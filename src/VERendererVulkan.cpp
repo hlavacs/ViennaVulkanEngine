@@ -120,31 +120,53 @@ namespace vve {
 		vvh::DevCreateImageViews({m_vkState().m_device, m_vkState().m_swapChain});
 
 		vvh::RenCreateRenderPass({
-			m_vkState().m_depthMapFormat, 
-			m_vkState().m_device, 
-			m_vkState().m_swapChain, 
-			m_clear,
-			m_renderPass
+			.m_depthFormat 	= m_vkState().m_depthMapFormat, 
+			.m_device 		= m_vkState().m_device, 
+			.m_swapChain 	= m_vkState().m_swapChain, 
+			.m_clear 		= m_clear,
+			.m_renderPass 	= m_renderPass
 		});
 
-		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, {}, m_descriptorSetLayoutPerFrame );
+		vvh::RenCreateDescriptorSetLayout( { 
+			.m_device = m_vkState().m_device, 
+			.m_bindings = {}, 
+			.m_descriptorSetLayout = m_descriptorSetLayoutPerFrame 
+		} );
 			
-        vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_renderPass, "shaders/Vulkan/vert.spv", "", {}, {},
-			 { m_descriptorSetLayoutPerFrame }, 
-			 {}, //spezialization constants
-			 {}, //push constants
-			 {}, //blend attachments
-			 m_graphicsPipeline);
+        vvh::RenCreateGraphicsPipeline( {
+			.m_device 				= m_vkState().m_device, 
+			.m_renderPass 			= m_renderPass, 
+			.m_vertShaderPath 		= "shaders/Vulkan/vert.spv", 
+			.m_fragShaderPath 		= "", 
+			.m_bindingDescription 	= {}, 
+			.m_attributeDescriptions = {},
+			.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame }, 
+			.m_specializationConstants = {}, 
+			.m_pushConstantRanges 	= {}, 
+			.m_blendAttachments 	= {}, 
+			.m_graphicsPipeline 	= m_graphicsPipeline
+		});
 
-		vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_commandPool);
-        vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool);
+		vvh::ComCreateCommandPool({
+			.m_surface 			= m_vkState().m_surface, 
+			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
+			.m_device 			= m_vkState().m_device,
+			.m_commandPool 		= m_vkState().m_commandPool
+		});
+
+        vvh::ComCreateCommandPool({
+			.m_surface 			= m_vkState().m_surface, 
+			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
+			.m_device 			= m_vkState().m_device, 
+			.m_commandPool 		= m_commandPool
+		});
         
 		vvh::RenCreateDepthResources({
-			m_vkState().m_physicalDevice,
-			m_vkState().m_device, 
-			m_vkState().m_vmaAllocator, 
-			m_vkState().m_swapChain, 
-			m_vkState().m_depthImage
+			.m_physicalDevice 	= m_vkState().m_physicalDevice,
+			.m_device 			= m_vkState().m_device, 
+			.m_vmaAllocator 	= m_vkState().m_vmaAllocator, 
+			.m_swapChain 		= m_vkState().m_swapChain, 
+			.m_depthImage 		= m_vkState().m_depthImage
 		});
 
 		vh::ImgTransitionImageLayout2(m_vkState().m_device, m_vkState().m_graphicsQueue, m_commandPool,
@@ -158,10 +180,10 @@ namespace vve {
 		}
 
 		vvh::RenCreateFramebuffers({
-			m_vkState().m_device, 
-			m_vkState().m_depthImage, 
-			m_renderPass,
-			m_vkState().m_swapChain
+			.m_device 		= m_vkState().m_device, 
+			.m_depthImage 	= m_vkState().m_depthImage, 
+			.m_renderPass 	= m_renderPass,
+			.m_swapChain 	= m_vkState().m_swapChain
 		});
 
         vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPool, m_commandBuffers);
@@ -188,14 +210,14 @@ namespace vve {
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
             vvh::DevRecreateSwapChain( {
-				m_windowSDLState().m_sdlWindow, 
-				m_vkState().m_surface, 
-				m_vkState().m_physicalDevice, 
-				m_vkState().m_device, 
-				m_vkState().m_vmaAllocator, 
-				m_vkState().m_swapChain, 
-				m_vkState().m_depthImage, 
-				m_renderPass
+				.m_window 			= m_windowSDLState().m_sdlWindow, 
+				.m_surface 			= m_vkState().m_surface, 
+				.m_physicalDevice 	= m_vkState().m_physicalDevice, 
+				.m_device 			= m_vkState().m_device, 
+				.m_vmaAllocator 	= m_vkState().m_vmaAllocator, 
+				.m_swapChain 		= m_vkState().m_swapChain, 
+				.m_depthImage 		= m_vkState().m_depthImage, 
+				.m_renderPass 		= m_renderPass
 			});
 
 			m_engine.SendMsg( MsgWindowSize{} );
@@ -208,18 +230,18 @@ namespace vve {
         vkResetCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame],  0);
 
 		vvh::ComBeginCommandBuffer({
-			m_commandBuffers[m_vkState().m_currentFrame]
+			.m_commandBuffer = m_commandBuffers[m_vkState().m_currentFrame]
 		});
 
 
 		vvh::ComBeginRenderPass({
-			m_commandBuffers[m_vkState().m_currentFrame], 
-			m_vkState().m_imageIndex, 
-			m_vkState().m_swapChain, 
-			m_renderPass, 
-			m_clear, 
-			m_windowState().m_clearColor, 
-			m_vkState().m_currentFrame
+			.m_commandBuffer 	= m_commandBuffers[m_vkState().m_currentFrame], 
+			.m_imageIndex 		= m_vkState().m_imageIndex, 
+			.m_swapChain 		= m_vkState().m_swapChain, 
+			.m_renderPass 		= m_renderPass, 
+			.m_clear 			= m_clear, 
+			.m_clearColor 		= m_windowState().m_clearColor, 
+			.m_currentFrame 	= m_vkState().m_currentFrame
 		});
 
 		vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame]);

@@ -52,7 +52,7 @@ namespace vve {
 	    VkRenderPass m_renderPass;
         bool m_clear{true};
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
-	    vh::Pipeline m_graphicsPipeline;
+	    vvh::Pipeline m_graphicsPipeline;
 	    VkDescriptorPool m_descriptorPool;    
 		VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
