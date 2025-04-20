@@ -23,7 +23,8 @@ namespace vve {
 		Renderer::OnInit(message);
 
 		vh::RenCreateRenderPassGeometry(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, true, m_geometryPass);
-		vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_lightingPass);
+		// TODO: If this stays this way, rename render pass creation or make new func
+		vh::RenCreateRenderPassGeometry(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_lightingPass);
 
 		// TODO: binding 0 might only need vertex globally
 		// Per Frame
@@ -179,7 +180,6 @@ namespace vve {
 		vh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
 
 		for (auto& pipeline : m_geomPipesPerType) {
-			// TODO: Probably remove here and if, add to lighting
 			vh::ComBindPipeline(
 				cmdBuffer,
 				m_vkState().m_imageIndex,
@@ -208,8 +208,6 @@ namespace vve {
 				if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 				auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
-				// TODO: change PNC to fit shaders after initial testing
-				// TODO: m_descriptorSetPerObject or m_descriptorSetComposition here?
 				vh::ComRecordObject(cmdBuffer, pipeline.second.m_graphicsPipeline,
 					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vkState().m_currentFrame);
 			}
@@ -223,7 +221,7 @@ namespace vve {
 
 		auto cmdBuffer2 = cmdBuffers[1];
 		vh::ComStartRecordCommandBufferClearValue(cmdBuffer2, m_vkState().m_imageIndex,
-			m_vkState().m_swapChain, m_vkState().m_swapChain.m_swapChainFramebuffers,
+			m_vkState().m_swapChain, m_gBufferFrameBuffers,
 			m_lightingPass, clearValues,
 			m_vkState().m_currentFrame);
 
@@ -246,6 +244,7 @@ namespace vve {
 			m_vkState().m_currentFrame);
 
 		// TODO .... do I need that? Think about it - for lighting pass???
+		// TODO .... Lighting pass still needs a draw call, is it indexed? 
 		// TODO .... probably remove push constant from geom pass, only need ligthing in lighting pass!
 		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
 			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
@@ -258,10 +257,9 @@ namespace vve {
 			if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
-			// TODO: change PNC to fit shaders after initial testing
-			// TODO: m_descriptorSetPerObject or m_descriptorSetComposition here?
+			// TODO: change PNC to fit shaders after initial testing?
 			vh::ComRecordObject(cmdBuffer2, m_lightingPipeline,
-				{ m_descriptorSetPerFrame, m_descriptorSetComposition, descriptorsets }, "", mesh, m_vkState().m_currentFrame);
+				{ m_descriptorSetPerFrame, m_descriptorSetComposition, descriptorsets }, "PN", mesh, m_vkState().m_currentFrame);
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer2);
@@ -424,10 +422,22 @@ namespace vve {
 		const std::string vert = (shaders / "test_lighting.spv").string();
 		const std::string frag = (shaders / "test_lighting.spv").string();
 
+		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+		// TODO: colorBlendAttachment.colorWriteMask = 0xf; ???
+		// TODO: rewrite to make use for the 3 attachments clearer
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
+		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
+		colorBlendAttachment.blendEnable = VK_TRUE;
+
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
 			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
-			{}, m_lightingPipeline, false);
+			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_lightingPipeline, false);
 	}
 
 	void RendererDeferred11::getBindingDescription(std::string type, std::string C, int& binding, int stride, auto& bdesc) {
