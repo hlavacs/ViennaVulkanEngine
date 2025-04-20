@@ -7,7 +7,7 @@ struct VSOutput {
 };
 
 [shader("vertex")]
-VSOutput vertexMain(uint vertexID : SV_VertexID)
+VSOutput main(uint vertexID : SV_VertexID)
 {
     VSOutput output = (VSOutput)0;
 
@@ -34,7 +34,7 @@ Sampler2D gAlbedo; // Albedo from geometry shader
 StructuredBuffer<Light> gLights;
 
 [shader("fragment")]
-PSOutput fragmentMain(VSOutput in)
+PSOutput main(VSOutput in)
 {
     // this is a dummy shader
     PSOutput out;

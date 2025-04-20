@@ -20,9 +20,9 @@ ConstantBuffer<UniformBufferFrame> gParamsFrame;
 
 //----------------------------------------------------------------------------
 
-// set 2 ... per object
+// set 1 ... per object
 
-[[vk::binding(0, 2)]]
+[[vk::binding(0, 1)]]
 ConstantBuffer<UniformBufferObjectColor> gParamsObject;
 
 //----------------------------------------------------------------------------
@@ -33,7 +33,7 @@ LightOffset offset;
 //----------------------------------------------------------------------------
 
 [shader("vertex")]
-VertexStageOutput vertexMain(
+VertexStageOutput main(
     float3 position: POSITION,
     float3 normal: NORMAL)
 {
@@ -58,7 +58,7 @@ struct GBufferOutput {
 };
 
 [shader("fragment")]
-GBufferOutput fragmentMain(CoarseVertex input: CoarseVertex) : SV_Target
+GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
 {
     GBufferOutput output;
     Camera camera = gParamsFrame.camera;

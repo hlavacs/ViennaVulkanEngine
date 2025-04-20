@@ -10,14 +10,14 @@ namespace vve {
 			{this, 3500, "INIT", [this](Message& message) { return OnInit(message); } },
 			{this, 2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
 			{this, 2000, "RECORD_NEXT_FRAME", [this](Message& message) { return OnRecordNextFrame(message); } },
-			{this,  000, "OBJECT_CREATE", [this](Message& message) { return OnObjectCreate(message); } },
+			{this, 2000, "OBJECT_CREATE", [this](Message& message) { return OnObjectCreate(message); } },
 			{this,10000, "OBJECT_DESTROY", [this](Message& message) { return OnObjectDestroy(message); } },
 			{this,	  0, "QUIT", [this](Message& message) { return OnQuit(message); } }
 			});
 	}
 
 	RendererDeferred11::~RendererDeferred11() {};
-
+		
 	bool RendererDeferred11::OnInit(Message message) {
 		// TODO: maybe a reference will be enough here to not make a message copy?
 		Renderer::OnInit(message);
@@ -26,7 +26,7 @@ namespace vve {
 		vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_lightingPass);
 
 		// TODO: binding 0 might only need vertex globally
-		// Set 0 - Per Frame
+		// Per Frame
 		vh::RenCreateDescriptorSetLayout(
 			m_vkState().m_device,
 			{
@@ -38,23 +38,8 @@ namespace vve {
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			m_descriptorSetLayoutPerFrame);
-		// Set 1 - Per Object
-		//vh::RenCreateDescriptorSetLayout(
-		//	m_vkState().m_device,
-		//	{
-		//		{	// Binding 0 : Object ubo
-		//			.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		//			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-		//		{	// Binding 1 : Albedo
-		//			.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		//			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-		//		//{	// Binding 2 : Normal
-		//		// IF Used later - rewrite to be same order as composition!?
-		//		//	.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-		//		//	.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
-		//	},
-		//	m_descriptorSetLayoutPerObject);
-		// Set 1 - Composition
+
+		// Composition
 		vh::RenCreateDescriptorSetLayout(
 			m_vkState().m_device,
 			{
@@ -70,7 +55,6 @@ namespace vve {
 			},
 			m_descriptorSetLayoutComposition);
 
-		//vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool);
 		m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
 		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPools[i]);
@@ -277,7 +261,7 @@ namespace vve {
 			// TODO: change PNC to fit shaders after initial testing
 			// TODO: m_descriptorSetPerObject or m_descriptorSetComposition here?
 			vh::ComRecordObject(cmdBuffer2, m_lightingPipeline,
-				{ m_descriptorSetPerFrame, m_descriptorSetComposition }, "PNUT", mesh, m_vkState().m_currentFrame);
+				{ m_descriptorSetPerFrame, m_descriptorSetComposition, descriptorsets }, "", mesh, m_vkState().m_currentFrame);
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer2);
@@ -423,7 +407,7 @@ namespace vve {
 				colorBlendAttachment.blendEnable = VK_FALSE;
 
 				vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_geometryPass, entry.path().string(), entry.path().string(), bindingDescriptions, attributeDescriptions,
-					{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition, descriptorSetLayoutPerObject }, { MAX_NUMBER_LIGHTS },
+					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, { MAX_NUMBER_LIGHTS },
 					{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 					{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, graphicsPipeline, true);
 
@@ -440,7 +424,6 @@ namespace vve {
 		const std::string vert = (shaders / "test_lighting.spv").string();
 		const std::string frag = (shaders / "test_lighting.spv").string();
 
-		// TODO: WHY does it need 3 layouts?
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
 			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },

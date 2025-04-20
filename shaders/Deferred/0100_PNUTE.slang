@@ -23,12 +23,12 @@ ConstantBuffer<UniformBufferFrame> gParamsFrame;
 
 //----------------------------------------------------------------------------
 
-// set 2 ... per object
+// set 1 ... per object
 
-[[vk::binding(0, 2)]]
+[[vk::binding(0, 1)]]
 ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
 
-[[vk::binding(1, 2)]]
+[[vk::binding(1, 1)]]
 Sampler2D albedoSampler;
 
 //----------------------------------------------------------------------------
@@ -39,7 +39,7 @@ LightOffset offset;
 //----------------------------------------------------------------------------
 
 [shader("vertex")]
-VertexStageOutput geomVertMain(
+VertexStageOutput main(
     float3 positionL    : POSITION,
     float3 normalL      : NORMAL,
     float2 uv           : TEXCOORD,
@@ -65,7 +65,7 @@ struct GBufferOutput {
 };
 
 [shader("fragment")]
-GBufferOutput geomFragMain(CoarseVertex input: CoarseVertex) : SV_Target
+GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
 {
     GBufferOutput output;
     Camera camera = gParamsFrame.camera;
