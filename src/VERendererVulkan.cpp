@@ -395,24 +395,24 @@ namespace vve {
 
 		for( auto geometry : m_registry.template GetView<vh::Mesh&>() ) {
 	        vvh::BufDestroyBuffer({
-				m_vkState().m_device, 
-				m_vkState().m_vmaAllocator, 
-				geometry().m_indexBuffer, 
-				geometry().m_indexBufferAllocation
+				.m_device 		= m_vkState().m_device, 
+				.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+				.m_buffer 		= geometry().m_indexBuffer, 
+				.m_allocation 	= geometry().m_indexBufferAllocation
 			});
 	        vvh::BufDestroyBuffer({
-				m_vkState().m_device, 
-				m_vkState().m_vmaAllocator, 
-				geometry().m_vertexBuffer, 
-				geometry().m_vertexBufferAllocation
+				.m_device 		= m_vkState().m_device, 
+				.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+				.m_buffer 		= geometry().m_vertexBuffer, 
+				.m_allocation 	= geometry().m_vertexBufferAllocation
 			});
 		}
 
 		for( auto ubo : m_registry.template GetView<vvh::Buffer&>() ) {
 			vvh::BufDestroyBuffer2({
-				m_vkState().m_device, 
-				m_vkState().m_vmaAllocator, 
-				ubo
+				.m_device 			= m_vkState().m_device, 
+				.m_vmaAllocator 	= m_vkState().m_vmaAllocator, 
+				.m_buffers 			= ubo
 			});
 		}
 
@@ -424,7 +424,10 @@ namespace vve {
 		vvh::SynDestroyFences({m_vkState().m_device, m_fences});
 
 		vvh::SynDestroySemaphores({
-			m_vkState().m_device, m_imageAvailableSemaphores, m_renderFinishedSemaphores, m_intermediateSemaphores
+			m_vkState().m_device, 
+			m_imageAvailableSemaphores, 
+			m_renderFinishedSemaphores, 
+			m_intermediateSemaphores
 		});
 
         vmaDestroyAllocator(m_vkState().m_vmaAllocator);
@@ -434,16 +437,18 @@ namespace vve {
         vkDestroySurfaceKHR(m_vkState().m_instance, m_vkState().m_surface, nullptr);
 
 		if (m_engine.GetState().debug) {
-            vh::DevDestroyDebugUtilsMessengerEXT(m_vkState().m_instance, m_vkState().m_debugMessenger, nullptr);
+            vvh::DevDestroyDebugUtilsMessengerEXT({
+				.m_instance 		= m_vkState().m_instance, 
+				.m_debugMessenger 	= m_vkState().m_debugMessenger, 
+				.m_pAllocator 		= nullptr
+			});
         }
 
         vkDestroyInstance(m_vkState().m_instance, nullptr);
 		return false;
     }
 
-
 	//-------------------------------------------------------------------------------------------------------
-
 
 	bool RendererVulkan::OnTextureCreate( Message message ) {
 		auto msg = message.template GetData<MsgTextureCreate>();
