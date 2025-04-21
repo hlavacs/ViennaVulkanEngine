@@ -483,8 +483,18 @@ namespace vve {
 	bool RendererVulkan::OnMeshDestroy( Message message ) {
 		auto handle = message.template GetData<MsgMeshDestroy>().m_handle;
 		auto mesh = m_registry.template Get<vh::Mesh&>(handle);
-		vh::BufDestroyBuffer(m_vkState().m_device, m_vkState().m_vmaAllocator, mesh().m_indexBuffer, mesh().m_indexBufferAllocation);
-		vh::BufDestroyBuffer(m_vkState().m_device, m_vkState().m_vmaAllocator, mesh().m_vertexBuffer, mesh().m_vertexBufferAllocation);
+		vvh::BufDestroyBuffer({
+			.m_device 		= m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+			.m_buffer 		= mesh().m_indexBuffer, 
+			.m_allocation 	= mesh().m_indexBufferAllocation
+		});
+		vvh::BufDestroyBuffer({
+			.m_device 		= m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+			.m_buffer 		= mesh().m_vertexBuffer, 
+			.m_allocation 	= mesh().m_vertexBufferAllocation
+		});
 		m_registry.Erase(handle);
 		return false;
 	}
