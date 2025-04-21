@@ -212,17 +212,17 @@ namespace vve {
 			.m_descriptorPool 	= m_descriptorPool
 		});
         vvh::SynCreateSemaphores({
-			m_vkState().m_device, 
-			m_imageAvailableSemaphores, 
-			m_renderFinishedSemaphores, 
-			3, 
-			m_intermediateSemaphores
+			.m_device 					= m_vkState().m_device, 
+			.m_imageAvailableSemaphores = m_imageAvailableSemaphores, 
+			.m_renderFinishedSemaphores = m_renderFinishedSemaphores, 
+			.m_size 					= 3, 
+			.m_intermediateSemaphores 	= m_intermediateSemaphores
 		});
 
 		vvh::SynCreateFences({
-			m_vkState().m_device, 
-			MAX_FRAMES_IN_FLIGHT, 
-			m_fences
+			.m_device 	= m_vkState().m_device, 
+			.m_size 	= MAX_FRAMES_IN_FLIGHT, 
+			.m_fences 	= m_fences
 		});
 		return false;
     }
@@ -234,12 +234,23 @@ namespace vve {
 
 		vkWaitForFences(m_vkState().m_device, 1, &m_fences[m_vkState().m_currentFrame], VK_TRUE, UINT64_MAX);
 
-        VkResult result = vkAcquireNextImageKHR(m_vkState().m_device, m_vkState().m_swapChain.m_swapChain, UINT64_MAX,
-                            m_imageAvailableSemaphores[m_vkState().m_currentFrame], VK_NULL_HANDLE, &m_vkState().m_imageIndex);
+        VkResult result = vkAcquireNextImageKHR(
+							m_vkState().m_device, 
+							m_vkState().m_swapChain.m_swapChain, 
+							UINT64_MAX,
+            				m_imageAvailableSemaphores[m_vkState().m_currentFrame], 
+							VK_NULL_HANDLE, 
+							&m_vkState().m_imageIndex);
 
-		vh::ImgTransitionImageLayout(m_vkState().m_device, m_vkState().m_graphicsQueue, m_commandPool, 
-			m_vkState().m_swapChain.m_swapChainImages[m_vkState().m_imageIndex], m_vkState().m_swapChain.m_swapChainImageFormat, 
-			VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+		vvh::ImgTransitionImageLayout2({
+			.m_device 			= m_vkState().m_device, 
+			.m_graphicsQueue 	= m_vkState().m_graphicsQueue, 
+			.m_commandPool 		= m_commandPool, 
+			.m_image 			= m_vkState().m_swapChain.m_swapChainImages[m_vkState().m_imageIndex], 
+			.m_format 			= m_vkState().m_swapChain.m_swapChainImageFormat, 
+			.m_oldLayout 		= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, 
+			.m_newLayout 		= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		});
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR ) {
             vvh::DevRecreateSwapChain( {
@@ -253,6 +264,18 @@ namespace vve {
 				.m_renderPass 		= m_renderPass
 			});
 
+			for( auto image : m_vkState().m_swapChain.m_swapChainImages ) {
+				vvh::ImgTransitionImageLayout2({
+					.m_device 			= m_vkState().m_device, 
+					.m_graphicsQueue 	= m_vkState().m_graphicsQueue, 
+					.m_commandPool 		= m_commandPool,
+					.m_image 			= image, 
+					.m_format 			= m_vkState().m_swapChain.m_swapChainImageFormat, 
+					.m_oldLayout 		= VK_IMAGE_LAYOUT_UNDEFINED, 
+					.m_newLayout 		= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+				});
+			}
+	
 			m_engine.SendMsg( MsgWindowSize{} );
         } else assert (result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR);
 		return false;
@@ -262,9 +285,7 @@ namespace vve {
 
         vkResetCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame],  0);
 
-		vvh::ComBeginCommandBuffer({
-			.m_commandBuffer = m_commandBuffers[m_vkState().m_currentFrame]
-		});
+		vvh::ComBeginCommandBuffer({.m_commandBuffer = m_commandBuffers[m_vkState().m_currentFrame]});
 
 
 		vvh::ComBeginRenderPass({
@@ -297,30 +318,48 @@ namespace vve {
 			m_vkState().m_currentFrame
 		});
 
-		vh::ImgTransitionImageLayout(m_vkState().m_device, m_vkState().m_graphicsQueue, m_commandPool, 
-			m_vkState().m_swapChain.m_swapChainImages[m_vkState().m_imageIndex], m_vkState().m_swapChain.m_swapChainImageFormat, 
-			VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		vvh::ImgTransitionImageLayout2({
+			.m_device 			= m_vkState().m_device, 
+			.m_graphicsQueue 	= m_vkState().m_graphicsQueue, 
+			.m_commandPool 		= m_commandPool, 
+			.m_image 			= m_vkState().m_swapChain.m_swapChainImages[m_vkState().m_imageIndex], 
+			.m_format 			= m_vkState().m_swapChain.m_swapChainImageFormat, 
+			.m_oldLayout 		= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 
+			.m_newLayout 		= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+		});
 
 		VkResult result = vvh::ComPresentImage({
-			m_vkState().m_presentQueue, 
-			m_vkState().m_swapChain, 
-			m_vkState().m_imageIndex, 
-			m_renderFinishedSemaphores[m_vkState().m_currentFrame]
+			.m_presentQueue 	= m_vkState().m_presentQueue, 
+			.m_swapChain 		= m_vkState().m_swapChain, 
+			.m_imageIndex 		= m_vkState().m_imageIndex, 
+			.m_signalSemaphore 	= m_renderFinishedSemaphores[m_vkState().m_currentFrame]
 		});
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || m_vkState().m_framebufferResized) {
             m_vkState().m_framebufferResized = false;
             vvh::DevRecreateSwapChain({
-				m_windowSDLState().m_sdlWindow, 
-				m_vkState().m_surface, 
-				m_vkState().m_physicalDevice, 
-				m_vkState().m_device, 
-				m_vkState().m_vmaAllocator, 
-				m_vkState().m_swapChain, 
-				m_vkState().m_depthImage, 
-				m_renderPass
+				.m_window 			= m_windowSDLState().m_sdlWindow, 
+				.m_surface 			= m_vkState().m_surface, 
+				.m_physicalDevice 	= m_vkState().m_physicalDevice, 
+				.m_device 			= m_vkState().m_device, 
+				.m_vmaAllocator 	= m_vkState().m_vmaAllocator, 
+				.m_swapChain 		= m_vkState().m_swapChain, 
+				.m_depthImage 		= m_vkState().m_depthImage, 
+				.m_renderPass 		= m_renderPass
 			});
 
+			for( auto image : m_vkState().m_swapChain.m_swapChainImages ) {
+				vvh::ImgTransitionImageLayout2({
+					.m_device 			= m_vkState().m_device, 
+					.m_graphicsQueue 	= m_vkState().m_graphicsQueue, 
+					.m_commandPool 		= m_commandPool,
+					.m_image 			= image, 
+					.m_format 			= m_vkState().m_swapChain.m_swapChainImageFormat, 
+					.m_oldLayout 		= VK_IMAGE_LAYOUT_UNDEFINED, 
+					.m_newLayout 		= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+				});
+			}
+	
 			m_engine.SendMsg( MsgWindowSize{} );
         } else assert(result == VK_SUCCESS);
 		return false;
@@ -330,10 +369,10 @@ namespace vve {
         vkDeviceWaitIdle(m_vkState().m_device);
 
         vvh::DevCleanupSwapChain({
-			m_vkState().m_device, 
-			m_vkState().m_vmaAllocator, 
-			m_vkState().m_swapChain, 
-			m_vkState().m_depthImage
+			.m_device 		= m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+			.m_swapChain 	= m_vkState().m_swapChain, 
+			.m_depthImage 	= m_vkState().m_depthImage
 		});
 
         vkDestroyPipeline(m_vkState().m_device, m_graphicsPipeline.m_pipeline, nullptr);
@@ -344,18 +383,37 @@ namespace vve {
 		for( decltype(auto) texture : m_registry.template GetView<vh::Image&>() ) {
 			vkDestroySampler(m_vkState().m_device, texture().m_mapSampler, nullptr);
         	vkDestroyImageView(m_vkState().m_device, texture().m_mapImageView, nullptr);
-	        vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, texture().m_mapImage, texture().m_mapImageAllocation);
+	        vvh::ImgDestroyImage({
+				.m_device 			= m_vkState().m_device, 
+				.m_vmaAllocator 	= m_vkState().m_vmaAllocator, 
+				.m_image 			= texture().m_mapImage,
+				.m_imageAllocation 	= texture().m_mapImageAllocation
+			});
 		}
 
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
 		for( auto geometry : m_registry.template GetView<vh::Mesh&>() ) {
-	        vh::BufDestroyBuffer(m_vkState().m_device, m_vkState().m_vmaAllocator, geometry().m_indexBuffer, geometry().m_indexBufferAllocation);
-	        vh::BufDestroyBuffer(m_vkState().m_device, m_vkState().m_vmaAllocator, geometry().m_vertexBuffer, geometry().m_vertexBufferAllocation);
+	        vvh::BufDestroyBuffer({
+				m_vkState().m_device, 
+				m_vkState().m_vmaAllocator, 
+				geometry().m_indexBuffer, 
+				geometry().m_indexBufferAllocation
+			});
+	        vvh::BufDestroyBuffer({
+				m_vkState().m_device, 
+				m_vkState().m_vmaAllocator, 
+				geometry().m_vertexBuffer, 
+				geometry().m_vertexBufferAllocation
+			});
 		}
 
-		for( auto ubo : m_registry.template GetView<vh::Buffer&>() ) {
-			vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, ubo);
+		for( auto ubo : m_registry.template GetView<vvh::Buffer&>() ) {
+			vvh::BufDestroyBuffer2({
+				m_vkState().m_device, 
+				m_vkState().m_vmaAllocator, 
+				ubo
+			});
 		}
 
         vkDestroyCommandPool(m_vkState().m_device, m_commandPool, nullptr);
@@ -363,7 +421,7 @@ namespace vve {
 
         vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
 
-		vh::SynDestroyFences(m_vkState().m_device, m_fences);
+		vvh::SynDestroyFences({m_vkState().m_device, m_fences});
 
 		vvh::SynDestroySemaphores({
 			m_vkState().m_device, m_imageAvailableSemaphores, m_renderFinishedSemaphores, m_intermediateSemaphores
