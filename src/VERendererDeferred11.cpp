@@ -246,21 +246,28 @@ namespace vve {
 		// TODO .... do I need that? Think about it - for lighting pass???
 		// TODO .... Lighting pass still needs a draw call, is it indexed? 
 		// TODO .... probably remove push constant from geom pass, only need ligthing in lighting pass!
-		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
-			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
-			({ (size_t)m_lightingPipeline.m_pipeline })) {
+		//for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
+		//	m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
+		//	({ (size_t)m_lightingPipeline.m_pipeline })) {
 
-			bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
-			bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-			// TODO: fix lighting pipeline
-			bool hasVertexColor = false;		// pipeline.second.m_type.find("C") != std::string::npos;
-			if (!hasTexture && !hasColor && !hasVertexColor) continue;
+		//	bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+		//	bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+		//	// TODO: fix lighting pipeline
+		//	bool hasVertexColor = false;		// pipeline.second.m_type.find("C") != std::string::npos;
+		//	if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
-			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
-			// TODO: change PNC to fit shaders after initial testing?
-			vh::ComRecordObject(cmdBuffer2, m_lightingPipeline,
-				{ m_descriptorSetPerFrame, m_descriptorSetComposition }, "PN", mesh, m_vkState().m_currentFrame);
-		}
+		//	auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
+		//	// TODO: change PNC to fit shaders after initial testing?
+		//	vh::ComRecordObject(cmdBuffer2, m_lightingPipeline,
+		//		{ m_descriptorSetPerFrame, m_descriptorSetComposition }, "PN", mesh, m_vkState().m_currentFrame);
+		//}
+		
+		VkDescriptorSet sets[] = { m_descriptorSetPerFrame.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame], 
+			m_descriptorSetComposition.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame] };
+		vkCmdBindDescriptorSets(cmdBuffer2, VK_PIPELINE_BIND_POINT_GRAPHICS, m_lightingPipeline.m_pipelineLayout,
+			m_descriptorSetPerFrame.m_set, 2, sets, 0, nullptr);
+
+		vkCmdDraw(cmdBuffer2, 3, 1, 0, 0);
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer2);
 		SubmitCommandBuffer(cmdBuffer2);
@@ -279,7 +286,7 @@ namespace vve {
 
 		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 		bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-		bool hasVertexColor = false; // pipelinePerType->m_type.find("C") != std::string::npos;
+		bool hasVertexColor = pipelinePerType->m_type.find("C") != std::string::npos;
 		if (!hasTexture && !hasColor && !hasVertexColor) return false;
 
 		vh::Buffer ubo;
