@@ -57,7 +57,7 @@ namespace vve {
 		volkLoadInstance(m_vkState().m_instance);
 
 		if (engineState.debug) {
-	        vh::DevSetupDebugMessenger(m_vkState().m_instance, m_vkState().m_debugMessenger );
+	        vvh::DevSetupDebugMessenger(m_vkState().m_instance, m_vkState().m_debugMessenger );
 		}
 
 		if (SDL_Vulkan_CreateSurface(m_windowSDLState().m_sdlWindow, m_vkState().m_instance, nullptr, &m_vkState().m_surface) == 0) {
@@ -169,14 +169,29 @@ namespace vve {
 			.m_depthImage 		= m_vkState().m_depthImage
 		});
 
-		vh::ImgTransitionImageLayout2(m_vkState().m_device, m_vkState().m_graphicsQueue, m_commandPool,
-			m_vkState().m_depthImage.m_depthImage, m_vkState().m_swapChain.m_swapChainImageFormat, 
-			VK_IMAGE_ASPECT_DEPTH_BIT, 1, 1, VK_IMAGE_LAYOUT_UNDEFINED , VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+		vvh::ImgTransitionImageLayout({
+			.m_device 			= m_vkState().m_device, 
+			.m_graphicsQueue 	= m_vkState().m_graphicsQueue, 
+			.m_commandPool 		= m_commandPool,
+			.m_image 			= m_vkState().m_depthImage.m_depthImage, 
+			.m_format 			= m_vkState().m_depthMapFormat, 
+			.m_aspect			= VK_IMAGE_ASPECT_DEPTH_BIT, 
+			.m_mipLevels 		= 1, 
+			.m_layers 			= 1, 
+			.m_oldLayout 		= VK_IMAGE_LAYOUT_UNDEFINED, 
+			.m_newLayout 		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+		});
         
 		for( auto image : m_vkState().m_swapChain.m_swapChainImages ) {
-			vh::ImgTransitionImageLayout(m_vkState().m_device, m_vkState().m_graphicsQueue, m_commandPool,
-				image, m_vkState().m_swapChain.m_swapChainImageFormat, 
-				VK_IMAGE_LAYOUT_UNDEFINED , VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+			vvh::ImgTransitionImageLayout2({
+				.m_device 			= m_vkState().m_device, 
+				.m_graphicsQueue 	= m_vkState().m_graphicsQueue, 
+				.m_commandPool 		= m_commandPool,
+				.m_image 			= image, 
+				.m_format 			= m_vkState().m_swapChain.m_swapChainImageFormat, 
+				.m_oldLayout 		= VK_IMAGE_LAYOUT_UNDEFINED, 
+				.m_newLayout 		= VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+			});
 		}
 
 		vvh::RenCreateFramebuffers({
@@ -186,11 +201,29 @@ namespace vve {
 			.m_swapChain 	= m_vkState().m_swapChain
 		});
 
-        vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPool, m_commandBuffers);
-        vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
-        vh::SynCreateSemaphores(m_vkState().m_device, m_imageAvailableSemaphores, m_renderFinishedSemaphores, 3, m_intermediateSemaphores);
+        vvh::ComCreateCommandBuffers({
+			.m_device 			= m_vkState().m_device, 
+			.m_commandPool 		= m_commandPool, 
+			.m_commandBuffers 	= m_commandBuffers
+		});
+        vvh::RenCreateDescriptorPool({
+			.m_device 			= m_vkState().m_device, 
+			.m_sizes 			= 1000, 
+			.m_descriptorPool 	= m_descriptorPool
+		});
+        vvh::SynCreateSemaphores({
+			m_vkState().m_device, 
+			m_imageAvailableSemaphores, 
+			m_renderFinishedSemaphores, 
+			3, 
+			m_intermediateSemaphores
+		});
 
-		vh::SynCreateFences(m_vkState().m_device, MAX_FRAMES_IN_FLIGHT, m_fences);
+		vvh::SynCreateFences({
+			m_vkState().m_device, 
+			MAX_FRAMES_IN_FLIGHT, 
+			m_fences
+		});
 		return false;
     }
 
@@ -244,7 +277,8 @@ namespace vve {
 			.m_currentFrame 	= m_vkState().m_currentFrame
 		});
 
-		vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame]);
+		vvh::ComEndRenderPass( {.m_commandBuffer = m_commandBuffers[m_vkState().m_currentFrame]} );
+		vvh::ComEndCommandBuffer({.m_commandBuffer = m_commandBuffers[m_vkState().m_currentFrame]});
 
 		SubmitCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame]);
 		return false;
@@ -252,8 +286,16 @@ namespace vve {
 
     bool RendererVulkan::OnRenderNextFrame(Message message) {
         	
-		vh::ComSubmitCommandBuffers(m_vkState().m_device, m_vkState().m_graphicsQueue, m_vkState().m_commandBuffersSubmit, 
-			m_imageAvailableSemaphores, m_renderFinishedSemaphores, m_intermediateSemaphores, m_fences, m_vkState().m_currentFrame);
+		vvh::ComSubmitCommandBuffers({
+			m_vkState().m_device, 
+			m_vkState().m_graphicsQueue, 
+			m_vkState().m_commandBuffersSubmit, 
+			m_imageAvailableSemaphores, 
+			m_renderFinishedSemaphores, 
+			m_intermediateSemaphores, 
+			m_fences, 
+			m_vkState().m_currentFrame
+		});
 
 		vh::ImgTransitionImageLayout(m_vkState().m_device, m_vkState().m_graphicsQueue, m_commandPool, 
 			m_vkState().m_swapChain.m_swapChainImages[m_vkState().m_imageIndex], m_vkState().m_swapChain.m_swapChainImageFormat, 
@@ -323,7 +365,9 @@ namespace vve {
 
 		vh::SynDestroyFences(m_vkState().m_device, m_fences);
 
-		vh::SynDestroySemaphores(m_vkState().m_device, m_imageAvailableSemaphores, m_renderFinishedSemaphores, m_intermediateSemaphores);
+		vvh::SynDestroySemaphores({
+			m_vkState().m_device, m_imageAvailableSemaphores, m_renderFinishedSemaphores, m_intermediateSemaphores
+		});
 
         vmaDestroyAllocator(m_vkState().m_vmaAllocator);
 
