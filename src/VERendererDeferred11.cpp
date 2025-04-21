@@ -24,7 +24,7 @@ namespace vve {
 
 		vh::RenCreateRenderPassGeometry(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, true, m_geometryPass);
 		// TODO: If this stays this way, rename render pass creation or make new func
-		vh::RenCreateRenderPassGeometry(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_lightingPass);
+		vh::RenCreateRenderPassLighting(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_lightingPass);
 
 		// TODO: binding 0 might only need vertex globally
 		// Per Frame
@@ -437,7 +437,7 @@ namespace vve {
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
 			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
 			{ {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
-			{ colorBlendAttachment, colorBlendAttachment, colorBlendAttachment }, m_lightingPipeline, false);
+			{ colorBlendAttachment }, m_lightingPipeline, false);
 	}
 
 	void RendererDeferred11::getBindingDescription(std::string type, std::string C, int& binding, int stride, auto& bdesc) {
