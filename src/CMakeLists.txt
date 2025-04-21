@@ -65,6 +65,11 @@ add_library (${TARGET} STATIC ${SOURCE} ${HEADERS})
 
 target_compile_features(${TARGET} PUBLIC cxx_std_20)
 
+# Build in parallel under Visual Studio. Not enabled by default.
+if(MSVC AND NOT USE_CLANG)
+  target_compile_options(${TARGET} PRIVATE "/MP")
+endif()
+
 source_group(
   TREE "${PROJECT_SOURCE_DIR}/include"
   PREFIX "Header Files"
