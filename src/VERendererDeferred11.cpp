@@ -220,9 +220,9 @@ namespace vve {
 		// Lighting pass
 
 		auto cmdBuffer2 = cmdBuffers[1];
-		vh::ComStartRecordCommandBufferClearValue(cmdBuffer2, m_vkState().m_imageIndex,
-			m_vkState().m_swapChain, m_gBufferFrameBuffers,
-			m_lightingPass, clearValues,
+		vh::ComStartRecordCommandBuffer(cmdBuffer2, m_vkState().m_imageIndex,
+			m_vkState().m_swapChain,
+			m_lightingPass, false, {},
 			m_vkState().m_currentFrame);
 
 		vh::ComBindPipeline(
@@ -259,7 +259,7 @@ namespace vve {
 			auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
 			// TODO: change PNC to fit shaders after initial testing?
 			vh::ComRecordObject(cmdBuffer2, m_lightingPipeline,
-				{ m_descriptorSetPerFrame, m_descriptorSetComposition, descriptorsets }, "PN", mesh, m_vkState().m_currentFrame);
+				{ m_descriptorSetPerFrame, m_descriptorSetComposition }, "PN", mesh, m_vkState().m_currentFrame);
 		}
 
 		vh::ComEndRecordCommandBuffer(cmdBuffer2);
