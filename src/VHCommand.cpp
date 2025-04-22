@@ -96,6 +96,29 @@ namespace vh {
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
+    // Used for cmdBuf that already is running
+    void ComStartRecordCommandBuffer2(VkCommandBuffer commandBuffer, uint32_t imageIndex
+        , SwapChain& swapChain, VkRenderPass renderPass, bool clear, glm::vec4 clearColor, uint32_t currentFrame) {
+
+        VkRenderPassBeginInfo renderPassInfo{};
+        renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+        renderPassInfo.renderPass = renderPass;
+        renderPassInfo.framebuffer = swapChain.m_swapChainFramebuffers[imageIndex];
+        renderPassInfo.renderArea.offset = { 0, 0 };
+        renderPassInfo.renderArea.extent = swapChain.m_swapChainExtent;
+
+        std::array<VkClearValue, 2> clearValues{};
+        if (clear) {
+            clearValues[0].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
+            clearValues[1].depthStencil = { 1.0f, 0 };
+
+            renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+            renderPassInfo.pClearValues = clearValues.data();
+        }
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+    }
+
     // Used by deferred renderer
     void ComStartRecordCommandBufferClearValue(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, std::vector<VkFramebuffer>& gBufferFramebuffers, VkRenderPass renderPass, const std::vector<VkClearValue>& clearValues, uint32_t currentFrame) {

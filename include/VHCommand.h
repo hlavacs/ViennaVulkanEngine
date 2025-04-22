@@ -12,6 +12,8 @@ namespace vh {
 
     void ComStartRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, bool clear, glm::vec4 clearColor, uint32_t currentFrame);
+    void ComStartRecordCommandBuffer2(VkCommandBuffer commandBuffer, uint32_t imageIndex
+        , SwapChain& swapChain, VkRenderPass renderPass, bool clear, glm::vec4 clearColor, uint32_t currentFrame);
 
     void ComStartRecordCommandBufferClearValue(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, std::vector<VkFramebuffer>& gBufferFramebuffers, VkRenderPass renderPass,
@@ -33,7 +35,7 @@ namespace vh {
 		std::vector<VkSemaphore>& renderFinishedSemaphores, 
         std::vector<Semaphores>& intermediateSemaphores, 
 		std::vector<VkFence>& fences, uint32_t currentFrame);
-
+    
     void ComSubmitCommandBuffers2(VkDevice device, VkQueue graphicsQueue, std::vector<VkCommandBuffer>& commandBuffers,
         std::vector<VkSemaphore>& imageAvailableSemaphores, std::vector<Semaphores>& semaphores, VkSemaphore& signalSemaphore,
         std::vector<VkFence>& fences, uint32_t currentFrame);
