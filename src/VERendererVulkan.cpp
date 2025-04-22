@@ -467,7 +467,12 @@ namespace vve {
 		auto texture = m_registry.template Get<vh::Image&>(handle);
 		vkDestroySampler(m_vkState().m_device, texture().m_mapSampler, nullptr);
 		vkDestroyImageView(m_vkState().m_device, texture().m_mapImageView, nullptr);
-		vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, texture().m_mapImage, texture().m_mapImageAllocation);
+		vvh::ImgDestroyImage({
+			.m_device			= m_vkState().m_device, 
+			.m_vmaAllocator 	= m_vkState().m_vmaAllocator, 
+			.m_image 			= texture().m_mapImage, 
+			.m_imageAllocation 	= texture().m_mapImageAllocation
+		});
 		m_registry.Erase(handle);
 		return false;
 	}
