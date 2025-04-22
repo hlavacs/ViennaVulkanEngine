@@ -11,15 +11,20 @@ VSOutput main(uint vertexID : SV_VertexID)
 {
     VSOutput output = (VSOutput)0;
 
-    float2 pos[3] = { { -1, -1 }, { 3, -1 }, { -1, 3 } };
+    float2 pos[3] = {
+        float2(-1, -1),
+        float2(-1, 3),
+        float2(3, -1)
+    };
     output.position = float4(pos[vertexID], 0.0, 1.0);
     output.uv = (pos[vertexID] + 1.0) * 0.5;
     return output;
 }
 
-struct PSOutput {
-    float4 color : SV_Target;
-};
+[[vk::binding(0, 0)]]
+ConstantBuffer<UniformBufferFrame> gParamsFrame;
+
+//----------------------------------------------------------------------------
 
 [[vk::binding(0, 1)]]
 Sampler2D gPosition; // Position from geometry shader
@@ -33,21 +38,24 @@ Sampler2D gAlbedo; // Albedo from geometry shader
 [[vk::binding(1, 0)]]
 StructuredBuffer<Light> gLights;
 
+//----------------------------------------------------------------------------
+
+[[vk::push_constant]]
+LightOffset offset;
+
+//----------------------------------------------------------------------------
+
 [shader("fragment")]
-PSOutput main(VSOutput in)
+float4 main(VSOutput in) : SV_Target
 {
     // this is a dummy shader
-    PSOutput out;
+    Camera camera = gParamsFrame.camera;
+    uint3 numberLights = gParamsFrame.numberLights;
 
-    float3 worldPos = gPosition.Sample(in.uv).xyz;
-    float3 normMap = gNormal.Sample(in.uv).xyz;
-    float3 albedo = gAlbedo.Sample(in.uv).xyz;
+    float3 P = gPosition.Sample(in.uv).xyz;
+    float3 N = normalize(gNormal.Sample(in.uv).xyz * 2 - 1);
+    float3 A = gAlbedo.Sample(in.uv).xyz;
 
-    float3 diffuse = 0.5;
-    float3 ambient = 0.3;
-
-    float3 color = diffuse + ambient;
-
-    out.color = float4(1.0, 0.0, 1.0, 1.0);
-    return out;
+    float3 l = calculateLighting(gLights, numberLights, offset, N, camera.positionW, P);
+    return float4(l * A.rgb, 1);
 }

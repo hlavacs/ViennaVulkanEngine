@@ -23,7 +23,6 @@ namespace vve {
 		Renderer::OnInit(message);
 
 		vh::RenCreateRenderPassGeometry(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, true, m_geometryPass);
-		// TODO: If this stays this way, rename render pass creation or make new func
 		vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_lightingPass);
 
 		// TODO: binding 0 might only need vertex globally
@@ -264,11 +263,12 @@ namespace vve {
 		// TODO .... probably remove push constant from geom pass, only need ligthing in lighting pass!
 		VkDescriptorSet sets[] = { m_descriptorSetPerFrame.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame], 
 			m_descriptorSetComposition.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame] };
+
 		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_lightingPipeline.m_pipelineLayout,
-			m_descriptorSetPerFrame.m_set, 2, sets, 0, nullptr);
+			0, 2, sets, 0, nullptr);
 
 		vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
-
+		
 		vh::ComEndRecordCommandBuffer(cmdBuffer);
 		SubmitCommandBuffer(cmdBuffer);
 
@@ -439,7 +439,7 @@ namespace vve {
 		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
 		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
 		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
-		colorBlendAttachment.blendEnable = VK_TRUE;
+		colorBlendAttachment.blendEnable = VK_FALSE;
 
 		vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_lightingPass, vert, frag, {}, {},
 			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition }, { MAX_NUMBER_LIGHTS },
