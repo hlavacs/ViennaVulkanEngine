@@ -24,7 +24,7 @@ namespace vve {
 
 		vh::RenCreateRenderPassGeometry(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, true, m_geometryPass);
 		// TODO: If this stays this way, rename render pass creation or make new func
-		vh::RenCreateRenderPassLighting(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_lightingPass);
+		vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, false, m_lightingPass);
 
 		// TODO: binding 0 might only need vertex globally
 		// Per Frame
@@ -157,7 +157,7 @@ namespace vve {
 
 	bool RendererDeferred11::OnRecordNextFrame(Message message) {
 
-		std::vector<VkCommandBuffer> cmdBuffers(2);
+		std::vector<VkCommandBuffer> cmdBuffers(1);
 		vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], cmdBuffers);
 		auto cmdBuffer = cmdBuffers[0];
 
@@ -212,21 +212,38 @@ namespace vve {
 					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vkState().m_currentFrame);
 			}
 		}
-
-		vh::ComEndRecordCommandBuffer(cmdBuffer);
-		SubmitCommandBuffer(cmdBuffer);
+		vkCmdEndRenderPass(cmdBuffer);
 
 		// ---------------------------------------------------------------------
 		// Lighting pass
 
-		auto cmdBuffer2 = cmdBuffers[1];
-		vh::ComStartRecordCommandBuffer(cmdBuffer2, m_vkState().m_imageIndex,
+		// Barrier to transition VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL -> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		VkImageMemoryBarrier barrier{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
+		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		barrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0,1, 0,1 };
+		for (auto& image : m_gBufferAttachments) {
+			barrier.image = image.m_gbufferImage;
+			vkCmdPipelineBarrier(
+				cmdBuffer,
+				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+				0, 0, nullptr, 0, nullptr,
+				1, &barrier
+			);
+		}
+
+		vh::ComStartRecordCommandBuffer2(cmdBuffer, m_vkState().m_imageIndex,
 			m_vkState().m_swapChain,
 			m_lightingPass, false, {},
 			m_vkState().m_currentFrame);
 
 		vh::ComBindPipeline(
-			cmdBuffer2,
+			cmdBuffer,
 			m_vkState().m_imageIndex,
 			m_vkState().m_swapChain,
 			m_lightingPass,
@@ -243,34 +260,17 @@ namespace vve {
 			}, //push constants
 			m_vkState().m_currentFrame);
 
-		// TODO .... do I need that? Think about it - for lighting pass???
-		// TODO .... Lighting pass still needs a draw call, is it indexed? 
+		// TODO .... Lighting pass still needs a proper draw call
 		// TODO .... probably remove push constant from geom pass, only need ligthing in lighting pass!
-		//for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
-		//	m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
-		//	({ (size_t)m_lightingPipeline.m_pipeline })) {
-
-		//	bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
-		//	bool hasColor = m_registry.template Has<vh::Color>(oHandle);
-		//	// TODO: fix lighting pipeline
-		//	bool hasVertexColor = false;		// pipeline.second.m_type.find("C") != std::string::npos;
-		//	if (!hasTexture && !hasColor && !hasVertexColor) continue;
-
-		//	auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
-		//	// TODO: change PNC to fit shaders after initial testing?
-		//	vh::ComRecordObject(cmdBuffer2, m_lightingPipeline,
-		//		{ m_descriptorSetPerFrame, m_descriptorSetComposition }, "PN", mesh, m_vkState().m_currentFrame);
-		//}
-		
 		VkDescriptorSet sets[] = { m_descriptorSetPerFrame.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame], 
 			m_descriptorSetComposition.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame] };
-		vkCmdBindDescriptorSets(cmdBuffer2, VK_PIPELINE_BIND_POINT_GRAPHICS, m_lightingPipeline.m_pipelineLayout,
+		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_lightingPipeline.m_pipelineLayout,
 			m_descriptorSetPerFrame.m_set, 2, sets, 0, nullptr);
 
-		vkCmdDraw(cmdBuffer2, 3, 1, 0, 0);
+		vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
 
-		vh::ComEndRecordCommandBuffer(cmdBuffer2);
-		SubmitCommandBuffer(cmdBuffer2);
+		vh::ComEndRecordCommandBuffer(cmdBuffer);
+		SubmitCommandBuffer(cmdBuffer);
 
 		++m_pass;
 		return false;
