@@ -64,7 +64,7 @@ namespace vve {
         auto getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription>;
 
 		template<typename T> 
-		auto RegisterLight(float type, std::vector<vh::Light>& lights, int& i) -> int;
+		auto RegisterLight(float type, std::vector<vvh::Light>& lights, int& i) -> int;
 
 		std::string 				m_windowName;
 		vecs::Ref<WindowState> 		m_windowState{};

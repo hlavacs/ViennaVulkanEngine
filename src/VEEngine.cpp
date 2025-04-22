@@ -1,5 +1,7 @@
 
-#include "VHInclude.h"
+#define VIENNA_VULKAN_HELPER_IMPL
+
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 

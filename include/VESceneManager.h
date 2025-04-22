@@ -22,9 +22,9 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	//Lights
 
-	using PointLight = vsty::strong_type_t<vh::LightParams, vsty::counter<>>;
-	using DirectionalLight = vsty::strong_type_t<vh::LightParams, vsty::counter<>>;
-	using SpotLight = vsty::strong_type_t<vh::LightParams, vsty::counter<>>;
+	using PointLight = vsty::strong_type_t<vvh::LightParams, vsty::counter<>>;
+	using DirectionalLight = vsty::strong_type_t<vvh::LightParams, vsty::counter<>>;
+	using SpotLight = vsty::strong_type_t<vvh::LightParams, vsty::counter<>>;
 
 	//-------------------------------------------------------------------------------------------------------
 	//Mesh

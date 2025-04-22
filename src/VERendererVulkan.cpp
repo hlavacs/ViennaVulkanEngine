@@ -1,4 +1,4 @@
-#include "VHInclude.h"
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 
@@ -380,7 +380,7 @@ namespace vve {
 
         vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 
-		for( decltype(auto) texture : m_registry.template GetView<vh::Image&>() ) {
+		for( decltype(auto) texture : m_registry.template GetView<vvh::Image&>() ) {
 			vkDestroySampler(m_vkState().m_device, texture().m_mapSampler, nullptr);
         	vkDestroyImageView(m_vkState().m_device, texture().m_mapImageView, nullptr);
 	        vvh::ImgDestroyImage({
@@ -393,7 +393,7 @@ namespace vve {
 
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
-		for( auto geometry : m_registry.template GetView<vh::Mesh&>() ) {
+		for( auto geometry : m_registry.template GetView<vvh::Mesh&>() ) {
 	        vvh::BufDestroyBuffer({
 				.m_device 		= m_vkState().m_device, 
 				.m_vmaAllocator = m_vkState().m_vmaAllocator, 
@@ -453,18 +453,29 @@ namespace vve {
 	bool RendererVulkan::OnTextureCreate( Message message ) {
 		auto msg = message.template GetData<MsgTextureCreate>();
 		auto handle = msg.m_handle;
-		auto texture = m_registry.template Get<vh::Image&>(handle);
+		auto texture = m_registry.template Get<vvh::Image&>(handle);
 		auto pixels = texture().m_pixels;
 
-		vh::ImgCreateTextureImage(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_graphicsQueue, m_commandPool, pixels, texture().m_width, texture().m_height, texture().m_size, texture);
-		vh::ImgCreateTextureImageView(m_vkState().m_device, texture);
-		vh::ImgCreateTextureSampler(m_vkState().m_physicalDevice, m_vkState().m_device, texture);
+		vvh::ImgCreateTextureImage({
+			m_vkState().m_physicalDevice, 
+			m_vkState().m_device, 
+			m_vkState().m_vmaAllocator, 
+			m_vkState().m_graphicsQueue, 
+			m_commandPool, 
+			pixels, 
+			texture().m_width, 
+			texture().m_height, 
+			texture().m_size, 
+			texture
+		});
+		vvh::ImgCreateTextureImageView({m_vkState().m_device, texture});
+		vvh::ImgCreateTextureSampler({m_vkState().m_physicalDevice, m_vkState().m_device, texture});
 		return false;
 	}
 
 	bool RendererVulkan::OnTextureDestroy( Message message ) {
 		auto handle = message.template GetData<MsgTextureDestroy>().m_handle;
-		auto texture = m_registry.template Get<vh::Image&>(handle);
+		auto texture = m_registry.template Get<vvh::Image&>(handle);
 		vkDestroySampler(m_vkState().m_device, texture().m_mapSampler, nullptr);
 		vkDestroyImageView(m_vkState().m_device, texture().m_mapImageView, nullptr);
 		vvh::ImgDestroyImage({
@@ -479,15 +490,19 @@ namespace vve {
 
 	bool RendererVulkan::OnMeshCreate( Message message ) {
 		auto handle = message.template GetData<MsgMeshCreate>().m_handle;
-		auto mesh = m_registry.template Get<vh::Mesh&>(handle);
-		vh::BufCreateVertexBuffer(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_graphicsQueue, m_commandPool, mesh);
-		vh::BufCreateIndexBuffer( m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_graphicsQueue, m_commandPool, mesh);
+		auto mesh = m_registry.template Get<vvh::Mesh&>(handle);
+		vvh::BufCreateVertexBuffer({
+			m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_graphicsQueue, m_commandPool, mesh
+		});
+		vvh::BufCreateIndexBuffer({
+			 m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_graphicsQueue, m_commandPool, mesh
+		});
 		return false;
 	}
 
 	bool RendererVulkan::OnMeshDestroy( Message message ) {
 		auto handle = message.template GetData<MsgMeshDestroy>().m_handle;
-		auto mesh = m_registry.template Get<vh::Mesh&>(handle);
+		auto mesh = m_registry.template Get<vvh::Mesh&>(handle);
 		vvh::BufDestroyBuffer({
 			.m_device 		= m_vkState().m_device, 
 			.m_vmaAllocator = m_vkState().m_vmaAllocator, 

@@ -24,13 +24,14 @@ set(SOURCE
   VESystem.cpp
   VEWindow.cpp
   VEWindowSDL.cpp
-  VHBuffer.cpp
-  VHImage.cpp
-  VHVulkan.cpp
-  VHDevice.cpp
-  VHRender.cpp
-  VHCommand.cpp
-  VHSync.cpp
+  
+  #VHBuffer.cpp
+  #VHImage.cpp
+  #VHVulkan.cpp
+  #VHDevice.cpp
+  #VHRender.cpp
+  #VHCommand.cpp
+  #VHSync.cpp
   )
 
 set(HEADERS
@@ -50,15 +51,16 @@ set(HEADERS
   ${INCLUDE}/VESystem.h
   ${INCLUDE}/VEWindow.h
   ${INCLUDE}/VEWindowSDL.h
-  ${INCLUDE}/VHInclude.h
-  ${INCLUDE}/VHBuffer.h
-  ${INCLUDE}/VHImage.h
-  ${INCLUDE}/VHVulkan.h
-  ${INCLUDE}/VHDevice.h
-  ${INCLUDE}/VHRender.h
-  ${INCLUDE}/VHRender.h
-  ${INCLUDE}/VHCommand.h
-  ${INCLUDE}/VHSync.h
+
+  #${INCLUDE}/VHInclude.h
+  #${INCLUDE}/VHBuffer.h
+  #${INCLUDE}/VHImage.h
+  #${INCLUDE}/VHVulkan.h
+  #${INCLUDE}/VHDevice.h
+  #${INCLUDE}/VHRender.h
+  #${INCLUDE}/VHRender.h
+  #${INCLUDE}/VHCommand.h
+  #${INCLUDE}/VHSync.h
 )
 
 add_library (${TARGET} STATIC ${SOURCE} ${HEADERS})

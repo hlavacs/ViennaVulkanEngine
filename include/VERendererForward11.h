@@ -12,7 +12,7 @@ namespace vve
 		struct PipelinePerType {
 			std::string m_type;
 			VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
-	    	vh::Pipeline m_graphicsPipeline;
+	    	vvh::Pipeline m_graphicsPipeline;
 		};
 
     public:
@@ -29,13 +29,13 @@ namespace vve
 		void CreatePipelines();
 
 		PipelinePerType* getPipelinePerType(std::string type);
-		std::string getPipelineType(ObjectHandle handle, vh::VertexData &vertexData);
+		std::string getPipelineType(ObjectHandle handle, vvh::VertexData &vertexData);
 
 		//parameters per frame
-		vh::Buffer m_uniformBuffersPerFrame;
-		vh::Buffer m_storageBuffersLights;
+		vvh::Buffer m_uniformBuffersPerFrame;
+		vvh::Buffer m_storageBuffersLights;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
-		vh::DescriptorSet m_descriptorSetPerFrame{0};
+		vvh::DescriptorSet m_descriptorSetPerFrame{0};
 		std::map<int, PipelinePerType> m_pipelinesPerType;
 	    VkRenderPass m_renderPassClear;
 	    VkRenderPass m_renderPass;

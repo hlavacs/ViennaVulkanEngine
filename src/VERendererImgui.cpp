@@ -1,5 +1,5 @@
 
-#include "VHInclude.h"
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 
@@ -31,12 +31,21 @@ namespace vve {
 			m_renderPass
 		});
 		
- 		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, {}, m_descriptorSetLayoutPerFrame );
+ 		vvh::RenCreateDescriptorSetLayout( {m_vkState().m_device, {}, m_descriptorSetLayoutPerFrame });
 			
-        vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_renderPass, "shaders/Imgui/vert.spv", "", {}, {},
-			 { m_descriptorSetLayoutPerFrame }, {}, {}, {}, m_graphicsPipeline);
+        vvh::RenCreateGraphicsPipeline({
+			m_vkState().m_device, 
+			m_renderPass, 
+			"shaders/Imgui/vert.spv", "", 
+			{}, 
+			{},
+			{ m_descriptorSetLayoutPerFrame }, 
+			{}, 
+			{}, {}, 
+			m_graphicsPipeline
+		});
 
-        vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
+        vvh::RenCreateDescriptorPool({m_vkState().m_device, 1000, m_descriptorPool});
 
 		vvh::SetupImgui( 
 			m_windowSDLState().m_sdlWindow, 
@@ -50,8 +59,8 @@ namespace vve {
 			m_renderPass
 		);  
 
-        vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool); 
-        vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPool, m_commandBuffers);
+        vvh::ComCreateCommandPool({m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool}); 
+        vvh::ComCreateCommandBuffers({m_vkState().m_device, m_commandPool, m_commandBuffers});
 		return false;
 	}
 
@@ -83,7 +92,8 @@ namespace vve {
 		ImGui::Render();
         ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), m_commandBuffers[m_vkState().m_currentFrame]);
 
-		vh::ComEndRecordCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame]);
+		vvh::ComEndRenderPass({.m_commandBuffer = m_commandBuffers[m_vkState().m_currentFrame]});
+		vvh::ComEndCommandBuffer({.m_commandBuffer = m_commandBuffers[m_vkState().m_currentFrame]});
 
 		SubmitCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame]);
 		return false;

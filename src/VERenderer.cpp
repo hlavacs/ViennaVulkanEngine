@@ -1,4 +1,4 @@
-#include "VHInclude.h"
+//#include "VHInclude.h"
 #include "VHInclude2.h"
 #include "VEInclude.h"
 
@@ -83,7 +83,7 @@ namespace vve {
     }
 
 	template<typename T>
-	int Renderer::RegisterLight(float type, std::vector<vh::Light>& lights, int& total) {
+	int Renderer::RegisterLight(float type, std::vector<vvh::Light>& lights, int& total) {
 		int n=0;
 		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>() ) {
 			++n;
@@ -95,9 +95,9 @@ namespace vve {
 		return n;
 	}
 
-	template auto Renderer::RegisterLight<PointLight>(float type, std::vector<vh::Light>& lights, int& i) -> int;
-	template auto Renderer::RegisterLight<DirectionalLight>(float type, std::vector<vh::Light>& lights, int& i) -> int;
-	template auto Renderer::RegisterLight<SpotLight>(float type, std::vector<vh::Light>& lights, int& i) -> int;
+	template auto Renderer::RegisterLight<PointLight>(float type, std::vector<vvh::Light>& lights, int& i) -> int;
+	template auto Renderer::RegisterLight<DirectionalLight>(float type, std::vector<vvh::Light>& lights, int& i) -> int;
+	template auto Renderer::RegisterLight<SpotLight>(float type, std::vector<vvh::Light>& lights, int& i) -> int;
 
 };  // namespace vve
 

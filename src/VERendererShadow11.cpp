@@ -1,4 +1,4 @@
-#include "VHInclude.h"
+//#include "VHInclude.h"
 #include "VHInclude2.h"
 #include "VEInclude.h"
 
@@ -20,7 +20,7 @@ namespace vve {
 
 	bool RendererShadow11::OnInit(Message message) {
 		Renderer::OnInit(message);
-
+/*
 		vvh::RenCreateRenderPass({
 			m_vkState().m_depthMapFormat, 
 			m_vkState().m_device, 
@@ -101,11 +101,13 @@ namespace vve {
 		}
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
 		
+		*/
 		return false;
 	}
 
 
 	void RendererShadow11::CheckShadowMaps( uint32_t numberMapsRequired ) {
+		/*
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		auto numberMaps = std::min(numberMapsRequired, shadowImage().MaxNumberMapsPerImage());
 		if( shadowImage().NumberMapsPerImage() >= numberMaps ) return;
@@ -130,6 +132,7 @@ namespace vve {
 			shadowImage().shadowImages.push_back(map);
 		}
 		shadowImage().numberImageArraylayers = numLayers;
+		*/
 	}
 
 	template<typename T>
@@ -148,6 +151,7 @@ namespace vve {
 	/// @param message 
 	/// @return Returns false.
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
+		/*
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 
@@ -167,6 +171,7 @@ namespace vve {
 				} );
 			}
 		}
+			*/
 		return false;
 	}
 
@@ -178,6 +183,7 @@ namespace vve {
 
 	bool RendererShadow11::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vkState().m_device);
+		/*
 
 		for( auto [handle, shadowMap] : m_registry.template GetView<vecs::Handle, ShadowImage&>() ) {
 			for( auto& map : shadowMap().shadowImages ) {
@@ -193,6 +199,7 @@ namespace vve {
 		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame);
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
+		*/
 		return false;
     }
 
