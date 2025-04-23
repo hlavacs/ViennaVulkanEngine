@@ -46,6 +46,7 @@ namespace vve {
             "VK_KHR_swapchain"
             #ifdef __APPLE__
             , "VK_KHR_portability_subset"
+            , "VK_KHR_shader_non_semantic_info"
             #endif
         };
 

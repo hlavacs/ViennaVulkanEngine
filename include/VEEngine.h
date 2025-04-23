@@ -7,7 +7,12 @@ namespace vve {
 	class Engine : public System {
 
 		static const uint32_t c_minimumVersion = VK_MAKE_VERSION(1, 1, 0); //for VMA
+
+		#ifdef __APPLE__
+		static const uint32_t c_maximumVersion = VK_MAKE_VERSION(1, 2, 0); //for VMA
+		#else
 		static const uint32_t c_maximumVersion = VK_MAKE_VERSION(1, 3, 0); //for VMA
+		#endif
 
 	public:
 
