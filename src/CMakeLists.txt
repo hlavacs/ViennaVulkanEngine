@@ -4,7 +4,7 @@ set(SOURCE
   ${imgui_SOURCE_DIR}/imgui.cpp
   ${imgui_SOURCE_DIR}/imgui_demo.cpp
   ${imgui_SOURCE_DIR}/imgui_draw.cpp
-  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl2.cpp
+  ${imgui_SOURCE_DIR}/backends/imgui_impl_sdl3.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
   ${imgui_SOURCE_DIR}/imgui_tables.cpp
   ${imgui_SOURCE_DIR}/imgui_widgets.cpp
@@ -19,17 +19,19 @@ set(SOURCE
   VERendererVulkan.cpp
   VESceneManager.cpp
   VEAssetManager.cpp
-  VESoundManager.cpp
+  #VESoundManagerSDL2.cpp
+  VESoundManagerSDL3.cpp
   VESystem.cpp
   VEWindow.cpp
   VEWindowSDL.cpp
-  VHBuffer.cpp
-  VHImage.cpp
-  VHVulkan.cpp
-  VHDevice.cpp
-  VHRender.cpp
-  VHCommand.cpp
-  VHSync.cpp
+  
+  #VHBuffer.cpp
+  #VHImage.cpp
+  #VHVulkan.cpp
+  #VHDevice.cpp
+  #VHRender.cpp
+  #VHCommand.cpp
+  #VHSync.cpp
   )
 
 set(HEADERS
@@ -44,29 +46,36 @@ set(HEADERS
   ${INCLUDE}/VERendererVulkan.h
   ${INCLUDE}/VESceneManager.h
   ${INCLUDE}/VEAssetManager.h
-  ${INCLUDE}/VESoundManager.h
+  #${INCLUDE}/VESoundManagerSDL2.h
+  ${INCLUDE}/VESoundManagerSDL3.h
   ${INCLUDE}/VESystem.h
   ${INCLUDE}/VEWindow.h
   ${INCLUDE}/VEWindowSDL.h
-  ${INCLUDE}/VHInclude.h
-  ${INCLUDE}/VHBuffer.h
-  ${INCLUDE}/VHImage.h
-  ${INCLUDE}/VHVulkan.h
-  ${INCLUDE}/VHDevice.h
-  ${INCLUDE}/VHRender.h
-  ${INCLUDE}/VHRender.h
-  ${INCLUDE}/VHCommand.h
-  ${INCLUDE}/VHSync.h
+
+  #${INCLUDE}/VHInclude.h
+  #${INCLUDE}/VHBuffer.h
+  #${INCLUDE}/VHImage.h
+  #${INCLUDE}/VHVulkan.h
+  #${INCLUDE}/VHDevice.h
+  #${INCLUDE}/VHRender.h
+  #${INCLUDE}/VHRender.h
+  #${INCLUDE}/VHCommand.h
+  #${INCLUDE}/VHSync.h
 )
 
 add_library (${TARGET} STATIC ${SOURCE} ${HEADERS})
 
 target_compile_features(${TARGET} PUBLIC cxx_std_20)
 
+# Build in parallel under Visual Studio. Not enabled by default.
+if(MSVC AND NOT USE_CLANG)
+  target_compile_options(${TARGET} PRIVATE "/MP")
+endif()
+
 source_group(
   TREE "${PROJECT_SOURCE_DIR}/include"
   PREFIX "Header Files"
   FILES ${HEADER_LIST})
 
-target_link_libraries(${TARGET} SDL2 assimp vk-bootstrap volk)
+target_link_libraries(${TARGET} SDL3::SDL3 SDL3_mixer::SDL3_mixer assimp vk-bootstrap volk)
 

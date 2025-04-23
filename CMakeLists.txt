@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.5.0)
+cmake_minimum_required (VERSION 3.8.0)
 project (
   "ViennaVulkanEngine"
   VERSION 2.0.0
@@ -58,6 +58,7 @@ link_directories(${VULKAN_SDK}/lib)
 include(FetchContent) # enable Fetch Content
 
 #--------------------------------- Fetch stb image ---------------------------------#
+
 FetchContent_Declare(stb_image
                      GIT_REPOSITORY https://github.com/nothings/stb.git
                      GIT_TAG master
@@ -66,6 +67,7 @@ FetchContent_MakeAvailable(stb_image)
 include_directories (${stb_image_SOURCE_DIR})
 
 #--------------------------------- Fetch file dialog ---------------------------------#
+
 FetchContent_Declare(l2dfiledialog
                      GIT_REPOSITORY https://github.com/Limeoats/L2DFileDialog.git
                      GIT_TAG master
@@ -74,6 +76,7 @@ FetchContent_MakeAvailable(l2dfiledialog)
 include_directories (${l2dfiledialog_SOURCE_DIR}/L2DFileDialog/src)
 
 #--------------------------------- Fetch Vienna Entity Component System ---------------------------------#
+
 FetchContent_Declare(viennaentitycomponentsystem
                      GIT_REPOSITORY https://github.com/hlavacs/ViennaEntityComponentSystem.git
                      GIT_TAG main
@@ -85,34 +88,40 @@ include_directories (${viennaentitycomponentsystem_SOURCE_DIR}/include)
 include_directories (${viennastrongtype_SOURCE_DIR}/include)
 include_directories (${viennatypelistlibrary_SOURCE_DIR}/include)
 
-#--------------------------------- Fetch SDL2 ---------------------------------#
-#set(SDL_STATIC true)
-FetchContent_Declare(sdl2
-                     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-                     GIT_TAG SDL2
+#--------------------------------- Fetch Vienna Vulkan Helper ---------------------------------#
+
+FetchContent_Declare(viennavulkanhelper
+                     GIT_REPOSITORY https://github.com/hlavacs/ViennaVulkanHelper.git
+                     GIT_TAG main
 )
-FetchContent_MakeAvailable(sdl2)
-include_directories (${sdl2_SOURCE_DIR}/include)
+FetchContent_MakeAvailable(viennavulkanhelper)
+include_directories (${viennavulkanhelper_SOURCE_DIR}/include)
 
 #--------------------------------- Fetch SDL3 ---------------------------------#
-#set(SDL_STATIC true)
-#FetchContent_Declare(sdl3
-#                     GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
-#                     GIT_TAG main
-#)
-#FetchContent_MakeAvailable(sdl3)
-#include_directories (${sdl3_SOURCE_DIR}/include)
+
+set(SDL_STATIC ON)
+set(SDL_SHARED OFF)
+FetchContent_Declare(sdl3
+					GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
+                    GIT_TAG main
+)
+FetchContent_MakeAvailable(sdl3)
+include_directories (${sdl3_SOURCE_DIR}/include)
+include_directories (${sdl3_SOURCE_DIR}/include/SDL3)
 
 #--------------------------------- Fetch SDL Mixer ---------------------------------#
-#set(SDL3_DIR ${SDL3_BINARY_DIR})
-#FetchContent_Declare(sdlmixer
-#                     GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
-#                     GIT_TAG main
-#)
-#FetchContent_MakeAvailable(sdlmixer)
-#include_directories (${sdlmixer_SOURCE_DIR}/include)
+
+set(SDL3_DIR ${SDL3_BINARY_DIR})
+set(BUILD_SHARED_LIBS OFF)
+FetchContent_Declare(sdlmixer
+                    GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
+                    GIT_TAG main
+)
+FetchContent_MakeAvailable(sdlmixer)
+include_directories (${sdlmixer_SOURCE_DIR}/include)
 
 #--------------------------------- Fetch Assimp ---------------------------------#
+
 FetchContent_Declare(assimp
                      GIT_REPOSITORY https://github.com/assimp/assimp.git 
                      GIT_TAG master
@@ -129,6 +138,7 @@ message("COMPILER: ${CMAKE_CXX_COMPILER_ID}")
 message("BUILD TYPE: ${CMAKE_BUILD_TYPE}")
 
 #--------------------------------- Fetch ImGui ---------------------------------#
+
 FetchContent_Declare(imgui
                      GIT_REPOSITORY https://github.com/ocornut/imgui.git 
                      GIT_TAG master)
@@ -160,10 +170,9 @@ message(STATUS "VSTY: ${viennastrongtype_SOURCE_DIR}")
 message(STATUS "STB IMAGE: ${stb_image_SOURCE_DIR}")
 message(STATUS "FILE DIALOG: ${l2dfiledialog_SOURCE_DIR}")
 message(STATUS "IMGUI: ${imgui_SOURCE_DIR}")
-message(STATUS "SDL2 SRC: ${sdl2_SOURCE_DIR}")
-message(STATUS "SDL2 BINARY: ${sdl2_BINARY_DIR}")
-#message(STATUS "SDL3 SRC: ${sdl3_SOURCE_DIR}")
-#message(STATUS "SDL Mixer SRC: ${sdlmixer_SOURCE_DIR}")
+message(STATUS "SDL3 SRC: ${sdl3_SOURCE_DIR}")
+message(STATUS "SDL3 BINARY: ${sdl3_BINARY_DIR}")
+message(STATUS "SDL Mixer SRC: ${sdlmixer_SOURCE_DIR}")
 message(STATUS "ASSIMP SRC: ${assimp_SOURCE_DIR}")
 message(STATUS "ASSIMP BIN: ${assimp_BINARY_DIR}")
 message(STATUS "ZLIB SRC: ${zlib_SOURCE_DIR}")
@@ -179,6 +188,10 @@ add_subdirectory(examples)
 include(CTest)
 add_subdirectory(tests)
 
+# set the game as the default startup project in VS
+if(MSVC)
+    set_property(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY VS_STARTUP_PROJECT game)
+endif()
 
 # Doxygen
 find_package(Doxygen)

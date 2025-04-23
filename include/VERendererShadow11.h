@@ -4,15 +4,15 @@ namespace vve
 {
 
 	static const uint32_t SHADOW_MAP_DIMENSION = 1024;
-	static const uint32_t SHADOW_MAX_MAPS_PER_ROW = 3;
-	static const uint32_t SHADOW_MAX_NUM_LAYERS = 64;
+	static const uint32_t SHADOW_MAX_MAPS_PER_ROW = 1;
+	static const uint32_t SHADOW_MAX_NUM_LAYERS = 128*6;
 	
 
 	struct ShadowImage {
 		uint32_t maxImageDimension2D;
 		uint32_t maxImageArrayLayers;
 		uint32_t numberImageArraylayers{0};
-		std::vector<vh::Map> shadowImages;
+		std::vector<vvh::Image> shadowImages;
 		uint32_t MaxNumberMapsUV() { return maxImageDimension2D / SHADOW_MAP_DIMENSION; };
 		uint32_t MaxNumberMapsPerLayer() { return MaxNumberMapsUV() * MaxNumberMapsUV(); };
 		uint32_t MaxNumberMapsPerImage() { return maxImageArrayLayers * MaxNumberMapsPerLayer(); };
@@ -41,13 +41,11 @@ namespace vve
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 
-		vh::Buffer m_uniformBuffersPerFrame;
-		vh::Buffer m_uniformBuffersLights;
+		vvh::Buffer m_uniformBuffersPerFrame;
+		vvh::Buffer m_storageBuffersLights;
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
-		vh::DescriptorSet m_descriptorSetPerFrame{0};
-
-		VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
-		vh::Pipeline m_graphicsPipeline;		
+		vvh::DescriptorSet m_descriptorSetPerFrame{0};
+		vvh::Pipeline m_shadowPipeline;		
 
 		vecs::Handle m_shadowImageHandle;
 		uint32_t m_pass;

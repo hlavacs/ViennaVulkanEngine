@@ -29,11 +29,11 @@ namespace vve {
 
         bool OnQuit(Message message);
 
-        const std::vector<const char*> m_validationLayers = {
+        const std::vector<std::string> m_validationLayers = {
             "VK_LAYER_KHRONOS_validation"
         };
 
-		std::vector<const char*> m_instanceExtensions = {
+		std::vector<std::string> m_instanceExtensions = {
             #ifdef __APPLE__
             "VK_MVK_macos_surface",
             // The next line is only required when using API_VERSION_1_0
@@ -42,7 +42,7 @@ namespace vve {
             #endif
         };
 
-        std::vector<const char*> m_deviceExtensions = {
+        std::vector<std::string> m_deviceExtensions = {
             "VK_KHR_swapchain"
             #ifdef __APPLE__
             , "VK_KHR_portability_subset"
@@ -52,14 +52,14 @@ namespace vve {
 	    VkRenderPass m_renderPass;
         bool m_clear{true};
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
-	    vh::Pipeline m_graphicsPipeline;
+	    vvh::Pipeline m_graphicsPipeline;
 	    VkDescriptorPool m_descriptorPool;    
 		VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 	    std::vector<VkCommandBuffer> m_commandBuffersSubmit;
         std::vector<VkSemaphore> m_imageAvailableSemaphores;
         std::vector<VkSemaphore> m_renderFinishedSemaphores;
-	    std::vector<vh::Semaphores> m_intermediateSemaphores;
+	    std::vector<vvh::Semaphores> m_intermediateSemaphores;
 		std::vector<VkFence> m_fences;
     };
 };   // namespace vve

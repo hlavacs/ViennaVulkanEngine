@@ -17,7 +17,7 @@ namespace vve {
         bool OnQuit(Message message);
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
-	    vh::Pipeline m_graphicsPipeline;
+	    vvh::Pipeline m_graphicsPipeline;
 
 	    VkRenderPass m_renderPass;
 	    VkDescriptorPool m_descriptorPool;    

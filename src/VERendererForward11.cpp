@@ -1,4 +1,4 @@
-#include "VHInclude.h"
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 
@@ -41,39 +41,89 @@ namespace vve {
     bool RendererForward11::OnInit(Message message) {
 		Renderer::OnInit(message);
 
-        vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, 
-			true, m_renderPassClear);
-        vh::RenCreateRenderPass(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_swapChain, 
-			false, m_renderPass);
+        vvh::RenCreateRenderPass({
+			.m_depthFormat 	= m_vkState().m_depthMapFormat, 
+			.m_device 		= m_vkState().m_device, 
+			.m_swapChain 	= m_vkState().m_swapChain, 
+			.m_clear 		= true, 
+			.m_renderPass 	= m_renderPassClear
+		});
+
+        vvh::RenCreateRenderPass({
+			.m_depthFormat 	= m_vkState().m_depthMapFormat, 
+			.m_device 		= m_vkState().m_device, 
+			.m_swapChain 	= m_vkState().m_swapChain, 
+			.m_clear 		= false, 
+			.m_renderPass 	= m_renderPass
+		});
 		
-		vh::RenCreateDescriptorSetLayout( m_vkState().m_device, //Per frame
-			{ 
-				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
-				{ 	.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+		vvh::RenCreateDescriptorSetLayout( {
+			.m_device = m_vkState().m_device, //Per frame
+			.m_bindings = { 
+				{ .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT },
+				{ .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
-			m_descriptorSetLayoutPerFrame );
+			.m_descriptorSetLayout = m_descriptorSetLayoutPerFrame 
+		});
 
 		for( int i=0; i<MAX_FRAMES_IN_FLIGHT; ++i) {
 			m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
-			vh::ComCreateCommandPool(m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPools[i]);
+			vvh::ComCreateCommandPool({
+				.m_surface 			= m_vkState().m_surface, 
+				.m_physicalDevice 	= m_vkState().m_physicalDevice, 
+				.m_device 			= m_vkState().m_device, 
+				.m_commandPool 		= m_commandPools[i]
+			});
 		}
 
-		vh::RenCreateDescriptorPool(m_vkState().m_device, 1000, m_descriptorPool);
-		vh::RenCreateDescriptorSet(m_vkState().m_device, m_descriptorSetLayoutPerFrame, m_descriptorPool, m_descriptorSetPerFrame);
+		vvh::RenCreateDescriptorPool({
+			.m_device 			= m_vkState().m_device, 
+			.m_sizes 			= 1000, 
+			.m_descriptorPool 	= m_descriptorPool
+		});
+		vvh::RenCreateDescriptorSet({
+			.m_device 				= m_vkState().m_device, 
+			.m_descriptorSetLayouts	= m_descriptorSetLayoutPerFrame, 
+			.m_descriptorPool 		= m_descriptorPool, 
+			.m_descriptorSet 		= m_descriptorSetPerFrame
+		});
 		
-		//Per frame uniform buffer
-		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeof(vh::UniformBufferFrame), m_uniformBuffersPerFrame);
-		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersPerFrame, 0, 
-			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeof(vh::UniformBufferFrame), m_descriptorSetPerFrame);   
+		// -----------------------------------------------------------------------------------------------
 
-		//Per frame light buffer
-		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, MAX_NUMBER_LIGHTS*sizeof(vh::Light), m_uniformBuffersLights);
-		vh::RenUpdateDescriptorSet(m_vkState().m_device, m_uniformBuffersLights, 1, 
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, MAX_NUMBER_LIGHTS*sizeof(vh::Light), m_descriptorSetPerFrame);   
+		//Per frame uniform buffer
+		vvh::BufCreateBuffers({
+			m_vkState().m_device, 
+			m_vkState().m_vmaAllocator, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			sizeof(vvh::UniformBufferFrame), 
+			m_uniformBuffersPerFrame
+		});
+		vvh::RenUpdateDescriptorSet({
+			m_vkState().m_device, 
+			m_uniformBuffersPerFrame, 0, 
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+			sizeof(vvh::UniformBufferFrame), 
+			m_descriptorSetPerFrame
+		});   
+
+		//Per frame light storage buffer
+		vvh::BufCreateBuffers({
+			m_vkState().m_device, 
+			m_vkState().m_vmaAllocator, 
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
+			MAX_NUMBER_LIGHTS*sizeof(vvh::Light), 
+			m_storageBuffersLights
+		});
+		vvh::RenUpdateDescriptorSet({
+			m_vkState().m_device, 
+			m_storageBuffersLights, 
+			1, 
+			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
+			MAX_NUMBER_LIGHTS*sizeof(vvh::Light), 
+			m_descriptorSetPerFrame
+		});   
+
+		// -----------------------------------------------------------------------------------------------
 
 		CreatePipelines();
 		return false;
@@ -89,7 +139,7 @@ namespace vve {
 				auto pri = std::stoi( filename.substr(0, pos1-1) );
 				std::string type = filename.substr(pos1+1, pos2 - pos1 - 1);
 				
-				vh::Pipeline graphicsPipeline;
+				vvh::Pipeline graphicsPipeline;
 
 				VkDescriptorSetLayout descriptorSetLayoutPerObject;
 				std::vector<VkDescriptorSetLayoutBinding> bindings{
@@ -100,7 +150,7 @@ namespace vve {
 					bindings.push_back( { .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT } );
 				}
 
-				vh::RenCreateDescriptorSetLayout( m_vkState().m_device, bindings, descriptorSetLayoutPerObject );
+				vvh::RenCreateDescriptorSetLayout( {m_vkState().m_device, bindings, descriptorSetLayoutPerObject });
 
 				std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions(type);
 				std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions(type);
@@ -115,14 +165,20 @@ namespace vve {
 				colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
 				colorBlendAttachment.blendEnable = VK_TRUE;
 
-				vh::RenCreateGraphicsPipeline(m_vkState().m_device, m_renderPass, 
-					entry.path().string(), entry.path().string(),
-					bindingDescriptions, attributeDescriptions,
-					{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
+				vvh::RenCreateGraphicsPipeline({
+					m_vkState().m_device, 
+					m_renderPass, 
+					entry.path().string(), 
+					entry.path().string(),
+					bindingDescriptions, 
+					attributeDescriptions,
+					{ m_descriptorSetLayoutPerFrame, 
+						descriptorSetLayoutPerObject }, 
 					{(int)MAX_NUMBER_LIGHTS}, //spezialization constants
 					{{.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8}}, //push constant ranges -> 2 ints
 					{colorBlendAttachment}, //blend attachments
-					graphicsPipeline);
+					graphicsPipeline
+				});
 				
 				m_pipelinesPerType[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
 
@@ -131,72 +187,14 @@ namespace vve {
 		}
 	}
 
-	void RendererForward11::getBindingDescription( std::string type, std::string C, int &binding, int stride, auto& bdesc ) {
-		if( type.find(C) == std::string::npos ) return;
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = binding++;
-		bindingDescription.stride = stride;
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		bdesc.push_back( bindingDescription );
-	}
-
-	auto RendererForward11::getBindingDescriptions( std::string type ) -> std::vector<VkVertexInputBindingDescription> {
-		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
-			
-		int binding=0;
-		getBindingDescription( type, "P", binding, size_pos, bindingDescriptions );
-		getBindingDescription( type, "N", binding, size_nor, bindingDescriptions );
-		getBindingDescription( type, "U", binding, size_tex, bindingDescriptions );
-		getBindingDescription( type, "C", binding, size_col, bindingDescriptions );
-		getBindingDescription( type, "T", binding, size_tan, bindingDescriptions );
-		return bindingDescriptions;
-	}
-
-	void RendererForward11::addAttributeDescription( std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd ) {
-		if( type.find(C) == std::string::npos ) return;
-		VkVertexInputAttributeDescription attributeDescription{};
-		attributeDescription.binding = binding++;
-		attributeDescription.location = location++;
-		attributeDescription.format = format;
-		attributeDescription.offset = 0;
-		attd.push_back( attributeDescription );
-	}
-
-    auto RendererForward11::getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription> {
-        std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-
-		int binding=0;
-		int location=0;
-		addAttributeDescription( type, "P", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
-		addAttributeDescription( type, "N", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
-		addAttributeDescription( type, "U", binding, location, VK_FORMAT_R32G32_SFLOAT,    attributeDescriptions );
-		addAttributeDescription( type, "C", binding, location, VK_FORMAT_R32G32B32A32_SFLOAT, attributeDescriptions );
-		addAttributeDescription( type, "T", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions );
-        return attributeDescriptions;
-    }
-
-
-	template<typename T>
-	int RendererForward11::RegisterLight(float type, std::vector<vh::Light>& lights, int& total) {
-		int n=0;
-		for( auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>() ) {
-			++n;
-			//m_engine.RegisterCallbacks( { {this,  2000 + total*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }} );
-			light().params.x = type;
-			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
-			if( ++total >= MAX_NUMBER_LIGHTS ) return n;
-		};
-		return n;
-	}
-
 	bool RendererForward11::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
 
 		m_pass = 0;
-		std::vector<vh::Light> lights{MAX_NUMBER_LIGHTS};
+		std::vector<vvh::Light> lights{MAX_NUMBER_LIGHTS};
 		m_numberLightsPerType = glm::ivec3{0};
 		int total{0};
-		vh::UniformBufferFrame ubc; //contains camera view and projection matrices and number of lights
+		vvh::UniformBufferFrame ubc; //contains camera view and projection matrices and number of lights
 		vkResetCommandPool( m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 
 		//m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
@@ -205,7 +203,7 @@ namespace vve {
 		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
 		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
 		ubc.numLights = m_numberLightsPerType;
-		memcpy(m_uniformBuffersLights.m_uniformBuffersMapped[m_vkState().m_currentFrame], lights.data(), total*sizeof(vh::Light));
+		memcpy(m_storageBuffersLights.m_uniformBuffersMapped[m_vkState().m_currentFrame], lights.data(), total*sizeof(vvh::Light));
 
 		//Copy camera view and projection matrices to the uniform buffer
 		auto [lToW, view, proj] = *m_registry.template GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>().begin();
@@ -216,16 +214,16 @@ namespace vve {
 
 		for( auto& pipeline : m_pipelinesPerType) {
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers] : 
-				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&>
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&>
 						({(size_t)pipeline.second.m_graphicsPipeline.m_pipeline}) ) {
 
 				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
-				bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+				bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
 				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
 				if( !hasTexture && !hasColor && !hasVertexColor ) continue;
 
 				if( hasTexture ) {
-					vh::BufferPerObjectTexture uboTexture{};
+					vvh::BufferPerObjectTexture uboTexture{};
 					uboTexture.model = LtoW(); 		
 					uboTexture.modelInverseTranspose = glm::inverse( glm::transpose(uboTexture.model) );
 					UVScale uvScale{ { 1.0f, 1.0f }};
@@ -233,13 +231,13 @@ namespace vve {
 					uboTexture.uvScale = uvScale;
 					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboTexture, sizeof(uboTexture));
 				} else if( hasColor ) {
-					vh::BufferPerObjectColor uboColor{};
+					vvh::BufferPerObjectColor uboColor{};
 					uboColor.model = LtoW(); 		
 					uboColor.modelInverseTranspose = glm::inverse( glm::transpose(uboColor.model) );
-					uboColor.color = m_registry.template Get<vh::Color>(oHandle);
+					uboColor.color = m_registry.template Get<vvh::Color>(oHandle);
 					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
 				} else if( hasVertexColor ) {
-					vh::BufferPerObject uboColor{};
+					vvh::BufferPerObject uboColor{};
 					uboColor.model = LtoW(); 
 					uboColor.modelInverseTranspose = glm::inverse( glm::transpose(uboColor.model) );
 					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
@@ -253,28 +251,46 @@ namespace vve {
 		auto msg = message.template GetData<MsgRecordNextFrame>();
 
 		std::vector<VkCommandBuffer> cmdBuffers(1);
-		vh::ComCreateCommandBuffers(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], cmdBuffers);
+		vvh::ComCreateCommandBuffers({
+			m_vkState().m_device, 
+			m_commandPools[m_vkState().m_currentFrame], 
+			cmdBuffers
+		});
 		auto cmdBuffer = cmdBuffers[0];
 
-		vh::ComStartRecordCommandBuffer(cmdBuffer, m_vkState().m_imageIndex, 
+		vvh::ComBeginCommandBuffer({cmdBuffer});
+
+		vvh::ComBeginRenderPass({
+			cmdBuffer, 
+			m_vkState().m_imageIndex, 
 			m_vkState().m_swapChain, 
-			m_renderPass, false, {}, 
-			m_vkState().m_currentFrame);
+			m_renderPass, 
+			false, 
+			{}, 
+			m_vkState().m_currentFrame
+		});
 
 		float f = 0.0;
 		std::array<float,4> blendconst = (m_pass == 0 ? std::array<float,4>{f,f,f,f} : std::array<float,4>{1-f,1-f,1-f,1-f});
 		
 		for( auto& pipeline : m_pipelinesPerType) {
 
-			vh::LightOffset offset{0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z};
-			//vh::LightOffset offset{m_pass, 1};
-			vh::ComBindPipeline(
+			vvh::LightOffset offset{0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z};
+			//vv::LightOffset offset{m_pass, 1};
+
+			vvh::Pipeline pip {
+				pipeline.second.m_graphicsPipeline.m_pipelineLayout,
+				pipeline.second.m_graphicsPipeline.m_pipeline
+			};
+
+			vvh::ComBindPipeline({
 				cmdBuffer, 
+				pip, 
 				m_vkState().m_imageIndex, 
 				m_vkState().m_swapChain, 
 				m_renderPass, 
-				pipeline.second.m_graphicsPipeline, 
-				{},	{}, //default view ports and scissors
+				{},	
+				{}, 
 				blendconst, //blend constants
 				{
 					{	.layout = pipeline.second.m_graphicsPipeline.m_pipelineLayout, 
@@ -284,24 +300,32 @@ namespace vve {
 						.pValues = &offset
 					}
 				}, //push constants
-				m_vkState().m_currentFrame);
+				m_vkState().m_currentFrame
+			});
 
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
-				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vh::Buffer&, vh::DescriptorSet&>
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, vvh::DescriptorSet&>
 						({(size_t)pipeline.second.m_graphicsPipeline.m_pipeline}) ) {
 
 				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
-				bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+				bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
 				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
 				if( !hasTexture && !hasColor && !hasVertexColor ) continue;
 
-				auto mesh = m_registry.template Get<vh::Mesh&>(ghandle);
-				vh::ComRecordObject( cmdBuffer, pipeline.second.m_graphicsPipeline, 
-					{ m_descriptorSetPerFrame, descriptorsets }, pipeline.second.m_type, mesh, m_vkState().m_currentFrame );
+				auto mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+				vvh::ComRecordObject( {
+					cmdBuffer, 
+					pipeline.second.m_graphicsPipeline, 
+					{ m_descriptorSetPerFrame, descriptorsets }, 
+					pipeline.second.m_type, 
+					mesh, 
+					m_vkState().m_currentFrame 
+				});
 			}
 		}
 
-		vh::ComEndRecordCommandBuffer(cmdBuffer);
+		vvh::ComEndRenderPass({.m_commandBuffer = cmdBuffer});
+		vvh::ComEndCommandBuffer({.m_commandBuffer = cmdBuffer});
 	    SubmitCommandBuffer(cmdBuffer);
 
 		++m_pass;
@@ -312,40 +336,62 @@ namespace vve {
 		ObjectHandle oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		assert( m_registry.template Has<MeshHandle>(oHandle) );	
 		auto meshHandle = m_registry.template Get<MeshHandle>(oHandle);
-		auto mesh = m_registry.template Get<vh::Mesh&>(meshHandle);
+		auto mesh = m_registry.template Get<vvh::Mesh&>(meshHandle);
 		auto type = getPipelineType(oHandle, mesh().m_verticesData);
 		auto pipelinePerType = getPipelinePerType(type);
 
 		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
-		bool hasColor = m_registry.template Has<vh::Color>(oHandle);
+		bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
 		bool hasVertexColor = pipelinePerType->m_type.find("C") != std::string::npos;
 		if( !hasTexture && !hasColor && !hasVertexColor ) return false;	
 
-		vh::Buffer ubo;
+		vvh::Buffer ubo;
 		size_t sizeUbo = 0;
-		vh::DescriptorSet descriptorSet{1};
-		vh::RenCreateDescriptorSet(m_vkState().m_device, pipelinePerType->m_descriptorSetLayoutPerObject, m_descriptorPool, descriptorSet);
+		vvh::DescriptorSet descriptorSet{1};
+		vvh::RenCreateDescriptorSet({
+			m_vkState().m_device, 
+			pipelinePerType->m_descriptorSetLayoutPerObject, 
+			m_descriptorPool, 
+			descriptorSet
+		});
 
 		if( hasTexture ) {
-			sizeUbo = sizeof(vh::BufferPerObjectTexture);
+			sizeUbo = sizeof(vvh::BufferPerObjectTexture);
 			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
-			auto texture = m_registry.template Get<vh::Map&>(tHandle);
-	    	vh::RenUpdateDescriptorSetTexture(m_vkState().m_device, texture, 1, descriptorSet);
+			auto texture = m_registry.template Get<vvh::Image&>(tHandle);
+	    	vvh::RenUpdateDescriptorSetTexture({
+				m_vkState().m_device, 
+				texture, 
+				1,
+				descriptorSet
+			});
 		} else if(hasColor) {
-			sizeUbo = sizeof(vh::BufferPerObjectColor);
+			sizeUbo = sizeof(vvh::BufferPerObjectColor);
 		} else if(hasVertexColor) {
-			sizeUbo = sizeof(vh::BufferPerObject);
+			sizeUbo = sizeof(vvh::BufferPerObject);
 		}
 
-		vh::BufCreateBuffers(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, sizeUbo, ubo);
-	    vh::RenUpdateDescriptorSet(m_vkState().m_device, ubo, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, sizeUbo, descriptorSet);
+		vvh::BufCreateBuffers({
+			m_vkState().m_device, 
+			m_vkState().m_vmaAllocator, 
+			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			sizeUbo, 
+			ubo
+		});
+	    vvh::RenUpdateDescriptorSet({
+			m_vkState().m_device, 
+			ubo, 
+			0, 
+			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+			sizeUbo, 
+			descriptorSet
+		});
 
 		m_registry.Put(oHandle, ubo, descriptorSet);
 		m_registry.AddTags(oHandle, (size_t)pipelinePerType->m_graphicsPipeline.m_pipeline);
 
-		assert( m_registry.template Has<vh::Buffer>(oHandle) );
-		assert( m_registry.template Has<vh::DescriptorSet>(oHandle) );
+		assert( m_registry.template Has<vvh::Buffer>(oHandle) );
+		assert( m_registry.template Has<vvh::DescriptorSet>(oHandle) );
 		return false; //true if handled
 	}
 
@@ -355,9 +401,13 @@ namespace vve {
 
 		assert(m_registry.Exists(oHandle) );
 
-		if( !m_registry.template Has<vh::Buffer>(oHandle) ) return false;
-		auto ubo = m_registry.template Get<vh::Buffer&>(oHandle);
-		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, ubo);
+		if( !m_registry.template Has<vvh::Buffer>(oHandle) ) return false;
+		auto ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
+		vvh::BufDestroyBuffer2({
+			m_vkState().m_device, 
+			m_vkState().m_vmaAllocator, 
+			ubo
+		});
 		return false;
 	}
 
@@ -366,10 +416,10 @@ namespace vve {
 	/// @param handle 
 	/// @param vertexData 
 	/// @return 
-	std::string RendererForward11::getPipelineType(ObjectHandle handle, vh::VertexData &vertexData) {
+	std::string RendererForward11::getPipelineType(ObjectHandle handle, vvh::VertexData &vertexData) {
 		std::string type = vertexData.getType();
 		if( m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos ) type += "E";
-		if( m_registry.template Has<vh::Color>(handle) && type.find("C") == std::string::npos && type.find("E") == std::string::npos ) type += "O";
+		if( m_registry.template Has<vvh::Color>(handle) && type.find("C") == std::string::npos && type.find("E") == std::string::npos ) type += "O";
 		return type;
 	}
 
@@ -400,8 +450,8 @@ namespace vve {
         vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);		
 		vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_renderPassClear, nullptr);
-		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame);
-		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersLights);
+		vvh::BufDestroyBuffer2({m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame});
+		vvh::BufDestroyBuffer2({m_vkState().m_device, m_vkState().m_vmaAllocator, m_storageBuffersLights});
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
 		return false;

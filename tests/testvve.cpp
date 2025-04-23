@@ -4,7 +4,7 @@
 #include <stack>
 #include <time.h>
 
-#include "VHInclude.h"
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 //#include "L2DFileDialog.h"
@@ -53,10 +53,10 @@ public:
 		int num_point_lights = 10;
 		for( int i=0; i<num_point_lights; ++i) {
 			float intensity1 = 0.8f;
-			vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.9f, 0.1f, 0.1f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+			vvh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.9f, 0.1f, 0.1f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 			auto lightHandle = m_registry.Insert(
 				vve::Name{"TestLight" + std::to_string(i)},
-				vve::PointLight{vh::LightParams{
+				vve::PointLight{vvh::LightParams{
 					glm::vec3(0.9f, 0.1f, 0.1f), glm::vec4(0.0f, intensity1, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
 				}},
 				vve::Position{glm::vec3(0.0f, 10.0f, 10.0f)},
@@ -152,7 +152,7 @@ public:
 	            if (ImGui::Button("Create##Create2")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
 
 					m_engine.SendMsg( MsgSceneLoad{ vve::Filename{path_obj2}, flags });		
-					vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.2f, 0.2f, 0.2f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+					vvh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.2f, 0.2f, 0.2f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets/standard/sphere.obj/sphere"} );
 					m_handles.push( handle );
 

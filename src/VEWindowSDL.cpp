@@ -1,5 +1,5 @@
 
-#include "VHInclude.h"
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 
@@ -45,21 +45,21 @@ namespace vve {
         auto wsdlstate = std::get<1>(state);
         
         if(!wsdlstate().m_sdl_initialized) {
-            if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_TIMER | SDL_INIT_GAMECONTROLLER | SDL_INIT_AUDIO) != 0) {
-                printf("Error: %s\n", SDL_GetError());
-                exit(1);
+            if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to init SDL: %s", SDL_GetError());
+                SDL_Quit();
+                return EXIT_FAILURE;
             }
             // From 2.0.18: Enable native IME.
         #ifdef SDL_HINT_IME_SHOW_UI
             SDL_SetHint(SDL_HINT_IME_SHOW_UI, "1");
         #endif
-        wsdlstate().m_sdl_initialized = true;
+            wsdlstate().m_sdl_initialized = true;
         }
 
         // Create window with Vulkan graphics context
-        SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
+        SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_VULKAN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY);
         auto sdlWindow = SDL_CreateWindow(wstate().m_windowName.c_str(), 
-                            SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 
                             wstate().m_width, wstate().m_height, window_flags);
 
         m_registry.Put(m_windowStateHandle, WindowSDLState{true, sdlWindow});
@@ -70,9 +70,13 @@ namespace vve {
         }
         uint32_t extensions_count = 0;
         std::vector<const char*> extensions;
-        SDL_Vulkan_GetInstanceExtensions(sdlWindow, &extensions_count, nullptr);
-        extensions.resize(extensions_count);
-        SDL_Vulkan_GetInstanceExtensions(sdlWindow, &extensions_count, extensions.data());
+        
+        unsigned int sdlExtensionCount = 0;
+        const char * const *instance_extensions = SDL_Vulkan_GetInstanceExtensions(&extensions_count);
+        for (unsigned int i = 0; i < extensions_count; i++) {
+            extensions.push_back(instance_extensions[i]);
+        }
+
         wstate().m_instanceExtensions.insert(wstate().m_instanceExtensions.end(), extensions.begin(), extensions.end());
 
 		m_engine.SendMsg( MsgExtensions{ wstate().m_instanceExtensions, {}} );
@@ -99,52 +103,45 @@ namespace vve {
         while (SDL_PollEvent(&event)) {
             m_engine.SendMsg( MsgSDL{message.GetDt(), event} );
 
-            if (event.type == SDL_WINDOWEVENT) {
-                switch (event.window.event) {
-					case SDL_WINDOWEVENT_CLOSE:
-						m_engine.Stop();
-						break;
-                	case SDL_WINDOWEVENT_MINIMIZED: 
-                    	wstate().m_isMinimized = true;
-                    	break;
-                	case SDL_WINDOWEVENT_MAXIMIZED: 
-                        wstate().m_isMinimized = false;
-                    	break;
-                	case SDL_WINDOWEVENT_RESTORED:
-                        wstate().m_isMinimized = false;
-                    	break;
-                }
-            } else {
-			    switch( event.type ) {
-					case SDL_QUIT:
-	                	m_engine.Stop();
-						break;
-	                case SDL_MOUSEMOTION:
-	                    m_engine.SendMsg( MsgMouseMove{message.GetDt(), event.motion.x, event.motion.y} );
-	                    break;
-	                case SDL_MOUSEBUTTONDOWN:
-	                    m_engine.SendMsg( MsgMouseButtonDown{message.GetDt(), event.button.button} );
-	                    button.push_back( event.button.button );
-	                    break;
-	                case SDL_MOUSEBUTTONUP:
-	                    m_engine.SendMsg( MsgMouseButtonUp{message.GetDt(), event.button.button} );
-	                    m_mouseButtonsDown.erase( event.button.button );
-	                    break;
-	                case SDL_MOUSEWHEEL:
-	                    m_engine.SendMsg( MsgMouseWheel{message.GetDt(), event.wheel.x, event.wheel.y} );
-	                    break;
-	                case SDL_KEYDOWN:
-	                    if( event.key.repeat ) continue;
-	                    m_engine.SendMsg( MsgKeyDown{message.GetDt(), event.key.keysym.scancode} );
-	                    key.push_back(event.key.keysym.scancode);
-	                    break;
-	                case SDL_KEYUP:
-	                    m_engine.SendMsg( MsgKeyUp{message.GetDt(), event.key.keysym.scancode} );
-	                    m_keysDown.erase(event.key.keysym.scancode);
-	                    break;
-	                default:
-	                    break;
-	            }
+            switch (event.type) {
+                case SDL_EVENT_QUIT:
+	            case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+		            m_engine.Stop();
+		            break;
+            	case SDL_EVENT_WINDOW_MINIMIZED: 
+                	wstate().m_isMinimized = true;
+                	break;
+            	case SDL_EVENT_WINDOW_MAXIMIZED: 
+                    wstate().m_isMinimized = false;
+                	break;
+            	case SDL_EVENT_WINDOW_RESTORED:
+                    wstate().m_isMinimized = false;
+                	break;
+                case SDL_EVENT_MOUSE_MOTION:
+                    m_engine.SendMsg( MsgMouseMove{message.GetDt(), event.motion.x, event.motion.y} );
+                    break;
+                case SDL_EVENT_MOUSE_BUTTON_DOWN:
+                    m_engine.SendMsg( MsgMouseButtonDown{message.GetDt(), event.button.button} );
+                    button.push_back( event.button.button );
+                    break;
+                case SDL_EVENT_MOUSE_BUTTON_UP:
+                    m_engine.SendMsg( MsgMouseButtonUp{message.GetDt(), event.button.button} );
+                    m_mouseButtonsDown.erase( event.button.button );
+                    break;
+                case SDL_EVENT_MOUSE_WHEEL:
+                    m_engine.SendMsg( MsgMouseWheel{message.GetDt(), event.wheel.x, event.wheel.y} );
+                    break;
+                case SDL_EVENT_KEY_DOWN:
+                    if( event.key.repeat ) continue;
+                    m_engine.SendMsg( MsgKeyDown{message.GetDt(), event.key.scancode} );
+                    key.push_back(event.key.scancode);
+                    break;
+                case SDL_EVENT_KEY_UP:
+                    m_engine.SendMsg( MsgKeyUp{message.GetDt(), event.key.scancode} );
+	                m_keysDown.erase(event.key.scancode);
+	                break;
+	            default:
+	                break;
 			}
         }
 

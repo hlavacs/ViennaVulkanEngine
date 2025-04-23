@@ -1,6 +1,6 @@
 
 #include <cassert>
-#include "VHInclude.h"
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 namespace vve {
@@ -31,11 +31,11 @@ namespace vve {
     
 	//------------------------------------------------------------------------
 
-	System::MsgMouseMove:: MsgMouseMove(double dt, int x, int y): MsgBase{"SDL_MOUSE_MOVE", dt}, m_x{x}, m_y{y} {}; 
+	System::MsgMouseMove:: MsgMouseMove(double dt, float x, float y): MsgBase{"SDL_MOUSE_MOVE", dt}, m_x{x}, m_y{y} {}; 
     System::MsgMouseButtonDown:: MsgMouseButtonDown(double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_DOWN", dt}, m_button{button} {}; 
     System::MsgMouseButtonUp::MsgMouseButtonUp(double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_UP", dt}, m_button{button} {}; 
     System::MsgMouseButtonRepeat::MsgMouseButtonRepeat(double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_REPEAT", dt}, m_button{button} {}; 
-    System::MsgMouseWheel::MsgMouseWheel(double dt, int x, int y): MsgBase{"SDL_MOUSE_WHEEL", dt}, m_x{x}, m_y{y} {}; 
+    System::MsgMouseWheel::MsgMouseWheel(double dt, float x, float y): MsgBase{"SDL_MOUSE_WHEEL", dt}, m_x{x}, m_y{y} {}; 
     System::MsgKeyDown::MsgKeyDown(double dt, int key): MsgBase{"SDL_KEY_DOWN", dt}, m_key{key} {}; 
     System::MsgKeyUp::MsgKeyUp(double dt, int key): MsgBase{"SDL_KEY_UP", dt}, m_key{key} {}; 
     System::MsgKeyRepeat::MsgKeyRepeat(double dt, int key): MsgBase{"SDL_KEY_REPEAT", dt}, m_key{key} {};   

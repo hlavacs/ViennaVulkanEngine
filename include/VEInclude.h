@@ -24,6 +24,7 @@
 #include <assimp/postprocess.h>
 #include <assimp/DefaultLogger.hpp>
 
+
 inline auto to_vec4 (const aiColor4D &color) {
 	return glm::vec4{color.r, color.g, color.b, color.a};
 }
@@ -31,7 +32,34 @@ inline auto to_vec4 (const aiColor4D &color) {
 #include "VSTY.h"
 #include "VECS.h"
 
+#if (defined(VVE_SINGLE_PRECISION) && defined(VVE_DOUBLE_PRECISION))
+	#error "Both VVE_SINGLE_PRECISION and VVE_DOUBLE_PRECISION are defined!"
+#endif
+
+#if !(defined(VVE_SINGLE_PRECISION) || defined(VVE_DOUBLE_PRECISION))
+	#define VVE_SINGLE_PRECISION
+#endif
+
 namespace vve {
+	#ifdef VVE_SINGLE_PRECISION
+		using real_t = float;
+		#define vec2_t glm::vec2
+		#define vec3_t glm::vec3
+		#define vec4_t glm::vec4
+		#define quat_t glm::quat
+		#define mat3_t glm::mat3
+		#define mat4_t glm::mat4
+		#define mat43_t glm::mat4x3
+	#else //VVE_DOUBLE_PRECISION
+		using real_t = double;
+		#define vec2_t glm::dvec2
+		#define vec3_t glm::dvec3
+		#define vec4_t glm::dvec4
+		#define quat_t glm::dquat
+		#define mat3_t glm::dmat3
+		#define mat4_t glm::dmat4
+		#define mat43_t glm::dmat4x3
+	#endif
 
 	#define MAX_MESSAGE_SIZE 256
 
@@ -93,4 +121,5 @@ namespace vve {
 #include "VERendererDeferred11.h"
 #include "VESceneManager.h"
 #include "VEAssetManager.h"
-#include "VESoundManager.h"
+//#include "VESoundManagerSDL2.h"
+#include "VESoundManagerSDL3.h"

@@ -1,6 +1,6 @@
 #include <filesystem>
 
-#include "VHInclude.h"
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 
@@ -70,13 +70,13 @@ namespace vve {
 
     bool SceneManager::OnLoadLevel(Message message) {
 
-		vh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.9f, 0.1f, 0.1f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+		vvh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.9f, 0.1f, 0.1f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 		m_engine.SendMsg( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
 		
 		float intensity1 = 0.8f;
 		auto lightHandle = m_registry.Insert(
 			Name{"Light1"},
-			PointLight{vh::LightParams{
+			PointLight{vvh::LightParams{
 				glm::vec3(0.9f, 0.1f, 0.1f), glm::vec4(0.0f, intensity1, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
 			}},
 			Position{glm::vec3(0.0f, 10.0f, 10.0f)},
@@ -93,7 +93,7 @@ namespace vve {
 		float intensity2 = 0.8f;
 		auto lightHandle2 = m_registry.Insert(
 			Name{"Light2"},
-			DirectionalLight{vh::LightParams{
+			DirectionalLight{vvh::LightParams{
 				glm::vec3(0.1f, 0.5f, 0.1f), glm::vec4(0.0f, intensity2, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
 			}},
 			Position{glm::vec3(10.0f, 10.0f, 10.0f)},
@@ -104,11 +104,11 @@ namespace vve {
 		);
 		SetParent( ObjectHandle{lightHandle2}, ParentHandle{m_rootHandle} );
 
-		vh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+		vvh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 		float intensity3 = 0.9f;
 		auto lightHandle3 = m_registry.Insert(
 			Name{"Light3"},
-			SpotLight{vh::LightParams{
+			SpotLight{vvh::LightParams{
 				glm::vec3(0.5f, 0.5f, 0.9f), glm::vec4(0.0f, intensity3, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
 			}},
 			Position{glm::vec3(20.0f, -10.0f, 10.0f)},
@@ -238,7 +238,7 @@ namespace vve {
 				m_registry.Put(nHandle, TextureName{texturePathStr});
 			}
 
-			vh::Color color;
+			vvh::Color color;
 			bool hasColor = false;
 			aiColor4D ambientColor;
 			if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_AMBIENT, ambientColor)) {

@@ -12,7 +12,7 @@ struct VS_OUTPUT
 
 // set 0 ... per frame
 
-[[vk::binding(0,0)]]
+[[vk::binding(0, 0)]]
 ConstantBuffer<UniformBufferFrame> gParamsFrame;
 
 [[vk::binding(1, 0)]]
@@ -22,7 +22,7 @@ StructuredBuffer<ShadowIndex> gShadowIndex;
 
 // set 1 ... per object
 
-[[vk::binding(0,1)]]
+[[vk::binding(0, 1)]]
 ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
 
 //----------------------------------------------------------------------------

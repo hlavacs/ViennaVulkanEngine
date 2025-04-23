@@ -1,5 +1,5 @@
 
-#include "VHInclude.h"
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 namespace vve {
@@ -88,7 +88,7 @@ namespace vve {
 		    std::cout << "Mesh " << i << " " << name() << " has " << mesh->mNumVertices << " vertices." << std::endl;
 			if( m_engine.ContainsHandle(name) ) continue;
 
-			vh::Mesh VVEMesh{};
+			vvh::Mesh VVEMesh{};
 		    for (unsigned int j = 0; j < mesh->mNumVertices; j++) {
 		        aiVector3D vertex = mesh->mVertices[j];
 				VVEMesh.m_verticesData.m_positions.push_back({vertex.x, vertex.y, vertex.z});
@@ -154,7 +154,7 @@ namespace vve {
 
 	bool AssetManager::OnTextureRelease(Message message) {
 		auto msg = message.template GetData<MsgTextureCreate>();
-		auto texture = m_registry.template Get<vh::Map&>(msg.m_handle);
+		auto texture = m_registry.template Get<vvh::Image&>(msg.m_handle);
 		stbi_image_free(texture().m_pixels); //last thing release resources
 		return true;
 	}
@@ -184,7 +184,7 @@ namespace vve {
         if (!pixels) { return nullptr; }
 
 		m_engine.SetHandle(fileName(), tHandle );
-		m_registry.Put(tHandle, vh::Map{texWidth, texHeight, 1, imageSize, pixels});
+		m_registry.Put(tHandle, vvh::Image{texWidth, texHeight, 1, imageSize, pixels});
 		return pixels;
 	}
 

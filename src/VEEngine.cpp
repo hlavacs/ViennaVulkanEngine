@@ -1,5 +1,7 @@
 
-#include "VHInclude.h"
+#define VIENNA_VULKAN_HELPER_IMPL
+
+#include "VHInclude2.h"
 #include "VEInclude.h"
 
 
@@ -64,7 +66,7 @@ namespace vve {
 	}
 	
 	void Engine::CreateWindows(){
-		RegisterSystem(std::make_unique<WindowSDL>(m_windowName, *this, m_windowName, 1200, 600 ) );
+		RegisterSystem(std::make_unique<WindowSDL>(m_windowName, *this, m_windowName, 1200, 600 ) );	
 	};
 	
 	void Engine::CreateRenderer(){
@@ -112,10 +114,15 @@ namespace vve {
 		SendMsg( MsgFrameStart{dt} ) ;
 		SendMsg( MsgPollEvents{dt} ) ;
 		SendMsg( MsgUpdate{dt} ) ;
-		SendMsg( MsgPrepareNextFrame{dt} ) ;
-		SendMsg( MsgRecordNextFrame{dt} ) ;
-		SendMsg( MsgRenderNextFrame{dt} ) ;
-		SendMsg( MsgPresentNextFrame{dt} ) ;
+
+		auto [handle, stateW, stateSDL] = WindowSDL::GetState(m_registry);
+
+		if(!stateW().m_isMinimized) {
+			SendMsg( MsgPrepareNextFrame{dt} ) ;
+			SendMsg( MsgRecordNextFrame{dt} ) ;
+			SendMsg( MsgRenderNextFrame{dt} ) ;
+			SendMsg( MsgPresentNextFrame{dt} ) ;
+		}
 		SendMsg( MsgFrameEnd{dt} ) ;
 	}
 
