@@ -643,62 +643,6 @@ namespace vve {
 			});
 	}
 
-	void RendererDeferred11::getBindingDescription(std::string type, std::string C, int& binding, int stride, auto& bdesc) {
-		if (type.find(C) == std::string::npos) return;
-		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = binding++;
-		bindingDescription.stride = stride;
-		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-		bdesc.push_back(bindingDescription);
-	}
-
-	auto RendererDeferred11::getBindingDescriptions(std::string type) -> std::vector<VkVertexInputBindingDescription> {
-		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
-		int binding = 0;
-		getBindingDescription(type, "P", binding, vvh::VertexData::size_pos, bindingDescriptions);
-		getBindingDescription(type, "N", binding, vvh::VertexData::size_nor, bindingDescriptions);
-		getBindingDescription(type, "U", binding, vvh::VertexData::size_tex, bindingDescriptions);
-		getBindingDescription(type, "C", binding, vvh::VertexData::size_col, bindingDescriptions);
-		getBindingDescription(type, "T", binding, vvh::VertexData::size_tan, bindingDescriptions);
-
-		return bindingDescriptions;
-	}
-
-	void RendererDeferred11::getAttributeDescription(std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd) {
-		if (type.find(C) == std::string::npos) return;
-		VkVertexInputAttributeDescription attributeDescription{};
-		attributeDescription.binding = binding++;
-		attributeDescription.location = location++;
-		attributeDescription.format = format;
-		attributeDescription.offset = 0;
-		attd.push_back(attributeDescription);
-	}
-
-	auto RendererDeferred11::getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription> {
-		std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
-		int binding = 0;
-		int location = 0;
-		getAttributeDescription(type, "P", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
-		getAttributeDescription(type, "N", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
-		getAttributeDescription(type, "U", binding, location, VK_FORMAT_R32G32_SFLOAT, attributeDescriptions);
-		getAttributeDescription(type, "C", binding, location, VK_FORMAT_R32G32B32A32_SFLOAT, attributeDescriptions);
-		getAttributeDescription(type, "T", binding, location, VK_FORMAT_R32G32B32_SFLOAT, attributeDescriptions);
-
-		return attributeDescriptions;
-	}
-
-	template<typename T>
-	auto RendererDeferred11::RegisterLight(float type, std::vector<vvh::Light>& lights, int& total) -> int {
-		int n = 0;
-		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, T&, LocalToWorldMatrix&>()) {
-			++n;
-			light().params.x = type;
-			lights[total] = { .positionW = glm::vec3{lToW()[3]}, .directionW = glm::vec3{lToW()[1]}, .lightParams = light() };
-			if (++total >= MAX_NUMBER_LIGHTS) return n;
-		};
-		return n;
-	}
-
 	std::string RendererDeferred11::getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) {
 		std::string type = vertexData.getType();
 		if (m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos) type += "E";

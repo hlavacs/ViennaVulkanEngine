@@ -30,22 +30,14 @@ namespace vve {
 		void CreateGeometryPipeline();
 		void CreateLightingPipeline();
 
-		void getBindingDescription(std::string type, std::string C, int& binding, int stride, auto& bdesc);
-		auto getBindingDescriptions(std::string type) -> std::vector<VkVertexInputBindingDescription>;
-		void getAttributeDescription(std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd);
-		auto getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription>;
-		template<typename T>
-		auto RegisterLight(float type, std::vector<vvh::Light>& lights, int& i) -> int;
-
 		auto getPipelinePerType(std::string type) -> PipelinePerType*;
 		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
 
 		std::vector<VkFramebuffer> m_gBufferFrameBuffers{};
 
-		vvh::Buffer m_uniformBuffersPerFrame{};	// TODO: maybe rename
+		vvh::Buffer m_uniformBuffersPerFrame{};
 		vvh::Buffer m_storageBuffersLights{};
 
-		// TODO: Maybe make GBufferAttachment struct for better alignment
 		VkSampler m_sampler{ VK_NULL_HANDLE };
 		std::array<vvh::GBufferImage, 3> m_gBufferAttachments{};
 
@@ -64,7 +56,7 @@ namespace vve {
 		std::vector<VkCommandPool> m_commandPools{};
 		std::vector<VkCommandBuffer> m_commandBuffers{};
 
-		glm::ivec3 m_numberLightsPerType{ 0,0,0 };
+		glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
 		int m_pass{ 0 };
 	};
 
