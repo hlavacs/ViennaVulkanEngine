@@ -412,7 +412,7 @@ namespace vve {
 			vvh::BufDestroyBuffer2({
 				.m_device 			= m_vkState().m_device, 
 				.m_vmaAllocator 	= m_vkState().m_vmaAllocator, 
-				.m_buffers 			= ubo
+				.m_buffers 			= ubo()
 			});
 		}
 

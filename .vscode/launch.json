@@ -16,6 +16,17 @@
             "externalConsole": false
         },
         {
+            "name": "MSVC Game Debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/examples/game/Debug/game.exe",  
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false
+        },
+        {
             "name": "MSVC Test Release",
             "type": "cppvsdbg",
             "request": "launch",
