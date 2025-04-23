@@ -22,7 +22,7 @@ namespace vve {
 		// TODO: maybe a reference will be enough here to not make a message copy?
 		Renderer::OnInit(message);
 
-		vvh::RenCreateRenderPass({
+		vvh::RenCreateRenderPassGeometry({
 			.m_depthFormat			= m_vkState().m_depthMapFormat,
 			.m_device				= m_vkState().m_device,
 			.m_swapChain			= m_vkState().m_swapChain,
@@ -93,7 +93,7 @@ namespace vve {
 			});
 		vvh::RenCreateDescriptorSet({
 			.m_device				= m_vkState().m_device,
-			.m_descriptorSetLayouts = m_descriptorSetLayoutPerFrame,
+			.m_descriptorSetLayouts = m_descriptorSetLayoutComposition,
 			.m_descriptorPool		= m_descriptorPool,
 			.m_descriptorSet		= m_descriptorSetComposition
 			});
@@ -125,7 +125,7 @@ namespace vve {
 			});
 		vvh::RenUpdateDescriptorSet({
 			.m_device				= m_vkState().m_device,
-			.m_uniformBuffers		= m_uniformBuffersPerFrame,
+			.m_uniformBuffers		= m_storageBuffersLights,
 			.m_binding				= 1,
 			.m_type					= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 			.m_size					= MAX_NUMBER_LIGHTS * sizeof(vvh::Light),
@@ -328,13 +328,13 @@ namespace vve {
 				if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 				auto mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
-				vvh::ComRecordObject({ 
-					.m_commandBuffer	= cmdBuffer,
-					.m_graphicsPipeline = pipeline.second.m_graphicsPipeline,
-					.m_descriptorSets	= { m_descriptorSetPerFrame, descriptorsets },
-					.m_type				= pipeline.second.m_type,
-					.m_mesh				= mesh,
-					.m_currentFrame		= m_vkState().m_currentFrame
+				vvh::ComRecordObject({
+					cmdBuffer,
+					pipeline.second.m_graphicsPipeline,
+					{ m_descriptorSetPerFrame, descriptorsets },
+					pipeline.second.m_type,
+					mesh,
+					m_vkState().m_currentFrame
 					});
 			}
 		}
@@ -404,7 +404,8 @@ namespace vve {
 
 		vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
 
-		vvh::ComEndCommandBuffer(cmdBuffer);
+		vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
 
 		++m_pass;
@@ -438,11 +439,11 @@ namespace vve {
 			sizeUbo = sizeof(vvh::BufferPerObjectTexture);
 			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
 			auto texture = m_registry.template Get<vvh::Image&>(tHandle);
-			vvh::RenUpdateDescriptorSetTexture({ 
-				.m_device			= m_vkState().m_device,
-				.m_texture			= texture,
-				.m_binding			= 1,
-				.m_descriptorSet	= descriptorSet
+			vvh::RenUpdateDescriptorSetTexture({
+				m_vkState().m_device,
+				texture,
+				1,
+				descriptorSet
 				});
 		}
 		else if (hasColor) {
@@ -484,10 +485,10 @@ namespace vve {
 
 		if (!m_registry.template Has<vvh::Buffer>(oHandle)) return false;
 		auto ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
-		vvh::BufDestroyBuffer2({ 
-			.m_device		= m_vkState().m_device,
-			.m_vmaAllocator = m_vkState().m_vmaAllocator,
-			.m_buffers		= ubo
+		vvh::BufDestroyBuffer2({
+			m_vkState().m_device,
+			m_vkState().m_vmaAllocator,
+			ubo
 			});
 		return false;
 	}
@@ -553,7 +554,7 @@ namespace vve {
 				auto pri = std::stoi(filename.substr(0, pos1 - 1));
 				std::string type = filename.substr(pos1 + 1, pos2 - pos1 - 1);
 
-				vvh::Pipeline graphicsPipeline;
+				vvh::Pipeline graphicsPipeline{};
 
 				VkDescriptorSetLayout descriptorSetLayoutPerObject{};
 				std::vector<VkDescriptorSetLayoutBinding> bindings{
