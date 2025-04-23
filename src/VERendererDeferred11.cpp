@@ -298,24 +298,24 @@ namespace vve {
 			};
 
 			vvh::ComBindPipeline({
-				.m_commandBuffer		= cmdBuffer,
-				.m_graphicsPipeline		= pip,
-				.m_imageIndex			= m_vkState().m_imageIndex,
-				.m_swapChain			= m_vkState().m_swapChain,
-				.m_renderPass			= m_geometryPass,
-				.m_viewPorts			= {},
-				.m_scissors				= {}, //default view ports and scissors
-				.m_blendConstants		= blendconst,
-				.m_pushConstants		= {
+				.m_commandBuffer	= cmdBuffer,
+				.m_graphicsPipeline	= pip,
+				.m_imageIndex		= m_vkState().m_imageIndex,
+				.m_swapChain		= m_vkState().m_swapChain,
+				.m_renderPass		= m_geometryPass,
+				.m_viewPorts		= {},
+				.m_scissors			= {}, //default view ports and scissors
+				.m_blendConstants	= blendconst,
+				.m_pushConstants	= {
 					{	
-						.layout			= pipeline.second.m_graphicsPipeline.m_pipelineLayout,
-						.stageFlags		= VK_SHADER_STAGE_FRAGMENT_BIT,
-						.offset			= 0,
-						.size			= sizeof(offset),
-						.pValues		= &offset
+						.layout		= pipeline.second.m_graphicsPipeline.m_pipelineLayout,
+						.stageFlags	= VK_SHADER_STAGE_FRAGMENT_BIT,
+						.offset		= 0,
+						.size		= sizeof(offset),
+						.pValues	= &offset
 					}
 				},
-				.m_currentFrame			= m_vkState().m_currentFrame
+				.m_currentFrame		= m_vkState().m_currentFrame
 				});
 
 			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
