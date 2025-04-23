@@ -13,6 +13,11 @@ namespace vve {
 			m_apiVersion = c_minimumVersion;
 		}
 
+		if( VK_VERSION_MAJOR(apiVersion) == 1 && VK_VERSION_MINOR(apiVersion) > VK_VERSION_MINOR(c_maximumVersion)) {
+			std::cout << "Maximum VVE Vulkan API version is 1." << VK_VERSION_MINOR(c_maximumVersion) << "!\n";
+			m_apiVersion = c_maximumVersion;
+		}
+
 	#ifndef NDEBUG
 		m_debug = true;
 	#endif

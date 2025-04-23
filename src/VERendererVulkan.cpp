@@ -82,6 +82,7 @@ namespace vve {
 			exit(1);
 		}
 		engineState.apiVersion = VK_MAKE_VERSION( VK_VERSION_MAJOR(engineState.apiVersion), minor, 0);
+		std::cout << "Selecting Vulkan API version 1." << VK_VERSION_MINOR(engineState.apiVersion) << "\n";
 		vkGetPhysicalDeviceProperties(m_vkState().m_physicalDevice, &m_vkState().m_physicalDeviceProperties);
 		vkGetPhysicalDeviceFeatures(m_vkState().m_physicalDevice, &m_vkState().m_physicalDeviceFeatures);
 
