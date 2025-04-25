@@ -33,11 +33,6 @@ Sampler2D albedoSampler;
 
 //----------------------------------------------------------------------------
 
-[[vk::push_constant]]
-LightOffset offset;
-
-//----------------------------------------------------------------------------
-
 [shader("vertex")]
 VertexStageOutput main(
     float3 positionL    : POSITION,

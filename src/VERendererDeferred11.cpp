@@ -306,15 +306,7 @@ namespace vve {
 				.m_viewPorts		= {},
 				.m_scissors			= {}, //default view ports and scissors
 				.m_blendConstants	= blendconst,
-				.m_pushConstants	= {
-					{	
-						.layout		= pipeline.second.m_graphicsPipeline.m_pipelineLayout,
-						.stageFlags	= VK_SHADER_STAGE_FRAGMENT_BIT,
-						.offset		= 0,
-						.size		= sizeof(offset),
-						.pValues	= &offset
-					}
-				},
+				.m_pushConstants	= {},
 				.m_currentFrame		= m_vkState().m_currentFrame
 				});
 
@@ -594,8 +586,8 @@ namespace vve {
 					.m_bindingDescription		= bindingDescriptions,
 					.m_attributeDescriptions	= attributeDescriptions,
 					.m_descriptorSetLayouts		= { m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject },
-					.m_specializationConstants	= { MAX_NUMBER_LIGHTS },
-					.m_pushConstantRanges		= { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
+					.m_specializationConstants	= {},
+					.m_pushConstantRanges		= {},
 					.m_blendAttachments			= { colorBlendAttachment, colorBlendAttachment, colorBlendAttachment },
 					.m_graphicsPipeline			= graphicsPipeline
 					// TODO: Check if this change affects something, was: bool depthWrite

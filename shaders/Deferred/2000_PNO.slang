@@ -27,11 +27,6 @@ ConstantBuffer<UniformBufferObjectColor> gParamsObject;
 
 //----------------------------------------------------------------------------
 
-[[vk::push_constant]]
-LightOffset offset;
-
-//----------------------------------------------------------------------------
-
 [shader("vertex")]
 VertexStageOutput main(
     float3 position: POSITION,
