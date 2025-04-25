@@ -87,7 +87,7 @@ class MyGame : public vve::System {
     
         bool OnUpdate( Message& message ) {
             auto msg = message.template GetData<vve::System::MsgUpdate>();
-            m_time_left -= msg.m_dt;
+            m_time_left -= static_cast<float>(msg.m_dt);
             auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
             pos().z = 0.5f;
             if( m_state == State::STATE_RUNNING ) {
@@ -101,8 +101,8 @@ class MyGame : public vve::System {
                 float distance = glm::length( vec2_t{pos().x, pos().y} - vec2_t{posCube().x, posCube().y} );
                 if( distance < 1.5f) {
                     m_cubes_left--;
-                    posCube().x = nextRandom();
-                    posCube().y = nextRandom();
+                    posCube().x = static_cast<float>(nextRandom());
+                    posCube().y = static_cast<float>(nextRandom());
                     if( m_cubes_left == 0 ) {
                         m_time_left += 20;
                         m_cubes_left = c_number_cubes;
