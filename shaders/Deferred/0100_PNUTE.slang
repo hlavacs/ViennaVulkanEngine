@@ -1,17 +1,15 @@
-// This shader is just here for testing purposes
-
 import Common;
 
 struct CoarseVertex {
-    float3 positionW : POSITION;
-    float3 normalW : NORMAL;
-    float2 uv : TEXCOORD;
-    float3 tangentW : TANGENT;
+    float3 positionW    : POSITION;
+    float3 normalW      : NORMAL;
+    float2 uv           : TEXCOORD;
+    float3 tangentW     : TANGENT;
 };
 
 struct VertexStageOutput {
-    CoarseVertex coarseVertex : CoarseVertex;
-    float4 sv_position : SV_Position;
+    CoarseVertex coarseVertex   : CoarseVertex;
+    float4 sv_position          : SV_Position;
 };
 
 // binding B,S means that the resource is bound to binding B, set S
@@ -67,12 +65,8 @@ GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
 
     float4 tex = albedoSampler.Sample(input.uv);
 
-    output.pos = float4(input.positionW, 1.0);
-    output.norm = float4(input.normalW, 1.0);
-    output.albedo = albedoSampler.Sample(input.uv);
+    output.pos      = float4(input.positionW, 1.0);
+    output.norm     = float4(input.normalW, 1.0);
+    output.albedo   = albedoSampler.Sample(input.uv);
     return output;
 }
-
-// float4(1.0, 1.0, 0.0, 1.0);  yellow
-// float4(0.0, 1.0, 0.5, 1.0);  light blue
-// float4(0.5, 0.0, 1.0, 1.0);  purple

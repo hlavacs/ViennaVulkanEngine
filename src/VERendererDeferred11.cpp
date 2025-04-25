@@ -37,7 +37,6 @@ namespace vve {
 			.m_renderPass			= m_lightingPass
 			});
 
-		// TODO: binding 0 might only need vertex globally
 		// Per Frame
 		vvh::RenCreateDescriptorSetLayout({
 			.m_device				= m_vkState().m_device,
@@ -291,7 +290,6 @@ namespace vve {
 
 		for (auto& pipeline : m_geomPipesPerType) {
 
-			// TODO: maybe make pointer or reference here to avoid copy?
 			vvh::Pipeline pip{
 				pipeline.second.m_graphicsPipeline.m_pipelineLayout,
 				pipeline.second.m_graphicsPipeline.m_pipeline
@@ -386,8 +384,6 @@ namespace vve {
 			.m_currentFrame		= m_vkState().m_currentFrame
 			});
 
-		// TODO .... Lighting pass still needs a proper draw call
-		// TODO .... probably remove push constant from geom pass, only need ligthing in lighting pass!
 		VkDescriptorSet sets[] = { m_descriptorSetPerFrame.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame],
 			m_descriptorSetComposition.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame] };
 
@@ -466,7 +462,7 @@ namespace vve {
 
 		assert(m_registry.template Has<vvh::Buffer>(oHandle));
 		assert(m_registry.template Has<vvh::DescriptorSet>(oHandle));
-		return false; //true if handled
+		return false;
 	}
 
 	bool RendererDeferred11::OnObjectDestroy(Message message) {
@@ -492,7 +488,6 @@ namespace vve {
 			vkDestroyCommandPool(m_vkState().m_device, pool, nullptr);
 		}
 
-		// TODO: Manage pipelines - rewrite into functions most likely
 		for (auto& [type, pipeline] : m_geomPipesPerType) {
 			vkDestroyDescriptorSetLayout(m_vkState().m_device, pipeline.m_descriptorSetLayoutPerObject, nullptr);
 			vkDestroyPipeline(m_vkState().m_device, pipeline.m_graphicsPipeline.m_pipeline, nullptr);
@@ -506,23 +501,20 @@ namespace vve {
 		vkDestroyRenderPass(m_vkState().m_device, m_lightingPass, nullptr);
 		vkDestroySampler(m_vkState().m_device, m_sampler, nullptr);
 
-		vvh::BufDestroyBuffer2({ 
-			.m_device		= m_vkState().m_device,
-			.m_vmaAllocator = m_vkState().m_vmaAllocator,
-			.m_buffers		= m_uniformBuffersPerFrame
-			});
-		vvh::BufDestroyBuffer2({ 
-			.m_device		= m_vkState().m_device,
-			.m_vmaAllocator = m_vkState().m_vmaAllocator,
-			.m_buffers		= m_storageBuffersLights
-			});
+		for (auto& buffer : { std::ref(m_uniformBuffersPerFrame), std::ref(m_storageBuffersLights) }) {
+			vvh::BufDestroyBuffer2({
+				.m_device		= m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_buffers		= buffer.get()
+				});
+		}
 
 		for (auto& gBufferAttach : m_gBufferAttachments) {
 			vvh::ImgDestroyImage({
-				.m_device = m_vkState().m_device,
-				.m_vmaAllocator = m_vkState().m_vmaAllocator,
-				.m_image = gBufferAttach.m_gbufferImage,
-				.m_imageAllocation = gBufferAttach.m_gbufferImageAllocation
+				.m_device			= m_vkState().m_device,
+				.m_vmaAllocator		= m_vkState().m_vmaAllocator,
+				.m_image			= gBufferAttach.m_gbufferImage,
+				.m_imageAllocation	= gBufferAttach.m_gbufferImageAllocation
 				});
 			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
 		}

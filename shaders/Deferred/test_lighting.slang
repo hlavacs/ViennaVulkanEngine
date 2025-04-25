@@ -1,20 +1,19 @@
-// This shader is just here for testing purposes
 import Common;
 
-struct VSOutput {
+struct VertexStageOutput {
     float4 position : SV_Position;
     float2 uv       : TEXCOORD0;
 };
 
 [shader("vertex")]
-VSOutput main(uint vertexID : SV_VertexID)
+VertexStageOutput main(uint vertexID : SV_VertexID)
 {
-    VSOutput output = (VSOutput)0;
+    VertexStageOutput output = (VertexStageOutput)0;
 
     float2 pos[3] = {
         float2(-1, -1),
-        float2(-1, 3),
-        float2(3, -1)
+        float2(-1,  3),
+        float2( 3, -1)
     };
     output.position = float4(pos[vertexID], 0.0, 1.0);
     output.uv = (pos[vertexID] + 1.0) * 0.5;
@@ -27,13 +26,13 @@ ConstantBuffer<UniformBufferFrame> gParamsFrame;
 //----------------------------------------------------------------------------
 
 [[vk::binding(0, 1)]]
-Sampler2D gPosition; // Position from geometry shader
+Sampler2D gPosition;    // Position from geometry shader
 
 [[vk::binding(1, 1)]]
-Sampler2D gNormal; // Normal from geometry shader
+Sampler2D gNormal;      // Normal from geometry shader
 
 [[vk::binding(2, 1)]]
-Sampler2D gAlbedo; // Albedo from geometry shader
+Sampler2D gAlbedo;      // Albedo from geometry shader
 
 [[vk::binding(1, 0)]]
 StructuredBuffer<Light> gLights;
@@ -46,9 +45,8 @@ LightOffset offset;
 //----------------------------------------------------------------------------
 
 [shader("fragment")]
-float4 main(VSOutput in) : SV_Target
+float4 main(VertexStageOutput in) : SV_Target
 {
-    // this is a dummy shader
     Camera camera = gParamsFrame.camera;
     uint3 numberLights = gParamsFrame.numberLights;
 
