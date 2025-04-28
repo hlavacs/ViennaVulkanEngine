@@ -90,12 +90,12 @@ include_directories (${viennatypelistlibrary_SOURCE_DIR}/include)
 
 #--------------------------------- Fetch Vienna Vulkan Helper ---------------------------------#
 
-FetchContent_Declare(viennavulkanhelper
-                     GIT_REPOSITORY https://github.com/hlavacs/ViennaVulkanHelper.git
-                     GIT_TAG main
-)
-FetchContent_MakeAvailable(viennavulkanhelper)
-include_directories (${viennavulkanhelper_SOURCE_DIR}/include)
+#FetchContent_Declare(viennavulkanhelper
+#                     GIT_REPOSITORY https://github.com/hlavacs/ViennaVulkanHelper.git
+#                     GIT_TAG main
+#)
+#FetchContent_MakeAvailable(viennavulkanhelper)
+#include_directories (${viennavulkanhelper_SOURCE_DIR}/include)
 
 #--------------------------------- Fetch SDL3 ---------------------------------#
 
