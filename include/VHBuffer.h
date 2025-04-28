@@ -18,7 +18,7 @@ namespace vvh {
     struct BufCreateBufferInfo { 
 		const VmaAllocator& 			m_vmaAllocator;
         const VkDeviceSize& 			m_size;
-		const VkBufferUsageFlags& 		m_usageFlags;
+		const VkBufferUsageFlags& 		m_usage;
 		const VkMemoryPropertyFlags& 	m_properties;
         const VmaAllocationCreateFlags& m_vmaFlags;
 		VkBuffer& 						m_buffer;
@@ -30,7 +30,7 @@ namespace vvh {
 	inline void BufCreateBuffer(T&& info) {
 		VkBufferCreateInfo bufferInfo = { VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
 		bufferInfo.size = info.m_size;
-		bufferInfo.usage = info.m_usageFlags;
+		bufferInfo.usage = info.m_usage;
 		bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
 		VmaAllocationCreateInfo allocInfo = {};
@@ -44,7 +44,7 @@ namespace vvh {
     struct BufCreateBuffersInfo {
 		const VkDevice& 			m_device;
 		const VmaAllocator& 		m_vmaAllocator;
-        const VkBufferUsageFlags& 	m_usageFlags;
+        const VkBufferUsageFlags& 	m_usage;
 		const VkDeviceSize& 		m_size;
 		Buffer& 					m_buffer;
 	};
@@ -62,7 +62,7 @@ namespace vvh {
 			BufCreateBuffer( {
 				.m_vmaAllocator = info.m_vmaAllocator,
 				.m_size 		= info.m_size, 
-				.m_usageFlags 	= info.m_usageFlags, 
+				.m_usage 	= info.m_usage, 
 				.m_properties 	= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
 				.m_vmaFlags 	= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
 				.m_buffer 		= info.m_buffer.m_uniformBuffers[i],
@@ -243,7 +243,7 @@ namespace vvh {
 		BufCreateBuffer( {
 			.m_vmaAllocator = info.m_vmaAllocator, 
 			.m_size = bufferSize, 
-			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+			.m_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 			.m_properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
 			.m_vmaFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, 
 			.m_buffer = stagingBuffer, 
@@ -256,7 +256,7 @@ namespace vvh {
 		BufCreateBuffer( {
 			.m_vmaAllocator = info.m_vmaAllocator, 
 			.m_size = bufferSize, 
-			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
+			.m_usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, 
 			.m_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 			.m_vmaFlags = 0, 
 			.m_buffer = info.m_mesh.m_vertexBuffer, 
@@ -290,7 +290,7 @@ namespace vvh {
 		BufCreateBuffer( {
 			.m_vmaAllocator = info.m_vmaAllocator, 
 			.m_size = bufferSize, 
-			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+			.m_usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 			.m_properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
 			.m_vmaFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, 
 			.m_buffer = stagingBuffer, 
@@ -303,7 +303,7 @@ namespace vvh {
 		BufCreateBuffer( {
 			.m_vmaAllocator = info.m_vmaAllocator, 
 			.m_size = bufferSize, 
-			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
+			.m_usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, 
 			.m_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
 			.m_vmaFlags = 0, 
 			.m_buffer = info.m_mesh.m_indexBuffer, 

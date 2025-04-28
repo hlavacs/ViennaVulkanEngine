@@ -322,7 +322,7 @@ namespace vvh {
         BufCreateBuffer( {
 			.m_vmaAllocator 	= info.m_vmaAllocator, 
 			.m_size 			= info.m_size, 
-			.m_usageFlags 		= VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+			.m_usage 		= VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
 			.m_properties 		= VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
 			.m_vmaFlags 		= VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, 
 			.m_buffer 			= stagingBuffer, 
@@ -454,7 +454,7 @@ namespace vvh {
         BufCreateBuffer( {
 			.m_vmaAllocator = info.m_vmaAllocator, 
 			.m_size = info.m_size, 
-			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+			.m_usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
 			.m_properties = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
 			.m_vmaFlags = VMA_MEMORY_USAGE_CPU_ONLY, 
             .m_buffer = stagingBuffer, 
