@@ -275,6 +275,8 @@ namespace vve {
 		if( parent().IsValid() ) {
 			auto childrenOld = m_registry.template Get<Children&>(parent());
 			childrenOld().erase(std::remove(childrenOld().begin(), childrenOld().end(), oHandle), childrenOld().end());
+		} else {
+			pHandle = ParentHandle{m_rootHandle};
 		}
 
 		auto childrenNew = m_registry.template Get<Children&>(pHandle);
