@@ -46,6 +46,7 @@ class MyGame : public vve::System {
         inline static std::string plane_txt  { "assets/test/plane/grass.jpg" };
 
         inline static std::string cube_obj  { "assets/test/crate0/cube.obj" };
+        inline static std::string test_obj  { "assets/test/cornell/CornellBox-Original.obj" };
 
         bool OnLoadLevel( Message message ) {
             auto msg = message.template GetData<vve::System::MsgLoadLevel>();	
@@ -81,6 +82,15 @@ class MyGame : public vve::System {
 
             m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1, 50 });
 			m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
+
+            // ----------------- Load Test -----------------
+
+            m_handleTest = m_registry.Insert(
+                vve::Position{ { 0.0f, 0.0f, 0.0f } },
+                vve::Rotation{ mat3_t{1.0f} },
+                vve::Scale{ vec3_t{1.0f} });
+
+            m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_handleTest), vve::ParentHandle{}, vve::Filename{test_obj}, aiProcess_FlipWindingOrder });
 
             return false;
         };
@@ -150,6 +160,7 @@ class MyGame : public vve::System {
         int m_cubes_left = c_number_cubes;  
         vecs::Handle m_handlePlane{};
         vecs::Handle m_handleCube{};
+        vecs::Handle m_handleTest{};
 		vecs::Handle m_cameraHandle{};
 		vecs::Handle m_cameraNodeHandle{};
 		float m_volume{MIX_MAX_VOLUME / 2.0};
