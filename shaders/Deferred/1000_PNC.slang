@@ -23,7 +23,7 @@ ConstantBuffer<UniformBufferFrame> gParamsFrame;
 // set 1 ... per object
 
 [[vk::binding(0, 1)]]
-ConstantBuffer<UniformBufferObjectColor> gParamsObject;
+ConstantBuffer<UniformBufferObject> gParamsObject;
 
 //----------------------------------------------------------------------------
 
@@ -61,7 +61,7 @@ GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
 
     output.pos      = float4(input.positionW, 1.0);
     output.norm     = float4(input.normalW, 1.0);
-    output.albedo   = float4(input.fragColor);
+    output.albedo   = input.fragColor;
 
     return output;
 }
