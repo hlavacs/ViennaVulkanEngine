@@ -37,8 +37,8 @@ VertexStageOutput main(
 
     VertexStageOutput output;
     output.coarseVertex.positionW   = mul(gParamsObject.model, float4(normal, 1.0)).xyz;
-    output.coarseVertex.normalW     = mul(gParamsObject.modelInvTranspose, float4(normal, 1.0)).xyz;
-    output.coarseVertex.fragColor   = gParamsObject.color.ambient + gParamsObject.color.diffuse;
+    output.coarseVertex.normalW     = mul(gParamsObject.modelInvTranspose, float4(normal, 0.0)).xyz;
+    output.coarseVertex.fragColor   = gParamsObject.color.ambient;
     output.sv_position              = mul(gParamsFrame.camera.proj, float4(viewPosition, 1.0));
 
     return output;
@@ -58,11 +58,8 @@ GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
     GBufferOutput output;
 
     output.pos      = float4(input.positionW, 1.0);
-    output.norm = float4(input.normalW, 1.0);
-    if (input.fragColor.r == 0.0) input.fragColor.r = 1.0;
-    if (input.fragColor.g == 0.0) input.fragColor.g = 1.0;
-    if (input.fragColor.b == 0.0) input.fragColor.b = 1.0;
-    output.albedo   = float4(input.fragColor.rgb, 1);
+    output.norm     = float4(input.normalW * 0.5 + 0.5, 0.0);
+    output.albedo   = input.fragColor;
 
     return output;
 }

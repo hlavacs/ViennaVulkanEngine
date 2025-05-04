@@ -143,7 +143,7 @@ namespace vve {
 			.m_vmaAllocator			= m_vkState().m_vmaAllocator,
 			.m_swapChain			= m_vkState().m_swapChain,
 			.m_gbufferImage			= m_gBufferAttachments[POSITION],
-			.m_format				= m_vkState().m_swapChain.m_swapChainImageFormat,
+			.m_format				= VK_FORMAT_R32G32B32A32_SFLOAT,
 			.m_sampler				= m_sampler
 			});
 		vvh::RenUpdateDescriptorSetGBufferAttachment({
@@ -158,7 +158,7 @@ namespace vve {
 			.m_vmaAllocator			= m_vkState().m_vmaAllocator,
 			.m_swapChain			= m_vkState().m_swapChain,
 			.m_gbufferImage			= m_gBufferAttachments[NORMAL],
-			.m_format				= m_vkState().m_swapChain.m_swapChainImageFormat,
+			.m_format				= VK_FORMAT_R8G8B8A8_UNORM,
 			.m_sampler				= m_sampler
 			});
 		vvh::RenUpdateDescriptorSetGBufferAttachment({ 
@@ -173,7 +173,7 @@ namespace vve {
 			.m_vmaAllocator			= m_vkState().m_vmaAllocator,
 			.m_swapChain			= m_vkState().m_swapChain,
 			.m_gbufferImage			= m_gBufferAttachments[ALBEDO],
-			.m_format				= VK_FORMAT_R8G8B8A8_UNORM,
+			.m_format				= VK_FORMAT_R8G8B8A8_SRGB,
 			.m_sampler				= m_sampler 
 			});
 		vvh::RenUpdateDescriptorSetGBufferAttachment({ 
@@ -325,8 +325,6 @@ namespace vve {
 		float f = 0.0;
 		std::array<float, 4> blendconst = (m_pass == 0 ? std::array<float, 4>{f, f, f, f} : std::array<float, 4>{ 1 - f,1 - f,1 - f,1 - f });
 
-		vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
-
 		for (auto& pipeline : m_geomPipesPerType) {
 
 			vvh::Pipeline pip{
@@ -401,6 +399,8 @@ namespace vve {
 			.m_clearValues		= {},
 			.m_currentFrame		= m_vkState().m_currentFrame 
 			});
+
+		vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
 
 		vvh::ComBindPipeline({
 			.m_commandBuffer	= cmdBuffer,
