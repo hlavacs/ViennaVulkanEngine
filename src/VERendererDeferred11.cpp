@@ -199,6 +199,41 @@ namespace vve {
 	}
 
 	bool RendererDeferred11::OnPrepareNextFrame(Message message) {
+		// TODO: Maybe make own event - or move check somewhere else
+		static auto width = m_vkState().m_swapChain.m_swapChainExtent.width;
+		static auto height = m_vkState().m_swapChain.m_swapChainExtent.height;
+		if (m_vkState().m_swapChain.m_swapChainExtent.width != width || m_vkState().m_swapChain.m_swapChainExtent.height != height) {
+			for (size_t i = 0; i < m_gBufferAttachments.size(); ++i) {
+				vvh::RenCreateGBufferResources({
+					.m_physicalDevice	= m_vkState().m_physicalDevice,
+					.m_device			= m_vkState().m_device,
+					.m_vmaAllocator		= m_vkState().m_vmaAllocator,
+					.m_swapChain		= m_vkState().m_swapChain,
+					.m_gbufferImage		= m_gBufferAttachments[i],
+					.m_format			= m_gBufferAttachments[i].m_gbufferFormat,
+					.m_sampler			= m_sampler
+					});
+				vvh::RenUpdateDescriptorSetGBufferAttachment({
+					.m_device			= m_vkState().m_device,
+					.m_gbufferImage		= m_gBufferAttachments[i],
+					.m_binding			= i,
+					.m_descriptorSet	= m_descriptorSetComposition
+					});
+			}
+
+			vvh::RenCreateGBufferFrameBuffers({
+				.m_device				= m_vkState().m_device,
+				.m_swapChain			= m_vkState().m_swapChain,
+				.m_gBufferAttachs		= m_gBufferAttachments,
+				.m_gBufferFrameBuffers	= m_gBufferFrameBuffers,
+				.m_depthImage			= m_vkState().m_depthImage,
+				.m_renderPass			= m_geometryPass
+				});
+
+			width	= m_vkState().m_swapChain.m_swapChainExtent.width;
+			height	= m_vkState().m_swapChain.m_swapChainExtent.height;
+		}
+
 		m_pass = 0;
 
 		vvh::UniformBufferFrame ubc;
