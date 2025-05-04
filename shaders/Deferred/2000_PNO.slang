@@ -56,7 +56,6 @@ struct GBufferOutput {
 GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
 {
     GBufferOutput output;
-    Camera camera = gParamsFrame.camera;
 
     output.pos      = float4(input.positionW, 1.0);
     output.norm = float4(input.normalW, 1.0);

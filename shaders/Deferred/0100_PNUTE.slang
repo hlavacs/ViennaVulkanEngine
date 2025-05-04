@@ -61,7 +61,6 @@ struct GBufferOutput {
 GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
 {
     GBufferOutput output;
-    Camera camera = gParamsFrame.camera;
 
     float4 tex = albedoSampler.Sample(input.uv);
 

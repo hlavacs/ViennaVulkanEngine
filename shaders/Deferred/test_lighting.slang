@@ -55,5 +55,5 @@ float4 main(VertexStageOutput in) : SV_Target
     float3 A = gAlbedo.Sample(in.uv).xyz;
 
     float3 l = calculateLighting(gLights, numberLights, offset, N, camera.positionW, P);
-    return float4(l * A.rgb, 1);
+    return float4(A.rgb * l, 1);
 }
