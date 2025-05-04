@@ -206,6 +206,8 @@ namespace vve {
 
 		int total{ 0 };
 		std::vector<vvh::Light> lights{ MAX_NUMBER_LIGHTS };
+		// TODO: Maybe move into separate function to not do this every frame?
+		m_numberLightsPerType = glm::ivec3{ 0 };
 		m_numberLightsPerType.x = RegisterLight<PointLight>(1.0f, lights, total);
 		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
 		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
@@ -273,7 +275,9 @@ namespace vve {
 		clearValues[2].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
 		clearValues[3].depthStencil = { 1.0f, 0 };
 
-		vvh::ComStartRecordCommandBufferClearValue({ 
+		vvh::ComBeginCommandBuffer({ cmdBuffer });
+
+		vvh::ComBeginRenderPass2({ 
 			.m_commandBuffer		= cmdBuffer,
 			.m_imageIndex			= m_vkState().m_imageIndex,
 			.m_swapChain			= m_vkState().m_swapChain,
@@ -562,13 +566,13 @@ namespace vve {
 				// TODO: colorBlendAttachment.colorWriteMask = 0xf; ???
 				// TODO: rewrite to make use for the 3 attachments clearer
 				colorBlendAttachment.colorWriteMask			= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-				colorBlendAttachment.srcColorBlendFactor	= VK_BLEND_FACTOR_ONE;
-				colorBlendAttachment.dstColorBlendFactor	= VK_BLEND_FACTOR_CONSTANT_ALPHA;
+				colorBlendAttachment.srcColorBlendFactor	= VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+				colorBlendAttachment.dstColorBlendFactor	= VK_BLEND_FACTOR_CONSTANT_COLOR;
 				colorBlendAttachment.colorBlendOp			= VK_BLEND_OP_ADD;
 				colorBlendAttachment.srcAlphaBlendFactor	= VK_BLEND_FACTOR_CONSTANT_ALPHA;
 				colorBlendAttachment.dstAlphaBlendFactor	= VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
 				colorBlendAttachment.alphaBlendOp			= VK_BLEND_OP_MAX;
-				colorBlendAttachment.blendEnable			= VK_FALSE;
+				colorBlendAttachment.blendEnable			= VK_TRUE;
 
 				vvh::RenCreateGraphicsPipeline({ 
 					.m_device					= m_vkState().m_device,
@@ -603,13 +607,13 @@ namespace vve {
 		// TODO: colorBlendAttachment.colorWriteMask = 0xf; ???
 		// TODO: rewrite to make use for the 3 attachments clearer
 		colorBlendAttachment.colorWriteMask			= VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-		colorBlendAttachment.srcColorBlendFactor	= VK_BLEND_FACTOR_ONE;
-		colorBlendAttachment.dstColorBlendFactor	= VK_BLEND_FACTOR_CONSTANT_ALPHA;
+		colorBlendAttachment.srcColorBlendFactor	= VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+		colorBlendAttachment.dstColorBlendFactor	= VK_BLEND_FACTOR_CONSTANT_COLOR;
 		colorBlendAttachment.colorBlendOp			= VK_BLEND_OP_ADD;
 		colorBlendAttachment.srcAlphaBlendFactor	= VK_BLEND_FACTOR_CONSTANT_ALPHA;
 		colorBlendAttachment.dstAlphaBlendFactor	= VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
 		colorBlendAttachment.alphaBlendOp			= VK_BLEND_OP_MAX;
-		colorBlendAttachment.blendEnable			= VK_FALSE;
+		colorBlendAttachment.blendEnable			= VK_TRUE;
 
 		vvh::RenCreateGraphicsPipeline({ 
 			.m_device					= m_vkState().m_device,
