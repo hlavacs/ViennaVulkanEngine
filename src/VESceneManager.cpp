@@ -247,10 +247,10 @@ namespace vve {
 		        std::cout << "Ambient Color: " << ambientColor.r << ambientColor .g<< ambientColor.b << ambientColor.a << std::endl;
 			}
 			aiColor4D diffuseColor;
-			if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_DIFFUSE, color.m_diffuseColor)) {
+			if (AI_SUCCESS == material->Get(AI_MATKEY_COLOR_DIFFUSE, diffuseColor)) {
 				hasColor = true;
 				color.m_diffuseColor = to_vec4(diffuseColor);
-		        std::cout << "Diffuse Color: " << color.m_diffuseColor.r << color.m_diffuseColor.g << color.m_diffuseColor.b << color.m_diffuseColor.a << std::endl;
+		        std::cout << "Diffuse Color: " << diffuseColor.r << diffuseColor.g << diffuseColor.b << diffuseColor.a << std::endl;
 			}
 			if( hasColor ) {
 				m_registry.Put(nHandle, color);

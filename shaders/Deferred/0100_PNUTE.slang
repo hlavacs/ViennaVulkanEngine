@@ -60,7 +60,7 @@ struct GBufferOutput {
 [shader("fragment")]
 GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
 {
-    GBufferOutput output;
+    GBufferOutput output = (GBufferOutput)0;
 
     float4 tex = albedoSampler.Sample(input.uv);
 
