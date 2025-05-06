@@ -64,7 +64,7 @@ GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
 
     float4 tex = albedoSampler.Sample(input.uv);
 
-    output.pos      = float4(input.positionW * 0.5 + 0.5, 1.0);
+    output.pos      = float4(input.positionW, 1.0);
     output.norm     = float4(input.normalW * 0.5 + 0.5, 0.0);
     output.albedo   = albedoSampler.Sample(input.uv);
     return output;
