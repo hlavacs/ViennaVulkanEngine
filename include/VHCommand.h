@@ -52,9 +52,14 @@ namespace vvh {
     }
 
 	//---------------------------------------------------------------------------------------------
-	//struct defined in VHBuffer.h
+	struct ComEndSingleTimeCommandsInfo {
+		const VkDevice& 		m_device;
+		const VkQueue& 			m_graphicsQueue;
+		const VkCommandPool& 	m_commandPool;
+		const VkCommandBuffer& 	m_commandBuffer;
+	};
 	
-	template<typename T>
+	template<typename T = ComEndSingleTimeCommandsInfo>
 	inline void ComEndSingleTimeCommands(T&& info) {
         vkEndCommandBuffer(info.m_commandBuffer);
 

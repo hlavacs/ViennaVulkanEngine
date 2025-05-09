@@ -29,8 +29,8 @@ namespace vve {
 		std::string m_windowName;
 		bool m_mouseButtonDown=false;
 		bool m_shiftPressed=false;
-		int m_x = -1;
-		int m_y = -1;
+		float m_x = -1;
+		float m_y = -1;
 		vecs::Handle m_cameraHandle{};
 		vecs::Handle m_cameraNodeHandle{};
 		bool m_makeScreenshot{false};

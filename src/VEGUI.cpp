@@ -115,9 +115,9 @@ namespace vve {
 		auto msg = message.template GetData<MsgMouseMove>();
 		real_t dt = (real_t)msg.m_dt;
 		if( m_x==-1 ) { m_x = msg.m_x; m_y = msg.m_y; }
-		int dx = msg.m_x - m_x;
+		float dx = msg.m_x - m_x;
 		m_x = msg.m_x;
-		int dy = msg.m_y - m_y;
+		float dy = msg.m_y - m_y;
 		m_y = msg.m_y;
 
 		auto [pn, rn, sn] = m_registry.template Get<Position&, Rotation&, Scale&>(m_cameraNodeHandle);
