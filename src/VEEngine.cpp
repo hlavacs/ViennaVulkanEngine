@@ -163,12 +163,24 @@ namespace vve {
 		return m_handleMap.contains(name);
 	}
 
-	void Engine::LoadScene(std::string& filename, aiPostProcessSteps flags ) { 
-		m_engine.SendMsg( MsgSceneLoad{ vve::Filename{filename}, flags });
+	void Engine::LoadScene(const Filename& filename, aiPostProcessSteps flags) { 
+		m_engine.SendMsg( MsgSceneLoad{ filename, flags });
 	};
 	
-	auto Engine::CreateScene() -> vecs::Handle{ return {}; };
-	auto Engine::CreateObject() -> vecs::Handle{ return {}; };
+	auto Engine::CreateScene(const Filename& filename, aiPostProcessSteps flags, ParentHandle parent, 
+							Position position, Rotation rotation, Scale scale) -> ObjectHandle {
+		ObjectHandle handle{ m_registry.Insert( position, rotation, scale) };
+        m_engine.SendMsg(MsgSceneCreate{ handle, parent, filename, flags });
+		return handle;
+	};
+
+	auto Engine::CreateObject(	const MeshName& meshName, const TextureName& textureName, ParentHandle parent, 	
+								Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle { 
+            ObjectHandle handle{ m_registry.Insert(position, rotation, scale, meshName, textureName, uvScale) };
+            m_engine.SendMsg(MsgObjectCreate{  handle, vve::ParentHandle{} });
+			return handle;
+    	};
+
 	auto Engine::CreateSpotLight() -> vecs::Handle{ return {}; };
 	auto Engine::CreateDirectionalLight() -> vecs::Handle{ return {}; };
 	auto Engine::CreatePointLight() -> vecs::Handle{ return {}; };
@@ -199,6 +211,14 @@ namespace vve {
 	void Engine::EraseTexture(){};
 	void Engine::EraseMesh(){}
 
+	void Engine::PlaySound(const Filename& filename, int mode, float volume) {
+        m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1, 50 });
+	};
+
+	void Engine::SetVolume(float volume) {
+		m_engine.SendMsg(MsgSetVolume{ (int)volume });
+
+	};
 
 };   // namespace vve
 

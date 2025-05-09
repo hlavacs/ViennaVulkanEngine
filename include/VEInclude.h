@@ -80,29 +80,55 @@ namespace vve {
    	class AssetManager;
 	class SoundManager;
 
+	//Names
 	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using SystemName = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using Filename = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using TextureName = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using NormalMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using HeightMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using LightMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using OcclusionMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using MeshName = vsty::strong_type_t<std::string, vsty::counter<>>;
 
+	//Handles
 	using ObjectHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using ParentHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using ChildHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using SiblingHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
 	using SoundHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>;
-
 	using CameraHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Camera as a unique component
-
 	using PointLightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use PointLight as a unique component
 	using DirectionalLightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use DirectionalLight as a unique component
 	using SpotLightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SpotLight as a unique component
-
 	using MeshHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
-
 	using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
 	using NormalMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use NormalMap as a unique component
 	using HeightMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use HeightMap as a unique component
 	using LightMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use LightMap as a unique component
 	using OcclusionMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use OcclusionMap as a unique component
+
+	//Geometry
+	struct VectorDefaultValue { static constexpr auto value = vec3_t{INFINITY, INFINITY, INFINITY}; };
+	struct MaxtrixDefaultValue { static constexpr auto value = mat4_t{INFINITY}; };
+
+	using Position = vsty::strong_type_t<vec3_t, vsty::counter<>, VectorDefaultValue >;
+	using Rotation = vsty::strong_type_t<mat3_t, vsty::counter<>, MaxtrixDefaultValue>;
+	using Scale = vsty::strong_type_t<vec3_t, vsty::counter<>, VectorDefaultValue>;
+	using UVScale = vsty::strong_type_t<vec2_t, vsty::counter<>>;
+	using LocalToParentMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
+	using LocalToWorldMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
+	using ViewMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
+	using ProjectionMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
+
+	//Scene
+	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
+
+	//Lights
+	using PointLight = vsty::strong_type_t<vvh::LightParams, vsty::counter<>>;
+	using DirectionalLight = vsty::strong_type_t<vvh::LightParams, vsty::counter<>>;
+	using SpotLight = vsty::strong_type_t<vvh::LightParams, vsty::counter<>>;
+
 }
 
 #include "VESystem.h"

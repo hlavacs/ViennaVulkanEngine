@@ -54,9 +54,17 @@ class MyGame : public vve::System {
 
             // ----------------- Load Plane -----------------
 
-            m_engine.SendMsg( MsgSceneLoad{ vve::Filename{plane_obj}, aiProcess_FlipWindingOrder });
+			m_engine.LoadScene( vve::Filename{plane_obj}, aiProcess_FlipWindingOrder);
 
-            auto m_handlePlane = m_registry.Insert( 
+			m_engine.CreateObject(	vve::MeshName{plane_mesh}, 
+									vve::TextureName{plane_txt}, 
+									vve::ParentHandle{}, 
+									vve::Position{vec3_t{0.0f, 0.0f, 0.0f}}, 
+									vve::Rotation{mat4_t{glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f))}}, 
+									vve::Scale{vec3_t{1000.0f, 1000.0f, 1000.0f}}, 
+									vve::UVScale{vec2_t{1000.0f, 1000.0f}});
+
+			/*auto m_handlePlane = m_registry.Insert( 
                             vve::Position{ {0.0f,0.0f,0.0f } }, 
                             vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
                             vve::Scale{vec3_t{1000.0f,1000.0f,1000.0f}}, 
@@ -66,21 +74,27 @@ class MyGame : public vve::System {
                         );
 
             m_engine.SendMsg(MsgObjectCreate{  vve::ObjectHandle(m_handlePlane), vve::ParentHandle{} });
-    
+			*/
             // ----------------- Load Cube -----------------
 
-            m_handleCube = m_registry.Insert( 
+			m_handleCube = m_engine.CreateScene(vve::Filename{cube_obj}, aiProcess_FlipWindingOrder, vve::ParentHandle{}, 
+												vve::Position{{nextRandom(), nextRandom(), 0.5f}}, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
+
+            /*m_handleCube = m_registry.Insert( 
                             vve::Position{ { nextRandom(), nextRandom(), 0.5f } }, 
                             vve::Rotation{mat3_t{1.0f}}, 
                             vve::Scale{vec3_t{1.0f}});
 
             m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_handleCube), vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder });
-
+			*/
             GetCamera();
             m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
 
-            m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1, 50 });
-			m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
+			m_engine.PlaySound(vve::Filename{"assets/sounds/dance.mp3"}, -1, 50);
+			m_engine.SetVolume(m_volume);
+
+            //m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1, 50 });
+			//m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
 
             return false;
         };

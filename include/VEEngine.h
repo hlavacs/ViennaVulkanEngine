@@ -65,9 +65,15 @@ namespace vve {
 		auto SetHandle(std::string name, vecs::Handle h) -> void;
 		auto ContainsHandle(std::string name) -> bool;
 
-		void LoadScene(std::string& name, aiPostProcessSteps flags = aiProcess_FlipWindingOrder);
-		auto CreateScene() -> vecs::Handle;
-		auto CreateObject() -> vecs::Handle;
+		void LoadScene( const Filename& name, aiPostProcessSteps flags = aiProcess_FlipWindingOrder);
+
+		auto CreateObject(	const MeshName& meshName, const TextureName& textureName, ParentHandle parent, 
+							Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle;
+		
+		auto CreateScene(	const Filename& filename, aiPostProcessSteps flags, ParentHandle parent, 
+							Position position, Rotation rotation, Scale scale) -> ObjectHandle;
+		
+		
 		auto CreateSpotLight() -> vecs::Handle;
 		auto CreateDirectionalLight() -> vecs::Handle;
 		auto CreatePointLight() -> vecs::Handle;
@@ -97,6 +103,9 @@ namespace vve {
 		void EraseMaterial();
 		void EraseTexture();
 		void EraseMesh();
+
+		void PlaySound(const Filename& filename, int mode, float volume);
+		void SetVolume(float volume);
 
 	protected:
 		virtual void CreateWindows();

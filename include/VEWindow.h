@@ -3,6 +3,9 @@
 
 namespace vve {
 
+	//-------------------------------------------------------------------------------------------------------
+	// Window base class
+
     struct WindowState {
         int 			            m_width{0};
         int 			            m_height{0};
