@@ -56,12 +56,47 @@ namespace vve {
 		void Quit();
 		void SendMsg( Message message );
 		void PrintCallbacks();
-		auto GetHandle(std::string name) -> vecs::Handle;
-		auto SetHandle(std::string name, vecs::Handle h) -> void;
-		auto ContainsHandle(std::string name) -> bool;
 		auto GetRegistry() -> auto& { return m_registry; }
 		auto GetState() { return EngineState{m_name, m_apiVersion, c_minimumVersion, c_maximumVersion, m_debug, m_initialized, m_running}; }
 		auto GetSystem(std::string name) -> System* { return m_systems[name].get(); }
+
+		//simple interface 
+		auto GetHandle(std::string name) -> vecs::Handle;
+		auto SetHandle(std::string name, vecs::Handle h) -> void;
+		auto ContainsHandle(std::string name) -> bool;
+
+		void LoadScene(std::string& name, aiPostProcessSteps flags = aiProcess_FlipWindingOrder);
+		auto CreateScene() -> vecs::Handle;
+		auto CreateObject() -> vecs::Handle;
+		auto CreateSpotLight() -> vecs::Handle;
+		auto CreateDirectionalLight() -> vecs::Handle;
+		auto CreatePointLight() -> vecs::Handle;
+		auto CreateCamera() -> vecs::Handle;
+		auto CreateCameraNode() -> vecs::Handle;
+		void EraseObject();
+		auto GetRootSceneNode() -> vecs::Handle;
+		auto GetParent() -> vecs::Handle;
+		auto SetParent() -> vecs::Handle;
+
+		auto GetLocalToParentTransform() -> mat4_t;
+		auto GetLocalToWorldTransform() -> mat4_t;
+		auto GetPosition();
+		auto GetOrientation();
+		auto GetScale();
+		auto GetUVScale();
+		auto SetLocalToParentTransform();
+		auto SetLocalToWorldTransform();
+		auto SetPosition();
+		auto SetOrientation();
+		auto SetScale();
+		auto SetUVScale();
+
+		auto CreateMesh() -> vecs::Handle;
+		auto CreateTexture() -> vecs::Handle;
+		auto CreateMaterial() -> vecs::Handle;
+		void EraseMaterial();
+		void EraseTexture();
+		void EraseMesh();
 
 	protected:
 		virtual void CreateWindows();

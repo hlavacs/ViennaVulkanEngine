@@ -130,18 +130,6 @@ namespace vve {
 		SendMsg( MsgFrameEnd{dt} ) ;
 	}
 
-	auto Engine::GetHandle(std::string name) -> vecs::Handle { 
-		return m_handleMap[name]; 
-	}
-
-	auto Engine::SetHandle(std::string name, vecs::Handle h) -> void {
-		m_handleMap[name] = h;
-	}
-
-	auto  Engine::ContainsHandle(std::string name) -> bool {
-		return m_handleMap.contains(name);
-	}
-
 	void Engine::Quit(){
 		Message( MsgQuit{} );
 	}
@@ -160,6 +148,57 @@ namespace vve {
 			std::cout << std::endl;
 		}
 	}
+
+	// simple interface
+
+	auto Engine::GetHandle(std::string name) -> vecs::Handle { 
+		return m_handleMap[name]; 
+	}
+
+	auto Engine::SetHandle(std::string name, vecs::Handle h) -> void {
+		m_handleMap[name] = h;
+	}
+
+	auto  Engine::ContainsHandle(std::string name) -> bool {
+		return m_handleMap.contains(name);
+	}
+
+	void Engine::LoadScene(std::string& filename, aiPostProcessSteps flags ) { 
+		m_engine.SendMsg( MsgSceneLoad{ vve::Filename{filename}, flags });
+	};
+	
+	auto Engine::CreateScene() -> vecs::Handle{ return {}; };
+	auto Engine::CreateObject() -> vecs::Handle{ return {}; };
+	auto Engine::CreateSpotLight() -> vecs::Handle{ return {}; };
+	auto Engine::CreateDirectionalLight() -> vecs::Handle{ return {}; };
+	auto Engine::CreatePointLight() -> vecs::Handle{ return {}; };
+	auto Engine::CreateCamera() -> vecs::Handle{ return {}; };
+	auto Engine::CreateCameraNode() -> vecs::Handle{ return {}; };
+	void Engine::EraseObject() {};
+	auto Engine::GetRootSceneNode() -> vecs::Handle{ return {}; };
+	auto Engine::GetParent() -> vecs::Handle{ return {}; };
+	auto Engine::SetParent() -> vecs::Handle{ return {}; };
+
+	auto GetLocalToParentTransform() -> mat4_t { return {}; };
+	auto GetLocalToWorldTransform() -> mat4_t { return {}; };
+	auto Engine::GetPosition(){};
+	auto Engine::GetOrientation(){};
+	auto Engine::GetScale(){};
+	auto Engine::GetUVScale(){};
+	auto SetLocalToParentTransform() {};
+	auto SetLocalToWorldTransform() {};
+	auto Engine::SetPosition(){};
+	auto Engine::SetOrientation(){};
+	auto Engine::SetScale(){};
+	auto Engine::SetUVScale(){};
+
+	auto Engine::CreateMesh() -> vecs::Handle{ return {}; };
+	auto Engine::CreateTexture() -> vecs::Handle{ return {}; };
+	auto Engine::CreateMaterial() -> vecs::Handle{ return {}; };
+	void Engine::EraseMaterial(){};
+	void Engine::EraseTexture(){};
+	void Engine::EraseMesh(){}
+
 
 };   // namespace vve
 
