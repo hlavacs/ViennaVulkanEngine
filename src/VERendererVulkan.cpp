@@ -152,6 +152,7 @@ namespace vve {
 			.m_surface 			= m_vkState().m_surface, 
 			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
 			.m_device 			= m_vkState().m_device,
+			.m_queueFamilyIndex	= m_vkState().m_queueFamilies.graphicsFamily.value(),
 			.m_commandPool 		= m_vkState().m_commandPool
 		});
 
@@ -159,6 +160,7 @@ namespace vve {
 			.m_surface 			= m_vkState().m_surface, 
 			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
 			.m_device 			= m_vkState().m_device, 
+			.m_queueFamilyIndex	= m_vkState().m_queueFamilies.graphicsFamily.value(),
 			.m_commandPool 		= m_commandPool
 		});
         
@@ -308,6 +310,17 @@ namespace vve {
 
     bool RendererVulkan::OnRenderNextFrame(Message message) {
         	
+		size_t size = m_vkState().m_commandBuffersSubmit.size();
+		if( size > m_intermediateSemaphores.size() ) {
+			vvh::SynCreateSemaphores({
+				.m_device 					= m_vkState().m_device, 
+				.m_imageAvailableSemaphores = m_imageAvailableSemaphores, 
+				.m_renderFinishedSemaphores = m_renderFinishedSemaphores, 
+				.m_size 					= size,
+				.m_intermediateSemaphores 	= m_intermediateSemaphores 
+			});
+		}
+
 		vvh::ComSubmitCommandBuffers({
 			m_vkState().m_device, 
 			m_vkState().m_graphicsQueue, 

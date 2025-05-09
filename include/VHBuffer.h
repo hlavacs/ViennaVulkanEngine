@@ -4,10 +4,10 @@
 namespace vvh {
 
 	struct ComEndSingleTimeCommandsInfo {
-		const VkDevice& m_device;
-		const VkQueue& m_graphicsQueue;
-		const VkCommandPool& m_commandPool;
-		const VkCommandBuffer& m_commandBuffer;
+		const VkDevice& 		m_device;
+		const VkQueue& 			m_graphicsQueue;
+		const VkCommandPool& 	m_commandPool;
+		const VkCommandBuffer& 	m_commandBuffer;
 	};
 
 	template<typename T = ComEndSingleTimeCommandsInfo>

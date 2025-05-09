@@ -8,17 +8,16 @@ namespace vvh {
 		const VkSurfaceKHR& 	m_surface;
 		const VkPhysicalDevice& m_physicalDevice;
 		const VkDevice& 		m_device;
+		const uint32_t&			m_queueFamilyIndex;
 		VkCommandPool& 			m_commandPool;
 	};
 
 	template<typename T = ComCreateCommandPoolinfo>
 	inline void ComCreateCommandPool(T&& info) {
-        QueueFamilyIndices queueFamilyIndices = DevFindQueueFamilies({ info.m_physicalDevice, info.m_surface });
-
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
         poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+        poolInfo.queueFamilyIndex = info.m_queueFamilyIndex; //queueFamilyIndices.graphicsFamily.value();
 
         if (vkCreateCommandPool(info.m_device, &poolInfo, nullptr, &info.m_commandPool) != VK_SUCCESS) {
             throw std::runtime_error("failed to create graphics command pool!");
@@ -171,7 +170,7 @@ namespace vvh {
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 		if(viewPorts.size() == 0) viewPorts.push_back(viewport);
-		vkCmdSetViewport(info.m_commandBuffer, 0, viewPorts.size(), viewPorts.data());
+		vkCmdSetViewport(info.m_commandBuffer, 0, (uint32_t)viewPorts.size(), viewPorts.data());
   
 
 		std::vector<VkRect2D> scissors = info.m_scissors;
@@ -179,7 +178,7 @@ namespace vvh {
 		scissor.offset = {0, 0};
 		scissor.extent = info.m_swapChain.m_swapChainExtent;
 		if(scissors.size() == 0) scissors.push_back(scissor);
-		vkCmdSetScissor(info.m_commandBuffer, 0, scissors.size(), scissors.data());
+		vkCmdSetScissor(info.m_commandBuffer, 0, (uint32_t)scissors.size(), scissors.data());
 
 		vkCmdSetBlendConstants(info.m_commandBuffer, &info.m_blendConstants[0]);
 
@@ -259,15 +258,6 @@ namespace vvh {
 	inline void ComSubmitCommandBuffers(T&& info) {
 
 		size_t size = info.m_commandBuffers.size();
-		if( size > info.m_intermediateSemaphores.size() ) {
-			vvh::SynCreateSemaphores({
-				.m_device = info.m_device, 
-				.m_imageAvailableSemaphores = info.m_imageAvailableSemaphores, 
-				.m_renderFinishedSemaphores = info.m_renderFinishedSemaphores, 
-				.m_size 					= size,
-				.m_intermediateSemaphores 	= info.m_intermediateSemaphores 
-			});
-		}
 
 		vkResetFences(info.m_device, 1, &info.m_fences[info.m_currentFrame]);
 
@@ -295,7 +285,7 @@ namespace vvh {
 
 			waitSemaphore = &info.m_intermediateSemaphores[i].m_renderFinishedSemaphores[info.m_currentFrame];
 		}
-		  if (vkQueueSubmit(info.m_graphicsQueue, submitInfos.size(), submitInfos.data(), fence) != VK_SUCCESS) {
+		  if (vkQueueSubmit(info.m_graphicsQueue, (uint32_t)submitInfos.size(), submitInfos.data(), fence) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
 	}

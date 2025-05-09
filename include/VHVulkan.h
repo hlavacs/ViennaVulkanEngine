@@ -297,9 +297,9 @@ namespace vvh {
 
 }
 
+#include "VHCommand.h"
 #include "VHBuffer.h"
 #include "VHImage.h"
 #include "VHDevice.h"
 #include "VHSync.h"
-#include "VHCommand.h"
 #include "VHRender.h"
