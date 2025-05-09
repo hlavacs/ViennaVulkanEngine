@@ -39,24 +39,24 @@ namespace vve {
 
 		auto engineState = m_engine.GetState();
 
-		if (engineState.debug) {
+		if (engineState.m_debug) {
             m_instanceExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
         }
 
 		volkInitialize();
-		m_vkState().m_apiVersionInstance = engineState.apiVersion;
+		m_vkState().m_apiVersionInstance = engineState.m_apiVersion;
     	vvh::DevCreateInstance( {
 			.m_validationLayers 	= m_validationLayers, 
 			.m_instanceExtensions 	= m_instanceExtensions, 
-			.m_name 				= engineState.name, 
-			.m_apiVersion 			= engineState.apiVersion, 
-			.m_debug 				= engineState.debug, 
+			.m_name 				= engineState.m_name, 
+			.m_apiVersion 			= engineState.m_apiVersion, 
+			.m_debug 				= engineState.m_debug, 
 			.m_instance 			= m_vkState().m_instance
 		});
 		
 		volkLoadInstance(m_vkState().m_instance);
 
-		if (engineState.debug) {
+		if (engineState.m_debug) {
 	        vvh::DevSetupDebugMessenger(m_vkState().m_instance, m_vkState().m_debugMessenger );
 		}
 
@@ -64,7 +64,7 @@ namespace vve {
             printf("Failed to create Vulkan surface.\n");
         }
 
-		m_vkState().m_apiVersionDevice = engineState.minimumVersion;
+		m_vkState().m_apiVersionDevice = engineState.m_minimumVersion;
         
 		vvh::DevPickPhysicalDevice( {
 			.m_instance 		= m_vkState().m_instance, 
@@ -75,14 +75,14 @@ namespace vve {
 		});
 		
 		
-		uint32_t minor = std::min( VK_VERSION_MINOR(m_vkState().m_apiVersionDevice), VK_VERSION_MINOR(engineState.apiVersion) );
-		minor = std::min( minor, VK_VERSION_MINOR(engineState.maximumVersion));
-		if( minor < VK_VERSION_MINOR(engineState.minimumVersion) ) {
-			std::cout << "No device found with Vulkan API version at least 1." << VK_VERSION_MINOR(engineState.minimumVersion) << "!\n";
+		uint32_t minor = std::min( VK_VERSION_MINOR(m_vkState().m_apiVersionDevice), VK_VERSION_MINOR(engineState.m_apiVersion) );
+		minor = std::min( minor, VK_VERSION_MINOR(engineState.m_maximumVersion));
+		if( minor < VK_VERSION_MINOR(engineState.m_minimumVersion) ) {
+			std::cout << "No device found with Vulkan API version at least 1." << VK_VERSION_MINOR(engineState.m_minimumVersion) << "!\n";
 			exit(1);
 		}
-		engineState.apiVersion = VK_MAKE_VERSION( VK_VERSION_MAJOR(engineState.apiVersion), minor, 0);
-		std::cout << "Selecting Vulkan API version 1." << VK_VERSION_MINOR(engineState.apiVersion) << "\n";
+		engineState.m_apiVersion = VK_MAKE_VERSION( VK_VERSION_MAJOR(engineState.m_apiVersion), minor, 0);
+		std::cout << "Selecting Vulkan API version 1." << VK_VERSION_MINOR(engineState.m_apiVersion) << "\n";
 		vkGetPhysicalDeviceProperties(m_vkState().m_physicalDevice, &m_vkState().m_physicalDeviceProperties);
 		vkGetPhysicalDeviceFeatures(m_vkState().m_physicalDevice, &m_vkState().m_physicalDeviceFeatures);
 
@@ -91,7 +91,7 @@ namespace vve {
 			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
 			.m_validationLayers = m_validationLayers, 
 			.m_deviceExtensions = m_deviceExtensions, 
-			.m_debug 			= engineState.debug, 
+			.m_debug 			= engineState.m_debug, 
 			.m_queueFamilies 	= m_vkState().m_queueFamilies, 
 			.m_device 			= m_vkState().m_device, 
 			.m_graphicsQueue 	= m_vkState().m_graphicsQueue, 
@@ -104,7 +104,7 @@ namespace vve {
 			.m_instance 		= m_vkState().m_instance, 
 			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
 			.m_device 			= m_vkState().m_device, 
-			.m_apiVersion 		= engineState.apiVersion, 
+			.m_apiVersion 		= engineState.m_apiVersion, 
 			.m_vmaAllocator 	= m_vkState().m_vmaAllocator
 		});  
 
@@ -450,7 +450,7 @@ namespace vve {
 
         vkDestroySurfaceKHR(m_vkState().m_instance, m_vkState().m_surface, nullptr);
 
-		if (m_engine.GetState().debug) {
+		if (m_engine.GetState().m_debug) {
             vvh::DevDestroyDebugUtilsMessengerEXT({
 				.m_instance 		= m_vkState().m_instance, 
 				.m_debugMessenger 	= m_vkState().m_debugMessenger, 

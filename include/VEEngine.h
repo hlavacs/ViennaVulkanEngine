@@ -17,13 +17,13 @@ namespace vve {
 	public:
 
 		struct EngineState {
-			const std::string& name;
-			uint32_t& apiVersion;
-			uint32_t minimumVersion = c_minimumVersion;
-			uint32_t maximumVersion = c_maximumVersion;
-			bool debug;		
-			bool initialized;
-			bool running;	
+			const std::string& m_name;
+			uint32_t& 	m_apiVersion;
+			uint32_t	m_minimumVersion = c_minimumVersion;
+			uint32_t 	m_maximumVersion = c_maximumVersion;
+			bool 		m_debug;		
+			bool 		m_initialized;
+			bool 		m_running;	
 		};
 
 		const std::string m_windowName = "VVE Window";
