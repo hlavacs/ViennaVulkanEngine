@@ -65,7 +65,7 @@ namespace vve {
 		auto SetHandle(std::string name, vecs::Handle h) -> void;
 		auto ContainsHandle(std::string name) -> bool;
 
-		void LoadScene( const Filename& name, aiPostProcessSteps flags = aiProcess_FlipWindingOrder);
+		void LoadScene( const Filename& name, aiPostProcessSteps flags = aiProcess_Triangulate);
 
 		auto CreateObject(	const MeshName& meshName, const TextureName& textureName, ParentHandle parent, 
 							Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle;

@@ -36,7 +36,20 @@ public:
 		std::cout << "Loading level: " << msg.m_level << std::endl;
 		std::string level = std::string("Level: ") + msg.m_level;
 
-		m_engine.SendMsg( MsgSceneLoad{ vve::Filename{"assets/test/plane/plane_t_n_s.obj"}, aiProcess_FlipWindingOrder });
+		m_engine.LoadScene( vve::Filename{"assets/test/plane/plane_t_n_s.obj"}, aiProcess_FlipWindingOrder);
+
+		m_engine.CreateObject(	vve::MeshName{"assets/test/plane/plane_t_n_s.obj/plane"}, 
+								vve::TextureName{"assets/test/plane/grass.jpg"}, 
+								vve::ParentHandle{}, 
+								vve::Position{vec3_t{0.0f, 0.0f, 0.0f}}, 
+								vve::Rotation{mat4_t{glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f))}}, 
+								vve::Scale{vec3_t{1000.0f, 1000.0f, 1000.0f}}, 
+								vve::UVScale{vec2_t{1000.0f, 1000.0f}});
+
+		m_engine.LoadScene(vve::Filename{"assets/standard/sphere.obj"} );		
+
+		/*m_engine.SendMsg( MsgSceneLoad{ vve::Filename{"assets/test/plane/plane_t_n_s.obj"}, aiProcess_FlipWindingOrder });
+
 		m_planeHandle = m_registry.Insert( 
 						vve::Position{ {0.0f,0.0f,0.0f } }, 
 						vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
@@ -46,10 +59,10 @@ public:
 						vve::UVScale{ { 1000.0f, 1000.0f } }
 					);
 		m_engine.SendMsg(MsgObjectCreate{  vve::ObjectHandle(m_planeHandle), vve::ParentHandle{} });
+		*/
 
-
-		m_engine.SendMsg( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
-
+		//m_engine.SendMsg( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
+		
 		int num_point_lights = 10;
 		for( int i=0; i<num_point_lights; ++i) {
 			float intensity1 = 0.8f;
@@ -88,7 +101,7 @@ public:
 		static float x = 0.0f, y = 0.0f;
 
         {
-            ImGui::Begin("Load Object");                          // Create a window called "Hello, world!" and append into it.		
+            ImGui::Begin("Load Object");    
 			ImGui::PushItemWidth(300);
 			static char* file_dialog_buffer = nullptr;
 			{
@@ -117,10 +130,9 @@ public:
 	            if (ImGui::Button("Create##Create1")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)				
 					
 					auto handle = m_registry.Insert( vve::Position{ { x, y, 0.1f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}}); 
-					m_handles.push( handle );
+					m_engine.SendMsg( MsgSceneCreate{	 vve::ObjectHandle{handle}, vve::ParentHandle{}, vve::Filename{path_obj}, flags });
 
-					m_engine.SendMsg( 
-						MsgSceneCreate{	 vve::ObjectHandle{handle}, vve::ParentHandle{}, vve::Filename{path_obj}, flags });
+					m_handles.push( handle );
 					x += 2.0f;
 				}
 			}
@@ -151,13 +163,14 @@ public:
 				ImGui::SameLine();
 	            if (ImGui::Button("Create##Create2")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
 
-					m_engine.SendMsg( MsgSceneLoad{ vve::Filename{path_obj2}, flags });		
-					vvh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.2f, 0.2f, 0.2f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets/standard/sphere.obj/sphere"} );
-					m_handles.push( handle );
+					m_engine.LoadScene(vve::Filename{path_obj2}, flags);
 
+					vvh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.2f, 0.2f, 0.2f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+					
+					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets/standard/sphere.obj/sphere"} );
 					m_engine.SendMsg(MsgObjectCreate{  vve::ObjectHandle(handle), vve::ParentHandle{} });
 
+					m_handles.push( handle );
 					x += 2.0f;		
 				}
 			}
@@ -188,14 +201,14 @@ public:
 	            if (ImGui::Button("Create##Create3")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
 
 					auto handle = m_registry.Insert( vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
-					m_handles.push( handle );
-
 					m_engine.SendMsg( 
 						MsgSceneCreate{
 							vve::ObjectHandle( handle ), 
 							vve::ParentHandle{}, 
 							vve::Filename{path_obj3},
 							flags });
+
+					m_handles.push( handle );
 					x += 2.0f;		
 				}
 			}
