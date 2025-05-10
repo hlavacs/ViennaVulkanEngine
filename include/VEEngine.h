@@ -104,7 +104,7 @@ namespace vve {
 		void EraseTexture();
 		void EraseMesh();
 
-		void PlaySound(const Filename& filename, int mode, float volume);
+		void PlaySound(const Filename& filename, int mode, float volume=100);
 		void SetVolume(float volume);
 
 	protected:

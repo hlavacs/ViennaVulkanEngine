@@ -212,7 +212,7 @@ namespace vve {
 	void Engine::EraseMesh(){}
 
 	void Engine::PlaySound(const Filename& filename, int mode, float volume) {
-        m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1, 50 });
+        m_engine.SendMsg(MsgPlaySound{ filename, mode, (int)volume });
 	};
 
 	void Engine::SetVolume(float volume) {
