@@ -38,15 +38,15 @@ VertexStageOutput main(
     float2 uv           : TEXCOORD,
     float3 tangentL     : TANGENT)
 {
-    VertexStageOutput output = (VertexStageOutput)0;
-    float3 positionW = mul(gParamsObject.model, float4(positionL, 1.0)).xyz;
-    float3 positionV = mul(gParamsFrame.camera.view, float4(positionW, 1.0)).xyz;
+    VertexStageOutput output = {};
+    float3 worldPosition    = mul(gParamsObject.model, float4(positionL, 1.0)).xyz;
+    float3 viewPosition     = mul(gParamsFrame.camera.view, float4(worldPosition, 1.0)).xyz;
 
-    output.coarseVertex.positionW   = positionW;
+    output.coarseVertex.positionW   = worldPosition;
     output.coarseVertex.normalW     = mul(gParamsObject.modelInvTranspose, float4(normalL, 0.0)).xyz;
     output.coarseVertex.uv          = gParamsObject.uvscale * uv;
     output.coarseVertex.tangentW    = mul(gParamsObject.model, float4(tangentL, 1.0)).xyz;
-    output.sv_position              = mul(gParamsFrame.camera.proj, float4(positionV, 1.0));
+    output.sv_position              = mul(gParamsFrame.camera.proj, float4(viewPosition, 1.0));
 
     return output;
 }
@@ -60,7 +60,7 @@ struct GBufferOutput {
 [shader("fragment")]
 GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
 {
-    GBufferOutput output = (GBufferOutput)0;
+    GBufferOutput output = {};
 
     float4 tex = albedoSampler.Sample(input.uv);
 

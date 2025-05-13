@@ -8,7 +8,7 @@ struct VertexStageOutput {
 [shader("vertex")]
 VertexStageOutput main(uint vertexID : SV_VertexID)
 {
-    VertexStageOutput output = (VertexStageOutput)0;
+    VertexStageOutput output = {};
 
     float2 pos[3] = {
         float2(-1, -1),

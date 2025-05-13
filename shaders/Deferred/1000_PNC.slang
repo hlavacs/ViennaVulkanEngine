@@ -36,8 +36,8 @@ VertexStageOutput main(
     float3 worldPosition    = mul(gParamsObject.model, float4(position, 1.0)).xyz;
     float3 viewPosition     = mul(gParamsFrame.camera.view, float4(worldPosition, 1.0)).xyz;
 
-    VertexStageOutput output;
-    output.coarseVertex.positionW   = mul(gParamsObject.model, float4(position, 1.0)).xyz;
+    VertexStageOutput output = {};
+    output.coarseVertex.positionW   = worldPosition;
     output.coarseVertex.normalW     = mul(gParamsObject.modelInvTranspose, float4(normal, 0.0)).xyz;
     output.coarseVertex.fragColor   = color;
     output.sv_position              = mul(gParamsFrame.camera.proj, float4(viewPosition, 1.0));
@@ -56,7 +56,7 @@ struct GBufferOutput {
 [shader("fragment")]
 GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
 {
-    GBufferOutput output = (GBufferOutput)0;
+    GBufferOutput output = {};
 
     output.pos      = float4(input.positionW, 1.0);
     output.norm     = float4(input.normalW * 0.5 + 0.5, 0.0);
