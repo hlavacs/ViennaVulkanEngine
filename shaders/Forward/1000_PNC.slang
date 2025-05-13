@@ -41,18 +41,18 @@ LightOffset offset;
 
 [shader("vertex")]
 VertexStageOutput vertexMain(
-    float3 position: POSITION,
-    float3 normal: NORMAL,
+    float3 positionL: POSITION,
+    float3 normalL: NORMAL,
     float4 color: COLOR)
 {
-    float3 worldPosition = mul(gParamsObject.model, float4(position, 1.0)).xyz;
-    float3 viewPosition = mul(gParamsFrame.camera.view, float4(worldPosition, 1.0)).xyz;
+    float3 PositionW = mul(gParamsObject.model, float4(positionL, 1.0)).xyz;
+    float3 PositionV = mul(gParamsFrame.camera.view, float4(PositionW, 1.0)).xyz;
 
     VertexStageOutput output;
-    output.coarseVertex.positionW = mul(gParamsObject.model, float4(normal, 1.0)).xyz;
-    output.coarseVertex.normalW = mul(gParamsObject.modelInvTranspose, float4(normal, 1.0)).xyz;
+    output.coarseVertex.positionW = PositionW;
+    output.coarseVertex.normalW = mul(gParamsObject.modelInvTranspose, float4(normalL, 1.0)).xyz;
     output.coarseVertex.fragColor = color;
-    output.sv_position = mul(gParamsFrame.camera.proj, float4(viewPosition, 1.0));
+    output.sv_position = mul(gParamsFrame.camera.proj, float4(PositionV, 1.0));
 
     return output;
 }
