@@ -46,22 +46,7 @@ public:
 								vve::Scale{vec3_t{1000.0f, 1000.0f, 1000.0f}}, 
 								vve::UVScale{vec2_t{1000.0f, 1000.0f}});
 
-		m_engine.LoadScene(vve::Filename{"assets/standard/sphere.obj"} );		
-
-		/*m_engine.SendMsg( MsgSceneLoad{ vve::Filename{"assets/test/plane/plane_t_n_s.obj"}, aiProcess_FlipWindingOrder });
-
-		m_planeHandle = m_registry.Insert( 
-						vve::Position{ {0.0f,0.0f,0.0f } }, 
-						vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
-						vve::Scale{vec3_t{1000.0f,1000.0f,1000.0f}}, 
-						vve::MeshName{"assets/test/plane/plane_t_n_s.obj/plane"},
-						vve::TextureName{"assets/test/plane/grass.jpg"},
-						vve::UVScale{ { 1000.0f, 1000.0f } }
-					);
-		m_engine.SendMsg(MsgObjectCreate{  vve::ObjectHandle(m_planeHandle), vve::ParentHandle{} });
-		*/
-
-		//m_engine.SendMsg( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
+		m_engine.LoadScene(vve::Filename{"assets/standard/sphere.obj"} );			
 		
 		int num_point_lights = 10;
 		for( int i=0; i<num_point_lights; ++i) {
@@ -129,9 +114,13 @@ public:
 				ImGui::SameLine();
 	            if (ImGui::Button("Create##Create1")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)				
 					
-					auto handle = m_registry.Insert( vve::Position{ { x, y, 0.1f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}}); 
-					m_engine.SendMsg( MsgSceneCreate{	 vve::ObjectHandle{handle}, vve::ParentHandle{}, vve::Filename{path_obj}, flags });
-
+					auto handle = m_engine.CreateScene(vve::Filename{path_obj}, 
+							flags, 
+							vve::ParentHandle{}, 	
+							vve::Position{ { x, y, 0.1f } }, 
+							vve::Rotation{mat3_t{1.0f}}, 
+							vve::Scale{vec3_t{1.0f}});
+					
 					m_handles.push( handle );
 					x += 2.0f;
 				}
@@ -167,9 +156,14 @@ public:
 
 					vvh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.2f, 0.2f, 0.2f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 					
-					auto handle = m_registry.Insert(vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{0.05f}}, color, vve::MeshName{"assets/standard/sphere.obj/sphere"} );
-					m_engine.SendMsg(MsgObjectCreate{  vve::ObjectHandle(handle), vve::ParentHandle{} });
-
+					auto handle = m_engine.CreateObject(vve::MeshName{"assets/standard/sphere.obj/sphere"}, 
+														color, 
+														vve::ParentHandle{}, 
+														vve::Position{ { x, y, 0.5f } }, 
+														vve::Rotation{mat3_t{1.0f}}, 
+														vve::Scale{vec3_t{0.05f}},
+														vve::UVScale{vec2_t{1.0f}});
+														
 					m_handles.push( handle );
 					x += 2.0f;		
 				}
@@ -200,14 +194,12 @@ public:
 				ImGui::SameLine();
 	            if (ImGui::Button("Create##Create3")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
 
-					auto handle = m_registry.Insert( vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
-					m_engine.SendMsg( 
-						MsgSceneCreate{
-							vve::ObjectHandle( handle ), 
-							vve::ParentHandle{}, 
-							vve::Filename{path_obj3},
-							flags });
 
+					auto handle = m_engine.CreateScene(vve::Filename{path_obj3}, 
+							flags, 
+							vve::ParentHandle{}, 	
+							vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
+					
 					m_handles.push( handle );
 					x += 2.0f;		
 				}
@@ -217,7 +209,8 @@ public:
 				if (ImGui::Button("Erase one ##Erase1")) {
 					if( !m_handles.empty() ) {
 						auto handle = m_handles.top();
-						m_engine.SendMsg(MsgObjectDestroy(vve::ObjectHandle(handle)));
+
+						m_engine.DestroyObject(vve::ObjectHandle(handle));
 						m_handles.pop();
 						x -= 2.0f;
 					}

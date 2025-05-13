@@ -69,17 +69,20 @@ namespace vve {
 
 		auto CreateObject(	const MeshName& meshName, const TextureName& textureName, ParentHandle parent, 
 							Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle;
-		
+
+		auto CreateObject(	const MeshName& meshName, const vvh::Color color, ParentHandle parent, 
+							Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle;
+
 		auto CreateScene(	const Filename& filename, aiPostProcessSteps flags, ParentHandle parent, 
 							Position position, Rotation rotation, Scale scale) -> ObjectHandle;
 		
+		void DestroyObject(ObjectHandle handle);
 		
 		auto CreateSpotLight() -> vecs::Handle;
 		auto CreateDirectionalLight() -> vecs::Handle;
 		auto CreatePointLight() -> vecs::Handle;
 		auto CreateCamera() -> vecs::Handle;
 		auto CreateCameraNode() -> vecs::Handle;
-		void EraseObject();
 		auto GetRootSceneNode() -> vecs::Handle;
 		auto GetParent() -> vecs::Handle;
 		auto SetParent() -> vecs::Handle;

@@ -149,6 +149,7 @@ namespace vve {
 		}
 	}
 
+	//-----------------------------------------------------------------------------------------------------------------------
 	// simple interface
 
 	auto Engine::GetHandle(std::string name) -> vecs::Handle { 
@@ -174,6 +175,13 @@ namespace vve {
 		return handle;
 	};
 
+	auto Engine::CreateObject(	const MeshName& meshName, vvh::Color color, ParentHandle parent, 	
+								Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle { 
+            ObjectHandle handle{ m_registry.Insert(position, rotation, scale, color, meshName, uvScale) };
+            m_engine.SendMsg(MsgObjectCreate{  handle, vve::ParentHandle{} });
+			return handle;
+    	};
+
 	auto Engine::CreateObject(	const MeshName& meshName, const TextureName& textureName, ParentHandle parent, 	
 								Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle { 
             ObjectHandle handle{ m_registry.Insert(position, rotation, scale, meshName, textureName, uvScale) };
@@ -181,12 +189,15 @@ namespace vve {
 			return handle;
     	};
 
+	void Engine::DestroyObject(ObjectHandle handle) {
+		m_engine.SendMsg(MsgObjectDestroy{handle});
+	};
+
 	auto Engine::CreateSpotLight() -> vecs::Handle{ return {}; };
 	auto Engine::CreateDirectionalLight() -> vecs::Handle{ return {}; };
 	auto Engine::CreatePointLight() -> vecs::Handle{ return {}; };
 	auto Engine::CreateCamera() -> vecs::Handle{ return {}; };
 	auto Engine::CreateCameraNode() -> vecs::Handle{ return {}; };
-	void Engine::EraseObject() {};
 	auto Engine::GetRootSceneNode() -> vecs::Handle{ return {}; };
 	auto Engine::GetParent() -> vecs::Handle{ return {}; };
 	auto Engine::SetParent() -> vecs::Handle{ return {}; };
