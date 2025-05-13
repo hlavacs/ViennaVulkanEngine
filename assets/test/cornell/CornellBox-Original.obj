@@ -12,6 +12,7 @@
 mtllib CornellBox-Original.mtl
 
 ## Object floor
+o floor
 v  -1.01  0.00   0.99
 v   1.00  0.00   0.99
 v   1.00  0.00  -1.04
@@ -22,6 +23,7 @@ usemtl floor
 f -4 -3 -2 -1
 
 ## Object ceiling 
+o ceiling
 v  -1.02  1.99   0.99  
 v  -1.02  1.99  -1.04
 v   1.00  1.99  -1.04
@@ -32,6 +34,7 @@ usemtl ceiling
 f -4 -3 -2 -1
 
 ## Object backwall  
+o backWall
 v  -0.99  0.00  -1.04 
 v   1.00  0.00  -1.04
 v   1.00  1.99  -1.04
@@ -42,6 +45,7 @@ usemtl backWall
 f -4 -3 -2 -1
 
 ## Object rightwall 
+o rightWall
 v	1.00  0.00  -1.04   
 v	1.00  0.00   0.99
 v	1.00  1.99   0.99
@@ -52,6 +56,7 @@ usemtl rightWall
 f -4 -3 -2 -1
 
 ## Object leftWall   
+o leftWall
 v  -1.01  0.00   0.99
 v  -0.99  0.00  -1.04
 v  -1.02  1.99  -1.04
@@ -62,6 +67,7 @@ usemtl leftWall
 f -4 -3 -2 -1
 
 ## Object shortBox 
+o shortBox
 usemtl shortBox
 
 # Top Face 
@@ -110,6 +116,7 @@ g shortBox
 usemtl shortBox
 
 ## Object tallBox 
+o tallBox
 usemtl tallBox
 
 # Top Face
@@ -158,6 +165,7 @@ g tallBox
 usemtl tallBox
 
 ## Object light 
+o light
 v	-0.24  1.98   0.16
 v	-0.24  1.98  -0.22
 v	 0.23  1.98  -0.22
