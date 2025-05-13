@@ -303,7 +303,7 @@ namespace vve {
 		auto cmdBuffer = cmdBuffers[0];
 
 		std::vector<VkClearValue> clearValues(4);
-		glm::vec4 clearColor{ 0,0,1,0 };
+		glm::vec4 clearColor{ 0,0,0,1 };
 
 		clearValues[0].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
 		clearValues[1].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
@@ -661,9 +661,9 @@ namespace vve {
 			.m_specializationConstants	= { MAX_NUMBER_LIGHTS },
 			.m_pushConstantRanges		= { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
 			.m_blendAttachments			= { colorBlendAttachment },
-			.m_graphicsPipeline			= m_lightingPipeline
+			.m_graphicsPipeline			= m_lightingPipeline,
 			// TODO : Check if this change affects something, was : bool depthWrite
-			/*false*/
+			.m_depthWrite				= false
 			});
 	}
 

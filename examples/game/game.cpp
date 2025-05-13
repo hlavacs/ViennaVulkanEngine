@@ -93,8 +93,8 @@ class MyGame : public vve::System {
             );
             m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_handleCornell), vve::ParentHandle{}, vve::Filename{cornell_obj}, aiProcess_PreTransformVertices });
             // cornell camera position
-            m_registry.Get<vve::Position&>(m_cameraHandle)().z += 0.46;
-            m_registry.Get<vve::Position&>(m_cameraHandle)().y -= 1.2;
+            m_registry.Get<vve::Position&>(m_cameraHandle)().z += 0.46f;
+            m_registry.Get<vve::Position&>(m_cameraHandle)().y -= 1.2f;
 
             return false;
         };
