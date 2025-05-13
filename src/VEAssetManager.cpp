@@ -21,19 +21,6 @@ namespace vve {
 
     AssetManager::~AssetManager() {}
 
-	void dumpNode(const aiNode* node, unsigned depth = 0) {
-		std::string indent(depth * 2, ' ');
-		std::cout
-			<< indent
-			<< "Node '" << node->mName.C_Str()
-			<< "' — meshes: " << node->mNumMeshes
-			<< " — children: " << node->mNumChildren
-			<< std::endl;
-
-		for (unsigned i = 0; i < node->mNumChildren; ++i)
-			dumpNode(node->mChildren[i], depth + 1);
-	}
-
 	bool AssetManager::OnSceneCreate( Message& message ) {
 		auto& msg = message.template GetData<MsgSceneCreate>();
 		auto flags = msg.m_ai_flags;
@@ -45,7 +32,6 @@ namespace vve {
 			else if( !m_fileNameMap.contains(msg.m_sceneName())) { SceneLoad(msg.m_sceneName, msg.m_scene); }
 			return false;
 		}
-		dumpNode(msg.m_scene->mRootNode);
 		aiReleaseImport(msg.m_scene); //last phase -> release the scene
 		return true;
 	}
