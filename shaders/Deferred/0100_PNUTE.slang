@@ -39,14 +39,14 @@ VertexStageOutput main(
     float3 tangentL     : TANGENT)
 {
     VertexStageOutput output = {};
-    float3 worldPosition    = mul(gParamsObject.model, float4(positionL, 1.0)).xyz;
-    float3 viewPosition     = mul(gParamsFrame.camera.view, float4(worldPosition, 1.0)).xyz;
+    float3 positionW        = mul(gParamsObject.model, float4(positionL, 1.0)).xyz;
+    float3 positionV        = mul(gParamsFrame.camera.view, float4(positionW, 1.0)).xyz;
 
-    output.coarseVertex.positionW   = worldPosition;
+    output.coarseVertex.positionW   = positionW;
     output.coarseVertex.normalW     = mul(gParamsObject.modelInvTranspose, float4(normalL, 0.0)).xyz;
     output.coarseVertex.uv          = gParamsObject.uvscale * uv;
     output.coarseVertex.tangentW    = mul(gParamsObject.model, float4(tangentL, 1.0)).xyz;
-    output.sv_position              = mul(gParamsFrame.camera.proj, float4(viewPosition, 1.0));
+    output.sv_position              = mul(gParamsFrame.camera.proj, float4(positionV, 1.0));
 
     return output;
 }

@@ -1,8 +1,8 @@
 import Common;
 
 struct VertexStageOutput {
-    float4 position : SV_Position;
-    float2 uv       : TEXCOORD0;
+    float4 sv_position : SV_Position;
+    float2 uv        : TEXCOORD0;
 };
 
 [shader("vertex")]
@@ -15,8 +15,8 @@ VertexStageOutput main(uint vertexID : SV_VertexID)
         float2(-1,  3),
         float2( 3, -1)
     };
-    output.position = float4(pos[vertexID], 0.0, 1.0);
-    output.uv = (pos[vertexID] + 1.0) * 0.5;
+    output.sv_position  = float4(pos[vertexID], 0.0, 1.0);
+    output.uv           = (pos[vertexID] + 1.0) * 0.5;
     return output;
 }
 

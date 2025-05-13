@@ -29,18 +29,18 @@ ConstantBuffer<UniformBufferObject> gParamsObject;
 
 [shader("vertex")]
 VertexStageOutput main(
-    float3 position : POSITION,
-    float3 normal   : NORMAL,
-    float4 color    : COLOR)
+    float3 positionL : POSITION,
+    float3 normalL   : NORMAL,
+    float4 color     : COLOR)
 {
-    float3 worldPosition    = mul(gParamsObject.model, float4(position, 1.0)).xyz;
-    float3 viewPosition     = mul(gParamsFrame.camera.view, float4(worldPosition, 1.0)).xyz;
+    float3 positionW = mul(gParamsObject.model, float4(positionL, 1.0)).xyz;
+    float3 positionV = mul(gParamsFrame.camera.view, float4(positionW, 1.0)).xyz;
 
     VertexStageOutput output = {};
-    output.coarseVertex.positionW   = worldPosition;
-    output.coarseVertex.normalW     = mul(gParamsObject.modelInvTranspose, float4(normal, 0.0)).xyz;
+    output.coarseVertex.positionW   = positionW;
+    output.coarseVertex.normalW     = mul(gParamsObject.modelInvTranspose, float4(normalL, 0.0)).xyz;
     output.coarseVertex.fragColor   = color;
-    output.sv_position              = mul(gParamsFrame.camera.proj, float4(viewPosition, 1.0));
+    output.sv_position              = mul(gParamsFrame.camera.proj, float4(positionV , 1.0));
 
     return output;
 }
