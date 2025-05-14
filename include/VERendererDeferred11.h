@@ -6,7 +6,7 @@ namespace vve {
 
 		friend class RendererDeferred;
 
-		enum GBufferIndex { POSITION = 0, NORMAL = 1, ALBEDO = 2 };
+		enum GBufferIndex { POSITION = 0, NORMAL = 1, ALBEDO = 2, DEPTH = 3 };
 
 		struct PipelinePerType {
 			std::string m_type;

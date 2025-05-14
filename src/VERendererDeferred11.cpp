@@ -188,7 +188,7 @@ namespace vve {
 		vvh::RenUpdateDescriptorSetDepthAttachment({
 			.m_device				= m_vkState().m_device,
 			.m_depthImage			= m_vkState().m_depthImage,
-			.m_binding				= 3,
+			.m_binding				= DEPTH,
 			.m_descriptorSet		= m_descriptorSetComposition,
 			.m_sampler				= m_sampler
 			});
