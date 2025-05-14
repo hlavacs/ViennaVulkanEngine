@@ -50,19 +50,18 @@ LightOffset offset;
 [shader("fragment")]
 float4 main(VertexStageOutput in) : SV_Target
 {
+    float depth = gDepth.Sample(in.uv);
+    if (depth >= 0.999) { // sky, nothing was drawn
+        discard;
+    }
+
     Camera camera = gParamsFrame.camera;
     uint3 numberLights = gParamsFrame.numberLights;
-
-    float depth = gDepth.Sample(in.uv);
 
     float3 P = gPosition.Sample(in.uv).xyz;
     // TODO: check formats, is * 2 - float3(1.0, 1.0, 1.0) needed?
     float3 N = (gNormal.Sample(in.uv).xyz) * 2 - float3(1.0, 1.0, 1.0);
     float3 A = gAlbedo.Sample(in.uv).xyz;
-
-    if (depth >= 0.999) { // sky, nothing was drawn
-        discard;
-    }
 
     float3 l = calculateLighting(gLights, numberLights, offset, N, camera.positionW, P);
     return float4(A.rgb * l, 1.0);
