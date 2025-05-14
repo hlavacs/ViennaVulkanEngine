@@ -65,7 +65,7 @@ namespace vve {
 					.stageFlags		= VK_SHADER_STAGE_FRAGMENT_BIT },
 				{	// Binding 3 : Depth
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+					.stageFlags		= VK_SHADER_STAGE_FRAGMENT_BIT },
 			},
 			.m_descriptorSetLayout	= m_descriptorSetLayoutComposition
 			});
@@ -581,6 +581,9 @@ namespace vve {
 		vkDestroyPipeline(m_vkState().m_device, m_lightingPipeline.m_pipeline, nullptr);
 		vkDestroyPipelineLayout(m_vkState().m_device, m_lightingPipeline.m_pipelineLayout, nullptr);
 
+		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
+		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutComposition, nullptr);
+
 		vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_geometryPass, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_lightingPass, nullptr);
@@ -594,6 +597,13 @@ namespace vve {
 				});
 		}
 
+		for (auto& fb : m_gBufferFrameBuffers) {
+			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
+		}
+		for (auto& fb : m_lightingFrameBuffers) {
+			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
+		}
+
 		for (auto& gBufferAttach : m_gBufferAttachments) {
 			vvh::ImgDestroyImage({
 				.m_device			= m_vkState().m_device,
@@ -603,9 +613,6 @@ namespace vve {
 				});
 			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
 		}
-
-		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
-		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutComposition, nullptr);
 
 		return false;
 	}
