@@ -34,6 +34,9 @@ Sampler2D gNormal;      // Normal from geometry shader
 [[vk::binding(2, 1)]]
 Sampler2D gAlbedo;      // Albedo from geometry shader
 
+[[vk::binding(3, 1)]]
+Sampler2D<float> gDepth;       // Depth
+
 [[vk::binding(1, 0)]]
 StructuredBuffer<Light> gLights;
 
@@ -50,10 +53,16 @@ float4 main(VertexStageOutput in) : SV_Target
     Camera camera = gParamsFrame.camera;
     uint3 numberLights = gParamsFrame.numberLights;
 
+    float depth = gDepth.Sample(in.uv);
+
     float3 P = gPosition.Sample(in.uv).xyz;
     // TODO: check formats, is * 2 - float3(1.0, 1.0, 1.0) needed?
     float3 N = (gNormal.Sample(in.uv).xyz) * 2 - float3(1.0, 1.0, 1.0);
     float3 A = gAlbedo.Sample(in.uv).xyz;
+
+    if (depth >= 0.999) { // sky, nothing was drawn
+        discard;
+    }
 
     float3 l = calculateLighting(gLights, numberLights, offset, N, camera.positionW, P);
     return float4(A.rgb * l, 1.0);
