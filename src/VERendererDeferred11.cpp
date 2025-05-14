@@ -29,8 +29,7 @@ namespace vve {
 			.m_clear				= true,
 			.m_renderPass			= m_geometryPass
 			});
-		vvh::RenCreateRenderPass({
-			.m_depthFormat			= m_vkState().m_depthMapFormat,
+		vvh::RenCreateRenderPassLighting({
 			.m_device				= m_vkState().m_device,
 			.m_swapChain			= m_vkState().m_swapChain,
 			.m_clear				= false,
