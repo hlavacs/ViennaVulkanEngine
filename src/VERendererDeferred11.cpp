@@ -62,7 +62,10 @@ namespace vve {
 					.stageFlags		= VK_SHADER_STAGE_FRAGMENT_BIT },
 				{	// Binding 2 : Albedo
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags		= VK_SHADER_STAGE_FRAGMENT_BIT }
+					.stageFlags		= VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 3 : Depth
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 			},
 			.m_descriptorSetLayout	= m_descriptorSetLayoutComposition
 			});
@@ -180,6 +183,14 @@ namespace vve {
 			.m_gbufferImage			= m_gBufferAttachments[ALBEDO],
 			.m_binding				= ALBEDO,
 			.m_descriptorSet		= m_descriptorSetComposition 
+			});
+
+		vvh::RenUpdateDescriptorSetDepthAttachment({
+			.m_device				= m_vkState().m_device,
+			.m_depthImage			= m_vkState().m_depthImage,
+			.m_binding				= 3,
+			.m_descriptorSet		= m_descriptorSetComposition,
+			.m_sampler				= m_sampler
 			});
 
 		// GBuffer FrameBuffers
@@ -431,6 +442,22 @@ namespace vve {
 		vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
 
 		vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+
+		// Depth
+		// TODO: Rewrite maybe into subpasses, these barriers are uncomfy
+		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+		barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		barrier.image = m_vkState().m_depthImage.m_depthImage;
+		vkCmdPipelineBarrier(
+			cmdBuffer,
+			VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			0, 0, nullptr, 0, nullptr,
+			1, &barrier
+		);
+
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
 
