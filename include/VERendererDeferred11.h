@@ -34,6 +34,7 @@ namespace vve {
 		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
 
 		std::vector<VkFramebuffer> m_gBufferFrameBuffers{};
+		std::vector<VkFramebuffer> m_lightingFrameBuffers{};
 
 		vvh::Buffer m_uniformBuffersPerFrame{};
 		vvh::Buffer m_storageBuffersLights{};

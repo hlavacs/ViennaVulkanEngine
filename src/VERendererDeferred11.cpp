@@ -203,6 +203,13 @@ namespace vve {
 			.m_renderPass			= m_geometryPass 
 			});
 
+		vvh::RenCreateFrameBuffers2({
+			.m_device				= m_vkState().m_device,
+			.m_renderPass			= m_lightingPass,
+			.m_swapChain			= m_vkState().m_swapChain,
+			.m_frameBuffers			= m_lightingFrameBuffers
+			});
+
 		CreateGeometryPipeline();
 		CreateLightingPipeline();
 		return false;
@@ -399,15 +406,28 @@ namespace vve {
 				1, &barrier
 			);
 		}
+		// TODO: Rewrite maybe into subpasses, these barriers are uncomfy
+		// Depth
+		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+		barrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+		barrier.image = m_vkState().m_depthImage.m_depthImage;
+		vkCmdPipelineBarrier(
+			cmdBuffer,
+			VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+			0, 0, nullptr, 0, nullptr,
+			1, &barrier
+		);
 
-		vvh::ComStartRecordCommandBuffer2({ 
-			.m_commandBuffer	= cmdBuffer,
-			.m_imageIndex		= m_vkState().m_imageIndex,
-			.m_swapChain		= m_vkState().m_swapChain,
-			.m_renderPass		= m_lightingPass,
-			.m_clear			= false,
-			.m_clearValues		= {},
-			.m_currentFrame		= m_vkState().m_currentFrame 
+		vvh::ComBeginRenderPass2({
+			.m_commandBuffer = cmdBuffer,
+			.m_imageIndex = m_vkState().m_imageIndex,
+			.m_swapChain = m_vkState().m_swapChain,
+			.m_gBufferFramebuffers = m_lightingFrameBuffers,
+			.m_renderPass = m_lightingPass,
+			.m_clearValues = {},
+			.m_currentFrame = m_vkState().m_currentFrame
 			});
 
 		vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
