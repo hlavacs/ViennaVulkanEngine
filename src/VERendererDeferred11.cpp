@@ -353,38 +353,32 @@ namespace vve {
 		// ---------------------------------------------------------------------
 		// Lighting pass
 
-		// Barrier to transition VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL -> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-		VkImageMemoryBarrier barrier{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
-		barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		barrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0,1, 0,1 };
+		// GBuffer attachments VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		for (auto& image : m_gBufferAttachments) {
-			barrier.image = image.m_gbufferImage;
-			vkCmdPipelineBarrier(
-				cmdBuffer,
-				VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-				0, 0, nullptr, 0, nullptr,
-				1, &barrier
-			);
+			vvh::ImgTransitionImageLayout3({
+				.m_device			= m_vkState().m_device,
+				.m_graphicsQueue	= m_vkState().m_graphicsQueue,
+				.m_commandPool		= m_commandPools[m_vkState().m_currentFrame],
+				.m_image			= image.m_gbufferImage,
+				.m_format			= image.m_gbufferFormat,
+				.m_oldLayout		= VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				.m_newLayout		= VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.m_commandBuffer	= cmdBuffer
+			});
 		}
-		// TODO: Rewrite maybe into subpasses, these barriers are uncomfy
-		// Depth
-		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		barrier.image = m_vkState().m_depthImage.m_depthImage;
-		vkCmdPipelineBarrier(
-			cmdBuffer,
-			VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			0, 0, nullptr, 0, nullptr,
-			1, &barrier
-		);
+		
+		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		vvh::ImgTransitionImageLayout3({
+				.m_device			= m_vkState().m_device,
+				.m_graphicsQueue	= m_vkState().m_graphicsQueue,
+				.m_commandPool		= m_commandPools[m_vkState().m_currentFrame],
+				.m_image			= m_vkState().m_depthImage.m_depthImage,
+				.m_format			= vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+				.m_aspect			= VK_IMAGE_ASPECT_DEPTH_BIT,
+				.m_oldLayout		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+				.m_newLayout		= VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.m_commandBuffer	= cmdBuffer
+			});
 
 		vvh::ComBeginRenderPass2({
 			.m_commandBuffer = cmdBuffer,
@@ -429,20 +423,18 @@ namespace vve {
 
 		vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 
-		// Depth
-		// TODO: Rewrite maybe into subpasses, these barriers are uncomfy
-		barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-		barrier.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		barrier.newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		barrier.image = m_vkState().m_depthImage.m_depthImage;
-		vkCmdPipelineBarrier(
-			cmdBuffer,
-			VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-			VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-			0, 0, nullptr, 0, nullptr,
-			1, &barrier
-		);
+		// Depth image VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+		vvh::ImgTransitionImageLayout3({
+			.m_device			= m_vkState().m_device,
+			.m_graphicsQueue	= m_vkState().m_graphicsQueue,
+			.m_commandPool		= m_vkState().m_commandPool,
+			.m_image			= m_vkState().m_depthImage.m_depthImage,
+			.m_format			= vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_aspect			= VK_IMAGE_ASPECT_DEPTH_BIT,
+			.m_oldLayout		= VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.m_newLayout		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			.m_commandBuffer	= cmdBuffer
+			});
 
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
