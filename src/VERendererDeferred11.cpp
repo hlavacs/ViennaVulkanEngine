@@ -12,6 +12,7 @@ namespace vve {
 			{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
 			{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
+			{this,  1500, "WINDOW_SIZE",		[this](Message& message) { return OnWindowSize(message); }},
 			{this, 	   0, "QUIT",				[this](Message& message) { return OnQuit(message); } }
 			});
 	}
@@ -216,41 +217,6 @@ namespace vve {
 	}
 
 	bool RendererDeferred11::OnPrepareNextFrame(Message message) {
-		// TODO: Maybe make own event - or move check somewhere else
-		static auto width = m_vkState().m_swapChain.m_swapChainExtent.width;
-		static auto height = m_vkState().m_swapChain.m_swapChainExtent.height;
-		if (m_vkState().m_swapChain.m_swapChainExtent.width != width || m_vkState().m_swapChain.m_swapChainExtent.height != height) {
-			for (size_t i = 0; i < m_gBufferAttachments.size(); ++i) {
-				vvh::RenCreateGBufferResources({
-					.m_physicalDevice	= m_vkState().m_physicalDevice,
-					.m_device			= m_vkState().m_device,
-					.m_vmaAllocator		= m_vkState().m_vmaAllocator,
-					.m_swapChain		= m_vkState().m_swapChain,
-					.m_gbufferImage		= m_gBufferAttachments[i],
-					.m_format			= m_gBufferAttachments[i].m_gbufferFormat,
-					.m_sampler			= m_sampler
-					});
-				vvh::RenUpdateDescriptorSetGBufferAttachment({
-					.m_device			= m_vkState().m_device,
-					.m_gbufferImage		= m_gBufferAttachments[i],
-					.m_binding			= i,
-					.m_descriptorSet	= m_descriptorSetComposition
-					});
-			}
-
-			vvh::RenCreateGBufferFrameBuffers({
-				.m_device				= m_vkState().m_device,
-				.m_swapChain			= m_vkState().m_swapChain,
-				.m_gBufferAttachs		= m_gBufferAttachments,
-				.m_gBufferFrameBuffers	= m_gBufferFrameBuffers,
-				.m_depthImage			= m_vkState().m_depthImage,
-				.m_renderPass			= m_geometryPass
-				});
-
-			width	= m_vkState().m_swapChain.m_swapChainExtent.width;
-			height	= m_vkState().m_swapChain.m_swapChainExtent.height;
-		}
-
 		m_pass = 0;
 
 		vvh::UniformBufferFrame ubc;
@@ -736,6 +702,52 @@ namespace vve {
 		std::cout << "Pipeline not found for type: " << type << std::endl;
 		exit(-1);
 		return nullptr;
+	}
+
+	bool RendererDeferred11::OnWindowSize(Message message) {
+		for (size_t i = 0; i < m_gBufferAttachments.size(); ++i) {
+			vvh::RenCreateGBufferResources({
+				.m_physicalDevice	= m_vkState().m_physicalDevice,
+				.m_device			= m_vkState().m_device,
+				.m_vmaAllocator		= m_vkState().m_vmaAllocator,
+				.m_swapChain		= m_vkState().m_swapChain,
+				.m_gbufferImage		= m_gBufferAttachments[i],
+				.m_format			= m_gBufferAttachments[i].m_gbufferFormat,
+				.m_sampler			= m_sampler
+				});
+			vvh::RenUpdateDescriptorSetGBufferAttachment({
+				.m_device			= m_vkState().m_device,
+				.m_gbufferImage		= m_gBufferAttachments[i],
+				.m_binding			= i,
+				.m_descriptorSet	= m_descriptorSetComposition
+				});
+		}
+
+		vvh::RenCreateGBufferFrameBuffers({
+			.m_device				= m_vkState().m_device,
+			.m_swapChain			= m_vkState().m_swapChain,
+			.m_gBufferAttachs		= m_gBufferAttachments,
+			.m_gBufferFrameBuffers	= m_gBufferFrameBuffers,
+			.m_depthImage			= m_vkState().m_depthImage,
+			.m_renderPass			= m_geometryPass
+			});
+
+		vvh::RenCreateFrameBuffers2({
+			.m_device				= m_vkState().m_device,
+			.m_renderPass			= m_lightingPass,
+			.m_swapChain			= m_vkState().m_swapChain,
+			.m_frameBuffers			= m_lightingFrameBuffers
+			});
+
+		vvh::RenUpdateDescriptorSetDepthAttachment({
+			.m_device				= m_vkState().m_device,
+			.m_depthImage			= m_vkState().m_depthImage,
+			.m_binding				= DEPTH,
+			.m_descriptorSet		= m_descriptorSetComposition,
+			.m_sampler				= m_sampler
+			});
+
+		return false;
 	}
 
 }	// namespace vve
