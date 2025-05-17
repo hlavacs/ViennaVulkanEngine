@@ -31,6 +31,7 @@ namespace vve {
 		void CreateGeometryPipeline();
 		void CreateLightingPipeline();
 
+		void CreateDeferredResources();
 		void DestroyDeferredResources();
 		auto getPipelinePerType(std::string type) -> PipelinePerType*;
 		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;

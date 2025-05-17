@@ -140,76 +140,7 @@ namespace vve {
 			.m_device				= m_vkState().m_device,
 			.m_sampler				= m_sampler 
 			});
-		vvh::RenCreateGBufferResources({ 
-			.m_physicalDevice		= m_vkState().m_physicalDevice,
-			.m_device				= m_vkState().m_device,
-			.m_vmaAllocator			= m_vkState().m_vmaAllocator,
-			.m_swapChain			= m_vkState().m_swapChain,
-			.m_gbufferImage			= m_gBufferAttachments[POSITION],
-			.m_format				= VK_FORMAT_R32G32B32A32_SFLOAT,
-			.m_sampler				= m_sampler
-			});
-		vvh::RenUpdateDescriptorSetGBufferAttachment({
-			.m_device				= m_vkState().m_device,
-			.m_gbufferImage			= m_gBufferAttachments[POSITION],
-			.m_binding				= POSITION,
-			.m_descriptorSet		= m_descriptorSetComposition
-			});
-		vvh::RenCreateGBufferResources({ 
-			.m_physicalDevice		= m_vkState().m_physicalDevice,
-			.m_device				= m_vkState().m_device,
-			.m_vmaAllocator			= m_vkState().m_vmaAllocator,
-			.m_swapChain			= m_vkState().m_swapChain,
-			.m_gbufferImage			= m_gBufferAttachments[NORMAL],
-			.m_format				= VK_FORMAT_R8G8B8A8_UNORM,
-			.m_sampler				= m_sampler
-			});
-		vvh::RenUpdateDescriptorSetGBufferAttachment({ 
-			.m_device				= m_vkState().m_device,
-			.m_gbufferImage			= m_gBufferAttachments[NORMAL],
-			.m_binding				= NORMAL,
-			.m_descriptorSet		= m_descriptorSetComposition
-			});
-		vvh::RenCreateGBufferResources({ 
-			.m_physicalDevice		= m_vkState().m_physicalDevice,
-			.m_device				= m_vkState().m_device,
-			.m_vmaAllocator			= m_vkState().m_vmaAllocator,
-			.m_swapChain			= m_vkState().m_swapChain,
-			.m_gbufferImage			= m_gBufferAttachments[ALBEDO],
-			.m_format				= VK_FORMAT_R8G8B8A8_SRGB,
-			.m_sampler				= m_sampler 
-			});
-		vvh::RenUpdateDescriptorSetGBufferAttachment({ 
-			.m_device				= m_vkState().m_device,
-			.m_gbufferImage			= m_gBufferAttachments[ALBEDO],
-			.m_binding				= ALBEDO,
-			.m_descriptorSet		= m_descriptorSetComposition 
-			});
-
-		vvh::RenUpdateDescriptorSetDepthAttachment({
-			.m_device				= m_vkState().m_device,
-			.m_depthImage			= m_vkState().m_depthImage,
-			.m_binding				= DEPTH,
-			.m_descriptorSet		= m_descriptorSetComposition,
-			.m_sampler				= m_sampler
-			});
-
-		// GBuffer FrameBuffers
-		vvh::RenCreateGBufferFrameBuffers({ 
-			.m_device				= m_vkState().m_device,
-			.m_swapChain			= m_vkState().m_swapChain,
-			.m_gBufferAttachs		= m_gBufferAttachments,
-			.m_gBufferFrameBuffers	= m_gBufferFrameBuffers,
-			.m_depthImage			= m_vkState().m_depthImage,
-			.m_renderPass			= m_geometryPass 
-			});
-
-		vvh::RenCreateFrameBuffers2({
-			.m_device				= m_vkState().m_device,
-			.m_renderPass			= m_lightingPass,
-			.m_swapChain			= m_vkState().m_swapChain,
-			.m_frameBuffers			= m_lightingFrameBuffers
-			});
+		CreateDeferredResources();
 
 		CreateGeometryPipeline();
 		CreateLightingPipeline();
@@ -381,13 +312,13 @@ namespace vve {
 			});
 
 		vvh::ComBeginRenderPass2({
-			.m_commandBuffer = cmdBuffer,
-			.m_imageIndex = m_vkState().m_imageIndex,
-			.m_swapChain = m_vkState().m_swapChain,
-			.m_gBufferFramebuffers = m_lightingFrameBuffers,
-			.m_renderPass = m_lightingPass,
-			.m_clearValues = {},
-			.m_currentFrame = m_vkState().m_currentFrame
+			.m_commandBuffer		= cmdBuffer,
+			.m_imageIndex			= m_vkState().m_imageIndex,
+			.m_swapChain			= m_vkState().m_swapChain,
+			.m_gBufferFramebuffers	= m_lightingFrameBuffers,
+			.m_renderPass			= m_lightingPass,
+			.m_clearValues			= {},
+			.m_currentFrame			= m_vkState().m_currentFrame
 			});
 
 		vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
@@ -681,46 +612,62 @@ namespace vve {
 		return nullptr;
 	}
 
-	void RendererDeferred11::DestroyDeferredResources() {
-		for (auto& fb : m_gBufferFrameBuffers) {
-			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
-		}
-		for (auto& fb : m_lightingFrameBuffers) {
-			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
-		}
+	void RendererDeferred11::CreateDeferredResources() {
+		vvh::RenCreateGBufferResources({
+			.m_physicalDevice		= m_vkState().m_physicalDevice,
+			.m_device				= m_vkState().m_device,
+			.m_vmaAllocator			= m_vkState().m_vmaAllocator,
+			.m_swapChain			= m_vkState().m_swapChain,
+			.m_gbufferImage			= m_gBufferAttachments[POSITION],
+			.m_format				= VK_FORMAT_R32G32B32A32_SFLOAT,
+			.m_sampler				= m_sampler
+			});
+		vvh::RenUpdateDescriptorSetGBufferAttachment({
+			.m_device				= m_vkState().m_device,
+			.m_gbufferImage			= m_gBufferAttachments[POSITION],
+			.m_binding				= POSITION,
+			.m_descriptorSet		= m_descriptorSetComposition
+			});
+		vvh::RenCreateGBufferResources({
+			.m_physicalDevice		= m_vkState().m_physicalDevice,
+			.m_device				= m_vkState().m_device,
+			.m_vmaAllocator			= m_vkState().m_vmaAllocator,
+			.m_swapChain			= m_vkState().m_swapChain,
+			.m_gbufferImage			= m_gBufferAttachments[NORMAL],
+			.m_format				= VK_FORMAT_R8G8B8A8_UNORM,
+			.m_sampler				= m_sampler
+			});
+		vvh::RenUpdateDescriptorSetGBufferAttachment({
+			.m_device				= m_vkState().m_device,
+			.m_gbufferImage			= m_gBufferAttachments[NORMAL],
+			.m_binding				= NORMAL,
+			.m_descriptorSet		= m_descriptorSetComposition
+			});
+		vvh::RenCreateGBufferResources({
+			.m_physicalDevice		= m_vkState().m_physicalDevice,
+			.m_device				= m_vkState().m_device,
+			.m_vmaAllocator			= m_vkState().m_vmaAllocator,
+			.m_swapChain			= m_vkState().m_swapChain,
+			.m_gbufferImage			= m_gBufferAttachments[ALBEDO],
+			.m_format				= VK_FORMAT_R8G8B8A8_SRGB,
+			.m_sampler				= m_sampler
+			});
+		vvh::RenUpdateDescriptorSetGBufferAttachment({
+			.m_device				= m_vkState().m_device,
+			.m_gbufferImage			= m_gBufferAttachments[ALBEDO],
+			.m_binding				= ALBEDO,
+			.m_descriptorSet		= m_descriptorSetComposition
+			});
 
-		for (auto& gBufferAttach : m_gBufferAttachments) {
-			vvh::ImgDestroyImage({
-				.m_device = m_vkState().m_device,
-				.m_vmaAllocator = m_vkState().m_vmaAllocator,
-				.m_image = gBufferAttach.m_gbufferImage,
-				.m_imageAllocation = gBufferAttach.m_gbufferImageAllocation
-				});
-			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
-		}
-	}
+		vvh::RenUpdateDescriptorSetDepthAttachment({
+			.m_device				= m_vkState().m_device,
+			.m_depthImage			= m_vkState().m_depthImage,
+			.m_binding				= DEPTH,
+			.m_descriptorSet		= m_descriptorSetComposition,
+			.m_sampler				= m_sampler
+			});
 
-	bool RendererDeferred11::OnWindowSize(Message message) {
-		DestroyDeferredResources();
-
-		for (size_t i = 0; i < m_gBufferAttachments.size(); ++i) {
-			vvh::RenCreateGBufferResources({
-				.m_physicalDevice	= m_vkState().m_physicalDevice,
-				.m_device			= m_vkState().m_device,
-				.m_vmaAllocator		= m_vkState().m_vmaAllocator,
-				.m_swapChain		= m_vkState().m_swapChain,
-				.m_gbufferImage		= m_gBufferAttachments[i],
-				.m_format			= m_gBufferAttachments[i].m_gbufferFormat,
-				.m_sampler			= m_sampler
-				});
-			vvh::RenUpdateDescriptorSetGBufferAttachment({
-				.m_device			= m_vkState().m_device,
-				.m_gbufferImage		= m_gBufferAttachments[i],
-				.m_binding			= i,
-				.m_descriptorSet	= m_descriptorSetComposition
-				});
-		}
-
+		// GBuffer FrameBuffers
 		vvh::RenCreateGBufferFrameBuffers({
 			.m_device				= m_vkState().m_device,
 			.m_swapChain			= m_vkState().m_swapChain,
@@ -736,14 +683,30 @@ namespace vve {
 			.m_swapChain			= m_vkState().m_swapChain,
 			.m_frameBuffers			= m_lightingFrameBuffers
 			});
+	}
 
-		vvh::RenUpdateDescriptorSetDepthAttachment({
-			.m_device				= m_vkState().m_device,
-			.m_depthImage			= m_vkState().m_depthImage,
-			.m_binding				= DEPTH,
-			.m_descriptorSet		= m_descriptorSetComposition,
-			.m_sampler				= m_sampler
-			});
+	void RendererDeferred11::DestroyDeferredResources() {
+		for (auto& fb : m_gBufferFrameBuffers) {
+			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
+		}
+		for (auto& fb : m_lightingFrameBuffers) {
+			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
+		}
+
+		for (auto& gBufferAttach : m_gBufferAttachments) {
+			vvh::ImgDestroyImage({
+				.m_device			= m_vkState().m_device,
+				.m_vmaAllocator		= m_vkState().m_vmaAllocator,
+				.m_image			= gBufferAttach.m_gbufferImage,
+				.m_imageAllocation	= gBufferAttach.m_gbufferImageAllocation
+				});
+			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
+		}
+	}
+
+	bool RendererDeferred11::OnWindowSize(Message message) {
+		DestroyDeferredResources();
+		CreateDeferredResources();
 
 		return false;
 	}
