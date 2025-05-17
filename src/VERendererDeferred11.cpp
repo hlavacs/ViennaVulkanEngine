@@ -555,22 +555,7 @@ namespace vve {
 				});
 		}
 
-		for (auto& fb : m_gBufferFrameBuffers) {
-			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
-		}
-		for (auto& fb : m_lightingFrameBuffers) {
-			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
-		}
-
-		for (auto& gBufferAttach : m_gBufferAttachments) {
-			vvh::ImgDestroyImage({
-				.m_device			= m_vkState().m_device,
-				.m_vmaAllocator		= m_vkState().m_vmaAllocator,
-				.m_image			= gBufferAttach.m_gbufferImage,
-				.m_imageAllocation	= gBufferAttach.m_gbufferImageAllocation
-				});
-			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
-		}
+		DestroyDeferredResources();
 
 		return false;
 	}
@@ -696,7 +681,28 @@ namespace vve {
 		return nullptr;
 	}
 
+	void RendererDeferred11::DestroyDeferredResources() {
+		for (auto& fb : m_gBufferFrameBuffers) {
+			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
+		}
+		for (auto& fb : m_lightingFrameBuffers) {
+			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
+		}
+
+		for (auto& gBufferAttach : m_gBufferAttachments) {
+			vvh::ImgDestroyImage({
+				.m_device = m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_image = gBufferAttach.m_gbufferImage,
+				.m_imageAllocation = gBufferAttach.m_gbufferImageAllocation
+				});
+			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
+		}
+	}
+
 	bool RendererDeferred11::OnWindowSize(Message message) {
+		DestroyDeferredResources();
+
 		for (size_t i = 0; i < m_gBufferAttachments.size(); ++i) {
 			vvh::RenCreateGBufferResources({
 				.m_physicalDevice	= m_vkState().m_physicalDevice,
