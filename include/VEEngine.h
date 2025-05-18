@@ -95,9 +95,11 @@ namespace vve {
 		auto CreatePointLight(Name name, ParentHandle parent, PointLight light, Position position = Position{vec3_t{0.0f}}, 
 							Rotation rotation = Rotation{mat3_t{1.0f}}, Scale scale = Scale{vec3_t{1.0f}}) -> ObjectHandle;
 
-		auto CreateDirectionalLight() -> ObjectHandle;
+		auto CreateDirectionalLight(Name name, ParentHandle parent, DirectionalLight light, Position position = Position{vec3_t{0.0f}}, 
+							Rotation rotation = Rotation{mat3_t{1.0f}}, Scale scale = Scale{vec3_t{1.0f}}) -> ObjectHandle;
 
-		auto CreateSpotLight() -> ObjectHandle;
+		auto CreateSpotLight(Name name, ParentHandle parent, SpotLight light, Position position = Position{vec3_t{0.0f}}, 
+							Rotation rotation = Rotation{mat3_t{1.0f}}, Scale scale = Scale{vec3_t{1.0f}}) -> ObjectHandle;
 
 		auto CreateCamera(Name name, ParentHandle parent, Camera camera, Position position = Position{vec3_t{0.0f}}, 
 						Rotation rotation = Rotation{mat3_t{1.0f}}, Scale scale = Scale{vec3_t{1.0f}}) -> ObjectHandle;

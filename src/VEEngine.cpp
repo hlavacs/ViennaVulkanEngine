@@ -224,12 +224,18 @@ namespace vve {
 		return handle;
 	};
 
-	auto Engine::CreateDirectionalLight() -> ObjectHandle { 
-		return {}; 
+	auto Engine::CreateDirectionalLight(Name name, ParentHandle parent, DirectionalLight light, 
+							Position position, Rotation rotation, Scale scale) -> ObjectHandle { 
+		ObjectHandle handle{ m_registry.Insert(name, parent, light, position, rotation, scale) };
+		m_engine.SetParent(handle, parent);
+		return handle;
 	};
 
-	auto Engine::CreateSpotLight() -> ObjectHandle { 
-		return {}; 
+	auto Engine::CreateSpotLight(Name name, ParentHandle parent, SpotLight light, 
+							Position position, Rotation rotation, Scale scale) -> ObjectHandle { 
+		ObjectHandle handle{ m_registry.Insert(name, parent, light, position, rotation, scale) };
+		m_engine.SetParent(handle, parent);
+		return handle;
 	};
 
 	auto Engine::CreateCamera(Name name, ParentHandle parent, Camera camera, Position position, Rotation rotation, Scale scale) -> ObjectHandle { 

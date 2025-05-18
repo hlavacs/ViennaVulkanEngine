@@ -94,6 +94,9 @@ namespace vve {
 		);
 		SetParent( ObjectHandle{lightHandle2}, ParentHandle{m_rootHandle} );
 
+
+		
+
 		vvh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 		float intensity3 = 0.9f;
 		auto lightHandle3 = m_registry.Insert(
