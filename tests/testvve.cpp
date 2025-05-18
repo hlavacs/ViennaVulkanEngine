@@ -38,9 +38,9 @@ public:
 
 		m_engine.LoadScene( vve::Filename{"assets/test/plane/plane_t_n_s.obj"}, aiProcess_FlipWindingOrder);
 
-		m_engine.CreateObject(	vve::MeshName{"assets/test/plane/plane_t_n_s.obj/plane"}, 
+		m_engine.CreateObject(	vve::Name{}, vve::ParentHandle{}, 
+								vve::MeshName{"assets/test/plane/plane_t_n_s.obj/plane"}, 
 								vve::TextureName{"assets/test/plane/grass.jpg"}, 
-								vve::ParentHandle{}, 
 								vve::Position{vec3_t{0.0f, 0.0f, 0.0f}}, 
 								vve::Rotation{mat4_t{glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f))}}, 
 								vve::Scale{vec3_t{1000.0f, 1000.0f, 1000.0f}}, 
@@ -114,9 +114,8 @@ public:
 				ImGui::SameLine();
 	            if (ImGui::Button("Create##Create1")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)				
 					
-					auto handle = m_engine.CreateScene(vve::Filename{path_obj}, 
-							flags, 
-							vve::ParentHandle{}, 	
+					auto handle = m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{path_obj}, 
+							flags, 							
 							vve::Position{ { x, y, 0.1f } }, 
 							vve::Rotation{mat3_t{1.0f}}, 
 							vve::Scale{vec3_t{1.0f}});
@@ -156,9 +155,9 @@ public:
 
 					vvh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.2f, 0.2f, 0.2f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 					
-					auto handle = m_engine.CreateObject(vve::MeshName{"assets/standard/sphere.obj/sphere"}, 
+					auto handle = m_engine.CreateObject(vve::Name{}, vve::ParentHandle{}, 
+														vve::MeshName{"assets/standard/sphere.obj/sphere"}, 
 														color, 
-														vve::ParentHandle{}, 
 														vve::Position{ { x, y, 0.5f } }, 
 														vve::Rotation{mat3_t{1.0f}}, 
 														vve::Scale{vec3_t{0.05f}},
@@ -195,10 +194,9 @@ public:
 	            if (ImGui::Button("Create##Create3")) {                          // Buttons return true when clicked (most widgets return true when edited/activated)		
 
 
-					auto handle = m_engine.CreateScene(vve::Filename{path_obj3}, 
-							flags, 
-							vve::ParentHandle{}, 	
-							vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
+					auto handle = m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, 
+												vve::Filename{path_obj3}, flags, 
+												vve::Position{ { x, y, 0.5f } }, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
 					
 					m_handles.push( handle );
 					x += 2.0f;		

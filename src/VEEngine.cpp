@@ -191,21 +191,21 @@ namespace vve {
 		m_engine.SendMsg( MsgSceneLoad{ filename, flags });
 	};
 	
-	auto Engine::CreateScene(const Filename& filename, aiPostProcessSteps flags, ParentHandle parent, 
+	auto Engine::CreateScene(Name name, ParentHandle parent, const Filename& filename, aiPostProcessSteps flags, 
 							Position position, Rotation rotation, Scale scale) -> ObjectHandle {
 		ObjectHandle handle{ m_registry.Insert( position, rotation, scale) };
         m_engine.SendMsg(MsgSceneCreate{ handle, parent, filename, flags });
 		return handle;
 	};
 
-	auto Engine::CreateObject(	const MeshName& meshName, vvh::Color color, ParentHandle parent, 	
+	auto Engine::CreateObject(	Name name, ParentHandle parent, const MeshName& meshName, vvh::Color color,  	
 								Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle { 
             ObjectHandle handle{ m_registry.Insert(position, rotation, scale, color, meshName, uvScale) };
             m_engine.SendMsg(MsgObjectCreate{  handle, vve::ParentHandle{} });
 			return handle;
     	};
 
-	auto Engine::CreateObject(	const MeshName& meshName, const TextureName& textureName, ParentHandle parent, 	
+	auto Engine::CreateObject(	Name name, ParentHandle parent, const MeshName& meshName, const TextureName& textureName, 
 								Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle { 
             ObjectHandle handle{ m_registry.Insert(position, rotation, scale, meshName, textureName, uvScale) };
             m_engine.SendMsg(MsgObjectCreate{  handle, vve::ParentHandle{} });
@@ -218,9 +218,19 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------------------
 
-	auto Engine::CreateSpotLight() -> vecs::Handle{ return {}; };
-	auto Engine::CreateDirectionalLight() -> vecs::Handle{ return {}; };
-	auto Engine::CreatePointLight() -> vecs::Handle{ return {}; };
+	auto Engine::CreatePointLight(Name name, ParentHandle parent, PointLight light, Position position, Rotation rotation, Scale scale) -> ObjectHandle { 
+		ObjectHandle handle{ m_registry.Insert(name, parent, light, position, rotation, scale) };
+		m_engine.SetParent(handle, parent);
+		return handle;
+	};
+
+	auto Engine::CreateDirectionalLight() -> ObjectHandle { 
+		return {}; 
+	};
+
+	auto Engine::CreateSpotLight() -> ObjectHandle { 
+		return {}; 
+	};
 
 	auto Engine::CreateCamera(Name name, ParentHandle parent, Camera camera, Position position, Rotation rotation, Scale scale) -> ObjectHandle { 
 		ObjectHandle handle{ m_registry.Insert( name, parent, camera, position, rotation, scale )};

@@ -49,7 +49,8 @@ namespace vve {
 		m_engine.SendMsg( MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });		
 		
 		float intensity1 = 0.8f;
-		auto lightHandle = m_registry.Insert(
+
+		/*auto lightHandle = m_registry.Insert(
 			Name{"Light1"},
 			PointLight{vvh::LightParams{
 				glm::vec3(0.9f, 0.1f, 0.1f), glm::vec4(0.0f, intensity1, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
@@ -64,6 +65,20 @@ namespace vve {
 		);
 		SetParent( ObjectHandle{lightHandle}, ParentHandle{m_rootHandle} );
 		m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
+		*/
+
+		auto nodehandle = m_engine.CreateObject(Name{"LightSphere"}, ParentHandle{m_rootHandle}, 
+												MeshName{"assets/standard/sphere.obj/sphere"}, color, 
+												Position{glm::vec3(0.0f, 10.0f, 10.0f)}, 
+												Rotation{mat3_t{1.0f}},
+												Scale{vec3_t{0.01f, 0.01f, 0.01f}});
+
+		auto lightHandle = m_engine.CreatePointLight( Name{"Light1"}, ParentHandle{nodehandle},
+												PointLight{vvh::LightParams{
+													glm::vec3(0.9f, 0.1f, 0.1f), 
+													glm::vec4(0.0f, intensity1, 10.0, 0.1f), 
+													glm::vec3(1.0f, 0.01f, 0.005f), 
+												}});
 
 		float intensity2 = 0.8f;
 		auto lightHandle2 = m_registry.Insert(

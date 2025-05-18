@@ -56,9 +56,10 @@ class MyGame : public vve::System {
 
 			m_engine.LoadScene( vve::Filename{plane_obj}, aiProcess_FlipWindingOrder);
 
-			m_engine.CreateObject(	vve::MeshName{plane_mesh}, 
+			m_engine.CreateObject(	vve::Name{},
+                                    vve::ParentHandle{}, 
+                                    vve::MeshName{plane_mesh}, 
 									vve::TextureName{plane_txt}, 
-									vve::ParentHandle{}, 
 									vve::Position{vec3_t{0.0f, 0.0f, 0.0f}}, 
 									vve::Rotation{mat4_t{glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f))}}, 
 									vve::Scale{vec3_t{1000.0f, 1000.0f, 1000.0f}}, 
@@ -66,7 +67,7 @@ class MyGame : public vve::System {
 
             // ----------------- Load Cube -----------------
 
-			m_handleCube = m_engine.CreateScene(vve::Filename{cube_obj}, aiProcess_FlipWindingOrder, vve::ParentHandle{}, 
+			m_handleCube = m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder, 
 												vve::Position{{nextRandom(), nextRandom(), 0.5f}}, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
 
             GetCamera();

@@ -77,21 +77,28 @@ namespace vve {
 		//Loading from file
 		void LoadScene( const Filename& name, aiPostProcessSteps flags = aiProcess_Triangulate);
 
-		auto CreateObject(	const MeshName& meshName, const TextureName& textureName, ParentHandle parent, 
-							Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle;
+		auto CreateObject(	Name name, ParentHandle parent, const MeshName& meshName, const TextureName& textureName, 
+							Position position = Position{vec3_t{0.0f}}, Rotation rotation = Rotation{mat3_t{1.0f}}, 
+							Scale scale = Scale{vec3_t{1.0f}}, UVScale uvScale = UVScale{vec2_t{1.0f}}) -> ObjectHandle;
 
-		auto CreateObject(	const MeshName& meshName, const vvh::Color color, ParentHandle parent, 
-							Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle;
+		auto CreateObject(	Name name, ParentHandle parent, const MeshName& meshName, const vvh::Color color, 
+							Position position = Position{vec3_t{0.0f}}, Rotation rotation = Rotation{mat3_t{1.0f}}, 
+							Scale scale = Scale{vec3_t{1.0f}}, UVScale uvScale = UVScale{vec2_t{1.0f}}) -> ObjectHandle;
 
-		auto CreateScene(	const Filename& filename, aiPostProcessSteps flags, ParentHandle parent, 
-							Position position, Rotation rotation, Scale scale) -> ObjectHandle;
+		auto CreateScene(	Name name, ParentHandle parent, const Filename& filename, aiPostProcessSteps flags,  
+							Position position = Position{vec3_t{0.0f}}, Rotation rotation = Rotation{mat3_t{1.0f}}, 
+							Scale scale = Scale{vec3_t{1.0f}}) -> ObjectHandle;
 		
 		void DestroyObject(ObjectHandle handle);
 
 		//Create special scene nodes
-		auto CreateSpotLight() -> vecs::Handle;
-		auto CreateDirectionalLight() -> vecs::Handle;
-		auto CreatePointLight() -> vecs::Handle;
+		auto CreatePointLight(Name name, ParentHandle parent, PointLight light, Position position = Position{vec3_t{0.0f}}, 
+							Rotation rotation = Rotation{mat3_t{1.0f}}, Scale scale = Scale{vec3_t{1.0f}}) -> ObjectHandle;
+
+		auto CreateDirectionalLight() -> ObjectHandle;
+
+		auto CreateSpotLight() -> ObjectHandle;
+
 		auto CreateCamera(Name name, ParentHandle parent, Camera camera, Position position = Position{vec3_t{0.0f}}, 
 						Rotation rotation = Rotation{mat3_t{1.0f}}, Scale scale = Scale{vec3_t{1.0f}}) -> ObjectHandle;
 
