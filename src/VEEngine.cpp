@@ -177,11 +177,12 @@ namespace vve {
 		return node;
 	}
 
-	auto Engine::GetParent(ObjectHandle object) -> ParentHandle{ 
+	auto Engine::GetParent(ObjectHandle object) -> ParentHandle { 
 		return m_registry.Get<ParentHandle>(object);
 	};
 
 	void Engine::SetParent(ObjectHandle object, ParentHandle parent) { 
+		if( !parent().IsValid() ) parent = GetRootSceneNode();
 		m_engine.SendMsg(MsgObjectSetParent{object, parent});
 	};
 
@@ -297,12 +298,29 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------------------
 
-	auto Engine::CreateMesh() -> vecs::Handle{ return {}; };
-	auto Engine::CreateTexture() -> vecs::Handle{ return {}; };
-	auto Engine::CreateMaterial() -> vecs::Handle{ return {}; };
-	void Engine::EraseMaterial(){};
-	void Engine::EraseTexture(){};
-	void Engine::EraseMesh(){}
+	auto Engine::CreateMesh() -> vecs::Handle { 
+		return {}; 
+	};
+
+	auto Engine::CreateTexture() -> vecs::Handle { 
+		return {}; 
+	};
+
+	auto Engine::CreateMaterial() -> vecs::Handle { 
+		return {}; 
+	};
+
+	void Engine::EraseMaterial() {
+
+	};
+
+	void Engine::EraseTexture() {
+
+	};
+
+	void Engine::EraseMesh() {
+
+	}
 
 	//-------------------------------------------------------------------------------------------------------------------
 
