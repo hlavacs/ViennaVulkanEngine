@@ -298,29 +298,14 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------------------
 
-	auto Engine::CreateMesh() -> vecs::Handle { 
-		return {}; 
-	};
-
-	auto Engine::CreateTexture() -> vecs::Handle { 
-		return {}; 
-	};
-
-	auto Engine::CreateMaterial() -> vecs::Handle { 
-		return {}; 
-	};
-
-	void Engine::EraseMaterial() {
-
-	};
-
-	void Engine::EraseTexture() {
-
-	};
-
-	void Engine::EraseMesh() {
-
+	void Engine::DestroyMesh(MeshHandle handle) {
+		m_engine.SendMsg(MsgMeshDestroy{handle});
 	}
+
+	void Engine::DestroyTexture(TextureHandle handle) {
+		m_engine.SendMsg(MsgTextureDestroy{handle});
+	};
+
 
 	//-------------------------------------------------------------------------------------------------------------------
 

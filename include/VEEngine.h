@@ -119,12 +119,8 @@ namespace vve {
 		void SetUVScale(ObjectHandle handle, UVScale uvScale);
 
 		//Create assets
-		auto CreateMesh() -> vecs::Handle;
-		auto CreateTexture() -> vecs::Handle;
-		auto CreateMaterial() -> vecs::Handle;
-		void EraseMaterial();
-		void EraseTexture();
-		void EraseMesh();
+		void DestroyMesh(MeshHandle);
+		void DestroyTexture(TextureHandle);
 
 		//sound
 		void PlaySound(const Filename& filename, int mode, float volume=100);
