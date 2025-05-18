@@ -29,14 +29,17 @@ namespace vve {
 	bool SceneManager::OnInit(Message message) {
 		m_worldHandle = m_registry.Insert( Name{m_worldName}, LocalToWorldMatrix{mat4_t{1.0f}} ); 
 								
-		m_rootHandle = m_registry.Insert(
+		/*m_rootHandle = m_registry.Insert(
 									Name{m_rootName},
 									ParentHandle{m_worldHandle},
 									ChildHandle{},
 									Children{},
 									Position{glm::vec3(0.0f, 0.0f, 0.0f)},
 									LocalToWorldMatrix{mat4_t{1.0f}} ); //insert root node
+		*/
 
+		m_rootHandle = m_engine.CreateSceneNode(Name{m_rootName}, ParentHandle{m_worldHandle}); //insert root node
+		m_engine.SetHandle(m_rootName, m_rootHandle); //save in handle map
 
 		// Create camera
         auto view = glm::inverse( glm::lookAt(glm::vec3(0.0f, -2.0f, 3.5f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );

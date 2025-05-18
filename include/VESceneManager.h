@@ -7,7 +7,7 @@ namespace vve {
 	//Camera
 
 	struct Camera {
-		real_t m_aspect = 1.0f;
+		real_t m_aspect = 16.0f / 9.0f;
 		real_t m_near = 0.1f;
 		real_t m_far = 1000.0f;
 		real_t m_fov = 45.0f;
@@ -18,13 +18,14 @@ namespace vve {
 
     class SceneManager : public System {
 
-		const std::string m_windowName = "VVE Window";
-		const std::string m_worldName = "VVE WorldSceneNode";
-		const std::string m_rootName = "VVE RootSceneNode";
-		const std::string m_cameraName = "VVE Camera";
-		const std::string m_cameraNodeName = "VVE CameraNode";
-
     public:
+
+		inline static const std::string m_windowName = "VVE Window";
+		inline static const std::string m_worldName = "VVE WorldSceneNode";
+		inline static const std::string m_rootName = "VVE RootSceneNode";
+		inline static const std::string m_cameraName = "VVE Camera";
+		inline static const std::string m_cameraNodeName = "VVE CameraNode";
+
         SceneManager(std::string systemName, Engine& engine );
         virtual ~SceneManager();
 

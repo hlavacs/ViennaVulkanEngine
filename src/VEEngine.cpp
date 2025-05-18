@@ -149,7 +149,7 @@ namespace vve {
 		}
 	}
 
-	//-----------------------------------------------------------------------------------------------------------------------
+	//-------------------------------------------------------------------------------------------------------------------
 	// simple interface
 
 	auto Engine::GetHandle(std::string name) -> vecs::Handle { 
@@ -164,6 +164,29 @@ namespace vve {
 		return m_handleMap.contains(name);
 	}
 
+	//-------------------------------------------------------------------------------------------------------------------
+
+	auto Engine::GetRootSceneNode() -> ObjectHandle { 
+		return ObjectHandle{ GetHandle(SceneManager::m_rootName) };
+	};
+
+	auto Engine::CreateSceneNode(Name name, ParentHandle parent, Position position, Rotation rotation, Scale scale) -> ObjectHandle {
+		if( !parent().IsValid() ) parent = GetRootSceneNode();
+		ObjectHandle node{ m_registry.Insert( name, parent, Children{},	position, rotation, scale) };
+		m_engine.SetParent(node, parent);
+		return node;
+	}
+
+	auto Engine::GetParent(ObjectHandle object) -> ParentHandle{ 
+		return m_registry.Get<ParentHandle>(object);
+	};
+
+	void Engine::SetParent(ObjectHandle object, ParentHandle parent) { 
+		m_engine.SendMsg(MsgObjectSetParent{object, parent});
+	};
+
+	//-------------------------------------------------------------------------------------------------------------------
+	
 	void Engine::LoadScene(const Filename& filename, aiPostProcessSteps flags) { 
 		m_engine.SendMsg( MsgSceneLoad{ filename, flags });
 	};
@@ -193,14 +216,24 @@ namespace vve {
 		m_engine.SendMsg(MsgObjectDestroy{handle});
 	};
 
+	//-------------------------------------------------------------------------------------------------------------------
+
 	auto Engine::CreateSpotLight() -> vecs::Handle{ return {}; };
 	auto Engine::CreateDirectionalLight() -> vecs::Handle{ return {}; };
 	auto Engine::CreatePointLight() -> vecs::Handle{ return {}; };
-	auto Engine::CreateCamera() -> vecs::Handle{ return {}; };
-	auto Engine::CreateCameraNode() -> vecs::Handle{ return {}; };
-	auto Engine::GetRootSceneNode() -> vecs::Handle{ return {}; };
-	auto Engine::GetParent() -> vecs::Handle{ return {}; };
-	auto Engine::SetParent() -> vecs::Handle{ return {}; };
+
+	auto Engine::CreateCamera(Name name, Camera camera, Position position, Rotation rotation, Scale scale) -> ObjectHandle { 
+
+		ObjectHandle handle{ m_registry.Insert(
+								name, camera, 
+								position, rotation,	scale, 
+								LocalToParentMatrix{mat4_t{1.0f}}, 
+								LocalToWorldMatrix{mat4_t{1.0f}}
+							)};
+		return handle;
+	};
+
+	//-------------------------------------------------------------------------------------------------------------------
 
 	auto GetLocalToParentTransform() -> mat4_t { return {}; };
 	auto GetLocalToWorldTransform() -> mat4_t { return {}; };
@@ -215,12 +248,16 @@ namespace vve {
 	auto Engine::SetScale(){};
 	auto Engine::SetUVScale(){};
 
+	//-------------------------------------------------------------------------------------------------------------------
+
 	auto Engine::CreateMesh() -> vecs::Handle{ return {}; };
 	auto Engine::CreateTexture() -> vecs::Handle{ return {}; };
 	auto Engine::CreateMaterial() -> vecs::Handle{ return {}; };
 	void Engine::EraseMaterial(){};
 	void Engine::EraseTexture(){};
 	void Engine::EraseMesh(){}
+
+	//-------------------------------------------------------------------------------------------------------------------
 
 	void Engine::PlaySound(const Filename& filename, int mode, float volume) {
         m_engine.SendMsg(MsgPlaySound{ filename, mode, (int)volume });

@@ -3,7 +3,8 @@
 namespace vve {
 
 
-
+	class Camera; 
+	
 	class Engine : public System {
 
 		static const uint32_t c_minimumVersion = VK_MAKE_VERSION(1, 1, 0); //for VMA
@@ -60,11 +61,20 @@ namespace vve {
 		auto GetState() { return EngineState{m_name, m_apiVersion, c_minimumVersion, c_maximumVersion, m_debug, m_initialized, m_running}; }
 		auto GetSystem(std::string name) -> System* { return m_systems[name].get(); }
 
-		//simple interface 
+		//Get and set raw handles in the engine map
 		auto GetHandle(std::string name) -> vecs::Handle;
 		auto SetHandle(std::string name, vecs::Handle h) -> void;
 		auto ContainsHandle(std::string name) -> bool;
 
+		//Scene Nodes
+		auto GetRootSceneNode() -> ObjectHandle;
+		auto CreateSceneNode(Name name, ParentHandle parent, Position position = Position{vec3_t{0.0f}}, 
+							Rotation rotation = Rotation{mat3_t{1.0f}}, Scale scale = Scale{vec3_t{1.0f}}) -> ObjectHandle;
+
+		auto GetParent(ObjectHandle object) -> ParentHandle;
+		void SetParent(ObjectHandle object, ParentHandle parent);
+
+		//Loading from file
 		void LoadScene( const Filename& name, aiPostProcessSteps flags = aiProcess_Triangulate);
 
 		auto CreateObject(	const MeshName& meshName, const TextureName& textureName, ParentHandle parent, 
@@ -77,16 +87,14 @@ namespace vve {
 							Position position, Rotation rotation, Scale scale) -> ObjectHandle;
 		
 		void DestroyObject(ObjectHandle handle);
-		
+
+		//Create special scene nodes
 		auto CreateSpotLight() -> vecs::Handle;
 		auto CreateDirectionalLight() -> vecs::Handle;
 		auto CreatePointLight() -> vecs::Handle;
-		auto CreateCamera() -> vecs::Handle;
-		auto CreateCameraNode() -> vecs::Handle;
-		auto GetRootSceneNode() -> vecs::Handle;
-		auto GetParent() -> vecs::Handle;
-		auto SetParent() -> vecs::Handle;
+		auto CreateCamera(Name name, Camera camera, Position position, Rotation rotation, Scale scale) -> ObjectHandle;
 
+		//Get and set components
 		auto GetLocalToParentTransform() -> mat4_t;
 		auto GetLocalToWorldTransform() -> mat4_t;
 		auto GetPosition();
@@ -100,6 +108,7 @@ namespace vve {
 		auto SetScale();
 		auto SetUVScale();
 
+		//Create assets
 		auto CreateMesh() -> vecs::Handle;
 		auto CreateTexture() -> vecs::Handle;
 		auto CreateMaterial() -> vecs::Handle;
@@ -107,6 +116,7 @@ namespace vve {
 		void EraseTexture();
 		void EraseMesh();
 
+		//sound
 		void PlaySound(const Filename& filename, int mode, float volume=100);
 		void SetVolume(float volume);
 
