@@ -27,47 +27,19 @@ namespace vve {
     SceneManager::~SceneManager() {}
 
 	bool SceneManager::OnInit(Message message) {
-		m_worldHandle = m_registry.Insert( Name{m_worldName}, LocalToWorldMatrix{mat4_t{1.0f}} ); 
+		m_worldHandle = m_registry.Insert( Name{m_worldName}, LocalToWorldMatrix{mat4_t{1.0f}} ); //no parent -> direct insert
 								
-		/*m_rootHandle = m_registry.Insert(
-									Name{m_rootName},
-									ParentHandle{m_worldHandle},
-									ChildHandle{},
-									Children{},
-									Position{glm::vec3(0.0f, 0.0f, 0.0f)},
-									LocalToWorldMatrix{mat4_t{1.0f}} ); //insert root node
-		*/
-
 		m_rootHandle = m_engine.CreateSceneNode(Name{m_rootName}, ParentHandle{m_worldHandle}); //insert root node
 		m_engine.SetHandle(m_rootName, m_rootHandle); //save in handle map
 
-		// Create camera
+		// Create camera node and camera
         auto view = glm::inverse( glm::lookAt(glm::vec3(0.0f, -2.0f, 3.5f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)) );
-
-		m_cameraNodeHandle = m_registry.Insert(
-								Name(m_cameraNodeName),
-								Children{},
-								Position{glm::vec3(view[3])}, 
-								Rotation{mat3_t{1.0f}},
-								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
-								LocalToParentMatrix{mat4_t{1.0f}}, 
-								LocalToWorldMatrix{mat4_t{1.0f}} );
-
-		SetParent( ObjectHandle{m_cameraNodeHandle}, ParentHandle{m_rootHandle} );
-
+		m_cameraNodeHandle = m_engine.CreateSceneNode(Name{m_cameraNodeName}, ParentHandle{m_rootHandle}, Position{glm::vec3(view[3])}); //insert root node
 		auto [handle, wstate] = Window::GetState(m_registry);
+		m_cameraHandle = m_engine.CreateCamera(Name{m_cameraName}, ParentHandle{m_cameraNodeHandle},
+										Camera{(real_t)(wstate().m_width) / (real_t)(wstate().m_height)},  
+										Position{vec3_t{0.0f, 0.0f, 0.0f}}, Rotation{mat3_t{view}}); //insert root node
 
-		m_cameraHandle = m_registry.Insert(
-								Name(m_cameraName),
-								Camera{(real_t)(wstate().m_width) / (real_t)(wstate().m_height)}, 
-								Position{vec3_t{0.0f, 0.0f, 0.0f}}, 
-								Rotation{mat3_t{view}},
-								Scale{vec3_t{1.0f, 1.0f, 1.0f}}, 
-								LocalToParentMatrix{mat4_t{1.0f}}, 
-								LocalToWorldMatrix{mat4_t{1.0f}}, 
-								ViewMatrix{view} );
-
-		SetParent( ObjectHandle{m_cameraHandle}, ParentHandle{m_cameraNodeHandle} );
 		return false;
 	}
 

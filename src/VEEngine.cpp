@@ -222,14 +222,9 @@ namespace vve {
 	auto Engine::CreateDirectionalLight() -> vecs::Handle{ return {}; };
 	auto Engine::CreatePointLight() -> vecs::Handle{ return {}; };
 
-	auto Engine::CreateCamera(Name name, Camera camera, Position position, Rotation rotation, Scale scale) -> ObjectHandle { 
-
-		ObjectHandle handle{ m_registry.Insert(
-								name, camera, 
-								position, rotation,	scale, 
-								LocalToParentMatrix{mat4_t{1.0f}}, 
-								LocalToWorldMatrix{mat4_t{1.0f}}
-							)};
+	auto Engine::CreateCamera(Name name, ParentHandle parent, Camera camera, Position position, Rotation rotation, Scale scale) -> ObjectHandle { 
+		ObjectHandle handle{ m_registry.Insert( name, parent, camera, position, rotation, scale )};
+		m_engine.SetParent(handle, parent);
 		return handle;
 	};
 

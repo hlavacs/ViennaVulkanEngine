@@ -4,7 +4,7 @@ namespace vve {
 
 
 	class Camera; 
-	
+
 	class Engine : public System {
 
 		static const uint32_t c_minimumVersion = VK_MAKE_VERSION(1, 1, 0); //for VMA
@@ -92,7 +92,8 @@ namespace vve {
 		auto CreateSpotLight() -> vecs::Handle;
 		auto CreateDirectionalLight() -> vecs::Handle;
 		auto CreatePointLight() -> vecs::Handle;
-		auto CreateCamera(Name name, Camera camera, Position position, Rotation rotation, Scale scale) -> ObjectHandle;
+		auto CreateCamera(Name name, ParentHandle parent, Camera camera, Position position = Position{vec3_t{0.0f}}, 
+						Rotation rotation = Rotation{mat3_t{1.0f}}, Scale scale = Scale{vec3_t{1.0f}}) -> ObjectHandle;
 
 		//Get and set components
 		auto GetLocalToParentTransform() -> mat4_t;
