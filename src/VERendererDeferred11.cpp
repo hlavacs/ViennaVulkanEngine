@@ -134,12 +134,14 @@ namespace vve {
 			.m_descriptorSet		= m_descriptorSetPerFrame
 			});
 
-		// Composition
+		// Composition Sampler
 		vvh::ImgCreateImageSampler({
 			.m_physicalDevice		= m_vkState().m_physicalDevice,
 			.m_device				= m_vkState().m_device,
 			.m_sampler				= m_sampler 
 			});
+
+		// Composition
 		CreateDeferredResources();
 
 		CreateGeometryPipeline();
@@ -268,14 +270,14 @@ namespace vve {
 				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
 				if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
-				auto mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+				vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
 				vvh::ComRecordObject({
-					cmdBuffer,
-					pipeline.second.m_graphicsPipeline,
-					{ m_descriptorSetPerFrame, descriptorsets },
-					pipeline.second.m_type,
-					mesh,
-					m_vkState().m_currentFrame
+					.m_commandBuffer	= cmdBuffer,
+					.m_graphicsPipeline = pipeline.second.m_graphicsPipeline,
+					.m_descriptorSets	= { m_descriptorSetPerFrame, descriptorsets },
+					.m_type				= pipeline.second.m_type,
+					.m_mesh				= mesh,
+					.m_currentFrame		= m_vkState().m_currentFrame
 					});
 			}
 		}
@@ -400,12 +402,12 @@ namespace vve {
 		if (hasTexture) {
 			sizeUbo = sizeof(vvh::BufferPerObjectTexture);
 			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
-			auto texture = m_registry.template Get<vvh::Image&>(tHandle);
+			vvh::Image& texture = m_registry.template Get<vvh::Image&>(tHandle);
 			vvh::RenUpdateDescriptorSetTexture({
-				m_vkState().m_device,
-				texture,
-				1,
-				descriptorSet
+				.m_device			= m_vkState().m_device,
+				.m_texture			= texture,
+				.m_binding			= 1,
+				.m_descriptorSet	= descriptorSet
 				});
 		}
 		else if (hasColor) {
@@ -446,11 +448,11 @@ namespace vve {
 		assert(m_registry.Exists(oHandle));
 
 		if (!m_registry.template Has<vvh::Buffer>(oHandle)) return false;
-		auto ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
+		vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
 		vvh::BufDestroyBuffer2({
-			m_vkState().m_device,
-			m_vkState().m_vmaAllocator,
-			ubo
+			.m_device		= m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_buffers		= ubo
 			});
 		return false;
 	}
@@ -666,6 +668,7 @@ namespace vve {
 			.m_renderPass			= m_geometryPass
 			});
 
+		// Lighting pass FrameBuffers
 		vvh::RenCreateFrameBuffers2({
 			.m_device				= m_vkState().m_device,
 			.m_renderPass			= m_lightingPass,
