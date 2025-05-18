@@ -246,18 +246,54 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------------------
 
-	auto GetLocalToParentTransform() -> mat4_t { return {}; };
-	auto GetLocalToWorldTransform() -> mat4_t { return {}; };
-	auto Engine::GetPosition(){};
-	auto Engine::GetOrientation(){};
-	auto Engine::GetScale(){};
-	auto Engine::GetUVScale(){};
-	auto SetLocalToParentTransform() {};
-	auto SetLocalToWorldTransform() {};
-	auto Engine::SetPosition(){};
-	auto Engine::SetOrientation(){};
-	auto Engine::SetScale(){};
-	auto Engine::SetUVScale(){};
+	auto Engine::GetLocalToParentMatrix(ObjectHandle handle) -> LocalToParentMatrix { 
+		return m_registry.template Get<LocalToParentMatrix>(handle); 
+	};
+
+	auto Engine::GetLocalToWorldMatrix(ObjectHandle handle) -> LocalToWorldMatrix { 
+		return m_registry.template Get<LocalToWorldMatrix>(handle); 
+	};
+
+	auto Engine::GetPosition(ObjectHandle handle) -> Position {
+		return m_registry.template Get<Position>(handle);
+	};
+
+	auto Engine::GetRotation(ObjectHandle handle) -> Rotation {
+		return m_registry.template Get<Rotation>(handle);
+	};
+
+	auto Engine::GetScale(ObjectHandle handle) -> Scale {
+		return m_registry.template Get<Scale>(handle);
+	};
+
+	auto Engine::GetUVScale(ObjectHandle handle) -> UVScale {
+		return m_registry.template Get<UVScale>(handle);
+	};
+
+	void Engine::SetLocalToParentMatrix(ObjectHandle handle, LocalToParentMatrix matrix) {
+		return m_registry.Put(handle, matrix);
+	};
+
+	void Engine::SetLocalToWorldMatrix(ObjectHandle handle, LocalToWorldMatrix matrix) {
+		return m_registry.Put(handle, matrix);
+	};
+
+	void Engine::SetPosition(ObjectHandle handle, Position position) {
+		return m_registry.Put(handle, position);
+	};
+
+	void Engine::SetRotation(ObjectHandle handle, Rotation rotation) {
+		return m_registry.Put(handle, rotation);
+	};
+
+	void Engine::SetScale(ObjectHandle handle, Scale scale) {
+		return m_registry.Put(handle, scale);
+	};
+
+	void Engine::SetUVScale(ObjectHandle handle, UVScale uvScale) {
+		return m_registry.Put(handle, uvScale);
+	};
+
 
 	//-------------------------------------------------------------------------------------------------------------------
 

@@ -105,18 +105,18 @@ namespace vve {
 						Rotation rotation = Rotation{mat3_t{1.0f}}, Scale scale = Scale{vec3_t{1.0f}}) -> ObjectHandle;
 
 		//Get and set components
-		auto GetLocalToParentTransform() -> mat4_t;
-		auto GetLocalToWorldTransform() -> mat4_t;
-		auto GetPosition();
-		auto GetOrientation();
-		auto GetScale();
-		auto GetUVScale();
-		auto SetLocalToParentTransform();
-		auto SetLocalToWorldTransform();
-		auto SetPosition();
-		auto SetOrientation();
-		auto SetScale();
-		auto SetUVScale();
+		auto GetLocalToParentMatrix(ObjectHandle handle) -> LocalToParentMatrix;
+		auto GetLocalToWorldMatrix(ObjectHandle handle) -> LocalToWorldMatrix;
+		auto GetPosition(ObjectHandle handle) -> Position;
+		auto GetRotation(ObjectHandle handle) -> Rotation;
+		auto GetScale(ObjectHandle handle) -> Scale;
+		auto GetUVScale(ObjectHandle handle) -> UVScale;
+		void SetLocalToParentMatrix(ObjectHandle handle, LocalToParentMatrix matrix);
+		void SetLocalToWorldMatrix(ObjectHandle handle, LocalToWorldMatrix matrix);
+		void SetPosition(ObjectHandle handle, Position position);
+		void SetRotation(ObjectHandle handle, Rotation rotation);
+		void SetScale(ObjectHandle handle, Scale scale);
+		void SetUVScale(ObjectHandle handle, UVScale uvScale);
 
 		//Create assets
 		auto CreateMesh() -> vecs::Handle;
