@@ -7,7 +7,6 @@ namespace vve {
 	RendererDeferred::RendererDeferred(std::string systemName, Engine& engine, std::string windowName)
 		: Renderer(systemName, engine, windowName) {
 
-		// TODO engine.RegisterCallback -> register Callbacks
 		engine.RegisterCallbacks({
 			{this, 3000, "INIT", [this](Message& message) { return OnInit(message); } }
 			});
@@ -16,7 +15,6 @@ namespace vve {
 	RendererDeferred::~RendererDeferred() {};
 
 	bool RendererDeferred::OnInit(Message message) {
-		std::cout << "RendererDeferred: OnInit callback\n";
 		auto state = m_engine.GetState();
 
 		switch (VK_API_VERSION_MINOR(state.apiVersion)) {
@@ -24,8 +22,15 @@ namespace vve {
 				std::cout << "Minimum Vulkan API version is 1.1!\n";
 				exit(1);
 				break;
+			case 4:
+				//fall through
+			case 3:
+				std::cout << "Initializing Vulkan 1.3 Deferred Renderer\n";
+				m_engine.RegisterSystem(std::make_unique<RendererDeferred13>(m_name() + "Light1.3", m_engine, m_windowName));
+				break;
 			default:
-				// TODO 1.1 Renderer & 1.3 Renderer
+				// 1.1 is default and minimum
+				std::cout << "Initializing Vulkan 1.1 Deferred Renderer\n";
 				m_engine.RegisterSystem(std::make_unique<RendererDeferred11>(m_name() + "Light1.1", m_engine, m_windowName));
 				break;
 		}
