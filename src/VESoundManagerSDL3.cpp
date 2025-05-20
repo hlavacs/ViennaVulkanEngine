@@ -37,9 +37,9 @@ namespace vve {
 
 	bool SoundManager::OnSetVolume(Message& message) {
 		auto msg = message.template GetData<MsgSetVolume>();
-		m_volume = msg.m_volume;
-        Mix_Volume(-1, m_volume);
-        Mix_VolumeMusic(m_volume);
+		m_volume = static_cast<float>(msg.m_volume);
+        Mix_Volume(-1, static_cast<int>(m_volume));
+        Mix_VolumeMusic(static_cast<int>(m_volume));
 		return false;
 	}
 
