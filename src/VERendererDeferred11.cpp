@@ -143,6 +143,7 @@ namespace vve {
 
 		// Composition
 		CreateDeferredResources();
+		CreateDeferredFrameBuffers();
 
 		CreateGeometryPipeline();
 		CreateLightingPipeline();
@@ -459,7 +460,9 @@ namespace vve {
 
 	bool RendererDeferred11::OnWindowSize(Message message) {
 		DestroyDeferredResources();
+		DestroyDeferredFrameBuffers();
 		CreateDeferredResources();
+		CreateDeferredFrameBuffers();
 
 		return false;
 	}
@@ -496,6 +499,7 @@ namespace vve {
 		}
 
 		DestroyDeferredResources();
+		DestroyDeferredFrameBuffers();
 
 		return false;
 	}
@@ -660,6 +664,21 @@ namespace vve {
 			.m_sampler				= m_sampler
 			});
 
+	}
+
+	void RendererDeferred11::DestroyDeferredResources() {
+		for (auto& gBufferAttach : m_gBufferAttachments) {
+			vvh::ImgDestroyImage({
+				.m_device			= m_vkState().m_device,
+				.m_vmaAllocator		= m_vkState().m_vmaAllocator,
+				.m_image			= gBufferAttach.m_gbufferImage,
+				.m_imageAllocation	= gBufferAttach.m_gbufferImageAllocation
+				});
+			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
+		}
+	}
+
+	void RendererDeferred11::CreateDeferredFrameBuffers() {
 		// GBuffer FrameBuffers
 		vvh::RenCreateGBufferFrameBuffers({
 			.m_device				= m_vkState().m_device,
@@ -679,22 +698,12 @@ namespace vve {
 			});
 	}
 
-	void RendererDeferred11::DestroyDeferredResources() {
+	void RendererDeferred11::DestroyDeferredFrameBuffers() {
 		for (auto& fb : m_gBufferFrameBuffers) {
 			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
 		}
 		for (auto& fb : m_lightingFrameBuffers) {
 			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
-		}
-
-		for (auto& gBufferAttach : m_gBufferAttachments) {
-			vvh::ImgDestroyImage({
-				.m_device			= m_vkState().m_device,
-				.m_vmaAllocator		= m_vkState().m_vmaAllocator,
-				.m_image			= gBufferAttach.m_gbufferImage,
-				.m_imageAllocation	= gBufferAttach.m_gbufferImageAllocation
-				});
-			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
 		}
 	}
 

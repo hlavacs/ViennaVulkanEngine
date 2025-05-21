@@ -29,6 +29,8 @@ namespace vve {
 
 		void CreateDeferredResources();
 		void DestroyDeferredResources();
+		void CreateDeferredFrameBuffers();
+		void DestroyDeferredFrameBuffers();
 		auto getPipelinePerType(std::string type) -> PipelinePerType*;
 		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
 
