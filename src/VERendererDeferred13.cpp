@@ -127,6 +127,63 @@ namespace vve {
 			.m_sampler = m_sampler
 			});
 
+		// TODO: rewrite into shared base class
+		using GBufIndex = vve::RendererDeferred::GBufferIndex;
+
+		vvh::RenCreateGBufferResources({
+			.m_physicalDevice = m_vkState().m_physicalDevice,
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_swapChain = m_vkState().m_swapChain,
+			.m_gbufferImage = m_gBufferAttachments[GBufIndex::POSITION],
+			.m_format = VK_FORMAT_R32G32B32A32_SFLOAT,
+			.m_sampler = m_sampler
+			});
+		vvh::RenUpdateDescriptorSetGBufferAttachment({
+			.m_device = m_vkState().m_device,
+			.m_gbufferImage = m_gBufferAttachments[GBufIndex::POSITION],
+			.m_binding = GBufIndex::POSITION,
+			.m_descriptorSet = m_descriptorSetComposition
+			});
+		vvh::RenCreateGBufferResources({
+			.m_physicalDevice = m_vkState().m_physicalDevice,
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_swapChain = m_vkState().m_swapChain,
+			.m_gbufferImage = m_gBufferAttachments[GBufIndex::NORMAL],
+			.m_format = VK_FORMAT_R8G8B8A8_UNORM,
+			.m_sampler = m_sampler
+			});
+		vvh::RenUpdateDescriptorSetGBufferAttachment({
+			.m_device = m_vkState().m_device,
+			.m_gbufferImage = m_gBufferAttachments[GBufIndex::NORMAL],
+			.m_binding = GBufIndex::NORMAL,
+			.m_descriptorSet = m_descriptorSetComposition
+			});
+		vvh::RenCreateGBufferResources({
+			.m_physicalDevice = m_vkState().m_physicalDevice,
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_swapChain = m_vkState().m_swapChain,
+			.m_gbufferImage = m_gBufferAttachments[GBufIndex::ALBEDO],
+			.m_format = VK_FORMAT_R8G8B8A8_SRGB,
+			.m_sampler = m_sampler
+			});
+		vvh::RenUpdateDescriptorSetGBufferAttachment({
+			.m_device = m_vkState().m_device,
+			.m_gbufferImage = m_gBufferAttachments[GBufIndex::ALBEDO],
+			.m_binding = GBufIndex::ALBEDO,
+			.m_descriptorSet = m_descriptorSetComposition
+			});
+
+		vvh::RenUpdateDescriptorSetDepthAttachment({
+			.m_device = m_vkState().m_device,
+			.m_depthImage = m_vkState().m_depthImage,
+			.m_binding = GBufIndex::DEPTH,
+			.m_descriptorSet = m_descriptorSetComposition,
+			.m_sampler = m_sampler
+			});
+
 		return false;
 	}
 
