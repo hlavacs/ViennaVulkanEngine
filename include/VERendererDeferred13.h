@@ -23,7 +23,7 @@ namespace vve {
 		//bool OnObjectCreate(Message message);
 		//bool OnObjectDestroy(Message message);
 		//bool OnWindowSize(Message message);
-		//bool OnQuit(Message message);
+		bool OnQuit(Message message);
 		//void CreateGeometryPipeline();
 		//void CreateLightingPipeline();
 

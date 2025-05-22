@@ -13,7 +13,7 @@ namespace vve {
 			//{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			//{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			//{this,  1500, "WINDOW_SIZE",		[this](Message& message) { return OnWindowSize(message); }},
-			//{this, 	   0, "QUIT",				[this](Message& message) { return OnQuit(message); } }
+			{this, 	   0, "QUIT",				[this](Message& message) { return OnQuit(message); } }
 			});
 	}
 
@@ -183,6 +183,50 @@ namespace vve {
 			.m_descriptorSet = m_descriptorSetComposition,
 			.m_sampler = m_sampler
 			});
+
+		return false;
+	}
+
+	bool RendererDeferred13::OnQuit(Message message) {
+		vkDeviceWaitIdle(m_vkState().m_device);
+
+		for (auto pool : m_commandPools) {
+			vkDestroyCommandPool(m_vkState().m_device, pool, nullptr);
+		}
+
+		//for (auto& [type, pipeline] : m_geomPipesPerType) {
+		//	vkDestroyDescriptorSetLayout(m_vkState().m_device, pipeline.m_descriptorSetLayoutPerObject, nullptr);
+		//	vkDestroyPipeline(m_vkState().m_device, pipeline.m_graphicsPipeline.m_pipeline, nullptr);
+		//	vkDestroyPipelineLayout(m_vkState().m_device, pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);
+		//}
+		//vkDestroyPipeline(m_vkState().m_device, m_lightingPipeline.m_pipeline, nullptr);
+		//vkDestroyPipelineLayout(m_vkState().m_device, m_lightingPipeline.m_pipelineLayout, nullptr);
+
+		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
+		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutComposition, nullptr);
+
+		vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
+		//vkDestroyRenderPass(m_vkState().m_device, m_geometryPass, nullptr);
+		//vkDestroyRenderPass(m_vkState().m_device, m_lightingPass, nullptr);
+		vkDestroySampler(m_vkState().m_device, m_sampler, nullptr);
+
+		for (auto& buffer : { std::ref(m_uniformBuffersPerFrame), std::ref(m_storageBuffersLights) }) {
+			vvh::BufDestroyBuffer2({
+				.m_device = m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_buffers = buffer.get()
+				});
+		}
+
+		for (auto& gBufferAttach : m_gBufferAttachments) {
+			vvh::ImgDestroyImage({
+				.m_device = m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_image = gBufferAttach.m_gbufferImage,
+				.m_imageAllocation = gBufferAttach.m_gbufferImageAllocation
+				});
+			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
+		}
 
 		return false;
 	}
