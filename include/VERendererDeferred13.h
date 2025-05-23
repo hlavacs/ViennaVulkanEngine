@@ -4,11 +4,11 @@ namespace vve {
 
 	class RendererDeferred13 : public Renderer {
 
-		//struct PipelinePerType {
-		//	std::string m_type;
-		//	VkDescriptorSetLayout m_descriptorSetLayoutPerObject{};
-		//	vvh::Pipeline m_graphicsPipeline{};
-		//};
+		struct PipelinePerType {
+			std::string m_type;
+			VkDescriptorSetLayout m_descriptorSetLayoutPerObject{};
+			vvh::Pipeline m_graphicsPipeline{};
+		};
 
 	public:
 		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
@@ -24,7 +24,7 @@ namespace vve {
 		//bool OnObjectDestroy(Message message);
 		//bool OnWindowSize(Message message);
 		bool OnQuit(Message message);
-		//void CreateGeometryPipeline();
+		void CreateGeometryPipeline();
 		//void CreateLightingPipeline();
 
 		//void CreateDeferredResources();
@@ -50,7 +50,7 @@ namespace vve {
 		//VkRenderPass m_geometryPass{ VK_NULL_HANDLE };
 		//VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
 
-		//std::map<int, PipelinePerType> m_geomPipesPerType;
+		std::map<int, PipelinePerType> m_geomPipesPerType;
 		//vvh::Pipeline m_lightingPipeline{};
 
 		std::vector<VkCommandPool> m_commandPools{};
