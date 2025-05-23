@@ -52,7 +52,7 @@ namespace vve {
 		//VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
 
 		std::map<int, PipelinePerType> m_geomPipesPerType;
-		//vvh::Pipeline m_lightingPipeline{};
+		vvh::Pipeline m_lightingPipeline{};
 
 		std::vector<VkCommandPool> m_commandPools{};
 		//std::vector<VkCommandBuffer> m_commandBuffers{};

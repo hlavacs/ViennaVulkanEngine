@@ -185,6 +185,7 @@ namespace vve {
 			});
 
 		CreateGeometryPipeline();
+		CreateLightingPipeline();
 
 		return false;
 	}
@@ -201,15 +202,14 @@ namespace vve {
 			vkDestroyPipeline(m_vkState().m_device, pipeline.m_graphicsPipeline.m_pipeline, nullptr);
 			vkDestroyPipelineLayout(m_vkState().m_device, pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);
 		}
-		//vkDestroyPipeline(m_vkState().m_device, m_lightingPipeline.m_pipeline, nullptr);
-		//vkDestroyPipelineLayout(m_vkState().m_device, m_lightingPipeline.m_pipelineLayout, nullptr);
+		vkDestroyPipeline(m_vkState().m_device, m_lightingPipeline.m_pipeline, nullptr);
+		vkDestroyPipelineLayout(m_vkState().m_device, m_lightingPipeline.m_pipelineLayout, nullptr);
 
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutComposition, nullptr);
 
 		vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
-		//vkDestroyRenderPass(m_vkState().m_device, m_geometryPass, nullptr);
-		//vkDestroyRenderPass(m_vkState().m_device, m_lightingPass, nullptr);
+
 		vkDestroySampler(m_vkState().m_device, m_sampler, nullptr);
 
 		for (auto& buffer : { std::ref(m_uniformBuffersPerFrame), std::ref(m_storageBuffersLights) }) {
@@ -307,6 +307,43 @@ namespace vve {
 				m_geomPipesPerType[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
 			}
 		}
+	}
+
+	void RendererDeferred13::CreateLightingPipeline() {
+		const std::filesystem::path shaders{ "shaders/Deferred" };
+		if (!std::filesystem::exists(shaders)) {
+			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
+		}
+		const std::string vert = (shaders / "test_lighting.spv").string();
+		const std::string frag = (shaders / "test_lighting.spv").string();
+
+		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+		// TODO: colorBlendAttachment.colorWriteMask = 0xf; ???
+		// TODO: rewrite to make use for the 3 attachments clearer
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
+		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
+		colorBlendAttachment.blendEnable = VK_TRUE;
+
+		vvh::RenCreateGraphicsPipelineDynamic({
+			.m_device = m_vkState().m_device,
+			.m_vertShaderPath = vert,
+			.m_fragShaderPath = frag,
+			.m_bindingDescription = {},
+			.m_attributeDescriptions = {},
+			.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition },
+			.m_specializationConstants = { MAX_NUMBER_LIGHTS },
+			.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
+			.m_blendAttachments = { colorBlendAttachment },
+			.m_graphicsPipeline = m_lightingPipeline,
+			.m_attachmentFormats = { m_vkState().m_swapChain.m_swapChainImageFormat },
+			.m_depthFormat = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_depthWrite = false
+			});
 	}
 
 }	// namespace vve
