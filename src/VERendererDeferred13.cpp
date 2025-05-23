@@ -184,6 +184,8 @@ namespace vve {
 			.m_sampler = m_sampler
 			});
 
+		CreateGeometryPipeline();
+
 		return false;
 	}
 

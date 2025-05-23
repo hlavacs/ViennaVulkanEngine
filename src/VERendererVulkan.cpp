@@ -86,17 +86,35 @@ namespace vve {
 		vkGetPhysicalDeviceProperties(m_vkState().m_physicalDevice, &m_vkState().m_physicalDeviceProperties);
 		vkGetPhysicalDeviceFeatures(m_vkState().m_physicalDevice, &m_vkState().m_physicalDeviceFeatures);
 
-		vvh::DevCreateLogicalDevice( {
-			.m_surface 			= m_vkState().m_surface, 
-			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
-			.m_validationLayers = m_validationLayers, 
-			.m_deviceExtensions = m_deviceExtensions, 
-			.m_debug 			= engineState.debug, 
-			.m_queueFamilies 	= m_vkState().m_queueFamilies, 
-			.m_device 			= m_vkState().m_device, 
-			.m_graphicsQueue 	= m_vkState().m_graphicsQueue, 
-			.m_presentQueue 	= m_vkState().m_presentQueue
-		});
+		// TODO: VkPhysicalDeviceDynamicRenderingFeaturesKHR if version lower than 1.3 but extension is available
+		// 1.1 renderer
+		if (VK_VERSION_MINOR(engineState.apiVersion) < 3) {
+			vvh::DevCreateLogicalDevice({
+			.m_surface			= m_vkState().m_surface,
+			.m_physicalDevice	= m_vkState().m_physicalDevice,
+			.m_validationLayers	= m_validationLayers,
+			.m_deviceExtensions	= m_deviceExtensions,
+			.m_debug			= engineState.debug,
+			.m_queueFamilies	= m_vkState().m_queueFamilies,
+			.m_device			= m_vkState().m_device,
+			.m_graphicsQueue	= m_vkState().m_graphicsQueue,
+			.m_presentQueue		= m_vkState().m_presentQueue
+			});
+		}
+		// 1.3 renderer
+		else {
+			vvh::DevCreateLogicalDevice13({
+			.m_surface			= m_vkState().m_surface,
+			.m_physicalDevice	= m_vkState().m_physicalDevice,
+			.m_validationLayers = m_validationLayers,
+			.m_deviceExtensions = m_deviceExtensions,
+			.m_debug			= engineState.debug,
+			.m_queueFamilies	= m_vkState().m_queueFamilies,
+			.m_device			= m_vkState().m_device,
+			.m_graphicsQueue	= m_vkState().m_graphicsQueue,
+			.m_presentQueue		= m_vkState().m_presentQueue
+			});
+		}
         
 		volkLoadDevice(m_vkState().m_device);
 		
