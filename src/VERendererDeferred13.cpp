@@ -233,6 +233,16 @@ namespace vve {
 		return false;
 	}
 
+	auto RendererDeferred13::getAttachmentFormats() -> std::vector<VkFormat> {
+		std::vector<VkFormat> attachFormats;
+		attachFormats.reserve(m_gBufferAttachments.size());
+		for (const auto& attach : m_gBufferAttachments) {
+			attachFormats.emplace_back(attach.m_gbufferFormat);
+		}
+
+		return attachFormats;
+	}
+
 	void RendererDeferred13::CreateGeometryPipeline() {
 		const std::filesystem::path shaders{ "shaders/Deferred" };
 		if (!std::filesystem::exists(shaders)) {
@@ -278,12 +288,6 @@ namespace vve {
 				colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
 				colorBlendAttachment.blendEnable = VK_TRUE;
 
-				std::vector<VkFormat> attachFormats;
-				attachFormats.reserve(m_gBufferAttachments.size());
-				for (const auto& attach : m_gBufferAttachments) {
-					attachFormats.emplace_back(attach.m_gbufferFormat);
-				}
-
 				vvh::RenCreateGraphicsPipelineDynamic({
 					.m_device = m_vkState().m_device,
 					.m_vertShaderPath = entry.path().string(),
@@ -295,7 +299,7 @@ namespace vve {
 					.m_pushConstantRanges = {},
 					.m_blendAttachments = { colorBlendAttachment, colorBlendAttachment, colorBlendAttachment },
 					.m_graphicsPipeline = graphicsPipeline,
-					.m_attachmentFormats = attachFormats,
+					.m_attachmentFormats = getAttachmentFormats(),
 					.m_depthFormat = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 					.m_depthWrite = true
 					});
