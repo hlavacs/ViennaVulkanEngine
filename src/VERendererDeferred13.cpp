@@ -10,7 +10,7 @@ namespace vve {
 			{this,  3500, "INIT",				[this](Message& message) { return OnInit(message); } },
 			{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
 			//{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
-			//{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
+			{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			//{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			//{this,  1500, "WINDOW_SIZE",		[this](Message& message) { return OnWindowSize(message); }},
 			{this, 	   0, "QUIT",				[this](Message& message) { return OnQuit(message); } }
@@ -249,6 +249,71 @@ namespace vve {
 		return false;
 	}
 
+	bool RendererDeferred13::OnObjectCreate(Message message) {
+		ObjectHandle oHandle = message.template GetData<MsgObjectCreate>().m_object;
+		assert(m_registry.template Has<MeshHandle>(oHandle));
+		auto meshHandle = m_registry.template Get<MeshHandle>(oHandle);
+		auto mesh = m_registry.template Get<vvh::Mesh&>(meshHandle);
+		auto type = getPipelineType(oHandle, mesh().m_verticesData);
+		auto pipelinePerType = getPipelinePerType(type);
+
+		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+		bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
+		bool hasVertexColor = pipelinePerType->m_type.find("C") != std::string::npos;
+		if (!hasTexture && !hasColor && !hasVertexColor) return false;
+
+		vvh::Buffer ubo;
+		size_t sizeUbo = 0;
+		vvh::DescriptorSet descriptorSet{ 1 };
+		vvh::RenCreateDescriptorSet({
+			.m_device = m_vkState().m_device,
+			.m_descriptorSetLayouts = pipelinePerType->m_descriptorSetLayoutPerObject,
+			.m_descriptorPool = m_descriptorPool,
+			.m_descriptorSet = descriptorSet
+			});
+
+		if (hasTexture) {
+			sizeUbo = sizeof(vvh::BufferPerObjectTexture);
+			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
+			vvh::Image& texture = m_registry.template Get<vvh::Image&>(tHandle);
+			vvh::RenUpdateDescriptorSetTexture({
+				.m_device = m_vkState().m_device,
+				.m_texture = texture,
+				.m_binding = 1,
+				.m_descriptorSet = descriptorSet
+				});
+		}
+		else if (hasColor) {
+			sizeUbo = sizeof(vvh::BufferPerObjectColor);
+		}
+		else if (hasVertexColor) {
+			sizeUbo = sizeof(vvh::BufferPerObject);
+		}
+
+		vvh::BufCreateBuffers({
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			.m_size = sizeUbo,
+			.m_buffer = ubo
+			});
+		vvh::RenUpdateDescriptorSet({
+			.m_device = m_vkState().m_device,
+			.m_uniformBuffers = ubo,
+			.m_binding = 0,
+			.m_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.m_size = sizeUbo,
+			.m_descriptorSet = descriptorSet
+			});
+
+		m_registry.Put(oHandle, ubo, descriptorSet);
+		m_registry.AddTags(oHandle, (size_t)pipelinePerType->m_graphicsPipeline.m_pipeline);
+
+		assert(m_registry.template Has<vvh::Buffer>(oHandle));
+		assert(m_registry.template Has<vvh::DescriptorSet>(oHandle));
+		return false;
+	}
+
 	bool RendererDeferred13::OnQuit(Message message) {
 		vkDeviceWaitIdle(m_vkState().m_device);
 
@@ -403,6 +468,24 @@ namespace vve {
 			.m_depthFormat = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 			.m_depthWrite = false
 			});
+	}
+
+	std::string RendererDeferred13::getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) {
+		std::string type = vertexData.getType();
+		if (m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos) type += "E";
+		if (m_registry.template Has<vvh::Color>(handle) && type.find("C") == std::string::npos && type.find("E") == std::string::npos) type += "O";
+		return type;
+	}
+
+	RendererDeferred13::PipelinePerType* RendererDeferred13::getPipelinePerType(std::string type) {
+		for (auto& [pri, pipeline] : m_geomPipesPerType) {
+			bool found = true;
+			for (auto& c : pipeline.m_type) { found = found && (type.find(c) != std::string::npos); }
+			if (found) return &pipeline;
+		}
+		std::cout << "Pipeline not found for type: " << type << std::endl;
+		exit(-1);
+		return nullptr;
 	}
 
 }	// namespace vve

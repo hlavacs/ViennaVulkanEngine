@@ -20,7 +20,7 @@ namespace vve {
 		bool OnInit(Message message);
 		bool OnPrepareNextFrame(Message message);
 		//bool OnRecordNextFrame(Message message);
-		//bool OnObjectCreate(Message message);
+		bool OnObjectCreate(Message message);
 		//bool OnObjectDestroy(Message message);
 		//bool OnWindowSize(Message message);
 		bool OnQuit(Message message);
@@ -30,8 +30,8 @@ namespace vve {
 		//void CreateDeferredResources();
 		//void DestroyDeferredResources();
 		auto getAttachmentFormats() -> std::vector<VkFormat>;
-		//auto getPipelinePerType(std::string type) -> PipelinePerType*;
-		//auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
+		auto getPipelinePerType(std::string type) -> PipelinePerType*;
+		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
 
 		//std::vector<VkFramebuffer> m_gBufferFrameBuffers{};
 		//std::vector<VkFramebuffer> m_lightingFrameBuffers{};
