@@ -11,7 +11,7 @@ namespace vve {
 			{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
 			//{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
 			{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
-			//{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
+			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			//{this,  1500, "WINDOW_SIZE",		[this](Message& message) { return OnWindowSize(message); }},
 			{this, 	   0, "QUIT",				[this](Message& message) { return OnQuit(message); } }
 			});
@@ -311,6 +311,22 @@ namespace vve {
 
 		assert(m_registry.template Has<vvh::Buffer>(oHandle));
 		assert(m_registry.template Has<vvh::DescriptorSet>(oHandle));
+		return false;
+	}
+
+	bool RendererDeferred13::OnObjectDestroy(Message message) {
+		auto& msg = message.template GetData<MsgObjectDestroy>();
+		auto& oHandle = msg.m_handle();
+
+		assert(m_registry.Exists(oHandle));
+
+		if (!m_registry.template Has<vvh::Buffer>(oHandle)) return false;
+		vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
+		vvh::BufDestroyBuffer2({
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_buffers = ubo
+			});
 		return false;
 	}
 

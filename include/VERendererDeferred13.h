@@ -21,7 +21,7 @@ namespace vve {
 		bool OnPrepareNextFrame(Message message);
 		//bool OnRecordNextFrame(Message message);
 		bool OnObjectCreate(Message message);
-		//bool OnObjectDestroy(Message message);
+		bool OnObjectDestroy(Message message);
 		//bool OnWindowSize(Message message);
 		bool OnQuit(Message message);
 		void CreateGeometryPipeline();
