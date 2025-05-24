@@ -575,7 +575,7 @@ namespace vve {
 		vvh::ImgTransitionImageLayout3({
 			.m_device = m_vkState().m_device,
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
-			.m_commandPool = m_vkState().m_commandPool,
+			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 			.m_image = m_vkState().m_depthImage.m_depthImage,
 			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
