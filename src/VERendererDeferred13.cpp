@@ -9,7 +9,7 @@ namespace vve {
 		engine.RegisterCallbacks({
 			{this,  3500, "INIT",				[this](Message& message) { return OnInit(message); } },
 			{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
-			//{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
+			{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
 			{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			//{this,  1500, "WINDOW_SIZE",		[this](Message& message) { return OnWindowSize(message); }},
@@ -327,6 +327,216 @@ namespace vve {
 			.m_vmaAllocator = m_vkState().m_vmaAllocator,
 			.m_buffers = ubo
 			});
+		return false;
+	}
+
+	bool RendererDeferred13::OnRecordNextFrame(Message message) {
+
+		std::vector<VkCommandBuffer> cmdBuffers(1);
+		vvh::ComCreateCommandBuffers({
+			.m_device = m_vkState().m_device,
+			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
+			.m_commandBuffers = cmdBuffers
+			});
+		auto cmdBuffer = cmdBuffers[0];
+
+		std::vector<VkClearValue> clearValues(4);
+		glm::vec4 clearColor{ 0,0,0,1 };
+
+		clearValues[0].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
+		clearValues[1].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
+		clearValues[2].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
+		clearValues[3].depthStencil = { 1.0f, 0 };
+
+		vvh::ComBeginCommandBuffer({ cmdBuffer });
+
+		/*vvh::ComBeginRenderPass2({
+			.m_commandBuffer = cmdBuffer,
+			.m_imageIndex = m_vkState().m_imageIndex,
+			.m_swapChain = m_vkState().m_swapChain,
+			.m_gBufferFramebuffers = m_gBufferFrameBuffers,
+			.m_renderPass = m_geometryPass,
+			.m_clearValues = clearValues,
+			.m_currentFrame = m_vkState().m_currentFrame
+			});*/
+
+		// TODO: Maybe add KHR way for extension support?
+		// Infos were in render pass previously
+		VkRenderingAttachmentInfo gbufferAttach[3] = {};
+		size_t i = 0;
+		for (const auto& attach : m_gBufferAttachments) {
+			gbufferAttach[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			gbufferAttach[i].pNext = VK_NULL_HANDLE;
+			gbufferAttach[i].imageView = attach.m_gbufferImageView;
+			gbufferAttach[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			gbufferAttach[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			gbufferAttach[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			gbufferAttach[i].clearValue = clearValues[i];
+			i++;
+		}
+
+		VkRenderingAttachmentInfo depthAttach = {};
+		depthAttach.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		depthAttach.pNext = VK_NULL_HANDLE;
+		depthAttach.imageView = m_vkState().m_depthImage.m_depthImageView;
+		depthAttach.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		depthAttach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depthAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		depthAttach.clearValue = clearValues[3];
+
+		auto renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent};
+		VkRenderingInfo remderingInfo = {};
+		remderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		remderingInfo.pNext = VK_NULL_HANDLE;
+		remderingInfo.flags = 0;
+		remderingInfo.renderArea = renderArea;
+		remderingInfo.layerCount = 1;
+		remderingInfo.viewMask = 0;
+		remderingInfo.colorAttachmentCount = m_gBufferAttachments.size();
+		remderingInfo.pColorAttachments = gbufferAttach;
+		remderingInfo.pDepthAttachment = &depthAttach;
+		remderingInfo.pStencilAttachment = nullptr;
+
+		// new call
+		vkCmdBeginRendering(cmdBuffer, &remderingInfo);
+
+
+		float f = 0.0;
+		std::array<float, 4> blendconst = (m_pass == 0 ? std::array<float, 4>{f, f, f, f} : std::array<float, 4>{ 1 - f,1 - f,1 - f,1 - f });
+
+		for (auto& pipeline : m_geomPipesPerType) {
+
+			vvh::Pipeline pip{
+				pipeline.second.m_graphicsPipeline.m_pipelineLayout,
+				pipeline.second.m_graphicsPipeline.m_pipeline
+			};
+
+			vvh::ComBindPipeline({
+				.m_commandBuffer = cmdBuffer,
+				.m_graphicsPipeline = pip,
+				.m_imageIndex = m_vkState().m_imageIndex,
+				.m_swapChain = m_vkState().m_swapChain,
+				.m_renderPass = VK_NULL_HANDLE,
+				.m_viewPorts = {},
+				.m_scissors = {}, //default view ports and scissors
+				.m_blendConstants = blendconst,
+				.m_pushConstants = {},
+				.m_currentFrame = m_vkState().m_currentFrame
+				});
+
+			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, vvh::DescriptorSet&>
+				({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
+
+				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+				bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
+				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
+				if (!hasTexture && !hasColor && !hasVertexColor) continue;
+
+				vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+				vvh::ComRecordObject({
+					.m_commandBuffer = cmdBuffer,
+					.m_graphicsPipeline = pipeline.second.m_graphicsPipeline,
+					.m_descriptorSets = { m_descriptorSetPerFrame, descriptorsets },
+					.m_type = pipeline.second.m_type,
+					.m_mesh = mesh,
+					.m_currentFrame = m_vkState().m_currentFrame
+					});
+			}
+		}
+		//vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+		vkCmdEndRendering(cmdBuffer);
+
+		//// ---------------------------------------------------------------------
+		//// Lighting pass
+
+		//// GBuffer attachments VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		//for (auto& image : m_gBufferAttachments) {
+		//	vvh::ImgTransitionImageLayout3({
+		//		.m_device = m_vkState().m_device,
+		//		.m_graphicsQueue = m_vkState().m_graphicsQueue,
+		//		.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
+		//		.m_image = image.m_gbufferImage,
+		//		.m_format = image.m_gbufferFormat,
+		//		.m_oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+		//		.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		//		.m_commandBuffer = cmdBuffer
+		//		});
+		//}
+
+		//// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		//vvh::ImgTransitionImageLayout3({
+		//		.m_device = m_vkState().m_device,
+		//		.m_graphicsQueue = m_vkState().m_graphicsQueue,
+		//		.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
+		//		.m_image = m_vkState().m_depthImage.m_depthImage,
+		//		.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+		//		.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+		//		.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		//		.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		//		.m_commandBuffer = cmdBuffer
+		//	});
+
+		//vvh::ComBeginRenderPass2({
+		//	.m_commandBuffer = cmdBuffer,
+		//	.m_imageIndex = m_vkState().m_imageIndex,
+		//	.m_swapChain = m_vkState().m_swapChain,
+		//	.m_gBufferFramebuffers = m_lightingFrameBuffers,
+		//	.m_renderPass = m_lightingPass,
+		//	.m_clearValues = {},
+		//	.m_currentFrame = m_vkState().m_currentFrame
+		//	});
+
+		//vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
+
+		//vvh::ComBindPipeline({
+		//	.m_commandBuffer = cmdBuffer,
+		//	.m_graphicsPipeline = m_lightingPipeline,
+		//	.m_imageIndex = m_vkState().m_imageIndex,
+		//	.m_swapChain = m_vkState().m_swapChain,
+		//	.m_renderPass = m_lightingPass,
+		//	.m_viewPorts = {},
+		//	.m_scissors = {}, //default view ports and scissors
+		//	.m_blendConstants = blendconst,
+		//	.m_pushConstants = {
+		//		{
+		//			.layout = m_lightingPipeline.m_pipelineLayout,
+		//			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+		//			.offset = 0,
+		//			.size = sizeof(offset),
+		//			.pValues = &offset
+		//		}
+		//	},
+		//	.m_currentFrame = m_vkState().m_currentFrame
+		//	});
+
+		//VkDescriptorSet sets[] = { m_descriptorSetPerFrame.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame],
+		//	m_descriptorSetComposition.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame] };
+
+		//vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_lightingPipeline.m_pipelineLayout,
+		//	0, 2, sets, 0, nullptr);
+
+		//vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+
+		//vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+
+		//// Depth image VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+		//vvh::ImgTransitionImageLayout3({
+		//	.m_device = m_vkState().m_device,
+		//	.m_graphicsQueue = m_vkState().m_graphicsQueue,
+		//	.m_commandPool = m_vkState().m_commandPool,
+		//	.m_image = m_vkState().m_depthImage.m_depthImage,
+		//	.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+		//	.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+		//	.m_oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+		//	.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+		//	.m_commandBuffer = cmdBuffer
+		//	});
+
+		//vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
+		SubmitCommandBuffer(cmdBuffer);
+
+		++m_pass;
 		return false;
 	}
 

@@ -19,7 +19,7 @@ namespace vve {
 	private:
 		bool OnInit(Message message);
 		bool OnPrepareNextFrame(Message message);
-		//bool OnRecordNextFrame(Message message);
+		bool OnRecordNextFrame(Message message);
 		bool OnObjectCreate(Message message);
 		bool OnObjectDestroy(Message message);
 		//bool OnWindowSize(Message message);
