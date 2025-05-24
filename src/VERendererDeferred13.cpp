@@ -364,16 +364,6 @@ namespace vve {
 
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
-		/*vvh::ComBeginRenderPass2({
-			.m_commandBuffer = cmdBuffer,
-			.m_imageIndex = m_vkState().m_imageIndex,
-			.m_swapChain = m_vkState().m_swapChain,
-			.m_gBufferFramebuffers = m_gBufferFrameBuffers,
-			.m_renderPass = m_geometryPass,
-			.m_clearValues = clearValues,
-			.m_currentFrame = m_vkState().m_currentFrame
-			});*/
-
 		// TODO: Maybe add KHR way for extension support?
 		// Infos were in render pass previously
 		VkRenderingAttachmentInfo gbufferAttach[3] = {};
@@ -490,16 +480,6 @@ namespace vve {
 				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				.m_commandBuffer = cmdBuffer
 			});
-
-		/*vvh::ComBeginRenderPass2({
-			.m_commandBuffer = cmdBuffer,
-			.m_imageIndex = m_vkState().m_imageIndex,
-			.m_swapChain = m_vkState().m_swapChain,
-			.m_gBufferFramebuffers = m_lightingFrameBuffers,
-			.m_renderPass = m_lightingPass,
-			.m_clearValues = {},
-			.m_currentFrame = m_vkState().m_currentFrame
-			});*/
 
 		VkRenderingAttachmentInfo outAttach = {};
 		outAttach.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
