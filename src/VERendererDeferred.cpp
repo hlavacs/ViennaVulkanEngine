@@ -4,8 +4,8 @@
 
 namespace vve {
 
-	RendererDeferred::RendererDeferred(std::string systemName, Engine& engine, std::string windowName)
-		: Renderer(systemName, engine, windowName) {
+	RendererDeferred::RendererDeferred(std::string systemName, Engine& engine, std::string windowName) :
+		System{ systemName, engine }, m_windowName(windowName) {
 
 		engine.RegisterCallbacks({
 			{this, 3000, "INIT", [this](Message& message) { return OnInit(message); } }

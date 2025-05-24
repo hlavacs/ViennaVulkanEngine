@@ -1,7 +1,7 @@
 #pragma once
 
 namespace vve {
-	class RendererDeferred : public Renderer {
+	class RendererDeferred : public System{
 		
 		friend class RendererDeferred11;
 		friend class RendererDeferred13;
@@ -14,6 +14,8 @@ namespace vve {
 
 	private:
 		bool OnInit(Message message);
+
+		std::string m_windowName;
 	};
 
 }	// namespace vve
