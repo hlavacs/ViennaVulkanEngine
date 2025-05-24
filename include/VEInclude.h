@@ -77,6 +77,8 @@ namespace vve {
 	class RendererShadow11;
 	class RendererVulkan;
 	class RendererDeferred;
+	class RendererDeferred11;
+	class RendererDeferred13;
    	class SceneManager;
    	class AssetManager;
 	class SoundManager;
