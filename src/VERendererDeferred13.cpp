@@ -506,9 +506,8 @@ namespace vve {
 		outAttach.pNext = VK_NULL_HANDLE;
 		outAttach.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_currentFrame];
 		outAttach.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		outAttach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		outAttach.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		outAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		outAttach.clearValue = clearValues[0];
 
 		VkRenderingInfo lightingRenderingInfo = {};
 		lightingRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
