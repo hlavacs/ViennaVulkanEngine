@@ -33,9 +33,6 @@ namespace vve {
 		auto getPipelinePerType(std::string type) -> PipelinePerType*;
 		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
 
-		//std::vector<VkFramebuffer> m_gBufferFrameBuffers{};
-		//std::vector<VkFramebuffer> m_lightingFrameBuffers{};
-
 		vvh::Buffer m_uniformBuffersPerFrame{};
 		vvh::Buffer m_storageBuffersLights{};
 
@@ -48,14 +45,11 @@ namespace vve {
 		vvh::DescriptorSet m_descriptorSetPerFrame{};
 		vvh::DescriptorSet m_descriptorSetComposition{};
 
-		//VkRenderPass m_geometryPass{ VK_NULL_HANDLE };
-		//VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
-
 		std::map<int, PipelinePerType> m_geomPipesPerType;
 		vvh::Pipeline m_lightingPipeline{};
 
 		std::vector<VkCommandPool> m_commandPools{};
-		//std::vector<VkCommandBuffer> m_commandBuffers{};
+		std::vector<VkCommandBuffer> m_commandBuffers{};
 
 		glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
 		int m_pass{ 0 };

@@ -67,6 +67,13 @@ namespace vve {
 				});
 		}
 
+		m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		vvh::ComCreateCommandBuffers({
+				.m_device = m_vkState().m_device,
+				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
+				.m_commandBuffers = m_commandBuffers
+			});
+
 		// TODO: shrink pool to only what is needed - why 1000?
 		vvh::RenCreateDescriptorPool({
 			.m_device = m_vkState().m_device,
@@ -346,13 +353,7 @@ namespace vve {
 
 	bool RendererDeferred13::OnRecordNextFrame(Message message) {
 
-		std::vector<VkCommandBuffer> cmdBuffers(1);
-		vvh::ComCreateCommandBuffers({
-			.m_device = m_vkState().m_device,
-			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-			.m_commandBuffers = cmdBuffers
-			});
-		auto cmdBuffer = cmdBuffers[0];
+		auto cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 
 		std::vector<VkClearValue> clearValues(4);
 		glm::vec4 clearColor{ 0,0,0,1 };
