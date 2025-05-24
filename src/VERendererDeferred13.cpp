@@ -406,7 +406,7 @@ namespace vve {
 		geometryRenderingInfo.renderArea = renderArea;
 		geometryRenderingInfo.layerCount = 1;
 		geometryRenderingInfo.viewMask = 0;
-		geometryRenderingInfo.colorAttachmentCount = m_gBufferAttachments.size();
+		geometryRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(m_gBufferAttachments.size());
 		geometryRenderingInfo.pColorAttachments = gbufferAttach;
 		geometryRenderingInfo.pDepthAttachment = &depthAttach;
 		geometryRenderingInfo.pStencilAttachment = nullptr;
@@ -557,6 +557,20 @@ namespace vve {
 
 		//vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 		vkCmdEndRendering(cmdBuffer);
+
+		// GBuffer attachments from  VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+		for (auto& image : m_gBufferAttachments) {
+			vvh::ImgTransitionImageLayout3({
+				.m_device = m_vkState().m_device,
+				.m_graphicsQueue = m_vkState().m_graphicsQueue,
+				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
+				.m_image = image.m_gbufferImage,
+				.m_format = image.m_gbufferFormat,
+				.m_oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.m_newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				.m_commandBuffer = cmdBuffer
+				});
+		}
 
 		// Depth image VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
