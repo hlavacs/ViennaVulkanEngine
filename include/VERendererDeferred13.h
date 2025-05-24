@@ -18,7 +18,7 @@ namespace vve {
 
 	private:
 		bool OnInit(Message message);
-		//bool OnPrepareNextFrame(Message message);
+		bool OnPrepareNextFrame(Message message);
 		//bool OnRecordNextFrame(Message message);
 		//bool OnObjectCreate(Message message);
 		//bool OnObjectDestroy(Message message);
@@ -57,8 +57,8 @@ namespace vve {
 		std::vector<VkCommandPool> m_commandPools{};
 		//std::vector<VkCommandBuffer> m_commandBuffers{};
 
-		//glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
-		//int m_pass{ 0 };
+		glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
+		int m_pass{ 0 };
 	};
 
 }	// namespace vve
