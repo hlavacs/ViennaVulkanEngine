@@ -385,20 +385,20 @@ namespace vve {
 		depthAttach.clearValue = clearValues[3];
 
 		auto renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent};
-		VkRenderingInfo remderingInfo = {};
-		remderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-		remderingInfo.pNext = VK_NULL_HANDLE;
-		remderingInfo.flags = 0;
-		remderingInfo.renderArea = renderArea;
-		remderingInfo.layerCount = 1;
-		remderingInfo.viewMask = 0;
-		remderingInfo.colorAttachmentCount = m_gBufferAttachments.size();
-		remderingInfo.pColorAttachments = gbufferAttach;
-		remderingInfo.pDepthAttachment = &depthAttach;
-		remderingInfo.pStencilAttachment = nullptr;
+		VkRenderingInfo geometryRenderingInfo = {};
+		geometryRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		geometryRenderingInfo.pNext = VK_NULL_HANDLE;
+		geometryRenderingInfo.flags = 0;
+		geometryRenderingInfo.renderArea = renderArea;
+		geometryRenderingInfo.layerCount = 1;
+		geometryRenderingInfo.viewMask = 0;
+		geometryRenderingInfo.colorAttachmentCount = m_gBufferAttachments.size();
+		geometryRenderingInfo.pColorAttachments = gbufferAttach;
+		geometryRenderingInfo.pDepthAttachment = &depthAttach;
+		geometryRenderingInfo.pStencilAttachment = nullptr;
 
 		// new call
-		vkCmdBeginRendering(cmdBuffer, &remderingInfo);
+		vkCmdBeginRendering(cmdBuffer, &geometryRenderingInfo);
 
 
 		float f = 0.0;
@@ -447,93 +447,117 @@ namespace vve {
 		//vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 		vkCmdEndRendering(cmdBuffer);
 
-		//// ---------------------------------------------------------------------
-		//// Lighting pass
+		// ---------------------------------------------------------------------
+		// Lighting pass
 
-		//// GBuffer attachments VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-		//for (auto& image : m_gBufferAttachments) {
-		//	vvh::ImgTransitionImageLayout3({
-		//		.m_device = m_vkState().m_device,
-		//		.m_graphicsQueue = m_vkState().m_graphicsQueue,
-		//		.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-		//		.m_image = image.m_gbufferImage,
-		//		.m_format = image.m_gbufferFormat,
-		//		.m_oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-		//		.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		//		.m_commandBuffer = cmdBuffer
-		//		});
-		//}
+		// GBuffer attachments VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		for (auto& image : m_gBufferAttachments) {
+			vvh::ImgTransitionImageLayout3({
+				.m_device = m_vkState().m_device,
+				.m_graphicsQueue = m_vkState().m_graphicsQueue,
+				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
+				.m_image = image.m_gbufferImage,
+				.m_format = image.m_gbufferFormat,
+				.m_oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.m_commandBuffer = cmdBuffer
+				});
+		}
 
-		//// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-		//vvh::ImgTransitionImageLayout3({
-		//		.m_device = m_vkState().m_device,
-		//		.m_graphicsQueue = m_vkState().m_graphicsQueue,
-		//		.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-		//		.m_image = m_vkState().m_depthImage.m_depthImage,
-		//		.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
-		//		.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
-		//		.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		//		.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		//		.m_commandBuffer = cmdBuffer
-		//	});
+		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		vvh::ImgTransitionImageLayout3({
+				.m_device = m_vkState().m_device,
+				.m_graphicsQueue = m_vkState().m_graphicsQueue,
+				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
+				.m_image = m_vkState().m_depthImage.m_depthImage,
+				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.m_commandBuffer = cmdBuffer
+			});
 
-		//vvh::ComBeginRenderPass2({
-		//	.m_commandBuffer = cmdBuffer,
-		//	.m_imageIndex = m_vkState().m_imageIndex,
-		//	.m_swapChain = m_vkState().m_swapChain,
-		//	.m_gBufferFramebuffers = m_lightingFrameBuffers,
-		//	.m_renderPass = m_lightingPass,
-		//	.m_clearValues = {},
-		//	.m_currentFrame = m_vkState().m_currentFrame
-		//	});
+		/*vvh::ComBeginRenderPass2({
+			.m_commandBuffer = cmdBuffer,
+			.m_imageIndex = m_vkState().m_imageIndex,
+			.m_swapChain = m_vkState().m_swapChain,
+			.m_gBufferFramebuffers = m_lightingFrameBuffers,
+			.m_renderPass = m_lightingPass,
+			.m_clearValues = {},
+			.m_currentFrame = m_vkState().m_currentFrame
+			});*/
 
-		//vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
+		VkRenderingAttachmentInfo outAttach = {};
+		outAttach.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		outAttach.pNext = VK_NULL_HANDLE;
+		outAttach.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_currentFrame];
+		outAttach.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		outAttach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		outAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		outAttach.clearValue = clearValues[0];
 
-		//vvh::ComBindPipeline({
-		//	.m_commandBuffer = cmdBuffer,
-		//	.m_graphicsPipeline = m_lightingPipeline,
-		//	.m_imageIndex = m_vkState().m_imageIndex,
-		//	.m_swapChain = m_vkState().m_swapChain,
-		//	.m_renderPass = m_lightingPass,
-		//	.m_viewPorts = {},
-		//	.m_scissors = {}, //default view ports and scissors
-		//	.m_blendConstants = blendconst,
-		//	.m_pushConstants = {
-		//		{
-		//			.layout = m_lightingPipeline.m_pipelineLayout,
-		//			.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-		//			.offset = 0,
-		//			.size = sizeof(offset),
-		//			.pValues = &offset
-		//		}
-		//	},
-		//	.m_currentFrame = m_vkState().m_currentFrame
-		//	});
+		VkRenderingInfo lightingRenderingInfo = {};
+		lightingRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		lightingRenderingInfo.pNext = VK_NULL_HANDLE;
+		lightingRenderingInfo.flags = 0;
+		lightingRenderingInfo.renderArea = renderArea;
+		lightingRenderingInfo.layerCount = 1;
+		lightingRenderingInfo.viewMask = 0;
+		lightingRenderingInfo.colorAttachmentCount = 1;
+		lightingRenderingInfo.pColorAttachments = &outAttach;
+		lightingRenderingInfo.pDepthAttachment = nullptr;
+		lightingRenderingInfo.pStencilAttachment = nullptr;
 
-		//VkDescriptorSet sets[] = { m_descriptorSetPerFrame.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame],
-		//	m_descriptorSetComposition.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame] };
+		vkCmdBeginRendering(cmdBuffer, &lightingRenderingInfo);
 
-		//vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_lightingPipeline.m_pipelineLayout,
-		//	0, 2, sets, 0, nullptr);
+		vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
 
-		//vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+		vvh::ComBindPipeline({
+			.m_commandBuffer = cmdBuffer,
+			.m_graphicsPipeline = m_lightingPipeline,
+			.m_imageIndex = m_vkState().m_imageIndex,
+			.m_swapChain = m_vkState().m_swapChain,
+			.m_renderPass = VK_NULL_HANDLE,
+			.m_viewPorts = {},
+			.m_scissors = {}, //default view ports and scissors
+			.m_blendConstants = blendconst,
+			.m_pushConstants = {
+				{
+					.layout = m_lightingPipeline.m_pipelineLayout,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+					.offset = 0,
+					.size = sizeof(offset),
+					.pValues = &offset
+				}
+			},
+			.m_currentFrame = m_vkState().m_currentFrame
+			});
+
+		VkDescriptorSet sets[] = { m_descriptorSetPerFrame.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame],
+			m_descriptorSetComposition.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame] };
+
+		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_lightingPipeline.m_pipelineLayout,
+			0, 2, sets, 0, nullptr);
+
+		vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
 
 		//vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+		vkCmdEndRendering(cmdBuffer);
 
-		//// Depth image VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-		//vvh::ImgTransitionImageLayout3({
-		//	.m_device = m_vkState().m_device,
-		//	.m_graphicsQueue = m_vkState().m_graphicsQueue,
-		//	.m_commandPool = m_vkState().m_commandPool,
-		//	.m_image = m_vkState().m_depthImage.m_depthImage,
-		//	.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
-		//	.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
-		//	.m_oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-		//	.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-		//	.m_commandBuffer = cmdBuffer
-		//	});
+		// Depth image VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+		vvh::ImgTransitionImageLayout3({
+			.m_device = m_vkState().m_device,
+			.m_graphicsQueue = m_vkState().m_graphicsQueue,
+			.m_commandPool = m_vkState().m_commandPool,
+			.m_image = m_vkState().m_depthImage.m_depthImage,
+			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+			.m_oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			.m_commandBuffer = cmdBuffer
+			});
 
-		//vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
+		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
 
 		++m_pass;
