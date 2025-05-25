@@ -4,11 +4,13 @@ namespace vve {
 
 	class RendererDeferred13 : public RendererDeferredCommon<RendererDeferred13> {
 
-		struct PipelinePerType {
-			std::string m_type;
-			VkDescriptorSetLayout m_descriptorSetLayoutPerObject{};
-			vvh::Pipeline m_graphicsPipeline{};
-		};
+		//struct PipelinePerType {
+		//	std::string m_type;
+		//	VkDescriptorSetLayout m_descriptorSetLayoutPerObject{};
+		//	vvh::Pipeline m_graphicsPipeline{};
+		//};
+
+		friend class RendererDeferredCommon<RendererDeferred13>;
 
 	public:
 		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
@@ -33,23 +35,23 @@ namespace vve {
 		auto getPipelinePerType(std::string type) -> PipelinePerType*;
 		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
 
-		vvh::Buffer m_uniformBuffersPerFrame{};
-		vvh::Buffer m_storageBuffersLights{};
+		//vvh::Buffer m_uniformBuffersPerFrame{};
+		//vvh::Buffer m_storageBuffersLights{};
 
-		VkSampler m_sampler{ VK_NULL_HANDLE };
-		std::array<vvh::GBufferImage, 3> m_gBufferAttachments{};
+		//VkSampler m_sampler{ VK_NULL_HANDLE };
+		//std::array<vvh::GBufferImage, 3> m_gBufferAttachments{};
 
-		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
-		VkDescriptorSetLayout m_descriptorSetLayoutComposition{ VK_NULL_HANDLE };
-		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
-		vvh::DescriptorSet m_descriptorSetPerFrame{};
-		vvh::DescriptorSet m_descriptorSetComposition{};
+		//VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
+		//VkDescriptorSetLayout m_descriptorSetLayoutComposition{ VK_NULL_HANDLE };
+		//VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
+		//vvh::DescriptorSet m_descriptorSetPerFrame{};
+		//vvh::DescriptorSet m_descriptorSetComposition{};
 
-		std::map<int, PipelinePerType> m_geomPipesPerType;
-		vvh::Pipeline m_lightingPipeline{};
+		//std::map<int, PipelinePerType> m_geomPipesPerType;
+		//vvh::Pipeline m_lightingPipeline{};
 
-		std::vector<VkCommandPool> m_commandPools{};
-		std::vector<VkCommandBuffer> m_commandBuffers{};
+		//std::vector<VkCommandPool> m_commandPools{};
+		//std::vector<VkCommandBuffer> m_commandBuffers{};
 
 		glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
 		int m_pass{ 0 };
