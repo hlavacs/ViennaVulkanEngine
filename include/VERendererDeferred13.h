@@ -2,7 +2,7 @@
 
 namespace vve {
 
-	class RendererDeferred13 : public Renderer {
+	class RendererDeferred13 : public RendererDeferredCommon {
 
 		struct PipelinePerType {
 			std::string m_type;
