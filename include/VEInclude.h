@@ -77,6 +77,7 @@ namespace vve {
 	class RendererShadow11;
 	class RendererVulkan;
 	class RendererDeferred;
+	class RendererDeferredCommon;	// Base class for 1.1 and 1.3 RenDef
 	class RendererDeferred11;
 	class RendererDeferred13;
    	class SceneManager;
@@ -120,6 +121,7 @@ namespace vve {
 #include "VERendererShadow11.h"
 #include "VERendererVulkan.h"
 #include "VERendererDeferred.h"
+#include "VERendererDeferredCommon.h"
 #include "VERendererDeferred11.h"
 #include "VERendererDeferred13.h"
 #include "VESceneManager.h"
