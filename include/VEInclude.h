@@ -77,6 +77,7 @@ namespace vve {
 	class RendererShadow11;
 	class RendererVulkan;
 	class RendererDeferred;
+	template<typename Derived>
 	class RendererDeferredCommon;	// Base class for 1.1 and 1.3 RenDef
 	class RendererDeferred11;
 	class RendererDeferred13;
