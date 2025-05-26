@@ -208,14 +208,12 @@ namespace vve {
 		return false;
 	}
 
-	//bool RendererDeferred11::OnWindowSize(Message message) {
-	//	DestroyDeferredResources();
-	//	DestroyDeferredFrameBuffers();
-	//	CreateDeferredResources();
-	//	CreateDeferredFrameBuffers();
+	bool RendererDeferred11::OnWindowSize(Message message) {
+		DestroyDeferredFrameBuffers();
+		CreateDeferredFrameBuffers();
 
-	//	return false;
-	//}
+		return false;
+	}
 
 	bool RendererDeferred11::OnQuit(Message message) {
 

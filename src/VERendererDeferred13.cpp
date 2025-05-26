@@ -266,6 +266,11 @@ namespace vve {
 		return false;
 	}
 
+	bool RendererDeferred13::OnWindowSize(Message message) {
+		// TODO: manage window scaling
+		return false;
+	}
+
 	bool RendererDeferred13::OnQuit(Message message) {
 		// empty
 		return false;

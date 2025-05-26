@@ -15,6 +15,7 @@ namespace vve {
 			{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
 			{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
+			{this,  1500, "WINDOW_SIZE",		[this](Message& message) { return OnWindowSize(message); }},
 			{this, 	   0, "QUIT",				[this](Message& message) { return OnQuit(message); } }
 			});
 	}
@@ -307,6 +308,16 @@ namespace vve {
 	}
 
 	template<typename Derived>
+	bool RendererDeferredCommon<Derived>::OnWindowSize(Message message) {
+		DestroyDeferredResources();
+		CreateDeferredResources();
+
+		static_cast<Derived*>(this)->OnWindowSize(message);
+
+		return false;
+	}
+
+	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnQuit(Message message) {
 		vkDeviceWaitIdle(m_vkState().m_device);
 
@@ -409,6 +420,19 @@ namespace vve {
 			.m_descriptorSet = m_descriptorSetComposition,
 			.m_sampler = m_sampler
 			});
+	}
+
+	template<typename Derived>
+	void RendererDeferredCommon<Derived>::DestroyDeferredResources() {
+		for (auto& gBufferAttach : m_gBufferAttachments) {
+			vvh::ImgDestroyImage({
+				.m_device = m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_image = gBufferAttach.m_gbufferImage,
+				.m_imageAllocation = gBufferAttach.m_gbufferImageAllocation
+				});
+			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
+		}
 	}
 
 	template<typename Derived>
