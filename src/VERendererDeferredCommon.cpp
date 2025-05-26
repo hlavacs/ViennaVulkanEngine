@@ -149,7 +149,6 @@ namespace vve {
 
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnPrepareNextFrame(Message message) {
-		m_pass = 0;
 
 		vvh::UniformBufferFrame ubc;
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);

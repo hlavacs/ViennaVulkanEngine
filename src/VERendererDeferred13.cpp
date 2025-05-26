@@ -93,9 +93,6 @@ namespace vve {
 		// new call
 		vkCmdBeginRendering(cmdBuffer, &m_geometryRenderingInfo);
 
-		float f = 0.0;
-		std::array<float, 4> blendconst = (m_pass == 0 ? std::array<float, 4>{f, f, f, f} : std::array<float, 4>{ 1 - f,1 - f,1 - f,1 - f });
-
 		for (auto& pipeline : m_geomPipesPerType) {
 
 			vvh::Pipeline pip{
@@ -111,7 +108,7 @@ namespace vve {
 				.m_renderPass = VK_NULL_HANDLE,
 				.m_viewPorts = {},
 				.m_scissors = {}, //default view ports and scissors
-				.m_blendConstants = blendconst,
+				.m_blendConstants = {},
 				.m_pushConstants = {},
 				.m_currentFrame = m_vkState().m_currentFrame
 				});
@@ -183,7 +180,7 @@ namespace vve {
 			.m_renderPass = VK_NULL_HANDLE,
 			.m_viewPorts = {},
 			.m_scissors = {}, //default view ports and scissors
-			.m_blendConstants = blendconst,
+			.m_blendConstants = {},
 			.m_pushConstants = {
 				{
 					.layout = m_lightingPipeline.m_pipelineLayout,
@@ -236,7 +233,6 @@ namespace vve {
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
 
-		++m_pass;
 		return false;
 	}
 
