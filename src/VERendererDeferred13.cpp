@@ -10,6 +10,60 @@ namespace vve {
 
 	bool RendererDeferred13::OnInit(Message message) {
 
+		// TODO: Maybe add KHR way for extension support?
+		// geometry
+		size_t i = 0;
+		for (const auto& attach : m_gBufferAttachments) {
+			m_gbufferRenderingInfo[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			m_gbufferRenderingInfo[i].pNext = VK_NULL_HANDLE;
+			m_gbufferRenderingInfo[i].imageView = attach.m_gbufferImageView;
+			m_gbufferRenderingInfo[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			m_gbufferRenderingInfo[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			m_gbufferRenderingInfo[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			m_gbufferRenderingInfo[i].clearValue = m_clearValues[i];
+			i++;
+		}
+
+		m_depthRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		m_depthRenderingInfo.pNext = VK_NULL_HANDLE;
+		m_depthRenderingInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
+		m_depthRenderingInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		m_depthRenderingInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		m_depthRenderingInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		m_depthRenderingInfo.clearValue = m_clearValues[DEPTH];
+
+		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
+		m_geometryRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		m_geometryRenderingInfo.pNext = VK_NULL_HANDLE;
+		m_geometryRenderingInfo.flags = 0;
+		m_geometryRenderingInfo.renderArea = renderArea;
+		m_geometryRenderingInfo.layerCount = 1;
+		m_geometryRenderingInfo.viewMask = 0;
+		m_geometryRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(m_gBufferAttachments.size());
+		m_geometryRenderingInfo.pColorAttachments = m_gbufferRenderingInfo;
+		m_geometryRenderingInfo.pDepthAttachment = &m_depthRenderingInfo;
+		m_geometryRenderingInfo.pStencilAttachment = nullptr;
+
+		// ----------------------------------------------------------------------------
+		// lighting
+		m_outputAttach.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		m_outputAttach.pNext = VK_NULL_HANDLE;
+		m_outputAttach.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
+		m_outputAttach.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		m_outputAttach.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		m_outputAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+		m_lightingRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		m_lightingRenderingInfo.pNext = VK_NULL_HANDLE;
+		m_lightingRenderingInfo.flags = 0;
+		m_lightingRenderingInfo.renderArea = renderArea;
+		m_lightingRenderingInfo.layerCount = 1;
+		m_lightingRenderingInfo.viewMask = 0;
+		m_lightingRenderingInfo.colorAttachmentCount = 1;
+		m_lightingRenderingInfo.pColorAttachments = &m_outputAttach;
+		m_lightingRenderingInfo.pDepthAttachment = nullptr;
+		m_lightingRenderingInfo.pStencilAttachment = nullptr;
+
 		CreateGeometryPipeline();
 		CreateLightingPipeline();
 
@@ -36,46 +90,8 @@ namespace vve {
 		auto cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
-		// TODO: Maybe add KHR way for extension support?
-		// Infos were in render pass previously
-		VkRenderingAttachmentInfo gbufferAttach[3] = {};
-		size_t i = 0;
-		for (const auto& attach : m_gBufferAttachments) {
-			gbufferAttach[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-			gbufferAttach[i].pNext = VK_NULL_HANDLE;
-			gbufferAttach[i].imageView = attach.m_gbufferImageView;
-			gbufferAttach[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			gbufferAttach[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			gbufferAttach[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			gbufferAttach[i].clearValue = m_clearValues[i];
-			i++;
-		}
-
-		VkRenderingAttachmentInfo depthAttach = {};
-		depthAttach.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-		depthAttach.pNext = VK_NULL_HANDLE;
-		depthAttach.imageView = m_vkState().m_depthImage.m_depthImageView;
-		depthAttach.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		depthAttach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depthAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		depthAttach.clearValue = m_clearValues[DEPTH];
-
-		auto renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent};
-		VkRenderingInfo geometryRenderingInfo = {};
-		geometryRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-		geometryRenderingInfo.pNext = VK_NULL_HANDLE;
-		geometryRenderingInfo.flags = 0;
-		geometryRenderingInfo.renderArea = renderArea;
-		geometryRenderingInfo.layerCount = 1;
-		geometryRenderingInfo.viewMask = 0;
-		geometryRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(m_gBufferAttachments.size());
-		geometryRenderingInfo.pColorAttachments = gbufferAttach;
-		geometryRenderingInfo.pDepthAttachment = &depthAttach;
-		geometryRenderingInfo.pStencilAttachment = nullptr;
-
 		// new call
-		vkCmdBeginRendering(cmdBuffer, &geometryRenderingInfo);
-
+		vkCmdBeginRendering(cmdBuffer, &m_geometryRenderingInfo);
 
 		float f = 0.0;
 		std::array<float, 4> blendconst = (m_pass == 0 ? std::array<float, 4>{f, f, f, f} : std::array<float, 4>{ 1 - f,1 - f,1 - f,1 - f });
@@ -152,27 +168,10 @@ namespace vve {
 				.m_commandBuffer = cmdBuffer
 			});
 
-		VkRenderingAttachmentInfo outAttach = {};
-		outAttach.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-		outAttach.pNext = VK_NULL_HANDLE;
-		outAttach.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
-		outAttach.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		outAttach.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		outAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		// Changes every frame
+		m_outputAttach.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
 
-		VkRenderingInfo lightingRenderingInfo = {};
-		lightingRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-		lightingRenderingInfo.pNext = VK_NULL_HANDLE;
-		lightingRenderingInfo.flags = 0;
-		lightingRenderingInfo.renderArea = renderArea;
-		lightingRenderingInfo.layerCount = 1;
-		lightingRenderingInfo.viewMask = 0;
-		lightingRenderingInfo.colorAttachmentCount = 1;
-		lightingRenderingInfo.pColorAttachments = &outAttach;
-		lightingRenderingInfo.pDepthAttachment = nullptr;
-		lightingRenderingInfo.pStencilAttachment = nullptr;
-
-		vkCmdBeginRendering(cmdBuffer, &lightingRenderingInfo);
+		vkCmdBeginRendering(cmdBuffer, &m_lightingRenderingInfo);
 
 		vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
 
@@ -242,7 +241,15 @@ namespace vve {
 	}
 
 	bool RendererDeferred13::OnWindowSize(Message message) {
-		// empty
+		for (size_t i = 0; i < 3; ++i) {
+			m_gbufferRenderingInfo[i].imageView = m_gBufferAttachments[i].m_gbufferImageView;
+		}
+		m_depthRenderingInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
+
+		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
+		m_geometryRenderingInfo.renderArea = renderArea;
+		m_lightingRenderingInfo.renderArea = renderArea;
+
 		return false;
 	}
 

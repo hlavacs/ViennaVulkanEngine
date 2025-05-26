@@ -22,6 +22,13 @@ namespace vve {
 		void CreateGeometryPipeline();
 		void CreateLightingPipeline();
 
+		VkRenderingAttachmentInfo m_gbufferRenderingInfo[3]{};
+		VkRenderingAttachmentInfo m_depthRenderingInfo{};
+		VkRenderingInfo m_geometryRenderingInfo{};
+
+		VkRenderingAttachmentInfo m_outputAttach{};
+		VkRenderingInfo m_lightingRenderingInfo{};
+
 	};
 
 }	// namespace vve
