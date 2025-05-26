@@ -12,6 +12,8 @@ namespace vve {
 		engine.RegisterCallbacks({
 			{this,  3500, "INIT",				[this](Message& message) { return OnInit(message); } },
 			{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
+			{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
+			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			});
 	}
 
@@ -200,6 +202,96 @@ namespace vve {
 		}
 
 		static_cast<Derived*>(this)->OnPrepareNextFrame(message);
+
+		return false;
+	}
+
+	template<typename Derived>
+	bool RendererDeferredCommon<Derived>::OnObjectCreate(Message message) {
+		ObjectHandle oHandle = message.template GetData<MsgObjectCreate>().m_object;
+		assert(m_registry.template Has<MeshHandle>(oHandle));
+		auto meshHandle = m_registry.template Get<MeshHandle>(oHandle);
+		auto mesh = m_registry.template Get<vvh::Mesh&>(meshHandle);
+		auto type = getPipelineType(oHandle, mesh().m_verticesData);
+		auto pipelinePerType = getPipelinePerType(type);
+
+		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+		bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
+		bool hasVertexColor = pipelinePerType->m_type.find("C") != std::string::npos;
+		if (!hasTexture && !hasColor && !hasVertexColor) return false;
+
+		vvh::Buffer ubo;
+		size_t sizeUbo = 0;
+		vvh::DescriptorSet descriptorSet{ 1 };
+		vvh::RenCreateDescriptorSet({
+			.m_device = m_vkState().m_device,
+			.m_descriptorSetLayouts = pipelinePerType->m_descriptorSetLayoutPerObject,
+			.m_descriptorPool = m_descriptorPool,
+			.m_descriptorSet = descriptorSet
+			});
+
+		if (hasTexture) {
+			sizeUbo = sizeof(vvh::BufferPerObjectTexture);
+			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
+			vvh::Image& texture = m_registry.template Get<vvh::Image&>(tHandle);
+			vvh::RenUpdateDescriptorSetTexture({
+				.m_device = m_vkState().m_device,
+				.m_texture = texture,
+				.m_binding = 1,
+				.m_descriptorSet = descriptorSet
+				});
+		}
+		else if (hasColor) {
+			sizeUbo = sizeof(vvh::BufferPerObjectColor);
+		}
+		else if (hasVertexColor) {
+			sizeUbo = sizeof(vvh::BufferPerObject);
+		}
+
+		vvh::BufCreateBuffers({
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			.m_size = sizeUbo,
+			.m_buffer = ubo
+			});
+		vvh::RenUpdateDescriptorSet({
+			.m_device = m_vkState().m_device,
+			.m_uniformBuffers = ubo,
+			.m_binding = 0,
+			.m_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.m_size = sizeUbo,
+			.m_descriptorSet = descriptorSet
+			});
+
+		m_registry.Put(oHandle, ubo, descriptorSet);
+		m_registry.AddTags(oHandle, (size_t)pipelinePerType->m_graphicsPipeline.m_pipeline);
+
+		assert(m_registry.template Has<vvh::Buffer>(oHandle));
+		assert(m_registry.template Has<vvh::DescriptorSet>(oHandle));
+
+
+		static_cast<Derived*>(this)->OnObjectCreate(message);
+
+		return false;
+	}
+
+	template<typename Derived>
+	bool RendererDeferredCommon<Derived>::OnObjectDestroy(Message message) {
+		auto& msg = message.template GetData<MsgObjectDestroy>();
+		auto& oHandle = msg.m_handle();
+
+		assert(m_registry.Exists(oHandle));
+
+		if (!m_registry.template Has<vvh::Buffer>(oHandle)) return false;
+		vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
+		vvh::BufDestroyBuffer2({
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_buffers = ubo
+			});
+
+		static_cast<Derived*>(this)->OnObjectDestroy(message);
 
 		return false;
 	}
