@@ -9,7 +9,7 @@ namespace vve {
 		engine.RegisterCallbacks({
 			//{this,  3500, "INIT",				[this](Message& message) { return OnInit(message); } },
 			//{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
-			{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
+			//{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
 			//{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			//{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			//{this,  1500, "WINDOW_SIZE",		[this](Message& message) { return OnWindowSize(message); }},

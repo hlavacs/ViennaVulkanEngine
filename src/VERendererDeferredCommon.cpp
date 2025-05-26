@@ -12,6 +12,7 @@ namespace vve {
 		engine.RegisterCallbacks({
 			{this,  3500, "INIT",				[this](Message& message) { return OnInit(message); } },
 			{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
+			{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
 			{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			});
@@ -202,6 +203,14 @@ namespace vve {
 		}
 
 		static_cast<Derived*>(this)->OnPrepareNextFrame(message);
+
+		return false;
+	}
+
+	template<typename Derived>
+	bool RendererDeferredCommon<Derived>::OnRecordNextFrame(Message message) {
+
+		static_cast<Derived*>(this)->OnRecordNextFrame(message);
 
 		return false;
 	}
