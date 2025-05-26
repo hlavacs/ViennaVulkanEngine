@@ -39,15 +39,6 @@ namespace vve {
 	bool RendererDeferred11::OnRecordNextFrame(Message message) {
 
 		auto cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
-
-		std::vector<VkClearValue> clearValues(4);
-		glm::vec4 clearColor{ 0,0,0,1 };
-
-		clearValues[0].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
-		clearValues[1].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
-		clearValues[2].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
-		clearValues[3].depthStencil = { 1.0f, 0 };
-
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
 		vvh::ComBeginRenderPass2({ 
@@ -56,7 +47,7 @@ namespace vve {
 			.m_swapChain			= m_vkState().m_swapChain,
 			.m_gBufferFramebuffers	= m_gBufferFrameBuffers,
 			.m_renderPass			= m_geometryPass,
-			.m_clearValues			= clearValues,
+			.m_clearValues			= m_clearValues,
 			.m_currentFrame			= m_vkState().m_currentFrame 
 			});
 

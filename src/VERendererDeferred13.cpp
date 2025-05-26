@@ -34,15 +34,6 @@ namespace vve {
 	bool RendererDeferred13::OnRecordNextFrame(Message message) {
 
 		auto cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
-
-		std::vector<VkClearValue> clearValues(4);
-		glm::vec4 clearColor{ 0,0,0,1 };
-
-		clearValues[0].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
-		clearValues[1].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
-		clearValues[2].color = { {clearColor.r, clearColor.g, clearColor.b, clearColor.w} };
-		clearValues[3].depthStencil = { 1.0f, 0 };
-
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
 		// TODO: Maybe add KHR way for extension support?
@@ -56,7 +47,7 @@ namespace vve {
 			gbufferAttach[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			gbufferAttach[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			gbufferAttach[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			gbufferAttach[i].clearValue = clearValues[i];
+			gbufferAttach[i].clearValue = m_clearValues[i];
 			i++;
 		}
 
@@ -67,7 +58,7 @@ namespace vve {
 		depthAttach.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		depthAttach.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		depthAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		depthAttach.clearValue = clearValues[3];
+		depthAttach.clearValue = m_clearValues[DEPTH];
 
 		auto renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent};
 		VkRenderingInfo geometryRenderingInfo = {};
@@ -129,7 +120,6 @@ namespace vve {
 					});
 			}
 		}
-		//vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 		vkCmdEndRendering(cmdBuffer);
 
 		// ---------------------------------------------------------------------
@@ -215,7 +205,6 @@ namespace vve {
 
 		vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
 
-		//vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 		vkCmdEndRendering(cmdBuffer);
 
 		// GBuffer attachments from  VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL

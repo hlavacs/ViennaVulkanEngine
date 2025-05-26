@@ -16,6 +16,13 @@ namespace vve {
 			vvh::Pipeline m_graphicsPipeline{};
 		};
 
+		static constexpr std::array<VkClearValue, 4> m_clearValues = { {
+			VkClearValue{.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }} },
+			VkClearValue{.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }} },
+			VkClearValue{.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }} },
+			VkClearValue{.depthStencil = { 1.0f, 0 } }
+		} };
+
 		vvh::Buffer m_uniformBuffersPerFrame{};
 		vvh::Buffer m_storageBuffersLights{};
 
