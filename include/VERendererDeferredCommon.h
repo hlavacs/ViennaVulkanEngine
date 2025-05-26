@@ -7,6 +7,8 @@ namespace vve {
 
 	protected:
 
+		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
+
 		enum GBufferIndex { POSITION = 0, NORMAL = 1, ALBEDO = 2, DEPTH = 3 };
 
 		struct PipelinePerType {
@@ -52,6 +54,10 @@ namespace vve {
 		void CreateDeferredResources();
 		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
 		auto getPipelinePerType(std::string type) -> PipelinePerType*;
+
+	protected:
+
+		auto getAttachmentFormats()->std::vector<VkFormat>;
 
 	};
 

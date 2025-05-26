@@ -13,7 +13,7 @@ namespace vve {
 		friend class RendererDeferredCommon<RendererDeferred13>;
 
 	public:
-		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
+		//static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
 
 		RendererDeferred13(std::string systemName, Engine& engine, std::string windowName);
 		virtual ~RendererDeferred13();
@@ -31,9 +31,9 @@ namespace vve {
 
 		//void CreateDeferredResources();
 		//void DestroyDeferredResources();
-		auto getAttachmentFormats() -> std::vector<VkFormat>;
-		auto getPipelinePerType(std::string type) -> PipelinePerType*;
-		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
+		//auto getAttachmentFormats() -> std::vector<VkFormat>;
+		//auto getPipelinePerType(std::string type) -> PipelinePerType*;
+		//auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
 
 		//vvh::Buffer m_uniformBuffersPerFrame{};
 		//vvh::Buffer m_storageBuffersLights{};

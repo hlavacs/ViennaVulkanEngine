@@ -321,15 +321,15 @@ namespace vve {
 		return false;
 	}
 
-	auto RendererDeferred13::getAttachmentFormats() -> std::vector<VkFormat> {
-		std::vector<VkFormat> attachFormats;
-		attachFormats.reserve(m_gBufferAttachments.size());
-		for (const auto& attach : m_gBufferAttachments) {
-			attachFormats.emplace_back(attach.m_gbufferFormat);
-		}
+	//auto RendererDeferred13::getAttachmentFormats() -> std::vector<VkFormat> {
+	//	std::vector<VkFormat> attachFormats;
+	//	attachFormats.reserve(m_gBufferAttachments.size());
+	//	for (const auto& attach : m_gBufferAttachments) {
+	//		attachFormats.emplace_back(attach.m_gbufferFormat);
+	//	}
 
-		return attachFormats;
-	}
+	//	return attachFormats;
+	//}
 
 	void RendererDeferred13::CreateGeometryPipeline() {
 		const std::filesystem::path shaders{ "shaders/Deferred" };

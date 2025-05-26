@@ -355,7 +355,18 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	std::string RendererDeferredCommon<Derived>::getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) {
+	auto RendererDeferredCommon<Derived>::getAttachmentFormats() -> std::vector<VkFormat> {
+		std::vector<VkFormat> attachFormats;
+		attachFormats.reserve(m_gBufferAttachments.size());
+		for (const auto& attach : m_gBufferAttachments) {
+			attachFormats.emplace_back(attach.m_gbufferFormat);
+		}
+
+		return attachFormats;
+	}
+
+	template<typename Derived>
+	auto RendererDeferredCommon<Derived>::getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string {
 		std::string type = vertexData.getType();
 		if (m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos) type += "E";
 		if (m_registry.template Has<vvh::Color>(handle) && type.find("C") == std::string::npos && type.find("E") == std::string::npos) type += "O";
@@ -363,7 +374,7 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	RendererDeferredCommon<Derived>::PipelinePerType* RendererDeferredCommon<Derived>::getPipelinePerType(std::string type) {
+	auto RendererDeferredCommon<Derived>::getPipelinePerType(std::string type) -> RendererDeferredCommon<Derived>::PipelinePerType* {
 		for (auto& [pri, pipeline] : m_geomPipesPerType) {
 			bool found = true;
 			for (auto& c : pipeline.m_type) { found = found && (type.find(c) != std::string::npos); }
