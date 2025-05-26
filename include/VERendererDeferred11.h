@@ -4,11 +4,13 @@ namespace vve {
 
 	class RendererDeferred11 : public RendererDeferredCommon<RendererDeferred11> {
 
-		struct PipelinePerType {
-			std::string m_type;
-			VkDescriptorSetLayout m_descriptorSetLayoutPerObject{};
-			vvh::Pipeline m_graphicsPipeline{};
-		};
+		//struct PipelinePerType {
+		//	std::string m_type;
+		//	VkDescriptorSetLayout m_descriptorSetLayoutPerObject{};
+		//	vvh::Pipeline m_graphicsPipeline{};
+		//};
+
+		friend class RendererDeferredCommon<RendererDeferred11>;
 
 	public:
 		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };

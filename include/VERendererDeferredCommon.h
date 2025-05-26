@@ -33,8 +33,8 @@ namespace vve {
 		std::vector<VkCommandPool> m_commandPools{};
 		std::vector<VkCommandBuffer> m_commandBuffers{};
 
-		//glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
-		//int m_pass{ 0 };
+		glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
+		int m_pass{ 0 };
 
 		// ---------------------------------------------------------------------------------
 
@@ -43,6 +43,7 @@ namespace vve {
 
 			engine.RegisterCallbacks({
 				{this,  3500, "INIT",				[this](Message& message) { return OnInit(message); } },
+				{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
 				});
 		}
 
@@ -166,7 +167,69 @@ namespace vve {
 				});
 
 			CreateDeferredResources();
+
 			static_cast<Derived*>(this)->OnInit(message);
+
+			return false;
+		}
+
+		bool OnPrepareNextFrame(Message message) {
+			m_pass = 0;
+
+			vvh::UniformBufferFrame ubc;
+			vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
+
+			int total{ 0 };
+			std::vector<vvh::Light> lights{ MAX_NUMBER_LIGHTS };
+			// TODO: Maybe move into separate function to not do this every frame?
+			m_numberLightsPerType = glm::ivec3{ 0 };
+			m_numberLightsPerType.x = RegisterLight<PointLight>(1.0f, lights, total);
+			m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
+			m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
+			ubc.numLights = m_numberLightsPerType;
+			memcpy(m_storageBuffersLights.m_uniformBuffersMapped[m_vkState().m_currentFrame], lights.data(), total * sizeof(vvh::Light));
+
+			auto [lToW, view, proj] = *m_registry.template GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>().begin();
+			ubc.camera.view = view();
+			ubc.camera.proj = proj();
+			ubc.camera.positionW = lToW()[3];
+			memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vkState().m_currentFrame], &ubc, sizeof(ubc));
+
+			for (auto& pipeline : m_geomPipesPerType) {
+				for (auto [oHandle, name, ghandle, LtoW, uniformBuffers] :
+					m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&>({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
+
+					bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
+					bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
+					bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
+					if (!hasTexture && !hasColor && !hasVertexColor) continue;
+
+					if (hasTexture) {
+						vvh::BufferPerObjectTexture uboTexture{};
+						uboTexture.model = LtoW();
+						uboTexture.modelInverseTranspose = glm::inverse(glm::transpose(uboTexture.model));
+						UVScale uvScale{ { 1.0f, 1.0f } };
+						if (m_registry.template Has<UVScale>(oHandle)) { uvScale = m_registry.template Get<UVScale>(oHandle); }
+						uboTexture.uvScale = uvScale;
+						memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboTexture, sizeof(uboTexture));
+					}
+					else if (hasColor) {
+						vvh::BufferPerObjectColor uboColor{};
+						uboColor.model = LtoW();
+						uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
+						uboColor.color = m_registry.template Get<vvh::Color>(oHandle);
+						memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
+					}
+					else if (hasVertexColor) {
+						vvh::BufferPerObject uboColor{};
+						uboColor.model = LtoW();
+						uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
+						memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
+					}
+				}
+			}
+
+			static_cast<Derived*>(this)->OnPrepareNextFrame(message);
 
 			return false;
 		}
