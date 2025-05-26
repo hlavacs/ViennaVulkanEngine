@@ -68,6 +68,7 @@ namespace vve {
 		void PrepareLightingAttachments(VkCommandBuffer& cmdBuffer);
 		void ResetLightingAttachments(VkCommandBuffer& cmdBuffer);
 		void RecordObjects(VkCommandBuffer& cmdBuffer, VkRenderPass* renderPass = VK_NULL_HANDLE);
+		void RecordLighting(VkCommandBuffer& cmdBuffer, VkRenderPass* renderPass = VK_NULL_HANDLE);
 
 	};
 

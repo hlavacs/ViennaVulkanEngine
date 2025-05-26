@@ -37,7 +37,7 @@ namespace vve {
 	}
 
 	bool RendererDeferred11::OnRecordNextFrame(Message message) {
-
+		// Geometry Pass
 		auto cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
@@ -70,35 +70,7 @@ namespace vve {
 			.m_currentFrame			= m_vkState().m_currentFrame
 			});
 
-		vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
-
-		vvh::ComBindPipeline({
-			.m_commandBuffer	= cmdBuffer,
-			.m_graphicsPipeline = m_lightingPipeline,
-			.m_imageIndex		= m_vkState().m_imageIndex,
-			.m_swapChain		= m_vkState().m_swapChain,
-			.m_renderPass		= m_lightingPass,
-			.m_viewPorts		= {},
-			.m_scissors			= {}, //default view ports and scissors
-			.m_blendConstants	= {},
-			.m_pushConstants	= {
-				{
-					.layout		= m_lightingPipeline.m_pipelineLayout,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-					.offset		= 0,
-					.size		= sizeof(offset),
-					.pValues	= &offset
-				}
-			},
-			.m_currentFrame		= m_vkState().m_currentFrame
-			});
-
-		vvh::ComRecordLighting({
-			.m_commandBuffer = cmdBuffer,
-			.m_graphicsPipeline = m_lightingPipeline,
-			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetComposition },
-			.m_currentFrame = m_vkState().m_currentFrame
-			});
+		RecordLighting(cmdBuffer);
 
 		vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 
