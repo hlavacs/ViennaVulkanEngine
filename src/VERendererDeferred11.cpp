@@ -141,18 +141,7 @@ namespace vve {
 
 		vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 
-		// Depth image VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-		vvh::ImgTransitionImageLayout3({
-			.m_device			= m_vkState().m_device,
-			.m_graphicsQueue	= m_vkState().m_graphicsQueue,
-			.m_commandPool		= m_vkState().m_commandPool,
-			.m_image			= m_vkState().m_depthImage.m_depthImage,
-			.m_format			= m_vkState().m_depthMapFormat,
-			.m_aspect			= VK_IMAGE_ASPECT_DEPTH_BIT,
-			.m_oldLayout		= VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			.m_newLayout		= VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-			.m_commandBuffer	= cmdBuffer
-			});
+		ResetLightingAttachments(cmdBuffer);
 
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);

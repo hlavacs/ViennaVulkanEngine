@@ -65,7 +65,8 @@ namespace vve {
 
 	protected:
 		auto getAttachmentFormats()->std::vector<VkFormat>;
-		void TransitionLightingAttachments(VkCommandBuffer& cmdBuffer);
+		void PrepareLightingAttachments(VkCommandBuffer& cmdBuffer);
+		void ResetLightingAttachments(VkCommandBuffer& cmdBuffer);
 
 	};
 
