@@ -10,20 +10,6 @@ namespace vve {
 
 	bool RendererDeferred13::OnInit(Message message) {
 
-		// GBuffer attachments from  VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		for (auto& image : m_gBufferAttachments) {
-			vvh::ImgTransitionImageLayout3({
-				.m_device = m_vkState().m_device,
-				.m_graphicsQueue = m_vkState().m_graphicsQueue,
-				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-				.m_image = image.m_gbufferImage,
-				.m_format = image.m_gbufferFormat,
-				.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-				.m_newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				.m_commandBuffer = VK_NULL_HANDLE
-				});
-		}
-
 		CreateGeometryPipeline();
 		CreateLightingPipeline();
 
@@ -267,7 +253,7 @@ namespace vve {
 	}
 
 	bool RendererDeferred13::OnWindowSize(Message message) {
-		// TODO: manage window scaling
+		// empty
 		return false;
 	}
 
