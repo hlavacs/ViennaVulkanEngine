@@ -71,7 +71,7 @@ namespace vve {
 	}
 
 	bool RendererDeferred13::OnPrepareNextFrame(Message message) {
-		// no extra steps aside from base class
+		// empty
 		return false;
 	}
 
@@ -138,32 +138,7 @@ namespace vve {
 		// ---------------------------------------------------------------------
 		// Lighting pass
 
-		// GBuffer attachments VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-		for (auto& image : m_gBufferAttachments) {
-			vvh::ImgTransitionImageLayout3({
-				.m_device = m_vkState().m_device,
-				.m_graphicsQueue = m_vkState().m_graphicsQueue,
-				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-				.m_image = image.m_gbufferImage,
-				.m_format = image.m_gbufferFormat,
-				.m_oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				.m_commandBuffer = cmdBuffer
-				});
-		}
-
-		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-		vvh::ImgTransitionImageLayout3({
-				.m_device = m_vkState().m_device,
-				.m_graphicsQueue = m_vkState().m_graphicsQueue,
-				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-				.m_image = m_vkState().m_depthImage.m_depthImage,
-				.m_format = m_vkState().m_depthMapFormat,
-				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				.m_commandBuffer = cmdBuffer
-			});
+		PrepareLightingAttachments(cmdBuffer);
 
 		// Changes every frame
 		m_outputAttach.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
