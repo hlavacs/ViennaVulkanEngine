@@ -51,46 +51,8 @@ namespace vve {
 			.m_currentFrame			= m_vkState().m_currentFrame 
 			});
 
-		for (auto& pipeline : m_geomPipesPerType) {
+		RecordObjects(cmdBuffer, &m_geometryPass);
 
-			vvh::Pipeline pip{
-				pipeline.second.m_graphicsPipeline.m_pipelineLayout,
-				pipeline.second.m_graphicsPipeline.m_pipeline
-			};
-
-			vvh::ComBindPipeline({
-				.m_commandBuffer	= cmdBuffer,
-				.m_graphicsPipeline	= pip,
-				.m_imageIndex		= m_vkState().m_imageIndex,
-				.m_swapChain		= m_vkState().m_swapChain,
-				.m_renderPass		= m_geometryPass,
-				.m_viewPorts		= {},
-				.m_scissors			= {}, //default view ports and scissors
-				.m_blendConstants	= {},
-				.m_pushConstants	= {},
-				.m_currentFrame		= m_vkState().m_currentFrame
-				});
-
-			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
-				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, vvh::DescriptorSet&>
-				({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
-
-				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
-				bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
-				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
-				if (!hasTexture && !hasColor && !hasVertexColor) continue;
-
-				vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
-				vvh::ComRecordObject({
-					.m_commandBuffer	= cmdBuffer,
-					.m_graphicsPipeline = pipeline.second.m_graphicsPipeline,
-					.m_descriptorSets	= { m_descriptorSetPerFrame, descriptorsets },
-					.m_type				= pipeline.second.m_type,
-					.m_mesh				= mesh,
-					.m_currentFrame		= m_vkState().m_currentFrame
-					});
-			}
-		}
 		vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 
 		// ---------------------------------------------------------------------
