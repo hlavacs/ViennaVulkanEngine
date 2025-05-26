@@ -4,7 +4,7 @@ namespace vve {
 
 	class RendererDeferred13 : public RendererDeferredCommon<RendererDeferred13> {
 
-	friend class RendererDeferredCommon<RendererDeferred13>;
+		friend class RendererDeferredCommon<RendererDeferred13>;
 
 	public:
 		RendererDeferred13(std::string systemName, Engine& engine, std::string windowName);
