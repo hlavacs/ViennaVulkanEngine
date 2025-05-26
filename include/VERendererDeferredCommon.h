@@ -6,7 +6,6 @@ namespace vve {
 	class RendererDeferredCommon : public Renderer{
 
 	protected:
-
 		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
 
 		enum GBufferIndex { POSITION = 0, NORMAL = 1, ALBEDO = 2, DEPTH = 3 };
@@ -45,7 +44,6 @@ namespace vve {
 		virtual ~RendererDeferredCommon();
 
 	private:
-
 		bool OnInit(Message message);
 		bool OnPrepareNextFrame(Message message);
 		bool OnRecordNextFrame(Message message);
@@ -58,7 +56,6 @@ namespace vve {
 		auto getPipelinePerType(std::string type) -> PipelinePerType*;
 
 	protected:
-
 		auto getAttachmentFormats()->std::vector<VkFormat>;
 
 	};

@@ -4,18 +4,7 @@
 namespace vve {
 
 	RendererDeferred13::RendererDeferred13(std::string systemName, Engine& engine, std::string windowName)
-		: RendererDeferredCommon(systemName, engine, windowName) {
-
-		engine.RegisterCallbacks({
-			//{this,  3500, "INIT",				[this](Message& message) { return OnInit(message); } },
-			//{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
-			//{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
-			//{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
-			//{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
-			//{this,  1500, "WINDOW_SIZE",		[this](Message& message) { return OnWindowSize(message); }},
-			//{this, 	   0, "QUIT",				[this](Message& message) { return OnQuit(message); } }
-			});
-	}
+		: RendererDeferredCommon(systemName, engine, windowName) {}
 
 	RendererDeferred13::~RendererDeferred13() {};
 
@@ -43,7 +32,6 @@ namespace vve {
 
 	bool RendererDeferred13::OnPrepareNextFrame(Message message) {
 		// no extra steps aside from base class
-
 		return false;
 	}
 
@@ -283,16 +271,6 @@ namespace vve {
 		return false;
 	}
 
-	//auto RendererDeferred13::getAttachmentFormats() -> std::vector<VkFormat> {
-	//	std::vector<VkFormat> attachFormats;
-	//	attachFormats.reserve(m_gBufferAttachments.size());
-	//	for (const auto& attach : m_gBufferAttachments) {
-	//		attachFormats.emplace_back(attach.m_gbufferFormat);
-	//	}
-
-	//	return attachFormats;
-	//}
-
 	void RendererDeferred13::CreateGeometryPipeline() {
 		const std::filesystem::path shaders{ "shaders/Deferred" };
 		if (!std::filesystem::exists(shaders)) {
@@ -395,23 +373,5 @@ namespace vve {
 			.m_depthWrite = false
 			});
 	}
-
-	/*std::string RendererDeferred13::getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) {
-		std::string type = vertexData.getType();
-		if (m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos) type += "E";
-		if (m_registry.template Has<vvh::Color>(handle) && type.find("C") == std::string::npos && type.find("E") == std::string::npos) type += "O";
-		return type;
-	}
-
-	RendererDeferred13::PipelinePerType* RendererDeferred13::getPipelinePerType(std::string type) {
-		for (auto& [pri, pipeline] : m_geomPipesPerType) {
-			bool found = true;
-			for (auto& c : pipeline.m_type) { found = found && (type.find(c) != std::string::npos); }
-			if (found) return &pipeline;
-		}
-		std::cout << "Pipeline not found for type: " << type << std::endl;
-		exit(-1);
-		return nullptr;
-	}*/
 
 }	// namespace vve
