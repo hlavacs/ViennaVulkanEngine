@@ -47,6 +47,8 @@ namespace vve {
 		bool OnInit(Message message);
 		bool OnPrepareNextFrame(Message message);
 		void CreateDeferredResources();
+		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
+		auto getPipelinePerType(std::string type) -> PipelinePerType*;
 
 	};
 

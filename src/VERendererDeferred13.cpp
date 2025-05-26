@@ -505,7 +505,7 @@ namespace vve {
 			});
 	}
 
-	std::string RendererDeferred13::getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) {
+	/*std::string RendererDeferred13::getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) {
 		std::string type = vertexData.getType();
 		if (m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos) type += "E";
 		if (m_registry.template Has<vvh::Color>(handle) && type.find("C") == std::string::npos && type.find("E") == std::string::npos) type += "O";
@@ -521,6 +521,6 @@ namespace vve {
 		std::cout << "Pipeline not found for type: " << type << std::endl;
 		exit(-1);
 		return nullptr;
-	}
+	}*/
 
 }	// namespace vve

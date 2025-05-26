@@ -262,4 +262,24 @@ namespace vve {
 			});
 	}
 
+	template<typename Derived>
+	std::string RendererDeferredCommon<Derived>::getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) {
+		std::string type = vertexData.getType();
+		if (m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos) type += "E";
+		if (m_registry.template Has<vvh::Color>(handle) && type.find("C") == std::string::npos && type.find("E") == std::string::npos) type += "O";
+		return type;
+	}
+
+	template<typename Derived>
+	RendererDeferredCommon<Derived>::PipelinePerType* RendererDeferredCommon<Derived>::getPipelinePerType(std::string type) {
+		for (auto& [pri, pipeline] : m_geomPipesPerType) {
+			bool found = true;
+			for (auto& c : pipeline.m_type) { found = found && (type.find(c) != std::string::npos); }
+			if (found) return &pipeline;
+		}
+		std::cout << "Pipeline not found for type: " << type << std::endl;
+		exit(-1);
+		return nullptr;
+	}
+
 }	// namespace vve
