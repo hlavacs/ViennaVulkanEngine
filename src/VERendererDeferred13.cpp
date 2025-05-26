@@ -168,13 +168,12 @@ namespace vve {
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 
-		VkDescriptorSet sets[] = { m_descriptorSetPerFrame.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame],
-			m_descriptorSetComposition.m_descriptorSetPerFrameInFlight[m_vkState().m_currentFrame] };
-
-		vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_lightingPipeline.m_pipelineLayout,
-			0, 2, sets, 0, nullptr);
-
-		vkCmdDraw(cmdBuffer, 3, 1, 0, 0);
+		vvh::ComRecordLighting({
+			.m_commandBuffer = cmdBuffer,
+			.m_graphicsPipeline = m_lightingPipeline,
+			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetComposition },
+			.m_currentFrame = m_vkState().m_currentFrame
+			});
 
 		vkCmdEndRendering(cmdBuffer);
 
