@@ -11,13 +11,13 @@ namespace vve {
 		virtual ~RendererDeferred13();
 
 	private:
-		bool OnInit(Message message);
-		bool OnPrepareNextFrame(Message message);
-		bool OnRecordNextFrame(Message message);
-		bool OnObjectCreate(Message message);
-		bool OnObjectDestroy(Message message);
-		bool OnWindowSize(Message message);
-		bool OnQuit(Message message);
+		void OnInit(Message message);
+		void OnPrepareNextFrame(Message message);
+		void OnRecordNextFrame(Message message);
+		void OnObjectCreate(Message message);
+		void OnObjectDestroy(Message message);
+		void OnWindowSize(Message message);
+		void OnQuit(Message message);
 
 		void CreateGeometryRenderingInfo();
 		void CreateLightingRenderingInfo();

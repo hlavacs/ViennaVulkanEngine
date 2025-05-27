@@ -8,8 +8,7 @@ namespace vve {
 
 	RendererDeferred11::~RendererDeferred11() {};
 
-	bool RendererDeferred11::OnInit(Message message) {
-
+	void RendererDeferred11::OnInit(Message message) {
 		vvh::RenCreateRenderPassGeometry({
 			.m_depthFormat			= m_vkState().m_depthMapFormat,
 			.m_device				= m_vkState().m_device,
@@ -28,15 +27,11 @@ namespace vve {
 
 		CreateGeometryPipeline(m_geometryPass);
 		CreateLightingPipeline(m_lightingPass);
-		return false;
 	}
 
-	bool RendererDeferred11::OnPrepareNextFrame(Message message) {
-		// empty
-		return false;
-	}
+	void RendererDeferred11::OnPrepareNextFrame(Message message) {}
 
-	bool RendererDeferred11::OnRecordNextFrame(Message message) {
+	void RendererDeferred11::OnRecordNextFrame(Message message) {
 		// Geometry Pass
 		auto cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
@@ -78,34 +73,21 @@ namespace vve {
 
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
-
-		return false;
 	}
 
-	bool RendererDeferred11::OnObjectCreate(Message message) {
-		// empty
-		return false;
-	}
+	void RendererDeferred11::OnObjectCreate(Message message) {}
 
-	bool RendererDeferred11::OnObjectDestroy(Message message) {
-		// empty
-		return false;
-	}
+	void RendererDeferred11::OnObjectDestroy(Message message) {}
 
-	bool RendererDeferred11::OnWindowSize(Message message) {
+	void RendererDeferred11::OnWindowSize(Message message) {
 		DestroyDeferredFrameBuffers();
 		CreateDeferredFrameBuffers();
-
-		return false;
 	}
 
-	bool RendererDeferred11::OnQuit(Message message) {
-
+	void RendererDeferred11::OnQuit(Message message) {
 		vkDestroyRenderPass(m_vkState().m_device, m_geometryPass, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_lightingPass, nullptr);
 		DestroyDeferredFrameBuffers();
-
-		return false;
 	}
 
 	void RendererDeferred11::CreateDeferredFrameBuffers() {

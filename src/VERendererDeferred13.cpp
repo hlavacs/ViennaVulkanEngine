@@ -8,31 +8,21 @@ namespace vve {
 
 	RendererDeferred13::~RendererDeferred13() {};
 
-	bool RendererDeferred13::OnInit(Message message) {
+	void RendererDeferred13::OnInit(Message message) {
 		CreateGeometryRenderingInfo();
 		CreateGeometryPipeline();
 
 		CreateLightingRenderingInfo();
 		CreateLightingPipeline();
-		return false;
 	}
 
-	bool RendererDeferred13::OnPrepareNextFrame(Message message) {
-		// empty
-		return false;
-	}
+	void RendererDeferred13::OnPrepareNextFrame(Message message) {}
 
-	bool RendererDeferred13::OnObjectCreate(Message message) {
-		// empty
-		return false;
-	}
+	void RendererDeferred13::OnObjectCreate(Message message) {}
 
-	bool RendererDeferred13::OnObjectDestroy(Message message) {
-		// empty
-		return false;
-	}
+	void RendererDeferred13::OnObjectDestroy(Message message) {}
 
-	bool RendererDeferred13::OnRecordNextFrame(Message message) {
+	void RendererDeferred13::OnRecordNextFrame(Message message) {
 		// Geometry Pass
 		auto cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
@@ -57,11 +47,9 @@ namespace vve {
 
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
-
-		return false;
 	}
 
-	bool RendererDeferred13::OnWindowSize(Message message) {
+	void RendererDeferred13::OnWindowSize(Message message) {
 		for (size_t i = 0; i < 3; ++i) {
 			m_gbufferRenderingInfo[i].imageView = m_gBufferAttachments[i].m_gbufferImageView;
 		}
@@ -70,14 +58,9 @@ namespace vve {
 		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
 		m_geometryRenderingInfo.renderArea = renderArea;
 		m_lightingRenderingInfo.renderArea = renderArea;
-
-		return false;
 	}
 
-	bool RendererDeferred13::OnQuit(Message message) {
-		// empty
-		return false;
-	}
+	void RendererDeferred13::OnQuit(Message message) {}
 
 	void RendererDeferred13::CreateGeometryRenderingInfo() {
 		// TODO: Maybe add KHR way for extension support?
