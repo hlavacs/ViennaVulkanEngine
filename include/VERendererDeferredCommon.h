@@ -60,6 +60,7 @@ namespace vve {
 
 		void CreateDeferredResources();
 		void DestroyDeferredResources();
+		//void CreateGeometryPipeline();
 		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
 		auto getPipelinePerType(std::string type) -> PipelinePerType*;
 
@@ -69,6 +70,7 @@ namespace vve {
 		void ResetLightingAttachments(VkCommandBuffer& cmdBuffer);
 		void RecordObjects(VkCommandBuffer& cmdBuffer, VkRenderPass* renderPass = VK_NULL_HANDLE);
 		void RecordLighting(VkCommandBuffer& cmdBuffer, VkRenderPass* renderPass = VK_NULL_HANDLE);
+		void CreateGeometryPipeline(const VkRenderPass& renderPass = VK_NULL_HANDLE);
 
 	};
 
