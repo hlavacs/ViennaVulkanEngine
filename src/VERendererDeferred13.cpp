@@ -10,42 +10,10 @@ namespace vve {
 
 	bool RendererDeferred13::OnInit(Message message) {
 
-		// TODO: Maybe add KHR way for extension support?
-		// geometry
-		size_t i = 0;
-		for (const auto& attach : m_gBufferAttachments) {
-			m_gbufferRenderingInfo[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-			m_gbufferRenderingInfo[i].pNext = VK_NULL_HANDLE;
-			m_gbufferRenderingInfo[i].imageView = attach.m_gbufferImageView;
-			m_gbufferRenderingInfo[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			m_gbufferRenderingInfo[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			m_gbufferRenderingInfo[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			m_gbufferRenderingInfo[i].clearValue = m_clearValues[i];
-			i++;
-		}
-
-		m_depthRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-		m_depthRenderingInfo.pNext = VK_NULL_HANDLE;
-		m_depthRenderingInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
-		m_depthRenderingInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		m_depthRenderingInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		m_depthRenderingInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		m_depthRenderingInfo.clearValue = m_clearValues[DEPTH];
-
-		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
-		m_geometryRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-		m_geometryRenderingInfo.pNext = VK_NULL_HANDLE;
-		m_geometryRenderingInfo.flags = 0;
-		m_geometryRenderingInfo.renderArea = renderArea;
-		m_geometryRenderingInfo.layerCount = 1;
-		m_geometryRenderingInfo.viewMask = 0;
-		m_geometryRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(m_gBufferAttachments.size());
-		m_geometryRenderingInfo.pColorAttachments = m_gbufferRenderingInfo;
-		m_geometryRenderingInfo.pDepthAttachment = &m_depthRenderingInfo;
-		m_geometryRenderingInfo.pStencilAttachment = nullptr;
+		CreateGeometryRenderingInfo();
 
 		// ----------------------------------------------------------------------------
-		// lighting
+		// Lighting
 		m_outputAttach.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 		m_outputAttach.pNext = VK_NULL_HANDLE;
 		m_outputAttach.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
@@ -53,6 +21,7 @@ namespace vve {
 		m_outputAttach.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
 		m_outputAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
+		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
 		m_lightingRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 		m_lightingRenderingInfo.pNext = VK_NULL_HANDLE;
 		m_lightingRenderingInfo.flags = 0;
@@ -130,6 +99,42 @@ namespace vve {
 	bool RendererDeferred13::OnQuit(Message message) {
 		// empty
 		return false;
+	}
+
+	void RendererDeferred13::CreateGeometryRenderingInfo() {
+		// TODO: Maybe add KHR way for extension support?
+		// Geometry
+		size_t i = 0;
+		for (const auto& attach : m_gBufferAttachments) {
+			m_gbufferRenderingInfo[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			m_gbufferRenderingInfo[i].pNext = VK_NULL_HANDLE;
+			m_gbufferRenderingInfo[i].imageView = attach.m_gbufferImageView;
+			m_gbufferRenderingInfo[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			m_gbufferRenderingInfo[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			m_gbufferRenderingInfo[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			m_gbufferRenderingInfo[i].clearValue = m_clearValues[i];
+			i++;
+		}
+
+		m_depthRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		m_depthRenderingInfo.pNext = VK_NULL_HANDLE;
+		m_depthRenderingInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
+		m_depthRenderingInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		m_depthRenderingInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		m_depthRenderingInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		m_depthRenderingInfo.clearValue = m_clearValues[DEPTH];
+
+		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
+		m_geometryRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		m_geometryRenderingInfo.pNext = VK_NULL_HANDLE;
+		m_geometryRenderingInfo.flags = 0;
+		m_geometryRenderingInfo.renderArea = renderArea;
+		m_geometryRenderingInfo.layerCount = 1;
+		m_geometryRenderingInfo.viewMask = 0;
+		m_geometryRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(m_gBufferAttachments.size());
+		m_geometryRenderingInfo.pColorAttachments = m_gbufferRenderingInfo;
+		m_geometryRenderingInfo.pDepthAttachment = &m_depthRenderingInfo;
+		m_geometryRenderingInfo.pStencilAttachment = nullptr;
 	}
 
 }	// namespace vve
