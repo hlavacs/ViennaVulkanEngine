@@ -9,33 +9,11 @@ namespace vve {
 	RendererDeferred13::~RendererDeferred13() {};
 
 	bool RendererDeferred13::OnInit(Message message) {
-
 		CreateGeometryRenderingInfo();
-
-		// ----------------------------------------------------------------------------
-		// Lighting
-		m_outputAttach.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-		m_outputAttach.pNext = VK_NULL_HANDLE;
-		m_outputAttach.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
-		m_outputAttach.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		m_outputAttach.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		m_outputAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-
-		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
-		m_lightingRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-		m_lightingRenderingInfo.pNext = VK_NULL_HANDLE;
-		m_lightingRenderingInfo.flags = 0;
-		m_lightingRenderingInfo.renderArea = renderArea;
-		m_lightingRenderingInfo.layerCount = 1;
-		m_lightingRenderingInfo.viewMask = 0;
-		m_lightingRenderingInfo.colorAttachmentCount = 1;
-		m_lightingRenderingInfo.pColorAttachments = &m_outputAttach;
-		m_lightingRenderingInfo.pDepthAttachment = nullptr;
-		m_lightingRenderingInfo.pStencilAttachment = nullptr;
-
 		CreateGeometryPipeline();
-		CreateLightingPipeline();
 
+		CreateLightingRenderingInfo();
+		CreateLightingPipeline();
 		return false;
 	}
 
@@ -103,7 +81,6 @@ namespace vve {
 
 	void RendererDeferred13::CreateGeometryRenderingInfo() {
 		// TODO: Maybe add KHR way for extension support?
-		// Geometry
 		size_t i = 0;
 		for (const auto& attach : m_gBufferAttachments) {
 			m_gbufferRenderingInfo[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -135,6 +112,27 @@ namespace vve {
 		m_geometryRenderingInfo.pColorAttachments = m_gbufferRenderingInfo;
 		m_geometryRenderingInfo.pDepthAttachment = &m_depthRenderingInfo;
 		m_geometryRenderingInfo.pStencilAttachment = nullptr;
+	}
+
+	void RendererDeferred13::CreateLightingRenderingInfo() {
+		m_outputAttach.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		m_outputAttach.pNext = VK_NULL_HANDLE;
+		m_outputAttach.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
+		m_outputAttach.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		m_outputAttach.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		m_outputAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
+		m_lightingRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+		m_lightingRenderingInfo.pNext = VK_NULL_HANDLE;
+		m_lightingRenderingInfo.flags = 0;
+		m_lightingRenderingInfo.renderArea = renderArea;
+		m_lightingRenderingInfo.layerCount = 1;
+		m_lightingRenderingInfo.viewMask = 0;
+		m_lightingRenderingInfo.colorAttachmentCount = 1;
+		m_lightingRenderingInfo.pColorAttachments = &m_outputAttach;
+		m_lightingRenderingInfo.pDepthAttachment = nullptr;
+		m_lightingRenderingInfo.pStencilAttachment = nullptr;
 	}
 
 }	// namespace vve

@@ -20,6 +20,7 @@ namespace vve {
 		bool OnQuit(Message message);
 
 		void CreateGeometryRenderingInfo();
+		void CreateLightingRenderingInfo();
 
 		VkRenderingAttachmentInfo m_gbufferRenderingInfo[3]{};
 		VkRenderingAttachmentInfo m_depthRenderingInfo{};
