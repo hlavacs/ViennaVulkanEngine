@@ -19,8 +19,6 @@ namespace vve {
 		bool OnWindowSize(Message message);
 		bool OnQuit(Message message);
 
-		void CreateLightingPipeline();
-
 		void CreateDeferredFrameBuffers();
 		void DestroyDeferredFrameBuffers();
 

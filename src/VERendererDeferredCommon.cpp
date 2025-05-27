@@ -518,6 +518,45 @@ namespace vve {
 	}
 
 	template<typename Derived>
+	void RendererDeferredCommon<Derived>::CreateLightingPipeline(const VkRenderPass& renderPass) {
+		const std::filesystem::path shaders{ "shaders/Deferred" };
+		if (!std::filesystem::exists(shaders)) {
+			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
+		}
+		const std::string vert = (shaders / "test_lighting.spv").string();
+		const std::string frag = (shaders / "test_lighting.spv").string();
+
+		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
+		// TODO: colorBlendAttachment.colorWriteMask = 0xf; ???
+		// TODO: rewrite to make use for the 3 attachments clearer
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+		colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
+		colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+		colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
+		colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
+		colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
+		colorBlendAttachment.blendEnable = VK_TRUE;
+
+		vvh::RenCreateGraphicsPipeline({
+			.m_device = m_vkState().m_device,
+			.m_renderPass = renderPass,
+			.m_vertShaderPath = vert,
+			.m_fragShaderPath = frag,
+			.m_bindingDescription = {},
+			.m_attributeDescriptions = {},
+			.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition },
+			.m_specializationConstants = { MAX_NUMBER_LIGHTS },
+			.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
+			.m_blendAttachments = { colorBlendAttachment },
+			.m_graphicsPipeline = m_lightingPipeline,
+			.m_attachmentFormats = { m_vkState().m_swapChain.m_swapChainImageFormat },
+			.m_depthFormat = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_depthWrite = false
+			});
+	}
+
+	template<typename Derived>
 	auto RendererDeferredCommon<Derived>::getAttachmentFormats() -> std::vector<VkFormat> {
 		std::vector<VkFormat> attachFormats;
 		attachFormats.reserve(m_gBufferAttachments.size());

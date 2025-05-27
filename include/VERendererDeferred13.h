@@ -19,8 +19,6 @@ namespace vve {
 		bool OnWindowSize(Message message);
 		bool OnQuit(Message message);
 
-		void CreateLightingPipeline();
-
 		VkRenderingAttachmentInfo m_gbufferRenderingInfo[3]{};
 		VkRenderingAttachmentInfo m_depthRenderingInfo{};
 		VkRenderingInfo m_geometryRenderingInfo{};
