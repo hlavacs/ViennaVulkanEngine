@@ -37,7 +37,7 @@ VertexStageOutput main(
 
     VertexStageOutput output = {};
     output.coarseVertex.positionW   = positionW;
-    output.coarseVertex.normalW     = mul(gParamsObject.modelInvTranspose, float4(normalL, 0.0)).xyz;
+    output.coarseVertex.normalW     = normalize(mul(gParamsObject.modelInvTranspose, float4(normalL, 0.0)).xyz);
     output.coarseVertex.fragColor   = gParamsObject.color.diffuse;
     output.sv_position              = mul(gParamsFrame.camera.proj, float4(positionV, 1.0));
 

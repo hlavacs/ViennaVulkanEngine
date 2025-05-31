@@ -547,7 +547,7 @@ namespace vve {
 			.m_attributeDescriptions = {},
 			.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition },
 			.m_specializationConstants = { MAX_NUMBER_LIGHTS },
-			.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8} },
+			.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(vvh::LightOffset)} },
 			.m_blendAttachments = { colorBlendAttachment },
 			.m_graphicsPipeline = m_lightingPipeline,
 			.m_attachmentFormats = { m_vkState().m_swapChain.m_swapChainImageFormat },
