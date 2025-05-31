@@ -46,14 +46,8 @@ VertexStageOutput main(
 
 //----------------------------------------------------------------------------
 
-struct GBufferOutput {
-    float4 pos      : SV_Target0;
-    float4 norm     : SV_Target1;
-    float4 albedo   : SV_Target2;
-};
-
 [shader("fragment")]
-GBufferOutput main(CoarseVertex input: CoarseVertex) : SV_Target
+GBufferOutput main(CoarseVertex input: CoarseVertex)
 {
     GBufferOutput output = {};
 

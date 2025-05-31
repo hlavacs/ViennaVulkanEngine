@@ -48,6 +48,12 @@ export public struct UniformBufferObjectColor {
     public Color color;
 };
 
+export public struct GBufferOutput {
+    public float4 pos : SV_Target0;
+    public float4 norm : SV_Target1;
+    public float4 albedo : SV_Target2;
+};
+
 //-----------------------------------------------------------------------
 
 // __include "Common_Shadow.slang";
