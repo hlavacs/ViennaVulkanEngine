@@ -547,7 +547,7 @@ namespace vve {
 			.m_attributeDescriptions = {},
 			.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition },
 			.m_specializationConstants = { MAX_NUMBER_LIGHTS },
-			.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(vvh::LightOffset)} },
+			.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(PushConstantsLight) } },
 			.m_blendAttachments = { colorBlendAttachment },
 			.m_graphicsPipeline = m_lightingPipeline,
 			.m_attachmentFormats = { m_vkState().m_swapChain.m_swapChainImageFormat },
@@ -694,6 +694,8 @@ namespace vve {
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::RecordLighting(VkCommandBuffer& cmdBuffer, VkRenderPass* renderPass) {
 		vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
+		auto [view, proj] = *m_registry.template GetView<ViewMatrix&, ProjectionMatrix&>().begin();
+		PushConstantsLight pc{ glm::inverse(proj() * view()), offset };
 
 		vvh::ComBindPipeline({
 			.m_commandBuffer = cmdBuffer,
@@ -709,8 +711,8 @@ namespace vve {
 					.layout = m_lightingPipeline.m_pipelineLayout,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 					.offset = 0,
-					.size = sizeof(offset),
-					.pValues = &offset
+					.size = sizeof(PushConstantsLight),
+					.pValues = &pc
 				}
 			},
 			.m_currentFrame = m_vkState().m_currentFrame

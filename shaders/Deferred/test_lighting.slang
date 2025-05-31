@@ -43,9 +43,19 @@ StructuredBuffer<Light> gLights;
 //----------------------------------------------------------------------------
 
 [[vk::push_constant]]
-LightOffset offset;
+PushConstant pushConstant;
 
 //----------------------------------------------------------------------------
+
+float3 reconstructPositionW(float2 uv, float depth) {
+    float clipZ = depth * 2.0 - 1.0;
+    float ndcX = uv.x * 2.0 - 1.0;
+    float ndcY = uv.y * 2.0 - 1.0;
+    float4 clipPos = float4(ndcX, ndcY, clipZ, 1.0);
+    float4 positionW = mul(pushConstant.invViewProj, clipPos);
+    positionW.xyz /= positionW.w;
+    return positionW.xyz;
+}
 
 [shader("fragment")]
 float4 main(VertexStageOutput in) : SV_Target
@@ -58,11 +68,11 @@ float4 main(VertexStageOutput in) : SV_Target
     Camera camera = gParamsFrame.camera;
     uint3 numberLights = gParamsFrame.numberLights;
 
-    float3 P = gPosition.Sample(in.uv).xyz;
+    float3 P = reconstructPositionW(in.uv, depth);
     // TODO: check formats, is * 2 - float3(1.0, 1.0, 1.0) needed?
     float3 N = (gNormal.Sample(in.uv).xyz) * 2 - float3(1.0, 1.0, 1.0);
     float3 A = gAlbedo.Sample(in.uv).xyz;
 
-    float3 l = calculateLighting(gLights, numberLights, offset, N, camera.positionW, P);
+    float3 l = calculateLighting(gLights, numberLights, pushConstant.offset, N, camera.positionW, P);
     return float4(A.rgb * l, 1.0);
 }

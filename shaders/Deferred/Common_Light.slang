@@ -19,6 +19,12 @@ export public struct LightOffset {
     public int numberLights;
 };
 
+// Used in Deferred Renderer to reconstruct positionW from depth
+export public struct PushConstant {
+    public float4x4 invViewProj;
+    public LightOffset offset;
+}
+
 //-----------------------------------------------------------------------
 
 export public float3 calculatePointLight(Light light, float3 nW, float3 viewPosW, float3 fragPosW) {

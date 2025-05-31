@@ -16,6 +16,11 @@ namespace vve {
 			vvh::Pipeline m_graphicsPipeline{};
 		};
 
+		struct PushConstantsLight {
+			alignas(16) glm::mat4 invViewProj;
+			vvh::LightOffset offset;
+		};
+
 		static constexpr std::array<VkClearValue, 4> m_clearValues = { {
 			VkClearValue{.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }} },
 			VkClearValue{.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }} },
