@@ -387,7 +387,7 @@ namespace vve {
 			.m_vmaAllocator = m_vkState().m_vmaAllocator,
 			.m_swapChain = m_vkState().m_swapChain,
 			.m_gbufferImage = m_gBufferAttachments[NORMAL],
-			.m_format = VK_FORMAT_R8G8B8A8_UNORM,
+			.m_format = VK_FORMAT_R16G16B16A16_SFLOAT,
 			.m_sampler = m_sampler
 			});
 		vvh::RenUpdateDescriptorSetGBufferAttachment({

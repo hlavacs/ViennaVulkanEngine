@@ -69,8 +69,7 @@ float4 main(VertexStageOutput in) : SV_Target
     uint3 numberLights = gParamsFrame.numberLights;
 
     float3 P = reconstructPositionW(in.uv, depth);
-    // TODO: check formats, is * 2 - float3(1.0, 1.0, 1.0) needed?
-    float3 N = (gNormal.Sample(in.uv).xyz) * 2 - float3(1.0, 1.0, 1.0);
+    float3 N = (gNormal.Sample(in.uv).xyz);
     float3 A = gAlbedo.Sample(in.uv).xyz;
 
     float3 l = calculateLighting(gLights, numberLights, pushConstant.offset, N, camera.positionW, P);
