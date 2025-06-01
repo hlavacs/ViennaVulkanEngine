@@ -42,7 +42,7 @@ namespace vve {
 			.m_swapChain			= m_vkState().m_swapChain,
 			.m_gBufferFramebuffers	= m_gBufferFrameBuffers,
 			.m_renderPass			= m_geometryPass,
-			.m_clearValues			= m_clearValues,
+			.m_clearValues			= {m_clearColorValue, m_clearColorValue, m_clearDepthStencilValue},
 			.m_currentFrame			= m_vkState().m_currentFrame 
 			});
 

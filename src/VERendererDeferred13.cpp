@@ -50,7 +50,7 @@ namespace vve {
 	}
 
 	void RendererDeferred13::OnWindowSize(Message message) {
-		for (size_t i = 0; i < 3; ++i) {
+		for (size_t i = 0; i < m_gBufferAttachments.size(); ++i) {
 			m_gbufferRenderingInfo[i].imageView = m_gBufferAttachments[i].m_gbufferImageView;
 		}
 		m_depthRenderingInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
@@ -72,7 +72,7 @@ namespace vve {
 			m_gbufferRenderingInfo[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 			m_gbufferRenderingInfo[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 			m_gbufferRenderingInfo[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			m_gbufferRenderingInfo[i].clearValue = m_clearValues[i];
+			m_gbufferRenderingInfo[i].clearValue = m_clearColorValue;
 			i++;
 		}
 
@@ -82,7 +82,7 @@ namespace vve {
 		m_depthRenderingInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 		m_depthRenderingInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 		m_depthRenderingInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		m_depthRenderingInfo.clearValue = m_clearValues[DEPTH];
+		m_depthRenderingInfo.clearValue = m_clearDepthStencilValue;
 
 		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
 		m_geometryRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;

@@ -8,7 +8,7 @@ namespace vve {
 	protected:
 		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
 
-		enum GBufferIndex { POSITION = 0, NORMAL = 1, ALBEDO = 2, DEPTH = 3 };
+		enum GBufferIndex { NORMAL = 0, ALBEDO = 1, DEPTH = 2, COUNT = 3 };
 
 		struct PipelinePerType {
 			std::string m_type;
@@ -21,18 +21,14 @@ namespace vve {
 			vvh::LightOffset offset;
 		};
 
-		static constexpr std::array<VkClearValue, 4> m_clearValues = { {
-			VkClearValue{.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }} },
-			VkClearValue{.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }} },
-			VkClearValue{.color = {{ 0.0f, 0.0f, 0.0f, 1.0f }} },
-			VkClearValue{.depthStencil = { 1.0f, 0 } }
-		} };
+		static constexpr VkClearValue m_clearColorValue{ .color = {0.0f, 0.0f, 0.0f, 1.0f} };
+		static constexpr VkClearValue m_clearDepthStencilValue{ .depthStencil = { 1.0f, 0 } };
 
 		vvh::Buffer m_uniformBuffersPerFrame{};
 		vvh::Buffer m_storageBuffersLights{};
 
 		VkSampler m_sampler{ VK_NULL_HANDLE };
-		std::array<vvh::GBufferImage, 3> m_gBufferAttachments{};
+		std::vector<vvh::GBufferImage> m_gBufferAttachments{COUNT - 1};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
 		VkDescriptorSetLayout m_descriptorSetLayoutComposition{ VK_NULL_HANDLE };

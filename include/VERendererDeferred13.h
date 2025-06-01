@@ -22,7 +22,7 @@ namespace vve {
 		void CreateGeometryRenderingInfo();
 		void CreateLightingRenderingInfo();
 
-		VkRenderingAttachmentInfo m_gbufferRenderingInfo[3]{};
+		VkRenderingAttachmentInfo m_gbufferRenderingInfo[COUNT - 1]{};
 		VkRenderingAttachmentInfo m_depthRenderingInfo{};
 		VkRenderingInfo m_geometryRenderingInfo{};
 

@@ -47,16 +47,13 @@ namespace vve {
 		vvh::RenCreateDescriptorSetLayout({
 			.m_device = m_vkState().m_device,
 			.m_bindings = {
-				{	// Binding 0 : Position
+				{	// Binding 0 : Normal
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 1 : Normal
+				{	// Binding 1 : Albedo
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 2 : Albedo
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 3 : Depth
+				{	// Binding 2 : Depth
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 			},
@@ -365,22 +362,6 @@ namespace vve {
 
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::CreateDeferredResources() {
-		// Position
-		vvh::RenCreateGBufferResources({
-			.m_physicalDevice = m_vkState().m_physicalDevice,
-			.m_device = m_vkState().m_device,
-			.m_vmaAllocator = m_vkState().m_vmaAllocator,
-			.m_swapChain = m_vkState().m_swapChain,
-			.m_gbufferImage = m_gBufferAttachments[POSITION],
-			.m_format = VK_FORMAT_R32G32B32A32_SFLOAT,
-			.m_sampler = m_sampler
-			});
-		vvh::RenUpdateDescriptorSetGBufferAttachment({
-			.m_device = m_vkState().m_device,
-			.m_gbufferImage = m_gBufferAttachments[POSITION],
-			.m_binding = POSITION,
-			.m_descriptorSet = m_descriptorSetComposition
-			});
 		// Normal
 		vvh::RenCreateGBufferResources({
 			.m_physicalDevice = m_vkState().m_physicalDevice,
@@ -507,7 +488,7 @@ namespace vve {
 					.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject },
 					.m_specializationConstants = {},
 					.m_pushConstantRanges = {},
-					.m_blendAttachments = { colorBlendAttachment, colorBlendAttachment, colorBlendAttachment },
+					.m_blendAttachments = { colorBlendAttachment, colorBlendAttachment },
 					.m_graphicsPipeline = graphicsPipeline,
 					.m_attachmentFormats = getAttachmentFormats(),
 					.m_depthFormat = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
