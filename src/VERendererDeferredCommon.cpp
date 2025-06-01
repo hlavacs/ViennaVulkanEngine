@@ -362,6 +362,8 @@ namespace vve {
 
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::CreateDeferredResources() {
+		m_gBufferAttachments.resize(COUNT - 1);
+
 		// Normal
 		vvh::RenCreateGBufferResources({
 			.m_physicalDevice = m_vkState().m_physicalDevice,
