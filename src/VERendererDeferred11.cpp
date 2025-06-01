@@ -14,7 +14,8 @@ namespace vve {
 			.m_device				= m_vkState().m_device,
 			.m_swapChain			= m_vkState().m_swapChain,
 			.m_clear				= true,
-			.m_renderPass			= m_geometryPass
+			.m_renderPass			= m_geometryPass,
+			.m_formats				= getAttachmentFormats()
 			});
 		vvh::RenCreateRenderPassLighting({
 			.m_device				= m_vkState().m_device,
