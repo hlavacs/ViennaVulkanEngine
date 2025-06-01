@@ -365,7 +365,7 @@ namespace vve {
 
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::CreateDeferredResources() {
-
+		// Position
 		vvh::RenCreateGBufferResources({
 			.m_physicalDevice = m_vkState().m_physicalDevice,
 			.m_device = m_vkState().m_device,
@@ -381,6 +381,7 @@ namespace vve {
 			.m_binding = POSITION,
 			.m_descriptorSet = m_descriptorSetComposition
 			});
+		// Normal
 		vvh::RenCreateGBufferResources({
 			.m_physicalDevice = m_vkState().m_physicalDevice,
 			.m_device = m_vkState().m_device,
@@ -396,6 +397,7 @@ namespace vve {
 			.m_binding = NORMAL,
 			.m_descriptorSet = m_descriptorSetComposition
 			});
+		// Albedo
 		vvh::RenCreateGBufferResources({
 			.m_physicalDevice = m_vkState().m_physicalDevice,
 			.m_device = m_vkState().m_device,
@@ -411,7 +413,7 @@ namespace vve {
 			.m_binding = ALBEDO,
 			.m_descriptorSet = m_descriptorSetComposition
 			});
-
+		// Depth
 		vvh::RenUpdateDescriptorSetDepthAttachment({
 			.m_device = m_vkState().m_device,
 			.m_depthImage = m_vkState().m_depthImage,
