@@ -26,15 +26,12 @@ ConstantBuffer<UniformBufferFrame> gParamsFrame;
 //----------------------------------------------------------------------------
 
 [[vk::binding(0, 1)]]
-Sampler2D gPosition;    // Position from geometry shader
-
-[[vk::binding(1, 1)]]
 Sampler2D gNormal;      // Normal from geometry shader
 
-[[vk::binding(2, 1)]]
+[[vk::binding(1, 1)]]
 Sampler2D gAlbedo;      // Albedo from geometry shader
 
-[[vk::binding(3, 1)]]
+[[vk::binding(2, 1)]]
 Sampler2D<float> gDepth;       // Depth
 
 [[vk::binding(1, 0)]]
