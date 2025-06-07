@@ -66,6 +66,9 @@ namespace vve {
 		    if (material->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
 		        std::cout << "Diffuse Color: " << color.r << ", " << color.g << ", " << color.b << std::endl;
 		    }
+			if (material->Get(AI_MATKEY_METALLIC_FACTOR, color) == AI_SUCCESS) {
+				std::cout << "Metallic Factor: " << color.r << ", " << color.g << ", " << color.b << std::endl;
+			}
 
 		    aiString texturePath;
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
