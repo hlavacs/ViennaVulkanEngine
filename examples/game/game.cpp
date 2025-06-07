@@ -46,7 +46,6 @@ class MyGame : public vve::System {
         inline static std::string plane_txt  { "assets/test/plane/grass.jpg" };
 
         inline static std::string cube_obj  { "assets/test/crate0/cube.obj" };
-        inline static std::string cornell_obj  { "assets/test/cornell/CornellBox-Original.obj" };
 
         bool OnLoadLevel( Message message ) {
             auto msg = message.template GetData<vve::System::MsgLoadLevel>();	
@@ -82,28 +81,6 @@ class MyGame : public vve::System {
 
             m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1, 50 });
 			m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
-
-            // ----------------- Load Cornell -----------------
-
-            m_engine.SendMsg(MsgSceneLoad{ vve::Filename{cornell_obj} });
-            m_handleCornell = m_registry.Insert(
-                vve::Position{ { 0.0f, 0.0f, -0.1f } },
-                vve::Rotation{ mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f / 2.0f, vec3_t{1.0f, 0.0f, 0.0f}) } },
-                vve::Scale{ vec3_t{1.0f} }
-            );
-            m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_handleCornell), vve::ParentHandle{}, vve::Filename{cornell_obj}, aiProcess_PreTransformVertices });
-            // cornell camera position
-            m_registry.Get<vve::Position&>(m_cameraHandle)().z += 0.46f;
-            m_registry.Get<vve::Position&>(m_cameraHandle)().y -= 1.2f;
-
-            // ----------------- Quick test - delete me -----------------
-            m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/test/Fireplace/Fireplace.gltf"} });
-            m_test = m_registry.Insert(
-                vve::Position{ { 5.0f, 0.0f, 0.1f } },
-                vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f))} },
-                vve::Scale{ vec3_t{1.0f} }
-            );
-            m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_test), vve::ParentHandle{}, vve::Filename{"assets/test/Fireplace/Fireplace.gltf"}, aiProcess_PreTransformVertices });
 
             return false;
         };
@@ -173,10 +150,8 @@ class MyGame : public vve::System {
         int m_cubes_left = c_number_cubes;  
         vecs::Handle m_handlePlane{};
         vecs::Handle m_handleCube{};
-        vecs::Handle m_handleCornell{};
 		vecs::Handle m_cameraHandle{};
 		vecs::Handle m_cameraNodeHandle{};
-        vecs::Handle m_test{};
 		float m_volume{MIX_MAX_VOLUME / 2.0};
     };
     
