@@ -14,6 +14,9 @@ set(SOURCE
   VERenderer.cpp
   VERendererForward.cpp
   VERendererForward11.cpp
+  VERendererDeferredCommon.cpp
+  VERendererDeferred11.cpp
+  VERendererDeferred13.cpp
   VERendererShadow11.cpp
   VERendererImgui.cpp
   VERendererVulkan.cpp
@@ -33,6 +36,9 @@ set(HEADERS
   ${INCLUDE}/VERenderer.h
   ${INCLUDE}/VERendererForward.h
   ${INCLUDE}/VERendererForward11.h
+  ${INCLUDE}/VERendererDeferredCommon.h
+  ${INCLUDE}/VERendererDeferred11.h
+  ${INCLUDE}/VERendererDeferred13.h
   ${INCLUDE}/VERendererShadow11.h
   ${INCLUDE}/VERendererImgui.h
   ${INCLUDE}/VERendererVulkan.h
