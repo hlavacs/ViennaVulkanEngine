@@ -40,6 +40,7 @@ export public struct Color {
     public float4 ambient;
     public float4 diffuse;
     public float4 specular;
+    public float4 metallicRoughness;
 };
 
 export public struct UniformBufferObjectColor {

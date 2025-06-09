@@ -252,6 +252,19 @@ namespace vve {
 				color.m_diffuseColor = to_vec4(diffuseColor);
 		        std::cout << "Diffuse Color: " << diffuseColor.r << diffuseColor.g << diffuseColor.b << diffuseColor.a << std::endl;
 			}
+			aiColor4D metallicFactor;
+			if (AI_SUCCESS == material->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor)) {
+				hasColor = true;
+				color.m_metallicRoughness[0] = metallicFactor.r;
+				std::cout << "Metallic Factor: " << metallicFactor.r << std::endl;
+			}
+			aiColor4D rougnessFactor;
+			if (AI_SUCCESS == material->Get(AI_MATKEY_ROUGHNESS_FACTOR, rougnessFactor)) {
+				hasColor = true;
+				color.m_metallicRoughness[1] = rougnessFactor.r;
+				std::cout << "Roughness Factor: " << rougnessFactor.r << std::endl;
+			}
+
 			if( hasColor ) {
 				m_registry.Put(nHandle, color);
 			}
