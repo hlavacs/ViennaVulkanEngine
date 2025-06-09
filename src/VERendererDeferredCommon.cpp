@@ -53,7 +53,10 @@ namespace vve {
 				{	// Binding 1 : Albedo
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 2 : Depth
+				{	// Binding 2 : Metallic and Roughness
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 3 : Depth
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 			},
@@ -396,6 +399,22 @@ namespace vve {
 			.m_binding = ALBEDO,
 			.m_descriptorSet = m_descriptorSetComposition
 			});
+		// Metallic and Roughness
+		vvh::RenCreateGBufferResources({
+			.m_physicalDevice = m_vkState().m_physicalDevice,
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_swapChain = m_vkState().m_swapChain,
+			.m_gbufferImage = m_gBufferAttachments[METALLIC_ROUGHNESS],
+			.m_format = VK_FORMAT_R8G8B8A8_UNORM,
+			.m_sampler = m_sampler
+			});
+		vvh::RenUpdateDescriptorSetGBufferAttachment({
+			.m_device = m_vkState().m_device,
+			.m_gbufferImage = m_gBufferAttachments[METALLIC_ROUGHNESS],
+			.m_binding = METALLIC_ROUGHNESS,
+			.m_descriptorSet = m_descriptorSetComposition
+			});
 		// Depth
 		vvh::RenUpdateDescriptorSetDepthAttachment({
 			.m_device = m_vkState().m_device,
@@ -480,6 +499,10 @@ namespace vve {
 				colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_MAX;
 				colorBlendAttachment.blendEnable = VK_TRUE;
 
+				std::vector<VkPipelineColorBlendAttachmentState> blends{};
+				blends.reserve(COUNT - 1);
+				for (size_t i = 0; i < COUNT - 1; ++i) blends.push_back(colorBlendAttachment);
+
 				vvh::RenCreateGraphicsPipeline({
 					.m_device = m_vkState().m_device,
 					.m_renderPass = renderPass,
@@ -490,7 +513,7 @@ namespace vve {
 					.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject },
 					.m_specializationConstants = {},
 					.m_pushConstantRanges = {},
-					.m_blendAttachments = { colorBlendAttachment, colorBlendAttachment },
+					.m_blendAttachments = blends,
 					.m_graphicsPipeline = graphicsPipeline,
 					.m_attachmentFormats = getAttachmentFormats(),
 					.m_depthFormat = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),

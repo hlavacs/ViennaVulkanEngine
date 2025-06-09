@@ -8,7 +8,7 @@ namespace vve {
 	protected:
 		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
 
-		enum GBufferIndex { NORMAL = 0, ALBEDO = 1, DEPTH = 2, COUNT = 3 };
+		enum GBufferIndex { NORMAL = 0, ALBEDO = 1, METALLIC_ROUGHNESS = 2, DEPTH = 3, COUNT };
 
 		struct PipelinePerType {
 			std::string m_type;
