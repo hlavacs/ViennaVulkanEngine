@@ -17,8 +17,12 @@ namespace vve {
 		};
 
 		struct PushConstantsLight {
-			alignas(16) glm::mat4 invViewProj;
-			vvh::LightOffset offset;
+			alignas(16) glm::mat4 m_invViewProj;
+			vvh::LightOffset m_offset;
+		};
+
+		struct PushConstantsMaterial {
+			alignas(16) glm::vec2 m_metallRoughness;
 		};
 
 		static constexpr VkClearValue m_clearColorValue{ .color = {0.0f, 0.0f, 0.0f, 1.0f} };

@@ -512,7 +512,7 @@ namespace vve {
 					.m_attributeDescriptions = attributeDescriptions,
 					.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject },
 					.m_specializationConstants = {},
-					.m_pushConstantRanges = {},
+					.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(PushConstantsMaterial) } },
 					.m_blendAttachments = blends,
 					.m_graphicsPipeline = graphicsPipeline,
 					.m_attachmentFormats = getAttachmentFormats(),
@@ -687,6 +687,17 @@ namespace vve {
 				if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
 				vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+				
+				// Metallic and Roughness as push constants per object
+				vvh::Color color = m_registry.template Get<vvh::Color>(oHandle);
+				PushConstantsMaterial metalRough{ {color.m_metallicRoughness.r, color.m_metallicRoughness.g} };
+				vkCmdPushConstants(cmdBuffer,
+					pipeline.second.m_graphicsPipeline.m_pipelineLayout,
+					VK_SHADER_STAGE_FRAGMENT_BIT,
+					0,
+					sizeof(PushConstantsMaterial),
+					&metalRough);
+
 				vvh::ComRecordObject({
 					.m_commandBuffer = cmdBuffer,
 					.m_graphicsPipeline = pipeline.second.m_graphicsPipeline,
