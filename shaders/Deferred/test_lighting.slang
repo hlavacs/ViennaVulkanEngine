@@ -32,6 +32,9 @@ Sampler2D gNormal;      // Normal from geometry shader
 Sampler2D gAlbedo;      // Albedo from geometry shader
 
 [[vk::binding(2, 1)]]
+Sampler2D gMetallicRoughness; // Metallic and Roughness from geometry shader
+
+[[vk::binding(3, 1)]]
 Sampler2D<float> gDepth;       // Depth
 
 [[vk::binding(1, 0)]]
@@ -40,7 +43,7 @@ StructuredBuffer<Light> gLights;
 //----------------------------------------------------------------------------
 
 [[vk::push_constant]]
-PushConstant pushConstant;
+PushConstantLight pushConstant;
 
 //----------------------------------------------------------------------------
 
@@ -70,6 +73,9 @@ float4 main(VertexStageOutput in) : SV_Target
     float3 P = reconstructPositionW(in.uv, depth);
     float3 N = normalize(gNormal.Sample(in.uv).xyz);
     float3 A = gAlbedo.Sample(in.uv).xyz;
+
+    // trash line testing
+    float4 delteMe = gMetallicRoughness.Sample(in.uv);
 
     float3 l = calculateLighting(gLights, numberLights, pushConstant.offset, N, camera.positionW, P);
 

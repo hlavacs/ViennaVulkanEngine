@@ -40,7 +40,6 @@ export public struct Color {
     public float4 ambient;
     public float4 diffuse;
     public float4 specular;
-    public float4 metallicRoughness;
 };
 
 export public struct UniformBufferObjectColor {
@@ -49,9 +48,15 @@ export public struct UniformBufferObjectColor {
     public Color color;
 };
 
+export public struct PushConstantMaterial {
+    public float2 metallicRoughness;
+    float2 padding;
+};
+
 export public struct GBufferOutput {
     public float4 norm : SV_Target0;
     public float4 albedo : SV_Target1;
+    public float4 metalRough : SV_Target1;
 };
 
 //-----------------------------------------------------------------------

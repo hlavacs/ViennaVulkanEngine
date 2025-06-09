@@ -31,6 +31,11 @@ Sampler2D albedoSampler;
 
 //----------------------------------------------------------------------------
 
+[[vk::push_constant]]
+PushConstantMaterial pushConstant;
+
+//----------------------------------------------------------------------------
+
 [shader("vertex")]
 VertexStageOutput main(
     float3 positionL    : POSITION,
@@ -62,5 +67,7 @@ GBufferOutput main(CoarseVertex input: CoarseVertex)
 
     output.norm     = float4(input.normalW, 0.0);
     output.albedo   = albedoSampler.Sample(input.uv);
+    output.metalRough = float4(pushConstant.metallicRoughness, 0.0, 0.0);
+
     return output;
 }

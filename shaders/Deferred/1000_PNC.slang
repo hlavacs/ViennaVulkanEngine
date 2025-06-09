@@ -27,6 +27,11 @@ ConstantBuffer<UniformBufferObject> gParamsObject;
 
 //----------------------------------------------------------------------------
 
+[[vk::push_constant]]
+PushConstantMaterial pushConstant;
+
+//----------------------------------------------------------------------------
+
 [shader("vertex")]
 VertexStageOutput main(
     float3 positionL : POSITION,
@@ -54,6 +59,7 @@ GBufferOutput main(CoarseVertex input: CoarseVertex)
 
     output.norm     = float4(input.normalW, 0.0);
     output.albedo   = input.fragColor;
+    output.metalRough = float4(pushConstant.metallicRoughness, 0.0, 0.0);
 
     return output;
 }
