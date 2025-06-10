@@ -7,7 +7,7 @@ namespace vve {
 	template class RendererDeferredCommon<RendererDeferred13>;
 
 	template<typename Derived>
-	RendererDeferredCommon<Derived>::RendererDeferredCommon(std::string systemName, Engine& engine, std::string windowName) : Renderer(systemName, engine, windowName) {
+	RendererDeferredCommon<Derived>::RendererDeferredCommon(const std::string& systemName, Engine& engine, const std::string& windowName) : Renderer(systemName, engine, windowName) {
 
 		engine.RegisterCallbacks({
 			{this,  3500, "INIT",				[this](Message& message) { return OnInit(message); } },

@@ -53,7 +53,7 @@ namespace vve {
 		// ---------------------------------------------------------------------------------
 
 	public:
-		RendererDeferredCommon(std::string systemName, Engine& engine, std::string windowName);
+		RendererDeferredCommon(const std::string& systemName, Engine& engine, const std::string& windowName);
 		virtual ~RendererDeferredCommon();
 
 	private:
