@@ -501,7 +501,7 @@ namespace vve {
 
 				std::vector<VkPipelineColorBlendAttachmentState> blends{};
 				blends.reserve(COUNT - 1);
-				for (size_t i = 0; i < COUNT - 1; ++i) blends.push_back(colorBlendAttachment);
+				for (uint8_t i = 0; i < COUNT - 1; ++i) blends.push_back(colorBlendAttachment);
 
 				vvh::RenCreateGraphicsPipeline({
 					.m_device = m_vkState().m_device,

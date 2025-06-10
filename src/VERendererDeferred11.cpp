@@ -25,7 +25,7 @@ namespace vve {
 			});
 
 		m_clearValues.reserve(COUNT);
-		for (size_t i = 0; i < COUNT - 1; ++i) m_clearValues.push_back(m_clearColorValue);
+		for (uint8_t i = 0; i < COUNT - 1; ++i) m_clearValues.push_back(m_clearColorValue);
 		m_clearValues.push_back(m_clearDepthStencilValue);
 
 		CreateDeferredFrameBuffers();
