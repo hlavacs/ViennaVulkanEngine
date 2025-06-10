@@ -169,7 +169,7 @@ namespace vve {
 		ubc.camera.positionW = lToW()[3];
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vkState().m_currentFrame], &ubc, sizeof(ubc));
 
-		for (auto& pipeline : m_geomPipesPerType) {
+		for (const auto& pipeline : m_geomPipesPerType) {
 			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers] :
 				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&>({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
 
@@ -218,12 +218,12 @@ namespace vve {
 
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnObjectCreate(Message message) {
-		ObjectHandle oHandle = message.template GetData<MsgObjectCreate>().m_object;
+		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		assert(m_registry.template Has<MeshHandle>(oHandle));
-		auto meshHandle = m_registry.template Get<MeshHandle>(oHandle);
-		auto mesh = m_registry.template Get<vvh::Mesh&>(meshHandle);
-		auto type = getPipelineType(oHandle, mesh().m_verticesData);
-		auto pipelinePerType = getPipelinePerType(type);
+		const auto& meshHandle = m_registry.template Get<MeshHandle>(oHandle);
+		const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(meshHandle);
+		const auto& type = getPipelineType(oHandle, mesh.m_verticesData);
+		const auto& pipelinePerType = getPipelinePerType(type);
 
 		bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 		bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
@@ -242,8 +242,8 @@ namespace vve {
 
 		if (hasTexture) {
 			sizeUbo = sizeof(vvh::BufferPerObjectTexture);
-			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
-			vvh::Image& texture = m_registry.template Get<vvh::Image&>(tHandle);
+			const auto& tHandle = m_registry.template Get<TextureHandle>(oHandle);
+			const vvh::Image& texture = m_registry.template Get<vvh::Image&>(tHandle);
 			vvh::RenUpdateDescriptorSetTexture({
 				.m_device = m_vkState().m_device,
 				.m_texture = texture,
@@ -288,8 +288,8 @@ namespace vve {
 
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnObjectDestroy(Message message) {
-		auto& msg = message.template GetData<MsgObjectDestroy>();
-		auto& oHandle = msg.m_handle();
+		const auto& msg = message.template GetData<MsgObjectDestroy>();
+		const auto& oHandle = msg.m_handle();
 
 		assert(m_registry.Exists(oHandle));
 
@@ -565,7 +565,7 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	auto RendererDeferredCommon<Derived>::getAttachmentFormats() -> std::vector<VkFormat> {
+	auto RendererDeferredCommon<Derived>::getAttachmentFormats() const -> const std::vector<VkFormat> {
 		std::vector<VkFormat> attachFormats;
 		attachFormats.reserve(m_gBufferAttachments.size());
 		for (const auto& attach : m_gBufferAttachments) {
@@ -576,7 +576,7 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	auto RendererDeferredCommon<Derived>::getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string {
+	auto RendererDeferredCommon<Derived>::getPipelineType(const ObjectHandle& handle, const vvh::VertexData& vertexData) const -> std::string {
 		std::string type = vertexData.getType();
 		if (m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos) type += "E";
 		if (m_registry.template Has<vvh::Color>(handle) && type.find("C") == std::string::npos && type.find("E") == std::string::npos) type += "O";
@@ -584,7 +584,7 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	auto RendererDeferredCommon<Derived>::getPipelinePerType(std::string type) -> RendererDeferredCommon<Derived>::PipelinePerType* {
+	auto RendererDeferredCommon<Derived>::getPipelinePerType(const std::string& type) const -> const RendererDeferredCommon<Derived>::PipelinePerType* {
 		for (auto& [pri, pipeline] : m_geomPipesPerType) {
 			bool found = true;
 			for (auto& c : pipeline.m_type) { found = found && (type.find(c) != std::string::npos); }
@@ -596,7 +596,7 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	void RendererDeferredCommon<Derived>::PrepareLightingAttachments(VkCommandBuffer& cmdBuffer) {
+	void RendererDeferredCommon<Derived>::PrepareLightingAttachments(const VkCommandBuffer& cmdBuffer) {
 		// GBuffer attachments VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		for (auto& image : m_gBufferAttachments) {
 			vvh::ImgTransitionImageLayout3({
@@ -626,7 +626,7 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	void RendererDeferredCommon<Derived>::ResetLightingAttachments(VkCommandBuffer& cmdBuffer) {
+	void RendererDeferredCommon<Derived>::ResetLightingAttachments(const VkCommandBuffer& cmdBuffer) {
 		// GBuffer attachments from  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		for (auto& image : m_gBufferAttachments) {
 			vvh::ImgTransitionImageLayout3({
@@ -656,8 +656,8 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	void RendererDeferredCommon<Derived>::RecordObjects(VkCommandBuffer& cmdBuffer, VkRenderPass* renderPass) {
-		for (auto& pipeline : m_geomPipesPerType) {
+	void RendererDeferredCommon<Derived>::RecordObjects(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass) {
+		for (const auto& pipeline : m_geomPipesPerType) {
 
 			vvh::Pipeline pip{
 				pipeline.second.m_graphicsPipeline.m_pipelineLayout,
@@ -686,10 +686,10 @@ namespace vve {
 				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
 				if (!hasTexture && !hasColor && !hasVertexColor) continue;
 
-				vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+				const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
 				
 				// Metallic and Roughness as push constants per object
-				vvh::Color color = m_registry.template Get<vvh::Color>(oHandle);
+				const vvh::Color& color = m_registry.template Get<vvh::Color&>(oHandle);
 				PushConstantsMaterial metalRough{ {color.m_metallicRoughness.r, color.m_metallicRoughness.g} };
 				vkCmdPushConstants(cmdBuffer,
 					pipeline.second.m_graphicsPipeline.m_pipelineLayout,
@@ -711,7 +711,7 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	void RendererDeferredCommon<Derived>::RecordLighting(VkCommandBuffer& cmdBuffer, VkRenderPass* renderPass) {
+	void RendererDeferredCommon<Derived>::RecordLighting(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass) {
 		vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
 		auto [view, proj] = *m_registry.template GetView<ViewMatrix&, ProjectionMatrix&>().begin();
 		PushConstantsLight pc{ glm::inverse(proj() * view()), offset };

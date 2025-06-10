@@ -67,17 +67,17 @@ namespace vve {
 
 		void CreateDeferredResources();
 		void DestroyDeferredResources();
-		auto getPipelineType(ObjectHandle handle, vvh::VertexData& vertexData) -> std::string;
-		auto getPipelinePerType(std::string type) -> PipelinePerType*;
+		auto getPipelineType(const ObjectHandle& handle, const vvh::VertexData& vertexData) const -> std::string;
+		auto getPipelinePerType(const std::string& type) const -> const PipelinePerType*;
 
 	protected:
 		void CreateGeometryPipeline(const VkRenderPass& renderPass = VK_NULL_HANDLE);
 		void CreateLightingPipeline(const VkRenderPass& renderPass = VK_NULL_HANDLE);
-		void PrepareLightingAttachments(VkCommandBuffer& cmdBuffer);
-		void ResetLightingAttachments(VkCommandBuffer& cmdBuffer);
-		void RecordObjects(VkCommandBuffer& cmdBuffer, VkRenderPass* renderPass = VK_NULL_HANDLE);
-		void RecordLighting(VkCommandBuffer& cmdBuffer, VkRenderPass* renderPass = VK_NULL_HANDLE);
-		auto getAttachmentFormats() -> std::vector<VkFormat>;
+		void PrepareLightingAttachments(const VkCommandBuffer& cmdBuffer);
+		void ResetLightingAttachments(const VkCommandBuffer& cmdBuffer);
+		void RecordObjects(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass = VK_NULL_HANDLE);
+		void RecordLighting(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass = VK_NULL_HANDLE);
+		auto getAttachmentFormats() const -> const std::vector<VkFormat>;
 
 	};
 
