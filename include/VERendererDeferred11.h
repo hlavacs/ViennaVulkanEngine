@@ -7,17 +7,17 @@ namespace vve {
 		friend class RendererDeferredCommon<RendererDeferred11>;
 
 	public:
-		RendererDeferred11(std::string systemName, Engine& engine, std::string windowName);
+		RendererDeferred11(const std::string& systemName, Engine& engine, const std::string& windowName);
 		virtual ~RendererDeferred11();
 
 	private:
-		void OnInit(Message message);
-		void OnPrepareNextFrame(Message message);
-		void OnRecordNextFrame(Message message);
-		void OnObjectCreate(Message message);
-		void OnObjectDestroy(Message message);
-		void OnWindowSize(Message message);
-		void OnQuit(Message message);
+		void OnInit();
+		void OnPrepareNextFrame();
+		void OnRecordNextFrame();
+		void OnObjectCreate();
+		void OnObjectDestroy();
+		void OnWindowSize();
+		void OnQuit();
 
 		void CreateDeferredFrameBuffers();
 		void DestroyDeferredFrameBuffers();

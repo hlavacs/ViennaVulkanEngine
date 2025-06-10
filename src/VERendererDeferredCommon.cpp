@@ -358,7 +358,7 @@ namespace vve {
 		}
 
 
-		static_cast<Derived*>(this)->OnQuit(message);
+		static_cast<Derived*>(this)->OnQuit();
 
 		return false;
 	}
