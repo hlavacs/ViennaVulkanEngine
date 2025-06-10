@@ -16,13 +16,15 @@ namespace vve {
 			vvh::Pipeline m_graphicsPipeline{};
 		};
 
-		struct PushConstantsLight {
+		struct alignas(16) PushConstantsLight {
 			alignas(16) glm::mat4 m_invViewProj;
-			vvh::LightOffset m_offset;
+			alignas(8) vvh::LightOffset m_offset;
+			alignas(4) float padding[2]{ 0, 0 };
 		};
 
-		struct PushConstantsMaterial {
-			alignas(16) glm::vec2 m_metallRoughness;
+		struct alignas(16) PushConstantsMaterial {
+			alignas(8) glm::vec2 m_metallRoughness;
+			alignas(4) float padding[2]{ 0, 0 };
 		};
 
 		static constexpr VkClearValue m_clearColorValue{ .color = {0.0f, 0.0f, 0.0f, 1.0f} };

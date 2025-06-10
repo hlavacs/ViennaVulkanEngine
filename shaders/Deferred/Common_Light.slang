@@ -23,6 +23,7 @@ export public struct LightOffset {
 export public struct PushConstantLight {
     public float4x4 invViewProj;
     public LightOffset offset;
+    float2 padding;
 }
 
 //-----------------------------------------------------------------------
