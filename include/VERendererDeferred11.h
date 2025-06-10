@@ -28,6 +28,7 @@ namespace vve {
 		VkRenderPass m_geometryPass{ VK_NULL_HANDLE };
 		VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
 
+		std::vector<VkClearValue> m_clearValues{};
 	};
 
 }	// namespace vve

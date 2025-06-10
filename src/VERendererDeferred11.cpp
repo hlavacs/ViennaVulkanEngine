@@ -24,6 +24,10 @@ namespace vve {
 			.m_renderPass			= m_lightingPass
 			});
 
+		m_clearValues.reserve(COUNT);
+		for (size_t i = 0; i < COUNT - 1; ++i) m_clearValues.push_back(m_clearColorValue);
+		m_clearValues.push_back(m_clearDepthStencilValue);
+
 		CreateDeferredFrameBuffers();
 
 		CreateGeometryPipeline(m_geometryPass);
@@ -43,7 +47,7 @@ namespace vve {
 			.m_swapChain			= m_vkState().m_swapChain,
 			.m_gBufferFramebuffers	= m_gBufferFrameBuffers,
 			.m_renderPass			= m_geometryPass,
-			.m_clearValues			= {m_clearColorValue, m_clearColorValue, m_clearDepthStencilValue},
+			.m_clearValues			= m_clearValues,
 			.m_currentFrame			= m_vkState().m_currentFrame 
 			});
 
