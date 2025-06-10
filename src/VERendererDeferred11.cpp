@@ -3,7 +3,7 @@
 
 namespace vve {
 
-	RendererDeferred11::RendererDeferred11(std::string systemName, Engine& engine, std::string windowName)
+	RendererDeferred11::RendererDeferred11(const std::string& systemName, Engine& engine, const std::string& windowName)
 		: RendererDeferredCommon(systemName, engine, windowName) {}
 
 	RendererDeferred11::~RendererDeferred11() {};

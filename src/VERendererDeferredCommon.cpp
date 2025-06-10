@@ -25,7 +25,7 @@ namespace vve {
 
 
 	template<typename Derived>
-	bool RendererDeferredCommon<Derived>::OnInit(Message message) {
+	bool RendererDeferredCommon<Derived>::OnInit(const Message& message) {
 		// TODO: maybe a reference will be enough here to not make a message copy?
 		Renderer::OnInit(message);
 
@@ -142,13 +142,13 @@ namespace vve {
 
 		CreateDeferredResources();
 
-		static_cast<Derived*>(this)->OnInit(message);
+		static_cast<Derived*>(this)->OnInit();
 
 		return false;
 	}
 
 	template<typename Derived>
-	bool RendererDeferredCommon<Derived>::OnPrepareNextFrame(Message message) {
+	bool RendererDeferredCommon<Derived>::OnPrepareNextFrame(const Message& message) {
 
 		vvh::UniformBufferFrame ubc;
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
@@ -203,21 +203,21 @@ namespace vve {
 			}
 		}
 
-		static_cast<Derived*>(this)->OnPrepareNextFrame(message);
+		static_cast<Derived*>(this)->OnPrepareNextFrame();
 
 		return false;
 	}
 
 	template<typename Derived>
-	bool RendererDeferredCommon<Derived>::OnRecordNextFrame(Message message) {
+	bool RendererDeferredCommon<Derived>::OnRecordNextFrame(const Message& message) {
 
-		static_cast<Derived*>(this)->OnRecordNextFrame(message);
+		static_cast<Derived*>(this)->OnRecordNextFrame();
 
 		return false;
 	}
 
 	template<typename Derived>
-	bool RendererDeferredCommon<Derived>::OnObjectCreate(Message message) {
+	bool RendererDeferredCommon<Derived>::OnObjectCreate(Message& message) {
 		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		assert(m_registry.template Has<MeshHandle>(oHandle));
 		const auto& meshHandle = m_registry.template Get<MeshHandle>(oHandle);
@@ -281,13 +281,13 @@ namespace vve {
 		assert(m_registry.template Has<vvh::DescriptorSet>(oHandle));
 
 
-		static_cast<Derived*>(this)->OnObjectCreate(message);
+		static_cast<Derived*>(this)->OnObjectCreate();
 
 		return false;
 	}
 
 	template<typename Derived>
-	bool RendererDeferredCommon<Derived>::OnObjectDestroy(Message message) {
+	bool RendererDeferredCommon<Derived>::OnObjectDestroy(Message& message) {
 		const auto& msg = message.template GetData<MsgObjectDestroy>();
 		const auto& oHandle = msg.m_handle();
 
@@ -301,23 +301,23 @@ namespace vve {
 			.m_buffers = ubo
 			});
 
-		static_cast<Derived*>(this)->OnObjectDestroy(message);
+		static_cast<Derived*>(this)->OnObjectDestroy();
 
 		return false;
 	}
 
 	template<typename Derived>
-	bool RendererDeferredCommon<Derived>::OnWindowSize(Message message) {
+	bool RendererDeferredCommon<Derived>::OnWindowSize(const Message& message) {
 		DestroyDeferredResources();
 		CreateDeferredResources();
 
-		static_cast<Derived*>(this)->OnWindowSize(message);
+		static_cast<Derived*>(this)->OnWindowSize();
 
 		return false;
 	}
 
 	template<typename Derived>
-	bool RendererDeferredCommon<Derived>::OnQuit(Message message) {
+	bool RendererDeferredCommon<Derived>::OnQuit(const Message& message) {
 		vkDeviceWaitIdle(m_vkState().m_device);
 
 		for (auto pool : m_commandPools) {

@@ -57,13 +57,13 @@ namespace vve {
 		virtual ~RendererDeferredCommon();
 
 	private:
-		bool OnInit(Message message);
-		bool OnPrepareNextFrame(Message message);
-		bool OnRecordNextFrame(Message message);
-		bool OnObjectCreate(Message message);
-		bool OnObjectDestroy(Message message);
-		bool OnWindowSize(Message message);
-		bool OnQuit(Message message);
+		bool OnInit(const Message& message);
+		bool OnPrepareNextFrame(const Message& message);
+		bool OnRecordNextFrame(const Message& message);
+		bool OnObjectCreate(Message& message);
+		bool OnObjectDestroy(Message& message);
+		bool OnWindowSize(const Message& message);
+		bool OnQuit(const Message& message);
 
 		void CreateDeferredResources();
 		void DestroyDeferredResources();
