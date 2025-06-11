@@ -4,7 +4,7 @@
 
 namespace vve {
 
-	RendererDeferred::RendererDeferred(std::string systemName, Engine& engine, std::string windowName) :
+	RendererDeferred::RendererDeferred(const std::string& systemName, Engine& engine, const std::string& windowName) :
 		System{ systemName, engine }, m_windowName(windowName) {
 
 		engine.RegisterCallbacks({
@@ -14,7 +14,7 @@ namespace vve {
 
 	RendererDeferred::~RendererDeferred() {};
 
-	bool RendererDeferred::OnInit(Message message) {
+	bool RendererDeferred::OnInit(const Message& message) {
 		auto state = m_engine.GetState();
 
 		switch (VK_API_VERSION_MINOR(state.apiVersion)) {

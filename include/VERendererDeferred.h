@@ -1,19 +1,14 @@
 #pragma once
 
 namespace vve {
-	class RendererDeferred : public System{
-		
-		friend class RendererDeferred11;
-		friend class RendererDeferred13;
-
-		enum GBufferIndex { POSITION = 0, NORMAL = 1, ALBEDO = 2, DEPTH = 3 };
+	class RendererDeferred : public System {
 
 	public:
-		RendererDeferred(std::string systemName, Engine& engine, std::string windowName);
+		RendererDeferred(const std::string& systemName, Engine& engine, const std::string& windowName);
 		virtual ~RendererDeferred();
 
 	private:
-		bool OnInit(Message message);
+		bool OnInit(const Message& message);
 
 		std::string m_windowName;
 	};
