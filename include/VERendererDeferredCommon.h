@@ -68,7 +68,7 @@ namespace vve {
 
 		void CreateDeferredResources();
 		void DestroyDeferredResources();
-		auto getPipelineType(const ObjectHandle& handle, const vvh::VertexData& vertexData) const -> std::string;
+		auto getPipelineType(const ObjectHandle& handle, const vvh::VertexData& vertexData) const -> const std::string;
 		auto getPipelinePerType(const std::string& type) const -> const PipelinePerType*;
 		void UpdateLightStorageBuffer();
 

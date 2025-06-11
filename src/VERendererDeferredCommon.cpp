@@ -586,7 +586,7 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	auto RendererDeferredCommon<Derived>::getPipelineType(const ObjectHandle& handle, const vvh::VertexData& vertexData) const -> std::string {
+	auto RendererDeferredCommon<Derived>::getPipelineType(const ObjectHandle& handle, const vvh::VertexData& vertexData) const -> const std::string {
 		std::string type = vertexData.getType();
 		if (m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos) type += "E";
 		if (m_registry.template Has<vvh::Color>(handle) && type.find("C") == std::string::npos && type.find("E") == std::string::npos) type += "O";
