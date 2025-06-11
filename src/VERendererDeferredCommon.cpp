@@ -463,7 +463,7 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	void RendererDeferredCommon<Derived>::CreateGeometryPipeline(const VkRenderPass& renderPass) {
+	void RendererDeferredCommon<Derived>::CreateGeometryPipeline(const VkRenderPass* renderPass) {
 		const std::filesystem::path shaders{ "shaders/Deferred" };
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
@@ -515,7 +515,7 @@ namespace vve {
 
 				vvh::RenCreateGraphicsPipeline({
 					.m_device = m_vkState().m_device,
-					.m_renderPass = renderPass,
+					.m_renderPass = renderPass != VK_NULL_HANDLE ? *renderPass : VK_NULL_HANDLE,
 					.m_vertShaderPath = entry.path().string(),
 					.m_fragShaderPath = entry.path().string(),
 					.m_bindingDescription = bindingDescriptions,
@@ -536,7 +536,7 @@ namespace vve {
 	}
 
 	template<typename Derived>
-	void RendererDeferredCommon<Derived>::CreateLightingPipeline(const VkRenderPass& renderPass) {
+	void RendererDeferredCommon<Derived>::CreateLightingPipeline(const VkRenderPass* renderPass) {
 		const std::filesystem::path shaders{ "shaders/Deferred" };
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
@@ -558,7 +558,7 @@ namespace vve {
 
 		vvh::RenCreateGraphicsPipeline({
 			.m_device = m_vkState().m_device,
-			.m_renderPass = renderPass,
+			.m_renderPass = renderPass != VK_NULL_HANDLE ? *renderPass : VK_NULL_HANDLE,
 			.m_vertShaderPath = vert,
 			.m_fragShaderPath = frag,
 			.m_bindingDescription = {},
@@ -696,7 +696,7 @@ namespace vve {
 				.m_graphicsPipeline = pip,
 				.m_imageIndex = m_vkState().m_imageIndex,
 				.m_swapChain = m_vkState().m_swapChain,
-				.m_renderPass = renderPass ? *renderPass : VK_NULL_HANDLE,
+				.m_renderPass = renderPass != VK_NULL_HANDLE ? *renderPass : VK_NULL_HANDLE,
 				.m_viewPorts = {},
 				.m_scissors = {}, //default view ports and scissors
 				.m_blendConstants = {},
@@ -749,7 +749,7 @@ namespace vve {
 			.m_graphicsPipeline = m_lightingPipeline,
 			.m_imageIndex = m_vkState().m_imageIndex,
 			.m_swapChain = m_vkState().m_swapChain,
-			.m_renderPass = renderPass ? *renderPass : VK_NULL_HANDLE,
+			.m_renderPass = renderPass != VK_NULL_HANDLE ? *renderPass : VK_NULL_HANDLE,
 			.m_viewPorts = {},
 			.m_scissors = {}, //default view ports and scissors
 			.m_blendConstants = {},

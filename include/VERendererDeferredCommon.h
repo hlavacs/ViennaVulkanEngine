@@ -73,8 +73,8 @@ namespace vve {
 		void UpdateLightStorageBuffer();
 
 	protected:
-		void CreateGeometryPipeline(const VkRenderPass& renderPass = VK_NULL_HANDLE);
-		void CreateLightingPipeline(const VkRenderPass& renderPass = VK_NULL_HANDLE);
+		void CreateGeometryPipeline(const VkRenderPass* renderPass = VK_NULL_HANDLE);
+		void CreateLightingPipeline(const VkRenderPass* renderPass = VK_NULL_HANDLE);
 		void PrepareLightingAttachments(const VkCommandBuffer& cmdBuffer);
 		void ResetLightingAttachments(const VkCommandBuffer& cmdBuffer);
 		void RecordObjects(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass = VK_NULL_HANDLE);

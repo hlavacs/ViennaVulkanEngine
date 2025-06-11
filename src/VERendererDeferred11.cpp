@@ -30,8 +30,8 @@ namespace vve {
 
 		CreateDeferredFrameBuffers();
 
-		CreateGeometryPipeline(m_geometryPass);
-		CreateLightingPipeline(m_lightingPass);
+		CreateGeometryPipeline(&m_geometryPass);
+		CreateLightingPipeline(&m_lightingPass);
 	}
 
 	void RendererDeferred11::OnPrepareNextFrame() {}
