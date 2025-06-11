@@ -296,6 +296,13 @@ namespace vve {
 
 		assert(m_registry.Exists(oHandle));
 
+		if (m_registry.template Has<PointLight>(oHandle) ||
+			m_registry.template Has<DirectionalLight>(oHandle) ||
+			m_registry.template Has<SpotLight>(oHandle)) {
+			// Object is a light, update m_storageBuffersLights in OnPrepareNextFrame!
+			m_lightsChanged = true;
+		}
+
 		if (!m_registry.template Has<vvh::Buffer>(oHandle)) return false;
 		vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
 		vvh::BufDestroyBuffer2({
