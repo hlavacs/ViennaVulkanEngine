@@ -49,6 +49,7 @@ namespace vve {
 		std::vector<VkCommandBuffer> m_commandBuffers{};
 
 		glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
+		bool m_lightsChanged{ true };
 
 		// ---------------------------------------------------------------------------------
 
@@ -69,6 +70,7 @@ namespace vve {
 		void DestroyDeferredResources();
 		auto getPipelineType(const ObjectHandle& handle, const vvh::VertexData& vertexData) const -> std::string;
 		auto getPipelinePerType(const std::string& type) const -> const PipelinePerType*;
+		void UpdateLightStorageBuffer();
 
 	protected:
 		void CreateGeometryPipeline(const VkRenderPass& renderPass = VK_NULL_HANDLE);

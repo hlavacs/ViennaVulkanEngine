@@ -13,7 +13,7 @@ namespace vve {
 			{this,  3500, "INIT",				[this](Message& message) { return OnInit(message); } },
 			{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
 			{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
-			{this,  2000, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
+			{this,  1750, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			{this,  1500, "WINDOW_SIZE",		[this](Message& message) { return OnWindowSize(message); }},
 			{this, 	   0, "QUIT",				[this](Message& message) { return OnQuit(message); } }
@@ -26,7 +26,6 @@ namespace vve {
 
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnInit(const Message& message) {
-		// TODO: maybe a reference will be enough here to not make a message copy?
 		Renderer::OnInit(message);
 
 		// Per Frame
@@ -153,15 +152,11 @@ namespace vve {
 		vvh::UniformBufferFrame ubc;
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 
-		int total{ 0 };
-		std::vector<vvh::Light> lights{ MAX_NUMBER_LIGHTS };
-		// TODO: Maybe move into separate function to not do this every frame?
-		m_numberLightsPerType = glm::ivec3{ 0 };
-		m_numberLightsPerType.x = RegisterLight<PointLight>(1.0f, lights, total);
-		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
-		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
+		if (m_lightsChanged) {
+			m_lightsChanged = false;	
+			UpdateLightStorageBuffer();
+		}
 		ubc.numLights = m_numberLightsPerType;
-		memcpy(m_storageBuffersLights.m_uniformBuffersMapped[m_vkState().m_currentFrame], lights.data(), total * sizeof(vvh::Light));
 
 		auto [lToW, view, proj] = *m_registry.template GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>().begin();
 		ubc.camera.view = view();
@@ -220,6 +215,14 @@ namespace vve {
 	bool RendererDeferredCommon<Derived>::OnObjectCreate(Message& message) {
 		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		assert(m_registry.template Has<MeshHandle>(oHandle));
+
+		if (m_registry.template Has<PointLight>(oHandle) ||
+			m_registry.template Has<DirectionalLight>(oHandle) ||
+			m_registry.template Has<SpotLight>(oHandle)) {
+			// Object is a light, update m_storageBuffersLights in OnPrepareNextFrame!
+			m_lightsChanged = true;
+		}
+
 		const auto& meshHandle = m_registry.template Get<MeshHandle>(oHandle);
 		const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(meshHandle);
 		const auto& type = getPipelineType(oHandle, mesh.m_verticesData);
@@ -593,6 +596,21 @@ namespace vve {
 		std::cout << "Pipeline not found for type: " << type << std::endl;
 		exit(-1);
 		return nullptr;
+	}
+
+	template<typename Derived>
+	void RendererDeferredCommon<Derived>::UpdateLightStorageBuffer() {
+		static std::vector<vvh::Light> lights{ MAX_NUMBER_LIGHTS };
+		int total = 0;
+		
+		m_numberLightsPerType = glm::ivec3{ 0 };
+		m_numberLightsPerType.x = RegisterLight<PointLight>(1.0f, lights, total);
+		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
+		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
+
+		for (size_t i = 0; i < m_storageBuffersLights.m_uniformBuffersMapped.size(); ++i) {
+			memcpy(m_storageBuffersLights.m_uniformBuffersMapped[i], lights.data(), total * sizeof(vvh::Light));
+		}
 	}
 
 	template<typename Derived>
