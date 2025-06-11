@@ -682,6 +682,8 @@ namespace vve {
 
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::RecordObjects(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass) {
+		assert(sizeof(PushConstantsMaterial) <= 128);
+
 		for (const auto& pipeline : m_geomPipesPerType) {
 
 			vvh::Pipeline pip{
@@ -737,6 +739,7 @@ namespace vve {
 
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::RecordLighting(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass) {
+		assert(sizeof(PushConstantsLight) <= 128);
 		vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
 		auto [view, proj] = *m_registry.template GetView<ViewMatrix&, ProjectionMatrix&>().begin();
 		PushConstantsLight pc{ glm::inverse(proj() * view()), offset };
