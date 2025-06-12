@@ -39,13 +39,6 @@ export public float3 calculatePointLight(Light light, float3 nW, float3 viewPosW
 	// Compute diffuse and specular components
 	float diff = max(dot(normalW, lightDir), 0.0);
 
-    // float spec = 0.0;
-    // if (diff > 0.0)
-    // {
-    //     float3 reflectDir = reflect(-lightDir, normalW);
-    //     spec = pow(max(dot(viewDir, reflectDir), 0.0), light.param.param.z);
-    // }
-
 	float3 reflectDir = reflect(-lightDir, -normalW);
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), light.param.param.z);
 
