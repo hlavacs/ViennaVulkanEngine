@@ -18,8 +18,6 @@ namespace vve {
 
 		struct alignas(16) PushConstantsLight {
 			alignas(16) glm::mat4 m_invViewProj;
-			alignas(8) vvh::LightOffset m_offset;
-			alignas(4) float padding[2]{ 0, 0 };
 		};
 
 		struct alignas(16) PushConstantsMaterial {

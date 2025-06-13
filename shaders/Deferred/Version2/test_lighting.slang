@@ -74,10 +74,10 @@ float4 main(VertexStageOutput in) : SV_Target
     float3 N = normalize(gNormal.Sample(in.uv).xyz);
     float3 A = gAlbedo.Sample(in.uv).xyz;
 
-    // trash line testing
-    float4 delteMe = gMetallicRoughness.Sample(in.uv);
+    // test line
+    float4 deleteMe = gMetallicRoughness.Sample(in.uv);
 
-    float3 l = calculateLighting(gLights, numberLights, pushConstant.offset, N, camera.positionW, P);
+    float3 l = calculateLighting(gLights, numberLights, N, camera.positionW, P);
 
     output = float4(A.rgb * l, 1.0);
     return output;

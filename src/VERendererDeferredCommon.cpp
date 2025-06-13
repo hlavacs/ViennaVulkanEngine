@@ -537,7 +537,7 @@ namespace vve {
 
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::CreateLightingPipeline(const VkRenderPass* renderPass) {
-		const std::filesystem::path shaders{ "shaders/Deferred" };
+		const std::filesystem::path shaders{ "shaders/Deferred/Version2" };
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
 		}
@@ -740,9 +740,10 @@ namespace vve {
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::RecordLighting(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass) {
 		assert(sizeof(PushConstantsLight) <= 128);
-		vvh::LightOffset offset{ 0, m_numberLightsPerType.x + m_numberLightsPerType.y + m_numberLightsPerType.z };
+
+		// TODO: Maybe move into camera ubo
 		auto [view, proj] = *m_registry.template GetView<ViewMatrix&, ProjectionMatrix&>().begin();
-		PushConstantsLight pc{ glm::inverse(proj() * view()), offset };
+		PushConstantsLight pc{ .m_invViewProj = glm::inverse(proj() * view()) };
 
 		vvh::ComBindPipeline({
 			.m_commandBuffer = cmdBuffer,

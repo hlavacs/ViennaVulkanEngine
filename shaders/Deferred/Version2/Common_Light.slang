@@ -3,27 +3,24 @@ implementing Common;
 // param.x==0...no light, param.x==1...point, param.x==2...directional, param.x==3...spotlight
 export public struct LightParams {
     public float3 color;
+    float pad1;
     public float4 param;       // x=type, y=intensity, z=power, w=ambient
     public float3 attenuation; // x=constant, y=linear, z=quadratic
+    float pad2;
 };
 
 // x==1...point, x==2...directional, x==3...spotlight
 export public struct Light {
     public float3 		positionW;
+	float pad1;
     public float3 		directionW;
+	float pad2;
     public LightParams 	param;
-};
-
-export public struct LightOffset {
-    public int lightOffset;
-    public int numberLights;
 };
 
 // Used in Deferred Renderer to reconstruct positionW from depth
 export public struct PushConstantLight {
     public float4x4 invViewProj;
-    public LightOffset offset;
-    float2 padding;
 }
 
 //-----------------------------------------------------------------------
@@ -100,27 +97,15 @@ export public float3 calculateSpotLight(Light light, float3 nW, float3 viewPosW,
 }
 
 
-export public float3 calculateLighting(StructuredBuffer<Light> light, int3 numberLights, LightOffset offset, float3 normalW, float3 viewPosW, float3 fragPosW) {
+export public float3 calculateLighting(StructuredBuffer<Light> light, int3 numberLights, float3 normalW, float3 viewPosW, float3 fragPosW) {
     float3 result = float3(0.0);
 
-	for( int i = 0; i < numberLights.x; i++ ) {// Point light
-        int idx = i;
-        if (idx >= offset.lightOffset + offset.numberLights) return result;
-		if( idx >= offset.lightOffset) result += calculatePointLight(light[idx], normalW, viewPosW, fragPosW);
-    }
-
-    for (int i = 0; i < numberLights.y; i++) { // Directional light
-        int idx = numberLights.x + i;
-        if (idx >= offset.lightOffset + offset.numberLights) return result;
-        if (idx >= offset.lightOffset) result += calculateDirectionalLight(light[idx], normalW, viewPosW, fragPosW);
-    }
-
-    for (int i = 0; i < numberLights.z; i++) { // Spot light
-        int idx = numberLights.x + numberLights.y + i;
-        if (idx >= offset.lightOffset + offset.numberLights) return result;
-        if (idx >= offset.lightOffset) result += calculateSpotLight(light[idx], normalW, viewPosW, fragPosW);
+    [unroll]
+    for (int i = 0; i < numberLights.x + numberLights.y + numberLights.z; ++i) {
+        if (light[i].param.param.x == 1) result += calculatePointLight(light[i], normalW, viewPosW, fragPosW);
+        if (light[i].param.param.x == 2) result += calculateDirectionalLight(light[i], normalW, viewPosW, fragPosW);
+        if (light[i].param.param.x == 3) result += calculateSpotLight(light[i], normalW, viewPosW, fragPosW);
     }
 
     return result;
 }
-
