@@ -64,8 +64,6 @@ float4 main(VertexStageOutput in) : SV_Target
         discard;
     }
 
-    float4 output = float4(0);
-
     Camera camera = gParamsFrame.camera;
     uint3 numberLights = gParamsFrame.numberLights;
 
@@ -74,7 +72,7 @@ float4 main(VertexStageOutput in) : SV_Target
     float3 A = gAlbedo.Sample(in.uv).xyz;
     float2 MR = gMetallicRoughness.Sample(in.uv).xy;
 
-    output += calcSinglePointLight(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g);
+    float4 output = calculateLighting(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g);
 
     return output;
 }
