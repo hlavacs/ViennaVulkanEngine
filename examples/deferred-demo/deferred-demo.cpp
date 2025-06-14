@@ -85,7 +85,7 @@ class MyGame : public vve::System {
 
             // ----------------- Load Cornell -----------------
 
-            m_engine.SendMsg(MsgSceneLoad{ vve::Filename{cornell_obj} });
+            m_engine.SendMsg(MsgSceneLoad{ vve::Filename{cornell_obj}, aiProcess_PreTransformVertices });
             m_handleCornell = m_registry.Insert(
                 vve::Position{ { 0.0f, 0.0f, -0.1f } },
                 vve::Rotation{ mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f / 2.0f, vec3_t{1.0f, 0.0f, 0.0f}) } },
@@ -96,14 +96,16 @@ class MyGame : public vve::System {
             m_registry.Get<vve::Position&>(m_cameraHandle)().z += 0.46f;
             m_registry.Get<vve::Position&>(m_cameraHandle)().y -= 1.2f;
 
-            // ----------------- Quick test - delete me -----------------
-            m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/test/Fireplace/Fireplace.gltf"} });
+            // -----------------  Fireplace -----------------
+            aiPostProcessSteps flags = static_cast<aiPostProcessSteps>(aiProcess_PreTransformVertices | aiProcess_ImproveCacheLocality);
+            m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/test/Fireplace/Fireplace.gltf"}, flags });
             m_test = m_registry.Insert(
                 vve::Position{ { 5.0f, 0.0f, 0.1f } },
-                vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), glm::radians(180.0f), glm::vec3(1.0f, 0.0f, 0.0f))} },
+                vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f))} },
+                //vve::Rotation{ mat3_t{1.0f} },
                 vve::Scale{ vec3_t{1.0f} }
             );
-            m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_test), vve::ParentHandle{}, vve::Filename{"assets/test/Fireplace/Fireplace.gltf"}, aiProcess_PreTransformVertices });
+            m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_test), vve::ParentHandle{}, vve::Filename{"assets/test/Fireplace/Fireplace.gltf"}, flags });
 
             return false;
         };
