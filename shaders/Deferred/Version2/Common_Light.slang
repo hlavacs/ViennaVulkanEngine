@@ -180,10 +180,10 @@ export public float3 accumulateDirectLights(StructuredBuffer<Light> light, int s
 
     float3 Lo = float3(0.0);
     for (int i = start; i < end; ++i) {
-        float3 L = -normalize(light[0].directionW);
+        float3 L = -normalize(light[i].directionW);
         float3 H = normalize(V + L);
 
-        float3 radiance = light[0].param.color * light[0].param.param.y;
+        float3 radiance = light[i].param.color * light[i].param.param.y;
 
         float NDF = DistributionGGX(N, H, roughness);
         float G = GeometrySmith(N, V, L, roughness);
@@ -204,43 +204,39 @@ export public float3 accumulateDirectLights(StructuredBuffer<Light> light, int s
     return Lo;
 }
 
-export public float4 calcSingleSpotLight(StructuredBuffer<Light> light, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
+export public float3 accumulateSpotLights(StructuredBuffer<Light> light, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
 
-    float3 Lo = float3(0.0);
-    float3 L = normalize(light[0].positionW - posW);
-
-    float distance = length(light[0].positionW - posW);
-    float intensity = pow(max(dot(L, -normalize(light[0].directionW)), 0.0), light[0].param.param.z);
-    float attenuation = 1.0 / (light[0].param.attenuation.x + intensity * distance + light[0].param.attenuation.z * distance * distance);
-
-    // intensity might also be = light[0].param.param.z / (4 * PI)
-    float3 radiance = light[0].param.color * light[0].param.param.y * attenuation;
-
-    float3 V = normalize(viewPosW - posW);
     float3 N = normalize(normalW);
-    float3 H = normalize(V + L);
-
+    float3 V = normalize(viewPosW - posW);
     float3 F0 = lerp(float3(0.04, 0.04, 0.04), albedo, metallic);
 
-    float NDF = DistributionGGX(N, H, roughness);
-    float G = GeometrySmith(N, V, L, roughness);
-    float3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+    float3 Lo = float3(0.0);
+    for (int i = start; i < end; ++i) {
+        float3 L = normalize(light[i].positionW - posW);
+        float3 H = normalize(V + L);
 
-    float3 kS = F;
-    float3 kD = float3(1.0) - kS;
-    kD *= 1.0 - metallic;
+        float distance = length(light[i].positionW - posW);
+        float intensity = pow(max(dot(L, -normalize(light[i].directionW)), 0.0), light[i].param.param.z);
+        float attenuation = 1.0 / (light[i].param.attenuation.x + intensity * distance + light[i].param.attenuation.z * distance * distance);
+        float3 radiance = light[0].param.color * light[0].param.param.y * attenuation;
 
-    float3 numerator = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
-    float3 specular = numerator / denominator;
+        float NDF = DistributionGGX(N, H, roughness);
+        float G = GeometrySmith(N, V, L, roughness);
+        float3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
-    float NdotL = max(dot(N, L), 0.0);
-    Lo += (kD * albedo / PI + specular) * radiance * NdotL;
+        float3 kS = F;
+        float3 kD = float3(1.0) - kS;
+        kD *= 1.0 - metallic;
 
-    float3 ambient = light[0].param.param.w * albedo /* ao */;
-    float3 color = ambient + Lo;
+        float3 numerator = NDF * G * F;
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.0001;
+        float3 specular = numerator / denominator;
 
-    return float4(color, 1);
+        float NdotL = max(dot(N, L), 0.0);
+        Lo += (kD * albedo / PI + specular) * radiance * NdotL;
+    }
+
+    return Lo;
 }
 
 export public float4 calculateLighting(StructuredBuffer<Light> light, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
@@ -253,16 +249,16 @@ export public float4 calculateLighting(StructuredBuffer<Light> light, int3 numbe
 
     for (int i = 0; i < numberLights.y; i++) { // Directional light
         int idx = numberLights.x + i;
-        Lo += accumulateDirectLights(light, idx, numberLights.y, normalW, viewPosW, posW, albedo, metallic, roughness);
+        Lo += accumulateDirectLights(light, idx, idx + numberLights.y, normalW, viewPosW, posW, albedo, metallic, roughness);
     }
 
-    // for (int i = 0; i < numberLights.z; i++) { // Spot light
-    //     int idx = numberLights.x + numberLights.y + i;
-    //     result += calculateSpotLight(light[idx], normalW, viewPosW, fragPosW);
-    // }
+    for (int i = 0; i < numberLights.z; i++) { // Spot light
+        int idx = numberLights.x + numberLights.y + i;
+        Lo += accumulateSpotLights(light, idx, idx + numberLights.z, normalW, viewPosW, posW, albedo, metallic, roughness);
+    }
 
     float3 ambient = float(0.01) * albedo /* ao */;
     float3 color = ambient + Lo;
 
-    return float4(color, 1);
+    return float4(color, 1.0);
 }
