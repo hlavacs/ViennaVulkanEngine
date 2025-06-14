@@ -48,10 +48,9 @@ PushConstantLight pushConstant;
 //----------------------------------------------------------------------------
 
 float3 reconstructPositionW(float2 uv, float depth) {
-    float clipZ = depth * 2.0 - 1.0;
     float ndcX = uv.x * 2.0 - 1.0;
     float ndcY = uv.y * 2.0 - 1.0;
-    float4 clipPos = float4(ndcX, ndcY, clipZ, 1.0);
+    float4 clipPos = float4(ndcX, ndcY, depth, 1.0);
     float4 positionW = mul(pushConstant.invViewProj, clipPos);
     positionW.xyz /= positionW.w;
     return positionW.xyz;
