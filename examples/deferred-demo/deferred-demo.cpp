@@ -16,7 +16,7 @@ class MyGame : public vve::System {
         const int c_field_size = 50;
         const int c_number_cubes = 10;
 
-        int nextRandom() {
+        int nextRandom() const {
             return rand() % (c_field_size) - c_field_size/2;
         }
 
@@ -49,7 +49,7 @@ class MyGame : public vve::System {
         inline static std::string cornell_obj  { "assets/test/cornell/CornellBox-Original.obj" };
 
         bool OnLoadLevel( Message message ) {
-            auto msg = message.template GetData<vve::System::MsgLoadLevel>();	
+            auto& msg = message.template GetData<vve::System::MsgLoadLevel>();	
             std::cout << "Loading level: " << msg.m_level << std::endl;
             std::string level = std::string("Level: ") + msg.m_level;
 
@@ -66,7 +66,7 @@ class MyGame : public vve::System {
                             vve::UVScale{ { 1000.0f, 1000.0f } }
                         );
 
-            m_engine.SendMsg(MsgObjectCreate{  vve::ObjectHandle(m_handlePlane), vve::ParentHandle{} });
+            m_engine.SendMsg(MsgObjectCreate{  vve::ObjectHandle(m_handlePlane), vve::ParentHandle{}, this });
     
             // ----------------- Load Cube -----------------
 
@@ -109,21 +109,23 @@ class MyGame : public vve::System {
 
 
             // -----------------  Point Light 1 -----------------
-            vvh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
             m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });
+            vvh::Color sphereColor{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 
             float intensity1 = 0.8f;
             auto lightHandle = m_registry.Insert(
                 vve::Name{ "Light1" },
                 vve::PointLight{ vvh::LightParams{
-                    glm::vec3(1.0f, 1.0f, 1.0f), glm::vec4(1.0f, intensity1, 10.0, 0.01f), glm::vec3(1.0f, 0.01f, 0.005f),
+                    .color = glm::vec3(1.0f, 1.0f, 1.0f), 
+                    .params = glm::vec4(1.0f, intensity1, 10.0, 0.01f), 
+                    .attenuation = glm::vec3(1.0f, 0.01f, 0.005f),
                 } },
                 vve::Position{ glm::vec3(5.0f, 0.0f, 5.0f) },
                 vve::Rotation{ mat3_t{1.0f} },
                 vve::Scale{ vec3_t{0.01f, 0.01f, 0.01f} },
                 vve::LocalToParentMatrix{ mat4_t{1.0f} },
                 vve::LocalToWorldMatrix{ mat4_t{1.0f} },
-                color,
+                sphereColor,
                 vve::MeshName{ "assets/standard/sphere.obj/sphere" }
                 );
             m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
@@ -132,7 +134,7 @@ class MyGame : public vve::System {
         };
     
         bool OnUpdate( Message& message ) {
-            auto msg = message.template GetData<vve::System::MsgUpdate>();
+            auto& msg = message.template GetData<vve::System::MsgUpdate>();
             m_time_left -= static_cast<float>(msg.m_dt);
             auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
             pos().z = 0.5f;
