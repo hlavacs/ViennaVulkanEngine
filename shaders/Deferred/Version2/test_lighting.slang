@@ -73,12 +73,9 @@ float4 main(VertexStageOutput in) : SV_Target
     float3 P = reconstructPositionW(in.uv, depth);
     float3 N = normalize(gNormal.Sample(in.uv).xyz);
     float3 A = gAlbedo.Sample(in.uv).xyz;
+    float2 MR = gMetallicRoughness.Sample(in.uv).xy;
 
-    // test line
-    float4 deleteMe = gMetallicRoughness.Sample(in.uv);
+    output += calcSinglePointLight(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g);
 
-    float3 l = calculateLighting(gLights, numberLights, N, camera.positionW, P);
-
-    output = float4(A.rgb * l, 1.0);
     return output;
 }
