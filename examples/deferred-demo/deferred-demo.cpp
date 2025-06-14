@@ -117,10 +117,10 @@ class MyGame : public vve::System {
                 vve::Name{ "Light1" },
                 vve::PointLight{ vvh::LightParams{
                     .color = glm::vec3(1.0f, 1.0f, 1.0f), 
-                    .params = glm::vec4(1.0f, intensity1, 10.0, 0.01f), 
-                    .attenuation = glm::vec3(1.0f, 0.01f, 0.005f),
+                    .params = glm::vec4(1.0f, intensity1, 10.0f, 0.01f), 
+                    .attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
                 } },
-                vve::Position{ glm::vec3(5.0f, 0.0f, 5.0f) },
+                vve::Position{ glm::vec3(7.0f, 1.5f, 2.0f) },
                 vve::Rotation{ mat3_t{1.0f} },
                 vve::Scale{ vec3_t{0.01f, 0.01f, 0.01f} },
                 vve::LocalToParentMatrix{ mat4_t{1.0f} },
