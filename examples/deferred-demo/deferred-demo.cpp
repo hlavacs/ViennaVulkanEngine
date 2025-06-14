@@ -165,30 +165,30 @@ class MyGame : public vve::System {
         }
     
         bool OnRecordNextFrame(Message message) { 
-            if( m_state == State::STATE_RUNNING ) {
-                ImGui::Begin("Game State");
-                char buffer[100];
-                std::snprintf(buffer, 100, "Time Left: %.2f s", m_time_left);
-                ImGui::TextUnformatted(buffer);
-                std::snprintf(buffer, 100, "Cubes Left: %d", m_cubes_left);
-                ImGui::TextUnformatted(buffer);
-				if (ImGui::SliderFloat("Sound Volume", &m_volume, 0, MIX_MAX_VOLUME)) {
-					m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
-				}
-                ImGui::End();
-            }
+    //        if( m_state == State::STATE_RUNNING ) {
+    //            ImGui::Begin("Game State");
+    //            char buffer[100];
+    //            std::snprintf(buffer, 100, "Time Left: %.2f s", m_time_left);
+    //            ImGui::TextUnformatted(buffer);
+    //            std::snprintf(buffer, 100, "Cubes Left: %d", m_cubes_left);
+    //            ImGui::TextUnformatted(buffer);
+				//if (ImGui::SliderFloat("Sound Volume", &m_volume, 0, MIX_MAX_VOLUME)) {
+				//	m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
+				//}
+    //            ImGui::End();
+    //        }
 
-            if( m_state == State::STATE_DEAD ) {
-                ImGui::Begin("Game State");
-                ImGui::TextUnformatted("Game Over");
-                if (ImGui::Button("Restart")) {
-                    m_state = State::STATE_RUNNING;
-                    m_time_left = c_max_time;
-                    m_cubes_left = c_number_cubes;
-                    m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1 });
-                }
-                ImGui::End();
-            }
+    //        if( m_state == State::STATE_DEAD ) {
+    //            ImGui::Begin("Game State");
+    //            ImGui::TextUnformatted("Game Over");
+    //            if (ImGui::Button("Restart")) {
+    //                m_state = State::STATE_RUNNING;
+    //                m_time_left = c_max_time;
+    //                m_cubes_left = c_number_cubes;
+    //                m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1 });
+    //            }
+    //            ImGui::End();
+    //        }
             return false;
         }
 
