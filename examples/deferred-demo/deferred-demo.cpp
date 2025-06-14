@@ -107,6 +107,27 @@ class MyGame : public vve::System {
             );
             m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_test), vve::ParentHandle{}, vve::Filename{"assets/test/Fireplace/Fireplace.gltf"}, flags });
 
+
+            // -----------------  Point Light 1 -----------------
+            vvh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 1.0f, 1.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+            m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });
+
+            float intensity1 = 0.8f;
+            auto lightHandle = m_registry.Insert(
+                vve::Name{ "Light1" },
+                vve::PointLight{ vvh::LightParams{
+                    glm::vec3(1.0f, 1.0f, 1.0f), glm::vec4(1.0f, intensity1, 10.0, 0.01f), glm::vec3(1.0f, 0.01f, 0.005f),
+                } },
+                vve::Position{ glm::vec3(5.0f, 0.0f, 5.0f) },
+                vve::Rotation{ mat3_t{1.0f} },
+                vve::Scale{ vec3_t{0.01f, 0.01f, 0.01f} },
+                vve::LocalToParentMatrix{ mat4_t{1.0f} },
+                vve::LocalToWorldMatrix{ mat4_t{1.0f} },
+                color,
+                vve::MeshName{ "assets/standard/sphere.obj/sphere" }
+                );
+            m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
+
             return false;
         };
     
