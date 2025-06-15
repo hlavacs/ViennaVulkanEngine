@@ -67,7 +67,7 @@ float GeometrySmith(float3 N, float3 V, float3 L, float roughness) {
 
 // https://learnopengl.com/PBR/Lighting
 
-export public float3 accumulatePointLights(StructuredBuffer<Light> light, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
+export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
 
     float3 N = normalize(normalW);
     float3 V = normalize(viewPosW - posW);
@@ -75,12 +75,12 @@ export public float3 accumulatePointLights(StructuredBuffer<Light> light, int st
 
     float3 Lo = float3(0.0);
     for (int i = start; i < end; ++i) {
-        float3 L = normalize(light[i].positionW - posW);
+        float3 L = normalize(lights[i].positionW - posW);
         float3 H = normalize(V + L);
 
-        float distance = length(light[i].positionW - posW);
-        float attenuation = 1.0 / (light[i].param.attenuation.x + light[i].param.attenuation.y * distance + light[i].param.attenuation.z * distance * distance);
-        float3 radiance = light[i].param.color * light[i].param.param.y * attenuation;
+        float distance = length(lights[i].positionW - posW);
+        float attenuation = 1.0 / (lights[i].param.attenuation.x + lights[i].param.attenuation.y * distance + lights[i].param.attenuation.z * distance * distance);
+        float3 radiance = lights[i].param.color * lights[i].param.param.y * attenuation;
 
         float NDF = DistributionGGX(N, H, roughness);
         float G = GeometrySmith(N, V, L, roughness);
@@ -101,7 +101,7 @@ export public float3 accumulatePointLights(StructuredBuffer<Light> light, int st
     return Lo;
 }
 
-export public float3 accumulateDirectLights(StructuredBuffer<Light> light, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
+export public float3 accumulateDirectLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
 
     float3 N = normalize(normalW);
     float3 V = normalize(viewPosW - posW);
@@ -109,10 +109,10 @@ export public float3 accumulateDirectLights(StructuredBuffer<Light> light, int s
 
     float3 Lo = float3(0.0);
     for (int i = start; i < end; ++i) {
-        float3 L = -normalize(light[i].directionW);
+        float3 L = -normalize(lights[i].directionW);
         float3 H = normalize(V + L);
 
-        float3 radiance = light[i].param.color * light[i].param.param.y;
+        float3 radiance = lights[i].param.color * lights[i].param.param.y;
 
         float NDF = DistributionGGX(N, H, roughness);
         float G = GeometrySmith(N, V, L, roughness);
@@ -133,7 +133,7 @@ export public float3 accumulateDirectLights(StructuredBuffer<Light> light, int s
     return Lo;
 }
 
-export public float3 accumulateSpotLights(StructuredBuffer<Light> light, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
+export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
 
     float3 N = normalize(normalW);
     float3 V = normalize(viewPosW - posW);
@@ -141,13 +141,13 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> light, int sta
 
     float3 Lo = float3(0.0);
     for (int i = start; i < end; ++i) {
-        float3 L = normalize(light[i].positionW - posW);
+        float3 L = normalize(lights[i].positionW - posW);
         float3 H = normalize(V + L);
 
-        float distance = length(light[i].positionW - posW);
-        float intensity = pow(max(dot(L, -normalize(light[i].directionW)), 0.0), light[i].param.param.z);
-        float attenuation = 1.0 / (light[i].param.attenuation.x + intensity * distance + light[i].param.attenuation.z * distance * distance);
-        float3 radiance = light[i].param.color * light[i].param.param.y * attenuation;
+        float distance = length(lights[i].positionW - posW);
+        float intensity = pow(max(dot(L, -normalize(lights[i].directionW)), 0.0), lights[i].param.param.z);
+        float attenuation = 1.0 / (lights[i].param.attenuation.x + intensity * distance + lights[i].param.attenuation.z * distance * distance);
+        float3 radiance = lights[i].param.color * lights[i].param.param.y * attenuation;
 
         float NDF = DistributionGGX(N, H, roughness);
         float G = GeometrySmith(N, V, L, roughness);
@@ -168,18 +168,18 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> light, int sta
     return Lo;
 }
 
-export public float4 calculateLighting(StructuredBuffer<Light> light, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
+export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
     float3 Lo = float3(0.0);
 
     int start = 0;
     int end = numberLights.x;
-    Lo += accumulatePointLights(light, start, end, normalW, viewPosW, posW, albedo, metallic, roughness);
+    Lo += accumulatePointLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness);
     start = end;
     end += numberLights.y;
-    Lo += accumulateDirectLights(light, start, end, normalW, viewPosW, posW, albedo, metallic, roughness);
+    Lo += accumulateDirectLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness);
     start = end;
     end += numberLights.z;
-    Lo += accumulateSpotLights(light, start, end, normalW, viewPosW, posW, albedo, metallic, roughness);
+    Lo += accumulateSpotLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness);
 
     float3 ambient = float(0.01) * albedo /* ao */;
     float3 color = ambient + Lo;
