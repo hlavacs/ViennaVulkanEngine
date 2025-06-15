@@ -16,4 +16,4 @@ SET FLAGS=-target spirv -g
 
 pause
 
-@REM ..\..\..\..\..\Downloads\slang_2025-10-3-dev\bin\
+@REM ..\..\..\..\Downloads\slang_2025-10-3-dev\bin\

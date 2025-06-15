@@ -48,9 +48,6 @@ export public struct UniformBufferObjectColor {
     public Color color;
 };
 
-//-----------------------------------------------------------------------
-
-// Deferred Renderer
 export public struct PushConstantMaterial {
     public float2 metallicRoughness;
     float2 padding;
@@ -67,3 +64,8 @@ export public struct GBufferOutput {
 // __include "Common_Shadow.slang";
 __include "Common_Light.slang";
 
+// [shader("fragment")]
+// float4 dummyShader(float3 positionW: POSITION)
+// {
+//     return float4(0, 0, 0, 0);
+// }

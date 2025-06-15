@@ -537,12 +537,12 @@ namespace vve {
 
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::CreateLightingPipeline(const VkRenderPass* renderPass) {
-		const std::filesystem::path shaders{ "shaders/Deferred/Version2" };
+		const std::filesystem::path shaders{ "shaders/Deferred" };
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
 		}
-		const std::string vert = (shaders / "test_lighting.spv").string();
-		const std::string frag = (shaders / "test_lighting.spv").string();
+		const std::string vert = (shaders / "PBR_lighting.spv").string();
+		const std::string frag = (shaders / "PBR_lighting.spv").string();
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 		// TODO: colorBlendAttachment.colorWriteMask = 0xf; ???
