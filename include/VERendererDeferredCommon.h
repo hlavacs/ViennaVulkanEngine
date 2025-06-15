@@ -21,7 +21,7 @@ namespace vve {
 		};
 
 		struct alignas(16) PushConstantsMaterial {
-			alignas(8) glm::vec2 m_metallRoughness;
+			alignas(8) glm::vec2 m_metallRoughness{ 0.0f, 1.0f };
 			alignas(4) float padding[2]{ 0, 0 };
 		};
 

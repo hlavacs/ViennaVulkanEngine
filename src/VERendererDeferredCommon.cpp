@@ -683,6 +683,7 @@ namespace vve {
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::RecordObjects(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass) {
 		assert(sizeof(PushConstantsMaterial) <= 128);
+		PushConstantsMaterial lastPush{ {std::numeric_limits<int>::min(), std::numeric_limits<int>::min()} };
 
 		for (const auto& pipeline : m_geomPipesPerType) {
 
@@ -716,19 +717,25 @@ namespace vve {
 				const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
 				
 				// Metallic and Roughness as push constants per object
-				PushConstantsMaterial metalRough{};
-				bool hasMaterial = m_registry.template Has<vvh::Material>(oHandle);
-				if (hasMaterial) {
-					const vvh::Material& material = m_registry.template Get<vvh::Material&>(oHandle);
-					metalRough.m_metallRoughness = { material.m_material.r, material.m_material.g };
+				PushConstantsMaterial currentMetalRough = [&]() {
+					bool hasMaterial = m_registry.template Has<vvh::Material>(oHandle);
+					if (hasMaterial) {
+						const vvh::Material& material = m_registry.template Get<vvh::Material&>(oHandle);
+						return PushConstantsMaterial{ {material.m_material.r, material.m_material.g} };
+					}
+					else return PushConstantsMaterial{};	// default values
+				}();
+
+				if (currentMetalRough.m_metallRoughness != lastPush.m_metallRoughness) {
+					vkCmdPushConstants(cmdBuffer,
+						pipeline.second.m_graphicsPipeline.m_pipelineLayout,
+						VK_SHADER_STAGE_FRAGMENT_BIT,
+						0,
+						sizeof(PushConstantsMaterial),
+						&currentMetalRough
+					);
+					lastPush = currentMetalRough;
 				}
-				
-				vkCmdPushConstants(cmdBuffer,
-					pipeline.second.m_graphicsPipeline.m_pipelineLayout,
-					VK_SHADER_STAGE_FRAGMENT_BIT,
-					0,
-					sizeof(PushConstantsMaterial),
-					&metalRough);
 
 				vvh::ComRecordObject({
 					.m_commandBuffer = cmdBuffer,
