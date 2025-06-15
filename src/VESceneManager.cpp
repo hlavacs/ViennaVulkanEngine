@@ -252,21 +252,27 @@ namespace vve {
 				color.m_diffuseColor = to_vec4(diffuseColor);
 		        std::cout << "Diffuse Color: " << diffuseColor.r << diffuseColor.g << diffuseColor.b << diffuseColor.a << std::endl;
 			}
+			if( hasColor ) {
+				m_registry.Put(nHandle, color);
+			}
+
+			// Material: Metallic, Rougness
+			vvh::Material mat;
+			bool hasMat = false;
 			aiColor4D metallicFactor;
 			if (AI_SUCCESS == material->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor)) {
-				hasColor = true;
-				color.m_metallicRoughness[0] = metallicFactor.r;
+				hasMat = true;
+				mat.m_material[0] = metallicFactor.r;
 				std::cout << "Metallic Factor: " << metallicFactor.r << std::endl;
 			}
 			aiColor4D rougnessFactor;
 			if (AI_SUCCESS == material->Get(AI_MATKEY_ROUGHNESS_FACTOR, rougnessFactor)) {
-				hasColor = true;
-				color.m_metallicRoughness[1] = rougnessFactor.r;
+				hasMat = true;
+				mat.m_material[1] = rougnessFactor.r;
 				std::cout << "Roughness Factor: " << rougnessFactor.r << std::endl;
 			}
-
-			if( hasColor ) {
-				m_registry.Put(nHandle, color);
+			if (hasMat) {
+				m_registry.Put(nHandle, mat);
 			}
 
 			m_engine.SendMsg( MsgObjectCreate{ObjectHandle{nHandle}, ParentHandle{parent}, this }); 

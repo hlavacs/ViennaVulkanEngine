@@ -118,20 +118,6 @@ namespace vve {
 				    aiColor4D color = mesh->mColors[0][j];
 					VVEMesh.m_verticesData.m_colors.push_back({color.r, color.g, color.b, color.a});
 				}
-
-				// Handling Metallic and Roughness
-				aiMaterial* material = scene->mMaterials[i];
-				glm::vec4 color{0.0};
-				aiColor4D metallic, roughness;
-				if (material->Get(AI_MATKEY_METALLIC_FACTOR, metallic) == AI_SUCCESS) {
-					color[0] = metallic.r;
-				}
-				if (material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS) {
-					color[1] = roughness.r;
-				}
-				if (color[0] != 0.0 || color[1] != 0.0) {
-					VVEMesh.m_verticesData.m_metalRough.push_back(color);
-				}
 		    }
 
 			for (unsigned int i = 0; i < mesh->mNumFaces; i++) {

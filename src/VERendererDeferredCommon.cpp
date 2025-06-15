@@ -716,8 +716,13 @@ namespace vve {
 				const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
 				
 				// Metallic and Roughness as push constants per object
-				const vvh::Color& color = m_registry.template Get<vvh::Color&>(oHandle);
-				PushConstantsMaterial metalRough{ {color.m_metallicRoughness.r, color.m_metallicRoughness.g} };
+				PushConstantsMaterial metalRough{};
+				bool hasMaterial = m_registry.template Has<vvh::Material>(oHandle);
+				if (hasMaterial) {
+					const vvh::Material& material = m_registry.template Get<vvh::Material&>(oHandle);
+					metalRough.m_metallRoughness = { material.m_material.r, material.m_material.g };
+				}
+				
 				vkCmdPushConstants(cmdBuffer,
 					pipeline.second.m_graphicsPipeline.m_pipelineLayout,
 					VK_SHADER_STAGE_FRAGMENT_BIT,
