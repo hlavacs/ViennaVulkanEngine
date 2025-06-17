@@ -63,6 +63,7 @@ namespace vve {
 			});
 
 		m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
+		m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			vvh::ComCreateCommandPool({
 				.m_surface = m_vkState().m_surface,
@@ -70,14 +71,13 @@ namespace vve {
 				.m_device = m_vkState().m_device,
 				.m_commandPool = m_commandPools[i]
 				});
-		}
 
-		m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
-		vvh::ComCreateCommandBuffers({
+			vvh::ComCreateCommandBuffers({
 				.m_device = m_vkState().m_device,
-				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
+				.m_commandPool = m_commandPools[i],
 				.m_commandBuffers = m_commandBuffers
-			});
+				});
+		}
 
 		// TODO: shrink pool to only what is needed - why 1000?
 		vvh::RenCreateDescriptorPool({
