@@ -24,7 +24,7 @@ namespace vve {
 
 	void RendererDeferred13::OnRecordNextFrame() {
 		// Geometry Pass
-		auto cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
+		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
 		vkCmdBeginRendering(cmdBuffer, &m_geometryRenderingInfo);

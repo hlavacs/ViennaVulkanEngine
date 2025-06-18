@@ -38,7 +38,7 @@ namespace vve {
 
 	void RendererDeferred11::OnRecordNextFrame() {
 		// Geometry Pass
-		auto cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
+		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
 		vvh::ComBeginRenderPass2({ 

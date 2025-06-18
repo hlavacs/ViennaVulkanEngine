@@ -72,10 +72,10 @@ namespace vve {
 				.m_commandPool = m_commandPools[i]
 				});
 
-			vvh::ComCreateCommandBuffers({
+			vvh::ComCreateSingleCommandBuffer({
 				.m_device = m_vkState().m_device,
 				.m_commandPool = m_commandPools[i],
-				.m_commandBuffers = m_commandBuffers
+				.m_commandBuffer = m_commandBuffers[i]
 				});
 		}
 
