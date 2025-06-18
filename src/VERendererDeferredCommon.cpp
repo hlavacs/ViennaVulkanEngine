@@ -357,15 +357,7 @@ namespace vve {
 				});
 		}
 
-		for (auto& gBufferAttach : m_gBufferAttachments) {
-			vvh::ImgDestroyImage({
-				.m_device = m_vkState().m_device,
-				.m_vmaAllocator = m_vkState().m_vmaAllocator,
-				.m_image = gBufferAttach.m_gbufferImage,
-				.m_imageAllocation = gBufferAttach.m_gbufferImageAllocation
-				});
-			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
-		}
+		DestroyDeferredResources();
 
 
 		static_cast<Derived*>(this)->OnQuit();
