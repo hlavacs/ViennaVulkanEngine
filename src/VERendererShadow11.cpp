@@ -180,6 +180,53 @@ namespace vve {
 	bool RendererShadow11::OnRecordNextFrame(Message message) {
 		auto msg = message.template GetData<MsgRecordNextFrame>();
 		++m_pass;
+
+		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
+		vvh::ComBeginCommandBuffer({ cmdBuffer });
+
+		vvh::ComBeginRenderPass2({
+			.m_commandBuffer = cmdBuffer,
+			.m_imageIndex = m_vkState().m_imageIndex,
+			.m_swapChain = m_vkState().m_swapChain,
+			.m_gBufferFramebuffers = m_vkState().m_swapChain.m_swapChainFramebuffers,
+			.m_renderPass = m_renderPass,
+			.m_clearValues = {},
+			.m_currentFrame = m_vkState().m_currentFrame
+			});
+
+		vvh::ComBindPipeline({
+			.m_commandBuffer = cmdBuffer,
+			.m_graphicsPipeline = m_shadowPipeline,
+			.m_imageIndex = m_vkState().m_imageIndex,
+			.m_swapChain = m_vkState().m_swapChain,
+			.m_renderPass = m_renderPass,
+			.m_viewPorts = {},
+			.m_scissors = {}, //default view ports and scissors
+			.m_blendConstants = {},
+			.m_pushConstants = {},
+			.m_currentFrame = m_vkState().m_currentFrame
+			});
+
+		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
+			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, vvh::DescriptorSet&>
+			({ (size_t)m_shadowPipeline.m_pipeline })) {
+
+			const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+
+			vvh::ComRecordObject({
+				.m_commandBuffer = cmdBuffer,
+				.m_graphicsPipeline = m_shadowPipeline,
+				.m_descriptorSets = { m_descriptorSetPerFrame, descriptorsets },
+				.m_type = "P",
+				.m_mesh = mesh,
+				.m_currentFrame = m_vkState().m_currentFrame
+				});
+		}
+
+		vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
+		SubmitCommandBuffer(cmdBuffer);
+
 		return false;
 	}
 
