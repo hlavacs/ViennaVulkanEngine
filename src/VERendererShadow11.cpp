@@ -64,7 +64,7 @@ namespace vve {
 		vvh::RenCreateGraphicsPipeline({
 			m_vkState().m_device,
 			m_renderPass,
-			"shaders/Deferred/Shadow11.spv", "",
+			"shaders/Deferred/Shadow11.spv", "shaders/Deferred/Shadow11.spv",
 			bindingDescriptions, attributeDescriptions,
 			{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject },
 			{}, //spezialization constants
