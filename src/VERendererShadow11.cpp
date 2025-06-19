@@ -108,7 +108,7 @@ namespace vve {
 
 
 	void RendererShadow11::CheckShadowMaps( uint32_t numberMapsRequired ) {
-		/*
+		
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		auto numberMaps = std::min(numberMapsRequired, shadowImage().MaxNumberMapsPerImage());
 		if( shadowImage().NumberMapsPerImage() >= numberMaps ) return;
@@ -116,24 +116,24 @@ namespace vve {
 		uint32_t requiredLayers = (uint32_t)std::ceil(numberMaps / (float)shadowImage().MaxNumberMapsPerLayer());
 		auto numLayers = std::min(shadowImage().maxImageArrayLayers, requiredLayers);
 		for( int i = 0; i < shadowImage().shadowImages.size(); i++ ) {
-			vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, 
-				shadowImage().shadowImages[i].m_mapImage, shadowImage().shadowImages[i].m_mapImageAllocation);
+			vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
+				shadowImage().shadowImages[i].m_mapImage, shadowImage().shadowImages[i].m_mapImageAllocation });
 			shadowImage().shadowImages.clear();
 		}
 
 		for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
-			vh::Image map;
-			vh::ImgCreateImage2(m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
+			vvh::Image map;
+			vvh::ImgCreateImage({ m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
 				, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, numLayers, 1
-				, vh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
+				, vvh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
 				, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 				, VK_IMAGE_LAYOUT_UNDEFINED
-				, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation); 
+				, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation });
 			
 			shadowImage().shadowImages.push_back(map);
 		}
 		shadowImage().numberImageArraylayers = numLayers;
-		*/
+		
 	}
 
 	template<typename T>
