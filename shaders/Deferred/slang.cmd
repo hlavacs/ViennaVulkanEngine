@@ -14,6 +14,7 @@ SET FLAGS=-target spirv -g
 %SLANG_PATH%slangc.exe 1000_PNC.slang %FLAGS% -o 1000_PNC.spv
 %SLANG_PATH%slangc.exe 2000_PNO.slang %FLAGS% -o 2000_PNO.spv
 %SLANG_PATH%slangc.exe PBR_lighting.slang %FLAGS% -o PBR_lighting.spv
+%SLANG_PATH%slangc.exe Shadow11.slang %FLAGS% -o Shadow11.spv
 
 pause
 

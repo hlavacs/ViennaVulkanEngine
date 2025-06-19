@@ -8,12 +8,12 @@ namespace vve {
 
 	RendererShadow11::RendererShadow11( std::string systemName, Engine& engine, std::string windowName ) : Renderer(systemName, engine, windowName ) {
 
-		//engine.RegisterCallbacks( { 
-		//	{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
-		//	{this,  1500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
-		//	{this,  1500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
-		//	{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
-		//} );
+		engine.RegisterCallbacks( { 
+			{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
+			{this,  1500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
+			{this,  1500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
+			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
+		} );
 	};
 
 	RendererShadow11::~RendererShadow11(){};
@@ -60,10 +60,11 @@ namespace vve {
 
 		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 
+		// TODO: Move shadow into own folder so deferred AND forward can use it
 		vvh::RenCreateGraphicsPipeline({
 			m_vkState().m_device,
 			m_renderPass,
-			"shaders/Forward/Shadow11.spv", "",
+			"shaders/Deferred/Shadow11.spv", "",
 			bindingDescriptions, attributeDescriptions,
 			{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject },
 			{}, //spezialization constants

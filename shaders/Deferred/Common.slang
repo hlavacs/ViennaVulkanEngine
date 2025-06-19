@@ -64,6 +64,6 @@ export public struct GBufferOutput {
 
 //-----------------------------------------------------------------------
 
-// __include "Common_Shadow.slang";
+__include "Common_Shadow.slang";
 __include "Common_Light.slang";
 
