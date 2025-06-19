@@ -152,7 +152,7 @@ namespace vve {
 	/// @param message 
 	/// @return Returns false.
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
-		/*
+		
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 
@@ -172,7 +172,7 @@ namespace vve {
 				} );
 			}
 		}
-			*/
+			
 		return false;
 	}
 
@@ -184,11 +184,11 @@ namespace vve {
 
 	bool RendererShadow11::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vkState().m_device);
-		/*
+		
 
 		for( auto [handle, shadowMap] : m_registry.template GetView<vecs::Handle, ShadowImage&>() ) {
 			for( auto& map : shadowMap().shadowImages ) {
-				vh::ImgDestroyImage(m_vkState().m_device, m_vkState().m_vmaAllocator, map.m_mapImage, map.m_mapImageAllocation);
+				vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator, map.m_mapImage, map.m_mapImageAllocation });
 			}
 		}
 
@@ -196,11 +196,11 @@ namespace vve {
 
         vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
-		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_storageBuffersLights);
-		vh::BufDestroyBuffer2(m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame);
+		vvh::BufDestroyBuffer2({ m_vkState().m_device, m_vkState().m_vmaAllocator, m_storageBuffersLights });
+		vvh::BufDestroyBuffer2({ m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame });
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
-		*/
+		
 		return false;
     }
 
