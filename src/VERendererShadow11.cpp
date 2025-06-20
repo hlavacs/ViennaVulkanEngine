@@ -24,7 +24,6 @@ namespace vve {
 		vvh::RenCreateRenderPassShadow({
 			m_vkState().m_depthMapFormat,
 			m_vkState().m_device,
-			m_vkState().m_swapChain,
 			false,
 			m_renderPass
 			});
