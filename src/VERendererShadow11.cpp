@@ -24,7 +24,7 @@ namespace vve {
 		vvh::RenCreateRenderPassShadow({
 			m_vkState().m_depthMapFormat,
 			m_vkState().m_device,
-			false,
+			true,
 			m_renderPass
 			});
 
@@ -69,7 +69,10 @@ namespace vve {
 			{}, //spezialization constants
 			{ {.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(vvh::ShadowOffset)} }, //push constant ranges -> 2 ints
 			{}, //blend attachments
-			m_shadowPipeline
+			m_shadowPipeline,
+			{}, //
+			vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			true
 		});
 		
 

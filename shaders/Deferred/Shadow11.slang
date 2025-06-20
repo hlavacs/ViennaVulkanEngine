@@ -33,9 +33,9 @@ ShadowImageOffset offset;
 //----------------------------------------------------------------------------
 
 [shader("vertex")]
-float4 main(float3 positionL: POSITION, int instanceID: SV_InstanceID) {
-    float4 positionW = mul(gParamsObject.model, float4(positionL, 1.0));
-    float4 output = mul(gShadowIndex[offset.shadowIndexOffset + instanceID].lightSpaceMatrix, positionW);
+float4 main(float3 positionL: POSITION) {
+    float4 positionW = mul(gParamsObject.model, float4(positionL, 1.0));    // do I need to do .xyz and set w to 1?
+    float4 output = mul(gShadowIndex[offset.shadowIndexOffset].lightSpaceMatrix, positionW);
     return output;
 }
 
