@@ -37,9 +37,12 @@ namespace vve
 		uint32_t  CountShadows(uint32_t num);
 		void CheckShadowMaps( uint32_t number);
 
+		void DestroyShadowMap();
+
 	    VkRenderPass m_renderPass;
 
-		VkFramebuffer m_shadowFrameBuffer{ VK_NULL_HANDLE };
+		std::vector<VkImageView> m_layerViews{};
+		std::vector<VkFramebuffer> m_shadowFrameBuffers{};
 
 	    VkDescriptorPool m_descriptorPool;    
 	    VkCommandPool m_commandPool;

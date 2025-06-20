@@ -128,16 +128,58 @@ namespace vve {
 		shadowImage().shadowImage = map;
 		shadowImage().numberImageArraylayers = numLayers;
 
-		// create image view
-		shadowImage().shadowImage.m_mapImageView = vvh::ImgCreateImageView({
+		// transition shadowMap from VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+		vvh::ImgTransitionImageLayout3({
+				.m_device = m_vkState().m_device,
+				.m_graphicsQueue = m_vkState().m_graphicsQueue,
+				.m_commandPool = m_commandPool,
+				.m_image = shadowImage().shadowImage.m_mapImage,
+				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+				.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+				.m_commandBuffer = VK_NULL_HANDLE
+			});
+
+		std::cout << "\nNumber of shadow layers: " << numLayers << "\n\n";
+
+		// TODO: shadowImage().shadowImage.m_mapImageView is pointless like that in 1.1!
+		m_layerViews.resize(numLayers);
+		m_shadowFrameBuffers.resize(numLayers);
+		for (uint32_t i = 0; i < numLayers; ++i) {
+			m_layerViews[i] = vvh::ImgCreateImageView({
 				.m_device = m_vkState().m_device,
 				.m_image = shadowImage().shadowImage.m_mapImage,
 				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
 				.m_layers = numLayers,
 				.m_mipLevels = 1,
-				.m_viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY
+				.m_viewType = VK_IMAGE_VIEW_TYPE_2D
 			});
+
+			// TODO: Framebuffer setup, has to be teared down when stuff changes?
+			// Framebuffer with layers
+			//m_shadowFrameBuffers.res
+			vvh::RenCreateSingleFrameBuffer({
+					.m_device = m_vkState().m_device,
+					.m_renderPass = m_renderPass,
+					.m_frameBuffer = m_shadowFrameBuffers[i],
+					.m_imageView = m_layerViews[i],
+					.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
+					.m_numLayers = 1 // shadowImage().numberImageArraylayers for 1.3 with only one view
+				});
+	}
+		// 1.3 2D array view, might add later
+		//// create image views and framebuffers
+		//shadowImage().shadowImage.m_mapImageView = vvh::ImgCreateImageView({
+		//		.m_device = m_vkState().m_device,
+		//		.m_image = shadowImage().shadowImage.m_mapImage,
+		//		.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+		//		.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
+		//		.m_layers = numLayers,
+		//		.m_mipLevels = 1,
+		//		.m_viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY
+		//	});
 
 	}
 
@@ -224,7 +266,7 @@ namespace vve {
 			.m_commandBuffer = cmdBuffer,
 			.m_imageIndex = 0,	//m_vkState().m_imageIndex,
 			.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
-			.m_framebuffers = {m_shadowFrameBuffer},
+			.m_framebuffers = m_shadowFrameBuffers,
 			.m_renderPass = m_renderPass,
 			.m_clearValues = {{.depthStencil = {1.0f, 0} }},
 			.m_currentFrame = m_vkState().m_currentFrame
@@ -284,11 +326,6 @@ namespace vve {
 	bool RendererShadow11::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vkState().m_device);
 
-		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
-
-		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator, 
-			shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
-
         vkDestroyCommandPool(m_vkState().m_device, m_commandPool, nullptr);
 
         vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
@@ -300,6 +337,20 @@ namespace vve {
 		
 		return false;
     }
+
+	void RendererShadow11::DestroyShadowMap() {
+		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+
+		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
+			shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
+
+		for (auto& view : m_layerViews) {
+			vkDestroyImageView(m_vkState().m_device, view, nullptr);
+		}
+		for (auto& fb : m_shadowFrameBuffers) {
+			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
+		}
+	}
 
 
 };   // namespace vve
