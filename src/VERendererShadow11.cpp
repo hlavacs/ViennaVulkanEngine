@@ -121,15 +121,25 @@ namespace vve {
 
 		vvh::Image map;
 		vvh::ImgCreateImage({ m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
-			, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, 1, numLayers
+			, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, numLayers, 1
 			, vvh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
 			, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 			, VK_IMAGE_LAYOUT_UNDEFINED
 			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation });
-			
+
 		shadowImage().shadowImage = map;
 		shadowImage().numberImageArraylayers = numLayers;
-		
+
+		// create image view
+		shadowImage().shadowImage.m_mapImageView = vvh::ImgCreateImageView({
+				.m_device = m_vkState().m_device,
+				.m_image = shadowImage().shadowImage.m_mapImage,
+				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.m_layers = numLayers,
+				.m_mipLevels = 1
+			});
+
 	}
 
 	template<typename T>
@@ -202,7 +212,7 @@ namespace vve {
 		vvh::ComBeginRenderPass2({
 			.m_commandBuffer = cmdBuffer,
 			.m_imageIndex = m_vkState().m_imageIndex,
-			.m_swapChain = m_vkState().m_swapChain,
+			.m_extent = m_vkState().m_swapChain.m_swapChainExtent,
 			.m_framebuffers = m_vkState().m_swapChain.m_swapChainFramebuffers,
 			.m_renderPass = m_renderPass,
 			.m_clearValues = {{.depthStencil = {1.0f, 0} }},
