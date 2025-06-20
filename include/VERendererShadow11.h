@@ -13,6 +13,7 @@ namespace vve
 		uint32_t maxImageArrayLayers;
 		uint32_t numberImageArraylayers{0};
 		//std::vector<vvh::Image> shadowImages;
+		// TODO: one image but needs multiple views for 1.1
 		vvh::Image shadowImage;
 		uint32_t MaxNumberMapsUV() { return maxImageDimension2D / SHADOW_MAP_DIMENSION; };
 		uint32_t MaxNumberMapsPerLayer() { return MaxNumberMapsUV() * MaxNumberMapsUV(); };

@@ -155,7 +155,7 @@ namespace vve {
 				.m_layers = numLayers,
 				.m_mipLevels = 1,
 				.m_viewType = VK_IMAGE_VIEW_TYPE_2D
-			});
+				});
 
 			// TODO: Framebuffer setup, has to be teared down when stuff changes?
 			// Framebuffer with layers
@@ -168,7 +168,7 @@ namespace vve {
 					.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
 					.m_numLayers = 1 // shadowImage().numberImageArraylayers for 1.3 with only one view
 				});
-	}
+		}
 		// 1.3 2D array view, might add later
 		//// create image views and framebuffers
 		//shadowImage().shadowImage.m_mapImageView = vvh::ImgCreateImageView({
@@ -200,52 +200,37 @@ namespace vve {
 	/// @return Returns false.
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
 		
-		auto msg = message.template GetData<MsgPrepareNextFrame>();
+		//auto msg = message.template GetData<MsgPrepareNextFrame>();
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 
 		m_pass = 0;
 		uint32_t numShadows = CountShadows<PointLight>(6);
 		numShadows += CountShadows<DirectionalLight>(3);
 		numShadows += CountShadows<SpotLight>(1);
+		// TODO: rewrite so it's more understandable
+		// Calculates number of layers, creates a vvh::Image shadowMap, creates 
+		// a view per layer, creates a frame buffer per layer
 		CheckShadowMaps(numShadows);
-		uint32_t numPasses = (uint32_t)std::ceil( numShadows / (float)shadowImage().MaxNumberMapsPerImage());
 
+
+		//uint32_t numPasses = (uint32_t)std::ceil( numShadows / (float)shadowImage().MaxNumberMapsPerImage());
 		//std::cout << "\n\nNumber of Shadow passes: " << numPasses << "\n\n";
+		//if( m_numberPasses != numPasses ) {
+		//	m_numberPasses = numPasses;
+		//	m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
+		//	for( uint32_t i=0; i<numShadows; ++i) {
+		//		m_engine.RegisterCallbacks( { 
+		//			{this,  1500 + (int)i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
+		//		} );
+		//	}
+		//}
 
-		if( m_numberPasses != numPasses ) {
-			m_numberPasses = numPasses;
-			m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
-			for( uint32_t i=0; i<numShadows; ++i) {
-				m_engine.RegisterCallbacks( { 
-					{this,  1500 + (int)i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
-				} );
-			}
-		}
-
-		// TODO: Framebuffer setup, has to be teared down when stuff changes?
-		// Framebuffer with layers
-		vvh::RenCreateSingleFrameBuffer({
-				.m_device = m_vkState().m_device,
-				.m_renderPass = m_renderPass,
-				.m_frameBuffer = m_shadowFrameBuffer,
-				.m_imageView = shadowImage().shadowImage.m_mapImageView,
-				.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
-				.m_numLayers = shadowImage().numberImageArraylayers
-			});
-
-		//struct ShadowIndex {
-		//	glm::ivec2 	mapResolution;
-		//	uint32_t 	layerIndex;
-		//	uint32_t 	viewportIndex;
-		//	glm::ivec2	layerOffset;
-		//	glm::mat4 	lightSpaceMatrix;
-		//};
 		vvh::ShadowIndex shadowIdx{
-			.mapResolution = {SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION},
-			.layerIndex = 0,
-			.viewportIndex = 0,
-			.layerOffset = {0, 0},
-			.lightSpaceMatrix = glm::mat4(0.0f),
+			.mapResolution = {SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION},	// glm::ivec2
+			.layerIndex = 0,						// uint32_t
+			.viewportIndex = 0,						// uint32_t
+			.layerOffset = {0, 0},					// glm::ivec2
+			.lightSpaceMatrix = glm::mat4(0.0f),	// glm::mat4
 		};
 
 		std::vector<vvh::ShadowIndex> shadowStorage;
