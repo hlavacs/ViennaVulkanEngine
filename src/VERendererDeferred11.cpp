@@ -44,8 +44,8 @@ namespace vve {
 		vvh::ComBeginRenderPass2({ 
 			.m_commandBuffer		= cmdBuffer,
 			.m_imageIndex			= m_vkState().m_imageIndex,
-			.m_swapChain			= m_vkState().m_swapChain,
-			.m_framebuffers	= m_gBufferFrameBuffers,
+			.m_extent				= m_vkState().m_swapChain.m_swapChainExtent,
+			.m_framebuffers			= m_gBufferFrameBuffers,
 			.m_renderPass			= m_geometryPass,
 			.m_clearValues			= m_clearValues,
 			.m_currentFrame			= m_vkState().m_currentFrame 
@@ -63,8 +63,8 @@ namespace vve {
 		vvh::ComBeginRenderPass2({
 			.m_commandBuffer		= cmdBuffer,
 			.m_imageIndex			= m_vkState().m_imageIndex,
-			.m_swapChain			= m_vkState().m_swapChain,
-			.m_framebuffers	= m_lightingFrameBuffers,
+			.m_extent				= m_vkState().m_swapChain.m_swapChainExtent,
+			.m_framebuffers			= m_lightingFrameBuffers,
 			.m_renderPass			= m_lightingPass,
 			.m_clearValues			= {},
 			.m_currentFrame			= m_vkState().m_currentFrame
