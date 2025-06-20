@@ -122,7 +122,7 @@ namespace vve {
 		vvh::ImgCreateImage({ m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
 			, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, numLayers, 1
 			, vvh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
-			, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+			, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
 			, VK_IMAGE_LAYOUT_UNDEFINED
 			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation });
 
@@ -136,7 +136,8 @@ namespace vve {
 				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
 				.m_layers = numLayers,
-				.m_mipLevels = 1
+				.m_mipLevels = 1,
+				.m_viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY
 			});
 
 	}
@@ -219,11 +220,12 @@ namespace vve {
 		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
+		// TODO: image index or just single image?
 		vvh::ComBeginRenderPass2({
 			.m_commandBuffer = cmdBuffer,
-			.m_imageIndex = m_vkState().m_imageIndex,
+			.m_imageIndex = 0,	//m_vkState().m_imageIndex,
 			.m_extent = m_vkState().m_swapChain.m_swapChainExtent,
-			.m_framebuffers = m_vkState().m_swapChain.m_swapChainFramebuffers,
+			.m_framebuffers = {m_shadowFrameBuffer},
 			.m_renderPass = m_renderPass,
 			.m_clearValues = {{.depthStencil = {1.0f, 0} }},
 			.m_currentFrame = m_vkState().m_currentFrame
