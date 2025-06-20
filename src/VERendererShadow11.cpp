@@ -36,10 +36,10 @@ namespace vve {
 		vvh::RenCreateDescriptorSetLayout({ m_vkState().m_device, //Per frame buffers
 			{
 				{.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
 				},
 				{.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
+					.stageFlags = VK_SHADER_STAGE_VERTEX_BIT
 				}
 			},
 			m_descriptorSetLayoutPerFrame });
@@ -48,9 +48,9 @@ namespace vve {
 
 		// -----------------------------------------------------------------------------------------------
 
-		VkDescriptorSetLayout descriptorSetLayoutPerObject;
+		VkDescriptorSetLayout descriptorSetLayoutPerObject = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSetLayoutBinding> bindings{
-			{.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT }
+			{.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT }
 		};
 		vvh::RenCreateDescriptorSetLayout({ m_vkState().m_device, bindings, descriptorSetLayoutPerObject });
 
@@ -63,7 +63,7 @@ namespace vve {
 		vvh::RenCreateGraphicsPipeline({
 			m_vkState().m_device,
 			m_renderPass,
-			"shaders/Deferred/Shadow11.spv", "shaders/Deferred/Shadow11.spv",
+			"shaders/Deferred/Shadow11.spv", "",
 			bindingDescriptions, attributeDescriptions,
 			{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject },
 			{}, //spezialization constants
@@ -239,7 +239,7 @@ namespace vve {
 	}
 
 	bool RendererShadow11::OnRecordNextFrame(Message message) {
-		auto msg = message.template GetData<MsgRecordNextFrame>();
+		//auto msg = message.template GetData<MsgRecordNextFrame>();
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		++m_pass;
 

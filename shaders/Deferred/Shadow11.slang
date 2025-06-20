@@ -43,9 +43,4 @@ VS_OUTPUT main(float3 positionL: POSITION, int instanceID: SV_InstanceID )
     return output;
 }
 
-[shader("fragment")]
-void main() 
-{
-    // empty, dummy shader quick hack
-}
-
+// Shader only runs vertex stage! No frag shader needed!
