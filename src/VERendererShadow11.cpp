@@ -205,7 +205,7 @@ namespace vve {
 
 		m_pass = 0;
 		uint32_t numShadows = CountShadows<PointLight>(6);
-		numShadows += CountShadows<DirectionalLight>(3);
+		numShadows += CountShadows<DirectionalLight>(1);	// TODO: Was 3 -> that has to be wrong?
 		numShadows += CountShadows<SpotLight>(1);
 		// TODO: rewrite so it's more understandable
 		// Calculates number of layers, creates a vvh::Image shadowMap, creates 
@@ -246,17 +246,6 @@ namespace vve {
 		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
-		// TODO: image index or just single image?
-		vvh::ComBeginRenderPass2({
-			.m_commandBuffer = cmdBuffer,
-			.m_imageIndex = 0,	//m_vkState().m_imageIndex,
-			.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
-			.m_framebuffers = m_shadowFrameBuffers,
-			.m_renderPass = m_renderPass,
-			.m_clearValues = {{.depthStencil = {1.0f, 0} }},
-			.m_currentFrame = m_vkState().m_currentFrame
-			});
-
 		vvh::ComBindPipeline({
 			.m_commandBuffer = cmdBuffer,
 			.m_graphicsPipeline = m_shadowPipeline,
@@ -270,10 +259,23 @@ namespace vve {
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 
+
 		vvh::ShadowOffset shadOff{ .shadowIndexOffset = 0, .numberShadows = 0 };
 
 		uint32_t numberTotalLayers = shadowImage().numberImageArraylayers;
 		for (uint32_t layer = 0; layer < numberTotalLayers; ++layer) {
+
+			// TODO: image index or just single image?
+			// One renderPass per layer, image index = layerNumber
+			vvh::ComBeginRenderPass2({
+				.m_commandBuffer = cmdBuffer,
+				.m_imageIndex = layer,	//m_vkState().m_imageIndex,
+				.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
+				.m_framebuffers = m_shadowFrameBuffers,
+				.m_renderPass = m_renderPass,
+				.m_clearValues = {{.depthStencil = {1.0f, 0} }},
+				.m_currentFrame = m_vkState().m_currentFrame
+				});
 
 			vkCmdPushConstants(cmdBuffer,
 				m_shadowPipeline.m_pipelineLayout,
@@ -299,9 +301,9 @@ namespace vve {
 					});
 			}
 
+			vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 		}
 
-		vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
 
