@@ -187,7 +187,7 @@ namespace vve {
 				.m_renderPass = m_renderPass,
 				.m_frameBuffer = m_shadowFrameBuffer,
 				.m_imageView = shadowImage().shadowImage.m_mapImageView,
-				.m_extent = {SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION},
+				.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
 				.m_numLayers = shadowImage().numberImageArraylayers
 			});
 
@@ -223,7 +223,7 @@ namespace vve {
 		vvh::ComBeginRenderPass2({
 			.m_commandBuffer = cmdBuffer,
 			.m_imageIndex = 0,	//m_vkState().m_imageIndex,
-			.m_extent = m_vkState().m_swapChain.m_swapChainExtent,
+			.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
 			.m_framebuffers = {m_shadowFrameBuffer},
 			.m_renderPass = m_renderPass,
 			.m_clearValues = {{.depthStencil = {1.0f, 0} }},
