@@ -21,7 +21,7 @@ namespace vve {
 	bool RendererShadow11::OnInit(Message message) {
 		Renderer::OnInit(message);
 
-		vvh::RenCreateRenderPass({
+		vvh::RenCreateRenderPassShadow({
 			m_vkState().m_depthMapFormat,
 			m_vkState().m_device,
 			m_vkState().m_swapChain,
@@ -203,7 +203,7 @@ namespace vve {
 			.m_commandBuffer = cmdBuffer,
 			.m_imageIndex = m_vkState().m_imageIndex,
 			.m_swapChain = m_vkState().m_swapChain,
-			.m_gBufferFramebuffers = m_vkState().m_swapChain.m_swapChainFramebuffers,
+			.m_framebuffers = m_vkState().m_swapChain.m_swapChainFramebuffers,
 			.m_renderPass = m_renderPass,
 			.m_clearValues = {{.depthStencil = {1.0f, 0} }},
 			.m_currentFrame = m_vkState().m_currentFrame

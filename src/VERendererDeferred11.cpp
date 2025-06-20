@@ -45,7 +45,7 @@ namespace vve {
 			.m_commandBuffer		= cmdBuffer,
 			.m_imageIndex			= m_vkState().m_imageIndex,
 			.m_swapChain			= m_vkState().m_swapChain,
-			.m_gBufferFramebuffers	= m_gBufferFrameBuffers,
+			.m_framebuffers	= m_gBufferFrameBuffers,
 			.m_renderPass			= m_geometryPass,
 			.m_clearValues			= m_clearValues,
 			.m_currentFrame			= m_vkState().m_currentFrame 
@@ -64,7 +64,7 @@ namespace vve {
 			.m_commandBuffer		= cmdBuffer,
 			.m_imageIndex			= m_vkState().m_imageIndex,
 			.m_swapChain			= m_vkState().m_swapChain,
-			.m_gBufferFramebuffers	= m_lightingFrameBuffers,
+			.m_framebuffers	= m_lightingFrameBuffers,
 			.m_renderPass			= m_lightingPass,
 			.m_clearValues			= {},
 			.m_currentFrame			= m_vkState().m_currentFrame
