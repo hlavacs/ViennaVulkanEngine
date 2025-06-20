@@ -68,10 +68,10 @@ namespace vve {
 			bindingDescriptions, attributeDescriptions,
 			{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject },
 			{}, //spezialization constants
-			{ {.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = 8} }, //push constant ranges -> 2 ints
+			{ {.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(vvh::ShadowOffset)} }, //push constant ranges -> 2 ints
 			{}, //blend attachments
 			m_shadowPipeline
-	});
+		});
 		
 
 		std::cout << "Pipeline Shadow" << std::endl;
@@ -122,10 +122,11 @@ namespace vve {
 			shadowImage().shadowImages.clear();
 		}
 
+		// TODO: do I need 2 images here, one should be enough?
 		for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
 			vvh::Image map;
 			vvh::ImgCreateImage({ m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
-				, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, numLayers, 1
+				, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, 1, numLayers
 				, vvh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
 				, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
 				, VK_IMAGE_LAYOUT_UNDEFINED
@@ -164,6 +165,8 @@ namespace vve {
 		CheckShadowMaps(numShadows);
 		uint32_t numPasses = (uint32_t)std::ceil( numShadows / (float)shadowImage().MaxNumberMapsPerImage());
 
+		//std::cout << "\n\nNumber of Shadow passes: " << numPasses << "\n\n";
+
 		if( m_numberPasses != numPasses ) {
 			m_numberPasses = numPasses;
 			m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
@@ -179,6 +182,7 @@ namespace vve {
 
 	bool RendererShadow11::OnRecordNextFrame(Message message) {
 		auto msg = message.template GetData<MsgRecordNextFrame>();
+		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		++m_pass;
 
 		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
@@ -190,7 +194,7 @@ namespace vve {
 			.m_swapChain = m_vkState().m_swapChain,
 			.m_gBufferFramebuffers = m_vkState().m_swapChain.m_swapChainFramebuffers,
 			.m_renderPass = m_renderPass,
-			.m_clearValues = {},
+			.m_clearValues = {{.depthStencil = {1.0f, 0} }},
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 
@@ -207,20 +211,33 @@ namespace vve {
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 
-		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
-			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, vvh::DescriptorSet&>
-			({ (size_t)m_shadowPipeline.m_pipeline })) {
+		uint32_t numberTotalLayers = shadowImage().numberImageArraylayers;
+		for (uint32_t layer = 0; layer < numberTotalLayers; ++layer) {
 
-			const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+			vkCmdPushConstants(cmdBuffer,
+				m_shadowPipeline.m_pipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT,
+				0,
+				sizeof(vvh::ShadowOffset),
+				&layer
+			);
 
-			vvh::ComRecordObject({
-				.m_commandBuffer = cmdBuffer,
-				.m_graphicsPipeline = m_shadowPipeline,
-				.m_descriptorSets = { m_descriptorSetPerFrame, descriptorsets },
-				.m_type = "P",
-				.m_mesh = mesh,
-				.m_currentFrame = m_vkState().m_currentFrame
-				});
+			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, vvh::DescriptorSet&>
+				({ (size_t)m_shadowPipeline.m_pipeline })) {
+
+				const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+
+				vvh::ComRecordObject({
+					.m_commandBuffer = cmdBuffer,
+					.m_graphicsPipeline = m_shadowPipeline,
+					.m_descriptorSets = { m_descriptorSetPerFrame, descriptorsets },
+					.m_type = "P",
+					.m_mesh = mesh,
+					.m_currentFrame = m_vkState().m_currentFrame
+					});
+			}
+
 		}
 
 		vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });

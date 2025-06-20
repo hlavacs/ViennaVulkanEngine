@@ -44,8 +44,8 @@ VS_OUTPUT main(float3 positionL: POSITION, int instanceID: SV_InstanceID )
 }
 
 [shader("fragment")]
-float4 main(float4 position: SV_POSITION) : SV_DEPTH
+void main() 
 {
-    return position.z;
+    // empty, dummy shader quick hack
 }
 
