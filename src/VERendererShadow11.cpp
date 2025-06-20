@@ -152,7 +152,7 @@ namespace vve {
 				.m_image = shadowImage().shadowImage.m_mapImage,
 				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = numLayers,
+				.m_layers = 1,
 				.m_mipLevels = 1,
 				.m_viewType = VK_IMAGE_VIEW_TYPE_2D
 				});
@@ -304,6 +304,11 @@ namespace vve {
 		vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
+
+		// TODO: write logic for when shadow is calculated (start, and then only when light changes)
+		// TODO: Write own Message maybe?
+		//m_engine.DeregisterCallbacks(this, "PREPARE_NEXT_FRAME");
+		//m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
 
 		return false;
 	}
