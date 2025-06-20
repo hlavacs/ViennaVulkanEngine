@@ -116,24 +116,18 @@ namespace vve {
 
 		uint32_t requiredLayers = (uint32_t)std::ceil(numberMaps / (float)shadowImage().MaxNumberMapsPerLayer());
 		auto numLayers = std::min(shadowImage().maxImageArrayLayers, requiredLayers);
-		for( int i = 0; i < shadowImage().shadowImages.size(); i++ ) {
-			vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
-				shadowImage().shadowImages[i].m_mapImage, shadowImage().shadowImages[i].m_mapImageAllocation });
-			shadowImage().shadowImages.clear();
-		}
+		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
+				shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
 
-		// TODO: do I need 2 images here, one should be enough?
-		for( int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++ ) {
-			vvh::Image map;
-			vvh::ImgCreateImage({ m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
-				, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, 1, numLayers
-				, vvh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
-				, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-				, VK_IMAGE_LAYOUT_UNDEFINED
-				, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation });
+		vvh::Image map;
+		vvh::ImgCreateImage({ m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
+			, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, 1, numLayers
+			, vvh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
+			, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
+			, VK_IMAGE_LAYOUT_UNDEFINED
+			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation });
 			
-			shadowImage().shadowImages.push_back(map);
-		}
+		shadowImage().shadowImage = map;
 		shadowImage().numberImageArraylayers = numLayers;
 		
 	}
@@ -176,6 +170,23 @@ namespace vve {
 				} );
 			}
 		}
+
+		//struct ShadowIndex {
+		//	glm::ivec2 	mapResolution;
+		//	uint32_t 	layerIndex;
+		//	uint32_t 	viewportIndex;
+		//	glm::ivec2	layerOffset;
+		//	glm::mat4 	lightSpaceMatrix;
+		//};
+		vvh::ShadowIndex shadowIdx{
+			.mapResolution = {SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION},
+			.layerIndex = 0,
+			.viewportIndex = 0,
+			.layerOffset = {0, 0},
+			.lightSpaceMatrix = glm::mat4(0.0f),
+		};
+
+		std::vector<vvh::ShadowIndex> shadowStorage;
 			
 		return false;
 	}
@@ -211,6 +222,8 @@ namespace vve {
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 
+		vvh::ShadowOffset shadOff{ .shadowIndexOffset = 0, .numberShadows = 0 };
+
 		uint32_t numberTotalLayers = shadowImage().numberImageArraylayers;
 		for (uint32_t layer = 0; layer < numberTotalLayers; ++layer) {
 
@@ -219,7 +232,7 @@ namespace vve {
 				VK_SHADER_STAGE_VERTEX_BIT,
 				0,
 				sizeof(vvh::ShadowOffset),
-				&layer
+				&shadOff
 			);
 
 			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
@@ -249,13 +262,11 @@ namespace vve {
 
 	bool RendererShadow11::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vkState().m_device);
-		
 
-		for( auto [handle, shadowMap] : m_registry.template GetView<vecs::Handle, ShadowImage&>() ) {
-			for( auto& map : shadowMap().shadowImages ) {
-				vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator, map.m_mapImage, map.m_mapImageAllocation });
-			}
-		}
+		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+
+		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator, 
+			shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
 
         vkDestroyCommandPool(m_vkState().m_device, m_commandPool, nullptr);
 
