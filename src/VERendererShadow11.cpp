@@ -102,8 +102,7 @@ namespace vve {
 			shadowImage.maxImageArrayLayers = MAX_NUMBER_LIGHTS*6;
 		}
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
-		
-		
+
 		return false;
 	}
 
@@ -180,6 +179,17 @@ namespace vve {
 				} );
 			}
 		}
+
+		// TODO: Framebuffer setup, has to be teared down when stuff changes?
+		// Framebuffer with layers
+		vvh::RenCreateSingleFrameBuffer({
+				.m_device = m_vkState().m_device,
+				.m_renderPass = m_renderPass,
+				.m_frameBuffer = m_shadowFrameBuffer,
+				.m_imageView = shadowImage().shadowImage.m_mapImageView,
+				.m_extent = {SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION},
+				.m_numLayers = shadowImage().numberImageArraylayers
+			});
 
 		//struct ShadowIndex {
 		//	glm::ivec2 	mapResolution;

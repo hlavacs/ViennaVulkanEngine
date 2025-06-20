@@ -38,6 +38,9 @@ namespace vve
 		void CheckShadowMaps( uint32_t number);
 
 	    VkRenderPass m_renderPass;
+
+		VkFramebuffer m_shadowFrameBuffer{ VK_NULL_HANDLE };
+
 	    VkDescriptorPool m_descriptorPool;    
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
