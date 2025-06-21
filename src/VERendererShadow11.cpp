@@ -12,6 +12,8 @@ namespace vve {
 			{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this,  1500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
 			{this,  1500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
+			{this,  1250, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
+			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
 		} );
 	};
@@ -237,6 +239,38 @@ namespace vve {
 		};
 
 		std::vector<vvh::ShadowIndex> shadowStorage;
+
+		vvh::UniformBufferFrame ubc;
+		vkResetCommandPool(m_vkState().m_device, m_commandPool, 0);
+
+		static std::vector<vvh::Light> lights{ MAX_NUMBER_LIGHTS };
+		int total = 0;
+
+		m_numberLightsPerType = glm::ivec3{ 0 };
+		m_numberLightsPerType.x = RegisterLight<PointLight>(1.0f, lights, total);
+		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
+		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
+
+		for (size_t i = 0; i < m_storageBuffersLights.m_uniformBuffersMapped.size(); ++i) {
+			memcpy(m_storageBuffersLights.m_uniformBuffersMapped[i], lights.data(), total * sizeof(vvh::Light));
+		}
+
+		ubc.numLights = m_numberLightsPerType;
+
+		auto [lToW, view, proj] = *m_registry.template GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>().begin();
+		ubc.camera.view = view();
+		ubc.camera.proj = proj();
+		ubc.camera.positionW = lToW()[3];
+		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vkState().m_currentFrame], &ubc, sizeof(ubc));
+
+		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers] :
+			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&>({ (size_t)m_shadowPipeline.m_pipeline })) {
+
+			vvh::BufferPerObject uboColor{};
+			uboColor.model = LtoW();
+			uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
+			memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
+		}
 			
 		return false;
 	}
@@ -371,6 +405,8 @@ namespace vve {
 
 		assert(m_registry.template Has<vvh::Buffer>(oHandle));
 		assert(m_registry.template Has<vvh::DescriptorSet>(oHandle));
+
+		return false;
 	}
 
 	bool RendererShadow11::OnQuit(Message message) {
