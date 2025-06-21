@@ -69,7 +69,7 @@ namespace vve {
 			bindingDescriptions, attributeDescriptions,
 			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject },
 			{}, //spezialization constants
-			{ {.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(vvh::ShadowOffset)} }, //push constant ranges -> 2 ints
+			{ {.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(glm::mat4)} }, //push constant ranges -> 2 ints
 			{}, //blend attachments
 			m_shadowPipeline,
 			{}, //
@@ -313,49 +313,14 @@ namespace vve {
 			});
 
 
-		vvh::ShadowOffset shadOff{ .shadowIndexOffset = 0, .numberShadows = 0 };
+		//vvh::ShadowOffset shadOff{ .shadowIndexOffset = 0, .numberShadows = 0 };
 
 		uint32_t numberTotalLayers = shadowImage().numberImageArraylayers;
-		for (uint32_t layer = 0; layer < numberTotalLayers; ++layer) {
-
-			// TODO: image index or just single image?
-			// One renderPass per layer, image index = layerNumber
-			vvh::ComBeginRenderPass2({
-				.m_commandBuffer = cmdBuffer,
-				.m_imageIndex = layer,	//m_vkState().m_imageIndex,
-				.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
-				.m_framebuffers = m_shadowFrameBuffers,
-				.m_renderPass = m_renderPass,
-				.m_clearValues = {{.depthStencil = {1.0f, 0} }},
-				.m_currentFrame = m_vkState().m_currentFrame
-				});
-
-			vkCmdPushConstants(cmdBuffer,
-				m_shadowPipeline.m_pipelineLayout,
-				VK_SHADER_STAGE_VERTEX_BIT,
-				0,
-				sizeof(vvh::ShadowOffset),
-				&shadOff
-			);
-
-			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
-				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, vvh::DescriptorSet&>
-				({ (size_t)m_shadowPipeline.m_pipeline })) {
-
-				const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
-
-				vvh::ComRecordObject({
-					.m_commandBuffer = cmdBuffer,
-					.m_graphicsPipeline = m_shadowPipeline,
-					.m_descriptorSets = { m_descriptorSetPerFrame, descriptorsets },
-					.m_type = "P",
-					.m_mesh = mesh,
-					.m_currentFrame = m_vkState().m_currentFrame
-					});
-			}
-
-			vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
-		}
+		uint32_t layerIdx = 0;
+		float near = 1.0f;
+		float far = 25.0f;
+		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
+		assert(layerIdx == 6);
 
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
@@ -436,6 +401,77 @@ namespace vve {
 		for (auto& fb : m_shadowFrameBuffers) {
 			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
 		}
+	}
+
+	void RendererShadow11::RenderPointLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
+		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+		float aspect = 1.0f;
+		const glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
+
+		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, PointLight&, LocalToWorldMatrix&>()) {
+			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
+
+			std::vector<glm::mat4> shadowTransforms;
+			shadowTransforms.reserve(6);
+			shadowTransforms.push_back(shadowProj *
+				glm::lookAt(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+			shadowTransforms.push_back(shadowProj *
+				glm::lookAt(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+			shadowTransforms.push_back(shadowProj *
+				glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+			shadowTransforms.push_back(shadowProj *
+				glm::lookAt(lightPos, lightPos + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+			shadowTransforms.push_back(shadowProj *
+				glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+			shadowTransforms.push_back(shadowProj *
+				glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+
+
+			for (uint8_t i = 0; i < 6; ++i, ++layer) {
+				// LightSpaceMatrix
+				glm::mat4 lightSpaceMatrix = shadowProj * shadowTransforms[i];
+
+				// TODO: image index or just single image?
+				// One renderPass per layer, image index = layerNumber
+				vvh::ComBeginRenderPass2({
+					.m_commandBuffer = cmdBuffer,
+					.m_imageIndex = layer,	//m_vkState().m_imageIndex,
+					.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
+					.m_framebuffers = m_shadowFrameBuffers,
+					.m_renderPass = m_renderPass,
+					.m_clearValues = {{.depthStencil = {1.0f, 0} }},
+					.m_currentFrame = m_vkState().m_currentFrame
+					});
+
+
+				vkCmdPushConstants(cmdBuffer,
+					m_shadowPipeline.m_pipelineLayout,
+					VK_SHADER_STAGE_VERTEX_BIT,
+					0,
+					sizeof(glm::mat4),
+					&lightSpaceMatrix
+				);
+
+				for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
+					m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, vvh::DescriptorSet&>
+					({ (size_t)m_shadowPipeline.m_pipeline })) {
+
+					const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+
+					vvh::ComRecordObject({
+						.m_commandBuffer = cmdBuffer,
+						.m_graphicsPipeline = m_shadowPipeline,
+						.m_descriptorSets = { m_descriptorSetPerFrame, descriptorsets },
+						.m_type = "P",
+						.m_mesh = mesh,
+						.m_currentFrame = m_vkState().m_currentFrame
+						});
+				}
+
+				vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+			}
+		}
+
 	}
 
 

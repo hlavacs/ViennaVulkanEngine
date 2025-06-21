@@ -10,10 +10,14 @@ export public struct ShadowIndex {
     public float4x4 lightSpaceMatrix;
 };
 
-export public struct ShadowImageOffset {
-    public int shadowIndexOffset;
-    public int numberShadows;
-};
+// export public struct ShadowImageOffset {
+//     public int shadowIndexOffset;
+//     public int numberShadows;
+// };
+
+export public struct LightSpaceMatrix {
+    public float4x4 lightSpaceMatrix;
+}
 
 //-----------------------------------------------------------------------
 

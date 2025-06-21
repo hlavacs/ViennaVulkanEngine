@@ -41,6 +41,7 @@ namespace vve
 		void CheckShadowMaps( uint32_t number);
 
 		void DestroyShadowMap();
+		void RenderPointLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near = 1.0f, const float& far = 25.0f);
 
 	    VkRenderPass m_renderPass;
 
