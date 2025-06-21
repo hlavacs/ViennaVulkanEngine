@@ -241,6 +241,22 @@ namespace vve {
 		return false;
 	}
 
+	bool RendererShadow11::OnObjectDestroy(Message message) {
+		const auto& msg = message.template GetData<MsgObjectDestroy>();
+		const auto& oHandle = msg.m_handle();
+
+		assert(m_registry.Exists(oHandle));
+
+		if (!m_registry.template Has<vvh::Buffer>(oHandle)) return false;
+		vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
+		vvh::BufDestroyBuffer2({
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_buffers = ubo
+			});
+		return false;
+	}
+
 	bool RendererShadow11::OnRecordNextFrame(Message message) {
 		//auto msg = message.template GetData<MsgRecordNextFrame>();
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
