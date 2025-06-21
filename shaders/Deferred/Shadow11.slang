@@ -23,7 +23,7 @@ StructuredBuffer<ShadowIndex> gShadowIndex;
 // set 1 ... per object
 
 [[vk::binding(0, 1)]]
-ConstantBuffer<UniformBufferObjectTexture> gParamsObject;
+ConstantBuffer<UniformBufferObject> gParamsObject;
 
 //----------------------------------------------------------------------------
 

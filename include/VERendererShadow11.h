@@ -33,6 +33,7 @@ namespace vve
         bool OnInit(Message message);
         bool OnPrepareNextFrame(Message message);
         bool OnRecordNextFrame(Message message);
+		bool OnObjectCreate(Message message);
         bool OnQuit(Message message);
 		template<typename T>
 		uint32_t  CountShadows(uint32_t num);
@@ -51,7 +52,8 @@ namespace vve
 
 		vvh::Buffer m_uniformBuffersPerFrame;
 		vvh::Buffer m_storageBuffersLights;
-		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame;
+		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
+		VkDescriptorSetLayout m_descriptorSetLayoutPerObject{ VK_NULL_HANDLE };
 		vvh::DescriptorSet m_descriptorSetPerFrame{0};
 		vvh::Pipeline m_shadowPipeline;		
 

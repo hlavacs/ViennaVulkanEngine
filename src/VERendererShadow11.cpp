@@ -48,11 +48,11 @@ namespace vve {
 
 		// -----------------------------------------------------------------------------------------------
 
-		VkDescriptorSetLayout descriptorSetLayoutPerObject = VK_NULL_HANDLE;
+		//VkDescriptorSetLayout descriptorSetLayoutPerObject = VK_NULL_HANDLE;
 		std::vector<VkDescriptorSetLayoutBinding> bindings{
 			{.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT }
 		};
-		vvh::RenCreateDescriptorSetLayout({ m_vkState().m_device, bindings, descriptorSetLayoutPerObject });
+		vvh::RenCreateDescriptorSetLayout({ m_vkState().m_device, bindings, m_descriptorSetLayoutPerObject });
 
 		std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions("P");
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions("P");
@@ -65,7 +65,7 @@ namespace vve {
 			m_renderPass,
 			"shaders/Deferred/Shadow11.spv", "",
 			bindingDescriptions, attributeDescriptions,
-			{ m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject },
+			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject },
 			{}, //spezialization constants
 			{ {.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(vvh::ShadowOffset)} }, //push constant ranges -> 2 ints
 			{}, //blend attachments
@@ -316,6 +316,45 @@ namespace vve {
 		//m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
 
 		return false;
+	}
+
+	bool RendererShadow11::OnObjectCreate(Message message) {
+		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
+		assert(m_registry.template Has<MeshHandle>(oHandle));
+
+		vvh::Buffer ubo;
+		size_t sizeUbo = 0;
+		vvh::DescriptorSet descriptorSet{ 1 };
+		vvh::RenCreateDescriptorSet({
+			.m_device = m_vkState().m_device,
+			.m_descriptorSetLayouts = m_descriptorSetLayoutPerObject,
+			.m_descriptorPool = m_descriptorPool,
+			.m_descriptorSet = descriptorSet
+			});
+
+		sizeUbo = sizeof(vvh::BufferPerObject);
+
+		vvh::BufCreateBuffers({
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+			.m_size = sizeUbo,
+			.m_buffer = ubo
+			});
+		vvh::RenUpdateDescriptorSet({
+			.m_device = m_vkState().m_device,
+			.m_uniformBuffers = ubo,
+			.m_binding = 0,
+			.m_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+			.m_size = sizeUbo,
+			.m_descriptorSet = descriptorSet
+			});
+
+		m_registry.Put(oHandle, ubo, descriptorSet);
+		m_registry.AddTags(oHandle, (size_t)m_shadowPipeline.m_pipeline);
+
+		assert(m_registry.template Has<vvh::Buffer>(oHandle));
+		assert(m_registry.template Has<vvh::DescriptorSet>(oHandle));
 	}
 
 	bool RendererShadow11::OnQuit(Message message) {
