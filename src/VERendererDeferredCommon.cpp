@@ -379,9 +379,10 @@ namespace vve {
 			.m_format = VK_FORMAT_R16G16B16A16_SFLOAT,
 			.m_sampler = m_sampler
 			});
-		vvh::RenUpdateDescriptorSetGBufferAttachment({
+		vvh::RenUpdateImageDescriptorSet({
 			.m_device = m_vkState().m_device,
-			.m_gbufferImage = m_gBufferAttachments[NORMAL],
+			.m_imageView = m_gBufferAttachments[NORMAL].m_gbufferImageView,
+			.m_sampler = m_sampler,
 			.m_binding = NORMAL,
 			.m_descriptorSet = m_descriptorSetComposition
 			});
@@ -395,9 +396,10 @@ namespace vve {
 			.m_format = VK_FORMAT_R8G8B8A8_SRGB,
 			.m_sampler = m_sampler
 			});
-		vvh::RenUpdateDescriptorSetGBufferAttachment({
+		vvh::RenUpdateImageDescriptorSet({
 			.m_device = m_vkState().m_device,
-			.m_gbufferImage = m_gBufferAttachments[ALBEDO],
+			.m_imageView = m_gBufferAttachments[ALBEDO].m_gbufferImageView,
+			.m_sampler = m_sampler,
 			.m_binding = ALBEDO,
 			.m_descriptorSet = m_descriptorSetComposition
 			});
@@ -411,9 +413,10 @@ namespace vve {
 			.m_format = VK_FORMAT_R8G8B8A8_UNORM,
 			.m_sampler = m_sampler
 			});
-		vvh::RenUpdateDescriptorSetGBufferAttachment({
+		vvh::RenUpdateImageDescriptorSet({
 			.m_device = m_vkState().m_device,
-			.m_gbufferImage = m_gBufferAttachments[METALLIC_ROUGHNESS],
+			.m_imageView = m_gBufferAttachments[METALLIC_ROUGHNESS].m_gbufferImageView,
+			.m_sampler = m_sampler,
 			.m_binding = METALLIC_ROUGHNESS,
 			.m_descriptorSet = m_descriptorSetComposition
 			});
