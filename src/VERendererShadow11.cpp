@@ -296,8 +296,8 @@ namespace vve {
 
 		uint32_t numberTotalLayers = shadowImage().numberImageArraylayers;
 		uint32_t layerIdx = 0;
-		float near = 0.1f;
-		float far = 50.0f;
+		float near = 1.0f;
+		float far = 25.0f;
 		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
 		assert(layerIdx == 6);
 
