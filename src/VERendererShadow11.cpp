@@ -156,7 +156,7 @@ namespace vve {
 				.m_image = shadowImage().shadowImage.m_mapImage,
 				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = numLayers,
+				.m_layers = CountShadows<PointLight>(6),
 				.m_mipLevels = 1,
 				.m_viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
 			});
