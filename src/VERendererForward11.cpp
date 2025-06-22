@@ -287,7 +287,7 @@ namespace vve {
 				cmdBuffer, 
 				pip, 
 				m_vkState().m_imageIndex, 
-				m_vkState().m_swapChain, 
+				m_vkState().m_swapChain.m_swapChainExtent,
 				m_renderPass, 
 				{},	
 				{}, 

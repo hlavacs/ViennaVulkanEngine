@@ -688,7 +688,7 @@ namespace vve {
 				.m_commandBuffer = cmdBuffer,
 				.m_graphicsPipeline = pip,
 				.m_imageIndex = m_vkState().m_imageIndex,
-				.m_swapChain = m_vkState().m_swapChain,
+				.m_extent = m_vkState().m_swapChain.m_swapChainExtent,
 				.m_renderPass = renderPass != VK_NULL_HANDLE ? *renderPass : VK_NULL_HANDLE,
 				.m_viewPorts = {},
 				.m_scissors = {}, //default view ports and scissors
@@ -753,7 +753,7 @@ namespace vve {
 			.m_commandBuffer = cmdBuffer,
 			.m_graphicsPipeline = m_lightingPipeline,
 			.m_imageIndex = m_vkState().m_imageIndex,
-			.m_swapChain = m_vkState().m_swapChain,
+			.m_extent = m_vkState().m_swapChain.m_swapChainExtent,
 			.m_renderPass = renderPass != VK_NULL_HANDLE ? *renderPass : VK_NULL_HANDLE,
 			.m_viewPorts = {},
 			.m_scissors = {}, //default view ports and scissors

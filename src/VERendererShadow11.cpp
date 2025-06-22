@@ -282,7 +282,7 @@ namespace vve {
 			.m_commandBuffer = cmdBuffer,
 			.m_graphicsPipeline = m_shadowPipeline,
 			.m_imageIndex = m_vkState().m_imageIndex,
-			.m_swapChain = m_vkState().m_swapChain,
+			.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
 			.m_renderPass = m_renderPass,
 			.m_viewPorts = {},
 			.m_scissors = {}, //default view ports and scissors
