@@ -22,6 +22,12 @@ StructuredBuffer<ShadowIndex> gShadowIndex;
 
 // set 1 ... per object
 
+/* 
+ * NOTE: this is in practive never just a UniformBufferObject, but one of UniformBufferObject,
+ * UniformBufferObjectTexture or UniformBufferObjectColor, however we only ever need
+ * the model matrix - so we use the existing object ubo provided by the actual renderer
+ * and just use the model matrix.
+*/
 [[vk::binding(0, 1)]]
 ConstantBuffer<UniformBufferObject> gParamsObject;
 

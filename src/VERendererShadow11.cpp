@@ -299,6 +299,7 @@ namespace vve {
 		float near = 1.0f;
 		float far = 25.0f;
 		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
+		// TODO: Remove assert. This is temporary, as demo.cpp has 1 point and 1 spot light = 7 layers EXACTLY
 		assert(layerIdx == 6);
 
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
@@ -379,7 +380,7 @@ namespace vve {
 
 	void RendererShadow11::RenderPointLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
 		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
-		float aspect = 1.0f;
+		float aspect = 1.0f;	// width / height
 
 		// Remapping from OpenGL -1, 1 to Vulkan [0, 1]
 		// TODO: What about #define GLM_FORCE_DEPTH_ZERO_TO_ONE
