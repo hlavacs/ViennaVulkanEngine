@@ -296,8 +296,8 @@ namespace vve {
 
 		uint32_t numberTotalLayers = shadowImage().numberImageArraylayers;
 		uint32_t layerIdx = 0;
-		float near = 1.0f;
-		float far = 25.0f;
+		float near = 0.1f;
+		float far = 50.0f;
 		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
 		assert(layerIdx == 6);
 
@@ -380,7 +380,18 @@ namespace vve {
 	void RendererShadow11::RenderPointLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
 		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		float aspect = 1.0f;
-		const glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
+
+		// Remapping from OpenGL -1, 1 to Vulkan [0, 1]
+		// TODO: What about #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+		glm::mat4 bias = glm::mat4(
+			1, 0, 0, 0,
+			0, 1, 0, 0,
+			0, 0, 0.5, 0.5,
+			0, 0, 0, 1
+		);
+
+		const glm::mat4 shadowProj = bias * glm::perspective(glm::radians(90.0f), aspect, near, far);
+
 
 		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, PointLight&, LocalToWorldMatrix&>()) {
 			glm::vec3 lightPos = glm::vec3{ lToW()[3] };

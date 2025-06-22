@@ -33,7 +33,7 @@ LightSpaceMatrix lsm;
 //----------------------------------------------------------------------------
 
 [shader("vertex")]
-float4 main(float3 positionL: POSITION) {
+float4 main(float3 positionL: POSITION) : SV_Position {
     float4 positionW = mul(gParamsObject.model, float4(positionL, 1.0)); // do I need to do .xyz and set w to 1?
     float4 output = mul(lsm.lightSpaceMatrix, positionW);
     return output;
