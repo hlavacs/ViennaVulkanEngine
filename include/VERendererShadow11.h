@@ -21,6 +21,10 @@ namespace vve
 		uint32_t NumberMapsPerImage() { return numberImageArraylayers * MaxNumberMapsPerLayer(); };
 	};
 
+	struct oShadowDescriptor {
+		vvh::DescriptorSet m_oShadowDescriptor;
+	};
+
 	using ShadowMaphandle = vsty::strong_type_t<ShadowImage, vsty::counter<>>;
 
     class RendererShadow11 : public Renderer {

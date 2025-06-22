@@ -10,9 +10,9 @@ namespace vve {
 
 		engine.RegisterCallbacks( { 
 			{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
-			{this,  1500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
-			{this,  1500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
-			{this,  1250, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
+			{this,  2500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
+			{this,  2500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
+			{this,  3250, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
 		} );
@@ -204,6 +204,7 @@ namespace vve {
 	/// @param message 
 	/// @return Returns false.
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
+		vkResetCommandPool(m_vkState().m_device, m_commandPool, 0);
 		
 		//auto msg = message.template GetData<MsgPrepareNextFrame>();
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
@@ -263,31 +264,8 @@ namespace vve {
 		ubc.camera.positionW = lToW()[3];
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vkState().m_currentFrame], &ubc, sizeof(ubc));
 
-		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers] :
-			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&>({ (size_t)m_shadowPipeline.m_pipeline })) {
-
-			vvh::BufferPerObject uboColor{};
-			uboColor.model = LtoW();
-			uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
-			memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
-		}
+		// per object ubo is already updated by other renderer
 			
-		return false;
-	}
-
-	bool RendererShadow11::OnObjectDestroy(Message message) {
-		const auto& msg = message.template GetData<MsgObjectDestroy>();
-		const auto& oHandle = msg.m_handle();
-
-		assert(m_registry.Exists(oHandle));
-
-		if (!m_registry.template Has<vvh::Buffer>(oHandle)) return false;
-		vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
-		vvh::BufDestroyBuffer2({
-			.m_device = m_vkState().m_device,
-			.m_vmaAllocator = m_vkState().m_vmaAllocator,
-			.m_buffers = ubo
-			});
 		return false;
 	}
 
@@ -299,6 +277,7 @@ namespace vve {
 		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
+		// TODO: has swapchain extent
 		vvh::ComBindPipeline({
 			.m_commandBuffer = cmdBuffer,
 			.m_graphicsPipeline = m_shadowPipeline,
@@ -336,9 +315,10 @@ namespace vve {
 	bool RendererShadow11::OnObjectCreate(Message message) {
 		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		assert(m_registry.template Has<MeshHandle>(oHandle));
+		assert(m_registry.template Has<vvh::Buffer>(oHandle));
 
-		vvh::Buffer ubo;
-		size_t sizeUbo = 0;
+		vvh::Buffer ubo = m_registry.template Get<vvh::Buffer>(oHandle);
+		size_t sizeUbo = sizeof(ubo);
 		vvh::DescriptorSet descriptorSet{ 1 };
 		vvh::RenCreateDescriptorSet({
 			.m_device = m_vkState().m_device,
@@ -347,15 +327,6 @@ namespace vve {
 			.m_descriptorSet = descriptorSet
 			});
 
-		sizeUbo = sizeof(vvh::BufferPerObject);
-
-		vvh::BufCreateBuffers({
-			.m_device = m_vkState().m_device,
-			.m_vmaAllocator = m_vkState().m_vmaAllocator,
-			.m_usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-			.m_size = sizeUbo,
-			.m_buffer = ubo
-			});
 		vvh::RenUpdateDescriptorSet({
 			.m_device = m_vkState().m_device,
 			.m_uniformBuffers = ubo,
@@ -365,12 +336,14 @@ namespace vve {
 			.m_descriptorSet = descriptorSet
 			});
 
-		m_registry.Put(oHandle, ubo, descriptorSet);
 		m_registry.AddTags(oHandle, (size_t)m_shadowPipeline.m_pipeline);
+		oShadowDescriptor ds = { descriptorSet };
+		m_registry.Put(oHandle, ds);
 
-		assert(m_registry.template Has<vvh::Buffer>(oHandle));
-		assert(m_registry.template Has<vvh::DescriptorSet>(oHandle));
+		return false;
+	}
 
+	bool RendererShadow11::OnObjectDestroy(Message message) {
 		return false;
 	}
 
@@ -384,6 +357,7 @@ namespace vve {
 		vvh::BufDestroyBuffer2({ m_vkState().m_device, m_vkState().m_vmaAllocator, m_storageBuffersLights });
 		vvh::BufDestroyBuffer2({ m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame });
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
+		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerObject, nullptr);
 
 		
 		return false;
@@ -452,8 +426,8 @@ namespace vve {
 					&lightSpaceMatrix
 				);
 
-				for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
-					m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, vvh::DescriptorSet&>
+				for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :
+					m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, oShadowDescriptor&>
 					({ (size_t)m_shadowPipeline.m_pipeline })) {
 
 					const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
@@ -461,7 +435,7 @@ namespace vve {
 					vvh::ComRecordObject({
 						.m_commandBuffer = cmdBuffer,
 						.m_graphicsPipeline = m_shadowPipeline,
-						.m_descriptorSets = { m_descriptorSetPerFrame, descriptorsets },
+						.m_descriptorSets = {  m_descriptorSetPerFrame, descriptorset().m_oShadowDescriptor},
 						.m_type = "P",
 						.m_mesh = mesh,
 						.m_currentFrame = m_vkState().m_currentFrame
