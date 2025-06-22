@@ -128,7 +128,9 @@ namespace vve {
 			, vvh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
 			, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
 			, VK_IMAGE_LAYOUT_UNDEFINED
-			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation });
+			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation, 
+			VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT // Cube now!
+			});
 
 		shadowImage().shadowImage = map;
 		shadowImage().numberImageArraylayers = numLayers;
@@ -149,6 +151,16 @@ namespace vve {
 		std::cout << "\nNumber of shadow layers: " << numLayers << "\n\n";
 
 		// TODO: shadowImage().shadowImage.m_mapImageView is pointless like that in 1.1!
+		m_cubeArrayView = vvh::ImgCreateImageView({
+				.m_device = m_vkState().m_device,
+				.m_image = shadowImage().shadowImage.m_mapImage,
+				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.m_layers = numLayers,
+				.m_mipLevels = 1,
+				.m_viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
+			});
+
 		m_layerViews.resize(numLayers);
 		m_shadowFrameBuffers.resize(numLayers);
 		for (uint32_t i = 0; i < numLayers; ++i) {
@@ -164,7 +176,6 @@ namespace vve {
 
 			// TODO: Framebuffer setup, has to be teared down when stuff changes?
 			// Framebuffer with layers
-			//m_shadowFrameBuffers.res
 			vvh::RenCreateSingleFrameBuffer({
 					.m_device = m_vkState().m_device,
 					.m_renderPass = m_renderPass,

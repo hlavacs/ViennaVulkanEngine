@@ -49,6 +49,7 @@ namespace vve
 
 	    VkRenderPass m_renderPass;
 
+		VkImageView m_cubeArrayView{};
 		std::vector<VkImageView> m_layerViews{};
 		std::vector<VkFramebuffer> m_shadowFrameBuffers{};
 
