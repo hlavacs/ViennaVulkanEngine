@@ -58,6 +58,12 @@ namespace vve {
 				{	// Binding 3 : Depth
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 4 : ShadowMap
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 5 : ShadowMap
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 			},
 			.m_descriptorSetLayout = m_descriptorSetLayoutComposition
 			});
@@ -139,6 +145,17 @@ namespace vve {
 			.m_sampler = m_sampler
 			});
 
+		// Shadow Sampler
+		vvh::ImgCreateImageSampler({
+			.m_physicalDevice = m_vkState().m_physicalDevice,
+			.m_device = m_vkState().m_device,
+			.m_sampler = m_shadowSampler,
+			.m_filter = VK_FILTER_LINEAR,
+			.m_borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+			.m_compareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
+			.m_maxLod = 1.0f
+			});
+
 		CreateDeferredResources();
 
 		static_cast<Derived*>(this)->OnInit();
@@ -205,6 +222,29 @@ namespace vve {
 
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnRecordNextFrame(const Message& message) {
+
+		static bool shadowUpdated = false;
+		
+		if (!shadowUpdated) {
+			auto view = m_registry.template GetView<vecs::Handle, ShadowImage&>();
+			auto iterBegin = view.begin();
+			auto [handleV, stateV] = *iterBegin;
+			vvh::RenUpdateImageDescriptorSet({
+				.m_device = m_vkState().m_device,
+				.m_imageView = stateV().m_cubeArrayView,
+				.m_sampler = m_shadowSampler,
+				.m_binding = DEPTH + 1,
+				.m_descriptorSet = m_descriptorSetComposition
+				});
+			vvh::RenUpdateImageDescriptorSet({
+				.m_device = m_vkState().m_device,
+				.m_imageView = stateV().m_cubeArrayView,
+				.m_sampler = m_shadowSampler,
+				.m_binding = DEPTH + 2,
+				.m_descriptorSet = m_descriptorSetComposition
+				});
+			shadowUpdated = true;
+		}
 
 		static_cast<Derived*>(this)->OnRecordNextFrame();
 
@@ -428,6 +468,18 @@ namespace vve {
 			.m_descriptorSet = m_descriptorSetComposition,
 			.m_sampler = m_sampler
 			});
+		// ShadowMap
+		//auto shadowHandle = m_registry.template GetView<vecs::Handle, ShadowImage&>({ (size_t)1337 });
+		//auto view = m_registry.template GetView<vecs::Handle, ShadowImage&>();
+		//auto iterBegin = view.begin();
+		//auto [handleV, stateV] = *iterBegin;
+		//vvh::RenUpdateImageDescriptorSet({
+		//	.m_device = m_vkState().m_device,
+		//	.m_imageView = stateV().m_cubeArrayView,
+		//	.m_sampler = m_shadowSampler,
+		//	.m_binding = DEPTH + 1,
+		//	.m_descriptorSet = m_descriptorSetComposition
+		//	});
 
 		// GBuffer attachments from  VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		for (auto& image : m_gBufferAttachments) {

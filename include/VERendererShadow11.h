@@ -15,6 +15,7 @@ namespace vve
 		//std::vector<vvh::Image> shadowImages;
 		// TODO: one image but needs multiple views for 1.1
 		vvh::Image shadowImage;
+		VkImageView m_cubeArrayView;
 		uint32_t MaxNumberMapsUV() { return maxImageDimension2D / SHADOW_MAP_DIMENSION; };
 		uint32_t MaxNumberMapsPerLayer() { return MaxNumberMapsUV() * MaxNumberMapsUV(); };
 		uint32_t MaxNumberMapsPerImage() { return maxImageArrayLayers * MaxNumberMapsPerLayer(); };
@@ -49,7 +50,10 @@ namespace vve
 
 	    VkRenderPass m_renderPass;
 
-		VkImageView m_cubeArrayView{};
+		bool m_renderedAlready = false;	// TODO: logic so that shadow maps dont get rendererd each frame!
+
+		//VkImageView m_cubeArrayView{};
+		//vecs::Handle m_ShadowCubeArrayViewHandle;
 		std::vector<VkImageView> m_layerViews{};
 		std::vector<VkFramebuffer> m_shadowFrameBuffers{};
 

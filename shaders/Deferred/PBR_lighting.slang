@@ -37,6 +37,12 @@ Sampler2D gMetallicRoughness; // Metallic and Roughness from geometry shader
 [[vk::binding(3, 1)]]
 Sampler2D<float> gDepth;       // Depth
 
+[[vk_binding(4, 1)]]
+TextureCubeArray<float> shadowCubeArray;
+
+[[vk_binding(5, 1)]]
+SamplerComparisonState shadowSampler;
+
 [[vk::binding(1, 0)]]
 StructuredBuffer<Light> gLights;
 
@@ -72,7 +78,7 @@ float4 main(VertexStageOutput in) : SV_Target
     float3 A = gAlbedo.Sample(in.uv).xyz;
     float2 MR = gMetallicRoughness.Sample(in.uv).xy;
 
-    float4 output = calculateLighting(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g);
+    float4 output = calculateLighting(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g, shadowCubeArray, shadowSampler);
 
     return output;
 }

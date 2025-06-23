@@ -10,8 +10,8 @@ namespace vve {
 
 		engine.RegisterCallbacks( { 
 			{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
-			{this,  2500, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
-			{this,  2500, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
+			{this,  2100, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
+			{this,  1990, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,  3250, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
@@ -106,6 +106,7 @@ namespace vve {
 			shadowImage.maxImageArrayLayers = MAX_NUMBER_LIGHTS*6;
 		}
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
+		m_registry.AddTags(m_shadowImageHandle, (size_t)1337 );
 
 		return false;
 	}
@@ -143,6 +144,7 @@ namespace vve {
 				.m_image = shadowImage().shadowImage.m_mapImage,
 				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.m_layers = 6,	// TODO: fix when it works
 				.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 				.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 				.m_commandBuffer = VK_NULL_HANDLE
@@ -151,7 +153,7 @@ namespace vve {
 		std::cout << "\nNumber of shadow layers: " << numLayers << "\n\n";
 
 		// TODO: shadowImage().shadowImage.m_mapImageView is pointless like that in 1.1!
-		m_cubeArrayView = vvh::ImgCreateImageView({
+		shadowImage().m_cubeArrayView = vvh::ImgCreateImageView({
 				.m_device = m_vkState().m_device,
 				.m_image = shadowImage().shadowImage.m_mapImage,
 				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
@@ -215,6 +217,7 @@ namespace vve {
 	/// @param message 
 	/// @return Returns false.
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
+		if (m_renderedAlready) return false;
 		vkResetCommandPool(m_vkState().m_device, m_commandPool, 0);
 		
 		//auto msg = message.template GetData<MsgPrepareNextFrame>();
@@ -241,16 +244,6 @@ namespace vve {
 		//		} );
 		//	}
 		//}
-
-		vvh::ShadowIndex shadowIdx{
-			.mapResolution = {SHADOW_MAP_DIMENSION, SHADOW_MAP_DIMENSION},	// glm::ivec2
-			.layerIndex = 0,						// uint32_t
-			.viewportIndex = 0,						// uint32_t
-			.layerOffset = {0, 0},					// glm::ivec2
-			.lightSpaceMatrix = glm::mat4(0.0f),	// glm::mat4
-		};
-
-		std::vector<vvh::ShadowIndex> shadowStorage;
 
 		vvh::UniformBufferFrame ubc;
 		vkResetCommandPool(m_vkState().m_device, m_commandPool, 0);
@@ -281,6 +274,7 @@ namespace vve {
 	}
 
 	bool RendererShadow11::OnRecordNextFrame(Message message) {
+		if (m_renderedAlready) return false;
 		//auto msg = message.template GetData<MsgRecordNextFrame>();
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		++m_pass;
@@ -313,6 +307,20 @@ namespace vve {
 		// TODO: Remove assert. This is temporary, as demo.cpp has 1 point and 1 spot light = 7 layers EXACTLY
 		assert(layerIdx == 6);
 
+		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		vvh::ImgTransitionImageLayout3({
+				.m_device = m_vkState().m_device,
+				.m_graphicsQueue = m_vkState().m_graphicsQueue,
+				.m_commandPool = m_commandPool,
+				.m_image = shadowImage().shadowImage.m_mapImage,
+				.m_format = m_vkState().m_depthMapFormat,
+				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.m_layers = 6,	// TODO: fix when it works
+				.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.m_commandBuffer = cmdBuffer,
+			});
+
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
 
@@ -320,6 +328,8 @@ namespace vve {
 		// TODO: Write own Message maybe?
 		//m_engine.DeregisterCallbacks(this, "PREPARE_NEXT_FRAME");
 		//m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
+
+		m_renderedAlready = true;
 
 		return false;
 	}

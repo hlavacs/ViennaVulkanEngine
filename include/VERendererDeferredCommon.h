@@ -32,6 +32,7 @@ namespace vve {
 		vvh::Buffer m_storageBuffersLights{};
 
 		VkSampler m_sampler{ VK_NULL_HANDLE };
+		VkSampler m_shadowSampler{ VK_NULL_HANDLE };
 		std::vector<vvh::GBufferImage> m_gBufferAttachments{};
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
