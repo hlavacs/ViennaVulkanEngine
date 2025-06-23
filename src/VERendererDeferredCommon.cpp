@@ -226,19 +226,17 @@ namespace vve {
 		static bool shadowUpdated = false;
 		
 		if (!shadowUpdated) {
-			auto view = m_registry.template GetView<vecs::Handle, ShadowImage&>();
-			auto iterBegin = view.begin();
-			auto [handleV, stateV] = *iterBegin;
+			auto [sHandle, shadowImage] = *m_registry.template GetView<vecs::Handle, ShadowImage&>().begin();
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
-				.m_imageView = stateV().m_cubeArrayView,
+				.m_imageView = shadowImage().m_cubeArrayView,
 				.m_sampler = m_shadowSampler,
 				.m_binding = DEPTH + 1,
 				.m_descriptorSet = m_descriptorSetComposition
 				});
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
-				.m_imageView = stateV().m_cubeArrayView,
+				.m_imageView = shadowImage().m_cubeArrayView,
 				.m_sampler = m_shadowSampler,
 				.m_binding = DEPTH + 2,
 				.m_descriptorSet = m_descriptorSetComposition
@@ -469,17 +467,7 @@ namespace vve {
 			.m_sampler = m_sampler
 			});
 		// ShadowMap
-		//auto shadowHandle = m_registry.template GetView<vecs::Handle, ShadowImage&>({ (size_t)1337 });
-		//auto view = m_registry.template GetView<vecs::Handle, ShadowImage&>();
-		//auto iterBegin = view.begin();
-		//auto [handleV, stateV] = *iterBegin;
-		//vvh::RenUpdateImageDescriptorSet({
-		//	.m_device = m_vkState().m_device,
-		//	.m_imageView = stateV().m_cubeArrayView,
-		//	.m_sampler = m_shadowSampler,
-		//	.m_binding = DEPTH + 1,
-		//	.m_descriptorSet = m_descriptorSetComposition
-		//	});
+		// Descriptor is updated once the shadowMap is built (currently in OnRecordFrame)
 
 		// GBuffer attachments from  VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		for (auto& image : m_gBufferAttachments) {
