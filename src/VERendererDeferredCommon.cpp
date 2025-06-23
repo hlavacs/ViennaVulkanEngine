@@ -58,11 +58,11 @@ namespace vve {
 				{	// Binding 3 : Depth
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 4 : ShadowMap
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				{	// Binding 4 : ShadowMap Image
+					.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 5 : ShadowMap
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				{	// Binding 5 : ShadowMap Sampler
+					.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 			},
 			.m_descriptorSetLayout = m_descriptorSetLayoutComposition
@@ -233,14 +233,16 @@ namespace vve {
 				.m_imageView = shadowImage().m_cubeArrayView,
 				.m_sampler = m_shadowSampler,
 				.m_binding = DEPTH + 1,
-				.m_descriptorSet = m_descriptorSetComposition
+				.m_descriptorSet = m_descriptorSetComposition,
+				.m_descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
 				});
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
 				.m_imageView = shadowImage().m_cubeArrayView,
 				.m_sampler = m_shadowSampler,
 				.m_binding = DEPTH + 2,
-				.m_descriptorSet = m_descriptorSetComposition
+				.m_descriptorSet = m_descriptorSetComposition, 
+				.m_descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER
 				});
 			shadowUpdated = true;
 		}
