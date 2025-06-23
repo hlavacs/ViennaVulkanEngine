@@ -437,7 +437,7 @@ namespace vve {
 
 			for (uint8_t i = 0; i < 6; ++i, ++layer) {
 				// LightSpaceMatrix
-				glm::mat4 lightSpaceMatrix = shadowProj * shadowTransforms[i];
+				glm::mat4 lightSpaceMatrix = shadowTransforms[i];
 
 				// TODO: image index or just single image?
 				// One renderPass per layer, image index = layerNumber
