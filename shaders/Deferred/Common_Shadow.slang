@@ -44,13 +44,15 @@ export public struct LightSpaceMatrix {
 float calcPointShadow(float3 positionW, float3 lightPosW, TextureCubeArray<float> shadowCubes, SamplerComparisonState shadowSampler, uint arrayIndex) {
     float3 dir = positionW - lightPosW;
     float dist = length(dir);
+    dir = dir / dist;
 
-    // SampleCmpLevelZero takes (sampler, coord, cmpValue)
-    // coord.xyz = direction, coord.w = arrayIndex (lightIdx)
+    float far = 25;
+    float bias = 0.0;
+
     float shadow = shadowCubes.SampleCmpLevelZero(
         shadowSampler,
         float4(dir, arrayIndex),
-        dist / 25 - 0   // 0 = bias
+        dist / far - bias
     );
 
     return shadow; // 1 = lit, 0 = fully shadowed

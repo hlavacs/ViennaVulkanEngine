@@ -153,7 +153,8 @@ namespace vve {
 			.m_filter = VK_FILTER_LINEAR,
 			.m_borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
 			.m_compareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-			.m_maxLod = 1.0f
+			.m_compareEnable = VK_TRUE,
+			.m_maxLod = 1.0f,	// TODO: Maybe 0.0?
 			});
 
 		CreateDeferredResources();
@@ -386,6 +387,7 @@ namespace vve {
 		vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 
 		vkDestroySampler(m_vkState().m_device, m_sampler, nullptr);
+		vkDestroySampler(m_vkState().m_device, m_shadowSampler, nullptr);
 
 		for (auto& buffer : { std::ref(m_uniformBuffersPerFrame), std::ref(m_storageBuffersLights) }) {
 			vvh::BufDestroyBuffer2({

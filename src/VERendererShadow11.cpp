@@ -301,7 +301,7 @@ namespace vve {
 
 		uint32_t numberTotalLayers = shadowImage().numberImageArraylayers;
 		uint32_t layerIdx = 0;
-		float near = 1.0f;
+		float near = 0.1f;
 		float far = 25.0f;
 		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
 		// TODO: Remove assert. This is temporary, as demo.cpp has 1 point and 1 spot light = 7 layers EXACTLY
@@ -412,6 +412,7 @@ namespace vve {
 			0, 0, 0, 1
 		);
 
+		//const glm::mat4 shadowProj = bias * glm::perspective(glm::radians(90.0f), aspect, near, far);
 		const glm::mat4 shadowProj = bias * glm::perspective(glm::radians(90.0f), aspect, near, far);
 
 
