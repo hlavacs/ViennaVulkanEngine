@@ -301,7 +301,7 @@ namespace vve {
 
 		uint32_t numberTotalLayers = shadowImage().numberImageArraylayers;
 		uint32_t layerIdx = 0;
-		float near = 0.1f;
+		float near = 1.1f;
 		float far = 25.0f;
 		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
 		// TODO: Remove assert. This is temporary, as demo.cpp has 1 point and 1 spot light = 7 layers EXACTLY
@@ -463,6 +463,11 @@ namespace vve {
 				for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :
 					m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, oShadowDescriptor&>
 					({ (size_t)m_shadowPipeline.m_pipeline })) {
+
+					if (m_registry.template Has<PointLight>(oHandle)) {
+						// Renders depth image without the point light sphere
+						continue;
+					}
 
 					const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
 
