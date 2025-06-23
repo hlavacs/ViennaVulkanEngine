@@ -173,7 +173,8 @@ namespace vve {
 				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
 				.m_layers = 1,
 				.m_mipLevels = 1,
-				.m_viewType = VK_IMAGE_VIEW_TYPE_2D
+				.m_viewType = VK_IMAGE_VIEW_TYPE_2D,
+				.m_baseArrayLayer = i
 				});
 
 			// TODO: Framebuffer setup, has to be teared down when stuff changes?
