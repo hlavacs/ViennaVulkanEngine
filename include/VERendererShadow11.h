@@ -22,6 +22,7 @@ namespace vve
 		uint32_t NumberMapsPerImage() { return numberImageArraylayers * MaxNumberMapsPerLayer(); };
 	};
 
+	// TODO: move into shadowImage struct?
 	struct oShadowDescriptor {
 		vvh::DescriptorSet m_oShadowDescriptor;
 	};
