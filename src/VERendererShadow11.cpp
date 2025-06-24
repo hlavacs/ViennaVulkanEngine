@@ -302,8 +302,8 @@ namespace vve {
 
 		uint32_t numberTotalLayers = shadowImage().numberImageArraylayers;
 		uint32_t layerIdx = 0;
-		float near = 0.5f;
-		float far = 15.0f;
+		float near = 1.0f;
+		float far = 25.0f;
 		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
 		// TODO: Remove assert. This is temporary, as demo.cpp has 1 point and 1 spot light = 7 layers EXACTLY
 		assert(layerIdx == 6);

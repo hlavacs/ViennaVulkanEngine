@@ -153,7 +153,7 @@ namespace vve {
 			.m_filter = VK_FILTER_LINEAR,
 			.m_borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
 			.m_compareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
-			.m_compareEnable = VK_TRUE,
+			.m_compareEnable = VK_FALSE,
 			.m_maxLod = 1.0f,	// TODO: Maybe 0.0?
 			});
 

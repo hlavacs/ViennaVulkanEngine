@@ -41,18 +41,43 @@ export public struct LightSpaceMatrix {
 //     return shadowFactor;
 // }
 
-float calcPointShadow(float3 positionW, float3 lightPosW, TextureCubeArray<float> shadowCubes, SamplerComparisonState shadowSampler, uint arrayIndex) {
-    float3 fragToLight = normalize(lightPosW - positionW);
-    float currentDepth = length(lightPosW - positionW);
+// float calcPointShadow(float3 positionW, float3 lightPosW, TextureCubeArray<float> shadowCubes, SamplerComparisonState shadowSampler, uint arrayIndex) {
+//     float3 fragToLight = normalize(lightPosW - positionW);
+//     float currentDepth = length(lightPosW - positionW) / 15;
+//     float far = 15;
+//     float bias = 0.05;
 
-    float far = 15;
+//     float shadow = shadowCubes.SampleCmpLevelZero(
+//         shadowSampler,
+//         float4(-fragToLight, arrayIndex),
+//         currentDepth - bias
+//     );
+
+//     return shadow;
+// }
+
+float calcPointShadow(float3 positionW, float3 lightPosW, TextureCubeArray<float> shadowCubes, SamplerState shadowSampler, uint arrayIndex) {
+    float3 fragToLight = positionW - lightPosW;
+    
+    float far = 25;
     float bias = 0.05;
 
-    float shadow = shadowCubes.SampleCmpLevelZero(
-        shadowSampler,
-        float4(fragToLight, arrayIndex),
-        currentDepth - bias
-    );
+    float closestDepth = shadowCubes.Sample(shadowSampler, float4(fragToLight, arrayIndex)).x;
 
-    return shadow; // 1 = lit, 0 = fully shadowed
+    //closestDepth *= far;
+
+    float currentDepth = length(fragToLight);
+
+    float shadow = currentDepth - bias > closestDepth ? 1.0 : 0.0;
+
+    // TODO: Should return shadow 1 or 0, but this is the best result yet to continue experimenting
+    return closestDepth;
+}
+
+float LinearizeDepth(float depth)
+{
+    float n = 1;
+    float f = 25;
+    float z = depth;
+    return (2.0 * n) / (f + n - z * (f - n));
 }

@@ -41,7 +41,7 @@ Sampler2D<float> gDepth;       // Depth
 TextureCubeArray<float> shadowCubeArray;
 
 [[vk_binding(5, 1)]]
-SamplerComparisonState shadowSampler;
+SamplerState shadowSampler;
 
 [[vk::binding(1, 0)]]
 StructuredBuffer<Light> gLights;
