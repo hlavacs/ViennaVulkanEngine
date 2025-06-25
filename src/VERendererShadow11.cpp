@@ -414,7 +414,7 @@ namespace vve {
 		//);
 
 		//const glm::mat4 shadowProj = bias * glm::perspective(glm::radians(90.0f), aspect, near, far);
-		const glm::mat4 shadowProj = glm::perspectiveLH_ZO(glm::radians(90.0f), aspect, near, far);
+		const glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
 
 
 		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, PointLight&, LocalToWorldMatrix&>()) {
@@ -423,17 +423,17 @@ namespace vve {
 			std::vector<glm::mat4> shadowTransforms;
 			shadowTransforms.reserve(6);
 			shadowTransforms.push_back(shadowProj *
-				glm::lookAtLH(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+				glm::lookAt(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
 			shadowTransforms.push_back(shadowProj *
-				glm::lookAtLH(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
+				glm::lookAt(lightPos, lightPos + glm::vec3(-1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
 			shadowTransforms.push_back(shadowProj *
-				glm::lookAtLH(lightPos, lightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
+				glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 1.0, 0.0), glm::vec3(0.0, 0.0, 1.0)));
 			shadowTransforms.push_back(shadowProj *
-				glm::lookAtLH(lightPos, lightPos + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
+				glm::lookAt(lightPos, lightPos + glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, -1.0)));
 			shadowTransforms.push_back(shadowProj *
-				glm::lookAtLH(lightPos, lightPos + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
+				glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, 1.0), glm::vec3(0.0, -1.0, 0.0)));
 			shadowTransforms.push_back(shadowProj *
-				glm::lookAtLH(lightPos, lightPos + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
+				glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
 
 
 			for (uint8_t i = 0; i < 6; ++i, ++layer) {
