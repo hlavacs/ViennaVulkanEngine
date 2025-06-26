@@ -37,3 +37,17 @@ float calcPointShadow(float3 positionW, float3 lightPosW, SamplerCubeArrayShadow
 
     return shadow;
 }
+
+float calcSpotShadow(float3 positionW, float3 lightPosW, SamplerCubeArrayShadow cubeArrayShadow, uint arrayIndex) {
+    // float4 clip = mul(spotVP[spotIdx], float4(fragPos, 1));
+    // clip.xyz /= clip.w;
+    // float2 uv = clip.xy * 0.5 + 0.5;
+    // float refDepth = clip.z * 0.5 + 0.5;
+    // uint layer = pointLightCount + spotIdx;
+    // return gShadowMaps.SampleCmpLevelZero(
+    //     float4(float3(uv, 0), layer),
+    //     refDepth
+    // );
+
+    return 5;
+}

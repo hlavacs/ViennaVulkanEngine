@@ -135,7 +135,7 @@ export public float3 accumulateDirectLights(StructuredBuffer<Light> lights, int 
     return Lo;
 }
 
-export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness) {
+export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow, uint shadowLayerIdx) {
 
     float3 N = normalize(normalW);
     float3 V = normalize(viewPosW - posW);
@@ -164,6 +164,8 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int st
         float3 specular = numerator / denominator;
 
         float NdotL = max(dot(N, L), 0.0);
+
+        float sh = calcPointShadow(posW, lights[i].positionW, cubeArrayShadow, shadowLayerIdx++);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
@@ -173,15 +175,17 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int st
 export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow) {
     float3 Lo = float3(0.0);
 
-    int start = 0;
-    int end = numberLights.x;
+    uint start = 0;
+    uint end = numberLights.x;
     Lo += accumulatePointLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, cubeArrayShadow);
     start = end;
     end += numberLights.y;
+    uint shadowLayerIdx = numberLights.x * 6;
     Lo += accumulateDirectLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness);
     start = end;
     end += numberLights.z;
-    Lo += accumulateSpotLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness);
+    shadowLayerIdx += numberLights.y;
+    Lo += accumulateSpotLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, cubeArrayShadow, shadowLayerIdx);
 
     float3 ambient = float(0.01) * albedo /* ao */;
     float3 color = ambient + Lo;

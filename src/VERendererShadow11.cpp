@@ -153,6 +153,8 @@ namespace vve {
 		std::cout << "\nNumber of shadow layers: " << numLayers << "\n\n";
 
 		// TODO: shadowImage().shadowImage.m_mapImageView is pointless like that in 1.1!
+
+		// Cube Array View for Point Lights
 		shadowImage().m_cubeArrayView = vvh::ImgCreateImageView({
 				.m_device = m_vkState().m_device,
 				.m_image = shadowImage().shadowImage.m_mapImage,
@@ -302,11 +304,13 @@ namespace vve {
 
 		uint32_t numberTotalLayers = shadowImage().numberImageArraylayers;
 		uint32_t layerIdx = 0;
-		float near = 1.0f;
-		float far = 25.0f;
+		static constexpr float near = 0.1f;
+		static constexpr float far = 1000.0f;
 		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
 		// TODO: Remove assert. This is temporary, as demo.cpp has 1 point and 1 spot light = 7 layers EXACTLY
 		assert(layerIdx == 6);
+		RenderSpotLightShadow(cmdBuffer, layerIdx, near, far);
+		assert(layerIdx == 7);
 
 		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
@@ -414,7 +418,7 @@ namespace vve {
 		//);
 
 		//const glm::mat4 shadowProj = bias * glm::perspective(glm::radians(90.0f), aspect, near, far);
-		const glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
+		static const glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
 
 
 		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, PointLight&, LocalToWorldMatrix&>()) {
@@ -436,7 +440,7 @@ namespace vve {
 				glm::lookAt(lightPos, lightPos + glm::vec3(0.0, 0.0, -1.0), glm::vec3(0.0, -1.0, 0.0)));
 
 
-			for (uint8_t i = 0; i < 6; ++i, ++layer) {
+			for (uint8_t i = 0; i < 6; ++i) {
 				// LightSpaceMatrix
 				glm::mat4 lightSpaceMatrix = shadowTransforms[i];
 
@@ -444,7 +448,7 @@ namespace vve {
 				// One renderPass per layer, image index = layerNumber
 				vvh::ComBeginRenderPass2({
 					.m_commandBuffer = cmdBuffer,
-					.m_imageIndex = layer,	//m_vkState().m_imageIndex,
+					.m_imageIndex = layer++,	//m_vkState().m_imageIndex,
 					.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
 					.m_framebuffers = m_shadowFrameBuffers,
 					.m_renderPass = m_renderPass,
@@ -467,8 +471,8 @@ namespace vve {
 					m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, oShadowDescriptor&>
 					({ (size_t)m_shadowPipeline.m_pipeline })) {
 
-					if (m_registry.template Has<PointLight>(oHandle)) {
-						// Renders depth image without the point light sphere
+					if (m_registry.template Has<PointLight>(oHandle) || m_registry.template Has<SpotLight>(oHandle)) {
+						// Renders depth image without the point or spot light sphere
 						continue;
 					}
 
@@ -490,5 +494,67 @@ namespace vve {
 
 	}
 
+	void RendererShadow11::RenderSpotLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
+		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+		float aspect = 1.0f;	// width / height
+		const float outerAngle = glm::radians(20.0f);
+
+		glm::mat4 shadowProj = glm::perspective(outerAngle * 2.0f, aspect, near, far);
+
+		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, SpotLight&, LocalToWorldMatrix&>()) {
+			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
+			glm::vec3 lightDir = glm::vec3{ lToW()[1] };
+
+			glm::vec3 up = glm::abs(glm::dot(lightDir, glm::vec3(0, 1, 0))) > 0.9f
+				? glm::vec3(1, 0, 0)
+				: glm::vec3(0, 1, 0);
+			glm::mat4 view = glm::lookAt(lightPos, lightPos + lightDir, up );
+
+			vvh::ComBeginRenderPass2({
+					.m_commandBuffer = cmdBuffer,
+					.m_imageIndex = layer++,	//m_vkState().m_imageIndex,
+					.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
+					.m_framebuffers = m_shadowFrameBuffers,
+					.m_renderPass = m_renderPass,
+					.m_clearValues = {{.depthStencil = {1.0f, 0} }},
+					.m_currentFrame = m_vkState().m_currentFrame
+				});
+
+
+			glm::mat4 lightSpaceMatrix = shadowProj * view;
+
+			PushConstantShadow pc{ lightSpaceMatrix, lightPos };
+			vkCmdPushConstants(cmdBuffer,
+				m_shadowPipeline.m_pipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				sizeof(PushConstantShadow),
+				&pc
+			);
+
+			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, oShadowDescriptor&>
+				({ (size_t)m_shadowPipeline.m_pipeline })) {
+
+				if (m_registry.template Has<PointLight>(oHandle) || m_registry.template Has<SpotLight>(oHandle)) {
+					// Renders depth image without the point or spot light sphere
+					continue;
+				}
+
+				const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+
+				vvh::ComRecordObject({
+					.m_commandBuffer = cmdBuffer,
+					.m_graphicsPipeline = m_shadowPipeline,
+					.m_descriptorSets = {  m_descriptorSetPerFrame, descriptorset().m_oShadowDescriptor},
+					.m_type = "P",
+					.m_mesh = mesh,
+					.m_currentFrame = m_vkState().m_currentFrame
+					});
+			}
+
+			vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+		}
+	}
 
 };   // namespace vve
