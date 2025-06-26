@@ -66,11 +66,8 @@ namespace vve {
 		vvh::RenCreateDescriptorSetLayout({
 			.m_device = m_vkState().m_device,
 			.m_bindings = {
-				{	// Binding 0 : ShadowMap Sampler
-					.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 1 : Shadow Cube Map
-					.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+				{	// Binding 0 : ShadowMap Cube Array
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 			},
 			.m_descriptorSetLayout = m_descriptorSetLayoutShadow
@@ -248,15 +245,7 @@ namespace vve {
 				.m_sampler = m_shadowSampler,
 				.m_binding = 0,
 				.m_descriptorSet = m_descriptorSetShadow,
-				.m_descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER
-				});
-			vvh::RenUpdateImageDescriptorSet({
-				.m_device = m_vkState().m_device,
-				.m_imageView = shadowImage().m_cubeArrayView,
-				.m_sampler = m_shadowSampler,
-				.m_binding = 1,
-				.m_descriptorSet = m_descriptorSetShadow,
-				.m_descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
 				});
 			shadowUpdated = true;
 		}

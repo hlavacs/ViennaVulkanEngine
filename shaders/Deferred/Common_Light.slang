@@ -67,7 +67,7 @@ float GeometrySmith(float3 N, float3 V, float3 L, float roughness) {
 
 // https://learnopengl.com/PBR/Lighting
 
-export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, TextureCubeArray<float> shadowCubes, SamplerComparisonState shadowSampler) {
+export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow) {
 
     float3 N = normalize(normalW);
     float3 V = normalize(viewPosW - posW);
@@ -96,7 +96,7 @@ export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int s
 
         float NdotL = max(dot(N, L), 0.0);
 
-        float sh = calcPointShadow(posW, lights[i].positionW, shadowCubes, shadowSampler, i);
+        float sh = calcPointShadow(posW, lights[i].positionW, cubeArrayShadow, i);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL * sh;
     }
 
@@ -170,12 +170,12 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int st
     return Lo;
 }
 
-export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, TextureCubeArray<float> shadowCubes, SamplerComparisonState shadowSampler) {
+export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow) {
     float3 Lo = float3(0.0);
 
     int start = 0;
     int end = numberLights.x;
-    Lo += accumulatePointLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, shadowCubes, shadowSampler);
+    Lo += accumulatePointLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, cubeArrayShadow);
     start = end;
     end += numberLights.y;
     Lo += accumulateDirectLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness);

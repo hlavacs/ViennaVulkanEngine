@@ -48,10 +48,7 @@ Sampler2D<float> gDepth;       // Depth
 // Set 2
 
 [[vk_binding(0, 2)]]
-SamplerComparisonState shadowSampler;
-
-[[vk_binding(1, 2)]]
-TextureCubeArray<float> shadowCubeArray;
+SamplerCubeArrayShadow shadowCubeArray;     // Pointlight cube shadowmaps
 
 //----------------------------------------------------------------------------
 
@@ -85,7 +82,7 @@ float4 main(VertexStageOutput in) : SV_Target
     float3 A = gAlbedo.Sample(in.uv).xyz;
     float2 MR = gMetallicRoughness.Sample(in.uv).xy;
 
-    float4 output = calculateLighting(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g, shadowCubeArray, shadowSampler);
+    float4 output = calculateLighting(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g, shadowCubeArray);
 
     return output;
 }
