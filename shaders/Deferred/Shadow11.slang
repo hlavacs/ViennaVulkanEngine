@@ -56,6 +56,7 @@ VSOut main(float3 positionL: POSITION) {
 float main(VSOut in) : SV_Depth {
     float dist = length(in.positionW - lsm.lightPosition);
 
-    float outDepth = clamp(dist / 1000, 0.0, 1.0);
+    constexpr float farPlane = 1000;
+    float outDepth = clamp(dist / farPlane, 0.0, 1.0);
     return outDepth;
 }

@@ -31,7 +31,8 @@ float calcPointShadow(float3 positionW, float3 lightPosW, TextureCubeArray<float
     float3 dir = normalize(L);
     float4 coord = float4(dir, arrayIndex);
 
-    float refDepth = dist / 1000;
+    constexpr float farPlane = 1000;
+    float refDepth = dist / farPlane;
 
     float shadow = shadowCubes.SampleCmpLevelZero(shadowSampler, coord, refDepth);
 
