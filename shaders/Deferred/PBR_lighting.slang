@@ -20,10 +20,17 @@ VertexStageOutput main(uint vertexID : SV_VertexID)
     return output;
 }
 
+//----------------------------------------------------------------------------
+// Set 0
+
 [[vk::binding(0, 0)]]
 ConstantBuffer<UniformBufferFrame> gParamsFrame;
 
+[[vk::binding(1, 0)]]
+StructuredBuffer<Light> gLights;
+
 //----------------------------------------------------------------------------
+// Set 1
 
 [[vk::binding(0, 1)]]
 Sampler2D gNormal;      // Normal from geometry shader
@@ -37,14 +44,14 @@ Sampler2D gMetallicRoughness; // Metallic and Roughness from geometry shader
 [[vk::binding(3, 1)]]
 Sampler2D<float> gDepth;       // Depth
 
-[[vk_binding(4, 1)]]
-TextureCubeArray<float> shadowCubeArray;
+//----------------------------------------------------------------------------
+// Set 2
 
-[[vk_binding(5, 1)]]
+[[vk_binding(0, 2)]]
 SamplerComparisonState shadowSampler;
 
-[[vk::binding(1, 0)]]
-StructuredBuffer<Light> gLights;
+[[vk_binding(1, 2)]]
+TextureCubeArray<float> shadowCubeArray;
 
 //----------------------------------------------------------------------------
 

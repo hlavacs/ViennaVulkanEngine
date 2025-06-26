@@ -57,15 +57,23 @@ namespace vve {
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 				{	// Binding 3 : Depth
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 4 : ShadowMap Image
-					.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 5 : ShadowMap Sampler
-					.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			.m_descriptorSetLayout = m_descriptorSetLayoutComposition
+			});
+
+		// Shadow
+		vvh::RenCreateDescriptorSetLayout({
+			.m_device = m_vkState().m_device,
+			.m_bindings = {
+				{	// Binding 0 : ShadowMap Sampler
+					.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 1 : Shadow Cube Map
+					.descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+			},
+			.m_descriptorSetLayout = m_descriptorSetLayoutShadow
 			});
 
 		m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
@@ -102,6 +110,12 @@ namespace vve {
 			.m_descriptorSetLayouts = m_descriptorSetLayoutComposition,
 			.m_descriptorPool = m_descriptorPool,
 			.m_descriptorSet = m_descriptorSetComposition
+			});
+		vvh::RenCreateDescriptorSet({
+			.m_device = m_vkState().m_device,
+			.m_descriptorSetLayouts = m_descriptorSetLayoutShadow,
+			.m_descriptorPool = m_descriptorPool,
+			.m_descriptorSet = m_descriptorSetShadow
 			});
 
 		// Per frame uniform buffer
@@ -232,17 +246,17 @@ namespace vve {
 				.m_device = m_vkState().m_device,
 				.m_imageView = shadowImage().m_cubeArrayView,
 				.m_sampler = m_shadowSampler,
-				.m_binding = DEPTH + 1,
-				.m_descriptorSet = m_descriptorSetComposition,
-				.m_descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
+				.m_binding = 0,
+				.m_descriptorSet = m_descriptorSetShadow,
+				.m_descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER
 				});
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
 				.m_imageView = shadowImage().m_cubeArrayView,
 				.m_sampler = m_shadowSampler,
-				.m_binding = DEPTH + 2,
-				.m_descriptorSet = m_descriptorSetComposition, 
-				.m_descriptorType = VK_DESCRIPTOR_TYPE_SAMPLER
+				.m_binding = 1,
+				.m_descriptorSet = m_descriptorSetShadow,
+				.m_descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE
 				});
 			shadowUpdated = true;
 		}
@@ -602,7 +616,7 @@ namespace vve {
 			.m_fragShaderPath = frag,
 			.m_bindingDescription = {},
 			.m_attributeDescriptions = {},
-			.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition },
+			.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition, m_descriptorSetLayoutShadow },
 			.m_specializationConstants = { MAX_NUMBER_LIGHTS },
 			.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(PushConstantsLight) } },
 			.m_blendAttachments = { colorBlendAttachment },
@@ -820,7 +834,7 @@ namespace vve {
 		vvh::ComRecordLighting({
 			.m_commandBuffer = cmdBuffer,
 			.m_graphicsPipeline = m_lightingPipeline,
-			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetComposition },
+			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetComposition, m_descriptorSetShadow },
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 	}

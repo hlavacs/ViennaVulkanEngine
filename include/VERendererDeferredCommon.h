@@ -37,9 +37,11 @@ namespace vve {
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
 		VkDescriptorSetLayout m_descriptorSetLayoutComposition{ VK_NULL_HANDLE };
+		VkDescriptorSetLayout m_descriptorSetLayoutShadow{ VK_NULL_HANDLE };
 		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
 		vvh::DescriptorSet m_descriptorSetPerFrame{};
 		vvh::DescriptorSet m_descriptorSetComposition{};
+		vvh::DescriptorSet m_descriptorSetShadow{};
 
 		std::map<int, PipelinePerType> m_geomPipesPerType;
 		vvh::Pipeline m_lightingPipeline{};
