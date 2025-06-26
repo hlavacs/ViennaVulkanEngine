@@ -65,11 +65,11 @@ namespace vve {
 		vvh::RenCreateGraphicsPipeline({
 			m_vkState().m_device,
 			m_renderPass,
-			"shaders/Deferred/Shadow11.spv", "",
+			"shaders/Deferred/Shadow11.spv", "shaders/Deferred/Shadow11.spv",
 			bindingDescriptions, attributeDescriptions,
 			{ m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutPerObject },
 			{}, //spezialization constants
-			{ {.stageFlags = VK_SHADER_STAGE_VERTEX_BIT, .offset = 0, .size = sizeof(glm::mat4)} }, //push constant ranges -> 2 ints
+			{ {.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(PushConstantShadow)} },
 			{}, //blend attachments
 			m_shadowPipeline,
 			{}, //
@@ -452,13 +452,15 @@ namespace vve {
 					.m_currentFrame = m_vkState().m_currentFrame
 					});
 
+				PushConstantShadow pc{ lightSpaceMatrix, lightPos };
+
 
 				vkCmdPushConstants(cmdBuffer,
 					m_shadowPipeline.m_pipelineLayout,
-					VK_SHADER_STAGE_VERTEX_BIT,
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 					0,
-					sizeof(glm::mat4),
-					&lightSpaceMatrix
+					sizeof(PushConstantShadow),
+					&pc
 				);
 
 				for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :

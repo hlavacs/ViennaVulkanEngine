@@ -38,22 +38,24 @@ LightSpaceMatrix lsm;
 
 //----------------------------------------------------------------------------
 
+struct VSOut {
+    float4 clipPos : SV_POSITION; 
+    float3 positionW : WORLDPOS;   
+}
+
 [shader("vertex")]
-float4 main(float3 positionL: POSITION) : SV_Position {
-    float4 positionW = mul(gParamsObject.model, float4(positionL, 1.0)); // do I need to do .xyz and set w to 1?
-    float4 output = mul(lsm.lightSpaceMatrix, positionW);
+VSOut main(float3 positionL: POSITION) {
+    VSOut output = {};
+    float4 positionW = mul(gParamsObject.model, float4(positionL, 1.0));
+    output.positionW = positionW.xyz;
+    output.clipPos = mul(lsm.lightSpaceMatrix, positionW);
     return output;
 }
 
-// [shader("vertex")]
-// VS_OUTPUT main(float3 positionL: POSITION, int instanceID: SV_InstanceID )
-// {
-//     VS_OUTPUT output;
-//     float4 positionW = mul(gParamsObject.model, float4(positionL, 1.0));
-//     output.position = mul(gShadowIndex[offset.shadowIndexOffset + instanceID].lightSpaceMatrix, positionW);
-//     output.viewportIndex = gShadowIndex[offset.shadowIndexOffset + instanceID].viewportIndex;
-//     output.renderTargetIndex = instanceID;
-//     return output;
-// }
+[shader("fragment")]
+float main(VSOut in) : SV_Depth {
+    float dist = length(in.positionW - lsm.lightPosition);
 
-// Shader only runs vertex stage! No frag shader needed!
+    float outDepth = clamp(dist / 1000, 0.0, 1.0);
+    return outDepth;
+}

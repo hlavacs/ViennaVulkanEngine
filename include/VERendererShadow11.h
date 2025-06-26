@@ -74,6 +74,12 @@ namespace vve
 		uint32_t m_numberPasses{1};
 
 		glm::ivec3 m_numberLightsPerType{0,0,0};
+
+		struct PushConstantShadow {
+			glm::mat4 lightSpaceMatrix;
+			glm::vec3 lightPosition;
+			float padding{ 0 };
+		};
 	};
 
 };   // namespace vve

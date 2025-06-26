@@ -67,7 +67,7 @@ float GeometrySmith(float3 N, float3 V, float3 L, float roughness) {
 
 // https://learnopengl.com/PBR/Lighting
 
-export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, TextureCubeArray<float> shadowCubes, SamplerState shadowSampler) {
+export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, TextureCubeArray<float> shadowCubes, SamplerComparisonState shadowSampler) {
 
     float3 N = normalize(normalW);
     float3 V = normalize(viewPosW - posW);
@@ -170,7 +170,7 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int st
     return Lo;
 }
 
-export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, TextureCubeArray<float> shadowCubes, SamplerState shadowSampler) {
+export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, TextureCubeArray<float> shadowCubes, SamplerComparisonState shadowSampler) {
     float3 Lo = float3(0.0);
 
     int start = 0;
