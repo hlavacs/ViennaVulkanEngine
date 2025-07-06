@@ -371,6 +371,14 @@ namespace vve {
 	}
 
 	bool RendererShadow11::OnObjectDestroy(Message message) {
+		const auto& msg = message.template GetData<MsgObjectDestroy>();
+		const auto& oHandle = msg.m_handle();
+		if (m_registry.template Has<oShadowDescriptor&>(oHandle)) {
+			oShadowDescriptor& vvh_ds = m_registry.template Get<oShadowDescriptor&>(oHandle);
+			for (auto& ds : vvh_ds.m_oShadowDescriptor.m_descriptorSetPerFrameInFlight) {
+				vkFreeDescriptorSets(m_vkState().m_device, m_descriptorPool, 1, &ds);
+			}
+		}
 		return false;
 	}
 

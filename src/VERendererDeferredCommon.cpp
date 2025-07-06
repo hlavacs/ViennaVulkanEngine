@@ -347,13 +347,21 @@ namespace vve {
 			m_lightsChanged = true;
 		}
 
-		if (!m_registry.template Has<vvh::Buffer>(oHandle)) return false;
+		if (m_registry.template Has<vvh::Buffer>(oHandle)) {
 		vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
 		vvh::BufDestroyBuffer2({
 			.m_device = m_vkState().m_device,
 			.m_vmaAllocator = m_vkState().m_vmaAllocator,
 			.m_buffers = ubo
 			});
+		}
+
+		if (m_registry.template Has<vvh::DescriptorSet&>(oHandle)) {
+			vvh::DescriptorSet& vvh_ds = m_registry.template Get<vvh::DescriptorSet&>(oHandle);
+			for (auto& ds : vvh_ds.m_descriptorSetPerFrameInFlight) {
+				vkFreeDescriptorSets(m_vkState().m_device, m_descriptorPool, 1, &ds);
+			}
+		}
 
 		static_cast<Derived*>(this)->OnObjectDestroy();
 
