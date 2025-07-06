@@ -16,6 +16,8 @@ class MyGame : public vve::System {
         const int c_field_size = 50;
         const int c_number_cubes = 10;
 
+        uint16_t currentNumberLights = 1;
+
         int nextRandom() const {
             return rand() % (c_field_size) - c_field_size/2;
         }
@@ -186,30 +188,25 @@ class MyGame : public vve::System {
         }
     
         bool OnRecordNextFrame(Message message) { 
-    //        if( m_state == State::STATE_RUNNING ) {
-    //            ImGui::Begin("Game State");
-    //            char buffer[100];
-    //            std::snprintf(buffer, 100, "Time Left: %.2f s", m_time_left);
-    //            ImGui::TextUnformatted(buffer);
-    //            std::snprintf(buffer, 100, "Cubes Left: %d", m_cubes_left);
-    //            ImGui::TextUnformatted(buffer);
-				//if (ImGui::SliderFloat("Sound Volume", &m_volume, 0, MIX_MAX_VOLUME)) {
-				//	m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
-				//}
-    //            ImGui::End();
-    //        }
+            ImGui::Begin("Light-Settings", nullptr, 
+                  ImGuiWindowFlags_NoDecoration
+                | ImGuiWindowFlags_AlwaysAutoResize
+                | ImGuiWindowFlags_NoMove);
 
-    //        if( m_state == State::STATE_DEAD ) {
-    //            ImGui::Begin("Game State");
-    //            ImGui::TextUnformatted("Game Over");
-    //            if (ImGui::Button("Restart")) {
-    //                m_state = State::STATE_RUNNING;
-    //                m_time_left = c_max_time;
-    //                m_cubes_left = c_number_cubes;
-    //                m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1 });
-    //            }
-    //            ImGui::End();
-    //        }
+            ImGui::Text("Select Light amount:");
+            for (int i = 1; i <= 6; ++i) {
+                char buf[8];
+                sprintf(buf, "%d", i);
+                if (ImGui::Button(buf, ImVec2(30, 30))) {
+                    currentNumberLights = i;
+                }
+                if (i < 6)
+                    ImGui::SameLine();
+            }
+            ImGui::Text("Current: %d", currentNumberLights);
+
+            ImGui::End();
+
             return false;
         }
 
