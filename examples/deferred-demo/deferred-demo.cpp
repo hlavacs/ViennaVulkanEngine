@@ -116,7 +116,7 @@ class MyGame : public vve::System {
             m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });
             vvh::Color sphereColor{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 
-            float intensity1 = 0.8f;
+            float intensity1 = 0.6f;
             auto lightHandle = m_registry.Insert(
                 vve::Name{ "PointLight-1" },
                 vve::PointLight{ vvh::LightParams{
@@ -196,7 +196,7 @@ class MyGame : public vve::System {
                 | ImGuiWindowFlags_NoMove);
 
             ImGui::Text("Select Light amount:");
-            static const int options[] = { 1, 5, 10, 20, 40, 80, 160 };
+            static const int options[] = { 1, 5, 10, 20, 40, 80 };
             for (size_t idx = 0; idx < std::size(options); ++idx) {
                 uint16_t val = options[idx];
                 char buf[16];
