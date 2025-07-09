@@ -51,6 +51,9 @@ namespace vve {
 
 		glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
 		bool m_lightsChanged{ true };
+		// TODO: rewrite: might be in light update function, but has to be checked against shadow renderer not yet rendering in
+		// on Prepare so view is VK_NULL
+		bool m_shadowsNeedUpdate{ true };
 
 		// ---------------------------------------------------------------------------------
 

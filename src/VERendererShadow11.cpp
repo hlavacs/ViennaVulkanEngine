@@ -116,12 +116,23 @@ namespace vve {
 		
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		auto numberMaps = std::min(numberMapsRequired, shadowImage().MaxNumberMapsPerImage());
-		if( shadowImage().NumberMapsPerImage() >= numberMaps ) return;
+		//if( shadowImage().NumberMapsPerImage() >= numberMaps ) return;
 
 		uint32_t requiredLayers = (uint32_t)std::ceil(numberMaps / (float)shadowImage().MaxNumberMapsPerLayer());
 		auto numLayers = std::min(shadowImage().maxImageArrayLayers, requiredLayers);
+		// TODO: make destroy function
 		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
 				shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
+		// Destroy frameBuffers
+		for (auto& fb : m_shadowFrameBuffers) {
+			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
+		}
+		// Destroy cube views and single layer views
+		vkDestroyImageView(m_vkState().m_device, shadowImage().m_cubeArrayView, nullptr);
+		for (auto view : m_layerViews) {
+			vkDestroyImageView(m_vkState().m_device, view, nullptr);
+		}
+		
 
 		vvh::Image map;
 		vvh::ImgCreateImage({ m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
@@ -144,7 +155,7 @@ namespace vve {
 				.m_image = shadowImage().shadowImage.m_mapImage,
 				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = 6,	// TODO: fix when it works
+				.m_layers = (int)numLayers,	// TODO: fix when it works
 				.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 				.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 				.m_commandBuffer = VK_NULL_HANDLE
@@ -160,11 +171,13 @@ namespace vve {
 				.m_image = shadowImage().shadowImage.m_mapImage,
 				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = CountShadows<PointLight>(6),
+				.m_layers = numLayers,//CountShadows<PointLight>(6),	// TODO: might want more layers than multiple of 6
 				.m_mipLevels = 1,
 				.m_viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
 			});
 
+
+		// TODO: m_layerViews maybe I can reuse cube view?
 		m_layerViews.resize(numLayers);
 		m_shadowFrameBuffers.resize(numLayers);
 		for (uint32_t i = 0; i < numLayers; ++i) {
@@ -308,9 +321,9 @@ namespace vve {
 		static constexpr float far = 1000.0f;
 		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
 		// TODO: Remove assert. This is temporary, as demo.cpp has 1 point and 1 spot light = 7 layers EXACTLY
-		assert(layerIdx == 6);
-		RenderSpotLightShadow(cmdBuffer, layerIdx, near, far);
-		assert(layerIdx == 7);
+		//assert(layerIdx == 6);
+		//RenderSpotLightShadow(cmdBuffer, layerIdx, near, far);
+		//assert(layerIdx == 7);
 
 		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
@@ -320,7 +333,7 @@ namespace vve {
 				.m_image = shadowImage().shadowImage.m_mapImage,
 				.m_format = m_vkState().m_depthMapFormat,
 				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = 6,	// TODO: fix when it works
+				.m_layers = (int)numberTotalLayers,	// TODO: fix when it works
 				.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				.m_commandBuffer = cmdBuffer,
@@ -334,7 +347,7 @@ namespace vve {
 		//m_engine.DeregisterCallbacks(this, "PREPARE_NEXT_FRAME");
 		//m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
 
-		m_renderedAlready = true;
+		//m_renderedAlready = true;
 
 		return false;
 	}
@@ -367,6 +380,7 @@ namespace vve {
 		oShadowDescriptor ds = { descriptorSet };
 		m_registry.Put(oHandle, ds);
 
+		m_renderedAlready = false;
 		return false;
 	}
 
@@ -379,6 +393,8 @@ namespace vve {
 				vkFreeDescriptorSets(m_vkState().m_device, m_descriptorPool, 1, &ds);
 			}
 		}
+
+		m_renderedAlready = false;
 		return false;
 	}
 
@@ -505,7 +521,7 @@ namespace vve {
 	void RendererShadow11::RenderSpotLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
 		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		float aspect = 1.0f;	// width / height
-		const float outerAngle = glm::radians(20.0f);
+		constexpr float outerAngle = glm::radians(20.0f);
 
 		glm::mat4 shadowProj = glm::perspective(outerAngle * 2.0f, aspect, near, far);
 

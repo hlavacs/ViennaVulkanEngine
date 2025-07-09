@@ -235,9 +235,9 @@ namespace vve {
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnRecordNextFrame(const Message& message) {
 
-		static bool shadowUpdated = false;
-		
-		if (!shadowUpdated) {
+		//static bool shadowUpdated = false;
+		//  && m_engine.ContainsHandle("Shadow1.1")
+		if (true || m_shadowsNeedUpdate) {
 			auto [sHandle, shadowImage] = *m_registry.template GetView<vecs::Handle, ShadowImage&>().begin();
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
@@ -247,7 +247,7 @@ namespace vve {
 				.m_descriptorSet = m_descriptorSetShadow,
 				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
 				});
-			shadowUpdated = true;
+			m_shadowsNeedUpdate = false;
 		}
 
 		static_cast<Derived*>(this)->OnRecordNextFrame();
@@ -348,12 +348,12 @@ namespace vve {
 		}
 
 		if (m_registry.template Has<vvh::Buffer>(oHandle)) {
-		vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
-		vvh::BufDestroyBuffer2({
-			.m_device = m_vkState().m_device,
-			.m_vmaAllocator = m_vkState().m_vmaAllocator,
-			.m_buffers = ubo
-			});
+			vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
+			vvh::BufDestroyBuffer2({
+				.m_device = m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_buffers = ubo
+				});
 		}
 
 		if (m_registry.template Has<vvh::DescriptorSet&>(oHandle)) {
@@ -668,6 +668,8 @@ namespace vve {
 		for (size_t i = 0; i < m_storageBuffersLights.m_uniformBuffersMapped.size(); ++i) {
 			memcpy(m_storageBuffersLights.m_uniformBuffersMapped[i], lights.data(), total * sizeof(vvh::Light));
 		}
+
+		m_shadowsNeedUpdate = true;
 	}
 
 	template<typename Derived>
