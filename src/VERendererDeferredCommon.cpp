@@ -759,6 +759,11 @@ namespace vve {
 				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, vvh::DescriptorSet&>
 				({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
 
+				if (m_registry.template Has<PointLight>(oHandle) || m_registry.template Has<SpotLight>(oHandle)) {
+					// Does not render the point or spot light sphere - has to be removed if this wants to be used
+					continue;
+				}
+
 				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 				bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
 				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
