@@ -315,6 +315,21 @@ namespace vve {
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 
+		// TODO: Make function? Not in OnCreateObject or OnDestroyObject so that
+		//       they don't depend on each other (OnRecord will always be after OnCreate/Destroy)
+		for (auto [oHandle, descriptorset] : m_registry.template GetView<vecs::Handle, oShadowDescriptor&> ({ (size_t)m_shadowPipeline.m_pipeline })) {
+			assert(m_registry.template Has<vvh::Buffer>(oHandle));
+			vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
+			size_t sizeUbo = sizeof(ubo);
+			vvh::RenUpdateDescriptorSet({
+				.m_device = m_vkState().m_device,
+				.m_uniformBuffers = ubo,
+				.m_binding = 0,
+				.m_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+				.m_size = sizeUbo,
+				.m_descriptorSet = descriptorset().m_oShadowDescriptor
+				});
+		}
 
 		//vvh::ShadowOffset shadOff{ .shadowIndexOffset = 0, .numberShadows = 0 };
 
@@ -506,22 +521,7 @@ namespace vve {
 					}
 
 					const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
-
-					if (i == 0) {	// Updates descriptorset once per point light only, not per cube layer
-						assert(m_registry.template Has<vvh::Buffer>(oHandle));
-						vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
-						size_t sizeUbo = sizeof(ubo);
-						vvh::RenUpdateDescriptorSet({
-							.m_device = m_vkState().m_device,
-							.m_uniformBuffers = ubo,
-							.m_binding = 0,
-							.m_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-							.m_size = sizeUbo,
-							.m_descriptorSet = descriptorset().m_oShadowDescriptor
-							});
-					}
-					
-
+	
 					vvh::ComRecordObject({
 						.m_commandBuffer = cmdBuffer,
 						.m_graphicsPipeline = m_shadowPipeline,

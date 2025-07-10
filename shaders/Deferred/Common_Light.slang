@@ -165,7 +165,7 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int st
 
         float NdotL = max(dot(N, L), 0.0);
 
-        float sh = calcPointShadow(posW, lights[i].positionW, cubeArrayShadow, shadowLayerIdx++);
+        //float sh = calcSpotShadow(posW, lights[i].positionW, cubeArrayShadow, shadowLayerIdx++);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 

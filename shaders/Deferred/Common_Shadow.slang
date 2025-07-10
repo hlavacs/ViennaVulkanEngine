@@ -35,19 +35,15 @@ float calcPointShadow(float3 positionW, float3 lightPosW, SamplerCubeArrayShadow
 
     float shadow = cubeArrayShadow.SampleCmpLevelZero(coord, refDepth);
 
-    return shadow;
+    return shadow == 0 ? 0.2 : shadow; // TODO: 0 or other value, like 0.3?
 }
 
-float calcSpotShadow(float3 positionW, float3 lightPosW, SamplerCubeArrayShadow cubeArrayShadow, uint arrayIndex) {
-    // float4 clip = mul(spotVP[spotIdx], float4(fragPos, 1));
-    // clip.xyz /= clip.w;
-    // float2 uv = clip.xy * 0.5 + 0.5;
-    // float refDepth = clip.z * 0.5 + 0.5;
-    // uint layer = pointLightCount + spotIdx;
-    // return gShadowMaps.SampleCmpLevelZero(
-    //     float4(float3(uv, 0), layer),
-    //     refDepth
-    // );
+// float calcSpotShadow(float3 positionW, float3 lightPosW, SamplerCubeArrayShadow cubeArrayShadow, uint arrayIndex) {
+//     float4 clip = mul(spotVP[arrayIndex], float4(positionW, 1));
+//     clip.xyz /= clip.w;
+//     float2 uv = clip.xy * 0.5 + 0.5;
+//     float refDepth = clip.z * 0.5 + 0.5;
+//     float shadow =  cubeArrayShadow.SampleCmpLevelZero(float4(float3(uv, 0), arrayIndex), refDepth);
 
-    return 5;
-}
+//     return shadow;
+// }

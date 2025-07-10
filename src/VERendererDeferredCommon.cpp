@@ -237,7 +237,7 @@ namespace vve {
 
 		//static bool shadowUpdated = false;
 		//  && m_engine.ContainsHandle("Shadow1.1")
-		if (true || m_shadowsNeedUpdate) {
+		if (m_shadowsNeedUpdate) {
 			auto [sHandle, shadowImage] = *m_registry.template GetView<vecs::Handle, ShadowImage&>().begin();
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
