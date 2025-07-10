@@ -320,7 +320,7 @@ namespace vve {
 		for (auto [oHandle, descriptorset] : m_registry.template GetView<vecs::Handle, oShadowDescriptor&> ({ (size_t)m_shadowPipeline.m_pipeline })) {
 			assert(m_registry.template Has<vvh::Buffer>(oHandle));
 			vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
-			size_t sizeUbo = sizeof(ubo);
+			size_t sizeUbo = sizeof(vvh::BufferPerObject);	// Always BufferPerObject as only position is used, ignore rest
 			vvh::RenUpdateDescriptorSet({
 				.m_device = m_vkState().m_device,
 				.m_uniformBuffers = ubo,
