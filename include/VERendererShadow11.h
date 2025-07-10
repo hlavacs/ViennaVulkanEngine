@@ -52,7 +52,7 @@ namespace vve
 
 	    VkRenderPass m_renderPass;
 
-		bool m_renderedAlready = false;	// TODO: logic so that shadow maps dont get rendererd each frame!
+		//bool m_renderedAlready = false;	// TODO: logic so that shadow maps dont get rendererd each frame!
 
 		//VkImageView m_cubeArrayView{};
 		//vecs::Handle m_ShadowCubeArrayViewHandle;
@@ -81,6 +81,14 @@ namespace vve
 			glm::vec3 lightPosition;
 			float padding{ 0 };
 		};
+
+		enum class State : int {
+			STATE_NEW,
+			STATE_PREPARED,
+			STATE_RECORDED,
+		};
+		State m_state = State::STATE_NEW;
+
 	};
 
 };   // namespace vve

@@ -234,7 +234,8 @@ namespace vve {
 	/// @param message 
 	/// @return Returns false.
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
-		if (m_renderedAlready) return false;
+		if (m_state != State::STATE_NEW) return false;
+		m_state = State::STATE_PREPARED;
 		vkResetCommandPool(m_vkState().m_device, m_commandPool, 0);
 		
 		//auto msg = message.template GetData<MsgPrepareNextFrame>();
@@ -291,7 +292,8 @@ namespace vve {
 	}
 
 	bool RendererShadow11::OnRecordNextFrame(Message message) {
-		if (m_renderedAlready) return false;
+		if (m_state != State::STATE_PREPARED) return false;
+		m_state = State::STATE_RECORDED;
 		//auto msg = message.template GetData<MsgRecordNextFrame>();
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		++m_pass;
@@ -381,7 +383,8 @@ namespace vve {
 		oShadowDescriptor ds = { descriptorSet };
 		m_registry.Put(oHandle, ds);
 
-		m_renderedAlready = false;
+		if (m_state != State::STATE_PREPARED) m_state = State::STATE_NEW;
+		//m_renderedAlready = false;
 		return false;
 	}
 
@@ -395,7 +398,8 @@ namespace vve {
 			}
 		}
 
-		m_renderedAlready = false;
+		//m_renderedAlready = false;
+		if (m_state != State::STATE_PREPARED) m_state = State::STATE_NEW;
 		return false;
 	}
 
