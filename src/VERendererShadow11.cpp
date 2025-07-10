@@ -10,9 +10,9 @@ namespace vve {
 
 		engine.RegisterCallbacks( { 
 			{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
-			{this,  2100, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
+			{this,  1800, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
 			{this,  1990, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
-			{this,  3250, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
+			{this,  1700, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
 		} );
@@ -115,11 +115,12 @@ namespace vve {
 	void RendererShadow11::CheckShadowMaps( uint32_t numberMapsRequired ) {
 		
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
-		auto numberMaps = std::min(numberMapsRequired, shadowImage().MaxNumberMapsPerImage());
+		//auto numberMaps = std::min(numberMapsRequired, shadowImage().MaxNumberMapsPerImage());
 		//if( shadowImage().NumberMapsPerImage() >= numberMaps ) return;
 
-		uint32_t requiredLayers = (uint32_t)std::ceil(numberMaps / (float)shadowImage().MaxNumberMapsPerLayer());
-		auto numLayers = std::min(shadowImage().maxImageArrayLayers, requiredLayers);
+		//uint32_t requiredLayers = (uint32_t)std::ceil(numberMaps / (float)shadowImage().MaxNumberMapsPerLayer());
+		//auto numLayers = std::min(shadowImage().maxImageArrayLayers, requiredLayers);
+		auto numLayers = numberMapsRequired;
 		// TODO: make destroy function
 		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
 				shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
@@ -355,10 +356,10 @@ namespace vve {
 	bool RendererShadow11::OnObjectCreate(Message message) {
 		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		assert(m_registry.template Has<MeshHandle>(oHandle));
-		assert(m_registry.template Has<vvh::Buffer>(oHandle));
+		//assert(m_registry.template Has<vvh::Buffer>(oHandle));
 
-		vvh::Buffer ubo = m_registry.template Get<vvh::Buffer>(oHandle);
-		size_t sizeUbo = sizeof(ubo);
+		//vvh::Buffer ubo = m_registry.template Get<vvh::Buffer>(oHandle);
+		//size_t sizeUbo = sizeof(ubo);
 		vvh::DescriptorSet descriptorSet{ 1 };
 		vvh::RenCreateDescriptorSet({
 			.m_device = m_vkState().m_device,
@@ -367,14 +368,14 @@ namespace vve {
 			.m_descriptorSet = descriptorSet
 			});
 
-		vvh::RenUpdateDescriptorSet({
-			.m_device = m_vkState().m_device,
-			.m_uniformBuffers = ubo,
-			.m_binding = 0,
-			.m_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-			.m_size = sizeUbo,
-			.m_descriptorSet = descriptorSet
-			});
+		//vvh::RenUpdateDescriptorSet({
+		//	.m_device = m_vkState().m_device,
+		//	.m_uniformBuffers = ubo,
+		//	.m_binding = 0,
+		//	.m_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+		//	.m_size = sizeUbo,
+		//	.m_descriptorSet = descriptorSet
+		//	});
 
 		m_registry.AddTags(oHandle, (size_t)m_shadowPipeline.m_pipeline);
 		oShadowDescriptor ds = { descriptorSet };
@@ -501,6 +502,21 @@ namespace vve {
 					}
 
 					const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+
+					if (i == 0) {	// Updates descriptorset once per point light only, not per cube layer
+						assert(m_registry.template Has<vvh::Buffer>(oHandle));
+						vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
+						size_t sizeUbo = sizeof(ubo);
+						vvh::RenUpdateDescriptorSet({
+							.m_device = m_vkState().m_device,
+							.m_uniformBuffers = ubo,
+							.m_binding = 0,
+							.m_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+							.m_size = sizeUbo,
+							.m_descriptorSet = descriptorset().m_oShadowDescriptor
+							});
+					}
+					
 
 					vvh::ComRecordObject({
 						.m_commandBuffer = cmdBuffer,
