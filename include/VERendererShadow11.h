@@ -89,6 +89,12 @@ namespace vve
 		};
 		State m_state = State::STATE_NEW;
 
+		struct DummyImage {
+			VkImage         m_dummyImage;
+			VmaAllocation   m_dummyImageAllocation;
+			VkImageView     m_dummyImageView;
+		};
+		DummyImage m_dummyImage;
 	};
 
 };   // namespace vve

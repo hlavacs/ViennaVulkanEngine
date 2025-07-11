@@ -108,6 +108,41 @@ namespace vve {
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
 		m_registry.AddTags(m_shadowImageHandle, (size_t)1337 );
 
+
+		// Dummy Image 
+		vvh::ImgCreateImage({
+			.m_physicalDevice = m_vkState().m_physicalDevice,
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_width = 1,
+			.m_height = 1,
+			.m_depth = 1,
+			.m_layers = 6,
+			.m_mipLevels = 1,
+			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_tiling = VK_IMAGE_TILING_OPTIMAL,
+			.m_usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+			.m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
+			.m_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			.m_image = m_dummyImage.m_dummyImage,
+			.m_imageAllocation = m_dummyImage.m_dummyImageAllocation,
+			.m_imgCreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT
+			});
+
+		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		vvh::ImgTransitionImageLayout3({
+				.m_device = m_vkState().m_device,
+				.m_graphicsQueue = m_vkState().m_graphicsQueue,
+				.m_commandPool = m_commandPool,
+				.m_image = m_dummyImage.m_dummyImage,
+				.m_format = m_vkState().m_depthMapFormat,
+				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.m_layers = 6,
+				.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+			});
+
+
 		return false;
 	}
 
@@ -124,6 +159,7 @@ namespace vve {
 		// TODO: make destroy function
 		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
 				shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
+		
 		// Destroy frameBuffers
 		for (auto& fb : m_shadowFrameBuffers) {
 			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
@@ -172,10 +208,38 @@ namespace vve {
 				.m_image = shadowImage().shadowImage.m_mapImage,
 				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = numLayers,//CountShadows<PointLight>(6),	// TODO: might want more layers than multiple of 6
+				.m_layers = CountShadows<PointLight>(6),	// TODO: might want more layers than multiple of 6
 				.m_mipLevels = 1,
 				.m_viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
 			});
+
+		// 2D Array View for Direct + Spot Lights
+		uint32_t directAndSpot = CountShadows<DirectionalLight>(1) + CountShadows<SpotLight>(1);
+		if (directAndSpot > 0) {
+			shadowImage().m_2DArrayView = vvh::ImgCreateImageView({
+				.m_device = m_vkState().m_device,
+				.m_image = shadowImage().shadowImage.m_mapImage,
+				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.m_layers = directAndSpot,
+				.m_mipLevels = 1,
+				.m_viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+				.m_baseArrayLayer = CountShadows<PointLight>(6)
+				});
+		}
+		else {
+			shadowImage().m_2DArrayView = vvh::ImgCreateImageView({
+				.m_device = m_vkState().m_device,
+				.m_image = m_dummyImage.m_dummyImage,
+				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.m_layers = 6,
+				.m_mipLevels = 1,
+				.m_viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+				.m_baseArrayLayer = 0
+				});
+		}
+		
 
 
 		// TODO: m_layerViews maybe I can reuse cube view?
@@ -421,6 +485,8 @@ namespace vve {
 	bool RendererShadow11::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vkState().m_device);
 
+		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+
         vkDestroyCommandPool(m_vkState().m_device, m_commandPool, nullptr);
 
         vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
@@ -430,6 +496,13 @@ namespace vve {
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerObject, nullptr);
 
+		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
+				shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
+		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
+				m_dummyImage.m_dummyImage, m_dummyImage.m_dummyImageAllocation });
+		vkDestroyImageView(m_vkState().m_device, shadowImage().m_2DArrayView, nullptr);
+
+		// TODO: make destroy function and use in check shadow maps
 		
 		return false;
     }
