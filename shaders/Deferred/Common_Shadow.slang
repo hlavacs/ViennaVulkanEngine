@@ -38,12 +38,15 @@ float calcPointShadow(float3 positionW, float3 lightPosW, SamplerCubeArrayShadow
     return shadow == 0 ? 0.2 : shadow; // TODO: 0 or other value, like 0.3?
 }
 
-// float calcSpotShadow(float3 positionW, float3 lightPosW, SamplerCubeArrayShadow cubeArrayShadow, uint arrayIndex) {
-//     float4 clip = mul(spotVP[arrayIndex], float4(positionW, 1));
-//     clip.xyz /= clip.w;
-//     float2 uv = clip.xy * 0.5 + 0.5;
-//     float refDepth = clip.z * 0.5 + 0.5;
-//     float shadow =  cubeArrayShadow.SampleCmpLevelZero(float4(float3(uv, 0), arrayIndex), refDepth);
+float calcSpotShadow(float3 positionW, float3 lightPosW, Sampler2DArrayShadow shadow2DArray, uint arrayIndex) {
+    float3 L = positionW - lightPosW;
+    float dist = length(L);
 
-//     return shadow;
-// }
+    float3 dir = normalize(L);
+
+    constexpr float farPlane = 1000;
+    float refDepth = dist / farPlane;
+    float shadow = shadow2DArray.SampleCmpLevelZero(dir, refDepth);
+
+    return shadow;
+}
