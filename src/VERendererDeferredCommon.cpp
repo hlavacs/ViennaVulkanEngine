@@ -66,7 +66,10 @@ namespace vve {
 		vvh::RenCreateDescriptorSetLayout({
 			.m_device = m_vkState().m_device,
 			.m_bindings = {
-				{	// Binding 0 : ShadowMap Cube Array
+				{	// Binding 0 : ShadowMap Cube Array - Point Lights
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 1 : ShadowMap 2D Array - Direct + Spot Lights
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 			},
@@ -96,19 +99,19 @@ namespace vve {
 			.m_sizes = 1000,
 			.m_descriptorPool = m_descriptorPool
 			});
-		vvh::RenCreateDescriptorSet({
+		vvh::RenCreateDescriptorSet({	// Per Frame
 			.m_device = m_vkState().m_device,
 			.m_descriptorSetLayouts = m_descriptorSetLayoutPerFrame,
 			.m_descriptorPool = m_descriptorPool,
 			.m_descriptorSet = m_descriptorSetPerFrame
 			});
-		vvh::RenCreateDescriptorSet({
+		vvh::RenCreateDescriptorSet({	// Composition
 			.m_device = m_vkState().m_device,
 			.m_descriptorSetLayouts = m_descriptorSetLayoutComposition,
 			.m_descriptorPool = m_descriptorPool,
 			.m_descriptorSet = m_descriptorSetComposition
 			});
-		vvh::RenCreateDescriptorSet({
+		vvh::RenCreateDescriptorSet({	// Shadow
 			.m_device = m_vkState().m_device,
 			.m_descriptorSetLayouts = m_descriptorSetLayoutShadow,
 			.m_descriptorPool = m_descriptorPool,
@@ -239,11 +242,21 @@ namespace vve {
 		//  && m_engine.ContainsHandle("Shadow1.1")
 		if (m_shadowsNeedUpdate) {
 			auto [sHandle, shadowImage] = *m_registry.template GetView<vecs::Handle, ShadowImage&>().begin();
+			// shadow cube array for point lights
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
 				.m_imageView = shadowImage().m_cubeArrayView,
 				.m_sampler = m_shadowSampler,
 				.m_binding = 0,
+				.m_descriptorSet = m_descriptorSetShadow,
+				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+				});
+			// shadow 2D array for direct + spot lights
+			vvh::RenUpdateImageDescriptorSet({
+				.m_device = m_vkState().m_device,
+				.m_imageView = shadowImage().m_2DArrayView,
+				.m_sampler = m_shadowSampler,
+				.m_binding = 1,
 				.m_descriptorSet = m_descriptorSetShadow,
 				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
 				});
@@ -664,6 +677,8 @@ namespace vve {
 		m_numberLightsPerType.x = RegisterLight<PointLight>(1.0f, lights, total);
 		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
 		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
+		// TODO: remove this transforms the direction of the first spot light to -1 in z for testing purposes
+		lights[m_numberLightsPerType.x + m_numberLightsPerType.y].directionW = glm::vec3(-1.0, -1.0, -1.0);
 
 		for (size_t i = 0; i < m_storageBuffersLights.m_uniformBuffersMapped.size(); ++i) {
 			memcpy(m_storageBuffersLights.m_uniformBuffersMapped[i], lights.data(), total * sizeof(vvh::Light));

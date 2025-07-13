@@ -404,7 +404,7 @@ namespace vve {
 		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
 		// TODO: Remove assert. This is temporary, as demo.cpp has 1 point and 1 spot light = 7 layers EXACTLY
 		//assert(layerIdx == 6);
-		//RenderSpotLightShadow(cmdBuffer, layerIdx, near, far);
+		RenderSpotLightShadow(cmdBuffer, layerIdx, near, far);
 		//assert(layerIdx == 7);
 
 		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -614,17 +614,16 @@ namespace vve {
 	void RendererShadow11::RenderSpotLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
 		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		float aspect = 1.0f;	// width / height
-		constexpr float outerAngle = glm::radians(20.0f);
 
-		glm::mat4 shadowProj = glm::perspective(outerAngle * 2.0f, aspect, near, far);
+		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
 
 		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, SpotLight&, LocalToWorldMatrix&>()) {
 			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
-			glm::vec3 lightDir = glm::vec3{ lToW()[1] };
+			//glm::vec3 lightDir = glm::vec3{ lToW()[1] };
+			// TODO: remove this transforms the direction of the first spot light to -1 in z for testing purposes
+			glm::vec3 lightDir = glm::vec3(-1.0, -1.0, -1.0);
 
-			glm::vec3 up = glm::abs(glm::dot(lightDir, glm::vec3(0, 1, 0))) > 0.9f
-				? glm::vec3(1, 0, 0)
-				: glm::vec3(0, 1, 0);
+			glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 			glm::mat4 view = glm::lookAt(lightPos, lightPos + lightDir, up );
 
 			vvh::ComBeginRenderPass2({
