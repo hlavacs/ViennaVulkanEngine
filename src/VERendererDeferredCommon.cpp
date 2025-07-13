@@ -704,7 +704,7 @@ namespace vve {
 		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
 		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
 		// TODO: remove this transforms the direction of the first spot light to -1 in z for testing purposes
-		lights[m_numberLightsPerType.x + m_numberLightsPerType.y].directionW = glm::vec3(-1.0, -1.0, -1.0);
+		//lights[m_numberLightsPerType.x + m_numberLightsPerType.y].directionW = glm::vec3(-1.0, -1.0, -1.0);
 
 		for (size_t i = 0; i < m_storageBuffersLights.m_uniformBuffersMapped.size(); ++i) {
 			memcpy(m_storageBuffersLights.m_uniformBuffersMapped[i], lights.data(), total * sizeof(vvh::Light));

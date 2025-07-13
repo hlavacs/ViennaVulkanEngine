@@ -625,9 +625,11 @@ namespace vve {
 
 		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, SpotLight&, LocalToWorldMatrix&>()) {
 			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
-			//glm::vec3 lightDir = glm::vec3{ lToW()[1] };
+			glm::vec3 lightDir = glm::vec3{ lToW()[1] };
+
+			std::cout << "LightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
 			// TODO: remove this transforms the direction of the first spot light to -1 in z for testing purposes
-			glm::vec3 lightDir = glm::vec3(-1.0, -1.0, -1.0);
+			//glm::vec3 lightDir = glm::vec3(-1.0, -1.0, -1.0);
 
 			glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 			glm::mat4 view = glm::lookAt(lightPos, lightPos + lightDir, up );

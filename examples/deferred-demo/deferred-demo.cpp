@@ -157,6 +157,27 @@ class MyGame : public vve::System {
             );
             m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle3), vve::ParentHandle{}, this });
 
+            // -----------------  Spot Light 2 -----------------
+            vvh::Color color4{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+            float intensity4 = 2.9f;
+            auto lightHandle4 = m_registry.Insert(
+                vve::Name{ "SpotLight-2" },
+                vve::SpotLight{ vvh::LightParams{
+                    .color = glm::vec3(0.0f, 0.0f, 1.0f),
+                    .params = glm::vec4(3.0f, intensity4, 10.0, 0.01f),
+                    .attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
+                } },
+                vve::Position{ glm::vec3(9.0f, 1.5f, 2.0f) },
+                //vve::Position{ glm::vec3(10.0f, -10.0f, 10.0f) },
+                vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 5.0f, glm::vec3(1.0f,0.0f,0.0f)) } },
+                vve::Scale{ vec3_t{0.01f, 0.05f, 0.01f} },
+                vve::LocalToParentMatrix{ mat4_t{1.0f} },
+                vve::LocalToWorldMatrix{ mat4_t{1.0f} },
+                color3,
+                vve::MeshName{ "assets/standard/sphere.obj/sphere" }
+                );
+            m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle4), vve::ParentHandle{}, this });
+
             return false;
         };
     
