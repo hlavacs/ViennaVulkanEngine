@@ -38,15 +38,18 @@ float calcPointShadow(float3 positionW, float3 lightPosW, SamplerCubeArrayShadow
     return shadow == 0 ? 0.2 : shadow; // TODO: 0 or other value, like 0.3?
 }
 
-float calcSpotShadow(float3 positionW, float3 lightPosW, Sampler2DArrayShadow shadow2DArray, uint arrayIndex) {
+float calcSpotShadow(float3 positionW, float3 lightPosW, Sampler2DArrayShadow shadow2DArray, uint arrayIndex, StructuredBuffer<float4x4> lsm) {
+    float4x4 lightSpaceMatrix = lsm[arrayIndex];
+    float4 lightSpace = mul(lightSpaceMatrix, float4(positionW, 1.0));
+    float3 ndc = lightSpace.xyz / lightSpace.w;
+    float2 uv = ndc.xy * 0.5 + 0.5;
+
     float3 L = positionW - lightPosW;
     float dist = length(L);
 
-    float3 dir = normalize(L);
-
     constexpr float farPlane = 1000;
     float refDepth = dist / farPlane;
-    float shadow = shadow2DArray.SampleCmpLevelZero(dir, refDepth);
+    float shadow = shadow2DArray.SampleCmpLevelZero(float3(uv, arrayIndex), refDepth);
 
-    return shadow;
+    return shadow == 0 ? 0.2 : shadow; // TODO: 0 or other value, like 0.3?
 }

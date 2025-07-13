@@ -72,6 +72,9 @@ namespace vve {
 				{	// Binding 1 : ShadowMap 2D Array - Direct + Spot Lights
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
+				{	// Binding 2 : Light Space Matrix - Direct + Spot Lights
+					.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			.m_descriptorSetLayout = m_descriptorSetLayoutShadow
 			});
@@ -171,6 +174,23 @@ namespace vve {
 			.m_maxLod = 0.0f,	// TODO: Maybe 0.0?
 			});
 
+		// Shadow light space matrices
+		vvh::BufCreateBuffers({
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+			.m_size = MAX_NUMBER_LIGHTS * sizeof(glm::mat4),
+			.m_buffer = m_storageBuffersLightSpaceMatrices
+			});
+		vvh::RenUpdateDescriptorSet({
+			.m_device = m_vkState().m_device,
+			.m_uniformBuffers = m_storageBuffersLightSpaceMatrices,
+			.m_binding = 2,
+			.m_type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+			.m_size = MAX_NUMBER_LIGHTS * sizeof(glm::mat4),
+			.m_descriptorSet = m_descriptorSetShadow
+			});
+
 		CreateDeferredResources();
 
 		static_cast<Derived*>(this)->OnInit();
@@ -260,6 +280,12 @@ namespace vve {
 				.m_descriptorSet = m_descriptorSetShadow,
 				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
 				});
+
+			size_t lsmSize = shadowImage().m_lightSpaceMatrices.size() * sizeof(glm::mat4);
+			for (size_t i = 0; i < m_storageBuffersLightSpaceMatrices.m_uniformBuffersMapped.size(); ++i) {
+				memcpy(m_storageBuffersLightSpaceMatrices.m_uniformBuffersMapped[i], shadowImage().m_lightSpaceMatrices.data(), lsmSize);
+			}
+
 			m_shadowsNeedUpdate = false;
 		}
 

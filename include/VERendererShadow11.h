@@ -17,6 +17,7 @@ namespace vve
 		vvh::Image shadowImage;
 		VkImageView m_cubeArrayView;
 		VkImageView m_2DArrayView;
+		std::vector<glm::mat4> m_lightSpaceMatrices;
 		uint32_t MaxNumberMapsUV() { return maxImageDimension2D / SHADOW_MAP_DIMENSION; };
 		uint32_t MaxNumberMapsPerLayer() { return MaxNumberMapsUV() * MaxNumberMapsUV(); };
 		uint32_t MaxNumberMapsPerImage() { return maxImageArrayLayers * MaxNumberMapsPerLayer(); };

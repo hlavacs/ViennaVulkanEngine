@@ -314,6 +314,11 @@ namespace vve {
 		// a view per layer, creates a frame buffer per layer
 		CheckShadowMaps(numShadows);
 
+		// TODO: rewrite so that countShadows is not called XXX -times
+		uint32_t lsmNeeded = CountShadows<DirectionalLight>(1) + CountShadows<SpotLight>(1);
+		shadowImage().m_lightSpaceMatrices.clear();
+		shadowImage().m_lightSpaceMatrices.reserve(lsmNeeded);
+
 
 		//uint32_t numPasses = (uint32_t)std::ceil( numShadows / (float)shadowImage().MaxNumberMapsPerImage());
 		//std::cout << "\n\nNumber of Shadow passes: " << numPasses << "\n\n";
@@ -406,6 +411,7 @@ namespace vve {
 		//assert(layerIdx == 6);
 		RenderSpotLightShadow(cmdBuffer, layerIdx, near, far);
 		//assert(layerIdx == 7);
+		std::cout << "Shadow lsm matrices count: " << shadowImage().m_lightSpaceMatrices.size() << std::endl;
 
 		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
@@ -612,7 +618,7 @@ namespace vve {
 	}
 
 	void RendererShadow11::RenderSpotLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
-		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+		ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		float aspect = 1.0f;	// width / height
 
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
@@ -638,6 +644,9 @@ namespace vve {
 
 
 			glm::mat4 lightSpaceMatrix = shadowProj * view;
+
+			// Push for lsm ubo in renderer
+			shadowImage.m_lightSpaceMatrices.emplace_back(lightSpaceMatrix);
 
 			PushConstantShadow pc{ lightSpaceMatrix, lightPos };
 			vkCmdPushConstants(cmdBuffer,

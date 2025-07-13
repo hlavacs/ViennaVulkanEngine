@@ -53,6 +53,9 @@ SamplerCubeArrayShadow shadowCubeArray;     // Point light cube shadowmaps
 [[vk_binding(1, 2)]]
 Sampler2DArrayShadow shadow2DArray;         // Array for direct and spot shadowmaps
 
+[[vk_binding(2, 2)]]                        // light space matrices for direct and spot shadowmaps
+StructuredBuffer<float4x4> gLightSpaceMatrices;
+
 //----------------------------------------------------------------------------
 
 [[vk::push_constant]]
@@ -85,7 +88,7 @@ float4 main(VertexStageOutput in) : SV_Target
     float3 A = gAlbedo.Sample(in.uv).xyz;
     float2 MR = gMetallicRoughness.Sample(in.uv).xy;
 
-    float4 output = calculateLighting(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g, shadowCubeArray, shadow2DArray);
+    float4 output = calculateLighting(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g, shadowCubeArray, shadow2DArray, gLightSpaceMatrices);
 
     return output;
 }

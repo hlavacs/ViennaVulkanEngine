@@ -135,7 +135,7 @@ export public float3 accumulateDirectLights(StructuredBuffer<Light> lights, int 
     return Lo;
 }
 
-export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, Sampler2DArrayShadow shadow2DArray) {
+export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, Sampler2DArrayShadow shadow2DArray, StructuredBuffer<float4x4> lsm, uint lsmIndex) {
 
     float3 N = normalize(normalW);
     float3 V = normalize(viewPosW - posW);
@@ -166,14 +166,14 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int st
 
         float NdotL = max(dot(N, L), 0.0);
 
-        float sh = calcSpotShadow(posW, lights[i].positionW, shadow2DArray, i);
+        float sh = calcSpotShadow(posW, lights[i].positionW, shadow2DArray, lsmIndex++, lsm);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL * sh;
     }
 
     return Lo;
 }
 
-export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow, Sampler2DArrayShadow shadow2DArray) {
+export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow, Sampler2DArrayShadow shadow2DArray, StructuredBuffer<float4x4> lsm) {
     float3 Lo = float3(0.0);
 
     uint start = 0;
@@ -185,7 +185,7 @@ export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numb
     Lo += accumulateDirectLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness);
     start = end;
     end += numberLights.z;
-    Lo += accumulateSpotLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, shadow2DArray);
+    Lo += accumulateSpotLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, shadow2DArray, lsm, numberLights.y);
 
     float3 ambient = float(0.01) * albedo /* ao */;
     float3 color = ambient + Lo;

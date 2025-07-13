@@ -30,6 +30,7 @@ namespace vve {
 
 		vvh::Buffer m_uniformBuffersPerFrame{};
 		vvh::Buffer m_storageBuffersLights{};
+		vvh::Buffer m_storageBuffersLightSpaceMatrices{};
 
 		VkSampler m_sampler{ VK_NULL_HANDLE };
 		VkSampler m_shadowSampler{ VK_NULL_HANDLE };
