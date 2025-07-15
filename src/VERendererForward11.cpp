@@ -286,9 +286,7 @@ namespace vve {
 			vvh::ComBindPipeline({
 				cmdBuffer, 
 				pip, 
-				m_vkState().m_imageIndex, 
 				m_vkState().m_swapChain.m_swapChainExtent,
-				m_renderPass, 
 				{},	
 				{}, 
 				blendconst, //blend constants
@@ -299,8 +297,7 @@ namespace vve {
 						.size = sizeof(offset), 
 						.pValues = &offset
 					}
-				}, //push constants
-				m_vkState().m_currentFrame
+				} //push constants
 			});
 
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 

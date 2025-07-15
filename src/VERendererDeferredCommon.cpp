@@ -779,14 +779,11 @@ namespace vve {
 			vvh::ComBindPipeline({
 				.m_commandBuffer = cmdBuffer,
 				.m_graphicsPipeline = pip,
-				.m_imageIndex = m_vkState().m_imageIndex,
 				.m_extent = m_vkState().m_swapChain.m_swapChainExtent,
-				.m_renderPass = renderPass != VK_NULL_HANDLE ? *renderPass : VK_NULL_HANDLE,
 				.m_viewPorts = {},
 				.m_scissors = {}, //default view ports and scissors
 				.m_blendConstants = {},
-				.m_pushConstants = {},
-				.m_currentFrame = m_vkState().m_currentFrame
+				.m_pushConstants = {}
 				});
 
 			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
@@ -849,9 +846,7 @@ namespace vve {
 		vvh::ComBindPipeline({
 			.m_commandBuffer = cmdBuffer,
 			.m_graphicsPipeline = m_lightingPipeline,
-			.m_imageIndex = m_vkState().m_imageIndex,
 			.m_extent = m_vkState().m_swapChain.m_swapChainExtent,
-			.m_renderPass = renderPass != VK_NULL_HANDLE ? *renderPass : VK_NULL_HANDLE,
 			.m_viewPorts = {},
 			.m_scissors = {}, //default view ports and scissors
 			.m_blendConstants = {},
@@ -863,8 +858,7 @@ namespace vve {
 					.size = sizeof(PushConstantsLight),
 					.pValues = &pc
 				}
-			},
-			.m_currentFrame = m_vkState().m_currentFrame
+			}
 			});
 
 		vvh::ComRecordLighting({

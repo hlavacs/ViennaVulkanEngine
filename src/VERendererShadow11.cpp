@@ -279,14 +279,11 @@ namespace vve {
 		vvh::ComBindPipeline({
 			.m_commandBuffer = cmdBuffer,
 			.m_graphicsPipeline = m_shadowPipeline,
-			.m_imageIndex = m_vkState().m_imageIndex,
 			.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
-			.m_renderPass = m_renderPass,
 			.m_viewPorts = {},
 			.m_scissors = {}, //default view ports and scissors
 			.m_blendConstants = {},
-			.m_pushConstants = {},
-			.m_currentFrame = m_vkState().m_currentFrame
+			.m_pushConstants = {}
 			});
 
 		// Takes the object ubo from OnObjectCreate of a renderer (not the shadow renderer) to update the descriptor set
