@@ -1,20 +1,5 @@
 implementing Common;
 
-//-----------------------------------------------------------------------
-
-export public struct ShadowIndex {
-    public int2 mapResolution;
-    public uint layerIndex;
-    public uint viewportIndex;
-    public int2 layerOffset;
-    public float4x4 lightSpaceMatrix;
-};
-
-// export public struct ShadowImageOffset {
-//     public int shadowIndexOffset;
-//     public int numberShadows;
-// };
-
 export public struct LightSpaceMatrix {
     public float4x4 lightSpaceMatrix;
     public float3 lightPosition;

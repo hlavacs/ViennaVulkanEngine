@@ -59,8 +59,7 @@ namespace vve {
 			{}, //
 			vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 			true
-		});
-		
+		});	
 
 		std::cout << "Pipeline Shadow" << std::endl;
 
@@ -118,11 +117,6 @@ namespace vve {
 	void RendererShadow11::CheckShadowMaps( uint32_t numberMapsRequired ) {
 		
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
-		//auto numberMaps = std::min(numberMapsRequired, shadowImage().MaxNumberMapsPerImage());
-		//if( shadowImage().NumberMapsPerImage() >= numberMaps ) return;
-
-		//uint32_t requiredLayers = (uint32_t)std::ceil(numberMaps / (float)shadowImage().MaxNumberMapsPerLayer());
-		//auto numLayers = std::min(shadowImage().maxImageArrayLayers, requiredLayers);
 		auto numLayers = numberMapsRequired;
 		// TODO: make destroy function
 		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
@@ -207,8 +201,6 @@ namespace vve {
 				.m_baseArrayLayer = 0
 				});
 		}
-		
-
 
 		// TODO: m_layerViews maybe I can reuse cube view?
 		m_layerViews.resize(numLayers);
@@ -236,18 +228,6 @@ namespace vve {
 					.m_numLayers = 1 // shadowImage().numberImageArraylayers for 1.3 with only one view
 				});
 		}
-		// 1.3 2D array view, might add later
-		//// create image views and framebuffers
-		//shadowImage().shadowImage.m_mapImageView = vvh::ImgCreateImageView({
-		//		.m_device = m_vkState().m_device,
-		//		.m_image = shadowImage().shadowImage.m_mapImage,
-		//		.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
-		//		.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
-		//		.m_layers = numLayers,
-		//		.m_mipLevels = 1,
-		//		.m_viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY
-		//	});
-
 	}
 
 	template<typename T>
@@ -260,11 +240,6 @@ namespace vve {
 		return n*shadowsPerLight;
 	}
 
-	/// @brief Prepare the next frame for shadow map rendering.
-	/// Calculate number of lights and number of shadow maps. Calculate ShadowIndex values.
-	/// Determine the number of passes and register record callback as many times. Create/adapt ShadowImage if necessaary.
-	/// @param message 
-	/// @return Returns false.
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
 		if (m_state != State::STATE_NEW) return false;
 		m_state = State::STATE_PREPARED;
@@ -286,21 +261,6 @@ namespace vve {
 		uint32_t lsmNeeded = CountShadows<DirectionalLight>(1) + CountShadows<SpotLight>(1);
 		shadowImage().m_lightSpaceMatrices.clear();
 		shadowImage().m_lightSpaceMatrices.reserve(lsmNeeded);
-
-
-		//uint32_t numPasses = (uint32_t)std::ceil( numShadows / (float)shadowImage().MaxNumberMapsPerImage());
-		//std::cout << "\n\nNumber of Shadow passes: " << numPasses << "\n\n";
-		//if( m_numberPasses != numPasses ) {
-		//	m_numberPasses = numPasses;
-		//	m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
-		//	for( uint32_t i=0; i<numShadows; ++i) {
-		//		m_engine.RegisterCallbacks( { 
-		//			{this,  1500 + (int)i*1000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
-		//		} );
-		//	}
-		//}
-
-		// per object ubo is already updated by other renderer
 			
 		return false;
 	}
@@ -308,7 +268,7 @@ namespace vve {
 	bool RendererShadow11::OnRecordNextFrame(Message message) {
 		if (m_state != State::STATE_PREPARED) return false;
 		m_state = State::STATE_RECORDED;
-		//auto msg = message.template GetData<MsgRecordNextFrame>();
+
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		++m_pass;
 
@@ -329,8 +289,7 @@ namespace vve {
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 
-		// TODO: Make function? Not in OnCreateObject or OnDestroyObject so that
-		//       they don't depend on each other (OnRecord will always be after OnCreate/Destroy)
+		// Takes the object ubo from OnObjectCreate of a renderer (not the shadow renderer) to update the descriptor set
 		for (auto [oHandle, descriptorset] : m_registry.template GetView<vecs::Handle, oShadowDescriptor&> ({ (size_t)m_shadowPipeline.m_pipeline })) {
 			assert(m_registry.template Has<vvh::Buffer>(oHandle));
 			vvh::Buffer& ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
@@ -345,18 +304,15 @@ namespace vve {
 				});
 		}
 
-		//vvh::ShadowOffset shadOff{ .shadowIndexOffset = 0, .numberShadows = 0 };
-
 		uint32_t numberTotalLayers = shadowImage().numberImageArraylayers;
 		uint32_t layerIdx = 0;
 		static constexpr float near = 0.1f;
 		static constexpr float far = 1000.0f;
+
 		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
-		// TODO: Remove assert. This is temporary, as demo.cpp has 1 point and 1 spot light = 7 layers EXACTLY
-		//assert(layerIdx == 6);
 		RenderDirectLightShadow(cmdBuffer, layerIdx, near, far);
 		RenderSpotLightShadow(cmdBuffer, layerIdx, near, far);
-		//assert(layerIdx == 7);
+
 		std::cout << "Shadow lsm matrices count: " << shadowImage().m_lightSpaceMatrices.size() << std::endl;
 
 		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -377,11 +333,6 @@ namespace vve {
 		SubmitCommandBuffer(cmdBuffer);
 
 		// TODO: write logic for when shadow is calculated (start, and then only when light changes)
-		// TODO: Write own Message maybe?
-		//m_engine.DeregisterCallbacks(this, "PREPARE_NEXT_FRAME");
-		//m_engine.DeregisterCallbacks(this, "RECORD_NEXT_FRAME");
-
-		//m_renderedAlready = true;
 
 		return false;
 	}
@@ -389,10 +340,7 @@ namespace vve {
 	bool RendererShadow11::OnObjectCreate(Message message) {
 		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		assert(m_registry.template Has<MeshHandle>(oHandle));
-		//assert(m_registry.template Has<vvh::Buffer>(oHandle));
 
-		//vvh::Buffer ubo = m_registry.template Get<vvh::Buffer>(oHandle);
-		//size_t sizeUbo = sizeof(ubo);
 		vvh::DescriptorSet descriptorSet{ 0 };
 		vvh::RenCreateDescriptorSet({
 			.m_device = m_vkState().m_device,
@@ -401,21 +349,11 @@ namespace vve {
 			.m_descriptorSet = descriptorSet
 			});
 
-		//vvh::RenUpdateDescriptorSet({
-		//	.m_device = m_vkState().m_device,
-		//	.m_uniformBuffers = ubo,
-		//	.m_binding = 0,
-		//	.m_type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-		//	.m_size = sizeUbo,
-		//	.m_descriptorSet = descriptorSet
-		//	});
-
 		m_registry.AddTags(oHandle, (size_t)m_shadowPipeline.m_pipeline);
 		oShadowDescriptor ds = { descriptorSet };
 		m_registry.Put(oHandle, ds);
 
 		if (m_state != State::STATE_PREPARED) m_state = State::STATE_NEW;
-		//m_renderedAlready = false;
 		return false;
 	}
 
@@ -429,7 +367,6 @@ namespace vve {
 			}
 		}
 
-		//m_renderedAlready = false;
 		if (m_state != State::STATE_PREPARED) m_state = State::STATE_NEW;
 		return false;
 	}
@@ -474,16 +411,6 @@ namespace vve {
 		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		float aspect = 1.0f;	// width / height
 
-		// Remapping from OpenGL -1, 1 to Vulkan [0, 1]
-		// TODO: What about #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-		//glm::mat4 bias = glm::mat4(
-		//	1, 0, 0, 0,
-		//	0, 1, 0, 0,
-		//	0, 0, 0.5, 0.5,
-		//	0, 0, 0, 1
-		//);
-
-		//const glm::mat4 shadowProj = bias * glm::perspective(glm::radians(90.0f), aspect, near, far);
 		static const glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
 
 
@@ -508,7 +435,7 @@ namespace vve {
 
 			for (uint8_t i = 0; i < 6; ++i) {
 				// LightSpaceMatrix
-				glm::mat4 lightSpaceMatrix = shadowTransforms[i];
+				glm::mat4& lightSpaceMatrix = shadowTransforms[i];
 
 				// TODO: image index or just single image?
 				// One renderPass per layer, image index = layerNumber
@@ -646,8 +573,6 @@ namespace vve {
 			glm::vec3 lightDir = glm::vec3{ lToW()[1] };
 
 			std::cout << "SpotLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
-			// TODO: remove this transforms the direction of the first spot light to -1 in z for testing purposes
-			//glm::vec3 lightDir = glm::vec3(-1.0, -1.0, -1.0);
 
 			glm::mat4 view = glm::lookAt(lightPos, lightPos + lightDir, up );
 

@@ -1,33 +1,5 @@
 import Common;
 
-// struct VS_OUTPUT
-// {
-//     float4 position : SV_Position;
-//     uint viewportIndex : SV_ViewportArrayIndex;
-//     uint renderTargetIndex : SV_RenderTargetArrayIndex;
-// };
-
-
-// binding B,S means that the resource is bound to binding B, set S
-
-// set 0 ... per frame
-
-// [[vk::binding(0, 0)]]
-// ConstantBuffer<UniformBufferFrame> gParamsFrame;    // TODO: Is this needed?
-
-// [[vk::binding(1, 0)]]
-// StructuredBuffer<ShadowIndex> gShadowIndex;
-
-//----------------------------------------------------------------------------
-
-// set 1 ... per object
-
-/* 
- * NOTE: this is in practive never just a UniformBufferObject, but one of UniformBufferObject,
- * UniformBufferObjectTexture or UniformBufferObjectColor, however we only ever need
- * the model matrix - so we use the existing object ubo provided by the actual renderer
- * and just use the model matrix.
-*/
 [[vk::binding(0, 0)]]
 ConstantBuffer<UniformBufferObject> gParamsObject;
 
