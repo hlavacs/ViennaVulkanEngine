@@ -30,12 +30,12 @@ namespace vve
         virtual ~RendererShadow11();
 
     private:
-        bool OnInit(Message message);
-        bool OnPrepareNextFrame(Message message);
-        bool OnRecordNextFrame(Message message);
-		bool OnObjectCreate(Message message);
-		bool OnObjectDestroy(Message message);
-        bool OnQuit(Message message);
+		bool OnInit(const Message& message);
+		bool OnPrepareNextFrame(const Message& message);
+		bool OnRecordNextFrame(const Message& message);
+		bool OnObjectCreate(Message& message);
+		bool OnObjectDestroy(Message& message);
+		bool OnQuit(const Message& message);
 
 		template<typename T>
 		auto CountShadows(const uint32_t& num) const -> uint32_t;

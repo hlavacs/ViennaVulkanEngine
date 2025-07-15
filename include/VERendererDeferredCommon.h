@@ -12,7 +12,7 @@ namespace vve {
 
 		struct PipelinePerType {
 			std::string m_type;
-			VkDescriptorSetLayout m_descriptorSetLayoutPerObject{};
+			VkDescriptorSetLayout m_descriptorSetLayoutPerObject{ VK_NULL_HANDLE };
 			vvh::Pipeline m_graphicsPipeline{};
 		};
 

@@ -20,7 +20,7 @@ namespace vve {
 
 	RendererShadow11::~RendererShadow11(){};
 
-	bool RendererShadow11::OnInit(Message message) {
+	bool RendererShadow11::OnInit(const Message& message) {
 		Renderer::OnInit(message);
 
 		vvh::RenCreateRenderPassShadow({
@@ -257,7 +257,7 @@ namespace vve {
 		return n*shadowsPerLight;
 	}
 
-	bool RendererShadow11::OnPrepareNextFrame(Message message) {
+	bool RendererShadow11::OnPrepareNextFrame(const Message& message) {
 		if (m_state != State::STATE_NEW) return false;
 		m_state = State::STATE_PREPARED;
 
@@ -268,7 +268,7 @@ namespace vve {
 		return false;
 	}
 
-	bool RendererShadow11::OnRecordNextFrame(Message message) {
+	bool RendererShadow11::OnRecordNextFrame(const Message& message) {
 		if (m_state != State::STATE_PREPARED) return false;
 		m_state = State::STATE_RECORDED;
 
@@ -339,7 +339,7 @@ namespace vve {
 		return false;
 	}
 
-	bool RendererShadow11::OnObjectCreate(Message message) {
+	bool RendererShadow11::OnObjectCreate(Message& message) {
 		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		assert(m_registry.template Has<MeshHandle>(oHandle));
 
@@ -359,7 +359,7 @@ namespace vve {
 		return false;
 	}
 
-	bool RendererShadow11::OnObjectDestroy(Message message) {
+	bool RendererShadow11::OnObjectDestroy(Message& message) {
 		const auto& msg = message.template GetData<MsgObjectDestroy>();
 		const auto& oHandle = msg.m_handle();
 		if (m_registry.template Has<oShadowDescriptor&>(oHandle)) {
@@ -373,7 +373,7 @@ namespace vve {
 		return false;
 	}
 
-	bool RendererShadow11::OnQuit(Message message) {
+	bool RendererShadow11::OnQuit(const Message& message) {
         vkDeviceWaitIdle(m_vkState().m_device);
 
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
