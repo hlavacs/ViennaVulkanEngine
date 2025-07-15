@@ -66,11 +66,7 @@ namespace vve
 	    VkCommandPool m_commandPool;
 	    std::vector<VkCommandBuffer> m_commandBuffers;
 
-		vvh::Buffer m_uniformBuffersPerFrame;
-		vvh::Buffer m_storageBuffersLights;
-		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject{ VK_NULL_HANDLE };
-		vvh::DescriptorSet m_descriptorSetPerFrame{0};
 		vvh::Pipeline m_shadowPipeline;		
 
 		vecs::Handle m_shadowImageHandle;

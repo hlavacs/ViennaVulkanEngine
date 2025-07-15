@@ -12,11 +12,11 @@ import Common;
 
 // set 0 ... per frame
 
-[[vk::binding(0, 0)]]
-ConstantBuffer<UniformBufferFrame> gParamsFrame;    // TODO: Is this needed?
+// [[vk::binding(0, 0)]]
+// ConstantBuffer<UniformBufferFrame> gParamsFrame;    // TODO: Is this needed?
 
-[[vk::binding(1, 0)]]
-StructuredBuffer<ShadowIndex> gShadowIndex;
+// [[vk::binding(1, 0)]]
+// StructuredBuffer<ShadowIndex> gShadowIndex;
 
 //----------------------------------------------------------------------------
 
@@ -28,7 +28,7 @@ StructuredBuffer<ShadowIndex> gShadowIndex;
  * the model matrix - so we use the existing object ubo provided by the actual renderer
  * and just use the model matrix.
 */
-[[vk::binding(0, 1)]]
+[[vk::binding(0, 0)]]
 ConstantBuffer<UniformBufferObject> gParamsObject;
 
 //----------------------------------------------------------------------------
