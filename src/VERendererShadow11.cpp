@@ -43,8 +43,6 @@ namespace vve {
 		std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions("P");
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions("P");
 
-		VkPipelineColorBlendAttachmentState colorBlendAttachment{};
-
 		// TODO: Move shadow into own folder so deferred AND forward can use it
 		vvh::RenCreateGraphicsPipeline({
 			m_vkState().m_device,
@@ -98,44 +96,36 @@ namespace vve {
 
 		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
-				.m_device = m_vkState().m_device,
-				.m_graphicsQueue = m_vkState().m_graphicsQueue,
-				.m_commandPool = m_commandPool,
-				.m_image = m_dummyImage.m_dummyImage,
-				.m_format = m_vkState().m_depthMapFormat,
-				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = 6,
-				.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-			});
+			.m_device = m_vkState().m_device,
+			.m_graphicsQueue = m_vkState().m_graphicsQueue,
+			.m_commandPool = m_commandPool,
+			.m_image = m_dummyImage.m_dummyImage,
+			.m_format = m_vkState().m_depthMapFormat,
+			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+			.m_layers = 6,
+			.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		});
 
 
 		return false;
 	}
 
 
-	void RendererShadow11::CheckShadowMaps( uint32_t numberMapsRequired ) {
-		
+	void RendererShadow11::CreateShadowMap() {	
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
-		auto numLayers = numberMapsRequired;
+
+		uint32_t numPointShadows = CountShadows<PointLight>(6);
+		uint32_t numDirectShadows = CountShadows<DirectionalLight>(1);
+		uint32_t numSpotShadows = CountShadows<SpotLight>(1);
+		uint32_t numTotalLayers = numPointShadows + numDirectShadows + numSpotShadows;
+
 		// TODO: make destroy function
-		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
-				shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
-		
-		// Destroy frameBuffers
-		for (auto& fb : m_shadowFrameBuffers) {
-			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
-		}
-		// Destroy cube views and single layer views
-		vkDestroyImageView(m_vkState().m_device, shadowImage().m_cubeArrayView, nullptr);
-		for (auto view : m_layerViews) {
-			vkDestroyImageView(m_vkState().m_device, view, nullptr);
-		}
-		
+		DestroyShadowMap();	
 
 		vvh::Image map;
 		vvh::ImgCreateImage({ m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
-			, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, numLayers, 1
+			, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, numTotalLayers, 1
 			, vvh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
 			, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
 			, VK_IMAGE_LAYOUT_UNDEFINED
@@ -143,50 +133,53 @@ namespace vve {
 			VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT // Cube now!
 			});
 
+		// light space matrices needed only by direct and spot lights
+		uint32_t numDirectAndSpotShadows = numDirectShadows + numSpotShadows;
+		shadowImage().m_lightSpaceMatrices.clear();
+		shadowImage().m_lightSpaceMatrices.reserve(numDirectAndSpotShadows);
 		shadowImage().shadowImage = map;
-		shadowImage().numberImageArraylayers = numLayers;
+		shadowImage().numberImageArraylayers = numTotalLayers;
 
 		// transition shadowMap from VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
-				.m_device = m_vkState().m_device,
-				.m_graphicsQueue = m_vkState().m_graphicsQueue,
-				.m_commandPool = m_commandPool,
-				.m_image = shadowImage().shadowImage.m_mapImage,
-				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
-				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = (int)numLayers,	// TODO: fix when it works
-				.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-				.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-				.m_commandBuffer = VK_NULL_HANDLE
-			});
+			.m_device = m_vkState().m_device,
+			.m_graphicsQueue = m_vkState().m_graphicsQueue,
+			.m_commandPool = m_commandPool,
+			.m_image = shadowImage().shadowImage.m_mapImage,
+			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+			.m_layers = (int)numTotalLayers,
+			.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			.m_commandBuffer = VK_NULL_HANDLE
+		});
 
-		std::cout << "\nNumber of shadow layers: " << numLayers << "\n\n";
+		std::cout << "\nNumber of shadow layers: " << numTotalLayers << "\n\n";
 
 		// TODO: shadowImage().shadowImage.m_mapImageView is pointless like that in 1.1!
 
 		// Cube Array View for Point Lights
 		shadowImage().m_cubeArrayView = vvh::ImgCreateImageView({
-				.m_device = m_vkState().m_device,
-				.m_image = shadowImage().shadowImage.m_mapImage,
-				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
-				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = CountShadows<PointLight>(6),	// TODO: might want more layers than multiple of 6
-				.m_mipLevels = 1,
-				.m_viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
-			});
+			.m_device = m_vkState().m_device,
+			.m_image = shadowImage().shadowImage.m_mapImage,
+			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
+			.m_layers = numPointShadows,	// TODO: might want more layers than multiple of 6
+			.m_mipLevels = 1,
+			.m_viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
+		});
 
 		// 2D Array View for Direct + Spot Lights
-		uint32_t directAndSpot = CountShadows<DirectionalLight>(1) + CountShadows<SpotLight>(1);
-		if (directAndSpot > 0) {
+		if (numDirectAndSpotShadows > 0) {
 			shadowImage().m_2DArrayView = vvh::ImgCreateImageView({
 				.m_device = m_vkState().m_device,
 				.m_image = shadowImage().shadowImage.m_mapImage,
 				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = directAndSpot,
+				.m_layers = numDirectAndSpotShadows,
 				.m_mipLevels = 1,
 				.m_viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
-				.m_baseArrayLayer = CountShadows<PointLight>(6)
+				.m_baseArrayLayer = numPointShadows
 				});
 		}
 		else {
@@ -202,10 +195,10 @@ namespace vve {
 				});
 		}
 
-		// TODO: m_layerViews maybe I can reuse cube view?
-		m_layerViews.resize(numLayers);
-		m_shadowFrameBuffers.resize(numLayers);
-		for (uint32_t i = 0; i < numLayers; ++i) {
+		// Creates a view and framebuffer for the total number of shadow layers
+		m_layerViews.resize(numTotalLayers);
+		m_shadowFrameBuffers.resize(numTotalLayers);
+		for (uint32_t i = 0; i < numTotalLayers; ++i) {
 			m_layerViews[i] = vvh::ImgCreateImageView({
 				.m_device = m_vkState().m_device,
 				.m_image = shadowImage().shadowImage.m_mapImage,
@@ -217,16 +210,15 @@ namespace vve {
 				.m_baseArrayLayer = i
 				});
 
-			// TODO: Framebuffer setup, has to be teared down when stuff changes?
 			// Framebuffer with layers
 			vvh::RenCreateSingleFrameBuffer({
-					.m_device = m_vkState().m_device,
-					.m_renderPass = m_renderPass,
-					.m_frameBuffer = m_shadowFrameBuffers[i],
-					.m_imageView = m_layerViews[i],
-					.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
-					.m_numLayers = 1 // shadowImage().numberImageArraylayers for 1.3 with only one view
-				});
+				.m_device = m_vkState().m_device,
+				.m_renderPass = m_renderPass,
+				.m_frameBuffer = m_shadowFrameBuffers[i],
+				.m_imageView = m_layerViews[i],
+				.m_extent = {shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D},
+				.m_numLayers = 1
+			});
 		}
 	}
 
@@ -243,24 +235,10 @@ namespace vve {
 	bool RendererShadow11::OnPrepareNextFrame(Message message) {
 		if (m_state != State::STATE_NEW) return false;
 		m_state = State::STATE_PREPARED;
+
 		vkResetCommandPool(m_vkState().m_device, m_commandPool, 0);
-		
-		//auto msg = message.template GetData<MsgPrepareNextFrame>();
-		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
-
-		m_pass = 0;
-		uint32_t numShadows = CountShadows<PointLight>(6);
-		numShadows += CountShadows<DirectionalLight>(1);	// TODO: Was 3 -> that has to be wrong?
-		numShadows += CountShadows<SpotLight>(1);
-		// TODO: rewrite so it's more understandable
-		// Calculates number of layers, creates a vvh::Image shadowMap, creates 
-		// a view per layer, creates a frame buffer per layer
-		CheckShadowMaps(numShadows);
-
-		// TODO: rewrite so that countShadows is not called XXX -times
-		uint32_t lsmNeeded = CountShadows<DirectionalLight>(1) + CountShadows<SpotLight>(1);
-		shadowImage().m_lightSpaceMatrices.clear();
-		shadowImage().m_lightSpaceMatrices.reserve(lsmNeeded);
+	
+		CreateShadowMap();
 			
 		return false;
 	}
@@ -270,7 +248,6 @@ namespace vve {
 		m_state = State::STATE_RECORDED;
 
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
-		++m_pass;
 
 		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
@@ -317,17 +294,17 @@ namespace vve {
 
 		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
-				.m_device = m_vkState().m_device,
-				.m_graphicsQueue = m_vkState().m_graphicsQueue,
-				.m_commandPool = m_commandPool,
-				.m_image = shadowImage().shadowImage.m_mapImage,
-				.m_format = m_vkState().m_depthMapFormat,
-				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = (int)numberTotalLayers,	// TODO: fix when it works
-				.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				.m_commandBuffer = cmdBuffer,
-			});
+			.m_device = m_vkState().m_device,
+			.m_graphicsQueue = m_vkState().m_graphicsQueue,
+			.m_commandPool = m_commandPool,
+			.m_image = shadowImage().shadowImage.m_mapImage,
+			.m_format = m_vkState().m_depthMapFormat,
+			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+			.m_layers = (int)numberTotalLayers,	// TODO: fix when it works
+			.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.m_commandBuffer = cmdBuffer,
+		});
 
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
@@ -389,6 +366,7 @@ namespace vve {
 		vkDestroyImageView(m_vkState().m_device, shadowImage().m_2DArrayView, nullptr);
 
 		// TODO: make destroy function and use in check shadow maps
+		DestroyShadowMap();
 		
 		return false;
     }

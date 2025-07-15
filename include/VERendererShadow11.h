@@ -46,7 +46,7 @@ namespace vve
         bool OnQuit(Message message);
 		template<typename T>
 		uint32_t  CountShadows(uint32_t num);
-		void CheckShadowMaps( uint32_t number);
+		void CreateShadowMap();
 
 		void DestroyShadowMap();
 		void RenderShadowMap(const VkCommandBuffer& cmdBuffer, uint32_t& layer);
@@ -71,8 +71,6 @@ namespace vve
 		vvh::Pipeline m_shadowPipeline;		
 
 		vecs::Handle m_shadowImageHandle;
-		uint32_t m_pass;
-		uint32_t m_numberPasses{1};
 
 		glm::ivec3 m_numberLightsPerType{0,0,0};
 
