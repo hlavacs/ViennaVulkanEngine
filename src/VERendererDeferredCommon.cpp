@@ -786,7 +786,7 @@ namespace vve {
 				.m_pushConstants = {}
 				});
 
-			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] :
+			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :
 				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, vvh::DescriptorSet&>
 				({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
 
@@ -826,7 +826,7 @@ namespace vve {
 				vvh::ComRecordObject({
 					.m_commandBuffer = cmdBuffer,
 					.m_graphicsPipeline = pipeline.second.m_graphicsPipeline,
-					.m_descriptorSets = { m_descriptorSetPerFrame, descriptorsets },
+					.m_descriptorSets = { m_descriptorSetPerFrame, descriptorset },
 					.m_type = pipeline.second.m_type,
 					.m_mesh = mesh,
 					.m_currentFrame = m_vkState().m_currentFrame
