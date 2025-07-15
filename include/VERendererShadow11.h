@@ -16,7 +16,6 @@ namespace vve
 		std::vector<glm::mat4> m_lightSpaceMatrices;
 	};
 
-	// TODO: move into shadowImage struct?
 	struct oShadowDescriptor {
 		vvh::DescriptorSet m_oShadowDescriptor;
 	};

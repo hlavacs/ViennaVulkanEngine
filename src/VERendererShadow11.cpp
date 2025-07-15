@@ -386,13 +386,11 @@ namespace vve {
 		vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerObject, nullptr);
 
-		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
-				shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
+		vkDestroyPipeline(m_vkState().m_device, m_shadowPipeline.m_pipeline, nullptr);
+		vkDestroyPipelineLayout(m_vkState().m_device, m_shadowPipeline.m_pipelineLayout, nullptr);
+
 		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
 				m_dummyImage.m_dummyImage, m_dummyImage.m_dummyImageAllocation });
-		vkDestroyImageView(m_vkState().m_device, shadowImage().m_2DArrayView, nullptr);
-
-		// TODO: make destroy function and use in check shadow maps
 		DestroyShadowMap();
 		
 		return false;
@@ -410,6 +408,8 @@ namespace vve {
 		for (auto& fb : m_shadowFrameBuffers) {
 			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
 		}
+		vkDestroyImageView(m_vkState().m_device, shadowImage().m_cubeArrayView, nullptr);
+		vkDestroyImageView(m_vkState().m_device, shadowImage().m_2DArrayView, nullptr);
 	}
 
 	void RendererShadow11::RenderPointLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
