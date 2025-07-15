@@ -159,13 +159,15 @@ namespace vve {
 		vvh::ImgCreateImageSampler({
 			.m_physicalDevice = m_vkState().m_physicalDevice,
 			.m_device = m_vkState().m_device,
-			.m_sampler = m_sampler
+			.m_sampler = m_sampler,
+			.m_filter = VK_FILTER_LINEAR,
 			});
 		// Sampler with anisotropy enabled for albedo
 		vvh::ImgCreateImageSampler({
 			.m_physicalDevice = m_vkState().m_physicalDevice,
 			.m_device = m_vkState().m_device,
 			.m_sampler = m_albedoSampler,
+			.m_filter = VK_FILTER_LINEAR,
 			.m_anisotropyEnable = VK_TRUE
 			});
 
