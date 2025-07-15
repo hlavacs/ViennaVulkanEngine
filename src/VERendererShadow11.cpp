@@ -460,26 +460,7 @@ namespace vve {
 					&pc
 				);
 
-				for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :
-					m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, oShadowDescriptor&>
-					({ (size_t)m_shadowPipeline.m_pipeline })) {
-
-					if (m_registry.template Has<PointLight>(oHandle) || m_registry.template Has<SpotLight>(oHandle)) {
-						// Renders depth image without the point or spot light sphere
-						continue;
-					}
-
-					const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
-	
-					vvh::ComRecordObject({
-						.m_commandBuffer = cmdBuffer,
-						.m_graphicsPipeline = m_shadowPipeline,
-						.m_descriptorSets = { descriptorset().m_oShadowDescriptor},
-						.m_type = "P",
-						.m_mesh = mesh,
-						.m_currentFrame = m_vkState().m_currentFrame
-						});
-				}
+				RecordObjects(cmdBuffer);
 
 				vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 			}
@@ -489,14 +470,10 @@ namespace vve {
 
 	void RendererShadow11::RenderDirectLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
 		ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
-		glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
+		static constexpr glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 
 		// TODO: left right bottom top is set to fit for deferred-demo.cpp, make adjustable?
-		glm::mat4 shadowProj = glm::ortho(
-			-20.0f, +20.0f,
-			-20.0f, +20.0f,
-			near, far
-		);
+		glm::mat4 shadowProj = glm::ortho(-20.0f, +20.0f, -20.0f, +20.0f, near, far);
 
 		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, DirectionalLight&, LocalToWorldMatrix&>()) {
 			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
@@ -521,9 +498,7 @@ namespace vve {
 					.m_currentFrame = m_vkState().m_currentFrame
 				});
 
-
 			glm::mat4 lightSpaceMatrix = shadowProj * view;
-
 			// Push for lsm ubo in renderer
 			shadowImage.m_lightSpaceMatrices.emplace_back(lightSpaceMatrix);
 
@@ -536,26 +511,7 @@ namespace vve {
 				&pc
 			);
 
-			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :
-				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, oShadowDescriptor&>
-				({ (size_t)m_shadowPipeline.m_pipeline })) {
-
-				if (m_registry.template Has<PointLight>(oHandle) || m_registry.template Has<SpotLight>(oHandle)) {
-					// Renders depth image without the point or spot light sphere
-					continue;
-				}
-
-				const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
-
-				vvh::ComRecordObject({
-					.m_commandBuffer = cmdBuffer,
-					.m_graphicsPipeline = m_shadowPipeline,
-					.m_descriptorSets = { descriptorset().m_oShadowDescriptor },
-					.m_type = "P",
-					.m_mesh = mesh,
-					.m_currentFrame = m_vkState().m_currentFrame
-					});
-			}
+			RecordObjects(cmdBuffer);
 
 			vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 		}
@@ -564,7 +520,7 @@ namespace vve {
 	void RendererShadow11::RenderSpotLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
 		ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		float aspect = 1.0f;	// width / height
-		glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
+		static constexpr glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
 
@@ -601,28 +557,32 @@ namespace vve {
 				&pc
 			);
 
-			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :
-				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, oShadowDescriptor&>
-				({ (size_t)m_shadowPipeline.m_pipeline })) {
-
-				if (m_registry.template Has<PointLight>(oHandle) || m_registry.template Has<SpotLight>(oHandle)) {
-					// Renders depth image without the point or spot light sphere
-					continue;
-				}
-
-				const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
-
-				vvh::ComRecordObject({
-					.m_commandBuffer = cmdBuffer,
-					.m_graphicsPipeline = m_shadowPipeline,
-					.m_descriptorSets = { descriptorset().m_oShadowDescriptor },
-					.m_type = "P",
-					.m_mesh = mesh,
-					.m_currentFrame = m_vkState().m_currentFrame
-					});
-			}
+			RecordObjects(cmdBuffer);
 
 			vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+		}
+	}
+
+	void RendererShadow11::RecordObjects(const VkCommandBuffer& cmdBuffer) {
+		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :
+			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, oShadowDescriptor&>
+			({ (size_t)m_shadowPipeline.m_pipeline })) {
+
+			if (m_registry.template Has<PointLight>(oHandle) || m_registry.template Has<SpotLight>(oHandle)) {
+				// Renders depth image without the point or spot light sphere
+				continue;
+			}
+
+			const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+
+			vvh::ComRecordObject({
+				.m_commandBuffer = cmdBuffer,
+				.m_graphicsPipeline = m_shadowPipeline,
+				.m_descriptorSets = { descriptorset().m_oShadowDescriptor },
+				.m_type = "P",
+				.m_mesh = mesh,
+				.m_currentFrame = m_vkState().m_currentFrame
+				});
 		}
 	}
 
