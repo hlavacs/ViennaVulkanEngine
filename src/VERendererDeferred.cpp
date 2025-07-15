@@ -32,6 +32,7 @@ namespace vve {
 			default:
 				// 1.1 is default and minimum
 				std::cout << "Initializing Vulkan 1.1 Deferred Renderer\n";
+				m_engine.RegisterSystem(std::make_unique<RendererShadow11>(m_name() + "Shadow1.1", m_engine, m_windowName));
 				m_engine.RegisterSystem(std::make_unique<RendererDeferred11>(m_name() + "Light1.1", m_engine, m_windowName));
 				break;
 		}
