@@ -138,7 +138,7 @@ class MyGame : public vve::System {
 
             // -----------------  Spot Light 1 -----------------
             vvh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-            float intensity3 = 2.9f;
+            float intensity3 = 0;//2.9f;
             auto lightHandle3 = m_registry.Insert(
                 vve::Name{"SpotLight-1"},
                 vve::SpotLight{vvh::LightParams{
@@ -159,7 +159,7 @@ class MyGame : public vve::System {
 
             // -----------------  Spot Light 2 -----------------
             vvh::Color color4{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-            float intensity4 = 2.9f;
+            float intensity4 = 0; //2.9f;
             auto lightHandle4 = m_registry.Insert(
                 vve::Name{ "SpotLight-2" },
                 vve::SpotLight{ vvh::LightParams{

@@ -46,11 +46,11 @@ float calcDirectShadow(float3 positionW, float3 lightPosW, Sampler2DArrayShadow 
 
     float3 L = positionW - lightPosW;
     float dist = length(L);
-    float bias = 0.005;
+    float bias = 0.00001;
 
     constexpr float farPlane = 1000;
     float refDepth = dist / farPlane;
-    float shadow = shadow2DArray.SampleCmpLevelZero(float3(uv, arrayIndex), refDepth + bias);
+    float shadow = shadow2DArray.SampleCmpLevelZero(float3(uv, arrayIndex), refDepth - bias);
 
     return shadow == 0 ? 0.2 : shadow; // TODO: 0 or other value, like 0.3?
 }
