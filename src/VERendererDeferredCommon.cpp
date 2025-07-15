@@ -613,7 +613,7 @@ namespace vve {
 					.m_blendAttachments = blends,
 					.m_graphicsPipeline = graphicsPipeline,
 					.m_attachmentFormats = getAttachmentFormats(),
-					.m_depthFormat = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+					.m_depthFormat = m_vkState().m_depthMapFormat,
 					.m_depthWrite = true
 					});
 
@@ -656,7 +656,7 @@ namespace vve {
 			.m_blendAttachments = { colorBlendAttachment },
 			.m_graphicsPipeline = m_lightingPipeline,
 			.m_attachmentFormats = { m_vkState().m_swapChain.m_swapChainImageFormat },
-			.m_depthFormat = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_depthFormat = m_vkState().m_depthMapFormat,
 			.m_depthWrite = false
 			});
 	}

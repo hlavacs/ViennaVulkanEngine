@@ -69,7 +69,7 @@ namespace vve {
 			{}, //blend attachments
 			m_shadowPipeline,
 			{}, //
-			vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			m_vkState().m_depthMapFormat,
 			true
 		});	
 
@@ -95,7 +95,7 @@ namespace vve {
 			.m_depth = 1,
 			.m_layers = 6,
 			.m_mipLevels = 1,
-			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_format = m_vkState().m_depthMapFormat,
 			.m_tiling = VK_IMAGE_TILING_OPTIMAL,
 			.m_usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
 			.m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
@@ -105,7 +105,7 @@ namespace vve {
 			.m_imgCreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT
 			});
 
-		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		// Depth image VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
 			.m_device = m_vkState().m_device,
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
@@ -137,7 +137,7 @@ namespace vve {
 		vvh::Image map;
 		vvh::ImgCreateImage({ m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
 			, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, numTotalLayers, 1
-			, vvh::RenFindDepthFormat(m_vkState().m_physicalDevice), VK_IMAGE_TILING_OPTIMAL
+			, m_vkState().m_depthMapFormat, VK_IMAGE_TILING_OPTIMAL
 			, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
 			, VK_IMAGE_LAYOUT_UNDEFINED
 			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation, 
@@ -157,7 +157,7 @@ namespace vve {
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
 			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 			.m_image = shadowImage().shadowImage.m_mapImage,
-			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_format = m_vkState().m_depthMapFormat,
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_layers = (int)numTotalLayers,
 			.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
@@ -174,7 +174,7 @@ namespace vve {
 			shadowImage().m_cubeArrayView = vvh::ImgCreateImageView({
 			.m_device = m_vkState().m_device,
 			.m_image = shadowImage().shadowImage.m_mapImage,
-			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_format = m_vkState().m_depthMapFormat,
 			.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_layers = numPointShadows,
 			.m_mipLevels = 1,
@@ -185,7 +185,7 @@ namespace vve {
 			shadowImage().m_cubeArrayView = vvh::ImgCreateImageView({
 			.m_device = m_vkState().m_device,
 			.m_image = m_dummyImage.m_dummyImage,
-			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_format = m_vkState().m_depthMapFormat,
 			.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_layers = 6,
 			.m_mipLevels = 1,
@@ -199,7 +199,7 @@ namespace vve {
 			shadowImage().m_2DArrayView = vvh::ImgCreateImageView({
 				.m_device = m_vkState().m_device,
 				.m_image = shadowImage().shadowImage.m_mapImage,
-				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+				.m_format = m_vkState().m_depthMapFormat,
 				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
 				.m_layers = numDirectAndSpotShadows,
 				.m_mipLevels = 1,
@@ -211,7 +211,7 @@ namespace vve {
 			shadowImage().m_2DArrayView = vvh::ImgCreateImageView({
 				.m_device = m_vkState().m_device,
 				.m_image = m_dummyImage.m_dummyImage,
-				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+				.m_format = m_vkState().m_depthMapFormat,
 				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
 				.m_layers = 6,
 				.m_mipLevels = 1,
@@ -227,7 +227,7 @@ namespace vve {
 			m_layerViews[i] = vvh::ImgCreateImageView({
 				.m_device = m_vkState().m_device,
 				.m_image = shadowImage().shadowImage.m_mapImage,
-				.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+				.m_format = m_vkState().m_depthMapFormat,
 				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
 				.m_layers = 1,
 				.m_mipLevels = 1,
