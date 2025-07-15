@@ -12,7 +12,6 @@ namespace vve
 		uint32_t maxImageDimension2D;
 		uint32_t maxImageArrayLayers;
 		uint32_t numberImageArraylayers{0};
-		//std::vector<vvh::Image> shadowImages;
 		// TODO: one image but needs multiple views for 1.1
 		vvh::Image shadowImage;
 		VkImageView m_cubeArrayView;
@@ -34,7 +33,7 @@ namespace vve
     class RendererShadow11 : public Renderer {
 
 	public:
-		RendererShadow11(std::string systemName, Engine& engine, std::string windowName);
+		RendererShadow11(const std::string& systemName, Engine& engine, const std::string& windowName);
         virtual ~RendererShadow11();
 
     private:
@@ -44,8 +43,9 @@ namespace vve
 		bool OnObjectCreate(Message message);
 		bool OnObjectDestroy(Message message);
         bool OnQuit(Message message);
+
 		template<typename T>
-		uint32_t  CountShadows(uint32_t num);
+		auto CountShadows(const uint32_t& num) const -> uint32_t;
 		void CreateShadowMap();
 
 		void DestroyShadowMap();
@@ -54,25 +54,19 @@ namespace vve
 		void RenderDirectLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near = 1.0f, const float& far = 25.0f);
 		void RenderSpotLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near = 1.0f, const float& far = 25.0f);
 
-	    VkRenderPass m_renderPass;
+	    VkRenderPass m_renderPass{ VK_NULL_HANDLE };;
 
-		//bool m_renderedAlready = false;	// TODO: logic so that shadow maps dont get rendererd each frame!
+		std::vector<VkImageView> m_layerViews{ VK_NULL_HANDLE };
+		std::vector<VkFramebuffer> m_shadowFrameBuffers{ VK_NULL_HANDLE };
 
-		//VkImageView m_cubeArrayView{};
-		//vecs::Handle m_ShadowCubeArrayViewHandle;
-		std::vector<VkImageView> m_layerViews{};
-		std::vector<VkFramebuffer> m_shadowFrameBuffers{};
-
-	    VkDescriptorPool m_descriptorPool;    
-	    VkCommandPool m_commandPool;
-	    std::vector<VkCommandBuffer> m_commandBuffers;
+	    VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
+	    VkCommandPool m_commandPool{ VK_NULL_HANDLE };
+		std::vector<VkCommandBuffer> m_commandBuffers{ VK_NULL_HANDLE };
 
 		VkDescriptorSetLayout m_descriptorSetLayoutPerObject{ VK_NULL_HANDLE };
 		vvh::Pipeline m_shadowPipeline;		
 
 		vecs::Handle m_shadowImageHandle;
-
-		glm::ivec3 m_numberLightsPerType{0,0,0};
 
 		struct PushConstantShadow {
 			glm::mat4 lightSpaceMatrix;
@@ -88,9 +82,9 @@ namespace vve
 		State m_state = State::STATE_NEW;
 
 		struct DummyImage {
-			VkImage         m_dummyImage;
-			VmaAllocation   m_dummyImageAllocation;
-			VkImageView     m_dummyImageView;
+			VkImage         m_dummyImage{ VK_NULL_HANDLE };
+			VmaAllocation   m_dummyImageAllocation{ VK_NULL_HANDLE };
+			VkImageView     m_dummyImageView{ VK_NULL_HANDLE };
 		};
 		DummyImage m_dummyImage;
 	};

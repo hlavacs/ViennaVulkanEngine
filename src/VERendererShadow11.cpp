@@ -6,7 +6,7 @@
 
 namespace vve {
 
-	RendererShadow11::RendererShadow11( std::string systemName, Engine& engine, std::string windowName ) : Renderer(systemName, engine, windowName ) {
+	RendererShadow11::RendererShadow11(const std::string& systemName, Engine& engine, const std::string& windowName ) : Renderer(systemName, engine, windowName ) {
 
 		engine.RegisterCallbacks( { 
 			{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
@@ -223,7 +223,7 @@ namespace vve {
 	}
 
 	template<typename T>
-	uint32_t RendererShadow11::CountShadows(uint32_t shadowsPerLight) {
+	uint32_t RendererShadow11::CountShadows(const uint32_t& shadowsPerLight) const {
 		int n=0;
 		for( auto [handle, light] : m_registry.template GetView<vecs::Handle, T&>() ) {
 
