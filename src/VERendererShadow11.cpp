@@ -30,8 +30,22 @@ namespace vve {
 			m_renderPass
 			});
 
-		vvh::ComCreateCommandPool({ m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool });
-		vvh::ComCreateCommandBuffers({ m_vkState().m_device, m_commandPool, m_commandBuffers });
+		m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
+		m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			vvh::ComCreateCommandPool({
+				.m_surface = m_vkState().m_surface,
+				.m_physicalDevice = m_vkState().m_physicalDevice,
+				.m_device = m_vkState().m_device,
+				.m_commandPool = m_commandPools[i]
+				});
+
+			vvh::ComCreateSingleCommandBuffer({
+				.m_device = m_vkState().m_device,
+				.m_commandPool = m_commandPools[i],
+				.m_commandBuffer = m_commandBuffers[i]
+				});
+		}
 
 
 		vvh::RenCreateDescriptorPool({ m_vkState().m_device, 1000, m_descriptorPool });
@@ -63,14 +77,11 @@ namespace vve {
 
 		// Shadow Image
 		ShadowImage shadowImage {
-			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAX_MAPS_PER_ROW*SHADOW_MAP_DIMENSION),
+			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAP_DIMENSION),
 			.maxImageArrayLayers = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers, SHADOW_MAX_NUM_LAYERS)
 		};
-		if( m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers >= MAX_NUMBER_LIGHTS*6) {
-			shadowImage.maxImageDimension2D = SHADOW_MAP_DIMENSION;
-			shadowImage.maxImageArrayLayers = MAX_NUMBER_LIGHTS*6;
-		}
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
+		// TODO: Manage tag better
 		m_registry.AddTags(m_shadowImageHandle, (size_t)1337 );
 
 
@@ -98,7 +109,7 @@ namespace vve {
 		vvh::ImgTransitionImageLayout3({
 			.m_device = m_vkState().m_device,
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
-			.m_commandPool = m_commandPool,
+			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 			.m_image = m_dummyImage.m_dummyImage,
 			.m_format = m_vkState().m_depthMapFormat,
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -118,6 +129,7 @@ namespace vve {
 		uint32_t numDirectShadows = CountShadows<DirectionalLight>(1);
 		uint32_t numSpotShadows = CountShadows<SpotLight>(1);
 		uint32_t numTotalLayers = numPointShadows + numDirectShadows + numSpotShadows;
+		numTotalLayers = numTotalLayers < 6 ? 6 : numTotalLayers;	// Because of cube compatible min 6 layers
 
 		// TODO: make destroy function
 		DestroyShadowMap();	
@@ -143,7 +155,7 @@ namespace vve {
 		vvh::ImgTransitionImageLayout3({
 			.m_device = m_vkState().m_device,
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
-			.m_commandPool = m_commandPool,
+			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 			.m_image = shadowImage().shadowImage.m_mapImage,
 			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -158,15 +170,29 @@ namespace vve {
 		// TODO: shadowImage().shadowImage.m_mapImageView is pointless like that in 1.1!
 
 		// Cube Array View for Point Lights
-		shadowImage().m_cubeArrayView = vvh::ImgCreateImageView({
+		if (numPointShadows >= 6) {
+			shadowImage().m_cubeArrayView = vvh::ImgCreateImageView({
 			.m_device = m_vkState().m_device,
 			.m_image = shadowImage().shadowImage.m_mapImage,
 			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
 			.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
-			.m_layers = numPointShadows,	// TODO: might want more layers than multiple of 6
+			.m_layers = numPointShadows,
 			.m_mipLevels = 1,
 			.m_viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
-		});
+			});
+		}
+		else {
+			shadowImage().m_cubeArrayView = vvh::ImgCreateImageView({
+			.m_device = m_vkState().m_device,
+			.m_image = m_dummyImage.m_dummyImage,
+			.m_format = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice),
+			.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
+			.m_layers = 6,
+			.m_mipLevels = 1,
+			.m_viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
+			});
+		}
+		
 
 		// 2D Array View for Direct + Spot Lights
 		if (numDirectAndSpotShadows > 0) {
@@ -235,7 +261,7 @@ namespace vve {
 		if (m_state != State::STATE_NEW) return false;
 		m_state = State::STATE_PREPARED;
 
-		vkResetCommandPool(m_vkState().m_device, m_commandPool, 0);
+		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 	
 		CreateShadowMap();
 			
@@ -295,7 +321,7 @@ namespace vve {
 		vvh::ImgTransitionImageLayout3({
 			.m_device = m_vkState().m_device,
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
-			.m_commandPool = m_commandPool,
+			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 			.m_image = shadowImage().shadowImage.m_mapImage,
 			.m_format = m_vkState().m_depthMapFormat,
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
@@ -352,7 +378,9 @@ namespace vve {
 
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 
-        vkDestroyCommandPool(m_vkState().m_device, m_commandPool, nullptr);
+		for (auto pool : m_commandPools) {
+			vkDestroyCommandPool(m_vkState().m_device, pool, nullptr);
+		}
 
         vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
