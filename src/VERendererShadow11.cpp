@@ -622,9 +622,10 @@ namespace vve {
 		ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 
+		// TODO: left right bottom top is set to fit for deferred-demo.cpp, make adjustable?
 		glm::mat4 shadowProj = glm::ortho(
-			-50.0f, +50.0f,
-			-50.0f, +50.0f,
+			-20.0f, +20.0f,
+			-20.0f, +20.0f,
 			near, far
 		);
 

@@ -117,7 +117,7 @@ class MyGame : public vve::System {
             vvh::Color sphereColor{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 
             // TODO: Was 0.6f, revert back
-            float intensity1 = 0.0f;
+            float intensity1 = 0.6f;
             auto lightHandle = m_registry.Insert(
                 vve::Name{ "PointLight-1" },
                 vve::PointLight{ vvh::LightParams{
@@ -138,7 +138,7 @@ class MyGame : public vve::System {
 
             // -----------------  Spot Light 1 -----------------
             vvh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-            float intensity3 = 0;//2.9f;
+            float intensity3 = 2.9f;
             auto lightHandle3 = m_registry.Insert(
                 vve::Name{"SpotLight-1"},
                 vve::SpotLight{vvh::LightParams{
@@ -159,7 +159,7 @@ class MyGame : public vve::System {
 
             // -----------------  Spot Light 2 -----------------
             vvh::Color color4{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-            float intensity4 = 0; //2.9f;
+            float intensity4 = 2.9f;
             auto lightHandle4 = m_registry.Insert(
                 vve::Name{ "SpotLight-2" },
                 vve::SpotLight{ vvh::LightParams{
@@ -219,7 +219,7 @@ class MyGame : public vve::System {
                 | ImGuiWindowFlags_NoMove);
 
             ImGui::Text("Select Light amount:");
-            static const int options[] = { 1, 5, 10, 20, 40, 80 };
+            static const int options[] = { 0, 1, 5, 10, 20, 40, 80 };
             for (size_t idx = 0; idx < std::size(options); ++idx) {
                 uint16_t val = options[idx];
                 char buf[16];
