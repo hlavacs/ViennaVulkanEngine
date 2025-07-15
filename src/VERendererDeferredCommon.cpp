@@ -703,8 +703,6 @@ namespace vve {
 		m_numberLightsPerType.x = RegisterLight<PointLight>(1.0f, lights, total);
 		m_numberLightsPerType.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
 		m_numberLightsPerType.z = RegisterLight<SpotLight>(3.0f, lights, total);
-		// TODO: remove this transforms the direction of the first spot light to -1 in z for testing purposes
-		//lights[m_numberLightsPerType.x + m_numberLightsPerType.y].directionW = glm::vec3(-1.0, -1.0, -1.0);
 
 		for (size_t i = 0; i < m_storageBuffersLights.m_uniformBuffersMapped.size(); ++i) {
 			memcpy(m_storageBuffersLights.m_uniformBuffersMapped[i], lights.data(), total * sizeof(vvh::Light));
@@ -731,16 +729,16 @@ namespace vve {
 
 		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
-				.m_device = m_vkState().m_device,
-				.m_graphicsQueue = m_vkState().m_graphicsQueue,
-				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-				.m_image = m_vkState().m_depthImage.m_depthImage,
-				.m_format = m_vkState().m_depthMapFormat,
-				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-				.m_commandBuffer = cmdBuffer
-			});
+			.m_device = m_vkState().m_device,
+			.m_graphicsQueue = m_vkState().m_graphicsQueue,
+			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
+			.m_image = m_vkState().m_depthImage.m_depthImage,
+			.m_format = m_vkState().m_depthMapFormat,
+			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+			.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.m_commandBuffer = cmdBuffer
+		});
 	}
 
 	template<typename Derived>

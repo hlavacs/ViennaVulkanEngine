@@ -107,7 +107,6 @@ namespace vve {
 			.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		});
 
-
 		return false;
 	}
 
