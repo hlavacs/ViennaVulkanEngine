@@ -528,7 +528,6 @@ namespace vve {
 				.m_graphicsQueue = m_vkState().m_graphicsQueue,
 				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 				.m_image = image.m_gbufferImage,
-				.m_format = image.m_gbufferFormat,
 				.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 				.m_newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				.m_commandBuffer = VK_NULL_HANDLE
@@ -718,7 +717,6 @@ namespace vve {
 				.m_graphicsQueue = m_vkState().m_graphicsQueue,
 				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 				.m_image = image.m_gbufferImage,
-				.m_format = image.m_gbufferFormat,
 				.m_oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				.m_commandBuffer = cmdBuffer
@@ -731,7 +729,6 @@ namespace vve {
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
 			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 			.m_image = m_vkState().m_depthImage.m_depthImage,
-			.m_format = m_vkState().m_depthMapFormat,
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 			.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -748,7 +745,6 @@ namespace vve {
 				.m_graphicsQueue = m_vkState().m_graphicsQueue,
 				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 				.m_image = image.m_gbufferImage,
-				.m_format = image.m_gbufferFormat,
 				.m_oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				.m_newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				.m_commandBuffer = cmdBuffer
@@ -761,7 +757,6 @@ namespace vve {
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
 			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 			.m_image = m_vkState().m_depthImage.m_depthImage,
-			.m_format = m_vkState().m_depthMapFormat,
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,

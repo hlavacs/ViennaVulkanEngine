@@ -111,7 +111,6 @@ namespace vve {
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
 			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 			.m_image = m_dummyImage.m_dummyImage,
-			.m_format = m_vkState().m_depthMapFormat,
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_layers = 6,
 			.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
@@ -157,7 +156,6 @@ namespace vve {
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
 			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 			.m_image = shadowImage().shadowImage.m_mapImage,
-			.m_format = m_vkState().m_depthMapFormat,
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_layers = (int)numTotalLayers,
 			.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
@@ -323,7 +321,6 @@ namespace vve {
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
 			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
 			.m_image = shadowImage().shadowImage.m_mapImage,
-			.m_format = m_vkState().m_depthMapFormat,
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_layers = (int)numberTotalLayers,	// TODO: fix when it works
 			.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
