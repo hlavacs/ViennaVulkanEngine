@@ -445,23 +445,9 @@ namespace vve {
 					&pc
 				);
 
-				// One renderPass per layer, image index = layerNumber
-				vvh::ComBeginRenderPass2({
-					.m_commandBuffer = cmdBuffer,
-					.m_imageIndex = layer++,	//m_vkState().m_imageIndex,
-					.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
-					.m_framebuffers = m_shadowFrameBuffers,
-					.m_renderPass = m_renderPass,
-					.m_clearValues = {{.depthStencil = {1.0f, 0} }},
-					.m_currentFrame = m_vkState().m_currentFrame
-					});
-
-				RecordObjects(cmdBuffer);
-
-				vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+				RenderShadowMap(cmdBuffer, layer);
 			}
 		}
-
 	}
 
 	void RendererShadow11::RenderDirectLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
@@ -492,19 +478,7 @@ namespace vve {
 				&pc
 			);
 
-			vvh::ComBeginRenderPass2({
-					.m_commandBuffer = cmdBuffer,
-					.m_imageIndex = layer++,	//m_vkState().m_imageIndex,
-					.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
-					.m_framebuffers = m_shadowFrameBuffers,
-					.m_renderPass = m_renderPass,
-					.m_clearValues = {{.depthStencil = {1.0f, 0} }},
-					.m_currentFrame = m_vkState().m_currentFrame
-				});
-
-			RecordObjects(cmdBuffer);
-
-			vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+			RenderShadowMap(cmdBuffer, layer);
 		}
 	}
 
@@ -523,7 +497,6 @@ namespace vve {
 
 			glm::mat4 view = glm::lookAt(lightPos, lightPos + lightDir, up );
 			glm::mat4 lightSpaceMatrix = shadowProj * view;
-
 			// Push for lsm ubo in renderer
 			shadowImage.m_lightSpaceMatrices.emplace_back(lightSpaceMatrix);
 
@@ -536,23 +509,24 @@ namespace vve {
 				&pc
 			);
 
-			vvh::ComBeginRenderPass2({
-					.m_commandBuffer = cmdBuffer,
-					.m_imageIndex = layer++,	//m_vkState().m_imageIndex,
-					.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
-					.m_framebuffers = m_shadowFrameBuffers,
-					.m_renderPass = m_renderPass,
-					.m_clearValues = {{.depthStencil = {1.0f, 0} }},
-					.m_currentFrame = m_vkState().m_currentFrame
-				});
-
-			RecordObjects(cmdBuffer);
-
-			vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+			RenderShadowMap(cmdBuffer, layer);
 		}
 	}
 
-	void RendererShadow11::RecordObjects(const VkCommandBuffer& cmdBuffer) {
+	void RendererShadow11::RenderShadowMap(const VkCommandBuffer& cmdBuffer, uint32_t& layer) {
+		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+
+		// One renderPass per layer, image index = layerNumber
+		vvh::ComBeginRenderPass2({
+			.m_commandBuffer = cmdBuffer,
+			.m_imageIndex = layer++,	//m_vkState().m_imageIndex,
+			.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
+			.m_framebuffers = m_shadowFrameBuffers,
+			.m_renderPass = m_renderPass,
+			.m_clearValues = {{.depthStencil = {1.0f, 0} }},
+			.m_currentFrame = m_vkState().m_currentFrame
+		});
+
 		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :
 			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, oShadowDescriptor&>
 			({ (size_t)m_shadowPipeline.m_pipeline })) {
@@ -573,6 +547,8 @@ namespace vve {
 				.m_currentFrame = m_vkState().m_currentFrame
 				});
 		}
+
+		vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
 	}
 
 };   // namespace vve
