@@ -47,8 +47,8 @@ namespace vve {
 		std::map<int, PipelinePerType> m_geomPipesPerType;
 		vvh::Pipeline m_lightingPipeline{};
 
-		std::vector<VkCommandPool> m_commandPools{};
-		std::vector<VkCommandBuffer> m_commandBuffers{};
+		std::vector<VkCommandPool> m_commandPools{ VK_NULL_HANDLE };
+		std::vector<VkCommandBuffer> m_commandBuffers{ VK_NULL_HANDLE };
 
 		glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
 		bool m_lightsChanged{ true };

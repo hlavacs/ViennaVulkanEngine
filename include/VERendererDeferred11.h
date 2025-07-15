@@ -22,8 +22,8 @@ namespace vve {
 		void CreateDeferredFrameBuffers();
 		void DestroyDeferredFrameBuffers();
 
-		std::vector<VkFramebuffer> m_gBufferFrameBuffers{};
-		std::vector<VkFramebuffer> m_lightingFrameBuffers{};
+		std::vector<VkFramebuffer> m_gBufferFrameBuffers{ VK_NULL_HANDLE };
+		std::vector<VkFramebuffer> m_lightingFrameBuffers{ VK_NULL_HANDLE };
 
 		VkRenderPass m_geometryPass{ VK_NULL_HANDLE };
 		VkRenderPass m_lightingPass{ VK_NULL_HANDLE };
