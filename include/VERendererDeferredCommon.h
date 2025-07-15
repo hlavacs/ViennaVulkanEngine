@@ -33,6 +33,7 @@ namespace vve {
 		vvh::Buffer m_storageBuffersLightSpaceMatrices{};
 
 		VkSampler m_sampler{ VK_NULL_HANDLE };
+		VkSampler m_albedoSampler{ VK_NULL_HANDLE };
 		VkSampler m_shadowSampler{ VK_NULL_HANDLE };
 		std::vector<vvh::GBufferImage> m_gBufferAttachments{};
 

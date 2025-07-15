@@ -161,6 +161,13 @@ namespace vve {
 			.m_device = m_vkState().m_device,
 			.m_sampler = m_sampler
 			});
+		// Sampler with anisotropy enabled for albedo
+		vvh::ImgCreateImageSampler({
+			.m_physicalDevice = m_vkState().m_physicalDevice,
+			.m_device = m_vkState().m_device,
+			.m_sampler = m_albedoSampler,
+			.m_anisotropyEnable = VK_TRUE
+			});
 
 		// Shadow Sampler
 		vvh::ImgCreateImageSampler({
@@ -171,7 +178,7 @@ namespace vve {
 			.m_borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
 			.m_compareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
 			.m_compareEnable = VK_TRUE,
-			.m_maxLod = 0.0f,	// TODO: Maybe 0.0?
+			.m_maxLod = 0.0f,
 			});
 
 		// Shadow light space matrices
@@ -437,6 +444,7 @@ namespace vve {
 		vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 
 		vkDestroySampler(m_vkState().m_device, m_sampler, nullptr);
+		vkDestroySampler(m_vkState().m_device, m_albedoSampler, nullptr);
 		vkDestroySampler(m_vkState().m_device, m_shadowSampler, nullptr);
 
 		for (auto& buffer : { std::ref(m_uniformBuffersPerFrame), std::ref(m_storageBuffersLights) }) {
@@ -484,12 +492,12 @@ namespace vve {
 			.m_swapChain = m_vkState().m_swapChain,
 			.m_gbufferImage = m_gBufferAttachments[ALBEDO],
 			.m_format = VK_FORMAT_R8G8B8A8_SRGB,
-			.m_sampler = m_sampler
+			.m_sampler = m_albedoSampler
 			});
 		vvh::RenUpdateImageDescriptorSet({
 			.m_device = m_vkState().m_device,
 			.m_imageView = m_gBufferAttachments[ALBEDO].m_gbufferImageView,
-			.m_sampler = m_sampler,
+			.m_sampler = m_albedoSampler,
 			.m_binding = ALBEDO,
 			.m_descriptorSet = m_descriptorSetComposition
 			});

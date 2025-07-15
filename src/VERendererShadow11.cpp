@@ -525,8 +525,8 @@ namespace vve {
 			.m_clearValues = {{.depthStencil = {1.0f, 0} }}
 		});
 
-		for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :
-			m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, oShadowDescriptor&>
+		for (auto [oHandle, ghandle, descriptorset] :
+			m_registry.template GetView<vecs::Handle, MeshHandle, oShadowDescriptor&>
 			({ (size_t)m_shadowPipeline.m_pipeline })) {
 
 			if (m_registry.template Has<PointLight>(oHandle) || m_registry.template Has<SpotLight>(oHandle)) {
