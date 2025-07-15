@@ -284,8 +284,8 @@ class MyGame : public vve::System {
 		float m_volume{MIX_MAX_VOLUME / 2.0};
 
         static std::mt19937& getRng() {
-            static std::mt19937 engine{ std::random_device{}() };
-            return engine;
+            static std::mt19937 rndEngine{ std::random_device{}() };
+            return rndEngine;
         }
 
         float randFloat(float min, float max) {
@@ -297,7 +297,7 @@ class MyGame : public vve::System {
     
     
     int main() {
-        vve::Engine engine("My Engine", VK_MAKE_VERSION(1, 3, 0)) ;
+        vve::Engine engine("My Engine");
         MyGame mygui{engine};  
         engine.Run();
     

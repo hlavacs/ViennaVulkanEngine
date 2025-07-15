@@ -256,7 +256,7 @@ namespace vve {
 	}
 
 	bool RendererShadow11::OnPrepareNextFrame(const Message& message) {
-		if (m_state != State::STATE_NEW) return false;
+		if (m_state != State::STATE_NEW || !m_engine.IsShadowEnabled()) return false;
 		m_state = State::STATE_PREPARED;
 
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
@@ -267,7 +267,7 @@ namespace vve {
 	}
 
 	bool RendererShadow11::OnRecordNextFrame(const Message& message) {
-		if (m_state != State::STATE_PREPARED) return false;
+		if (m_state != State::STATE_PREPARED || !m_engine.IsShadowEnabled()) return false;
 		m_state = State::STATE_RECORDED;
 
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);

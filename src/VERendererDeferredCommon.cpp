@@ -267,7 +267,7 @@ namespace vve {
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnRecordNextFrame(const Message& message) {
 
-		if (m_shadowsNeedUpdate) {
+		if (m_shadowsNeedUpdate && m_engine.IsShadowEnabled()) {
 			auto [sHandle, shadowImage] = *m_registry.template GetView<vecs::Handle, ShadowImage&>().begin();
 			// shadow cube array for point lights
 			vvh::RenUpdateImageDescriptorSet({
