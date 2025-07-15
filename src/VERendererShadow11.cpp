@@ -411,13 +411,13 @@ namespace vve {
 		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		float aspect = 1.0f;	// width / height
 
-		static const glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
-
+		static glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
 
 		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, PointLight&, LocalToWorldMatrix&>()) {
 			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
 
-			std::vector<glm::mat4> shadowTransforms;
+			static std::vector<glm::mat4> shadowTransforms;
+			shadowTransforms.clear();
 			shadowTransforms.reserve(6);
 			shadowTransforms.push_back(shadowProj *
 				glm::lookAt(lightPos, lightPos + glm::vec3(1.0, 0.0, 0.0), glm::vec3(0.0, -1.0, 0.0)));
@@ -434,10 +434,17 @@ namespace vve {
 
 
 			for (uint8_t i = 0; i < 6; ++i) {
-				// LightSpaceMatrix
 				glm::mat4& lightSpaceMatrix = shadowTransforms[i];
+				PushConstantShadow pc{ lightSpaceMatrix, lightPos };
 
-				// TODO: image index or just single image?
+				vkCmdPushConstants(cmdBuffer,
+					m_shadowPipeline.m_pipelineLayout,
+					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+					0,
+					sizeof(PushConstantShadow),
+					&pc
+				);
+
 				// One renderPass per layer, image index = layerNumber
 				vvh::ComBeginRenderPass2({
 					.m_commandBuffer = cmdBuffer,
@@ -448,17 +455,6 @@ namespace vve {
 					.m_clearValues = {{.depthStencil = {1.0f, 0} }},
 					.m_currentFrame = m_vkState().m_currentFrame
 					});
-
-				PushConstantShadow pc{ lightSpaceMatrix, lightPos };
-
-
-				vkCmdPushConstants(cmdBuffer,
-					m_shadowPipeline.m_pipelineLayout,
-					VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-					0,
-					sizeof(PushConstantShadow),
-					&pc
-				);
 
 				RecordObjects(cmdBuffer);
 
@@ -482,22 +478,7 @@ namespace vve {
 			std::cout << "DirectLightPos: " << lightPos.x << ", " << lightPos.y << ", " << lightPos.z << std::endl;
 			std::cout << "DirectLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
 
-			glm::mat4 view = glm::lookAt(
-				lightPos,
-				glm::vec3(0.0f),
-				up
-			);
-
-			vvh::ComBeginRenderPass2({
-					.m_commandBuffer = cmdBuffer,
-					.m_imageIndex = layer++,	//m_vkState().m_imageIndex,
-					.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
-					.m_framebuffers = m_shadowFrameBuffers,
-					.m_renderPass = m_renderPass,
-					.m_clearValues = {{.depthStencil = {1.0f, 0} }},
-					.m_currentFrame = m_vkState().m_currentFrame
-				});
-
+			glm::mat4 view = glm::lookAt(lightPos, glm::vec3(0.0f), up);
 			glm::mat4 lightSpaceMatrix = shadowProj * view;
 			// Push for lsm ubo in renderer
 			shadowImage.m_lightSpaceMatrices.emplace_back(lightSpaceMatrix);
@@ -510,6 +491,16 @@ namespace vve {
 				sizeof(PushConstantShadow),
 				&pc
 			);
+
+			vvh::ComBeginRenderPass2({
+					.m_commandBuffer = cmdBuffer,
+					.m_imageIndex = layer++,	//m_vkState().m_imageIndex,
+					.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
+					.m_framebuffers = m_shadowFrameBuffers,
+					.m_renderPass = m_renderPass,
+					.m_clearValues = {{.depthStencil = {1.0f, 0} }},
+					.m_currentFrame = m_vkState().m_currentFrame
+				});
 
 			RecordObjects(cmdBuffer);
 
@@ -531,18 +522,6 @@ namespace vve {
 			std::cout << "SpotLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
 
 			glm::mat4 view = glm::lookAt(lightPos, lightPos + lightDir, up );
-
-			vvh::ComBeginRenderPass2({
-					.m_commandBuffer = cmdBuffer,
-					.m_imageIndex = layer++,	//m_vkState().m_imageIndex,
-					.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
-					.m_framebuffers = m_shadowFrameBuffers,
-					.m_renderPass = m_renderPass,
-					.m_clearValues = {{.depthStencil = {1.0f, 0} }},
-					.m_currentFrame = m_vkState().m_currentFrame
-				});
-
-
 			glm::mat4 lightSpaceMatrix = shadowProj * view;
 
 			// Push for lsm ubo in renderer
@@ -556,6 +535,16 @@ namespace vve {
 				sizeof(PushConstantShadow),
 				&pc
 			);
+
+			vvh::ComBeginRenderPass2({
+					.m_commandBuffer = cmdBuffer,
+					.m_imageIndex = layer++,	//m_vkState().m_imageIndex,
+					.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
+					.m_framebuffers = m_shadowFrameBuffers,
+					.m_renderPass = m_renderPass,
+					.m_clearValues = {{.depthStencil = {1.0f, 0} }},
+					.m_currentFrame = m_vkState().m_currentFrame
+				});
 
 			RecordObjects(cmdBuffer);
 
