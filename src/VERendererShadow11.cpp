@@ -409,6 +409,7 @@ namespace vve {
 		RenderPointLightShadow(cmdBuffer, layerIdx, near, far);
 		// TODO: Remove assert. This is temporary, as demo.cpp has 1 point and 1 spot light = 7 layers EXACTLY
 		//assert(layerIdx == 6);
+		RenderDirectLightShadow(cmdBuffer, layerIdx, near, far);
 		RenderSpotLightShadow(cmdBuffer, layerIdx, near, far);
 		//assert(layerIdx == 7);
 		std::cout << "Shadow lsm matrices count: " << shadowImage().m_lightSpaceMatrices.size() << std::endl;
@@ -617,9 +618,83 @@ namespace vve {
 
 	}
 
+	void RendererShadow11::RenderDirectLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
+		ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+		glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
+
+		glm::mat4 shadowProj = glm::ortho(
+			-50.0f, +50.0f,
+			-50.0f, +50.0f,
+			near, far
+		);
+
+		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, DirectionalLight&, LocalToWorldMatrix&>()) {
+			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
+			glm::vec3 lightDir = glm::vec3{ lToW()[1] };
+
+			std::cout << "DirectLightPos: " << lightPos.x << ", " << lightPos.y << ", " << lightPos.z << std::endl;
+			std::cout << "DirectLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
+
+			glm::mat4 view = glm::lookAt(
+				lightPos,
+				glm::vec3(0.0f),
+				up
+			);
+
+			vvh::ComBeginRenderPass2({
+					.m_commandBuffer = cmdBuffer,
+					.m_imageIndex = layer++,	//m_vkState().m_imageIndex,
+					.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
+					.m_framebuffers = m_shadowFrameBuffers,
+					.m_renderPass = m_renderPass,
+					.m_clearValues = {{.depthStencil = {1.0f, 0} }},
+					.m_currentFrame = m_vkState().m_currentFrame
+				});
+
+
+			glm::mat4 lightSpaceMatrix = shadowProj * view;
+
+			// Push for lsm ubo in renderer
+			shadowImage.m_lightSpaceMatrices.emplace_back(lightSpaceMatrix);
+
+			PushConstantShadow pc{ lightSpaceMatrix, lightPos };
+			vkCmdPushConstants(cmdBuffer,
+				m_shadowPipeline.m_pipelineLayout,
+				VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				0,
+				sizeof(PushConstantShadow),
+				&pc
+			);
+
+			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, descriptorset] :
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, oShadowDescriptor&>
+				({ (size_t)m_shadowPipeline.m_pipeline })) {
+
+				if (m_registry.template Has<PointLight>(oHandle) || m_registry.template Has<SpotLight>(oHandle)) {
+					// Renders depth image without the point or spot light sphere
+					continue;
+				}
+
+				const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
+
+				vvh::ComRecordObject({
+					.m_commandBuffer = cmdBuffer,
+					.m_graphicsPipeline = m_shadowPipeline,
+					.m_descriptorSets = {  m_descriptorSetPerFrame, descriptorset().m_oShadowDescriptor},
+					.m_type = "P",
+					.m_mesh = mesh,
+					.m_currentFrame = m_vkState().m_currentFrame
+					});
+			}
+
+			vvh::ComEndRenderPass({ .m_commandBuffer = cmdBuffer });
+		}
+	}
+
 	void RendererShadow11::RenderSpotLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
 		ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		float aspect = 1.0f;	// width / height
+		glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 
 		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
 
@@ -627,11 +702,10 @@ namespace vve {
 			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
 			glm::vec3 lightDir = glm::vec3{ lToW()[1] };
 
-			std::cout << "LightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
+			std::cout << "SpotLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
 			// TODO: remove this transforms the direction of the first spot light to -1 in z for testing purposes
 			//glm::vec3 lightDir = glm::vec3(-1.0, -1.0, -1.0);
 
-			glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 			glm::mat4 view = glm::lookAt(lightPos, lightPos + lightDir, up );
 
 			vvh::ComBeginRenderPass2({
