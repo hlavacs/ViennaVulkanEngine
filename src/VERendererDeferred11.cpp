@@ -47,8 +47,7 @@ namespace vve {
 			.m_extent				= m_vkState().m_swapChain.m_swapChainExtent,
 			.m_framebuffers			= m_gBufferFrameBuffers,
 			.m_renderPass			= m_geometryPass,
-			.m_clearValues			= m_clearValues,
-			.m_currentFrame			= m_vkState().m_currentFrame 
+			.m_clearValues			= m_clearValues
 			});
 
 		RecordObjects(cmdBuffer, &m_geometryPass);
@@ -66,8 +65,7 @@ namespace vve {
 			.m_extent				= m_vkState().m_swapChain.m_swapChainExtent,
 			.m_framebuffers			= m_lightingFrameBuffers,
 			.m_renderPass			= m_lightingPass,
-			.m_clearValues			= {},
-			.m_currentFrame			= m_vkState().m_currentFrame
+			.m_clearValues			= {}
 			});
 
 		RecordLighting(cmdBuffer);
