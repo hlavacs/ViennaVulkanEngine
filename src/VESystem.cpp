@@ -43,6 +43,10 @@ namespace vve {
     
 	//------------------------------------------------------------------------
 
+    System::MsgShadowMapRecreated::MsgShadowMapRecreated() : MsgBase{ "SHADOW_MAP_RECREATED" } {}
+
+    //------------------------------------------------------------------------
+
 	System::MsgSceneLoad::MsgSceneLoad(Filename sceneName, aiPostProcessSteps ai_flags) : MsgBase{"SCENE_LOAD"}, m_sceneName{sceneName}, m_ai_flags{ai_flags} {};
 
 	System::MsgSceneCreate::MsgSceneCreate(ObjectHandle object, ParentHandle parent, Filename sceneName, aiPostProcessSteps ai_flags) : 

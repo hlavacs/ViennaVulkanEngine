@@ -46,7 +46,9 @@ namespace vve {
 		"MESH_CREATE",	
 		"MESH_DESTROY",	
         "DELETED", //React to something being deleted
-        "LAST" //
+        "LAST", //
+		//---------------------
+		"SHADOW_MAP_RECREATED"
     };
 
 
@@ -96,6 +98,10 @@ namespace vve {
 	    struct MsgKeyUp : public MsgBase { MsgKeyUp(double dt, int key);  int m_key; };
 	    struct MsgKeyRepeat : public MsgBase { MsgKeyRepeat(double dt, int key); int m_key; };
 	    struct MsgSDL : public MsgBase { MsgSDL(double dt, SDL_Event event ); double m_dt; SDL_Event m_event; };
+
+		//------------------------------------------------------------------------------------------------
+		
+		struct MsgShadowMapRecreated : public MsgBase { MsgShadowMapRecreated(); };
 
 		//------------------------------------------------------------------------------------------------
 
