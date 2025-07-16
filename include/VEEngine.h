@@ -63,8 +63,8 @@ namespace vve {
 		auto GetRegistry() -> auto& { return m_registry; }
 		auto GetState() { return EngineState{m_name, m_apiVersion, c_minimumVersion, c_maximumVersion, m_debug, m_initialized, m_running}; }
 		auto GetSystem(std::string name) -> System* { return m_systems[name].get(); }
-		auto IsShadowEnabled() const -> bool { return enableShadows; }
-		void SetShadow(bool enabled) { enableShadows = enabled; }
+		auto GetShadowToggle() -> bool& { return m_shadowsEnabled; }
+		auto IsShadowEnabled() const -> const bool { return m_shadowsEnabled; }
 
 	protected:
 		virtual void CreateWindows();
@@ -79,7 +79,7 @@ namespace vve {
 		bool m_initialized{false};
 		bool m_running{false};
 
-		bool enableShadows{ true };
+		bool m_shadowsEnabled{ true };
 
 		std::chrono::time_point<std::chrono::high_resolution_clock> m_last;
 

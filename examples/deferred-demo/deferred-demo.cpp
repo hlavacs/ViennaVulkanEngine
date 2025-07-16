@@ -218,7 +218,7 @@ class MyGame : public vve::System {
                 | ImGuiWindowFlags_AlwaysAutoResize
                 | ImGuiWindowFlags_NoMove);
 
-            ImGui::Text("Select Light amount:");
+            ImGui::Text("Select Point Light amount:");
             static const int options[] = { 0, 1, 5, 10, 20, 40, 80 };
             for (size_t idx = 0; idx < std::size(options); ++idx) {
                 uint16_t val = options[idx];
@@ -232,7 +232,17 @@ class MyGame : public vve::System {
                     ImGui::SameLine();
             }
 
-            ImGui::Text("Current: %d", currentNumberLights);
+            ImGui::Text("Currently active Point Lights: %d", currentNumberLights);
+            ImGui::Separator();
+
+            // Shadow On/Off toggle
+            ImGui::Checkbox("Enable Shadow", &m_engine.GetShadowToggle());
+            if (m_engine.IsShadowEnabled()) {
+                ImGui::Text("Shadow ON");
+            }
+            else {
+                ImGui::Text("Shadow OFF");
+            }
 
             ImGui::End();
 
