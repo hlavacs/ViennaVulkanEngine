@@ -77,7 +77,7 @@ namespace vve {
 		auto getPipelineType(const ObjectHandle& handle, const vvh::VertexData& vertexData) const -> const std::string;
 		auto getPipelinePerType(const std::string& type) const -> const PipelinePerType*;
 		void UpdateLightStorageBuffer();
-		void UpdateShadowRessources();
+		void UpdateShadowResources();
 
 	protected:
 		void CreateGeometryPipeline(const VkRenderPass* renderPass = VK_NULL_HANDLE);

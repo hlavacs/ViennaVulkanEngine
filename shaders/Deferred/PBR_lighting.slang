@@ -61,6 +61,9 @@ StructuredBuffer<float4x4> gLightSpaceMatrices;
 [[vk::push_constant]]
 PushConstantLight pushConstant;
 
+[[vk::constant_id(0)]]
+const int32_t SHADOW_ENABLED = 0;
+
 //----------------------------------------------------------------------------
 
 float3 reconstructPositionW(float2 uv, float depth) {
@@ -88,7 +91,7 @@ float4 main(VertexStageOutput in) : SV_Target
     float3 A = gAlbedo.Sample(in.uv).xyz;
     float2 MR = gMetallicRoughness.Sample(in.uv).xy;
 
-    float4 output = calculateLighting(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g, shadowCubeArray, shadow2DArray, gLightSpaceMatrices);
+    float4 output = calculateLighting(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g, shadowCubeArray, shadow2DArray, gLightSpaceMatrices, SHADOW_ENABLED);
 
     return output;
 }

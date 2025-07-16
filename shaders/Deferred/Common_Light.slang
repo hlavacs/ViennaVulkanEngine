@@ -67,7 +67,7 @@ float GeometrySmith(float3 N, float3 V, float3 L, float roughness) {
 
 // https://learnopengl.com/PBR/Lighting
 
-export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow) {
+export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow, int32_t enableShadow) {
 
     float3 N = normalize(normalW);
     float3 V = normalize(viewPosW - posW);
@@ -96,14 +96,14 @@ export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int s
 
         float NdotL = max(dot(N, L), 0.0);
 
-        float sh = calcPointShadow(posW, lights[i].positionW, cubeArrayShadow, i);
+        float sh = enableShadow == 0 ? 1 : calcPointShadow(posW, lights[i].positionW, cubeArrayShadow, i);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL * sh;
     }
 
     return Lo;
 }
 
-export public float3 accumulateDirectLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, Sampler2DArrayShadow shadow2DArray, StructuredBuffer<float4x4> lsm, uint lsmIndex) {
+export public float3 accumulateDirectLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, Sampler2DArrayShadow shadow2DArray, StructuredBuffer<float4x4> lsm, uint lsmIndex, int32_t enableShadow) {
 
     float3 N = normalize(normalW);
     float3 V = normalize(viewPosW - posW);
@@ -130,14 +130,14 @@ export public float3 accumulateDirectLights(StructuredBuffer<Light> lights, int 
         float3 specular = numerator / denominator;
 
         float NdotL = max(dot(N, L), 0.0);
-        float sh = calcDirectShadow(posW, lights[i].positionW, shadow2DArray, arrayIndex++, lsm);
+        float sh = enableShadow == 0 ? 1 : calcDirectShadow(posW, lights[i].positionW, shadow2DArray, arrayIndex++, lsm);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL * sh;
     }
     
     return Lo;
 }
 
-export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, Sampler2DArrayShadow shadow2DArray, StructuredBuffer<float4x4> lsm, uint lsmIndex) {
+export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, Sampler2DArrayShadow shadow2DArray, StructuredBuffer<float4x4> lsm, uint lsmIndex, int32_t enableShadow) {
 
     float3 N = normalize(normalW);
     float3 V = normalize(viewPosW - posW);
@@ -169,26 +169,26 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int st
 
         float NdotL = max(dot(N, L), 0.0);
 
-        float sh = calcSpotShadow(posW, lights[i].positionW, shadow2DArray, arrayIndex++, lsm);
+        float sh = enableShadow == 0 ? 1 : calcSpotShadow(posW, lights[i].positionW, shadow2DArray, arrayIndex++, lsm);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL * sh;
     }
 
     return Lo;
 }
 
-export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow, Sampler2DArrayShadow shadow2DArray, StructuredBuffer<float4x4> lsm) {
+export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow, Sampler2DArrayShadow shadow2DArray, StructuredBuffer<float4x4> lsm, int32_t enableShadow) {
     float3 Lo = float3(0.0);
 
     uint start = 0;
     uint end = numberLights.x;
-    Lo += accumulatePointLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, cubeArrayShadow);
+    Lo += accumulatePointLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, cubeArrayShadow, enableShadow);
     start = end;
     end += numberLights.y;
     uint shadowLayerIdx = numberLights.x * 6;
-    Lo += accumulateDirectLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, shadow2DArray, lsm, 0);
+    Lo += accumulateDirectLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, shadow2DArray, lsm, 0, enableShadow);
     start = end;
     end += numberLights.z;
-    Lo += accumulateSpotLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, shadow2DArray, lsm, numberLights.y);
+    Lo += accumulateSpotLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, shadow2DArray, lsm, numberLights.y, enableShadow);
 
     float3 ambient = float(0.01) * albedo /* ao */;
     float3 color = ambient + Lo;
