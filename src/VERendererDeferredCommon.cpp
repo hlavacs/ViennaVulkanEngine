@@ -451,7 +451,7 @@ namespace vve {
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnShadowMapRecreated(const Message& message) {
 		UpdateShadowResources();
-		return true;
+		return false;
 	}
 
 	template<typename Derived>
