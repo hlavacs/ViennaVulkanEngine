@@ -46,7 +46,7 @@ namespace vve {
 		vvh::DescriptorSet m_descriptorSetShadow{};
 
 		std::map<int, PipelinePerType> m_geomPipesPerType;
-		vvh::Pipeline m_lightingPipeline{};
+		std::array<vvh::Pipeline, 2> m_lightingPipeline{};
 
 		std::vector<VkCommandPool> m_commandPools{ VK_NULL_HANDLE };
 		std::vector<VkCommandBuffer> m_commandBuffers{ VK_NULL_HANDLE };

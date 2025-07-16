@@ -412,8 +412,10 @@ namespace vve {
 			vkDestroyPipeline(m_vkState().m_device, pipeline.m_graphicsPipeline.m_pipeline, nullptr);
 			vkDestroyPipelineLayout(m_vkState().m_device, pipeline.m_graphicsPipeline.m_pipelineLayout, nullptr);
 		}
-		vkDestroyPipeline(m_vkState().m_device, m_lightingPipeline.m_pipeline, nullptr);
-		vkDestroyPipelineLayout(m_vkState().m_device, m_lightingPipeline.m_pipelineLayout, nullptr);
+		for (auto& pipeline : m_lightingPipeline) {
+			vkDestroyPipeline(m_vkState().m_device, pipeline.m_pipeline, nullptr);
+			vkDestroyPipelineLayout(m_vkState().m_device, pipeline.m_pipelineLayout, nullptr);
+		}
 
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutComposition, nullptr);
@@ -608,22 +610,25 @@ namespace vve {
 		const std::string vert = (shaders / "PBR_lighting.spv").string();
 		const std::string frag = (shaders / "PBR_lighting.spv").string();
 
-		vvh::RenCreateGraphicsPipeline({
-			.m_device = m_vkState().m_device,
-			.m_renderPass = renderPass != VK_NULL_HANDLE ? *renderPass : VK_NULL_HANDLE,
-			.m_vertShaderPath = vert,
-			.m_fragShaderPath = frag,
-			.m_bindingDescription = {},
-			.m_attributeDescriptions = {},
-			.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition, m_descriptorSetLayoutShadow },
-			.m_specializationConstants = { 0 },
-			.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(PushConstantsLight) } },
-			.m_blendAttachments = {},
-			.m_graphicsPipeline = m_lightingPipeline,
-			.m_attachmentFormats = { m_vkState().m_swapChain.m_swapChainImageFormat },
-			.m_depthFormat = m_vkState().m_depthMapFormat,
-			.m_depthWrite = false
-			});
+		for (int32_t i = 0; i < 2; ++i) {
+			// creates two lighting pipelines with spec const 0 = shadowOff and 1 = shadowOn
+			vvh::RenCreateGraphicsPipeline({
+				.m_device = m_vkState().m_device,
+				.m_renderPass = renderPass != VK_NULL_HANDLE ? *renderPass : VK_NULL_HANDLE,
+				.m_vertShaderPath = vert,
+				.m_fragShaderPath = frag,
+				.m_bindingDescription = {},
+				.m_attributeDescriptions = {},
+				.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition, m_descriptorSetLayoutShadow },
+				.m_specializationConstants = { i },
+				.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(PushConstantsLight) } },
+				.m_blendAttachments = {},
+				.m_graphicsPipeline = m_lightingPipeline[i],
+				.m_attachmentFormats = { m_vkState().m_swapChain.m_swapChainImageFormat },
+				.m_depthFormat = m_vkState().m_depthMapFormat,
+				.m_depthWrite = false
+				});
+		}
 	}
 
 	template<typename Derived>
@@ -841,14 +846,14 @@ namespace vve {
 
 		vvh::ComBindPipeline({
 			.m_commandBuffer = cmdBuffer,
-			.m_graphicsPipeline = m_lightingPipeline,
+			.m_graphicsPipeline = m_lightingPipeline[static_cast<size_t>(m_engine.IsShadowEnabled())],
 			.m_extent = m_vkState().m_swapChain.m_swapChainExtent,
 			.m_viewPorts = {},
 			.m_scissors = {}, //default view ports and scissors
 			.m_blendConstants = {},
 			.m_pushConstants = {
 				{
-					.layout = m_lightingPipeline.m_pipelineLayout,
+					.layout = m_lightingPipeline[static_cast<size_t>(m_engine.IsShadowEnabled())].m_pipelineLayout,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 					.offset = 0,
 					.size = sizeof(PushConstantsLight),
@@ -859,7 +864,7 @@ namespace vve {
 
 		vvh::ComRecordLighting({
 			.m_commandBuffer = cmdBuffer,
-			.m_graphicsPipeline = m_lightingPipeline,
+			.m_graphicsPipeline = m_lightingPipeline[static_cast<size_t>(m_engine.IsShadowEnabled())],
 			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetComposition, m_descriptorSetShadow },
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
