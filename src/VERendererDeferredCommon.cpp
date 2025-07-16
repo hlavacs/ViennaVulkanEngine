@@ -267,33 +267,8 @@ namespace vve {
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnRecordNextFrame(const Message& message) {
 
-		if (m_shadowsNeedUpdate && m_engine.IsShadowEnabled()) {
-			auto [sHandle, shadowImage] = *m_registry.template GetView<vecs::Handle, ShadowImage&>().begin();
-			// shadow cube array for point lights
-			vvh::RenUpdateImageDescriptorSet({
-				.m_device = m_vkState().m_device,
-				.m_imageView = shadowImage().m_cubeArrayView,
-				.m_sampler = m_shadowSampler,
-				.m_binding = 0,
-				.m_descriptorSet = m_descriptorSetShadow,
-				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
-				});
-			// shadow 2D array for direct + spot lights
-			vvh::RenUpdateImageDescriptorSet({
-				.m_device = m_vkState().m_device,
-				.m_imageView = shadowImage().m_2DArrayView,
-				.m_sampler = m_shadowSampler,
-				.m_binding = 1,
-				.m_descriptorSet = m_descriptorSetShadow,
-				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
-				});
-
-			size_t lsmSize = shadowImage().m_lightSpaceMatrices.size() * sizeof(glm::mat4);
-			for (size_t i = 0; i < m_storageBuffersLightSpaceMatrices.m_uniformBuffersMapped.size(); ++i) {
-				memcpy(m_storageBuffersLightSpaceMatrices.m_uniformBuffersMapped[i], shadowImage().m_lightSpaceMatrices.data(), lsmSize);
-			}
-
-			m_shadowsNeedUpdate = false;
+		if (m_shadowsNeedUpdate) {
+			UpdateShadowResources();
 		}
 
 		static_cast<Derived*>(this)->OnRecordNextFrame();
@@ -697,6 +672,36 @@ namespace vve {
 		}
 
 		m_shadowsNeedUpdate = true;
+	}
+
+	template<typename Derived>
+	void RendererDeferredCommon<Derived>::UpdateShadowResources() {
+		auto [sHandle, shadowImage] = *m_registry.template GetView<vecs::Handle, ShadowImage&>().begin();
+		// shadow cube array for point lights
+		vvh::RenUpdateImageDescriptorSet({
+			.m_device = m_vkState().m_device,
+			.m_imageView = shadowImage().m_cubeArrayView,
+			.m_sampler = m_shadowSampler,
+			.m_binding = 0,
+			.m_descriptorSet = m_descriptorSetShadow,
+			.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+			});
+		// shadow 2D array for direct + spot lights
+		vvh::RenUpdateImageDescriptorSet({
+			.m_device = m_vkState().m_device,
+			.m_imageView = shadowImage().m_2DArrayView,
+			.m_sampler = m_shadowSampler,
+			.m_binding = 1,
+			.m_descriptorSet = m_descriptorSetShadow,
+			.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+			});
+
+		size_t lsmSize = shadowImage().m_lightSpaceMatrices.size() * sizeof(glm::mat4);
+		for (size_t i = 0; i < m_storageBuffersLightSpaceMatrices.m_uniformBuffersMapped.size(); ++i) {
+			memcpy(m_storageBuffersLightSpaceMatrices.m_uniformBuffersMapped[i], shadowImage().m_lightSpaceMatrices.data(), lsmSize);
+		}
+
+		m_shadowsNeedUpdate = false;
 	}
 
 	template<typename Derived>
