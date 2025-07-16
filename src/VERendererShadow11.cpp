@@ -9,7 +9,7 @@ namespace vve {
 	RendererShadow11::RendererShadow11(const std::string& systemName, Engine& engine, const std::string& windowName ) : Renderer(systemName, engine, windowName ) {
 
 		engine.RegisterCallbacks( { 
-			{this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
+			{this,  3400, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this,  1800, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
 			{this,  1990, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,  1700, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
@@ -75,16 +75,6 @@ namespace vve {
 
 		std::cout << "Pipeline Shadow" << std::endl;
 
-		// Shadow Image
-		ShadowImage shadowImage {
-			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAP_DIMENSION),
-			.maxImageArrayLayers = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers, SHADOW_MAX_NUM_LAYERS)
-		};
-		m_shadowImageHandle = m_registry.Insert(shadowImage);
-		// TODO: Manage tag better
-		m_registry.AddTags(m_shadowImageHandle, (size_t)1337 );
-
-
 		// Dummy Image 
 		vvh::ImgCreateImage({
 			.m_physicalDevice = m_vkState().m_physicalDevice,
@@ -117,7 +107,46 @@ namespace vve {
 			.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
 		});
 
+		// Shadow Image
+		ShadowImage shadowImage{
+			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAP_DIMENSION),
+			.maxImageArrayLayers = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers, SHADOW_MAX_NUM_LAYERS)
+		};
+		m_shadowImageHandle = m_registry.Insert(shadowImage);
+		// TODO: Manage tag better
+		m_registry.AddTags(m_shadowImageHandle, (size_t)1337);
+
+		SetDummyCubeArrayView();
+		SetDummy2DArrayView();
+
 		return false;
+	}
+
+	void RendererShadow11::SetDummyCubeArrayView() {
+		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+		shadowImage().m_cubeArrayView = vvh::ImgCreateImageView({
+			.m_device = m_vkState().m_device,
+			.m_image = m_dummyImage.m_dummyImage,
+			.m_format = m_vkState().m_depthMapFormat,
+			.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
+			.m_layers = 6,
+			.m_mipLevels = 1,
+			.m_viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
+			});
+	}
+
+	void RendererShadow11::SetDummy2DArrayView() {
+		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+		shadowImage().m_2DArrayView = vvh::ImgCreateImageView({
+			.m_device = m_vkState().m_device,
+			.m_image = m_dummyImage.m_dummyImage,
+			.m_format = m_vkState().m_depthMapFormat,
+			.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
+			.m_layers = 6,
+			.m_mipLevels = 1,
+			.m_viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
+			.m_baseArrayLayer = 0
+			});
 	}
 
 
@@ -131,7 +160,7 @@ namespace vve {
 		numTotalLayers = numTotalLayers < 6 ? 6 : numTotalLayers;	// Because of cube compatible min 6 layers
 
 		// TODO: make destroy function
-		DestroyShadowMap();	
+		DestroyShadowMap();
 
 		vvh::Image map;
 		vvh::ImgCreateImage({ m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
@@ -180,15 +209,7 @@ namespace vve {
 			});
 		}
 		else {
-			shadowImage().m_cubeArrayView = vvh::ImgCreateImageView({
-			.m_device = m_vkState().m_device,
-			.m_image = m_dummyImage.m_dummyImage,
-			.m_format = m_vkState().m_depthMapFormat,
-			.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
-			.m_layers = 6,
-			.m_mipLevels = 1,
-			.m_viewType = VK_IMAGE_VIEW_TYPE_CUBE_ARRAY
-			});
+			SetDummyCubeArrayView();
 		}
 		
 
@@ -206,16 +227,7 @@ namespace vve {
 				});
 		}
 		else {
-			shadowImage().m_2DArrayView = vvh::ImgCreateImageView({
-				.m_device = m_vkState().m_device,
-				.m_image = m_dummyImage.m_dummyImage,
-				.m_format = m_vkState().m_depthMapFormat,
-				.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT,
-				.m_layers = 6,
-				.m_mipLevels = 1,
-				.m_viewType = VK_IMAGE_VIEW_TYPE_2D_ARRAY,
-				.m_baseArrayLayer = 0
-				});
+			SetDummy2DArrayView();
 		}
 
 		// Creates a view and framebuffer for the total number of shadow layers
@@ -262,6 +274,7 @@ namespace vve {
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 	
 		CreateShadowMap();
+		m_engine.SendMsg(MsgShadowMapRecreated{});
 			
 		return false;
 	}

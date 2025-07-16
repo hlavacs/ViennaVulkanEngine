@@ -40,6 +40,9 @@ namespace vve
 		auto CountShadows(const uint32_t& num) const -> uint32_t;
 		void CreateShadowMap();
 
+		void SetDummyCubeArrayView();
+		void SetDummy2DArrayView();
+
 		void DestroyShadowMap();
 		void RenderShadowMap(const VkCommandBuffer& cmdBuffer, uint32_t& layer);
 		void RenderPointLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near = 1.0f, const float& far = 25.0f);
