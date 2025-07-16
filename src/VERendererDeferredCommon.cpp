@@ -10,13 +10,14 @@ namespace vve {
 	RendererDeferredCommon<Derived>::RendererDeferredCommon(const std::string& systemName, Engine& engine, const std::string& windowName) : Renderer(systemName, engine, windowName) {
 
 		engine.RegisterCallbacks({
-			{this,  3500, "INIT",				[this](Message& message) { return OnInit(message); } },
-			{this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
-			{this,  2000, "RECORD_NEXT_FRAME",	[this](Message& message) { return OnRecordNextFrame(message); } },
-			{this,  1750, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
-			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
-			{this,  1500, "WINDOW_SIZE",		[this](Message& message) { return OnWindowSize(message); }},
-			{this, 	   0, "QUIT",				[this](Message& message) { return OnQuit(message); } }
+			{this,  3500, "INIT",				 [this](Message& message) { return OnInit(message); } },
+			{this,  2000, "PREPARE_NEXT_FRAME",  [this](Message& message) { return OnPrepareNextFrame(message); } },
+			{this,  2000, "RECORD_NEXT_FRAME",	 [this](Message& message) { return OnRecordNextFrame(message); } },
+			{this,  1750, "OBJECT_CREATE",		 [this](Message& message) { return OnObjectCreate(message); } },
+			{this, 10000, "OBJECT_DESTROY",		 [this](Message& message) { return OnObjectDestroy(message); } },
+			{this,  1500, "WINDOW_SIZE",		 [this](Message& message) { return OnWindowSize(message); }},
+			{this, 	   0, "QUIT",				 [this](Message& message) { return OnQuit(message); } },
+			{this,  1900, "SHADOW_MAP_RECREATED",[this](Message& message) { return OnShadowMapRecreated(message); } },
 			});
 	}
 
@@ -267,8 +268,13 @@ namespace vve {
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnRecordNextFrame(const Message& message) {
 
-		if (m_shadowsNeedUpdate) {
+		//if (m_shadowsNeedUpdate) {
+		//	UpdateShadowResources();
+		//}
+		static bool tempBool = true;
+		if (tempBool) {
 			UpdateShadowResources();
+			tempBool = false;
 		}
 
 		static_cast<Derived*>(this)->OnRecordNextFrame();
@@ -440,6 +446,12 @@ namespace vve {
 		static_cast<Derived*>(this)->OnQuit();
 
 		return false;
+	}
+
+	template<typename Derived>
+	bool RendererDeferredCommon<Derived>::OnShadowMapRecreated(const Message& message) {
+		UpdateShadowResources();
+		return true;
 	}
 
 	template<typename Derived>
@@ -676,7 +688,7 @@ namespace vve {
 			memcpy(m_storageBuffersLights.m_uniformBuffersMapped[i], lights.data(), total * sizeof(vvh::Light));
 		}
 
-		m_shadowsNeedUpdate = true;
+		//m_shadowsNeedUpdate = true;
 	}
 
 	template<typename Derived>
@@ -706,7 +718,7 @@ namespace vve {
 			memcpy(m_storageBuffersLightSpaceMatrices.m_uniformBuffersMapped[i], shadowImage().m_lightSpaceMatrices.data(), lsmSize);
 		}
 
-		m_shadowsNeedUpdate = false;
+		//m_shadowsNeedUpdate = false;
 	}
 
 	template<typename Derived>
