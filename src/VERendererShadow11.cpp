@@ -70,7 +70,8 @@ namespace vve {
 			m_shadowPipeline,
 			{}, //
 			m_vkState().m_depthMapFormat,
-			true
+			true,
+			VK_CULL_MODE_FRONT_BIT
 		});	
 
 		std::cout << "Pipeline Shadow" << std::endl;
