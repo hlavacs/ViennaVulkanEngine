@@ -501,7 +501,7 @@ namespace vve {
 		float aspect = 1.0f;	// width / height
 		static constexpr glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
 
-		glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), aspect, near, far);
+		glm::mat4 shadowProj = glm::perspective(glm::radians(120.0f), aspect, near, far);
 
 		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, SpotLight&, LocalToWorldMatrix&>()) {
 			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
