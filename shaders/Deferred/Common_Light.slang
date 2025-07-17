@@ -190,7 +190,7 @@ export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numb
     end += numberLights.z;
     Lo += accumulateSpotLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, shadow2DArray, lsm, numberLights.y, enableShadow);
 
-    float3 ambient = float(0.01) * albedo /* ao */;
+    float3 ambient = float(0.01) * clamp(albedo, 0.0, 0.3) /* ao */;
     float3 color = ambient + Lo;
 
     return float4(color, 1.0);
