@@ -90,19 +90,19 @@ namespace vve {
 		//SetParent( ObjectHandle{lightHandle}, ParentHandle{m_rootHandle} );
 		//m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
 
-		float intensity2 = 5.8f;
-		auto lightHandle2 = m_registry.Insert(
-			Name{"LightDirect1"},
-			DirectionalLight{vvh::LightParams{
-				glm::vec3(0.1f, 0.5f, 0.1f), glm::vec4(2.0f, intensity2, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
-			}},
-			Position{ glm::vec3(7.0f, -15.5f, 5.0f) },
-			Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 10.0f, glm::vec3(1.0f,0.0f,0.0f)) }},
-			Scale{vec3_t{1.0f}}, 
-			LocalToParentMatrix{mat4_t{1.0f}}, 
-			LocalToWorldMatrix{mat4_t{1.0f}}
-		);
-		SetParent( ObjectHandle{lightHandle2}, ParentHandle{m_rootHandle} );
+		//float intensity2 = 5.8f;
+		//auto lightHandle2 = m_registry.Insert(
+		//	Name{"LightDirect1"},
+		//	DirectionalLight{vvh::LightParams{
+		//		glm::vec3(0.1f, 0.5f, 0.1f), glm::vec4(2.0f, intensity2, 10.0, 0.1f), glm::vec3(1.0f, 0.01f, 0.005f), 
+		//	}},
+		//	Position{ glm::vec3(7.0f, -15.5f, 5.0f) },
+		//	Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 10.0f, glm::vec3(1.0f,0.0f,0.0f)) }},
+		//	Scale{vec3_t{1.0f}}, 
+		//	LocalToParentMatrix{mat4_t{1.0f}}, 
+		//	LocalToWorldMatrix{mat4_t{1.0f}}
+		//);
+		//SetParent( ObjectHandle{lightHandle2}, ParentHandle{m_rootHandle} );
 
 		//vvh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 		//float intensity3 = 0.9f;

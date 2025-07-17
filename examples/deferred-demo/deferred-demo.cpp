@@ -133,8 +133,28 @@ class MyGame : public vve::System {
                 sphereColor,
                 vve::MeshName{ "assets/standard/sphere.obj/sphere" }
                 );
-            m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{m_myParentHandle}, this });
+            m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
 
+            // -----------------  Direct Light 1 -----------------
+            glm::vec3 dir = glm::normalize(glm::vec3(1, 2, 1));
+            glm::quat q = glm::rotation(glm::vec3(1, 0, 0), dir);
+            glm::mat3 mat = glm::toMat3(q);
+
+            float intensity2 = 2.8f;
+            auto lightHandle2 = m_registry.Insert(
+            	vve::Name{"DirectLight-1"},
+            	vve::DirectionalLight{vvh::LightParams{
+                    .color = glm::vec3(0.1f, 0.5f, 0.1f), 
+                    .params = glm::vec4(2.0f, intensity2, 10.0, 0.1f),
+                    .attenuation = glm::vec3(1.0f, 0.01f, 0.005f),
+            	}},
+            	vve::Position{ glm::vec3(-7.0f, -15.5f, 11.0f) },
+                vve::Rotation{ mat },
+                vve::Scale{vec3_t{1.0f}},
+                vve::LocalToParentMatrix{mat4_t{1.0f}},
+                vve::LocalToWorldMatrix{mat4_t{1.0f}}
+            );
+            m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle2), vve::ParentHandle{}, this });
 
             // -----------------  Spot Light 1 -----------------
             vvh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
