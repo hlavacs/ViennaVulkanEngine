@@ -35,6 +35,12 @@ private:
 		std::cout << "Loading level: " << msg.m_level << std::endl;
 		std::string level = std::string("Level: ") + msg.m_level;
 
+		// Starting Camera position
+		GetCamera();
+		m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f / 2.0f, vec3_t{1.0f, 0.0f, 0.0f}) }; 
+		m_registry.Get<vve::Position&>(m_cameraNodeHandle)().x += 7.46f;
+		m_registry.Get<vve::Position&>(m_cameraNodeHandle)().y -= 4.2f;
+
 		// ----------------- Load Plane -----------------
 
 		m_engine.SendMsg(MsgSceneLoad{ vve::Filename{plane_obj}, aiProcess_FlipWindingOrder });
@@ -53,14 +59,11 @@ private:
 		// ----------------- Load Cube -----------------
 
 		auto handleCube = m_registry.Insert(
-			vve::Position{ { nextRandom(), nextRandom(), 0.5f } },
+			vve::Position{ { randFloat(-50.0f, 50.0f), randFloat(-50.0f, 50.0f), 0.5f } },
 			vve::Rotation{ mat3_t{1.0f} },
 			vve::Scale{ vec3_t{1.0f} });
 
 		m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleCube), vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder });
-
-		GetCamera();
-		m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f / 2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
 
 		// ----------------- Load Cornell -----------------
 
@@ -99,28 +102,28 @@ private:
 
 	bool OnRecordNextFrame(Message message) {
 		// ImGui Interface
-		ImGui::Begin("Light-Settings", nullptr,
-			ImGuiWindowFlags_NoDecoration
-			| ImGuiWindowFlags_AlwaysAutoResize
-			| ImGuiWindowFlags_NoMove);
+		ImGui::Begin("Light-Settings", nullptr, ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize| ImGuiWindowFlags_NoMove);
 
+		// Point Light UI
 		ImGui::Text("Select Point Light amount:");
 		static constexpr int options[] = { 0, 1, 5, 10, 20, 40, 80 };
+		static int activePointLights = 0;
 		for (size_t idx = 0; idx < std::size(options); ++idx) {
 			uint16_t val = options[idx];
 			char buf[16];
 			sprintf(buf, "%d", val);
 			if (ImGui::Button(buf, ImVec2(40, 30))) {
-				currentNumberPointLights = val;
+				activePointLights = val;
 				managePointLights(val);
 			}
 			if (idx + 1 < std::size(options))
 				ImGui::SameLine();
 		}
 
-		ImGui::Text("Currently active Point Lights: %d", currentNumberPointLights);
+		ImGui::Text("Currently active Point Lights: %d", activePointLights);
 		ImGui::Separator();
 
+		// Spot Light UI
 		ImGui::Text("Select Spot Light setting:");
 		static constexpr const char* spotOptions[] = { "None", "Couch" };
 		static int activeSpotIdx = 0;
@@ -137,7 +140,7 @@ private:
 
 		ImGui::Separator();
 
-		// Shadow On/Off toggle
+		// Shadow On/Off toggle UI
 		ImGui::Checkbox("Enable Shadow", &m_engine.GetShadowToggle());
 		if (m_engine.IsShadowEnabled()) {
 			ImGui::Text("Shadow ON");
@@ -213,11 +216,6 @@ private:
 	}
 
 	// Random generator functions
-
-	int nextRandom() const {
-		return rand() % (c_field_size)-c_field_size / 2;
-	}
-
 	static std::mt19937& getRng() {
 		static std::mt19937 rndEngine{ std::random_device{}() };
 		return rndEngine;
@@ -229,14 +227,8 @@ private:
 	}
 
 private:
-	const float c_max_time = 35.0f;
-	const int c_field_size = 50;
-	const int c_number_cubes = 10;
-
 	vecs::Handle m_cameraHandle{};
 	vecs::Handle m_cameraNodeHandle{};
-
-	uint16_t currentNumberPointLights = 1;
 
 	inline static const std::string plane_obj	{ "assets/test/plane/plane_t_n_s.obj" };
 	inline static const std::string plane_mesh	{ "assets/test/plane/plane_t_n_s.obj/plane" };
