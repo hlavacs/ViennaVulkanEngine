@@ -274,7 +274,7 @@ namespace vve {
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 	
 		CreateShadowMap();
-		m_engine.SendMsg(MsgShadowMapRecreated{});
+		//m_engine.SendMsg(MsgShadowMapRecreated{});
 			
 		return false;
 	}
@@ -341,8 +341,7 @@ namespace vve {
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
 
-		// TODO: write logic for when shadow is calculated (start, and then only when light changes)
-
+		m_engine.SendMsg(MsgShadowMapRecreated{});
 		return false;
 	}
 
