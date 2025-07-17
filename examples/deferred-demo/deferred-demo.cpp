@@ -6,376 +6,252 @@
 #include "VEInclude.h"
 #include <random>
 
-class MyGame : public vve::System {
+class DeferredDemo : public vve::System {
 
-        enum class State : int {
-            STATE_RUNNING,
-            STATE_DEAD
-        };
+public:
+	DeferredDemo(vve::Engine& engine) : vve::System("DeferredDemo", engine) {
 
-        const float c_max_time = 35.0f;
-        const int c_field_size = 50;
-        const int c_number_cubes = 10;
+		m_engine.RegisterCallbacks({
+			{this,      0, "LOAD_LEVEL", [this](Message& message) { return OnLoadLevel(message); } },
+			{this,  10000, "UPDATE", [this](Message& message) { return OnUpdate(message); } },
+			{this, -10000, "RECORD_NEXT_FRAME", [this](Message& message) { return OnRecordNextFrame(message); } }
+			});
+	};
 
-        uint16_t currentNumberPointLights = 1;
+	~DeferredDemo() {};
 
-        int nextRandom() const {
-            return rand() % (c_field_size) - c_field_size/2;
-        }
+private:
 
-    public:
-        MyGame( vve::Engine& engine ) : vve::System("MyGame", engine ) {
-    
-            m_engine.RegisterCallbacks( { 
-                {this,      0, "LOAD_LEVEL", [this](Message& message){ return OnLoadLevel(message);} },
-                {this,  10000, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
-                {this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
-            } );
-            m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
-        };
-        
-        ~MyGame() {};
+	void GetCamera() {
+		if (m_cameraHandle.IsValid() == false) {
+			auto [handle, camera, parent] = *m_registry.GetView<vecs::Handle, vve::Camera&, vve::ParentHandle>().begin();
+			m_cameraHandle = handle;
+			m_cameraNodeHandle = parent;
+		};
+	}
 
-        void GetCamera() {
-            if(m_cameraHandle.IsValid() == false) { 
-                auto [handle, camera, parent] = *m_registry.GetView<vecs::Handle, vve::Camera&, vve::ParentHandle>().begin(); 
-                m_cameraHandle = handle;
-                m_cameraNodeHandle = parent;
-            };
-        }
-    
-        inline static std::string plane_obj  { "assets/test/plane/plane_t_n_s.obj" };
-        inline static std::string plane_mesh { "assets/test/plane/plane_t_n_s.obj/plane" };
-        inline static std::string plane_txt  { "assets/test/plane/grass.jpg" };
+	bool OnLoadLevel(Message message) {
+		auto& msg = message.template GetData<vve::System::MsgLoadLevel>();
+		std::cout << "Loading level: " << msg.m_level << std::endl;
+		std::string level = std::string("Level: ") + msg.m_level;
 
-        inline static std::string cube_obj  { "assets/test/crate0/cube.obj" };
-        inline static std::string cornell_obj  { "assets/test/cornell/CornellBox-Original.obj" };
+		// ----------------- Load Plane -----------------
 
-        bool OnLoadLevel( Message message ) {
-            auto& msg = message.template GetData<vve::System::MsgLoadLevel>();	
-            std::cout << "Loading level: " << msg.m_level << std::endl;
-            std::string level = std::string("Level: ") + msg.m_level;
+		m_engine.SendMsg(MsgSceneLoad{ vve::Filename{plane_obj}, aiProcess_FlipWindingOrder });
 
-            // ----------------- Load Plane -----------------
+		auto m_handlePlane = m_registry.Insert(
+			vve::Position{ {0.0f,0.0f,0.0f } },
+			vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) } },
+			vve::Scale{ vec3_t{1000.0f,1000.0f,1000.0f} },
+			vve::MeshName{ plane_mesh },
+			vve::TextureName{ plane_txt },
+			vve::UVScale{ { 1000.0f, 1000.0f } }
+		);
 
-            m_engine.SendMsg( MsgSceneLoad{ vve::Filename{plane_obj}, aiProcess_FlipWindingOrder });
+		m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(m_handlePlane), vve::ParentHandle{}, this });
 
-            auto m_handlePlane = m_registry.Insert( 
-                            vve::Position{ {0.0f,0.0f,0.0f } }, 
-                            vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
-                            vve::Scale{vec3_t{1000.0f,1000.0f,1000.0f}}, 
-                            vve::MeshName{plane_mesh},
-                            vve::TextureName{plane_txt},
-                            vve::UVScale{ { 1000.0f, 1000.0f } }
-                        );
+		// ----------------- Load Cube -----------------
 
-            m_engine.SendMsg(MsgObjectCreate{  vve::ObjectHandle(m_handlePlane), vve::ParentHandle{}, this });
-    
-            // ----------------- Load Cube -----------------
+		auto handleCube = m_registry.Insert(
+			vve::Position{ { nextRandom(), nextRandom(), 0.5f } },
+			vve::Rotation{ mat3_t{1.0f} },
+			vve::Scale{ vec3_t{1.0f} });
 
-            m_handleCube = m_registry.Insert( 
-                            vve::Position{ { nextRandom(), nextRandom(), 0.5f } }, 
-                            vve::Rotation{mat3_t{1.0f}}, 
-                            vve::Scale{vec3_t{1.0f}});
+		m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleCube), vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder });
 
-            m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_handleCube), vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder });
+		GetCamera();
+		m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f / 2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
 
-            GetCamera();
-            m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
+		// ----------------- Load Cornell -----------------
 
-            m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1, 50 });
-			m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
+		m_engine.SendMsg(MsgSceneLoad{ vve::Filename{cornell_obj}, aiProcess_PreTransformVertices });
+		auto handleCornell = m_registry.Insert(
+			vve::Position{ { 0.0f, 0.0f, -0.1f } },
+			vve::Rotation{ mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f / 2.0f, vec3_t{1.0f, 0.0f, 0.0f}) } },
+			vve::Scale{ vec3_t{1.0f} }
+		);
+		m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleCornell), vve::ParentHandle{}, vve::Filename{cornell_obj}, aiProcess_PreTransformVertices });
 
-            // ----------------- Load Cornell -----------------
-
-            m_engine.SendMsg(MsgSceneLoad{ vve::Filename{cornell_obj}, aiProcess_PreTransformVertices });
-            m_handleCornell = m_registry.Insert(
-                vve::Position{ { 0.0f, 0.0f, -0.1f } },
-                vve::Rotation{ mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f / 2.0f, vec3_t{1.0f, 0.0f, 0.0f}) } },
-                vve::Scale{ vec3_t{1.0f} }
-            );
-            m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_handleCornell), vve::ParentHandle{}, vve::Filename{cornell_obj}, aiProcess_PreTransformVertices });
-            // cornell camera position
-            m_registry.Get<vve::Position&>(m_cameraNodeHandle)().x += 7.46f;
-            m_registry.Get<vve::Position&>(m_cameraNodeHandle)().y -= 4.2f;
-            m_registry.Get<vve::Position&>(m_cameraNodeHandle)().z += 1.46f;
-
-            // -----------------  Fireplace -----------------
-            aiPostProcessSteps flags = static_cast<aiPostProcessSteps>(aiProcess_PreTransformVertices | aiProcess_ImproveCacheLocality);
-            m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/test/Fireplace/Fireplace.gltf"}, flags });
-            m_test = m_registry.Insert(
-                vve::Position{ { 5.0f, 0.0f, 0.1f } },
-                vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f))} },
-                //vve::Rotation{ mat3_t{1.0f} },
-                vve::Scale{ vec3_t{1.0f} }
-            );
-            m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_test), vve::ParentHandle{}, vve::Filename{"assets/test/Fireplace/Fireplace.gltf"}, flags });
+		// -----------------  Fireplace -----------------
+		aiPostProcessSteps flags = static_cast<aiPostProcessSteps>(aiProcess_PreTransformVertices | aiProcess_ImproveCacheLocality);
+		m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/test/Fireplace/Fireplace.gltf"}, flags });
+		auto handleFireplace = m_registry.Insert(
+			vve::Position{ { 5.0f, 0.0f, 0.1f } },
+			vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f))} },
+			//vve::Rotation{ mat3_t{1.0f} },
+			vve::Scale{ vec3_t{1.0f} }
+		);
+		m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleFireplace), vve::ParentHandle{}, vve::Filename{"assets/test/Fireplace/Fireplace.gltf"}, flags });
 
 
-            // -----------------  Point Light 1 -----------------
-            m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });
-            //vvh::Color sphereColor{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+		// -----------------  Light Mesh -----------------
+		m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });
 
-            //// TODO: Was 0.6f, revert back
-            //float intensity1 = 0.6f;
-            //auto lightHandle = m_registry.Insert(
-            //    vve::Name{ "PointLight-1" },
-            //    vve::PointLight{ vvh::LightParams{
-            //        .color = glm::vec3(1.0f, 1.0f, 1.0f), 
-            //        .params = glm::vec4(1.0f, intensity1, 10.0f, 0.01f), 
-            //        .attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
-            //    } },
-            //    vve::Position{ glm::vec3(7.0f, 1.5f, 2.0f) },
-            //    vve::Rotation{ mat3_t{1.0f} },
-            //    vve::Scale{ vec3_t{0.01f, 0.01f, 0.01f} },
-            //    vve::LocalToParentMatrix{ mat4_t{1.0f} },
-            //    vve::LocalToWorldMatrix{ mat4_t{1.0f} },
-            //    sphereColor,
-            //    vve::MeshName{ "assets/standard/sphere.obj/sphere" }
-            //    );
-            //m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
+		return false;
+	};
 
-            // -----------------  Direct Light 1 -----------------
-            //glm::vec3 dir = glm::normalize(glm::vec3(1, 2, 1));
-            //glm::quat q = glm::rotation(glm::vec3(1, 0, 0), dir);
-            //glm::mat3 mat = glm::toMat3(q);
+	bool OnUpdate(Message& message) {
+		auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
+		pos().z = 1.5f;
 
-            //float intensity2 = 2.8f;
-            //auto lightHandle2 = m_registry.Insert(
-            //	vve::Name{"DirectLight-1"},
-            //	vve::DirectionalLight{vvh::LightParams{
-            //        .color = glm::vec3(0.1f, 0.5f, 0.1f), 
-            //        .params = glm::vec4(2.0f, intensity2, 10.0, 0.1f),
-            //        .attenuation = glm::vec3(1.0f, 0.01f, 0.005f),
-            //	}},
-            //	vve::Position{ glm::vec3(-7.0f, -15.5f, 11.0f) },
-            //    vve::Rotation{ mat },
-            //    vve::Scale{vec3_t{1.0f}},
-            //    vve::LocalToParentMatrix{mat4_t{1.0f}},
-            //    vve::LocalToWorldMatrix{mat4_t{1.0f}}
-            //);
-            //m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle2), vve::ParentHandle{}, this });
+		return false;
+	}
 
-            // -----------------  Spot Light 1 -----------------
-            //vvh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-            //float intensity3 = 2.9f;
-            //auto lightHandle3 = m_registry.Insert(
-            //    vve::Name{"SpotLight-1"},
-            //    vve::SpotLight{vvh::LightParams{
-        		  //  .color = glm::vec3(1.0f, 0.0f, 0.0f), 
-            //        .params = glm::vec4(3.0f, intensity3, 10.0, 0.01f), 
-            //        .attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
-        	   // }},
-            //    vve::Position{ glm::vec3(7.0f, 1.5f, 2.0f) },
-            //    vve::Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 5.0f, glm::vec3(1.0f,0.0f,0.0f)) }},
-            //    vve::Scale{vec3_t{0.01f, 0.05f, 0.01f}},
-            //    vve::LocalToParentMatrix{mat4_t{1.0f}},
-            //    vve::LocalToWorldMatrix{mat4_t{1.0f}},
-            //    color3,
-        	   // vve::MeshName{"assets/standard/sphere.obj/sphere"}
-            //);
-            //m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle3), vve::ParentHandle{}, this });
+	bool OnRecordNextFrame(Message message) {
+		// ImGui Interface
+		ImGui::Begin("Light-Settings", nullptr,
+			ImGuiWindowFlags_NoDecoration
+			| ImGuiWindowFlags_AlwaysAutoResize
+			| ImGuiWindowFlags_NoMove);
 
-            // -----------------  Spot Light 2 -----------------
-            //vvh::Color color4{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-            //float intensity4 = 2.9f;
-            //auto lightHandle4 = m_registry.Insert(
-            //    vve::Name{ "SpotLight-2" },
-            //    vve::SpotLight{ vvh::LightParams{
-            //        .color = glm::vec3(0.0f, 0.0f, 1.0f),
-            //        .params = glm::vec4(3.0f, intensity4, 10.0, 0.01f),
-            //        .attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
-            //    } },
-            //    vve::Position{ glm::vec3(9.0f, 1.5f, 2.0f) },
-            //    vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 5.0f, glm::vec3(1.0f,0.0f,0.0f)) } },
-            //    vve::Scale{ vec3_t{0.01f, 0.05f, 0.01f} },
-            //    vve::LocalToParentMatrix{ mat4_t{1.0f} },
-            //    vve::LocalToWorldMatrix{ mat4_t{1.0f} },
-            //    color3,
-            //    vve::MeshName{ "assets/standard/sphere.obj/sphere" }
-            //    );
-            //m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle4), vve::ParentHandle{}, this });
+		ImGui::Text("Select Point Light amount:");
+		static constexpr int options[] = { 0, 1, 5, 10, 20, 40, 80 };
+		for (size_t idx = 0; idx < std::size(options); ++idx) {
+			uint16_t val = options[idx];
+			char buf[16];
+			sprintf(buf, "%d", val);
+			if (ImGui::Button(buf, ImVec2(40, 30))) {
+				currentNumberPointLights = val;
+				managePointLights(val);
+			}
+			if (idx + 1 < std::size(options))
+				ImGui::SameLine();
+		}
 
-            return false;
-        };
-    
-        bool OnUpdate( Message& message ) {
-            auto& msg = message.template GetData<vve::System::MsgUpdate>();
-            m_time_left -= static_cast<float>(msg.m_dt);
-            auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
-            pos().z = 1.5f;
-            if( m_state == State::STATE_RUNNING ) {
-                if( m_time_left <= 0.0f ) { 
-                    m_state = State::STATE_DEAD; 
-                    m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, 0 });
-                    m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/gameover.wav"}, 1 });
-                    return false;
-                }
-                auto posCube = m_registry.Get<vve::Position&>(m_handleCube);
-                float distance = glm::length( vec2_t{pos().x, pos().y} - vec2_t{posCube().x, posCube().y} );
-                if( distance < 1.5f) {
-                    m_cubes_left--;
-                    posCube().x = static_cast<float>(nextRandom());
-                    posCube().y = static_cast<float>(nextRandom());
-                    if( m_cubes_left == 0 ) {
-                        m_time_left += 20;
-                        m_cubes_left = c_number_cubes;
-                        m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/bell.wav"}, 1 });
-                    } else {
-                        m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/explosion.wav"}, 1 });
-                    }
-                }
-            }
+		ImGui::Text("Currently active Point Lights: %d", currentNumberPointLights);
+		ImGui::Separator();
 
-            return false;
-        }
-    
-        bool OnRecordNextFrame(Message message) { 
-            ImGui::Begin("Light-Settings", nullptr, 
-                  ImGuiWindowFlags_NoDecoration
-                | ImGuiWindowFlags_AlwaysAutoResize
-                | ImGuiWindowFlags_NoMove);
+		ImGui::Text("Select Spot Light setting:");
+		static constexpr const char* spotOptions[] = { "None", "Couch" };
+		static int activeSpotIdx = 0;
+		for (int i = 0; i < 2; ++i) {
+			if (ImGui::Button(spotOptions[i])) {
+				activeSpotIdx = i;
+				manageSpotLights(activeSpotIdx);
+			}
+			ImGui::SameLine();
+		}
+		ImGui::NewLine();
 
-            ImGui::Text("Select Point Light amount:");
-            static constexpr int options[] = { 0, 1, 5, 10, 20, 40, 80 };
-            for (size_t idx = 0; idx < std::size(options); ++idx) {
-                uint16_t val = options[idx];
-                char buf[16];
-                sprintf(buf, "%d", val);
-                if (ImGui::Button(buf, ImVec2(40, 30))) {
-                    currentNumberPointLights = val;
-                    managePointLights(val);
-                }
-                if (idx + 1 < std::size(options))
-                    ImGui::SameLine();
-            }
+		ImGui::Text("Active: %s", spotOptions[activeSpotIdx]);
 
-            ImGui::Text("Currently active Point Lights: %d", currentNumberPointLights);
-            ImGui::Separator();
+		ImGui::Separator();
 
-            ImGui::Text("Select Spot Light setting:");
-            static constexpr const char* spotOptions[] = {"None", "Couch"};
-            static int activeSpotIdx = 0;
-            for (int i = 0; i < 2; ++i) {
-                if (ImGui::Button(spotOptions[i])) {
-                    activeSpotIdx = i;
-                    manageSpotLights(activeSpotIdx);
-                }
-                ImGui::SameLine();
-            }
-            ImGui::NewLine();
+		// Shadow On/Off toggle
+		ImGui::Checkbox("Enable Shadow", &m_engine.GetShadowToggle());
+		if (m_engine.IsShadowEnabled()) {
+			ImGui::Text("Shadow ON");
+		}
+		else {
+			ImGui::Text("Shadow OFF");
+		}
 
-            ImGui::Text("Active: %s", spotOptions[activeSpotIdx]);
+		ImGui::End();
 
-            ImGui::Separator();
+		return false;
+	}
 
-            // Shadow On/Off toggle
-            ImGui::Checkbox("Enable Shadow", &m_engine.GetShadowToggle());
-            if (m_engine.IsShadowEnabled()) {
-                ImGui::Text("Shadow ON");
-            }
-            else {
-                ImGui::Text("Shadow OFF");
-            }
+	void managePointLights(const uint16_t& lightCount) {
+		// deletes all lights first
+		for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::PointLight&>()) {
+			m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
+		}
+		static constexpr vvh::Color sphereColor{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 
-            ImGui::End();
+		for (uint16_t i = 0; i < lightCount; ++i) {
+			// Random values but still close to main scene
+			glm::vec3 pointLightPosition(randFloat(5.0f, 10.0f), randFloat(0.5f, 3.0), randFloat(1.75f, 2.5f));
+			glm::vec3 pointLightColor(randFloat(0.0f, 1.0f), randFloat(0.0f, 1.0f), randFloat(0.0f, 1.0f));
+			float intensity = randFloat(0.1f, 0.3f);
 
-            return false;
-        }
+			auto lightHandle = m_registry.Insert(
+				vve::Name{ "PointLight-" + i },
+				vve::PointLight{ vvh::LightParams{
+					.color = pointLightColor,
+					.params = glm::vec4(1.0f, intensity, 10.0f, 0.01f),
+					.attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
+				} },
+				vve::Position{ pointLightPosition },
+				vve::Rotation{ mat3_t{1.0f} },
+				vve::Scale{ vec3_t{0.01f, 0.01f, 0.01f} },
+				vve::LocalToParentMatrix{ mat4_t{1.0f} },
+				vve::LocalToWorldMatrix{ mat4_t{1.0f} },
+				sphereColor,
+				vve::MeshName{ "assets/standard/sphere.obj/sphere" }
+				);
+			m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
+		}
+	}
 
-        void managePointLights(const uint16_t& lightCount) {
-            // deletes all lights first
-            for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::PointLight&>()) {
-                m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle});
-            }
-            static constexpr vvh::Color sphereColor{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+	void manageSpotLights(const int spotOption) {
+		// deletes all lights first
+		for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::SpotLight&>()) {
+			m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
+		}
+		static constexpr vvh::Color sphereColor{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
 
-            for (uint16_t i = 0; i < lightCount; ++i) {
-                // Random values but still close to main scene
-                glm::vec3 pointLightPosition(randFloat(5.0f, 10.0f), randFloat(0.5f, 3.0), randFloat(1.75f, 2.5f));
-                glm::vec3 pointLightColor(randFloat(0.0f, 1.0f), randFloat(0.0f, 1.0f), randFloat(0.0f, 1.0f));
-                float intensity = randFloat(0.1f, 0.3f);
+		if (spotOption == 0) return;
 
-                auto lightHandle = m_registry.Insert(
-                    vve::Name{ "PointLight-" + i },
-                    vve::PointLight{ vvh::LightParams{
-                        .color = pointLightColor,
-                        .params = glm::vec4(1.0f, intensity, 10.0f, 0.01f),
-                        .attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
-                    } },
-                    vve::Position{ pointLightPosition },
-                    vve::Rotation{ mat3_t{1.0f} },
-                    vve::Scale{ vec3_t{0.01f, 0.01f, 0.01f} },
-                    vve::LocalToParentMatrix{ mat4_t{1.0f} },
-                    vve::LocalToWorldMatrix{ mat4_t{1.0f} },
-                    sphereColor,
-                    vve::MeshName{ "assets/standard/sphere.obj/sphere" }
-                    );
-                m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
-            }
-        }
+		vvh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+		float intensity3 = 2.9f;
+		auto lightHandle3 = m_registry.Insert(
+			vve::Name{ "SpotLight-1" },
+			vve::SpotLight{ vvh::LightParams{
+				.color = glm::vec3(1.0f, 1.0f, 1.0f),
+				.params = glm::vec4(3.0f, intensity3, 10.0, 0.01f),
+				.attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
+			} },
+			vve::Position{ glm::vec3(7.0f, 1.5f, 2.0f) },
+			vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 5.0f, glm::vec3(1.0f,0.0f,0.0f)) } },
+			vve::Scale{ vec3_t{0.01f, 0.05f, 0.01f} },
+			vve::LocalToParentMatrix{ mat4_t{1.0f} },
+			vve::LocalToWorldMatrix{ mat4_t{1.0f} },
+			color3,
+			vve::MeshName{ "assets/standard/sphere.obj/sphere" }
+			);
+		m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle3), vve::ParentHandle{}, this });
+	}
 
-        void manageSpotLights(const int spotOption) {
-            // deletes all lights first
-            for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::SpotLight&>()) {
-                m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
-            }
-            static constexpr vvh::Color sphereColor{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+	// Random generator functions
 
-            if (spotOption == 0) return;
+	int nextRandom() const {
+		return rand() % (c_field_size)-c_field_size / 2;
+	}
 
-            vvh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
-            float intensity3 = 2.9f;
-            auto lightHandle3 = m_registry.Insert(
-                vve::Name{ "SpotLight-1" },
-                vve::SpotLight{ vvh::LightParams{
-                    .color = glm::vec3(1.0f, 1.0f, 1.0f),
-                    .params = glm::vec4(3.0f, intensity3, 10.0, 0.01f),
-                    .attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
-                } },
-                vve::Position{ glm::vec3(7.0f, 1.5f, 2.0f) },
-                vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 5.0f, glm::vec3(1.0f,0.0f,0.0f)) } },
-                vve::Scale{ vec3_t{0.01f, 0.05f, 0.01f} },
-                vve::LocalToParentMatrix{ mat4_t{1.0f} },
-                vve::LocalToWorldMatrix{ mat4_t{1.0f} },
-                color3,
-                vve::MeshName{ "assets/standard/sphere.obj/sphere" }
-                );
-            m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle3), vve::ParentHandle{}, this });
-        }
+	static std::mt19937& getRng() {
+		static std::mt19937 rndEngine{ std::random_device{}() };
+		return rndEngine;
+	}
 
-    private:
-        State m_state = State::STATE_RUNNING;
-        float m_time_left = c_max_time;
-        int m_cubes_left = c_number_cubes;  
-        vecs::Handle m_handlePlane{};
-        vecs::Handle m_handleCube{};
-        vecs::Handle m_handleCornell{};
-		vecs::Handle m_cameraHandle{};
-		vecs::Handle m_cameraNodeHandle{};
-        vecs::Handle m_test{};
-        vecs::Handle m_myParentHandle{};
-		float m_volume{MIX_MAX_VOLUME / 2.0};
+	float randFloat(float min, float max) {
+		std::uniform_real_distribution<float> dist(min, max);
+		return dist(getRng());
+	}
 
-        static std::mt19937& getRng() {
-            static std::mt19937 rndEngine{ std::random_device{}() };
-            return rndEngine;
-        }
+private:
+	const float c_max_time = 35.0f;
+	const int c_field_size = 50;
+	const int c_number_cubes = 10;
 
-        float randFloat(float min, float max) {
-            std::uniform_real_distribution<float> dist(min, max);
-            return dist(getRng());
-        }
-    };
-    
-    
-    
-    int main() {
-        vve::Engine engine("My Engine");
-        MyGame mygui{engine};  
-        engine.Run();
-    
-        return 0;
-    }
-    
-    
+	vecs::Handle m_cameraHandle{};
+	vecs::Handle m_cameraNodeHandle{};
+
+	uint16_t currentNumberPointLights = 1;
+
+	inline static const std::string plane_obj	{ "assets/test/plane/plane_t_n_s.obj" };
+	inline static const std::string plane_mesh	{ "assets/test/plane/plane_t_n_s.obj/plane" };
+	inline static const std::string plane_txt	{ "assets/test/plane/grass.jpg" };
+	inline static const std::string cube_obj	{ "assets/test/crate0/cube.obj" };
+	inline static const std::string cornell_obj	{ "assets/test/cornell/CornellBox-Original.obj" };
+};
+
+
+
+int main() {
+	vve::Engine engine("My Engine");
+	DeferredDemo demo{ engine };
+	engine.Run();
+
+	return 0;
+}
+

@@ -274,7 +274,6 @@ namespace vve {
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 	
 		CreateShadowMap();
-		//m_engine.SendMsg(MsgShadowMapRecreated{});
 			
 		return false;
 	}
