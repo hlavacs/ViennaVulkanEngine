@@ -268,15 +268,6 @@ namespace vve {
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnRecordNextFrame(const Message& message) {
 
-		//if (m_shadowsNeedUpdate) {
-		//	UpdateShadowResources();
-		//}
-		static bool tempBool = true;
-		if (tempBool) {
-			UpdateShadowResources();
-			tempBool = false;
-		}
-
 		static_cast<Derived*>(this)->OnRecordNextFrame();
 
 		return false;
@@ -520,8 +511,7 @@ namespace vve {
 			.m_descriptorSet = m_descriptorSetComposition,
 			.m_sampler = m_sampler
 			});
-		// ShadowMap
-		// Descriptor is updated once the shadowMap is built (currently in OnRecordFrame)
+		// ShadowMap descriptor is updated on shadow map recreated callback
 
 		// GBuffer attachments from  VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		for (auto& image : m_gBufferAttachments) {
@@ -690,8 +680,6 @@ namespace vve {
 		for (size_t i = 0; i < m_storageBuffersLights.m_uniformBuffersMapped.size(); ++i) {
 			memcpy(m_storageBuffersLights.m_uniformBuffersMapped[i], lights.data(), total * sizeof(vvh::Light));
 		}
-
-		//m_shadowsNeedUpdate = true;
 	}
 
 	template<typename Derived>
@@ -720,8 +708,6 @@ namespace vve {
 		for (size_t i = 0; i < m_storageBuffersLightSpaceMatrices.m_uniformBuffersMapped.size(); ++i) {
 			memcpy(m_storageBuffersLightSpaceMatrices.m_uniformBuffersMapped[i], shadowImage().m_lightSpaceMatrices.data(), lsmSize);
 		}
-
-		//m_shadowsNeedUpdate = false;
 	}
 
 	template<typename Derived>
