@@ -17,7 +17,7 @@ class MyGame : public vve::System {
         const int c_field_size = 50;
         const int c_number_cubes = 10;
 
-        uint16_t currentNumberLights = 1;
+        uint16_t currentNumberPointLights = 1;
 
         int nextRandom() const {
             return rand() % (c_field_size) - c_field_size/2;
@@ -136,25 +136,25 @@ class MyGame : public vve::System {
             m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle), vve::ParentHandle{}, this });
 
             // -----------------  Direct Light 1 -----------------
-            glm::vec3 dir = glm::normalize(glm::vec3(1, 2, 1));
-            glm::quat q = glm::rotation(glm::vec3(1, 0, 0), dir);
-            glm::mat3 mat = glm::toMat3(q);
+            //glm::vec3 dir = glm::normalize(glm::vec3(1, 2, 1));
+            //glm::quat q = glm::rotation(glm::vec3(1, 0, 0), dir);
+            //glm::mat3 mat = glm::toMat3(q);
 
-            float intensity2 = 2.8f;
-            auto lightHandle2 = m_registry.Insert(
-            	vve::Name{"DirectLight-1"},
-            	vve::DirectionalLight{vvh::LightParams{
-                    .color = glm::vec3(0.1f, 0.5f, 0.1f), 
-                    .params = glm::vec4(2.0f, intensity2, 10.0, 0.1f),
-                    .attenuation = glm::vec3(1.0f, 0.01f, 0.005f),
-            	}},
-            	vve::Position{ glm::vec3(-7.0f, -15.5f, 11.0f) },
-                vve::Rotation{ mat },
-                vve::Scale{vec3_t{1.0f}},
-                vve::LocalToParentMatrix{mat4_t{1.0f}},
-                vve::LocalToWorldMatrix{mat4_t{1.0f}}
-            );
-            m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle2), vve::ParentHandle{}, this });
+            //float intensity2 = 2.8f;
+            //auto lightHandle2 = m_registry.Insert(
+            //	vve::Name{"DirectLight-1"},
+            //	vve::DirectionalLight{vvh::LightParams{
+            //        .color = glm::vec3(0.1f, 0.5f, 0.1f), 
+            //        .params = glm::vec4(2.0f, intensity2, 10.0, 0.1f),
+            //        .attenuation = glm::vec3(1.0f, 0.01f, 0.005f),
+            //	}},
+            //	vve::Position{ glm::vec3(-7.0f, -15.5f, 11.0f) },
+            //    vve::Rotation{ mat },
+            //    vve::Scale{vec3_t{1.0f}},
+            //    vve::LocalToParentMatrix{mat4_t{1.0f}},
+            //    vve::LocalToWorldMatrix{mat4_t{1.0f}}
+            //);
+            //m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(lightHandle2), vve::ParentHandle{}, this });
 
             // -----------------  Spot Light 1 -----------------
             vvh::Color color3{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.1f, 0.1f, 0.9f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
@@ -167,7 +167,6 @@ class MyGame : public vve::System {
                     .attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
         	    }},
                 vve::Position{ glm::vec3(7.0f, 1.5f, 2.0f) },
-                //vve::Position{ glm::vec3(10.0f, -10.0f, 10.0f) },
                 vve::Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 5.0f, glm::vec3(1.0f,0.0f,0.0f)) }},
                 vve::Scale{vec3_t{0.01f, 0.05f, 0.01f}},
                 vve::LocalToParentMatrix{mat4_t{1.0f}},
@@ -188,7 +187,6 @@ class MyGame : public vve::System {
                     .attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
                 } },
                 vve::Position{ glm::vec3(9.0f, 1.5f, 2.0f) },
-                //vve::Position{ glm::vec3(10.0f, -10.0f, 10.0f) },
                 vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 5.0f, glm::vec3(1.0f,0.0f,0.0f)) } },
                 vve::Scale{ vec3_t{0.01f, 0.05f, 0.01f} },
                 vve::LocalToParentMatrix{ mat4_t{1.0f} },
@@ -239,20 +237,35 @@ class MyGame : public vve::System {
                 | ImGuiWindowFlags_NoMove);
 
             ImGui::Text("Select Point Light amount:");
-            static const int options[] = { 0, 1, 5, 10, 20, 40, 80 };
+            static constexpr int options[] = { 0, 1, 5, 10, 20, 40, 80 };
             for (size_t idx = 0; idx < std::size(options); ++idx) {
                 uint16_t val = options[idx];
                 char buf[16];
                 sprintf(buf, "%d", val);
                 if (ImGui::Button(buf, ImVec2(40, 30))) {
-                    currentNumberLights = val;
-                    manageLights(val);
+                    currentNumberPointLights = val;
+                    managePointLights(val);
                 }
                 if (idx + 1 < std::size(options))
                     ImGui::SameLine();
             }
 
-            ImGui::Text("Currently active Point Lights: %d", currentNumberLights);
+            ImGui::Text("Currently active Point Lights: %d", currentNumberPointLights);
+            ImGui::Separator();
+
+            ImGui::Text("Select Spot Light setting:");
+            static constexpr const char* spotOptions[] = {"None", "Couch", "Table"};
+            static int activeSpotIdx = 0;
+            for (int i = 0; i < 3; ++i) {
+                if (ImGui::Button(spotOptions[i])) {
+                    activeSpotIdx = i;
+                }
+                ImGui::SameLine();
+            }
+            ImGui::NewLine();
+
+            ImGui::Text("Active: %s", spotOptions[activeSpotIdx]);
+
             ImGui::Separator();
 
             // Shadow On/Off toggle
@@ -269,7 +282,7 @@ class MyGame : public vve::System {
             return false;
         }
 
-        void manageLights(const uint16_t& lightCount) {
+        void managePointLights(const uint16_t& lightCount) {
             // deletes all lights first
             for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::PointLight&>()) {
                 m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle});
