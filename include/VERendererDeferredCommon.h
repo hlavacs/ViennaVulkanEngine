@@ -5,11 +5,7 @@ namespace vve {
 	template <typename Derived>
 	class RendererDeferredCommon : public Renderer{
 
-	protected:
-		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
-
-		enum GBufferIndex : uint8_t { NORMAL = 0, ALBEDO = 1, METALLIC_ROUGHNESS = 2, DEPTH = 3, COUNT };
-
+	private:
 		struct PipelinePerType {
 			std::string m_type;
 			VkDescriptorSetLayout m_descriptorSetLayoutPerObject{ VK_NULL_HANDLE };
@@ -24,37 +20,6 @@ namespace vve {
 			alignas(8) glm::vec2 m_metallRoughness{ 0.0f, 1.0f };
 			alignas(4) float padding[2]{ 0, 0 };
 		};
-
-		static constexpr VkClearValue m_clearColorValue{ .color = {0.0f, 0.0f, 0.0f, 1.0f} };
-		static constexpr VkClearValue m_clearDepthStencilValue{ .depthStencil = { 1.0f, 0 } };
-
-		vvh::Buffer m_uniformBuffersPerFrame{};
-		vvh::Buffer m_storageBuffersLights{};
-		vvh::Buffer m_storageBuffersLightSpaceMatrices{};
-
-		VkSampler m_sampler{ VK_NULL_HANDLE };
-		VkSampler m_albedoSampler{ VK_NULL_HANDLE };
-		VkSampler m_shadowSampler{ VK_NULL_HANDLE };
-		std::vector<vvh::GBufferImage> m_gBufferAttachments{};
-
-		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
-		VkDescriptorSetLayout m_descriptorSetLayoutComposition{ VK_NULL_HANDLE };
-		VkDescriptorSetLayout m_descriptorSetLayoutShadow{ VK_NULL_HANDLE };
-		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
-		vvh::DescriptorSet m_descriptorSetPerFrame{};
-		vvh::DescriptorSet m_descriptorSetComposition{};
-		vvh::DescriptorSet m_descriptorSetShadow{};
-
-		std::map<int, PipelinePerType> m_geomPipesPerType;
-		std::array<vvh::Pipeline, 2> m_lightingPipeline{};
-
-		std::vector<VkCommandPool> m_commandPools{ VK_NULL_HANDLE };
-		std::vector<VkCommandBuffer> m_commandBuffers{ VK_NULL_HANDLE };
-
-		glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
-		bool m_lightsChanged{ true };
-
-		// ---------------------------------------------------------------------------------
 
 	public:
 		RendererDeferredCommon(const std::string& systemName, Engine& engine, const std::string& windowName);
@@ -86,6 +51,41 @@ namespace vve {
 		void RecordLighting(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass = VK_NULL_HANDLE);
 		auto getAttachmentFormats() const -> const std::vector<VkFormat>;
 
+	protected:
+		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
+
+		enum GBufferIndex : uint8_t { NORMAL = 0, ALBEDO = 1, METALLIC_ROUGHNESS = 2, DEPTH = 3, COUNT };
+
+		static constexpr VkClearValue m_clearColorValue{ .color = {0.0f, 0.0f, 0.0f, 1.0f} };
+		static constexpr VkClearValue m_clearDepthStencilValue{ .depthStencil = { 1.0f, 0 } };
+
+		std::vector<VkCommandBuffer> m_commandBuffers{ VK_NULL_HANDLE };
+		std::vector<vvh::GBufferImage> m_gBufferAttachments{};
+
+	private:
+		vvh::Buffer m_uniformBuffersPerFrame{};
+		vvh::Buffer m_storageBuffersLights{};
+		vvh::Buffer m_storageBuffersLightSpaceMatrices{};
+
+		VkSampler m_sampler{ VK_NULL_HANDLE };
+		VkSampler m_albedoSampler{ VK_NULL_HANDLE };
+		VkSampler m_shadowSampler{ VK_NULL_HANDLE };
+
+		VkDescriptorSetLayout m_descriptorSetLayoutPerFrame{ VK_NULL_HANDLE };
+		VkDescriptorSetLayout m_descriptorSetLayoutComposition{ VK_NULL_HANDLE };
+		VkDescriptorSetLayout m_descriptorSetLayoutShadow{ VK_NULL_HANDLE };
+		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
+		vvh::DescriptorSet m_descriptorSetPerFrame{};
+		vvh::DescriptorSet m_descriptorSetComposition{};
+		vvh::DescriptorSet m_descriptorSetShadow{};
+
+		std::map<int, PipelinePerType> m_geomPipesPerType;
+		std::array<vvh::Pipeline, 2> m_lightingPipeline{};
+
+		std::vector<VkCommandPool> m_commandPools{ VK_NULL_HANDLE };
+
+		glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
+		bool m_lightsChanged{ true };
 	};
 
 }	// namespace vve
