@@ -467,18 +467,19 @@ namespace vve {
 	void RendererShadow11::RenderDirectLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
 		ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		static constexpr glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
+		glm::vec3 sceneCenter(0.0f);
 
 		// TODO: left right bottom top is set to fit for deferred-demo.cpp, make adjustable?
 		glm::mat4 shadowProj = glm::ortho(-20.0f, +20.0f, -20.0f, +20.0f, near, far);
 
 		for (auto [handle, light, lToW] : m_registry.template GetView<vecs::Handle, DirectionalLight&, LocalToWorldMatrix&>()) {
-			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
-			glm::vec3 lightDir = glm::vec3{ lToW()[1] };
+			glm::vec3 lightDir = glm::normalize(glm::vec3{ lToW()[1] });
+			glm::vec3 lightPos = sceneCenter - lightDir * 20.0f;
 
 			std::cout << "DirectLightPos: " << lightPos.x << ", " << lightPos.y << ", " << lightPos.z << std::endl;
 			std::cout << "DirectLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
 
-			glm::mat4 view = glm::lookAt(lightPos, glm::vec3(0.0f), up);
+			glm::mat4 view = glm::lookAt(lightPos, sceneCenter, up);
 			glm::mat4 lightSpaceMatrix = shadowProj * view;
 			// Push for lsm ubo in renderer
 			shadowImage.m_lightSpaceMatrices.emplace_back(lightSpaceMatrix);
