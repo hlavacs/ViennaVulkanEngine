@@ -285,7 +285,6 @@ namespace vve {
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnObjectCreate(Message& message) {
 		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
-		assert(m_registry.template Has<MeshHandle>(oHandle));
 
 		if (m_registry.template Has<PointLight>(oHandle) ||
 			m_registry.template Has<DirectionalLight>(oHandle) ||
@@ -293,6 +292,10 @@ namespace vve {
 			// Object is a light, update m_storageBuffersLights in OnPrepareNextFrame!
 			m_lightsChanged = true;
 		}
+
+		if (m_registry.template Has<DirectionalLight>(oHandle)) return false;
+
+		assert(m_registry.template Has<MeshHandle>(oHandle));
 
 		const auto& meshHandle = m_registry.template Get<MeshHandle>(oHandle);
 		const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(meshHandle);
