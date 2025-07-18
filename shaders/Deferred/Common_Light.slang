@@ -75,6 +75,9 @@ export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int s
 
     float3 Lo = float3(0.0);
     for (int i = start; i < end; ++i) {
+        float sh = enableShadow == 0 ? 1 : calcPointShadow(posW, lights[i].positionW, cubeArrayShadow, i);
+        if (sh == 0) continue;
+
         float3 L = normalize(lights[i].positionW - posW);
         float3 H = normalize(V + L);
 
@@ -96,7 +99,6 @@ export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int s
 
         float NdotL = max(dot(N, L), 0.0);
 
-        float sh = enableShadow == 0 ? 1 : calcPointShadow(posW, lights[i].positionW, cubeArrayShadow, i);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL * sh;
     }
 
@@ -112,6 +114,9 @@ export public float3 accumulateDirectLights(StructuredBuffer<Light> lights, int 
     float3 Lo = float3(0.0);
     uint arrayIndex = lsmIndex;
     for (int i = start; i < end; ++i) {
+        float sh = enableShadow == 0 ? 1 : calcDirectShadow(posW, lights[i].positionW, shadow2DArray, arrayIndex++, lsm);
+        if (sh == 0) continue;
+
         float3 L = -normalize(lights[i].directionW);
         float3 H = normalize(V + L);
 
@@ -130,7 +135,7 @@ export public float3 accumulateDirectLights(StructuredBuffer<Light> lights, int 
         float3 specular = numerator / denominator;
 
         float NdotL = max(dot(N, L), 0.0);
-        float sh = enableShadow == 0 ? 1 : calcDirectShadow(posW, lights[i].positionW, shadow2DArray, arrayIndex++, lsm);
+
         Lo += (kD * albedo / PI + specular) * radiance * NdotL * sh;
     }
     
@@ -146,6 +151,9 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int st
     uint arrayIndex = lsmIndex;
     float3 Lo = float3(0.0);
     for (int i = start; i < end; ++i) {
+        float sh = enableShadow == 0 ? 1 : calcSpotShadow(posW, lights[i].positionW, shadow2DArray, arrayIndex++, lsm);
+        if (sh == 0) continue;
+
         float3 L = normalize(lights[i].positionW - posW);
         float3 H = normalize(V + L);
 
@@ -169,7 +177,6 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int st
 
         float NdotL = max(dot(N, L), 0.0);
 
-        float sh = enableShadow == 0 ? 1 : calcSpotShadow(posW, lights[i].positionW, shadow2DArray, arrayIndex++, lsm);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL * sh;
     }
 
@@ -184,7 +191,6 @@ export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numb
     Lo += accumulatePointLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, cubeArrayShadow, enableShadow);
     start = end;
     end += numberLights.y;
-    uint shadowLayerIdx = numberLights.x * 6;
     Lo += accumulateDirectLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, shadow2DArray, lsm, 0, enableShadow);
     start = end;
     end += numberLights.z;
