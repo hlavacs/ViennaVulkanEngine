@@ -14,7 +14,7 @@ namespace vve {
 			{this,  2000, "PREPARE_NEXT_FRAME",  [this](Message& message) { return OnPrepareNextFrame(message); } },
 			{this,  2000, "RECORD_NEXT_FRAME",	 [this](Message& message) { return OnRecordNextFrame(message); } },
 			{this,  1750, "OBJECT_CREATE",		 [this](Message& message) { return OnObjectCreate(message); } },
-			{this, 10000, "OBJECT_DESTROY",		 [this](Message& message) { return OnObjectDestroy(message); } },
+			{this,  1750, "OBJECT_DESTROY",		 [this](Message& message) { return OnObjectDestroy(message); } },
 			{this,  1500, "WINDOW_SIZE",		 [this](Message& message) { return OnWindowSize(message); }},
 			{this, 	   0, "QUIT",				 [this](Message& message) { return OnQuit(message); } },
 			{this,  1900, "SHADOW_MAP_RECREATED",[this](Message& message) { return OnShadowMapRecreated(message); } },
