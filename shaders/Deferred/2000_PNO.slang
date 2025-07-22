@@ -56,8 +56,8 @@ GBufferOutput main(CoarseVertex input: CoarseVertex)
 {
     GBufferOutput output = {};
 
-    output.norm     = float4(input.normalW, 0.0);
-    output.albedo   = input.fragColor;
+    output.normal     = float4(input.normalW, 0.0);
+    output.albedo     = input.fragColor;
     output.metalRough = float4(pushConstant.metallicRoughness, 0.0, 0.0);
 
     return output;

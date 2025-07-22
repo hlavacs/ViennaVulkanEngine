@@ -57,9 +57,9 @@ export public struct PushConstantMaterial {
 };
 
 export public struct GBufferOutput {
-    public float4 norm : SV_Target0;
+    public float4 normal : SV_Target0;
     public float4 albedo : SV_Target1;
-    public float4 metalRough : SV_Target1;
+    public float4 metalRough : SV_Target2;
 };
 
 //-----------------------------------------------------------------------
