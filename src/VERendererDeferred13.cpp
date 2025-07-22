@@ -58,8 +58,9 @@ namespace vve {
 		}
 		m_depthAttachmentInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
 
-		for (auto& lri : m_lightingRenderingInfo) {
-			lri.renderArea = renderArea;
+		for (size_t i = 0; i < m_vkState().m_swapChain.m_swapChainImageViews.size(); ++i) {
+			m_outputAttachmentInfo[i].imageView = m_vkState().m_swapChain.m_swapChainImageViews[i];
+			m_lightingRenderingInfo[i].renderArea = renderArea;
 		}
 	}
 
