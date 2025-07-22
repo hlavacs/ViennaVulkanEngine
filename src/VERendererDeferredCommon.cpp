@@ -450,69 +450,71 @@ namespace vve {
 
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::CreateDeferredResources() {
-		m_gBufferAttachments.resize(COUNT - 1);
+		m_gBufferAttachments.resize((COUNT - 1) * MAX_FRAMES_IN_FLIGHT);
 
-		// Normal
-		vvh::RenCreateGBufferResources({
-			.m_physicalDevice = m_vkState().m_physicalDevice,
-			.m_device = m_vkState().m_device,
-			.m_vmaAllocator = m_vkState().m_vmaAllocator,
-			.m_swapChain = m_vkState().m_swapChain,
-			.m_gbufferImage = m_gBufferAttachments[NORMAL],
-			.m_format = VK_FORMAT_R16G16B16A16_SFLOAT,
-			.m_sampler = m_sampler
-			});
-		vvh::RenUpdateImageDescriptorSet({
-			.m_device = m_vkState().m_device,
-			.m_imageView = m_gBufferAttachments[NORMAL].m_gbufferImageView,
-			.m_sampler = m_sampler,
-			.m_binding = NORMAL,
-			.m_descriptorSet = m_descriptorSetComposition
-			});
-		// Albedo
-		vvh::RenCreateGBufferResources({
-			.m_physicalDevice = m_vkState().m_physicalDevice,
-			.m_device = m_vkState().m_device,
-			.m_vmaAllocator = m_vkState().m_vmaAllocator,
-			.m_swapChain = m_vkState().m_swapChain,
-			.m_gbufferImage = m_gBufferAttachments[ALBEDO],
-			.m_format = VK_FORMAT_R8G8B8A8_SRGB,
-			.m_sampler = m_albedoSampler
-			});
-		vvh::RenUpdateImageDescriptorSet({
-			.m_device = m_vkState().m_device,
-			.m_imageView = m_gBufferAttachments[ALBEDO].m_gbufferImageView,
-			.m_sampler = m_albedoSampler,
-			.m_binding = ALBEDO,
-			.m_descriptorSet = m_descriptorSetComposition
-			});
-		// Metallic and Roughness
-		vvh::RenCreateGBufferResources({
-			.m_physicalDevice = m_vkState().m_physicalDevice,
-			.m_device = m_vkState().m_device,
-			.m_vmaAllocator = m_vkState().m_vmaAllocator,
-			.m_swapChain = m_vkState().m_swapChain,
-			.m_gbufferImage = m_gBufferAttachments[METALLIC_ROUGHNESS],
-			.m_format = VK_FORMAT_R8G8B8A8_UNORM,
-			.m_sampler = m_sampler
-			});
-		vvh::RenUpdateImageDescriptorSet({
-			.m_device = m_vkState().m_device,
-			.m_imageView = m_gBufferAttachments[METALLIC_ROUGHNESS].m_gbufferImageView,
-			.m_sampler = m_sampler,
-			.m_binding = METALLIC_ROUGHNESS,
-			.m_descriptorSet = m_descriptorSetComposition
-			});
-		// Depth
-		vvh::RenUpdateDescriptorSetDepthAttachment({
-			.m_device = m_vkState().m_device,
-			.m_depthImage = m_vkState().m_depthImage,
-			.m_binding = DEPTH,
-			.m_descriptorSet = m_descriptorSetComposition,
-			.m_sampler = m_sampler
-			});
-		// ShadowMap descriptor is updated on shadow map recreated callback
-
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			// Normal
+			vvh::RenCreateGBufferResources({
+				.m_physicalDevice = m_vkState().m_physicalDevice,
+				.m_device = m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_swapChain = m_vkState().m_swapChain,
+				.m_gbufferImage = m_gBufferAttachments[NORMAL + i * MAX_FRAMES_IN_FLIGHT],
+				.m_format = VK_FORMAT_R16G16B16A16_SFLOAT,
+				.m_sampler = m_sampler
+				});
+			vvh::RenUpdateImageDescriptorSet({
+				.m_device = m_vkState().m_device,
+				.m_imageView = m_gBufferAttachments[NORMAL + i * MAX_FRAMES_IN_FLIGHT].m_gbufferImageView,
+				.m_sampler = m_sampler,
+				.m_binding = NORMAL,
+				.m_descriptorSet = m_descriptorSetComposition
+				});
+			// Albedo
+			vvh::RenCreateGBufferResources({
+				.m_physicalDevice = m_vkState().m_physicalDevice,
+				.m_device = m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_swapChain = m_vkState().m_swapChain,
+				.m_gbufferImage = m_gBufferAttachments[ALBEDO + i * MAX_FRAMES_IN_FLIGHT],
+				.m_format = VK_FORMAT_R8G8B8A8_SRGB,
+				.m_sampler = m_albedoSampler
+				});
+			vvh::RenUpdateImageDescriptorSet({
+				.m_device = m_vkState().m_device,
+				.m_imageView = m_gBufferAttachments[ALBEDO + i * MAX_FRAMES_IN_FLIGHT].m_gbufferImageView,
+				.m_sampler = m_albedoSampler,
+				.m_binding = ALBEDO,
+				.m_descriptorSet = m_descriptorSetComposition
+				});
+			// Metallic and Roughness
+			vvh::RenCreateGBufferResources({
+				.m_physicalDevice = m_vkState().m_physicalDevice,
+				.m_device = m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_swapChain = m_vkState().m_swapChain,
+				.m_gbufferImage = m_gBufferAttachments[METALLIC_ROUGHNESS + i * MAX_FRAMES_IN_FLIGHT],
+				.m_format = VK_FORMAT_R8G8B8A8_UNORM,
+				.m_sampler = m_sampler
+				});
+			vvh::RenUpdateImageDescriptorSet({
+				.m_device = m_vkState().m_device,
+				.m_imageView = m_gBufferAttachments[METALLIC_ROUGHNESS + i * MAX_FRAMES_IN_FLIGHT].m_gbufferImageView,
+				.m_sampler = m_sampler,
+				.m_binding = METALLIC_ROUGHNESS,
+				.m_descriptorSet = m_descriptorSetComposition
+				});
+			// Depth
+			vvh::RenUpdateDescriptorSetDepthAttachment({
+				.m_device = m_vkState().m_device,
+				.m_depthImage = m_vkState().m_depthImage,
+				.m_binding = DEPTH,
+				.m_descriptorSet = m_descriptorSetComposition,
+				.m_sampler = m_sampler
+				});
+			// ShadowMap descriptor is updated on shadow map recreated callback
+		}
+		
 		// GBuffer attachments from  VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
 		for (auto& image : m_gBufferAttachments) {
 			vvh::ImgTransitionImageLayout3({
@@ -639,9 +641,9 @@ namespace vve {
 	template<typename Derived>
 	auto RendererDeferredCommon<Derived>::getAttachmentFormats() const -> const std::vector<VkFormat> {
 		std::vector<VkFormat> attachFormats;
-		attachFormats.reserve(m_gBufferAttachments.size());
-		for (const auto& attach : m_gBufferAttachments) {
-			attachFormats.emplace_back(attach.m_gbufferFormat);
+		attachFormats.reserve(COUNT - 1);
+		for (size_t i = 0; i < COUNT - 1; ++i) {
+			attachFormats.emplace_back(m_gBufferAttachments[i].m_gbufferFormat);
 		}
 
 		return attachFormats;
