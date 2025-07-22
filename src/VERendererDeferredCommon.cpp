@@ -459,13 +459,13 @@ namespace vve {
 				.m_device = m_vkState().m_device,
 				.m_vmaAllocator = m_vkState().m_vmaAllocator,
 				.m_swapChain = m_vkState().m_swapChain,
-				.m_gbufferImage = m_gBufferAttachments[NORMAL + i * MAX_FRAMES_IN_FLIGHT],
+				.m_gbufferImage = m_gBufferAttachments[NORMAL + i * (COUNT-1)],
 				.m_format = VK_FORMAT_R16G16B16A16_SFLOAT,
 				.m_sampler = m_sampler
 				});
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
-				.m_imageView = m_gBufferAttachments[NORMAL + i * MAX_FRAMES_IN_FLIGHT].m_gbufferImageView,
+				.m_imageView = m_gBufferAttachments[NORMAL + i * (COUNT - 1)].m_gbufferImageView,
 				.m_sampler = m_sampler,
 				.m_binding = NORMAL,
 				.m_descriptorSet = m_descriptorSetComposition
@@ -476,13 +476,13 @@ namespace vve {
 				.m_device = m_vkState().m_device,
 				.m_vmaAllocator = m_vkState().m_vmaAllocator,
 				.m_swapChain = m_vkState().m_swapChain,
-				.m_gbufferImage = m_gBufferAttachments[ALBEDO + i * MAX_FRAMES_IN_FLIGHT],
+				.m_gbufferImage = m_gBufferAttachments[ALBEDO + i * (COUNT - 1)],
 				.m_format = VK_FORMAT_R8G8B8A8_SRGB,
 				.m_sampler = m_albedoSampler
 				});
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
-				.m_imageView = m_gBufferAttachments[ALBEDO + i * MAX_FRAMES_IN_FLIGHT].m_gbufferImageView,
+				.m_imageView = m_gBufferAttachments[ALBEDO + i * (COUNT - 1)].m_gbufferImageView,
 				.m_sampler = m_albedoSampler,
 				.m_binding = ALBEDO,
 				.m_descriptorSet = m_descriptorSetComposition
@@ -493,13 +493,13 @@ namespace vve {
 				.m_device = m_vkState().m_device,
 				.m_vmaAllocator = m_vkState().m_vmaAllocator,
 				.m_swapChain = m_vkState().m_swapChain,
-				.m_gbufferImage = m_gBufferAttachments[METALLIC_ROUGHNESS + i * MAX_FRAMES_IN_FLIGHT],
+				.m_gbufferImage = m_gBufferAttachments[METALLIC_ROUGHNESS + i * (COUNT - 1)],
 				.m_format = VK_FORMAT_R8G8B8A8_UNORM,
 				.m_sampler = m_sampler
 				});
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
-				.m_imageView = m_gBufferAttachments[METALLIC_ROUGHNESS + i * MAX_FRAMES_IN_FLIGHT].m_gbufferImageView,
+				.m_imageView = m_gBufferAttachments[METALLIC_ROUGHNESS + i * (COUNT - 1)].m_gbufferImageView,
 				.m_sampler = m_sampler,
 				.m_binding = METALLIC_ROUGHNESS,
 				.m_descriptorSet = m_descriptorSetComposition

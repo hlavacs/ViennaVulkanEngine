@@ -27,7 +27,7 @@ namespace vve {
 		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
-		vkCmdBeginRendering(cmdBuffer, &m_geometryRenderingInfo);
+		vkCmdBeginRendering(cmdBuffer, &m_geometryRenderingInfo[m_vkState().m_currentFrame]);
 		RecordObjects(cmdBuffer);
 		vkCmdEndRendering(cmdBuffer);
 
@@ -37,7 +37,7 @@ namespace vve {
 		PrepareLightingAttachments(cmdBuffer);
 
 		// Changes every frame
-		m_outputAttach.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
+		m_outputAttachmentInfo.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
 
 		vkCmdBeginRendering(cmdBuffer, &m_lightingRenderingInfo);
 		RecordLighting(cmdBuffer);
@@ -50,60 +50,67 @@ namespace vve {
 	}
 
 	void RendererDeferred13::OnWindowSize() {
-		for (size_t i = 0; i < m_gBufferAttachments.size(); ++i) {
-			m_gbufferRenderingInfo[i].imageView = m_gBufferAttachments[i].m_gbufferImageView;
-		}
-		m_depthRenderingInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
-
 		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
-		m_geometryRenderingInfo.renderArea = renderArea;
+
+		for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			for (auto j = 0; j < COUNT - 1; ++j) {
+				auto idx = j + i * (COUNT - 1);
+				m_gbufferAttachmentInfo[i][j].imageView = m_gBufferAttachments[idx].m_gbufferImageView;
+			}
+			m_geometryRenderingInfo[i].renderArea = renderArea;
+		}
+		m_depthAttachmentInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
+
 		m_lightingRenderingInfo.renderArea = renderArea;
 	}
 
 	void RendererDeferred13::OnQuit() {}
 
 	void RendererDeferred13::CreateGeometryRenderingInfo() {
-		// TODO: Maybe add KHR way for extension support?
-		size_t i = 0;
-		for (const auto& attach : m_gBufferAttachments) {
-			m_gbufferRenderingInfo[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-			m_gbufferRenderingInfo[i].pNext = VK_NULL_HANDLE;
-			m_gbufferRenderingInfo[i].imageView = attach.m_gbufferImageView;
-			m_gbufferRenderingInfo[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-			m_gbufferRenderingInfo[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-			m_gbufferRenderingInfo[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-			m_gbufferRenderingInfo[i].clearValue = m_clearColorValue;
-			i++;
-		}
-
-		m_depthRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-		m_depthRenderingInfo.pNext = VK_NULL_HANDLE;
-		m_depthRenderingInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
-		m_depthRenderingInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		m_depthRenderingInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		m_depthRenderingInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		m_depthRenderingInfo.clearValue = m_clearDepthStencilValue;
 
 		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
-		m_geometryRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-		m_geometryRenderingInfo.pNext = VK_NULL_HANDLE;
-		m_geometryRenderingInfo.flags = 0;
-		m_geometryRenderingInfo.renderArea = renderArea;
-		m_geometryRenderingInfo.layerCount = 1;
-		m_geometryRenderingInfo.viewMask = 0;
-		m_geometryRenderingInfo.colorAttachmentCount = static_cast<uint32_t>(m_gBufferAttachments.size());
-		m_geometryRenderingInfo.pColorAttachments = m_gbufferRenderingInfo;
-		m_geometryRenderingInfo.pDepthAttachment = &m_depthRenderingInfo;
-		m_geometryRenderingInfo.pStencilAttachment = nullptr;
+
+		// TODO: depth attachment - view per frame in flight?!
+		m_depthAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		m_depthAttachmentInfo.pNext = VK_NULL_HANDLE;
+		m_depthAttachmentInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
+		m_depthAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+		m_depthAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		m_depthAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		m_depthAttachmentInfo.clearValue = m_clearDepthStencilValue;
+
+		for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			for (auto j = 0; j < COUNT - 1; ++j) {
+				auto idx = j + i * (COUNT - 1);
+				m_gbufferAttachmentInfo[i][j].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+				m_gbufferAttachmentInfo[i][j].pNext = VK_NULL_HANDLE;
+				m_gbufferAttachmentInfo[i][j].imageView = m_gBufferAttachments[idx].m_gbufferImageView;
+				m_gbufferAttachmentInfo[i][j].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+				m_gbufferAttachmentInfo[i][j].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+				m_gbufferAttachmentInfo[i][j].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+				m_gbufferAttachmentInfo[i][j].clearValue = m_clearColorValue;
+			}
+			m_geometryRenderingInfo[i].sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+			m_geometryRenderingInfo[i].pNext = VK_NULL_HANDLE;
+			m_geometryRenderingInfo[i].flags = 0;
+			m_geometryRenderingInfo[i].renderArea = renderArea;
+			m_geometryRenderingInfo[i].layerCount = 1;
+			m_geometryRenderingInfo[i].viewMask = 0;
+			m_geometryRenderingInfo[i].colorAttachmentCount = static_cast<uint32_t>(COUNT - 1);
+			m_geometryRenderingInfo[i].pColorAttachments = m_gbufferAttachmentInfo[i].data();
+			m_geometryRenderingInfo[i].pDepthAttachment = &m_depthAttachmentInfo;
+			m_geometryRenderingInfo[i].pStencilAttachment = nullptr;
+		}
+
 	}
 
 	void RendererDeferred13::CreateLightingRenderingInfo() {
-		m_outputAttach.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-		m_outputAttach.pNext = VK_NULL_HANDLE;
-		m_outputAttach.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
-		m_outputAttach.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		m_outputAttach.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		m_outputAttach.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+		m_outputAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+		m_outputAttachmentInfo.pNext = VK_NULL_HANDLE;
+		m_outputAttachmentInfo.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
+		m_outputAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		m_outputAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+		m_outputAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
 		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
 		m_lightingRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
@@ -113,7 +120,7 @@ namespace vve {
 		m_lightingRenderingInfo.layerCount = 1;
 		m_lightingRenderingInfo.viewMask = 0;
 		m_lightingRenderingInfo.colorAttachmentCount = 1;
-		m_lightingRenderingInfo.pColorAttachments = &m_outputAttach;
+		m_lightingRenderingInfo.pColorAttachments = &m_outputAttachmentInfo;
 		m_lightingRenderingInfo.pDepthAttachment = nullptr;
 		m_lightingRenderingInfo.pStencilAttachment = nullptr;
 	}

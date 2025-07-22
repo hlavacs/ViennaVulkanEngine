@@ -101,7 +101,9 @@ namespace vve {
 			.m_gBufferAttachs		= m_gBufferAttachments,
 			.m_gBufferFrameBuffers	= m_gBufferFrameBuffers,
 			.m_depthImage			= m_vkState().m_depthImage,
-			.m_renderPass			= m_geometryPass
+			.m_renderPass			= m_geometryPass,
+			.m_attachCount			= COUNT - 1,
+			.m_framesInFlight		= MAX_FRAMES_IN_FLIGHT
 			});
 
 		// Lighting pass FrameBuffers
