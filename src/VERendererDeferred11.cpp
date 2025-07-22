@@ -43,7 +43,7 @@ namespace vve {
 
 		vvh::ComBeginRenderPass2({ 
 			.m_commandBuffer		= cmdBuffer,
-			.m_imageIndex			= m_vkState().m_imageIndex,
+			.m_imageIndex			= m_vkState().m_currentFrame,
 			.m_extent				= m_vkState().m_swapChain.m_swapChainExtent,
 			.m_framebuffers			= m_gBufferFrameBuffers,
 			.m_renderPass			= m_geometryPass,
