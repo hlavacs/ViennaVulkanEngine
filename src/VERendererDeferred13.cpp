@@ -36,10 +36,7 @@ namespace vve {
 
 		PrepareLightingAttachments(cmdBuffer);
 
-		// Changes every frame
-		m_outputAttachmentInfo.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
-
-		vkCmdBeginRendering(cmdBuffer, &m_lightingRenderingInfo);
+		vkCmdBeginRendering(cmdBuffer, &m_lightingRenderingInfo[m_vkState().m_imageIndex]);
 		RecordLighting(cmdBuffer);
 		vkCmdEndRendering(cmdBuffer);
 
@@ -61,7 +58,9 @@ namespace vve {
 		}
 		m_depthAttachmentInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
 
-		m_lightingRenderingInfo.renderArea = renderArea;
+		for (auto& lri : m_lightingRenderingInfo) {
+			lri.renderArea = renderArea;
+		}
 	}
 
 	void RendererDeferred13::OnQuit() {}
@@ -105,24 +104,29 @@ namespace vve {
 	}
 
 	void RendererDeferred13::CreateLightingRenderingInfo() {
-		m_outputAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-		m_outputAttachmentInfo.pNext = VK_NULL_HANDLE;
-		m_outputAttachmentInfo.imageView = m_vkState().m_swapChain.m_swapChainImageViews[m_vkState().m_imageIndex];
-		m_outputAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		m_outputAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
-		m_outputAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-
+		m_outputAttachmentInfo.resize(m_vkState().m_swapChain.m_swapChainImageViews.size());
+		m_lightingRenderingInfo.resize(m_vkState().m_swapChain.m_swapChainImageViews.size());
 		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
-		m_lightingRenderingInfo.sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
-		m_lightingRenderingInfo.pNext = VK_NULL_HANDLE;
-		m_lightingRenderingInfo.flags = 0;
-		m_lightingRenderingInfo.renderArea = renderArea;
-		m_lightingRenderingInfo.layerCount = 1;
-		m_lightingRenderingInfo.viewMask = 0;
-		m_lightingRenderingInfo.colorAttachmentCount = 1;
-		m_lightingRenderingInfo.pColorAttachments = &m_outputAttachmentInfo;
-		m_lightingRenderingInfo.pDepthAttachment = nullptr;
-		m_lightingRenderingInfo.pStencilAttachment = nullptr;
+
+		for (size_t i = 0; i < m_vkState().m_swapChain.m_swapChainImageViews.size(); ++i) {
+			m_outputAttachmentInfo[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			m_outputAttachmentInfo[i].pNext = VK_NULL_HANDLE;
+			m_outputAttachmentInfo[i].imageView = m_vkState().m_swapChain.m_swapChainImageViews[i];
+			m_outputAttachmentInfo[i].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			m_outputAttachmentInfo[i].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+			m_outputAttachmentInfo[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+
+			m_lightingRenderingInfo[i].sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
+			m_lightingRenderingInfo[i].pNext = VK_NULL_HANDLE;
+			m_lightingRenderingInfo[i].flags = 0;
+			m_lightingRenderingInfo[i].renderArea = renderArea;
+			m_lightingRenderingInfo[i].layerCount = 1;
+			m_lightingRenderingInfo[i].viewMask = 0;
+			m_lightingRenderingInfo[i].colorAttachmentCount = 1;
+			m_lightingRenderingInfo[i].pColorAttachments = &m_outputAttachmentInfo[i];
+			m_lightingRenderingInfo[i].pDepthAttachment = nullptr;
+			m_lightingRenderingInfo[i].pStencilAttachment = nullptr;
+		}
 	}
 
 }	// namespace vve
