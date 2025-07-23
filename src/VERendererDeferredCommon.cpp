@@ -73,7 +73,7 @@ namespace vve {
 				{	// Binding 1 : ShadowMap 2D Array - Direct + Spot Lights
 					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 2 : Light Space Matrix - Direct + Spot Lights
+				{	// Binding 2 : Light Space Matrices - Direct + Spot Lights
 					.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
@@ -169,7 +169,8 @@ namespace vve {
 			.m_device = m_vkState().m_device,
 			.m_sampler = m_albedoSampler,
 			.m_filter = VK_FILTER_LINEAR,
-			.m_anisotropyEnable = VK_TRUE
+			.m_addressMode = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+			.m_anisotropyEnable = VK_TRUE,
 			});
 
 		// Shadow Sampler
