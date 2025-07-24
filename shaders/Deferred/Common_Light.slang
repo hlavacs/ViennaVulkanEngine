@@ -27,7 +27,9 @@ static const float PI = 3.14159265359;
 
 //-----------------------------------------------------------------------
 
-// https://learnopengl.com/PBR/Lighting
+// PBR shader code adapted from LearnOpenGL (https://learnopengl.com/PBR/Lighting)
+// Original author: Joey de Vries - https://twitter.com/JoeyDeVriez
+// used under CC BY-NC 4.0 - https://creativecommons.org/licenses/by-nc/4.0/
 
 float3 fresnelSchlick(float cosTheta, float3 F0) {
     return F0 + (1.0 - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
@@ -64,8 +66,6 @@ float GeometrySmith(float3 N, float3 V, float3 L, float roughness) {
 
     return ggx1 * ggx2;
 }
-
-// https://learnopengl.com/PBR/Lighting
 
 export public float3 accumulatePointLights(StructuredBuffer<Light> lights, int start, int end, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow, int32_t enableShadow) {
 
