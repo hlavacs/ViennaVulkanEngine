@@ -106,6 +106,7 @@ namespace vve {
 			});
 
 		// Lighting pass FrameBuffers
+		m_lightingFrameBuffers.resize(m_vkState().m_swapChain.m_swapChainImageViews.size());
 		vvh::RenCreateFrameBuffers2({
 			.m_device				= m_vkState().m_device,
 			.m_renderPass			= m_lightingPass,
