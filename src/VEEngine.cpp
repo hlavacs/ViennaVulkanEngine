@@ -75,7 +75,7 @@ namespace vve {
 	};
 	
 	void Engine::CreateRenderer(){
-		RegisterSystem(std::make_unique<RendererVulkan>( m_rendererVulkanaName,  *this, m_windowName ) );
+		RegisterSystem(std::make_unique<RendererVulkan>( m_rendererVulkanName,  *this, m_windowName ) );
 		RegisterSystem(std::make_unique<RendererImgui>(  m_rendererImguiName,   *this, m_windowName ) );
 		//RegisterSystem(std::make_unique<RendererForward>(m_rendererForwardName, *this, m_windowName) );
 		RegisterSystem(std::make_unique<RendererDeferred>(m_rendererDeferredName, *this, m_windowName) );
