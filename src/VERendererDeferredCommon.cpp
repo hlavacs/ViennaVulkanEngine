@@ -80,8 +80,6 @@ namespace vve {
 			.m_descriptorSetLayout = m_descriptorSetLayoutShadow
 			});
 
-		m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
-		m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			vvh::ComCreateCommandPool({
 				.m_surface = m_vkState().m_surface,

@@ -59,7 +59,7 @@ namespace vve {
 		static constexpr VkClearValue m_clearColorValue{ .color = {0.0f, 0.0f, 0.0f, 1.0f} };
 		static constexpr VkClearValue m_clearDepthStencilValue{ .depthStencil = { 1.0f, 0 } };
 
-		std::vector<VkCommandBuffer> m_commandBuffers{ VK_NULL_HANDLE };
+		std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> m_commandBuffers{};
 		std::vector<vvh::GBufferImage> m_gBufferAttachments{};
 
 	private:
@@ -82,7 +82,7 @@ namespace vve {
 		std::map<int, PipelinePerType> m_geomPipesPerType;
 		std::array<vvh::Pipeline, 2> m_lightingPipeline{};
 
-		std::vector<VkCommandPool> m_commandPools{ VK_NULL_HANDLE };
+		std::array<VkCommandPool, MAX_FRAMES_IN_FLIGHT> m_commandPools{};
 
 		glm::ivec3 m_numberLightsPerType{ 0, 0, 0 };
 		bool m_lightsChanged{ true };
