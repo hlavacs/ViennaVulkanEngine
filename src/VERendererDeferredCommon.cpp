@@ -106,15 +106,13 @@ namespace vve {
 			.m_descriptorSetLayouts = m_descriptorSetLayoutPerFrame,
 			.m_descriptorPool = m_descriptorPool,
 			.m_descriptorSet = m_descriptorSetPerFrame
-			});
-		for (auto& set : m_descriptorSetsComposition) {
-			vvh::RenCreateDescriptorSet({	// Composition
+		});
+		vvh::RenCreateDescriptorSet({	// Composition
 			.m_device = m_vkState().m_device,
 			.m_descriptorSetLayouts = m_descriptorSetLayoutComposition,
 			.m_descriptorPool = m_descriptorPool,
-			.m_descriptorSet = set
-			});
-		}
+			.m_descriptorSet = m_descriptorSetsComposition
+		});
 		vvh::RenCreateDescriptorSet({	// Shadow
 			.m_device = m_vkState().m_device,
 			.m_descriptorSetLayouts = m_descriptorSetLayoutShadow,
@@ -468,7 +466,7 @@ namespace vve {
 				.m_imageView = m_gBufferAttachments[i][NORMAL].m_gbufferImageView,
 				.m_sampler = m_sampler,
 				.m_binding = NORMAL,
-				.m_descriptorSet = m_descriptorSetsComposition[i]
+				.m_descriptorSet = m_descriptorSetsComposition.m_descriptorSetPerFrameInFlight[i]
 				});
 			// Albedo
 			vvh::RenCreateGBufferResources({
@@ -485,7 +483,7 @@ namespace vve {
 				.m_imageView = m_gBufferAttachments[i][ALBEDO].m_gbufferImageView,
 				.m_sampler = m_albedoSampler,
 				.m_binding = ALBEDO,
-				.m_descriptorSet = m_descriptorSetsComposition[i]
+				.m_descriptorSet = m_descriptorSetsComposition.m_descriptorSetPerFrameInFlight[i]
 				});
 			// Metallic and Roughness
 			vvh::RenCreateGBufferResources({
@@ -502,16 +500,22 @@ namespace vve {
 				.m_imageView = m_gBufferAttachments[i][METALLIC_ROUGHNESS].m_gbufferImageView,
 				.m_sampler = m_sampler,
 				.m_binding = METALLIC_ROUGHNESS,
-				.m_descriptorSet = m_descriptorSetsComposition[i]
+				.m_descriptorSet = m_descriptorSetsComposition.m_descriptorSetPerFrameInFlight[i]
 				});
 			// Depth
-			// TODO: done twice but only one per frame depth image used
-			vvh::RenUpdateDescriptorSetDepthAttachment({
+			vvh::RenCreateDepthResources({
+				.m_physicalDevice = m_vkState().m_physicalDevice,
 				.m_device = m_vkState().m_device,
-				.m_depthImage = m_vkState().m_depthImage,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_swapChain = m_vkState().m_swapChain,
+				.m_depthImage = m_depthAttachments[i]
+				});
+			vvh::RenUpdateImageDescriptorSet({
+				.m_device = m_vkState().m_device,
+				.m_imageView = m_depthAttachments[i].m_depthImageView,
+				.m_sampler = m_sampler,
 				.m_binding = DEPTH,
-				.m_descriptorSet = m_descriptorSetsComposition[i],
-				.m_sampler = m_sampler
+				.m_descriptorSet = m_descriptorSetsComposition.m_descriptorSetPerFrameInFlight[i],
 				});
 			// ShadowMap descriptor is updated on shadow map recreated callback
 		}
@@ -528,6 +532,18 @@ namespace vve {
 				.m_commandBuffer = VK_NULL_HANDLE
 				});
 		}
+		for (auto& depthAttach : m_depthAttachments) {
+			vvh::ImgTransitionImageLayout3({
+				.m_device = m_vkState().m_device,
+				.m_graphicsQueue = m_vkState().m_graphicsQueue,
+				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
+				.m_image = depthAttach.m_depthImage,
+				.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
+				.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+				.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+				.m_commandBuffer = VK_NULL_HANDLE
+				});
+		}
 	}
 
 	template<typename Derived>
@@ -540,6 +556,15 @@ namespace vve {
 				.m_imageAllocation = gBufferAttach.m_gbufferImageAllocation
 				});
 			vkDestroyImageView(m_vkState().m_device, gBufferAttach.m_gbufferImageView, nullptr);
+		}
+		for (auto& dephtAttach : m_depthAttachments) {
+			vvh::ImgDestroyImage({
+				.m_device = m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_image = dephtAttach.m_depthImage,
+				.m_imageAllocation = dephtAttach.m_depthImageAllocation
+				});
+			vkDestroyImageView(m_vkState().m_device, dephtAttach.m_depthImageView, nullptr);
 		}
 	}
 
@@ -688,24 +713,26 @@ namespace vve {
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::UpdateShadowResources() {
 		auto [sHandle, shadowImage] = *m_registry.template GetView<vecs::Handle, ShadowImage&>().begin();
-		// shadow cube array for point lights
-		vvh::RenUpdateImageDescriptorSet({
-			.m_device = m_vkState().m_device,
-			.m_imageView = shadowImage().m_cubeArrayView,
-			.m_sampler = m_shadowSampler,
-			.m_binding = 0,
-			.m_descriptorSet = m_descriptorSetShadow,
-			.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
-			});
-		// shadow 2D array for direct + spot lights
-		vvh::RenUpdateImageDescriptorSet({
-			.m_device = m_vkState().m_device,
-			.m_imageView = shadowImage().m_2DArrayView,
-			.m_sampler = m_shadowSampler,
-			.m_binding = 1,
-			.m_descriptorSet = m_descriptorSetShadow,
-			.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
-			});
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			// shadow cube array for point lights
+			vvh::RenUpdateImageDescriptorSet({
+				.m_device = m_vkState().m_device,
+				.m_imageView = shadowImage().m_cubeArrayView,
+				.m_sampler = m_shadowSampler,
+				.m_binding = 0,
+				.m_descriptorSet = m_descriptorSetShadow.m_descriptorSetPerFrameInFlight[i],
+				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+				});
+			// shadow 2D array for direct + spot lights
+			vvh::RenUpdateImageDescriptorSet({
+				.m_device = m_vkState().m_device,
+				.m_imageView = shadowImage().m_2DArrayView,
+				.m_sampler = m_shadowSampler,
+				.m_binding = 1,
+				.m_descriptorSet = m_descriptorSetShadow.m_descriptorSetPerFrameInFlight[i],
+				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+				});
+		}
 
 		size_t lsmSize = shadowImage().m_lightSpaceMatrices.size() * sizeof(glm::mat4);
 		for (size_t i = 0; i < m_storageBuffersLightSpaceMatrices.m_uniformBuffersMapped.size(); ++i) {
@@ -733,7 +760,7 @@ namespace vve {
 			.m_device = m_vkState().m_device,
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
 			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-			.m_image = m_vkState().m_depthImage.m_depthImage,
+			.m_image = m_depthAttachments[m_vkState().m_currentFrame].m_depthImage,
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
 			.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
@@ -761,7 +788,7 @@ namespace vve {
 			.m_device = m_vkState().m_device,
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
 			.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-			.m_image = m_vkState().m_depthImage.m_depthImage,
+			.m_image = m_depthAttachments[m_vkState().m_currentFrame].m_depthImage,
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
@@ -869,7 +896,7 @@ namespace vve {
 		vvh::ComRecordLighting({
 			.m_commandBuffer = cmdBuffer,
 			.m_graphicsPipeline = m_lightingPipeline[static_cast<size_t>(m_engine.IsShadowEnabled())],
-			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetsComposition[m_vkState().m_currentFrame], m_descriptorSetShadow},
+			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetsComposition, m_descriptorSetShadow},
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 	}

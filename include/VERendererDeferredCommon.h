@@ -61,6 +61,7 @@ namespace vve {
 
 		std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> m_commandBuffers{};
 		std::array<std::array<vvh::GBufferImage, COUNT>, MAX_FRAMES_IN_FLIGHT> m_gBufferAttachments{};
+		std::array<vvh::DepthImage, MAX_FRAMES_IN_FLIGHT> m_depthAttachments{};
 
 	private:
 		vvh::Buffer m_uniformBuffersPerFrame{};
@@ -76,7 +77,7 @@ namespace vve {
 		VkDescriptorSetLayout m_descriptorSetLayoutShadow{ VK_NULL_HANDLE };
 		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
 		vvh::DescriptorSet m_descriptorSetPerFrame{};
-		std::array<vvh::DescriptorSet, MAX_FRAMES_IN_FLIGHT> m_descriptorSetsComposition{};
+		vvh::DescriptorSet m_descriptorSetsComposition{};
 		vvh::DescriptorSet m_descriptorSetShadow{};
 
 		std::map<int, PipelinePerType> m_geomPipesPerType;

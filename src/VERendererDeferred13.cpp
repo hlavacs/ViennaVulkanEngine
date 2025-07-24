@@ -53,9 +53,9 @@ namespace vve {
 			for (auto j = 0; j < COUNT; ++j) {
 				m_gbufferAttachmentInfo[i][j].imageView = m_gBufferAttachments[i][j].m_gbufferImageView;
 			}
+			m_depthAttachmentInfo[i].imageView = m_depthAttachments[i].m_depthImageView;
 			m_geometryRenderingInfo[i].renderArea = renderArea;
 		}
-		m_depthAttachmentInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
 
 		for (size_t i = 0; i < m_vkState().m_swapChain.m_swapChainImageViews.size(); ++i) {
 			m_outputAttachmentInfo[i].imageView = m_vkState().m_swapChain.m_swapChainImageViews[i];
@@ -69,15 +69,6 @@ namespace vve {
 
 		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
 
-		// TODO: depth attachment - view per frame in flight?!
-		m_depthAttachmentInfo.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
-		m_depthAttachmentInfo.pNext = VK_NULL_HANDLE;
-		m_depthAttachmentInfo.imageView = m_vkState().m_depthImage.m_depthImageView;
-		m_depthAttachmentInfo.imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-		m_depthAttachmentInfo.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		m_depthAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-		m_depthAttachmentInfo.clearValue = m_clearDepthStencilValue;
-
 		for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			for (auto j = 0; j < COUNT; ++j) {
 				m_gbufferAttachmentInfo[i][j].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
@@ -88,6 +79,15 @@ namespace vve {
 				m_gbufferAttachmentInfo[i][j].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 				m_gbufferAttachmentInfo[i][j].clearValue = m_clearColorValue;
 			}
+
+			m_depthAttachmentInfo[i].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
+			m_depthAttachmentInfo[i].pNext = VK_NULL_HANDLE;
+			m_depthAttachmentInfo[i].imageView = m_depthAttachments[i].m_depthImageView;
+			m_depthAttachmentInfo[i].imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+			m_depthAttachmentInfo[i].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+			m_depthAttachmentInfo[i].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			m_depthAttachmentInfo[i].clearValue = m_clearDepthStencilValue;
+
 			m_geometryRenderingInfo[i].sType = VK_STRUCTURE_TYPE_RENDERING_INFO;
 			m_geometryRenderingInfo[i].pNext = VK_NULL_HANDLE;
 			m_geometryRenderingInfo[i].flags = 0;
@@ -96,7 +96,7 @@ namespace vve {
 			m_geometryRenderingInfo[i].viewMask = 0;
 			m_geometryRenderingInfo[i].colorAttachmentCount = static_cast<uint32_t>(COUNT);
 			m_geometryRenderingInfo[i].pColorAttachments = m_gbufferAttachmentInfo[i].data();
-			m_geometryRenderingInfo[i].pDepthAttachment = &m_depthAttachmentInfo;
+			m_geometryRenderingInfo[i].pDepthAttachment = &m_depthAttachmentInfo[i];
 			m_geometryRenderingInfo[i].pStencilAttachment = nullptr;
 		}
 

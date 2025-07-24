@@ -100,7 +100,7 @@ namespace vve {
 				.m_extent = m_vkState().m_swapChain.m_swapChainExtent,
 				.m_gBufferAttachs = m_gBufferAttachments[i],
 				.m_gBufferFrameBuffer = m_gBufferFrameBuffers[i],
-				.m_depthImage = m_vkState().m_depthImage,
+				.m_depthImage = m_depthAttachments[i],
 				.m_renderPass = m_geometryPass
 			});
 		}
