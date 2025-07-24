@@ -232,7 +232,7 @@ namespace vve {
 				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 				bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
 				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
-				if (!hasTexture && !hasColor && !hasVertexColor) continue;
+				if (!hasTexture && !hasColor && !hasVertexColor) [[unlikely]] continue;
 
 				if (hasTexture) {
 					vvh::BufferPerObjectTexture uboTexture{};
@@ -688,7 +688,7 @@ namespace vve {
 		for (auto& [pri, pipeline] : m_geomPipesPerType) {
 			bool found = true;
 			for (auto& c : pipeline.m_type) { found = found && (type.find(c) != std::string::npos); }
-			if (found) return &pipeline;
+			if (found) [[likely]] return &pipeline;
 		}
 		std::cout << "Pipeline not found for type: " << type << std::endl;
 		exit(-1);
@@ -830,7 +830,7 @@ namespace vve {
 				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 				bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
 				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
-				if (!hasTexture && !hasColor && !hasVertexColor) continue;
+				if (!hasTexture && !hasColor && !hasVertexColor) [[unlikely]] continue;
 
 				const vvh::Mesh& mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
 				
