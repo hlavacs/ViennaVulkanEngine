@@ -109,12 +109,14 @@ namespace vve {
 			.m_descriptorPool = m_descriptorPool,
 			.m_descriptorSet = m_descriptorSetPerFrame
 			});
-		vvh::RenCreateDescriptorSet({	// Composition
+		for (auto& set : m_descriptorSetsComposition) {
+			vvh::RenCreateDescriptorSet({	// Composition
 			.m_device = m_vkState().m_device,
 			.m_descriptorSetLayouts = m_descriptorSetLayoutComposition,
 			.m_descriptorPool = m_descriptorPool,
-			.m_descriptorSet = m_descriptorSetComposition
+			.m_descriptorSet = set
 			});
+		}
 		vvh::RenCreateDescriptorSet({	// Shadow
 			.m_device = m_vkState().m_device,
 			.m_descriptorSetLayouts = m_descriptorSetLayoutShadow,
@@ -469,7 +471,7 @@ namespace vve {
 				.m_imageView = m_gBufferAttachments[NORMAL + i * (COUNT - 1)].m_gbufferImageView,
 				.m_sampler = m_sampler,
 				.m_binding = NORMAL,
-				.m_descriptorSet = m_descriptorSetComposition
+				.m_descriptorSet = m_descriptorSetsComposition[i]
 				});
 			// Albedo
 			vvh::RenCreateGBufferResources({
@@ -486,7 +488,7 @@ namespace vve {
 				.m_imageView = m_gBufferAttachments[ALBEDO + i * (COUNT - 1)].m_gbufferImageView,
 				.m_sampler = m_albedoSampler,
 				.m_binding = ALBEDO,
-				.m_descriptorSet = m_descriptorSetComposition
+				.m_descriptorSet = m_descriptorSetsComposition[i]
 				});
 			// Metallic and Roughness
 			vvh::RenCreateGBufferResources({
@@ -503,14 +505,15 @@ namespace vve {
 				.m_imageView = m_gBufferAttachments[METALLIC_ROUGHNESS + i * (COUNT - 1)].m_gbufferImageView,
 				.m_sampler = m_sampler,
 				.m_binding = METALLIC_ROUGHNESS,
-				.m_descriptorSet = m_descriptorSetComposition
+				.m_descriptorSet = m_descriptorSetsComposition[i]
 				});
 			// Depth
+			// TODO: done twice but only one per frame depth image used
 			vvh::RenUpdateDescriptorSetDepthAttachment({
 				.m_device = m_vkState().m_device,
 				.m_depthImage = m_vkState().m_depthImage,
 				.m_binding = DEPTH,
-				.m_descriptorSet = m_descriptorSetComposition,
+				.m_descriptorSet = m_descriptorSetsComposition[i],
 				.m_sampler = m_sampler
 				});
 			// ShadowMap descriptor is updated on shadow map recreated callback
@@ -716,12 +719,12 @@ namespace vve {
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::PrepareLightingAttachments(const VkCommandBuffer& cmdBuffer) {
 		// GBuffer attachments VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-		for (auto& image : m_gBufferAttachments) {
+		for (size_t i = 0; i < COUNT - 1; ++i) {
 			vvh::ImgTransitionImageLayout3({
 				.m_device = m_vkState().m_device,
 				.m_graphicsQueue = m_vkState().m_graphicsQueue,
 				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-				.m_image = image.m_gbufferImage,
+				.m_image = m_gBufferAttachments[i + (COUNT-1) * m_vkState().m_currentFrame].m_gbufferImage,
 				.m_oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				.m_commandBuffer = cmdBuffer
@@ -744,12 +747,12 @@ namespace vve {
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::ResetLightingAttachments(const VkCommandBuffer& cmdBuffer) {
 		// GBuffer attachments from  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		for (auto& image : m_gBufferAttachments) {
+		for (size_t i = 0; i < COUNT - 1; ++i) {
 			vvh::ImgTransitionImageLayout3({
 				.m_device = m_vkState().m_device,
 				.m_graphicsQueue = m_vkState().m_graphicsQueue,
 				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-				.m_image = image.m_gbufferImage,
+				.m_image = m_gBufferAttachments[i + (COUNT - 1) * m_vkState().m_currentFrame].m_gbufferImage,
 				.m_oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				.m_newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				.m_commandBuffer = cmdBuffer
@@ -869,7 +872,7 @@ namespace vve {
 		vvh::ComRecordLighting({
 			.m_commandBuffer = cmdBuffer,
 			.m_graphicsPipeline = m_lightingPipeline[static_cast<size_t>(m_engine.IsShadowEnabled())],
-			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetComposition, m_descriptorSetShadow },
+			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetsComposition[m_vkState().m_currentFrame], m_descriptorSetShadow},
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 	}

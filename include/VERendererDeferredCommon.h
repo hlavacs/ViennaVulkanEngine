@@ -76,7 +76,7 @@ namespace vve {
 		VkDescriptorSetLayout m_descriptorSetLayoutShadow{ VK_NULL_HANDLE };
 		VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
 		vvh::DescriptorSet m_descriptorSetPerFrame{};
-		vvh::DescriptorSet m_descriptorSetComposition{};
+		std::array<vvh::DescriptorSet, MAX_FRAMES_IN_FLIGHT> m_descriptorSetsComposition{};
 		vvh::DescriptorSet m_descriptorSetShadow{};
 
 		std::map<int, PipelinePerType> m_geomPipesPerType;

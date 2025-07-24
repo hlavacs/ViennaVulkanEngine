@@ -24,7 +24,7 @@ namespace vve {
 
 		std::array<std::array<VkRenderingAttachmentInfo, COUNT - 1>, MAX_FRAMES_IN_FLIGHT> m_gbufferAttachmentInfo{};
 		VkRenderingAttachmentInfo m_depthAttachmentInfo{};
-		VkRenderingInfo m_geometryRenderingInfo[MAX_FRAMES_IN_FLIGHT]{};
+		std::array<VkRenderingInfo, MAX_FRAMES_IN_FLIGHT> m_geometryRenderingInfo{};
 
 		std::vector<VkRenderingAttachmentInfo> m_outputAttachmentInfo{};
 		std::vector<VkRenderingInfo> m_lightingRenderingInfo{};
