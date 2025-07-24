@@ -61,7 +61,7 @@ namespace vve {
 
 		std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> m_commandBuffers{};
 		std::array<std::array<vvh::GBufferImage, COUNT>, MAX_FRAMES_IN_FLIGHT> m_gBufferAttachments{};
-		std::array<vvh::DepthImage, MAX_FRAMES_IN_FLIGHT> m_depthAttachments{};
+		std::array<vvh::DepthImage, MAX_FRAMES_IN_FLIGHT> m_depthAttachments{};	// m_vkState.depthImage could be upgraded to per frame and used instead
 
 	private:
 		vvh::Buffer m_uniformBuffersPerFrame{};

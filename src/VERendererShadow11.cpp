@@ -113,6 +113,7 @@ namespace vve {
 			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAP_DIMENSION),
 			.maxImageArrayLayers = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers, SHADOW_MAX_NUM_LAYERS)
 		};
+		std::cout << "MAX IMAGE LAYERS: " << shadowImage.maxImageArrayLayers << "\n";
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
 		// TODO: Manage tag better
 		m_registry.AddTags(m_shadowImageHandle, (size_t)1337);
@@ -159,6 +160,9 @@ namespace vve {
 		uint32_t numSpotShadows = CountShadows<SpotLight>(1);
 		uint32_t numTotalLayers = numPointShadows + numDirectShadows + numSpotShadows;
 		numTotalLayers = numTotalLayers < 6 ? 6 : numTotalLayers;	// Because of cube compatible min 6 layers
+
+		// TODO: Currently there is no cap on layers, could exceed allocation size or maxImageArrayLayers
+		assert(numTotalLayers < shadowImage().maxImageArrayLayers);
 
 		// TODO: make destroy function
 		DestroyShadowMap();
