@@ -24,8 +24,8 @@ namespace vve {
 			.m_renderPass			= m_lightingPass
 			});
 
-		m_clearValues.reserve(COUNT);
-		for (uint8_t i = 0; i < COUNT - 1; ++i) m_clearValues.push_back(m_clearColorValue);
+		m_clearValues.reserve(COUNT + 1);
+		for (uint8_t i = 0; i < COUNT; ++i) m_clearValues.push_back(m_clearColorValue);
 		m_clearValues.push_back(m_clearDepthStencilValue);
 
 		CreateDeferredFrameBuffers();
@@ -102,7 +102,7 @@ namespace vve {
 			.m_gBufferFrameBuffers	= m_gBufferFrameBuffers,
 			.m_depthImage			= m_vkState().m_depthImage,
 			.m_renderPass			= m_geometryPass,
-			.m_attachCount			= COUNT - 1,
+			.m_attachCount			= COUNT,
 			.m_framesInFlight		= MAX_FRAMES_IN_FLIGHT
 			});
 

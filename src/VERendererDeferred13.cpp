@@ -50,8 +50,8 @@ namespace vve {
 		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
 
 		for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-			for (auto j = 0; j < COUNT - 1; ++j) {
-				auto idx = j + i * (COUNT - 1);
+			for (auto j = 0; j < COUNT; ++j) {
+				auto idx = j + i * COUNT;
 				m_gbufferAttachmentInfo[i][j].imageView = m_gBufferAttachments[idx].m_gbufferImageView;
 			}
 			m_geometryRenderingInfo[i].renderArea = renderArea;
@@ -80,8 +80,8 @@ namespace vve {
 		m_depthAttachmentInfo.clearValue = m_clearDepthStencilValue;
 
 		for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
-			for (auto j = 0; j < COUNT - 1; ++j) {
-				auto idx = j + i * (COUNT - 1);
+			for (auto j = 0; j < COUNT; ++j) {
+				auto idx = j + i * COUNT;
 				m_gbufferAttachmentInfo[i][j].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 				m_gbufferAttachmentInfo[i][j].pNext = VK_NULL_HANDLE;
 				m_gbufferAttachmentInfo[i][j].imageView = m_gBufferAttachments[idx].m_gbufferImageView;
@@ -96,7 +96,7 @@ namespace vve {
 			m_geometryRenderingInfo[i].renderArea = renderArea;
 			m_geometryRenderingInfo[i].layerCount = 1;
 			m_geometryRenderingInfo[i].viewMask = 0;
-			m_geometryRenderingInfo[i].colorAttachmentCount = static_cast<uint32_t>(COUNT - 1);
+			m_geometryRenderingInfo[i].colorAttachmentCount = static_cast<uint32_t>(COUNT);
 			m_geometryRenderingInfo[i].pColorAttachments = m_gbufferAttachmentInfo[i].data();
 			m_geometryRenderingInfo[i].pDepthAttachment = &m_depthAttachmentInfo;
 			m_geometryRenderingInfo[i].pStencilAttachment = nullptr;

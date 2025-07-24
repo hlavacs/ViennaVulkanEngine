@@ -54,7 +54,7 @@ namespace vve {
 	protected:
 		static constexpr uint32_t MAX_NUMBER_LIGHTS{ 128 };
 
-		enum GBufferIndex : uint8_t { NORMAL = 0, ALBEDO = 1, METALLIC_ROUGHNESS = 2, DEPTH = 3, COUNT };
+		enum GBufferIndex : size_t { NORMAL = 0, ALBEDO = 1, METALLIC_ROUGHNESS = 2, DEPTH = 3, COUNT = 3 };
 
 		static constexpr VkClearValue m_clearColorValue{ .color = {0.0f, 0.0f, 0.0f, 1.0f} };
 		static constexpr VkClearValue m_clearDepthStencilValue{ .depthStencil = { 1.0f, 0 } };
