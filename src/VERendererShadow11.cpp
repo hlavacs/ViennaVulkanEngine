@@ -537,7 +537,7 @@ namespace vve {
 			.m_extent = {shadowImage.maxImageDimension2D, shadowImage.maxImageDimension2D},
 			.m_framebuffers = m_shadowFrameBuffers,
 			.m_renderPass = m_renderPass,
-			.m_clearValues = {{.depthStencil = {1.0f, 0} }}
+			.m_clearValues = m_clearValue
 		});
 
 		for (auto [oHandle, ghandle, descriptorset] :

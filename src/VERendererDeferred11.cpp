@@ -24,9 +24,8 @@ namespace vve {
 			.m_renderPass			= m_lightingPass
 			});
 
-		m_clearValues.reserve(COUNT + 1);
-		for (uint8_t i = 0; i < COUNT; ++i) m_clearValues.push_back(m_clearColorValue);
-		m_clearValues.push_back(m_clearDepthStencilValue);
+		for (uint8_t i = 0; i < COUNT; ++i) m_clearValues[i] = m_clearColorValue;
+		m_clearValues[COUNT + 1] = m_clearDepthStencilValue;
 
 		CreateDeferredFrameBuffers();
 

@@ -83,6 +83,7 @@ namespace vve
 		vecs::Handle m_shadowImageHandle;
 
 		State m_state = State::STATE_NEW;
+		static constexpr std::array<VkClearValue, 1> m_clearValue = { { VkClearValue{.depthStencil = {1.0f, 0}}} };
 
 		DummyImage m_dummyImage;
 	};
