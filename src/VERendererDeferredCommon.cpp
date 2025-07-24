@@ -721,7 +721,8 @@ namespace vve {
 				.m_sampler = m_shadowSampler,
 				.m_binding = 0,
 				.m_descriptorSet = m_descriptorSetShadow.m_descriptorSetPerFrameInFlight[i],
-				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.m_imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
 				});
 			// shadow 2D array for direct + spot lights
 			vvh::RenUpdateImageDescriptorSet({
@@ -730,7 +731,8 @@ namespace vve {
 				.m_sampler = m_shadowSampler,
 				.m_binding = 1,
 				.m_descriptorSet = m_descriptorSetShadow.m_descriptorSetPerFrameInFlight[i],
-				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER
+				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.m_imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
 				});
 		}
 

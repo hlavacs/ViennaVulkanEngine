@@ -74,10 +74,11 @@ namespace vve
 		std::vector<VkFramebuffer> m_shadowFrameBuffers{ VK_NULL_HANDLE };
 
 	    VkDescriptorPool m_descriptorPool{ VK_NULL_HANDLE };
+		VkDescriptorSetLayout m_descriptorSetLayoutPerObject{ VK_NULL_HANDLE };
+
 		std::vector<VkCommandPool> m_commandPools{ VK_NULL_HANDLE };
 		std::vector<VkCommandBuffer> m_commandBuffers{ VK_NULL_HANDLE };
 
-		VkDescriptorSetLayout m_descriptorSetLayoutPerObject{ VK_NULL_HANDLE };
 		vvh::Pipeline m_shadowPipeline{};
 
 		vecs::Handle m_shadowImageHandle;

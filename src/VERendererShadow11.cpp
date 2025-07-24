@@ -96,7 +96,7 @@ namespace vve {
 			.m_imgCreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT
 			});
 
-		// Depth image VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		// Depth image VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
 			.m_device = m_vkState().m_device,
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
@@ -105,7 +105,7 @@ namespace vve {
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_layers = 6,
 			.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+			.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
 		});
 
 		// Shadow Image
@@ -329,7 +329,7 @@ namespace vve {
 
 		std::cout << "Shadow lsm matrices count: " << shadowImage().m_lightSpaceMatrices.size() << std::endl;
 
-		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
 			.m_device = m_vkState().m_device,
 			.m_graphicsQueue = m_vkState().m_graphicsQueue,
@@ -338,7 +338,7 @@ namespace vve {
 			.m_aspect = VK_IMAGE_ASPECT_DEPTH_BIT,
 			.m_layers = (int)numberTotalLayers,	// TODO: fix when it works
 			.m_oldLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-			.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			.m_newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
 			.m_commandBuffer = cmdBuffer,
 		});
 
