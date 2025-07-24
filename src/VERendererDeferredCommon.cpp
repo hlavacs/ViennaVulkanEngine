@@ -451,7 +451,6 @@ namespace vve {
 
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::CreateDeferredResources() {
-		m_gBufferAttachments.resize(COUNT * MAX_FRAMES_IN_FLIGHT);
 
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			// Normal
@@ -460,13 +459,13 @@ namespace vve {
 				.m_device = m_vkState().m_device,
 				.m_vmaAllocator = m_vkState().m_vmaAllocator,
 				.m_swapChain = m_vkState().m_swapChain,
-				.m_gbufferImage = m_gBufferAttachments[NORMAL + i * COUNT],
+				.m_gbufferImage = m_gBufferAttachments[i][NORMAL],
 				.m_format = VK_FORMAT_R16G16B16A16_SFLOAT,
 				.m_sampler = m_sampler
 				});
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
-				.m_imageView = m_gBufferAttachments[NORMAL + i * COUNT].m_gbufferImageView,
+				.m_imageView = m_gBufferAttachments[i][NORMAL].m_gbufferImageView,
 				.m_sampler = m_sampler,
 				.m_binding = NORMAL,
 				.m_descriptorSet = m_descriptorSetsComposition[i]
@@ -477,13 +476,13 @@ namespace vve {
 				.m_device = m_vkState().m_device,
 				.m_vmaAllocator = m_vkState().m_vmaAllocator,
 				.m_swapChain = m_vkState().m_swapChain,
-				.m_gbufferImage = m_gBufferAttachments[ALBEDO + i * COUNT],
+				.m_gbufferImage = m_gBufferAttachments[i][ALBEDO],
 				.m_format = VK_FORMAT_R8G8B8A8_SRGB,
 				.m_sampler = m_albedoSampler
 				});
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
-				.m_imageView = m_gBufferAttachments[ALBEDO + i * COUNT].m_gbufferImageView,
+				.m_imageView = m_gBufferAttachments[i][ALBEDO].m_gbufferImageView,
 				.m_sampler = m_albedoSampler,
 				.m_binding = ALBEDO,
 				.m_descriptorSet = m_descriptorSetsComposition[i]
@@ -494,13 +493,13 @@ namespace vve {
 				.m_device = m_vkState().m_device,
 				.m_vmaAllocator = m_vkState().m_vmaAllocator,
 				.m_swapChain = m_vkState().m_swapChain,
-				.m_gbufferImage = m_gBufferAttachments[METALLIC_ROUGHNESS + i * COUNT],
+				.m_gbufferImage = m_gBufferAttachments[i][METALLIC_ROUGHNESS],
 				.m_format = VK_FORMAT_R8G8B8A8_UNORM,
 				.m_sampler = m_sampler
 				});
 			vvh::RenUpdateImageDescriptorSet({
 				.m_device = m_vkState().m_device,
-				.m_imageView = m_gBufferAttachments[METALLIC_ROUGHNESS + i * COUNT].m_gbufferImageView,
+				.m_imageView = m_gBufferAttachments[i][METALLIC_ROUGHNESS].m_gbufferImageView,
 				.m_sampler = m_sampler,
 				.m_binding = METALLIC_ROUGHNESS,
 				.m_descriptorSet = m_descriptorSetsComposition[i]
@@ -518,12 +517,12 @@ namespace vve {
 		}
 		
 		// GBuffer attachments from  VK_IMAGE_LAYOUT_UNDEFINED --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		for (auto& image : m_gBufferAttachments) {
+		for (auto& gBufferAttach : m_gBufferAttachments | std::views::join) {
 			vvh::ImgTransitionImageLayout3({
 				.m_device = m_vkState().m_device,
 				.m_graphicsQueue = m_vkState().m_graphicsQueue,
 				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-				.m_image = image.m_gbufferImage,
+				.m_image = gBufferAttach.m_gbufferImage,
 				.m_oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 				.m_newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				.m_commandBuffer = VK_NULL_HANDLE
@@ -533,7 +532,7 @@ namespace vve {
 
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::DestroyDeferredResources() {
-		for (auto& gBufferAttach : m_gBufferAttachments) {
+		for (auto& gBufferAttach : m_gBufferAttachments | std::views::join) {
 			vvh::ImgDestroyImage({
 				.m_device = m_vkState().m_device,
 				.m_vmaAllocator = m_vkState().m_vmaAllocator,
@@ -645,7 +644,7 @@ namespace vve {
 		std::vector<VkFormat> attachFormats;
 		attachFormats.reserve(COUNT);
 		for (size_t i = 0; i < COUNT; ++i) {
-			attachFormats.emplace_back(m_gBufferAttachments[i].m_gbufferFormat);
+			attachFormats.emplace_back(m_gBufferAttachments[0][i].m_gbufferFormat);
 		}
 
 		return attachFormats;
@@ -717,12 +716,12 @@ namespace vve {
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::PrepareLightingAttachments(const VkCommandBuffer& cmdBuffer) {
 		// GBuffer attachments VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-		for (size_t i = 0; i < COUNT; ++i) {
+		for (auto& image : m_gBufferAttachments[m_vkState().m_currentFrame]) {
 			vvh::ImgTransitionImageLayout3({
 				.m_device = m_vkState().m_device,
 				.m_graphicsQueue = m_vkState().m_graphicsQueue,
 				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-				.m_image = m_gBufferAttachments[i + COUNT * m_vkState().m_currentFrame].m_gbufferImage,
+				.m_image = image.m_gbufferImage,
 				.m_oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				.m_newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				.m_commandBuffer = cmdBuffer
@@ -745,12 +744,12 @@ namespace vve {
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::ResetLightingAttachments(const VkCommandBuffer& cmdBuffer) {
 		// GBuffer attachments from  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-		for (size_t i = 0; i < COUNT; ++i) {
+		for (auto& image : m_gBufferAttachments[m_vkState().m_currentFrame]) {
 			vvh::ImgTransitionImageLayout3({
 				.m_device = m_vkState().m_device,
 				.m_graphicsQueue = m_vkState().m_graphicsQueue,
 				.m_commandPool = m_commandPools[m_vkState().m_currentFrame],
-				.m_image = m_gBufferAttachments[i + COUNT * m_vkState().m_currentFrame].m_gbufferImage,
+				.m_image = image.m_gbufferImage,
 				.m_oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				.m_newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				.m_commandBuffer = cmdBuffer

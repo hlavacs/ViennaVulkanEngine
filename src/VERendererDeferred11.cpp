@@ -94,17 +94,17 @@ namespace vve {
 
 	void RendererDeferred11::CreateDeferredFrameBuffers() {
 		// GBuffer FrameBuffers
-		vvh::RenCreateGBufferFrameBuffers({
-			.m_device				= m_vkState().m_device,
-			.m_swapChain			= m_vkState().m_swapChain,
-			.m_gBufferAttachs		= m_gBufferAttachments,
-			.m_gBufferFrameBuffers	= m_gBufferFrameBuffers,
-			.m_depthImage			= m_vkState().m_depthImage,
-			.m_renderPass			= m_geometryPass,
-			.m_attachCount			= COUNT,
-			.m_framesInFlight		= MAX_FRAMES_IN_FLIGHT
+		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
+			vvh::RenCreateGBufferFrameBuffers({
+				.m_device = m_vkState().m_device,
+				.m_extent = m_vkState().m_swapChain.m_swapChainExtent,
+				.m_gBufferAttachs = m_gBufferAttachments[i],
+				.m_gBufferFrameBuffer = m_gBufferFrameBuffers[i],
+				.m_depthImage = m_vkState().m_depthImage,
+				.m_renderPass = m_geometryPass
 			});
-
+		}
+		
 		// Lighting pass FrameBuffers
 		m_lightingFrameBuffers.resize(m_vkState().m_swapChain.m_swapChainImageViews.size());
 		vvh::RenCreateFrameBuffers2({

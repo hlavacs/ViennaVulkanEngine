@@ -51,8 +51,7 @@ namespace vve {
 
 		for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			for (auto j = 0; j < COUNT; ++j) {
-				auto idx = j + i * COUNT;
-				m_gbufferAttachmentInfo[i][j].imageView = m_gBufferAttachments[idx].m_gbufferImageView;
+				m_gbufferAttachmentInfo[i][j].imageView = m_gBufferAttachments[i][j].m_gbufferImageView;
 			}
 			m_geometryRenderingInfo[i].renderArea = renderArea;
 		}
@@ -81,10 +80,9 @@ namespace vve {
 
 		for (auto i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			for (auto j = 0; j < COUNT; ++j) {
-				auto idx = j + i * COUNT;
 				m_gbufferAttachmentInfo[i][j].sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
 				m_gbufferAttachmentInfo[i][j].pNext = VK_NULL_HANDLE;
-				m_gbufferAttachmentInfo[i][j].imageView = m_gBufferAttachments[idx].m_gbufferImageView;
+				m_gbufferAttachmentInfo[i][j].imageView = m_gBufferAttachments[i][j].m_gbufferImageView;
 				m_gbufferAttachmentInfo[i][j].imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 				m_gbufferAttachmentInfo[i][j].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
 				m_gbufferAttachmentInfo[i][j].storeOp = VK_ATTACHMENT_STORE_OP_STORE;

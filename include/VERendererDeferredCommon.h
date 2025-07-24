@@ -60,7 +60,7 @@ namespace vve {
 		static constexpr VkClearValue m_clearDepthStencilValue{ .depthStencil = { 1.0f, 0 } };
 
 		std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> m_commandBuffers{};
-		std::vector<vvh::GBufferImage> m_gBufferAttachments{};
+		std::array<std::array<vvh::GBufferImage, COUNT>, MAX_FRAMES_IN_FLIGHT> m_gBufferAttachments{};
 
 	private:
 		vvh::Buffer m_uniformBuffersPerFrame{};
