@@ -12,7 +12,7 @@ public:
 	DeferredDemo(vve::Engine& engine) : vve::System("DeferredDemo", engine) {
 
 		m_engine.RegisterCallbacks({
-			{this,      0, "LOAD_LEVEL", [this](Message& message) { return OnLoadLevel(message); } },
+			{this,   1000, "LOAD_LEVEL", [this](Message& message) { return OnLoadLevel(message); } },
 			{this,  10000, "UPDATE", [this](Message& message) { return OnUpdate(message); } },
 			{this, -10000, "RECORD_NEXT_FRAME", [this](Message& message) { return OnRecordNextFrame(message); } }
 			});
@@ -34,6 +34,17 @@ private:
 		auto& msg = message.template GetData<vve::System::MsgLoadLevel>();
 		std::cout << "Loading level: " << msg.m_level << std::endl;
 		std::string level = std::string("Level: ") + msg.m_level;
+
+		// Removes lights from VESceneManager
+		for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::PointLight&>()) {
+			m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
+		}
+		for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::DirectionalLight&>()) {
+			m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
+		}
+		for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::SpotLight&>()) {
+			m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
+		}
 
 		// Starting Camera position
 		GetCamera();
