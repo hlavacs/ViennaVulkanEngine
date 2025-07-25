@@ -23,10 +23,10 @@ namespace vve {
 		Renderer::OnInit(message);
 
 		vvh::RenCreateRenderPassShadow({
-			m_vkState().m_depthMapFormat,
-			m_vkState().m_device,
-			true,
-			m_renderPass
+			.m_depthFormat = m_vkState().m_depthMapFormat,
+			.m_device = m_vkState().m_device,
+			.m_clear = true,
+			.m_renderPass = m_renderPass
 			});
 
 		m_commandPools.resize(MAX_FRAMES_IN_FLIGHT);
@@ -48,30 +48,38 @@ namespace vve {
 		}
 
 
-		vvh::RenCreateDescriptorPool({ m_vkState().m_device, 1000, m_descriptorPool });
+		vvh::RenCreateDescriptorPool({ 
+			.m_device = m_vkState().m_device, 
+			.m_sizes = 1000, 
+			.m_descriptorPool = m_descriptorPool 
+			});
 
-		vvh::RenCreateDescriptorSetLayout({ m_vkState().m_device,
-			{ {.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
-			m_descriptorSetLayoutPerObject });
+		vvh::RenCreateDescriptorSetLayout({ 
+			.m_device = m_vkState().m_device,
+			.m_bindings = { {.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT } },
+			.m_descriptorSetLayout = m_descriptorSetLayoutPerObject 
+			});
 
 		std::vector<VkVertexInputBindingDescription> bindingDescriptions = getBindingDescriptions("P");
 		std::vector<VkVertexInputAttributeDescription> attributeDescriptions = getAttributeDescriptions("P");
 
 		// TODO: Move shadow into own folder so deferred AND forward can use it
 		vvh::RenCreateGraphicsPipeline({
-			m_vkState().m_device,
-			m_renderPass,
-			"shaders/Deferred/Shadow11.spv", "shaders/Deferred/Shadow11.spv",
-			bindingDescriptions, attributeDescriptions,
-			{ m_descriptorSetLayoutPerObject },
-			{}, //spezialization constants
-			{ {.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(PushConstantShadow)} },
-			{}, //blend attachments
-			m_shadowPipeline,
-			{}, //
-			m_vkState().m_depthMapFormat,
-			true,
-			VK_CULL_MODE_FRONT_BIT
+			.m_device = m_vkState().m_device,
+			.m_renderPass = m_renderPass,
+			.m_vertShaderPath = "shaders/Deferred/Shadow11.spv", 
+			.m_fragShaderPath = "shaders/Deferred/Shadow11.spv",
+			.m_bindingDescription = bindingDescriptions, 
+			.m_attributeDescriptions = attributeDescriptions,
+			.m_descriptorSetLayouts = { m_descriptorSetLayoutPerObject },
+			.m_specializationConstants = {},
+			.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(PushConstantShadow)} },
+			.m_blendAttachments = {},
+			.m_graphicsPipeline = m_shadowPipeline,
+			.m_attachmentFormats = {}, //
+			.m_depthFormat = m_vkState().m_depthMapFormat,
+			.m_depthWrite = true,
+			.m_cullModeFlagBits = VK_CULL_MODE_FRONT_BIT
 		});	
 
 		std::cout << "Pipeline Shadow" << std::endl;
@@ -168,13 +176,23 @@ namespace vve {
 		DestroyShadowMap();
 
 		vvh::Image map;
-		vvh::ImgCreateImage({ m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator
-			, shadowImage().maxImageDimension2D, shadowImage().maxImageDimension2D, 1, numTotalLayers, 1
-			, m_vkState().m_depthMapFormat, VK_IMAGE_TILING_OPTIMAL
-			, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-			, VK_IMAGE_LAYOUT_UNDEFINED
-			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, map.m_mapImage, map.m_mapImageAllocation, 
-			VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT // Cube now!
+		vvh::ImgCreateImage({ 
+			.m_physicalDevice = m_vkState().m_physicalDevice, 
+			.m_device = m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+			.m_width = shadowImage().maxImageDimension2D, 
+			.m_height = shadowImage().maxImageDimension2D, 
+			.m_depth = 1, 
+			.m_layers = numTotalLayers, 
+			.m_mipLevels = 1, 
+			.m_format = m_vkState().m_depthMapFormat, 
+			.m_tiling = VK_IMAGE_TILING_OPTIMAL, 
+			.m_usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+			.m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED, 
+			.m_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+			.m_image = map.m_mapImage, 
+			.m_imageAllocation = map.m_mapImageAllocation,
+			.m_imgCreateFlags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT // Cube now!
 			});
 
 		// light space matrices needed only by direct and spot lights
@@ -347,8 +365,12 @@ namespace vve {
 		vkDestroyPipeline(m_vkState().m_device, m_shadowPipeline.m_pipeline, nullptr);
 		vkDestroyPipelineLayout(m_vkState().m_device, m_shadowPipeline.m_pipelineLayout, nullptr);
 
-		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
-				m_dummyImage.m_dummyImage, m_dummyImage.m_dummyImageAllocation });
+		vvh::ImgDestroyImage({ 
+			.m_device = m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_image = m_dummyImage.m_dummyImage, 
+			.m_imageAllocation = m_dummyImage.m_dummyImageAllocation 
+			});
 		DestroyShadowMap();
 		
 		return false;
@@ -357,8 +379,12 @@ namespace vve {
 	void RendererShadow11::DestroyShadowMap() {
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 
-		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
-			shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
+		vvh::ImgDestroyImage({ 
+			.m_device = m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_image = shadowImage().shadowImage.m_mapImage, 
+			.m_imageAllocation = shadowImage().shadowImage.m_mapImageAllocation 
+			});
 
 		for (auto& view : m_layerViews) {
 			vkDestroyImageView(m_vkState().m_device, view, nullptr);
@@ -377,7 +403,7 @@ namespace vve {
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 
 		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
-		vvh::ComBeginCommandBuffer({ cmdBuffer });
+		vvh::ComBeginCommandBuffer({ .m_commandBuffer = cmdBuffer });
 
 		vvh::ComBindPipeline({
 			.m_commandBuffer = cmdBuffer,
