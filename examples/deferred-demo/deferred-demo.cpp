@@ -52,61 +52,95 @@ private:
 		m_registry.Get<vve::Position&>(m_cameraNodeHandle)().x += 7.46f;
 		m_registry.Get<vve::Position&>(m_cameraNodeHandle)().y -= 4.2f;
 
-		// ----------------- Load Plane -----------------
-
-		m_engine.SendMsg(MsgSceneLoad{ vve::Filename{plane_obj}, aiProcess_FlipWindingOrder });
-
-		auto m_handlePlane = m_registry.Insert(
-			vve::Position{ {0.0f,0.0f,0.0f } },
-			vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) } },
-			vve::Scale{ vec3_t{1000.0f,1000.0f,1000.0f} },
-			vve::MeshName{ plane_mesh },
-			vve::TextureName{ plane_txt },
-			vve::UVScale{ { 1000.0f, 1000.0f } }
-		);
-
-		m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(m_handlePlane), vve::ParentHandle{}, this });
-
-		// ----------------- Load Cube -----------------
-
-		auto handleCube = m_registry.Insert(
-			vve::Position{ { randFloat(-50.0f, 50.0f), randFloat(-50.0f, 50.0f), 0.5f } },
-			vve::Rotation{ mat3_t{1.0f} },
-			vve::Scale{ vec3_t{1.0f} });
-
-		m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleCube), vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder });
-
-		// ----------------- Load Cornell -----------------
-
-		m_engine.SendMsg(MsgSceneLoad{ vve::Filename{cornell_obj}, aiProcess_PreTransformVertices });
-		auto handleCornell = m_registry.Insert(
-			vve::Position{ { 0.0f, 0.0f, -0.1f } },
-			vve::Rotation{ mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f / 2.0f, vec3_t{1.0f, 0.0f, 0.0f}) } },
-			vve::Scale{ vec3_t{1.0f} }
-		);
-		m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleCornell), vve::ParentHandle{}, vve::Filename{cornell_obj}, aiProcess_PreTransformVertices });
-
-		// -----------------  Fireplace -----------------
-		aiPostProcessSteps flags = static_cast<aiPostProcessSteps>(aiProcess_PreTransformVertices | aiProcess_ImproveCacheLocality);
-		m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/test/Fireplace/Fireplace.gltf"}, flags });
-		auto handleFireplace = m_registry.Insert(
-			vve::Position{ { 5.0f, 0.0f, 0.1f } },
-			vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f))} },
-			//vve::Rotation{ mat3_t{1.0f} },
-			vve::Scale{ vec3_t{1.0f} }
-		);
-		m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleFireplace), vve::ParentHandle{}, vve::Filename{"assets/test/Fireplace/Fireplace.gltf"}, flags });
-
-
 		// -----------------  Light Mesh -----------------
 		m_engine.SendMsg(MsgSceneLoad{ vve::Filename{"assets/standard/sphere.obj"} });
+
+		// If there is a path to sponza and/or curtains, load it
+		sponza_active = !sponza.empty();
+		curtains_active = sponza_active && !curtains.empty();
+
+		// ----------------- Load Plane -----------------
+
+		if (!sponza_active) {
+
+			m_engine.SendMsg(MsgSceneLoad{ vve::Filename{plane_obj}, aiProcess_FlipWindingOrder });
+
+			auto m_handlePlane = m_registry.Insert(
+				vve::Position{ {0.0f,0.0f,0.0f } },
+				vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) } },
+				vve::Scale{ vec3_t{1000.0f,1000.0f,1000.0f} },
+				vve::MeshName{ plane_mesh },
+				vve::TextureName{ plane_txt },
+				vve::UVScale{ { 1000.0f, 1000.0f } }
+			);
+
+			m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(m_handlePlane), vve::ParentHandle{}, this });
+
+			// ----------------- Load Cube -----------------
+
+			auto handleCube = m_registry.Insert(
+				vve::Position{ { randFloat(-50.0f, 50.0f), randFloat(-50.0f, 50.0f), 0.5f } },
+				vve::Rotation{ mat3_t{1.0f} },
+				vve::Scale{ vec3_t{1.0f} });
+
+			m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleCube), vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder });
+
+			// ----------------- Load Cornell -----------------
+
+			m_engine.SendMsg(MsgSceneLoad{ vve::Filename{cornell_obj}, aiProcess_PreTransformVertices });
+			auto handleCornell = m_registry.Insert(
+				vve::Position{ { 0.0f, 0.0f, -0.1f } },
+				vve::Rotation{ mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f / 2.0f, vec3_t{1.0f, 0.0f, 0.0f}) } },
+				vve::Scale{ vec3_t{1.0f} }
+			);
+			m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleCornell), vve::ParentHandle{}, vve::Filename{cornell_obj}, aiProcess_PreTransformVertices });
+
+			// -----------------  Fireplace -----------------
+			aiPostProcessSteps flags = static_cast<aiPostProcessSteps>(aiProcess_PreTransformVertices | aiProcess_ImproveCacheLocality);
+			m_engine.SendMsg(MsgSceneLoad{ vve::Filename{fireplace}, flags });
+			auto handleFireplace = m_registry.Insert(
+				vve::Position{ { 5.0f, 0.0f, 0.1f } },
+				vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f))} },
+				//vve::Rotation{ mat3_t{1.0f} },
+				vve::Scale{ vec3_t{1.0f} }
+			);
+			m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleFireplace), vve::ParentHandle{}, vve::Filename{fireplace}, flags });
+
+		}
+		else {
+			// -----------------  Sponza -----------------
+			std::cout << "Sponza Scene courtesy of Intel Corporation - GPU Research Samples\n";
+
+			// sponza
+			aiPostProcessSteps flags = static_cast<aiPostProcessSteps>(aiProcess_PreTransformVertices | aiProcess_ImproveCacheLocality);
+			m_engine.SendMsg(MsgSceneLoad{ vve::Filename{sponza}, flags });
+			auto handleSponza = m_registry.Insert(
+				vve::Position{ { 5.0f, 0.0f, 0.1f } },
+				vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f))} },
+				vve::Scale{ vec3_t{1.0f} }
+			);
+			m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleSponza), vve::ParentHandle{}, vve::Filename{sponza}, flags });
+
+			// curtains
+			if (curtains_active) {
+				m_engine.SendMsg(MsgSceneLoad{ vve::Filename{curtains}, flags });
+				auto handleCurtains = m_registry.Insert(
+					vve::Position{ { 5.0f, 0.0f, 0.1f } },
+					vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f))} },
+					vve::Scale{ vec3_t{1.0f} }
+				);
+				m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(handleCurtains), vve::ParentHandle{}, vve::Filename{curtains}, flags });
+			}
+		}
 
 		return false;
 	};
 
 	bool OnUpdate(Message& message) {
 		auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
-		pos().z = 1.5f;
+		if (!sponza_active) {
+			pos().z = 1.5f;
+		}
 
 		return false;
 	}
@@ -175,8 +209,13 @@ private:
 		for (uint16_t i = 0; i < lightCount; ++i) {
 			// Random values but still close to main scene
 			glm::vec3 pointLightPosition(randFloat(5.0f, 10.0f), randFloat(0.5f, 3.0), randFloat(1.75f, 2.5f));
+			if (sponza_active) {
+				pointLightPosition = glm::vec3(randFloat(-10.0f, 10.0f), randFloat(-5.5f, 5.5), randFloat(0.75f, 15.5f));
+			}
 			glm::vec3 pointLightColor(randFloat(0.0f, 1.0f), randFloat(0.0f, 1.0f), randFloat(0.0f, 1.0f));
 			float intensity = randFloat(0.1f, 0.3f);
+			intensity *= sponza_active ? 10 : 1;
+
 
 			auto lightHandle = m_registry.Insert(
 				vve::Name{ "PointLight-" + i },
@@ -246,6 +285,13 @@ private:
 	inline static const std::string plane_txt	{ "assets/test/plane/grass.jpg" };
 	inline static const std::string cube_obj	{ "assets/test/crate0/cube.obj" };
 	inline static const std::string cornell_obj	{ "assets/test/cornell/CornellBox-Original.obj" };
+	inline static const std::string fireplace	{ "assets/test/Fireplace/Fireplace.gltf" };
+	// Sponza Scene courtesy of Intel Corporation - GPU Research Samples
+	bool sponza_active = false;
+	bool curtains_active = false;
+	// If there is a path, it loads this instead of the Fireplace demo
+	inline static const std::string sponza		{ /*"INSERT-YOUR-PATH/main_sponza/NewSponza_Main_glTF_003.gltf"*/ };
+	inline static const std::string curtains	{ /*"INSERT-YOUR-PATH/pkg_a_curtains/NewSponza_Curtains_glTF.gltf"*/ };
 };
 
 
