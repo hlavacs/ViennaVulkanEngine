@@ -1,7 +1,7 @@
 
 #define VIENNA_VULKAN_HELPER_IMPL
 
-#include "VHInclude2.h"
+#include "VHInclude.h"
 #include "VEInclude.h"
 
 
@@ -131,18 +131,6 @@ namespace vve {
 		SendMsg( MsgFrameEnd{dt} ) ;
 	}
 
-	auto Engine::GetHandle(std::string name) -> vecs::Handle { 
-		return m_handleMap[name]; 
-	}
-
-	auto Engine::SetHandle(std::string name, vecs::Handle h) -> void {
-		m_handleMap[name] = h;
-	}
-
-	auto  Engine::ContainsHandle(std::string name) -> bool {
-		return m_handleMap.contains(name);
-	}
-
 	void Engine::Quit(){
 		Message( MsgQuit{} );
 	}
@@ -161,6 +149,175 @@ namespace vve {
 			std::cout << std::endl;
 		}
 	}
+
+	//-------------------------------------------------------------------------------------------------------------------
+	// simple interface
+
+	auto Engine::GetHandle(std::string name) -> vecs::Handle { 
+		return m_handleMap[name]; 
+	}
+
+	auto Engine::SetHandle(std::string name, vecs::Handle h) -> void {
+		m_handleMap[name] = h;
+	}
+
+	auto  Engine::ContainsHandle(std::string name) -> bool {
+		return m_handleMap.contains(name);
+	}
+
+	//-------------------------------------------------------------------------------------------------------------------
+
+	auto Engine::GetRootSceneNode() -> ObjectHandle { 
+		return ObjectHandle{ GetHandle(SceneManager::m_rootName) };
+	};
+
+	auto Engine::CreateSceneNode(Name name, ParentHandle parent, Position position, Rotation rotation, Scale scale) -> ObjectHandle {
+		if( !parent().IsValid() ) parent = GetRootSceneNode();
+		ObjectHandle node{ m_registry.Insert( name, parent, Children{},	position, rotation, scale) };
+		m_engine.SetParent(node, parent);
+		return node;
+	}
+
+	auto Engine::GetParent(ObjectHandle object) -> ParentHandle { 
+		return m_registry.Get<ParentHandle>(object);
+	};
+
+	void Engine::SetParent(ObjectHandle object, ParentHandle parent) { 
+		if( !parent().IsValid() ) parent = GetRootSceneNode();
+		m_engine.SendMsg(MsgObjectSetParent{object, parent});
+	};
+
+	//-------------------------------------------------------------------------------------------------------------------
+	
+	void Engine::LoadScene(const Filename& filename, aiPostProcessSteps flags) { 
+		m_engine.SendMsg( MsgSceneLoad{ filename, flags });
+	};
+	
+	auto Engine::CreateScene(Name name, ParentHandle parent, const Filename& filename, aiPostProcessSteps flags, 
+							Position position, Rotation rotation, Scale scale) -> ObjectHandle {
+		ObjectHandle handle{ m_registry.Insert( position, rotation, scale) };
+        m_engine.SendMsg(MsgSceneCreate{ handle, parent, filename, flags });
+		return handle;
+	};
+
+	auto Engine::CreateObject(	Name name, ParentHandle parent, const MeshName& meshName, vvh::Color color,  	
+								Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle { 
+            ObjectHandle handle{ m_registry.Insert(position, rotation, scale, color, meshName, uvScale) };
+            m_engine.SendMsg(MsgObjectCreate{  handle, vve::ParentHandle{} });
+			return handle;
+    	};
+
+	auto Engine::CreateObject(	Name name, ParentHandle parent, const MeshName& meshName, const TextureName& textureName, 
+								Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle { 
+            ObjectHandle handle{ m_registry.Insert(position, rotation, scale, meshName, textureName, uvScale) };
+            m_engine.SendMsg(MsgObjectCreate{  handle, vve::ParentHandle{} });
+			return handle;
+    	};
+
+	void Engine::DestroyObject(ObjectHandle handle) {
+		m_engine.SendMsg(MsgObjectDestroy{handle});
+	};
+
+	//-------------------------------------------------------------------------------------------------------------------
+
+	auto Engine::CreatePointLight(Name name, ParentHandle parent, PointLight light, Position position, Rotation rotation, Scale scale) -> ObjectHandle { 
+		ObjectHandle handle{ m_registry.Insert(name, parent, light, position, rotation, scale) };
+		m_engine.SetParent(handle, parent);
+		return handle;
+	};
+
+	auto Engine::CreateDirectionalLight(Name name, ParentHandle parent, DirectionalLight light, 
+							Position position, Rotation rotation, Scale scale) -> ObjectHandle { 
+		ObjectHandle handle{ m_registry.Insert(name, parent, light, position, rotation, scale) };
+		m_engine.SetParent(handle, parent);
+		return handle;
+	};
+
+	auto Engine::CreateSpotLight(Name name, ParentHandle parent, SpotLight light, 
+							Position position, Rotation rotation, Scale scale) -> ObjectHandle { 
+		ObjectHandle handle{ m_registry.Insert(name, parent, light, position, rotation, scale) };
+		m_engine.SetParent(handle, parent);
+		return handle;
+	};
+
+	auto Engine::CreateCamera(Name name, ParentHandle parent, Camera camera, Position position, Rotation rotation, Scale scale) -> ObjectHandle { 
+		ObjectHandle handle{ m_registry.Insert( name, parent, camera, position, rotation, scale )};
+		m_engine.SetParent(handle, parent);
+		return handle;
+	};
+
+	//-------------------------------------------------------------------------------------------------------------------
+
+	auto Engine::GetLocalToParentMatrix(ObjectHandle handle) -> LocalToParentMatrix { 
+		return m_registry.template Get<LocalToParentMatrix>(handle); 
+	};
+
+	auto Engine::GetLocalToWorldMatrix(ObjectHandle handle) -> LocalToWorldMatrix { 
+		return m_registry.template Get<LocalToWorldMatrix>(handle); 
+	};
+
+	auto Engine::GetPosition(ObjectHandle handle) -> Position {
+		return m_registry.template Get<Position>(handle);
+	};
+
+	auto Engine::GetRotation(ObjectHandle handle) -> Rotation {
+		return m_registry.template Get<Rotation>(handle);
+	};
+
+	auto Engine::GetScale(ObjectHandle handle) -> Scale {
+		return m_registry.template Get<Scale>(handle);
+	};
+
+	auto Engine::GetUVScale(ObjectHandle handle) -> UVScale {
+		return m_registry.template Get<UVScale>(handle);
+	};
+
+	void Engine::SetLocalToParentMatrix(ObjectHandle handle, LocalToParentMatrix matrix) {
+		return m_registry.Put(handle, matrix);
+	};
+
+	void Engine::SetLocalToWorldMatrix(ObjectHandle handle, LocalToWorldMatrix matrix) {
+		return m_registry.Put(handle, matrix);
+	};
+
+	void Engine::SetPosition(ObjectHandle handle, Position position) {
+		return m_registry.Put(handle, position);
+	};
+
+	void Engine::SetRotation(ObjectHandle handle, Rotation rotation) {
+		return m_registry.Put(handle, rotation);
+	};
+
+	void Engine::SetScale(ObjectHandle handle, Scale scale) {
+		return m_registry.Put(handle, scale);
+	};
+
+	void Engine::SetUVScale(ObjectHandle handle, UVScale uvScale) {
+		return m_registry.Put(handle, uvScale);
+	};
+
+
+	//-------------------------------------------------------------------------------------------------------------------
+
+	void Engine::DestroyMesh(MeshHandle handle) {
+		m_engine.SendMsg(MsgMeshDestroy{handle});
+	}
+
+	void Engine::DestroyTexture(TextureHandle handle) {
+		m_engine.SendMsg(MsgTextureDestroy{handle});
+	};
+
+
+	//-------------------------------------------------------------------------------------------------------------------
+
+	void Engine::PlaySound(const Filename& filename, int mode, float volume) {
+        m_engine.SendMsg(MsgPlaySound{ filename, mode, (int)volume });
+	};
+
+	void Engine::SetVolume(float volume) {
+		m_engine.SendMsg(MsgSetVolume{ (int)volume });
+
+	};
 
 };   // namespace vve
 

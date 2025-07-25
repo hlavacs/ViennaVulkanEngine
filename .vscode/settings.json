@@ -93,7 +93,8 @@
 		"unordered_set": "cpp",
 		"stack": "cpp",
 		"print": "cpp",
-		"coroutine": "cpp"
+		"coroutine": "cpp",
+		"cassert": "cpp"
 	},
 	"C_Cpp.errorSquiggles": "enabled"
 }

@@ -1,4 +1,4 @@
-#include "VHInclude2.h"
+#include "VHInclude.h"
 #include "VEInclude.h"
 
 
@@ -72,6 +72,7 @@ namespace vve {
 				.m_surface 			= m_vkState().m_surface, 
 				.m_physicalDevice 	= m_vkState().m_physicalDevice, 
 				.m_device 			= m_vkState().m_device, 
+				.m_queueFamilyIndex	= m_vkState().m_queueFamilies.graphicsFamily.value(),
 				.m_commandPool 		= m_commandPools[i]
 			});
 		}
@@ -92,35 +93,36 @@ namespace vve {
 
 		//Per frame uniform buffer
 		vvh::BufCreateBuffers({
-			m_vkState().m_device, 
-			m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			sizeof(vvh::UniformBufferFrame), 
-			m_uniformBuffersPerFrame
+			.m_device 		= m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+			.m_usage	= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			.m_size 		= sizeof(vvh::UniformBufferFrame), 
+			.m_buffer 		= m_uniformBuffersPerFrame
 		});
 		vvh::RenUpdateDescriptorSet({
-			m_vkState().m_device, 
-			m_uniformBuffersPerFrame, 0, 
-			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
-			sizeof(vvh::UniformBufferFrame), 
-			m_descriptorSetPerFrame
+			.m_device 			= m_vkState().m_device, 
+			.m_uniformBuffers	= m_uniformBuffersPerFrame, 
+			.m_binding 			= 0, 
+			.m_type 			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+			.m_size 			= sizeof(vvh::UniformBufferFrame), 
+			.m_descriptorSet 	= m_descriptorSetPerFrame
 		});   
 
 		//Per frame light storage buffer
 		vvh::BufCreateBuffers({
-			m_vkState().m_device, 
-			m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
-			MAX_NUMBER_LIGHTS*sizeof(vvh::Light), 
-			m_storageBuffersLights
+			.m_device 		= m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+			.m_usage 	= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
+			.m_size 		= MAX_NUMBER_LIGHTS*sizeof(vvh::Light), 
+			.m_buffer 		= m_storageBuffersLights
 		});
 		vvh::RenUpdateDescriptorSet({
-			m_vkState().m_device, 
-			m_storageBuffersLights, 
-			1, 
-			VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
-			MAX_NUMBER_LIGHTS*sizeof(vvh::Light), 
-			m_descriptorSetPerFrame
+			.m_device 			= m_vkState().m_device, 
+			.m_uniformBuffers 	= m_storageBuffersLights, 
+			.m_binding 			= 1, 
+			.m_type 			= VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 
+			.m_size 			= MAX_NUMBER_LIGHTS*sizeof(vvh::Light), 
+			.m_descriptorSet 	= m_descriptorSetPerFrame
 		});   
 
 		// -----------------------------------------------------------------------------------------------
@@ -157,7 +159,7 @@ namespace vve {
 
 				VkPipelineColorBlendAttachmentState colorBlendAttachment{};
 				colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-				colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
+				colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_ONE;
 				colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_CONSTANT_COLOR;
 				colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
 				colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_CONSTANT_ALPHA;
@@ -166,18 +168,17 @@ namespace vve {
 				colorBlendAttachment.blendEnable = VK_TRUE;
 
 				vvh::RenCreateGraphicsPipeline({
-					m_vkState().m_device, 
-					m_renderPass, 
-					entry.path().string(), 
-					entry.path().string(),
-					bindingDescriptions, 
-					attributeDescriptions,
-					{ m_descriptorSetLayoutPerFrame, 
-						descriptorSetLayoutPerObject }, 
-					{(int)MAX_NUMBER_LIGHTS}, //spezialization constants
-					{{.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8}}, //push constant ranges -> 2 ints
-					{colorBlendAttachment}, //blend attachments
-					graphicsPipeline
+					.m_device 					= m_vkState().m_device, 
+					.m_renderPass 				= m_renderPass, 
+					.m_vertShaderPath 			= entry.path().string(), 
+					.m_fragShaderPath 			= entry.path().string(),
+					.m_bindingDescription 		= bindingDescriptions, 
+					.m_attributeDescriptions 	= attributeDescriptions,
+					.m_descriptorSetLayouts 	= { m_descriptorSetLayoutPerFrame, descriptorSetLayoutPerObject }, 
+					.m_specializationConstants 	= {(int)MAX_NUMBER_LIGHTS}, //spezialization constants
+					.m_pushConstantRanges 		=  {{.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = 8}}, //push constant ranges -> 2 ints
+					.m_blendAttachments 		= {colorBlendAttachment}, //blend attachments
+					.m_graphicsPipeline 		= graphicsPipeline
 				});
 				
 				m_pipelinesPerType[pri] = { type, descriptorSetLayoutPerObject, graphicsPipeline };
@@ -252,22 +253,22 @@ namespace vve {
 
 		std::vector<VkCommandBuffer> cmdBuffers(1);
 		vvh::ComCreateCommandBuffers({
-			m_vkState().m_device, 
-			m_commandPools[m_vkState().m_currentFrame], 
-			cmdBuffers
+			.m_device 			= m_vkState().m_device, 
+			.m_commandPool 		= m_commandPools[m_vkState().m_currentFrame], 
+			.m_commandBuffers 	= cmdBuffers
 		});
 		auto cmdBuffer = cmdBuffers[0];
 
 		vvh::ComBeginCommandBuffer({cmdBuffer});
 
 		vvh::ComBeginRenderPass({
-			cmdBuffer, 
-			m_vkState().m_imageIndex, 
-			m_vkState().m_swapChain, 
-			m_renderPass, 
-			false, 
-			{}, 
-			m_vkState().m_currentFrame
+			.m_commandBuffer	= cmdBuffer, 
+			.m_imageIndex 		= m_vkState().m_imageIndex, 
+			.m_swapChain 		= m_vkState().m_swapChain, 
+			.m_renderPass 		= m_renderPass, 
+			.m_clear 			= false, 
+			.m_clearColor 		= {}, 
+			.m_currentFrame 	= m_vkState().m_currentFrame
 		});
 
 		float f = 0.0;
@@ -284,20 +285,23 @@ namespace vve {
 			};
 
 			vvh::ComBindPipeline({
-				cmdBuffer, 
-				pip, 
-				m_vkState().m_swapChain.m_swapChainExtent,
-				{},	
-				{}, 
-				blendconst, //blend constants
-				{
+				.m_commandBuffer 	= cmdBuffer, 
+				.m_graphicsPipeline = pip, 
+				.m_imageIndex 		= m_vkState().m_imageIndex, 
+				.m_swapChain 		= m_vkState().m_swapChain, 
+				.m_renderPass 		= m_renderPass, 
+				.m_viewPorts 		= {},	
+				.m_scissors 		= {}, 
+				.m_blendConstants 	= blendconst, //blend constants
+				.m_pushConstants 	= {
 					{	.layout = pipeline.second.m_graphicsPipeline.m_pipelineLayout, 
 						.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, 
 						.offset = 0, 
 						.size = sizeof(offset), 
 						.pValues = &offset
 					}
-				} //push constants
+				}, 
+				.m_currentFrame 	= m_vkState().m_currentFrame
 			});
 
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
@@ -311,12 +315,12 @@ namespace vve {
 
 				auto mesh = m_registry.template Get<vvh::Mesh&>(ghandle);
 				vvh::ComRecordObject( {
-					cmdBuffer, 
-					pipeline.second.m_graphicsPipeline, 
-					{ m_descriptorSetPerFrame, descriptorsets }, 
-					pipeline.second.m_type, 
-					mesh, 
-					m_vkState().m_currentFrame 
+					.m_commandBuffer 	= cmdBuffer, 
+					.m_graphicsPipeline = pipeline.second.m_graphicsPipeline, 
+					.m_descriptorSets 	= { m_descriptorSetPerFrame, descriptorsets }, 
+					.m_type 			= pipeline.second.m_type, 
+					.m_mesh 			= mesh(), 
+					.m_currentFrame 	= m_vkState().m_currentFrame 
 				});
 			}
 		}
@@ -346,10 +350,10 @@ namespace vve {
 		size_t sizeUbo = 0;
 		vvh::DescriptorSet descriptorSet{1};
 		vvh::RenCreateDescriptorSet({
-			m_vkState().m_device, 
-			pipelinePerType->m_descriptorSetLayoutPerObject, 
-			m_descriptorPool, 
-			descriptorSet
+			.m_device 				= m_vkState().m_device, 
+			.m_descriptorSetLayouts = pipelinePerType->m_descriptorSetLayoutPerObject, 
+			.m_descriptorPool 		= m_descriptorPool, 
+			.m_descriptorSet 		= descriptorSet
 		});
 
 		if( hasTexture ) {
@@ -357,10 +361,10 @@ namespace vve {
 			auto tHandle = m_registry.template Get<TextureHandle>(oHandle);
 			auto texture = m_registry.template Get<vvh::Image&>(tHandle);
 	    	vvh::RenUpdateDescriptorSetTexture({
-				m_vkState().m_device, 
-				texture, 
-				1,
-				descriptorSet
+				.m_device 			= m_vkState().m_device, 
+				.m_texture 			= texture(), 
+				.m_binding 			= 1,
+				.m_descriptorSet 	= descriptorSet
 			});
 		} else if(hasColor) {
 			sizeUbo = sizeof(vvh::BufferPerObjectColor);
@@ -369,19 +373,19 @@ namespace vve {
 		}
 
 		vvh::BufCreateBuffers({
-			m_vkState().m_device, 
-			m_vkState().m_vmaAllocator, 
-			VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
-			sizeUbo, 
-			ubo
+			.m_device 		= m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+			.m_usage 	= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			.m_size 		= sizeUbo, 
+			.m_buffer 		= ubo
 		});
 	    vvh::RenUpdateDescriptorSet({
-			m_vkState().m_device, 
-			ubo, 
-			0, 
-			VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
-			sizeUbo, 
-			descriptorSet
+			.m_device 			= m_vkState().m_device, 
+			.m_uniformBuffers 	= ubo, 
+			.m_binding 			= 0, 
+			.m_type 			= VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 
+			.m_size 			= sizeUbo, 
+			.m_descriptorSet 	= descriptorSet
 		});
 
 		m_registry.Put(oHandle, ubo, descriptorSet);
@@ -401,9 +405,9 @@ namespace vve {
 		if( !m_registry.template Has<vvh::Buffer>(oHandle) ) return false;
 		auto ubo = m_registry.template Get<vvh::Buffer&>(oHandle);
 		vvh::BufDestroyBuffer2({
-			m_vkState().m_device, 
-			m_vkState().m_vmaAllocator, 
-			ubo
+			.m_device 		= m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+			.m_buffers 		= ubo()
 		});
 		return false;
 	}
@@ -447,8 +451,18 @@ namespace vve {
         vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);		
 		vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_renderPassClear, nullptr);
-		vvh::BufDestroyBuffer2({m_vkState().m_device, m_vkState().m_vmaAllocator, m_uniformBuffersPerFrame});
-		vvh::BufDestroyBuffer2({m_vkState().m_device, m_vkState().m_vmaAllocator, m_storageBuffersLights});
+		vvh::BufDestroyBuffer2({
+			.m_device 		= m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+			.m_buffers 		= m_uniformBuffersPerFrame
+		});
+
+		vvh::BufDestroyBuffer2({
+			.m_device 		= m_vkState().m_device, 
+			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
+			.m_buffers 		= m_storageBuffersLights
+		});
+
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 
 		return false;

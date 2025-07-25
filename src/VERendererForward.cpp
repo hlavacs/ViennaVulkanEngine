@@ -1,4 +1,4 @@
-#include "VHInclude2.h"
+#include "VHInclude.h"
 #include "VEInclude.h"
 
 
@@ -17,7 +17,7 @@ namespace vve {
 	bool RendererForward::OnInit(Message message) {
 		auto state = m_engine.GetState();
 
-		switch( VK_VERSION_MINOR(state.apiVersion) ) {
+		switch( VK_VERSION_MINOR(state.m_apiVersion) ) {
 			case 0:
 				std::cout << "Minimum Vulkan API version is 1.1!\n";
 				exit(1);

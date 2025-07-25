@@ -1,5 +1,5 @@
 
-#include "VHInclude2.h"
+#include "VHInclude.h"
 #include "VEInclude.h"
 
 
@@ -24,25 +24,27 @@ namespace vve {
 		Renderer::OnInit(message);
 
         vvh::RenCreateRenderPass({
-			m_vkState().m_depthMapFormat, 
-			m_vkState().m_device, 
-			m_vkState().m_swapChain, 
-			false, 
-			m_renderPass
+			.m_depthFormat 	= m_vkState().m_depthMapFormat, 
+			.m_device 		= m_vkState().m_device, 
+			.m_swapChain 	= m_vkState().m_swapChain, 
+			.m_clear 		= false, 
+			.m_renderPass 	= m_renderPass
 		});
 		
  		vvh::RenCreateDescriptorSetLayout( {m_vkState().m_device, {}, m_descriptorSetLayoutPerFrame });
 			
         vvh::RenCreateGraphicsPipeline({
-			m_vkState().m_device, 
-			m_renderPass, 
-			"shaders/Imgui/vert.spv", "", 
-			{}, 
-			{},
-			{ m_descriptorSetLayoutPerFrame }, 
-			{}, 
-			{}, {}, 
-			m_graphicsPipeline
+			.m_device 					= m_vkState().m_device, 
+			.m_renderPass 				= m_renderPass, 
+			.m_vertShaderPath 			= "shaders/Imgui/vert.spv", 
+			.m_fragShaderPath 			= "", 
+			.m_bindingDescription		= {}, 
+			.m_attributeDescriptions 	= {},
+			.m_descriptorSetLayouts 	= { m_descriptorSetLayoutPerFrame }, 
+			.m_specializationConstants 	= {}, 
+			.m_pushConstantRanges 		= {}, 
+			.m_blendAttachments 		= {}, 
+			.m_graphicsPipeline 		= m_graphicsPipeline
 		});
 
         vvh::RenCreateDescriptorPool({m_vkState().m_device, 1000, m_descriptorPool});
@@ -59,8 +61,18 @@ namespace vve {
 			m_renderPass
 		);  
 
-        vvh::ComCreateCommandPool({m_vkState().m_surface, m_vkState().m_physicalDevice, m_vkState().m_device, m_commandPool}); 
-        vvh::ComCreateCommandBuffers({m_vkState().m_device, m_commandPool, m_commandBuffers});
+        vvh::ComCreateCommandPool({
+			.m_surface 			= m_vkState().m_surface, 
+			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
+			.m_device 			= m_vkState().m_device, 
+			.m_queueFamilyIndex	= m_vkState().m_queueFamilies.graphicsFamily.value(),
+			.m_commandPool 		= m_commandPool
+		}); 
+        vvh::ComCreateCommandBuffers({
+			.m_device 			= m_vkState().m_device, 
+			.m_commandPool 		= m_commandPool, 
+			.m_commandBuffers 	= m_commandBuffers
+		});
 		return false;
 	}
 
@@ -75,18 +87,16 @@ namespace vve {
 
         vkResetCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame],  0);
 
-		vvh::ComBeginCommandBuffer({
-			m_commandBuffers[m_vkState().m_currentFrame]
-		});
+		vvh::ComBeginCommandBuffer({.m_commandBuffer = m_commandBuffers[m_vkState().m_currentFrame]});
 
 		vvh::ComBeginRenderPass({
-			m_commandBuffers[m_vkState().m_currentFrame], 
-			m_vkState().m_imageIndex, 
-			m_vkState().m_swapChain, 
-			m_renderPass, 
-			false, 
-			m_windowState().m_clearColor, 
-			m_vkState().m_currentFrame
+			.m_commandBuffer 	= m_commandBuffers[m_vkState().m_currentFrame], 
+			.m_imageIndex 		= m_vkState().m_imageIndex, 
+			.m_swapChain 		= m_vkState().m_swapChain, 
+			.m_renderPass 		= m_renderPass, 
+			.m_clear 			= false, 
+			.m_clearColor 		= m_windowState().m_clearColor, 
+			.m_currentFrame 	= m_vkState().m_currentFrame
 		});
 		
 		ImGui::Render();

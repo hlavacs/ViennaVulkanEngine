@@ -1,4 +1,4 @@
-#include "VHInclude2.h"
+#include "VHInclude.h"
 #include "VEInclude.h"
 
 namespace vve {
@@ -114,13 +114,11 @@ namespace vve {
 
 		auto msg = message.template GetData<MsgMouseMove>();
 		real_t dt = (real_t)msg.m_dt;
-		int msg_m_x = static_cast<int>(msg.m_x);
-		int msg_m_y = static_cast<int>(msg.m_y);
-		if( m_x==-1 ) { m_x = msg_m_x; m_y = msg_m_y; }
-		int dx = msg_m_x - m_x;
-		m_x = msg_m_x;
-		int dy = msg_m_y - m_y;
-		m_y = msg_m_y;
+		if( m_x==-1 ) { m_x = msg.m_x; m_y = msg.m_y; }
+		float dx = msg.m_x - m_x;
+		m_x = msg.m_x;
+		float dy = msg.m_y - m_y;
+		m_y = msg.m_y;
 
 		auto [pn, rn, sn] = m_registry.template Get<Position&, Rotation&, Scale&>(m_cameraNodeHandle);
 		auto [pc, rc, sc, LtoPc] = m_registry.template Get<Position&, Rotation&, Scale&, LocalToParentMatrix>(m_cameraHandle);		
@@ -177,11 +175,24 @@ namespace vve {
 
 			uint8_t *dataImage = new uint8_t[imageSize];
 
-			/*vvh::ImgCopyImageToHost( {
-				vstate().m_device, vstate().m_vmaAllocator, vstate().m_graphicsQueue,
-				vstate().m_commandPool, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
-				dataImage, extent.width, extent.height, imageSize, 2, 1, 0, 3
-			});*/
+			vvh::ImgCopyImageToHost( {
+				vstate().m_device, 
+				vstate().m_vmaAllocator, 
+				vstate().m_graphicsQueue,
+				vstate().m_commandPool, 
+				image, 
+				VK_FORMAT_R8G8B8A8_UNORM, 
+				VK_IMAGE_ASPECT_COLOR_BIT, 
+				VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+				dataImage, 
+				extent.width, 
+				extent.height, 
+				imageSize, 
+				2, 
+				1, 
+				0, 
+				3
+			});
 
 			m_numScreenshot++;
 

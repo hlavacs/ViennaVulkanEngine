@@ -4,15 +4,10 @@
 namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
-	//Nodes
-
-	using Children = vsty::strong_type_t<std::vector<vecs::Handle>, vsty::counter<>>;
-
-	//-------------------------------------------------------------------------------------------------------
 	//Camera
 
 	struct Camera {
-		real_t m_aspect = 1.0f;
+		real_t m_aspect = 16.0f / 9.0f;
 		real_t m_near = 0.1f;
 		real_t m_far = 1000.0f;
 		real_t m_fov = 45.0f;
@@ -20,52 +15,17 @@ namespace vve {
 	};
 
 	//-------------------------------------------------------------------------------------------------------
-	//Lights
-
-	using PointLight = vsty::strong_type_t<vvh::LightParams, vsty::counter<>>;
-	using DirectionalLight = vsty::strong_type_t<vvh::LightParams, vsty::counter<>>;
-	using SpotLight = vsty::strong_type_t<vvh::LightParams, vsty::counter<>>;
-
-	//-------------------------------------------------------------------------------------------------------
-	//Mesh
-
-	using MeshName = vsty::strong_type_t<std::string, vsty::counter<>>;
-
-	//-------------------------------------------------------------------------------------------------------
-	//Maps
-
-	using TextureName = vsty::strong_type_t<std::string, vsty::counter<>>;
-	using NormalMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
-	using HeightMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
-	using LightMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
-	using OcclusionMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
-
-	//-------------------------------------------------------------------------------------------------------
-	//Transforms
-	
-	struct VectorDefaultValue { static constexpr auto value = vec3_t{INFINITY, INFINITY, INFINITY}; };
-	struct MaxtrixDefaultValue { static constexpr auto value = mat4_t{INFINITY}; };
-
-	using Position = vsty::strong_type_t<vec3_t, vsty::counter<>, VectorDefaultValue >;
-	using Rotation = vsty::strong_type_t<mat3_t, vsty::counter<>, MaxtrixDefaultValue>;
-	using Scale = vsty::strong_type_t<vec3_t, vsty::counter<>, VectorDefaultValue>;
-	using UVScale = vsty::strong_type_t<vec2_t, vsty::counter<>>;
-	using LocalToParentMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
-	using LocalToWorldMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
-	using ViewMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
-	using ProjectionMatrix = vsty::strong_type_t<mat4_t, vsty::counter<>, MaxtrixDefaultValue>;
-
-	//-------------------------------------------------------------------------------------------------------
 
     class SceneManager : public System {
 
-		const std::string m_windowName = "VVE Window";
-		const std::string m_worldName = "VVE WorldSceneNode";
-		const std::string m_rootName = "VVE RootSceneNode";
-		const std::string m_cameraName = "VVE Camera";
-		const std::string m_cameraNodeName = "VVE CameraNode";
-
     public:
+
+		inline static const std::string m_windowName = "VVE Window";
+		inline static const std::string m_worldName = "VVE WorldSceneNode";
+		inline static const std::string m_rootName = "VVE RootSceneNode";
+		inline static const std::string m_cameraName = "VVE Camera";
+		inline static const std::string m_cameraNodeName = "VVE CameraNode";
+
         SceneManager(std::string systemName, Engine& engine );
         virtual ~SceneManager();
 

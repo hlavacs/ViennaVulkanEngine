@@ -12,10 +12,6 @@
 mtllib CornellBox-Original.mtl
 
 ## Object floor
-<<<<<<< HEAD
-o floor
-=======
->>>>>>> origin/nexgen
 v  -1.01  0.00   0.99
 v   1.00  0.00   0.99
 v   1.00  0.00  -1.04
@@ -26,10 +22,6 @@ usemtl floor
 f -4 -3 -2 -1
 
 ## Object ceiling 
-<<<<<<< HEAD
-o ceiling
-=======
->>>>>>> origin/nexgen
 v  -1.02  1.99   0.99  
 v  -1.02  1.99  -1.04
 v   1.00  1.99  -1.04
@@ -40,10 +32,6 @@ usemtl ceiling
 f -4 -3 -2 -1
 
 ## Object backwall  
-<<<<<<< HEAD
-o backWall
-=======
->>>>>>> origin/nexgen
 v  -0.99  0.00  -1.04 
 v   1.00  0.00  -1.04
 v   1.00  1.99  -1.04
@@ -54,10 +42,6 @@ usemtl backWall
 f -4 -3 -2 -1
 
 ## Object rightwall 
-<<<<<<< HEAD
-o rightWall
-=======
->>>>>>> origin/nexgen
 v	1.00  0.00  -1.04   
 v	1.00  0.00   0.99
 v	1.00  1.99   0.99
@@ -68,10 +52,6 @@ usemtl rightWall
 f -4 -3 -2 -1
 
 ## Object leftWall   
-<<<<<<< HEAD
-o leftWall
-=======
->>>>>>> origin/nexgen
 v  -1.01  0.00   0.99
 v  -0.99  0.00  -1.04
 v  -1.02  1.99  -1.04
@@ -82,10 +62,6 @@ usemtl leftWall
 f -4 -3 -2 -1
 
 ## Object shortBox 
-<<<<<<< HEAD
-o shortBox
-=======
->>>>>>> origin/nexgen
 usemtl shortBox
 
 # Top Face 
@@ -134,10 +110,6 @@ g shortBox
 usemtl shortBox
 
 ## Object tallBox 
-<<<<<<< HEAD
-o tallBox
-=======
->>>>>>> origin/nexgen
 usemtl tallBox
 
 # Top Face
@@ -186,10 +158,6 @@ g tallBox
 usemtl tallBox
 
 ## Object light 
-<<<<<<< HEAD
-o light
-=======
->>>>>>> origin/nexgen
 v	-0.24  1.98   0.16
 v	-0.24  1.98  -0.22
 v	 0.23  1.98  -0.22

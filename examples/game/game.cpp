@@ -2,7 +2,7 @@
 #include <iostream>
 #include <utility>
 #include <format>
-#include "VHInclude2.h"
+#include "VHInclude.h"
 #include "VEInclude.h"
 
 class MyGame : public vve::System {
@@ -28,7 +28,7 @@ class MyGame : public vve::System {
                 {this,  10000, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
                 {this, -10000, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} }
             } );
-            m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
+            m_engine.SetVolume(m_volume);
         };
         
         ~MyGame() {};
@@ -54,34 +54,27 @@ class MyGame : public vve::System {
 
             // ----------------- Load Plane -----------------
 
-            m_engine.SendMsg( MsgSceneLoad{ vve::Filename{plane_obj}, aiProcess_FlipWindingOrder });
+			m_engine.LoadScene( vve::Filename{plane_obj}, aiProcess_FlipWindingOrder);
 
-            auto m_handlePlane = m_registry.Insert( 
-                            vve::Position{ {0.0f,0.0f,0.0f } }, 
-                            vve::Rotation{ mat3_t { glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f)) }}, 
-                            vve::Scale{vec3_t{1000.0f,1000.0f,1000.0f}}, 
-                            vve::MeshName{plane_mesh},
-                            vve::TextureName{plane_txt},
-                            vve::UVScale{ { 1000.0f, 1000.0f } }
-                        );
+			m_engine.CreateObject(	vve::Name{},
+                                    vve::ParentHandle{}, 
+                                    vve::MeshName{plane_mesh}, 
+									vve::TextureName{plane_txt}, 
+									vve::Position{vec3_t{0.0f, 0.0f, 0.0f}}, 
+									vve::Rotation{mat4_t{glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f))}}, 
+									vve::Scale{vec3_t{1000.0f, 1000.0f, 1000.0f}}, 
+									vve::UVScale{vec2_t{1000.0f, 1000.0f}});
 
-            m_engine.SendMsg(MsgObjectCreate{  vve::ObjectHandle(m_handlePlane), vve::ParentHandle{} });
-    
             // ----------------- Load Cube -----------------
 
-            m_handleCube = m_registry.Insert( 
-                            vve::Position{ { nextRandom(), nextRandom(), 0.5f } }, 
-                            vve::Rotation{mat3_t{1.0f}}, 
-                            vve::Scale{vec3_t{1.0f}});
-
-            m_engine.SendMsg(MsgSceneCreate{ vve::ObjectHandle(m_handleCube), vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder });
+			m_handleCube = m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder, 
+												vve::Position{{nextRandom(), nextRandom(), 0.5f}}, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
 
             GetCamera();
             m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
 
-            m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1, 50 });
-			m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
-
+			m_engine.PlaySound(vve::Filename{"assets/sounds/dance.mp3"}, -1, 50);
+			m_engine.SetVolume(m_volume);
             return false;
         };
     
@@ -93,8 +86,9 @@ class MyGame : public vve::System {
             if( m_state == State::STATE_RUNNING ) {
                 if( m_time_left <= 0.0f ) { 
                     m_state = State::STATE_DEAD; 
-                    m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, 0 });
-                    m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/gameover.wav"}, 1 });
+
+                    m_engine.PlaySound( vve::Filename{"assets/sounds/dance.mp3"}, 0, 50 );
+                    m_engine.PlaySound( vve::Filename{"assets/sounds/gameover.wav"}, 1, 50 );
                     return false;
                 }
                 auto posCube = m_registry.Get<vve::Position&>(m_handleCube);
@@ -106,9 +100,9 @@ class MyGame : public vve::System {
                     if( m_cubes_left == 0 ) {
                         m_time_left += 20;
                         m_cubes_left = c_number_cubes;
-                        m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/bell.wav"}, 1 });
+                        m_engine.PlaySound( vve::Filename{"assets/sounds/bell.wav"}, 1 );
                     } else {
-                        m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/explosion.wav"}, 1 });
+                        m_engine.PlaySound( vve::Filename{"assets/sounds/explosion.wav"}, 1 );
                     }
                 }
             }
@@ -125,7 +119,7 @@ class MyGame : public vve::System {
                 std::snprintf(buffer, 100, "Cubes Left: %d", m_cubes_left);
                 ImGui::TextUnformatted(buffer);
 				if (ImGui::SliderFloat("Sound Volume", &m_volume, 0, MIX_MAX_VOLUME)) {
-					m_engine.SendMsg(MsgSetVolume{ (int)m_volume });
+					m_engine.SetVolume(m_volume);
 				}
                 ImGui::End();
             }
@@ -137,7 +131,7 @@ class MyGame : public vve::System {
                     m_state = State::STATE_RUNNING;
                     m_time_left = c_max_time;
                     m_cubes_left = c_number_cubes;
-                    m_engine.SendMsg(MsgPlaySound{ vve::Filename{"assets/sounds/dance.mp3"}, -1 });
+                    m_engine.PlaySound( vve::Filename{"assets/sounds/dance.mp3"}, -1 );
                 }
                 ImGui::End();
             }

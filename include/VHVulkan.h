@@ -17,18 +17,38 @@
 #include <unordered_map>
 
 #define MAX_FRAMES_IN_FLIGHT 2
+#define MAXINFLIGHT 2
 
 
-namespace std {
-	template <typename T, typename... Rest>
-	inline void hash_combine(std::size_t& seed, const T& v, const Rest&... rest) {
-	    seed ^= std::hash<T>{}(v) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
-	    (hash_combine(seed, rest), ...);
+
+namespace vvh {
+
+	inline auto ToCharPtr(const std::vector<std::string>& vec) -> std::vector<const char*> { 
+	    std::vector<const char*> res;
+	    for( auto& str : vec) res.push_back(str.c_str());
+	    return res;
 	}
-}
+
+	inline std::vector<char> ReadFile(const std::string& filename) {
+        std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+        if (!file.is_open()) {
+            std::cout << "failed to open file: " << filename << std::endl;
+            throw std::runtime_error("failed to open file!");
+        }
+
+        size_t fileSize = (size_t) file.tellg();
+        std::vector<char> buffer(fileSize);
+
+        file.seekg(0);
+        file.read(buffer.data(), fileSize);
+
+        file.close();
+
+        return buffer;
+    }
 
 
-namespace vh {
 
 	//--------------------------------------------------------------------
 	//Shader resources
@@ -48,7 +68,7 @@ namespace vh {
 	struct BufferPerObjectColor {
 	    glm::mat4 model;
 	    glm::mat4 modelInverseTranspose;
-		vh::Color color{}; 		
+		vvh::Color color{}; 		
 	};
 
 	struct BufferPerObjectTexture {
@@ -135,7 +155,7 @@ namespace vh {
         VkImageView     m_depthImageView;
     };
 
-    struct Map {
+    struct Image {
 		int 			m_width;
 		int				m_height;
 		int				m_layers;
@@ -202,7 +222,7 @@ namespace vh {
 		std::vector<glm::vec4> m_colors;
 		std::vector<glm::vec3> m_tangents;
 
-		std::string getType() {
+		std::string getType() const {
 			std::string name;
 			if( m_positions.size() > 0 ) name = name + "P";
 			if( m_normals.size() > 0 )   name = name + "N";
@@ -212,7 +232,7 @@ namespace vh {
 			return name;
 		}
 
-		VkDeviceSize getSize() {
+		VkDeviceSize getSize() const {
 			return 	m_positions.size() * sizeof(glm::vec3) + 
 					m_normals.size()   * sizeof(glm::vec3) + 
 					m_texCoords.size() * sizeof(glm::vec2) + 
@@ -220,7 +240,7 @@ namespace vh {
 					m_tangents.size()  * sizeof(glm::vec3);
 		}
 
-		VkDeviceSize getSize( std::string type ) {
+		VkDeviceSize getSize( std::string type ) const {
 			return 	type.find("P") != std::string::npos ? m_positions.size() * sizeof(glm::vec3) : 0 + 
 					type.find("N") != std::string::npos ? m_normals.size()   * sizeof(glm::vec3) : 0 + 
 					type.find("U") != std::string::npos ? m_texCoords.size() * sizeof(glm::vec2) : 0 + 
@@ -228,7 +248,7 @@ namespace vh {
 					type.find("T") != std::string::npos ? m_tangents.size()  * sizeof(glm::vec3) : 0;
 		}
 
-		std::vector<VkDeviceSize> getOffsets() {
+		std::vector<VkDeviceSize> getOffsets() const {
 			size_t offset=0;
 			std::vector<VkDeviceSize> offsets{};
 			if( size_t size = m_positions.size() * size_pos; size > 0 ) { offsets.push_back(offset); offset += size; }
@@ -239,7 +259,7 @@ namespace vh {
 			return offsets;
 		}
 
-		std::vector<VkDeviceSize> getOffsets( std::string type ) {
+		std::vector<VkDeviceSize> getOffsets( std::string type ) const {
 			size_t offset=0;
 			std::vector<VkDeviceSize> offsets{};
 			if( type.find("P") != std::string::npos ) { offsets.push_back(offset); offset += m_positions.size() * size_pos; }
@@ -296,7 +316,10 @@ namespace vh {
 
 #include "VHBuffer.h"
 #include "VHCommand.h"
+#include "VHBuffer.h"
+#include "VHImage.h"
 #include "VHDevice.h"
 #include "VHRender.h"
 #include "VHVulkan.h"
 #include "VHSync.h"
+#include "VHRender.h"
