@@ -27,6 +27,28 @@
             "externalConsole": false
         },
         {
+            "name": "MSVC Deferred-Demo Debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/examples/deferred-demo/Debug/deferred-demo.exe",  
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false
+        },
+        {
+            "name": "MSVC Deferred-Demo Release",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/examples/deferred-demo/Release/deferred-demo.exe",  
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false
+        },
+        {
             "name": "MSVC Test Release",
             "type": "cppvsdbg",
             "request": "launch",
