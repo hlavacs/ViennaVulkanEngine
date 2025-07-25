@@ -59,10 +59,9 @@ private:
 		sponza_active = !sponza.empty();
 		curtains_active = sponza_active && !curtains.empty();
 
-		// ----------------- Load Plane -----------------
-
 		if (!sponza_active) {
 
+			// ----------------- Load Plane -----------------
 			m_engine.SendMsg(MsgSceneLoad{ vve::Filename{plane_obj}, aiProcess_FlipWindingOrder });
 
 			auto m_handlePlane = m_registry.Insert(
