@@ -95,7 +95,7 @@ namespace vve {
 		vvh::BufCreateBuffers({
 			.m_device 		= m_vkState().m_device, 
 			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
-			.m_usage	= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			.m_usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			.m_size 		= sizeof(vvh::UniformBufferFrame), 
 			.m_buffer 		= m_uniformBuffersPerFrame
 		});
@@ -112,7 +112,7 @@ namespace vve {
 		vvh::BufCreateBuffers({
 			.m_device 		= m_vkState().m_device, 
 			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
-			.m_usage 	= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, 
+			.m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
 			.m_size 		= MAX_NUMBER_LIGHTS*sizeof(vvh::Light), 
 			.m_buffer 		= m_storageBuffersLights
 		});
@@ -287,9 +287,7 @@ namespace vve {
 			vvh::ComBindPipeline({
 				.m_commandBuffer 	= cmdBuffer, 
 				.m_graphicsPipeline = pip, 
-				.m_imageIndex 		= m_vkState().m_imageIndex, 
-				.m_swapChain 		= m_vkState().m_swapChain, 
-				.m_renderPass 		= m_renderPass, 
+				.m_extent = m_vkState().m_swapChain.m_swapChainExtent,
 				.m_viewPorts 		= {},	
 				.m_scissors 		= {}, 
 				.m_blendConstants 	= blendconst, //blend constants
@@ -300,8 +298,7 @@ namespace vve {
 						.size = sizeof(offset), 
 						.pValues = &offset
 					}
-				}, 
-				.m_currentFrame 	= m_vkState().m_currentFrame
+				}
 			});
 
 			for( auto[oHandle, name, ghandle, LtoW, uniformBuffers, descriptorsets] : 
@@ -375,7 +372,7 @@ namespace vve {
 		vvh::BufCreateBuffers({
 			.m_device 		= m_vkState().m_device, 
 			.m_vmaAllocator = m_vkState().m_vmaAllocator, 
-			.m_usage 	= VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 
+			.m_usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 			.m_size 		= sizeUbo, 
 			.m_buffer 		= ubo
 		});

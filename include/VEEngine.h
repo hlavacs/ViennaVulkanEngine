@@ -3,7 +3,7 @@
 namespace vve {
 
 
-	class Camera; 
+	struct Camera; 
 
 	class Engine : public System {
 

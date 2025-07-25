@@ -640,7 +640,7 @@ namespace vvh {
 		const VkFormat& m_format;
 		const VkImageAspectFlagBits& m_aspects;
 		const VkImageLayout& m_layout;
-		const unsigned char* m_bufferData;
+		unsigned char* m_bufferData;
 		const uint32_t& m_width;
 		const uint32_t& m_height;
 		const uint32_t& m_size;
@@ -660,9 +660,9 @@ namespace vvh {
 		BufCreateBuffer({
 			.m_vmaAllocator = info.m_vmaAllocator,
 			.m_size = info.m_size,
-			.m_usage = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-			.m_vmaFlags = VMA_MEMORY_USAGE_CPU_ONLY,
+			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
 			.m_properties = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+			.m_vmaFlags = VMA_MEMORY_USAGE_CPU_ONLY,
 			.m_buffer = stagingBuffer,
 			.m_allocation = stagingBufferAllocation,
 			.m_allocationInfo = &allocInfo
@@ -674,7 +674,6 @@ namespace vvh {
 			.m_commandPool = info.m_commandPool,
 			.m_image = info.m_image,
 			.m_format = info.m_format,
-			.m_layout = info.m_layout,
 			.m_oldLayout = info.m_layout,
 			.m_newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL
 			});
@@ -684,8 +683,8 @@ namespace vvh {
 			.m_graphicsQueue = info.m_graphicsQueue,
 			.m_commandPool = info.m_commandPool,
 			.m_image = info.m_image,
-			.m_aspectMask = info.m_aspectMask,
-			.m_buffer = info.m_stagingBuffer,
+			.m_aspectMask = info.m_aspects,
+			.m_buffer = stagingBuffer,
 			.m_layerCount = 1,
 			.m_width = info.m_width,
 			.m_height = info.m_height
@@ -703,7 +702,7 @@ namespace vvh {
 
 		void* data;
 		vmaMapMemory(info.m_vmaAllocator, stagingBufferAllocation, &data);
-		memcpy(info.m_bufferData, data, (size_t)info.m_imageSize);
+		memcpy(info.m_bufferData, data, (size_t)info.m_size);
 		vmaUnmapMemory(info.m_vmaAllocator, stagingBufferAllocation);
 
 		vvh::ImgSwapChannels(info);
@@ -711,6 +710,7 @@ namespace vvh {
 		vmaDestroyBuffer(info.m_vmaAllocator, stagingBuffer, stagingBufferAllocation);
 		return VK_SUCCESS;
 	}
+
 
 
 }

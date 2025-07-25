@@ -36,6 +36,7 @@ namespace vve {
 				.m_surface = m_vkState().m_surface,
 				.m_physicalDevice = m_vkState().m_physicalDevice,
 				.m_device = m_vkState().m_device,
+				.m_queueFamilyIndex = m_vkState().m_queueFamilies.graphicsFamily.value(),
 				.m_commandPool = m_commandPools[i]
 				});
 

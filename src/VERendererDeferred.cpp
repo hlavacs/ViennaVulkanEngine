@@ -17,7 +17,7 @@ namespace vve {
 	bool RendererDeferred::OnInit(const Message& message) {
 		auto state = m_engine.GetState();
 
-		switch (VK_API_VERSION_MINOR(state.apiVersion)) {
+		switch (VK_API_VERSION_MINOR(state.m_apiVersion)) {
 			case 0:
 				std::cout << "Minimum Vulkan API version is 1.1!\n";
 				exit(1);
