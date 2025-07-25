@@ -115,7 +115,7 @@ set(SDL3_DIR ${SDL3_BINARY_DIR})
 set(BUILD_SHARED_LIBS OFF)
 FetchContent_Declare(sdlmixer
                     GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
-                    GIT_TAG main
+                    GIT_TAG b3a6fa8
 )
 FetchContent_MakeAvailable(sdlmixer)
 include_directories (${sdlmixer_SOURCE_DIR}/include)
