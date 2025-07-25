@@ -11,7 +11,7 @@ namespace vve {
 		engine.RegisterCallbacks( { 
 			{this,  3400, "INIT", [this](Message& message){ return OnInit(message);} },
 			{this,  1800, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
-			{this,  1990, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
+			//{this,  1990, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,  1700, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
 			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
@@ -279,12 +279,99 @@ namespace vve {
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 	
 		CreateShadowMap();
+
+		// This function renders already in onPREPARE because it results in better performance
+		// when shadows have to be re-rendered.
+		// In case this wants to be moved back into onRECORD, the rest of this function can be moved.
+		RenderShadowMap();
 			
 		return false;
 	}
 
+	// Currently unused and called in OnPrepareNextFrame
 	bool RendererShadow11::OnRecordNextFrame(const Message& message) {
-		if (m_state != State::STATE_PREPARED || !m_engine.IsShadowEnabled()) return false;
+		RenderShadowMap();
+
+		return false;
+	}
+
+	bool RendererShadow11::OnObjectCreate(Message& message) {
+		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
+		if (m_registry.template Has<DirectionalLight>(oHandle)) return false;	// Object without mesh, e.g. direct light
+
+		assert(m_registry.template Has<MeshHandle>(oHandle));
+
+		vvh::DescriptorSet descriptorSet{ 0 };
+		vvh::RenCreateDescriptorSet({
+			.m_device = m_vkState().m_device,
+			.m_descriptorSetLayouts = m_descriptorSetLayoutPerObject,
+			.m_descriptorPool = m_descriptorPool,
+			.m_descriptorSet = descriptorSet
+			});
+
+		m_registry.AddTags(oHandle, (size_t)m_shadowPipeline.m_pipeline);
+		oShadowDescriptor ds = { descriptorSet };
+		m_registry.Put(oHandle, ds);
+
+		m_state = State::STATE_NEW;
+		return false;
+	}
+
+	bool RendererShadow11::OnObjectDestroy(Message& message) {
+		const auto& msg = message.template GetData<MsgObjectDestroy>();
+		const auto& oHandle = msg.m_handle();
+		if (m_registry.template Has<oShadowDescriptor&>(oHandle)) {
+			oShadowDescriptor& vvh_ds = m_registry.template Get<oShadowDescriptor&>(oHandle);
+			for (auto& ds : vvh_ds.m_oShadowDescriptor.m_descriptorSetPerFrameInFlight) {
+				vkFreeDescriptorSets(m_vkState().m_device, m_descriptorPool, 1, &ds);
+			}
+		}
+
+		m_state = State::STATE_NEW;
+		return false;
+	}
+
+	bool RendererShadow11::OnQuit(const Message& message) {
+        vkDeviceWaitIdle(m_vkState().m_device);
+
+		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+
+		for (auto pool : m_commandPools) {
+			vkDestroyCommandPool(m_vkState().m_device, pool, nullptr);
+		}
+
+        vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
+		vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
+		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerObject, nullptr);
+
+		vkDestroyPipeline(m_vkState().m_device, m_shadowPipeline.m_pipeline, nullptr);
+		vkDestroyPipelineLayout(m_vkState().m_device, m_shadowPipeline.m_pipelineLayout, nullptr);
+
+		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
+				m_dummyImage.m_dummyImage, m_dummyImage.m_dummyImageAllocation });
+		DestroyShadowMap();
+		
+		return false;
+    }
+
+	void RendererShadow11::DestroyShadowMap() {
+		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
+
+		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
+			shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
+
+		for (auto& view : m_layerViews) {
+			vkDestroyImageView(m_vkState().m_device, view, nullptr);
+		}
+		for (auto& fb : m_shadowFrameBuffers) {
+			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
+		}
+		vkDestroyImageView(m_vkState().m_device, shadowImage().m_cubeArrayView, nullptr);
+		vkDestroyImageView(m_vkState().m_device, shadowImage().m_2DArrayView, nullptr);
+	}
+
+	void RendererShadow11::RenderShadowMap() {
+		if (m_state != State::STATE_PREPARED || !m_engine.IsShadowEnabled()) return;
 		m_state = State::STATE_RECORDED;
 
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
@@ -292,7 +379,6 @@ namespace vve {
 		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
 		vvh::ComBeginCommandBuffer({ cmdBuffer });
 
-		// TODO: has swapchain extent
 		vvh::ComBindPipeline({
 			.m_commandBuffer = cmdBuffer,
 			.m_graphicsPipeline = m_shadowPipeline,
@@ -345,83 +431,8 @@ namespace vve {
 		vvh::ComEndCommandBuffer({ .m_commandBuffer = cmdBuffer });
 		SubmitCommandBuffer(cmdBuffer);
 
+		// Tells other renderer that the shadow map changed
 		m_engine.SendMsg(MsgShadowMapRecreated{});
-		return false;
-	}
-
-	bool RendererShadow11::OnObjectCreate(Message& message) {
-		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
-		if (m_registry.template Has<DirectionalLight>(oHandle)) return false;	// Object without mesh, e.g. direct light
-
-		assert(m_registry.template Has<MeshHandle>(oHandle));
-
-		vvh::DescriptorSet descriptorSet{ 0 };
-		vvh::RenCreateDescriptorSet({
-			.m_device = m_vkState().m_device,
-			.m_descriptorSetLayouts = m_descriptorSetLayoutPerObject,
-			.m_descriptorPool = m_descriptorPool,
-			.m_descriptorSet = descriptorSet
-			});
-
-		m_registry.AddTags(oHandle, (size_t)m_shadowPipeline.m_pipeline);
-		oShadowDescriptor ds = { descriptorSet };
-		m_registry.Put(oHandle, ds);
-
-		if (m_state != State::STATE_PREPARED) m_state = State::STATE_NEW;
-		return false;
-	}
-
-	bool RendererShadow11::OnObjectDestroy(Message& message) {
-		const auto& msg = message.template GetData<MsgObjectDestroy>();
-		const auto& oHandle = msg.m_handle();
-		if (m_registry.template Has<oShadowDescriptor&>(oHandle)) {
-			oShadowDescriptor& vvh_ds = m_registry.template Get<oShadowDescriptor&>(oHandle);
-			for (auto& ds : vvh_ds.m_oShadowDescriptor.m_descriptorSetPerFrameInFlight) {
-				vkFreeDescriptorSets(m_vkState().m_device, m_descriptorPool, 1, &ds);
-			}
-		}
-
-		if (m_state != State::STATE_PREPARED) m_state = State::STATE_NEW;
-		return false;
-	}
-
-	bool RendererShadow11::OnQuit(const Message& message) {
-        vkDeviceWaitIdle(m_vkState().m_device);
-
-		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
-
-		for (auto pool : m_commandPools) {
-			vkDestroyCommandPool(m_vkState().m_device, pool, nullptr);
-		}
-
-        vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
-		vkDestroyRenderPass(m_vkState().m_device, m_renderPass, nullptr);
-		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerObject, nullptr);
-
-		vkDestroyPipeline(m_vkState().m_device, m_shadowPipeline.m_pipeline, nullptr);
-		vkDestroyPipelineLayout(m_vkState().m_device, m_shadowPipeline.m_pipelineLayout, nullptr);
-
-		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
-				m_dummyImage.m_dummyImage, m_dummyImage.m_dummyImageAllocation });
-		DestroyShadowMap();
-		
-		return false;
-    }
-
-	void RendererShadow11::DestroyShadowMap() {
-		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
-
-		vvh::ImgDestroyImage({ m_vkState().m_device, m_vkState().m_vmaAllocator,
-			shadowImage().shadowImage.m_mapImage, shadowImage().shadowImage.m_mapImageAllocation });
-
-		for (auto& view : m_layerViews) {
-			vkDestroyImageView(m_vkState().m_device, view, nullptr);
-		}
-		for (auto& fb : m_shadowFrameBuffers) {
-			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);
-		}
-		vkDestroyImageView(m_vkState().m_device, shadowImage().m_cubeArrayView, nullptr);
-		vkDestroyImageView(m_vkState().m_device, shadowImage().m_2DArrayView, nullptr);
 	}
 
 	void RendererShadow11::RenderPointLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
@@ -462,7 +473,7 @@ namespace vve {
 					&pc
 				);
 
-				RenderShadowMap(cmdBuffer, layer);
+				RenderObjectPosition(cmdBuffer, layer);
 			}
 		}
 	}
@@ -496,7 +507,7 @@ namespace vve {
 				&pc
 			);
 
-			RenderShadowMap(cmdBuffer, layer);
+			RenderObjectPosition(cmdBuffer, layer);
 		}
 	}
 
@@ -527,11 +538,11 @@ namespace vve {
 				&pc
 			);
 
-			RenderShadowMap(cmdBuffer, layer);
+			RenderObjectPosition(cmdBuffer, layer);
 		}
 	}
 
-	void RendererShadow11::RenderShadowMap(const VkCommandBuffer& cmdBuffer, uint32_t& layer) {
+	void RendererShadow11::RenderObjectPosition(const VkCommandBuffer& cmdBuffer, uint32_t& layer) {
 		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 
 		// One renderPass per layer, image index = layerNumber
