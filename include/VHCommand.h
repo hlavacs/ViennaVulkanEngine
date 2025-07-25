@@ -4,98 +4,117 @@ namespace vvh {
 
 	//---------------------------------------------------------------------------------------------
 
-    struct ComCreateCommandPoolinfo {
-		const VkSurfaceKHR& 	m_surface;
+	struct ComCreateCommandPoolinfo {
+		const VkSurfaceKHR& m_surface;
 		const VkPhysicalDevice& m_physicalDevice;
-		const VkDevice& 		m_device;
-		const uint32_t&			m_queueFamilyIndex;
-		VkCommandPool& 			m_commandPool;
+		const VkDevice& m_device;
+		VkCommandPool& m_commandPool;
 	};
 
 	template<typename T = ComCreateCommandPoolinfo>
 	inline void ComCreateCommandPool(T&& info) {
-        VkCommandPoolCreateInfo poolInfo{};
-        poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-        poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-        poolInfo.queueFamilyIndex = info.m_queueFamilyIndex; 
+		QueueFamilyIndices queueFamilyIndices = DevFindQueueFamilies({ info.m_physicalDevice, info.m_surface });
 
-        if (vkCreateCommandPool(info.m_device, &poolInfo, nullptr, &info.m_commandPool) != VK_SUCCESS) {
-            throw std::runtime_error("failed to create graphics command pool!");
-        }
-    }
+		VkCommandPoolCreateInfo poolInfo{};
+		poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		poolInfo.queueFamilyIndex = queueFamilyIndices.graphicsFamily.value();
+
+		if (vkCreateCommandPool(info.m_device, &poolInfo, nullptr, &info.m_commandPool) != VK_SUCCESS) {
+			throw std::runtime_error("failed to create graphics command pool!");
+		}
+	}
 
 	//---------------------------------------------------------------------------------------------
 
-    struct ComBeginSingleTimeCommandsInfo {
+	struct ComBeginSingleTimeCommandsInfo {
 		const VkDevice& m_device;
-		const VkCommandPool& 	m_commandPool;
+		const VkCommandPool& m_commandPool;
 	};
 
 	template<typename T = ComBeginSingleTimeCommandsInfo>
 	inline auto ComBeginSingleTimeCommands(T&& info) -> VkCommandBuffer {
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandPool = info.m_commandPool;
-        allocInfo.commandBufferCount = 1;
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandPool = info.m_commandPool;
+		allocInfo.commandBufferCount = 1;
 
-        VkCommandBuffer commandBuffer;
-        vkAllocateCommandBuffers(info.m_device, &allocInfo, &commandBuffer);
+		VkCommandBuffer commandBuffer;
+		vkAllocateCommandBuffers(info.m_device, &allocInfo, &commandBuffer);
 
-        VkCommandBufferBeginInfo beginInfo{};
-        beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-        beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+		VkCommandBufferBeginInfo beginInfo{};
+		beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-        vkBeginCommandBuffer(commandBuffer, &beginInfo);
+		vkBeginCommandBuffer(commandBuffer, &beginInfo);
 
-        return commandBuffer;
-    }
+		return commandBuffer;
+	}
 
 	//---------------------------------------------------------------------------------------------
-	struct ComEndSingleTimeCommandsInfo {
-		const VkDevice& 		m_device;
-		const VkQueue& 			m_graphicsQueue;
-		const VkCommandPool& 	m_commandPool;
-		const VkCommandBuffer& 	m_commandBuffer;
-	};
-	
-	template<typename T = ComEndSingleTimeCommandsInfo>
+	//struct defined in VHBuffer.h
+
+	template<typename T>
 	inline void ComEndSingleTimeCommands(T&& info) {
-        vkEndCommandBuffer(info.m_commandBuffer);
+		vkEndCommandBuffer(info.m_commandBuffer);
 
-        VkSubmitInfo submitInfo{};
-        submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-        submitInfo.commandBufferCount = 1;
-        submitInfo.pCommandBuffers = &info.m_commandBuffer;
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+		submitInfo.commandBufferCount = 1;
+		submitInfo.pCommandBuffers = &info.m_commandBuffer;
 
-        vkQueueSubmit(info.m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
-        vkQueueWaitIdle(info.m_graphicsQueue);
+		vkQueueSubmit(info.m_graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+		vkQueueWaitIdle(info.m_graphicsQueue);
 
-        vkFreeCommandBuffers(info.m_device, info.m_commandPool, 1, &info.m_commandBuffer);
-    }
+		vkFreeCommandBuffers(info.m_device, info.m_commandPool, 1, &info.m_commandBuffer);
+	}
 
 	//---------------------------------------------------------------------------------------------
 
-	struct ComCreateCommandBuffersInfo { 
-		const VkDevice& 				m_device;
-		const VkCommandPool& 			m_commandPool;
-		std::vector<VkCommandBuffer>& 	m_commandBuffers;
+	struct ComCreateCommandBuffersInfo {
+		const VkDevice& m_device;
+		const VkCommandPool& m_commandPool;
+		std::vector<VkCommandBuffer>& m_commandBuffers;
 	};
 
 	template<typename T = ComCreateCommandBuffersInfo>
-    inline void ComCreateCommandBuffers(T&& info) {
-        if(info.m_commandBuffers.size() == 0) info.m_commandBuffers.resize(2);
+	inline void ComCreateCommandBuffers(T&& info) {
+		if (info.m_commandBuffers.size() == 0) info.m_commandBuffers.resize(2);
 
-        VkCommandBufferAllocateInfo allocInfo{};
-        allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-        allocInfo.commandPool = info.m_commandPool;
-        allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-        allocInfo.commandBufferCount = (uint32_t) info.m_commandBuffers.size();
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = info.m_commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = (uint32_t)info.m_commandBuffers.size();
 
-        if (vkAllocateCommandBuffers(info.m_device, &allocInfo, info.m_commandBuffers.data()) != VK_SUCCESS) {
-            throw std::runtime_error("failed to allocate command buffers!");
-        }
-    }
+		if (vkAllocateCommandBuffers(info.m_device, &allocInfo, info.m_commandBuffers.data()) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate command buffers!");
+		}
+	}
+
+	//---------------------------------------------------------------------------------------------
+
+	struct ComCreateSingleCommandBufferInfo {
+		const VkDevice& m_device;
+		const VkCommandPool& m_commandPool;
+		VkCommandBuffer& m_commandBuffer;
+	};
+
+	// used to create a single cmd buf
+	template<typename T = ComCreateSingleCommandBufferInfo>
+	inline void ComCreateSingleCommandBuffer(T&& info) {
+
+		VkCommandBufferAllocateInfo allocInfo{};
+		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfo.commandPool = info.m_commandPool;
+		allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfo.commandBufferCount = 1;
+
+		if (vkAllocateCommandBuffers(info.m_device, &allocInfo, &info.m_commandBuffer) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate command buffers!");
+		}
+	}
 
 	//---------------------------------------------------------------------------------------------
 
@@ -113,33 +132,33 @@ namespace vvh {
 			throw std::runtime_error("failed to begin recording command buffer!");
 		}
 	}
-	
+
 	//---------------------------------------------------------------------------------------------
 
 	struct ComBeginRenderPassInfo {
-		const VkCommandBuffer& 	m_commandBuffer;
-		const uint32_t& 	m_imageIndex;
-		const SwapChain& 	m_swapChain;
+		const VkCommandBuffer& m_commandBuffer;
+		const uint32_t& m_imageIndex;
+		const SwapChain& m_swapChain;
 		const VkRenderPass& m_renderPass;
-		const bool& 		m_clear;
-		const glm::vec4& 	m_clearColor;
-		const uint32_t& 	m_currentFrame;
+		const bool& m_clear;
+		const glm::vec4& m_clearColor;
+		const uint32_t& m_currentFrame;
 	};
 
 	template<typename T = ComBeginRenderPassInfo>
 	inline void ComBeginRenderPass(T&& info) {
-		
+
 		VkRenderPassBeginInfo renderPassInfo{};
 		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 		renderPassInfo.renderPass = info.m_renderPass;
 		renderPassInfo.framebuffer = info.m_swapChain.m_swapChainFramebuffers[info.m_imageIndex];
-		renderPassInfo.renderArea.offset = {0, 0};
+		renderPassInfo.renderArea.offset = { 0, 0 };
 		renderPassInfo.renderArea.extent = info.m_swapChain.m_swapChainExtent;
 
 		std::array<VkClearValue, 2> clearValues{};
-		if( info.m_clear) {
-			clearValues[0].color = {{info.m_clearColor.r, info.m_clearColor.g, info.m_clearColor.b, info.m_clearColor.w}};  
-			clearValues[1].depthStencil = {1.0f, 0};
+		if (info.m_clear) {
+			clearValues[0].color = { {info.m_clearColor.r, info.m_clearColor.g, info.m_clearColor.b, info.m_clearColor.w} };
+			clearValues[1].depthStencil = { 1.0f, 0 };
 
 			renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
 			renderPassInfo.pClearValues = clearValues.data();
@@ -147,20 +166,17 @@ namespace vvh {
 
 		vkCmdBeginRenderPass(info.m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	}
-		
+
 	//---------------------------------------------------------------------------------------------
 
-    struct ComBindPipelineInfo { 
-		const VkCommandBuffer& 				m_commandBuffer;
-		const Pipeline& 						m_graphicsPipeline;
-		const uint32_t&					m_imageIndex;
-        const SwapChain& 				m_swapChain;
-		const VkRenderPass& 			m_renderPass; 
-        const std::vector<VkViewport>& 	m_viewPorts;
-		const std::vector<VkRect2D>& 	m_scissors;
-        const std::array<float,4>& 		m_blendConstants;
+	struct ComBindPipelineInfo {
+		const VkCommandBuffer& m_commandBuffer;
+		const Pipeline& m_graphicsPipeline;
+		const VkExtent2D& m_extent;
+		const std::vector<VkViewport>& m_viewPorts;
+		const std::vector<VkRect2D>& m_scissors;
+		const std::array<float, 4>& m_blendConstants;
 		const std::vector<PushConstants>& m_pushConstants;
-        const uint32_t& 				m_currentFrame;
 	};
 
 	template<typename T = ComBindPipelineInfo>
@@ -170,30 +186,30 @@ namespace vvh {
 		VkViewport viewport{};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = (float) info.m_swapChain.m_swapChainExtent.width;
-		viewport.height = (float) info.m_swapChain.m_swapChainExtent.height;
+		viewport.width = (float)info.m_extent.width;
+		viewport.height = (float)info.m_extent.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
-		if(viewPorts.size() == 0) viewPorts.push_back(viewport);
-		vkCmdSetViewport(info.m_commandBuffer, 0, (uint32_t)viewPorts.size(), viewPorts.data());
-  
+		if (viewPorts.size() == 0) viewPorts.push_back(viewport);
+		vkCmdSetViewport(info.m_commandBuffer, 0, static_cast<uint32_t>(viewPorts.size()), viewPorts.data());
+
 
 		std::vector<VkRect2D> scissors = info.m_scissors;
 		VkRect2D scissor{};
-		scissor.offset = {0, 0};
-		scissor.extent = info.m_swapChain.m_swapChainExtent;
-		if(scissors.size() == 0) scissors.push_back(scissor);
-		vkCmdSetScissor(info.m_commandBuffer, 0, (uint32_t)scissors.size(), scissors.data());
+		scissor.offset = { 0, 0 };
+		scissor.extent = info.m_extent;
+		if (scissors.size() == 0) scissors.push_back(scissor);
+		vkCmdSetScissor(info.m_commandBuffer, 0, static_cast<uint32_t>(scissors.size()), scissors.data());
 
-		vkCmdSetBlendConstants(info.m_commandBuffer, &info.m_blendConstants[0]);
+		vkCmdSetBlendConstants(info.m_commandBuffer, info.m_blendConstants.data());
 
-		for( auto& pc : info.m_pushConstants ) {
+		for (auto& pc : info.m_pushConstants) {
 			vkCmdPushConstants(info.m_commandBuffer, pc.layout, pc.stageFlags, pc.offset, pc.size, pc.pValues);
 		}
 
 		vkCmdBindPipeline(info.m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, info.m_graphicsPipeline.m_pipeline);
 	}
-	
+
 	//---------------------------------------------------------------------------------------------
 
 	struct ComEndCommandBufferInfo {
@@ -206,40 +222,40 @@ namespace vvh {
 			throw std::runtime_error("failed to record command buffer!");
 		}
 	}
-	
+
 	//---------------------------------------------------------------------------------------------
 
-    struct ComEndRenderPassInfo {
+	struct ComEndRenderPassInfo {
 		const VkCommandBuffer& m_commandBuffer;
 	};
 
 	template<typename T = ComEndRenderPassInfo>
 	inline void ComEndRenderPass(T&& info) {
-        vkCmdEndRenderPass(info.m_commandBuffer);
-    }
+		vkCmdEndRenderPass(info.m_commandBuffer);
+	}
 
 	//---------------------------------------------------------------------------------------------
 
-    struct ComRecordObjectInfo {
-		const VkCommandBuffer& 	m_commandBuffer;
-		const Pipeline& 		m_graphicsPipeline;
+	struct ComRecordObjectInfo {
+		const VkCommandBuffer& m_commandBuffer;
+		const Pipeline& m_graphicsPipeline;
 		const std::vector<DescriptorSet>&& m_descriptorSets;
 		const std::string 	m_type;
-		const Mesh& 		m_mesh;
-		const uint32_t& 	m_currentFrame;
+		const Mesh& m_mesh;
+		const uint32_t& m_currentFrame;
 	};
 
 	template<typename T = ComRecordObjectInfo>
 	inline void ComRecordObject(T&& info) {
-	
+
 		auto offsets = info.m_mesh.m_verticesData.getOffsets(info.m_type);
 		std::vector<VkBuffer> vertexBuffers(offsets.size(), info.m_mesh.m_vertexBuffer);
-		   vkCmdBindVertexBuffers(info.m_commandBuffer, 0, (uint32_t)offsets.size(), vertexBuffers.data(), offsets.data());
+		vkCmdBindVertexBuffers(info.m_commandBuffer, 0, (uint32_t)offsets.size(), vertexBuffers.data(), offsets.data());
 
 		vkCmdBindIndexBuffer(info.m_commandBuffer, info.m_mesh.m_indexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-		for( auto& descriptorSet : info.m_descriptorSets ) {
-			vkCmdBindDescriptorSets(info.m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, info.m_graphicsPipeline.m_pipelineLayout, 
+		for (auto& descriptorSet : info.m_descriptorSets) {
+			vkCmdBindDescriptorSets(info.m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, info.m_graphicsPipeline.m_pipelineLayout,
 				descriptorSet.m_set, 1, &descriptorSet.m_descriptorSetPerFrameInFlight[info.m_currentFrame], 0, nullptr);
 		}
 
@@ -248,40 +264,74 @@ namespace vvh {
 
 	//---------------------------------------------------------------------------------------------
 
+	struct ComRecordLightingInfo {
+		const VkCommandBuffer& m_commandBuffer;
+		const Pipeline& m_graphicsPipeline;
+		const std::vector<DescriptorSet>&& m_descriptorSets;
+		const uint32_t& m_currentFrame;
+	};
+
+	// Draw command in deferred renderer
+	template<typename T = ComRecordLightingInfo>
+	inline void ComRecordLighting(T&& info) {
+		std::vector<VkDescriptorSet> sets;
+		sets.reserve(info.m_descriptorSets.size());
+
+		for (const auto& descriptorSet : info.m_descriptorSets) {
+			sets.push_back(descriptorSet.m_descriptorSetPerFrameInFlight[info.m_currentFrame]);
+		}
+
+		vkCmdBindDescriptorSets(info.m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, info.m_graphicsPipeline.m_pipelineLayout,
+			0, static_cast<uint32_t>(sets.size()), sets.data(), 0, nullptr);
+
+		vkCmdDraw(info.m_commandBuffer, 3, 1, 0, 0);
+	}
+
+	//---------------------------------------------------------------------------------------------
+
 	struct ComSubmitCommandBuffersInfo {
-		const VkDevice& 					m_device;
-		const VkQueue& 						m_graphicsQueue;
+		const VkDevice& m_device;
+		const VkQueue& m_graphicsQueue;
 		const std::vector<VkCommandBuffer>& m_commandBuffers;
-		std::vector<VkSemaphore>& 			m_imageAvailableSemaphores;
-		std::vector<VkSemaphore>& 			m_renderFinishedSemaphores; 
-        std::vector<Semaphores>& 			m_intermediateSemaphores; 
-		const std::vector<VkFence>& 		m_fences; 
-		const uint32_t& 					m_currentFrame;
+		std::vector<VkSemaphore>& m_imageAvailableSemaphores;
+		std::vector<VkSemaphore>& m_renderFinishedSemaphores;
+		std::vector<Semaphores>& m_intermediateSemaphores;
+		const std::vector<VkFence>& m_fences;
+		const uint32_t& m_currentFrame;
 	};
 
 	template<typename T = ComSubmitCommandBuffersInfo>
 	inline void ComSubmitCommandBuffers(T&& info) {
 
 		size_t size = info.m_commandBuffers.size();
+		if (size > info.m_intermediateSemaphores.size()) {
+			vvh::SynCreateSemaphores({
+				.m_device = info.m_device,
+				.m_imageAvailableSemaphores = info.m_imageAvailableSemaphores,
+				.m_renderFinishedSemaphores = info.m_renderFinishedSemaphores,
+				.m_size = size,
+				.m_intermediateSemaphores = info.m_intermediateSemaphores
+				});
+		}
 
 		vkResetFences(info.m_device, 1, &info.m_fences[info.m_currentFrame]);
 
 		const VkSemaphore* waitSemaphore = &info.m_imageAvailableSemaphores[info.m_currentFrame];
 		std::vector<VkSubmitInfo> submitInfos(info.m_commandBuffers.size());
-		VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
 		VkFence fence = VK_NULL_HANDLE;
-		 
-		for( int i = 0; i < size; i++ ) {
+
+		for (int i = 0; i < size; i++) {
 			submitInfos[i].sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 			submitInfos[i].commandBufferCount = 1;
 			submitInfos[i].pCommandBuffers = &info.m_commandBuffers[i];
-			
+
 			submitInfos[i].waitSemaphoreCount = 1;
 			submitInfos[i].pWaitSemaphores = waitSemaphore;
 			submitInfos[i].pWaitDstStageMask = waitStages;
-			
+
 			VkSemaphore* signalSemaphore = &info.m_intermediateSemaphores[i].m_renderFinishedSemaphores[info.m_currentFrame];
-			if( i== size-1 ) {
+			if (i == size - 1) {
 				fence = info.m_fences[info.m_currentFrame];
 				signalSemaphore = &info.m_renderFinishedSemaphores[info.m_currentFrame];
 			}
@@ -290,31 +340,98 @@ namespace vvh {
 
 			waitSemaphore = &info.m_intermediateSemaphores[i].m_renderFinishedSemaphores[info.m_currentFrame];
 		}
-		  if (vkQueueSubmit(info.m_graphicsQueue, (uint32_t)submitInfos.size(), submitInfos.data(), fence) != VK_SUCCESS) {
+		if (vkQueueSubmit(info.m_graphicsQueue, static_cast<uint32_t>(submitInfos.size()), submitInfos.data(), fence) != VK_SUCCESS) {
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
 	}
-	   
+
 	//---------------------------------------------------------------------------------------------
 
 	struct ComPresentImageInfo {
-		const VkQueue& 		m_presentQueue;
-		const SwapChain& 	m_swapChain;
-		const uint32_t& 	m_imageIndex;
-		const VkSemaphore& 	m_signalSemaphore;
+		const VkQueue& m_presentQueue;
+		const SwapChain& m_swapChain;
+		const uint32_t& m_imageIndex;
+		const VkSemaphore& m_signalSemaphore;
 	};
 
 	template<typename T = ComPresentImageInfo>
 	inline auto ComPresentImage(T&& info) -> VkResult {
-        VkPresentInfoKHR presentInfo{};
-        presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
-        presentInfo.waitSemaphoreCount = 1;
-        presentInfo.pWaitSemaphores = &info.m_signalSemaphore;
-        presentInfo.swapchainCount = 1;
-        presentInfo.pSwapchains = &info.m_swapChain.m_swapChain;
-        presentInfo.pImageIndices = &info.m_imageIndex;
-        return vkQueuePresentKHR(info.m_presentQueue, &presentInfo);
+		VkPresentInfoKHR presentInfo{};
+		presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+		presentInfo.waitSemaphoreCount = 1;
+		presentInfo.pWaitSemaphores = &info.m_signalSemaphore;
+		presentInfo.swapchainCount = 1;
+		presentInfo.pSwapchains = &info.m_swapChain.m_swapChain;
+		presentInfo.pImageIndices = &info.m_imageIndex;
+		return vkQueuePresentKHR(info.m_presentQueue, &presentInfo);
 	}
+
+	//---------------------------------------------------------------------------------------------
+
+	struct ComBeginRenderPass2Info {
+		const VkCommandBuffer& m_commandBuffer;
+		const uint32_t& m_imageIndex;
+		const VkExtent2D& m_extent;
+		const std::span<VkFramebuffer>& m_framebuffers;
+		const VkRenderPass& m_renderPass;
+		const std::span<const VkClearValue>& m_clearValues;
+	};
+
+	// Used by deferred renderer 1.1
+	template<typename T = ComBeginRenderPass2Info>
+	inline void ComBeginRenderPass2(T&& info) {
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = info.m_renderPass;
+		renderPassInfo.framebuffer = info.m_framebuffers[info.m_imageIndex];
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = info.m_extent;
+
+		if (info.m_clearValues.size()) {
+			renderPassInfo.clearValueCount = static_cast<uint32_t>(info.m_clearValues.size());
+			renderPassInfo.pClearValues = info.m_clearValues.data();
+		}
+
+		vkCmdBeginRenderPass(info.m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	//---------------------------------------------------------------------------------------------
+
+	struct ComStartRecordCommandBuffer2Info {
+		VkCommandBuffer& m_commandBuffer;
+		const uint32_t& m_imageIndex;
+		const SwapChain& m_swapChain;
+		const VkRenderPass& m_renderPass;
+		bool				m_clear;
+		const glm::vec4& m_clearValues;
+		const uint32_t& m_currentFrame;
+	};
+
+	// Used for cmdBuf that already is running
+	template<typename T = ComStartRecordCommandBuffer2Info>
+	inline void ComStartRecordCommandBuffer2(T&& info) {
+
+		VkRenderPassBeginInfo renderPassInfo{};
+		renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+		renderPassInfo.renderPass = info.m_renderPass;
+		renderPassInfo.framebuffer = info.m_swapChain.m_swapChainFramebuffers[info.m_imageIndex];
+		renderPassInfo.renderArea.offset = { 0, 0 };
+		renderPassInfo.renderArea.extent = info.m_swapChain.m_swapChainExtent;
+
+		std::array<VkClearValue, 2> clearValues{};
+		if (info.m_clear) {
+			clearValues[0].color = { {info.m_clearValues.r, info.m_clearValues.g, info.m_clearValues.b, info.m_clearValues.w} };
+			clearValues[1].depthStencil = { 1.0f, 0 };
+
+			renderPassInfo.clearValueCount = static_cast<uint32_t>(clearValues.size());
+			renderPassInfo.pClearValues = clearValues.data();
+		}
+
+		vkCmdBeginRenderPass(info.m_commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	//---------------------------------------------------------------------------------------------
 
 } // namespace vh
 
