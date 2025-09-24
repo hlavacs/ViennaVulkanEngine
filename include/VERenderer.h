@@ -14,11 +14,6 @@ namespace vve {
 	static const int size_col = sizeof(glm::vec4);
 	static const int size_tan = sizeof(glm::vec3);
 
-    enum class RendererType {
-        FORWARD,
-        DEFERRED,
-        RAYTRACING
-    };
 
 	struct VulkanState {
 		uint32_t 		m_apiVersionInstance{VK_API_VERSION_1_1};
@@ -37,7 +32,7 @@ namespace vve {
 		VkQueue 		m_graphicsQueue{VK_NULL_HANDLE};
 		VkQueue 		m_presentQueue{VK_NULL_HANDLE};
 		vvh::SwapChain 	m_swapChain;
-		vvh::DepthImage 	m_depthImage;
+		vvh::DepthImage m_depthImage;
 		VkFormat		m_depthMapFormat{VK_FORMAT_UNDEFINED};
 		VkCommandPool 	m_commandPool{VK_NULL_HANDLE};
 		std::vector<VkCommandBuffer> m_commandBuffersSubmit;

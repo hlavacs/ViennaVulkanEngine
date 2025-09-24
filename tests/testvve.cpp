@@ -246,7 +246,7 @@ public:
 
 int main() {
 
-    vve::Engine engine("My Engine") ;
+    vve::Engine engine("My Engine", vve::RendererType::RENDERER_TYPE_FORWARD) ;
 
 	MyGUI mygui{engine};
 

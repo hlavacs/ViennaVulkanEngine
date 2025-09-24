@@ -7,7 +7,7 @@
 
 namespace vve {
 	
-	Engine::Engine(std::string name, uint32_t apiVersion, bool debug) : System(name, *this), m_apiVersion(apiVersion) {
+	Engine::Engine(std::string name, RendererType type, uint32_t apiVersion, bool debug) : System(name, *this), m_apiVersion(apiVersion) {
 		if( VK_VERSION_MAJOR(apiVersion) == 1 && VK_VERSION_MINOR(apiVersion) < VK_VERSION_MINOR(c_minimumVersion)) {
 			std::cout << "Minimum VVE Vulkan API version is 1." << VK_VERSION_MINOR(c_minimumVersion) << "!\n";
 			m_apiVersion = c_minimumVersion;
@@ -17,6 +17,8 @@ namespace vve {
 			std::cout << "Maximum VVE Vulkan API version is 1." << VK_VERSION_MINOR(c_maximumVersion) << "!\n";
 			m_apiVersion = c_maximumVersion;
 		}
+
+		m_type = type;
 
 	#ifndef NDEBUG
 		m_debug = true;
@@ -77,7 +79,7 @@ namespace vve {
 	void Engine::CreateRenderer(){
 		RegisterSystem(std::make_unique<RendererVulkan>( m_rendererVulkanName,  *this, m_windowName ) );
 		RegisterSystem(std::make_unique<RendererImgui>(  m_rendererImguiName,   *this, m_windowName ) );
-		if (VK_VERSION_MINOR(m_apiVersion) < 3)
+		if (m_type == vve::RendererType::RENDERER_TYPE_FORWARD)
 			RegisterSystem(std::make_unique<RendererForward>(m_rendererForwardName, *this, m_windowName) );
 		else 
 			RegisterSystem(std::make_unique<RendererDeferred>(m_rendererDeferredName, *this, m_windowName) );

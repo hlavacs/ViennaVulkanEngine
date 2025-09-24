@@ -5,6 +5,12 @@ namespace vve {
 
 	struct Camera; 
 
+    enum class RendererType {
+        RENDERER_TYPE_FORWARD,
+        RENDERER_TYPE_DEFERRED,
+        RENDERER_TYPE_RAYTRACING
+    };
+
 	class Engine : public System {
 
 		static const uint32_t c_minimumVersion = VK_MAKE_VERSION(1, 1, 0); //for VMA
@@ -19,6 +25,7 @@ namespace vve {
 
 		struct EngineState {
 			const std::string& m_name;
+			RendererType m_type;
 			uint32_t& 	m_apiVersion;
 			uint32_t	m_minimumVersion = c_minimumVersion;
 			uint32_t 	m_maximumVersion = c_maximumVersion;
@@ -45,7 +52,7 @@ namespace vve {
 			std::function<bool(Message&)> m_callback;
 		};
 
-		Engine(std::string name, uint32_t apiVersion = c_maximumVersion, bool debug=false);
+		Engine(std::string name, RendererType type = RendererType::RENDERER_TYPE_DEFERRED, uint32_t apiVersion = c_maximumVersion, bool debug=false);
 		virtual ~Engine();
 		void RegisterSystem( std::unique_ptr<System>&& system );
 		void DeregisterSystem( System* system );
@@ -59,7 +66,7 @@ namespace vve {
 		void SendMsg( Message message );
 		void PrintCallbacks();
 		auto GetRegistry() -> auto& { return m_registry; }
-		auto GetState() { return EngineState{m_name, m_apiVersion, c_minimumVersion, c_maximumVersion, m_debug, m_initialized, m_running}; }
+		auto GetState() { return EngineState{m_name, m_type, m_apiVersion, c_minimumVersion, c_maximumVersion, m_debug, m_initialized, m_running}; }
 		auto GetSystem(std::string name) -> System* { return m_systems[name].get(); }
 		auto GetShadowToggle() -> bool& { return m_shadowsEnabled; }
 		auto IsShadowEnabled() const -> const bool { return m_shadowsEnabled; }
@@ -137,6 +144,7 @@ namespace vve {
 
 		std::unordered_map<std::string, std::unique_ptr<System>> m_systems{};
 
+		RendererType m_type;
 		uint32_t m_apiVersion;
 		bool m_debug{false};
 		bool m_initialized{false};
