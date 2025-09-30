@@ -75,11 +75,11 @@ namespace vvh {
         init_info.Queue = graphicsQueue;
         init_info.PipelineCache = VK_NULL_HANDLE;
         init_info.DescriptorPool = descriptorPool;
-        init_info.RenderPass = renderPass;
-        init_info.Subpass = 0;
+        init_info.PipelineInfoMain.RenderPass = renderPass;
+        init_info.PipelineInfoMain.Subpass = 0;
         init_info.MinImageCount = 3;
         init_info.ImageCount = 3;
-        init_info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+        init_info.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
         init_info.Allocator = nullptr;
         init_info.CheckVkResultFn = nullptr;
         ImGui_ImplVulkan_Init(&init_info);
