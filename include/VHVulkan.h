@@ -24,12 +24,22 @@
 
 namespace vvh {
 
+	/**
+	 * @brief Convert vector of strings to vector of C-style string pointers
+	 * @param vec Vector of strings
+	 * @return Vector of const char pointers
+	 */
 	inline auto ToCharPtr(const std::vector<std::string>& vec) -> std::vector<const char*> {
 		std::vector<const char*> res;
 		for (auto& str : vec) res.push_back(str.c_str());
 		return res;
 	}
 
+	/**
+	 * @brief Read file contents into a character vector
+	 * @param filename Path to the file
+	 * @return Vector containing file contents
+	 */
 	inline std::vector<char> ReadFile(const std::string& filename) {
 		std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -55,6 +65,9 @@ namespace vvh {
 	//Shader resources
 	//make sure that their size is a multiple of 16!
 
+	/**
+	 * @brief Color structure with ambient, diffuse, and specular components
+	 */
 	struct Color {
 		glm::vec4 m_ambientColor{ 0.0f };
 		glm::vec4 m_diffuseColor{ 0.0f };
@@ -153,27 +166,43 @@ namespace vvh {
 	//--------------------------------------------------------------------
 	//Structures used to communicate with the helper layer
 
+	/**
+	 * @brief Holds Vulkan queue family indices
+	 */
 	struct QueueFamilyIndices {
 		std::optional<uint32_t> graphicsFamily;
 		std::optional<uint32_t> presentFamily;
 
+		/**
+		 * @brief Check if all required queue families are found
+		 * @return True if all families are available
+		 */
 		bool isComplete() {
 			return graphicsFamily.has_value() && presentFamily.has_value();
 		}
 	};
 
+	/**
+	 * @brief Holds swap chain support details
+	 */
 	struct SwapChainSupportDetails {
 		VkSurfaceCapabilitiesKHR capabilities;
 		std::vector<VkSurfaceFormatKHR> formats;
 		std::vector<VkPresentModeKHR> presentModes;
 	};
 
+	/**
+	 * @brief Depth image resources
+	 */
 	struct DepthImage {
 		VkImage         m_depthImage;
 		VmaAllocation   m_depthImageAllocation;
 		VkImageView     m_depthImageView;
 	};
 
+	/**
+	 * @brief Image resources including pixels and Vulkan handles
+	 */
 	struct Image {
 		int 			m_width;
 		int				m_height;
@@ -225,12 +254,16 @@ namespace vvh {
 		glm::vec4 m_material{ 0.0f, 1.0f, 0.0f, 0.0f }; // x = metallic, y = roughness, zw will be ao in future
 	};
 
-	/// Pipeline code:
-	/// P...Vertex data contains positions
-	/// N...Vertex data contains normals
-	/// T...Vertex data contains tangents
-	/// C...Vertex data contains colors
-	/// U...Vertex data contains texture UV coordinates
+	/**
+	 * @brief Vertex data structure with multiple attribute types
+	 *
+	 * Pipeline code:
+	 * P...Vertex data contains positions
+	 * N...Vertex data contains normals
+	 * T...Vertex data contains tangents
+	 * C...Vertex data contains colors
+	 * U...Vertex data contains texture UV coordinates
+	 */
 	struct VertexData {
 
 		static const int size_pos = sizeof(glm::vec3);
@@ -245,6 +278,10 @@ namespace vvh {
 		std::vector<glm::vec4> m_colors;
 		std::vector<glm::vec3> m_tangents;
 
+		/**
+		 * @brief Get vertex data type string (e.g., "PNUC")
+		 * @return String describing which attributes are present
+		 */
 		std::string getType() const {
 			std::string name;
 			if (m_positions.size() > 0) name = name + "P";
@@ -312,6 +349,9 @@ namespace vvh {
 		}
 	};
 
+	/**
+	 * @brief Mesh data with vertices, indices, and Vulkan buffers
+	 */
 	struct Mesh {
 		VertexData				m_verticesData;
 		std::vector<uint32_t>   m_indices;
@@ -322,7 +362,11 @@ namespace vvh {
 	};
 
 
-	/// @brief Semaphores for signalling that a command buffer has finished executing. Every buffer gets its own Semaphore.
+	/**
+	 * @brief Semaphores for signalling that a command buffer has finished executing
+	 *
+	 * Every buffer gets its own Semaphore.
+	 */
 	struct Semaphores {
 		std::vector<VkSemaphore> m_renderFinishedSemaphores;
 	};

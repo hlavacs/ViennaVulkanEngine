@@ -15,6 +15,9 @@ namespace vve {
 	static const int size_tan = sizeof(glm::vec3);
 
 
+	/**
+	 * @brief Holds Vulkan state and resources
+	 */
 	struct VulkanState {
 		uint32_t 		m_apiVersionInstance{VK_API_VERSION_1_1};
 		uint32_t 		m_apiVersionDevice{VK_API_VERSION_1_1};
@@ -42,12 +45,29 @@ namespace vve {
 		bool m_framebufferResized = false;
 	};
 
+    /**
+     * @brief Base renderer class for managing Vulkan rendering
+     */
     class Renderer : public System {
         friend class Engine;
 
     public:
+        /**
+         * @brief Constructor for Renderer
+         * @param systemName Name of the system
+         * @param m_engine Reference to the engine
+         * @param windowName Name of the associated window
+         */
         Renderer(std::string systemName, Engine& m_engine, std::string windowName);
+        /**
+         * @brief Destructor for Renderer
+         */
         virtual ~Renderer();
+		/**
+		 * @brief Get Vulkan state from registry
+		 * @param registry Reference to the VECS registry
+		 * @return Tuple containing handle and Vulkan state reference
+		 */
 		static auto GetState(vecs::Registry& registry) -> std::tuple< vecs::Handle, vecs::Ref<VulkanState>>;
 
     protected:

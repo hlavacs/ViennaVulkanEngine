@@ -2,12 +2,24 @@
 
 namespace vve {
 
+	/**
+	 * @brief Deferred renderer implementation for Vulkan 1.1
+	 */
 	class RendererDeferred11 : public RendererDeferredCommon<RendererDeferred11> {
 
 		friend class RendererDeferredCommon<RendererDeferred11>;
 
 	public:
+		/**
+		 * @brief Constructor for Deferred 1.1 Renderer
+		 * @param systemName Name of the system
+		 * @param engine Reference to the engine
+		 * @param windowName Name of the associated window
+		 */
 		RendererDeferred11(const std::string& systemName, Engine& engine, const std::string& windowName);
+		/**
+		 * @brief Destructor for Deferred 1.1 Renderer
+		 */
 		virtual ~RendererDeferred11();
 
 	private:

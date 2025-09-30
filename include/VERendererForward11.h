@@ -5,10 +5,16 @@ namespace vve
 
 	static const uint32_t MAX_NUMBER_LIGHTS = 128;
 
+    /**
+     * @brief Forward renderer implementation for Vulkan 1.1
+     */
     class RendererForward11 : public Renderer {
 
 		friend class RendererForward;
 
+		/**
+		 * @brief Pipeline configuration per object type
+		 */
 		struct PipelinePerType {
 			std::string m_type;
 			VkDescriptorSetLayout m_descriptorSetLayoutPerObject;
@@ -16,7 +22,16 @@ namespace vve
 		};
 
     public:
+        /**
+         * @brief Constructor for Forward 1.1 Renderer
+         * @param systemName Name of the system
+         * @param engine Reference to the engine
+         * @param windowName Name of the associated window
+         */
         RendererForward11(std::string systemName, Engine& engine, std::string windowName);
+        /**
+         * @brief Destructor for Forward 1.1 Renderer
+         */
         virtual ~RendererForward11();
 
     private:

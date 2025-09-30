@@ -3,7 +3,13 @@
 
 namespace vve {
 
-	GUI::GUI(std::string systemName, Engine& engine, std::string windowName ) : 
+	/**
+	 * @brief Constructor for the GUI class
+	 * @param systemName Name of the system
+	 * @param engine Reference to the engine
+	 * @param windowName Name of the window
+	 */
+	GUI::GUI(std::string systemName, Engine& engine, std::string windowName ) :
 		System(systemName, engine), m_windowName(windowName) {
 		m_engine.RegisterCallbacks( { 
 			{this, 0, "SDL_KEY_DOWN", [this](Message& message){ return OnKeyDown(message);} },
@@ -17,7 +23,11 @@ namespace vve {
 		} );
 	};
 
-
+	/**
+	 * @brief Handle key down event
+	 * @param message Message containing key down data
+	 * @return True if message was handled
+	 */
 	bool GUI::OnKeyDown(Message message) {
 		GetCamera();
 
@@ -85,6 +95,11 @@ namespace vve {
 		return false;
     }
 
+	/**
+	 * @brief Handle key up event
+	 * @param message Message containing key up data
+	 * @return True if message was handled
+	 */
 	bool GUI::OnKeyUp(Message message) {
 		auto msg = message.template GetData<MsgKeyUp>();
 		int key = msg.m_key;
@@ -92,6 +107,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handle mouse button down event
+	 * @param message Message containing mouse button down data
+	 * @return True if message was handled
+	 */
 	bool GUI::OnMouseButtonDown(Message message) {
 		auto msg = message.template GetData<MsgMouseButtonDown>();
 		if(msg.m_button != SDL_BUTTON_RIGHT) return false;
@@ -100,6 +120,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handle mouse button up event
+	 * @param message Message containing mouse button up data
+	 * @return True if message was handled
+	 */
 	bool GUI::OnMouseButtonUp(Message message) {
 		auto msg = message.template GetData<MsgMouseButtonUp>();
 		if(msg.m_button != SDL_BUTTON_RIGHT) return false;
@@ -107,7 +132,11 @@ namespace vve {
 		return false;
 	}
 
-
+	/**
+	 * @brief Handle mouse move event
+	 * @param message Message containing mouse move data
+	 * @return True if message was handled
+	 */
 	bool GUI::OnMouseMove(Message message) {
 		if( m_mouseButtonDown == false ) return false;
 		GetCamera();
@@ -141,7 +170,11 @@ namespace vve {
 		return false;
 	}
 
-	
+	/**
+	 * @brief Handle mouse wheel event
+	 * @param message Message containing mouse wheel data
+	 * @return True if message was handled
+	 */
 	bool GUI::OnMouseWheel(Message message) {
 		GetCamera();
 		auto msg = message.template GetData<MsgMouseWheel>();
@@ -155,6 +188,9 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Get the current camera handle
+	 */
 	void GUI::GetCamera() {
 		if(m_cameraHandle.IsValid() == false) { 
 			auto [handle, camera, parent] = *m_registry.GetView<vecs::Handle, Camera&, ParentHandle>().begin(); 
@@ -163,7 +199,11 @@ namespace vve {
 		};
 	}
 
-
+	/**
+	 * @brief Handle frame end event
+	 * @param message Message containing frame end data
+	 * @return True if message was handled
+	 */
 	bool GUI::OnFrameEnd(Message message) {
 		if (m_makeScreenshot) {
 			auto vstate = std::get<1>(Renderer::GetState(m_registry));

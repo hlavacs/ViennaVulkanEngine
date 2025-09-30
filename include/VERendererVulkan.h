@@ -7,11 +7,23 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	// Vulkan Renderer
 
+    /**
+     * @brief Basic Vulkan renderer implementation
+     */
     class RendererVulkan : public Renderer {
 
     public:
 
+        /**
+         * @brief Constructor for Vulkan Renderer
+         * @param systemName Name of the system
+         * @param engine Reference to the engine
+         * @param windowName Name of the associated window
+         */
         RendererVulkan(std::string systemName, Engine& engine, std::string windowName);
+        /**
+         * @brief Destructor for Vulkan Renderer
+         */
         virtual ~RendererVulkan();
 
     protected:

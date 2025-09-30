@@ -2,10 +2,17 @@
 
 namespace vve {
 
+	/**
+	 * @brief Base class for deferred renderers (CRTP)
+	 * @tparam Derived The derived renderer class (1.1 or 1.3)
+	 */
 	template <typename Derived>
 	class RendererDeferredCommon : public Renderer{
 
 	private:
+		/**
+		 * @brief Pipeline configuration per object type
+		 */
 		struct PipelinePerType {
 			std::string m_type;
 			VkDescriptorSetLayout m_descriptorSetLayoutPerObject{ VK_NULL_HANDLE };
@@ -22,7 +29,16 @@ namespace vve {
 		};
 
 	public:
+		/**
+		 * @brief Constructor for Deferred Common Renderer
+		 * @param systemName Name of the system
+		 * @param engine Reference to the engine
+		 * @param windowName Name of the associated window
+		 */
 		RendererDeferredCommon(const std::string& systemName, Engine& engine, const std::string& windowName);
+		/**
+		 * @brief Destructor for Deferred Common Renderer
+		 */
 		virtual ~RendererDeferredCommon();
 
 	private:

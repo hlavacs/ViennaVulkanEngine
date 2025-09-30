@@ -44,12 +44,30 @@ namespace vvh {
 
 	//extern VkInstance volkInstance;
 
+	/**
+	 * @brief Load Vulkan function pointer using volk
+	 * @param name Function name
+	 * @param context Context pointer (unused)
+	 * @return Function pointer
+	 */
 	inline auto LoadVolk(const char* name, void* context) {
    		return vkGetInstanceProcAddr(volkInstance, name);
 	}
 
     //------------------------------------------------------------------------
 
+    /**
+     * @brief Setup ImGui for Vulkan rendering
+     * @param sdlWindow SDL window pointer
+     * @param instance Vulkan instance
+     * @param physicalDevice Physical device
+     * @param queueFamilies Queue family indices
+     * @param device Logical device
+     * @param graphicsQueue Graphics queue
+     * @param commandPool Command pool
+     * @param descriptorPool Descriptor pool
+     * @param renderPass Render pass
+     */
     inline void SetupImgui(SDL_Window* sdlWindow, VkInstance instance, VkPhysicalDevice physicalDevice, QueueFamilyIndices queueFamilies
         , VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkDescriptorPool descriptorPool
         , VkRenderPass renderPass) {
@@ -89,7 +107,15 @@ namespace vvh {
         //ImGui_ImplVulkan_DestroyFontUploadObjects();
     }
 
-    
+
+    /**
+     * @brief Initialize SDL3 for Vulkan
+     * @param name Window name
+     * @param width Window width
+     * @param height Window height
+     * @param extensions Vector to store Vulkan extensions
+     * @return True on success, false on failure
+     */
     inline bool SDL3Init( std::string name, int width, int height, std::vector<std::string>& extensions) {
         if (!SDL_Init(SDL_INIT_VIDEO | SDL_INIT_EVENTS)) {
             SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "Failed to init SDL: %s", SDL_GetError());

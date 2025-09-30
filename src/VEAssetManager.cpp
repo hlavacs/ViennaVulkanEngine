@@ -3,10 +3,15 @@
 #include "VEInclude.h"
 
 namespace vve {
-	
+
 
 	//-------------------------------------------------------------------------------------------------------
 
+	/**
+	 * @brief Constructor for the AssetManager class
+	 * @param systemName Name of the system
+	 * @param engine Reference to the engine
+	 */
     AssetManager::AssetManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallbacks( { 
 			{this,                               0, "SCENE_LOAD", [this](Message& message){ return OnSceneLoad(message);} },
@@ -19,8 +24,16 @@ namespace vve {
 		} );
 	}
 
+	/**
+	 * @brief Destructor for the AssetManager class
+	 */
     AssetManager::~AssetManager() {}
 
+	/**
+	 * @brief Handle scene creation message
+	 * @param message Message containing scene creation data
+	 * @return True if message was handled
+	 */
 	bool AssetManager::OnSceneCreate( Message& message ) {
 		auto& msg = message.template GetData<MsgSceneCreate>();
 		auto flags = msg.m_ai_flags;
@@ -36,6 +49,11 @@ namespace vve {
 		return true;
 	}
 
+	/**
+	 * @brief Handle scene load message
+	 * @param message Message containing scene load data
+	 * @return True if message was handled
+	 */
     bool AssetManager::OnSceneLoad(Message& message) {
 		auto& msg = message.template GetData<MsgSceneLoad>();
 		auto flags = msg.m_ai_flags;
@@ -46,6 +64,12 @@ namespace vve {
 		return true; //the message is consumed -> no more processing allowed
 	}
 
+	/**
+	 * @brief Load a scene from file
+	 * @param sceneName Filename of the scene
+	 * @param scene Pointer to the Assimp scene structure
+	 * @return True if scene was loaded successfully
+	 */
 	bool AssetManager::SceneLoad(Filename sceneName, const C_STRUCT aiScene* scene) {
 		std::filesystem::path filepath = sceneName();
 		auto directory = filepath.parent_path();
@@ -138,6 +162,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handle object creation message
+	 * @param message Message containing object creation data
+	 * @return True if message was handled
+	 */
     bool AssetManager::OnObjectCreate(Message message) {
 		auto msg = message.template GetData<MsgObjectCreate>();
 		if( m_registry.Has<MeshName>(msg.m_object) ) {
@@ -151,6 +180,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handle texture creation message
+	 * @param message Message containing texture creation data
+	 * @return True if message was handled
+	 */
 	bool AssetManager::OnTextureCreate(Message message) {
 		auto msg = message.template GetData<MsgTextureCreate>();
 		if( msg.m_sender == this ) return false;
@@ -158,6 +192,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handle texture release message
+	 * @param message Message containing texture release data
+	 * @return True if message was handled
+	 */
 	bool AssetManager::OnTextureRelease(Message message) {
 		auto msg = message.template GetData<MsgTextureCreate>();
 		auto texture = m_registry.template Get<vvh::Image&>(msg.m_handle);
@@ -165,6 +204,11 @@ namespace vve {
 		return true;
 	}
 
+	/**
+	 * @brief Handle play sound message
+	 * @param message Message containing sound playback data
+	 * @return True if message was handled
+	 */
 	bool AssetManager::OnPlaySound(Message& message) {
 		auto& msg = message.template GetData<MsgPlaySound>();
 		auto fileName = msg.m_filepath();
@@ -180,6 +224,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Load texture data from file
+	 * @param tHandle Handle to the texture to load
+	 * @return Pointer to loaded texture data
+	 */
 	auto AssetManager::LoadTexture(TextureHandle tHandle) -> stbi_uc* {
 		auto fileName = m_registry.Get<Name&>(tHandle);
 		if( m_engine.ContainsHandle(fileName()) ) return nullptr;

@@ -3,10 +3,22 @@
 
 namespace vve {
 
+    /**
+     * @brief ImGui renderer implementation
+     */
     class RendererImgui : public Renderer  {
-		
+
     public:
+        /**
+         * @brief Constructor for ImGui Renderer
+         * @param systemName Name of the system
+         * @param engine Reference to the engine
+         * @param windowName Name of the associated window
+         */
         RendererImgui(std::string systemName, Engine& engine, std::string windowName);
+        /**
+         * @brief Destructor for ImGui Renderer
+         */
         virtual ~RendererImgui();
 
     private:

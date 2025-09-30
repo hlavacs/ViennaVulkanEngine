@@ -25,6 +25,11 @@
 #include <assimp/DefaultLogger.hpp>
 
 
+/**
+ * @brief Converts an Assimp color to a GLM vec4
+ * @param color The Assimp color to convert
+ * @return GLM vec4 representation of the color
+ */
 inline auto to_vec4 (const aiColor4D &color) {
 	return glm::vec4{color.r, color.g, color.b, color.a};
 }
@@ -63,6 +68,9 @@ namespace vve {
 
 	#define MAX_MESSAGE_SIZE 256
 
+    /**
+     * @brief Empty struct used as a placeholder or default type
+     */
     struct Empty {};
 
    	class System;

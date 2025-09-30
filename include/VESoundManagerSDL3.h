@@ -4,6 +4,9 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 
+    /**
+     * @brief Sound state for SDL3
+     */
     struct SoundState {
         std::string     m_filepath{};
         int             m_cont{0};
@@ -15,11 +18,26 @@ namespace vve {
         //SDL_AudioDeviceID m_deviceId{0};
     };
 
+	/**
+	 * @brief Sound manager implementation using SDL3
+	 */
 	class SoundManager : public System {
 
 	public:
+        /**
+         * @brief Constructor for Sound Manager
+         * @param systemName Name of the system
+         * @param engine Reference to the engine
+         */
         SoundManager(std::string systemName, Engine& engine);
+    	/**
+    	 * @brief Destructor for Sound Manager
+    	 */
     	~SoundManager() {};
+		/**
+		 * @brief Get current volume
+		 * @return Volume level
+		 */
 		int GetVolume() { return (int)m_volume; }
 
         static inline SoundManager* m_soundManager{nullptr};

@@ -6,6 +6,9 @@ namespace vve
 	static constexpr uint32_t SHADOW_MAP_DIMENSION = 1024;
 	static constexpr uint32_t SHADOW_MAX_NUM_LAYERS = 128*6;
 
+	/**
+	 * @brief Shadow map image data structure
+	 */
 	struct ShadowImage {
 		vvh::Image shadowImage;
 		uint32_t numberImageArraylayers{ 0 };
@@ -18,6 +21,9 @@ namespace vve
 
 	using ShadowMaphandle = vsty::strong_type_t<ShadowImage, vsty::counter<>>;
 
+    /**
+     * @brief Shadow map renderer for Vulkan 1.1
+     */
     class RendererShadow11 : public Renderer {
 	private:
 		struct PushConstantShadow {
@@ -43,7 +49,16 @@ namespace vve
 		};
 
 	public:
+		/**
+		 * @brief Constructor for Shadow 1.1 Renderer
+		 * @param systemName Name of the system
+		 * @param engine Reference to the engine
+		 * @param windowName Name of the associated window
+		 */
 		RendererShadow11(const std::string& systemName, Engine& engine, const std::string& windowName);
+        /**
+         * @brief Destructor for Shadow 1.1 Renderer
+         */
         virtual ~RendererShadow11();
 
     private:
