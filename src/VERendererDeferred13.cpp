@@ -3,11 +3,23 @@
 
 namespace vve {
 
+	/**
+	 * @brief Constructs a Vulkan 1.3 deferred renderer
+	 * @param systemName Name of the renderer system
+	 * @param engine Reference to the engine instance
+	 * @param windowName Name of the window to render to
+	 */
 	RendererDeferred13::RendererDeferred13(const std::string& systemName, Engine& engine, const std::string& windowName)
 		: RendererDeferredCommon(systemName, engine, windowName) {}
 
+	/**
+	 * @brief Destructor for the Vulkan 1.3 deferred renderer
+	 */
 	RendererDeferred13::~RendererDeferred13() {};
 
+	/**
+	 * @brief Initializes the Vulkan 1.3 deferred renderer with dynamic rendering
+	 */
 	void RendererDeferred13::OnInit() {
 		CreateGeometryRenderingInfo();
 		CreateGeometryPipeline();
@@ -16,12 +28,24 @@ namespace vve {
 		CreateLightingPipeline();
 	}
 
+	/**
+	 * @brief Prepares resources for the next frame (empty implementation for this renderer)
+	 */
 	void RendererDeferred13::OnPrepareNextFrame() {}
 
+	/**
+	 * @brief Handles object creation events (empty implementation for this renderer)
+	 */
 	void RendererDeferred13::OnObjectCreate() {}
 
+	/**
+	 * @brief Handles object destruction events (empty implementation for this renderer)
+	 */
 	void RendererDeferred13::OnObjectDestroy() {}
 
+	/**
+	 * @brief Records rendering commands for the next frame using dynamic rendering
+	 */
 	void RendererDeferred13::OnRecordNextFrame() {
 		// Geometry Pass
 		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
@@ -46,6 +70,9 @@ namespace vve {
 		SubmitCommandBuffer(cmdBuffer);
 	}
 
+	/**
+	 * @brief Handles window resize by updating rendering info structures
+	 */
 	void RendererDeferred13::OnWindowSize() {
 		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
 
@@ -63,8 +90,14 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Handles application quit (empty implementation for this renderer)
+	 */
 	void RendererDeferred13::OnQuit() {}
 
+	/**
+	 * @brief Creates the rendering info structures for the geometry pass
+	 */
 	void RendererDeferred13::CreateGeometryRenderingInfo() {
 
 		VkRect2D renderArea = VkRect2D{ VkOffset2D{}, m_vkState().m_swapChain.m_swapChainExtent };
@@ -102,6 +135,9 @@ namespace vve {
 
 	}
 
+	/**
+	 * @brief Creates the rendering info structures for the lighting composition pass
+	 */
 	void RendererDeferred13::CreateLightingRenderingInfo() {
 		m_outputAttachmentInfo.resize(m_vkState().m_swapChain.m_swapChainImageViews.size());
 		m_lightingRenderingInfo.resize(m_vkState().m_swapChain.m_swapChainImageViews.size());

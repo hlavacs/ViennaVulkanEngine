@@ -8,6 +8,12 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	// Vulkan Renderer
 
+    /**
+     * @brief Constructs a Vulkan renderer and registers event callbacks
+     * @param systemName Name of the renderer system
+     * @param engine Reference to the engine instance
+     * @param windowName Name of the window to render to
+     */
     RendererVulkan::RendererVulkan(std::string systemName, Engine& engine, std::string windowName ) 
         : Renderer(systemName, engine, windowName) {
 
@@ -25,8 +31,16 @@ namespace vve {
 		} );
     }
 
+    /**
+     * @brief Destructor for Vulkan renderer
+     */
     RendererVulkan::~RendererVulkan() {}
 
+    /**
+     * @brief Handles extension messages by collecting instance and device extensions
+     * @param message Message containing extension requirements
+     * @return false to continue message propagation
+     */
     bool RendererVulkan::OnExtensions(Message message) {
 		auto msg = message.template GetData<MsgExtensions>();
 		m_instanceExtensions.insert(m_instanceExtensions.end(), msg.m_instExt.begin(), msg.m_instExt.end());
@@ -34,6 +48,11 @@ namespace vve {
 		return false;
 	}
 
+    /**
+     * @brief Initializes the Vulkan renderer by creating instance, device, swap chain, and render resources
+     * @param message Initialization message
+     * @return false to continue message propagation
+     */
     bool RendererVulkan::OnInit(Message message) {
 		Renderer::OnInit(message);
 
@@ -248,6 +267,11 @@ namespace vve {
 		return false;
     }
 
+    /**
+     * @brief Prepares the next frame by acquiring the next swap chain image and transitioning layouts
+     * @param message Frame preparation message
+     * @return false to continue message propagation
+     */
     bool RendererVulkan::OnPrepareNextFrame(Message message) {
 
         m_vkState().m_currentFrame = (m_vkState().m_currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
@@ -302,6 +326,11 @@ namespace vve {
 		return false;
     }
 
+    /**
+     * @brief Records rendering commands for the next frame into command buffers
+     * @param message Frame recording message
+     * @return false to continue message propagation
+     */
     bool RendererVulkan::OnRecordNextFrame(Message message) {
 
         vkResetCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame],  0);
@@ -326,6 +355,11 @@ namespace vve {
 		return false;
 	}
 
+    /**
+     * @brief Submits command buffers and presents the rendered frame to the screen
+     * @param message Frame rendering message
+     * @return false to continue message propagation
+     */
     bool RendererVulkan::OnRenderNextFrame(Message message) {
         	
 		size_t size = m_vkState().m_commandBuffersSubmit.size();
@@ -396,7 +430,12 @@ namespace vve {
         } else assert(result == VK_SUCCESS);
 		return false;
     }
-    
+
+    /**
+     * @brief Cleans up all Vulkan resources when shutting down the renderer
+     * @param message Quit message
+     * @return false to continue message propagation
+     */
     bool RendererVulkan::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vkState().m_device);
 
@@ -482,6 +521,11 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 
+	/**
+	 * @brief Creates a Vulkan texture from image data
+	 * @param message Message containing texture creation parameters
+	 * @return false to continue message propagation
+	 */
 	bool RendererVulkan::OnTextureCreate( Message message ) {
 		auto msg = message.template GetData<MsgTextureCreate>();
 		auto handle = msg.m_handle;
@@ -505,6 +549,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Destroys a Vulkan texture and frees associated resources
+	 * @param message Message containing texture handle to destroy
+	 * @return false to continue message propagation
+	 */
 	bool RendererVulkan::OnTextureDestroy( Message message ) {
 		auto handle = message.template GetData<MsgTextureDestroy>().m_handle;
 		auto texture = m_registry.template Get<vvh::Image&>(handle);
@@ -520,6 +569,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Creates Vulkan vertex and index buffers for a mesh
+	 * @param message Message containing mesh creation parameters
+	 * @return false to continue message propagation
+	 */
 	bool RendererVulkan::OnMeshCreate( Message message ) {
 		auto handle = message.template GetData<MsgMeshCreate>().m_handle;
 		auto mesh = m_registry.template Get<vvh::Mesh&>(handle);
@@ -532,6 +586,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Destroys a Vulkan mesh and frees vertex and index buffer resources
+	 * @param message Message containing mesh handle to destroy
+	 * @return false to continue message propagation
+	 */
 	bool RendererVulkan::OnMeshDestroy( Message message ) {
 		auto handle = message.template GetData<MsgMeshDestroy>().m_handle;
 		auto mesh = m_registry.template Get<vvh::Mesh&>(handle);

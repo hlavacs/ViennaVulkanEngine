@@ -5,15 +5,34 @@
 
 namespace vve {
 
-    Renderer::Renderer(std::string systemName, Engine& engine, std::string windowName ) : 
+    /**
+     * @brief Constructs a renderer system
+     * @param systemName Name of the renderer system
+     * @param engine Reference to the engine instance
+     * @param windowName Name of the window to render to
+     */
+    Renderer::Renderer(std::string systemName, Engine& engine, std::string windowName ) :
 		System{systemName, engine }, m_windowName(windowName) {	};
 
+    /**
+     * @brief Destructor for the renderer
+     */
     Renderer::~Renderer(){};
 
+	/**
+	 * @brief Retrieves the Vulkan state from the registry
+	 * @param registry ECS registry containing the Vulkan state
+	 * @return Tuple containing the handle and reference to the Vulkan state
+	 */
 	auto Renderer::GetState(vecs::Registry& registry) -> std::tuple<vecs::Handle, vecs::Ref<VulkanState>> {
         return *registry.template GetView<vecs::Handle, VulkanState&>().begin();
     }
 
+	/**
+	 * @brief Initializes the renderer and sets up Vulkan state references
+	 * @param message Initialization message containing engine state
+	 * @return false to continue message processing
+	 */
 	bool Renderer::OnInit(Message message) {
 		auto [handle, stateW, stateSDL] = WindowSDL::GetState(m_registry);
 		m_windowState = stateW;
@@ -33,10 +52,22 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Submits a command buffer for rendering
+	 * @param commandBuffer Vulkan command buffer to submit
+	 */
 	void Renderer::SubmitCommandBuffer( VkCommandBuffer commandBuffer ) { 
-		m_vkState().m_commandBuffersSubmit.push_back(commandBuffer); 
+		m_vkState().m_commandBuffersSubmit.push_back(commandBuffer);
 	};
 
+	/**
+	 * @brief Helper function to create a vertex input binding description
+	 * @param type Vertex attribute type string
+	 * @param C Character representing the attribute component
+	 * @param binding Binding index reference
+	 * @param stride Stride of the vertex data
+	 * @param bdesc Vector to append the binding description to
+	 */
 	void Renderer::getBindingDescription( std::string type, std::string C, int &binding, int stride, auto& bdesc ) {
 		if( type.find(C) == std::string::npos ) return;
 		VkVertexInputBindingDescription bindingDescription{};
@@ -46,6 +77,11 @@ namespace vve {
 		bdesc.push_back( bindingDescription );
 	}
 
+	/**
+	 * @brief Creates all vertex input binding descriptions for the given vertex type
+	 * @param type Vertex attribute type string (e.g., "PNUT" for Position, Normal, UV, Tangent)
+	 * @return Vector of vertex input binding descriptions
+	 */
 	auto Renderer::getBindingDescriptions( std::string type ) -> std::vector<VkVertexInputBindingDescription> {
 		std::vector<VkVertexInputBindingDescription> bindingDescriptions{};
 			
@@ -58,6 +94,15 @@ namespace vve {
 		return bindingDescriptions;
 	}
 
+	/**
+	 * @brief Helper function to create a vertex input attribute description
+	 * @param type Vertex attribute type string
+	 * @param C Character representing the attribute component
+	 * @param binding Binding index reference
+	 * @param location Attribute location reference
+	 * @param format Vulkan format for the attribute
+	 * @param attd Vector to append the attribute description to
+	 */
 	void Renderer::addAttributeDescription( std::string type, std::string C, int& binding, int& location, VkFormat format, auto& attd ) {
 		if( type.find(C) == std::string::npos ) return;
 		VkVertexInputAttributeDescription attributeDescription{};
@@ -68,6 +113,11 @@ namespace vve {
 		attd.push_back( attributeDescription );
 	}
 
+    /**
+     * @brief Creates all vertex input attribute descriptions for the given vertex type
+     * @param type Vertex attribute type string (e.g., "PNUT" for Position, Normal, UV, Tangent)
+     * @return Vector of vertex input attribute descriptions
+     */
     auto Renderer::getAttributeDescriptions(std::string type) -> std::vector<VkVertexInputAttributeDescription> {
         std::vector<VkVertexInputAttributeDescription> attributeDescriptions{};
 
@@ -81,6 +131,14 @@ namespace vve {
         return attributeDescriptions;
     }
 
+	/**
+	 * @brief Registers lights of a specific type from the ECS registry
+	 * @tparam T Light component type (PointLight, DirectionalLight, or SpotLight)
+	 * @param type Light type identifier
+	 * @param lights Vector to store registered lights
+	 * @param total Total number of lights registered so far
+	 * @return Number of lights registered
+	 */
 	template<typename T>
 	int Renderer::RegisterLight(float type, std::vector<vvh::Light>& lights, int& total) {
 		int n=0;

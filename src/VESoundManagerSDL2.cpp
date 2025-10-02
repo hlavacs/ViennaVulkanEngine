@@ -3,6 +3,11 @@
 
 namespace vve {
 
+	/**
+	 * @brief Constructs a sound manager using SDL2 audio and registers event callbacks
+	 * @param systemName Name of the sound manager system
+	 * @param engine Reference to the engine instance
+	 */
 	SoundManager::SoundManager(std::string systemName, Engine& engine ) : System(systemName, engine){
 		m_engine.RegisterCallbacks( { 
  		  	{this,    0, "UPDATE", [this](Message& message){ return OnUpdate(message);} },
@@ -13,11 +18,23 @@ namespace vve {
         SoundManager::m_soundManager = this;
     };
 
+    /**
+     * @brief Static wrapper for SDL audio callback that delegates to instance method
+     * @param userdata User data pointer containing sound handle
+     * @param stream Audio stream buffer to fill
+     * @param len Length of audio data requested
+     */
     void SoundManager::SDL3AudioCallback(void *userdata, Uint8 *stream, int len) {
         size_t i = reinterpret_cast<std::uintptr_t>(userdata);
         SoundManager::m_soundManager->AudioCallback(vecs::Handle{i}, stream, len);
     }
 
+    /**
+     * @brief Fills audio stream with sound data and applies volume scaling
+     * @param handle Handle to the sound being played
+     * @param stream Audio stream buffer to fill
+     * @param len Length of audio data requested
+     */
     void SoundManager::AudioCallback(vecs::Handle handle, Uint8 *stream, int len) {
         auto sound = m_registry.template Get<SoundState&>(handle);
         if(sound().m_playLength == 0 ) { return; }
@@ -33,6 +50,11 @@ namespace vve {
         sound().m_playLength -= len;
     }
 
+    /**
+     * @brief Plays a sound from a file or stops it based on continuation parameter
+     * @param message Message containing sound playback parameters
+     * @return true if sound was started, false otherwise
+     */
     bool SoundManager::OnPlaySound(Message& message) {
         auto msg = message.template GetData<MsgPlaySound>();
         Filename filepath = msg.m_filepath;
@@ -65,12 +87,22 @@ namespace vve {
 		return false;
     }
 
+	/**
+	 * @brief Sets the global volume for all sounds
+	 * @param message Message containing volume level
+	 * @return false to continue message propagation
+	 */
 	bool SoundManager::OnSetVolume(Message& message) {
 		auto msg = message.template GetData<MsgSetVolume>();
 		m_volume = msg.m_volume;
 		return false;
 	}
 
+    /**
+     * @brief Updates sound playback states and handles looping sounds
+     * @param message Update message
+     * @return false to continue message propagation
+     */
     bool SoundManager::OnUpdate(Message message) {
         auto msg = message.template GetData<MsgUpdate>();
         for(auto sound : m_registry.template GetView<SoundState&>()) {
@@ -89,6 +121,11 @@ namespace vve {
 		return false;
     }
 
+    /**
+     * @brief Cleans up all sound resources when shutting down
+     * @param message Quit message
+     * @return false to continue message propagation
+     */
     bool SoundManager::OnQuit(Message message) {
         auto msg = message.template GetData<MsgQuit>();
         for(auto sound : m_registry.template GetView<SoundState&>()) {

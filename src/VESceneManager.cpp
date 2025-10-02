@@ -9,7 +9,12 @@ namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
 	//Scene Manager class
-	
+
+	/**
+	 * @brief Constructs a scene manager and registers event callbacks for scene operations
+	 * @param systemName Name of the scene manager system
+	 * @param engine Reference to the engine instance
+	 */
     SceneManager::SceneManager(std::string systemName, Engine& engine ) : System{systemName, engine } {
 		engine.RegisterCallbacks( { 
 			{this,  						  2000,	"INIT", [this](Message& message){ return OnInit(message);} },
@@ -24,8 +29,16 @@ namespace vve {
 		} );
 	}
 
+	/**
+	 * @brief Destructor for scene manager
+	 */
     SceneManager::~SceneManager() {}
 
+	/**
+	 * @brief Initializes the scene manager by creating world, root node, and camera
+	 * @param message Initialization message
+	 * @return false to continue message propagation
+	 */
 	bool SceneManager::OnInit(Message message) {
 		m_worldHandle = m_registry.Insert( Name{m_worldName}, LocalToWorldMatrix{mat4_t{1.0f}} ); //no parent -> direct insert
 								
@@ -43,6 +56,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Loads a default level with a sphere and several lights for testing
+	 * @param message Load level message
+	 * @return false to continue message propagation
+	 */
     bool SceneManager::OnLoadLevel(Message message) {
 
 		vvh::Color color{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 0.9f, 0.1f, 0.1f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
@@ -91,6 +109,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Updates camera aspect ratio when window size changes
+	 * @param message Window size message
+	 * @return false to continue message propagation
+	 */
     bool SceneManager::OnWindowSize(Message message) {
 		auto [name, camera] = m_registry.template Get<Name&, Camera&>(m_cameraHandle);
 		auto [handle, wstate] = Window::GetState(m_registry);
@@ -99,6 +122,11 @@ namespace vve {
 	}
 
 
+	/**
+	 * @brief Updates all scene node transformations by traversing the scene hierarchy
+	 * @param message Update message
+	 * @return false to continue message propagation
+	 */
     bool SceneManager::OnUpdate(Message message) {
 		auto children = m_registry.template Get<Children&>(m_rootHandle);
 
@@ -130,6 +158,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handles object creation by setting parent-child relationships
+	 * @param message Message containing object creation parameters
+	 * @return false to continue message propagation
+	 */
 	bool SceneManager::OnObjectCreate(Message message) {
 		auto& msg = message.template GetData<MsgObjectCreate>();
 		if( msg.m_sender == this ) return false;
@@ -141,6 +174,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Creates a scene from loaded 3D model by processing the scene hierarchy
+	 * @param message Message containing scene creation parameters
+	 * @return false to continue message propagation
+	 */
 	bool SceneManager::OnSceneCreate(Message message) {
 		auto& msg = message.template GetData<MsgSceneCreate>();
 		ObjectHandle oHandle = msg.m_object;
@@ -168,6 +206,14 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Recursively processes nodes in a 3D model scene hierarchy
+	 * @param node Current node being processed
+	 * @param parent Handle to the parent node
+	 * @param filepath Path to the model file
+	 * @param scene Pointer to the Assimp scene data
+	 * @param id Reference to unique node ID counter
+	 */
 	void SceneManager::ProcessNode(aiNode* node, ParentHandle parent, std::filesystem::path& filepath, const aiScene* scene, uint64_t& id) {
 		auto directory = filepath.parent_path();
 
@@ -249,12 +295,22 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Handles setting a new parent for an object in the scene hierarchy
+	 * @param message Message containing object and parent handles
+	 * @return false to continue message propagation
+	 */
     bool SceneManager::OnObjectSetParent(Message message) {
 		auto msg = message.template GetData<MsgObjectSetParent>();
 		SetParent(msg.m_object, msg.m_parent);
 		return false;
 	}
 
+	/**
+	 * @brief Sets the parent of an object, updating parent-child relationships
+	 * @param oHandle Handle to the object
+	 * @param pHandle Handle to the new parent
+	 */
 	void SceneManager::SetParent(ObjectHandle oHandle, ParentHandle pHandle) {
 		auto parent = m_registry.template Get<ParentHandle&>(oHandle);
 		if( parent().IsValid() ) {
@@ -269,6 +325,11 @@ namespace vve {
 		parent() = pHandle;
 	}
 
+	/**
+	 * @brief Handles object destruction by removing from hierarchy and destroying children
+	 * @param message Message containing object handle and destruction phase
+	 * @return false to continue message propagation
+	 */
     bool SceneManager::OnObjectDestroy(Message message) {
 		auto msg = message.template GetData<MsgObjectDestroy>();
 		if( msg.m_phase > 0) { //last phase -> Uniform Buffers have been deallocated

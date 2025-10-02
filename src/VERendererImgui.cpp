@@ -5,6 +5,12 @@
 
 namespace vve {
 
+    /**
+     * @brief Constructor for RendererImgui
+     * @param systemName Name of the system
+     * @param engine Reference to the engine
+     * @param windowName Name of the window
+     */
     RendererImgui::RendererImgui( std::string systemName, Engine& engine, std::string windowName ) 
         : Renderer(systemName, engine, windowName ) {
 
@@ -18,8 +24,16 @@ namespace vve {
 
     };
 
+    /**
+     * @brief Destructor for RendererImgui
+     */
     RendererImgui::~RendererImgui() {};
 
+    /**
+     * @brief Initialize the ImGui renderer
+     * @param message Message containing initialization data
+     * @return false
+     */
     bool RendererImgui::OnInit(Message message) {
 		Renderer::OnInit(message);
 
@@ -76,6 +90,11 @@ namespace vve {
 		return false;
 	}
 
+    /**
+     * @brief Prepare ImGui for the next frame
+     * @param message Message containing frame preparation data
+     * @return false
+     */
     bool RendererImgui::OnPrepareNextFrame(Message message) {
 	    ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL3_NewFrame();
@@ -83,6 +102,11 @@ namespace vve {
 		return false;
     }
 
+    /**
+     * @brief Record ImGui draw commands for the next frame
+     * @param message Message containing frame recording data
+     * @return false
+     */
     bool RendererImgui::OnRecordNextFrame(Message message) {
 
         vkResetCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame],  0);
@@ -109,12 +133,22 @@ namespace vve {
 		return false;
     }
 
+    /**
+     * @brief Handle SDL events for ImGui
+     * @param message Message containing SDL event data
+     * @return false
+     */
     bool RendererImgui::OnSDL(Message message) {
     	SDL_Event event = message.template GetData<MsgSDL>().m_event;
     	ImGui_ImplSDL3_ProcessEvent(&event);
 		return false;
     }
 
+    /**
+     * @brief Clean up ImGui renderer resources
+     * @param message Message containing quit data
+     * @return false
+     */
     bool RendererImgui::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vkState().m_device);
 		ImGui_ImplVulkan_Shutdown();

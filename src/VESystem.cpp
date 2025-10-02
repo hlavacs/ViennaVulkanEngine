@@ -4,7 +4,12 @@
 #include "VEInclude.h"
 
 namespace vve {
-	
+
+	/**
+	 * @brief Constructs a base message with a type and delta time
+	 * @param type Message type string
+	 * @param dt Delta time since last frame
+	 */
 	System::MsgBase::MsgBase(std::string type, double dt) : m_dt{dt} {
 		assert( MsgTypeNames.find(type) != MsgTypeNames.end() );
 		m_type = std::hash<std::string>{}(type);
@@ -68,7 +73,16 @@ namespace vve {
 
 	//------------------------------------------------------------------------
 
+    /**
+     * @brief Constructs a system with a name and engine reference
+     * @param systemName Name of the system
+     * @param engine Reference to the engine instance
+     */
     System::System( std::string systemName, Engine& engine ) : m_name(systemName), m_engine(engine), m_registry{engine.GetRegistry()} {};
+
+    /**
+     * @brief Destructor for the system
+     */
     System::~System(){};
 
 

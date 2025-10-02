@@ -9,6 +9,12 @@ namespace vve {
 	//-------------------------------------------------------------------------------------------------------
 	// SDL Window
 
+	/**
+	 * @brief Retrieves the window state from the registry by name
+	 * @param registry Reference to the entity registry
+	 * @param windowName Name of the window to find (empty for first window)
+	 * @return Tuple containing handle, window state, and SDL window state
+	 */
     auto WindowSDL::GetState(vecs::Registry& registry, const std::string&& windowName) -> std::tuple<vecs::Handle, vecs::Ref<WindowState>, vecs::Ref<WindowSDLState>> {
         for( auto ret: registry.template GetView<vecs::Handle, WindowState&, WindowSDLState&>() ) {
             auto [handle, wstate, wsdlstate] = ret;
@@ -21,10 +27,22 @@ namespace vve {
         return { {}, {}, {} };
     }
 
+	/**
+	 * @brief Retrieves this window's state from the registry
+	 * @return Tuple containing window state and SDL window state
+	 */
     auto WindowSDL::GetState2() -> std::tuple<vecs::Ref<WindowState>, vecs::Ref<WindowSDLState>> {
         return m_registry.template Get<WindowState&, WindowSDLState&>(m_windowStateHandle);
     }
-	
+
+	/**
+	 * @brief Constructs an SDL window and registers event callbacks
+	 * @param systemName Name of the window system
+	 * @param engine Reference to the engine instance
+	 * @param windowName Name for the window
+	 * @param width Window width in pixels
+	 * @param height Window height in pixels
+	 */
     WindowSDL::WindowSDL( std::string systemName, Engine& engine,std::string windowName, int width, int height) 
                 : Window(systemName, engine, windowName, width, height ) {
 
@@ -37,8 +55,16 @@ namespace vve {
         m_windowStateHandle = m_registry.Insert(WindowState{width, height, windowName}, WindowSDLState{});
     }
 
+	/**
+	 * @brief Destructor for SDL window
+	 */
     WindowSDL::~WindowSDL() {}
 
+	/**
+	 * @brief Initializes SDL and creates the window with Vulkan support
+	 * @param message Initialization message
+	 * @return false to continue message propagation
+	 */
     bool WindowSDL::OnInit(Message message) {
         auto state = GetState2();
         auto wstate = std::get<0>(state);
@@ -83,6 +109,11 @@ namespace vve {
 		return false;
     }
 
+	/**
+	 * @brief Polls SDL events and dispatches input messages to the engine
+	 * @param message Poll events message
+	 * @return false to continue message propagation
+	 */
     bool WindowSDL::OnPollEvents(Message message) {
         // Poll and handle events (inputs, window resize, etc.)
         // You can read the io.WantCaptureMouse, io.WantCaptureKeyboard flags to tell if dear imgui wants to use your inputs.
@@ -162,6 +193,11 @@ namespace vve {
         return false;
     }
 
+	/**
+	 * @brief Cleans up SDL window resources when shutting down
+	 * @param message Quit message
+	 * @return false to continue message propagation
+	 */
     bool WindowSDL::OnQuit(Message message) {
 		SDL_DestroyWindow(std::get<1>(GetState2())().m_sdlWindow);
         SDL_Quit(); 

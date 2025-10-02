@@ -3,11 +3,23 @@
 
 namespace vve {
 
+	/**
+	 * @brief Constructs a Vulkan 1.1 deferred renderer
+	 * @param systemName Name of the renderer system
+	 * @param engine Reference to the engine instance
+	 * @param windowName Name of the window to render to
+	 */
 	RendererDeferred11::RendererDeferred11(const std::string& systemName, Engine& engine, const std::string& windowName)
 		: RendererDeferredCommon(systemName, engine, windowName) {}
 
+	/**
+	 * @brief Destructor for the Vulkan 1.1 deferred renderer
+	 */
 	RendererDeferred11::~RendererDeferred11() {};
 
+	/**
+	 * @brief Initializes the Vulkan 1.1 deferred renderer with render passes
+	 */
 	void RendererDeferred11::OnInit() {
 		vvh::RenCreateRenderPassGeometry({
 			.m_depthFormat			= m_vkState().m_depthMapFormat,
@@ -33,8 +45,14 @@ namespace vve {
 		CreateLightingPipeline(&m_lightingPass);
 	}
 
+	/**
+	 * @brief Prepares resources for the next frame (empty implementation for this renderer)
+	 */
 	void RendererDeferred11::OnPrepareNextFrame() {}
 
+	/**
+	 * @brief Records rendering commands for the next frame using render passes
+	 */
 	void RendererDeferred11::OnRecordNextFrame() {
 		// Geometry Pass
 		auto& cmdBuffer = m_commandBuffers[m_vkState().m_currentFrame];
@@ -77,21 +95,36 @@ namespace vve {
 		SubmitCommandBuffer(cmdBuffer);
 	}
 
+	/**
+	 * @brief Handles object creation events (empty implementation for this renderer)
+	 */
 	void RendererDeferred11::OnObjectCreate() {}
 
+	/**
+	 * @brief Handles object destruction events (empty implementation for this renderer)
+	 */
 	void RendererDeferred11::OnObjectDestroy() {}
 
+	/**
+	 * @brief Handles window resize by recreating framebuffers
+	 */
 	void RendererDeferred11::OnWindowSize() {
 		DestroyDeferredFrameBuffers();
 		CreateDeferredFrameBuffers();
 	}
 
+	/**
+	 * @brief Handles application quit by cleaning up render passes and framebuffers
+	 */
 	void RendererDeferred11::OnQuit() {
 		vkDestroyRenderPass(m_vkState().m_device, m_geometryPass, nullptr);
 		vkDestroyRenderPass(m_vkState().m_device, m_lightingPass, nullptr);
 		DestroyDeferredFrameBuffers();
 	}
 
+	/**
+	 * @brief Creates G-buffer and lighting pass framebuffers
+	 */
 	void RendererDeferred11::CreateDeferredFrameBuffers() {
 		// GBuffer FrameBuffers
 		for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
@@ -115,6 +148,9 @@ namespace vve {
 			});
 	}
 
+	/**
+	 * @brief Destroys G-buffer and lighting pass framebuffers
+	 */
 	void RendererDeferred11::DestroyDeferredFrameBuffers() {
 		for (auto& fb : m_gBufferFrameBuffers) {
 			vkDestroyFramebuffer(m_vkState().m_device, fb, nullptr);

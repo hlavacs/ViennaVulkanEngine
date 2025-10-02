@@ -23,6 +23,12 @@
 
 namespace vve {
 
+    /**
+     * @brief Constructs a forward renderer for Vulkan 1.1 and registers event callbacks
+     * @param systemName Name of the renderer system
+     * @param engine Reference to the engine instance
+     * @param windowName Name of the window to render to
+     */
     RendererForward11::RendererForward11( std::string systemName, Engine& engine, std::string windowName ) 
         : Renderer(systemName, engine, windowName ) {
 
@@ -36,8 +42,16 @@ namespace vve {
   		} );
     };
 
+    /**
+     * @brief Destructor for forward renderer
+     */
     RendererForward11::~RendererForward11(){};
 
+    /**
+     * @brief Initializes the forward renderer by creating render passes, descriptor sets, and pipelines
+     * @param message Initialization message
+     * @return false to continue message propagation
+     */
     bool RendererForward11::OnInit(Message message) {
 		Renderer::OnInit(message);
 
@@ -131,6 +145,9 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Creates graphics pipelines by loading shader files from the shaders directory
+	 */
 	void RendererForward11::CreatePipelines() {
 		const std::filesystem::path shaders{"shaders/Forward"};
 		for( const auto& entry : std::filesystem::directory_iterator(shaders) ) {
@@ -188,6 +205,11 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Prepares the next frame by updating light and camera data in uniform buffers
+	 * @param message Frame preparation message
+	 * @return false to continue message propagation
+	 */
 	bool RendererForward11::OnPrepareNextFrame(Message message) {
 		auto msg = message.template GetData<MsgPrepareNextFrame>();
 
@@ -248,6 +270,11 @@ namespace vve {
 		return false;
 	}
 
+    /**
+     * @brief Records rendering commands for the next frame into command buffers
+     * @param message Frame recording message
+     * @return false to continue message propagation
+     */
     bool RendererForward11::OnRecordNextFrame(Message message) {
 		auto msg = message.template GetData<MsgRecordNextFrame>();
 
@@ -330,6 +357,11 @@ namespace vve {
 		return false;
     }
 
+	/**
+	 * @brief Handles object creation by setting up descriptor sets and uniform buffers
+	 * @param message Message containing object creation parameters
+	 * @return false to continue message propagation
+	 */
 	bool RendererForward11::OnObjectCreate( Message message ) {
 		ObjectHandle oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		assert( m_registry.template Has<MeshHandle>(oHandle) );	
@@ -393,6 +425,11 @@ namespace vve {
 		return false; //true if handled
 	}
 
+	/**
+	 * @brief Handles object destruction by cleaning up uniform buffers
+	 * @param message Message containing object handle to destroy
+	 * @return false to continue message propagation
+	 */
 	bool RendererForward11::OnObjectDestroy( Message message ) {
 		auto msg = message.template GetData<MsgObjectDestroy>();
 		auto oHandle = msg.m_handle();
@@ -410,10 +447,12 @@ namespace vve {
 	}
 
 
-	/// @brief 
-	/// @param handle 
-	/// @param vertexData 
-	/// @return 
+	/**
+	 * @brief Determines the pipeline type string based on object properties and vertex data
+	 * @param handle Handle to the object
+	 * @param vertexData Vertex data structure containing vertex attributes
+	 * @return Pipeline type string describing required shader features
+	 */
 	std::string RendererForward11::getPipelineType(ObjectHandle handle, vvh::VertexData &vertexData) {
 		std::string type = vertexData.getType();
 		if( m_registry.template Has<TextureHandle>(handle) && type.find("U") != std::string::npos ) type += "E";
@@ -421,6 +460,11 @@ namespace vve {
 		return type;
 	}
 
+	/**
+	 * @brief Finds and returns the pipeline matching the specified type string
+	 * @param type Pipeline type string to search for
+	 * @return Pointer to the matching pipeline, or exits if not found
+	 */
 	RendererForward11::PipelinePerType* RendererForward11::getPipelinePerType(std::string type) {
 		for( auto& [pri, pipeline] : m_pipelinesPerType ) {
 			bool found = true;
@@ -432,6 +476,11 @@ namespace vve {
 		return nullptr;
 	}
 
+    /**
+     * @brief Cleans up all forward renderer resources when shutting down
+     * @param message Quit message
+     * @return false to continue message propagation
+     */
     bool RendererForward11::OnQuit(Message message) {
         vkDeviceWaitIdle(m_vkState().m_device);
 

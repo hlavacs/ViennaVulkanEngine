@@ -3,6 +3,11 @@
 
 namespace vve {
 
+	/**
+	 * @brief Constructs a sound manager using SDL3 Mixer and registers event callbacks
+	 * @param systemName Name of the sound manager system
+	 * @param engine Reference to the engine instance
+	 */
 	SoundManager::SoundManager(std::string systemName, Engine& engine ) : System(systemName, engine){
 		m_engine.RegisterCallbacks( { 
  		  	{this, 1000, "PLAY_SOUND", [this](Message& message){ return OnPlaySound(message);} },
@@ -15,6 +20,11 @@ namespace vve {
         Mix_AllocateChannels(128);  //audio channels
     };
 
+    /**
+     * @brief Plays a sound from a file or stops it based on continuation parameter
+     * @param message Message containing sound playback parameters
+     * @return true if sound was started, false otherwise
+     */
     bool SoundManager::OnPlaySound(Message& message) {
         auto msg = message.template GetData<MsgPlaySound>();
         Filename filepath = msg.m_filepath;
@@ -35,6 +45,11 @@ namespace vve {
 		return false;
     }
 
+	/**
+	 * @brief Sets the global volume for all sound channels and music
+	 * @param message Message containing volume level
+	 * @return false to continue message propagation
+	 */
 	bool SoundManager::OnSetVolume(Message& message) {
 		auto msg = message.template GetData<MsgSetVolume>();
 		m_volume = static_cast<float>(msg.m_volume);
@@ -43,6 +58,11 @@ namespace vve {
 		return false;
 	}
 
+    /**
+     * @brief Cleans up all sound resources when shutting down
+     * @param message Quit message
+     * @return false to continue message propagation
+     */
     bool SoundManager::OnQuit(Message message) {
         auto msg = message.template GetData<MsgQuit>();
         for(auto sound : m_registry.template GetView<SoundState&>()) {

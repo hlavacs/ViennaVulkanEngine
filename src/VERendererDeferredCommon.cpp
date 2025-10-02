@@ -6,6 +6,13 @@ namespace vve {
 	template class RendererDeferredCommon<RendererDeferred11>;
 	template class RendererDeferredCommon<RendererDeferred13>;
 
+	/**
+	 * @brief Constructs a deferred renderer with common functionality
+	 * @tparam Derived The derived renderer type
+	 * @param systemName Name of the renderer system
+	 * @param engine Reference to the engine instance
+	 * @param windowName Name of the window to render to
+	 */
 	template<typename Derived>
 	RendererDeferredCommon<Derived>::RendererDeferredCommon(const std::string& systemName, Engine& engine, const std::string& windowName) : Renderer(systemName, engine, windowName) {
 
@@ -21,10 +28,19 @@ namespace vve {
 			});
 	}
 
+	/**
+	 * @brief Destructor for the deferred renderer
+	 * @tparam Derived The derived renderer type
+	 */
 	template<typename Derived>
 	RendererDeferredCommon<Derived>::~RendererDeferredCommon() {};
 
-
+	/**
+	 * @brief Initializes the deferred renderer resources including descriptor sets, command buffers, and G-buffer
+	 * @tparam Derived The derived renderer type
+	 * @param message Initialization message
+	 * @return false to continue message processing
+	 */
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnInit(const Message& message) {
 		Renderer::OnInit(message);
@@ -208,6 +224,12 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Prepares the next frame by updating uniform buffers and lights
+	 * @tparam Derived The derived renderer type
+	 * @param message Frame preparation message
+	 * @return false to continue message processing
+	 */
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnPrepareNextFrame(const Message& message) {
 
@@ -265,6 +287,12 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Records rendering commands for the next frame
+	 * @tparam Derived The derived renderer type
+	 * @param message Frame recording message
+	 * @return false to continue message processing
+	 */
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnRecordNextFrame(const Message& message) {
 
@@ -273,6 +301,12 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handles object creation events and creates necessary rendering resources
+	 * @tparam Derived The derived renderer type
+	 * @param message Object creation message
+	 * @return false to continue message processing
+	 */
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnObjectCreate(Message& message) {
 		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
@@ -354,6 +388,12 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handles object destruction events and cleans up rendering resources
+	 * @tparam Derived The derived renderer type
+	 * @param message Object destruction message
+	 * @return false to continue message processing
+	 */
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnObjectDestroy(Message& message) {
 		const auto& msg = message.template GetData<MsgObjectDestroy>();
@@ -389,6 +429,12 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handles window resize events by recreating deferred rendering resources
+	 * @tparam Derived The derived renderer type
+	 * @param message Window size change message
+	 * @return false to continue message processing
+	 */
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnWindowSize(const Message& message) {
 		DestroyDeferredResources();
@@ -399,6 +445,12 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handles application quit events and cleans up all renderer resources
+	 * @tparam Derived The derived renderer type
+	 * @param message Quit message
+	 * @return false to continue message processing
+	 */
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnQuit(const Message& message) {
 		vkDeviceWaitIdle(m_vkState().m_device);
@@ -442,12 +494,22 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handles shadow map recreation events and updates shadow resources
+	 * @tparam Derived The derived renderer type
+	 * @param message Shadow map recreation message
+	 * @return false to continue message processing
+	 */
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnShadowMapRecreated(const Message& message) {
 		UpdateShadowResources();
 		return false;
 	}
 
+	/**
+	 * @brief Creates deferred rendering resources including G-buffer attachments and depth buffers
+	 * @tparam Derived The derived renderer type
+	 */
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::CreateDeferredResources() {
 
@@ -547,6 +609,10 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Destroys deferred rendering resources including G-buffer and depth attachments
+	 * @tparam Derived The derived renderer type
+	 */
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::DestroyDeferredResources() {
 		for (auto& gBufferAttach : m_gBufferAttachments | std::views::join) {
@@ -569,6 +635,11 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Creates graphics pipelines for geometry rendering based on shader files
+	 * @tparam Derived The derived renderer type
+	 * @param renderPass Render pass to use for the pipeline
+	 */
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::CreateGeometryPipeline(const VkRenderPass* renderPass) {
 		const std::filesystem::path shaders{ "shaders/Deferred" };
@@ -635,6 +706,11 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Creates graphics pipelines for lighting composition pass
+	 * @tparam Derived The derived renderer type
+	 * @param renderPass Render pass to use for the pipeline
+	 */
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::CreateLightingPipeline(const VkRenderPass* renderPass) {
 		const std::filesystem::path shaders{ "shaders/Deferred" };
@@ -665,6 +741,11 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Retrieves the G-buffer attachment formats
+	 * @tparam Derived The derived renderer type
+	 * @return Vector of G-buffer attachment formats
+	 */
 	template<typename Derived>
 	auto RendererDeferredCommon<Derived>::getAttachmentFormats() const -> const std::vector<VkFormat> {
 		std::vector<VkFormat> attachFormats;
@@ -676,6 +757,13 @@ namespace vve {
 		return attachFormats;
 	}
 
+	/**
+	 * @brief Determines the pipeline type string based on object properties and vertex data
+	 * @tparam Derived The derived renderer type
+	 * @param handle Handle to the object
+	 * @param vertexData Vertex data of the object
+	 * @return Pipeline type string
+	 */
 	template<typename Derived>
 	auto RendererDeferredCommon<Derived>::getPipelineType(const ObjectHandle& handle, const vvh::VertexData& vertexData) const -> const std::string {
 		std::string type = vertexData.getType();
@@ -684,6 +772,12 @@ namespace vve {
 		return type;
 	}
 
+	/**
+	 * @brief Retrieves the graphics pipeline for a given type
+	 * @tparam Derived The derived renderer type
+	 * @param type Pipeline type string
+	 * @return Pointer to the pipeline per type structure
+	 */
 	template<typename Derived>
 	auto RendererDeferredCommon<Derived>::getPipelinePerType(const std::string& type) const -> const RendererDeferredCommon<Derived>::PipelinePerType* {
 		for (auto& [pri, pipeline] : m_geomPipesPerType) {
@@ -696,6 +790,10 @@ namespace vve {
 		return nullptr;
 	}
 
+	/**
+	 * @brief Updates the light storage buffer with current scene lights
+	 * @tparam Derived The derived renderer type
+	 */
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::UpdateLightStorageBuffer() {
 		static std::vector<vvh::Light> lights{ MAX_NUMBER_LIGHTS };
@@ -711,6 +809,10 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Updates shadow map descriptors and light space matrices
+	 * @tparam Derived The derived renderer type
+	 */
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::UpdateShadowResources() {
 		auto [sHandle, shadowImage] = *m_registry.template GetView<vecs::Handle, ShadowImage&>().begin();
@@ -743,6 +845,11 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Transitions G-buffer attachments from color attachment to shader read layout
+	 * @tparam Derived The derived renderer type
+	 * @param cmdBuffer Command buffer to record transitions into
+	 */
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::PrepareLightingAttachments(const VkCommandBuffer& cmdBuffer) {
 		// GBuffer attachments VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
@@ -771,6 +878,11 @@ namespace vve {
 		});
 	}
 
+	/**
+	 * @brief Transitions G-buffer attachments from shader read to color attachment layout
+	 * @tparam Derived The derived renderer type
+	 * @param cmdBuffer Command buffer to record transitions into
+	 */
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::ResetLightingAttachments(const VkCommandBuffer& cmdBuffer) {
 		// GBuffer attachments from  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL --> VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
@@ -799,6 +911,12 @@ namespace vve {
 			});
 	}
 
+	/**
+	 * @brief Records rendering commands for all scene objects into the geometry pass
+	 * @tparam Derived The derived renderer type
+	 * @param cmdBuffer Command buffer to record commands into
+	 * @param renderPass Render pass being used
+	 */
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::RecordObjects(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass) {
 		assert(sizeof(PushConstantsMaterial) <= 128);
@@ -870,6 +988,12 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Records rendering commands for the lighting composition pass
+	 * @tparam Derived The derived renderer type
+	 * @param cmdBuffer Command buffer to record commands into
+	 * @param renderPass Render pass being used
+	 */
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::RecordLighting(const VkCommandBuffer& cmdBuffer, const VkRenderPass* renderPass) {
 		assert(sizeof(PushConstantsLight) <= 128);

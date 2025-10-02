@@ -4,6 +4,13 @@
 
 namespace vh {
 
+	/**
+	 * @brief Create a command pool for allocating command buffers from the graphics queue family
+	 * @param surface Vulkan surface for finding queue families
+	 * @param physicalDevice Physical device to query for queue families
+	 * @param device Logical device for creating the command pool
+	 * @param commandPool Output command pool handle
+	 */
 	void ComCreateCommandPool(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandPool& commandPool) {
         QueueFamilyIndices queueFamilyIndices = DevFindQueueFamilies(physicalDevice, surface);
 
@@ -17,6 +24,12 @@ namespace vh {
         }
     }
 
+    /**
+     * @brief Begin recording a single-time command buffer for one-off operations
+     * @param device Logical device for allocating command buffers
+     * @param commandPool Command pool to allocate from
+     * @return Allocated and recording command buffer
+     */
     VkCommandBuffer ComBeginSingleTimeCommands(VkDevice device, VkCommandPool commandPool) {
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
@@ -36,6 +49,14 @@ namespace vh {
         return commandBuffer;
     }
 
+    /**
+     * @brief End recording, submit, and free a single-time command buffer
+     * @param device Logical device for freeing command buffers
+     * @param graphicsQueue Graphics queue for command submission
+     * @param commandPool Command pool the buffer was allocated from
+     * @param commandBuffer Command buffer to end and submit
+     * @return VK_SUCCESS on successful submission
+     */
     VkResult ComEndSingleTimeCommands(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool, VkCommandBuffer commandBuffer) {
         vkEndCommandBuffer(commandBuffer);
 
@@ -51,7 +72,12 @@ namespace vh {
         return VK_SUCCESS;
     }
 
-
+    /**
+     * @brief Allocate command buffers from a command pool
+     * @param device Logical device for allocating command buffers
+     * @param commandPool Command pool to allocate from
+     * @param commandBuffers Vector to store allocated command buffers (resized to 2 if empty)
+     */
     void ComCreateCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers) {
         if(commandBuffers.size() == 0) commandBuffers.resize(2);
 
@@ -66,7 +92,16 @@ namespace vh {
         }
     }
 
-
+	/**
+	 * @brief Begin recording a command buffer and start a render pass with optional clearing
+	 * @param commandBuffer Command buffer to begin recording
+	 * @param imageIndex Swap chain image index to render to
+	 * @param swapChain Swap chain containing framebuffers and extent
+	 * @param renderPass Render pass to begin
+	 * @param clear Whether to clear color and depth attachments
+	 * @param clearColor Color to clear with if clear is true
+	 * @param currentFrame Current frame index
+	 */
 	void ComStartRecordCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, bool clear, glm::vec4 clearColor, uint32_t currentFrame) {
 
@@ -96,7 +131,16 @@ namespace vh {
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
-    // Used for cmdBuf that already is running
+    /**
+     * @brief Start a render pass for a command buffer that is already recording
+     * @param commandBuffer Command buffer currently recording
+     * @param imageIndex Swap chain image index to render to
+     * @param swapChain Swap chain containing framebuffers and extent
+     * @param renderPass Render pass to begin
+     * @param clear Whether to clear color and depth attachments
+     * @param clearColor Color to clear with if clear is true
+     * @param currentFrame Current frame index
+     */
     void ComStartRecordCommandBuffer2(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, bool clear, glm::vec4 clearColor, uint32_t currentFrame) {
 
@@ -119,7 +163,16 @@ namespace vh {
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
-    // Used by deferred renderer
+    /**
+     * @brief Begin recording a command buffer for deferred rendering with custom clear values
+     * @param commandBuffer Command buffer to begin recording
+     * @param imageIndex Swap chain image index to render to
+     * @param swapChain Swap chain containing extent information
+     * @param gBufferFramebuffers Vector of G-buffer framebuffers
+     * @param renderPass Render pass to begin
+     * @param clearValues Vector of clear values for all attachments
+     * @param currentFrame Current frame index
+     */
     void ComStartRecordCommandBufferClearValue(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, std::vector<VkFramebuffer>& gBufferFramebuffers, VkRenderPass renderPass, const std::vector<VkClearValue>& clearValues, uint32_t currentFrame) {
 
@@ -145,6 +198,19 @@ namespace vh {
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     }
 
+	/**
+	 * @brief Bind a graphics pipeline and set dynamic state (viewport, scissor, blend constants, push constants)
+	 * @param commandBuffer Command buffer to record commands to
+	 * @param imageIndex Swap chain image index (unused)
+	 * @param swapChain Swap chain for default viewport and scissor dimensions
+	 * @param renderPass Render pass (unused)
+	 * @param graphicsPipeline Pipeline to bind
+	 * @param viewPorts Vector of viewports (uses default if empty)
+	 * @param scissors Vector of scissor rectangles (uses default if empty)
+	 * @param blendConstants Blend constant values
+	 * @param pushConstants Vector of push constant data to upload
+	 * @param currentFrame Current frame index (unused)
+	 */
 	void ComBindPipeline(VkCommandBuffer commandBuffer, uint32_t imageIndex
         , SwapChain& swapChain, VkRenderPass renderPass, Pipeline& graphicsPipeline
         , std::vector<VkViewport> viewPorts, std::vector<VkRect2D> scissors
@@ -177,6 +243,10 @@ namespace vh {
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.m_pipeline);
 	}
 
+	/**
+	 * @brief End a render pass and finish recording a command buffer
+	 * @param commandBuffer Command buffer to end
+	 */
     void ComEndRecordCommandBuffer(VkCommandBuffer commandBuffer) {
         vkCmdEndRenderPass(commandBuffer);
         if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS) {
@@ -184,7 +254,16 @@ namespace vh {
         }
     }
 
-    void ComRecordObject(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline, 
+    /**
+     * @brief Record draw commands for a mesh object with vertex buffers, index buffer, and descriptor sets
+     * @param commandBuffer Command buffer to record commands to
+     * @param graphicsPipeline Pipeline to use for binding descriptor sets
+     * @param descriptorSets Vector of descriptor sets to bind
+     * @param type Vertex attribute type identifier for offset calculation
+     * @param mesh Mesh containing vertex and index buffers
+     * @param currentFrame Current frame index for descriptor set selection
+     */
+    void ComRecordObject(VkCommandBuffer commandBuffer, Pipeline& graphicsPipeline,
 			const std::vector<DescriptorSet>&& descriptorSets, std::string type, Mesh& mesh, uint32_t currentFrame) {
 
         auto offsets = mesh.m_verticesData.getOffsets(type);
@@ -201,10 +280,21 @@ namespace vh {
         vkCmdDrawIndexed(commandBuffer, static_cast<uint32_t>(mesh.m_indices.size()), 1, 0, 0, 0);
 	}
 
-	void ComSubmitCommandBuffers(VkDevice device, VkQueue graphicsQueue, std::vector<VkCommandBuffer>& commandBuffers, 
-		std::vector<VkSemaphore>& imageAvailableSemaphores, 
-		std::vector<VkSemaphore>& renderFinishedSemaphores, 
-        std::vector<Semaphores>& intermediateSemaphores, 
+	/**
+	 * @brief Submit multiple command buffers with semaphore synchronization for multi-pass rendering
+	 * @param device Logical device for fence operations
+	 * @param graphicsQueue Graphics queue to submit command buffers to
+	 * @param commandBuffers Vector of command buffers to submit
+	 * @param imageAvailableSemaphores Semaphores signaling image availability
+	 * @param renderFinishedSemaphores Semaphores signaling render completion
+	 * @param intermediateSemaphores Intermediate semaphores for synchronizing between passes
+	 * @param fences Fences for CPU-GPU synchronization
+	 * @param currentFrame Current frame index
+	 */
+	void ComSubmitCommandBuffers(VkDevice device, VkQueue graphicsQueue, std::vector<VkCommandBuffer>& commandBuffers,
+		std::vector<VkSemaphore>& imageAvailableSemaphores,
+		std::vector<VkSemaphore>& renderFinishedSemaphores,
+        std::vector<Semaphores>& intermediateSemaphores,
 		std::vector<VkFence>& fences, uint32_t currentFrame) {
 
 		size_t size = commandBuffers.size();
@@ -243,6 +333,14 @@ namespace vh {
 	    }
 	}
 
+	/**
+	 * @brief Present a rendered swap chain image to the screen
+	 * @param presentQueue Present queue for image presentation
+	 * @param swapChain Swap chain containing the image to present
+	 * @param imageIndex Index of the swap chain image to present
+	 * @param signalSemaphore Semaphore to wait on before presenting
+	 * @return Result of the present operation (VK_SUCCESS or error code)
+	 */
 	VkResult ComPresentImage(VkQueue presentQueue, SwapChain swapChain, uint32_t& imageIndex, VkSemaphore& signalSemaphore) {
         VkPresentInfoKHR presentInfo{};
         presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;

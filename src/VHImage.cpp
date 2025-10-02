@@ -2,8 +2,21 @@
 
 namespace vh {
 
-    void ImgCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, 
-        VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int texWidth, int texHeight, 
+    /**
+     * @brief Create a texture image from pixel data and upload it to GPU memory
+     * @param physicalDevice Physical device for image creation
+     * @param device Logical device for creating image and buffers
+     * @param vmaAllocator VMA allocator for memory management
+     * @param graphicsQueue Graphics queue for command submission
+     * @param commandPool Command pool for allocating command buffers
+     * @param pixels Pointer to pixel data in host memory
+     * @param texWidth Width of the texture in pixels
+     * @param texHeight Height of the texture in pixels
+     * @param imageSize Size of the pixel data in bytes
+     * @param texture Output texture object with image and allocation
+     */
+    void ImgCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator,
+        VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int texWidth, int texHeight,
         size_t imageSize, vh::Map& texture) {
 
         VkBuffer stagingBuffer;
@@ -33,11 +46,22 @@ namespace vh {
         BufDestroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
     }
 
+    /**
+     * @brief Create an image view for a texture to enable shader access
+     * @param device Logical device for creating the image view
+     * @param texture Texture object to create image view for
+     */
     void ImgCreateTextureImageView(VkDevice device, Map& texture) {
       texture.m_mapImageView = ImgCreateImageView(device, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
                                       , VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
+    /**
+     * @brief Create a texture sampler with anisotropic filtering for texture sampling
+     * @param physicalDevice Physical device for querying device properties
+     * @param device Logical device for creating the sampler
+     * @param texture Texture object to create sampler for
+     */
     void ImgCreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Map &texture) {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -62,10 +86,28 @@ namespace vh {
         }
     }
 
+    /**
+     * @brief Create an image view for a Vulkan image with single layer and mip level
+     * @param device Logical device for creating the image view
+     * @param image Vulkan image to create view for
+     * @param format Image format
+     * @param aspectFlags Image aspect flags (color, depth, or stencil)
+     * @return Created image view handle
+     */
     VkImageView ImgCreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
         return ImgCreateImageView2(device, image, format, aspectFlags, 1, 1);
     }
 
+    /**
+     * @brief Create an image view for a Vulkan image with specified layers and mip levels
+     * @param device Logical device for creating the image view
+     * @param image Vulkan image to create view for
+     * @param format Image format
+     * @param aspectFlags Image aspect flags (color, depth, or stencil)
+     * @param layers Number of array layers to include in the view
+     * @param mipLevels Number of mipmap levels to include in the view
+     * @return Created image view handle
+     */
     VkImageView ImgCreateImageView2(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags,
                     uint32_t layers, uint32_t mipLevels ) {
         VkImageViewCreateInfo viewInfo{};
@@ -87,6 +129,21 @@ namespace vh {
         return imageView;
     }
 
+    /**
+     * @brief Create a 2D Vulkan image with single layer and mip level
+     * @param physicalDevice Physical device for image creation
+     * @param device Logical device for creating the image
+     * @param vmaAllocator VMA allocator for memory management
+     * @param width Image width in pixels
+     * @param height Image height in pixels
+     * @param format Image format
+     * @param tiling Image tiling mode (linear or optimal)
+     * @param usage Image usage flags
+     * @param imageLayout Initial image layout
+     * @param properties Memory property flags
+     * @param image Output image handle
+     * @param imageAllocation Output VMA allocation handle
+     */
     void ImgCreateImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator, uint32_t width, uint32_t height
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageLayout imageLayout
         , VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation) {
@@ -97,6 +154,24 @@ namespace vh {
                     image, imageAllocation);
     }
 
+    /**
+     * @brief Create a Vulkan image with specified depth, layers, and mip levels
+     * @param physicalDevice Physical device for image creation
+     * @param device Logical device for creating the image
+     * @param vmaAllocator VMA allocator for memory management
+     * @param width Image width in pixels
+     * @param height Image height in pixels
+     * @param depth Image depth (typically 1 for 2D images)
+     * @param layers Number of array layers
+     * @param mipLevels Number of mipmap levels
+     * @param format Image format
+     * @param tiling Image tiling mode (linear or optimal)
+     * @param usage Image usage flags
+     * @param imageLayout Initial image layout
+     * @param properties Memory property flags
+     * @param image Output image handle
+     * @param imageAllocation Output VMA allocation handle
+     */
     void ImgCreateImage2(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , uint32_t width, uint32_t height, uint32_t depth, uint32_t layers, uint32_t mipLevels
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageLayout imageLayout
@@ -124,6 +199,12 @@ namespace vh {
         vmaCreateImage(vmaAllocator, &imageInfo, &allocInfo, &image, &imageAllocation, nullptr);
     }
 
+    /**
+     * @brief Create an image sampler with nearest filtering and clamp-to-edge addressing
+     * @param physicalDevice Physical device for querying device properties
+     * @param device Logical device for creating the sampler
+     * @param sampler Output sampler handle
+     */
     void ImgCreateImageSampler(VkPhysicalDevice physicalDevice, VkDevice device, VkSampler& sampler) {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -148,11 +229,27 @@ namespace vh {
         }
     }
 
+    /**
+     * @brief Destroy a Vulkan image and free its allocated memory
+     * @param device Logical device (unused but kept for API consistency)
+     * @param vmaAllocator VMA allocator used to create the image
+     * @param image Image handle to destroy
+     * @param imageAllocation VMA allocation handle to free
+     */
     void ImgDestroyImage(VkDevice device, VmaAllocator vmaAllocator, VkImage image, VmaAllocation& imageAllocation) {
         vmaDestroyImage(vmaAllocator, image, imageAllocation);
     }
 
-
+    /**
+     * @brief Transition an image from one layout to another using a pipeline barrier
+     * @param device Logical device for command buffer operations
+     * @param graphicsQueue Graphics queue for command submission
+     * @param commandPool Command pool for allocating command buffers
+     * @param image Image to transition
+     * @param format Image format
+     * @param oldLayout Current image layout
+     * @param newLayout Target image layout
+     */
     void ImgTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
             ImgTransitionImageLayout2(device, graphicsQueue, commandPool, image, format
@@ -160,6 +257,19 @@ namespace vh {
                 , oldLayout, newLayout);
     }
 
+    /**
+     * @brief Transition an image layout with specified aspect, mip levels, and layers
+     * @param device Logical device for command buffer operations
+     * @param graphicsQueue Graphics queue for command submission
+     * @param commandPool Command pool for allocating command buffers
+     * @param image Image to transition
+     * @param format Image format
+     * @param aspect Image aspect flags (color, depth, or stencil)
+     * @param numMipLevels Number of mip levels to transition
+     * @param numLayers Number of array layers to transition
+     * @param oldLayout Current image layout
+     * @param newLayout Target image layout
+     */
     void ImgTransitionImageLayout2(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
          , VkImage image, VkFormat format
          , VkImageAspectFlags aspect, int numMipLevels, int numLayers
@@ -279,7 +389,16 @@ namespace vh {
 		return VK_SUCCESS;
 	}
 
-
+	/**
+	 * @brief Swap color channels in image buffer data to reorder RGBA components
+	 * @param bufferData Pointer to image buffer data
+	 * @param r Target index for red channel
+	 * @param g Target index for green channel
+	 * @param b Target index for blue channel
+	 * @param a Target index for alpha channel
+	 * @param width Image width in pixels
+	 * @param height Image height in pixels
+	 */
 	void ImgSwapChannels(unsigned char *bufferData, int r, int g, int b, int a, int width, int height) {
 		for (uint32_t i = 0; i < width * height; i++)
 		{
@@ -294,8 +413,13 @@ namespace vh {
 			bufferData[4 * i + a] = ac;
 		}
 	}
-    
 
+	/**
+	 * @brief Select a suitable depth map format from candidates based on device support
+	 * @param physicalDevice Physical device to query for format support
+	 * @param depthFormats Vector of candidate depth formats to check
+	 * @param depthMapFormat Output parameter for selected depth format
+	 */
     void ImgPickDepthMapFormat( VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& depthFormats, VkFormat& depthMapFormat ) {
         for( auto format : depthFormats ) {
             VkFormatProperties properties;

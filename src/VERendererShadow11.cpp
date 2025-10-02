@@ -5,6 +5,12 @@
 
 namespace vve {
 
+	/**
+	 * @brief Constructor for shadow renderer, registers engine callbacks for shadow map rendering
+	 * @param systemName Name of the renderer system
+	 * @param engine Engine instance to register with
+	 * @param windowName Name of the window for rendering
+	 */
 	RendererShadow11::RendererShadow11(const std::string& systemName, Engine& engine, const std::string& windowName ) : Renderer(systemName, engine, windowName ) {
 
 		engine.RegisterCallbacks( { 
@@ -17,8 +23,16 @@ namespace vve {
 		} );
 	};
 
+	/**
+	 * @brief Destructor for shadow renderer
+	 */
 	RendererShadow11::~RendererShadow11(){};
 
+	/**
+	 * @brief Initialize shadow renderer with render pass, pipelines, and resources
+	 * @param message Initialization message
+	 * @return True on successful initialization
+	 */
 	bool RendererShadow11::OnInit(const Message& message) {
 		Renderer::OnInit(message);
 
@@ -132,6 +146,9 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Create a dummy cube array image view for shadow mapping initialization
+	 */
 	void RendererShadow11::SetDummyCubeArrayView() {
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		shadowImage().m_cubeArrayView = vvh::ImgCreateImageView({
@@ -145,6 +162,9 @@ namespace vve {
 			});
 	}
 
+	/**
+	 * @brief Create a dummy 2D array image view for shadow mapping initialization
+	 */
 	void RendererShadow11::SetDummy2DArrayView() {
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		shadowImage().m_2DArrayView = vvh::ImgCreateImageView({
@@ -159,7 +179,9 @@ namespace vve {
 			});
 	}
 
-
+	/**
+	 * @brief Create shadow map images and framebuffers for all light sources
+	 */
 	void RendererShadow11::CreateShadowMap() {	
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 
@@ -290,6 +312,11 @@ namespace vve {
 		return n*shadowsPerLight;
 	}
 
+	/**
+	 * @brief Prepare and render shadow maps for the next frame
+	 * @param message Frame preparation message
+	 * @return False to continue processing
+	 */
 	bool RendererShadow11::OnPrepareNextFrame(const Message& message) {
 		if (m_state != State::STATE_NEW || !m_engine.IsShadowEnabled()) return false;
 		m_state = State::STATE_PREPARED;
@@ -306,13 +333,22 @@ namespace vve {
 		return false;
 	}
 
-	// Currently unused and called in OnPrepareNextFrame
+	/**
+	 * @brief Record shadow rendering commands (currently unused, called in OnPrepareNextFrame)
+	 * @param message Frame recording message
+	 * @return False to continue processing
+	 */
 	bool RendererShadow11::OnRecordNextFrame(const Message& message) {
 		RenderShadowMap();
 
 		return false;
 	}
 
+	/**
+	 * @brief Handle object creation by allocating shadow descriptor sets
+	 * @param message Object creation message containing object handle
+	 * @return False to continue processing
+	 */
 	bool RendererShadow11::OnObjectCreate(Message& message) {
 		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		if (m_registry.template Has<DirectionalLight>(oHandle)) return false;	// Object without mesh, e.g. direct light
@@ -335,6 +371,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Handle object destruction by freeing shadow descriptor sets
+	 * @param message Object destruction message containing object handle
+	 * @return False to continue processing
+	 */
 	bool RendererShadow11::OnObjectDestroy(Message& message) {
 		const auto& msg = message.template GetData<MsgObjectDestroy>();
 		const auto& oHandle = msg.m_handle();
@@ -349,6 +390,11 @@ namespace vve {
 		return false;
 	}
 
+	/**
+	 * @brief Clean up shadow renderer resources on application quit
+	 * @param message Quit message
+	 * @return False to continue processing
+	 */
 	bool RendererShadow11::OnQuit(const Message& message) {
         vkDeviceWaitIdle(m_vkState().m_device);
 
@@ -376,6 +422,9 @@ namespace vve {
 		return false;
     }
 
+	/**
+	 * @brief Destroy shadow map images, views, and framebuffers
+	 */
 	void RendererShadow11::DestroyShadowMap() {
 		auto shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 
@@ -396,6 +445,9 @@ namespace vve {
 		vkDestroyImageView(m_vkState().m_device, shadowImage().m_2DArrayView, nullptr);
 	}
 
+	/**
+	 * @brief Render shadow maps for all light sources into layered depth textures
+	 */
 	void RendererShadow11::RenderShadowMap() {
 		if (m_state != State::STATE_PREPARED || !m_engine.IsShadowEnabled()) return;
 		m_state = State::STATE_RECORDED;
@@ -461,6 +513,13 @@ namespace vve {
 		m_engine.SendMsg(MsgShadowMapRecreated{});
 	}
 
+	/**
+	 * @brief Render shadow maps for point lights (6 faces per light for cube mapping)
+	 * @param cmdBuffer Command buffer to record rendering commands
+	 * @param layer Starting layer index in shadow map array
+	 * @param near Near plane distance for shadow projection
+	 * @param far Far plane distance for shadow projection
+	 */
 	void RendererShadow11::RenderPointLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
 		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		float aspect = 1.0f;	// width / height
@@ -504,6 +563,13 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Render shadow maps for directional lights using orthographic projection
+	 * @param cmdBuffer Command buffer to record rendering commands
+	 * @param layer Starting layer index in shadow map array
+	 * @param near Near plane distance for shadow projection
+	 * @param far Far plane distance for shadow projection
+	 */
 	void RendererShadow11::RenderDirectLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
 		ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		static constexpr glm::vec3 up = glm::vec3(0.0f, 0.0f, 1.0f);
@@ -537,6 +603,13 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Render shadow maps for spot lights using perspective projection
+	 * @param cmdBuffer Command buffer to record rendering commands
+	 * @param layer Starting layer index in shadow map array
+	 * @param near Near plane distance for shadow projection
+	 * @param far Far plane distance for shadow projection
+	 */
 	void RendererShadow11::RenderSpotLightShadow(const VkCommandBuffer& cmdBuffer, uint32_t& layer, const float& near, const float& far) {
 		ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 		float aspect = 1.0f;	// width / height
@@ -568,6 +641,11 @@ namespace vve {
 		}
 	}
 
+	/**
+	 * @brief Render object positions to shadow map layer for depth testing
+	 * @param cmdBuffer Command buffer to record rendering commands
+	 * @param layer Shadow map layer to render to (incremented after rendering)
+	 */
 	void RendererShadow11::RenderObjectPosition(const VkCommandBuffer& cmdBuffer, uint32_t& layer) {
 		const ShadowImage& shadowImage = m_registry.template Get<ShadowImage&>(m_shadowImageHandle);
 

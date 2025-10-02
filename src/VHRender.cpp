@@ -4,7 +4,14 @@
 
 namespace vh {
 
-
+    /**
+     * @brief Create a Vulkan render pass with color and depth attachments
+     * @param physicalDevice Physical device for finding depth format
+     * @param device Logical device for creating the render pass
+     * @param swapChain Swap chain containing image format and extent
+     * @param clear Whether to clear attachments at the start of the render pass
+     * @param renderPass Output render pass handle
+     */
     void RenCreateRenderPass(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass) {
         VkAttachmentDescription colorAttachment{};
         colorAttachment.format = swapChain.m_swapChainImageFormat;
@@ -74,6 +81,14 @@ namespace vh {
         }
     }
 
+    /**
+     * @brief Create a Vulkan render pass for geometry buffer (G-buffer) rendering with multiple color attachments
+     * @param physicalDevice Physical device for finding depth format
+     * @param device Logical device for creating the render pass
+     * @param swapChain Swap chain containing image format and extent
+     * @param clear Whether to clear attachments at the start of the render pass
+     * @param renderPass Output render pass handle for G-buffer (position, normals, albedo, depth)
+     */
     void RenCreateRenderPassGeometry(VkPhysicalDevice physicalDevice, VkDevice device, SwapChain& swapChain, bool clear, VkRenderPass& renderPass) {
         std::array<VkAttachmentDescription, 4> attachments{};
         // Position
@@ -146,6 +161,12 @@ namespace vh {
         }
     }
 
+    /**
+     * @brief Create a Vulkan descriptor set layout from binding descriptions
+     * @param device Logical device for creating the descriptor set layout
+     * @param bind Vector of descriptor set layout bindings to configure
+     * @param descriptorSetLayouts Output descriptor set layout handle
+     */
     void RenCreateDescriptorSetLayout(VkDevice device, const std::vector<VkDescriptorSetLayoutBinding>& bind, VkDescriptorSetLayout& descriptorSetLayouts) {
 		uint32_t i = 0;
 		std::vector<VkDescriptorSetLayoutBinding> bindings = bind;
@@ -166,6 +187,12 @@ namespace vh {
         }
     }
 
+    /**
+     * @brief Create a Vulkan shader module from compiled SPIR-V bytecode
+     * @param device Logical device for creating the shader module
+     * @param code Vector containing SPIR-V shader bytecode
+     * @return Created shader module handle
+     */
     VkShaderModule RenCreateShaderModule(VkDevice device, const std::vector<char>& code) {
         VkShaderModuleCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -180,11 +207,26 @@ namespace vh {
         return shaderModule;
     }
 
-    void RenCreateGraphicsPipeline(VkDevice device, VkRenderPass renderPass, 
+    /**
+     * @brief Create a Vulkan graphics pipeline with shaders, vertex input, and rendering state
+     * @param device Logical device for creating the pipeline
+     * @param renderPass Render pass the pipeline will be used with
+     * @param vertShaderPath Path to vertex shader SPIR-V file
+     * @param fragShaderPath Path to fragment shader SPIR-V file (empty for vertex-only pipeline)
+     * @param bindingDescription Vertex input binding descriptions
+     * @param attributeDescriptions Vertex input attribute descriptions
+     * @param descriptorSetLayouts Descriptor set layouts for pipeline resources
+     * @param specializationConstants Specialization constants for shader compilation
+     * @param pushConstantRanges Push constant ranges for dynamic data
+     * @param blendAttachments Color blend attachment states
+     * @param graphicsPipeline Output pipeline object with pipeline and layout handles
+     * @param depthWrite Whether to enable depth testing and writing
+     */
+    void RenCreateGraphicsPipeline(VkDevice device, VkRenderPass renderPass,
 			std::string vertShaderPath, std::string fragShaderPath,
-			std::vector<VkVertexInputBindingDescription> bindingDescription, 
+			std::vector<VkVertexInputBindingDescription> bindingDescription,
 			std::vector<VkVertexInputAttributeDescription> attributeDescriptions,
-			std::vector<VkDescriptorSetLayout> descriptorSetLayouts, 
+			std::vector<VkDescriptorSetLayout> descriptorSetLayouts,
 			std::vector<int32_t> specializationConstants,
             std::vector<VkPushConstantRange> pushConstantRanges,
             std::vector<VkPipelineColorBlendAttachmentState> blendAttachments,
@@ -335,6 +377,13 @@ namespace vh {
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
     }
 
+    /**
+     * @brief Create framebuffers for each swap chain image with color and depth attachments
+     * @param device Logical device for creating framebuffers
+     * @param swapChain Swap chain containing image views and extent
+     * @param depthImage Depth image for depth attachment
+     * @param renderPass Render pass the framebuffers will be used with
+     */
     void RenCreateFramebuffers(VkDevice device, SwapChain& swapChain, DepthImage& depthImage, VkRenderPass renderPass) {
         swapChain.m_swapChainFramebuffers.resize(swapChain.m_swapChainImageViews.size());
 
@@ -359,7 +408,16 @@ namespace vh {
         }
     }
 
-    void RenCreateGBufferFrameBuffers(VkDevice device, SwapChain& swapChain, std::array<GBufferImage, 3>& gBufferAttachs, 
+    /**
+     * @brief Create framebuffers for G-buffer deferred rendering with multiple color attachments
+     * @param device Logical device for creating framebuffers
+     * @param swapChain Swap chain containing extent information
+     * @param gBufferAttachs Array of G-buffer images (position, normals, albedo)
+     * @param m_gBufferFramebuffers Output vector of created framebuffers
+     * @param depthImage Depth image for depth attachment
+     * @param renderPass Render pass the framebuffers will be used with
+     */
+    void RenCreateGBufferFrameBuffers(VkDevice device, SwapChain& swapChain, std::array<GBufferImage, 3>& gBufferAttachs,
         std::vector<VkFramebuffer>& m_gBufferFramebuffers, DepthImage& depthImage, VkRenderPass renderPass) {
 
         m_gBufferFramebuffers.resize(swapChain.m_swapChainImageViews.size());
@@ -387,6 +445,12 @@ namespace vh {
         }
     }
 
+    /**
+     * @brief Create a Vulkan descriptor pool for allocating descriptor sets
+     * @param device Logical device for creating the descriptor pool
+     * @param sizes Maximum number of descriptor sets and per-type descriptors to allocate
+     * @param descriptorPool Output descriptor pool handle
+     */
     void RenCreateDescriptorPool(VkDevice device, uint32_t sizes, VkDescriptorPool& descriptorPool) {
 
 		std::vector<VkDescriptorPoolSize> pool_sizes;
@@ -414,8 +478,14 @@ namespace vh {
         }
     }
 
-
-    void RenCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout& descriptorSetLayouts, 
+    /**
+     * @brief Allocate descriptor sets from a descriptor pool for each frame in flight
+     * @param device Logical device for allocating descriptor sets
+     * @param descriptorSetLayouts Descriptor set layout to use for allocation
+     * @param descriptorPool Descriptor pool to allocate from
+     * @param descriptorSet Output descriptor set object with per-frame descriptor sets
+     */
+    void RenCreateDescriptorSet(VkDevice device, VkDescriptorSetLayout& descriptorSetLayouts,
 		VkDescriptorPool descriptorPool, DescriptorSet& descriptorSet) {
 
 		descriptorSet.m_descriptorSetPerFrameInFlight.resize(MAX_FRAMES_IN_FLIGHT);
@@ -430,8 +500,16 @@ namespace vh {
         }
     }
 
-
-    void RenUpdateDescriptorSet(VkDevice device, Buffer& uniformBuffers, size_t binding, VkDescriptorType type, 
+    /**
+     * @brief Update descriptor sets with uniform buffer bindings for all frames in flight
+     * @param device Logical device for updating descriptor sets
+     * @param uniformBuffers Buffer object containing per-frame uniform buffers
+     * @param binding Binding index in the descriptor set
+     * @param type Descriptor type (e.g., uniform buffer, storage buffer)
+     * @param size Size of the buffer range to bind
+     * @param descriptorSet Descriptor set object to update
+     */
+    void RenUpdateDescriptorSet(VkDevice device, Buffer& uniformBuffers, size_t binding, VkDescriptorType type,
             size_t size, DescriptorSet& descriptorSet) {
 
 		size_t i = 0;
@@ -455,6 +533,13 @@ namespace vh {
 		}
     }
 
+    /**
+     * @brief Update descriptor sets with texture sampler bindings for all frames in flight
+     * @param device Logical device for updating descriptor sets
+     * @param texture Map object containing texture image view and sampler
+     * @param binding Binding index in the descriptor set
+     * @param descriptorSet Descriptor set object to update
+     */
     void RenUpdateDescriptorSetTexture(VkDevice device, Map& texture, size_t binding, DescriptorSet& descriptorSet) {
 
 		size_t i = 0;
@@ -479,6 +564,13 @@ namespace vh {
 		}
     }
 
+    /**
+     * @brief Update descriptor sets with G-buffer attachment image bindings for all frames in flight
+     * @param device Logical device for updating descriptor sets
+     * @param gbufferImage G-buffer image containing image view and sampler
+     * @param binding Binding index in the descriptor set
+     * @param descriptorSet Descriptor set object to update
+     */
     void RenUpdateDescriptorSetGBufferAttachment(VkDevice device, GBufferImage& gbufferImage, size_t binding, DescriptorSet& descriptorSet) {
         size_t i = 0;
         for (auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight) {
@@ -503,6 +595,14 @@ namespace vh {
         }
     }
 
+    /**
+     * @brief Create depth buffer resources with optimal format and memory allocation
+     * @param physicalDevice Physical device for finding supported depth format
+     * @param device Logical device for creating image and image view
+     * @param vmaAllocator VMA allocator for memory management
+     * @param swapChain Swap chain containing extent for depth buffer size
+     * @param depthImage Output depth image object with image, allocation, and view
+     */
     void RenCreateDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , SwapChain& swapChain, DepthImage& depthImage) {
         VkFormat depthFormat = RenFindDepthFormat(physicalDevice);
@@ -516,6 +616,16 @@ namespace vh {
         depthImage.m_depthImageView = ImgCreateImageView(device, depthImage.m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
     }
 
+    /**
+     * @brief Create G-buffer attachment resources for deferred rendering
+     * @param physicalDevice Physical device for image creation
+     * @param device Logical device for creating image and image view
+     * @param vmaAllocator VMA allocator for memory management
+     * @param swapChain Swap chain containing extent for G-buffer size
+     * @param gbufferImage Output G-buffer image object with image, allocation, view, and sampler
+     * @param format Image format for the G-buffer attachment
+     * @param sampler Sampler to use for sampling the G-buffer attachment
+     */
     void RenCreateGBufferResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , SwapChain& swapChain, GBufferImage& gbufferImage, VkFormat format, VkSampler sampler) {
         gbufferImage.m_gbufferFormat = format;
@@ -529,6 +639,14 @@ namespace vh {
         gbufferImage.m_gbufferImageView = ImgCreateImageView(device, gbufferImage.m_gbufferImage, format, VK_IMAGE_ASPECT_COLOR_BIT);
     }
 
+    /**
+     * @brief Find a supported image format from a list of candidates with required features
+     * @param physicalDevice Physical device to query for format support
+     * @param candidates Vector of candidate formats to check
+     * @param tiling Required image tiling mode (linear or optimal)
+     * @param features Required format feature flags
+     * @return First supported format from candidates, or throws if none found
+     */
     VkFormat RenFindSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates
         , VkImageTiling tiling, VkFormatFeatureFlags features) {
 
@@ -546,6 +664,11 @@ namespace vh {
         throw std::runtime_error("failed to find supported format!");
     }
 
+    /**
+     * @brief Find a supported depth buffer format for the physical device
+     * @param physicalDevice Physical device to query for depth format support
+     * @return Supported depth format (32-bit float, 32-bit float + stencil, or 24-bit + stencil)
+     */
     VkFormat RenFindDepthFormat(VkPhysicalDevice physicalDevice) {
         return RenFindSupportedFormat(physicalDevice, 
             {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
@@ -554,6 +677,11 @@ namespace vh {
         );
     }
 
+    /**
+     * @brief Check if a depth format includes a stencil component
+     * @param format Depth format to check
+     * @return True if format includes stencil component, false otherwise
+     */
     bool RenHasStencilComponent(VkFormat format) {
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
