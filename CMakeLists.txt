@@ -49,7 +49,7 @@ elseif (UNIX AND NOT APPLE)
 	set(VULKAN_LIB lib)
 endif()
 
-include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE})
+#include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE})
 include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/volk)
 include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/vma)
 link_directories(${VULKAN_SDK}/lib)
@@ -161,6 +161,10 @@ FetchContent_Declare(vkbootstrap
                      GIT_TAG main)
 FetchContent_MakeAvailable(vkbootstrap)
 include_directories(${vkbootstrap_SOURCE_DIR}/src)
+
+#----- Let VULKAN SDK come last (might also contain a conflicting SDL3) ---------------#
+
+include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE})
 
 #--------------------------------- Summary ---------------------------------#
 
