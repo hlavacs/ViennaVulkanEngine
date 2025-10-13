@@ -38,22 +38,6 @@ include_directories(${INCLUDE})
 find_package(Vulkan REQUIRED)
 set(VULKAN_SDK $ENV{VULKAN_SDK})
 
-if (WIN32)
-	set(VULKAN_INCLUDE Include)
-	set(VULKAN_LIB Lib)
-elseif (APPLE)
-	set(VULKAN_INCLUDE include)
-    set(VULKAN_LIB lib)
-elseif (UNIX AND NOT APPLE)
-	set(VULKAN_INCLUDE include)
-	set(VULKAN_LIB lib)
-endif()
-
-#include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE})
-include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/volk)
-include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/vma)
-link_directories(${VULKAN_SDK}/lib)
-
 # Fetch GitHub projects and set variables for include directories
 include(FetchContent) # enable Fetch Content
 
@@ -164,7 +148,21 @@ include_directories(${vkbootstrap_SOURCE_DIR}/src)
 
 #----- Let VULKAN SDK come last (might also contain a conflicting SDL3) ---------------#
 
+if (WIN32)
+	set(VULKAN_INCLUDE Include)
+	set(VULKAN_LIB Lib)
+elseif (APPLE)
+	set(VULKAN_INCLUDE include)
+    set(VULKAN_LIB lib)
+elseif (UNIX AND NOT APPLE)
+	set(VULKAN_INCLUDE include)
+	set(VULKAN_LIB lib)
+endif()
+
 include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE})
+include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/volk)
+include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/vma)
+link_directories(${VULKAN_SDK}/lib)
 
 #--------------------------------- Summary ---------------------------------#
 
