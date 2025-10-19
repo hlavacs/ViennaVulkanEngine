@@ -132,13 +132,26 @@ private:
 			}
 		}
 
+		// -----------------  Moving point light on scene load -----------------
+		manageMovingPointLight();
+
 		return false;
 	};
 
 	bool OnUpdate(Message& message) {
 		auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
+		pos().z = 1.0f;
 		if (!sponza_active) {
 			pos().z = 1.5f;
+		}
+		
+		// this moves the m_testHandle point light as long as point lights are not modified, this is just for light move testing
+		if (m_registry.Exists(m_testHandle) && m_testHandle.IsValid()){
+			auto pos = m_registry.Get<vve::Position&>(m_testHandle);
+			static int sign = 1;
+			if (pos().x > 10.0f || pos().x < 5.0f) sign *= -1;
+			pos().x += 0.001f * sign;
+			m_registry.Put<vve::Position&>(m_testHandle, pos);
 		}
 
 		return false;
@@ -165,6 +178,24 @@ private:
 		}
 
 		ImGui::Text("Currently active Point Lights: %d", activePointLights);
+		ImGui::Separator();
+
+		// Spot Light UI
+		ImGui::Text("Select moving Point Light setting:");
+		static constexpr const char* pOptions[] = { "Off", "On" };
+		static int activePIdx = 0;
+		for (int i = 0; i < 2; ++i) {
+			if (ImGui::Button(pOptions[i])) {
+				activePIdx = i;
+				managePointLights(0); // deletes all point lights
+				if (i == 1) manageMovingPointLight();
+			}
+			ImGui::SameLine();
+		}
+		ImGui::NewLine();
+
+		ImGui::Text("Active: %s", pOptions[activePIdx]);
+
 		ImGui::Separator();
 
 		// Spot Light UI
@@ -196,6 +227,32 @@ private:
 		ImGui::End();
 
 		return false;
+	}
+
+	void manageMovingPointLight() {
+		// -----------------  Moving point light on scene load -----------------
+
+		glm::vec3 pointLightPosition(5.0f, 1.8f, 2.5f);
+		glm::vec3 pointLightColor(0.97f, 0.71f, 0.184f);
+		float intensity = 0.6f;
+
+		vvh::Color sphereColor{ { 0.0f, 0.0f, 0.0f, 1.0f }, { 1.0f, 0.0f, 0.0f, 1.0f }, { 0.0f, 0.0f, 0.0f, 1.0f } };
+		m_testHandle = m_registry.Insert(
+			vve::Name{ "PointLight-test" },
+			vve::PointLight{ vvh::LightParams{
+				.color = pointLightColor,
+				.params = glm::vec4(1.0f, intensity, 10.0f, 0.01f),
+				.attenuation = glm::vec3(1.0f, 0.09f, 0.032f),
+			} },
+			vve::Position{ pointLightPosition },
+			vve::Rotation{ mat3_t{glm::rotate(glm::mat4(1.0f), glm::radians(-70.0f), glm::vec3(1.0f, 0.0f, 0.0f))} },
+			vve::Scale{ vec3_t{0.01f, 0.01f, 0.01f} },
+			vve::LocalToParentMatrix{ mat4_t{1.0f} },
+			vve::LocalToWorldMatrix{ mat4_t{1.0f} },
+			sphereColor,
+			vve::MeshName{ "assets/standard/sphere.obj/sphere" }
+			);
+		m_engine.SendMsg(MsgObjectCreate{ vve::ObjectHandle(m_testHandle), vve::ParentHandle{}, this });
 	}
 
 	void managePointLights(const uint16_t& lightCount) {
@@ -278,6 +335,7 @@ private:
 private:
 	vecs::Handle m_cameraHandle{};
 	vecs::Handle m_cameraNodeHandle{};
+	vecs::Handle m_testHandle{};
 
 	inline static const std::string plane_obj	{ "assets/test/plane/plane_t_n_s.obj" };
 	inline static const std::string plane_mesh	{ "assets/test/plane/plane_t_n_s.obj/plane" };
