@@ -67,6 +67,7 @@ namespace vve
 		bool OnRecordNextFrame(const Message& message);
 		bool OnObjectCreate(Message& message);
 		bool OnObjectDestroy(Message& message);
+		bool OnObjectChanged(Message& message);
 		bool OnQuit(const Message& message);
 
 		template<typename T>

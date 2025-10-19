@@ -25,6 +25,7 @@ namespace vve {
 			{this,  1500, "WINDOW_SIZE",		 [this](Message& message) { return OnWindowSize(message); }},
 			{this, 	   0, "QUIT",				 [this](Message& message) { return OnQuit(message); } },
 			{this,  1900, "SHADOW_MAP_RECREATED",[this](Message& message) { return OnShadowMapRecreated(message); } },
+			{this,  1800, "OBJECT_CHANGED",		 [this](Message& message) { return OnObjectChanged(message); } },
 			});
 	}
 
@@ -503,6 +504,25 @@ namespace vve {
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnShadowMapRecreated(const Message& message) {
 		UpdateShadowResources();
+		return false;
+	}
+
+	template<typename Derived>
+	bool RendererDeferredCommon<Derived>::OnObjectChanged(Message& message) {
+		const auto& msg = message.template GetData<MsgObjectChanged>();
+		const auto& oHandle = msg.m_object();
+
+		static std::array<bool, MAX_FRAMES_IN_FLIGHT> dirty;
+		dirty.fill(true);
+		m_registry.Put(oHandle, Dirty{ dirty });
+
+
+		if (m_registry.template Has<PointLight>(oHandle) ||
+			m_registry.template Has<DirectionalLight>(oHandle) ||
+			m_registry.template Has<SpotLight>(oHandle)) {
+			// Object is a light, update m_storageBuffersLights in OnPrepareNextFrame!
+			m_lightsChanged = true;
+		}
 		return false;
 	}
 

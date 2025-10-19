@@ -19,6 +19,7 @@ namespace vve {
 			//{this,  1990, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,  1700, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
+			{this,  1800, "OBJECT_CHANGED",		 [this](Message& message) { return OnObjectChanged(message); } },
 			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
 		} );
 	};
@@ -388,6 +389,17 @@ namespace vve {
 		}
 
 		m_state = State::STATE_NEW;
+		return false;
+	}
+
+	bool RendererShadow11::OnObjectChanged(Message& message) {
+		const auto& msg = message.template GetData<MsgObjectChanged>();
+		const auto& oHandle = msg.m_object();
+
+		if (m_registry.template Get<Name&>(oHandle)().find("Camera") == std::string::npos) {
+			m_state = State::STATE_NEW;
+		}
+
 		return false;
 	}
 
