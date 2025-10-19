@@ -135,7 +135,7 @@ namespace vve {
 			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAP_DIMENSION),
 			.maxImageArrayLayers = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers, SHADOW_MAX_NUM_LAYERS)
 		};
-		std::cout << "MAX IMAGE LAYERS: " << shadowImage.maxImageArrayLayers << "\n";
+		//std::cout << "MAX IMAGE LAYERS: " << shadowImage.maxImageArrayLayers << "\n";
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
 		// TODO: Manage tag better
 		m_registry.AddTags(m_shadowImageHandle, (size_t)1337);
@@ -237,7 +237,7 @@ namespace vve {
 			.m_commandBuffer = VK_NULL_HANDLE
 		});
 
-		std::cout << "\nNumber of shadow layers: " << numTotalLayers << "\n\n";
+		//std::cout << "\nNumber of shadow layers: " << numTotalLayers << "\n\n";
 
 		// TODO: shadowImage().shadowImage.m_mapImageView is pointless like that in 1.1!
 
@@ -339,6 +339,7 @@ namespace vve {
 	 * @return False to continue processing
 	 */
 	bool RendererShadow11::OnRecordNextFrame(const Message& message) {
+		// callback not registered currently, renders in onprepare for better frame rate
 		RenderShadowMap();
 
 		return false;
@@ -491,7 +492,7 @@ namespace vve {
 		RenderDirectLightShadow(cmdBuffer, layerIdx, near, far);
 		RenderSpotLightShadow(cmdBuffer, layerIdx, near, far);
 
-		std::cout << "Shadow lsm matrices count: " << shadowImage().m_lightSpaceMatrices.size() << std::endl;
+		//std::cout << "Shadow lsm matrices count: " << shadowImage().m_lightSpaceMatrices.size() << std::endl;
 
 		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
@@ -582,8 +583,8 @@ namespace vve {
 			glm::vec3 lightDir = glm::normalize(glm::vec3{ lToW()[1] });
 			glm::vec3 lightPos = sceneCenter - lightDir * 20.0f;
 
-			std::cout << "DirectLightPos: " << lightPos.x << ", " << lightPos.y << ", " << lightPos.z << std::endl;
-			std::cout << "DirectLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
+			//std::cout << "DirectLightPos: " << lightPos.x << ", " << lightPos.y << ", " << lightPos.z << std::endl;
+			//std::cout << "DirectLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
 
 			glm::mat4 view = glm::lookAt(lightPos, sceneCenter, up);
 			glm::mat4 lightSpaceMatrix = shadowProj * view;
@@ -621,7 +622,7 @@ namespace vve {
 			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
 			glm::vec3 lightDir = glm::vec3{ lToW()[1] };
 
-			std::cout << "SpotLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
+			//std::cout << "SpotLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
 
 			glm::mat4 view = glm::lookAt(lightPos, lightPos + lightDir, up );
 			glm::mat4 lightSpaceMatrix = shadowProj * view;
