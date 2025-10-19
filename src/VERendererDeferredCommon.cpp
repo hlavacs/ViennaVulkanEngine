@@ -234,13 +234,14 @@ namespace vve {
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnPrepareNextFrame(const Message& message) {
 
-		vvh::UniformBufferFrame ubc;
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 
 		if (m_lightsChanged) {
 			m_lightsChanged = false;	
 			UpdateLightStorageBuffer();
 		}
+
+		vvh::UniformBufferFrame ubc;
 		ubc.numLights = m_numberLightsPerType;
 
 		auto [lToW, view, proj] = *m_registry.template GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>().begin();
@@ -250,9 +251,10 @@ namespace vve {
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vkState().m_currentFrame], &ubc, sizeof(ubc));
 
 		for (const auto& pipeline : m_geomPipesPerType) {
-			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers] :
-				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&>({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
+			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, dirty] :
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, Dirty&>({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
 
+				if (!dirty()[m_vkState().m_currentFrame]) continue;
 				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 				bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
 				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
@@ -280,6 +282,7 @@ namespace vve {
 					uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
 					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
 				}
+				dirty()[m_vkState().m_currentFrame] = false;
 			}
 		}
 

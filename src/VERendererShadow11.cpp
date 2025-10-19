@@ -325,16 +325,16 @@ namespace vve {
 		if (now - m_lastUpdate >= minInterval) {
 			m_lastUpdate = now;
 
-		m_state = State::STATE_PREPARED;
+			m_state = State::STATE_PREPARED;
 
-		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
-	
-		CreateShadowMap();
+			vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 
-		// This function renders already in onPREPARE because it results in better performance
-		// when shadows have to be re-rendered.
-		// In case this wants to be moved back into onRECORD, the rest of this function can be moved.
-		RenderShadowMap();
+			CreateShadowMap();
+
+			// This function renders already in onPREPARE because it results in better performance
+			// when shadows have to be re-rendered.
+			// In case this wants to be moved back into onRECORD, the rest of this function can be moved.
+			RenderShadowMap();
 		}
 			
 		return false;
