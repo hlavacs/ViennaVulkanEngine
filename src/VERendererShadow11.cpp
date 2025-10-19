@@ -320,6 +320,11 @@ namespace vve {
 	 */
 	bool RendererShadow11::OnPrepareNextFrame(const Message& message) {
 		if (m_state != State::STATE_NEW || !m_engine.IsShadowEnabled()) return false;
+
+		auto now = Clock::now();
+		if (now - m_lastUpdate >= minInterval) {
+			m_lastUpdate = now;
+
 		m_state = State::STATE_PREPARED;
 
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
@@ -330,6 +335,7 @@ namespace vve {
 		// when shadows have to be re-rendered.
 		// In case this wants to be moved back into onRECORD, the rest of this function can be moved.
 		RenderShadowMap();
+		}
 			
 		return false;
 	}
