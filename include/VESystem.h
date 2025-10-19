@@ -51,7 +51,8 @@ namespace vve {
         "DELETED", //React to something being deleted
         "LAST", //
 		//---------------------
-		"SHADOW_MAP_RECREATED"
+		"SHADOW_MAP_RECREATED",
+		"OBJECT_CHANGED"
     };
 
 
@@ -146,6 +147,8 @@ namespace vve {
 
 		/** @brief Message for shadow map recreation */
 		struct MsgShadowMapRecreated : public MsgBase { MsgShadowMapRecreated(); };
+		/** @brief Message for light tranformation notification */
+		struct MsgObjectChanged : public MsgBase { MsgObjectChanged(ObjectHandle object); ObjectHandle m_object{}; };
 
 		//------------------------------------------------------------------------------------------------
 
