@@ -67,6 +67,7 @@ namespace vve
 		bool OnRecordNextFrame(const Message& message);
 		bool OnObjectCreate(Message& message);
 		bool OnObjectDestroy(Message& message);
+		bool OnObjectChanged(Message& message);
 		bool OnQuit(const Message& message);
 
 		template<typename T>
@@ -103,6 +104,11 @@ namespace vve
 		static constexpr std::array<VkClearValue, 1> m_clearValue = { { VkClearValue{.depthStencil = {1.0f, 0}}} };
 
 		DummyImage m_dummyImage;
+
+		// minInterval is the minimum intervall in which the shadowmap recreates
+		static constexpr std::chrono::milliseconds minInterval = std::chrono::milliseconds(30);
+		using Clock = std::chrono::steady_clock;
+		Clock::time_point m_lastUpdate = Clock::now();
 	};
 
 };   // namespace vve

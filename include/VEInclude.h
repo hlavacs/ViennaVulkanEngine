@@ -142,6 +142,8 @@ namespace vve {
 	using DirectionalLight = vsty::strong_type_t<vvh::LightParams, vsty::counter<>>;
 	using SpotLight = vsty::strong_type_t<vvh::LightParams, vsty::counter<>>;
 
+	using Dirty = vsty::strong_type_t<std::array<bool, MAX_FRAMES_IN_FLIGHT>, vsty::counter<>>;
+
 }
 
 #include "VESystem.h"

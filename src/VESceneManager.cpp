@@ -130,15 +130,22 @@ namespace vve {
     bool SceneManager::OnUpdate(Message message) {
 		auto children = m_registry.template Get<Children&>(m_rootHandle);
 
-		auto update = [](auto& registry, mat4_t& parentToWorld, vecs::Handle& handle, auto& self) -> void {
-			auto [name, p, r, s, LtoP, LtoW] = registry.template Get<Name, Position&, Rotation&, Scale&, LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
-			LtoP() = glm::translate(mat4_t{1.0f}, p()) * mat4_t(r()) * glm::scale(mat4_t{1.0f}, s());
-			LtoW() = parentToWorld * LtoP();
+		auto update = [](auto& registry, mat4_t& parentToWorld, vecs::Handle& handle, auto& self, auto& engine) -> void {
+			auto [name, p, r, s, LtoP, LtoW] = registry.template Get<Name&, Position&, Rotation&, Scale&, LocalToParentMatrix&, LocalToWorldMatrix&>(handle);
+
+			auto temp1 = glm::translate(mat4_t{1.0f}, p()) * mat4_t(r()) * glm::scale(mat4_t{1.0f}, s());
+			if (LtoP() != temp1) [[unlikely]] LtoP() = std::move(temp1);
+			auto temp = parentToWorld * LtoP();
+			if (temp != LtoW()) [[unlikely]] {
+				LtoW() = std::move(temp);
+
+				engine.SendMsg(MsgObjectChanged{ ObjectHandle{handle} });
+			}
+			else return;
 			//std::cout << "Handle: " << handle << " Name: " << name() << " Position: " << p().x << ", " << p().y << ", " << p().z << std::endl;
 
 			if( registry.template Has<Camera>(handle) ) {
 				auto [name, camera] = registry.template Get<Name&, Camera&>(handle);
-				auto cam = camera();
 				registry.Put(handle, ViewMatrix{glm::inverse(LtoW())});
 				registry.Put(handle, ProjectionMatrix{camera().Matrix()});
 				//std::cout << "Camera: " << name() << " R: " << camera.m_aspect << std::endl;
@@ -146,14 +153,14 @@ namespace vve {
 
 			if( registry.template Has<Children&>(handle) ) {
 				auto children = registry.template Get<Children&>(handle);
-				for( auto child : children() ) {
-					self(registry, LtoW(), child, self);
+				for( auto& child : children() ) {
+					self(registry, LtoW(), child, self, engine);
 				}
 			}
 		};
 
-		for( auto child : children() ) {
-			update(m_registry, LocalToWorldMatrix{mat4_t{1.0f}}, child, update);
+		for( auto& child : children() ) {
+			update(m_registry, LocalToWorldMatrix{mat4_t{1.0f}}, child, update, m_engine);
 		}
 		return false;
 	}

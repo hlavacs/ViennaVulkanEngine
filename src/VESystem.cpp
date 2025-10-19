@@ -49,6 +49,7 @@ namespace vve {
 	//------------------------------------------------------------------------
 
     System::MsgShadowMapRecreated::MsgShadowMapRecreated() : MsgBase{ "SHADOW_MAP_RECREATED" } {}
+    System::MsgObjectChanged::MsgObjectChanged(ObjectHandle object) : MsgBase{ "OBJECT_CHANGED" }, m_object{ object } {}
 
     //------------------------------------------------------------------------
 

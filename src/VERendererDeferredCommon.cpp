@@ -25,6 +25,7 @@ namespace vve {
 			{this,  1500, "WINDOW_SIZE",		 [this](Message& message) { return OnWindowSize(message); }},
 			{this, 	   0, "QUIT",				 [this](Message& message) { return OnQuit(message); } },
 			{this,  1900, "SHADOW_MAP_RECREATED",[this](Message& message) { return OnShadowMapRecreated(message); } },
+			{this,  1800, "OBJECT_CHANGED",		 [this](Message& message) { return OnObjectChanged(message); } },
 			});
 	}
 
@@ -233,13 +234,14 @@ namespace vve {
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnPrepareNextFrame(const Message& message) {
 
-		vvh::UniformBufferFrame ubc;
 		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
 
 		if (m_lightsChanged) {
 			m_lightsChanged = false;	
 			UpdateLightStorageBuffer();
 		}
+
+		vvh::UniformBufferFrame ubc;
 		ubc.numLights = m_numberLightsPerType;
 
 		auto [lToW, view, proj] = *m_registry.template GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>().begin();
@@ -249,9 +251,10 @@ namespace vve {
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vkState().m_currentFrame], &ubc, sizeof(ubc));
 
 		for (const auto& pipeline : m_geomPipesPerType) {
-			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers] :
-				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&>({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
+			for (auto [oHandle, name, ghandle, LtoW, uniformBuffers, dirty] :
+				m_registry.template GetView<vecs::Handle, Name, MeshHandle, LocalToWorldMatrix&, vvh::Buffer&, Dirty&>({ (size_t)pipeline.second.m_graphicsPipeline.m_pipeline })) {
 
+				if (!dirty()[m_vkState().m_currentFrame]) continue;
 				bool hasTexture = m_registry.template Has<TextureHandle>(oHandle);
 				bool hasColor = m_registry.template Has<vvh::Color>(oHandle);
 				bool hasVertexColor = pipeline.second.m_type.find("C") != std::string::npos;
@@ -279,6 +282,7 @@ namespace vve {
 					uboColor.modelInverseTranspose = glm::inverse(glm::transpose(uboColor.model));
 					memcpy(uniformBuffers().m_uniformBuffersMapped[m_vkState().m_currentFrame], &uboColor, sizeof(uboColor));
 				}
+				dirty()[m_vkState().m_currentFrame] = false;
 			}
 		}
 
@@ -440,6 +444,10 @@ namespace vve {
 		DestroyDeferredResources();
 		CreateDeferredResources();
 
+		auto [handle, camera, LtoW] = *m_registry.GetView<vecs::Handle, vve::Camera&, LocalToWorldMatrix&>().begin();
+		m_registry.Put(handle, ViewMatrix{ glm::inverse(LtoW()) });
+		m_registry.Put(handle, ProjectionMatrix{ camera().Matrix() });
+
 		static_cast<Derived*>(this)->OnWindowSize();
 
 		return false;
@@ -503,6 +511,25 @@ namespace vve {
 	template<typename Derived>
 	bool RendererDeferredCommon<Derived>::OnShadowMapRecreated(const Message& message) {
 		UpdateShadowResources();
+		return false;
+	}
+
+	template<typename Derived>
+	bool RendererDeferredCommon<Derived>::OnObjectChanged(Message& message) {
+		const auto& msg = message.template GetData<MsgObjectChanged>();
+		const auto& oHandle = msg.m_object();
+
+		static std::array<bool, MAX_FRAMES_IN_FLIGHT> dirty;
+		dirty.fill(true);
+		m_registry.Put(oHandle, Dirty{ dirty });
+
+
+		if (m_registry.template Has<PointLight>(oHandle) ||
+			m_registry.template Has<DirectionalLight>(oHandle) ||
+			m_registry.template Has<SpotLight>(oHandle)) {
+			// Object is a light, update m_storageBuffersLights in OnPrepareNextFrame!
+			m_lightsChanged = true;
+		}
 		return false;
 	}
 

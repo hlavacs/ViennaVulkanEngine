@@ -50,6 +50,7 @@ namespace vve {
 		bool OnWindowSize(const Message& message);
 		bool OnQuit(const Message& message);
 		bool OnShadowMapRecreated(const Message& message);
+		bool OnObjectChanged(Message& message);
 
 		void CreateDeferredResources();
 		void DestroyDeferredResources();

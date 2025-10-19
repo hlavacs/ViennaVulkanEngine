@@ -19,6 +19,7 @@ namespace vve {
 			//{this,  1990, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRecordNextFrame(message);} },
 			{this,  1700, "OBJECT_CREATE",		[this](Message& message) { return OnObjectCreate(message); } },
 			{this, 10000, "OBJECT_DESTROY",		[this](Message& message) { return OnObjectDestroy(message); } },
+			{this,  1800, "OBJECT_CHANGED",		 [this](Message& message) { return OnObjectChanged(message); } },
 			{this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
 		} );
 	};
@@ -135,7 +136,7 @@ namespace vve {
 			.maxImageDimension2D = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageDimension2D, SHADOW_MAP_DIMENSION),
 			.maxImageArrayLayers = std::min(m_vkState().m_physicalDeviceProperties.limits.maxImageArrayLayers, SHADOW_MAX_NUM_LAYERS)
 		};
-		std::cout << "MAX IMAGE LAYERS: " << shadowImage.maxImageArrayLayers << "\n";
+		//std::cout << "MAX IMAGE LAYERS: " << shadowImage.maxImageArrayLayers << "\n";
 		m_shadowImageHandle = m_registry.Insert(shadowImage);
 		// TODO: Manage tag better
 		m_registry.AddTags(m_shadowImageHandle, (size_t)1337);
@@ -237,7 +238,7 @@ namespace vve {
 			.m_commandBuffer = VK_NULL_HANDLE
 		});
 
-		std::cout << "\nNumber of shadow layers: " << numTotalLayers << "\n\n";
+		//std::cout << "\nNumber of shadow layers: " << numTotalLayers << "\n\n";
 
 		// TODO: shadowImage().shadowImage.m_mapImageView is pointless like that in 1.1!
 
@@ -319,16 +320,22 @@ namespace vve {
 	 */
 	bool RendererShadow11::OnPrepareNextFrame(const Message& message) {
 		if (m_state != State::STATE_NEW || !m_engine.IsShadowEnabled()) return false;
-		m_state = State::STATE_PREPARED;
 
-		vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
-	
-		CreateShadowMap();
+		auto now = Clock::now();
+		if (now - m_lastUpdate >= minInterval) {
+			m_lastUpdate = now;
 
-		// This function renders already in onPREPARE because it results in better performance
-		// when shadows have to be re-rendered.
-		// In case this wants to be moved back into onRECORD, the rest of this function can be moved.
-		RenderShadowMap();
+			m_state = State::STATE_PREPARED;
+
+			vkResetCommandPool(m_vkState().m_device, m_commandPools[m_vkState().m_currentFrame], 0);
+
+			CreateShadowMap();
+
+			// This function renders already in onPREPARE because it results in better performance
+			// when shadows have to be re-rendered.
+			// In case this wants to be moved back into onRECORD, the rest of this function can be moved.
+			RenderShadowMap();
+		}
 			
 		return false;
 	}
@@ -339,6 +346,7 @@ namespace vve {
 	 * @return False to continue processing
 	 */
 	bool RendererShadow11::OnRecordNextFrame(const Message& message) {
+		// callback not registered currently, renders in onprepare for better frame rate
 		RenderShadowMap();
 
 		return false;
@@ -387,6 +395,17 @@ namespace vve {
 		}
 
 		m_state = State::STATE_NEW;
+		return false;
+	}
+
+	bool RendererShadow11::OnObjectChanged(Message& message) {
+		const auto& msg = message.template GetData<MsgObjectChanged>();
+		const auto& oHandle = msg.m_object();
+
+		if (m_registry.template Get<Name&>(oHandle)().find("Camera") == std::string::npos) {
+			m_state = State::STATE_NEW;
+		}
+
 		return false;
 	}
 
@@ -491,7 +510,7 @@ namespace vve {
 		RenderDirectLightShadow(cmdBuffer, layerIdx, near, far);
 		RenderSpotLightShadow(cmdBuffer, layerIdx, near, far);
 
-		std::cout << "Shadow lsm matrices count: " << shadowImage().m_lightSpaceMatrices.size() << std::endl;
+		//std::cout << "Shadow lsm matrices count: " << shadowImage().m_lightSpaceMatrices.size() << std::endl;
 
 		// Depth image VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL --> VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
 		vvh::ImgTransitionImageLayout3({
@@ -582,8 +601,8 @@ namespace vve {
 			glm::vec3 lightDir = glm::normalize(glm::vec3{ lToW()[1] });
 			glm::vec3 lightPos = sceneCenter - lightDir * 20.0f;
 
-			std::cout << "DirectLightPos: " << lightPos.x << ", " << lightPos.y << ", " << lightPos.z << std::endl;
-			std::cout << "DirectLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
+			//std::cout << "DirectLightPos: " << lightPos.x << ", " << lightPos.y << ", " << lightPos.z << std::endl;
+			//std::cout << "DirectLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
 
 			glm::mat4 view = glm::lookAt(lightPos, sceneCenter, up);
 			glm::mat4 lightSpaceMatrix = shadowProj * view;
@@ -621,7 +640,7 @@ namespace vve {
 			glm::vec3 lightPos = glm::vec3{ lToW()[3] };
 			glm::vec3 lightDir = glm::vec3{ lToW()[1] };
 
-			std::cout << "SpotLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
+			//std::cout << "SpotLightDir: " << lightDir.x << ", " << lightDir.y << ", " << lightDir.z << std::endl;
 
 			glm::mat4 view = glm::lookAt(lightPos, lightPos + lightDir, up );
 			glm::mat4 lightSpaceMatrix = shadowProj * view;
