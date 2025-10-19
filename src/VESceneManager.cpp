@@ -146,7 +146,6 @@ namespace vve {
 
 			if( registry.template Has<Camera>(handle) ) {
 				auto [name, camera] = registry.template Get<Name&, Camera&>(handle);
-				auto& cam = camera();
 				registry.Put(handle, ViewMatrix{glm::inverse(LtoW())});
 				registry.Put(handle, ProjectionMatrix{camera().Matrix()});
 				//std::cout << "Camera: " << name() << " R: " << camera.m_aspect << std::endl;

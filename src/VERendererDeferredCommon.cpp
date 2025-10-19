@@ -444,6 +444,10 @@ namespace vve {
 		DestroyDeferredResources();
 		CreateDeferredResources();
 
+		auto [handle, camera, LtoW] = *m_registry.GetView<vecs::Handle, vve::Camera&, LocalToWorldMatrix&>().begin();
+		m_registry.Put(handle, ViewMatrix{ glm::inverse(LtoW()) });
+		m_registry.Put(handle, ProjectionMatrix{ camera().Matrix() });
+
 		static_cast<Derived*>(this)->OnWindowSize();
 
 		return false;
