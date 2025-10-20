@@ -14,6 +14,8 @@ class MyGame : public vve::System {
 
 	std::default_random_engine rnd_gen{ 12345 };					//Random numbers
 	std::uniform_real_distribution<> rnd_unif{ 0.0f, 1.0f };		//Random numbers
+	glmmat3 C = glmmat3{{1,0,0},{0,0,-1},{0,1,0}};
+	glmmat3 CTrans = glm::transpose(C);
 
     public:
         MyGame( vve::Engine& engine ) : vve::System("MyGame", engine ) {
@@ -46,12 +48,10 @@ class MyGame : public vve::System {
             auto model = vpe::VPEWorld::Body::computeModel(pos, orient, body->m_scale);
 	        vecs::Handle node = vecs::Handle(reinterpret_cast<size_t>(body->m_owner));		// Owner is a handle to a scene node
 
-            pos = glmvec3{pos.x, pos.z, pos.y};
-            glmmat3 rot = toMat3(orient);
-            rot = glmmat3{rot[0], -rot[1], -rot[2]};
-            rot = glmmat3( glm::rotate(glmmat4(rot), -3.14152f / 2.0f, glmvec3{1,0,0}) );
+            pos = CTrans * pos; //to go from physics to render, positions and vectors must be multiplied by CTrans
+            glmmat3 rot = C * toMat3(orient) * CTrans; //rotations R transform to C * R * CTrans
 
-            std::cout << rot[0] << ' ' << rot[1] << ' ' << rot[2] << std::endl;
+			//std::cout << rot[0] << ' ' << rot[1] << ' ' << rot[2] << std::endl;
 
             m_registry.Put(node, vve::Position(pos), vve::Rotation(rot));
         };
@@ -120,8 +120,6 @@ class MyGame : public vve::System {
 		        auto [pc, rc, sc, LtoPc] = m_registry.template Get<vve::Position&, vve::Rotation&, vve::Scale&, vve::LocalToParentMatrix>(m_cameraHandle);	
 				
                 glmvec3 dir{vec3_t{ LtoPn() * LtoPc() * vec4_t{0.0f, 0.0f, -1.0f, 0.0f} }};
-                dir = {dir.x, dir.z, dir.y};
-
                 glmvec3 vel = (30.0_real + 5.0_real * (real)rnd_unif(rnd_gen)) * dir / glm::length(dir);
 				glmvec3 scale{ 1,1,1 }; // = rnd_unif(rnd_gen) * 10;
 				float angle = (real)rnd_unif(rnd_gen) * 10 * 3 * (real)M_PI / 180.0_real;
@@ -141,10 +139,10 @@ class MyGame : public vve::System {
                     reinterpret_cast<void*>(handleCube.GetValue()), 
                     & m_physics.g_cube, 
                     scale, 
-                    glmvec3{pn().x,pn().z,pn().y} + 2.0_real * dir, 
-                    glm::rotate(glm::mat4{1.0f}, 0.0f, glm::normalize(glmvec3{0,1,0})), //angle, orient
-                    glmvec3{0.0f}, //vel, 
-                    glmvec3{0.0f}, //vrot, 
+                    glmmat3{C} * pn(), //to go from render to physics, positions and vectors must be multiplied by C
+                    glmmat4{CTrans} * glm::rotate(glm::mat4{1.0f}, angle, glm::normalize(orient)) * glmmat4{C}, //rotations R transform to CTrans * R * C
+                    C * vel, //direction is same as vector
+                    C * vrot,  //is a vector
                     1.0_real / 100.0_real, 
                     m_physics.m_restitution, 
                     m_physics.m_friction);
