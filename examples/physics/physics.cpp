@@ -40,6 +40,13 @@ class MyGame : public vve::System {
             };
         }
 
+		glmvec3 toPhysics(glmvec3 vec) { return C * vec; }
+		glmmat3 toPhysics(glmmat3 mat) { return CTrans * mat * C; }
+		glmmat4 toPhysics(glmmat4 mat) { return glmmat4{CTrans} * mat * glmmat4{C}; }
+		glmvec3 fromPhysics(glmvec3 vec) { return CTrans * vec; }
+		glmmat3 fromPhysics(glmmat3 mat) { return C * mat * CTrans; }
+		glmmat4 fromPhysics(glmmat4 mat) { return glmmat4{C} * mat * glmmat4{CTrans};}
+
         inline static vecs::Registry* m_static_registry{};
         vpe::VPEWorld::callback_move onMove = [&](double dt, std::shared_ptr<vpe::VPEWorld::Body> body) {
             auto pos = body->m_positionW;													// New position of the scene node
@@ -47,13 +54,7 @@ class MyGame : public vve::System {
 	        body->stepPosition(dt, pos, orient, false);										// Extrapolate
             auto model = vpe::VPEWorld::Body::computeModel(pos, orient, body->m_scale);
 	        vecs::Handle node = vecs::Handle(reinterpret_cast<size_t>(body->m_owner));		// Owner is a handle to a scene node
-
-            pos = CTrans * pos; //to go from physics to render, positions and vectors must be multiplied by CTrans
-            glmmat3 rot = C * toMat3(orient) * CTrans; //rotations R transform to C * R * CTrans
-
-			//std::cout << rot[0] << ' ' << rot[1] << ' ' << rot[2] << std::endl;
-
-            m_registry.Put(node, vve::Position(pos), vve::Rotation(rot));
+            m_registry.Put(node, vve::Position(fromPhysics(pos)), vve::Rotation(fromPhysics(toMat3(orient))));
         };
 
         inline static vpe::VPEWorld::callback_erase onErase = [&](std::shared_ptr<vpe::VPEWorld::Body> body) {
@@ -139,10 +140,10 @@ class MyGame : public vve::System {
                     reinterpret_cast<void*>(handleCube.GetValue()), 
                     & m_physics.g_cube, 
                     scale, 
-                    glmmat3{C} * pn(), //to go from render to physics, positions and vectors must be multiplied by C
-                    glmmat4{CTrans} * glm::rotate(glm::mat4{1.0f}, angle, glm::normalize(orient)) * glmmat4{C}, //rotations R transform to CTrans * R * C
-                    C * vel, //direction is same as vector
-                    C * vrot,  //is a vector
+                    toPhysics(pn()), //glmmat3{C} * pn(), //to go from render to physics, positions and vectors must be multiplied by C
+                    toPhysics(glm::rotate(glm::mat4{1.0f}, angle, glm::normalize(orient))), //glmmat4{CTrans} * glm::rotate(glm::mat4{1.0f}, angle, glm::normalize(orient)) * glmmat4{C}, //rotations R transform to CTrans * R * C
+                    toPhysics(vel), //direction is same as vector
+                    toPhysics(vrot),  //is a vector
                     1.0_real / 100.0_real, 
                     m_physics.m_restitution, 
                     m_physics.m_friction);
