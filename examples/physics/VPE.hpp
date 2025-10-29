@@ -24,7 +24,7 @@
 #include <functional>
 
 //This engine uses left handed, Y UP. To align your engine with VPE, use 
-//#define GLM_FORCE_LEFT_HANDED
+//#define GLM_FORCE_LEFT_HANDED before including VPE.hpp
 //If your engine uses right handed, Z up, then do not define this macro. VPE will then automatically swap y and z.
 
 #define GLM_ENABLE_EXPERIMENTAL
@@ -219,25 +219,41 @@ namespace std {
 
 namespace vpe {
 
+
+	#ifndef GLM_FORCE_LEFT_HANDED
+		inline static glmmat3 C = glmmat3{{1,0,0},{0,0,1},{0,1,0}}; 
+	#else
+		inline static glmmat3 C = glmmat3{1.0f};
+	#endif
+		
+	inline static glmmat3 CTrans = glm::transpose(C);
+
+	static constexpr glmvec3 toPhysics(glmvec3 vec) { return C * vec; }
+	static constexpr glmmat3 toPhysics(glmmat3 mat) { return CTrans * mat * C; }
+	static constexpr glmmat4 toPhysics(glmmat4 mat) { return glmmat4{CTrans} * mat * glmmat4{C}; }
+	static constexpr glmvec3 fromPhysics(glmvec3 vec) { return CTrans * vec; }
+	static constexpr glmmat3 fromPhysics(glmmat3 mat) { return C * mat * CTrans; }
+	static constexpr glmmat4 fromPhysics(glmmat4 mat) { return glmmat4{C} * mat * glmmat4{CTrans};}
+
 	/// <summary>
 	/// This class  implements a simple rigid body physics engine.
 	/// </summary>
 	class VPEWorld {
 
 		#ifndef GLM_FORCE_LEFT_HANDED
-			glmmat3 C = glmmat3{{1,0,0},{0,0,1},{0,1,0}}; 
+			inline static glmmat3 C = glmmat3{{1,0,0},{0,0,1},{0,1,0}}; 
 		#else
-			glmmat3 C = glmmat3{1.0f};
+			inline static glmmat3 C = glmmat3{1.0f};
 		#endif
 		
-		glmmat3 CTrans = glm::transpose(C);
+		inline static glmmat3 CTrans = glm::transpose(C);
 
-		glmvec3 toPhysics(glmvec3 vec) { return C * vec; }
-		glmmat3 toPhysics(glmmat3 mat) { return CTrans * mat * C; }
-		glmmat4 toPhysics(glmmat4 mat) { return glmmat4{CTrans} * mat * glmmat4{C}; }
-		glmvec3 fromPhysics(glmvec3 vec) { return CTrans * vec; }
-		glmmat3 fromPhysics(glmmat3 mat) { return C * mat * CTrans; }
-		glmmat4 fromPhysics(glmmat4 mat) { return glmmat4{C} * mat * glmmat4{CTrans};}
+		static constexpr glmvec3 toPhysics(glmvec3 vec) { return C * vec; }
+		static constexpr glmmat3 toPhysics(glmmat3 mat) { return CTrans * mat * C; }
+		static constexpr glmmat4 toPhysics(glmmat4 mat) { return glmmat4{CTrans} * mat * glmmat4{C}; }
+		static constexpr glmvec3 fromPhysics(glmvec3 vec) { return CTrans * vec; }
+		static constexpr glmmat3 fromPhysics(glmmat3 mat) { return C * mat * CTrans; }
+		static constexpr glmmat4 fromPhysics(glmmat4 mat) { return glmmat4{C} * mat * glmmat4{CTrans};}
 
 	public:
 
