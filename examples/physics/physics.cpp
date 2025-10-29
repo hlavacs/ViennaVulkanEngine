@@ -13,7 +13,7 @@ class MyGame : public vve::System {
 
 	std::default_random_engine rnd_gen{ 12345 };					//Random numbers
 	std::uniform_real_distribution<> rnd_unif{ 0.0f, 1.0f };		//Random numbers
-	glmmat3 C = glmmat3{{1,0,0},{0,0,-1},{0,1,0}};
+	glmmat3 C = glmmat3{{1,0,0},{0,0,1},{0,1,0}};
 	glmmat3 CTrans = glm::transpose(C);
 
     public:
