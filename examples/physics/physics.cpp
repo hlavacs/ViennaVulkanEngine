@@ -1,9 +1,8 @@
-
+#define _USE_MATH_DEFINES // for C++
+#include <cmath>
 #include <iostream>
 #include <utility>
 #include <format>
-#define _USE_MATH_DEFINES // for C++
-#include <cmath>
 #include "VHInclude.h"
 #include "VEInclude.h"
 

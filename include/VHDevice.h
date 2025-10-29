@@ -300,7 +300,25 @@ namespace vvh {
 		vulkanFunctions.vkGetDeviceProcAddr = vkGetDeviceProcAddr;
 
 		VmaAllocatorCreateInfo allocatorCreateInfo = {};
-		allocatorCreateInfo.flags = VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+
+		bool supportsMemoryBudget = false;
+		uint32_t extensionCount = 0;
+		if (vkEnumerateDeviceExtensionProperties(info.m_physicalDevice, nullptr, &extensionCount, nullptr) == VK_SUCCESS && extensionCount > 0) {
+			std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+			if (vkEnumerateDeviceExtensionProperties(info.m_physicalDevice, nullptr, &extensionCount, availableExtensions.data()) == VK_SUCCESS) {
+				for (const auto& extension : availableExtensions) {
+					if (strcmp(extension.extensionName, VK_EXT_MEMORY_BUDGET_EXTENSION_NAME) == 0) {
+						supportsMemoryBudget = true;
+						break;
+					}
+				}
+			}
+		}
+
+		if (supportsMemoryBudget) {
+			allocatorCreateInfo.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+		}
+
 		allocatorCreateInfo.vulkanApiVersion = info.m_apiVersion;
 		allocatorCreateInfo.physicalDevice = info.m_physicalDevice;
 		allocatorCreateInfo.device = info.m_device;
@@ -478,8 +496,20 @@ namespace vvh {
 		}
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
-		deviceFeatures.samplerAnisotropy = VK_TRUE;
-		deviceFeatures.imageCubeArray = VK_TRUE;	// TODO: check if needed later
+
+		// Query supported features and only enable what the device actually exposes
+		VkPhysicalDeviceFeatures2 supportedFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+		VkPhysicalDeviceVulkan11Features supportedFeatures11{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
+		supportedFeatures2.pNext = &supportedFeatures11;
+		supportedFeatures11.pNext = nullptr;
+		vkGetPhysicalDeviceFeatures2(info.m_physicalDevice, &supportedFeatures2);
+
+		if (supportedFeatures2.features.samplerAnisotropy) {
+			deviceFeatures.samplerAnisotropy = VK_TRUE;
+		}
+		if (supportedFeatures2.features.imageCubeArray) {
+			deviceFeatures.imageCubeArray = VK_TRUE;	// TODO: check if needed later
+		}
 
 		// Combines all enabled features with pNext
 		VkPhysicalDeviceFeatures2  deviceFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
@@ -487,7 +517,7 @@ namespace vvh {
 
 		// --- 1.1
 		VkPhysicalDeviceVulkan11Features deviceFeatures11{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
-		deviceFeatures11.shaderDrawParameters = VK_TRUE;
+		deviceFeatures11.shaderDrawParameters = supportedFeatures11.shaderDrawParameters;
 
 		// All enabled features
 		deviceFeatures2.pNext = &deviceFeatures11;
@@ -561,8 +591,24 @@ namespace vvh {
 		}
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
-		deviceFeatures.samplerAnisotropy = VK_TRUE;
-		deviceFeatures.imageCubeArray = VK_TRUE;	// TODO: Put into 1.1
+
+		// Query supported features and only enable what the device actually exposes
+		VkPhysicalDeviceFeatures2 supportedFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+		VkPhysicalDeviceVulkan11Features supportedFeatures11{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
+		VkPhysicalDeviceVulkan12Features supportedFeatures12{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
+		VkPhysicalDeviceVulkan13Features supportedFeatures13{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
+		supportedFeatures2.pNext = &supportedFeatures11;
+		supportedFeatures11.pNext = &supportedFeatures12;
+		supportedFeatures12.pNext = &supportedFeatures13;
+		supportedFeatures13.pNext = nullptr;
+		vkGetPhysicalDeviceFeatures2(info.m_physicalDevice, &supportedFeatures2);
+
+		if (supportedFeatures2.features.samplerAnisotropy) {
+			deviceFeatures.samplerAnisotropy = VK_TRUE;
+		}
+		if (supportedFeatures2.features.imageCubeArray) {
+			deviceFeatures.imageCubeArray = VK_TRUE;	// TODO: Put into 1.1
+		}
 
 		// Combines all enabled features with pNext
 		VkPhysicalDeviceFeatures2  deviceFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
@@ -570,7 +616,7 @@ namespace vvh {
 
 		// --- 1.1
 		VkPhysicalDeviceVulkan11Features deviceFeatures11{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
-		deviceFeatures11.shaderDrawParameters = VK_TRUE;
+		deviceFeatures11.shaderDrawParameters = supportedFeatures11.shaderDrawParameters;
 
 		// --- 1.2
 		// TODO: Currently rewritten, might not be needed!
@@ -580,7 +626,7 @@ namespace vvh {
 
 		// --- 1.3
 		VkPhysicalDeviceVulkan13Features deviceFeatures13{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
-		deviceFeatures13.dynamicRendering = VK_TRUE;
+		deviceFeatures13.dynamicRendering = supportedFeatures13.dynamicRendering;
 
 		// All enabled features
 		deviceFeatures2.pNext = &deviceFeatures11;
