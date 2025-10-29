@@ -23,8 +23,11 @@
 #include <map>
 #include <functional>
 
+//This engine uses left handed, Y UP. To align your engine with VPE, use 
+//#define GLM_FORCE_LEFT_HANDED
+//If your engine uses right handed, Z up, then do not define this macro. VPE will then automatically swap y and z.
+
 #define GLM_ENABLE_EXPERIMENTAL
-#define GLM_FORCE_LEFT_HANDED
 #include "glm/glm.hpp"
 #include "glm/gtx/matrix_operation.hpp"
 #include "glm/gtc/quaternion.hpp"
@@ -220,6 +223,21 @@ namespace vpe {
 	/// This class  implements a simple rigid body physics engine.
 	/// </summary>
 	class VPEWorld {
+
+		#ifndef GLM_FORCE_LEFT_HANDED
+			glmmat3 C = glmmat3{{1,0,0},{0,0,1},{0,1,0}}; 
+		#else
+			glmmat3 C = glmmat3{1.0f};
+		#endif
+		
+		glmmat3 CTrans = glm::transpose(C);
+
+		glmvec3 toPhysics(glmvec3 vec) { return C * vec; }
+		glmmat3 toPhysics(glmmat3 mat) { return CTrans * mat * C; }
+		glmmat4 toPhysics(glmmat4 mat) { return glmmat4{CTrans} * mat * glmmat4{C}; }
+		glmvec3 fromPhysics(glmvec3 vec) { return CTrans * vec; }
+		glmmat3 fromPhysics(glmmat3 mat) { return C * mat * CTrans; }
+		glmmat4 fromPhysics(glmmat4 mat) { return glmmat4{C} * mat * glmmat4{CTrans};}
 
 	public:
 
