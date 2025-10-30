@@ -25,7 +25,7 @@
 
 //This engine uses left handed, Y UP. To align your engine with VPE, use 
 //#define GLM_FORCE_LEFT_HANDED before including VPE.hpp
-//If your engine uses right handed, Z up, then do not define this macro. VPE will then automatically swap y and z.
+//If your engine uses right handed, Z up, then do not define this macro and use vpe::toPhysics/vpe::fromPhysics to swap y and z.
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include "glm/glm.hpp"
