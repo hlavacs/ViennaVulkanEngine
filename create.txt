@@ -1,0 +1,12 @@
+
+
+
+
+
+Create a script into file build_manual.cmd that does the same as cmake would do. 
+download all necessary projects into directory build/_deps, compile them using cmake 
+and then compile the main project. 
+let the user choose between release and debug, and between MSVC and MSVC Clang as command line parameters.
+Always show the progress. Compile SDL3, SDL3_mixer, assimp and vkbootstrap with cmake. 
+Compile the main project with the chosen compiler, progressive. Only compile those files that
+need compilation. Compile the main project and also the examples.

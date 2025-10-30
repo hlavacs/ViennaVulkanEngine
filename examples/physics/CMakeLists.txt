@@ -1,5 +1,5 @@
 set(TARGET physics)
-set(SOURCE physics.cpp VPE.cpp)
+set(SOURCE physics.cpp)
 set(HEADERS )
 
 add_executable(${TARGET} ${SOURCE} ${HEADERS})

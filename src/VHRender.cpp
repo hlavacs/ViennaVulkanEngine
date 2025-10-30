@@ -2,7 +2,7 @@
 #include "VHInclude.h"
 
 
-namespace vh {
+namespace vvh {
 
     /**
      * @brief Create a Vulkan render pass with color and depth attachments
@@ -248,7 +248,7 @@ namespace vh {
 		std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
         VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
-        auto vertShaderCode = VulReadFile(vertShaderPath);
+        auto vertShaderCode = ReadFile(vertShaderPath);
         VkShaderModule vertShaderModule = RenCreateShaderModule(device, vertShaderCode);
         vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
         vertShaderStageInfo.stage = VK_SHADER_STAGE_VERTEX_BIT;
@@ -260,7 +260,7 @@ namespace vh {
 		VkShaderModule fragShaderModule{};
 		if( !fragShaderPath.empty() ) {
 	        VkPipelineShaderStageCreateInfo fragShaderStageInfo{};
-	        auto fragShaderCode = VulReadFile(fragShaderPath);
+	        auto fragShaderCode = ReadFile(fragShaderPath);
 	        fragShaderModule = RenCreateShaderModule(device, fragShaderCode);
 	        fragShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 	        fragShaderStageInfo.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -540,7 +540,7 @@ namespace vh {
      * @param binding Binding index in the descriptor set
      * @param descriptorSet Descriptor set object to update
      */
-    void RenUpdateDescriptorSetTexture(VkDevice device, Map& texture, size_t binding, DescriptorSet& descriptorSet) {
+    void RenUpdateDescriptorSetTexture(VkDevice device, Image& texture, size_t binding, DescriptorSet& descriptorSet) {
 
 		size_t i = 0;
 	    for ( auto& ds : descriptorSet.m_descriptorSetPerFrameInFlight ) {
@@ -605,15 +605,30 @@ namespace vh {
      */
     void RenCreateDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator
         , SwapChain& swapChain, DepthImage& depthImage) {
+
         VkFormat depthFormat = RenFindDepthFormat(physicalDevice);
 
-        ImgCreateImage(physicalDevice, device, vmaAllocator, swapChain.m_swapChainExtent.width
-            , swapChain.m_swapChainExtent.height, depthFormat
-            , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-            , VK_IMAGE_LAYOUT_UNDEFINED //  Do NOT CHANGE
-            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, depthImage.m_depthImage, depthImage.m_depthImageAllocation);
+        ImgCreateImage2({
+			.m_physicalDevice = physicalDevice, 
+			.m_device = device, 
+			.m_vmaAllocator = vmaAllocator, 
+			.m_width = swapChain.m_swapChainExtent.width, 
+			.m_height = swapChain.m_swapChainExtent.height, 
+			.m_format = depthFormat, 
+			.m_tiling = VK_IMAGE_TILING_OPTIMAL, 
+			.m_usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 
+			.m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED, //  Do NOT CHANGE
+			.m_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+			.m_image = depthImage.m_depthImage, 
+			.m_imageAllocation = depthImage.m_depthImageAllocation
+		});
             
-        depthImage.m_depthImageView = ImgCreateImageView(device, depthImage.m_depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT);
+        depthImage.m_depthImageView = ImgCreateImageView2( {
+			.m_device = device, 
+			.m_image = depthImage.m_depthImage, 
+			.m_format = depthFormat, 
+			.m_aspects = VK_IMAGE_ASPECT_DEPTH_BIT
+		});
     }
 
     /**
@@ -631,12 +646,27 @@ namespace vh {
         gbufferImage.m_gbufferFormat = format;
         gbufferImage.m_gbufferSampler = sampler;
 
-        ImgCreateImage(physicalDevice, device, vmaAllocator, swapChain.m_swapChainExtent.width
-            , swapChain.m_swapChainExtent.height, format
-            , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT 
-            , VK_IMAGE_LAYOUT_UNDEFINED //  Do NOT CHANGE
-            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, gbufferImage.m_gbufferImage, gbufferImage.m_gbufferImageAllocation);
-        gbufferImage.m_gbufferImageView = ImgCreateImageView(device, gbufferImage.m_gbufferImage, format, VK_IMAGE_ASPECT_COLOR_BIT);
+        ImgCreateImage2( {
+			.m_physicalDevice = physicalDevice, 
+			.m_device = device, 
+			.m_vmaAllocator = vmaAllocator, 
+			.m_width = swapChain.m_swapChainExtent.width, 
+			.m_height = swapChain.m_swapChainExtent.height, 
+			.m_format = format, 
+			.m_tiling = VK_IMAGE_TILING_OPTIMAL, 
+			.m_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 
+			.m_imageLayout = VK_IMAGE_LAYOUT_UNDEFINED, //  Do NOT CHANGE 
+			.m_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+			.m_image = gbufferImage.m_gbufferImage, 
+			.m_imageAllocation = gbufferImage.m_gbufferImageAllocation
+			}
+		);
+        gbufferImage.m_gbufferImageView = ImgCreateImageView2( {
+			.m_device = device, 
+			.m_image = gbufferImage.m_gbufferImage, 
+			.m_format = format, 
+			.m_aspects = VK_IMAGE_ASPECT_COLOR_BIT
+		});
     }
 
     /**
@@ -669,24 +699,24 @@ namespace vh {
      * @param physicalDevice Physical device to query for depth format support
      * @return Supported depth format (32-bit float, 32-bit float + stencil, or 24-bit + stencil)
      */
-    VkFormat RenFindDepthFormat(VkPhysicalDevice physicalDevice) {
-        return RenFindSupportedFormat(physicalDevice, 
-            {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-        );
-    }
+    //VkFormat RenFindDepthFormat(VkPhysicalDevice physicalDevice) {
+    //    return RenFindSupportedFormat(physicalDevice, 
+    //       {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+    //        VK_IMAGE_TILING_OPTIMAL,
+    //        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    //    );
+    //}
 
     /**
      * @brief Check if a depth format includes a stencil component
      * @param format Depth format to check
      * @return True if format includes stencil component, false otherwise
      */
-    bool RenHasStencilComponent(VkFormat format) {
-        return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
-    }
+    //bool RenHasStencilComponent(VkFormat format) {
+    //    return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
+    //}
 
 
-} // namespace vh
+}; // namespace vh
 
 

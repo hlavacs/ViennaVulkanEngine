@@ -2,7 +2,7 @@
 #include "VHInclude.h"
 
 
-namespace vh {
+namespace vvh {
 
 	/**
 	 * @brief Create a command pool for allocating command buffers from the graphics queue family
@@ -12,7 +12,8 @@ namespace vh {
 	 * @param commandPool Output command pool handle
 	 */
 	void ComCreateCommandPool(VkSurfaceKHR surface, VkPhysicalDevice physicalDevice, VkDevice device, VkCommandPool& commandPool) {
-        QueueFamilyIndices queueFamilyIndices = DevFindQueueFamilies(physicalDevice, surface);
+        QueueFamilyIndices queueFamilyIndices = 
+			DevFindQueueFamilies({physicalDevice, surface});
 
         VkCommandPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
@@ -226,13 +227,13 @@ namespace vh {
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
         if(viewPorts.size() == 0) viewPorts.push_back(viewport);
-        vkCmdSetViewport(commandBuffer, 0, viewPorts.size(), viewPorts.data());
+        vkCmdSetViewport(commandBuffer, 0, (uint32_t)viewPorts.size(), viewPorts.data());
   
         VkRect2D scissor{};
         scissor.offset = {0, 0};
         scissor.extent = swapChain.m_swapChainExtent;
         if(scissors.size() == 0) scissors.push_back(scissor);
-        vkCmdSetScissor(commandBuffer, 0, scissors.size(), scissors.data());
+        vkCmdSetScissor(commandBuffer, 0, (int)scissors.size(), scissors.data());
 
         vkCmdSetBlendConstants(commandBuffer, &blendConstants[0]);
 
@@ -299,7 +300,7 @@ namespace vh {
 
 		size_t size = commandBuffers.size();
 		if( size > intermediateSemaphores.size() ) {
-			vh::SynCreateSemaphores(device, imageAvailableSemaphores, renderFinishedSemaphores, size, intermediateSemaphores);
+			SynCreateSemaphores({device, imageAvailableSemaphores, renderFinishedSemaphores, size, intermediateSemaphores});
 		}
 
         vkResetFences(device, 1, &fences[currentFrame]);

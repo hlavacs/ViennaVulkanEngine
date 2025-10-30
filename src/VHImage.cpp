@@ -1,6 +1,6 @@
 #include "VHInclude.h"
 
-namespace vh {
+namespace vvh {
 
     /**
      * @brief Create a texture image from pixel data and upload it to GPU memory
@@ -17,33 +17,70 @@ namespace vh {
      */
     void ImgCreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VmaAllocator vmaAllocator,
         VkQueue graphicsQueue, VkCommandPool commandPool, void* pixels, int texWidth, int texHeight,
-        size_t imageSize, vh::Map& texture) {
+        size_t imageSize, Image& texture) {
 
         VkBuffer stagingBuffer;
         VmaAllocation stagingBufferAllocation;
         VmaAllocationInfo allocInfo;
-        BufCreateBuffer( vmaAllocator, imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-            , VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-            , VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT
-            , stagingBuffer, stagingBufferAllocation, &allocInfo);
+        BufCreateBuffer( {
+			vmaAllocator, 
+			imageSize, 
+			VK_BUFFER_USAGE_TRANSFER_SRC_BIT, 
+			VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 
+			VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT, 
+			stagingBuffer, 
+			stagingBufferAllocation, 
+			&allocInfo
+		});
 
         memcpy(allocInfo.pMappedData, pixels, imageSize);
 
-        ImgCreateImage(physicalDevice, device, vmaAllocator, texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB
-            , VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-            , VK_IMAGE_LAYOUT_UNDEFINED
-            , VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, texture.m_mapImage, texture.m_mapImageAllocation); 
+        ImgCreateImage2({
+			physicalDevice, 
+			device, 
+			vmaAllocator, 
+			(uint32_t)texWidth, 
+			(uint32_t)texHeight, 
+			VK_FORMAT_R8G8B8A8_SRGB, 
+			VK_IMAGE_TILING_OPTIMAL, 
+			VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, 
+			VK_IMAGE_LAYOUT_UNDEFINED, 
+			VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, 
+			texture.m_mapImage, 
+			texture.m_mapImageAllocation
+		}); 
 		
-        ImgTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
-                , VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        ImgTransitionImageLayout2({
+			device, 
+			graphicsQueue, 
+			commandPool, 
+			texture.m_mapImage, 
+			VK_FORMAT_R8G8B8A8_SRGB, 
+			VK_IMAGE_LAYOUT_UNDEFINED, 
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL
+		});
     
-        BufCopyBufferToImage(device, graphicsQueue, commandPool, stagingBuffer, texture.m_mapImage
-                 , static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+        BufCopyBufferToImage({
+			.m_device = device, 
+			.m_graphicsQueue = graphicsQueue, 
+			.m_commandPool = commandPool, 
+			.m_buffer = stagingBuffer, 
+			.m_image = texture.m_mapImage, 
+			.m_width = static_cast<uint32_t>(texWidth), 
+			.m_height = static_cast<uint32_t>(texHeight)
+		});
 
-        ImgTransitionImageLayout(device, graphicsQueue, commandPool, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
-            , VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        ImgTransitionImageLayout2({
+			device, 
+			graphicsQueue, 
+			commandPool, 
+			texture.m_mapImage, 
+			VK_FORMAT_R8G8B8A8_SRGB, 
+			VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 
+			VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+		});
 
-        BufDestroyBuffer(device, vmaAllocator, stagingBuffer, stagingBufferAllocation);
+        BufDestroyBuffer({device, vmaAllocator, stagingBuffer, stagingBufferAllocation});
     }
 
     /**
@@ -51,9 +88,13 @@ namespace vh {
      * @param device Logical device for creating the image view
      * @param texture Texture object to create image view for
      */
-    void ImgCreateTextureImageView(VkDevice device, Map& texture) {
-      texture.m_mapImageView = ImgCreateImageView(device, texture.m_mapImage, VK_FORMAT_R8G8B8A8_SRGB
-                                      , VK_IMAGE_ASPECT_COLOR_BIT);
+    void ImgCreateTextureImageView(VkDevice device, Image& texture) {
+      	texture.m_mapImageView = ImgCreateImageView2({
+			device, 
+			texture.m_mapImage, 
+			VK_FORMAT_R8G8B8A8_SRGB, 
+			VK_IMAGE_ASPECT_COLOR_BIT
+		});
     }
 
     /**
@@ -62,7 +103,7 @@ namespace vh {
      * @param device Logical device for creating the sampler
      * @param texture Texture object to create sampler for
      */
-    void ImgCreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Map &texture) {
+    void ImgCreateTextureSampler(VkPhysicalDevice physicalDevice, VkDevice device, Image &texture) {
         VkPhysicalDeviceProperties properties{};
         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
 
@@ -95,7 +136,7 @@ namespace vh {
      * @return Created image view handle
      */
     VkImageView ImgCreateImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
-        return ImgCreateImageView2(device, image, format, aspectFlags, 1, 1);
+        return ImgCreateImageView({device, image, format, aspectFlags, 1, 1});
     }
 
     /**
@@ -148,10 +189,20 @@ namespace vh {
         , VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageLayout imageLayout
         , VkMemoryPropertyFlags properties, VkImage& image, VmaAllocation& imageAllocation) {
 
-        return ImgCreateImage2(physicalDevice, device, vmaAllocator, 
-                    width, height, 1, 1, 1, 
-                    format, tiling, usage, imageLayout, properties, 
-                    image, imageAllocation);
+        return 	ImgCreateImage({
+					physicalDevice, 
+					device, 
+					vmaAllocator, 
+                    width, height, 
+					1, 1, 1, 
+                    format, 
+					tiling, 
+					usage, 
+					imageLayout, 
+					properties, 
+                    image, 
+					imageAllocation
+				});
     }
 
     /**
@@ -252,9 +303,17 @@ namespace vh {
      */
     void ImgTransitionImageLayout(VkDevice device, VkQueue graphicsQueue, VkCommandPool commandPool
         , VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout) {
-            ImgTransitionImageLayout2(device, graphicsQueue, commandPool, image, format
-                , VK_IMAGE_ASPECT_COLOR_BIT, 1, 1
-                , oldLayout, newLayout);
+            ImgTransitionImageLayout({
+				device, 
+				graphicsQueue, 
+				commandPool, 
+				image, 
+				format, 
+				VK_IMAGE_ASPECT_COLOR_BIT, 
+				1, 1, 
+				oldLayout, 
+				newLayout
+			});
     }
 
     /**
@@ -275,7 +334,7 @@ namespace vh {
          , VkImageAspectFlags aspect, int numMipLevels, int numLayers
          , VkImageLayout oldLayout, VkImageLayout newLayout) {
 
-        VkCommandBuffer commandBuffer = ComBeginSingleTimeCommands(device, commandPool);
+        VkCommandBuffer commandBuffer = ComBeginSingleTimeCommands({device, commandPool});
 
         VkImageMemoryBarrier barrier{};
         barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -334,7 +393,7 @@ namespace vh {
               1, &barrier
         );
 
-        ComEndSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+        ComEndSingleTimeCommands({device, graphicsQueue, commandPool, commandBuffer});
     }
 
 
@@ -364,15 +423,32 @@ namespace vh {
 		VmaAllocation stagingBufferAllocation;
         VmaAllocationInfo allocInfo;
 
-        BufCreateBuffer(allocator, (VkDeviceSize)imageSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
-            VMA_MEMORY_USAGE_CPU_ONLY, VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
-            stagingBuffer, stagingBufferAllocation, &allocInfo);
+        BufCreateBuffer({
+			.m_vmaAllocator = allocator, 
+			.m_size = (VkDeviceSize)imageSize, 
+			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT, 
+            .m_properties = VMA_MEMORY_USAGE_CPU_ONLY, 
+			.m_vmaFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+            .m_buffer = stagingBuffer, 
+			.m_allocation = stagingBufferAllocation, 
+			.m_allocationInfo = &allocInfo
+		});
 
 		ImgTransitionImageLayout(device, graphicsQueue, commandPool, image, format, 
 			//aspect, 1, 1, 
 			layout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
 
-		BufCopyImageToBuffer(device, graphicsQueue, commandPool, image, aspect, stagingBuffer, 1, width, height);
+		BufCopyImageToBuffer2({
+			.m_device = device, 
+			.m_graphicsQueue = graphicsQueue, 
+			.m_commandPool = commandPool, 
+			.m_image = image, 
+			.m_aspectMask = aspect, 
+			.m_buffer = stagingBuffer, 
+			.m_layerCount = 1, 
+			.m_width = width, 
+			.m_height = height
+		});
 
 		ImgTransitionImageLayout(device, graphicsQueue, commandPool, image, format, 
 			//aspect, 1, 1, 
@@ -383,7 +459,15 @@ namespace vh {
 		memcpy(bufferData, data, (size_t)imageSize);
 		vmaUnmapMemory(allocator, stagingBufferAllocation);
 
-		vh::ImgSwapChannels(bufferData, r, g, b, a, width, height);
+		ImgSwapChannels({
+			.m_bufferData = bufferData, 
+			.m_r = r, 
+			.m_g = g, 
+			.m_b = b, 
+			.m_a = a, 
+			.m_width = (int)width, 
+			.m_height = (int)height
+		});
 
 		vmaDestroyBuffer(allocator, stagingBuffer, stagingBufferAllocation);
 		return VK_SUCCESS;

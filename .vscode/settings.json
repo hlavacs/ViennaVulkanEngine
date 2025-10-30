@@ -95,7 +95,8 @@
 		"print": "cpp",
 		"coroutine": "cpp",
 		"cassert": "cpp",
-		"source_location": "cpp"
+		"source_location": "cpp",
+		"future": "cpp"
 	},
 	"C_Cpp.errorSquiggles": "enabled"
 }

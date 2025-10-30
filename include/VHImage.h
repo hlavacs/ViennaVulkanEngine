@@ -610,8 +610,8 @@ namespace vvh {
 		int& m_g;
 		int& m_b;
 		int& m_a;
-		int& m_width;
-		int& m_height;
+		int m_width;
+		int m_height;
 	};
 
 	template<typename T = ImgSwapChannelsInfo>
