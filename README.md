@@ -45,6 +45,13 @@ cmake --build build --config Debug
 build\tests\Debug\testvve.exe
 ```
 
+## Compiling using a CMD Script
+
+The CMD scripts setup and compile under Windows for MSVC, run them from the main project directory. Use a cmake MSVC script to compile using cmake. The build_manual_MSVC.cmd script clones all necessary projects from GitHub and then compiles the engine directly calling cl or clang-cl. It accepts two paramters: debug/release and msvc/clang. E.g.
+```
+build_manual_MSVC.cmd debug msvc
+```
+compiles the debug version using MSVC. 
 
 
 # Installing on MacOS
