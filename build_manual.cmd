@@ -213,11 +213,13 @@ set BUILD_DIR=%ROOT_DIR%build
 set DEPS_DIR=%BUILD_DIR%\_deps
 set LIB_DIR=%BUILD_DIR%\lib\%BUILD_TYPE%
 set EXAMPLES_BASE_DIR=%BUILD_DIR%\examples
+set TESTS_BASE_DIR=%BUILD_DIR%\tests
 
 REM Create directories
 if not exist "%DEPS_DIR%" mkdir "%DEPS_DIR%"
 if not exist "%LIB_DIR%" mkdir "%LIB_DIR%"
 if not exist "%EXAMPLES_BASE_DIR%" mkdir "%EXAMPLES_BASE_DIR%"
+if not exist "%TESTS_BASE_DIR%" mkdir "%TESTS_BASE_DIR%"
 
 echo Build configuration:
 echo   Compiler: %COMPILER_NAME%
@@ -669,6 +671,24 @@ echo.
 echo   All examples compiled successfully
 echo.
 
+REM ----------------------------------------------------------------------------
+REM Compile Tests
+REM ----------------------------------------------------------------------------
+
+echo [5/5] Compiling Tests...
+echo.
+
+set TEST_COUNT=0
+set TEST_TOTAL=1
+
+REM Compile testvve test
+set /a TEST_COUNT+=1
+call :CompileTest "testvve" "%ROOT_DIR%tests\testvve.cpp" "!TEST_COUNT!" %TEST_TOTAL%
+
+echo.
+echo   All tests compiled successfully
+echo.
+
 echo ============================================================================
 echo BUILD COMPLETE
 echo ============================================================================
@@ -681,6 +701,9 @@ echo   - %EXAMPLES_BASE_DIR%\game\%BUILD_TYPE%\game.exe
 echo   - %EXAMPLES_BASE_DIR%\helper\%BUILD_TYPE%\helper.exe
 echo   - %EXAMPLES_BASE_DIR%\physics\%BUILD_TYPE%\physics.exe
 echo   - %EXAMPLES_BASE_DIR%\deferred-demo\%BUILD_TYPE%\deferred-demo.exe
+echo.
+echo Tests (%BUILD_TYPE%):
+echo   - %TESTS_BASE_DIR%\%BUILD_TYPE%\testvve.exe
 echo.
 echo Dependencies built with %COMPILER_NAME%:
 echo   - %DEPS_DIR%\SDL\build\%BUILD_TYPE%\SDL3.lib
@@ -696,6 +719,108 @@ exit /b 0
 REM ============================================================================
 REM Helper Functions
 REM ============================================================================
+
+REM ----------------------------------------------------------------------------
+REM Function to compile and link a test executable
+REM Parameters: %1=executable name, %2=source file, %3=current count, %4=total
+REM ----------------------------------------------------------------------------
+:CompileTest
+setlocal EnableDelayedExpansion
+set TEST_NAME=%~1
+set SOURCE_FILE=%~2
+set CURRENT=%~3
+set TOTAL=%~4
+set TEST_OUTPUT_DIR=%TESTS_BASE_DIR%\%BUILD_TYPE%
+set EXE_FILE=%TEST_OUTPUT_DIR%\%TEST_NAME%.exe
+set TEST_OBJ_DIR=%BUILD_DIR%\obj\tests\%BUILD_TYPE%
+set OBJ_FILE=%TEST_OBJ_DIR%\%TEST_NAME%.obj
+
+REM Create directories for tests
+if not exist "%TEST_OBJ_DIR%" mkdir "%TEST_OBJ_DIR%"
+if not exist "%TEST_OUTPUT_DIR%" mkdir "%TEST_OUTPUT_DIR%"
+
+echo   [%CURRENT%/%TOTAL%] Compiling %TEST_NAME%...
+
+REM Check if we need to recompile
+set NEED_COMPILE=1
+if exist "%OBJ_FILE%" (
+    if exist "%EXE_FILE%" (
+        for %%S in ("%SOURCE_FILE%") do set SOURCE_TIME=%%~tS
+        for %%O in ("%OBJ_FILE%") do set OBJECT_TIME=%%~tO
+        for %%E in ("%EXE_FILE%") do set EXE_TIME=%%~tE
+
+        REM If source hasn't changed and exe exists, skip
+        if "!SOURCE_TIME!" LEQ "!OBJECT_TIME!" (
+            if "!OBJECT_TIME!" LEQ "!EXE_TIME!" (
+                echo      %TEST_NAME%.exe is up to date, skipping
+                set NEED_COMPILE=0
+            )
+        )
+    )
+)
+
+if !NEED_COMPILE!==1 (
+    REM Compile the source file
+    echo      Compiling %TEST_NAME%.cpp...
+    echo.
+    echo      === COMPILE COMMAND ===
+    echo      %CXX_COMPILER% %CXX_FLAGS% %INCLUDE_PATHS% /c "%SOURCE_FILE%" /Fo"%OBJ_FILE%"
+    echo      =======================
+    echo.
+    %CXX_COMPILER% %CXX_FLAGS% %INCLUDE_PATHS% ^
+        /c "%SOURCE_FILE%" ^
+        /Fo"%OBJ_FILE%"
+
+    if !ERRORLEVEL! NEQ 0 (
+        echo ERROR: Failed to compile %TEST_NAME%
+        exit /b 1
+    )
+
+    REM Link the executable
+    echo.
+    echo      Linking %TEST_NAME%.exe...
+    echo.
+    echo      === LINK COMMAND ===
+    if "%BUILD_TYPE%"=="Debug" (
+        set DEBUG_FLAGS=/DEBUG /PDB:"%TEST_OUTPUT_DIR%\%TEST_NAME%.pdb"
+    ) else (
+        set DEBUG_FLAGS=
+    )
+    if defined ZLIB_LIB (
+        echo      link /nologo /OUT:"%EXE_FILE%" "%OBJ_FILE%" %LINK_LIBS% "%ASSIMP_LIB%" "%ZLIB_LIB%" !DEBUG_FLAGS! /SUBSYSTEM:CONSOLE
+    ) else (
+        echo      link /nologo /OUT:"%EXE_FILE%" "%OBJ_FILE%" %LINK_LIBS% "%ASSIMP_LIB%" !DEBUG_FLAGS! /SUBSYSTEM:CONSOLE
+    )
+    echo      ====================
+    echo.
+
+    if defined ZLIB_LIB (
+        link /nologo /OUT:"%EXE_FILE%" ^
+            "%OBJ_FILE%" ^
+            %LINK_LIBS% ^
+            "%ASSIMP_LIB%" ^
+            "%ZLIB_LIB%" ^
+            !DEBUG_FLAGS! ^
+            /SUBSYSTEM:CONSOLE
+    ) else (
+        link /nologo /OUT:"%EXE_FILE%" ^
+            "%OBJ_FILE%" ^
+            %LINK_LIBS% ^
+            "%ASSIMP_LIB%" ^
+            !DEBUG_FLAGS! ^
+            /SUBSYSTEM:CONSOLE
+    )
+
+    if !ERRORLEVEL! NEQ 0 (
+        echo ERROR: Failed to link %TEST_NAME%
+        exit /b 1
+    )
+
+    echo      %TEST_NAME%.exe created successfully
+)
+
+endlocal
+goto :eof
 
 REM ----------------------------------------------------------------------------
 REM Function to compile ImGui file only if source is newer than object
@@ -774,8 +899,8 @@ endlocal
 goto :eof
 
 REM ----------------------------------------------------------------------------
-REM Function to compile and link an example executable
-REM Parameters: %1=executable name, %2=source file, %3=current count, %4=total
+REM Function to compile and link an example/test executable
+REM Parameters: %1=executable name, %2=source file, %3=current count, %4=total, %5=output base dir (optional)
 REM ----------------------------------------------------------------------------
 :CompileExample
 setlocal EnableDelayedExpansion
@@ -783,9 +908,17 @@ set EXAMPLE_NAME=%~1
 set SOURCE_FILE=%~2
 set CURRENT=%~3
 set TOTAL=%~4
-set EXAMPLE_OUTPUT_DIR=%EXAMPLES_BASE_DIR%\%EXAMPLE_NAME%\%BUILD_TYPE%
+set OUTPUT_BASE=%~5
+
+REM Determine output directory based on source file path
+if "%OUTPUT_BASE%"=="" (
+    set EXAMPLE_OUTPUT_DIR=%EXAMPLES_BASE_DIR%\%EXAMPLE_NAME%\%BUILD_TYPE%
+    set EXAMPLE_OBJ_DIR=%BUILD_DIR%\obj\examples\%EXAMPLE_NAME%\%BUILD_TYPE%
+) else (
+    set EXAMPLE_OUTPUT_DIR=%OUTPUT_BASE%\%EXAMPLE_NAME%\%BUILD_TYPE%
+    set EXAMPLE_OBJ_DIR=%BUILD_DIR%\obj\tests\%EXAMPLE_NAME%\%BUILD_TYPE%
+)
 set EXE_FILE=%EXAMPLE_OUTPUT_DIR%\%EXAMPLE_NAME%.exe
-set EXAMPLE_OBJ_DIR=%BUILD_DIR%\obj\examples\%EXAMPLE_NAME%\%BUILD_TYPE%
 set OBJ_FILE=%EXAMPLE_OBJ_DIR%\%EXAMPLE_NAME%.obj
 
 REM Create directories for examples
