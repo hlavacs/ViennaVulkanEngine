@@ -834,10 +834,15 @@ if !NEED_COMPILE!==1 (
     echo      Linking %EXAMPLE_NAME%.exe...
     echo.
     echo      === LINK COMMAND ===
-    if defined ZLIB_LIB (
-        echo      link /nologo /OUT:"%EXE_FILE%" "%OBJ_FILE%" %LINK_LIBS% "%ASSIMP_LIB%" "%ZLIB_LIB%" /SUBSYSTEM:CONSOLE
+    if "%BUILD_TYPE%"=="Debug" (
+        set DEBUG_FLAGS=/DEBUG /PDB:"%EXAMPLE_OUTPUT_DIR%\%EXAMPLE_NAME%.pdb"
     ) else (
-        echo      link /nologo /OUT:"%EXE_FILE%" "%OBJ_FILE%" %LINK_LIBS% "%ASSIMP_LIB%" /SUBSYSTEM:CONSOLE
+        set DEBUG_FLAGS=
+    )
+    if defined ZLIB_LIB (
+        echo      link /nologo /OUT:"%EXE_FILE%" "%OBJ_FILE%" %LINK_LIBS% "%ASSIMP_LIB%" "%ZLIB_LIB%" !DEBUG_FLAGS! /SUBSYSTEM:CONSOLE
+    ) else (
+        echo      link /nologo /OUT:"%EXE_FILE%" "%OBJ_FILE%" %LINK_LIBS% "%ASSIMP_LIB%" !DEBUG_FLAGS! /SUBSYSTEM:CONSOLE
     )
     echo      ====================
     echo.
@@ -848,12 +853,14 @@ if !NEED_COMPILE!==1 (
             %LINK_LIBS% ^
             "%ASSIMP_LIB%" ^
             "%ZLIB_LIB%" ^
+            !DEBUG_FLAGS! ^
             /SUBSYSTEM:CONSOLE
     ) else (
         link /nologo /OUT:"%EXE_FILE%" ^
             "%OBJ_FILE%" ^
             %LINK_LIBS% ^
             "%ASSIMP_LIB%" ^
+            !DEBUG_FLAGS! ^
             /SUBSYSTEM:CONSOLE
     )
 
