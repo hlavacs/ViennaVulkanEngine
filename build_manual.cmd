@@ -211,15 +211,13 @@ REM ----------------------------------------------------------------------------
 set ROOT_DIR=%~dp0
 set BUILD_DIR=%ROOT_DIR%build
 set DEPS_DIR=%BUILD_DIR%\_deps
-set OBJ_DIR=%BUILD_DIR%\obj\%BUILD_TYPE%
-set BIN_DIR=%BUILD_DIR%\bin\%BUILD_TYPE%
 set LIB_DIR=%BUILD_DIR%\lib\%BUILD_TYPE%
+set EXAMPLES_BASE_DIR=%BUILD_DIR%\examples
 
 REM Create directories
 if not exist "%DEPS_DIR%" mkdir "%DEPS_DIR%"
-if not exist "%OBJ_DIR%" mkdir "%OBJ_DIR%"
-if not exist "%BIN_DIR%" mkdir "%BIN_DIR%"
 if not exist "%LIB_DIR%" mkdir "%LIB_DIR%"
+if not exist "%EXAMPLES_BASE_DIR%" mkdir "%EXAMPLES_BASE_DIR%"
 
 echo Build configuration:
 echo   Compiler: %COMPILER_NAME%
@@ -516,7 +514,7 @@ REM Compile ImGui (with incremental compilation)
 REM ----------------------------------------------------------------------------
 
 echo [1/2] Compiling ImGui...
-set IMGUI_OBJ_DIR=%OBJ_DIR%\imgui
+set IMGUI_OBJ_DIR=%BUILD_DIR%\obj\imgui\%BUILD_TYPE%
 if not exist "%IMGUI_OBJ_DIR%" mkdir "%IMGUI_OBJ_DIR%"
 
 set IMGUI_FILES=imgui imgui_demo imgui_draw imgui_tables imgui_widgets
@@ -542,7 +540,7 @@ REM Compile ViennaVulkanEngine (with incremental compilation)
 REM ----------------------------------------------------------------------------
 
 echo [2/2] Compiling ViennaVulkanEngine...
-set VVE_OBJ_DIR=%OBJ_DIR%\vve
+set VVE_OBJ_DIR=%BUILD_DIR%\obj\vve\%BUILD_TYPE%
 if not exist "%VVE_OBJ_DIR%" mkdir "%VVE_OBJ_DIR%"
 
 set VVE_FILE_COUNT=0
@@ -678,11 +676,11 @@ echo.
 echo Build artifacts:
 echo   Library: %LIB_DIR%\viennavulkanengine.lib
 echo.
-echo Examples:
-echo   - %BIN_DIR%\game.exe
-echo   - %BIN_DIR%\helper.exe
-echo   - %BIN_DIR%\physics.exe
-echo   - %BIN_DIR%\deferred-demo.exe
+echo Examples (%BUILD_TYPE%):
+echo   - %EXAMPLES_BASE_DIR%\game\%BUILD_TYPE%\game.exe
+echo   - %EXAMPLES_BASE_DIR%\helper\%BUILD_TYPE%\helper.exe
+echo   - %EXAMPLES_BASE_DIR%\physics\%BUILD_TYPE%\physics.exe
+echo   - %EXAMPLES_BASE_DIR%\deferred-demo\%BUILD_TYPE%\deferred-demo.exe
 echo.
 echo Dependencies built with %COMPILER_NAME%:
 echo   - %DEPS_DIR%\SDL\build\%BUILD_TYPE%\SDL3.lib
@@ -785,11 +783,14 @@ set EXAMPLE_NAME=%~1
 set SOURCE_FILE=%~2
 set CURRENT=%~3
 set TOTAL=%~4
-set EXE_FILE=%BIN_DIR%\%EXAMPLE_NAME%.exe
-set OBJ_FILE=%OBJ_DIR%\examples\%EXAMPLE_NAME%.obj
+set EXAMPLE_OUTPUT_DIR=%EXAMPLES_BASE_DIR%\%EXAMPLE_NAME%\%BUILD_TYPE%
+set EXE_FILE=%EXAMPLE_OUTPUT_DIR%\%EXAMPLE_NAME%.exe
+set EXAMPLE_OBJ_DIR=%BUILD_DIR%\obj\examples\%EXAMPLE_NAME%\%BUILD_TYPE%
+set OBJ_FILE=%EXAMPLE_OBJ_DIR%\%EXAMPLE_NAME%.obj
 
-REM Create obj directory for examples
-if not exist "%OBJ_DIR%\examples" mkdir "%OBJ_DIR%\examples"
+REM Create directories for examples
+if not exist "%EXAMPLE_OBJ_DIR%" mkdir "%EXAMPLE_OBJ_DIR%"
+if not exist "%EXAMPLE_OUTPUT_DIR%" mkdir "%EXAMPLE_OUTPUT_DIR%"
 
 echo   [%CURRENT%/%TOTAL%] Compiling %EXAMPLE_NAME%...
 

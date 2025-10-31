@@ -2,3 +2,4 @@
 build/
 imgui.ini
 cmake/
+*.pdb
