@@ -3,9 +3,6 @@
 
 namespace vve {
 
-	template class RendererDeferredCommon<RendererDeferred11>;
-	template class RendererDeferredCommon<RendererDeferred13>;
-
 	/**
 	 * @brief Constructs a deferred renderer with common functionality
 	 * @tparam Derived The derived renderer type
@@ -1054,5 +1051,9 @@ namespace vve {
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 	}
+
+	// Explicit template instantiations - must come after all template method definitions
+	template class RendererDeferredCommon<RendererDeferred11>;
+	template class RendererDeferredCommon<RendererDeferred13>;
 
 }	// namespace vve
