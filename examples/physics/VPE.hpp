@@ -692,7 +692,7 @@ namespace vpe {
 			/// <returns>Pointer to supporting vertex of body.</returns>
 			Vertex* support(glmvec3 dirL) {
 				auto compare = [&](auto& a, auto& b) { return glm::dot(dirL, a.m_positionL) < glm::dot(dirL, b.m_positionL); };
-				return std::ranges::max_element(m_polytope->m_vertices, compare)._Ptr;
+				return std::addressof(*std::ranges::max_element(m_polytope->m_vertices, compare));
 			};
 		};
 
