@@ -1061,7 +1061,7 @@ namespace vpe {
 		/// </summary>
 		/// <param name="owner">A void pointer to the owner of the body.</param>
 		void eraseBody(auto* owner) {
-			std::shared_ptr<Body> body = m_bodies[(void*)owner];
+			std::shared_ptr<Body> body = m_bodies[(void*)owner].second;
 			if (body->m_on_erase) body->m_on_erase(body);
 			m_collider.erase(body->m_owner);
 			m_bodies.erase(owner);

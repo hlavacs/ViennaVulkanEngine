@@ -47,7 +47,7 @@ class MyGame : public vve::System {
             m_registry.Put(node, vve::Position(vpe::fromPhysics(pos)), vve::Rotation(vpe::fromPhysics(toMat3(orient))));
         };
 
-        inline static vpe::VPEWorld::callback_erase onErase = [&](std::shared_ptr<vpe::VPEWorld::Body> body) {
+        inline static vpe::VPEWorld::callback_erase onErase = [](std::shared_ptr<vpe::VPEWorld::Body> body) {
 	        auto node = vecs::Handle(reinterpret_cast<size_t>(body->m_owner));					// Owner is a pointer to a scene node
 	        //getSceneManagerPointer()->deleteSceneNodeAndChildren(((VESceneNode*)body->m_owner)->getName());
             return;
