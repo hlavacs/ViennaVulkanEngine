@@ -1,0 +1,110 @@
+# .clang-format (ClangFormatStyle: LLVM baseline with project tweaks)
+BasedOnStyle: LLVM
+Language: Cpp
+Standard: c++20
+
+# Line length and wrapping
+ColumnLimit: 120
+BreakAfterReturnType: None
+AllowShortFunctionsOnASingleLine: Empty
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: False
+BreakBeforeBraces: Attach
+BraceWrapping:
+  AfterNamespace: false
+  AfterClass: false
+  AfterControlStatement: false
+  AfterFunction: false
+  SplitEmptyFunction: false
+  SplitEmptyRecord: false
+  SplitEmptyNamespace: false
+
+# Indentation and spacing
+IndentWidth: 4
+TabWidth: 4
+UseTab: Always
+ContinuationIndentWidth: 8
+NamespaceIndentation: All
+AccessModifierOffset: -4
+IndentCaseLabels: true
+IndentExternBlock: AfterExternBlock
+SpaceBeforeParens: Custom
+SpaceBeforeParensOptions:
+  AfterControlStatements: false
+  AfterFunctionDeclarationName: false
+  AfterFunctionDefinitionName: false
+SpacesInParens: Custom
+SpacesInParensOptions:
+  InEmptyParentheses: false
+  InConditionalStatements: true
+  InCStyleCasts: false
+SpacesInSquareBrackets: false
+SpacesInAngles: false
+SpaceAfterCStyleCast: true
+SpaceAfterTemplateKeyword: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeCaseColon: false
+
+# Pointers and references
+PointerAlignment: Left
+ReferenceAlignment: Left
+
+# Functions, lambdas, and templates
+KeepEmptyLinesAtTheStartOfBlocks: false
+BinPackParameters: false
+BinPackArguments: false
+AllowAllParametersOfDeclarationOnNextLine: true
+Cpp11BracedListStyle: true
+DerivePointerAlignment: false
+LambdaBodyIndentation: Signature
+AlignAfterOpenBracket: Align
+BreakConstructorInitializers: AfterColon
+PackConstructorInitializers: BinPack
+ConstructorInitializerIndentWidth: 8
+AlwaysBreakTemplateDeclarations: Yes
+
+# Includes
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^<.*>$'
+    Priority: 1
+  - Regex: '^["]VH.*'
+    Priority: 2
+  - Regex: '^["]VE.*'
+    Priority: 3
+  - Regex: '.*'
+    Priority: 4
+SortIncludes: true
+IncludeIsMainRegex: '([-_](test|unittest))?$'
+
+# Comments and docs
+ReflowComments: Never
+CommentPragmas: '^ IWYU pragma:'
+AlignTrailingComments: true
+
+# Enums, braces, and initialization
+AllowShortEnumsOnASingleLine: false
+BreakBeforeTernaryOperators: true
+BreakStringLiterals: true
+
+# Case labels and switches
+IndentCaseBlocks: false
+AllowShortCaseLabelsOnASingleLine: false
+
+# Preprocessor
+IndentPPDirectives: AfterHash
+SpaceAfterLogicalNot: false
+SpacesInConditionalStatement: false
+
+# Naming-sensitive tweaks
+QualifierAlignment: Left
+
+# STL and ranges readability
+SpacesInLineCommentPrefix:
+  Minimum: 1
+  Maximum: 1
+
+# Experimental/format stability
+FixNamespaceComments: true
+SortUsingDeclarations: true
+RemoveBracesLLVM: false
