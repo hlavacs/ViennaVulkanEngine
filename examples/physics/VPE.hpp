@@ -692,7 +692,7 @@ namespace vpe {
 			/// <returns>Pointer to supporting vertex of body.</returns>
 			Vertex* support(glmvec3 dirL) {
 				auto compare = [&](auto& a, auto& b) { return glm::dot(dirL, a.m_positionL) < glm::dot(dirL, b.m_positionL); };
-				return std::ranges::max_element(m_polytope->m_vertices, compare)._Ptr;
+				return std::addressof(*std::ranges::max_element(m_polytope->m_vertices, compare));
 			};
 		};
 
@@ -1061,7 +1061,7 @@ namespace vpe {
 		/// </summary>
 		/// <param name="owner">A void pointer to the owner of the body.</param>
 		void eraseBody(auto* owner) {
-			std::shared_ptr<Body> body = m_bodies[(void*)owner];
+			std::shared_ptr<Body> body = m_bodies[(void*)owner].second;
 			if (body->m_on_erase) body->m_on_erase(body);
 			m_collider.erase(body->m_owner);
 			m_bodies.erase(owner);
