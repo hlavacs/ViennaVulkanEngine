@@ -1,0 +1,47 @@
+// ============================================================================
+// RANK COMPUTE SHADER
+// Reference: third_party/vkgs/shaders/rank.comp
+// Adapted from VKGS (https://github.com/jaesung-cs/vkgs)
+// ============================================================================
+#version 460
+
+layout(local_size_x = 256) in;
+
+layout(set = 0, binding = 0) uniform Camera {
+  mat4 projection;
+  mat4 view;
+  vec3 camera_position;
+  float pad0;
+  uvec2 screen_size;  // (width, height)
+};
+
+layout(push_constant, std430) uniform PushConstants { mat4 model; };
+
+layout(set = 1, binding = 0) uniform Info { uint point_count; };
+
+layout(std430, set = 1, binding = 1) readonly buffer GaussianPosition {
+  float gaussian_position[];  // (N, 3)
+};
+
+layout(std430, set = 2, binding = 2) buffer VisiblePointCount { uint visible_point_count; };
+
+layout(std430, set = 2, binding = 3) writeonly buffer InstanceKey { uint key[]; };
+
+layout(std430, set = 2, binding = 4) writeonly buffer InstanceIndex { uint index[]; };
+
+void main() {
+  uint id = gl_GlobalInvocationID.x;
+  if (id >= point_count) return;
+
+  vec4 pos = vec4(gaussian_position[id * 3 + 0], gaussian_position[id * 3 + 1], gaussian_position[id * 3 + 2], 1.f);
+  pos = projection * view * model * pos;
+  pos = pos / pos.w;
+  float depth = pos.z;
+
+  // valid only when center is inside NDC clip space (matching VKGS exactly)
+  if (abs(pos.x) <= 1.f && abs(pos.y) <= 1.f && pos.z >= 0.f && pos.z <= 1.f) {
+    uint instance_index = atomicAdd(visible_point_count, 1);
+    key[instance_index] = floatBitsToUint(1.f - depth);  // Back-to-front sorting (higher depth = rendered first)
+    index[instance_index] = id;
+  }
+}

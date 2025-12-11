@@ -1,0 +1,184 @@
+#version 460 core
+
+#extension GL_EXT_shader_16bit_storage : require
+
+layout(local_size_x = 256, local_size_y = 1, local_size_z = 1) in;
+
+layout(set = 0, binding = 0) uniform Camera {
+  mat4 projection;
+  mat4 view;
+  vec3 camera_position;
+  float pad0;
+  uvec2 screen_size;  // (width, height)
+};
+
+layout(push_constant, std430) uniform PushConstants { mat4 model; };
+
+layout(set = 1, binding = 0) uniform Info { uint point_count; };
+
+layout(std430, set = 1, binding = 1) readonly buffer GaussianPosition {
+  float gaussian_position[];  // (N, 3)
+};
+
+layout(std430, set = 1, binding = 2) readonly buffer GaussianCov3d {
+  float gaussian_cov3d[];  // (N, 6)
+};
+
+layout(std430, set = 1, binding = 3) readonly buffer GaussianOpacity {
+  float gaussian_opacity[];  // (N)
+};
+
+layout(std430, set = 1, binding = 4) readonly buffer GaussianSh {
+  f16vec4 gaussian_sh[];  // (N, 3, 4, 4), 16 values packed with 4 vec4.
+};
+
+layout(std430, set = 2, binding = 0) writeonly buffer DrawIndirect {
+  uint indexCount;
+  uint instanceCount;
+  uint firstIndex;
+  int vertexOffset;
+  uint firstInstance;
+  uint pad[3];
+
+  // draw indirect
+  uint vertexCount1;
+  uint instanceCount1;
+  uint firstVertex1;
+  uint firstInstance1;
+};
+
+layout(std430, set = 2, binding = 1) writeonly buffer Instances {
+  vec4 instances[];  // (N, 12). 3 for ndc position, 1 padding, 4 for rot scale, 4 for color.
+};
+
+layout(std430, set = 2, binding = 2) buffer VisiblePointCount { uint visible_point_count; };
+
+layout(std430, set = 2, binding = 5) readonly buffer InverseMap {
+  int inverse_map[];  // (N), inverse map from id to sorted index
+};
+
+void main() {
+  uint id = gl_GlobalInvocationID.x;
+  if (id >= point_count) return;
+
+  if (id == 0) {
+    indexCount = 6 * visible_point_count;
+    instanceCount = 1;
+    firstIndex = 0;
+    vertexOffset = 0;
+    firstInstance = 0;
+
+    vertexCount1 = visible_point_count;
+    instanceCount1 = 1;
+    firstVertex1 = 0;
+    firstInstance1 = 0;
+  }
+
+  int inverse_id = inverse_map[id];
+  if (inverse_id == -1) return;
+
+  // CRITICAL: Bounds check to prevent out-of-bounds writes causing corruption/stretching
+  // If inverse_id is beyond visible_point_count, writing to instances[] corrupts memory
+  if (inverse_id < 0 || inverse_id >= int(visible_point_count)) return;
+
+  vec3 v0 = vec3(gaussian_cov3d[id * 6 + 0], gaussian_cov3d[id * 6 + 1], gaussian_cov3d[id * 6 + 2]);
+  vec3 v1 = vec3(gaussian_cov3d[id * 6 + 3], gaussian_cov3d[id * 6 + 4], gaussian_cov3d[id * 6 + 5]);
+  vec4 pos = vec4(gaussian_position[id * 3 + 0], gaussian_position[id * 3 + 1], gaussian_position[id * 3 + 2], 1.f);
+
+  // direction in model space for SH calculation
+  vec4 camera_podel_position = inverse(model) * vec4(camera_position, 1.f);
+  camera_podel_position = camera_podel_position / camera_podel_position.w;
+  vec3 dir = normalize(pos.xyz - camera_podel_position.xyz);
+
+  // [v0.x v0.y v0.z]
+  // [v0.y v1.x v1.y]
+  // [v0.z v1.y v1.z]
+  mat3 cov3d = mat3(v0, v0.y, v1.xy, v0.z, v1.yz);
+
+  // model matrix
+  mat3 model3d = mat3(model);
+  cov3d = model3d * cov3d * transpose(model3d);
+  pos = model * pos;
+
+  // view matrix
+  mat3 view3d = mat3(view);
+  cov3d = view3d * cov3d * transpose(view3d);
+  pos = view * pos;
+
+  // projection
+  float r = length(vec3(pos));
+  mat3 J = mat3(-1.f / pos.z, 0.f, -2.f * pos.x / r, 0.f, -1.f / pos.z, -2.f * pos.y / r, pos.x / pos.z / pos.z,
+                pos.y / pos.z / pos.z, -2.f * pos.z / r);
+  cov3d = J * cov3d * transpose(J);
+
+  // projection xy
+  mat2 projection_scale = mat2(projection);
+  mat2 cov2d = projection_scale * mat2(cov3d) * projection_scale;
+
+  // low-pass filter
+  cov2d[0][0] += 1.f / screen_size.x / screen_size.x;
+  cov2d[1][1] += 1.f / screen_size.y / screen_size.y;
+
+  // eigendecomposition
+  // [a c] = [x y]
+  // [c b]   [y z]
+  float a = cov2d[0][0];
+  float b = cov2d[1][1];
+  float c = cov2d[1][0];
+  float D = sqrt((a - b) * (a - b) + 4.f * c * c);
+  float s0 = sqrt(0.5f * (a + b + D));
+  float s1 = sqrt(0.5f * (a + b - D));
+  // decompose to R S^2 R^T
+  float sin2t = 2.f * c / D;
+  float cos2t = (a - b) / D;
+  float theta = atan(sin2t, cos2t) / 2.f;
+  float cos_theta = cos(theta);
+  float sin_theta = sin(theta);
+  // R*S
+  mat2 rot_scale = mat2(s0 * cos_theta, s0 * sin_theta, -s1 * sin_theta, s1 * cos_theta);
+
+  pos = projection * pos;
+  pos = pos / pos.w;
+
+  // calculate spherical harmonics
+  const float C0 = 0.28209479177387814f;
+  const float C1 = 0.4886025119029199f;
+  const float C20 = 1.0925484305920792f;
+  const float C21 = 0.31539156525252005f;
+  const float C22 = 0.5462742152960396f;
+  const float C30 = 0.5900435899266435f;
+  const float C31 = 2.890611442640554f;
+  const float C32 = 0.4570457994644658f;
+  const float C33 = 0.3731763325901154f;
+  const float C34 = 1.445305721320277f;
+  float x = dir.x;
+  float y = dir.y;
+  float z = dir.z;
+  float xx = x * x;
+  float yy = y * y;
+  float zz = z * z;
+  float xy = x * y;
+  float yz = y * z;
+  float xz = x * z;
+  vec4 basis0 = vec4(C0, -C1 * y, C1 * z, -C1 * x);
+  vec4 basis1 = vec4(C20 * xy, -C20 * yz, C21 * (2.f * zz - xx - yy), -C20 * xz);
+  vec4 basis2 = vec4(C22 * (xx - yy), -C30 * y * (3.f * xx - yy), C31 * xy * z, -C32 * y * (4.f * zz - xx - yy));
+  vec4 basis3 = vec4(C33 * z * (2.f * zz - 3.f * xx - 3.f * yy), -C32 * x * (4.f * zz - xx - yy), C34 * z * (xx - yy),
+                     -C30 * x * (xx - 3.f * yy));
+
+  mat3x4 sh0 = mat3x4(gaussian_sh[id * 12 + 0], gaussian_sh[id * 12 + 4], gaussian_sh[id * 12 + 8]);
+  mat3x4 sh1 = mat3x4(gaussian_sh[id * 12 + 1], gaussian_sh[id * 12 + 5], gaussian_sh[id * 12 + 9]);
+  mat3x4 sh2 = mat3x4(gaussian_sh[id * 12 + 2], gaussian_sh[id * 12 + 6], gaussian_sh[id * 12 + 10]);
+  mat3x4 sh3 = mat3x4(gaussian_sh[id * 12 + 3], gaussian_sh[id * 12 + 7], gaussian_sh[id * 12 + 11]);
+
+  // row vector-matrix multiplication
+  vec3 color = basis0 * sh0 + basis1 * sh1 + basis2 * sh2 + basis3 * sh3;
+
+  // translation and clip
+  color = max(color + 0.5f, 0.f);
+  float opacity = gaussian_opacity[id];
+
+  instances[inverse_id * 3 + 0].xyz = pos.xyz;
+  instances[inverse_id * 3 + 1] = vec4(rot_scale[0], rot_scale[1]);
+  instances[inverse_id * 3 + 2] = vec4(color, opacity);
+}
