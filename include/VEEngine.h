@@ -54,6 +54,7 @@ namespace vve {
 		const std::string m_rendererVulkanName = "VVE Renderer Vulkan";
 		const std::string m_rendererForwardName = "VVE Renderer Forward";
 		const std::string m_rendererDeferredName = "VVE Renderer Deferred";
+		const std::string m_rendererRaytracingName = "VVE Renderer Raytracing";
 		const std::string m_rendererImguiName = "VVE Renderer Imgui";
 		const std::string m_guiName = "VVE GUI";
 
@@ -231,6 +232,10 @@ namespace vve {
 		auto CreateObject(	Name name, ParentHandle parent, const MeshName& meshName, const TextureName& textureName,
 							Position position = Position{vec3_t{0.0f}}, Rotation rotation = Rotation{mat3_t{1.0f}},
 							Scale scale = Scale{vec3_t{1.0f}}, UVScale uvScale = UVScale{vec2_t{1.0f}}) -> ObjectHandle;
+
+		auto CreateObject(Name name, ParentHandle parent, const MeshName& meshName, const MaterialName& materialName, const TextureName& textureName,
+			Position position = Position{ vec3_t{0.0f} }, Rotation rotation = Rotation{ mat3_t{1.0f} },
+			Scale scale = Scale{ vec3_t{1.0f} }, UVScale uvScale = UVScale{ vec2_t{1.0f} }) -> ObjectHandle;
 
 		/**
 		 * @brief Creates an object with a mesh and color.

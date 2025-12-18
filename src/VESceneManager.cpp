@@ -247,8 +247,22 @@ namespace vve {
 		if ( node->mNumMeshes > 0) {
 		    auto mesh = scene->mMeshes[node->mMeshes[0]];
 			m_registry.Put(nHandle, MeshName{(filepath.string() + "/" + mesh->mName.C_Str())});
+
+			
 			
 			auto material = scene->mMaterials[mesh->mMaterialIndex];
+
+			
+			aiString name;
+			if (material->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
+				Name nameMat{ (filepath.string() + "/" + std::string(name.C_Str()) + "/Material") };
+				m_registry.Put(nHandle, MaterialName{ nameMat });
+			}
+			
+			
+
+
+
 		    aiString texturePath;
 			std::string texturePathStr{};
 		    if (material->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
@@ -256,6 +270,8 @@ namespace vve {
 		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;
 				m_registry.Put(nHandle, TextureName{texturePathStr});
 			}
+
+			
 
 			vvh::Color color;
 			bool hasColor = false;

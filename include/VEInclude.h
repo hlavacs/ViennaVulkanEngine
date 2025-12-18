@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <iterator>
 #include <ranges>
+#include <optional>
 
 #include <assimp/cimport.h>
 #include <assimp/Importer.hpp>
@@ -93,11 +94,13 @@ namespace vve {
    	class AssetManager;
 	class SoundManager;
 
+
 	//Names
 	using Name = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using SystemName = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using Filename = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using TextureName = vsty::strong_type_t<std::string, vsty::counter<>>;
+	using MaterialName = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using NormalMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using HeightMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
 	using LightMapName = vsty::strong_type_t<std::string, vsty::counter<>>;
@@ -116,6 +119,7 @@ namespace vve {
 	using SpotLightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use SpotLight as a unique component
 	using MeshHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
 	using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
+	using MaterialHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Material as a unique comonent
 	using NormalMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use NormalMap as a unique component
 	using HeightMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use HeightMap as a unique component
 	using LightMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use LightMap as a unique component
@@ -165,3 +169,22 @@ namespace vve {
 #include "VEAssetManager.h"
 //#include "VESoundManagerSDL2.h"
 #include "VESoundManagerSDL3.h"
+
+#include "PathTracing/command_manager.h"
+#include "PathTracing/buffer.h"
+#include "PathTracing/image.h"
+#include "PathTracing/helper_structs.h"
+#include "PathTracing/render_target.h"
+#include "PathTracing/descriptor_sets.h"
+#include "PathTracing/descriptor_sets_RT.h"
+#include "PathTracing/descriptor_sets_targets.h"
+#include "PathTracing/light_manager.h"
+#include "PathTracing/material_manager.h"
+#include "PathTracing/object_manager.h"
+#include "PathTracing/pipline_rasterized.h"
+#include "PathTracing/pipline_raytraced.h"
+
+#include "PathTracing/swapchain.h"
+#include "PathTracing/texture_manager.h"
+
+#include "PathTracing/vrt_renderer.h"

@@ -83,18 +83,34 @@ namespace vve {
 		        std::cout << "Material: " << name.C_Str() << std::endl;
 		    }
 
+			Name nameMat{ (filepath.string() + "/" + std::string(name.C_Str()) + "/Material")};
+			if (m_engine.ContainsHandle(nameMat)) continue;
+
+			vvh::VRTMaterial VRTmaterial;
+
 		    aiColor3D color;
 		    if (material->Get(AI_MATKEY_COLOR_AMBIENT, color) == AI_SUCCESS) {
 		        std::cout << "Ambient Color: " << color.r << ", " << color.g << ", " << color.b << std::endl;
 		    }
 		    if (material->Get(AI_MATKEY_COLOR_DIFFUSE, color) == AI_SUCCESS) {
 		        std::cout << "Diffuse Color: " << color.r << ", " << color.g << ", " << color.b << std::endl;
+				VRTmaterial.albedo = glm::vec3(color.r, color.g, color.b);
 		    }
 			if (material->Get(AI_MATKEY_METALLIC_FACTOR, color) == AI_SUCCESS) {
 				std::cout << "Metallic Factor: " << color.r << ", ";
+				VRTmaterial.metallic = color.r;
 			}
 			if (material->Get(AI_MATKEY_ROUGHNESS_FACTOR, color) == AI_SUCCESS) {
 				std::cout << "Roughness Factor: " << color.r << std::endl;
+				VRTmaterial.roughness = color.r;
+			}
+			if (material->Get(AI_MATKEY_SPECULAR_FACTOR, color) == AI_SUCCESS) {
+				std::cout << "Specular Factor: " << color.r << std::endl;
+				VRTmaterial.ior = color.r;
+			}
+			if (material->Get(AI_MATKEY_OPACITY, color) == AI_SUCCESS) {
+				std::cout << "Opacity Factor: " << color.r << std::endl;
+				VRTmaterial.alpha = color.r;
 			}
 
 		    aiString texturePath;
@@ -106,7 +122,82 @@ namespace vve {
 				auto pixels = LoadTexture(tHandle);
 				if( pixels != nullptr) m_engine.SendMsg( MsgTextureCreate{tHandle, this } );
 				m_fileNameMap.insert( std::make_pair(filepath, (Name{texturePathStr})) );
+
+				VRTmaterial.albedoTextureName = texturePathStr;
 		    }
+
+			//added aditional textures:
+
+			if (material->GetTexture(aiTextureType_NORMALS, 0, &texturePath) == AI_SUCCESS) {
+				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
+				std::cout << "Normal Texture: " << texturePathStr << std::endl;
+
+				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
+				auto pixels = LoadTexture(tHandle);
+				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
+				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
+
+				VRTmaterial.normalTextureName = texturePathStr;
+			}
+
+			if (material->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &texturePath) == AI_SUCCESS) {
+				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
+				std::cout << "Normal Texture: " << texturePathStr << std::endl;
+
+				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
+				auto pixels = LoadTexture(tHandle);
+				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
+				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
+
+				VRTmaterial.roughnessTextureName = texturePathStr;
+			}
+
+			if (material->GetTexture(aiTextureType_METALNESS, 0, &texturePath) == AI_SUCCESS) {
+				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
+				std::cout << "Normal Texture: " << texturePathStr << std::endl;
+
+				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
+				auto pixels = LoadTexture(tHandle);
+				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
+				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
+
+				VRTmaterial.metallicTextureName = texturePathStr;
+			}
+
+			if (material->GetTexture(aiTextureType_SPECULAR, 0, &texturePath) == AI_SUCCESS) {
+				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
+				std::cout << "Normal Texture: " << texturePathStr << std::endl;
+
+				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
+				auto pixels = LoadTexture(tHandle);
+				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
+				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
+
+				VRTmaterial.iorTextureName = texturePathStr;
+			}
+
+			if (material->GetTexture(aiTextureType_OPACITY, 0, &texturePath) == AI_SUCCESS) {
+				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
+				std::cout << "Normal Texture: " << texturePathStr << std::endl;
+
+				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
+				auto pixels = LoadTexture(tHandle);
+				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
+				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
+
+				VRTmaterial.alphaTextureName = texturePathStr;
+			}
+			
+			/*
+			m_engine.SetHandle(fileName(), tHandle);
+			m_registry.Put(tHandle, vvh::Image{ texWidth, texHeight, 1, imageSize, pixels });
+			*/
+
+			auto mHandle = m_registry.Insert(nameMat);
+			m_engine.SetHandle(nameMat, mHandle);
+			m_registry.Put(mHandle, VRTmaterial);
+
+			std::cout << "MaterialName: " << (filepath.string() + "/" + std::string(name.C_Str()) + "/Material") << "\n";
 		}
 
 		// Process meshes
@@ -176,6 +267,10 @@ namespace vve {
 		if( m_registry.Has<TextureName>(msg.m_object) ) {
 			auto textureName = m_registry.Get<TextureName>(msg.m_object);
 			m_registry.Put(	msg.m_object, TextureHandle{m_engine.GetHandle(textureName)} );
+		}
+		if (m_registry.Has<MaterialName>(msg.m_object)) {
+			auto materialName = m_registry.Get<MaterialName>(msg.m_object);
+			m_registry.Put(msg.m_object, MaterialHandle{ m_engine.GetHandle(materialName) });
 		}
 		return false;
 	}

@@ -113,13 +113,36 @@ namespace vve {
 	/**
 	 * @brief Create and register the renderer systems
 	 */
-	void Engine::CreateRenderer(){
-		RegisterSystem(std::make_unique<RendererVulkan>( m_rendererVulkanName,  *this, m_windowName ) );
-		RegisterSystem(std::make_unique<RendererImgui>(  m_rendererImguiName,   *this, m_windowName ) );
+	/*
+	void Engine::CreateRenderer() {
+		RegisterSystem(std::make_unique<RendererVulkan>(m_rendererVulkanName, *this, m_windowName));
+		RegisterSystem(std::make_unique<RendererImgui>(m_rendererImguiName, *this, m_windowName));
 		if (m_type == vve::RendererType::RENDERER_TYPE_FORWARD)
-			RegisterSystem(std::make_unique<RendererForward>(m_rendererForwardName, *this, m_windowName) );
-		else 
-			RegisterSystem(std::make_unique<RendererDeferred>(m_rendererDeferredName, *this, m_windowName) );
+			RegisterSystem(std::make_unique<RendererForward>(m_rendererForwardName, *this, m_windowName));
+		else
+			RegisterSystem(std::make_unique<RendererDeferred>(m_rendererDeferredName, *this, m_windowName));
+	};
+	*/
+
+
+	void Engine::CreateRenderer(){
+
+		switch (m_type) {
+		case vve::RendererType::RENDERER_TYPE_FORWARD:
+			RegisterSystem(std::make_unique<RendererVulkan>(m_rendererVulkanName, *this, m_windowName));
+			RegisterSystem(std::make_unique<RendererImgui>(m_rendererImguiName, *this, m_windowName));
+			RegisterSystem(std::make_unique<RendererForward>(m_rendererForwardName, *this, m_windowName));
+			break;
+		case vve::RendererType::RENDERER_TYPE_DEFERRED:
+			RegisterSystem(std::make_unique<RendererVulkan>(m_rendererVulkanName, *this, m_windowName));
+			RegisterSystem(std::make_unique<RendererImgui>(m_rendererImguiName, *this, m_windowName));
+			RegisterSystem(std::make_unique<RendererDeferred>(m_rendererDeferredName, *this, m_windowName));
+			break;
+		case vve::RendererType::RENDERER_TYPE_RAYTRACING:
+			RegisterSystem(std::make_unique<RendererImgui>(m_rendererImguiName, *this, m_windowName));
+			RegisterSystem(std::make_unique<RendererRayTraced>(m_rendererRaytracingName, *this, m_windowName));
+			break;
+		}
 	};
 
 	/**
@@ -356,6 +379,13 @@ namespace vve {
             m_engine.SendMsg(MsgObjectCreate{  handle, vve::ParentHandle{} });
 			return handle;
     	};
+
+	auto Engine::CreateObject(Name name, ParentHandle parent,  const MeshName& meshName, const MaterialName& materialName, const TextureName& textureName,
+		Position position, Rotation rotation, Scale scale, UVScale uvScale) -> ObjectHandle {
+		ObjectHandle handle{ m_registry.Insert(position, rotation, scale, meshName,textureName, materialName, uvScale) };
+		m_engine.SendMsg(MsgObjectCreate{ handle, vve::ParentHandle{} });
+		return handle;
+	};
 
 	/**
 	 * @brief Destroy an object
