@@ -254,6 +254,24 @@ namespace vvh {
 		glm::vec4 m_material{ 0.0f, 1.0f, 0.0f, 0.0f }; // x = metallic, y = roughness, zw will be ao in future
 	};
 
+	struct VRTMaterial {
+		uint32_t index = 0;
+		bool registered = false;
+
+		std::string albedoTextureName = "";
+		std::string normalTextureName = "";
+		std::string alphaTextureName = "";
+		std::string roughnessTextureName = "";
+		std::string metallicTextureName = "";
+		std::string iorTextureName = "";
+
+		glm::vec3 albedo{ 0.5,0.5,0.5 };
+		float alpha = 1.0;
+		float roughness = 0.5;
+		float metallic = 0.0;
+		float ior = 0.5;
+	};
+
 	/**
 	 * @brief Vertex data structure with multiple attribute types
 	 *
