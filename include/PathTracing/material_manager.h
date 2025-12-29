@@ -1,7 +1,7 @@
 #pragma once
 
 namespace vve {
-	class MaterialManager {
+	class MaterialManager : public System {
 	private:
 		std::vector<MaterialInfo*> materials;
 		DeviceBuffer<Material>* buffer;
@@ -9,13 +9,20 @@ namespace vve {
 		VkDevice device;
 		VkPhysicalDevice physicalDevice;
 
+		bool materialCreated = false;
+
 	public:
 
-		MaterialManager(VkDevice& device, VkPhysicalDevice& physicalDevice, CommandManager* commandManager);
+		bool OnMaterialCreate(Message message);
 
-		MaterialInfo* addMaterial(MaterialSlotRGB albedo, MaterialSlotRGB normal, MaterialSlotF roughness, MaterialSlotF metalness, MaterialSlotF ior, MaterialSlotF alpha);
+		bool OnPrepareNextFrame(Message message);
+		bool OnRecordNextFrame(Message message);
+
+		MaterialManager(std::string systemName, Engine& engine, VkDevice& device, VkPhysicalDevice& physicalDevice, CommandManager* commandManager);
 
 		void createMaterialBuffer();
+
+		bool materialChanged();
 
 		DeviceBuffer<Material>* getMaterialBuffer();
 	};

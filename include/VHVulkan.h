@@ -213,6 +213,8 @@ namespace vvh {
 		VmaAllocation   m_mapImageAllocation;
 		VkImageView     m_mapImageView;
 		VkSampler       m_mapSampler;
+
+		uint32_t index;
 	};
 
 	struct Buffer {
@@ -370,6 +372,15 @@ namespace vvh {
 	/**
 	 * @brief Mesh data with vertices, indices, and Vulkan buffers
 	 */
+	struct Instance {
+		glm::mat4 model = glm::mat4(1.0f);
+		glm::mat4 modelInverse = glm::mat4(1.0f);
+		uint32_t materialIndex = 0;
+		uint32_t firstIndex = 0; //needed for RT
+		glm::vec2 uvScale;
+	};
+
+
 	struct Mesh {
 		VertexData				m_verticesData;
 		std::vector<uint32_t>   m_indices;
@@ -377,6 +388,20 @@ namespace vvh {
 		VmaAllocation           m_vertexBufferAllocation;
 		VkBuffer                m_indexBuffer;
 		VmaAllocation           m_indexBufferAllocation;
+
+
+		uint32_t index;
+
+		uint32_t firstIndex;
+		uint32_t indexCount;
+
+		uint32_t firstVertex;
+		uint32_t vertexCount;
+
+		uint32_t firstInstance = 0;
+		uint32_t instanceCount = 0;
+
+		std::vector<Instance> instances;
 	};
 
 

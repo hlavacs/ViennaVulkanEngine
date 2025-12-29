@@ -69,6 +69,7 @@ namespace vve {
 	System::MsgTextureCreate::MsgTextureCreate(TextureHandle handle, System* sender) : MsgBase{"TEXTURE_CREATE"}, m_handle{handle}, m_sender{sender} {};
     System::MsgTextureDestroy::MsgTextureDestroy(TextureHandle handle) : MsgBase{"TEXTURE_DESTROY"}, m_handle{handle} {};
 	System::MsgMeshCreate::MsgMeshCreate(MeshHandle handle) : MsgBase{"MESH_CREATE"}, m_handle{handle} {};
+    System::MsgMaterialCreate::MsgMaterialCreate(MaterialHandle handle) : MsgBase{ "MATERIAL_CREATE" }, m_handle{ handle } {};
     System::MsgMeshDestroy::MsgMeshDestroy(MeshHandle handle) : MsgBase{"MESH_DESTROY"}, m_handle{handle} {};
     System::MsgDeleted:: MsgDeleted(double dt): MsgBase{"DELETED"} {}; 
 

@@ -2,7 +2,7 @@
 
 
 namespace vve {
-    class PiplineRasterized {
+    class PiplineRasterized: public System {
 
     private:
         VkPipeline graphicsPipeline{};
@@ -21,7 +21,7 @@ namespace vve {
 
         DeviceBuffer<Vertex>* vertexBuffer;
         DeviceBuffer<uint32_t>* indexBuffer;
-        std::vector<HostBuffer<Instance>*> instanceBuffers;
+        std::vector<HostBuffer<vvh::Instance>*> instanceBuffers;
 
 
         static std::vector<char> readFile(const std::string& filename) {
@@ -180,8 +180,12 @@ namespace vve {
 
     public:
 
-        PiplineRasterized(VkDevice device, VkExtent2D extent, CommandManager* commandManager, DeviceBuffer<Vertex>* vertexBuffer, DeviceBuffer<uint32_t>* indexBuffer, std::vector<HostBuffer<Instance>*> instanceBuffers, VkDescriptorSetLayout& descriptorSetLayout, std::vector<VkDescriptorSet>& descriptorSets) :
-            device(device), extent(extent), commandManager(commandManager), vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), instanceBuffers(instanceBuffers), descriptorSetLayout(descriptorSetLayout), descriptorSets(descriptorSets) {
+        PiplineRasterized(std::string systemName, Engine& engine, VkDevice device, VkExtent2D extent, CommandManager* commandManager, DeviceBuffer<Vertex>* vertexBuffer, DeviceBuffer<uint32_t>* indexBuffer, std::vector<HostBuffer<vvh::Instance>*> instanceBuffers, VkDescriptorSetLayout& descriptorSetLayout) :
+            System{ systemName, engine }, device(device), extent(extent), commandManager(commandManager), vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), instanceBuffers(instanceBuffers), descriptorSetLayout(descriptorSetLayout) {
+        }
+
+        void setDescriptorSets(std::vector<VkDescriptorSet>& descriptorSets) {
+            this->descriptorSets = descriptorSets;
         }
 
 
@@ -211,8 +215,8 @@ namespace vve {
             createFramebuffers();
 
 
-            auto vertShaderCode = readFile("vert.spv");
-            auto fragShaderCode = readFile("frag.spv");
+            auto vertShaderCode = readFile("shaders/PathTracing/vert.spv");
+            auto fragShaderCode = readFile("shaders/PathTracing/frag.spv");
 
             VkShaderModule vertShaderModule = createShaderModule(vertShaderCode, device);
             VkShaderModule fragShaderModule = createShaderModule(fragShaderCode, device);
@@ -395,7 +399,7 @@ namespace vve {
             vkDestroyShaderModule(device, vertShaderModule, nullptr);
         }
 
-        void recordCommandBuffer(std::vector<Object*> objects, uint32_t currentFrame) {
+        void recordCommandBuffer(uint32_t currentFrame) {
 
             VkCommandBuffer commandBuffer = commandManager->getCommandBuffer(currentFrame);
 
@@ -448,6 +452,13 @@ namespace vve {
 
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
 
+            for (auto [gHandle, mesh] : m_registry.GetView<vecs::Handle, vvh::Mesh&>()) {
+                if (mesh().instanceCount > 0) {
+                    vkCmdDrawIndexed(commandBuffer, mesh().indexCount, mesh().instanceCount, mesh().firstIndex, 0, mesh().firstInstance);
+                }       
+            }
+
+            /*
             for (Object* object : objects) {
                 if (object->instanceCount > 0) {
 
@@ -465,13 +476,13 @@ namespace vve {
                     vkCmdDrawIndexed(commandBuffer, object->indexCount, object->instanceCount, object->firstIndex, 0, object->firstInstance);
                 }
             }
+            */
 
             vkCmdEndRenderPass(commandBuffer);
 
             for (RenderTarget* target : renderTargets) {
                 target->getImage(currentFrame)->setLayout(VK_IMAGE_LAYOUT_GENERAL);
             }
-
 
         }
     };

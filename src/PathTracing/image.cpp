@@ -51,10 +51,14 @@ namespace vve {
 
     void Image::transitionImageLayout(VkImageLayout newLayout, VkCommandBuffer cmd) {
 
+        if (newLayout == VK_IMAGE_LAYOUT_UNDEFINED) {
+            std::cout << "New image layout may not be VK_IMAGE_LAYOUT_UNDEFINED \n";
+        }
+        
+
         if (newLayout == currentLayout) {
             return;
         }
-
 
         LayoutInfo oldInfo = getLayoutInfo(currentLayout);
         LayoutInfo newInfo = getLayoutInfo(newLayout);

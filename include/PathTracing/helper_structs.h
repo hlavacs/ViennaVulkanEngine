@@ -37,12 +37,7 @@ namespace vve {
         }
     };
 
-    struct Instance {
-        glm::mat4 model = glm::mat4(1.0f);
-        glm::mat4 modelInverse = glm::mat4(1.0f);
-        uint32_t materialIndex = 0;
-        uint32_t firstIndex = 0; //needed for RT
-    };
+
 
     struct Object {
         uint32_t firstIndex;
@@ -55,7 +50,7 @@ namespace vve {
 
         uint32_t materialIndex = 0;
 
-        std::vector<Instance*> instances;
+        std::vector<vvh::Instance*> instances;
     };
 
     struct UniformBufferObject {
@@ -108,7 +103,7 @@ namespace vve {
 
     std::array<VkVertexInputBindingDescription, 2> getBindingDescriptions();
 
-    std::array<VkVertexInputAttributeDescription, 13> getAttributeDescriptions();
+    std::array<VkVertexInputAttributeDescription, 14> getAttributeDescriptions();
 
     struct AccelStructure {
         VkAccelerationStructureKHR accel = VK_NULL_HANDLE;

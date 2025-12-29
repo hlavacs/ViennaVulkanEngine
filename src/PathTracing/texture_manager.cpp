@@ -3,39 +3,53 @@
 
 namespace vve {
 
-    TextureManager::TextureManager(VkDevice& device, VkPhysicalDevice& physicalDevice, CommandManager* commandManager) :
-        device(device), physicalDevice(physicalDevice), commandManager(commandManager) {
+    TextureManager::TextureManager(std::string systemName, Engine& engine, VkDevice& device, VkPhysicalDevice& physicalDevice, CommandManager* commandManager) :
+        System{ systemName, engine }, device(device), physicalDevice(physicalDevice), commandManager(commandManager) {
         createTextureSampler();
+
+        engine.RegisterCallbacks({
+            {this,   1000, "TEXTURE_CREATE",   [this](Message& message) { return OnTextureCreate(message); } },
+            {this,   1000, "TEXTURE_DESTROY",  [this](Message& message) { return OnTextureDestroy(message); } },
+            {this,  1997, "RECORD_NEXT_FRAME", [this](Message& message) { return OnRecordNextFrame(message); } }
+            });
     }
 
-    Texture* TextureManager::loadTexture(std::string filepath) {
+    bool TextureManager::OnTextureCreate(Message message) {
+        auto msg = message.template GetData<MsgTextureCreate>();
+        auto handle = msg.m_handle;
+        auto texture = m_registry.template Get<vvh::Image&>(handle);
+        auto pixels = texture().m_pixels;
+        auto witdh = texture().m_width;
+        auto height = texture().m_height;
 
-        //retrieve textures like this
-        //TextureHandle handle = m_engine.GetHandle("textureNameString");
+        Image* image = new Image(static_cast<uint8_t*>(pixels), witdh, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
 
+        Texture* vrtTexture = new Texture();
+        vrtTexture->image = image;
 
-        /*
-        int texWidth, texHeight, texChannels;
-        stbi_uc* pixels = stbi_load(filepath.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
-        VkDeviceSize imageSize = texWidth * texHeight * 4;
+        vrtTexture->textureIndex = textures.size();
+        texture().index = textures.size();
 
-        if (!pixels) {
-            throw std::runtime_error("failed to load texture image!");
-        }
+        textures.push_back(vrtTexture);
 
-        Image* image = new Image(static_cast<uint8_t*>(pixels), texWidth, texHeight, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        textureCreated = true;
 
-        Texture* texture = new Texture();
-        texture->image = image;
-
-        texture->textureIndex = textures.size();
-
-        textures.push_back(texture);
-
-        return texture;
-        */
-        return nullptr;
+        return false;
     }
+
+    bool TextureManager::OnRecordNextFrame(Message message) {
+        textureCreated = false;
+        return false;
+    }
+
+    bool TextureManager::OnTextureDestroy(Message message) {
+        return false;
+    }
+
+    bool TextureManager::texturesChanged() {
+        return textureCreated;
+    }
+
 
     void TextureManager::createTextureSampler() {
 

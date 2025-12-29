@@ -105,6 +105,14 @@ namespace vve {
             return swapChainImageFormat;
         }
 
+        VkSwapchainKHR getSwapchain() {
+            return swapChain;
+        }
+
+        uint32_t getImageIndex(int currentFrame) {
+            return imageIndices[currentFrame];
+        }
+
         void recreateSwapChain() {
             int width = 0, height = 0;
             SDL_GetWindowSize(window, &width, &height);
@@ -130,7 +138,7 @@ namespace vve {
         }
 
         void recordImageTransfer(int currentFrame, RenderTarget* target) {
-            images[imageIndices[currentFrame]]->recordCopyFromImage(target->getImage(currentFrame), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, currentFrame);
+            images[imageIndices[currentFrame]]->recordCopyFromImage(target->getImage(currentFrame), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, currentFrame);;
         }
 
         VkResult presentImage(int currentFrame, VkSemaphore renderCompletSemaphore) {
@@ -150,10 +158,6 @@ namespace vve {
             presentInfo.pResults = nullptr; // Optional
 
             return vkQueuePresentKHR(presentQueue, &presentInfo);
-        }
-
-        VkSwapchainKHR getSwapchain() {
-            return swapChain;
         }
 
         VkSemaphore getImageAvailableSemaphore(int currentFrame) {

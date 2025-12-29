@@ -137,14 +137,19 @@ namespace vve {
     public:
 
         PiplineRaytraced(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager, VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties,
-            VkDescriptorSetLayout descriptorSetLayoutGeneral, std::vector<VkDescriptorSet> descriptorSetsGeneral, VkDescriptorSetLayout descriptorSetLayoutRT,
-            std::vector<VkDescriptorSet> descriptorSetsRT, VkDescriptorSetLayout descriptorSetLayoutTargets,
+            VkDescriptorSetLayout descriptorSetLayoutGeneral, VkDescriptorSetLayout descriptorSetLayoutRT,
+            VkDescriptorSetLayout descriptorSetLayoutTargets,
             std::vector<VkDescriptorSet> descriptorSetsTargets, VkExtent2D extent)
             : device(device), physicalDevice(physicalDevice), commandManager(commandManager), m_rtProperties(m_rtProperties),
-            descriptorSetLayoutGeneral(descriptorSetLayoutGeneral), descriptorSetsGeneral(descriptorSetsGeneral), descriptorSetLayoutRT(descriptorSetLayoutRT),
-            descriptorSetsRT(descriptorSetsRT), descriptorSetLayoutTargets(descriptorSetLayoutTargets), descriptorSetsTargets(descriptorSetsTargets), extent(extent)
+            descriptorSetLayoutGeneral(descriptorSetLayoutGeneral), descriptorSetLayoutRT(descriptorSetLayoutRT),
+            descriptorSetLayoutTargets(descriptorSetLayoutTargets), descriptorSetsTargets(descriptorSetsTargets), extent(extent)
         {
             loadRayTracingFunctions();
+        }
+
+        void setDescriptorSets(std::vector<VkDescriptorSet> descriptorSetsGeneral, std::vector<VkDescriptorSet> descriptorSetsRT) {
+            this->descriptorSetsGeneral = descriptorSetsGeneral;
+            this->descriptorSetsRT = descriptorSetsRT;
         }
 
 
@@ -166,9 +171,9 @@ namespace vve {
             for (auto& s : stages)
                 s.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 
-            auto raygenCode = readFile("raygen.rgen.spv");
-            auto missCode = readFile("miss.rmiss.spv");
-            auto chitCode = readFile("closesthit.rchit.spv");
+            auto raygenCode = readFile("shaders/PathTracing/raygen.rgen.spv");
+            auto missCode = readFile("shaders/PathTracing/miss.rmiss.spv");
+            auto chitCode = readFile("shaders/PathTracing/closesthit.rchit.spv");
 
             VkShaderModule raygenModule = createShaderModule(raygenCode, device);
             VkShaderModule missModule = createShaderModule(missCode, device);

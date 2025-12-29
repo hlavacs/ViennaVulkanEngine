@@ -25,6 +25,9 @@ namespace vve {
     public:
         GenericBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice)
             : GPUDataStorage(device, physicalDevice), usage(usage), size(size), properties(properties), allocFlags(allocFlags) {
+            if (size == 0) {
+                size = 1;
+            }
             initBuffer();
         }
 
@@ -71,10 +74,16 @@ namespace vve {
         }
 
         HostBuffer(size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice) : GPUDataStorage(device, physicalDevice), usage(usage), count(count), allocFlags(allocFlags) {
+            if (count == 0) {
+                count = 1;
+            }         
             initBuffer(count);
         }
 
         HostBuffer(const T* data, size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice) : GPUDataStorage(device, physicalDevice), usage(usage), allocFlags(allocFlags) {
+            if (count == 0) {
+                count = 1;
+            }
             initBuffer(count);
             copyToBuffer(data, count);
         }
@@ -100,6 +109,9 @@ namespace vve {
         }
 
         void updateBuffer(const T* data, size_t count) {
+            if (count == 0) {
+                count = 1;
+            }
             VkDeviceSize bufferSize = sizeof(T) * count;
             if (count > this->count) {
                 initBuffer(count);
@@ -147,6 +159,9 @@ namespace vve {
 
         DeviceBuffer(const T* data, size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice) :
             GPUDataStorage(device, physicalDevice), usage(usage), commandManager(commandManager), allocFlags(allocFlags) {
+            if (count == 0) {
+                count = 1;
+            }
             initBuffer(data, count);
         }
 
@@ -177,6 +192,9 @@ namespace vve {
         }
 
         void updateBuffer(const T* data, size_t count) {
+            if (count == 0) {
+                count = 1;
+            }
             initBuffer(data, count);
         }
 
@@ -211,7 +229,10 @@ namespace vve {
     public:
         RawDeviceBuffer(VkDeviceSize size, const void* data, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice)
             : GPUDataStorage(device, physicalDevice), usage(usage), allocFlags(allocFlags), commandManager(commandManager), bufferSize(size)
-        {
+        {   
+            if (size == 0) {
+                size = 1;
+            }
             initBuffer(size);
             transferData(data, size);
         }
@@ -219,6 +240,9 @@ namespace vve {
         RawDeviceBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice)
             : GPUDataStorage(device, physicalDevice), usage(usage), allocFlags(allocFlags), commandManager(commandManager), bufferSize(size)
         {
+            if (size == 0) {
+                size = 1;
+            }
             initBuffer(size);
         }
 

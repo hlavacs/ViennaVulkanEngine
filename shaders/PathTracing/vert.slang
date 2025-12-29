@@ -13,9 +13,11 @@ struct VSInput
     float4 normal    : NORMAL0;
     float4 texCoord  : TEXCOORD0;
 
-    float4x4 model   : MODEL;   // Custom semantic (allowed in Slang)
-    float4x4 modelInverse   : MODEL;
+    float4x4 model;
+    float4x4 modelInverse;
     uint materialIndex;
+    uint firstIndex;
+    float2 uvScale;
 };
 
 struct VSOutput
@@ -24,6 +26,7 @@ struct VSOutput
     float3 fragPosition : TEXCOORD0;
     float3 fragNormal   : TEXCOORD1;
     float2 fragTexCoord : TEXCOORD2;
+    uint materialIndex;
 };
 
 [shader("vertex")]
@@ -37,7 +40,9 @@ VSOutput main(VSInput input)
 
     o.fragPosition = worldPos.xyz;
     o.fragNormal   = normalize(mul(input.modelInverse, float4(input.normal.xyz, 0)).xyz);
-    o.fragTexCoord = input.texCoord.xy;
+    o.fragTexCoord = (input.texCoord.xy * input.uvScale);
+
+    o.materialIndex = input.materialIndex;
 
     return o;
 }

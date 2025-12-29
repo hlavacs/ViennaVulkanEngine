@@ -197,6 +197,8 @@ namespace vve {
 			m_engine.SetHandle(nameMat, mHandle);
 			m_registry.Put(mHandle, VRTmaterial);
 
+			m_engine.SendMsg(MsgMaterialCreate{ MaterialHandle{mHandle} });
+
 			std::cout << "MaterialName: " << (filepath.string() + "/" + std::string(name.C_Str()) + "/Material") << "\n";
 		}
 
@@ -262,7 +264,8 @@ namespace vve {
 		auto msg = message.template GetData<MsgObjectCreate>();
 		if( m_registry.Has<MeshName>(msg.m_object) ) {
 			auto meshName = m_registry.Get<MeshName>(msg.m_object);
-			m_registry.Put(	msg.m_object, MeshHandle{ m_engine.GetHandle(meshName) } );
+			MeshHandle gHandle = MeshHandle{ m_engine.GetHandle(meshName) };
+			m_registry.Put(	msg.m_object, gHandle);
 		}
 		if( m_registry.Has<TextureName>(msg.m_object) ) {
 			auto textureName = m_registry.Get<TextureName>(msg.m_object);

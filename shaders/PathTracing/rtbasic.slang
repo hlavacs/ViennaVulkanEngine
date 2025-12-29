@@ -14,6 +14,7 @@ float4x4 model;
 float4x4 modelInverse;
 uint materialIndex;
 uint firstIndex;
+float2 uvScale;
 };
 
 struct IntersectionInfo
@@ -171,6 +172,7 @@ void rgenMain()
     
     outImage[int2(launchID)] = float4(outputColor, 1.0);
     //outImage[int2(launchID)] = float4(inPosition[int2(launchID)].xyz, 1.0);
+    //outImage[int2(launchID)] = float4(inNormal[int2(launchID)].xyz, 1.0);
 }
 
 // Closest hit shader - called when ray hits geometry

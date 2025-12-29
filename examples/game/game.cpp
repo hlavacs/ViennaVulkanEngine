@@ -84,24 +84,6 @@ class MyGame : public vve::System {
 			m_handleCube = m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder, 
 												vve::Position{{nextRandom(), nextRandom(), 0.5f}}, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
 
-
-            std::cout << "Material Test: \n";
-            for (auto [oHandle, materialHandle] :
-                m_registry.template GetView<
-                vecs::Handle,
-                vve::MaterialHandle
-                >())
-            {
-                vvh::VRTMaterial material = m_registry.Get<vvh::VRTMaterial&>(materialHandle);
-
-                std::cout << "Material Test: \n";
-                std::cout << material.albedoTextureName << "\n";
-            }
-            std::cout << "TestEND \n";
-
-
-
-
             GetCamera();
             m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
 
@@ -143,6 +125,7 @@ class MyGame : public vve::System {
         }
     
         bool OnRecordNextFrame(Message message) { 
+            /*
             if( m_state == State::STATE_RUNNING ) {
                 ImGui::Begin("Game State");
                 char buffer[100];
@@ -167,6 +150,7 @@ class MyGame : public vve::System {
                 }
                 ImGui::End();
             }
+            */
             return false;
         }
 
@@ -184,7 +168,7 @@ class MyGame : public vve::System {
     
     
     int main() {
-        vve::Engine engine("My Engine", vve::RendererType::RENDERER_TYPE_FORWARD) ;
+        vve::Engine engine("My Engine", vve::RendererType::RENDERER_TYPE_RAYTRACING) ;
         MyGame mygui{engine};  
         engine.Run();
     

@@ -9,13 +9,17 @@ namespace vve {
 		bool OnInit(Message message);
 		bool OnPrepareNextFrame(Message message);
 		bool OnRecordNextFrame(Message message);
-		bool OnObjectCreate(Message message);
-		bool OnObjectDestroy(Message message);
+		bool OnRenderNextFrame(Message message);
 		bool OnQuit(Message message);
 
 		void createInstance();
 		void pickPhysicalDevice();
 		void createLogicalDevice();
+
+		void UpdateGeneralDescriptors();
+		void UpdateRayTracingDescriptors();
+
+		void updateUniformBuffer(uint32_t currentImage);
 
 
 		std::string m_windowName;
@@ -41,6 +45,9 @@ namespace vve {
 		VkDevice device;
 		VkQueue graphicsQueue;
 		VkQueue presentQueue;
+
+		uint32_t graphicsQueueIndex;
+		uint32_t presentQueueIndex;
 
 		uint32_t currentFrame = 0;
 		bool framebufferResized = false;
@@ -83,5 +90,12 @@ namespace vve {
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR };
 		VkPhysicalDeviceAccelerationStructurePropertiesKHR m_asProperties{
 			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR };
+
+		bool generalDiscriptorsCreated = false;
+		bool raytracingDiscriptorsCreated = false;
+
+
+		vecs::Ref<VulkanState> m_vkState{};
+		vecs::Handle m_vulkanStateHandle{};
 	};
 };

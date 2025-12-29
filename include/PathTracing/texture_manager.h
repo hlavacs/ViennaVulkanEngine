@@ -1,18 +1,26 @@
 #pragma once
 
 namespace vve {
-    class TextureManager {
+    class TextureManager : public System {
     private:
         std::vector<Texture*> textures{};
         VkSampler textureSampler{};
         VkDevice device;
         VkPhysicalDevice physicalDevice;
         CommandManager* commandManager;
+        bool textureCreated = false;
     public:
 
-        TextureManager(VkDevice& device, VkPhysicalDevice& physicalDevice, CommandManager* commandManager);
+        TextureManager(std::string systemName, Engine& engine, VkDevice& device, VkPhysicalDevice& physicalDevice, CommandManager* commandManager);
 
-        Texture* loadTexture(std::string filepath);
+        
+
+        bool OnTextureCreate(Message message);
+
+        bool OnTextureDestroy(Message message);
+        bool OnRecordNextFrame(Message message);
+
+        bool texturesChanged();
 
         /*
         ~TextureManager() {

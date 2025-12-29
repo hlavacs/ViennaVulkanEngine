@@ -6,6 +6,7 @@ struct FSInput
     float3 fragPosition : TEXCOORD0;
     float3 fragNormal   : TEXCOORD1;
     float2 fragTexCoord : TEXCOORD2;
+    uint materialIndex;
 };
 
 [[vk::binding(1, 0)]]
@@ -13,13 +14,6 @@ StructuredBuffer<Material> materials;
 
 [[vk::binding(2, 0)]]
 Sampler2D textures[];
-
-[[vk::push_constant]]
-cbuffer PushData
-{
-    uint materialIndex;
-};
-
 
 struct FSOutput
 {
@@ -35,7 +29,7 @@ FSOutput main(FSInput input)
 {
     FSOutput o;
 
-    Material mat = materials[materialIndex];
+    Material mat = materials[input.materialIndex];
 
     //o.outAlbedoAlpha = textures[mat.albedoTextureIndex].Sample(input.fragTexCoord);
 
