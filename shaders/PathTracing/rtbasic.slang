@@ -17,6 +17,17 @@ uint firstIndex;
 float2 uvScale;
 };
 
+struct LightSource
+{
+    float4 position;
+    float4 emission;
+    float4 direction;
+    float radius;
+    float pdf;
+    float accumulativeSampleWeight;
+    uint lightType;
+};
+
 struct IntersectionInfo
 {
  float3 position;
@@ -89,6 +100,9 @@ StructuredBuffer<uint> indexBuffer;
 
 [[vk::binding(3, 1)]]
 StructuredBuffer<Instance> instanceBuffer;
+
+[[vk::binding(4, 1)]]
+StructuredBuffer<LightSource> lightBuffer;
 
 
 

@@ -54,7 +54,8 @@ namespace vve {
 		"SHADOW_MAP_RECREATED",
 		"OBJECT_CHANGED",
 
-		"MATERIAL_CREATE"
+		"MATERIAL_CREATE",
+		"LIGHT_CREATE"
     };
 
 
@@ -190,6 +191,7 @@ namespace vve {
 	    struct MsgMeshCreate : public MsgBase { MsgMeshCreate( MeshHandle handle); MeshHandle m_handle; };
 
 		struct MsgMaterialCreate : public MsgBase { MsgMaterialCreate(MaterialHandle handle); MeshHandle m_handle; };
+		struct MsgLightCreate : public MsgBase { MsgLightCreate(ObjectHandle handle); ObjectHandle m_handle; };
 	    /** @brief Message for mesh destruction */
 	    struct MsgMeshDestroy : public MsgBase { MsgMeshDestroy(MeshHandle handle); MeshHandle m_handle; };
 		/** @brief Message for deleted resources */

@@ -120,6 +120,7 @@ namespace vve {
 	using MeshHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
 	using TextureHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Texture as a unique comonent
 	using MaterialHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Material as a unique comonent
+	using LightHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use Light as a unique comonent
 	using NormalMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use NormalMap as a unique component
 	using HeightMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use HeightMap as a unique component
 	using LightMapHandle = vsty::strong_type_t<vecs::Handle, vsty::counter<>>; //need this to use LightMap as a unique component

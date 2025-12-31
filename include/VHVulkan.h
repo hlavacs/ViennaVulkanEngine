@@ -274,6 +274,16 @@ namespace vvh {
 		float ior = 0.5;
 	};
 
+	struct VRTLight {
+		glm::vec3 emission;
+		float radius;
+	};
+
+	struct VRTSphereLight: public VRTLight {};
+	struct VRTDiskLight : public VRTLight {
+		glm::vec3 direction;
+	};
+
 	/**
 	 * @brief Vertex data structure with multiple attribute types
 	 *

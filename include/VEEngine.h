@@ -314,6 +314,10 @@ namespace vve {
 		auto CreateSpotLight(Name name, ParentHandle parent, SpotLight light, Position position = Position{vec3_t{0.0f}},
 							Rotation rotation = Rotation{mat3_t{1.0f}}, Scale scale = Scale{vec3_t{1.0f}}) -> ObjectHandle;
 
+		auto CreateVRTSphereLight(Name name, ParentHandle parent, vec3_t emmision = vec3_t{ 1.0f }, float radius = float{1.0f}, Position position = Position{vec3_t{0.0f}}) -> ObjectHandle;
+
+		auto CreateVRTDiskLight(Name name, ParentHandle parent, vec3_t emmision = vec3_t{ 1.0f }, vec3_t direction = vec3_t{0.0f, 0.0f, -1.0f }, float radius = float{ 1.0f }, Position position = Position{ vec3_t{0.0f} }) -> ObjectHandle;
+
 		/**
 		 * @brief Creates a camera.
 		 * @param name Name of the camera.

@@ -64,11 +64,10 @@ namespace vve {
 		std::vector<VkDescriptorSet> descriptorSetsTargets;
 		VkDescriptorSetLayout descriptorSetLayoutTargets;
 
-		Texture* texture;
 		TextureManager* textureManager;
-
 		ObjectManager* objectManager;
 		MaterialManager* materialManager;
+		LightManager* lightManager;
 
 		CommandManager* commandManager;
 		SwapChain* swapchain;

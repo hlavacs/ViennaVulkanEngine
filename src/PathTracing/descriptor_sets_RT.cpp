@@ -21,7 +21,8 @@ namespace vve {
         //Binding 1: vertexBuffer
         //Binding 2: indexBuffer
         //Binding 3: instanceBuffer
-        for (int i = 1; i < 4; i++) {
+        //Binding 4: lightBuffer
+        for (int i = 1; i < 5; i++) {
             VkDescriptorSetLayoutBinding layoutBinding{};
             layoutBinding.binding = i;
             layoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
@@ -49,7 +50,7 @@ namespace vve {
         poolSizes[0].type = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
         poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT);
         poolSizes[1].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 3;
+        poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT) * 4;
 
         VkDescriptorPoolCreateInfo poolInfo{};
         poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -65,7 +66,7 @@ namespace vve {
 
     void createDescriptorSetsRT(std::vector<VkDescriptorSet>& descriptorSets, VkDescriptorPool descriptorPool, VkDescriptorSetLayout descriptorSetLayout,
         VkAccelerationStructureKHR tlas, DeviceBuffer<Vertex>* vertexBuffer, DeviceBuffer<uint32_t>* indexBuffer,
-        std::vector<HostBuffer<vvh::Instance>*> instanceBuffers, VkDevice device)
+        std::vector<HostBuffer<vvh::Instance>*> instanceBuffers, DeviceBuffer<LightSource>* lightBuffer, VkDevice device)
     {
         // Allocate descriptor sets (one per frame)
         std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
@@ -97,6 +98,11 @@ namespace vve {
         indexBufferInfo.buffer = indexBuffer->getBuffer();
         indexBufferInfo.offset = 0;
         indexBufferInfo.range = sizeof(uint32_t) * indexBuffer->getCount();
+
+        VkDescriptorBufferInfo lightBufferInfo{};
+        lightBufferInfo.buffer = lightBuffer->getBuffer();
+        lightBufferInfo.offset = 0;
+        lightBufferInfo.range = sizeof(LightSource) * lightBuffer->getCount();
 
         std::vector<VkDescriptorBufferInfo> instanceBufferInfos;
 
@@ -154,6 +160,17 @@ namespace vve {
             instanceWrite.pBufferInfo = &instanceBufferInfos[i];
 
             writes.push_back(instanceWrite);
+
+            VkWriteDescriptorSet lightWrite{};
+            lightWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            lightWrite.dstSet = descriptorSets[i];
+            lightWrite.dstBinding = 4;
+            lightWrite.dstArrayElement = 0;
+            lightWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+            lightWrite.descriptorCount = 1;
+            lightWrite.pBufferInfo = &lightBufferInfo;
+
+            writes.push_back(lightWrite);
 
             vkUpdateDescriptorSets(device,
                 static_cast<uint32_t>(writes.size()), writes.data(),

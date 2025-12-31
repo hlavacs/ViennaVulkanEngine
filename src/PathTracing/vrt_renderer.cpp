@@ -44,7 +44,7 @@ namespace vve {
                 descriptorSetsRT.data()
             );
         }
-        createDescriptorSetsRT(descriptorSetsRT, descriptorPoolRT, descriptorSetLayoutRT, objectManager->getTlas().accel, objectManager->getVertexBuffer(), objectManager->getIndexBuffer(), objectManager->getInstanceBuffers(), device);
+        createDescriptorSetsRT(descriptorSetsRT, descriptorPoolRT, descriptorSetLayoutRT, objectManager->getTlas().accel, objectManager->getVertexBuffer(), objectManager->getIndexBuffer(), objectManager->getInstanceBuffers(), lightManager->getLightBuffer(), device);
         raytracer->setDescriptorSets(descriptorSets, descriptorSetsRT);
         raytracingDiscriptorsCreated = true;
     }
@@ -83,12 +83,10 @@ namespace vve {
         objectManager = objectManagerUnique.get();  
         m_engine.RegisterSystem(std::move(objectManagerUnique));
 
-        //objectManager->createVertexBuffer();
-        //objectManager->createIndexBuffer();
-        //objectManager->createInstanceBuffers();
 
-        //objectManager->createBottomLevelAS();
-        //objectManager->createTopLevelAS();
+        auto lightManagerUnique = std::make_unique<LightManager>("Light Manager", m_engine, commandManager, device, physicalDevice);
+        lightManager = lightManagerUnique.get();
+        m_engine.RegisterSystem(std::move(lightManagerUnique));
 
         uniformBuffer_c.resize(MAX_FRAMES_IN_FLIGHT);
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
@@ -187,7 +185,7 @@ namespace vve {
 
         m_vkState().m_surface = surface;
 
-
+       
 
         return false;
     }
@@ -240,7 +238,7 @@ namespace vve {
         if (materialManager->materialChanged() || textureManager->texturesChanged()) {
             UpdateGeneralDescriptors();
         }
-        if (objectManager->meshesChanged() || objectManager->instancesChanged()) {      
+        if (objectManager->meshesChanged() || objectManager->instancesChanged() || lightManager->lightsChanged()) {      
             UpdateRayTracingDescriptors();
         }
 

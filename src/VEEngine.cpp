@@ -387,6 +387,35 @@ namespace vve {
 		return handle;
 	};
 
+	auto Engine::CreateVRTSphereLight(Name name, ParentHandle parent, vec3_t emmision, float radius, Position position) -> ObjectHandle {
+		Rotation rotation = Rotation{ mat3_t{1.0f} };
+		Scale scale = Scale{ vec3_t{1.0f} };
+
+		vvh::VRTSphereLight light;
+		light.emission = emmision;
+		light.radius = radius;
+
+		ObjectHandle handle{ m_registry.Insert(name, parent, light, position, rotation, scale) };
+		m_engine.SetParent(handle, parent);
+		m_engine.SendMsg(MsgLightCreate{ handle });
+		return handle;
+	}
+
+	auto Engine::CreateVRTDiskLight(Name name, ParentHandle parent, vec3_t emmision, vec3_t direction, float radius, Position position) -> ObjectHandle {
+		Rotation rotation = Rotation{ mat3_t{1.0f} };
+		Scale scale = Scale{ vec3_t{1.0f} };
+
+		vvh::VRTDiskLight light;
+		light.emission = emmision;
+		light.radius = radius;
+		light.direction = direction;
+
+		ObjectHandle handle{ m_registry.Insert(name, parent, light, position, rotation, scale) };
+		m_engine.SetParent(handle, parent);
+		m_engine.SendMsg(MsgLightCreate{ handle });
+		return handle;
+	}
+
 	/**
 	 * @brief Destroy an object
 	 * @param handle Handle to the object to destroy
