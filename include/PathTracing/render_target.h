@@ -31,6 +31,12 @@ namespace vve {
 			return format;
 		}
 
+		void recreateRenderTarget(uint32_t width, uint32_t height) {
+			for (Image* image : images) {
+				image->recreateImage(width, height);
+			}
+		}
+
 
 
 	};

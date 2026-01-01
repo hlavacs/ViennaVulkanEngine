@@ -152,6 +152,14 @@ namespace vve {
             this->descriptorSetsRT = descriptorSetsRT;
         }
 
+        void setRenderTargetsDescriptorSets(std::vector<VkDescriptorSet> descriptorSetsTargets) {
+            this->descriptorSetsTargets = descriptorSetsTargets;
+        }
+
+        void setExtent(VkExtent2D extent) {
+            this->extent = extent;
+        }
+
 
         void bindRenderTarget(RenderTarget* target) {
             renderTargets.push_back(target);

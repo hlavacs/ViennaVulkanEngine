@@ -51,10 +51,7 @@ namespace vve {
         }
 
         void cleanupSwapChain() {
-            for (auto image : images) {
-                delete image;
-            }
-
+            //I cant use the normal image destructor to get rid of the images. Other way is needed. 
             images = std::vector<Image*>{};
 
             vkDestroySwapchainKHR(device, swapChain, nullptr);
@@ -114,17 +111,8 @@ namespace vve {
         }
 
         void recreateSwapChain() {
-            int width = 0, height = 0;
-            SDL_GetWindowSize(window, &width, &height);
-            while (width == 0 || height == 0) {
-                SDL_GetWindowSize(window, &width, &height);
-                SDL_WaitEvent(nullptr);
-            }
-
             vkDeviceWaitIdle(device);
-
             cleanupSwapChain();
-
             createSwapchain();
         }
 

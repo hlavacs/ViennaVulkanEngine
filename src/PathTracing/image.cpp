@@ -11,6 +11,7 @@ namespace vve {
         currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     }
 
+    //for the swapchain
     Image::Image(VkImage image, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice) :
         GPUDataStorage(device, physicalDevice), image(image), width(width), height(height), format(format), tiling(tiling), usage(usage), aspectFlags(aspectFlags), commandManager(commandManager) {
         createImageView();
@@ -24,6 +25,19 @@ namespace vve {
         currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         copyDataToImage(pixels);
         createImageView();
+    }
+
+    void Image::recreateImage(uint32_t width, uint32_t height) {
+        this->width = width;
+        this->height = height;
+
+        if (imageView) vkDestroyImageView(device, imageView, nullptr);
+        if (image) vkDestroyImage(device, image, nullptr);
+        if (imageMemory) vkFreeMemory(device, imageMemory, nullptr);
+
+        createImage();
+        createImageView();
+        currentLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     }
 
     Image::~Image() {

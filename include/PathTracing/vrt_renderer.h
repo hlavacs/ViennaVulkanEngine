@@ -20,6 +20,7 @@ namespace vve {
 		void UpdateRayTracingDescriptors();
 
 		void updateUniformBuffer(uint32_t currentImage);
+		void resizeWindow();
 
 
 		std::string m_windowName;
@@ -82,6 +83,9 @@ namespace vve {
 		RenderTarget* normalTarget;
 		RenderTarget* specTarget;
 		RenderTarget* positionTarget;
+
+		std::vector<RenderTarget*> allTargets;
+		std::vector<RenderTarget*> rayTracingTargets;
 
 		std::vector<HostBuffer<UniformBufferObject>*> uniformBuffer_c;
 

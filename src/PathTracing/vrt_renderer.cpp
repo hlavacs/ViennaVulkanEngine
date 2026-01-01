@@ -123,21 +123,27 @@ namespace vve {
 
         RtTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
 
-        std::vector<RenderTarget*> targets;
+        allTargets.push_back(albedoTarget);
+        allTargets.push_back(normalTarget);
+        allTargets.push_back(specTarget);
+        allTargets.push_back(positionTarget);
+        allTargets.push_back(RtTarget);
+        allTargets.push_back(depthTarget);
 
-        targets.push_back(albedoTarget);
-        targets.push_back(normalTarget);
-        targets.push_back(specTarget);
-        targets.push_back(positionTarget);
 
-        targets.push_back(RtTarget);
+        rayTracingTargets.push_back(albedoTarget);
+        rayTracingTargets.push_back(normalTarget);
+        rayTracingTargets.push_back(specTarget);
+        rayTracingTargets.push_back(positionTarget);
+
+        rayTracingTargets.push_back(RtTarget);
 
         createDescriptorSetLayoutRT(descriptorSetLayoutRT, device);
         createDescriptorPoolRT(descriptorPoolRT, device);
 
-        createDescriptorSetLayoutTargets(descriptorSetLayoutTargets, targets.size(), device);
-        createDescriptorPoolTargets(descriptorPoolTargets, targets.size(), device);
-        createDescriptorSetsTargets(descriptorSetsTargets, descriptorPoolTargets, descriptorSetLayoutTargets, targets, device);
+        createDescriptorSetLayoutTargets(descriptorSetLayoutTargets, rayTracingTargets.size(), device);
+        createDescriptorPoolTargets(descriptorPoolTargets, rayTracingTargets.size(), device);
+        createDescriptorSetsTargets(descriptorSetsTargets, descriptorPoolTargets, descriptorSetLayoutTargets, rayTracingTargets, device);
 
         raytracer = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, descriptorSetLayout, descriptorSetLayoutRT, descriptorSetLayoutTargets, descriptorSetsTargets, swapchain->getExtent());
 
@@ -190,17 +196,33 @@ namespace vve {
         return false;
     }
 
+    void RendererRayTraced::resizeWindow() {
+        swapchain->recreateSwapChain();
+
+        for (RenderTarget* target : allTargets) {
+            target->recreateRenderTarget(swapchain->getExtent().width, swapchain->getExtent().height);
+        }
+        rasterizer->recreateFrameBuffers(swapchain->getExtent());
+
+        vkFreeDescriptorSets(
+            device,
+            descriptorPoolTargets,
+            descriptorSetsTargets.size(),
+            descriptorSetsTargets.data()
+        );
+        createDescriptorSetsTargets(descriptorSetsTargets, descriptorPoolTargets, descriptorSetLayoutTargets, rayTracingTargets, device);
+        raytracer->setRenderTargetsDescriptorSets(descriptorSetsTargets);
+        raytracer->setExtent(swapchain->getExtent());
+        m_engine.SendMsg(MsgWindowSize{});
+        //send Message window resized maybe (aspect ratio incorrect)
+    }
+
     bool RendererRayTraced::OnRecordNextFrame(Message message) {
-
-        commandManager->waitForFence(currentFrame);
-
         VkResult result = swapchain->acquireNextImage(currentFrame);
         m_vkState().m_imageIndex = swapchain->getImageIndex(currentFrame);
 
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-            swapchain->recreateSwapChain();
-            //recreate render targets
-            rasterizer->recreateFrameBuffers(swapchain->getExtent());
+            resizeWindow();
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
             throw std::runtime_error("failed to acquire swap chain image!");
@@ -210,7 +232,7 @@ namespace vve {
         rasterizer->recordCommandBuffer(currentFrame);
         //the raytracer switches the sampler of the textures to linear causing the image to darken. In generell later on everything in the renderer should be switched to linear and only be converted to srgb before presentation
         raytracer->recordCommandBuffer(currentFrame);
-        swapchain->recordImageTransfer(currentFrame, RtTarget);
+        swapchain->recordImageTransfer(currentFrame, albedoTarget);
         //swapchain->recordImageTransfer(currentFrame, albedoTarget);
 
         return false;
@@ -232,7 +254,7 @@ namespace vve {
     }
 
     bool RendererRayTraced::OnPrepareNextFrame(Message message) {
-
+        commandManager->waitForFence(currentFrame);
         updateUniformBuffer(currentFrame);
 
         if (materialManager->materialChanged() || textureManager->texturesChanged()) {
@@ -254,11 +276,8 @@ namespace vve {
 
         VkResult result = swapchain->presentImage(currentFrame, commandManager->getRenderFinishedSemaphores(currentFrame));
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) {
-            framebufferResized = false;
-            //recreate render Targets
-            swapchain->recreateSwapChain();
-            rasterizer->recreateFrameBuffers(swapchain->getExtent());
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            resizeWindow();
         }
         else if (result != VK_SUCCESS) {
             throw std::runtime_error("failed to present swap chain image!");

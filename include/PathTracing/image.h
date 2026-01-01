@@ -110,6 +110,8 @@ namespace vve {
         void copyFromImage(Image* srcImage, VkImageLayout newLayout);
         void recordCopyFromImage(Image* srcImage, VkImageLayout newLayout, int currentFrame);
 
+        void recreateImage(uint32_t width, uint32_t height);
+
         VkImage getImage();
         VkImageView getImageView();
 
