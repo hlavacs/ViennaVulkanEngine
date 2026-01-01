@@ -413,10 +413,8 @@ namespace vve {
 
             std::vector<VkClearValue> clearValues;
 
-            for (int i = 0; i < renderTargets.size(); i++) {
-                VkClearValue clearColor;
-                clearColor.color = { {0.0f, 0.0f, 0.0f, 1.0f} };
-                clearValues.push_back(clearColor);
+            for (RenderTarget* target : renderTargets) {
+                clearValues.push_back(target->getClearColor());
             }
 
             VkClearValue clearColor;
