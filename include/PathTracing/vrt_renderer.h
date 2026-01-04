@@ -100,5 +100,8 @@ namespace vve {
 
 		vecs::Ref<VulkanState> m_vkState{};
 		vecs::Handle m_vulkanStateHandle{};
+
+		std::mt19937 gen;
+		std::uniform_int_distribution<uint32_t> dist;
 	};
 };

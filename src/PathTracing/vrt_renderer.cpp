@@ -5,7 +5,7 @@
 
 namespace vve {
     RendererRayTraced::RendererRayTraced(std::string systemName, Engine& engine, std::string windowName)
-        : System{ systemName, engine }, m_windowName(windowName) {
+        : System{ systemName, engine }, m_windowName(windowName), gen(std::random_device{}()), dist(std::numeric_limits<uint32_t>::min(), std::numeric_limits<uint32_t>::max()) {
 
         
         engine.RegisterCallbacks({
@@ -249,6 +249,8 @@ namespace vve {
 
         ubo.viewInv = glm::transpose(glm::inverse(ubo.view)); // Transpose inverse view matrix
         ubo.projInv = glm::transpose(glm::inverse(ubo.proj));
+
+        ubo.seed = dist(gen);
 
         uniformBuffer_c[currentImage]->updateBuffer(&ubo, 1);
     }

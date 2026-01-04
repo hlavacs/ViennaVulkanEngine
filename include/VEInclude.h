@@ -18,6 +18,8 @@
 #include <iterator>
 #include <ranges>
 #include <optional>
+#include <random>
+#include <cstdint>
 
 #include <assimp/cimport.h>
 #include <assimp/Importer.hpp>

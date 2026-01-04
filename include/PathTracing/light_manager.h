@@ -50,6 +50,11 @@ namespace vve {
 
 					addDiskLight(position, glm::vec4(light.emission, 1.0), transformedDirection, light.radius);
 				}
+
+				for (LightSource& light : lights) {
+					light.accumulativeSampleWeight /= totalLightWeight;
+				}
+
 				buffer->updateBuffer(lights.data(), lights.size());
 				return false;
 			}
@@ -74,7 +79,7 @@ namespace vve {
 			light.radius = radius;
 			light.lightType = 0;
 			light.direction = glm::vec4(0.0, 0.0, 0.0, 0.0);
-			light.pdf = 1.0f / surfaceArea;
+			light.pdf = surfaceArea;
 			light.accumulativeSampleWeight = totalLightWeight;
 			lights.push_back(light);
 		}
@@ -90,7 +95,7 @@ namespace vve {
 			light.radius = radius;
 			light.lightType = 1;
 			light.direction = direction;
-			light.pdf = 1.0f / surfaceArea;
+			light.pdf = surfaceArea;
 			light.accumulativeSampleWeight = totalLightWeight;
 			lights.push_back(light);
 		}
