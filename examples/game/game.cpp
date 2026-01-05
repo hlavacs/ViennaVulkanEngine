@@ -84,7 +84,7 @@ class MyGame : public vve::System {
 			m_handleCube = m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{cube_obj}, aiProcess_FlipWindingOrder, 
 												vve::Position{{nextRandom(), nextRandom(), 0.5f}}, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
 
-            m_engine.CreateVRTSphereLight(vve::Name{}, vve::ParentHandle{}, vec3_t{ 2000.0f }, 4.0f, vve::Position{ {0.0f,0.0f,20.0f} });
+            m_engine.CreateVRTSphereLight(vve::Name{}, vve::ParentHandle{}, vec3_t{ 5000.0f }, 4.0f, vve::Position{ {0.0f,0.0f,20.0f} });
 
 
             GetCamera();

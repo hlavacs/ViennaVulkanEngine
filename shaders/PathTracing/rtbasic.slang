@@ -128,9 +128,11 @@ float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inou
     const uint rayFlags = 0;
 
     //self blocked
+    
     if (dot(shadowRay.Direction, its.normal) < 0.0) {
         return float3(0.0, 0.0, 0.0);
     }
+    
 
     TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
 
@@ -230,33 +232,6 @@ float3 clipThroughput(in float3 throughput) {
     return throughputClipped;
 }
 
-
-float3 directRaycastTest(in IntersectionRecord its, in MaterialRecord material, inout Sampler sampler) {
-    EmitterRecord emitterRecord = sampleRandomLightSource(lightBuffer, its.position, sampler);
-
-    RayDesc shadowRay = getRay(its, emitterRecord.direction);
-    HitPayload payload;
-    const uint rayFlags = 0;
-
-    // self blocked
-    if (dot(shadowRay.Direction, its.normal) < 0.0) {
-        return float3(0.0, 0.0, 0.0);
-    }
-
-    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
-
-    if (payload.distance < emitterRecord.distance) {
-        return float3(0.0, 0.0, 0.0);
-    }
-
-    BSDFQueryRecord shaderRecord;
-    shaderRecord.wi = its.frame.toLocal(-its.direction);
-    shaderRecord.wo = its.frame.toLocal(shadowRay.Direction);
-
-    float3 bsdfEval = PrincipledEval(shaderRecord, material);
-
-    return emitterRecord.sampleEmission * dot(its.normal, shadowRay.Direction) * bsdfEval;
-}
 
 float3 integratorPT(inout Sampler sampler) {
     IntegrationStepQueryRecord integrationStep = simulateFirstBounce(sampler);
