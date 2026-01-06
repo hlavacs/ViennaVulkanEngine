@@ -19,6 +19,8 @@ set(SOURCE
   VERendererDeferred11.cpp
   VERendererDeferred13.cpp
   VERendererShadow11.cpp
+  VERendererGaussian.cpp
+  VEGaussianAssetLoader.cpp
   VERendererImgui.cpp
   VERendererVulkan.cpp
   VESceneManager.cpp
@@ -42,6 +44,9 @@ set(HEADERS
   ${INCLUDE}/VERendererDeferred11.h
   ${INCLUDE}/VERendererDeferred13.h
   ${INCLUDE}/VERendererShadow11.h
+  ${INCLUDE}/VERendererGaussian.h
+  ${INCLUDE}/VEGaussianComponent.h
+  ${INCLUDE}/VEGaussianAssetLoader.h
   ${INCLUDE}/VERendererImgui.h
   ${INCLUDE}/VERendererVulkan.h
   ${INCLUDE}/VESceneManager.h
@@ -67,5 +72,5 @@ source_group(
   PREFIX "Header Files"
   FILES ${HEADER_LIST})
 
-target_link_libraries(${TARGET} SDL3::SDL3 SDL3_mixer::SDL3_mixer assimp vk-bootstrap volk)
+target_link_libraries(${TARGET} SDL3::SDL3 SDL3_mixer::SDL3_mixer assimp vk-bootstrap volk vk_radix_sort)
 
