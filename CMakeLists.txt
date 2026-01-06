@@ -153,7 +153,7 @@ if (WIN32)
 	set(VULKAN_LIB Lib)
 elseif (APPLE)
 	set(VULKAN_INCLUDE include)
-    set(VULKAN_LIB lib)
+	set(VULKAN_LIB lib)
 elseif (UNIX AND NOT APPLE)
 	set(VULKAN_INCLUDE include)
 	set(VULKAN_LIB lib)
@@ -163,6 +163,16 @@ include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE})
 include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/volk)
 include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/vma)
 link_directories(${VULKAN_SDK}/lib)
+
+#--------------------------------- Vulkan Radix Sort ---------------------------------#
+
+# Single-file header-only library (v0.2.0+)
+# Requires VRDX_IMPLEMENTATION to be defined in exactly one source file
+FetchContent_Declare(vulkan_radix_sort
+    GIT_REPOSITORY https://github.com/jaesung-cs/vulkan_radix_sort.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(vulkan_radix_sort)
 
 #--------------------------------- Summary ---------------------------------#
 
