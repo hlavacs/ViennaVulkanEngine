@@ -31,6 +31,7 @@ namespace vve {
         glm::vec4 pos;
         glm::vec4 normal;
         glm::vec4 texCoord;
+        glm::vec4 tangent;
 
         bool operator==(const Vertex& other) const {
             return pos == other.pos && normal == other.normal && texCoord == other.texCoord;
@@ -106,7 +107,7 @@ namespace vve {
 
     std::array<VkVertexInputBindingDescription, 2> getBindingDescriptions();
 
-    std::array<VkVertexInputAttributeDescription, 14> getAttributeDescriptions();
+    std::array<VkVertexInputAttributeDescription, 15> getAttributeDescriptions();
 
     struct AccelStructure {
         VkAccelerationStructureKHR accel = VK_NULL_HANDLE;

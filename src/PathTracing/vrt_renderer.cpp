@@ -111,12 +111,14 @@ namespace vve {
         normalTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
         specTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
         positionTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice, VkClearColorValue{{-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),1.0}});
+        shadingNormalTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
 
         //rasterizer->bindRenderTarget(mainTarget);
         rasterizer->bindRenderTarget(albedoTarget);
         rasterizer->bindRenderTarget(normalTarget);
         rasterizer->bindRenderTarget(specTarget);
         rasterizer->bindRenderTarget(positionTarget);
+        rasterizer->bindRenderTarget(shadingNormalTarget);
 
         rasterizer->bindDepthRenderTarget(depthTarget);
         rasterizer->initGraphicsPipeline();
@@ -129,12 +131,14 @@ namespace vve {
         allTargets.push_back(positionTarget);
         allTargets.push_back(RtTarget);
         allTargets.push_back(depthTarget);
+        allTargets.push_back(shadingNormalTarget);
 
 
         rayTracingTargets.push_back(albedoTarget);
         rayTracingTargets.push_back(normalTarget);
         rayTracingTargets.push_back(specTarget);
         rayTracingTargets.push_back(positionTarget);
+        rayTracingTargets.push_back(shadingNormalTarget);
 
         rayTracingTargets.push_back(RtTarget);
 
@@ -151,6 +155,7 @@ namespace vve {
         raytracer->bindRenderTarget(normalTarget);
         raytracer->bindRenderTarget(specTarget);
         raytracer->bindRenderTarget(positionTarget);
+        raytracer->bindRenderTarget(shadingNormalTarget);
 
         raytracer->bindRenderTarget(RtTarget);
 

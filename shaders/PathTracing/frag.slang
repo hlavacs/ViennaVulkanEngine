@@ -1,11 +1,12 @@
 import Materials;
-
+import Frame;
 
 struct FSInput
 {
     float3 fragPosition : TEXCOORD0;
-    float3 fragNormal   : TEXCOORD1;
-    float2 fragTexCoord : TEXCOORD2;
+    float3 fragNormal : TEXCOORD1;
+    float3 fragTangent : TEXCOORD2;
+    float2 fragTexCoord : TEXCOORD3;
     uint materialIndex;
 };
 
@@ -21,6 +22,7 @@ struct FSOutput
     float3 outNormal      : SV_Target1;
     float3 outSpec        : SV_Target2;
     float3 outPosition    : SV_Target3;
+    float3 outShadingNormal : SV_Target4;
 };
 
 
@@ -31,12 +33,15 @@ FSOutput main(FSInput input)
 
     Material mat = materials[input.materialIndex];
 
-    //o.outAlbedoAlpha = textures[mat.albedoTextureIndex].Sample(input.fragTexCoord);
+    Frame geometryFrame = Frame(input.fragNormal, input.fragTangent);
 
-    o.outAlbedoAlpha = float4(getAlbedo(mat, textures, input.fragTexCoord), getAlpha(mat, textures, input.fragTexCoord));
+    MaterialRecord material = getMaterialProperties(mat, textures, input.fragTexCoord, geometryFrame);
+
+    o.outAlbedoAlpha = float4(material.albedo, material.alpha);
 
     o.outNormal = input.fragNormal;
-    o.outSpec = float3(getRoughness(mat, textures, input.fragTexCoord), getMetallic(mat, textures, input.fragTexCoord), getIOR(mat, textures, input.fragTexCoord));
+    o.outShadingNormal = material.shadingFrame.n;
+    o.outSpec = float3(material.roughness, material.metalness, material.ior);
     o.outPosition = input.fragPosition;
 
     return o;

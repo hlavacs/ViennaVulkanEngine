@@ -83,6 +83,7 @@ namespace vve {
 		RenderTarget* normalTarget;
 		RenderTarget* specTarget;
 		RenderTarget* positionTarget;
+		RenderTarget* shadingNormalTarget;
 
 		std::vector<RenderTarget*> allTargets;
 		std::vector<RenderTarget*> rayTracingTargets;

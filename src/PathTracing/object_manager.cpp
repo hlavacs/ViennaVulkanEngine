@@ -56,6 +56,7 @@ namespace vve {
 
 			for (auto [gHandle, mesh] : m_registry.GetView<vecs::Handle, vvh::Mesh&>()) {
 				vvh::VertexData& vertexData = mesh().m_verticesData;
+				std::cout << "tangents: " << vertexData.m_tangents.size() << "\n";
 				firstVertex = accumulatedVertexData.size();
 				firstIndex = accumulatedIndices.size();
 
@@ -64,6 +65,7 @@ namespace vve {
 					vertex.pos = glm::vec4(vertexData.m_positions[i], 1.0);
 					vertex.normal = glm::vec4(vertexData.m_normals[i], 0.0);
 					vertex.texCoord = glm::vec4(vertexData.m_texCoords[i], 0.0, 0.0);
+					vertex.tangent = glm::vec4(vertexData.m_tangents[i], 0.0);
 
 					accumulatedVertexData.push_back(vertex);
 				}

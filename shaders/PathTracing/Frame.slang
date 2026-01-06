@@ -1,8 +1,8 @@
 //A orthonormal geometry frame
 public struct Frame {
-    float3 n;
-    float3 t;
-    float3 s;
+    public float3 n;
+    public float3 t;
+    public float3 s;
 
     /*
     public __init(float3 n_in) {

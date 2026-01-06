@@ -11,6 +11,7 @@ struct Vertex
     float4 position;
     float4 normal;
     float4 uv;
+    float4 tangent;
 };
 
 struct Instance
@@ -27,6 +28,7 @@ struct IntersectionRecord
     float3 position;
     float3 direction;
     float3 normal;
+    float3 tangent;
     float2 uv;
     Frame frame;
     uint materialIdx;
@@ -49,6 +51,8 @@ struct IntegrationStepQueryRecord {
     RayDesc indirectRay = RayDesc();
 }
 
+
+
 IntersectionRecord getIntersectionInfo(in HitPayload payload, in RayDesc ray){
     
     Instance instance = instanceBuffer[payload.instanceIdx];
@@ -66,11 +70,14 @@ IntersectionRecord getIntersectionInfo(in HitPayload payload, in RayDesc ray){
 
     float3 localPosition = v0.position.xyz * payload.barycentrics.z + v1.position.xyz * payload.barycentrics.x + v2.position.xyz * payload.barycentrics.y;
     float3 localNormal = normalize(v0.normal.xyz * payload.barycentrics.z + v1.normal.xyz * payload.barycentrics.x + v2.normal.xyz * payload.barycentrics.y);
+    
+    float3 localTangent = normalize(v0.tangent.xyz * payload.barycentrics.z + v1.tangent.xyz * payload.barycentrics.x + v2.tangent.xyz * payload.barycentrics.y);
 
     its.uv = v0.uv.xy * payload.barycentrics.z + v1.uv.xy * payload.barycentrics.x + v2.uv.xy * payload.barycentrics.y;
     its.position = mul(instance.model, float4(localPosition, 1)).xyz;
     its.direction = ray.Direction;
     its.normal = normalize(mul(instance.modelInverse, float4(localNormal, 0)).xyz);
+    its.tangent = normalize(mul(instance.modelInverse, float4(localTangent, 0)).xyz);
     its.materialIdx = instance.materialIndex;
     
     //incomming direction should be in the lower hemisphere.
@@ -78,7 +85,7 @@ IntersectionRecord getIntersectionInfo(in HitPayload payload, in RayDesc ray){
         its.normal *= -1.0;
     }
 
-    its.frame = Frame(its.normal);
+    its.frame = Frame(its.normal, its.tangent);
 
     return its;
 }
@@ -140,13 +147,20 @@ float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inou
         return float3(0.0, 0.0, 0.0);
     }
 
+    /*
     BSDFQueryRecord shaderRecord;
     shaderRecord.wi = its.frame.toLocal(-its.direction);
     shaderRecord.wo = its.frame.toLocal(shadowRay.Direction);
+    */
+
+    BSDFQueryRecord shaderRecord;
+    shaderRecord.wi = material.shadingFrame.toLocal(-its.direction);
+    shaderRecord.wo = material.shadingFrame.toLocal(shadowRay.Direction);
+
 
     float3 bsdfEval = PrincipledEval(shaderRecord, material);
 
-    return emitterRecord.sampleEmission * dot(its.normal, shadowRay.Direction) * bsdfEval;
+    return emitterRecord.sampleEmission * bsdfEval;
 }
 
 RayDesc getInitialRay(in float2 launchID, in float2 launchSize) {
@@ -178,22 +192,28 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
     its.frame = Frame(its.normal);
     its.direction = cameraRay.Direction;
 
-    BSDFQueryRecord record;
-    record.wi = -its.frame.toLocal(its.direction);
+    
 
     MaterialRecord material;
     material.albedo = inAlbedoAlpha[int2(launchID)].xyz;
     material.alpha = inAlbedoAlpha[int2(launchID)].w;
-    material.normal = inNormal[int2(launchID)].xyz;
+    //Incorrect but not needed
+    material.normal = float3(0.0,0.0,1.0);
     material.roughness = inSpec[int2(launchID)].x;
     material.metalness = inSpec[int2(launchID)].y;
     material.ior = inSpec[int2(launchID)].z;
 
+    material.shadingFrame = Frame(inShadingNormal[int2(launchID)].xyz);
+
     float3 directLight = directRaycast(its, material, sampler);
 
-    float3 bsdf = samplePrincipled(record, material, sampler);
+    BSDFQueryRecord record;
+    //record.wi = -its.frame.toLocal(its.direction);
+    record.wi = material.shadingFrame.toLocal(-its.direction);
 
-    RayDesc indirectRay = getRay(its, its.frame.toWorld(record.wo));
+    float3 bsdf = samplePrincipled(record, material, sampler);
+    // RayDesc indirectRay = getRay(its, its.frame.toWorld(record.wo));
+    RayDesc indirectRay = getRay(its, material.shadingFrame.toWorld(record.wo));
 
     IntegrationStepQueryRecord integrationStep;
 
@@ -251,20 +271,17 @@ float3 integratorPT(inout Sampler sampler) {
 
         IntersectionRecord its = getIntersectionInfo(payload, integrationStep.indirectRay);
 
-        BSDFQueryRecord shaderRecord;
-        shaderRecord.wi = its.frame.toLocal(-its.direction);
+        
 
         Material material = materials[its.materialIdx];
-        MaterialRecord materialRecord = getMaterialProperties(material, textures, its.uv);
+        MaterialRecord materialRecord = getMaterialProperties(material, textures, its.uv, its.frame);
+
+        BSDFQueryRecord shaderRecord;
+        // shaderRecord.wi = its.frame.toLocal(-its.direction);
+        shaderRecord.wi = materialRecord.shadingFrame.toLocal(-its.direction);
 
         float3 bsdf = samplePrincipled(shaderRecord, materialRecord, sampler);
-
-        float3 bsdfEval = PrincipledEval(shaderRecord, materialRecord);
-
-
-
-        integrationStep.indirectRay = getRayInternal(its, its.frame.toWorld(shaderRecord.wo));
-
+        integrationStep.indirectRay = getRayInternal(its, materialRecord.shadingFrame.toWorld(shaderRecord.wo));
         //check needed if material is descrete!!!
         /*
         if (bsdfQuery.measure != EDiscrete) {
@@ -336,6 +353,9 @@ RWTexture2D<float4> inSpec;
 RWTexture2D<float4> inPosition;
 
 [[vk::binding(4, 2)]]
+RWTexture2D<float4> inShadingNormal;
+
+[[vk::binding(5, 2)]]
 RWTexture2D<float4> outImage;
 
 
@@ -348,7 +368,6 @@ void rgenMain()
     // Get the current pixel coordinates and image dimensions
     float2 launchID = (float2)DispatchRaysIndex().xy;     // Current pixel (x,y)
     float2 launchSize = (float2)DispatchRaysDimensions().xy; // Image size (width,height)
-
     /*
     // Set ray tracing flags (0 = no special flags)
     const uint rayFlags = 0;
@@ -395,15 +414,19 @@ void rgenMain()
     if (payload.hit) {
         IntersectionRecord its = getIntersectionInfo(payload, ray);
 
+        
         if (dot(ray.Direction, its.normal) > 0.0) {
             outputColor = float3(0.0, 0.0, 1.0);
         } else {
             outputColor = float3(1.0, 0.0, 0.0);
         }
+            
+        outputColor = its.tangent;    
         
     }
      outImage[int2(launchID)] = float4(outputColor, 1.0);
-     */
+    */
+
 
     
     float3 position = inPosition[int2(launchID)].xyz;
@@ -423,7 +446,7 @@ void rgenMain()
     
 
     //outImage[int2(launchID)] = float4(outputColor, 1.0);
-    //outImage[int2(launchID)] = float4(inPosition[int2(launchID)].xyz, 1.0);
+    //outImage[int2(launchID)] = float4(inShadingNormal[int2(launchID)].xyz, 1.0);
     //outImage[int2(launchID)] = float4(inNormal[int2(launchID)].xyz, 1.0);
 }
 
