@@ -6,6 +6,7 @@ import Random;
 import Frame;
 import BSDF;
 import ColorSpace;
+import Surface;
 
 struct Vertex
 {
@@ -22,17 +23,6 @@ float4x4 modelInverse;
 uint materialIndex;
 uint firstIndex;
 float2 uvScale;
-};
-
-struct IntersectionRecord
-{
-    float3 position;
-    float3 direction;
-    float3 normal;
-    float3 tangent;
-    float2 uv;
-    Frame frame;
-    uint materialIdx;
 };
 
 // Ray payload structure - carries data through the ray tracing pipeline
@@ -154,9 +144,9 @@ float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inou
     shaderRecord.wo = its.frame.toLocal(shadowRay.Direction);
     */
 
-    BSDFQueryRecord shaderRecord;
-    shaderRecord.wi = material.shadingFrame.toLocal(-its.direction);
-    shaderRecord.wo = material.shadingFrame.toLocal(shadowRay.Direction);
+    BSDFQueryRecord shaderRecord = constructBSDFRecord(its, material, shadowRay.Direction);;
+    //shaderRecord.wiShading = material.shadingFrame.toLocal(-its.direction);
+    //shaderRecord.woShading = material.shadingFrame.toLocal(shadowRay.Direction);
 
 
     float3 bsdfEval = PrincipledEval(shaderRecord, material);
@@ -208,13 +198,11 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
 
     float3 directLight = directRaycast(its, material, sampler);
 
-    BSDFQueryRecord record;
-    //record.wi = -its.frame.toLocal(its.direction);
-    record.wi = material.shadingFrame.toLocal(-its.direction);
+    BSDFQueryRecord record = constructBSDFRecord(its, material);
 
     float3 bsdf = samplePrincipled(record, material, sampler);
     // RayDesc indirectRay = getRay(its, its.frame.toWorld(record.wo));
-    RayDesc indirectRay = getRay(its, material.shadingFrame.toWorld(record.wo));
+    RayDesc indirectRay = getRay(its, record.woWorld);
 
     IntegrationStepQueryRecord integrationStep;
 
@@ -277,12 +265,10 @@ float3 integratorPT(inout Sampler sampler) {
         Material material = materials[its.materialIdx];
         MaterialRecord materialRecord = getMaterialProperties(material, textures, its.uv, its.frame);
 
-        BSDFQueryRecord shaderRecord;
-        // shaderRecord.wi = its.frame.toLocal(-its.direction);
-        shaderRecord.wi = materialRecord.shadingFrame.toLocal(-its.direction);
+        BSDFQueryRecord shaderRecord = constructBSDFRecord(its, materialRecord);
 
         float3 bsdf = samplePrincipled(shaderRecord, materialRecord, sampler);
-        integrationStep.indirectRay = getRayInternal(its, materialRecord.shadingFrame.toWorld(shaderRecord.wo));
+        integrationStep.indirectRay = getRayInternal(its, shaderRecord.woWorld);
         //check needed if material is descrete!!!
         /*
         if (bsdfQuery.measure != EDiscrete) {
