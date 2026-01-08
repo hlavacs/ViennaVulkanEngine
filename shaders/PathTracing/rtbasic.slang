@@ -5,6 +5,7 @@ import Lightsource;
 import Random;
 import Frame;
 import BSDF;
+import ColorSpace;
 
 struct Vertex
 {
@@ -440,7 +441,7 @@ void rgenMain()
         Sampler sampler = Sampler(pixelSeed);
 
         float3 outputColor = integratorPT(sampler);
-        outImage[int2(launchID)] = float4(outputColor, 1.0);
+        outImage[int2(launchID)] = float4(LinearToSRGB(outputColor), 1.0);
     }
     
     

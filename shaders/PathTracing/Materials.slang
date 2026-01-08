@@ -80,7 +80,8 @@ export public float3 getNormal(in Material mat, in Sampler2D textures[], in floa
     if (mat.normalTextureIndex == -1) {
         return float3(0.0,0.0,1.0);
     } else {
-        float3 mappedNormal = LinearToSRGB(textures[mat.normalTextureIndex].Sample(texCoord).xyz);
+        // float3 mappedNormal = LinearToSRGB(textures[mat.normalTextureIndex].Sample(texCoord).xyz);
+        float3 mappedNormal = textures[mat.normalTextureIndex].Sample(texCoord).xyz;
         float3 normal;
 
         //normal is in srgb

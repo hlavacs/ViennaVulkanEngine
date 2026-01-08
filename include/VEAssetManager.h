@@ -75,7 +75,9 @@ namespace vve {
 		 * @return Pointer to loaded texture data
 		 */
 		auto LoadTexture(TextureHandle handle) -> stbi_uc*;
+		auto LoadTexture(TextureHandle handle, vvh::ColorSpace colorSpace) -> stbi_uc*;
 
+		
 		/**
 		 * @brief Load a scene from file
 		 * @param sceneName Filename of the scene

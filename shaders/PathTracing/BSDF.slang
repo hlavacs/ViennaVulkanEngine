@@ -20,7 +20,7 @@ public float3 DiffuseEval(in BSDFQueryRecord record, in MaterialRecord material)
     }
 
     // return material.albedo / M_PI;
-    return float3(0.5, 0.5, 0.5) / M_PI * record.wo.z;
+    return material.albedo / M_PI * record.wo.z;
 }
 
 public float DiffusePdf(in BSDFQueryRecord record, in MaterialRecord material) {

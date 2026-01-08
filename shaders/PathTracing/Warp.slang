@@ -41,22 +41,23 @@ public float3 squareToUniformSphere(in float2 sample)
     return float3(r * cosPhi, r * sinPhi, z);
 }
 
-//This potentially generates a cosine sample
+// This potentially generates a cosine sample
 public float3 squareToUniformHemisphere(in float2 sample) {
+    // sample.y is our cos(theta). For a uniform distribution,
+    // we sample the height (z) linearly between 0 and 1.
+    float z = sample.y;
 
-    // Theta is angle from normal comming down, with range pi/2, Theta of 0 means we have the normal.
+    // Calculate the radius in the XY plane using the identity:
+    // sin^2(theta) + cos^2(theta) = 1  =>  r = sin(theta)
+    float r = sqrt(max(0.0, 1.0 - z * z));
 
-    // Theta = arccos of sample.y, hence cosTheta just = sample.y
-    float cosTheta = sample.y;
-    // This happens to be the sine wave just that it is scaled so that 1 is reached at pi/2
-    float sinTheta = sqrt(max(0.0, 1.0 - cosTheta * cosTheta));
-
-    float phi = 2.0f * M_PI * sample.x;
+    // Sample the azimuth (phi) uniformly around the circle
+    float phi = 2.0 * M_PI * sample.x;
 
     float sinPhi = sin(phi);
     float cosPhi = cos(phi);
 
-    return float3(cosPhi * sinTheta, sinPhi * sinTheta, cosTheta);
+    return float3(r * cosPhi, r * sinPhi, z);
 }
 
 public float squareToUniformHemispherePdf(in float3 v) {

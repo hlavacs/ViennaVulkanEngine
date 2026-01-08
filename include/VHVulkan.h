@@ -203,18 +203,22 @@ namespace vvh {
 	/**
 	 * @brief Image resources including pixels and Vulkan handles
 	 */
+
+	enum ColorSpace {SRGB, LINEAR};
+
 	struct Image {
 		int 			m_width;
 		int				m_height;
 		int				m_layers;
 		VkDeviceSize	m_size;
 		void* m_pixels{ nullptr };
+		ColorSpace		colorSpace;
 		VkImage         m_mapImage;
 		VmaAllocation   m_mapImageAllocation;
 		VkImageView     m_mapImageView;
 		VkSampler       m_mapSampler;
 
-		uint32_t index;
+		uint32_t index;	
 	};
 
 	struct Buffer {

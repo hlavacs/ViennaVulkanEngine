@@ -119,7 +119,7 @@ namespace vve {
 		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;	
 				
 				auto tHandle = TextureHandle{m_registry.Insert(Name{texturePathStr})};
-				auto pixels = LoadTexture(tHandle);
+				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::SRGB);
 				if( pixels != nullptr) m_engine.SendMsg( MsgTextureCreate{tHandle, this } );
 				m_fileNameMap.insert( std::make_pair(filepath, (Name{texturePathStr})) );
 
@@ -133,7 +133,7 @@ namespace vve {
 				std::cout << "Normal Texture: " << texturePathStr << std::endl;
 
 				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
-				auto pixels = LoadTexture(tHandle);
+				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::LINEAR);
 				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
 				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
 
@@ -142,10 +142,10 @@ namespace vve {
 
 			if (material->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &texturePath) == AI_SUCCESS) {
 				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
-				std::cout << "Normal Texture: " << texturePathStr << std::endl;
+				std::cout << "Roughness Texture: " << texturePathStr << std::endl;
 
 				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
-				auto pixels = LoadTexture(tHandle);
+				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::LINEAR);
 				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
 				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
 
@@ -154,10 +154,10 @@ namespace vve {
 
 			if (material->GetTexture(aiTextureType_METALNESS, 0, &texturePath) == AI_SUCCESS) {
 				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
-				std::cout << "Normal Texture: " << texturePathStr << std::endl;
+				std::cout << "Metalness Texture: " << texturePathStr << std::endl;
 
 				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
-				auto pixels = LoadTexture(tHandle);
+				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::LINEAR);
 				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
 				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
 
@@ -166,10 +166,10 @@ namespace vve {
 
 			if (material->GetTexture(aiTextureType_SPECULAR, 0, &texturePath) == AI_SUCCESS) {
 				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
-				std::cout << "Normal Texture: " << texturePathStr << std::endl;
+				std::cout << "IOR Texture: " << texturePathStr << std::endl;
 
 				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
-				auto pixels = LoadTexture(tHandle);
+				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::LINEAR);
 				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
 				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
 
@@ -178,10 +178,10 @@ namespace vve {
 
 			if (material->GetTexture(aiTextureType_OPACITY, 0, &texturePath) == AI_SUCCESS) {
 				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
-				std::cout << "Normal Texture: " << texturePathStr << std::endl;
+				std::cout << "Alpha Texture: " << texturePathStr << std::endl;
 
 				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
-				auto pixels = LoadTexture(tHandle);
+				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::LINEAR);
 				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
 				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
 
@@ -337,7 +337,21 @@ namespace vve {
         if (!pixels) { return nullptr; }
 
 		m_engine.SetHandle(fileName(), tHandle );
-		m_registry.Put(tHandle, vvh::Image{texWidth, texHeight, 1, imageSize, pixels});
+		m_registry.Put(tHandle, vvh::Image{texWidth, texHeight, 1, imageSize, pixels, vvh::ColorSpace::SRGB});
+		return pixels;
+	}
+
+	auto AssetManager::LoadTexture(TextureHandle tHandle, vvh::ColorSpace colorSpace) -> stbi_uc* {
+		auto fileName = m_registry.Get<Name&>(tHandle);
+		if (m_engine.ContainsHandle(fileName())) return nullptr;
+
+		int texWidth, texHeight, texChannels;
+		stbi_uc* pixels = stbi_load(fileName().c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		VkDeviceSize imageSize = texWidth * texHeight * 4;
+		if (!pixels) { return nullptr; }
+
+		m_engine.SetHandle(fileName(), tHandle);
+		m_registry.Put(tHandle, vvh::Image{ texWidth, texHeight, 1, imageSize, pixels, colorSpace });
 		return pixels;
 	}
 

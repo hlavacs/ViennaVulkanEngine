@@ -22,8 +22,15 @@ namespace vve {
         auto witdh = texture().m_width;
         auto height = texture().m_height;
 
-        Image* image = new Image(static_cast<uint8_t*>(pixels), witdh, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        Image* image;
 
+        if (texture().colorSpace == vvh::ColorSpace::SRGB) {
+            image = new Image(static_cast<uint8_t*>(pixels), witdh, height, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        }
+        else {
+            image = new Image(static_cast<uint8_t*>(pixels), witdh, height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        }
+        
         Texture* vrtTexture = new Texture();
         vrtTexture->image = image;
 
