@@ -40,12 +40,42 @@ class MyGame : public vve::System {
                 m_cameraNodeHandle = parent;
             };
         }
+
+        inline static std::string test_scene_gltf{ "assets/shader_room_gltf/test_scene.gltf" };
     
         inline static std::string plane_obj  { "assets/test/plane/plane_t_n_s.obj" };
         inline static std::string plane_mesh { "assets/test/plane/plane_t_n_s.obj/plane" };
         inline static std::string plane_txt  { "assets/test/plane/grass.jpg" };
 
         inline static std::string cube_obj  { "assets/test/crate0/cube.obj" };
+
+        inline static std::string floor_obj{ "assets/shader_room/floor.obj" };
+        inline static std::string floor_mesh{ "assets/shader_room/floor.obj/floor" };
+        inline static std::string floor_material{ "assets/shader_room/floor.obj/Material/Material" };
+
+        inline static std::string back_wall_obj{ "assets/shader_room/back_wall.obj" };
+        inline static std::string back_wall_mesh{ "assets/shader_room/back_wall.obj/back_wall" };
+        inline static std::string back_wall_material{ "assets/shader_room/back_wall.obj/back_wall_mat/Material" };
+
+        inline static std::string side_wall_obj{ "assets/shader_room/side_wall.obj" };
+        inline static std::string side_wall_mesh{ "assets/shader_room/side_wall.obj/side_wall" };
+        inline static std::string side_wall_material{ "assets/shader_room/side_wall.obj/side_wall_mat/Material" };
+
+        inline static std::string box_obj{ "assets/shader_room/box.obj" };
+        inline static std::string box_mesh{ "assets/shader_room/box.obj/box" };
+        inline static std::string box_material{ "assets/shader_room/box.obj/box_mat/Material" };
+
+        inline static std::string metal_obj{ "assets/shader_room/metal.obj" };
+        inline static std::string metal_mesh{ "assets/shader_room/metal.obj/metal" };
+        inline static std::string metal_material{ "assets/shader_room/metal.obj/metal_mat/Material" };
+
+        inline static std::string diffuse_obj{ "assets/shader_room/diffuse.obj" };
+        inline static std::string diffuse_mesh{ "assets/shader_room/diffuse.obj/diffuse" };
+        inline static std::string diffuse_material{ "assets/shader_room/diffuse.obj/diffuse_mat/Material" };
+
+        inline static std::string mirror_obj{ "assets/shader_room/mirror.obj" };
+        inline static std::string mirror_mesh{ "assets/shader_room/mirror.obj/mirror" };
+        inline static std::string mirror_material{ "assets/shader_room/mirror.obj/mirror_mat/Material" };
 
         inline static std::string plane_material{ "assets/test/plane/plane_t_n_s.obj/plane/Material" };
 
@@ -55,19 +85,8 @@ class MyGame : public vve::System {
             std::string level = std::string("Level: ") + msg.m_level;
 
             // ----------------- Load Plane -----------------
-
-			m_engine.LoadScene( vve::Filename{plane_obj}, aiProcess_FlipWindingOrder);
-
             /*
-			m_engine.CreateObject(	vve::Name{},
-                                    vve::ParentHandle{}, 
-                                    vve::MeshName{plane_mesh}, 
-									vve::TextureName{plane_txt}, 
-									vve::Position{vec3_t{0.0f, 0.0f, 0.0f}}, 
-									vve::Rotation{mat4_t{glm::rotate(glm::mat4(1.0f), 3.14152f / 2.0f, glm::vec3(1.0f,0.0f,0.0f))}}, 
-									vve::Scale{vec3_t{1000.0f, 1000.0f, 1000.0f}}, 
-									vve::UVScale{vec2_t{1000.0f, 1000.0f}});
-            */
+			m_engine.LoadScene( vve::Filename{plane_obj}, aiProcess_FlipWindingOrder);
 
             m_engine.CreateObject(vve::Name{},
                 vve::ParentHandle{},
@@ -85,17 +104,115 @@ class MyGame : public vve::System {
 												vve::Position{{nextRandom(), nextRandom(), 0.5f}}, vve::Rotation{mat3_t{1.0f}}, vve::Scale{vec3_t{1.0f}});
 
             m_engine.CreateVRTSphereLight(vve::Name{}, vve::ParentHandle{}, vec3_t{ 5000.0f }, 4.0f, vve::Position{ {0.0f,0.0f,20.0f} });
+            */
+
+            m_engine.PlaySound(vve::Filename{ "assets/sounds/dance.mp3" }, -1, 50);
+            m_engine.SetVolume(m_volume);
+
+            /*
+            m_engine.LoadScene(vve::Filename{ floor_obj }, aiProcess_FlipWindingOrder);
+
+            
+            m_engine.CreateObject(vve::Name{},
+                vve::ParentHandle{},
+                vve::MeshName{ floor_mesh },
+                vve::MaterialName{ floor_material },
+                vve::TextureName{ plane_txt },
+                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
+                vve::Rotation{ mat3_t{1.0f} },
+                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
+                vve::UVScale{ vec2_t{5.0f, 5.0f} });
+
+            m_engine.LoadScene(vve::Filename{ back_wall_obj }, aiProcess_FlipWindingOrder);
+
+            m_engine.CreateObject(vve::Name{},
+                vve::ParentHandle{},
+                vve::MeshName{ back_wall_mesh },
+                vve::MaterialName{ back_wall_material },
+                vve::TextureName{ plane_txt },
+                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
+                vve::Rotation{ mat3_t{1.0f} },
+                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
+                vve::UVScale{ vec2_t{5.0f, 5.0f} });
+
+            m_engine.LoadScene(vve::Filename{ side_wall_obj }, aiProcess_FlipWindingOrder);
+
+            m_engine.CreateObject(vve::Name{},
+                vve::ParentHandle{},
+                vve::MeshName{ side_wall_mesh },
+                vve::MaterialName{ side_wall_material },
+                vve::TextureName{ plane_txt },
+                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
+                vve::Rotation{ mat3_t{1.0f} },
+                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
+                vve::UVScale{ vec2_t{5.0f, 5.0f} });
+
+            m_engine.LoadScene(vve::Filename{ box_obj }, aiProcess_FlipWindingOrder);
+
+            m_engine.CreateObject(vve::Name{},
+                vve::ParentHandle{},
+                vve::MeshName{ box_mesh },
+                vve::MaterialName{ box_material },
+                vve::TextureName{ plane_txt },
+                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
+                vve::Rotation{ mat3_t{1.0f} },
+                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
+                vve::UVScale{ vec2_t{2.0f, 2.0f} });
+
+            m_engine.LoadScene(vve::Filename{ metal_obj }, aiProcess_FlipWindingOrder);
+
+            m_engine.CreateObject(vve::Name{},
+                vve::ParentHandle{},
+                vve::MeshName{ metal_mesh },
+                vve::MaterialName{ metal_material },
+                vve::TextureName{ plane_txt },
+                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
+                vve::Rotation{ mat3_t{1.0f} },
+                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
+                vve::UVScale{ vec2_t{1.0f, 1.0f} });
+
+            m_engine.LoadScene(vve::Filename{ diffuse_obj }, aiProcess_FlipWindingOrder);
+
+            m_engine.CreateObject(vve::Name{},
+                vve::ParentHandle{},
+                vve::MeshName{ diffuse_mesh },
+                vve::MaterialName{ diffuse_material },
+                vve::TextureName{ plane_txt },
+                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
+                vve::Rotation{ mat3_t{1.0f} },
+                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
+                vve::UVScale{ vec2_t{1.0f, 1.0f} });
+
+            m_engine.LoadScene(vve::Filename{ mirror_obj }, aiProcess_FlipWindingOrder);
+
+            m_engine.CreateObject(vve::Name{},
+                vve::ParentHandle{},
+                vve::MeshName{ mirror_mesh },
+                vve::MaterialName{ mirror_material },
+                vve::TextureName{ plane_txt },
+                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
+                vve::Rotation{ mat3_t{1.0f} },
+                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
+                vve::UVScale{ vec2_t{1.0f, 1.0f} });
+            */
+
+            m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{ test_scene_gltf }, aiProcess_FlipWindingOrder,
+                vve::Position{ {0.0,0.0,0.0} }, vve::Rotation{ mat3_t{1.0f} }, vve::Scale{ vec3_t{1.0f} });
+            
+            m_engine.CreateVRTSphereLight(vve::Name{}, vve::ParentHandle{}, vec3_t{ 5000.0f }, 4.0f, vve::Position{ {0.0f,0.0f,20.0f} });
 
 
             GetCamera();
             m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
+            auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
+            pos() = vec3_t(0.0f, 0.0f, 0.5f);
 
-			m_engine.PlaySound(vve::Filename{"assets/sounds/dance.mp3"}, -1, 50);
-			m_engine.SetVolume(m_volume);
             return false;
+            
         };
     
         bool OnUpdate( Message& message ) {
+            /*
             auto msg = message.template GetData<vve::System::MsgUpdate>();
             m_time_left -= static_cast<float>(msg.m_dt);
             auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
@@ -123,7 +240,7 @@ class MyGame : public vve::System {
                     }
                 }
             }
-
+            */
             return false;
         }
     

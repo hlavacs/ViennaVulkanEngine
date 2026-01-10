@@ -112,6 +112,8 @@ namespace vve {
 					instance.uvScale = glm::vec2(1.0f);
 				}
 
+				instance.uvScale *= material.uvScale;
+
 				mesh.instances.push_back(instance);
 			}
 

@@ -65,6 +65,7 @@ IntersectionRecord getIntersectionInfo(in HitPayload payload, in RayDesc ray){
     float3 localTangent = normalize(v0.tangent.xyz * payload.barycentrics.z + v1.tangent.xyz * payload.barycentrics.x + v2.tangent.xyz * payload.barycentrics.y);
 
     its.uv = v0.uv.xy * payload.barycentrics.z + v1.uv.xy * payload.barycentrics.x + v2.uv.xy * payload.barycentrics.y;
+    its.uv *= instance.uvScale;
     its.position = mul(instance.model, float4(localPosition, 1)).xyz;
     its.direction = ray.Direction;
     its.normal = normalize(mul(instance.modelInverse, float4(localNormal, 0)).xyz);
@@ -185,6 +186,8 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
 
     
 
+    
+
     MaterialRecord material;
     material.albedo = inAlbedoAlpha[int2(launchID)].xyz;
     material.alpha = inAlbedoAlpha[int2(launchID)].w;
@@ -194,7 +197,14 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
     material.metalness = inSpec[int2(launchID)].y;
     material.ior = inSpec[int2(launchID)].z;
 
-    material.shadingFrame = Frame(inShadingNormal[int2(launchID)].xyz);
+    float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
+
+    if (dot(its.normal, its.direction) > 0.0) {
+        its.normal *= -1.0;
+        shadingNormal *= -1.0;
+    }
+
+    material.shadingFrame = Frame(shadingNormal);
 
     float3 directLight = directRaycast(its, material, sampler);
 
@@ -407,9 +417,11 @@ void rgenMain()
         } else {
             outputColor = float3(1.0, 0.0, 0.0);
         }
-            
-        outputColor = its.tangent;    
-        
+
+        // outputColor = its.tangent;
+        //Material material = materials[its.materialIdx];
+        //MaterialRecord materialRecord = getMaterialProperties(material, textures, its.uv, its.frame);
+        //outputColor = materialRecord.albedo;
     }
      outImage[int2(launchID)] = float4(outputColor, 1.0);
     */
@@ -429,12 +441,10 @@ void rgenMain()
         float3 outputColor = integratorPT(sampler);
         outImage[int2(launchID)] = float4(LinearToSRGB(outputColor), 1.0);
     }
-    
-    
 
-    //outImage[int2(launchID)] = float4(outputColor, 1.0);
-    //outImage[int2(launchID)] = float4(inShadingNormal[int2(launchID)].xyz, 1.0);
-    //outImage[int2(launchID)] = float4(inNormal[int2(launchID)].xyz, 1.0);
+    // outImage[int2(launchID)] = float4(outputColor, 1.0);
+    //outImage[int2(launchID)] = float4(inSpec[int2(launchID)].z,0.0,0.0, 1.0);
+    //outImage[int2(launchID)] = float4(inAlbedoAlpha[int2(launchID)].xyz, 1.0);
 }
 
 // Closest hit shader - called when ray hits geometry

@@ -3,6 +3,7 @@ import Warp;
 import Materials;
 import Random;
 import Surface;
+import Frame;
 
 public struct BSDFQueryRecord {
     public float3 geometryNormal; 
@@ -33,6 +34,87 @@ public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in Materia
     record.woWorld = outDirection;
     record.geometryNormal = its.normal;
     return record;
+}
+
+float fresnel(in float cosTheta_i, in float eta) {
+    float sin2Theta_i = 1 - pow(cosTheta_i, 2.0);
+    float sin2Theta_t = sin2Theta_i / pow(eta, 2.0);
+    float cosTheta_t = sqrt(1 - sin2Theta_t);
+
+    float r_parl = (eta * cosTheta_i - cosTheta_t) /
+                   (eta * cosTheta_i + cosTheta_t);
+    float r_perp = (cosTheta_i - eta * cosTheta_t) /
+                   (cosTheta_i + eta * cosTheta_t);
+    return (pow(r_parl, 2.0) + pow(r_perp, 2.0)) / 2;
+}
+
+public float3 glossyEval(in BSDFQueryRecord record, in MaterialRecord material) {
+    if (material.roughness < 0.01) {
+        return material.albedo;
+    }
+
+    float cosWiG = dot(record.geometryNormal, record.wiWorld);
+    if (cosWiG <= 0) return float3(0);
+    float cosWoG = dot(record.geometryNormal, record.woWorld);
+    if (cosWoG <= 0) return float3(0);
+
+    // actully eta = m_intIOR / m_extIOR, but m_extIOR simplified to 1.0 for now
+    float3 F = fresnel(dot(record.wiShading, record.wm), material.ior);
+
+    //F is maybe wrong here!!!!!!!!!!
+    // https://www.youtube.com/watch?v=gya7x9H3mV0
+    return material.albedo * D(record.wm, material.roughness) * G(record.woShading, record.wiShading, material.roughness) * (1.0 - F) / ((4 * record.wiShading.z * record.woShading.z)) * record.woShading.z;
+}
+
+public float glossyPdf(in BSDFQueryRecord record, in MaterialRecord material) {
+
+    if (material.roughness < 0.01) {
+        return 0.0f;
+    }
+
+    float cosWiG = dot(record.geometryNormal, record.wiWorld);
+    if (cosWiG <= 0) return 0.0;
+    float cosWoG = dot(record.geometryNormal, record.woWorld);
+    if (cosWoG <= 0) return 0.0;
+
+    return squareToGGXPDF(record.woShading, record.wm, material.roughness) / (4 * abs(dot(record.woShading, record.wm)));
+}
+
+public float3 sampleGlossy(inout BSDFQueryRecord record, in MaterialRecord material, in float2 sample) {
+
+    float cosWiG = dot(record.geometryNormal, record.wiWorld);
+    if (cosWiG <= 0) return 0.0;
+
+    if (material.roughness < 0.01) {
+        record.woShading = float3(-record.wiShading.x, -record.wiShading.y, record.wiShading.z);
+        record.woWorld = material.shadingFrame.toWorld(record.woShading);
+        //record.measure = EDiscrete;
+        //record.eta = 1.0f;
+
+        return glossyEval(record, material);
+    }
+
+    record.wm = squareToGGX(record.wiShading, sample, material.roughness);
+
+    Frame microfacetFrame = Frame(record.wm);
+
+    // reflect around microfacet
+    float3 MicrofacetWi = microfacetFrame.toLocal(record.wiShading);
+    float3 MicrofacetWo = float3(-MicrofacetWi.x, -MicrofacetWi.y, MicrofacetWi.z);
+    record.woShading = microfacetFrame.toWorld(MicrofacetWo);
+    record.woWorld = material.shadingFrame.toWorld(record.woShading);
+
+    // handle low roughness
+    //record.measure = ESolidAngle;
+    //record.eta = 1.0f;
+
+    float pdfValue = glossyPdf(record, material);
+    float min = 0.001;
+    float max = 1000.0;
+
+    pdfValue = clamp(pdfValue, min, max);
+
+    return glossyEval(record, material) / pdfValue;
 }
 
 public float3 DiffuseEval(in BSDFQueryRecord record, in MaterialRecord material) {

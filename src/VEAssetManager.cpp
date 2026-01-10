@@ -119,7 +119,7 @@ namespace vve {
 		        std::cout << "Diffuse Texture: " << texturePathStr << std::endl;	
 				
 				auto tHandle = TextureHandle{m_registry.Insert(Name{texturePathStr})};
-				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::SRGB);
+				auto pixels = LoadTexture(tHandle, VK_FORMAT_R8G8B8A8_SRGB);
 				if( pixels != nullptr) m_engine.SendMsg( MsgTextureCreate{tHandle, this } );
 				m_fileNameMap.insert( std::make_pair(filepath, (Name{texturePathStr})) );
 
@@ -133,43 +133,68 @@ namespace vve {
 				std::cout << "Normal Texture: " << texturePathStr << std::endl;
 
 				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
-				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::LINEAR);
+				auto pixels = LoadTexture(tHandle, VK_FORMAT_R8G8B8A8_UNORM);
 				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
 				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
 
 				VRTmaterial.normalTextureName = texturePathStr;
 			}
 
-			if (material->GetTexture(aiTextureType_DIFFUSE_ROUGHNESS, 0, &texturePath) == AI_SUCCESS) {
+			if (material->GetTexture(aiTextureType_METALNESS, 0, &texturePath) == AI_SUCCESS) {
 				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
-				std::cout << "Roughness Texture: " << texturePathStr << std::endl;
 
-				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
-				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::LINEAR);
-				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
-				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
+				float roughnessFactor = 1.0f;
+				float metallicFactor = 1.0f;
 
-				VRTmaterial.roughnessTextureName = texturePathStr;
+				bool roughnessFactorExists = material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor);
+				bool metallnessFactorExists = material->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor);
+				//this does not work
+				if (roughnessFactor == 1.0f) {
+					std::cout << "Roughness Texture: " << texturePathStr << std::endl;
+
+					std::string textureName = texturePathStr + "/roughness";
+
+					auto tHandle = TextureHandle{ m_registry.Insert(Name{textureName}) };
+					auto pixels = LoadTextureChannel(tHandle, texturePathStr, 1);
+					if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
+					m_fileNameMap.insert(std::make_pair(filepath, (Name{ textureName })));
+
+					VRTmaterial.roughnessTextureName = textureName;
+				}
+				if (metallicFactor == 1.0f) {
+					std::cout << "Metallness Texture: " << texturePathStr << std::endl;
+
+					std::string textureName = texturePathStr + "/metallness";
+
+					auto tHandle = TextureHandle{ m_registry.Insert(Name{textureName}) };
+					auto pixels = LoadTextureChannel(tHandle, texturePathStr, 2);
+					if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
+					m_fileNameMap.insert(std::make_pair(filepath, (Name{ textureName })));
+
+					VRTmaterial.metallicTextureName = textureName;
+				}		
 			}
-
+			
+			/*
 			if (material->GetTexture(aiTextureType_METALNESS, 0, &texturePath) == AI_SUCCESS) {
 				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
 				std::cout << "Metalness Texture: " << texturePathStr << std::endl;
 
 				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
-				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::LINEAR);
+				auto pixels = LoadTexture(tHandle, VK_FORMAT_R8G8B8A8_UNORM);
 				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
 				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
 
 				VRTmaterial.metallicTextureName = texturePathStr;
 			}
+			*/
 
 			if (material->GetTexture(aiTextureType_SPECULAR, 0, &texturePath) == AI_SUCCESS) {
 				auto texturePathStr = directory.string() + "/" + std::string{ texturePath.C_Str() };
 				std::cout << "IOR Texture: " << texturePathStr << std::endl;
 
 				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
-				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::LINEAR);
+				auto pixels = LoadTextureChannel(tHandle, texturePathStr, 0);
 				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
 				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
 
@@ -181,11 +206,20 @@ namespace vve {
 				std::cout << "Alpha Texture: " << texturePathStr << std::endl;
 
 				auto tHandle = TextureHandle{ m_registry.Insert(Name{texturePathStr}) };
-				auto pixels = LoadTexture(tHandle, vvh::ColorSpace::LINEAR);
+				auto pixels = LoadTexture(tHandle, VK_FORMAT_R8G8B8A8_UNORM);
 				if (pixels != nullptr) m_engine.SendMsg(MsgTextureCreate{ tHandle, this });
 				m_fileNameMap.insert(std::make_pair(filepath, (Name{ texturePathStr })));
 
 				VRTmaterial.alphaTextureName = texturePathStr;
+			}
+
+			aiUVTransform uv;
+			if (material->Get(AI_MATKEY_UVTRANSFORM(aiTextureType_BASE_COLOR, 0), uv) == AI_SUCCESS)
+			{
+				VRTmaterial.uvScale = { uv.mScaling.x , uv.mScaling.y };
+				// uv.mTranslation.x 
+				// uv.mTranslation.y
+				// uv.mRotation 
 			}
 			
 			/*
@@ -337,11 +371,11 @@ namespace vve {
         if (!pixels) { return nullptr; }
 
 		m_engine.SetHandle(fileName(), tHandle );
-		m_registry.Put(tHandle, vvh::Image{texWidth, texHeight, 1, imageSize, pixels, vvh::ColorSpace::SRGB});
+		m_registry.Put(tHandle, vvh::Image{texWidth, texHeight, 1, imageSize, pixels, VK_FORMAT_R8G8B8A8_SRGB });
 		return pixels;
 	}
 
-	auto AssetManager::LoadTexture(TextureHandle tHandle, vvh::ColorSpace colorSpace) -> stbi_uc* {
+	auto AssetManager::LoadTexture(TextureHandle tHandle, VkFormat format) -> stbi_uc* {
 		auto fileName = m_registry.Get<Name&>(tHandle);
 		if (m_engine.ContainsHandle(fileName())) return nullptr;
 
@@ -351,8 +385,33 @@ namespace vve {
 		if (!pixels) { return nullptr; }
 
 		m_engine.SetHandle(fileName(), tHandle);
-		m_registry.Put(tHandle, vvh::Image{ texWidth, texHeight, 1, imageSize, pixels, colorSpace });
+		m_registry.Put(tHandle, vvh::Image{ texWidth, texHeight, 1, imageSize, pixels, format });
 		return pixels;
+	}
+
+	auto AssetManager::LoadTextureChannel(TextureHandle tHandle, std::string fileName, int channel) -> stbi_uc* {
+		auto textureName = m_registry.Get<Name&>(tHandle);
+		if (m_engine.ContainsHandle(textureName())) return nullptr;
+
+		int texWidth, texHeight, texChannels;
+		stbi_uc* pixels = stbi_load(fileName.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+		if (!pixels) return nullptr;
+
+		VkDeviceSize imageSize = texWidth * texHeight;
+		stbi_uc* channelPixels = new stbi_uc[imageSize]; // 1 byte per pixel
+
+		if (channel < 0) channel = 0;
+		if (channel > 3) channel = 3;
+
+		for (int i = 0; i < texWidth * texHeight; ++i) {
+			channelPixels[i] = pixels[i * 4 + channel];
+		}
+
+		m_engine.SetHandle(textureName(), tHandle);
+		m_registry.Put(tHandle, vvh::Image{ texWidth, texHeight, 1, imageSize, channelPixels, VK_FORMAT_R8_UNORM });
+
+		stbi_image_free(pixels); 
+		return channelPixels;
 	}
 
 

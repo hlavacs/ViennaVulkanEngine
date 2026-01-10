@@ -212,7 +212,7 @@ namespace vvh {
 		int				m_layers;
 		VkDeviceSize	m_size;
 		void* m_pixels{ nullptr };
-		ColorSpace		colorSpace;
+		VkFormat		format;
 		VkImage         m_mapImage;
 		VmaAllocation   m_mapImageAllocation;
 		VkImageView     m_mapImageView;
@@ -276,6 +276,8 @@ namespace vvh {
 		float roughness = 0.5;
 		float metallic = 0.0;
 		float ior = 0.5;
+
+		glm::vec2 uvScale;
 	};
 
 	struct VRTLight {

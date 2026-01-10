@@ -75,7 +75,8 @@ namespace vve {
 		 * @return Pointer to loaded texture data
 		 */
 		auto LoadTexture(TextureHandle handle) -> stbi_uc*;
-		auto LoadTexture(TextureHandle handle, vvh::ColorSpace colorSpace) -> stbi_uc*;
+		auto LoadTexture(TextureHandle handle, VkFormat format) -> stbi_uc*;
+		auto LoadTextureChannel(TextureHandle tHandle, std::string fileName, int channel) -> stbi_uc*;
 
 		
 		/**
