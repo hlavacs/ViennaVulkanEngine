@@ -127,11 +127,9 @@ float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inou
     const uint rayFlags = 0;
 
     //self blocked
-    
     if (dot(shadowRay.Direction, its.normal) < 0.0) {
         return float3(0.0, 0.0, 0.0);
     }
-    
 
     TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
 
@@ -145,7 +143,7 @@ float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inou
     shaderRecord.wo = its.frame.toLocal(shadowRay.Direction);
     */
 
-    BSDFQueryRecord shaderRecord = constructBSDFRecord(its, material, shadowRay.Direction);;
+    BSDFQueryRecord shaderRecord = constructBSDFRecord(its, material, shadowRay.Direction, true);
     //shaderRecord.wiShading = material.shadingFrame.toLocal(-its.direction);
     //shaderRecord.woShading = material.shadingFrame.toLocal(shadowRay.Direction);
 
@@ -207,8 +205,8 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
     material.shadingFrame = Frame(shadingNormal);
 
     float3 directLight = directRaycast(its, material, sampler);
-
-    BSDFQueryRecord record = constructBSDFRecord(its, material);
+    
+    BSDFQueryRecord record = constructBSDFRecord(its, material, false);
 
     float3 bsdf = samplePrincipled(record, material, sampler);
     // RayDesc indirectRay = getRay(its, its.frame.toWorld(record.wo));
@@ -275,7 +273,7 @@ float3 integratorPT(inout Sampler sampler) {
         Material material = materials[its.materialIdx];
         MaterialRecord materialRecord = getMaterialProperties(material, textures, its.uv, its.frame);
 
-        BSDFQueryRecord shaderRecord = constructBSDFRecord(its, materialRecord);
+        BSDFQueryRecord shaderRecord = constructBSDFRecord(its, materialRecord, false);
 
         float3 bsdf = samplePrincipled(shaderRecord, materialRecord, sampler);
         integrationStep.indirectRay = getRayInternal(its, shaderRecord.woWorld);
@@ -443,7 +441,8 @@ void rgenMain()
     }
 
     // outImage[int2(launchID)] = float4(outputColor, 1.0);
-    //outImage[int2(launchID)] = float4(inSpec[int2(launchID)].z,0.0,0.0, 1.0);
+    //float outValue = inSpec[int2(launchID)].x;
+    //outImage[int2(launchID)] = float4(outValue, outValue, outValue, 1.0);
     //outImage[int2(launchID)] = float4(inAlbedoAlpha[int2(launchID)].xyz, 1.0);
 }
 

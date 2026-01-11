@@ -108,98 +108,10 @@ class MyGame : public vve::System {
 
             m_engine.PlaySound(vve::Filename{ "assets/sounds/dance.mp3" }, -1, 50);
             m_engine.SetVolume(m_volume);
-
-            /*
-            m_engine.LoadScene(vve::Filename{ floor_obj }, aiProcess_FlipWindingOrder);
-
-            
-            m_engine.CreateObject(vve::Name{},
-                vve::ParentHandle{},
-                vve::MeshName{ floor_mesh },
-                vve::MaterialName{ floor_material },
-                vve::TextureName{ plane_txt },
-                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
-                vve::Rotation{ mat3_t{1.0f} },
-                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
-                vve::UVScale{ vec2_t{5.0f, 5.0f} });
-
-            m_engine.LoadScene(vve::Filename{ back_wall_obj }, aiProcess_FlipWindingOrder);
-
-            m_engine.CreateObject(vve::Name{},
-                vve::ParentHandle{},
-                vve::MeshName{ back_wall_mesh },
-                vve::MaterialName{ back_wall_material },
-                vve::TextureName{ plane_txt },
-                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
-                vve::Rotation{ mat3_t{1.0f} },
-                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
-                vve::UVScale{ vec2_t{5.0f, 5.0f} });
-
-            m_engine.LoadScene(vve::Filename{ side_wall_obj }, aiProcess_FlipWindingOrder);
-
-            m_engine.CreateObject(vve::Name{},
-                vve::ParentHandle{},
-                vve::MeshName{ side_wall_mesh },
-                vve::MaterialName{ side_wall_material },
-                vve::TextureName{ plane_txt },
-                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
-                vve::Rotation{ mat3_t{1.0f} },
-                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
-                vve::UVScale{ vec2_t{5.0f, 5.0f} });
-
-            m_engine.LoadScene(vve::Filename{ box_obj }, aiProcess_FlipWindingOrder);
-
-            m_engine.CreateObject(vve::Name{},
-                vve::ParentHandle{},
-                vve::MeshName{ box_mesh },
-                vve::MaterialName{ box_material },
-                vve::TextureName{ plane_txt },
-                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
-                vve::Rotation{ mat3_t{1.0f} },
-                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
-                vve::UVScale{ vec2_t{2.0f, 2.0f} });
-
-            m_engine.LoadScene(vve::Filename{ metal_obj }, aiProcess_FlipWindingOrder);
-
-            m_engine.CreateObject(vve::Name{},
-                vve::ParentHandle{},
-                vve::MeshName{ metal_mesh },
-                vve::MaterialName{ metal_material },
-                vve::TextureName{ plane_txt },
-                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
-                vve::Rotation{ mat3_t{1.0f} },
-                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
-                vve::UVScale{ vec2_t{1.0f, 1.0f} });
-
-            m_engine.LoadScene(vve::Filename{ diffuse_obj }, aiProcess_FlipWindingOrder);
-
-            m_engine.CreateObject(vve::Name{},
-                vve::ParentHandle{},
-                vve::MeshName{ diffuse_mesh },
-                vve::MaterialName{ diffuse_material },
-                vve::TextureName{ plane_txt },
-                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
-                vve::Rotation{ mat3_t{1.0f} },
-                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
-                vve::UVScale{ vec2_t{1.0f, 1.0f} });
-
-            m_engine.LoadScene(vve::Filename{ mirror_obj }, aiProcess_FlipWindingOrder);
-
-            m_engine.CreateObject(vve::Name{},
-                vve::ParentHandle{},
-                vve::MeshName{ mirror_mesh },
-                vve::MaterialName{ mirror_material },
-                vve::TextureName{ plane_txt },
-                vve::Position{ vec3_t{10.0f, 10.0f, 0.0f} },
-                vve::Rotation{ mat3_t{1.0f} },
-                vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
-                vve::UVScale{ vec2_t{1.0f, 1.0f} });
-            */
-
             m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{ test_scene_gltf }, aiProcess_FlipWindingOrder,
                 vve::Position{ {0.0,0.0,0.0} }, vve::Rotation{ mat3_t{1.0f} }, vve::Scale{ vec3_t{1.0f} });
             
-            m_engine.CreateVRTSphereLight(vve::Name{}, vve::ParentHandle{}, vec3_t{ 5000.0f }, 4.0f, vve::Position{ {0.0f,0.0f,20.0f} });
+            m_engine.CreateVRTSphereLight(vve::Name{}, vve::ParentHandle{}, vec3_t{ 2000.0f }, 0.5f, vve::Position{ {7.44097f,-0.608485f,4.85042f} });
 
 
             GetCamera();

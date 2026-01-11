@@ -113,18 +113,18 @@ public float G(in float3 wi, in float3 wo, float roughness) {
     return G1(wi, roughness) * G1(wo, roughness);
 }
 
-public float D(in float3 micronormal, float roughness) {
+public float D(in float3 micronormal, float alpha) {
 
     // D(wm) return a constant, this constant gives the relative differential area of microfacets with the surface normal (needed for normalization)
     // r^2/(pi * (cos(theta)^2 * (r^2 - 1) + 1)^2)
 
-    float alpha = roughness * roughness;
+    float alpha2 = alpha * alpha;
 
-    float m = micronormal.z * micronormal.z * (alpha - 1) + 1;
+    float m = micronormal.z * micronormal.z * (alpha2 - 1) + 1;
 
-    return alpha / (M_PI * m * m);
+    return alpha2 / (M_PI * m * m);
 
-    //return std::pow(roughness, 2.0) / (M_PI * std::pow(std::pow(micronormal.z(), 2.0) * (std::pow(roughness, 2.0) - 1) + 1, 2.0));
+    //return pow(roughness, 2.0) / (M_PI * pow(pow(micronormal.z, 2.0) * (pow(roughness, 2.0) - 1) + 1, 2.0));
 }
 
 public float squareToGGXPDF(in float3 wi, in float3 micronormal, float roughness) {

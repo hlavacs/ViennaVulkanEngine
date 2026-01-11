@@ -58,24 +58,6 @@ export public float3 getAlbedo(in Material mat, in Sampler2D textures[], in floa
     }
 }
 
-float3 SRGBToLinear(float3 c)
-{
-    return lerp(
-        c / 12.92,
-        pow((c + 0.055) / 1.055, 2.4),
-        step(0.04045, c)
-    );
-}
-
-float3 LinearToSRGB(float3 c)
-{
-    return lerp(
-        c * 12.92,
-        1.055 * pow(c, 1.0 / 2.4) - 0.055,
-        step(0.0031308, c)
-    );
-}
-
 export public float3 getNormal(in Material mat, in Sampler2D textures[], in float2 texCoord) {
     if (mat.normalTextureIndex == -1) {
         return float3(0.0,0.0,1.0);
@@ -116,10 +98,12 @@ export public float getMetallic(in Material mat, in Sampler2D textures[], in flo
     }
 }
 
+
+
 export public float getIOR(in Material mat, in Sampler2D textures[], in float2 texCoord){
-    if(mat.iorTextureIndex == -1){
+    if (mat.iorTextureIndex == -1) {
         return mat.ior;
-    }else{
+    } else {
         return textures[mat.iorTextureIndex].Sample(texCoord).x;
     }
 }
