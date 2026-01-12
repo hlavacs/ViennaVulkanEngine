@@ -125,7 +125,7 @@ namespace vve {
 		//------------------------------------------------------------------------------------------------
 
 		/** @brief Message for mouse move events */
-		struct MsgMouseMove : public MsgBase { MsgMouseMove(double dt, float x, float y); float m_x; float m_y; };
+		struct MsgMouseMove : public MsgBase { MsgMouseMove(double dt, float x, float y, float xrel, float yrel); float m_x; float m_y; float m_xrel; float m_yrel; };
 	    /** @brief Message for mouse button down events */
 	    struct MsgMouseButtonDown : public MsgBase { MsgMouseButtonDown(double dt, int button); int m_button; };
 	    /** @brief Message for mouse button up events */
