@@ -9,13 +9,18 @@ layout(local_size_x = 256) in;
 
 layout(set = 0, binding = 0) uniform Camera {
   mat4 projection;
-  mat4 view;
   vec3 camera_position;
   float pad0;
   uvec2 screen_size;  // (width, height)
 };
 
-layout(push_constant, std430) uniform PushConstants { mat4 model; };
+// VVE modification: view matrix moved from Camera uniform to push constants.
+// VKGS includes view in Camera UBO, but VVE's CameraUBO is minimal (no view).
+// View comes from VVE's camera system and is pushed alongside model per-dispatch.
+layout(push_constant, std430) uniform PushConstants {
+  mat4 model;
+  mat4 view;
+};
 
 layout(set = 1, binding = 0) uniform Info { uint point_count; };
 
