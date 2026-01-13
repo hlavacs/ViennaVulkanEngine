@@ -199,7 +199,8 @@ export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numb
     // Ambient lighting from irradiance cubemap (IBL from gaussian environment)
     float3 N = normalize(normalW);
     float3 irradiance = irradianceCubemap.Sample(N).rgb;
-    float3 ambient = irradiance * albedo * 0.8;  // Reduced from 2.0 to avoid over-tinting (adjust as needed)
+    float intensity = 1.0;
+    float3 ambient = irradiance * albedo * intensity;
     float3 color = ambient + Lo;
 
     return float4(color, 1.0);

@@ -248,7 +248,6 @@ namespace vve {
 		ubc.camera.view = view();
 		ubc.camera.proj = proj();
 		ubc.camera.positionW = lToW()[3];
-
 		memcpy(m_uniformBuffersPerFrame.m_uniformBuffersMapped[m_vkState().m_currentFrame], &ubc, sizeof(ubc));
 
 		for (const auto& pipeline : m_geomPipesPerType) {
