@@ -1,0 +1,35 @@
+#version 460 core
+
+/**
+ * @file box_filter_irradiance.comp
+ * @brief Simple downsample of environment cubemap to irradiance map
+ * Uses texture sampling to downsample 512x512 env to 32x32 irradiance.
+ */
+
+layout(local_size_x = 8, local_size_y = 8) in;
+
+layout(set = 0, binding = 0) uniform samplerCube envCubemap;
+layout(set = 0, binding = 1, rgba16f) uniform writeonly imageCube irradianceMap;
+
+// Convert cubemap face coord to direction vector
+vec3 coordToDir(uint face, vec2 uv) {
+    vec2 ndc = uv * 2.0 - 1.0;
+    if (face == 0) return normalize(vec3(1.0, -ndc.y, -ndc.x));       // +X
+    if (face == 1) return normalize(vec3(-1.0, -ndc.y, ndc.x));       // -X
+    if (face == 2) return normalize(vec3(ndc.x, 1.0, ndc.y));         // +Y
+    if (face == 3) return normalize(vec3(ndc.x, -1.0, -ndc.y));       // -Y
+    if (face == 4) return normalize(vec3(ndc.x, -ndc.y, 1.0));        // +Z
+    return normalize(vec3(-ndc.x, -ndc.y, -1.0));                      // -Z
+}
+
+void main() {
+    ivec3 coord = ivec3(gl_GlobalInvocationID);
+    ivec2 size = imageSize(irradianceMap);
+    if (coord.x >= size.x || coord.y >= size.y || coord.z >= 6) return;
+
+    vec2 uv = (vec2(coord.xy) + 0.5) / vec2(size);
+    vec3 dir = coordToDir(coord.z, uv);
+    vec3 color = texture(envCubemap, dir).rgb;
+
+    imageStore(irradianceMap, coord, vec4(color, 1.0));
+}

@@ -1,13 +1,12 @@
 // CRITICAL: vulkan_radix_sort must use volk's function pointers (not static Vulkan linking)
 // VVE uses volk for dynamic Vulkan loading. Without VRDX_USE_VOLK, the library would
-// statically link Vulkan functions, creating two separate function pointer sets → crash.
+// statically link Vulkan functions, creating two separate function pointer sets causing a crash.
 #define VRDX_IMPLEMENTATION  // Single-header library implementation (define ONCE in .cpp)
 #define VRDX_USE_VOLK        // Use volk's dynamically loaded function pointers
 
 #include "VHInclude.h"  // Includes volk.h - MUST come before vk_radix_sort.h
 #include <vk_radix_sort.h>  // Include AFTER volk.h with VRDX_USE_VOLK defined
 #include "VEInclude.h"
-#include <cmath>
 
 namespace vve {
 
@@ -23,8 +22,7 @@ RendererGaussian::RendererGaussian(const std::string& systemName, Engine& engine
     engine.RegisterCallbacks({
         {this,  3500, "INIT", [this](Message& message){ return OnInit(message);} },
         {this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message){ return OnPrepareNextFrame(message);} },
-        // Register AFTER RendererVulkan's RECORD (priority 0), so our rendering comes after the clear
-        {this,    -1, "RENDER_NEXT_FRAME", [this](Message& message){ return OnRenderNextFrame(message);} },  // Priority -1 to run AFTER RendererVulkan's recording (priority 0)
+        {this,  1900, "RECORD_NEXT_FRAME", [this](Message& message){ return OnRenderNextFrame(message);} },
         {this,  1800, "OBJECT_CREATE", [this](Message& message) { return OnObjectCreate(message); } },
         {this, 10100, "OBJECT_DESTROY", [this](Message& message) { return OnObjectDestroy(message); } },
         {this,     0, "QUIT", [this](Message& message){ return OnQuit(message);} }
@@ -48,6 +46,7 @@ bool RendererGaussian::OnInit(const Message& message) {
     CreateGraphicsPipeline();
 
     CreateCameraBuffers();
+    CreateCubemapResources();
     CreateDescriptorPool();
     AllocateDescriptorSets();
     UpdateDescriptorSets();
@@ -75,6 +74,9 @@ bool RendererGaussian::OnPrepareNextFrame(const Message& message) {
     auto& swapChain = m_vkState().m_swapChain;
 
     // Simple synchronization: wait for GPU to finish before updating buffers
+    // OPTIMIZATION: Replace with per-frame fences for proper frame-in-flight rendering:
+    // vkWaitForFences(m_renderFences[currentFrame]) before updating, submit with fence signal.
+    // See VKGS engine.cc:1029,1314,1325 and VERendererVulkan.cpp:280 for fence patterns.
     vkQueueWaitIdle(m_vkState().m_graphicsQueue);
 
     auto [cameraHandle, camera, LtoW] = *m_registry.GetView<vecs::Handle, Camera&, LocalToWorldMatrix&>().begin();
@@ -91,10 +93,12 @@ bool RendererGaussian::OnPrepareNextFrame(const Message& message) {
         swapChain.m_swapChainExtent.height
     );
 
-    // Update camera uniform buffer
+    // Store view matrix for push constants
+    m_viewMatrix = viewMatrix;
+
+    // Update camera uniform buffer (view matrix now pushed as constant)
     struct CameraUBO {
         glm::mat4 projection;
-        glm::mat4 view;
         glm::vec3 cameraPosition;
         float pad0;
         glm::uvec2 screenSize;
@@ -102,7 +106,6 @@ bool RendererGaussian::OnPrepareNextFrame(const Message& message) {
 
     CameraUBO cameraData{};
     cameraData.projection = projectionMatrix;
-    cameraData.view = viewMatrix;
     cameraData.cameraPosition = cameraPosition;
     cameraData.pad0 = 0.0f;
     cameraData.screenSize = screenSize;
@@ -118,14 +121,9 @@ bool RendererGaussian::OnPrepareNextFrame(const Message& message) {
 
 
 /**
- * @brief Handle frame rendering - record and submit our gaussian rendering
+ * @brief Record gaussian rendering command buffer for current frame
  * @param message Render frame message
- * @return False to continue processing (let RendererVulkan handle final submission/presentation)
- *
- * NOTE: Performance monitoring should be added here in the future to track:
- * - Frame time for each render pass (rank, radix sort, inverse_index, projection, graphics)
- * - Gaussian count per frame (total vs visible after frustum culling)
- * - GPU memory usage for gaussian buffers
+ * @return False to continue processing
  */
 bool RendererGaussian::OnRenderNextFrame(const Message& message) {
 
@@ -159,7 +157,6 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         auto& obj = m_gaussianObjects[objIdx];
 
         // Bind gaussian data descriptor sets (Set 1, Set 2, Set 3)
-        // Use per-frame output descriptor set to prevent cross-frame corruption
         VkDescriptorSet descriptorSets[] = {
             m_gaussianDataDescriptorSets[objIdx],
             m_outputDescriptorSets[objIdx],
@@ -169,21 +166,40 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
                                 m_computePipelineLayout, 1, 3,
                                 descriptorSets, 0, nullptr);
 
-        // Push model matrix
-        glm::mat4 modelMatrix = glm::mat4(1.0f);
+        // Build model matrix from object's transform components
+        ObjectHandle objHandle = m_objectToBufferIndex[objIdx].first;
+        auto position = m_registry.Get<Position&>(objHandle);
+        auto rotation = m_registry.Get<Rotation&>(objHandle);
+        auto scale = m_registry.Get<Scale&>(objHandle);
+
+        glm::mat4 translateMatrix = glm::translate(glm::mat4(1.0f), position());
+        glm::mat4 rotationMatrix = glm::mat4(rotation());
+        glm::mat4 scaleMatrix = glm::scale(glm::mat4(1.0f), scale());
+        glm::mat4 modelMatrix = translateMatrix * rotationMatrix * scaleMatrix;
+
+        // Push both model and view matrices
+        struct PushConstants {
+            glm::mat4 model;
+            glm::mat4 view;
+        };
+        PushConstants pushData{ modelMatrix, m_viewMatrix };
 
         vkCmdPushConstants(cmdBuffer, m_computePipelineLayout,
                           VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                          sizeof(glm::mat4), &modelMatrix);
+                          sizeof(PushConstants), &pushData);
 
-        // parse_ply now runs ONCE during initialization (in AllocateGaussianDescriptorSets)
+        // NOTE: parse_ply shader runs once during initialization (in AllocateGaussianDescriptorSets)
+        // VKGS runs parse_ply per-frame (engine.cc:1141) for dynamic PLY loading.
+        // This implementation uses static PLY data - buffers contain parsed gaussian data after initialization.
 
         // ============================================================================
         // RANK SHADER: Frustum culling and depth key generation
         // Reference: third_party/vkgs/src/vkgs/engine/engine.cc:1165-1194
         // ============================================================================
 
-        // vkgs:1167 - Clear visible count buffer (must be 0 before rank shader)
+        // vkgs:1167 - Clear visible count buffer to 0
+        // Rank shader uses atomicAdd(visible_point_count, 1) to allocate indices (rank.comp:44)
+        // Starting from 0 ensures correct index allocation without accumulating across frames
         vkCmdFillBuffer(cmdBuffer, obj.visibleCountBuffer, 0, sizeof(uint32_t), 0);
 
         // vkgs:1169-1173 - Barrier: ensure fill completes before rank reads (use global barrier like VKGS)
@@ -205,13 +221,14 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         vkCmdDispatch(cmdBuffer, rankWorkgroups, 1, 1);
 
         // NOTE: VKGS has barrier/copy here (vkgs:1196-1212) to read visible_point_count to CPU for diagnostics
-        // We skip this CPU readback (not needed for rendering, only for VKGS's UI display)
+        // This implementation skips CPU readback (not needed for rendering, only for VKGS's UI display)
 
-        // CRITICAL: Barrier after rank to ensure visible_point_count is written before radix sort reads it
-        // Radix sort uses INDIRECT mode, reading count from visibleCountBuffer at runtime
+        // CRITICAL: Barrier ensures rank shader writes complete before radix sort reads buffers
+        // Rank writes: visible_point_count (via atomicAdd), key[], index[]
+        // Sort reads: visible_point_count (INDIRECT mode - GPU-driven count from visibleCountBuffer)
         VkMemoryBarrier rankBarrier{};
         rankBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-        rankBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;  // Rank writes visible_count, key[], index[]
+        rankBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         rankBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
         vkCmdPipelineBarrier(cmdBuffer,
                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -258,12 +275,15 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
                                 m_computePipelineLayout, 1, 3,
                                 descriptorSetsRebind, 0, nullptr);
 
-        // NOTE: VKGS does not have explicit barrier after radix sort
-        // Required to ensure key/index buffers are ready before inverse_index shader reads them
+        // CRITICAL: Barrier ensures radix sort writes complete before inverse_index reads buffers
+        // Radix sort writes: keyBuffer[] (sorted depths), indexBuffer[] (sorted gaussian IDs)
+        // inverse_index reads: indexBuffer[] to build inverse mapping
+        // vulkan_radix_sort API requires this barrier (documented in vk_radix_sort.h)
+        // VKGS combines this barrier with the fillBuffer barrier below for efficiency (engine.cc:1228-1232)
         VkMemoryBarrier globalBarrier{};
         globalBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
-        globalBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;  // Radix sort writes
-        globalBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;   // inverse_index reads
+        globalBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+        globalBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
         vkCmdPipelineBarrier(cmdBuffer,
                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
@@ -275,8 +295,10 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         // Reference: third_party/vkgs/src/vkgs/engine/engine.cc:1224-1253
         // ============================================================================
 
-        // vkgs:1226 - Initialize inverse_map buffer to -1 (required by projection shader)
-        // VKGS uses loaded_point_count_, we use obj.pointCount (same value)
+        // vkgs:1226 - Initialize inverse_map buffer to -1 for ALL gaussians
+        // projection shader checks inverse_map[id] == -1 to skip culled gaussians (projection.comp:78-79)
+        // inverse_index writes sorted positions ONLY for visible gaussians
+        // Remaining entries stay -1, indicating culled (not visible)
         VkDeviceSize inverseMapSize = obj.pointCount * sizeof(int32_t);
         vkCmdFillBuffer(cmdBuffer, obj.inverseMapBuffer, 0, inverseMapSize, 0xFFFFFFFF);  // -1 in two's complement
 
@@ -290,17 +312,17 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
                             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                             0, 1, &inverseMapBarrier, 0, nullptr, 0, nullptr);
 
-        // vkgs:1234-1240 - Bind descriptor sets (we do this earlier, so skipping here)
+        // vkgs:1234-1240 - Bind descriptor sets (done earlier, so skipping here)
 
         // vkgs:1242 - Bind inverse_index pipeline
         vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_inverseIndexPipeline);
 
-        // vkgs:1244-1245 - Push constants (we do this earlier, so skipping here)
+        // vkgs:1244-1245 - Push constants (done earlier, so skipping here)
 
-        // vkgs:1249-1250 - Dispatch inverse_index shader with workgroup calculation
-        // Dispatching based on pointCount (not visible_point_count) matches VKGS behavior
-        // Shader guards itself with early return: if (id >= visible_point_count) return;
-        // This approach avoids reading visible_point_count back to CPU for dispatch calculation
+        // vkgs:1249-1250 - Dispatch based on pointCount (total gaussians), not visible_point_count
+        // Launches threads for ALL gaussians, shader early-exits for culled ones (inverse_index.comp:20)
+        // Alternative would require GPU-to-CPU readback of visible_point_count (expensive sync point)
+        // Trade-off: Launch extra threads vs. avoid GPU-to-CPU synchronization latency
         uint32_t inverseIndexWorkgroups = (obj.pointCount + 255) / 256;
         vkCmdDispatch(cmdBuffer, inverseIndexWorkgroups, 1, 1);
 
@@ -322,17 +344,16 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         // vkgs:1263 - Bind projection pipeline
         vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_projectionPipeline);
 
-        // vkgs:1265-1266 - Push constants (re-push to ensure not corrupted by radix sort)
-        glm::mat4 modelMatrix2 = glm::mat4(1.0f);
+        // vkgs:1265-1266 - Push model matrix (re-push to ensure not corrupted by radix sort)
         vkCmdPushConstants(cmdBuffer, m_computePipelineLayout,
                           VK_SHADER_STAGE_COMPUTE_BIT, 0,
-                          sizeof(glm::mat4), &modelMatrix2);
+                          sizeof(glm::mat4), &modelMatrix);
 
         // vkgs:1270-1271 - Dispatch projection shader with workgroup calculation
         uint32_t projectionWorkgroups = (obj.pointCount + 255) / 256;
         vkCmdDispatch(cmdBuffer, projectionWorkgroups, 1, 1);
 
-        // vkgs:1276-1280 - Barrier: projection writes → graphics pipeline reads (draw stage)
+        // vkgs:1276-1280 - Barrier: projection writes, graphics pipeline reads (draw stage)
         VkMemoryBarrier computeToGraphicsBarrier{};
         computeToGraphicsBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
         computeToGraphicsBarrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
@@ -342,12 +363,11 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
                             VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT,
                             0, 1, &computeToGraphicsBarrier, 0, nullptr, 0, nullptr);
 
-        // Begin dynamic rendering
         VkRenderingAttachmentInfo colorAttachment{};
         colorAttachment.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO;
         colorAttachment.imageView = swapChain.m_swapChainImageViews[imageIndex];
         colorAttachment.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;  // Preserve RendererVulkan's clear
+        colorAttachment.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;  // Load cleared framebuffer from RendererVulkan to composite onto
         colorAttachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
 
         VkRenderingInfo renderingInfo{};
@@ -441,7 +461,7 @@ bool RendererGaussian::OnObjectCreate(Message& message) {
 
     // Map ObjectHandle to buffer index for destruction
     size_t objectIndex = m_gaussianObjects.size() - 1;
-    m_objectToBufferIndex[oHandle] = objectIndex;
+    m_objectToBufferIndex.push_back({oHandle, objectIndex});
 
     // Update splat count in component (modify through strong type wrapper)
     gaussianSplat().splatCount = plyData.pointCount;
@@ -467,8 +487,10 @@ bool RendererGaussian::OnObjectDestroy(Message& message) {
         return false;
     }
 
-    // Find buffer index from mapping
-    auto it = m_objectToBufferIndex.find(oHandle);
+    // Find buffer index from mapping (linear search)
+    auto it = std::find_if(m_objectToBufferIndex.begin(), m_objectToBufferIndex.end(),
+        [&oHandle](const auto& pair) { return pair.first == oHandle; });
+
     if (it == m_objectToBufferIndex.end()) {
         std::cerr << "Warning: Gaussian object not found in buffer index map" << std::endl;
         return false;
@@ -482,30 +504,23 @@ bool RendererGaussian::OnObjectDestroy(Message& message) {
     // Destroy GPU buffers for this object
     DestroyGaussianBuffers(m_gaussianObjects[objectIndex]);
 
-    // Swap-and-pop to remove from vectors (avoids shifting all indices)
-    size_t lastIndex = m_gaussianObjects.size() - 1;
-    if (objectIndex != lastIndex) {
-        // Swap with last element
-        m_gaussianObjects[objectIndex] = m_gaussianObjects[lastIndex];
-        m_gaussianDataDescriptorSets[objectIndex] = m_gaussianDataDescriptorSets[lastIndex];
-        m_outputDescriptorSets[objectIndex] = m_outputDescriptorSets[lastIndex];
-        m_plyDescriptorSets[objectIndex] = m_plyDescriptorSets[lastIndex];
+    // Remove from all vectors (standard erase)
+    m_gaussianObjects.erase(m_gaussianObjects.begin() + objectIndex);
+    m_gaussianDataDescriptorSets.erase(m_gaussianDataDescriptorSets.begin() + objectIndex);
+    m_outputDescriptorSets.erase(m_outputDescriptorSets.begin() + objectIndex);
+    m_plyDescriptorSets.erase(m_plyDescriptorSets.begin() + objectIndex);
+    m_radixStorageBuffers.erase(m_radixStorageBuffers.begin() + objectIndex);
+    m_radixStorageAllocations.erase(m_radixStorageAllocations.begin() + objectIndex);
 
-        // Update mapping for the swapped object (find its handle)
-        for (auto& [handle, idx] : m_objectToBufferIndex) {
-            if (idx == lastIndex) {
-                m_objectToBufferIndex[handle] = objectIndex;
-                break;
-            }
+    // Remove from mapping
+    m_objectToBufferIndex.erase(it);
+
+    // Update indices in mapping for objects that were shifted down
+    for (auto& pair : m_objectToBufferIndex) {
+        if (pair.second > objectIndex) {
+            pair.second--;
         }
     }
-
-    // Remove last elements
-    m_gaussianObjects.pop_back();
-    m_gaussianDataDescriptorSets.pop_back();
-    m_outputDescriptorSets.pop_back();
-    m_plyDescriptorSets.pop_back();
-    m_objectToBufferIndex.erase(oHandle);
 
     std::cout << "Gaussian object destroyed (was at index: " << objectIndex << ")" << std::endl;
 
@@ -530,6 +545,7 @@ bool RendererGaussian::OnQuit(const Message& message) {
     DestroyCommandBuffers();
     DestroyPipelines();
     DestroyDescriptors();
+    DestroyCubemapResources();
     DestroyCameraBuffers();
     CleanupDepthSort();
 
@@ -550,7 +566,6 @@ void RendererGaussian::CreateComputePipelines() {
     auto inverseIndexCode = vvh::ReadFile("shaders/GaussianSplatting/inverse_index.spv");
     auto projectionCode = vvh::ReadFile("shaders/GaussianSplatting/projection.spv");
 
-    // Create shader modules
     VkShaderModuleCreateInfo shaderModuleInfo{};
     shaderModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 
@@ -582,7 +597,7 @@ void RendererGaussian::CreateComputePipelines() {
     VkDescriptorSetLayoutCreateInfo cameraLayoutInfo{};
     cameraLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
     cameraLayoutInfo.pNext = nullptr;
-    cameraLayoutInfo.flags = 0;  // Explicitly no push descriptors
+    cameraLayoutInfo.flags = 0;
     cameraLayoutInfo.bindingCount = 1;
     cameraLayoutInfo.pBindings = &cameraBinding;
     vkCreateDescriptorSetLayout(device, &cameraLayoutInfo, nullptr, &m_cameraDescriptorLayout);
@@ -622,7 +637,7 @@ void RendererGaussian::CreateComputePipelines() {
 
     VkDescriptorSetLayoutCreateInfo gaussianLayoutInfo{};
     gaussianLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    gaussianLayoutInfo.flags = 0;  // Explicitly no push descriptors
+    gaussianLayoutInfo.flags = 0;
     gaussianLayoutInfo.bindingCount = 5;
     gaussianLayoutInfo.pBindings = gaussianBindings;
     vkCreateDescriptorSetLayout(device, &gaussianLayoutInfo, nullptr, &m_gaussianDataDescriptorLayout);
@@ -668,7 +683,7 @@ void RendererGaussian::CreateComputePipelines() {
 
     VkDescriptorSetLayoutCreateInfo outputLayoutInfo{};
     outputLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    outputLayoutInfo.flags = 0;  // Explicitly no push descriptors
+    outputLayoutInfo.flags = 0;
     outputLayoutInfo.bindingCount = 6;
     outputLayoutInfo.pBindings = outputBindings;
     vkCreateDescriptorSetLayout(device, &outputLayoutInfo, nullptr, &m_outputDescriptorLayout);
@@ -682,7 +697,7 @@ void RendererGaussian::CreateComputePipelines() {
 
     VkDescriptorSetLayoutCreateInfo plyLayoutInfo{};
     plyLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    plyLayoutInfo.flags = 0;  // Explicitly no push descriptors
+    plyLayoutInfo.flags = 0;
     plyLayoutInfo.bindingCount = 1;
     plyLayoutInfo.pBindings = &plyBinding;
     vkCreateDescriptorSetLayout(device, &plyLayoutInfo, nullptr, &m_plyDescriptorLayout);
@@ -698,7 +713,7 @@ void RendererGaussian::CreateComputePipelines() {
     VkPushConstantRange pushConstantRange{};
     pushConstantRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
     pushConstantRange.offset = 0;
-    pushConstantRange.size = sizeof(glm::mat4); // model matrix
+    pushConstantRange.size = sizeof(glm::mat4) * 2; // model + view matrices (128 bytes)
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
@@ -731,6 +746,74 @@ void RendererGaussian::CreateComputePipelines() {
     // Projection pipeline
     computePipelineInfo.stage.module = m_projectionShader;
     vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &computePipelineInfo, nullptr, &m_projectionPipeline);
+
+    // ========================================================================
+    // Diffuse Irradiance Convolution Pipeline
+    // ========================================================================
+    
+    auto irradianceCode = vvh::ReadFile("shaders/GaussianSplatting/convolve_irradiance.spv");
+    shaderModuleInfo.codeSize = irradianceCode.size();
+    shaderModuleInfo.pCode = reinterpret_cast<const uint32_t*>(irradianceCode.data());
+    vkCreateShaderModule(device, &shaderModuleInfo, nullptr, &m_irradianceShader);
+
+    // Create irradiance descriptor set layout (Set 0 for irradiance shader)
+    // Binding 0: Environment cubemap (sampler)
+    // Binding 1: Irradiance cubemap (storage image)
+    VkDescriptorSetLayoutBinding irradianceBindings[2] = {};
+    irradianceBindings[0].binding = 0;
+    irradianceBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    irradianceBindings[0].descriptorCount = 1;
+    irradianceBindings[0].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+    irradianceBindings[1].binding = 1;
+    irradianceBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+    irradianceBindings[1].descriptorCount = 1;
+    irradianceBindings[1].stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+
+    VkDescriptorSetLayoutCreateInfo irradianceLayoutInfo{};
+    irradianceLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    irradianceLayoutInfo.flags = 0;
+    irradianceLayoutInfo.bindingCount = 2;
+    irradianceLayoutInfo.pBindings = irradianceBindings;
+    vkCreateDescriptorSetLayout(device, &irradianceLayoutInfo, nullptr, &m_irradianceDescriptorLayout);
+
+    // Create irradiance pipeline layout (single set)
+    VkPipelineLayoutCreateInfo irradiancePipelineLayoutInfo{};
+    irradiancePipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    irradiancePipelineLayoutInfo.setLayoutCount = 1;
+    irradiancePipelineLayoutInfo.pSetLayouts = &m_irradianceDescriptorLayout;
+    vkCreatePipelineLayout(device, &irradiancePipelineLayoutInfo, nullptr, &m_irradiancePipelineLayout);
+
+    // Create irradiance compute pipeline
+    VkComputePipelineCreateInfo irradianceComputePipelineInfo{};
+    irradianceComputePipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    irradianceComputePipelineInfo.layout = m_irradiancePipelineLayout;
+    irradianceComputePipelineInfo.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    irradianceComputePipelineInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+    irradianceComputePipelineInfo.stage.module = m_irradianceShader;
+    irradianceComputePipelineInfo.stage.pName = "main";
+    vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &irradianceComputePipelineInfo, nullptr, &m_irradiancePipeline);
+
+    // ========================================================================
+    // Box Filter Pipeline (fast alternative to convolution)
+    // ========================================================================
+
+    auto boxFilterCode = vvh::ReadFile("shaders/GaussianSplatting/box_filter_irradiance.spv");
+    shaderModuleInfo.codeSize = boxFilterCode.size();
+    shaderModuleInfo.pCode = reinterpret_cast<const uint32_t*>(boxFilterCode.data());
+    vkCreateShaderModule(device, &shaderModuleInfo, nullptr, &m_boxFilterShader);
+
+    // Create box filter pipeline (shares same layout as convolution)
+    VkComputePipelineCreateInfo boxFilterPipelineInfo{};
+    boxFilterPipelineInfo.sType = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+    boxFilterPipelineInfo.layout = m_irradiancePipelineLayout;
+    boxFilterPipelineInfo.stage.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+    boxFilterPipelineInfo.stage.stage = VK_SHADER_STAGE_COMPUTE_BIT;
+    boxFilterPipelineInfo.stage.module = m_boxFilterShader;
+    boxFilterPipelineInfo.stage.pName = "main";
+    vkCreateComputePipelines(device, VK_NULL_HANDLE, 1, &boxFilterPipelineInfo, nullptr, &m_boxFilterPipeline);
+
+    std::cout << "Irradiance pipelines created (2 variants: convolution, box filter)" << std::endl;
 }
 
 /**
@@ -743,7 +826,6 @@ void RendererGaussian::CreateGraphicsPipeline() {
     auto vertCode = vvh::ReadFile("shaders/GaussianSplatting/splat_vert.spv");
     auto fragCode = vvh::ReadFile("shaders/GaussianSplatting/splat_frag.spv");
 
-    // Create shader modules
     VkShaderModuleCreateInfo shaderModuleInfo{};
     shaderModuleInfo.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
 
@@ -777,15 +859,16 @@ void RendererGaussian::CreateGraphicsPipeline() {
     vertexInputInfo.vertexAttributeDescriptionCount = 0;
 
     // Input assembly (TRIANGLE_LIST for indexed quads)
-    // CRITICAL: Must be TRIANGLE_LIST, not TRIANGLE_STRIP!
-    // Our index buffer pattern [0,1,2,2,1,3, 4,5,6,6,5,7...] is for TRIANGLE_LIST
+    // Index buffer pattern [0,1,2,2,1,3, 4,5,6,6,5,7...] is for TRIANGLE_LIST
     // Reference: VKGS engine.cc uses TRIANGLE_LIST
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
     inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
     inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
     inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-    // Viewport and scissor (dynamic)
+    // Viewport and scissor declared as dynamic state (set per-frame via vkCmdSetViewport/Scissor)
+    // Allows window resize without pipeline recreation
+    // Reference: third_party/vkgs/src/vkgs/engine/engine.cc:1426-1431
     VkPipelineViewportStateCreateInfo viewportState{};
     viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
     viewportState.viewportCount = 1;
@@ -808,12 +891,12 @@ void RendererGaussian::CreateGraphicsPipeline() {
     multisampling.sampleShadingEnable = VK_FALSE;
     multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
 
-    // Depth and stencil (DISABLED - no depth attachment in dynamic rendering setup)
+    // Depth testing disabled (back-to-front alpha blending)
     VkPipelineDepthStencilStateCreateInfo depthStencil{};
     depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-    depthStencil.depthTestEnable = VK_FALSE;  // Disabled - no depth buffer
+    depthStencil.depthTestEnable = VK_FALSE;
     depthStencil.depthWriteEnable = VK_FALSE;
-    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
+    depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
     depthStencil.depthBoundsTestEnable = VK_FALSE;
     depthStencil.stencilTestEnable = VK_FALSE;
 
@@ -847,12 +930,14 @@ void RendererGaussian::CreateGraphicsPipeline() {
     dynamicState.dynamicStateCount = 2;
     dynamicState.pDynamicStates = dynamicStates;
 
-    // Graphics pipeline uses Set 1 = m_outputDescriptorLayout (which contains Instances at binding 1)
-    // Note: Shader uses "set = 1" which maps to the second descriptor set in the pipeline layout
-    // Set 0 is unused by the shader, but we need a valid layout (use camera layout as dummy)
+    // Graphics pipeline layout follows VKGS pattern (engine.cc:237)
+    // Set 0: Camera (used by compute shaders, not graphics shader, but included for consistency)
+    // Set 1: Instances buffer (used by graphics shader: splat.vert:3)
+    // VKGS shares graphics_pipeline_layout_ across multiple pipelines (splat, color_line, etc.)
+    // Pattern allows all pipelines to reference "camera = set 0" conceptually
     VkDescriptorSetLayout graphicsSetLayouts[] = {
-        m_cameraDescriptorLayout, // Set 0: Dummy (not accessed by shader, but required by Vulkan)
-        m_outputDescriptorLayout  // Set 1: Contains Instances buffer at binding 1
+        m_cameraDescriptorLayout, // Set 0: Camera (compute only, included for pattern consistency)
+        m_outputDescriptorLayout  // Set 1: Instances buffer at binding 1
     };
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
@@ -862,7 +947,9 @@ void RendererGaussian::CreateGraphicsPipeline() {
     pipelineLayoutInfo.pushConstantRangeCount = 0;
     vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &m_graphicsPipelineLayout);
 
-    // Dynamic rendering info (VVE uses dynamic rendering, not render passes)
+    // VVE uses VK_KHR_dynamic_rendering (Vulkan 1.3 core, no VkRenderPass objects needed)
+    // VKGS uses traditional VkRenderPass (engine.cc:125, older pattern)
+    // Dynamic rendering: Specify attachments via VkPipelineRenderingCreateInfo instead of render pass
     VkFormat colorFormat = m_vkState().m_swapChain.m_swapChainImageFormat;
     VkPipelineRenderingCreateInfo renderingInfo{};
     renderingInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
@@ -873,7 +960,7 @@ void RendererGaussian::CreateGraphicsPipeline() {
     // Create graphics pipeline
     VkGraphicsPipelineCreateInfo pipelineInfo{};
     pipelineInfo.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-    pipelineInfo.pNext = &renderingInfo;  // Add dynamic rendering info
+    pipelineInfo.pNext = &renderingInfo;  // Dynamic rendering info (replaces render pass)
     pipelineInfo.stageCount = 2;
     pipelineInfo.pStages = shaderStages;
     pipelineInfo.pVertexInputState = &vertexInputInfo;
@@ -885,7 +972,7 @@ void RendererGaussian::CreateGraphicsPipeline() {
     pipelineInfo.pColorBlendState = &colorBlending;
     pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = m_graphicsPipelineLayout;
-    pipelineInfo.renderPass = VK_NULL_HANDLE;  // No render pass for dynamic rendering
+    pipelineInfo.renderPass = VK_NULL_HANDLE;  // NULL for dynamic rendering
     pipelineInfo.subpass = 0;
 
     vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &m_splatPipeline);
@@ -914,6 +1001,14 @@ void RendererGaussian::DestroyPipelines() {
         vkDestroyPipeline(device, m_projectionPipeline, nullptr);
         m_projectionPipeline = VK_NULL_HANDLE;
     }
+    if (m_irradiancePipeline != VK_NULL_HANDLE) {
+        vkDestroyPipeline(device, m_irradiancePipeline, nullptr);
+        m_irradiancePipeline = VK_NULL_HANDLE;
+    }
+    if (m_boxFilterPipeline != VK_NULL_HANDLE) {
+        vkDestroyPipeline(device, m_boxFilterPipeline, nullptr);
+        m_boxFilterPipeline = VK_NULL_HANDLE;
+    }
 
     // Destroy graphics pipeline
     if (m_splatPipeline != VK_NULL_HANDLE) {
@@ -925,6 +1020,10 @@ void RendererGaussian::DestroyPipelines() {
     if (m_computePipelineLayout != VK_NULL_HANDLE) {
         vkDestroyPipelineLayout(device, m_computePipelineLayout, nullptr);
         m_computePipelineLayout = VK_NULL_HANDLE;
+    }
+    if (m_irradiancePipelineLayout != VK_NULL_HANDLE) {
+        vkDestroyPipelineLayout(device, m_irradiancePipelineLayout, nullptr);
+        m_irradiancePipelineLayout = VK_NULL_HANDLE;
     }
     if (m_graphicsPipelineLayout != VK_NULL_HANDLE) {
         vkDestroyPipelineLayout(device, m_graphicsPipelineLayout, nullptr);
@@ -962,6 +1061,14 @@ void RendererGaussian::DestroyPipelines() {
         vkDestroyShaderModule(device, m_projectionShader, nullptr);
         m_projectionShader = VK_NULL_HANDLE;
     }
+    if (m_irradianceShader != VK_NULL_HANDLE) {
+        vkDestroyShaderModule(device, m_irradianceShader, nullptr);
+        m_irradianceShader = VK_NULL_HANDLE;
+    }
+    if (m_boxFilterShader != VK_NULL_HANDLE) {
+        vkDestroyShaderModule(device, m_boxFilterShader, nullptr);
+        m_boxFilterShader = VK_NULL_HANDLE;
+    }
     if (m_splatVertShader != VK_NULL_HANDLE) {
         vkDestroyShaderModule(device, m_splatVertShader, nullptr);
         m_splatVertShader = VK_NULL_HANDLE;
@@ -980,11 +1087,13 @@ void RendererGaussian::CreateGaussianBuffers(const PLYData& plyData, GaussianBuf
     const uint32_t N = plyData.pointCount;
 
     // Buffer sizes (matching VKGS format)
-    VkDeviceSize plyBufferSize = 60 * sizeof(uint32_t) + plyData.rawData.size();
-    VkDeviceSize positionBufferSize = N * 3 * sizeof(float);
-    VkDeviceSize cov3dBufferSize = N * 6 * sizeof(float);
-    VkDeviceSize opacityBufferSize = N * sizeof(float);
-    VkDeviceSize shBufferSize = N * 48 * sizeof(uint16_t);  // f16
+    // Reference: third_party/vkgs/src/vkgs/engine/splat_load_thread.cc:92 (PLY buffer)
+    // Reference: third_party/vkgs/src/vkgs/engine/engine.cc:485-491 (gaussian data buffers)
+    VkDeviceSize plyBufferSize = 60 * sizeof(uint32_t) + plyData.rawData.size();  // 60 offset indices + raw PLY data
+    VkDeviceSize positionBufferSize = N * 3 * sizeof(float);  // xyz per gaussian
+    VkDeviceSize cov3dBufferSize = N * 6 * sizeof(float);     // 6 covariance matrix components (upper triangle)
+    VkDeviceSize opacityBufferSize = N * sizeof(float);       // alpha per gaussian
+    VkDeviceSize shBufferSize = N * 48 * sizeof(uint16_t);    // 48 f16 spherical harmonics coefficients
 
     // Pad to next multiple of 4 for radix sort library requirement
     // vulkan_radix_sort internally pads element count to multiple of 4
@@ -1084,10 +1193,12 @@ void RendererGaussian::CreateGaussianBuffers(const PLYData& plyData, GaussianBuf
         .m_allocationInfo = nullptr
     });
 
-    // Create write buffers (updated each frame with vkQueueWaitIdle synchronization)
-    VkDeviceSize drawIndirectBufferSize = 64; // DrawIndirect struct (see projection.comp)
+    // Create write buffers (updated each frame, vkQueueWaitIdle at line 80 ensures GPU idle)
+    // Reference: third_party/vkgs/src/vkgs/engine/engine.cc:436 (draw indirect: 12 uint32 = 48 bytes)
+    // Reference: third_party/vkgs/src/vkgs/engine/engine.cc:500 (instances: N * 12 float)
+    VkDeviceSize drawIndirectBufferSize = 64; // DrawIndirect struct (projection.comp defines 12 uint32 = 48 bytes, rounded to 64)
     VkDeviceSize instancesBufferSize = N * 12 * sizeof(float); // N * 3 vec4 (position + rot_scale + color/opacity)
-    VkDeviceSize inverseMapBufferSize = paddedN * sizeof(int32_t);  // Use paddedN for radix sort
+    VkDeviceSize inverseMapBufferSize = paddedN * sizeof(int32_t);  // Use paddedN for radix sort (engine.cc:497)
     VkDeviceSize visibleCountBufferSize = sizeof(uint32_t);
 
     vvh::BufCreateBuffer({
@@ -1370,6 +1481,11 @@ void RendererGaussian::DestroyGaussianBuffers(GaussianBuffers& buffers) {
 
 /**
  * @brief Create camera uniform buffers (one per frame-in-flight)
+ *
+ * Frame-in-flight pattern: Each frame gets its own buffer to avoid GPU/CPU race conditions
+ * when multiple frames render concurrently (GPU rendering frame N while CPU prepares N+1).
+ * Currently using vkQueueWaitIdle synchronization (line 80), but per-frame buffers follow
+ * standard Vulkan pattern and allow future optimization to proper frame-in-flight rendering.
  */
 void RendererGaussian::CreateCameraBuffers() {
     auto& allocator = m_vkState().m_vmaAllocator;
@@ -1378,8 +1494,10 @@ void RendererGaussian::CreateCameraBuffers() {
     m_cameraBuffers.resize(frameCount);
     m_cameraAllocations.resize(frameCount);
 
-    // Camera data: mat4 projection, mat4 view, vec3 camera_position, float pad, uvec2 screen_size
-    VkDeviceSize cameraBufferSize = sizeof(glm::mat4) * 2 + sizeof(glm::vec3) + sizeof(float) + sizeof(glm::uvec2);
+    // Camera uniform buffer (modified from VKGS - view matrix moved to push constants)
+    // VKGS: projection + view + camera_position + pad + screen_size
+    // This project:  projection + camera_position + pad + screen_size (see projection.comp:6-11, rank.comp:9-14)
+    VkDeviceSize cameraBufferSize = sizeof(glm::mat4) + sizeof(glm::vec3) + sizeof(float) + sizeof(glm::uvec2);
 
     for (uint32_t i = 0; i < frameCount; i++) {
         VmaAllocationInfo allocInfo;
@@ -1422,7 +1540,7 @@ void RendererGaussian::DestroyCameraBuffers() {
  * @brief Initialize depth sort pipeline for gaussian rendering
  */
 void RendererGaussian::InitializeDepthSort() {
-    // Verify volk loaded the push descriptor extension function
+    // Verify volk loaded VK_KHR_push_descriptor extension (required by vulkan_radix_sort internally)
     if (vkCmdPushDescriptorSetKHR == nullptr) {
         std::cerr << "ERROR: vkCmdPushDescriptorSetKHR is NULL! Extension not loaded by volk." << std::endl;
         throw std::runtime_error("VK_KHR_push_descriptor function not loaded");
@@ -1502,16 +1620,7 @@ void RendererGaussian::CreateCommandBuffers() {
         vkAllocateCommandBuffers(device, &allocInfo, &m_commandBuffers[i]);
     }
 
-    // Create fences for frame synchronization (start signaled)
-    m_renderFences.resize(frameCount);
-    VkFenceCreateInfo fenceInfo{};
-    fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
-    fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;  // Start signaled so first frame doesn't wait
-    for (uint32_t i = 0; i < frameCount; i++) {
-        vkCreateFence(device, &fenceInfo, nullptr, &m_renderFences[i]);
-    }
-
-    std::cout << "Command buffers and fences created (" << frameCount << " frames)" << std::endl;
+    std::cout << "Command buffers created (" << frameCount << " frames)" << std::endl;
 }
 
 /**
@@ -1519,14 +1628,6 @@ void RendererGaussian::CreateCommandBuffers() {
  */
 void RendererGaussian::DestroyCommandBuffers() {
     auto& device = m_vkState().m_device;
-
-    // Destroy fences
-    for (auto fence : m_renderFences) {
-        if (fence != VK_NULL_HANDLE) {
-            vkDestroyFence(device, fence, nullptr);
-        }
-    }
-    m_renderFences.clear();
 
     // Destroy command pools
     for (auto pool : m_commandPools) {
@@ -1546,13 +1647,14 @@ void RendererGaussian::CreateDescriptorPool() {
     auto& device = m_vkState().m_device;
     uint32_t frameCount = static_cast<uint32_t>(m_vkState().m_swapChain.m_swapChainImages.size());
 
-    // Pool sizes for our descriptor sets
+    // Pool sizes for descriptor sets (see CreateDescriptorSetLayouts for layout definitions)
     // Set 0: 1 uniform (Camera)
-    // Set 1: 1 uniform (Info) + 1 storage (Position - bindings 1-4 not in layout yet)
+    // Set 1: 1 uniform (Info) + 4 storage (Position, Cov3d, Opacity, Sh)
     // Set 2: 6 storage (DrawIndirect, Instances, VisibleCount, Key, Index, InverseMap)
     // Set 3: 1 storage (PLY)
+    // Total per object: 2 uniforms + 11 storage buffers
     std::vector<VkDescriptorPoolSize> poolSizes = {
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, frameCount * 10 },   // Camera + Info buffers per object
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, frameCount * 10 },   // Camera (per-frame) + Info (per-object)
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, frameCount * 50 }    // All storage buffers (generous for multiple objects)
     };
 
@@ -1560,7 +1662,7 @@ void RendererGaussian::CreateDescriptorPool() {
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
     poolInfo.pPoolSizes = poolSizes.data();
-    poolInfo.maxSets = frameCount * 20;  // 4 sets per object, support multiple objects
+    poolInfo.maxSets = frameCount * 20;  // frameCount camera + 1 irradiance + 3 per object, sized for multiple objects
 
     vkCreateDescriptorPool(device, &poolInfo, nullptr, &m_descriptorPool);
 }
@@ -1584,6 +1686,14 @@ void RendererGaussian::AllocateDescriptorSets() {
 
         vkAllocateDescriptorSets(device, &allocInfo, &m_cameraDescriptorSets[i]);
     }
+
+    // Allocate irradiance descriptor set (single global set for env+irradiance cubemaps)
+    VkDescriptorSetAllocateInfo irradianceAllocInfo{};
+    irradianceAllocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+    irradianceAllocInfo.descriptorPool = m_descriptorPool;
+    irradianceAllocInfo.descriptorSetCount = 1;
+    irradianceAllocInfo.pSetLayouts = &m_irradianceDescriptorLayout;
+    vkAllocateDescriptorSets(device, &irradianceAllocInfo, &m_irradianceDescriptorSet);
 
     // Note: Gaussian data and output descriptor sets are allocated per object in OnObjectCreate()
 }
@@ -1612,6 +1722,40 @@ void RendererGaussian::UpdateDescriptorSets() {
         cameraWrite.pBufferInfo = &cameraBufferInfo;
 
         vkUpdateDescriptorSets(device, 1, &cameraWrite, 0, nullptr);
+    }
+
+    // Update irradiance cubemap descriptor set (for IBL convolution)
+    if (m_irradianceDescriptorSet != VK_NULL_HANDLE) {
+        // Binding 0: Environment cubemap (sampler)
+        VkDescriptorImageInfo envDescriptorInfo = {};
+        envDescriptorInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        envDescriptorInfo.imageView = m_envCubemapView;
+        envDescriptorInfo.sampler = m_envCubemapSampler;
+
+        // Binding 1: Irradiance cubemap (storage image)
+        VkDescriptorImageInfo irrDescriptorInfo = {};
+        irrDescriptorInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        irrDescriptorInfo.imageView = m_irradianceView;
+        irrDescriptorInfo.sampler = VK_NULL_HANDLE;
+
+        VkWriteDescriptorSet writes[2] = {};
+        writes[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writes[0].dstSet = m_irradianceDescriptorSet;
+        writes[0].dstBinding = 0;
+        writes[0].dstArrayElement = 0;
+        writes[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        writes[0].descriptorCount = 1;
+        writes[0].pImageInfo = &envDescriptorInfo;
+
+        writes[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        writes[1].dstSet = m_irradianceDescriptorSet;
+        writes[1].dstBinding = 1;
+        writes[1].dstArrayElement = 0;
+        writes[1].descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        writes[1].descriptorCount = 1;
+        writes[1].pImageInfo = &irrDescriptorInfo;
+
+        vkUpdateDescriptorSets(device, 2, writes, 0, nullptr);
     }
 
     // Note: Gaussian data and output descriptor sets are updated per object in OnObjectCreate()
@@ -1882,7 +2026,7 @@ void RendererGaussian::AllocateGaussianDescriptorSets(size_t objectIndex) {
     // ============================================================================
     // PARSE PLY: Run during initialization to parse PLY data
     // Reference: third_party/vkgs/src/vkgs/engine/engine.cc:1137-1162
-    // In VKGS, parse_ply runs on-demand per frame (vkgs:1138 TODO: make parse async)
+    // In VKGS, parse_ply runs on-demand per frame (vkgs:1138)
     // ============================================================================
     {
         auto& commandPool = m_commandPools[0];  // Use first frame's command pool for initialization
