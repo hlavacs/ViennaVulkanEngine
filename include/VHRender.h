@@ -293,6 +293,7 @@ namespace vvh {
         pool_sizes.push_back({ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, info.m_sizes });
         pool_sizes.push_back({ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, info.m_sizes });
         pool_sizes.push_back({ VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, info.m_sizes });
+        pool_sizes.push_back({ VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, info.m_sizes });
 
         VkDescriptorPoolCreateInfo pool_info = {};
         pool_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;

@@ -24,6 +24,7 @@ namespace vvh {
 		VkBuffer& m_buffer;
 		VmaAllocation& m_allocation;
 		VmaAllocationInfo* m_allocationInfo;
+		VkDeviceSize m_alignment{0};
 	};
 
 	template<typename T = BufCreateBufferInfo>
@@ -36,7 +37,11 @@ namespace vvh {
 		VmaAllocationCreateInfo allocInfo = {};
 		allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
 		allocInfo.flags = info.m_vmaFlags;
-		vmaCreateBuffer(info.m_vmaAllocator, &bufferInfo, &allocInfo, &info.m_buffer, &info.m_allocation, info.m_allocationInfo);
+		if (info.m_alignment > 0) {
+			vmaCreateBufferWithAlignment(info.m_vmaAllocator, &bufferInfo, &allocInfo, info.m_alignment, &info.m_buffer, &info.m_allocation, info.m_allocationInfo);
+		} else {
+			vmaCreateBuffer(info.m_vmaAllocator, &bufferInfo, &allocInfo, &info.m_buffer, &info.m_allocation, info.m_allocationInfo);
+		}
 	}
 
 	//---------------------------------------------------------------------------------------------
@@ -230,6 +235,7 @@ namespace vvh {
 		const VkQueue& m_graphicsQueue;
 		const VkCommandPool& m_commandPool;
 		Mesh& m_mesh;
+		VkBufferUsageFlags m_extraUsageFlags{0};
 	};
 
 	template<typename T = BufCreateVertexBufferInfo>
@@ -256,7 +262,7 @@ namespace vvh {
 		BufCreateBuffer({
 			.m_vmaAllocator = info.m_vmaAllocator,
 			.m_size = bufferSize,
-			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | info.m_extraUsageFlags,
 			.m_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			.m_vmaFlags = 0,
 			.m_buffer = info.m_mesh.m_vertexBuffer,
@@ -266,6 +272,12 @@ namespace vvh {
 		BufCopyBuffer({ info.m_device, info.m_graphicsQueue, info.m_commandPool, stagingBuffer, info.m_mesh.m_vertexBuffer, bufferSize });
 
 		BufDestroyBuffer({ info.m_device, info.m_vmaAllocator, stagingBuffer, stagingBufferAllocation });
+
+		if (info.m_extraUsageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+			VkBufferDeviceAddressInfo addressInfo{ VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO };
+			addressInfo.buffer = info.m_mesh.m_vertexBuffer;
+			info.m_mesh.m_vertexBufferAddress = vkGetBufferDeviceAddress(info.m_device, &addressInfo);
+		}
 	}
 
 	//---------------------------------------------------------------------------------------------
@@ -277,6 +289,7 @@ namespace vvh {
 		const VkQueue& m_graphicsQueue;
 		const VkCommandPool& m_commandPool;
 		Mesh& m_mesh;
+		VkBufferUsageFlags m_extraUsageFlags{0};
 	};
 
 	template<typename T = BufCreateIndexBufferinfo>
@@ -303,7 +316,7 @@ namespace vvh {
 		BufCreateBuffer({
 			.m_vmaAllocator = info.m_vmaAllocator,
 			.m_size = bufferSize,
-			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT | info.m_extraUsageFlags,
 			.m_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
 			.m_vmaFlags = 0,
 			.m_buffer = info.m_mesh.m_indexBuffer,
@@ -313,6 +326,89 @@ namespace vvh {
 		BufCopyBuffer({ info.m_device, info.m_graphicsQueue, info.m_commandPool, stagingBuffer, info.m_mesh.m_indexBuffer, bufferSize });
 
 		BufDestroyBuffer({ info.m_device, info.m_vmaAllocator, stagingBuffer, stagingBufferAllocation });
+
+		if (info.m_extraUsageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+			VkBufferDeviceAddressInfo addressInfo{ VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO };
+			addressInfo.buffer = info.m_mesh.m_indexBuffer;
+			info.m_mesh.m_indexBufferAddress = vkGetBufferDeviceAddress(info.m_device, &addressInfo);
+		}
+	}
+
+	//---------------------------------------------------------------------------------------------
+
+	struct BufCreateVertexBufferInterleavedInfo {
+		const VkPhysicalDevice& m_physicalDevice;
+		const VkDevice& m_device;
+		const VmaAllocator& m_vmaAllocator;
+		const VkQueue& m_graphicsQueue;
+		const VkCommandPool& m_commandPool;
+		Mesh& m_mesh;
+		VkBufferUsageFlags m_extraUsageFlags{0};
+	};
+
+	template<typename T = BufCreateVertexBufferInterleavedInfo>
+	void BufCreateVertexBufferInterleaved(T&& info) {
+		struct VertexInterleaved {
+			glm::vec3 position;
+			glm::vec3 normal;
+			glm::vec2 texCoord;
+		};
+
+		const auto& positions = info.m_mesh.m_verticesData.m_positions;
+		const auto& normals = info.m_mesh.m_verticesData.m_normals;
+		const auto& texCoords = info.m_mesh.m_verticesData.m_texCoords;
+		size_t vertexCount = positions.size();
+		if (vertexCount == 0) {
+			return;
+		}
+
+		std::vector<VertexInterleaved> interleaved;
+		interleaved.reserve(vertexCount);
+		for (size_t i = 0; i < vertexCount; ++i) {
+			VertexInterleaved v{};
+			v.position = positions[i];
+			v.normal = (i < normals.size()) ? normals[i] : glm::vec3{0.0f, 0.0f, 1.0f};
+			v.texCoord = (i < texCoords.size()) ? texCoords[i] : glm::vec2{0.0f, 0.0f};
+			interleaved.push_back(v);
+		}
+
+		VkDeviceSize bufferSize = static_cast<VkDeviceSize>(interleaved.size() * sizeof(VertexInterleaved));
+
+		VkBuffer stagingBuffer;
+		VmaAllocation stagingBufferAllocation;
+		VmaAllocationInfo allocInfo;
+		BufCreateBuffer({
+			.m_vmaAllocator = info.m_vmaAllocator,
+			.m_size = bufferSize,
+			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+			.m_properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+			.m_vmaFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+			.m_buffer = stagingBuffer,
+			.m_allocation = stagingBufferAllocation,
+			.m_allocationInfo = &allocInfo
+		});
+
+		memcpy(allocInfo.pMappedData, interleaved.data(), static_cast<size_t>(bufferSize));
+
+		BufCreateBuffer({
+			.m_vmaAllocator = info.m_vmaAllocator,
+			.m_size = bufferSize,
+			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | info.m_extraUsageFlags,
+			.m_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+			.m_vmaFlags = 0,
+			.m_buffer = info.m_mesh.m_vertexBufferRT,
+			.m_allocation = info.m_mesh.m_vertexBufferRTAllocation
+		});
+
+		BufCopyBuffer({ info.m_device, info.m_graphicsQueue, info.m_commandPool, stagingBuffer, info.m_mesh.m_vertexBufferRT, bufferSize });
+
+		BufDestroyBuffer({ info.m_device, info.m_vmaAllocator, stagingBuffer, stagingBufferAllocation });
+
+		if (info.m_extraUsageFlags & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) {
+			VkBufferDeviceAddressInfo addressInfo{ VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO };
+			addressInfo.buffer = info.m_mesh.m_vertexBufferRT;
+			info.m_mesh.m_vertexBufferRTAddress = vkGetBufferDeviceAddress(info.m_device, &addressInfo);
+		}
 	}
 
 

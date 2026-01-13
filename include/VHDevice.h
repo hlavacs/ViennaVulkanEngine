@@ -291,6 +291,7 @@ namespace vvh {
 		VkDevice& m_device;
 		uint32_t& m_apiVersion;
 		VmaAllocator& m_vmaAllocator;
+		bool m_enableBufferDeviceAddress{false};
 	};
 
 	template<typename T = DevInitVMAInfo>
@@ -317,6 +318,9 @@ namespace vvh {
 
 		if (supportsMemoryBudget) {
 			allocatorCreateInfo.flags |= VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT;
+		}
+		if (info.m_enableBufferDeviceAddress) {
+			allocatorCreateInfo.flags |= VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT;
 		}
 
 		allocatorCreateInfo.vulkanApiVersion = info.m_apiVersion;
@@ -497,11 +501,44 @@ namespace vvh {
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
 
+		auto hasDeviceExtension = [&](const char* extName) {
+			return std::find(info.m_deviceExtensions.begin(), info.m_deviceExtensions.end(), extName) != info.m_deviceExtensions.end();
+		};
+		const bool enableBda = hasDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+		const bool enableAccel = hasDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+		const bool enableRayQuery = hasDeviceExtension(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+		const bool enableScalarBlockLayout = hasDeviceExtension(VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME);
+
 		// Query supported features and only enable what the device actually exposes
 		VkPhysicalDeviceFeatures2 supportedFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
 		VkPhysicalDeviceVulkan11Features supportedFeatures11{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
+		VkPhysicalDeviceBufferDeviceAddressFeatures supportedBda{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES };
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR supportedAccel{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR };
+		VkPhysicalDeviceRayQueryFeaturesKHR supportedRayQuery{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR };
+		VkPhysicalDeviceScalarBlockLayoutFeaturesEXT supportedScalar{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT };
+
 		supportedFeatures2.pNext = &supportedFeatures11;
 		supportedFeatures11.pNext = nullptr;
+		if (enableBda || enableAccel || enableRayQuery || enableScalarBlockLayout) {
+			VkBaseOutStructure* tail = reinterpret_cast<VkBaseOutStructure*>(&supportedFeatures11);
+			if (enableBda) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&supportedBda);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&supportedBda);
+			}
+			if (enableAccel) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&supportedAccel);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&supportedAccel);
+			}
+			if (enableRayQuery) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&supportedRayQuery);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&supportedRayQuery);
+			}
+			if (enableScalarBlockLayout) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&supportedScalar);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&supportedScalar);
+			}
+			tail->pNext = nullptr;
+		}
 		vkGetPhysicalDeviceFeatures2(info.m_physicalDevice, &supportedFeatures2);
 
 		if (supportedFeatures2.features.samplerAnisotropy) {
@@ -519,9 +556,39 @@ namespace vvh {
 		VkPhysicalDeviceVulkan11Features deviceFeatures11{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
 		deviceFeatures11.shaderDrawParameters = supportedFeatures11.shaderDrawParameters;
 
+		// --- Extensions
+		VkPhysicalDeviceBufferDeviceAddressFeatures deviceBda{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES };
+		deviceBda.bufferDeviceAddress = (enableBda && supportedBda.bufferDeviceAddress) ? VK_TRUE : VK_FALSE;
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR deviceAccel{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR };
+		deviceAccel.accelerationStructure = (enableAccel && supportedAccel.accelerationStructure) ? VK_TRUE : VK_FALSE;
+		VkPhysicalDeviceRayQueryFeaturesKHR deviceRayQuery{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR };
+		deviceRayQuery.rayQuery = (enableRayQuery && supportedRayQuery.rayQuery) ? VK_TRUE : VK_FALSE;
+		VkPhysicalDeviceScalarBlockLayoutFeaturesEXT deviceScalar{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES_EXT };
+		deviceScalar.scalarBlockLayout = (enableScalarBlockLayout && supportedScalar.scalarBlockLayout) ? VK_TRUE : VK_FALSE;
+
 		// All enabled features
 		deviceFeatures2.pNext = &deviceFeatures11;
 		deviceFeatures11.pNext = nullptr;
+		if (enableBda || enableAccel || enableRayQuery || enableScalarBlockLayout) {
+			VkBaseOutStructure* tail = reinterpret_cast<VkBaseOutStructure*>(&deviceFeatures11);
+			if (enableBda) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&deviceBda);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&deviceBda);
+			}
+			if (enableAccel) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&deviceAccel);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&deviceAccel);
+			}
+			if (enableRayQuery) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&deviceRayQuery);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&deviceRayQuery);
+			}
+			if (enableScalarBlockLayout) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&deviceScalar);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&deviceScalar);
+			}
+			tail->pNext = nullptr;
+		}
 
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
@@ -592,15 +659,37 @@ namespace vvh {
 
 		VkPhysicalDeviceFeatures deviceFeatures{};
 
+		auto hasDeviceExtension = [&](const char* extName) {
+			return std::find(info.m_deviceExtensions.begin(), info.m_deviceExtensions.end(), extName) != info.m_deviceExtensions.end();
+		};
+		const bool enableBda = hasDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+		const bool enableAccel = hasDeviceExtension(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
+		const bool enableRayQuery = hasDeviceExtension(VK_KHR_RAY_QUERY_EXTENSION_NAME);
+
 		// Query supported features and only enable what the device actually exposes
 		VkPhysicalDeviceFeatures2 supportedFeatures2{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
 		VkPhysicalDeviceVulkan11Features supportedFeatures11{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
 		VkPhysicalDeviceVulkan12Features supportedFeatures12{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
 		VkPhysicalDeviceVulkan13Features supportedFeatures13{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR supportedAccel{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR };
+		VkPhysicalDeviceRayQueryFeaturesKHR supportedRayQuery{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR };
+
 		supportedFeatures2.pNext = &supportedFeatures11;
 		supportedFeatures11.pNext = &supportedFeatures12;
 		supportedFeatures12.pNext = &supportedFeatures13;
 		supportedFeatures13.pNext = nullptr;
+		if (enableAccel || enableRayQuery) {
+			VkBaseOutStructure* tail = reinterpret_cast<VkBaseOutStructure*>(&supportedFeatures13);
+			if (enableAccel) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&supportedAccel);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&supportedAccel);
+			}
+			if (enableRayQuery) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&supportedRayQuery);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&supportedRayQuery);
+			}
+			tail->pNext = nullptr;
+		}
 		vkGetPhysicalDeviceFeatures2(info.m_physicalDevice, &supportedFeatures2);
 
 		if (supportedFeatures2.features.samplerAnisotropy) {
@@ -621,18 +710,36 @@ namespace vvh {
 		// --- 1.2
 		// TODO: Currently rewritten, might not be needed!
 		VkPhysicalDeviceVulkan12Features deviceFeatures12{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES };
-		//deviceFeatures12.shaderOutputLayer = VK_TRUE;
-		//deviceFeatures12.shaderOutputViewportIndex = VK_TRUE;
+		deviceFeatures12.bufferDeviceAddress = (enableBda && supportedFeatures12.bufferDeviceAddress) ? VK_TRUE : VK_FALSE;
+		deviceFeatures12.scalarBlockLayout = supportedFeatures12.scalarBlockLayout;
 
 		// --- 1.3
 		VkPhysicalDeviceVulkan13Features deviceFeatures13{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES };
 		deviceFeatures13.dynamicRendering = supportedFeatures13.dynamicRendering;
+
+		// --- Extensions
+		VkPhysicalDeviceAccelerationStructureFeaturesKHR deviceAccel{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR };
+		deviceAccel.accelerationStructure = (enableAccel && supportedAccel.accelerationStructure) ? VK_TRUE : VK_FALSE;
+		VkPhysicalDeviceRayQueryFeaturesKHR deviceRayQuery{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR };
+		deviceRayQuery.rayQuery = (enableRayQuery && supportedRayQuery.rayQuery) ? VK_TRUE : VK_FALSE;
 
 		// All enabled features
 		deviceFeatures2.pNext = &deviceFeatures11;
 		deviceFeatures11.pNext = &deviceFeatures12;
 		deviceFeatures12.pNext = &deviceFeatures13;
 		deviceFeatures13.pNext = nullptr;
+		if (enableAccel || enableRayQuery) {
+			VkBaseOutStructure* tail = reinterpret_cast<VkBaseOutStructure*>(&deviceFeatures13);
+			if (enableAccel) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&deviceAccel);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&deviceAccel);
+			}
+			if (enableRayQuery) {
+				tail->pNext = reinterpret_cast<VkBaseOutStructure*>(&deviceRayQuery);
+				tail = reinterpret_cast<VkBaseOutStructure*>(&deviceRayQuery);
+			}
+			tail->pNext = nullptr;
+		}
 
 		VkDeviceCreateInfo createInfo{};
 		createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;

@@ -359,6 +359,11 @@ namespace vvh {
 		VmaAllocation           m_vertexBufferAllocation;
 		VkBuffer                m_indexBuffer;
 		VmaAllocation           m_indexBufferAllocation;
+		VkBuffer                m_vertexBufferRT{VK_NULL_HANDLE};
+		VmaAllocation           m_vertexBufferRTAllocation{VK_NULL_HANDLE};
+		VkDeviceAddress			m_vertexBufferAddress{0};
+		VkDeviceAddress			m_indexBufferAddress{0};
+		VkDeviceAddress			m_vertexBufferRTAddress{0};
 	};
 
 

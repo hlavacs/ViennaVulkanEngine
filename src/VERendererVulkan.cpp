@@ -136,13 +136,19 @@ namespace vve {
 		}
         
 		volkLoadDevice(m_vkState().m_device);
-		
+
+		auto hasDeviceExtension = [&](const char* extName) {
+			return std::find(m_deviceExtensions.begin(), m_deviceExtensions.end(), extName) != m_deviceExtensions.end();
+		};
+		bool enableBufferDeviceAddress = hasDeviceExtension(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+
 		vvh::DevInitVMA({
 			.m_instance 		= m_vkState().m_instance, 
 			.m_physicalDevice 	= m_vkState().m_physicalDevice, 
 			.m_device 			= m_vkState().m_device, 
 			.m_apiVersion 		= engineState.m_apiVersion, 
-			.m_vmaAllocator 	= m_vkState().m_vmaAllocator
+			.m_vmaAllocator 	= m_vkState().m_vmaAllocator,
+			.m_enableBufferDeviceAddress = enableBufferDeviceAddress
 		});  
 
  		m_vkState().m_depthMapFormat = vvh::RenFindDepthFormat(m_vkState().m_physicalDevice);
@@ -477,6 +483,14 @@ namespace vve {
 				.m_buffer 		= geometry().m_vertexBuffer, 
 				.m_allocation 	= geometry().m_vertexBufferAllocation
 			});
+			if (geometry().m_vertexBufferRT != VK_NULL_HANDLE) {
+				vvh::BufDestroyBuffer({
+					.m_device 		= m_vkState().m_device,
+					.m_vmaAllocator = m_vkState().m_vmaAllocator,
+					.m_buffer 		= geometry().m_vertexBufferRT,
+					.m_allocation 	= geometry().m_vertexBufferRTAllocation
+				});
+			}
 		}
 
 		for( auto ubo : m_registry.template GetView<vvh::Buffer&>() ) {
@@ -577,12 +591,39 @@ namespace vve {
 	bool RendererVulkan::OnMeshCreate( Message message ) {
 		auto handle = message.template GetData<MsgMeshCreate>().m_handle;
 		auto mesh = m_registry.template Get<vvh::Mesh&>(handle);
+		VkBufferUsageFlags extraUsage = 0;
+		if (m_vkState().m_enableRayTracing) {
+			extraUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR;
+		}
 		vvh::BufCreateVertexBuffer({
-			m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_graphicsQueue, m_commandPool, mesh
+			.m_physicalDevice = m_vkState().m_physicalDevice,
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_graphicsQueue = m_vkState().m_graphicsQueue,
+			.m_commandPool = m_commandPool,
+			.m_mesh = mesh,
+			.m_extraUsageFlags = extraUsage
 		});
 		vvh::BufCreateIndexBuffer({
-			 m_vkState().m_physicalDevice, m_vkState().m_device, m_vkState().m_vmaAllocator, m_vkState().m_graphicsQueue, m_commandPool, mesh
+			.m_physicalDevice = m_vkState().m_physicalDevice,
+			.m_device = m_vkState().m_device,
+			.m_vmaAllocator = m_vkState().m_vmaAllocator,
+			.m_graphicsQueue = m_vkState().m_graphicsQueue,
+			.m_commandPool = m_commandPool,
+			.m_mesh = mesh,
+			.m_extraUsageFlags = extraUsage
 		});
+		if (m_vkState().m_enableRayTracing) {
+			vvh::BufCreateVertexBufferInterleaved({
+				.m_physicalDevice = m_vkState().m_physicalDevice,
+				.m_device = m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_graphicsQueue = m_vkState().m_graphicsQueue,
+				.m_commandPool = m_commandPool,
+				.m_mesh = mesh,
+				.m_extraUsageFlags = extraUsage
+			});
+		}
 		return false;
 	}
 
@@ -606,6 +647,16 @@ namespace vve {
 			.m_buffer 		= mesh().m_vertexBuffer, 
 			.m_allocation 	= mesh().m_vertexBufferAllocation
 		});
+		if (mesh().m_vertexBufferRT != VK_NULL_HANDLE) {
+			vvh::BufDestroyBuffer({
+				.m_device 		= m_vkState().m_device,
+				.m_vmaAllocator = m_vkState().m_vmaAllocator,
+				.m_buffer 		= mesh().m_vertexBufferRT,
+				.m_allocation 	= mesh().m_vertexBufferRTAllocation
+			});
+			mesh().m_vertexBufferRT = VK_NULL_HANDLE;
+			mesh().m_vertexBufferRTAllocation = VK_NULL_HANDLE;
+		}
 		m_registry.Erase(handle);
 		return false;
 	}
