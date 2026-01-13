@@ -20,6 +20,7 @@ set(SOURCE
   VERendererDeferred13.cpp
   VERendererShadow11.cpp
   VERendererGaussian.cpp
+  VERendererGaussian_Cubemap.cpp
   VEGaussianAssetLoader.cpp
   VERendererImgui.cpp
   VERendererVulkan.cpp
