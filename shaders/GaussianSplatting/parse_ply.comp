@@ -2,6 +2,11 @@
 // PARSE PLY COMPUTE SHADER
 // Reference: third_party/vkgs/shaders/parse_ply.comp
 // Adapted from VKGS (https://github.com/jaesung-cs/vkgs)
+//
+// Adaptation: Extracted from VKGS standalone viewer and integrated into VVE
+// - Uses VVE descriptor set bindings (Set 1: gaussian data, Set 3: PLY input)
+// - Modified for VVE's Vulkan memory management (VMA allocator)
+// - Otherwise mathematically identical to VKGS implementation
 // ============================================================================
 #version 460 core
 
@@ -39,7 +44,9 @@ shared uint local_offsets[60];
 void main() {
   uint id = gl_GlobalInvocationID.x;
 
-  // TODO: offsets in push constant?
+  // Copy 60 PLY property offsets to shared memory for fast access by all threads in workgroup
+  // Note: Could use push constants, but 60 × uint32 = 240 bytes exceeds VK minimum guarantee (128 bytes)
+  // Current approach: Read from buffer once per workgroup, cache in shared memory
   if (gl_LocalInvocationID.x < 60) {
     local_offsets[gl_LocalInvocationID.x] = offsets[gl_LocalInvocationID.x];
   }
