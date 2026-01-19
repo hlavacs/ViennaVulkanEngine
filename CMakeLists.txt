@@ -146,14 +146,26 @@ FetchContent_Declare(vkbootstrap
 FetchContent_MakeAvailable(vkbootstrap)
 include_directories(${vkbootstrap_SOURCE_DIR}/src)
 
-#----- Let VULKAN SDK come last (might also contain a conflicting SDL3) ---------------#
+#--------------------------------- Vulkan Memory Allocator ---------------------------------#
+
+# Fetch VMA 3.3.0 BEFORE SDK includes to ensure priority
+# (SDK ships outdated VMA pre-3.2.1 that rejects Vulkan 1.4)
+# VMA 3.2.1+ supports Vulkan 1.4 and fixes assertion bug
+FetchContent_Declare(VulkanMemoryAllocator
+	GIT_REPOSITORY https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator.git
+	GIT_TAG v3.3.0
+)
+FetchContent_MakeAvailable(VulkanMemoryAllocator)
+include_directories(${vulkanmemoryallocator_SOURCE_DIR}/include)
+
+#----- Let VULKAN SDK come last (might also contain a conflicting SDL3 and outdated VMA) ---------------#
 
 if (WIN32)
 	set(VULKAN_INCLUDE Include)
 	set(VULKAN_LIB Lib)
 elseif (APPLE)
 	set(VULKAN_INCLUDE include)
-    set(VULKAN_LIB lib)
+	set(VULKAN_LIB lib)
 elseif (UNIX AND NOT APPLE)
 	set(VULKAN_INCLUDE include)
 	set(VULKAN_LIB lib)
@@ -161,8 +173,19 @@ endif()
 
 include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE})
 include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/volk)
-include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/vma)
+# VMA from SDK is outdated (pre-3.2.1), fetch latest instead (see above)
+# include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/vma)
 link_directories(${VULKAN_SDK}/lib)
+
+#--------------------------------- Vulkan Radix Sort ---------------------------------#
+
+# Single-file header-only library (v0.2.0+)
+# Requires VRDX_IMPLEMENTATION to be defined in exactly one source file
+FetchContent_Declare(vulkan_radix_sort
+    GIT_REPOSITORY https://github.com/jaesung-cs/vulkan_radix_sort.git
+    GIT_TAG master
+)
+FetchContent_MakeAvailable(vulkan_radix_sort)
 
 #--------------------------------- Summary ---------------------------------#
 
