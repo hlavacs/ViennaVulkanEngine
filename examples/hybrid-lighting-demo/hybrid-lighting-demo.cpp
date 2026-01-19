@@ -21,8 +21,8 @@ struct SceneConfig {
     //const char* meshPath = "assets/viking_room/viking_room.obj";
 
     // Gaussian transform (initial)
-    glm::vec3 gaussianPosition = glm::vec3(-2.0f, 0.0f, 0.0f);
-    glm::vec3 gaussianRotation = glm::vec3(0.0f, 80.0f, -140.0f);  // Euler angles (degrees)
+    glm::vec3 gaussianPosition = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 gaussianRotation = glm::vec3(0.0f, 0.0f, 0.0f);  // Euler angles (degrees)
     glm::vec3 gaussianScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
     // Mesh transform (initial)
@@ -31,14 +31,9 @@ struct SceneConfig {
     //glm::vec3 meshScale = glm::vec3(1.0f, 1.0f, 1.0f);
 
     // Lighting
-    // Ambient multiplier in shader (edit Common_Light.slang)
-    float lightIntensity = 0.2f;         // Directional light intensity
-    glm::vec3 lightColor = glm::vec3(0.3f, 0.3f, 0.3f);
+    // Ambient intensity multiplier in shader (edit Common_Light.slang)
 
-    // Camera
-    glm::vec3 cameraPosition = glm::vec3(0.0f, 1.0f, 5.0f);
-    float cameraFov = 45.0f;
-    float cameraSpeed = 2.0f;
+    glm::vec3 cameraPositionOffset = glm::vec3(0.0f, -1.5f, -3.0f);
 
     // Rendering
     glm::vec3 clearColor = glm::vec3(0.1f, 0.1f, 0.1f);  // Main scene background (dark grey)
@@ -78,8 +73,9 @@ private:
     double m_fpsUpdateInterval = 1.0;
 
     // Gaussian transform adjustment
+    glm::mat3 m_gaussianInitialRotation = glm::mat3(1.0f);  // Set in OnLoadLevel
     glm::vec3 m_gaussianPosition = glm::vec3(0.0f, 0.0f, 0.0f);
-    glm::vec3 m_gaussianRotation = glm::vec3(0.0f, 0.0f, 0.0f);
+    glm::vec3 m_gaussianRotation = glm::vec3(-85.0f, 0.0f, -100.0f);  // Runtime delta (starts at 0)
     float m_transformSpeed = 1.0f;
 
     // IBL regeneration timing
@@ -87,10 +83,20 @@ private:
 
     void GetCamera() {
         if (m_cameraHandle.IsValid() == false) {
-            auto [handle, camera, parent] = *m_registry.GetView<vecs::Handle, vve::Camera&, vve::ParentHandle>().begin();
-            m_cameraHandle = handle;
-            m_cameraNodeHandle = parent;
+            auto view = m_registry.GetView<vecs::Handle, vve::Camera&, vve::ParentHandle>();
+            if (view.begin() != view.end()) {
+                auto [handle, camera, parent] = *view.begin();
+                m_cameraHandle = handle;
+                m_cameraNodeHandle = parent;
+            }
         }
+    }
+
+    static glm::mat3 EulerToRotationMatrix(const glm::vec3& eulerDegrees) {
+        glm::mat4 rotX = glm::rotate(glm::mat4(1.0f), glm::radians(eulerDegrees.x), glm::vec3(1.0f, 0.0f, 0.0f));
+        glm::mat4 rotY = glm::rotate(glm::mat4(1.0f), glm::radians(eulerDegrees.y), glm::vec3(0.0f, 1.0f, 0.0f));
+        glm::mat4 rotZ = glm::rotate(glm::mat4(1.0f), glm::radians(eulerDegrees.z), glm::vec3(0.0f, 0.0f, 1.0f));
+        return glm::mat3(rotZ * rotY * rotX);
     }
 
     bool OnLoadLevel(Message message) {
@@ -98,42 +104,19 @@ private:
         std::cout << "Initializing Hybrid Lighting Demo scene..." << std::endl;
 
         // OPTIONAL: Remove VVE's default scene lights (created by VESceneManager::OnLoadLevel)
-        // VVE automatically creates 3 test lights: Light1 (point, red), Light2 (directional, green), Light3 (spot, blue)
-        // Uncomment to use ONLY gaussian IBL for ambient lighting (no direct lights)
-        // Currently KEPT for baseline visibility - gaussian IBL provides ambient, these provide directionality
-        //
-        // for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::PointLight&>()) {
-        //     m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
-        // }
-        // for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::DirectionalLight&>()) {
-        //     m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
-        // }
-        // for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::SpotLight&>()) {
-        //     m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
-        // }
+        for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::PointLight&>()) {
+            m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
+        }
+        for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::DirectionalLight&>()) {
+            m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
+        }
+        for (auto [handle, light] : m_registry.template GetView<vecs::Handle, vve::SpotLight&>()) {
+            m_engine.SendMsg(MsgObjectDestroy{ (vve::ObjectHandle)handle });
+        }
 
-        // Create camera (using config)
-        auto cameraHandle = m_registry.Insert(
-            vve::Name{ "Camera" },
-            vve::Camera{
-                .m_aspect = 16.0f / 9.0f,
-                .m_near = 0.1f,
-                .m_far = 1000.0f,
-                .m_fov = m_config.cameraFov
-            },
-            vve::Position{ m_config.cameraPosition },
-            vve::Rotation{ mat3_t{1.0f} },
-            vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
-            vve::LocalToParentMatrix{ mat4_t{1.0f} },
-            vve::LocalToWorldMatrix{ mat4_t{glm::translate(glm::mat4(1.0f), m_config.cameraPosition)} },
-            vve::ParentHandle{}
-        );
-
-        // Build initial rotation matrix from config Euler angles (XYZ order)
-        glm::mat4 rotX = glm::rotate(glm::mat4(1.0f), glm::radians(m_config.gaussianRotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-        glm::mat4 rotY = glm::rotate(glm::mat4(1.0f), glm::radians(m_config.gaussianRotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-        glm::mat4 rotZ = glm::rotate(glm::mat4(1.0f), glm::radians(m_config.gaussianRotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-        glm::mat3 initialRotation = glm::mat3(rotY * rotX * rotZ);
+        // Build initial rotation: config (baked) * member initial value (runtime delta)
+        m_gaussianInitialRotation = EulerToRotationMatrix(m_config.gaussianRotation);
+        glm::mat3 startRotation = m_gaussianInitialRotation * EulerToRotationMatrix(m_gaussianRotation);
 
         // Create gaussian environment (using config)
         m_gaussianHandle = m_registry.Insert(
@@ -145,15 +128,12 @@ private:
                 .emissiveIntensity = 1.0f
             }},
             vve::Position{ m_config.gaussianPosition },
-            vve::Rotation{ initialRotation },
-            vve::Scale{ m_config.gaussianScale },
-            vve::LocalToParentMatrix{ mat4_t{1.0f} },
-            vve::LocalToWorldMatrix{ mat4_t{glm::translate(glm::mat4(1.0f), m_config.gaussianPosition)} }
+            vve::Rotation{ startRotation },
+            vve::Scale{ m_config.gaussianScale }
         );
 
-        // Store initial transform for runtime adjustment
+        // Store initial position for runtime adjustment
         m_gaussianPosition = m_config.gaussianPosition;
-        m_gaussianRotation = m_config.gaussianRotation;
 
         // Send gaussian object creation message
         m_engine.SendMsg(vve::System::MsgObjectCreate{ vve::ObjectHandle(m_gaussianHandle), vve::ParentHandle{}, this });
@@ -165,31 +145,33 @@ private:
         m_meshObjectHandle = m_registry.Insert(
             vve::Name{ "TestMesh" },
             vve::Position{ m_config.meshPosition },
-            vve::Rotation{ mat3_t{1.0f} },
+            vve::Rotation{ mat3_t{ glm::rotate(glm::mat4(1.0f), glm::radians(-90.0f), glm::vec3(.0f, 0.0f, 1.0f)) } },
             vve::Scale{ m_config.meshScale }
         );
 
         m_engine.SendMsg(vve::System::MsgSceneCreate{ vve::ObjectHandle(m_meshObjectHandle), vve::ParentHandle{}, vve::Filename{m_config.meshPath} });
 
-        // Add weak directional light for baseline visibility (using config)
-        auto lightHandle = m_engine.CreateDirectionalLight(
-            vve::Name{"WeakFillLight"}, vve::ParentHandle{},
-            vve::DirectionalLight{vvh::LightParams{
-                m_config.lightColor,
-                glm::vec4(0.0f, m_config.lightIntensity, 10.0, 0.1f),
-                glm::vec3(1.0f, 0.01f, 0.005f)
-            }},
-            vve::Position{glm::vec3(0.0f, 10.0f, 0.0f)},
-            vve::Rotation{mat3_t{glm::rotate(glm::mat4(1.0f), -3.14152f / 4.0f, glm::vec3(1.0f, 0.0f, 0.0f))}}
-        );
-
+        // Set initial camera rotation and position (following deferred-demo convention)
         GetCamera();
+        if (m_cameraHandle.IsValid()) {
+            // Set intial camera rotation
+            m_registry.Get<vve::Rotation&>(m_cameraHandle)() =
+                mat3_t{ glm::rotate(mat4_t{1.0f}, glm::radians(90.0f), vec3_t{1.0f, 0.0f, 0.0f}) };
+
+            // Apply position offset
+            m_registry.Get<vve::Position&>(m_cameraNodeHandle)() += m_config.cameraPositionOffset;
+        }
+
 
         std::cout << "Scene created." << std::endl;
         std::cout << "\nNote: Small sphere in scene is light visualization from VESceneManager (shows cubemap if bound)" << std::endl;
-        std::cout << "\nControls:" << std::endl;
-        std::cout << "  WASD + Space/Shift - Move camera" << std::endl;
-        std::cout << "  Mouse/Arrow Keys - Rotate camera" << std::endl;
+        std::cout << "\nControls (VVE camera - VEGUI.cpp):" << std::endl;
+        std::cout << "  WASD - Move camera (relative to view direction)" << std::endl;
+        std::cout << "  Q/E - Move camera up/down (world Z)" << std::endl;
+        std::cout << "  Arrow Keys / Mouse+RMB - Rotate camera" << std::endl;
+        std::cout << "  Shift - Speed multiplier" << std::endl;
+        std::cout << "  T - Print GPU timings (Frame and IBL)" << std::endl;
+        std::cout << "\nGaussian Transform Controls (Numpad):" << std::endl;
         std::cout << "  Numpad 4/6/8/2 - Move gaussian (X/Z)" << std::endl;
         std::cout << "  Numpad +/- - Move gaussian (Y)" << std::endl;
         std::cout << "  Numpad 7/9 - Rotate gaussian (Y axis)" << std::endl;
@@ -222,21 +204,40 @@ private:
         GetCamera();
         if (!m_cameraNodeHandle.IsValid()) return false;
 
-        // Camera movement
-        auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
+        // Camera movement handled by VVE's VEGUI (WASD, Q/E, arrows, mouse)
         const bool* keystate = SDL_GetKeyboardState(nullptr);
 
-        vec3_t movement{0.0f};
-        if (keystate[SDL_SCANCODE_W]) movement.z -= 1.0f;  // Forward
-        if (keystate[SDL_SCANCODE_S]) movement.z += 1.0f;  // Backward
-        if (keystate[SDL_SCANCODE_A]) movement.x -= 1.0f;  // Left
-        if (keystate[SDL_SCANCODE_D]) movement.x += 1.0f;  // Right
-        if (keystate[SDL_SCANCODE_SPACE]) movement.y += 1.0f;  // Up
-        if (keystate[SDL_SCANCODE_LSHIFT]) movement.y -= 1.0f;  // Down
+        // GPU timing output (T key) - for performance analysis
+        static bool tWasPressed = false;
+        if (keystate[SDL_SCANCODE_T] && !tWasPressed && m_gaussianRenderer) {
+            // Frame timing (gaussian splatting pipeline)
+            const auto& t = m_gaussianRenderer->GetFrameTimings();
+            if (t.valid) {
+                double toMs = t.timestampPeriod / 1e6;  // Convert to milliseconds
+                std::cout << "[GPU Frame] "
+                          << "Rank: " << std::fixed << std::setprecision(3) << t.rankTime * toMs << "ms | "
+                          << "Sort: " << t.sortTime * toMs << "ms | "
+                          << "Inverse: " << t.inverseIndexTime * toMs << "ms | "
+                          << "Proj: " << t.projectionTime * toMs << "ms | "
+                          << "Render: " << t.renderTime * toMs << "ms | "
+                          << "Total: " << t.totalTime * toMs << "ms" << std::endl;
+            } else {
+                std::cout << "[GPU Frame] No valid timing data" << std::endl;
+            }
 
-        if (glm::length(movement) > 0.0f) {
-            pos() += glm::normalize(movement) * m_config.cameraSpeed * dt;
+            // IBL timing (thesis contribution)
+            const auto& ibl = m_gaussianRenderer->GetIBLTimings();
+            if (ibl.valid) {
+                double toMs = ibl.timestampPeriod / 1e6;
+                std::cout << "[GPU IBL]   "
+                          << "Cubemap: " << std::fixed << std::setprecision(3) << ibl.cubemapTime * toMs << "ms | "
+                          << "Irradiance: " << ibl.irradianceTime * toMs << "ms | "
+                          << "Total: " << ibl.totalTime * toMs << "ms" << std::endl;
+            } else {
+                std::cout << "[GPU IBL]   No valid timing data" << std::endl;
+            }
         }
+        tWasPressed = keystate[SDL_SCANCODE_T];
 
         // Gaussian transform adjustment controls (all on numpad to avoid conflicts)
         bool gaussianTransformChanged = false;
@@ -260,20 +261,14 @@ private:
 
         // Update gaussian transform if changed
         if (gaussianTransformChanged && m_gaussianHandle.IsValid()) {
-            auto gaussianPos = m_registry.Get<vve::Position&>(m_gaussianHandle);
-            gaussianPos() = m_gaussianPosition;
+            m_registry.Get<vve::Position&>(m_gaussianHandle)() = m_gaussianPosition;
 
-            // Build rotation matrix from Euler angles (XYZ order)
-            glm::mat4 rotX = glm::rotate(glm::mat4(1.0f), glm::radians(m_gaussianRotation.x), glm::vec3(1.0f, 0.0f, 0.0f));
-            glm::mat4 rotY = glm::rotate(glm::mat4(1.0f), glm::radians(m_gaussianRotation.y), glm::vec3(0.0f, 1.0f, 0.0f));
-            glm::mat4 rotZ = glm::rotate(glm::mat4(1.0f), glm::radians(m_gaussianRotation.z), glm::vec3(0.0f, 0.0f, 1.0f));
-            glm::mat3 rotation = glm::mat3(rotY * rotX * rotZ);
-
-            auto gaussianRot = m_registry.Get<vve::Rotation&>(m_gaussianHandle);
-            gaussianRot() = rotation;
+            // Final rotation = initial (baked) * runtime (delta)
+            glm::mat3 runtimeRotation = EulerToRotationMatrix(m_gaussianRotation);
+            m_registry.Get<vve::Rotation&>(m_gaussianHandle)() = m_gaussianInitialRotation * runtimeRotation;
 
             std::cout << "Gaussian: pos(" << m_gaussianPosition.x << ", " << m_gaussianPosition.y << ", " << m_gaussianPosition.z << ") "
-                      << "rot(" << m_gaussianRotation.x << ", " << m_gaussianRotation.y << ", " << m_gaussianRotation.z << ")" << std::endl;
+                      << "rot delta(" << m_gaussianRotation.x << ", " << m_gaussianRotation.y << ", " << m_gaussianRotation.z << ")" << std::endl;
         }
 
         // Get RendererGaussian reference on first frame (after all systems initialized)
