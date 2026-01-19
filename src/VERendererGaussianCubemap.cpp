@@ -1,5 +1,5 @@
 /**
- * @file VERendererGaussian_Cubemap.cpp
+ * @file VERendererGaussianCubemap.cpp
  * @brief Cubemap IBL implementation for dynamic light probe extraction from gaussian environments
  *
  * Approach: Render gaussian splats to cubemap, then convolve to generate diffuse irradiance map.
@@ -13,7 +13,9 @@
 #pragma warning(push)
 #pragma warning(disable: 4244)
 #endif
+
 #include <vk_radix_sort.h>  // Include AFTER volk.h
+
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
