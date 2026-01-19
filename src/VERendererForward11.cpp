@@ -364,9 +364,6 @@ namespace vve {
 	 */
 	bool RendererForward11::OnObjectCreate( Message message ) {
 		ObjectHandle oHandle = message.template GetData<MsgObjectCreate>().m_object;
-		if (m_registry.template Has<DirectionalLight>(oHandle)) return false;
-		if (m_registry.template Has<GaussianSplat>(oHandle)) return false;
-
 		assert( m_registry.template Has<MeshHandle>(oHandle) );	
 		auto meshHandle = m_registry.template Get<MeshHandle>(oHandle);
 		auto mesh = m_registry.template Get<vvh::Mesh&>(meshHandle);

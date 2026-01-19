@@ -89,9 +89,6 @@ namespace vve {
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 				{	// Binding 2 : Light Space Matrices - Direct + Spot Lights
 					.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 3 : Irradiance Cubemap - IBL ambient lighting
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			.m_descriptorSetLayout = m_descriptorSetLayoutShadow
@@ -323,7 +320,6 @@ namespace vve {
 		}
 
 		if (m_registry.template Has<DirectionalLight>(oHandle)) return false;
-		if (m_registry.template Has<GaussianSplat>(oHandle)) return false;
 
 		assert(m_registry.template Has<MeshHandle>(oHandle));
 
@@ -865,20 +861,6 @@ namespace vve {
 				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 				.m_imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
 				});
-
-			// irradiance cubemap for IBL ambient lighting (from RendererGaussian)
-			auto* gaussianRenderer = dynamic_cast<RendererGaussian*>(m_engine.GetSystem(m_engine.m_rendererDeferredName + "Gaussian"));
-			if (gaussianRenderer && gaussianRenderer->GetIrradianceView() != VK_NULL_HANDLE) {
-				vvh::RenUpdateImageDescriptorSet({
-					.m_device = m_vkState().m_device,
-					.m_imageView = gaussianRenderer->GetIrradianceView(),
-					.m_sampler = gaussianRenderer->GetIrradianceSampler(),
-					.m_binding = 3,
-					.m_descriptorSet = m_descriptorSetShadow.m_descriptorSetPerFrameInFlight[i],
-					.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.m_imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-					});
-			}
 		}
 
 		size_t lsmSize = shadowImage().m_lightSpaceMatrices.size() * sizeof(glm::mat4);

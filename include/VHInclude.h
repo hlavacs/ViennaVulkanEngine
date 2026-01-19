@@ -27,7 +27,7 @@
 #include <stb_image_write.h>
 #include "volk.h"
 #include <VkBootstrap.h>
-#include "vk_mem_alloc.h"
+#include "vma/vk_mem_alloc.h"
 #include "imgui.h"
 #include "backends/imgui_impl_sdl3.h"
 #include "backends/imgui_impl_vulkan.h"
