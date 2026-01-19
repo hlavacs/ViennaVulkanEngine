@@ -1,6 +1,6 @@
 # The Vienna Vulkan Engine (VVE)
 
-> **Note:** This is an adapted VVE version for the hybrid lighting demo (BSc thesis project). See [examples/hybrid-lighting-demo/README.md](examples/hybrid-lighting-demo/README.md) for project-specific documentation.
+> **Note:** Adapted for the gaussian splatting environment lighting demo (BSc thesis project). See [examples/gaussian-splatting-cubemap-lighting-demo/README.md](examples/gaussian-splatting-cubemap-lighting-demo/README.md) for project-specific documentation.
 
 ---
 

@@ -1,5 +1,5 @@
 /**
- * @file hybrid-lighting-demo.cpp
+ * @file gaussian-splatting-cubemap-lighting-demo.cpp
  * @brief Hybrid rendering: Mesh object lit by gaussian environment
  *
  * Light probe extraction from gaussian splatting environments

@@ -1,5 +1,5 @@
-set(TARGET hybrid-lighting-demo)
-set(SOURCE hybrid-lighting-demo.cpp)
+set(TARGET gaussian-splatting-cubemap-lighting-demo)
+set(SOURCE gaussian-splatting-cubemap-lighting-demo.cpp)
 set(HEADERS )
 
 add_executable(${TARGET} ${SOURCE} ${HEADERS})

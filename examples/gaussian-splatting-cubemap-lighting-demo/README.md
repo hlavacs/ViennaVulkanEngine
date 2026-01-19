@@ -43,14 +43,14 @@ cmake --build build --config Release
 ## Running
 
 ```bash
-build\examples\hybrid-lighting-demo\Release\hybrid-lighting-demo.exe
+build\examples\gaussian-splatting-cubemap-lighting-demo\Release\gaussian-splatting-cubemap-lighting-demo.exe
 ```
 
 ## Configuration
 
 ### Asset Paths
 
-Edit `hybrid-lighting-demo.cpp`:
+Edit `gaussian-splatting-cubemap-lighting-demo.cpp`:
 
 ```cpp
 const char* gaussianPath = "assets/gaussian-splatting/InteriorDesign.ply";
@@ -62,7 +62,7 @@ glm::vec3 meshPosition = glm::vec3(0.0f, 0.0f, 0.0f);
 
 **Default:** Box filter (fast, suitable for real-time)
 
-To enable high-quality convolution, uncomment line 96 in `hybrid-lighting-demo.cpp`:
+To enable high-quality convolution, uncomment line 96 in `gaussian-splatting-cubemap-lighting-demo.cpp`:
 
 ```cpp
 // m_gaussianRenderer->SetUseConvolutionFilter(true);  // Slow but accurate
