@@ -5,7 +5,17 @@
 #define VRDX_USE_VOLK        // Use volk's dynamically loaded function pointers
 
 #include "VHInclude.h"  // Includes volk.h - MUST come before vk_radix_sort.h
+
+// Suppress MSVC warning C4244 (VkDeviceSize to uint32_t conversion) in third-party library
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4244)
+#endif
 #include <vk_radix_sort.h>  // Include AFTER volk.h with VRDX_USE_VOLK defined
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 #include "VEInclude.h"
 
 namespace vve {
