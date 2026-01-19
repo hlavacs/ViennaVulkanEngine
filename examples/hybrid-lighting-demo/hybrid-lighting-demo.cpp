@@ -56,7 +56,7 @@ public:
     HybridLightingDemo(vve::Engine& engine) : vve::System("HybridLightingDemo", engine) {
         m_engine.RegisterCallbacks({
             {this, 1000, "LOAD_LEVEL", [this](Message& message) { return OnLoadLevel(message); }},
-            {this, 1000, "UPDATE", [this](Message& message) { return OnUpdate(message); }}
+            {this, 10000, "UPDATE", [this](Message& message) { return OnUpdate(message); }}
         });
     }
 
