@@ -11,7 +11,9 @@
 #pragma warning(push)
 #pragma warning(disable: 4244)
 #endif
+
 #include <vk_radix_sort.h>  // Include AFTER volk.h with VRDX_USE_VOLK defined
+
 #ifdef _MSC_VER
 #pragma warning(pop)
 #endif
@@ -65,6 +67,30 @@ bool RendererGaussian::OnInit(const Message& message) {
 
     CreateCommandBuffers();
 
+    // Create single timestamp query pool
+    // Unlike VKGS (which uses 2 pools with fences), we use vkQueueWaitIdle so 1 pool suffices
+    if (m_timestampQueriesEnabled) {
+        VkQueryPoolCreateInfo queryPoolInfo{};
+        queryPoolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
+        queryPoolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
+        queryPoolInfo.queryCount = TIMESTAMP_COUNT;
+
+        VkQueryPool queryPool;
+        if (vkCreateQueryPool(m_vkState().m_device, &queryPoolInfo, nullptr, &queryPool) == VK_SUCCESS) {
+            m_timestampQueryPools.push_back(queryPool);
+        }
+
+        // Create IBL timing query pool (thesis contribution measurement)
+        queryPoolInfo.queryCount = IBL_TIMESTAMP_COUNT;
+        vkCreateQueryPool(m_vkState().m_device, &queryPoolInfo, nullptr, &m_iblQueryPool);
+
+        // Get timestamp period for converting ticks to nanoseconds
+        VkPhysicalDeviceProperties deviceProps;
+        vkGetPhysicalDeviceProperties(m_vkState().m_physicalDevice, &deviceProps);
+        m_frameTimings.timestampPeriod = deviceProps.limits.timestampPeriod;
+        m_iblTimings.timestampPeriod = deviceProps.limits.timestampPeriod;
+    }
+
     std::cout << "RendererGaussian initialized" << std::endl;
 
     return false;
@@ -88,6 +114,34 @@ bool RendererGaussian::OnPrepareNextFrame(const Message& message) {
     // vkWaitForFences(m_renderFences[currentFrame]) before updating, submit with fence signal.
     // See VKGS engine.cc:1029,1314,1325 and VERendererVulkan.cpp:280 for fence patterns.
     vkQueueWaitIdle(m_vkState().m_graphicsQueue);
+
+    // Read timestamps from previous frame (GPU finished after vkQueueWaitIdle)
+    // Reference: VKGS engine.cc:1031-1044
+    // With vkQueueWaitIdle we use a single pool - safe to read then write
+    if (m_timestampQueriesEnabled && !m_timestampQueryPools.empty() && m_frameTimings.valid) {
+        VkQueryPool queryPool = m_timestampQueryPools[0];
+        std::vector<uint64_t> timestamps(TIMESTAMP_COUNT);
+
+        VkResult result = vkGetQueryPoolResults(
+            m_vkState().m_device, queryPool,
+            0, static_cast<uint32_t>(timestamps.size()),
+            timestamps.size() * sizeof(uint64_t), timestamps.data(), sizeof(uint64_t),
+            VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT
+        );
+
+        if (result == VK_SUCCESS) {
+            // Calculate timings (same indexing as VKGS engine.cc:1039-1044)
+            m_frameTimings.rankTime = timestamps[2] - timestamps[1];
+            m_frameTimings.sortTime = timestamps[4] - timestamps[3];
+            m_frameTimings.inverseIndexTime = timestamps[6] - timestamps[5];
+            m_frameTimings.projectionTime = timestamps[8] - timestamps[7];
+            m_frameTimings.renderTime = timestamps[10] - timestamps[9];
+            m_frameTimings.totalTime = timestamps[11] - timestamps[0];
+            m_frameTimings.valid = true;
+        } else {
+            m_frameTimings.valid = false;
+        }
+    }
 
     auto [cameraHandle, camera, LtoW] = *m_registry.GetView<vecs::Handle, Camera&, LocalToWorldMatrix&>().begin();
 
@@ -158,6 +212,15 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
 
     vkBeginCommandBuffer(cmdBuffer, &beginInfo);
 
+    // Reset and start timestamp queries (like VKGS engine.cc:1075-1076)
+    // Single pool approach - safe with vkQueueWaitIdle synchronization
+    VkQueryPool timestampQueryPool = VK_NULL_HANDLE;
+    if (m_timestampQueriesEnabled && !m_timestampQueryPools.empty()) {
+        timestampQueryPool = m_timestampQueryPools[0];
+        vkCmdResetQueryPool(cmdBuffer, timestampQueryPool, 0, TIMESTAMP_COUNT);
+        vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, timestampQueryPool, 0);
+    }
+
     // Bind camera descriptor set (Set 0)
     vkCmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
                             m_computePipelineLayout, 0, 1,
@@ -207,6 +270,11 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         // Reference: third_party/vkgs/src/vkgs/engine/engine.cc:1165-1194
         // ============================================================================
 
+        // Timestamp 1: before rank (only for first object, like VKGS)
+        if (timestampQueryPool != VK_NULL_HANDLE && objIdx == 0) {
+            vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, timestampQueryPool, 1);
+        }
+
         // vkgs:1167 - Clear visible count buffer to 0
         // Rank shader uses atomicAdd(visible_point_count, 1) to allocate indices (rank.comp:44)
         // Starting from 0 ensures correct index allocation without accumulating across frames
@@ -230,6 +298,11 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         uint32_t rankWorkgroups = (obj.pointCount + 255) / 256;
         vkCmdDispatch(cmdBuffer, rankWorkgroups, 1, 1);
 
+        // Timestamp 2: after rank
+        if (timestampQueryPool != VK_NULL_HANDLE && objIdx == 0) {
+            vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, timestampQueryPool, 2);
+        }
+
         // NOTE: VKGS has barrier/copy here (vkgs:1196-1212) to read visible_point_count to CPU for diagnostics
         // This implementation skips CPU readback (not needed for rendering, only for VKGS's UI display)
 
@@ -251,6 +324,11 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         // Using vulkan_radix_sort library from https://github.com/jaesung-cs/vulkan_radix_sort
         // ============================================================================
 
+        // Timestamp 3: before sort
+        if (timestampQueryPool != VK_NULL_HANDLE && objIdx == 0) {
+            vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, timestampQueryPool, 3);
+        }
+
         // Radix sort: Back-to-front depth sorting for correct alpha blending
         vrdxCmdSortKeyValueIndirect(
             cmdBuffer,
@@ -267,6 +345,11 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
             VK_NULL_HANDLE,                         // queryPool (no timing)
             0                                       // query index
         );
+
+        // Timestamp 4: after sort
+        if (timestampQueryPool != VK_NULL_HANDLE && objIdx == 0) {
+            vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, timestampQueryPool, 4);
+        }
 
         // NOTE: Rebind ALL descriptor sets after radix sort (radix sort clears everything)
         // This is NOT in VKGS - our implementation detail due to vulkan_radix_sort behavior
@@ -305,6 +388,11 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         // Reference: third_party/vkgs/src/vkgs/engine/engine.cc:1224-1253
         // ============================================================================
 
+        // Timestamp 5: before inverse index
+        if (timestampQueryPool != VK_NULL_HANDLE && objIdx == 0) {
+            vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, timestampQueryPool, 5);
+        }
+
         // vkgs:1226 - Initialize inverse_map buffer to -1 for ALL gaussians
         // projection shader checks inverse_map[id] == -1 to skip culled gaussians (projection.comp:78-79)
         // inverse_index writes sorted positions ONLY for visible gaussians
@@ -336,6 +424,11 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         uint32_t inverseIndexWorkgroups = (obj.pointCount + 255) / 256;
         vkCmdDispatch(cmdBuffer, inverseIndexWorkgroups, 1, 1);
 
+        // Timestamp 6: after inverse index
+        if (timestampQueryPool != VK_NULL_HANDLE && objIdx == 0) {
+            vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, timestampQueryPool, 6);
+        }
+
         // vkgs:1257-1261 - Barrier after inverse_index: ensure inverse_map is visible to projection
         VkMemoryBarrier inverseBarrier{};
         inverseBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
@@ -351,6 +444,11 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         // Reference: third_party/vkgs/src/vkgs/engine/engine.cc:1255-1274
         // ============================================================================
 
+        // Timestamp 7: before projection
+        if (timestampQueryPool != VK_NULL_HANDLE && objIdx == 0) {
+            vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, timestampQueryPool, 7);
+        }
+
         // vkgs:1263 - Bind projection pipeline
         vkCmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, m_projectionPipeline);
 
@@ -362,6 +460,11 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         // vkgs:1270-1271 - Dispatch projection shader with workgroup calculation
         uint32_t projectionWorkgroups = (obj.pointCount + 255) / 256;
         vkCmdDispatch(cmdBuffer, projectionWorkgroups, 1, 1);
+
+        // Timestamp 8: after projection
+        if (timestampQueryPool != VK_NULL_HANDLE && objIdx == 0) {
+            vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, timestampQueryPool, 8);
+        }
 
         // vkgs:1276-1280 - Barrier: projection writes, graphics pipeline reads (draw stage)
         VkMemoryBarrier computeToGraphicsBarrier{};
@@ -387,6 +490,11 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         renderingInfo.layerCount = 1;
         renderingInfo.colorAttachmentCount = 1;
         renderingInfo.pColorAttachments = &colorAttachment;
+
+        // Timestamp 9: before rendering
+        if (timestampQueryPool != VK_NULL_HANDLE && objIdx == 0) {
+            vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, timestampQueryPool, 9);
+        }
 
         vkCmdBeginRendering(cmdBuffer, &renderingInfo);
 
@@ -426,6 +534,18 @@ bool RendererGaussian::OnRenderNextFrame(const Message& message) {
         vkCmdDrawIndexedIndirect(cmdBuffer, obj.drawIndirectBuffer, 0, 1, 0);
 
         vkCmdEndRendering(cmdBuffer);
+
+        // Timestamp 10: after rendering
+        if (timestampQueryPool != VK_NULL_HANDLE && objIdx == 0) {
+            vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, timestampQueryPool, 10);
+        }
+    }
+
+    // Timestamp 11: end of frame (like VKGS engine.cc:1301)
+    if (timestampQueryPool != VK_NULL_HANDLE) {
+        vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, timestampQueryPool, 11);
+        // Mark timestamps as valid for reading in next frame's OnPrepareNextFrame
+        m_frameTimings.valid = true;
     }
 
     vkEndCommandBuffer(cmdBuffer);
@@ -544,6 +664,20 @@ bool RendererGaussian::OnObjectDestroy(Message& message) {
  */
 bool RendererGaussian::OnQuit(const Message& message) {
     vkDeviceWaitIdle(m_vkState().m_device);
+
+    // Destroy timestamp query pools
+    for (auto& queryPool : m_timestampQueryPools) {
+        if (queryPool != VK_NULL_HANDLE) {
+            vkDestroyQueryPool(m_vkState().m_device, queryPool, nullptr);
+        }
+    }
+    m_timestampQueryPools.clear();
+
+    // Destroy IBL query pool
+    if (m_iblQueryPool != VK_NULL_HANDLE) {
+        vkDestroyQueryPool(m_vkState().m_device, m_iblQueryPool, nullptr);
+        m_iblQueryPool = VK_NULL_HANDLE;
+    }
 
     // Clean up all Gaussian objects
     for (auto& gaussianObj : m_gaussianObjects) {

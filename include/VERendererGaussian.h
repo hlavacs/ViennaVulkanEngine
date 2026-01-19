@@ -12,6 +12,29 @@ namespace vve
 {
 
 class RendererGaussian : public Renderer {
+public:
+    // GPU timestamp queries (in nanoseconds)
+    // Reference: VKGS engine.cc:1039-1044
+    struct FrameTimings {
+        uint64_t rankTime = 0;           // Frustum culling + depth key generation
+        uint64_t sortTime = 0;           // Radix sort (back-to-front ordering)
+        uint64_t inverseIndexTime = 0;   // Inverse mapping creation
+        uint64_t projectionTime = 0;     // Screen-space projection
+        uint64_t renderTime = 0;         // Graphics pipeline (splat drawing)
+        uint64_t totalTime = 0;          // End-to-end frame time
+        float timestampPeriod = 0.0f;    // Nanoseconds per timestamp tick (from device limits)
+        bool valid = false;              // True if timestamps were recorded
+    };
+
+    // IBL generation timing (thesis contribution measurement)
+    struct IBLTimings {
+        uint64_t cubemapTime = 0;        // Rendering 6 cubemap faces from gaussians
+        uint64_t irradianceTime = 0;     // Irradiance filtering (convolution or box)
+        uint64_t totalTime = 0;          // Total IBL generation time
+        float timestampPeriod = 0.0f;    // Nanoseconds per timestamp tick
+        bool valid = false;              // True if timestamps were recorded
+    };
+
 private:
     struct PushConstantGaussian {
         glm::mat4 model;
@@ -93,6 +116,15 @@ public:
     // FALSE: Box filter (hardware downsampling, fast)
     void SetUseConvolutionFilter(bool enable) { m_useConvolutionFilter = enable; }
     bool GetUseConvolutionFilter() const { return m_useConvolutionFilter; }
+
+    // GPU timestamp queries for performance evaluation
+    // Enable/disable timestamp recording (default: enabled)
+    void SetTimestampQueriesEnabled(bool enable) { m_timestampQueriesEnabled = enable; }
+    bool GetTimestampQueriesEnabled() const { return m_timestampQueriesEnabled; }
+    // Get timing results from previous frame (read in OnPrepareNextFrame)
+    const FrameTimings& GetFrameTimings() const { return m_frameTimings; }
+    // Get IBL timing results (updated after each GenerateCubemapIBL call)
+    const IBLTimings& GetIBLTimings() const { return m_iblTimings; }
 
 private:
     // Message callbacks
@@ -209,10 +241,22 @@ private:
     VkImageView m_irradianceView{ VK_NULL_HANDLE };
 
     // Cubemap resolutions (configurable via SetCubemapResolutions before OnInit)
-    uint32_t m_cubemapResolution = 1024;
-    uint32_t m_irradianceResolution = 64;
+    uint32_t m_cubemapResolution = 512;
+    uint32_t m_irradianceResolution = 32;
     glm::vec3 m_cubemapClearColor = glm::vec3(0.3f, 0.3f, 0.3f);
     bool m_useConvolutionFilter = true;                   // TRUE: convolution (slow), FALSE: box filter (fast)
-};
 
+    // GPU timestamp queries for performance evaluation
+    // Reference: VKGS engine.cc:472-478 (query pool creation), 1031-1044 (timestamp reading)
+    // Simplified to single pool since we use vkQueueWaitIdle (VKGS uses 2 pools with fences)
+    static constexpr uint32_t TIMESTAMP_COUNT = 12;       // 12 timestamps like VKGS (indices 0-11)
+    std::vector<VkQueryPool> m_timestampQueryPools;       // Single query pool (vector for consistency)
+    FrameTimings m_frameTimings;                          // Latest timing results
+    bool m_timestampQueriesEnabled = true;
+
+    // IBL generation timing (thesis contribution)
+    static constexpr uint32_t IBL_TIMESTAMP_COUNT = 4;    // 4 timestamps: start, after cubemap, after irradiance, end
+    VkQueryPool m_iblQueryPool = VK_NULL_HANDLE;
+    IBLTimings m_iblTimings;
+};
 }  // namespace vve

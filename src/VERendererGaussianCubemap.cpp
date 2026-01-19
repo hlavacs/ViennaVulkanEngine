@@ -559,8 +559,19 @@ void RendererGaussian::GenerateCubemapIBL(size_t gaussianObjectIndex) {
 
     vkBeginCommandBuffer(cmdBuffer, &beginInfo);
 
+    // Reset and write start timestamp for IBL timing
+    if (m_timestampQueriesEnabled && m_iblQueryPool != VK_NULL_HANDLE) {
+        vkCmdResetQueryPool(cmdBuffer, m_iblQueryPool, 0, IBL_TIMESTAMP_COUNT);
+        vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_iblQueryPool, 0);
+    }
+
     // Render gaussian environment to cubemap
     RenderEnvironmentToCubemap(cmdBuffer, gaussianObjectIndex);
+
+    // Timestamp after cubemap rendering
+    if (m_timestampQueriesEnabled && m_iblQueryPool != VK_NULL_HANDLE) {
+        vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, m_iblQueryPool, 1);
+    }
 
     // Transition irradiance map layout for storage write
     VkImageMemoryBarrier irrBarrier = {};
@@ -586,6 +597,11 @@ void RendererGaussian::GenerateCubemapIBL(size_t gaussianObjectIndex) {
     // Generate irradiance map (convolution or box filter based on toggle)
     ConvolveIrradianceMap(cmdBuffer);
 
+    // Timestamp after irradiance filtering
+    if (m_timestampQueriesEnabled && m_iblQueryPool != VK_NULL_HANDLE) {
+        vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, m_iblQueryPool, 2);
+    }
+
     // Transition irradiance map to shader read layout for PBR sampling
     VkImageMemoryBarrier irrReadBarrier = {};
     irrReadBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -607,6 +623,11 @@ void RendererGaussian::GenerateCubemapIBL(size_t gaussianObjectIndex) {
                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                          0, 0, nullptr, 0, nullptr, 1, &irrReadBarrier);
 
+    // Final timestamp
+    if (m_timestampQueriesEnabled && m_iblQueryPool != VK_NULL_HANDLE) {
+        vkCmdWriteTimestamp(cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, m_iblQueryPool, 3);
+    }
+
     // End recording
     vkEndCommandBuffer(cmdBuffer);
 
@@ -620,6 +641,22 @@ void RendererGaussian::GenerateCubemapIBL(size_t gaussianObjectIndex) {
     vkGetDeviceQueue(device, queueFamilyIndex, 0, &graphicsQueue);
     vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
     vkQueueWaitIdle(graphicsQueue);
+
+    // Read IBL timestamps
+    if (m_timestampQueriesEnabled && m_iblQueryPool != VK_NULL_HANDLE) {
+        std::vector<uint64_t> timestamps(IBL_TIMESTAMP_COUNT);
+        VkResult result = vkGetQueryPoolResults(device, m_iblQueryPool, 0, IBL_TIMESTAMP_COUNT,
+                                                 IBL_TIMESTAMP_COUNT * sizeof(uint64_t), timestamps.data(),
+                                                 sizeof(uint64_t), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT);
+        if (result == VK_SUCCESS) {
+            m_iblTimings.cubemapTime = timestamps[1] - timestamps[0];
+            m_iblTimings.irradianceTime = timestamps[2] - timestamps[1];
+            m_iblTimings.totalTime = timestamps[3] - timestamps[0];
+            m_iblTimings.valid = true;
+        } else {
+            m_iblTimings.valid = false;
+        }
+    }
 
     // Cleanup
     vkFreeCommandBuffers(device, commandPool, 1, &cmdBuffer);
