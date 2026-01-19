@@ -3,7 +3,6 @@
 /**
  * @file box_filter_irradiance.comp
  * @brief Simple downsample of environment cubemap to irradiance map
- * Uses texture sampling to downsample 512x512 env to 32x32 irradiance.
  */
 
 layout(local_size_x = 8, local_size_y = 8) in;
