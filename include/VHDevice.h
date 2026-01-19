@@ -518,8 +518,6 @@ namespace vvh {
 		// --- 1.1
 		VkPhysicalDeviceVulkan11Features deviceFeatures11{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
 		deviceFeatures11.shaderDrawParameters = supportedFeatures11.shaderDrawParameters;
-		deviceFeatures11.storageBuffer16BitAccess = supportedFeatures11.storageBuffer16BitAccess;  // For gaussian splatting f16 SH coefficients
-		deviceFeatures11.uniformAndStorageBuffer16BitAccess = supportedFeatures11.uniformAndStorageBuffer16BitAccess;  // For gaussian splatting f16 in uniforms
 
 		// All enabled features
 		deviceFeatures2.pNext = &deviceFeatures11;
@@ -619,8 +617,6 @@ namespace vvh {
 		// --- 1.1
 		VkPhysicalDeviceVulkan11Features deviceFeatures11{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES };
 		deviceFeatures11.shaderDrawParameters = supportedFeatures11.shaderDrawParameters;
-		deviceFeatures11.storageBuffer16BitAccess = supportedFeatures11.storageBuffer16BitAccess;  // For gaussian splatting f16 SH coefficients
-		deviceFeatures11.uniformAndStorageBuffer16BitAccess = supportedFeatures11.uniformAndStorageBuffer16BitAccess;  // For gaussian splatting f16 in uniforms
 
 		// --- 1.2
 		// TODO: Currently rewritten, might not be needed!

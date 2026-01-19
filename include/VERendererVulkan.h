@@ -56,7 +56,6 @@ namespace vve {
 
         std::vector<std::string> m_deviceExtensions = {
             "VK_KHR_swapchain"
-            , "VK_KHR_push_descriptor"  // Required by vulkan_radix_sort library
             #ifdef __APPLE__
             , "VK_KHR_portability_subset"
             , "VK_KHR_shader_non_semantic_info"

@@ -360,7 +360,6 @@ namespace vve {
 	bool RendererShadow11::OnObjectCreate(Message& message) {
 		const ObjectHandle& oHandle = message.template GetData<MsgObjectCreate>().m_object;
 		if (m_registry.template Has<DirectionalLight>(oHandle)) return false;	// Object without mesh, e.g. direct light
-		if (m_registry.template Has<GaussianSplat>(oHandle)) return false;		// Object without mesh, e.g. gaussian splat
 
 		assert(m_registry.template Has<MeshHandle>(oHandle));
 

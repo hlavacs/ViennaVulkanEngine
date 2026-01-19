@@ -12,8 +12,7 @@ namespace vve {
     enum class RendererType {
         RENDERER_TYPE_FORWARD,
         RENDERER_TYPE_DEFERRED,
-        RENDERER_TYPE_RAYTRACING,
-        RENDERER_TYPE_GAUSSIAN
+        RENDERER_TYPE_RAYTRACING
     };
 
 	/**
@@ -27,7 +26,7 @@ namespace vve {
 		#ifdef __APPLE__
 		static const uint32_t c_maximumVersion = VK_MAKE_VERSION(1, 2, 0); //for VMA
 		#else
-		static const uint32_t c_maximumVersion = VK_MAKE_VERSION(1, 4, 0); //for VMA 3.2.1+ and vulkan_radix_sort
+		static const uint32_t c_maximumVersion = VK_MAKE_VERSION(1, 3, 0); //for VMA
 		#endif
 
 	public:
@@ -55,7 +54,6 @@ namespace vve {
 		const std::string m_rendererVulkanName = "VVE Renderer Vulkan";
 		const std::string m_rendererForwardName = "VVE Renderer Forward";
 		const std::string m_rendererDeferredName = "VVE Renderer Deferred";
-		const std::string m_rendererGaussianName = "VVE Renderer Gaussian";
 		const std::string m_rendererImguiName = "VVE Renderer Imgui";
 		const std::string m_guiName = "VVE GUI";
 
