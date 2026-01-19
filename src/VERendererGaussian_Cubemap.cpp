@@ -7,7 +7,17 @@
  */
 
 #include "VHInclude.h"  // Includes volk.h for Vulkan types
+
+// Suppress MSVC warning C4244 (VkDeviceSize to uint32_t conversion) in third-party library
+#ifdef _MSC_VER
+#pragma warning(push)
+#pragma warning(disable: 4244)
+#endif
 #include <vk_radix_sort.h>  // Include AFTER volk.h
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
+
 #include "VEInclude.h"
 
 namespace vve {
