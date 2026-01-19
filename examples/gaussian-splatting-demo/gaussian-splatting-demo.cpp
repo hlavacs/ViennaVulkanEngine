@@ -15,7 +15,7 @@ public:
     GaussianSplattingDemo(vve::Engine& engine) : vve::System("GaussianSplattingDemo", engine) {
         m_engine.RegisterCallbacks({
             {this, 1000, "LOAD_LEVEL", [this](Message& message) { return OnLoadLevel(message); }},
-            {this, 1000, "UPDATE", [this](Message& message) { return OnUpdate(message); }}
+            {this, 10000, "UPDATE", [this](Message& message) { return OnUpdate(message); }}
         });
     }
 
@@ -72,9 +72,7 @@ private:
             }},
             vve::Position{ glm::vec3(0.0f, 0.0f, 0.0f) },
             vve::Rotation{ mat3_t{1.0f} },
-            vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} },
-            vve::LocalToParentMatrix{ mat4_t{1.0f} },
-            vve::LocalToWorldMatrix{ mat4_t{1.0f} }
+            vve::Scale{ vec3_t{1.0f, 1.0f, 1.0f} }
         );
 
         // Send object creation message
