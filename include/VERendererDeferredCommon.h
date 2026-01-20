@@ -2,6 +2,10 @@
 
 namespace vve {
 
+#ifdef VVE_GAUSSIAN_ENABLED
+	class RendererGaussian;  // Forward declaration for IBL integration
+#endif
+
 	/**
 	 * @brief Base class for deferred renderers (CRTP)
 	 * @tparam Derived The derived renderer class (1.1 or 1.3)
@@ -96,6 +100,13 @@ namespace vve {
 		vvh::DescriptorSet m_descriptorSetPerFrame{};
 		vvh::DescriptorSet m_descriptorSetsComposition{};
 		vvh::DescriptorSet m_descriptorSetShadow{};
+
+#ifdef VVE_GAUSSIAN_ENABLED
+		VkDescriptorSetLayout m_descriptorSetLayoutIBL{ VK_NULL_HANDLE };
+		vvh::DescriptorSet m_descriptorSetIBL{};
+		RendererGaussian* m_gaussianRenderer{ nullptr };
+		bool m_iblDescriptorNeedsUpdate{ true };
+#endif
 
 		std::map<int, PipelinePerType> m_geomPipesPerType;
 		std::array<vvh::Pipeline, 2> m_lightingPipeline{};

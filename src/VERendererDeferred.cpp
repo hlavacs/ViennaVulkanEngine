@@ -41,14 +41,18 @@ namespace vve {
 			case 3:
 				std::cout << "Initializing Vulkan 1.3 Deferred Renderer\n";
 				m_engine.RegisterSystem(std::make_unique<RendererShadow11>(m_name() + "Shadow1.1", m_engine, m_windowName));
+#ifdef VVE_GAUSSIAN_ENABLED
 				m_engine.RegisterSystem(std::make_unique<RendererGaussian>(m_name() + "Gaussian", m_engine, m_windowName));
+#endif
 				m_engine.RegisterSystem(std::make_unique<RendererDeferred13>(m_name() + "Light1.3", m_engine, m_windowName));
 				break;
 			default:
 				// 1.1 is default and minimum
 				std::cout << "Initializing Vulkan 1.1 Deferred Renderer\n";
 				m_engine.RegisterSystem(std::make_unique<RendererShadow11>(m_name() + "Shadow1.1", m_engine, m_windowName));
+#ifdef VVE_GAUSSIAN_ENABLED
 				m_engine.RegisterSystem(std::make_unique<RendererGaussian>(m_name() + "Gaussian", m_engine, m_windowName));
+#endif
 				m_engine.RegisterSystem(std::make_unique<RendererDeferred11>(m_name() + "Light1.1", m_engine, m_windowName));
 				break;
 		}

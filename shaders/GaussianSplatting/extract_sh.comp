@@ -1,0 +1,139 @@
+#version 460 core
+
+#extension GL_EXT_shader_16bit_storage : require
+#extension GL_EXT_shader_explicit_arithmetic_types : require
+
+// ============================================================================
+// SH EXTRACTION COMPUTE SHADER
+// Extract spherical harmonics coefficients from gaussian environment at a query point
+// Used for dynamic light probe generation from gaussian splatting scenes
+// ============================================================================
+
+layout(local_size_x = 256) in;
+
+// Query position in world space (object we want to light)
+layout(push_constant, std430) uniform PushConstants {
+    vec3 queryPosition;
+    float influenceRadius;  // Gaussians beyond this distance contribute less
+};
+
+layout(set = 0, binding = 0) uniform Info { uint point_count; };
+
+layout(std430, set = 0, binding = 1) readonly buffer GaussianPosition {
+    float gaussian_position[];  // (N, 3)
+};
+
+layout(std430, set = 0, binding = 2) readonly buffer GaussianSh {
+    f16vec4 gaussian_sh[];  // (N, 12) - stored as f16vec4, matches projection.comp format
+};
+
+// Output: 9 SH coefficients for 2nd degree SH, RGB format
+layout(std430, set = 1, binding = 0) buffer OutputSH {
+    vec4 output_sh[9];  // vec4 for alignment, w component unused
+};
+
+// Shared memory for reduction within workgroup
+shared vec3 sh_accumulator[9][256];  // 9 SH bands × 256 threads
+shared float weight_accumulator[256];
+
+void main() {
+    uint tid = gl_LocalInvocationID.x;
+    uint gid = gl_GlobalInvocationID.x;
+
+    // Initialize shared memory
+    for (int i = 0; i < 9; i++) {
+        sh_accumulator[i][tid] = vec3(0.0);
+    }
+    weight_accumulator[tid] = 0.0;
+
+    barrier();
+
+    // Process gaussians (each thread processes multiple gaussians)
+    // stride = 256 (local_size_x), so thread i processes gaussians i, i+256, i+512, ...
+    for (uint idx = tid; idx < point_count; idx += 256) {
+        // Load gaussian position
+        vec3 gaussianPos = vec3(
+            gaussian_position[idx * 3 + 0],
+            gaussian_position[idx * 3 + 1],
+            gaussian_position[idx * 3 + 2]
+        );
+
+        // Calculate distance and weight
+        float dist = distance(queryPosition, gaussianPos);
+
+        // Inverse distance weighting with falloff
+        // Weight = 1 / (1 + (dist/radius)^2)
+        float normalizedDist = dist / max(influenceRadius, 0.001);
+        float weight = 1.0 / (1.0 + normalizedDist * normalizedDist);
+
+        // Load SH coefficients (first 9 bands for degree 2, RGB)
+        // Gaussian SH storage: (N, 12 f16vec4) = (N, 3 colors, 4 vec4 per color)
+        // Layout: 12 vec4s per gaussian = [R0-3, R4-7, R8-11, R12-15, G0-3, G4-7, G8-11, G12-15, B0-3, B4-7, B8-11, B12-15]
+        uint shBaseIdx = idx * 12;  // 12 f16vec4 per gaussian
+
+        // Load SH data as matrices (avoids component access issues)
+        // mat3x4 constructor takes f16vec4 directly, conversion happens implicitly
+        mat3x4 sh_bands_0_3 = mat3x4(
+            gaussian_sh[shBaseIdx + 0],  // R: bands 0-3
+            gaussian_sh[shBaseIdx + 4],  // G: bands 0-3
+            gaussian_sh[shBaseIdx + 8]   // B: bands 0-3
+        );
+        mat3x4 sh_bands_4_7 = mat3x4(
+            gaussian_sh[shBaseIdx + 1],  // R: bands 4-7
+            gaussian_sh[shBaseIdx + 5],  // G: bands 4-7
+            gaussian_sh[shBaseIdx + 9]   // B: bands 4-7
+        );
+        mat3x4 sh_bands_8_11 = mat3x4(
+            gaussian_sh[shBaseIdx + 2],  // R: bands 8-11
+            gaussian_sh[shBaseIdx + 6],  // G: bands 8-11
+            gaussian_sh[shBaseIdx + 10]  // B: bands 8-11
+        );
+
+        // Extract SH bands as RGB vec3 (access matrix rows via [col][row])
+        // mat3x4[i] gives column i (a vec4), [i][j] gives element at column i, row j
+        sh_accumulator[0][tid] += vec3(sh_bands_0_3[0][0], sh_bands_0_3[1][0], sh_bands_0_3[2][0]) * weight;  // Band 0: R0, G0, B0
+        sh_accumulator[1][tid] += vec3(sh_bands_0_3[0][1], sh_bands_0_3[1][1], sh_bands_0_3[2][1]) * weight;  // Band 1: R1, G1, B1
+        sh_accumulator[2][tid] += vec3(sh_bands_0_3[0][2], sh_bands_0_3[1][2], sh_bands_0_3[2][2]) * weight;  // Band 2: R2, G2, B2
+        sh_accumulator[3][tid] += vec3(sh_bands_0_3[0][3], sh_bands_0_3[1][3], sh_bands_0_3[2][3]) * weight;  // Band 3: R3, G3, B3
+        sh_accumulator[4][tid] += vec3(sh_bands_4_7[0][0], sh_bands_4_7[1][0], sh_bands_4_7[2][0]) * weight;  // Band 4: R4, G4, B4
+        sh_accumulator[5][tid] += vec3(sh_bands_4_7[0][1], sh_bands_4_7[1][1], sh_bands_4_7[2][1]) * weight;  // Band 5: R5, G5, B5
+        sh_accumulator[6][tid] += vec3(sh_bands_4_7[0][2], sh_bands_4_7[1][2], sh_bands_4_7[2][2]) * weight;  // Band 6: R6, G6, B6
+        sh_accumulator[7][tid] += vec3(sh_bands_4_7[0][3], sh_bands_4_7[1][3], sh_bands_4_7[2][3]) * weight;  // Band 7: R7, G7, B7
+        sh_accumulator[8][tid] += vec3(sh_bands_8_11[0][0], sh_bands_8_11[1][0], sh_bands_8_11[2][0]) * weight; // Band 8: R8, G8, B8
+
+        weight_accumulator[tid] += weight;
+    }
+
+    barrier();
+
+    // Reduction within workgroup (parallel reduction)
+    for (uint stride = 128; stride > 0; stride >>= 1) {
+        if (tid < stride) {
+            for (int i = 0; i < 9; i++) {
+                sh_accumulator[i][tid] += sh_accumulator[i][tid + stride];
+            }
+            weight_accumulator[tid] += weight_accumulator[tid + stride];
+        }
+        barrier();
+    }
+
+    // Final accumulation across workgroups (atomic add to output)
+    // Only thread 0 of each workgroup writes
+    if (tid == 0) {
+        // Read f16vec4 and convert via multiplication
+        vec4 sh_r0 = vec4(1.0) * gaussian_sh[0];
+        vec4 sh_g0 = vec4(1.0) * gaussian_sh[4];
+        vec4 sh_b0 = vec4(1.0) * gaussian_sh[8];
+
+        // Access components
+        output_sh[0] = vec4(sh_r0.x, sh_g0.x, sh_b0.x, 1.0);
+        output_sh[1] = vec4(sh_r0.y, sh_g0.y, sh_b0.y, 1.0);
+        output_sh[2] = vec4(sh_r0.z, sh_g0.z, sh_b0.z, 1.0);
+        output_sh[3] = vec4(sh_r0.w, sh_g0.w, sh_b0.w, 1.0);
+
+        // Clear remaining bands
+        for (int i = 4; i < 9; i++) {
+            output_sh[i] = vec4(0.0);
+        }
+    }
+}

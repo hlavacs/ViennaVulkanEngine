@@ -118,8 +118,10 @@ namespace vve {
 		RegisterSystem(std::make_unique<RendererImgui>(  m_rendererImguiName,   *this, m_windowName ) );
 		if (m_type == vve::RendererType::RENDERER_TYPE_FORWARD)
 			RegisterSystem(std::make_unique<RendererForward>(m_rendererForwardName, *this, m_windowName) );
+#ifdef VVE_GAUSSIAN_ENABLED
 		else if (m_type == vve::RendererType::RENDERER_TYPE_GAUSSIAN)
 			RegisterSystem(std::make_unique<RendererGaussian>(m_rendererGaussianName, *this, m_windowName) );
+#endif
 		else
 			RegisterSystem(std::make_unique<RendererDeferred>(m_rendererDeferredName, *this, m_windowName) );
 	};

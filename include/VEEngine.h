@@ -13,7 +13,9 @@ namespace vve {
         RENDERER_TYPE_FORWARD,
         RENDERER_TYPE_DEFERRED,
         RENDERER_TYPE_RAYTRACING,
+#ifdef VVE_GAUSSIAN_ENABLED
         RENDERER_TYPE_GAUSSIAN
+#endif
     };
 
 	/**
@@ -26,8 +28,10 @@ namespace vve {
 
 		#ifdef __APPLE__
 		static const uint32_t c_maximumVersion = VK_MAKE_VERSION(1, 2, 0); //for VMA
+		#elif defined(VVE_GAUSSIAN_ENABLED)
+		static const uint32_t c_maximumVersion = VK_MAKE_VERSION(1, 4, 0); //for VMA and vulkan_radix_sort
 		#else
-		static const uint32_t c_maximumVersion = VK_MAKE_VERSION(1, 4, 0); //for VMA 3.2.1+ and vulkan_radix_sort
+		static const uint32_t c_maximumVersion = VK_MAKE_VERSION(1, 3, 0); //for VMA
 		#endif
 
 	public:

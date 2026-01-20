@@ -12,3 +12,14 @@ if(MSVC)
 endif()
 
 target_link_libraries (${TARGET} PUBLIC viennavulkanengine)
+
+# SDL3 Issue #14867: SDL_STATIC/SDL_SHARED don't work reliably, DLL still produced.
+# Copy SDL3 DLL to executable directory as workaround.
+if(WIN32)
+    add_custom_command(TARGET ${TARGET} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:SDL3::SDL3>"
+            "$<TARGET_FILE_DIR:${TARGET}>"
+        COMMENT "Copying SDL3 DLL to ${TARGET} directory"
+    )
+endif()

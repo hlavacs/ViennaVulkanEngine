@@ -33,10 +33,10 @@ Lighting information is extracted from gaussian splat environments to light trad
 
 ## Building
 
-From the ViennaVulkanEngine root directory:
+From the ViennaVulkanEngine root directory (requires `-DVVE_GAUSSIAN_ENABLED=ON`):
 
 ```bash
-cmake -B build
+cmake -B build -DVVE_GAUSSIAN_ENABLED=ON
 cmake --build build --config Release
 ```
 

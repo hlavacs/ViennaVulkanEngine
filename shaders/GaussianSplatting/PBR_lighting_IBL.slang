@@ -1,3 +1,7 @@
+// PBR_lighting_IBL.slang - IBL variant of PBR lighting for gaussian splatting demos
+// Adds irradiance cubemap binding for ambient lighting from gaussian environments
+// AI-generated code for ViennaVulkanEngine gaussian splatting integration
+
 import Common;
 
 struct VertexStageOutput {
@@ -57,6 +61,12 @@ Sampler2DArrayShadow shadow2DArray;         // Array for direct and spot shadowm
 StructuredBuffer<float4x4> gLightSpaceMatrices;
 
 //----------------------------------------------------------------------------
+// Set 3 - IBL (Image-Based Lighting) from gaussian environment
+
+[[vk::binding(0, 3)]]
+SamplerCube gIrradianceMap;                 // Irradiance cubemap from gaussian splat environment
+
+//----------------------------------------------------------------------------
 
 [[vk::push_constant]]
 PushConstantLight pushConstant;
@@ -91,7 +101,8 @@ float4 main(VertexStageOutput in) : SV_Target
     float3 A = gAlbedo.Sample(in.uv).xyz;
     float2 MR = gMetallicRoughness.Sample(in.uv).xy;
 
-    float4 output = calculateLighting(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g, shadowCubeArray, shadow2DArray, gLightSpaceMatrices, SHADOW_ENABLED);
+    // Use IBL variant for ambient lighting from gaussian environment
+    float4 output = calculateLightingIBL(gLights, numberLights, N, camera.positionW, P, A, MR.r, MR.g, shadowCubeArray, shadow2DArray, gLightSpaceMatrices, SHADOW_ENABLED, gIrradianceMap);
 
     return output;
 }

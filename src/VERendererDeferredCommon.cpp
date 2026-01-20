@@ -89,13 +89,23 @@ namespace vve {
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
 				{	// Binding 2 : Light Space Matrices - Direct + Spot Lights
 					.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT },
-				{	// Binding 3 : Irradiance Cubemap - IBL ambient lighting
-					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
 			},
 			.m_descriptorSetLayout = m_descriptorSetLayoutShadow
 			});
+
+#ifdef VVE_GAUSSIAN_ENABLED
+		// IBL (Image-Based Lighting) from gaussian environment
+		vvh::RenCreateDescriptorSetLayout({
+			.m_device = m_vkState().m_device,
+			.m_bindings = {
+				{	// Binding 0 : Irradiance Cubemap from gaussian environment
+					.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+					.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT }
+			},
+			.m_descriptorSetLayout = m_descriptorSetLayoutIBL
+			});
+#endif
 
 		for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; ++i) {
 			vvh::ComCreateCommandPool({
@@ -137,6 +147,14 @@ namespace vve {
 			.m_descriptorPool = m_descriptorPool,
 			.m_descriptorSet = m_descriptorSetShadow
 			});
+#ifdef VVE_GAUSSIAN_ENABLED
+		vvh::RenCreateDescriptorSet({	// IBL from gaussian environment
+			.m_device = m_vkState().m_device,
+			.m_descriptorSetLayouts = m_descriptorSetLayoutIBL,
+			.m_descriptorPool = m_descriptorPool,
+			.m_descriptorSet = m_descriptorSetIBL
+			});
+#endif
 
 		// Per frame uniform buffer
 		vvh::BufCreateBuffers({
@@ -286,6 +304,47 @@ namespace vve {
 			}
 		}
 
+#ifdef VVE_GAUSSIAN_ENABLED
+		// Update IBL descriptor with irradiance cubemap from gaussian renderer
+		if (m_gaussianRenderer == nullptr) {
+			// Lazily get gaussian renderer reference (it's registered as a sibling system)
+			std::string gaussianSystemName = m_name() + "Gaussian";
+			// The deferred common name is like "VVE Renderer DeferredLight1.3", need to find the parent
+			// Actually, RendererDeferred registers gaussian with name like "VVE Renderer DeferredGaussian"
+			// Let's try finding by searching for a system with "Gaussian" suffix
+			auto* system = m_engine.GetSystem(m_engine.m_rendererDeferredName + "Gaussian");
+			if (system) {
+				m_gaussianRenderer = dynamic_cast<RendererGaussian*>(system);
+			}
+		}
+
+		if (m_gaussianRenderer && m_iblDescriptorNeedsUpdate) {
+			VkImageView irradianceView = m_gaussianRenderer->GetIrradianceView();
+			VkSampler irradianceSampler = m_gaussianRenderer->GetIrradianceSampler();
+
+			if (irradianceView != VK_NULL_HANDLE && irradianceSampler != VK_NULL_HANDLE) {
+				// Update IBL descriptor set with irradiance cubemap (all frames at once)
+				VkDescriptorImageInfo imageInfo{};
+				imageInfo.sampler = irradianceSampler;
+				imageInfo.imageView = irradianceView;
+				imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+				for (size_t i = 0; i < m_descriptorSetIBL.m_descriptorSetPerFrameInFlight.size(); ++i) {
+					VkWriteDescriptorSet write{};
+					write.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+					write.dstSet = m_descriptorSetIBL.m_descriptorSetPerFrameInFlight[i];
+					write.dstBinding = 0;
+					write.dstArrayElement = 0;
+					write.descriptorCount = 1;
+					write.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+					write.pImageInfo = &imageInfo;
+					vkUpdateDescriptorSets(m_vkState().m_device, 1, &write, 0, nullptr);
+				}
+				m_iblDescriptorNeedsUpdate = false;
+			}
+		}
+#endif
+
 		static_cast<Derived*>(this)->OnPrepareNextFrame();
 
 		return false;
@@ -323,7 +382,9 @@ namespace vve {
 		}
 
 		if (m_registry.template Has<DirectionalLight>(oHandle)) return false;
+#ifdef VVE_GAUSSIAN_ENABLED
 		if (m_registry.template Has<GaussianSplat>(oHandle)) return false;
+#endif
 
 		assert(m_registry.template Has<MeshHandle>(oHandle));
 
@@ -480,6 +541,9 @@ namespace vve {
 
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutPerFrame, nullptr);
 		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutComposition, nullptr);
+#ifdef VVE_GAUSSIAN_ENABLED
+		vkDestroyDescriptorSetLayout(m_vkState().m_device, m_descriptorSetLayoutIBL, nullptr);
+#endif
 
 		vkDestroyDescriptorPool(m_vkState().m_device, m_descriptorPool, nullptr);
 
@@ -741,12 +805,28 @@ namespace vve {
 	 */
 	template<typename Derived>
 	void RendererDeferredCommon<Derived>::CreateLightingPipeline(const VkRenderPass* renderPass) {
+#ifdef VVE_GAUSSIAN_ENABLED
+		// Use IBL shader for gaussian-enabled builds (samples irradiance from gaussian environment)
+		const std::filesystem::path shaders{ "shaders/GaussianSplatting" };
+		if (!std::filesystem::exists(shaders)) {
+			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
+		}
+		const std::string vert = (shaders / "PBR_lighting_IBL.spv").string();
+		const std::string frag = (shaders / "PBR_lighting_IBL.spv").string();
+		const std::vector<VkDescriptorSetLayout> layouts = {
+			m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition, m_descriptorSetLayoutShadow, m_descriptorSetLayoutIBL
+		};
+#else
 		const std::filesystem::path shaders{ "shaders/Deferred" };
 		if (!std::filesystem::exists(shaders)) {
 			std::cerr << "ERROR: Folder does not exist: " << std::filesystem::absolute(shaders) << "\n";
 		}
 		const std::string vert = (shaders / "PBR_lighting.spv").string();
 		const std::string frag = (shaders / "PBR_lighting.spv").string();
+		const std::vector<VkDescriptorSetLayout> layouts = {
+			m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition, m_descriptorSetLayoutShadow
+		};
+#endif
 
 		for (int32_t i = 0; i < 2; ++i) {
 			// creates two lighting pipelines with spec const 0 = shadowOff and 1 = shadowOn
@@ -757,7 +837,7 @@ namespace vve {
 				.m_fragShaderPath = frag,
 				.m_bindingDescription = {},
 				.m_attributeDescriptions = {},
-				.m_descriptorSetLayouts = { m_descriptorSetLayoutPerFrame, m_descriptorSetLayoutComposition, m_descriptorSetLayoutShadow },
+				.m_descriptorSetLayouts = layouts,
 				.m_specializationConstants = { i },
 				.m_pushConstantRanges = { {.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT, .offset = 0, .size = sizeof(PushConstantsLight) } },
 				.m_blendAttachments = {},
@@ -865,20 +945,6 @@ namespace vve {
 				.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 				.m_imageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL
 				});
-
-			// irradiance cubemap for IBL ambient lighting (from RendererGaussian)
-			auto* gaussianRenderer = dynamic_cast<RendererGaussian*>(m_engine.GetSystem(m_engine.m_rendererDeferredName + "Gaussian"));
-			if (gaussianRenderer && gaussianRenderer->GetIrradianceView() != VK_NULL_HANDLE) {
-				vvh::RenUpdateImageDescriptorSet({
-					.m_device = m_vkState().m_device,
-					.m_imageView = gaussianRenderer->GetIrradianceView(),
-					.m_sampler = gaussianRenderer->GetIrradianceSampler(),
-					.m_binding = 3,
-					.m_descriptorSet = m_descriptorSetShadow.m_descriptorSetPerFrameInFlight[i],
-					.m_descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-					.m_imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-					});
-			}
 		}
 
 		size_t lsmSize = shadowImage().m_lightSpaceMatrices.size() * sizeof(glm::mat4);
@@ -1065,7 +1131,11 @@ namespace vve {
 		vvh::ComRecordLighting({
 			.m_commandBuffer = cmdBuffer,
 			.m_graphicsPipeline = m_lightingPipeline[static_cast<size_t>(m_engine.IsShadowEnabled())],
-			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetsComposition, m_descriptorSetShadow},
+#ifdef VVE_GAUSSIAN_ENABLED
+			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetsComposition, m_descriptorSetShadow, m_descriptorSetIBL },
+#else
+			.m_descriptorSets = { m_descriptorSetPerFrame, m_descriptorSetsComposition, m_descriptorSetShadow },
+#endif
 			.m_currentFrame = m_vkState().m_currentFrame
 			});
 	}

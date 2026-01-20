@@ -6,6 +6,10 @@ project (
   LANGUAGES CXX
 )
 
+#--------------------------------- Optional Features ---------------------------------#
+
+option(VVE_GAUSSIAN_ENABLED "Enable Gaussian Splatting renderer (requires vulkan_radix_sort)" OFF)
+
 if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
   	add_compile_options(/D IMGUI_IMPL_VULKAN_NO_PROTOTYPES)
 	add_compile_options(/D_CRT_SECURE_NO_WARNINGS) #for assimp
@@ -83,8 +87,11 @@ include_directories (${viennatypelistlibrary_SOURCE_DIR}/include)
 
 #--------------------------------- Fetch SDL3 ---------------------------------#
 
-set(SDL_STATIC ON)
-set(SDL_SHARED OFF)
+# SDL3 Issue #14867: SDL_STATIC/SDL_SHARED don't work reliably.
+# Use CACHE FORCE to override SDL3's internal defaults.
+set(BUILD_SHARED_LIBS OFF CACHE BOOL "Build shared libraries" FORCE)
+set(SDL_STATIC ON CACHE BOOL "Build SDL3 static library" FORCE)
+set(SDL_SHARED OFF CACHE BOOL "Build SDL3 shared library" FORCE)
 FetchContent_Declare(sdl3
 					GIT_REPOSITORY https://github.com/libsdl-org/SDL.git
                     GIT_TAG main
@@ -96,7 +103,7 @@ include_directories (${sdl3_SOURCE_DIR}/include/SDL3)
 #--------------------------------- Fetch SDL Mixer ---------------------------------#
 
 set(SDL3_DIR ${SDL3_BINARY_DIR})
-set(BUILD_SHARED_LIBS OFF)
+# BUILD_SHARED_LIBS already OFF from above
 FetchContent_Declare(sdlmixer
                     GIT_REPOSITORY https://github.com/libsdl-org/SDL_mixer.git
                     GIT_TAG b3a6fa8
@@ -164,15 +171,20 @@ include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/volk)
 include_directories(${VULKAN_SDK}/${VULKAN_INCLUDE}/vma)
 link_directories(${VULKAN_SDK}/lib)
 
-#--------------------------------- Vulkan Radix Sort ---------------------------------#
+#--------------------------------- Vulkan Radix Sort (Gaussian Splatting) ---------------------------------#
 
-# Single-file header-only library (v0.2.0+)
-# Requires VRDX_IMPLEMENTATION to be defined in exactly one source file
-FetchContent_Declare(vulkan_radix_sort
-    GIT_REPOSITORY https://github.com/jaesung-cs/vulkan_radix_sort.git
-    GIT_TAG master
-)
-FetchContent_MakeAvailable(vulkan_radix_sort)
+if(VVE_GAUSSIAN_ENABLED)
+    # Single-file header-only library (v0.2.0+)
+    # Requires VRDX_IMPLEMENTATION to be defined in exactly one source file
+    FetchContent_Declare(vulkan_radix_sort
+        GIT_REPOSITORY https://github.com/jaesung-cs/vulkan_radix_sort.git
+        GIT_TAG master
+    )
+    FetchContent_MakeAvailable(vulkan_radix_sort)
+    message(STATUS "Gaussian Splatting: ENABLED")
+else()
+    message(STATUS "Gaussian Splatting: DISABLED")
+endif()
 
 #--------------------------------- Summary ---------------------------------#
 
