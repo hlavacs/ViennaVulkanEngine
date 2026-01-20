@@ -1,3 +1,5 @@
+// IBL variant of Common_Light.slang for gaussian demos
+// Adds irradiance cubemap sampling for ambient lighting from gaussian environments
 implementing Common;
 
 // param.x==0...no light, param.x==1...point, param.x==2...directional, param.x==3...spotlight
@@ -138,7 +140,7 @@ export public float3 accumulateDirectLights(StructuredBuffer<Light> lights, int 
 
         Lo += (kD * albedo / PI + specular) * radiance * NdotL * sh;
     }
-    
+
     return Lo;
 }
 
@@ -183,7 +185,8 @@ export public float3 accumulateSpotLights(StructuredBuffer<Light> lights, int st
     return Lo;
 }
 
-export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow, Sampler2DArrayShadow shadow2DArray, StructuredBuffer<float4x4> lsm, int32_t enableShadow) {
+// IBL variant: uses irradiance cubemap for ambient lighting instead of hardcoded value
+export public float4 calculateLightingIBL(StructuredBuffer<Light> lights, int3 numberLights, float3 normalW, float3 viewPosW, float3 posW, float3 albedo, float metallic, float roughness, SamplerCubeArrayShadow cubeArrayShadow, Sampler2DArrayShadow shadow2DArray, StructuredBuffer<float4x4> lsm, int32_t enableShadow, SamplerCube irradianceCubemap) {
     float3 Lo = float3(0.0);
 
     uint start = 0;
@@ -196,7 +199,11 @@ export public float4 calculateLighting(StructuredBuffer<Light> lights, int3 numb
     end += numberLights.z;
     Lo += accumulateSpotLights(lights, start, end, normalW, viewPosW, posW, albedo, metallic, roughness, shadow2DArray, lsm, numberLights.y, enableShadow);
 
-    float3 ambient = float(0.01) * clamp(albedo, 0.0, 0.3) /* ao */;
+    // Ambient lighting from irradiance cubemap (IBL from gaussian environment)
+    float3 N = normalize(normalW);
+    float3 irradiance = irradianceCubemap.Sample(N).rgb;
+    float intensity = 1.0;
+    float3 ambient = irradiance * albedo * intensity;
     float3 color = ambient + Lo;
 
     return float4(color, 1.0);

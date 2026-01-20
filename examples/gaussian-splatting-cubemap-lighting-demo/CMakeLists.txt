@@ -11,7 +11,8 @@ endif()
 
 target_link_libraries (${TARGET} PUBLIC viennavulkanengine)
 
-# Auto-copy SDL3 DLL to executable directory (Debug: SDL3d.dll, Release: SDL3.dll)
+# SDL3 Issue #14867: SDL_STATIC/SDL_SHARED don't work reliably, DLL still produced.
+# Copy SDL3 DLL to executable directory as workaround.
 if(WIN32)
     add_custom_command(TARGET ${TARGET} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different

@@ -89,7 +89,9 @@ namespace vve {
 	class RendererDeferredCommon;	// Base class for 1.1 and 1.3 RenDef
 	class RendererDeferred11;
 	class RendererDeferred13;
+#ifdef VVE_GAUSSIAN_ENABLED
 	class RendererGaussian;
+#endif
    	class SceneManager;
    	class AssetManager;
 	class SoundManager;
@@ -162,9 +164,11 @@ namespace vve {
 #include "VERendererDeferredCommon.h"
 #include "VERendererDeferred11.h"
 #include "VERendererDeferred13.h"
+#ifdef VVE_GAUSSIAN_ENABLED
 #include "VERendererGaussian.h"
 #include "VEGaussianComponent.h"
 #include "VEGaussianAssetLoader.h"
+#endif
 #include "VESceneManager.h"
 #include "VEAssetManager.h"
 //#include "VESoundManagerSDL2.h"

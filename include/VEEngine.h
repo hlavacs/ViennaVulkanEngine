@@ -13,7 +13,9 @@ namespace vve {
         RENDERER_TYPE_FORWARD,
         RENDERER_TYPE_DEFERRED,
         RENDERER_TYPE_RAYTRACING,
+#ifdef VVE_GAUSSIAN_ENABLED
         RENDERER_TYPE_GAUSSIAN
+#endif
     };
 
 	/**
