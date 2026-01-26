@@ -170,7 +170,6 @@ private:
         std::cout << "  Q/E - Move camera up/down (world Z)" << std::endl;
         std::cout << "  Arrow Keys / Mouse+RMB - Rotate camera" << std::endl;
         std::cout << "  Shift - Speed multiplier" << std::endl;
-        std::cout << "  T - Print GPU timings (Frame and IBL)" << std::endl;
         std::cout << "\nGaussian Transform Controls (Numpad):" << std::endl;
         std::cout << "  Numpad 4/6/8/2 - Move gaussian (X/Z)" << std::endl;
         std::cout << "  Numpad +/- - Move gaussian (Y)" << std::endl;
@@ -193,9 +192,27 @@ private:
         if (m_fpsTimer >= m_fpsUpdateInterval) {
             double avgFPS = m_frameCount / m_fpsAccumulator;
             double avgFrameTime = (m_fpsAccumulator / m_frameCount) * 1000.0;
-            std::cout << "[FPS] " << static_cast<int>(avgFPS) << " fps"
-                      << " (" << avgFrameTime << " ms/frame)"
-                      << std::endl;
+            std::cout << "FPS: " << std::fixed << std::setprecision(1) << avgFPS
+                      << " (" << avgFrameTime << " ms/frame)" << std::endl;
+
+            // Periodic GPU timing output (for automated benchmarking)
+            if (m_gaussianRenderer) {
+                const auto& t = m_gaussianRenderer->GetFrameTimings();
+                if (t.valid) {
+                    double toMs = t.timestampPeriod / 1e6;
+                    std::cout << "Rank: " << std::fixed << std::setprecision(3) << t.rankTime * toMs << " ms, "
+                              << "Sort: " << t.sortTime * toMs << " ms, "
+                              << "Projection: " << t.projectionTime * toMs << " ms, "
+                              << "Render: " << t.renderTime * toMs << " ms" << std::endl;
+                }
+                const auto& ibl = m_gaussianRenderer->GetIBLTimings();
+                if (ibl.valid) {
+                    double toMs = ibl.timestampPeriod / 1e6;
+                    std::cout << "Cubemap: " << std::fixed << std::setprecision(3) << ibl.cubemapTime * toMs << " ms, "
+                              << "Irradiance: " << ibl.irradianceTime * toMs << " ms" << std::endl;
+                }
+            }
+
             m_frameCount = 0;
             m_fpsAccumulator = 0.0;
             m_fpsTimer = 0.0;
@@ -206,38 +223,6 @@ private:
 
         // Camera movement handled by VVE's VEGUI (WASD, Q/E, arrows, mouse)
         const bool* keystate = SDL_GetKeyboardState(nullptr);
-
-        // GPU timing output (T key) - for performance analysis
-        static bool tWasPressed = false;
-        if (keystate[SDL_SCANCODE_T] && !tWasPressed && m_gaussianRenderer) {
-            // Frame timing (gaussian splatting pipeline)
-            const auto& t = m_gaussianRenderer->GetFrameTimings();
-            if (t.valid) {
-                double toMs = t.timestampPeriod / 1e6;  // Convert to milliseconds
-                std::cout << "[GPU Frame] "
-                          << "Rank: " << std::fixed << std::setprecision(3) << t.rankTime * toMs << "ms | "
-                          << "Sort: " << t.sortTime * toMs << "ms | "
-                          << "Inverse: " << t.inverseIndexTime * toMs << "ms | "
-                          << "Proj: " << t.projectionTime * toMs << "ms | "
-                          << "Render: " << t.renderTime * toMs << "ms | "
-                          << "Total: " << t.totalTime * toMs << "ms" << std::endl;
-            } else {
-                std::cout << "[GPU Frame] No valid timing data" << std::endl;
-            }
-
-            // IBL timing (thesis contribution)
-            const auto& ibl = m_gaussianRenderer->GetIBLTimings();
-            if (ibl.valid) {
-                double toMs = ibl.timestampPeriod / 1e6;
-                std::cout << "[GPU IBL]   "
-                          << "Cubemap: " << std::fixed << std::setprecision(3) << ibl.cubemapTime * toMs << "ms | "
-                          << "Irradiance: " << ibl.irradianceTime * toMs << "ms | "
-                          << "Total: " << ibl.totalTime * toMs << "ms" << std::endl;
-            } else {
-                std::cout << "[GPU IBL]   No valid timing data" << std::endl;
-            }
-        }
-        tWasPressed = keystate[SDL_SCANCODE_T];
 
         // Gaussian transform adjustment controls (all on numpad to avoid conflicts)
         bool gaussianTransformChanged = false;
