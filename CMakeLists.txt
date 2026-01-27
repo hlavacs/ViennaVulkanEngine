@@ -142,7 +142,7 @@ include_directories(${glm_SOURCE_DIR}/src)
 
 FetchContent_Declare(vkbootstrap
                      GIT_REPOSITORY https://github.com/charles-lunarg/vk-bootstrap.git 
-                     GIT_TAG main)
+                     GIT_TAG v1.4.339)
 FetchContent_MakeAvailable(vkbootstrap)
 include_directories(${vkbootstrap_SOURCE_DIR}/src)
 
