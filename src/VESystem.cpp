@@ -36,7 +36,7 @@ namespace vve {
     
 	//------------------------------------------------------------------------
 
-	System::MsgMouseMove:: MsgMouseMove(double dt, float x, float y): MsgBase{"SDL_MOUSE_MOVE", dt}, m_x{x}, m_y{y} {}; 
+    System::MsgMouseMove:: MsgMouseMove(double dt, float x, float y, float xrel, float yrel): MsgBase{"SDL_MOUSE_MOVE", dt}, m_x{x}, m_y{y}, m_xrel{xrel}, m_yrel{yrel} {}; 
     System::MsgMouseButtonDown:: MsgMouseButtonDown(double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_DOWN", dt}, m_button{button} {}; 
     System::MsgMouseButtonUp::MsgMouseButtonUp(double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_UP", dt}, m_button{button} {}; 
     System::MsgMouseButtonRepeat::MsgMouseButtonRepeat(double dt, int button): MsgBase{"SDL_MOUSE_BUTTON_REPEAT", dt}, m_button{button} {}; 
