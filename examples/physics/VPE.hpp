@@ -228,12 +228,12 @@ namespace vpe {
 		
 	inline static glmmat3 CTrans = glm::transpose(C);
 
-	static constexpr glmvec3 toPhysics(glmvec3 vec) { return C * vec; }
-	static constexpr glmmat3 toPhysics(glmmat3 mat) { return CTrans * mat * C; }
-	static constexpr glmmat4 toPhysics(glmmat4 mat) { return glmmat4{CTrans} * mat * glmmat4{C}; }
-	static constexpr glmvec3 fromPhysics(glmvec3 vec) { return CTrans * vec; }
-	static constexpr glmmat3 fromPhysics(glmmat3 mat) { return C * mat * CTrans; }
-	static constexpr glmmat4 fromPhysics(glmmat4 mat) { return glmmat4{C} * mat * glmmat4{CTrans};}
+	static const glmvec3 toPhysics(glmvec3 vec) { return C * vec; }
+	static const glmmat3 toPhysics(glmmat3 mat) { return CTrans * mat * C; }
+	static const glmmat4 toPhysics(glmmat4 mat) { return glmmat4{CTrans} * mat * glmmat4{C}; }
+	static const glmvec3 fromPhysics(glmvec3 vec) { return CTrans * vec; }
+	static const glmmat3 fromPhysics(glmmat3 mat) { return C * mat * CTrans; }
+	static const glmmat4 fromPhysics(glmmat4 mat) { return glmmat4{C} * mat * glmmat4{CTrans};}
 
 	/// <summary>
 	/// This class  implements a simple rigid body physics engine.
@@ -248,12 +248,12 @@ namespace vpe {
 		
 		inline static glmmat3 CTrans = glm::transpose(C);
 
-		static constexpr glmvec3 toPhysics(glmvec3 vec) { return C * vec; }
-		static constexpr glmmat3 toPhysics(glmmat3 mat) { return CTrans * mat * C; }
-		static constexpr glmmat4 toPhysics(glmmat4 mat) { return glmmat4{CTrans} * mat * glmmat4{C}; }
-		static constexpr glmvec3 fromPhysics(glmvec3 vec) { return CTrans * vec; }
-		static constexpr glmmat3 fromPhysics(glmmat3 mat) { return C * mat * CTrans; }
-		static constexpr glmmat4 fromPhysics(glmmat4 mat) { return glmmat4{C} * mat * glmmat4{CTrans};}
+		static const glmvec3 toPhysics(glmvec3 vec) { return C * vec; }
+		static const glmmat3 toPhysics(glmmat3 mat) { return CTrans * mat * C; }
+		static const glmmat4 toPhysics(glmmat4 mat) { return glmmat4{CTrans} * mat * glmmat4{C}; }
+		static const glmvec3 fromPhysics(glmvec3 vec) { return CTrans * vec; }
+		static const glmmat3 fromPhysics(glmmat3 mat) { return C * mat * CTrans; }
+		static const glmmat4 fromPhysics(glmmat4 mat) { return glmmat4{C} * mat * glmmat4{CTrans};}
 
 	public:
 
@@ -1669,8 +1669,8 @@ namespace vpe {
 		/// <param name="contact">Contact between the two bodies.</param>
 		/// <param name="eq">Result of edge query.</param>
 		void createEdgeContact(Contact& contact, EdgeQuery& eq) {
-			Face* ref_face = maxFaceAlignment(eq.m_normalL, eq.m_edge_ref->m_edge_face_ptrs, fabs);	//face of A best aligned with the contact normal
-			Face* inc_face = maxFaceAlignment(-RTOIN(eq.m_normalL), eq.m_edge_inc->m_edge_face_ptrs, fabs);	//face of B best aligned with the contact normal
+			Face* ref_face = maxFaceAlignment(eq.m_normalL, eq.m_edge_ref->m_edge_face_ptrs, [](real x) { return static_cast<real>(fabs(x)); });	//face of A best aligned with the contact normal
+			Face* inc_face = maxFaceAlignment(-RTOIN(eq.m_normalL), eq.m_edge_inc->m_edge_face_ptrs, [](real x) { return static_cast<real>(fabs(x)); });	//face of B best aligned with the contact normal
 
 			real dp_ref = fabs(glm::dot(eq.m_normalL, ref_face->m_normalL));	//Use the better aligned face as reference face.
 			real dp_inc = fabs(glm::dot(eq.m_normalL, inc_face->m_normalL));
