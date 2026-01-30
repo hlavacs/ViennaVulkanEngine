@@ -148,7 +148,7 @@
               "environment": [],
               "externalConsole": false,
               "MIMode": "lldb",
-              "MIDebuggerPath": "/usr/bin/lldb"
+              "miDebuggerPath": "/usr/bin/lldb"
         },
     {
               "name": "AppleClang Helper",
@@ -161,7 +161,7 @@
               "environment": [],
               "externalConsole": false,
               "MIMode": "lldb",
-              "MIDebuggerPath": "/usr/bin/lldb"
+              "miDebuggerPath": "/usr/bin/lldb"
         },
         {
               "name": "AppleClang Game",
@@ -174,7 +174,7 @@
               "environment": [],
               "externalConsole": false,
               "MIMode": "lldb",
-              "MIDebuggerPath": "/usr/bin/lldb"
+              "miDebuggerPath": "/usr/bin/lldb"
         },
         {
               "name": "Linux Clang Test",
@@ -187,7 +187,7 @@
               "environment": [],
               "externalConsole": false,
               "MIMode": "gdb",
-              "MIDebuggerPath": "/usr/bin/gdb"
+              "miDebuggerPath": "/usr/bin/gdb"
         },
     {
               "name": "Linux Clang Helper",
@@ -200,7 +200,7 @@
               "environment": [],
               "externalConsole": false,
               "MIMode": "gdb",
-              "MIDebuggerPath": "/usr/bin/gdb"
+              "miDebuggerPath": "/usr/bin/gdb"
         },
         {
               "name": "Linux Clang Game",
@@ -213,7 +213,20 @@
               "environment": [],
               "externalConsole": false,
               "MIMode": "gdb",
-              "MIDebuggerPath": "/usr/bin/gdb"
+              "miDebuggerPath": "/usr/bin/gdb"
+        },
+        {
+              "name": "Linux Clang Physics",
+              "type": "cppdbg",
+              "request": "launch",
+              "program": "${workspaceFolder}/build/examples/physics/physics",  
+              "args": [],
+              "stopAtEntry": false,
+              "cwd": "${workspaceFolder}",
+              "environment": [],
+              "externalConsole": false,
+              "MIMode": "gdb",
+              "miDebuggerPath": "/usr/bin/gdb"
         }
     ]
 
