@@ -210,10 +210,11 @@ namespace vve {
             depthTarget = target;
         }
 
-        //RecreateFramebuffers when swapchain is recreated!!!!!!!!!!!!!!
-
         void recreateFrameBuffers(VkExtent2D extent) {
             this->extent = extent;
+            for (VkFramebuffer frameBuffer : framebuffers) {
+                vkDestroyFramebuffer(device, frameBuffer, nullptr);
+            }
             createFramebuffers();
         }
 

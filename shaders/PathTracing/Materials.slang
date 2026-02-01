@@ -2,6 +2,12 @@
 module Materials;
 import Frame;
 
+#ifdef RAY_TRACING
+    #define SAMPLE_2D(tex, uv) tex.SampleLevel(uv, 0.0)
+#else
+    #define SAMPLE_2D(tex, uv) tex.Sample(uv)
+#endif
+
 export public struct Material
 {
     public float4 albedo;
@@ -54,9 +60,8 @@ export public float3 getAlbedo(in Material mat, in Sampler2D textures[], in floa
     if(mat.albedoTextureIndex == -1){
         return mat.albedo.xyz;
     } else {
-        // for rasterizer implicit sampling should be used: .Sample(texCoord)
-        // return textures[mat.albedoTextureIndex].SampleLevel(texCoord, 0.0).xyz;
-        return textures[mat.albedoTextureIndex].Sample(texCoord).xyz;
+        // for rasterizer implicit sampling should be used: .Sample(texCoordz
+        return SAMPLE_2D(textures[mat.albedoTextureIndex], texCoord).xyz;   
     }
 }
 
@@ -64,14 +69,9 @@ export public float3 getNormal(in Material mat, in Sampler2D textures[], in floa
     if (mat.normalTextureIndex == -1) {
         return float3(0.0,0.0,1.0);
     } else {
-        // float3 mappedNormal = LinearToSRGB(textures[mat.normalTextureIndex].Sample(texCoord).xyz);
-        float3 mappedNormal = textures[mat.normalTextureIndex].Sample(texCoord).xyz;
-        float3 normal;
-
-        //normal is in srgb
-        normal = (mappedNormal * 2.0) - 1.0;
-        //normal.xy = (mappedNormal.xy - float2(0.5, 0.5)) * 2.0;
-        //normal.z = sqrt(saturate(1.0 - normal.x * normal.x - normal.y * normal.y));
+        float3 mappedNormal;
+        mappedNormal = SAMPLE_2D(textures[mat.normalTextureIndex], texCoord).xyz; 
+        float3 normal = (mappedNormal * 2.0) - 1.0;
         return normalize(normal);
     }
 }
@@ -79,33 +79,31 @@ export public float3 getNormal(in Material mat, in Sampler2D textures[], in floa
 export public float getAlpha(in Material mat, in Sampler2D textures[], in float2 texCoord){
     if(mat.alphaTextureIndex == -1){
         return mat.alpha;
-    }else{
-        return textures[mat.alphaTextureIndex].Sample(texCoord).x;
+    } else {
+        return SAMPLE_2D(textures[mat.alphaTextureIndex], texCoord).x;
     }
 }
 
 export public float getRoughness(in Material mat, in Sampler2D textures[], in float2 texCoord){
     if(mat.roughnessTextureIndex == -1){
         return mat.roughness;
-    }else{
-        return textures[mat.roughnessTextureIndex].Sample(texCoord).x;
+    } else {
+        return SAMPLE_2D(textures[mat.roughnessTextureIndex], texCoord).x;      
     }
 }
 
 export public float getMetallic(in Material mat, in Sampler2D textures[], in float2 texCoord){
     if(mat.metalnessTextureIndex == -1){
         return mat.metalness;
-    }else{
-        return textures[mat.metalnessTextureIndex].Sample(texCoord).x;
+    } else {
+        return SAMPLE_2D(textures[mat.metalnessTextureIndex], texCoord).x;
     }
 }
-
-
 
 export public float getIOR(in Material mat, in Sampler2D textures[], in float2 texCoord){
     if (mat.iorTextureIndex == -1) {
         return mat.ior;
     } else {
-        return textures[mat.iorTextureIndex].Sample(texCoord).x;
+        return SAMPLE_2D(textures[mat.iorTextureIndex], texCoord).x;       
     }
 }
