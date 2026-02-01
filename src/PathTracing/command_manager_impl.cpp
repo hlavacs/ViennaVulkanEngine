@@ -3,7 +3,19 @@
 
 namespace vve {
 	CommandManager::~CommandManager() {
+		
+	}
+
+	void CommandManager::freeResources() {
 		vkDestroyCommandPool(device, commandPool, nullptr);
+
+		for (auto semaphore : renderFinishedSemaphores) {
+			vkDestroySemaphore(device, semaphore, nullptr);
+		}
+
+		for (auto fence : inFlightFences) {
+			vkDestroyFence(device, fence, nullptr);
+		}
 	}
 
 	CommandManager::CommandManager(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkQueue& graphicsQueue) :

@@ -18,7 +18,6 @@ namespace vve {
 			System{ systemName, engine }, commandManager(commandManager), device(device), physicalDevice(physicalDevice) 
 		{
 			engine.RegisterCallbacks({
-			{this,  1996, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
 			{this,  0000, "LIGHT_CREATE", [this](Message& message) { return OnLightCreate(message); } },
 			{this,  1996, "RECORD_NEXT_FRAME", [this](Message& message) { return OnRecordNextFrame(message); } }
 				});
@@ -26,12 +25,18 @@ namespace vve {
 			createBuffer();
 		}
 
+		~LightManager() {}
+
+		void freeResources() {
+			delete buffer;
+		}
+
 		bool OnLightCreate(Message message) {
 			lightChanged = true;
 			return false;
 		}
 
-		bool OnPrepareNextFrame(Message message) {
+		void prepareNextFrame() {
 			if (lightChanged) {
 
 				lights = std::vector<LightSource>();
@@ -56,7 +61,6 @@ namespace vve {
 				}
 
 				buffer->updateBuffer(lights.data(), lights.size());
-				return false;
 			}
 			
 		}

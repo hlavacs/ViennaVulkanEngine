@@ -15,13 +15,39 @@ namespace vve {
 		currentFrame = 0;
 
 		engine.RegisterCallbacks({
-			{this,  1999, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
 			{this,  1999, "OBJECT_CREATE", [this](Message& message) { return OnMeshCreated(message); } },
 			{this,  10000, "OBJECT_CHANGED", [this](Message& message) { return OnObjectChanged(message); } },
 			{this,  10000, "MESH_CREATE", [this](Message& message) { return OnMeshCreated(message); } },
 			{this,  1999, "RECORD_NEXT_FRAME", [this](Message& message) { return OnRecordNextFrame(message); } }
 			});
     }
+	ObjectManager::~ObjectManager() {
+	}
+
+	void ObjectManager::freeResources() {	
+		freeBlas();
+		freeTlas();
+
+		for (HostBuffer<vvh::Instance>* instanceBuffer : instanceBuffers) {
+			delete instanceBuffer;
+		}
+		delete vertexBuffer;
+		delete indexBuffer;
+	}
+
+	void ObjectManager::freeBlas() {
+		for (AccelStructure& accel : m_blasAccel) {
+			vkDestroyAccelerationStructureKHR(device, accel.accel, nullptr);
+			delete accel.buffer;
+		}
+	}
+
+	void ObjectManager::freeTlas() {
+		if (m_tlasAccel.accel != VK_NULL_HANDLE) {
+			vkDestroyAccelerationStructureKHR(device, m_tlasAccel.accel, nullptr);
+			delete m_tlasAccel.buffer;
+		}
+	}
 
 	bool ObjectManager::OnMeshCreated(Message message) {
 		objectCreated = true;
@@ -45,7 +71,7 @@ namespace vve {
 		return false;
 	}
 
-	bool ObjectManager::OnPrepareNextFrame(Message message) {
+	void ObjectManager::prepareNextFrame() {
 
 		if (objectCreated) {
 			std::vector<Vertex> accumulatedVertexData;
@@ -84,6 +110,7 @@ namespace vve {
 			}
 			vertexBuffer->updateBuffer(accumulatedVertexData.data(), accumulatedVertexData.size());
 			indexBuffer->updateBuffer(accumulatedIndices.data(), accumulatedIndices.size());
+			
 			createBottomLevelAS();
 		}
 
@@ -126,9 +153,9 @@ namespace vve {
 			}
 			
 			instanceBuffers[currentFrame]->updateBuffer(accumulatedInstances.data(), accumulatedInstances.size());
+			freeTlas();
 			createTopLevelAS();
 		}
-		return false;
 	}
 
 	bool ObjectManager::OnRecordNextFrame(Message message) {
@@ -328,6 +355,8 @@ namespace vve {
 
 	void ObjectManager::createBottomLevelAS()
 	{
+		//free previous accel
+		freeBlas();
 		// Prepare geometry information for all meshes
 		m_blasAccel = std::vector<AccelStructure>();
 		m_blasAccel.resize(numMeshes);

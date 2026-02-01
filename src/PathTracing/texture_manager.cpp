@@ -14,6 +14,17 @@ namespace vve {
             });
     }
 
+    TextureManager::~TextureManager() {
+
+    }
+
+    void TextureManager::freeResources() {
+        for (Texture* texture : textures) {
+            delete texture->image;
+        }
+        vkDestroySampler(device, textureSampler, nullptr);
+    }
+
     bool TextureManager::OnTextureCreate(Message message) {
         auto msg = message.template GetData<MsgTextureCreate>();
         auto handle = msg.m_handle;

@@ -240,6 +240,16 @@ namespace vve {
 
             // Create the shader binding table for this pipeline
             createShaderBindingTable(rtPipelineInfo);
+
+            vkDestroyShaderModule(device, raygenModule, nullptr);
+            vkDestroyShaderModule(device, missModule, nullptr);
+            vkDestroyShaderModule(device, chitModule, nullptr);
+        }
+
+        void freeResources() {
+            vkDestroyPipeline(device, graphicsPipeline, nullptr);
+            vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+            delete shaderBindingTableBuffer;
         }
 
         void recordCommandBuffer(int currentFrame)

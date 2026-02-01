@@ -35,11 +35,16 @@ namespace vve {
 	public:
 
 		ObjectManager(std::string systemName, Engine& engine, VkDevice& device, VkPhysicalDevice& physicalDevice, CommandManager* commandManager, VkPhysicalDeviceAccelerationStructurePropertiesKHR m_asProperties);
-
+		~ObjectManager();
+		void freeResources();
+		void freeBlas();
+		void freeTlas();
+		
+		
 		bool OnMeshCreated(Message message);
 		bool OnObjectChanged(Message message);
 		bool OnObjectCreated(Message message);
-		bool OnPrepareNextFrame(Message message);
+		void prepareNextFrame();
 		bool OnRecordNextFrame(Message message);
 
 		void createVertexBuffer();

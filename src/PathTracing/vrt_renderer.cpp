@@ -13,15 +13,64 @@ namespace vve {
             {this,  2000, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
             {this,  2000, "RECORD_NEXT_FRAME", [this](Message& message) { return OnRecordNextFrame(message); } },
             {this,      0, "RENDER_NEXT_FRAME", [this](Message& message) { return OnRenderNextFrame(message); } },
-            {this,     0, "QUIT", [this](Message& message) { return OnQuit(message); } }
+            {this,     0, "QUIT", [this](Message& message) { return OnQuit(message); } },
             });
             
     };
 
-    RendererRayTraced::~RendererRayTraced() {}
+    bool RendererRayTraced::OnQuit(Message message) {
+        vkDeviceWaitIdle(device);
+        //Free descriptor sets
+        vkFreeDescriptorSets(device, descriptorPool, descriptorSets.size(), descriptorSets.data());
+        vkFreeDescriptorSets(device, descriptorPoolRT, descriptorSetsRT.size(), descriptorSetsRT.data());
+        vkFreeDescriptorSets(device, descriptorPoolTargets, descriptorSetsTargets.size(), descriptorSetsTargets.data());
+
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayoutRT, nullptr);
+        vkDestroyDescriptorSetLayout(device, descriptorSetLayoutTargets, nullptr);
+
+        vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+        vkDestroyDescriptorPool(device, descriptorPoolRT, nullptr);
+        vkDestroyDescriptorPool(device, descriptorPoolTargets, nullptr);
+
+        //piplines
+        rasterizer->freeResources();
+        raytracer->freeResources();
+
+        //buffers
+        lightManager->freeResources();
+        textureManager->freeResources();
+        materialManager->freeResources();
+        objectManager->freeResources();
+        commandManager->freeResources();
+
+        for (HostBuffer<UniformBufferObject>* buffer : uniformBuffer_c) {
+            delete buffer;
+        }
+
+        //render targets
+        for (RenderTarget* target : allTargets) {
+            delete target;
+        }
+
+        delete swapchain;
+        vkDestroyDevice(device, nullptr);
+        vkDestroySurfaceKHR(instance, surface, nullptr);
+        vkDestroyDebugUtilsMessengerEXT(instance, vkbInstance.debug_messenger, nullptr);
+        vkDestroyInstance(instance, nullptr);
+
+        return false;
+    }
+
+    RendererRayTraced::~RendererRayTraced() { 
+        std::cout << "main destructor called \n";      
+    }
 
 
-    void RendererRayTraced::UpdateGeneralDescriptors() {
+
+
+    void RendererRayTraced::destroyGeneralDescriptors() {
+        vkDeviceWaitIdle(device);
         if (generalDiscriptorsCreated) {
             vkFreeDescriptorSets(
                 device,
@@ -29,13 +78,10 @@ namespace vve {
                 descriptorSets.size(),
                 descriptorSets.data()
             );
-        }      
-        createDescriptorSets(descriptorSets, descriptorPool, descriptorSetLayout, uniformBuffer_c, materialManager->getMaterialBuffer(), textureManager->getTextures(), textureManager->getSampler(), device);
-        rasterizer->setDescriptorSets(descriptorSets);
-        raytracer->setDescriptorSets(descriptorSets, descriptorSetsRT);  
-        generalDiscriptorsCreated = true;
+        }
     }
-    void RendererRayTraced::UpdateRayTracingDescriptors() {
+    void RendererRayTraced::destroyRayTracingDescriptors() {
+        vkDeviceWaitIdle(device);
         if (raytracingDiscriptorsCreated) {
             vkFreeDescriptorSets(
                 device,
@@ -44,6 +90,14 @@ namespace vve {
                 descriptorSetsRT.data()
             );
         }
+    }
+    void RendererRayTraced::recreateGeneralDescriptors() {    
+        createDescriptorSets(descriptorSets, descriptorPool, descriptorSetLayout, uniformBuffer_c, materialManager->getMaterialBuffer(), textureManager->getTextures(), textureManager->getSampler(), device);
+        rasterizer->setDescriptorSets(descriptorSets);
+        raytracer->setDescriptorSets(descriptorSets, descriptorSetsRT);  
+        generalDiscriptorsCreated = true;
+    }
+    void RendererRayTraced::recreateRayTracingDescriptors() {
         createDescriptorSetsRT(descriptorSetsRT, descriptorPoolRT, descriptorSetLayoutRT, objectManager->getTlas().accel, objectManager->getVertexBuffer(), objectManager->getIndexBuffer(), objectManager->getInstanceBuffers(), lightManager->getLightBuffer(), device);
         raytracer->setDescriptorSets(descriptorSets, descriptorSetsRT);
         raytracingDiscriptorsCreated = true;
@@ -103,7 +157,7 @@ namespace vve {
 
         //rasterizer = new PiplineRasterized(device, swapchain->getExtent(), commandManager, objectManager->getVertexBuffer(), objectManager->getIndexBuffer(), objectManager->getInstanceBuffers(), descriptorSetLayout, descriptorSets);
 
-        mainTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, swapchain->getFormat(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        //mainTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, swapchain->getFormat(), VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
         depthTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_D32_SFLOAT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, commandManager, device, physicalDevice);
 
 
@@ -265,17 +319,26 @@ namespace vve {
         updateUniformBuffer(currentFrame);
 
         if (materialManager->materialChanged() || textureManager->texturesChanged()) {
-            UpdateGeneralDescriptors();
+            destroyGeneralDescriptors();
         }
         if (objectManager->meshesChanged() || objectManager->instancesChanged() || lightManager->lightsChanged()) {      
-            UpdateRayTracingDescriptors();
+            destroyRayTracingDescriptors();
+        }
+
+        lightManager->prepareNextFrame();
+        materialManager->prepareNextFrame();
+        objectManager->prepareNextFrame();
+
+        if (materialManager->materialChanged() || textureManager->texturesChanged()) {
+            recreateGeneralDescriptors();
+        }
+        if (objectManager->meshesChanged() || objectManager->instancesChanged() || lightManager->lightsChanged()) {
+            recreateRayTracingDescriptors();
         }
 
         return false;
     }
-    bool RendererRayTraced::OnQuit(Message message) {
-        return false;
-    }
+    
 
     bool RendererRayTraced::OnRenderNextFrame(Message message) {
 

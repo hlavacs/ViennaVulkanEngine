@@ -190,9 +190,16 @@ namespace vve {
 
 
         ~PiplineRasterized() {
+        }
+
+        void freeResources() {
             vkDestroyPipeline(device, graphicsPipeline, nullptr);
             vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
             vkDestroyRenderPass(device, renderPass, nullptr);
+
+            for (VkFramebuffer frameBuffer : framebuffers) {
+                vkDestroyFramebuffer(device, frameBuffer, nullptr);
+            }
         }
 
         void bindRenderTarget(RenderTarget* target) {

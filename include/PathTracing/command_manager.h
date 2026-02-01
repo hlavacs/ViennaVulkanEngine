@@ -37,6 +37,8 @@ namespace vve {
 
 		~CommandManager();
 
+		void freeResources();
+
 		VkCommandBuffer getCommandBuffer(int currentFrame);
 		VkCommandBuffer* getCommandBufferPtr(int currentFrame);
 

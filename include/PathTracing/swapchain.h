@@ -51,9 +51,12 @@ namespace vve {
         }
 
         void cleanupSwapChain() {
-            //I cant use the normal image destructor to get rid of the images. Other way is needed. 
-            images = std::vector<Image*>{};
+            for (Image* image : images) {
+                image->removeImageRefernece();
+                delete image;
+            }
 
+            images = std::vector<Image*>{};
             vkDestroySwapchainKHR(device, swapChain, nullptr);
         }
 
@@ -91,7 +94,7 @@ namespace vve {
             for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
                 vkDestroySemaphore(device, imageAvailableSemaphores[i], nullptr);
             }
-            vkDestroySwapchainKHR(device, swapChain, nullptr);
+            cleanupSwapChain();
         }
 
         VkExtent2D getExtent() {

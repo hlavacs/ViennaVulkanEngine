@@ -9,10 +9,15 @@ namespace vve {
 		createMaterialBuffer();
 
 		engine.RegisterCallbacks({
-			{this,  1998, "PREPARE_NEXT_FRAME", [this](Message& message) { return OnPrepareNextFrame(message); } },
 			{this,  1000, "MATERIAL_CREATE", [this](Message& message) { return OnMaterialCreate(message); } },
 			{this,  1998, "RECORD_NEXT_FRAME", [this](Message& message) { return OnRecordNextFrame(message); } }
 			});
+	}
+	MaterialManager::~MaterialManager() {
+	}
+
+	void MaterialManager::freeResources() {
+		delete buffer;
 	}
 
 	bool MaterialManager::OnMaterialCreate(Message message) {
@@ -20,7 +25,7 @@ namespace vve {
 		return false;
 	}
 
-	bool MaterialManager::OnPrepareNextFrame(Message message) {
+	void MaterialManager::prepareNextFrame() {
 
 		if (materialCreated) {
 			std::vector<Material> accumulatedmaterials;
@@ -93,7 +98,6 @@ namespace vve {
 			}
 			buffer->updateBuffer(accumulatedmaterials.data(), accumulatedmaterials.size());
 		}
-		return false;
 	}
 
 	bool MaterialManager::OnRecordNextFrame(Message message) {

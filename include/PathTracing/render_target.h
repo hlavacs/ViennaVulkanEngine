@@ -31,6 +31,12 @@ namespace vve {
 			clearColor.color = clearColorValue;
 		}
 
+		~RenderTarget() {
+			for (Image* image : images) {
+				delete image;
+			}
+		}
+
 
 		Image* getImage(int currentFrame) {
 			return images[currentFrame];

@@ -22,15 +22,10 @@ namespace vve {
 
         bool texturesChanged();
 
-        /*
-        ~TextureManager() {
-            for (Texture* texture : textures) {
-                vkDestroyImageView(device, texture->textureImageView, nullptr);
-                vkDestroyImage(device, texture->textureImage, nullptr);
-                vkFreeMemory(device, texture->textureImageMemory, nullptr);
-            }
-        }
-        */
+        
+        ~TextureManager();
+        void freeResources();
+        
 
         void createTextureSampler();
 

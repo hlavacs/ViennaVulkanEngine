@@ -16,8 +16,11 @@ namespace vve {
 		void pickPhysicalDevice();
 		void createLogicalDevice();
 
-		void UpdateGeneralDescriptors();
-		void UpdateRayTracingDescriptors();
+		void recreateGeneralDescriptors();
+		void recreateRayTracingDescriptors();
+
+		void destroyGeneralDescriptors();
+		void destroyRayTracingDescriptors();
 
 		void updateUniformBuffer(uint32_t currentImage);
 		void resizeWindow();

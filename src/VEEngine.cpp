@@ -215,6 +215,7 @@ namespace vve {
 	 */
 	void Engine::Quit(){
 		Message( MsgQuit{} );
+		SendMsg(MsgQuit{});
 	}
 
 	/**

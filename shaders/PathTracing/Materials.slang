@@ -53,7 +53,9 @@ public MaterialRecord getMaterialProperties(in Material mat, in Sampler2D textur
 export public float3 getAlbedo(in Material mat, in Sampler2D textures[], in float2 texCoord){
     if(mat.albedoTextureIndex == -1){
         return mat.albedo.xyz;
-    }else{
+    } else {
+        // for rasterizer implicit sampling should be used: .Sample(texCoord)
+        // return textures[mat.albedoTextureIndex].SampleLevel(texCoord, 0.0).xyz;
         return textures[mat.albedoTextureIndex].Sample(texCoord).xyz;
     }
 }

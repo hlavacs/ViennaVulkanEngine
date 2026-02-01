@@ -124,7 +124,8 @@ public float glossyPdf(in BSDFQueryRecord record, in MaterialRecord material) {
     float cosWoG = dot(record.geometryNormal, record.woWorld);
     if (cosWoG <= 0) return 0.0;
 
-    return squareToGGXPDF(record.woShading, record.wm, material.roughness) / (4 * abs(dot(record.woShading, record.wm)));
+    float alpha = pow(material.roughness, 2.0);
+    return squareToGGXPDF(record.woShading, record.wm, alpha) / (4 * abs(dot(record.woShading, record.wm)));
 }
 
 public float3 sampleGlossy(inout BSDFQueryRecord record, in MaterialRecord material, bool isMetal, in float2 sample) {
@@ -132,6 +133,7 @@ public float3 sampleGlossy(inout BSDFQueryRecord record, in MaterialRecord mater
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG <= 0) return 0.0;
 
+    
     if (material.roughness < 0.01) {
         record.woShading = float3(-record.wiShading.x, -record.wiShading.y, record.wiShading.z);
         record.woWorld = material.shadingFrame.toWorld(record.woShading);
@@ -140,9 +142,10 @@ public float3 sampleGlossy(inout BSDFQueryRecord record, in MaterialRecord mater
 
         return glossyEval(record, material, isMetal);
     }
+    float alpha = pow(material.roughness, 2.0);
 
     if (!record.wmSet) {
-        record.wm = squareToGGX(record.wiShading, sample, material.roughness);
+        record.wm = squareToGGX(record.wiShading, sample, alpha);
         record.wmSet = true;
     }
 
@@ -270,7 +273,8 @@ public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord m
     if (material.roughness < 0.01) {
         record.wm = float3(0.0, 0.0, 1.0);
     } else {
-        record.wm = squareToGGX(record.wiShading, sample, material.roughness);
+        float alpha = pow(material.roughness, 2.0);
+        record.wm = squareToGGX(record.wiShading, sample, alpha);
     }
     
     record.wmSet = true;
@@ -297,15 +301,27 @@ public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord m
     weights[1] = specularInfluence + weights[0];
     weights[2] = metallicInfluence + weights[1];
 
+    /*
+    float pdfs[3];
+    pdfs[0] = diffuseInfluence;
+    pdfs[1] = specularInfluence;
+    pdfs[2] = metallicInfluence;
+
+    float pdf = 1.0;
+    */
+
     float rand = sampler.UniformFloat();
     LightInteraction chosenInteraction = LightInteraction::DIFFUSE;
     for (uint i = 0; i < 3; i++) {
         if (weights[i] >= rand) {
             chosenInteraction = interactions[i];
+            //pdf = pdfs[i];
             break;
         }
     }
 
+    // currently the eval function of the choosen interaction is fully used. This is unbiased but likely more noisy than needed.
+    // using Multiple importance sampling is likely possible here.
     switch (chosenInteraction)
     {
     case LightInteraction::DIFFUSE:
@@ -316,5 +332,7 @@ public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord m
         return sampleGlossy(record, material, true, sample);
     default:
         return float3(0.0);
-    } 
+    }
+
+    //return PrincipledEval(record, material) / PrincipledPdf(record, material) / pdf;
 }

@@ -118,6 +118,8 @@ namespace vve {
         VkFormat getFormat();
 
         ~Image();
+
+        void removeImageRefernece();
     };
 
 }

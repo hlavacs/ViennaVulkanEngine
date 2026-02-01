@@ -15,10 +15,13 @@ namespace vve {
 
 		bool OnMaterialCreate(Message message);
 
-		bool OnPrepareNextFrame(Message message);
+		void prepareNextFrame();
 		bool OnRecordNextFrame(Message message);
 
 		MaterialManager(std::string systemName, Engine& engine, VkDevice& device, VkPhysicalDevice& physicalDevice, CommandManager* commandManager);
+		~MaterialManager();
+
+		void freeResources();
 
 		void createMaterialBuffer();
 

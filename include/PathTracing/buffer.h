@@ -32,6 +32,11 @@ namespace vve {
         }
 
         ~GenericBuffer() {
+            destroyBuffer();
+        }
+
+        void destroyBuffer() {
+            if (mappedMemory) { vkUnmapMemory(device, memory); mappedMemory = nullptr; }
             if (buffer) vkDestroyBuffer(device, buffer, nullptr);
             if (memory) vkFreeMemory(device, memory, nullptr);
         }
@@ -90,6 +95,11 @@ namespace vve {
 
 
         ~HostBuffer() {
+            destroyBuffer();
+        }
+
+        void destroyBuffer() {
+            if (mappedMemory) { vkUnmapMemory(device, memory); mappedMemory = nullptr; }
             if (buffer) vkDestroyBuffer(device, buffer, nullptr);
             if (memory) vkFreeMemory(device, memory, nullptr);
         }
@@ -114,6 +124,7 @@ namespace vve {
             }
             VkDeviceSize bufferSize = sizeof(T) * count;
             if (count > this->count) {
+                destroyBuffer();
                 initBuffer(count);
             }
             copyToBuffer(data, count);
@@ -166,6 +177,10 @@ namespace vve {
         }
 
         ~DeviceBuffer() {
+            destroyBuffer();
+        }
+
+        void destroyBuffer() {
             if (buffer) vkDestroyBuffer(device, buffer, nullptr);
             if (memory) vkFreeMemory(device, memory, nullptr);
         }
@@ -195,6 +210,7 @@ namespace vve {
             if (count == 0) {
                 count = 1;
             }
+            destroyBuffer();
             initBuffer(data, count);
         }
 
@@ -247,6 +263,10 @@ namespace vve {
         }
 
         ~RawDeviceBuffer() {
+            destroyBuffer();
+        }
+
+        void destroyBuffer() {
             if (buffer) vkDestroyBuffer(device, buffer, nullptr);
             if (memory) vkFreeMemory(device, memory, nullptr);
         }

@@ -46,6 +46,11 @@ namespace vve {
         if (imageMemory) vkFreeMemory(device, imageMemory, nullptr);
     }
 
+    void Image::removeImageRefernece() {
+        image = VK_NULL_HANDLE;
+        imageMemory = VK_NULL_HANDLE;
+    }
+
     void Image::createImageView() {
         VkImageViewCreateInfo viewInfo{};
         viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
