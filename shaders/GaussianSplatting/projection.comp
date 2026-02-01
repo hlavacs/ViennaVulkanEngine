@@ -1,3 +1,17 @@
+// ============================================================================
+// DISCLAIMER:
+// The referenced implementation has been adapted with the assistance of generative AI.
+// ============================================================================
+
+// ============================================================================
+// PROJECTION COMPUTE SHADER
+// Reference: third_party/vkgs/shaders/projection.comp
+// Adapted from VKGS (https://github.com/jaesung-cs/vkgs)
+//
+// Adaptation: Extracted from VKGS standalone viewer and integrated into VVE
+// - Uses VVE descriptor set layout and push constants
+// - Otherwise mathematically identical to VKGS implementation
+// ============================================================================
 #version 460 core
 
 #extension GL_EXT_shader_16bit_storage : require

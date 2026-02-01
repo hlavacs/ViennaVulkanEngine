@@ -1,3 +1,8 @@
+// ============================================================================
+// DISCLAIMER:
+// The implementation has been adapted with the assistance of generative AI.
+// ============================================================================
+
 /**
  * @file gaussian-splatting-cubemap-lighting-demo.cpp
  * @brief Hybrid rendering: Mesh object lit by gaussian environment

@@ -1,3 +1,11 @@
+// ============================================================================
+// SPLAT FRAGMENT SHADER
+// Reference: third_party/vkgs/shaders/splat.frag
+// Adapted from VKGS (https://github.com/jaesung-cs/vkgs)
+//
+// Adaptation: Extracted from VKGS standalone viewer and integrated into VVE
+// - Identical to VKGS implementation
+// ============================================================================
 #version 460
 
 layout(location = 0) in vec4 color;

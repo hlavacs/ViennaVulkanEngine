@@ -1,3 +1,5 @@
+// Common_Shadow.slang - Shadow calculation functions
+// Copy of Deferred/Common_Shadow.slang for gaussian splatting IBL shaders
 implementing Common;
 
 export public struct LightSpaceMatrix {

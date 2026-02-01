@@ -2,6 +2,10 @@
 // INVERSE INDEX COMPUTE SHADER
 // Reference: third_party/vkgs/shaders/inverse_index.comp
 // Adapted from VKGS (https://github.com/jaesung-cs/vkgs)
+//
+// Adaptation: Extracted from VKGS standalone viewer and integrated into VVE
+// - Uses VVE descriptor set bindings (Set 2: output buffers)
+// - Otherwise identical to VKGS implementation
 // ============================================================================
 #version 460 core
 

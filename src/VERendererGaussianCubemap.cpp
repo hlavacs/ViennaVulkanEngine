@@ -1,3 +1,10 @@
+// ============================================================================
+// DISCLAIMER:
+// This document contains documentation comments created or co-authored
+// with the assistance of generative AI. The implementation logic and
+// source code were authored manually.
+// ============================================================================
+
 /**
  * @file VERendererGaussianCubemap.cpp
  * @brief Cubemap IBL implementation for dynamic light probe extraction from gaussian environments

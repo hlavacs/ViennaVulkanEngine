@@ -1,6 +1,5 @@
 // PBR_lighting_IBL.slang - IBL variant of PBR lighting for gaussian splatting demos
 // Adds irradiance cubemap binding for ambient lighting from gaussian environments
-// AI-generated code for ViennaVulkanEngine gaussian splatting integration
 
 import Common;
 

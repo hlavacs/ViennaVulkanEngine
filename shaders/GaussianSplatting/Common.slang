@@ -1,4 +1,5 @@
-// Common.slang
+// Common.slang - Shared types for gaussian splatting IBL shaders
+// Copy of Deferred/Common.slang with IBL-specific light module
 module common;
 
 //-----------------------------------------------------------------------

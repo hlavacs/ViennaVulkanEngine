@@ -1,7 +1,17 @@
 // ============================================================================
+// DISCLAIMER:
+// The referenced implementation has been adapted with the assistance of generative AI.
+// ============================================================================
+
+// ============================================================================
 // RANK COMPUTE SHADER
 // Reference: third_party/vkgs/shaders/rank.comp
 // Adapted from VKGS (https://github.com/jaesung-cs/vkgs)
+//
+// Adaptation: Extracted from VKGS standalone viewer and integrated into VVE
+// - View matrix moved from Camera UBO to push constants (VVE's CameraUBO is minimal)
+// - Uses VVE descriptor set layout
+// - Otherwise mathematically identical to VKGS implementation
 // ============================================================================
 #version 460
 

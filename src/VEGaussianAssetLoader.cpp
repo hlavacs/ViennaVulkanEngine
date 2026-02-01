@@ -1,3 +1,14 @@
+// ============================================================================
+// DISCLAIMER:
+// This implementation is adapted from the vkgs rendering engine
+// by Jaesung Kim (https://github.com/jaesung-cs/vkgs).
+// All incorporated code sections are explicitly marked and comply
+// with the original project's license.
+// This document contains documentation comments created or co-authored
+// with the assistance of generative AI. The implementation logic and
+// source code were authored manually.
+// ============================================================================
+
 #include "VEGaussianAssetLoader.h"
 #include <iostream>
 #include <sstream>

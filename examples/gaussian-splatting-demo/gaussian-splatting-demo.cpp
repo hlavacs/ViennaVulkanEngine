@@ -1,3 +1,10 @@
+// ============================================================================
+// DISCLAIMER:
+// This document contains documentation comments created or co-authored
+// with the assistance of generative AI. The implementation logic and
+// source code were authored manually.
+// ============================================================================
+
 /**
  * @file gaussian-splatting-demo.cpp
  * @brief Simple demonstration of gaussian splatting rendering in VVE

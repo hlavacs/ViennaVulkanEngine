@@ -1,3 +1,8 @@
+// ============================================================================
+// DISCLAIMER:
+// The referenced implementation has been adapted with the assistance of generative AI.
+// ============================================================================
+
 #version 460 core
 
 /**
@@ -6,6 +11,32 @@
  *
  * Adapted from LearnOpenGL PBR IBL tutorial:
  * https://learnopengl.com/PBR/IBL/Diffuse-irradiance
+ *
+ * ============================================================================
+ * COMPARISON WITH LEARNOPENGL IMPLEMENTATION
+ * ============================================================================
+ *
+ * SIMILARITIES:
+ * - Hemisphere sampling with nested phi/theta loops (Riemann sum)
+ * - Same sampleDelta step size (0.025)
+ * - Spherical-to-Cartesian conversion: sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)
+ * - TBN matrix construction for tangent-to-world transformation
+ * - Cosine-weighted integration: envSample * cos(theta) * sin(theta)
+ *   - cos(theta): Lambert's cosine law (BRDF)
+ *   - sin(theta): Jacobian for spherical integration (solid angle dω = sin(θ)dθdφ)
+ * - Final normalization: PI * irradiance / nrSamples
+ *
+ * DIFFERENCES:
+ * - Theta range: VVE uses 0.125*PI (22.5°) vs LearnOpenGL's 0.5*PI (90°)
+ *   Reason: Tighter sampling cone preserves more detail from gaussian environments,
+ *   which often have high-frequency features unlike typical HDR skyboxes.
+ * - TBN singularity handling: VVE checks abs(normal.y) < 0.999 to avoid degenerate
+ *   cross product when normal points straight up/down. LearnOpenGL omits this check.
+ * - Execution model: VVE uses compute shader with explicit workgroup dispatch (8x8)
+ *   over all 6 faces. LearnOpenGL uses fragment shader with GPU rasterization.
+ * - Output: VVE uses imageStore to imageCube, LearnOpenGL renders to FBO attachment.
+ *
+ * ============================================================================
  *
  * For each output texel (representing a normal direction):
  * - Sample environment cubemap over hemisphere around normal
@@ -77,7 +108,7 @@ void main() {
     float nrSamples = 0.0;
 
     for (float phi = 0.0; phi < 2.0 * PI; phi += sampleDelta) {
-        for (float theta = 0.0; theta < 0.125 * PI; theta += sampleDelta) {  // Tight cone (22.5°) for minimal blur
+        for (float theta = 0.0; theta < 0.5 * PI; theta += sampleDelta) {  // Change to 0.125 * PI for tight cone (22.5°) for minimal blur
             // Spherical to cartesian (in tangent space)
             vec3 tangentSample = vec3(
                 sin(theta) * cos(phi),

@@ -1,3 +1,12 @@
+// ============================================================================
+// SPLAT VERTEX SHADER
+// Reference: third_party/vkgs/shaders/splat.vert
+// Adapted from VKGS (https://github.com/jaesung-cs/vkgs)
+//
+// Adaptation: Extracted from VKGS standalone viewer and integrated into VVE
+// - Uses VVE descriptor set bindings
+// - Otherwise identical to VKGS implementation
+// ============================================================================
 #version 460
 
 layout(std430, set = 1, binding = 1) readonly buffer Instances {

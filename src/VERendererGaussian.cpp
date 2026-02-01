@@ -1,3 +1,14 @@
+// ============================================================================
+// DISCLAIMER:
+// This implementation is adapted from the vkgs rendering engine
+// by Jaesung Kim (https://github.com/jaesung-cs/vkgs).
+// All incorporated code sections are explicitly marked and comply
+// with the original project's license.
+// This document contains documentation comments created or co-authored
+// with the assistance of generative AI.The implementation logic and
+// source code were authored manually.
+// ============================================================================
+
 // CRITICAL: vulkan_radix_sort must use volk's function pointers (not static Vulkan linking)
 // VVE uses volk for dynamic Vulkan loading. Without VRDX_USE_VOLK, the library would
 // statically link Vulkan functions, creating two separate function pointer sets causing a crash.
@@ -2109,7 +2120,7 @@ void RendererGaussian::AllocateGaussianDescriptorSets(size_t objectIndex) {
     indexWrite.descriptorCount = 1;
     indexWrite.pBufferInfo = &indexInfo;
     writes.push_back(indexWrite);
-
+ 
     // Binding 5: InverseMap
     VkDescriptorBufferInfo inverseMapInfo{};
     inverseMapInfo.buffer = obj.inverseMapBuffer;

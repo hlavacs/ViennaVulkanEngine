@@ -1,4 +1,9 @@
 // ============================================================================
+// DISCLAIMER:
+// The referenced implementation has been adapted with the assistance of generative AI.
+// ============================================================================
+
+// ============================================================================
 // PARSE PLY COMPUTE SHADER
 // Reference: third_party/vkgs/shaders/parse_ply.comp
 // Adapted from VKGS (https://github.com/jaesung-cs/vkgs)
