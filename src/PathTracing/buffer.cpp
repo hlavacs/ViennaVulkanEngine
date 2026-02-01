@@ -33,18 +33,15 @@ namespace vve {
         //this is only required for the some bvh buffer maybe add a toggle 
         //this causes a shitton of validation errors!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+        VkMemoryAllocateFlagsInfo allocFlagInfo{};
+        allocFlagInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
+        allocFlagInfo.flags = allocFlags;
 
         VkMemoryAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
         allocInfo.allocationSize = memRequirements.size;
         allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties);
-
-        if (allocFlags != 0) {
-            VkMemoryAllocateFlagsInfo allocFlagInfo{};
-            allocFlagInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
-            allocFlagInfo.flags = allocFlags;
-            allocInfo.pNext = &allocFlagInfo;
-        }
+        allocInfo.pNext = (allocFlags != 0) ? &allocFlagInfo : nullptr;
 
 
         if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
