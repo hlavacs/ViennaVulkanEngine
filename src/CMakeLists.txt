@@ -40,6 +40,11 @@ set(SOURCE
   PathTracing/object_manager.cpp
   PathTracing/texture_manager.cpp  
   PathTracing/vrt_renderer.cpp  
+  PathTracing/light_manager.cpp
+  PathTracing/pipline_rasterized.cpp
+  PathTracing/pipline_raytraced.cpp
+  PathTracing/render_target.cpp
+  PathTracing/swapchain.cpp
   )
 
 set(HEADERS
