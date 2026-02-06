@@ -1,3 +1,8 @@
+/**
+ * @file render_target.cpp
+ * @brief RenderTarget implementation.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

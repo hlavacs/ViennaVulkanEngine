@@ -1,3 +1,8 @@
+/**
+ * @file image.cpp
+ * @brief Image creation, transitions, and data transfer implementation.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

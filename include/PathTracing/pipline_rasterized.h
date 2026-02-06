@@ -1,7 +1,12 @@
 #pragma once
 
+/**
+ * @file pipline_rasterized.h
+ * @brief Rasterization pipeline setup and command recording.
+ */
 
 namespace vve {
+    /** Rasterization pipeline system for drawing geometry to render targets. */
     class PiplineRasterized: public System {
 
     private:
@@ -42,6 +47,7 @@ namespace vve {
             return buffer;
         }
 
+        /** Create a shader module from SPIR-V bytecode. */
         VkShaderModule createShaderModule(const std::vector<char>& code, VkDevice& device);
 
         // we assume that all render targets of a rasterized pipline are non persistent aka: colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
@@ -52,23 +58,42 @@ namespace vve {
 
     public:
 
+        /**
+         * @param systemName System identifier.
+         * @param engine Engine reference for messaging.
+         * @param device Logical device.
+         * @param extent Render area extent.
+         * @param commandManager Command manager for command buffers.
+         * @param vertexBuffer Geometry vertex buffer.
+         * @param indexBuffer Geometry index buffer.
+         * @param instanceBuffers Per-frame instance buffers.
+         * @param descriptorSetLayout Descriptor set layout for uniforms/textures.
+         */
         PiplineRasterized(std::string systemName, Engine& engine, VkDevice device, VkExtent2D extent, CommandManager* commandManager, DeviceBuffer<Vertex>* vertexBuffer, DeviceBuffer<uint32_t>* indexBuffer, std::vector<HostBuffer<vvh::Instance>*> instanceBuffers, VkDescriptorSetLayout& descriptorSetLayout);
 
+        /** Assign descriptor sets used by the pipeline. */
         void setDescriptorSets(std::vector<VkDescriptorSet>& descriptorSets);
 
 
+        /** Release owned Vulkan resources. */
         ~PiplineRasterized();
 
+        /** Explicitly free Vulkan resources (destructor-safe). */
         void freeResources();
 
+        /** Bind a color render target. */
         void bindRenderTarget(RenderTarget* target);
 
+        /** Bind a depth render target. */
         void bindDepthRenderTarget(RenderTarget* target);
 
+        /** Recreate framebuffers for a new extent. */
         void recreateFrameBuffers(VkExtent2D extent);
 
+        /** Create the graphics pipeline. */
         void initGraphicsPipeline();
 
+        /** Record draw commands for the current frame. */
         void recordCommandBuffer(uint32_t currentFrame);
     };
 

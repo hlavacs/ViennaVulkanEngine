@@ -1,12 +1,19 @@
 #pragma once
 
+/**
+ * @file image.h
+ * @brief Image wrapper with layout transitions and data transfer helpers.
+ */
+
 namespace vve {
 
+    /** Access and stage masks used for an image layout transition. */
     struct LayoutInfo {
         VkAccessFlags accessMask;
         VkPipelineStageFlags stageMask;
     };
 
+    /** Vulkan image wrapper with optional data upload and layout tracking. */
     class Image : public GPUDataStorage {
     private:
 
@@ -64,16 +71,63 @@ namespace vve {
 
 
     public:
+        /**
+         * Create an owned image with allocated memory.
+         * @param width Image width in pixels.
+         * @param height Image height in pixels.
+         * @param format Image format.
+         * @param tiling Image tiling mode.
+         * @param usage Image usage flags.
+         * @param aspectFlags Image aspect flags.
+         * @param commandManager Command manager for layout transitions.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
         Image(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice);
 
+        /**
+         * Create an owned image and upload initial pixel data.
+         * @param pixels Source pixel buffer.
+         * @param width Image width in pixels.
+         * @param height Image height in pixels.
+         * @param format Image format.
+         * @param tiling Image tiling mode.
+         * @param usage Image usage flags.
+         * @param aspectFlags Image aspect flags.
+         * @param commandManager Command manager for layout transitions.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
         Image(uint8_t* pixels, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice);
 
+        /**
+         * Wrap an existing image without taking ownership of creation.
+         * @param image Existing Vulkan image handle.
+         * @param width Image width in pixels.
+         * @param height Image height in pixels.
+         * @param format Image format.
+         * @param tiling Image tiling mode.
+         * @param usage Image usage flags.
+         * @param aspectFlags Image aspect flags.
+         * @param commandManager Command manager for layout transitions.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
         Image(VkImage image, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice);
 
+        /** Set the internally tracked layout without a barrier. */
         void setLayout(VkImageLayout layout) {
             currentLayout = layout;
         }
 
+        /**
+         * Insert an image memory barrier for the current layout.
+         * @param srcAccessMask Access mask of previous usage.
+         * @param srcStage Pipeline stage of previous usage.
+         * @param dstAccessMask Access mask of next usage.
+         * @param dstStage Pipeline stage of next usage.
+         * @param currentFrame Frame index for command buffer selection.
+         */
         void memoryBarrier(VkAccessFlags srcAccessMask, VkPipelineStageFlags srcStage, VkAccessFlags dstAccessMask, VkPipelineStageFlags dstStage, int currentFrame) {
             VkImageMemoryBarrier imgBarrier{};
             imgBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -102,23 +156,57 @@ namespace vve {
         }
 
 
+        /**
+         * Transition the image to a new layout (immediate submit).
+         * @param newLayout Target layout.
+         */
         void transitionImageLayout(VkImageLayout newLayout);
 
+        /**
+         * Record a layout transition into the current frame's command buffer.
+         * @param newLayout Target layout.
+         * @param currentFrame Frame index.
+         */
         void recordImageLayoutTransition(VkImageLayout newLayout, int currentFrame);
 
+        /**
+         * Upload pixel data into the image using a staging buffer.
+         * @param pixels Source pixel buffer.
+         */
         void copyDataToImage(uint8_t* pixels);
+        /**
+         * Copy from another image with an optional layout transition.
+         * @param srcImage Source image.
+         * @param newLayout Layout for this image after copy.
+         */
         void copyFromImage(Image* srcImage, VkImageLayout newLayout);
+        /**
+         * Record copy from another image into the frame command buffer.
+         * @param srcImage Source image.
+         * @param newLayout Layout for this image after copy.
+         * @param currentFrame Frame index.
+         */
         void recordCopyFromImage(Image* srcImage, VkImageLayout newLayout, int currentFrame);
 
+        /**
+         * Recreate the image with a new size.
+         * @param width New width in pixels.
+         * @param height New height in pixels.
+         */
         void recreateImage(uint32_t width, uint32_t height);
 
+        /** @return Vulkan image handle. */
         VkImage getImage();
+        /** @return Vulkan image view handle. */
         VkImageView getImageView();
 
+        /** @return Image format. */
         VkFormat getFormat();
 
+        /** Release owned image resources. */
         ~Image();
 
+        /** Remove ownership of the underlying image handle. */
         void removeImageRefernece();
     };
 

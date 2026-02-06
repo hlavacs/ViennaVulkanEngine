@@ -1,3 +1,8 @@
+/**
+ * @file command_manager_impl.cpp
+ * @brief CommandManager implementation.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

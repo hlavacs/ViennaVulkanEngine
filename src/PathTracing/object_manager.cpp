@@ -1,3 +1,8 @@
+ï»¿/**
+ * @file object_manager.cpp
+ * @brief ObjectManager implementation.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 
@@ -330,10 +335,10 @@ namespace vve {
 		triangles.vertexStride = sizeof(Vertex);
 		triangles.maxVertex = mesh.firstVertex + mesh.vertexCount;
 
-		// GLOBAL vertex buffer – no per-object offset needed
+		// GLOBAL vertex buffer ï¿½ no per-object offset needed
 		triangles.vertexData.deviceAddress = vertexBuffer->getDeviceAddress();
 
-		// GLOBAL index buffer – we point into the correct range using firstIndex
+		// GLOBAL index buffer ï¿½ we point into the correct range using firstIndex
 		triangles.indexType = VK_INDEX_TYPE_UINT32;
 		triangles.indexData.deviceAddress =
 			indexBuffer->getDeviceAddress() + mesh.firstIndex * sizeof(uint32_t);

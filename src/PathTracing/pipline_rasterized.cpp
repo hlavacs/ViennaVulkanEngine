@@ -1,3 +1,8 @@
+/**
+ * @file pipline_rasterized.cpp
+ * @brief Rasterization pipeline implementation.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

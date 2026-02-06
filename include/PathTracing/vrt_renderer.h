@@ -1,28 +1,54 @@
+/**
+ * @file vrt_renderer.h
+ * @brief Main ray traced renderer system.
+ */
+
 namespace vve {
+	/** Top-level renderer that owns Vulkan objects and render systems. */
 	class RendererRayTraced : public System {
 		friend class Engine;
 	public:
+		/**
+		 * @param systemName System identifier.
+		 * @param engine Engine reference for messaging.
+		 * @param windowName Window title/name.
+		 */
 		RendererRayTraced(std::string systemName, Engine& engine, std::string windowName);
+		/** Release owned Vulkan resources. */
 		~RendererRayTraced();
 	private:
 
+		/** Initialize Vulkan and rendering systems. */
 		bool OnInit(Message message);
+		/** Prepare per-frame data. */
 		bool OnPrepareNextFrame(Message message);
+		/** Record command buffers for the frame. */
 		bool OnRecordNextFrame(Message message);
+		/** Submit and present the frame. */
 		bool OnRenderNextFrame(Message message);
+		/** Cleanup and shutdown. */
 		bool OnQuit(Message message);
 
+		/** Create Vulkan instance and debug layers. */
 		void createInstance();
+		/** Select a physical device. */
 		void pickPhysicalDevice();
+		/** Create the logical device and queues. */
 		void createLogicalDevice();
 
+		/** Recreate general descriptor resources. */
 		void recreateGeneralDescriptors();
+		/** Recreate ray tracing descriptor resources. */
 		void recreateRayTracingDescriptors();
 
+		/** Destroy general descriptors. */
 		void destroyGeneralDescriptors();
+		/** Destroy ray tracing descriptors. */
 		void destroyRayTracingDescriptors();
 
+		/** Update per-frame uniform buffer data. */
 		void updateUniformBuffer(uint32_t currentImage);
+		/** Handle window resize and swapchain recreation. */
 		void resizeWindow();
 
 

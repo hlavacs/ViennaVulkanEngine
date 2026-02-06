@@ -1,3 +1,8 @@
+/**
+ * @file helper_structs.cpp
+ * @brief Helper functions for vertex input descriptions.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

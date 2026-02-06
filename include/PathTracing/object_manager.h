@@ -1,6 +1,12 @@
 #pragma once
 
+/**
+ * @file object_manager.h
+ * @brief Geometry, instance, and acceleration structure management.
+ */
+
 namespace vve {
+	/** Manages mesh buffers, instances, and ray tracing acceleration structures. */
 	class ObjectManager : public System {
 		friend class Engine;
 	private:
@@ -34,34 +40,71 @@ namespace vve {
 
 	public:
 
+		/**
+		 * @param systemName System identifier.
+		 * @param engine Engine reference for messaging.
+		 * @param device Logical device.
+		 * @param physicalDevice Physical device for memory queries.
+		 * @param commandManager Command manager for staging copies.
+		 * @param m_asProperties Acceleration structure device properties.
+		 */
 		ObjectManager(std::string systemName, Engine& engine, VkDevice& device, VkPhysicalDevice& physicalDevice, CommandManager* commandManager, VkPhysicalDeviceAccelerationStructurePropertiesKHR m_asProperties);
+		/** Release owned Vulkan resources. */
 		~ObjectManager();
+		/** Explicitly free Vulkan resources (destructor-safe). */
 		void freeResources();
+		/** Free BLAS resources. */
 		void freeBlas();
+		/** Free TLAS resources. */
 		void freeTlas();
 		
-		
+		/** Handle mesh creation messages. */
 		bool OnMeshCreated(Message message);
+		/** Handle object changed messages. */
 		bool OnObjectChanged(Message message);
+		/** Handle object creation messages. */
 		bool OnObjectCreated(Message message);
+		/** Prepare geometry data for the next frame. */
 		void prepareNextFrame();
+		/** Record geometry updates for the next frame. */
 		bool OnRecordNextFrame(Message message);
 
+		/** Create or rebuild the vertex buffer. */
 		void createVertexBuffer();
+		/** Create or rebuild the index buffer. */
 		void createIndexBuffer();
+		/** Create or rebuild instance buffers. */
 		void createInstanceBuffers();
 
+		/** @return Pointer to the vertex buffer. */
 		DeviceBuffer<Vertex>* getVertexBuffer();
+		/** @return Pointer to the index buffer. */
 		DeviceBuffer<uint32_t>* getIndexBuffer();
+		/** @return Instance buffers per frame. */
 		std::vector<HostBuffer<vvh::Instance>*> getInstanceBuffers();
 
+		/** Load ray tracing function pointers. */
 		void loadRayTracingFunctions();
 
+		/**
+		 * Create an acceleration structure.
+		 * @param out Output structure wrapper.
+		 * @param createInfo Vulkan create info.
+		 * @return True on success.
+		 */
 		bool createAcceleration(
 			AccelStructure& out,
 			VkAccelerationStructureCreateInfoKHR& createInfo);
 
 
+		/**
+		 * Build an acceleration structure.
+		 * @param asType Type of AS (BLAS/TLAS).
+		 * @param accelStruct Target AS wrapper.
+		 * @param asGeometry Geometry description.
+		 * @param asBuildRangeInfo Build range info.
+		 * @param flags Build flags.
+		 */
 		void createAccelerationStructure(VkAccelerationStructureTypeKHR asType,  // The type of acceleration structure (BLAS or TLAS)
 			AccelStructure& accelStruct,
 			VkAccelerationStructureGeometryKHR& asGeometry,  // The geometry to build the acceleration structure from
@@ -69,18 +112,30 @@ namespace vve {
 			VkBuildAccelerationStructureFlagsKHR flags  // Build flags (e.g. prefer fast trace)
 		);
 
+		/**
+		 * Convert mesh data to AS geometry structs.
+		 * @param mesh Source mesh.
+		 * @param geometry Output geometry.
+		 * @param rangeInfo Output range info.
+		 */
 		void convertToAcelGeometry(vvh::Mesh& mesh, VkAccelerationStructureGeometryKHR& geometry, VkAccelerationStructureBuildRangeInfoKHR& rangeInfo);
 
+		/** Build bottom-level acceleration structures. */
 		void createBottomLevelAS();
 
+		/** Build top-level acceleration structure. */
 		void createTopLevelAS();
 
 
+		/** @return TLAS wrapper. */
 		AccelStructure getTlas();
 
+		/** Update the current frame index. */
 		void updateCurrentFrame(int currentFrame);
 
+		/** @return True if instance data changed. */
 		bool instancesChanged();
+		/** @return True if mesh data changed. */
 		bool meshesChanged();
 
 

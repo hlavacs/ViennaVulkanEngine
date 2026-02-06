@@ -1,3 +1,8 @@
+/**
+ * @file descriptor_sets_RT.cpp
+ * @brief Descriptor set creation for ray tracing resources.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

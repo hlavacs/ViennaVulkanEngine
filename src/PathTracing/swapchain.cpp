@@ -1,3 +1,8 @@
+/**
+ * @file swapchain.cpp
+ * @brief SwapChain implementation.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

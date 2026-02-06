@@ -1,3 +1,8 @@
+/**
+ * @file descriptor_sets.cpp
+ * @brief Descriptor set creation for general rendering resources.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

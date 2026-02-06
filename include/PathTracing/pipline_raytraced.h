@@ -1,7 +1,12 @@
 #pragma once
 
+/**
+ * @file pipline_raytraced.h
+ * @brief Ray tracing pipeline setup and command recording.
+ */
 
 namespace vve {
+    /** Ray tracing pipeline wrapper for shader binding tables and dispatch. */
     class PiplineRaytraced {
     private:
 
@@ -58,6 +63,7 @@ namespace vve {
             return buffer;
         }
 
+        /** Create a shader module from SPIR-V bytecode. */
         VkShaderModule createShaderModule(const std::vector<char>& code, VkDevice& device);
 
         void createShaderBindingTable(const VkRayTracingPipelineCreateInfoKHR& rtPipelineInfo);
@@ -66,24 +72,42 @@ namespace vve {
 
     public:
 
+        /**
+         * @param device Logical device.
+         * @param physicalDevice Physical device for RT properties.
+         * @param commandManager Command manager for command buffers.
+         * @param m_rtProperties Ray tracing pipeline properties.
+         * @param descriptorSetLayoutGeneral Layout for general descriptors.
+         * @param descriptorSetLayoutRT Layout for RT descriptors.
+         * @param descriptorSetLayoutTargets Layout for target descriptors.
+         * @param descriptorSetsTargets Descriptor sets for targets.
+         * @param extent Render area extent.
+         */
         PiplineRaytraced(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager, VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties,
             VkDescriptorSetLayout descriptorSetLayoutGeneral, VkDescriptorSetLayout descriptorSetLayoutRT,
             VkDescriptorSetLayout descriptorSetLayoutTargets,
             std::vector<VkDescriptorSet> descriptorSetsTargets, VkExtent2D extent);
 
+        /** Assign descriptor sets used by the pipeline. */
         void setDescriptorSets(std::vector<VkDescriptorSet> descriptorSetsGeneral, std::vector<VkDescriptorSet> descriptorSetsRT);
 
+        /** Assign descriptor sets for render targets. */
         void setRenderTargetsDescriptorSets(std::vector<VkDescriptorSet> descriptorSetsTargets);
 
+        /** Update the render extent. */
         void setExtent(VkExtent2D extent);
 
 
+        /** Bind a render target for ray tracing output. */
         void bindRenderTarget(RenderTarget* target);
 
+        /** Create the ray tracing pipeline and SBT. */
         void initRayTracingPipeline();
 
+        /** Release owned Vulkan resources. */
         void freeResources();
 
+        /** Record ray tracing commands for the current frame. */
         void recordCommandBuffer(int currentFrame);
 
     };

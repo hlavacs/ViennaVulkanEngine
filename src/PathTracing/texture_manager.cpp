@@ -1,3 +1,8 @@
+/**
+ * @file texture_manager.cpp
+ * @brief TextureManager implementation.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

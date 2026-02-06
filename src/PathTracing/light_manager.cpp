@@ -1,3 +1,8 @@
+/**
+ * @file light_manager.cpp
+ * @brief LightManager implementation.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

@@ -1,3 +1,7 @@
+/**
+ * @file vrt_renderer.cpp
+ * @brief RendererRayTraced implementation.
+ */
 
 #include "VHInclude.h"
 #include "VEInclude.h"

@@ -1,3 +1,8 @@
+/**
+ * @file pipline_raytraced.cpp
+ * @brief Ray tracing pipeline implementation.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

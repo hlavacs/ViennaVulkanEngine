@@ -1,3 +1,8 @@
+/**
+ * @file descriptor_sets_targets.cpp
+ * @brief Descriptor set creation for render target outputs.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 

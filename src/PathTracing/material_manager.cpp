@@ -1,3 +1,8 @@
+/**
+ * @file material_manager.cpp
+ * @brief MaterialManager implementation.
+ */
+
 #include "VHInclude.h"
 #include "VEInclude.h"
 
