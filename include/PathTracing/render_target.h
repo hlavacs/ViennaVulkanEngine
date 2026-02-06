@@ -49,13 +49,20 @@ namespace vve {
 		/** Release owned image resources. */
 		~RenderTarget();
 
-		/** @return Image for the given frame index. */
+		/**
+		 * @param currentFrame Frame index.
+		 * @return Image for the given frame index.
+		 */
 		Image* getImage(int currentFrame);
 
 		/** @return Render target image format. */
 		VkFormat getFormat();
 
-		/** Recreate all images with a new size. */
+		/**
+		 * Recreate all images with a new size.
+		 * @param width New width in pixels.
+		 * @param height New height in pixels.
+		 */
 		void recreateRenderTarget(uint32_t width, uint32_t height);
 		
 		/** @return Clear color value for the target. */

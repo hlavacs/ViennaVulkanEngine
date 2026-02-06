@@ -56,22 +56,39 @@ namespace vve {
         /** @return Swapchain handle. */
         VkSwapchainKHR getSwapchain();
 
-        /** @return Swapchain image index for the frame. */
+        /**
+         * @param currentFrame Frame index.
+         * @return Swapchain image index for the frame.
+         */
         uint32_t getImageIndex(int currentFrame);
 
         /** Recreate swapchain and dependent resources. */
         void recreateSwapChain();
 
-        /** Acquire the next swapchain image. */
+        /**
+         * Acquire the next swapchain image.
+         * @param currentFrame Frame index.
+         */
         VkResult acquireNextImage(int currentFrame);
 
-        /** Record image transfer from a render target to the swapchain image. */
+        /**
+         * Record image transfer from a render target to the swapchain image.
+         * @param currentFrame Frame index.
+         * @param target Source render target.
+         */
         void recordImageTransfer(int currentFrame, RenderTarget* target);
 
-        /** Present the current swapchain image. */
+        /**
+         * Present the current swapchain image.
+         * @param currentFrame Frame index.
+         * @param renderCompletSemaphore Semaphore to wait on before present.
+         */
         VkResult presentImage(int currentFrame, VkSemaphore renderCompletSemaphore);
 
-        /** @return Image-available semaphore for the frame. */
+        /**
+         * @param currentFrame Frame index.
+         * @return Image-available semaphore for the frame.
+         */
         VkSemaphore getImageAvailableSemaphore(int currentFrame);
     };
 

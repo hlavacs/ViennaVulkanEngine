@@ -64,9 +64,15 @@ namespace vve {
 		/** Explicitly free Vulkan resources (destructor-safe). */
 		void freeResources();
 
-		/** @return Command buffer for the given frame index. */
+		/**
+		 * @param currentFrame Frame index.
+		 * @return Command buffer for the given frame index.
+		 */
 		VkCommandBuffer getCommandBuffer(int currentFrame);
-		/** @return Pointer to command buffer for the given frame index. */
+		/**
+		 * @param currentFrame Frame index.
+		 * @return Pointer to command buffer for the given frame index.
+		 */
 		VkCommandBuffer* getCommandBufferPtr(int currentFrame);
 
 		/**
@@ -81,7 +87,10 @@ namespace vve {
 		 */
 		void endSingleTimeCommand(VkCommandBuffer& commandBuffer);
 
-		/** Begin recording the frame command buffer. */
+		/**
+		 * Begin recording the frame command buffer.
+		 * @param currentFrame Frame index.
+		 */
 		void beginCommand(int currentFrame);
 		/**
 		 * Submit the frame command buffer.
@@ -89,9 +98,15 @@ namespace vve {
 		 * @param ImageAvailableSemaphore Semaphore to wait on before rendering.
 		 */
 		void executeCommand(int currentFrame, VkSemaphore ImageAvailableSemaphore);
-		/** @return Render-finished semaphore for the frame. */
+		/**
+		 * @param currentFrame Frame index.
+		 * @return Render-finished semaphore for the frame.
+		 */
 		VkSemaphore getRenderFinishedSemaphores(int currentFrame);
-		/** Wait for the in-flight fence of the frame. */
+		/**
+		 * Wait for the in-flight fence of the frame.
+		 * @param currentFrame Frame index.
+		 */
 		void waitForFence(int currentFrame);
 
 	};

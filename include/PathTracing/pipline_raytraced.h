@@ -88,17 +88,30 @@ namespace vve {
             VkDescriptorSetLayout descriptorSetLayoutTargets,
             std::vector<VkDescriptorSet> descriptorSetsTargets, VkExtent2D extent);
 
-        /** Assign descriptor sets used by the pipeline. */
+        /**
+         * Assign descriptor sets used by the pipeline.
+         * @param descriptorSetsGeneral General descriptor sets.
+         * @param descriptorSetsRT Ray tracing descriptor sets.
+         */
         void setDescriptorSets(std::vector<VkDescriptorSet> descriptorSetsGeneral, std::vector<VkDescriptorSet> descriptorSetsRT);
 
-        /** Assign descriptor sets for render targets. */
+        /**
+         * Assign descriptor sets for render targets.
+         * @param descriptorSetsTargets Target descriptor sets.
+         */
         void setRenderTargetsDescriptorSets(std::vector<VkDescriptorSet> descriptorSetsTargets);
 
-        /** Update the render extent. */
+        /**
+         * Update the render extent.
+         * @param extent New render extent.
+         */
         void setExtent(VkExtent2D extent);
 
 
-        /** Bind a render target for ray tracing output. */
+        /**
+         * Bind a render target for ray tracing output.
+         * @param target Render target to add.
+         */
         void bindRenderTarget(RenderTarget* target);
 
         /** Create the ray tracing pipeline and SBT. */
@@ -107,7 +120,10 @@ namespace vve {
         /** Release owned Vulkan resources. */
         void freeResources();
 
-        /** Record ray tracing commands for the current frame. */
+        /**
+         * Record ray tracing commands for the current frame.
+         * @param currentFrame Frame index.
+         */
         void recordCommandBuffer(int currentFrame);
 
     };

@@ -18,15 +18,30 @@ namespace vve {
 		~RendererRayTraced();
 	private:
 
-		/** Initialize Vulkan and rendering systems. */
+		/**
+		 * Initialize Vulkan and rendering systems.
+		 * @param message Message payload.
+		 */
 		bool OnInit(Message message);
-		/** Prepare per-frame data. */
+		/**
+		 * Prepare per-frame data.
+		 * @param message Message payload.
+		 */
 		bool OnPrepareNextFrame(Message message);
-		/** Record command buffers for the frame. */
+		/**
+		 * Record command buffers for the frame.
+		 * @param message Message payload.
+		 */
 		bool OnRecordNextFrame(Message message);
-		/** Submit and present the frame. */
+		/**
+		 * Submit and present the frame.
+		 * @param message Message payload.
+		 */
 		bool OnRenderNextFrame(Message message);
-		/** Cleanup and shutdown. */
+		/**
+		 * Cleanup and shutdown.
+		 * @param message Message payload.
+		 */
 		bool OnQuit(Message message);
 
 		/** Create Vulkan instance and debug layers. */
@@ -46,7 +61,10 @@ namespace vve {
 		/** Destroy ray tracing descriptors. */
 		void destroyRayTracingDescriptors();
 
-		/** Update per-frame uniform buffer data. */
+		/**
+		 * Update per-frame uniform buffer data.
+		 * @param currentImage Frame image index.
+		 */
 		void updateUniformBuffer(uint32_t currentImage);
 		/** Handle window resize and swapchain recreation. */
 		void resizeWindow();

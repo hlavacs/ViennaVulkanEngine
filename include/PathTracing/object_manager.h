@@ -58,15 +58,27 @@ namespace vve {
 		/** Free TLAS resources. */
 		void freeTlas();
 		
-		/** Handle mesh creation messages. */
+		/**
+		 * Handle mesh creation messages.
+		 * @param message Message payload.
+		 */
 		bool OnMeshCreated(Message message);
-		/** Handle object changed messages. */
+		/**
+		 * Handle object changed messages.
+		 * @param message Message payload.
+		 */
 		bool OnObjectChanged(Message message);
-		/** Handle object creation messages. */
+		/**
+		 * Handle object creation messages.
+		 * @param message Message payload.
+		 */
 		bool OnObjectCreated(Message message);
 		/** Prepare geometry data for the next frame. */
 		void prepareNextFrame();
-		/** Record geometry updates for the next frame. */
+		/**
+		 * Record geometry updates for the next frame.
+		 * @param message Message payload.
+		 */
 		bool OnRecordNextFrame(Message message);
 
 		/** Create or rebuild the vertex buffer. */
@@ -130,7 +142,10 @@ namespace vve {
 		/** @return TLAS wrapper. */
 		AccelStructure getTlas();
 
-		/** Update the current frame index. */
+		/**
+		 * Update the current frame index.
+		 * @param currentFrame Frame index.
+		 */
 		void updateCurrentFrame(int currentFrame);
 
 		/** @return True if instance data changed. */

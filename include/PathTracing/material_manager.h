@@ -19,12 +19,18 @@ namespace vve {
 
 	public:
 
-		/** Handle material creation messages. */
+		/**
+		 * Handle material creation messages.
+		 * @param message Message payload.
+		 */
 		bool OnMaterialCreate(Message message);
 
 		/** Prepare material data for the next frame. */
 		void prepareNextFrame();
-		/** Record material buffer updates for the next frame. */
+		/**
+		 * Record material buffer updates for the next frame.
+		 * @param message Message payload.
+		 */
 		bool OnRecordNextFrame(Message message);
 
 		/**

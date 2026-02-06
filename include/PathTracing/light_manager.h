@@ -35,28 +35,54 @@ namespace vve {
 		/** Explicitly free Vulkan resources (destructor-safe). */
 		void freeResources();
 
-		/** Handle light creation messages. */
+		/**
+		 * Handle light creation messages.
+		 * @param message Message payload.
+		 */
 		bool OnLightCreate(Message message);
 
 		/** Prepare light data for the next frame. */
 		void prepareNextFrame();
 
-		/** Record light buffer updates for the next frame. */
+		/**
+		 * Record light buffer updates for the next frame.
+		 * @param message Message payload.
+		 */
 		bool OnRecordNextFrame(Message message);
 		
-		/** Add a spherical light. */
+		/**
+		 * Add a spherical light.
+		 * @param position Light position.
+		 * @param emission Light emission.
+		 * @param radius Sphere radius.
+		 */
 		void addSphereLight(glm::vec4 position, glm::vec4 emission, float radius);
 
-		/** Add a disk light. */
+		/**
+		 * Add a disk light.
+		 * @param position Light position.
+		 * @param emission Light emission.
+		 * @param direction Disk normal direction.
+		 * @param radius Disk radius.
+		 */
 		void addDiskLight(glm::vec4 position, glm::vec4 emission, glm::vec4 direction, float radius);
 
-		/** @return Light power computed from emission. */
+		/**
+		 * @param emission Light emission.
+		 * @return Light power computed from emission.
+		 */
 		float getLightPower(glm::vec4 emission);
 
-		/** @return Surface area of a sphere light. */
+		/**
+		 * @param radius Sphere radius.
+		 * @return Surface area of a sphere light.
+		 */
 		float calculateSphereLightSurfaceArea(float radius);
 
-		/** @return Surface area of a disk light. */
+		/**
+		 * @param radius Disk radius.
+		 * @return Surface area of a disk light.
+		 */
 		float calculateDiskLightSurfaceArea(float radius);
 
 		/** Create or rebuild the light buffer. */

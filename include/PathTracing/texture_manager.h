@@ -28,12 +28,21 @@ namespace vve {
 
         
 
-        /** Handle texture creation messages. */
+        /**
+         * Handle texture creation messages.
+         * @param message Message payload.
+         */
         bool OnTextureCreate(Message message);
 
-        /** Handle texture destruction messages. */
+        /**
+         * Handle texture destruction messages.
+         * @param message Message payload.
+         */
         bool OnTextureDestroy(Message message);
-        /** Record texture updates for the next frame. */
+        /**
+         * Record texture updates for the next frame.
+         * @param message Message payload.
+         */
         bool OnRecordNextFrame(Message message);
 
         /** @return True if texture list changed since last frame. */

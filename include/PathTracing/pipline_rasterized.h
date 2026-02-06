@@ -71,7 +71,10 @@ namespace vve {
          */
         PiplineRasterized(std::string systemName, Engine& engine, VkDevice device, VkExtent2D extent, CommandManager* commandManager, DeviceBuffer<Vertex>* vertexBuffer, DeviceBuffer<uint32_t>* indexBuffer, std::vector<HostBuffer<vvh::Instance>*> instanceBuffers, VkDescriptorSetLayout& descriptorSetLayout);
 
-        /** Assign descriptor sets used by the pipeline. */
+        /**
+         * Assign descriptor sets used by the pipeline.
+         * @param descriptorSets Descriptor sets to bind.
+         */
         void setDescriptorSets(std::vector<VkDescriptorSet>& descriptorSets);
 
 
@@ -81,19 +84,31 @@ namespace vve {
         /** Explicitly free Vulkan resources (destructor-safe). */
         void freeResources();
 
-        /** Bind a color render target. */
+        /**
+         * Bind a color render target.
+         * @param target Render target to add.
+         */
         void bindRenderTarget(RenderTarget* target);
 
-        /** Bind a depth render target. */
+        /**
+         * Bind a depth render target.
+         * @param target Depth render target.
+         */
         void bindDepthRenderTarget(RenderTarget* target);
 
-        /** Recreate framebuffers for a new extent. */
+        /**
+         * Recreate framebuffers for a new extent.
+         * @param extent New render extent.
+         */
         void recreateFrameBuffers(VkExtent2D extent);
 
         /** Create the graphics pipeline. */
         void initGraphicsPipeline();
 
-        /** Record draw commands for the current frame. */
+        /**
+         * Record draw commands for the current frame.
+         * @param currentFrame Frame index.
+         */
         void recordCommandBuffer(uint32_t currentFrame);
     };
 

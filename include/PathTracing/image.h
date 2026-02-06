@@ -115,7 +115,10 @@ namespace vve {
          */
         Image(VkImage image, uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling, VkImageUsageFlags usage, VkImageAspectFlags aspectFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice);
 
-        /** Set the internally tracked layout without a barrier. */
+        /**
+         * Set the internally tracked layout without a barrier.
+         * @param layout Layout to track.
+         */
         void setLayout(VkImageLayout layout) {
             currentLayout = layout;
         }
