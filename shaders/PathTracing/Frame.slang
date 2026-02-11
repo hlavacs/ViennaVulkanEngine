@@ -12,6 +12,7 @@ public struct Frame {
     }
         */
 
+    // Input: normal in world space. Output: orthonormal frame (n,t,s).
     public __init(float3 n_in)
     {
         n = normalize(n_in);
@@ -33,18 +34,19 @@ public struct Frame {
 
 
 
+    // Inputs: normal and tangent in world space. Output: orthonormal frame (n,t,s).
     public __init(float3 n_in, float3 t_in) {
         n = normalize(n_in);
         t = normalize(t_in);
         s = cross(n, t);
     }
 
-    /// Convert from world coordinates to local coordinates
+    /// Inputs: world-space vector. Output: local-space vector.
     public float3 toLocal(in float3 v) {
         return float3(dot(v, s), dot(v, t), dot(v, n));
     }
 
-    /// Convert from local coordinates to world coordinates
+    /// Inputs: local-space vector. Output: world-space vector.
     public float3 toWorld(in float3 v) {
         return s * v.x + t * v.y + n * v.z;
     }

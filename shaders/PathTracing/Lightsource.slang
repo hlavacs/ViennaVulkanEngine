@@ -5,6 +5,7 @@ import Defines;
 
 public struct LightSource
 {
+    // Inputs: light parameters used for sampling and evaluation.
     public float4 position;
     public float4 emission;
     public float4 direction;
@@ -15,6 +16,7 @@ public struct LightSource
 };
 
 public struct EmitterRecord {
+    // Outputs: sampled light contribution and geometry.
     public float3 sampleEmission;
     public float distance;
     public float3 intersection;
@@ -22,6 +24,7 @@ public struct EmitterRecord {
 }
 
 public struct RandomEmitterRecord {
+    // Outputs: sampled light record + selection PDF.
     public EmitterRecord record;
     public float pdf;
 }
@@ -55,6 +58,7 @@ EmitterRecord sampleSphereLight(in LightSource light,
                                 in float3 origin,
                                 inout Sampler sampler)
 {
+    // Inputs: light, shading point, RNG. Output: sampled emitter record.
     EmitterRecord rec;
 
     float3 C = light.position.xyz;
@@ -133,6 +137,7 @@ EmitterRecord sampleDiskLight(in LightSource light, in float3 origin, inout Samp
 
 EmitterRecord sampleDiskLight(in LightSource light, in float3 origin, inout Sampler sampler)
 {
+    // Inputs: light, shading point, RNG. Output: sampled emitter record.
     EmitterRecord rec;
 
     float3 P = origin;
@@ -181,6 +186,7 @@ EmitterRecord sampleDiskLight(in LightSource light, in float3 origin, inout Samp
 }
 
 EmitterRecord sampleLightSource(in LightSource light, in float3 origin, inout Sampler sampler) {
+    // Inputs: light, shading point, RNG. Output: sampled emitter record by type.
     EmitterRecord record;
 
     if (light.lightType == 0) {
@@ -193,6 +199,7 @@ EmitterRecord sampleLightSource(in LightSource light, in float3 origin, inout Sa
 
 // returns the light influence from a randomly selected light.
 public EmitterRecord sampleRandomLightSource(in StructuredBuffer<LightSource> lightSources, in float3 origin, inout Sampler sampler) {
+    // Inputs: light buffer, shading point, RNG. Output: sampled emitter record with selection PDF folded in.
     float pdf = 0.0;
     LightSource light = chooseRandomLightSource(lightSources, sampler, pdf);
     EmitterRecord record = sampleLightSource(light, origin, sampler);
@@ -204,6 +211,7 @@ public EmitterRecord sampleRandomLightSource(in StructuredBuffer<LightSource> li
 }
 
 LightSource chooseRandomLightSource(in StructuredBuffer<LightSource> lightSources, inout Sampler sampler, inout float pdf) {
+    // Inputs: light buffer, RNG. Output: chosen light and its selection PDF.
     float rand = sampler.UniformFloat();
     uint index = 0;
     LightSource chosenLight;

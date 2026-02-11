@@ -28,6 +28,7 @@ float2 uvScale;
 // Ray payload structure - carries data through the ray tracing pipeline
 struct HitPayload
 {
+    // Outputs: hit data returned from ray traversal.
     bool hit;
     float3 color;
     float distance;
@@ -37,6 +38,7 @@ struct HitPayload
 };
 
 struct IntegrationStepQueryRecord {
+    // Outputs: per-bounce integration state.
     float3 throughput = float3(1.0);
     float3 output = float3(0.0);
     RayDesc indirectRay = RayDesc();
@@ -45,6 +47,7 @@ struct IntegrationStepQueryRecord {
 
 
 IntersectionRecord getIntersectionInfo(in HitPayload payload, in RayDesc ray){
+    // Inputs: hit payload and ray. Output: resolved intersection record in world space.
     
     Instance instance = instanceBuffer[payload.instanceIdx];
     uint firstIndex = instance.firstIndex;
@@ -83,6 +86,7 @@ IntersectionRecord getIntersectionInfo(in HitPayload payload, in RayDesc ray){
 }
 
 RayDesc getRay(in IntersectionRecord its, float3 castDirection) {
+    // Inputs: intersection and cast direction. Output: offset ray starting at surface.
     RayDesc ray;
 
     ray.Origin = its.position;
@@ -94,6 +98,7 @@ RayDesc getRay(in IntersectionRecord its, float3 castDirection) {
 }
 
 RayDesc getRay2(in IntersectionRecord its, float3 castDirection) {
+    // Inputs: intersection and cast direction. Output: ray offset along normal.
     RayDesc ray;
     //normals are inverted
     ray.Origin = its.position + (its.normal * 0.001);
@@ -105,6 +110,7 @@ RayDesc getRay2(in IntersectionRecord its, float3 castDirection) {
 }
 
 RayDesc getRayInternal(in IntersectionRecord its, float3 castDirection) {
+    // Inputs: intersection and cast direction. Output: ray offset based on side.
     RayDesc ray;
     if (dot(its.normal, castDirection) > 0.0) {
         ray.Origin = its.position + (its.normal * 0.001);
@@ -120,6 +126,7 @@ RayDesc getRayInternal(in IntersectionRecord its, float3 castDirection) {
 }
 
 float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inout Sampler sampler) {
+    // Inputs: intersection, material, RNG. Output: direct lighting contribution.
     EmitterRecord emitterRecord = sampleRandomLightSource(lightBuffer, its.position, sampler);
 
     RayDesc shadowRay = getRay(its, emitterRecord.direction);
@@ -154,6 +161,7 @@ float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inou
 }
 
 RayDesc getInitialRay(in float2 launchID, in float2 launchSize) {
+    // Inputs: pixel coordinates and image size. Output: camera ray in world space.
    
 
     const float2 clipCoords = launchID / launchSize * 2.0 - 1.0;
@@ -170,6 +178,7 @@ RayDesc getInitialRay(in float2 launchID, in float2 launchSize) {
 }
 
 IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
+    // Inputs: RNG. Output: first-bounce integration state.
     float2 launchID = (float2)DispatchRaysIndex().xy;        // Current pixel (x,y)
     float2 launchSize = (float2)DispatchRaysDimensions().xy; // Image size (width,height)
 
@@ -223,17 +232,20 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
 
 bool isSkyPixel(float3 pos)
 {
+    // Input: position sample. Output: true if position encodes sky.
     return any(isinf(pos)) && any(pos < 0);
 }
 
 //Direct Integrator
 float3 integratorDirect(inout Sampler sampler) {
+    // Inputs: RNG. Output: direct-only lighting for a pixel.
     IntegrationStepQueryRecord integrationStep = simulateFirstBounce(sampler);
 
     return integrationStep.output;
 }
 
 float RRProbability(in float3 throughput) {
+    // Input: throughput. Output: Russian roulette continuation probability.
     float maxXY = max(throughput.x, throughput.y);
     float max = max(maxXY, throughput.z);
 
@@ -241,6 +253,7 @@ float RRProbability(in float3 throughput) {
 }
 
 float3 clipThroughput(in float3 throughput) {
+    // Input: throughput. Output: clamped throughput for stability.
     float3 throughputClipped;
     throughputClipped.x = min(throughput.x, 0.99);
     throughputClipped.y = min(throughput.y, 0.99);
@@ -251,6 +264,7 @@ float3 clipThroughput(in float3 throughput) {
 
 
 float3 integratorPT(inout Sampler sampler) {
+    // Inputs: RNG. Output: path-traced radiance for a pixel.
     IntegrationStepQueryRecord integrationStep = simulateFirstBounce(sampler);
 
     uint depth = 1;
@@ -359,6 +373,7 @@ RWTexture2D<float4> outImage;
 [shader("raygeneration")]
 void rgenMain()
 {
+    // Output: writes the final color to outImage.
     
     // Get the current pixel coordinates and image dimensions
     float2 launchID = (float2)DispatchRaysIndex().xy;     // Current pixel (x,y)
@@ -450,6 +465,7 @@ void rgenMain()
 [shader("closesthit")]
 void rchitMain(inout HitPayload payload, in BuiltInTriangleIntersectionAttributes attr)
 {
+    // Inputs: hit attributes, payload (inout). Output: filled payload for intersection.
     payload.hit = true;
     payload.distance = RayTCurrent();
     payload.instanceIdx = InstanceIndex();
@@ -465,6 +481,7 @@ void rchitMain(inout HitPayload payload, in BuiltInTriangleIntersectionAttribute
 [shader("miss")]
 void rmissMain(inout HitPayload payload)
 {
+    // Inputs: payload (inout). Output: miss payload values.
     // Set background color when ray misses all geometry
     // In a full implementation, this could sample from:
     // - Skybox textures

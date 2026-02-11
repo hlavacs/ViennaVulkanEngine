@@ -3,6 +3,7 @@ import Frame;
 
 struct FSInput
 {
+    // Inputs: interpolated world-space values and material index.
     float3 fragPosition : TEXCOORD0;
     float3 fragNormal : TEXCOORD1;
     float3 fragTangent : TEXCOORD2;
@@ -18,6 +19,7 @@ Sampler2D textures[];
 
 struct FSOutput
 {
+    // Outputs: G-buffer targets.
     float4 outAlbedoAlpha : SV_Target0;
     float3 outNormal      : SV_Target1;
     float3 outSpec        : SV_Target2;
@@ -29,6 +31,7 @@ struct FSOutput
 [shader("pixel")]
 FSOutput main(FSInput input)
 {
+    // Input: FSInput. Output: FSOutput with packed material attributes.
     FSOutput o;
 
     Material mat = materials[input.materialIndex];

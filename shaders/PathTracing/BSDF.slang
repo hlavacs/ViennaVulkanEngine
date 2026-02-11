@@ -6,19 +6,23 @@ import Surface;
 import Frame;
 
 public struct BSDFQueryRecord {
+    // Input: geometric normal in world space.
     public float3 geometryNormal; 
 
+    // Input: incident/outgoing directions in world space.
     public float3 wiWorld;
     public float3 woWorld;
 
+    // Input: incident/outgoing directions in shading space.
     public float3 wiShading;
     public float3 woShading;
 
+    // Input: microfacet half vector cache (shading space).
     public bool wmSet;
     public float3 wm;
     public float eta;
 
-    //this is not pretty replace it later.
+    // Input: shadow-only evaluation flag.
     public bool isShadowQuery;
 }
 
@@ -31,10 +35,12 @@ enum LightInteraction : int
 };
 
 float convertIORLevel(float iorLevel) {
+    // Input: artist IOR level. Output: physical IOR (level + 1).
     return 1.0 + iorLevel;
 }
 
 public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in MaterialRecord material, in bool isShadowQuery) {
+    // Inputs: intersection, material, shadow flag. Output: initialized query record.
     BSDFQueryRecord record;
     record.wiShading = material.shadingFrame.toLocal(-its.direction);
     record.wiWorld = -its.direction;
@@ -45,6 +51,7 @@ public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in Materia
 }
 
 public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in MaterialRecord material, float3 outDirection, in bool isShadowQuery) {
+    // Inputs: intersection, material, outgoing world direction, shadow flag. Output: initialized query record.
     BSDFQueryRecord record;
     record.wiShading = material.shadingFrame.toLocal(-its.direction);
     record.wiWorld = -its.direction;
@@ -57,6 +64,7 @@ public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in Materia
 }
 
 float fresnel(in float cosTheta_i, in float eta) {
+    // Inputs: cos(theta_i), relative IOR. Output: Fresnel reflectance.
     float sin2Theta_i = 1 - pow(cosTheta_i, 2.0);
     float sin2Theta_t = sin2Theta_i / pow(eta, 2.0);
     float cosTheta_t = sqrt(1 - sin2Theta_t);
@@ -69,6 +77,7 @@ float fresnel(in float cosTheta_i, in float eta) {
 }
 
 public float3 glossyEval(in BSDFQueryRecord record, in MaterialRecord material, bool isMetal) {
+    // Inputs: BSDF record, material, metal flag. Output: BSDF value (RGB).
 
     float3 color;
 
@@ -109,6 +118,7 @@ public float3 glossyEval(in BSDFQueryRecord record, in MaterialRecord material, 
 }
 
 public float glossyPdf(in BSDFQueryRecord record, in MaterialRecord material) {
+    // Inputs: BSDF record, material. Output: PDF of glossy sampling.
 
     if (material.roughness < 0.01) {
         return 0.0f;
@@ -129,6 +139,8 @@ public float glossyPdf(in BSDFQueryRecord record, in MaterialRecord material) {
 }
 
 public float3 sampleGlossy(inout BSDFQueryRecord record, in MaterialRecord material, bool isMetal, in float2 sample) {
+    // Inputs: BSDF record (inout), material, metal flag, 2D sample.
+    // Output: weighted BSDF value for the sampled direction.
 
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG <= 0) return 0.0;
@@ -171,6 +183,7 @@ public float3 sampleGlossy(inout BSDFQueryRecord record, in MaterialRecord mater
 }
 
 public float3 DiffuseEval(in BSDFQueryRecord record, in MaterialRecord material) {
+    // Inputs: BSDF record, material. Output: Lambertian BSDF value (RGB).
 
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG <= 0) return float3(0);
@@ -190,6 +203,7 @@ public float3 DiffuseEval(in BSDFQueryRecord record, in MaterialRecord material)
 }
 
 public float DiffusePdf(in BSDFQueryRecord record, in MaterialRecord material) {
+    // Inputs: BSDF record, material. Output: PDF of cosine hemisphere sampling.
 
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG <= 0) return 0.0;
@@ -200,6 +214,8 @@ public float DiffusePdf(in BSDFQueryRecord record, in MaterialRecord material) {
 }
 
 public float3 sampleDiffuse(inout BSDFQueryRecord record, in MaterialRecord material, in float2 sample) {
+    // Inputs: BSDF record (inout), material, 2D sample.
+    // Output: weighted BSDF value for the sampled direction.
 
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG <= 0) return 0.0;
@@ -215,6 +231,7 @@ public float3 sampleDiffuse(inout BSDFQueryRecord record, in MaterialRecord mate
 }
 
 public float3 PrincipledEval(in BSDFQueryRecord record, in MaterialRecord material) {
+    // Inputs: BSDF record, material. Output: combined principled BSDF value (RGB).
     float eta = convertIORLevel(material.ior);
 
     if (!record.wmSet) {
@@ -245,6 +262,7 @@ public float3 PrincipledEval(in BSDFQueryRecord record, in MaterialRecord materi
 }
 
 public float PrincipledPdf(in BSDFQueryRecord record, in MaterialRecord material) {
+    // Inputs: BSDF record, material. Output: PDF of principled mixture.
     float eta = convertIORLevel(material.ior);
 
     if (!record.wmSet) {
@@ -266,6 +284,8 @@ public float PrincipledPdf(in BSDFQueryRecord record, in MaterialRecord material
 }
 
 public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord material, inout Sampler sampler) {
+    // Inputs: BSDF record (inout), material, RNG sampler (inout).
+    // Output: weighted BSDF value for the sampled direction.
     float2 sample = sampler.UniformFloat2();
 
     float eta = convertIORLevel(material.ior);

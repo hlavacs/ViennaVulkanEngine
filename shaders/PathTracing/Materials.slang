@@ -36,12 +36,14 @@ public struct MaterialRecord {
 }
 
 Frame getShadingFrame(Frame geometryFrame, MaterialRecord material) {
+    // Inputs: geometry frame and material record. Output: shading frame from normal map.
     float3 shadingNormal = geometryFrame.toWorld(material.normal);
     Frame shadingFrame = Frame(shadingNormal);
     return shadingFrame;
 }
 
 public MaterialRecord getMaterialProperties(in Material mat, in Sampler2D textures[], in float2 texCoord, in Frame geometryFrame) {
+    // Inputs: material, texture array, UV, geometry frame. Output: resolved material record.
     MaterialRecord record;
 
     record.albedo = getAlbedo(mat, textures, texCoord);
@@ -57,6 +59,7 @@ public MaterialRecord getMaterialProperties(in Material mat, in Sampler2D textur
 }
 
 export public float3 getAlbedo(in Material mat, in Sampler2D textures[], in float2 texCoord){
+    // Inputs: material, textures, UV. Output: base color.
     if(mat.albedoTextureIndex == -1){
         return mat.albedo.xyz;
     } else {
@@ -66,6 +69,7 @@ export public float3 getAlbedo(in Material mat, in Sampler2D textures[], in floa
 }
 
 export public float3 getNormal(in Material mat, in Sampler2D textures[], in float2 texCoord) {
+    // Inputs: material, textures, UV. Output: tangent-space normal.
     if (mat.normalTextureIndex == -1) {
         return float3(0.0,0.0,1.0);
     } else {
@@ -77,6 +81,7 @@ export public float3 getNormal(in Material mat, in Sampler2D textures[], in floa
 }
 
 export public float getAlpha(in Material mat, in Sampler2D textures[], in float2 texCoord){
+    // Inputs: material, textures, UV. Output: alpha.
     if(mat.alphaTextureIndex == -1){
         return mat.alpha;
     } else {
@@ -85,6 +90,7 @@ export public float getAlpha(in Material mat, in Sampler2D textures[], in float2
 }
 
 export public float getRoughness(in Material mat, in Sampler2D textures[], in float2 texCoord){
+    // Inputs: material, textures, UV. Output: roughness.
     if(mat.roughnessTextureIndex == -1){
         return mat.roughness;
     } else {
@@ -93,6 +99,7 @@ export public float getRoughness(in Material mat, in Sampler2D textures[], in fl
 }
 
 export public float getMetallic(in Material mat, in Sampler2D textures[], in float2 texCoord){
+    // Inputs: material, textures, UV. Output: metalness.
     if(mat.metalnessTextureIndex == -1){
         return mat.metalness;
     } else {
@@ -101,6 +108,7 @@ export public float getMetallic(in Material mat, in Sampler2D textures[], in flo
 }
 
 export public float getIOR(in Material mat, in Sampler2D textures[], in float2 texCoord){
+    // Inputs: material, textures, UV. Output: IOR.
     if (mat.iorTextureIndex == -1) {
         return mat.ior;
     } else {

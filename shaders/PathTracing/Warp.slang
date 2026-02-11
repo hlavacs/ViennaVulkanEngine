@@ -1,6 +1,7 @@
 import Defines;
 
 public float2 squareToUniformDisk(in float2 sample) {
+    // Input: 2D uniform sample. Output: uniform point on unit disk.
 	float r = sqrt(sample.x);
 	float phi = 2.0f * M_PI * sample.y;
 
@@ -16,6 +17,7 @@ public float2 squareToUniformDisk(in float2 sample) {
 
 
 public float squareToUniformDiskPdf(in float2 p) {
+    // Input: disk point. Output: PDF value on unit disk.
     float lenght = sqrt(p.x * p.x + p.y * p.y);
 
     if (lenght > 1.0) {
@@ -27,6 +29,7 @@ public float squareToUniformDiskPdf(in float2 p) {
 
 public float3 squareToUniformSphere(in float2 sample)
 {
+    // Input: 2D uniform sample. Output: uniform direction on unit sphere.
     // z is uniform in [-1,1]
     float z = 1.0f - 2.0f * sample.y;
 
@@ -43,6 +46,7 @@ public float3 squareToUniformSphere(in float2 sample)
 
 // This potentially generates a cosine sample
 public float3 squareToUniformHemisphere(in float2 sample) {
+    // Input: 2D uniform sample. Output: uniform direction on hemisphere.
     // sample.y is our cos(theta). For a uniform distribution,
     // we sample the height (z) linearly between 0 and 1.
     float z = sample.y;
@@ -61,16 +65,19 @@ public float3 squareToUniformHemisphere(in float2 sample) {
 }
 
 public float squareToUniformHemispherePdf(in float3 v) {
+    // Input: hemisphere direction. Output: PDF value for uniform hemisphere.
     return 1 / (2.0f * M_PI);
 }
 
 public float3 squareToCosineHemisphere(in float2 sample) {
+    // Input: 2D uniform sample. Output: cosine-weighted hemisphere direction.
     float2 uniformDisk = squareToUniformDisk(sample);
     float z = sqrt(1 - uniformDisk.x * uniformDisk.x - uniformDisk.y * uniformDisk.y);
     return float3(uniformDisk.x, uniformDisk.y, z);
 }
 
 public float squareToCosineHemispherePdf(in float3 v) {
+    // Input: hemisphere direction. Output: PDF value for cosine hemisphere.
     if (v.z > 0.0) {
         return v.z / (M_PI);
     } else {
@@ -79,6 +86,7 @@ public float squareToCosineHemispherePdf(in float3 v) {
 }
 
 public float3 squareToGGX(in float3 wi, in float2 sample, float roughness) {
+    // Inputs: incident direction, 2D sample, roughness. Output: sampled micro-normal.
     float3 macronormal = float3(0.0, 0.0, 1.0);
 
     float3 wh = float3(roughness * wi.x, roughness * wi.y, wi.z);
@@ -107,13 +115,16 @@ public float3 squareToGGX(in float3 wi, in float2 sample, float roughness) {
 }
 
 public float G1(in float3 wi, float roughness) {
+    // Inputs: direction, roughness. Output: Smith G1 term.
     return (2.0 * wi.z) / (wi.z + sqrt(roughness * roughness + (1.0 - roughness * roughness) * wi.z * wi.z));
 }
 public float G(in float3 wi, in float3 wo, float roughness) {
+    // Inputs: incident/outgoing, roughness. Output: Smith G term.
     return G1(wi, roughness) * G1(wo, roughness);
 }
 
 public float D(in float3 micronormal, float alpha) {
+    // Inputs: micro-normal, alpha. Output: GGX normal distribution.
 
     // D(wm) return a constant, this constant gives the relative differential area of microfacets with the surface normal (needed for normalization)
     // r^2/(pi * (cos(theta)^2 * (r^2 - 1) + 1)^2)
@@ -128,6 +139,7 @@ public float D(in float3 micronormal, float alpha) {
 }
 
 public float squareToGGXPDF(in float3 wi, in float3 micronormal, float roughness) {
+    // Inputs: incident, micro-normal, roughness. Output: GGX PDF value.
     // This is D(wi,wm) handels part of the masking and shadowing specifically this term does:
     // std::abs(wi.dot(micronormal))
 

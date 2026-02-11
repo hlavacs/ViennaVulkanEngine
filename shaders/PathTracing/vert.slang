@@ -9,6 +9,7 @@ cbuffer UniformBufferObject
 
 struct VSInput
 {
+    // Inputs: per-vertex attributes and per-instance transforms.
     float4 position  : POSITION0;
     float4 normal    : NORMAL0;
     float4 texCoord : TEXCOORD0;
@@ -23,6 +24,7 @@ struct VSInput
 
 struct VSOutput
 {
+    // Outputs: clip-space position and interpolated attributes.
     float4 position     : SV_Position;
     float3 fragPosition : TEXCOORD0;
     float3 fragNormal : TEXCOORD1;
@@ -34,6 +36,7 @@ struct VSOutput
 [shader("vertex")]
 VSOutput main(VSInput input)
 {
+    // Input: VSInput. Output: VSOutput for rasterization.
     VSOutput o;
 
     float4 worldPos = mul(input.model, input.position);
