@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.8.0)
+cmake_minimum_required (VERSION 3.15.0)
 project (
   "ViennaVulkanEngine"
   VERSION 2.0.0

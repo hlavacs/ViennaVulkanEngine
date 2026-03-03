@@ -36,6 +36,7 @@ namespace vvh {
 		VmaAllocationCreateInfo allocInfo = {};
 		allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
 		allocInfo.flags = info.m_vmaFlags;
+		allocInfo.requiredFlags = info.m_properties;   // <- added
 		vmaCreateBuffer(info.m_vmaAllocator, &bufferInfo, &allocInfo, &info.m_buffer, &info.m_allocation, info.m_allocationInfo);
 	}
 

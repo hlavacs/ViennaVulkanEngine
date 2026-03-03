@@ -464,6 +464,7 @@ namespace vvh {
 		allocInfo.usage = VMA_MEMORY_USAGE_AUTO;
 		allocInfo.flags = VMA_ALLOCATION_CREATE_DEDICATED_MEMORY_BIT;
 		allocInfo.priority = 1.0f;
+		allocInfo.requiredFlags = info.m_properties;   // <- added
 		vmaCreateImage(info.m_vmaAllocator, &imageInfo, &allocInfo, &info.m_image, &info.m_imageAllocation, nullptr);
 	}
 
@@ -657,7 +658,7 @@ namespace vvh {
 		VmaAllocation stagingBufferAllocation;
 		VmaAllocationInfo allocInfo;
 
-		BufCreateBuffer({
+		/*BufCreateBuffer({
 			.m_vmaAllocator = info.m_vmaAllocator,
 			.m_size = info.m_size,
 			.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
@@ -666,7 +667,19 @@ namespace vvh {
 			.m_buffer = stagingBuffer,
 			.m_allocation = stagingBufferAllocation,
 			.m_allocationInfo = &allocInfo
-			});
+			});*/
+
+		BufCreateBuffer({
+    		.m_vmaAllocator = info.m_vmaAllocator,
+    		.m_size = info.m_size,
+    		.m_usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+    		.m_properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+    		.m_vmaFlags = VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT | VMA_ALLOCATION_CREATE_MAPPED_BIT,
+    		.m_buffer = stagingBuffer,
+    		.m_allocation = stagingBufferAllocation,
+    		.m_allocationInfo = &allocInfo
+		});
+
 
 		ImgTransitionImageLayout2({
 			.m_device = info.m_device,
