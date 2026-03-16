@@ -98,5 +98,6 @@
 		"source_location": "cpp",
 		"future": "cpp"
 	},
-	"C_Cpp.errorSquiggles": "enabled"
+	"C_Cpp.errorSquiggles": "enabled",
+    "C_Cpp.default.cppStandard": "c++20"
 }

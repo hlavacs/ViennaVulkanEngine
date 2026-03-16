@@ -1,0 +1,72 @@
+// For format details, see https://aka.ms/devcontainer.json.
+{
+	"name": "C++",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+    // "dockerComposeFile": "compose.yml",
+    // "service": "cpp-dev",
+    "runArgs": [
+        "--device=/dev/dri",
+        "--group-add=video",
+        "--ipc=host"
+    ],
+
+    "containerEnv": {
+        "DISPLAY": "${localEnv:DISPLAY}",
+        "XAUTHORITY": "/tmp/.docker.xauth",
+        // PulseAudio / PipeWire configuration
+        "PULSE_SERVER": "unix:/run/user/host/pulse/native",
+        "PULSE_COOKIE": "/tmp/pulseaudio.cookie",
+        "PIPEWIRE_RUNTIME_DIR": "/run/user/host"
+    },
+
+    "mounts": [
+        {
+            "type": "bind",
+            "source": "/tmp/.X11-unix",
+            "target": "/tmp/.X11-unix"
+        },
+        {
+            "type": "bind",
+            "source": "${localEnv:HOME}/.Xauthority",
+            "target": "/tmp/.docker.xauth"
+        },
+        // Mount XDG_RUNTIME_DIR for shared sockets (PulseAudio, PipeWire)
+        {
+            "type": "bind",
+            "source": "${localEnv:XDG_RUNTIME_DIR}",
+            "target": "/run/user/host"
+        },
+        // Mount PulseAudio cookie if it exists
+        {
+            "type": "bind",
+            "source": "${localEnv:HOME}/.config/pulse/cookie",
+            "target": "/tmp/pulseaudio.cookie"
+        }
+    ],
+
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	// "postCreateCommand": "gcc -v",
+
+	// Configure tool-specific properties.
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-vscode.cpptools-extension-pack",
+                "Gruntfuggly.todo-tree"
+            ]
+        }
+    },
+
+    // Connect as root so the container can read the mounted Xauthority (which is typically 0600 on host)
+    // More info: https://aka.ms/dev-containers-non-root
+    "remoteUser": "root"
+}
