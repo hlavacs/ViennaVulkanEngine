@@ -149,7 +149,7 @@ namespace vve {
                     wstate().m_isMinimized = false;
                 	break;
                 case SDL_EVENT_MOUSE_MOTION:
-                    m_engine.SendMsg( MsgMouseMove{message.GetDt(), event.motion.x, event.motion.y} );
+                    m_engine.SendMsg( MsgMouseMove{message.GetDt(), event.motion.x, event.motion.y, event.motion.xrel, event.motion.yrel} );
                     break;
                 case SDL_EVENT_MOUSE_BUTTON_DOWN:
                     m_engine.SendMsg( MsgMouseButtonDown{message.GetDt(), event.button.button} );
