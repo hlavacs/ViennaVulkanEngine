@@ -36,7 +36,7 @@ namespace vve {
 
     /** Raw Vulkan buffer wrapper with optional host mapping. */
     class GenericBuffer : public GPUDataStorage {
-    private:
+    protected:
         VkBuffer buffer{};
         VkDeviceMemory memory{};
         void* mappedMemory{};
@@ -44,6 +44,28 @@ namespace vve {
         VkMemoryPropertyFlags properties;
         VkMemoryAllocateFlags allocFlags;
         VkDeviceSize size;
+
+        /** Destroy buffer and memory, unmapping if needed. */
+        void destroyBuffer() {
+            if (mappedMemory) { vkUnmapMemory(device, memory); mappedMemory = nullptr; }
+            if (buffer) vkDestroyBuffer(device, buffer, nullptr);
+            if (memory) vkFreeMemory(device, memory, nullptr);
+        }
+
+        /** Create buffer and map it if host-visible. */
+        void initBuffer(VkDeviceSize size) {
+            this->size = size;
+            createBuffer(size, usage, properties, allocFlags, buffer, memory);
+            if (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
+            {
+                vkMapMemory(device, memory, 0, size, 0, &mappedMemory);
+            }
+            else
+            {
+                mappedMemory = nullptr;
+            }
+        }
+
     public:
         /**
          * @param size Buffer size in bytes (0 is promoted to 1).
@@ -58,34 +80,17 @@ namespace vve {
             if (size == 0) {
                 size = 1;
             }
-            initBuffer();
+            initBuffer(size);
         }
+
+        GenericBuffer(VkBufferUsageFlags usage, VkMemoryPropertyFlags properties, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice)
+            : GPUDataStorage(device, physicalDevice), usage(usage), size(0), properties(properties), allocFlags(allocFlags) {}
 
         /** Destroy and release buffer resources. */
         ~GenericBuffer() {
             destroyBuffer();
         }
 
-        /** Destroy buffer and memory, unmapping if needed. */
-        void destroyBuffer() {
-            if (mappedMemory) { vkUnmapMemory(device, memory); mappedMemory = nullptr; }
-            if (buffer) vkDestroyBuffer(device, buffer, nullptr);
-            if (memory) vkFreeMemory(device, memory, nullptr);
-        }
-
-        /** Create buffer and map it if host-visible. */
-        void initBuffer() {
-            createBuffer(size, usage, properties, allocFlags, buffer, memory);
-            if (properties & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
-            {
-                vkMapMemory(device, memory, 0, size, 0, &mappedMemory);
-            }
-            else
-            {
-                mappedMemory = nullptr;
-            }
-        }
-
         /** @return Device address of the buffer. */
         VkDeviceAddress getDeviceAddress() {
             VkBufferDeviceAddressInfo info{ VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO };
@@ -95,253 +100,12 @@ namespace vve {
 
         /** @return Vulkan buffer handle. */
         VkBuffer getBuffer() const { return buffer; }
-    };
-
-    /** Host-visible, typed buffer for CPU updates. */
-    template <typename T>
-    class HostBuffer : public GPUDataStorage {
-    private:
-        VkBuffer buffer{};
-        VkDeviceMemory memory{};
-        void* mappedMemory{};
-        size_t count;
-        VkBufferUsageFlags usage;
-        VkMemoryAllocateFlags allocFlags;
-
-    public:
-
-        /**
-         * @param usage Buffer usage flags.
-         * @param allocFlags Allocation flags.
-         * @param device Logical device.
-         * @param physicalDevice Physical device for memory queries.
-         */
-        HostBuffer(VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice) : GPUDataStorage(device, physicalDevice), usage(usage), allocFlags(allocFlags) {
-            count = 0;
-        }
-
-        /**
-         * @param count Number of elements (0 is promoted to 1).
-         * @param usage Buffer usage flags.
-         * @param allocFlags Allocation flags.
-         * @param device Logical device.
-         * @param physicalDevice Physical device for memory queries.
-         */
-        HostBuffer(size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice) : GPUDataStorage(device, physicalDevice), usage(usage), count(count), allocFlags(allocFlags) {
-            if (count == 0) {
-                count = 1;
-            }         
-            initBuffer(count);
-        }
-
-        /**
-         * @param data CPU pointer to initial data.
-         * @param count Number of elements (0 is promoted to 1).
-         * @param usage Buffer usage flags.
-         * @param allocFlags Allocation flags.
-         * @param device Logical device.
-         * @param physicalDevice Physical device for memory queries.
-         */
-        HostBuffer(const T* data, size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice) : GPUDataStorage(device, physicalDevice), usage(usage), allocFlags(allocFlags) {
-            if (count == 0) {
-                count = 1;
-            }
-            initBuffer(count);
-            copyToBuffer(data, count);
-        }
-
-
-        /** Destroy and release buffer resources. */
-        ~HostBuffer() {
-            destroyBuffer();
-        }
-
-        /** Destroy buffer and memory, unmapping if needed. */
-        void destroyBuffer() {
-            if (mappedMemory) { vkUnmapMemory(device, memory); mappedMemory = nullptr; }
-            if (buffer) vkDestroyBuffer(device, buffer, nullptr);
-            if (memory) vkFreeMemory(device, memory, nullptr);
-        }
-
-        /**
-         * @param count Number of elements.
-         */
-        void initBuffer(size_t count) {
-            this->count = count;
-            VkDeviceSize bufferSize = sizeof(T) * count;
-
-            createBuffer(bufferSize, usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, allocFlags, buffer, memory);
-
-            vkMapMemory(device, memory, 0, bufferSize, 0, &mappedMemory);
-        }
-
-        /**
-         * @param data CPU pointer to data.
-         * @param count Number of elements to copy.
-         */
-        void copyToBuffer(const T* data, size_t count) {
-            VkDeviceSize bufferSize = sizeof(T) * count;
-            memcpy(mappedMemory, data, bufferSize);
-        }
-
-        /**
-         * @param data CPU pointer to data.
-         * @param count Number of elements.
-         */
-        void updateBuffer(const T* data, size_t count) {
-            if (count == 0) {
-                count = 1;
-            }
-            VkDeviceSize bufferSize = sizeof(T) * count;
-            if (count > this->count) {
-                destroyBuffer();
-                initBuffer(count);
-            }
-            copyToBuffer(data, count);
-        }
-
-        /** @return Device address of the buffer. */
-        VkDeviceAddress getDeviceAddress() {
-            VkBufferDeviceAddressInfo info{ VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO };
-            info.buffer = buffer;
-            return vkGetBufferDeviceAddress(device, &info);
-        }
-
-        /** @return Vulkan buffer handle. */
-        VkBuffer getBuffer() const { return buffer; }
-
-        /** @return Element count currently allocated. */
-        size_t getCount() const { return count; }
-    };
-
-    /** Device-local, typed buffer populated via a staging copy. */
-    template <typename T>
-    class DeviceBuffer : public GPUDataStorage {
-    private:
-        VkBuffer buffer{};
-        VkDeviceMemory memory{};
-        size_t count;
-        VkBufferUsageFlags usage;
-        CommandManager* commandManager;
-        VkMemoryAllocateFlags allocFlags;
-
-        /**
-         * @param srcBuffer Source buffer.
-         * @param dstBuffer Destination buffer.
-         * @param size Size in bytes to copy.
-         */
-        void copyBuffer(VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size) {
-            VkCommandBuffer commandBuffer = commandManager->beginSingleTimeCommand();
-
-            VkBufferCopy copyRegion{};
-            copyRegion.srcOffset = 0; //!< Optional
-            copyRegion.dstOffset = 0; //!< Optional
-            copyRegion.size = size;
-            vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-            commandManager->endSingleTimeCommand(commandBuffer);
-        }
-
-    public:
-
-        /**
-         * @param usage Buffer usage flags.
-         * @param allocFlags Allocation flags.
-         * @param commandManager Command manager for staging copies.
-         * @param device Logical device.
-         * @param physicalDevice Physical device for memory queries.
-         */
-        DeviceBuffer(VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice) :
-            GPUDataStorage(device, physicalDevice), usage(usage), commandManager(commandManager), allocFlags(allocFlags) {
-        }
-
-        /**
-         * @param data CPU pointer to initial data.
-         * @param count Number of elements (0 is promoted to 1).
-         * @param usage Buffer usage flags.
-         * @param allocFlags Allocation flags.
-         * @param commandManager Command manager for staging copies.
-         * @param device Logical device.
-         * @param physicalDevice Physical device for memory queries.
-         */
-        DeviceBuffer(const T* data, size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice) :
-            GPUDataStorage(device, physicalDevice), usage(usage), commandManager(commandManager), allocFlags(allocFlags) {
-            if (count == 0) {
-                count = 1;
-            }
-            initBuffer(data, count);
-        }
-
-        /** Destroy and release buffer resources. */
-        ~DeviceBuffer() {
-            destroyBuffer();
-        }
-
-        /** Destroy buffer and memory. */
-        void destroyBuffer() {
-            if (buffer) vkDestroyBuffer(device, buffer, nullptr);
-            if (memory) vkFreeMemory(device, memory, nullptr);
-        }
-
-        /**
-         * @param data CPU pointer to data.
-         * @param count Number of elements.
-         */
-        void initBuffer(const T* data, size_t count) {
-            this->count = count;
-            VkDeviceSize bufferSize = sizeof(T) * count;
-
-            VkBuffer stagingBuffer;
-            VkDeviceMemory stagingBufferMemory;
-            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, 0, stagingBuffer, stagingBufferMemory);
-
-            void* stagingMappedMemory;
-            vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, &stagingMappedMemory);
-            memcpy(stagingMappedMemory, data, (size_t)bufferSize);
-            vkUnmapMemory(device, stagingBufferMemory);
-
-            createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, allocFlags, buffer, memory);
-
-            copyBuffer(stagingBuffer, buffer, bufferSize);
-
-            vkDestroyBuffer(device, stagingBuffer, nullptr);
-            vkFreeMemory(device, stagingBufferMemory, nullptr);
-        }
-
-        /**
-         * @param data CPU pointer to data.
-         * @param count Number of elements (0 is promoted to 1).
-         */
-        void updateBuffer(const T* data, size_t count) {
-            if (count == 0) {
-                count = 1;
-            }
-            destroyBuffer();
-            initBuffer(data, count);
-        }
-
-        /** @return Vulkan buffer handle. */
-        VkBuffer getBuffer() const { return buffer; }
-
-        /** @return Element count currently allocated. */
-        size_t getCount() const { return count; }
-
-        /** @return Device address of the buffer. */
-        VkDeviceAddress getDeviceAddress() {
-            VkBufferDeviceAddressInfo info{ VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO };
-            info.buffer = buffer;
-            return vkGetBufferDeviceAddress(device, &info);
-        }
-
+        VkDeviceSize getSize() const { return size; }
     };
 
     /** Device-local, untyped buffer with explicit staging transfer. */
-    class RawDeviceBuffer : public GPUDataStorage {
-    private:
-        VkBuffer buffer{};
-        VkDeviceMemory memory{};
-        VkDeviceSize bufferSize{};
-        VkBufferUsageFlags usage;
-        VkMemoryAllocateFlags allocFlags;
+    class RawDeviceBuffer : public GenericBuffer {
+    protected:
         CommandManager* commandManager;
 
         /**
@@ -356,74 +120,13 @@ namespace vve {
             commandManager->endSingleTimeCommand(cmd);
         }
 
-    public:
-        /**
-         * @param size Buffer size in bytes (0 is promoted to 1).
-         * @param data CPU pointer to initial data.
-         * @param usage Buffer usage flags.
-         * @param allocFlags Allocation flags.
-         * @param commandManager Command manager for staging copies.
-         * @param device Logical device.
-         * @param physicalDevice Physical device for memory queries.
-         */
-        RawDeviceBuffer(VkDeviceSize size, const void* data, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice)
-            : GPUDataStorage(device, physicalDevice), usage(usage), allocFlags(allocFlags), commandManager(commandManager), bufferSize(size)
-        {   
-            if (size == 0) {
-                size = 1;
-            }
-            initBuffer(size);
-            transferData(data, size);
-        }
-
-        /**
-         * @param size Buffer size in bytes (0 is promoted to 1).
-         * @param usage Buffer usage flags.
-         * @param allocFlags Allocation flags.
-         * @param commandManager Command manager for staging copies.
-         * @param device Logical device.
-         * @param physicalDevice Physical device for memory queries.
-         */
-        RawDeviceBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice)
-            : GPUDataStorage(device, physicalDevice), usage(usage), allocFlags(allocFlags), commandManager(commandManager), bufferSize(size)
-        {
-            if (size == 0) {
-                size = 1;
-            }
-            initBuffer(size);
-        }
-
-        /** Destroy and release buffer resources. */
-        ~RawDeviceBuffer() {
-            destroyBuffer();
-        }
-
-        /** Destroy buffer and memory. */
-        void destroyBuffer() {
-            if (buffer) vkDestroyBuffer(device, buffer, nullptr);
-            if (memory) vkFreeMemory(device, memory, nullptr);
-        }
-
-        /**
-         * @param size Buffer size in bytes.
-         */
-        void initBuffer(VkDeviceSize size) {
-            /// --- Create device-local buffer ---
-            createBuffer(size,
-                VK_BUFFER_USAGE_TRANSFER_DST_BIT | usage,
-                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
-                allocFlags,
-                buffer,
-                memory);
-        }
-
         /**
          * @param data CPU pointer to data.
          * @param size Size in bytes.
          */
         void transferData(const void* data, VkDeviceSize size)
         {
-            bufferSize = size;
+            this->size = size;
 
             /// --- Create staging buffer ---
             VkBuffer stagingBuffer;
@@ -448,17 +151,233 @@ namespace vve {
             vkFreeMemory(device, stagingMemory, nullptr);
         }
 
-        /** @return Vulkan buffer handle. */
-        VkBuffer getBuffer() const { return buffer; }
-        /** @return Buffer size in bytes. */
-        VkDeviceSize getSize() const { return bufferSize; }
+    public:
+        /**
+         * @param size Buffer size in bytes (0 is promoted to 1).
+         * @param data CPU pointer to initial data.
+         * @param usage Buffer usage flags.
+         * @param allocFlags Allocation flags.
+         * @param commandManager Command manager for staging copies.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
+        RawDeviceBuffer(VkDeviceSize size, const void* data, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice)
+            : GenericBuffer(size, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, allocFlags, device, physicalDevice), commandManager(commandManager)
+        {
+            transferData(data, size);
+        }
 
-        /** @return Device address of the buffer. */
-        VkDeviceAddress getDeviceAddress() {
-            VkBufferDeviceAddressInfo info{ VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO };
-            info.buffer = buffer;
-            return vkGetBufferDeviceAddress(device, &info);
+        /**
+         * @param size Buffer size in bytes (0 is promoted to 1).
+         * @param usage Buffer usage flags.
+         * @param allocFlags Allocation flags.
+         * @param commandManager Command manager for staging copies.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
+        RawDeviceBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice)
+            : GenericBuffer(size, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, allocFlags, device, physicalDevice), commandManager(commandManager)
+        {}
+
+        RawDeviceBuffer(VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice)
+            : GenericBuffer(usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, allocFlags, device, physicalDevice), commandManager(commandManager)
+        {
+        }
+
+        /** Destroy and release buffer resources. */
+        ~RawDeviceBuffer() {
+            destroyBuffer();
+        }
+
+        void updateBuffer(const void* data, VkDeviceSize size) {
+            if (size == 0) {
+                size = 1;
+            }
+            destroyBuffer();
+            initBuffer(size);
+            transferData(data, size);
         }
     };
+
+    /** Device-local, typed buffer populated via a staging copy. */
+    template <typename T>
+    class DeviceBuffer : public RawDeviceBuffer {
+    private:
+        size_t count;
+    public:
+
+        /**
+         * @param usage Buffer usage flags.
+         * @param allocFlags Allocation flags.
+         * @param commandManager Command manager for staging copies.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
+
+        DeviceBuffer( VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice) :
+            RawDeviceBuffer(usage, allocFlags, commandManager, device, physicalDevice), count(0) {
+        }
+
+        DeviceBuffer(size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice) :
+            RawDeviceBuffer(sizeof(T)* count, usage, allocFlags, commandManager, device, physicalDevice), count(count){
+        }
+
+        /**
+         * @param data CPU pointer to initial data.
+         * @param count Number of elements (0 is promoted to 1).
+         * @param usage Buffer usage flags.
+         * @param allocFlags Allocation flags.
+         * @param commandManager Command manager for staging copies.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
+        DeviceBuffer(const T* data, size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice) :
+            RawDeviceBuffer(sizeof(T) * count, data, usage, allocFlags, commandManager, device, physicalDevice), count(count) {}
+
+        /** Destroy and release buffer resources. */
+        ~DeviceBuffer() {
+            destroyBuffer();
+        }
+
+        /**
+         * @param data CPU pointer to data.
+         * @param count Number of elements (0 is promoted to 1).
+         */
+        void updateBuffer(const T* data, size_t count) {
+            this->count = count;
+            RawDeviceBuffer::updateBuffer(data, sizeof(T) * count);
+        }
+
+        /** @return Element count currently allocated. */
+        size_t getCount() const { return count; }
+    };
+
+
+    /** Host-visible, typed buffer for CPU updates. */
+    class RawHostBuffer : public GenericBuffer {
+    private:   
+        /**
+         * @param data CPU pointer to data.
+         * @param count Number of elements to copy.
+         */
+        void copyToBuffer(const void* data, VkDeviceSize size) {
+            memcpy(mappedMemory, data, size);
+        }
+
+    public:
+
+        /**
+         * @param usage Buffer usage flags.
+         * @param allocFlags Allocation flags.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
+
+        /**
+         * @param count Number of elements (0 is promoted to 1).
+         * @param usage Buffer usage flags.
+         * @param allocFlags Allocation flags.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
+        RawHostBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice) 
+            : GenericBuffer(size, usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, allocFlags, device, physicalDevice){}
+
+        RawHostBuffer(VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice)
+            : GenericBuffer(usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, allocFlags, device, physicalDevice) {
+        }
+
+        /**
+         * @param data CPU pointer to initial data.
+         * @param count Number of elements (0 is promoted to 1).
+         * @param usage Buffer usage flags.
+         * @param allocFlags Allocation flags.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
+        RawHostBuffer(const void* data, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice) 
+            : GenericBuffer(size, usage, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT, allocFlags, device, physicalDevice) {
+            copyToBuffer(data, size);
+        }
+
+
+        /** Destroy and release buffer resources. */
+        ~RawHostBuffer() {
+            destroyBuffer();
+        }
+
+        /**
+         * @param data CPU pointer to data.
+         * @param count Number of elements.
+         */
+        void updateBuffer(const void* data, VkDeviceSize size) {
+            if (size == 0) {
+                size = 1;
+            }
+            if (size > this->size) {
+                destroyBuffer();
+                initBuffer(size);
+            }
+            copyToBuffer(data, size);
+        }
+    };
+
+
+    /** Host-visible, typed buffer for CPU updates. */
+    template <typename T>
+    class HostBuffer : public RawHostBuffer {
+    private:
+        size_t count;
+
+    public:
+        /**
+         * @param count Number of elements (0 is promoted to 1).
+         * @param usage Buffer usage flags.
+         * @param allocFlags Allocation flags.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
+    
+        HostBuffer(VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice)
+            : RawHostBuffer(usage, allocFlags, device, physicalDevice), count(0) {
+        }
+
+        HostBuffer(size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice)
+            : RawHostBuffer(sizeof(T)* count, usage, allocFlags, device, physicalDevice), count(count) {
+        }
+
+        /**
+         * @param data CPU pointer to initial data.
+         * @param count Number of elements (0 is promoted to 1).
+         * @param usage Buffer usage flags.
+         * @param allocFlags Allocation flags.
+         * @param device Logical device.
+         * @param physicalDevice Physical device for memory queries.
+         */
+        HostBuffer(const T* data, size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice)
+            : RawHostBuffer(data, sizeof(T)* count, usage, allocFlags, device, physicalDevice), count(count) {
+        }
+
+
+        /** Destroy and release buffer resources. */
+        ~HostBuffer() {
+            destroyBuffer();
+        }
+
+        /**
+         * @param data CPU pointer to data.
+         * @param count Number of elements.
+         */
+        void updateBuffer(const T* data, size_t count) {
+            this->count = count;
+            RawHostBuffer::updateBuffer(data, sizeof(T) * count);
+        }
+
+
+        /** @return Element count currently allocated. */
+        size_t getCount() const { return count; }
+    };
+
+
 
 }

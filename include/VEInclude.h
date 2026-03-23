@@ -181,6 +181,7 @@ namespace vve {
 #include "PathTracing/descriptor_sets.h"
 #include "PathTracing/descriptor_sets_RT.h"
 #include "PathTracing/descriptor_sets_targets.h"
+#include "PathTracing/descriptor_set_manager.h"
 #include "PathTracing/light_manager.h"
 #include "PathTracing/material_manager.h"
 #include "PathTracing/object_manager.h"

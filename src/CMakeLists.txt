@@ -45,6 +45,7 @@ set(SOURCE
   PathTracing/pipline_raytraced.cpp
   PathTracing/render_target.cpp
   PathTracing/swapchain.cpp
+  PathTracing/descriptor_set_manager.cpp
   )
 
 set(HEADERS
@@ -85,6 +86,7 @@ set(HEADERS
   ${INCLUDE}/PathTracing/swapchain.h
   ${INCLUDE}/PathTracing/texture_manager.h
   ${INCLUDE}/PathTracing/vrt_renderer.h
+  ${INCLUDE}/PathTracing/descriptor_set_manager.h
 )
 
 add_library (${TARGET} STATIC ${SOURCE} ${HEADERS})
