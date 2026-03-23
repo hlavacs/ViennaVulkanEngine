@@ -21,6 +21,7 @@ set(SOURCE
   VERendererShadow11.cpp
   VERendererImgui.cpp
   VERendererVulkan.cpp
+  VERendererRaytracing.cpp
   VESceneManager.cpp
   VEAssetManager.cpp
   #VESoundManagerSDL2.cpp
@@ -44,6 +45,7 @@ set(HEADERS
   ${INCLUDE}/VERendererShadow11.h
   ${INCLUDE}/VERendererImgui.h
   ${INCLUDE}/VERendererVulkan.h
+  ${INCLUDE}/VERendererRaytracing.h
   ${INCLUDE}/VESceneManager.h
   ${INCLUDE}/VEAssetManager.h
   #${INCLUDE}/VESoundManagerSDL2.h

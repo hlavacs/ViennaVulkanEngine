@@ -84,6 +84,7 @@ namespace vve {
 	class RendererForward11;
 	class RendererShadow11;
 	class RendererVulkan;
+	class RendererRaytracing;
 	class RendererDeferred;
 	template<typename Derived>
 	class RendererDeferredCommon;	// Base class for 1.1 and 1.3 RenDef
@@ -157,6 +158,7 @@ namespace vve {
 #include "VERendererForward11.h"
 #include "VERendererShadow11.h"
 #include "VERendererVulkan.h"
+#include "VERendererRaytracing.h"
 #include "VERendererDeferred.h"
 #include "VERendererDeferredCommon.h"
 #include "VERendererDeferred11.h"
