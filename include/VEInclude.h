@@ -21,6 +21,7 @@
 #include <random>
 #include <cstdint>
 
+
 #include <assimp/cimport.h>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
@@ -177,11 +178,11 @@ namespace vve {
 #include "PathTracing/buffer.h"
 #include "PathTracing/image.h"
 #include "PathTracing/helper_structs.h"
+#include "PathTracing/descriptor_set_manager.h"
 #include "PathTracing/render_target.h"
 #include "PathTracing/descriptor_sets.h"
 #include "PathTracing/descriptor_sets_RT.h"
 #include "PathTracing/descriptor_sets_targets.h"
-#include "PathTracing/descriptor_set_manager.h"
 #include "PathTracing/light_manager.h"
 #include "PathTracing/material_manager.h"
 #include "PathTracing/object_manager.h"

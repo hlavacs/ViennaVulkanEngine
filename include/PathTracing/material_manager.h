@@ -55,5 +55,6 @@ namespace vve {
 
 		/** @return Pointer to the material buffer. */
 		DeviceBuffer<Material>* getMaterialBuffer();
+		SingleDescriptorPlacment getMaterialDescriptorInput(size_t binding);
 	};
 }

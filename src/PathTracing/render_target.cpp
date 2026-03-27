@@ -50,4 +50,17 @@ namespace vve {
 		return clearColor;
 	}
 
+
+	PerFrameDescriptorPlacment RenderTarget::getDescriptorInput(size_t binding) {
+
+		std::vector<DescriptorInput*> descriptors;
+
+		for (Image* image : images) {
+			DescriptorImageInput* descriptorInput = new DescriptorImageInput(image, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+			descriptors.push_back(descriptorInput);
+		}
+
+		return PerFrameDescriptorPlacment(descriptors, binding);
+	}
+
 }

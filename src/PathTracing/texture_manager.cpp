@@ -104,4 +104,9 @@ namespace vve {
     std::vector<Texture*> TextureManager::getTextures() {
         return textures;
     }
+
+    SingleDescriptorPlacment TextureManager::getTextureDescriptorInput(size_t binding) {
+        DescriptorTextureInput* descriptorInput = new DescriptorTextureInput(&textures, textureSampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  1024);
+        return SingleDescriptorPlacment(descriptorInput, binding);
+    }
 }

@@ -63,6 +63,7 @@ namespace vve {
 
         /** @return Texture list. */
         std::vector<Texture*> getTextures();
+        SingleDescriptorPlacment getTextureDescriptorInput(size_t binding);
     };
 
 }

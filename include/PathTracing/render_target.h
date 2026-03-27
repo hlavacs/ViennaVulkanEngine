@@ -67,6 +67,8 @@ namespace vve {
 		
 		/** @return Clear color value for the target. */
 		VkClearValue getClearColor();
+
+		PerFrameDescriptorPlacment getDescriptorInput(size_t binding);
 	};
 
 }
