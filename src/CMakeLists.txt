@@ -1,22 +1,18 @@
-file(GLOB_RECURSE VVE_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cxx"
-    "${CMAKE_CURRENT_SOURCE_DIR}/*.cc"
-)
-
-if(NOT VVE_SOURCES)
-    set(VVE_STUB_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/vve_stub.cpp")
-    file(WRITE "${VVE_STUB_SOURCE}" "extern \"C\" void vve_stub() {}\n")
-    list(APPEND VVE_SOURCES "${VVE_STUB_SOURCE}")
-endif()
-
-add_library(ViennaVulkanEngine SHARED ${VVE_SOURCES})
+add_library(ViennaVulkanEngine SHARED)
 add_library(ViennaVulkanEngine::ViennaVulkanEngine ALIAS ViennaVulkanEngine)
 
-target_include_directories(ViennaVulkanEngine
+target_compile_features(ViennaVulkanEngine PUBLIC cxx_std_20)
+target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_ENGINE_BUILD)
+
+target_sources(ViennaVulkanEngine
+    PRIVATE
+        VEEngine.cpp
     PUBLIC
-        "${CMAKE_SOURCE_DIR}/include"
+        FILE_SET CXX_MODULES FILES
+            VEEngine.ixx
 )
+
+target_include_directories(ViennaVulkanEngine PUBLIC "${CMAKE_SOURCE_DIR}/include")
 
 target_link_libraries(ViennaVulkanEngine
     PUBLIC

@@ -1,4 +1,4 @@
-#pragma once
+module;
 
 #if defined(_WIN32)
 #if defined(VVE_ENGINE_BUILD)
@@ -10,7 +10,9 @@
 #define VVE_API
 #endif
 
-class VVE_API VEEngine {
+export module VEEngine;
+
+export class VVE_API VEEngine {
 public:
     VEEngine();
     ~VEEngine();

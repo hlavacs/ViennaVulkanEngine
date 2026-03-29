@@ -1,41 +1,10 @@
-cmake_minimum_required(VERSION 3.21)
+cmake_minimum_required(VERSION 3.28)
 
 project(ViennaVulkanEngine VERSION 3.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Vulkan REQUIRED)
-
-file(GLOB_RECURSE VVE_SOURCES CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cxx"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cc"
-)
-
-if(NOT VVE_SOURCES)
-    set(VVE_STUB_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/vve_stub.cpp")
-    file(WRITE "${VVE_STUB_SOURCE}" "extern \"C\" void vve_stub() {}\n")
-    list(APPEND VVE_SOURCES "${VVE_STUB_SOURCE}")
-endif()
-
-add_library(ViennaVulkanEngine SHARED ${VVE_SOURCES})
-add_library(ViennaVulkanEngine::ViennaVulkanEngine ALIAS ViennaVulkanEngine)
-
-target_include_directories(ViennaVulkanEngine
-    PUBLIC
-        "${CMAKE_CURRENT_SOURCE_DIR}/include"
-)
-
-target_link_libraries(ViennaVulkanEngine
-    PUBLIC
-        Vulkan::Vulkan
-)
-
-if(MSVC)
-    target_compile_options(ViennaVulkanEngine PRIVATE /std:c++latest)
-else()
-    target_compile_options(ViennaVulkanEngine PRIVATE -std=c++2c)
-endif()
 
 function(vve_set_output_dirs target_name)
     get_target_property(target_type "${target_name}" TYPE)
@@ -60,4 +29,14 @@ function(vve_set_output_dirs target_name)
     endif()
 endfunction()
 
-vve_set_output_dirs(ViennaVulkanEngine)
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/CMakeLists.txt")
+    add_subdirectory(src)
+endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/CMakeLists.txt")
+    add_subdirectory(examples)
+endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
+    add_subdirectory(tests)
+endif()

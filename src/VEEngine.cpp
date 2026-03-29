@@ -1,10 +1,10 @@
-#include "VEEngine.hpp"
+module VEEngine;
 
-VEEngine::VEEngine() {
-	// Constructor implementation
-}
+VEEngine::VEEngine() = default;
 
-VEEngine::~VEEngine() {
-	// Destructor implementation
+VEEngine::~VEEngine() = default;
+
+int VEEngine::getVersionMajor() const noexcept {
+    return 3;
 }
 
