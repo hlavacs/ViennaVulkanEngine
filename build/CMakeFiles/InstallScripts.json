@@ -1,0 +1,7 @@
+{
+	"InstallScripts" : 
+	[
+		"C:/data/GitHub/ViennaVulkanEngine/build/cmake_install.cmake"
+	],
+	"Parallel" : false
+}
