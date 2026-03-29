@@ -12,8 +12,6 @@ target_sources(ViennaVulkanEngine
             VEEngine.ixx
 )
 
-target_include_directories(ViennaVulkanEngine PUBLIC "${CMAKE_SOURCE_DIR}/include")
-
 target_link_libraries(ViennaVulkanEngine
     PUBLIC
         Vulkan::Vulkan

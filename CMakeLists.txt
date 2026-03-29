@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.28)
 
+set(CMAKE_VS_GLOBALS "VcpkgEnabled=false")
+
 project(ViennaVulkanEngine VERSION 3.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -12,20 +14,45 @@ function(vve_set_output_dirs target_name)
     set_target_properties("${target_name}" PROPERTIES
         ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/lib"
     )
+    foreach(config ${CMAKE_CONFIGURATION_TYPES})
+        string(TOUPPER "${config}" config_upper)
+        set_target_properties("${target_name}" PROPERTIES
+            "ARCHIVE_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/lib"
+        )
+    endforeach()
 
     if(target_type STREQUAL "EXECUTABLE")
         set_target_properties("${target_name}" PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/exe"
         )
+        foreach(config ${CMAKE_CONFIGURATION_TYPES})
+            string(TOUPPER "${config}" config_upper)
+            set_target_properties("${target_name}" PROPERTIES
+                "RUNTIME_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/exe"
+            )
+        endforeach()
     elseif(target_type STREQUAL "SHARED_LIBRARY")
         set_target_properties("${target_name}" PROPERTIES
             RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/dll"
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/dll"
         )
+        foreach(config ${CMAKE_CONFIGURATION_TYPES})
+            string(TOUPPER "${config}" config_upper)
+            set_target_properties("${target_name}" PROPERTIES
+                "RUNTIME_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/dll"
+                "LIBRARY_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/dll"
+            )
+        endforeach()
     elseif(target_type STREQUAL "MODULE_LIBRARY")
         set_target_properties("${target_name}" PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/dll"
         )
+        foreach(config ${CMAKE_CONFIGURATION_TYPES})
+            string(TOUPPER "${config}" config_upper)
+            set_target_properties("${target_name}" PROPERTIES
+                "LIBRARY_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/dll"
+            )
+        endforeach()
     endif()
 endfunction()
 
