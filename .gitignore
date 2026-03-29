@@ -1,0 +1,54 @@
+# Build directories
+/build/
+/bin/
+/out/
+
+# CMake
+/CMakeFiles/
+/CMakeCache.txt
+/cmake_install.cmake
+/compile_commands.json
+/CTestTestfile.cmake
+/Testing/
+/install_manifest.txt
+
+# Visual Studio
+/.vs/
+*.sln.docstates
+*.VC.db
+*.VC.opendb
+*.opensdf
+*.sdf
+*.suo
+*.user
+*.userosscache
+*.vcxproj.user
+
+# IDEs and editors
+/.idea/
+.vscode/
+*~
+*.swp
+*.tmp
+
+# Logs and runtime outputs
+*.log
+*.tlog
+*.obj
+*.o
+*.pdb
+*.ipch
+*.ilk
+*.idb
+*.pch
+*.dll
+*.exe
+*.lib
+*.a
+*.so
+*.dylib
+
+# OS metadata
+.DS_Store
+Thumbs.db
+desktop.ini
