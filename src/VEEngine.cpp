@@ -1,3 +1,7 @@
+module;
+
+#include <cassert>
+
 module VEEngine;
 import VEEngine.V3;
 import std;
@@ -16,21 +20,21 @@ std::unique_ptr<VEEngine> makeEngine(VEEngineVersion version) {
 } // namespace
 
 VEEngine::VEEngine(VEEngineVersion version)
-    : construction_mode_(ConstructionMode::interface),
-      impl_(makeEngine(version)) {
+    : impl_(makeEngine(version)) {
 }
 
 VEEngine::VEEngine() noexcept
-    : construction_mode_(ConstructionMode::implementation),
-      impl_(nullptr) {
+    : impl_(nullptr) {
 }
 
 VEEngine::~VEEngine() = default;
 
 int VEEngine::getVersionMajor() const noexcept {
-    if (impl_ != nullptr) {
-        return impl_->getVersionMajor();
-    }
+    assert(impl_ != nullptr);
+    return impl_->getVersionMajor();
+}
 
-    return 0;
+std::string VEEngine::loadFile(const std::filesystem::path& file_path) const {
+    assert(impl_ != nullptr);
+    return impl_->loadFile(file_path);
 }

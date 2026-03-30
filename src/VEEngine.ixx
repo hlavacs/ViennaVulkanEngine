@@ -28,16 +28,11 @@ public:
     VEEngine& operator=(VEEngine&&) = delete;
 
     [[nodiscard]] virtual int getVersionMajor() const noexcept;
+    [[nodiscard]] virtual std::string loadFile(const std::filesystem::path& file_path) const;
 
 protected:
     VEEngine() noexcept;
 
 private:
-    enum class ConstructionMode {
-        interface,
-        implementation
-    };
-
-    ConstructionMode construction_mode_;
     std::unique_ptr<VEEngine> impl_;
 };

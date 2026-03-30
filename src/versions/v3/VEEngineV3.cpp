@@ -11,6 +11,18 @@ public:
     [[nodiscard]] int getVersionMajor() const noexcept override {
         return 3;
     }
+
+    [[nodiscard]] std::string loadFile(const std::filesystem::path& file_path) const override {
+        std::ifstream file(file_path, std::ios::binary);
+        if (!file) {
+            return {};
+        }
+
+        return {
+            std::istreambuf_iterator<char>(file),
+            std::istreambuf_iterator<char>()
+        };
+    }
 };
 
 } // namespace
