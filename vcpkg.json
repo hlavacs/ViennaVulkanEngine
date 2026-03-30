@@ -2,7 +2,7 @@
   "name": "vienna-vulkan-engine",
   "version-string": "3.0.0",
   "dependencies": [
-    "glm"
+    "assimp"
   ],
   "builtin-baseline": "b5d1a94fb7f88fd835e360fd23a45a09ceedbf48"
 }

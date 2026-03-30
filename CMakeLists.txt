@@ -1,22 +1,21 @@
 cmake_minimum_required(VERSION 3.28)
 
-set(CMAKE_VS_GLOBALS
-    "VcpkgEnabled=true"
-    "VcpkgEnableManifest=true"
-)
-if(DEFINED ENV{VCPKG_ROOT})
-    list(APPEND CMAKE_VS_GLOBALS "VcpkgRoot=$ENV{VCPKG_ROOT}")
-endif()
-
-if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-    if(DEFINED ENV{VCPKG_ROOT} AND EXISTS "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
-        set(CMAKE_TOOLCHAIN_FILE
-            "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
-            CACHE STRING "Vcpkg toolchain file")
+if(NOT DEFINED VVE_VCPKG_TRIPLET OR VVE_VCPKG_TRIPLET STREQUAL "")
+    if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
+        set(VVE_VCPKG_TRIPLET_DEFAULT "x64-windows")
+    elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
+        set(VVE_VCPKG_TRIPLET_DEFAULT "x64-linux")
+    elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
+        set(VVE_VCPKG_TRIPLET_DEFAULT "x64-osx")
+    else()
+        message(FATAL_ERROR "Unsupported host platform '${CMAKE_HOST_SYSTEM_NAME}' for default vcpkg triplet selection.")
     endif()
+
+    set(VVE_VCPKG_TRIPLET
+        "${VVE_VCPKG_TRIPLET_DEFAULT}"
+        CACHE STRING "Vcpkg triplet used for local manifest installs")
 endif()
 
-set(VVE_VCPKG_TRIPLET "x64-windows" CACHE STRING "Vcpkg triplet used for local manifest installs")
 if(EXISTS "${CMAKE_SOURCE_DIR}/vcpkg_installed/${VVE_VCPKG_TRIPLET}")
     list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/vcpkg_installed/${VVE_VCPKG_TRIPLET}")
 endif()
@@ -55,17 +54,27 @@ function(vve_set_output_dirs target_name)
             )
         endforeach()
     elseif(target_type STREQUAL "SHARED_LIBRARY")
-        set_target_properties("${target_name}" PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/exe"
-            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/dll"
-        )
-        foreach(config ${CMAKE_CONFIGURATION_TYPES})
-            string(TOUPPER "${config}" config_upper)
+        if(WIN32)
             set_target_properties("${target_name}" PROPERTIES
-                "RUNTIME_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/exe"
-                "LIBRARY_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/dll"
+                RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/exe"
             )
-        endforeach()
+            foreach(config ${CMAKE_CONFIGURATION_TYPES})
+                string(TOUPPER "${config}" config_upper)
+                set_target_properties("${target_name}" PROPERTIES
+                    "RUNTIME_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/exe"
+                )
+            endforeach()
+        else()
+            set_target_properties("${target_name}" PROPERTIES
+                LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/lib"
+            )
+            foreach(config ${CMAKE_CONFIGURATION_TYPES})
+                string(TOUPPER "${config}" config_upper)
+                set_target_properties("${target_name}" PROPERTIES
+                    "LIBRARY_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/lib"
+                )
+            endforeach()
+        endif()
     elseif(target_type STREQUAL "MODULE_LIBRARY")
         set_target_properties("${target_name}" PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/dll"

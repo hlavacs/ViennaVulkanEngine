@@ -8,7 +8,7 @@ target_compile_options(ViennaVulkanEngine PUBLIC
     "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-std=c++2c>"
 )
 
-find_package(glm CONFIG REQUIRED)
+find_package(assimp CONFIG REQUIRED)
 
 target_sources(ViennaVulkanEngine
     PRIVATE
@@ -23,7 +23,7 @@ target_sources(ViennaVulkanEngine
 
 target_link_libraries(ViennaVulkanEngine
     PUBLIC
-        glm::glm
+        assimp::assimp
         Vulkan::Vulkan
 )
 

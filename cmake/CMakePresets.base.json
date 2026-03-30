@@ -1,0 +1,64 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "debug-base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {}
+    },
+    {
+      "name": "debug-windows",
+      "displayName": "Debug (Windows)",
+      "inherits": "debug-base",
+      "generator": "Visual Studio 17 2022",
+      "cacheVariables": {
+        "VVE_VCPKG_TRIPLET": "x64-windows"
+      }
+    },
+    {
+      "name": "debug-linux",
+      "displayName": "Debug (Linux)",
+      "inherits": "debug-base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VVE_VCPKG_TRIPLET": "x64-linux"
+      }
+    },
+    {
+      "name": "debug-macos",
+      "displayName": "Debug (macOS)",
+      "inherits": "debug-base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "VVE_VCPKG_TRIPLET": "x64-osx"
+      }
+    }
+  ],
+  "buildPresets": [
+    {
+      "name": "build-debug-windows",
+      "displayName": "Build Debug (Windows)",
+      "configurePreset": "debug-windows",
+      "configuration": "Debug",
+      "targets": [
+        "ALL_BUILD"
+      ],
+      "jobs": 16
+    },
+    {
+      "name": "build-debug-linux",
+      "displayName": "Build Debug (Linux)",
+      "configurePreset": "debug-linux",
+      "jobs": 16
+    },
+    {
+      "name": "build-debug-macos",
+      "displayName": "Build Debug (macOS)",
+      "configurePreset": "debug-macos",
+      "jobs": 16
+    }
+  ]
+}

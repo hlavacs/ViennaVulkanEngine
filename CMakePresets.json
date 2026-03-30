@@ -5,27 +5,7 @@
     "minor": 28,
     "patch": 0
   },
-  "configurePresets": [
-    {
-      "name": "debug",
-      "displayName": "Debug",
-      "generator": "Visual Studio 17 2022",
-      "binaryDir": "${sourceDir}/build",
-      "cacheVariables": {
-        "VVE_VCPKG_TRIPLET": "x64-windows"
-      }
-    }
-  ],
-  "buildPresets": [
-    {
-      "name": "debug",
-      "displayName": "Build Debug",
-      "configurePreset": "debug",
-      "configuration": "Debug",
-      "targets": [
-        "ALL_BUILD"
-      ],
-      "jobs": 16
-    }
+  "include": [
+    "cmake/CMakePresets.base.json"
   ]
 }
