@@ -13,24 +13,21 @@ module;
 export module VEEngine;
 import std;
 
-export class VVE_API VEEngine {
-public:
-    virtual ~VEEngine();
-
-    [[nodiscard]] virtual int getVersionMajor() const noexcept = 0;
+export enum class VEEngineVersion {
+    v3
 };
 
-export class VVE_API VEEngineDelegator final : public VEEngine {
+export class VVE_API VEEngine {
 public:
-    VEEngineDelegator();
-    ~VEEngineDelegator() override;
+    explicit VEEngine(VEEngineVersion version = VEEngineVersion::v3);
+    ~VEEngine();
 
-    VEEngineDelegator(const VEEngineDelegator&) = delete;
-    VEEngineDelegator(VEEngineDelegator&&) = delete;
-    VEEngineDelegator& operator=(const VEEngineDelegator&) = delete;
-    VEEngineDelegator& operator=(VEEngineDelegator&&) = delete;
+    VEEngine(const VEEngine&) = delete;
+    VEEngine(VEEngine&&) = delete;
+    VEEngine& operator=(const VEEngine&) = delete;
+    VEEngine& operator=(VEEngine&&) = delete;
 
-    [[nodiscard]] int getVersionMajor() const noexcept override;
+    [[nodiscard]] int getVersionMajor() const noexcept;
 
 private:
     class Impl;

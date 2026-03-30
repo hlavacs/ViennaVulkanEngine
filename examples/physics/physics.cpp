@@ -1,6 +1,6 @@
 import VEEngine;
 
 int main() {
-    VEEngineDelegator engine;
+    VEEngine engine;
     return engine.getVersionMajor() == 3 ? 0 : 1;
 }

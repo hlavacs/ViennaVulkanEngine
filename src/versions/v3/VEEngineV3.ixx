@@ -1,8 +1,8 @@
-export module VEEngine:V3;
+export module VEEngine.V3;
 
 namespace vve::v3 {
 
-class VEEngine {
+export class Engine {
 public:
     [[nodiscard]] int getVersionMajor() const noexcept;
 };

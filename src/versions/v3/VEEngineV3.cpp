@@ -1,9 +1,8 @@
-module VEEngine;
-import :V3;
+module VEEngine.V3;
 
 namespace vve::v3 {
 
-int VEEngine::getVersionMajor() const noexcept {
+int Engine::getVersionMajor() const noexcept {
     return 3;
 }
 

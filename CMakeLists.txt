@@ -6,6 +6,10 @@ project(ViennaVulkanEngine VERSION 3.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+add_compile_options(
+    "$<$<CXX_COMPILER_ID:MSVC>:/MP>"
+)
+
 find_package(Vulkan REQUIRED)
 
 function(vve_set_output_dirs target_name)
