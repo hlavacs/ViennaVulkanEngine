@@ -9,11 +9,11 @@ public:
     explicit Engine(const VEEngineConfig& config)
         : application_name_("ViennaVulkanEngine"),
           validation_enabled_(false) {
-        if (const auto application_name = config.tryGet<VeApplicationName>()) {
+        if (const auto application_name = config.tryGet<VEApplicationName>()) {
             application_name_ = application_name->value;
         }
 
-        if (const auto enable_validation = config.tryGet<VeEnableValidation>()) {
+        if (const auto enable_validation = config.tryGet<VEEnableValidation>()) {
             validation_enabled_ = enable_validation->value;
         }
     }

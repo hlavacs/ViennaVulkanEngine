@@ -3,7 +3,7 @@ import VEEngine;
 int main() {
     VEEngine engine(
         VeEngineVersion::v3,
-        VeApplicationName{"physics"});
+        VEApplicationName{"physics"});
     const auto version_major = engine.getVersionMajor();
     if (!version_major) {
         return 1;

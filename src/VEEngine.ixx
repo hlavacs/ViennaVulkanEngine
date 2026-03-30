@@ -26,11 +26,11 @@ export enum class VeResult {
     internal_error
 };
 
-export struct VeApplicationName {
+export struct VEApplicationName {
     std::string value;
 };
 
-export struct VeEnableValidation {
+export struct VEEnableValidation {
     bool value = false;
 };
 
