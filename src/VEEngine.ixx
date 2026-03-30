@@ -11,11 +11,28 @@ module;
 #endif
 
 export module VEEngine;
+import std;
 
 export class VVE_API VEEngine {
 public:
-    VEEngine();
-    ~VEEngine();
+    virtual ~VEEngine();
 
-    [[nodiscard]] int getVersionMajor() const noexcept;
+    [[nodiscard]] virtual int getVersionMajor() const noexcept = 0;
+};
+
+export class VVE_API VEEngineDelegator final : public VEEngine {
+public:
+    VEEngineDelegator();
+    ~VEEngineDelegator() override;
+
+    VEEngineDelegator(const VEEngineDelegator&) = delete;
+    VEEngineDelegator(VEEngineDelegator&&) = delete;
+    VEEngineDelegator& operator=(const VEEngineDelegator&) = delete;
+    VEEngineDelegator& operator=(VEEngineDelegator&&) = delete;
+
+    [[nodiscard]] int getVersionMajor() const noexcept override;
+
+private:
+    class Impl;
+    std::unique_ptr<Impl> impl_;
 };

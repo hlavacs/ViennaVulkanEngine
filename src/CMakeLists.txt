@@ -11,9 +11,11 @@ target_compile_options(ViennaVulkanEngine PUBLIC
 target_sources(ViennaVulkanEngine
     PRIVATE
         VEEngine.cpp
+        versions/v3/VEEngineV3.cpp
     PUBLIC
         FILE_SET CXX_MODULES FILES
             VEEngine.ixx
+            versions/v3/VEEngineV3.ixx
 )
 
 target_link_libraries(ViennaVulkanEngine
