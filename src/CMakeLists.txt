@@ -1,8 +1,12 @@
 add_library(ViennaVulkanEngine SHARED)
 add_library(ViennaVulkanEngine::ViennaVulkanEngine ALIAS ViennaVulkanEngine)
 
-target_compile_features(ViennaVulkanEngine PUBLIC cxx_std_20)
+target_compile_features(ViennaVulkanEngine PUBLIC cxx_std_23)
 target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_ENGINE_BUILD)
+target_compile_options(ViennaVulkanEngine PUBLIC
+    "$<$<CXX_COMPILER_ID:MSVC>:/std:c++latest>"
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-std=c++2c>"
+)
 
 target_sources(ViennaVulkanEngine
     PRIVATE

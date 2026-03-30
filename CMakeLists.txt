@@ -33,13 +33,13 @@ function(vve_set_output_dirs target_name)
         endforeach()
     elseif(target_type STREQUAL "SHARED_LIBRARY")
         set_target_properties("${target_name}" PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/dll"
+            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/exe"
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/dll"
         )
         foreach(config ${CMAKE_CONFIGURATION_TYPES})
             string(TOUPPER "${config}" config_upper)
             set_target_properties("${target_name}" PROPERTIES
-                "RUNTIME_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/dll"
+                "RUNTIME_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/exe"
                 "LIBRARY_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/dll"
             )
         endforeach()
