@@ -7,11 +7,11 @@ import std;
 namespace {
 // File-local helpers stay out of the public module surface and avoid symbol collisions.
 
-std::unique_ptr<ve::Engine> makeEngine(
-    ve::EngineVersion version,
-    const ve::EngineConfig& config) {
+std::unique_ptr<vve::Engine> makeEngine(
+    vve::EngineVersion version,
+    const vve::EngineConfig& config) {
     switch (version) {
-        case ve::EngineVersion::v3: return vve::v3::makeEngine(config);
+        case vve::EngineVersion::v3: return vve::v3::makeEngine(config);
     }
 
     return nullptr;
@@ -19,23 +19,23 @@ std::unique_ptr<ve::Engine> makeEngine(
 
 } // namespace
 
-ve::Engine::Engine(ve::EngineVersion version, ve::EngineConfig config)
+vve::Engine::Engine(vve::EngineVersion version, vve::EngineConfig config)
     : impl_(makeEngine(version, config)) {
 }
 
-ve::Engine::Engine() noexcept
+vve::Engine::Engine() noexcept
     : impl_(nullptr) {
 }
 
-ve::Engine::~Engine() = default;
+vve::Engine::~Engine() = default;
 
-std::expected<int, ve::Result> ve::Engine::getVersionMajor() const noexcept {
-    if (impl_ == nullptr) return std::unexpected(ve::Result::internal_error);
+std::expected<int, vve::Result> vve::Engine::getVersionMajor() const noexcept {
+    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
     return impl_->getVersionMajor();
 }
 
-std::expected<std::string, ve::Result> ve::Engine::loadFile(
+std::expected<std::string, vve::Result> vve::Engine::loadFile(
     const std::filesystem::path& file_path) const {
-    if (impl_ == nullptr) return std::unexpected(ve::Result::internal_error);
+    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
     return impl_->loadFile(file_path);
 }

@@ -13,7 +13,7 @@ module;
 export module VEEngine;
 import std;
 
-export namespace ve {
+export namespace vve {
 
 enum class EngineVersion {
     v3
@@ -98,4 +98,4 @@ private:
     std::unique_ptr<Engine> impl_;
 };
 
-} // namespace ve
+} // namespace vve
