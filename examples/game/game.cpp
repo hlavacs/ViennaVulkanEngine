@@ -2,10 +2,10 @@ import VEEngine;
 import std;
 
 int main() {
-    VEEngine engine(
-        VeEngineVersion::v3,
-        VEApplicationName{"game"},
-        VEEnableValidation{true});
+    ve::Engine engine(
+        ve::EngineVersion::v3,
+        ve::ApplicationName{"game"},
+        ve::EnableValidation{true});
     const auto version_major = engine.getVersionMajor();
     if (!version_major) {
         return 1;

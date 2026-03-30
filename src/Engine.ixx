@@ -13,11 +13,13 @@ module;
 export module VEEngine;
 import std;
 
-export enum class VeEngineVersion {
+export namespace ve {
+
+enum class EngineVersion {
     v3
 };
 
-export enum class VeResult {
+enum class Result {
     success = 0,
     invalid_argument,
     file_not_found,
@@ -26,25 +28,25 @@ export enum class VeResult {
     internal_error
 };
 
-export struct VEApplicationName {
+struct ApplicationName {
     std::string value;
 };
 
-export struct VEEnableValidation {
+struct EnableValidation {
     bool value = false;
 };
 
-export class VEEngineConfig {
+class EngineConfig {
 public:
-    VEEngineConfig() = default;
+    EngineConfig() = default;
 
     template <typename... TOptions>
-    explicit VEEngineConfig(TOptions&&... options) {
+    explicit EngineConfig(TOptions&&... options) {
         (set(std::forward<TOptions>(options)), ...);
     }
 
     template <typename TOption>
-    VEEngineConfig& set(TOption&& option) {
+    EngineConfig& set(TOption&& option) {
         using TStoredOption = std::remove_cvref_t<TOption>;
         options_[std::type_index(typeid(TStoredOption))] = std::forward<TOption>(option);
         return *this;
@@ -68,30 +70,32 @@ private:
     std::unordered_map<std::type_index, std::any> options_;
 };
 
-export class VVE_API VEEngine {
+class VVE_API Engine {
 public:
-    explicit VEEngine(VeEngineVersion version, VEEngineConfig config = {});
+    explicit Engine(EngineVersion version, EngineConfig config = {});
 
     template <typename... TOptions>
         requires (sizeof...(TOptions) > 0)
-    explicit VEEngine(VeEngineVersion version, TOptions&&... options)
-        : VEEngine(version, VEEngineConfig(std::forward<TOptions>(options)...)) {
+    explicit Engine(EngineVersion version, TOptions&&... options)
+        : Engine(version, EngineConfig(std::forward<TOptions>(options)...)) {
     }
 
-    ~VEEngine();
+    ~Engine();
 
-    VEEngine(const VEEngine&) = delete;
-    VEEngine(VEEngine&&) = delete;
-    VEEngine& operator=(const VEEngine&) = delete;
-    VEEngine& operator=(VEEngine&&) = delete;
+    Engine(const Engine&) = delete;
+    Engine(Engine&&) = delete;
+    Engine& operator=(const Engine&) = delete;
+    Engine& operator=(Engine&&) = delete;
 
-    [[nodiscard]] virtual std::expected<int, VeResult> getVersionMajor() const noexcept;
-    [[nodiscard]] virtual std::expected<std::string, VeResult> loadFile(
+    [[nodiscard]] virtual std::expected<int, Result> getVersionMajor() const noexcept;
+    [[nodiscard]] virtual std::expected<std::string, Result> loadFile(
         const std::filesystem::path& file_path) const;
 
 protected:
-    VEEngine() noexcept;
+    Engine() noexcept;
 
 private:
-    std::unique_ptr<VEEngine> impl_;
+    std::unique_ptr<Engine> impl_;
 };
+
+} // namespace ve

@@ -1,9 +1,9 @@
 import VEEngine;
 
 int main() {
-    VEEngine engine(
-        VeEngineVersion::v3,
-        VEApplicationName{"physics"});
+    ve::Engine engine(
+        ve::EngineVersion::v3,
+        ve::ApplicationName{"physics"});
     const auto version_major = engine.getVersionMajor();
     if (!version_major) {
         return 1;
