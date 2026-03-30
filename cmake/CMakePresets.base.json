@@ -52,6 +52,9 @@
       "name": "build-debug-windows",
       "displayName": "Build Debug (Windows)",
       "configurePreset": "debug-windows",
+      "environment": {
+        "PATH": "${sourceDir}/tools/shims;$penv{PATH}"
+      },
       "configuration": "Debug",
       "targets": [
         "ALL_BUILD"

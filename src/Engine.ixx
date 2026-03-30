@@ -13,6 +13,7 @@ module;
 export module VEEngine;
 import std;
 export import :Handle;
+export import :Math;
 
 export namespace vve::detail {
 
@@ -22,8 +23,28 @@ class EngineImpl;
 
 export namespace vve {
 
+// Engine configuration options 
+
 enum class EngineVersion {
     v3
+};
+
+enum class GraphicsApi {
+    vulkan,
+    direct3d12,
+    metal
+};
+
+enum class RendererKind {
+    forward_renderer,
+    deferred_renderer,
+    path_tracing
+};
+
+enum class ShadowKind {
+    none,
+    shadow_map,
+    ray_traced
 };
 
 enum class Result {
@@ -37,12 +58,29 @@ enum class Result {
     internal_error
 };
 
+/// @brief Configuration for creating an Engine instance. Can be constructed with arbitrary options using the set() method or the variadic constructor.
 struct ApplicationName {
     std::string value;
 };
 
 struct EnableValidation {
     bool value = false;
+};
+
+struct PreferredGraphicsApi {
+    GraphicsApi value = GraphicsApi::vulkan;
+};
+
+struct PreferredRenderer {
+    RendererKind value = RendererKind::forward_renderer;
+};
+
+struct PreferredShadow {
+    ShadowKind value = ShadowKind::none;
+};
+
+struct EnableImGui {
+    bool value = true;
 };
 
 class EngineConfig {
@@ -101,8 +139,8 @@ public:
     [[nodiscard]] std::expected<void, Result> step();
     [[nodiscard]] std::expected<bool, Result> isInitialized() const noexcept;
     [[nodiscard]] std::expected<int, Result> getVersionMajor() const noexcept;
-    [[nodiscard]] std::expected<std::string, Result> loadFile(
-        const std::filesystem::path& file_path) const;
+    [[nodiscard]] std::expected<void, Result> loadFile(
+        const std::filesystem::path& file_path);
 
 private:
     std::unique_ptr<detail::EngineImpl> impl_{nullptr};
@@ -121,8 +159,8 @@ public:
     [[nodiscard]] virtual std::expected<void, vve::Result> step() = 0;
     [[nodiscard]] virtual bool isInitialized() const noexcept = 0;
     [[nodiscard]] virtual std::expected<int, vve::Result> getVersionMajor() const noexcept = 0;
-    [[nodiscard]] virtual std::expected<std::string, vve::Result> loadFile(
-        const std::filesystem::path& file_path) const = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> loadFile(
+        const std::filesystem::path& file_path) = 0;
 };
 
 } // namespace vve::detail

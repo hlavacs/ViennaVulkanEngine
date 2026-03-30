@@ -6,6 +6,15 @@ This project uses `vcpkg` manifest dependencies for third-party libraries that a
 
 `glm` is not installed through `vcpkg`. The project expects `glm` to come from the Vulkan SDK include directory.
 
+All engine math should go through the exported `vve::math` abstraction layer instead of using raw `glm` types directly. The precision can be selected at compile time:
+
+```powershell
+cmake --preset debug-windows -DVVE_MATH_USE_DOUBLE=ON
+cmake --build --preset build-debug-windows
+```
+
+With `VVE_MATH_USE_DOUBLE=OFF` the engine uses `float`; with `ON` it uses `double`.
+
 The default setup is host-aware:
 - Windows uses the `x64-windows` vcpkg triplet
 - Linux uses the `x64-linux` vcpkg triplet

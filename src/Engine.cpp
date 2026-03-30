@@ -50,8 +50,8 @@ std::expected<int, vve::Result> vve::Engine::getVersionMajor() const noexcept {
     return impl_->getVersionMajor();
 }
 
-std::expected<std::string, vve::Result> vve::Engine::loadFile(
-    const std::filesystem::path& file_path) const {
+std::expected<void, vve::Result> vve::Engine::loadFile(
+    const std::filesystem::path& file_path) {
     if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
     return impl_->loadFile(file_path);
 }
