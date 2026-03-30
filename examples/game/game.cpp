@@ -6,6 +6,15 @@ int main() {
         vve::EngineVersion::v3,
         vve::ApplicationName{"game"},
         vve::EnableValidation{true});
+
+    if (!engine.init()) {
+        return 1;
+    }
+
+    if (!engine.run()) {
+        return 1;
+    }
+
     const auto version_major = engine.getVersionMajor();
     if (!version_major) {
         return 1;

@@ -4,6 +4,15 @@ int main() {
     vve::Engine engine(
         vve::EngineVersion::v3,
         vve::ApplicationName{"physics"});
+
+    if (!engine.init()) {
+        return 1;
+    }
+
+    if (!engine.step()) {
+        return 1;
+    }
+
     const auto version_major = engine.getVersionMajor();
     if (!version_major) {
         return 1;

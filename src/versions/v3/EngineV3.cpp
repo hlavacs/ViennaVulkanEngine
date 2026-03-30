@@ -8,7 +8,9 @@ class Engine final : public vve::Engine {
 public:
     explicit Engine(const vve::EngineConfig& config)
         : application_name_("ViennaVulkanEngine"),
-          validation_enabled_(false) {
+          validation_enabled_(false),
+          initialized_(false),
+          running_(false) {
         if (const auto application_name = config.tryGet<vve::ApplicationName>()) {
             application_name_ = application_name->value;
         }
@@ -16,6 +18,29 @@ public:
         if (const auto enable_validation = config.tryGet<vve::EnableValidation>()) {
             validation_enabled_ = enable_validation->value;
         }
+    }
+
+    [[nodiscard]] std::expected<void, vve::Result> init() override {
+        initialized_ = true;
+        running_ = false;
+        return {};
+    }
+
+    [[nodiscard]] std::expected<void, vve::Result> run() override {
+        if (!initialized_) {
+            init();
+        }
+
+        running_ = true;
+        return {};
+    }
+
+    [[nodiscard]] std::expected<void, vve::Result> step() override {
+        if (!initialized_) {
+            return std::unexpected(vve::Result::internal_error);
+        }
+
+        return {};
     }
 
     [[nodiscard]] std::expected<int, vve::Result> getVersionMajor() const noexcept override {
@@ -47,7 +72,9 @@ public:
 
 private:
     std::string application_name_;
-    bool validation_enabled_;
+    bool validation_enabled_{false};
+    bool initialized_{false};
+    bool running_{false};
 };
 
 } // namespace

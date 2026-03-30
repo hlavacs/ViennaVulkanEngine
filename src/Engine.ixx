@@ -87,6 +87,9 @@ public:
     Engine& operator=(const Engine&) = delete;
     Engine& operator=(Engine&&) = delete;
 
+    [[nodiscard]] virtual std::expected<void, Result> init();
+    [[nodiscard]] virtual std::expected<void, Result> run();
+    [[nodiscard]] virtual std::expected<void, Result> step();
     [[nodiscard]] virtual std::expected<int, Result> getVersionMajor() const noexcept;
     [[nodiscard]] virtual std::expected<std::string, Result> loadFile(
         const std::filesystem::path& file_path) const;
@@ -95,7 +98,7 @@ protected:
     Engine() noexcept;
 
 private:
-    std::unique_ptr<Engine> impl_;
+    std::unique_ptr<Engine> impl_{nullptr};
 };
 
 } // namespace vve

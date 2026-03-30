@@ -29,6 +29,21 @@ vve::Engine::Engine() noexcept
 
 vve::Engine::~Engine() = default;
 
+std::expected<void, vve::Result> vve::Engine::init() {
+    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
+    return impl_->init();
+}
+
+std::expected<void, vve::Result> vve::Engine::run() {
+    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
+    return impl_->run();
+}
+
+std::expected<void, vve::Result> vve::Engine::step() {
+    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
+    return impl_->step();
+}
+
 std::expected<int, vve::Result> vve::Engine::getVersionMajor() const noexcept {
     if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
     return impl_->getVersionMajor();
