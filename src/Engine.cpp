@@ -40,6 +40,11 @@ std::expected<void, vve::Result> vve::Engine::step() {
     return impl_->step();
 }
 
+std::expected<bool, vve::Result> vve::Engine::isInitialized() const noexcept {
+    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
+    return impl_->isInitialized();
+}
+
 std::expected<int, vve::Result> vve::Engine::getVersionMajor() const noexcept {
     if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
     return impl_->getVersionMajor();

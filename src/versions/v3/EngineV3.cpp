@@ -20,26 +20,41 @@ public:
         }
     }
 
+    [[nodiscard]] bool isInitialized() const noexcept override {
+        return initialized_;
+    }    
+    
     [[nodiscard]] std::expected<void, vve::Result> init() override {
+        if(isInitialized()) {
+            return std::unexpected(vve::Result::already_initialized);
+        }
+
         initialized_ = true;
         running_ = false;
         return {};
     }
 
     [[nodiscard]] std::expected<void, vve::Result> run() override {
-        if (!initialized_) {
+        if (!isInitialized()) {
             if (auto init_result = init(); !init_result) {
                 return init_result;
             }
         }
 
         running_ = true;
+
+        while(running_) {
+            if(!step()) {
+                 running_ = false;
+            }
+        }
+
         return {};
     }
 
     [[nodiscard]] std::expected<void, vve::Result> step() override {
-        if (!initialized_) {
-            return std::unexpected(vve::Result::internal_error);
+        if (!isInitialized()) {
+            return std::unexpected(vve::Result::not_initialized);
         }
 
         return {};

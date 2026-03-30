@@ -28,6 +28,8 @@ enum class EngineVersion {
 
 enum class Result {
     success = 0,
+    not_initialized,
+    already_initialized,
     invalid_argument,
     file_not_found,
     io_error,
@@ -97,6 +99,7 @@ public:
     [[nodiscard]] std::expected<void, Result> init();
     [[nodiscard]] std::expected<void, Result> run();
     [[nodiscard]] std::expected<void, Result> step();
+    [[nodiscard]] std::expected<bool, Result> isInitialized() const noexcept;
     [[nodiscard]] std::expected<int, Result> getVersionMajor() const noexcept;
     [[nodiscard]] std::expected<std::string, Result> loadFile(
         const std::filesystem::path& file_path) const;
@@ -116,6 +119,7 @@ public:
     [[nodiscard]] virtual std::expected<void, vve::Result> init() = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> run() = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> step() = 0;
+    [[nodiscard]] virtual bool isInitialized() const noexcept = 0;
     [[nodiscard]] virtual std::expected<int, vve::Result> getVersionMajor() const noexcept = 0;
     [[nodiscard]] virtual std::expected<std::string, vve::Result> loadFile(
         const std::filesystem::path& file_path) const = 0;
