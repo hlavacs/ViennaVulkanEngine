@@ -8,9 +8,19 @@
       "cacheVariables": {}
     },
     {
+      "name": "windows-base",
+      "hidden": true,
+      "environment": {
+        "PATH": "${sourceDir}/tools/shims;$penv{PATH}"
+      }
+    },
+    {
       "name": "debug-windows",
       "displayName": "Debug (Windows)",
-      "inherits": "debug-base",
+      "inherits": [
+        "debug-base",
+        "windows-base"
+      ],
       "generator": "Visual Studio 17 2022",
       "cacheVariables": {
         "VVE_VCPKG_TRIPLET": "x64-windows"

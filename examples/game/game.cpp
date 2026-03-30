@@ -11,7 +11,7 @@ int main() {
         return 1;
     }
 
-    if (!engine.run()) {
+    if (!engine.step()) {
         return 1;
     }
 
