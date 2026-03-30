@@ -16,10 +16,13 @@ std::unique_ptr<VEEngine> makeEngine(VEEngineVersion version) {
 } // namespace
 
 VEEngine::VEEngine(VEEngineVersion version)
-    : impl_(makeEngine(version)) {
+    : construction_mode_(ConstructionMode::interface),
+      impl_(makeEngine(version)) {
 }
 
-VEEngine::VEEngine(ConstructionMode) noexcept {
+VEEngine::VEEngine() noexcept
+    : construction_mode_(ConstructionMode::implementation),
+      impl_(nullptr) {
 }
 
 VEEngine::~VEEngine() = default;

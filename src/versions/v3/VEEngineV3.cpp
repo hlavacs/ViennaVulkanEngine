@@ -6,9 +6,7 @@ namespace {
 
 class Engine final : public VEEngine {
 public:
-    Engine()
-        : VEEngine(ConstructionMode::implementation) {
-    }
+    Engine() = default;
 
     [[nodiscard]] int getVersionMajor() const noexcept override {
         return 3;

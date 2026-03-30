@@ -19,7 +19,7 @@ export enum class VEEngineVersion {
 
 export class VVE_API VEEngine {
 public:
-    explicit VEEngine(VEEngineVersion version = VEEngineVersion::v3);
+    explicit VEEngine(VEEngineVersion version);
     ~VEEngine();
 
     VEEngine(const VEEngine&) = delete;
@@ -30,12 +30,14 @@ public:
     [[nodiscard]] virtual int getVersionMajor() const noexcept;
 
 protected:
+    VEEngine() noexcept;
+
+private:
     enum class ConstructionMode {
+        interface,
         implementation
     };
 
-    explicit VEEngine(ConstructionMode) noexcept;
-
-private:
+    ConstructionMode construction_mode_;
     std::unique_ptr<VEEngine> impl_;
 };
