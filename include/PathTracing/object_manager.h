@@ -95,10 +95,10 @@ namespace vve {
 		/** @return Instance buffers per frame. */
 		std::vector<HostBuffer<vvh::Instance>*> getInstanceBuffers();
 
-		SingleDescriptorPlacment getVertexDescriptorInput(size_t binding);
-		SingleDescriptorPlacment getIndexDescriptorInput(size_t binding);
-		PerFrameDescriptorPlacment getInstanceDescriptorInput(size_t binding);
-		SingleDescriptorPlacment getTlasDescriptorInput(size_t binding);
+		SingleDescriptorPlacment* getVertexDescriptorInput(size_t binding);
+		SingleDescriptorPlacment* getIndexDescriptorInput(size_t binding);
+		PerFrameDescriptorPlacment* getInstanceDescriptorInput(size_t binding);
+		SingleDescriptorPlacment* getTlasDescriptorInput(size_t binding);
 
 		/** Load ray tracing function pointers. */
 		void loadRayTracingFunctions();

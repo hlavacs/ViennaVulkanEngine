@@ -10,10 +10,11 @@ namespace vve {
 		bool useVariableDescriptorCount = false;
 	public:
 		DescriptorInput(VkDescriptorType type, size_t descriptorCount)
-			: type(type), descriptorCount(descriptorCount), maxDescriptorCount(0), bindingFlags(0), useVariableDescriptorCount(false){}
+			: type(type), descriptorCount(descriptorCount), maxDescriptorCount(1), bindingFlags(0), useVariableDescriptorCount(false){}
 
 		DescriptorInput(VkDescriptorType type, size_t descriptorCount, size_t maxDescriptorCount, VkDescriptorBindingFlags bindingFlags, bool useVariableDescriptorCount = false)
 			: type(type), descriptorCount(descriptorCount), maxDescriptorCount(maxDescriptorCount), bindingFlags(bindingFlags), useVariableDescriptorCount(useVariableDescriptorCount) {
+			std::cout << "maxDescriptorCount: " << maxDescriptorCount << "\n";
 		}
 
 		virtual VkWriteDescriptorSet getDescriptorWrite() = 0;
@@ -26,7 +27,7 @@ namespace vve {
 			return layoutBinding;
 		}
 		size_t getMaxDescriptorCount() { return maxDescriptorCount; }
-		size_t getDescriptorCount() { return descriptorCount; }
+		virtual size_t getDescriptorCount() { return descriptorCount; }
 		VkDescriptorType getType() { return type; }
 		VkDescriptorBindingFlags getBindingFlags() { return bindingFlags; }
 		bool usesVariableDescriptorCount() {return useVariableDescriptorCount;}
@@ -57,13 +58,12 @@ namespace vve {
 			bufferInfo.offset = 0;
 			bufferInfo.range = input->getSize();
 
-			VkWriteDescriptorSet descriptorWrite;
+			VkWriteDescriptorSet descriptorWrite{};
 
 			descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			descriptorWrite.dstArrayElement = 0;
 			descriptorWrite.descriptorType = type;
 			descriptorWrite.descriptorCount = 1;
-			//bufferInfo is deleted after this function call -> ERROR!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			descriptorWrite.pBufferInfo = &bufferInfo;
 
 			return descriptorWrite;
@@ -75,7 +75,7 @@ namespace vve {
 		Image* input;
 		VkDescriptorImageInfo imageInfo;
 	public:
-		DescriptorImageInput(Image* input, VkDescriptorType type) :DescriptorInput(type, 1), input(input) {}
+		DescriptorImageInput(Image* input, VkDescriptorType type) :DescriptorInput(type, 1), input(input){}
 
 		Image* getInput() {
 			return input;
@@ -95,7 +95,7 @@ namespace vve {
 			imageInfo.imageView = input->getImageView();
 			imageInfo.sampler = VK_NULL_HANDLE; // not used
 
-			VkWriteDescriptorSet imageWrite;
+			VkWriteDescriptorSet imageWrite{};
 
 			imageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			imageWrite.dstArrayElement = 0;
@@ -118,6 +118,7 @@ namespace vve {
 			:DescriptorInput(type, input->size(), maxTextureCount, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
 				VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT |
 				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, true), input(input), sampler(sampler) {
+			std::cout << "maxTextureCount: " << maxTextureCount << "\n";
 		}
 
 		std::vector<Texture*>* getInput() {
@@ -132,6 +133,8 @@ namespace vve {
 			input = newInput;
 		}
 
+		size_t getDescriptorCount() override { return input->size(); }
+
 		VkWriteDescriptorSet getDescriptorWrite() {
 			size_t textureCount = input->size();
 			imageInfos = std::vector<VkDescriptorImageInfo>(textureCount);
@@ -141,7 +144,7 @@ namespace vve {
 				imageInfos[t].sampler = sampler;
 			}
 
-			VkWriteDescriptorSet imageWrite;
+			VkWriteDescriptorSet imageWrite{};
 
 			imageWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
 			imageWrite.dstArrayElement = 0;
@@ -160,7 +163,7 @@ namespace vve {
 		VkWriteDescriptorSetAccelerationStructureKHR asInfo;
 		VkSampler sampler;
 	public:
-		DescriptorAccelInput(AccelStructure* input, VkDescriptorType type) :DescriptorInput(type, 1, 0, false), input(input) {}
+		DescriptorAccelInput(AccelStructure* input, VkDescriptorType type) :DescriptorInput(type, 1), input(input) {}
 
 		AccelStructure* getInput() {
 			return input;
@@ -251,6 +254,7 @@ namespace vve {
 	class DescriptorManager {
 	private:
 		bool finalized = false;
+		bool discriptorsCreated = false;
 
 		std::vector<DescriptorPlacment*> descriptorInputs;
 
@@ -285,6 +289,8 @@ namespace vve {
 			for (std::pair<VkDescriptorType, int> descriptor : map) {
 				poolSizes[i].type = descriptor.first;
 				poolSizes[i].descriptorCount = descriptor.second * MAX_FRAMES_IN_FLIGHT;
+
+				i++;
 			}
 
 			VkDescriptorPoolCreateInfo poolInfo{};
@@ -306,6 +312,9 @@ namespace vve {
 			for (int i = 0; i < descriptorInputs.size(); i++) {
 				VkDescriptorSetLayoutBinding layoutbinding = descriptorInputs[i]->getDescriptorLayout();
 				layoutbinding.stageFlags = stageFlags;
+
+				std::cout << "Layout binding: " << layoutbinding.binding << "\n";
+				std::cout << "Layout descriptor count: " << layoutbinding.descriptorCount << "\n";
 
 				if (layoutbinding.binding != i) {
 					std::cerr << "Encountered unexpected binding index";
@@ -342,6 +351,9 @@ namespace vve {
 		}
 
 		void createDescriptorSets() {
+
+			discriptorsCreated = true;
+
 			std::vector<VkDescriptorSetLayout> layouts(MAX_FRAMES_IN_FLIGHT, descriptorSetLayout);
 			VkDescriptorSetAllocateInfo allocInfo{};
 			allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
@@ -351,11 +363,12 @@ namespace vve {
 
 			DescriptorInput* lastInput = descriptorInputs[descriptorInputs.size() - 1]->getDescriptorInput(0);
 			VkDescriptorSetVariableDescriptorCountAllocateInfo countInfo{};
+			std::vector<uint32_t> counts;
 
 			if (lastInput->usesVariableDescriptorCount()) {
 				countInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_VARIABLE_DESCRIPTOR_COUNT_ALLOCATE_INFO;
 				countInfo.descriptorSetCount = MAX_FRAMES_IN_FLIGHT;
-				std::vector<uint32_t> counts(MAX_FRAMES_IN_FLIGHT, lastInput->getDescriptorCount());
+				counts = std::vector<uint32_t>(MAX_FRAMES_IN_FLIGHT, lastInput->getDescriptorCount());
 				countInfo.pDescriptorCounts = counts.data();
 
 				allocInfo.pNext = &countInfo;
@@ -379,6 +392,7 @@ namespace vve {
 
 	public:
 		DescriptorManager(std::vector<DescriptorPlacment*> descriptorInputs, VkShaderStageFlags stageFlags, VkDevice& device) : descriptorInputs(descriptorInputs), stageFlags(stageFlags), device(device) {}
+		DescriptorManager(VkShaderStageFlags stageFlags, VkDevice& device) : descriptorInputs(std::vector<DescriptorPlacment*>()), stageFlags(stageFlags), device(device) {}
 
 		void finalize() {
 			finalized = true;
@@ -387,13 +401,25 @@ namespace vve {
 				});
 			createDescriptorPool();
 			createDescriptorSetLayout();
-			createDescriptorSets();
+			//at the point at which the descriptor sets are created the buffers are empty leading to a error. Pospone descriptor set creation to a later point.
+			//createDescriptorSets();
 		}
 
 		void update() {
 			if (!finalized) {
 				std::cerr << "Descriptor Manager has to be finalized before updating the descriptor sets \n";
 			}
+
+			if (discriptorsCreated) {
+				vkDeviceWaitIdle(device);
+				vkFreeDescriptorSets(
+					device,
+					descriptorPool,
+					descriptorSets.size(),
+					descriptorSets.data()
+				);
+			}
+
 			createDescriptorSets();
 		}
 

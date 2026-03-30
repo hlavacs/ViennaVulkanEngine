@@ -56,6 +56,10 @@ namespace vve {
 		/** Recreate ray tracing descriptor resources. */
 		void recreateRayTracingDescriptors();
 
+		void createCommonDescriptors();
+		void createRtDescriptors();
+		void createRtTargetsDescriptors();
+
 		/** Destroy general descriptors. */
 		void destroyGeneralDescriptors();
 		/** Destroy ray tracing descriptors. */
@@ -99,6 +103,11 @@ namespace vve {
 
 		uint32_t currentFrame = 0;
 		bool framebufferResized = false;
+
+		DescriptorManager* commonDescriptors;
+		DescriptorManager* rtDescriptors;
+		DescriptorManager* rtTargetsDescriptors;
+
 
 		VkDescriptorPool descriptorPool;
 		std::vector<VkDescriptorSet> descriptorSets;

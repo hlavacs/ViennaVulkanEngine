@@ -101,6 +101,50 @@ namespace vve {
         raytracer->setDescriptorSets(descriptorSets, descriptorSetsRT);  
         generalDiscriptorsCreated = true;
     }
+
+    void RendererRayTraced::createCommonDescriptors() {
+        commonDescriptors = new DescriptorManager(VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR, device);
+        std::vector<DescriptorInput*> uniformBufferDescriptorInputs{};
+        for (GenericBuffer* buffer : uniformBuffer_c) {
+            DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+            uniformBufferDescriptorInputs.push_back(descriptorInput);
+        } 
+        PerFrameDescriptorPlacment* uniformBufferDescriptors = new PerFrameDescriptorPlacment(uniformBufferDescriptorInputs, 0);
+
+        commonDescriptors->addDescriptorInput(uniformBufferDescriptors);
+        commonDescriptors->addDescriptorInput(materialManager->getMaterialDescriptorInput(1));
+        commonDescriptors->addDescriptorInput(textureManager->getTextureDescriptorInput(2));
+
+        commonDescriptors->finalize();
+    }
+
+    void RendererRayTraced::createRtDescriptors() {
+        rtDescriptors = new DescriptorManager(VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR , device);
+
+        rtDescriptors->addDescriptorInput(objectManager->getTlasDescriptorInput(0));
+        rtDescriptors->addDescriptorInput(objectManager->getVertexDescriptorInput(1));
+        rtDescriptors->addDescriptorInput(objectManager->getIndexDescriptorInput(2));
+        rtDescriptors->addDescriptorInput(objectManager->getInstanceDescriptorInput(3));
+        rtDescriptors->addDescriptorInput(lightManager->getLightDescriptorInput(4));
+
+        rtDescriptors->finalize();
+    }
+
+    void RendererRayTraced::createRtTargetsDescriptors() {
+        rtTargetsDescriptors = new DescriptorManager(VK_SHADER_STAGE_RAYGEN_BIT_KHR, device);
+
+        rtTargetsDescriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0));
+        rtTargetsDescriptors->addDescriptorInput(normalTarget->getDescriptorInput(1));
+        rtTargetsDescriptors->addDescriptorInput(specTarget->getDescriptorInput(2));
+        rtTargetsDescriptors->addDescriptorInput(positionTarget->getDescriptorInput(3));
+        rtTargetsDescriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4));
+        rtTargetsDescriptors->addDescriptorInput(RtTarget->getDescriptorInput(5));
+
+        rtTargetsDescriptors->finalize();
+        rtTargetsDescriptors->update();
+    }
+
+
     void RendererRayTraced::recreateRayTracingDescriptors() {
         createDescriptorSetsRT(descriptorSetsRT, descriptorPoolRT, descriptorSetLayoutRT, objectManager->getTlas().accel, objectManager->getVertexBuffer(), objectManager->getIndexBuffer(), objectManager->getInstanceBuffers(), lightManager->getLightBuffer(), device);
         raytracer->setDescriptorSets(descriptorSets, descriptorSetsRT);
@@ -153,6 +197,8 @@ namespace vve {
 
         createDescriptorSetLayout(descriptorSetLayout, device);
         createDescriptorPool(descriptorPool, device);
+
+        createCommonDescriptors();
        
         auto piplineRasterizedUnique = std::make_unique<PiplineRasterized>("Pipline Rasterized", m_engine, device, swapchain->getExtent(), commandManager, objectManager->getVertexBuffer(), objectManager->getIndexBuffer(), objectManager->getInstanceBuffers(), descriptorSetLayout);
         rasterizer = piplineRasterizedUnique.get();
@@ -203,9 +249,16 @@ namespace vve {
         createDescriptorSetLayoutRT(descriptorSetLayoutRT, device);
         createDescriptorPoolRT(descriptorPoolRT, device);
 
+        createRtDescriptors();
+
         createDescriptorSetLayoutTargets(descriptorSetLayoutTargets, rayTracingTargets.size(), device);
         createDescriptorPoolTargets(descriptorPoolTargets, rayTracingTargets.size(), device);
         createDescriptorSetsTargets(descriptorSetsTargets, descriptorPoolTargets, descriptorSetLayoutTargets, rayTracingTargets, device);
+
+        std::cout << "before target descriptors \n";
+        createRtTargetsDescriptors();
+        std::cout << "after target descriptors \n";
+
 
         raytracer = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, descriptorSetLayout, descriptorSetLayoutRT, descriptorSetLayoutTargets, descriptorSetsTargets, swapchain->getExtent());
 
@@ -275,6 +328,9 @@ namespace vve {
         );
         createDescriptorSetsTargets(descriptorSetsTargets, descriptorPoolTargets, descriptorSetLayoutTargets, rayTracingTargets, device);
         raytracer->setRenderTargetsDescriptorSets(descriptorSetsTargets);
+
+
+        rtTargetsDescriptors->update();
         raytracer->setExtent(swapchain->getExtent());
         m_engine.SendMsg(MsgWindowSize{});
         //send Message window resized maybe (aspect ratio incorrect)
@@ -335,9 +391,11 @@ namespace vve {
 
         if (materialManager->materialChanged() || textureManager->texturesChanged()) {
             recreateGeneralDescriptors();
+            commonDescriptors->update();
         }
         if (objectManager->meshesChanged() || objectManager->instancesChanged() || lightManager->lightsChanged()) {
             recreateRayTracingDescriptors();
+            rtDescriptors->update();
         }
 
         return false;

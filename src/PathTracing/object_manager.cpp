@@ -450,26 +450,26 @@ namespace vve {
 		return objectCreated;
 	}
 
-	SingleDescriptorPlacment ObjectManager::getVertexDescriptorInput(size_t binding) {
+	SingleDescriptorPlacment* ObjectManager::getVertexDescriptorInput(size_t binding) {
 		DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(vertexBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		return SingleDescriptorPlacment(descriptorInput, binding);
+		return new SingleDescriptorPlacment(descriptorInput, binding);
 	}
-	SingleDescriptorPlacment ObjectManager::getIndexDescriptorInput(size_t binding) {
+	SingleDescriptorPlacment* ObjectManager::getIndexDescriptorInput(size_t binding) {
 		DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(indexBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		return SingleDescriptorPlacment(descriptorInput, binding);
+		return new SingleDescriptorPlacment(descriptorInput, binding);
 	}
-	PerFrameDescriptorPlacment ObjectManager::getInstanceDescriptorInput(size_t binding) {
+	PerFrameDescriptorPlacment* ObjectManager::getInstanceDescriptorInput(size_t binding) {
 		std::vector<DescriptorInput*> descriptors;
 		for (HostBuffer<vvh::Instance>* instanceBuffer : instanceBuffers) {
 			DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(instanceBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 			descriptors.push_back(descriptorInput);
 		}
 		
-		return PerFrameDescriptorPlacment(descriptors, binding);
+		return new PerFrameDescriptorPlacment(descriptors, binding);
 	}
-	SingleDescriptorPlacment ObjectManager::getTlasDescriptorInput(size_t binding) {
+	SingleDescriptorPlacment* ObjectManager::getTlasDescriptorInput(size_t binding) {
 		DescriptorAccelInput* descriptorInput = new DescriptorAccelInput(&m_tlasAccel, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
-		return SingleDescriptorPlacment(descriptorInput, binding);
+		return new SingleDescriptorPlacment(descriptorInput, binding);
 	}
 
 

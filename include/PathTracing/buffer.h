@@ -162,7 +162,7 @@ namespace vve {
          * @param physicalDevice Physical device for memory queries.
          */
         RawDeviceBuffer(VkDeviceSize size, const void* data, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice)
-            : GenericBuffer(size, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, allocFlags, device, physicalDevice), commandManager(commandManager)
+            : GenericBuffer(size, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, allocFlags, device, physicalDevice), commandManager(commandManager)
         {
             transferData(data, size);
         }
@@ -176,17 +176,12 @@ namespace vve {
          * @param physicalDevice Physical device for memory queries.
          */
         RawDeviceBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice)
-            : GenericBuffer(size, usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, allocFlags, device, physicalDevice), commandManager(commandManager)
+            : GenericBuffer(size, usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, allocFlags, device, physicalDevice), commandManager(commandManager)
         {}
 
         RawDeviceBuffer(VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice)
-            : GenericBuffer(usage, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, allocFlags, device, physicalDevice), commandManager(commandManager)
+            : GenericBuffer(usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, allocFlags, device, physicalDevice), commandManager(commandManager)
         {
-        }
-
-        /** Destroy and release buffer resources. */
-        ~RawDeviceBuffer() {
-            destroyBuffer();
         }
 
         void updateBuffer(const void* data, VkDeviceSize size) {
@@ -234,10 +229,6 @@ namespace vve {
         DeviceBuffer(const T* data, size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, CommandManager* commandManager, VkDevice& device, VkPhysicalDevice& physicalDevice) :
             RawDeviceBuffer(sizeof(T) * count, data, usage, allocFlags, commandManager, device, physicalDevice), count(count) {}
 
-        /** Destroy and release buffer resources. */
-        ~DeviceBuffer() {
-            destroyBuffer();
-        }
 
         /**
          * @param data CPU pointer to data.
@@ -300,12 +291,6 @@ namespace vve {
             copyToBuffer(data, size);
         }
 
-
-        /** Destroy and release buffer resources. */
-        ~RawHostBuffer() {
-            destroyBuffer();
-        }
-
         /**
          * @param data CPU pointer to data.
          * @param count Number of elements.
@@ -356,12 +341,6 @@ namespace vve {
          */
         HostBuffer(const T* data, size_t count, VkBufferUsageFlags usage, VkMemoryAllocateFlags allocFlags, VkDevice& device, VkPhysicalDevice& physicalDevice)
             : RawHostBuffer(data, sizeof(T)* count, usage, allocFlags, device, physicalDevice), count(count) {
-        }
-
-
-        /** Destroy and release buffer resources. */
-        ~HostBuffer() {
-            destroyBuffer();
         }
 
         /**

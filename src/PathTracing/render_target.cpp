@@ -51,7 +51,7 @@ namespace vve {
 	}
 
 
-	PerFrameDescriptorPlacment RenderTarget::getDescriptorInput(size_t binding) {
+	PerFrameDescriptorPlacment* RenderTarget::getDescriptorInput(size_t binding) {
 
 		std::vector<DescriptorInput*> descriptors;
 
@@ -60,7 +60,7 @@ namespace vve {
 			descriptors.push_back(descriptorInput);
 		}
 
-		return PerFrameDescriptorPlacment(descriptors, binding);
+		return new PerFrameDescriptorPlacment(descriptors, binding);
 	}
 
 }

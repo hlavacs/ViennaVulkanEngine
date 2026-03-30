@@ -123,8 +123,8 @@ namespace vve {
 		return buffer;
 	}
 
-	SingleDescriptorPlacment MaterialManager::getMaterialDescriptorInput(size_t binding) {
+	SingleDescriptorPlacment* MaterialManager::getMaterialDescriptorInput(size_t binding) {
 		DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-		return SingleDescriptorPlacment(descriptorInput, binding);
+		return new SingleDescriptorPlacment(descriptorInput, binding);
 	}
 }
