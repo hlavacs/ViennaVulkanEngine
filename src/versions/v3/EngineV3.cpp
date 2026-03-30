@@ -31,6 +31,8 @@ public:
 
         initialized_ = true;
         running_ = false;
+        last_time_ = std::chrono::time_point_cast<std::chrono::nanoseconds>(
+            std::chrono::high_resolution_clock::now());
         return {};
     }
 
@@ -56,6 +58,13 @@ public:
         if (!isInitialized()) {
             return std::unexpected(vve::Result::not_initialized);
         }
+
+        const auto current_time = std::chrono::time_point_cast<std::chrono::nanoseconds>(
+            std::chrono::high_resolution_clock::now());
+        const double seconds_elapsed =
+            std::chrono::duration<double>(current_time - last_time_).count();
+        last_time_ = current_time;
+        //std::print("seconds_elapsed: {}\n", seconds_elapsed);
 
         return {};
     }
@@ -92,6 +101,8 @@ private:
     bool validation_enabled_{false};
     bool initialized_{false};
     bool running_{false};
+    std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds>
+        last_time_{};
 };
 
 } // namespace
