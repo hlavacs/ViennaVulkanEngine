@@ -4,9 +4,9 @@ namespace vve::v3 {
 
 namespace {
 
-class Engine final : public vve::Engine {
+class EngineImpl final : public vve::detail::EngineImpl {
 public:
-    explicit Engine(const vve::EngineConfig& config)
+    explicit EngineImpl(const vve::EngineConfig& config)
         : application_name_("ViennaVulkanEngine"),
           validation_enabled_(false),
           initialized_(false),
@@ -28,7 +28,9 @@ public:
 
     [[nodiscard]] std::expected<void, vve::Result> run() override {
         if (!initialized_) {
-            init();
+            if (auto init_result = init(); !init_result) {
+                return init_result;
+            }
         }
 
         running_ = true;
@@ -79,8 +81,8 @@ private:
 
 } // namespace
 
-std::unique_ptr<vve::Engine> makeEngine(const vve::EngineConfig& config) {
-    return std::make_unique<Engine>(config);
+std::unique_ptr<vve::detail::EngineImpl> makeEngine(const vve::EngineConfig& config) {
+    return std::make_unique<EngineImpl>(config);
 }
 
 } // namespace vve::v3

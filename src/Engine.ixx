@@ -13,6 +13,12 @@ module;
 export module VEEngine;
 import std;
 
+export namespace vve::detail {
+
+class EngineImpl;
+
+} // namespace vve::detail
+
 export namespace vve {
 
 enum class EngineVersion {
@@ -87,18 +93,31 @@ public:
     Engine& operator=(const Engine&) = delete;
     Engine& operator=(Engine&&) = delete;
 
-    [[nodiscard]] virtual std::expected<void, Result> init();
-    [[nodiscard]] virtual std::expected<void, Result> run();
-    [[nodiscard]] virtual std::expected<void, Result> step();
-    [[nodiscard]] virtual std::expected<int, Result> getVersionMajor() const noexcept;
-    [[nodiscard]] virtual std::expected<std::string, Result> loadFile(
+    [[nodiscard]] std::expected<void, Result> init();
+    [[nodiscard]] std::expected<void, Result> run();
+    [[nodiscard]] std::expected<void, Result> step();
+    [[nodiscard]] std::expected<int, Result> getVersionMajor() const noexcept;
+    [[nodiscard]] std::expected<std::string, Result> loadFile(
         const std::filesystem::path& file_path) const;
 
-protected:
-    Engine() noexcept;
-
 private:
-    std::unique_ptr<Engine> impl_{nullptr};
+    std::unique_ptr<detail::EngineImpl> impl_{nullptr};
 };
 
 } // namespace vve
+
+namespace vve::detail {
+
+class EngineImpl {
+public:
+    virtual ~EngineImpl() = default;
+
+    [[nodiscard]] virtual std::expected<void, vve::Result> init() = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> run() = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> step() = 0;
+    [[nodiscard]] virtual std::expected<int, vve::Result> getVersionMajor() const noexcept = 0;
+    [[nodiscard]] virtual std::expected<std::string, vve::Result> loadFile(
+        const std::filesystem::path& file_path) const = 0;
+};
+
+} // namespace vve::detail
