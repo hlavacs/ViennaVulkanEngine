@@ -1,6 +1,25 @@
 cmake_minimum_required(VERSION 3.28)
 
-set(CMAKE_VS_GLOBALS "VcpkgEnabled=false")
+set(CMAKE_VS_GLOBALS
+    "VcpkgEnabled=true"
+    "VcpkgEnableManifest=true"
+)
+if(DEFINED ENV{VCPKG_ROOT})
+    list(APPEND CMAKE_VS_GLOBALS "VcpkgRoot=$ENV{VCPKG_ROOT}")
+endif()
+
+if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+    if(DEFINED ENV{VCPKG_ROOT} AND EXISTS "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake")
+        set(CMAKE_TOOLCHAIN_FILE
+            "$ENV{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+            CACHE STRING "Vcpkg toolchain file")
+    endif()
+endif()
+
+set(VVE_VCPKG_TRIPLET "x64-windows" CACHE STRING "Vcpkg triplet used for local manifest installs")
+if(EXISTS "${CMAKE_SOURCE_DIR}/vcpkg_installed/${VVE_VCPKG_TRIPLET}")
+    list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/vcpkg_installed/${VVE_VCPKG_TRIPLET}")
+endif()
 
 project(ViennaVulkanEngine VERSION 3.0.0 LANGUAGES CXX)
 

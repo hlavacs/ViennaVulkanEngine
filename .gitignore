@@ -3,6 +3,7 @@
 /build-*/
 /bin/
 /out/
+/vcpkg_installed/
 
 # CMake
 /CMakeFiles/

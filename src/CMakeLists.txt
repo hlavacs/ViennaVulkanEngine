@@ -8,6 +8,8 @@ target_compile_options(ViennaVulkanEngine PUBLIC
     "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-std=c++2c>"
 )
 
+find_package(glm CONFIG REQUIRED)
+
 target_sources(ViennaVulkanEngine
     PRIVATE
         Engine.cpp
@@ -21,6 +23,7 @@ target_sources(ViennaVulkanEngine
 
 target_link_libraries(ViennaVulkanEngine
     PUBLIC
+        glm::glm
         Vulkan::Vulkan
 )
 
