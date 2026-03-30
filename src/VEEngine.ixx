@@ -27,9 +27,15 @@ public:
     VEEngine& operator=(const VEEngine&) = delete;
     VEEngine& operator=(VEEngine&&) = delete;
 
-    [[nodiscard]] int getVersionMajor() const noexcept;
+    [[nodiscard]] virtual int getVersionMajor() const noexcept;
+
+protected:
+    enum class ConstructionMode {
+        implementation
+    };
+
+    explicit VEEngine(ConstructionMode) noexcept;
 
 private:
-    class Impl;
-    std::unique_ptr<Impl> impl_;
+    std::unique_ptr<VEEngine> impl_;
 };
