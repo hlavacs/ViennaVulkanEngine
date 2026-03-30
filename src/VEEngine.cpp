@@ -1,40 +1,39 @@
 module;
 
-#include <cassert>
-
 module VEEngine;
 import VEEngine.V3;
 import std;
 
 namespace {
 
-std::unique_ptr<VEEngine> makeEngine(VEEngineVersion version) {
+std::unique_ptr<VEEngine> makeEngine(
+    VeEngineVersion version,
+    const VEEngineConfig& config) {
     switch (version) {
-    case VEEngineVersion::v3:
-        return vve::v3::makeEngine();
+        case VeEngineVersion::v3: return vve::v3::makeEngine(config);
     }
 
-    std::unreachable();
+    return nullptr;
 }
 
 } // namespace
 
-VEEngine::VEEngine(VEEngineVersion version)
-    : impl_(makeEngine(version)) {
+VEEngine::VEEngine(VeEngineVersion version, VEEngineConfig config)
+    : impl_(makeEngine(version, config)) {
 }
 
-VEEngine::VEEngine() noexcept
-    : impl_(nullptr) {
+VEEngine::VEEngine() noexcept : impl_(nullptr) {
 }
 
 VEEngine::~VEEngine() = default;
 
-int VEEngine::getVersionMajor() const noexcept {
-    assert(impl_ != nullptr);
+std::expected<int, VeResult> VEEngine::getVersionMajor() const noexcept {
+    if (impl_ == nullptr) return std::unexpected(VeResult::internal_error); 
     return impl_->getVersionMajor();
 }
 
-std::string VEEngine::loadFile(const std::filesystem::path& file_path) const {
-    assert(impl_ != nullptr);
+std::expected<std::string, VeResult> VEEngine::loadFile(
+    const std::filesystem::path& file_path) const {
+    if (impl_ == nullptr) return std::unexpected(VeResult::internal_error); 
     return impl_->loadFile(file_path);
 }

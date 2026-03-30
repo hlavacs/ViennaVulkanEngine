@@ -1,6 +1,13 @@
 import VEEngine;
 
 int main() {
-    VEEngine engine(VEEngineVersion::v3);
-    return engine.getVersionMajor() == 3 ? 0 : 1;
+    VEEngine engine(
+        VeEngineVersion::v3,
+        VeApplicationName{"physics"});
+    const auto version_major = engine.getVersionMajor();
+    if (!version_major) {
+        return 1;
+    }
+
+    return *version_major == 3 ? 0 : 1;
 }

@@ -4,6 +4,6 @@ import std;
 
 namespace vve::v3 {
 
-export std::unique_ptr<VEEngine> makeEngine();
+export std::unique_ptr<VEEngine> makeEngine(const VEEngineConfig& config);
 
 } // namespace vve::v3

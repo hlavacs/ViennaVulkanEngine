@@ -1,8 +1,16 @@
-import std;
 import VEEngine;
+import std;
 
 int main() {
-    VEEngine engine(VEEngineVersion::v3);
-    std::cout << "VVE " << engine.getVersionMajor() << ".0\n";
-    return engine.getVersionMajor() == 3 ? 0 : 1;
+    VEEngine engine(
+        VeEngineVersion::v3,
+        VeApplicationName{"game"},
+        VeEnableValidation{true});
+    const auto version_major = engine.getVersionMajor();
+    if (!version_major) {
+        return 1;
+    }
+
+    std::cout << "VVE " << *version_major << ".0\n";
+    return *version_major == 3 ? 0 : 1;
 }
