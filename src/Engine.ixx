@@ -12,6 +12,7 @@ module;
 
 export module VEEngine;
 import std;
+export import :Handle;
 
 export namespace vve::detail {
 

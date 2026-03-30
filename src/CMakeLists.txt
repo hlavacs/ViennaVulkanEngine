@@ -14,6 +14,7 @@ target_sources(ViennaVulkanEngine
         versions/v3/EngineV3.cpp
     PUBLIC
         FILE_SET CXX_MODULES FILES
+            Handle.ixx
             Engine.ixx
             versions/v3/EngineV3.ixx
 )
