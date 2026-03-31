@@ -28,7 +28,6 @@
 
 # IDEs and editors
 /.idea/
-.vscode/
 *~
 *.swp
 *.tmp
