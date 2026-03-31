@@ -12,6 +12,7 @@ module;
 
 export module VEEngine;
 import std;
+export import :System;
 export import :Handle;
 export import :Math;
 
