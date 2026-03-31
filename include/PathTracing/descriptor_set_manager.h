@@ -8,12 +8,15 @@ namespace vve {
 		size_t descriptorCount = 1;
 		VkDescriptorBindingFlags bindingFlags;
 		bool useVariableDescriptorCount = false;
-	public:
-		DescriptorInput(VkDescriptorType type, size_t descriptorCount)
-			: type(type), descriptorCount(descriptorCount), maxDescriptorCount(1), bindingFlags(0), useVariableDescriptorCount(false){}
 
-		DescriptorInput(VkDescriptorType type, size_t descriptorCount, size_t maxDescriptorCount, VkDescriptorBindingFlags bindingFlags, bool useVariableDescriptorCount = false)
-			: type(type), descriptorCount(descriptorCount), maxDescriptorCount(maxDescriptorCount), bindingFlags(bindingFlags), useVariableDescriptorCount(useVariableDescriptorCount) {
+		VkShaderStageFlags stageFlags;
+
+	public:
+		DescriptorInput(VkDescriptorType type, size_t descriptorCount, VkShaderStageFlags stageFlags)
+			: type(type), descriptorCount(descriptorCount), maxDescriptorCount(1), bindingFlags(0), useVariableDescriptorCount(false), stageFlags(stageFlags){}
+
+		DescriptorInput(VkDescriptorType type, size_t descriptorCount, size_t maxDescriptorCount, VkDescriptorBindingFlags bindingFlags, bool useVariableDescriptorCount, VkShaderStageFlags stageFlags)
+			: type(type), descriptorCount(descriptorCount), maxDescriptorCount(maxDescriptorCount), bindingFlags(bindingFlags), useVariableDescriptorCount(useVariableDescriptorCount), stageFlags(stageFlags){
 			std::cout << "maxDescriptorCount: " << maxDescriptorCount << "\n";
 		}
 
@@ -23,6 +26,7 @@ namespace vve {
 			layoutBinding.descriptorType = type;
 			layoutBinding.descriptorCount = maxDescriptorCount;
 			layoutBinding.pImmutableSamplers = nullptr; // Optional
+			layoutBinding.stageFlags = stageFlags;
 
 			return layoutBinding;
 		}
@@ -38,7 +42,7 @@ namespace vve {
 		GenericBuffer* input;
 		VkDescriptorBufferInfo bufferInfo;
 	public:
-		DescriptorBufferInput(GenericBuffer* input, VkDescriptorType type) :DescriptorInput(type, 1), input(input) {}
+		DescriptorBufferInput(GenericBuffer* input, VkDescriptorType type, VkShaderStageFlags stageFlags) :DescriptorInput(type, 1, stageFlags), input(input) {}
 
 		GenericBuffer* getInput() {
 			return input;
@@ -75,7 +79,7 @@ namespace vve {
 		Image* input;
 		VkDescriptorImageInfo imageInfo;
 	public:
-		DescriptorImageInput(Image* input, VkDescriptorType type) :DescriptorInput(type, 1), input(input){}
+		DescriptorImageInput(Image* input, VkDescriptorType type, VkShaderStageFlags stageFlags) :DescriptorInput(type, 1, stageFlags), input(input){}
 
 		Image* getInput() {
 			return input;
@@ -114,10 +118,10 @@ namespace vve {
 		std::vector<VkDescriptorImageInfo> imageInfos;
 		VkSampler sampler;
 	public:
-		DescriptorTextureInput(std::vector<Texture*>* input, VkSampler sampler, VkDescriptorType type, size_t maxTextureCount)
+		DescriptorTextureInput(std::vector<Texture*>* input, VkSampler sampler, VkDescriptorType type, size_t maxTextureCount, VkShaderStageFlags stageFlags)
 			:DescriptorInput(type, input->size(), maxTextureCount, VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT |
 				VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT |
-				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, true), input(input), sampler(sampler) {
+				VK_DESCRIPTOR_BINDING_UPDATE_AFTER_BIND_BIT, true, stageFlags), input(input), sampler(sampler) {
 			std::cout << "maxTextureCount: " << maxTextureCount << "\n";
 		}
 
@@ -163,7 +167,7 @@ namespace vve {
 		VkWriteDescriptorSetAccelerationStructureKHR asInfo;
 		VkSampler sampler;
 	public:
-		DescriptorAccelInput(AccelStructure* input, VkDescriptorType type) :DescriptorInput(type, 1), input(input) {}
+		DescriptorAccelInput(AccelStructure* input, VkDescriptorType type, VkShaderStageFlags stageFlags) :DescriptorInput(type, 1, stageFlags), input(input) {}
 
 		AccelStructure* getInput() {
 			return input;
@@ -261,7 +265,6 @@ namespace vve {
 		VkDescriptorSetLayout descriptorSetLayout;
 		std::vector<VkDescriptorSet> descriptorSets;
 		VkDescriptorPool descriptorPool;
-		VkShaderStageFlags stageFlags;
 
 		VkDevice& device;
 
@@ -311,8 +314,6 @@ namespace vve {
 
 			for (int i = 0; i < descriptorInputs.size(); i++) {
 				VkDescriptorSetLayoutBinding layoutbinding = descriptorInputs[i]->getDescriptorLayout();
-				layoutbinding.stageFlags = stageFlags;
-
 				std::cout << "Layout binding: " << layoutbinding.binding << "\n";
 				std::cout << "Layout descriptor count: " << layoutbinding.descriptorCount << "\n";
 
@@ -391,8 +392,14 @@ namespace vve {
 		}
 
 	public:
-		DescriptorManager(std::vector<DescriptorPlacment*> descriptorInputs, VkShaderStageFlags stageFlags, VkDevice& device) : descriptorInputs(descriptorInputs), stageFlags(stageFlags), device(device) {}
-		DescriptorManager(VkShaderStageFlags stageFlags, VkDevice& device) : descriptorInputs(std::vector<DescriptorPlacment*>()), stageFlags(stageFlags), device(device) {}
+		DescriptorManager(std::vector<DescriptorPlacment*> descriptorInputs, VkDevice& device) : descriptorInputs(descriptorInputs), device(device) {}
+		DescriptorManager(VkDevice& device) : descriptorInputs(std::vector<DescriptorPlacment*>()), device(device) {}
+
+		~DescriptorManager() {
+			vkFreeDescriptorSets(device, descriptorPool, descriptorSets.size(), descriptorSets.data());
+			vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
+			vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+		}
 
 		void finalize() {
 			finalized = true;
@@ -405,11 +412,7 @@ namespace vve {
 			//createDescriptorSets();
 		}
 
-		void update() {
-			if (!finalized) {
-				std::cerr << "Descriptor Manager has to be finalized before updating the descriptor sets \n";
-			}
-
+		void destroyDescriptorSets() {
 			if (discriptorsCreated) {
 				vkDeviceWaitIdle(device);
 				vkFreeDescriptorSets(
@@ -418,8 +421,15 @@ namespace vve {
 					descriptorSets.size(),
 					descriptorSets.data()
 				);
+				discriptorsCreated = false;
 			}
+		}
 
+		void update() {
+			if (!finalized) {
+				std::cerr << "Descriptor Manager has to be finalized before updating the descriptor sets \n";
+			}
+			destroyDescriptorSets();
 			createDescriptorSets();
 		}
 
@@ -430,11 +440,22 @@ namespace vve {
 			descriptorInputs.push_back(input);
 		}
 
-		std::vector<VkDescriptorSet> getDescriptorSets() {
+
+
+		const std::vector<VkDescriptorSet>& getDescriptorSets() const {
 			if (!finalized) {
 				std::cerr << "Descriptor Manager has to be finalized before retrieve \n";
 			}
 			return descriptorSets;
+		}
+
+
+		VkDescriptorSetLayout* getDescriptorLayoutReference() {
+			return &descriptorSetLayout;
+		}
+
+		VkDescriptorSetLayout getDescriptorLayout() {
+			return descriptorSetLayout;
 		}
 	};
 }

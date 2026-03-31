@@ -51,19 +51,9 @@ namespace vve {
 		/** Create the logical device and queues. */
 		void createLogicalDevice();
 
-		/** Recreate general descriptor resources. */
-		void recreateGeneralDescriptors();
-		/** Recreate ray tracing descriptor resources. */
-		void recreateRayTracingDescriptors();
-
 		void createCommonDescriptors();
 		void createRtDescriptors();
 		void createRtTargetsDescriptors();
-
-		/** Destroy general descriptors. */
-		void destroyGeneralDescriptors();
-		/** Destroy ray tracing descriptors. */
-		void destroyRayTracingDescriptors();
 
 		/**
 		 * Update per-frame uniform buffer data.
@@ -108,19 +98,6 @@ namespace vve {
 		DescriptorManager* rtDescriptors;
 		DescriptorManager* rtTargetsDescriptors;
 
-
-		VkDescriptorPool descriptorPool;
-		std::vector<VkDescriptorSet> descriptorSets;
-		VkDescriptorSetLayout descriptorSetLayout;
-
-		VkDescriptorPool descriptorPoolRT;
-		std::vector<VkDescriptorSet> descriptorSetsRT;
-		VkDescriptorSetLayout descriptorSetLayoutRT;
-
-		VkDescriptorPool descriptorPoolTargets;
-		std::vector<VkDescriptorSet> descriptorSetsTargets;
-		VkDescriptorSetLayout descriptorSetLayoutTargets;
-
 		TextureManager* textureManager;
 		ObjectManager* objectManager;
 		MaterialManager* materialManager;
@@ -150,9 +127,6 @@ namespace vve {
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR };
 		VkPhysicalDeviceAccelerationStructurePropertiesKHR m_asProperties{
 			VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR };
-
-		bool generalDiscriptorsCreated = false;
-		bool raytracingDiscriptorsCreated = false;
 
 
 		vecs::Ref<VulkanState> m_vkState{};

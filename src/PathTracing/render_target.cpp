@@ -51,12 +51,12 @@ namespace vve {
 	}
 
 
-	PerFrameDescriptorPlacment* RenderTarget::getDescriptorInput(size_t binding) {
+	PerFrameDescriptorPlacment* RenderTarget::getDescriptorInput(size_t binding, VkShaderStageFlags stageFlags) {
 
 		std::vector<DescriptorInput*> descriptors;
 
 		for (Image* image : images) {
-			DescriptorImageInput* descriptorInput = new DescriptorImageInput(image, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+			DescriptorImageInput* descriptorInput = new DescriptorImageInput(image, VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, stageFlags);
 			descriptors.push_back(descriptorInput);
 		}
 

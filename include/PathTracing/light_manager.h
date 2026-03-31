@@ -90,7 +90,7 @@ namespace vve {
 
 		/** @return Pointer to the light buffer. */
 		DeviceBuffer<LightSource>* getLightBuffer();
-		SingleDescriptorPlacment* getLightDescriptorInput(size_t binding);
+		SingleDescriptorPlacment* getLightDescriptorInput(size_t binding, VkShaderStageFlags stageFlags);
 
 		/** @return True if light data changed since last frame. */
 		bool lightsChanged();

@@ -13,8 +13,8 @@ namespace vve {
         VkPipeline graphicsPipeline{};
         VkPipelineLayout pipelineLayout{};
         VkRenderPass renderPass{};
-        VkDescriptorSetLayout descriptorSetLayout;
-        std::vector<VkDescriptorSet> descriptorSets;
+
+        DescriptorManager* descriptorManager;
         std::vector<VkFramebuffer> framebuffers{};
 
         std::vector<RenderTarget*> renderTargets;
@@ -69,13 +69,7 @@ namespace vve {
          * @param instanceBuffers Per-frame instance buffers.
          * @param descriptorSetLayout Descriptor set layout for uniforms/textures.
          */
-        PiplineRasterized(std::string systemName, Engine& engine, VkDevice device, VkExtent2D extent, CommandManager* commandManager, DeviceBuffer<Vertex>* vertexBuffer, DeviceBuffer<uint32_t>* indexBuffer, std::vector<HostBuffer<vvh::Instance>*> instanceBuffers, VkDescriptorSetLayout& descriptorSetLayout);
-
-        /**
-         * Assign descriptor sets used by the pipeline.
-         * @param descriptorSets Descriptor sets to bind.
-         */
-        void setDescriptorSets(std::vector<VkDescriptorSet>& descriptorSets);
+        PiplineRasterized(std::string systemName, Engine& engine, VkDevice device, VkExtent2D extent, CommandManager* commandManager, DeviceBuffer<Vertex>* vertexBuffer, DeviceBuffer<uint32_t>* indexBuffer, std::vector<HostBuffer<vvh::Instance>*> instanceBuffers, DescriptorManager* descriptorManager);
 
 
         /** Release owned Vulkan resources. */

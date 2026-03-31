@@ -85,23 +85,13 @@ namespace vve {
 
 
     PiplineRaytraced::PiplineRaytraced(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager, VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties,
-        VkDescriptorSetLayout descriptorSetLayoutGeneral, VkDescriptorSetLayout descriptorSetLayoutRT,
-        VkDescriptorSetLayout descriptorSetLayoutTargets,
-        std::vector<VkDescriptorSet> descriptorSetsTargets, VkExtent2D extent)
+        DescriptorManager* commonDescriptors, DescriptorManager* rtDescriptors,
+        DescriptorManager* targetsDescriptors, VkExtent2D extent)
         : device(device), physicalDevice(physicalDevice), commandManager(commandManager), m_rtProperties(m_rtProperties),
-        descriptorSetLayoutGeneral(descriptorSetLayoutGeneral), descriptorSetLayoutRT(descriptorSetLayoutRT),
-        descriptorSetLayoutTargets(descriptorSetLayoutTargets), descriptorSetsTargets(descriptorSetsTargets), extent(extent)
+        commonDescriptors(commonDescriptors), rtDescriptors(rtDescriptors),
+        targetsDescriptors(targetsDescriptors), extent(extent)
     {
         loadRayTracingFunctions();
-    }
-
-    void PiplineRaytraced::setDescriptorSets(std::vector<VkDescriptorSet> descriptorSetsGeneral, std::vector<VkDescriptorSet> descriptorSetsRT) {
-        this->descriptorSetsGeneral = descriptorSetsGeneral;
-        this->descriptorSetsRT = descriptorSetsRT;
-    }
-
-    void PiplineRaytraced::setRenderTargetsDescriptorSets(std::vector<VkDescriptorSet> descriptorSetsTargets) {
-        this->descriptorSetsTargets = descriptorSetsTargets;
     }
 
     void PiplineRaytraced::setExtent(VkExtent2D extent) {
@@ -171,7 +161,7 @@ namespace vve {
 
         VkPipelineLayoutCreateInfo pipeline_layout_create_info{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
         // Descriptor sets: one specific to ray tracing, and one shared with the rasterization pipeline
-        std::array<VkDescriptorSetLayout, 3> layouts = { descriptorSetLayoutGeneral , descriptorSetLayoutRT, descriptorSetLayoutTargets };
+        std::array<VkDescriptorSetLayout, 3> layouts = { commonDescriptors->getDescriptorLayout() , rtDescriptors->getDescriptorLayout(), targetsDescriptors->getDescriptorLayout()};
         pipeline_layout_create_info.setLayoutCount = uint32_t(layouts.size());
         pipeline_layout_create_info.pSetLayouts = layouts.data();
         vkCreatePipelineLayout(device, &pipeline_layout_create_info, nullptr, &pipelineLayout);
@@ -211,7 +201,7 @@ namespace vve {
 
         vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, graphicsPipeline);
 
-        std::array<VkDescriptorSet, 3> descriptorSets = { descriptorSetsGeneral[currentFrame], descriptorSetsRT[currentFrame], descriptorSetsTargets[currentFrame] };
+        std::array<VkDescriptorSet, 3> descriptorSets = { commonDescriptors->getDescriptorSets()[currentFrame], rtDescriptors->getDescriptorSets()[currentFrame], targetsDescriptors->getDescriptorSets()[currentFrame] };
 
         vkCmdBindDescriptorSets(
             cmd,

@@ -119,8 +119,8 @@ namespace vve {
 		return buffer;
 	}
 
-	SingleDescriptorPlacment* LightManager::getLightDescriptorInput(size_t binding) {
-		DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	SingleDescriptorPlacment* LightManager::getLightDescriptorInput(size_t binding, VkShaderStageFlags stageFlags) {
+		DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(buffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stageFlags);
 		return new SingleDescriptorPlacment(descriptorInput, binding);
 	}
 

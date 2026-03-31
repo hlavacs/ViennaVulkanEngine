@@ -105,8 +105,8 @@ namespace vve {
         return textures;
     }
 
-    SingleDescriptorPlacment* TextureManager::getTextureDescriptorInput(size_t binding) {
-        DescriptorTextureInput* descriptorInput = new DescriptorTextureInput(&textures, textureSampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  1024);
+    SingleDescriptorPlacment* TextureManager::getTextureDescriptorInput(size_t binding, VkShaderStageFlags stageFlags) {
+        DescriptorTextureInput* descriptorInput = new DescriptorTextureInput(&textures, textureSampler, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,  1024, stageFlags);
         return new SingleDescriptorPlacment(descriptorInput, binding);
     }
 }

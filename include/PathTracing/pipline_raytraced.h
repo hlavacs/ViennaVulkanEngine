@@ -27,12 +27,9 @@ namespace vve {
         VkStridedDeviceAddressRegionKHR m_hitRegion{};       // Hit shader region
         VkStridedDeviceAddressRegionKHR m_callableRegion{};  // Callable shader region
 
-        VkDescriptorSetLayout descriptorSetLayoutGeneral;
-        std::vector<VkDescriptorSet> descriptorSetsGeneral;
-        VkDescriptorSetLayout descriptorSetLayoutRT;
-        std::vector<VkDescriptorSet> descriptorSetsRT;
-        VkDescriptorSetLayout descriptorSetLayoutTargets;
-        std::vector<VkDescriptorSet> descriptorSetsTargets;
+        DescriptorManager* commonDescriptors;
+        DescriptorManager* rtDescriptors;
+        DescriptorManager* targetsDescriptors;
 
 
         VkExtent2D extent;
@@ -84,22 +81,8 @@ namespace vve {
          * @param extent Render area extent.
          */
         PiplineRaytraced(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager, VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties,
-            VkDescriptorSetLayout descriptorSetLayoutGeneral, VkDescriptorSetLayout descriptorSetLayoutRT,
-            VkDescriptorSetLayout descriptorSetLayoutTargets,
-            std::vector<VkDescriptorSet> descriptorSetsTargets, VkExtent2D extent);
-
-        /**
-         * Assign descriptor sets used by the pipeline.
-         * @param descriptorSetsGeneral General descriptor sets.
-         * @param descriptorSetsRT Ray tracing descriptor sets.
-         */
-        void setDescriptorSets(std::vector<VkDescriptorSet> descriptorSetsGeneral, std::vector<VkDescriptorSet> descriptorSetsRT);
-
-        /**
-         * Assign descriptor sets for render targets.
-         * @param descriptorSetsTargets Target descriptor sets.
-         */
-        void setRenderTargetsDescriptorSets(std::vector<VkDescriptorSet> descriptorSetsTargets);
+            DescriptorManager* commonDescriptors, DescriptorManager* rtDescriptors,
+            DescriptorManager* targetsDescriptors, VkExtent2D extent);
 
         /**
          * Update the render extent.

@@ -143,12 +143,8 @@ namespace vve {
         }
     }
 
-    PiplineRasterized::PiplineRasterized(std::string systemName, Engine& engine, VkDevice device, VkExtent2D extent, CommandManager* commandManager, DeviceBuffer<Vertex>* vertexBuffer, DeviceBuffer<uint32_t>* indexBuffer, std::vector<HostBuffer<vvh::Instance>*> instanceBuffers, VkDescriptorSetLayout& descriptorSetLayout) :
-        System{ systemName, engine }, device(device), extent(extent), commandManager(commandManager), vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), instanceBuffers(instanceBuffers), descriptorSetLayout(descriptorSetLayout) {
-    }
-
-    void PiplineRasterized::setDescriptorSets(std::vector<VkDescriptorSet>& descriptorSets) {
-        this->descriptorSets = descriptorSets;
+    PiplineRasterized::PiplineRasterized(std::string systemName, Engine& engine, VkDevice device, VkExtent2D extent, CommandManager* commandManager, DeviceBuffer<Vertex>* vertexBuffer, DeviceBuffer<uint32_t>* indexBuffer, std::vector<HostBuffer<vvh::Instance>*> instanceBuffers, DescriptorManager* descriptorManager) :
+        System{ systemName, engine }, device(device), extent(extent), commandManager(commandManager), vertexBuffer(vertexBuffer), indexBuffer(indexBuffer), instanceBuffers(instanceBuffers), descriptorManager(descriptorManager){
     }
 
 
@@ -318,7 +314,7 @@ namespace vve {
         VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
         pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
         pipelineLayoutInfo.setLayoutCount = 1; // Optional
-        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+        pipelineLayoutInfo.pSetLayouts = descriptorManager->getDescriptorLayoutReference();
         pipelineLayoutInfo.pushConstantRangeCount = 1; // Optional
         pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange; // Optional
 
@@ -419,7 +415,7 @@ namespace vve {
 
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer->getBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSets[currentFrame], 0, nullptr);
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorManager->getDescriptorSets()[currentFrame], 0, nullptr);
 
         for (auto [gHandle, mesh] : m_registry.GetView<vecs::Handle, vvh::Mesh&>()) {
             if (mesh().instanceCount > 0) {

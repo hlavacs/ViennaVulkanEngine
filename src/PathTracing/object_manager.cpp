@@ -450,25 +450,25 @@ namespace vve {
 		return objectCreated;
 	}
 
-	SingleDescriptorPlacment* ObjectManager::getVertexDescriptorInput(size_t binding) {
-		DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(vertexBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	SingleDescriptorPlacment* ObjectManager::getVertexDescriptorInput(size_t binding, VkShaderStageFlags stageFlags) {
+		DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(vertexBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stageFlags);
 		return new SingleDescriptorPlacment(descriptorInput, binding);
 	}
-	SingleDescriptorPlacment* ObjectManager::getIndexDescriptorInput(size_t binding) {
-		DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(indexBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+	SingleDescriptorPlacment* ObjectManager::getIndexDescriptorInput(size_t binding, VkShaderStageFlags stageFlags) {
+		DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(indexBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stageFlags);
 		return new SingleDescriptorPlacment(descriptorInput, binding);
 	}
-	PerFrameDescriptorPlacment* ObjectManager::getInstanceDescriptorInput(size_t binding) {
+	PerFrameDescriptorPlacment* ObjectManager::getInstanceDescriptorInput(size_t binding, VkShaderStageFlags stageFlags) {
 		std::vector<DescriptorInput*> descriptors;
 		for (HostBuffer<vvh::Instance>* instanceBuffer : instanceBuffers) {
-			DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(instanceBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+			DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(instanceBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stageFlags);
 			descriptors.push_back(descriptorInput);
 		}
 		
 		return new PerFrameDescriptorPlacment(descriptors, binding);
 	}
-	SingleDescriptorPlacment* ObjectManager::getTlasDescriptorInput(size_t binding) {
-		DescriptorAccelInput* descriptorInput = new DescriptorAccelInput(&m_tlasAccel, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR);
+	SingleDescriptorPlacment* ObjectManager::getTlasDescriptorInput(size_t binding, VkShaderStageFlags stageFlags) {
+		DescriptorAccelInput* descriptorInput = new DescriptorAccelInput(&m_tlasAccel, VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, stageFlags);
 		return new SingleDescriptorPlacment(descriptorInput, binding);
 	}
 
