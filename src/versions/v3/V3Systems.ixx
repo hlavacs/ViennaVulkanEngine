@@ -5,36 +5,34 @@ import std;
 
 export namespace vve::v3 {
 
-class IAssetSystem {
+class System {
 public:
-    virtual ~IAssetSystem() = default;
+    virtual ~System() = default;
     [[nodiscard]] virtual std::string_view name() const noexcept = 0;
+};
+
+class IAssetSystem : public System {
+public:
     [[nodiscard]] virtual std::expected<ImportedScene, vve::Result> importScene(
         const std::filesystem::path& source_path) = 0;
 };
 
-class IResourceSystem {
+class IResourceSystem : public System {
 public:
-    virtual ~IResourceSystem() = default;
-    [[nodiscard]] virtual std::string_view name() const noexcept = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> registerImportedScene(
         const ImportedScene& scene,
         const std::filesystem::path& source_path) = 0;
     [[nodiscard]] virtual std::expected<std::vector<ResourceRecord>, vve::Result> enumerate() const = 0;
 };
 
-class ISceneSystem {
+class ISceneSystem : public System {
 public:
-    virtual ~ISceneSystem() = default;
-    [[nodiscard]] virtual std::string_view name() const noexcept = 0;
     [[nodiscard]] virtual std::expected<SceneData, vve::Result> instantiate(
         const ImportedScene& scene) = 0;
 };
 
-class ITaskGraphSystem {
+class ITaskGraphSystem : public System {
 public:
-    virtual ~ITaskGraphSystem() = default;
-    [[nodiscard]] virtual std::string_view name() const noexcept = 0;
     [[nodiscard]] virtual TaskGraph build(
         const SceneData& scene,
         const FrameContext& frame_context) = 0;
@@ -48,20 +46,16 @@ public:
     [[nodiscard]] virtual std::expected<void, vve::Result> init() = 0;
 };
 
-class IShaderSystem {
+class IShaderSystem : public System {
 public:
-    virtual ~IShaderSystem() = default;
-    [[nodiscard]] virtual std::string_view name() const noexcept = 0;
     [[nodiscard]] virtual std::expected<ShaderMetadata, vve::Result> reflect(
         const std::filesystem::path& shader_path,
         vve::RendererKind renderer,
         vve::ShadowKind shadow) = 0;
 };
 
-class IRenderSystem {
+class IRenderSystem : public System {
 public:
-    virtual ~IRenderSystem() = default;
-    [[nodiscard]] virtual std::string_view name() const noexcept = 0;
     [[nodiscard]] virtual RenderGraph build(
         const FrameContext& frame_context,
         const SceneData& scene,
@@ -72,10 +66,8 @@ public:
         const RenderGraph& render_graph) = 0;
 };
 
-class IGuiSystem {
+class IGuiSystem : public System {
 public:
-    virtual ~IGuiSystem() = default;
-    [[nodiscard]] virtual std::string_view name() const noexcept = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> init(
         IGraphicsBackend& graphics_backend) = 0;
 };
