@@ -5,6 +5,8 @@ import std;
 
 export namespace vve::v3 {
 
+class IRenderSystem;
+
 class IAssetSystem : public vve::System {
 public:
     [[nodiscard]] virtual std::expected<ImportedScene, vve::Result> importScene(
@@ -25,11 +27,20 @@ public:
         const ImportedScene& scene) = 0;
 };
 
+class ITaskSystem : public vve::System {
+public:
+    virtual void registerTasks(
+        TaskGraphBuilder& builder,
+        const SceneData& scene) = 0;
+};
+
 class ITaskGraphSystem : public vve::System {
 public:
     [[nodiscard]] virtual TaskGraph build(
         const SceneData& scene,
-        const FrameContext& frame_context) = 0;
+        std::span<ITaskSystem* const> task_systems,
+        IRenderSystem& render_system,
+        const RenderGraph& render_graph) = 0;
 };
 
 class IGraphicsBackend {
@@ -50,14 +61,12 @@ public:
 
 class IRenderSystem : public vve::System {
 public:
-    [[nodiscard]] virtual RenderGraph build(
+    [[nodiscard]] virtual RenderGraph buildStaticGraph() = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> record(
         const FrameContext& frame_context,
         const SceneData& scene,
-        const TaskGraph& task_graph,
-        const ShaderMetadata& shader_metadata) = 0;
-    [[nodiscard]] virtual std::expected<void, vve::Result> render(
-        const FrameContext& frame_context,
-        const RenderGraph& render_graph) = 0;
+        const RenderGraph& render_graph,
+        RenderTaskPhase phase) = 0;
 };
 
 class IGuiSystem : public vve::System {
@@ -71,6 +80,11 @@ struct EngineRuntimeDesc {
     vve::RendererKind renderer{vve::RendererKind::forward_renderer};
     vve::ShadowKind shadow{vve::ShadowKind::none};
     bool imgui_enabled{true};
+    std::vector<std::shared_ptr<ITaskSystem>> task_systems{};
+};
+
+struct TaskSystems {
+    std::vector<std::shared_ptr<ITaskSystem>> value{};
 };
 
 } // namespace vve::v3

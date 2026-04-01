@@ -20,6 +20,7 @@ std::expected<Runtime, vve::Result> createRuntime(const EngineRuntimeDesc& desc)
     runtime.resource_system = createResourceSystem();
     runtime.scene_system = createSceneSystem();
     runtime.task_graph_system = createTaskGraphSystem();
+    runtime.task_systems = desc.task_systems;
     runtime.graphics_backend = std::move(*graphics_backend);
     runtime.shader_system = createShaderSystem();
     runtime.render_system = createRenderSystem(
@@ -27,6 +28,7 @@ std::expected<Runtime, vve::Result> createRuntime(const EngineRuntimeDesc& desc)
         desc.shadow,
         *runtime.graphics_backend,
         desc.imgui_enabled);
+    runtime.render_graph = runtime.render_system->buildStaticGraph();
     if (desc.imgui_enabled) {
         runtime.gui_system = createGuiSystem();
     }
@@ -44,6 +46,11 @@ std::expected<Runtime, vve::Result> createRuntime(const EngineRuntimeDesc& desc)
     runtime.snapshot.gui_system = runtime.gui_system
         ? std::string(runtime.gui_system->name())
         : "Disabled";
+    runtime.snapshot.task_systems.reserve(runtime.task_systems.size());
+    for (const auto& task_system : runtime.task_systems) {
+        runtime.snapshot.task_systems.push_back(
+            task_system ? std::string(task_system->name()) : "UnnamedTaskSystem");
+    }
 
     return runtime;
 }

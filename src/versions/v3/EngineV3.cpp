@@ -6,6 +6,31 @@ namespace vve::v3 {
 
 namespace {
 
+[[nodiscard]] std::vector<ITaskSystem*> makeTaskSystemView(
+    const std::vector<std::shared_ptr<ITaskSystem>>& task_systems) {
+    std::vector<ITaskSystem*> view{};
+    view.reserve(task_systems.size());
+
+    for (const auto& task_system : task_systems) {
+        if (task_system != nullptr) {
+            view.push_back(task_system.get());
+        }
+    }
+
+    return view;
+}
+
+[[nodiscard]] std::expected<TaskGraph, vve::Result> buildTaskGraph(
+    detail::Runtime& runtime,
+    const SceneData& scene) {
+    auto task_systems = makeTaskSystemView(runtime.task_systems);
+    return runtime.task_graph_system->build(
+        scene,
+        task_systems,
+        *runtime.render_system,
+        runtime.render_graph);
+}
+
 class EngineImpl final : public vve::detail::EngineImpl {
 public:
     explicit EngineImpl(const vve::EngineConfig& config)
@@ -33,6 +58,10 @@ public:
 
         if (const auto imgui = config.tryGet<vve::EnableImGui>()) {
             runtime_desc_.imgui_enabled = imgui->value;
+        }
+
+        if (const auto task_systems = config.tryGet<vve::v3::TaskSystems>()) {
+            runtime_desc_.task_systems = task_systems->value;
         }
     }
 
@@ -63,6 +92,7 @@ public:
 
         initialized_ = true;
         running_ = false;
+        task_graph_dirty_ = true;
         last_time_ = std::chrono::time_point_cast<std::chrono::nanoseconds>(
             std::chrono::high_resolution_clock::now());
         return {};
@@ -107,18 +137,19 @@ public:
             .delta_seconds = seconds_elapsed
         };
 
-        const auto task_graph = runtime_.task_graph_system->build(*scene_, frame_context);
-        const auto shader_metadata = runtime_.shader_system->reflect(
-            "shaders/frame.slang",
-            runtime_desc_.renderer,
-            runtime_desc_.shadow);
-        if (!shader_metadata) {
-            return std::unexpected(shader_metadata.error());
+        if (task_graph_dirty_ || !task_graph_) {
+            if (auto task_graph_result = rebuildTaskGraph(); !task_graph_result) {
+                return task_graph_result;
+            }
         }
 
-        const auto render_graph = runtime_.render_system->build(
-            frame_context, *scene_, task_graph, *shader_metadata);
-        runtime_.render_system->render(frame_context, render_graph);
+        const TaskExecutionContext execution_context{
+            .frame_context = &frame_context,
+            .scene = &*scene_
+        };
+        if (auto execute_result = executeTaskGraph(*task_graph_, execution_context); !execute_result) {
+            return execute_result;
+        }
         return {};
     }
 
@@ -153,19 +184,37 @@ public:
 
         loaded_file_path_ = file_path;
         scene_ = std::move(*scene);
-        return {};
+        task_graph_dirty_ = true;
+        return rebuildTaskGraph();
     }
 
 private:
+    [[nodiscard]] std::expected<void, vve::Result> rebuildTaskGraph() {
+        if (!scene_) {
+            return std::unexpected(vve::Result::invalid_argument);
+        }
+
+        auto task_graph = buildTaskGraph(runtime_, *scene_);
+        if (!task_graph) {
+            return std::unexpected(task_graph.error());
+        }
+
+        task_graph_ = std::move(*task_graph);
+        task_graph_dirty_ = false;
+        return {};
+    }
+
     std::string application_name_;
     bool validation_enabled_{false};
     bool initialized_{false};
     bool running_{false};
     std::uint64_t frame_index_{0};
     EngineRuntimeDesc runtime_desc_{};
-    detail::Runtime runtime_{};
+    detail::Runtime runtime_{};    
     std::filesystem::path loaded_file_path_{};
     std::optional<SceneData> scene_{};
+    std::optional<TaskGraph> task_graph_{};
+    bool task_graph_dirty_{true};
     std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds>
         last_time_{};
 };

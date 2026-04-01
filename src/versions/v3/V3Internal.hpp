@@ -7,9 +7,11 @@ struct Runtime final {
     std::unique_ptr<IResourceSystem> resource_system{};
     std::unique_ptr<ISceneSystem> scene_system{};
     std::unique_ptr<ITaskGraphSystem> task_graph_system{};
+    std::vector<std::shared_ptr<ITaskSystem>> task_systems{};
     std::unique_ptr<IGraphicsBackend> graphics_backend{};
     std::unique_ptr<IShaderSystem> shader_system{};
     std::unique_ptr<IRenderSystem> render_system{};
+    RenderGraph render_graph{};
     std::unique_ptr<IGuiSystem> gui_system{};
     EngineRuntimeSnapshot snapshot{};
 };

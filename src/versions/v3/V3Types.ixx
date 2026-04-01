@@ -25,11 +25,15 @@ enum class ResourceLocation {
 
 enum class TaskKernelId : std::uint32_t {
     none = 0,
+    begin_frame,
     update_transforms,
     sample_animations,
     cull_visibility,
     build_draw_packets,
-    upload_resources
+    upload_resources,
+    record_render_graph,
+    record_post_processing,
+    record_post_post_processing
 };
 
 enum class RenderKernelId : std::uint32_t {
@@ -41,7 +45,15 @@ enum class RenderKernelId : std::uint32_t {
     path_trace,
     shadow_map,
     ray_traced_shadows,
+    post_process,
+    post_post_process,
     imgui
+};
+
+enum class RenderTaskPhase : std::uint32_t {
+    main = 0,
+    post_process,
+    post_post_process
 };
 
 enum class ShaderStage : std::uint32_t {
@@ -137,16 +149,96 @@ struct SceneData {
     std::vector<SceneNodeDesc> nodes{};
 };
 
+struct TaskExecutionContext {
+    const FrameContext* frame_context{nullptr};
+    const SceneData* scene{nullptr};
+};
+
+using TaskCallback = std::function<std::expected<void, vve::Result>(const TaskExecutionContext&)>;
+
 struct TaskNodeDesc {
     TaskNodeHandle handle{};
     TaskKernelId kernel{TaskKernelId::none};
     std::vector<TaskNodeHandle> depends_on{};
     std::vector<ResourceAccess> accesses{};
+    std::string debug_name{};
+    TaskCallback callback{};
 };
 
 struct TaskGraph {
     std::vector<TaskNodeDesc> nodes{};
 };
+
+class TaskGraphBuilder {
+public:
+    [[nodiscard]] TaskNodeHandle addTask(
+        std::string_view stable_name,
+        TaskKernelId kernel,
+        TaskCallback callback = {},
+        std::vector<TaskNodeHandle> depends_on = {},
+        std::vector<ResourceAccess> accesses = {},
+        std::string debug_name = {});
+
+    void addTask(TaskNodeDesc node);
+
+    [[nodiscard]] TaskGraph build() &&;
+    [[nodiscard]] std::vector<TaskNodeHandle> leafTasks() const;
+
+private:
+    std::vector<TaskNodeDesc> nodes_{};
+};
+
+inline TaskNodeHandle TaskGraphBuilder::addTask(
+    std::string_view stable_name,
+    TaskKernelId kernel,
+    TaskCallback callback,
+    std::vector<TaskNodeHandle> depends_on,
+    std::vector<ResourceAccess> accesses,
+    std::string debug_name) {
+    const TaskNodeHandle handle{vve::Handle::fromHash(stable_name)};
+    addTask(TaskNodeDesc{
+        .handle = handle,
+        .kernel = kernel,
+        .depends_on = std::move(depends_on),
+        .accesses = std::move(accesses),
+        .debug_name = debug_name.empty() ? std::string(stable_name) : std::move(debug_name),
+        .callback = std::move(callback)
+    });
+    return handle;
+}
+
+inline void TaskGraphBuilder::addTask(TaskNodeDesc node) {
+    if (node.debug_name.empty()) {
+        node.debug_name = "task." + std::to_string(node.handle.value.value());
+    }
+
+    nodes_.push_back(std::move(node));
+}
+
+inline TaskGraph TaskGraphBuilder::build() && {
+    return TaskGraph{.nodes = std::move(nodes_)};
+}
+
+inline std::vector<TaskNodeHandle> TaskGraphBuilder::leafTasks() const {
+    std::unordered_set<vve::Handle::value_type> dependency_handles{};
+    dependency_handles.reserve(nodes_.size());
+
+    for (const auto& node : nodes_) {
+        for (const auto& dependency : node.depends_on) {
+            dependency_handles.insert(dependency.value.value());
+        }
+    }
+
+    std::vector<TaskNodeHandle> leaf_handles{};
+    leaf_handles.reserve(nodes_.size());
+    for (const auto& node : nodes_) {
+        if (!dependency_handles.contains(node.handle.value.value())) {
+            leaf_handles.push_back(node.handle);
+        }
+    }
+
+    return leaf_handles;
+}
 
 struct ShaderParameter {
     std::string name{};
@@ -172,6 +264,7 @@ struct RenderResourceUse {
 struct RenderPassDesc {
     RenderPassHandle handle{};
     RenderKernelId kernel{RenderKernelId::none};
+    RenderTaskPhase phase{RenderTaskPhase::main};
     std::vector<RenderPassHandle> depends_on{};
     std::vector<RenderResourceUse> uses{};
     std::string debug_name{};
@@ -193,6 +286,7 @@ struct EngineRuntimeSnapshot {
     std::string shader_system{"SlangShaderSystem"};
     std::string render_system{"RenderSystem"};
     std::string gui_system{"ImGuiSystem"};
+    std::vector<std::string> task_systems{};
 };
 
 } // namespace vve::v3

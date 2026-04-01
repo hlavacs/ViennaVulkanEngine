@@ -40,12 +40,14 @@ namespace {
             return RenderPassDesc{
                 .handle = RenderPassHandle{detail::makeStableHandle("render.shadow_map")},
                 .kernel = RenderKernelId::shadow_map,
+                .phase = RenderTaskPhase::main,
                 .debug_name = "Shadow Map"
             };
         case vve::ShadowKind::ray_traced:
             return RenderPassDesc{
                 .handle = RenderPassHandle{detail::makeStableHandle("render.ray_traced_shadows")},
                 .kernel = RenderKernelId::ray_traced_shadows,
+                .phase = RenderTaskPhase::main,
                 .debug_name = "Ray Traced Shadows"
             };
     }
@@ -70,11 +72,7 @@ public:
         return "RenderSystem";
     }
 
-    [[nodiscard]] RenderGraph build(
-        const FrameContext&,
-        const SceneData&,
-        const TaskGraph&,
-        const ShaderMetadata&) override {
+    [[nodiscard]] RenderGraph buildStaticGraph() override {
         RenderGraph graph{};
 
         if (const auto shadow_pass = buildShadowPass(shadow_)) {
@@ -89,25 +87,55 @@ public:
         graph.passes.push_back(RenderPassDesc{
             .handle = main_pass,
             .kernel = selectMainKernel(renderer_),
+            .phase = RenderTaskPhase::main,
             .depends_on = std::move(main_dependencies),
             .debug_name = std::string(selectMainPassName(renderer_))
+        });
+
+        const auto post_process_pass = RenderPassHandle{detail::makeStableHandle("render.post_process")};
+        graph.passes.push_back(RenderPassDesc{
+            .handle = post_process_pass,
+            .kernel = RenderKernelId::post_process,
+            .phase = RenderTaskPhase::post_process,
+            .depends_on = {main_pass},
+            .debug_name = "Post Processing"
+        });
+
+        const auto post_post_process_pass = RenderPassHandle{
+            detail::makeStableHandle("render.post_post_process")
+        };
+        graph.passes.push_back(RenderPassDesc{
+            .handle = post_post_process_pass,
+            .kernel = RenderKernelId::post_post_process,
+            .phase = RenderTaskPhase::post_post_process,
+            .depends_on = {post_process_pass},
+            .debug_name = "Post Post Processing"
         });
 
         if (imgui_enabled_) {
             graph.passes.push_back(RenderPassDesc{
                 .handle = RenderPassHandle{detail::makeStableHandle("render.imgui")},
                 .kernel = RenderKernelId::imgui,
-                .depends_on = {main_pass},
-                .debug_name = std::format("ImGui ({})", graphics_backend_.name())
+                .phase = RenderTaskPhase::post_post_process,
+                .depends_on = {post_post_process_pass},
+                .debug_name = std::string("ImGui (") + std::string(graphics_backend_.name()) + ")"
             });
         }
 
         return graph;
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> render(
+    [[nodiscard]] std::expected<void, vve::Result> record(
         const FrameContext&,
-        const RenderGraph&) override {
+        const SceneData&,
+        const RenderGraph& render_graph,
+        RenderTaskPhase phase) override {
+        for (const auto& pass : render_graph.passes) {
+            if (pass.phase != phase) {
+                continue;
+            }
+        }
+
         return {};
     }
 
