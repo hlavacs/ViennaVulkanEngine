@@ -14,6 +14,7 @@ if(VVE_MATH_USE_DOUBLE)
 endif()
 
 find_package(assimp CONFIG REQUIRED)
+find_package(SDL3_mixer CONFIG REQUIRED)
 
 target_sources(ViennaVulkanEngine
     PRIVATE
@@ -44,6 +45,9 @@ target_link_libraries(ViennaVulkanEngine
     PUBLIC
         assimp::assimp
         Vulkan::Vulkan
+    PRIVATE
+        SDL3::SDL3
+        SDL3_mixer::SDL3_mixer
 )
 
 vve_set_output_dirs(ViennaVulkanEngine)

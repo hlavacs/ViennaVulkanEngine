@@ -118,7 +118,8 @@ public:
 
         const auto render_graph = runtime_.render_system->build(
             frame_context, *scene_, task_graph, *shader_metadata);
-        return runtime_.render_system->render(frame_context, render_graph);
+        runtime_.render_system->render(frame_context, render_graph);
+        return {};
     }
 
     [[nodiscard]] std::expected<int, vve::Result> getVersionMajor() const noexcept override {

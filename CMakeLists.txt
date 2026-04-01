@@ -28,7 +28,12 @@ add_compile_options(
     "$<$<CXX_COMPILER_ID:MSVC>:/MP>"
 )
 
+if(DEFINED ENV{VULKAN_SDK} AND NOT "$ENV{VULKAN_SDK}" STREQUAL "")
+    list(PREPEND CMAKE_PREFIX_PATH "$ENV{VULKAN_SDK}/cmake")
+endif()
+
 find_package(Vulkan REQUIRED)
+find_package(SDL3 CONFIG REQUIRED)
 
 function(vve_set_output_dirs target_name)
     get_target_property(target_type "${target_name}" TYPE)
@@ -53,6 +58,15 @@ function(vve_set_output_dirs target_name)
                 "RUNTIME_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/exe"
             )
         endforeach()
+
+        if(WIN32)
+            add_custom_command(TARGET "${target_name}" POST_BUILD
+                COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+                    $<TARGET_RUNTIME_DLLS:${target_name}>
+                    $<TARGET_FILE_DIR:${target_name}>
+                COMMAND_EXPAND_LISTS
+            )
+        endif()
     elseif(target_type STREQUAL "SHARED_LIBRARY")
         if(WIN32)
             set_target_properties("${target_name}" PROPERTIES

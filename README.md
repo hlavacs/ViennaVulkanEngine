@@ -2,9 +2,9 @@
 
 ## Setup
 
-This project uses `vcpkg` manifest dependencies for third-party libraries that are not already provided by the Vulkan SDK. `assimp` is declared in [vcpkg.json](C:/data/GitHub/ViennaVulkanEngine/vcpkg.json) and installed into the repo-local `vcpkg_installed` directory.
+This project uses `vcpkg` manifest dependencies for third-party libraries that are not already provided by the Vulkan SDK. `assimp` and `sdl3-mixer` are declared in [vcpkg.json](C:/data/GitHub/ViennaVulkanEngine/vcpkg.json) and installed into the repo-local `vcpkg_installed` directory.
 
-`glm` is not installed through `vcpkg`. The project expects `glm` to come from the Vulkan SDK include directory.
+`glm` and `SDL3` are not installed through `vcpkg`. The project expects both to come from the Vulkan SDK. On Windows, CMake resolves `SDL3` from `$ENV{VULKAN_SDK}/cmake`.
 
 All engine math should go through the exported `vve::math` abstraction layer instead of using raw `glm` types directly. The precision can be selected at compile time:
 

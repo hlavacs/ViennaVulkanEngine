@@ -2,7 +2,8 @@
   "name": "vienna-vulkan-engine",
   "version-string": "3.0.0",
   "dependencies": [
-    "assimp"
+    "assimp",
+    "sdl3-mixer"
   ],
-  "builtin-baseline": "8cf84605ce9764de46caeb47b9e710db9493add9"
+  "builtin-baseline": "fc3be1ebea7eaeb3071fe716ac65713af1f3a146"
 }
