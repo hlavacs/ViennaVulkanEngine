@@ -64,6 +64,20 @@ public:
         return {};
     }
 
+    void bindTaskCallbacks(
+        TaskGraphBuilder& builder,
+        TaskNodeHandle upload_resources_task) override {
+        builder.setTaskCallback(
+            upload_resources_task,
+            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
+                    return std::unexpected(vve::Result::invalid_argument);
+                }
+
+                return uploadResources(*execution_context.frame_context, *execution_context.scene);
+            });
+    }
+
 private:
     std::vector<ResourceRecord> records_{};
 };

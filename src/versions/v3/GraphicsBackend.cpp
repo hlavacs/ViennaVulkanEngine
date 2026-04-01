@@ -39,6 +39,31 @@ public:
         return {};
     }
 
+    void bindTaskCallbacks(
+        TaskGraphBuilder& builder,
+        TaskNodeHandle begin_frame_task,
+        TaskNodeHandle end_frame_task) override {
+        builder.setTaskCallback(
+            begin_frame_task,
+            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                if (execution_context.frame_context == nullptr) {
+                    return std::unexpected(vve::Result::invalid_argument);
+                }
+
+                return beginFrame(*execution_context.frame_context);
+            });
+
+        builder.setTaskCallback(
+            end_frame_task,
+            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                if (execution_context.frame_context == nullptr) {
+                    return std::unexpected(vve::Result::invalid_argument);
+                }
+
+                return endFrame(*execution_context.frame_context);
+            });
+    }
+
 private:
     bool initialized_{false};
 };

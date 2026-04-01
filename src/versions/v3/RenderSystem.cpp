@@ -153,6 +153,68 @@ public:
         return {};
     }
 
+    void bindTaskCallbacks(
+        TaskGraphBuilder& builder,
+        const RenderGraph& render_graph,
+        TaskNodeHandle build_draw_packets_task,
+        TaskNodeHandle record_render_graph_task,
+        TaskNodeHandle record_post_processing_task,
+        TaskNodeHandle consume_frame_output_task) override {
+        builder.setTaskCallback(
+            build_draw_packets_task,
+            [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
+                    return std::unexpected(vve::Result::invalid_argument);
+                }
+
+                return buildDrawPackets(
+                    *execution_context.frame_context,
+                    *execution_context.scene,
+                    render_graph);
+            });
+
+        builder.setTaskCallback(
+            record_render_graph_task,
+            [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
+                    return std::unexpected(vve::Result::invalid_argument);
+                }
+
+                return record(
+                    *execution_context.frame_context,
+                    *execution_context.scene,
+                    render_graph,
+                    RenderTaskPhase::main);
+            });
+
+        builder.setTaskCallback(
+            record_post_processing_task,
+            [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
+                    return std::unexpected(vve::Result::invalid_argument);
+                }
+
+                return record(
+                    *execution_context.frame_context,
+                    *execution_context.scene,
+                    render_graph,
+                    RenderTaskPhase::post_process);
+            });
+
+        builder.setTaskCallback(
+            consume_frame_output_task,
+            [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
+                    return std::unexpected(vve::Result::invalid_argument);
+                }
+
+                return consumeOutput(
+                    *execution_context.frame_context,
+                    *execution_context.scene,
+                    render_graph);
+            });
+    }
+
 private:
     vve::RendererKind renderer_{vve::RendererKind::forward_renderer};
     vve::ShadowKind shadow_{vve::ShadowKind::none};

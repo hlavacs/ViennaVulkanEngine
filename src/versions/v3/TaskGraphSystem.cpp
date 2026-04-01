@@ -22,16 +22,10 @@ public:
         const RenderGraph& render_graph) override {
         TaskGraphBuilder builder{};
 
-        [[maybe_unused]] const auto begin_frame = builder.addTask(
+        const auto begin_frame = builder.addTask(
             "task.begin_frame",
             TaskKernelId::begin_frame,
-            [&graphics_backend](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
-
-                return graphics_backend.beginFrame(*execution_context.frame_context);
-            },
+            {},
             {},
             {},
             "Begin Frame");
@@ -51,15 +45,7 @@ public:
         const auto transforms = builder.addTask(
             "task.update_transforms",
             TaskKernelId::update_transforms,
-            [&scene_system](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
-
-                return scene_system.updateTransforms(
-                    *execution_context.frame_context,
-                    *execution_context.scene);
-            },
+            {},
             std::move(pre_engine_dependencies),
             {},
             "Update Transforms");
@@ -67,15 +53,7 @@ public:
         const auto uploads = builder.addTask(
             "task.upload_resources",
             TaskKernelId::upload_resources,
-            [&resource_system](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
-
-                return resource_system.uploadResources(
-                    *execution_context.frame_context,
-                    *execution_context.scene);
-            },
+            {},
             {transforms},
             {},
             "Upload Resources");
@@ -83,15 +61,7 @@ public:
         const auto culling = builder.addTask(
             "task.cull_visibility",
             TaskKernelId::cull_visibility,
-            [&scene_system](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
-
-                return scene_system.cullVisibility(
-                    *execution_context.frame_context,
-                    *execution_context.scene);
-            },
+            {},
             {uploads},
             {},
             "Cull Visibility");
@@ -99,17 +69,7 @@ public:
         const auto build_draw_packets = builder.addTask(
             "task.build_draw_packets",
             TaskKernelId::build_draw_packets,
-            [&render_system, &render_graph](
-                const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
-
-                return render_system.buildDrawPackets(
-                    *execution_context.frame_context,
-                    *execution_context.scene,
-                    render_graph);
-            },
+            {},
             {culling},
             {},
             "Build Draw Packets");
@@ -117,18 +77,7 @@ public:
         const auto record_render_graph = builder.addTask(
             "task.record_render_graph",
             TaskKernelId::record_render_graph,
-            [&render_system, &render_graph](
-                const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
-
-                return render_system.record(
-                    *execution_context.frame_context,
-                    *execution_context.scene,
-                    render_graph,
-                    RenderTaskPhase::main);
-            },
+            {},
             {build_draw_packets},
             {},
             "Record Render Graph");
@@ -136,18 +85,7 @@ public:
         const auto record_post_processing = builder.addTask(
             "task.record_post_processing",
             TaskKernelId::record_post_processing,
-            [&render_system, &render_graph](
-                const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
-
-                return render_system.record(
-                    *execution_context.frame_context,
-                    *execution_context.scene,
-                    render_graph,
-                    RenderTaskPhase::post_process);
-            },
+            {},
             {record_render_graph},
             {},
             "Record Post Processing");
@@ -155,34 +93,29 @@ public:
         const auto consume_frame_output = builder.addTask(
             "task.consume_frame_output",
             TaskKernelId::consume_frame_output,
-            [&render_system, &render_graph](
-                const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
-
-                return render_system.consumeOutput(
-                    *execution_context.frame_context,
-                    *execution_context.scene,
-                    render_graph);
-            },
+            {},
             {record_post_processing},
             {},
             "Consume Frame Output");
 
-        builder.addTask(
+        const auto end_frame = builder.addTask(
             "task.end_frame",
             TaskKernelId::end_frame,
-            [&graphics_backend](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
-
-                return graphics_backend.endFrame(*execution_context.frame_context);
-            },
+            {},
             {consume_frame_output},
             {},
             "End Frame");
+
+        graphics_backend.bindTaskCallbacks(builder, begin_frame, end_frame);
+        scene_system.bindTaskCallbacks(builder, transforms, culling);
+        resource_system.bindTaskCallbacks(builder, uploads);
+        render_system.bindTaskCallbacks(
+            builder,
+            render_graph,
+            build_draw_packets,
+            record_render_graph,
+            record_post_processing,
+            consume_frame_output);
 
         return std::move(builder).build();
     }

@@ -25,7 +25,7 @@ public:
                 events_.push_back(3);
                 return {};
             },
-            {vve::v3::TaskNodeHandle{vve::Handle::fromHash(std::string_view{"engine.upload"})}});
+            {vve::v3::TaskGraphBuilder::taskHandleFor("engine.upload")});
     }
 
 private:
@@ -59,6 +59,19 @@ int main() {
         RecordingTaskSystem system(events);
         system.registerTasks(builder, {});
 
+        if (!builder.containsTask("engine.upload")) {
+            return 4;
+        }
+
+        [[maybe_unused]] const auto late_update = builder.addTask(
+            "game.late_update",
+            vve::v3::TaskKernelId::none,
+            [&events](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Result> {
+                events.push_back(4);
+                return {};
+            });
+        builder.addDependency("game.late_update", "game.update");
+
         const auto graph = std::move(builder).build();
         const vve::v3::FrameContext frame_context{
             .frame_index = 7,
@@ -75,7 +88,7 @@ int main() {
             return 1;
         }
 
-        const std::vector<int> expected{1, 2, 3};
+        const std::vector<int> expected{1, 2, 3, 4};
         if (events != expected) {
             return 2;
         }

@@ -180,6 +180,13 @@ public:
         std::string debug_name = {});
 
     void addTask(TaskNodeDesc node);
+    void setTaskCallback(TaskNodeHandle handle, TaskCallback callback);
+    [[nodiscard]] static TaskNodeHandle makeTaskHandle(std::string_view stable_name);
+    [[nodiscard]] static TaskNodeHandle taskHandleFor(std::string_view stable_name);
+    [[nodiscard]] std::optional<TaskNodeHandle> findTask(std::string_view stable_name) const;
+    [[nodiscard]] bool containsTask(std::string_view stable_name) const;
+    void addDependency(TaskNodeHandle task, TaskNodeHandle dependency);
+    void addDependency(std::string_view task_name, std::string_view dependency_name);
 
     [[nodiscard]] TaskGraph build() &&;
     [[nodiscard]] std::vector<TaskNodeHandle> leafTasks() const;
@@ -195,7 +202,7 @@ inline TaskNodeHandle TaskGraphBuilder::addTask(
     std::vector<TaskNodeHandle> depends_on,
     std::vector<ResourceAccess> accesses,
     std::string debug_name) {
-    const TaskNodeHandle handle{vve::Handle::fromHash(stable_name)};
+    const TaskNodeHandle handle = makeTaskHandle(stable_name);
     addTask(TaskNodeDesc{
         .handle = handle,
         .kernel = kernel,
@@ -213,6 +220,53 @@ inline void TaskGraphBuilder::addTask(TaskNodeDesc node) {
     }
 
     nodes_.push_back(std::move(node));
+}
+
+inline void TaskGraphBuilder::setTaskCallback(TaskNodeHandle handle, TaskCallback callback) {
+    for (auto& node : nodes_) {
+        if (node.handle.value == handle.value) {
+            node.callback = std::move(callback);
+            return;
+        }
+    }
+}
+
+inline TaskNodeHandle TaskGraphBuilder::makeTaskHandle(std::string_view stable_name) {
+    return TaskNodeHandle{vve::Handle::fromHash(stable_name)};
+}
+
+inline TaskNodeHandle TaskGraphBuilder::taskHandleFor(std::string_view stable_name) {
+    return makeTaskHandle(stable_name);
+}
+
+inline std::optional<TaskNodeHandle> TaskGraphBuilder::findTask(std::string_view stable_name) const {
+    const auto handle = makeTaskHandle(stable_name);
+    for (const auto& node : nodes_) {
+        if (node.handle.value == handle.value) {
+            return handle;
+        }
+    }
+
+    return std::nullopt;
+}
+
+inline bool TaskGraphBuilder::containsTask(std::string_view stable_name) const {
+    return findTask(stable_name).has_value();
+}
+
+inline void TaskGraphBuilder::addDependency(TaskNodeHandle task, TaskNodeHandle dependency) {
+    for (auto& node : nodes_) {
+        if (node.handle.value == task.value) {
+            node.depends_on.push_back(dependency);
+            return;
+        }
+    }
+}
+
+inline void TaskGraphBuilder::addDependency(
+    std::string_view task_name,
+    std::string_view dependency_name) {
+    addDependency(makeTaskHandle(task_name), makeTaskHandle(dependency_name));
 }
 
 inline TaskGraph TaskGraphBuilder::build() && {
