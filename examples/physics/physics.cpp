@@ -3,7 +3,19 @@ import VEEngine;
 int main() {
     vve::Engine engine(
         vve::EngineVersion::v3,
-        vve::ApplicationName{"physics"});
+        vve::ApplicationName{"physics"},
+        vve::Windows{
+            .value = {
+                vve::WindowDesc{
+                    .id = "physics.main",
+                    .title = "VVE Physics",
+                    .width = 1280,
+                    .height = 720,
+                    .resizable = true,
+                    .visible = true
+                }
+            }
+        });
 
     if (!engine.init()) {
         return 1;

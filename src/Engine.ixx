@@ -85,6 +85,19 @@ struct EnableImGui {
     bool value = true;
 };
 
+struct WindowDesc {
+    std::string id{"main"};
+    std::string title{"ViennaVulkanEngine"};
+    std::uint32_t width{1280};
+    std::uint32_t height{720};
+    bool resizable{true};
+    bool visible{true};
+};
+
+struct Windows {
+    std::vector<WindowDesc> value{};
+};
+
 class EngineConfig {
 public:
     EngineConfig() = default;

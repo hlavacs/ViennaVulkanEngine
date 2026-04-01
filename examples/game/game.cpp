@@ -5,7 +5,27 @@ int main() {
     vve::Engine engine(
         vve::EngineVersion::v3,
         vve::ApplicationName{"game"},
-        vve::EnableValidation{true});
+        vve::EnableValidation{true},
+        vve::Windows{
+            .value = {
+                vve::WindowDesc{
+                    .id = "main",
+                    .title = "VVE Game",
+                    .width = 1600,
+                    .height = 900,
+                    .resizable = true,
+                    .visible = true
+                },
+                vve::WindowDesc{
+                    .id = "tools",
+                    .title = "VVE Tools",
+                    .width = 960,
+                    .height = 720,
+                    .resizable = true,
+                    .visible = true
+                }
+            }
+        });
 
     if (!engine.init()) {
         return 1;

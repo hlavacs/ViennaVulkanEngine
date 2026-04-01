@@ -8,6 +8,8 @@ struct Runtime final {
     std::unique_ptr<ISceneSystem> scene_system{};
     std::unique_ptr<ITaskGraphSystem> task_graph_system{};
     std::vector<std::shared_ptr<ITaskSystem>> task_systems{};
+    std::unique_ptr<IWindowSystem> window_system{};
+    std::shared_ptr<WindowFrameData> window_frame{std::make_shared<WindowFrameData>()};
     std::unique_ptr<IGraphicsBackend> graphics_backend{};
     std::unique_ptr<IShaderSystem> shader_system{};
     std::unique_ptr<IRenderSystem> render_system{};
@@ -22,6 +24,7 @@ struct Runtime final {
 [[nodiscard]] std::unique_ptr<IResourceSystem> createResourceSystem();
 [[nodiscard]] std::unique_ptr<ISceneSystem> createSceneSystem();
 [[nodiscard]] std::unique_ptr<ITaskGraphSystem> createTaskGraphSystem();
+[[nodiscard]] std::unique_ptr<IWindowSystem> createWindowSystem();
 [[nodiscard]] std::expected<std::unique_ptr<IGraphicsBackend>, vve::Result> createGraphicsBackend(
     vve::GraphicsApi api);
 [[nodiscard]] std::unique_ptr<IShaderSystem> createShaderSystem();

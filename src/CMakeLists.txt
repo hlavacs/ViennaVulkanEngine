@@ -25,6 +25,7 @@ target_sources(ViennaVulkanEngine
         versions/v3/ResourceSystem.cpp
         versions/v3/SceneSystem.cpp
         versions/v3/TaskGraphSystem.cpp
+        versions/v3/WindowSystem.cpp
         versions/v3/GraphicsBackend.cpp
         versions/v3/ShaderSystem.cpp
         versions/v3/RenderSystem.cpp

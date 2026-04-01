@@ -9,6 +9,7 @@ class IGraphicsBackend;
 class IResourceSystem;
 class ISceneSystem;
 class IRenderSystem;
+class IWindowSystem;
 
 class IAssetSystem : public vve::System {
 public:
@@ -57,11 +58,23 @@ public:
     [[nodiscard]] virtual TaskGraph build(
         const SceneData& scene,
         std::span<ITaskSystem* const> task_systems,
+        IWindowSystem& window_system,
         IGraphicsBackend& graphics_backend,
         IResourceSystem& resource_system,
         ISceneSystem& scene_system,
         IRenderSystem& render_system,
         const RenderGraph& render_graph) = 0;
+};
+
+class IWindowSystem : public vve::System {
+public:
+    [[nodiscard]] virtual std::expected<void, vve::Result> init(
+        std::span<const vve::WindowDesc> windows) = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> pollEvents(
+        const FrameContext& frame_context) = 0;
+    [[nodiscard]] virtual WindowFrameData frameData() const = 0;
+    virtual void setFrameDataSink(std::shared_ptr<WindowFrameData> frame_data) = 0;
+    virtual void registerTasks(TaskGraphBuilder& builder) = 0;
 };
 
 class IGraphicsBackend {
@@ -121,6 +134,7 @@ struct EngineRuntimeDesc {
     vve::RendererKind renderer{vve::RendererKind::forward_renderer};
     vve::ShadowKind shadow{vve::ShadowKind::none};
     bool imgui_enabled{true};
+    std::vector<vve::WindowDesc> windows{vve::WindowDesc{}};
     std::vector<std::shared_ptr<ITaskSystem>> task_systems{};
 };
 

@@ -27,6 +27,7 @@ namespace {
     return runtime.task_graph_system->build(
         scene,
         task_systems,
+        *runtime.window_system,
         *runtime.graphics_backend,
         *runtime.resource_system,
         *runtime.scene_system,
@@ -61,6 +62,10 @@ public:
 
         if (const auto imgui = config.tryGet<vve::EnableImGui>()) {
             runtime_desc_.imgui_enabled = imgui->value;
+        }
+
+        if (const auto windows = config.tryGet<vve::Windows>()) {
+            runtime_desc_.windows = windows->value;
         }
 
         if (const auto task_systems = config.tryGet<vve::v3::TaskSystems>()) {
@@ -148,7 +153,8 @@ public:
 
         const TaskExecutionContext execution_context{
             .frame_context = &frame_context,
-            .scene = &*scene_
+            .scene = &*scene_,
+            .window_frame = runtime_.window_frame
         };
         if (auto execute_result = executeTaskGraph(*task_graph_, execution_context); !execute_result) {
             return execute_result;

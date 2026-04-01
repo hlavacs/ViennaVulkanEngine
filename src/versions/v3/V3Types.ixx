@@ -26,6 +26,7 @@ enum class ResourceLocation {
 enum class TaskKernelId : std::uint32_t {
     none = 0,
     begin_frame,
+    poll_window_events,
     update_transforms,
     sample_animations,
     cull_visibility_cpu,
@@ -35,6 +36,21 @@ enum class TaskKernelId : std::uint32_t {
     record_render_graph,
     consume_frame_output,
     end_frame
+};
+
+enum class WindowEventType : std::uint32_t {
+    none = 0,
+    close_requested,
+    resized,
+    moved,
+    focus_gained,
+    focus_lost,
+    key_down,
+    key_up,
+    mouse_move,
+    mouse_button_down,
+    mouse_button_up,
+    mouse_wheel
 };
 
 enum class RenderKernelId : std::uint32_t {
@@ -86,6 +102,10 @@ struct TaskNodeHandle final {
 };
 
 struct RenderPassHandle final {
+    vve::Handle value{};
+};
+
+struct WindowHandle final {
     vve::Handle value{};
 };
 
@@ -144,9 +164,33 @@ struct SceneData {
     std::vector<SceneNodeDesc> nodes{};
 };
 
+struct WindowState {
+    WindowHandle handle{};
+    std::string id{};
+    std::string title{};
+    std::uint32_t width{0};
+    std::uint32_t height{0};
+    bool focused{false};
+    bool minimized{false};
+    bool should_close{false};
+};
+
+struct WindowEvent {
+    WindowHandle window{};
+    WindowEventType type{WindowEventType::none};
+    std::int32_t a{0};
+    std::int32_t b{0};
+};
+
+struct WindowFrameData {
+    std::span<const WindowState> windows{};
+    std::span<const WindowEvent> events{};
+};
+
 struct TaskExecutionContext {
     const FrameContext* frame_context{nullptr};
     SceneData* scene{nullptr};
+    std::shared_ptr<const WindowFrameData> window_frame{};
 };
 
 using TaskCallback = std::function<std::expected<void, vve::Result>(const TaskExecutionContext&)>;
@@ -184,6 +228,7 @@ public:
     void addDependency(std::string_view task_name, std::string_view dependency_name);
 
     [[nodiscard]] TaskGraph build() &&;
+    [[nodiscard]] std::vector<TaskNodeHandle> rootTasks() const;
     [[nodiscard]] std::vector<TaskNodeHandle> leafTasks() const;
 
 private:
@@ -268,6 +313,18 @@ inline TaskGraph TaskGraphBuilder::build() && {
     return TaskGraph{.nodes = std::move(nodes_)};
 }
 
+inline std::vector<TaskNodeHandle> TaskGraphBuilder::rootTasks() const {
+    std::vector<TaskNodeHandle> root_handles{};
+    root_handles.reserve(nodes_.size());
+    for (const auto& node : nodes_) {
+        if (node.depends_on.empty()) {
+            root_handles.push_back(node.handle);
+        }
+    }
+
+    return root_handles;
+}
+
 inline std::vector<TaskNodeHandle> TaskGraphBuilder::leafTasks() const {
     std::unordered_set<vve::Handle::value_type> dependency_handles{};
     dependency_handles.reserve(nodes_.size());
@@ -333,6 +390,7 @@ struct EngineRuntimeSnapshot {
     std::string task_graph_system{"TaskGraphSystem"};
     std::string shader_system{"SlangShaderSystem"};
     std::string render_system{"RenderSystem"};
+    std::string window_system{"SDL3WindowSystem"};
     std::string gui_system{"ImGuiSystem"};
     std::vector<std::string> task_systems{};
 };

@@ -15,6 +15,7 @@ public:
     [[nodiscard]] TaskGraph build(
         const SceneData& scene,
         std::span<ITaskSystem* const> task_systems,
+        IWindowSystem& window_system,
         IGraphicsBackend& graphics_backend,
         IResourceSystem& resource_system,
         ISceneSystem& scene_system,
@@ -23,14 +24,24 @@ public:
         TaskGraphBuilder builder{};
 
         graphics_backend.registerTasks(builder);
+        window_system.registerTasks(builder);
 
+        const auto begin_frame = TaskGraphBuilder::taskHandleFor("task.begin_frame");
+        const auto poll_window_events = TaskGraphBuilder::taskHandleFor("task.poll_window_events");
         for (auto* const task_system : task_systems) {
             if (task_system != nullptr) {
                 task_system->registerTasks(builder, scene);
             }
         }
 
-        const auto begin_frame = TaskGraphBuilder::taskHandleFor("task.begin_frame");
+        for (const auto& root : builder.rootTasks()) {
+            if (root.value == begin_frame.value || root.value == poll_window_events.value) {
+                continue;
+            }
+
+            builder.addDependency(root, poll_window_events);
+        }
+
         const auto end_frame = TaskGraphBuilder::taskHandleFor("task.end_frame");
         std::vector<TaskNodeHandle> user_leaf_tasks{};
         for (const auto& leaf : builder.leafTasks()) {
