@@ -44,10 +44,24 @@ public:
         return {};
     }
 
-    void bindTaskCallbacks(
+    void registerTasks(
         TaskGraphBuilder& builder,
-        TaskNodeHandle update_transforms_task,
-        TaskNodeHandle cull_visibility_cpu_task) override {
+        const SceneData&) override {
+        const auto update_transforms_task = builder.addTask(
+            "task.update_transforms",
+            TaskKernelId::update_transforms,
+            {},
+            {TaskGraphBuilder::taskHandleFor("task.begin_frame")},
+            {},
+            "Update Transforms");
+        const auto cull_visibility_cpu_task = builder.addTask(
+            "task.cull_visibility_cpu",
+            TaskKernelId::cull_visibility_cpu,
+            {},
+            {TaskGraphBuilder::taskHandleFor("task.upload_resources")},
+            {},
+            "Cull Visibility CPU");
+
         builder.setTaskCallback(
             update_transforms_task,
             [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {

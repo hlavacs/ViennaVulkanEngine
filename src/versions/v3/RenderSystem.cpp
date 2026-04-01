@@ -160,14 +160,46 @@ public:
         return {};
     }
 
-    void bindTaskCallbacks(
+    void registerTasks(
         TaskGraphBuilder& builder,
-        const RenderGraph& render_graph,
-        TaskNodeHandle cull_visibility_gpu_task,
-        TaskNodeHandle build_draw_packets_task,
-        TaskNodeHandle record_render_graph_task,
-        TaskNodeHandle record_post_processing_task,
-        TaskNodeHandle consume_frame_output_task) override {
+        const SceneData&,
+        const RenderGraph& render_graph) override {
+        const auto cull_visibility_gpu_task = builder.addTask(
+            "task.cull_visibility_gpu",
+            TaskKernelId::cull_visibility_gpu,
+            {},
+            {TaskGraphBuilder::taskHandleFor("task.cull_visibility_cpu")},
+            {},
+            "Cull Visibility GPU");
+        const auto build_draw_packets_task = builder.addTask(
+            "task.build_draw_packets",
+            TaskKernelId::build_draw_packets,
+            {},
+            {cull_visibility_gpu_task},
+            {},
+            "Build Draw Packets");
+        const auto record_render_graph_task = builder.addTask(
+            "task.record_render_graph",
+            TaskKernelId::record_render_graph,
+            {},
+            {build_draw_packets_task},
+            {},
+            "Record Render Graph");
+        const auto record_post_processing_task = builder.addTask(
+            "task.record_post_processing",
+            TaskKernelId::record_post_processing,
+            {},
+            {record_render_graph_task},
+            {},
+            "Record Post Processing");
+        const auto consume_frame_output_task = builder.addTask(
+            "task.consume_frame_output",
+            TaskKernelId::consume_frame_output,
+            {},
+            {record_post_processing_task},
+            {},
+            "Consume Frame Output");
+
         builder.setTaskCallback(
             cull_visibility_gpu_task,
             [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {

@@ -64,9 +64,17 @@ public:
         return {};
     }
 
-    void bindTaskCallbacks(
+    void registerTasks(
         TaskGraphBuilder& builder,
-        TaskNodeHandle upload_resources_task) override {
+        const SceneData&) override {
+        const auto upload_resources_task = builder.addTask(
+            "task.upload_resources",
+            TaskKernelId::upload_resources,
+            {},
+            {TaskGraphBuilder::taskHandleFor("task.update_transforms")},
+            {},
+            "Upload Resources");
+
         builder.setTaskCallback(
             upload_resources_task,
             [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {

@@ -22,13 +22,7 @@ public:
         const RenderGraph& render_graph) override {
         TaskGraphBuilder builder{};
 
-        const auto begin_frame = builder.addTask(
-            "task.begin_frame",
-            TaskKernelId::begin_frame,
-            {},
-            {},
-            {},
-            "Begin Frame");
+        graphics_backend.registerTasks(builder);
 
         for (auto* const task_system : task_systems) {
             if (task_system != nullptr) {
@@ -36,95 +30,31 @@ public:
             }
         }
 
-        auto pre_engine_dependencies = builder.leafTasks();
-        if (pre_engine_dependencies.empty()) {
-            pre_engine_dependencies.push_back(TaskNodeHandle{
-                vve::Handle::fromHash(std::string_view{"task.begin_frame"})});
+        const auto begin_frame = TaskGraphBuilder::taskHandleFor("task.begin_frame");
+        const auto end_frame = TaskGraphBuilder::taskHandleFor("task.end_frame");
+        std::vector<TaskNodeHandle> user_leaf_tasks{};
+        for (const auto& leaf : builder.leafTasks()) {
+            if (leaf.value == begin_frame.value || leaf.value == end_frame.value) {
+                continue;
+            }
+
+            user_leaf_tasks.push_back(leaf);
         }
 
-        const auto transforms = builder.addTask(
-            "task.update_transforms",
-            TaskKernelId::update_transforms,
-            {},
-            std::move(pre_engine_dependencies),
-            {},
-            "Update Transforms");
+        scene_system.registerTasks(builder, scene);
+        resource_system.registerTasks(builder, scene);
+        render_system.registerTasks(builder, scene, render_graph);
 
-        const auto uploads = builder.addTask(
-            "task.upload_resources",
-            TaskKernelId::upload_resources,
-            {},
-            {transforms},
-            {},
-            "Upload Resources");
+        const auto update_transforms = builder.findTask("task.update_transforms");
+        if (update_transforms.has_value()) {
+            for (const auto& leaf : user_leaf_tasks) {
+                if (leaf.value == update_transforms->value) {
+                    continue;
+                }
 
-        const auto cull_visibility_cpu = builder.addTask(
-            "task.cull_visibility_cpu",
-            TaskKernelId::cull_visibility_cpu,
-            {},
-            {uploads},
-            {},
-            "Cull Visibility CPU");
-
-        const auto cull_visibility_gpu = builder.addTask(
-            "task.cull_visibility_gpu",
-            TaskKernelId::cull_visibility_gpu,
-            {},
-            {cull_visibility_cpu},
-            {},
-            "Cull Visibility GPU");
-
-        const auto build_draw_packets = builder.addTask(
-            "task.build_draw_packets",
-            TaskKernelId::build_draw_packets,
-            {},
-            {cull_visibility_gpu},
-            {},
-            "Build Draw Packets");
-
-        const auto record_render_graph = builder.addTask(
-            "task.record_render_graph",
-            TaskKernelId::record_render_graph,
-            {},
-            {build_draw_packets},
-            {},
-            "Record Render Graph");
-
-        const auto record_post_processing = builder.addTask(
-            "task.record_post_processing",
-            TaskKernelId::record_post_processing,
-            {},
-            {record_render_graph},
-            {},
-            "Record Post Processing");
-
-        const auto consume_frame_output = builder.addTask(
-            "task.consume_frame_output",
-            TaskKernelId::consume_frame_output,
-            {},
-            {record_post_processing},
-            {},
-            "Consume Frame Output");
-
-        const auto end_frame = builder.addTask(
-            "task.end_frame",
-            TaskKernelId::end_frame,
-            {},
-            {consume_frame_output},
-            {},
-            "End Frame");
-
-        graphics_backend.bindTaskCallbacks(builder, begin_frame, end_frame);
-        scene_system.bindTaskCallbacks(builder, transforms, cull_visibility_cpu);
-        resource_system.bindTaskCallbacks(builder, uploads);
-        render_system.bindTaskCallbacks(
-            builder,
-            render_graph,
-            cull_visibility_gpu,
-            build_draw_packets,
-            record_render_graph,
-            record_post_processing,
-            consume_frame_output);
+                builder.addDependency(*update_transforms, leaf);
+            }
+        }
 
         return std::move(builder).build();
     }

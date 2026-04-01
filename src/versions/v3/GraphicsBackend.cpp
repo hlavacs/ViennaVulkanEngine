@@ -39,10 +39,22 @@ public:
         return {};
     }
 
-    void bindTaskCallbacks(
-        TaskGraphBuilder& builder,
-        TaskNodeHandle begin_frame_task,
-        TaskNodeHandle end_frame_task) override {
+    void registerTasks(TaskGraphBuilder& builder) override {
+        const auto begin_frame_task = builder.addTask(
+            "task.begin_frame",
+            TaskKernelId::begin_frame,
+            {},
+            {},
+            {},
+            "Begin Frame");
+        const auto end_frame_task = builder.addTask(
+            "task.end_frame",
+            TaskKernelId::end_frame,
+            {},
+            {TaskGraphBuilder::taskHandleFor("task.consume_frame_output")},
+            {},
+            "End Frame");
+
         builder.setTaskCallback(
             begin_frame_task,
             [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {

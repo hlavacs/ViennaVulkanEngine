@@ -25,9 +25,9 @@ public:
     [[nodiscard]] virtual std::expected<void, vve::Result> uploadResources(
         const FrameContext& frame_context,
         const SceneData& scene) = 0;
-    virtual void bindTaskCallbacks(
+    virtual void registerTasks(
         TaskGraphBuilder& builder,
-        TaskNodeHandle upload_resources_task) = 0;
+        const SceneData& scene) = 0;
 };
 
 class ISceneSystem : public vve::System {
@@ -40,10 +40,9 @@ public:
     [[nodiscard]] virtual std::expected<void, vve::Result> cullVisibility(
         const FrameContext& frame_context,
         const SceneData& scene) = 0;
-    virtual void bindTaskCallbacks(
+    virtual void registerTasks(
         TaskGraphBuilder& builder,
-        TaskNodeHandle update_transforms_task,
-        TaskNodeHandle cull_visibility_cpu_task) = 0;
+        const SceneData& scene) = 0;
 };
 
 class ITaskSystem : public vve::System {
@@ -75,10 +74,7 @@ public:
         const FrameContext& frame_context) = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> endFrame(
         const FrameContext& frame_context) = 0;
-    virtual void bindTaskCallbacks(
-        TaskGraphBuilder& builder,
-        TaskNodeHandle begin_frame_task,
-        TaskNodeHandle end_frame_task) = 0;
+    virtual void registerTasks(TaskGraphBuilder& builder) = 0;
 };
 
 class IShaderSystem : public vve::System {
@@ -109,14 +105,10 @@ public:
         const FrameContext& frame_context,
         const SceneData& scene,
         const RenderGraph& render_graph) = 0;
-    virtual void bindTaskCallbacks(
+    virtual void registerTasks(
         TaskGraphBuilder& builder,
-        const RenderGraph& render_graph,
-        TaskNodeHandle cull_visibility_gpu_task,
-        TaskNodeHandle build_draw_packets_task,
-        TaskNodeHandle record_render_graph_task,
-        TaskNodeHandle record_post_processing_task,
-        TaskNodeHandle consume_frame_output_task) = 0;
+        const SceneData& scene,
+        const RenderGraph& render_graph) = 0;
 };
 
 class IGuiSystem : public vve::System {
