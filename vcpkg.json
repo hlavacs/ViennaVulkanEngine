@@ -3,6 +3,7 @@
   "version-string": "3.0.0",
   "dependencies": [
     "assimp",
+    "imgui",
     "sdl3-mixer"
   ],
   "builtin-baseline": "fc3be1ebea7eaeb3071fe716ac65713af1f3a146"

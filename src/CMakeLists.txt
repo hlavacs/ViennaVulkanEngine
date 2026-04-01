@@ -14,6 +14,7 @@ if(VVE_MATH_USE_DOUBLE)
 endif()
 
 find_package(assimp CONFIG REQUIRED)
+find_package(imgui CONFIG REQUIRED)
 find_package(SDL3_mixer CONFIG REQUIRED)
 
 target_sources(ViennaVulkanEngine
@@ -44,6 +45,7 @@ target_sources(ViennaVulkanEngine
 target_link_libraries(ViennaVulkanEngine
     PUBLIC
         assimp::assimp
+        imgui::imgui
         Vulkan::Vulkan
     PRIVATE
         SDL3::SDL3
