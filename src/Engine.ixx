@@ -60,6 +60,11 @@ enum class Result {
     internal_error
 };
 
+enum class FrameStatus {
+    continue_running = 0,
+    should_close
+};
+
 /// @brief Configuration for creating an Engine instance. Can be constructed with arbitrary options using the set() method or the variadic constructor.
 struct ApplicationName {
     std::string value;
@@ -151,7 +156,7 @@ public:
 
     [[nodiscard]] std::expected<void, Result> init();
     [[nodiscard]] std::expected<void, Result> run();
-    [[nodiscard]] std::expected<void, Result> step();
+    [[nodiscard]] std::expected<FrameStatus, Result> step();
     [[nodiscard]] std::expected<bool, Result> isInitialized() const noexcept;
     [[nodiscard]] std::expected<int, Result> getVersionMajor() const noexcept;
     [[nodiscard]] std::expected<void, Result> loadFile(
@@ -171,7 +176,7 @@ public:
 
     [[nodiscard]] virtual std::expected<void, vve::Result> init() = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> run() = 0;
-    [[nodiscard]] virtual std::expected<void, vve::Result> step() = 0;
+    [[nodiscard]] virtual std::expected<vve::FrameStatus, vve::Result> step() = 0;
     [[nodiscard]] virtual bool isInitialized() const noexcept = 0;
     [[nodiscard]] virtual std::expected<int, vve::Result> getVersionMajor() const noexcept = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> loadFile(

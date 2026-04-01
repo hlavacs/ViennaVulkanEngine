@@ -132,14 +132,16 @@ public:
         while (running_) {
             if (auto step_result = step(); !step_result) {
                 running_ = false;
-                return step_result;
+                return std::unexpected(step_result.error());
+            } else if (*step_result == vve::FrameStatus::should_close) {
+                running_ = false;
             }
         }
 
         return std::expected<void, vve::Result>{};
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> step() override {
+    [[nodiscard]] std::expected<vve::FrameStatus, vve::Result> step() override {
         if (!isInitialized()) {
             return std::unexpected(vve::Result::not_initialized);
         }
@@ -161,7 +163,7 @@ public:
 
         if (task_graph_dirty_ || !task_graph_) {
             if (auto task_graph_result = rebuildTaskGraph(); !task_graph_result) {
-                return task_graph_result;
+                return std::unexpected(task_graph_result.error());
             }
         }
 
@@ -171,14 +173,15 @@ public:
             .window_frame = runtime_.window_frame
         };
         if (auto execute_result = executeTaskGraph(*task_graph_, execution_context); !execute_result) {
-            return execute_result;
+            return std::unexpected(execute_result.error());
         }
 
         if (anyWindowShouldClose(runtime_.window_frame)) {
             running_ = false;
+            return vve::FrameStatus::should_close;
         }
 
-        return std::expected<void, vve::Result>{};
+        return vve::FrameStatus::continue_running;
     }
 
     [[nodiscard]] std::expected<int, vve::Result> getVersionMajor() const noexcept override {

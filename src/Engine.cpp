@@ -35,7 +35,7 @@ std::expected<void, vve::Result> vve::Engine::run() {
     return impl_->run();
 }
 
-std::expected<void, vve::Result> vve::Engine::step() {
+std::expected<vve::FrameStatus, vve::Result> vve::Engine::step() {
     if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
     return impl_->step();
 }
