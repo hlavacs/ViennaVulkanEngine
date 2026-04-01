@@ -187,10 +187,16 @@ struct WindowFrameData {
     std::span<const WindowEvent> events{};
 };
 
+enum class TaskScope : std::uint32_t {
+    global = 0,
+    window
+};
+
 struct TaskExecutionContext {
     const FrameContext* frame_context{nullptr};
     SceneData* scene{nullptr};
     std::shared_ptr<const WindowFrameData> window_frame{};
+    std::optional<WindowHandle> window{};
 };
 
 using TaskCallback = std::function<std::expected<void, vve::Result>(const TaskExecutionContext&)>;
@@ -198,6 +204,8 @@ using TaskCallback = std::function<std::expected<void, vve::Result>(const TaskEx
 struct TaskNodeDesc {
     TaskNodeHandle handle{};
     TaskKernelId kernel{TaskKernelId::none};
+    TaskScope scope{TaskScope::global};
+    std::optional<WindowHandle> window{};
     std::vector<TaskNodeHandle> depends_on{};
     std::vector<ResourceAccess> accesses{};
     std::string debug_name{};
@@ -216,7 +224,9 @@ public:
         TaskCallback callback = {},
         std::vector<TaskNodeHandle> depends_on = {},
         std::vector<ResourceAccess> accesses = {},
-        std::string debug_name = {});
+        std::string debug_name = {},
+        TaskScope scope = TaskScope::global,
+        std::optional<WindowHandle> window = std::nullopt);
 
     void addTask(TaskNodeDesc node);
     void setTaskCallback(TaskNodeHandle handle, TaskCallback callback);
@@ -241,11 +251,15 @@ inline TaskNodeHandle TaskGraphBuilder::addTask(
     TaskCallback callback,
     std::vector<TaskNodeHandle> depends_on,
     std::vector<ResourceAccess> accesses,
-    std::string debug_name) {
+    std::string debug_name,
+    TaskScope scope,
+    std::optional<WindowHandle> window) {
     const TaskNodeHandle handle = makeTaskHandle(stable_name);
     addTask(TaskNodeDesc{
         .handle = handle,
         .kernel = kernel,
+        .scope = scope,
+        .window = window,
         .depends_on = std::move(depends_on),
         .accesses = std::move(accesses),
         .debug_name = debug_name.empty() ? std::string(stable_name) : std::move(debug_name),
@@ -377,6 +391,12 @@ struct RenderPassDesc {
 
 struct RenderGraph {
     std::vector<RenderPassDesc> passes{};
+};
+
+struct WindowRenderPipeline {
+    WindowHandle window{};
+    std::string window_id{};
+    RenderGraph graph{};
 };
 
 struct EngineRuntimeSnapshot {

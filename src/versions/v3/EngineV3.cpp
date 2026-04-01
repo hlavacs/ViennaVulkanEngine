@@ -32,7 +32,7 @@ namespace {
         *runtime.resource_system,
         *runtime.scene_system,
         *runtime.render_system,
-        runtime.render_graph);
+        runtime.render_pipelines);
 }
 
 class EngineImpl final : public vve::detail::EngineImpl {

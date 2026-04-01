@@ -51,7 +51,7 @@ public:
             "task.end_frame",
             TaskKernelId::end_frame,
             {},
-            {TaskGraphBuilder::taskHandleFor("task.consume_frame_output")},
+            {},
             {},
             "End Frame");
 

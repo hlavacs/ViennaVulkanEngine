@@ -86,6 +86,10 @@ public:
         };
     }
 
+    [[nodiscard]] std::span<const WindowState> windows() const override {
+        return states_;
+    }
+
     void setFrameDataSink(std::shared_ptr<WindowFrameData> frame_data) override {
         frame_data_sink_ = std::move(frame_data);
         syncFrameData();

@@ -63,7 +63,7 @@ public:
         IResourceSystem& resource_system,
         ISceneSystem& scene_system,
         IRenderSystem& render_system,
-        const RenderGraph& render_graph) = 0;
+        std::span<const WindowRenderPipeline> render_pipelines) = 0;
 };
 
 class IWindowSystem : public vve::System {
@@ -73,6 +73,7 @@ public:
     [[nodiscard]] virtual std::expected<void, vve::Result> pollEvents(
         const FrameContext& frame_context) = 0;
     [[nodiscard]] virtual WindowFrameData frameData() const = 0;
+    [[nodiscard]] virtual std::span<const WindowState> windows() const = 0;
     virtual void setFrameDataSink(std::shared_ptr<WindowFrameData> frame_data) = 0;
     virtual void registerTasks(TaskGraphBuilder& builder) = 0;
 };
@@ -100,27 +101,31 @@ public:
 
 class IRenderSystem : public vve::System {
 public:
-    [[nodiscard]] virtual RenderGraph buildStaticGraph() = 0;
+    [[nodiscard]] virtual RenderGraph buildStaticGraph(WindowHandle window) = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> cullVisibilityGpu(
         const FrameContext& frame_context,
         const SceneData& scene,
+        WindowHandle window,
         const RenderGraph& render_graph) = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> buildDrawPackets(
         const FrameContext& frame_context,
         const SceneData& scene,
+        WindowHandle window,
         const RenderGraph& render_graph) = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> record(
         const FrameContext& frame_context,
         const SceneData& scene,
+        WindowHandle window,
         const RenderGraph& render_graph) = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> consumeOutput(
         const FrameContext& frame_context,
         const SceneData& scene,
+        WindowHandle window,
         const RenderGraph& render_graph) = 0;
     virtual void registerTasks(
         TaskGraphBuilder& builder,
         const SceneData& scene,
-        const RenderGraph& render_graph) = 0;
+        std::span<const WindowRenderPipeline> render_pipelines) = 0;
 };
 
 class IGuiSystem : public vve::System {

@@ -70,14 +70,15 @@ public:
         return "RenderSystem";
     }
 
-    [[nodiscard]] RenderGraph buildStaticGraph() override {
+    [[nodiscard]] RenderGraph buildStaticGraph(WindowHandle window) override {
         RenderGraph graph{};
+        const auto window_salt = window.value.value();
 
         if (const auto shadow_pass = buildShadowPass(shadow_)) {
             graph.passes.push_back(*shadow_pass);
         }
 
-        const auto main_pass = RenderPassHandle{detail::makeStableHandle("render.main")};
+        const auto main_pass = RenderPassHandle{detail::makeStableHandle("render.main", window_salt)};
         std::vector<RenderPassHandle> main_dependencies{};
         if (!graph.passes.empty()) {
             main_dependencies.push_back(graph.passes.front().handle);
@@ -89,7 +90,9 @@ public:
             .debug_name = std::string(selectMainPassName(renderer_))
         });
 
-        const auto post_process_pass = RenderPassHandle{detail::makeStableHandle("render.post_process")};
+        const auto post_process_pass = RenderPassHandle{
+            detail::makeStableHandle("render.post_process", window_salt)
+        };
         graph.passes.push_back(RenderPassDesc{
             .handle = post_process_pass,
             .kernel = RenderKernelId::post_process,
@@ -98,7 +101,7 @@ public:
         });
 
         const auto post_post_process_pass = RenderPassHandle{
-            detail::makeStableHandle("render.post_post_process")
+            detail::makeStableHandle("render.post_post_process", window_salt)
         };
         graph.passes.push_back(RenderPassDesc{
             .handle = post_post_process_pass,
@@ -109,7 +112,7 @@ public:
 
         if (imgui_enabled_) {
             graph.passes.push_back(RenderPassDesc{
-                .handle = RenderPassHandle{detail::makeStableHandle("render.imgui")},
+                .handle = RenderPassHandle{detail::makeStableHandle("render.imgui", window_salt)},
                 .kernel = RenderKernelId::imgui,
                 .depends_on = {post_post_process_pass},
                 .debug_name = std::string("ImGui (") + std::string(graphics_backend_.name()) + ")"
@@ -122,6 +125,7 @@ public:
     [[nodiscard]] std::expected<void, vve::Result> cullVisibilityGpu(
         const FrameContext&,
         const SceneData&,
+        WindowHandle,
         const RenderGraph&) override {
         return {};
     }
@@ -129,6 +133,7 @@ public:
     [[nodiscard]] std::expected<void, vve::Result> buildDrawPackets(
         const FrameContext&,
         const SceneData&,
+        WindowHandle,
         const RenderGraph&) override {
         return {};
     }
@@ -136,6 +141,7 @@ public:
     [[nodiscard]] std::expected<void, vve::Result> record(
         const FrameContext&,
         const SceneData&,
+        WindowHandle,
         const RenderGraph& render_graph) override {
         for (const auto& pass : render_graph.passes) {
         }
@@ -146,6 +152,7 @@ public:
     [[nodiscard]] std::expected<void, vve::Result> consumeOutput(
         const FrameContext&,
         const SceneData&,
+        WindowHandle,
         const RenderGraph&) override {
         return {};
     }
@@ -153,87 +160,112 @@ public:
     void registerTasks(
         TaskGraphBuilder& builder,
         const SceneData&,
-        const RenderGraph& render_graph) override {
-        const auto cull_visibility_gpu_task = builder.addTask(
-            "task.cull_visibility_gpu",
-            TaskKernelId::cull_visibility_gpu,
-            {},
-            {TaskGraphBuilder::taskHandleFor("task.cull_visibility_cpu")},
-            {},
-            "Cull Visibility GPU");
-        const auto build_draw_packets_task = builder.addTask(
-            "task.build_draw_packets",
-            TaskKernelId::build_draw_packets,
-            {},
-            {cull_visibility_gpu_task},
-            {},
-            "Build Draw Packets");
-        const auto record_render_graph_task = builder.addTask(
-            "task.record_render_graph",
-            TaskKernelId::record_render_graph,
-            {},
-            {build_draw_packets_task},
-            {},
-            "Record Render Graph");
-        const auto consume_frame_output_task = builder.addTask(
-            "task.consume_frame_output",
-            TaskKernelId::consume_frame_output,
-            {},
-            {record_render_graph_task},
-            {},
-            "Consume Frame Output");
+        std::span<const WindowRenderPipeline> render_pipelines) override {
+        for (const auto& pipeline : render_pipelines) {
+            const auto window = pipeline.window;
+            const auto* render_graph = &pipeline.graph;
+            const auto cull_visibility_gpu_name =
+                std::format("task.window.{}.cull_visibility_gpu", pipeline.window_id);
+            const auto build_draw_packets_name =
+                std::format("task.window.{}.build_draw_packets", pipeline.window_id);
+            const auto record_render_graph_name =
+                std::format("task.window.{}.record_render_graph", pipeline.window_id);
+            const auto consume_frame_output_name =
+                std::format("task.window.{}.consume_frame_output", pipeline.window_id);
 
-        builder.setTaskCallback(
-            cull_visibility_gpu_task,
-            [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
+            const auto cull_visibility_gpu_task = builder.addTask(
+                cull_visibility_gpu_name,
+                TaskKernelId::cull_visibility_gpu,
+                {},
+                {TaskGraphBuilder::taskHandleFor("task.upload_resources")},
+                {},
+                std::string("Cull Visibility GPU (") + pipeline.window_id + ")",
+                TaskScope::window,
+                pipeline.window);
+            const auto build_draw_packets_task = builder.addTask(
+                build_draw_packets_name,
+                TaskKernelId::build_draw_packets,
+                {},
+                {cull_visibility_gpu_task},
+                {},
+                std::string("Build Draw Packets (") + pipeline.window_id + ")",
+                TaskScope::window,
+                pipeline.window);
+            const auto record_render_graph_task = builder.addTask(
+                record_render_graph_name,
+                TaskKernelId::record_render_graph,
+                {},
+                {build_draw_packets_task},
+                {},
+                std::string("Record Render Graph (") + pipeline.window_id + ")",
+                TaskScope::window,
+                pipeline.window);
+            const auto consume_frame_output_task = builder.addTask(
+                consume_frame_output_name,
+                TaskKernelId::consume_frame_output,
+                {},
+                {record_render_graph_task},
+                {},
+                std::string("Consume Frame Output (") + pipeline.window_id + ")",
+                TaskScope::window,
+                pipeline.window);
 
-                return cullVisibilityGpu(
-                    *execution_context.frame_context,
-                    *execution_context.scene,
-                    render_graph);
-            });
+            builder.setTaskCallback(
+                cull_visibility_gpu_task,
+                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                    if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
+                        return std::unexpected(vve::Result::invalid_argument);
+                    }
 
-        builder.setTaskCallback(
-            build_draw_packets_task,
-            [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
+                    return cullVisibilityGpu(
+                        *execution_context.frame_context,
+                        *execution_context.scene,
+                        window,
+                        *render_graph);
+                });
 
-                return buildDrawPackets(
-                    *execution_context.frame_context,
-                    *execution_context.scene,
-                    render_graph);
-            });
+            builder.setTaskCallback(
+                build_draw_packets_task,
+                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                    if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
+                        return std::unexpected(vve::Result::invalid_argument);
+                    }
 
-        builder.setTaskCallback(
-            record_render_graph_task,
-            [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
+                    return buildDrawPackets(
+                        *execution_context.frame_context,
+                        *execution_context.scene,
+                        window,
+                        *render_graph);
+                });
 
-                return record(
-                    *execution_context.frame_context,
-                    *execution_context.scene,
-                    render_graph);
-            });
+            builder.setTaskCallback(
+                record_render_graph_task,
+                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                    if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
+                        return std::unexpected(vve::Result::invalid_argument);
+                    }
 
-        builder.setTaskCallback(
-            consume_frame_output_task,
-            [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
+                    return record(
+                        *execution_context.frame_context,
+                        *execution_context.scene,
+                        window,
+                        *render_graph);
+                });
 
-                return consumeOutput(
-                    *execution_context.frame_context,
-                    *execution_context.scene,
-                    render_graph);
-            });
+            builder.setTaskCallback(
+                consume_frame_output_task,
+                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                    if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
+                        return std::unexpected(vve::Result::invalid_argument);
+                    }
+
+                    return consumeOutput(
+                        *execution_context.frame_context,
+                        *execution_context.scene,
+                        window,
+                        *render_graph);
+                });
+        }
     }
 
 private:

@@ -34,7 +34,15 @@ std::expected<Runtime, vve::Result> createRuntime(const EngineRuntimeDesc& desc)
         return std::unexpected(window_result.error());
     }
     *runtime.window_frame = runtime.window_system->frameData();
-    runtime.render_graph = runtime.render_system->buildStaticGraph();
+    runtime.render_pipelines.clear();
+    runtime.render_pipelines.reserve(runtime.window_system->windows().size());
+    for (const auto& window : runtime.window_system->windows()) {
+        runtime.render_pipelines.push_back(WindowRenderPipeline{
+            .window = window.handle,
+            .window_id = window.id,
+            .graph = runtime.render_system->buildStaticGraph(window.handle)
+        });
+    }
     if (desc.imgui_enabled) {
         runtime.gui_system = createGuiSystem();
     }

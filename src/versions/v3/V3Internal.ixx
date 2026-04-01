@@ -16,7 +16,7 @@ struct Runtime final {
     std::unique_ptr<IGraphicsBackend> graphics_backend{};
     std::unique_ptr<IShaderSystem> shader_system{};
     std::unique_ptr<IRenderSystem> render_system{};
-    RenderGraph render_graph{};
+    std::vector<WindowRenderPipeline> render_pipelines{};
     std::unique_ptr<IGuiSystem> gui_system{};
     EngineRuntimeSnapshot snapshot{};
 };
