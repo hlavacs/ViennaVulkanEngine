@@ -71,7 +71,7 @@ public:
             "task.upload_resources",
             TaskKernelId::upload_resources,
             {},
-            {TaskGraphBuilder::taskHandleFor("task.update_transforms")},
+            {TaskGraphBuilder::taskHandleFor("task.cull_visibility_cpu")},
             {},
             "Upload Resources");
 

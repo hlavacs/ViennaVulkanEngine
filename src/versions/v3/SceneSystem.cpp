@@ -58,7 +58,7 @@ public:
             "task.cull_visibility_cpu",
             TaskKernelId::cull_visibility_cpu,
             {},
-            {TaskGraphBuilder::taskHandleFor("task.upload_resources")},
+            {TaskGraphBuilder::taskHandleFor("task.update_transforms")},
             {},
             "Cull Visibility CPU");
 
