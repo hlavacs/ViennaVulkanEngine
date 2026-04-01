@@ -21,6 +21,24 @@ public:
         return {};
     }
 
+    [[nodiscard]] std::expected<void, vve::Result> beginFrame(
+        const FrameContext&) override {
+        if (!initialized_) {
+            return std::unexpected(vve::Result::not_initialized);
+        }
+
+        return {};
+    }
+
+    [[nodiscard]] std::expected<void, vve::Result> endFrame(
+        const FrameContext&) override {
+        if (!initialized_) {
+            return std::unexpected(vve::Result::not_initialized);
+        }
+
+        return {};
+    }
+
 private:
     bool initialized_{false};
 };

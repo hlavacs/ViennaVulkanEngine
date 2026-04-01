@@ -64,7 +64,7 @@ int main() {
             .frame_index = 7,
             .delta_seconds = 0.016
         };
-        const vve::v3::SceneData scene{};
+        vve::v3::SceneData scene{};
         const auto result = vve::v3::executeTaskGraph(
             graph,
             vve::v3::TaskExecutionContext{

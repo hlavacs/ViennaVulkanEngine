@@ -5,6 +5,9 @@ import std;
 
 export namespace vve::v3 {
 
+class IGraphicsBackend;
+class IResourceSystem;
+class ISceneSystem;
 class IRenderSystem;
 
 class IAssetSystem : public vve::System {
@@ -19,12 +22,21 @@ public:
         const ImportedScene& scene,
         const std::filesystem::path& source_path) = 0;
     [[nodiscard]] virtual std::expected<std::vector<ResourceRecord>, vve::Result> enumerate() const = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> uploadResources(
+        const FrameContext& frame_context,
+        const SceneData& scene) = 0;
 };
 
 class ISceneSystem : public vve::System {
 public:
     [[nodiscard]] virtual std::expected<SceneData, vve::Result> instantiate(
         const ImportedScene& scene) = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> updateTransforms(
+        const FrameContext& frame_context,
+        SceneData& scene) = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> cullVisibility(
+        const FrameContext& frame_context,
+        const SceneData& scene) = 0;
 };
 
 class ITaskSystem : public vve::System {
@@ -39,6 +51,9 @@ public:
     [[nodiscard]] virtual TaskGraph build(
         const SceneData& scene,
         std::span<ITaskSystem* const> task_systems,
+        IGraphicsBackend& graphics_backend,
+        IResourceSystem& resource_system,
+        ISceneSystem& scene_system,
         IRenderSystem& render_system,
         const RenderGraph& render_graph) = 0;
 };
@@ -49,6 +64,10 @@ public:
     [[nodiscard]] virtual std::string_view name() const noexcept = 0;
     [[nodiscard]] virtual vve::GraphicsApi api() const noexcept = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> init() = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> beginFrame(
+        const FrameContext& frame_context) = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> endFrame(
+        const FrameContext& frame_context) = 0;
 };
 
 class IShaderSystem : public vve::System {
@@ -62,11 +81,19 @@ public:
 class IRenderSystem : public vve::System {
 public:
     [[nodiscard]] virtual RenderGraph buildStaticGraph() = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> buildDrawPackets(
+        const FrameContext& frame_context,
+        const SceneData& scene,
+        const RenderGraph& render_graph) = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> record(
         const FrameContext& frame_context,
         const SceneData& scene,
         const RenderGraph& render_graph,
         RenderTaskPhase phase) = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> consumeOutput(
+        const FrameContext& frame_context,
+        const SceneData& scene,
+        const RenderGraph& render_graph) = 0;
 };
 
 class IGuiSystem : public vve::System {

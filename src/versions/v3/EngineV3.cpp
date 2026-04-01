@@ -27,6 +27,9 @@ namespace {
     return runtime.task_graph_system->build(
         scene,
         task_systems,
+        *runtime.graphics_backend,
+        *runtime.resource_system,
+        *runtime.scene_system,
         *runtime.render_system,
         runtime.render_graph);
 }

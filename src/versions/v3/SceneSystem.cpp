@@ -27,6 +27,22 @@ public:
         }
         return instance;
     }
+
+    [[nodiscard]] std::expected<void, vve::Result> updateTransforms(
+        const FrameContext&,
+        SceneData& scene) override {
+        for (auto& node : scene.nodes) {
+            node.local_transform = node.local_transform;
+        }
+
+        return {};
+    }
+
+    [[nodiscard]] std::expected<void, vve::Result> cullVisibility(
+        const FrameContext&,
+        const SceneData&) override {
+        return {};
+    }
 };
 
 } // namespace

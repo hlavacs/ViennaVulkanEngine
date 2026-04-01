@@ -107,7 +107,7 @@ public:
         graph.passes.push_back(RenderPassDesc{
             .handle = post_post_process_pass,
             .kernel = RenderKernelId::post_post_process,
-            .phase = RenderTaskPhase::post_post_process,
+            .phase = RenderTaskPhase::post_process,
             .depends_on = {post_process_pass},
             .debug_name = "Post Post Processing"
         });
@@ -116,13 +116,20 @@ public:
             graph.passes.push_back(RenderPassDesc{
                 .handle = RenderPassHandle{detail::makeStableHandle("render.imgui")},
                 .kernel = RenderKernelId::imgui,
-                .phase = RenderTaskPhase::post_post_process,
+                .phase = RenderTaskPhase::post_process,
                 .depends_on = {post_post_process_pass},
                 .debug_name = std::string("ImGui (") + std::string(graphics_backend_.name()) + ")"
             });
         }
 
         return graph;
+    }
+
+    [[nodiscard]] std::expected<void, vve::Result> buildDrawPackets(
+        const FrameContext&,
+        const SceneData&,
+        const RenderGraph&) override {
+        return {};
     }
 
     [[nodiscard]] std::expected<void, vve::Result> record(
@@ -136,6 +143,13 @@ public:
             }
         }
 
+        return {};
+    }
+
+    [[nodiscard]] std::expected<void, vve::Result> consumeOutput(
+        const FrameContext&,
+        const SceneData&,
+        const RenderGraph&) override {
         return {};
     }
 

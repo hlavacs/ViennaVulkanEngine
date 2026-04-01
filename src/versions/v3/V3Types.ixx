@@ -33,7 +33,8 @@ enum class TaskKernelId : std::uint32_t {
     upload_resources,
     record_render_graph,
     record_post_processing,
-    record_post_post_processing
+    consume_frame_output,
+    end_frame
 };
 
 enum class RenderKernelId : std::uint32_t {
@@ -52,8 +53,7 @@ enum class RenderKernelId : std::uint32_t {
 
 enum class RenderTaskPhase : std::uint32_t {
     main = 0,
-    post_process,
-    post_post_process
+    post_process
 };
 
 enum class ShaderStage : std::uint32_t {
@@ -151,7 +151,7 @@ struct SceneData {
 
 struct TaskExecutionContext {
     const FrameContext* frame_context{nullptr};
-    const SceneData* scene{nullptr};
+    SceneData* scene{nullptr};
 };
 
 using TaskCallback = std::function<std::expected<void, vve::Result>(const TaskExecutionContext&)>;

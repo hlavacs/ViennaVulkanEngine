@@ -50,6 +50,20 @@ public:
         return records_;
     }
 
+    [[nodiscard]] std::expected<void, vve::Result> uploadResources(
+        const FrameContext&,
+        const SceneData&) override {
+        for (auto& record : records_) {
+            if (record.location == ResourceLocation::imported_blob ||
+                record.location == ResourceLocation::cpu_memory) {
+                record.location = ResourceLocation::gpu_memory;
+                ++record.generation;
+            }
+        }
+
+        return {};
+    }
+
 private:
     std::vector<ResourceRecord> records_{};
 };
