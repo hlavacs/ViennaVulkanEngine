@@ -31,7 +31,7 @@ int main() {
         return 1;
     }
 
-    if (!engine.step()) {
+    if (!engine.run()) {
         return 1;
     }
 

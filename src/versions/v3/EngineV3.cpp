@@ -35,6 +35,18 @@ namespace {
         runtime.render_pipelines);
 }
 
+[[nodiscard]] bool anyWindowShouldClose(const std::shared_ptr<const WindowFrameData>& window_frame) {
+    if (window_frame == nullptr) {
+        return false;
+    }
+
+    return std::ranges::any_of(
+        window_frame->windows,
+        [](const WindowState& window) {
+            return window.should_close;
+        });
+}
+
 class EngineImpl final : public vve::detail::EngineImpl {
 public:
     explicit EngineImpl(const vve::EngineConfig& config)
@@ -122,7 +134,6 @@ public:
                 running_ = false;
                 return step_result;
             }
-            running_ = false;
         }
 
         return std::expected<void, vve::Result>{};
@@ -162,6 +173,11 @@ public:
         if (auto execute_result = executeTaskGraph(*task_graph_, execution_context); !execute_result) {
             return execute_result;
         }
+
+        if (anyWindowShouldClose(runtime_.window_frame)) {
+            running_ = false;
+        }
+
         return std::expected<void, vve::Result>{};
     }
 

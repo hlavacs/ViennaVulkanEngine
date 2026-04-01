@@ -69,6 +69,7 @@ public:
         }
 
         events_.clear();
+        SDL_PumpEvents();
 
         SDL_Event event{};
         while (SDL_PollEvent(&event)) {
