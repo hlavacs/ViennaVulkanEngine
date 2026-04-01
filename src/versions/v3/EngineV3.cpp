@@ -98,12 +98,15 @@ public:
             }
         }
 
+        loaded_file_path_.clear();
+        scene_ = SceneData{};
+        task_graph_.reset();
         initialized_ = true;
         running_ = false;
         task_graph_dirty_ = true;
         last_time_ = std::chrono::time_point_cast<std::chrono::nanoseconds>(
             std::chrono::high_resolution_clock::now());
-        return {};
+        return std::expected<void, vve::Result>{};
     }
 
     [[nodiscard]] std::expected<void, vve::Result> run() override {
@@ -122,7 +125,7 @@ public:
             running_ = false;
         }
 
-        return {};
+        return std::expected<void, vve::Result>{};
     }
 
     [[nodiscard]] std::expected<void, vve::Result> step() override {
@@ -159,7 +162,7 @@ public:
         if (auto execute_result = executeTaskGraph(*task_graph_, execution_context); !execute_result) {
             return execute_result;
         }
-        return {};
+        return std::expected<void, vve::Result>{};
     }
 
     [[nodiscard]] std::expected<int, vve::Result> getVersionMajor() const noexcept override {
