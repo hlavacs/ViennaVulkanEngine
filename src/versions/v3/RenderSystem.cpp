@@ -125,6 +125,13 @@ public:
         return graph;
     }
 
+    [[nodiscard]] std::expected<void, vve::Result> cullVisibilityGpu(
+        const FrameContext&,
+        const SceneData&,
+        const RenderGraph&) override {
+        return {};
+    }
+
     [[nodiscard]] std::expected<void, vve::Result> buildDrawPackets(
         const FrameContext&,
         const SceneData&,
@@ -156,10 +163,24 @@ public:
     void bindTaskCallbacks(
         TaskGraphBuilder& builder,
         const RenderGraph& render_graph,
+        TaskNodeHandle cull_visibility_gpu_task,
         TaskNodeHandle build_draw_packets_task,
         TaskNodeHandle record_render_graph_task,
         TaskNodeHandle record_post_processing_task,
         TaskNodeHandle consume_frame_output_task) override {
+        builder.setTaskCallback(
+            cull_visibility_gpu_task,
+            [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
+                    return std::unexpected(vve::Result::invalid_argument);
+                }
+
+                return cullVisibilityGpu(
+                    *execution_context.frame_context,
+                    *execution_context.scene,
+                    render_graph);
+            });
+
         builder.setTaskCallback(
             build_draw_packets_task,
             [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {

@@ -30,6 +30,7 @@ struct Runtime final {
 [[nodiscard]] std::unique_ptr<IShaderSystem> createShaderSystem();
 [[nodiscard]] std::unique_ptr<IRenderSystem> createRenderSystem(
     vve::RendererKind renderer,
+    vve::ShadowKind shadow,
     IGraphicsBackend& graphics_backend,
     bool imgui_enabled);
 [[nodiscard]] std::unique_ptr<IGuiSystem> createGuiSystem();

@@ -43,7 +43,7 @@ public:
     virtual void bindTaskCallbacks(
         TaskGraphBuilder& builder,
         TaskNodeHandle update_transforms_task,
-        TaskNodeHandle cull_visibility_task) = 0;
+        TaskNodeHandle cull_visibility_cpu_task) = 0;
 };
 
 class ITaskSystem : public vve::System {
@@ -92,6 +92,10 @@ public:
 class IRenderSystem : public vve::System {
 public:
     [[nodiscard]] virtual RenderGraph buildStaticGraph() = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Result> cullVisibilityGpu(
+        const FrameContext& frame_context,
+        const SceneData& scene,
+        const RenderGraph& render_graph) = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> buildDrawPackets(
         const FrameContext& frame_context,
         const SceneData& scene,
@@ -108,6 +112,7 @@ public:
     virtual void bindTaskCallbacks(
         TaskGraphBuilder& builder,
         const RenderGraph& render_graph,
+        TaskNodeHandle cull_visibility_gpu_task,
         TaskNodeHandle build_draw_packets_task,
         TaskNodeHandle record_render_graph_task,
         TaskNodeHandle record_post_processing_task,

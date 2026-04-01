@@ -58,19 +58,27 @@ public:
             {},
             "Upload Resources");
 
-        const auto culling = builder.addTask(
-            "task.cull_visibility",
-            TaskKernelId::cull_visibility,
+        const auto cull_visibility_cpu = builder.addTask(
+            "task.cull_visibility_cpu",
+            TaskKernelId::cull_visibility_cpu,
             {},
             {uploads},
             {},
-            "Cull Visibility");
+            "Cull Visibility CPU");
+
+        const auto cull_visibility_gpu = builder.addTask(
+            "task.cull_visibility_gpu",
+            TaskKernelId::cull_visibility_gpu,
+            {},
+            {cull_visibility_cpu},
+            {},
+            "Cull Visibility GPU");
 
         const auto build_draw_packets = builder.addTask(
             "task.build_draw_packets",
             TaskKernelId::build_draw_packets,
             {},
-            {culling},
+            {cull_visibility_gpu},
             {},
             "Build Draw Packets");
 
@@ -107,11 +115,12 @@ public:
             "End Frame");
 
         graphics_backend.bindTaskCallbacks(builder, begin_frame, end_frame);
-        scene_system.bindTaskCallbacks(builder, transforms, culling);
+        scene_system.bindTaskCallbacks(builder, transforms, cull_visibility_cpu);
         resource_system.bindTaskCallbacks(builder, uploads);
         render_system.bindTaskCallbacks(
             builder,
             render_graph,
+            cull_visibility_gpu,
             build_draw_packets,
             record_render_graph,
             record_post_processing,

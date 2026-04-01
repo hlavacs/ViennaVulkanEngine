@@ -47,7 +47,7 @@ public:
     void bindTaskCallbacks(
         TaskGraphBuilder& builder,
         TaskNodeHandle update_transforms_task,
-        TaskNodeHandle cull_visibility_task) override {
+        TaskNodeHandle cull_visibility_cpu_task) override {
         builder.setTaskCallback(
             update_transforms_task,
             [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
@@ -59,7 +59,7 @@ public:
             });
 
         builder.setTaskCallback(
-            cull_visibility_task,
+            cull_visibility_cpu_task,
             [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
                 if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
                     return std::unexpected(vve::Result::invalid_argument);
