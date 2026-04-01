@@ -40,14 +40,12 @@ namespace {
             return RenderPassDesc{
                 .handle = RenderPassHandle{detail::makeStableHandle("render.shadow_map")},
                 .kernel = RenderKernelId::shadow_map,
-                .phase = RenderTaskPhase::main,
                 .debug_name = "Shadow Map"
             };
         case vve::ShadowKind::ray_traced:
             return RenderPassDesc{
                 .handle = RenderPassHandle{detail::makeStableHandle("render.ray_traced_shadows")},
                 .kernel = RenderKernelId::ray_traced_shadows,
-                .phase = RenderTaskPhase::main,
                 .debug_name = "Ray Traced Shadows"
             };
     }
@@ -87,7 +85,6 @@ public:
         graph.passes.push_back(RenderPassDesc{
             .handle = main_pass,
             .kernel = selectMainKernel(renderer_),
-            .phase = RenderTaskPhase::main,
             .depends_on = std::move(main_dependencies),
             .debug_name = std::string(selectMainPassName(renderer_))
         });
@@ -96,7 +93,6 @@ public:
         graph.passes.push_back(RenderPassDesc{
             .handle = post_process_pass,
             .kernel = RenderKernelId::post_process,
-            .phase = RenderTaskPhase::post_process,
             .depends_on = {main_pass},
             .debug_name = "Post Processing"
         });
@@ -107,7 +103,6 @@ public:
         graph.passes.push_back(RenderPassDesc{
             .handle = post_post_process_pass,
             .kernel = RenderKernelId::post_post_process,
-            .phase = RenderTaskPhase::post_process,
             .depends_on = {post_process_pass},
             .debug_name = "Post Post Processing"
         });
@@ -116,7 +111,6 @@ public:
             graph.passes.push_back(RenderPassDesc{
                 .handle = RenderPassHandle{detail::makeStableHandle("render.imgui")},
                 .kernel = RenderKernelId::imgui,
-                .phase = RenderTaskPhase::post_process,
                 .depends_on = {post_post_process_pass},
                 .debug_name = std::string("ImGui (") + std::string(graphics_backend_.name()) + ")"
             });
@@ -142,12 +136,8 @@ public:
     [[nodiscard]] std::expected<void, vve::Result> record(
         const FrameContext&,
         const SceneData&,
-        const RenderGraph& render_graph,
-        RenderTaskPhase phase) override {
+        const RenderGraph& render_graph) override {
         for (const auto& pass : render_graph.passes) {
-            if (pass.phase != phase) {
-                continue;
-            }
         }
 
         return {};
@@ -185,18 +175,11 @@ public:
             {build_draw_packets_task},
             {},
             "Record Render Graph");
-        const auto record_post_processing_task = builder.addTask(
-            "task.record_post_processing",
-            TaskKernelId::record_post_processing,
-            {},
-            {record_render_graph_task},
-            {},
-            "Record Post Processing");
         const auto consume_frame_output_task = builder.addTask(
             "task.consume_frame_output",
             TaskKernelId::consume_frame_output,
             {},
-            {record_post_processing_task},
+            {record_render_graph_task},
             {},
             "Consume Frame Output");
 
@@ -236,22 +219,7 @@ public:
                 return record(
                     *execution_context.frame_context,
                     *execution_context.scene,
-                    render_graph,
-                    RenderTaskPhase::main);
-            });
-
-        builder.setTaskCallback(
-            record_post_processing_task,
-            [this, &render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
-                }
-
-                return record(
-                    *execution_context.frame_context,
-                    *execution_context.scene,
-                    render_graph,
-                    RenderTaskPhase::post_process);
+                    render_graph);
             });
 
         builder.setTaskCallback(

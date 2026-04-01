@@ -99,8 +99,7 @@ public:
     [[nodiscard]] virtual std::expected<void, vve::Result> record(
         const FrameContext& frame_context,
         const SceneData& scene,
-        const RenderGraph& render_graph,
-        RenderTaskPhase phase) = 0;
+        const RenderGraph& render_graph) = 0;
     [[nodiscard]] virtual std::expected<void, vve::Result> consumeOutput(
         const FrameContext& frame_context,
         const SceneData& scene,

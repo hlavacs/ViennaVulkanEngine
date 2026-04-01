@@ -33,7 +33,6 @@ enum class TaskKernelId : std::uint32_t {
     build_draw_packets,
     upload_resources,
     record_render_graph,
-    record_post_processing,
     consume_frame_output,
     end_frame
 };
@@ -50,11 +49,6 @@ enum class RenderKernelId : std::uint32_t {
     post_process,
     post_post_process,
     imgui
-};
-
-enum class RenderTaskPhase : std::uint32_t {
-    main = 0,
-    post_process
 };
 
 enum class ShaderStage : std::uint32_t {
@@ -319,7 +313,6 @@ struct RenderResourceUse {
 struct RenderPassDesc {
     RenderPassHandle handle{};
     RenderKernelId kernel{RenderKernelId::none};
-    RenderTaskPhase phase{RenderTaskPhase::main};
     std::vector<RenderPassHandle> depends_on{};
     std::vector<RenderResourceUse> uses{};
     std::string debug_name{};
