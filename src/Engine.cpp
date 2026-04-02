@@ -4,6 +4,8 @@ module VEEngine;
 import VEEngine.V3;
 import std;
 
+#include "ECS.cpp"
+
 template <typename TImplementation>
 vve::EngineFacade<TImplementation>::EngineFacade(vve::EngineConfig config)
     : implementation_(std::move(config)) {
