@@ -2,11 +2,29 @@ import VEEngine;
 import VEEngine.V3;
 import std;
 
+class DummyGameSystem final : public vve::System {
+public:
+    [[nodiscard]] std::string_view name() const noexcept override {
+        return "DummyGameSystem";
+    }
+
+    [[nodiscard]] std::expected<void, vve::Error> init(vve::World&) {
+        return {};
+    }
+
+    [[nodiscard]] std::expected<void, vve::Error> update(
+        vve::World&,
+        const vve::v3::FrameContext&) {
+        return {};
+    }
+};
+
 int main() {
 
-    vve::Engine engine(
+    auto engine = vve::makeEngine(
         vve::ApplicationName{"game"},
         vve::EnableValidation{true},
+        vve::makeUserSystems(DummyGameSystem{}),
         vve::Windows{
             .value = {
                 vve::WindowDesc{

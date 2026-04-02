@@ -2,7 +2,7 @@ import VEEngine;
 import VEEngine.V3;
 
 int main() {
-    vve::Engine engine(
+    auto engine = vve::makeEngine(
         vve::ApplicationName{"physics"},
         vve::Windows{
             .value = {
