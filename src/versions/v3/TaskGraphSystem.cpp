@@ -84,14 +84,13 @@ template <>
 TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::TaskGraphSystemFacade()
     : implementation_(
           new DefaultTaskGraphSystemImplementation(),
-          [](void* implementation) {
-              delete static_cast<DefaultTaskGraphSystemImplementation*>(implementation);
+          [](DefaultTaskGraphSystemImplementation* implementation) {
+              delete implementation;
           }) {
 }
 
-template <>
 std::string_view TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::name() const noexcept {
-    return static_cast<DefaultTaskGraphSystemImplementation*>(implementation_.get())->name();
+    return implementation_->name();
 }
 
 template <>
@@ -104,7 +103,7 @@ TaskGraph TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::build(
     SceneSystem& scene_system,
     RenderSystem& render_system,
     std::span<const WindowRenderPipeline> render_pipelines) {
-    return static_cast<DefaultTaskGraphSystemImplementation*>(implementation_.get())->build(
+    return implementation_->build(
         scene,
         task_systems,
         window_system,

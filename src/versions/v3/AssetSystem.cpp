@@ -36,20 +36,19 @@ template <>
 AssetSystemFacade<AssimpAssetSystemImplementation>::AssetSystemFacade()
     : implementation_(
           new AssimpAssetSystemImplementation(),
-          [](void* implementation) {
-              delete static_cast<AssimpAssetSystemImplementation*>(implementation);
+          [](AssimpAssetSystemImplementation* implementation) {
+              delete implementation;
           }) {
 }
 
-template <>
 std::string_view AssetSystemFacade<AssimpAssetSystemImplementation>::name() const noexcept {
-    return static_cast<AssimpAssetSystemImplementation*>(implementation_.get())->name();
+    return implementation_->name();
 }
 
 template <>
 std::expected<ImportedScene, vve::Error> AssetSystemFacade<AssimpAssetSystemImplementation>::importScene(
     const std::filesystem::path& source_path) {
-    return static_cast<AssimpAssetSystemImplementation*>(implementation_.get())->importScene(source_path);
+    return implementation_->importScene(source_path);
 }
 
 template class AssetSystemFacade<AssimpAssetSystemImplementation>;

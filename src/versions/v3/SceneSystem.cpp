@@ -86,43 +86,40 @@ template <>
 SceneSystemFacade<DefaultSceneSystemImplementation>::SceneSystemFacade()
     : implementation_(
           new DefaultSceneSystemImplementation(),
-          [](void* implementation) {
-              delete static_cast<DefaultSceneSystemImplementation*>(implementation);
+          [](DefaultSceneSystemImplementation* implementation) {
+              delete implementation;
           }) {
 }
 
-template <>
 std::string_view SceneSystemFacade<DefaultSceneSystemImplementation>::name() const noexcept {
-    return static_cast<DefaultSceneSystemImplementation*>(implementation_.get())->name();
+    return implementation_->name();
 }
 
 template <>
 std::expected<SceneData, vve::Error> SceneSystemFacade<DefaultSceneSystemImplementation>::instantiate(
     const ImportedScene& scene) {
-    return static_cast<DefaultSceneSystemImplementation*>(implementation_.get())->instantiate(scene);
+    return implementation_->instantiate(scene);
 }
 
 template <>
 std::expected<void, vve::Error> SceneSystemFacade<DefaultSceneSystemImplementation>::updateTransforms(
     const FrameContext& frame_context,
     SceneData& scene) {
-    return static_cast<DefaultSceneSystemImplementation*>(implementation_.get())
-        ->updateTransforms(frame_context, scene);
+    return implementation_->updateTransforms(frame_context, scene);
 }
 
 template <>
 std::expected<void, vve::Error> SceneSystemFacade<DefaultSceneSystemImplementation>::cullVisibility(
     const FrameContext& frame_context,
     const SceneData& scene) {
-    return static_cast<DefaultSceneSystemImplementation*>(implementation_.get())
-        ->cullVisibility(frame_context, scene);
+    return implementation_->cullVisibility(frame_context, scene);
 }
 
 template <>
 void SceneSystemFacade<DefaultSceneSystemImplementation>::registerTasks(
     TaskGraphBuilder& builder,
     const SceneData& scene) {
-    static_cast<DefaultSceneSystemImplementation*>(implementation_.get())->registerTasks(builder, scene);
+    implementation_->registerTasks(builder, scene);
 }
 
 template class SceneSystemFacade<DefaultSceneSystemImplementation>;

@@ -24,20 +24,19 @@ template <>
 GuiSystemFacade<ImGuiSystemImplementation>::GuiSystemFacade()
     : implementation_(
           new ImGuiSystemImplementation(),
-          [](void* implementation) {
-              delete static_cast<ImGuiSystemImplementation*>(implementation);
+          [](ImGuiSystemImplementation* implementation) {
+              delete implementation;
           }) {
 }
 
-template <>
 std::string_view GuiSystemFacade<ImGuiSystemImplementation>::name() const noexcept {
-    return static_cast<ImGuiSystemImplementation*>(implementation_.get())->name();
+    return implementation_->name();
 }
 
 template <>
 std::expected<void, vve::Error> GuiSystemFacade<ImGuiSystemImplementation>::init(
     GraphicsBackendFacade<VulkanGraphicsBackendImplementation>& graphics_backend) {
-    return static_cast<ImGuiSystemImplementation*>(implementation_.get())->init(graphics_backend);
+    return implementation_->init(graphics_backend);
 }
 
 template class GuiSystemFacade<ImGuiSystemImplementation>;

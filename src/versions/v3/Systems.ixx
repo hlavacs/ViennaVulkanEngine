@@ -42,7 +42,7 @@ public:
         const std::filesystem::path& source_path);
 
 private:
-    std::unique_ptr<void, void (*)(void*)> implementation_{nullptr, nullptr};
+    std::unique_ptr<TImplementation, void (*)(TImplementation*)> implementation_{nullptr, nullptr};
 };
 
 template <typename TImplementation>
@@ -68,7 +68,7 @@ public:
         const SceneData& scene);
 
 private:
-    std::unique_ptr<void, void (*)(void*)> implementation_{nullptr, nullptr};
+    std::unique_ptr<TImplementation, void (*)(TImplementation*)> implementation_{nullptr, nullptr};
 };
 
 template <typename TImplementation>
@@ -95,7 +95,7 @@ public:
         const SceneData& scene);
 
 private:
-    std::unique_ptr<void, void (*)(void*)> implementation_{nullptr, nullptr};
+    std::unique_ptr<TImplementation, void (*)(TImplementation*)> implementation_{nullptr, nullptr};
 };
 
 template <typename TImplementation>
@@ -119,7 +119,7 @@ public:
     void registerTasks(TaskGraphBuilder& builder);
 
 private:
-    std::unique_ptr<void, void (*)(void*)> implementation_{nullptr, nullptr};
+    std::unique_ptr<TImplementation, void (*)(TImplementation*)> implementation_{nullptr, nullptr};
 };
 
 template <typename TImplementation>
@@ -142,7 +142,7 @@ public:
     void registerTasks(TaskGraphBuilder& builder);
 
 private:
-    std::unique_ptr<void, void (*)(void*)> implementation_{nullptr, nullptr};
+    std::unique_ptr<TImplementation, void (*)(TImplementation*)> implementation_{nullptr, nullptr};
 };
 
 template <typename TImplementation>
@@ -162,7 +162,7 @@ public:
         vve::ShadowKind shadow);
 
 private:
-    std::unique_ptr<void, void (*)(void*)> implementation_{nullptr, nullptr};
+    std::unique_ptr<TImplementation, void (*)(TImplementation*)> implementation_{nullptr, nullptr};
 };
 
 template <typename TImplementation>
@@ -207,7 +207,7 @@ public:
         std::span<const WindowRenderPipeline> render_pipelines);
 
 private:
-    std::unique_ptr<void, void (*)(void*)> implementation_{nullptr, nullptr};
+    std::unique_ptr<TImplementation, void (*)(TImplementation*)> implementation_{nullptr, nullptr};
 };
 
 template <typename TImplementation>
@@ -225,7 +225,7 @@ public:
         GraphicsBackendFacade<VulkanGraphicsBackendImplementation>& graphics_backend);
 
 private:
-    std::unique_ptr<void, void (*)(void*)> implementation_{nullptr, nullptr};
+    std::unique_ptr<TImplementation, void (*)(TImplementation*)> implementation_{nullptr, nullptr};
 };
 
 using AssetSystem = AssetSystemFacade<AssimpAssetSystemImplementation>;
@@ -268,7 +268,7 @@ public:
         std::span<const WindowRenderPipeline> render_pipelines);
 
 private:
-    std::unique_ptr<void, void (*)(void*)> implementation_{nullptr, nullptr};
+    std::unique_ptr<TImplementation, void (*)(TImplementation*)> implementation_{nullptr, nullptr};
 };
 
 using TaskGraphSystem = TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>;

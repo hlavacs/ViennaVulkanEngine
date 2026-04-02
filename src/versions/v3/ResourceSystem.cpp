@@ -92,43 +92,40 @@ template <>
 ResourceSystemFacade<DefaultResourceSystemImplementation>::ResourceSystemFacade()
     : implementation_(
           new DefaultResourceSystemImplementation(),
-          [](void* implementation) {
-              delete static_cast<DefaultResourceSystemImplementation*>(implementation);
+          [](DefaultResourceSystemImplementation* implementation) {
+              delete implementation;
           }) {
 }
 
-template <>
 std::string_view ResourceSystemFacade<DefaultResourceSystemImplementation>::name() const noexcept {
-    return static_cast<DefaultResourceSystemImplementation*>(implementation_.get())->name();
+    return implementation_->name();
 }
 
 template <>
 std::expected<void, vve::Error> ResourceSystemFacade<DefaultResourceSystemImplementation>::registerImportedScene(
     const ImportedScene& scene,
     const std::filesystem::path& source_path) {
-    return static_cast<DefaultResourceSystemImplementation*>(implementation_.get())
-        ->registerImportedScene(scene, source_path);
+    return implementation_->registerImportedScene(scene, source_path);
 }
 
 template <>
 std::expected<std::vector<ResourceRecord>, vve::Error>
 ResourceSystemFacade<DefaultResourceSystemImplementation>::enumerate() const {
-    return static_cast<DefaultResourceSystemImplementation*>(implementation_.get())->enumerate();
+    return implementation_->enumerate();
 }
 
 template <>
 std::expected<void, vve::Error> ResourceSystemFacade<DefaultResourceSystemImplementation>::uploadResources(
     const FrameContext& frame_context,
     const SceneData& scene) {
-    return static_cast<DefaultResourceSystemImplementation*>(implementation_.get())
-        ->uploadResources(frame_context, scene);
+    return implementation_->uploadResources(frame_context, scene);
 }
 
 template <>
 void ResourceSystemFacade<DefaultResourceSystemImplementation>::registerTasks(
     TaskGraphBuilder& builder,
     const SceneData& scene) {
-    static_cast<DefaultResourceSystemImplementation*>(implementation_.get())->registerTasks(builder, scene);
+    implementation_->registerTasks(builder, scene);
 }
 
 template class ResourceSystemFacade<DefaultResourceSystemImplementation>;

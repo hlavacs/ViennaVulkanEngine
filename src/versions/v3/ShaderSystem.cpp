@@ -58,14 +58,13 @@ template <>
 ShaderSystemFacade<SlangShaderSystemImplementation>::ShaderSystemFacade()
     : implementation_(
           new SlangShaderSystemImplementation(),
-          [](void* implementation) {
-              delete static_cast<SlangShaderSystemImplementation*>(implementation);
+          [](SlangShaderSystemImplementation* implementation) {
+              delete implementation;
           }) {
 }
 
-template <>
 std::string_view ShaderSystemFacade<SlangShaderSystemImplementation>::name() const noexcept {
-    return static_cast<SlangShaderSystemImplementation*>(implementation_.get())->name();
+    return implementation_->name();
 }
 
 template <>
@@ -73,8 +72,7 @@ std::expected<ShaderMetadata, vve::Error> ShaderSystemFacade<SlangShaderSystemIm
     const std::filesystem::path& shader_path,
     vve::RendererKind renderer,
     vve::ShadowKind shadow) {
-    return static_cast<SlangShaderSystemImplementation*>(implementation_.get())
-        ->reflect(shader_path, renderer, shadow);
+    return implementation_->reflect(shader_path, renderer, shadow);
 }
 
 template class ShaderSystemFacade<SlangShaderSystemImplementation>;

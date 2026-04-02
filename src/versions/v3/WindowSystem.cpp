@@ -386,47 +386,46 @@ template <>
 WindowSystemFacade<SDL3WindowSystemImplementation>::WindowSystemFacade()
     : implementation_(
           new SDL3WindowSystemImplementation(),
-          [](void* implementation) {
-              delete static_cast<SDL3WindowSystemImplementation*>(implementation);
+          [](SDL3WindowSystemImplementation* implementation) {
+              delete implementation;
           }) {
 }
 
-template <>
 std::string_view WindowSystemFacade<SDL3WindowSystemImplementation>::name() const noexcept {
-    return static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->name();
+    return implementation_->name();
 }
 
 template <>
 std::expected<void, vve::Error> WindowSystemFacade<SDL3WindowSystemImplementation>::init(
     std::span<const vve::WindowDesc> windows) {
-    return static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->init(windows);
+    return implementation_->init(windows);
 }
 
 template <>
 std::expected<void, vve::Error> WindowSystemFacade<SDL3WindowSystemImplementation>::pollEvents(
     const FrameContext& frame_context) {
-    return static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->pollEvents(frame_context);
+    return implementation_->pollEvents(frame_context);
 }
 
 template <>
 WindowFrameData WindowSystemFacade<SDL3WindowSystemImplementation>::frameData() const {
-    return static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->frameData();
+    return implementation_->frameData();
 }
 
 template <>
 std::span<const WindowState> WindowSystemFacade<SDL3WindowSystemImplementation>::windows() const {
-    return static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->windows();
+    return implementation_->windows();
 }
 
 template <>
 void WindowSystemFacade<SDL3WindowSystemImplementation>::setFrameDataSink(
     std::shared_ptr<WindowFrameData> frame_data) {
-    static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->setFrameDataSink(std::move(frame_data));
+    implementation_->setFrameDataSink(std::move(frame_data));
 }
 
 template <>
 void WindowSystemFacade<SDL3WindowSystemImplementation>::registerTasks(TaskGraphBuilder& builder) {
-    static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->registerTasks(builder);
+    implementation_->registerTasks(builder);
 }
 
 template class WindowSystemFacade<SDL3WindowSystemImplementation>;

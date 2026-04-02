@@ -82,41 +82,40 @@ template <>
 GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::GraphicsBackendFacade()
     : implementation_(
           new VulkanGraphicsBackendImplementation(),
-          [](void* implementation) {
-              delete static_cast<VulkanGraphicsBackendImplementation*>(implementation);
+          [](VulkanGraphicsBackendImplementation* implementation) {
+              delete implementation;
           }) {
 }
 
-template <>
 std::string_view GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::name() const noexcept {
-    return static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->name();
+    return implementation_->name();
 }
 
 template <>
 vve::GraphicsApi GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::api() const noexcept {
-    return static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->api();
+    return implementation_->api();
 }
 
 template <>
 std::expected<void, vve::Error> GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::init() {
-    return static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->init();
+    return implementation_->init();
 }
 
 template <>
 std::expected<void, vve::Error> GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::beginFrame(
     const FrameContext& frame_context) {
-    return static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->beginFrame(frame_context);
+    return implementation_->beginFrame(frame_context);
 }
 
 template <>
 std::expected<void, vve::Error> GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::endFrame(
     const FrameContext& frame_context) {
-    return static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->endFrame(frame_context);
+    return implementation_->endFrame(frame_context);
 }
 
 template <>
 void GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::registerTasks(TaskGraphBuilder& builder) {
-    static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->registerTasks(builder);
+    implementation_->registerTasks(builder);
 }
 
 template class GraphicsBackendFacade<VulkanGraphicsBackendImplementation>;

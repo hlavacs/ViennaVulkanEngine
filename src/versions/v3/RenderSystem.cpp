@@ -285,19 +285,18 @@ RenderSystemFacade<DefaultRenderSystemImplementation>::RenderSystemFacade(
               shadow,
               graphics_backend,
               imgui_enabled),
-          [](void* implementation) {
-              delete static_cast<DefaultRenderSystemImplementation*>(implementation);
+          [](DefaultRenderSystemImplementation* implementation) {
+              delete implementation;
           }) {
 }
 
-template <>
 std::string_view RenderSystemFacade<DefaultRenderSystemImplementation>::name() const noexcept {
-    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())->name();
+    return implementation_->name();
 }
 
 template <>
 RenderGraph RenderSystemFacade<DefaultRenderSystemImplementation>::buildStaticGraph(WindowHandle window) {
-    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())->buildStaticGraph(window);
+    return implementation_->buildStaticGraph(window);
 }
 
 template <>
@@ -306,8 +305,7 @@ std::expected<void, vve::Error> RenderSystemFacade<DefaultRenderSystemImplementa
     const SceneData& scene,
     WindowHandle window,
     const RenderGraph& render_graph) {
-    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())
-        ->cullVisibilityGpu(frame_context, scene, window, render_graph);
+    return implementation_->cullVisibilityGpu(frame_context, scene, window, render_graph);
 }
 
 template <>
@@ -316,8 +314,7 @@ std::expected<void, vve::Error> RenderSystemFacade<DefaultRenderSystemImplementa
     const SceneData& scene,
     WindowHandle window,
     const RenderGraph& render_graph) {
-    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())
-        ->buildDrawPackets(frame_context, scene, window, render_graph);
+    return implementation_->buildDrawPackets(frame_context, scene, window, render_graph);
 }
 
 template <>
@@ -326,8 +323,7 @@ std::expected<void, vve::Error> RenderSystemFacade<DefaultRenderSystemImplementa
     const SceneData& scene,
     WindowHandle window,
     const RenderGraph& render_graph) {
-    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())
-        ->record(frame_context, scene, window, render_graph);
+    return implementation_->record(frame_context, scene, window, render_graph);
 }
 
 template <>
@@ -336,8 +332,7 @@ std::expected<void, vve::Error> RenderSystemFacade<DefaultRenderSystemImplementa
     const SceneData& scene,
     WindowHandle window,
     const RenderGraph& render_graph) {
-    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())
-        ->consumeOutput(frame_context, scene, window, render_graph);
+    return implementation_->consumeOutput(frame_context, scene, window, render_graph);
 }
 
 template <>
@@ -345,8 +340,7 @@ void RenderSystemFacade<DefaultRenderSystemImplementation>::registerTasks(
     TaskGraphBuilder& builder,
     const SceneData& scene,
     std::span<const WindowRenderPipeline> render_pipelines) {
-    static_cast<DefaultRenderSystemImplementation*>(implementation_.get())
-        ->registerTasks(builder, scene, render_pipelines);
+    implementation_->registerTasks(builder, scene, render_pipelines);
 }
 
 template class RenderSystemFacade<DefaultRenderSystemImplementation>;
