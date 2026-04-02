@@ -1,64 +1,66 @@
 export module VEEngine:ECS;
 import std;
 import :Handle;
+import :Result;
 
 export namespace vve {
 
-class IECS {
+template <typename T>
+concept NotHandle = !std::same_as<std::remove_cvref_t<T>, Handle>;
+
+template <typename TImplementation>
+class ECSFacade {
 public:
-    virtual ~IECS() = default;
+    [[nodiscard]] std::expected<Handle, Result> create() {
+        return implementation_.create();
+    }
 
-    [[nodiscard]] virtual Handle create() = 0;
-    [[nodiscard]] virtual bool addComponent(
-        Handle entity,
-        std::type_index component_type,
-        std::any component) = 0;
-    [[nodiscard]] virtual std::optional<std::any> get(
-        Handle entity,
-        std::type_index component_type) const = 0;
-    [[nodiscard]] virtual bool put(
-        Handle entity,
-        std::type_index component_type,
-        std::any component) = 0;
-    [[nodiscard]] virtual bool erase(Handle entity) = 0;
-    [[nodiscard]] virtual bool eraseComponent(
-        Handle entity,
-        std::type_index component_type) = 0;
+    [[nodiscard]] std::expected<bool, Result> exists(Handle entity) const {
+        return implementation_.exists(entity);
+    }
 
-    template <typename TComponent>
-    [[nodiscard]] bool addComponent(Handle entity, TComponent component) {
-        return addComponent(
+    [[nodiscard]] std::expected<void, Result> erase(Handle entity) {
+        return implementation_.erase(entity);
+    }
+
+    template <NotHandle TComponent>
+    [[nodiscard]] std::expected<void, Result> addComponent(
+        Handle entity,
+        TComponent&& component) {
+        using TStoredComponent = std::remove_cvref_t<TComponent>;
+        return implementation_.template addComponent<TStoredComponent>(
             entity,
-            std::type_index(typeid(TComponent)),
-            std::any(std::move(component)));
+            std::forward<TComponent>(component));
     }
 
-    template <typename TComponent>
-    [[nodiscard]] std::optional<TComponent> get(Handle entity) const {
-        auto component = get(entity, std::type_index(typeid(TComponent)));
-        if (!component.has_value()) {
-            return std::nullopt;
-        }
-
-        if (const auto* value = std::any_cast<TComponent>(&*component)) {
-            return *value;
-        }
-
-        return std::nullopt;
+    template <NotHandle TComponent>
+    [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, Result> get(
+        Handle entity) const {
+        using TStoredComponent = std::remove_cvref_t<TComponent>;
+        return implementation_.template get<TStoredComponent>(entity);
     }
 
-    template <typename TComponent>
-    [[nodiscard]] bool put(Handle entity, TComponent component) {
-        return put(
+    template <NotHandle TComponent>
+    [[nodiscard]] std::expected<void, Result> put(
+        Handle entity,
+        TComponent&& component) {
+        using TStoredComponent = std::remove_cvref_t<TComponent>;
+        return implementation_.template put<TStoredComponent>(
             entity,
-            std::type_index(typeid(TComponent)),
-            std::any(std::move(component)));
+            std::forward<TComponent>(component));
     }
 
-    template <typename TComponent>
-    [[nodiscard]] bool eraseComponent(Handle entity) {
-        return eraseComponent(entity, std::type_index(typeid(TComponent)));
+    template <NotHandle TComponent>
+    [[nodiscard]] std::expected<void, Result> eraseComponent(Handle entity) {
+        using TStoredComponent = std::remove_cvref_t<TComponent>;
+        return implementation_.template eraseComponent<TStoredComponent>(entity);
     }
+
+private:
+    TImplementation implementation_{};
 };
+
+template <typename TImplementation>
+using ECS = ECSFacade<TImplementation>;
 
 } // namespace vve

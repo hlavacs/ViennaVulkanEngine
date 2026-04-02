@@ -16,6 +16,7 @@ export import :ECS;
 export import :System;
 export import :Handle;
 export import :Math;
+export import :Result;
 
 export namespace vve::detail {
 
@@ -47,17 +48,6 @@ enum class ShadowKind {
     none,
     shadow_map,
     ray_traced
-};
-
-enum class Result {
-    success = 0,
-    not_initialized,
-    already_initialized,
-    invalid_argument,
-    file_not_found,
-    io_error,
-    unsupported_version,
-    internal_error
 };
 
 enum class FrameStatus {
