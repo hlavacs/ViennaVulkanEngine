@@ -20,7 +20,7 @@ find_package(SDL3_mixer CONFIG REQUIRED)
 target_sources(ViennaVulkanEngine
     PRIVATE
         Engine.cpp
-        versions/v3/EngineV3.cpp
+        versions/v3/Engine.cpp
         versions/v3/AssetSystem.cpp
         versions/v3/ResourceSystem.cpp
         versions/v3/SceneSystem.cpp
@@ -39,10 +39,10 @@ target_sources(ViennaVulkanEngine
             Math.ixx
             Error.ixx
             Engine.ixx
-            versions/v3/V3Types.ixx
-            versions/v3/V3Systems.ixx
-            versions/v3/V3Internal.ixx
-            versions/v3/EngineV3.ixx
+            versions/v3/Types.ixx
+            versions/v3/Systems.ixx
+            versions/v3/Internal.ixx
+            versions/v3/Engine.ixx
 )
 
 target_link_libraries(ViennaVulkanEngine

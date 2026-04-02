@@ -13,7 +13,7 @@ import :Error;
 #define VVE_API
 #endif
 
-#include "versions/v3/V3ECS.ixx"
+#include "versions/v3/ECS.ixx"
 
 export namespace vve {
 
