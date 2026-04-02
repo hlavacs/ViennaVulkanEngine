@@ -4,25 +4,23 @@ import :Internal;
 
 namespace vve::v3 {
 
-namespace {
-
-class VulkanGraphicsBackend final : public IGraphicsBackend {
+class VulkanGraphicsBackendImplementation {
 public:
-    [[nodiscard]] std::string_view name() const noexcept override {
+    [[nodiscard]] std::string_view name() const noexcept {
         return "VulkanGraphicsBackend";
     }
 
-    [[nodiscard]] vve::GraphicsApi api() const noexcept override {
+    [[nodiscard]] vve::GraphicsApi api() const noexcept {
         return vve::GraphicsApi::vulkan;
     }
 
-    [[nodiscard]] std::expected<void, vve::Error> init() override {
+    [[nodiscard]] std::expected<void, vve::Error> init() {
         initialized_ = true;
         return {};
     }
 
     [[nodiscard]] std::expected<void, vve::Error> beginFrame(
-        const FrameContext&) override {
+        const FrameContext&) {
         if (!initialized_) {
             return std::unexpected(vve::Error::not_initialized);
         }
@@ -31,7 +29,7 @@ public:
     }
 
     [[nodiscard]] std::expected<void, vve::Error> endFrame(
-        const FrameContext&) override {
+        const FrameContext&) {
         if (!initialized_) {
             return std::unexpected(vve::Error::not_initialized);
         }
@@ -39,7 +37,7 @@ public:
         return {};
     }
 
-    void registerTasks(TaskGraphBuilder& builder) override {
+    void registerTasks(TaskGraphBuilder& builder) {
         const auto begin_frame_task = builder.addTask(
             "task.begin_frame",
             TaskKernelId::begin_frame,
@@ -80,19 +78,50 @@ private:
     bool initialized_{false};
 };
 
-} // namespace
-
-std::expected<std::unique_ptr<IGraphicsBackend>, vve::Error> detail::createGraphicsBackend(
-    vve::GraphicsApi api) {
-    switch (api) {
-        case vve::GraphicsApi::vulkan:
-            return std::make_unique<VulkanGraphicsBackend>();
-        case vve::GraphicsApi::direct3d12:
-        case vve::GraphicsApi::metal:
-            return std::unexpected(vve::Error::unsupported_version);
-    }
-
-    return std::unexpected(vve::Error::internal_error);
+template <>
+GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::GraphicsBackendFacade()
+    : implementation_(
+          new VulkanGraphicsBackendImplementation(),
+          [](void* implementation) {
+              delete static_cast<VulkanGraphicsBackendImplementation*>(implementation);
+          }) {
 }
+
+template <>
+GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::~GraphicsBackendFacade() = default;
+
+template <>
+std::string_view GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::name() const noexcept {
+    return static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->name();
+}
+
+template <>
+vve::GraphicsApi GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::api() const noexcept {
+    return static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->api();
+}
+
+template <>
+std::expected<void, vve::Error> GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::init() {
+    return static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->init();
+}
+
+template <>
+std::expected<void, vve::Error> GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::beginFrame(
+    const FrameContext& frame_context) {
+    return static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->beginFrame(frame_context);
+}
+
+template <>
+std::expected<void, vve::Error> GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::endFrame(
+    const FrameContext& frame_context) {
+    return static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->endFrame(frame_context);
+}
+
+template <>
+void GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::registerTasks(TaskGraphBuilder& builder) {
+    static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->registerTasks(builder);
+}
+
+template class GraphicsBackendFacade<VulkanGraphicsBackendImplementation>;
 
 } // namespace vve::v3

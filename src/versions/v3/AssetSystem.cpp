@@ -4,16 +4,14 @@ import :Internal;
 
 namespace vve::v3 {
 
-namespace {
-
-class AssimpAssetSystem final : public IAssetSystem {
+class AssimpAssetSystemImplementation {
 public:
-    [[nodiscard]] std::string_view name() const noexcept override {
+    [[nodiscard]] std::string_view name() const noexcept {
         return "AssimpAssetSystem";
     }
 
     [[nodiscard]] std::expected<ImportedScene, vve::Error> importScene(
-        const std::filesystem::path& source_path) override {
+        const std::filesystem::path& source_path) {
         ImportedScene scene{};
         scene.handle = SceneHandle{detail::makeStableHandle(source_path.string())};
         scene.name = source_path.filename().string();
@@ -34,10 +32,29 @@ public:
     }
 };
 
-} // namespace
-
-std::unique_ptr<IAssetSystem> detail::createAssetSystem() {
-    return std::make_unique<AssimpAssetSystem>();
+template <>
+AssetSystemFacade<AssimpAssetSystemImplementation>::AssetSystemFacade()
+    : implementation_(
+          new AssimpAssetSystemImplementation(),
+          [](void* implementation) {
+              delete static_cast<AssimpAssetSystemImplementation*>(implementation);
+          }) {
 }
+
+template <>
+AssetSystemFacade<AssimpAssetSystemImplementation>::~AssetSystemFacade() = default;
+
+template <>
+std::string_view AssetSystemFacade<AssimpAssetSystemImplementation>::name() const noexcept {
+    return static_cast<AssimpAssetSystemImplementation*>(implementation_.get())->name();
+}
+
+template <>
+std::expected<ImportedScene, vve::Error> AssetSystemFacade<AssimpAssetSystemImplementation>::importScene(
+    const std::filesystem::path& source_path) {
+    return static_cast<AssimpAssetSystemImplementation*>(implementation_.get())->importScene(source_path);
+}
+
+template class AssetSystemFacade<AssimpAssetSystemImplementation>;
 
 } // namespace vve::v3

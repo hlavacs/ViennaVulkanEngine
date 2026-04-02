@@ -4,23 +4,21 @@ import :Internal;
 
 namespace vve::v3 {
 
-namespace {
-
-class TaskGraphSystem final : public ITaskGraphSystem {
+class DefaultTaskGraphSystemImplementation {
 public:
-    [[nodiscard]] std::string_view name() const noexcept override {
+    [[nodiscard]] std::string_view name() const noexcept {
         return "TaskGraphSystem";
     }
 
     [[nodiscard]] TaskGraph build(
         const SceneData& scene,
         std::span<ITaskSystem* const> task_systems,
-        IWindowSystem& window_system,
-        IGraphicsBackend& graphics_backend,
-        IResourceSystem& resource_system,
-        ISceneSystem& scene_system,
-        IRenderSystem& render_system,
-        std::span<const WindowRenderPipeline> render_pipelines) override {
+        WindowSystem& window_system,
+        GraphicsBackend& graphics_backend,
+        ResourceSystem& resource_system,
+        SceneSystem& scene_system,
+        RenderSystem& render_system,
+        std::span<const WindowRenderPipeline> render_pipelines) {
         TaskGraphBuilder builder{};
 
         graphics_backend.registerTasks(builder);
@@ -82,10 +80,44 @@ public:
     }
 };
 
-} // namespace
-
-std::unique_ptr<ITaskGraphSystem> detail::createTaskGraphSystem() {
-    return std::make_unique<TaskGraphSystem>();
+template <>
+TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::TaskGraphSystemFacade()
+    : implementation_(
+          new DefaultTaskGraphSystemImplementation(),
+          [](void* implementation) {
+              delete static_cast<DefaultTaskGraphSystemImplementation*>(implementation);
+          }) {
 }
+
+template <>
+TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::~TaskGraphSystemFacade() = default;
+
+template <>
+std::string_view TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::name() const noexcept {
+    return static_cast<DefaultTaskGraphSystemImplementation*>(implementation_.get())->name();
+}
+
+template <>
+TaskGraph TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::build(
+    const SceneData& scene,
+    std::span<ITaskSystem* const> task_systems,
+    WindowSystem& window_system,
+    GraphicsBackend& graphics_backend,
+    ResourceSystem& resource_system,
+    SceneSystem& scene_system,
+    RenderSystem& render_system,
+    std::span<const WindowRenderPipeline> render_pipelines) {
+    return static_cast<DefaultTaskGraphSystemImplementation*>(implementation_.get())->build(
+        scene,
+        task_systems,
+        window_system,
+        graphics_backend,
+        resource_system,
+        scene_system,
+        render_system,
+        render_pipelines);
+}
+
+template class TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>;
 
 } // namespace vve::v3

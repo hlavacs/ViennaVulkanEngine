@@ -236,12 +236,12 @@ std::expected<void, vve::Error> BasicEngineImplementation<TUserSystems...>::init
     }
 
     runtime_ = std::move(*runtime);
-    if (auto backend_result = runtime_.graphics_backend->init(); !backend_result) {
+    if (auto backend_result = runtime_.graphics_backend.init(); !backend_result) {
         return backend_result;
     }
 
     if (runtime_.gui_system != nullptr) {
-        if (auto gui_result = runtime_.gui_system->init(*runtime_.graphics_backend); !gui_result) {
+        if (auto gui_result = runtime_.gui_system->init(runtime_.graphics_backend); !gui_result) {
             return gui_result;
         }
     }
@@ -359,17 +359,17 @@ std::expected<void, vve::Error> BasicEngineImplementation<TUserSystems...>::load
         return std::unexpected(vve::Error::invalid_argument);
     }
 
-    const auto imported_scene = runtime_.asset_system->importScene(file_path);
+    const auto imported_scene = runtime_.asset_system.importScene(file_path);
     if (!imported_scene) {
         return std::unexpected(imported_scene.error());
     }
 
-    if (auto register_result = runtime_.resource_system->registerImportedScene(
+    if (auto register_result = runtime_.resource_system.registerImportedScene(
             *imported_scene, file_path); !register_result) {
         return register_result;
     }
 
-    const auto scene = runtime_.scene_system->instantiate(*imported_scene);
+    const auto scene = runtime_.scene_system.instantiate(*imported_scene);
     if (!scene) {
         return std::unexpected(scene.error());
     }
@@ -394,13 +394,13 @@ std::expected<void, vve::Error> BasicEngineImplementation<TUserSystems...>::rebu
         }
     }
 
-    auto task_graph = runtime_.task_graph_system->build(
+    auto task_graph = runtime_.task_graph_system.build(
         *scene_,
         task_systems,
-        *runtime_.window_system,
-        *runtime_.graphics_backend,
-        *runtime_.resource_system,
-        *runtime_.scene_system,
+        runtime_.window_system,
+        runtime_.graphics_backend,
+        runtime_.resource_system,
+        runtime_.scene_system,
         *runtime_.render_system,
         runtime_.render_pipelines);
     task_graph_ = std::move(task_graph);

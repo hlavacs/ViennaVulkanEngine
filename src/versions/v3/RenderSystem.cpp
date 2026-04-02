@@ -4,8 +4,6 @@ import :Internal;
 
 namespace vve::v3 {
 
-namespace {
-
 [[nodiscard]] RenderKernelId selectMainKernel(vve::RendererKind renderer) {
     switch (renderer) {
         case vve::RendererKind::forward_renderer:
@@ -53,12 +51,12 @@ namespace {
     return std::nullopt;
 }
 
-class RenderSystem final : public IRenderSystem {
+class DefaultRenderSystemImplementation {
 public:
-    RenderSystem(
+    DefaultRenderSystemImplementation(
         vve::RendererKind renderer,
         vve::ShadowKind shadow,
-        IGraphicsBackend& graphics_backend,
+        GraphicsBackend& graphics_backend,
         bool imgui_enabled)
         : renderer_(renderer),
           shadow_(shadow),
@@ -66,11 +64,11 @@ public:
           imgui_enabled_(imgui_enabled) {
     }
 
-    [[nodiscard]] std::string_view name() const noexcept override {
+    [[nodiscard]] std::string_view name() const noexcept {
         return "RenderSystem";
     }
 
-    [[nodiscard]] RenderGraph buildStaticGraph(WindowHandle window) override {
+    [[nodiscard]] RenderGraph buildStaticGraph(WindowHandle window) {
         RenderGraph graph{};
         const auto window_salt = window.value.value();
 
@@ -126,7 +124,7 @@ public:
         const FrameContext&,
         const SceneData&,
         WindowHandle,
-        const RenderGraph&) override {
+        const RenderGraph&) {
         return {};
     }
 
@@ -134,7 +132,7 @@ public:
         const FrameContext&,
         const SceneData&,
         WindowHandle,
-        const RenderGraph&) override {
+        const RenderGraph&) {
         return {};
     }
 
@@ -142,7 +140,7 @@ public:
         const FrameContext&,
         const SceneData&,
         WindowHandle,
-        const RenderGraph& render_graph) override {
+        const RenderGraph& render_graph) {
         for (const auto& pass : render_graph.passes) {
         }
 
@@ -153,14 +151,14 @@ public:
         const FrameContext&,
         const SceneData&,
         WindowHandle,
-        const RenderGraph&) override {
+        const RenderGraph&) {
         return {};
     }
 
     void registerTasks(
         TaskGraphBuilder& builder,
         const SceneData&,
-        std::span<const WindowRenderPipeline> render_pipelines) override {
+        std::span<const WindowRenderPipeline> render_pipelines) {
         for (const auto& pipeline : render_pipelines) {
             const auto window = pipeline.window;
             const auto* render_graph = &pipeline.graph;
@@ -271,18 +269,89 @@ public:
 private:
     vve::RendererKind renderer_{vve::RendererKind::forward_renderer};
     vve::ShadowKind shadow_{vve::ShadowKind::none};
-    IGraphicsBackend& graphics_backend_;
+    GraphicsBackend& graphics_backend_;
     bool imgui_enabled_{true};
 };
 
-} // namespace
-
-std::unique_ptr<IRenderSystem> detail::createRenderSystem(
+template <>
+RenderSystemFacade<DefaultRenderSystemImplementation>::RenderSystemFacade(
     vve::RendererKind renderer,
     vve::ShadowKind shadow,
-    IGraphicsBackend& graphics_backend,
-    bool imgui_enabled) {
-    return std::make_unique<RenderSystem>(renderer, shadow, graphics_backend, imgui_enabled);
+    GraphicsBackendFacade<VulkanGraphicsBackendImplementation>& graphics_backend,
+    bool imgui_enabled)
+    : implementation_(
+          new DefaultRenderSystemImplementation(
+              renderer,
+              shadow,
+              graphics_backend,
+              imgui_enabled),
+          [](void* implementation) {
+              delete static_cast<DefaultRenderSystemImplementation*>(implementation);
+          }) {
 }
+
+template <>
+RenderSystemFacade<DefaultRenderSystemImplementation>::~RenderSystemFacade() = default;
+
+template <>
+std::string_view RenderSystemFacade<DefaultRenderSystemImplementation>::name() const noexcept {
+    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())->name();
+}
+
+template <>
+RenderGraph RenderSystemFacade<DefaultRenderSystemImplementation>::buildStaticGraph(WindowHandle window) {
+    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())->buildStaticGraph(window);
+}
+
+template <>
+std::expected<void, vve::Error> RenderSystemFacade<DefaultRenderSystemImplementation>::cullVisibilityGpu(
+    const FrameContext& frame_context,
+    const SceneData& scene,
+    WindowHandle window,
+    const RenderGraph& render_graph) {
+    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())
+        ->cullVisibilityGpu(frame_context, scene, window, render_graph);
+}
+
+template <>
+std::expected<void, vve::Error> RenderSystemFacade<DefaultRenderSystemImplementation>::buildDrawPackets(
+    const FrameContext& frame_context,
+    const SceneData& scene,
+    WindowHandle window,
+    const RenderGraph& render_graph) {
+    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())
+        ->buildDrawPackets(frame_context, scene, window, render_graph);
+}
+
+template <>
+std::expected<void, vve::Error> RenderSystemFacade<DefaultRenderSystemImplementation>::record(
+    const FrameContext& frame_context,
+    const SceneData& scene,
+    WindowHandle window,
+    const RenderGraph& render_graph) {
+    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())
+        ->record(frame_context, scene, window, render_graph);
+}
+
+template <>
+std::expected<void, vve::Error> RenderSystemFacade<DefaultRenderSystemImplementation>::consumeOutput(
+    const FrameContext& frame_context,
+    const SceneData& scene,
+    WindowHandle window,
+    const RenderGraph& render_graph) {
+    return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())
+        ->consumeOutput(frame_context, scene, window, render_graph);
+}
+
+template <>
+void RenderSystemFacade<DefaultRenderSystemImplementation>::registerTasks(
+    TaskGraphBuilder& builder,
+    const SceneData& scene,
+    std::span<const WindowRenderPipeline> render_pipelines) {
+    static_cast<DefaultRenderSystemImplementation*>(implementation_.get())
+        ->registerTasks(builder, scene, render_pipelines);
+}
+
+template class RenderSystemFacade<DefaultRenderSystemImplementation>;
 
 } // namespace vve::v3

@@ -4,17 +4,15 @@ import :Internal;
 
 namespace vve::v3 {
 
-namespace {
-
-class ResourceSystem final : public IResourceSystem {
+class DefaultResourceSystemImplementation {
 public:
-    [[nodiscard]] std::string_view name() const noexcept override {
+    [[nodiscard]] std::string_view name() const noexcept {
         return "ResourceSystem";
     }
 
     [[nodiscard]] std::expected<void, vve::Error> registerImportedScene(
         const ImportedScene& scene,
-        const std::filesystem::path& source_path) override {
+        const std::filesystem::path& source_path) {
         records_.push_back(ResourceRecord{
             .id = scene.handle.value,
             .kind = ResourceKind::unknown,
@@ -46,13 +44,13 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<std::vector<ResourceRecord>, vve::Error> enumerate() const override {
+    [[nodiscard]] std::expected<std::vector<ResourceRecord>, vve::Error> enumerate() const {
         return records_;
     }
 
     [[nodiscard]] std::expected<void, vve::Error> uploadResources(
         const FrameContext&,
-        const SceneData&) override {
+        const SceneData&) {
         for (auto& record : records_) {
             if (record.location == ResourceLocation::imported_blob ||
                 record.location == ResourceLocation::cpu_memory) {
@@ -66,7 +64,7 @@ public:
 
     void registerTasks(
         TaskGraphBuilder& builder,
-        const SceneData&) override {
+        const SceneData&) {
         const auto upload_resources_task = builder.addTask(
             "task.upload_resources",
             TaskKernelId::upload_resources,
@@ -90,10 +88,52 @@ private:
     std::vector<ResourceRecord> records_{};
 };
 
-} // namespace
-
-std::unique_ptr<IResourceSystem> detail::createResourceSystem() {
-    return std::make_unique<ResourceSystem>();
+template <>
+ResourceSystemFacade<DefaultResourceSystemImplementation>::ResourceSystemFacade()
+    : implementation_(
+          new DefaultResourceSystemImplementation(),
+          [](void* implementation) {
+              delete static_cast<DefaultResourceSystemImplementation*>(implementation);
+          }) {
 }
+
+template <>
+ResourceSystemFacade<DefaultResourceSystemImplementation>::~ResourceSystemFacade() = default;
+
+template <>
+std::string_view ResourceSystemFacade<DefaultResourceSystemImplementation>::name() const noexcept {
+    return static_cast<DefaultResourceSystemImplementation*>(implementation_.get())->name();
+}
+
+template <>
+std::expected<void, vve::Error> ResourceSystemFacade<DefaultResourceSystemImplementation>::registerImportedScene(
+    const ImportedScene& scene,
+    const std::filesystem::path& source_path) {
+    return static_cast<DefaultResourceSystemImplementation*>(implementation_.get())
+        ->registerImportedScene(scene, source_path);
+}
+
+template <>
+std::expected<std::vector<ResourceRecord>, vve::Error>
+ResourceSystemFacade<DefaultResourceSystemImplementation>::enumerate() const {
+    return static_cast<DefaultResourceSystemImplementation*>(implementation_.get())->enumerate();
+}
+
+template <>
+std::expected<void, vve::Error> ResourceSystemFacade<DefaultResourceSystemImplementation>::uploadResources(
+    const FrameContext& frame_context,
+    const SceneData& scene) {
+    return static_cast<DefaultResourceSystemImplementation*>(implementation_.get())
+        ->uploadResources(frame_context, scene);
+}
+
+template <>
+void ResourceSystemFacade<DefaultResourceSystemImplementation>::registerTasks(
+    TaskGraphBuilder& builder,
+    const SceneData& scene) {
+    static_cast<DefaultResourceSystemImplementation*>(implementation_.get())->registerTasks(builder, scene);
+}
+
+template class ResourceSystemFacade<DefaultResourceSystemImplementation>;
 
 } // namespace vve::v3

@@ -4,8 +4,6 @@ import :Internal;
 
 namespace vve::v3 {
 
-namespace {
-
 [[nodiscard]] std::string_view toRendererName(vve::RendererKind renderer) {
     switch (renderer) {
         case vve::RendererKind::forward_renderer:
@@ -32,16 +30,16 @@ namespace {
     return "unknown";
 }
 
-class SlangShaderSystem final : public IShaderSystem {
+class SlangShaderSystemImplementation {
 public:
-    [[nodiscard]] std::string_view name() const noexcept override {
+    [[nodiscard]] std::string_view name() const noexcept {
         return "SlangShaderSystem";
     }
 
     [[nodiscard]] std::expected<ShaderMetadata, vve::Error> reflect(
         const std::filesystem::path& shader_path,
         vve::RendererKind renderer,
-        vve::ShadowKind shadow) override {
+        vve::ShadowKind shadow) {
         ShaderMetadata metadata{};
         metadata.handle = ShaderHandle{detail::makeStableHandle(shader_path.string())};
         metadata.shader_name = shader_path.filename().string();
@@ -56,10 +54,32 @@ public:
     }
 };
 
-} // namespace
-
-std::unique_ptr<IShaderSystem> detail::createShaderSystem() {
-    return std::make_unique<SlangShaderSystem>();
+template <>
+ShaderSystemFacade<SlangShaderSystemImplementation>::ShaderSystemFacade()
+    : implementation_(
+          new SlangShaderSystemImplementation(),
+          [](void* implementation) {
+              delete static_cast<SlangShaderSystemImplementation*>(implementation);
+          }) {
 }
+
+template <>
+ShaderSystemFacade<SlangShaderSystemImplementation>::~ShaderSystemFacade() = default;
+
+template <>
+std::string_view ShaderSystemFacade<SlangShaderSystemImplementation>::name() const noexcept {
+    return static_cast<SlangShaderSystemImplementation*>(implementation_.get())->name();
+}
+
+template <>
+std::expected<ShaderMetadata, vve::Error> ShaderSystemFacade<SlangShaderSystemImplementation>::reflect(
+    const std::filesystem::path& shader_path,
+    vve::RendererKind renderer,
+    vve::ShadowKind shadow) {
+    return static_cast<SlangShaderSystemImplementation*>(implementation_.get())
+        ->reflect(shader_path, renderer, shadow);
+}
+
+template class ShaderSystemFacade<SlangShaderSystemImplementation>;
 
 } // namespace vve::v3

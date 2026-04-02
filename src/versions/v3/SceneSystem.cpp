@@ -4,16 +4,14 @@ import :Internal;
 
 namespace vve::v3 {
 
-namespace {
-
-class SceneSystem final : public ISceneSystem {
+class DefaultSceneSystemImplementation {
 public:
-    [[nodiscard]] std::string_view name() const noexcept override {
+    [[nodiscard]] std::string_view name() const noexcept {
         return "SceneSystem";
     }
 
     [[nodiscard]] std::expected<SceneData, vve::Error> instantiate(
-        const ImportedScene& scene) override {
+        const ImportedScene& scene) {
         SceneData instance{};
         instance.handle = scene.handle;
         instance.nodes.reserve(scene.nodes.size());
@@ -30,7 +28,7 @@ public:
 
     [[nodiscard]] std::expected<void, vve::Error> updateTransforms(
         const FrameContext&,
-        SceneData& scene) override {
+        SceneData& scene) {
         for (auto& node : scene.nodes) {
             node.local_transform = node.local_transform;
         }
@@ -40,13 +38,13 @@ public:
 
     [[nodiscard]] std::expected<void, vve::Error> cullVisibility(
         const FrameContext&,
-        const SceneData&) override {
+        const SceneData&) {
         return {};
     }
 
     void registerTasks(
         TaskGraphBuilder& builder,
-        const SceneData&) override {
+        const SceneData&) {
         const auto update_transforms_task = builder.addTask(
             "task.update_transforms",
             TaskKernelId::update_transforms,
@@ -84,10 +82,52 @@ public:
     }
 };
 
-} // namespace
-
-std::unique_ptr<ISceneSystem> detail::createSceneSystem() {
-    return std::make_unique<SceneSystem>();
+template <>
+SceneSystemFacade<DefaultSceneSystemImplementation>::SceneSystemFacade()
+    : implementation_(
+          new DefaultSceneSystemImplementation(),
+          [](void* implementation) {
+              delete static_cast<DefaultSceneSystemImplementation*>(implementation);
+          }) {
 }
+
+template <>
+SceneSystemFacade<DefaultSceneSystemImplementation>::~SceneSystemFacade() = default;
+
+template <>
+std::string_view SceneSystemFacade<DefaultSceneSystemImplementation>::name() const noexcept {
+    return static_cast<DefaultSceneSystemImplementation*>(implementation_.get())->name();
+}
+
+template <>
+std::expected<SceneData, vve::Error> SceneSystemFacade<DefaultSceneSystemImplementation>::instantiate(
+    const ImportedScene& scene) {
+    return static_cast<DefaultSceneSystemImplementation*>(implementation_.get())->instantiate(scene);
+}
+
+template <>
+std::expected<void, vve::Error> SceneSystemFacade<DefaultSceneSystemImplementation>::updateTransforms(
+    const FrameContext& frame_context,
+    SceneData& scene) {
+    return static_cast<DefaultSceneSystemImplementation*>(implementation_.get())
+        ->updateTransforms(frame_context, scene);
+}
+
+template <>
+std::expected<void, vve::Error> SceneSystemFacade<DefaultSceneSystemImplementation>::cullVisibility(
+    const FrameContext& frame_context,
+    const SceneData& scene) {
+    return static_cast<DefaultSceneSystemImplementation*>(implementation_.get())
+        ->cullVisibility(frame_context, scene);
+}
+
+template <>
+void SceneSystemFacade<DefaultSceneSystemImplementation>::registerTasks(
+    TaskGraphBuilder& builder,
+    const SceneData& scene) {
+    static_cast<DefaultSceneSystemImplementation*>(implementation_.get())->registerTasks(builder, scene);
+}
+
+template class SceneSystemFacade<DefaultSceneSystemImplementation>;
 
 } // namespace vve::v3

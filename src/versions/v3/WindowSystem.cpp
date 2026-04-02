@@ -8,11 +8,9 @@ import :Internal;
 
 namespace vve::v3 {
 
-namespace {
-
-class SDL3WindowSystem final : public IWindowSystem {
+class SDL3WindowSystemImplementation {
 public:
-    ~SDL3WindowSystem() override {
+    ~SDL3WindowSystemImplementation() {
         for (auto& record : windows_) {
             if (record.window != nullptr) {
                 SDL_DestroyWindow(record.window);
@@ -25,12 +23,12 @@ public:
         }
     }
 
-    [[nodiscard]] std::string_view name() const noexcept override {
+    [[nodiscard]] std::string_view name() const noexcept {
         return "SDL3WindowSystem";
     }
 
     [[nodiscard]] std::expected<void, vve::Error> init(
-        std::span<const vve::WindowDesc> windows) override {
+        std::span<const vve::WindowDesc> windows) {
         if (!video_initialized_) {
             if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
                 return std::unexpected(vve::Error::internal_error);
@@ -63,7 +61,7 @@ public:
     }
 
     [[nodiscard]] std::expected<void, vve::Error> pollEvents(
-        const FrameContext&) override {
+        const FrameContext&) {
         if (!video_initialized_) {
             return std::unexpected(vve::Error::not_initialized);
         }
@@ -80,23 +78,23 @@ public:
         return {};
     }
 
-    [[nodiscard]] WindowFrameData frameData() const override {
+    [[nodiscard]] WindowFrameData frameData() const {
         return WindowFrameData{
             .windows = states_,
             .events = events_
         };
     }
 
-    [[nodiscard]] std::span<const WindowState> windows() const override {
+    [[nodiscard]] std::span<const WindowState> windows() const {
         return states_;
     }
 
-    void setFrameDataSink(std::shared_ptr<WindowFrameData> frame_data) override {
+    void setFrameDataSink(std::shared_ptr<WindowFrameData> frame_data) {
         frame_data_sink_ = std::move(frame_data);
         syncFrameData();
     }
 
-    void registerTasks(TaskGraphBuilder& builder) override {
+    void registerTasks(TaskGraphBuilder& builder) {
         const auto poll_window_events_task = builder.addTask(
             "task.poll_window_events",
             TaskKernelId::poll_window_events,
@@ -384,10 +382,56 @@ private:
     std::shared_ptr<WindowFrameData> frame_data_sink_{};
 };
 
-} // namespace
-
-std::unique_ptr<IWindowSystem> detail::createWindowSystem() {
-    return std::make_unique<SDL3WindowSystem>();
+template <>
+WindowSystemFacade<SDL3WindowSystemImplementation>::WindowSystemFacade()
+    : implementation_(
+          new SDL3WindowSystemImplementation(),
+          [](void* implementation) {
+              delete static_cast<SDL3WindowSystemImplementation*>(implementation);
+          }) {
 }
+
+template <>
+WindowSystemFacade<SDL3WindowSystemImplementation>::~WindowSystemFacade() = default;
+
+template <>
+std::string_view WindowSystemFacade<SDL3WindowSystemImplementation>::name() const noexcept {
+    return static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->name();
+}
+
+template <>
+std::expected<void, vve::Error> WindowSystemFacade<SDL3WindowSystemImplementation>::init(
+    std::span<const vve::WindowDesc> windows) {
+    return static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->init(windows);
+}
+
+template <>
+std::expected<void, vve::Error> WindowSystemFacade<SDL3WindowSystemImplementation>::pollEvents(
+    const FrameContext& frame_context) {
+    return static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->pollEvents(frame_context);
+}
+
+template <>
+WindowFrameData WindowSystemFacade<SDL3WindowSystemImplementation>::frameData() const {
+    return static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->frameData();
+}
+
+template <>
+std::span<const WindowState> WindowSystemFacade<SDL3WindowSystemImplementation>::windows() const {
+    return static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->windows();
+}
+
+template <>
+void WindowSystemFacade<SDL3WindowSystemImplementation>::setFrameDataSink(
+    std::shared_ptr<WindowFrameData> frame_data) {
+    static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->setFrameDataSink(std::move(frame_data));
+}
+
+template <>
+void WindowSystemFacade<SDL3WindowSystemImplementation>::registerTasks(TaskGraphBuilder& builder) {
+    static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->registerTasks(builder);
+}
+
+template class WindowSystemFacade<SDL3WindowSystemImplementation>;
 
 } // namespace vve::v3
