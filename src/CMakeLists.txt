@@ -41,6 +41,7 @@ target_sources(ViennaVulkanEngine
             Engine.ixx
             versions/v3/V3Types.ixx
             versions/v3/V3Systems.ixx
+            versions/v3/V3Internal.ixx
             versions/v3/EngineV3.ixx
 )
 

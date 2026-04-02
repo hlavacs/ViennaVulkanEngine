@@ -1,8 +1,8 @@
 import VEEngine;
+import VEEngine.V3;
 
 int main() {
     vve::Engine engine(
-        vve::EngineVersion::v3,
         vve::ApplicationName{"physics"},
         vve::Windows{
             .value = {

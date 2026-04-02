@@ -1,10 +1,10 @@
 import VEEngine;
+import VEEngine.V3;
 import std;
 
 int main() {
 
     vve::Engine engine(
-        vve::EngineVersion::v3,
         vve::ApplicationName{"game"},
         vve::EnableValidation{true},
         vve::Windows{

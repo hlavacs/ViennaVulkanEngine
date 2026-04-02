@@ -1,9 +1,10 @@
-module VEEngine.V3:Internal;
+export module VEEngine.V3:Internal;
+import VEEngine.V3.Types;
 import VEEngine.V3.Systems;
 import VEEngine;
 import std;
 
-namespace vve::v3::detail {
+export namespace vve::v3::detail {
 
 struct Runtime final {
     std::unique_ptr<IAssetSystem> asset_system{};

@@ -18,19 +18,15 @@ export import :Handle;
 export import :Math;
 export import :Error;
 
-export namespace vve::detail {
+export namespace vve::v3 {
 
-class EngineImpl;
+class EngineImplementation;
 
-} // namespace vve::detail
+} // namespace vve::v3
 
 export namespace vve {
 
 // Engine configuration options 
-
-enum class EngineVersion {
-    v3
-};
 
 enum class GraphicsApi {
     vulkan,
@@ -127,22 +123,21 @@ private:
     std::unordered_map<std::type_index, std::any> options_;
 };
 
-class VVE_API Engine {
+template <typename TImplementation>
+class VVE_API EngineFacade {
 public:
-    explicit Engine(EngineVersion version, EngineConfig config = {});
+    explicit EngineFacade(EngineConfig config = {});
 
     template <typename... TOptions>
         requires (sizeof...(TOptions) > 0)
-    explicit Engine(EngineVersion version, TOptions&&... options)
-        : Engine(version, EngineConfig(std::forward<TOptions>(options)...)) {
+    explicit EngineFacade(TOptions&&... options)
+        : EngineFacade(EngineConfig(std::forward<TOptions>(options)...)) {
     }
 
-    ~Engine();
-
-    Engine(const Engine&) = delete;
-    Engine(Engine&&) = delete;
-    Engine& operator=(const Engine&) = delete;
-    Engine& operator=(Engine&&) = delete;
+    EngineFacade(const EngineFacade&) = delete;
+    EngineFacade(EngineFacade&&) = delete;
+    EngineFacade& operator=(const EngineFacade&) = delete;
+    EngineFacade& operator=(EngineFacade&&) = delete;
 
     [[nodiscard]] std::expected<void, Error> init();
     [[nodiscard]] std::expected<void, Error> run();
@@ -153,24 +148,10 @@ public:
         const std::filesystem::path& file_path);
 
 private:
-    std::unique_ptr<detail::EngineImpl> impl_{nullptr};
+    TImplementation implementation_;
 };
+
+template <typename TImplementation = vve::v3::EngineImplementation>
+using Engine = EngineFacade<TImplementation>;
 
 } // namespace vve
-
-namespace vve::detail {
-
-class EngineImpl {
-public:
-    virtual ~EngineImpl() = default;
-
-    [[nodiscard]] virtual std::expected<void, vve::Error> init() = 0;
-    [[nodiscard]] virtual std::expected<void, vve::Error> run() = 0;
-    [[nodiscard]] virtual std::expected<vve::FrameStatus, vve::Error> step() = 0;
-    [[nodiscard]] virtual bool isInitialized() const noexcept = 0;
-    [[nodiscard]] virtual std::expected<int, vve::Error> getVersionMajor() const noexcept = 0;
-    [[nodiscard]] virtual std::expected<void, vve::Error> loadFile(
-        const std::filesystem::path& file_path) = 0;
-};
-
-} // namespace vve::detail

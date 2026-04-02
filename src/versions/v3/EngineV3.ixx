@@ -2,6 +2,7 @@ export module VEEngine.V3;
 import VEEngine;
 export import VEEngine.V3.Types;
 export import VEEngine.V3.Systems;
+import :Internal;
 import std;
 
 namespace vve::v3 {
@@ -76,6 +77,36 @@ export inline [[nodiscard]] std::expected<void, vve::Error> executeTaskGraph(
     return {};
 }
 
-export std::unique_ptr<vve::detail::EngineImpl> makeEngine(const vve::EngineConfig& config);
+export class EngineImplementation {
+public:
+    explicit EngineImplementation(const vve::EngineConfig& config);
+
+    [[nodiscard]] std::expected<void, vve::Error> init();
+    [[nodiscard]] std::expected<void, vve::Error> run();
+    [[nodiscard]] std::expected<vve::FrameStatus, vve::Error> step();
+    [[nodiscard]] std::expected<bool, vve::Error> isInitialized() const noexcept;
+    [[nodiscard]] std::expected<int, vve::Error> getVersionMajor() const noexcept;
+    [[nodiscard]] std::expected<void, vve::Error> loadFile(
+        const std::filesystem::path& file_path);
+
+private:
+    [[nodiscard]] std::expected<void, vve::Error> rebuildTaskGraph();
+
+    std::string application_name_;
+    bool validation_enabled_{false};
+    bool initialized_{false};
+    bool running_{false};
+    std::uint64_t frame_index_{0};
+    EngineRuntimeDesc runtime_desc_{};
+    detail::Runtime runtime_{};
+    std::filesystem::path loaded_file_path_{};
+    std::optional<SceneData> scene_{};
+    std::optional<TaskGraph> task_graph_{};
+    bool task_graph_dirty_{true};
+    std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds>
+        last_time_{};
+};
+
+export using Engine = vve::Engine<EngineImplementation>;
 
 } // namespace vve::v3

@@ -2,56 +2,41 @@ module;
 
 module VEEngine;
 import VEEngine.V3;
-import std;
 
-namespace {
-// File-local helpers stay out of the public module surface and avoid symbol collisions.
-
-std::unique_ptr<vve::detail::EngineImpl> makeEngine(
-    vve::EngineVersion version,
-    const vve::EngineConfig& config) {
-    switch (version) {
-        case vve::EngineVersion::v3: return vve::v3::makeEngine(config);
-    }
-
-    return nullptr;
+template <typename TImplementation>
+vve::EngineFacade<TImplementation>::EngineFacade(vve::EngineConfig config)
+    : implementation_(std::move(config)) {
 }
 
-} // namespace
-
-vve::Engine::Engine(vve::EngineVersion version, vve::EngineConfig config)
-    : impl_(makeEngine(version, config)) {
+template <typename TImplementation>
+std::expected<void, vve::Error> vve::EngineFacade<TImplementation>::init() {
+    return implementation_.init();
 }
 
-vve::Engine::~Engine() = default;
-
-std::expected<void, vve::Error> vve::Engine::init() {
-    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
-    return impl_->init();
+template <typename TImplementation>
+std::expected<void, vve::Error> vve::EngineFacade<TImplementation>::run() {
+    return implementation_.run();
 }
 
-std::expected<void, vve::Error> vve::Engine::run() {
-    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
-    return impl_->run();
+template <typename TImplementation>
+std::expected<vve::FrameStatus, vve::Error> vve::EngineFacade<TImplementation>::step() {
+    return implementation_.step();
 }
 
-std::expected<vve::FrameStatus, vve::Error> vve::Engine::step() {
-    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
-    return impl_->step();
+template <typename TImplementation>
+std::expected<bool, vve::Error> vve::EngineFacade<TImplementation>::isInitialized() const noexcept {
+    return implementation_.isInitialized();
 }
 
-std::expected<bool, vve::Error> vve::Engine::isInitialized() const noexcept {
-    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
-    return impl_->isInitialized();
+template <typename TImplementation>
+std::expected<int, vve::Error> vve::EngineFacade<TImplementation>::getVersionMajor() const noexcept {
+    return implementation_.getVersionMajor();
 }
 
-std::expected<int, vve::Error> vve::Engine::getVersionMajor() const noexcept {
-    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
-    return impl_->getVersionMajor();
-}
-
-std::expected<void, vve::Error> vve::Engine::loadFile(
+template <typename TImplementation>
+std::expected<void, vve::Error> vve::EngineFacade<TImplementation>::loadFile(
     const std::filesystem::path& file_path) {
-    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
-    return impl_->loadFile(file_path);
+    return implementation_.loadFile(file_path);
 }
+
+template class vve::EngineFacade<vve::v3::EngineImplementation>;

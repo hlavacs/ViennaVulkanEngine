@@ -4,7 +4,7 @@ module;
 
 module VEEngine.V3;
 import std;
-#include "V3Internal.hpp"
+import :Internal;
 
 namespace vve::v3 {
 
