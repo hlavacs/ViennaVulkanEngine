@@ -43,6 +43,7 @@ set(SOURCE
   PathTracing/light_manager.cpp
   PathTracing/pipline_rasterized.cpp
   PathTracing/pipline_raytraced.cpp
+  PathTracing/pipline_filter.cpp
   PathTracing/render_target.cpp
   PathTracing/swapchain.cpp
   PathTracing/descriptor_set_manager.cpp
@@ -82,6 +83,7 @@ set(HEADERS
   ${INCLUDE}/PathTracing/object_manager.h
   ${INCLUDE}/PathTracing/pipline_rasterized.h
   ${INCLUDE}/PathTracing/pipline_raytraced.h
+  ${INCLUDE}/PathTracing/pipline_filter.h
   ${INCLUDE}/PathTracing/render_target.h
   ${INCLUDE}/PathTracing/swapchain.h
   ${INCLUDE}/PathTracing/texture_manager.h

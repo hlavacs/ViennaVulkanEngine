@@ -188,6 +188,7 @@ namespace vve {
 #include "PathTracing/object_manager.h"
 #include "PathTracing/pipline_rasterized.h"
 #include "PathTracing/pipline_raytraced.h"
+#include "PathTracing/pipline_filter.h"
 
 #include "PathTracing/swapchain.h"
 #include "PathTracing/texture_manager.h"

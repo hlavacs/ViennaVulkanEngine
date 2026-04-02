@@ -67,6 +67,9 @@ namespace vve {
         glm::mat4 proj;
         glm::mat4 projInv;
 
+        glm::mat4 prevView;
+        glm::mat4 prevProj;
+
         uint32_t seed;
         float _pad0[3];
     };

@@ -27,13 +27,19 @@ namespace vve {
         //Free descriptor sets
 
         delete commonDescriptors;
+        delete reprojectionPassDescriptors;
         delete rtDescriptors;
         delete rtTargetsDescriptors;
+        delete combinePassDescriptors;
 
 
         //piplines
         rasterizer->freeResources();
         raytracer->freeResources();
+        combinePass->freeResources();
+        reprojectionPass->freeResources();
+
+        vkDestroySampler(device, targetSampler, nullptr);
 
         //buffers
         lightManager->freeResources();
@@ -64,15 +70,19 @@ namespace vve {
         std::cout << "main destructor called \n";      
     }
 
-    void RendererRayTraced::createCommonDescriptors() {
-        commonDescriptors = new DescriptorManager(device);
+    PerFrameDescriptorPlacment* RendererRayTraced::getUniformBufferDescriptorInput(int binding, VkShaderStageFlags stageFlags) {
         std::vector<DescriptorInput*> uniformBufferDescriptorInputs{};
         for (GenericBuffer* buffer : uniformBuffer_c) {
-            DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+            DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stageFlags);
             uniformBufferDescriptorInputs.push_back(descriptorInput);
-        } 
-        PerFrameDescriptorPlacment* uniformBufferDescriptors = new PerFrameDescriptorPlacment(uniformBufferDescriptorInputs, 0);
+        }
+        return new PerFrameDescriptorPlacment(uniformBufferDescriptorInputs, binding);
+    }
 
+    void RendererRayTraced::createCommonDescriptors() {
+        commonDescriptors = new DescriptorManager(device);
+        
+        PerFrameDescriptorPlacment* uniformBufferDescriptors = getUniformBufferDescriptorInput(0, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
         commonDescriptors->addDescriptorInput(uniformBufferDescriptors);
         commonDescriptors->addDescriptorInput(materialManager->getMaterialDescriptorInput(1, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         commonDescriptors->addDescriptorInput(textureManager->getTextureDescriptorInput(2, VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR));
@@ -104,6 +114,69 @@ namespace vve {
 
         rtTargetsDescriptors->finalize();
         rtTargetsDescriptors->update();
+    }
+
+    void RendererRayTraced::createCombinePassDescriptors() {
+        combinePassDescriptors = new DescriptorManager(device);
+
+        combinePassDescriptors->addDescriptorInput(RtTarget->getDescriptorInput(0, VK_SHADER_STAGE_COMPUTE_BIT));
+        combinePassDescriptors->addDescriptorInput(albedoTarget->getDescriptorInput(1, VK_SHADER_STAGE_COMPUTE_BIT));
+        combinePassDescriptors->addDescriptorInput(lightingReprojectedTarget->getDescriptorInput(2, VK_SHADER_STAGE_COMPUTE_BIT));
+        combinePassDescriptors->addDescriptorInput(lightingPreviousTarget->getDescriptorInput(3, VK_SHADER_STAGE_COMPUTE_BIT));
+        combinePassDescriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(4, VK_SHADER_STAGE_COMPUTE_BIT));
+        combinePassDescriptors->addDescriptorInput(combinedTarget->getDescriptorInput(5, VK_SHADER_STAGE_COMPUTE_BIT));
+        combinePassDescriptors->addDescriptorInput(accumulatedLightingTarget->getDescriptorInput(6, VK_SHADER_STAGE_COMPUTE_BIT));
+        
+
+        combinePassDescriptors->finalize();
+        combinePassDescriptors->update();
+    }
+
+    void RendererRayTraced::createReprojectPassDescriptors() {
+        reprojectionPassDescriptors = new DescriptorManager(device);
+
+        PerFrameDescriptorPlacment* uniformBufferDescriptors = getUniformBufferDescriptorInput(0, VK_SHADER_STAGE_COMPUTE_BIT);
+        reprojectionPassDescriptors->addDescriptorInput(uniformBufferDescriptors);
+        reprojectionPassDescriptors->addDescriptorInput(positionTarget->getDescriptorInput(1, VK_SHADER_STAGE_COMPUTE_BIT));
+        reprojectionPassDescriptors->addDescriptorInput(positionPreviousTarget->getDescriptorInput(2, VK_SHADER_STAGE_COMPUTE_BIT, targetSampler));
+        reprojectionPassDescriptors->addDescriptorInput(lightingPreviousTarget->getDescriptorInput(3, VK_SHADER_STAGE_COMPUTE_BIT, targetSampler));
+        reprojectionPassDescriptors->addDescriptorInput(lightingReprojectedTarget->getDescriptorInput(4, VK_SHADER_STAGE_COMPUTE_BIT));
+        reprojectionPassDescriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(5, VK_SHADER_STAGE_COMPUTE_BIT));
+
+        reprojectionPassDescriptors->finalize();
+        reprojectionPassDescriptors->update();
+    }
+
+    void RendererRayTraced::createRenderTargetSampler() {
+         VkPhysicalDeviceProperties properties{};
+         vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+         VkSamplerCreateInfo samplerInfo{};
+         samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+
+         samplerInfo.magFilter = VK_FILTER_LINEAR;
+         samplerInfo.minFilter = VK_FILTER_LINEAR;
+
+         samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+         samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+         samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
+
+         samplerInfo.anisotropyEnable = VK_FALSE;
+         samplerInfo.maxAnisotropy = 1.0f;
+
+         samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+         samplerInfo.unnormalizedCoordinates = VK_FALSE;
+         samplerInfo.compareEnable = VK_FALSE;
+         samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+
+         samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST;
+         samplerInfo.mipLodBias = 0.0f;
+         samplerInfo.minLod = 0.0f;
+         samplerInfo.maxLod = 0.0f;
+
+         if (vkCreateSampler(device, &samplerInfo, nullptr, &targetSampler) != VK_SUCCESS) {
+             throw std::runtime_error("failed to create texture sampler!");
+         }
     }
 
     bool RendererRayTraced::OnInit(Message message) {
@@ -150,6 +223,8 @@ namespace vve {
             uniformBuffer_c[i] = new HostBuffer<UniformBufferObject>(1, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 0, device, physicalDevice);
         }
 
+        createRenderTargetSampler();
+
         createCommonDescriptors();
        
         auto piplineRasterizedUnique = std::make_unique<PiplineRasterized>("Pipline Rasterized", m_engine, device, swapchain->getExtent(), commandManager, objectManager->getVertexBuffer(), objectManager->getIndexBuffer(), objectManager->getInstanceBuffers(), commonDescriptors);
@@ -166,7 +241,7 @@ namespace vve {
         albedoTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
         normalTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
         specTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
-        positionTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice, VkClearColorValue{{-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),1.0}});
+        positionTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice, VkClearColorValue{{-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),1.0}});
         shadingNormalTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
 
         //rasterizer->bindRenderTarget(mainTarget);
@@ -179,7 +254,28 @@ namespace vve {
         rasterizer->bindDepthRenderTarget(depthTarget);
         rasterizer->initGraphicsPipeline();
 
-        RtTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        //reprojection
+        lightingPreviousTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        lightingReprojectedTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        positionPreviousTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice, VkClearColorValue{ {-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),1.0} });
+        reprojectionErrorTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+
+
+        allTargets.push_back(lightingPreviousTarget);
+        allTargets.push_back(lightingReprojectedTarget);
+        allTargets.push_back(positionPreviousTarget);
+        allTargets.push_back(reprojectionErrorTarget);
+
+        createReprojectPassDescriptors();
+        reprojectionPass = new PipelineFilter(device, physicalDevice, commandManager, reprojectionPassDescriptors, swapchain->getExtent(), "shaders/PathTracing/reprojectionPass.spv");
+        reprojectionPass->bindRenderTarget(positionTarget);
+        reprojectionPass->bindRenderTarget(positionPreviousTarget);
+        reprojectionPass->bindRenderTarget(lightingPreviousTarget);
+        reprojectionPass->bindRenderTarget(lightingReprojectedTarget);
+        reprojectionPass->bindRenderTarget(reprojectionErrorTarget);
+        reprojectionPass->initComputePipeline();
+
+        RtTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
 
         allTargets.push_back(albedoTarget);
         allTargets.push_back(normalTarget);
@@ -213,6 +309,25 @@ namespace vve {
         raytracer->bindRenderTarget(RtTarget);
 
         raytracer->initRayTracingPipeline();
+
+
+        combinedTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        accumulatedLightingTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        allTargets.push_back(combinedTarget);
+        allTargets.push_back(accumulatedLightingTarget);
+        createCombinePassDescriptors();
+        combinePass = new PipelineFilter(device, physicalDevice, commandManager, combinePassDescriptors, swapchain->getExtent(), "shaders/PathTracing/combinePass.spv");
+
+        combinePass->bindRenderTarget(RtTarget);
+        combinePass->bindRenderTarget(albedoTarget);
+        combinePass->bindRenderTarget(lightingReprojectedTarget);
+        combinePass->bindRenderTarget(lightingPreviousTarget);
+        combinePass->bindRenderTarget(reprojectionErrorTarget);
+        combinePass->bindRenderTarget(combinedTarget);
+        combinePass->bindRenderTarget(accumulatedLightingTarget);
+
+        combinePass->initComputePipeline();
+
 
         //upload data to VkState
 
@@ -263,7 +378,11 @@ namespace vve {
         rasterizer->recreateFrameBuffers(swapchain->getExtent());
 
         rtTargetsDescriptors->update();
+        combinePassDescriptors->update();
+        reprojectionPassDescriptors->update();
         raytracer->setExtent(swapchain->getExtent());
+        combinePass->setExtent(swapchain->getExtent());
+        reprojectionPass->setExtent(swapchain->getExtent());
         m_engine.SendMsg(MsgWindowSize{});
         //send Message window resized maybe (aspect ratio incorrect)
     }
@@ -281,9 +400,19 @@ namespace vve {
 
         commandManager->beginCommand(currentFrame);
         rasterizer->recordCommandBuffer(currentFrame);
+        reprojectionPass->recordCommandBuffer(currentFrame);
         //the raytracer switches the sampler of the textures to linear causing the image to darken. In generell later on everything in the renderer should be switched to linear and only be converted to srgb before presentation
         raytracer->recordCommandBuffer(currentFrame);
-        swapchain->recordImageTransfer(currentFrame, RtTarget);
+        combinePass->recordCommandBuffer(currentFrame);
+        //copy images to previous image buffers
+        //WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        //Writing to the next image might introduce syncronisation errors.
+        //should such errors ever occur, intorduce a ubo vector and ensure that the previous view and projection matrix are read from the ubo of the same frame in flight
+        //(and copy to the same frame in flight here)
+        lightingPreviousTarget->getImage(nextFrame)->recordCopyFromImage(accumulatedLightingTarget->getImage(currentFrame), VK_IMAGE_LAYOUT_GENERAL, currentFrame);
+        positionPreviousTarget->getImage(nextFrame)->recordCopyFromImage(positionTarget->getImage(currentFrame), VK_IMAGE_LAYOUT_GENERAL, currentFrame);
+
+        swapchain->recordImageTransfer(currentFrame, combinedTarget);
         //swapchain->recordImageTransfer(currentFrame, albedoTarget);
 
         return false;
@@ -298,10 +427,15 @@ namespace vve {
         ubo.view = view();
         ubo.proj = proj();
 
+        ubo.prevView = uniforms.view;
+        ubo.prevProj = uniforms.proj;
+
         ubo.viewInv = glm::transpose(glm::inverse(ubo.view)); // Transpose inverse view matrix
         ubo.projInv = glm::transpose(glm::inverse(ubo.proj));
 
         ubo.seed = dist(gen);
+
+        uniforms = ubo;
 
         uniformBuffer_c[currentImage]->updateBuffer(&ubo, 1);
     }
@@ -346,6 +480,8 @@ namespace vve {
         }
 
         currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+        nextFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+
         objectManager->updateCurrentFrame(currentFrame);
 
         m_vkState().m_currentFrame = currentFrame;

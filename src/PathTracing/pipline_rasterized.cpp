@@ -423,26 +423,6 @@ namespace vve {
             }
         }
 
-        /*
-        for (Object* object : objects) {
-            if (object->instanceCount > 0) {
-
-                uint32_t material_index = object->materialIndex;
-
-                vkCmdPushConstants(
-                    commandBuffer,
-                    pipelineLayout,
-                    VK_SHADER_STAGE_FRAGMENT_BIT,
-                    0,
-                    sizeof(uint32_t),
-                    &material_index
-                );
-
-                vkCmdDrawIndexed(commandBuffer, object->indexCount, object->instanceCount, object->firstIndex, 0, object->firstInstance);
-            }
-        }
-        */
-
         vkCmdEndRenderPass(commandBuffer);
 
         for (RenderTarget* target : renderTargets) {

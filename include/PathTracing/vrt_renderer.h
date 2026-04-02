@@ -51,9 +51,15 @@ namespace vve {
 		/** Create the logical device and queues. */
 		void createLogicalDevice();
 
+		PerFrameDescriptorPlacment* getUniformBufferDescriptorInput(int binding, VkShaderStageFlags stageFlags);
+
 		void createCommonDescriptors();
 		void createRtDescriptors();
 		void createRtTargetsDescriptors();
+		void createCombinePassDescriptors();
+		void createReprojectPassDescriptors();
+
+		void createRenderTargetSampler();
 
 		/**
 		 * Update per-frame uniform buffer data.
@@ -92,11 +98,14 @@ namespace vve {
 		uint32_t presentQueueIndex;
 
 		uint32_t currentFrame = 0;
+		uint32_t nextFrame = 0;
 		bool framebufferResized = false;
 
 		DescriptorManager* commonDescriptors;
 		DescriptorManager* rtDescriptors;
 		DescriptorManager* rtTargetsDescriptors;
+		DescriptorManager* combinePassDescriptors;
+		DescriptorManager* reprojectionPassDescriptors;
 
 		TextureManager* textureManager;
 		ObjectManager* objectManager;
@@ -111,6 +120,17 @@ namespace vve {
 		RenderTarget* RtTarget;
 		PiplineRaytraced* raytracer;
 
+		RenderTarget* lightingPreviousTarget;
+		RenderTarget* lightingReprojectedTarget;
+		RenderTarget* positionPreviousTarget;
+		RenderTarget* reprojectionErrorTarget;
+
+		PipelineFilter* reprojectionPass;
+
+		RenderTarget* combinedTarget;
+		RenderTarget* accumulatedLightingTarget;
+		PipelineFilter* combinePass;
+
 
 		RenderTarget* albedoTarget;
 		RenderTarget* normalTarget;
@@ -120,6 +140,10 @@ namespace vve {
 
 		std::vector<RenderTarget*> allTargets;
 		std::vector<RenderTarget*> rayTracingTargets;
+
+		VkSampler targetSampler{};
+
+		UniformBufferObject uniforms;
 
 		std::vector<HostBuffer<UniformBufferObject>*> uniformBuffer_c;
 

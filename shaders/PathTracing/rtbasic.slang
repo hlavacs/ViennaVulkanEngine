@@ -40,7 +40,8 @@ struct HitPayload
 struct IntegrationStepQueryRecord {
     // Outputs: per-bounce integration state.
     float3 throughput = float3(1.0);
-    float3 output = float3(0.0);
+    float3 directLight = float3(0.0);
+    float3 indirectLight = float3(0.0);
     RayDesc indirectRay = RayDesc();
 }
 
@@ -154,7 +155,6 @@ float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inou
     //shaderRecord.wiShading = material.shadingFrame.toLocal(-its.direction);
     //shaderRecord.woShading = material.shadingFrame.toLocal(shadowRay.Direction);
 
-
     float3 bsdfEval = PrincipledEval(shaderRecord, material);
 
     return emitterRecord.sampleEmission * bsdfEval;
@@ -204,6 +204,14 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
     material.metalness = inSpec[int2(launchID)].y;
     material.ior = inSpec[int2(launchID)].z;
 
+    MaterialRecord materialNoAlbedo;
+    materialNoAlbedo.albedo = float3(1.0,1.0,1.0);
+    materialNoAlbedo.alpha = inAlbedoAlpha[int2(launchID)].w;
+    materialNoAlbedo.normal = float3(0.0, 0.0, 1.0);
+    materialNoAlbedo.roughness = inSpec[int2(launchID)].x;
+    materialNoAlbedo.metalness = inSpec[int2(launchID)].y;
+    materialNoAlbedo.ior = inSpec[int2(launchID)].z;
+
     float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
 
     if (dot(its.normal, its.direction) > 0.0) {
@@ -212,6 +220,7 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
     }
 
     material.shadingFrame = Frame(shadingNormal);
+    materialNoAlbedo.shadingFrame = Frame(shadingNormal);
 
     float3 directLight = directRaycast(its, material, sampler);
     
@@ -223,7 +232,7 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
 
     IntegrationStepQueryRecord integrationStep;
 
-    integrationStep.output = directLight;
+    integrationStep.directLight = directLight;
     integrationStep.throughput = bsdf;
     integrationStep.indirectRay = indirectRay;
 
@@ -241,7 +250,7 @@ float3 integratorDirect(inout Sampler sampler) {
     // Inputs: RNG. Output: direct-only lighting for a pixel.
     IntegrationStepQueryRecord integrationStep = simulateFirstBounce(sampler);
 
-    return integrationStep.output;
+    return integrationStep.directLight;
 }
 
 float RRProbability(in float3 throughput) {
@@ -262,8 +271,7 @@ float3 clipThroughput(in float3 throughput) {
     return throughputClipped;
 }
 
-
-float3 integratorPT(inout Sampler sampler) {
+IntegrationStepQueryRecord integratorPT(inout Sampler sampler) {
     // Inputs: RNG. Output: path-traced radiance for a pixel.
     IntegrationStepQueryRecord integrationStep = simulateFirstBounce(sampler);
 
@@ -300,7 +308,7 @@ float3 integratorPT(inout Sampler sampler) {
         */
 
         float3 directLight = directRaycast(its, materialRecord, sampler);
-        integrationStep.output += directLight * integrationStep.throughput;
+        integrationStep.indirectLight += directLight * integrationStep.throughput;
 
         if (sampler.UniformFloat() >= RRProb) {
             break;
@@ -310,7 +318,7 @@ float3 integratorPT(inout Sampler sampler) {
         depth++;
     }
 
-    return integrationStep.output;
+    return integrationStep;
 }
 
 [[vk::binding(0, 0)]]
@@ -320,6 +328,9 @@ cbuffer UniformBufferObject
     float4x4 viewInv;
     float4x4 proj;
     float4x4 projInv;
+
+    float4x4 prevView;
+    float4x4 prevProj;
 
     uint seed;
 };
@@ -451,8 +462,25 @@ void rgenMain()
 
         Sampler sampler = Sampler(pixelSeed);
 
-        float3 outputColor = integratorPT(sampler);
-        outImage[int2(launchID)] = float4(LinearToSRGB(outputColor), 1.0);
+        IntegrationStepQueryRecord outputRecord = integratorPT(sampler);
+        // outImage[int2(launchID)] = float4(LinearToSRGB(outputColor), 1.0);
+        float3 albedo = inAlbedoAlpha[int2(launchID)].xyz;
+        //works for now, but terrible with reprojection errors
+
+        float3 outputColor = outputRecord.directLight + outputRecord.indirectLight;
+
+        
+        //this works for now but is likley to break with slight reprojection errors.
+        //in the end I have to make sure to seperate everything that gets multiplied with the albedo
+        //aka direct diffuse + dirrect metallic specular will be in one render target.
+        //indirect lighting + direct dielectic specular in a second target
+        //maybe splitting between specular and diffuse also works. In that case the diffuse would still have to be devided,
+        //by albedo. But indirect has less tendency to be large when albedo is small because indirect is already weighted with throughput 
+        //not sure about the math it might actually be garanteed to not be large.
+        float3 lighting = outputColor / max(albedo,0.001);
+        outImage[int2(launchID)] = float4(lighting, 1.0);
+
+        
     }
 
     // outImage[int2(launchID)] = float4(outputColor, 1.0);

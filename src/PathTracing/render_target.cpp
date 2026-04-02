@@ -63,4 +63,16 @@ namespace vve {
 		return new PerFrameDescriptorPlacment(descriptors, binding);
 	}
 
+	PerFrameDescriptorPlacment* RenderTarget::getDescriptorInput(size_t binding, VkShaderStageFlags stageFlags, VkSampler sampler) {
+
+		std::vector<DescriptorInput*> descriptors;
+
+		for (Image* image : images) {
+			DescriptorImageInput* descriptorInput = new DescriptorImageInput(image, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, stageFlags, sampler);
+			descriptors.push_back(descriptorInput);
+		}
+
+		return new PerFrameDescriptorPlacment(descriptors, binding);
+	}
+
 }

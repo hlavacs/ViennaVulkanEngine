@@ -114,7 +114,7 @@ namespace vve {
     }
 
     void SwapChain::recordImageTransfer(int currentFrame, RenderTarget* target) {
-        images[imageIndices[currentFrame]]->recordCopyFromImage(target->getImage(currentFrame), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, currentFrame);;
+        images[imageIndices[currentFrame]]->recordCopyFromImage(target->getImage(currentFrame), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, currentFrame);
     }
 
     VkResult SwapChain::presentImage(int currentFrame, VkSemaphore renderCompletSemaphore) {

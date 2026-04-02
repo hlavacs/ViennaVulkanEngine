@@ -4,6 +4,9 @@ slangc vert.slang -entry main -target spirv -o vert.spv -DRASTERIZER
 
 slangc frag.slang -entry main -target spirv -o frag.spv -DRASTERIZER
 
+slangc combinePass.slang -entry main -target spirv -o combinePass.spv
+
+slangc reprojectionPass.slang -entry main -target spirv -o reprojectionPass.spv
 
 rem --- Raygen shader ---
 slangc rtbasic.slang -entry rgenMain -target spirv -o raygen.rgen.spv -DRAY_TRACING

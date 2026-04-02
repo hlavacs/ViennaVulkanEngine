@@ -78,8 +78,12 @@ namespace vve {
 	private:
 		Image* input;
 		VkDescriptorImageInfo imageInfo;
+		VkSampler sampler;
+		bool useSampler;
 	public:
-		DescriptorImageInput(Image* input, VkDescriptorType type, VkShaderStageFlags stageFlags) :DescriptorInput(type, 1, stageFlags), input(input){}
+		DescriptorImageInput(Image* input, VkDescriptorType type, VkShaderStageFlags stageFlags) :DescriptorInput(type, 1, stageFlags), input(input), useSampler(false){}
+		DescriptorImageInput(Image* input, VkDescriptorType type, VkShaderStageFlags stageFlags, VkSampler sampler)
+			:DescriptorInput(type, 1, stageFlags), input(input), sampler(sampler), useSampler(true) {}
 
 		Image* getInput() {
 			return input;
@@ -97,7 +101,13 @@ namespace vve {
 			imageInfo = VkDescriptorImageInfo();
 			imageInfo.imageLayout = VK_IMAGE_LAYOUT_GENERAL;
 			imageInfo.imageView = input->getImageView();
-			imageInfo.sampler = VK_NULL_HANDLE; // not used
+			if (useSampler) {
+				imageInfo.sampler = sampler;
+			}
+			else {
+				imageInfo.sampler = VK_NULL_HANDLE; // not used
+			}
+	
 
 			VkWriteDescriptorSet imageWrite{};
 

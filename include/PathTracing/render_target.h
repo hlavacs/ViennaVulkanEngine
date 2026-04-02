@@ -69,6 +69,7 @@ namespace vve {
 		VkClearValue getClearColor();
 
 		PerFrameDescriptorPlacment* getDescriptorInput(size_t binding, VkShaderStageFlags stageFlags);
+		PerFrameDescriptorPlacment* getDescriptorInput(size_t binding, VkShaderStageFlags stageFlags, VkSampler sampler);
 	};
 
 }
