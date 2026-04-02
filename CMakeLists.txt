@@ -20,6 +20,14 @@ if(EXISTS "${CMAKE_SOURCE_DIR}/vcpkg_installed/${VVE_VCPKG_TRIPLET}")
     list(PREPEND CMAKE_PREFIX_PATH "${CMAKE_SOURCE_DIR}/vcpkg_installed/${VVE_VCPKG_TRIPLET}")
 endif()
 
+if(CMAKE_GENERATOR MATCHES "^Visual Studio")
+    if(DEFINED CMAKE_VS_GLOBALS AND NOT CMAKE_VS_GLOBALS STREQUAL "")
+        set(CMAKE_VS_GLOBALS "${CMAKE_VS_GLOBALS};VcpkgApplocalDeps=false")
+    else()
+        set(CMAKE_VS_GLOBALS "VcpkgApplocalDeps=false")
+    endif()
+endif()
+
 project(ViennaVulkanEngine VERSION 3.0.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_EXTENSIONS OFF)

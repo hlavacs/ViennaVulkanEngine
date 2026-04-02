@@ -2,6 +2,7 @@ module;
 
 module VEEngine;
 import VEEngine.V3;
+import std;
 
 template <typename TImplementation>
 vve::EngineFacade<TImplementation>::EngineFacade(vve::EngineConfig config)
