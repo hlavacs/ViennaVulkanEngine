@@ -1,3 +1,15 @@
+module;
+
+#if defined(_WIN32)
+#if defined(VVE_ENGINE_BUILD)
+#define VVE_API __declspec(dllexport)
+#else
+#define VVE_API __declspec(dllimport)
+#endif
+#else
+#define VVE_API
+#endif
+
 export module VEEngine.V3:Internal;
 import VEEngine.V3.Types;
 import VEEngine.V3.Systems;
@@ -38,6 +50,6 @@ struct Runtime final {
     IGraphicsBackend& graphics_backend,
     bool imgui_enabled);
 [[nodiscard]] std::unique_ptr<IGuiSystem> createGuiSystem();
-[[nodiscard]] std::expected<Runtime, vve::Error> createRuntime(const EngineRuntimeDesc& desc);
+[[nodiscard]] VVE_API std::expected<Runtime, vve::Error> createRuntime(const EngineRuntimeDesc& desc);
 
 } // namespace vve::v3::detail

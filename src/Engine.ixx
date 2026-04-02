@@ -20,7 +20,10 @@ export import :Error;
 
 export namespace vve::v3 {
 
-class EngineImplementation;
+template <typename... TUserSystems>
+class BasicEngineImplementation;
+
+using EngineImplementation = BasicEngineImplementation<>;
 
 } // namespace vve::v3
 
@@ -89,6 +92,34 @@ struct Windows {
     std::vector<WindowDesc> value{};
 };
 
+template <typename T>
+concept UserSystemLike = std::derived_from<std::remove_cvref_t<T>, System>;
+
+template <UserSystemLike... TSystems>
+struct UserSystems {
+    std::tuple<TSystems...> value{};
+};
+
+template <UserSystemLike... TSystems>
+[[nodiscard]] auto makeUserSystems(TSystems&&... systems) {
+    return UserSystems<std::remove_cvref_t<TSystems>...>{
+        .value = std::tuple<std::remove_cvref_t<TSystems>...>{
+            std::forward<TSystems>(systems)...}
+    };
+}
+
+class VVE_API World {
+public:
+    explicit World(ECS<>& ecs) noexcept;
+
+    [[nodiscard]] ECS<>& ecs() noexcept;
+
+    [[nodiscard]] const ECS<>& ecs() const noexcept;
+
+private:
+    ECS<>* ecs_;
+};
+
 class EngineConfig {
 public:
     EngineConfig() = default;
@@ -151,7 +182,87 @@ private:
     TImplementation implementation_;
 };
 
+namespace detail {
+
+template <typename T>
+struct IsUserSystemsOption : std::false_type {};
+
+template <UserSystemLike... TSystems>
+struct IsUserSystemsOption<UserSystems<TSystems...>> : std::true_type {};
+
+template <typename TDefault, typename... TOptions>
+struct FindUserSystemsOption {
+    using type = TDefault;
+};
+
+template <typename TDefault, typename TFirst, typename... TRest>
+struct FindUserSystemsOption<TDefault, TFirst, TRest...> {
+    using TNormalized = std::remove_cvref_t<TFirst>;
+    using type = std::conditional_t<
+        IsUserSystemsOption<TNormalized>::value,
+        TNormalized,
+        typename FindUserSystemsOption<TDefault, TRest...>::type>;
+};
+
+template <typename TUserSystems>
+struct EngineTypeFromUserSystems;
+
+template <UserSystemLike... TSystems>
+struct EngineTypeFromUserSystems<UserSystems<TSystems...>> {
+    using type = EngineFacade<vve::v3::BasicEngineImplementation<TSystems...>>;
+};
+
+} // namespace detail
+
+template <typename... TUserSystems>
+using BasicEngine = EngineFacade<vve::v3::BasicEngineImplementation<TUserSystems...>>;
+
 template <typename TImplementation = vve::v3::EngineImplementation>
 using Engine = EngineFacade<TImplementation>;
+
+template <typename... TOptions>
+[[nodiscard]] auto makeEngine(TOptions&&... options) {
+    using TUserSystems = typename detail::FindUserSystemsOption<UserSystems<>, TOptions...>::type;
+    using TEngine = typename detail::EngineTypeFromUserSystems<TUserSystems>::type;
+
+    return TEngine(
+        EngineConfig(std::forward<TOptions>(options)...));
+}
+
+template <typename TImplementation>
+EngineFacade<TImplementation>::EngineFacade(EngineConfig config)
+    : implementation_(std::move(config)) {
+}
+
+template <typename TImplementation>
+[[nodiscard]] std::expected<void, Error> EngineFacade<TImplementation>::init() {
+    return implementation_.init();
+}
+
+template <typename TImplementation>
+[[nodiscard]] std::expected<void, Error> EngineFacade<TImplementation>::run() {
+    return implementation_.run();
+}
+
+template <typename TImplementation>
+[[nodiscard]] std::expected<FrameStatus, Error> EngineFacade<TImplementation>::step() {
+    return implementation_.step();
+}
+
+template <typename TImplementation>
+[[nodiscard]] std::expected<bool, Error> EngineFacade<TImplementation>::isInitialized() const noexcept {
+    return implementation_.isInitialized();
+}
+
+template <typename TImplementation>
+[[nodiscard]] std::expected<int, Error> EngineFacade<TImplementation>::getVersionMajor() const noexcept {
+    return implementation_.getVersionMajor();
+}
+
+template <typename TImplementation>
+[[nodiscard]] std::expected<void, Error> EngineFacade<TImplementation>::loadFile(
+    const std::filesystem::path& file_path) {
+    return implementation_.loadFile(file_path);
+}
 
 } // namespace vve
