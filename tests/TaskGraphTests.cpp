@@ -21,7 +21,7 @@ public:
         [[maybe_unused]] const auto game_update = builder.addTask(
             "game.update",
             vve::v3::TaskKernelId::none,
-            [this](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Result> {
+            [this](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Error> {
                 events_.push_back(3);
                 return {};
             },
@@ -42,7 +42,7 @@ int main() {
         const auto transforms = builder.addTask(
             "engine.transforms",
             vve::v3::TaskKernelId::update_transforms,
-            [&events](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Result> {
+            [&events](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Error> {
                 events.push_back(1);
                 return {};
             });
@@ -50,7 +50,7 @@ int main() {
         const auto uploads = builder.addTask(
             "engine.upload",
             vve::v3::TaskKernelId::upload_resources,
-            [&events](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Result> {
+            [&events](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Error> {
                 events.push_back(2);
                 return {};
             },
@@ -66,7 +66,7 @@ int main() {
         [[maybe_unused]] const auto late_update = builder.addTask(
             "game.late_update",
             vve::v3::TaskKernelId::none,
-            [&events](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Result> {
+            [&events](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Error> {
                 events.push_back(4);
                 return {};
             });
@@ -104,7 +104,7 @@ int main() {
 
         const auto graph = std::move(builder).build();
         const auto result = vve::v3::executeTaskGraph(graph, {});
-        if (result || result.error() != vve::Result::invalid_argument) {
+        if (result || result.error() != vve::Error::invalid_argument) {
             return 3;
         }
     }

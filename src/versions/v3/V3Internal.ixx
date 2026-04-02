@@ -28,7 +28,7 @@ struct Runtime final {
 [[nodiscard]] std::unique_ptr<ISceneSystem> createSceneSystem();
 [[nodiscard]] std::unique_ptr<ITaskGraphSystem> createTaskGraphSystem();
 [[nodiscard]] std::unique_ptr<IWindowSystem> createWindowSystem();
-[[nodiscard]] std::expected<std::unique_ptr<IGraphicsBackend>, vve::Result> createGraphicsBackend(
+[[nodiscard]] std::expected<std::unique_ptr<IGraphicsBackend>, vve::Error> createGraphicsBackend(
     vve::GraphicsApi api);
 [[nodiscard]] std::unique_ptr<IShaderSystem> createShaderSystem();
 [[nodiscard]] std::unique_ptr<IRenderSystem> createRenderSystem(
@@ -37,6 +37,6 @@ struct Runtime final {
     IGraphicsBackend& graphics_backend,
     bool imgui_enabled);
 [[nodiscard]] std::unique_ptr<IGuiSystem> createGuiSystem();
-[[nodiscard]] std::expected<Runtime, vve::Result> createRuntime(const EngineRuntimeDesc& desc);
+[[nodiscard]] std::expected<Runtime, vve::Error> createRuntime(const EngineRuntimeDesc& desc);
 
 } // namespace vve::v3::detail

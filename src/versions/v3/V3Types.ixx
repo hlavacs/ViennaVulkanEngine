@@ -199,7 +199,7 @@ struct TaskExecutionContext {
     std::optional<WindowHandle> window{};
 };
 
-using TaskCallback = std::function<std::expected<void, vve::Result>(const TaskExecutionContext&)>;
+using TaskCallback = std::function<std::expected<void, vve::Error>(const TaskExecutionContext&)>;
 
 struct TaskNodeDesc {
     TaskNodeHandle handle{};

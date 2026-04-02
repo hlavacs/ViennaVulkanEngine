@@ -29,11 +29,11 @@ public:
         return "SDL3WindowSystem";
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> init(
+    [[nodiscard]] std::expected<void, vve::Error> init(
         std::span<const vve::WindowDesc> windows) override {
         if (!video_initialized_) {
             if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
-                return std::unexpected(vve::Result::internal_error);
+                return std::unexpected(vve::Error::internal_error);
             }
 
             video_initialized_ = true;
@@ -62,10 +62,10 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> pollEvents(
+    [[nodiscard]] std::expected<void, vve::Error> pollEvents(
         const FrameContext&) override {
         if (!video_initialized_) {
-            return std::unexpected(vve::Result::not_initialized);
+            return std::unexpected(vve::Error::not_initialized);
         }
 
         events_.clear();
@@ -107,9 +107,9 @@ public:
 
         builder.setTaskCallback(
             poll_window_events_task,
-            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
+                    return std::unexpected(vve::Error::invalid_argument);
                 }
 
                 return pollEvents(*execution_context.frame_context);
@@ -124,14 +124,14 @@ private:
         WindowState state{};
     };
 
-    [[nodiscard]] std::expected<void, vve::Result> createWindow(const vve::WindowDesc& desc) {
+    [[nodiscard]] std::expected<void, vve::Error> createWindow(const vve::WindowDesc& desc) {
         if (desc.id.empty()) {
-            return std::unexpected(vve::Result::invalid_argument);
+            return std::unexpected(vve::Error::invalid_argument);
         }
         if (std::ranges::any_of(windows_, [&desc](const WindowRecord& record) {
                 return record.id == desc.id;
             })) {
-            return std::unexpected(vve::Result::invalid_argument);
+            return std::unexpected(vve::Error::invalid_argument);
         }
 
         Uint64 flags = SDL_WINDOW_VULKAN;
@@ -148,7 +148,7 @@ private:
             static_cast<int>(desc.height),
             flags);
         if (window == nullptr) {
-            return std::unexpected(vve::Result::internal_error);
+            return std::unexpected(vve::Error::internal_error);
         }
 
         const WindowHandle handle{vve::Handle::fromHash(std::string_view(desc.id))};

@@ -6,7 +6,7 @@ import std;
 
 namespace vve::v3 {
 
-export inline [[nodiscard]] std::expected<void, vve::Result> executeTaskGraph(
+export inline [[nodiscard]] std::expected<void, vve::Error> executeTaskGraph(
     const TaskGraph& task_graph,
     const TaskExecutionContext& execution_context) {
     std::unordered_map<vve::Handle::value_type, std::size_t> node_indices{};
@@ -15,7 +15,7 @@ export inline [[nodiscard]] std::expected<void, vve::Result> executeTaskGraph(
     for (std::size_t index = 0; index < task_graph.nodes.size(); ++index) {
         const auto handle_value = task_graph.nodes[index].handle.value.value();
         if (!node_indices.emplace(handle_value, index).second) {
-            return std::unexpected(vve::Result::invalid_argument);
+            return std::unexpected(vve::Error::invalid_argument);
         }
     }
 
@@ -28,7 +28,7 @@ export inline [[nodiscard]] std::expected<void, vve::Result> executeTaskGraph(
         for (const auto& dependency : node.depends_on) {
             const auto dependency_it = node_indices.find(dependency.value.value());
             if (dependency_it == node_indices.end()) {
-                return std::unexpected(vve::Result::invalid_argument);
+                return std::unexpected(vve::Error::invalid_argument);
             }
 
             dependents[dependency_it->second].push_back(index);
@@ -59,7 +59,7 @@ export inline [[nodiscard]] std::expected<void, vve::Result> executeTaskGraph(
         for (const auto dependent_index : dependents[node_index]) {
             auto& dependency_count = remaining_dependencies[dependent_index];
             if (dependency_count == 0) {
-                return std::unexpected(vve::Result::internal_error);
+                return std::unexpected(vve::Error::internal_error);
             }
 
             --dependency_count;
@@ -70,7 +70,7 @@ export inline [[nodiscard]] std::expected<void, vve::Result> executeTaskGraph(
     }
 
     if (completed_nodes != task_graph.nodes.size()) {
-        return std::unexpected(vve::Result::invalid_argument);
+        return std::unexpected(vve::Error::invalid_argument);
     }
 
     return {};

@@ -20,7 +20,7 @@ namespace {
     return view;
 }
 
-[[nodiscard]] std::expected<TaskGraph, vve::Result> buildTaskGraph(
+[[nodiscard]] std::expected<TaskGraph, vve::Error> buildTaskGraph(
     detail::Runtime& runtime,
     const SceneData& scene) {
     auto task_systems = makeTaskSystemView(runtime.task_systems);
@@ -89,9 +89,9 @@ public:
         return initialized_;
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> init() override {
+    [[nodiscard]] std::expected<void, vve::Error> init() override {
         if (isInitialized()) {
-            return std::unexpected(vve::Result::already_initialized);
+            return std::unexpected(vve::Error::already_initialized);
         }
 
         auto runtime = detail::createRuntime(runtime_desc_);
@@ -118,10 +118,10 @@ public:
         task_graph_dirty_ = true;
         last_time_ = std::chrono::time_point_cast<std::chrono::nanoseconds>(
             std::chrono::high_resolution_clock::now());
-        return std::expected<void, vve::Result>{};
+        return std::expected<void, vve::Error>{};
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> run() override {
+    [[nodiscard]] std::expected<void, vve::Error> run() override {
         if (!isInitialized()) {
             if (auto init_result = init(); !init_result) {
                 return init_result;
@@ -138,16 +138,16 @@ public:
             }
         }
 
-        return std::expected<void, vve::Result>{};
+        return std::expected<void, vve::Error>{};
     }
 
-    [[nodiscard]] std::expected<vve::FrameStatus, vve::Result> step() override {
+    [[nodiscard]] std::expected<vve::FrameStatus, vve::Error> step() override {
         if (!isInitialized()) {
-            return std::unexpected(vve::Result::not_initialized);
+            return std::unexpected(vve::Error::not_initialized);
         }
 
         if (!scene_) {
-            return std::unexpected(vve::Result::invalid_argument);
+            return std::unexpected(vve::Error::invalid_argument);
         }
 
         const auto current_time = std::chrono::time_point_cast<std::chrono::nanoseconds>(
@@ -184,18 +184,18 @@ public:
         return vve::FrameStatus::continue_running;
     }
 
-    [[nodiscard]] std::expected<int, vve::Result> getVersionMajor() const noexcept override {
+    [[nodiscard]] std::expected<int, vve::Error> getVersionMajor() const noexcept override {
         return 3;
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> loadFile(
+    [[nodiscard]] std::expected<void, vve::Error> loadFile(
         const std::filesystem::path& file_path) override {
         if (!isInitialized()) {
-            return std::unexpected(vve::Result::not_initialized);
+            return std::unexpected(vve::Error::not_initialized);
         }
 
         if (file_path.empty()) {
-            return std::unexpected(vve::Result::invalid_argument);
+            return std::unexpected(vve::Error::invalid_argument);
         }
 
         const auto imported_scene = runtime_.asset_system->importScene(file_path);
@@ -220,9 +220,9 @@ public:
     }
 
 private:
-    [[nodiscard]] std::expected<void, vve::Result> rebuildTaskGraph() {
+    [[nodiscard]] std::expected<void, vve::Error> rebuildTaskGraph() {
         if (!scene_) {
-            return std::unexpected(vve::Result::invalid_argument);
+            return std::unexpected(vve::Error::invalid_argument);
         }
 
         auto task_graph = buildTaskGraph(runtime_, *scene_);

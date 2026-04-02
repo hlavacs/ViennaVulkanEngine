@@ -16,7 +16,7 @@ export import :ECS;
 export import :System;
 export import :Handle;
 export import :Math;
-export import :Result;
+export import :Error;
 
 export namespace vve::detail {
 
@@ -144,12 +144,12 @@ public:
     Engine& operator=(const Engine&) = delete;
     Engine& operator=(Engine&&) = delete;
 
-    [[nodiscard]] std::expected<void, Result> init();
-    [[nodiscard]] std::expected<void, Result> run();
-    [[nodiscard]] std::expected<FrameStatus, Result> step();
-    [[nodiscard]] std::expected<bool, Result> isInitialized() const noexcept;
-    [[nodiscard]] std::expected<int, Result> getVersionMajor() const noexcept;
-    [[nodiscard]] std::expected<void, Result> loadFile(
+    [[nodiscard]] std::expected<void, Error> init();
+    [[nodiscard]] std::expected<void, Error> run();
+    [[nodiscard]] std::expected<FrameStatus, Error> step();
+    [[nodiscard]] std::expected<bool, Error> isInitialized() const noexcept;
+    [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept;
+    [[nodiscard]] std::expected<void, Error> loadFile(
         const std::filesystem::path& file_path);
 
 private:
@@ -164,12 +164,12 @@ class EngineImpl {
 public:
     virtual ~EngineImpl() = default;
 
-    [[nodiscard]] virtual std::expected<void, vve::Result> init() = 0;
-    [[nodiscard]] virtual std::expected<void, vve::Result> run() = 0;
-    [[nodiscard]] virtual std::expected<vve::FrameStatus, vve::Result> step() = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Error> init() = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Error> run() = 0;
+    [[nodiscard]] virtual std::expected<vve::FrameStatus, vve::Error> step() = 0;
     [[nodiscard]] virtual bool isInitialized() const noexcept = 0;
-    [[nodiscard]] virtual std::expected<int, vve::Result> getVersionMajor() const noexcept = 0;
-    [[nodiscard]] virtual std::expected<void, vve::Result> loadFile(
+    [[nodiscard]] virtual std::expected<int, vve::Error> getVersionMajor() const noexcept = 0;
+    [[nodiscard]] virtual std::expected<void, vve::Error> loadFile(
         const std::filesystem::path& file_path) = 0;
 };
 

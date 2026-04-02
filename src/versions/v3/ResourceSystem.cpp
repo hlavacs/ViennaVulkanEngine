@@ -12,7 +12,7 @@ public:
         return "ResourceSystem";
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> registerImportedScene(
+    [[nodiscard]] std::expected<void, vve::Error> registerImportedScene(
         const ImportedScene& scene,
         const std::filesystem::path& source_path) override {
         records_.push_back(ResourceRecord{
@@ -46,11 +46,11 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<std::vector<ResourceRecord>, vve::Result> enumerate() const override {
+    [[nodiscard]] std::expected<std::vector<ResourceRecord>, vve::Error> enumerate() const override {
         return records_;
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> uploadResources(
+    [[nodiscard]] std::expected<void, vve::Error> uploadResources(
         const FrameContext&,
         const SceneData&) override {
         for (auto& record : records_) {
@@ -77,9 +77,9 @@ public:
 
         builder.setTaskCallback(
             upload_resources_task,
-            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
+                    return std::unexpected(vve::Error::invalid_argument);
                 }
 
                 return uploadResources(*execution_context.frame_context, *execution_context.scene);

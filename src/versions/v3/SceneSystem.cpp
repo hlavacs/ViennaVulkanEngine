@@ -12,7 +12,7 @@ public:
         return "SceneSystem";
     }
 
-    [[nodiscard]] std::expected<SceneData, vve::Result> instantiate(
+    [[nodiscard]] std::expected<SceneData, vve::Error> instantiate(
         const ImportedScene& scene) override {
         SceneData instance{};
         instance.handle = scene.handle;
@@ -28,7 +28,7 @@ public:
         return instance;
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> updateTransforms(
+    [[nodiscard]] std::expected<void, vve::Error> updateTransforms(
         const FrameContext&,
         SceneData& scene) override {
         for (auto& node : scene.nodes) {
@@ -38,7 +38,7 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> cullVisibility(
+    [[nodiscard]] std::expected<void, vve::Error> cullVisibility(
         const FrameContext&,
         const SceneData&) override {
         return {};
@@ -64,9 +64,9 @@ public:
 
         builder.setTaskCallback(
             update_transforms_task,
-            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
+                    return std::unexpected(vve::Error::invalid_argument);
                 }
 
                 return updateTransforms(*execution_context.frame_context, *execution_context.scene);
@@ -74,9 +74,9 @@ public:
 
         builder.setTaskCallback(
             cull_visibility_cpu_task,
-            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
+                    return std::unexpected(vve::Error::invalid_argument);
                 }
 
                 return cullVisibility(*execution_context.frame_context, *execution_context.scene);

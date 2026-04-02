@@ -12,7 +12,7 @@ public:
         return "ImGuiSystem";
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> init(
+    [[nodiscard]] std::expected<void, vve::Error> init(
         IGraphicsBackend&) override {
         initialized_ = true;
         return {};

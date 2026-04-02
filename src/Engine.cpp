@@ -25,33 +25,33 @@ vve::Engine::Engine(vve::EngineVersion version, vve::EngineConfig config)
 
 vve::Engine::~Engine() = default;
 
-std::expected<void, vve::Result> vve::Engine::init() {
-    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
+std::expected<void, vve::Error> vve::Engine::init() {
+    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
     return impl_->init();
 }
 
-std::expected<void, vve::Result> vve::Engine::run() {
-    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
+std::expected<void, vve::Error> vve::Engine::run() {
+    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
     return impl_->run();
 }
 
-std::expected<vve::FrameStatus, vve::Result> vve::Engine::step() {
-    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
+std::expected<vve::FrameStatus, vve::Error> vve::Engine::step() {
+    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
     return impl_->step();
 }
 
-std::expected<bool, vve::Result> vve::Engine::isInitialized() const noexcept {
-    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
+std::expected<bool, vve::Error> vve::Engine::isInitialized() const noexcept {
+    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
     return impl_->isInitialized();
 }
 
-std::expected<int, vve::Result> vve::Engine::getVersionMajor() const noexcept {
-    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
+std::expected<int, vve::Error> vve::Engine::getVersionMajor() const noexcept {
+    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
     return impl_->getVersionMajor();
 }
 
-std::expected<void, vve::Result> vve::Engine::loadFile(
+std::expected<void, vve::Error> vve::Engine::loadFile(
     const std::filesystem::path& file_path) {
-    if (impl_ == nullptr) return std::unexpected(vve::Result::internal_error);
+    if (impl_ == nullptr) return std::unexpected(vve::Error::internal_error);
     return impl_->loadFile(file_path);
 }

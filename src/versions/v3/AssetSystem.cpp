@@ -12,7 +12,7 @@ public:
         return "AssimpAssetSystem";
     }
 
-    [[nodiscard]] std::expected<ImportedScene, vve::Result> importScene(
+    [[nodiscard]] std::expected<ImportedScene, vve::Error> importScene(
         const std::filesystem::path& source_path) override {
         ImportedScene scene{};
         scene.handle = SceneHandle{detail::makeStableHandle(source_path.string())};

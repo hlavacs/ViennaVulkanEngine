@@ -38,7 +38,7 @@ public:
         return "SlangShaderSystem";
     }
 
-    [[nodiscard]] std::expected<ShaderMetadata, vve::Result> reflect(
+    [[nodiscard]] std::expected<ShaderMetadata, vve::Error> reflect(
         const std::filesystem::path& shader_path,
         vve::RendererKind renderer,
         vve::ShadowKind shadow) override {

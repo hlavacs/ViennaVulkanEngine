@@ -16,24 +16,24 @@ public:
         return vve::GraphicsApi::vulkan;
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> init() override {
+    [[nodiscard]] std::expected<void, vve::Error> init() override {
         initialized_ = true;
         return {};
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> beginFrame(
+    [[nodiscard]] std::expected<void, vve::Error> beginFrame(
         const FrameContext&) override {
         if (!initialized_) {
-            return std::unexpected(vve::Result::not_initialized);
+            return std::unexpected(vve::Error::not_initialized);
         }
 
         return {};
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> endFrame(
+    [[nodiscard]] std::expected<void, vve::Error> endFrame(
         const FrameContext&) override {
         if (!initialized_) {
-            return std::unexpected(vve::Result::not_initialized);
+            return std::unexpected(vve::Error::not_initialized);
         }
 
         return {};
@@ -57,9 +57,9 @@ public:
 
         builder.setTaskCallback(
             begin_frame_task,
-            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
+                    return std::unexpected(vve::Error::invalid_argument);
                 }
 
                 return beginFrame(*execution_context.frame_context);
@@ -67,9 +67,9 @@ public:
 
         builder.setTaskCallback(
             end_frame_task,
-            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+            [this](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr) {
-                    return std::unexpected(vve::Result::invalid_argument);
+                    return std::unexpected(vve::Error::invalid_argument);
                 }
 
                 return endFrame(*execution_context.frame_context);
@@ -82,17 +82,17 @@ private:
 
 } // namespace
 
-std::expected<std::unique_ptr<IGraphicsBackend>, vve::Result> detail::createGraphicsBackend(
+std::expected<std::unique_ptr<IGraphicsBackend>, vve::Error> detail::createGraphicsBackend(
     vve::GraphicsApi api) {
     switch (api) {
         case vve::GraphicsApi::vulkan:
             return std::make_unique<VulkanGraphicsBackend>();
         case vve::GraphicsApi::direct3d12:
         case vve::GraphicsApi::metal:
-            return std::unexpected(vve::Result::unsupported_version);
+            return std::unexpected(vve::Error::unsupported_version);
     }
 
-    return std::unexpected(vve::Result::internal_error);
+    return std::unexpected(vve::Error::internal_error);
 }
 
 } // namespace vve::v3

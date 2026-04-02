@@ -122,7 +122,7 @@ public:
         return graph;
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> cullVisibilityGpu(
+    [[nodiscard]] std::expected<void, vve::Error> cullVisibilityGpu(
         const FrameContext&,
         const SceneData&,
         WindowHandle,
@@ -130,7 +130,7 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> buildDrawPackets(
+    [[nodiscard]] std::expected<void, vve::Error> buildDrawPackets(
         const FrameContext&,
         const SceneData&,
         WindowHandle,
@@ -138,7 +138,7 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> record(
+    [[nodiscard]] std::expected<void, vve::Error> record(
         const FrameContext&,
         const SceneData&,
         WindowHandle,
@@ -149,7 +149,7 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<void, vve::Result> consumeOutput(
+    [[nodiscard]] std::expected<void, vve::Error> consumeOutput(
         const FrameContext&,
         const SceneData&,
         WindowHandle,
@@ -212,9 +212,9 @@ public:
 
             builder.setTaskCallback(
                 cull_visibility_gpu_task,
-                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Error> {
                     if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                        return std::unexpected(vve::Result::invalid_argument);
+                        return std::unexpected(vve::Error::invalid_argument);
                     }
 
                     return cullVisibilityGpu(
@@ -226,9 +226,9 @@ public:
 
             builder.setTaskCallback(
                 build_draw_packets_task,
-                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Error> {
                     if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                        return std::unexpected(vve::Result::invalid_argument);
+                        return std::unexpected(vve::Error::invalid_argument);
                     }
 
                     return buildDrawPackets(
@@ -240,9 +240,9 @@ public:
 
             builder.setTaskCallback(
                 record_render_graph_task,
-                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Error> {
                     if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                        return std::unexpected(vve::Result::invalid_argument);
+                        return std::unexpected(vve::Error::invalid_argument);
                     }
 
                     return record(
@@ -254,9 +254,9 @@ public:
 
             builder.setTaskCallback(
                 consume_frame_output_task,
-                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Result> {
+                [this, window, render_graph](const TaskExecutionContext& execution_context) -> std::expected<void, vve::Error> {
                     if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                        return std::unexpected(vve::Result::invalid_argument);
+                        return std::unexpected(vve::Error::invalid_argument);
                     }
 
                     return consumeOutput(

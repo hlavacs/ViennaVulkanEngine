@@ -9,7 +9,7 @@ vve::Handle makeStableHandle(std::string_view name, std::uint64_t salt) {
     return vve::Handle::fromHash(mixed);
 }
 
-std::expected<Runtime, vve::Result> createRuntime(const EngineRuntimeDesc& desc) {
+std::expected<Runtime, vve::Error> createRuntime(const EngineRuntimeDesc& desc) {
     auto graphics_backend = createGraphicsBackend(desc.graphics_api);
     if (!graphics_backend) {
         return std::unexpected(graphics_backend.error());
