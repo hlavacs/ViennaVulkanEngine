@@ -3,6 +3,8 @@ import std;
 import :Handle;
 import :Error;
 
+#include "versions/v3/ECSV3.ixx"
+
 export namespace vve {
 
 template <typename T>
@@ -60,7 +62,7 @@ private:
     TImplementation implementation_{};
 };
 
-template <typename TImplementation>
+template <typename TImplementation = vve::v3::BasicECSImplementation<>>
 using ECS = ECSFacade<TImplementation>;
 
 } // namespace vve
