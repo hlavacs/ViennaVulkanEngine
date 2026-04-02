@@ -98,9 +98,6 @@ ResourceSystemFacade<DefaultResourceSystemImplementation>::ResourceSystemFacade(
 }
 
 template <>
-ResourceSystemFacade<DefaultResourceSystemImplementation>::~ResourceSystemFacade() = default;
-
-template <>
 std::string_view ResourceSystemFacade<DefaultResourceSystemImplementation>::name() const noexcept {
     return static_cast<DefaultResourceSystemImplementation*>(implementation_.get())->name();
 }

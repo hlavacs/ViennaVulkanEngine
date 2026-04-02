@@ -90,9 +90,6 @@ TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::TaskGraphSystemFaca
 }
 
 template <>
-TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::~TaskGraphSystemFacade() = default;
-
-template <>
 std::string_view TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::name() const noexcept {
     return static_cast<DefaultTaskGraphSystemImplementation*>(implementation_.get())->name();
 }

@@ -291,9 +291,6 @@ RenderSystemFacade<DefaultRenderSystemImplementation>::RenderSystemFacade(
 }
 
 template <>
-RenderSystemFacade<DefaultRenderSystemImplementation>::~RenderSystemFacade() = default;
-
-template <>
 std::string_view RenderSystemFacade<DefaultRenderSystemImplementation>::name() const noexcept {
     return static_cast<DefaultRenderSystemImplementation*>(implementation_.get())->name();
 }

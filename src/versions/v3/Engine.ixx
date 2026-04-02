@@ -38,8 +38,11 @@ template <typename TSystem>
 [[nodiscard]] std::expected<void, vve::Error> invokeUserSystemUpdate(
     TSystem& system,
     vve::World& world,
-    const FrameContext& frame_context) {
-    if constexpr (requires { system.update(world, frame_context); }) {
+    const FrameContext& frame_context,
+    const WindowFrameData& window_frame) {
+    if constexpr (requires { system.update(world, frame_context, window_frame); }) {
+        return system.update(world, frame_context, window_frame);
+    } else if constexpr (requires { system.update(world, frame_context); }) {
         return system.update(world, frame_context);
     } else {
         return {};
@@ -63,11 +66,12 @@ template <typename... TSystems>
 [[nodiscard]] std::expected<void, vve::Error> updateUserSystems(
     std::tuple<TSystems...>& systems,
     vve::World& world,
-    const FrameContext& frame_context) {
+    const FrameContext& frame_context,
+    const WindowFrameData& window_frame) {
     std::expected<void, vve::Error> result{};
     std::apply(
         [&](auto&... system) {
-            ((result = invokeUserSystemUpdate(system, world, frame_context), result ? void() : void()), ...);
+            ((result = invokeUserSystemUpdate(system, world, frame_context, window_frame), result ? void() : void()), ...);
         },
         systems);
     return result;
@@ -305,12 +309,6 @@ std::expected<vve::FrameStatus, vve::Error> BasicEngineImplementation<TUserSyste
         .delta_seconds = seconds_elapsed
     };
 
-    vve::World world{ecs_};
-    if (auto user_system_result = detail::updateUserSystems(user_systems_, world, frame_context);
-        !user_system_result) {
-        return std::unexpected(user_system_result.error());
-    }
-
     if (task_graph_dirty_ || !task_graph_) {
         if (auto task_graph_result = rebuildTaskGraph(); !task_graph_result) {
             return std::unexpected(task_graph_result.error());
@@ -324,6 +322,16 @@ std::expected<vve::FrameStatus, vve::Error> BasicEngineImplementation<TUserSyste
     };
     if (auto execute_result = executeTaskGraph(*task_graph_, execution_context); !execute_result) {
         return std::unexpected(execute_result.error());
+    }
+
+    vve::World world{ecs_};
+    if (auto user_system_result = detail::updateUserSystems(
+            user_systems_,
+            world,
+            frame_context,
+            *runtime_.window_frame);
+        !user_system_result) {
+        return std::unexpected(user_system_result.error());
     }
 
     if (std::ranges::any_of(

@@ -28,16 +28,16 @@ class DefaultRenderSystemImplementation;
 class ImGuiSystemImplementation;
 
 template <typename TImplementation>
-class VVE_API AssetSystemFacade : public vve::System {
+class VVE_API AssetSystemFacade {
 public:
     AssetSystemFacade();
-    ~AssetSystemFacade() override;
+    ~AssetSystemFacade() = default;
     AssetSystemFacade(AssetSystemFacade&& other) noexcept = default;
     AssetSystemFacade& operator=(AssetSystemFacade&& other) noexcept = default;
     AssetSystemFacade(const AssetSystemFacade&) = delete;
     AssetSystemFacade& operator=(const AssetSystemFacade&) = delete;
 
-    [[nodiscard]] std::string_view name() const noexcept override;
+    [[nodiscard]] std::string_view name() const noexcept;
     [[nodiscard]] std::expected<ImportedScene, vve::Error> importScene(
         const std::filesystem::path& source_path);
 
@@ -46,16 +46,16 @@ private:
 };
 
 template <typename TImplementation>
-class VVE_API ResourceSystemFacade : public vve::System {
+class VVE_API ResourceSystemFacade {
 public:
     ResourceSystemFacade();
-    ~ResourceSystemFacade() override;
+    ~ResourceSystemFacade() = default;
     ResourceSystemFacade(ResourceSystemFacade&& other) noexcept = default;
     ResourceSystemFacade& operator=(ResourceSystemFacade&& other) noexcept = default;
     ResourceSystemFacade(const ResourceSystemFacade&) = delete;
     ResourceSystemFacade& operator=(const ResourceSystemFacade&) = delete;
 
-    [[nodiscard]] std::string_view name() const noexcept override;
+    [[nodiscard]] std::string_view name() const noexcept;
     [[nodiscard]] std::expected<void, vve::Error> registerImportedScene(
         const ImportedScene& scene,
         const std::filesystem::path& source_path);
@@ -72,16 +72,16 @@ private:
 };
 
 template <typename TImplementation>
-class VVE_API SceneSystemFacade : public vve::System {
+class VVE_API SceneSystemFacade {
 public:
     SceneSystemFacade();
-    ~SceneSystemFacade() override;
+    ~SceneSystemFacade() = default;
     SceneSystemFacade(SceneSystemFacade&& other) noexcept = default;
     SceneSystemFacade& operator=(SceneSystemFacade&& other) noexcept = default;
     SceneSystemFacade(const SceneSystemFacade&) = delete;
     SceneSystemFacade& operator=(const SceneSystemFacade&) = delete;
 
-    [[nodiscard]] std::string_view name() const noexcept override;
+    [[nodiscard]] std::string_view name() const noexcept;
     [[nodiscard]] std::expected<SceneData, vve::Error> instantiate(
         const ImportedScene& scene);
     [[nodiscard]] std::expected<void, vve::Error> updateTransforms(
@@ -99,16 +99,16 @@ private:
 };
 
 template <typename TImplementation>
-class VVE_API WindowSystemFacade : public vve::System {
+class VVE_API WindowSystemFacade {
 public:
     WindowSystemFacade();
-    ~WindowSystemFacade() override;
+    ~WindowSystemFacade() = default;
     WindowSystemFacade(WindowSystemFacade&& other) noexcept = default;
     WindowSystemFacade& operator=(WindowSystemFacade&& other) noexcept = default;
     WindowSystemFacade(const WindowSystemFacade&) = delete;
     WindowSystemFacade& operator=(const WindowSystemFacade&) = delete;
 
-    [[nodiscard]] std::string_view name() const noexcept override;
+    [[nodiscard]] std::string_view name() const noexcept;
     [[nodiscard]] std::expected<void, vve::Error> init(
         std::span<const vve::WindowDesc> windows);
     [[nodiscard]] std::expected<void, vve::Error> pollEvents(
@@ -123,16 +123,16 @@ private:
 };
 
 template <typename TImplementation>
-class VVE_API GraphicsBackendFacade : public vve::System {
+class VVE_API GraphicsBackendFacade {
 public:
     GraphicsBackendFacade();
-    ~GraphicsBackendFacade() override;
+    ~GraphicsBackendFacade() = default;
     GraphicsBackendFacade(GraphicsBackendFacade&& other) noexcept = default;
     GraphicsBackendFacade& operator=(GraphicsBackendFacade&& other) noexcept = default;
     GraphicsBackendFacade(const GraphicsBackendFacade&) = delete;
     GraphicsBackendFacade& operator=(const GraphicsBackendFacade&) = delete;
 
-    [[nodiscard]] std::string_view name() const noexcept override;
+    [[nodiscard]] std::string_view name() const noexcept;
     [[nodiscard]] vve::GraphicsApi api() const noexcept;
     [[nodiscard]] std::expected<void, vve::Error> init();
     [[nodiscard]] std::expected<void, vve::Error> beginFrame(
@@ -146,16 +146,16 @@ private:
 };
 
 template <typename TImplementation>
-class VVE_API ShaderSystemFacade : public vve::System {
+class VVE_API ShaderSystemFacade {
 public:
     ShaderSystemFacade();
-    ~ShaderSystemFacade() override;
+    ~ShaderSystemFacade() = default;
     ShaderSystemFacade(ShaderSystemFacade&& other) noexcept = default;
     ShaderSystemFacade& operator=(ShaderSystemFacade&& other) noexcept = default;
     ShaderSystemFacade(const ShaderSystemFacade&) = delete;
     ShaderSystemFacade& operator=(const ShaderSystemFacade&) = delete;
 
-    [[nodiscard]] std::string_view name() const noexcept override;
+    [[nodiscard]] std::string_view name() const noexcept;
     [[nodiscard]] std::expected<ShaderMetadata, vve::Error> reflect(
         const std::filesystem::path& shader_path,
         vve::RendererKind renderer,
@@ -166,20 +166,20 @@ private:
 };
 
 template <typename TImplementation>
-class VVE_API RenderSystemFacade : public vve::System {
+class VVE_API RenderSystemFacade {
 public:
     RenderSystemFacade(
         vve::RendererKind renderer,
         vve::ShadowKind shadow,
         GraphicsBackendFacade<VulkanGraphicsBackendImplementation>& graphics_backend,
         bool imgui_enabled);
-    ~RenderSystemFacade() override;
+    ~RenderSystemFacade() = default;
     RenderSystemFacade(RenderSystemFacade&& other) noexcept = default;
     RenderSystemFacade& operator=(RenderSystemFacade&& other) noexcept = default;
     RenderSystemFacade(const RenderSystemFacade&) = delete;
     RenderSystemFacade& operator=(const RenderSystemFacade&) = delete;
 
-    [[nodiscard]] std::string_view name() const noexcept override;
+    [[nodiscard]] std::string_view name() const noexcept;
     [[nodiscard]] RenderGraph buildStaticGraph(WindowHandle window);
     [[nodiscard]] std::expected<void, vve::Error> cullVisibilityGpu(
         const FrameContext& frame_context,
@@ -211,16 +211,16 @@ private:
 };
 
 template <typename TImplementation>
-class VVE_API GuiSystemFacade : public vve::System {
+class VVE_API GuiSystemFacade {
 public:
     GuiSystemFacade();
-    ~GuiSystemFacade() override;
+    ~GuiSystemFacade() = default;
     GuiSystemFacade(GuiSystemFacade&& other) noexcept = default;
     GuiSystemFacade& operator=(GuiSystemFacade&& other) noexcept = default;
     GuiSystemFacade(const GuiSystemFacade&) = delete;
     GuiSystemFacade& operator=(const GuiSystemFacade&) = delete;
 
-    [[nodiscard]] std::string_view name() const noexcept override;
+    [[nodiscard]] std::string_view name() const noexcept;
     [[nodiscard]] std::expected<void, vve::Error> init(
         GraphicsBackendFacade<VulkanGraphicsBackendImplementation>& graphics_backend);
 
@@ -237,24 +237,26 @@ using ShaderSystem = ShaderSystemFacade<SlangShaderSystemImplementation>;
 using RenderSystem = RenderSystemFacade<DefaultRenderSystemImplementation>;
 using GuiSystem = GuiSystemFacade<ImGuiSystemImplementation>;
 
-class ITaskSystem : public vve::System {
+class ITaskSystem {
 public:
+    virtual ~ITaskSystem() = default;
+    [[nodiscard]] virtual std::string_view name() const noexcept = 0;
     virtual void registerTasks(
         TaskGraphBuilder& builder,
         const SceneData& scene) = 0;
 };
 
 template <typename TImplementation>
-class VVE_API TaskGraphSystemFacade : public vve::System {
+class VVE_API TaskGraphSystemFacade {
 public:
     TaskGraphSystemFacade();
-    ~TaskGraphSystemFacade() override;
+    ~TaskGraphSystemFacade() = default;
     TaskGraphSystemFacade(TaskGraphSystemFacade&& other) noexcept = default;
     TaskGraphSystemFacade& operator=(TaskGraphSystemFacade&& other) noexcept = default;
     TaskGraphSystemFacade(const TaskGraphSystemFacade&) = delete;
     TaskGraphSystemFacade& operator=(const TaskGraphSystemFacade&) = delete;
 
-    [[nodiscard]] std::string_view name() const noexcept override;
+    [[nodiscard]] std::string_view name() const noexcept;
     [[nodiscard]] TaskGraph build(
         const SceneData& scene,
         std::span<ITaskSystem* const> task_systems,

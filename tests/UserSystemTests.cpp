@@ -1,13 +1,14 @@
 #include <string_view>
 
+import std;
 import VEEngine;
 import VEEngine.V3;
 
 namespace {
 
-class CounterSystem final : public vve::System {
+class CounterSystem final {
 public:
-    [[nodiscard]] std::string_view name() const noexcept override {
+    [[nodiscard]] std::string_view name() const noexcept {
         return "CounterSystem";
     }
 

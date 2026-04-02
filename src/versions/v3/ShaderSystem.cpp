@@ -64,9 +64,6 @@ ShaderSystemFacade<SlangShaderSystemImplementation>::ShaderSystemFacade()
 }
 
 template <>
-ShaderSystemFacade<SlangShaderSystemImplementation>::~ShaderSystemFacade() = default;
-
-template <>
 std::string_view ShaderSystemFacade<SlangShaderSystemImplementation>::name() const noexcept {
     return static_cast<SlangShaderSystemImplementation*>(implementation_.get())->name();
 }

@@ -42,9 +42,6 @@ AssetSystemFacade<AssimpAssetSystemImplementation>::AssetSystemFacade()
 }
 
 template <>
-AssetSystemFacade<AssimpAssetSystemImplementation>::~AssetSystemFacade() = default;
-
-template <>
 std::string_view AssetSystemFacade<AssimpAssetSystemImplementation>::name() const noexcept {
     return static_cast<AssimpAssetSystemImplementation*>(implementation_.get())->name();
 }

@@ -2,9 +2,9 @@ import VEEngine;
 import VEEngine.V3;
 import std;
 
-class DummyGameSystem final : public vve::System {
+class DummyGameSystem final {
 public:
-    [[nodiscard]] std::string_view name() const noexcept override {
+    [[nodiscard]] std::string_view name() const noexcept {
         return "DummyGameSystem";
     }
 
@@ -14,7 +14,8 @@ public:
 
     [[nodiscard]] std::expected<void, vve::Error> update(
         vve::World&,
-        const vve::v3::FrameContext&) {
+        const vve::v3::FrameContext&,
+        const vve::v3::WindowFrameData&) {
         return {};
     }
 };

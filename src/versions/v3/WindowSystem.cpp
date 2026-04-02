@@ -392,9 +392,6 @@ WindowSystemFacade<SDL3WindowSystemImplementation>::WindowSystemFacade()
 }
 
 template <>
-WindowSystemFacade<SDL3WindowSystemImplementation>::~WindowSystemFacade() = default;
-
-template <>
 std::string_view WindowSystemFacade<SDL3WindowSystemImplementation>::name() const noexcept {
     return static_cast<SDL3WindowSystemImplementation*>(implementation_.get())->name();
 }

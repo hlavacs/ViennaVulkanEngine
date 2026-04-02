@@ -88,9 +88,6 @@ GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::GraphicsBackendFacad
 }
 
 template <>
-GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::~GraphicsBackendFacade() = default;
-
-template <>
 std::string_view GraphicsBackendFacade<VulkanGraphicsBackendImplementation>::name() const noexcept {
     return static_cast<VulkanGraphicsBackendImplementation*>(implementation_.get())->name();
 }

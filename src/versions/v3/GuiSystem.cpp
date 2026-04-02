@@ -30,9 +30,6 @@ GuiSystemFacade<ImGuiSystemImplementation>::GuiSystemFacade()
 }
 
 template <>
-GuiSystemFacade<ImGuiSystemImplementation>::~GuiSystemFacade() = default;
-
-template <>
 std::string_view GuiSystemFacade<ImGuiSystemImplementation>::name() const noexcept {
     return static_cast<ImGuiSystemImplementation*>(implementation_.get())->name();
 }

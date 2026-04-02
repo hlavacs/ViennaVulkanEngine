@@ -34,7 +34,6 @@ target_sources(ViennaVulkanEngine
     PUBLIC
         FILE_SET CXX_MODULES FILES
             ECS.ixx
-            System.ixx
             Handle.ixx
             Math.ixx
             Error.ixx

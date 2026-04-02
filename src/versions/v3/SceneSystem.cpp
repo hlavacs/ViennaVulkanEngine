@@ -92,9 +92,6 @@ SceneSystemFacade<DefaultSceneSystemImplementation>::SceneSystemFacade()
 }
 
 template <>
-SceneSystemFacade<DefaultSceneSystemImplementation>::~SceneSystemFacade() = default;
-
-template <>
 std::string_view SceneSystemFacade<DefaultSceneSystemImplementation>::name() const noexcept {
     return static_cast<DefaultSceneSystemImplementation*>(implementation_.get())->name();
 }

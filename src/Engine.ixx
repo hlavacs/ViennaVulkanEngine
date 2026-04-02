@@ -13,7 +13,6 @@ module;
 export module VEEngine;
 import std;
 export import :ECS;
-export import :System;
 export import :Handle;
 export import :Math;
 export import :Error;
@@ -93,7 +92,9 @@ struct Windows {
 };
 
 template <typename T>
-concept UserSystemLike = std::derived_from<std::remove_cvref_t<T>, System>;
+concept UserSystemLike = requires(const std::remove_cvref_t<T>& system) {
+    { system.name() } -> std::convertible_to<std::string_view>;
+};
 
 template <UserSystemLike... TSystems>
 struct UserSystems {
