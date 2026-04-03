@@ -3,6 +3,10 @@ import std;
 import :Handle;
 import :Error;
 
+#ifndef VVE_DEFAULT_ENGINE_NAMESPACE
+#define VVE_DEFAULT_ENGINE_NAMESPACE v3
+#endif
+
 #if defined(_WIN32)
 #if defined(VVE_ENGINE_BUILD)
 #define VVE_API __declspec(dllexport)
@@ -15,20 +19,12 @@ import :Error;
 
 #include "versions/v3/ECS.ixx"
 
-#ifndef VVE_DEFAULT_ECS_NAMESPACE
-#ifdef VVE_DEFAULT_ENGINE_NAMESPACE
-#define VVE_DEFAULT_ECS_NAMESPACE VVE_DEFAULT_ENGINE_NAMESPACE
-#else
-#define VVE_DEFAULT_ECS_NAMESPACE v3
-#endif
-#endif
-
 export namespace vve {
 
    namespace detail {
 
-      template <typename TTraits = vve::VVE_DEFAULT_ECS_NAMESPACE::DefaultECSTraits>
-      using DefaultECSImplementationTemplate = vve::VVE_DEFAULT_ECS_NAMESPACE::BasicECSImplementation<TTraits>;
+      template <typename TTraits = vve::VVE_DEFAULT_ENGINE_NAMESPACE::DefaultECSTraits>
+      using DefaultECSImplementationTemplate = vve::VVE_DEFAULT_ENGINE_NAMESPACE::BasicECSImplementation<TTraits>;
 
       using DefaultECSImplementation = DefaultECSImplementationTemplate<>;
 
