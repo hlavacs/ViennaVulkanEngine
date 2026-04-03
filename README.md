@@ -75,7 +75,7 @@ To run unit tests in VS Code, use `Tasks: Run Task` and choose one of these task
 `Run Unit Tests` executes the existing Debug test build in the workspace:
 
 ```text
-ctest --test-dir build -C Debug --output-on-failure
+ctest --test-dir <active CMake build directory> -C Debug --output-on-failure
 ```
 
 `Build And Test Debug` runs:
@@ -89,15 +89,15 @@ Build Debug -> Run Unit Tests
 To build and run all unit tests from the project root:
 
 ```powershell
-cmake -S . -B build
-cmake --build build --config Debug
-ctest --test-dir build -C Debug --output-on-failure
+cmake -S . -B build/debug-windows
+cmake --build build/debug-windows --config Debug
+ctest --test-dir build/debug-windows -C Debug --output-on-failure
 ```
 
 To list the registered tests without running them:
 
 ```powershell
-ctest --test-dir build -C Debug -N
+ctest --test-dir build/debug-windows -C Debug -N
 ```
 
 ## Doxygen

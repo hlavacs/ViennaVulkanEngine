@@ -32,10 +32,31 @@
             "program": "ctest",
             "args": [
                 "--test-dir",
-                "build",
+                "${command:cmake.buildDirectory}",
                 "-C",
                 "Debug",
                 "--output-on-failure"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build Debug",
+            "noDebug": true
+        },
+        {
+            "name": "Debug WorldTests",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "ctest",
+            "args": [
+                "--test-dir",
+                "${command:cmake.buildDirectory}",
+                "-C",
+                "Debug",
+                "--output-on-failure",
+                "-R",
+                "^WorldTests$"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

@@ -93,10 +93,28 @@
             "command": "ctest",
             "args": [
                 "--test-dir",
-                "build",
+                "${command:cmake.buildDirectory}",
                 "-C",
                 "Debug",
                 "--output-on-failure"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Run World Tests",
+            "type": "shell",
+            "command": "ctest",
+            "args": [
+                "--test-dir",
+                "${command:cmake.buildDirectory}",
+                "-C",
+                "Debug",
+                "--output-on-failure",
+                "-R",
+                "^WorldTests$"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
