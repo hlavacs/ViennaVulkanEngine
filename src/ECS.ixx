@@ -61,8 +61,7 @@ export namespace vve {
    template <NotHandle TComponent>
    [[nodiscard]] std::expected<void, Error> ECSFacade<TImplementation>::addComponent(Handle entity,
                                                                                      TComponent &&component) {
-      using TStoredComponent = std::remove_cvref_t<TComponent>;
-      return implementation_.template addComponent<TStoredComponent>(entity, std::forward<TComponent>(component));
+      return implementation_.addComponent(entity, std::forward<TComponent>(component));
    }
 
    template <typename TImplementation>
@@ -76,8 +75,7 @@ export namespace vve {
    template <typename TImplementation>
    template <NotHandle TComponent>
    [[nodiscard]] std::expected<void, Error> ECSFacade<TImplementation>::put(Handle entity, TComponent &&component) {
-      using TStoredComponent = std::remove_cvref_t<TComponent>;
-      return implementation_.template put<TStoredComponent>(entity, std::forward<TComponent>(component));
+      return implementation_.put(entity, std::forward<TComponent>(component));
    }
 
    template <typename TImplementation>

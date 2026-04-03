@@ -66,13 +66,18 @@ int main() {
       return 10;
    }
 
+   Position lvalue_position{6, 12};
+   if (!ecs.put(entity, lvalue_position)) {
+      return 101;
+   }
+
    if (ecs.put(invalid_entity, Position{11, 12})) {
       return 11;
    }
 
    const auto updated_position_result = ecs.get<Position>(entity);
    if (!updated_position_result || !updated_position_result->has_value() ||
-       **updated_position_result != Position{4, 8}) {
+       **updated_position_result != Position{6, 12}) {
       return 12;
    }
 
