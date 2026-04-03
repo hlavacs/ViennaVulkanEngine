@@ -10,8 +10,8 @@ struct Position {
 };
 
 struct Velocity {
-    float x{160.0F};
-    float y{90.0F};
+    float x{0.0F};
+    float y{0.0F};
 };
 
 } // namespace
@@ -30,32 +30,32 @@ public:
 
         player_ = *player_result;
 
-        if (const auto add_position_result = world.ecs().addComponent(*player_, Position{}); !add_position_result) {
+        if (const auto add_position_result = world.ecs().addComponent(player_, Position{}); !add_position_result) {
             return std::unexpected(add_position_result.error());
         }
 
-        if (const auto add_velocity_result = world.ecs().addComponent(*player_, Velocity{}); !add_velocity_result) {
+        if (const auto add_velocity_result = world.ecs().addComponent(player_, Velocity{}); !add_velocity_result) {
             return std::unexpected(add_velocity_result.error());
         }
 
-        std::cout << '[' << name() << "] spawned entity " << player_->value() << '\n';
+        std::cout << '[' << name() << "] spawned entity " << player_.value() << '\n';
         return {};
     }
 
     [[nodiscard]] std::expected<void, vve::Error> update(
         vve::World& world,
         const vve::v3::FrameContext& frame_context,
-        const vve::v3::WindowFrameData&) {
-        if (!player_) {
+        const vve::v3::WindowFrameData& window_frame) {
+        if (!player_.isValid()) {
             return std::unexpected(vve::Error::invalid_argument);
         }
 
-        const auto position_result = world.ecs().get<Position>(*player_);
+        const auto position_result = world.ecs().get<Position>(player_);
         if (!position_result) {
             return std::unexpected(position_result.error());
         }
 
-        const auto velocity_result = world.ecs().get<Velocity>(*player_);
+        const auto velocity_result = world.ecs().get<Velocity>(player_);
         if (!velocity_result) {
             return std::unexpected(velocity_result.error());
         }
@@ -66,6 +66,23 @@ public:
 
         auto position = **position_result;
         auto velocity = **velocity_result;
+
+        for (const auto& event : window_frame.events) {
+            switch (event.type) {
+            case vve::v3::WindowEventType::key_down:
+                applyKeyState(event.b, true, velocity);
+                break;
+            case vve::v3::WindowEventType::key_up:
+                applyKeyState(event.b, false, velocity);
+                break;
+            case vve::v3::WindowEventType::close_requested:
+                std::cout << '[' << name() << "] close requested for window "
+                          << event.window.value.value() << '\n';
+                break;
+            default:
+                break;
+            }
+        }
 
         position.x += velocity.x * static_cast<float>(frame_context.delta_seconds);
         position.y += velocity.y * static_cast<float>(frame_context.delta_seconds);
@@ -83,11 +100,11 @@ public:
             velocity.y = -velocity.y;
         }
 
-        if (const auto put_position_result = world.ecs().put(*player_, position); !put_position_result) {
+        if (const auto put_position_result = world.ecs().put(player_, position); !put_position_result) {
             return std::unexpected(put_position_result.error());
         }
 
-        if (const auto put_velocity_result = world.ecs().put(*player_, velocity); !put_velocity_result) {
+        if (const auto put_velocity_result = world.ecs().put(player_, velocity); !put_velocity_result) {
             return std::unexpected(put_velocity_result.error());
         }
 
@@ -99,7 +116,33 @@ public:
     }
 
 private:
-    std::optional<vve::Handle> player_{};
+    static void applyKeyState(std::int32_t keycode, bool pressed, Velocity& velocity) {
+        constexpr float speed_x = 160.0F;
+        constexpr float speed_y = 90.0F;
+
+        switch (keycode) {
+        case 'a':
+        case 'A':
+            velocity.x = pressed ? -speed_x : (velocity.x < 0.0F ? 0.0F : velocity.x);
+            break;
+        case 'd':
+        case 'D':
+            velocity.x = pressed ? speed_x : (velocity.x > 0.0F ? 0.0F : velocity.x);
+            break;
+        case 'w':
+        case 'W':
+            velocity.y = pressed ? -speed_y : (velocity.y < 0.0F ? 0.0F : velocity.y);
+            break;
+        case 's':
+        case 'S':
+            velocity.y = pressed ? speed_y : (velocity.y > 0.0F ? 0.0F : velocity.y);
+            break;
+        default:
+            break;
+        }
+    }
+
+    vve::Handle player_{};
     std::uint64_t frame_counter_{0};
 };
 

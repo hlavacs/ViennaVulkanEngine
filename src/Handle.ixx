@@ -7,6 +7,7 @@ export namespace vve {
    public:
       using value_type = std::uint64_t;
       using part_type = std::uint32_t;
+      static constexpr value_type invalid_value = std::numeric_limits<value_type>::max();
 
       constexpr Handle() noexcept = default;
       constexpr explicit Handle(value_type value) noexcept : value_(value) {}
@@ -25,6 +26,8 @@ export namespace vve {
          return Handle(low, high);
       }
 
+      [[nodiscard]] static constexpr Handle invalid() noexcept { return Handle(invalid_value); }
+
       template <typename THashable>
          requires(!std::same_as<std::remove_cvref_t<THashable>, Handle> &&
                   requires(const std::remove_cvref_t<THashable> &value) {
@@ -35,6 +38,7 @@ export namespace vve {
       }
 
       [[nodiscard]] constexpr value_type value() const noexcept { return value_; }
+      [[nodiscard]] constexpr bool isValid() const noexcept { return value_ != invalid_value; }
 
       [[nodiscard]] constexpr part_type low() const noexcept { return static_cast<part_type>(value_ & 0xFFFFFFFFull); }
 
@@ -52,7 +56,9 @@ export namespace vve {
          return static_cast<value_type>(low) | (static_cast<value_type>(high) << 32);
       }
 
-      value_type value_{0};
+      value_type value_{invalid_value};
    };
+
+   static_assert(sizeof(Handle) == sizeof(Handle::value_type));
 
 } // namespace vve

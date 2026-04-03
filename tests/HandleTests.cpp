@@ -6,10 +6,19 @@ import VEEngine;
 
 int main() {
     {
+        constexpr vve::Handle handle{};
+        static_assert(sizeof(vve::Handle) == 8);
+        static_assert(handle.value() == vve::Handle::invalid_value);
+        static_assert(!handle.isValid());
+        static_assert(vve::Handle::invalid() == handle);
+    }
+
+    {
         constexpr vve::Handle handle{0x89ABCDEFu, 0x01234567u};
         static_assert(handle.low() == 0x89ABCDEFu);
         static_assert(handle.high() == 0x01234567u);
         static_assert(static_cast<std::uint64_t>(handle) == 0x0123456789ABCDEFull);
+        static_assert(handle.isValid());
 
         constexpr auto parts = handle.parts();
         static_assert(parts[0] == 0x89ABCDEFu);
