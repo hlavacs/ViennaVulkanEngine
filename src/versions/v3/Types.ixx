@@ -4,24 +4,9 @@ import std;
 
 export namespace vve::v3 {
 
-   enum class ResourceKind {
-      unknown,
-      mesh,
-      texture,
-      material,
-      shader_program,
-      buffer,
-      image
-   };
+   enum class ResourceKind { unknown, mesh, texture, material, shader_program, buffer, image };
 
-   enum class ResourceLocation {
-      unknown,
-      source_file,
-      imported_blob,
-      cpu_memory,
-      gpu_memory,
-      streaming
-   };
+   enum class ResourceLocation { unknown, source_file, imported_blob, cpu_memory, gpu_memory, streaming };
 
    enum class TaskKernelId : std::uint32_t {
       none = 0,
@@ -192,8 +177,7 @@ export namespace vve::v3 {
       std::optional<WindowHandle> window{};
    };
 
-   using TaskCallback = std::function<std::expected<void, vve::Error>(
-       const TaskExecutionContext &)>;
+   using TaskCallback = std::function<std::expected<void, vve::Error>(const TaskExecutionContext &)>;
 
    struct TaskNodeDesc {
       TaskNodeHandle handle{};
@@ -212,26 +196,20 @@ export namespace vve::v3 {
 
    class TaskGraphBuilder {
    public:
-      [[nodiscard]] TaskNodeHandle
-      addTask(std::string_view stable_name, TaskKernelId kernel,
-              TaskCallback callback = {},
-              std::vector<TaskNodeHandle> depends_on = {},
-              std::vector<ResourceAccess> accesses = {},
-              std::string debug_name = {}, TaskScope scope = TaskScope::global,
-              std::optional<WindowHandle> window = std::nullopt);
+      [[nodiscard]] TaskNodeHandle addTask(std::string_view stable_name, TaskKernelId kernel,
+                                           TaskCallback callback = {}, std::vector<TaskNodeHandle> depends_on = {},
+                                           std::vector<ResourceAccess> accesses = {}, std::string debug_name = {},
+                                           TaskScope scope = TaskScope::global,
+                                           std::optional<WindowHandle> window = std::nullopt);
 
       void addTask(TaskNodeDesc node);
       void setTaskCallback(TaskNodeHandle handle, TaskCallback callback);
-      [[nodiscard]] static TaskNodeHandle
-      makeTaskHandle(std::string_view stable_name);
-      [[nodiscard]] static TaskNodeHandle
-      taskHandleFor(std::string_view stable_name);
-      [[nodiscard]] std::optional<TaskNodeHandle>
-      findTask(std::string_view stable_name) const;
+      [[nodiscard]] static TaskNodeHandle makeTaskHandle(std::string_view stable_name);
+      [[nodiscard]] static TaskNodeHandle taskHandleFor(std::string_view stable_name);
+      [[nodiscard]] std::optional<TaskNodeHandle> findTask(std::string_view stable_name) const;
       [[nodiscard]] bool containsTask(std::string_view stable_name) const;
       void addDependency(TaskNodeHandle task, TaskNodeHandle dependency);
-      void addDependency(std::string_view task_name,
-                         std::string_view dependency_name);
+      void addDependency(std::string_view task_name, std::string_view dependency_name);
 
       [[nodiscard]] TaskGraph build() &&;
       [[nodiscard]] std::vector<TaskNodeHandle> rootTasks() const;
@@ -241,11 +219,10 @@ export namespace vve::v3 {
       std::vector<TaskNodeDesc> nodes_{};
    };
 
-   inline TaskNodeHandle TaskGraphBuilder::addTask(
-       std::string_view stable_name, TaskKernelId kernel, TaskCallback callback,
-       std::vector<TaskNodeHandle> depends_on,
-       std::vector<ResourceAccess> accesses, std::string debug_name,
-       TaskScope scope, std::optional<WindowHandle> window) {
+   inline TaskNodeHandle TaskGraphBuilder::addTask(std::string_view stable_name, TaskKernelId kernel,
+                                                   TaskCallback callback, std::vector<TaskNodeHandle> depends_on,
+                                                   std::vector<ResourceAccess> accesses, std::string debug_name,
+                                                   TaskScope scope, std::optional<WindowHandle> window) {
       const TaskNodeHandle handle = makeTaskHandle(stable_name);
       addTask(TaskNodeDesc{.handle = handle,
                            .kernel = kernel,
@@ -253,9 +230,7 @@ export namespace vve::v3 {
                            .window = window,
                            .depends_on = std::move(depends_on),
                            .accesses = std::move(accesses),
-                           .debug_name = debug_name.empty()
-                                             ? std::string(stable_name)
-                                             : std::move(debug_name),
+                           .debug_name = debug_name.empty() ? std::string(stable_name) : std::move(debug_name),
                            .callback = std::move(callback)});
       return handle;
    }
@@ -268,8 +243,7 @@ export namespace vve::v3 {
       nodes_.push_back(std::move(node));
    }
 
-   inline void TaskGraphBuilder::setTaskCallback(TaskNodeHandle handle,
-                                                 TaskCallback callback) {
+   inline void TaskGraphBuilder::setTaskCallback(TaskNodeHandle handle, TaskCallback callback) {
       for (auto &node : nodes_) {
          if (node.handle.value == handle.value) {
             node.callback = std::move(callback);
@@ -278,18 +252,15 @@ export namespace vve::v3 {
       }
    }
 
-   inline TaskNodeHandle
-   TaskGraphBuilder::makeTaskHandle(std::string_view stable_name) {
+   inline TaskNodeHandle TaskGraphBuilder::makeTaskHandle(std::string_view stable_name) {
       return TaskNodeHandle{vve::Handle::fromHash(stable_name)};
    }
 
-   inline TaskNodeHandle
-   TaskGraphBuilder::taskHandleFor(std::string_view stable_name) {
+   inline TaskNodeHandle TaskGraphBuilder::taskHandleFor(std::string_view stable_name) {
       return makeTaskHandle(stable_name);
    }
 
-   inline std::optional<TaskNodeHandle>
-   TaskGraphBuilder::findTask(std::string_view stable_name) const {
+   inline std::optional<TaskNodeHandle> TaskGraphBuilder::findTask(std::string_view stable_name) const {
       const auto handle = makeTaskHandle(stable_name);
       for (const auto &node : nodes_) {
          if (node.handle.value == handle.value) {
@@ -300,13 +271,11 @@ export namespace vve::v3 {
       return std::nullopt;
    }
 
-   inline bool
-   TaskGraphBuilder::containsTask(std::string_view stable_name) const {
+   inline bool TaskGraphBuilder::containsTask(std::string_view stable_name) const {
       return findTask(stable_name).has_value();
    }
 
-   inline void TaskGraphBuilder::addDependency(TaskNodeHandle task,
-                                               TaskNodeHandle dependency) {
+   inline void TaskGraphBuilder::addDependency(TaskNodeHandle task, TaskNodeHandle dependency) {
       for (auto &node : nodes_) {
          if (node.handle.value == task.value) {
             node.depends_on.push_back(dependency);
@@ -315,15 +284,11 @@ export namespace vve::v3 {
       }
    }
 
-   inline void
-   TaskGraphBuilder::addDependency(std::string_view task_name,
-                                   std::string_view dependency_name) {
+   inline void TaskGraphBuilder::addDependency(std::string_view task_name, std::string_view dependency_name) {
       addDependency(makeTaskHandle(task_name), makeTaskHandle(dependency_name));
    }
 
-   inline TaskGraph TaskGraphBuilder::build() && {
-      return TaskGraph{.nodes = std::move(nodes_)};
-   }
+   inline TaskGraph TaskGraphBuilder::build() && { return TaskGraph{.nodes = std::move(nodes_)}; }
 
    inline std::vector<TaskNodeHandle> TaskGraphBuilder::rootTasks() const {
       std::vector<TaskNodeHandle> root_handles{};

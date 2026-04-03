@@ -22,51 +22,37 @@ export namespace vve {
 
    template <typename TImplementation> class VVE_API ECSFacade {
    public:
-      [[nodiscard]] std::expected<Handle, Error> create() {
-         return implementation_.create();
-      }
+      [[nodiscard]] std::expected<Handle, Error> create() { return implementation_.create(); }
 
-      [[nodiscard]] std::expected<bool, Error> exists(Handle entity) const {
-         return implementation_.exists(entity);
-      }
+      [[nodiscard]] std::expected<bool, Error> exists(Handle entity) const { return implementation_.exists(entity); }
 
-      [[nodiscard]] std::expected<void, Error> erase(Handle entity) {
-         return implementation_.erase(entity);
-      }
+      [[nodiscard]] std::expected<void, Error> erase(Handle entity) { return implementation_.erase(entity); }
 
       template <NotHandle TComponent>
-      [[nodiscard]] std::expected<void, Error>
-      addComponent(Handle entity, TComponent &&component);
+      [[nodiscard]] std::expected<void, Error> addComponent(Handle entity, TComponent &&component);
 
       template <NotHandle TComponent>
-      [[nodiscard]] std::expected<
-          std::optional<std::remove_cvref_t<TComponent>>, Error>
-      get(Handle entity) const;
+      [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, Error> get(Handle entity) const;
 
       template <NotHandle TComponent>
-      [[nodiscard]] std::expected<void, Error> put(Handle entity,
-                                                   TComponent &&component);
+      [[nodiscard]] std::expected<void, Error> put(Handle entity, TComponent &&component);
 
-      template <NotHandle TComponent>
-      [[nodiscard]] std::expected<void, Error> eraseComponent(Handle entity);
+      template <NotHandle TComponent> [[nodiscard]] std::expected<void, Error> eraseComponent(Handle entity);
 
    private:
       TImplementation implementation_{};
    };
    template <typename TImplementation>
    template <NotHandle TComponent>
-   [[nodiscard]] std::expected<void, Error>
-   ECSFacade<TImplementation>::addComponent(Handle entity,
-                                            TComponent &&component) {
+   [[nodiscard]] std::expected<void, Error> ECSFacade<TImplementation>::addComponent(Handle entity,
+                                                                                     TComponent &&component) {
       using TStoredComponent = std::remove_cvref_t<TComponent>;
-      return implementation_.template addComponent<TStoredComponent>(
-          entity, std::forward<TComponent>(component));
+      return implementation_.template addComponent<TStoredComponent>(entity, std::forward<TComponent>(component));
    }
 
    template <typename TImplementation>
    template <NotHandle TComponent>
-   [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>,
-                               Error>
+   [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, Error>
    ECSFacade<TImplementation>::get(Handle entity) const {
       using TStoredComponent = std::remove_cvref_t<TComponent>;
       return implementation_.template get<TStoredComponent>(entity);
@@ -74,22 +60,18 @@ export namespace vve {
 
    template <typename TImplementation>
    template <NotHandle TComponent>
-   [[nodiscard]] std::expected<void, Error>
-   ECSFacade<TImplementation>::put(Handle entity, TComponent &&component) {
+   [[nodiscard]] std::expected<void, Error> ECSFacade<TImplementation>::put(Handle entity, TComponent &&component) {
       using TStoredComponent = std::remove_cvref_t<TComponent>;
-      return implementation_.template put<TStoredComponent>(
-          entity, std::forward<TComponent>(component));
+      return implementation_.template put<TStoredComponent>(entity, std::forward<TComponent>(component));
    }
 
    template <typename TImplementation>
    template <NotHandle TComponent>
-   [[nodiscard]] std::expected<void, Error>
-   ECSFacade<TImplementation>::eraseComponent(Handle entity) {
+   [[nodiscard]] std::expected<void, Error> ECSFacade<TImplementation>::eraseComponent(Handle entity) {
       using TStoredComponent = std::remove_cvref_t<TComponent>;
       return implementation_.template eraseComponent<TStoredComponent>(entity);
    }
 
-   template <typename TImplementation = vve::v3::BasicECSImplementation<>>
-   using ECS = ECSFacade<TImplementation>;
+   template <typename TImplementation = vve::v3::BasicECSImplementation<>> using ECS = ECSFacade<TImplementation>;
 
 } // namespace vve

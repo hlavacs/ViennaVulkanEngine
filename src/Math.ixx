@@ -35,41 +35,27 @@ export namespace vve::math {
    using Mat4 = glm::mat4;
 #endif
 
-   [[nodiscard]] inline constexpr Scalar zero() noexcept {
-      return static_cast<Scalar>(0);
-   }
+   [[nodiscard]] inline constexpr Scalar zero() noexcept { return static_cast<Scalar>(0); }
 
-   [[nodiscard]] inline constexpr Scalar one() noexcept {
-      return static_cast<Scalar>(1);
-   }
+   [[nodiscard]] inline constexpr Scalar one() noexcept { return static_cast<Scalar>(1); }
 
    [[nodiscard]] inline Mat4 identityMat4() noexcept { return Mat4(one()); }
 
-   [[nodiscard]] inline Vec3 zeroVec3() noexcept {
-      return Vec3(zero(), zero(), zero());
-   }
+   [[nodiscard]] inline Vec3 zeroVec3() noexcept { return Vec3(zero(), zero(), zero()); }
 
-   [[nodiscard]] inline Quat identityQuat() noexcept {
-      return Quat(one(), zero(), zero(), zero());
-   }
+   [[nodiscard]] inline Quat identityQuat() noexcept { return Quat(one(), zero(), zero(), zero()); }
 
    [[nodiscard]] inline Mat4 translate(const Mat4 &matrix, const Vec3 &offset) {
       return glm::translate(matrix, offset);
    }
 
-   [[nodiscard]] inline Mat4 scale(const Mat4 &matrix, const Vec3 &factors) {
-      return glm::scale(matrix, factors);
-   }
+   [[nodiscard]] inline Mat4 scale(const Mat4 &matrix, const Vec3 &factors) { return glm::scale(matrix, factors); }
 
-   [[nodiscard]] inline Mat4 perspective(Scalar field_of_view_radians,
-                                         Scalar aspect_ratio, Scalar near_plane,
+   [[nodiscard]] inline Mat4 perspective(Scalar field_of_view_radians, Scalar aspect_ratio, Scalar near_plane,
                                          Scalar far_plane) {
-      return glm::perspective(field_of_view_radians, aspect_ratio, near_plane,
-                              far_plane);
+      return glm::perspective(field_of_view_radians, aspect_ratio, near_plane, far_plane);
    }
 
-   [[nodiscard]] inline Mat4 inverse(const Mat4 &matrix) {
-      return glm::inverse(matrix);
-   }
+   [[nodiscard]] inline Mat4 inverse(const Mat4 &matrix) { return glm::inverse(matrix); }
 
 } // namespace vve::math

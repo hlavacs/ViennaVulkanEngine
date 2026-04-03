@@ -25,8 +25,7 @@ export namespace vve::v3::detail {
       TaskGraphSystem task_graph_system{};
       std::vector<std::shared_ptr<ITaskSystem>> task_systems{};
       WindowSystem window_system{};
-      std::shared_ptr<WindowFrameData> window_frame{
-          std::make_shared<WindowFrameData>()};
+      std::shared_ptr<WindowFrameData> window_frame{std::make_shared<WindowFrameData>()};
       GraphicsBackend graphics_backend{};
       ShaderSystem shader_system{};
       std::unique_ptr<RenderSystem> render_system{};
@@ -35,9 +34,7 @@ export namespace vve::v3::detail {
       EngineRuntimeSnapshot snapshot{};
    };
 
-   [[nodiscard]] vve::Handle makeStableHandle(std::string_view name,
-                                              std::uint64_t salt = 0);
-   [[nodiscard]] VVE_API std::expected<Runtime, vve::Error>
-   createRuntime(const EngineRuntimeDesc &desc);
+   [[nodiscard]] vve::Handle makeStableHandle(std::string_view name, std::uint64_t salt = 0);
+   [[nodiscard]] VVE_API std::expected<Runtime, vve::Error> createRuntime(const EngineRuntimeDesc &desc);
 
 } // namespace vve::v3::detail

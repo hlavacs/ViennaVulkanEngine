@@ -23,12 +23,9 @@ namespace vve::v3 {
          }
       }
 
-      [[nodiscard]] std::string_view name() const noexcept {
-         return "SDL3WindowSystem";
-      }
+      [[nodiscard]] std::string_view name() const noexcept { return "SDL3WindowSystem"; }
 
-      [[nodiscard]] std::expected<void, vve::Error>
-      init(std::span<const vve::WindowDesc> windows) {
+      [[nodiscard]] std::expected<void, vve::Error> init(std::span<const vve::WindowDesc> windows) {
          if (!video_initialized_) {
             if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
                return std::unexpected(vve::Error::internal_error);
@@ -60,8 +57,7 @@ namespace vve::v3 {
          return {};
       }
 
-      [[nodiscard]] std::expected<void, vve::Error>
-      pollEvents(const FrameContext &) {
+      [[nodiscard]] std::expected<void, vve::Error> pollEvents(const FrameContext &) {
          if (!video_initialized_) {
             return std::unexpected(vve::Error::not_initialized);
          }
@@ -78,13 +74,9 @@ namespace vve::v3 {
          return {};
       }
 
-      [[nodiscard]] WindowFrameData frameData() const {
-         return WindowFrameData{.windows = states_, .events = events_};
-      }
+      [[nodiscard]] WindowFrameData frameData() const { return WindowFrameData{.windows = states_, .events = events_}; }
 
-      [[nodiscard]] std::span<const WindowState> windows() const {
-         return states_;
-      }
+      [[nodiscard]] std::span<const WindowState> windows() const { return states_; }
 
       void setFrameDataSink(std::shared_ptr<WindowFrameData> frame_data) {
          frame_data_sink_ = std::move(frame_data);
@@ -92,15 +84,13 @@ namespace vve::v3 {
       }
 
       void registerTasks(TaskGraphBuilder &builder) {
-         const auto poll_window_events_task = builder.addTask(
-             "task.poll_window_events", TaskKernelId::poll_window_events, {},
-             {TaskGraphBuilder::taskHandleFor("task.begin_frame")}, {},
-             "Poll Window Events");
+         const auto poll_window_events_task =
+             builder.addTask("task.poll_window_events", TaskKernelId::poll_window_events, {},
+                             {TaskGraphBuilder::taskHandleFor("task.begin_frame")}, {}, "Poll Window Events");
 
          builder.setTaskCallback(
              poll_window_events_task,
-             [this](const TaskExecutionContext &execution_context)
-                 -> std::expected<void, vve::Error> {
+             [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr) {
                    return std::unexpected(vve::Error::invalid_argument);
                 }
@@ -117,14 +107,11 @@ namespace vve::v3 {
          WindowState state{};
       };
 
-      [[nodiscard]] std::expected<void, vve::Error>
-      createWindow(const vve::WindowDesc &desc) {
+      [[nodiscard]] std::expected<void, vve::Error> createWindow(const vve::WindowDesc &desc) {
          if (desc.id.empty()) {
             return std::unexpected(vve::Error::invalid_argument);
          }
-         if (std::ranges::any_of(windows_, [&desc](const WindowRecord &record) {
-                return record.id == desc.id;
-             })) {
+         if (std::ranges::any_of(windows_, [&desc](const WindowRecord &record) { return record.id == desc.id; })) {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
@@ -137,28 +124,25 @@ namespace vve::v3 {
          }
 
          SDL_Window *const window =
-             SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.width),
-                              static_cast<int>(desc.height), flags);
+             SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.width), static_cast<int>(desc.height), flags);
          if (window == nullptr) {
             return std::unexpected(vve::Error::internal_error);
          }
 
-         const WindowHandle handle{
-             vve::Handle::fromHash(std::string_view(desc.id))};
+         const WindowHandle handle{vve::Handle::fromHash(std::string_view(desc.id))};
          const auto window_id = SDL_GetWindowID(window);
 
-         WindowRecord record{
-             .handle = handle,
-             .id = desc.id,
-             .window = window,
-             .state = WindowState{.handle = handle,
-                                  .id = desc.id,
-                                  .title = desc.title,
-                                  .width = desc.width,
-                                  .height = desc.height,
-                                  .focused = SDL_GetKeyboardFocus() == window,
-                                  .minimized = false,
-                                  .should_close = false}};
+         WindowRecord record{.handle = handle,
+                             .id = desc.id,
+                             .window = window,
+                             .state = WindowState{.handle = handle,
+                                                  .id = desc.id,
+                                                  .title = desc.title,
+                                                  .width = desc.width,
+                                                  .height = desc.height,
+                                                  .focused = SDL_GetKeyboardFocus() == window,
+                                                  .minimized = false,
+                                                  .should_close = false}};
 
          window_indices_[window_id] = windows_.size();
          windows_.push_back(std::move(record));
@@ -172,82 +156,58 @@ namespace vve::v3 {
             markAllWindowsClosing();
             break;
          case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-            pushWindowEvent(event.window.windowID,
-                            WindowEventType::close_requested, 0, 0,
-                            [](WindowState &state, std::int32_t, std::int32_t) {
-                               state.should_close = true;
-                            });
+            pushWindowEvent(event.window.windowID, WindowEventType::close_requested, 0, 0,
+                            [](WindowState &state, std::int32_t, std::int32_t) { state.should_close = true; });
             break;
          case SDL_EVENT_WINDOW_RESIZED:
-            pushWindowEvent(
-                event.window.windowID, WindowEventType::resized,
-                event.window.data1, event.window.data2,
-                [](WindowState &state, std::int32_t width,
-                   std::int32_t height) {
-                   state.width = static_cast<std::uint32_t>(std::max(width, 0));
-                   state.height =
-                       static_cast<std::uint32_t>(std::max(height, 0));
-                });
+            pushWindowEvent(event.window.windowID, WindowEventType::resized, event.window.data1, event.window.data2,
+                            [](WindowState &state, std::int32_t width, std::int32_t height) {
+                               state.width = static_cast<std::uint32_t>(std::max(width, 0));
+                               state.height = static_cast<std::uint32_t>(std::max(height, 0));
+                            });
             break;
          case SDL_EVENT_WINDOW_MOVED:
-            pushWindowEvent(event.window.windowID, WindowEventType::moved,
-                            event.window.data1, event.window.data2);
+            pushWindowEvent(event.window.windowID, WindowEventType::moved, event.window.data1, event.window.data2);
             break;
          case SDL_EVENT_WINDOW_FOCUS_GAINED:
-            pushWindowEvent(event.window.windowID,
-                            WindowEventType::focus_gained, 0, 0,
-                            [](WindowState &state, std::int32_t, std::int32_t) {
-                               state.focused = true;
-                            });
+            pushWindowEvent(event.window.windowID, WindowEventType::focus_gained, 0, 0,
+                            [](WindowState &state, std::int32_t, std::int32_t) { state.focused = true; });
             break;
          case SDL_EVENT_WINDOW_FOCUS_LOST:
-            pushWindowEvent(event.window.windowID, WindowEventType::focus_lost,
-                            0, 0,
-                            [](WindowState &state, std::int32_t, std::int32_t) {
-                               state.focused = false;
-                            });
+            pushWindowEvent(event.window.windowID, WindowEventType::focus_lost, 0, 0,
+                            [](WindowState &state, std::int32_t, std::int32_t) { state.focused = false; });
             break;
          case SDL_EVENT_WINDOW_MINIMIZED:
-            updateWindowState(event.window.windowID, [](WindowState &state) {
-               state.minimized = true;
-            });
+            updateWindowState(event.window.windowID, [](WindowState &state) { state.minimized = true; });
             break;
          case SDL_EVENT_WINDOW_RESTORED:
-            updateWindowState(event.window.windowID, [](WindowState &state) {
-               state.minimized = false;
-            });
+            updateWindowState(event.window.windowID, [](WindowState &state) { state.minimized = false; });
             break;
          case SDL_EVENT_KEY_DOWN:
             pushWindowEvent(event.key.windowID, WindowEventType::key_down,
-                            static_cast<std::int32_t>(event.key.scancode),
-                            static_cast<std::int32_t>(event.key.key));
+                            static_cast<std::int32_t>(event.key.scancode), static_cast<std::int32_t>(event.key.key));
             break;
          case SDL_EVENT_KEY_UP:
-            pushWindowEvent(event.key.windowID, WindowEventType::key_up,
-                            static_cast<std::int32_t>(event.key.scancode),
+            pushWindowEvent(event.key.windowID, WindowEventType::key_up, static_cast<std::int32_t>(event.key.scancode),
                             static_cast<std::int32_t>(event.key.key));
             break;
          case SDL_EVENT_MOUSE_MOTION:
             pushWindowEvent(event.motion.windowID, WindowEventType::mouse_move,
-                            static_cast<std::int32_t>(event.motion.x),
-                            static_cast<std::int32_t>(event.motion.y));
+                            static_cast<std::int32_t>(event.motion.x), static_cast<std::int32_t>(event.motion.y));
             break;
          case SDL_EVENT_MOUSE_BUTTON_DOWN:
-            pushWindowEvent(event.button.windowID,
-                            WindowEventType::mouse_button_down,
+            pushWindowEvent(event.button.windowID, WindowEventType::mouse_button_down,
                             static_cast<std::int32_t>(event.button.button),
                             static_cast<std::int32_t>(event.button.clicks));
             break;
          case SDL_EVENT_MOUSE_BUTTON_UP:
-            pushWindowEvent(event.button.windowID,
-                            WindowEventType::mouse_button_up,
+            pushWindowEvent(event.button.windowID, WindowEventType::mouse_button_up,
                             static_cast<std::int32_t>(event.button.button),
                             static_cast<std::int32_t>(event.button.clicks));
             break;
          case SDL_EVENT_MOUSE_WHEEL:
             pushWindowEvent(event.wheel.windowID, WindowEventType::mouse_wheel,
-                            static_cast<std::int32_t>(event.wheel.x),
-                            static_cast<std::int32_t>(event.wheel.y));
+                            static_cast<std::int32_t>(event.wheel.x), static_cast<std::int32_t>(event.wheel.y));
             break;
          default:
             break;
@@ -257,16 +217,13 @@ namespace vve::v3 {
       void markAllWindowsClosing() {
          for (auto &record : windows_) {
             record.state.should_close = true;
-            events_.push_back(
-                WindowEvent{.window = record.handle,
-                            .type = WindowEventType::close_requested});
+            events_.push_back(WindowEvent{.window = record.handle, .type = WindowEventType::close_requested});
          }
          rebuildStateCache();
       }
 
       template <typename TMutator>
-      void pushWindowEvent(Uint32 window_id, WindowEventType type,
-                           std::int32_t a, std::int32_t b, TMutator &&mutator) {
+      void pushWindowEvent(Uint32 window_id, WindowEventType type, std::int32_t a, std::int32_t b, TMutator &&mutator) {
          const auto index = findWindowIndex(window_id);
          if (!index.has_value()) {
             return;
@@ -274,19 +231,15 @@ namespace vve::v3 {
 
          auto &record = windows_[*index];
          std::forward<TMutator>(mutator)(record.state, a, b);
-         events_.push_back(WindowEvent{
-             .window = record.handle, .type = type, .a = a, .b = b});
+         events_.push_back(WindowEvent{.window = record.handle, .type = type, .a = a, .b = b});
          states_[*index] = record.state;
       }
 
-      void pushWindowEvent(Uint32 window_id, WindowEventType type,
-                           std::int32_t a, std::int32_t b) {
-         pushWindowEvent(window_id, type, a, b,
-                         [](WindowState &, std::int32_t, std::int32_t) {});
+      void pushWindowEvent(Uint32 window_id, WindowEventType type, std::int32_t a, std::int32_t b) {
+         pushWindowEvent(window_id, type, a, b, [](WindowState &, std::int32_t, std::int32_t) {});
       }
 
-      template <typename TMutator>
-      void updateWindowState(Uint32 window_id, TMutator &&mutator) {
+      template <typename TMutator> void updateWindowState(Uint32 window_id, TMutator &&mutator) {
          const auto index = findWindowIndex(window_id);
          if (!index.has_value()) {
             return;
@@ -297,8 +250,7 @@ namespace vve::v3 {
          states_[*index] = record.state;
       }
 
-      [[nodiscard]] std::optional<std::size_t>
-      findWindowIndex(Uint32 window_id) const {
+      [[nodiscard]] std::optional<std::size_t> findWindowIndex(Uint32 window_id) const {
          const auto it = window_indices_.find(window_id);
          if (it == window_indices_.end()) {
             return std::nullopt;
@@ -335,50 +287,39 @@ namespace vve::v3 {
    template <>
    WindowSystemFacade<SDL3WindowSystemImplementation>::WindowSystemFacade()
        : implementation_(new SDL3WindowSystemImplementation(),
-                         [](SDL3WindowSystemImplementation *implementation) {
-                            delete implementation;
-                         }) {}
+                         [](SDL3WindowSystemImplementation *implementation) { delete implementation; }) {}
 
-   std::string_view
-   WindowSystemFacade<SDL3WindowSystemImplementation>::name() const noexcept {
+   std::string_view WindowSystemFacade<SDL3WindowSystemImplementation>::name() const noexcept {
       return implementation_->name();
    }
 
    template <>
    std::expected<void, vve::Error>
-   WindowSystemFacade<SDL3WindowSystemImplementation>::init(
-       std::span<const vve::WindowDesc> windows) {
+   WindowSystemFacade<SDL3WindowSystemImplementation>::init(std::span<const vve::WindowDesc> windows) {
       return implementation_->init(windows);
    }
 
    template <>
    std::expected<void, vve::Error>
-   WindowSystemFacade<SDL3WindowSystemImplementation>::pollEvents(
-       const FrameContext &frame_context) {
+   WindowSystemFacade<SDL3WindowSystemImplementation>::pollEvents(const FrameContext &frame_context) {
       return implementation_->pollEvents(frame_context);
    }
 
-   template <>
-   WindowFrameData
-   WindowSystemFacade<SDL3WindowSystemImplementation>::frameData() const {
+   template <> WindowFrameData WindowSystemFacade<SDL3WindowSystemImplementation>::frameData() const {
       return implementation_->frameData();
    }
 
-   template <>
-   std::span<const WindowState>
-   WindowSystemFacade<SDL3WindowSystemImplementation>::windows() const {
+   template <> std::span<const WindowState> WindowSystemFacade<SDL3WindowSystemImplementation>::windows() const {
       return implementation_->windows();
    }
 
    template <>
-   void WindowSystemFacade<SDL3WindowSystemImplementation>::setFrameDataSink(
-       std::shared_ptr<WindowFrameData> frame_data) {
+   void
+   WindowSystemFacade<SDL3WindowSystemImplementation>::setFrameDataSink(std::shared_ptr<WindowFrameData> frame_data) {
       implementation_->setFrameDataSink(std::move(frame_data));
    }
 
-   template <>
-   void WindowSystemFacade<SDL3WindowSystemImplementation>::registerTasks(
-       TaskGraphBuilder &builder) {
+   template <> void WindowSystemFacade<SDL3WindowSystemImplementation>::registerTasks(TaskGraphBuilder &builder) {
       implementation_->registerTasks(builder);
    }
 
