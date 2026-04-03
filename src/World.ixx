@@ -17,12 +17,8 @@ import :Error;
 import :Handle;
 import :Math;
 
-#ifndef VVE_DEFAULT_WORLD_NAMESPACE
-#ifdef VVE_DEFAULT_ENGINE_NAMESPACE
-#define VVE_DEFAULT_WORLD_NAMESPACE VVE_DEFAULT_ENGINE_NAMESPACE
-#else
-#define VVE_DEFAULT_WORLD_NAMESPACE v3
-#endif
+#ifndef VVE_DEFAULT_ENGINE_NAMESPACE
+#define VVE_DEFAULT_ENGINE_NAMESPACE v3
 #endif
 
 export namespace vve {
@@ -141,7 +137,7 @@ export namespace vve {
 
    namespace detail {
 
-      using DefaultWorldImplementation = vve::VVE_DEFAULT_WORLD_NAMESPACE::WorldImplementation;
+      using DefaultWorldImplementation = vve::VVE_DEFAULT_ENGINE_NAMESPACE::WorldImplementation;
 
    } // namespace detail
 
