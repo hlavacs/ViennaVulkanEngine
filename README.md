@@ -49,3 +49,36 @@ Vcpkg Install -> Configure Debug -> Build Debug
 ```
 
 Use that task when setting up the project on a new machine.
+
+To run unit tests in VS Code, use `Tasks: Run Task` and choose one of these tasks:
+
+- `Run Unit Tests`
+- `Build And Test Debug`
+
+`Run Unit Tests` executes the existing Debug test build in the workspace:
+
+```text
+ctest --test-dir build -C Debug --output-on-failure
+```
+
+`Build And Test Debug` runs:
+
+```text
+Build Debug -> Run Unit Tests
+```
+
+## Unit Tests
+
+To build and run all unit tests from the project root:
+
+```powershell
+cmake -S . -B build
+cmake --build build --config Debug
+ctest --test-dir build -C Debug --output-on-failure
+```
+
+To list the registered tests without running them:
+
+```powershell
+ctest --test-dir build -C Debug -N
+```

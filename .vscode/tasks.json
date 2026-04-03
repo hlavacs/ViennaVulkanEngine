@@ -86,6 +86,32 @@
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Run Unit Tests",
+            "type": "shell",
+            "command": "ctest",
+            "args": [
+                "--test-dir",
+                "build",
+                "-C",
+                "Debug",
+                "--output-on-failure"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build And Test Debug",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Build Debug",
+                "Run Unit Tests"
+            ],
+            "problemMatcher": [],
+            "group": "test"
         }
     ]
 }
