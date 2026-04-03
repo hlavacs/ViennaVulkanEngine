@@ -15,17 +15,19 @@ cmake --build --preset build-debug-windows
 
 With `VVE_MATH_USE_DOUBLE=OFF` the engine uses `float`; with `ON` it uses `double`.
 
-The public `vve::Engine<>` and `vve::ECS<>` aliases can also be selected at build time through simple defines:
+The public `vve::Engine<>` and `vve::ECS<>` aliases can also be selected at build time through simple namespace-style defines:
 
 ```text
-VVE_DEFAULT_ENGINE_IMPLEMENTATION
-VVE_DEFAULT_ECS_IMPLEMENTATION
+VVE_DEFAULT_ENGINE_NAMESPACE
+VVE_DEFAULT_ECS_NAMESPACE
 ```
 
-The CMake target exposes matching cache variables. The current codebase supports value `3`:
+These values are used directly in qualified names such as `vve::v3::...`, so no numeric selector layer is needed.
+
+The CMake target exposes matching cache variables. The current codebase supports value `v3`:
 
 ```powershell
-cmake --preset debug-windows -DVVE_DEFAULT_ENGINE_IMPLEMENTATION=3 -DVVE_DEFAULT_ECS_IMPLEMENTATION=3
+cmake --preset debug-windows -DVVE_DEFAULT_ENGINE_NAMESPACE=v3 -DVVE_DEFAULT_ECS_NAMESPACE=v3
 cmake --build --preset build-debug-windows
 ```
 

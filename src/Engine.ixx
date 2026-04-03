@@ -17,8 +17,8 @@ export import :Handle;
 export import :Math;
 export import :Error;
 
-#ifndef VVE_DEFAULT_ENGINE_IMPLEMENTATION
-#define VVE_DEFAULT_ENGINE_IMPLEMENTATION 3
+#ifndef VVE_DEFAULT_ENGINE_NAMESPACE
+#define VVE_DEFAULT_ENGINE_NAMESPACE v3
 #endif
 
 export namespace vve::v3 {
@@ -33,14 +33,11 @@ export namespace vve {
 
    namespace detail {
 
-#if VVE_DEFAULT_ENGINE_IMPLEMENTATION == 3
-      using DefaultEngineImplementation = vve::v3::EngineImplementation;
+      using DefaultEngineImplementation = vve::VVE_DEFAULT_ENGINE_NAMESPACE::EngineImplementation;
 
       template <typename... TSystems>
-      using DefaultEngineImplementationTemplate = vve::v3::BasicEngineImplementation<TSystems...>;
-#else
-#error Unsupported VVE_DEFAULT_ENGINE_IMPLEMENTATION value
-#endif
+      using DefaultEngineImplementationTemplate =
+          vve::VVE_DEFAULT_ENGINE_NAMESPACE::BasicEngineImplementation<TSystems...>;
 
    } // namespace detail
 

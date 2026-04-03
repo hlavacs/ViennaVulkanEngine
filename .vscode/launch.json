@@ -24,6 +24,25 @@
             "environment": [],
             "console": "integratedTerminal",
             "preLaunchTask": "Build Debug"
+        },
+        {
+            "name": "Debug all tests",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "ctest",
+            "args": [
+                "--test-dir",
+                "build",
+                "-C",
+                "Debug",
+                "--output-on-failure"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build Debug",
+            "noDebug": true
         }
     ],
     "compounds": [

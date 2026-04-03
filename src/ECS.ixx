@@ -15,20 +15,16 @@ import :Error;
 
 #include "versions/v3/ECS.ixx"
 
-#ifndef VVE_DEFAULT_ECS_IMPLEMENTATION
-#define VVE_DEFAULT_ECS_IMPLEMENTATION 3
+#ifndef VVE_DEFAULT_ECS_NAMESPACE
+#define VVE_DEFAULT_ECS_NAMESPACE v3
 #endif
 
 export namespace vve {
 
    namespace detail {
 
-#if VVE_DEFAULT_ECS_IMPLEMENTATION == 3
-      template <typename TTraits = vve::v3::DefaultECSTraits>
-      using DefaultECSImplementationTemplate = vve::v3::BasicECSImplementation<TTraits>;
-#else
-#error Unsupported VVE_DEFAULT_ECS_IMPLEMENTATION value
-#endif
+      template <typename TTraits = vve::VVE_DEFAULT_ECS_NAMESPACE::DefaultECSTraits>
+      using DefaultECSImplementationTemplate = vve::VVE_DEFAULT_ECS_NAMESPACE::BasicECSImplementation<TTraits>;
 
       using DefaultECSImplementation = DefaultECSImplementationTemplate<>;
 
