@@ -15,7 +15,24 @@ import :Error;
 
 #include "versions/v3/ECS.ixx"
 
+#ifndef VVE_DEFAULT_ECS_IMPLEMENTATION
+#define VVE_DEFAULT_ECS_IMPLEMENTATION 3
+#endif
+
 export namespace vve {
+
+   namespace detail {
+
+#if VVE_DEFAULT_ECS_IMPLEMENTATION == 3
+      template <typename TTraits = vve::v3::DefaultECSTraits>
+      using DefaultECSImplementationTemplate = vve::v3::BasicECSImplementation<TTraits>;
+#else
+#error Unsupported VVE_DEFAULT_ECS_IMPLEMENTATION value
+#endif
+
+      using DefaultECSImplementation = DefaultECSImplementationTemplate<>;
+
+   } // namespace detail
 
    template <typename T>
    concept NotHandle = !std::same_as<std::remove_cvref_t<T>, Handle>;
@@ -81,6 +98,6 @@ export namespace vve {
       return implementation_.template eraseComponent<TStoredComponent>(entity);
    }
 
-   template <typename TImplementation = vve::v3::BasicECSImplementation<>> using ECS = ECSFacade<TImplementation>;
+   template <typename TImplementation = detail::DefaultECSImplementation> using ECS = ECSFacade<TImplementation>;
 
 } // namespace vve

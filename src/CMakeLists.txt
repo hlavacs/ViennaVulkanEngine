@@ -13,6 +13,14 @@ if(VVE_MATH_USE_DOUBLE)
     target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_MATH_USE_DOUBLE)
 endif()
 
+set(VVE_DEFAULT_ENGINE_IMPLEMENTATION "3" CACHE STRING "Default engine implementation selected by the public vve::Engine alias")
+set_property(CACHE VVE_DEFAULT_ENGINE_IMPLEMENTATION PROPERTY STRINGS "3")
+target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_DEFAULT_ENGINE_IMPLEMENTATION=${VVE_DEFAULT_ENGINE_IMPLEMENTATION})
+
+set(VVE_DEFAULT_ECS_IMPLEMENTATION "3" CACHE STRING "Default ECS implementation selected by the public vve::ECS alias")
+set_property(CACHE VVE_DEFAULT_ECS_IMPLEMENTATION PROPERTY STRINGS "3")
+target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_DEFAULT_ECS_IMPLEMENTATION=${VVE_DEFAULT_ECS_IMPLEMENTATION})
+
 find_package(assimp CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(SDL3_mixer CONFIG REQUIRED)

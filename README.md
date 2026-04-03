@@ -15,6 +15,22 @@ cmake --build --preset build-debug-windows
 
 With `VVE_MATH_USE_DOUBLE=OFF` the engine uses `float`; with `ON` it uses `double`.
 
+The public `vve::Engine<>` and `vve::ECS<>` aliases can also be selected at build time through simple defines:
+
+```text
+VVE_DEFAULT_ENGINE_IMPLEMENTATION
+VVE_DEFAULT_ECS_IMPLEMENTATION
+```
+
+The CMake target exposes matching cache variables. The current codebase supports value `3`:
+
+```powershell
+cmake --preset debug-windows -DVVE_DEFAULT_ENGINE_IMPLEMENTATION=3 -DVVE_DEFAULT_ECS_IMPLEMENTATION=3
+cmake --build --preset build-debug-windows
+```
+
+All example targets also show the downstream-style usage directly in their CMake files, for example [examples/game/CMakeLists.txt](C:/data/GitHub/ViennaVulkanEngine/examples/game/CMakeLists.txt) and [examples/physics/CMakeLists.txt](C:/data/GitHub/ViennaVulkanEngine/examples/physics/CMakeLists.txt).
+
 The default setup is host-aware:
 - Windows uses the `x64-windows` vcpkg triplet
 - Linux uses the `x64-linux` vcpkg triplet

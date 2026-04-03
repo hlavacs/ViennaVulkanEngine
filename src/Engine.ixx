@@ -17,6 +17,10 @@ export import :Handle;
 export import :Math;
 export import :Error;
 
+#ifndef VVE_DEFAULT_ENGINE_IMPLEMENTATION
+#define VVE_DEFAULT_ENGINE_IMPLEMENTATION 3
+#endif
+
 export namespace vve::v3 {
 
    template <typename... TUserSystems> class BasicEngineImplementation;
@@ -26,6 +30,19 @@ export namespace vve::v3 {
 } // namespace vve::v3
 
 export namespace vve {
+
+   namespace detail {
+
+#if VVE_DEFAULT_ENGINE_IMPLEMENTATION == 3
+      using DefaultEngineImplementation = vve::v3::EngineImplementation;
+
+      template <typename... TSystems>
+      using DefaultEngineImplementationTemplate = vve::v3::BasicEngineImplementation<TSystems...>;
+#else
+#error Unsupported VVE_DEFAULT_ENGINE_IMPLEMENTATION value
+#endif
+
+   } // namespace detail
 
    // Engine configuration options
 
@@ -178,12 +195,13 @@ export namespace vve {
       template <typename TUserSystems> struct EngineTypeFromUserSystems;
 
       template <UserSystemLike... TSystems> struct EngineTypeFromUserSystems<UserSystems<TSystems...>> {
-         using type = EngineFacade<vve::v3::BasicEngineImplementation<TSystems...>>;
+         using type = EngineFacade<DefaultEngineImplementationTemplate<TSystems...>>;
       };
 
    } // namespace detail
 
-   template <typename TImplementation = vve::v3::EngineImplementation> using Engine = EngineFacade<TImplementation>;
+   template <typename TImplementation = detail::DefaultEngineImplementation>
+   using Engine = EngineFacade<TImplementation>;
 
    template <typename... TOptions> [[nodiscard]] auto makeEngine(TOptions &&...options) {
       using TUserSystems = typename detail::FindUserSystemsOption<UserSystems<>, TOptions...>::type;
