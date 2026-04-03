@@ -70,6 +70,29 @@ int main() {
       return 9;
    }
 
+   if (!world.addComponent(spawned, vve::Transform{})) {
+      return 91;
+   }
+
+   if (!world.translate(spawned, vve::math::Vec3(1.0F, 2.0F, 3.0F))) {
+      return 92;
+   }
+
+   if (!world.setScale(spawned, vve::math::Vec3(2.0F, 2.0F, 2.0F))) {
+      return 93;
+   }
+
+   const auto transform_result = world.getTransform(spawned);
+   if (!transform_result || !transform_result->has_value()) {
+      return 94;
+   }
+
+   const auto &transform = **transform_result;
+   if (transform.translation.x != 1.0F || transform.translation.y != 2.0F || transform.translation.z != 3.0F ||
+       transform.scale.x != 2.0F || transform.scale.y != 2.0F || transform.scale.z != 2.0F) {
+      return 95;
+   }
+
    if (!world.setComponent(spawned, Position{4, 8})) {
       return 10;
    }
@@ -96,6 +119,18 @@ int main() {
    const auto exists_after_destroy_result = world.exists(spawned);
    if (!exists_after_destroy_result || *exists_after_destroy_result) {
       return 15;
+   }
+
+   if (world.findWindow("main").has_value()) {
+      return 16;
+   }
+
+   if (world.input().isKeyDown('W')) {
+      return 17;
+   }
+
+   if (world.loadScene("assets/example.glb")) {
+      return 18;
    }
 
    return 0;

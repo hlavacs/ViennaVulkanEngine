@@ -45,6 +45,13 @@ export namespace vve::math {
 
    [[nodiscard]] inline Quat identityQuat() noexcept { return Quat(one(), zero(), zero(), zero()); }
 
+   [[nodiscard]] inline Quat multiply(const Quat &lhs, const Quat &rhs) noexcept {
+      return Quat(lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z,
+                  lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y,
+                  lhs.w * rhs.y - lhs.x * rhs.z + lhs.y * rhs.w + lhs.z * rhs.x,
+                  lhs.w * rhs.z + lhs.x * rhs.y - lhs.y * rhs.x + lhs.z * rhs.w);
+   }
+
    [[nodiscard]] inline Mat4 translate(const Mat4 &matrix, const Vec3 &offset) {
       return glm::translate(matrix, offset);
    }

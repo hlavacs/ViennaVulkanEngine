@@ -21,6 +21,63 @@ namespace vve::v3 {
 
    namespace detail {
 
+      inline void syncWorldWindows(const WindowFrameData &window_frame, std::vector<vve::WindowInfo> &windows) {
+         windows.clear();
+         windows.reserve(window_frame.windows.size());
+         for (const auto &window : window_frame.windows) {
+            windows.push_back(vve::WindowInfo{.handle = window.handle.value,
+                                             .id = window.id,
+                                             .title = window.title,
+                                             .width = window.width,
+                                             .height = window.height,
+                                             .focused = window.focused,
+                                             .minimized = window.minimized,
+                                             .should_close = window.should_close});
+         }
+      }
+
+      inline void syncWorldInput(const WindowFrameData &window_frame, vve::InputState &input) {
+         vve::detail::beginInputFrame(input);
+
+         for (const auto &event : window_frame.events) {
+            switch (event.type) {
+            case WindowEventType::key_down:
+               vve::detail::pressKey(input, event.b);
+               break;
+            case WindowEventType::key_up:
+               vve::detail::releaseKey(input, event.b);
+               break;
+            case WindowEventType::mouse_move: {
+               const vve::math::Vec2 position{static_cast<vve::math::Scalar>(event.a),
+                                              static_cast<vve::math::Scalar>(event.b)};
+               const auto window_handle = event.window.value;
+               const auto current_position = input.mousePosition(window_handle).value_or(position);
+               vve::detail::addMouseDelta(
+                   input, window_handle,
+                   vve::math::Vec2{position.x - current_position.x, position.y - current_position.y});
+               vve::detail::setMousePosition(input, window_handle, position);
+               break;
+            }
+            case WindowEventType::mouse_wheel:
+               vve::detail::addMouseWheelDelta(input, event.window.value,
+                   vve::math::Vec2{static_cast<vve::math::Scalar>(event.a), static_cast<vve::math::Scalar>(event.b)});
+               break;
+            default:
+               break;
+            }
+         }
+      }
+
+      template <typename TEngine>
+      [[nodiscard]] std::expected<void, vve::Error> loadSceneThroughWorld(void *context,
+                                                                          const std::filesystem::path &path) {
+         if (context == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return static_cast<TEngine *>(context)->loadFile(path);
+      }
+
       template <typename TSystem>
       [[nodiscard]] std::expected<void, vve::Error> invokeUserSystemInit(TSystem &system, vve::World &world) {
          // C++26 reflection is not available in the current toolchain, so
@@ -169,6 +226,10 @@ namespace vve::v3 {
       bool task_graph_dirty_{true};
       std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds> last_time_{};
       vve::ECS<> ecs_{};
+      std::vector<vve::WindowInfo> world_windows_{};
+      vve::InputState input_state_{};
+      vve::detail::WorldRuntimeAccess world_runtime_access_{};
+      vve::World world_;
       std::tuple<TUserSystems...> user_systems_{};
    };
 
@@ -177,7 +238,7 @@ namespace vve::v3 {
 
    template <typename... TUserSystems>
    BasicEngineImplementation<TUserSystems...>::BasicEngineImplementation(const vve::EngineConfig &config)
-       : application_name_("ViennaVulkanEngine"), validation_enabled_(false) {
+       : application_name_("ViennaVulkanEngine"), validation_enabled_(false), world_(ecs_, world_runtime_access_) {
       if (const auto application_name = config.tryGet<vve::ApplicationName>()) {
          application_name_ = application_name->value;
       }
@@ -246,9 +307,14 @@ namespace vve::v3 {
       running_ = false;
       task_graph_dirty_ = true;
       last_time_ = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
+      world_runtime_access_.windows = &world_windows_;
+      world_runtime_access_.input = &input_state_;
+      world_runtime_access_.load_scene = &detail::loadSceneThroughWorld<BasicEngineImplementation<TUserSystems...>>;
+      world_runtime_access_.load_scene_context = this;
+      detail::syncWorldWindows(*runtime_.window_frame, world_windows_);
+      detail::syncWorldInput(*runtime_.window_frame, input_state_);
 
-      vve::World world{ecs_};
-      if (auto user_system_result = detail::initUserSystems(user_systems_, world); !user_system_result) {
+      if (auto user_system_result = detail::initUserSystems(user_systems_, world_); !user_system_result) {
          return user_system_result;
       }
 
@@ -305,9 +371,10 @@ namespace vve::v3 {
          return std::unexpected(execute_result.error());
       }
 
-      vve::World world{ecs_};
+      detail::syncWorldWindows(*runtime_.window_frame, world_windows_);
+      detail::syncWorldInput(*runtime_.window_frame, input_state_);
       if (auto user_system_result =
-              detail::updateUserSystems(user_systems_, world, frame_context, *runtime_.window_frame);
+              detail::updateUserSystems(user_systems_, world_, frame_context, *runtime_.window_frame);
           !user_system_result) {
          return std::unexpected(user_system_result.error());
       }

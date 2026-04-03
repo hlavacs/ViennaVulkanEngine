@@ -4,11 +4,6 @@ import std;
 
 namespace {
 
-struct Position {
-    float x{0.0F};
-    float y{0.0F};
-};
-
 struct Velocity {
     float x{0.0F};
     float y{0.0F};
@@ -23,7 +18,7 @@ public:
     }
 
     [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
-        const auto player_result = world.spawn(Position{}, Velocity{});
+        const auto player_result = world.spawn(vve::Transform{}, Velocity{});
         if (!player_result) {
             return std::unexpected(player_result.error());
         }
@@ -37,14 +32,9 @@ public:
     [[nodiscard]] std::expected<void, vve::Error> update(
         vve::World& world,
         const vve::v3::FrameContext& frame_context,
-        const vve::v3::WindowFrameData& window_frame) {
+        const vve::v3::WindowFrameData&) {
         if (!player_.isValid()) {
             return std::unexpected(vve::Error::invalid_argument);
-        }
-
-        const auto position_result = world.getComponent<Position>(player_);
-        if (!position_result) {
-            return std::unexpected(position_result.error());
         }
 
         const auto velocity_result = world.getComponent<Velocity>(player_);
@@ -52,48 +42,49 @@ public:
             return std::unexpected(velocity_result.error());
         }
 
-        if (!position_result->has_value() || !velocity_result->has_value()) {
+        const auto transform_result = world.getTransform(player_);
+        if (!transform_result) {
+            return std::unexpected(transform_result.error());
+        }
+
+        if (!transform_result->has_value() || !velocity_result->has_value()) {
             return std::unexpected(vve::Error::invalid_argument);
         }
 
-        auto position = **position_result;
+        auto transform = **transform_result;
         auto velocity = **velocity_result;
+        const auto& input = world.input();
 
-        for (const auto& event : window_frame.events) {
-            switch (event.type) {
-            case vve::v3::WindowEventType::key_down:
-                applyKeyState(event.b, true, velocity);
-                break;
-            case vve::v3::WindowEventType::key_up:
-                applyKeyState(event.b, false, velocity);
-                break;
-            case vve::v3::WindowEventType::close_requested:
-                std::cout << '[' << name() << "] close requested for window "
-                          << event.window.value.value() << '\n';
-                break;
-            default:
-                break;
-            }
+        velocity.x = 0.0F;
+        velocity.y = 0.0F;
+        if (input.isKeyDown('A') || input.isKeyDown('a')) {
+            velocity.x -= 160.0F;
+        }
+        if (input.isKeyDown('D') || input.isKeyDown('d')) {
+            velocity.x += 160.0F;
+        }
+        if (input.isKeyDown('W') || input.isKeyDown('w')) {
+            velocity.y -= 90.0F;
+        }
+        if (input.isKeyDown('S') || input.isKeyDown('s')) {
+            velocity.y += 90.0F;
         }
 
-        position.x += velocity.x * static_cast<float>(frame_context.delta_seconds);
-        position.y += velocity.y * static_cast<float>(frame_context.delta_seconds);
+        if (input.wasKeyPressed('R') || input.wasKeyPressed('r')) {
+            transform.translation = vve::math::zeroVec3();
+        }
+
+        transform.translation.x += velocity.x * static_cast<float>(frame_context.delta_seconds);
+        transform.translation.y += velocity.y * static_cast<float>(frame_context.delta_seconds);
 
         constexpr float limit_x = 400.0F;
         constexpr float limit_y = 225.0F;
 
-        if (position.x < -limit_x || position.x > limit_x) {
-            position.x = std::clamp(position.x, -limit_x, limit_x);
-            velocity.x = -velocity.x;
-        }
+        transform.translation.x = std::clamp(transform.translation.x, -limit_x, limit_x);
+        transform.translation.y = std::clamp(transform.translation.y, -limit_y, limit_y);
 
-        if (position.y < -limit_y || position.y > limit_y) {
-            position.y = std::clamp(position.y, -limit_y, limit_y);
-            velocity.y = -velocity.y;
-        }
-
-        if (const auto put_position_result = world.setComponent(player_, position); !put_position_result) {
-            return std::unexpected(put_position_result.error());
+        if (const auto set_transform_result = world.setTransform(player_, transform); !set_transform_result) {
+            return std::unexpected(set_transform_result.error());
         }
 
         if (const auto put_velocity_result = world.setComponent(player_, velocity); !put_velocity_result) {
@@ -101,37 +92,16 @@ public:
         }
 
         if (frame_counter_++ % 120 == 0) {
-            std::cout << '[' << name() << "] player=(" << position.x << ", " << position.y << ")\n";
+            const auto main_window = world.findWindow("main");
+            std::cout << '[' << name() << "] player=(" << transform.translation.x << ", "
+                      << transform.translation.y << ')';
+            if (main_window) {
+                std::cout << " window=" << main_window->width << 'x' << main_window->height;
+            }
+            std::cout << '\n';
         }
 
         return {};
-    }
-
-private:
-    static void applyKeyState(std::int32_t keycode, bool pressed, Velocity& velocity) {
-        constexpr float speed_x = 160.0F;
-        constexpr float speed_y = 90.0F;
-
-        switch (keycode) {
-        case 'a':
-        case 'A':
-            velocity.x = pressed ? -speed_x : (velocity.x < 0.0F ? 0.0F : velocity.x);
-            break;
-        case 'd':
-        case 'D':
-            velocity.x = pressed ? speed_x : (velocity.x > 0.0F ? 0.0F : velocity.x);
-            break;
-        case 'w':
-        case 'W':
-            velocity.y = pressed ? -speed_y : (velocity.y < 0.0F ? 0.0F : velocity.y);
-            break;
-        case 's':
-        case 'S':
-            velocity.y = pressed ? speed_y : (velocity.y > 0.0F ? 0.0F : velocity.y);
-            break;
-        default:
-            break;
-        }
     }
 
     vve::Handle player_{};
