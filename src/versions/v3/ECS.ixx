@@ -90,6 +90,21 @@
 
       template <typename TComponent>
          requires(!std::same_as<std::remove_cvref_t<TComponent>, vve::Handle>)
+      [[nodiscard]] std::expected<bool, vve::Error> hasComponent(vve::Handle entity) const {
+         if (!entities_.contains(entity.value())) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto pool_it = component_pools_.find(std::type_index(typeid(TComponent)));
+         if (pool_it == component_pools_.end()) {
+            return false;
+         }
+
+         return pool_it->second.contains(entity.value());
+      }
+
+      template <typename TComponent>
+         requires(!std::same_as<std::remove_cvref_t<TComponent>, vve::Handle>)
       [[nodiscard]] std::expected<void, vve::Error> eraseComponent(vve::Handle entity) {
          if (!entities_.contains(entity.value())) {
             return std::unexpected(vve::Error::invalid_argument);

@@ -37,6 +37,8 @@ export namespace vve {
       template <NotHandle TComponent>
       [[nodiscard]] std::expected<void, Error> put(Handle entity, TComponent &&component);
 
+      template <NotHandle TComponent> [[nodiscard]] std::expected<bool, Error> hasComponent(Handle entity) const;
+
       template <NotHandle TComponent> [[nodiscard]] std::expected<void, Error> eraseComponent(Handle entity);
 
    private:
@@ -63,6 +65,13 @@ export namespace vve {
    [[nodiscard]] std::expected<void, Error> ECSFacade<TImplementation>::put(Handle entity, TComponent &&component) {
       using TStoredComponent = std::remove_cvref_t<TComponent>;
       return implementation_.template put<TStoredComponent>(entity, std::forward<TComponent>(component));
+   }
+
+   template <typename TImplementation>
+   template <NotHandle TComponent>
+   [[nodiscard]] std::expected<bool, Error> ECSFacade<TImplementation>::hasComponent(Handle entity) const {
+      using TStoredComponent = std::remove_cvref_t<TComponent>;
+      return implementation_.template hasComponent<TStoredComponent>(entity);
    }
 
    template <typename TImplementation>
