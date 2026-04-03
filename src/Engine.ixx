@@ -13,6 +13,7 @@
 export module VEEngine;
 import std;
 export import :ECS;
+export import :World;
 export import :Handle;
 export import :Math;
 export import :Error;
@@ -104,18 +105,6 @@ export namespace vve {
       return UserSystems<std::remove_cvref_t<TSystems>...>{
           .value = std::tuple<std::remove_cvref_t<TSystems>...>{std::forward<TSystems>(systems)...}};
    }
-
-   class VVE_API World {
-   public:
-      explicit World(ECS<> &ecs) noexcept;
-
-      [[nodiscard]] ECS<> &ecs() noexcept;
-
-      [[nodiscard]] const ECS<> &ecs() const noexcept;
-
-   private:
-      ECS<> *ecs_;
-   };
 
    class EngineConfig {
    public:

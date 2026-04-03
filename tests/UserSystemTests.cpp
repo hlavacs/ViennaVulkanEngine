@@ -13,7 +13,7 @@ public:
     }
 
     [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
-        const auto entity = world.ecs().create();
+        const auto entity = world.createEntity();
         if (!entity) {
             return std::unexpected(entity.error());
         }

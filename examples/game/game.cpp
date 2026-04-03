@@ -23,20 +23,12 @@ public:
     }
 
     [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
-        const auto player_result = world.ecs().create();
+        const auto player_result = world.spawn(Position{}, Velocity{});
         if (!player_result) {
             return std::unexpected(player_result.error());
         }
 
         player_ = *player_result;
-
-        if (const auto add_position_result = world.ecs().addComponent(player_, Position{}); !add_position_result) {
-            return std::unexpected(add_position_result.error());
-        }
-
-        if (const auto add_velocity_result = world.ecs().addComponent(player_, Velocity{}); !add_velocity_result) {
-            return std::unexpected(add_velocity_result.error());
-        }
 
         std::cout << '[' << name() << "] spawned entity " << player_.value() << '\n';
         return {};
@@ -50,12 +42,12 @@ public:
             return std::unexpected(vve::Error::invalid_argument);
         }
 
-        const auto position_result = world.ecs().get<Position>(player_);
+        const auto position_result = world.getComponent<Position>(player_);
         if (!position_result) {
             return std::unexpected(position_result.error());
         }
 
-        const auto velocity_result = world.ecs().get<Velocity>(player_);
+        const auto velocity_result = world.getComponent<Velocity>(player_);
         if (!velocity_result) {
             return std::unexpected(velocity_result.error());
         }
@@ -100,11 +92,11 @@ public:
             velocity.y = -velocity.y;
         }
 
-        if (const auto put_position_result = world.ecs().put(player_, position); !put_position_result) {
+        if (const auto put_position_result = world.setComponent(player_, position); !put_position_result) {
             return std::unexpected(put_position_result.error());
         }
 
-        if (const auto put_velocity_result = world.ecs().put(player_, velocity); !put_velocity_result) {
+        if (const auto put_velocity_result = world.setComponent(player_, velocity); !put_velocity_result) {
             return std::unexpected(put_velocity_result.error());
         }
 
