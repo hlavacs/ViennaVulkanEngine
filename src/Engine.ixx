@@ -80,7 +80,7 @@ struct EnableImGui {
 
 struct WindowDesc {
     std::string id{"main"};
-    std::string title{"ViennaVulkanEngine"};
+    std::string title{"Vienna Vulkan Engine V3"};
     std::uint32_t width{1280};
     std::uint32_t height{720};
     bool resizable{true};

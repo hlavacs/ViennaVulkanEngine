@@ -36,6 +36,13 @@ add_compile_options(
     "$<$<CXX_COMPILER_ID:MSVC>:/MP>"
 )
 
+find_package(Doxygen QUIET)
+if(DOXYGEN_FOUND)
+    message(STATUS "Doxygen found: ${DOXYGEN_EXECUTABLE}")
+else()
+    message(STATUS "Doxygen not found. The 'docs' target will be unavailable.")
+endif()
+
 if(DEFINED ENV{VULKAN_SDK} AND NOT "$ENV{VULKAN_SDK}" STREQUAL "")
     list(PREPEND CMAKE_PREFIX_PATH "$ENV{VULKAN_SDK}/cmake")
 endif()
@@ -120,4 +127,30 @@ endif()
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
     add_subdirectory(tests)
+endif()
+
+if(DOXYGEN_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in")
+    set(VVE_DOXYGEN_OUTPUT_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/docs/build")
+    set(VVE_DOXYGEN_INPUT
+        "${CMAKE_CURRENT_SOURCE_DIR}/src"
+        "${CMAKE_CURRENT_SOURCE_DIR}/README.md"
+    )
+    string(REPLACE ";" " " VVE_DOXYGEN_INPUT "${VVE_DOXYGEN_INPUT}")
+
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
+        @ONLY
+    )
+
+    add_custom_target(docs
+        COMMAND "${DOXYGEN_EXECUTABLE}" "${CMAKE_CURRENT_BINARY_DIR}/Doxyfile"
+        WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+        COMMENT "Generating API documentation with Doxygen"
+        VERBATIM
+    )
+
+    message(STATUS "Added CMake target: docs")
+elseif(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in")
+    message(STATUS "Doxygen template found, but 'docs' target was not added because Doxygen is unavailable.")
 endif()
