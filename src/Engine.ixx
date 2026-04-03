@@ -215,9 +215,6 @@ struct EngineTypeFromUserSystems<UserSystems<TSystems...>> {
 
 } // namespace detail
 
-template <typename... TUserSystems>
-using BasicEngine = EngineFacade<vve::v3::BasicEngineImplementation<TUserSystems...>>;
-
 template <typename TImplementation = vve::v3::EngineImplementation>
 using Engine = EngineFacade<TImplementation>;
 
