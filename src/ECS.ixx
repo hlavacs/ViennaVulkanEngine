@@ -16,7 +16,11 @@ import :Error;
 #include "versions/v3/ECS.ixx"
 
 #ifndef VVE_DEFAULT_ECS_NAMESPACE
+#ifdef VVE_DEFAULT_ENGINE_NAMESPACE
+#define VVE_DEFAULT_ECS_NAMESPACE VVE_DEFAULT_ENGINE_NAMESPACE
+#else
 #define VVE_DEFAULT_ECS_NAMESPACE v3
+#endif
 #endif
 
 export namespace vve {

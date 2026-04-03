@@ -17,10 +17,6 @@ set(VVE_DEFAULT_ENGINE_NAMESPACE "v3" CACHE STRING "Default engine namespace sel
 set_property(CACHE VVE_DEFAULT_ENGINE_NAMESPACE PROPERTY STRINGS "v3")
 target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_DEFAULT_ENGINE_NAMESPACE=${VVE_DEFAULT_ENGINE_NAMESPACE})
 
-set(VVE_DEFAULT_ECS_NAMESPACE "v3" CACHE STRING "Default ECS namespace selected by the public vve::ECS alias")
-set_property(CACHE VVE_DEFAULT_ECS_NAMESPACE PROPERTY STRINGS "v3")
-target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_DEFAULT_ECS_NAMESPACE=${VVE_DEFAULT_ECS_NAMESPACE})
-
 find_package(assimp CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(SDL3_mixer CONFIG REQUIRED)
