@@ -15,23 +15,22 @@ cmake --build --preset build-debug-windows
 
 With `VVE_MATH_USE_DOUBLE=OFF` the engine uses `float`; with `ON` it uses `double`.
 
-The public `vve::Engine<>` and `vve::ECS<>` aliases can also be selected at build time through simple namespace-style defines:
+The public `vve::Engine<>`, `vve::ECS<>`, and `vve::World` aliases are selected through a single namespace-style define:
 
 ```text
 VVE_DEFAULT_ENGINE_NAMESPACE
-VVE_DEFAULT_ECS_NAMESPACE
 ```
 
-These values are used directly in qualified names such as `vve::v3::...`, so no numeric selector layer is needed.
+This value is used directly in qualified names such as `vve::v3::...`, so no numeric selector layer is needed. `vve::ECS<>` and `vve::World` follow the engine namespace automatically.
 
 The CMake target exposes matching cache variables. The current codebase supports value `v3`:
 
 ```powershell
-cmake --preset debug-windows -DVVE_DEFAULT_ENGINE_NAMESPACE=v3 -DVVE_DEFAULT_ECS_NAMESPACE=v3
+cmake --preset debug-windows -DVVE_DEFAULT_ENGINE_NAMESPACE=v3
 cmake --build --preset build-debug-windows
 ```
 
-All example targets also show the downstream-style usage directly in their CMake files, for example [examples/game/CMakeLists.txt](C:/data/GitHub/ViennaVulkanEngine/examples/game/CMakeLists.txt) and [examples/physics/CMakeLists.txt](C:/data/GitHub/ViennaVulkanEngine/examples/physics/CMakeLists.txt).
+All example targets now follow that single engine namespace selection automatically.
 
 The default setup is host-aware:
 - Windows uses the `x64-windows` vcpkg triplet
@@ -100,3 +99,14 @@ To list the registered tests without running them:
 ```powershell
 ctest --test-dir build -C Debug -N
 ```
+
+## Doxygen
+
+If Doxygen is installed, CMake adds a `docs` target. Generate the documentation from the project root with:
+
+```powershell
+cmake -S . -B build/debug-windows
+cmake --build build/debug-windows --config Debug --target docs
+```
+
+The generated output is written to [docs/build](C:/data/GitHub/ViennaVulkanEngine/docs/build). The HTML entry page is usually [docs/build/html/index.html](C:/data/GitHub/ViennaVulkanEngine/docs/build/html/index.html).
