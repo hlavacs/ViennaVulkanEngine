@@ -1,0 +1,6 @@
+BasedOnStyle: LLVM
+IndentWidth: 3
+NamespaceIndentation: All
+AccessModifierOffset: -3
+IndentAccessModifiers: false
+PointerAlignment: Right
