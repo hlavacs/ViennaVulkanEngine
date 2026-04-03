@@ -75,7 +75,7 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         return static_cast<TEngine *>(context)->loadFile(path);
+         return static_cast<TEngine *>(context)->loadSceneFile(path);
       }
 
       template <typename TSystem>
@@ -208,7 +208,7 @@ namespace vve::v3 {
       [[nodiscard]] std::expected<vve::FrameStatus, vve::Error> step();
       [[nodiscard]] std::expected<bool, vve::Error> isInitialized() const noexcept;
       [[nodiscard]] std::expected<int, vve::Error> getVersionMajor() const noexcept;
-      [[nodiscard]] std::expected<void, vve::Error> loadFile(const std::filesystem::path &file_path);
+      [[nodiscard]] std::expected<void, vve::Error> loadSceneFile(const std::filesystem::path &file_path);
 
    private:
       [[nodiscard]] std::expected<void, vve::Error> rebuildTaskGraph();
@@ -400,7 +400,7 @@ namespace vve::v3 {
 
    template <typename... TUserSystems>
    std::expected<void, vve::Error>
-   BasicEngineImplementation<TUserSystems...>::loadFile(const std::filesystem::path &file_path) {
+   BasicEngineImplementation<TUserSystems...>::loadSceneFile(const std::filesystem::path &file_path) {
       if (!*isInitialized()) {
          return std::unexpected(vve::Error::not_initialized);
       }

@@ -155,7 +155,6 @@ export namespace vve {
       [[nodiscard]] std::expected<FrameStatus, Error> step();
       [[nodiscard]] std::expected<bool, Error> isInitialized() const noexcept;
       [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept;
-      [[nodiscard]] std::expected<void, Error> loadFile(const std::filesystem::path &file_path);
 
    private:
       TImplementation implementation_;
@@ -220,12 +219,6 @@ export namespace vve {
    template <typename TImplementation>
    [[nodiscard]] std::expected<int, Error> EngineFacade<TImplementation>::getVersionMajor() const noexcept {
       return implementation_.getVersionMajor();
-   }
-
-   template <typename TImplementation>
-   [[nodiscard]] std::expected<void, Error>
-   EngineFacade<TImplementation>::loadFile(const std::filesystem::path &file_path) {
-      return implementation_.loadFile(file_path);
    }
 
 } // namespace vve
