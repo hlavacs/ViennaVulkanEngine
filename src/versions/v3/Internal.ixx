@@ -36,5 +36,10 @@ export namespace vve::v3::detail {
 
    [[nodiscard]] vve::Handle makeStableHandle(std::string_view name, std::uint64_t salt = 0);
    [[nodiscard]] VVE_API std::expected<Runtime, vve::Error> createRuntime(const EngineRuntimeDesc &desc);
+#ifndef NDEBUG
+   [[nodiscard]] VVE_API std::expected<void, vve::Error>
+   exportCombinedGraphDot(const TaskGraph &task_graph, VectorConstRange<WindowRenderPipeline> render_pipelines,
+                          const std::filesystem::path &output_path);
+#endif
 
 } // namespace vve::v3::detail

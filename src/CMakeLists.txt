@@ -35,6 +35,7 @@ target_sources(ViennaVulkanEngine
         versions/v3/RenderSystem.cpp
         versions/v3/GuiSystem.cpp
         versions/v3/Runtime.cpp
+        versions/v3/GraphDump.cpp
     PUBLIC
         FILE_SET CXX_MODULES FILES
             ECS.ixx
