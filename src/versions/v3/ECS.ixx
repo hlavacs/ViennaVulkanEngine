@@ -29,8 +29,8 @@
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         for (auto &[_, pool] : component_pools_) {
-            pool.erase(entity.value());
+         for (auto &[_, erase_component] : componentErasers()) {
+            erase_component(entity.value());
          }
 
          return {};
@@ -43,7 +43,8 @@
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         auto &pool = component_pools_[std::type_index(typeid(TComponent))];
+         using component_type = std::remove_cvref_t<TComponent>;
+         auto &pool = componentPool<component_type>();
          const auto [_, inserted] = pool.emplace(entity.value(), std::forward<TComponent>(component));
          if (!inserted) {
             return std::unexpected(vve::Error::invalid_argument);
@@ -54,26 +55,20 @@
 
       template <typename TComponent>
          requires(!std::same_as<std::remove_cvref_t<TComponent>, vve::Handle>)
-      [[nodiscard]] std::expected<std::optional<TComponent>, vve::Error> get(vve::Handle entity) const {
+      [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, vve::Error> get(vve::Handle entity) const {
+         using component_type = std::remove_cvref_t<TComponent>;
+
          if (!entities_.contains(entity.value())) {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         const auto pool_it = component_pools_.find(std::type_index(typeid(TComponent)));
-         if (pool_it == component_pools_.end()) {
-            return std::optional<TComponent>{};
+         const auto &pool = componentPool<component_type>();
+         const auto component_it = pool.find(entity.value());
+         if (component_it == pool.end()) {
+            return std::optional<component_type>{};
          }
 
-         const auto component_it = pool_it->second.find(entity.value());
-         if (component_it == pool_it->second.end()) {
-            return std::optional<TComponent>{};
-         }
-
-         if (const auto *component = std::any_cast<TComponent>(&component_it->second)) {
-            return std::optional<TComponent>{*component};
-         }
-
-         return std::unexpected(vve::Error::internal_error);
+         return std::optional<component_type>{component_it->second};
       }
 
       template <typename TComponent>
@@ -83,47 +78,58 @@
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         auto &pool = component_pools_[std::type_index(typeid(TComponent))];
-         pool.insert_or_assign(entity.value(), std::forward<TComponent>(component));
+         using component_type = std::remove_cvref_t<TComponent>;
+         componentPool<component_type>().insert_or_assign(entity.value(), std::forward<TComponent>(component));
          return {};
       }
 
       template <typename TComponent>
          requires(!std::same_as<std::remove_cvref_t<TComponent>, vve::Handle>)
       [[nodiscard]] std::expected<bool, vve::Error> hasComponent(vve::Handle entity) const {
+         using component_type = std::remove_cvref_t<TComponent>;
+
          if (!entities_.contains(entity.value())) {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         const auto pool_it = component_pools_.find(std::type_index(typeid(TComponent)));
-         if (pool_it == component_pools_.end()) {
-            return false;
-         }
-
-         return pool_it->second.contains(entity.value());
+         return componentPool<component_type>().contains(entity.value());
       }
 
       template <typename TComponent>
          requires(!std::same_as<std::remove_cvref_t<TComponent>, vve::Handle>)
       [[nodiscard]] std::expected<void, vve::Error> eraseComponent(vve::Handle entity) {
+         using component_type = std::remove_cvref_t<TComponent>;
+
          if (!entities_.contains(entity.value())) {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         const auto pool_it = component_pools_.find(std::type_index(typeid(TComponent)));
-         if (pool_it == component_pools_.end()) {
-            return {};
-         }
-
-         pool_it->second.erase(entity.value());
+         componentPool<component_type>().erase(entity.value());
          return {};
       }
 
    private:
-      using component_pool_type = std::unordered_map<vve::Handle::value_type, std::any>;
+      using component_eraser_type = void (*)(vve::Handle::value_type);
+      template <typename TComponent> using component_pool_type = std::unordered_map<vve::Handle::value_type, TComponent>;
+
+      template <typename TComponent> static component_pool_type<TComponent> &componentPool() {
+         static const bool registered = []() -> bool {
+            componentErasers().insert_or_assign(std::type_index(typeid(TComponent)),
+                                                +[](vve::Handle::value_type entity_value) { componentPool<TComponent>().erase(entity_value); });
+            return true;
+         }();
+         static_cast<void>(registered);
+
+         static std::unordered_map<vve::Handle::value_type, TComponent> pool{};
+         return pool;
+      }
+
+      static std::unordered_map<std::type_index, component_eraser_type> &componentErasers() {
+         static std::unordered_map<std::type_index, component_eraser_type> erasers{};
+         return erasers;
+      }
 
       std::unordered_set<vve::Handle::value_type> entities_{};
-      std::unordered_map<std::type_index, component_pool_type> component_pools_{};
       entity_value_type next_entity_value_{traits_type::first_entity_value};
    };
 
