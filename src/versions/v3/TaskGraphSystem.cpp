@@ -8,11 +8,11 @@ namespace vve::v3 {
    public:
       [[nodiscard]] std::string_view name() const noexcept { return "TaskGraphSystem"; }
 
-      [[nodiscard]] TaskGraph build(const SceneData &scene, std::span<ITaskSystem *const> task_systems,
+      [[nodiscard]] TaskGraph build(const SceneData &scene, SegmentedConstRange<ITaskSystem *> task_systems,
                                     WindowSystem &window_system, GraphicsBackend &graphics_backend,
                                     ResourceSystem &resource_system, SceneSystem &scene_system,
                                     RenderSystem &render_system,
-                                    std::span<const WindowRenderPipeline> render_pipelines) {
+                                    SegmentedConstRange<WindowRenderPipeline> render_pipelines) {
          TaskGraphBuilder builder{};
 
          graphics_backend.registerTasks(builder);
@@ -82,9 +82,9 @@ namespace vve::v3 {
 
    template <>
    TaskGraph TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::build(
-       const SceneData &scene, std::span<ITaskSystem *const> task_systems, WindowSystem &window_system,
+       const SceneData &scene, SegmentedConstRange<ITaskSystem *> task_systems, WindowSystem &window_system,
        GraphicsBackend &graphics_backend, ResourceSystem &resource_system, SceneSystem &scene_system,
-       RenderSystem &render_system, std::span<const WindowRenderPipeline> render_pipelines) {
+       RenderSystem &render_system, SegmentedConstRange<WindowRenderPipeline> render_pipelines) {
       return implementation_->build(scene, task_systems, window_system, graphics_backend, resource_system, scene_system,
                                     render_system, render_pipelines);
    }

@@ -121,7 +121,7 @@ namespace vve::v3 {
       }
 
       void registerTasks(TaskGraphBuilder &builder, const SceneData &,
-                         std::span<const WindowRenderPipeline> render_pipelines) {
+                         SegmentedConstRange<WindowRenderPipeline> render_pipelines) {
          for (const auto &pipeline : render_pipelines) {
             const auto window = pipeline.window;
             const auto *render_graph = &pipeline.graph;
@@ -251,7 +251,7 @@ namespace vve::v3 {
 
    template <>
    void RenderSystemFacade<DefaultRenderSystemImplementation>::registerTasks(
-       TaskGraphBuilder &builder, const SceneData &scene, std::span<const WindowRenderPipeline> render_pipelines) {
+       TaskGraphBuilder &builder, const SceneData &scene, SegmentedConstRange<WindowRenderPipeline> render_pipelines) {
       implementation_->registerTasks(builder, scene, render_pipelines);
    }
 

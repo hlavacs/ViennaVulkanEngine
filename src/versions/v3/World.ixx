@@ -16,12 +16,13 @@ namespace vve::v3 {
       [[nodiscard]] std::expected<bool, vve::Error> exists(vve::Handle entity) const { return ecs().exists(entity); }
       [[nodiscard]] std::expected<void, vve::Error> destroyEntity(vve::Handle entity) { return ecs().erase(entity); }
       [[nodiscard]] std::expected<void, vve::Error> destroyObject(vve::Handle entity) { return destroyEntity(entity); }
-      [[nodiscard]] std::span<const vve::WindowInfo> windows() const {
-         if (runtime_access_ == nullptr || runtime_access_->windows == nullptr) {
+      [[nodiscard]] std::ranges::subrange<const vve::WindowInfo *> windows() const {
+         if (runtime_access_ == nullptr || runtime_access_->windows_begin == nullptr ||
+             runtime_access_->windows_end == nullptr) {
             return {};
          }
 
-         return *runtime_access_->windows;
+         return std::ranges::subrange(runtime_access_->windows_begin, runtime_access_->windows_end);
       }
       [[nodiscard]] std::optional<vve::WindowInfo> findWindow(vve::Handle window) const {
          for (const auto &window_info : windows()) {

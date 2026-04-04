@@ -95,10 +95,10 @@ export namespace vve::v3 {
       WindowSystemFacade &operator=(const WindowSystemFacade &) = delete;
 
       [[nodiscard]] std::string_view name() const noexcept;
-      [[nodiscard]] std::expected<void, vve::Error> init(std::span<const vve::WindowDesc> windows);
+      [[nodiscard]] std::expected<void, vve::Error> init(std::ranges::subrange<const vve::WindowDesc *> windows);
       [[nodiscard]] std::expected<void, vve::Error> pollEvents(const FrameContext &frame_context);
       [[nodiscard]] WindowFrameData frameData() const;
-      [[nodiscard]] std::span<const WindowState> windows() const;
+      [[nodiscard]] SegmentedConstRange<WindowState> windows() const;
       void setFrameDataSink(std::shared_ptr<WindowFrameData> frame_data);
       void registerTasks(TaskGraphBuilder &builder);
 
@@ -168,7 +168,7 @@ export namespace vve::v3 {
                                                                   const SceneData &scene, WindowHandle window,
                                                                   const RenderGraph &render_graph);
       void registerTasks(TaskGraphBuilder &builder, const SceneData &scene,
-                         std::span<const WindowRenderPipeline> render_pipelines);
+                         SegmentedConstRange<WindowRenderPipeline> render_pipelines);
 
    private:
       std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr};
@@ -217,11 +217,11 @@ export namespace vve::v3 {
       TaskGraphSystemFacade &operator=(const TaskGraphSystemFacade &) = delete;
 
       [[nodiscard]] std::string_view name() const noexcept;
-      [[nodiscard]] TaskGraph build(const SceneData &scene, std::span<ITaskSystem *const> task_systems,
+      [[nodiscard]] TaskGraph build(const SceneData &scene, SegmentedConstRange<ITaskSystem *> task_systems,
                                     WindowSystem &window_system, GraphicsBackend &graphics_backend,
                                     ResourceSystem &resource_system, SceneSystem &scene_system,
                                     RenderSystem &render_system,
-                                    std::span<const WindowRenderPipeline> render_pipelines);
+                                    SegmentedConstRange<WindowRenderPipeline> render_pipelines);
 
    private:
       std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr};

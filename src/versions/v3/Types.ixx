@@ -118,6 +118,13 @@ export namespace vve::v3 {
 
       SegmentedVector() = default;
 
+      SegmentedVector(std::initializer_list<T> values) {
+         reserve(values.size());
+         for (const auto &value : values) {
+            push_back(value);
+         }
+      }
+
       explicit SegmentedVector(size_type count, const T &value = T{}) {
          resize(count, value);
       }
@@ -361,6 +368,12 @@ export namespace vve::v3 {
       size_type size_{0};
    };
 
+   template <typename T> using SegmentedConstRange = std::ranges::subrange<typename SegmentedVector<T>::const_iterator>;
+
+   template <typename T> [[nodiscard]] SegmentedConstRange<T> makeRange(const SegmentedVector<T> &values) {
+      return SegmentedConstRange<T>(values.cbegin(), values.cend());
+   }
+
    enum class ResourceKind { unknown, mesh, texture, material, shader_program, buffer, image };
 
    enum class ResourceLocation { unknown, source_file, imported_blob, cpu_memory, gpu_memory, streaming };
@@ -521,8 +534,8 @@ export namespace vve::v3 {
    };
 
    struct WindowFrameData {
-      std::span<const WindowState> windows{};
-      std::span<const WindowEvent> events{};
+      SegmentedConstRange<WindowState> windows{};
+      SegmentedConstRange<WindowEvent> events{};
    };
 
    enum class TaskScope : std::uint32_t { global = 0, window };

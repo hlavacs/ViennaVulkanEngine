@@ -29,7 +29,7 @@ export namespace vve::v3::detail {
       GraphicsBackend graphics_backend{};
       ShaderSystem shader_system{};
       std::unique_ptr<RenderSystem> render_system{};
-      std::vector<WindowRenderPipeline> render_pipelines{};
+      SegmentedVector<WindowRenderPipeline> render_pipelines{};
       std::unique_ptr<GuiSystem> gui_system{};
       EngineRuntimeSnapshot snapshot{};
    };

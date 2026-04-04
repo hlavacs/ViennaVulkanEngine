@@ -19,7 +19,9 @@ namespace vve::v3::detail {
       runtime.render_system =
           std::make_unique<RenderSystem>(desc.renderer, desc.shadow, runtime.graphics_backend, desc.imgui_enabled);
       runtime.window_system.setFrameDataSink(runtime.window_frame);
-      if (auto window_result = runtime.window_system.init(desc.windows); !window_result) {
+      if (auto window_result = runtime.window_system.init(
+              std::ranges::subrange(desc.windows.data(), desc.windows.data() + desc.windows.size()));
+          !window_result) {
          return std::unexpected(window_result.error());
       }
       *runtime.window_frame = runtime.window_system.frameData();

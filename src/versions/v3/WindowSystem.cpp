@@ -25,7 +25,7 @@ namespace vve::v3 {
 
       [[nodiscard]] std::string_view name() const noexcept { return "SDL3WindowSystem"; }
 
-      [[nodiscard]] std::expected<void, vve::Error> init(std::span<const vve::WindowDesc> windows) {
+      [[nodiscard]] std::expected<void, vve::Error> init(std::ranges::subrange<const vve::WindowDesc *> windows) {
          if (!video_initialized_) {
             if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
                return std::unexpected(vve::Error::internal_error);
@@ -74,9 +74,11 @@ namespace vve::v3 {
          return {};
       }
 
-      [[nodiscard]] WindowFrameData frameData() const { return WindowFrameData{.windows = states_, .events = events_}; }
+      [[nodiscard]] WindowFrameData frameData() const {
+         return WindowFrameData{.windows = makeRange(states_), .events = makeRange(events_)};
+      }
 
-      [[nodiscard]] std::span<const WindowState> windows() const { return states_; }
+      [[nodiscard]] SegmentedConstRange<WindowState> windows() const { return makeRange(states_); }
 
       void setFrameDataSink(std::shared_ptr<WindowFrameData> frame_data) {
          frame_data_sink_ = std::move(frame_data);
@@ -272,15 +274,15 @@ namespace vve::v3 {
             return;
          }
 
-         frame_data_sink_->windows = states_;
-         frame_data_sink_->events = events_;
+         frame_data_sink_->windows = makeRange(states_);
+         frame_data_sink_->events = makeRange(events_);
       }
 
       bool video_initialized_{false};
       SegmentedVector<WindowRecord> windows_{};
       std::unordered_map<Uint32, std::size_t> window_indices_{};
-      std::vector<WindowState> states_{};
-      std::vector<WindowEvent> events_{};
+      SegmentedVector<WindowState> states_{};
+      SegmentedVector<WindowEvent> events_{};
       std::shared_ptr<WindowFrameData> frame_data_sink_{};
    };
 
@@ -295,7 +297,7 @@ namespace vve::v3 {
 
    template <>
    std::expected<void, vve::Error>
-   WindowSystemFacade<SDL3WindowSystemImplementation>::init(std::span<const vve::WindowDesc> windows) {
+   WindowSystemFacade<SDL3WindowSystemImplementation>::init(std::ranges::subrange<const vve::WindowDesc *> windows) {
       return implementation_->init(windows);
    }
 
@@ -309,7 +311,8 @@ namespace vve::v3 {
       return implementation_->frameData();
    }
 
-   template <> std::span<const WindowState> WindowSystemFacade<SDL3WindowSystemImplementation>::windows() const {
+   template <>
+   SegmentedConstRange<WindowState> WindowSystemFacade<SDL3WindowSystemImplementation>::windows() const {
       return implementation_->windows();
    }
 
