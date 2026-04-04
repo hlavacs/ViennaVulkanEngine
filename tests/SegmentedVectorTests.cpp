@@ -11,7 +11,7 @@ import VEEngine.V3;
 
 namespace {
 
-   using int_container = vve::v3::SegmentedVector<int, 4>;
+   using int_container = vve::v3::Vector<int, 4>;
 
    struct pair_value {
       int first{0};
@@ -360,7 +360,7 @@ namespace {
    }
 
    [[nodiscard]] int testEmplaceAndNonTrivialValues() {
-      vve::v3::SegmentedVector<pair_value, 2> pairs{};
+      vve::v3::Vector<pair_value, 2> pairs{};
       const auto &back_pair = pairs.emplace_back(1, 2);
       if (back_pair != pair_value{1, 2}) {
          return 1;
@@ -376,7 +376,7 @@ namespace {
          return 3;
       }
 
-      vve::v3::SegmentedVector<std::string, 3> names{};
+      vve::v3::Vector<std::string, 3> names{};
       names.emplace_back("alpha");
       names.emplace_back(3, 'b');
       names.insert(names.cbegin() + 1, std::string{"middle"});
@@ -390,7 +390,7 @@ namespace {
    [[nodiscard]] int testTrackedLifetimeAndOperations() {
       tracked_value::resetCounters();
       {
-         vve::v3::SegmentedVector<tracked_value, 3> values{};
+         vve::v3::Vector<tracked_value, 3> values{};
          values.emplace_back(1);
          values.emplace_back(2);
          values.emplace(values.cbegin() + 1, 3);
@@ -408,7 +408,7 @@ namespace {
             return 3;
          }
 
-         vve::v3::SegmentedVector<tracked_value, 3> copied(values);
+         vve::v3::Vector<tracked_value, 3> copied(values);
          if (tracked_value::alive_count != 4 || copied.size() != 2) {
             return 4;
          }

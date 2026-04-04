@@ -25,7 +25,8 @@ namespace vve::v3 {
 
       [[nodiscard]] std::string_view name() const noexcept { return "SDL3WindowSystem"; }
 
-      [[nodiscard]] std::expected<void, vve::Error> init(std::ranges::subrange<const vve::WindowDesc *> windows) {
+      [[nodiscard]] std::expected<void, vve::Error>
+      init(VectorConstRange<vve::WindowDesc> windows) {
          if (!video_initialized_) {
             if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
                return std::unexpected(vve::Error::internal_error);
@@ -78,7 +79,7 @@ namespace vve::v3 {
          return WindowFrameData{.windows = makeRange(states_), .events = makeRange(events_)};
       }
 
-      [[nodiscard]] SegmentedConstRange<WindowState> windows() const { return makeRange(states_); }
+      [[nodiscard]] VectorConstRange<WindowState> windows() const { return makeRange(states_); }
 
       void setFrameDataSink(std::shared_ptr<WindowFrameData> frame_data) {
          frame_data_sink_ = std::move(frame_data);
@@ -279,10 +280,10 @@ namespace vve::v3 {
       }
 
       bool video_initialized_{false};
-      SegmentedVector<WindowRecord> windows_{};
+      Vector<WindowRecord> windows_{};
       std::unordered_map<Uint32, std::size_t> window_indices_{};
-      SegmentedVector<WindowState> states_{};
-      SegmentedVector<WindowEvent> events_{};
+      Vector<WindowState> states_{};
+      Vector<WindowEvent> events_{};
       std::shared_ptr<WindowFrameData> frame_data_sink_{};
    };
 
@@ -297,7 +298,7 @@ namespace vve::v3 {
 
    template <>
    std::expected<void, vve::Error>
-   WindowSystemFacade<SDL3WindowSystemImplementation>::init(std::ranges::subrange<const vve::WindowDesc *> windows) {
+   WindowSystemFacade<SDL3WindowSystemImplementation>::init(VectorConstRange<vve::WindowDesc> windows) {
       return implementation_->init(windows);
    }
 
@@ -312,7 +313,7 @@ namespace vve::v3 {
    }
 
    template <>
-   SegmentedConstRange<WindowState> WindowSystemFacade<SDL3WindowSystemImplementation>::windows() const {
+   VectorConstRange<WindowState> WindowSystemFacade<SDL3WindowSystemImplementation>::windows() const {
       return implementation_->windows();
    }
 

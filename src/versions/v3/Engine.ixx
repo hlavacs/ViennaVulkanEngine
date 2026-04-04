@@ -264,7 +264,8 @@ namespace vve::v3 {
       }
 
       if (const auto windows = config.tryGet<vve::Windows>()) {
-         runtime_desc_.windows = windows->value;
+         runtime_desc_.windows.clear();
+         runtime_desc_.windows.appendRange(windows->value);
       }
 
       if (const auto task_systems = config.tryGet<vve::v3::TaskSystems>()) {
@@ -307,14 +308,14 @@ namespace vve::v3 {
       running_ = false;
       task_graph_dirty_ = true;
       last_time_ = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
-      world_runtime_access_.windows_begin = world_windows_.data();
-      world_runtime_access_.windows_end = world_windows_.data() + world_windows_.size();
+      world_runtime_access_.windows_begin = world_windows_.cbegin();
+      world_runtime_access_.windows_end = world_windows_.cend();
       world_runtime_access_.input = &input_state_;
       world_runtime_access_.load_scene = &detail::loadSceneThroughWorld<BasicEngineImplementation<TUserSystems...>>;
       world_runtime_access_.load_scene_context = this;
       detail::syncWorldWindows(*runtime_.window_frame, world_windows_);
-      world_runtime_access_.windows_begin = world_windows_.data();
-      world_runtime_access_.windows_end = world_windows_.data() + world_windows_.size();
+      world_runtime_access_.windows_begin = world_windows_.cbegin();
+      world_runtime_access_.windows_end = world_windows_.cend();
       detail::syncWorldInput(*runtime_.window_frame, input_state_);
 
       if (auto user_system_result = detail::initUserSystems(user_systems_, world_); !user_system_result) {
@@ -375,8 +376,8 @@ namespace vve::v3 {
       }
 
       detail::syncWorldWindows(*runtime_.window_frame, world_windows_);
-      world_runtime_access_.windows_begin = world_windows_.data();
-      world_runtime_access_.windows_end = world_windows_.data() + world_windows_.size();
+      world_runtime_access_.windows_begin = world_windows_.cbegin();
+      world_runtime_access_.windows_end = world_windows_.cend();
       detail::syncWorldInput(*runtime_.window_frame, input_state_);
       if (auto user_system_result =
               detail::updateUserSystems(user_systems_, world_, frame_context, *runtime_.window_frame);
@@ -441,7 +442,7 @@ namespace vve::v3 {
          return std::unexpected(vve::Error::invalid_argument);
       }
 
-      SegmentedVector<ITaskSystem *> task_systems{};
+      Vector<ITaskSystem *> task_systems{};
       task_systems.reserve(runtime_.task_systems.size());
       for (const auto &task_system : runtime_.task_systems) {
          if (task_system != nullptr) {

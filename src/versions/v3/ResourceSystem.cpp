@@ -73,7 +73,7 @@ namespace vve::v3 {
       }
 
    private:
-      SegmentedVector<ResourceRecord> records_{};
+      Vector<ResourceRecord> records_{};
    };
 
    template <>

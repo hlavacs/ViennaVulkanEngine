@@ -4,7 +4,7 @@ import std;
 
 export namespace vve::v3 {
 
-   template <typename T, std::size_t SegmentSize = 256> class SegmentedVector {
+   template <typename T, std::size_t SegmentSize = 256> class Vector {
       static_assert(SegmentSize > 0, "SegmentSize must be greater than zero.");
 
    public:
@@ -101,9 +101,9 @@ export namespace vve::v3 {
          }
 
       private:
-         using owner_type = std::conditional_t<std::is_const_v<TValue>, const SegmentedVector, SegmentedVector>;
+         using owner_type = std::conditional_t<std::is_const_v<TValue>, const Vector, Vector>;
 
-         friend class SegmentedVector;
+         friend class Vector;
          template <typename> friend class basic_iterator;
 
          basic_iterator(owner_type *owner, size_type index) : owner_(owner), index_(index) {}
@@ -116,42 +116,48 @@ export namespace vve::v3 {
       using iterator = basic_iterator<T>;
       using const_iterator = basic_iterator<const T>;
 
-      SegmentedVector() = default;
+      Vector() = default;
 
-      SegmentedVector(std::initializer_list<T> values) {
+      Vector(std::initializer_list<T> values) {
          reserve(values.size());
          for (const auto &value : values) {
             push_back(value);
          }
       }
 
-      explicit SegmentedVector(size_type count, const T &value = T{}) {
+      explicit Vector(size_type count, const T &value = T{}) {
          resize(count, value);
       }
 
-      SegmentedVector(const SegmentedVector &other) {
+      template <std::ranges::input_range TRange>
+         requires(std::constructible_from<T, std::ranges::range_reference_t<TRange>>)
+      explicit Vector(std::from_range_t, TRange &&range) {
+         appendRange(std::forward<TRange>(range));
+      }
+
+      Vector(const Vector &other) {
          reserve(other.size());
          for (const auto &value : other) {
             push_back(value);
          }
       }
 
-      SegmentedVector(SegmentedVector &&other) noexcept
+      Vector(Vector &&other) noexcept
           : allocator_(std::move(other.allocator_)), segments_(std::move(other.segments_)), size_(other.size_) {
          other.size_ = 0;
       }
 
-      SegmentedVector &operator=(const SegmentedVector &other) {
+      Vector &operator=(const Vector &other) {
          if (this == &other) {
             return *this;
          }
 
-         SegmentedVector copy(other);
+         Vector copy(other);
          swap(copy);
          return *this;
       }
 
-      SegmentedVector &operator=(SegmentedVector &&other) noexcept {
+      Vector &operator=(Vector &&other) noexcept {
          if (this == &other) {
             return *this;
          }
@@ -165,14 +171,14 @@ export namespace vve::v3 {
          return *this;
       }
 
-      ~SegmentedVector() {
+      ~Vector() {
          clear();
          releaseSegments();
       }
 
       [[nodiscard]] reference at(size_type index) {
          if (index >= size_) {
-            throw std::out_of_range("SegmentedVector index out of range");
+            throw std::out_of_range("Vector index out of range");
          }
 
          return (*this)[index];
@@ -180,7 +186,7 @@ export namespace vve::v3 {
 
       [[nodiscard]] const_reference at(size_type index) const {
          if (index >= size_) {
-            throw std::out_of_range("SegmentedVector index out of range");
+            throw std::out_of_range("Vector index out of range");
          }
 
          return (*this)[index];
@@ -214,10 +220,22 @@ export namespace vve::v3 {
       void push_back(const T &value) { static_cast<void>(emplace_back(value)); }
       void push_back(T &&value) { static_cast<void>(emplace_back(std::move(value))); }
 
+      template <std::ranges::input_range TRange>
+         requires(std::constructible_from<T, std::ranges::range_reference_t<TRange>>)
+      void appendRange(TRange &&range) {
+         if constexpr (std::ranges::sized_range<TRange>) {
+            reserve(size_ + static_cast<size_type>(std::ranges::size(range)));
+         }
+
+         for (auto &&value : range) {
+            emplace_back(std::forward<decltype(value)>(value));
+         }
+      }
+
       template <typename... TArgs> iterator emplace(const_iterator position, TArgs &&...args) {
          const auto index = static_cast<size_type>(position.index_);
          if (index > size_) {
-            throw std::out_of_range("SegmentedVector insert position out of range");
+            throw std::out_of_range("Vector insert position out of range");
          }
 
          if (index == size_) {
@@ -319,7 +337,7 @@ export namespace vve::v3 {
       [[nodiscard]] const_iterator end() const noexcept { return const_iterator(this, size_); }
       [[nodiscard]] const_iterator cend() const noexcept { return const_iterator(this, size_); }
 
-      void swap(SegmentedVector &other) noexcept {
+      void swap(Vector &other) noexcept {
          std::swap(allocator_, other.allocator_);
          segments_.swap(other.segments_);
          std::swap(size_, other.size_);
@@ -368,10 +386,10 @@ export namespace vve::v3 {
       size_type size_{0};
    };
 
-   template <typename T> using SegmentedConstRange = std::ranges::subrange<typename SegmentedVector<T>::const_iterator>;
+   template <typename T> using VectorConstRange = std::ranges::subrange<typename Vector<T>::const_iterator>;
 
-   template <typename T> [[nodiscard]] SegmentedConstRange<T> makeRange(const SegmentedVector<T> &values) {
-      return SegmentedConstRange<T>(values.cbegin(), values.cend());
+   template <typename T> [[nodiscard]] VectorConstRange<T> makeRange(const Vector<T> &values) {
+      return VectorConstRange<T>(values.cbegin(), values.cend());
    }
 
    enum class ResourceKind { unknown, mesh, texture, material, shader_program, buffer, image };
@@ -490,9 +508,9 @@ export namespace vve::v3 {
    struct ImportedScene {
       SceneHandle handle{};
       std::string name{};
-      std::vector<ImportedMesh> meshes{};
-      std::vector<ImportedMaterial> materials{};
-      std::vector<ImportedSceneNode> nodes{};
+      Vector<ImportedMesh> meshes{};
+      Vector<ImportedMaterial> materials{};
+      Vector<ImportedSceneNode> nodes{};
    };
 
    struct ResourceRecord {
@@ -512,7 +530,7 @@ export namespace vve::v3 {
 
    struct SceneData {
       SceneHandle handle{};
-      std::vector<SceneNodeDesc> nodes{};
+      Vector<SceneNodeDesc> nodes{};
    };
 
    struct WindowState {
@@ -534,8 +552,8 @@ export namespace vve::v3 {
    };
 
    struct WindowFrameData {
-      SegmentedConstRange<WindowState> windows{};
-      SegmentedConstRange<WindowEvent> events{};
+      VectorConstRange<WindowState> windows{};
+      VectorConstRange<WindowEvent> events{};
    };
 
    enum class TaskScope : std::uint32_t { global = 0, window };
@@ -554,21 +572,21 @@ export namespace vve::v3 {
       TaskKernelId kernel{TaskKernelId::none};
       TaskScope scope{TaskScope::global};
       std::optional<WindowHandle> window{};
-      std::vector<TaskNodeHandle> depends_on{};
-      std::vector<ResourceAccess> accesses{};
+      Vector<TaskNodeHandle> depends_on{};
+      Vector<ResourceAccess> accesses{};
       std::string debug_name{};
       TaskCallback callback{};
    };
 
    struct TaskGraph {
-      std::vector<TaskNodeDesc> nodes{};
+      Vector<TaskNodeDesc> nodes{};
    };
 
    class TaskGraphBuilder {
    public:
       [[nodiscard]] TaskNodeHandle addTask(std::string_view stable_name, TaskKernelId kernel,
-                                           TaskCallback callback = {}, std::vector<TaskNodeHandle> depends_on = {},
-                                           std::vector<ResourceAccess> accesses = {}, std::string debug_name = {},
+                                           TaskCallback callback = {}, Vector<TaskNodeHandle> depends_on = {},
+                                           Vector<ResourceAccess> accesses = {}, std::string debug_name = {},
                                            TaskScope scope = TaskScope::global,
                                            std::optional<WindowHandle> window = std::nullopt);
 
@@ -586,12 +604,12 @@ export namespace vve::v3 {
       [[nodiscard]] std::vector<TaskNodeHandle> leafTasks() const;
 
    private:
-      std::vector<TaskNodeDesc> nodes_{};
+      Vector<TaskNodeDesc> nodes_{};
    };
 
    inline TaskNodeHandle TaskGraphBuilder::addTask(std::string_view stable_name, TaskKernelId kernel,
-                                                   TaskCallback callback, std::vector<TaskNodeHandle> depends_on,
-                                                   std::vector<ResourceAccess> accesses, std::string debug_name,
+                                                   TaskCallback callback, Vector<TaskNodeHandle> depends_on,
+                                                   Vector<ResourceAccess> accesses, std::string debug_name,
                                                    TaskScope scope, std::optional<WindowHandle> window) {
       const TaskNodeHandle handle = makeTaskHandle(stable_name);
       addTask(TaskNodeDesc{.handle = handle,
@@ -703,8 +721,8 @@ export namespace vve::v3 {
    struct ShaderMetadata {
       ShaderHandle handle{};
       std::string shader_name{};
-      std::vector<ShaderStage> stages{};
-      std::vector<ShaderParameter> parameters{};
+      Vector<ShaderStage> stages{};
+      Vector<ShaderParameter> parameters{};
       std::string intended_renderer{};
       std::string intended_shadow{};
    };
@@ -717,13 +735,13 @@ export namespace vve::v3 {
    struct RenderPassDesc {
       RenderPassHandle handle{};
       RenderKernelId kernel{RenderKernelId::none};
-      std::vector<RenderPassHandle> depends_on{};
-      std::vector<RenderResourceUse> uses{};
+      Vector<RenderPassHandle> depends_on{};
+      Vector<RenderResourceUse> uses{};
       std::string debug_name{};
    };
 
    struct RenderGraph {
-      std::vector<RenderPassDesc> passes{};
+      Vector<RenderPassDesc> passes{};
    };
 
    struct WindowRenderPipeline {
@@ -745,7 +763,7 @@ export namespace vve::v3 {
       std::string render_system{"RenderSystem"};
       std::string window_system{"SDL3WindowSystem"};
       std::string gui_system{"ImGuiSystem"};
-      std::vector<std::string> task_systems{};
+      Vector<std::string> task_systems{};
    };
 
 } // namespace vve::v3

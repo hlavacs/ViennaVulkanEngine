@@ -23,13 +23,13 @@ export namespace vve::v3::detail {
       ResourceSystem resource_system{};
       SceneSystem scene_system{};
       TaskGraphSystem task_graph_system{};
-      std::vector<std::shared_ptr<ITaskSystem>> task_systems{};
+      Vector<std::shared_ptr<ITaskSystem>> task_systems{};
       WindowSystem window_system{};
       std::shared_ptr<WindowFrameData> window_frame{std::make_shared<WindowFrameData>()};
       GraphicsBackend graphics_backend{};
       ShaderSystem shader_system{};
       std::unique_ptr<RenderSystem> render_system{};
-      SegmentedVector<WindowRenderPipeline> render_pipelines{};
+      Vector<WindowRenderPipeline> render_pipelines{};
       std::unique_ptr<GuiSystem> gui_system{};
       EngineRuntimeSnapshot snapshot{};
    };

@@ -82,8 +82,8 @@ export namespace vve {
    namespace detail {
 
       struct WorldRuntimeAccess {
-         const WindowInfo *windows_begin{nullptr};
-         const WindowInfo *windows_end{nullptr};
+         std::vector<WindowInfo>::const_iterator windows_begin{};
+         std::vector<WindowInfo>::const_iterator windows_end{};
          const InputState *input{nullptr};
          std::expected<void, Error> (*load_scene)(void *context, const std::filesystem::path &path){nullptr};
          void *load_scene_context{nullptr};
@@ -172,7 +172,7 @@ export namespace vve {
 
       template <NotHandle... TComponents> [[nodiscard]] std::expected<Handle, Error> spawn(TComponents &&...components);
 
-      [[nodiscard]] std::ranges::subrange<const WindowInfo *> windows() const;
+      [[nodiscard]] std::ranges::subrange<std::vector<WindowInfo>::const_iterator> windows() const;
       [[nodiscard]] std::optional<WindowInfo> findWindow(Handle window) const;
       [[nodiscard]] std::optional<WindowInfo> findWindow(std::string_view window_id) const;
       [[nodiscard]] const InputState &input() const;
@@ -259,7 +259,7 @@ export namespace vve {
    }
 
    template <typename TImplementation>
-   inline std::ranges::subrange<const WindowInfo *> WorldFacade<TImplementation>::windows() const {
+   inline std::ranges::subrange<std::vector<WindowInfo>::const_iterator> WorldFacade<TImplementation>::windows() const {
       return implementation_.windows();
    }
 

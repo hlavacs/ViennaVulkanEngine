@@ -64,7 +64,7 @@ namespace vve::v3 {
          }
 
          const auto main_pass = RenderPassHandle{detail::makeStableHandle("render.main", window_salt)};
-         std::vector<RenderPassHandle> main_dependencies{};
+         Vector<RenderPassHandle> main_dependencies{};
          if (!graph.passes.empty()) {
             main_dependencies.push_back(graph.passes.front().handle);
          }
@@ -121,7 +121,7 @@ namespace vve::v3 {
       }
 
       void registerTasks(TaskGraphBuilder &builder, const SceneData &,
-                         SegmentedConstRange<WindowRenderPipeline> render_pipelines) {
+                         VectorConstRange<WindowRenderPipeline> render_pipelines) {
          for (const auto &pipeline : render_pipelines) {
             const auto window = pipeline.window;
             const auto *render_graph = &pipeline.graph;
@@ -251,7 +251,7 @@ namespace vve::v3 {
 
    template <>
    void RenderSystemFacade<DefaultRenderSystemImplementation>::registerTasks(
-       TaskGraphBuilder &builder, const SceneData &scene, SegmentedConstRange<WindowRenderPipeline> render_pipelines) {
+       TaskGraphBuilder &builder, const SceneData &scene, VectorConstRange<WindowRenderPipeline> render_pipelines) {
       implementation_->registerTasks(builder, scene, render_pipelines);
    }
 
