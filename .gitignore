@@ -49,7 +49,7 @@
 *.a
 *.so
 *.dylib
-/dgraph_dumps/
+/graph_dumps/
 /screenshots/
 
 # OS metadata
