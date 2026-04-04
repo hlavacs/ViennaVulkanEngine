@@ -43,6 +43,7 @@ target_sources(ViennaVulkanEngine
             Math.ixx
             Error.ixx
             Engine.ixx
+            versions/v3/Vector.ixx
             versions/v3/Types.ixx
             versions/v3/Systems.ixx
             versions/v3/Internal.ixx
