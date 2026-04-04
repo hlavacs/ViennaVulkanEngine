@@ -49,6 +49,8 @@
 *.a
 *.so
 *.dylib
+/dgraph_dumps/
+/screenshots/
 
 # OS metadata
 .DS_Store
