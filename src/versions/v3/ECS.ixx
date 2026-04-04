@@ -108,9 +108,51 @@
          return {};
       }
 
+      template <typename... TComponents>
+         requires(sizeof...(TComponents) > 0 && (... && !std::same_as<std::remove_cvref_t<TComponents>, vve::Handle>))
+      [[nodiscard]] std::expected<std::vector<vve::Handle>, vve::Error> view() const {
+         const std::array pools{
+             poolInfo<std::remove_cvref_t<TComponents>>()...,
+         };
+
+         const auto smallest_pool_it = std::ranges::min_element(pools, {}, &component_pool_info::size);
+         std::vector<vve::Handle::value_type> candidate_entities{};
+         smallest_pool_it->collectEntities(candidate_entities);
+
+         std::vector<vve::Handle> result{};
+         result.reserve(candidate_entities.size());
+         for (const auto entity_value : candidate_entities) {
+            if ((componentPool<std::remove_cvref_t<TComponents>>().contains(entity_value) && ...)) {
+               result.emplace_back(entity_value);
+            }
+         }
+
+         return result;
+      }
+
    private:
+      struct component_pool_info {
+         std::size_t size;
+         void (*collectEntities)(std::vector<vve::Handle::value_type> &);
+         bool (*contains)(vve::Handle::value_type);
+      };
+
       using component_eraser_type = void (*)(vve::Handle::value_type);
       template <typename TComponent> using component_pool_type = std::unordered_map<vve::Handle::value_type, TComponent>;
+
+      template <typename TComponent> static component_pool_info poolInfo() {
+         return component_pool_info{
+             .size = componentPool<TComponent>().size(),
+             .collectEntities =
+                 +[](std::vector<vve::Handle::value_type> &entities) {
+                    entities.clear();
+                    entities.reserve(componentPool<TComponent>().size());
+                    for (const auto &[entity_value, _] : componentPool<TComponent>()) {
+                       entities.push_back(entity_value);
+                    }
+                 },
+             .contains = +[](vve::Handle::value_type entity_value) { return componentPool<TComponent>().contains(entity_value); }};
+      }
 
       template <typename TComponent> static component_pool_type<TComponent> &componentPool() {
          static const bool registered = []() -> bool {

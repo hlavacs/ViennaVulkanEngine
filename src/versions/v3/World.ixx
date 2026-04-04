@@ -101,6 +101,12 @@ namespace vve::v3 {
       }
 
       template <vve::NotHandle... TComponents>
+         requires(sizeof...(TComponents) > 0)
+      [[nodiscard]] std::expected<std::vector<vve::Handle>, vve::Error> view() const {
+         return ecs().template view<std::remove_cvref_t<TComponents>...>();
+      }
+
+      template <vve::NotHandle... TComponents>
       [[nodiscard]] std::expected<vve::Handle, vve::Error> spawn(TComponents &&...components) {
          const auto entity_result = createEntity();
          if (!entity_result) {

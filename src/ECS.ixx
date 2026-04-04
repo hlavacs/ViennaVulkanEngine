@@ -54,6 +54,10 @@ export namespace vve {
 
       template <NotHandle TComponent> [[nodiscard]] std::expected<void, Error> eraseComponent(Handle entity);
 
+      template <NotHandle... TComponents>
+         requires(sizeof...(TComponents) > 0)
+      [[nodiscard]] std::expected<std::vector<Handle>, Error> view() const;
+
    private:
       TImplementation implementation_{};
    };
@@ -90,6 +94,13 @@ export namespace vve {
    [[nodiscard]] std::expected<void, Error> ECSFacade<TImplementation>::eraseComponent(Handle entity) {
       using TStoredComponent = std::remove_cvref_t<TComponent>;
       return implementation_.template eraseComponent<TStoredComponent>(entity);
+   }
+
+   template <typename TImplementation>
+   template <NotHandle... TComponents>
+      requires(sizeof...(TComponents) > 0)
+   [[nodiscard]] std::expected<std::vector<Handle>, Error> ECSFacade<TImplementation>::view() const {
+      return implementation_.template view<std::remove_cvref_t<TComponents>...>();
    }
 
    template <typename TImplementation = detail::DefaultECSImplementation> using ECS = ECSFacade<TImplementation>;
