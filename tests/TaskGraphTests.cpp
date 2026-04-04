@@ -25,7 +25,10 @@ public:
                 events_.push_back(3);
                 return {};
             },
-            {vve::v3::TaskGraphBuilder::taskHandleFor("engine.upload")});
+            {vve::v3::TaskGraphBuilder::taskHandleFor("engine.upload")},
+            {},
+            {},
+            vve::v3::TaskPhase::post_frame);
     }
 
 private:
@@ -69,7 +72,11 @@ int main() {
             [&events](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Error> {
                 events.push_back(4);
                 return {};
-            });
+            },
+            {},
+            {},
+            {},
+            vve::v3::TaskPhase::post_frame);
         builder.addDependency("game.late_update", "game.update");
 
         const auto graph = std::move(builder).build();
@@ -106,6 +113,27 @@ int main() {
         const auto result = vve::v3::executeTaskGraph(graph, {});
         if (result || result.error() != vve::Error::invalid_argument) {
             return 3;
+        }
+    }
+
+    {
+        vve::v3::TaskGraphBuilder builder{};
+        [[maybe_unused]] const auto end_frame = builder.addTask(
+            "task.end_frame",
+            vve::v3::TaskKernelId::end_frame);
+        [[maybe_unused]] const auto invalid_user_update = builder.addTask(
+            "task.invalid_phase",
+            vve::v3::TaskKernelId::none,
+            {},
+            {vve::v3::TaskGraphBuilder::taskHandleFor("task.end_frame")},
+            {},
+            {},
+            vve::v3::TaskPhase::user_update);
+
+        const auto graph = std::move(builder).build();
+        const auto result = vve::v3::executeTaskGraph(graph, {});
+        if (result || result.error() != vve::Error::invalid_argument) {
+            return 5;
         }
     }
 

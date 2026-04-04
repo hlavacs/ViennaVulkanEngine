@@ -32,10 +32,11 @@ namespace vve::v3 {
       }
 
       void registerTasks(TaskGraphBuilder &builder) {
-         const auto begin_frame_task =
-             builder.addTask("task.begin_frame", TaskKernelId::begin_frame, {}, {}, {}, "Begin Frame");
-         const auto end_frame_task =
-             builder.addTask("task.end_frame", TaskKernelId::end_frame, {}, {}, {}, "End Frame");
+          const auto begin_frame_task =
+             builder.addTask("task.begin_frame", TaskKernelId::begin_frame, {}, {}, {}, "Begin Frame",
+                             TaskPhase::begin_frame);
+          const auto end_frame_task =
+             builder.addTask("task.end_frame", TaskKernelId::end_frame, {}, {}, {}, "End Frame", TaskPhase::end_frame);
 
          builder.setTaskCallback(
              begin_frame_task,

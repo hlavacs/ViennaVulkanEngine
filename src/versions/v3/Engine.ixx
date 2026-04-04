@@ -122,8 +122,9 @@ namespace vve::v3 {
          }
 
          const auto sync_world_state_task =
-             builder.addTask("task.sync_world_state", TaskKernelId::none, {},
-                             {TaskGraphBuilder::taskHandleFor("task.poll_window_events")}, {}, "Sync World State");
+              builder.addTask("task.sync_world_state", TaskKernelId::none, {},
+                             {TaskGraphBuilder::taskHandleFor("task.poll_window_events")}, {}, "Sync World State",
+                             TaskPhase::input);
 
          builder.setTaskCallback(
              sync_world_state_task,
@@ -147,7 +148,7 @@ namespace vve::v3 {
                 ([&] {
                    const auto task_name = std::format("task.user_system.{}.update", system_index++);
                    const auto update_task = builder.addTask(task_name, TaskKernelId::none, {}, {sync_world_state_task},
-                                                            {}, std::string(system.name()));
+                                                            {}, std::string(system.name()), TaskPhase::user_update);
                    builder.setTaskCallback(
                        update_task,
                        [&world, &system](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
@@ -188,6 +189,10 @@ namespace vve::v3 {
          for (const auto &dependency : node.depends_on) {
             const auto dependency_it = node_indices.find(dependency.value.value());
             if (dependency_it == node_indices.end()) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+            if (static_cast<std::underlying_type_t<TaskPhase>>(task_graph.nodes[dependency_it->second].phase) >
+                static_cast<std::underlying_type_t<TaskPhase>>(node.phase)) {
                return std::unexpected(vve::Error::invalid_argument);
             }
 

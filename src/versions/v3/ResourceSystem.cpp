@@ -58,8 +58,9 @@ namespace vve::v3 {
 
       void registerTasks(TaskGraphBuilder &builder, const SceneData &) {
          const auto upload_resources_task =
-             builder.addTask("task.upload_resources", TaskKernelId::upload_resources, {},
-                             {TaskGraphBuilder::taskHandleFor("task.cull_visibility_cpu")}, {}, "Upload Resources");
+              builder.addTask("task.upload_resources", TaskKernelId::upload_resources, {},
+                             {TaskGraphBuilder::taskHandleFor("task.cull_visibility_cpu")}, {}, "Upload Resources",
+                             TaskPhase::resources);
 
          builder.setTaskCallback(
              upload_resources_task,

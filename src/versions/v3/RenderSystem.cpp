@@ -131,19 +131,23 @@ namespace vve::v3 {
             const auto consume_frame_output_name =
                 std::format("task.window.{}.consume_frame_output", pipeline.window_id);
 
-            const auto cull_visibility_gpu_task = builder.addTask(
-                cull_visibility_gpu_name, TaskKernelId::cull_visibility_gpu, {},
-                {TaskGraphBuilder::taskHandleFor("task.upload_resources")}, {},
-                std::string("Cull Visibility GPU (") + pipeline.window_id + ")", TaskScope::window, pipeline.window);
-            const auto build_draw_packets_task = builder.addTask(
-                build_draw_packets_name, TaskKernelId::build_draw_packets, {}, {cull_visibility_gpu_task}, {},
-                std::string("Build Draw Packets (") + pipeline.window_id + ")", TaskScope::window, pipeline.window);
-            const auto record_render_graph_task = builder.addTask(
-                record_render_graph_name, TaskKernelId::record_render_graph, {}, {build_draw_packets_task}, {},
-                std::string("Record Render Graph (") + pipeline.window_id + ")", TaskScope::window, pipeline.window);
-            const auto consume_frame_output_task = builder.addTask(
-                consume_frame_output_name, TaskKernelId::consume_frame_output, {}, {record_render_graph_task}, {},
-                std::string("Consume Frame Output (") + pipeline.window_id + ")", TaskScope::window, pipeline.window);
+             const auto cull_visibility_gpu_task = builder.addTask(
+                 cull_visibility_gpu_name, TaskKernelId::cull_visibility_gpu, {},
+                 {TaskGraphBuilder::taskHandleFor("task.upload_resources")}, {},
+                 std::string("Cull Visibility GPU (") + pipeline.window_id + ")", TaskPhase::render,
+                 TaskScope::window, pipeline.window);
+             const auto build_draw_packets_task = builder.addTask(
+                 build_draw_packets_name, TaskKernelId::build_draw_packets, {}, {cull_visibility_gpu_task}, {},
+                 std::string("Build Draw Packets (") + pipeline.window_id + ")", TaskPhase::render, TaskScope::window,
+                 pipeline.window);
+             const auto record_render_graph_task = builder.addTask(
+                 record_render_graph_name, TaskKernelId::record_render_graph, {}, {build_draw_packets_task}, {},
+                 std::string("Record Render Graph (") + pipeline.window_id + ")", TaskPhase::render,
+                 TaskScope::window, pipeline.window);
+             const auto consume_frame_output_task = builder.addTask(
+                 consume_frame_output_name, TaskKernelId::consume_frame_output, {}, {record_render_graph_task}, {},
+                 std::string("Consume Frame Output (") + pipeline.window_id + ")", TaskPhase::render,
+                 TaskScope::window, pipeline.window);
 
             builder.setTaskCallback(
                 cull_visibility_gpu_task,

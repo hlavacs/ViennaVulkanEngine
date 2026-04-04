@@ -87,9 +87,10 @@ namespace vve::v3 {
       }
 
       void registerTasks(TaskGraphBuilder &builder) {
-         const auto poll_window_events_task =
-             builder.addTask("task.poll_window_events", TaskKernelId::poll_window_events, {},
-                             {TaskGraphBuilder::taskHandleFor("task.begin_frame")}, {}, "Poll Window Events");
+          const auto poll_window_events_task =
+              builder.addTask("task.poll_window_events", TaskKernelId::poll_window_events, {},
+                             {TaskGraphBuilder::taskHandleFor("task.begin_frame")}, {}, "Poll Window Events",
+                             TaskPhase::input);
 
          builder.setTaskCallback(
              poll_window_events_task,

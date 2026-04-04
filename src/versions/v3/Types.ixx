@@ -24,6 +24,18 @@ export namespace vve::v3 {
       end_frame
    };
 
+   enum class TaskPhase : std::uint32_t {
+      automatic = 0,
+      begin_frame,
+      input,
+      user_update,
+      scene,
+      resources,
+      render,
+      end_frame,
+      post_frame
+   };
+
    enum class WindowEventType : std::uint32_t {
       none = 0,
       close_requested,
@@ -184,6 +196,7 @@ export namespace vve::v3 {
    struct TaskNodeDesc {
       TaskNodeHandle handle{};
       TaskKernelId kernel{TaskKernelId::none};
+      TaskPhase phase{TaskPhase::automatic};
       TaskScope scope{TaskScope::global};
       std::optional<WindowHandle> window{};
       Vector<TaskNodeHandle> depends_on{};
@@ -201,6 +214,7 @@ export namespace vve::v3 {
       [[nodiscard]] TaskNodeHandle addTask(std::string_view stable_name, TaskKernelId kernel,
                                            TaskCallback callback = {}, Vector<TaskNodeHandle> depends_on = {},
                                            Vector<ResourceAccess> accesses = {}, std::string debug_name = {},
+                                           TaskPhase phase = TaskPhase::automatic,
                                            TaskScope scope = TaskScope::global,
                                            std::optional<WindowHandle> window = std::nullopt);
 
@@ -212,6 +226,7 @@ export namespace vve::v3 {
       [[nodiscard]] bool containsTask(std::string_view stable_name) const;
       void addDependency(TaskNodeHandle task, TaskNodeHandle dependency);
       void addDependency(std::string_view task_name, std::string_view dependency_name);
+      [[nodiscard]] static TaskPhase inferPhase(TaskKernelId kernel);
 
       [[nodiscard]] TaskGraph build() &&;
       [[nodiscard]] std::vector<TaskNodeHandle> rootTasks() const;
@@ -223,11 +238,12 @@ export namespace vve::v3 {
 
    inline TaskNodeHandle TaskGraphBuilder::addTask(std::string_view stable_name, TaskKernelId kernel,
                                                    TaskCallback callback, Vector<TaskNodeHandle> depends_on,
-                                                   Vector<ResourceAccess> accesses, std::string debug_name,
+                                                   Vector<ResourceAccess> accesses, std::string debug_name, TaskPhase phase,
                                                    TaskScope scope, std::optional<WindowHandle> window) {
       const TaskNodeHandle handle = makeTaskHandle(stable_name);
       addTask(TaskNodeDesc{.handle = handle,
                            .kernel = kernel,
+                           .phase = phase == TaskPhase::automatic ? inferPhase(kernel) : phase,
                            .scope = scope,
                            .window = window,
                            .depends_on = std::move(depends_on),
@@ -240,6 +256,9 @@ export namespace vve::v3 {
    inline void TaskGraphBuilder::addTask(TaskNodeDesc node) {
       if (node.debug_name.empty()) {
          node.debug_name = "task." + std::to_string(node.handle.value.value());
+      }
+      if (node.phase == TaskPhase::automatic) {
+         node.phase = inferPhase(node.kernel);
       }
 
       nodes_.push_back(std::move(node));
@@ -288,6 +307,31 @@ export namespace vve::v3 {
 
    inline void TaskGraphBuilder::addDependency(std::string_view task_name, std::string_view dependency_name) {
       addDependency(makeTaskHandle(task_name), makeTaskHandle(dependency_name));
+   }
+
+   inline TaskPhase TaskGraphBuilder::inferPhase(TaskKernelId kernel) {
+      switch (kernel) {
+      case TaskKernelId::begin_frame:
+         return TaskPhase::begin_frame;
+      case TaskKernelId::poll_window_events:
+         return TaskPhase::input;
+      case TaskKernelId::update_transforms:
+      case TaskKernelId::sample_animations:
+      case TaskKernelId::cull_visibility_cpu:
+         return TaskPhase::scene;
+      case TaskKernelId::upload_resources:
+         return TaskPhase::resources;
+      case TaskKernelId::cull_visibility_gpu:
+      case TaskKernelId::build_draw_packets:
+      case TaskKernelId::record_render_graph:
+      case TaskKernelId::consume_frame_output:
+         return TaskPhase::render;
+      case TaskKernelId::end_frame:
+         return TaskPhase::end_frame;
+      case TaskKernelId::none:
+      default:
+         return TaskPhase::user_update;
+      }
    }
 
    inline TaskGraph TaskGraphBuilder::build() && { return TaskGraph{.nodes = std::move(nodes_)}; }

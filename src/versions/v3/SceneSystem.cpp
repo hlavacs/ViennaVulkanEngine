@@ -35,11 +35,13 @@ namespace vve::v3 {
 
       void registerTasks(TaskGraphBuilder &builder, const SceneData &) {
          const auto update_transforms_task =
-             builder.addTask("task.update_transforms", TaskKernelId::update_transforms, {},
-                             {TaskGraphBuilder::taskHandleFor("task.begin_frame")}, {}, "Update Transforms");
+              builder.addTask("task.update_transforms", TaskKernelId::update_transforms, {},
+                             {TaskGraphBuilder::taskHandleFor("task.begin_frame")}, {}, "Update Transforms",
+                             TaskPhase::scene);
          const auto cull_visibility_cpu_task =
-             builder.addTask("task.cull_visibility_cpu", TaskKernelId::cull_visibility_cpu, {},
-                             {TaskGraphBuilder::taskHandleFor("task.update_transforms")}, {}, "Cull Visibility CPU");
+              builder.addTask("task.cull_visibility_cpu", TaskKernelId::cull_visibility_cpu, {},
+                             {TaskGraphBuilder::taskHandleFor("task.update_transforms")}, {}, "Cull Visibility CPU",
+                             TaskPhase::scene);
 
          builder.setTaskCallback(
              update_transforms_task,
