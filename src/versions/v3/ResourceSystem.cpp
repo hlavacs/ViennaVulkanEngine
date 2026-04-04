@@ -35,7 +35,15 @@ namespace vve::v3 {
          return {};
       }
 
-      [[nodiscard]] std::expected<std::vector<ResourceRecord>, vve::Error> enumerate() const { return records_; }
+      [[nodiscard]] std::expected<std::vector<ResourceRecord>, vve::Error> enumerate() const {
+         std::vector<ResourceRecord> records{};
+         records.reserve(records_.size());
+         for (const auto &record : records_) {
+            records.push_back(record);
+         }
+
+         return records;
+      }
 
       [[nodiscard]] std::expected<void, vve::Error> uploadResources(const FrameContext &, const SceneData &) {
          for (auto &record : records_) {
@@ -65,7 +73,7 @@ namespace vve::v3 {
       }
 
    private:
-      std::vector<ResourceRecord> records_{};
+      SegmentedVector<ResourceRecord> records_{};
    };
 
    template <>

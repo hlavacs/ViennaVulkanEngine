@@ -277,7 +277,7 @@ namespace vve::v3 {
       }
 
       bool video_initialized_{false};
-      std::vector<WindowRecord> windows_{};
+      SegmentedVector<WindowRecord> windows_{};
       std::unordered_map<Uint32, std::size_t> window_indices_{};
       std::vector<WindowState> states_{};
       std::vector<WindowEvent> events_{};
