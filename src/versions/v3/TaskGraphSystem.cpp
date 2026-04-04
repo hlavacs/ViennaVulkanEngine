@@ -12,6 +12,7 @@ namespace vve::v3 {
                                     WindowSystem &window_system, GraphicsBackend &graphics_backend,
                                     ResourceSystem &resource_system, SceneSystem &scene_system,
                                     RenderSystem &render_system,
+                                    std::function<void(TaskGraphBuilder &, const SceneData &)> extra_tasks,
                                     VectorConstRange<WindowRenderPipeline> render_pipelines) {
          TaskGraphBuilder builder{};
 
@@ -25,6 +26,9 @@ namespace vve::v3 {
             if (task_system != nullptr) {
                task_system->registerTasks(builder, scene);
             }
+         }
+         if (extra_tasks) {
+            extra_tasks(builder, scene);
          }
 
          for (const auto &root : builder.rootTasks()) {
@@ -84,9 +88,10 @@ namespace vve::v3 {
    TaskGraph TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::build(
        const SceneData &scene, VectorConstRange<ITaskSystem *> task_systems, WindowSystem &window_system,
        GraphicsBackend &graphics_backend, ResourceSystem &resource_system, SceneSystem &scene_system,
-       RenderSystem &render_system, VectorConstRange<WindowRenderPipeline> render_pipelines) {
+       RenderSystem &render_system, std::function<void(TaskGraphBuilder &, const SceneData &)> extra_tasks,
+       VectorConstRange<WindowRenderPipeline> render_pipelines) {
       return implementation_->build(scene, task_systems, window_system, graphics_backend, resource_system, scene_system,
-                                    render_system, render_pipelines);
+                                    render_system, std::move(extra_tasks), render_pipelines);
    }
 
    template class TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>;

@@ -174,6 +174,7 @@ export namespace vve::v3 {
    struct TaskExecutionContext {
       const FrameContext *frame_context{nullptr};
       SceneData *scene{nullptr};
+      vve::World *world{nullptr};
       std::shared_ptr<const WindowFrameData> window_frame{};
       std::optional<WindowHandle> window{};
    };

@@ -221,7 +221,7 @@ export namespace vve::v3 {
       [[nodiscard]] TaskGraph build(const SceneData &scene, VectorConstRange<ITaskSystem *> task_systems,
                                     WindowSystem &window_system, GraphicsBackend &graphics_backend,
                                     ResourceSystem &resource_system, SceneSystem &scene_system,
-                                    RenderSystem &render_system,
+                                    RenderSystem &render_system, std::function<void(TaskGraphBuilder &, const SceneData &)> extra_tasks,
                                     VectorConstRange<WindowRenderPipeline> render_pipelines);
 
    private:

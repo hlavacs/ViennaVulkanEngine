@@ -114,18 +114,55 @@ namespace vve::v3 {
       }
 
       template <typename... TSystems>
-      [[nodiscard]] std::expected<void, vve::Error>
-      updateUserSystems(std::tuple<TSystems...> &systems, vve::World &world, const FrameContext &frame_context,
-                        const WindowFrameData &window_frame) {
-         std::expected<void, vve::Error> result{};
+      void registerUserSystemTasks(std::tuple<TSystems...> &systems, vve::World &world,
+                                   std::vector<vve::WindowInfo> &world_windows, vve::InputState &input_state,
+                                   vve::detail::WorldRuntimeAccess &world_runtime_access, TaskGraphBuilder &builder) {
+         if constexpr (sizeof...(TSystems) == 0) {
+            return;
+         }
+
+         const auto sync_world_state_task =
+             builder.addTask("task.sync_world_state", TaskKernelId::none, {},
+                             {TaskGraphBuilder::taskHandleFor("task.poll_window_events")}, {}, "Sync World State");
+
+         builder.setTaskCallback(
+             sync_world_state_task,
+             [&world, &world_windows, &input_state,
+              &world_runtime_access](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
+                if (execution_context.window_frame == nullptr || execution_context.world == nullptr ||
+                    execution_context.world != &world) {
+                   return std::unexpected(vve::Error::invalid_argument);
+                }
+
+                detail::syncWorldWindows(*execution_context.window_frame, world_windows);
+                world_runtime_access.windows_begin = world_windows.cbegin();
+                world_runtime_access.windows_end = world_windows.cend();
+                detail::syncWorldInput(*execution_context.window_frame, input_state);
+                return {};
+             });
+
+         std::size_t system_index = 0;
          std::apply(
              [&](auto &...system) {
-                ((result = invokeUserSystemUpdate(system, world, frame_context, window_frame),
-                  result ? void() : void()),
+                ([&] {
+                   const auto task_name = std::format("task.user_system.{}.update", system_index++);
+                   const auto update_task = builder.addTask(task_name, TaskKernelId::none, {}, {sync_world_state_task},
+                                                            {}, std::string(system.name()));
+                   builder.setTaskCallback(
+                       update_task,
+                       [&world, &system](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
+                          if (execution_context.frame_context == nullptr || execution_context.window_frame == nullptr ||
+                              execution_context.world == nullptr || execution_context.world != &world) {
+                             return std::unexpected(vve::Error::invalid_argument);
+                          }
+
+                          return invokeUserSystemUpdate(system, *execution_context.world, *execution_context.frame_context,
+                                                        *execution_context.window_frame);
+                       });
+                }(),
                  ...);
              },
              systems);
-         return result;
       }
 
    } // namespace detail
@@ -370,19 +407,9 @@ namespace vve::v3 {
       }
 
       const TaskExecutionContext execution_context{
-          .frame_context = &frame_context, .scene = &*scene_, .window_frame = runtime_.window_frame};
+          .frame_context = &frame_context, .scene = &*scene_, .world = &world_, .window_frame = runtime_.window_frame};
       if (auto execute_result = executeTaskGraph(*task_graph_, execution_context); !execute_result) {
          return std::unexpected(execute_result.error());
-      }
-
-      detail::syncWorldWindows(*runtime_.window_frame, world_windows_);
-      world_runtime_access_.windows_begin = world_windows_.cbegin();
-      world_runtime_access_.windows_end = world_windows_.cend();
-      detail::syncWorldInput(*runtime_.window_frame, input_state_);
-      if (auto user_system_result =
-              detail::updateUserSystems(user_systems_, world_, frame_context, *runtime_.window_frame);
-          !user_system_result) {
-         return std::unexpected(user_system_result.error());
       }
 
       if (std::ranges::any_of(runtime_.window_frame->windows,
@@ -450,9 +477,14 @@ namespace vve::v3 {
          }
       }
 
-      auto task_graph = runtime_.task_graph_system.build(
-          *scene_, makeRange(task_systems), runtime_.window_system, runtime_.graphics_backend, runtime_.resource_system,
-          runtime_.scene_system, *runtime_.render_system, makeRange(runtime_.render_pipelines));
+       auto task_graph = runtime_.task_graph_system.build(
+           *scene_, makeRange(task_systems), runtime_.window_system, runtime_.graphics_backend, runtime_.resource_system,
+           runtime_.scene_system, *runtime_.render_system,
+           [this](TaskGraphBuilder &builder, const SceneData &) {
+              detail::registerUserSystemTasks(user_systems_, world_, world_windows_, input_state_,
+                                              world_runtime_access_, builder);
+           },
+           makeRange(runtime_.render_pipelines));
       task_graph_ = std::move(task_graph);
       task_graph_dirty_ = false;
       return {};

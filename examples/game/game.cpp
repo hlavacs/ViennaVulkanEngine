@@ -1,6 +1,12 @@
+#include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <expected>
+#include <iostream>
+#include <string_view>
+
 import VEEngine;
 import VEEngine.V3;
-import std;
 
 namespace {
 
@@ -93,8 +99,9 @@ public:
 
         if (frame_counter_++ % 120 == 0) {
             const auto main_window = world.findWindow("main");
-            std::cout << '[' << name() << "] player=(" << transform.translation.x << ", "
-                      << transform.translation.y << ')';
+            const auto player_x = static_cast<int>(std::lround(transform.translation.x));
+            const auto player_y = static_cast<int>(std::lround(transform.translation.y));
+            std::cout << '[' << name() << "] player=(" << player_x << ", " << player_y << ')';
             if (main_window) {
                 std::cout << " window=" << main_window->width << 'x' << main_window->height;
             }
