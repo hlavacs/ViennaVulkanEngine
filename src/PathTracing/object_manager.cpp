@@ -331,7 +331,7 @@ namespace vve {
 		VkAccelerationStructureGeometryTrianglesDataKHR triangles{};
 		triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
 		//change format once propper vertex data is used
-		triangles.vertexFormat = VK_FORMAT_R32G32B32A32_SFLOAT;
+		triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
 		triangles.vertexStride = sizeof(Vertex);
 		triangles.maxVertex = mesh.firstVertex + mesh.vertexCount;
 

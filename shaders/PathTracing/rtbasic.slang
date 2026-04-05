@@ -39,9 +39,9 @@ struct HitPayload
 
 struct IntegrationStepQueryRecord {
     // Outputs: per-bounce integration state.
-    float3 throughput = float3(1.0);
-    float3 directLight = float3(0.0);
-    float3 indirectLight = float3(0.0);
+    float3 throughput;
+    float3 directLight;
+    float3 indirectLight;
     RayDesc indirectRay = RayDesc();
 }
 
@@ -233,6 +233,7 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
     IntegrationStepQueryRecord integrationStep;
 
     integrationStep.directLight = directLight;
+    integrationStep.indirectLight = float3(0.0);
     integrationStep.throughput = bsdf;
     integrationStep.indirectRay = indirectRay;
 
