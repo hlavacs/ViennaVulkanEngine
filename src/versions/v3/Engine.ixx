@@ -142,7 +142,7 @@ namespace vve::v3 {
                                                                     vve::World &world) {
          std::expected<void, vve::Error> result{};
          std::apply(
-             [&](auto &...system) { ((result = invokeUserSystemInit(system, world), result ? void() : void()), ...); },
+             [&](auto &...system) { ((result = invokeUserSystemInit(system, world)), ...); },
              systems);
          return result;
       }
