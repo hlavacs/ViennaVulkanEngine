@@ -133,11 +133,12 @@ Do not jump directly into code generation unless explicitly asked.
 ### Code Documentation
 
 - Add extensive Doxygen compatible comments to the code.
-- Each file, function, class, struct gets a header explaining why it is there and if necessary input, output and return parameters
+- Each file, function, class, struct gets a header explaining why it is there and if necessary input, output and return parameters.
 - In a struct or enum or class, each member variable or value must have its own comment line at the end. 
+- Function declarations should not have comments, only definitions.
 - When adding comments, try to minimize the number of lines in the file. If max line length allows, put comments in the same line after the code.
 - Add comments to roughly 30 to 50 percent of all code lines.
-- If a new code block, e.g., a loop, begins, add comments in front of it to exaplain what the following code does.
+- If a new code block, e.g., a loop, begins, add comments in front of it to explain what the following code does.
 - Keep comments simple and abstract. Prefer "what" to "how".
 - In sequential lines, try to align comments vertically by adding tabs. 
 

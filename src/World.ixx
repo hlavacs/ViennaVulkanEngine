@@ -74,17 +74,11 @@ export namespace vve {
     */
    class VVE_API InputState {
    public:
-      /// @brief Returns whether a key is currently held down.
       [[nodiscard]] bool isKeyDown(std::int32_t keycode) const;
-      /// @brief Returns whether a key transitioned to pressed during the current frame.
       [[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const;
-      /// @brief Returns whether a key transitioned to released during the current frame.
       [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const;
-      /// @brief Returns the latest known mouse position for a window, if any.
       [[nodiscard]] std::optional<math::Vec2> mousePosition(Handle window) const;
-      /// @brief Returns the accumulated mouse movement delta for a window this frame.
       [[nodiscard]] math::Vec2 mouseDelta(Handle window) const;
-      /// @brief Returns the accumulated mouse wheel delta for a window this frame.
       [[nodiscard]] math::Vec2 mouseWheelDelta(Handle window) const;
 
    private:
@@ -120,6 +114,10 @@ export namespace vve {
          void *load_scene_context{nullptr}; ///< Opaque callback context passed back to `load_scene`.
       };
 
+      /**
+       * @brief Clears per-frame transient input state before new events are applied.
+       * @param input Input snapshot mutated for the next frame.
+       */
       inline void beginInputFrame(InputState &input) {
          input.keys_pressed_.clear();
          input.keys_released_.clear();
@@ -127,16 +125,34 @@ export namespace vve {
          input.mouse_wheel_delta_.clear();
       }
 
+      /**
+       * @brief Stores the latest mouse position for a window.
+       * @param input Input snapshot receiving the update.
+       * @param window Window handle associated with the mouse event.
+       * @param position Latest mouse position in window coordinates.
+       */
       inline void setMousePosition(InputState &input, Handle window, math::Vec2 position) {
          input.mouse_positions_[window.value()] = position;
       }
 
+      /**
+       * @brief Accumulates mouse movement delta for a window during the current frame.
+       * @param input Input snapshot receiving the update.
+       * @param window Window handle associated with the mouse event.
+       * @param delta Mouse movement delta to accumulate.
+       */
       inline void addMouseDelta(InputState &input, Handle window, math::Vec2 delta) {
          auto [it, inserted] = input.mouse_delta_.try_emplace(window.value(), math::Vec2(math::zero(), math::zero()));
          auto &value = it->second;
          value += delta;
       }
 
+      /**
+       * @brief Accumulates mouse wheel delta for a window during the current frame.
+       * @param input Input snapshot receiving the update.
+       * @param window Window handle associated with the mouse-wheel event.
+       * @param delta Mouse wheel delta to accumulate.
+       */
       inline void addMouseWheelDelta(InputState &input, Handle window, math::Vec2 delta) {
          auto [it, inserted] =
              input.mouse_wheel_delta_.try_emplace(window.value(), math::Vec2(math::zero(), math::zero()));
@@ -144,16 +160,30 @@ export namespace vve {
          value += delta;
       }
 
+      /**
+       * @brief Marks a key as pressed in the current frame snapshot.
+       * @param input Input snapshot receiving the update.
+       * @param keycode Platform keycode that became pressed.
+       */
       inline void pressKey(InputState &input, std::int32_t keycode) {
          input.keys_down_.insert(keycode);
          input.keys_pressed_.insert(keycode);
       }
 
+      /**
+       * @brief Marks a key as released in the current frame snapshot.
+       * @param input Input snapshot receiving the update.
+       * @param keycode Platform keycode that became released.
+       */
       inline void releaseKey(InputState &input, std::int32_t keycode) {
          input.keys_down_.erase(keycode);
          input.keys_released_.insert(keycode);
       }
 
+      /**
+       * @brief Returns a shared empty input snapshot used when no runtime is bound.
+       * @return Immutable empty input snapshot.
+       */
       [[nodiscard]] inline const InputState &emptyInputState() {
          static const InputState input{};
          return input;
@@ -182,77 +212,46 @@ export namespace vve {
     */
    template <typename TImplementation> class VVE_API WorldFacade {
    public:
-      /// @brief Creates a world facade backed only by ECS storage.
       explicit WorldFacade(ECS<> &ecs) noexcept;
-      /// @brief Creates a world facade with ECS storage and runtime service access.
       explicit WorldFacade(ECS<> &ecs, const detail::WorldRuntimeAccess &runtime_access) noexcept;
 
-      /// @brief Returns mutable access to the underlying ECS facade.
       [[nodiscard]] ECS<> &ecs() noexcept;
-      /// @brief Returns read-only access to the underlying ECS facade.
       [[nodiscard]] const ECS<> &ecs() const noexcept; 
 
-      /// @brief Creates a new entity.
       [[nodiscard]] std::expected<Handle, Error> createEntity();
-      /// @brief Creates a new object entity. Currently equivalent to `createEntity()`.
       [[nodiscard]] std::expected<Handle, Error> createObject();
-      /// @brief Returns whether an entity currently exists.
       [[nodiscard]] std::expected<bool, Error> exists(Handle entity) const;
-      /// @brief Destroys an entity and all of its components.
       [[nodiscard]] std::expected<void, Error> destroyEntity(Handle entity);
-      /// @brief Destroys an object entity. Currently equivalent to `destroyEntity()`.
       [[nodiscard]] std::expected<void, Error> destroyObject(Handle entity);
 
-      /// @brief Adds a component to an entity through the world facade.
       template <NotHandle TComponent>
       [[nodiscard]] std::expected<void, Error> addComponent(Handle entity, TComponent &&component);
 
-      /// @brief Returns a copy of a component if the entity has one.
       template <NotHandle TComponent>
       [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, Error>
       getComponent(Handle entity) const;
 
-      /// @brief Replaces or inserts a component on an entity.
       template <NotHandle TComponent>
       [[nodiscard]] std::expected<void, Error> setComponent(Handle entity, TComponent &&component);
 
-      /// @brief Returns whether an entity owns a component of type `TComponent`.
       template <NotHandle TComponent> [[nodiscard]] std::expected<bool, Error> hasComponent(Handle entity) const;
 
-      /// @brief Removes a component of type `TComponent` from an entity.
       template <NotHandle TComponent> [[nodiscard]] std::expected<void, Error> removeComponent(Handle entity);
 
-      /// @brief Creates an entity and attaches all provided components.
       template <NotHandle... TComponents> [[nodiscard]] std::expected<Handle, Error> spawn(TComponents &&...components);
 
-      /// @brief Returns the currently visible runtime window range.
       [[nodiscard]] std::ranges::subrange<std::vector<WindowInfo>::const_iterator> windows() const;
-      /// @brief Finds a window by handle.
       [[nodiscard]] std::optional<WindowInfo> findWindow(Handle window) const;
-      /// @brief Finds a window by its stable string id.
       [[nodiscard]] std::optional<WindowInfo> findWindow(std::string_view window_id) const;
-      /// @brief Returns the current frame's input snapshot.
       [[nodiscard]] const InputState &input() const;
-      /// @brief Requests scene loading through the runtime scene-loading seam.
       [[nodiscard]] std::expected<void, Error> loadScene(const std::filesystem::path &path);
 
-      /// @brief Returns an entity transform component if present.
       [[nodiscard]] std::expected<std::optional<Transform>, Error> getTransform(Handle entity) const;
-      /// @brief Replaces an entity transform component.
       [[nodiscard]] std::expected<void, Error> setTransform(Handle entity, const Transform &transform);
-      /// @brief Adds `offset` to an entity transform's translation.
       [[nodiscard]] std::expected<void, Error> translate(Handle entity, const math::Vec3 &offset);
-      /// @brief Premultiplies an entity transform by `rotation`.
       [[nodiscard]] std::expected<void, Error> rotate(Handle entity, const math::Quat &rotation);
-      /// @brief Replaces an entity transform scale.
       [[nodiscard]] std::expected<void, Error> setScale(Handle entity, const math::Vec3 &scale);
 
-      /**
-       * @brief Mutates a component by value and writes the result back.
-       *
-       * The mutator operates on a temporary component copy. The updated value
-       * is committed through `setComponent()` if the component exists.
-       */
       template <NotHandle TComponent, typename TMutator>
          requires(std::invocable<TMutator, std::remove_cvref_t<TComponent> &>)
       [[nodiscard]] std::expected<void, Error> modifyComponent(Handle entity, TMutator &&mutator);
@@ -264,18 +263,35 @@ export namespace vve {
    /// @brief Default world facade alias for the selected engine namespace.
    using World = WorldFacade<detail::DefaultWorldImplementation>;
 
+   /**
+    * @brief Creates a world facade backed only by ECS storage.
+    * @param ecs ECS facade exposed through the world boundary.
+    */
    template <typename TImplementation> WorldFacade<TImplementation>::WorldFacade(ECS<> &ecs) noexcept : implementation_(ecs) {}
 
+   /**
+    * @brief Creates a world facade with ECS storage and runtime service access.
+    * @param ecs ECS facade exposed through the world boundary.
+    * @param runtime_access Runtime bridge used for windows, input, and scene loading.
+    */
    template <typename TImplementation>
    WorldFacade<TImplementation>::WorldFacade(ECS<> &ecs, const detail::WorldRuntimeAccess &runtime_access) noexcept
        : implementation_(ecs, runtime_access) {}
 
+   /// @brief Returns whether a key is currently held down.
    inline bool InputState::isKeyDown(std::int32_t keycode) const { return keys_down_.contains(keycode); }
 
+   /// @brief Returns whether a key transitioned to pressed during the current frame.
    inline bool InputState::wasKeyPressed(std::int32_t keycode) const { return keys_pressed_.contains(keycode); }
 
+   /// @brief Returns whether a key transitioned to released during the current frame.
    inline bool InputState::wasKeyReleased(std::int32_t keycode) const { return keys_released_.contains(keycode); }
 
+   /**
+    * @brief Returns the latest known mouse position for a window, if any.
+    * @param window Window handle to inspect.
+    * @return Mouse position when known for the current frame.
+    */
    inline std::optional<math::Vec2> InputState::mousePosition(Handle window) const {
       const auto it = mouse_positions_.find(window.value());
       if (it == mouse_positions_.end()) {
@@ -285,104 +301,133 @@ export namespace vve {
       return it->second;
    }
 
+   /**
+    * @brief Returns the accumulated mouse movement delta for a window this frame.
+    * @param window Window handle to inspect.
+    * @return Mouse delta accumulated during the current frame.
+    */
    inline math::Vec2 InputState::mouseDelta(Handle window) const {
       const auto it = mouse_delta_.find(window.value());
       return it == mouse_delta_.end() ? math::Vec2(math::zero(), math::zero()) : it->second;
    }
 
+   /**
+    * @brief Returns the accumulated mouse wheel delta for a window this frame.
+    * @param window Window handle to inspect.
+    * @return Mouse wheel delta accumulated during the current frame.
+    */
    inline math::Vec2 InputState::mouseWheelDelta(Handle window) const {
       const auto it = mouse_wheel_delta_.find(window.value());
       return it == mouse_wheel_delta_.end() ? math::Vec2(math::zero(), math::zero()) : it->second;
    }
 
+   /// @brief Returns mutable access to the underlying ECS facade.
    template <typename TImplementation> inline ECS<> &WorldFacade<TImplementation>::ecs() noexcept {
       return implementation_.ecs();
    }
 
+   /// @brief Returns read-only access to the underlying ECS facade.
    template <typename TImplementation> inline const ECS<> &WorldFacade<TImplementation>::ecs() const noexcept {
       return implementation_.ecs();
    }
 
+   /// @brief Creates a new entity.
    template <typename TImplementation>
    inline std::expected<Handle, Error> WorldFacade<TImplementation>::createEntity() {
       return implementation_.createEntity();
    }
 
+   /// @brief Creates a new object entity. Currently equivalent to `createEntity()`.
    template <typename TImplementation>
    inline std::expected<Handle, Error> WorldFacade<TImplementation>::createObject() {
       return implementation_.createObject();
    }
 
+   /// @brief Returns whether an entity currently exists.
    template <typename TImplementation>
    inline std::expected<bool, Error> WorldFacade<TImplementation>::exists(Handle entity) const {
       return implementation_.exists(entity);
    }
 
+   /// @brief Destroys an entity and all of its components.
    template <typename TImplementation>
    inline std::expected<void, Error> WorldFacade<TImplementation>::destroyEntity(Handle entity) {
       return implementation_.destroyEntity(entity);
    }
 
+   /// @brief Destroys an object entity. Currently equivalent to `destroyEntity()`.
    template <typename TImplementation>
    inline std::expected<void, Error> WorldFacade<TImplementation>::destroyObject(Handle entity) {
       return implementation_.destroyObject(entity);
    }
 
+   /// @brief Returns the currently visible runtime window range.
    template <typename TImplementation>
    inline std::ranges::subrange<std::vector<WindowInfo>::const_iterator> WorldFacade<TImplementation>::windows() const {
       return implementation_.windows();
    }
 
+   /// @brief Finds a window by handle.
    template <typename TImplementation> inline std::optional<WindowInfo> WorldFacade<TImplementation>::findWindow(Handle window) const {
       return implementation_.findWindow(window);
    }
 
+   /// @brief Finds a window by its stable string id.
    template <typename TImplementation>
    inline std::optional<WindowInfo> WorldFacade<TImplementation>::findWindow(std::string_view window_id) const {
       return implementation_.findWindow(window_id);
    }
 
+   /// @brief Returns the current frame's input snapshot.
    template <typename TImplementation> inline const InputState &WorldFacade<TImplementation>::input() const {
       return implementation_.input();
    }
 
+   /// @brief Requests scene loading through the runtime scene-loading seam.
    template <typename TImplementation>
    inline std::expected<void, Error> WorldFacade<TImplementation>::loadScene(const std::filesystem::path &path) {
       return implementation_.loadScene(path);
    }
 
+   /// @brief Returns an entity transform component if present.
    template <typename TImplementation>
    inline std::expected<std::optional<Transform>, Error> WorldFacade<TImplementation>::getTransform(Handle entity) const {
       return implementation_.getTransform(entity);
    }
 
+   /// @brief Replaces an entity transform component.
    template <typename TImplementation>
    inline std::expected<void, Error> WorldFacade<TImplementation>::setTransform(Handle entity, const Transform &transform) {
       return implementation_.setTransform(entity, transform);
    }
 
+   /// @brief Adds `offset` to an entity transform's translation.
    template <typename TImplementation>
    inline std::expected<void, Error> WorldFacade<TImplementation>::translate(Handle entity, const math::Vec3 &offset) {
       return implementation_.translate(entity, offset);
    }
 
+   /// @brief Premultiplies an entity transform by `rotation`.
    template <typename TImplementation>
    inline std::expected<void, Error> WorldFacade<TImplementation>::rotate(Handle entity, const math::Quat &rotation) {
       return implementation_.rotate(entity, rotation);
    }
 
+   /// @brief Replaces an entity transform scale.
    template <typename TImplementation>
    inline std::expected<void, Error> WorldFacade<TImplementation>::setScale(Handle entity, const math::Vec3 &scale) {
       return implementation_.setScale(entity, scale);
    }
 
+   /// @brief Adds a component to an entity through the world facade.
    template <typename TImplementation>
    template <NotHandle TComponent>
    [[nodiscard]] std::expected<void, Error> WorldFacade<TImplementation>::addComponent(Handle entity,
-                                                                                       TComponent &&component) {
+                                                                                      TComponent &&component) {
       return implementation_.addComponent(entity, std::forward<TComponent>(component));
    }
 
+   /// @brief Returns a copy of a component if the entity has one.
    template <typename TImplementation>
    template <NotHandle TComponent>
    [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, Error>
@@ -390,6 +435,7 @@ export namespace vve {
       return implementation_.template getComponent<TComponent>(entity);
    }
 
+   /// @brief Replaces or inserts a component on an entity.
    template <typename TImplementation>
    template <NotHandle TComponent>
    [[nodiscard]] std::expected<void, Error> WorldFacade<TImplementation>::setComponent(Handle entity,
@@ -397,24 +443,35 @@ export namespace vve {
       return implementation_.setComponent(entity, std::forward<TComponent>(component));
    }
 
+   /// @brief Returns whether an entity owns a component of type `TComponent`.
    template <typename TImplementation>
    template <NotHandle TComponent>
    [[nodiscard]] std::expected<bool, Error> WorldFacade<TImplementation>::hasComponent(Handle entity) const {
       return implementation_.template hasComponent<TComponent>(entity);
    }
 
+   /// @brief Removes a component of type `TComponent` from an entity.
    template <typename TImplementation>
    template <NotHandle TComponent>
    [[nodiscard]] std::expected<void, Error> WorldFacade<TImplementation>::removeComponent(Handle entity) {
       return implementation_.template removeComponent<TComponent>(entity);
    }
 
+   /// @brief Creates an entity and attaches all provided components.
    template <typename TImplementation>
    template <NotHandle... TComponents>
    [[nodiscard]] std::expected<Handle, Error> WorldFacade<TImplementation>::spawn(TComponents &&...components) {
       return implementation_.spawn(std::forward<TComponents>(components)...);
    }
 
+   /**
+    * @brief Mutates a component by value and writes the result back.
+    * @tparam TComponent Component type to read, mutate, and write back.
+    * @tparam TMutator Callable that mutates the temporary component copy.
+    * @param entity Entity handle to mutate.
+    * @param mutator Mutation callable applied to the copied component value.
+    * @return Empty success result, or an error when the component mutation fails.
+    */
    template <typename TImplementation>
    template <NotHandle TComponent, typename TMutator>
       requires(std::invocable<TMutator, std::remove_cvref_t<TComponent> &>)

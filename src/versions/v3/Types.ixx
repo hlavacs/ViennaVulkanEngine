@@ -293,18 +293,6 @@ export namespace vve::v3 {
     */
    class TaskGraphBuilder {
    public:
-      /**
-       * @brief Adds a task with an optional callback, dependency list, and resource access list.
-       * @param stable_name Stable name hashed into the task handle.
-       * @param kernel Built-in kernel classification.
-       * @param callback Optional callback invoked during execution.
-       * @param depends_on Explicit predecessor task handles.
-       * @param accesses Coarse resource accesses associated with the task.
-       * @param debug_name Human-readable task name for diagnostics.
-       * @param phase Optional explicit task phase override.
-       * @param scope Task scope used by scheduling and diagnostics.
-       * @param window Optional window scope for per-window tasks.
-       */
       [[nodiscard]] TaskNodeHandle addTask(std::string_view stable_name, TaskKernelId kernel,
                                            TaskCallback callback = {}, Vector<TaskNodeHandle> depends_on = {},
                                            Vector<ResourceAccess> accesses = {}, std::string debug_name = {},
@@ -312,30 +300,18 @@ export namespace vve::v3 {
                                            TaskScope scope = TaskScope::global,
                                            std::optional<WindowHandle> window = std::nullopt);
 
-      /// @brief Adds a fully described task node.
       void addTask(TaskNodeDesc node);
-      /// @brief Replaces the callback of an already registered task.
       [[nodiscard]] bool setTaskCallback(TaskNodeHandle handle, TaskCallback callback);
-      /// @brief Hashes a stable task name into a deterministic task handle.
       [[nodiscard]] static TaskNodeHandle makeTaskHandle(std::string_view stable_name);
-      /// @brief Convenience alias for `makeTaskHandle`.
       [[nodiscard]] static TaskNodeHandle taskHandleFor(std::string_view stable_name);
-      /// @brief Returns the handle for a named task if that task has already been added.
       [[nodiscard]] std::optional<TaskNodeHandle> findTask(std::string_view stable_name) const;
-      /// @brief Returns whether a named task exists in the builder.
       [[nodiscard]] bool containsTask(std::string_view stable_name) const;
-      /// @brief Adds a dependency edge from `task` to `dependency`.
       [[nodiscard]] bool addDependency(TaskNodeHandle task, TaskNodeHandle dependency);
-      /// @brief Adds a dependency edge between tasks identified by stable name.
       [[nodiscard]] bool addDependency(std::string_view task_name, std::string_view dependency_name);
-      /// @brief Returns the default phase associated with a kernel.
       [[nodiscard]] static TaskPhase inferPhase(TaskKernelId kernel);
 
-      /// @brief Finalizes and returns the task graph.
       [[nodiscard]] TaskGraph build() &&; 
-      /// @brief Returns tasks with no explicit predecessors.
       [[nodiscard]] std::vector<TaskNodeHandle> rootTasks() const;
-      /// @brief Returns tasks that are not referenced as dependencies by other tasks.
       [[nodiscard]] std::vector<TaskNodeHandle> leafTasks() const;
 
    private:

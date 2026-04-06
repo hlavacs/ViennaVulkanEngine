@@ -200,7 +200,6 @@ export namespace vve {
     */
    template <typename TImplementation> class VVE_API EngineFacade {
    public:
-      /// @brief Creates an engine from a pre-built configuration object.
       explicit EngineFacade(EngineConfig config = {});
 
       /// @brief Creates an engine by collecting typed option arguments into `EngineConfig`.
@@ -213,15 +212,10 @@ export namespace vve {
       EngineFacade &operator=(const EngineFacade &) = delete;
       EngineFacade &operator=(EngineFacade &&) = delete;
 
-      /// @brief Initializes runtime subsystems and prepares the engine for execution.
       [[nodiscard]] std::expected<void, Error> init();
-      /// @brief Runs the main loop until the implementation requests shutdown or returns an error.
       [[nodiscard]] std::expected<void, Error> run();
-      /// @brief Executes one frame worth of engine work.
       [[nodiscard]] std::expected<FrameStatus, Error> step();
-      /// @brief Returns whether initialization completed successfully.
       [[nodiscard]] std::expected<bool, Error> isInitialized() const noexcept;
-      /// @brief Returns the major version number of the active engine implementation.
       [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept;
 
    private:
@@ -276,33 +270,51 @@ export namespace vve {
       return TEngine(EngineConfig(std::forward<TOptions>(options)...));
    }
 
-   /// @brief Stores the pre-built config inside the selected implementation.
+   /**
+    * @brief Stores the pre-built config inside the selected implementation.
+    * @param config Type-indexed configuration consumed by the selected implementation.
+    */
    template <typename TImplementation>
    EngineFacade<TImplementation>::EngineFacade(EngineConfig config) : implementation_(std::move(config)) {}
 
-   /// @brief Forwards initialization to the selected engine implementation.
+   /**
+    * @brief Forwards initialization to the selected engine implementation.
+    * @return Empty success result, or the implementation's initialization error.
+    */
    template <typename TImplementation> [[nodiscard]] std::expected<void, Error> EngineFacade<TImplementation>::init() {
       return implementation_.init();
    }
 
-   /// @brief Forwards the main loop to the selected engine implementation.
+   /**
+    * @brief Forwards the main loop to the selected engine implementation.
+    * @return Empty success result, or the first runtime error reported by the implementation.
+    */
    template <typename TImplementation> [[nodiscard]] std::expected<void, Error> EngineFacade<TImplementation>::run() {
       return implementation_.run();
    }
 
-   /// @brief Forwards one frame step to the selected engine implementation.
+   /**
+    * @brief Forwards one frame step to the selected engine implementation.
+    * @return Frame status on success, or the implementation's execution error.
+    */
    template <typename TImplementation>
    [[nodiscard]] std::expected<FrameStatus, Error> EngineFacade<TImplementation>::step() {
       return implementation_.step();
    }
 
-   /// @brief Returns whether the selected engine implementation has initialized successfully.
+   /**
+    * @brief Returns whether the selected engine implementation has initialized successfully.
+    * @return `true` when initialized, otherwise `false`, or an error from the implementation.
+    */
    template <typename TImplementation>
    [[nodiscard]] std::expected<bool, Error> EngineFacade<TImplementation>::isInitialized() const noexcept {
       return implementation_.isInitialized();
    }
 
-   /// @brief Returns the major version number exposed by the selected engine implementation.
+   /**
+    * @brief Returns the major version number exposed by the selected engine implementation.
+    * @return Major version number on success, or an error from the implementation.
+    */
    template <typename TImplementation>
    [[nodiscard]] std::expected<int, Error> EngineFacade<TImplementation>::getVersionMajor() const noexcept {
       return implementation_.getVersionMajor();

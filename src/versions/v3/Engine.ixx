@@ -184,49 +184,16 @@ namespace vve::v3 {
     */
    export template <typename... TUserSystems> class VVE_API BasicEngineImplementation {
    public:
-      /**
-       * @brief Creates the engine implementation from a public engine configuration.
-       * @param config Type-indexed engine configuration options.
-       */
       explicit BasicEngineImplementation(const vve::EngineConfig &config);
 
-      /**
-       * @brief Initializes runtime subsystems and prepares the engine for execution.
-       * @return Empty success result, or an initialization error.
-       */
       [[nodiscard]] std::expected<void, vve::Error> init();
-      /**
-       * @brief Runs the engine until shutdown is requested.
-       * @return Empty success result, or the first runtime error.
-       */
       [[nodiscard]] std::expected<void, vve::Error> run();
-      /**
-       * @brief Executes one engine frame.
-       * @return Frame status on success, or an execution error.
-       */
       [[nodiscard]] std::expected<vve::FrameStatus, vve::Error> step();
-      /**
-       * @brief Returns whether initialization has completed.
-       * @return `true` when initialized, otherwise `false`.
-       */
       [[nodiscard]] std::expected<bool, vve::Error> isInitialized() const noexcept;
-      /**
-       * @brief Returns the major engine version number.
-       * @return Major version number on success.
-       */
       [[nodiscard]] std::expected<int, vve::Error> getVersionMajor() const noexcept;
-      /**
-       * @brief Imports and instantiates a scene file.
-       * @param file_path Scene file path to load.
-       * @return Empty success result, or a loading/instantiation error.
-       */
       [[nodiscard]] std::expected<void, vve::Error> loadSceneFile(const std::filesystem::path &file_path);
 
    private:
-      /**
-       * @brief Rebuilds the frame task graph from the current runtime state.
-       * @return Empty success result, or a graph-construction error.
-       */
       [[nodiscard]] std::expected<void, vve::Error> rebuildTaskGraph();
 
       std::string application_name_;             ///< Human-readable application name.
@@ -255,6 +222,10 @@ namespace vve::v3 {
    export using EngineImplementation = BasicEngineImplementation<>;
    export using Engine = vve::Engine<EngineImplementation>;
 
+   /**
+    * @brief Creates the engine implementation from a public engine configuration.
+    * @param config Type-indexed engine configuration options.
+    */
    template <typename... TUserSystems>
    BasicEngineImplementation<TUserSystems...>::BasicEngineImplementation(const vve::EngineConfig &config)
        : application_name_("ViennaVulkanEngine"), validation_enabled_(false), world_(ecs_, world_runtime_access_) {
@@ -302,6 +273,10 @@ namespace vve::v3 {
       }
    }
 
+   /**
+    * @brief Initializes runtime subsystems and prepares the engine for execution.
+    * @return Empty success result, or an initialization error.
+    */
    template <typename... TUserSystems>
    std::expected<void, vve::Error> BasicEngineImplementation<TUserSystems...>::init() {
       if (*isInitialized()) { // Initialization is a one-way transition to a prepared runtime state.
@@ -353,6 +328,10 @@ namespace vve::v3 {
       return {};
    }
 
+   /**
+    * @brief Runs the engine until shutdown is requested.
+    * @return Empty success result, or the first runtime error.
+    */
    template <typename... TUserSystems>
    std::expected<void, vve::Error> BasicEngineImplementation<TUserSystems...>::run() {
       if (!*isInitialized()) { // `run` bootstraps initialization if the caller has not done it manually.
@@ -375,6 +354,10 @@ namespace vve::v3 {
       return {};
    }
 
+   /**
+    * @brief Executes one engine frame.
+    * @return Frame status on success, or an execution error.
+    */
    template <typename... TUserSystems>
    std::expected<vve::FrameStatus, vve::Error> BasicEngineImplementation<TUserSystems...>::step() {
       if (!*isInitialized()) { // Per-frame execution requires an initialized runtime.
@@ -419,16 +402,29 @@ namespace vve::v3 {
       return vve::FrameStatus::continue_running;
    }
 
+   /**
+    * @brief Returns whether initialization has completed.
+    * @return `true` when initialized, otherwise `false`.
+    */
    template <typename... TUserSystems>
    std::expected<bool, vve::Error> BasicEngineImplementation<TUserSystems...>::isInitialized() const noexcept {
       return initialized_;
    }
 
+   /**
+    * @brief Returns the major engine version number.
+    * @return Major version number on success.
+    */
    template <typename... TUserSystems>
    std::expected<int, vve::Error> BasicEngineImplementation<TUserSystems...>::getVersionMajor() const noexcept {
       return 3;
    }
 
+   /**
+    * @brief Imports and instantiates a scene file.
+    * @param file_path Scene file path to load.
+    * @return Empty success result, or a loading/instantiation error.
+    */
    template <typename... TUserSystems>
    std::expected<void, vve::Error>
    BasicEngineImplementation<TUserSystems...>::loadSceneFile(const std::filesystem::path &file_path) {
@@ -464,6 +460,10 @@ namespace vve::v3 {
       return rebuildTaskGraph();
    }
 
+   /**
+    * @brief Rebuilds the frame task graph from the current runtime state.
+    * @return Empty success result, or a graph-construction error.
+    */
    template <typename... TUserSystems>
    std::expected<void, vve::Error> BasicEngineImplementation<TUserSystems...>::rebuildTaskGraph() {
       // Graph construction requires an instantiated scene because many tasks

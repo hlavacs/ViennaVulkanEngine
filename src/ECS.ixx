@@ -76,60 +76,19 @@ export namespace vve {
       // Structural teardown remains explicit instead of being hidden behind mutation helpers.
       [[nodiscard]] std::expected<void, Error> erase(Handle entity) { return implementation_.erase(entity); }
 
-      /**
-       * @brief Adds a component to an entity.
-       * @tparam TComponent Component type to attach.
-       * @param entity Entity handle receiving the component.
-       * @param component Component value to store.
-       * @return Empty success result, or an error when the entity is invalid or the component already exists.
-       */
       template <NotHandle TComponent>
       [[nodiscard]] std::expected<void, Error> addComponent(Handle entity, TComponent &&component);
 
-      /**
-       * @brief Returns a copy of a component if it exists on the entity.
-       * @tparam TComponent Component type to read.
-       * @param entity Entity handle to inspect.
-       * @return Optional component copy, or an error when the entity is invalid.
-       */
       template <NotHandle TComponent>
       [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, Error> get(Handle entity) const;
 
-      /**
-       * @brief Replaces or inserts a component value on an entity.
-       * @tparam TComponent Component type to write.
-       * @param entity Entity handle to mutate.
-       * @param component New component value.
-       * @return Empty success result, or an error when the entity is invalid.
-       */
       template <NotHandle TComponent>
       [[nodiscard]] std::expected<void, Error> put(Handle entity, TComponent &&component);
 
-      /**
-       * @brief Returns whether an entity currently owns a component of type `TComponent`.
-       * @tparam TComponent Component type to test.
-       * @param entity Entity handle to inspect.
-       * @return `true` when the component exists, `false` when it does not, or an error when the entity is invalid.
-       */
       template <NotHandle TComponent> [[nodiscard]] std::expected<bool, Error> hasComponent(Handle entity) const;
 
-      /**
-       * @brief Removes a component of type `TComponent` from an entity.
-       * @tparam TComponent Component type to remove.
-       * @param entity Entity handle to mutate.
-       * @return Empty success result, or an error when the entity is invalid.
-       */
       template <NotHandle TComponent> [[nodiscard]] std::expected<void, Error> eraseComponent(Handle entity);
 
-      /**
-       * @brief Returns entity handles that contain all requested component types.
-       * @tparam TComponents Component types that must all be present.
-       *
-       * The current public contract exposes only matching handles. Callers must
-       * request component values explicitly afterwards.
-       *
-       * @return Matching entity handles, or an error when view construction fails.
-       */
       template <NotHandle... TComponents>
          requires(sizeof...(TComponents) > 0)
       [[nodiscard]] std::expected<std::vector<Handle>, Error> view() const;
@@ -145,7 +104,7 @@ export namespace vve {
     * @param entity Entity handle receiving the component.
     * @param component Component value to store.
     * @return Empty success result, or an error reported by the implementation.
-    */
+   */
    template <typename TImplementation>
    template <NotHandle TComponent>
    [[nodiscard]] std::expected<void, Error> ECSFacade<TImplementation>::addComponent(Handle entity,
