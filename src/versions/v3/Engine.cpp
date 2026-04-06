@@ -1,4 +1,4 @@
-﻿module VEEngine.V3;
+module VEEngine.V3;
 
 /**
  * @file

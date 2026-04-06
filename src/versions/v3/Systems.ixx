@@ -50,7 +50,7 @@ export namespace vve::v3 {
       [[nodiscard]] std::expected<ImportedScene, vve::Error> importScene(const std::filesystem::path &source_path);
 
    private:
-      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr};
+      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
    };
 
    /// @brief Resource-registration and upload facade.
@@ -77,7 +77,7 @@ export namespace vve::v3 {
       void registerTasks(TaskGraphBuilder &builder, const SceneData &scene);
 
    private:
-      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr};
+      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
    };
 
    /// @brief Scene-instantiation and scene-update facade.
@@ -104,7 +104,7 @@ export namespace vve::v3 {
       void registerTasks(TaskGraphBuilder &builder, const SceneData &scene);
 
    private:
-      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr};
+      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
    };
 
    /// @brief Window creation and event-polling facade.
@@ -134,7 +134,7 @@ export namespace vve::v3 {
       void registerTasks(TaskGraphBuilder &builder);
 
    private:
-      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr};
+      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
    };
 
    /// @brief Graphics-backend facade for frame boundary work.
@@ -161,7 +161,7 @@ export namespace vve::v3 {
       void registerTasks(TaskGraphBuilder &builder);
 
    private:
-      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr};
+      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
    };
 
    /// @brief Shader reflection facade.
@@ -181,7 +181,7 @@ export namespace vve::v3 {
       reflect(const std::filesystem::path &shader_path, vve::RendererKind renderer, vve::ShadowKind shadow);
 
    private:
-      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr};
+      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
    };
 
    /// @brief Render orchestration facade.
@@ -221,7 +221,7 @@ export namespace vve::v3 {
                          VectorConstRange<WindowRenderPipeline> render_pipelines);
 
    private:
-      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr};
+      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
    };
 
    /// @brief Optional GUI integration facade.
@@ -241,7 +241,7 @@ export namespace vve::v3 {
       init(GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend);
 
    private:
-      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr};
+      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
    };
 
    /// @brief Default asset-system facade alias for v3.
@@ -258,7 +258,7 @@ export namespace vve::v3 {
    using ShaderSystem = ShaderSystemFacade<SlangShaderSystemImplementation>;
    /// @brief Default render-system facade alias for v3.
    using RenderSystem = RenderSystemFacade<DefaultRenderSystemImplementation>;
-   using GuiSystem = GuiSystemFacade<ImGuiSystemImplementation>;	///< Default GUI-system facade alias for v3.
+   using GuiSystem = GuiSystemFacade<ImGuiSystemImplementation>; ///< Default GUI-system facade alias for v3.
 
    /**
     * @brief User extension seam for injecting custom tasks into the frame graph.
@@ -300,7 +300,7 @@ export namespace vve::v3 {
                                     VectorConstRange<WindowRenderPipeline> render_pipelines);
 
    private:
-      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr};
+      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
    };
 
    /// @brief Default task-graph facade alias for v3.
@@ -308,17 +308,17 @@ export namespace vve::v3 {
 
    /// @brief Runtime assembly descriptor used to create the concrete v3 engine runtime.
    struct EngineRuntimeDesc {
-      vve::GraphicsApi graphics_api{vve::GraphicsApi::vulkan};			///< Requested graphics API for runtime creation.
-      vve::RendererKind renderer{vve::RendererKind::forward_renderer};	///< Requested renderer kind.
-      vve::ShadowKind shadow{vve::ShadowKind::none};							///< Requested shadow mode.
-      bool imgui_enabled{true};														///< Enables or disables Dear ImGui integration.
-      Vector<vve::WindowDesc> windows{vve::WindowDesc{}};				///< Windows created during runtime initialization.
-      Vector<std::shared_ptr<ITaskSystem>> task_systems{};	///< External task systems that extend the frame task graph.
+      vve::GraphicsApi graphics_api{vve::GraphicsApi::vulkan};         ///< Requested graphics API for runtime creation.
+      vve::RendererKind renderer{vve::RendererKind::forward_renderer}; ///< Requested renderer kind.
+      vve::ShadowKind shadow{vve::ShadowKind::none};                   ///< Requested shadow mode.
+      bool imgui_enabled{true};                                        ///< Enables or disables Dear ImGui integration.
+      Vector<vve::WindowDesc> windows{vve::WindowDesc{}};              ///< Windows created during runtime initialization.
+      Vector<std::shared_ptr<ITaskSystem>> task_systems{};             ///< External task systems that extend the frame task graph.
    };
 
    /// @brief Wrapper used to pass runtime task systems through engine configuration.
    struct TaskSystems {
-      Vector<std::shared_ptr<ITaskSystem>> value{};	///< Task-system instances supplied by the caller.
+      Vector<std::shared_ptr<ITaskSystem>> value{}; ///< Task-system instances supplied by the caller.
    };
 
 } // namespace vve::v3

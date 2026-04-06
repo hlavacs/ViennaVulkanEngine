@@ -20,9 +20,9 @@ export namespace vve {
     */
    class Handle {
    public:
-      using value_type = std::uint64_t;
-      using part_type = std::uint32_t;
-      static constexpr value_type invalid_value = std::numeric_limits<value_type>::max();
+      using value_type = std::uint64_t;                                                   ///< Raw storage type of a full handle value.
+      using part_type = std::uint32_t;                                                    ///< Raw storage type of one half-handle component.
+      static constexpr value_type invalid_value = std::numeric_limits<value_type>::max(); ///< Sentinel raw value representing an invalid handle.
 
       /// @brief Creates an invalid handle.
       constexpr Handle() noexcept = default; 
@@ -76,15 +76,18 @@ export namespace vve {
       /// @brief Explicitly converts the handle to its raw 64-bit value.
       [[nodiscard]] constexpr explicit operator value_type() const noexcept { return value_; }
 
+      /// @brief Returns whether two handles store the same raw value.
       [[nodiscard]] friend constexpr bool operator==(Handle lhs, Handle rhs) noexcept = default;
+      /// @brief Orders handles by raw value for associative containers and comparisons.
       [[nodiscard]] friend constexpr auto operator<=>(Handle lhs, Handle rhs) noexcept = default;
 
    private:
+      /// @brief Combines low and high 32-bit parts into one 64-bit handle value.
       [[nodiscard]] static constexpr value_type join(part_type low, part_type high) noexcept {
          return static_cast<value_type>(low) | (static_cast<value_type>(high) << 32);
       }
 
-      value_type value_{invalid_value};
+      value_type value_{invalid_value}; ///< Raw 64-bit handle value.
    };
 
    /// @brief Handles are expected to remain storage-compatible with their raw value.

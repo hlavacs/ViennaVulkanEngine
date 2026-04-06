@@ -75,7 +75,7 @@ namespace vve::v3 {
       }
 
    private:
-      bool initialized_{false};	///< Tracks whether backend initialization has completed.
+      bool initialized_{false}; ///< Tracks whether backend initialization has completed.
    };
 
    /// @brief Constructs the public graphics-backend facade around the concrete implementation.

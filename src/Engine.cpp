@@ -1,4 +1,4 @@
-﻿module;
+module;
 
 module VEEngine;
 import VEEngine.V3;

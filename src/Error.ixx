@@ -13,13 +13,13 @@ export namespace vve {
     * subsystem facades without forcing exception-based control flow.
     */
    enum class Error {
-      not_initialized, ///< Operation requires initialization that has not happened yet.
+      not_initialized,     ///< Operation requires initialization that has not happened yet.
       already_initialized, ///< Operation attempted to initialize an already initialized object.
-      invalid_argument, ///< Caller supplied invalid input or violated an API precondition.
-      file_not_found, ///< Requested file could not be found.
-      io_error, ///< Generic I/O failure.
+      invalid_argument,    ///< Caller supplied invalid input or violated an API precondition.
+      file_not_found,      ///< Requested file could not be found.
+      io_error,            ///< Generic I/O failure.
       unsupported_version, ///< Requested feature or version is not supported by the implementation.
-      internal_error ///< Catch-all internal engine failure.
+      internal_error       ///< Catch-all internal engine failure.
    };
 
 } // namespace vve

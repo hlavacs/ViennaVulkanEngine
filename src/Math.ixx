@@ -27,19 +27,19 @@ import std;
 export namespace vve::math {
 
 #if defined(VVE_MATH_USE_DOUBLE)
-   using Scalar = double;		///< Scalar type selected for engine math at compile time.
-   using Vec2 = glm::dvec2;	///< Two-component vector using the selected scalar precision.
-   using Vec3 = glm::dvec3;	///< Three-component vector using the selected scalar precision.
-   using Vec4 = glm::dvec4;	///< Four-component vector using the selected scalar precision.
-   using Quat = glm::dquat;	///< Quaternion using the selected scalar precision.
-   using Mat4 = glm::dmat4;	///< 4x4 matrix using the selected scalar precision.
+   using Scalar = double;   ///< Scalar type selected for engine math at compile time.
+   using Vec2 = glm::dvec2; ///< Two-component vector using the selected scalar precision.
+   using Vec3 = glm::dvec3; ///< Three-component vector using the selected scalar precision.
+   using Vec4 = glm::dvec4; ///< Four-component vector using the selected scalar precision.
+   using Quat = glm::dquat; ///< Quaternion using the selected scalar precision.
+   using Mat4 = glm::dmat4; ///< 4x4 matrix using the selected scalar precision.
 #else
-   using Scalar = float;	///< Scalar type selected for engine math at compile time.
-   using Vec2 = glm::vec2;	///< Two-component vector using the selected scalar precision.
-   using Vec3 = glm::vec3;	///< Three-component vector using the selected scalar precision.
-   using Vec4 = glm::vec4;	///< Four-component vector using the selected scalar precision.
-   using Quat = glm::quat;	///< Quaternion using the selected scalar precision.
-   using Mat4 = glm::mat4;	///< 4x4 matrix using the selected scalar precision.
+   using Scalar = float;   ///< Scalar type selected for engine math at compile time.
+   using Vec2 = glm::vec2; ///< Two-component vector using the selected scalar precision.
+   using Vec3 = glm::vec3; ///< Three-component vector using the selected scalar precision.
+   using Vec4 = glm::vec4; ///< Four-component vector using the selected scalar precision.
+   using Quat = glm::quat; ///< Quaternion using the selected scalar precision.
+   using Mat4 = glm::mat4; ///< 4x4 matrix using the selected scalar precision.
 #endif
 
    /// @brief Returns the additive identity for the configured scalar type.
@@ -51,6 +51,9 @@ export namespace vve::math {
    /// @brief Returns a 4x4 identity matrix.
    [[nodiscard]] inline Mat4 identityMat4() noexcept { return Mat4(one()); }
 
+   /// @brief Returns a vector with all components set to one.
+   [[nodiscard]] inline Vec3 oneVec3() noexcept { return Vec3(one(), one(), one()); }
+
    /// @brief Returns a zero-initialized three-component vector.
    [[nodiscard]] inline Vec3 zeroVec3() noexcept { return Vec3(zero(), zero(), zero()); }
 
@@ -59,6 +62,8 @@ export namespace vve::math {
 
    /// @brief Multiplies two quaternions without exposing GLM at call sites.
    [[nodiscard]] inline Quat multiply(const Quat &lhs, const Quat &rhs) noexcept {
+      // Keep this wrapper explicit so engine-facing code does not depend on
+      // GLM operator conventions at call sites.
       return Quat(lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z,
                   lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y,
                   lhs.w * rhs.y - lhs.x * rhs.z + lhs.y * rhs.w + lhs.z * rhs.x,

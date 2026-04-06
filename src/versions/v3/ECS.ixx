@@ -9,8 +9,8 @@ namespace vve::v3 {
     * @brief Default entity-allocation traits for the v3 ECS.
     */
    struct DefaultECSTraits {
-      using entity_value_type = vve::Handle::value_type;				///< Underlying integer type used for entity values.
-      static constexpr entity_value_type first_entity_value = 1;	///< First allocated entity value.
+      using entity_value_type = vve::Handle::value_type;         ///< Underlying integer type used for entity values.
+      static constexpr entity_value_type first_entity_value = 1; ///< First allocated entity value.
    };
 
    /**
@@ -21,7 +21,7 @@ namespace vve::v3 {
     */
    template <typename TTraits = DefaultECSTraits> class BasicECSImplementation {
    public:
-      using traits_type = TTraits;	///< Traits type controlling allocation behavior.
+      using traits_type = TTraits; ///< Traits type controlling allocation behavior.
       /// @brief Underlying integer type used for entity values.
       using entity_value_type = typename traits_type::entity_value_type;
 
@@ -217,7 +217,7 @@ namespace vve::v3 {
    private:
       /// @brief Summary of one component pool used when building views.
       struct component_pool_info {
-         std::size_t size;	///< Number of entities in the component pool.
+         std::size_t size; ///< Number of entities in the component pool.
          /// @brief Function that collects all entity ids in the pool.
          void (*collectEntities)(std::vector<vve::Handle::value_type> &);
          /// @brief Function that checks whether an entity id exists in the pool.
@@ -282,8 +282,8 @@ namespace vve::v3 {
          return erasers;
       }
 
-      std::unordered_set<vve::Handle::value_type> entities_{};						///< Set of currently alive entity ids.
-      entity_value_type next_entity_value_{traits_type::first_entity_value};	///< Next entity value to allocate.
+      std::unordered_set<vve::Handle::value_type> entities_{};               ///< Set of currently alive entity ids.
+      entity_value_type next_entity_value_{traits_type::first_entity_value}; ///< Next entity value to allocate.
    };
 
 } // namespace vve::v3

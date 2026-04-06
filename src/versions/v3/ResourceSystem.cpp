@@ -97,7 +97,7 @@ namespace vve::v3 {
       }
 
    private:
-      Vector<ResourceRecord> records_{};	///< Registered resource records owned by the subsystem.
+      Vector<ResourceRecord> records_{}; ///< Registered resource records owned by the subsystem.
    };
 
    /// @brief Constructs the public resource-system facade around the concrete implementation.

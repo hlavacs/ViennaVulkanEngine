@@ -13,6 +13,11 @@ namespace vve::v3::detail {
 
 #ifndef NDEBUG
 
+   /**
+    * @brief Returns a stable label for a task phase.
+    * @param phase Task phase to name.
+    * @return Lowercase phase label used in DOT output.
+    */
    [[nodiscard]] static std::string_view taskPhaseName(TaskPhase phase) noexcept {
       switch (phase) {
       case TaskPhase::automatic:
@@ -38,6 +43,11 @@ namespace vve::v3::detail {
       return "unknown";
    }
 
+   /**
+    * @brief Returns the DOT node color assigned to a task phase.
+    * @param phase Task phase to colorize.
+    * @return Hex color string used in DOT output.
+    */
    [[nodiscard]] static std::string_view taskPhaseColor(TaskPhase phase) noexcept {
       switch (phase) {
       case TaskPhase::automatic:
@@ -63,6 +73,11 @@ namespace vve::v3::detail {
       return "#eeeeee";
    }
 
+   /**
+    * @brief Returns a stable label for a built-in task kernel.
+    * @param kernel Task kernel to name.
+    * @return Lowercase kernel label used in diagnostics.
+    */
    [[nodiscard]] static std::string_view taskKernelName(TaskKernelId kernel) noexcept {
       switch (kernel) {
       case TaskKernelId::none:
@@ -94,6 +109,11 @@ namespace vve::v3::detail {
       return "unknown";
    }
 
+   /**
+    * @brief Returns a stable label for a built-in render kernel.
+    * @param kernel Render kernel to name.
+    * @return Lowercase kernel label used in diagnostics.
+    */
    [[nodiscard]] static std::string_view renderKernelName(RenderKernelId kernel) noexcept {
       switch (kernel) {
       case RenderKernelId::none:
@@ -123,6 +143,11 @@ namespace vve::v3::detail {
       return "unknown";
    }
 
+   /**
+    * @brief Escapes text so it can be embedded safely inside a DOT label.
+    * @param text Raw label text.
+    * @return Escaped DOT-compatible label string.
+    */
    [[nodiscard]] static std::string escapeDotLabel(std::string_view text) {
       std::string result{};
       result.reserve(text.size());
@@ -145,6 +170,11 @@ namespace vve::v3::detail {
       return result;
    }
 
+   /**
+    * @brief Collects render-pass indices that have no explicit predecessors.
+    * @param graph Render graph being inspected.
+    * @param roots Output vector receiving root pass indices.
+    */
    static void appendRenderRoots(const RenderGraph &graph, std::vector<std::size_t> &roots) {
       roots.clear();
       roots.reserve(graph.passes.size());
@@ -155,6 +185,11 @@ namespace vve::v3::detail {
       }
    }
 
+   /**
+    * @brief Collects render-pass indices that are not used as prerequisites by later passes.
+    * @param graph Render graph being inspected.
+    * @param leaves Output vector receiving leaf pass indices.
+    */
    static void appendRenderLeaves(const RenderGraph &graph, std::vector<std::size_t> &leaves) {
       std::unordered_set<vve::Handle::value_type> dependency_handles{};
       dependency_handles.reserve(graph.passes.size());
@@ -173,10 +208,19 @@ namespace vve::v3::detail {
       }
    }
 
+   /**
+    * @brief Writes a combined task-graph and render-graph DOT dump.
+    * @param task_graph Declarative frame task graph.
+    * @param render_pipelines Per-window render pipelines attached to the frame.
+    * @param output_path Destination `.dot` file path.
+    * @return Empty success result, or an I/O error when the dump cannot be written.
+    */
    std::expected<void, vve::Error>
    exportCombinedGraphDot(const TaskGraph &task_graph, VectorConstRange<WindowRenderPipeline> render_pipelines,
                           const std::filesystem::path &output_path) {
       std::error_code create_error{};
+      // Debug dumps create their parent directory on demand so the task can be
+      // triggered from a clean workspace.
       std::filesystem::create_directories(output_path.parent_path(), create_error);
       if (create_error) {
          return std::unexpected(vve::Error::internal_error);
@@ -228,6 +272,8 @@ namespace vve::v3::detail {
             if (node.phase != phase) {
                continue;
             }
+            // Each task node includes both the human-readable label and the
+            // built-in kernel id so graph dumps stay informative during debugging.
             output << "      \"task::" << node.handle.value.value() << "\""
                    << " [shape=box, style=\"filled,rounded\", fillcolor=\"" << taskPhaseColor(phase)
                    << "\", label=\""
@@ -249,6 +295,8 @@ namespace vve::v3::detail {
       std::vector<std::size_t> render_roots{};
       std::vector<std::size_t> render_leaves{};
       for (const auto &pipeline : render_pipelines) {
+         // Each window receives its own subgraph so per-window render graphs
+         // remain visually separated in the combined dump.
          output << "  subgraph cluster_render_" << pipeline.window.value.value() << " {\n";
          output << "    label=\"Render Graph: " << escapeDotLabel(pipeline.window_id) << "\";\n";
          output << "    color=\"#97c47f\";\n";
@@ -276,6 +324,8 @@ namespace vve::v3::detail {
          const auto record_task = TaskGraphBuilder::taskHandleFor(
              std::format("task.window.{}.record_render_graph", pipeline.window_id));
          for (const auto root_index : render_roots) {
+            // Dashed edges connect the task DAG to the per-window render graph
+            // without implying that render passes are task nodes themselves.
             output << "  \"task::" << record_task.value.value() << "\" -> "
                    << "\"render::" << escapeDotLabel(pipeline.window_id) << "::"
                    << pipeline.graph.passes[root_index].handle.value.value() << "\" "

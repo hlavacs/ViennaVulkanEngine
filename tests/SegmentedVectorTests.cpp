@@ -15,45 +15,56 @@ import VEEngine.V3;
  */
 namespace {
 
-   using int_container = vve::v3::Vector<int, 4>;
+   using int_container = vve::v3::Vector<int, 4>; ///< Test alias using a small segment size to force multi-segment behavior quickly.
 
+   /// @brief Small aggregate used to test emplacement of non-scalar values.
    struct pair_value {
-      int first{0};
-      int second{0};
+      int first{0};  ///< First stored integer.
+      int second{0}; ///< Second stored integer.
 
+      /// @brief Creates the default zero pair.
       pair_value() = default;
+      /// @brief Creates a pair from explicit integer values.
       pair_value(int first_value, int second_value) : first(first_value), second(second_value) {}
 
+      /// @brief Compares two pair values field-by-field.
       [[nodiscard]] friend bool operator==(const pair_value &, const pair_value &) = default;
    };
 
+   /// @brief Value type that tracks lifetime, copy, and move activity for container tests.
    struct tracked_value {
-      inline static int alive_count = 0;
-      inline static int copy_count = 0;
-      inline static int move_count = 0;
+      inline static int alive_count = 0; ///< Number of currently alive instances.
+      inline static int copy_count = 0;  ///< Number of copy operations observed.
+      inline static int move_count = 0;  ///< Number of move operations observed.
 
-      int value{0};
+      int value{0}; ///< Stored payload value.
 
+      /// @brief Creates a tracked value with default payload.
       tracked_value() { ++alive_count; }
+      /// @brief Creates a tracked value with explicit payload.
       explicit tracked_value(int initial_value) : value(initial_value) { ++alive_count; }
 
+      /// @brief Copy-constructs a tracked value and increments counters.
       tracked_value(const tracked_value &other) : value(other.value) {
          ++alive_count;
          ++copy_count;
       }
 
+      /// @brief Move-constructs a tracked value and marks the source as moved-from.
       tracked_value(tracked_value &&other) noexcept : value(other.value) {
          ++alive_count;
          ++move_count;
          other.value = -1;
       }
 
+      /// @brief Copy-assigns the payload and increments the copy counter.
       tracked_value &operator=(const tracked_value &other) {
          value = other.value;
          ++copy_count;
          return *this;
       }
 
+      /// @brief Move-assigns the payload and marks the source as moved-from.
       tracked_value &operator=(tracked_value &&other) noexcept {
          value = other.value;
          ++move_count;
@@ -61,10 +72,13 @@ namespace {
          return *this;
       }
 
+      /// @brief Destroys the tracked value and decrements the live-instance counter.
       ~tracked_value() { --alive_count; }
 
+      /// @brief Compares two tracked values by payload.
       [[nodiscard]] friend bool operator==(const tracked_value &, const tracked_value &) = default;
 
+      /// @brief Resets all static test counters.
       static void resetCounters() {
          alive_count = 0;
          copy_count = 0;
@@ -72,6 +86,7 @@ namespace {
       }
    };
 
+   /// @brief Verifies that `values` matches an expected integer sequence exactly.
    [[nodiscard]] bool verifySequence(const int_container &values, std::initializer_list<int> expected) {
       if (values.size() != expected.size()) {
          return false;
@@ -80,6 +95,7 @@ namespace {
       return std::ranges::equal(values, expected);
    }
 
+   /// @brief Tests basic growth, random access, and stable-address behavior.
    [[nodiscard]] int testBasicGrowthAndAccess() {
       int_container values{};
       if (!values.empty() || values.size() != 0 || values.capacity() != 0 || values.segmentCount() != 0) {
@@ -116,6 +132,7 @@ namespace {
       return 0;
    }
 
+   /// @brief Tests insertion, erasure, resizing, and clearing across segment boundaries.
    [[nodiscard]] int testInsertEraseAndResize() {
       int_container values{};
       for (int value = 0; value < 10; ++value) {
@@ -180,6 +197,7 @@ namespace {
       return 0;
    }
 
+   /// @brief Tests explicit reserve behavior and fill/default construction paths.
    [[nodiscard]] int testReserveAndConstruction() {
       int_container values{};
       values.reserve(1);
@@ -220,6 +238,7 @@ namespace {
       return 0;
    }
 
+   /// @brief Tests iterator correctness, const access, and range compatibility.
    [[nodiscard]] int testIteratorsAndConstAccess() {
       int_container values{};
       for (int value = 1; value <= 8; ++value) {
@@ -265,6 +284,7 @@ namespace {
       return 0;
    }
 
+   /// @brief Tests copy/move construction, assignment, and swap semantics.
    [[nodiscard]] int testCopyMoveSwapAndAssignment() {
       int_container original{};
       for (int value = 0; value < 9; ++value) {
@@ -328,6 +348,7 @@ namespace {
       return 0;
    }
 
+   /// @brief Tests bounds-checked access on mutable and const containers.
    [[nodiscard]] int testOutOfRangeAndConstAt() {
       int_container values{};
       values.push_back(5);
@@ -363,6 +384,7 @@ namespace {
       return 0;
    }
 
+   /// @brief Tests emplacement and insertion of non-trivial element types.
    [[nodiscard]] int testEmplaceAndNonTrivialValues() {
       vve::v3::Vector<pair_value, 2> pairs{};
       const auto &back_pair = pairs.emplace_back(1, 2);
@@ -391,6 +413,7 @@ namespace {
       return 0;
    }
 
+   /// @brief Tests object lifetime accounting for erase, copy, move, and clear operations.
    [[nodiscard]] int testTrackedLifetimeAndOperations() {
       tracked_value::resetCounters();
       {
@@ -440,6 +463,10 @@ namespace {
 
 } // namespace
 
+/**
+ * @brief Executes the segmented-vector regression tests.
+ * @return Process exit code where each failing block returns a unique range.
+ */
 int main() {
    if (const auto result = testBasicGrowthAndAccess(); result != 0) {
       return 100 + result;

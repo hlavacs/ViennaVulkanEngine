@@ -5,6 +5,9 @@ import :Internal;
 /**
  * @file
  * @brief v3 GUI-system implementation.
+ *
+ * The current implementation is intentionally thin and exists mainly to keep
+ * GUI integration behind a stable subsystem facade.
  */
 namespace vve::v3 {
 
@@ -18,12 +21,13 @@ namespace vve::v3 {
 
       /// @brief Initializes GUI resources against the active graphics backend.
       [[nodiscard]] std::expected<void, vve::Error> init(GraphicsBackend &) {
+         // The placeholder implementation tracks initialization state only.
          initialized_ = true;
          return {};
       }
 
    private:
-      bool initialized_{false};	///< Tracks whether GUI initialization has completed.
+      bool initialized_{false}; ///< Tracks whether GUI initialization has completed.
    };
 
    /// @brief Constructs the public GUI-system facade around the concrete implementation.

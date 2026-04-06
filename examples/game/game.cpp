@@ -142,6 +142,7 @@ public:
         return {};
     }
 
+private:
     /// @brief Handle of the player entity created during initialization.
     vve::Handle player_{};
     /// @brief Counter used to throttle example logging.

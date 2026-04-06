@@ -46,14 +46,14 @@ export namespace vve {
 
    /// @brief Runtime-visible description of an engine window.
    struct WindowInfo {
-      Handle handle{};				///< Opaque handle of the runtime window.
-      std::string id{};				///< Stable string id of the window.
-      std::string title{};			///< Human-readable window title.
-      std::uint32_t width{0};		///< Current window width in pixels.
-      std::uint32_t height{0};	///< Current window height in pixels.
-      bool focused{false};			///< Whether the window currently has focus.
-      bool minimized{false};		///< Whether the window is minimized.
-      bool should_close{false};	///< Whether the window has requested closure.
+      Handle handle{};          ///< Opaque handle of the runtime window.
+      std::string id{};         ///< Stable string id of the window.
+      std::string title{};      ///< Human-readable window title.
+      std::uint32_t width{0};   ///< Current window width in pixels.
+      std::uint32_t height{0};  ///< Current window height in pixels.
+      bool focused{false};      ///< Whether the window currently has focus.
+      bool minimized{false};    ///< Whether the window is minimized.
+      bool should_close{false}; ///< Whether the window has requested closure.
    };
 
    /// @brief Standard transform component used by world helper methods.
@@ -88,7 +88,7 @@ export namespace vve {
       [[nodiscard]] math::Vec2 mouseWheelDelta(Handle window) const;
 
    private:
-      std::unordered_set<std::int32_t> keys_down_{};		///< Keys that are currently held down.
+      std::unordered_set<std::int32_t> keys_down_{};    ///< Keys that are currently held down.
       std::unordered_set<std::int32_t> keys_pressed_{}; ///< Keys that transitioned to pressed during the current frame.
       /// @brief Keys that transitioned to released during the current frame.
       std::unordered_set<std::int32_t> keys_released_{};
@@ -112,12 +112,12 @@ export namespace vve {
 
       /// @brief Runtime-only bridge used to expose window, input, and scene-loading services to `World`.
       struct WorldRuntimeAccess {
-         std::vector<WindowInfo>::const_iterator windows_begin{};	///< Begin iterator for the runtime window cache.
-         std::vector<WindowInfo>::const_iterator windows_end{};	///< End iterator for the runtime window cache.
-         const InputState *input{nullptr};								///< Pointer to the current input snapshot.
+         std::vector<WindowInfo>::const_iterator windows_begin{}; ///< Begin iterator for the runtime window cache.
+         std::vector<WindowInfo>::const_iterator windows_end{};   ///< End iterator for the runtime window cache.
+         const InputState *input{nullptr};                        ///< Pointer to the current input snapshot.
          /// @brief Runtime callback used to request scene loading.
          std::expected<void, Error> (*load_scene)(void *context, const std::filesystem::path &path){nullptr};
-         void *load_scene_context{nullptr};	///< Opaque callback context passed back to `load_scene`.
+         void *load_scene_context{nullptr}; ///< Opaque callback context passed back to `load_scene`.
       };
 
       inline void beginInputFrame(InputState &input) {

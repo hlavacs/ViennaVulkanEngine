@@ -229,27 +229,27 @@ namespace vve::v3 {
        */
       [[nodiscard]] std::expected<void, vve::Error> rebuildTaskGraph();
 
-      std::string application_name_;					///< Human-readable application name.
-      bool validation_enabled_{false};					///< Enables additional runtime validation where supported.
-      bool initialized_{false};							///< Tracks whether initialization has completed.
-      bool running_{false};								///< Tracks whether the main loop is currently running.
-      std::uint64_t frame_index_{0};					///< Monotonically increasing frame index.
-      EngineRuntimeDesc runtime_desc_{};				///< Runtime descriptor assembled from engine configuration.
-      detail::Runtime runtime_{};						///< Concrete runtime object holding subsystem facades.
-      std::filesystem::path loaded_file_path_{};	///< Last successfully loaded scene path.
-      std::optional<SceneData> scene_{};				///< Current instantiated scene data.
-      std::optional<TaskGraph> task_graph_{};		///< Current declarative task graph.
+      std::string application_name_;             ///< Human-readable application name.
+      bool validation_enabled_{false};           ///< Enables additional runtime validation where supported.
+      bool initialized_{false};                  ///< Tracks whether initialization has completed.
+      bool running_{false};                      ///< Tracks whether the main loop is currently running.
+      std::uint64_t frame_index_{0};             ///< Monotonically increasing frame index.
+      EngineRuntimeDesc runtime_desc_{};         ///< Runtime descriptor assembled from engine configuration.
+      detail::Runtime runtime_{};                ///< Concrete runtime object holding subsystem facades.
+      std::filesystem::path loaded_file_path_{}; ///< Last successfully loaded scene path.
+      std::optional<SceneData> scene_{};         ///< Current instantiated scene data.
+      std::optional<TaskGraph> task_graph_{};    ///< Current declarative task graph.
       /// @brief Cached compiled execution plan for the current task graph.
       std::optional<detail::CompiledTaskGraph> compiled_task_graph_{};
-      bool task_graph_dirty_{true};	///< Tracks whether the task graph must be rebuilt.
+      bool task_graph_dirty_{true}; ///< Tracks whether the task graph must be rebuilt.
       /// @brief Timestamp used to compute per-frame delta time.
       std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds> last_time_{};
-      vve::ECS<> ecs_{};													///< World ECS storage used by the engine.
-      std::vector<vve::WindowInfo> world_windows_{};				///< World-visible window cache synchronized each frame.
-      vve::InputState input_state_{};								///< World-visible input snapshot synchronized each frame.
-      vve::detail::WorldRuntimeAccess world_runtime_access_{};	///< Runtime bridge shared with the world facade.
-      vve::World world_;													///< Game-facing world facade exposed to user systems.
-      std::tuple<TUserSystems...> user_systems_{};					///< Compile-time typed tuple of user-system instances.
+      vve::ECS<> ecs_{};                                       ///< World ECS storage used by the engine.
+      std::vector<vve::WindowInfo> world_windows_{};           ///< World-visible window cache synchronized each frame.
+      vve::InputState input_state_{};                          ///< World-visible input snapshot synchronized each frame.
+      vve::detail::WorldRuntimeAccess world_runtime_access_{}; ///< Runtime bridge shared with the world facade.
+      vve::World world_;                                       ///< Game-facing world facade exposed to user systems.
+      std::tuple<TUserSystems...> user_systems_{};             ///< Compile-time typed tuple of user-system instances.
    };
 
    export using EngineImplementation = BasicEngineImplementation<>;

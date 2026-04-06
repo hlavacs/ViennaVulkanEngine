@@ -1,4 +1,4 @@
-﻿module VEEngine.V3;
+module VEEngine.V3;
 import std;
 import :Internal;
 
@@ -11,6 +11,11 @@ import :Internal;
  */
 namespace vve::v3 {
 
+   /**
+    * @brief Selects the main render kernel for the configured renderer family.
+    * @param renderer High-level renderer choice from the public engine config.
+    * @return Built-in render kernel used for the primary pass.
+    */
    [[nodiscard]] RenderKernelId selectMainKernel(vve::RendererKind renderer) {
       switch (renderer) {
       case vve::RendererKind::forward_renderer:
@@ -24,6 +29,11 @@ namespace vve::v3 {
       return RenderKernelId::none;
    }
 
+   /**
+    * @brief Returns a human-readable label for the primary render pass.
+    * @param renderer High-level renderer choice from the public engine config.
+    * @return Main-pass name used for graph diagnostics.
+    */
    [[nodiscard]] std::string_view selectMainPassName(vve::RendererKind renderer) {
       switch (renderer) {
       case vve::RendererKind::forward_renderer:
@@ -37,6 +47,11 @@ namespace vve::v3 {
       return "Main";
    }
 
+   /**
+    * @brief Builds the optional shadow pass for the selected shadowing mode.
+    * @param shadow Requested shadowing strategy.
+    * @return Render-pass description when a shadow pass is required.
+    */
    [[nodiscard]] std::optional<RenderPassDesc> buildShadowPass(vve::ShadowKind shadow) {
       switch (shadow) {
       case vve::ShadowKind::none:
@@ -54,18 +69,40 @@ namespace vve::v3 {
       return std::nullopt;
    }
 
+   /**
+    * @brief Concrete render-system implementation used by v3.
+    *
+    * The implementation owns renderer selection policy and translates that
+    * policy into both a static render graph and the frame tasks that execute
+    * the per-window render pipeline.
+    */
    class DefaultRenderSystemImplementation {
    public:
+      /**
+       * @brief Creates the render system for the selected renderer configuration.
+       * @param renderer Requested renderer family.
+       * @param shadow Requested shadow mode.
+       * @param graphics_backend Active graphics backend used for diagnostics and future backend work.
+       * @param imgui_enabled Whether an ImGui render pass should be appended.
+       */
       DefaultRenderSystemImplementation(vve::RendererKind renderer, vve::ShadowKind shadow,
                                         GraphicsBackend &graphics_backend, bool imgui_enabled)
           : renderer_(renderer), shadow_(shadow), graphics_backend_(graphics_backend), imgui_enabled_(imgui_enabled) {}
 
+      /// @brief Returns the subsystem name for diagnostics.
       [[nodiscard]] std::string_view name() const noexcept { return "RenderSystem"; }
 
+      /**
+       * @brief Builds the static render graph for one window.
+       * @param window Window receiving the render pipeline.
+       * @return Immutable render graph used by later scheduling and graph-dump code.
+       */
       [[nodiscard]] RenderGraph buildStaticGraph(WindowHandle window) {
          RenderGraph graph{};
          const auto window_salt = window.value.value();
 
+         // Shadow work, when enabled, becomes the first prerequisite of the
+         // main pass so later passes can remain renderer-agnostic.
          if (const auto shadow_pass = buildShadowPass(shadow_)) {
             graph.passes.push_back(*shadow_pass);
          }
@@ -75,11 +112,14 @@ namespace vve::v3 {
          if (!graph.passes.empty()) {
             main_dependencies.push_back(graph.passes.front().handle);
          }
+         // The main pass represents the renderer-specific primary shading stage.
          graph.passes.push_back(RenderPassDesc{.handle = main_pass,
                                                .kernel = selectMainKernel(renderer_),
                                                .depends_on = std::move(main_dependencies),
                                                .debug_name = std::string(selectMainPassName(renderer_))});
 
+         // Post-processing remains explicit in the graph so graph dumps and
+         // later backend integration can reason about ordering cleanly.
          const auto post_process_pass = RenderPassHandle{detail::makeStableHandle("render.post_process", window_salt)};
          graph.passes.push_back(RenderPassDesc{.handle = post_process_pass,
                                                .kernel = RenderKernelId::post_process,
@@ -94,6 +134,8 @@ namespace vve::v3 {
                                                .debug_name = "Post Post Processing"});
 
          if (imgui_enabled_) {
+            // GUI rendering is modeled as an optional trailing pass so it can
+            // depend on the fully composed scene image.
             graph.passes.push_back(
                 RenderPassDesc{.handle = RenderPassHandle{detail::makeStableHandle("render.imgui", window_salt)},
                                .kernel = RenderKernelId::imgui,
@@ -104,29 +146,41 @@ namespace vve::v3 {
          return graph;
       }
 
+      /// @brief Performs placeholder GPU visibility work for one window graph.
       [[nodiscard]] std::expected<void, vve::Error> cullVisibilityGpu(const FrameContext &, const SceneData &,
                                                                       WindowHandle, const RenderGraph &) {
          return {};
       }
 
+      /// @brief Performs placeholder draw-packet generation for one window graph.
       [[nodiscard]] std::expected<void, vve::Error> buildDrawPackets(const FrameContext &, const SceneData &,
                                                                      WindowHandle, const RenderGraph &) {
          return {};
       }
 
+      /// @brief Records placeholder render work for the supplied render graph.
       [[nodiscard]] std::expected<void, vve::Error> record(const FrameContext &, const SceneData &, WindowHandle,
                                                            const RenderGraph &render_graph) {
          for (const auto &pass : render_graph.passes) {
+            // Iterating the passes keeps the placeholder implementation aligned
+            // with the future shape where each pass will emit backend commands.
          }
 
          return {};
       }
 
+      /// @brief Consumes the produced frame output for a window.
       [[nodiscard]] std::expected<void, vve::Error> consumeOutput(const FrameContext &, const SceneData &, WindowHandle,
                                                                   const RenderGraph &) {
          return {};
       }
 
+      /**
+       * @brief Registers render tasks for each active window pipeline.
+       * @param builder Shared frame task-graph builder.
+       * @param scene Runtime scene data for the current graph build.
+       * @param render_pipelines Per-window render graphs to wire into the task graph.
+       */
       void registerTasks(TaskGraphBuilder &builder, const SceneData &,
                          VectorConstRange<WindowRenderPipeline> render_pipelines) {
          for (const auto &pipeline : render_pipelines) {
@@ -138,28 +192,32 @@ namespace vve::v3 {
             const auto consume_frame_output_name =
                 std::format("task.window.{}.consume_frame_output", pipeline.window_id);
 
-             const auto cull_visibility_gpu_task = builder.addTask(
-                 cull_visibility_gpu_name, TaskKernelId::cull_visibility_gpu, {},
-                 {TaskGraphBuilder::taskHandleFor("task.upload_resources")}, {},
-                 std::string("Cull Visibility GPU (") + pipeline.window_id + ")", TaskPhase::render,
-                 TaskScope::window, pipeline.window);
-             const auto build_draw_packets_task = builder.addTask(
-                 build_draw_packets_name, TaskKernelId::build_draw_packets, {}, {cull_visibility_gpu_task}, {},
-                 std::string("Build Draw Packets (") + pipeline.window_id + ")", TaskPhase::render, TaskScope::window,
-                 pipeline.window);
-             const auto record_render_graph_task = builder.addTask(
-                 record_render_graph_name, TaskKernelId::record_render_graph, {}, {build_draw_packets_task}, {},
-                 std::string("Record Render Graph (") + pipeline.window_id + ")", TaskPhase::render,
-                 TaskScope::window, pipeline.window);
-             const auto consume_frame_output_task = builder.addTask(
-                 consume_frame_output_name, TaskKernelId::consume_frame_output, {}, {record_render_graph_task}, {},
-                 std::string("Consume Frame Output (") + pipeline.window_id + ")", TaskPhase::render,
-                 TaskScope::window, pipeline.window);
+            // Render work is serialized explicitly per window so later DAG
+            // compilation does not have to infer pass ordering heuristically.
+            const auto cull_visibility_gpu_task = builder.addTask(
+                cull_visibility_gpu_name, TaskKernelId::cull_visibility_gpu, {},
+                {TaskGraphBuilder::taskHandleFor("task.upload_resources")}, {},
+                std::string("Cull Visibility GPU (") + pipeline.window_id + ")", TaskPhase::render,
+                TaskScope::window, pipeline.window);
+            const auto build_draw_packets_task = builder.addTask(
+                build_draw_packets_name, TaskKernelId::build_draw_packets, {}, {cull_visibility_gpu_task}, {},
+                std::string("Build Draw Packets (") + pipeline.window_id + ")", TaskPhase::render, TaskScope::window,
+                pipeline.window);
+            const auto record_render_graph_task = builder.addTask(
+                record_render_graph_name, TaskKernelId::record_render_graph, {}, {build_draw_packets_task}, {},
+                std::string("Record Render Graph (") + pipeline.window_id + ")", TaskPhase::render,
+                TaskScope::window, pipeline.window);
+            const auto consume_frame_output_task = builder.addTask(
+                consume_frame_output_name, TaskKernelId::consume_frame_output, {}, {record_render_graph_task}, {},
+                std::string("Consume Frame Output (") + pipeline.window_id + ")", TaskPhase::render,
+                TaskScope::window, pipeline.window);
 
             [[maybe_unused]] const auto cull_callback_set = builder.setTaskCallback(
                 cull_visibility_gpu_task,
                 [this, window,
                  render_graph](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
+                   // Render callbacks require both frame timing and the active
+                   // runtime scene to be present in the execution context.
                    if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
                       return std::unexpected(vve::Error::invalid_argument);
                    }
@@ -206,12 +264,13 @@ namespace vve::v3 {
       }
 
    private:
-      vve::RendererKind renderer_{vve::RendererKind::forward_renderer};
-      vve::ShadowKind shadow_{vve::ShadowKind::none};
-      GraphicsBackend &graphics_backend_;
-      bool imgui_enabled_{true};
+      vve::RendererKind renderer_{vve::RendererKind::forward_renderer}; ///< Selected renderer family.
+      vve::ShadowKind shadow_{vve::ShadowKind::none};                   ///< Selected shadowing strategy.
+      GraphicsBackend &graphics_backend_;                               ///< Backend facade used by render diagnostics and later GPU work.
+      bool imgui_enabled_{true};                                        ///< Whether the GUI pass should be appended.
    };
 
+   /// @brief Constructs the public render-system facade around the concrete implementation.
    template <>
    RenderSystemFacade<DefaultRenderSystemImplementation>::RenderSystemFacade(
        vve::RendererKind renderer, vve::ShadowKind shadow,
@@ -219,15 +278,18 @@ namespace vve::v3 {
        : implementation_(new DefaultRenderSystemImplementation(renderer, shadow, graphics_backend, imgui_enabled),
                          [](DefaultRenderSystemImplementation *implementation) { delete implementation; }) {}
 
+   /// @brief Returns the render-system name for the public facade.
    std::string_view RenderSystemFacade<DefaultRenderSystemImplementation>::name() const noexcept {
       return implementation_->name();
    }
 
+   /// @brief Builds the static render graph through the public render-system facade.
    template <>
    RenderGraph RenderSystemFacade<DefaultRenderSystemImplementation>::buildStaticGraph(WindowHandle window) {
       return implementation_->buildStaticGraph(window);
    }
 
+   /// @brief Performs GPU visibility work through the public render-system facade.
    template <>
    std::expected<void, vve::Error>
    RenderSystemFacade<DefaultRenderSystemImplementation>::cullVisibilityGpu(const FrameContext &frame_context,
@@ -236,6 +298,7 @@ namespace vve::v3 {
       return implementation_->cullVisibilityGpu(frame_context, scene, window, render_graph);
    }
 
+   /// @brief Builds draw packets through the public render-system facade.
    template <>
    std::expected<void, vve::Error>
    RenderSystemFacade<DefaultRenderSystemImplementation>::buildDrawPackets(const FrameContext &frame_context,
@@ -244,6 +307,7 @@ namespace vve::v3 {
       return implementation_->buildDrawPackets(frame_context, scene, window, render_graph);
    }
 
+   /// @brief Records render work through the public render-system facade.
    template <>
    std::expected<void, vve::Error>
    RenderSystemFacade<DefaultRenderSystemImplementation>::record(const FrameContext &frame_context,
@@ -252,6 +316,7 @@ namespace vve::v3 {
       return implementation_->record(frame_context, scene, window, render_graph);
    }
 
+   /// @brief Consumes frame output through the public render-system facade.
    template <>
    std::expected<void, vve::Error>
    RenderSystemFacade<DefaultRenderSystemImplementation>::consumeOutput(const FrameContext &frame_context,
@@ -260,12 +325,14 @@ namespace vve::v3 {
       return implementation_->consumeOutput(frame_context, scene, window, render_graph);
    }
 
+   /// @brief Registers render tasks through the public render-system facade.
    template <>
    void RenderSystemFacade<DefaultRenderSystemImplementation>::registerTasks(
        TaskGraphBuilder &builder, const SceneData &scene, VectorConstRange<WindowRenderPipeline> render_pipelines) {
       implementation_->registerTasks(builder, scene, render_pipelines);
    }
 
+   /// @brief Emits the explicit render-system facade instantiation for v3.
    template class RenderSystemFacade<DefaultRenderSystemImplementation>;
 
 } // namespace vve::v3
