@@ -1,4 +1,4 @@
-﻿module;
+module;
 
 #if defined(_WIN32)
 #if defined(VVE_ENGINE_BUILD)
@@ -16,52 +16,63 @@ import VEEngine.V3.Systems;
 import VEEngine;
 import std;
 
+/**
+ * @file
+ * @brief Internal v3 runtime types and helper declarations.
+ *
+ * This module centralizes compiled task-graph state and runtime assembly data
+ * shared across v3 implementation units.
+ */
 export namespace vve::v3::detail {
 
+   /// @brief Distinguishes explicit graph edges from synthesized hazard edges.
    enum class CompiledTaskDependencyKind : std::uint32_t {
-      explicit_order = 0,
-      resource_hazard
+      explicit_order = 0, ///< Dependency came from an explicit task-graph edge.
+      resource_hazard ///< Dependency was added to enforce a resource hazard ordering.
    };
 
+   /// @brief One compiled dependency edge in the executable task graph.
    struct CompiledTaskDependencyDesc {
-      std::size_t node_index{0};
-      CompiledTaskDependencyKind kind{CompiledTaskDependencyKind::explicit_order};
+      std::size_t node_index{0};									///< Index of the dependency node in the compiled node array.
+      CompiledTaskDependencyKind kind{CompiledTaskDependencyKind::explicit_order};	///< Origin of the dependency edge.
    };
 
+   /// @brief Executable task-node metadata derived from a declarative task node.
    struct CompiledTaskNodeDesc {
-      std::size_t index{0};
-      std::uint32_t initial_dependency_count{0};
-      Vector<CompiledTaskDependencyDesc> dependencies{};
-      Vector<CompiledTaskDependencyDesc> dependents{};
-      Vector<ResourceAccess> accesses{};
+      std::size_t index{0};										///< Index of this node in the compiled node array.
+      std::uint32_t initial_dependency_count{0};			///< Number of dependencies before execution begins.
+      Vector<CompiledTaskDependencyDesc> dependencies{};	///< Incoming dependency edges.
+      Vector<CompiledTaskDependencyDesc> dependents{};	///< Outgoing dependency edges.
+      Vector<ResourceAccess> accesses{};						///< Cached resource access declarations.
    };
 
    // CompiledTaskGraph is a reusable execution plan for one TaskGraph build.
    // It intentionally keeps richer metadata than the current single-threaded
    // executor needs so future hazard-aware and parallel scheduling can reuse
-   // the same compiled form.
-   struct CompiledTaskGraph {
-      bool valid{true};
-      vve::Error error{vve::Error::internal_error};
-      Vector<CompiledTaskNodeDesc> nodes{};
-      Vector<std::size_t> initial_ready_nodes{};
-      Vector<std::size_t> topological_order{};
+   struct CompiledTaskGraph { // the same compiled form.
+      bool valid{true};											///< Whether compilation succeeded.
+      vve::Error error{vve::Error::internal_error};	///< Error code when `valid` is false.
+      Vector<CompiledTaskNodeDesc> nodes{};				///< Compiled nodes in execution-plan order.
+      Vector<std::size_t> initial_ready_nodes{};		///< Nodes ready to run at the beginning of execution.
+      Vector<std::size_t> topological_order{};			///< Topological order used by the current executor.
    };
 
+   /// @brief Fully assembled v3 runtime object.
    struct Runtime final {
-      AssetSystem asset_system{};
-      ResourceSystem resource_system{};
-      SceneSystem scene_system{};
-      TaskGraphSystem task_graph_system{};
-      Vector<std::shared_ptr<ITaskSystem>> task_systems{};
-      WindowSystem window_system{};
+      AssetSystem asset_system{};									///< Asset-import subsystem facade.
+      ResourceSystem resource_system{};							///< Resource-management subsystem facade.
+      SceneSystem scene_system{};									///< Scene-management subsystem facade.
+      TaskGraphSystem task_graph_system{};						///< Task-graph assembly subsystem facade.
+      Vector<std::shared_ptr<ITaskSystem>> task_systems{};	///< User-supplied task systems extending the runtime.
+      WindowSystem window_system{};									///< Window/platform subsystem facade.
+      /// @brief Shared frame-local window snapshot.
       std::shared_ptr<WindowFrameData> window_frame{std::make_shared<WindowFrameData>()};
-      GraphicsBackend graphics_backend{};
-      ShaderSystem shader_system{};
-      std::unique_ptr<RenderSystem> render_system{};
-      Vector<WindowRenderPipeline> render_pipelines{};
-      std::unique_ptr<GuiSystem> gui_system{};
-      EngineRuntimeSnapshot snapshot{};
+      GraphicsBackend graphics_backend{};						///< Graphics backend facade.
+      ShaderSystem shader_system{};								///< Shader reflection subsystem facade.
+      std::unique_ptr<RenderSystem> render_system{};		///< Render subsystem facade stored via indirection.
+      Vector<WindowRenderPipeline> render_pipelines{};	///< Per-window render pipelines.
+      std::unique_ptr<GuiSystem> gui_system{};				///< Optional GUI subsystem facade.
+      EngineRuntimeSnapshot snapshot{};						///< Human-readable runtime snapshot for diagnostics.
    };
 
    VVE_API void syncWorldWindows(const WindowFrameData &window_frame, std::vector<vve::WindowInfo> &windows);

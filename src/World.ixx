@@ -21,6 +21,14 @@ import :Math;
 #define VVE_DEFAULT_ENGINE_NAMESPACE v3
 #endif
 
+/**
+ * @file
+ * @brief Game-facing world facade over ECS storage and runtime services.
+ *
+ * `World` provides the narrow API that gameplay-facing code uses to create
+ * entities, attach components, read transient input, inspect windows, and
+ * trigger scene loading without depending on lower-level engine internals.
+ */
 export namespace vve {
 
    class InputState;
@@ -36,38 +44,59 @@ export namespace vve {
       [[nodiscard]] const InputState &emptyInputState();
    } // namespace detail
 
+   /// @brief Runtime-visible description of an engine window.
    struct WindowInfo {
-      Handle handle{};
-      std::string id{};
-      std::string title{};
-      std::uint32_t width{0};
-      std::uint32_t height{0};
-      bool focused{false};
-      bool minimized{false};
-      bool should_close{false};
+      Handle handle{};				///< Opaque handle of the runtime window.
+      std::string id{};				///< Stable string id of the window.
+      std::string title{};			///< Human-readable window title.
+      std::uint32_t width{0};		///< Current window width in pixels.
+      std::uint32_t height{0};	///< Current window height in pixels.
+      bool focused{false};			///< Whether the window currently has focus.
+      bool minimized{false};		///< Whether the window is minimized.
+      bool should_close{false};	///< Whether the window has requested closure.
    };
 
+   /// @brief Standard transform component used by world helper methods.
    struct Transform {
+      /// @brief World-space translation.
       math::Vec3 translation{math::zeroVec3()};
+      /// @brief World-space orientation.
       math::Quat rotation{math::identityQuat()};
+      /// @brief Non-uniform scale.
       math::Vec3 scale{math::one(), math::one(), math::one()};
    };
 
+   /**
+    * @brief Per-frame input snapshot exposed through `World`.
+    *
+    * The runtime mutates this structure at frame boundaries. Consumers observe
+    * it as read-only state.
+    */
    class VVE_API InputState {
    public:
+      /// @brief Returns whether a key is currently held down.
       [[nodiscard]] bool isKeyDown(std::int32_t keycode) const;
+      /// @brief Returns whether a key transitioned to pressed during the current frame.
       [[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const;
+      /// @brief Returns whether a key transitioned to released during the current frame.
       [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const;
+      /// @brief Returns the latest known mouse position for a window, if any.
       [[nodiscard]] std::optional<math::Vec2> mousePosition(Handle window) const;
+      /// @brief Returns the accumulated mouse movement delta for a window this frame.
       [[nodiscard]] math::Vec2 mouseDelta(Handle window) const;
+      /// @brief Returns the accumulated mouse wheel delta for a window this frame.
       [[nodiscard]] math::Vec2 mouseWheelDelta(Handle window) const;
 
    private:
-      std::unordered_set<std::int32_t> keys_down_{};
-      std::unordered_set<std::int32_t> keys_pressed_{};
+      std::unordered_set<std::int32_t> keys_down_{};		///< Keys that are currently held down.
+      std::unordered_set<std::int32_t> keys_pressed_{}; ///< Keys that transitioned to pressed during the current frame.
+      /// @brief Keys that transitioned to released during the current frame.
       std::unordered_set<std::int32_t> keys_released_{};
+      /// @brief Latest known mouse positions per window handle value.
       std::unordered_map<Handle::value_type, math::Vec2> mouse_positions_{};
+      /// @brief Accumulated mouse movement delta per window handle value for the current frame.
       std::unordered_map<Handle::value_type, math::Vec2> mouse_delta_{};
+      /// @brief Accumulated mouse wheel delta per window handle value for the current frame.
       std::unordered_map<Handle::value_type, math::Vec2> mouse_wheel_delta_{};
 
       friend struct detail::WorldRuntimeAccess;
@@ -81,12 +110,14 @@ export namespace vve {
 
    namespace detail {
 
+      /// @brief Runtime-only bridge used to expose window, input, and scene-loading services to `World`.
       struct WorldRuntimeAccess {
-         std::vector<WindowInfo>::const_iterator windows_begin{};
-         std::vector<WindowInfo>::const_iterator windows_end{};
-         const InputState *input{nullptr};
+         std::vector<WindowInfo>::const_iterator windows_begin{};	///< Begin iterator for the runtime window cache.
+         std::vector<WindowInfo>::const_iterator windows_end{};	///< End iterator for the runtime window cache.
+         const InputState *input{nullptr};								///< Pointer to the current input snapshot.
+         /// @brief Runtime callback used to request scene loading.
          std::expected<void, Error> (*load_scene)(void *context, const std::filesystem::path &path){nullptr};
-         void *load_scene_context{nullptr};
+         void *load_scene_context{nullptr};	///< Opaque callback context passed back to `load_scene`.
       };
 
       inline void beginInputFrame(InputState &input) {
@@ -142,48 +173,86 @@ export namespace vve {
 
    } // namespace detail
 
+   /**
+    * @brief Game-facing facade that combines ECS access with runtime services.
+    *
+    * `World` intentionally exposes engine concepts rather than raw runtime
+    * implementation details. Entity storage still lives in ECS; `World`
+    * provides the higher-level convenience boundary used by systems.
+    */
    template <typename TImplementation> class VVE_API WorldFacade {
    public:
+      /// @brief Creates a world facade backed only by ECS storage.
       explicit WorldFacade(ECS<> &ecs) noexcept;
+      /// @brief Creates a world facade with ECS storage and runtime service access.
       explicit WorldFacade(ECS<> &ecs, const detail::WorldRuntimeAccess &runtime_access) noexcept;
 
+      /// @brief Returns mutable access to the underlying ECS facade.
       [[nodiscard]] ECS<> &ecs() noexcept;
-      [[nodiscard]] const ECS<> &ecs() const noexcept;
+      /// @brief Returns read-only access to the underlying ECS facade.
+      [[nodiscard]] const ECS<> &ecs() const noexcept; 
 
+      /// @brief Creates a new entity.
       [[nodiscard]] std::expected<Handle, Error> createEntity();
+      /// @brief Creates a new object entity. Currently equivalent to `createEntity()`.
       [[nodiscard]] std::expected<Handle, Error> createObject();
+      /// @brief Returns whether an entity currently exists.
       [[nodiscard]] std::expected<bool, Error> exists(Handle entity) const;
+      /// @brief Destroys an entity and all of its components.
       [[nodiscard]] std::expected<void, Error> destroyEntity(Handle entity);
+      /// @brief Destroys an object entity. Currently equivalent to `destroyEntity()`.
       [[nodiscard]] std::expected<void, Error> destroyObject(Handle entity);
 
+      /// @brief Adds a component to an entity through the world facade.
       template <NotHandle TComponent>
       [[nodiscard]] std::expected<void, Error> addComponent(Handle entity, TComponent &&component);
 
+      /// @brief Returns a copy of a component if the entity has one.
       template <NotHandle TComponent>
       [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, Error>
       getComponent(Handle entity) const;
 
+      /// @brief Replaces or inserts a component on an entity.
       template <NotHandle TComponent>
       [[nodiscard]] std::expected<void, Error> setComponent(Handle entity, TComponent &&component);
 
+      /// @brief Returns whether an entity owns a component of type `TComponent`.
       template <NotHandle TComponent> [[nodiscard]] std::expected<bool, Error> hasComponent(Handle entity) const;
 
+      /// @brief Removes a component of type `TComponent` from an entity.
       template <NotHandle TComponent> [[nodiscard]] std::expected<void, Error> removeComponent(Handle entity);
 
+      /// @brief Creates an entity and attaches all provided components.
       template <NotHandle... TComponents> [[nodiscard]] std::expected<Handle, Error> spawn(TComponents &&...components);
 
+      /// @brief Returns the currently visible runtime window range.
       [[nodiscard]] std::ranges::subrange<std::vector<WindowInfo>::const_iterator> windows() const;
+      /// @brief Finds a window by handle.
       [[nodiscard]] std::optional<WindowInfo> findWindow(Handle window) const;
+      /// @brief Finds a window by its stable string id.
       [[nodiscard]] std::optional<WindowInfo> findWindow(std::string_view window_id) const;
+      /// @brief Returns the current frame's input snapshot.
       [[nodiscard]] const InputState &input() const;
+      /// @brief Requests scene loading through the runtime scene-loading seam.
       [[nodiscard]] std::expected<void, Error> loadScene(const std::filesystem::path &path);
 
+      /// @brief Returns an entity transform component if present.
       [[nodiscard]] std::expected<std::optional<Transform>, Error> getTransform(Handle entity) const;
+      /// @brief Replaces an entity transform component.
       [[nodiscard]] std::expected<void, Error> setTransform(Handle entity, const Transform &transform);
+      /// @brief Adds `offset` to an entity transform's translation.
       [[nodiscard]] std::expected<void, Error> translate(Handle entity, const math::Vec3 &offset);
+      /// @brief Premultiplies an entity transform by `rotation`.
       [[nodiscard]] std::expected<void, Error> rotate(Handle entity, const math::Quat &rotation);
+      /// @brief Replaces an entity transform scale.
       [[nodiscard]] std::expected<void, Error> setScale(Handle entity, const math::Vec3 &scale);
 
+      /**
+       * @brief Mutates a component by value and writes the result back.
+       *
+       * The mutator operates on a temporary component copy. The updated value
+       * is committed through `setComponent()` if the component exists.
+       */
       template <NotHandle TComponent, typename TMutator>
          requires(std::invocable<TMutator, std::remove_cvref_t<TComponent> &>)
       [[nodiscard]] std::expected<void, Error> modifyComponent(Handle entity, TMutator &&mutator);
@@ -192,6 +261,7 @@ export namespace vve {
       TImplementation implementation_;
    };
 
+   /// @brief Default world facade alias for the selected engine namespace.
    using World = WorldFacade<detail::DefaultWorldImplementation>;
 
    template <typename TImplementation> WorldFacade<TImplementation>::WorldFacade(ECS<> &ecs) noexcept : implementation_(ecs) {}

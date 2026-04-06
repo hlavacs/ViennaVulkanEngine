@@ -2,6 +2,13 @@ module VEEngine.V3;
 import std;
 import :Internal;
 
+/**
+ * @file
+ * @brief Debug graph-dump helpers for task and render graphs.
+ *
+ * These utilities export DOT descriptions that make graph structure easier to
+ * inspect during development and debugging.
+ */
 namespace vve::v3::detail {
 
 #ifndef NDEBUG

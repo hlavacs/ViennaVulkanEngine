@@ -2,16 +2,25 @@
 
 import VEEngine;
 
+/**
+ * @file
+ * @brief Regression tests for the public world facade.
+ */
 namespace {
 
+   /// @brief Test component storing a 2D position.
    struct Position {
+      /// @brief Horizontal coordinate used by the test.
       int x{0};
+      /// @brief Vertical coordinate used by the test.
       int y{0};
 
       [[nodiscard]] friend bool operator==(const Position &, const Position &) = default;
    };
 
+   /// @brief Test component storing a string tag.
    struct Tag {
+      /// @brief Tag text used by the test.
       std::string value{};
 
       [[nodiscard]] friend bool operator==(const Tag &, const Tag &) = default;
@@ -19,6 +28,10 @@ namespace {
 
 } // namespace
 
+/**
+ * @brief Executes the world-facade regression tests.
+ * @return Process exit code expected by the lightweight test runner.
+ */
 int main() {
    vve::ECS<> ecs{};
    vve::World world{ecs};
@@ -47,6 +60,7 @@ int main() {
       return 5;
    }
 
+   // `modifyComponent()` should read, mutate, and write back the component.
    if (!world.modifyComponent<Position>(entity, [](Position &position) {
           position.x += 10;
           position.y += 20;
@@ -70,7 +84,8 @@ int main() {
       return 9;
    }
 
-   if (!world.addComponent(spawned, vve::Transform{})) {
+   // The transform helper methods should operate on the standard transform
+   if (!world.addComponent(spawned, vve::Transform{})) { // component without exposing storage internals.
       return 91;
    }
 
@@ -121,6 +136,7 @@ int main() {
       return 15;
    }
 
+   // A world without runtime access should expose empty window and input state.
    if (world.findWindow("main").has_value()) {
       return 16;
    }

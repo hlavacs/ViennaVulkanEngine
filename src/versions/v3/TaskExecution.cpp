@@ -2,6 +2,13 @@ module VEEngine.V3;
 import :Internal;
 import std;
 
+/**
+ * @file
+ * @brief Task-graph compilation and execution helpers for v3.
+ *
+ * This file turns declarative task graphs into compiled execution order and
+ * validates the dependency model before callbacks run.
+ */
 namespace vve::v3::detail {
 
    namespace {

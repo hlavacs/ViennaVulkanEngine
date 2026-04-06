@@ -1,3 +1,4 @@
+/// @file Rasterizer shader entry points and shared parameter blocks for v3.
 #include "lights.slang"
 
 struct VertexInput

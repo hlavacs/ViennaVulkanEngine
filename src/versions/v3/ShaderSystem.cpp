@@ -2,8 +2,16 @@
 import std;
 import :Internal;
 
+/**
+ * @file
+ * @brief v3 shader-reflection implementation.
+ *
+ * The current implementation produces placeholder reflection data while
+ * preserving the shape of the shader metadata API.
+ */
 namespace vve::v3 {
 
+   /// @brief Converts a public renderer enum into the shader metadata string form.
    [[nodiscard]] std::string_view toRendererName(vve::RendererKind renderer) {
       switch (renderer) {
       case vve::RendererKind::forward_renderer:
@@ -17,6 +25,7 @@ namespace vve::v3 {
       return "unknown";
    }
 
+   /// @brief Converts a public shadow enum into the shader metadata string form.
    [[nodiscard]] std::string_view toShadowName(vve::ShadowKind shadow) {
       switch (shadow) {
       case vve::ShadowKind::none:
@@ -30,13 +39,19 @@ namespace vve::v3 {
       return "unknown";
    }
 
+   /**
+    * @brief Concrete shader-system implementation used by v3.
+    */
    class SlangShaderSystemImplementation {
    public:
+      /// @brief Returns the subsystem name for diagnostics.
       [[nodiscard]] std::string_view name() const noexcept { return "SlangShaderSystem"; }
 
+      /// @brief Reflects a shader path into placeholder shader metadata.
       [[nodiscard]] std::expected<ShaderMetadata, vve::Error>
       reflect(const std::filesystem::path &shader_path, vve::RendererKind renderer, vve::ShadowKind shadow) {
-         ShaderMetadata metadata{};
+         // The reflection seam currently fabricates metadata from the shader
+         ShaderMetadata metadata{}; // path and the requested renderer configuration.
          metadata.handle = ShaderHandle{detail::makeStableHandle(shader_path.string())};
          metadata.shader_name = shader_path.filename().string();
          metadata.stages = {ShaderStage::vertex, ShaderStage::fragment};
@@ -49,15 +64,18 @@ namespace vve::v3 {
       }
    };
 
+   /// @brief Constructs the public shader-system facade around the concrete implementation.
    template <>
    ShaderSystemFacade<SlangShaderSystemImplementation>::ShaderSystemFacade()
        : implementation_(new SlangShaderSystemImplementation(),
                          [](SlangShaderSystemImplementation *implementation) { delete implementation; }) {}
 
+   /// @brief Returns the shader-system name for the public facade.
    std::string_view ShaderSystemFacade<SlangShaderSystemImplementation>::name() const noexcept {
       return implementation_->name();
    }
 
+   /// @brief Reflects a shader through the public facade.
    template <>
    std::expected<ShaderMetadata, vve::Error>
    ShaderSystemFacade<SlangShaderSystemImplementation>::reflect(const std::filesystem::path &shader_path,
@@ -65,6 +83,7 @@ namespace vve::v3 {
       return implementation_->reflect(shader_path, renderer, shadow);
    }
 
+   /// @brief Emits the explicit shader-system facade instantiation for v3.
    template class ShaderSystemFacade<SlangShaderSystemImplementation>;
 
 } // namespace vve::v3

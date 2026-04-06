@@ -16,7 +16,7 @@ Primary priorities, in order:
 8. data-oriented design
 9. maintainable long-term architecture
 10. code readability is very important
-11. extensive Doxygen compatible commenting: each file, function, class, struct gets a header explaining why it is there and if necessary input, output and retir parameters, add comments to roughly one third to half of the code lines
+11. extensive Doxygen compatible commenting
 
 All analysis, design, and implementation should optimize for an engine that can serve as a long-lived reusable foundation across many projects, not for one-off convenience or game-specific shortcuts.
 
@@ -63,7 +63,7 @@ Do not jump directly into code generation unless explicitly asked.
   - rendering
   - render graph / frame graph
   - asset/resource management
-  - physics
+  - physics is provided by a user system
   - audio
   - input
   - platform
@@ -129,6 +129,9 @@ Do not jump directly into code generation unless explicitly asked.
 - Prefer idiomatic modern C++ over C-style patterns or legacy inheritance-heavy OOP.
 - Use templates deliberately, not decoratively.
 - Prefer range-based for-loops over counted for-loops.
+- Each file, function, class, struct gets a header explaining why it is there and if necessary input, output and return parameters
+- In a struct or enum or class, each memeber variable or value must have its own comment line.
+- Add comments to roughly one third to half of the code lines
 
 ### Performance first
 

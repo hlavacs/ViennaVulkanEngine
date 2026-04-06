@@ -8,8 +8,18 @@
 import VEEngine;
 import VEEngine.V3;
 
+/**
+ * @file
+ * @brief Minimal runtime example that boots the engine and runs the frame loop.
+ */
+
+/**
+ * @brief Runs the physics sample shell.
+ * @return Process exit code expected by the example launcher.
+ */
 int main() {
-    auto engine = vve::makeEngine(
+    // The physics sample currently exercises only engine startup and runtime
+    auto engine = vve::makeEngine( // execution. Physics itself is expected to arrive through a user system.
         vve::ApplicationName{"physics"},
         vve::Windows{
             .value = {

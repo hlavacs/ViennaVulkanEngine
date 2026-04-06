@@ -3,18 +3,28 @@
 
 import VEEngine.V3;
 
+/**
+ * @file
+ * @brief Regression tests for task-graph construction and execution.
+ */
 namespace {
 
+/**
+ * @brief Test task system that appends a marker when executed.
+ */
 class RecordingTaskSystem final : public vve::v3::ITaskSystem {
 public:
+    /// @brief Creates the recording task system over the shared event vector.
     explicit RecordingTaskSystem(std::vector<int>& events)
         : events_(events) {
     }
 
+    /// @brief Returns the task-system name for diagnostics.
     [[nodiscard]] std::string_view name() const noexcept override {
         return "RecordingTaskSystem";
     }
 
+    /// @brief Registers a single post-frame task that records execution.
     void registerTasks(
         vve::v3::TaskGraphBuilder& builder,
         const vve::v3::SceneData&) override {
@@ -32,14 +42,19 @@ public:
     }
 
 private:
-    std::vector<int>& events_;
+    std::vector<int>& events_; ///< Shared event log used to verify execution order.
 };
 
 } // namespace
 
+/**
+ * @brief Executes the task-graph regression tests.
+ * @return Process exit code expected by the lightweight test runner.
+ */
 int main() {
     {
-        std::vector<int> events{};
+        // Verify that task execution respects dependency order, including tasks
+        std::vector<int> events{}; // registered later by user task systems.
         vve::v3::TaskGraphBuilder builder{};
 
         const auto transforms = builder.addTask(
@@ -102,7 +117,7 @@ int main() {
     }
 
     {
-        vve::v3::TaskGraphBuilder builder{};
+        vve::v3::TaskGraphBuilder builder{}; // Graph compilation must reject dependencies on missing tasks.
         [[maybe_unused]] const auto invalid_task = builder.addTask(
             "task.invalid",
             vve::v3::TaskKernelId::none,
@@ -117,7 +132,7 @@ int main() {
     }
 
     {
-        vve::v3::TaskGraphBuilder builder{};
+        vve::v3::TaskGraphBuilder builder{}; // Invalid phase ordering must be caught during graph validation.
         [[maybe_unused]] const auto end_frame = builder.addTask(
             "task.end_frame",
             vve::v3::TaskKernelId::end_frame);

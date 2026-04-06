@@ -2,10 +2,18 @@
 import std;
 import :Internal;
 
+/**
+ * @file
+ * @brief v3 task-graph assembly implementation.
+ *
+ * This file collects subsystem-owned tasks into a single frame task graph and
+ * inserts the engine's implicit dependency rules between the major phases.
+ */
 namespace vve::v3 {
 
    namespace {
 
+      /// @brief Attaches window-input polling as a prerequisite for all root tasks except the built-in frame tasks.
       void attachImplicitInputDependencies(TaskGraphBuilder &builder, TaskNodeHandle begin_frame,
                                            TaskNodeHandle poll_window_events, TaskNodeHandle end_frame) {
          for (const auto &root : builder.rootTasks()) {
@@ -18,6 +26,7 @@ namespace vve::v3 {
          }
       }
 
+      /// @brief Collects leaf tasks that must complete before scene work begins.
       [[nodiscard]] std::vector<TaskNodeHandle>
       collectPreSceneLeafTasks(const TaskGraphBuilder &builder, TaskNodeHandle begin_frame, TaskNodeHandle end_frame) {
          std::vector<TaskNodeHandle> user_leaf_tasks{};
@@ -32,6 +41,7 @@ namespace vve::v3 {
          return user_leaf_tasks;
       }
 
+      /// @brief Makes the scene update task depend on all earlier user leaf tasks.
       void attachSceneStartDependencies(TaskGraphBuilder &builder, const std::vector<TaskNodeHandle> &pre_scene_leaf_tasks) {
          const auto update_transforms = builder.findTask("task.update_transforms");
          if (!update_transforms.has_value()) {
@@ -47,6 +57,7 @@ namespace vve::v3 {
          }
       }
 
+      /// @brief Makes end-of-frame execution wait for all per-window output consumers.
       void attachEndFrameDependencies(TaskGraphBuilder &builder, VectorConstRange<WindowRenderPipeline> render_pipelines) {
          const auto end_frame_task = builder.findTask("task.end_frame");
          if (!end_frame_task.has_value()) {
@@ -62,17 +73,29 @@ namespace vve::v3 {
 
    } // namespace
 
+   /**
+    * @brief Concrete task-graph assembly policy for v3.
+    *
+    * The implementation coordinates task registration order and adds the
+    * engine's implicit cross-subsystem edges.
+    */
    class DefaultTaskGraphSystemImplementation {
    public:
+      /// @brief Returns the subsystem name for diagnostics.
       [[nodiscard]] std::string_view name() const noexcept { return "TaskGraphSystem"; }
 
+      /**
+       * @brief Builds the frame task graph from subsystem task registrations.
+       * @return Immutable frame task graph ready for compilation and execution.
+       */
       [[nodiscard]] TaskGraph build(const SceneData &scene, VectorConstRange<ITaskSystem *> task_systems,
                                     WindowSystem &window_system, GraphicsBackend &graphics_backend,
                                     ResourceSystem &resource_system, SceneSystem &scene_system,
                                     RenderSystem &render_system,
                                     std::function<void(TaskGraphBuilder &, const SceneData &)> extra_tasks,
                                     VectorConstRange<WindowRenderPipeline> render_pipelines) {
-         TaskGraphBuilder builder{};
+         // Start with an empty builder and let each subsystem append its own
+         TaskGraphBuilder builder{}; // task set through its subsystem facade.
 
          graphics_backend.registerTasks(builder);
          window_system.registerTasks(builder);
@@ -80,6 +103,8 @@ namespace vve::v3 {
          const auto begin_frame = TaskGraphBuilder::taskHandleFor("task.begin_frame");
          const auto poll_window_events = TaskGraphBuilder::taskHandleFor("task.poll_window_events");
          const auto end_frame = TaskGraphBuilder::taskHandleFor("task.end_frame");
+         // User task systems extend the graph before the built-in scene and
+         // render phases are added so implicit edges can bridge between them.
          for (auto *const task_system : task_systems) {
             if (task_system != nullptr) {
                task_system->registerTasks(builder, scene);
@@ -89,6 +114,7 @@ namespace vve::v3 {
             extra_tasks(builder, scene);
          }
 
+         // Apply engine policy edges after all pre-scene tasks are known.
          attachImplicitInputDependencies(builder, begin_frame, poll_window_events, end_frame);
          const auto user_leaf_tasks = collectPreSceneLeafTasks(builder, begin_frame, end_frame);
 
@@ -99,19 +125,23 @@ namespace vve::v3 {
          attachSceneStartDependencies(builder, user_leaf_tasks);
          attachEndFrameDependencies(builder, render_pipelines);
 
-         return std::move(builder).build();
+         // Finalize the declarative builder into the immutable graph consumed by
+         return std::move(builder).build(); // the task-graph compiler.
       }
    };
 
+   /// @brief Constructs the public task-graph facade around the concrete implementation.
    template <>
    TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::TaskGraphSystemFacade()
        : implementation_(new DefaultTaskGraphSystemImplementation(),
                          [](DefaultTaskGraphSystemImplementation *implementation) { delete implementation; }) {}
 
+   /// @brief Returns the task-graph-system name for the public facade.
    std::string_view TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::name() const noexcept {
       return implementation_->name();
    }
 
+   /// @brief Builds the frame task graph through the public task-graph facade.
    template <>
    TaskGraph TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::build(
        const SceneData &scene, VectorConstRange<ITaskSystem *> task_systems, WindowSystem &window_system,
@@ -122,6 +152,7 @@ namespace vve::v3 {
                                     render_system, std::move(extra_tasks), render_pipelines);
    }
 
+   /// @brief Emits the explicit task-graph facade instantiation for v3.
    template class TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>;
 
 } // namespace vve::v3

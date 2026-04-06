@@ -1,3 +1,4 @@
+/// @file Shared lighting data declarations used by v3 shaders.
 static const uint kMaxLights = 8;
 
 static const uint kLightTypeDirectional = 0;

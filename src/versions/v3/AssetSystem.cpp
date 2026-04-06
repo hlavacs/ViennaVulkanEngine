@@ -2,6 +2,14 @@
 import std;
 import :Internal;
 
+/**
+ * @file
+ * @brief v3 asset-system implementation.
+ *
+ * The current implementation is intentionally minimal and synthesizes imported
+ * scene data from source-path metadata. It provides the subsystem seam that a
+ * fuller importer can later replace.
+ */
 namespace vve::v3 {
 
    class AssimpAssetSystemImplementation {

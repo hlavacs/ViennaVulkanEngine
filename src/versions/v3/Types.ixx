@@ -1,14 +1,41 @@
 export module VEEngine.V3.Types;
+// This module gathers the lightweight value types that define the contracts
+// shared between the v3 subsystem facades.
 export import VEEngine.V3.Vector;
 import VEEngine;
 import std;
 
+/**
+ * @file
+ * @brief Public v3 data types for resources, tasks, rendering, and runtime state.
+ *
+ * These types form the public contract shared across v3 subsystem facades and
+ * frame-graph/task-graph APIs.
+ */
 export namespace vve::v3 {
 
-   enum class ResourceKind { unknown, mesh, texture, material, shader_program, buffer, image };
+   /// @brief Coarse classification of engine-managed resource records.
+   enum class ResourceKind {
+      unknown, ///< Resource kind is not yet known.
+      mesh, ///< Mesh resource.
+      texture, ///< Texture resource.
+      material, ///< Material resource.
+      shader_program, ///< Shader program resource.
+      buffer, ///< Generic buffer resource.
+      image ///< Generic image resource.
+   };
 
-   enum class ResourceLocation { unknown, source_file, imported_blob, cpu_memory, gpu_memory, streaming };
+   /// @brief Current storage location or provenance of a resource record.
+   enum class ResourceLocation {
+      unknown, ///< Resource location is not yet known.
+      source_file, ///< Resource originates directly from a source file.
+      imported_blob, ///< Resource exists as imported intermediate data.
+      cpu_memory, ///< Resource resides in CPU-visible memory.
+      gpu_memory, ///< Resource resides in GPU memory.
+      streaming ///< Resource is managed through a streaming path.
+   };
 
+   /// @brief Built-in engine task kernels recognized by the v3 scheduler.
    enum class TaskKernelId : std::uint32_t {
       none = 0,
       begin_frame,
@@ -24,6 +51,7 @@ export namespace vve::v3 {
       end_frame
    };
 
+   /// @brief High-level phase used to group task execution within a frame.
    enum class TaskPhase : std::uint32_t {
       automatic = 0,
       begin_frame,
@@ -36,6 +64,7 @@ export namespace vve::v3 {
       post_frame
    };
 
+   /// @brief Window event kinds emitted by the window system.
    enum class WindowEventType : std::uint32_t {
       none = 0,
       close_requested,
@@ -51,6 +80,7 @@ export namespace vve::v3 {
       mouse_wheel
    };
 
+   /// @brief Built-in render pass kernels recognized by the renderer.
    enum class RenderKernelId : std::uint32_t {
       none = 0,
       depth_prepass,
@@ -65,152 +95,211 @@ export namespace vve::v3 {
       imgui
    };
 
-   enum class ShaderStage : std::uint32_t { vertex = 0, fragment, compute };
+   /// @brief Shader stage kinds reported by shader reflection.
+   enum class ShaderStage : std::uint32_t {
+      vertex = 0, ///< Vertex shader stage.
+      fragment, ///< Fragment shader stage.
+      compute ///< Compute shader stage.
+   };
 
+   /// @brief Strong type for mesh resource identifiers.
    struct MeshHandle final {
-      vve::Handle value{};
+      vve::Handle value{};	///< Underlying generic handle value.
    };
 
+   /// @brief Strong type for texture resource identifiers.
    struct TextureHandle final {
-      vve::Handle value{};
+      vve::Handle value{};	///< Underlying generic handle value.
    };
 
+   /// @brief Strong type for material resource identifiers.
    struct MaterialHandle final {
-      vve::Handle value{};
+      vve::Handle value{};	///< Underlying generic handle value.
    };
 
+   /// @brief Strong type for shader resource identifiers.
    struct ShaderHandle final {
-      vve::Handle value{};
+      vve::Handle value{};	///< Underlying generic handle value.
    };
 
+   /// @brief Strong type for scene identifiers.
    struct SceneHandle final {
-      vve::Handle value{};
+      vve::Handle value{};	///< Underlying generic handle value.
    };
 
+   /// @brief Strong type for scene-node identifiers.
    struct SceneNodeHandle final {
-      vve::Handle value{};
+      vve::Handle value{};	///< Underlying generic handle value.
    };
 
+   /// @brief Strong type for task-node identifiers.
    struct TaskNodeHandle final {
-      vve::Handle value{};
+      vve::Handle value{};	///< Underlying generic handle value.
    };
 
+   /// @brief Strong type for render-pass identifiers.
    struct RenderPassHandle final {
-      vve::Handle value{};
+      vve::Handle value{};	///< Underlying generic handle value.
    };
 
+   /// @brief Strong type for window identifiers inside v3 systems.
    struct WindowHandle final {
-      vve::Handle value{};
+      vve::Handle value{};	///< Underlying generic handle value.
    };
 
+   /// @brief Per-frame timing data passed to runtime systems and tasks.
    struct FrameContext {
-      std::uint64_t frame_index{0};
-      double delta_seconds{0.0};
+      std::uint64_t frame_index{0};	///< Monotonically increasing frame index.
+      double delta_seconds{0.0};		///< Frame delta time in seconds.
    };
 
+   /// @brief Declares a task's read or write access to a resource handle.
    struct ResourceAccess {
-      vve::Handle resource{};
-      bool write{false};
+      vve::Handle resource{};	///< Resource touched by the task.
+      bool write{false};		///< Whether the access writes to the resource.
    };
 
+   /// @brief Imported mesh metadata produced by the asset system.
    struct ImportedMesh {
-      MeshHandle handle{};
-      std::string name{};
+      MeshHandle handle{};	///< Stable imported mesh handle.
+      std::string name{};	///< Human-readable mesh name.
    };
 
+   /// @brief Imported material metadata produced by the asset system.
    struct ImportedMaterial {
-      MaterialHandle handle{};
-      std::string name{};
+      MaterialHandle handle{};	///< Stable imported material handle.
+      std::string name{};			///< Human-readable material name.
    };
 
+   /// @brief Imported scene-node description with local transform data.
    struct ImportedSceneNode {
-      SceneNodeHandle handle{};
-      SceneNodeHandle parent{};
-      std::string name{};
+      SceneNodeHandle handle{};	///< Stable imported scene-node handle.
+      SceneNodeHandle parent{};	///< Parent node handle, or default for a root node.
+      std::string name{};			///< Human-readable node name.
+      /// @brief Local transform relative to the parent node.
       vve::math::Mat4 local_transform{vve::math::identityMat4()};
    };
 
+   /// @brief Scene asset payload produced by import and consumed by scene instantiation.
    struct ImportedScene {
-      SceneHandle handle{};
-      std::string name{};
-      Vector<ImportedMesh> meshes{};
-      Vector<ImportedMaterial> materials{};
-      Vector<ImportedSceneNode> nodes{};
+      SceneHandle handle{};						///< Stable scene handle.
+      std::string name{};							///< Human-readable scene name.
+      Vector<ImportedMesh> meshes{};			///< Imported meshes owned by the scene.
+      Vector<ImportedMaterial> materials{};	///< Imported materials owned by the scene.
+      Vector<ImportedSceneNode> nodes{};		///< Imported scene-node hierarchy.
    };
 
+   /// @brief Persistent record describing a registered engine resource.
    struct ResourceRecord {
-      vve::Handle id{};
-      ResourceKind kind{ResourceKind::unknown};
-      ResourceLocation location{ResourceLocation::unknown};
-      std::uint32_t generation{0};
-      std::filesystem::path source_path{};
+      vve::Handle id{};													///< Stable resource identifier.
+      ResourceKind kind{ResourceKind::unknown};					///< Resource category.
+      ResourceLocation location{ResourceLocation::unknown};	///< Current storage location or provenance.
+      std::uint32_t generation{0};								///< Monotonic version incremented on significant transitions.
+      std::filesystem::path source_path{};						///< Source file associated with the resource.
    };
 
+   /// @brief Instantiated scene-node description used at runtime.
    struct SceneNodeDesc {
-      SceneNodeHandle handle{};
-      SceneNodeHandle parent{};
-      std::string name{};
+      SceneNodeHandle handle{};	///< Stable runtime scene-node handle.
+      SceneNodeHandle parent{};	///< Parent node handle, or default for a root node.
+      std::string name{};			///< Human-readable node name.
+      /// @brief Local transform relative to the parent node.
       vve::math::Mat4 local_transform{vve::math::identityMat4()};
    };
 
+   /// @brief Runtime scene data shared across scene, resource, and render systems.
    struct SceneData {
-      SceneHandle handle{};
-      Vector<SceneNodeDesc> nodes{};
+      SceneHandle handle{};				///< Stable runtime scene handle.
+      Vector<SceneNodeDesc> nodes{};	///< Runtime scene-node list.
    };
 
+   /// @brief Runtime window snapshot used by the frame graph and world facade.
    struct WindowState {
-      WindowHandle handle{};
-      std::string id{};
-      std::string title{};
-      std::uint32_t width{0};
-      std::uint32_t height{0};
-      bool focused{false};
-      bool minimized{false};
-      bool should_close{false};
+      WindowHandle handle{};		///< Stable runtime window handle.
+      std::string id{};				///< Stable string identifier.
+      std::string title{};			///< Human-readable title.
+      std::uint32_t width{0};		///< Current window width in pixels.
+      std::uint32_t height{0};	///< Current window height in pixels.
+      bool focused{false};			///< Whether the window is focused.
+      bool minimized{false};		///< Whether the window is minimized.
+      bool should_close{false};	///< Whether the window has requested closure.
    };
 
+   /// @brief Window event payload emitted during event polling.
    struct WindowEvent {
-      WindowHandle window{};
-      WindowEventType type{WindowEventType::none};
-      std::int32_t a{0};
-      std::int32_t b{0};
+      WindowHandle window{};								///< Window associated with the event.
+      WindowEventType type{WindowEventType::none};	///< Event type.
+      std::int32_t a{0};									///< First event payload integer.
+      std::int32_t b{0};									///< Second event payload integer.
    };
 
+   /// @brief Frame-local window snapshot and event range bundle.
    struct WindowFrameData {
-      VectorConstRange<WindowState> windows{};
-      VectorConstRange<WindowEvent> events{};
+      VectorConstRange<WindowState> windows{};	///< Current window-state range for the frame.
+      VectorConstRange<WindowEvent> events{};	///< Current event range for the frame.
    };
 
-   enum class TaskScope : std::uint32_t { global = 0, window };
+   /// @brief Scope used to distinguish global tasks from per-window tasks.
+   enum class TaskScope : std::uint32_t {
+      global = 0, ///< Task is global to the frame.
+      window ///< Task is scoped to one window.
+   };
 
+   /// @brief Runtime data visible to task callbacks during execution.
    struct TaskExecutionContext {
-      const FrameContext *frame_context{nullptr};
-      SceneData *scene{nullptr};
-      vve::World *world{nullptr};
-      std::shared_ptr<const WindowFrameData> window_frame{};
-      std::optional<WindowHandle> window{};
+      const FrameContext *frame_context{nullptr};					///< Frame timing data, or `nullptr` when unavailable.
+      SceneData *scene{nullptr};											///< Mutable scene data, or `nullptr` when unavailable.
+      vve::World *world{nullptr};										///< World facade, or `nullptr` when unavailable.
+      std::shared_ptr<const WindowFrameData> window_frame{};	///< Shared window snapshot for the frame.
+      std::optional<WindowHandle> window{};						///< Optional window scope when the task is window-specific.
    };
 
+   /// @brief Callback signature used by task nodes.
    using TaskCallback = std::function<std::expected<void, vve::Error>(const TaskExecutionContext &)>;
 
+   /**
+    * @brief Declarative task-node description.
+    *
+    * Dependencies are expressed explicitly through `depends_on`. `accesses`
+    * records coarse resource hazards used by higher-level graph tooling.
+    */
    struct TaskNodeDesc {
-      TaskNodeHandle handle{};
-      TaskKernelId kernel{TaskKernelId::none};
-      TaskPhase phase{TaskPhase::automatic};
-      TaskScope scope{TaskScope::global};
-      std::optional<WindowHandle> window{};
-      Vector<TaskNodeHandle> depends_on{};
-      Vector<ResourceAccess> accesses{};
-      std::string debug_name{};
-      TaskCallback callback{};
+      TaskNodeHandle handle{};						///< Stable task handle.
+      TaskKernelId kernel{TaskKernelId::none};	///< Built-in kernel classification.
+      TaskPhase phase{TaskPhase::automatic};		///< Declared execution phase.
+      TaskScope scope{TaskScope::global};			///< Global or per-window task scope.
+      std::optional<WindowHandle> window{};		///< Optional associated window for per-window tasks.
+      Vector<TaskNodeHandle> depends_on{};		///< Explicit predecessor task handles.
+      Vector<ResourceAccess> accesses{};			///< Coarse resource access declarations.
+      std::string debug_name{};						///< Human-readable task name for diagnostics.
+      TaskCallback callback{};						///< Optional callback executed when the task runs.
    };
 
+   /// @brief Immutable task graph assembled from task-node descriptions.
    struct TaskGraph {
       Vector<TaskNodeDesc> nodes{};
    };
 
+   /**
+    * @brief Helper for constructing task graphs incrementally.
+    *
+    * Stable names are hashed into task handles so independently built subsystems
+    * can refer to the same task identity without exchanging raw indices.
+    */
    class TaskGraphBuilder {
    public:
+      /**
+       * @brief Adds a task with an optional callback, dependency list, and resource access list.
+       * @param stable_name Stable name hashed into the task handle.
+       * @param kernel Built-in kernel classification.
+       * @param callback Optional callback invoked during execution.
+       * @param depends_on Explicit predecessor task handles.
+       * @param accesses Coarse resource accesses associated with the task.
+       * @param debug_name Human-readable task name for diagnostics.
+       * @param phase Optional explicit task phase override.
+       * @param scope Task scope used by scheduling and diagnostics.
+       * @param window Optional window scope for per-window tasks.
+       */
       [[nodiscard]] TaskNodeHandle addTask(std::string_view stable_name, TaskKernelId kernel,
                                            TaskCallback callback = {}, Vector<TaskNodeHandle> depends_on = {},
                                            Vector<ResourceAccess> accesses = {}, std::string debug_name = {},
@@ -218,29 +307,56 @@ export namespace vve::v3 {
                                            TaskScope scope = TaskScope::global,
                                            std::optional<WindowHandle> window = std::nullopt);
 
+      /// @brief Adds a fully described task node.
       void addTask(TaskNodeDesc node);
+      /// @brief Replaces the callback of an already registered task.
       [[nodiscard]] bool setTaskCallback(TaskNodeHandle handle, TaskCallback callback);
+      /// @brief Hashes a stable task name into a deterministic task handle.
       [[nodiscard]] static TaskNodeHandle makeTaskHandle(std::string_view stable_name);
+      /// @brief Convenience alias for `makeTaskHandle`.
       [[nodiscard]] static TaskNodeHandle taskHandleFor(std::string_view stable_name);
+      /// @brief Returns the handle for a named task if that task has already been added.
       [[nodiscard]] std::optional<TaskNodeHandle> findTask(std::string_view stable_name) const;
+      /// @brief Returns whether a named task exists in the builder.
       [[nodiscard]] bool containsTask(std::string_view stable_name) const;
+      /// @brief Adds a dependency edge from `task` to `dependency`.
       [[nodiscard]] bool addDependency(TaskNodeHandle task, TaskNodeHandle dependency);
+      /// @brief Adds a dependency edge between tasks identified by stable name.
       [[nodiscard]] bool addDependency(std::string_view task_name, std::string_view dependency_name);
+      /// @brief Returns the default phase associated with a kernel.
       [[nodiscard]] static TaskPhase inferPhase(TaskKernelId kernel);
 
-      [[nodiscard]] TaskGraph build() &&;
+      /// @brief Finalizes and returns the task graph.
+      [[nodiscard]] TaskGraph build() &&; 
+      /// @brief Returns tasks with no explicit predecessors.
       [[nodiscard]] std::vector<TaskNodeHandle> rootTasks() const;
+      /// @brief Returns tasks that are not referenced as dependencies by other tasks.
       [[nodiscard]] std::vector<TaskNodeHandle> leafTasks() const;
 
    private:
       Vector<TaskNodeDesc> nodes_{};
    };
 
+   /**
+    * @brief Adds a task using the convenience parameter set.
+    * @param stable_name Stable name hashed into the task handle.
+    * @param kernel Built-in kernel classification.
+    * @param callback Optional callback invoked during execution.
+    * @param depends_on Explicit predecessor task handles.
+    * @param accesses Coarse resource accesses associated with the task.
+    * @param debug_name Human-readable task name for diagnostics.
+    * @param phase Optional explicit phase override.
+    * @param scope Task scope used by scheduling and diagnostics.
+    * @param window Optional window scope for per-window tasks.
+    * @return Handle of the added task.
+    */
    inline TaskNodeHandle TaskGraphBuilder::addTask(std::string_view stable_name, TaskKernelId kernel,
                                                    TaskCallback callback, Vector<TaskNodeHandle> depends_on,
                                                    Vector<ResourceAccess> accesses, std::string debug_name, TaskPhase phase,
                                                    TaskScope scope, std::optional<WindowHandle> window) {
+      // Stable names give independently constructed tasks a deterministic identity.
       const TaskNodeHandle handle = makeTaskHandle(stable_name);
+      // Normalize convenience parameters into the full task-node representation.
       addTask(TaskNodeDesc{.handle = handle,
                            .kernel = kernel,
                            .phase = phase == TaskPhase::automatic ? inferPhase(kernel) : phase,
@@ -253,19 +369,35 @@ export namespace vve::v3 {
       return handle;
    }
 
+   /**
+    * @brief Adds a fully described task node to the builder.
+    * @param node Task-node description to append.
+    */
    inline void TaskGraphBuilder::addTask(TaskNodeDesc node) {
+      // Synthesize a debug label when the caller did not provide one so tools
+      // still have something readable to display.
       if (node.debug_name.empty()) {
          node.debug_name = "task." + std::to_string(node.handle.value.value());
       }
+      // Automatic phase selection keeps callers from restating obvious kernel defaults.
       if (node.phase == TaskPhase::automatic) {
          node.phase = inferPhase(node.kernel);
       }
 
+      // Preserve insertion order because later compilation derives execution
+      // structure from the accumulated node set.
       nodes_.push_back(std::move(node));
    }
 
+   /**
+    * @brief Replaces the callback of a previously registered task.
+    * @param handle Task handle to update.
+    * @param callback New callback to store.
+    * @return `true` when the task was found, otherwise `false`.
+    */
    inline bool TaskGraphBuilder::setTaskCallback(TaskNodeHandle handle, TaskCallback callback) {
       for (auto &node : nodes_) {
+         // Task identity is based on the strong handle rather than the debug name.
          if (node.handle.value == handle.value) {
             node.callback = std::move(callback);
             return true;
@@ -275,17 +407,36 @@ export namespace vve::v3 {
       return false;
    }
 
+   /**
+    * @brief Hashes a stable task name into a deterministic handle.
+    * @param stable_name Stable task name.
+    * @return Deterministic task handle derived from the name.
+    */
    inline TaskNodeHandle TaskGraphBuilder::makeTaskHandle(std::string_view stable_name) {
+      // Hash-based handles let multiple subsystems refer to the same conceptual
+      // task without coordinating integer indices.
       return TaskNodeHandle{vve::Handle::fromHash(stable_name)};
    }
 
+   /**
+    * @brief Convenience alias for `makeTaskHandle`.
+    * @param stable_name Stable task name.
+    * @return Deterministic task handle derived from the name.
+    */
    inline TaskNodeHandle TaskGraphBuilder::taskHandleFor(std::string_view stable_name) {
       return makeTaskHandle(stable_name);
    }
 
+   /**
+    * @brief Searches for a task by stable name.
+    * @param stable_name Stable task name to search for.
+    * @return Matching task handle when present.
+    */
    inline std::optional<TaskNodeHandle> TaskGraphBuilder::findTask(std::string_view stable_name) const {
       const auto handle = makeTaskHandle(stable_name);
       for (const auto &node : nodes_) {
+         // Match on the deterministic handle so lookup remains stable even if
+         // debug labels differ.
          if (node.handle.value == handle.value) {
             return handle;
          }
@@ -294,20 +445,34 @@ export namespace vve::v3 {
       return std::nullopt;
    }
 
+   /**
+    * @brief Returns whether a task with the given stable name has been added.
+    * @param stable_name Stable task name to search for.
+    * @return `true` when the task exists, otherwise `false`.
+    */
    inline bool TaskGraphBuilder::containsTask(std::string_view stable_name) const {
       return findTask(stable_name).has_value();
    }
 
+   /**
+    * @brief Adds a dependency edge from `task` to `dependency`.
+    * @param task Task that depends on `dependency`.
+    * @param dependency Task that must execute first.
+    * @return `true` when the dependency was recorded, otherwise `false`.
+    */
    inline bool TaskGraphBuilder::addDependency(TaskNodeHandle task, TaskNodeHandle dependency) {
       for (auto &node : nodes_) {
+         // Only the dependent task is mutated; the prerequisite task remains unchanged.
          if (node.handle.value == task.value) {
             for (const auto &existing_dependency : node.depends_on) {
+               // Treat duplicate dependency declarations as success to keep the
+               // builder tolerant of additive subsystem registration.
                if (existing_dependency.value == dependency.value) {
                   return true;
                }
             }
 
-            node.depends_on.push_back(dependency);
+            node.depends_on.push_back(dependency); // Store an explicit predecessor edge for later graph compilation.
             return true;
          }
       }
@@ -315,11 +480,24 @@ export namespace vve::v3 {
       return false;
    }
 
+   /**
+    * @brief Adds a dependency edge using stable task names.
+    * @param task_name Stable name of the dependent task.
+    * @param dependency_name Stable name of the prerequisite task.
+    * @return `true` when the dependency was recorded, otherwise `false`.
+    */
    inline bool TaskGraphBuilder::addDependency(std::string_view task_name, std::string_view dependency_name) {
       return addDependency(makeTaskHandle(task_name), makeTaskHandle(dependency_name));
    }
 
+   /**
+    * @brief Infers the default phase for a task kernel.
+    * @param kernel Built-in task kernel classification.
+    * @return Default task phase associated with the kernel.
+    */
    inline TaskPhase TaskGraphBuilder::inferPhase(TaskKernelId kernel) {
+      // Kernel-to-phase mapping gives built-in tasks a sensible default slot in
+      // the frame without forcing every caller to specify one manually.
       switch (kernel) {
       case TaskKernelId::begin_frame:
          return TaskPhase::begin_frame;
@@ -344,13 +522,21 @@ export namespace vve::v3 {
       }
    }
 
+   /**
+    * @brief Finalizes the builder into an immutable task graph.
+    * @return Task graph built from the accumulated nodes.
+    */
    inline TaskGraph TaskGraphBuilder::build() && { return TaskGraph{.nodes = std::move(nodes_)}; }
 
+   /**
+    * @brief Returns tasks that have no explicit predecessors.
+    * @return Handles of all root tasks.
+    */
    inline std::vector<TaskNodeHandle> TaskGraphBuilder::rootTasks() const {
       std::vector<TaskNodeHandle> root_handles{};
       root_handles.reserve(nodes_.size());
       for (const auto &node : nodes_) {
-         if (node.depends_on.empty()) {
+         if (node.depends_on.empty()) { // Root tasks are exactly the tasks with no declared predecessors.
             root_handles.push_back(node.handle);
          }
       }
@@ -358,12 +544,17 @@ export namespace vve::v3 {
       return root_handles;
    }
 
+   /**
+    * @brief Returns tasks that are not referenced as dependencies by other tasks.
+    * @return Handles of all leaf tasks.
+    */
    inline std::vector<TaskNodeHandle> TaskGraphBuilder::leafTasks() const {
       std::unordered_set<vve::Handle::value_type> dependency_handles{};
       dependency_handles.reserve(nodes_.size());
 
       for (const auto &node : nodes_) {
          for (const auto &dependency : node.depends_on) {
+            // Track every task that appears as someone else's prerequisite.
             dependency_handles.insert(dependency.value.value());
          }
       }
@@ -371,6 +562,7 @@ export namespace vve::v3 {
       std::vector<TaskNodeHandle> leaf_handles{};
       leaf_handles.reserve(nodes_.size());
       for (const auto &node : nodes_) {
+         // Leaf tasks are the ones never referenced as a predecessor.
          if (!dependency_handles.contains(node.handle.value.value())) {
             leaf_handles.push_back(node.handle);
          }
@@ -379,59 +571,66 @@ export namespace vve::v3 {
       return leaf_handles;
    }
 
+   /// @brief Reflected shader parameter binding description.
    struct ShaderParameter {
-      std::string name{};
-      std::string type_name{};
-      std::uint32_t binding{0};
-      std::uint32_t set{0};
+      std::string name{};			///< Parameter name as reflected from the shader.
+      std::string type_name{};	///< Shader language type name.
+      std::uint32_t binding{0};	///< Resource binding index.
+      std::uint32_t set{0};		///< Descriptor set index.
    };
 
+   /// @brief Reflected shader metadata used by higher-level systems.
    struct ShaderMetadata {
-      ShaderHandle handle{};
-      std::string shader_name{};
-      Vector<ShaderStage> stages{};
-      Vector<ShaderParameter> parameters{};
-      std::string intended_renderer{};
-      std::string intended_shadow{};
+      ShaderHandle handle{};						///< Stable shader handle.
+      std::string shader_name{};					///< Human-readable shader name.
+      Vector<ShaderStage> stages{};				///< Stages compiled into the shader.
+      Vector<ShaderParameter> parameters{};	///< Reflected resource parameters.
+      std::string intended_renderer{};			///< Intended renderer mode as metadata text.
+      std::string intended_shadow{};			///< Intended shadow mode as metadata text.
    };
 
+   /// @brief Coarse render-graph resource access declaration.
    struct RenderResourceUse {
-      vve::Handle resource{};
-      bool write{false};
+      vve::Handle resource{};	///< Resource touched by the render pass.
+      bool write{false};		///< Whether the render pass writes to the resource.
    };
 
+   /// @brief Declarative render-pass description.
    struct RenderPassDesc {
-      RenderPassHandle handle{};
-      RenderKernelId kernel{RenderKernelId::none};
-      Vector<RenderPassHandle> depends_on{};
-      Vector<RenderResourceUse> uses{};
-      std::string debug_name{};
+      RenderPassHandle handle{};							///< Stable render-pass handle.
+      RenderKernelId kernel{RenderKernelId::none};	///< Built-in render kernel classification.
+      Vector<RenderPassHandle> depends_on{};			///< Explicit predecessor render passes.
+      Vector<RenderResourceUse> uses{};				///< Coarse render-resource accesses.
+      std::string debug_name{};							///< Human-readable pass name for diagnostics.
    };
 
+   /// @brief Immutable render graph used by the render system.
    struct RenderGraph {
-      Vector<RenderPassDesc> passes{};
+      Vector<RenderPassDesc> passes{};	///< Immutable list of render passes in the graph.
    };
 
+   /// @brief Render graph bundle bound to a specific window.
    struct WindowRenderPipeline {
-      WindowHandle window{};
-      std::string window_id{};
-      RenderGraph graph{};
+      WindowHandle window{};		///< Window owning the render pipeline.
+      std::string window_id{};	///< Stable window string id.
+      RenderGraph graph{};			///< Render graph executed for the window.
    };
 
+   /// @brief Human-readable snapshot of the assembled engine runtime configuration.
    struct EngineRuntimeSnapshot {
-      vve::GraphicsApi graphics_api{vve::GraphicsApi::vulkan};
-      vve::RendererKind renderer{vve::RendererKind::forward_renderer};
-      vve::ShadowKind shadow{vve::ShadowKind::none};
-      bool imgui_enabled{true};
-      std::string asset_system{"AssimpAssetSystem"};
-      std::string resource_system{"ResourceSystem"};
-      std::string scene_system{"SceneSystem"};
-      std::string task_graph_system{"TaskGraphSystem"};
-      std::string shader_system{"SlangShaderSystem"};
-      std::string render_system{"RenderSystem"};
-      std::string window_system{"SDL3WindowSystem"};
-      std::string gui_system{"ImGuiSystem"};
-      Vector<std::string> task_systems{};
+      vve::GraphicsApi graphics_api{vve::GraphicsApi::vulkan};				///< Active graphics API.
+      vve::RendererKind renderer{vve::RendererKind::forward_renderer};	///< Active renderer kind.
+      vve::ShadowKind shadow{vve::ShadowKind::none};							///< Active shadow mode.
+      bool imgui_enabled{true};														///< Whether Dear ImGui is enabled.
+      std::string asset_system{"AssimpAssetSystem"};							///< Asset-system implementation name.
+      std::string resource_system{"ResourceSystem"};							///< Resource-system implementation name.
+      std::string scene_system{"SceneSystem"};									///< Scene-system implementation name.
+      std::string task_graph_system{"TaskGraphSystem"};						///< Task-graph-system implementation name.
+      std::string shader_system{"SlangShaderSystem"};							///< Shader-system implementation name.
+      std::string render_system{"RenderSystem"};								///< Render-system implementation name.
+      std::string window_system{"SDL3WindowSystem"};							///< Window-system implementation name.
+      std::string gui_system{"ImGuiSystem"};										///< GUI-system implementation name.
+      Vector<std::string> task_systems{};											///< Names of user-supplied task systems.
    };
 
 } // namespace vve::v3

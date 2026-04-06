@@ -5,45 +5,65 @@
 
 import VEEngine;
 
+/**
+ * @file
+ * @brief Regression tests for the public ECS facade.
+ */
 namespace {
 
+   /// @brief Test component storing a 2D position.
    struct Position {
+      /// @brief Horizontal coordinate used by the test.
       int x{0};
+      /// @brief Vertical coordinate used by the test.
       int y{0};
 
       [[nodiscard]] friend bool operator==(const Position &, const Position &) = default;
    };
 
+   /// @brief Test component storing a 2D velocity.
    struct Velocity {
+      /// @brief Horizontal velocity used by the test.
       int dx{0};
+      /// @brief Vertical velocity used by the test.
       int dy{0};
 
       [[nodiscard]] friend bool operator==(const Velocity &, const Velocity &) = default;
    };
 
+   /// @brief Test component storing health points.
    struct Health {
+      /// @brief Health value used by the test.
       int value{0};
 
       [[nodiscard]] friend bool operator==(const Health &, const Health &) = default;
    };
 
+   /// @brief Test component storing a string tag.
    struct Tag {
+      /// @brief Tag text used by the test.
       std::string value{};
 
       [[nodiscard]] friend bool operator==(const Tag &, const Tag &) = default;
    };
 
+   /// @brief Returns whether an entity handle appears in a result set.
    [[nodiscard]] bool containsEntity(const std::vector<vve::Handle> &entities, vve::Handle entity) {
       return std::ranges::find(entities, entity) != entities.end();
    }
 
 } // namespace
 
+/**
+ * @brief Executes the ECS regression tests.
+ * @return Process exit code expected by the lightweight test runner.
+ */
 int main() {
    vve::ECS<> ecs{};
    const vve::Handle invalid_entity{9999};
 
-   const auto entity_a_result = ecs.create();
+   // Create three entities so the test can verify uniqueness and component
+   const auto entity_a_result = ecs.create(); // membership across multiple rows of storage.
    if (!entity_a_result) {
       return 1;
    }
@@ -62,6 +82,7 @@ int main() {
    const auto entity_b = *entity_b_result;
    const auto entity_c = *entity_c_result;
 
+   // Newly created entities must always have distinct handles.
    if (entity_a == entity_b || entity_a == entity_c || entity_b == entity_c) {
       return 4;
    }
@@ -81,7 +102,8 @@ int main() {
       return 7;
    }
 
-   const auto missing_velocity_result = ecs.get<Velocity>(entity_a);
+   // Reading a missing component from a valid entity should produce
+   const auto missing_velocity_result = ecs.get<Velocity>(entity_a); // `std::optional{}` rather than an error.
    if (!missing_velocity_result || missing_velocity_result->has_value()) {
       return 8;
    }
@@ -199,6 +221,7 @@ int main() {
       return 33;
    }
 
+   // Views should only include entities owning every requested component.
    const auto position_velocity_view_result = ecs.view<Position, Velocity>();
    if (!position_velocity_view_result) {
       return 34;

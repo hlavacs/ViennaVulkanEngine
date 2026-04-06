@@ -2,6 +2,13 @@
 import std;
 import :Internal;
 
+/**
+ * @file
+ * @brief v3 render-system implementation.
+ *
+ * This file assembles the per-window render graph and provides the render
+ * tasks that bridge scene data into backend-facing render work.
+ */
 namespace vve::v3 {
 
    [[nodiscard]] RenderKernelId selectMainKernel(vve::RendererKind renderer) {

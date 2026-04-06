@@ -9,6 +9,10 @@
 
 import VEEngine.V3;
 
+/**
+ * @file
+ * @brief Regression tests for the segmented v3 `Vector` container.
+ */
 namespace {
 
    using int_container = vve::v3::Vector<int, 4>;

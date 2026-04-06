@@ -8,22 +8,41 @@
 import VEEngine;
 import VEEngine.V3;
 
+/**
+ * @file
+ * @brief Interactive example that drives a small user-system-based game loop.
+ */
 namespace {
 
+/**
+ * @brief Example gameplay component storing planar velocity.
+ */
 struct Velocity {
+    /// @brief Horizontal velocity in world units per second.
     float x{0.0F};
+    /// @brief Vertical velocity in world units per second.
     float y{0.0F};
 };
 
 } // namespace
 
+/**
+ * @brief Example game system that reads input and moves a single player entity.
+ */
 class SimpleGameSystem final {
 public:
+    /// @brief Returns the system name shown in diagnostics.
     [[nodiscard]] std::string_view name() const noexcept {
         return "SimpleGameSystem";
     }
 
+    /**
+     * @brief Creates the example player entity.
+     * @param world Game-facing world facade provided by the engine.
+     */
     [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
+        // The example spawns one entity with a transform and velocity so the
+        // update loop can demonstrate world and input access.
         const auto player_result = world.spawn(vve::Transform{}, Velocity{});
         if (!player_result) {
             return std::unexpected(player_result.error());
@@ -35,6 +54,12 @@ public:
         return {};
     }
 
+    /**
+     * @brief Processes one game update.
+     * @param world Game-facing world facade used for entity and input access.
+     * @param frame_context Timing data for the current frame.
+     * @param window_frame Current window snapshot, unused by this example.
+     */
     [[nodiscard]] std::expected<void, vve::Error> update(
         vve::World& world,
         const vve::v3::FrameContext& frame_context,
@@ -43,6 +68,8 @@ public:
             return std::unexpected(vve::Error::invalid_argument);
         }
 
+        // Fetch the current velocity and transform copies through the world
+        // facade before applying input-driven changes.
         const auto velocity_result = world.getComponent<Velocity>(player_);
         if (!velocity_result) {
             return std::unexpected(velocity_result.error());
@@ -61,7 +88,7 @@ public:
         auto velocity = **velocity_result;
         const auto& input = world.input();
 
-        velocity.x = 0.0F;
+        velocity.x = 0.0F; // Reset velocity every frame so movement is purely input driven.
         velocity.y = 0.0F;
         if (input.isKeyDown('A') || input.isKeyDown('a')) {
             velocity.x -= 160.0F;
@@ -76,10 +103,13 @@ public:
             velocity.y += 90.0F;
         }
 
+        // Reset the player back to the origin when R is pressed.
         if (input.wasKeyPressed('R') || input.wasKeyPressed('r')) {
             transform.translation = vve::math::zeroVec3();
         }
 
+        // Integrate velocity using the frame delta and clamp movement to a
+        // screen-like rectangle for the sample.
         transform.translation.x += velocity.x * static_cast<float>(frame_context.delta_seconds);
         transform.translation.y += velocity.y * static_cast<float>(frame_context.delta_seconds);
 
@@ -97,7 +127,8 @@ public:
             return std::unexpected(put_velocity_result.error());
         }
 
-        if (frame_counter_++ % 120 == 0) {
+        // Periodically print state so the example remains observable without
+        if (frame_counter_++ % 120 == 0) { // any game-specific UI layer.
             const auto main_window = world.findWindow("main");
             const auto player_x = static_cast<int>(std::lround(transform.translation.x));
             const auto player_y = static_cast<int>(std::lround(transform.translation.y));
@@ -111,13 +142,20 @@ public:
         return {};
     }
 
+    /// @brief Handle of the player entity created during initialization.
     vve::Handle player_{};
+    /// @brief Counter used to throttle example logging.
     std::uint64_t frame_counter_{0};
 };
 
+/**
+ * @brief Runs the interactive game example.
+ * @return Process exit code expected by the example launcher.
+ */
 int main() {
 
-    auto engine = vve::makeEngine(
+    // Configure a two-window sample runtime so the example exercises the
+    auto engine = vve::makeEngine( // multi-window API shape exposed by the engine.
         vve::ApplicationName{"game"},
         vve::EnableValidation{true},
         vve::makeUserSystems(SimpleGameSystem{}),
@@ -153,7 +191,8 @@ int main() {
         return 1;
     }
 
-    while (true) {
+    // Drive the engine one frame at a time so the example can react to the
+    while (true) { // engine's explicit `FrameStatus` contract.
         const auto step_result = engine.step();
         if (!step_result) {
             return 1;

@@ -4,9 +4,18 @@
 
 import VEEngine;
 
+/**
+ * @file
+ * @brief Regression tests for the public `Handle` type.
+ */
+
+/**
+ * @brief Executes the handle regression tests.
+ * @return Process exit code expected by the lightweight test runner.
+ */
 int main() {
     {
-        constexpr vve::Handle handle{};
+        constexpr vve::Handle handle{}; // Default construction must yield the invalid sentinel.
         static_assert(sizeof(vve::Handle) == 8);
         static_assert(handle.value() == vve::Handle::invalid_value);
         static_assert(!handle.isValid());
@@ -14,6 +23,7 @@ int main() {
     }
 
     {
+        // Construction from parts must preserve the exact bit layout.
         constexpr vve::Handle handle{0x89ABCDEFu, 0x01234567u};
         static_assert(handle.low() == 0x89ABCDEFu);
         static_assert(handle.high() == 0x01234567u);
@@ -26,13 +36,15 @@ int main() {
     }
 
     {
+        // Construction from a raw 64-bit value must preserve part accessors.
         constexpr vve::Handle handle{0x0123456789ABCDEFull};
         static_assert(handle.low() == 0x89ABCDEFu);
         static_assert(handle.high() == 0x01234567u);
     }
 
     {
-        const std::string name = "mesh/albedo";
+        // Hash-based construction is the public path used by many engine
+        const std::string name = "mesh/albedo"; // systems to derive stable handles from names.
         const vve::Handle handle{name};
         const auto expected = static_cast<std::uint64_t>(std::hash<std::string>{}(name));
 

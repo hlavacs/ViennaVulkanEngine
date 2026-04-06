@@ -1,4 +1,4 @@
-﻿module;
+module;
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/ext/matrix_double4x4.hpp>
@@ -17,34 +17,47 @@
 export module VEEngine:Math;
 import std;
 
+/**
+ * @file
+ * @brief Math facade used by the public engine API.
+ *
+ * Engine-facing code should depend on this module instead of raw GLM types so
+ * the scalar precision policy remains selectable at build time.
+ */
 export namespace vve::math {
 
 #if defined(VVE_MATH_USE_DOUBLE)
-   using Scalar = double;
-   using Vec2 = glm::dvec2;
-   using Vec3 = glm::dvec3;
-   using Vec4 = glm::dvec4;
-   using Quat = glm::dquat;
-   using Mat4 = glm::dmat4;
+   using Scalar = double;		///< Scalar type selected for engine math at compile time.
+   using Vec2 = glm::dvec2;	///< Two-component vector using the selected scalar precision.
+   using Vec3 = glm::dvec3;	///< Three-component vector using the selected scalar precision.
+   using Vec4 = glm::dvec4;	///< Four-component vector using the selected scalar precision.
+   using Quat = glm::dquat;	///< Quaternion using the selected scalar precision.
+   using Mat4 = glm::dmat4;	///< 4x4 matrix using the selected scalar precision.
 #else
-   using Scalar = float;
-   using Vec2 = glm::vec2;
-   using Vec3 = glm::vec3;
-   using Vec4 = glm::vec4;
-   using Quat = glm::quat;
-   using Mat4 = glm::mat4;
+   using Scalar = float;	///< Scalar type selected for engine math at compile time.
+   using Vec2 = glm::vec2;	///< Two-component vector using the selected scalar precision.
+   using Vec3 = glm::vec3;	///< Three-component vector using the selected scalar precision.
+   using Vec4 = glm::vec4;	///< Four-component vector using the selected scalar precision.
+   using Quat = glm::quat;	///< Quaternion using the selected scalar precision.
+   using Mat4 = glm::mat4;	///< 4x4 matrix using the selected scalar precision.
 #endif
 
+   /// @brief Returns the additive identity for the configured scalar type.
    [[nodiscard]] inline constexpr Scalar zero() noexcept { return static_cast<Scalar>(0); }
 
+   /// @brief Returns the multiplicative identity for the configured scalar type.
    [[nodiscard]] inline constexpr Scalar one() noexcept { return static_cast<Scalar>(1); }
 
+   /// @brief Returns a 4x4 identity matrix.
    [[nodiscard]] inline Mat4 identityMat4() noexcept { return Mat4(one()); }
 
+   /// @brief Returns a zero-initialized three-component vector.
    [[nodiscard]] inline Vec3 zeroVec3() noexcept { return Vec3(zero(), zero(), zero()); }
 
+   /// @brief Returns the identity quaternion.
    [[nodiscard]] inline Quat identityQuat() noexcept { return Quat(one(), zero(), zero(), zero()); }
 
+   /// @brief Multiplies two quaternions without exposing GLM at call sites.
    [[nodiscard]] inline Quat multiply(const Quat &lhs, const Quat &rhs) noexcept {
       return Quat(lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z,
                   lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y,
@@ -52,17 +65,21 @@ export namespace vve::math {
                   lhs.w * rhs.z + lhs.x * rhs.y - lhs.y * rhs.x + lhs.z * rhs.w);
    }
 
+   /// @brief Returns `matrix` translated by `offset`.
    [[nodiscard]] inline Mat4 translate(const Mat4 &matrix, const Vec3 &offset) {
       return glm::translate(matrix, offset);
    }
 
+   /// @brief Returns `matrix` scaled by `factors`.
    [[nodiscard]] inline Mat4 scale(const Mat4 &matrix, const Vec3 &factors) { return glm::scale(matrix, factors); }
 
+   /// @brief Builds a perspective projection matrix.
    [[nodiscard]] inline Mat4 perspective(Scalar field_of_view_radians, Scalar aspect_ratio, Scalar near_plane,
                                          Scalar far_plane) {
       return glm::perspective(field_of_view_radians, aspect_ratio, near_plane, far_plane);
    }
 
+   /// @brief Returns the inverse of `matrix`.
    [[nodiscard]] inline Mat4 inverse(const Mat4 &matrix) { return glm::inverse(matrix); }
 
 } // namespace vve::math

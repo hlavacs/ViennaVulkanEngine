@@ -1,8 +1,20 @@
 export module VEEngine.V3.Vector;
 import std;
 
+/**
+ * @file
+ * @brief Segmented vector container used by v3 runtime data structures.
+ *
+ * The container trades a fully contiguous allocation for stable segment growth
+ * that avoids large reallocations as runtime arrays expand.
+ */
 export namespace vve::v3 {
 
+   /**
+    * @brief Segmented vector with random-access iteration.
+    * @tparam T Element type.
+    * @tparam SegmentSize Number of elements per segment allocation.
+    */
    template <typename T, std::size_t SegmentSize = 256> class Vector {
       static_assert(SegmentSize > 0, "SegmentSize must be greater than zero.");
 
@@ -17,10 +29,12 @@ export namespace vve::v3 {
       using allocator_type = std::allocator<T>;
 
    private:
+      /// @brief Allocator traits used for element construction and destruction.
       using allocator_traits = std::allocator_traits<allocator_type>;
 
+      /// @brief One allocated element segment.
       struct Segment {
-         pointer data{nullptr};
+         pointer data{nullptr};	///< Pointer to the first element slot in the segment.
       };
 
       template <typename TValue> class basic_iterator {

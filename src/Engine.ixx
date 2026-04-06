@@ -1,4 +1,4 @@
-﻿module;
+module;
 
 #if defined(_WIN32)
 #if defined(VVE_ENGINE_BUILD)
@@ -22,10 +22,19 @@ export import :Error;
 #define VVE_DEFAULT_ENGINE_NAMESPACE v3
 #endif
 
+/**
+ * @file
+ * @brief Public engine facade and configuration surface.
+ *
+ * This module is the main consumer entry point for engine construction,
+ * initialization, and frame stepping. Version-specific implementation detail
+ * stays behind the selected engine namespace alias.
+ */
 export namespace vve::v3 {
 
    template <typename... TUserSystems> class BasicEngineImplementation;
 
+   /// @brief Default concrete engine implementation for the active v3 namespace.
    using EngineImplementation = BasicEngineImplementation<>;
 
 } // namespace vve::v3
@@ -44,82 +53,124 @@ export namespace vve {
 
    // Engine configuration options
 
-   enum class GraphicsApi { vulkan, direct3d12, metal };
+   /// @brief Graphics backend requested by the caller.
+   enum class GraphicsApi {
+      vulkan, ///< Vulkan backend selection.
+      direct3d12, ///< Direct3D 12 backend selection.
+      metal ///< Metal backend selection.
+   };
 
-   enum class RendererKind { forward_renderer, deferred_renderer, path_tracing };
+   /// @brief High-level renderer pipeline family requested by the caller.
+   enum class RendererKind {
+      forward_renderer, ///< Forward-renderer configuration.
+      deferred_renderer, ///< Deferred-renderer configuration.
+      path_tracing ///< Path-tracing configuration.
+   };
 
-   enum class ShadowKind { none, shadow_map, ray_traced };
+   /// @brief Shadowing strategy requested by the caller.
+   enum class ShadowKind {
+      none, ///< No shadowing.
+      shadow_map, ///< Shadow-map-based shadows.
+      ray_traced ///< Ray-traced shadows.
+   };
 
-   enum class FrameStatus { continue_running = 0, should_close };
+   /// @brief Result of a single engine step.
+   enum class FrameStatus {
+      continue_running = 0, ///< Engine should continue processing more frames.
+      should_close ///< Engine requested shutdown.
+   };
 
-   /// @brief Configuration for creating an Engine instance. Can be constructed
-   /// with arbitrary options using the set() method or the variadic
-   /// constructor.
+   /// @brief Human-readable application name shown to runtime subsystems.
    struct ApplicationName {
-      std::string value;
+      std::string value;	///< Human-readable application name.
    };
 
+   /// @brief Enables additional validation in supporting subsystems.
    struct EnableValidation {
-      bool value = false;
+      bool value = false;	///< Enables additional validation when supported.
    };
 
+   /// @brief Selects the preferred graphics API for runtime creation.
    struct PreferredGraphicsApi {
-      GraphicsApi value = GraphicsApi::vulkan;
+      GraphicsApi value = GraphicsApi::vulkan;	///< Requested graphics API.
    };
 
+   /// @brief Selects the preferred renderer family.
    struct PreferredRenderer {
-      RendererKind value = RendererKind::forward_renderer;
+      RendererKind value = RendererKind::forward_renderer;	///< Requested renderer kind.
    };
 
+   /// @brief Selects the preferred shadowing mode.
    struct PreferredShadow {
-      ShadowKind value = ShadowKind::none;
+      ShadowKind value = ShadowKind::none;	///< Requested shadow mode.
    };
 
+   /// @brief Enables or disables Dear ImGui integration.
    struct EnableImGui {
-      bool value = true;
+      bool value = true;	///< Enables Dear ImGui integration.
    };
 
+   /**
+    * @brief Window creation descriptor.
+    *
+    * The public engine API treats windows as explicit runtime resources rather
+    * than implicit global state.
+    */
    struct WindowDesc {
-      std::string id{"main"};
-      std::string title{"Vienna Vulkan Engine V3"};
-      std::uint32_t width{1280};
-      std::uint32_t height{720};
-      bool resizable{true};
-      bool visible{true};
+      std::string id{"main"};									///< Stable window identifier.
+      std::string title{"Vienna Vulkan Engine V3"};	///< Human-readable window title.
+      std::uint32_t width{1280};								///< Initial window width in pixels.
+      std::uint32_t height{720};								///< Initial window height in pixels.
+      bool resizable{true};									///< Whether the platform window may be resized.
+      bool visible{true};										///< Whether the window is visible on creation.
    };
 
+   /// @brief Collection wrapper used to configure all initial windows.
    struct Windows {
-      std::vector<WindowDesc> value{};
+      std::vector<WindowDesc> value{};	///< List of windows created at engine startup.
    };
 
+   /// @brief Minimal concept required for user-provided frame systems.
    template <typename T>
    concept UserSystemLike = requires(const std::remove_cvref_t<T> &system) {
       { system.name() } -> std::convertible_to<std::string_view>;
    };
 
+   /// @brief Heterogeneous container for user systems supplied at engine creation.
    template <UserSystemLike... TSystems> struct UserSystems {
-      std::tuple<TSystems...> value{};
+      std::tuple<TSystems...> value{};	///< Tuple storing the supplied user-system instances.
    };
 
+   /// @brief Convenience helper that preserves user system value types.
    template <UserSystemLike... TSystems> [[nodiscard]] auto makeUserSystems(TSystems &&...systems) {
       return UserSystems<std::remove_cvref_t<TSystems>...>{
           .value = std::tuple<std::remove_cvref_t<TSystems>...>{std::forward<TSystems>(systems)...}};
    }
 
+   /**
+    * @brief Type-indexed option bag used to build an engine instance.
+    *
+    * Each option type is unique by its concrete C++ type. Later calls to
+    * `set()` replace earlier options of the same type.
+    */
    class EngineConfig {
    public:
-      EngineConfig() = default;
+      /// @brief Constructs an empty configuration that uses engine defaults.
+      EngineConfig() = default; 
 
+      /// @brief Constructs a configuration by applying each provided option in order.
       template <typename... TOptions> explicit EngineConfig(TOptions &&...options) {
          (set(std::forward<TOptions>(options)), ...);
       }
 
+      /// @brief Stores or replaces an option keyed by its concrete type.
       template <typename TOption> EngineConfig &set(TOption &&option) {
          using TStoredOption = std::remove_cvref_t<TOption>;
          options_[std::type_index(typeid(TStoredOption))] = std::forward<TOption>(option);
          return *this;
       }
 
+      /// @brief Returns an option copy when the requested type has been configured.
       template <typename TOption> [[nodiscard]] std::optional<TOption> tryGet() const {
          const auto entry = options_.find(std::type_index(typeid(TOption)));
          if (entry == options_.end()) {
@@ -137,10 +188,18 @@ export namespace vve {
       std::unordered_map<std::type_index, std::any> options_;
    };
 
+   /**
+    * @brief Public engine lifecycle facade.
+    *
+    * This facade owns the selected engine implementation and forwards
+    * initialization and frame loop control through a stable API.
+    */
    template <typename TImplementation> class VVE_API EngineFacade {
    public:
+      /// @brief Creates an engine from a pre-built configuration object.
       explicit EngineFacade(EngineConfig config = {});
 
+      /// @brief Creates an engine by collecting typed option arguments into `EngineConfig`.
       template <typename... TOptions>
          requires(sizeof...(TOptions) > 0)
       explicit EngineFacade(TOptions &&...options) : EngineFacade(EngineConfig(std::forward<TOptions>(options)...)) {}
@@ -150,10 +209,15 @@ export namespace vve {
       EngineFacade &operator=(const EngineFacade &) = delete;
       EngineFacade &operator=(EngineFacade &&) = delete;
 
+      /// @brief Initializes runtime subsystems and prepares the engine for execution.
       [[nodiscard]] std::expected<void, Error> init();
+      /// @brief Runs the main loop until the implementation requests shutdown or returns an error.
       [[nodiscard]] std::expected<void, Error> run();
+      /// @brief Executes one frame worth of engine work.
       [[nodiscard]] std::expected<FrameStatus, Error> step();
+      /// @brief Returns whether initialization completed successfully.
       [[nodiscard]] std::expected<bool, Error> isInitialized() const noexcept;
+      /// @brief Returns the major version number of the active engine implementation.
       [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept;
 
    private:
@@ -185,9 +249,16 @@ export namespace vve {
 
    } // namespace detail
 
+   /// @brief Default engine facade alias for the selected engine namespace.
    template <typename TImplementation = detail::DefaultEngineImplementation>
    using Engine = EngineFacade<TImplementation>;
 
+   /**
+    * @brief Builds an engine facade from typed option arguments.
+    *
+    * If a `UserSystems<...>` option is present, the returned engine type is
+    * specialized so those systems participate in the frame task graph.
+    */
    template <typename... TOptions> [[nodiscard]] auto makeEngine(TOptions &&...options) {
       using TUserSystems = typename detail::FindUserSystemsOption<UserSystems<>, TOptions...>::type;
       using TEngine = typename detail::EngineTypeFromUserSystems<TUserSystems>::type;

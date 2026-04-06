@@ -2,6 +2,13 @@
 import std;
 import :Internal;
 
+/**
+ * @file
+ * @brief v3 runtime assembly helpers.
+ *
+ * This file constructs the concrete runtime object that wires together all v3
+ * subsystem implementations behind their public facades.
+ */
 namespace vve::v3::detail {
 
    vve::Handle makeStableHandle(std::string_view name, std::uint64_t salt) {

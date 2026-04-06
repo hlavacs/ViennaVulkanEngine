@@ -6,6 +6,13 @@ module VEEngine.V3;
 import std;
 import :Internal;
 
+/**
+ * @file
+ * @brief v3 SDL3-backed window-system implementation.
+ *
+ * The window system owns platform window lifetime, event translation, and the
+ * frame-local window snapshot consumed by the rest of the runtime.
+ */
 namespace vve::v3 {
 
    class SDL3WindowSystemImplementation {
