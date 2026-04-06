@@ -15,6 +15,8 @@ Primary priorities, in order:
 7. compile-time guarantees where practical
 8. data-oriented design
 9. maintainable long-term architecture
+10. code readability is very important
+11. extensive Doxygen compatible commenting: each file, function, class, struct gets a header explaining why it is there and if necessary input, output and retir parameters, add comments to roughly one third to half of the code lines
 
 All analysis, design, and implementation should optimize for an engine that can serve as a long-lived reusable foundation across many projects, not for one-off convenience or game-specific shortcuts.
 
