@@ -233,12 +233,12 @@ Do not jump directly into code generation unless explicitly asked.
 
 ## C++ language policy
 
-- Prefer C++20/23/26 features when they clearly improve correctness, clarity, maintainability, or zero-cost abstraction and the toolchain supports them.
+- Prefer C++20/23 features when they clearly improve correctness, clarity, maintainability, or zero-cost abstraction and the toolchain supports them.
 - Prefer STL first.
 - Prefer `std::span`, `std::array`, `std::vector`, `std::string_view`, `std::optional`, `std::variant`, and concepts where appropriate.
 - Prefer RAII and explicit ownership.
 - Prefer `constexpr` and compile-time composition where practical.
-- Avoid raw owning pointers.
+- Avoid raw owning pointers. Prefer references to pointers.
 - Avoid macro-heavy metaprogramming when language features suffice.
 - Avoid custom containers, allocators, type-erasure systems, or utility frameworks unless profiling, layout requirements, or platform constraints justify them.
 - Avoid virtual dispatch on hot paths unless clearly warranted.
@@ -246,6 +246,7 @@ Do not jump directly into code generation unless explicitly asked.
 - Prefer explicit move/copy behavior over accidental ownership semantics.
 - Prefer standard algorithms and ranges when they improve clarity without hiding important cost.
 - Be careful with template metaprogramming: use it to encode intent and remove runtime cost, not to show cleverness.
+- Prefer less code using templates to verbose code production. Use &&, auto, concepts when possible and appropriate.
 
 ---
 
