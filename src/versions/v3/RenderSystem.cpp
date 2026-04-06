@@ -149,7 +149,7 @@ namespace vve::v3 {
                  std::string("Consume Frame Output (") + pipeline.window_id + ")", TaskPhase::render,
                  TaskScope::window, pipeline.window);
 
-            builder.setTaskCallback(
+            [[maybe_unused]] const auto cull_callback_set = builder.setTaskCallback(
                 cull_visibility_gpu_task,
                 [this, window,
                  render_graph](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
@@ -161,7 +161,7 @@ namespace vve::v3 {
                                             *render_graph);
                 });
 
-            builder.setTaskCallback(
+            [[maybe_unused]] const auto build_callback_set = builder.setTaskCallback(
                 build_draw_packets_task,
                 [this, window,
                  render_graph](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
@@ -173,7 +173,7 @@ namespace vve::v3 {
                                            *render_graph);
                 });
 
-            builder.setTaskCallback(
+            [[maybe_unused]] const auto record_callback_set = builder.setTaskCallback(
                 record_render_graph_task,
                 [this, window,
                  render_graph](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
@@ -184,7 +184,7 @@ namespace vve::v3 {
                    return record(*execution_context.frame_context, *execution_context.scene, window, *render_graph);
                 });
 
-            builder.setTaskCallback(
+            [[maybe_unused]] const auto consume_callback_set = builder.setTaskCallback(
                 consume_frame_output_task,
                 [this, window,
                  render_graph](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {

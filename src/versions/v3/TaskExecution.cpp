@@ -4,6 +4,78 @@ import std;
 
 namespace vve::v3::detail {
 
+   namespace {
+
+      [[nodiscard]] bool hasCompiledDependency(const CompiledTaskNodeDesc &node, std::size_t dependency_index) {
+         return std::ranges::any_of(node.dependencies, [dependency_index](const CompiledTaskDependencyDesc &dependency) {
+            return dependency.node_index == dependency_index;
+         });
+      }
+
+      void addCompiledDependency(CompiledTaskGraph &compiled_graph, std::size_t node_index,
+                                 std::size_t dependency_index, CompiledTaskDependencyKind kind) {
+         auto &node = compiled_graph.nodes[node_index];
+         if (hasCompiledDependency(node, dependency_index)) {
+            return;
+         }
+
+         node.dependencies.push_back(CompiledTaskDependencyDesc{.node_index = dependency_index, .kind = kind});
+         ++node.initial_dependency_count;
+         compiled_graph.nodes[dependency_index].dependents.push_back(
+             CompiledTaskDependencyDesc{.node_index = node_index, .kind = kind});
+      }
+
+      [[nodiscard]] std::uint64_t taskSchedulingKey(const TaskNodeDesc &node, std::size_t index) {
+         return (static_cast<std::uint64_t>(static_cast<std::underlying_type_t<TaskPhase>>(node.phase)) << 32U) |
+                static_cast<std::uint64_t>(index);
+      }
+
+      void addResourceHazardDependencies(const TaskGraph &task_graph, CompiledTaskGraph &compiled_graph) {
+         std::unordered_map<vve::Handle::value_type, std::size_t> last_writer{};
+         std::unordered_map<vve::Handle::value_type, std::vector<std::size_t>> last_readers{};
+
+         std::vector<std::size_t> ordered_indices(task_graph.nodes.size());
+         std::iota(ordered_indices.begin(), ordered_indices.end(), std::size_t{0});
+         std::ranges::sort(ordered_indices, [&task_graph](std::size_t left, std::size_t right) {
+            return taskSchedulingKey(task_graph.nodes[left], left) < taskSchedulingKey(task_graph.nodes[right], right);
+         });
+
+         for (const auto node_index : ordered_indices) {
+            const auto &node = task_graph.nodes[node_index];
+            for (const auto &access : node.accesses) {
+               const auto resource_key = access.resource.value();
+               if (access.write) {
+                  if (const auto writer = last_writer.find(resource_key); writer != last_writer.end()) {
+                     addCompiledDependency(compiled_graph, node_index, writer->second,
+                                          CompiledTaskDependencyKind::resource_hazard);
+                  }
+
+                  if (const auto readers = last_readers.find(resource_key); readers != last_readers.end()) {
+                     for (const auto reader_index : readers->second) {
+                        addCompiledDependency(compiled_graph, node_index, reader_index,
+                                             CompiledTaskDependencyKind::resource_hazard);
+                     }
+                  }
+
+                  last_writer[resource_key] = node_index;
+                  last_readers[resource_key].clear();
+               } else {
+                  if (const auto writer = last_writer.find(resource_key); writer != last_writer.end()) {
+                     addCompiledDependency(compiled_graph, node_index, writer->second,
+                                          CompiledTaskDependencyKind::resource_hazard);
+                  }
+
+                  auto &readers = last_readers[resource_key];
+                  if (!std::ranges::contains(readers, node_index)) {
+                     readers.push_back(node_index);
+                  }
+               }
+            }
+         }
+      }
+
+   } // namespace
+
    CompiledTaskGraph compileTaskGraph(const TaskGraph &task_graph) {
       CompiledTaskGraph compiled_graph{};
       compiled_graph.nodes.reserve(task_graph.nodes.size());
@@ -32,7 +104,6 @@ namespace vve::v3::detail {
       for (std::size_t index = 0; index < task_graph.nodes.size(); ++index) {
          const auto &node = task_graph.nodes[index];
          auto &compiled_node = compiled_graph.nodes[index];
-         compiled_node.initial_dependency_count = static_cast<std::uint32_t>(node.depends_on.size());
          compiled_node.dependencies.reserve(node.depends_on.size());
 
          for (const auto &dependency : node.depends_on) {
@@ -49,13 +120,11 @@ namespace vve::v3::detail {
                return compiled_graph;
             }
 
-            compiled_node.dependencies.push_back(
-                CompiledTaskDependencyDesc{.node_index = dependency_it->second,
-                                           .kind = CompiledTaskDependencyKind::explicit_order});
-            compiled_graph.nodes[dependency_it->second].dependents.push_back(
-                CompiledTaskDependencyDesc{.node_index = index, .kind = CompiledTaskDependencyKind::explicit_order});
+            addCompiledDependency(compiled_graph, index, dependency_it->second, CompiledTaskDependencyKind::explicit_order);
          }
       }
+
+      addResourceHazardDependencies(task_graph, compiled_graph);
 
       std::vector<std::uint32_t> remaining_dependencies{};
       remaining_dependencies.reserve(compiled_graph.nodes.size());

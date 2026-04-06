@@ -92,7 +92,7 @@ namespace vve::v3 {
                              {TaskGraphBuilder::taskHandleFor("task.begin_frame")}, {}, "Poll Window Events",
                              TaskPhase::input);
 
-         builder.setTaskCallback(
+         [[maybe_unused]] const auto callback_set = builder.setTaskCallback(
              poll_window_events_task,
              [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr) {

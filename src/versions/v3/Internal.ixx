@@ -36,6 +36,10 @@ export namespace vve::v3::detail {
       Vector<ResourceAccess> accesses{};
    };
 
+   // CompiledTaskGraph is a reusable execution plan for one TaskGraph build.
+   // It intentionally keeps richer metadata than the current single-threaded
+   // executor needs so future hazard-aware and parallel scheduling can reuse
+   // the same compiled form.
    struct CompiledTaskGraph {
       bool valid{true};
       vve::Error error{vve::Error::internal_error};
@@ -60,6 +64,12 @@ export namespace vve::v3::detail {
       EngineRuntimeSnapshot snapshot{};
    };
 
+   VVE_API void syncWorldWindows(const WindowFrameData &window_frame, std::vector<vve::WindowInfo> &windows);
+   VVE_API void syncWorldInput(const WindowFrameData &window_frame, vve::InputState &input);
+   [[nodiscard]] VVE_API TaskNodeHandle ensureWorldSyncTask(std::vector<vve::WindowInfo> &world_windows,
+                                                            vve::InputState &input_state,
+                                                            vve::detail::WorldRuntimeAccess &world_runtime_access,
+                                                            TaskGraphBuilder &builder);
    [[nodiscard]] vve::Handle makeStableHandle(std::string_view name, std::uint64_t salt = 0);
    [[nodiscard]] VVE_API CompiledTaskGraph compileTaskGraph(const TaskGraph &task_graph);
    [[nodiscard]] VVE_API std::expected<void, vve::Error>
@@ -70,6 +80,11 @@ export namespace vve::v3::detail {
                           const TaskExecutionContext &execution_context);
    [[nodiscard]] VVE_API std::expected<Runtime, vve::Error> createRuntime(const EngineRuntimeDesc &desc);
 #ifndef NDEBUG
+   VVE_API void registerDebugGraphDumpTask(std::function<const TaskGraph *()> task_graph_accessor,
+                                           VectorConstRange<WindowRenderPipeline> render_pipelines,
+                                           std::vector<vve::WindowInfo> &world_windows, vve::InputState &input_state,
+                                           vve::detail::WorldRuntimeAccess &world_runtime_access,
+                                           TaskGraphBuilder &builder);
    [[nodiscard]] VVE_API std::expected<void, vve::Error>
    exportCombinedGraphDot(const TaskGraph &task_graph, VectorConstRange<WindowRenderPipeline> render_pipelines,
                           const std::filesystem::path &output_path);

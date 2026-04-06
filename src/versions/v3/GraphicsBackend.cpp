@@ -38,7 +38,7 @@ namespace vve::v3 {
           const auto end_frame_task =
              builder.addTask("task.end_frame", TaskKernelId::end_frame, {}, {}, {}, "End Frame", TaskPhase::end_frame);
 
-         builder.setTaskCallback(
+         [[maybe_unused]] const auto begin_callback_set = builder.setTaskCallback(
              begin_frame_task,
              [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr) {
@@ -48,7 +48,7 @@ namespace vve::v3 {
                 return beginFrame(*execution_context.frame_context);
              });
 
-         builder.setTaskCallback(
+         [[maybe_unused]] const auto end_callback_set = builder.setTaskCallback(
              end_frame_task, [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr) {
                    return std::unexpected(vve::Error::invalid_argument);

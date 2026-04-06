@@ -43,7 +43,7 @@ namespace vve::v3 {
                              {TaskGraphBuilder::taskHandleFor("task.update_transforms")}, {}, "Cull Visibility CPU",
                              TaskPhase::scene);
 
-         builder.setTaskCallback(
+         [[maybe_unused]] const auto transforms_callback_set = builder.setTaskCallback(
              update_transforms_task,
              [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
@@ -53,7 +53,7 @@ namespace vve::v3 {
                 return updateTransforms(*execution_context.frame_context, *execution_context.scene);
              });
 
-         builder.setTaskCallback(
+         [[maybe_unused]] const auto cull_callback_set = builder.setTaskCallback(
              cull_visibility_cpu_task,
              [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {

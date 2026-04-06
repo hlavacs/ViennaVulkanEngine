@@ -62,7 +62,7 @@ namespace vve::v3 {
                              {TaskGraphBuilder::taskHandleFor("task.cull_visibility_cpu")}, {}, "Upload Resources",
                              TaskPhase::resources);
 
-         builder.setTaskCallback(
+         [[maybe_unused]] const auto callback_set = builder.setTaskCallback(
              upload_resources_task,
              [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
                 if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {

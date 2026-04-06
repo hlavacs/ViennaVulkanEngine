@@ -77,7 +77,7 @@ int main() {
             {},
             {},
             vve::v3::TaskPhase::post_frame);
-        builder.addDependency("game.late_update", "game.update");
+        [[maybe_unused]] const auto dependency_added = builder.addDependency("game.late_update", "game.update");
 
         const auto graph = std::move(builder).build();
         const vve::v3::FrameContext frame_context{
