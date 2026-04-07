@@ -94,7 +94,7 @@ export namespace vve {
       [[nodiscard]] std::expected<std::vector<Handle>, Error> view() const;
 
    private:
-      TImplementation implementation_{}; ///< Concrete ECS implementation hidden behind the public facade.
+      TImplementation implementation_{};  ///< Concrete ECS implementation hidden behind the public facade.
    };
 
    /**

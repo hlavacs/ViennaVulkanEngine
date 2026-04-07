@@ -337,11 +337,11 @@ namespace vve::v3 {
          frame_data_sink_->events = makeRange(events_);
       }
 
-      bool video_initialized_{false};                            ///< Tracks whether SDL video has been initialized.
-      Vector<WindowRecord> windows_{};                           ///< Owned window records.
+      bool video_initialized_{false};                             ///< Tracks whether SDL video has been initialized.
+      Vector<WindowRecord> windows_{};                            ///< Owned window records.
       std::unordered_map<Uint32, std::size_t> window_indices_{}; ///< Maps SDL window ids to record indices.
-      Vector<WindowState> states_{};                             ///< Contiguous window-state cache exposed to the runtime.
-      Vector<WindowEvent> events_{};                             ///< Frame-local translated event list.
+      Vector<WindowState> states_{};                              ///< Contiguous window-state cache exposed to the runtime.
+      Vector<WindowEvent> events_{};                              ///< Frame-local translated event list.
       std::shared_ptr<WindowFrameData> frame_data_sink_{};       ///< Shared snapshot sink consumed by the runtime.
    };
 

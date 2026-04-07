@@ -111,7 +111,7 @@ export namespace vve {
          const InputState *input{nullptr};                        ///< Pointer to the current input snapshot.
          /// @brief Runtime callback used to request scene loading.
          std::expected<void, Error> (*load_scene)(void *context, const std::filesystem::path &path){nullptr};
-         void *load_scene_context{nullptr}; ///< Opaque callback context passed back to `load_scene`.
+         void *load_scene_context{nullptr};                       ///< Opaque callback context passed back to `load_scene`.
       };
 
       /**

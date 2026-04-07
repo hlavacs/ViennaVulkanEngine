@@ -282,8 +282,8 @@ namespace vve::v3 {
          return erasers;
       }
 
-      std::unordered_set<vve::Handle::value_type> entities_{};               ///< Set of currently alive entity ids.
-      entity_value_type next_entity_value_{traits_type::first_entity_value}; ///< Next entity value to allocate.
+      std::unordered_set<vve::Handle::value_type> entities_{};                ///< Set of currently alive entity ids.
+      entity_value_type next_entity_value_{traits_type::first_entity_value};  ///< Next entity value to allocate.
    };
 
 } // namespace vve::v3

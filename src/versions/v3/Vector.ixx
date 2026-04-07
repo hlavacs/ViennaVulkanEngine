@@ -147,8 +147,8 @@ export namespace vve::v3 {
          /// @brief Creates an iterator over `owner` positioned at `index`.
          basic_iterator(owner_type *owner, size_type index) : owner_(owner), index_(index) {}
 
-         owner_type *owner_{nullptr}; ///< Container being iterated.
-         difference_type index_{0};   ///< Logical element index inside the container.
+         owner_type *owner_{nullptr};  ///< Container being iterated.
+         difference_type index_{0};    ///< Logical element index inside the container.
       };
 
    public:

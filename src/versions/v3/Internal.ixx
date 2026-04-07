@@ -135,12 +135,12 @@ export namespace vve::v3::detail {
       WindowSystem window_system{};                        ///< Window/platform subsystem facade.
       /// @brief Shared frame-local window snapshot.
       std::shared_ptr<WindowFrameData> window_frame{std::make_shared<WindowFrameData>()};
-      GraphicsBackend graphics_backend{};              ///< Graphics backend facade.
-      ShaderSystem shader_system{};                    ///< Shader reflection subsystem facade.
-      std::unique_ptr<RenderSystem> render_system{};   ///< Render subsystem facade stored via indirection.
-      Vector<WindowRenderPipeline> render_pipelines{}; ///< Per-window render pipelines.
-      std::unique_ptr<GuiSystem> gui_system{};         ///< Optional GUI subsystem facade.
-      EngineRuntimeSnapshot snapshot{};                ///< Human-readable runtime snapshot for diagnostics.
+      GraphicsBackend graphics_backend{};                 ///< Graphics backend facade.
+      ShaderSystem shader_system{};                       ///< Shader reflection subsystem facade.
+      std::unique_ptr<RenderSystem> render_system{};      ///< Render subsystem facade stored via indirection.
+      Vector<WindowRenderPipeline> render_pipelines{};    ///< Per-window render pipelines.
+      std::unique_ptr<GuiSystem> gui_system{};            ///< Optional GUI subsystem facade.
+      EngineRuntimeSnapshot snapshot{};                   ///< Human-readable runtime snapshot for diagnostics.
    };
 
    /// @brief Synchronizes runtime window state into the world-facing window cache.

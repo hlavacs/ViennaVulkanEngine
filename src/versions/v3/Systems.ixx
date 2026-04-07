@@ -343,7 +343,7 @@ export namespace vve::v3 {
 
    /// @brief Wrapper used to pass runtime task systems through engine configuration.
    struct TaskSystems {
-      Vector<std::shared_ptr<ITaskSystem>> value{}; ///< Task-system instances supplied by the caller.
+      Vector<std::shared_ptr<ITaskSystem>> value{};             ///< Task-system instances supplied by the caller.
    };
 
 } // namespace vve::v3

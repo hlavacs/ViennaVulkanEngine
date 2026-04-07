@@ -174,20 +174,20 @@ namespace vve::v3 {
 
       /// @brief Frame-execution caches and timing state owned by the engine.
       struct FrameExecutionState {
-         std::uint64_t frame_index{0}; ///< Monotonically increasing frame index.
-         std::optional<TaskGraph> task_graph{}; ///< Current declarative task graph.
+         std::uint64_t frame_index{0};                               ///< Monotonically increasing frame index.
+         std::optional<TaskGraph> task_graph{};                      ///< Current declarative task graph.
          std::optional<detail::CompiledTaskGraph> compiled_task_graph{}; ///< Cached compiled execution plan.
-         bool task_graph_dirty{true}; ///< Tracks whether the task graph must be rebuilt.
+         bool task_graph_dirty{true};                               ///< Tracks whether the task graph must be rebuilt.
          std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds> last_time{}; ///< Timestamp used to compute per-frame delta time.
       };
 
       /// @brief World-facing caches and runtime bridge owned by the engine.
       struct WorldBridgeState {
-         vve::ECS<> ecs{}; ///< World ECS storage used by the engine.
-         std::vector<vve::WindowInfo> windows{}; ///< World-visible window cache synchronized each frame.
-         vve::InputState input{}; ///< World-visible input snapshot synchronized each frame.
+         vve::ECS<> ecs{};                                  ///< World ECS storage used by the engine.
+         std::vector<vve::WindowInfo> windows{};            ///< World-visible window cache synchronized each frame.
+         vve::InputState input{};                           ///< World-visible input snapshot synchronized each frame.
          vve::detail::WorldRuntimeAccess runtime_access{}; ///< Runtime bridge shared with the world facade.
-         std::unique_ptr<vve::World> world{}; ///< Game-facing world facade exposed to user systems.
+         std::unique_ptr<vve::World> world{};               ///< Game-facing world facade exposed to user systems.
       };
 
    } // namespace detail
@@ -229,10 +229,10 @@ namespace vve::v3 {
 
       EngineRuntimeDesc runtime_desc_{};         ///< Runtime descriptor assembled from engine configuration.
       detail::Runtime runtime_{};                ///< Concrete runtime object holding subsystem facades.
-      detail::EngineLifecycleState lifecycle_{}; ///< Engine lifecycle flags and config-derived values.
-      detail::SceneRuntimeState scene_state_{}; ///< Active-scene state owned by the engine.
+      detail::EngineLifecycleState lifecycle_{};      ///< Engine lifecycle flags and config-derived values.
+      detail::SceneRuntimeState scene_state_{};       ///< Active-scene state owned by the engine.
       detail::FrameExecutionState execution_state_{}; ///< Frame-execution caches and timing state.
-      detail::WorldBridgeState world_bridge_{}; ///< World-facing caches and runtime bridge.
+      detail::WorldBridgeState world_bridge_{};       ///< World-facing caches and runtime bridge.
       std::tuple<TUserSystems...> user_systems_{};    ///< Compile-time typed tuple of user-system instances.
    };
 

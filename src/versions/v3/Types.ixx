@@ -227,7 +227,7 @@ export namespace vve::v3 {
 
    /// @brief Window event payload emitted during event polling.
    struct WindowEvent {
-      WindowHandle window{};                       ///< Window associated with the event.
+      WindowHandle window{};                        ///< Window associated with the event.
       WindowEventType type{WindowEventType::none}; ///< Event type.
       std::int32_t a{0};                           ///< First event payload integer.
       std::int32_t b{0};                           ///< Second event payload integer.
@@ -247,9 +247,9 @@ export namespace vve::v3 {
 
    /// @brief Runtime data visible to task callbacks during execution.
    struct TaskExecutionContext {
-      const FrameContext *frame_context{nullptr};            ///< Frame timing data, or `nullptr` when unavailable.
-      SceneData *scene{nullptr};                             ///< Mutable scene data, or `nullptr` when unavailable.
-      vve::World *world{nullptr};                            ///< World facade, or `nullptr` when unavailable.
+      const FrameContext *frame_context{nullptr};             ///< Frame timing data, or `nullptr` when unavailable.
+      SceneData *scene{nullptr};                              ///< Mutable scene data, or `nullptr` when unavailable.
+      vve::World *world{nullptr};                             ///< World facade, or `nullptr` when unavailable.
       std::shared_ptr<const WindowFrameData> window_frame{}; ///< Shared window snapshot for the frame.
       std::optional<WindowHandle> window{};                  ///< Optional window scope when the task is window-specific.
    };
