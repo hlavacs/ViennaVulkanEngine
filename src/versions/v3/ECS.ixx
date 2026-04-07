@@ -100,11 +100,11 @@ namespace vve::v3 {
        * @brief Returns a component copy when present.
        * @tparam TComponent Component type to read.
        * @param entity Entity handle to inspect.
-       * @return Optional component copy, or an error when the entity is invalid.
+       * @return Component copy, or an error when the entity is invalid or the component is absent.
        */
       template <typename TComponent>
          requires(!std::same_as<std::remove_cvref_t<TComponent>, vve::Handle>)
-      [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, vve::Error> get(vve::Handle entity) const {
+      [[nodiscard]] std::expected<std::remove_cvref_t<TComponent>, vve::Error> get(vve::Handle entity) const {
          using component_type = std::remove_cvref_t<TComponent>;
 
          if (!entities_.contains(entity.value())) { // Reads of non-existent entities are treated as invalid API usage.
@@ -113,7 +113,33 @@ namespace vve::v3 {
 
          const auto &pool = componentPool<component_type>();
          const auto component_it = pool.find(entity.value());
-         if (component_it == pool.end()) { // Missing component data is not an error for a valid entity.
+         if (component_it == pool.end()) { // Strict reads require the component to exist on the entity.
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         // The public API returns a copy rather than a raw reference so the
+         // facade does not expose storage stability guarantees.
+         return component_it->second;
+      }
+
+      /**
+       * @brief Returns an optional component copy when present.
+       * @tparam TComponent Component type to read.
+       * @param entity Entity handle to inspect.
+       * @return Optional component copy, or an error when the entity is invalid.
+       */
+      template <typename TComponent>
+         requires(!std::same_as<std::remove_cvref_t<TComponent>, vve::Handle>)
+      [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, vve::Error> tryGet(vve::Handle entity) const {
+         using component_type = std::remove_cvref_t<TComponent>;
+
+         if (!entities_.contains(entity.value())) { // Reads of non-existent entities are treated as invalid API usage.
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto &pool = componentPool<component_type>();
+         const auto component_it = pool.find(entity.value());
+         if (component_it == pool.end()) { // Optional reads let callers distinguish absence from invalid handles.
             return std::optional<component_type>{};
          }
 

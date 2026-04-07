@@ -80,7 +80,10 @@ export namespace vve {
       [[nodiscard]] std::expected<void, Error> addComponent(Handle entity, TComponent &&component);
 
       template <NotHandle TComponent>
-      [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, Error> get(Handle entity) const;
+      [[nodiscard]] std::expected<std::remove_cvref_t<TComponent>, Error> get(Handle entity) const;
+
+      template <NotHandle TComponent>
+      [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, Error> tryGet(Handle entity) const;
 
       template <NotHandle TComponent>
       [[nodiscard]] std::expected<void, Error> put(Handle entity, TComponent &&component);
@@ -114,7 +117,22 @@ export namespace vve {
    }
 
    /**
-    * @brief Reads a component copy through the selected ECS implementation.
+   * @brief Reads a component copy through the selected ECS implementation.
+   * @tparam TImplementation Concrete ECS implementation type.
+   * @tparam TComponent Component type to read.
+   * @param entity Entity handle to inspect.
+   * @return Component copy, or an error reported by the implementation.
+   */
+   template <typename TImplementation>
+   template <NotHandle TComponent>
+   [[nodiscard]] std::expected<std::remove_cvref_t<TComponent>, Error> ECSFacade<TImplementation>::get(Handle entity) const {
+      using TStoredComponent = std::remove_cvref_t<TComponent>;
+      // Normalize the component type once so the backend never sees cv/ref noise.
+      return implementation_.template get<TStoredComponent>(entity);
+   }
+
+   /**
+    * @brief Reads an optional component copy through the selected ECS implementation.
     * @tparam TImplementation Concrete ECS implementation type.
     * @tparam TComponent Component type to read.
     * @param entity Entity handle to inspect.
@@ -123,10 +141,10 @@ export namespace vve {
    template <typename TImplementation>
    template <NotHandle TComponent>
    [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, Error>
-   ECSFacade<TImplementation>::get(Handle entity) const {
+   ECSFacade<TImplementation>::tryGet(Handle entity) const {
       using TStoredComponent = std::remove_cvref_t<TComponent>;
       // Normalize the component type once so the backend never sees cv/ref noise.
-      return implementation_.template get<TStoredComponent>(entity);
+      return implementation_.template tryGet<TStoredComponent>(entity);
    }
 
    /**
