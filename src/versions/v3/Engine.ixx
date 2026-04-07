@@ -155,8 +155,40 @@ namespace vve::v3 {
                 }(),
                  ...);
              },
-              systems);
+             systems);
       }
+
+      /// @brief Engine-owned lifecycle flags and user-facing configuration values.
+      struct EngineLifecycleState {
+         std::string application_name{"ViennaVulkanEngine"}; ///< Human-readable application name.
+         bool validation_enabled{false};                     ///< Enables additional runtime validation where supported.
+         bool initialized{false};                            ///< Tracks whether initialization has completed.
+         bool running{false};                                ///< Tracks whether the main loop is currently running.
+      };
+
+      /// @brief Active-scene state owned by the engine.
+      struct SceneRuntimeState {
+         std::filesystem::path loaded_file_path{}; ///< Last successfully loaded scene path.
+         std::optional<SceneData> scene{};         ///< Current instantiated scene data.
+      };
+
+      /// @brief Frame-execution caches and timing state owned by the engine.
+      struct FrameExecutionState {
+         std::uint64_t frame_index{0}; ///< Monotonically increasing frame index.
+         std::optional<TaskGraph> task_graph{}; ///< Current declarative task graph.
+         std::optional<detail::CompiledTaskGraph> compiled_task_graph{}; ///< Cached compiled execution plan.
+         bool task_graph_dirty{true}; ///< Tracks whether the task graph must be rebuilt.
+         std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds> last_time{}; ///< Timestamp used to compute per-frame delta time.
+      };
+
+      /// @brief World-facing caches and runtime bridge owned by the engine.
+      struct WorldBridgeState {
+         vve::ECS<> ecs{}; ///< World ECS storage used by the engine.
+         std::vector<vve::WindowInfo> windows{}; ///< World-visible window cache synchronized each frame.
+         vve::InputState input{}; ///< World-visible input snapshot synchronized each frame.
+         vve::detail::WorldRuntimeAccess runtime_access{}; ///< Runtime bridge shared with the world facade.
+         std::unique_ptr<vve::World> world{}; ///< Game-facing world facade exposed to user systems.
+      };
 
    } // namespace detail
 
@@ -195,27 +227,13 @@ namespace vve::v3 {
    private:
       [[nodiscard]] std::expected<void, vve::Error> rebuildTaskGraph();
 
-      std::string application_name_;             ///< Human-readable application name.
-      bool validation_enabled_{false};           ///< Enables additional runtime validation where supported.
-      bool initialized_{false};                  ///< Tracks whether initialization has completed.
-      bool running_{false};                      ///< Tracks whether the main loop is currently running.
-      std::uint64_t frame_index_{0};             ///< Monotonically increasing frame index.
       EngineRuntimeDesc runtime_desc_{};         ///< Runtime descriptor assembled from engine configuration.
       detail::Runtime runtime_{};                ///< Concrete runtime object holding subsystem facades.
-      std::filesystem::path loaded_file_path_{}; ///< Last successfully loaded scene path.
-      std::optional<SceneData> scene_{};         ///< Current instantiated scene data.
-      std::optional<TaskGraph> task_graph_{};    ///< Current declarative task graph.
-      /// @brief Cached compiled execution plan for the current task graph.
-      std::optional<detail::CompiledTaskGraph> compiled_task_graph_{};
-      bool task_graph_dirty_{true}; ///< Tracks whether the task graph must be rebuilt.
-      /// @brief Timestamp used to compute per-frame delta time.
-      std::chrono::time_point<std::chrono::high_resolution_clock, std::chrono::nanoseconds> last_time_{};
-      vve::ECS<> ecs_{};                                       ///< World ECS storage used by the engine.
-      std::vector<vve::WindowInfo> world_windows_{};           ///< World-visible window cache synchronized each frame.
-      vve::InputState input_state_{};                          ///< World-visible input snapshot synchronized each frame.
-      vve::detail::WorldRuntimeAccess world_runtime_access_{}; ///< Runtime bridge shared with the world facade.
-      vve::World world_;                                       ///< Game-facing world facade exposed to user systems.
-      std::tuple<TUserSystems...> user_systems_{};             ///< Compile-time typed tuple of user-system instances.
+      detail::EngineLifecycleState lifecycle_{}; ///< Engine lifecycle flags and config-derived values.
+      detail::SceneRuntimeState scene_state_{}; ///< Active-scene state owned by the engine.
+      detail::FrameExecutionState execution_state_{}; ///< Frame-execution caches and timing state.
+      detail::WorldBridgeState world_bridge_{}; ///< World-facing caches and runtime bridge.
+      std::tuple<TUserSystems...> user_systems_{};    ///< Compile-time typed tuple of user-system instances.
    };
 
    export using EngineImplementation = BasicEngineImplementation<>;
@@ -226,16 +244,17 @@ namespace vve::v3 {
     * @param config Type-indexed engine configuration options.
     */
    template <typename... TUserSystems>
-   BasicEngineImplementation<TUserSystems...>::BasicEngineImplementation(const vve::EngineConfig &config)
-       : application_name_("ViennaVulkanEngine"), validation_enabled_(false), world_(ecs_, world_runtime_access_) {
+   BasicEngineImplementation<TUserSystems...>::BasicEngineImplementation(const vve::EngineConfig &config) {
       // Apply optional public config values onto the runtime descriptor while
       // keeping sensible defaults for omitted settings.
+      world_bridge_.world = std::make_unique<vve::World>(world_bridge_.ecs, world_bridge_.runtime_access);
+
       if (const auto application_name = config.tryGet<vve::ApplicationName>()) {
-         application_name_ = application_name->value;
+         lifecycle_.application_name = application_name->value;
       }
 
       if (const auto enable_validation = config.tryGet<vve::EnableValidation>()) {
-         validation_enabled_ = enable_validation->value;
+         lifecycle_.validation_enabled = enable_validation->value;
       }
 
       if (const auto graphics_api = config.tryGet<vve::PreferredGraphicsApi>()) {
@@ -299,28 +318,33 @@ namespace vve::v3 {
          }
       }
 
-      loaded_file_path_.clear(); // Reset frame-owned state so a fresh runtime starts from a clean scene.
-      scene_ = SceneData{};
-      task_graph_.reset();
-      compiled_task_graph_.reset();
-      initialized_ = true;
-      running_ = false;
-      task_graph_dirty_ = true;
-      last_time_ = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
+      scene_state_.loaded_file_path.clear(); // Reset frame-owned state so a fresh runtime starts from a clean scene.
+      scene_state_.scene = SceneData{};
+      execution_state_.task_graph.reset();
+      execution_state_.compiled_task_graph.reset();
+      lifecycle_.initialized = true;
+      lifecycle_.running = false;
+      execution_state_.task_graph_dirty = true;
+      execution_state_.last_time =
+          std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
       // Wire the world facade to the runtime-owned window/input snapshots and
       // to the engine-owned scene-loading callback.
-      world_runtime_access_.windows_begin = world_windows_.cbegin();
-      world_runtime_access_.windows_end = world_windows_.cend();
-      world_runtime_access_.input = &input_state_;
-      world_runtime_access_.load_scene = &detail::loadSceneThroughWorld<BasicEngineImplementation<TUserSystems...>>;
-      world_runtime_access_.load_scene_context = this;
+      world_bridge_.runtime_access.windows_begin = world_bridge_.windows.cbegin();
+      world_bridge_.runtime_access.windows_end = world_bridge_.windows.cend();
+      world_bridge_.runtime_access.input = &world_bridge_.input;
+      world_bridge_.runtime_access.load_scene = &detail::loadSceneThroughWorld<BasicEngineImplementation<TUserSystems...>>;
+      world_bridge_.runtime_access.load_scene_context = this;
       // Prime world-visible caches before user init hooks run.
-      detail::syncWorldWindows(*runtime_.window_frame, world_windows_);
-      world_runtime_access_.windows_begin = world_windows_.cbegin();
-      world_runtime_access_.windows_end = world_windows_.cend();
-      detail::syncWorldInput(*runtime_.window_frame, input_state_);
+      detail::syncWorldWindows(*runtime_.window_frame, world_bridge_.windows);
+      world_bridge_.runtime_access.windows_begin = world_bridge_.windows.cbegin();
+      world_bridge_.runtime_access.windows_end = world_bridge_.windows.cend();
+      detail::syncWorldInput(*runtime_.window_frame, world_bridge_.input);
 
-      if (auto user_system_result = detail::initUserSystems(user_systems_, world_); !user_system_result) {
+      if (world_bridge_.world == nullptr) {
+         return std::unexpected(vve::Error::invalid_argument);
+      }
+
+      if (auto user_system_result = detail::initUserSystems(user_systems_, *world_bridge_.world); !user_system_result) {
          return user_system_result;
       }
 
@@ -339,14 +363,14 @@ namespace vve::v3 {
          }
       }
 
-      running_ = true;
-      while (running_) {
+      lifecycle_.running = true;
+      while (lifecycle_.running) {
          // Stop immediately on execution errors so the caller sees the root cause.
          if (auto step_result = step(); !step_result) {
-            running_ = false;
+            lifecycle_.running = false;
             return std::unexpected(step_result.error());
          } else if (*step_result == vve::FrameStatus::should_close) {
-            running_ = false;
+            lifecycle_.running = false;
          }
       }
 
@@ -363,38 +387,43 @@ namespace vve::v3 {
          return std::unexpected(vve::Error::not_initialized);
       }
 
-      if (!scene_) {
+      if (!scene_state_.scene) {
          return std::unexpected(vve::Error::invalid_argument);
       }
 
       const auto current_time = // Capture frame timing once and pass it into all scheduled work.
           std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
-      const double seconds_elapsed = std::chrono::duration<double>(current_time - last_time_).count();
-      last_time_ = current_time;
+      const double seconds_elapsed = std::chrono::duration<double>(current_time - execution_state_.last_time).count();
+      execution_state_.last_time = current_time;
 
-      const FrameContext frame_context{.frame_index = frame_index_++, .delta_seconds = seconds_elapsed};
+      const FrameContext frame_context{.frame_index = execution_state_.frame_index++, .delta_seconds = seconds_elapsed};
 
       // Rebuild the task graph only when scene/runtime state invalidates the
       // previously compiled execution plan.
-      if (task_graph_dirty_ || !task_graph_) {
+      if (execution_state_.task_graph_dirty || !execution_state_.task_graph) {
          if (auto task_graph_result = rebuildTaskGraph(); !task_graph_result) {
             return std::unexpected(task_graph_result.error());
          }
-      } else if (!compiled_task_graph_.has_value()) {
+      } else if (!execution_state_.compiled_task_graph.has_value()) {
           // Recompile lazily if only the cached plan is missing.
-          compiled_task_graph_ = detail::compileTaskGraph(*task_graph_);
+          execution_state_.compiled_task_graph = detail::compileTaskGraph(*execution_state_.task_graph);
       }
 
       const TaskExecutionContext execution_context{ // Frame-local data shared by all task callbacks.
-          .frame_context = &frame_context, .scene = &*scene_, .world = &world_, .window_frame = runtime_.window_frame};
-      const auto execute_result = detail::executeCachedTaskGraph(*task_graph_, compiled_task_graph_, execution_context);
+          .frame_context = &frame_context,
+          .scene = &*scene_state_.scene,
+          .world = world_bridge_.world.get(),
+          .window_frame = runtime_.window_frame};
+      const auto execute_result = detail::executeCachedTaskGraph(*execution_state_.task_graph,
+                                                                 execution_state_.compiled_task_graph,
+                                                                 execution_context);
       if (!execute_result) {
          return std::unexpected(execute_result.error());
       }
 
       if (std::ranges::any_of(runtime_.window_frame->windows, // Treat close requests as a frame result, not an error.
                               [](const WindowState &window) { return window.should_close; })) {
-         running_ = false;
+         lifecycle_.running = false;
          return vve::FrameStatus::should_close;
       }
 
@@ -407,7 +436,7 @@ namespace vve::v3 {
     */
    template <typename... TUserSystems>
    std::expected<bool, vve::Error> BasicEngineImplementation<TUserSystems...>::isInitialized() const noexcept {
-      return initialized_;
+      return lifecycle_.initialized;
    }
 
    /**
@@ -446,9 +475,9 @@ namespace vve::v3 {
          return std::unexpected(scene.error());
       }
 
-      loaded_file_path_ = file_path; // Changing the scene invalidates the previously built frame graph.
-      scene_ = std::move(*scene);
-      task_graph_dirty_ = true;
+      scene_state_.loaded_file_path = file_path; // Changing the scene invalidates the previously built frame graph.
+      scene_state_.scene = std::move(*scene);
+      execution_state_.task_graph_dirty = true;
       return rebuildTaskGraph();
    }
 
@@ -460,7 +489,7 @@ namespace vve::v3 {
    std::expected<void, vve::Error> BasicEngineImplementation<TUserSystems...>::rebuildTaskGraph() {
       // Graph construction requires an instantiated scene because many tasks
       // depend on scene-owned nodes and resources.
-      if (!scene_) {
+      if (!scene_state_.scene) {
          return std::unexpected(vve::Error::invalid_argument);
       }
 
@@ -477,21 +506,24 @@ namespace vve::v3 {
       // Let the task-graph subsystem assemble the built-in frame tasks, then
       // inject engine-owned extensions such as user-system tasks and debug dumps.
       auto task_graph = runtime_.task_graph_system.build(
-          *scene_, makeRange(task_systems), runtime_.window_system, runtime_.graphics_backend, runtime_.resource_system,
+          *scene_state_.scene, makeRange(task_systems), runtime_.window_system, runtime_.graphics_backend, runtime_.resource_system,
           runtime_.scene_system, *runtime_.render_system,
           [this](TaskGraphBuilder &builder, const SceneData &) {
-             detail::registerUserSystemTasks(user_systems_, world_, world_windows_, input_state_,
-                                             world_runtime_access_, builder);
+             detail::registerUserSystemTasks(user_systems_, *world_bridge_.world, world_bridge_.windows,
+                                             world_bridge_.input, world_bridge_.runtime_access, builder);
 #ifndef NDEBUG
              detail::registerDebugGraphDumpTask( // Debug builds expose an extra graph-dump task for inspection.
-                 [this]() -> const TaskGraph * { return task_graph_ ? &*task_graph_ : nullptr; },
-                 makeRange(runtime_.render_pipelines), world_windows_, input_state_, world_runtime_access_, builder);
+                 [this]() -> const TaskGraph * {
+                    return execution_state_.task_graph ? &*execution_state_.task_graph : nullptr;
+                 },
+                 makeRange(runtime_.render_pipelines), world_bridge_.windows, world_bridge_.input,
+                 world_bridge_.runtime_access, builder);
 #endif
           },
           makeRange(runtime_.render_pipelines));
-      task_graph_ = std::move(task_graph); // Cache both the declarative graph and its compiled execution plan.
-      compiled_task_graph_ = detail::compileTaskGraph(*task_graph_);
-      task_graph_dirty_ = false;
+      execution_state_.task_graph = std::move(task_graph); // Cache both the declarative graph and its compiled execution plan.
+      execution_state_.compiled_task_graph = detail::compileTaskGraph(*execution_state_.task_graph);
+      execution_state_.task_graph_dirty = false;
       return {};
    }
 
