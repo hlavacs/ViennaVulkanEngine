@@ -28,6 +28,7 @@ target_sources(ViennaVulkanEngine
         versions/v3/AssetSystem.cpp
         versions/v3/ResourceSystem.cpp
         versions/v3/SceneSystem.cpp
+        versions/v3/SceneLoader.cpp
         versions/v3/TaskGraphSystem.cpp
         versions/v3/TaskExecution.cpp
         versions/v3/FrameTasks.cpp

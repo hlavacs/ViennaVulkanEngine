@@ -129,6 +129,7 @@ export namespace vve::v3::detail {
       AssetSystem asset_system{};                          ///< Asset-import subsystem facade.
       ResourceSystem resource_system{};                    ///< Resource-management subsystem facade.
       SceneSystem scene_system{};                          ///< Scene-management subsystem facade.
+      std::unique_ptr<SceneLoader> scene_loader{};         ///< Scene-loading orchestration facade.
       TaskGraphSystem task_graph_system{};                 ///< Task-graph assembly subsystem facade.
       Vector<std::shared_ptr<ITaskSystem>> task_systems{}; ///< User-supplied task systems extending the runtime.
       WindowSystem window_system{};                        ///< Window/platform subsystem facade.

@@ -40,6 +40,8 @@ namespace vve::v3::detail {
       // External task systems are stored directly on the runtime so later task
       // graph rebuilds can flatten them into non-owning views.
       runtime.task_systems = desc.task_systems;
+      runtime.scene_loader =
+          std::make_unique<SceneLoader>(runtime.asset_system, runtime.resource_system, runtime.scene_system);
       runtime.render_system =
           std::make_unique<RenderSystem>(desc.renderer, desc.shadow, runtime.graphics_backend, desc.imgui_enabled);
       // Window polling owns the authoritative frame snapshot shared with the

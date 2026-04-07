@@ -17,6 +17,7 @@ Primary priorities, in order:
 9. maintainable long-term architecture
 10. code readability is very important
 11. extensive Doxygen compatible commenting, see guidelines below
+12. simplicity through keeping the lines of code count low and abstraction through templating
 
 All analysis, design, and implementation should optimize for an engine that can serve as a long-lived reusable foundation across many projects, not for one-off convenience or game-specific shortcuts.
 

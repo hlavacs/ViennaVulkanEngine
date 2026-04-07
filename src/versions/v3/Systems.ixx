@@ -27,6 +27,7 @@ export namespace vve::v3 {
    class AssimpAssetSystemImplementation;
    class DefaultResourceSystemImplementation;
    class DefaultSceneSystemImplementation;
+   class DefaultSceneLoaderImplementation;
    class DefaultTaskGraphSystemImplementation;
    class SDL3WindowSystemImplementation;
    class VulkanGraphicsBackendImplementation;
@@ -102,6 +103,28 @@ export namespace vve::v3 {
                                                                    const SceneData &scene);
       /// @brief Registers scene-related tasks with the frame task graph.
       void registerTasks(TaskGraphBuilder &builder, const SceneData &scene);
+
+   private:
+      std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
+   };
+
+   /// @brief Scene-loading orchestration facade.
+   template <typename TImplementation> class VVE_API SceneLoaderFacade {
+   public:
+      /// @brief Creates the scene loader around the participating import, resource, and scene subsystems.
+      SceneLoaderFacade(AssetSystemFacade<AssimpAssetSystemImplementation> &asset_system,
+                        ResourceSystemFacade<DefaultResourceSystemImplementation> &resource_system,
+                        SceneSystemFacade<DefaultSceneSystemImplementation> &scene_system);
+      ~SceneLoaderFacade() = default;
+      SceneLoaderFacade(SceneLoaderFacade &&other) noexcept = default;
+      SceneLoaderFacade &operator=(SceneLoaderFacade &&other) noexcept = default;
+      SceneLoaderFacade(const SceneLoaderFacade &) = delete;
+      SceneLoaderFacade &operator=(const SceneLoaderFacade &) = delete;
+
+      /// @brief Returns the implementation name for diagnostics.
+      [[nodiscard]] std::string_view name() const noexcept;
+      /// @brief Imports, registers, and instantiates a scene file into runtime scene data.
+      [[nodiscard]] std::expected<SceneData, vve::Error> loadScene(const std::filesystem::path &file_path);
 
    private:
       std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
@@ -250,6 +273,8 @@ export namespace vve::v3 {
    using ResourceSystem = ResourceSystemFacade<DefaultResourceSystemImplementation>;
    /// @brief Default scene-system facade alias for v3.
    using SceneSystem = SceneSystemFacade<DefaultSceneSystemImplementation>;
+   /// @brief Default scene-loader facade alias for v3.
+   using SceneLoader = SceneLoaderFacade<DefaultSceneLoaderImplementation>;
    /// @brief Default window-system facade alias for v3.
    using WindowSystem = WindowSystemFacade<SDL3WindowSystemImplementation>;
    /// @brief Default graphics-backend facade alias for v3.

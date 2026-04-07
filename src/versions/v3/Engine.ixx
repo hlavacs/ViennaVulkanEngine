@@ -435,20 +435,13 @@ namespace vve::v3 {
          return std::unexpected(vve::Error::invalid_argument);
       }
 
-      // Import converts source data into engine-owned intermediate scene data.
-      const auto imported_scene = runtime_.asset_system.importScene(file_path);
-      if (!imported_scene) {
-         return std::unexpected(imported_scene.error());
+      if (runtime_.scene_loader == nullptr) {
+         return std::unexpected(vve::Error::invalid_argument);
       }
 
-      // Resource registration assigns stable engine handles before instantiation.
-      if (auto register_result = runtime_.resource_system.registerImportedScene(*imported_scene, file_path);
-          !register_result) {
-         return register_result;
-      }
-
-      // Scene instantiation produces the runtime scene representation consumed by systems.
-      const auto scene = runtime_.scene_system.instantiate(*imported_scene);
+      // Scene loading now lives behind a dedicated orchestration subsystem so
+      // the engine keeps only active-scene ownership and graph invalidation.
+      const auto scene = runtime_.scene_loader->loadScene(file_path);
       if (!scene) {
          return std::unexpected(scene.error());
       }
