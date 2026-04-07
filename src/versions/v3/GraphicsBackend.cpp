@@ -48,30 +48,14 @@ namespace vve::v3 {
 
       /// @brief Registers the backend's built-in frame-boundary tasks.
       void registerTasks(TaskGraphBuilder &builder) {
-          const auto begin_frame_task =
-             builder.addTask("task.begin_frame", TaskKernelId::begin_frame, {}, {}, {}, "Begin Frame",
-                             TaskPhase::begin_frame);
-          const auto end_frame_task =
-             builder.addTask("task.end_frame", TaskKernelId::end_frame, {}, {}, {}, "End Frame", TaskPhase::end_frame);
-
-         [[maybe_unused]] const auto begin_callback_set = builder.setTaskCallback(
-             begin_frame_task,
-             [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-                if (execution_context.frame_context == nullptr) {
-                   return std::unexpected(vve::Error::invalid_argument);
-                }
-
-                return beginFrame(*execution_context.frame_context);
-             });
-
-         [[maybe_unused]] const auto end_callback_set = builder.setTaskCallback(
-             end_frame_task, [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-                if (execution_context.frame_context == nullptr) {
-                   return std::unexpected(vve::Error::invalid_argument);
-                }
-
-                return endFrame(*execution_context.frame_context);
-             });
+         [[maybe_unused]] const auto begin_frame_task = builder.addTask(
+             "task.begin_frame", TaskKernelId::begin_frame,
+             detail::requireFrame([this](const FrameContext &frame_context) { return beginFrame(frame_context); }),
+             {}, {}, "Begin Frame", TaskPhase::begin_frame);
+         [[maybe_unused]] const auto end_frame_task = builder.addTask(
+             "task.end_frame", TaskKernelId::end_frame,
+             detail::requireFrame([this](const FrameContext &frame_context) { return endFrame(frame_context); }), {},
+             {}, "End Frame", TaskPhase::end_frame);
       }
 
    private:

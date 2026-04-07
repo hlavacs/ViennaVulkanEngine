@@ -25,6 +25,63 @@ import std;
  */
 export namespace vve::v3::detail {
 
+   template <typename TFunction> [[nodiscard]] TaskCallback requireFrame(TFunction function) {
+      return [function = std::move(function)](const TaskExecutionContext &execution_context)
+                 -> std::expected<void, vve::Error> {
+         if (execution_context.frame_context == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return std::invoke(function, *execution_context.frame_context);
+      };
+   }
+
+   template <typename TFunction> [[nodiscard]] TaskCallback requireFrameScene(TFunction function) {
+      return [function = std::move(function)](const TaskExecutionContext &execution_context)
+                 -> std::expected<void, vve::Error> {
+         if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return std::invoke(function, *execution_context.frame_context, *execution_context.scene);
+      };
+   }
+
+   template <typename TFunction> [[nodiscard]] TaskCallback requireWindowFrame(TFunction function) {
+      return [function = std::move(function)](const TaskExecutionContext &execution_context)
+                 -> std::expected<void, vve::Error> {
+         if (execution_context.window_frame == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return std::invoke(function, *execution_context.window_frame);
+      };
+   }
+
+   template <typename TFunction> [[nodiscard]] TaskCallback requireWorld(TFunction function) {
+      return [function = std::move(function)](const TaskExecutionContext &execution_context)
+                 -> std::expected<void, vve::Error> {
+         if (execution_context.world == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return std::invoke(function, *execution_context.world);
+      };
+   }
+
+   template <typename TFunction> [[nodiscard]] TaskCallback requireFrameWindowFrameWorld(TFunction function) {
+      return [function = std::move(function)](const TaskExecutionContext &execution_context)
+                 -> std::expected<void, vve::Error> {
+         if (execution_context.frame_context == nullptr || execution_context.window_frame == nullptr ||
+             execution_context.world == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return std::invoke(function, *execution_context.frame_context, *execution_context.window_frame,
+                            *execution_context.world);
+      };
+   }
+
    /// @brief Distinguishes explicit graph edges from synthesized hazard edges.
    enum class CompiledTaskDependencyKind : std::uint32_t {
       explicit_order = 0, ///< Dependency came from an explicit task-graph edge.

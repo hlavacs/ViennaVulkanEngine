@@ -80,20 +80,13 @@ namespace vve::v3 {
 
       /// @brief Registers the built-in resource upload task.
       void registerTasks(TaskGraphBuilder &builder, const SceneData &) {
-         const auto upload_resources_task =
-              builder.addTask("task.upload_resources", TaskKernelId::upload_resources, {},
-                             {TaskGraphBuilder::taskHandleFor("task.cull_visibility_cpu")}, {}, "Upload Resources",
-                             TaskPhase::resources);
-
-         [[maybe_unused]] const auto callback_set = builder.setTaskCallback(
-             upload_resources_task,
-             [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                   return std::unexpected(vve::Error::invalid_argument);
-                }
-
-                return uploadResources(*execution_context.frame_context, *execution_context.scene);
-             });
+         [[maybe_unused]] const auto upload_resources_task = builder.addTask(
+             "task.upload_resources", TaskKernelId::upload_resources,
+             detail::requireFrameScene([this](const FrameContext &frame_context, const SceneData &scene) {
+                return uploadResources(frame_context, scene);
+             }),
+             {TaskGraphBuilder::taskHandleFor("task.cull_visibility_cpu")}, {}, "Upload Resources",
+             TaskPhase::resources);
       }
 
    private:

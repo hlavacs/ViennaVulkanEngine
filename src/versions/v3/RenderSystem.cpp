@@ -195,71 +195,41 @@ namespace vve::v3 {
             // Render work is serialized explicitly per window so later DAG
             // compilation does not have to infer pass ordering heuristically.
             const auto cull_visibility_gpu_task = builder.addTask(
-                cull_visibility_gpu_name, TaskKernelId::cull_visibility_gpu, {},
+                cull_visibility_gpu_name, TaskKernelId::cull_visibility_gpu,
+                detail::requireFrameScene([this, window, render_graph](const FrameContext &frame_context,
+                                                                       const SceneData &scene) {
+                   return cullVisibilityGpu(frame_context, scene, window, *render_graph);
+                }),
                 {TaskGraphBuilder::taskHandleFor("task.upload_resources")}, {},
                 std::string("Cull Visibility GPU (") + pipeline.window_id + ")", TaskPhase::render,
                 TaskScope::window, pipeline.window);
             const auto build_draw_packets_task = builder.addTask(
-                build_draw_packets_name, TaskKernelId::build_draw_packets, {}, {cull_visibility_gpu_task}, {},
+                build_draw_packets_name, TaskKernelId::build_draw_packets,
+                detail::requireFrameScene([this, window, render_graph](const FrameContext &frame_context,
+                                                                       const SceneData &scene) {
+                   return buildDrawPackets(frame_context, scene, window, *render_graph);
+                }),
+                {cull_visibility_gpu_task}, {},
                 std::string("Build Draw Packets (") + pipeline.window_id + ")", TaskPhase::render, TaskScope::window,
                 pipeline.window);
             const auto record_render_graph_task = builder.addTask(
-                record_render_graph_name, TaskKernelId::record_render_graph, {}, {build_draw_packets_task}, {},
+                record_render_graph_name, TaskKernelId::record_render_graph,
+                detail::requireFrameScene([this, window, render_graph](const FrameContext &frame_context,
+                                                                       const SceneData &scene) {
+                   return record(frame_context, scene, window, *render_graph);
+                }),
+                {build_draw_packets_task}, {},
                 std::string("Record Render Graph (") + pipeline.window_id + ")", TaskPhase::render,
                 TaskScope::window, pipeline.window);
             const auto consume_frame_output_task = builder.addTask(
-                consume_frame_output_name, TaskKernelId::consume_frame_output, {}, {record_render_graph_task}, {},
+                consume_frame_output_name, TaskKernelId::consume_frame_output,
+                detail::requireFrameScene([this, window, render_graph](const FrameContext &frame_context,
+                                                                       const SceneData &scene) {
+                   return consumeOutput(frame_context, scene, window, *render_graph);
+                }),
+                {record_render_graph_task}, {},
                 std::string("Consume Frame Output (") + pipeline.window_id + ")", TaskPhase::render,
                 TaskScope::window, pipeline.window);
-
-            [[maybe_unused]] const auto cull_callback_set = builder.setTaskCallback(
-                cull_visibility_gpu_task,
-                [this, window,
-                 render_graph](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-                   // Render callbacks require both frame timing and the active
-                   // runtime scene to be present in the execution context.
-                   if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                      return std::unexpected(vve::Error::invalid_argument);
-                   }
-
-                   return cullVisibilityGpu(*execution_context.frame_context, *execution_context.scene, window,
-                                            *render_graph);
-                });
-
-            [[maybe_unused]] const auto build_callback_set = builder.setTaskCallback(
-                build_draw_packets_task,
-                [this, window,
-                 render_graph](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-                   if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                      return std::unexpected(vve::Error::invalid_argument);
-                   }
-
-                   return buildDrawPackets(*execution_context.frame_context, *execution_context.scene, window,
-                                           *render_graph);
-                });
-
-            [[maybe_unused]] const auto record_callback_set = builder.setTaskCallback(
-                record_render_graph_task,
-                [this, window,
-                 render_graph](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-                   if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                      return std::unexpected(vve::Error::invalid_argument);
-                   }
-
-                   return record(*execution_context.frame_context, *execution_context.scene, window, *render_graph);
-                });
-
-            [[maybe_unused]] const auto consume_callback_set = builder.setTaskCallback(
-                consume_frame_output_task,
-                [this, window,
-                 render_graph](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-                   if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                      return std::unexpected(vve::Error::invalid_argument);
-                   }
-
-                   return consumeOutput(*execution_context.frame_context, *execution_context.scene, window,
-                                        *render_graph);
-                });
          }
       }
 

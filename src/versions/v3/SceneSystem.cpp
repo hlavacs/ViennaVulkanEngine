@@ -51,34 +51,18 @@ namespace vve::v3 {
 
       /// @brief Registers the built-in scene-phase tasks.
       void registerTasks(TaskGraphBuilder &builder, const SceneData &) {
-         const auto update_transforms_task =
-              builder.addTask("task.update_transforms", TaskKernelId::update_transforms, {},
-                             {TaskGraphBuilder::taskHandleFor("task.begin_frame")}, {}, "Update Transforms",
-                             TaskPhase::scene);
-         const auto cull_visibility_cpu_task =
-              builder.addTask("task.cull_visibility_cpu", TaskKernelId::cull_visibility_cpu, {},
-                             {TaskGraphBuilder::taskHandleFor("task.update_transforms")}, {}, "Cull Visibility CPU",
-                             TaskPhase::scene);
-
-         [[maybe_unused]] const auto transforms_callback_set = builder.setTaskCallback(
-             update_transforms_task,
-             [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                   return std::unexpected(vve::Error::invalid_argument);
-                }
-
-                return updateTransforms(*execution_context.frame_context, *execution_context.scene);
-             });
-
-         [[maybe_unused]] const auto cull_callback_set = builder.setTaskCallback(
-             cull_visibility_cpu_task,
-             [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-                if (execution_context.frame_context == nullptr || execution_context.scene == nullptr) {
-                   return std::unexpected(vve::Error::invalid_argument);
-                }
-
-                return cullVisibility(*execution_context.frame_context, *execution_context.scene);
-             });
+         const auto update_transforms_task = builder.addTask(
+             "task.update_transforms", TaskKernelId::update_transforms,
+             detail::requireFrameScene([this](const FrameContext &frame_context, SceneData &scene) {
+                return updateTransforms(frame_context, scene);
+             }),
+             {TaskGraphBuilder::taskHandleFor("task.begin_frame")}, {}, "Update Transforms", TaskPhase::scene);
+         [[maybe_unused]] const auto cull_visibility_cpu_task = builder.addTask(
+             "task.cull_visibility_cpu", TaskKernelId::cull_visibility_cpu,
+             detail::requireFrameScene([this](const FrameContext &frame_context, SceneData &scene) {
+                return cullVisibility(frame_context, scene);
+             }),
+             {update_transforms_task}, {}, "Cull Visibility CPU", TaskPhase::scene);
       }
    };
 

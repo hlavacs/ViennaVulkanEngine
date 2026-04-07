@@ -138,21 +138,20 @@ namespace vve::v3 {
                    // Stable task names make user-system tasks debuggable and
                    // deterministic across task-graph rebuilds.
                    const auto task_name = std::format("task.user_system.{}.update", system_index++);
-                   const auto update_task = builder.addTask(task_name, TaskKernelId::none, {}, {sync_world_state_task},
-                                                            {}, std::string(system.name()), TaskPhase::user_update);
-                   [[maybe_unused]] const auto callback_set = builder.setTaskCallback(
-                       update_task,
-                       [&world, &system](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-                          // User hooks rely on frame timing, the synchronized
-                          // world facade, and the current window snapshot.
-                          if (execution_context.frame_context == nullptr || execution_context.window_frame == nullptr ||
-                              execution_context.world == nullptr || execution_context.world != &world) {
+                   [[maybe_unused]] const auto update_task = builder.addTask(
+                       task_name, TaskKernelId::none,
+                       requireFrameWindowFrameWorld([&world, &system](const FrameContext &frame_context,
+                                                                      const WindowFrameData &window_frame,
+                                                                      vve::World &callback_world)
+                                                        -> std::expected<void, vve::Error> {
+                          // User hooks rely on the engine-owned world facade rather than any unrelated world instance.
+                          if (&callback_world != &world) {
                              return std::unexpected(vve::Error::invalid_argument);
                           }
 
-                          return invokeUserSystemUpdate(system, *execution_context.world, *execution_context.frame_context,
-                                                        *execution_context.window_frame);
-                       });
+                          return invokeUserSystemUpdate(system, callback_world, frame_context, window_frame);
+                       }),
+                       {sync_world_state_task}, {}, std::string(system.name()), TaskPhase::user_update);
                 }(),
                  ...);
              },

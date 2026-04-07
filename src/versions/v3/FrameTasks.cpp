@@ -92,29 +92,19 @@ namespace vve::v3::detail {
       }
 
       const auto sync_world_state_task =
-          builder.addTask("task.sync_world_state", TaskKernelId::none, {},
+          builder.addTask("task.sync_world_state", TaskKernelId::none,
+                          requireWindowFrame([&world_windows, &input_state, &world_runtime_access](
+                                                 const WindowFrameData &window_frame) -> std::expected<void, vve::Error> {
+                             // Window and input synchronization is derived entirely from the
+                             // window-system frame snapshot handed to the task callback.
+                             syncWorldWindows(window_frame, world_windows);
+                             world_runtime_access.windows_begin = world_windows.cbegin();
+                             world_runtime_access.windows_end = world_windows.cend();
+                             syncWorldInput(window_frame, input_state);
+                             return {};
+                          }),
                           {TaskGraphBuilder::taskHandleFor("task.poll_window_events")}, {}, "Sync World State",
                           TaskPhase::input);
-
-      const auto callback_set = builder.setTaskCallback(
-          sync_world_state_task,
-          [&world_windows, &input_state,
-           &world_runtime_access](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-             if (execution_context.window_frame == nullptr) {
-                return std::unexpected(vve::Error::invalid_argument);
-             }
-
-             // Window and input synchronization is derived entirely from the
-             // window-system frame snapshot handed to the task callback.
-             syncWorldWindows(*execution_context.window_frame, world_windows);
-             world_runtime_access.windows_begin = world_windows.cbegin();
-             world_runtime_access.windows_end = world_windows.cend();
-             syncWorldInput(*execution_context.window_frame, input_state);
-             return {};
-          });
-      if (!callback_set) {
-         return {};
-      }
 
       return sync_world_state_task;
    }
@@ -132,25 +122,23 @@ namespace vve::v3::detail {
       const auto sync_world_state_task =
           ensureWorldSyncTask(world_windows, input_state, world_runtime_access, builder);
 
-      const auto dump_graph_task =
-          builder.addTask("task.debug.dump_graphs", TaskKernelId::none, {}, {sync_world_state_task}, {},
-                          "Dump Combined Graph DOT", TaskPhase::user_update);
-      [[maybe_unused]] const auto callback_set = builder.setTaskCallback(
-          dump_graph_task,
-          [task_graph_accessor = std::move(task_graph_accessor),
-           render_pipelines](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
+      [[maybe_unused]] const auto dump_graph_task = builder.addTask(
+          "task.debug.dump_graphs", TaskKernelId::none,
+          requireWorld([task_graph_accessor = std::move(task_graph_accessor),
+                        render_pipelines](vve::World &world) -> std::expected<void, vve::Error> {
              const auto *task_graph = task_graph_accessor ? task_graph_accessor() : nullptr;
-             if (task_graph == nullptr || execution_context.world == nullptr) {
+             if (task_graph == nullptr) {
                 return std::unexpected(vve::Error::invalid_argument);
              }
              // The graph dump is opt-in and only fires on the debug hotkey.
-             if (!execution_context.world->input().wasKeyPressed(debugDumpGraphHotkey)) {
+             if (!world.input().wasKeyPressed(debugDumpGraphHotkey)) {
                 return {};
              }
 
              const auto output_path = std::filesystem::current_path() / "graph_dumps" / "combined_frame_graph.dot";
              return exportCombinedGraphDot(*task_graph, render_pipelines, output_path);
-          });
+          }),
+          {sync_world_state_task}, {}, "Dump Combined Graph DOT", TaskPhase::user_update);
    }
 #endif
 

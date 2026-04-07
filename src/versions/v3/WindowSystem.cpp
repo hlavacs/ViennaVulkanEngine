@@ -122,21 +122,10 @@ namespace vve::v3 {
 
       /// @brief Registers the built-in window-event polling task.
       void registerTasks(TaskGraphBuilder &builder) {
-         const auto poll_window_events_task =
-             builder.addTask("task.poll_window_events", TaskKernelId::poll_window_events, {},
-                             {TaskGraphBuilder::taskHandleFor("task.begin_frame")}, {}, "Poll Window Events",
-                             TaskPhase::input);
-
-         [[maybe_unused]] const auto callback_set = builder.setTaskCallback(
-             poll_window_events_task,
-             [this](const TaskExecutionContext &execution_context) -> std::expected<void, vve::Error> {
-                // Polling requires frame timing to satisfy the shared callback contract.
-                if (execution_context.frame_context == nullptr) {
-                   return std::unexpected(vve::Error::invalid_argument);
-                }
-
-                return pollEvents(*execution_context.frame_context);
-             });
+         [[maybe_unused]] const auto poll_window_events_task = builder.addTask(
+             "task.poll_window_events", TaskKernelId::poll_window_events,
+             detail::requireFrame([this](const FrameContext &frame_context) { return pollEvents(frame_context); }),
+             {TaskGraphBuilder::taskHandleFor("task.begin_frame")}, {}, "Poll Window Events", TaskPhase::input);
       }
 
    private:
