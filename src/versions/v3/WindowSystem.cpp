@@ -1,5 +1,6 @@
 module;
 
+#include "FacadeMacros.hpp"
 #include <SDL3/SDL.h>
 
 module VEEngine.V3;
@@ -345,52 +346,37 @@ namespace vve::v3 {
    };
 
    /// @brief Constructs the public window-system facade around the concrete SDL3 implementation.
-   template <>
-   WindowSystemFacade<SDL3WindowSystemImplementation>::WindowSystemFacade()
-       : implementation_(new SDL3WindowSystemImplementation(),
-                         [](SDL3WindowSystemImplementation *implementation) { delete implementation; }) {}
+   VVE_V3_DEFINE_FACADE_CTOR(WindowSystemFacade, SDL3WindowSystemImplementation, (), ())
 
    /// @brief Returns the window-system name for the public facade.
-   std::string_view WindowSystemFacade<SDL3WindowSystemImplementation>::name() const noexcept {
-      return implementation_->name();
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(WindowSystemFacade, SDL3WindowSystemImplementation, name, (), (), const noexcept,
+                               std::string_view)
 
    /// @brief Creates runtime windows through the public window-system facade.
-   template <>
-   std::expected<void, vve::Error>
-   WindowSystemFacade<SDL3WindowSystemImplementation>::init(VectorConstRange<vve::WindowDesc> windows) {
-      return implementation_->init(windows);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(WindowSystemFacade, SDL3WindowSystemImplementation, init,
+                               (VectorConstRange<vve::WindowDesc> windows), (windows), ,
+                               std::expected<void, vve::Error>)
 
    /// @brief Polls events through the public window-system facade.
-   template <>
-   std::expected<void, vve::Error>
-   WindowSystemFacade<SDL3WindowSystemImplementation>::pollEvents(const FrameContext &frame_context) {
-      return implementation_->pollEvents(frame_context);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(WindowSystemFacade, SDL3WindowSystemImplementation, pollEvents,
+                               (const FrameContext &frame_context), (frame_context), ,
+                               std::expected<void, vve::Error>)
 
    /// @brief Returns frame data through the public window-system facade.
-   template <> WindowFrameData WindowSystemFacade<SDL3WindowSystemImplementation>::frameData() const {
-      return implementation_->frameData();
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(WindowSystemFacade, SDL3WindowSystemImplementation, frameData, (), (), const,
+                               WindowFrameData)
 
    /// @brief Returns runtime windows through the public window-system facade.
-   template <>
-   VectorConstRange<WindowState> WindowSystemFacade<SDL3WindowSystemImplementation>::windows() const {
-      return implementation_->windows();
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(WindowSystemFacade, SDL3WindowSystemImplementation, windows, (), (), const,
+                               VectorConstRange<WindowState>)
 
    /// @brief Installs the shared frame-data sink through the public window-system facade.
-   template <>
-   void
-   WindowSystemFacade<SDL3WindowSystemImplementation>::setFrameDataSink(std::shared_ptr<WindowFrameData> frame_data) {
-      implementation_->setFrameDataSink(std::move(frame_data));
-   }
+   VVE_V3_DEFINE_FACADE_VOID_METHOD(WindowSystemFacade, SDL3WindowSystemImplementation, setFrameDataSink,
+                                    (std::shared_ptr<WindowFrameData> frame_data), (std::move(frame_data)), )
 
    /// @brief Registers window tasks through the public window-system facade.
-   template <> void WindowSystemFacade<SDL3WindowSystemImplementation>::registerTasks(TaskGraphBuilder &builder) {
-      implementation_->registerTasks(builder);
-   }
+   VVE_V3_DEFINE_FACADE_VOID_METHOD(WindowSystemFacade, SDL3WindowSystemImplementation, registerTasks,
+                                    (TaskGraphBuilder &builder), (builder), )
 
    /// @brief Emits the explicit window-system facade instantiation for v3.
    template class WindowSystemFacade<SDL3WindowSystemImplementation>;

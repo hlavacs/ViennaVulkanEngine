@@ -1,3 +1,7 @@
+module;
+
+#include "FacadeMacros.hpp"
+
 module VEEngine.V3;
 import std;
 import :Internal;
@@ -50,22 +54,16 @@ namespace vve::v3 {
    };
 
    /// @brief Constructs the public asset-system facade around the concrete implementation.
-   template <>
-   AssetSystemFacade<AssimpAssetSystemImplementation>::AssetSystemFacade()
-       : implementation_(new AssimpAssetSystemImplementation(),
-                         [](AssimpAssetSystemImplementation *implementation) { delete implementation; }) {}
+   VVE_V3_DEFINE_FACADE_CTOR(AssetSystemFacade, AssimpAssetSystemImplementation, (), ())
 
    /// @brief Returns the asset-system name for the public facade.
-   std::string_view AssetSystemFacade<AssimpAssetSystemImplementation>::name() const noexcept {
-      return implementation_->name();
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(AssetSystemFacade, AssimpAssetSystemImplementation, name, (), (), const noexcept,
+                               std::string_view)
 
    /// @brief Imports a scene through the public asset-system facade.
-   template <>
-   std::expected<ImportedScene, vve::Error>
-   AssetSystemFacade<AssimpAssetSystemImplementation>::importScene(const std::filesystem::path &source_path) {
-      return implementation_->importScene(source_path);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(AssetSystemFacade, AssimpAssetSystemImplementation, importScene,
+                               (const std::filesystem::path &source_path), (source_path), ,
+                               std::expected<ImportedScene, vve::Error>)
 
    /// @brief Emits the explicit asset-system facade instantiation for v3.
    template class AssetSystemFacade<AssimpAssetSystemImplementation>;

@@ -1,3 +1,7 @@
+module;
+
+#include "FacadeMacros.hpp"
+
 module VEEngine.V3;
 import std;
 import :Internal;
@@ -67,45 +71,29 @@ namespace vve::v3 {
    };
 
    /// @brief Constructs the public scene-system facade around the concrete implementation.
-   template <>
-   SceneSystemFacade<DefaultSceneSystemImplementation>::SceneSystemFacade()
-       : implementation_(new DefaultSceneSystemImplementation(),
-                         [](DefaultSceneSystemImplementation *implementation) { delete implementation; }) {}
+   VVE_V3_DEFINE_FACADE_CTOR(SceneSystemFacade, DefaultSceneSystemImplementation, (), ())
 
    /// @brief Returns the scene-system name for the public facade.
-   std::string_view SceneSystemFacade<DefaultSceneSystemImplementation>::name() const noexcept {
-      return implementation_->name();
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(SceneSystemFacade, DefaultSceneSystemImplementation, name, (), (), const noexcept,
+                               std::string_view)
 
    /// @brief Instantiates a runtime scene through the public facade.
-   template <>
-   std::expected<SceneData, vve::Error>
-   SceneSystemFacade<DefaultSceneSystemImplementation>::instantiate(const ImportedScene &scene) {
-      return implementation_->instantiate(scene);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(SceneSystemFacade, DefaultSceneSystemImplementation, instantiate,
+                               (const ImportedScene &scene), (scene), , std::expected<SceneData, vve::Error>)
 
    /// @brief Updates scene transforms through the public facade.
-   template <>
-   std::expected<void, vve::Error>
-   SceneSystemFacade<DefaultSceneSystemImplementation>::updateTransforms(const FrameContext &frame_context,
-                                                                         SceneData &scene) {
-      return implementation_->updateTransforms(frame_context, scene);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(SceneSystemFacade, DefaultSceneSystemImplementation, updateTransforms,
+                               (const FrameContext &frame_context, SceneData &scene), (frame_context, scene), ,
+                               std::expected<void, vve::Error>)
 
    /// @brief Performs CPU visibility work through the public facade.
-   template <>
-   std::expected<void, vve::Error>
-   SceneSystemFacade<DefaultSceneSystemImplementation>::cullVisibility(const FrameContext &frame_context,
-                                                                       const SceneData &scene) {
-      return implementation_->cullVisibility(frame_context, scene);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(SceneSystemFacade, DefaultSceneSystemImplementation, cullVisibility,
+                               (const FrameContext &frame_context, const SceneData &scene), (frame_context, scene), ,
+                               std::expected<void, vve::Error>)
 
    /// @brief Registers scene tasks through the public facade.
-   template <>
-   void SceneSystemFacade<DefaultSceneSystemImplementation>::registerTasks(TaskGraphBuilder &builder,
-                                                                           const SceneData &scene) {
-      implementation_->registerTasks(builder, scene);
-   }
+   VVE_V3_DEFINE_FACADE_VOID_METHOD(SceneSystemFacade, DefaultSceneSystemImplementation, registerTasks,
+                                    (TaskGraphBuilder &builder, const SceneData &scene), (builder, scene), )
 
    /// @brief Emits the explicit scene-system facade instantiation for v3.
    template class SceneSystemFacade<DefaultSceneSystemImplementation>;

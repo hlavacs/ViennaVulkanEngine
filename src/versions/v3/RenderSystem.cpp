@@ -1,3 +1,7 @@
+module;
+
+#include "FacadeMacros.hpp"
+
 module VEEngine.V3;
 import std;
 import :Internal;
@@ -241,66 +245,49 @@ namespace vve::v3 {
    };
 
    /// @brief Constructs the public render-system facade around the concrete implementation.
-   template <>
-   RenderSystemFacade<DefaultRenderSystemImplementation>::RenderSystemFacade(
-       vve::RendererKind renderer, vve::ShadowKind shadow,
-       GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend, bool imgui_enabled)
-       : implementation_(new DefaultRenderSystemImplementation(renderer, shadow, graphics_backend, imgui_enabled),
-                         [](DefaultRenderSystemImplementation *implementation) { delete implementation; }) {}
+   VVE_V3_DEFINE_FACADE_CTOR(
+       RenderSystemFacade, DefaultRenderSystemImplementation,
+       (vve::RendererKind renderer, vve::ShadowKind shadow,
+        GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend, bool imgui_enabled),
+       (renderer, shadow, graphics_backend, imgui_enabled))
 
    /// @brief Returns the render-system name for the public facade.
-   std::string_view RenderSystemFacade<DefaultRenderSystemImplementation>::name() const noexcept {
-      return implementation_->name();
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, name, (), (), const noexcept,
+                               std::string_view)
 
    /// @brief Builds the static render graph through the public render-system facade.
-   template <>
-   RenderGraph RenderSystemFacade<DefaultRenderSystemImplementation>::buildStaticGraph(WindowHandle window) {
-      return implementation_->buildStaticGraph(window);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, buildStaticGraph,
+                               (WindowHandle window), (window), , RenderGraph)
 
    /// @brief Performs GPU visibility work through the public render-system facade.
-   template <>
-   std::expected<void, vve::Error>
-   RenderSystemFacade<DefaultRenderSystemImplementation>::cullVisibilityGpu(const FrameContext &frame_context,
-                                                                            const SceneData &scene, WindowHandle window,
-                                                                            const RenderGraph &render_graph) {
-      return implementation_->cullVisibilityGpu(frame_context, scene, window, render_graph);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, cullVisibilityGpu,
+                               (const FrameContext &frame_context, const SceneData &scene, WindowHandle window,
+                                const RenderGraph &render_graph),
+                               (frame_context, scene, window, render_graph), , std::expected<void, vve::Error>)
 
    /// @brief Builds draw packets through the public render-system facade.
-   template <>
-   std::expected<void, vve::Error>
-   RenderSystemFacade<DefaultRenderSystemImplementation>::buildDrawPackets(const FrameContext &frame_context,
-                                                                           const SceneData &scene, WindowHandle window,
-                                                                           const RenderGraph &render_graph) {
-      return implementation_->buildDrawPackets(frame_context, scene, window, render_graph);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, buildDrawPackets,
+                               (const FrameContext &frame_context, const SceneData &scene, WindowHandle window,
+                                const RenderGraph &render_graph),
+                               (frame_context, scene, window, render_graph), , std::expected<void, vve::Error>)
 
    /// @brief Records render work through the public render-system facade.
-   template <>
-   std::expected<void, vve::Error>
-   RenderSystemFacade<DefaultRenderSystemImplementation>::record(const FrameContext &frame_context,
-                                                                 const SceneData &scene, WindowHandle window,
-                                                                 const RenderGraph &render_graph) {
-      return implementation_->record(frame_context, scene, window, render_graph);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, record,
+                               (const FrameContext &frame_context, const SceneData &scene, WindowHandle window,
+                                const RenderGraph &render_graph),
+                               (frame_context, scene, window, render_graph), , std::expected<void, vve::Error>)
 
    /// @brief Consumes frame output through the public render-system facade.
-   template <>
-   std::expected<void, vve::Error>
-   RenderSystemFacade<DefaultRenderSystemImplementation>::consumeOutput(const FrameContext &frame_context,
-                                                                        const SceneData &scene, WindowHandle window,
-                                                                        const RenderGraph &render_graph) {
-      return implementation_->consumeOutput(frame_context, scene, window, render_graph);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, consumeOutput,
+                               (const FrameContext &frame_context, const SceneData &scene, WindowHandle window,
+                                const RenderGraph &render_graph),
+                               (frame_context, scene, window, render_graph), , std::expected<void, vve::Error>)
 
    /// @brief Registers render tasks through the public render-system facade.
-   template <>
-   void RenderSystemFacade<DefaultRenderSystemImplementation>::registerTasks(
-       TaskGraphBuilder &builder, const SceneData &scene, VectorConstRange<WindowRenderPipeline> render_pipelines) {
-      implementation_->registerTasks(builder, scene, render_pipelines);
-   }
+   VVE_V3_DEFINE_FACADE_VOID_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, registerTasks,
+                                    (TaskGraphBuilder &builder, const SceneData &scene,
+                                     VectorConstRange<WindowRenderPipeline> render_pipelines),
+                                    (builder, scene, render_pipelines), )
 
    /// @brief Emits the explicit render-system facade instantiation for v3.
    template class RenderSystemFacade<DefaultRenderSystemImplementation>;

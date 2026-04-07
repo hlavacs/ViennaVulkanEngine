@@ -1,3 +1,7 @@
+module;
+
+#include "FacadeMacros.hpp"
+
 module VEEngine.V3;
 import std;
 import :Internal;
@@ -65,23 +69,17 @@ namespace vve::v3 {
    };
 
    /// @brief Constructs the public shader-system facade around the concrete implementation.
-   template <>
-   ShaderSystemFacade<SlangShaderSystemImplementation>::ShaderSystemFacade()
-       : implementation_(new SlangShaderSystemImplementation(),
-                         [](SlangShaderSystemImplementation *implementation) { delete implementation; }) {}
+   VVE_V3_DEFINE_FACADE_CTOR(ShaderSystemFacade, SlangShaderSystemImplementation, (), ())
 
    /// @brief Returns the shader-system name for the public facade.
-   std::string_view ShaderSystemFacade<SlangShaderSystemImplementation>::name() const noexcept {
-      return implementation_->name();
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(ShaderSystemFacade, SlangShaderSystemImplementation, name, (), (), const noexcept,
+                               std::string_view)
 
    /// @brief Reflects a shader through the public facade.
-   template <>
-   std::expected<ShaderMetadata, vve::Error>
-   ShaderSystemFacade<SlangShaderSystemImplementation>::reflect(const std::filesystem::path &shader_path,
-                                                                vve::RendererKind renderer, vve::ShadowKind shadow) {
-      return implementation_->reflect(shader_path, renderer, shadow);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(ShaderSystemFacade, SlangShaderSystemImplementation, reflect,
+                               (const std::filesystem::path &shader_path, vve::RendererKind renderer,
+                                vve::ShadowKind shadow),
+                               (shader_path, renderer, shadow), , std::expected<ShaderMetadata, vve::Error>)
 
    /// @brief Emits the explicit shader-system facade instantiation for v3.
    template class ShaderSystemFacade<SlangShaderSystemImplementation>;

@@ -1,3 +1,7 @@
+module;
+
+#include "FacadeMacros.hpp"
+
 module VEEngine.V3;
 import std;
 import :Internal;
@@ -131,26 +135,23 @@ namespace vve::v3 {
    };
 
    /// @brief Constructs the public task-graph facade around the concrete implementation.
-   template <>
-   TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::TaskGraphSystemFacade()
-       : implementation_(new DefaultTaskGraphSystemImplementation(),
-                         [](DefaultTaskGraphSystemImplementation *implementation) { delete implementation; }) {}
+   VVE_V3_DEFINE_FACADE_CTOR(TaskGraphSystemFacade, DefaultTaskGraphSystemImplementation, (), ())
 
    /// @brief Returns the task-graph-system name for the public facade.
-   std::string_view TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::name() const noexcept {
-      return implementation_->name();
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(TaskGraphSystemFacade, DefaultTaskGraphSystemImplementation, name, (), (),
+                               const noexcept, std::string_view)
 
    /// @brief Builds the frame task graph through the public task-graph facade.
-   template <>
-   TaskGraph TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>::build(
-       const SceneData &scene, VectorConstRange<ITaskSystem *> task_systems, WindowSystem &window_system,
-       GraphicsBackend &graphics_backend, ResourceSystem &resource_system, SceneSystem &scene_system,
-       RenderSystem &render_system, std::function<void(TaskGraphBuilder &, const SceneData &)> extra_tasks,
-       VectorConstRange<WindowRenderPipeline> render_pipelines) {
-      return implementation_->build(scene, task_systems, window_system, graphics_backend, resource_system, scene_system,
-                                    render_system, std::move(extra_tasks), render_pipelines);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(TaskGraphSystemFacade, DefaultTaskGraphSystemImplementation, build,
+                               (const SceneData &scene, VectorConstRange<ITaskSystem *> task_systems,
+                                WindowSystem &window_system, GraphicsBackend &graphics_backend,
+                                ResourceSystem &resource_system, SceneSystem &scene_system,
+                                RenderSystem &render_system,
+                                std::function<void(TaskGraphBuilder &, const SceneData &)> extra_tasks,
+                                VectorConstRange<WindowRenderPipeline> render_pipelines),
+                               (scene, task_systems, window_system, graphics_backend, resource_system, scene_system,
+                                render_system, std::move(extra_tasks), render_pipelines),
+                               , TaskGraph)
 
    /// @brief Emits the explicit task-graph facade instantiation for v3.
    template class TaskGraphSystemFacade<DefaultTaskGraphSystemImplementation>;

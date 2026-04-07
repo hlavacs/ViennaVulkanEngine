@@ -25,6 +25,12 @@ import std;
  */
 export namespace vve::v3::detail {
 
+   template <typename TImplementation, typename... TArgs>
+   [[nodiscard]] std::unique_ptr<TImplementation, void (*)(TImplementation *)> makeImplementation(TArgs &&...args) {
+      return {new TImplementation(std::forward<TArgs>(args)...),
+              [](TImplementation *implementation) { delete implementation; }};
+   }
+
    template <typename TFunction> [[nodiscard]] TaskCallback requireFrame(TFunction function) {
       return [function = std::move(function)](const TaskExecutionContext &execution_context)
                  -> std::expected<void, vve::Error> {

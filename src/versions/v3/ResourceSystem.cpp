@@ -1,3 +1,7 @@
+module;
+
+#include "FacadeMacros.hpp"
+
 module VEEngine.V3;
 import std;
 import :Internal;
@@ -94,44 +98,29 @@ namespace vve::v3 {
    };
 
    /// @brief Constructs the public resource-system facade around the concrete implementation.
-   template <>
-   ResourceSystemFacade<DefaultResourceSystemImplementation>::ResourceSystemFacade()
-       : implementation_(new DefaultResourceSystemImplementation(),
-                         [](DefaultResourceSystemImplementation *implementation) { delete implementation; }) {}
+   VVE_V3_DEFINE_FACADE_CTOR(ResourceSystemFacade, DefaultResourceSystemImplementation, (), ())
 
    /// @brief Returns the resource-system name for the public facade.
-   std::string_view ResourceSystemFacade<DefaultResourceSystemImplementation>::name() const noexcept {
-      return implementation_->name();
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(ResourceSystemFacade, DefaultResourceSystemImplementation, name, (), (), const noexcept,
+                               std::string_view)
 
    /// @brief Registers imported scene resources through the public facade.
-   template <>
-   std::expected<void, vve::Error> ResourceSystemFacade<DefaultResourceSystemImplementation>::registerImportedScene(
-       const ImportedScene &scene, const std::filesystem::path &source_path) {
-      return implementation_->registerImportedScene(scene, source_path);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(ResourceSystemFacade, DefaultResourceSystemImplementation, registerImportedScene,
+                               (const ImportedScene &scene, const std::filesystem::path &source_path),
+                               (scene, source_path), , std::expected<void, vve::Error>)
 
    /// @brief Enumerates registered resources through the public facade.
-   template <>
-   std::expected<std::vector<ResourceRecord>, vve::Error>
-   ResourceSystemFacade<DefaultResourceSystemImplementation>::enumerate() const {
-      return implementation_->enumerate();
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(ResourceSystemFacade, DefaultResourceSystemImplementation, enumerate, (), (), const,
+                               std::expected<std::vector<ResourceRecord>, vve::Error>)
 
    /// @brief Uploads resources through the public facade.
-   template <>
-   std::expected<void, vve::Error>
-   ResourceSystemFacade<DefaultResourceSystemImplementation>::uploadResources(const FrameContext &frame_context,
-                                                                              const SceneData &scene) {
-      return implementation_->uploadResources(frame_context, scene);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(ResourceSystemFacade, DefaultResourceSystemImplementation, uploadResources,
+                               (const FrameContext &frame_context, const SceneData &scene), (frame_context, scene), ,
+                               std::expected<void, vve::Error>)
 
    /// @brief Registers resource tasks through the public facade.
-   template <>
-   void ResourceSystemFacade<DefaultResourceSystemImplementation>::registerTasks(TaskGraphBuilder &builder,
-                                                                                 const SceneData &scene) {
-      implementation_->registerTasks(builder, scene);
-   }
+   VVE_V3_DEFINE_FACADE_VOID_METHOD(ResourceSystemFacade, DefaultResourceSystemImplementation, registerTasks,
+                                    (TaskGraphBuilder &builder, const SceneData &scene), (builder, scene), )
 
    /// @brief Emits the explicit resource-system facade instantiation for v3.
    template class ResourceSystemFacade<DefaultResourceSystemImplementation>;

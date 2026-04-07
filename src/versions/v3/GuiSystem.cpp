@@ -1,3 +1,7 @@
+module;
+
+#include "FacadeMacros.hpp"
+
 module VEEngine.V3;
 import std;
 import :Internal;
@@ -31,22 +35,16 @@ namespace vve::v3 {
    };
 
    /// @brief Constructs the public GUI-system facade around the concrete implementation.
-   template <>
-   GuiSystemFacade<ImGuiSystemImplementation>::GuiSystemFacade()
-       : implementation_(new ImGuiSystemImplementation(),
-                         [](ImGuiSystemImplementation *implementation) { delete implementation; }) {}
+   VVE_V3_DEFINE_FACADE_CTOR(GuiSystemFacade, ImGuiSystemImplementation, (), ())
 
    /// @brief Returns the GUI-system name for the public facade.
-   std::string_view GuiSystemFacade<ImGuiSystemImplementation>::name() const noexcept {
-      return implementation_->name();
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(GuiSystemFacade, ImGuiSystemImplementation, name, (), (), const noexcept,
+                               std::string_view)
 
    /// @brief Initializes the GUI system through the public facade.
-   template <>
-   std::expected<void, vve::Error> GuiSystemFacade<ImGuiSystemImplementation>::init(
-       GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend) {
-      return implementation_->init(graphics_backend);
-   }
+   VVE_V3_DEFINE_FACADE_METHOD(GuiSystemFacade, ImGuiSystemImplementation, init,
+                               (GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend),
+                               (graphics_backend), , std::expected<void, vve::Error>)
 
    /// @brief Emits the explicit GUI-system facade instantiation for v3.
    template class GuiSystemFacade<ImGuiSystemImplementation>;
