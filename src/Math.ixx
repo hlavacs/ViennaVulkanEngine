@@ -70,6 +70,9 @@ export namespace vve::math {
                   lhs.w * rhs.z + lhs.x * rhs.y - lhs.y * rhs.x + lhs.z * rhs.w);
    }
 
+   /// @brief Multiplies two 4x4 matrices without exposing GLM at call sites.
+   [[nodiscard]] inline Mat4 multiply(const Mat4 &lhs, const Mat4 &rhs) { return lhs * rhs; }
+
    /// @brief Returns `matrix` translated by `offset`.
    [[nodiscard]] inline Mat4 translate(const Mat4 &matrix, const Vec3 &offset) {
       return glm::translate(matrix, offset);

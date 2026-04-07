@@ -15,6 +15,59 @@ import :Internal;
  */
 namespace vve::v3 {
 
+   namespace {
+
+      /**
+       * @brief Returns the runtime node index for a scene-node handle.
+       * @param scene Runtime scene storage to search.
+       * @param handle Stable scene-node handle to resolve.
+       * @return Matching node index, or an error when the handle is unknown.
+       */
+      [[nodiscard]] std::expected<std::size_t, vve::Error> findNodeIndex(const SceneData &scene, SceneNodeHandle handle) {
+         for (std::size_t index = 0; index < scene.nodes.size(); ++index) {
+            if (scene.nodes[index].handle.value == handle.value) {
+               return index;
+            }
+         }
+
+         return std::unexpected(vve::Error::invalid_argument);
+      }
+
+      /**
+       * @brief Updates one node world transform recursively for the current frame.
+       * @param scene Mutable runtime scene storage.
+       * @param node_index Index of the runtime node to update.
+       * @param current_frame Current frame index used to avoid duplicate work.
+       * @return Empty success result, or an error when the hierarchy references an unknown parent.
+       */
+      [[nodiscard]] std::expected<void, vve::Error>
+      updateNodeRecursive(SceneData &scene, std::size_t node_index, std::uint64_t current_frame) {
+         auto &node = scene.nodes[node_index];
+         if (node.last_updated_frame == current_frame) {
+            return {};
+         }
+
+         if (node.parent.value.isValid()) {
+            const auto parent_index = findNodeIndex(scene, node.parent);
+            if (!parent_index) {
+               return std::unexpected(parent_index.error());
+            }
+
+            if (auto update_result = updateNodeRecursive(scene, *parent_index, current_frame); !update_result) {
+               return update_result;
+            }
+
+            node.world_transform = vve::math::multiply(scene.nodes[*parent_index].world_transform, node.local_transform);
+         } else {
+            node.world_transform = node.local_transform;
+         }
+
+         node.last_updated_frame = current_frame;
+         return {};
+      }
+
+   } // namespace
+
    /**
     * @brief Concrete scene-system implementation used by v3.
     */
@@ -33,16 +86,20 @@ namespace vve::v3 {
             instance.nodes.push_back(SceneNodeDesc{.handle = node.handle,
                                                    .parent = node.parent,
                                                    .name = node.name,
-                                                   .local_transform = node.local_transform});
+                                                   .local_transform = node.local_transform,
+                                                   .world_transform = node.local_transform,
+                                                   .last_updated_frame = 0});
          }
          return instance;
       }
 
       /// @brief Updates scene transforms for the current frame.
-      [[nodiscard]] std::expected<void, vve::Error> updateTransforms(const FrameContext &, SceneData &scene) {
-         // The current placeholder scene system leaves transforms unchanged but
-         for (auto &node : scene.nodes) { // still preserves the task seam for future animation and hierarchy work.
-            node.local_transform = node.local_transform;
+      [[nodiscard]] std::expected<void, vve::Error> updateTransforms(const FrameContext &frame_context, SceneData &scene) {
+         // An empty scene is a valid runtime state and therefore a no-op.
+         for (std::size_t node_index = 0; node_index < scene.nodes.size(); ++node_index) {
+            if (auto update_result = updateNodeRecursive(scene, node_index, frame_context.frame_index); !update_result) {
+               return update_result;
+            }
          }
 
          return {};

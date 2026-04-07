@@ -111,7 +111,7 @@ namespace vve::v3 {
       template <vve::NotHandle TComponent>
       [[nodiscard]] std::expected<std::optional<std::remove_cvref_t<TComponent>>, vve::Error>
       getComponent(vve::Handle entity) const {
-         return ecs().template get<TComponent>(entity);
+         return ecs().template tryGet<TComponent>(entity);
       }
 
       /// @brief Replaces or inserts a component on an entity.
@@ -169,16 +169,12 @@ namespace vve::v3 {
       template <vve::NotHandle TComponent, typename TMutator>
          requires(std::invocable<TMutator, std::remove_cvref_t<TComponent> &>)
       [[nodiscard]] std::expected<void, vve::Error> modifyComponent(vve::Handle entity, TMutator &&mutator) {
-         auto component_result = getComponent<TComponent>(entity);
+         auto component_result = ecs().template get<TComponent>(entity);
          if (!component_result) {
             return std::unexpected(component_result.error());
          }
 
-         if (!component_result->has_value()) {
-            return std::unexpected(vve::Error::invalid_argument);
-         }
-
-         auto component = **component_result;
+         auto component = *component_result;
          std::forward<TMutator>(mutator)(component);
          return setComponent(entity, std::move(component));
       }

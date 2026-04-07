@@ -205,6 +205,9 @@ export namespace vve::v3 {
       std::string name{};       ///< Human-readable node name.
       /// @brief Local transform relative to the parent node.
       vve::math::Mat4 local_transform{vve::math::identityMat4()};
+      /// @brief Cached world transform updated during the scene phase.
+      vve::math::Mat4 world_transform{vve::math::identityMat4()};
+      std::uint64_t last_updated_frame{0}; ///< Frame index of the last world-transform update.
    };
 
    /// @brief Runtime scene data shared across scene, resource, and render systems.
