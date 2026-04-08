@@ -71,7 +71,8 @@ namespace vve {
         glm::mat4 prevProj;
 
         uint32_t seed;
-        float _pad0[3];
+        uint32_t lightCount;
+        float _pad0[2];
     };
 
     /** Material slot that can be a texture or constant RGB. */

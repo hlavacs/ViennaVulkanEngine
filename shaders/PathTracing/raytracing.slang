@@ -1,0 +1,210 @@
+import Defines;
+import Materials;
+import Lightsource;
+import Random;
+import Frame;
+import BSDF;
+import ColorSpace;
+import Surface;
+
+struct Vertex
+{
+    float4 position;
+    float4 normal;
+    float4 uv;
+    float4 tangent;
+};
+
+struct Instance
+{
+    float4x4 model;
+    float4x4 modelInverse;
+    uint materialIndex;
+    uint firstIndex;
+    float2 uvScale;
+};
+
+[[vk::binding(0, 0)]]
+cbuffer UniformBufferObject
+{
+    float4x4 view;
+    float4x4 viewInv;
+    float4x4 proj;
+    float4x4 projInv;
+
+    float4x4 prevView;
+    float4x4 prevProj;
+
+    uint seed;
+    uint lightCount;
+};
+
+[[vk::binding(1, 0)]]
+StructuredBuffer<Material> materials;
+
+[[vk::binding(2, 0)]]
+Sampler2D textures[];
+
+
+[[vk::binding(0, 1)]]
+RaytracingAccelerationStructure topLevelAS;
+
+[[vk::binding(1, 1)]]
+StructuredBuffer<Vertex> vertexBuffer;
+
+[[vk::binding(2, 1)]]
+StructuredBuffer<uint> indexBuffer;
+
+[[vk::binding(3, 1)]]
+StructuredBuffer<Instance> instanceBuffer;
+
+[[vk::binding(4, 1)]]
+StructuredBuffer<LightSource> lightBuffer;
+
+// Ray payload structure - carries data through the ray tracing pipeline
+struct HitPayload
+{
+    // Outputs: hit data returned from ray traversal.
+    bool hit;
+    float3 color;
+    float distance;
+    uint triangleIdx;
+    uint instanceIdx;
+    float3 barycentrics;
+};
+
+struct IntegrationStepQueryRecord {
+    // Outputs: per-bounce integration state.
+    float3 throughput;
+    float3 directLight;
+    float3 indirectLight;
+    RayDesc indirectRay;
+}
+
+IntersectionRecord getIntersectionInfo(in HitPayload payload, in RayDesc ray) {
+    // Inputs: hit payload and ray. Output: resolved intersection record in world space.
+
+    Instance instance = instanceBuffer[payload.instanceIdx];
+    uint firstIndex = instance.firstIndex;
+
+    uint i0 = indexBuffer[firstIndex + payload.triangleIdx * 3 + 0];
+    uint i1 = indexBuffer[firstIndex + payload.triangleIdx * 3 + 1];
+    uint i2 = indexBuffer[firstIndex + payload.triangleIdx * 3 + 2];
+
+    Vertex v0 = vertexBuffer[i0];
+    Vertex v1 = vertexBuffer[i1];
+    Vertex v2 = vertexBuffer[i2];
+
+    IntersectionRecord its;
+
+    float3 localPosition = v0.position.xyz * payload.barycentrics.z + v1.position.xyz * payload.barycentrics.x + v2.position.xyz * payload.barycentrics.y;
+    float3 localNormal = normalize(v0.normal.xyz * payload.barycentrics.z + v1.normal.xyz * payload.barycentrics.x + v2.normal.xyz * payload.barycentrics.y);
+
+    float3 localTangent = normalize(v0.tangent.xyz * payload.barycentrics.z + v1.tangent.xyz * payload.barycentrics.x + v2.tangent.xyz * payload.barycentrics.y);
+
+    its.uv = v0.uv.xy * payload.barycentrics.z + v1.uv.xy * payload.barycentrics.x + v2.uv.xy * payload.barycentrics.y;
+    its.uv *= instance.uvScale;
+    its.position = mul(instance.model, float4(localPosition, 1)).xyz;
+    its.direction = ray.Direction;
+    its.normal = normalize(mul(instance.modelInverse, float4(localNormal, 0)).xyz);
+    its.tangent = normalize(mul(instance.modelInverse, float4(localTangent, 0)).xyz);
+    its.materialIdx = instance.materialIndex;
+
+    // incomming direction should be in the lower hemisphere.
+    if (dot(its.normal, its.direction) > 0.0) {
+        its.normal *= -1.0;
+    }
+
+    its.frame = Frame(its.normal, its.tangent);
+
+    return its;
+}
+
+RayDesc getRay(in IntersectionRecord its, float3 castDirection) {
+    // Inputs: intersection and cast direction. Output: offset ray starting at surface.
+    RayDesc ray;
+
+    ray.Origin = its.position;
+    ray.Direction = normalize(castDirection);
+    ray.TMin = 0.001;    // Minimum distance to avoid self-intersection
+    ray.TMax = INFINITE; // Maximum distance (infinite for primary rays)
+
+    return ray;
+}
+
+RayDesc getRay2(in IntersectionRecord its, float3 castDirection) {
+    // Inputs: intersection and cast direction. Output: ray offset along normal.
+    RayDesc ray;
+    // normals are inverted
+    ray.Origin = its.position + (its.normal * 0.001);
+    ray.Direction = normalize(castDirection);
+    ray.TMin = 0.0;      // Minimum distance to avoid self-intersection
+    ray.TMax = INFINITE; // Maximum distance (infinite for primary rays)
+
+    return ray;
+}
+
+RayDesc getRayInternal(in IntersectionRecord its, float3 castDirection) {
+    // Inputs: intersection and cast direction. Output: ray offset based on side.
+    RayDesc ray;
+    if (dot(its.normal, castDirection) > 0.0) {
+        ray.Origin = its.position + (its.normal * 0.001);
+    } else {
+        ray.Origin = its.position - (its.normal * 0.001);
+    }
+
+    ray.Direction = normalize(castDirection);
+    ray.TMin = 0.0;      // Minimum distance to avoid self-intersection
+    ray.TMax = INFINITE; // Maximum distance (infinite for primary rays)
+
+    return ray;
+}
+
+RayDesc getInitialRay(in float2 launchID, in float2 launchSize) {
+    // Inputs: pixel coordinates and image size. Output: camera ray in world space.
+
+    const float2 clipCoords = launchID / launchSize * 2.0 - 1.0;
+    const float4 viewCoordsHomogeneous = mul(float4(clipCoords, 1.0, 1.0), projInv);
+    const float3 viewRayDir = viewCoordsHomogeneous.xyz / viewCoordsHomogeneous.w;
+
+    RayDesc ray;
+    ray.Origin = mul(float4(0.0, 0.0, 0.0, 1.0), viewInv).xyz;
+    ray.Direction = mul(float4(normalize(viewRayDir), 0.0), viewInv).xyz;
+    ray.TMin = 0.001;
+    ray.TMax = INFINITE;
+
+    return ray;
+}
+
+bool isSkyPixel(float3 pos)
+{
+    // Input: position sample. Output: true if position encodes sky.
+    return any(isinf(pos)) && any(pos < 0);
+}
+
+bool isLightOccluded(in IntersectionRecord its, EmitterRecord emitterRecord) {
+    RayDesc shadowRay = getRay(its, emitterRecord.direction);
+    HitPayload payload;
+    const uint rayFlags = 0;
+
+    // self blocked
+    if (dot(shadowRay.Direction, its.normal) < 0.0) {
+        return true;
+    }
+
+    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
+
+    if (payload.distance < emitterRecord.distance) {
+        return true;
+    }
+
+    return false;
+}
+
+float3 getUnoccludedLightContribution(in IntersectionRecord its, in MaterialRecord material, in EmitterRecord emitterRecord) {
+    BSDFQueryRecord shaderRecord = constructBSDFRecord(its, material, emitterRecord.direction, true);
+
+    float3 bsdfEval = PrincipledEval(shaderRecord, material);
+
+    return emitterRecord.sampleEmission * bsdfEval;
+}

@@ -434,6 +434,7 @@ namespace vve {
         ubo.projInv = glm::transpose(glm::inverse(ubo.proj));
 
         ubo.seed = dist(gen);
+        ubo.lightCount = lightManager->getLightCount();
 
         uniforms = ubo;
 

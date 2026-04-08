@@ -83,4 +83,11 @@ public struct Sampler
 
         return float3(x1, x2, x3);
     }
+
+    // this function has a slight modulo bias
+    [mutating]
+    public uint UniformUIntFast(uint min, uint max)
+    {
+        return min + (PCG() % (max - min + 1u));
+    }
 }

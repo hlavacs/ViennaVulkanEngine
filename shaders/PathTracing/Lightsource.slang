@@ -106,34 +106,28 @@ EmitterRecord sampleSphereLight(in LightSource light,
     return rec;
 }
 
-/*
-EmitterRecord sampleSphereLight(in LightSource light, in float3 origin, inout Sampler sampler) {
-    EmitterRecord record;
+// uses solid angle sampling to imporve noise levels
+EmitterRecord sampleSphereLightCenter(in LightSource light,
+                                in float3 origin,
+                                inout Sampler sampler)
+{
+    // Inputs: light, shading point, RNG. Output: sampled emitter record.
+    EmitterRecord rec;
 
-    float3 sphereCoords = squareToUniformSphere(sampler.UniformFloat2());
+    float3 C = light.position.xyz;
+    float3 P = origin;
 
-    record.intersection = light.position.xyz + sphereCoords * light.radius;
-    record.distance = length(record.intersection - origin);
-    record.direction = normalize(record.intersection - origin);
-    // /light.pdf????????????
-    record.sampleEmission = (light.emission.xyz) / (record.distance * record.distance);
-    return record;
+    float3 toLight = C - P;
+
+    rec.intersection = C;
+    rec.distance = length(toLight);
+    rec.direction = normalize(toLight);
+
+    // Final estimator for total emitted power Φ
+    rec.sampleEmission = light.emission.xyz / (4.0 * M_PI * rec.distance * rec.distance);
+
+    return rec;
 }
-*/
-
-/*
-EmitterRecord sampleDiskLight(in LightSource light, in float3 origin, inout Sampler sampler) {
-    EmitterRecord record;
-    Frame frame = Frame(normalize(light.direction.xyz));
-    float3 diskCoords = float3(squareToUniformDisk(sampler.UniformFloat2()), 0.0);
-
-    record.intersection = light.position.xyz + frame.toWorld(diskCoords) * light.radius;
-    record.distance = length(record.intersection - origin);
-    record.direction = normalize(record.intersection - origin);
-    record.sampleEmission = (light.emission.xyz) * dot(light.direction.xyz, -record.direction) / (record.distance * record.distance) * squareToUniformDiskPdf(diskCoords.xy);
-    return record;
-}
-    */
 
 EmitterRecord sampleDiskLight(in LightSource light, in float3 origin, inout Sampler sampler)
 {
@@ -185,7 +179,27 @@ EmitterRecord sampleDiskLight(in LightSource light, in float3 origin, inout Samp
     return rec;
 }
 
-EmitterRecord sampleLightSource(in LightSource light, in float3 origin, inout Sampler sampler) {
+EmitterRecord sampleDiskLightCenter(in LightSource light, in float3 origin, inout Sampler sampler)
+{
+    // Inputs: light, shading point, RNG. Output: sampled emitter record.
+    EmitterRecord rec;
+
+    float3 C = light.position.xyz;
+    float3 P = origin;
+
+    float3 toLight = C - P;
+
+    rec.intersection = C;
+    rec.distance = length(toLight);
+    rec.direction = normalize(toLight);
+
+    // Final estimator for total emitted power Φ
+    rec.sampleEmission = light.emission.xyz / (4.0 * M_PI * rec.distance * rec.distance);
+
+    return rec;
+}
+
+public EmitterRecord sampleLightSource(in LightSource light, in float3 origin, inout Sampler sampler) {
     // Inputs: light, shading point, RNG. Output: sampled emitter record by type.
     EmitterRecord record;
 
@@ -197,11 +211,23 @@ EmitterRecord sampleLightSource(in LightSource light, in float3 origin, inout Sa
     return record;
 }
 
+public EmitterRecord sampleLightSourceCenter(in LightSource light, in float3 origin, inout Sampler sampler) {
+    // Inputs: light, shading point, RNG. Output: sampled emitter record by type.
+    EmitterRecord record;
+
+    if (light.lightType == 0) {
+        record = sampleSphereLightCenter(light, origin, sampler);
+    } else if (light.lightType == 1) {
+        record = sampleDiskLightCenter(light, origin, sampler);
+    }
+    return record;
+}
+
 // returns the light influence from a randomly selected light.
-public EmitterRecord sampleRandomLightSource(in StructuredBuffer<LightSource> lightSources, in float3 origin, inout Sampler sampler) {
+public EmitterRecord sampleRandomLightSourceWeighted(in StructuredBuffer<LightSource> lightSources, in float3 origin, inout Sampler sampler) {
     // Inputs: light buffer, shading point, RNG. Output: sampled emitter record with selection PDF folded in.
     float pdf = 0.0;
-    LightSource light = chooseRandomLightSource(lightSources, sampler, pdf);
+    LightSource light = chooseRandomLightSourceWeighted(lightSources, sampler, pdf);
     EmitterRecord record = sampleLightSource(light, origin, sampler);
 
     record.sampleEmission = record.sampleEmission / pdf;
@@ -210,7 +236,37 @@ public EmitterRecord sampleRandomLightSource(in StructuredBuffer<LightSource> li
     return record;
 }
 
-LightSource chooseRandomLightSource(in StructuredBuffer<LightSource> lightSources, inout Sampler sampler, inout float pdf) {
+// returns the light influence from a randomly selected light.
+public EmitterRecord sampleLightSourceWeighted(in StructuredBuffer<LightSource> lightSources, in float3 origin, inout Sampler sampler, in uint index) {
+    // Inputs: light buffer, shading point, RNG. Output: sampled emitter record with selection PDF folded in.
+    float pdf = lightSourcePdf(lightSources, index);
+    LightSource light = lightSources[index];
+    EmitterRecord record = sampleLightSource(light, origin, sampler);
+
+    record.sampleEmission = record.sampleEmission / pdf;
+
+    return record;
+}
+
+// returns the light influence from a randomly selected light.
+public EmitterRecord sampleRandomLightSource(in StructuredBuffer<LightSource> lightSources, in float3 origin, inout Sampler sampler, in uint lightCount) {
+    // Inputs: light buffer, shading point, RNG. Output: sampled emitter record with selection PDF folded in.
+    float pdf = 0.0;
+    LightSource light = chooseRandomLightSource(lightSources, sampler, pdf, lightCount);
+    EmitterRecord record = sampleLightSource(light, origin, sampler);
+
+    record.sampleEmission = record.sampleEmission / pdf;
+
+    return record;
+}
+
+LightSource chooseRandomLightSource(in StructuredBuffer<LightSource> lightSources, inout Sampler sampler, inout float pdf, in uint lightCount) {
+    uint index = sampler.UniformUIntFast(0, lightCount - 1);
+    pdf = 1.0 / float(lightCount);
+    return lightSources[index];
+}
+
+LightSource chooseRandomLightSourceWeighted(in StructuredBuffer<LightSource> lightSources, inout Sampler sampler, inout float pdf) {
     // Inputs: light buffer, RNG. Output: chosen light and its selection PDF.
     float rand = sampler.UniformFloat();
     uint index = 0;
@@ -231,3 +287,15 @@ LightSource chooseRandomLightSource(in StructuredBuffer<LightSource> lightSource
     }
     return chosenLight;
 }
+
+float lightSourcePdf(in StructuredBuffer<LightSource> lightSources, in uint index) {
+    uint index = 0;
+    LightSource light = lightSources[index];
+    if (index == 0) {
+        return light.accumulativeSampleWeight;
+    } else {
+        LightSource previousLight = lightSources[index - 1];
+        return light.accumulativeSampleWeight - previousLight.accumulativeSampleWeight;
+    }
+}
+

@@ -1,4 +1,3 @@
-
 import Defines;
 import Materials;
 import Lightsource;
@@ -7,174 +6,19 @@ import Frame;
 import BSDF;
 import ColorSpace;
 import Surface;
-
-struct Vertex
-{
-    float4 position;
-    float4 normal;
-    float4 uv;
-    float4 tangent;
-};
-
-struct Instance
-{
-float4x4 model;
-float4x4 modelInverse;
-uint materialIndex;
-uint firstIndex;
-float2 uvScale;
-};
-
-// Ray payload structure - carries data through the ray tracing pipeline
-struct HitPayload
-{
-    // Outputs: hit data returned from ray traversal.
-    bool hit;
-    float3 color;
-    float distance;
-    uint triangleIdx;
-    uint instanceIdx;
-    float3 barycentrics;
-};
-
-struct IntegrationStepQueryRecord {
-    // Outputs: per-bounce integration state.
-    float3 throughput;
-    float3 directLight;
-    float3 indirectLight;
-    RayDesc indirectRay = RayDesc();
-}
-
-
-
-IntersectionRecord getIntersectionInfo(in HitPayload payload, in RayDesc ray){
-    // Inputs: hit payload and ray. Output: resolved intersection record in world space.
-    
-    Instance instance = instanceBuffer[payload.instanceIdx];
-    uint firstIndex = instance.firstIndex;
-
-    uint i0 = indexBuffer[firstIndex + payload.triangleIdx * 3 + 0];
-    uint i1 = indexBuffer[firstIndex + payload.triangleIdx * 3 + 1];
-    uint i2 = indexBuffer[firstIndex + payload.triangleIdx * 3 + 2];
-
-    Vertex v0 = vertexBuffer[i0];
-    Vertex v1 = vertexBuffer[i1];
-    Vertex v2 = vertexBuffer[i2];
-
-    IntersectionRecord its;
-
-    float3 localPosition = v0.position.xyz * payload.barycentrics.z + v1.position.xyz * payload.barycentrics.x + v2.position.xyz * payload.barycentrics.y;
-    float3 localNormal = normalize(v0.normal.xyz * payload.barycentrics.z + v1.normal.xyz * payload.barycentrics.x + v2.normal.xyz * payload.barycentrics.y);
-    
-    float3 localTangent = normalize(v0.tangent.xyz * payload.barycentrics.z + v1.tangent.xyz * payload.barycentrics.x + v2.tangent.xyz * payload.barycentrics.y);
-
-    its.uv = v0.uv.xy * payload.barycentrics.z + v1.uv.xy * payload.barycentrics.x + v2.uv.xy * payload.barycentrics.y;
-    its.uv *= instance.uvScale;
-    its.position = mul(instance.model, float4(localPosition, 1)).xyz;
-    its.direction = ray.Direction;
-    its.normal = normalize(mul(instance.modelInverse, float4(localNormal, 0)).xyz);
-    its.tangent = normalize(mul(instance.modelInverse, float4(localTangent, 0)).xyz);
-    its.materialIdx = instance.materialIndex;
-    
-    //incomming direction should be in the lower hemisphere.
-    if (dot(its.normal, its.direction) > 0.0) {
-        its.normal *= -1.0;
-    }
-
-    its.frame = Frame(its.normal, its.tangent);
-
-    return its;
-}
-
-RayDesc getRay(in IntersectionRecord its, float3 castDirection) {
-    // Inputs: intersection and cast direction. Output: offset ray starting at surface.
-    RayDesc ray;
-
-    ray.Origin = its.position;
-    ray.Direction = normalize(castDirection);
-    ray.TMin = 0.001;    // Minimum distance to avoid self-intersection
-    ray.TMax = INFINITE; // Maximum distance (infinite for primary rays)
-
-    return ray;
-}
-
-RayDesc getRay2(in IntersectionRecord its, float3 castDirection) {
-    // Inputs: intersection and cast direction. Output: ray offset along normal.
-    RayDesc ray;
-    //normals are inverted
-    ray.Origin = its.position + (its.normal * 0.001);
-    ray.Direction = normalize(castDirection);
-    ray.TMin = 0.0;    // Minimum distance to avoid self-intersection
-    ray.TMax = INFINITE; // Maximum distance (infinite for primary rays)
-
-    return ray;
-}
-
-RayDesc getRayInternal(in IntersectionRecord its, float3 castDirection) {
-    // Inputs: intersection and cast direction. Output: ray offset based on side.
-    RayDesc ray;
-    if (dot(its.normal, castDirection) > 0.0) {
-        ray.Origin = its.position + (its.normal * 0.001);
-    } else {
-        ray.Origin = its.position - (its.normal * 0.001);
-    }
-    
-    ray.Direction = normalize(castDirection);
-    ray.TMin = 0.0;      // Minimum distance to avoid self-intersection
-    ray.TMax = INFINITE; // Maximum distance (infinite for primary rays)
-
-    return ray;
-}
+import raytracing;
 
 float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inout Sampler sampler) {
     // Inputs: intersection, material, RNG. Output: direct lighting contribution.
-    EmitterRecord emitterRecord = sampleRandomLightSource(lightBuffer, its.position, sampler);
+    EmitterRecord emitterRecord = sampleRandomLightSourceWeighted(lightBuffer, its.position, sampler);
 
-    RayDesc shadowRay = getRay(its, emitterRecord.direction);
-    HitPayload payload;
-    const uint rayFlags = 0;
+    bool occluded = isLightOccluded(its, emitterRecord);
 
-    //self blocked
-    if (dot(shadowRay.Direction, its.normal) < 0.0) {
+    if (occluded) {
         return float3(0.0, 0.0, 0.0);
     }
 
-    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
-
-    if (payload.distance < emitterRecord.distance) {
-        return float3(0.0, 0.0, 0.0);
-    }
-
-    /*
-    BSDFQueryRecord shaderRecord;
-    shaderRecord.wi = its.frame.toLocal(-its.direction);
-    shaderRecord.wo = its.frame.toLocal(shadowRay.Direction);
-    */
-
-    BSDFQueryRecord shaderRecord = constructBSDFRecord(its, material, shadowRay.Direction, true);
-    //shaderRecord.wiShading = material.shadingFrame.toLocal(-its.direction);
-    //shaderRecord.woShading = material.shadingFrame.toLocal(shadowRay.Direction);
-
-    float3 bsdfEval = PrincipledEval(shaderRecord, material);
-
-    return emitterRecord.sampleEmission * bsdfEval;
-}
-
-RayDesc getInitialRay(in float2 launchID, in float2 launchSize) {
-    // Inputs: pixel coordinates and image size. Output: camera ray in world space.
-   
-
-    const float2 clipCoords = launchID / launchSize * 2.0 - 1.0;
-    const float4 viewCoordsHomogeneous = mul(float4(clipCoords, 1.0, 1.0), projInv);
-    const float3 viewRayDir = viewCoordsHomogeneous.xyz / viewCoordsHomogeneous.w;
-
-    RayDesc ray;
-    ray.Origin = mul(float4(0.0, 0.0, 0.0, 1.0), viewInv).xyz;
-    ray.Direction = mul(float4(normalize(viewRayDir), 0.0), viewInv).xyz;
-    ray.TMin = 0.001;    
-    ray.TMax = INFINITE;
-
-    return ray;
+    return getUnoccludedLightContribution(its, material, emitterRecord);
 }
 
 IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
@@ -191,10 +35,6 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
     its.frame = Frame(its.normal);
     its.direction = cameraRay.Direction;
 
-    
-
-    
-
     MaterialRecord material;
     material.albedo = inAlbedoAlpha[int2(launchID)].xyz;
     material.alpha = inAlbedoAlpha[int2(launchID)].w;
@@ -204,14 +44,6 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
     material.metalness = inSpec[int2(launchID)].y;
     material.ior = inSpec[int2(launchID)].z;
 
-    MaterialRecord materialNoAlbedo;
-    materialNoAlbedo.albedo = float3(1.0,1.0,1.0);
-    materialNoAlbedo.alpha = inAlbedoAlpha[int2(launchID)].w;
-    materialNoAlbedo.normal = float3(0.0, 0.0, 1.0);
-    materialNoAlbedo.roughness = inSpec[int2(launchID)].x;
-    materialNoAlbedo.metalness = inSpec[int2(launchID)].y;
-    materialNoAlbedo.ior = inSpec[int2(launchID)].z;
-
     float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
 
     if (dot(its.normal, its.direction) > 0.0) {
@@ -220,7 +52,6 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
     }
 
     material.shadingFrame = Frame(shadingNormal);
-    materialNoAlbedo.shadingFrame = Frame(shadingNormal);
 
     float3 directLight = directRaycast(its, material, sampler);
     
@@ -238,12 +69,6 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
     integrationStep.indirectRay = indirectRay;
 
     return integrationStep;
-}
-
-bool isSkyPixel(float3 pos)
-{
-    // Input: position sample. Output: true if position encodes sky.
-    return any(isinf(pos)) && any(pos < 0);
 }
 
 //Direct Integrator
@@ -300,13 +125,6 @@ IntegrationStepQueryRecord integratorPT(inout Sampler sampler) {
 
         float3 bsdf = samplePrincipled(shaderRecord, materialRecord, sampler);
         integrationStep.indirectRay = getRayInternal(its, shaderRecord.woWorld);
-        //check needed if material is descrete!!!
-        /*
-        if (bsdfQuery.measure != EDiscrete) {
-            DirectRayCastQuerryRecord directLight = directLightRayCast(its, ray, scene, sampler);
-            output += directLight.directSampleEmission * throughput;
-        }
-        */
 
         float3 directLight = directRaycast(its, materialRecord, sampler);
         integrationStep.indirectLight += directLight * integrationStep.throughput;
@@ -321,44 +139,6 @@ IntegrationStepQueryRecord integratorPT(inout Sampler sampler) {
 
     return integrationStep;
 }
-
-[[vk::binding(0, 0)]]
-cbuffer UniformBufferObject
-{
-    float4x4 view;
-    float4x4 viewInv;
-    float4x4 proj;
-    float4x4 projInv;
-
-    float4x4 prevView;
-    float4x4 prevProj;
-
-    uint seed;
-};
-
-[[vk::binding(1, 0)]]
-StructuredBuffer<Material> materials;
-
-[[vk::binding(2, 0)]]
-Sampler2D textures[];
-
-
-[[vk::binding(0, 1)]]
-RaytracingAccelerationStructure topLevelAS;
-
-[[vk::binding(1, 1)]]
-StructuredBuffer<Vertex> vertexBuffer;
-
-[[vk::binding(2, 1)]]
-StructuredBuffer<uint> indexBuffer;
-
-[[vk::binding(3, 1)]]
-StructuredBuffer<Instance> instanceBuffer;
-
-[[vk::binding(4, 1)]]
-StructuredBuffer<LightSource> lightBuffer;
-
-
 
 
 [[vk::binding(0, 2)]]
@@ -390,68 +170,6 @@ void rgenMain()
     // Get the current pixel coordinates and image dimensions
     float2 launchID = (float2)DispatchRaysIndex().xy;     // Current pixel (x,y)
     float2 launchSize = (float2)DispatchRaysDimensions().xy; // Image size (width,height)
-    /*
-    // Set ray tracing flags (0 = no special flags)
-    const uint rayFlags = 0;
-    
-    // Convert pixel coordinates to normalized device coordinates (NDC)
-    // Range: [-1,1] for both x and y
-    const float2 clipCoords = launchID / launchSize * 2.0 - 1.0;
-    
-    // Transform from NDC to view space using inverse projection matrix
-    const float4 viewCoords = mul(float4(clipCoords, 1.0, 1.0), projInv);
-
-    const float4 viewCoordsHomogeneous = mul(float4(clipCoords, 1.0, 1.0), projInv);
-
-    // CRITICAL FIX: Divide X, Y, Z by W to get correct view space coordinates
-    const float3 viewRayDir = viewCoordsHomogeneous.xyz / viewCoordsHomogeneous.w;
-
-    // Create the primary ray
-    RayDesc ray;
-    // Origin calculation (This is correct)
-    ray.Origin = mul(float4(0.0, 0.0, 0.0, 1.0), viewInv).xyz; 
-
-    // DIRECTION FIX: Use the corrected viewRayDir
-    ray.Direction = mul(float4(normalize(viewRayDir), 0.0), viewInv).xyz;
-
-    ray.TMin = 0.001;    // Minimum distance to avoid self-intersection
-    ray.TMax = INFINITE; // Maximum distance (infinite for primary rays)
-
-    // Initialize ray payload with default values
-    HitPayload payload;
-    payload.color = float3(0, 0, 0);  // Start with black
-
-    // Cast the ray into the scene using the acceleration structure
-    // Parameters: AS, flags, instance mask, sbt offset, sbt stride, miss offset, ray, payload
-    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, ray, payload);
-    
-    // Get the final color from the ray tracing result
-    float3 color = payload.color;
-    
-    // Write the result to the output image
-    //outImage[int2(launchID)] = float4(color, 1.0);
-
-    float3 outputColor = float3(0.0,0.0,0.0);
-
-    if (payload.hit) {
-        IntersectionRecord its = getIntersectionInfo(payload, ray);
-
-        
-        if (dot(ray.Direction, its.normal) > 0.0) {
-            outputColor = float3(0.0, 0.0, 1.0);
-        } else {
-            outputColor = float3(1.0, 0.0, 0.0);
-        }
-
-        // outputColor = its.tangent;
-        //Material material = materials[its.materialIdx];
-        //MaterialRecord materialRecord = getMaterialProperties(material, textures, its.uv, its.frame);
-        //outputColor = materialRecord.albedo;
-    }
-     outImage[int2(launchID)] = float4(outputColor, 1.0);
-    */
-
-
     
     float3 position = inPosition[int2(launchID)].xyz;
 
@@ -479,15 +197,8 @@ void rgenMain()
         //by albedo. But indirect has less tendency to be large when albedo is small because indirect is already weighted with throughput 
         //not sure about the math it might actually be garanteed to not be large.
         float3 lighting = outputColor / max(albedo,0.001);
-        outImage[int2(launchID)] = float4(lighting, 1.0);
-
-        
+        outImage[int2(launchID)] = float4(lighting, 1.0);    
     }
-
-    // outImage[int2(launchID)] = float4(outputColor, 1.0);
-    //float outValue = inSpec[int2(launchID)].x;
-    //outImage[int2(launchID)] = float4(outValue, outValue, outValue, 1.0);
-    //outImage[int2(launchID)] = float4(inAlbedoAlpha[int2(launchID)].xyz, 1.0);
 }
 
 // Closest hit shader - called when ray hits geometry

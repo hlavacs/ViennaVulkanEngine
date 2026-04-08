@@ -124,6 +124,10 @@ namespace vve {
 		return new SingleDescriptorPlacment(descriptorInput, binding);
 	}
 
+	size_t LightManager::getLightCount() {
+		return lights.size();
+	}
+
 	bool LightManager::lightsChanged() {
 		return lightChanged;
 	}
