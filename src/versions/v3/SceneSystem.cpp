@@ -24,45 +24,133 @@ namespace vve::v3 {
        * @return Matching node index, or an error when the handle is unknown.
        */
       [[nodiscard]] std::expected<std::size_t, vve::Error> findNodeIndex(const SceneData &scene, SceneNodeHandle handle) {
-         for (std::size_t index = 0; index < scene.nodes.size(); ++index) {
-            if (scene.nodes[index].handle.value == handle.value) {
-               return index;
-            }
+         const auto node_index = scene.node_indices.find(handle.value.value());
+         if (node_index == scene.node_indices.end()) {
+            return std::unexpected(vve::Error::invalid_argument);
          }
 
-         return std::unexpected(vve::Error::invalid_argument);
+         return node_index->second;
       }
 
       /**
-       * @brief Updates one node world transform recursively for the current frame.
+       * @brief Rebuilds the scene-node handle lookup cache from dense runtime storage.
        * @param scene Mutable runtime scene storage.
-       * @param node_index Index of the runtime node to update.
-       * @param current_frame Current frame index used to avoid duplicate work.
-       * @return Empty success result, or an error when the hierarchy references an unknown parent.
+       * @return Empty success result, or an error when duplicate node handles are present.
        */
-      [[nodiscard]] std::expected<void, vve::Error>
-      updateNodeRecursive(SceneData &scene, std::size_t node_index, std::uint64_t current_frame) {
-         auto &node = scene.nodes[node_index];
-         if (node.last_updated_frame == current_frame) {
-            return {};
+      [[nodiscard]] std::expected<void, vve::Error> rebuildNodeIndex(SceneData &scene) {
+         scene.node_indices.clear();
+         scene.node_indices.reserve(scene.nodes.size());
+
+         for (std::size_t node_index = 0; node_index < scene.nodes.size(); ++node_index) {
+            const auto handle_value = scene.nodes[node_index].handle.value.value();
+            const auto [_, inserted] = scene.node_indices.emplace(handle_value, node_index);
+            if (!inserted) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
          }
 
-         if (node.parent.value.isValid()) {
+         return {};
+      }
+
+      /**
+       * @brief Builds first-child and next-sibling links from the parent hierarchy.
+       * @param scene Mutable runtime scene storage.
+       * @return Empty success result, or an error when the hierarchy references an unknown parent.
+       */
+      [[nodiscard]] std::expected<void, vve::Error> buildHierarchyLinks(SceneData &scene) {
+         for (auto &node : scene.nodes) {
+            node.first_child = {};
+            node.next_sibling = {};
+         }
+
+         for (auto &node : scene.nodes) {
+            if (!node.parent.value.isValid()) {
+               continue;
+            }
+
             const auto parent_index = findNodeIndex(scene, node.parent);
             if (!parent_index) {
                return std::unexpected(parent_index.error());
             }
 
-            if (auto update_result = updateNodeRecursive(scene, *parent_index, current_frame); !update_result) {
-               return update_result;
-            }
-
-            node.world_transform = vve::math::multiply(scene.nodes[*parent_index].world_transform, node.local_transform);
-         } else {
-            node.world_transform = node.local_transform;
+            auto &parent = scene.nodes[*parent_index];
+            node.next_sibling = parent.first_child; // New children are prepended to keep the representation compact.
+            parent.first_child = node.handle;
          }
 
+         return {};
+      }
+
+      /**
+       * @brief Collects runtime root-node indices in dense storage order.
+       * @param scene Runtime scene storage to inspect.
+       * @return Root-node indices used to seed the top-down transform traversal.
+       */
+      [[nodiscard]] std::vector<std::size_t> collectRootNodeIndices(const SceneData &scene) {
+         std::vector<std::size_t> root_indices{};
+         root_indices.reserve(scene.nodes.size());
+
+         for (std::size_t node_index = 0; node_index < scene.nodes.size(); ++node_index) {
+            if (!scene.nodes[node_index].parent.value.isValid()) {
+               root_indices.push_back(node_index);
+            }
+         }
+
+         return root_indices;
+      }
+
+      /**
+       * @brief Resolves one parent's children into a forward traversal sequence.
+       * @param scene Runtime scene storage to inspect.
+       * @param parent Runtime node whose children are appended.
+       * @param child_indices Output vector receiving child indices in traversal order.
+       * @return Empty success result, or an error when a child handle cannot be resolved.
+       */
+      [[nodiscard]] std::expected<void, vve::Error>
+      appendChildTraversalOrder(const SceneData &scene, const SceneNodeDesc &parent, std::vector<std::size_t> &child_indices) {
+         const auto child_begin = child_indices.size();
+         auto child_handle = parent.first_child;
+         while (child_handle.value.isValid()) {
+            const auto child_index = findNodeIndex(scene, child_handle);
+            if (!child_index) {
+               return std::unexpected(child_index.error());
+            }
+
+            child_indices.push_back(*child_index);
+            child_handle = scene.nodes[*child_index].next_sibling;
+         }
+
+         std::reverse(child_indices.begin() + static_cast<std::ptrdiff_t>(child_begin), child_indices.end());
+         return {};
+      }
+
+      /**
+       * @brief Updates one node subtree recursively for the current frame.
+       * @param scene Mutable runtime scene storage.
+       * @param node_index Index of the runtime node to update.
+       * @param parent_world World transform of the parent node, or `nullptr` for a root node.
+       * @param current_frame Current frame index written into the updated subtree.
+       * @return Empty success result, or an error when the hierarchy references an unknown parent.
+       */
+      [[nodiscard]] std::expected<void, vve::Error>
+      updateNodeRecursive(SceneData &scene, std::size_t node_index, const vve::math::Mat4 *parent_world, std::uint64_t current_frame) {
+         auto &node = scene.nodes[node_index];
+         node.world_transform = parent_world == nullptr ? node.local_transform
+                                                        : vve::math::multiply(*parent_world, node.local_transform);
          node.last_updated_frame = current_frame;
+
+         // Visit children after their parent so transform propagation stays root-first and depth-first.
+         std::vector<std::size_t> child_indices{};
+         if (auto child_result = appendChildTraversalOrder(scene, node, child_indices); !child_result) {
+            return child_result;
+         }
+
+         for (const auto child_index : child_indices) {
+            if (auto update_result = updateNodeRecursive(scene, child_index, &node.world_transform, current_frame); !update_result) {
+               return update_result;
+            }
+         }
+
          return {};
       }
 
@@ -85,20 +173,38 @@ namespace vve::v3 {
          for (const auto &node : scene.nodes) {
             instance.nodes.push_back(SceneNodeDesc{.handle = node.handle,
                                                    .parent = node.parent,
+                                                   .first_child = {},
+                                                   .next_sibling = {},
                                                    .name = node.name,
                                                    .local_transform = node.local_transform,
                                                    .world_transform = node.local_transform,
                                                    .last_updated_frame = 0});
          }
+         if (auto index_result = rebuildNodeIndex(instance); !index_result) {
+            return std::unexpected(index_result.error());
+         }
+
+         if (auto hierarchy_result = buildHierarchyLinks(instance); !hierarchy_result) {
+            return std::unexpected(hierarchy_result.error());
+         }
+
          return instance;
       }
 
       /// @brief Updates scene transforms for the current frame.
       [[nodiscard]] std::expected<void, vve::Error> updateTransforms(const FrameContext &frame_context, SceneData &scene) {
-         // An empty scene is a valid runtime state and therefore a no-op.
-         for (std::size_t node_index = 0; node_index < scene.nodes.size(); ++node_index) {
-            if (auto update_result = updateNodeRecursive(scene, node_index, frame_context.frame_index); !update_result) {
+         // Seed the traversal from root nodes only so every update flows top-down through the hierarchy.
+         const auto root_indices = collectRootNodeIndices(scene);
+         for (const auto node_index : root_indices) {
+            if (auto update_result = updateNodeRecursive(scene, node_index, nullptr, frame_context.frame_index); !update_result) {
                return update_result;
+            }
+         }
+
+         // Nodes not reached from a root indicate a malformed hierarchy such as a cycle.
+         for (const auto &node : scene.nodes) {
+            if (node.last_updated_frame != frame_context.frame_index) {
+               return std::unexpected(vve::Error::invalid_argument);
             }
          }
 

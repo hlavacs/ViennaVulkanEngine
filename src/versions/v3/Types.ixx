@@ -200,9 +200,11 @@ export namespace vve::v3 {
 
    /// @brief Instantiated scene-node description used at runtime.
    struct SceneNodeDesc {
-      SceneNodeHandle handle{}; ///< Stable runtime scene-node handle.
-      SceneNodeHandle parent{}; ///< Parent node handle, or default for a root node.
-      std::string name{};       ///< Human-readable node name.
+      SceneNodeHandle handle{};       ///< Stable runtime scene-node handle.
+      SceneNodeHandle parent{};       ///< Parent node handle, or default for a root node.
+      SceneNodeHandle first_child{};  ///< First child node handle, or default when the node has no children.
+      SceneNodeHandle next_sibling{}; ///< Next sibling node handle in the parent's child list, or default when none exists.
+      std::string name{};             ///< Human-readable node name.
       /// @brief Local transform relative to the parent node.
       vve::math::Mat4 local_transform{vve::math::identityMat4()};
       /// @brief Cached world transform updated during the scene phase.
@@ -212,8 +214,9 @@ export namespace vve::v3 {
 
    /// @brief Runtime scene data shared across scene, resource, and render systems.
    struct SceneData {
-      SceneHandle handle{};          ///< Stable runtime scene handle.
-      Vector<SceneNodeDesc> nodes{}; ///< Runtime scene-node list.
+      SceneHandle handle{};                                             ///< Stable runtime scene handle.
+      Vector<SceneNodeDesc> nodes{};                                    ///< Runtime scene-node list.
+      std::unordered_map<vve::Handle::value_type, std::size_t> node_indices{}; ///< Handle-to-index lookup cache for runtime scene nodes.
    };
 
    /// @brief Runtime window snapshot used by the frame graph and world facade.
