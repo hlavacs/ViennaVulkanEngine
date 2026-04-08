@@ -148,6 +148,7 @@ namespace vve {
 
 				bool roughnessFactorExists = material->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughnessFactor);
 				bool metallnessFactorExists = material->Get(AI_MATKEY_METALLIC_FACTOR, metallicFactor);
+
 				//this does not work
 				if (roughnessFactor == 1.0f) {
 					std::cout << "Roughness Texture: " << texturePathStr << std::endl;
@@ -220,6 +221,9 @@ namespace vve {
 				// uv.mTranslation.x 
 				// uv.mTranslation.y
 				// uv.mRotation 
+			}
+			else {
+				VRTmaterial.uvScale = { 1.0 , 1.0};
 			}
 			
 			/*

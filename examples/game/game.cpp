@@ -41,43 +41,8 @@ class MyGame : public vve::System {
             };
         }
 
-        inline static std::string test_scene_gltf{ "assets/shader_room_gltf/test_scene.gltf" };
-    
-        inline static std::string plane_obj  { "assets/test/plane/plane_t_n_s.obj" };
-        inline static std::string plane_mesh { "assets/test/plane/plane_t_n_s.obj/plane" };
-        inline static std::string plane_txt  { "assets/test/plane/grass.jpg" };
-
-        inline static std::string cube_obj  { "assets/test/crate0/cube.obj" };
-
-        inline static std::string floor_obj{ "assets/shader_room/floor.obj" };
-        inline static std::string floor_mesh{ "assets/shader_room/floor.obj/floor" };
-        inline static std::string floor_material{ "assets/shader_room/floor.obj/Material/Material" };
-
-        inline static std::string back_wall_obj{ "assets/shader_room/back_wall.obj" };
-        inline static std::string back_wall_mesh{ "assets/shader_room/back_wall.obj/back_wall" };
-        inline static std::string back_wall_material{ "assets/shader_room/back_wall.obj/back_wall_mat/Material" };
-
-        inline static std::string side_wall_obj{ "assets/shader_room/side_wall.obj" };
-        inline static std::string side_wall_mesh{ "assets/shader_room/side_wall.obj/side_wall" };
-        inline static std::string side_wall_material{ "assets/shader_room/side_wall.obj/side_wall_mat/Material" };
-
-        inline static std::string box_obj{ "assets/shader_room/box.obj" };
-        inline static std::string box_mesh{ "assets/shader_room/box.obj/box" };
-        inline static std::string box_material{ "assets/shader_room/box.obj/box_mat/Material" };
-
-        inline static std::string metal_obj{ "assets/shader_room/metal.obj" };
-        inline static std::string metal_mesh{ "assets/shader_room/metal.obj/metal" };
-        inline static std::string metal_material{ "assets/shader_room/metal.obj/metal_mat/Material" };
-
-        inline static std::string diffuse_obj{ "assets/shader_room/diffuse.obj" };
-        inline static std::string diffuse_mesh{ "assets/shader_room/diffuse.obj/diffuse" };
-        inline static std::string diffuse_material{ "assets/shader_room/diffuse.obj/diffuse_mat/Material" };
-
-        inline static std::string mirror_obj{ "assets/shader_room/mirror.obj" };
-        inline static std::string mirror_mesh{ "assets/shader_room/mirror.obj/mirror" };
-        inline static std::string mirror_material{ "assets/shader_room/mirror.obj/mirror_mat/Material" };
-
-        inline static std::string plane_material{ "assets/test/plane/plane_t_n_s.obj/plane/Material" };
+        //inline static std::string test_scene_gltf{ "assets/shader_room_gltf/test_scene.gltf" };
+        inline static std::string test_scene_gltf{ "assets/sponza/sponza.gltf" };
 
         bool OnLoadLevel( Message message ) {
             auto msg = message.template GetData<vve::System::MsgLoadLevel>();	
