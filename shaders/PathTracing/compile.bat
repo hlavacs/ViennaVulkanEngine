@@ -11,6 +11,15 @@ slangc reprojectionPass.slang -entry main -target spirv -o reprojectionPass.spv
 rem --- Raygen shader ---
 slangc rtbasic.slang -entry rgenMain -target spirv -o raygen.rgen.spv -DRAY_TRACING
 
+rem --- Raygen shader ---
+slangc Direct_Raytracer.slang -entry rgenMain -target spirv -o raygen_direct.rgen.spv -DRAY_TRACING
+
+rem --- Raygen shader ---
+slangc RestirTemporal.slang -entry rgenMain -target spirv -o raygen_restir_temporal.rgen.spv -DRAY_TRACING
+
+rem --- Raygen shader ---
+slangc RestirSpatial.slang -entry rgenMain -target spirv -o raygen_restir_spatial.rgen.spv -DRAY_TRACING
+
 rem --- Miss shader ---
 slangc rtbasic.slang -entry rmissMain -target spirv -o miss.rmiss.spv -DRAY_TRACING
 

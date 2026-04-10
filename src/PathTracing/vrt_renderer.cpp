@@ -143,8 +143,66 @@ namespace vve {
         reprojectionPassDescriptors->addDescriptorInput(lightingReprojectedTarget->getDescriptorInput(4, VK_SHADER_STAGE_COMPUTE_BIT));
         reprojectionPassDescriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(5, VK_SHADER_STAGE_COMPUTE_BIT));
 
+        reprojectionPassDescriptors->addDescriptorInput(reservoirLightIndexA->getDescriptorInput(6, VK_SHADER_STAGE_COMPUTE_BIT));
+        reprojectionPassDescriptors->addDescriptorInput(reservoirLightWeightA->getDescriptorInput(7, VK_SHADER_STAGE_COMPUTE_BIT));
+        reprojectionPassDescriptors->addDescriptorInput(reservoirWeightSumA->getDescriptorInput(8, VK_SHADER_STAGE_COMPUTE_BIT));
+        reprojectionPassDescriptors->addDescriptorInput(reservoirLightCountA->getDescriptorInput(9, VK_SHADER_STAGE_COMPUTE_BIT));
+
+        reprojectionPassDescriptors->addDescriptorInput(reservoirLightIndexB->getDescriptorInput(10, VK_SHADER_STAGE_COMPUTE_BIT));
+        reprojectionPassDescriptors->addDescriptorInput(reservoirLightWeightB->getDescriptorInput(11, VK_SHADER_STAGE_COMPUTE_BIT));
+        reprojectionPassDescriptors->addDescriptorInput(reservoirWeightSumB->getDescriptorInput(12, VK_SHADER_STAGE_COMPUTE_BIT));
+        reprojectionPassDescriptors->addDescriptorInput(reservoirLightCountB->getDescriptorInput(13, VK_SHADER_STAGE_COMPUTE_BIT));
+
         reprojectionPassDescriptors->finalize();
         reprojectionPassDescriptors->update();
+    }
+
+    void RendererRayTraced::createRestirTemporalDescriptors() {
+        restir_temporal_descriptors = new DescriptorManager(device);
+
+        restir_temporal_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restir_temporal_descriptors->addDescriptorInput(reservoirLightIndexB->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(reservoirLightWeightB->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(reservoirWeightSumB->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(reservoirLightCountB->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restir_temporal_descriptors->addDescriptorInput(reservoirLightIndexA->getDescriptorInput(10, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(reservoirLightWeightA->getDescriptorInput(11, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(reservoirWeightSumA->getDescriptorInput(12, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_temporal_descriptors->addDescriptorInput(reservoirLightCountA->getDescriptorInput(13, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restir_temporal_descriptors->finalize();
+        restir_temporal_descriptors->update();
+    }
+
+    void RendererRayTraced::createRestirSpatialDescriptors() {
+        restir_spatial_descriptors = new DescriptorManager(device);
+
+        restir_spatial_descriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(RtTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restir_spatial_descriptors->addDescriptorInput(reservoirLightIndexA->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(reservoirLightWeightA->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(reservoirWeightSumA->getDescriptorInput(8, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(reservoirLightCountA->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restir_spatial_descriptors->addDescriptorInput(reservoirLightIndexB->getDescriptorInput(10, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(reservoirLightWeightB->getDescriptorInput(11, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(reservoirWeightSumB->getDescriptorInput(12, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restir_spatial_descriptors->addDescriptorInput(reservoirLightCountB->getDescriptorInput(13, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restir_spatial_descriptors->finalize();
+        restir_spatial_descriptors->update();
     }
 
     void RendererRayTraced::createRenderTargetSampler() {
@@ -223,14 +281,6 @@ namespace vve {
             uniformBuffer_c[i] = new HostBuffer<UniformBufferObject>(1, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 0, device, physicalDevice);
         }
 
-        createRenderTargetSampler();
-
-        createCommonDescriptors();
-       
-        auto piplineRasterizedUnique = std::make_unique<PiplineRasterized>("Pipline Rasterized", m_engine, device, swapchain->getExtent(), commandManager, objectManager->getVertexBuffer(), objectManager->getIndexBuffer(), objectManager->getInstanceBuffers(), commonDescriptors);
-        rasterizer = piplineRasterizedUnique.get();
-        m_engine.RegisterSystem(std::move(piplineRasterizedUnique));
-
 
         //rasterizer = new PiplineRasterized(device, swapchain->getExtent(), commandManager, objectManager->getVertexBuffer(), objectManager->getIndexBuffer(), objectManager->getInstanceBuffers(), descriptorSetLayout, descriptorSets);
 
@@ -244,7 +294,69 @@ namespace vve {
         positionTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice, VkClearColorValue{{-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),1.0}});
         shadingNormalTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
 
-        //rasterizer->bindRenderTarget(mainTarget);
+        //reprojection
+        lightingPreviousTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        lightingReprojectedTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        positionPreviousTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice, VkClearColorValue{ {-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),1.0} });
+        reprojectionErrorTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+
+        //restir
+        reservoirLightIndexA = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        reservoirLightWeightA = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        reservoirWeightSumA = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        reservoirLightCountA = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+
+        reservoirLightIndexB = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        reservoirLightWeightB = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        reservoirWeightSumB = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        reservoirLightCountB = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32_UINT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+
+        //raytracing
+        RtTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+
+        //accumulation
+
+        combinedTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+        accumulatedLightingTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
+
+        allTargets.push_back(albedoTarget);
+        allTargets.push_back(normalTarget);
+        allTargets.push_back(specTarget);
+        allTargets.push_back(positionTarget);
+        allTargets.push_back(depthTarget);
+        allTargets.push_back(shadingNormalTarget);
+
+        allTargets.push_back(RtTarget);
+
+        allTargets.push_back(reservoirLightIndexA);
+        allTargets.push_back(reservoirLightWeightA);
+        allTargets.push_back(reservoirWeightSumA);
+        allTargets.push_back(reservoirLightCountA);
+
+        allTargets.push_back(reservoirLightIndexB);
+        allTargets.push_back(reservoirLightWeightB);
+        allTargets.push_back(reservoirWeightSumB);
+        allTargets.push_back(reservoirLightCountB);
+
+
+        allTargets.push_back(lightingPreviousTarget);
+        allTargets.push_back(lightingReprojectedTarget);
+        allTargets.push_back(positionPreviousTarget);
+        allTargets.push_back(reprojectionErrorTarget);
+
+        allTargets.push_back(combinedTarget);
+        allTargets.push_back(accumulatedLightingTarget);
+
+
+        //rasterizer pipline
+        createRenderTargetSampler();
+
+        createCommonDescriptors();
+
+        auto piplineRasterizedUnique = std::make_unique<PiplineRasterized>("Pipline Rasterized", m_engine, device, swapchain->getExtent(), commandManager, objectManager->getVertexBuffer(), objectManager->getIndexBuffer(), objectManager->getInstanceBuffers(), commonDescriptors);
+        rasterizer = piplineRasterizedUnique.get();
+        m_engine.RegisterSystem(std::move(piplineRasterizedUnique));
+
         rasterizer->bindRenderTarget(albedoTarget);
         rasterizer->bindRenderTarget(normalTarget);
         rasterizer->bindRenderTarget(specTarget);
@@ -254,36 +366,8 @@ namespace vve {
         rasterizer->bindDepthRenderTarget(depthTarget);
         rasterizer->initGraphicsPipeline();
 
-        //reprojection
-        lightingPreviousTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
-        lightingReprojectedTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
-        positionPreviousTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R32G32B32A32_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice, VkClearColorValue{ {-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),-std::numeric_limits<float>::infinity(),1.0} });
-        reprojectionErrorTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
 
 
-        allTargets.push_back(lightingPreviousTarget);
-        allTargets.push_back(lightingReprojectedTarget);
-        allTargets.push_back(positionPreviousTarget);
-        allTargets.push_back(reprojectionErrorTarget);
-
-        createReprojectPassDescriptors();
-        reprojectionPass = new PipelineFilter(device, physicalDevice, commandManager, reprojectionPassDescriptors, swapchain->getExtent(), "shaders/PathTracing/reprojectionPass.spv");
-        reprojectionPass->bindRenderTarget(positionTarget);
-        reprojectionPass->bindRenderTarget(positionPreviousTarget);
-        reprojectionPass->bindRenderTarget(lightingPreviousTarget);
-        reprojectionPass->bindRenderTarget(lightingReprojectedTarget);
-        reprojectionPass->bindRenderTarget(reprojectionErrorTarget);
-        reprojectionPass->initComputePipeline();
-
-        RtTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
-
-        allTargets.push_back(albedoTarget);
-        allTargets.push_back(normalTarget);
-        allTargets.push_back(specTarget);
-        allTargets.push_back(positionTarget);
-        allTargets.push_back(RtTarget);
-        allTargets.push_back(depthTarget);
-        allTargets.push_back(shadingNormalTarget);
 
 
         rayTracingTargets.push_back(albedoTarget);
@@ -298,7 +382,9 @@ namespace vve {
         createRtTargetsDescriptors();
 
 
-        raytracer = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, rtDescriptors, rtTargetsDescriptors, swapchain->getExtent());
+        raytracer = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, rtDescriptors, rtTargetsDescriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_direct.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+        
 
         raytracer->bindRenderTarget(albedoTarget);
         raytracer->bindRenderTarget(normalTarget);
@@ -311,10 +397,96 @@ namespace vve {
         raytracer->initRayTracingPipeline();
 
 
-        combinedTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
-        accumulatedLightingTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_STORAGE_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
-        allTargets.push_back(combinedTarget);
-        allTargets.push_back(accumulatedLightingTarget);
+
+
+        std::cout << "created  restir render targets \n";
+
+        createRestirTemporalDescriptors();
+        std::cout << "created  restir descriptort set targets \n";
+
+        //needs diffrent pipline barrier!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        restir_temporal = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, rtDescriptors, restir_temporal_descriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_restir_temporal.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+
+        std::cout << "created  restir temporal \n";
+
+        restir_temporal->bindRenderTarget(albedoTarget);
+        restir_temporal->bindRenderTarget(normalTarget);
+        restir_temporal->bindRenderTarget(specTarget);
+        restir_temporal->bindRenderTarget(positionTarget);
+        restir_temporal->bindRenderTarget(shadingNormalTarget);
+
+        restir_temporal->bindRenderTarget(reprojectionErrorTarget);
+
+
+        restir_temporal->bindRenderTarget(reservoirLightIndexA);
+        restir_temporal->bindRenderTarget(reservoirLightWeightA);
+        restir_temporal->bindRenderTarget(reservoirWeightSumA);
+        restir_temporal->bindRenderTarget(reservoirLightCountA);
+
+        restir_temporal->bindRenderTarget(reservoirLightIndexB);
+        restir_temporal->bindRenderTarget(reservoirLightWeightB);
+        restir_temporal->bindRenderTarget(reservoirWeightSumB);
+        restir_temporal->bindRenderTarget(reservoirLightCountB);
+
+
+        restir_temporal->initRayTracingPipeline();
+
+
+
+        createRestirSpatialDescriptors();
+
+        restir_spatial = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, rtDescriptors, restir_spatial_descriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_restir_spatial.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+        std::cout << "created  restir spatial \n";
+
+        restir_spatial->bindRenderTarget(albedoTarget);
+        restir_spatial->bindRenderTarget(normalTarget);
+        restir_spatial->bindRenderTarget(specTarget);
+        restir_spatial->bindRenderTarget(positionTarget);
+        restir_spatial->bindRenderTarget(shadingNormalTarget);
+
+        restir_spatial->bindRenderTarget(RtTarget);
+
+
+        restir_spatial->bindRenderTarget(reservoirLightIndexA);
+        restir_spatial->bindRenderTarget(reservoirLightWeightA);
+        restir_spatial->bindRenderTarget(reservoirWeightSumA);
+        restir_spatial->bindRenderTarget(reservoirLightCountA);
+
+        restir_spatial->bindRenderTarget(reservoirLightIndexB);
+        restir_spatial->bindRenderTarget(reservoirLightWeightB);
+        restir_spatial->bindRenderTarget(reservoirWeightSumB);
+        restir_spatial->bindRenderTarget(reservoirLightCountB);
+
+
+        restir_spatial->initRayTracingPipeline();
+
+
+
+
+        createReprojectPassDescriptors();
+        reprojectionPass = new PipelineFilter(device, physicalDevice, commandManager, reprojectionPassDescriptors, swapchain->getExtent(), "shaders/PathTracing/reprojectionPass.spv");
+        reprojectionPass->bindRenderTarget(positionTarget);
+        reprojectionPass->bindRenderTarget(positionPreviousTarget);
+        reprojectionPass->bindRenderTarget(lightingPreviousTarget);
+        reprojectionPass->bindRenderTarget(lightingReprojectedTarget);
+        reprojectionPass->bindRenderTarget(reprojectionErrorTarget);
+
+
+        reprojectionPass->bindRenderTarget(reservoirLightIndexA);
+        reprojectionPass->bindRenderTarget(reservoirLightWeightA);
+        reprojectionPass->bindRenderTarget(reservoirWeightSumA);
+        reprojectionPass->bindRenderTarget(reservoirLightCountA);
+
+        reprojectionPass->bindRenderTarget(reservoirLightIndexB);
+        reprojectionPass->bindRenderTarget(reservoirLightWeightB);
+        reprojectionPass->bindRenderTarget(reservoirWeightSumB);
+        reprojectionPass->bindRenderTarget(reservoirLightCountB);
+
+
+        reprojectionPass->initComputePipeline();
+
+
         createCombinePassDescriptors();
         combinePass = new PipelineFilter(device, physicalDevice, commandManager, combinePassDescriptors, swapchain->getExtent(), "shaders/PathTracing/combinePass.spv");
 
@@ -380,7 +552,11 @@ namespace vve {
         rtTargetsDescriptors->update();
         combinePassDescriptors->update();
         reprojectionPassDescriptors->update();
+        restir_temporal_descriptors->update(); 
+        restir_spatial_descriptors->update();
         raytracer->setExtent(swapchain->getExtent());
+        restir_temporal->setExtent(swapchain->getExtent());
+        restir_spatial->setExtent(swapchain->getExtent());
         combinePass->setExtent(swapchain->getExtent());
         reprojectionPass->setExtent(swapchain->getExtent());
         m_engine.SendMsg(MsgWindowSize{});
@@ -402,7 +578,11 @@ namespace vve {
         rasterizer->recordCommandBuffer(currentFrame);
         reprojectionPass->recordCommandBuffer(currentFrame);
         //the raytracer switches the sampler of the textures to linear causing the image to darken. In generell later on everything in the renderer should be switched to linear and only be converted to srgb before presentation
-        raytracer->recordCommandBuffer(currentFrame);
+        //raytracer->recordCommandBuffer(currentFrame);
+
+        restir_temporal->recordCommandBuffer(currentFrame);
+        restir_spatial->recordCommandBuffer(currentFrame);
+
         combinePass->recordCommandBuffer(currentFrame);
         //copy images to previous image buffers
         //WARNING!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -411,6 +591,11 @@ namespace vve {
         //(and copy to the same frame in flight here)
         lightingPreviousTarget->getImage(nextFrame)->recordCopyFromImage(accumulatedLightingTarget->getImage(currentFrame), VK_IMAGE_LAYOUT_GENERAL, currentFrame);
         positionPreviousTarget->getImage(nextFrame)->recordCopyFromImage(positionTarget->getImage(currentFrame), VK_IMAGE_LAYOUT_GENERAL, currentFrame);
+
+        reservoirLightIndexA->getImage(nextFrame)->recordCopyFromImage(reservoirLightIndexB->getImage(currentFrame), VK_IMAGE_LAYOUT_GENERAL, currentFrame);
+        reservoirLightWeightA->getImage(nextFrame)->recordCopyFromImage(reservoirLightWeightB->getImage(currentFrame), VK_IMAGE_LAYOUT_GENERAL, currentFrame);
+        reservoirWeightSumA->getImage(nextFrame)->recordCopyFromImage(reservoirWeightSumB->getImage(currentFrame), VK_IMAGE_LAYOUT_GENERAL, currentFrame);
+        reservoirLightCountA->getImage(nextFrame)->recordCopyFromImage(reservoirLightCountB->getImage(currentFrame), VK_IMAGE_LAYOUT_GENERAL, currentFrame);
 
         swapchain->recordImageTransfer(currentFrame, combinedTarget);
         //swapchain->recordImageTransfer(currentFrame, albedoTarget);

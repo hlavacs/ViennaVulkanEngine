@@ -137,7 +137,7 @@ void rgenMain()
         {
             uint lightIndex = sampler.UniformUIntFast(0, lightCount - 1);
 
-            p_hat = unoccludedLightRadiance(lightIndex, its, material, sampler);
+            p_hat = unoccludedLightRadianceCenter(lightIndex, its, material, sampler);
 
             float w = p_hat / lightPdf;
 
@@ -147,8 +147,8 @@ void rgenMain()
         if (IsReservoirValid(reservoir))
         {
             // Update weight with new radiance with visibility term!
-            float p_hat = length(groundTruthLightRadiance(reservoir.lightSelected, its, material, sampler));
-            reservoir.lightWeight = p_hat > 0.0 ? (1.0 / p_hat) * reservoir.W_sum / reservoir.M : 0.0;
+            float p_hat = length(occludedLightRadianceCenter(reservoir.lightSelected, its, material, sampler));
+            reservoir.lightWeight = p_hat > 0.0 ? (1.0 / max(p_hat, 0.001)) * reservoir.W_sum / reservoir.M : 0.0;
         } else {
             reservoir = Reservoir(0, 0.0, 0.0, 0);
         }

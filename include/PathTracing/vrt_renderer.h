@@ -58,6 +58,8 @@ namespace vve {
 		void createRtTargetsDescriptors();
 		void createCombinePassDescriptors();
 		void createReprojectPassDescriptors();
+		void createRestirTemporalDescriptors();
+		void createRestirSpatialDescriptors();
 
 		void createRenderTargetSampler();
 
@@ -137,6 +139,23 @@ namespace vve {
 		RenderTarget* specTarget;
 		RenderTarget* positionTarget;
 		RenderTarget* shadingNormalTarget;
+
+
+		RenderTarget* reservoirLightIndexA;
+		RenderTarget* reservoirLightWeightA;
+		RenderTarget* reservoirWeightSumA;
+		RenderTarget* reservoirLightCountA;
+
+		RenderTarget* reservoirLightIndexB;
+		RenderTarget* reservoirLightWeightB;
+		RenderTarget* reservoirWeightSumB;
+		RenderTarget* reservoirLightCountB;
+
+		PiplineRaytraced* restir_temporal;
+		PiplineRaytraced* restir_spatial;
+
+		DescriptorManager* restir_temporal_descriptors;
+		DescriptorManager* restir_spatial_descriptors;
 
 		std::vector<RenderTarget*> allTargets;
 		std::vector<RenderTarget*> rayTracingTargets;

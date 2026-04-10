@@ -41,6 +41,10 @@ namespace vve {
         PFN_vkCreateRayTracingPipelinesKHR vkCreateRayTracingPipelinesKHR = nullptr;
         PFN_vkGetRayTracingShaderGroupHandlesKHR vkGetRayTracingShaderGroupHandlesKHR = nullptr;
 
+        std::string raygenShaderName;
+        VkPipelineStageFlagBits barrierStage;
+
+
 
         static std::vector<char> readFile(const std::string& filename) {
             std::ifstream file(filename, std::ios::ate | std::ios::binary);
@@ -82,7 +86,7 @@ namespace vve {
          */
         PiplineRaytraced(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager, VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties,
             DescriptorManager* commonDescriptors, DescriptorManager* rtDescriptors,
-            DescriptorManager* targetsDescriptors, VkExtent2D extent);
+            DescriptorManager* targetsDescriptors, VkExtent2D extent, std::string raygenShaderName, VkPipelineStageFlagBits barrierStage);
 
         /**
          * Update the render extent.

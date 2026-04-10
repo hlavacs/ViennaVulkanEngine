@@ -36,7 +36,7 @@ void main(uint3 threadId: SV_DispatchThreadID) {
     float reprojectionErrorFactor = clamp(reprojectionError / maxReprojectionError, 0.0, 1.0);
 
     float accumulationBaseFactor = 0.2;
-    float accumulationFactor = lerp(0.2, 1.0, reprojectionErrorFactor);
+    float accumulationFactor = lerp(accumulationBaseFactor, 1.0, reprojectionErrorFactor);
 
     lighting = clamp(lighting, 0.0, 1000.0);
 
@@ -44,6 +44,7 @@ void main(uint3 threadId: SV_DispatchThreadID) {
 
     lightingAccumulated = max(min(lightingAccumulated, 100.0), 0.0);
 
+    // put lightAccumulated here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     outAccumulatedLight[launchID] = float4(lightingAccumulated, 1.0);
     outCombined[launchID] = float4(LinearToSRGB(lightingAccumulated * max(albedo, 0.001)), 1.0);
 

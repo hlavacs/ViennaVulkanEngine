@@ -86,10 +86,10 @@ namespace vve {
 
     PiplineRaytraced::PiplineRaytraced(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager, VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties,
         DescriptorManager* commonDescriptors, DescriptorManager* rtDescriptors,
-        DescriptorManager* targetsDescriptors, VkExtent2D extent)
+        DescriptorManager* targetsDescriptors, VkExtent2D extent, std::string raygenShaderName, VkPipelineStageFlagBits barrierStage)
         : device(device), physicalDevice(physicalDevice), commandManager(commandManager), m_rtProperties(m_rtProperties),
         commonDescriptors(commonDescriptors), rtDescriptors(rtDescriptors),
-        targetsDescriptors(targetsDescriptors), extent(extent)
+        targetsDescriptors(targetsDescriptors), extent(extent), raygenShaderName(raygenShaderName), barrierStage(barrierStage)
     {
         loadRayTracingFunctions();
     }
@@ -117,7 +117,7 @@ namespace vve {
         for (auto& s : stages)
             s.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
 
-        auto raygenCode = readFile("shaders/PathTracing/raygen.rgen.spv");
+        auto raygenCode = readFile(raygenShaderName);
         auto missCode = readFile("shaders/PathTracing/miss.rmiss.spv");
         auto chitCode = readFile("shaders/PathTracing/closesthit.rchit.spv");
 
@@ -224,7 +224,7 @@ namespace vve {
         vkCmdPipelineBarrier(
             cmd,
             VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,   // old enum
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,           // old enum
+            barrierStage,           // old enum
             0,                                              // no dependency flags
             1, &barrier,                                    // memory barriers
             0, nullptr,                                     // buffer memory barriers

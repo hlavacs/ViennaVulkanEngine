@@ -24,6 +24,34 @@ RWTexture2D<float4> outReprojectedLighting;
 [[vk::binding(5, 0)]]
 RWTexture2D<float4> outReprojectionError;
 
+//restir
+
+[[vk::binding(6, 0)]]
+RWTexture2D<uint> inLightIndex;
+
+[[vk::binding(7, 0)]]
+RWTexture2D<float> inLightWeight;
+
+[[vk::binding(8, 0)]]
+RWTexture2D<float> inWeightSum;
+
+[[vk::binding(9, 0)]]
+RWTexture2D<uint> inLightCount;
+
+[[vk::binding(10, 0)]]
+RWTexture2D<uint> outLightIndex;
+
+[[vk::binding(11, 0)]]
+RWTexture2D<float> outLightWeight;
+
+[[vk::binding(12, 0)]]
+RWTexture2D<float> outWeightSum;
+
+[[vk::binding(13, 0)]]
+RWTexture2D<uint> outLightCount;
+
+
+
 [shader("compute")]
 [numthreads(16, 16, 1)]
 void main(uint3 threadId: SV_DispatchThreadID) {
@@ -61,7 +89,23 @@ void main(uint3 threadId: SV_DispatchThreadID) {
     float3 lightingReprojected = inPreviousLighting.SampleLevel(predictedUVPrev, 0).xyz;
     float4 positionReprojected = float4(inPreviousPosition.SampleLevel(predictedUVPrev, 0).xyz,1.0);
 
+    //restir
+    float2 predictedUVPrevClamped = clamp(predictedUVPrev, 0.0, 1.0);
+    
+    //+0.5 because typconversion rounds down
+    uint2 predictedIDPrev = (uint2)(predictedUVPrevClamped * (dims -1.0) + 0.5);
+
+    outLightIndex[launchID] = inLightIndex[predictedIDPrev];
+    outLightWeight[launchID] = inLightWeight[predictedIDPrev];
+    outWeightSum[launchID] = inWeightSum[predictedIDPrev];
+    outLightCount[launchID] = inLightCount[predictedIDPrev];
+
     float length = length(positionReprojected - position);
+
+    bool isOffscreen = any(predictedUVPrev < 0.0) || any(predictedUVPrev > 1.0);
+    if (isOffscreen) {
+        length = 1000000.0;
+    }
 
     outReprojectedLighting[launchID] = float4(lightingReprojected, 1.0);
     outReprojectionError[launchID] = float4(length);

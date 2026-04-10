@@ -25,7 +25,7 @@ RWTexture2D<float4> inPosition;
 RWTexture2D<float4> inShadingNormal;
 
 [[vk::binding(5, 2)]]
-RWTexture2D<float4> inReprojectionError;
+RWTexture2D<float4> outImage;
 
 [[vk::binding(6, 2)]]
 RWTexture2D<uint> inLightIndex;
@@ -50,9 +50,6 @@ RWTexture2D<float> outWeightSum;
 
 [[vk::binding(13, 2)]]
 RWTexture2D<uint> outLightCount;
-
-[[vk::binding(14, 2)]]
-RWTexture2D<float4> outImage;
 
 void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout IntersectionRecord its, inout MaterialRecord material) {
     RayDesc cameraRay = getInitialRay(launchID, launchSize);
@@ -155,9 +152,13 @@ void rgenMain()
 
                 // restrict influence from past samples.
                 // this may not be optimal, the real time raytracing engine handles this diffrently
+ 
                 reservoirSpatial.M = min(MAX_SPATIAL_INFLUENCE * reservoir.M, reservoirSpatial.M);
 
-                reservoir = CombineReservoirs(reservoir, reservoirSpatial, its, material, sampler);
+                if(IsReservoirValid(reservoirSpatial)){
+                    reservoir = CombineReservoirs(reservoir, reservoirSpatial, its, material, sampler);
+                }
+                
             }     
         }
 
@@ -165,16 +166,29 @@ void rgenMain()
 
         if (IsReservoirValid(reservoir))
         {
-            float3 radiance = groundTruthLightRadiance(reservoir.lightSelected, its, material, sampler) * reservoir.lightWeight;
+            float3 radiance = groundTruthLightRadiance(reservoir.lightSelected, its, material, sampler);
             output = radiance * reservoir.lightWeight;
             float p_hat = length(radiance);
             //maybe one shouldn't use this but I am unsure???
-            reservoir.lightWeight = p_hat > 0.0 ? (1.0 / p_hat) * reservoir.W_sum / reservoir.M : 0.0;
+
+            //this does not work because one has to sample the same point on the light source every time otherwhise restir does not work
+            /*
+            if(p_hat <= 0.0 || reservoir.M == 0) {
+                reservoir = Reservoir(0, 0.0, 0.0, 0);
+            }
+                */
+                
+                
+
+            //reservoir.lightWeight = p_hat > 0.0 ? (1.0 / max(p_hat, 0.001)) * reservoir.W_sum / reservoir.M : 0.0;
         } else {
             reservoir = Reservoir(0, 0.0, 0.0, 0);
         }
 
+        float3 albedo = inAlbedoAlpha[launchID].xyz;
+        float3 lighting = output / max(albedo,0.001);
+
         storeReservoir(reservoir, launchID);
-        outImage[launchID] = float4(output, 1.0);
+        outImage[launchID] = float4(lighting, 1.0);
     }
 }
