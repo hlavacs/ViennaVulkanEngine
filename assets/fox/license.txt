@@ -1,0 +1,11 @@
+Model Information:
+* title:	Low poly fox by PixelMannen (Animated)
+* source:	https://sketchfab.com/3d-models/low-poly-fox-by-pixelmannen-animated-371dea88d7e04a76af5763f2a36866bc
+* author:	tomkranis (https://sketchfab.com/tomkranis)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "Low poly fox by PixelMannen (Animated)" (https://sketchfab.com/3d-models/low-poly-fox-by-pixelmannen-animated-371dea88d7e04a76af5763f2a36866bc) by tomkranis (https://sketchfab.com/tomkranis) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
