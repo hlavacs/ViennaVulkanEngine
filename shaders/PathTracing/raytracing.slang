@@ -208,3 +208,16 @@ float3 getUnoccludedLightContribution(in IntersectionRecord its, in MaterialReco
 
     return emitterRecord.sampleEmission * bsdfEval;
 }
+
+float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inout Sampler sampler) {
+    // Inputs: intersection, material, RNG. Output: direct lighting contribution.
+    EmitterRecord emitterRecord = sampleRandomLightSourceWeighted(lightBuffer, its.position, sampler);
+
+    bool occluded = isLightOccluded(its, emitterRecord);
+
+    if (occluded) {
+        return float3(0.0, 0.0, 0.0);
+    }
+
+    return getUnoccludedLightContribution(its, material, emitterRecord);
+}
