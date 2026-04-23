@@ -58,6 +58,31 @@ endif()
 find_package(Vulkan REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
 
+set(VVE_VCPKG_RUNTIME_DLLS_RELEASE)
+if(WIN32 AND EXISTS "${VVE_VCPKG_INSTALLED_DIR}/bin")
+   file(GLOB VVE_VCPKG_RUNTIME_DLLS_RELEASE CONFIGURE_DEPENDS
+      "${VVE_VCPKG_INSTALLED_DIR}/bin/*.dll"
+   )
+endif()
+
+set(VVE_VCPKG_RUNTIME_DLLS_DEBUG)
+if(WIN32 AND EXISTS "${VVE_VCPKG_INSTALLED_DIR}/debug/bin")
+   file(GLOB VVE_VCPKG_RUNTIME_DLLS_DEBUG CONFIGURE_DEPENDS
+      "${VVE_VCPKG_INSTALLED_DIR}/debug/bin/*.dll"
+   )
+endif()
+
+if(WIN32 AND (VVE_VCPKG_RUNTIME_DLLS_RELEASE OR VVE_VCPKG_RUNTIME_DLLS_DEBUG))
+   add_custom_target(vve_copy_runtime_dlls
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_SOURCE_DIR}/bin/exe"
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+         $<$<CONFIG:Debug>:${VVE_VCPKG_RUNTIME_DLLS_DEBUG}>
+         $<$<NOT:$<CONFIG:Debug>>:${VVE_VCPKG_RUNTIME_DLLS_RELEASE}>
+         "${CMAKE_SOURCE_DIR}/bin/exe"
+      COMMAND_EXPAND_LISTS
+   )
+endif()
+
 function(vve_set_output_dirs target_name)
    get_target_property(target_type "${target_name}" TYPE)
 
@@ -83,6 +108,9 @@ function(vve_set_output_dirs target_name)
       endforeach()
 
       if(WIN32)
+         if(TARGET vve_copy_runtime_dlls)
+            add_dependencies("${target_name}" vve_copy_runtime_dlls)
+         endif()
          add_custom_command(TARGET "${target_name}" POST_BUILD
             COMMAND "${CMAKE_COMMAND}" -E copy_if_different
                $<TARGET_RUNTIME_DLLS:${target_name}>
@@ -101,6 +129,15 @@ function(vve_set_output_dirs target_name)
                "RUNTIME_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/exe"
             )
          endforeach()
+         if(TARGET vve_copy_runtime_dlls)
+            add_dependencies("${target_name}" vve_copy_runtime_dlls)
+         endif()
+         add_custom_command(TARGET "${target_name}" POST_BUILD
+            COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+               $<TARGET_RUNTIME_DLLS:${target_name}>
+               $<TARGET_FILE_DIR:${target_name}>
+            COMMAND_EXPAND_LISTS
+         )
       else()
          set_target_properties("${target_name}" PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/lib"

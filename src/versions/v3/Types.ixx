@@ -159,16 +159,88 @@ export namespace vve::v3 {
       bool write{false};      ///< Whether the access writes to the resource.
    };
 
-   /// @brief Imported mesh metadata produced by the asset system.
-   struct ImportedMesh {
-      MeshHandle handle{}; ///< Stable imported mesh handle.
-      std::string name{};  ///< Human-readable mesh name.
+   /// @brief High-level meaning assigned to a referenced texture.
+   enum class TextureSemantic : std::uint32_t {
+      unknown = 0,        ///< Texture role is not known.
+      base_color,         ///< Base-color or diffuse color texture.
+      normal,             ///< Normal-map texture.
+      metallic_roughness, ///< Combined metallic-roughness texture.
+      roughness,          ///< Roughness-only texture.
+      metallic,           ///< Metallic-only texture.
+      specular,           ///< Specular response texture.
+      emissive,           ///< Emissive color texture.
+      opacity,            ///< Opacity or alpha texture.
+      ambient_occlusion   ///< Ambient-occlusion texture.
    };
 
-   /// @brief Imported material metadata produced by the asset system.
+   /// @brief CPU-side vertex payload imported from a source scene.
+   struct ImportedVertex {
+      vve::math::Vec3 position{vve::math::zeroVec3()}; ///< Object-space vertex position.
+      vve::math::Vec3 normal{vve::math::zeroVec3()};   ///< Object-space vertex normal.
+      vve::math::Vec3 tangent{vve::math::zeroVec3()};  ///< Object-space tangent direction.
+      vve::math::Vec3 bitangent{vve::math::zeroVec3()}; ///< Object-space bitangent direction.
+      vve::math::Vec2 texcoord0{vve::math::Vec2(vve::math::zero(), vve::math::zero())}; ///< Primary texture coordinates.
+      vve::math::Vec4 color0{vve::math::Vec4(vve::math::one(), vve::math::one(), vve::math::one(),
+                                             vve::math::one())}; ///< Primary vertex color.
+   };
+
+   /// @brief One indexed primitive range inside an imported mesh.
+   struct ImportedSubmesh {
+      std::uint32_t index_offset{0}; ///< Offset into the mesh index buffer.
+      std::uint32_t index_count{0};  ///< Number of indices in the primitive range.
+      MaterialHandle material{};     ///< Material assigned to this primitive range.
+   };
+
+   /// @brief Imported mesh payload produced by the asset system.
+   struct ImportedMesh {
+      MeshHandle handle{};                 ///< Stable imported mesh handle.
+      std::string name{};                  ///< Human-readable mesh name.
+      Vector<ImportedVertex> vertices{};   ///< CPU-side imported vertex data.
+      Vector<std::uint32_t> indices{};     ///< CPU-side imported index data.
+      Vector<ImportedSubmesh> submeshes{}; ///< Primitive/material partitioning for the mesh.
+      vve::math::Vec3 bounds_min{vve::math::zeroVec3()}; ///< Object-space minimum bounds corner.
+      vve::math::Vec3 bounds_max{vve::math::zeroVec3()}; ///< Object-space maximum bounds corner.
+      std::filesystem::path source_path{}; ///< Source scene file that produced the mesh.
+   };
+
+   /// @brief One texture reference owned by an imported material.
+   struct ImportedTextureRef {
+      TextureHandle texture{};                            ///< Stable referenced texture handle.
+      TextureSemantic semantic{TextureSemantic::unknown}; ///< Meaning of the texture inside the material.
+      std::uint32_t uv_set{0};                            ///< UV channel used by the texture.
+   };
+
+   /// @brief Imported texture reference produced by the asset system.
+   struct ImportedTexture {
+      TextureHandle handle{};              ///< Stable imported texture handle.
+      std::string name{};                  ///< Human-readable texture name.
+      std::filesystem::path resolved_path{}; ///< Canonicalized external path when the texture is file-backed.
+      std::filesystem::path original_path{}; ///< Original texture path string reported by the importer.
+      bool embedded{false};                ///< Whether the texture payload is embedded in the scene file.
+      std::string embedded_id{};           ///< Embedded texture identifier when `embedded` is true.
+   };
+
+   /// @brief Imported material payload produced by the asset system.
    struct ImportedMaterial {
       MaterialHandle handle{}; ///< Stable imported material handle.
       std::string name{};      ///< Human-readable material name.
+      Vector<ImportedTextureRef> textures{}; ///< Referenced textures preserved from the source material.
+      vve::math::Vec4 base_color_factor{
+          vve::math::Vec4(vve::math::one(), vve::math::one(), vve::math::one(), vve::math::one())}; ///< Base-color multiplier.
+      vve::math::Vec3 emissive_factor{vve::math::zeroVec3()}; ///< Emissive color multiplier.
+      vve::math::Scalar roughness_factor{vve::math::one()};   ///< Roughness scalar factor.
+      vve::math::Scalar metallic_factor{vve::math::zero()};   ///< Metallic scalar factor.
+      vve::math::Scalar normal_scale{vve::math::one()};       ///< Normal-map scale factor.
+      vve::math::Scalar alpha_cutoff{vve::math::zero()};      ///< Alpha cutoff used by masked materials.
+      bool double_sided{false};                               ///< Whether the material should render both sides.
+      bool alpha_blend{false};                                ///< Whether the material expects alpha blending.
+   };
+
+   /// @brief One imported mesh instance attached to a scene node.
+   struct ImportedMeshInstance {
+      vve::Handle handle{};                          ///< Stable imported mesh-instance handle.
+      MeshHandle mesh{};                             ///< Referenced imported mesh.
+      std::optional<MaterialHandle> material_override{}; ///< Optional per-instance material override.
    };
 
    /// @brief Imported scene-node description with local transform data.
@@ -178,12 +250,15 @@ export namespace vve::v3 {
       std::string name{};       ///< Human-readable node name.
       /// @brief Local transform relative to the parent node.
       vve::math::Mat4 local_transform{vve::math::identityMat4()};
+      Vector<ImportedMeshInstance> mesh_instances{}; ///< Mesh instances attached to this node.
    };
 
    /// @brief Scene asset payload produced by import and consumed by scene instantiation.
    struct ImportedScene {
       SceneHandle handle{};                 ///< Stable scene handle.
       std::string name{};                   ///< Human-readable scene name.
+      std::filesystem::path source_path{};  ///< Source file from which the scene was imported.
+      Vector<ImportedTexture> textures{};   ///< Imported textures referenced by scene materials.
       Vector<ImportedMesh> meshes{};        ///< Imported meshes owned by the scene.
       Vector<ImportedMaterial> materials{}; ///< Imported materials owned by the scene.
       Vector<ImportedSceneNode> nodes{};    ///< Imported scene-node hierarchy.
@@ -212,11 +287,29 @@ export namespace vve::v3 {
       std::uint64_t last_updated_frame{std::numeric_limits<std::uint64_t>::max()}; ///< Frame index of the last world-transform update.
    };
 
+   /// @brief Runtime mesh-instance description attached to one scene node.
+   struct SceneMeshInstanceDesc {
+      vve::Handle handle{};                          ///< Stable runtime mesh-instance handle.
+      SceneNodeHandle node{};                        ///< Owning runtime scene node.
+      MeshHandle mesh{};                             ///< Referenced mesh handle.
+      std::optional<MaterialHandle> material_override{}; ///< Optional per-instance material override.
+   };
+
    /// @brief Runtime scene data shared across scene, resource, and render systems.
    struct SceneData {
-      SceneHandle handle{};                                             ///< Stable runtime scene handle.
-      Vector<SceneNodeDesc> nodes{};                                    ///< Runtime scene-node list.
+      SceneHandle handle{}; ///< Stable runtime scene handle.
+      std::string name{};   ///< Human-readable runtime scene name.
+      std::filesystem::path source_path{}; ///< Source file from which the scene was loaded.
+      Vector<ImportedTexture> textures{};  ///< Imported textures preserved in runtime scene storage.
+      std::unordered_map<vve::Handle::value_type, std::size_t> texture_indices{}; ///< Handle-to-index lookup cache for textures.
+      Vector<ImportedMesh> meshes{};       ///< Imported meshes preserved in runtime scene storage.
+      std::unordered_map<vve::Handle::value_type, std::size_t> mesh_indices{}; ///< Handle-to-index lookup cache for meshes.
+      Vector<ImportedMaterial> materials{}; ///< Imported materials preserved in runtime scene storage.
+      std::unordered_map<vve::Handle::value_type, std::size_t> material_indices{}; ///< Handle-to-index lookup cache for materials.
+      Vector<SceneNodeDesc> nodes{};        ///< Runtime scene-node list.
       std::unordered_map<vve::Handle::value_type, std::size_t> node_indices{}; ///< Handle-to-index lookup cache for runtime scene nodes.
+      Vector<SceneMeshInstanceDesc> mesh_instances{}; ///< Runtime mesh instances attached to scene nodes.
+      std::unordered_map<vve::Handle::value_type, std::size_t> mesh_instance_indices{}; ///< Handle-to-index lookup cache for runtime mesh instances.
    };
 
    /// @brief Runtime window snapshot used by the frame graph and world facade.

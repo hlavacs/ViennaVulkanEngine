@@ -31,31 +31,42 @@ namespace vve::v3 {
        */
       [[nodiscard]] std::expected<void, vve::Error> registerImportedScene(const ImportedScene &scene,
                                                                           const std::filesystem::path &source_path) {
-         // Record the scene itself as a source-file-backed resource.
-         records_.push_back(ResourceRecord{.id = scene.handle.value,
-                                           .kind = ResourceKind::unknown,
-                                           .location = ResourceLocation::source_file,
-                                           .generation = 1,
-                                           .source_path = source_path});
+         scenes_.insert_or_assign(scene.handle.value.value(), scene);
+         upsertRecord(ResourceRecord{.id = scene.handle.value,
+                                     .kind = ResourceKind::unknown,
+                                     .location = ResourceLocation::source_file,
+                                     .generation = 1,
+                                     .source_path = source_path});
 
-         // Meshes and materials start as imported blobs until upload moves them
-         for (const auto &mesh : scene.meshes) { // into GPU memory.
-            records_.push_back(ResourceRecord{.id = mesh.handle.value,
-                                              .kind = ResourceKind::mesh,
-                                              .location = ResourceLocation::imported_blob,
-                                              .generation = 1,
-                                              .source_path = source_path});
+         for (const auto &texture : scene.textures) {
+            textures_.insert_or_assign(texture.handle.value.value(), texture);
+            upsertRecord(ResourceRecord{.id = texture.handle.value,
+                                        .kind = ResourceKind::texture,
+                                        .location = ResourceLocation::cpu_memory,
+                                        .generation = 1,
+                                        .source_path = texture.resolved_path.empty() ? source_path
+                                                                                    : texture.resolved_path});
+         }
+
+         for (const auto &mesh : scene.meshes) {
+            meshes_.insert_or_assign(mesh.handle.value.value(), mesh);
+            upsertRecord(ResourceRecord{.id = mesh.handle.value,
+                                        .kind = ResourceKind::mesh,
+                                        .location = ResourceLocation::cpu_memory,
+                                        .generation = 1,
+                                        .source_path = mesh.source_path.empty() ? source_path : mesh.source_path});
          }
 
          for (const auto &material : scene.materials) {
-            records_.push_back(ResourceRecord{.id = material.handle.value,
-                                              .kind = ResourceKind::material,
-                                              .location = ResourceLocation::imported_blob,
-                                              .generation = 1,
-                                              .source_path = source_path});
+            materials_.insert_or_assign(material.handle.value.value(), material);
+            upsertRecord(ResourceRecord{.id = material.handle.value,
+                                        .kind = ResourceKind::material,
+                                        .location = ResourceLocation::cpu_memory,
+                                        .generation = 1,
+                                        .source_path = source_path});
          }
 
-        return {};
+         return {};
       }
 
       /// @brief Returns a copy of the currently registered resource records.
@@ -94,7 +105,23 @@ namespace vve::v3 {
       }
 
    private:
+      void upsertRecord(ResourceRecord record) {
+         const auto id = record.id.value();
+         if (const auto record_index = record_indices_.find(id); record_index != record_indices_.end()) {
+            records_[record_index->second] = std::move(record);
+            return;
+         }
+
+         record_indices_.emplace(id, records_.size());
+         records_.push_back(std::move(record));
+      }
+
       Vector<ResourceRecord> records_{}; ///< Registered resource records owned by the subsystem.
+      std::unordered_map<vve::Handle::value_type, std::size_t> record_indices_{}; ///< Record lookup cache keyed by stable resource id.
+      std::unordered_map<vve::Handle::value_type, ImportedScene> scenes_{}; ///< Imported scenes retained in CPU memory.
+      std::unordered_map<vve::Handle::value_type, ImportedTexture> textures_{}; ///< Imported texture references retained in CPU memory.
+      std::unordered_map<vve::Handle::value_type, ImportedMesh> meshes_{}; ///< Imported mesh payloads retained in CPU memory.
+      std::unordered_map<vve::Handle::value_type, ImportedMaterial> materials_{}; ///< Imported material payloads retained in CPU memory.
    };
 
    /// @brief Constructs the public resource-system facade around the concrete implementation.

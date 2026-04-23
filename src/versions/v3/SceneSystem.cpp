@@ -17,6 +17,24 @@ namespace vve::v3 {
 
    namespace {
 
+      template <typename TItem, typename THandleAccessor>
+      [[nodiscard]] std::expected<void, vve::Error>
+      rebuildHandleIndex(const Vector<TItem> &items, std::unordered_map<vve::Handle::value_type, std::size_t> &indices,
+                         THandleAccessor handle_accessor) {
+         indices.clear();
+         indices.reserve(items.size());
+
+         for (std::size_t item_index = 0; item_index < items.size(); ++item_index) {
+            const auto handle_value = handle_accessor(items[item_index]).value();
+            const auto [_, inserted] = indices.emplace(handle_value, item_index);
+            if (!inserted) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+         }
+
+         return {};
+      }
+
       /**
        * @brief Returns the runtime node index for a scene-node handle.
        * @param scene Runtime scene storage to search.
@@ -38,13 +56,24 @@ namespace vve::v3 {
        * @return Empty success result, or an error when duplicate node handles are present.
        */
       [[nodiscard]] std::expected<void, vve::Error> rebuildNodeIndex(SceneData &scene) {
-         scene.node_indices.clear();
-         scene.node_indices.reserve(scene.nodes.size());
+         return rebuildHandleIndex(scene.nodes, scene.node_indices,
+                                   [](const SceneNodeDesc &node) { return node.handle.value; });
+      }
 
-         for (std::size_t node_index = 0; node_index < scene.nodes.size(); ++node_index) {
-            const auto handle_value = scene.nodes[node_index].handle.value.value();
-            const auto [_, inserted] = scene.node_indices.emplace(handle_value, node_index);
-            if (!inserted) {
+      /**
+       * @brief Validates that all runtime mesh-instance references point to known assets.
+       * @param scene Runtime scene storage to validate.
+       * @return Empty success result, or an error when an instance references an unknown mesh or material.
+       */
+      [[nodiscard]] std::expected<void, vve::Error> validateMeshInstances(const SceneData &scene) {
+         for (const auto &mesh_instance : scene.mesh_instances) {
+            if (!scene.node_indices.contains(mesh_instance.node.value.value()) ||
+                !scene.mesh_indices.contains(mesh_instance.mesh.value.value())) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            if (mesh_instance.material_override.has_value() &&
+                !scene.material_indices.contains(mesh_instance.material_override->value.value())) {
                return std::unexpected(vve::Error::invalid_argument);
             }
          }
@@ -171,8 +200,35 @@ namespace vve::v3 {
       /// @brief Converts imported scene data into runtime scene data.
       [[nodiscard]] std::expected<SceneData, vve::Error> instantiate(const ImportedScene &scene) {
          SceneData instance{};
-         // Runtime scene instantiation currently copies the imported node data
-         instance.handle = scene.handle; // verbatim into the mutable runtime representation.
+         instance.handle = scene.handle;
+         instance.name = scene.name;
+         instance.source_path = scene.source_path;
+         instance.textures = scene.textures;
+         instance.meshes = scene.meshes;
+         instance.materials = scene.materials;
+
+         if (auto texture_index_result =
+                 rebuildHandleIndex(instance.textures, instance.texture_indices,
+                                    [](const ImportedTexture &texture) { return texture.handle.value; });
+             !texture_index_result) {
+            return std::unexpected(texture_index_result.error());
+         }
+
+         if (auto mesh_index_result = rebuildHandleIndex(instance.meshes, instance.mesh_indices,
+                                                         [](const ImportedMesh &mesh) { return mesh.handle.value; });
+             !mesh_index_result) {
+            return std::unexpected(mesh_index_result.error());
+         }
+
+         if (auto material_index_result = rebuildHandleIndex(
+                 instance.materials, instance.material_indices,
+                 [](const ImportedMaterial &material) { return material.handle.value; });
+             !material_index_result) {
+            return std::unexpected(material_index_result.error());
+         }
+
+         // Runtime scene instantiation copies the imported node data verbatim
+         // into mutable runtime scene storage.
          instance.nodes.reserve(scene.nodes.size());
          for (const auto &node : scene.nodes) {
             instance.nodes.push_back(SceneNodeDesc{.handle = node.handle,
@@ -184,8 +240,30 @@ namespace vve::v3 {
                                                    .world_transform = node.local_transform,
                                                    .last_updated_frame = std::numeric_limits<std::uint64_t>::max()});
          }
+
+         for (const auto &node : scene.nodes) {
+            for (const auto &mesh_instance : node.mesh_instances) {
+               instance.mesh_instances.push_back(SceneMeshInstanceDesc{.handle = mesh_instance.handle,
+                                                                      .node = node.handle,
+                                                                      .mesh = mesh_instance.mesh,
+                                                                      .material_override =
+                                                                          mesh_instance.material_override});
+            }
+         }
+
          if (auto index_result = rebuildNodeIndex(instance); !index_result) {
             return std::unexpected(index_result.error());
+         }
+
+         if (auto mesh_instance_index_result = rebuildHandleIndex(
+                 instance.mesh_instances, instance.mesh_instance_indices,
+                 [](const SceneMeshInstanceDesc &mesh_instance) { return mesh_instance.handle; });
+             !mesh_instance_index_result) {
+            return std::unexpected(mesh_instance_index_result.error());
+         }
+
+         if (auto validate_result = validateMeshInstances(instance); !validate_result) {
+            return std::unexpected(validate_result.error());
          }
 
          if (auto hierarchy_result = buildHierarchyLinks(instance); !hierarchy_result) {
