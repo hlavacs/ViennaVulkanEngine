@@ -219,10 +219,51 @@ void printScene(const vve::v3::ImportedScene &scene) {
     printNodes(scene);
 }
 
+class SponzaLoaderSystem final {
+public:
+    SponzaLoaderSystem() = default;
+    explicit SponzaLoaderSystem(std::filesystem::path scene_path) : scene_path_(std::move(scene_path)) {}
+
+    [[nodiscard]] std::string_view name() const noexcept { return "SponzaLoaderSystem"; }
+
+    [[nodiscard]] std::expected<void, vve::Error> init(vve::World &world) {
+        if (loaded_) {
+            return {};
+        }
+
+        if (scene_path_.empty()) {
+            return std::unexpected(vve::Error::invalid_argument);
+        }
+
+        if (const auto load_result = world.loadScene(scene_path_); !load_result) {
+            std::cerr << '[' << name() << "] failed to load scene into runtime: " << scene_path_.string() << '\n';
+            return std::unexpected(load_result.error());
+        }
+
+        loaded_ = true;
+        std::cout << '[' << name() << "] scene loaded into runtime: " << scene_path_.string() << '\n';
+        return {};
+    }
+
+    [[nodiscard]] std::expected<void, vve::Error> update(
+        vve::World &world,
+        const vve::v3::FrameContext &frame_context,
+        const vve::v3::WindowFrameData &window_frame) {
+        (void)world;
+        (void)frame_context;
+        (void)window_frame;
+        return {};
+    }
+
+private:
+    std::filesystem::path scene_path_{};
+    bool loaded_{false};
+};
+
 } // namespace
 
 /**
- * @brief Imports the Sponza scene and prints the full imported scene contents.
+ * @brief Imports the Sponza scene, prints its contents, and opens a render window.
  * @param argc Process argument count.
  * @param argv Process argument vector.
  * @return Process exit code expected by the example launcher.
@@ -244,5 +285,35 @@ int main(int argc, char **argv) {
 
     std::cout << std::fixed << std::setprecision(6);
     printScene(*imported_scene);
+
+    auto engine = vve::makeEngine(
+        vve::ApplicationName{"sponza"},
+        vve::EnableValidation{true},
+        vve::makeUserSystems(SponzaLoaderSystem{*scene_path}),
+        vve::Windows{
+            .value = {
+                vve::WindowDesc{
+                    .id = "sponza.main",
+                    .title = "VVE Sponza",
+                    .width = 1600,
+                    .height = 900,
+                    .resizable = true,
+                    .visible = true}}});
+
+    if (!engine.init()) {
+        return 1;
+    }
+
+    while (true) {
+        const auto step_result = engine.step();
+        if (!step_result) {
+            return 1;
+        }
+
+        if (*step_result == vve::FrameStatus::should_close) {
+            break;
+        }
+    }
+
     return 0;
 }
