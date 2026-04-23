@@ -175,11 +175,18 @@
             "command": "ctest",
             "args": [
                 "--test-dir",
-                "${command:cmake.buildDirectory}",
+                "${workspaceFolder}/build/debug-windows",
                 "-C",
                 "Debug",
                 "--output-on-failure"
             ],
+            "linux": {
+                "args": [
+                    "--test-dir",
+                    "${workspaceFolder}/build/debug-linux",
+                    "--output-on-failure"
+                ]
+            },
             "osx": {
                 "args": [
                     "--test-dir",
@@ -198,13 +205,22 @@
             "command": "ctest",
             "args": [
                 "--test-dir",
-                "${command:cmake.buildDirectory}",
+                "${workspaceFolder}/build/debug-windows",
                 "-C",
                 "Debug",
                 "--output-on-failure",
                 "-R",
                 "^WorldTests$"
             ],
+            "linux": {
+                "args": [
+                    "--test-dir",
+                    "${workspaceFolder}/build/debug-linux",
+                    "--output-on-failure",
+                    "-R",
+                    "^WorldTests$"
+                ]
+            },
             "osx": {
                 "args": [
                     "--test-dir",
