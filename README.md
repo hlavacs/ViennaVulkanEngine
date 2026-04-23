@@ -57,6 +57,48 @@ cmake --preset debug-macos     # macOS
 cmake --build --preset build-debug-macos
 ```
 
+## Installing vcpkg
+
+vcpkg must be installed and available in your PATH before building.
+
+### macOS
+
+**Option 1: Homebrew (recommended)**
+```bash
+brew install vcpkg
+```
+
+**Option 2: Clone and bootstrap**
+```bash
+git clone https://github.com/Microsoft/vcpkg.git ~/vcpkg
+cd ~/vcpkg
+./bootstrap-vcpkg.sh
+# Add to PATH: export PATH="$HOME/vcpkg:$PATH"
+```
+
+**Verify installation:**
+```bash
+vcpkg version
+```
+
+### Linux
+
+```bash
+git clone https://github.com/Microsoft/vcpkg.git ~/vcpkg
+cd ~/vcpkg
+./bootstrap-vcpkg.sh
+# Add to PATH: export PATH="$HOME/vcpkg:$PATH"
+```
+
+### Windows
+
+Download the latest release from https://github.com/microsoft/vcpkg or clone and bootstrap:
+```powershell
+git clone https://github.com/Microsoft/vcpkg.git
+cd vcpkg
+./bootstrap-vcpkg.bat
+```
+
 ## VS Code
 
 The supported VS Code bootstrap task is `Bootstrap Debug`. It selects the correct host preset automatically and runs:
