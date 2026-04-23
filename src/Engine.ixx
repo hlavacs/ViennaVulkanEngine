@@ -10,6 +10,10 @@ module;
 #define VVE_API
 #endif
 
+namespace vve::v3 {
+   template <typename... TUserSystems> class BasicEngineImplementation;
+}
+
 export module VEEngine;
 import std;
 export import :ECS;
@@ -31,8 +35,6 @@ export import :Error;
  * stays behind the selected engine namespace alias.
  */
 export namespace vve::v3 {
-
-   template <typename... TUserSystems> class BasicEngineImplementation;
 
    /// @brief Default concrete engine implementation for the active v3 namespace.
    using EngineImplementation = BasicEngineImplementation<>;

@@ -1,7 +1,7 @@
-export module VEEngine.V3.Types;
+export module VEEngine.V3:Types;
 // This module gathers the lightweight value types that define the contracts
 // shared between the v3 subsystem facades.
-export import VEEngine.V3.Vector;
+export import :Vector;
 import VEEngine;
 import std;
 
@@ -209,7 +209,7 @@ export namespace vve::v3 {
       vve::math::Mat4 local_transform{vve::math::identityMat4()};
       /// @brief Cached world transform updated during the scene phase.
       vve::math::Mat4 world_transform{vve::math::identityMat4()};
-      std::uint64_t last_updated_frame{0}; ///< Frame index of the last world-transform update.
+      std::uint64_t last_updated_frame{std::numeric_limits<std::uint64_t>::max()}; ///< Frame index of the last world-transform update.
    };
 
    /// @brief Runtime scene data shared across scene, resource, and render systems.

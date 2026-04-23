@@ -2,6 +2,6 @@
 	"C_Cpp.errorSquiggles": "disabled",
 	"cmake.useCMakePresets": "always",
 	"cmake.configureOnOpen": false,
-	"cmake.defaultConfigurePreset": "debug-windows",
-	"cmake.defaultBuildPreset": "build-debug-windows"
+	"cmake.defaultConfigurePreset": "debug-macos-arm64-llvm",
+	"cmake.defaultBuildPreset": "build-debug-macos-arm64-llvm"
 }

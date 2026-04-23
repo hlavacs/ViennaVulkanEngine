@@ -1,4 +1,4 @@
-export module VEEngine.V3.Vector;
+export module VEEngine.V3:Vector;
 import std;
 
 /**

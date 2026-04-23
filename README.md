@@ -2,9 +2,9 @@
 
 ## Setup
 
-This project uses `vcpkg` manifest dependencies for third-party libraries that are not already provided by the Vulkan SDK. `assimp`, `imgui`, and `sdl3-mixer` are declared in [vcpkg.json](C:/data/GitHub/ViennaVulkanEngine/vcpkg.json) and installed into the repo-local `vcpkg_installed` directory.
+This project uses `vcpkg` manifest dependencies for third-party libraries that are not already provided by the Vulkan SDK. `assimp`, `glm`, `imgui`, and `sdl3-mixer` are declared in [vcpkg.json](C:/data/GitHub/ViennaVulkanEngine/vcpkg.json) and installed into the repo-local `vcpkg_installed` directory.
 
-`glm` and `SDL3` are not installed through `vcpkg`. The project expects both to come from the Vulkan SDK. On Windows, CMake resolves `SDL3` from `$ENV{VULKAN_SDK}/cmake`.
+`SDL3` is installed transitively by `sdl3-mixer`. The project still expects Vulkan to come from a Vulkan SDK or system Vulkan installation. On Windows, CMake resolves Vulkan SDK CMake packages from `$ENV{VULKAN_SDK}/cmake`.
 
 All engine math should go through the exported `vve::math` abstraction layer instead of using raw `glm` types directly. The precision can be selected at compile time:
 
@@ -55,6 +55,24 @@ cmake --build --preset build-debug-linux
 
 cmake --preset debug-macos     # macOS
 cmake --build --preset build-debug-macos
+```
+
+On Apple Silicon macOS with Homebrew LLVM, use the arm64 LLVM preset:
+
+```bash
+brew install ninja llvm
+vcpkg install --triplet arm64-osx
+cmake --preset debug-macos-arm64-llvm
+cmake --build --preset build-debug-macos-arm64-llvm
+```
+
+On Intel macOS with Homebrew LLVM, use the x64 LLVM preset:
+
+```bash
+brew install ninja llvm
+vcpkg install --triplet x64-osx
+cmake --preset debug-macos-x64-llvm
+cmake --build --preset build-debug-macos-x64-llvm
 ```
 
 ## Installing vcpkg

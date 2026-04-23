@@ -11,8 +11,8 @@ module;
 #endif
 
 export module VEEngine.V3:Internal;
-import VEEngine.V3.Types;
-import VEEngine.V3.Systems;
+import :Types;
+import :Systems;
 import VEEngine;
 import std;
 

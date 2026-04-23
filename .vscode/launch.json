@@ -3,6 +3,107 @@
     "configurations": [
         {
             "name": "Debug game",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/exe/game",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "Build Debug"
+        },
+        {
+            "name": "Debug physics",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/exe/physics",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "Build Debug"
+        },
+        {
+            "name": "Run all tests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/opt/homebrew/bin/ctest",
+            "args": [
+                "--test-dir",
+                "${workspaceFolder}/build/debug-macos-arm64-llvm",
+                "--output-on-failure"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "Build Debug",
+            "noDebug": true
+        },
+        {
+            "name": "Debug WorldTests",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/exe/WorldTests",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "Build Debug"
+        },
+        {
+            "name": "Run all tests (macOS x64)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "/usr/local/bin/ctest",
+            "args": [
+                "--test-dir",
+                "${workspaceFolder}/build/debug-macos-x64-llvm",
+                "--output-on-failure"
+            ],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "Build Debug macOS x64 LLVM",
+            "noDebug": true
+        },
+        {
+            "name": "Debug game (macOS x64)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/exe/game",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "Build Debug macOS x64 LLVM"
+        },
+        {
+            "name": "Debug physics (macOS x64)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/exe/physics",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "Build Debug macOS x64 LLVM"
+        },
+        {
+            "name": "Debug game (Windows)",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/exe/game.exe",
@@ -14,7 +115,7 @@
             "preLaunchTask": "Build Debug"
         },
         {
-            "name": "Debug physics",
+            "name": "Debug physics (Windows)",
             "type": "cppvsdbg",
             "request": "launch",
             "program": "${workspaceFolder}/bin/exe/physics.exe",
@@ -24,46 +125,6 @@
             "environment": [],
             "console": "integratedTerminal",
             "preLaunchTask": "Build Debug"
-        },
-        {
-            "name": "Debug all tests",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "ctest",
-            "args": [
-                "--test-dir",
-                "${command:cmake.buildDirectory}",
-                "-C",
-                "Debug",
-                "--output-on-failure"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "integratedTerminal",
-            "preLaunchTask": "Build Debug",
-            "noDebug": true
-        },
-        {
-            "name": "Debug WorldTests",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "ctest",
-            "args": [
-                "--test-dir",
-                "${command:cmake.buildDirectory}",
-                "-C",
-                "Debug",
-                "--output-on-failure",
-                "-R",
-                "^WorldTests$"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "integratedTerminal",
-            "preLaunchTask": "Build Debug",
-            "noDebug": true
         }
     ],
     "compounds": [

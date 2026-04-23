@@ -10,8 +10,8 @@ module;
 #define VVE_API
 #endif
 
-export module VEEngine.V3.Systems;
-import VEEngine.V3.Types;
+export module VEEngine.V3:Systems;
+import :Types;
 import VEEngine;
 import std;
 

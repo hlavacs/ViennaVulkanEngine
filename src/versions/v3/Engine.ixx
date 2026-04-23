@@ -12,8 +12,8 @@ module;
 
 export module VEEngine.V3;
 import VEEngine;
-export import VEEngine.V3.Types;
-export import VEEngine.V3.Systems;
+export import :Types;
+export import :Systems;
 import :Internal;
 import std;
 
@@ -198,7 +198,7 @@ namespace vve::v3 {
     * @param execution_context Runtime data passed to task callbacks.
     * @return Empty success result, or an execution/validation error.
     */
-   export inline [[nodiscard]] std::expected<void, vve::Error>
+   export [[nodiscard]] inline std::expected<void, vve::Error>
    executeTaskGraph(const TaskGraph &task_graph, const TaskExecutionContext &execution_context) {
       // Validate dependencies before callbacks execute.
       const auto compiled_task_graph = detail::compileTaskGraph(task_graph);
@@ -236,8 +236,7 @@ namespace vve::v3 {
       std::tuple<TUserSystems...> user_systems_{};    ///< Compile-time typed tuple of user-system instances.
    };
 
-   export using EngineImplementation = BasicEngineImplementation<>;
-   export using Engine = vve::Engine<EngineImplementation>;
+   export using Engine = vve::Engine<BasicEngineImplementation<>>;
 
    /**
     * @brief Creates the engine implementation from a public engine configuration.

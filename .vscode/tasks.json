@@ -8,6 +8,13 @@
             "args": [
                 "install"
             ],
+            "osx": {
+                "args": [
+                    "install",
+                    "--triplet",
+                    "arm64-osx"
+                ]
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -36,7 +43,7 @@
             "osx": {
                 "args": [
                     "--preset",
-                    "debug-macos"
+                    "debug-macos-arm64-llvm"
                 ]
             }
         },
@@ -79,13 +86,88 @@
                 "args": [
                     "--build",
                     "--preset",
-                    "build-debug-macos"
+                    "build-debug-macos-arm64-llvm"
                 ]
             },
             "group": {
                 "kind": "build",
                 "isDefault": true
             }
+        },
+        {
+            "label": "Vcpkg Install macOS x64 LLVM",
+            "type": "shell",
+            "command": "vcpkg",
+            "args": [
+                "install",
+                "--triplet",
+                "x64-osx"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Configure Debug macOS x64 LLVM",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--preset",
+                "debug-macos-x64-llvm"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Debug macOS x64 LLVM",
+            "type": "shell",
+            "command": "cmake",
+            "args": [
+                "--build",
+                "--preset",
+                "build-debug-macos-x64-llvm"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Bootstrap Debug macOS x64 LLVM",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Vcpkg Install macOS x64 LLVM",
+                "Configure Debug macOS x64 LLVM",
+                "Build Debug macOS x64 LLVM"
+            ],
+            "problemMatcher": []
+        },
+        {
+            "label": "Run Unit Tests macOS x64 LLVM",
+            "type": "shell",
+            "command": "ctest",
+            "args": [
+                "--test-dir",
+                "${workspaceFolder}/build/debug-macos-x64-llvm",
+                "--output-on-failure"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Build And Test Debug macOS x64 LLVM",
+            "dependsOrder": "sequence",
+            "dependsOn": [
+                "Build Debug macOS x64 LLVM",
+                "Run Unit Tests macOS x64 LLVM"
+            ],
+            "problemMatcher": [],
+            "group": "test"
         },
         {
             "label": "Run Unit Tests",
@@ -98,6 +180,13 @@
                 "Debug",
                 "--output-on-failure"
             ],
+            "osx": {
+                "args": [
+                    "--test-dir",
+                    "${workspaceFolder}/build/debug-macos-arm64-llvm",
+                    "--output-on-failure"
+                ]
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -116,6 +205,15 @@
                 "-R",
                 "^WorldTests$"
             ],
+            "osx": {
+                "args": [
+                    "--test-dir",
+                    "${workspaceFolder}/build/debug-macos-arm64-llvm",
+                    "--output-on-failure",
+                    "-R",
+                    "^WorldTests$"
+                ]
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },

@@ -135,6 +135,10 @@ namespace vve::v3 {
       [[nodiscard]] std::expected<void, vve::Error>
       updateNodeRecursive(SceneData &scene, std::size_t node_index, const vve::math::Mat4 *parent_world, std::uint64_t current_frame) {
          auto &node = scene.nodes[node_index];
+         if (node.last_updated_frame == current_frame) {
+            return {};
+         }
+
          node.world_transform = parent_world == nullptr ? node.local_transform
                                                         : vve::math::multiply(*parent_world, node.local_transform);
          node.last_updated_frame = current_frame;
@@ -178,7 +182,7 @@ namespace vve::v3 {
                                                    .name = node.name,
                                                    .local_transform = node.local_transform,
                                                    .world_transform = node.local_transform,
-                                                   .last_updated_frame = 0});
+                                                   .last_updated_frame = std::numeric_limits<std::uint64_t>::max()});
          }
          if (auto index_result = rebuildNodeIndex(instance); !index_result) {
             return std::unexpected(index_result.error());
@@ -193,6 +197,14 @@ namespace vve::v3 {
 
       /// @brief Updates scene transforms for the current frame.
       [[nodiscard]] std::expected<void, vve::Error> updateTransforms(const FrameContext &frame_context, SceneData &scene) {
+         if (auto index_result = rebuildNodeIndex(scene); !index_result) {
+            return std::unexpected(index_result.error());
+         }
+
+         if (auto hierarchy_result = buildHierarchyLinks(scene); !hierarchy_result) {
+            return std::unexpected(hierarchy_result.error());
+         }
+
          // Seed the traversal from root nodes only so every update flows top-down through the hierarchy.
          const auto root_indices = collectRootNodeIndices(scene);
          for (const auto node_index : root_indices) {
