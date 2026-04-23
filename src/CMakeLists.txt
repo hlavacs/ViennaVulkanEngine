@@ -14,8 +14,7 @@ set_property(CACHE VVE_DEFAULT_ENGINE_NAMESPACE PROPERTY STRINGS "v3")
 target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_DEFAULT_ENGINE_NAMESPACE=${VVE_DEFAULT_ENGINE_NAMESPACE})
 
 find_package(assimp CONFIG REQUIRED)
-find_package(imgui CONFIG REQUIRED)
-find_package(SDL3_mixer CONFIG REQUIRED)
+find_package(SDL3 CONFIG REQUIRED)
 
 target_sources(ViennaVulkanEngine
     PRIVATE
@@ -53,11 +52,9 @@ target_sources(ViennaVulkanEngine
 target_link_libraries(ViennaVulkanEngine
     PUBLIC
         assimp::assimp
-        imgui::imgui
         Vulkan::Vulkan
     PRIVATE
         SDL3::SDL3
-        SDL3_mixer::SDL3_mixer
 )
 
 vve_set_output_dirs(ViennaVulkanEngine)

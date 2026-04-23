@@ -3,28 +3,38 @@
     "configurations": [
         {
             "name": "Debug game",
-            "type": "cppdbg",
+            "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/exe/game",
+            "program": "${workspaceFolder}/bin/exe/game.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false,
-            "MIMode": "lldb",
+            "console": "integratedTerminal",
             "preLaunchTask": "Build Debug"
         },
         {
             "name": "Debug physics",
-            "type": "cppdbg",
+            "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/exe/physics",
+            "program": "${workspaceFolder}/bin/exe/physics.exe",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
             "environment": [],
-            "externalConsole": false,
-            "MIMode": "lldb",
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build Debug"
+        },
+        {
+            "name": "Debug WorldTests",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/exe/WorldTests.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal",
             "preLaunchTask": "Build Debug"
         },
         {
@@ -44,19 +54,6 @@
             "MIMode": "lldb",
             "preLaunchTask": "Build Debug",
             "noDebug": true
-        },
-        {
-            "name": "Debug WorldTests",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/exe/WorldTests",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "Build Debug"
         },
         {
             "name": "Run all tests (macOS x64)",

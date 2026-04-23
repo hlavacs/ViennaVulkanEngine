@@ -4,8 +4,7 @@
   "dependencies": [
     "assimp",
     "glm",
-    "imgui",
-    "sdl3-mixer"
+    "sdl3"
   ],
-  "builtin-baseline": "fc3be1ebea7eaeb3071fe716ac65713af1f3a146"
+  "builtin-baseline": "8cf84605ce9764de46caeb47b9e710db9493add9"
 }

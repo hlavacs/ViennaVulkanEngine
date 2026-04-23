@@ -88,9 +88,6 @@
         "PATH": "${sourceDir}/tools/shims;$penv{PATH}"
       },
       "configuration": "Debug",
-      "targets": [
-        "ALL_BUILD"
-      ],
       "jobs": 16
     },
     {
