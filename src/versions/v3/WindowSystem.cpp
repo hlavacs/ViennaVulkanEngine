@@ -104,6 +104,7 @@ namespace vve::v3 {
             translateEvent(event);
          }
 
+         appendHeldKeyEvents();
          syncFrameData();
          return {};
       }
@@ -333,6 +334,40 @@ namespace vve::v3 {
             break;
          default:
             break;
+         }
+      }
+
+      /// @brief Adds current keyboard-state events so held keys are independent of OS key repeat.
+      void appendHeldKeyEvents() {
+         SDL_Window *const keyboard_focus = SDL_GetKeyboardFocus();
+         if (keyboard_focus == nullptr) {
+            return;
+         }
+
+         const SDL_WindowID window_id = SDL_GetWindowID(keyboard_focus);
+         if (!findWindowIndex(window_id).has_value()) {
+            return;
+         }
+
+         int key_count = 0;
+         const bool *const keyboard_state = SDL_GetKeyboardState(&key_count);
+         if (keyboard_state == nullptr || key_count <= 0) {
+            return;
+         }
+
+         const SDL_Keymod modifiers = SDL_GetModState();
+         for (int scancode = 0; scancode < key_count; ++scancode) {
+            if (!keyboard_state[scancode]) {
+               continue;
+            }
+
+            const auto sdl_scancode = static_cast<SDL_Scancode>(scancode);
+            const SDL_Keycode keycode = SDL_GetKeyFromScancode(sdl_scancode, modifiers, true);
+            if (keycode == SDLK_UNKNOWN) {
+               continue;
+            }
+
+            pushWindowEvent(window_id, WindowEventType::key_held, scancode, static_cast<std::int32_t>(keycode));
          }
       }
 

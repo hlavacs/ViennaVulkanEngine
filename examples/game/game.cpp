@@ -159,6 +159,7 @@ public:
             input.isKeyDown('S') || input.isKeyDown('s') ? 'S' : '-'
         };
         const std::string key_state_string{key_state.data(), key_state.size()};
+        const bool movement_key_held = key_state_string != "----";
         log_accumulator_seconds_ += frame_context.delta_seconds;
         const bool periodic_log = log_accumulator_seconds_ >= 1.0;
         const bool key_state_changed = key_state_string != last_logged_key_state_;
@@ -166,8 +167,8 @@ public:
             log_accumulator_seconds_ = 0.0;
         }
 
-        // Periodically print state so the example remains observable without
-        if (key_state_changed || reset_pressed || periodic_log) { // any game-specific UI layer.
+        // While movement keys are held, print every frame so repeated input is
+        if (movement_key_held || key_state_changed || reset_pressed || periodic_log) { // immediately observable.
             const auto main_window = world.findWindow("main");
             const auto tools_window = world.findWindow("tools");
             const auto player_x = static_cast<int>(std::lround(transform.translation.x));

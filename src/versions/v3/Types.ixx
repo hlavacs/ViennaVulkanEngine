@@ -73,6 +73,7 @@ export namespace vve::v3 {
       focus_gained,      ///< Window gained input focus.
       focus_lost,        ///< Window lost input focus.
       key_down,          ///< Keyboard key was pressed.
+      key_held,          ///< Keyboard key is currently held.
       key_up,            ///< Keyboard key was released.
       mouse_move,        ///< Mouse cursor moved within the window.
       mouse_button_down, ///< Mouse button was pressed.

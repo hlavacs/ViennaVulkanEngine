@@ -149,5 +149,26 @@ int main() {
       return 18;
    }
 
+   vve::InputState input{};
+   vve::detail::pressKey(input, 'W');
+   if (!input.isKeyDown('W') || !input.wasKeyPressed('W')) {
+      return 19;
+   }
+
+   vve::detail::beginInputFrame(input);
+   if (input.isKeyDown('W') || input.wasKeyPressed('W')) {
+      return 20;
+   }
+
+   vve::detail::holdKey(input, 'W');
+   if (!input.isKeyDown('W') || input.wasKeyPressed('W')) {
+      return 21;
+   }
+
+   vve::detail::releaseKey(input, 'W');
+   if (input.isKeyDown('W') || !input.wasKeyReleased('W')) {
+      return 22;
+   }
+
    return 0;
 }

@@ -44,14 +44,17 @@ namespace vve::v3::detail {
     * @param input Destination input snapshot exposed through `World`.
     */
    void syncWorldInput(const WindowFrameData &window_frame, vve::InputState &input) {
-      // Begin by clearing per-frame transition state while preserving longer-
-      vve::detail::beginInputFrame(input); // lived key-down and mouse-position data.
+      // Rebuild held-key state from the window system's authoritative frame
+      vve::detail::beginInputFrame(input); // snapshot while clearing per-frame transition state.
 
       for (const auto &event : window_frame.events) {
          switch (event.type) {
          case WindowEventType::key_down:
             // Key-down events update both the held set and the pressed-this-
             vve::detail::pressKey(input, event.b); // frame set.
+            break;
+         case WindowEventType::key_held:
+            vve::detail::holdKey(input, event.b);
             break;
          case WindowEventType::key_up:
             vve::detail::releaseKey(input, event.b); // Key-up events clear the held set and mark the release edge.

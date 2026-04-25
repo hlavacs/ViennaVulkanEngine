@@ -39,6 +39,7 @@ export namespace vve {
       void setMousePosition(InputState &, Handle, math::Vec2);
       void addMouseDelta(InputState &, Handle, math::Vec2);
       void addMouseWheelDelta(InputState &, Handle, math::Vec2);
+      void holdKey(InputState &, std::int32_t);
       void pressKey(InputState &, std::int32_t);
       void releaseKey(InputState &, std::int32_t);
       [[nodiscard]] const InputState &emptyInputState();
@@ -98,6 +99,7 @@ export namespace vve {
       friend void detail::setMousePosition(InputState &, Handle, math::Vec2);
       friend void detail::addMouseDelta(InputState &, Handle, math::Vec2);
       friend void detail::addMouseWheelDelta(InputState &, Handle, math::Vec2);
+      friend void detail::holdKey(InputState &, std::int32_t);
       friend void detail::pressKey(InputState &, std::int32_t);
       friend void detail::releaseKey(InputState &, std::int32_t);
    };
@@ -119,6 +121,7 @@ export namespace vve {
        * @param input Input snapshot mutated for the next frame.
        */
       inline void beginInputFrame(InputState &input) {
+         input.keys_down_.clear();
          input.keys_pressed_.clear();
          input.keys_released_.clear();
          input.mouse_delta_.clear();
@@ -158,6 +161,15 @@ export namespace vve {
              input.mouse_wheel_delta_.try_emplace(window.value(), math::Vec2(math::zero(), math::zero()));
          auto &value = it->second;
          value += delta;
+      }
+
+      /**
+       * @brief Marks a key as held without adding a pressed-this-frame edge.
+       * @param input Input snapshot receiving the held-key update.
+       * @param keycode Platform keycode that is currently down.
+       */
+      inline void holdKey(InputState &input, std::int32_t keycode) {
+         input.keys_down_.insert(keycode);
       }
 
       /**
