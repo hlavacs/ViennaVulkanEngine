@@ -28,6 +28,20 @@
             "preLaunchTask": "Build Debug"
         },
         {
+            "name": "Debug sponza",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/exe/sponza",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "internalConsoleOptions": "openOnSessionStart",
+            "MIMode": "lldb",
+            "preLaunchTask": "Build Debug"
+        },
+        {
             "name": "Debug WorldTests",
             "type": "cppdbg",
             "request": "launch",
@@ -105,6 +119,18 @@
             "preLaunchTask": "Build Debug"
         },
         {
+            "name": "Debug sponza (Windows)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/exe/sponza.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build Debug"
+        },
+        {
             "name": "Debug WorldTests (Windows)",
             "type": "cppvsdbg",
             "request": "launch",
@@ -162,7 +188,8 @@
             "name": "Debug all examples",
             "configurations": [
                 "Debug game",
-                "Debug physics"
+                "Debug physics",
+                "Debug sponza"
             ],
             "stopAll": true
         }

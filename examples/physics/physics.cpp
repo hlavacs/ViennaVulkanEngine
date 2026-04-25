@@ -102,8 +102,8 @@ int main() {
                 vve::WindowDesc{
                     .id = "physics.main",
                     .title = "VVE Physics Sandbox",
-                    .width = 960,
-                    .height = 640,
+                    .width = 800,
+                    .height = 450,
                     .resizable = true,
                     .visible = true
                 }

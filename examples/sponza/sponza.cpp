@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cstdlib>
 #include <expected>
 #include <filesystem>
@@ -17,6 +18,27 @@ import VEEngine.V3;
  */
 namespace {
 
+[[nodiscard]] constexpr std::string_view toString(vve::Error error) noexcept {
+    switch (error) {
+    case vve::Error::not_initialized:
+        return "not_initialized";
+    case vve::Error::already_initialized:
+        return "already_initialized";
+    case vve::Error::invalid_argument:
+        return "invalid_argument";
+    case vve::Error::file_not_found:
+        return "file_not_found";
+    case vve::Error::io_error:
+        return "io_error";
+    case vve::Error::unsupported_version:
+        return "unsupported_version";
+    case vve::Error::internal_error:
+        return "internal_error";
+    }
+
+    return "unknown_error";
+}
+
 [[nodiscard]] std::optional<std::filesystem::path>
 firstExistingPath(const std::vector<std::filesystem::path> &candidates) {
     for (const auto &candidate : candidates) {
@@ -29,10 +51,95 @@ firstExistingPath(const std::vector<std::filesystem::path> &candidates) {
     return std::nullopt;
 }
 
+void appendSceneCandidates(std::vector<std::filesystem::path> &candidates, const std::filesystem::path &root) {
+    if (root.empty()) {
+        return;
+    }
+
+    const std::vector<std::filesystem::path> scene_file_names{
+        "Sponza.gltf",
+        "Sponza.glb",
+        "NewSponza_Main_glTF_003.gltf"
+    };
+    const std::vector<std::filesystem::path> scene_directories{
+        root,
+        root / "Sponza",
+        root / "sponza",
+        root / "assets" / "Sponza",
+        root / "assets" / "sponza",
+        root / "main_sponza"
+    };
+
+    for (const auto &directory : scene_directories) {
+        for (const auto &file_name : scene_file_names) {
+            candidates.push_back(directory / file_name);
+        }
+    }
+}
+
+[[nodiscard]] std::filesystem::path executableDirectory(char **argv) {
+    if (argv == nullptr || argv[0] == nullptr || argv[0][0] == '\0') {
+        return {};
+    }
+
+    std::error_code error_code{};
+    const auto executable_path = std::filesystem::absolute(std::filesystem::path(argv[0]), error_code);
+    if (error_code) {
+        return {};
+    }
+
+    return executable_path.parent_path();
+}
+
+[[nodiscard]] bool wantsVerboseSceneDump(int argc, char **argv) {
+    for (int argument_index = 1; argument_index < argc; ++argument_index) {
+        if (argv[argument_index] == nullptr) {
+            continue;
+        }
+
+        const std::string_view argument{argv[argument_index]};
+        if (argument == "--verbose" || argument == "--dump-all") {
+            return true;
+        }
+    }
+
+    if (const char *verbose = std::getenv("VVE_SPONZA_VERBOSE"); verbose != nullptr) {
+        const std::string_view value{verbose};
+        return value == "1" || value == "true" || value == "TRUE" || value == "on" || value == "ON";
+    }
+
+    return false;
+}
+
+[[nodiscard]] bool wantsRuntimeSceneLoad(int argc, char **argv) {
+    for (int argument_index = 1; argument_index < argc; ++argument_index) {
+        if (argv[argument_index] == nullptr) {
+            continue;
+        }
+
+        const std::string_view argument{argv[argument_index]};
+        if (argument == "--load-runtime-scene") {
+            return true;
+        }
+    }
+
+    if (const char *load_runtime_scene = std::getenv("VVE_SPONZA_LOAD_RUNTIME_SCENE");
+        load_runtime_scene != nullptr) {
+        const std::string_view value{load_runtime_scene};
+        return value == "1" || value == "true" || value == "TRUE" || value == "on" || value == "ON";
+    }
+
+    return false;
+}
+
 [[nodiscard]] std::optional<std::filesystem::path> resolveScenePath(int argc, char **argv) {
-    if (argc > 1 && argv[1] != nullptr && argv[1][0] != '\0') {
+    for (int argument_index = 1; argument_index < argc; ++argument_index) {
+        if (argv[argument_index] == nullptr || argv[argument_index][0] == '\0' || argv[argument_index][0] == '-') {
+            continue;
+        }
+
         if (std::optional<std::filesystem::path> direct_path =
-                firstExistingPath({std::filesystem::path(argv[1])});
+                firstExistingPath({std::filesystem::path(argv[argument_index])});
             direct_path.has_value()) {
             return direct_path;
         }
@@ -48,18 +155,15 @@ firstExistingPath(const std::vector<std::filesystem::path> &candidates) {
     }
 
     const auto current_directory = std::filesystem::current_path();
-    return firstExistingPath({
-        std::filesystem::path("C:/data/GitHub/main_sponza/NewSponza_Main_glTF_003.gltf"),
-        current_directory / "Sponza.gltf",
-        current_directory / "Sponza" / "Sponza.gltf",
-        current_directory / "sponza" / "Sponza.gltf",
-        current_directory / "assets" / "Sponza" / "Sponza.gltf",
-        current_directory / "assets" / "sponza" / "Sponza.gltf",
-        current_directory / "Sponza.glb",
-        current_directory / "Sponza" / "Sponza.glb",
-        current_directory / "sponza" / "Sponza.glb",
-        current_directory / "assets" / "Sponza" / "Sponza.glb",
-        current_directory / "assets" / "sponza" / "Sponza.glb"});
+    const auto executable_directory = executableDirectory(argv);
+
+    std::vector<std::filesystem::path> candidates{};
+    appendSceneCandidates(candidates, current_directory);
+    appendSceneCandidates(candidates, current_directory.parent_path());
+    appendSceneCandidates(candidates, executable_directory);
+    appendSceneCandidates(candidates, executable_directory.parent_path().parent_path());
+    appendSceneCandidates(candidates, executable_directory.parent_path().parent_path().parent_path());
+    return firstExistingPath(candidates);
 }
 
 [[nodiscard]] std::uint64_t rawHandle(vve::Handle handle) {
@@ -219,10 +323,54 @@ void printScene(const vve::v3::ImportedScene &scene) {
     printNodes(scene);
 }
 
+void printMainObjects(const vve::v3::ImportedScene &scene) {
+    std::cout << "Main objects\n";
+    std::cout << "  scene=\"" << scene.name << "\" meshes=" << scene.meshes.size()
+              << " materials=" << scene.materials.size()
+              << " textures=" << scene.textures.size()
+              << " nodes=" << scene.nodes.size() << '\n';
+
+    std::vector<const vve::v3::ImportedSceneNode *> root_nodes{};
+    for (std::size_t node_index = 0; node_index < scene.nodes.size(); ++node_index) {
+        const auto &node = scene.nodes[node_index];
+        if (node.parent.value.isValid()) {
+            continue;
+        }
+
+        root_nodes.push_back(&node);
+        std::cout << "  root[" << node_index << "] handle=" << rawHandle(node.handle.value)
+                  << " name=\"" << node.name << "\" mesh_instances=" << node.mesh_instances.size() << '\n';
+    }
+
+    std::size_t top_level_node_count = 0;
+    std::cout << "  top_level_nodes\n";
+    for (std::size_t node_index = 0; node_index < scene.nodes.size(); ++node_index) {
+        const auto &node = scene.nodes[node_index];
+        const bool is_top_level = std::ranges::any_of(root_nodes, [&node](const auto *root_node) {
+            return root_node != nullptr && node.parent.value.value() == root_node->handle.value.value();
+        });
+        if (!is_top_level) {
+            continue;
+        }
+
+        ++top_level_node_count;
+        std::cout << "    [" << node_index << "] name=\"" << node.name
+                  << "\" mesh_instances=" << node.mesh_instances.size() << '\n';
+    }
+
+    if (top_level_node_count == 0) {
+        std::cout << "    <none>\n";
+    }
+
+    std::cout << "  root_node_count=" << root_nodes.size() << '\n';
+    std::cout << "  top_level_node_count=" << top_level_node_count << '\n';
+}
+
 class SponzaLoaderSystem final {
 public:
     SponzaLoaderSystem() = default;
-    explicit SponzaLoaderSystem(std::filesystem::path scene_path) : scene_path_(std::move(scene_path)) {}
+    explicit SponzaLoaderSystem(std::filesystem::path scene_path, const bool load_runtime_scene = false)
+        : scene_path_(std::move(scene_path)), load_runtime_scene_(load_runtime_scene) {}
 
     [[nodiscard]] std::string_view name() const noexcept { return "SponzaLoaderSystem"; }
 
@@ -235,6 +383,16 @@ public:
             return std::unexpected(vve::Error::invalid_argument);
         }
 
+        if (!load_runtime_scene_) {
+            std::cout << '[' << name() << "] scene imported for object listing; runtime scene load disabled\n";
+            std::cout << '[' << name()
+                      << "] pass --load-runtime-scene or set VVE_SPONZA_LOAD_RUNTIME_SCENE=1 to load it into the runtime\n";
+            printWindowInventory(world);
+            loaded_ = true;
+            return {};
+        }
+
+        std::cout << '[' << name() << "] loading scene into runtime: " << scene_path_.string() << '\n';
         if (const auto load_result = world.loadScene(scene_path_); !load_result) {
             std::cerr << '[' << name() << "] failed to load scene into runtime: " << scene_path_.string() << '\n';
             return std::unexpected(load_result.error());
@@ -242,6 +400,7 @@ public:
 
         loaded_ = true;
         std::cout << '[' << name() << "] scene loaded into runtime: " << scene_path_.string() << '\n';
+        printWindowInventory(world);
         return {};
     }
 
@@ -256,7 +415,21 @@ public:
     }
 
 private:
+    void printWindowInventory(vve::World &world) {
+        std::cout << '[' << name() << "] windows:";
+        bool printed_any = false;
+        for (const auto &window : world.windows()) {
+            printed_any = true;
+            std::cout << ' ' << window.id << '=' << window.width << 'x' << window.height;
+        }
+        if (!printed_any) {
+            std::cout << " <none>";
+        }
+        std::cout << '\n';
+    }
+
     std::filesystem::path scene_path_{};
+    bool load_runtime_scene_{false};
     bool loaded_{false};
 };
 
@@ -269,44 +442,58 @@ private:
  * @return Process exit code expected by the example launcher.
  */
 int main(int argc, char **argv) {
+    std::cout << std::unitbuf;
+    std::cerr << std::unitbuf;
+
+    const bool verbose_scene_dump = wantsVerboseSceneDump(argc, argv);
+    const bool load_runtime_scene = wantsRuntimeSceneLoad(argc, argv);
     const auto scene_path = resolveScenePath(argc, argv);
     if (!scene_path.has_value()) {
-        std::cerr << "Unable to locate the Sponza scene.\n";
-        std::cerr << "Pass the scene file path as the first argument or set VVE_SPONZA_SCENE.\n";
+        std::cerr << "[sponza] Unable to locate the Sponza scene.\n";
+        std::cerr << "[sponza] Pass the scene file path as the first argument or set VVE_SPONZA_SCENE.\n";
         return 1;
-    }
+    } else {
+        std::cout << "[sponza] using scene: " << scene_path->string() << '\n';
 
-    vve::v3::AssetSystem asset_system{};
-    const auto imported_scene = asset_system.importScene(*scene_path);
-    if (!imported_scene) {
-        std::cerr << "Failed to import scene: " << scene_path->string() << '\n';
-        return 1;
-    }
+        vve::v3::AssetSystem asset_system{};
+        const auto imported_scene = asset_system.importScene(*scene_path);
+        if (!imported_scene) {
+            std::cerr << "[sponza] Failed to import scene: " << scene_path->string() << '\n';
+            return 1;
+        }
 
-    std::cout << std::fixed << std::setprecision(6);
-    printScene(*imported_scene);
+        std::cout << std::fixed << std::setprecision(6);
+        printMainObjects(*imported_scene);
+        if (verbose_scene_dump) {
+            printScene(*imported_scene);
+        } else {
+            std::cout << "[sponza] Pass --verbose or set VVE_SPONZA_VERBOSE=1 for the full scene dump.\n";
+        }
+    }
 
     auto engine = vve::makeEngine(
         vve::ApplicationName{"sponza"},
         vve::EnableValidation{true},
-        vve::makeUserSystems(SponzaLoaderSystem{*scene_path}),
+        vve::makeUserSystems(SponzaLoaderSystem{*scene_path, load_runtime_scene}),
         vve::Windows{
             .value = {
                 vve::WindowDesc{
                     .id = "sponza.main",
                     .title = "VVE Sponza",
-                    .width = 1600,
-                    .height = 900,
+                    .width = 960,
+                    .height = 540,
                     .resizable = true,
                     .visible = true}}});
 
-    if (!engine.init()) {
+    if (const auto init_result = engine.init(); !init_result) {
+        std::cerr << "[sponza] engine.init failed: " << toString(init_result.error()) << '\n';
         return 1;
     }
 
     while (true) {
         const auto step_result = engine.step();
         if (!step_result) {
+            std::cerr << "[sponza] engine.step failed: " << toString(step_result.error()) << '\n';
             return 1;
         }
 

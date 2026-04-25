@@ -2,7 +2,7 @@
 
 ## Setup
 
-This project uses `vcpkg` manifest dependencies for third-party libraries that are not already provided by the Vulkan SDK. `assimp`, `glm`, `imgui`, and `sdl3-mixer` are declared in [vcpkg.json](C:/data/GitHub/ViennaVulkanEngine/vcpkg.json) and installed into the repo-local `vcpkg_installed` directory.
+This project uses `vcpkg` manifest dependencies for third-party libraries that are not already provided by the Vulkan SDK. `assimp`, `glm`, `imgui`, and `sdl3-mixer` are declared in [vcpkg.json](vcpkg.json) and installed into the repo-local `vcpkg_installed` directory.
 
 `SDL3` is installed transitively by `sdl3-mixer`. The project still expects Vulkan to come from a Vulkan SDK or system Vulkan installation. On Windows, CMake resolves Vulkan SDK CMake packages from `$ENV{VULKAN_SDK}/cmake`.
 
@@ -160,4 +160,4 @@ cmake -S . -B build/debug-windows
 cmake --build build/debug-windows --config Debug --target docs
 ```
 
-The generated output is written to [docs/build](C:/data/GitHub/ViennaVulkanEngine/docs/build). The HTML entry page is usually [docs/build/html/index.html](C:/data/GitHub/ViennaVulkanEngine/docs/build/html/index.html).
+The generated output is written to [docs/build](docs/build). The HTML entry page is usually [docs/build/html/index.html](docs/build/html/index.html).

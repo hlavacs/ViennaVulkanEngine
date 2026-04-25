@@ -231,16 +231,16 @@ int main() {
                 vve::WindowDesc{
                     .id = "main",
                     .title = "VVE Game",
-                    .width = 800,
-                    .height = 620,
+                    .width = 640,
+                    .height = 480,
                     .resizable = true,
                     .visible = true
                 },
                 vve::WindowDesc{
                     .id = "tools",
                     .title = "VVE Tools",
-                    .width = 520,
-                    .height = 620,
+                    .width = 400,
+                    .height = 480,
                     .resizable = true,
                     .visible = true
                 }
