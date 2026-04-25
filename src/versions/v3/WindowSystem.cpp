@@ -51,6 +51,7 @@ namespace vve::v3 {
       init(VectorConstRange<vve::WindowDesc> windows) {
          if (!video_initialized_) {
             if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+               std::cerr << "[SDL3WindowSystem] Failed to initialize SDL video subsystem: " << SDL_GetError() << '\n';
                return std::unexpected(vve::Error::internal_error);
             }
 
@@ -138,6 +139,72 @@ namespace vve::v3 {
          WindowState state{};         ///< Cached engine-facing window state.
       };
 
+      /// @brief Builds the SDL flag set for one engine window descriptor.
+      [[nodiscard]] static Uint64 buildWindowFlags(const vve::WindowDesc &desc) {
+         Uint64 flags = SDL_WINDOW_VULKAN;
+         if (desc.resizable) {
+            flags |= SDL_WINDOW_RESIZABLE;
+         }
+         if (!desc.visible) {
+            flags |= SDL_WINDOW_HIDDEN;
+         }
+         return flags;
+      }
+
+      /// @brief Chooses a visible position for the next created window.
+      [[nodiscard]] std::pair<int, int> nextWindowPosition(SDL_Window *window) const {
+         if (window == nullptr) {
+            return {0, 0};
+         }
+
+         int width = 0;
+         int height = 0;
+         SDL_GetWindowSize(window, &width, &height);
+
+         constexpr int margin = 32;
+         constexpr int gap = 24;
+         constexpr int cascade_step = 48;
+
+         SDL_Rect usable_bounds{};
+         const SDL_DisplayID display = SDL_GetPrimaryDisplay();
+         if (display == 0 || !SDL_GetDisplayUsableBounds(display, &usable_bounds)) {
+            const int offset = static_cast<int>(std::min<std::size_t>(windows_.size(), 8U)) * cascade_step;
+            return {margin + offset, margin + offset};
+         }
+
+         if (windows_.empty()) {
+            return {usable_bounds.x + margin, usable_bounds.y + margin};
+         }
+
+         int previous_x = usable_bounds.x + margin;
+         int previous_y = usable_bounds.y + margin;
+         if (windows_.back().window != nullptr) {
+            SDL_GetWindowPosition(windows_.back().window, &previous_x, &previous_y);
+         }
+
+         const int usable_right = usable_bounds.x + usable_bounds.w - margin;
+         const int usable_bottom = usable_bounds.y + usable_bounds.h - margin;
+         const int previous_right = previous_x + static_cast<int>(windows_.back().state.width);
+         const int previous_bottom = previous_y + static_cast<int>(windows_.back().state.height);
+
+         if (previous_right + gap + width <= usable_right) {
+            return {previous_right + gap, previous_y};
+         }
+
+         if (previous_bottom + gap + height <= usable_bottom) {
+            return {usable_bounds.x + margin, previous_bottom + gap};
+         }
+
+         const int offset = static_cast<int>(std::min<std::size_t>(windows_.size(), 8U)) * cascade_step;
+         return {usable_bounds.x + margin + offset, usable_bounds.y + margin + offset};
+      }
+
+      /// @brief Places newly created windows where they stay discoverable on screen.
+      void positionWindow(SDL_Window *window) const {
+         const auto [x, y] = nextWindowPosition(window);
+         SDL_SetWindowPosition(window, x, y);
+      }
+
       /**
        * @brief Creates one SDL window from an engine window descriptor.
        * @param desc Window descriptor from engine configuration.
@@ -153,34 +220,45 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         Uint64 flags = SDL_WINDOW_VULKAN;
-         if (desc.resizable) {
-            flags |= SDL_WINDOW_RESIZABLE;
-         }
-         if (!desc.visible) {
-            flags |= SDL_WINDOW_HIDDEN;
-         }
+         const Uint64 flags = buildWindowFlags(desc);
 
          SDL_Window *const window =
              SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.width), static_cast<int>(desc.height), flags);
-         if (window == nullptr) {
-            return std::unexpected(vve::Error::internal_error);
+         SDL_Window *resolved_window = window;
+         if (resolved_window == nullptr) {
+            const std::string vulkan_error = SDL_GetError();
+            resolved_window = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.width), static_cast<int>(desc.height),
+                                               flags & ~SDL_WINDOW_VULKAN);
+            if (resolved_window == nullptr) {
+               std::cerr << "[SDL3WindowSystem] Failed to create window '" << desc.id << "': "
+                         << SDL_GetError() << '\n';
+               return std::unexpected(vve::Error::internal_error);
+            }
+
+            std::clog << "[SDL3WindowSystem] Vulkan-capable window creation is unavailable for '" << desc.id << "': "
+                      << vulkan_error << ". Falling back to a standard SDL window.\n";
          }
+
+         positionWindow(resolved_window);
+
+         int actual_width = 0;
+         int actual_height = 0;
+         SDL_GetWindowSize(resolved_window, &actual_width, &actual_height);
 
          // Window identity is derived from the caller-supplied id so it stays
          // stable across runtime rebuilds.
          const WindowHandle handle{vve::Handle::fromHash(std::string_view(desc.id))};
-         const auto window_id = SDL_GetWindowID(window);
+         const auto window_id = SDL_GetWindowID(resolved_window);
 
          WindowRecord record{.handle = handle,
                              .id = desc.id,
-                             .window = window,
+                             .window = resolved_window,
                              .state = WindowState{.handle = handle,
                                                   .id = desc.id,
                                                   .title = desc.title,
-                                                  .width = desc.width,
-                                                  .height = desc.height,
-                                                  .focused = SDL_GetKeyboardFocus() == window,
+                                                  .width = static_cast<std::uint32_t>(std::max(actual_width, 0)),
+                                                  .height = static_cast<std::uint32_t>(std::max(actual_height, 0)),
+                                                  .focused = SDL_GetKeyboardFocus() == resolved_window,
                                                   .minimized = false,
                                                   .should_close = false}};
 

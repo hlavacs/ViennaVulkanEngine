@@ -6,13 +6,22 @@
             "type": "shell",
             "command": "vcpkg",
             "args": [
-                "install"
+                "install",
+                "--triplet",
+                "x64-windows"
             ],
             "osx": {
                 "args": [
                     "install",
                     "--triplet",
                     "arm64-osx"
+                ]
+            },
+            "linux": {
+                "args": [
+                    "install",
+                    "--triplet",
+                    "x64-linux"
                 ]
             },
             "options": {
@@ -24,6 +33,9 @@
             "label": "Configure Debug",
             "type": "shell",
             "command": "cmake",
+            "dependsOn": [
+                "Vcpkg Install"
+            ],
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -51,8 +63,6 @@
             "label": "Bootstrap Debug",
             "dependsOrder": "sequence",
             "dependsOn": [
-                "Vcpkg Install",
-                "Configure Debug",
                 "Build Debug"
             ],
             "problemMatcher": [],
@@ -64,6 +74,9 @@
             "label": "Build Debug",
             "type": "shell",
             "command": "cmake",
+            "dependsOn": [
+                "Configure Debug"
+            ],
             "options": {
                 "cwd": "${workspaceFolder}"
             },
@@ -95,84 +108,12 @@
             }
         },
         {
-            "label": "Vcpkg Install macOS x64 LLVM",
-            "type": "shell",
-            "command": "vcpkg",
-            "args": [
-                "install",
-                "--triplet",
-                "x64-osx"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "Configure Debug macOS x64 LLVM",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--preset",
-                "debug-macos-x64-llvm"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "Build Debug macOS x64 LLVM",
-            "type": "shell",
-            "command": "cmake",
-            "args": [
-                "--build",
-                "--preset",
-                "build-debug-macos-x64-llvm"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "Bootstrap Debug macOS x64 LLVM",
-            "dependsOrder": "sequence",
-            "dependsOn": [
-                "Vcpkg Install macOS x64 LLVM",
-                "Configure Debug macOS x64 LLVM",
-                "Build Debug macOS x64 LLVM"
-            ],
-            "problemMatcher": []
-        },
-        {
-            "label": "Run Unit Tests macOS x64 LLVM",
-            "type": "shell",
-            "command": "ctest",
-            "args": [
-                "--test-dir",
-                "${workspaceFolder}/build/debug-macos-x64-llvm",
-                "--output-on-failure"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": []
-        },
-        {
-            "label": "Build And Test Debug macOS x64 LLVM",
-            "dependsOrder": "sequence",
-            "dependsOn": [
-                "Build Debug macOS x64 LLVM",
-                "Run Unit Tests macOS x64 LLVM"
-            ],
-            "problemMatcher": [],
-            "group": "test"
-        },
-        {
             "label": "Run Unit Tests",
             "type": "shell",
             "command": "ctest",
+            "dependsOn": [
+                "Build Debug"
+            ],
             "args": [
                 "--test-dir",
                 "${workspaceFolder}/build/debug-windows",
@@ -203,6 +144,9 @@
             "label": "Run World Tests",
             "type": "shell",
             "command": "ctest",
+            "dependsOn": [
+                "Build Debug"
+            ],
             "args": [
                 "--test-dir",
                 "${workspaceFolder}/build/debug-windows",
@@ -239,7 +183,6 @@
             "label": "Build And Test Debug",
             "dependsOrder": "sequence",
             "dependsOn": [
-                "Build Debug",
                 "Run Unit Tests"
             ],
             "problemMatcher": [],

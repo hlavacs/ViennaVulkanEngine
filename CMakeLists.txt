@@ -6,7 +6,7 @@ if(NOT DEFINED VVE_VCPKG_TRIPLET OR VVE_VCPKG_TRIPLET STREQUAL "")
    elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux")
       set(VVE_VCPKG_TRIPLET_DEFAULT "x64-linux")
    elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Darwin")
-      set(VVE_VCPKG_TRIPLET_DEFAULT "x64-osx")
+      set(VVE_VCPKG_TRIPLET_DEFAULT "arm64-osx")
    else()
       message(FATAL_ERROR "Unsupported host platform '${CMAKE_HOST_SYSTEM_NAME}' for default vcpkg triplet selection.")
    endif()
@@ -43,6 +43,10 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_compile_options(
    "$<$<CXX_COMPILER_ID:MSVC>:/MP>"
 )
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+   add_compile_options(-Wno-reserved-module-identifier)
+endif()
 
 find_package(Doxygen QUIET)
 if(DOXYGEN_FOUND)

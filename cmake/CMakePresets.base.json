@@ -43,7 +43,7 @@
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "VVE_VCPKG_TRIPLET": "x64-osx"
+        "VVE_VCPKG_TRIPLET": "arm64-osx"
       }
     },
     {
@@ -60,22 +60,6 @@
         "CMAKE_EXPERIMENTAL_CXX_IMPORT_STD": "451f2fe2-a8a2-47c3-bc32-94786d8fc91b",
         "CMAKE_OSX_ARCHITECTURES": "arm64",
         "VVE_VCPKG_TRIPLET": "arm64-osx"
-      }
-    },
-    {
-      "name": "debug-macos-x64-llvm",
-      "displayName": "Debug (macOS x64 LLVM)",
-      "inherits": "debug-base",
-      "generator": "Ninja",
-      "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CXX_COMPILER": "/usr/local/opt/llvm/bin/clang++",
-        "CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS": "/usr/local/opt/llvm/bin/clang-scan-deps",
-        "CMAKE_CXX_MODULE_STD": "ON",
-        "CMAKE_CXX_STDLIB_MODULES_JSON": "/usr/local/opt/llvm/lib/c++/libc++.modules.json",
-        "CMAKE_EXPERIMENTAL_CXX_IMPORT_STD": "451f2fe2-a8a2-47c3-bc32-94786d8fc91b",
-        "CMAKE_OSX_ARCHITECTURES": "x86_64",
-        "VVE_VCPKG_TRIPLET": "x64-osx"
       }
     }
   ],
@@ -106,12 +90,6 @@
       "name": "build-debug-macos-arm64-llvm",
       "displayName": "Build Debug (macOS arm64 LLVM)",
       "configurePreset": "debug-macos-arm64-llvm",
-      "jobs": 16
-    },
-    {
-      "name": "build-debug-macos-x64-llvm",
-      "displayName": "Build Debug (macOS x64 LLVM)",
-      "configurePreset": "debug-macos-x64-llvm",
       "jobs": 16
     }
   ]

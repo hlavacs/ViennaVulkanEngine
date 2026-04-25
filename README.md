@@ -35,7 +35,7 @@ All example targets now follow that single engine namespace selection automatica
 The default setup is host-aware:
 - Windows uses the `x64-windows` vcpkg triplet
 - Linux uses the `x64-linux` vcpkg triplet
-- macOS uses the `x64-osx` vcpkg triplet
+- macOS uses the `arm64-osx` vcpkg triplet
 
 `vcpkg install` is an explicit bootstrap step. Configure and build consume the already-installed packages from `vcpkg_installed/<triplet>`.
 
@@ -64,15 +64,6 @@ brew install ninja llvm
 vcpkg install --triplet arm64-osx
 cmake --preset debug-macos-arm64-llvm
 cmake --build --preset build-debug-macos-arm64-llvm
-```
-
-On Intel macOS with Homebrew LLVM, use the x64 LLVM preset:
-
-```bash
-brew install ninja llvm
-vcpkg install --triplet x64-osx
-cmake --preset debug-macos-x64-llvm
-cmake --build --preset build-debug-macos-x64-llvm
 ```
 
 ## Installing vcpkg

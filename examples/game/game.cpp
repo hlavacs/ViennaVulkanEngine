@@ -1,8 +1,10 @@
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <cstdint>
 #include <expected>
 #include <iostream>
+#include <string>
 #include <string_view>
 
 import VEEngine;
@@ -13,6 +15,27 @@ import VEEngine.V3;
  * @brief Interactive example that drives a small user-system-based game loop.
  */
 namespace {
+
+[[nodiscard]] constexpr std::string_view toString(vve::Error error) noexcept {
+    switch (error) {
+    case vve::Error::not_initialized:
+        return "not_initialized";
+    case vve::Error::already_initialized:
+        return "already_initialized";
+    case vve::Error::invalid_argument:
+        return "invalid_argument";
+    case vve::Error::file_not_found:
+        return "file_not_found";
+    case vve::Error::io_error:
+        return "io_error";
+    case vve::Error::unsupported_version:
+        return "unsupported_version";
+    case vve::Error::internal_error:
+        return "internal_error";
+    }
+
+    return "unknown_error";
+}
 
 /**
  * @brief Example gameplay component storing planar velocity.
@@ -51,6 +74,7 @@ public:
         player_ = *player_result;
 
         std::cout << '[' << name() << "] spawned entity " << player_.value() << '\n';
+        printWindowInventory(world);
         return {};
     }
 
@@ -127,26 +151,66 @@ public:
             return std::unexpected(put_velocity_result.error());
         }
 
+        const bool reset_pressed = input.wasKeyPressed('R') || input.wasKeyPressed('r');
+        const std::array<char, 4> key_state{
+            input.isKeyDown('A') || input.isKeyDown('a') ? 'A' : '-',
+            input.isKeyDown('D') || input.isKeyDown('d') ? 'D' : '-',
+            input.isKeyDown('W') || input.isKeyDown('w') ? 'W' : '-',
+            input.isKeyDown('S') || input.isKeyDown('s') ? 'S' : '-'
+        };
+        const std::string key_state_string{key_state.data(), key_state.size()};
+        log_accumulator_seconds_ += frame_context.delta_seconds;
+        const bool periodic_log = log_accumulator_seconds_ >= 1.0;
+        const bool key_state_changed = key_state_string != last_logged_key_state_;
+        if (periodic_log) {
+            log_accumulator_seconds_ = 0.0;
+        }
+
         // Periodically print state so the example remains observable without
-        if (frame_counter_++ % 120 == 0) { // any game-specific UI layer.
+        if (key_state_changed || reset_pressed || periodic_log) { // any game-specific UI layer.
             const auto main_window = world.findWindow("main");
+            const auto tools_window = world.findWindow("tools");
             const auto player_x = static_cast<int>(std::lround(transform.translation.x));
             const auto player_y = static_cast<int>(std::lround(transform.translation.y));
-            std::cout << '[' << name() << "] player=(" << player_x << ", " << player_y << ')';
+            std::cout << '[' << name() << "] player=(" << player_x << ", " << player_y << ')'
+                      << " velocity=(" << static_cast<int>(std::lround(velocity.x)) << ", "
+                      << static_cast<int>(std::lround(velocity.y)) << ')'
+                      << " keys=" << key_state_string;
             if (main_window) {
-                std::cout << " window=" << main_window->width << 'x' << main_window->height;
+                std::cout << " main=" << main_window->width << 'x' << main_window->height
+                          << (main_window->focused ? "[focused]" : "");
+            }
+            if (tools_window) {
+                std::cout << " tools=" << tools_window->width << 'x' << tools_window->height
+                          << (tools_window->focused ? "[focused]" : "");
             }
             std::cout << '\n';
+            last_logged_key_state_ = key_state_string;
         }
 
         return {};
     }
 
 private:
+    void printWindowInventory(vve::World& world) {
+        std::cout << '[' << name() << "] windows:";
+        bool printed_any = false;
+        for (const auto& window : world.windows()) {
+            printed_any = true;
+            std::cout << ' ' << window.id << '=' << window.width << 'x' << window.height;
+        }
+        if (!printed_any) {
+            std::cout << " <none>";
+        }
+        std::cout << '\n';
+    }
+
     /// @brief Handle of the player entity created during initialization.
     vve::Handle player_{};
-    /// @brief Counter used to throttle example logging.
-    std::uint64_t frame_counter_{0};
+    /// @brief Tracks time until the next heartbeat log line.
+    double log_accumulator_seconds_{0.0};
+    /// @brief Stores the last emitted key-state summary so repeated idle frames stay quiet.
+    std::string last_logged_key_state_{"----"};
 };
 
 /**
@@ -154,6 +218,8 @@ private:
  * @return Process exit code expected by the example launcher.
  */
 int main() {
+    std::cout << std::unitbuf;
+    std::cerr << std::unitbuf;
 
     // Configure a two-window sample runtime so the example exercises the
     auto engine = vve::makeEngine( // multi-window API shape exposed by the engine.
@@ -165,16 +231,16 @@ int main() {
                 vve::WindowDesc{
                     .id = "main",
                     .title = "VVE Game",
-                    .width = 1600,
-                    .height = 900,
+                    .width = 800,
+                    .height = 620,
                     .resizable = true,
                     .visible = true
                 },
                 vve::WindowDesc{
                     .id = "tools",
                     .title = "VVE Tools",
-                    .width = 960,
-                    .height = 720,
+                    .width = 520,
+                    .height = 620,
                     .resizable = true,
                     .visible = true
                 }
@@ -188,7 +254,8 @@ int main() {
     std::cout << "VVE " << *version_major << ".0\n";
     
 
-    if (!engine.init()) {
+    if (const auto init_result = engine.init(); !init_result) {
+        std::cerr << "[game] engine.init failed: " << toString(init_result.error()) << '\n';
         return 1;
     }
 
@@ -196,6 +263,7 @@ int main() {
     while (true) { // engine's explicit `FrameStatus` contract.
         const auto step_result = engine.step();
         if (!step_result) {
+            std::cerr << "[game] engine.step failed: " << toString(step_result.error()) << '\n';
             return 1;
         }
 
