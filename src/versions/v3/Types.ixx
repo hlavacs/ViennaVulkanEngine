@@ -864,6 +864,7 @@ export namespace vve::v3 {
    struct WindowRenderPipeline {
       WindowHandle window{};   ///< Window owning the render pipeline.
       std::string window_id{}; ///< Stable window string id.
+      RendererDesc renderer{}; ///< Backend renderer selected for this window.
       RenderGraph graph{};     ///< Render graph executed for the window.
    };
 

@@ -186,11 +186,19 @@ namespace vve::v3::detail {
       runtime.render_pipelines.clear();
       runtime.render_pipelines.reserve(runtime.window_system.windows().size());
       for (const auto &window : runtime.window_system.windows()) {
+         const auto renderer = runtime.graphics_backend.createRenderer(window.renderer_id);
+         if (!renderer) {
+            std::cerr << "[VulkanRuntime] Unsupported renderer id for window '" << window.id
+                      << "': " << window.renderer_id << '\n';
+            return std::unexpected(renderer.error());
+         }
+
          // Each runtime window receives a static render graph during runtime
          // assembly so frame execution can reuse the same pipeline description.
          runtime.render_pipelines.push_back(
              WindowRenderPipeline{.window = window.handle,
                                   .window_id = window.id,
+                                  .renderer = *renderer,
                                   .graph = runtime.render_system->buildStaticGraph(window.handle)});
       }
       if (desc.imgui_enabled) {

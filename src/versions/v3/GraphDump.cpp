@@ -189,7 +189,10 @@ namespace vve::v3::detail {
          // Each window receives its own subgraph so per-window render graphs
          // remain visually separated in the combined dump.
          output << "  subgraph cluster_render_" << pipeline.window.value.value() << " {\n";
-         output << "    label=\"Render Graph: " << escapeDotLabel(pipeline.window_id) << "\";\n";
+         output << "    label=\""
+                << escapeDotLabel(std::format("Render Graph: {}\\nrenderer={}", pipeline.window_id,
+                                              pipeline.renderer.id))
+                << "\";\n";
          output << "    color=\"#97c47f\";\n";
          output << "    style=rounded;\n";
 
