@@ -87,6 +87,12 @@ if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "")
    endif()
 endif()
 
+if(EXISTS "${VVE_VCPKG_INSTALLED_DIR}/share/sdl3/SDL3Config.cmake")
+   set(SDL3_DIR "${VVE_VCPKG_INSTALLED_DIR}/share/sdl3" CACHE PATH "SDL3 package configuration directory from vcpkg_installed" FORCE)
+elseif(EXISTS "${VVE_VCPKG_INSTALLED_DIR}/share/SDL3/SDL3Config.cmake")
+   set(SDL3_DIR "${VVE_VCPKG_INSTALLED_DIR}/share/SDL3" CACHE PATH "SDL3 package configuration directory from vcpkg_installed" FORCE)
+endif()
+
 find_package(Vulkan REQUIRED)
 find_package(slang CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)

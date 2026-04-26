@@ -3,7 +3,12 @@
   "version-string": "3.0.0",
   "dependencies": [
     "assimp",
-    "sdl3"
+    {
+      "name": "sdl3",
+      "features": [
+        "vulkan"
+      ]
+    }
   ],
   "builtin-baseline": "8cf84605ce9764de46caeb47b9e710db9493add9"
 }

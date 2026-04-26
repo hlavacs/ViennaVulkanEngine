@@ -13,11 +13,25 @@ set(VVE_DEFAULT_ENGINE_NAMESPACE "v3" CACHE STRING "Default engine namespace sel
 set_property(CACHE VVE_DEFAULT_ENGINE_NAMESPACE PROPERTY STRINGS "v3")
 target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_DEFAULT_ENGINE_NAMESPACE=${VVE_DEFAULT_ENGINE_NAMESPACE})
 
+set(VVE_DEFAULT_VULKAN_ICD "" CACHE STRING "Default Vulkan ICD selector used when VVE_VULKAN_ICD is unset")
+set_property(CACHE VVE_DEFAULT_VULKAN_ICD PROPERTY STRINGS "" "system" "kosmickrisp")
+target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_DEFAULT_VULKAN_ICD="${VVE_DEFAULT_VULKAN_ICD}")
+
 find_package(assimp CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
 
 if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "" AND EXISTS "${VVE_VULKAN_SDK_ROOT}/include/glm/glm.hpp")
    target_include_directories(ViennaVulkanEngine BEFORE PUBLIC "${VVE_VULKAN_SDK_ROOT}/include")
+endif()
+
+if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "")
+   file(TO_CMAKE_PATH "${VVE_VULKAN_SDK_ROOT}" VVE_VULKAN_SDK_ROOT_COMPILE_PATH)
+   target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_VULKAN_SDK_ROOT="${VVE_VULKAN_SDK_ROOT_COMPILE_PATH}")
+endif()
+
+if(APPLE AND DEFINED Vulkan_LIBRARY AND NOT Vulkan_LIBRARY STREQUAL "")
+   file(TO_CMAKE_PATH "${Vulkan_LIBRARY}" VVE_SDL_VULKAN_LIBRARY_COMPILE_PATH)
+   target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_SDL_VULKAN_LIBRARY="${VVE_SDL_VULKAN_LIBRARY_COMPILE_PATH}")
 endif()
 
 target_sources(ViennaVulkanEngine

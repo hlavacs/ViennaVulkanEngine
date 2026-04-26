@@ -218,7 +218,7 @@ private:
  * @brief Runs the interactive game example.
  * @return Process exit code expected by the example launcher.
  */
-int main() {
+int main(int, char **) {
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
 

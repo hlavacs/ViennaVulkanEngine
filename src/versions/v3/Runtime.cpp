@@ -1,3 +1,8 @@
+module;
+
+#include <cctype>
+#include <cstdlib>
+
 module VEEngine.V3;
 import std;
 import :Internal;
@@ -16,6 +21,125 @@ namespace vve::v3::detail {
    /// @brief Resolves built-in shader files next to the v3 implementation sources.
    [[nodiscard]] std::filesystem::path builtInShaderPath(std::string_view filename) {
       return std::filesystem::path(__FILE__).parent_path() / "shaders" / filename;
+   }
+
+   /// @brief Returns an environment variable value as an owning string.
+   [[nodiscard]] std::string environmentValue(const char *name) {
+      if (name == nullptr) {
+         return {};
+      }
+
+      const char *value = std::getenv(name);
+      return value == nullptr ? std::string{} : std::string(value);
+   }
+
+   /// @brief Returns the CMake-configured default Vulkan ICD selector.
+   [[nodiscard]] std::string defaultVulkanIcdSelector() {
+#ifdef VVE_DEFAULT_VULKAN_ICD
+      return std::string{VVE_DEFAULT_VULKAN_ICD};
+#else
+      return {};
+#endif
+   }
+
+   /// @brief Returns a lowercase copy for small environment selector values.
+   [[nodiscard]] std::string lowerAscii(std::string value) {
+      std::ranges::transform(value, value.begin(), [](unsigned char character) {
+         return static_cast<char>(std::tolower(character));
+      });
+      return value;
+   }
+
+   /// @brief Sets an environment variable before the Vulkan loader is touched by SDL or the backend.
+   [[nodiscard]] bool setProcessEnvironment(const char *name, const std::filesystem::path &value) {
+      const auto value_string = value.string();
+#if defined(_WIN32)
+      return _putenv_s(name, value_string.c_str()) == 0;
+#else
+      return setenv(name, value_string.c_str(), 1) == 0;
+#endif
+   }
+
+   /// @brief Returns candidate KosmicKrisp ICD manifests from explicit, SDK, and system locations.
+   [[nodiscard]] std::vector<std::filesystem::path> kosmicKrispIcdCandidates() {
+      std::vector<std::filesystem::path> candidates{};
+
+      if (const auto explicit_manifest = environmentValue("VVE_KOSMICKRISP_ICD"); !explicit_manifest.empty()) {
+         candidates.emplace_back(explicit_manifest);
+      }
+
+#if defined(VVE_VULKAN_SDK_ROOT)
+      candidates.emplace_back(std::filesystem::path(VVE_VULKAN_SDK_ROOT) / "share" / "vulkan" / "icd.d" /
+                              "libkosmickrisp_icd.json");
+#endif
+
+      if (const auto vulkan_sdk = environmentValue("VULKAN_SDK"); !vulkan_sdk.empty()) {
+         candidates.emplace_back(std::filesystem::path(vulkan_sdk) / "share" / "vulkan" / "icd.d" /
+                                 "libkosmickrisp_icd.json");
+      }
+
+#if defined(__APPLE__)
+      candidates.emplace_back("/usr/local/share/vulkan/icd.d/libkosmickrisp_icd.json");
+      candidates.emplace_back("/opt/homebrew/share/vulkan/icd.d/libkosmickrisp_icd.json");
+#endif
+
+      return candidates;
+   }
+
+   /// @brief Finds the first existing KosmicKrisp ICD manifest.
+   [[nodiscard]] std::optional<std::filesystem::path> findKosmicKrispIcdManifest() {
+      for (const auto &candidate : kosmicKrispIcdCandidates()) {
+         std::error_code error_code{};
+         if (std::filesystem::exists(candidate, error_code) && !error_code) {
+            return std::filesystem::weakly_canonical(candidate, error_code);
+         }
+      }
+
+      return std::nullopt;
+   }
+
+   /**
+    * @brief Applies the engine's optional Vulkan ICD selector before any Vulkan user initializes.
+    *
+    * `VK_ICD_FILENAMES` remains the authoritative Vulkan-loader override. The
+    * engine selector is only a convenience for project launch scripts and
+    * examples; it resolves to the SDK/system KosmicKrisp ICD manifest.
+    */
+   [[nodiscard]] std::expected<void, vve::Error> configureVulkanIcdSelection() {
+      auto requested_icd = environmentValue("VVE_VULKAN_ICD");
+      if (requested_icd.empty()) {
+         requested_icd = defaultVulkanIcdSelector();
+      }
+
+      requested_icd = lowerAscii(std::move(requested_icd));
+      if (requested_icd.empty() || requested_icd == "default" || requested_icd == "system") {
+         return {};
+      }
+
+      if (!environmentValue("VK_ICD_FILENAMES").empty()) {
+         std::clog << "[VulkanRuntime] VK_ICD_FILENAMES is already set; VVE_VULKAN_ICD=" << requested_icd
+                   << " will not override it.\n";
+         return {};
+      }
+
+      if (requested_icd != "kosmickrisp") {
+         std::cerr << "[VulkanRuntime] Unsupported VVE_VULKAN_ICD value: " << requested_icd << '\n';
+         return std::unexpected(vve::Error::invalid_argument);
+      }
+
+      const auto manifest = findKosmicKrispIcdManifest();
+      if (!manifest.has_value()) {
+         std::cerr << "[VulkanRuntime] Unable to locate libkosmickrisp_icd.json for VVE_VULKAN_ICD=kosmickrisp.\n";
+         return std::unexpected(vve::Error::file_not_found);
+      }
+
+      if (!setProcessEnvironment("VK_ICD_FILENAMES", *manifest)) {
+         std::cerr << "[VulkanRuntime] Failed to set VK_ICD_FILENAMES=" << manifest->string() << '\n';
+         return std::unexpected(vve::Error::internal_error);
+      }
+
+      std::clog << "[VulkanRuntime] VK_ICD_FILENAMES=" << manifest->string() << '\n';
+      return {};
    }
 
    } // namespace
@@ -65,6 +189,9 @@ namespace vve::v3::detail {
       if (auto window_result = runtime.window_system.init(makeRange(desc.windows));
           !window_result) {
          return std::unexpected(window_result.error());
+      }
+      if (auto icd_result = configureVulkanIcdSelection(); !icd_result) {
+         return std::unexpected(icd_result.error());
       }
       *runtime.window_frame = runtime.window_system.frameData();
       runtime.render_pipelines.clear();

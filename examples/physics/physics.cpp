@@ -89,7 +89,7 @@ private:
  * @brief Runs the physics sample shell.
  * @return Process exit code expected by the example launcher.
  */
-int main() {
+int main(int, char **) {
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
 

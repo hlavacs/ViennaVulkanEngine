@@ -2,9 +2,9 @@
 
 ## Setup
 
-This project uses `vcpkg` manifest dependencies for third-party libraries that are not already provided by the Vulkan SDK. `assimp`, `glm`, `imgui`, and `sdl3-mixer` are declared in [vcpkg.json](vcpkg.json) and installed into the repo-local `vcpkg_installed` directory.
+This project uses `vcpkg` manifest dependencies for third-party libraries that are not already provided by the Vulkan SDK. `assimp` and `sdl3` are declared in [vcpkg.json](vcpkg.json) and installed into the repo-local `vcpkg_installed` directory. SDL3 is built with its Vulkan feature enabled so the examples can create Vulkan-capable windows.
 
-`SDL3` is installed transitively by `sdl3-mixer`. The project expects Vulkan and Slang to come from the Vulkan SDK. On Windows, CMake resolves the SDK from `$ENV{VULKAN_SDK}`. On macOS, CMake also auto-detects SDK installs below `$HOME/VulkanSDK/*/macOS`.
+The project expects Vulkan, Slang, GLM, and optional macOS Vulkan ICDs such as KosmicKrisp to come from the Vulkan SDK. On Windows, CMake resolves the SDK from `$ENV{VULKAN_SDK}`. On macOS, CMake also auto-detects SDK installs below `$HOME/VulkanSDK/*/macOS`.
 
 All engine math should go through the exported `vve::math` abstraction layer instead of using raw `glm` types directly. The precision can be selected at compile time:
 
@@ -14,6 +14,31 @@ cmake --build --preset build-debug-windows
 ```
 
 With `VVE_MATH_USE_DOUBLE=OFF` the engine uses `float`; with `ON` it uses `double`.
+
+### Vulkan ICD Selection
+
+The engine links against the Vulkan loader, not directly against individual drivers. On macOS, KosmicKrisp is selected through its Vulkan ICD manifest (`libkosmickrisp_icd.json`) when that manifest is present in the Vulkan SDK or a system Vulkan install.
+
+For VS Code and normal macOS GUI debugging, configure the default selector and then build:
+
+```bash
+cmake --preset debug-macos-arm64-llvm -DVVE_DEFAULT_VULKAN_ICD=kosmickrisp
+cmake --build --preset build-debug-macos-arm64-llvm
+```
+
+The runtime resolves `libkosmickrisp_icd.json`, sets `VK_ICD_FILENAMES` before the engine creates its Vulkan instance, and prints the Vulkan devices and driver metadata exposed by the selected ICD. SDL window creation is left on the system/default display path so platform window discovery is not constrained by a specific Vulkan ICD. If `VK_ICD_FILENAMES` is already set, the engine respects it and does not override it.
+
+For manual command-line launches, the same selector can be supplied per process:
+
+```bash
+VVE_VULKAN_ICD=kosmickrisp bin/exe/game
+```
+
+A custom KosmicKrisp manifest can be supplied with:
+
+```bash
+VVE_KOSMICKRISP_ICD=/path/to/libkosmickrisp_icd.json VVE_VULKAN_ICD=kosmickrisp bin/exe/game
+```
 
 The public `vve::Engine<>`, `vve::ECS<>`, and `vve::World` aliases are selected through a single namespace-style define:
 

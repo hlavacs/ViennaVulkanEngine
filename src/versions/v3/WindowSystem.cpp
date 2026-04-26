@@ -2,6 +2,15 @@ module;
 
 #include "FacadeMacros.hpp"
 #include <SDL3/SDL.h>
+#ifndef SDL_MAIN_HANDLED
+#define SDL_MAIN_HANDLED
+#define VVE_DEFINED_SDL_MAIN_HANDLED
+#endif
+#include <SDL3/SDL_main.h>
+#ifdef VVE_DEFINED_SDL_MAIN_HANDLED
+#undef SDL_MAIN_HANDLED
+#undef VVE_DEFINED_SDL_MAIN_HANDLED
+#endif
 
 module VEEngine.V3;
 import std;
@@ -50,6 +59,8 @@ namespace vve::v3 {
       [[nodiscard]] std::expected<void, vve::Error>
       init(VectorConstRange<vve::WindowDesc> windows) {
          if (!video_initialized_) {
+            configureVulkanLoader();
+            SDL_SetMainReady();
             if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
                std::cerr << "[SDL3WindowSystem] Failed to initialize SDL video subsystem: " << SDL_GetError() << '\n';
                return std::unexpected(vve::Error::internal_error);
@@ -150,6 +161,15 @@ namespace vve::v3 {
             flags |= SDL_WINDOW_HIDDEN;
          }
          return flags;
+      }
+
+      /// @brief Keeps SDL's Vulkan window support on the same loader selected by CMake.
+      void configureVulkanLoader() const {
+#ifdef VVE_SDL_VULKAN_LIBRARY
+         if (!SDL_SetHint(SDL_HINT_VULKAN_LIBRARY, VVE_SDL_VULKAN_LIBRARY)) {
+            std::clog << "[SDL3WindowSystem] Failed to set SDL Vulkan loader hint: " << SDL_GetError() << '\n';
+         }
+#endif
       }
 
       /// @brief Chooses a visible position for the next created window.
