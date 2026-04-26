@@ -3,7 +3,6 @@
   "version-string": "3.0.0",
   "dependencies": [
     "assimp",
-    "glm",
     "sdl3"
   ],
   "builtin-baseline": "8cf84605ce9764de46caeb47b9e710db9493add9"
