@@ -253,17 +253,26 @@ namespace vve::v3 {
          return layout;
       }
 
+      /// @brief Backend-owned shader module plus the entry-point metadata required by VkPipeline creation.
+      struct VulkanShaderModule {
+         VkShaderModule module{VK_NULL_HANDLE};
+         ShaderStage stage{ShaderStage::vertex};
+         std::string entry_point{};
+      };
+
       /// @brief Backend-owned Vulkan objects created for one reflected pipeline layout.
       struct VulkanPipelineResources {
          PipelineBackendResources summary{};
-         std::vector<VkShaderModule> shader_modules{};
+         std::vector<VulkanShaderModule> shader_modules{};
          std::vector<VkDescriptorSetLayout> descriptor_set_layouts{};
          VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
       };
 
-      /// @brief Backend-owned preparation state for one future VkPipeline.
+      /// @brief Backend-owned state for one created VkPipeline.
       struct VulkanGraphicsPipelineResources {
          GraphicsPipelineResources summary{};
+         VkRenderPass render_pass{VK_NULL_HANDLE};
+         VkPipeline pipeline{VK_NULL_HANDLE};
       };
 
       /// @brief Physical device and queue family selected for backend object creation.
@@ -315,7 +324,7 @@ namespace vve::v3 {
                    desc.cull_mode == GraphicsCullMode::back && desc.depth_test_enabled &&
                    desc.depth_write_enabled && desc.depth_format != GraphicsDepthFormat::none &&
                    desc.color_attachment_count == 1 && desc.vertex_binding_count == 1 &&
-                   desc.vertex_attribute_count >= 3;
+                   desc.vertex_attribute_count >= 5;
          }
 
          if (desc.renderer_id == "deferred") {
@@ -323,7 +332,7 @@ namespace vve::v3 {
                    desc.topology == GraphicsPrimitiveTopology::triangle_list &&
                    desc.depth_test_enabled && desc.depth_write_enabled &&
                    desc.depth_format != GraphicsDepthFormat::none && desc.color_attachment_count >= 3 &&
-                   desc.vertex_binding_count == 1 && desc.vertex_attribute_count >= 3;
+                   desc.vertex_binding_count == 1 && desc.vertex_attribute_count >= 5;
          }
 
          if (desc.renderer_id == "path_tracing") {
@@ -358,6 +367,20 @@ namespace vve::v3 {
          return flags;
       }
 
+      /// @brief Converts one reflected shader stage to a Vulkan graphics-pipeline stage bit.
+      [[nodiscard]] std::optional<VkShaderStageFlagBits> shaderStageFlagBit(ShaderStage stage) {
+         switch (stage) {
+         case ShaderStage::vertex:
+            return VK_SHADER_STAGE_VERTEX_BIT;
+         case ShaderStage::fragment:
+            return VK_SHADER_STAGE_FRAGMENT_BIT;
+         case ShaderStage::compute:
+            return std::nullopt;
+         }
+
+         return std::nullopt;
+      }
+
       /// @brief Converts a reflected descriptor category to a Vulkan descriptor type.
       [[nodiscard]] std::optional<VkDescriptorType> descriptorType(DescriptorBindingKind kind) {
          switch (kind) {
@@ -384,6 +407,84 @@ namespace vve::v3 {
          }
 
          return std::nullopt;
+      }
+
+      /// @brief Converts renderer-selected primitive topology to Vulkan pipeline state.
+      [[nodiscard]] VkPrimitiveTopology primitiveTopology(GraphicsPrimitiveTopology topology) {
+         switch (topology) {
+         case GraphicsPrimitiveTopology::triangle_list:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+         case GraphicsPrimitiveTopology::triangle_strip:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+         }
+
+         return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+      }
+
+      /// @brief Converts renderer-selected culling to Vulkan pipeline state.
+      [[nodiscard]] VkCullModeFlags cullMode(GraphicsCullMode mode) {
+         switch (mode) {
+         case GraphicsCullMode::none:
+            return VK_CULL_MODE_NONE;
+         case GraphicsCullMode::front:
+            return VK_CULL_MODE_FRONT_BIT;
+         case GraphicsCullMode::back:
+            return VK_CULL_MODE_BACK_BIT;
+         }
+
+         return VK_CULL_MODE_NONE;
+      }
+
+      /// @brief Converts renderer-selected front-face winding to Vulkan pipeline state.
+      [[nodiscard]] VkFrontFace frontFace(GraphicsFrontFace winding) {
+         switch (winding) {
+         case GraphicsFrontFace::counter_clockwise:
+            return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+         case GraphicsFrontFace::clockwise:
+            return VK_FRONT_FACE_CLOCKWISE;
+         }
+
+         return VK_FRONT_FACE_COUNTER_CLOCKWISE;
+      }
+
+      /// @brief Converts renderer-selected depth comparison to Vulkan pipeline state.
+      [[nodiscard]] VkCompareOp depthCompareOp(GraphicsDepthCompareOp compare) {
+         switch (compare) {
+         case GraphicsDepthCompareOp::always:
+            return VK_COMPARE_OP_ALWAYS;
+         case GraphicsDepthCompareOp::less:
+            return VK_COMPARE_OP_LESS;
+         case GraphicsDepthCompareOp::less_equal:
+            return VK_COMPARE_OP_LESS_OR_EQUAL;
+         }
+
+         return VK_COMPARE_OP_ALWAYS;
+      }
+
+      /// @brief Converts placeholder color formats to Vulkan formats.
+      [[nodiscard]] VkFormat colorFormat(GraphicsColorFormat format) {
+         switch (format) {
+         case GraphicsColorFormat::bgra8_srgb:
+            return VK_FORMAT_B8G8R8A8_SRGB;
+         case GraphicsColorFormat::rgba8_srgb:
+            return VK_FORMAT_R8G8B8A8_SRGB;
+         case GraphicsColorFormat::rgba16_float:
+            return VK_FORMAT_R16G16B16A16_SFLOAT;
+         }
+
+         return VK_FORMAT_B8G8R8A8_SRGB;
+      }
+
+      /// @brief Converts placeholder depth formats to Vulkan formats.
+      [[nodiscard]] VkFormat depthFormat(GraphicsDepthFormat format) {
+         switch (format) {
+         case GraphicsDepthFormat::none:
+            return VK_FORMAT_UNDEFINED;
+         case GraphicsDepthFormat::depth32_float:
+            return VK_FORMAT_D32_SFLOAT;
+         }
+
+         return VK_FORMAT_UNDEFINED;
       }
 
       /// @brief Returns whether a physical device supports a queue family with graphics work.
@@ -819,8 +920,18 @@ namespace vve::v3 {
                                                            desc.depth_format != GraphicsDepthFormat::none,
                                                        .pipeline_cache_ready = pipeline_cache_ != VK_NULL_HANDLE,
                                                        .vulkan_pipeline_created = false};
+         if (auto render_pass = createPlaceholderRenderPass(resources, desc); !render_pass) {
+            destroyGraphicsPipelineResources(resources);
+            return std::unexpected(render_pass.error());
+         }
+         if (auto pipeline = createVulkanGraphicsPipeline(resources, pipeline_resource->second, desc); !pipeline) {
+            destroyGraphicsPipelineResources(resources);
+            return std::unexpected(pipeline.error());
+         }
+
+         resources.summary.vulkan_pipeline_created = resources.pipeline != VK_NULL_HANDLE;
          const auto summary = resources.summary;
-         graphics_pipelines_.emplace(handle.value.value(), resources);
+         graphics_pipelines_.emplace(handle.value.value(), std::move(resources));
          return summary;
       }
 
@@ -939,7 +1050,11 @@ namespace vve::v3 {
                return std::unexpected(vve::Error::internal_error);
             }
 
-            resources.shader_modules.push_back(shader_module);
+            // Slang emits one SPIR-V module per requested entry point here, and
+            // the Vulkan OpEntryPoint name inside each generated module is "main".
+            resources.shader_modules.push_back(VulkanShaderModule{.module = shader_module,
+                                                                  .stage = binary.stage,
+                                                                  .entry_point = "main"});
          }
 
          return {};
@@ -1030,6 +1145,270 @@ namespace vve::v3 {
          return {};
       }
 
+      [[nodiscard]] std::expected<void, vve::Error>
+      createPlaceholderRenderPass(VulkanGraphicsPipelineResources &resources, const GraphicsPipelineDesc &desc) {
+         if (desc.color_attachment_count == 0) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         std::vector<VkAttachmentDescription> attachments{};
+         std::vector<VkAttachmentReference> color_references{};
+         attachments.reserve(desc.color_attachment_count + (desc.depth_format == GraphicsDepthFormat::none ? 0U : 1U));
+         color_references.reserve(desc.color_attachment_count);
+
+         for (std::uint32_t color_index = 0; color_index < desc.color_attachment_count; ++color_index) {
+            attachments.push_back(VkAttachmentDescription{.flags = 0,
+                                                          .format = colorFormat(desc.color_format),
+                                                          .samples = VK_SAMPLE_COUNT_1_BIT,
+                                                          .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                          .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+                                                          .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                          .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                                          .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                                                          .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+            color_references.push_back(VkAttachmentReference{
+                .attachment = color_index,
+                .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+         }
+
+         VkAttachmentReference depth_reference{.attachment = VK_ATTACHMENT_UNUSED,
+                                               .layout = VK_IMAGE_LAYOUT_UNDEFINED};
+         if (desc.depth_format != GraphicsDepthFormat::none) {
+            depth_reference = VkAttachmentReference{
+                .attachment = static_cast<std::uint32_t>(attachments.size()),
+                .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+            attachments.push_back(VkAttachmentDescription{.flags = 0,
+                                                          .format = depthFormat(desc.depth_format),
+                                                          .samples = VK_SAMPLE_COUNT_1_BIT,
+                                                          .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                          .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                                          .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                          .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                                          .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                                                          .finalLayout =
+                                                              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL});
+         }
+
+         const VkSubpassDescription subpass{.flags = 0,
+                                            .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                            .inputAttachmentCount = 0,
+                                            .pInputAttachments = nullptr,
+                                            .colorAttachmentCount =
+                                                static_cast<std::uint32_t>(color_references.size()),
+                                            .pColorAttachments = color_references.data(),
+                                            .pResolveAttachments = nullptr,
+                                            .pDepthStencilAttachment =
+                                                desc.depth_format == GraphicsDepthFormat::none ? nullptr
+                                                                                               : &depth_reference,
+                                            .preserveAttachmentCount = 0,
+                                            .pPreserveAttachments = nullptr};
+         const VkRenderPassCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+                                                  .pNext = nullptr,
+                                                  .flags = 0,
+                                                  .attachmentCount =
+                                                      static_cast<std::uint32_t>(attachments.size()),
+                                                  .pAttachments = attachments.data(),
+                                                  .subpassCount = 1,
+                                                  .pSubpasses = &subpass,
+                                                  .dependencyCount = 0,
+                                                  .pDependencies = nullptr};
+         const VkResult result = vkCreateRenderPass(device_, &create_info, nullptr, &resources.render_pass);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateRenderPass failed: " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      createVulkanGraphicsPipeline(VulkanGraphicsPipelineResources &resources,
+                                   const VulkanPipelineResources &pipeline_resources,
+                                   const GraphicsPipelineDesc &desc) {
+         if (resources.render_pass == VK_NULL_HANDLE || pipeline_resources.pipeline_layout == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         std::vector<VkPipelineShaderStageCreateInfo> shader_stages{};
+         shader_stages.reserve(pipeline_resources.shader_modules.size());
+         bool has_vertex_stage = false;
+         bool has_fragment_stage = false;
+         for (const auto &shader_module : pipeline_resources.shader_modules) {
+            const auto stage = shaderStageFlagBit(shader_module.stage);
+            if (!stage.has_value()) {
+               continue;
+            }
+            if (shader_module.module == VK_NULL_HANDLE || shader_module.entry_point.empty()) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            has_vertex_stage = has_vertex_stage || *stage == VK_SHADER_STAGE_VERTEX_BIT;
+            has_fragment_stage = has_fragment_stage || *stage == VK_SHADER_STAGE_FRAGMENT_BIT;
+            shader_stages.push_back(VkPipelineShaderStageCreateInfo{.sType =
+                                                                         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                                                                     .pNext = nullptr,
+                                                                     .flags = 0,
+                                                                     .stage = *stage,
+                                                                     .module = shader_module.module,
+                                                                     .pName = shader_module.entry_point.c_str(),
+                                                                     .pSpecializationInfo = nullptr});
+         }
+         if (!has_vertex_stage || !has_fragment_stage || shader_stages.empty()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         std::vector<VkVertexInputBindingDescription> vertex_bindings{};
+         std::vector<VkVertexInputAttributeDescription> vertex_attributes{};
+         if (desc.vertex_binding_count > 0) {
+            if (desc.vertex_binding_count != 1 || desc.vertex_attribute_count < 5) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            vertex_bindings.push_back(VkVertexInputBindingDescription{.binding = 0,
+                                                                      .stride = 60,
+                                                                      .inputRate = VK_VERTEX_INPUT_RATE_VERTEX});
+            vertex_attributes = {
+                VkVertexInputAttributeDescription{.location = 0,
+                                                  .binding = 0,
+                                                  .format = VK_FORMAT_R32G32B32_SFLOAT,
+                                                  .offset = 0},
+                VkVertexInputAttributeDescription{.location = 1,
+                                                  .binding = 0,
+                                                  .format = VK_FORMAT_R32G32B32_SFLOAT,
+                                                  .offset = 12},
+                VkVertexInputAttributeDescription{.location = 2,
+                                                  .binding = 0,
+                                                  .format = VK_FORMAT_R32G32B32_SFLOAT,
+                                                  .offset = 24},
+                VkVertexInputAttributeDescription{.location = 3,
+                                                  .binding = 0,
+                                                  .format = VK_FORMAT_R32G32_SFLOAT,
+                                                  .offset = 36},
+                VkVertexInputAttributeDescription{.location = 4,
+                                                  .binding = 0,
+                                                  .format = VK_FORMAT_R32G32B32A32_SFLOAT,
+                                                  .offset = 44}};
+         }
+
+         const VkPipelineVertexInputStateCreateInfo vertex_input{
+             .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+             .pNext = nullptr,
+             .flags = 0,
+             .vertexBindingDescriptionCount = static_cast<std::uint32_t>(vertex_bindings.size()),
+             .pVertexBindingDescriptions = vertex_bindings.data(),
+             .vertexAttributeDescriptionCount = static_cast<std::uint32_t>(vertex_attributes.size()),
+             .pVertexAttributeDescriptions = vertex_attributes.data()};
+         const VkPipelineInputAssemblyStateCreateInfo input_assembly{
+             .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+             .pNext = nullptr,
+             .flags = 0,
+             .topology = primitiveTopology(desc.topology),
+             .primitiveRestartEnable = VK_FALSE};
+         const VkPipelineViewportStateCreateInfo viewport_state{.sType =
+                                                                   VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+                                                               .pNext = nullptr,
+                                                               .flags = 0,
+                                                               .viewportCount = 1,
+                                                               .pViewports = nullptr,
+                                                               .scissorCount = 1,
+                                                               .pScissors = nullptr};
+         const VkPipelineRasterizationStateCreateInfo rasterization{
+             .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+             .pNext = nullptr,
+             .flags = 0,
+             .depthClampEnable = VK_FALSE,
+             .rasterizerDiscardEnable = VK_FALSE,
+             .polygonMode = VK_POLYGON_MODE_FILL,
+             .cullMode = cullMode(desc.cull_mode),
+             .frontFace = frontFace(desc.front_face),
+             .depthBiasEnable = VK_FALSE,
+             .depthBiasConstantFactor = 0.0F,
+             .depthBiasClamp = 0.0F,
+             .depthBiasSlopeFactor = 0.0F,
+             .lineWidth = 1.0F};
+         const VkPipelineMultisampleStateCreateInfo multisample{
+             .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+             .pNext = nullptr,
+             .flags = 0,
+             .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+             .sampleShadingEnable = VK_FALSE,
+             .minSampleShading = 1.0F,
+             .pSampleMask = nullptr,
+             .alphaToCoverageEnable = VK_FALSE,
+             .alphaToOneEnable = VK_FALSE};
+         const VkPipelineDepthStencilStateCreateInfo depth_stencil{
+             .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+             .pNext = nullptr,
+             .flags = 0,
+             .depthTestEnable = desc.depth_test_enabled ? VK_TRUE : VK_FALSE,
+             .depthWriteEnable = desc.depth_write_enabled ? VK_TRUE : VK_FALSE,
+             .depthCompareOp = depthCompareOp(desc.depth_compare),
+             .depthBoundsTestEnable = VK_FALSE,
+             .stencilTestEnable = VK_FALSE,
+             .front = {},
+             .back = {},
+             .minDepthBounds = 0.0F,
+             .maxDepthBounds = 1.0F};
+         std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachments{};
+         color_blend_attachments.resize(desc.color_attachment_count,
+                                        VkPipelineColorBlendAttachmentState{
+                                            .blendEnable = desc.blending_enabled ? VK_TRUE : VK_FALSE,
+                                            .srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,
+                                            .dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                            .colorBlendOp = VK_BLEND_OP_ADD,
+                                            .srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,
+                                            .dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                            .alphaBlendOp = VK_BLEND_OP_ADD,
+                                            .colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT |
+                                                              VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT});
+         const VkPipelineColorBlendStateCreateInfo color_blend{
+             .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+             .pNext = nullptr,
+             .flags = 0,
+             .logicOpEnable = VK_FALSE,
+             .logicOp = VK_LOGIC_OP_COPY,
+             .attachmentCount = static_cast<std::uint32_t>(color_blend_attachments.size()),
+             .pAttachments = color_blend_attachments.data(),
+             .blendConstants = {0.0F, 0.0F, 0.0F, 0.0F}};
+         const std::array dynamic_states{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+         const VkPipelineDynamicStateCreateInfo dynamic_state{.sType =
+                                                                 VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+                                                             .pNext = nullptr,
+                                                             .flags = 0,
+                                                             .dynamicStateCount =
+                                                                 static_cast<std::uint32_t>(dynamic_states.size()),
+                                                             .pDynamicStates = dynamic_states.data()};
+         const VkGraphicsPipelineCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+                                                        .pNext = nullptr,
+                                                        .flags = 0,
+                                                        .stageCount =
+                                                            static_cast<std::uint32_t>(shader_stages.size()),
+                                                        .pStages = shader_stages.data(),
+                                                        .pVertexInputState = &vertex_input,
+                                                        .pInputAssemblyState = &input_assembly,
+                                                        .pTessellationState = nullptr,
+                                                        .pViewportState = &viewport_state,
+                                                        .pRasterizationState = &rasterization,
+                                                        .pMultisampleState = &multisample,
+                                                        .pDepthStencilState = &depth_stencil,
+                                                        .pColorBlendState = &color_blend,
+                                                        .pDynamicState = &dynamic_state,
+                                                        .layout = pipeline_resources.pipeline_layout,
+                                                        .renderPass = resources.render_pass,
+                                                        .subpass = 0,
+                                                        .basePipelineHandle = VK_NULL_HANDLE,
+                                                        .basePipelineIndex = -1};
+         const VkResult result =
+             vkCreateGraphicsPipelines(device_, pipeline_cache_, 1, &create_info, nullptr, &resources.pipeline);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateGraphicsPipelines failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         return {};
+      }
+
       void destroyPipelineResources(VulkanPipelineResources &resources) noexcept {
          if (device_ == VK_NULL_HANDLE) {
             return;
@@ -1048,14 +1427,34 @@ namespace vve::v3 {
          resources.descriptor_set_layouts.clear();
 
          for (auto shader_module : resources.shader_modules) {
-            if (shader_module != VK_NULL_HANDLE) {
-               vkDestroyShaderModule(device_, shader_module, nullptr);
+            if (shader_module.module != VK_NULL_HANDLE) {
+               vkDestroyShaderModule(device_, shader_module.module, nullptr);
             }
          }
          resources.shader_modules.clear();
       }
 
+      void destroyGraphicsPipelineResources(VulkanGraphicsPipelineResources &resources) noexcept {
+         if (device_ == VK_NULL_HANDLE) {
+            return;
+         }
+
+         if (resources.pipeline != VK_NULL_HANDLE) {
+            vkDestroyPipeline(device_, resources.pipeline, nullptr);
+            resources.pipeline = VK_NULL_HANDLE;
+         }
+
+         if (resources.render_pass != VK_NULL_HANDLE) {
+            vkDestroyRenderPass(device_, resources.render_pass, nullptr);
+            resources.render_pass = VK_NULL_HANDLE;
+         }
+      }
+
       void destroy() noexcept {
+         for (auto &[handle, resources] : graphics_pipelines_) {
+            (void)handle;
+            destroyGraphicsPipelineResources(resources);
+         }
          graphics_pipelines_.clear();
 
          for (auto &[handle, resources] : pipeline_resources_) {

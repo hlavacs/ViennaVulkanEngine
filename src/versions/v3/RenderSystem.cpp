@@ -69,7 +69,7 @@ namespace vve::v3 {
          desc.depth_format = GraphicsDepthFormat::depth32_float;
          desc.color_attachment_count = 1;
          desc.vertex_binding_count = 1;
-         desc.vertex_attribute_count = 3;
+         desc.vertex_attribute_count = 5;
          return desc;
       }
 
@@ -85,7 +85,7 @@ namespace vve::v3 {
          desc.depth_format = GraphicsDepthFormat::depth32_float;
          desc.color_attachment_count = 4;
          desc.vertex_binding_count = 1;
-         desc.vertex_attribute_count = 3;
+         desc.vertex_attribute_count = 5;
          return desc;
       }
 

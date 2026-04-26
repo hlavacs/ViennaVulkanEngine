@@ -969,7 +969,7 @@ export namespace vve::v3 {
       GraphicsDepthFormat depth_format{GraphicsDepthFormat::depth32_float}; ///< Placeholder depth format.
       std::uint32_t color_attachment_count{1};                  ///< Number of color outputs expected.
       std::uint32_t vertex_binding_count{1};                    ///< Number of vertex buffer bindings expected.
-      std::uint32_t vertex_attribute_count{3};                  ///< Number of vertex attributes expected.
+      std::uint32_t vertex_attribute_count{5};                  ///< Number of vertex attributes expected.
    };
 
    /// @brief Summary of backend-owned graphics pipeline preparation state.
@@ -981,7 +981,7 @@ export namespace vve::v3 {
       std::uint32_t color_attachment_count{0};                  ///< Number of color attachments described.
       bool depth_enabled{false};                                ///< Whether a depth attachment is described.
       bool pipeline_cache_ready{false};                         ///< Whether a Vulkan pipeline cache owns this plan.
-      bool vulkan_pipeline_created{false};                      ///< Stage 10 will flip this when VkPipeline exists.
+      bool vulkan_pipeline_created{false};                      ///< Whether a real VkPipeline exists.
    };
 
    /// @brief Renderer-side binding of reflected layout data to backend Vulkan resources.
@@ -997,7 +997,7 @@ export namespace vve::v3 {
       std::size_t shader_stage_count{0};                ///< Reflected shader stages available to the renderer.
       std::size_t descriptor_set_layout_count{0};       ///< Descriptor layouts available to the renderer.
       bool ready_for_pipeline_creation{false};          ///< Whether later Vulkan graphics-pipeline creation can start.
-      bool graphics_pipeline_ready{false};              ///< Whether Stage 9 graphics pipeline planning is complete.
+      bool graphics_pipeline_ready{false};              ///< Whether graphics pipeline creation is complete.
    };
 
    /// @brief Coarse render-graph resource access declaration.
