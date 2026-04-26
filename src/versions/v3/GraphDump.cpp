@@ -190,8 +190,11 @@ namespace vve::v3::detail {
          // remain visually separated in the combined dump.
          output << "  subgraph cluster_render_" << pipeline.window.value.value() << " {\n";
          output << "    label=\""
-                << escapeDotLabel(std::format("Render Graph: {}\\nrenderer={}\\nshader={}", pipeline.window_id,
-                                              pipeline.renderer.id, pipeline.shader_program.value.value()))
+                << escapeDotLabel(std::format("Render Graph: {}\\nrenderer={}\\nshader={}\\nstages={} sets={}",
+                                              pipeline.window_id, pipeline.renderer.id,
+                                              pipeline.shader_program.value.value(),
+                                              pipeline.pipeline_layout.shader_stages.size(),
+                                              pipeline.pipeline_layout.descriptor_sets.size()))
                 << "\";\n";
          output << "    color=\"#97c47f\";\n";
          output << "    style=rounded;\n";

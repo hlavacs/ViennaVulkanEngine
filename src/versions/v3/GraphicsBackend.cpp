@@ -110,6 +110,60 @@ namespace vve::v3 {
          return aliases;
       }
 
+      /// @brief Maps Slang reflection binding labels to backend descriptor categories.
+      [[nodiscard]] const std::map<std::string_view, DescriptorBindingKind> &descriptorBindingKindMap() {
+         static const std::map<std::string_view, DescriptorBindingKind> kinds{
+             {"acceleration_structure", DescriptorBindingKind::acceleration_structure},
+             {"combined_texture_sampler", DescriptorBindingKind::sampled_image},
+             {"constant_buffer", DescriptorBindingKind::uniform_buffer},
+             {"descriptor_table_slot", DescriptorBindingKind::parameter_block},
+             {"input_render_target", DescriptorBindingKind::input_attachment},
+             {"parameter_block", DescriptorBindingKind::parameter_block},
+             {"push_constant", DescriptorBindingKind::push_constant},
+             {"push_constant_buffer", DescriptorBindingKind::push_constant},
+             {"raw_buffer", DescriptorBindingKind::storage_buffer},
+             {"ray_tracing_acceleration_structure", DescriptorBindingKind::acceleration_structure},
+             {"register_space", DescriptorBindingKind::parameter_block},
+             {"sampler", DescriptorBindingKind::sampler},
+             {"sampler_state", DescriptorBindingKind::sampler},
+             {"shader_resource", DescriptorBindingKind::sampled_image},
+             {"sub_element_register_space", DescriptorBindingKind::parameter_block},
+             {"texture", DescriptorBindingKind::sampled_image},
+             {"typed_buffer", DescriptorBindingKind::storage_buffer},
+             {"unordered_access", DescriptorBindingKind::storage_buffer},
+         };
+         return kinds;
+      }
+
+      /// @brief Converts a reflected binding label to the backend category enum.
+      [[nodiscard]] DescriptorBindingKind descriptorBindingKind(std::string_view reflected_kind) {
+         return vve::detail::mapValueOr(descriptorBindingKindMap(), reflected_kind, DescriptorBindingKind::unknown);
+      }
+
+      /// @brief Refines Slang parameter-block entries into concrete Vulkan descriptor categories.
+      [[nodiscard]] DescriptorBindingKind descriptorBindingKind(const ShaderParameter &parameter) {
+         const auto reflected_kind = descriptorBindingKind(parameter.binding_kind);
+         if (reflected_kind != DescriptorBindingKind::parameter_block) {
+            return reflected_kind;
+         }
+
+         const std::string_view type_name{parameter.type_name};
+         if (type_name.find("ConstantBuffer") != std::string_view::npos) {
+            return DescriptorBindingKind::uniform_buffer;
+         }
+         if (type_name.find("Sampler") != std::string_view::npos) {
+            return DescriptorBindingKind::sampler;
+         }
+         if (type_name.find("Texture") != std::string_view::npos) {
+            return DescriptorBindingKind::sampled_image;
+         }
+         if (type_name.find("Buffer") != std::string_view::npos) {
+            return DescriptorBindingKind::storage_buffer;
+         }
+
+         return reflected_kind;
+      }
+
       /// @brief Maps a user renderer id to a canonical registry key.
       [[nodiscard]] std::optional<std::string_view> canonicalRendererId(std::string_view renderer_id) {
          const auto normalized = normalizeRendererId(renderer_id);
@@ -119,6 +173,84 @@ namespace vve::v3 {
             return std::nullopt;
          }
          return alias->second;
+      }
+
+      /// @brief Appends stage entry points from shader reflection to a pipeline layout.
+      [[nodiscard]] std::expected<void, vve::Error> appendPipelineStages(PipelineLayoutDesc &layout,
+                                                                         const ShaderMetadata &shader) {
+         if (!shader.handle.value.isValid() || shader.binaries.empty() || shader.stages.empty()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         layout.shader_stages.reserve(shader.binaries.size());
+         for (const auto &binary : shader.binaries) {
+            if (binary.entry_point.empty() || binary.spirv_words.empty()) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            layout.shader_stages.push_back(PipelineShaderStageDesc{
+                .stage = binary.stage,
+                .entry_point = binary.entry_point,
+                .spirv_word_count = binary.spirv_words.size()});
+         }
+
+         std::ranges::sort(layout.shader_stages, {}, &PipelineShaderStageDesc::stage);
+         return {};
+      }
+
+      /// @brief Appends reflected descriptor bindings grouped by descriptor set.
+      void appendPipelineBindings(PipelineLayoutDesc &layout, const ShaderMetadata &shader) {
+         std::map<std::uint32_t, PipelineDescriptorSetLayoutDesc> descriptor_sets{};
+         for (const auto &parameter : shader.parameters) {
+            const auto kind = descriptorBindingKind(parameter);
+            if (kind == DescriptorBindingKind::push_constant) {
+               layout.push_constants.push_back(PipelinePushConstantRangeDesc{
+                   .name = parameter.name,
+                   .type_name = parameter.type_name,
+                   .visible_stages = shader.stages});
+               continue;
+            }
+
+            auto &set_layout = descriptor_sets[parameter.set];
+            set_layout.set = parameter.set;
+            set_layout.bindings.push_back(PipelineDescriptorBindingDesc{
+                .set = parameter.set,
+                .binding = parameter.binding,
+                .kind = kind,
+                .name = parameter.name,
+                .type_name = parameter.type_name,
+                .visible_stages = shader.stages});
+         }
+
+         layout.descriptor_sets.reserve(descriptor_sets.size());
+         for (auto &[set, set_layout] : descriptor_sets) {
+            (void)set;
+            std::ranges::sort(set_layout.bindings, [](const auto &lhs, const auto &rhs) {
+               return std::tie(lhs.binding, lhs.name, lhs.type_name) < std::tie(rhs.binding, rhs.name, rhs.type_name);
+            });
+            layout.descriptor_sets.push_back(std::move(set_layout));
+         }
+
+         std::ranges::sort(layout.push_constants, {}, &PipelinePushConstantRangeDesc::name);
+      }
+
+      /// @brief Builds the validated backend-facing layout plan for a renderer/shader pair.
+      [[nodiscard]] std::expected<PipelineLayoutDesc, vve::Error>
+      buildPipelineLayout(const RendererDesc &renderer, const ShaderMetadata &shader) {
+         if (!renderer.handle.value.isValid() || renderer.api != vve::GraphicsApi::vulkan ||
+             renderer.id.empty() || shader.intended_renderer != vve::rendererKindName(renderer.kind)) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         PipelineLayoutDesc layout{.renderer = renderer.handle,
+                                   .renderer_id = renderer.id,
+                                   .shader_program = shader.handle};
+         if (auto stage_result = appendPipelineStages(layout, shader); !stage_result) {
+            return std::unexpected(stage_result.error());
+         }
+
+         appendPipelineBindings(layout, shader);
+         return layout;
       }
 
       /// @brief Enumerates available instance extensions.
@@ -357,6 +489,12 @@ namespace vve::v3 {
          return renderer->second;
       }
 
+      /// @brief Builds a backend-facing pipeline layout description from shader reflection.
+      [[nodiscard]] std::expected<PipelineLayoutDesc, vve::Error>
+      createPipelineLayout(const RendererDesc &renderer, const ShaderMetadata &shader) const {
+         return buildPipelineLayout(renderer, shader);
+      }
+
       /// @brief Performs begin-frame backend work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &) {
          if (!initialized_) {
@@ -414,6 +552,11 @@ namespace vve::v3 {
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, createRenderer,
                                (std::string_view renderer_id), (renderer_id), const,
                                std::expected<RendererDesc, vve::Error>)
+
+   /// @brief Builds a pipeline layout description through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, createPipelineLayout,
+                               (const RendererDesc &renderer, const ShaderMetadata &shader), (renderer, shader), const,
+                               std::expected<PipelineLayoutDesc, vve::Error>)
 
    /// @brief Begins a frame through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, beginFrame,

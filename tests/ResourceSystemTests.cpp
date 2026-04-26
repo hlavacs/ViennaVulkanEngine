@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <filesystem>
+#include <string_view>
 
 import VEEngine;
 import VEEngine.V3;
@@ -24,6 +25,24 @@ namespace {
 
          current_path = current_path.parent_path();
       }
+   }
+
+   /// @brief Returns whether a pipeline layout contains a reflected binding suffix and kind.
+   [[nodiscard]] bool hasBindingSuffix(const vve::v3::PipelineLayoutDesc &layout, std::string_view suffix,
+                                       vve::v3::DescriptorBindingKind kind) {
+      return std::ranges::any_of(layout.descriptor_sets, [suffix, kind](const auto &descriptor_set) {
+         return std::ranges::any_of(descriptor_set.bindings, [suffix, kind](const auto &binding) {
+            return binding.kind == kind && binding.name.ends_with(suffix);
+         });
+      });
+   }
+
+   /// @brief Returns whether a pipeline layout has a shader stage.
+   [[nodiscard]] bool hasPipelineStage(const vve::v3::PipelineLayoutDesc &layout, vve::v3::ShaderStage stage) {
+      return std::ranges::any_of(layout.shader_stages, [stage](const auto &shader_stage) {
+         return shader_stage.stage == stage && !shader_stage.entry_point.empty() &&
+                shader_stage.spirv_word_count > 0;
+      });
    }
 
 } // namespace
@@ -97,11 +116,48 @@ int main() {
       return 11;
    }
 
+   vve::v3::GraphicsBackend backend{};
+   const auto forward_renderer = backend.createRenderer("forward");
+   if (!forward_renderer) {
+      return 12;
+   }
+
+   const auto forward_layout = backend.createPipelineLayout(*forward_renderer, *shader_metadata);
+   if (!forward_layout) {
+      return 13;
+   }
+
+   if (forward_layout->renderer_id != "forward" ||
+       forward_layout->shader_program.value != shader_metadata->handle.value ||
+       !hasPipelineStage(*forward_layout, vve::v3::ShaderStage::vertex) ||
+       !hasPipelineStage(*forward_layout, vve::v3::ShaderStage::fragment) ||
+       forward_layout->descriptor_sets.empty()) {
+      return 14;
+   }
+
+   if (!hasBindingSuffix(*forward_layout, "frame", vve::v3::DescriptorBindingKind::uniform_buffer) ||
+       !hasBindingSuffix(*forward_layout, "baseColorTexture", vve::v3::DescriptorBindingKind::sampled_image) ||
+       !hasBindingSuffix(*forward_layout, "baseColorSampler", vve::v3::DescriptorBindingKind::sampler)) {
+      return 15;
+   }
+
+   const auto deferred_renderer = backend.createRenderer("deferred");
+   if (!deferred_renderer) {
+      return 16;
+   }
+
+   const auto deferred_layout = backend.createPipelineLayout(*deferred_renderer, *deferred_shader);
+   if (!deferred_layout || deferred_layout->renderer_id != "deferred" ||
+       deferred_layout->shader_program.value != deferred_shader->handle.value ||
+       deferred_layout->shader_program.value == forward_layout->shader_program.value) {
+      return 17;
+   }
+
    const auto missing_shader = resource_system.loadShaderProgram(repository_root / "src/versions/v3/shaders/missing.slang",
                                                                  shader_system, vve::RendererKind::forward_renderer,
                                                                  vve::ShadowKind::none);
    if (missing_shader || missing_shader.error() != vve::Error::file_not_found) {
-      return 12;
+      return 18;
    }
 
    return 0;

@@ -103,6 +103,19 @@ export namespace vve::v3 {
       compute     ///< Compute shader stage.
    };
 
+   /// @brief Backend-facing descriptor categories derived from shader reflection.
+   enum class DescriptorBindingKind : std::uint32_t {
+      unknown = 0,              ///< Binding type could not be classified.
+      uniform_buffer,           ///< Constant/uniform buffer binding.
+      sampled_image,            ///< Read-only sampled texture/image binding.
+      sampler,                  ///< Standalone sampler binding.
+      storage_buffer,           ///< Read-write storage buffer binding.
+      input_attachment,         ///< Vulkan input attachment binding.
+      acceleration_structure,   ///< Ray-tracing acceleration-structure binding.
+      parameter_block,          ///< Slang parameter block or descriptor table container.
+      push_constant             ///< Push-constant range source.
+   };
+
    /// @brief Strong type for mesh resource identifiers.
    struct MeshHandle final {
       vve::Handle value{}; ///< Underlying generic handle value.
@@ -840,6 +853,46 @@ export namespace vve::v3 {
       std::string intended_shadow{};        ///< Intended shadow mode as metadata text.
    };
 
+   /// @brief One shader entry point selected for a backend pipeline.
+   struct PipelineShaderStageDesc {
+      ShaderStage stage{ShaderStage::vertex};      ///< Shader stage used by the pipeline.
+      std::string entry_point{};                   ///< Entry-point function name.
+      std::size_t spirv_word_count{0};             ///< Size of the compiled SPIR-V module in words.
+   };
+
+   /// @brief One reflected descriptor binding in a backend pipeline layout.
+   struct PipelineDescriptorBindingDesc {
+      std::uint32_t set{0};                        ///< Descriptor set index.
+      std::uint32_t binding{0};                    ///< Descriptor binding index.
+      DescriptorBindingKind kind{DescriptorBindingKind::unknown}; ///< Backend descriptor category.
+      std::string name{};                          ///< Reflected shader parameter name.
+      std::string type_name{};                     ///< Reflected shader type name.
+      std::vector<ShaderStage> visible_stages{};   ///< Stages that may access the binding.
+   };
+
+   /// @brief Descriptor set layout description grouped by set index.
+   struct PipelineDescriptorSetLayoutDesc {
+      std::uint32_t set{0};                                  ///< Descriptor set index.
+      std::vector<PipelineDescriptorBindingDesc> bindings{}; ///< Bindings contained in the set.
+   };
+
+   /// @brief Reflected push-constant range source.
+   struct PipelinePushConstantRangeDesc {
+      std::string name{};                        ///< Reflected push-constant parameter name.
+      std::string type_name{};                   ///< Reflected push-constant type name.
+      std::vector<ShaderStage> visible_stages{}; ///< Stages that may access the range.
+   };
+
+   /// @brief Backend-facing pipeline layout plan derived from shader reflection.
+   struct PipelineLayoutDesc {
+      RendererHandle renderer{};                                ///< Renderer that owns the layout plan.
+      std::string renderer_id{};                                ///< Canonical renderer id.
+      ShaderHandle shader_program{};                            ///< Shader program the layout was derived from.
+      std::vector<PipelineShaderStageDesc> shader_stages{};     ///< Shader stages and entry points.
+      std::vector<PipelineDescriptorSetLayoutDesc> descriptor_sets{}; ///< Reflected descriptor set layouts.
+      std::vector<PipelinePushConstantRangeDesc> push_constants{};    ///< Reflected push-constant ranges.
+   };
+
    /// @brief Coarse render-graph resource access declaration.
    struct RenderResourceUse {
       vve::Handle resource{}; ///< Resource touched by the render pass.
@@ -866,6 +919,7 @@ export namespace vve::v3 {
       std::string window_id{}; ///< Stable window string id.
       RendererDesc renderer{}; ///< Backend renderer selected for this window.
       ShaderHandle shader_program{}; ///< Shader program compiled for this window renderer.
+      PipelineLayoutDesc pipeline_layout{}; ///< Backend-facing layout derived from shader reflection.
       RenderGraph graph{};     ///< Render graph executed for the window.
    };
 

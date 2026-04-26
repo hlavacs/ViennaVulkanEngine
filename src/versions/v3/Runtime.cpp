@@ -23,7 +23,12 @@ namespace vve::v3::detail {
       return std::filesystem::path(__FILE__).parent_path() / "shaders" / filename;
    }
 
-   using RuntimeShaderPrograms = std::map<std::tuple<vve::RendererKind, vve::ShadowKind>, ShaderHandle>;
+   struct RuntimeShaderProgram {
+      ShaderHandle shader_program{};          ///< Compiled shader program handle.
+      PipelineLayoutDesc pipeline_layout{};   ///< Backend-facing layout derived from reflection.
+   };
+
+   using RuntimeShaderPrograms = std::map<std::tuple<vve::RendererKind, vve::ShadowKind>, RuntimeShaderProgram>;
 
    /// @brief Returns an environment variable value as an owning string.
    [[nodiscard]] std::string environmentValue(const char *name) {
@@ -191,7 +196,14 @@ namespace vve::v3::detail {
             return std::unexpected(shader_metadata.error());
          }
 
-         shader_programs.emplace(shader_key, shader_metadata->handle);
+         const auto pipeline_layout = runtime.graphics_backend.createPipelineLayout(*renderer, *shader_metadata);
+         if (!pipeline_layout) {
+            std::cerr << "[VulkanRuntime] Failed to create pipeline layout for renderer '" << renderer->id << "'\n";
+            return std::unexpected(pipeline_layout.error());
+         }
+
+         shader_programs.emplace(shader_key, RuntimeShaderProgram{.shader_program = shader_metadata->handle,
+                                                                  .pipeline_layout = *pipeline_layout});
       }
 
       return shader_programs;
@@ -255,7 +267,8 @@ namespace vve::v3::detail {
              WindowRenderPipeline{.window = window.handle,
                                   .window_id = window.id,
                                   .renderer = *renderer,
-                                  .shader_program = shader_program->second,
+                                  .shader_program = shader_program->second.shader_program,
+                                  .pipeline_layout = shader_program->second.pipeline_layout,
                                   .graph = runtime.render_system->buildStaticGraph(window.handle, *renderer)});
       }
       if (desc.imgui_enabled) {

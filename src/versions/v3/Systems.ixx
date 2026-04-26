@@ -189,6 +189,9 @@ export namespace vve::v3 {
       [[nodiscard]] std::vector<RendererDesc> supportedRenderers() const;
       /// @brief Creates or resolves a backend renderer descriptor for a renderer id.
       [[nodiscard]] std::expected<RendererDesc, vve::Error> createRenderer(std::string_view renderer_id) const;
+      /// @brief Builds a backend-facing pipeline layout description from shader reflection.
+      [[nodiscard]] std::expected<PipelineLayoutDesc, vve::Error>
+      createPipelineLayout(const RendererDesc &renderer, const ShaderMetadata &shader) const;
       /// @brief Performs backend begin-frame work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &frame_context);
       /// @brief Performs backend end-frame work.
