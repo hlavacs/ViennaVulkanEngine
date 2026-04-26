@@ -239,7 +239,7 @@ export namespace vve::v3 {
       /// @brief Returns the implementation name for diagnostics.
       [[nodiscard]] std::string_view name() const noexcept; 
       /// @brief Builds the static render graph for a window.
-      [[nodiscard]] RenderGraph buildStaticGraph(WindowHandle window);
+      [[nodiscard]] RenderGraph buildStaticGraph(WindowHandle window, const RendererDesc &renderer);
       /// @brief Performs GPU visibility work for a window render graph.
       [[nodiscard]] std::expected<void, vve::Error> cullVisibilityGpu(const FrameContext &frame_context,
                                                                       const SceneData &scene, WindowHandle window,

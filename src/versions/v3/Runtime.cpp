@@ -199,7 +199,7 @@ namespace vve::v3::detail {
              WindowRenderPipeline{.window = window.handle,
                                   .window_id = window.id,
                                   .renderer = *renderer,
-                                  .graph = runtime.render_system->buildStaticGraph(window.handle)});
+                                  .graph = runtime.render_system->buildStaticGraph(window.handle, *renderer)});
       }
       if (desc.imgui_enabled) {
          // GUI integration stays optional and is omitted entirely when disabled.

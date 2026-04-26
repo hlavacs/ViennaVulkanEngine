@@ -15,36 +15,6 @@ import :Internal;
  */
 namespace vve::v3 {
 
-   static const std::map<vve::RendererKind, RenderKernelId> main_render_kernel_map{
-       {vve::RendererKind::forward_renderer, RenderKernelId::forward_opaque},
-       {vve::RendererKind::deferred_renderer, RenderKernelId::deferred_gbuffer},
-       {vve::RendererKind::path_tracing, RenderKernelId::path_trace},
-   };
-
-   static const std::map<vve::RendererKind, std::string_view> main_pass_name_map{
-       {vve::RendererKind::forward_renderer, "Forward Main"},
-       {vve::RendererKind::deferred_renderer, "Deferred Main"},
-       {vve::RendererKind::path_tracing, "Path Tracing Main"},
-   };
-
-   /**
-    * @brief Selects the main render kernel for the configured renderer family.
-    * @param renderer High-level renderer choice from the public engine config.
-    * @return Built-in render kernel used for the primary pass.
-   */
-   [[nodiscard]] RenderKernelId selectMainKernel(vve::RendererKind renderer) {
-      return vve::detail::mapValueOr(main_render_kernel_map, renderer, RenderKernelId::none);
-   }
-
-   /**
-    * @brief Returns a human-readable label for the primary render pass.
-    * @param renderer High-level renderer choice from the public engine config.
-    * @return Main-pass name used for graph diagnostics.
-   */
-   [[nodiscard]] std::string_view selectMainPassName(vve::RendererKind renderer) {
-      return vve::detail::mapValueOr(main_pass_name_map, renderer, std::string_view{"Main"});
-   }
-
    /**
     * @brief Builds the optional shadow pass for the selected shadowing mode.
     * @param shadow Requested shadowing strategy.
@@ -85,7 +55,9 @@ namespace vve::v3 {
        */
       DefaultRenderSystemImplementation(vve::RendererKind renderer, vve::ShadowKind shadow,
                                         GraphicsBackend &graphics_backend, bool imgui_enabled)
-          : renderer_(renderer), shadow_(shadow), graphics_backend_(graphics_backend), imgui_enabled_(imgui_enabled) {}
+          : shadow_(shadow), graphics_backend_(graphics_backend), imgui_enabled_(imgui_enabled) {
+         (void)renderer;
+      }
 
       /// @brief Returns the subsystem name for diagnostics.
       [[nodiscard]] std::string_view name() const noexcept { return "RenderSystem"; }
@@ -93,9 +65,10 @@ namespace vve::v3 {
       /**
        * @brief Builds the static render graph for one window.
        * @param window Window receiving the render pipeline.
+       * @param renderer Backend renderer selected for the window.
        * @return Immutable render graph used by later scheduling and graph-dump code.
        */
-      [[nodiscard]] RenderGraph buildStaticGraph(WindowHandle window) {
+      [[nodiscard]] RenderGraph buildStaticGraph(WindowHandle window, const RendererDesc &renderer) {
          RenderGraph graph{};
          const auto window_salt = window.value.value();
 
@@ -112,9 +85,9 @@ namespace vve::v3 {
          }
          // The main pass represents the renderer-specific primary shading stage.
          graph.passes.push_back(RenderPassDesc{.handle = main_pass,
-                                               .kernel = selectMainKernel(renderer_),
+                                               .kernel = renderer.main_kernel,
                                                .depends_on = std::move(main_dependencies),
-                                               .debug_name = std::string(selectMainPassName(renderer_))});
+                                               .debug_name = renderer.display_name});
 
          // Post-processing remains explicit in the graph so graph dumps and
          // later backend integration can reason about ordering cleanly.
@@ -232,7 +205,6 @@ namespace vve::v3 {
       }
 
    private:
-      vve::RendererKind renderer_{vve::RendererKind::forward_renderer}; ///< Selected renderer family.
       vve::ShadowKind shadow_{vve::ShadowKind::none};                   ///< Selected shadowing strategy.
       GraphicsBackend &graphics_backend_;                               ///< Backend facade used by render diagnostics and later GPU work.
       bool imgui_enabled_{true};                                        ///< Whether the GUI pass should be appended.
@@ -251,7 +223,7 @@ namespace vve::v3 {
 
    /// @brief Builds the static render graph through the public render-system facade.
    VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, buildStaticGraph,
-                               (WindowHandle window), (window), , RenderGraph)
+                               (WindowHandle window, const RendererDesc &renderer), (window, renderer), , RenderGraph)
 
    /// @brief Performs GPU visibility work through the public render-system facade.
    VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, cullVisibilityGpu,

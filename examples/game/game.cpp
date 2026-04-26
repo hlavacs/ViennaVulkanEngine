@@ -225,7 +225,7 @@ int main(int, char **) {
                     .title = "VVE Tools",
                     .width = 400,
                     .height = 480,
-                    .renderer_id = "forward",
+                    .renderer_id = "deferred",
                     .resizable = true,
                     .visible = true
                 }
