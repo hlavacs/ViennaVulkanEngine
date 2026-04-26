@@ -318,6 +318,10 @@ namespace vve::v3 {
          return backend_result;
       }
 
+      if (auto pipeline_resources = detail::createRuntimePipelineResources(runtime_); !pipeline_resources) {
+         return pipeline_resources;
+      }
+
       if (runtime_.gui_system != nullptr) { // GUI support is optional and initialized only when present.
          if (auto gui_result = runtime_.gui_system->init(runtime_.graphics_backend); !gui_result) {
             return gui_result;

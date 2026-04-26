@@ -192,6 +192,12 @@ export namespace vve::v3 {
       /// @brief Builds a backend-facing pipeline layout description from shader reflection.
       [[nodiscard]] std::expected<PipelineLayoutDesc, vve::Error>
       createPipelineLayout(const RendererDesc &renderer, const ShaderMetadata &shader) const;
+      /// @brief Creates backend-owned Vulkan objects for a reflected pipeline layout.
+      [[nodiscard]] std::expected<PipelineBackendResources, vve::Error>
+      createPipelineResources(const PipelineLayoutDesc &layout, const ShaderMetadata &shader);
+      /// @brief Returns backend resource metadata for an already-created pipeline resource bundle.
+      [[nodiscard]] std::expected<std::optional<PipelineBackendResources>, vve::Error>
+      pipelineResources(PipelineResourceHandle resources) const;
       /// @brief Performs backend begin-frame work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &frame_context);
       /// @brief Performs backend end-frame work.

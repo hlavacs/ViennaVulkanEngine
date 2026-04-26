@@ -300,4 +300,34 @@ namespace vve::v3::detail {
       return runtime;
    }
 
+   /**
+    * @brief Creates backend-owned Vulkan resources for all assembled window render pipelines.
+    * @param runtime Runtime whose pipelines already contain reflected pipeline layout descriptions.
+    * @return Empty success result, or the first backend/resource-system error.
+    */
+   std::expected<void, vve::Error> createRuntimePipelineResources(Runtime &runtime) {
+      for (auto &pipeline : runtime.render_pipelines) {
+         const auto shader_metadata = runtime.resource_system.shaderProgram(pipeline.shader_program);
+         if (!shader_metadata) {
+            return std::unexpected(shader_metadata.error());
+         }
+         if (!shader_metadata->has_value()) {
+            std::cerr << "[VulkanRuntime] Missing shader metadata for pipeline '" << pipeline.window_id << "'\n";
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto backend_resources =
+             runtime.graphics_backend.createPipelineResources(pipeline.pipeline_layout, **shader_metadata);
+         if (!backend_resources) {
+            std::cerr << "[VulkanRuntime] Failed to create backend pipeline resources for window '"
+                      << pipeline.window_id << "' renderer='" << pipeline.renderer.id << "'\n";
+            return std::unexpected(backend_resources.error());
+         }
+
+         pipeline.backend_resources = *backend_resources;
+      }
+
+      return {};
+   }
+
 } // namespace vve::v3::detail

@@ -141,23 +141,28 @@ int main() {
       return 15;
    }
 
+   const auto resources_before_init = backend.createPipelineResources(*forward_layout, *shader_metadata);
+   if (resources_before_init || resources_before_init.error() != vve::Error::not_initialized) {
+      return 16;
+   }
+
    const auto deferred_renderer = backend.createRenderer("deferred");
    if (!deferred_renderer) {
-      return 16;
+      return 17;
    }
 
    const auto deferred_layout = backend.createPipelineLayout(*deferred_renderer, *deferred_shader);
    if (!deferred_layout || deferred_layout->renderer_id != "deferred" ||
        deferred_layout->shader_program.value != deferred_shader->handle.value ||
        deferred_layout->shader_program.value == forward_layout->shader_program.value) {
-      return 17;
+      return 18;
    }
 
    const auto missing_shader = resource_system.loadShaderProgram(repository_root / "src/versions/v3/shaders/missing.slang",
                                                                  shader_system, vve::RendererKind::forward_renderer,
                                                                  vve::ShadowKind::none);
    if (missing_shader || missing_shader.error() != vve::Error::file_not_found) {
-      return 18;
+      return 19;
    }
 
    return 0;

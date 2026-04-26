@@ -253,6 +253,136 @@ namespace vve::v3 {
          return layout;
       }
 
+      /// @brief Backend-owned Vulkan objects created for one reflected pipeline layout.
+      struct VulkanPipelineResources {
+         PipelineBackendResources summary{};
+         std::vector<VkShaderModule> shader_modules{};
+         std::vector<VkDescriptorSetLayout> descriptor_set_layouts{};
+         VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
+      };
+
+      /// @brief Physical device and queue family selected for backend object creation.
+      struct SelectedPhysicalDevice {
+         VkPhysicalDevice device{VK_NULL_HANDLE};
+         std::uint32_t graphics_queue_family{0};
+      };
+
+      /// @brief Builds a stable resource-bundle handle for one renderer/shader pair.
+      [[nodiscard]] PipelineResourceHandle pipelineResourceHandle(const PipelineLayoutDesc &layout) {
+         auto seed = std::string{"vulkan.pipeline_resources:"};
+         seed += layout.renderer_id;
+         seed.push_back(':');
+         seed += std::to_string(layout.shader_program.value.value());
+         return PipelineResourceHandle{.value = vve::Handle::fromHash(seed)};
+      }
+
+      /// @brief Converts reflected shader stages to Vulkan shader-stage flags.
+      [[nodiscard]] VkShaderStageFlags shaderStageFlags(const std::vector<ShaderStage> &stages) {
+         VkShaderStageFlags flags = 0;
+         for (const auto stage : stages) {
+            switch (stage) {
+            case ShaderStage::vertex:
+               flags |= VK_SHADER_STAGE_VERTEX_BIT;
+               break;
+            case ShaderStage::fragment:
+               flags |= VK_SHADER_STAGE_FRAGMENT_BIT;
+               break;
+            case ShaderStage::compute:
+               flags |= VK_SHADER_STAGE_COMPUTE_BIT;
+               break;
+            }
+         }
+
+         return flags;
+      }
+
+      /// @brief Converts a reflected descriptor category to a Vulkan descriptor type.
+      [[nodiscard]] std::optional<VkDescriptorType> descriptorType(DescriptorBindingKind kind) {
+         switch (kind) {
+         case DescriptorBindingKind::uniform_buffer:
+            return VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+         case DescriptorBindingKind::sampled_image:
+            return VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+         case DescriptorBindingKind::sampler:
+            return VK_DESCRIPTOR_TYPE_SAMPLER;
+         case DescriptorBindingKind::storage_buffer:
+            return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+         case DescriptorBindingKind::input_attachment:
+            return VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+         case DescriptorBindingKind::acceleration_structure:
+#ifdef VK_KHR_acceleration_structure
+            return VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR;
+#else
+            return std::nullopt;
+#endif
+         case DescriptorBindingKind::unknown:
+         case DescriptorBindingKind::parameter_block:
+         case DescriptorBindingKind::push_constant:
+            return std::nullopt;
+         }
+
+         return std::nullopt;
+      }
+
+      /// @brief Returns whether a physical device supports a queue family with graphics work.
+      [[nodiscard]] std::optional<std::uint32_t> graphicsQueueFamily(VkPhysicalDevice device) {
+         std::uint32_t queue_family_count = 0;
+         vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
+         if (queue_family_count == 0) {
+            return std::nullopt;
+         }
+
+         std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
+         vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
+         for (std::uint32_t index = 0; index < queue_family_count; ++index) {
+            if ((queue_families[index].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0 &&
+                queue_families[index].queueCount > 0) {
+               return index;
+            }
+         }
+
+         return std::nullopt;
+      }
+
+      /// @brief Selects the first physical device that can create graphics-capable resources.
+      [[nodiscard]] std::expected<SelectedPhysicalDevice, vve::Error> selectPhysicalDevice(VkInstance instance) {
+         std::uint32_t device_count = 0;
+         VkResult result = vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+         if (result != VK_SUCCESS || device_count == 0) {
+            std::cerr << "[VulkanGraphicsBackend] no Vulkan physical device available for backend resources\n";
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         std::vector<VkPhysicalDevice> devices(device_count);
+         result = vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
+         if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
+            std::cerr << "[VulkanGraphicsBackend] vkEnumeratePhysicalDevices failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         devices.resize(device_count);
+         for (const auto device : devices) {
+            if (const auto queue_family = graphicsQueueFamily(device)) {
+               return SelectedPhysicalDevice{.device = device, .graphics_queue_family = *queue_family};
+            }
+         }
+
+         std::cerr << "[VulkanGraphicsBackend] no graphics-capable Vulkan queue family found\n";
+         return std::unexpected(vve::Error::internal_error);
+      }
+
+      /// @brief Returns device extensions required for the selected physical device.
+      [[nodiscard]] std::vector<const char *> requiredDeviceExtensions(VkPhysicalDevice device) {
+         std::vector<const char *> extensions{};
+#ifdef VK_KHR_portability_subset
+         if (hasDeviceExtension(device, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME)) {
+            extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
+         }
+#endif
+         return extensions;
+      }
+
       /// @brief Enumerates available instance extensions.
       [[nodiscard]] std::expected<std::vector<VkExtensionProperties>, vve::Error> enumerateInstanceExtensions() {
          std::uint32_t extension_count = 0;
@@ -447,6 +577,8 @@ namespace vve::v3 {
     */
    class VulkanGraphicsBackendImplementation {
    public:
+      ~VulkanGraphicsBackendImplementation() { destroy(); }
+
       /// @brief Returns the backend name for diagnostics.
       [[nodiscard]] std::string_view name() const noexcept { return "VulkanGraphicsBackend"; }
 
@@ -455,8 +587,39 @@ namespace vve::v3 {
 
       /// @brief Initializes backend-owned state.
       [[nodiscard]] std::expected<void, vve::Error> init() {
-         if (auto diagnostics_result = logVulkanStartupDiagnostics(); !diagnostics_result) {
-            return std::unexpected(diagnostics_result.error());
+         if (initialized_) {
+            return {};
+         }
+
+         const auto selected_icd = environmentValue("VVE_VULKAN_ICD");
+         const auto vk_icd_filenames = environmentValue("VK_ICD_FILENAMES");
+         std::clog << "[VulkanGraphicsBackend] VVE_VULKAN_ICD="
+                   << (selected_icd.empty() ? "<default>" : selected_icd) << '\n';
+         std::clog << "[VulkanGraphicsBackend] VK_ICD_FILENAMES="
+                   << (vk_icd_filenames.empty() ? "<loader default>" : vk_icd_filenames) << '\n';
+
+         const auto instance = createDiagnosticInstance();
+         if (!instance) {
+            return std::unexpected(instance.error());
+         }
+         instance_ = *instance;
+
+         if (auto device_result = logPhysicalDevices(instance_); !device_result) {
+            destroy();
+            return std::unexpected(device_result.error());
+         }
+
+         const auto selected_device = selectPhysicalDevice(instance_);
+         if (!selected_device) {
+            destroy();
+            return std::unexpected(selected_device.error());
+         }
+
+         physical_device_ = selected_device->device;
+         graphics_queue_family_ = selected_device->graphics_queue_family;
+         if (auto logical_device = createLogicalDevice(); !logical_device) {
+            destroy();
+            return std::unexpected(logical_device.error());
          }
 
          initialized_ = true;
@@ -495,6 +658,69 @@ namespace vve::v3 {
          return buildPipelineLayout(renderer, shader);
       }
 
+      /// @brief Creates backend-owned Vulkan objects for a reflected pipeline layout.
+      [[nodiscard]] std::expected<PipelineBackendResources, vve::Error>
+      createPipelineResources(const PipelineLayoutDesc &layout, const ShaderMetadata &shader) {
+         if (!initialized_ || device_ == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::not_initialized);
+         }
+         if (layout.shader_program.value != shader.handle.value || !layout.shader_program.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+         if (!layout.push_constants.empty()) {
+            std::cerr << "[VulkanGraphicsBackend] push constants require reflected byte ranges before Vulkan creation\n";
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto handle = pipelineResourceHandle(layout);
+         const auto existing = pipeline_resources_.find(handle.value.value());
+         if (existing != pipeline_resources_.end()) {
+            return existing->second.summary;
+         }
+
+         VulkanPipelineResources resources{};
+         resources.summary = PipelineBackendResources{.handle = handle,
+                                                      .renderer = layout.renderer,
+                                                      .shader_program = layout.shader_program};
+
+         if (auto shader_modules = createShaderModules(resources, shader); !shader_modules) {
+            destroyPipelineResources(resources);
+            return std::unexpected(shader_modules.error());
+         }
+
+         if (auto descriptor_sets = createDescriptorSetLayouts(resources, layout); !descriptor_sets) {
+            destroyPipelineResources(resources);
+            return std::unexpected(descriptor_sets.error());
+         }
+
+         if (auto pipeline_layout = createVulkanPipelineLayout(resources); !pipeline_layout) {
+            destroyPipelineResources(resources);
+            return std::unexpected(pipeline_layout.error());
+         }
+
+         resources.summary.shader_module_count = resources.shader_modules.size();
+         resources.summary.descriptor_set_layout_count = resources.descriptor_set_layouts.size();
+         resources.summary.pipeline_layout_created = resources.pipeline_layout != VK_NULL_HANDLE;
+         const auto summary = resources.summary;
+         pipeline_resources_.emplace(handle.value.value(), std::move(resources));
+         return summary;
+      }
+
+      /// @brief Returns backend resource metadata for an already-created pipeline resource bundle.
+      [[nodiscard]] std::expected<std::optional<PipelineBackendResources>, vve::Error>
+      pipelineResources(PipelineResourceHandle resources) const {
+         if (!resources.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto resource_it = pipeline_resources_.find(resources.value.value());
+         if (resource_it == pipeline_resources_.end()) {
+            return std::optional<PipelineBackendResources>{};
+         }
+
+         return resource_it->second.summary;
+      }
+
       /// @brief Performs begin-frame backend work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &) {
          if (!initialized_) {
@@ -526,6 +752,203 @@ namespace vve::v3 {
       }
 
    private:
+      [[nodiscard]] std::expected<void, vve::Error> createLogicalDevice() {
+         const float queue_priority = 1.0F;
+         const VkDeviceQueueCreateInfo queue_create_info{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                                                         .pNext = nullptr,
+                                                         .flags = 0,
+                                                         .queueFamilyIndex = graphics_queue_family_,
+                                                         .queueCount = 1,
+                                                         .pQueuePriorities = &queue_priority};
+         const auto enabled_extensions = requiredDeviceExtensions(physical_device_);
+         const VkDeviceCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+                                              .pNext = nullptr,
+                                              .flags = 0,
+                                              .queueCreateInfoCount = 1,
+                                              .pQueueCreateInfos = &queue_create_info,
+                                              .enabledLayerCount = 0,
+                                              .ppEnabledLayerNames = nullptr,
+                                              .enabledExtensionCount =
+                                                  static_cast<std::uint32_t>(enabled_extensions.size()),
+                                              .ppEnabledExtensionNames = enabled_extensions.data(),
+                                              .pEnabledFeatures = nullptr};
+
+         const VkResult result = vkCreateDevice(physical_device_, &create_info, nullptr, &device_);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateDevice failed: " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         vkGetDeviceQueue(device_, graphics_queue_family_, 0, &graphics_queue_);
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error> createShaderModules(VulkanPipelineResources &resources,
+                                                                        const ShaderMetadata &shader) {
+         resources.shader_modules.reserve(shader.binaries.size());
+         for (const auto &binary : shader.binaries) {
+            if (binary.spirv_words.empty()) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            const VkShaderModuleCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+                                                       .pNext = nullptr,
+                                                       .flags = 0,
+                                                       .codeSize = binary.spirv_words.size() *
+                                                                   sizeof(binary.spirv_words.front()),
+                                                       .pCode = binary.spirv_words.data()};
+            VkShaderModule shader_module = VK_NULL_HANDLE;
+            const VkResult result = vkCreateShaderModule(device_, &create_info, nullptr, &shader_module);
+            if (result != VK_SUCCESS) {
+               std::cerr << "[VulkanGraphicsBackend] vkCreateShaderModule failed: " << string_VkResult(result)
+                         << '\n';
+               return std::unexpected(vve::Error::internal_error);
+            }
+
+            resources.shader_modules.push_back(shader_module);
+         }
+
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      createDescriptorSetLayouts(VulkanPipelineResources &resources, const PipelineLayoutDesc &layout) {
+         resources.descriptor_set_layouts.reserve(layout.descriptor_sets.size());
+         for (const auto &descriptor_set : layout.descriptor_sets) {
+            std::map<std::uint32_t, VkDescriptorSetLayoutBinding> bindings_by_index{};
+            for (const auto &binding : descriptor_set.bindings) {
+               const auto type = descriptorType(binding.kind);
+               if (!type.has_value()) {
+                  continue;
+               }
+
+               auto stage_flags = shaderStageFlags(binding.visible_stages);
+               if (stage_flags == 0) {
+                  std::vector<ShaderStage> layout_stages{};
+                  layout_stages.reserve(layout.shader_stages.size());
+                  for (const auto &shader_stage : layout.shader_stages) {
+                     layout_stages.push_back(shader_stage.stage);
+                  }
+                  stage_flags = shaderStageFlags(layout_stages);
+               }
+
+               VkDescriptorSetLayoutBinding vk_binding{.binding = binding.binding,
+                                                       .descriptorType = *type,
+                                                       .descriptorCount = 1,
+                                                       .stageFlags = stage_flags,
+                                                       .pImmutableSamplers = nullptr};
+               if (auto existing = bindings_by_index.find(binding.binding); existing != bindings_by_index.end()) {
+                  if (existing->second.descriptorType != vk_binding.descriptorType) {
+                     std::cerr << "[VulkanGraphicsBackend] conflicting descriptor types for set "
+                               << descriptor_set.set << " binding " << binding.binding << '\n';
+                     return std::unexpected(vve::Error::invalid_argument);
+                  }
+                  existing->second.stageFlags |= vk_binding.stageFlags;
+                  continue;
+               }
+
+               bindings_by_index.emplace(binding.binding, vk_binding);
+            }
+
+            std::vector<VkDescriptorSetLayoutBinding> bindings{};
+            bindings.reserve(bindings_by_index.size());
+            for (const auto &[binding_index, binding] : bindings_by_index) {
+               (void)binding_index;
+               bindings.push_back(binding);
+            }
+
+            const VkDescriptorSetLayoutCreateInfo create_info{
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .bindingCount = static_cast<std::uint32_t>(bindings.size()),
+                .pBindings = bindings.data()};
+            VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
+            const VkResult result = vkCreateDescriptorSetLayout(device_, &create_info, nullptr, &descriptor_set_layout);
+            if (result != VK_SUCCESS) {
+               std::cerr << "[VulkanGraphicsBackend] vkCreateDescriptorSetLayout failed: " << string_VkResult(result)
+                         << '\n';
+               return std::unexpected(vve::Error::internal_error);
+            }
+
+            resources.descriptor_set_layouts.push_back(descriptor_set_layout);
+         }
+
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error> createVulkanPipelineLayout(VulkanPipelineResources &resources) {
+         const VkPipelineLayoutCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                                                      .pNext = nullptr,
+                                                      .flags = 0,
+                                                      .setLayoutCount =
+                                                          static_cast<std::uint32_t>(resources.descriptor_set_layouts.size()),
+                                                      .pSetLayouts = resources.descriptor_set_layouts.data(),
+                                                      .pushConstantRangeCount = 0,
+                                                      .pPushConstantRanges = nullptr};
+         const VkResult result = vkCreatePipelineLayout(device_, &create_info, nullptr, &resources.pipeline_layout);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreatePipelineLayout failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         return {};
+      }
+
+      void destroyPipelineResources(VulkanPipelineResources &resources) noexcept {
+         if (device_ == VK_NULL_HANDLE) {
+            return;
+         }
+
+         if (resources.pipeline_layout != VK_NULL_HANDLE) {
+            vkDestroyPipelineLayout(device_, resources.pipeline_layout, nullptr);
+            resources.pipeline_layout = VK_NULL_HANDLE;
+         }
+
+         for (auto descriptor_set_layout : resources.descriptor_set_layouts) {
+            if (descriptor_set_layout != VK_NULL_HANDLE) {
+               vkDestroyDescriptorSetLayout(device_, descriptor_set_layout, nullptr);
+            }
+         }
+         resources.descriptor_set_layouts.clear();
+
+         for (auto shader_module : resources.shader_modules) {
+            if (shader_module != VK_NULL_HANDLE) {
+               vkDestroyShaderModule(device_, shader_module, nullptr);
+            }
+         }
+         resources.shader_modules.clear();
+      }
+
+      void destroy() noexcept {
+         for (auto &[handle, resources] : pipeline_resources_) {
+            (void)handle;
+            destroyPipelineResources(resources);
+         }
+         pipeline_resources_.clear();
+
+         if (device_ != VK_NULL_HANDLE) {
+            vkDestroyDevice(device_, nullptr);
+            device_ = VK_NULL_HANDLE;
+         }
+         if (instance_ != VK_NULL_HANDLE) {
+            vkDestroyInstance(instance_, nullptr);
+            instance_ = VK_NULL_HANDLE;
+         }
+
+         graphics_queue_ = VK_NULL_HANDLE;
+         physical_device_ = VK_NULL_HANDLE;
+         graphics_queue_family_ = 0;
+         initialized_ = false;
+      }
+
+      VkInstance instance_{VK_NULL_HANDLE};       ///< Persistent Vulkan instance used for backend resources.
+      VkPhysicalDevice physical_device_{VK_NULL_HANDLE}; ///< Selected physical device.
+      VkDevice device_{VK_NULL_HANDLE};           ///< Logical device owning backend resources.
+      VkQueue graphics_queue_{VK_NULL_HANDLE};    ///< Graphics-capable queue for future work.
+      std::uint32_t graphics_queue_family_{0};    ///< Queue family used to create the logical device.
+      std::unordered_map<vve::Handle::value_type, VulkanPipelineResources> pipeline_resources_{};
       bool initialized_{false}; ///< Tracks whether backend initialization has completed.
    };
 
@@ -557,6 +980,16 @@ namespace vve::v3 {
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, createPipelineLayout,
                                (const RendererDesc &renderer, const ShaderMetadata &shader), (renderer, shader), const,
                                std::expected<PipelineLayoutDesc, vve::Error>)
+
+   /// @brief Creates backend-owned pipeline resources through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, createPipelineResources,
+                               (const PipelineLayoutDesc &layout, const ShaderMetadata &shader), (layout, shader), ,
+                               std::expected<PipelineBackendResources, vve::Error>)
+
+   /// @brief Returns backend resource metadata through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, pipelineResources,
+                               (PipelineResourceHandle resources), (resources), const,
+                               std::expected<std::optional<PipelineBackendResources>, vve::Error>)
 
    /// @brief Begins a frame through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, beginFrame,

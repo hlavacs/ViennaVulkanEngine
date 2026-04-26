@@ -161,6 +161,11 @@ export namespace vve::v3 {
       vve::Handle value{}; ///< Underlying generic handle value.
    };
 
+   /// @brief Strong type for backend-created pipeline resource bundles.
+   struct PipelineResourceHandle final {
+      vve::Handle value{}; ///< Underlying generic handle value.
+   };
+
    /// @brief Strong type for window identifiers inside v3 systems.
    struct WindowHandle final {
       vve::Handle value{}; ///< Underlying generic handle value.
@@ -893,6 +898,16 @@ export namespace vve::v3 {
       std::vector<PipelinePushConstantRangeDesc> push_constants{};    ///< Reflected push-constant ranges.
    };
 
+   /// @brief Summary of backend-owned Vulkan objects created for a reflected pipeline layout.
+   struct PipelineBackendResources {
+      PipelineResourceHandle handle{};                 ///< Stable backend resource-bundle handle.
+      RendererHandle renderer{};                       ///< Renderer that owns the resources.
+      ShaderHandle shader_program{};                   ///< Shader program used to create shader modules.
+      std::size_t shader_module_count{0};              ///< Number of Vulkan shader modules created.
+      std::size_t descriptor_set_layout_count{0};      ///< Number of Vulkan descriptor-set layouts created.
+      bool pipeline_layout_created{false};             ///< Whether a Vulkan pipeline layout was created.
+   };
+
    /// @brief Coarse render-graph resource access declaration.
    struct RenderResourceUse {
       vve::Handle resource{}; ///< Resource touched by the render pass.
@@ -920,6 +935,7 @@ export namespace vve::v3 {
       RendererDesc renderer{}; ///< Backend renderer selected for this window.
       ShaderHandle shader_program{}; ///< Shader program compiled for this window renderer.
       PipelineLayoutDesc pipeline_layout{}; ///< Backend-facing layout derived from shader reflection.
+      PipelineBackendResources backend_resources{}; ///< Backend-owned Vulkan objects for the layout.
       RenderGraph graph{};     ///< Render graph executed for the window.
    };
 
