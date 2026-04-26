@@ -35,6 +35,8 @@ export namespace vve::v3 {
    class DefaultRenderSystemImplementation;
    class ImGuiSystemImplementation;
 
+   template <typename TImplementation> class ShaderSystemFacade;
+
    /// @brief Asset-import facade for source scene ingestion.
    template <typename TImplementation> class VVE_API AssetSystemFacade {
    public:
@@ -69,6 +71,13 @@ export namespace vve::v3 {
       /// @brief Registers resources referenced by an imported scene.
       [[nodiscard]] std::expected<void, vve::Error> registerImportedScene(const ImportedScene &scene,
                                                                           const std::filesystem::path &source_path);
+      /// @brief Loads a shader source file, compiles it through the shader system, and registers the result.
+      [[nodiscard]] std::expected<ShaderMetadata, vve::Error>
+      loadShaderProgram(const std::filesystem::path &shader_path,
+                        ShaderSystemFacade<SlangShaderSystemImplementation> &shader_system,
+                        vve::RendererKind renderer, vve::ShadowKind shadow);
+      /// @brief Returns registered shader metadata when the shader handle is known.
+      [[nodiscard]] std::expected<std::optional<ShaderMetadata>, vve::Error> shaderProgram(ShaderHandle shader) const;
       /// @brief Enumerates the currently known resource records.
       [[nodiscard]] std::expected<std::vector<ResourceRecord>, vve::Error> enumerate() const;
       /// @brief Uploads resources needed for the current frame.
@@ -202,6 +211,9 @@ export namespace vve::v3 {
       /// @brief Reflects a shader into engine-visible metadata for the chosen renderer mode.
       [[nodiscard]] std::expected<ShaderMetadata, vve::Error>
       reflect(const std::filesystem::path &shader_path, vve::RendererKind renderer, vve::ShadowKind shadow);
+      /// @brief Compiles and reflects already-loaded shader source.
+      [[nodiscard]] std::expected<ShaderMetadata, vve::Error>
+      compileAndReflect(const ShaderSource &shader_source, vve::RendererKind renderer, vve::ShadowKind shadow);
 
    private:
       std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.

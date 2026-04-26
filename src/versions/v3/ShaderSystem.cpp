@@ -190,8 +190,8 @@ namespace vve::v3 {
       return module_name;
    }
 
-   /// @brief Reads a shader file into a null-terminated source string for Slang.
-   [[nodiscard]] std::expected<std::string, vve::Error> readShaderSource(const std::filesystem::path &shader_path) {
+   /// @brief Reads a shader file into a null-terminated source payload for Slang.
+   [[nodiscard]] std::expected<ShaderSource, vve::Error> readShaderSource(const std::filesystem::path &shader_path) {
       if (!std::filesystem::exists(shader_path)) {
          return std::unexpected(vve::Error::file_not_found);
       }
@@ -201,7 +201,9 @@ namespace vve::v3 {
          return std::unexpected(vve::Error::io_error);
       }
 
-      return std::string(std::istreambuf_iterator<char>(input), std::istreambuf_iterator<char>());
+      return ShaderSource{.source_path = shader_path,
+                          .source_code = std::string(std::istreambuf_iterator<char>(input),
+                                                     std::istreambuf_iterator<char>())};
    }
 
    /// @brief Emits Slang diagnostics when a compile/reflection operation fails.
@@ -371,15 +373,23 @@ namespace vve::v3 {
       /// @brief Compiles a Slang source file and reflects its resource metadata.
       [[nodiscard]] std::expected<ShaderMetadata, vve::Error>
       reflect(const std::filesystem::path &shader_path, vve::RendererKind renderer, vve::ShadowKind shadow) {
-         if (!ensureGlobalSession()) {
-            return std::unexpected(vve::Error::internal_error);
-         }
-
          const auto absolute_shader_path = std::filesystem::absolute(shader_path);
          const auto shader_source = readShaderSource(absolute_shader_path);
          if (!shader_source) {
             return std::unexpected(shader_source.error());
          }
+
+         return compileAndReflect(*shader_source, renderer, shadow);
+      }
+
+      /// @brief Compiles and reflects a shader source payload loaded by another subsystem.
+      [[nodiscard]] std::expected<ShaderMetadata, vve::Error>
+      compileAndReflect(const ShaderSource &shader_source, vve::RendererKind renderer, vve::ShadowKind shadow) {
+         if (!ensureGlobalSession()) {
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const auto absolute_shader_path = std::filesystem::absolute(shader_source.source_path);
 
          slang::TargetDesc target_desc{};
          target_desc.format = SLANG_SPIRV;
@@ -414,9 +424,11 @@ namespace vve::v3 {
 
          Slang::ComPtr<slang::IBlob> diagnostics;
          Slang::ComPtr<slang::IModule> module;
-         module.attach(session->loadModuleFromSourceString(makeModuleName(absolute_shader_path).c_str(),
-                                                           absolute_shader_path.generic_string().c_str(),
-                                                           shader_source->c_str(), diagnostics.writeRef()));
+         const auto module_name = makeModuleName(absolute_shader_path);
+         const auto source_path_string = absolute_shader_path.generic_string();
+         module.attach(session->loadModuleFromSourceString(module_name.c_str(),
+                                                           source_path_string.c_str(),
+                                                           shader_source.source_code.c_str(), diagnostics.writeRef()));
          if (module == nullptr) {
             logSlangFailure("failed to load Slang module", diagnostics);
             return std::unexpected(vve::Error::invalid_argument);
@@ -555,6 +567,12 @@ namespace vve::v3 {
                                (const std::filesystem::path &shader_path, vve::RendererKind renderer,
                                 vve::ShadowKind shadow),
                                (shader_path, renderer, shadow), , std::expected<ShaderMetadata, vve::Error>)
+
+   /// @brief Compiles and reflects already-loaded shader source through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(ShaderSystemFacade, SlangShaderSystemImplementation, compileAndReflect,
+                               (const ShaderSource &shader_source, vve::RendererKind renderer,
+                                vve::ShadowKind shadow),
+                               (shader_source, renderer, shadow), , std::expected<ShaderMetadata, vve::Error>)
 
    /// @brief Emits the explicit shader-system facade instantiation for v3.
    template class ShaderSystemFacade<SlangShaderSystemImplementation>;

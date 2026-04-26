@@ -652,6 +652,12 @@ export namespace vve::v3 {
       return leaf_handles;
    }
 
+   /// @brief Source-code payload for one shader module loaded by the resource system.
+   struct ShaderSource {
+      std::filesystem::path source_path{}; ///< Absolute or project-relative source path used for diagnostics/includes.
+      std::string source_code{};           ///< Loaded shader source text.
+   };
+
    /// @brief Reflected shader parameter binding description.
    struct ShaderParameter {
       std::string name{};       ///< Parameter name as reflected from the shader.

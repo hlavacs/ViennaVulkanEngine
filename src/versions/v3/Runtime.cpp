@@ -11,6 +11,15 @@ import :Internal;
  */
 namespace vve::v3::detail {
 
+   namespace {
+
+   /// @brief Resolves built-in shader files next to the v3 implementation sources.
+   [[nodiscard]] std::filesystem::path builtInShaderPath(std::string_view filename) {
+      return std::filesystem::path(__FILE__).parent_path() / "shaders" / filename;
+   }
+
+   } // namespace
+
    /**
     * @brief Builds a deterministic handle from a stable name plus salt.
     * @param name Stable textual seed.
@@ -44,6 +53,12 @@ namespace vve::v3::detail {
           std::make_unique<SceneLoader>(runtime.asset_system, runtime.resource_system, runtime.scene_system);
       runtime.render_system =
           std::make_unique<RenderSystem>(desc.renderer, desc.shadow, runtime.graphics_backend, desc.imgui_enabled);
+      if (auto shader_result =
+              runtime.resource_system.loadShaderProgram(builtInShaderPath("rasterizer.slang"), runtime.shader_system,
+                                                        desc.renderer, desc.shadow);
+          !shader_result) {
+         return std::unexpected(shader_result.error());
+      }
       // Window polling owns the authoritative frame snapshot shared with the
       // rest of the frame systems.
       runtime.window_system.setFrameDataSink(runtime.window_frame);

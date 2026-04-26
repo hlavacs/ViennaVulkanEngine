@@ -16,6 +16,27 @@ import :Internal;
  */
 namespace vve::v3 {
 
+   namespace {
+
+   /// @brief Loads text source into a resource-owned shader payload.
+   [[nodiscard]] std::expected<ShaderSource, vve::Error> loadShaderSource(const std::filesystem::path &shader_path) {
+      const auto absolute_shader_path = std::filesystem::absolute(shader_path);
+      if (!std::filesystem::exists(absolute_shader_path)) {
+         return std::unexpected(vve::Error::file_not_found);
+      }
+
+      std::ifstream input(absolute_shader_path, std::ios::binary);
+      if (!input) {
+         return std::unexpected(vve::Error::io_error);
+      }
+
+      return ShaderSource{.source_path = absolute_shader_path,
+                          .source_code = std::string(std::istreambuf_iterator<char>(input),
+                                                     std::istreambuf_iterator<char>())};
+   }
+
+   } // namespace
+
    /**
     * @brief Concrete resource-system implementation used by v3.
     */
@@ -67,6 +88,58 @@ namespace vve::v3 {
          }
 
          return {};
+      }
+
+      /**
+       * @brief Loads and compiles a shader program as a first-class resource.
+       * @param shader_path Shader source path to load.
+       * @param shader_system Shader compiler/reflection subsystem.
+       * @param renderer Intended renderer kind.
+       * @param shadow Intended shadow mode.
+       */
+      [[nodiscard]] std::expected<ShaderMetadata, vve::Error>
+      loadShaderProgram(const std::filesystem::path &shader_path, ShaderSystem &shader_system,
+                        vve::RendererKind renderer, vve::ShadowKind shadow) {
+         const auto shader_source = loadShaderSource(shader_path);
+         if (!shader_source) {
+            return std::unexpected(shader_source.error());
+         }
+
+         const auto shader_metadata = shader_system.compileAndReflect(*shader_source, renderer, shadow);
+         if (!shader_metadata) {
+            return std::unexpected(shader_metadata.error());
+         }
+
+         const auto shader_id = shader_metadata->handle.value.value();
+         shader_programs_.insert_or_assign(shader_id, *shader_metadata);
+
+         auto generation = std::uint32_t{1};
+         if (const auto record_index = record_indices_.find(shader_id); record_index != record_indices_.end()) {
+            generation = records_[record_index->second].generation + 1;
+         }
+
+         upsertRecord(ResourceRecord{.id = shader_metadata->handle.value,
+                                     .kind = ResourceKind::shader_program,
+                                     .location = ResourceLocation::cpu_memory,
+                                     .generation = generation,
+                                     .source_path = shader_source->source_path});
+
+         return *shader_metadata;
+      }
+
+      /// @brief Returns stored shader metadata for an already registered shader program.
+      [[nodiscard]] std::expected<std::optional<ShaderMetadata>, vve::Error>
+      shaderProgram(ShaderHandle shader) const {
+         if (!shader.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto shader_it = shader_programs_.find(shader.value.value());
+         if (shader_it == shader_programs_.end()) {
+            return std::optional<ShaderMetadata>{};
+         }
+
+         return shader_it->second;
       }
 
       /// @brief Returns a copy of the currently registered resource records.
@@ -122,6 +195,7 @@ namespace vve::v3 {
       std::unordered_map<vve::Handle::value_type, ImportedTexture> textures_{}; ///< Imported texture references retained in CPU memory.
       std::unordered_map<vve::Handle::value_type, ImportedMesh> meshes_{}; ///< Imported mesh payloads retained in CPU memory.
       std::unordered_map<vve::Handle::value_type, ImportedMaterial> materials_{}; ///< Imported material payloads retained in CPU memory.
+      std::unordered_map<vve::Handle::value_type, ShaderMetadata> shader_programs_{}; ///< Compiled shader metadata retained in CPU memory.
    };
 
    /// @brief Constructs the public resource-system facade around the concrete implementation.
@@ -135,6 +209,19 @@ namespace vve::v3 {
    VVE_V3_DEFINE_FACADE_METHOD(ResourceSystemFacade, DefaultResourceSystemImplementation, registerImportedScene,
                                (const ImportedScene &scene, const std::filesystem::path &source_path),
                                (scene, source_path), , std::expected<void, vve::Error>)
+
+   /// @brief Loads, compiles, and registers a shader program through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(ResourceSystemFacade, DefaultResourceSystemImplementation, loadShaderProgram,
+                               (const std::filesystem::path &shader_path,
+                                ShaderSystemFacade<SlangShaderSystemImplementation> &shader_system,
+                                vve::RendererKind renderer, vve::ShadowKind shadow),
+                               (shader_path, shader_system, renderer, shadow), ,
+                               std::expected<ShaderMetadata, vve::Error>)
+
+   /// @brief Returns registered shader metadata through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(ResourceSystemFacade, DefaultResourceSystemImplementation, shaderProgram,
+                               (ShaderHandle shader), (shader), const,
+                               std::expected<std::optional<ShaderMetadata>, vve::Error>)
 
    /// @brief Enumerates registered resources through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(ResourceSystemFacade, DefaultResourceSystemImplementation, enumerate, (), (), const,
