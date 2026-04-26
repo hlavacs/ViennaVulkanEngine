@@ -24,6 +24,8 @@ public struct BSDFQueryRecord {
 
     // Input: shadow-only evaluation flag.
     public bool isShadowQuery;
+
+    public float pdf;
 }
 
 enum LightInteraction : int
@@ -179,6 +181,8 @@ public float3 sampleGlossy(inout BSDFQueryRecord record, in MaterialRecord mater
 
     pdfValue = clamp(pdfValue, min, max);
 
+    record.pdf = pdfValue;
+
     return glossyEval(record, material, isMetal) / pdfValue;
 }
 
@@ -227,7 +231,12 @@ public float3 sampleDiffuse(inout BSDFQueryRecord record, in MaterialRecord mate
     record.wm = float3(0.0, 0.0, 1.0);
     // moved record.wo.z out of the shader!
     // return DiffuseEval(record, material) / DiffusePdf(record, material) * record.wo.z;
-    return DiffuseEval(record, material) / DiffusePdf(record, material);
+
+    float pdf = DiffusePdf(record, material);
+
+    record.pdf = pdf;
+
+    return DiffuseEval(record, material) / pdf;
 }
 
 public float3 PrincipledEval(in BSDFQueryRecord record, in MaterialRecord material) {

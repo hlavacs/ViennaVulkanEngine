@@ -72,7 +72,8 @@ namespace vve {
 
         uint32_t seed;
         uint32_t lightCount;
-        float _pad0[2];
+        uint32_t x_dimensions;
+        uint32_t y_dimensions;
     };
 
     /** Material slot that can be a texture or constant RGB. */
@@ -131,5 +132,4 @@ namespace vve {
         VkAccelerationStructureKHR accel = VK_NULL_HANDLE;
         RawDeviceBuffer* buffer = nullptr;
     };
-
 }

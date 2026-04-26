@@ -8,7 +8,9 @@ import ColorSpace;
 import Surface;
 import raytracing;
 import Reservoir;
+import ReservoirGI;
 import RestirDI;
+import RestirGI;
 
 [[vk::binding(0, 2)]]
 RWTexture2D<float4> inAlbedoAlpha;
@@ -29,10 +31,21 @@ RWTexture2D<float4> inShadingNormal;
 RWTexture2D<float4> inReprojectionError;
 
 [[vk::binding(6, 2)]]
-RWStructuredBuffer<Reservoir> inReservoir;
+RWTexture2D<float4> inPositionPrevious;
 
 [[vk::binding(7, 2)]]
+RWStructuredBuffer<Reservoir> inReservoir;
+
+[[vk::binding(8, 2)]]
 RWStructuredBuffer<Reservoir> outReservoir;
+
+[[vk::binding(9, 2)]]
+RWStructuredBuffer<ReservoirGI> inReservoirGI;
+
+[[vk::binding(10, 2)]]
+RWStructuredBuffer<ReservoirGI> outReservoirGI;
+
+
 
 void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout IntersectionRecord its, inout MaterialRecord material) {
     RayDesc cameraRay = getInitialRay(launchID, launchSize);
@@ -61,7 +74,6 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
     material.shadingFrame = Frame(shadingNormal);
 }
 
-
 // Ray generation shader - entry point for each pixel
 [shader("raygeneration")]
 void rgenMain()
@@ -76,10 +88,13 @@ void rgenMain()
 
     const uint CANDIDATE_COUNT = 32;
     const uint MAX_TEMPORAL_INFLUENCE = 20;
+    const uint MAX_AGE = 20;
 
     if (isSkyPixel(position)) {
         Reservoir reservoir = Reservoir(0, 0.0, 0.0, 0);
+        ReservoirGI reservoirGI = createEmptyReservoirGI();
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
+        storeReservoirGI(reservoirGI, launchID, launchSize, outReservoirGI);
     } else {
         uint linear = (uint)launchID.x + (uint)launchID.y * (uint)launchSize.x;
         uint pixelSeed = Hash(linear ^ (seed * 0x9E3779B9u));
@@ -95,6 +110,7 @@ void rgenMain()
         getInitialSurfaceData(launchID, launchSize, its, material);
 
         Reservoir reservoir = Reservoir(0, 0.0, 0.0, 0);
+        ReservoirGI reservoirGI = createEmptyReservoirGI();
 
         // initial selection of 1 light of M
         for (uint i = 0; i < CANDIDATE_COUNT; i++)
@@ -108,6 +124,12 @@ void rgenMain()
             UpdateReservoir(reservoir, lightIndex, w, 1, sampler);
         }
 
+        // initial generation of GI sample
+        ReservoirGI initialGISample = createInitialReservoirGI(its, material, sampler);
+        reservoirGI = CombineReservoirsGI(reservoirGI, initialGISample, its, material, sampler);
+
+
+        //ser lightweight of DI reservoir using visibility
         if (IsReservoirValid(reservoir))
         {
             // Update weight with new radiance with visibility term!
@@ -121,14 +143,28 @@ void rgenMain()
         //better system needed in the future
         if (inReprojectionError[launchID].x < 0.5) {
             Reservoir temporalReservoir = readReservoir(launchID, launchSize, inReservoir);
-
             // restrict influence from past samples.
             // this may not be optimal, the real time raytracing engine handles this diffrently
             temporalReservoir.M = min(MAX_TEMPORAL_INFLUENCE * reservoir.M, temporalReservoir.M);
-
             reservoir = CombineReservoirs(reservoir, temporalReservoir, its, material, sampler);
+
+            // GI
+            ReservoirGI temporalReservoirGI = readReservoirGI(launchID, launchSize, inReservoirGI);
+
+            float jacobian = getJacobian(inPosition[launchID].xyz, inPositionPrevious[launchID].xyz, temporalReservoirGI.position, temporalReservoirGI.normal);
+
+            temporalReservoirGI.W_sum *= jacobian;
+
+            temporalReservoirGI.M = min(MAX_TEMPORAL_INFLUENCE * reservoirGI.M, temporalReservoirGI.M);
+
+            temporalReservoirGI.age++;
+
+            if (temporalReservoirGI.age < MAX_AGE) {
+                reservoirGI = CombineReservoirsGI(reservoirGI, temporalReservoirGI, its, material, sampler);
+            }
         }
 
-        storeReservoir(reservoir, launchID, launchSize, outReservoir);  
+        storeReservoir(reservoir, launchID, launchSize, outReservoir);
+        storeReservoirGI(reservoirGI, launchID, launchSize, outReservoirGI);
     }
 }

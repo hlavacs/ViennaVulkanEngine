@@ -192,6 +192,12 @@ namespace vve {
             initBuffer(size);
             transferData(data, size);
         }
+
+        void recordCopyFromBuffer(GenericBuffer* srcBuffer, int currentFrame) {
+            VkCommandBuffer cmd = commandManager->getCommandBuffer(currentFrame);
+            VkBufferCopy region{ 0, 0, size };
+            vkCmdCopyBuffer(cmd, srcBuffer->getBuffer(), buffer, 1, &region);
+        }
     };
 
     /** Device-local, typed buffer populated via a staging copy. */

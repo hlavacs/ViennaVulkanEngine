@@ -8,6 +8,7 @@ import ColorSpace;
 import Surface;
 import raytracing;
 import Reservoir;
+import ReservoirGI;
 import RestirDI;
 
 [[vk::binding(0, 2)]]
@@ -29,11 +30,19 @@ RWTexture2D<float4> inShadingNormal;
 RWTexture2D<float4> outImage;
 
 [[vk::binding(6, 2)]]
-RWStructuredBuffer<Reservoir> inReservoir;
+RWTexture2D<float4> inPositionPrevious;
 
 [[vk::binding(7, 2)]]
+RWStructuredBuffer<Reservoir> inReservoir;
+
+[[vk::binding(8, 2)]]
 RWStructuredBuffer<Reservoir> outReservoir;
 
+[[vk::binding(9, 2)]]
+RWStructuredBuffer<ReservoirGI> inReservoirGI;
+
+[[vk::binding(10, 2)]]
+RWStructuredBuffer<ReservoirGI> outReservoirGI;
 
 void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout IntersectionRecord its, inout MaterialRecord material) {
     RayDesc cameraRay = getInitialRay(launchID, launchSize);
@@ -62,6 +71,9 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
     material.shadingFrame = Frame(shadingNormal);
 }
 
+
+
+
 // Ray generation shader - entry point for each pixel
 [shader("raygeneration")]
 void rgenMain()
@@ -80,7 +92,9 @@ void rgenMain()
 
     if (isSkyPixel(position)) {
         Reservoir reservoir = Reservoir(0, 0.0, 0.0, 0);
+        ReservoirGI reservoirGI = createEmptyReservoirGI();
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
+        storeReservoirGI(reservoirGI, launchID, launchSize, outReservoirGI);
     } else {
         uint linear = (uint)launchID.x + (uint)launchID.y * (uint)launchSize.x;
         uint pixelSeed = Hash(linear ^ (seed * 0x9E3779B9u));
@@ -96,6 +110,7 @@ void rgenMain()
         getInitialSurfaceData(launchID, launchSize, its, material);
 
         Reservoir reservoir = readReservoir(launchID, launchSize, inReservoir);
+        ReservoirGI reservoirGI = readReservoirGI(launchID, launchSize, inReservoirGI);
 
         float3 normal = inNormal[launchID].xyz;
         float3 position = inPosition[launchID].xyz;
@@ -113,14 +128,24 @@ void rgenMain()
 
             if (dot(normal, normalSpatial) >= 0.9 && length(positionSpatial - position) < 0.25) {
                 Reservoir reservoirSpatial = readReservoir(readID, launchSize, inReservoir);
+                ReservoirGI reservoirGISpatial = readReservoirGI(readID, launchSize, inReservoirGI);
 
                 // restrict influence from past samples.
                 // this may not be optimal, the real time raytracing engine handles this diffrently
- 
+
                 reservoirSpatial.M = min(MAX_SPATIAL_INFLUENCE * reservoir.M, reservoirSpatial.M);
+                reservoirGISpatial.M = min(MAX_SPATIAL_INFLUENCE * reservoirGI.M, reservoirGISpatial.M);
+
+                float jacobian = getJacobian(inPosition[launchID].xyz, inPositionPrevious[launchID].xyz, reservoirGISpatial.position, reservoirGISpatial.normal);
+
+                reservoirGISpatial.W_sum *= jacobian;
 
                 if(IsReservoirValid(reservoirSpatial)){
                     reservoir = CombineReservoirs(reservoir, reservoirSpatial, its, material, sampler);
+                }
+
+                if (IsReservoirValidGI(reservoirGISpatial)) {
+                    reservoirGI = CombineReservoirsGI(reservoirGI, reservoirGISpatial, its, material, sampler);
                 }
                 
             }     
@@ -132,27 +157,23 @@ void rgenMain()
         {
             float3 radiance = groundTruthLightRadiance(reservoir.lightSelected, its, material, sampler);
             output = radiance * reservoir.lightWeight;
-            float p_hat = length(radiance);
-            //maybe one shouldn't use this but I am unsure???
-
-            //this does not work because one has to sample the same point on the light source every time otherwhise restir does not work
-            /*
-            if(p_hat <= 0.0 || reservoir.M == 0) {
-                reservoir = Reservoir(0, 0.0, 0.0, 0);
-            }
-                */
-                
-                
-
-            //reservoir.lightWeight = p_hat > 0.0 ? (1.0 / max(p_hat, 0.001)) * reservoir.W_sum / reservoir.M : 0.0;
         } else {
             reservoir = Reservoir(0, 0.0, 0.0, 0);
+        }
+
+        if (IsReservoirValidGI(reservoirGI))
+        {
+            float3 radiance = evaluateReservoirGI(reservoirGI, its, material);
+            output += radiance;
+        } else {
+            reservoirGI = createEmptyReservoirGI();
         }
 
         float3 albedo = inAlbedoAlpha[launchID].xyz;
         float3 lighting = output / max(albedo,0.001);
 
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
+        storeReservoirGI(reservoirGI, launchID, launchSize, outReservoirGI);
         outImage[launchID] = float4(lighting, 1.0);
     }
 }

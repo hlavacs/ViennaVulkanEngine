@@ -1,3 +1,5 @@
+import Reservoir;
+
 [[vk::binding(0, 0)]]
 cbuffer UniformBufferObject
 {
@@ -7,6 +9,10 @@ cbuffer UniformBufferObject
     float4x4 projInv;
     float4x4 prevView;
     float4x4 prevProj;
+    uint seed;
+    uint lightCount;
+    uint x_dimensions;
+    uint y_dimensions; 
 };
 
 [[vk::binding(1, 0)]]
@@ -27,28 +33,10 @@ RWTexture2D<float4> outReprojectionError;
 //restir
 
 [[vk::binding(6, 0)]]
-RWTexture2D<uint> inLightIndex;
+RWStructuredBuffer<Reservoir> inReservoir;
 
 [[vk::binding(7, 0)]]
-RWTexture2D<float> inLightWeight;
-
-[[vk::binding(8, 0)]]
-RWTexture2D<float> inWeightSum;
-
-[[vk::binding(9, 0)]]
-RWTexture2D<uint> inLightCount;
-
-[[vk::binding(10, 0)]]
-RWTexture2D<uint> outLightIndex;
-
-[[vk::binding(11, 0)]]
-RWTexture2D<float> outLightWeight;
-
-[[vk::binding(12, 0)]]
-RWTexture2D<float> outWeightSum;
-
-[[vk::binding(13, 0)]]
-RWTexture2D<uint> outLightCount;
+RWStructuredBuffer<Reservoir> outReservoir;
 
 
 
@@ -56,6 +44,7 @@ RWTexture2D<uint> outLightCount;
 [numthreads(16, 16, 1)]
 void main(uint3 threadId: SV_DispatchThreadID) {
     int2 launchID = threadId.xy;
+    int2 launchSize = int2(x_dimensions, y_dimensions);
 
     float2 dims;
     inPreviousLighting.GetDimensions(dims.x, dims.y);
@@ -95,10 +84,13 @@ void main(uint3 threadId: SV_DispatchThreadID) {
     //+0.5 because typconversion rounds down
     uint2 predictedIDPrev = (uint2)(predictedUVPrevClamped * (dims -1.0) + 0.5);
 
-    outLightIndex[launchID] = inLightIndex[predictedIDPrev];
-    outLightWeight[launchID] = inLightWeight[predictedIDPrev];
-    outWeightSum[launchID] = inWeightSum[predictedIDPrev];
-    outLightCount[launchID] = inLightCount[predictedIDPrev];
+    if (predictedUVPrev.x >= 0.0 && predictedUVPrev.x <= 1.0 && predictedUVPrev.y >= 0.0 && predictedUVPrev.y <= 1.0) {
+        storeReservoir(readReservoir(predictedIDPrev, launchSize, inReservoir), launchID, launchSize, outReservoir);
+    } else {
+        Reservoir reservoir = Reservoir(0, 0.0, 0.0, 0);
+        storeReservoir(reservoir, launchID, launchSize, outReservoir);
+    }
+    
 
     float length = length(positionReprojected - position);
 
@@ -110,99 +102,3 @@ void main(uint3 threadId: SV_DispatchThreadID) {
     outReprojectedLighting[launchID] = float4(lightingReprojected, 1.0);
     outReprojectionError[launchID] = float4(length);
 }
-
-/*
-[shader("compute")]
-[numthreads(16, 16, 1)]
-void main(uint3 threadId: SV_DispatchThreadID) {
-    int2 launchID = threadId.xy;
-
-    float2 dims;
-    inPreviousLighting.GetDimensions(dims.x, dims.y);
-
-    float4 position = float4(inPosition[launchID].xyz, 1.0);
-    float4 prevPosition = float4(inPreviousPosition.Load(int3(launchID,0)).xyz, 1.0);
-
-    float4 clipSpacePos = mul(proj, mul(view, position));
-    float4 clipSpacePosPrev = mul(prevProj, mul(prevView, position));
-
-    //perspective devide
-    float3 ndc = clipSpacePos.xyz / clipSpacePos.w;
-    float3 ndcPrev = clipSpacePosPrev.xyz / clipSpacePosPrev.w;
-
-    // Calculate Motion in normalized device coordinates
-    float2 motionNDC = ndcPrev.xy - ndc.xy;
-
-    // Convert NDC motion to UV motion
-    // Divide by 2 because ndc has the range(-1 to 1)
-    // Flip Y because Vulkan UVs start at top-left
-    float2 motionUV = float2(motionNDC.x, motionNDC.y);
-
-
-
-    //Calculate the Reprojected UV
-    float2 currentUV = (float2(launchID) + 0.5f) / dims;
-    float2 reprojectedUV = currentUV + motionUV;
-
-    float3 lightingReprojected = inPreviousLighting.SampleLevel(reprojectedUV, 0).xyz;
-    float4 positionReprojected = float4(inPreviousPosition.SampleLevel(reprojectedUV, 0).xyz,1.0);
-
-
-
-    float length = length(positionReprojected - position);
-
-    outReprojectedLighting[launchID] = float4(length, length, length, 1.0);
-}
-*/
-
-/*
-[shader("compute")]
-[numthreads(16, 16, 1)]
-void main(uint3 threadId: SV_DispatchThreadID) {
-    int2 launchID = threadId.xy;
-
-    float2 dims;
-    inPreviousLighting.GetDimensions(dims.x, dims.y);
-    float2 currentUV = (float2(launchID) + 0.5f) / dims;
-
-    float4 position = float4(inPosition[launchID].xyz, 1.0);
-    float4 prevPosition = float4(inPreviousPosition.Load(int3(launchID,0)).xyz, 1.0);
-
-    float4 clipSpacePos = mul(proj, mul(view, position));
-    float4 clipSpacePosPrev = mul(proj, mul(view, prevPosition));
-
-    //perspective devide
-    float3 ndc = clipSpacePos.xyz / clipSpacePos.w;
-    float3 ndcPrev = clipSpacePosPrev.xyz / clipSpacePosPrev.w;
-
-    float3 predictedUV = (ndc * 0.5) + 0.5;
-    float3 predictedUVPrev = (ndcPrev * 0.5) + 0.5;
-
-    float2 uvMotion = predictedUVPrev.xy - currentUV;
-
-    float uvError = length(predictedUVPrev.xy - currentUV);
-
-    // Calculate Motion in normalized device coordinates
-    float2 motionNDC = ndcPrev.xy - ndc.xy;
-
-    // Convert NDC motion to UV motion
-    // Divide by 2 because ndc has the range(-1 to 1)
-    // Flip Y because Vulkan UVs start at top-left
-    float2 motionUV = float2(motionNDC.x, motionNDC.y);
-
-
-
-    //Calculate the Reprojected UV
-
-    float2 reprojectedUV = currentUV + motionUV;
-
-    float3 lightingReprojected = inPreviousLighting.SampleLevel(reprojectedUV, 0).xyz;
-    float4 positionReprojected = float4(inPreviousPosition.SampleLevel(predictedUVPrev.xy, 0).xyz,1.0);
-
-    
-
-    float length = length(positionReprojected - position);
-
-    outReprojectedLighting[launchID] = float4(length, length, length, 1.0);
-}
-*/

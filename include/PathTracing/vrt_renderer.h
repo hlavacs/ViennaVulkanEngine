@@ -140,16 +140,8 @@ namespace vve {
 		RenderTarget* positionTarget;
 		RenderTarget* shadingNormalTarget;
 
-
-		RenderTarget* reservoirLightIndexA;
-		RenderTarget* reservoirLightWeightA;
-		RenderTarget* reservoirWeightSumA;
-		RenderTarget* reservoirLightCountA;
-
-		RenderTarget* reservoirLightIndexB;
-		RenderTarget* reservoirLightWeightB;
-		RenderTarget* reservoirWeightSumB;
-		RenderTarget* reservoirLightCountB;
+		RenderTargetBuffer<ReservoirDI>* reservoirDI_A;
+		RenderTargetBuffer<ReservoirDI>* reservoirDI_B;
 
 		PiplineRaytraced* restir_temporal;
 		PiplineRaytraced* restir_spatial;

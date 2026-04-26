@@ -37,6 +37,8 @@ cbuffer UniformBufferObject
 
     uint seed;
     uint lightCount;
+    uint x_dimensions;
+    uint y_dimensions;
 };
 
 [[vk::binding(1, 0)]]

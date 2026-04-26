@@ -31,9 +31,6 @@ set(SOURCE
 
   PathTracing/buffer.cpp
   PathTracing/command_manager_impl.cpp
-  PathTracing/descriptor_sets.cpp
-  PathTracing/descriptor_sets_RT.cpp
-  PathTracing/descriptor_sets_targets.cpp
   PathTracing/helper_structs.cpp
   PathTracing/image.cpp
   PathTracing/material_manager.cpp
@@ -73,9 +70,6 @@ set(HEADERS
 
   ${INCLUDE}/PathTracing/buffer.h
   ${INCLUDE}/PathTracing/command_manager.h
-  ${INCLUDE}/PathTracing/descriptor_sets.h
-  ${INCLUDE}/PathTracing/descriptor_sets_RT.h
-  ${INCLUDE}/PathTracing/descriptor_sets_targets.h
   ${INCLUDE}/PathTracing/helper_structs.h
   ${INCLUDE}/PathTracing/image.h
   ${INCLUDE}/PathTracing/light_manager.h
@@ -85,10 +79,12 @@ set(HEADERS
   ${INCLUDE}/PathTracing/pipline_raytraced.h
   ${INCLUDE}/PathTracing/pipline_filter.h
   ${INCLUDE}/PathTracing/render_target.h
+  ${INCLUDE}/PathTracing/render_target_buffer.h
   ${INCLUDE}/PathTracing/swapchain.h
   ${INCLUDE}/PathTracing/texture_manager.h
   ${INCLUDE}/PathTracing/vrt_renderer.h
   ${INCLUDE}/PathTracing/descriptor_set_manager.h
+  ${INCLUDE}/PathTracing/restir.h
 )
 
 add_library (${TARGET} STATIC ${SOURCE} ${HEADERS})
