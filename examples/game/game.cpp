@@ -158,10 +158,12 @@ public:
                       << " keys=" << key_state_string;
             if (main_window) {
                 std::cout << " main=" << main_window->width << 'x' << main_window->height
+                          << '[' << main_window->renderer_id << ']'
                           << (main_window->focused ? "[focused]" : "");
             }
             if (tools_window) {
                 std::cout << " tools=" << tools_window->width << 'x' << tools_window->height
+                          << '[' << tools_window->renderer_id << ']'
                           << (tools_window->focused ? "[focused]" : "");
             }
             std::cout << '\n';
@@ -177,7 +179,8 @@ private:
         bool printed_any = false;
         for (const auto& window : world.windows()) {
             printed_any = true;
-            std::cout << ' ' << window.id << '=' << window.width << 'x' << window.height;
+            std::cout << ' ' << window.id << '=' << window.width << 'x' << window.height
+                      << '[' << window.renderer_id << ']';
         }
         if (!printed_any) {
             std::cout << " <none>";
@@ -213,6 +216,7 @@ int main(int, char **) {
                     .title = "VVE Game",
                     .width = 640,
                     .height = 480,
+                    .renderer_id = "forward",
                     .resizable = true,
                     .visible = true
                 },
@@ -221,6 +225,7 @@ int main(int, char **) {
                     .title = "VVE Tools",
                     .width = 400,
                     .height = 480,
+                    .renderer_id = "forward",
                     .resizable = true,
                     .visible = true
                 }

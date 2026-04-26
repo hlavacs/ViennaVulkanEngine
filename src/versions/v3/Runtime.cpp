@@ -18,11 +18,6 @@ namespace vve::v3::detail {
 
    namespace {
 
-   /// @brief Resolves built-in shader files next to the v3 implementation sources.
-   [[nodiscard]] std::filesystem::path builtInShaderPath(std::string_view filename) {
-      return std::filesystem::path(__FILE__).parent_path() / "shaders" / filename;
-   }
-
    /// @brief Returns an environment variable value as an owning string.
    [[nodiscard]] std::string environmentValue(const char *name) {
       if (name == nullptr) {
@@ -177,11 +172,8 @@ namespace vve::v3::detail {
           std::make_unique<SceneLoader>(runtime.asset_system, runtime.resource_system, runtime.scene_system);
       runtime.render_system =
           std::make_unique<RenderSystem>(desc.renderer, desc.shadow, runtime.graphics_backend, desc.imgui_enabled);
-      if (auto shader_result =
-              runtime.resource_system.loadShaderProgram(builtInShaderPath("rasterizer.slang"), runtime.shader_system,
-                                                        desc.renderer, desc.shadow);
-          !shader_result) {
-         return std::unexpected(shader_result.error());
+      if (auto icd_result = configureVulkanIcdSelection(); !icd_result) {
+         return std::unexpected(icd_result.error());
       }
       // Window polling owns the authoritative frame snapshot shared with the
       // rest of the frame systems.
@@ -189,9 +181,6 @@ namespace vve::v3::detail {
       if (auto window_result = runtime.window_system.init(makeRange(desc.windows));
           !window_result) {
          return std::unexpected(window_result.error());
-      }
-      if (auto icd_result = configureVulkanIcdSelection(); !icd_result) {
-         return std::unexpected(icd_result.error());
       }
       *runtime.window_frame = runtime.window_system.frameData();
       runtime.render_pipelines.clear();

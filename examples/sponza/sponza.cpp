@@ -371,7 +371,8 @@ private:
         bool printed_any = false;
         for (const auto &window : world.windows()) {
             printed_any = true;
-            std::cout << ' ' << window.id << '=' << window.width << 'x' << window.height;
+            std::cout << ' ' << window.id << '=' << window.width << 'x' << window.height
+                      << '[' << window.renderer_id << ']';
         }
         if (!printed_any) {
             std::cout << " <none>";
@@ -433,6 +434,7 @@ int main(int argc, char **argv) {
                     .title = "VVE Sponza",
                     .width = 960,
                     .height = 540,
+                    .renderer_id = "forward",
                     .resizable = true,
                     .visible = true}}});
 

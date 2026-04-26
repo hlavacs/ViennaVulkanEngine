@@ -320,6 +320,7 @@ export namespace vve::v3 {
       std::string title{};      ///< Human-readable title.
       std::uint32_t width{0};   ///< Current window width in pixels.
       std::uint32_t height{0};  ///< Current window height in pixels.
+      std::string renderer_id{}; ///< Requested renderer identifier for this window.
       bool focused{false};      ///< Whether the window is focused.
       bool minimized{false};    ///< Whether the window is minimized.
       bool should_close{false}; ///< Whether the window has requested closure.

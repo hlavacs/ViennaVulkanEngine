@@ -168,6 +168,7 @@ export namespace vve {
       std::string title{"Vienna Vulkan Engine V3"}; ///< Human-readable window title.
       std::uint32_t width{1280};                    ///< Initial window width in pixels.
       std::uint32_t height{720};                    ///< Initial window height in pixels.
+      std::string renderer_id{};                    ///< Requested renderer identifier, or empty to inherit the default.
       bool resizable{true};                         ///< Whether the platform window may be resized.
       bool visible{true};                           ///< Whether the window is visible on creation.
    };

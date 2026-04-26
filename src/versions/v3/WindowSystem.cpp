@@ -279,6 +279,7 @@ namespace vve::v3 {
                                                   .title = desc.title,
                                                   .width = static_cast<std::uint32_t>(std::max(actual_width, 0)),
                                                   .height = static_cast<std::uint32_t>(std::max(actual_height, 0)),
+                                                  .renderer_id = desc.renderer_id,
                                                   .focused = SDL_GetKeyboardFocus() == resolved_window,
                                                   .minimized = false,
                                                   .should_close = false}};

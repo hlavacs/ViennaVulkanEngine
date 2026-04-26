@@ -32,6 +32,7 @@ namespace vve::v3::detail {
                                           .title = window.title,
                                           .width = window.width,
                                           .height = window.height,
+                                          .renderer_id = window.renderer_id,
                                           .focused = window.focused,
                                           .minimized = window.minimized,
                                           .should_close = window.should_close});

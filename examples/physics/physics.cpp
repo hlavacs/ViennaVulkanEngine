@@ -26,7 +26,8 @@ public:
         bool printed_any = false;
         for (const auto& window : world.windows()) {
             printed_any = true;
-            std::cout << ' ' << window.id << '=' << window.width << 'x' << window.height;
+            std::cout << ' ' << window.id << '=' << window.width << 'x' << window.height
+                      << '[' << window.renderer_id << ']';
         }
         if (!printed_any) {
             std::cout << " <none>";
@@ -53,6 +54,7 @@ public:
         }
 
         std::cout << " physics.main=" << main_window->width << 'x' << main_window->height
+                  << '[' << main_window->renderer_id << ']'
                   << (main_window->focused ? "[focused]" : "")
                   << (main_window->minimized ? "[minimized]" : "") << '\n';
         return {};
@@ -83,6 +85,7 @@ int main(int, char **) {
                     .title = "VVE Physics Sandbox",
                     .width = 800,
                     .height = 450,
+                    .renderer_id = "forward",
                     .resizable = true,
                     .visible = true
                 }

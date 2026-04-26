@@ -288,6 +288,13 @@ namespace vve::v3 {
             user_systems_ = user_systems->value;
          }
       }
+
+      const auto default_renderer_id = std::string(vve::rendererKindName(runtime_desc_.renderer));
+      for (auto &window : runtime_desc_.windows) {
+         if (window.renderer_id.empty()) {
+            window.renderer_id = default_renderer_id;
+         }
+      }
    }
 
    /**
