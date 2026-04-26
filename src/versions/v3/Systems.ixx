@@ -198,6 +198,12 @@ export namespace vve::v3 {
       /// @brief Returns backend resource metadata for an already-created pipeline resource bundle.
       [[nodiscard]] std::expected<std::optional<PipelineBackendResources>, vve::Error>
       pipelineResources(PipelineResourceHandle resources) const;
+      /// @brief Creates backend-owned graphics pipeline preparation data.
+      [[nodiscard]] std::expected<GraphicsPipelineResources, vve::Error>
+      createGraphicsPipelineResources(const RendererPipelineBinding &binding, const GraphicsPipelineDesc &desc);
+      /// @brief Returns backend graphics pipeline metadata for an already-created pipeline.
+      [[nodiscard]] std::expected<std::optional<GraphicsPipelineResources>, vve::Error>
+      graphicsPipelineResources(GraphicsPipelineHandle pipeline) const;
       /// @brief Performs backend begin-frame work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &frame_context);
       /// @brief Performs backend end-frame work.
@@ -255,6 +261,10 @@ export namespace vve::v3 {
       /// @brief Returns a previously bound renderer pipeline for a window.
       [[nodiscard]] std::expected<std::optional<RendererPipelineBinding>, vve::Error>
       rendererPipeline(WindowHandle window) const;
+      /// @brief Requests backend graphics-pipeline preparation for a bound renderer pipeline.
+      [[nodiscard]] std::expected<GraphicsPipelineResources, vve::Error>
+      createGraphicsPipeline(GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend,
+                             const RendererPipelineBinding &binding);
       /// @brief Performs GPU visibility work for a window render graph.
       [[nodiscard]] std::expected<void, vve::Error> cullVisibilityGpu(const FrameContext &frame_context,
                                                                       const SceneData &scene, WindowHandle window,

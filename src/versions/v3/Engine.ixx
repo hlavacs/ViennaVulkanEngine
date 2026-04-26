@@ -324,6 +324,9 @@ namespace vve::v3 {
       if (auto renderer_bindings = detail::bindRuntimeRendererPipelines(runtime_); !renderer_bindings) {
          return renderer_bindings;
       }
+      if (auto graphics_pipelines = detail::createRuntimeGraphicsPipelines(runtime_); !graphics_pipelines) {
+         return graphics_pipelines;
+      }
 
       if (runtime_.gui_system != nullptr) { // GUI support is optional and initialized only when present.
          if (auto gui_result = runtime_.gui_system->init(runtime_.graphics_backend); !gui_result) {

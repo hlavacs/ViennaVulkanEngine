@@ -354,4 +354,31 @@ namespace vve::v3::detail {
       return {};
    }
 
+   /**
+    * @brief Prepares backend graphics pipeline summaries for all bound renderer instances.
+    * @param runtime Runtime whose render pipelines already contain renderer bindings.
+    * @return Empty success result, or the first graphics-pipeline preparation error.
+    */
+   std::expected<void, vve::Error> createRuntimeGraphicsPipelines(Runtime &runtime) {
+      if (runtime.render_system == nullptr) {
+         return std::unexpected(vve::Error::invalid_argument);
+      }
+
+      for (auto &pipeline : runtime.render_pipelines) {
+         const auto graphics_pipeline =
+             runtime.render_system->createGraphicsPipeline(runtime.graphics_backend, pipeline.renderer_binding);
+         if (!graphics_pipeline) {
+            std::cerr << "[VulkanRuntime] Failed to prepare graphics pipeline for window '"
+                      << pipeline.window_id << "' renderer='" << pipeline.renderer.id << "'\n";
+            return std::unexpected(graphics_pipeline.error());
+         }
+
+         pipeline.graphics_pipeline = *graphics_pipeline;
+         pipeline.renderer_binding.graphics_pipeline = graphics_pipeline->handle;
+         pipeline.renderer_binding.graphics_pipeline_ready = graphics_pipeline->pipeline_cache_ready;
+      }
+
+      return {};
+   }
+
 } // namespace vve::v3::detail

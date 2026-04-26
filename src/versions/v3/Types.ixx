@@ -116,6 +116,45 @@ export namespace vve::v3 {
       push_constant             ///< Push-constant range source.
    };
 
+   /// @brief Primitive assembly topology requested for a Vulkan graphics pipeline.
+   enum class GraphicsPrimitiveTopology : std::uint32_t {
+      triangle_list = 0, ///< Independent triangle primitives.
+      triangle_strip    ///< Connected triangle strip primitives.
+   };
+
+   /// @brief Face-culling mode requested for rasterization.
+   enum class GraphicsCullMode : std::uint32_t {
+      none = 0, ///< No faces are culled.
+      front,    ///< Front-facing primitives are culled.
+      back      ///< Back-facing primitives are culled.
+   };
+
+   /// @brief Front-face winding requested for rasterization.
+   enum class GraphicsFrontFace : std::uint32_t {
+      counter_clockwise = 0, ///< Counter-clockwise triangles are front-facing.
+      clockwise             ///< Clockwise triangles are front-facing.
+   };
+
+   /// @brief Depth comparison requested by a graphics pipeline.
+   enum class GraphicsDepthCompareOp : std::uint32_t {
+      always = 0, ///< Depth tests always pass.
+      less,       ///< Incoming depth must be less than stored depth.
+      less_equal  ///< Incoming depth may be less than or equal to stored depth.
+   };
+
+   /// @brief Placeholder color attachment formats used before swapchain integration.
+   enum class GraphicsColorFormat : std::uint32_t {
+      bgra8_srgb = 0, ///< 8-bit BGRA sRGB color output.
+      rgba8_srgb,     ///< 8-bit RGBA sRGB color output.
+      rgba16_float    ///< 16-bit floating-point RGBA color output.
+   };
+
+   /// @brief Placeholder depth attachment formats used before swapchain integration.
+   enum class GraphicsDepthFormat : std::uint32_t {
+      none = 0,     ///< No depth attachment is used.
+      depth32_float ///< 32-bit floating-point depth attachment.
+   };
+
    /// @brief Strong type for mesh resource identifiers.
    struct MeshHandle final {
       vve::Handle value{}; ///< Underlying generic handle value.
@@ -908,6 +947,43 @@ export namespace vve::v3 {
       bool pipeline_layout_created{false};             ///< Whether a Vulkan pipeline layout was created.
    };
 
+   /// @brief Strong type for backend-created graphics pipeline identifiers.
+   struct GraphicsPipelineHandle final {
+      vve::Handle value{}; ///< Underlying generic handle value.
+   };
+
+   /// @brief Renderer-selected graphics pipeline state before actual VkPipeline creation.
+   struct GraphicsPipelineDesc {
+      RendererHandle renderer{};                                ///< Renderer requesting the pipeline.
+      std::string renderer_id{};                                ///< Canonical renderer id.
+      PipelineResourceHandle backend_resources{};               ///< Backend resources the pipeline will consume.
+      RenderKernelId main_kernel{RenderKernelId::none};         ///< Main render kernel implemented by this pipeline.
+      GraphicsPrimitiveTopology topology{GraphicsPrimitiveTopology::triangle_list}; ///< Primitive topology.
+      GraphicsCullMode cull_mode{GraphicsCullMode::back};       ///< Rasterization culling mode.
+      GraphicsFrontFace front_face{GraphicsFrontFace::counter_clockwise}; ///< Rasterization winding mode.
+      bool depth_test_enabled{true};                            ///< Whether depth testing is enabled.
+      bool depth_write_enabled{true};                           ///< Whether depth writes are enabled.
+      GraphicsDepthCompareOp depth_compare{GraphicsDepthCompareOp::less_equal}; ///< Depth comparison mode.
+      bool blending_enabled{false};                             ///< Whether color blending is enabled.
+      GraphicsColorFormat color_format{GraphicsColorFormat::bgra8_srgb}; ///< Placeholder color format.
+      GraphicsDepthFormat depth_format{GraphicsDepthFormat::depth32_float}; ///< Placeholder depth format.
+      std::uint32_t color_attachment_count{1};                  ///< Number of color outputs expected.
+      std::uint32_t vertex_binding_count{1};                    ///< Number of vertex buffer bindings expected.
+      std::uint32_t vertex_attribute_count{3};                  ///< Number of vertex attributes expected.
+   };
+
+   /// @brief Summary of backend-owned graphics pipeline preparation state.
+   struct GraphicsPipelineResources {
+      GraphicsPipelineHandle handle{};                          ///< Stable graphics-pipeline handle.
+      RendererHandle renderer{};                                ///< Renderer that requested the pipeline.
+      PipelineResourceHandle backend_resources{};               ///< Pipeline-layout/shader resource bundle used.
+      RenderKernelId main_kernel{RenderKernelId::none};         ///< Main render kernel represented by this pipeline.
+      std::uint32_t color_attachment_count{0};                  ///< Number of color attachments described.
+      bool depth_enabled{false};                                ///< Whether a depth attachment is described.
+      bool pipeline_cache_ready{false};                         ///< Whether a Vulkan pipeline cache owns this plan.
+      bool vulkan_pipeline_created{false};                      ///< Stage 10 will flip this when VkPipeline exists.
+   };
+
    /// @brief Renderer-side binding of reflected layout data to backend Vulkan resources.
    struct RendererPipelineBinding {
       WindowHandle window{};                            ///< Window whose renderer instance owns the binding.
@@ -916,10 +992,12 @@ export namespace vve::v3 {
       std::string renderer_id{};                        ///< Canonical renderer id.
       ShaderHandle shader_program{};                    ///< Shader program bound to this renderer instance.
       PipelineResourceHandle backend_resources{};       ///< Backend Vulkan resource bundle used by the renderer.
+      GraphicsPipelineHandle graphics_pipeline{};       ///< Graphics pipeline prepared for this renderer binding.
       RenderKernelId main_kernel{RenderKernelId::none}; ///< Primary render kernel selected by this renderer.
       std::size_t shader_stage_count{0};                ///< Reflected shader stages available to the renderer.
       std::size_t descriptor_set_layout_count{0};       ///< Descriptor layouts available to the renderer.
       bool ready_for_pipeline_creation{false};          ///< Whether later Vulkan graphics-pipeline creation can start.
+      bool graphics_pipeline_ready{false};              ///< Whether Stage 9 graphics pipeline planning is complete.
    };
 
    /// @brief Coarse render-graph resource access declaration.
@@ -951,6 +1029,7 @@ export namespace vve::v3 {
       PipelineLayoutDesc pipeline_layout{}; ///< Backend-facing layout derived from shader reflection.
       PipelineBackendResources backend_resources{}; ///< Backend-owned Vulkan objects for the layout.
       RendererPipelineBinding renderer_binding{}; ///< Renderer-side binding for later graphics pipeline creation.
+      GraphicsPipelineResources graphics_pipeline{}; ///< Backend graphics pipeline preparation summary.
       RenderGraph graph{};     ///< Render graph executed for the window.
    };
 

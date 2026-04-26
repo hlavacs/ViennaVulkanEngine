@@ -115,6 +115,25 @@ namespace {
              (*stored)->backend_resources.value == binding->backend_resources.value;
    }
 
+   /// @brief Verifies renderer-specific graphics pipeline requests reach the backend cleanly.
+   [[nodiscard]] bool pipelineRequestRequiresBackendInit(vve::v3::RenderSystem &render_system,
+                                                         vve::v3::GraphicsBackend &backend,
+                                                         std::string_view renderer_id) {
+      const auto renderer = backend.createRenderer(renderer_id);
+      if (!renderer) {
+         return false;
+      }
+
+      const auto pipeline = testPipeline(render_system, *renderer);
+      const auto binding = render_system.bindPipelineResources(pipeline);
+      if (!binding) {
+         return false;
+      }
+
+      const auto graphics_pipeline = render_system.createGraphicsPipeline(backend, *binding);
+      return !graphics_pipeline && graphics_pipeline.error() == vve::Error::not_initialized;
+   }
+
 } // namespace
 
 /**
@@ -149,10 +168,22 @@ int main() {
       return 5;
    }
 
+   if (!pipelineRequestRequiresBackendInit(render_system, backend, "forward")) {
+      return 6;
+   }
+
+   if (!pipelineRequestRequiresBackendInit(render_system, backend, "deferred")) {
+      return 7;
+   }
+
+   if (!pipelineRequestRequiresBackendInit(render_system, backend, "path_tracing")) {
+      return 8;
+   }
+
    const auto forward = backend.createRenderer("forward");
    const auto deferred = backend.createRenderer("deferred");
    if (!forward || !deferred) {
-      return 6;
+      return 9;
    }
 
    auto incompatible = testPipeline(render_system, *forward);
@@ -160,7 +191,19 @@ int main() {
    incompatible.backend_resources = testResources(incompatible.pipeline_layout);
    const auto rejected = render_system.bindPipelineResources(incompatible);
    if (rejected || rejected.error() != vve::Error::invalid_argument) {
-      return 7;
+      return 10;
+   }
+
+   auto invalid_binding_source = testPipeline(render_system, *forward);
+   const auto valid_binding = render_system.bindPipelineResources(invalid_binding_source);
+   if (!valid_binding) {
+      return 11;
+   }
+   auto invalid_binding = *valid_binding;
+   invalid_binding.main_kernel = vve::v3::RenderKernelId::path_trace;
+   const auto invalid_pipeline_request = render_system.createGraphicsPipeline(backend, invalid_binding);
+   if (invalid_pipeline_request || invalid_pipeline_request.error() != vve::Error::invalid_argument) {
+      return 12;
    }
 
    return 0;

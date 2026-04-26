@@ -261,6 +261,11 @@ namespace vve::v3 {
          VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
       };
 
+      /// @brief Backend-owned preparation state for one future VkPipeline.
+      struct VulkanGraphicsPipelineResources {
+         GraphicsPipelineResources summary{};
+      };
+
       /// @brief Physical device and queue family selected for backend object creation.
       struct SelectedPhysicalDevice {
          VkPhysicalDevice device{VK_NULL_HANDLE};
@@ -274,6 +279,63 @@ namespace vve::v3 {
          seed.push_back(':');
          seed += std::to_string(layout.shader_program.value.value());
          return PipelineResourceHandle{.value = vve::Handle::fromHash(seed)};
+      }
+
+      /// @brief Builds a stable graphics-pipeline handle from renderer-selected state.
+      [[nodiscard]] GraphicsPipelineHandle graphicsPipelineHandle(const GraphicsPipelineDesc &desc) {
+         auto seed = std::string{"vulkan.graphics_pipeline:"};
+         seed += desc.renderer_id;
+         seed.push_back(':');
+         seed += std::to_string(desc.backend_resources.value.value());
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(desc.main_kernel));
+         seed.push_back(':');
+         seed += std::to_string(desc.color_attachment_count);
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(desc.color_format));
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(desc.depth_format));
+         return GraphicsPipelineHandle{.value = vve::Handle::fromHash(seed)};
+      }
+
+      /// @brief Returns whether a pipeline description matches the binding it was requested from.
+      [[nodiscard]] bool graphicsPipelineDescMatchesBinding(const RendererPipelineBinding &binding,
+                                                            const GraphicsPipelineDesc &desc) {
+         return binding.ready_for_pipeline_creation && binding.renderer.value == desc.renderer.value &&
+                binding.renderer_id == desc.renderer_id &&
+                binding.backend_resources.value == desc.backend_resources.value &&
+                binding.main_kernel == desc.main_kernel && desc.color_attachment_count > 0;
+      }
+
+      /// @brief Validates renderer-specific graphics pipeline state before later VkPipeline creation.
+      [[nodiscard]] bool graphicsPipelineDescMatchesRenderer(const GraphicsPipelineDesc &desc) {
+         if (desc.renderer_id == "forward") {
+            return desc.main_kernel == RenderKernelId::forward_opaque &&
+                   desc.topology == GraphicsPrimitiveTopology::triangle_list &&
+                   desc.cull_mode == GraphicsCullMode::back && desc.depth_test_enabled &&
+                   desc.depth_write_enabled && desc.depth_format != GraphicsDepthFormat::none &&
+                   desc.color_attachment_count == 1 && desc.vertex_binding_count == 1 &&
+                   desc.vertex_attribute_count >= 3;
+         }
+
+         if (desc.renderer_id == "deferred") {
+            return desc.main_kernel == RenderKernelId::deferred_gbuffer &&
+                   desc.topology == GraphicsPrimitiveTopology::triangle_list &&
+                   desc.depth_test_enabled && desc.depth_write_enabled &&
+                   desc.depth_format != GraphicsDepthFormat::none && desc.color_attachment_count >= 3 &&
+                   desc.vertex_binding_count == 1 && desc.vertex_attribute_count >= 3;
+         }
+
+         if (desc.renderer_id == "path_tracing") {
+            return desc.main_kernel == RenderKernelId::path_trace &&
+                   desc.topology == GraphicsPrimitiveTopology::triangle_list &&
+                   desc.cull_mode == GraphicsCullMode::none && !desc.depth_test_enabled &&
+                   !desc.depth_write_enabled && desc.depth_format == GraphicsDepthFormat::none &&
+                   desc.color_attachment_count == 1 && desc.vertex_binding_count == 0 &&
+                   desc.vertex_attribute_count == 0;
+         }
+
+         return false;
       }
 
       /// @brief Converts reflected shader stages to Vulkan shader-stage flags.
@@ -621,6 +683,10 @@ namespace vve::v3 {
             destroy();
             return std::unexpected(logical_device.error());
          }
+         if (auto pipeline_cache = createPipelineCache(); !pipeline_cache) {
+            destroy();
+            return std::unexpected(pipeline_cache.error());
+         }
 
          initialized_ = true;
          return {};
@@ -721,6 +787,58 @@ namespace vve::v3 {
          return resource_it->second.summary;
       }
 
+      /// @brief Creates backend-owned graphics pipeline preparation data.
+      [[nodiscard]] std::expected<GraphicsPipelineResources, vve::Error>
+      createGraphicsPipelineResources(const RendererPipelineBinding &binding, const GraphicsPipelineDesc &desc) {
+         if (!initialized_ || device_ == VK_NULL_HANDLE || pipeline_cache_ == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::not_initialized);
+         }
+         if (!graphicsPipelineDescMatchesBinding(binding, desc) || !graphicsPipelineDescMatchesRenderer(desc)) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto pipeline_resource = pipeline_resources_.find(binding.backend_resources.value.value());
+         if (pipeline_resource == pipeline_resources_.end() ||
+             !pipeline_resource->second.summary.pipeline_layout_created) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto handle = graphicsPipelineHandle(desc);
+         const auto existing = graphics_pipelines_.find(handle.value.value());
+         if (existing != graphics_pipelines_.end()) {
+            return existing->second.summary;
+         }
+
+         VulkanGraphicsPipelineResources resources{};
+         resources.summary = GraphicsPipelineResources{.handle = handle,
+                                                       .renderer = desc.renderer,
+                                                       .backend_resources = desc.backend_resources,
+                                                       .main_kernel = desc.main_kernel,
+                                                       .color_attachment_count = desc.color_attachment_count,
+                                                       .depth_enabled =
+                                                           desc.depth_format != GraphicsDepthFormat::none,
+                                                       .pipeline_cache_ready = pipeline_cache_ != VK_NULL_HANDLE,
+                                                       .vulkan_pipeline_created = false};
+         const auto summary = resources.summary;
+         graphics_pipelines_.emplace(handle.value.value(), resources);
+         return summary;
+      }
+
+      /// @brief Returns backend graphics pipeline metadata for an already-prepared pipeline.
+      [[nodiscard]] std::expected<std::optional<GraphicsPipelineResources>, vve::Error>
+      graphicsPipelineResources(GraphicsPipelineHandle pipeline) const {
+         if (!pipeline.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto pipeline_it = graphics_pipelines_.find(pipeline.value.value());
+         if (pipeline_it == graphics_pipelines_.end()) {
+            return std::optional<GraphicsPipelineResources>{};
+         }
+
+         return pipeline_it->second.summary;
+      }
+
       /// @brief Performs begin-frame backend work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &) {
          if (!initialized_) {
@@ -780,6 +898,22 @@ namespace vve::v3 {
          }
 
          vkGetDeviceQueue(device_, graphics_queue_family_, 0, &graphics_queue_);
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error> createPipelineCache() {
+         const VkPipelineCacheCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO,
+                                                     .pNext = nullptr,
+                                                     .flags = 0,
+                                                     .initialDataSize = 0,
+                                                     .pInitialData = nullptr};
+         const VkResult result = vkCreatePipelineCache(device_, &create_info, nullptr, &pipeline_cache_);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreatePipelineCache failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
          return {};
       }
 
@@ -922,11 +1056,18 @@ namespace vve::v3 {
       }
 
       void destroy() noexcept {
+         graphics_pipelines_.clear();
+
          for (auto &[handle, resources] : pipeline_resources_) {
             (void)handle;
             destroyPipelineResources(resources);
          }
          pipeline_resources_.clear();
+
+         if (pipeline_cache_ != VK_NULL_HANDLE) {
+            vkDestroyPipelineCache(device_, pipeline_cache_, nullptr);
+            pipeline_cache_ = VK_NULL_HANDLE;
+         }
 
          if (device_ != VK_NULL_HANDLE) {
             vkDestroyDevice(device_, nullptr);
@@ -947,8 +1088,10 @@ namespace vve::v3 {
       VkPhysicalDevice physical_device_{VK_NULL_HANDLE}; ///< Selected physical device.
       VkDevice device_{VK_NULL_HANDLE};           ///< Logical device owning backend resources.
       VkQueue graphics_queue_{VK_NULL_HANDLE};    ///< Graphics-capable queue for future work.
+      VkPipelineCache pipeline_cache_{VK_NULL_HANDLE}; ///< Backend-owned cache for future VkPipeline creation.
       std::uint32_t graphics_queue_family_{0};    ///< Queue family used to create the logical device.
       std::unordered_map<vve::Handle::value_type, VulkanPipelineResources> pipeline_resources_{};
+      std::unordered_map<vve::Handle::value_type, VulkanGraphicsPipelineResources> graphics_pipelines_{};
       bool initialized_{false}; ///< Tracks whether backend initialization has completed.
    };
 
@@ -990,6 +1133,17 @@ namespace vve::v3 {
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, pipelineResources,
                                (PipelineResourceHandle resources), (resources), const,
                                std::expected<std::optional<PipelineBackendResources>, vve::Error>)
+
+   /// @brief Creates backend graphics pipeline preparation data through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation,
+                               createGraphicsPipelineResources,
+                               (const RendererPipelineBinding &binding, const GraphicsPipelineDesc &desc),
+                               (binding, desc), , std::expected<GraphicsPipelineResources, vve::Error>)
+
+   /// @brief Returns backend graphics pipeline metadata through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation,
+                               graphicsPipelineResources, (GraphicsPipelineHandle pipeline), (pipeline), const,
+                               std::expected<std::optional<GraphicsPipelineResources>, vve::Error>)
 
    /// @brief Begins a frame through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, beginFrame,

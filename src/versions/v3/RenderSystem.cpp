@@ -44,6 +44,70 @@ namespace vve::v3 {
       });
    }
 
+   /// @brief Builds renderer-specific graphics pipeline state from a validated renderer binding.
+   [[nodiscard]] std::expected<GraphicsPipelineDesc, vve::Error>
+   graphicsPipelineDescForBinding(const RendererPipelineBinding &binding) {
+      if (!binding.ready_for_pipeline_creation || !binding.renderer.value.isValid() ||
+          !binding.backend_resources.value.isValid() || binding.renderer_id.empty()) {
+         return std::unexpected(vve::Error::invalid_argument);
+      }
+
+      GraphicsPipelineDesc desc{.renderer = binding.renderer,
+                                .renderer_id = binding.renderer_id,
+                                .backend_resources = binding.backend_resources,
+                                .main_kernel = binding.main_kernel};
+
+      if (binding.renderer_id == "forward" && binding.main_kernel == RenderKernelId::forward_opaque) {
+         desc.topology = GraphicsPrimitiveTopology::triangle_list;
+         desc.cull_mode = GraphicsCullMode::back;
+         desc.front_face = GraphicsFrontFace::counter_clockwise;
+         desc.depth_test_enabled = true;
+         desc.depth_write_enabled = true;
+         desc.depth_compare = GraphicsDepthCompareOp::less_equal;
+         desc.blending_enabled = false;
+         desc.color_format = GraphicsColorFormat::bgra8_srgb;
+         desc.depth_format = GraphicsDepthFormat::depth32_float;
+         desc.color_attachment_count = 1;
+         desc.vertex_binding_count = 1;
+         desc.vertex_attribute_count = 3;
+         return desc;
+      }
+
+      if (binding.renderer_id == "deferred" && binding.main_kernel == RenderKernelId::deferred_gbuffer) {
+         desc.topology = GraphicsPrimitiveTopology::triangle_list;
+         desc.cull_mode = GraphicsCullMode::back;
+         desc.front_face = GraphicsFrontFace::counter_clockwise;
+         desc.depth_test_enabled = true;
+         desc.depth_write_enabled = true;
+         desc.depth_compare = GraphicsDepthCompareOp::less_equal;
+         desc.blending_enabled = false;
+         desc.color_format = GraphicsColorFormat::rgba16_float;
+         desc.depth_format = GraphicsDepthFormat::depth32_float;
+         desc.color_attachment_count = 4;
+         desc.vertex_binding_count = 1;
+         desc.vertex_attribute_count = 3;
+         return desc;
+      }
+
+      if (binding.renderer_id == "path_tracing" && binding.main_kernel == RenderKernelId::path_trace) {
+         desc.topology = GraphicsPrimitiveTopology::triangle_list;
+         desc.cull_mode = GraphicsCullMode::none;
+         desc.front_face = GraphicsFrontFace::counter_clockwise;
+         desc.depth_test_enabled = false;
+         desc.depth_write_enabled = false;
+         desc.depth_compare = GraphicsDepthCompareOp::always;
+         desc.blending_enabled = false;
+         desc.color_format = GraphicsColorFormat::rgba16_float;
+         desc.depth_format = GraphicsDepthFormat::none;
+         desc.color_attachment_count = 1;
+         desc.vertex_binding_count = 0;
+         desc.vertex_attribute_count = 0;
+         return desc;
+      }
+
+      return std::unexpected(vve::Error::invalid_argument);
+   }
+
    /**
     * @brief Concrete render-system implementation used by v3.
     *
@@ -62,7 +126,7 @@ namespace vve::v3 {
        */
       DefaultRenderSystemImplementation(vve::RendererKind renderer, vve::ShadowKind shadow,
                                         GraphicsBackend &graphics_backend, bool imgui_enabled)
-          : shadow_(shadow), graphics_backend_(graphics_backend), imgui_enabled_(imgui_enabled) {
+          : shadow_(shadow), graphics_backend_name_(graphics_backend.name()), imgui_enabled_(imgui_enabled) {
          (void)renderer;
       }
 
@@ -118,7 +182,7 @@ namespace vve::v3 {
                 RenderPassDesc{.handle = RenderPassHandle{detail::makeStableHandle("render.imgui", window_salt)},
                                .kernel = RenderKernelId::imgui,
                                .depends_on = {post_post_process_pass},
-                               .debug_name = std::string("ImGui (") + std::string(graphics_backend_.name()) + ")"});
+                               .debug_name = std::string("ImGui (") + graphics_backend_name_ + ")"});
          }
 
          return graph;
@@ -164,6 +228,34 @@ namespace vve::v3 {
          }
 
          return binding->second;
+      }
+
+      /**
+       * @brief Requests graphics pipeline preparation for an already bound renderer instance.
+       * @param binding Renderer binding produced by bindPipelineResources.
+       * @return Backend graphics-pipeline preparation summary.
+       */
+      [[nodiscard]] std::expected<GraphicsPipelineResources, vve::Error>
+      createGraphicsPipeline(GraphicsBackend &graphics_backend, const RendererPipelineBinding &binding) {
+         const auto stored_binding = renderer_bindings_.find(binding.window.value.value());
+         if (stored_binding == renderer_bindings_.end() ||
+             stored_binding->second.backend_resources.value != binding.backend_resources.value) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto desc = graphicsPipelineDescForBinding(binding);
+         if (!desc) {
+            return std::unexpected(desc.error());
+         }
+
+         const auto graphics_pipeline = graphics_backend.createGraphicsPipelineResources(binding, *desc);
+         if (!graphics_pipeline) {
+            return std::unexpected(graphics_pipeline.error());
+         }
+
+         stored_binding->second.graphics_pipeline = graphics_pipeline->handle;
+         stored_binding->second.graphics_pipeline_ready = graphics_pipeline->pipeline_cache_ready;
+         return *graphics_pipeline;
       }
 
       /// @brief Performs placeholder GPU visibility work for one window graph.
@@ -290,7 +382,7 @@ namespace vve::v3 {
       }
 
       vve::ShadowKind shadow_{vve::ShadowKind::none};                   ///< Selected shadowing strategy.
-      GraphicsBackend &graphics_backend_;                               ///< Backend facade used by render diagnostics and later GPU work.
+      std::string graphics_backend_name_{};                              ///< Backend name copied for stable render-graph labels.
       std::unordered_map<vve::Handle::value_type, RendererPipelineBinding> renderer_bindings_{};
       bool imgui_enabled_{true};                                        ///< Whether the GUI pass should be appended.
    };
@@ -319,6 +411,13 @@ namespace vve::v3 {
    VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, rendererPipeline,
                                (WindowHandle window), (window), const,
                                std::expected<std::optional<RendererPipelineBinding>, vve::Error>)
+
+   /// @brief Requests graphics pipeline preparation through the public render-system facade.
+   VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, createGraphicsPipeline,
+                               (GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend,
+                                const RendererPipelineBinding &binding),
+                               (graphics_backend, binding), ,
+                               std::expected<GraphicsPipelineResources, vve::Error>)
 
    /// @brief Performs GPU visibility work through the public render-system facade.
    VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, cullVisibilityGpu,

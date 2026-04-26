@@ -170,6 +170,8 @@ export namespace vve::v3::detail {
    [[nodiscard]] VVE_API std::expected<void, vve::Error> createRuntimePipelineResources(Runtime &runtime);
    /// @brief Binds backend pipeline resources to the selected renderer instances.
    [[nodiscard]] VVE_API std::expected<void, vve::Error> bindRuntimeRendererPipelines(Runtime &runtime);
+   /// @brief Prepares graphics pipeline descriptions for the selected renderer instances.
+   [[nodiscard]] VVE_API std::expected<void, vve::Error> createRuntimeGraphicsPipelines(Runtime &runtime);
 #ifndef NDEBUG
    /// @brief Registers the debug-only task that exports a combined task/render graph dump.
    VVE_API void registerDebugGraphDumpTask(std::function<const TaskGraph *()> task_graph_accessor,
