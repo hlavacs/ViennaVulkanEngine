@@ -143,9 +143,24 @@ export namespace vve::v3 {
       vve::Handle value{}; ///< Underlying generic handle value.
    };
 
+   /// @brief Strong type for backend-created renderer identifiers.
+   struct RendererHandle final {
+      vve::Handle value{}; ///< Underlying generic handle value.
+   };
+
    /// @brief Strong type for window identifiers inside v3 systems.
    struct WindowHandle final {
       vve::Handle value{}; ///< Underlying generic handle value.
+   };
+
+   /// @brief Backend-visible description of a selectable renderer.
+   struct RendererDesc {
+      RendererHandle handle{};                                        ///< Stable backend renderer handle.
+      std::string id{};                                               ///< Canonical renderer identifier.
+      std::string display_name{};                                     ///< Human-readable renderer name.
+      vve::GraphicsApi api{vve::GraphicsApi::vulkan};                 ///< Graphics API used by this renderer.
+      vve::RendererKind kind{vve::RendererKind::forward_renderer};    ///< Public renderer family represented by this id.
+      RenderKernelId main_kernel{RenderKernelId::forward_opaque};     ///< Primary render kernel for this renderer.
    };
 
    /// @brief Per-frame timing data passed to runtime systems and tasks.

@@ -185,6 +185,10 @@ export namespace vve::v3 {
       [[nodiscard]] vve::GraphicsApi api() const noexcept; 
       /// @brief Initializes backend resources.
       [[nodiscard]] std::expected<void, vve::Error> init();
+      /// @brief Returns renderers selectable by backend renderer id.
+      [[nodiscard]] std::vector<RendererDesc> supportedRenderers() const;
+      /// @brief Creates or resolves a backend renderer descriptor for a renderer id.
+      [[nodiscard]] std::expected<RendererDesc, vve::Error> createRenderer(std::string_view renderer_id) const;
       /// @brief Performs backend begin-frame work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &frame_context);
       /// @brief Performs backend end-frame work.

@@ -1,5 +1,6 @@
 module;
 
+#include <cctype>
 #include "FacadeMacros.hpp"
 #include <cstdlib>
 #include <vulkan/vulkan.h>
@@ -34,6 +35,90 @@ namespace vve::v3 {
 
          const char *value = std::getenv(name);
          return value == nullptr ? std::string{} : std::string(value);
+      }
+
+      /// @brief Returns whether an ASCII character should be trimmed from renderer ids.
+      [[nodiscard]] bool isAsciiSpace(unsigned char character) {
+         return std::isspace(character) != 0;
+      }
+
+      /// @brief Normalizes user-facing renderer ids for stable backend lookup.
+      [[nodiscard]] std::string normalizeRendererId(std::string_view renderer_id) {
+         while (!renderer_id.empty() && isAsciiSpace(static_cast<unsigned char>(renderer_id.front()))) {
+            renderer_id.remove_prefix(1);
+         }
+         while (!renderer_id.empty() && isAsciiSpace(static_cast<unsigned char>(renderer_id.back()))) {
+            renderer_id.remove_suffix(1);
+         }
+
+         std::string normalized{};
+         normalized.reserve(renderer_id.size());
+         for (const char character : renderer_id) {
+            if (character == '-') {
+               normalized.push_back('_');
+            } else {
+               normalized.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(character))));
+            }
+         }
+         return normalized;
+      }
+
+      /// @brief Stable renderer handle derived from the canonical backend id.
+      [[nodiscard]] RendererHandle rendererHandle(std::string_view renderer_id) {
+         return RendererHandle{.value = vve::Handle::fromHash(std::format("vulkan.renderer.{}", renderer_id))};
+      }
+
+      /// @brief Canonical renderer descriptors currently known to the Vulkan backend.
+      [[nodiscard]] const std::map<std::string_view, RendererDesc> &rendererRegistry() {
+         static const std::map<std::string_view, RendererDesc> renderers{
+             {"forward",
+              RendererDesc{.handle = rendererHandle("forward"),
+                           .id = "forward",
+                           .display_name = "Forward Renderer",
+                           .api = vve::GraphicsApi::vulkan,
+                           .kind = vve::RendererKind::forward_renderer,
+                           .main_kernel = RenderKernelId::forward_opaque}},
+             {"deferred",
+              RendererDesc{.handle = rendererHandle("deferred"),
+                           .id = "deferred",
+                           .display_name = "Deferred Renderer",
+                           .api = vve::GraphicsApi::vulkan,
+                           .kind = vve::RendererKind::deferred_renderer,
+                           .main_kernel = RenderKernelId::deferred_gbuffer}},
+             {"path_tracing",
+              RendererDesc{.handle = rendererHandle("path_tracing"),
+                           .id = "path_tracing",
+                           .display_name = "Path Tracing Renderer",
+                           .api = vve::GraphicsApi::vulkan,
+                           .kind = vve::RendererKind::path_tracing,
+                           .main_kernel = RenderKernelId::path_trace}},
+         };
+         return renderers;
+      }
+
+      /// @brief Accepted aliases for renderer ids exposed to applications and launch scripts.
+      [[nodiscard]] const std::map<std::string_view, std::string_view> &rendererAliasMap() {
+         static const std::map<std::string_view, std::string_view> aliases{
+             {"forward", "forward"},
+             {"forward_renderer", "forward"},
+             {"deferred", "deferred"},
+             {"deferred_renderer", "deferred"},
+             {"path_tracer", "path_tracing"},
+             {"path_tracing", "path_tracing"},
+             {"path_tracing_renderer", "path_tracing"},
+         };
+         return aliases;
+      }
+
+      /// @brief Maps a user renderer id to a canonical registry key.
+      [[nodiscard]] std::optional<std::string_view> canonicalRendererId(std::string_view renderer_id) {
+         const auto normalized = normalizeRendererId(renderer_id);
+         const std::string_view normalized_view{normalized};
+         const auto alias = rendererAliasMap().find(normalized_view);
+         if (alias == rendererAliasMap().end()) {
+            return std::nullopt;
+         }
+         return alias->second;
       }
 
       /// @brief Enumerates available instance extensions.
@@ -246,6 +331,32 @@ namespace vve::v3 {
          return {};
       }
 
+      /// @brief Returns all renderer descriptors supported by this Vulkan backend.
+      [[nodiscard]] std::vector<RendererDesc> supportedRenderers() const {
+         std::vector<RendererDesc> renderers{};
+         renderers.reserve(rendererRegistry().size());
+         for (const auto &[id, renderer] : rendererRegistry()) {
+            (void)id;
+            renderers.push_back(renderer);
+         }
+         return renderers;
+      }
+
+      /// @brief Creates or resolves a backend renderer descriptor by id.
+      [[nodiscard]] std::expected<RendererDesc, vve::Error> createRenderer(std::string_view renderer_id) const {
+         const auto canonical_id = canonicalRendererId(renderer_id);
+         if (!canonical_id.has_value()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto renderer = rendererRegistry().find(*canonical_id);
+         if (renderer == rendererRegistry().end()) {
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         return renderer->second;
+      }
+
       /// @brief Performs begin-frame backend work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &) {
          if (!initialized_) {
@@ -294,6 +405,15 @@ namespace vve::v3 {
    /// @brief Initializes the backend through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, init, (), (), ,
                                std::expected<void, vve::Error>)
+
+   /// @brief Returns supported renderer descriptors through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, supportedRenderers, (),
+                               (), const, std::vector<RendererDesc>)
+
+   /// @brief Creates or resolves a renderer descriptor through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, createRenderer,
+                               (std::string_view renderer_id), (renderer_id), const,
+                               std::expected<RendererDesc, vve::Error>)
 
    /// @brief Begins a frame through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, beginFrame,
