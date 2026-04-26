@@ -16,27 +16,6 @@ import VEEngine.V3;
  */
 namespace {
 
-[[nodiscard]] constexpr std::string_view toString(vve::Error error) noexcept {
-    switch (error) {
-    case vve::Error::not_initialized:
-        return "not_initialized";
-    case vve::Error::already_initialized:
-        return "already_initialized";
-    case vve::Error::invalid_argument:
-        return "invalid_argument";
-    case vve::Error::file_not_found:
-        return "file_not_found";
-    case vve::Error::io_error:
-        return "io_error";
-    case vve::Error::unsupported_version:
-        return "unsupported_version";
-    case vve::Error::internal_error:
-        return "internal_error";
-    }
-
-    return "unknown_error";
-}
-
 /**
  * @brief Example gameplay component storing planar velocity.
  */
@@ -256,7 +235,7 @@ int main(int, char **) {
     
 
     if (const auto init_result = engine.init(); !init_result) {
-        std::cerr << "[game] engine.init failed: " << toString(init_result.error()) << '\n';
+        std::cerr << "[game] engine.init failed: " << vve::errorName(init_result.error()) << '\n';
         return 1;
     }
 
@@ -264,7 +243,7 @@ int main(int, char **) {
     while (true) { // engine's explicit `FrameStatus` contract.
         const auto step_result = engine.step();
         if (!step_result) {
-            std::cerr << "[game] engine.step failed: " << toString(step_result.error()) << '\n';
+            std::cerr << "[game] engine.step failed: " << vve::errorName(step_result.error()) << '\n';
             return 1;
         }
 

@@ -22,6 +22,21 @@ namespace vve::v3 {
 
    namespace {
 
+      static const std::map<aiTextureType, TextureSemantic> assimp_texture_semantic_map{
+          {aiTextureType_BASE_COLOR, TextureSemantic::base_color},
+          {aiTextureType_DIFFUSE, TextureSemantic::base_color},
+          {aiTextureType_NORMALS, TextureSemantic::normal},
+          {aiTextureType_HEIGHT, TextureSemantic::normal},
+          {aiTextureType_UNKNOWN, TextureSemantic::metallic_roughness},
+          {aiTextureType_DIFFUSE_ROUGHNESS, TextureSemantic::roughness},
+          {aiTextureType_METALNESS, TextureSemantic::metallic},
+          {aiTextureType_SPECULAR, TextureSemantic::specular},
+          {aiTextureType_EMISSIVE, TextureSemantic::emissive},
+          {aiTextureType_OPACITY, TextureSemantic::opacity},
+          {aiTextureType_AMBIENT_OCCLUSION, TextureSemantic::ambient_occlusion},
+          {aiTextureType_LIGHTMAP, TextureSemantic::ambient_occlusion},
+      };
+
       [[nodiscard]] std::filesystem::path normalizePath(const std::filesystem::path &path) {
          std::error_code error_code{};
          const auto canonical_path = std::filesystem::weakly_canonical(path, error_code);
@@ -69,31 +84,7 @@ namespace vve::v3 {
       }
 
       [[nodiscard]] TextureSemantic mapTextureSemantic(const aiTextureType texture_type) {
-         switch (texture_type) {
-         case aiTextureType_BASE_COLOR:
-         case aiTextureType_DIFFUSE:
-            return TextureSemantic::base_color;
-         case aiTextureType_NORMALS:
-         case aiTextureType_HEIGHT:
-            return TextureSemantic::normal;
-         case aiTextureType_UNKNOWN:
-            return TextureSemantic::metallic_roughness;
-         case aiTextureType_DIFFUSE_ROUGHNESS:
-            return TextureSemantic::roughness;
-         case aiTextureType_METALNESS:
-            return TextureSemantic::metallic;
-         case aiTextureType_SPECULAR:
-            return TextureSemantic::specular;
-         case aiTextureType_EMISSIVE:
-            return TextureSemantic::emissive;
-         case aiTextureType_OPACITY:
-            return TextureSemantic::opacity;
-         case aiTextureType_AMBIENT_OCCLUSION:
-         case aiTextureType_LIGHTMAP:
-            return TextureSemantic::ambient_occlusion;
-         default:
-            return TextureSemantic::unknown;
-         }
+         return vve::detail::mapValueOr(assimp_texture_semantic_map, texture_type, TextureSemantic::unknown);
       }
 
       class TextureRegistry {

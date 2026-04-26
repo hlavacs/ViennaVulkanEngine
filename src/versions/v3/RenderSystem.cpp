@@ -15,40 +15,34 @@ import :Internal;
  */
 namespace vve::v3 {
 
+   static const std::map<vve::RendererKind, RenderKernelId> main_render_kernel_map{
+       {vve::RendererKind::forward_renderer, RenderKernelId::forward_opaque},
+       {vve::RendererKind::deferred_renderer, RenderKernelId::deferred_gbuffer},
+       {vve::RendererKind::path_tracing, RenderKernelId::path_trace},
+   };
+
+   static const std::map<vve::RendererKind, std::string_view> main_pass_name_map{
+       {vve::RendererKind::forward_renderer, "Forward Main"},
+       {vve::RendererKind::deferred_renderer, "Deferred Main"},
+       {vve::RendererKind::path_tracing, "Path Tracing Main"},
+   };
+
    /**
     * @brief Selects the main render kernel for the configured renderer family.
     * @param renderer High-level renderer choice from the public engine config.
     * @return Built-in render kernel used for the primary pass.
-    */
+   */
    [[nodiscard]] RenderKernelId selectMainKernel(vve::RendererKind renderer) {
-      switch (renderer) {
-      case vve::RendererKind::forward_renderer:
-         return RenderKernelId::forward_opaque;
-      case vve::RendererKind::deferred_renderer:
-         return RenderKernelId::deferred_gbuffer;
-      case vve::RendererKind::path_tracing:
-         return RenderKernelId::path_trace;
-      }
-
-      return RenderKernelId::none;
+      return vve::detail::mapValueOr(main_render_kernel_map, renderer, RenderKernelId::none);
    }
 
    /**
     * @brief Returns a human-readable label for the primary render pass.
     * @param renderer High-level renderer choice from the public engine config.
     * @return Main-pass name used for graph diagnostics.
-    */
+   */
    [[nodiscard]] std::string_view selectMainPassName(vve::RendererKind renderer) {
-      switch (renderer) {
-      case vve::RendererKind::forward_renderer:
-         return "Forward Main";
-      case vve::RendererKind::deferred_renderer:
-         return "Deferred Main";
-      case vve::RendererKind::path_tracing:
-         return "Path Tracing Main";
-      }
-
-      return "Main";
+      return vve::detail::mapValueOr(main_pass_name_map, renderer, std::string_view{"Main"});
    }
 
    /**

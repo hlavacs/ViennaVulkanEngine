@@ -21,151 +21,97 @@ namespace vve::v3 {
 
    namespace {
 
+   static const std::map<SlangStage, std::optional<ShaderStage>> slang_stage_map{
+       {SLANG_STAGE_VERTEX, std::optional<ShaderStage>{ShaderStage::vertex}},
+       {SLANG_STAGE_FRAGMENT, std::optional<ShaderStage>{ShaderStage::fragment}},
+       {SLANG_STAGE_COMPUTE, std::optional<ShaderStage>{ShaderStage::compute}},
+   };
+
+   static const std::map<slang::ParameterCategory, std::string_view> parameter_category_name_map{
+       {slang::ParameterCategory::ConstantBuffer, "constant_buffer"},
+       {slang::ParameterCategory::ShaderResource, "shader_resource"},
+       {slang::ParameterCategory::UnorderedAccess, "unordered_access"},
+       {slang::ParameterCategory::SamplerState, "sampler_state"},
+       {slang::ParameterCategory::DescriptorTableSlot, "descriptor_table_slot"},
+       {slang::ParameterCategory::PushConstantBuffer, "push_constant_buffer"},
+       {slang::ParameterCategory::RegisterSpace, "register_space"},
+       {slang::ParameterCategory::SubElementRegisterSpace, "sub_element_register_space"},
+       {slang::ParameterCategory::Uniform, "uniform"},
+       {slang::ParameterCategory::VaryingInput, "varying_input"},
+       {slang::ParameterCategory::VaryingOutput, "varying_output"},
+   };
+
+   static const std::map<slang::TypeReflection::Kind, std::string_view> type_kind_name_map{
+       {slang::TypeReflection::Kind::Struct, "struct"},
+       {slang::TypeReflection::Kind::Array, "array"},
+       {slang::TypeReflection::Kind::Matrix, "matrix"},
+       {slang::TypeReflection::Kind::Vector, "vector"},
+       {slang::TypeReflection::Kind::Scalar, "scalar"},
+       {slang::TypeReflection::Kind::ConstantBuffer, "constant_buffer"},
+       {slang::TypeReflection::Kind::Resource, "resource"},
+       {slang::TypeReflection::Kind::SamplerState, "sampler_state"},
+       {slang::TypeReflection::Kind::ShaderStorageBuffer, "shader_storage_buffer"},
+       {slang::TypeReflection::Kind::ParameterBlock, "parameter_block"},
+   };
+
+   static const std::map<slang::BindingType, std::string_view> binding_type_name_map{
+       {slang::BindingType::Sampler, "sampler"},
+       {slang::BindingType::Texture, "texture"},
+       {slang::BindingType::ConstantBuffer, "constant_buffer"},
+       {slang::BindingType::ParameterBlock, "parameter_block"},
+       {slang::BindingType::TypedBuffer, "typed_buffer"},
+       {slang::BindingType::RawBuffer, "raw_buffer"},
+       {slang::BindingType::CombinedTextureSampler, "combined_texture_sampler"},
+       {slang::BindingType::InputRenderTarget, "input_render_target"},
+       {slang::BindingType::InlineUniformData, "inline_uniform_data"},
+       {slang::BindingType::RayTracingAccelerationStructure, "ray_tracing_acceleration_structure"},
+       {slang::BindingType::PushConstant, "push_constant"},
+   };
+
+   static const std::map<slang::ParameterCategory, bool> descriptor_like_category_map{
+       {slang::ParameterCategory::ConstantBuffer, true},
+       {slang::ParameterCategory::ShaderResource, true},
+       {slang::ParameterCategory::UnorderedAccess, true},
+       {slang::ParameterCategory::SamplerState, true},
+       {slang::ParameterCategory::DescriptorTableSlot, true},
+       {slang::ParameterCategory::PushConstantBuffer, true},
+       {slang::ParameterCategory::RegisterSpace, true},
+       {slang::ParameterCategory::SubElementRegisterSpace, true},
+   };
+
    /// @brief Converts a public renderer enum into the shader metadata string form.
    [[nodiscard]] std::string_view toRendererName(vve::RendererKind renderer) noexcept {
-      switch (renderer) {
-      case vve::RendererKind::forward_renderer:
-         return "forward";
-      case vve::RendererKind::deferred_renderer:
-         return "deferred";
-      case vve::RendererKind::path_tracing:
-         return "path_tracing";
-      }
-
-      return "unknown";
+      return vve::rendererKindName(renderer);
    }
 
    /// @brief Converts a public shadow enum into the shader metadata string form.
    [[nodiscard]] std::string_view toShadowName(vve::ShadowKind shadow) noexcept {
-      switch (shadow) {
-      case vve::ShadowKind::none:
-         return "none";
-      case vve::ShadowKind::shadow_map:
-         return "shadow_map";
-      case vve::ShadowKind::ray_traced:
-         return "ray_traced";
-      }
-
-      return "unknown";
+      return vve::shadowKindName(shadow);
    }
 
    /// @brief Converts a Slang stage into the public shader-stage enum.
    [[nodiscard]] std::optional<ShaderStage> toShaderStage(SlangStage stage) noexcept {
-      switch (stage) {
-      case SLANG_STAGE_VERTEX:
-         return ShaderStage::vertex;
-      case SLANG_STAGE_FRAGMENT:
-         return ShaderStage::fragment;
-      case SLANG_STAGE_COMPUTE:
-         return ShaderStage::compute;
-      default:
-         return std::nullopt;
-      }
+      return vve::detail::mapValueOr(slang_stage_map, stage, std::optional<ShaderStage>{});
    }
 
    /// @brief Returns a stable text label for a Slang parameter category.
    [[nodiscard]] std::string_view toParameterCategoryName(slang::ParameterCategory category) noexcept {
-      switch (category) {
-      case slang::ParameterCategory::ConstantBuffer:
-         return "constant_buffer";
-      case slang::ParameterCategory::ShaderResource:
-         return "shader_resource";
-      case slang::ParameterCategory::UnorderedAccess:
-         return "unordered_access";
-      case slang::ParameterCategory::SamplerState:
-         return "sampler_state";
-      case slang::ParameterCategory::DescriptorTableSlot:
-         return "descriptor_table_slot";
-      case slang::ParameterCategory::PushConstantBuffer:
-         return "push_constant_buffer";
-      case slang::ParameterCategory::RegisterSpace:
-         return "register_space";
-      case slang::ParameterCategory::SubElementRegisterSpace:
-         return "sub_element_register_space";
-      case slang::ParameterCategory::Uniform:
-         return "uniform";
-      case slang::ParameterCategory::VaryingInput:
-         return "varying_input";
-      case slang::ParameterCategory::VaryingOutput:
-         return "varying_output";
-      default:
-         return "unknown";
-      }
+      return vve::detail::mapValueOr(parameter_category_name_map, category, std::string_view{"unknown"});
    }
 
    /// @brief Returns a compact name for reflected Slang type kinds.
    [[nodiscard]] std::string_view toTypeKindName(slang::TypeReflection::Kind kind) noexcept {
-      switch (kind) {
-      case slang::TypeReflection::Kind::Struct:
-         return "struct";
-      case slang::TypeReflection::Kind::Array:
-         return "array";
-      case slang::TypeReflection::Kind::Matrix:
-         return "matrix";
-      case slang::TypeReflection::Kind::Vector:
-         return "vector";
-      case slang::TypeReflection::Kind::Scalar:
-         return "scalar";
-      case slang::TypeReflection::Kind::ConstantBuffer:
-         return "constant_buffer";
-      case slang::TypeReflection::Kind::Resource:
-         return "resource";
-      case slang::TypeReflection::Kind::SamplerState:
-         return "sampler_state";
-      case slang::TypeReflection::Kind::ShaderStorageBuffer:
-         return "shader_storage_buffer";
-      case slang::TypeReflection::Kind::ParameterBlock:
-         return "parameter_block";
-      default:
-         return "unknown";
-      }
+      return vve::detail::mapValueOr(type_kind_name_map, kind, std::string_view{"unknown"});
    }
 
    /// @brief Returns a compact name for Slang descriptor binding kinds.
    [[nodiscard]] std::string_view toBindingTypeName(slang::BindingType binding_type) noexcept {
-      switch (binding_type) {
-      case slang::BindingType::Sampler:
-         return "sampler";
-      case slang::BindingType::Texture:
-         return "texture";
-      case slang::BindingType::ConstantBuffer:
-         return "constant_buffer";
-      case slang::BindingType::ParameterBlock:
-         return "parameter_block";
-      case slang::BindingType::TypedBuffer:
-         return "typed_buffer";
-      case slang::BindingType::RawBuffer:
-         return "raw_buffer";
-      case slang::BindingType::CombinedTextureSampler:
-         return "combined_texture_sampler";
-      case slang::BindingType::InputRenderTarget:
-         return "input_render_target";
-      case slang::BindingType::InlineUniformData:
-         return "inline_uniform_data";
-      case slang::BindingType::RayTracingAccelerationStructure:
-         return "ray_tracing_acceleration_structure";
-      case slang::BindingType::PushConstant:
-         return "push_constant";
-      default:
-         return "unknown";
-      }
+      return vve::detail::mapValueOr(binding_type_name_map, binding_type, std::string_view{"unknown"});
    }
 
    /// @brief Returns whether a reflected variable is a descriptor-like resource binding.
    [[nodiscard]] bool isDescriptorLike(slang::ParameterCategory category) noexcept {
-      switch (category) {
-      case slang::ParameterCategory::ConstantBuffer:
-      case slang::ParameterCategory::ShaderResource:
-      case slang::ParameterCategory::UnorderedAccess:
-      case slang::ParameterCategory::SamplerState:
-      case slang::ParameterCategory::DescriptorTableSlot:
-      case slang::ParameterCategory::PushConstantBuffer:
-      case slang::ParameterCategory::RegisterSpace:
-      case slang::ParameterCategory::SubElementRegisterSpace:
-         return true;
-      default:
-         return false;
-      }
+      return vve::detail::mapValueOr(descriptor_like_category_map, category, false);
    }
 
    /// @brief Builds a Slang-safe module name from a source filename.

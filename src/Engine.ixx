@@ -84,6 +84,49 @@ export namespace vve {
       should_close          ///< Engine requested shutdown.
    };
 
+   /// @brief Returns the stable diagnostic name for a graphics API selection.
+   [[nodiscard]] std::string_view graphicsApiName(GraphicsApi api) {
+      static const std::map<GraphicsApi, std::string_view> names{
+          {GraphicsApi::vulkan, "vulkan"},
+          {GraphicsApi::direct3d12, "direct3d12"},
+          {GraphicsApi::metal, "metal"},
+      };
+
+      return detail::mapValueOr(names, api, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for a renderer family.
+   [[nodiscard]] std::string_view rendererKindName(RendererKind renderer) {
+      static const std::map<RendererKind, std::string_view> names{
+          {RendererKind::forward_renderer, "forward"},
+          {RendererKind::deferred_renderer, "deferred"},
+          {RendererKind::path_tracing, "path_tracing"},
+      };
+
+      return detail::mapValueOr(names, renderer, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for a shadowing strategy.
+   [[nodiscard]] std::string_view shadowKindName(ShadowKind shadow) {
+      static const std::map<ShadowKind, std::string_view> names{
+          {ShadowKind::none, "none"},
+          {ShadowKind::shadow_map, "shadow_map"},
+          {ShadowKind::ray_traced, "ray_traced"},
+      };
+
+      return detail::mapValueOr(names, shadow, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for a frame-step result.
+   [[nodiscard]] std::string_view frameStatusName(FrameStatus status) {
+      static const std::map<FrameStatus, std::string_view> names{
+          {FrameStatus::continue_running, "continue_running"},
+          {FrameStatus::should_close, "should_close"},
+      };
+
+      return detail::mapValueOr(names, status, std::string_view{"unknown"});
+   }
+
    /// @brief Human-readable application name shown to runtime subsystems.
    struct ApplicationName {
       std::string value; ///< Human-readable application name.

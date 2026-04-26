@@ -15,27 +15,6 @@ import VEEngine.V3;
 
 namespace {
 
-[[nodiscard]] constexpr std::string_view toString(vve::Error error) noexcept {
-    switch (error) {
-    case vve::Error::not_initialized:
-        return "not_initialized";
-    case vve::Error::already_initialized:
-        return "already_initialized";
-    case vve::Error::invalid_argument:
-        return "invalid_argument";
-    case vve::Error::file_not_found:
-        return "file_not_found";
-    case vve::Error::io_error:
-        return "io_error";
-    case vve::Error::unsupported_version:
-        return "unsupported_version";
-    case vve::Error::internal_error:
-        return "internal_error";
-    }
-
-    return "unknown_error";
-}
-
 class PhysicsShellSystem final {
 public:
     [[nodiscard]] std::string_view name() const noexcept {
@@ -111,12 +90,12 @@ int main(int, char **) {
         });
 
     if (const auto init_result = engine.init(); !init_result) {
-        std::cerr << "[physics] engine.init failed: " << toString(init_result.error()) << '\n';
+        std::cerr << "[physics] engine.init failed: " << vve::errorName(init_result.error()) << '\n';
         return 1;
     }
 
     if (const auto run_result = engine.run(); !run_result) {
-        std::cerr << "[physics] engine.run failed: " << toString(run_result.error()) << '\n';
+        std::cerr << "[physics] engine.run failed: " << vve::errorName(run_result.error()) << '\n';
         return 1;
     }
 

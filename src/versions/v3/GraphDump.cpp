@@ -13,134 +13,25 @@ namespace vve::v3::detail {
 
 #ifndef NDEBUG
 
-   /**
-    * @brief Returns a stable label for a task phase.
-    * @param phase Task phase to name.
-    * @return Lowercase phase label used in DOT output.
-    */
-   [[nodiscard]] static std::string_view taskPhaseName(TaskPhase phase) noexcept {
-      switch (phase) {
-      case TaskPhase::automatic:
-         return "automatic";
-      case TaskPhase::begin_frame:
-         return "begin_frame";
-      case TaskPhase::input:
-         return "input";
-      case TaskPhase::user_update:
-         return "user_update";
-      case TaskPhase::scene:
-         return "scene";
-      case TaskPhase::resources:
-         return "resources";
-      case TaskPhase::render:
-         return "render";
-      case TaskPhase::end_frame:
-         return "end_frame";
-      case TaskPhase::post_frame:
-         return "post_frame";
-      }
-
-      return "unknown";
-   }
+   static const std::map<TaskPhase, std::string_view> task_phase_color_map{
+       {TaskPhase::automatic, "#e6e6e6"},
+       {TaskPhase::begin_frame, "#d9edf7"},
+       {TaskPhase::input, "#dff0d8"},
+       {TaskPhase::user_update, "#fcf8e3"},
+       {TaskPhase::scene, "#f5e3ff"},
+       {TaskPhase::resources, "#fce5cd"},
+       {TaskPhase::render, "#ead1dc"},
+       {TaskPhase::end_frame, "#d0e0e3"},
+       {TaskPhase::post_frame, "#eeeeee"},
+   };
 
    /**
     * @brief Returns the DOT node color assigned to a task phase.
     * @param phase Task phase to colorize.
     * @return Hex color string used in DOT output.
-    */
+   */
    [[nodiscard]] static std::string_view taskPhaseColor(TaskPhase phase) noexcept {
-      switch (phase) {
-      case TaskPhase::automatic:
-         return "#e6e6e6";
-      case TaskPhase::begin_frame:
-         return "#d9edf7";
-      case TaskPhase::input:
-         return "#dff0d8";
-      case TaskPhase::user_update:
-         return "#fcf8e3";
-      case TaskPhase::scene:
-         return "#f5e3ff";
-      case TaskPhase::resources:
-         return "#fce5cd";
-      case TaskPhase::render:
-         return "#ead1dc";
-      case TaskPhase::end_frame:
-         return "#d0e0e3";
-      case TaskPhase::post_frame:
-         return "#eeeeee";
-      }
-
-      return "#eeeeee";
-   }
-
-   /**
-    * @brief Returns a stable label for a built-in task kernel.
-    * @param kernel Task kernel to name.
-    * @return Lowercase kernel label used in diagnostics.
-    */
-   [[nodiscard]] static std::string_view taskKernelName(TaskKernelId kernel) noexcept {
-      switch (kernel) {
-      case TaskKernelId::none:
-         return "none";
-      case TaskKernelId::begin_frame:
-         return "begin_frame";
-      case TaskKernelId::poll_window_events:
-         return "poll_window_events";
-      case TaskKernelId::update_transforms:
-         return "update_transforms";
-      case TaskKernelId::sample_animations:
-         return "sample_animations";
-      case TaskKernelId::cull_visibility_cpu:
-         return "cull_visibility_cpu";
-      case TaskKernelId::cull_visibility_gpu:
-         return "cull_visibility_gpu";
-      case TaskKernelId::build_draw_packets:
-         return "build_draw_packets";
-      case TaskKernelId::upload_resources:
-         return "upload_resources";
-      case TaskKernelId::record_render_graph:
-         return "record_render_graph";
-      case TaskKernelId::consume_frame_output:
-         return "consume_frame_output";
-      case TaskKernelId::end_frame:
-         return "end_frame";
-      }
-
-      return "unknown";
-   }
-
-   /**
-    * @brief Returns a stable label for a built-in render kernel.
-    * @param kernel Render kernel to name.
-    * @return Lowercase kernel label used in diagnostics.
-    */
-   [[nodiscard]] static std::string_view renderKernelName(RenderKernelId kernel) noexcept {
-      switch (kernel) {
-      case RenderKernelId::none:
-         return "none";
-      case RenderKernelId::depth_prepass:
-         return "depth_prepass";
-      case RenderKernelId::forward_opaque:
-         return "forward_opaque";
-      case RenderKernelId::deferred_gbuffer:
-         return "deferred_gbuffer";
-      case RenderKernelId::deferred_lighting:
-         return "deferred_lighting";
-      case RenderKernelId::path_trace:
-         return "path_trace";
-      case RenderKernelId::shadow_map:
-         return "shadow_map";
-      case RenderKernelId::ray_traced_shadows:
-         return "ray_traced_shadows";
-      case RenderKernelId::post_process:
-         return "post_process";
-      case RenderKernelId::post_post_process:
-         return "post_post_process";
-      case RenderKernelId::imgui:
-         return "imgui";
-      }
-
-      return "unknown";
+      return vve::detail::mapValueOr(task_phase_color_map, phase, std::string_view{"#eeeeee"});
    }
 
    /**

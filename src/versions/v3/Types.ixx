@@ -345,6 +345,151 @@ export namespace vve::v3 {
       window      ///< Task is scoped to one window.
    };
 
+   /// @brief Returns the stable diagnostic name for a resource kind.
+   [[nodiscard]] std::string_view resourceKindName(ResourceKind kind) {
+      static const std::map<ResourceKind, std::string_view> names{
+          {ResourceKind::unknown, "unknown"},
+          {ResourceKind::mesh, "mesh"},
+          {ResourceKind::texture, "texture"},
+          {ResourceKind::material, "material"},
+          {ResourceKind::shader_program, "shader_program"},
+          {ResourceKind::buffer, "buffer"},
+          {ResourceKind::image, "image"},
+      };
+
+      return vve::detail::mapValueOr(names, kind, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for a resource location.
+   [[nodiscard]] std::string_view resourceLocationName(ResourceLocation location) {
+      static const std::map<ResourceLocation, std::string_view> names{
+          {ResourceLocation::unknown, "unknown"},
+          {ResourceLocation::source_file, "source_file"},
+          {ResourceLocation::imported_blob, "imported_blob"},
+          {ResourceLocation::cpu_memory, "cpu_memory"},
+          {ResourceLocation::gpu_memory, "gpu_memory"},
+          {ResourceLocation::streaming, "streaming"},
+      };
+
+      return vve::detail::mapValueOr(names, location, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for a task kernel.
+   [[nodiscard]] std::string_view taskKernelName(TaskKernelId kernel) {
+      static const std::map<TaskKernelId, std::string_view> names{
+          {TaskKernelId::none, "none"},
+          {TaskKernelId::begin_frame, "begin_frame"},
+          {TaskKernelId::poll_window_events, "poll_window_events"},
+          {TaskKernelId::update_transforms, "update_transforms"},
+          {TaskKernelId::sample_animations, "sample_animations"},
+          {TaskKernelId::cull_visibility_cpu, "cull_visibility_cpu"},
+          {TaskKernelId::cull_visibility_gpu, "cull_visibility_gpu"},
+          {TaskKernelId::build_draw_packets, "build_draw_packets"},
+          {TaskKernelId::upload_resources, "upload_resources"},
+          {TaskKernelId::record_render_graph, "record_render_graph"},
+          {TaskKernelId::consume_frame_output, "consume_frame_output"},
+          {TaskKernelId::end_frame, "end_frame"},
+      };
+
+      return vve::detail::mapValueOr(names, kernel, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for a task phase.
+   [[nodiscard]] std::string_view taskPhaseName(TaskPhase phase) {
+      static const std::map<TaskPhase, std::string_view> names{
+          {TaskPhase::automatic, "automatic"},
+          {TaskPhase::begin_frame, "begin_frame"},
+          {TaskPhase::input, "input"},
+          {TaskPhase::user_update, "user_update"},
+          {TaskPhase::scene, "scene"},
+          {TaskPhase::resources, "resources"},
+          {TaskPhase::render, "render"},
+          {TaskPhase::end_frame, "end_frame"},
+          {TaskPhase::post_frame, "post_frame"},
+      };
+
+      return vve::detail::mapValueOr(names, phase, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for a window event type.
+   [[nodiscard]] std::string_view windowEventTypeName(WindowEventType type) {
+      static const std::map<WindowEventType, std::string_view> names{
+          {WindowEventType::none, "none"},
+          {WindowEventType::close_requested, "close_requested"},
+          {WindowEventType::resized, "resized"},
+          {WindowEventType::moved, "moved"},
+          {WindowEventType::focus_gained, "focus_gained"},
+          {WindowEventType::focus_lost, "focus_lost"},
+          {WindowEventType::key_down, "key_down"},
+          {WindowEventType::key_held, "key_held"},
+          {WindowEventType::key_up, "key_up"},
+          {WindowEventType::mouse_move, "mouse_move"},
+          {WindowEventType::mouse_button_down, "mouse_button_down"},
+          {WindowEventType::mouse_button_up, "mouse_button_up"},
+          {WindowEventType::mouse_wheel, "mouse_wheel"},
+      };
+
+      return vve::detail::mapValueOr(names, type, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for a render kernel.
+   [[nodiscard]] std::string_view renderKernelName(RenderKernelId kernel) {
+      static const std::map<RenderKernelId, std::string_view> names{
+          {RenderKernelId::none, "none"},
+          {RenderKernelId::depth_prepass, "depth_prepass"},
+          {RenderKernelId::forward_opaque, "forward_opaque"},
+          {RenderKernelId::deferred_gbuffer, "deferred_gbuffer"},
+          {RenderKernelId::deferred_lighting, "deferred_lighting"},
+          {RenderKernelId::path_trace, "path_trace"},
+          {RenderKernelId::shadow_map, "shadow_map"},
+          {RenderKernelId::ray_traced_shadows, "ray_traced_shadows"},
+          {RenderKernelId::post_process, "post_process"},
+          {RenderKernelId::post_post_process, "post_post_process"},
+          {RenderKernelId::imgui, "imgui"},
+      };
+
+      return vve::detail::mapValueOr(names, kernel, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for a shader stage.
+   [[nodiscard]] std::string_view shaderStageName(ShaderStage stage) {
+      static const std::map<ShaderStage, std::string_view> names{
+          {ShaderStage::vertex, "vertex"},
+          {ShaderStage::fragment, "fragment"},
+          {ShaderStage::compute, "compute"},
+      };
+
+      return vve::detail::mapValueOr(names, stage, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for a texture semantic.
+   [[nodiscard]] std::string_view textureSemanticName(TextureSemantic semantic) {
+      static const std::map<TextureSemantic, std::string_view> names{
+          {TextureSemantic::unknown, "unknown"},
+          {TextureSemantic::base_color, "base_color"},
+          {TextureSemantic::normal, "normal"},
+          {TextureSemantic::metallic_roughness, "metallic_roughness"},
+          {TextureSemantic::roughness, "roughness"},
+          {TextureSemantic::metallic, "metallic"},
+          {TextureSemantic::specular, "specular"},
+          {TextureSemantic::emissive, "emissive"},
+          {TextureSemantic::opacity, "opacity"},
+          {TextureSemantic::ambient_occlusion, "ambient_occlusion"},
+      };
+
+      return vve::detail::mapValueOr(names, semantic, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for a task scope.
+   [[nodiscard]] std::string_view taskScopeName(TaskScope scope) {
+      static const std::map<TaskScope, std::string_view> names{
+          {TaskScope::global, "global"},
+          {TaskScope::window, "window"},
+      };
+
+      return vve::detail::mapValueOr(names, scope, std::string_view{"unknown"});
+   }
+
    /// @brief Runtime data visible to task callbacks during execution.
    struct TaskExecutionContext {
       const FrameContext *frame_context{nullptr};             ///< Frame timing data, or `nullptr` when unavailable.
@@ -577,30 +722,24 @@ export namespace vve::v3 {
     * @return Default task phase associated with the kernel.
     */
    inline TaskPhase TaskGraphBuilder::inferPhase(TaskKernelId kernel) {
+      static const std::map<TaskKernelId, TaskPhase> default_phases{
+          {TaskKernelId::none, TaskPhase::user_update},
+          {TaskKernelId::begin_frame, TaskPhase::begin_frame},
+          {TaskKernelId::poll_window_events, TaskPhase::input},
+          {TaskKernelId::update_transforms, TaskPhase::scene},
+          {TaskKernelId::sample_animations, TaskPhase::scene},
+          {TaskKernelId::cull_visibility_cpu, TaskPhase::scene},
+          {TaskKernelId::cull_visibility_gpu, TaskPhase::render},
+          {TaskKernelId::build_draw_packets, TaskPhase::render},
+          {TaskKernelId::upload_resources, TaskPhase::resources},
+          {TaskKernelId::record_render_graph, TaskPhase::render},
+          {TaskKernelId::consume_frame_output, TaskPhase::render},
+          {TaskKernelId::end_frame, TaskPhase::end_frame},
+      };
+
       // Kernel-to-phase mapping gives built-in tasks a sensible default slot in
       // the frame without forcing every caller to specify one manually.
-      switch (kernel) {
-      case TaskKernelId::begin_frame:
-         return TaskPhase::begin_frame;
-      case TaskKernelId::poll_window_events:
-         return TaskPhase::input;
-      case TaskKernelId::update_transforms:
-      case TaskKernelId::sample_animations:
-      case TaskKernelId::cull_visibility_cpu:
-         return TaskPhase::scene;
-      case TaskKernelId::upload_resources:
-         return TaskPhase::resources;
-      case TaskKernelId::cull_visibility_gpu:
-      case TaskKernelId::build_draw_packets:
-      case TaskKernelId::record_render_graph:
-      case TaskKernelId::consume_frame_output:
-         return TaskPhase::render;
-      case TaskKernelId::end_frame:
-         return TaskPhase::end_frame;
-      case TaskKernelId::none:
-      default:
-         return TaskPhase::user_update;
-      }
+      return vve::detail::mapValueOr(default_phases, kernel, TaskPhase::user_update);
    }
 
    /**

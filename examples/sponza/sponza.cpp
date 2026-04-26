@@ -18,27 +18,6 @@ import VEEngine.V3;
  */
 namespace {
 
-[[nodiscard]] constexpr std::string_view toString(vve::Error error) noexcept {
-    switch (error) {
-    case vve::Error::not_initialized:
-        return "not_initialized";
-    case vve::Error::already_initialized:
-        return "already_initialized";
-    case vve::Error::invalid_argument:
-        return "invalid_argument";
-    case vve::Error::file_not_found:
-        return "file_not_found";
-    case vve::Error::io_error:
-        return "io_error";
-    case vve::Error::unsupported_version:
-        return "unsupported_version";
-    case vve::Error::internal_error:
-        return "internal_error";
-    }
-
-    return "unknown_error";
-}
-
 [[nodiscard]] std::optional<std::filesystem::path>
 firstExistingPath(const std::vector<std::filesystem::path> &candidates) {
     for (const auto &candidate : candidates) {
@@ -170,34 +149,6 @@ void appendSceneCandidates(std::vector<std::filesystem::path> &candidates, const
     return handle.value();
 }
 
-[[nodiscard]] const char *textureSemanticName(vve::v3::TextureSemantic semantic) {
-    using vve::v3::TextureSemantic;
-    switch (semantic) {
-    case TextureSemantic::unknown:
-        return "unknown";
-    case TextureSemantic::base_color:
-        return "base_color";
-    case TextureSemantic::normal:
-        return "normal";
-    case TextureSemantic::metallic_roughness:
-        return "metallic_roughness";
-    case TextureSemantic::roughness:
-        return "roughness";
-    case TextureSemantic::metallic:
-        return "metallic";
-    case TextureSemantic::specular:
-        return "specular";
-    case TextureSemantic::emissive:
-        return "emissive";
-    case TextureSemantic::opacity:
-        return "opacity";
-    case TextureSemantic::ambient_occlusion:
-        return "ambient_occlusion";
-    }
-
-    return "unknown";
-}
-
 void printVec2(const vve::math::Vec2 &value) {
     std::cout << '(' << value.x << ", " << value.y << ')';
 }
@@ -252,7 +203,7 @@ void printMaterials(const vve::v3::ImportedScene &scene) {
         for (std::size_t texture_ref_index = 0; texture_ref_index < material.textures.size(); ++texture_ref_index) {
             const auto &texture_ref = material.textures[texture_ref_index];
             std::cout << "      [" << texture_ref_index << "] texture=" << rawHandle(texture_ref.texture.value)
-                      << " semantic=" << textureSemanticName(texture_ref.semantic)
+                      << " semantic=" << vve::v3::textureSemanticName(texture_ref.semantic)
                       << " uv_set=" << texture_ref.uv_set << '\n';
         }
     }
@@ -486,14 +437,14 @@ int main(int argc, char **argv) {
                     .visible = true}}});
 
     if (const auto init_result = engine.init(); !init_result) {
-        std::cerr << "[sponza] engine.init failed: " << toString(init_result.error()) << '\n';
+        std::cerr << "[sponza] engine.init failed: " << vve::errorName(init_result.error()) << '\n';
         return 1;
     }
 
     while (true) {
         const auto step_result = engine.step();
         if (!step_result) {
-            std::cerr << "[sponza] engine.step failed: " << toString(step_result.error()) << '\n';
+            std::cerr << "[sponza] engine.step failed: " << vve::errorName(step_result.error()) << '\n';
             return 1;
         }
 

@@ -3,6 +3,7 @@ module;
 #include "FacadeMacros.hpp"
 #include <cstdlib>
 #include <vulkan/vulkan.h>
+#include <vulkan/vk_enum_string_helper.h>
 
 module VEEngine.V3;
 import std;
@@ -19,136 +20,10 @@ namespace vve::v3 {
 
    namespace {
 
-      /// @brief Converts common Vulkan results into stable diagnostic text.
-      [[nodiscard]] const char *vkResultName(const VkResult result) {
-         switch (result) {
-         case VK_SUCCESS:
-            return "VK_SUCCESS";
-         case VK_NOT_READY:
-            return "VK_NOT_READY";
-         case VK_TIMEOUT:
-            return "VK_TIMEOUT";
-         case VK_EVENT_SET:
-            return "VK_EVENT_SET";
-         case VK_EVENT_RESET:
-            return "VK_EVENT_RESET";
-         case VK_INCOMPLETE:
-            return "VK_INCOMPLETE";
-         case VK_ERROR_OUT_OF_HOST_MEMORY:
-            return "VK_ERROR_OUT_OF_HOST_MEMORY";
-         case VK_ERROR_OUT_OF_DEVICE_MEMORY:
-            return "VK_ERROR_OUT_OF_DEVICE_MEMORY";
-         case VK_ERROR_INITIALIZATION_FAILED:
-            return "VK_ERROR_INITIALIZATION_FAILED";
-         case VK_ERROR_DEVICE_LOST:
-            return "VK_ERROR_DEVICE_LOST";
-         case VK_ERROR_MEMORY_MAP_FAILED:
-            return "VK_ERROR_MEMORY_MAP_FAILED";
-         case VK_ERROR_LAYER_NOT_PRESENT:
-            return "VK_ERROR_LAYER_NOT_PRESENT";
-         case VK_ERROR_EXTENSION_NOT_PRESENT:
-            return "VK_ERROR_EXTENSION_NOT_PRESENT";
-         case VK_ERROR_FEATURE_NOT_PRESENT:
-            return "VK_ERROR_FEATURE_NOT_PRESENT";
-         case VK_ERROR_INCOMPATIBLE_DRIVER:
-            return "VK_ERROR_INCOMPATIBLE_DRIVER";
-         case VK_ERROR_TOO_MANY_OBJECTS:
-            return "VK_ERROR_TOO_MANY_OBJECTS";
-         case VK_ERROR_FORMAT_NOT_SUPPORTED:
-            return "VK_ERROR_FORMAT_NOT_SUPPORTED";
-         case VK_ERROR_FRAGMENTED_POOL:
-            return "VK_ERROR_FRAGMENTED_POOL";
-         case VK_ERROR_UNKNOWN:
-            return "VK_ERROR_UNKNOWN";
-         default:
-            return "VK_RESULT_UNRECOGNIZED";
-         }
-      }
-
       /// @brief Converts a packed Vulkan version to major.minor.patch text.
       [[nodiscard]] std::string versionString(const std::uint32_t version) {
          return std::format("{}.{}.{}", VK_API_VERSION_MAJOR(version), VK_API_VERSION_MINOR(version),
                             VK_API_VERSION_PATCH(version));
-      }
-
-      /// @brief Converts a Vulkan physical-device type to diagnostic text.
-      [[nodiscard]] const char *physicalDeviceTypeName(const VkPhysicalDeviceType type) {
-         switch (type) {
-         case VK_PHYSICAL_DEVICE_TYPE_OTHER:
-            return "other";
-         case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU:
-            return "integrated_gpu";
-         case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU:
-            return "discrete_gpu";
-         case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU:
-            return "virtual_gpu";
-         case VK_PHYSICAL_DEVICE_TYPE_CPU:
-            return "cpu";
-         default:
-            return "unknown";
-         }
-      }
-
-      /// @brief Converts known Vulkan driver identifiers to diagnostic text.
-      [[nodiscard]] const char *driverIdName(const VkDriverId driver_id) {
-         switch (driver_id) {
-         case VK_DRIVER_ID_AMD_PROPRIETARY:
-            return "VK_DRIVER_ID_AMD_PROPRIETARY";
-         case VK_DRIVER_ID_AMD_OPEN_SOURCE:
-            return "VK_DRIVER_ID_AMD_OPEN_SOURCE";
-         case VK_DRIVER_ID_MESA_RADV:
-            return "VK_DRIVER_ID_MESA_RADV";
-         case VK_DRIVER_ID_NVIDIA_PROPRIETARY:
-            return "VK_DRIVER_ID_NVIDIA_PROPRIETARY";
-         case VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS:
-            return "VK_DRIVER_ID_INTEL_PROPRIETARY_WINDOWS";
-         case VK_DRIVER_ID_INTEL_OPEN_SOURCE_MESA:
-            return "VK_DRIVER_ID_INTEL_OPEN_SOURCE_MESA";
-         case VK_DRIVER_ID_IMAGINATION_PROPRIETARY:
-            return "VK_DRIVER_ID_IMAGINATION_PROPRIETARY";
-         case VK_DRIVER_ID_QUALCOMM_PROPRIETARY:
-            return "VK_DRIVER_ID_QUALCOMM_PROPRIETARY";
-         case VK_DRIVER_ID_ARM_PROPRIETARY:
-            return "VK_DRIVER_ID_ARM_PROPRIETARY";
-         case VK_DRIVER_ID_GOOGLE_SWIFTSHADER:
-            return "VK_DRIVER_ID_GOOGLE_SWIFTSHADER";
-         case VK_DRIVER_ID_GGP_PROPRIETARY:
-            return "VK_DRIVER_ID_GGP_PROPRIETARY";
-         case VK_DRIVER_ID_BROADCOM_PROPRIETARY:
-            return "VK_DRIVER_ID_BROADCOM_PROPRIETARY";
-         case VK_DRIVER_ID_MESA_LLVMPIPE:
-            return "VK_DRIVER_ID_MESA_LLVMPIPE";
-         case VK_DRIVER_ID_MOLTENVK:
-            return "VK_DRIVER_ID_MOLTENVK";
-         case VK_DRIVER_ID_COREAVI_PROPRIETARY:
-            return "VK_DRIVER_ID_COREAVI_PROPRIETARY";
-         case VK_DRIVER_ID_JUICE_PROPRIETARY:
-            return "VK_DRIVER_ID_JUICE_PROPRIETARY";
-         case VK_DRIVER_ID_VERISILICON_PROPRIETARY:
-            return "VK_DRIVER_ID_VERISILICON_PROPRIETARY";
-         case VK_DRIVER_ID_MESA_TURNIP:
-            return "VK_DRIVER_ID_MESA_TURNIP";
-         case VK_DRIVER_ID_MESA_V3DV:
-            return "VK_DRIVER_ID_MESA_V3DV";
-         case VK_DRIVER_ID_MESA_PANVK:
-            return "VK_DRIVER_ID_MESA_PANVK";
-         case VK_DRIVER_ID_SAMSUNG_PROPRIETARY:
-            return "VK_DRIVER_ID_SAMSUNG_PROPRIETARY";
-         case VK_DRIVER_ID_MESA_VENUS:
-            return "VK_DRIVER_ID_MESA_VENUS";
-         case VK_DRIVER_ID_MESA_DOZEN:
-            return "VK_DRIVER_ID_MESA_DOZEN";
-         case VK_DRIVER_ID_MESA_NVK:
-            return "VK_DRIVER_ID_MESA_NVK";
-#if VK_HEADER_VERSION >= 341
-         case VK_DRIVER_ID_MESA_HONEYKRISP:
-            return "VK_DRIVER_ID_MESA_HONEYKRISP";
-         case VK_DRIVER_ID_MESA_KOSMICKRISP:
-            return "VK_DRIVER_ID_MESA_KOSMICKRISP";
-#endif
-         default:
-            return "VK_DRIVER_ID_UNKNOWN";
-         }
       }
 
       /// @brief Reads an environment variable for diagnostics without mutating loader state.
@@ -167,7 +42,7 @@ namespace vve::v3 {
          VkResult result = vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, nullptr);
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkEnumerateInstanceExtensionProperties failed: "
-                      << vkResultName(result) << '\n';
+                      << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 
@@ -179,7 +54,7 @@ namespace vve::v3 {
          result = vkEnumerateInstanceExtensionProperties(nullptr, &extension_count, extensions.data());
          if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
             std::cerr << "[VulkanGraphicsBackend] vkEnumerateInstanceExtensionProperties failed: "
-                      << vkResultName(result) << '\n';
+                      << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 
@@ -231,7 +106,7 @@ namespace vve::v3 {
          VkInstance instance = VK_NULL_HANDLE;
          const VkResult result = vkCreateInstance(&create_info, nullptr, &instance);
          if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkCreateInstance failed: " << vkResultName(result) << '\n';
+            std::cerr << "[VulkanGraphicsBackend] vkCreateInstance failed: " << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 
@@ -266,7 +141,8 @@ namespace vve::v3 {
          std::uint32_t device_count = 0;
          VkResult result = vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
          if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkEnumeratePhysicalDevices failed: " << vkResultName(result) << '\n';
+            std::cerr << "[VulkanGraphicsBackend] vkEnumeratePhysicalDevices failed: " << string_VkResult(result)
+                      << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 
@@ -278,7 +154,8 @@ namespace vve::v3 {
          std::vector<VkPhysicalDevice> devices(device_count);
          result = vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
          if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-            std::cerr << "[VulkanGraphicsBackend] vkEnumeratePhysicalDevices failed: " << vkResultName(result) << '\n';
+            std::cerr << "[VulkanGraphicsBackend] vkEnumeratePhysicalDevices failed: " << string_VkResult(result)
+                      << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 
@@ -309,11 +186,11 @@ namespace vve::v3 {
             }
 
             std::clog << "[VulkanGraphicsBackend] device[" << device_index << "] name=\""
-                      << properties.deviceName << "\" type=" << physicalDeviceTypeName(properties.deviceType)
+                      << properties.deviceName << "\" type=" << string_VkPhysicalDeviceType(properties.deviceType)
                       << " api=" << versionString(properties.apiVersion)
                       << " driver_version=" << versionString(properties.driverVersion);
             if (can_query_driver_properties && (get_properties_2 != nullptr || get_properties_2_khr != nullptr)) {
-               std::clog << " driver_id=" << driverIdName(driver_properties.driverID)
+               std::clog << " driver_id=" << string_VkDriverId(driver_properties.driverID)
                          << " driver_name=\"" << driver_properties.driverName << "\""
                          << " driver_info=\"" << driver_properties.driverInfo << "\"";
             }
