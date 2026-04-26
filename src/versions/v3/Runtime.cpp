@@ -18,6 +18,13 @@ namespace vve::v3::detail {
 
    namespace {
 
+   /// @brief Resolves built-in shader files next to the v3 implementation sources.
+   [[nodiscard]] std::filesystem::path builtInShaderPath(std::string_view filename) {
+      return std::filesystem::path(__FILE__).parent_path() / "shaders" / filename;
+   }
+
+   using RuntimeShaderPrograms = std::map<std::tuple<vve::RendererKind, vve::ShadowKind>, ShaderHandle>;
+
    /// @brief Returns an environment variable value as an owning string.
    [[nodiscard]] std::string environmentValue(const char *name) {
       if (name == nullptr) {
@@ -148,8 +155,46 @@ namespace vve::v3::detail {
    vve::Handle makeStableHandle(std::string_view name, std::uint64_t salt) {
       // Salted names let related resources share a semantic prefix while still
       // producing distinct stable handles.
-      const auto mixed = std::format("{}:{}", name, salt);
+      auto mixed = std::string{name};
+      mixed.push_back(':');
+      mixed += std::to_string(salt);
       return vve::Handle::fromHash(mixed);
+   }
+
+   /**
+    * @brief Loads built-in shader variants required by the configured window renderers.
+    * @param runtime Runtime owning the resource and shader systems.
+    * @param desc Runtime descriptor with normalized window renderer ids and shadow mode.
+    * @return Shader handles keyed by renderer family and shadow variant.
+    */
+   [[nodiscard]] std::expected<RuntimeShaderPrograms, vve::Error>
+   loadShaderProgramsForWindows(Runtime &runtime, const EngineRuntimeDesc &desc) {
+      RuntimeShaderPrograms shader_programs{};
+      for (const auto &window : desc.windows) {
+         const auto renderer = runtime.graphics_backend.createRenderer(window.renderer_id);
+         if (!renderer) {
+            std::cerr << "[VulkanRuntime] Unsupported renderer id for window '" << window.id
+                      << "': " << window.renderer_id << '\n';
+            return std::unexpected(renderer.error());
+         }
+
+         const auto shader_key = std::tuple{renderer->kind, desc.shadow};
+         if (shader_programs.contains(shader_key)) {
+            continue;
+         }
+
+         const auto shader_metadata =
+             runtime.resource_system.loadShaderProgram(builtInShaderPath("rasterizer.slang"),
+                                                       runtime.shader_system, renderer->kind, desc.shadow);
+         if (!shader_metadata) {
+            std::cerr << "[VulkanRuntime] Failed to load shader program for renderer '" << renderer->id << "'\n";
+            return std::unexpected(shader_metadata.error());
+         }
+
+         shader_programs.emplace(shader_key, shader_metadata->handle);
+      }
+
+      return shader_programs;
    }
 
    /**
@@ -172,6 +217,11 @@ namespace vve::v3::detail {
           std::make_unique<SceneLoader>(runtime.asset_system, runtime.resource_system, runtime.scene_system);
       runtime.render_system =
           std::make_unique<RenderSystem>(desc.renderer, desc.shadow, runtime.graphics_backend, desc.imgui_enabled);
+      auto shader_programs = loadShaderProgramsForWindows(runtime, desc);
+      if (!shader_programs) {
+         return std::unexpected(shader_programs.error());
+      }
+
       if (auto icd_result = configureVulkanIcdSelection(); !icd_result) {
          return std::unexpected(icd_result.error());
       }
@@ -193,12 +243,19 @@ namespace vve::v3::detail {
             return std::unexpected(renderer.error());
          }
 
+         const auto shader_program = shader_programs->find(std::tuple{renderer->kind, desc.shadow});
+         if (shader_program == shader_programs->end()) {
+            std::cerr << "[VulkanRuntime] Missing shader program for renderer '" << renderer->id << "'\n";
+            return std::unexpected(vve::Error::internal_error);
+         }
+
          // Each runtime window receives a static render graph during runtime
          // assembly so frame execution can reuse the same pipeline description.
          runtime.render_pipelines.push_back(
              WindowRenderPipeline{.window = window.handle,
                                   .window_id = window.id,
                                   .renderer = *renderer,
+                                  .shader_program = shader_program->second,
                                   .graph = runtime.render_system->buildStaticGraph(window.handle, *renderer)});
       }
       if (desc.imgui_enabled) {

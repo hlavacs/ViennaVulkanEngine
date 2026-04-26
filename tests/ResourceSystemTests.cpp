@@ -75,11 +75,33 @@ int main() {
       return 7;
    }
 
+   const auto deferred_shader =
+       resource_system.loadShaderProgram(repository_root / "src/versions/v3/shaders/rasterizer.slang", shader_system,
+                                         vve::RendererKind::deferred_renderer, vve::ShadowKind::none);
+   if (!deferred_shader) {
+      return 8;
+   }
+
+   if (deferred_shader->handle.value == shader_metadata->handle.value ||
+       deferred_shader->intended_renderer != "deferred") {
+      return 9;
+   }
+
+   const auto stored_forward = resource_system.shaderProgram(shader_metadata->handle);
+   const auto stored_deferred = resource_system.shaderProgram(deferred_shader->handle);
+   if (!stored_forward || !stored_forward->has_value() || !stored_deferred || !stored_deferred->has_value()) {
+      return 10;
+   }
+
+   if ((*stored_forward)->intended_renderer != "forward" || (*stored_deferred)->intended_renderer != "deferred") {
+      return 11;
+   }
+
    const auto missing_shader = resource_system.loadShaderProgram(repository_root / "src/versions/v3/shaders/missing.slang",
                                                                  shader_system, vve::RendererKind::forward_renderer,
                                                                  vve::ShadowKind::none);
    if (missing_shader || missing_shader.error() != vve::Error::file_not_found) {
-      return 8;
+      return 12;
    }
 
    return 0;

@@ -35,6 +35,17 @@ namespace vve::v3 {
                                                      std::istreambuf_iterator<char>())};
    }
 
+   /// @brief Builds the stable resource handle for a source/renderer/shadow shader variant.
+   [[nodiscard]] ShaderHandle shaderVariantHandle(const ShaderSource &shader_source, vve::RendererKind renderer,
+                                                  vve::ShadowKind shadow) {
+      auto seed = shader_source.source_path.generic_string();
+      seed.push_back(':');
+      seed += vve::rendererKindName(renderer);
+      seed.push_back(':');
+      seed += vve::shadowKindName(shadow);
+      return ShaderHandle{detail::makeStableHandle(seed)};
+   }
+
    } // namespace
 
    /**
@@ -105,26 +116,37 @@ namespace vve::v3 {
             return std::unexpected(shader_source.error());
          }
 
-         const auto shader_metadata = shader_system.compileAndReflect(*shader_source, renderer, shadow);
-         if (!shader_metadata) {
-            return std::unexpected(shader_metadata.error());
+         const auto compile_key = shader_source->source_path.generic_string();
+         auto compiled_shader = compiled_shader_cache_.find(compile_key);
+         if (compiled_shader == compiled_shader_cache_.end()) {
+            const auto shader_metadata = shader_system.compileAndReflect(*shader_source, renderer, shadow);
+            if (!shader_metadata) {
+               return std::unexpected(shader_metadata.error());
+            }
+
+            compiled_shader = compiled_shader_cache_.emplace(compile_key, *shader_metadata).first;
          }
 
-         const auto shader_id = shader_metadata->handle.value.value();
-         shader_programs_.insert_or_assign(shader_id, *shader_metadata);
+         auto shader_metadata = compiled_shader->second;
+         shader_metadata.handle = shaderVariantHandle(*shader_source, renderer, shadow);
+         shader_metadata.intended_renderer = std::string(vve::rendererKindName(renderer));
+         shader_metadata.intended_shadow = std::string(vve::shadowKindName(shadow));
+
+         const auto shader_id = shader_metadata.handle.value.value();
+         shader_programs_.insert_or_assign(shader_id, shader_metadata);
 
          auto generation = std::uint32_t{1};
          if (const auto record_index = record_indices_.find(shader_id); record_index != record_indices_.end()) {
             generation = records_[record_index->second].generation + 1;
          }
 
-         upsertRecord(ResourceRecord{.id = shader_metadata->handle.value,
+         upsertRecord(ResourceRecord{.id = shader_metadata.handle.value,
                                      .kind = ResourceKind::shader_program,
                                      .location = ResourceLocation::cpu_memory,
                                      .generation = generation,
                                      .source_path = shader_source->source_path});
 
-         return *shader_metadata;
+         return shader_metadata;
       }
 
       /// @brief Returns stored shader metadata for an already registered shader program.
@@ -195,6 +217,7 @@ namespace vve::v3 {
       std::unordered_map<vve::Handle::value_type, ImportedTexture> textures_{}; ///< Imported texture references retained in CPU memory.
       std::unordered_map<vve::Handle::value_type, ImportedMesh> meshes_{}; ///< Imported mesh payloads retained in CPU memory.
       std::unordered_map<vve::Handle::value_type, ImportedMaterial> materials_{}; ///< Imported material payloads retained in CPU memory.
+      std::map<std::string, ShaderMetadata> compiled_shader_cache_{}; ///< Source-level compiler output reused by variants.
       std::unordered_map<vve::Handle::value_type, ShaderMetadata> shader_programs_{}; ///< Compiled shader metadata retained in CPU memory.
    };
 

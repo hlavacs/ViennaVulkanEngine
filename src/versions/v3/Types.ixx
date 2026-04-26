@@ -833,9 +833,9 @@ export namespace vve::v3 {
    struct ShaderMetadata {
       ShaderHandle handle{};                ///< Stable shader handle.
       std::string shader_name{};            ///< Human-readable shader name.
-      Vector<ShaderStage> stages{};         ///< Stages compiled into the shader.
-      Vector<ShaderParameter> parameters{}; ///< Reflected resource parameters.
-      Vector<ShaderStageBinary> binaries{}; ///< Compiled entry-point SPIR-V modules.
+      std::vector<ShaderStage> stages{};         ///< Stages compiled into the shader.
+      std::vector<ShaderParameter> parameters{}; ///< Reflected resource parameters.
+      std::vector<ShaderStageBinary> binaries{}; ///< Compiled entry-point SPIR-V modules.
       std::string intended_renderer{};      ///< Intended renderer mode as metadata text.
       std::string intended_shadow{};        ///< Intended shadow mode as metadata text.
    };
@@ -865,6 +865,7 @@ export namespace vve::v3 {
       WindowHandle window{};   ///< Window owning the render pipeline.
       std::string window_id{}; ///< Stable window string id.
       RendererDesc renderer{}; ///< Backend renderer selected for this window.
+      ShaderHandle shader_program{}; ///< Shader program compiled for this window renderer.
       RenderGraph graph{};     ///< Render graph executed for the window.
    };
 

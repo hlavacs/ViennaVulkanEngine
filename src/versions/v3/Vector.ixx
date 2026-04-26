@@ -201,6 +201,7 @@ export namespace vve::v3 {
       Vector(Vector &&other) noexcept
           : allocator_(std::move(other.allocator_)), segments_(std::move(other.segments_)), size_(other.size_) {
          other.size_ = 0;
+         other.segments_.clear();
       }
 
       /// @brief Replaces this container with a deep copy of `other`.
@@ -226,6 +227,7 @@ export namespace vve::v3 {
          segments_ = std::move(other.segments_);
          size_ = other.size_;
          other.size_ = 0;
+         other.segments_.clear();
          return *this;
       }
 

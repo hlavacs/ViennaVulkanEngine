@@ -372,9 +372,8 @@ namespace vve::v3 {
          Slang::ComPtr<slang::IModule> module;
          const auto module_name = makeModuleName(absolute_shader_path);
          const auto source_path_string = absolute_shader_path.generic_string();
-         module.attach(session->loadModuleFromSourceString(module_name.c_str(),
-                                                           source_path_string.c_str(),
-                                                           shader_source.source_code.c_str(), diagnostics.writeRef()));
+         module = session->loadModuleFromSourceString(module_name.c_str(), source_path_string.c_str(),
+                                                      shader_source.source_code.c_str(), diagnostics.writeRef());
          if (module == nullptr) {
             logSlangFailure("failed to load Slang module", diagnostics);
             return std::unexpected(vve::Error::invalid_argument);
@@ -429,7 +428,12 @@ namespace vve::v3 {
          }
 
          ShaderMetadata metadata{};
-         metadata.handle = ShaderHandle{detail::makeStableHandle(absolute_shader_path.generic_string())};
+         auto shader_seed = absolute_shader_path.generic_string();
+         shader_seed.push_back(':');
+         shader_seed += toRendererName(renderer);
+         shader_seed.push_back(':');
+         shader_seed += toShadowName(shadow);
+         metadata.handle = ShaderHandle{detail::makeStableHandle(shader_seed)};
          metadata.shader_name = absolute_shader_path.filename().string();
          metadata.intended_renderer = std::string(toRendererName(renderer));
          metadata.intended_shadow = std::string(toShadowName(shadow));
