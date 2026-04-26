@@ -37,6 +37,13 @@ namespace vve::v3 {
       return std::nullopt;
    }
 
+   /// @brief Returns whether a render graph contains the expected renderer-specific main pass.
+   [[nodiscard]] bool graphContainsKernel(const RenderGraph &graph, RenderKernelId kernel) {
+      return std::ranges::any_of(graph.passes, [kernel](const RenderPassDesc &pass) {
+         return pass.kernel == kernel;
+      });
+   }
+
    /**
     * @brief Concrete render-system implementation used by v3.
     *
@@ -115,6 +122,48 @@ namespace vve::v3 {
          }
 
          return graph;
+      }
+
+      /**
+       * @brief Binds backend resources to the renderer instance selected for one window.
+       * @param pipeline Fully assembled window pipeline with backend resources.
+       * @return Renderer-side binding state ready for later graphics-pipeline creation.
+       */
+      [[nodiscard]] std::expected<RendererPipelineBinding, vve::Error>
+      bindPipelineResources(const WindowRenderPipeline &pipeline) {
+         if (auto validation = validatePipelineBinding(pipeline); !validation) {
+            return std::unexpected(validation.error());
+         }
+
+         RendererPipelineBinding binding{.window = pipeline.window,
+                                         .window_id = pipeline.window_id,
+                                         .renderer = pipeline.renderer.handle,
+                                         .renderer_id = pipeline.renderer.id,
+                                         .shader_program = pipeline.shader_program,
+                                         .backend_resources = pipeline.backend_resources.handle,
+                                         .main_kernel = pipeline.renderer.main_kernel,
+                                         .shader_stage_count = pipeline.pipeline_layout.shader_stages.size(),
+                                         .descriptor_set_layout_count =
+                                             pipeline.backend_resources.descriptor_set_layout_count,
+                                         .ready_for_pipeline_creation =
+                                             pipeline.backend_resources.pipeline_layout_created};
+         renderer_bindings_[pipeline.window.value.value()] = binding;
+         return binding;
+      }
+
+      /// @brief Returns the renderer binding installed for a window, when present.
+      [[nodiscard]] std::expected<std::optional<RendererPipelineBinding>, vve::Error>
+      rendererPipeline(WindowHandle window) const {
+         if (!window.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto binding = renderer_bindings_.find(window.value.value());
+         if (binding == renderer_bindings_.end()) {
+            return std::optional<RendererPipelineBinding>{};
+         }
+
+         return binding->second;
       }
 
       /// @brief Performs placeholder GPU visibility work for one window graph.
@@ -205,8 +254,44 @@ namespace vve::v3 {
       }
 
    private:
+      /// @brief Checks that renderer, reflected layout, backend resources, and graph all describe the same pipeline.
+      [[nodiscard]] static std::expected<void, vve::Error>
+      validatePipelineBinding(const WindowRenderPipeline &pipeline) {
+         if (!pipeline.window.value.isValid() || pipeline.window_id.empty() ||
+             !pipeline.renderer.handle.value.isValid() || pipeline.renderer.id.empty() ||
+             pipeline.renderer.api != vve::GraphicsApi::vulkan ||
+             !pipeline.shader_program.value.isValid() || pipeline.pipeline_layout.shader_stages.empty() ||
+             !pipeline.backend_resources.handle.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         if (pipeline.pipeline_layout.renderer.value != pipeline.renderer.handle.value ||
+             pipeline.pipeline_layout.renderer_id != pipeline.renderer.id ||
+             pipeline.pipeline_layout.shader_program.value != pipeline.shader_program.value) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         if (pipeline.backend_resources.renderer.value != pipeline.renderer.handle.value ||
+             pipeline.backend_resources.shader_program.value != pipeline.shader_program.value ||
+             !pipeline.backend_resources.pipeline_layout_created) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         if (pipeline.backend_resources.shader_module_count != pipeline.pipeline_layout.shader_stages.size() ||
+             pipeline.backend_resources.descriptor_set_layout_count != pipeline.pipeline_layout.descriptor_sets.size()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         if (!graphContainsKernel(pipeline.graph, pipeline.renderer.main_kernel)) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return {};
+      }
+
       vve::ShadowKind shadow_{vve::ShadowKind::none};                   ///< Selected shadowing strategy.
       GraphicsBackend &graphics_backend_;                               ///< Backend facade used by render diagnostics and later GPU work.
+      std::unordered_map<vve::Handle::value_type, RendererPipelineBinding> renderer_bindings_{};
       bool imgui_enabled_{true};                                        ///< Whether the GUI pass should be appended.
    };
 
@@ -224,6 +309,16 @@ namespace vve::v3 {
    /// @brief Builds the static render graph through the public render-system facade.
    VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, buildStaticGraph,
                                (WindowHandle window, const RendererDesc &renderer), (window, renderer), , RenderGraph)
+
+   /// @brief Binds backend resources to a renderer instance through the public render-system facade.
+   VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, bindPipelineResources,
+                               (const WindowRenderPipeline &pipeline), (pipeline), ,
+                               std::expected<RendererPipelineBinding, vve::Error>)
+
+   /// @brief Returns a renderer binding through the public render-system facade.
+   VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, rendererPipeline,
+                               (WindowHandle window), (window), const,
+                               std::expected<std::optional<RendererPipelineBinding>, vve::Error>)
 
    /// @brief Performs GPU visibility work through the public render-system facade.
    VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, cullVisibilityGpu,

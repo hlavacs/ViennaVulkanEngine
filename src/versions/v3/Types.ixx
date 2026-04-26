@@ -908,6 +908,20 @@ export namespace vve::v3 {
       bool pipeline_layout_created{false};             ///< Whether a Vulkan pipeline layout was created.
    };
 
+   /// @brief Renderer-side binding of reflected layout data to backend Vulkan resources.
+   struct RendererPipelineBinding {
+      WindowHandle window{};                            ///< Window whose renderer instance owns the binding.
+      std::string window_id{};                          ///< Stable window string id for diagnostics.
+      RendererHandle renderer{};                        ///< Renderer instance receiving the resources.
+      std::string renderer_id{};                        ///< Canonical renderer id.
+      ShaderHandle shader_program{};                    ///< Shader program bound to this renderer instance.
+      PipelineResourceHandle backend_resources{};       ///< Backend Vulkan resource bundle used by the renderer.
+      RenderKernelId main_kernel{RenderKernelId::none}; ///< Primary render kernel selected by this renderer.
+      std::size_t shader_stage_count{0};                ///< Reflected shader stages available to the renderer.
+      std::size_t descriptor_set_layout_count{0};       ///< Descriptor layouts available to the renderer.
+      bool ready_for_pipeline_creation{false};          ///< Whether later Vulkan graphics-pipeline creation can start.
+   };
+
    /// @brief Coarse render-graph resource access declaration.
    struct RenderResourceUse {
       vve::Handle resource{}; ///< Resource touched by the render pass.
@@ -936,6 +950,7 @@ export namespace vve::v3 {
       ShaderHandle shader_program{}; ///< Shader program compiled for this window renderer.
       PipelineLayoutDesc pipeline_layout{}; ///< Backend-facing layout derived from shader reflection.
       PipelineBackendResources backend_resources{}; ///< Backend-owned Vulkan objects for the layout.
+      RendererPipelineBinding renderer_binding{}; ///< Renderer-side binding for later graphics pipeline creation.
       RenderGraph graph{};     ///< Render graph executed for the window.
    };
 

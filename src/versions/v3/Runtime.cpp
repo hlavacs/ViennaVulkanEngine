@@ -330,4 +330,28 @@ namespace vve::v3::detail {
       return {};
    }
 
+   /**
+    * @brief Binds backend-created pipeline resources to each selected renderer instance.
+    * @param runtime Runtime whose render pipelines already own backend pipeline resources.
+    * @return Empty success result, or the first renderer binding error.
+    */
+   std::expected<void, vve::Error> bindRuntimeRendererPipelines(Runtime &runtime) {
+      if (runtime.render_system == nullptr) {
+         return std::unexpected(vve::Error::invalid_argument);
+      }
+
+      for (auto &pipeline : runtime.render_pipelines) {
+         const auto renderer_binding = runtime.render_system->bindPipelineResources(pipeline);
+         if (!renderer_binding) {
+            std::cerr << "[VulkanRuntime] Failed to bind backend pipeline resources for window '"
+                      << pipeline.window_id << "' renderer='" << pipeline.renderer.id << "'\n";
+            return std::unexpected(renderer_binding.error());
+         }
+
+         pipeline.renderer_binding = *renderer_binding;
+      }
+
+      return {};
+   }
+
 } // namespace vve::v3::detail

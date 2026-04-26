@@ -249,6 +249,12 @@ export namespace vve::v3 {
       [[nodiscard]] std::string_view name() const noexcept; 
       /// @brief Builds the static render graph for a window.
       [[nodiscard]] RenderGraph buildStaticGraph(WindowHandle window, const RendererDesc &renderer);
+      /// @brief Binds reflected/backend pipeline resources to a renderer instance for one window.
+      [[nodiscard]] std::expected<RendererPipelineBinding, vve::Error>
+      bindPipelineResources(const WindowRenderPipeline &pipeline);
+      /// @brief Returns a previously bound renderer pipeline for a window.
+      [[nodiscard]] std::expected<std::optional<RendererPipelineBinding>, vve::Error>
+      rendererPipeline(WindowHandle window) const;
       /// @brief Performs GPU visibility work for a window render graph.
       [[nodiscard]] std::expected<void, vve::Error> cullVisibilityGpu(const FrameContext &frame_context,
                                                                       const SceneData &scene, WindowHandle window,

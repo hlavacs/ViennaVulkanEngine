@@ -168,6 +168,8 @@ export namespace vve::v3::detail {
    [[nodiscard]] VVE_API std::expected<Runtime, vve::Error> createRuntime(const EngineRuntimeDesc &desc);
    /// @brief Creates backend-owned Vulkan resources for each assembled window render pipeline.
    [[nodiscard]] VVE_API std::expected<void, vve::Error> createRuntimePipelineResources(Runtime &runtime);
+   /// @brief Binds backend pipeline resources to the selected renderer instances.
+   [[nodiscard]] VVE_API std::expected<void, vve::Error> bindRuntimeRendererPipelines(Runtime &runtime);
 #ifndef NDEBUG
    /// @brief Registers the debug-only task that exports a combined task/render graph dump.
    VVE_API void registerDebugGraphDumpTask(std::function<const TaskGraph *()> task_graph_accessor,
