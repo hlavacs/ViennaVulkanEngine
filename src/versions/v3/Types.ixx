@@ -658,6 +658,14 @@ export namespace vve::v3 {
       std::string type_name{};  ///< Shader language type name.
       std::uint32_t binding{0}; ///< Resource binding index.
       std::uint32_t set{0};     ///< Descriptor set index.
+      std::string binding_kind{}; ///< Slang/Vulkan binding category name.
+   };
+
+   /// @brief SPIR-V bytecode produced for one reflected shader entry point.
+   struct ShaderStageBinary {
+      ShaderStage stage{ShaderStage::vertex};     ///< Shader stage compiled for the entry point.
+      std::string entry_point{};                  ///< Entry-point function name.
+      std::vector<std::uint32_t> spirv_words{};   ///< Compiled SPIR-V module words.
    };
 
    /// @brief Reflected shader metadata used by higher-level systems.
@@ -666,6 +674,7 @@ export namespace vve::v3 {
       std::string shader_name{};            ///< Human-readable shader name.
       Vector<ShaderStage> stages{};         ///< Stages compiled into the shader.
       Vector<ShaderParameter> parameters{}; ///< Reflected resource parameters.
+      Vector<ShaderStageBinary> binaries{}; ///< Compiled entry-point SPIR-V modules.
       std::string intended_renderer{};      ///< Intended renderer mode as metadata text.
       std::string intended_shadow{};        ///< Intended shadow mode as metadata text.
    };

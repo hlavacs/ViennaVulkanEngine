@@ -4,7 +4,7 @@
 
 This project uses `vcpkg` manifest dependencies for third-party libraries that are not already provided by the Vulkan SDK. `assimp`, `glm`, `imgui`, and `sdl3-mixer` are declared in [vcpkg.json](vcpkg.json) and installed into the repo-local `vcpkg_installed` directory.
 
-`SDL3` is installed transitively by `sdl3-mixer`. The project still expects Vulkan to come from a Vulkan SDK or system Vulkan installation. On Windows, CMake resolves Vulkan SDK CMake packages from `$ENV{VULKAN_SDK}/cmake`.
+`SDL3` is installed transitively by `sdl3-mixer`. The project expects Vulkan and Slang to come from the Vulkan SDK. On Windows, CMake resolves the SDK from `$ENV{VULKAN_SDK}`. On macOS, CMake also auto-detects SDK installs below `$HOME/VulkanSDK/*/macOS`.
 
 All engine math should go through the exported `vve::math` abstraction layer instead of using raw `glm` types directly. The precision can be selected at compile time:
 
