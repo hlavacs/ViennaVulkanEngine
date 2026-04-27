@@ -1424,6 +1424,10 @@ namespace vve::v3 {
             return {};
          }
 
+         if (auto icd_result = detail::configureVulkanIcdSelection(); !icd_result) {
+            return std::unexpected(icd_result.error());
+         }
+
          const auto selected_icd = environmentValue("VVE_VULKAN_ICD");
          const auto vk_icd_filenames = environmentValue("VK_ICD_FILENAMES");
          std::clog << "[VulkanGraphicsBackend] VVE_VULKAN_ICD="

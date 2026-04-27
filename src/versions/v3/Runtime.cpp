@@ -67,35 +67,37 @@ namespace vve::v3::detail {
 #endif
    }
 
-   /// @brief Returns candidate KosmicKrisp ICD manifests from explicit, SDK, and system locations.
-   [[nodiscard]] std::vector<std::filesystem::path> kosmicKrispIcdCandidates() {
+   /// @brief Returns candidate ICD manifests from explicit, SDK, and system locations.
+   [[nodiscard]] std::vector<std::filesystem::path> icdManifestCandidates(const char *explicit_env,
+                                                                          std::string_view manifest_filename) {
       std::vector<std::filesystem::path> candidates{};
 
-      if (const auto explicit_manifest = environmentValue("VVE_KOSMICKRISP_ICD"); !explicit_manifest.empty()) {
+      if (const auto explicit_manifest = environmentValue(explicit_env); !explicit_manifest.empty()) {
          candidates.emplace_back(explicit_manifest);
       }
 
 #if defined(VVE_VULKAN_SDK_ROOT)
       candidates.emplace_back(std::filesystem::path(VVE_VULKAN_SDK_ROOT) / "share" / "vulkan" / "icd.d" /
-                              "libkosmickrisp_icd.json");
+                              manifest_filename);
 #endif
 
       if (const auto vulkan_sdk = environmentValue("VULKAN_SDK"); !vulkan_sdk.empty()) {
          candidates.emplace_back(std::filesystem::path(vulkan_sdk) / "share" / "vulkan" / "icd.d" /
-                                 "libkosmickrisp_icd.json");
+                                 manifest_filename);
       }
 
 #if defined(__APPLE__)
-      candidates.emplace_back("/usr/local/share/vulkan/icd.d/libkosmickrisp_icd.json");
-      candidates.emplace_back("/opt/homebrew/share/vulkan/icd.d/libkosmickrisp_icd.json");
+      candidates.emplace_back(std::filesystem::path("/usr/local/share/vulkan/icd.d") / manifest_filename);
+      candidates.emplace_back(std::filesystem::path("/opt/homebrew/share/vulkan/icd.d") / manifest_filename);
 #endif
 
       return candidates;
    }
 
-   /// @brief Finds the first existing KosmicKrisp ICD manifest.
-   [[nodiscard]] std::optional<std::filesystem::path> findKosmicKrispIcdManifest() {
-      for (const auto &candidate : kosmicKrispIcdCandidates()) {
+   /// @brief Finds the first existing ICD manifest in priority order.
+   [[nodiscard]] std::optional<std::filesystem::path>
+   findIcdManifest(const char *explicit_env, std::string_view manifest_filename) {
+      for (const auto &candidate : icdManifestCandidates(explicit_env, manifest_filename)) {
          std::error_code error_code{};
          if (std::filesystem::exists(candidate, error_code) && !error_code) {
             return std::filesystem::weakly_canonical(candidate, error_code);
@@ -105,14 +107,26 @@ namespace vve::v3::detail {
       return std::nullopt;
    }
 
+   /// @brief Finds the first existing MoltenVK ICD manifest.
+   [[nodiscard]] std::optional<std::filesystem::path> findMoltenVkIcdManifest() {
+      return findIcdManifest("VVE_MOLTENVK_ICD", "MoltenVK_icd.json");
+   }
+
+   /// @brief Finds the first existing KosmicKrisp ICD manifest.
+   [[nodiscard]] std::optional<std::filesystem::path> findKosmicKrispIcdManifest() {
+      return findIcdManifest("VVE_KOSMICKRISP_ICD", "libkosmickrisp_icd.json");
+   }
+
+   } // namespace
+
    /**
     * @brief Applies the engine's optional Vulkan ICD selector before any Vulkan user initializes.
     *
     * `VK_ICD_FILENAMES` remains the authoritative Vulkan-loader override. The
     * engine selector is only a convenience for project launch scripts and
-    * examples; it resolves to the SDK/system KosmicKrisp ICD manifest.
+    * examples; it can resolve to SDK-provided MoltenVK or KosmicKrisp manifests.
     */
-   [[nodiscard]] std::expected<void, vve::Error> configureVulkanIcdSelection() {
+   std::expected<void, vve::Error> configureVulkanIcdSelection() {
       auto requested_icd = environmentValue("VVE_VULKAN_ICD");
       if (requested_icd.empty()) {
          requested_icd = defaultVulkanIcdSelector();
@@ -124,32 +138,34 @@ namespace vve::v3::detail {
       }
 
       if (!environmentValue("VK_ICD_FILENAMES").empty()) {
-         std::clog << "[VulkanRuntime] VK_ICD_FILENAMES is already set; VVE_VULKAN_ICD=" << requested_icd
+         std::clog << "[VulkanIcd] VK_ICD_FILENAMES is already set; VVE_VULKAN_ICD=" << requested_icd
                    << " will not override it.\n";
          return {};
       }
 
-      if (requested_icd != "kosmickrisp") {
-         std::cerr << "[VulkanRuntime] Unsupported VVE_VULKAN_ICD value: " << requested_icd << '\n';
+      std::optional<std::filesystem::path> manifest{};
+      if (requested_icd == "moltenvk") {
+         manifest = findMoltenVkIcdManifest();
+      } else if (requested_icd == "kosmickrisp") {
+         manifest = findKosmicKrispIcdManifest();
+      } else {
+         std::cerr << "[VulkanIcd] Unsupported VVE_VULKAN_ICD value: " << requested_icd << '\n';
          return std::unexpected(vve::Error::invalid_argument);
       }
 
-      const auto manifest = findKosmicKrispIcdManifest();
       if (!manifest.has_value()) {
-         std::cerr << "[VulkanRuntime] Unable to locate libkosmickrisp_icd.json for VVE_VULKAN_ICD=kosmickrisp.\n";
+         std::cerr << "[VulkanIcd] Unable to locate ICD manifest for VVE_VULKAN_ICD=" << requested_icd << ".\n";
          return std::unexpected(vve::Error::file_not_found);
       }
 
       if (!setProcessEnvironment("VK_ICD_FILENAMES", *manifest)) {
-         std::cerr << "[VulkanRuntime] Failed to set VK_ICD_FILENAMES=" << manifest->string() << '\n';
+         std::cerr << "[VulkanIcd] Failed to set VK_ICD_FILENAMES=" << manifest->string() << '\n';
          return std::unexpected(vve::Error::internal_error);
       }
 
-      std::clog << "[VulkanRuntime] VK_ICD_FILENAMES=" << manifest->string() << '\n';
+      std::clog << "[VulkanIcd] VK_ICD_FILENAMES=" << manifest->string() << '\n';
       return {};
    }
-
-   } // namespace
 
    /**
     * @brief Builds a deterministic handle from a stable name plus salt.

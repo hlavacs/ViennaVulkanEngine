@@ -139,7 +139,10 @@
                 ]
             },
             "osx": {
+                "command": "/usr/bin/env",
                 "args": [
+                    "VK_ICD_FILENAMES=${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json",
+                    "ctest",
                     "--test-dir",
                     "${workspaceFolder}/build/debug-macos-arm64-llvm",
                     "--output-on-failure"
@@ -176,7 +179,10 @@
                 ]
             },
             "osx": {
+                "command": "/usr/bin/env",
                 "args": [
+                    "VK_ICD_FILENAMES=${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json",
+                    "ctest",
                     "--test-dir",
                     "${workspaceFolder}/build/debug-macos-arm64-llvm",
                     "--output-on-failure",

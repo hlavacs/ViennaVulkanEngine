@@ -5,7 +5,9 @@
       "name": "debug-base",
       "hidden": true,
       "binaryDir": "${sourceDir}/build/${presetName}",
-      "cacheVariables": {}
+      "cacheVariables": {
+        "VVE_DEFAULT_VULKAN_ICD": "system"
+      }
     },
     {
       "name": "windows-base",
@@ -43,6 +45,7 @@
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "VVE_DEFAULT_VULKAN_ICD": "moltenvk",
         "VVE_VCPKG_TRIPLET": "arm64-osx"
       }
     },
@@ -59,6 +62,7 @@
         "CMAKE_CXX_STDLIB_MODULES_JSON": "/opt/homebrew/opt/llvm/lib/c++/libc++.modules.json",
         "CMAKE_EXPERIMENTAL_CXX_IMPORT_STD": "451f2fe2-a8a2-47c3-bc32-94786d8fc91b",
         "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "VVE_DEFAULT_VULKAN_ICD": "moltenvk",
         "VVE_VCPKG_TRIPLET": "arm64-osx"
       }
     }

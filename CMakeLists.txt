@@ -87,6 +87,26 @@ if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "")
    endif()
 endif()
 
+set(VVE_GENERATED_MOLTENVK_ICD_MANIFEST "")
+if(APPLE AND NOT VVE_VULKAN_SDK_ROOT STREQUAL "")
+   set(VVE_MOLTENVK_LIBRARY "${VVE_VULKAN_SDK_ROOT}/lib/libMoltenVK.dylib")
+   if(EXISTS "${VVE_MOLTENVK_LIBRARY}")
+      set(VVE_GENERATED_VULKAN_ICD_DIR "${CMAKE_BINARY_DIR}/vulkan/icd.d")
+      set(VVE_GENERATED_MOLTENVK_ICD_MANIFEST "${VVE_GENERATED_VULKAN_ICD_DIR}/MoltenVK_icd.json")
+      file(MAKE_DIRECTORY "${VVE_GENERATED_VULKAN_ICD_DIR}")
+      file(WRITE "${VVE_GENERATED_MOLTENVK_ICD_MANIFEST}"
+         "{\n"
+         "  \"file_format_version\": \"1.0.0\",\n"
+         "  \"ICD\": {\n"
+         "    \"library_path\": \"${VVE_MOLTENVK_LIBRARY}\",\n"
+         "    \"api_version\": \"1.4.0\",\n"
+         "    \"is_portability_driver\": true\n"
+         "  }\n"
+         "}\n"
+      )
+   endif()
+endif()
+
 if(EXISTS "${VVE_VCPKG_INSTALLED_DIR}/share/sdl3/SDL3Config.cmake")
    set(SDL3_DIR "${VVE_VCPKG_INSTALLED_DIR}/share/sdl3" CACHE PATH "SDL3 package configuration directory from vcpkg_installed" FORCE)
 elseif(EXISTS "${VVE_VCPKG_INSTALLED_DIR}/share/SDL3/SDL3Config.cmake")

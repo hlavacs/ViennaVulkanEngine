@@ -137,6 +137,16 @@ public:
 
         player_ = *player_result;
 
+        const auto camera_result = world.spawn(vve::CameraComponent{
+            .camera = cameraForPlayer(vve::math::zeroVec3()),
+            .window_id = "main"
+        });
+        if (!camera_result) {
+            return std::unexpected(camera_result.error());
+        }
+
+        camera_ = *camera_result;
+
         if (scene_path_.empty()) {
             return std::unexpected(vve::Error::invalid_argument);
         }
@@ -296,7 +306,18 @@ private:
     [[nodiscard]] std::expected<void, vve::Error> updateCamera(
         vve::World& world,
         const vve::math::Vec3& player_position) const {
-        return world.setCamera(cameraForPlayer(player_position));
+        if (!camera_.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+        }
+
+        if (const auto camera_component_result = world.setComponent(
+                camera_,
+                vve::CameraComponent{.camera = cameraForPlayer(player_position), .window_id = "main"});
+            !camera_component_result) {
+            return std::unexpected(camera_component_result.error());
+        }
+
+        return world.setActiveCamera(camera_);
     }
 
     void printWindowInventory(vve::World& world) {
@@ -315,6 +336,8 @@ private:
 
     /// @brief Handle of the player entity created during initialization.
     vve::Handle player_{};
+    /// @brief Handle of the camera entity used as the active view.
+    vve::Handle camera_{};
     /// @brief Runtime scene loaded so public camera changes are visible.
     std::filesystem::path scene_path_{};
     /// @brief Tracks time until the next heartbeat log line.

@@ -9,7 +9,12 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "VK_ICD_FILENAMES",
+                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
+                }
+            ],
             "externalConsole": false,
             "MIMode": "lldb",
             "preLaunchTask": "Build Debug"
@@ -22,7 +27,12 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "VK_ICD_FILENAMES",
+                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
+                }
+            ],
             "externalConsole": false,
             "MIMode": "lldb",
             "preLaunchTask": "Build Debug"
@@ -35,7 +45,12 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "VK_ICD_FILENAMES",
+                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
+                }
+            ],
             "externalConsole": false,
             "internalConsoleOptions": "openOnSessionStart",
             "MIMode": "lldb",
@@ -49,7 +64,12 @@
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "VK_ICD_FILENAMES",
+                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
+                }
+            ],
             "externalConsole": false,
             "MIMode": "lldb",
             "preLaunchTask": "Build Debug"
@@ -60,6 +80,7 @@
             "request": "launch",
             "program": "/usr/bin/env",
             "args": [
+                "VK_ICD_FILENAMES=${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json",
                 "ctest",
                 "--test-dir",
                 "${workspaceFolder}/build/debug-macos-arm64-llvm",
@@ -67,7 +88,12 @@
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "VK_ICD_FILENAMES",
+                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
+                }
+            ],
             "externalConsole": false,
             "MIMode": "lldb",
             "preLaunchTask": "Build Debug",
@@ -79,6 +105,7 @@
             "request": "launch",
             "program": "/usr/bin/env",
             "args": [
+                "VK_ICD_FILENAMES=${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json",
                 "ctest",
                 "--test-dir",
                 "${workspaceFolder}/build/debug-macos-arm64-llvm",
@@ -88,7 +115,12 @@
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [],
+            "environment": [
+                {
+                    "name": "VK_ICD_FILENAMES",
+                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
+                }
+            ],
             "externalConsole": false,
             "MIMode": "lldb",
             "preLaunchTask": "Build Debug",

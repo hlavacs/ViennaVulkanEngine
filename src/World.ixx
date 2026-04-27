@@ -97,6 +97,12 @@ export namespace vve {
       }
    };
 
+   /// @brief Camera component that can be attached to an entity and selected as the active view.
+   struct CameraComponent {
+      Camera camera{};       ///< Camera data stored on the entity.
+      std::string window_id{}; ///< Optional future per-window routing id; empty means the runtime-wide camera.
+   };
+
    /**
     * @brief Per-frame input snapshot exposed through `World`.
     *
@@ -291,6 +297,7 @@ export namespace vve {
       [[nodiscard]] const InputState &input() const;
       [[nodiscard]] std::expected<void, Error> loadScene(const std::filesystem::path &path);
       [[nodiscard]] std::expected<void, Error> setCamera(const Camera &camera);
+      [[nodiscard]] std::expected<void, Error> setActiveCamera(Handle camera_entity);
 
       [[nodiscard]] std::expected<std::optional<Transform>, Error> getTransform(Handle entity) const;
       [[nodiscard]] std::expected<void, Error> setTransform(Handle entity, const Transform &transform);
@@ -439,6 +446,20 @@ export namespace vve {
    template <typename TImplementation>
    inline std::expected<void, Error> WorldFacade<TImplementation>::setCamera(const Camera &camera) {
       return implementation_.setCamera(camera);
+   }
+
+   /// @brief Selects an entity camera component as the active render camera.
+   template <typename TImplementation>
+   inline std::expected<void, Error> WorldFacade<TImplementation>::setActiveCamera(Handle camera_entity) {
+      const auto camera_result = getComponent<CameraComponent>(camera_entity);
+      if (!camera_result) {
+         return std::unexpected(camera_result.error());
+      }
+      if (!camera_result->has_value()) {
+         return std::unexpected(Error::invalid_argument);
+      }
+
+      return setCamera(camera_result->value().camera);
    }
 
    /// @brief Returns an entity transform component if present.

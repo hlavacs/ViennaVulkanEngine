@@ -11,7 +11,15 @@ if(VVE_TEST_SOURCES)
       add_executable("${test_name}" "${test_source}")
       target_link_libraries("${test_name}" PRIVATE ViennaVulkanEngine::ViennaVulkanEngine)
 
-      add_test(NAME "${test_name}" COMMAND "${test_name}")
+      if(APPLE AND VVE_GENERATED_MOLTENVK_ICD_MANIFEST)
+         add_test(NAME "${test_name}" COMMAND
+            /usr/bin/env
+            "VK_ICD_FILENAMES=${VVE_GENERATED_MOLTENVK_ICD_MANIFEST}"
+            "$<TARGET_FILE:${test_name}>"
+         )
+      else()
+         add_test(NAME "${test_name}" COMMAND "${test_name}")
+      endif()
       vve_set_output_dirs("${test_name}")
    endforeach()
 endif()

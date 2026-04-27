@@ -164,6 +164,8 @@ export namespace vve::v3::detail {
    [[nodiscard]] VVE_API std::expected<void, vve::Error>
    executeCachedTaskGraph(const TaskGraph &task_graph, const std::optional<CompiledTaskGraph> &compiled_task_graph,
                           const TaskExecutionContext &execution_context);
+   /// @brief Applies the configured Vulkan ICD selector before any Vulkan instance is created.
+   [[nodiscard]] VVE_API std::expected<void, vve::Error> configureVulkanIcdSelection();
    /// @brief Assembles the concrete v3 runtime from the runtime descriptor.
    [[nodiscard]] VVE_API std::expected<Runtime, vve::Error> createRuntime(const EngineRuntimeDesc &desc);
    /// @brief Rebinds runtime-owned facades that store references to sibling subsystems after a runtime move.

@@ -192,6 +192,11 @@ namespace vve::v3 {
       return -view_z;
    }
 
+   /// @brief Returns whether the object depth is inside the active camera clip range.
+   [[nodiscard]] bool isInsideCameraClipRange(const CameraFrameData &camera, vve::math::Scalar camera_depth) {
+      return camera_depth >= camera.near_plane && camera_depth <= camera.far_plane;
+   }
+
    /// @brief Orders packets for correct opaque/transparent rendering and stable descriptor keys.
    void sortDrawPackets(Vector<DrawPacket> &packets) {
       std::stable_sort(packets.begin(), packets.end(), [](const DrawPacket &lhs, const DrawPacket &rhs) {
@@ -529,6 +534,9 @@ namespace vve::v3 {
                const auto pipeline_variant = forwardPipelineVariant(double_sided, alpha_blend);
                const auto graphics_pipeline = graphicsPipelineForVariant(binding->second, pipeline_variant);
                const auto camera_depth = cameraViewDepth(scene.active_camera, node->world_transform);
+               if (!isInsideCameraClipRange(scene.active_camera, camera_depth)) {
+                  continue;
+               }
                if (binding->second.graphics_pipeline_ready && !graphics_pipeline.value.isValid()) {
                   return std::unexpected(vve::Error::invalid_argument);
                }

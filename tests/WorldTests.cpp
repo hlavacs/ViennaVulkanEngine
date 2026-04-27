@@ -174,6 +174,15 @@ int main() {
       return 181;
    }
 
+   const auto local_camera_entity = world.spawn(vve::CameraComponent{});
+   if (!local_camera_entity) {
+      return 182;
+   }
+
+   if (world.setActiveCamera(*local_camera_entity)) {
+      return 183;
+   }
+
    vve::ECS<> runtime_ecs{};
    CameraCapture camera_capture{};
    vve::detail::WorldRuntimeAccess runtime_access{};
@@ -186,8 +195,13 @@ int main() {
                                            vve::math::Vec3(0.0F, 1.0F, 0.0F),
                                            0.75F, 0.2F, 250.0F);
 
-   if (!runtime_world.setCamera(camera)) {
-      return 182;
+   const auto runtime_camera_entity = runtime_world.spawn(vve::CameraComponent{.camera = camera});
+   if (!runtime_camera_entity) {
+      return 184;
+   }
+
+   if (!runtime_world.setActiveCamera(*runtime_camera_entity)) {
+      return 185;
    }
 
    if (!camera_capture.called || camera_capture.camera.position.x != 2.0F ||
@@ -198,7 +212,7 @@ int main() {
        camera_capture.camera.vertical_fov_radians != 0.75F ||
        camera_capture.camera.near_plane != 0.2F ||
        camera_capture.camera.far_plane != 250.0F) {
-      return 183;
+      return 186;
    }
 
    vve::InputState input{};

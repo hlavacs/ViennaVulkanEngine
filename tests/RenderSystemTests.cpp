@@ -405,6 +405,46 @@ namespace {
              packets[4].draw_index == 4;
    }
 
+   /// @brief Verifies draw-packet generation respects the active camera clip range.
+   [[nodiscard]] bool drawPacketsCullCameraClipRange(vve::v3::RenderSystem &render_system,
+                                                     vve::v3::GraphicsBackend &backend) {
+      const auto renderer = backend.createRenderer("forward");
+      if (!renderer) {
+         return false;
+      }
+
+      const auto pipeline = testPipeline(render_system, *renderer);
+      const auto binding = render_system.bindPipelineResources(pipeline);
+      if (!binding) {
+         return false;
+      }
+
+      auto scene = testUploadedScene();
+      scene.active_camera.far_plane = 6.0F;
+      const auto culled_build = render_system.buildDrawPackets(
+          vve::v3::FrameContext{.frame_index = 90, .delta_seconds = 0.0}, scene, pipeline.window, pipeline.graph);
+      if (!culled_build) {
+         return false;
+      }
+
+      const auto culled_packets = render_system.drawPackets(pipeline.window);
+      if (!culled_packets || !culled_packets->has_value() || !(*culled_packets)->packets.empty()) {
+         return false;
+      }
+
+      scene.active_camera.far_plane = 8.0F;
+      const auto visible_build = render_system.buildDrawPackets(
+          vve::v3::FrameContext{.frame_index = 91, .delta_seconds = 0.0}, scene, pipeline.window, pipeline.graph);
+      if (!visible_build) {
+         return false;
+      }
+
+      const auto visible_packets = render_system.drawPackets(pipeline.window);
+      return visible_packets && visible_packets->has_value() && (*visible_packets)->packets.size() == 1 &&
+             (*visible_packets)->packets.front().camera_depth == 7.0F &&
+             (*visible_packets)->frame_index == 91;
+   }
+
 } // namespace
 
 /**
@@ -473,6 +513,10 @@ int main() {
 
    if (!drawPacketsAreSortedForForwardRenderer(render_system, backend)) {
       return 11;
+   }
+
+   if (!drawPacketsCullCameraClipRange(render_system, backend)) {
+      return 12;
    }
 
    return 0;

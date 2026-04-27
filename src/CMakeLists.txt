@@ -14,7 +14,7 @@ set_property(CACHE VVE_DEFAULT_ENGINE_NAMESPACE PROPERTY STRINGS "v3")
 target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_DEFAULT_ENGINE_NAMESPACE=${VVE_DEFAULT_ENGINE_NAMESPACE})
 
 set(VVE_DEFAULT_VULKAN_ICD "" CACHE STRING "Default Vulkan ICD selector used when VVE_VULKAN_ICD is unset")
-set_property(CACHE VVE_DEFAULT_VULKAN_ICD PROPERTY STRINGS "" "system" "kosmickrisp")
+set_property(CACHE VVE_DEFAULT_VULKAN_ICD PROPERTY STRINGS "" "system" "moltenvk" "kosmickrisp")
 target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_DEFAULT_VULKAN_ICD="${VVE_DEFAULT_VULKAN_ICD}")
 
 find_package(assimp CONFIG REQUIRED)
