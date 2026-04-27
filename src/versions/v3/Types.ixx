@@ -1150,7 +1150,7 @@ export namespace vve::v3 {
       std::uint32_t sort_bucket{0};                     ///< Coarse render-order bin used before depth sorting.
       vve::math::Scalar camera_depth{vve::math::zero()}; ///< Positive depth along the current view direction.
       CameraFrameData camera{};                         ///< Camera used to build view/projection constants for this draw.
-      std::uint32_t draw_index{0};                       ///< Stable zero-based index within the packet list.
+      std::uint32_t draw_index{0};                       ///< Sorted zero-based index within the current packet list.
       SceneNodeHandle node{};                            ///< Scene node providing the transform.
       vve::Handle mesh_instance{};                       ///< Runtime mesh-instance handle represented by the packet.
       MeshHandle mesh{};                                 ///< Mesh resource to draw.

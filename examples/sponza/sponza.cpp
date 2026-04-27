@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <expected>
 #include <filesystem>
@@ -21,6 +22,11 @@ import VEEngine.V3;
  * @brief Example program that imports the Sponza scene and prints its contents.
  */
 namespace {
+
+constexpr std::int32_t sdlKeyRight = 0x4000004F;
+constexpr std::int32_t sdlKeyLeft = 0x40000050;
+constexpr std::int32_t sdlKeyDown = 0x40000051;
+constexpr std::int32_t sdlKeyUp = 0x40000052;
 
 [[nodiscard]] std::optional<std::filesystem::path>
 firstExistingPath(const std::vector<std::filesystem::path> &candidates) {
@@ -234,6 +240,57 @@ void includePoint(SceneBounds &bounds, const vve::math::Vec3 &point) {
     const auto y = left.y - right.y;
     const auto z = left.z - right.z;
     return (x * x) + (y * y) + (z * z);
+}
+
+[[nodiscard]] vve::math::Vec3 addVec3(const vve::math::Vec3 &left, const vve::math::Vec3 &right) {
+    return vve::math::Vec3(left.x + right.x, left.y + right.y, left.z + right.z);
+}
+
+[[nodiscard]] vve::math::Vec3 subtractVec3(const vve::math::Vec3 &left, const vve::math::Vec3 &right) {
+    return vve::math::Vec3(left.x - right.x, left.y - right.y, left.z - right.z);
+}
+
+[[nodiscard]] vve::math::Vec3 scaleVec3(const vve::math::Vec3 &value, const vve::math::Scalar scale) {
+    return vve::math::Vec3(value.x * scale, value.y * scale, value.z * scale);
+}
+
+[[nodiscard]] vve::math::Vec3 crossVec3(const vve::math::Vec3 &left, const vve::math::Vec3 &right) {
+    return vve::math::Vec3(
+        (left.y * right.z) - (left.z * right.y),
+        (left.z * right.x) - (left.x * right.z),
+        (left.x * right.y) - (left.y * right.x));
+}
+
+[[nodiscard]] vve::math::Scalar dotVec3(const vve::math::Vec3 &left, const vve::math::Vec3 &right) {
+    return (left.x * right.x) + (left.y * right.y) + (left.z * right.z);
+}
+
+[[nodiscard]] vve::math::Vec3 normalizeVec3(const vve::math::Vec3 &value,
+                                            const vve::math::Vec3 &fallback) {
+    const auto squared_length = distanceSquared(value, vve::math::zeroVec3());
+    if (squared_length <= static_cast<vve::math::Scalar>(0.000001)) {
+        return fallback;
+    }
+
+    return scaleVec3(value, vve::math::one() / std::sqrt(squared_length));
+}
+
+[[nodiscard]] vve::math::Vec3 rotateVec3AroundAxis(const vve::math::Vec3 &value,
+                                                   const vve::math::Vec3 &axis,
+                                                   const vve::math::Scalar radians) {
+    const auto normalized_axis = normalizeVec3(axis, vve::math::Vec3(vve::math::zero(), vve::math::one(),
+                                                                     vve::math::zero()));
+    const auto sine = std::sin(radians);
+    const auto cosine = std::cos(radians);
+    const auto scaled_value = scaleVec3(value, cosine);
+    const auto scaled_cross = scaleVec3(crossVec3(normalized_axis, value), sine);
+    const auto scaled_axis = scaleVec3(normalized_axis, dotVec3(normalized_axis, value) *
+                                                            (vve::math::one() - cosine));
+    return addVec3(addVec3(scaled_value, scaled_cross), scaled_axis);
+}
+
+[[nodiscard]] bool isMoveKeyDown(const vve::InputState &input, const char upper, const char lower) {
+    return input.isKeyDown(upper) || input.isKeyDown(lower);
 }
 
 void includeTransformedMeshBounds(SceneBounds &bounds, const vve::v3::ImportedMesh &mesh,
@@ -564,13 +621,19 @@ public:
                 return std::unexpected(camera_result.error());
             }
 
-            std::cout << '[' << name() << "] camera source=" << camera_plan_->source << " position=";
-            printVec3(camera_plan_->camera.position);
-            std::cout << " target=";
-            printVec3(camera_plan_->target);
-            std::cout << " radius=" << camera_plan_->radius
+            std::cout << '[' << name() << "] camera source=" << camera_plan_->source
+                      << " radius=" << camera_plan_->radius
                       << " near=" << camera_plan_->camera.near_plane
                       << " far=" << camera_plan_->camera.far_plane << '\n';
+            camera_entity_ = *camera_entity;
+            camera_position_ = camera_plan_->camera.position;
+            camera_target_ = camera_plan_->target;
+            camera_fov_ = camera_plan_->camera.vertical_fov_radians;
+            camera_near_ = camera_plan_->camera.near_plane;
+            camera_far_ = camera_plan_->camera.far_plane;
+            movement_speed_ = std::max(camera_plan_->radius * static_cast<vve::math::Scalar>(0.35),
+                                       static_cast<vve::math::Scalar>(4.0));
+            rotation_speed_ = static_cast<vve::math::Scalar>(1.5);
         } else {
             std::cout << '[' << name() << "] no scene bounds available; using the engine default camera\n";
         }
@@ -585,16 +648,130 @@ public:
         vve::World &world,
         const vve::v3::FrameContext &frame_context,
         const vve::v3::WindowFrameData &window_frame) {
-        (void)world;
         (void)window_frame;
         if (!frame_loop_logged_ && frame_context.frame_index > 0) {
             std::cout << '[' << name() << "] frame loop active; scene resources upload incrementally\n";
             frame_loop_logged_ = true;
         }
+
+        if (const auto camera_result = updateCameraFromInput(world, frame_context); !camera_result) {
+            return std::unexpected(camera_result.error());
+        }
+
         return {};
     }
 
 private:
+    [[nodiscard]] std::expected<void, vve::Error> updateCameraFromInput(
+        vve::World &world,
+        const vve::v3::FrameContext &frame_context) {
+        if (!load_runtime_scene_ || !camera_entity_.isValid()) {
+            return {};
+        }
+
+        const auto &input = world.input();
+        const bool forward_pressed = isMoveKeyDown(input, 'W', 'w');
+        const bool backward_pressed = isMoveKeyDown(input, 'S', 's');
+        const bool left_pressed = isMoveKeyDown(input, 'A', 'a');
+        const bool right_pressed = isMoveKeyDown(input, 'D', 'd');
+        const bool look_up_pressed = input.isKeyDown(sdlKeyUp);
+        const bool look_down_pressed = input.isKeyDown(sdlKeyDown);
+        const bool look_left_pressed = input.isKeyDown(sdlKeyLeft);
+        const bool look_right_pressed = input.isKeyDown(sdlKeyRight);
+
+        std::string key_state{};
+        key_state.reserve(8);
+        key_state.push_back(forward_pressed ? 'W' : '-');
+        key_state.push_back(backward_pressed ? 'S' : '-');
+        key_state.push_back(left_pressed ? 'A' : '-');
+        key_state.push_back(right_pressed ? 'D' : '-');
+        key_state.push_back(look_up_pressed ? '^' : '-');
+        key_state.push_back(look_down_pressed ? 'v' : '-');
+        key_state.push_back(look_left_pressed ? '<' : '-');
+        key_state.push_back(look_right_pressed ? '>' : '-');
+
+        const auto forward_axis = (forward_pressed ? 1 : 0) - (backward_pressed ? 1 : 0);
+        const auto right_axis = (right_pressed ? 1 : 0) - (left_pressed ? 1 : 0);
+        const auto pitch_axis = (look_up_pressed ? 1 : 0) - (look_down_pressed ? 1 : 0);
+        const auto yaw_axis = (look_left_pressed ? 1 : 0) - (look_right_pressed ? 1 : 0);
+        const bool movement_key_held = forward_axis != 0 || right_axis != 0;
+        const bool rotation_key_held = pitch_axis != 0 || yaw_axis != 0;
+
+        if (movement_key_held || rotation_key_held) {
+            const auto up = vve::math::Vec3(vve::math::zero(), vve::math::one(), vve::math::zero());
+            const auto look_vector = subtractVec3(camera_target_, camera_position_);
+            const auto look_distance = std::max(std::sqrt(distanceSquared(camera_position_, camera_target_)),
+                                                static_cast<vve::math::Scalar>(0.001));
+            const auto seconds = static_cast<vve::math::Scalar>(
+                std::clamp(frame_context.delta_seconds, 0.0, 0.1));
+            auto forward = normalizeVec3(look_vector,
+                                         vve::math::Vec3(vve::math::zero(), vve::math::zero(), -vve::math::one()));
+            auto right = normalizeVec3(crossVec3(forward, up),
+                                       vve::math::Vec3(vve::math::one(), vve::math::zero(), vve::math::zero()));
+
+            if (movement_key_held) {
+                const auto forward_offset = scaleVec3(forward, static_cast<vve::math::Scalar>(forward_axis) *
+                                                                   movement_speed_ * seconds);
+                const auto right_offset = scaleVec3(right, static_cast<vve::math::Scalar>(right_axis) *
+                                                             movement_speed_ * seconds);
+                const auto offset = addVec3(forward_offset, right_offset);
+                camera_position_ = addVec3(camera_position_, offset);
+                camera_target_ = addVec3(camera_target_, offset);
+            }
+
+            if (rotation_key_held) {
+                if (yaw_axis != 0) {
+                    const auto yaw_radians = static_cast<vve::math::Scalar>(yaw_axis) * rotation_speed_ * seconds;
+                    forward = normalizeVec3(rotateVec3AroundAxis(forward, up, yaw_radians), forward);
+                }
+
+                right = normalizeVec3(crossVec3(forward, up),
+                                      vve::math::Vec3(vve::math::one(), vve::math::zero(), vve::math::zero()));
+
+                if (pitch_axis != 0) {
+                    const auto pitch_radians = static_cast<vve::math::Scalar>(pitch_axis) *
+                                               rotation_speed_ * seconds;
+                    const auto pitched_forward = normalizeVec3(rotateVec3AroundAxis(forward, right, pitch_radians),
+                                                               forward);
+                    if (std::abs(dotVec3(pitched_forward, up)) < static_cast<vve::math::Scalar>(0.98)) {
+                        forward = pitched_forward;
+                    }
+                }
+
+                camera_target_ = addVec3(camera_position_, scaleVec3(forward, look_distance));
+            }
+
+            const auto camera = vve::Camera::lookAt(camera_position_, camera_target_, up,
+                                                    camera_fov_, camera_near_, camera_far_);
+            const auto set_component = world.setComponent(
+                camera_entity_,
+                vve::CameraComponent{.camera = camera, .window_id = "sponza.main"});
+            if (!set_component) {
+                return std::unexpected(set_component.error());
+            }
+
+            if (const auto set_active = world.setActiveCamera(camera_entity_); !set_active) {
+                return std::unexpected(set_active.error());
+            }
+        }
+
+        camera_log_accumulator_seconds_ += frame_context.delta_seconds;
+        const bool periodic_log = camera_log_accumulator_seconds_ >= 1.0;
+        const bool key_state_changed = key_state != last_logged_camera_key_state_;
+        if (periodic_log) {
+            camera_log_accumulator_seconds_ = 0.0;
+        }
+
+        if (movement_key_held || rotation_key_held || key_state_changed || periodic_log) {
+            std::cout << '[' << name() << "] camera keys=" << key_state
+                      << " move_speed=" << movement_speed_
+                      << " turn_speed=" << rotation_speed_ << '\n';
+            last_logged_camera_key_state_ = key_state;
+        }
+
+        return {};
+    }
+
     void printWindowInventory(vve::World &world) {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
@@ -611,9 +788,19 @@ private:
 
     std::filesystem::path scene_path_{};
     std::optional<SponzaCameraPlan> camera_plan_{};
+    vve::Handle camera_entity_{};
+    vve::math::Vec3 camera_position_{vve::math::zeroVec3()};
+    vve::math::Vec3 camera_target_{vve::math::zeroVec3()};
+    vve::math::Scalar camera_fov_{static_cast<vve::math::Scalar>(1.0471975511965976)};
+    vve::math::Scalar camera_near_{static_cast<vve::math::Scalar>(0.1)};
+    vve::math::Scalar camera_far_{static_cast<vve::math::Scalar>(10000.0)};
+    vve::math::Scalar movement_speed_{static_cast<vve::math::Scalar>(4.0)};
+    vve::math::Scalar rotation_speed_{static_cast<vve::math::Scalar>(1.5)};
     bool load_runtime_scene_{true};
     bool loaded_{false};
     bool frame_loop_logged_{false};
+    double camera_log_accumulator_seconds_{0.0};
+    std::string last_logged_camera_key_state_{"--------"};
 };
 
 } // namespace

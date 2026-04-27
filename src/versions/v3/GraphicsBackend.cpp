@@ -157,12 +157,24 @@ namespace vve::v3 {
          return nullptr;
       }
 
-      /// @brief Builds a cache key for one material/texture descriptor-set payload.
+      /// @brief Builds a cache key for one stable draw descriptor-set payload.
       [[nodiscard]] std::string drawDescriptorSetKey(const DrawPacket &packet, std::uint32_t frame_slot) {
          auto key = std::string{"slot:"};
          key += std::to_string(frame_slot);
-         key += ":draw:";
-         key += std::to_string(packet.draw_index);
+         key += ":window:";
+         key += std::to_string(packet.window.value.value());
+         key += ":pass:";
+         key += std::to_string(packet.pass.value.value());
+         key += ":pipeline:";
+         key += std::to_string(packet.graphics_pipeline.value.value());
+         key += ":node:";
+         key += std::to_string(packet.node.value.value());
+         key += ":instance:";
+         key += std::to_string(packet.mesh_instance.value());
+         key += ":mesh:";
+         key += std::to_string(packet.mesh.value.value());
+         key += ":first:";
+         key += std::to_string(packet.first_index);
          key += ":material:";
          key += std::to_string(packet.material.value.value());
          key.push_back(':');
