@@ -155,6 +155,37 @@ export namespace vve::v3 {
       depth32_float ///< 32-bit floating-point depth attachment.
    };
 
+   /// @brief Backend-neutral usage category for GPU buffer allocations.
+   enum class GpuBufferUsage : std::uint32_t {
+      unknown = 0, ///< Buffer usage is not yet known.
+      vertex,      ///< Vertex input buffer.
+      index,       ///< Index input buffer.
+      uniform,     ///< Constant/uniform data buffer.
+      storage,     ///< Shader storage buffer.
+      staging      ///< Transfer staging buffer.
+   };
+
+   /// @brief Backend-neutral usage category for GPU image allocations.
+   enum class GpuImageUsage : std::uint32_t {
+      unknown = 0,             ///< Image usage is not yet known.
+      sampled,                 ///< Shader-sampled texture image.
+      color_attachment,        ///< Render-target color attachment.
+      depth_stencil_attachment, ///< Render-target depth/stencil attachment.
+      storage,                 ///< Shader storage image.
+      transfer_source,         ///< Transfer source image.
+      transfer_destination     ///< Transfer destination image.
+   };
+
+   /// @brief Backend-neutral image format categories tracked by resource summaries.
+   enum class GpuImageFormat : std::uint32_t {
+      unknown = 0,  ///< Image format is not yet known.
+      rgba8_unorm,  ///< 8-bit normalized RGBA image.
+      rgba8_srgb,   ///< 8-bit sRGB RGBA image.
+      bgra8_srgb,   ///< 8-bit sRGB BGRA image.
+      rgba16_float, ///< 16-bit floating-point RGBA image.
+      depth32_float ///< 32-bit floating-point depth image.
+   };
+
    /// @brief Strong type for mesh resource identifiers.
    struct MeshHandle final {
       vve::Handle value{}; ///< Underlying generic handle value.
@@ -202,6 +233,21 @@ export namespace vve::v3 {
 
    /// @brief Strong type for backend-created pipeline resource bundles.
    struct PipelineResourceHandle final {
+      vve::Handle value{}; ///< Underlying generic handle value.
+   };
+
+   /// @brief Strong type for backend-owned GPU buffer identifiers.
+   struct GpuBufferHandle final {
+      vve::Handle value{}; ///< Underlying generic handle value.
+   };
+
+   /// @brief Strong type for backend-owned GPU image identifiers.
+   struct GpuImageHandle final {
+      vve::Handle value{}; ///< Underlying generic handle value.
+   };
+
+   /// @brief Strong type for backend-owned GPU sampler identifiers.
+   struct GpuSamplerHandle final {
       vve::Handle value{}; ///< Underlying generic handle value.
    };
 
@@ -346,6 +392,71 @@ export namespace vve::v3 {
       std::filesystem::path source_path{};                  ///< Source file associated with the resource.
    };
 
+   /// @brief Public summary of a backend-owned GPU buffer without exposing API handles.
+   struct GpuBufferResources {
+      GpuBufferHandle handle{};                 ///< Stable backend buffer handle.
+      vve::Handle owner{};                      ///< Engine resource that owns or requested the buffer.
+      ResourceKind owner_kind{ResourceKind::unknown}; ///< Kind of owner resource.
+      GpuBufferUsage usage{GpuBufferUsage::unknown};  ///< Intended buffer usage.
+      std::size_t byte_size{0};                 ///< Buffer allocation size in bytes.
+      std::uint32_t generation{0};              ///< Uploaded generation represented by this buffer.
+      bool buffer_created{false};               ///< Whether the backend buffer object exists.
+      bool memory_bound{false};                 ///< Whether device memory is bound to the buffer.
+   };
+
+   /// @brief Public summary of uploaded mesh buffers.
+   struct GpuMeshResources {
+      MeshHandle mesh{};                        ///< Imported/runtime mesh represented on the GPU.
+      GpuBufferHandle vertex_buffer{};          ///< Backend vertex buffer handle.
+      GpuBufferHandle index_buffer{};           ///< Backend index buffer handle.
+      std::uint32_t vertex_count{0};            ///< Number of vertices uploaded.
+      std::uint32_t index_count{0};             ///< Number of indices uploaded.
+      std::uint32_t submesh_count{0};           ///< Number of submesh ranges represented.
+      std::size_t vertex_stride{0};             ///< Size of one uploaded vertex in bytes.
+      std::size_t vertex_byte_size{0};          ///< Total uploaded vertex-buffer bytes.
+      std::size_t index_byte_size{0};           ///< Total uploaded index-buffer bytes.
+      std::uint32_t generation{0};              ///< Resource generation represented by these buffers.
+      bool resident{false};                     ///< Whether the mesh is backed by GPU memory.
+   };
+
+   /// @brief Public summary of an uploaded texture image.
+   struct GpuTextureResources {
+      TextureHandle texture{};                  ///< Imported/runtime texture represented on the GPU.
+      GpuImageHandle image{};                   ///< Backend image handle.
+      GpuSamplerHandle sampler{};               ///< Backend sampler handle, when one is created.
+      GpuImageUsage usage{GpuImageUsage::sampled}; ///< Intended image usage.
+      GpuImageFormat format{GpuImageFormat::unknown}; ///< Tracked image format.
+      std::uint32_t width{0};                   ///< Image width in texels.
+      std::uint32_t height{0};                  ///< Image height in texels.
+      std::uint32_t mip_levels{1};              ///< Number of mip levels represented.
+      std::uint32_t array_layers{1};            ///< Number of array layers represented.
+      std::uint32_t generation{0};              ///< Resource generation represented by this image.
+      bool image_created{false};                ///< Whether the backend image object exists.
+      bool image_view_created{false};           ///< Whether an image view exists for shader binding.
+      bool sampler_created{false};              ///< Whether a sampler exists for shader binding.
+      bool resident{false};                     ///< Whether the texture is backed by GPU memory.
+   };
+
+   /// @brief One material texture binding resolved to backend-neutral GPU resource handles.
+   struct GpuMaterialTextureBinding {
+      TextureHandle texture{};                            ///< Texture resource referenced by the material.
+      GpuImageHandle image{};                             ///< Uploaded image used by the binding.
+      GpuSamplerHandle sampler{};                         ///< Sampler used by the binding.
+      TextureSemantic semantic{TextureSemantic::unknown}; ///< Material meaning of the texture binding.
+      std::uint32_t binding{0};                           ///< Renderer-local material binding slot.
+      std::uint32_t uv_set{0};                            ///< UV channel used by the texture.
+   };
+
+   /// @brief Public summary of uploaded material constants and texture bindings.
+   struct GpuMaterialResources {
+      MaterialHandle material{};                  ///< Imported/runtime material represented on the GPU.
+      GpuBufferHandle constants_buffer{};         ///< Backend buffer containing material constants.
+      Vector<GpuMaterialTextureBinding> textures{}; ///< Texture bindings resolved for this material.
+      std::uint32_t generation{0};                ///< Resource generation represented by this material data.
+      bool constants_uploaded{false};             ///< Whether material constants are GPU-resident.
+      bool textures_uploaded{false};              ///< Whether all referenced texture bindings are GPU-resident.
+   };
+
    /// @brief Instantiated scene-node description used at runtime.
    struct SceneNodeDesc {
       SceneNodeHandle handle{};       ///< Stable runtime scene-node handle.
@@ -383,6 +494,12 @@ export namespace vve::v3 {
       std::unordered_map<vve::Handle::value_type, std::size_t> node_indices{}; ///< Handle-to-index lookup cache for runtime scene nodes.
       Vector<SceneMeshInstanceDesc> mesh_instances{}; ///< Runtime mesh instances attached to scene nodes.
       std::unordered_map<vve::Handle::value_type, std::size_t> mesh_instance_indices{}; ///< Handle-to-index lookup cache for runtime mesh instances.
+      Vector<GpuMeshResources> gpu_meshes{}; ///< GPU-resident mesh summaries populated by the resource system.
+      std::unordered_map<vve::Handle::value_type, std::size_t> gpu_mesh_indices{}; ///< Handle-to-index lookup cache for GPU mesh summaries.
+      Vector<GpuTextureResources> gpu_textures{}; ///< GPU-resident texture summaries populated by the resource system.
+      std::unordered_map<vve::Handle::value_type, std::size_t> gpu_texture_indices{}; ///< Handle-to-index lookup cache for GPU texture summaries.
+      Vector<GpuMaterialResources> gpu_materials{}; ///< GPU-resident material summaries populated by the resource system.
+      std::unordered_map<vve::Handle::value_type, std::size_t> gpu_material_indices{}; ///< Handle-to-index lookup cache for GPU material summaries.
    };
 
    /// @brief Runtime window snapshot used by the frame graph and world facade.
@@ -984,6 +1101,34 @@ export namespace vve::v3 {
       bool vulkan_pipeline_created{false};                      ///< Whether a real VkPipeline exists.
    };
 
+   /// @brief One backend-neutral indexed draw command prepared from scene and resource data.
+   struct DrawPacket {
+      WindowHandle window{};                            ///< Window whose renderer will consume the packet.
+      RenderPassHandle pass{};                          ///< Render pass that owns the packet.
+      RenderKernelId kernel{RenderKernelId::forward_opaque}; ///< Render kernel selected for the packet.
+      GraphicsPipelineHandle graphics_pipeline{};       ///< Pipeline expected to record the packet.
+      SceneNodeHandle node{};                            ///< Scene node providing the transform.
+      vve::Handle mesh_instance{};                       ///< Runtime mesh-instance handle represented by the packet.
+      MeshHandle mesh{};                                 ///< Mesh resource to draw.
+      MaterialHandle material{};                         ///< Material resource selected for the draw.
+      GpuBufferHandle vertex_buffer{};                   ///< Uploaded vertex buffer.
+      GpuBufferHandle index_buffer{};                    ///< Uploaded index buffer.
+      std::uint32_t first_index{0};                      ///< First index for indexed drawing.
+      std::uint32_t index_count{0};                      ///< Number of indices to draw.
+      std::int32_t vertex_offset{0};                     ///< Signed base vertex for indexed drawing.
+      std::uint32_t instance_count{1};                   ///< Number of instances to draw.
+      vve::math::Mat4 world_transform{vve::math::identityMat4()}; ///< Object-to-world transform for this draw.
+      bool double_sided{false};                          ///< Whether the draw disables back-face culling.
+      bool alpha_blend{false};                           ///< Whether the draw requires alpha blending.
+   };
+
+   /// @brief Draw packets prepared for one window and frame.
+   struct WindowDrawPacketList {
+      WindowHandle window{};              ///< Window whose renderer owns the packet list.
+      std::uint64_t frame_index{0};       ///< Frame that produced the packet list.
+      Vector<DrawPacket> packets{};       ///< Ordered draw packets for render command recording.
+   };
+
    /// @brief Opaque native window pointer exported by the platform window system.
    struct NativeWindowHandle {
       WindowHandle window{};            ///< Engine window represented by the native handle.
@@ -1068,6 +1213,7 @@ export namespace vve::v3 {
       GraphicsPipelineResources graphics_pipeline{}; ///< Backend graphics pipeline preparation summary.
       WindowSwapchainResources swapchain{}; ///< Backend presentation resources for this window.
       RenderGraph graph{};     ///< Render graph executed for the window.
+      WindowDrawPacketList draw_packets{}; ///< Draw packets prepared for this window during the render phase.
    };
 
    /// @brief Human-readable snapshot of the assembled engine runtime configuration.
