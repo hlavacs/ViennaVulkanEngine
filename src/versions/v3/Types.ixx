@@ -282,6 +282,20 @@ export namespace vve::v3 {
       double delta_seconds{0.0};    ///< Frame delta time in seconds.
    };
 
+   /// @brief Camera data consumed by forward draw packets and backend frame constants.
+   struct CameraFrameData {
+      vve::math::Vec3 position{
+          vve::math::Vec3(vve::math::zero(), static_cast<vve::math::Scalar>(1.5),
+                          static_cast<vve::math::Scalar>(6.0))}; ///< World-space camera position.
+      vve::math::Mat4 view_transform{vve::math::translate(
+          vve::math::identityMat4(),
+          vve::math::Vec3(vve::math::zero(), static_cast<vve::math::Scalar>(-1.5),
+                          static_cast<vve::math::Scalar>(-6.0)))}; ///< World-to-view transform.
+      vve::math::Scalar vertical_fov_radians{static_cast<vve::math::Scalar>(1.0471975511965976)}; ///< Vertical field of view.
+      vve::math::Scalar near_plane{static_cast<vve::math::Scalar>(0.1)}; ///< Near clip plane.
+      vve::math::Scalar far_plane{static_cast<vve::math::Scalar>(10000.0)}; ///< Far clip plane.
+   };
+
    /// @brief Declares a task's read or write access to a resource handle.
    struct ResourceAccess {
       vve::Handle resource{}; ///< Resource touched by the task.
@@ -510,6 +524,7 @@ export namespace vve::v3 {
       std::unordered_map<vve::Handle::value_type, std::size_t> gpu_texture_indices{}; ///< Handle-to-index lookup cache for GPU texture summaries.
       Vector<GpuMaterialResources> gpu_materials{}; ///< GPU-resident material summaries populated by the resource system.
       std::unordered_map<vve::Handle::value_type, std::size_t> gpu_material_indices{}; ///< Handle-to-index lookup cache for GPU material summaries.
+      CameraFrameData active_camera{}; ///< Camera used by render packet generation until explicit camera entities exist.
    };
 
    /// @brief Runtime window snapshot used by the frame graph and world facade.
@@ -1133,6 +1148,7 @@ export namespace vve::v3 {
       GraphicsPipelineVariant pipeline_variant{GraphicsPipelineVariant::opaque}; ///< Material-state pipeline variant selected for this draw.
       std::uint32_t sort_bucket{0};                     ///< Coarse render-order bin used before depth sorting.
       vve::math::Scalar camera_depth{vve::math::zero()}; ///< Positive depth along the current view direction.
+      CameraFrameData camera{};                         ///< Camera used to build view/projection constants for this draw.
       std::uint32_t draw_index{0};                       ///< Stable zero-based index within the packet list.
       SceneNodeHandle node{};                            ///< Scene node providing the transform.
       vve::Handle mesh_instance{};                       ///< Runtime mesh-instance handle represented by the packet.

@@ -182,10 +182,14 @@ namespace vve::v3 {
       return vve::math::Vec3(transform[3][0], transform[3][1], transform[3][2]);
    }
 
-   /// @brief Estimates depth along the current default forward-renderer view.
-   [[nodiscard]] vve::math::Scalar defaultViewDepth(const vve::math::Mat4 &world_transform) {
-      constexpr vve::math::Scalar default_camera_z = static_cast<vve::math::Scalar>(6.0);
-      return default_camera_z - worldTranslation(world_transform).z;
+   /// @brief Estimates positive depth along the active camera's view direction.
+   [[nodiscard]] vve::math::Scalar cameraViewDepth(const CameraFrameData &camera,
+                                                   const vve::math::Mat4 &world_transform) {
+      const auto position = worldTranslation(world_transform);
+      const auto view_z = (camera.view_transform[0][2] * position.x) +
+                          (camera.view_transform[1][2] * position.y) +
+                          (camera.view_transform[2][2] * position.z) + camera.view_transform[3][2];
+      return -view_z;
    }
 
    /// @brief Orders packets for correct opaque/transparent rendering and stable descriptor keys.
@@ -524,7 +528,7 @@ namespace vve::v3 {
                const bool alpha_blend = material_data != nullptr && material_data->alpha_blend;
                const auto pipeline_variant = forwardPipelineVariant(double_sided, alpha_blend);
                const auto graphics_pipeline = graphicsPipelineForVariant(binding->second, pipeline_variant);
-               const auto camera_depth = defaultViewDepth(node->world_transform);
+               const auto camera_depth = cameraViewDepth(scene.active_camera, node->world_transform);
                if (binding->second.graphics_pipeline_ready && !graphics_pipeline.value.isValid()) {
                   return std::unexpected(vve::Error::invalid_argument);
                }
@@ -536,6 +540,7 @@ namespace vve::v3 {
                                                     .pipeline_variant = pipeline_variant,
                                                     .sort_bucket = pipelineVariantSortBucket(pipeline_variant),
                                                     .camera_depth = camera_depth,
+                                                    .camera = scene.active_camera,
                                                     .draw_index = static_cast<std::uint32_t>(packets.packets.size()),
                                                     .node = node->handle,
                                                     .mesh_instance = instance.handle,

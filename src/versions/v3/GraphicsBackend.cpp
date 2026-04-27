@@ -732,14 +732,6 @@ namespace vve::v3 {
                                       0.0F, 0.0F, 0.0F, 1.0F};
       }
 
-      /// @brief Builds a column-major translation matrix payload.
-      [[nodiscard]] std::array<float, 16> translationMatrixPayload(float x, float y, float z) {
-         return std::array<float, 16>{1.0F, 0.0F, 0.0F, 0.0F,
-                                      0.0F, 1.0F, 0.0F, 0.0F,
-                                      0.0F, 0.0F, 1.0F, 0.0F,
-                                      x,    y,    z,    1.0F};
-      }
-
       /// @brief Copies a math matrix into the column-major float payload used by Slang.
       [[nodiscard]] std::array<float, 16> matrixPayload(const vve::math::Mat4 &matrix) {
          std::array<float, 16> values{};
@@ -752,11 +744,11 @@ namespace vve::v3 {
       }
 
       /// @brief Builds a Vulkan clip-space perspective projection matrix payload.
-      [[nodiscard]] std::array<float, 16> perspectiveMatrixPayload(float aspect_ratio) {
-         constexpr float pi = 3.14159265358979323846F;
-         constexpr float vertical_field_of_view = 60.0F * pi / 180.0F;
-         constexpr float near_plane = 0.1F;
-         constexpr float far_plane = 10000.0F;
+      [[nodiscard]] std::array<float, 16> perspectiveMatrixPayload(float aspect_ratio,
+                                                                   const CameraFrameData &camera) {
+         const float vertical_field_of_view = std::max(static_cast<float>(camera.vertical_fov_radians), 0.001F);
+         const float near_plane = std::max(static_cast<float>(camera.near_plane), 0.001F);
+         const float far_plane = std::max(static_cast<float>(camera.far_plane), near_plane + 0.001F);
          const float f = 1.0F / std::tan(vertical_field_of_view * 0.5F);
          const float safe_aspect = std::max(aspect_ratio, 0.001F);
 
@@ -770,16 +762,19 @@ namespace vve::v3 {
       [[nodiscard]] VulkanFrameConstants frameConstantsForExtent(VkExtent2D extent) {
          const auto width = static_cast<float>(std::max(extent.width, 1U));
          const auto height = static_cast<float>(std::max(extent.height, 1U));
+         const CameraFrameData camera{};
          return VulkanFrameConstants{.model = identityMatrixPayload(),
-                                     .view = translationMatrixPayload(0.0F, -1.5F, -6.0F),
-                                     .projection = perspectiveMatrixPayload(width / height)};
+                                     .view = matrixPayload(camera.view_transform),
+                                     .projection = perspectiveMatrixPayload(width / height, camera)};
       }
 
       /// @brief Builds frame constants for one draw, including its scene-graph world transform.
       [[nodiscard]] VulkanFrameConstants frameConstantsForDraw(VkExtent2D extent, const DrawPacket &packet) {
-         auto constants = frameConstantsForExtent(extent);
-         constants.model = matrixPayload(packet.world_transform);
-         return constants;
+         const auto width = static_cast<float>(std::max(extent.width, 1U));
+         const auto height = static_cast<float>(std::max(extent.height, 1U));
+         return VulkanFrameConstants{.model = matrixPayload(packet.world_transform),
+                                     .view = matrixPayload(packet.camera.view_transform),
+                                     .projection = perspectiveMatrixPayload(width / height, packet.camera)};
       }
 
       /// @brief Copies frame constants into an owned byte array for uniform-buffer uploads.

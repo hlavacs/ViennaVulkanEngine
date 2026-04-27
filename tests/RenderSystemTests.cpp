@@ -105,6 +105,12 @@ namespace {
       const auto mesh_instance_handle = vve::Handle::fromHash(std::string_view{"tests.render.mesh_instance"});
 
       vve::v3::SceneData scene{};
+      scene.active_camera.position = vve::math::Vec3(0.0F, 0.0F, 10.0F);
+      scene.active_camera.view_transform =
+          vve::math::translate(vve::math::identityMat4(), vve::math::Vec3(0.0F, 0.0F, -10.0F));
+      scene.active_camera.vertical_fov_radians = 0.9F;
+      scene.active_camera.near_plane = 0.25F;
+      scene.active_camera.far_plane = 500.0F;
 
       vve::v3::ImportedMesh mesh{};
       mesh.handle = mesh_handle;
@@ -298,6 +304,12 @@ namespace {
              packet.kernel == pass->kernel &&
              packet.pipeline_variant == vve::v3::GraphicsPipelineVariant::double_sided_alpha_blend &&
              packet.draw_index == 0 &&
+             packet.camera.position.z == scene.active_camera.position.z &&
+             packet.camera.view_transform[3][2] == scene.active_camera.view_transform[3][2] &&
+             packet.camera.vertical_fov_radians == scene.active_camera.vertical_fov_radians &&
+             packet.camera.near_plane == scene.active_camera.near_plane &&
+             packet.camera.far_plane == scene.active_camera.far_plane &&
+             packet.camera_depth == 7.0F &&
              packet.node.value.value() == mesh_instance.node.value.value() &&
              packet.mesh_instance.value() == mesh_instance.handle.value() &&
              packet.mesh.value.value() == mesh_instance.mesh.value.value() &&
