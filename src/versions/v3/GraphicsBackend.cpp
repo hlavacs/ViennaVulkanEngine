@@ -516,11 +516,31 @@ namespace vve::v3 {
          seed.push_back(':');
          seed += std::to_string(static_cast<std::uint32_t>(desc.main_kernel));
          seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(desc.variant));
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(desc.topology));
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(desc.cull_mode));
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(desc.front_face));
+         seed.push_back(':');
+         seed += desc.depth_test_enabled ? "depth_test" : "no_depth_test";
+         seed.push_back(':');
+         seed += desc.depth_write_enabled ? "depth_write" : "no_depth_write";
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(desc.depth_compare));
+         seed.push_back(':');
+         seed += desc.blending_enabled ? "blend" : "opaque";
+         seed.push_back(':');
          seed += std::to_string(desc.color_attachment_count);
          seed.push_back(':');
          seed += std::to_string(static_cast<std::uint32_t>(desc.color_format));
          seed.push_back(':');
          seed += std::to_string(static_cast<std::uint32_t>(desc.depth_format));
+         seed.push_back(':');
+         seed += std::to_string(desc.vertex_binding_count);
+         seed.push_back(':');
+         seed += std::to_string(desc.vertex_attribute_count);
          return GraphicsPipelineHandle{.value = vve::Handle::fromHash(seed)};
       }
 
@@ -589,18 +609,39 @@ namespace vve::v3 {
          return binding.ready_for_pipeline_creation && binding.renderer.value == desc.renderer.value &&
                 binding.renderer_id == desc.renderer_id &&
                 binding.backend_resources.value == desc.backend_resources.value &&
-                binding.main_kernel == desc.main_kernel && desc.color_attachment_count > 0;
+                binding.main_kernel == desc.main_kernel &&
+                binding.color_format == desc.color_format &&
+                binding.depth_format == desc.depth_format && desc.color_attachment_count > 0;
       }
 
       /// @brief Validates renderer-specific graphics pipeline state before later VkPipeline creation.
       [[nodiscard]] bool graphicsPipelineDescMatchesRenderer(const GraphicsPipelineDesc &desc) {
          if (desc.renderer_id == "forward") {
-            return desc.main_kernel == RenderKernelId::forward_opaque &&
-                   desc.topology == GraphicsPrimitiveTopology::triangle_list &&
-                   desc.cull_mode == GraphicsCullMode::back && desc.depth_test_enabled &&
-                   desc.depth_write_enabled && desc.depth_format != GraphicsDepthFormat::none &&
-                   desc.color_attachment_count == 1 && desc.vertex_binding_count == 1 &&
-                   desc.vertex_attribute_count >= 5;
+            const bool common_state =
+                desc.main_kernel == RenderKernelId::forward_opaque &&
+                desc.topology == GraphicsPrimitiveTopology::triangle_list &&
+                desc.front_face == GraphicsFrontFace::counter_clockwise && desc.depth_test_enabled &&
+                desc.depth_compare == GraphicsDepthCompareOp::less_equal &&
+                desc.depth_format != GraphicsDepthFormat::none && desc.color_attachment_count == 1 &&
+                desc.vertex_binding_count == 1 && desc.vertex_attribute_count >= 5;
+            if (!common_state) {
+               return false;
+            }
+
+            switch (desc.variant) {
+            case GraphicsPipelineVariant::opaque:
+               return desc.cull_mode == GraphicsCullMode::back &&
+                      desc.depth_write_enabled && !desc.blending_enabled;
+            case GraphicsPipelineVariant::double_sided:
+               return desc.cull_mode == GraphicsCullMode::none &&
+                      desc.depth_write_enabled && !desc.blending_enabled;
+            case GraphicsPipelineVariant::alpha_blend:
+               return desc.cull_mode == GraphicsCullMode::back &&
+                      !desc.depth_write_enabled && desc.blending_enabled;
+            case GraphicsPipelineVariant::double_sided_alpha_blend:
+               return desc.cull_mode == GraphicsCullMode::none &&
+                      !desc.depth_write_enabled && desc.blending_enabled;
+            }
          }
 
          return false;
@@ -1570,6 +1611,7 @@ namespace vve::v3 {
                                                        .renderer = desc.renderer,
                                                        .backend_resources = desc.backend_resources,
                                                        .main_kernel = desc.main_kernel,
+                                                       .variant = desc.variant,
                                                        .color_attachment_count = desc.color_attachment_count,
                                                        .depth_enabled =
                                                            desc.depth_format != GraphicsDepthFormat::none,

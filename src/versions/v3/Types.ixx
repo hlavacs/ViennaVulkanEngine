@@ -157,6 +157,14 @@ export namespace vve::v3 {
       depth32_float ///< 32-bit floating-point depth attachment.
    };
 
+   /// @brief Material-facing graphics pipeline variants used by the forward renderer.
+   enum class GraphicsPipelineVariant : std::uint32_t {
+      opaque = 0,              ///< Back-face culled opaque material pass.
+      double_sided,            ///< Opaque pass without face culling.
+      alpha_blend,             ///< Alpha-blended pass with back-face culling.
+      double_sided_alpha_blend ///< Alpha-blended pass without face culling.
+   };
+
    /// @brief Backend-neutral usage category for GPU buffer allocations.
    enum class GpuBufferUsage : std::uint32_t {
       unknown = 0, ///< Buffer usage is not yet known.
@@ -1077,6 +1085,7 @@ export namespace vve::v3 {
       std::string renderer_id{};                                ///< Canonical renderer id.
       PipelineResourceHandle backend_resources{};               ///< Backend resources the pipeline will consume.
       RenderKernelId main_kernel{RenderKernelId::none};         ///< Main render kernel implemented by this pipeline.
+      GraphicsPipelineVariant variant{GraphicsPipelineVariant::opaque}; ///< Forward material-state variant.
       GraphicsPrimitiveTopology topology{GraphicsPrimitiveTopology::triangle_list}; ///< Primitive topology.
       GraphicsCullMode cull_mode{GraphicsCullMode::back};       ///< Rasterization culling mode.
       GraphicsFrontFace front_face{GraphicsFrontFace::counter_clockwise}; ///< Rasterization winding mode.
@@ -1084,8 +1093,8 @@ export namespace vve::v3 {
       bool depth_write_enabled{true};                           ///< Whether depth writes are enabled.
       GraphicsDepthCompareOp depth_compare{GraphicsDepthCompareOp::less_equal}; ///< Depth comparison mode.
       bool blending_enabled{false};                             ///< Whether color blending is enabled.
-      GraphicsColorFormat color_format{GraphicsColorFormat::bgra8_srgb}; ///< Placeholder color format.
-      GraphicsDepthFormat depth_format{GraphicsDepthFormat::depth32_float}; ///< Placeholder depth format.
+      GraphicsColorFormat color_format{GraphicsColorFormat::bgra8_srgb}; ///< Window color target format.
+      GraphicsDepthFormat depth_format{GraphicsDepthFormat::depth32_float}; ///< Window depth target format.
       std::uint32_t color_attachment_count{1};                  ///< Number of color outputs expected.
       std::uint32_t vertex_binding_count{1};                    ///< Number of vertex buffer bindings expected.
       std::uint32_t vertex_attribute_count{5};                  ///< Number of vertex attributes expected.
@@ -1097,6 +1106,7 @@ export namespace vve::v3 {
       RendererHandle renderer{};                                ///< Renderer that requested the pipeline.
       PipelineResourceHandle backend_resources{};               ///< Pipeline-layout/shader resource bundle used.
       RenderKernelId main_kernel{RenderKernelId::none};         ///< Main render kernel represented by this pipeline.
+      GraphicsPipelineVariant variant{GraphicsPipelineVariant::opaque}; ///< Material-state variant represented by this pipeline.
       std::uint32_t color_attachment_count{0};                  ///< Number of color attachments described.
       bool depth_enabled{false};                                ///< Whether a depth attachment is described.
       bool pipeline_cache_ready{false};                         ///< Whether a Vulkan pipeline cache owns this plan.
@@ -1120,6 +1130,7 @@ export namespace vve::v3 {
       RenderPassHandle pass{};                          ///< Render pass that owns the packet.
       RenderKernelId kernel{RenderKernelId::forward_opaque}; ///< Render kernel selected for the packet.
       GraphicsPipelineHandle graphics_pipeline{};       ///< Pipeline expected to record the packet.
+      GraphicsPipelineVariant pipeline_variant{GraphicsPipelineVariant::opaque}; ///< Material-state pipeline variant selected for this draw.
       std::uint32_t draw_index{0};                       ///< Stable zero-based index within the packet list.
       SceneNodeHandle node{};                            ///< Scene node providing the transform.
       vve::Handle mesh_instance{};                       ///< Runtime mesh-instance handle represented by the packet.
@@ -1198,7 +1209,10 @@ export namespace vve::v3 {
       std::string renderer_id{};                        ///< Canonical renderer id.
       ShaderHandle shader_program{};                    ///< Shader program bound to this renderer instance.
       PipelineResourceHandle backend_resources{};       ///< Backend Vulkan resource bundle used by the renderer.
-      GraphicsPipelineHandle graphics_pipeline{};       ///< Graphics pipeline prepared for this renderer binding.
+      GraphicsPipelineHandle graphics_pipeline{};       ///< Opaque graphics pipeline prepared for this renderer binding.
+      GraphicsPipelineHandle double_sided_graphics_pipeline{}; ///< Double-sided opaque pipeline variant.
+      GraphicsPipelineHandle alpha_blend_graphics_pipeline{}; ///< Alpha-blended pipeline variant.
+      GraphicsPipelineHandle double_sided_alpha_blend_graphics_pipeline{}; ///< Double-sided alpha-blended pipeline variant.
       RenderKernelId main_kernel{RenderKernelId::none}; ///< Primary render kernel selected by this renderer.
       GraphicsColorFormat color_format{GraphicsColorFormat::bgra8_srgb}; ///< Window color target used by the renderer pipeline.
       GraphicsDepthFormat depth_format{GraphicsDepthFormat::depth32_float}; ///< Window depth target used by the renderer pipeline.

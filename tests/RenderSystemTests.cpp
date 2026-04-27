@@ -259,6 +259,7 @@ namespace {
       return packet.window.value == pipeline.window.value &&
              packet.pass.value.value() == pass->handle.value.value() &&
              packet.kernel == pass->kernel &&
+             packet.pipeline_variant == vve::v3::GraphicsPipelineVariant::double_sided_alpha_blend &&
              packet.draw_index == 0 &&
              packet.node.value.value() == mesh_instance.node.value.value() &&
              packet.mesh_instance.value() == mesh_instance.handle.value() &&

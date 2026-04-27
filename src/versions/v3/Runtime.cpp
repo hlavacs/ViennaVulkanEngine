@@ -374,8 +374,17 @@ namespace vve::v3::detail {
          }
 
          pipeline.graphics_pipeline = *graphics_pipeline;
-         pipeline.renderer_binding.graphics_pipeline = graphics_pipeline->handle;
-         pipeline.renderer_binding.graphics_pipeline_ready = graphics_pipeline->pipeline_cache_ready;
+         const auto stored_binding = runtime.render_system->rendererPipeline(pipeline.window);
+         if (!stored_binding) {
+            return std::unexpected(stored_binding.error());
+         }
+         if (!stored_binding->has_value()) {
+            std::cerr << "[VulkanRuntime] Missing stored renderer binding after graphics pipeline creation for window '"
+                      << pipeline.window_id << "' renderer='" << pipeline.renderer.id << "'\n";
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         pipeline.renderer_binding = **stored_binding;
       }
 
       return {};

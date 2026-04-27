@@ -140,9 +140,60 @@ namespace vve::v3 {
                                    .alpha_cutoff = material->alpha_cutoff};
    }
 
+   /// @brief Selects the forward renderer pipeline variant required by material raster state.
+   [[nodiscard]] GraphicsPipelineVariant forwardPipelineVariant(bool double_sided, bool alpha_blend) {
+      if (double_sided && alpha_blend) {
+         return GraphicsPipelineVariant::double_sided_alpha_blend;
+      }
+      if (double_sided) {
+         return GraphicsPipelineVariant::double_sided;
+      }
+      if (alpha_blend) {
+         return GraphicsPipelineVariant::alpha_blend;
+      }
+
+      return GraphicsPipelineVariant::opaque;
+   }
+
+   /// @brief Returns the prepared graphics pipeline handle for a forward material-state variant.
+   [[nodiscard]] GraphicsPipelineHandle graphicsPipelineForVariant(const RendererPipelineBinding &binding,
+                                                                   GraphicsPipelineVariant variant) {
+      switch (variant) {
+      case GraphicsPipelineVariant::opaque:
+         return binding.graphics_pipeline;
+      case GraphicsPipelineVariant::double_sided:
+         return binding.double_sided_graphics_pipeline;
+      case GraphicsPipelineVariant::alpha_blend:
+         return binding.alpha_blend_graphics_pipeline;
+      case GraphicsPipelineVariant::double_sided_alpha_blend:
+         return binding.double_sided_alpha_blend_graphics_pipeline;
+      }
+
+      return {};
+   }
+
+   /// @brief Stores a prepared graphics pipeline handle on the matching forward material-state slot.
+   void setGraphicsPipelineForVariant(RendererPipelineBinding &binding, GraphicsPipelineVariant variant,
+                                      GraphicsPipelineHandle handle) {
+      switch (variant) {
+      case GraphicsPipelineVariant::opaque:
+         binding.graphics_pipeline = handle;
+         break;
+      case GraphicsPipelineVariant::double_sided:
+         binding.double_sided_graphics_pipeline = handle;
+         break;
+      case GraphicsPipelineVariant::alpha_blend:
+         binding.alpha_blend_graphics_pipeline = handle;
+         break;
+      case GraphicsPipelineVariant::double_sided_alpha_blend:
+         binding.double_sided_alpha_blend_graphics_pipeline = handle;
+         break;
+      }
+   }
+
    /// @brief Builds renderer-specific graphics pipeline state from a validated renderer binding.
    [[nodiscard]] std::expected<GraphicsPipelineDesc, vve::Error>
-   graphicsPipelineDescForBinding(const RendererPipelineBinding &binding) {
+   graphicsPipelineDescForBinding(const RendererPipelineBinding &binding, GraphicsPipelineVariant variant) {
       if (!binding.ready_for_pipeline_creation || !binding.renderer.value.isValid() ||
           !binding.backend_resources.value.isValid() || binding.renderer_id.empty()) {
          return std::unexpected(vve::Error::invalid_argument);
@@ -151,16 +202,25 @@ namespace vve::v3 {
       GraphicsPipelineDesc desc{.renderer = binding.renderer,
                                 .renderer_id = binding.renderer_id,
                                 .backend_resources = binding.backend_resources,
-                                .main_kernel = binding.main_kernel};
+                                .main_kernel = binding.main_kernel,
+                                .variant = variant};
 
       if (binding.renderer_id == "forward" && binding.main_kernel == RenderKernelId::forward_opaque) {
          desc.topology = GraphicsPrimitiveTopology::triangle_list;
-         desc.cull_mode = GraphicsCullMode::back;
+         desc.cull_mode =
+             variant == GraphicsPipelineVariant::double_sided ||
+                     variant == GraphicsPipelineVariant::double_sided_alpha_blend
+                 ? GraphicsCullMode::none
+                 : GraphicsCullMode::back;
          desc.front_face = GraphicsFrontFace::counter_clockwise;
          desc.depth_test_enabled = true;
-         desc.depth_write_enabled = true;
+         desc.depth_write_enabled =
+             variant != GraphicsPipelineVariant::alpha_blend &&
+             variant != GraphicsPipelineVariant::double_sided_alpha_blend;
          desc.depth_compare = GraphicsDepthCompareOp::less_equal;
-         desc.blending_enabled = false;
+         desc.blending_enabled =
+             variant == GraphicsPipelineVariant::alpha_blend ||
+             variant == GraphicsPipelineVariant::double_sided_alpha_blend;
          desc.color_format = binding.color_format;
          desc.depth_format = binding.depth_format;
          desc.color_attachment_count = 1;
@@ -314,19 +374,36 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         const auto desc = graphicsPipelineDescForBinding(binding);
-         if (!desc) {
-            return std::unexpected(desc.error());
+         constexpr std::array variants{GraphicsPipelineVariant::opaque,
+                                       GraphicsPipelineVariant::double_sided,
+                                       GraphicsPipelineVariant::alpha_blend,
+                                       GraphicsPipelineVariant::double_sided_alpha_blend};
+         std::optional<GraphicsPipelineResources> primary_pipeline{};
+         bool all_variants_ready = true;
+         for (const auto variant : variants) {
+            const auto desc = graphicsPipelineDescForBinding(binding, variant);
+            if (!desc) {
+               return std::unexpected(desc.error());
+            }
+
+            const auto graphics_pipeline = graphics_backend.createGraphicsPipelineResources(binding, *desc);
+            if (!graphics_pipeline) {
+               return std::unexpected(graphics_pipeline.error());
+            }
+
+            setGraphicsPipelineForVariant(stored_binding->second, variant, graphics_pipeline->handle);
+            all_variants_ready = all_variants_ready && graphics_pipeline->pipeline_cache_ready;
+            if (variant == GraphicsPipelineVariant::opaque) {
+               primary_pipeline = *graphics_pipeline;
+            }
          }
 
-         const auto graphics_pipeline = graphics_backend.createGraphicsPipelineResources(binding, *desc);
-         if (!graphics_pipeline) {
-            return std::unexpected(graphics_pipeline.error());
+         if (!primary_pipeline.has_value()) {
+            return std::unexpected(vve::Error::internal_error);
          }
 
-         stored_binding->second.graphics_pipeline = graphics_pipeline->handle;
-         stored_binding->second.graphics_pipeline_ready = graphics_pipeline->pipeline_cache_ready;
-         return *graphics_pipeline;
+         stored_binding->second.graphics_pipeline_ready = all_variants_ready;
+         return *primary_pipeline;
       }
 
       /// @brief Performs placeholder GPU visibility work for one window graph.
@@ -384,10 +461,19 @@ namespace vve::v3 {
                   return std::unexpected(vve::Error::invalid_argument);
                }
 
+               const bool double_sided = material_data != nullptr && material_data->double_sided;
+               const bool alpha_blend = material_data != nullptr && material_data->alpha_blend;
+               const auto pipeline_variant = forwardPipelineVariant(double_sided, alpha_blend);
+               const auto graphics_pipeline = graphicsPipelineForVariant(binding->second, pipeline_variant);
+               if (binding->second.graphics_pipeline_ready && !graphics_pipeline.value.isValid()) {
+                  return std::unexpected(vve::Error::invalid_argument);
+               }
+
                packets.packets.push_back(DrawPacket{.window = window,
                                                     .pass = pass->handle,
                                                     .kernel = pass->kernel,
-                                                    .graphics_pipeline = binding->second.graphics_pipeline,
+                                                    .graphics_pipeline = graphics_pipeline,
+                                                    .pipeline_variant = pipeline_variant,
                                                     .draw_index = static_cast<std::uint32_t>(packets.packets.size()),
                                                     .node = node->handle,
                                                     .mesh_instance = instance.handle,
@@ -409,10 +495,8 @@ namespace vve::v3 {
                                                     .vertex_offset = 0,
                                                     .instance_count = 1,
                                                     .world_transform = node->world_transform,
-                                                    .double_sided =
-                                                        material_data != nullptr && material_data->double_sided,
-                                                    .alpha_blend =
-                                                        material_data != nullptr && material_data->alpha_blend});
+                                                    .double_sided = double_sided,
+                                                    .alpha_blend = alpha_blend});
             }
          }
 

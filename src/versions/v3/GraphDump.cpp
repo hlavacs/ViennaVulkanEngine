@@ -188,9 +188,14 @@ namespace vve::v3::detail {
       for (const auto &pipeline : render_pipelines) {
          // Each window receives its own subgraph so per-window render graphs
          // remain visually separated in the combined dump.
+         const std::size_t pipeline_variant_count =
+             (pipeline.renderer_binding.graphics_pipeline.value.isValid() ? 1U : 0U) +
+             (pipeline.renderer_binding.double_sided_graphics_pipeline.value.isValid() ? 1U : 0U) +
+             (pipeline.renderer_binding.alpha_blend_graphics_pipeline.value.isValid() ? 1U : 0U) +
+             (pipeline.renderer_binding.double_sided_alpha_blend_graphics_pipeline.value.isValid() ? 1U : 0U);
          output << "  subgraph cluster_render_" << pipeline.window.value.value() << " {\n";
          output << "    label=\""
-                << escapeDotLabel(std::format("Render Graph: {}\\nrenderer={}\\nshader={}\\nstages={} sets={} vk_modules={} bound={} vk_pipeline={} swapchain={} color={} depth={} images={} framebuffers={} presented={} dirty={}",
+                << escapeDotLabel(std::format("Render Graph: {}\\nrenderer={}\\nshader={}\\nstages={} sets={} vk_modules={} bound={} vk_pipeline={} variants={} swapchain={} color={} depth={} images={} framebuffers={} presented={} dirty={}",
                                               pipeline.window_id, pipeline.renderer.id,
                                               pipeline.shader_program.value.value(),
                                               pipeline.pipeline_layout.shader_stages.size(),
@@ -198,6 +203,7 @@ namespace vve::v3::detail {
                                               pipeline.backend_resources.shader_module_count,
                                               pipeline.renderer_binding.ready_for_pipeline_creation ? "yes" : "no",
                                               pipeline.graphics_pipeline.vulkan_pipeline_created ? "created" : "none",
+                                              pipeline_variant_count,
                                               pipeline.swapchain.swapchain_created ? "created" : "none",
                                               pipeline.swapchain.surface_format,
                                               pipeline.swapchain.depth_format,
