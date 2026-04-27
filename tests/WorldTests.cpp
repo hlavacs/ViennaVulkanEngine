@@ -181,13 +181,10 @@ int main() {
    runtime_access.set_camera_context = &camera_capture;
 
    vve::World runtime_world{runtime_ecs, runtime_access};
-   vve::Camera camera{};
-   camera.position = vve::math::Vec3(2.0F, 3.0F, 4.0F);
-   camera.view_transform =
-       vve::math::translate(vve::math::identityMat4(), vve::math::Vec3(-2.0F, -3.0F, -4.0F));
-   camera.vertical_fov_radians = 0.75F;
-   camera.near_plane = 0.2F;
-   camera.far_plane = 250.0F;
+   const auto camera = vve::Camera::lookAt(vve::math::Vec3(2.0F, 3.0F, 4.0F),
+                                           vve::math::Vec3(2.0F, 3.0F, 0.0F),
+                                           vve::math::Vec3(0.0F, 1.0F, 0.0F),
+                                           0.75F, 0.2F, 250.0F);
 
    if (!runtime_world.setCamera(camera)) {
       return 182;

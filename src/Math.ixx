@@ -81,6 +81,11 @@ export namespace vve::math {
    /// @brief Returns `matrix` scaled by `factors`.
    [[nodiscard]] inline Mat4 scale(const Mat4 &matrix, const Vec3 &factors) { return glm::scale(matrix, factors); }
 
+   /// @brief Builds a right-handed world-to-view transform looking from `eye` toward `center`.
+   [[nodiscard]] inline Mat4 lookAt(const Vec3 &eye, const Vec3 &center, const Vec3 &up) {
+      return glm::lookAt(eye, center, up);
+   }
+
    /// @brief Builds a perspective projection matrix.
    [[nodiscard]] inline Mat4 perspective(Scalar field_of_view_radians, Scalar aspect_ratio, Scalar near_plane,
                                          Scalar far_plane) {

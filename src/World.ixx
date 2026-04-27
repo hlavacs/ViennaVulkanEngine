@@ -79,6 +79,22 @@ export namespace vve {
       math::Scalar vertical_fov_radians{static_cast<math::Scalar>(1.0471975511965976)}; ///< Vertical field of view.
       math::Scalar near_plane{static_cast<math::Scalar>(0.1)}; ///< Near clip plane.
       math::Scalar far_plane{static_cast<math::Scalar>(10000.0)}; ///< Far clip plane.
+
+      /// @brief Builds a camera from an eye position and target point.
+      [[nodiscard]] static Camera lookAt(const math::Vec3 &position, const math::Vec3 &target,
+                                         const math::Vec3 &up = math::Vec3(math::zero(), math::one(), math::zero()),
+                                         math::Scalar vertical_fov_radians =
+                                             static_cast<math::Scalar>(1.0471975511965976),
+                                         math::Scalar near_plane = static_cast<math::Scalar>(0.1),
+                                         math::Scalar far_plane = static_cast<math::Scalar>(10000.0)) {
+         Camera camera{};
+         camera.position = position;
+         camera.view_transform = math::lookAt(position, target, up);
+         camera.vertical_fov_radians = vertical_fov_radians;
+         camera.near_plane = near_plane;
+         camera.far_plane = far_plane;
+         return camera;
+      }
    };
 
    /**

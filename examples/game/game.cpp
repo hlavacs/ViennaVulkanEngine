@@ -283,18 +283,14 @@ private:
     [[nodiscard]] vve::Camera cameraForPlayer(const vve::math::Vec3& player_position) const {
         constexpr float world_to_camera = 0.01F;
 
-        vve::Camera camera{};
-        camera.position = vve::math::Vec3(
+        const auto camera_position = vve::math::Vec3(
             player_position.x * world_to_camera,
             1.5F - (player_position.y * world_to_camera),
             8.0F);
-        camera.view_transform = vve::math::translate(
-            vve::math::identityMat4(),
-            vve::math::Vec3(-camera.position.x, -camera.position.y, -camera.position.z));
-        camera.vertical_fov_radians = 0.9F;
-        camera.near_plane = 0.1F;
-        camera.far_plane = 1000.0F;
-        return camera;
+        const auto camera_target = vve::math::Vec3(camera_position.x, camera_position.y, 0.0F);
+        return vve::Camera::lookAt(camera_position, camera_target,
+                                   vve::math::Vec3(0.0F, 1.0F, 0.0F),
+                                   0.9F, 0.1F, 1000.0F);
     }
 
     [[nodiscard]] std::expected<void, vve::Error> updateCamera(
