@@ -31,6 +31,8 @@ namespace {
    struct CameraCapture {
       /// @brief Last camera observed by the callback.
       vve::Camera camera{};
+      /// @brief Window id observed by the per-window callback.
+      std::string window_id{};
       /// @brief Whether the callback was invoked.
       bool called{false};
    };
@@ -43,6 +45,20 @@ namespace {
 
       auto &capture = *static_cast<CameraCapture *>(context);
       capture.camera = camera;
+      capture.called = true;
+      return {};
+   }
+
+   /// @brief Runtime callback used to verify per-window camera forwarding.
+   [[nodiscard]] std::expected<void, vve::Error>
+   captureWindowCamera(void *context, std::string_view window_id, const vve::Camera &camera) {
+      if (context == nullptr) {
+         return std::unexpected(vve::Error::invalid_argument);
+      }
+
+      auto &capture = *static_cast<CameraCapture *>(context);
+      capture.camera = camera;
+      capture.window_id = std::string{window_id};
       capture.called = true;
       return {};
    }
@@ -188,6 +204,8 @@ int main() {
    vve::detail::WorldRuntimeAccess runtime_access{};
    runtime_access.set_camera = &captureCamera;
    runtime_access.set_camera_context = &camera_capture;
+   runtime_access.set_window_camera = &captureWindowCamera;
+   runtime_access.set_window_camera_context = &camera_capture;
 
    vve::World runtime_world{runtime_ecs, runtime_access};
    const auto camera = vve::Camera::lookAt(vve::math::Vec3(2.0F, 3.0F, 4.0F),
@@ -213,6 +231,26 @@ int main() {
        camera_capture.camera.near_plane != 0.2F ||
        camera_capture.camera.far_plane != 250.0F) {
       return 186;
+   }
+
+   camera_capture = CameraCapture{};
+   const auto window_camera = vve::Camera::lookAt(vve::math::Vec3(5.0F, 6.0F, 7.0F),
+                                                  vve::math::Vec3(5.0F, 6.0F, 0.0F));
+   const auto window_camera_entity =
+       runtime_world.spawn(vve::CameraComponent{.camera = window_camera, .window_id = "tools"});
+   if (!window_camera_entity) {
+      return 187;
+   }
+
+   if (!runtime_world.setActiveCamera(*window_camera_entity)) {
+      return 188;
+   }
+
+   if (!camera_capture.called || camera_capture.window_id != "tools" ||
+       camera_capture.camera.position.x != 5.0F ||
+       camera_capture.camera.position.y != 6.0F ||
+       camera_capture.camera.position.z != 7.0F) {
+      return 189;
    }
 
    vve::InputState input{};

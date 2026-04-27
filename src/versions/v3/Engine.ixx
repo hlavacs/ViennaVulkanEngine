@@ -64,6 +64,34 @@ namespace vve::v3 {
       }
 
       /**
+       * @brief Adapts the world per-window camera callback to a concrete engine instance.
+       * @tparam TEngine Engine implementation type receiving the callback.
+       * @param context Opaque engine pointer stored in `WorldRuntimeAccess`.
+       * @param window_id Runtime window id receiving the active camera.
+       * @param camera Public camera description supplied by game code.
+       * @return Empty success result, or an error when the callback context is invalid.
+       */
+      template <typename TEngine>
+      [[nodiscard]] std::expected<void, vve::Error> setWindowCameraThroughWorld(void *context,
+                                                                                std::string_view window_id,
+                                                                                const vve::Camera &camera) {
+         if (context == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return static_cast<TEngine *>(context)->setActiveCamera(window_id, camera);
+      }
+
+      /// @brief Converts public camera state into render-facing frame data.
+      [[nodiscard]] CameraFrameData cameraFrameDataFromPublicCamera(const vve::Camera &camera) {
+         return CameraFrameData{.position = camera.position,
+                                .view_transform = camera.view_transform,
+                                .vertical_fov_radians = camera.vertical_fov_radians,
+                                .near_plane = camera.near_plane,
+                                .far_plane = camera.far_plane};
+      }
+
+      /**
        * @brief Invokes a user system's optional `init(world)` hook when present.
        * @tparam TSystem User-system type.
        * @param system User-system instance.
@@ -241,6 +269,8 @@ namespace vve::v3 {
       [[nodiscard]] std::expected<int, vve::Error> getVersionMajor() const noexcept;
       [[nodiscard]] std::expected<void, vve::Error> loadSceneFile(const std::filesystem::path &file_path);
       [[nodiscard]] std::expected<void, vve::Error> setActiveCamera(const vve::Camera &camera);
+      [[nodiscard]] std::expected<void, vve::Error> setActiveCamera(std::string_view window_id,
+                                                                    const vve::Camera &camera);
 
    private:
       [[nodiscard]] std::expected<void, vve::Error> rebuildTaskGraph();
@@ -380,6 +410,9 @@ namespace vve::v3 {
       world_bridge_.runtime_access.set_camera =
           &detail::setCameraThroughWorld<BasicEngineImplementation<TUserSystems...>>;
       world_bridge_.runtime_access.set_camera_context = this;
+      world_bridge_.runtime_access.set_window_camera =
+          &detail::setWindowCameraThroughWorld<BasicEngineImplementation<TUserSystems...>>;
+      world_bridge_.runtime_access.set_window_camera_context = this;
       // Prime world-visible caches before user init hooks run.
       detail::syncWorldWindows(*runtime_.window_frame, world_bridge_.windows);
       world_bridge_.runtime_access.windows_begin = world_bridge_.windows.cbegin();
@@ -542,11 +575,28 @@ namespace vve::v3 {
          return std::unexpected(vve::Error::not_initialized);
       }
 
-      scene_state_.scene->active_camera = CameraFrameData{.position = camera.position,
-                                                          .view_transform = camera.view_transform,
-                                                          .vertical_fov_radians = camera.vertical_fov_radians,
-                                                          .near_plane = camera.near_plane,
-                                                          .far_plane = camera.far_plane};
+      scene_state_.scene->active_camera = detail::cameraFrameDataFromPublicCamera(camera);
+      return {};
+   }
+
+   /**
+    * @brief Updates the active scene camera for one runtime window id.
+    * @param window_id Runtime window id that should use the camera.
+    * @param camera Public camera description supplied through `World`.
+    * @return Empty success result, or an error when no scene is active.
+    */
+   template <typename... TUserSystems>
+   std::expected<void, vve::Error>
+   BasicEngineImplementation<TUserSystems...>::setActiveCamera(std::string_view window_id,
+                                                               const vve::Camera &camera) {
+      if (window_id.empty()) {
+         return setActiveCamera(camera);
+      }
+      if (!*isInitialized() || !scene_state_.scene) {
+         return std::unexpected(vve::Error::not_initialized);
+      }
+
+      scene_state_.scene->window_cameras[std::string{window_id}] = detail::cameraFrameDataFromPublicCamera(camera);
       return {};
    }
 

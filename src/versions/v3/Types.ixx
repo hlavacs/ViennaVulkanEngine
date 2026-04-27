@@ -524,7 +524,8 @@ export namespace vve::v3 {
       std::unordered_map<vve::Handle::value_type, std::size_t> gpu_texture_indices{}; ///< Handle-to-index lookup cache for GPU texture summaries.
       Vector<GpuMaterialResources> gpu_materials{}; ///< GPU-resident material summaries populated by the resource system.
       std::unordered_map<vve::Handle::value_type, std::size_t> gpu_material_indices{}; ///< Handle-to-index lookup cache for GPU material summaries.
-      CameraFrameData active_camera{}; ///< Camera used by render packet generation until explicit camera entities exist.
+      CameraFrameData active_camera{}; ///< Fallback camera used when a window has no explicit camera.
+      std::map<std::string, CameraFrameData> window_cameras{}; ///< Optional active cameras keyed by runtime window id.
    };
 
    /// @brief Runtime window snapshot used by the frame graph and world facade.

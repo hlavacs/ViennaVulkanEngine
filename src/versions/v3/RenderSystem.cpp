@@ -197,6 +197,18 @@ namespace vve::v3 {
       return camera_depth >= camera.near_plane && camera_depth <= camera.far_plane;
    }
 
+   /// @brief Resolves the active camera for one window, falling back to the scene camera.
+   [[nodiscard]] const CameraFrameData &cameraForWindow(const SceneData &scene, std::string_view window_id) {
+      if (!window_id.empty()) {
+         const auto camera = scene.window_cameras.find(std::string{window_id});
+         if (camera != scene.window_cameras.end()) {
+            return camera->second;
+         }
+      }
+
+      return scene.active_camera;
+   }
+
    /// @brief Orders packets for correct opaque/transparent rendering and stable descriptor keys.
    void sortDrawPackets(Vector<DrawPacket> &packets) {
       std::stable_sort(packets.begin(), packets.end(), [](const DrawPacket &lhs, const DrawPacket &rhs) {
@@ -499,6 +511,7 @@ namespace vve::v3 {
          }
 
          WindowDrawPacketList packets{.window = window, .frame_index = frame_context.frame_index};
+         const auto &active_camera = cameraForWindow(scene, binding->second.window_id);
          for (const auto &instance : scene.mesh_instances) {
             const auto *node = findNode(scene, instance.node);
             const auto *mesh = findMesh(scene, instance.mesh);
@@ -533,8 +546,8 @@ namespace vve::v3 {
                const bool alpha_blend = material_data != nullptr && material_data->alpha_blend;
                const auto pipeline_variant = forwardPipelineVariant(double_sided, alpha_blend);
                const auto graphics_pipeline = graphicsPipelineForVariant(binding->second, pipeline_variant);
-               const auto camera_depth = cameraViewDepth(scene.active_camera, node->world_transform);
-               if (!isInsideCameraClipRange(scene.active_camera, camera_depth)) {
+               const auto camera_depth = cameraViewDepth(active_camera, node->world_transform);
+               if (!isInsideCameraClipRange(active_camera, camera_depth)) {
                   continue;
                }
                if (binding->second.graphics_pipeline_ready && !graphics_pipeline.value.isValid()) {
@@ -548,7 +561,7 @@ namespace vve::v3 {
                                                     .pipeline_variant = pipeline_variant,
                                                     .sort_bucket = pipelineVariantSortBucket(pipeline_variant),
                                                     .camera_depth = camera_depth,
-                                                    .camera = scene.active_camera,
+                                                    .camera = active_camera,
                                                     .draw_index = static_cast<std::uint32_t>(packets.packets.size()),
                                                     .node = node->handle,
                                                     .mesh_instance = instance.handle,

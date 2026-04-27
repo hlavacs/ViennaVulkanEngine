@@ -153,6 +153,10 @@ export namespace vve {
          /// @brief Runtime callback used to update the active render camera.
          std::expected<void, Error> (*set_camera)(void *context, const Camera &camera){nullptr};
          void *set_camera_context{nullptr};                       ///< Opaque callback context passed back to `set_camera`.
+         /// @brief Runtime callback used to update the active render camera for one window id.
+         std::expected<void, Error> (*set_window_camera)(void *context, std::string_view window_id,
+                                                         const Camera &camera){nullptr};
+         void *set_window_camera_context{nullptr}; ///< Opaque callback context passed back to `set_window_camera`.
       };
 
       /**
@@ -297,6 +301,7 @@ export namespace vve {
       [[nodiscard]] const InputState &input() const;
       [[nodiscard]] std::expected<void, Error> loadScene(const std::filesystem::path &path);
       [[nodiscard]] std::expected<void, Error> setCamera(const Camera &camera);
+      [[nodiscard]] std::expected<void, Error> setCamera(std::string_view window_id, const Camera &camera);
       [[nodiscard]] std::expected<void, Error> setActiveCamera(Handle camera_entity);
 
       [[nodiscard]] std::expected<std::optional<Transform>, Error> getTransform(Handle entity) const;
@@ -448,6 +453,13 @@ export namespace vve {
       return implementation_.setCamera(camera);
    }
 
+   /// @brief Updates the active render camera for one runtime window id.
+   template <typename TImplementation>
+   inline std::expected<void, Error> WorldFacade<TImplementation>::setCamera(std::string_view window_id,
+                                                                             const Camera &camera) {
+      return implementation_.setCamera(window_id, camera);
+   }
+
    /// @brief Selects an entity camera component as the active render camera.
    template <typename TImplementation>
    inline std::expected<void, Error> WorldFacade<TImplementation>::setActiveCamera(Handle camera_entity) {
@@ -459,7 +471,12 @@ export namespace vve {
          return std::unexpected(Error::invalid_argument);
       }
 
-      return setCamera(camera_result->value().camera);
+      const auto &camera_component = camera_result->value();
+      if (camera_component.window_id.empty()) {
+         return setCamera(camera_component.camera);
+      }
+
+      return setCamera(camera_component.window_id, camera_component.camera);
    }
 
    /// @brief Returns an entity transform component if present.

@@ -445,6 +445,40 @@ namespace {
              (*visible_packets)->frame_index == 91;
    }
 
+   /// @brief Verifies a window-specific camera overrides the scene fallback camera for packet generation.
+   [[nodiscard]] bool drawPacketsUseWindowCameraOverride(vve::v3::RenderSystem &render_system,
+                                                         vve::v3::GraphicsBackend &backend) {
+      const auto renderer = backend.createRenderer("forward");
+      if (!renderer) {
+         return false;
+      }
+
+      const auto pipeline = testPipeline(render_system, *renderer);
+      const auto binding = render_system.bindPipelineResources(pipeline);
+      if (!binding) {
+         return false;
+      }
+
+      auto scene = testUploadedScene();
+      auto window_camera = scene.active_camera;
+      window_camera.position = vve::math::Vec3(0.0F, 0.0F, 20.0F);
+      window_camera.view_transform =
+          vve::math::translate(vve::math::identityMat4(), vve::math::Vec3(0.0F, 0.0F, -20.0F));
+      window_camera.far_plane = 25.0F;
+      scene.window_cameras.emplace(pipeline.window_id, window_camera);
+
+      const auto build = render_system.buildDrawPackets(
+          vve::v3::FrameContext{.frame_index = 92, .delta_seconds = 0.0}, scene, pipeline.window, pipeline.graph);
+      if (!build) {
+         return false;
+      }
+
+      const auto packet_list = render_system.drawPackets(pipeline.window);
+      return packet_list && packet_list->has_value() && (*packet_list)->packets.size() == 1 &&
+             (*packet_list)->packets.front().camera.position.z == 20.0F &&
+             (*packet_list)->packets.front().camera_depth == 17.0F;
+   }
+
 } // namespace
 
 /**
@@ -517,6 +551,10 @@ int main() {
 
    if (!drawPacketsCullCameraClipRange(render_system, backend)) {
       return 12;
+   }
+
+   if (!drawPacketsUseWindowCameraOverride(render_system, backend)) {
+      return 13;
    }
 
    return 0;
