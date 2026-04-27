@@ -1,6 +1,7 @@
 module;
 
 #include <cctype>
+#include <cmath>
 #include "FacadeMacros.hpp"
 #include <cstdlib>
 #include <cstring>
@@ -282,6 +283,8 @@ namespace vve::v3 {
          VkBuffer buffer{VK_NULL_HANDLE};
          VkDeviceMemory memory{VK_NULL_HANDLE};
          VkDeviceSize size{0};
+         VkDescriptorType descriptor_type{VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER};
+         PipelineDescriptorBindingDesc binding{};
       };
 
       /// @brief Backend-owned fallback sampled image used before real texture upload exists.
@@ -513,6 +516,71 @@ namespace vve::v3 {
          return std::nullopt;
       }
 
+      /// @brief CPU-side layout matching rasterizer.slang FrameConstants.
+      struct VulkanFrameConstants {
+         std::array<float, 16> model{};
+         std::array<float, 16> view{};
+         std::array<float, 16> projection{};
+      };
+
+      static_assert(sizeof(VulkanFrameConstants) == sizeof(float) * 48U);
+
+      /// @brief Returns whether a reflected uniform buffer represents per-frame camera data.
+      [[nodiscard]] bool isFrameConstantsBinding(const PipelineDescriptorBindingDesc &binding) {
+         return binding.kind == DescriptorBindingKind::uniform_buffer &&
+                (containsAsciiToken(binding.name, "frame") || containsAsciiToken(binding.type_name, "Frame"));
+      }
+
+      /// @brief Builds a column-major identity matrix payload for Slang float4x4 constants.
+      [[nodiscard]] std::array<float, 16> identityMatrixPayload() {
+         return std::array<float, 16>{1.0F, 0.0F, 0.0F, 0.0F,
+                                      0.0F, 1.0F, 0.0F, 0.0F,
+                                      0.0F, 0.0F, 1.0F, 0.0F,
+                                      0.0F, 0.0F, 0.0F, 1.0F};
+      }
+
+      /// @brief Builds a column-major translation matrix payload.
+      [[nodiscard]] std::array<float, 16> translationMatrixPayload(float x, float y, float z) {
+         return std::array<float, 16>{1.0F, 0.0F, 0.0F, 0.0F,
+                                      0.0F, 1.0F, 0.0F, 0.0F,
+                                      0.0F, 0.0F, 1.0F, 0.0F,
+                                      x,    y,    z,    1.0F};
+      }
+
+      /// @brief Builds a Vulkan clip-space perspective projection matrix payload.
+      [[nodiscard]] std::array<float, 16> perspectiveMatrixPayload(float aspect_ratio) {
+         constexpr float pi = 3.14159265358979323846F;
+         constexpr float vertical_field_of_view = 60.0F * pi / 180.0F;
+         constexpr float near_plane = 0.1F;
+         constexpr float far_plane = 10000.0F;
+         const float f = 1.0F / std::tan(vertical_field_of_view * 0.5F);
+         const float safe_aspect = std::max(aspect_ratio, 0.001F);
+
+         return std::array<float, 16>{f / safe_aspect, 0.0F, 0.0F, 0.0F,
+                                      0.0F, -f, 0.0F, 0.0F,
+                                      0.0F, 0.0F, far_plane / (near_plane - far_plane), -1.0F,
+                                      0.0F, 0.0F, (far_plane * near_plane) / (near_plane - far_plane), 0.0F};
+      }
+
+      /// @brief Builds the default camera constants for the current swapchain extent.
+      [[nodiscard]] VulkanFrameConstants frameConstantsForExtent(VkExtent2D extent) {
+         const auto width = static_cast<float>(std::max(extent.width, 1U));
+         const auto height = static_cast<float>(std::max(extent.height, 1U));
+         return VulkanFrameConstants{.model = identityMatrixPayload(),
+                                     .view = translationMatrixPayload(0.0F, -1.5F, -6.0F),
+                                     .projection = perspectiveMatrixPayload(width / height)};
+      }
+
+      /// @brief Copies frame constants into a byte span when the descriptor buffer is large enough.
+      [[nodiscard]] bool writeFrameConstants(std::span<std::byte> bytes, const VulkanFrameConstants &constants) {
+         if (bytes.size() < sizeof(constants)) {
+            return false;
+         }
+
+         std::memcpy(bytes.data(), &constants, sizeof(constants));
+         return true;
+      }
+
       /// @brief Builds conservative fallback bytes for reflected buffer descriptors.
       [[nodiscard]] std::vector<std::byte> fallbackDescriptorBufferBytes(const PipelineDescriptorBindingDesc &binding) {
          std::vector<std::byte> bytes(1024, std::byte{0});
@@ -534,7 +602,11 @@ namespace vve::v3 {
             }
          };
 
-         if (containsAsciiToken(binding.name, "frame")) {
+         if (isFrameConstantsBinding(binding)) {
+            [[maybe_unused]] const bool frame_written =
+                writeFrameConstants(bytes, frameConstantsForExtent(VkExtent2D{.width = 1, .height = 1}));
+         }
+         if (containsAsciiToken(binding.name, "frame") && !isFrameConstantsBinding(binding)) {
             write_identity(0);
             write_identity(64);
             write_identity(128);
@@ -1873,10 +1945,52 @@ namespace vve::v3 {
          resources.descriptor_buffers.push_back(VulkanDescriptorBufferResource{
              .buffer = buffer_resource.buffer,
              .memory = buffer_resource.memory,
-             .size = static_cast<VkDeviceSize>(bytes.size())});
+             .size = static_cast<VkDeviceSize>(bytes.size()),
+             .descriptor_type = descriptor_type,
+             .binding = binding});
          buffer_resource.buffer = VK_NULL_HANDLE;
          buffer_resource.memory = VK_NULL_HANDLE;
          return index;
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      updateDescriptorBufferBytes(const VulkanDescriptorBufferResource &resource, std::span<const std::byte> bytes) {
+         if (resource.memory == VK_NULL_HANDLE || resource.size < bytes.size()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         void *mapped = nullptr;
+         const VkResult result =
+             vkMapMemory(device_, resource.memory, 0, static_cast<VkDeviceSize>(bytes.size()), 0, &mapped);
+         if (result != VK_SUCCESS || mapped == nullptr) {
+            std::cerr << "[VulkanGraphicsBackend] vkMapMemory(frame constants) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         std::memcpy(mapped, bytes.data(), bytes.size());
+         vkUnmapMemory(device_, resource.memory);
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      updateFrameDescriptorBuffers(VulkanPipelineResources &resources, VkExtent2D extent) {
+         const auto constants = frameConstantsForExtent(extent);
+         std::array<std::byte, sizeof(constants)> bytes{};
+         std::memcpy(bytes.data(), &constants, sizeof(constants));
+
+         for (const auto &buffer : resources.descriptor_buffers) {
+            if (buffer.descriptor_type != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+                !isFrameConstantsBinding(buffer.binding)) {
+               continue;
+            }
+
+            if (auto update_result = updateDescriptorBufferBytes(buffer, bytes); !update_result) {
+               return std::unexpected(update_result.error());
+            }
+         }
+
+         return {};
       }
 
       [[nodiscard]] std::expected<void, vve::Error>
@@ -2987,6 +3101,7 @@ namespace vve::v3 {
          vkCmdSetViewport(command_buffer, 0, 1, &viewport);
          vkCmdSetScissor(command_buffer, 0, 1, &scissor);
 
+         std::unordered_set<vve::Handle::value_type> refreshed_pipeline_resources{};
          for (const auto &packet : draw_packets.packets) {
             if (!packet.window.value.isValid() ||
                 packet.window.value.value() != resources.summary.window.value.value() ||
@@ -3012,6 +3127,14 @@ namespace vve::v3 {
             if (pipeline_resource == pipeline_resources_.end() ||
                 pipeline_resource->second.pipeline_layout == VK_NULL_HANDLE) {
                return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            const auto pipeline_resource_key = pipeline->second.summary.backend_resources.value.value();
+            if (refreshed_pipeline_resources.insert(pipeline_resource_key).second) {
+               if (auto frame_update = updateFrameDescriptorBuffers(pipeline_resource->second, resources.extent);
+                   !frame_update) {
+                  return std::unexpected(frame_update.error());
+               }
             }
 
             const VkDeviceSize vertex_offset = 0;
