@@ -419,7 +419,7 @@ export namespace vve::v3 {
    };
 
    /// @brief Returns the stable diagnostic name for a resource kind.
-   [[nodiscard]] std::string_view resourceKindName(ResourceKind kind) {
+   [[nodiscard]] inline std::string_view resourceKindName(ResourceKind kind) {
       static const std::map<ResourceKind, std::string_view> names{
           {ResourceKind::unknown, "unknown"},
           {ResourceKind::mesh, "mesh"},
@@ -434,7 +434,7 @@ export namespace vve::v3 {
    }
 
    /// @brief Returns the stable diagnostic name for a resource location.
-   [[nodiscard]] std::string_view resourceLocationName(ResourceLocation location) {
+   [[nodiscard]] inline std::string_view resourceLocationName(ResourceLocation location) {
       static const std::map<ResourceLocation, std::string_view> names{
           {ResourceLocation::unknown, "unknown"},
           {ResourceLocation::source_file, "source_file"},
@@ -448,7 +448,7 @@ export namespace vve::v3 {
    }
 
    /// @brief Returns the stable diagnostic name for a task kernel.
-   [[nodiscard]] std::string_view taskKernelName(TaskKernelId kernel) {
+   [[nodiscard]] inline std::string_view taskKernelName(TaskKernelId kernel) {
       static const std::map<TaskKernelId, std::string_view> names{
           {TaskKernelId::none, "none"},
           {TaskKernelId::begin_frame, "begin_frame"},
@@ -468,7 +468,7 @@ export namespace vve::v3 {
    }
 
    /// @brief Returns the stable diagnostic name for a task phase.
-   [[nodiscard]] std::string_view taskPhaseName(TaskPhase phase) {
+   [[nodiscard]] inline std::string_view taskPhaseName(TaskPhase phase) {
       static const std::map<TaskPhase, std::string_view> names{
           {TaskPhase::automatic, "automatic"},
           {TaskPhase::begin_frame, "begin_frame"},
@@ -485,7 +485,7 @@ export namespace vve::v3 {
    }
 
    /// @brief Returns the stable diagnostic name for a window event type.
-   [[nodiscard]] std::string_view windowEventTypeName(WindowEventType type) {
+   [[nodiscard]] inline std::string_view windowEventTypeName(WindowEventType type) {
       static const std::map<WindowEventType, std::string_view> names{
           {WindowEventType::none, "none"},
           {WindowEventType::close_requested, "close_requested"},
@@ -506,7 +506,7 @@ export namespace vve::v3 {
    }
 
    /// @brief Returns the stable diagnostic name for a render kernel.
-   [[nodiscard]] std::string_view renderKernelName(RenderKernelId kernel) {
+   [[nodiscard]] inline std::string_view renderKernelName(RenderKernelId kernel) {
       static const std::map<RenderKernelId, std::string_view> names{
           {RenderKernelId::none, "none"},
           {RenderKernelId::depth_prepass, "depth_prepass"},
@@ -525,7 +525,7 @@ export namespace vve::v3 {
    }
 
    /// @brief Returns the stable diagnostic name for a shader stage.
-   [[nodiscard]] std::string_view shaderStageName(ShaderStage stage) {
+   [[nodiscard]] inline std::string_view shaderStageName(ShaderStage stage) {
       static const std::map<ShaderStage, std::string_view> names{
           {ShaderStage::vertex, "vertex"},
           {ShaderStage::fragment, "fragment"},
@@ -536,7 +536,7 @@ export namespace vve::v3 {
    }
 
    /// @brief Returns the stable diagnostic name for a texture semantic.
-   [[nodiscard]] std::string_view textureSemanticName(TextureSemantic semantic) {
+   [[nodiscard]] inline std::string_view textureSemanticName(TextureSemantic semantic) {
       static const std::map<TextureSemantic, std::string_view> names{
           {TextureSemantic::unknown, "unknown"},
           {TextureSemantic::base_color, "base_color"},
@@ -554,7 +554,7 @@ export namespace vve::v3 {
    }
 
    /// @brief Returns the stable diagnostic name for a task scope.
-   [[nodiscard]] std::string_view taskScopeName(TaskScope scope) {
+   [[nodiscard]] inline std::string_view taskScopeName(TaskScope scope) {
       static const std::map<TaskScope, std::string_view> names{
           {TaskScope::global, "global"},
           {TaskScope::window, "window"},

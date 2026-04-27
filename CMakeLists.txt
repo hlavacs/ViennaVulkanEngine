@@ -94,7 +94,106 @@ elseif(EXISTS "${VVE_VCPKG_INSTALLED_DIR}/share/SDL3/SDL3Config.cmake")
 endif()
 
 find_package(Vulkan REQUIRED)
-find_package(slang CONFIG REQUIRED)
+find_package(slang CONFIG QUIET)
+
+set(VVE_SLANG_RUNTIME_DLLS_RELEASE)
+set(VVE_SLANG_RUNTIME_DLLS_DEBUG)
+set(VVE_SLANG_RUNTIME_DLLS)
+
+if(NOT TARGET slang::slang)
+   find_path(VVE_SLANG_INCLUDE_DIR
+      NAMES slang/slang.h
+      HINTS
+         "${VVE_VULKAN_SDK_ROOT}/include"
+         "${VVE_VULKAN_SDK_ROOT}/Include"
+   )
+
+   if(WIN32)
+      find_library(VVE_SLANG_LIBRARY_RELEASE
+         NAMES slang
+         HINTS
+            "${VVE_VULKAN_SDK_ROOT}/Lib"
+            "${VVE_VULKAN_SDK_ROOT}/lib"
+      )
+      find_library(VVE_SLANG_LIBRARY_DEBUG
+         NAMES slangd slang
+         HINTS
+            "${VVE_VULKAN_SDK_ROOT}/Lib"
+            "${VVE_VULKAN_SDK_ROOT}/lib"
+      )
+      find_file(VVE_SLANG_RUNTIME_RELEASE
+         NAMES slang.dll
+         HINTS
+            "${VVE_VULKAN_SDK_ROOT}/Bin"
+            "${VVE_VULKAN_SDK_ROOT}/bin"
+      )
+      find_file(VVE_SLANG_RUNTIME_DEBUG
+         NAMES slangd.dll slang.dll
+         HINTS
+            "${VVE_VULKAN_SDK_ROOT}/Bin"
+            "${VVE_VULKAN_SDK_ROOT}/bin"
+      )
+   else()
+      find_library(VVE_SLANG_LIBRARY_RELEASE
+         NAMES slang
+         HINTS
+            "${VVE_VULKAN_SDK_ROOT}/lib"
+            "${VVE_VULKAN_SDK_ROOT}/Lib"
+      )
+      set(VVE_SLANG_LIBRARY_DEBUG "${VVE_SLANG_LIBRARY_RELEASE}")
+      set(VVE_SLANG_RUNTIME_RELEASE "${VVE_SLANG_LIBRARY_RELEASE}")
+      set(VVE_SLANG_RUNTIME_DEBUG "${VVE_SLANG_LIBRARY_RELEASE}")
+   endif()
+
+   if(VVE_SLANG_INCLUDE_DIR AND VVE_SLANG_LIBRARY_RELEASE AND VVE_SLANG_RUNTIME_RELEASE)
+      add_library(slang::slang SHARED IMPORTED GLOBAL)
+      set_target_properties(slang::slang PROPERTIES
+         INTERFACE_INCLUDE_DIRECTORIES "${VVE_SLANG_INCLUDE_DIR}"
+         IMPORTED_CONFIGURATIONS "Debug;Release;RelWithDebInfo;MinSizeRel"
+      )
+
+      if(WIN32)
+         set_target_properties(slang::slang PROPERTIES
+            IMPORTED_IMPLIB_DEBUG "${VVE_SLANG_LIBRARY_DEBUG}"
+            IMPORTED_IMPLIB_RELEASE "${VVE_SLANG_LIBRARY_RELEASE}"
+            IMPORTED_IMPLIB_RELWITHDEBINFO "${VVE_SLANG_LIBRARY_RELEASE}"
+            IMPORTED_IMPLIB_MINSIZEREL "${VVE_SLANG_LIBRARY_RELEASE}"
+            IMPORTED_LOCATION_DEBUG "${VVE_SLANG_RUNTIME_DEBUG}"
+            IMPORTED_LOCATION_RELEASE "${VVE_SLANG_RUNTIME_RELEASE}"
+            IMPORTED_LOCATION_RELWITHDEBINFO "${VVE_SLANG_RUNTIME_RELEASE}"
+            IMPORTED_LOCATION_MINSIZEREL "${VVE_SLANG_RUNTIME_RELEASE}"
+         )
+
+         if(EXISTS "${VVE_VULKAN_SDK_ROOT}/Bin")
+            set(VVE_SLANG_RUNTIME_BIN_DIR "${VVE_VULKAN_SDK_ROOT}/Bin")
+         else()
+            set(VVE_SLANG_RUNTIME_BIN_DIR "${VVE_VULKAN_SDK_ROOT}/bin")
+         endif()
+
+         file(GLOB VVE_SLANG_RUNTIME_DLLS CONFIGURE_DEPENDS
+            "${VVE_SLANG_RUNTIME_BIN_DIR}/slang*.dll"
+         )
+         list(APPEND VVE_SLANG_RUNTIME_DLLS_DEBUG ${VVE_SLANG_RUNTIME_DLLS})
+         list(APPEND VVE_SLANG_RUNTIME_DLLS_RELEASE ${VVE_SLANG_RUNTIME_DLLS})
+      else()
+         set_target_properties(slang::slang PROPERTIES
+            IMPORTED_LOCATION_DEBUG "${VVE_SLANG_RUNTIME_DEBUG}"
+            IMPORTED_LOCATION_RELEASE "${VVE_SLANG_RUNTIME_RELEASE}"
+            IMPORTED_LOCATION_RELWITHDEBINFO "${VVE_SLANG_RUNTIME_RELEASE}"
+            IMPORTED_LOCATION_MINSIZEREL "${VVE_SLANG_RUNTIME_RELEASE}"
+         )
+      endif()
+
+      message(STATUS "Using Slang from Vulkan SDK fallback: ${VVE_VULKAN_SDK_ROOT}")
+   else()
+      message(FATAL_ERROR
+         "Could not find Slang via CMake package config or Vulkan SDK fallback. "
+         "Set slang_DIR to a directory containing slangConfig.cmake, or set VVE_VULKAN_SDK_ROOT/VULKAN_SDK "
+         "to a Vulkan SDK installation that provides the Slang headers and libraries."
+      )
+   endif()
+endif()
+
 find_package(SDL3 CONFIG REQUIRED)
 
 set(VVE_VCPKG_RUNTIME_DLLS_RELEASE)
@@ -103,6 +202,7 @@ if(WIN32 AND EXISTS "${VVE_VCPKG_INSTALLED_DIR}/bin")
       "${VVE_VCPKG_INSTALLED_DIR}/bin/*.dll"
    )
 endif()
+list(APPEND VVE_VCPKG_RUNTIME_DLLS_RELEASE ${VVE_SLANG_RUNTIME_DLLS_RELEASE})
 
 set(VVE_VCPKG_RUNTIME_DLLS_DEBUG)
 if(WIN32 AND EXISTS "${VVE_VCPKG_INSTALLED_DIR}/debug/bin")
@@ -110,13 +210,23 @@ if(WIN32 AND EXISTS "${VVE_VCPKG_INSTALLED_DIR}/debug/bin")
       "${VVE_VCPKG_INSTALLED_DIR}/debug/bin/*.dll"
    )
 endif()
+list(APPEND VVE_VCPKG_RUNTIME_DLLS_DEBUG ${VVE_SLANG_RUNTIME_DLLS_DEBUG})
 
-if(WIN32 AND (VVE_VCPKG_RUNTIME_DLLS_RELEASE OR VVE_VCPKG_RUNTIME_DLLS_DEBUG))
+set(VVE_WINDOWS_RUNTIME_DLLS)
+if(WIN32)
+   list(APPEND VVE_WINDOWS_RUNTIME_DLLS
+      ${VVE_VCPKG_RUNTIME_DLLS_RELEASE}
+      ${VVE_VCPKG_RUNTIME_DLLS_DEBUG}
+      ${VVE_SLANG_RUNTIME_DLLS}
+   )
+   list(REMOVE_DUPLICATES VVE_WINDOWS_RUNTIME_DLLS)
+endif()
+
+if(WIN32 AND VVE_WINDOWS_RUNTIME_DLLS)
    add_custom_target(vve_copy_runtime_dlls
       COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_SOURCE_DIR}/bin/exe"
       COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-         $<$<CONFIG:Debug>:${VVE_VCPKG_RUNTIME_DLLS_DEBUG}>
-         $<$<NOT:$<CONFIG:Debug>>:${VVE_VCPKG_RUNTIME_DLLS_RELEASE}>
+         ${VVE_WINDOWS_RUNTIME_DLLS}
          "${CMAKE_SOURCE_DIR}/bin/exe"
       COMMAND_EXPAND_LISTS
    )

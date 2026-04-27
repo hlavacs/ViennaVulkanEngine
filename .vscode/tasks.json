@@ -24,6 +24,16 @@
                     "x64-linux"
                 ]
             },
+            "windows": {
+                "command": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "$vcpkg = if ($env:VCPKG_ROOT -and (Test-Path (Join-Path $env:VCPKG_ROOT 'vcpkg.exe'))) { Join-Path $env:VCPKG_ROOT 'vcpkg.exe' } elseif (Test-Path 'C:\\vcpkg\\vcpkg.exe') { 'C:\\vcpkg\\vcpkg.exe' } else { 'vcpkg' }; & $vcpkg install --triplet x64-windows; exit $LASTEXITCODE"
+                ]
+            },
             "options": {
                 "cwd": "${workspaceFolder}"
             },

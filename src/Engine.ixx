@@ -85,7 +85,7 @@ export namespace vve {
    };
 
    /// @brief Returns the stable diagnostic name for a graphics API selection.
-   [[nodiscard]] std::string_view graphicsApiName(GraphicsApi api) {
+   [[nodiscard]] inline std::string_view graphicsApiName(GraphicsApi api) {
       static const std::map<GraphicsApi, std::string_view> names{
           {GraphicsApi::vulkan, "vulkan"},
           {GraphicsApi::direct3d12, "direct3d12"},
@@ -96,7 +96,7 @@ export namespace vve {
    }
 
    /// @brief Returns the stable diagnostic name for a renderer family.
-   [[nodiscard]] std::string_view rendererKindName(RendererKind renderer) {
+   [[nodiscard]] inline std::string_view rendererKindName(RendererKind renderer) {
       static const std::map<RendererKind, std::string_view> names{
           {RendererKind::forward_renderer, "forward"},
           {RendererKind::deferred_renderer, "deferred"},
@@ -107,7 +107,7 @@ export namespace vve {
    }
 
    /// @brief Returns the stable diagnostic name for a shadowing strategy.
-   [[nodiscard]] std::string_view shadowKindName(ShadowKind shadow) {
+   [[nodiscard]] inline std::string_view shadowKindName(ShadowKind shadow) {
       static const std::map<ShadowKind, std::string_view> names{
           {ShadowKind::none, "none"},
           {ShadowKind::shadow_map, "shadow_map"},
@@ -118,7 +118,7 @@ export namespace vve {
    }
 
    /// @brief Returns the stable diagnostic name for a frame-step result.
-   [[nodiscard]] std::string_view frameStatusName(FrameStatus status) {
+   [[nodiscard]] inline std::string_view frameStatusName(FrameStatus status) {
       static const std::map<FrameStatus, std::string_view> names{
           {FrameStatus::continue_running, "continue_running"},
           {FrameStatus::should_close, "should_close"},

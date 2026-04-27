@@ -38,7 +38,7 @@ export namespace vve {
    };
 
    /// @brief Returns the stable diagnostic name for an engine error code.
-   [[nodiscard]] std::string_view errorName(Error error) {
+   [[nodiscard]] inline std::string_view errorName(Error error) {
       static const std::map<Error, std::string_view> names{
           {Error::not_initialized, "not_initialized"},
           {Error::already_initialized, "already_initialized"},
