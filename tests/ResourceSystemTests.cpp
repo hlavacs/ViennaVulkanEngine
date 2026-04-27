@@ -51,6 +51,8 @@ namespace {
           .value = vve::Handle::fromHash(std::string_view{"tests.resources.triangle_scene"})};
       const auto mesh_handle = vve::v3::MeshHandle{
           .value = vve::Handle::fromHash(std::string_view{"tests.resources.triangle_mesh"})};
+      const auto material_handle = vve::v3::MaterialHandle{
+          .value = vve::Handle::fromHash(std::string_view{"tests.resources.triangle_material"})};
       const auto node_handle = vve::v3::SceneNodeHandle{
           .value = vve::Handle::fromHash(std::string_view{"tests.resources.triangle_node"})};
       const auto mesh_instance_handle = vve::Handle::fromHash(std::string_view{"tests.resources.triangle_instance"});
@@ -64,8 +66,19 @@ namespace {
       mesh.indices.push_back(0U);
       mesh.indices.push_back(1U);
       mesh.indices.push_back(2U);
-      mesh.submeshes.push_back(vve::v3::ImportedSubmesh{.index_offset = 0, .index_count = 3});
+      mesh.submeshes.push_back(vve::v3::ImportedSubmesh{.index_offset = 0,
+                                                        .index_count = 3,
+                                                        .material = material_handle});
       mesh.source_path = source_path;
+
+      vve::v3::ImportedMaterial material{};
+      material.handle = material_handle;
+      material.name = "triangle_material";
+      material.base_color_factor = vve::math::Vec4(0.25F, 0.5F, 0.75F, 1.0F);
+      material.normal_scale = 1.25F;
+      material.roughness_factor = 0.6F;
+      material.metallic_factor = 0.2F;
+      material.alpha_cutoff = 0.35F;
 
       vve::v3::ImportedSceneNode node{};
       node.handle = node_handle;
@@ -77,6 +90,7 @@ namespace {
       scene.name = "triangle_scene";
       scene.source_path = source_path;
       scene.meshes.push_back(std::move(mesh));
+      scene.materials.push_back(std::move(material));
       scene.nodes.push_back(std::move(node));
       return scene;
    }
@@ -224,7 +238,10 @@ int main() {
       return 23;
    }
 
-   if (scene->gpu_meshes.size() != 1 || !scene->gpu_mesh_indices.contains(imported_scene.meshes.front().handle.value.value())) {
+   if (scene->gpu_meshes.size() != 1 ||
+       !scene->gpu_mesh_indices.contains(imported_scene.meshes.front().handle.value.value()) ||
+       scene->gpu_materials.size() != 1 ||
+       !scene->gpu_material_indices.contains(imported_scene.materials.front().handle.value.value())) {
       return 24;
    }
 
@@ -236,17 +253,28 @@ int main() {
       return 25;
    }
 
+   const auto &gpu_material = scene->gpu_materials.front();
+   if (gpu_material.material.value != imported_scene.materials.front().handle.value ||
+       !gpu_material.constants_uploaded || gpu_material.textures_uploaded ||
+       !gpu_material.constants_buffer.value.isValid()) {
+      return 26;
+   }
+
    const auto vertex_buffer = backend.bufferResources(gpu_mesh.vertex_buffer);
    const auto index_buffer = backend.bufferResources(gpu_mesh.index_buffer);
+   const auto material_buffer = backend.bufferResources(gpu_material.constants_buffer);
    if (!vertex_buffer || !vertex_buffer->has_value() || !index_buffer || !index_buffer->has_value() ||
-       (*vertex_buffer)->byte_size != gpu_mesh.vertex_byte_size ||
-       (*index_buffer)->byte_size != gpu_mesh.index_byte_size) {
-      return 26;
+       !material_buffer || !material_buffer->has_value() || (*vertex_buffer)->byte_size != gpu_mesh.vertex_byte_size ||
+       (*index_buffer)->byte_size != gpu_mesh.index_byte_size ||
+       (*material_buffer)->usage != vve::v3::GpuBufferUsage::uniform ||
+       (*material_buffer)->owner != imported_scene.materials.front().handle.value ||
+       (*material_buffer)->byte_size != sizeof(float) * 16U) {
+      return 27;
    }
 
    const auto uploaded_records = resource_system.enumerate();
    if (!uploaded_records) {
-      return 27;
+      return 28;
    }
 
    const auto mesh_record = std::ranges::find_if(*uploaded_records, [&](const vve::v3::ResourceRecord &record) {
@@ -261,21 +289,38 @@ int main() {
       return record.id == gpu_mesh.index_buffer.value && record.kind == vve::v3::ResourceKind::buffer &&
              record.location == vve::v3::ResourceLocation::gpu_memory;
    });
+   const auto material_record = std::ranges::find_if(*uploaded_records, [&](const vve::v3::ResourceRecord &record) {
+      return record.id == imported_scene.materials.front().handle.value &&
+             record.kind == vve::v3::ResourceKind::material &&
+             record.location == vve::v3::ResourceLocation::gpu_memory &&
+             record.generation == gpu_material.generation;
+   });
+   const auto material_buffer_record =
+       std::ranges::find_if(*uploaded_records, [&](const vve::v3::ResourceRecord &record) {
+          return record.id == gpu_material.constants_buffer.value && record.kind == vve::v3::ResourceKind::buffer &&
+                 record.location == vve::v3::ResourceLocation::gpu_memory;
+       });
    if (mesh_record == uploaded_records->end() || vertex_record == uploaded_records->end() ||
-       index_record == uploaded_records->end()) {
-      return 28;
+       index_record == uploaded_records->end() || material_record == uploaded_records->end() ||
+       material_buffer_record == uploaded_records->end()) {
+      return 29;
    }
 
    const auto uploaded_generation = gpu_mesh.generation;
    const auto uploaded_vertex_buffer = gpu_mesh.vertex_buffer;
    const auto uploaded_index_buffer = gpu_mesh.index_buffer;
+   const auto uploaded_material_generation = gpu_material.generation;
+   const auto uploaded_material_buffer = gpu_material.constants_buffer;
    const auto upload_again = resource_system.uploadResources(vve::v3::FrameContext{.frame_index = 2, .delta_seconds = 0.016},
                                                              *scene, backend);
    if (!upload_again || scene->gpu_meshes.size() != 1 ||
        scene->gpu_meshes.front().generation != uploaded_generation ||
        scene->gpu_meshes.front().vertex_buffer.value != uploaded_vertex_buffer.value ||
-       scene->gpu_meshes.front().index_buffer.value != uploaded_index_buffer.value) {
-      return 29;
+       scene->gpu_meshes.front().index_buffer.value != uploaded_index_buffer.value ||
+       scene->gpu_materials.size() != 1 ||
+       scene->gpu_materials.front().generation != uploaded_material_generation ||
+       scene->gpu_materials.front().constants_buffer.value != uploaded_material_buffer.value) {
+      return 30;
    }
 
    return 0;

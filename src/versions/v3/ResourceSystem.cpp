@@ -66,10 +66,47 @@ namespace vve::v3 {
       return static_cast<std::uint32_t>(value);
    }
 
+   /// @brief CPU-side material constant payload uploaded for forward shading.
+   struct MaterialConstantsUpload {
+      std::array<float, 4> base_color_factor{};
+      std::array<float, 4> scalar_factors{};
+      std::array<float, 4> emissive_factor{};
+      std::array<float, 4> reserved{};
+   };
+
+   static_assert(sizeof(MaterialConstantsUpload) == sizeof(float) * 16U);
+
+   /// @brief Builds the material constant payload consumed by rasterizer.slang.
+   [[nodiscard]] MaterialConstantsUpload materialConstantsUpload(const ImportedMaterial &material) {
+      return MaterialConstantsUpload{
+          .base_color_factor = {static_cast<float>(material.base_color_factor.x),
+                                static_cast<float>(material.base_color_factor.y),
+                                static_cast<float>(material.base_color_factor.z),
+                                static_cast<float>(material.base_color_factor.w)},
+          .scalar_factors = {static_cast<float>(material.normal_scale),
+                             static_cast<float>(material.roughness_factor),
+                             static_cast<float>(material.metallic_factor),
+                             static_cast<float>(material.alpha_cutoff)},
+          .emissive_factor = {static_cast<float>(material.emissive_factor.x),
+                              static_cast<float>(material.emissive_factor.y),
+                              static_cast<float>(material.emissive_factor.z),
+                              0.0F},
+          .reserved = {0.0F, 0.0F, 0.0F, 0.0F}};
+   }
+
    /// @brief Finds an uploaded mesh summary in mutable runtime scene data.
    [[nodiscard]] std::optional<std::size_t> gpuMeshIndex(const SceneData &scene, MeshHandle mesh) {
       const auto index_it = scene.gpu_mesh_indices.find(mesh.value.value());
       if (index_it == scene.gpu_mesh_indices.end() || index_it->second >= scene.gpu_meshes.size()) {
+         return std::nullopt;
+      }
+      return index_it->second;
+   }
+
+   /// @brief Finds an uploaded material summary in mutable runtime scene data.
+   [[nodiscard]] std::optional<std::size_t> gpuMaterialIndex(const SceneData &scene, MaterialHandle material) {
+      const auto index_it = scene.gpu_material_indices.find(material.value.value());
+      if (index_it == scene.gpu_material_indices.end() || index_it->second >= scene.gpu_materials.size()) {
          return std::nullopt;
       }
       return index_it->second;
@@ -207,6 +244,43 @@ namespace vve::v3 {
       /// @brief Uploads imported mesh resources to backend-owned GPU buffers.
       [[nodiscard]] std::expected<void, vve::Error> uploadResources(const FrameContext &, SceneData &scene,
                                                                     GraphicsBackend &graphics_backend) {
+         for (const auto &material : scene.materials) {
+            auto *record = findRecord(material.handle.value);
+            if (record == nullptr) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            if (const auto existing_material = gpuMaterialIndex(scene, material.handle);
+                existing_material.has_value() && scene.gpu_materials[*existing_material].constants_uploaded &&
+                scene.gpu_materials[*existing_material].generation == record->generation) {
+               continue;
+            }
+
+            const auto uploaded_generation = record->generation + 1U;
+            const auto payload = materialConstantsUpload(material);
+            const auto payload_bytes = std::as_bytes(std::span{std::addressof(payload), 1U});
+            const auto constants_buffer =
+                graphics_backend.createBuffer(material.handle.value, ResourceKind::material, GpuBufferUsage::uniform,
+                                              payload_bytes, uploaded_generation);
+            if (!constants_buffer) {
+               return std::unexpected(constants_buffer.error());
+            }
+
+            upsertGpuMaterial(scene, GpuMaterialResources{.material = material.handle,
+                                                          .constants_buffer = constants_buffer->handle,
+                                                          .generation = uploaded_generation,
+                                                          .constants_uploaded = true,
+                                                          .textures_uploaded = false});
+
+            record->location = ResourceLocation::gpu_memory;
+            record->generation = uploaded_generation;
+            upsertRecord(ResourceRecord{.id = constants_buffer->handle.value,
+                                        .kind = ResourceKind::buffer,
+                                        .location = ResourceLocation::gpu_memory,
+                                        .generation = uploaded_generation,
+                                        .source_path = scene.source_path});
+         }
+
          for (const auto &mesh : scene.meshes) {
             if (mesh.vertices.empty() || mesh.indices.empty()) {
                continue;
@@ -310,6 +384,19 @@ namespace vve::v3 {
 
          scene.gpu_mesh_indices.insert_or_assign(id, scene.gpu_meshes.size());
          scene.gpu_meshes.push_back(std::move(resources));
+      }
+
+      void upsertGpuMaterial(SceneData &scene, GpuMaterialResources resources) {
+         const auto id = resources.material.value.value();
+         if (const auto gpu_material_index = scene.gpu_material_indices.find(id);
+             gpu_material_index != scene.gpu_material_indices.end() &&
+             gpu_material_index->second < scene.gpu_materials.size()) {
+            scene.gpu_materials[gpu_material_index->second] = std::move(resources);
+            return;
+         }
+
+         scene.gpu_material_indices.insert_or_assign(id, scene.gpu_materials.size());
+         scene.gpu_materials.push_back(std::move(resources));
       }
 
       void upsertRecord(ResourceRecord record) {
