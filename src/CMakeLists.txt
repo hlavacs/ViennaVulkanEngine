@@ -36,8 +36,8 @@ endif()
 
 target_sources(ViennaVulkanEngine
     PRIVATE
-        Engine.cpp
-        versions/v3/Engine.cpp
+        EngineFacade.cpp
+        versions/v3/EngineV3.cpp
         versions/v3/AssetSystem.cpp
         versions/v3/ResourceSystem.cpp
         versions/v3/SceneSystem.cpp

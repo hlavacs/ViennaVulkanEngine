@@ -65,6 +65,21 @@ namespace vve::v3 {
          return normalized;
       }
 
+      /// @brief Lowercases ASCII text for lightweight reflected-name matching.
+      [[nodiscard]] std::string asciiLower(std::string_view text) {
+         std::string lowered{};
+         lowered.reserve(text.size());
+         for (const char character : text) {
+            lowered.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(character))));
+         }
+         return lowered;
+      }
+
+      /// @brief Returns whether reflected text contains a case-insensitive token.
+      [[nodiscard]] bool containsAsciiToken(std::string_view text, std::string_view token) {
+         return asciiLower(text).find(asciiLower(token)) != std::string::npos;
+      }
+
       /// @brief Stable renderer handle derived from the canonical backend id.
       [[nodiscard]] RendererHandle rendererHandle(std::string_view renderer_id) {
          return RendererHandle{.value = vve::Handle::fromHash(std::format("vulkan.renderer.{}", renderer_id))};
@@ -262,11 +277,32 @@ namespace vve::v3 {
          std::string entry_point{};
       };
 
+      /// @brief Backend-owned fallback buffer used to satisfy reflected descriptor bindings.
+      struct VulkanDescriptorBufferResource {
+         VkBuffer buffer{VK_NULL_HANDLE};
+         VkDeviceMemory memory{VK_NULL_HANDLE};
+         VkDeviceSize size{0};
+      };
+
+      /// @brief Backend-owned fallback sampled image used before real texture upload exists.
+      struct VulkanDescriptorImageResource {
+         VkImage image{VK_NULL_HANDLE};
+         VkDeviceMemory memory{VK_NULL_HANDLE};
+         VkImageView image_view{VK_NULL_HANDLE};
+         VkImageLayout layout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+      };
+
       /// @brief Backend-owned Vulkan objects created for one reflected pipeline layout.
       struct VulkanPipelineResources {
          PipelineBackendResources summary{};
          std::vector<VulkanShaderModule> shader_modules{};
          std::vector<VkDescriptorSetLayout> descriptor_set_layouts{};
+         std::vector<std::vector<PipelineDescriptorBindingDesc>> descriptor_bindings{};
+         VkDescriptorPool descriptor_pool{VK_NULL_HANDLE};
+         std::vector<VkDescriptorSet> descriptor_sets{};
+         std::vector<VulkanDescriptorBufferResource> descriptor_buffers{};
+         std::vector<VulkanDescriptorImageResource> descriptor_images{};
+         std::vector<VkSampler> descriptor_samplers{};
          VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
       };
 
@@ -475,6 +511,61 @@ namespace vve::v3 {
          }
 
          return std::nullopt;
+      }
+
+      /// @brief Builds conservative fallback bytes for reflected buffer descriptors.
+      [[nodiscard]] std::vector<std::byte> fallbackDescriptorBufferBytes(const PipelineDescriptorBindingDesc &binding) {
+         std::vector<std::byte> bytes(1024, std::byte{0});
+         const auto write_float = [&bytes](std::size_t offset, float value) {
+            if (offset + sizeof(value) <= bytes.size()) {
+               std::memcpy(bytes.data() + offset, &value, sizeof(value));
+            }
+         };
+         const auto write_uint = [&bytes](std::size_t offset, std::uint32_t value) {
+            if (offset + sizeof(value) <= bytes.size()) {
+               std::memcpy(bytes.data() + offset, &value, sizeof(value));
+            }
+         };
+         const auto write_identity = [&write_float](std::size_t offset) {
+            for (std::size_t row = 0; row < 4; ++row) {
+               for (std::size_t column = 0; column < 4; ++column) {
+                  write_float(offset + ((row * 4U + column) * sizeof(float)), row == column ? 1.0F : 0.0F);
+               }
+            }
+         };
+
+         if (containsAsciiToken(binding.name, "frame")) {
+            write_identity(0);
+            write_identity(64);
+            write_identity(128);
+         }
+         if (containsAsciiToken(binding.name, "material")) {
+            write_float(0, 1.0F);
+            write_float(4, 1.0F);
+            write_float(8, 1.0F);
+            write_float(12, 1.0F);
+            write_float(16, 1.0F);
+         }
+         if (containsAsciiToken(binding.name, "lighting")) {
+            write_uint(0, 0U);
+            write_float(4, 0.25F);
+            write_float(8, 0.25F);
+            write_float(12, 0.25F);
+            write_float(16, 0.25F);
+            write_float(20, 0.25F);
+            write_float(24, 0.25F);
+         }
+
+         return bytes;
+      }
+
+      /// @brief Chooses a clear color for fallback textures by reflected binding name.
+      [[nodiscard]] VkClearColorValue fallbackTextureClearColor(const PipelineDescriptorBindingDesc &binding) {
+         if (containsAsciiToken(binding.name, "normal")) {
+            return VkClearColorValue{.float32 = {0.5F, 0.5F, 1.0F, 1.0F}};
+         }
+
+         return VkClearColorValue{.float32 = {1.0F, 1.0F, 1.0F, 1.0F}};
       }
 
       /// @brief Converts renderer-selected primitive topology to Vulkan pipeline state.
@@ -1084,6 +1175,14 @@ namespace vve::v3 {
             destroyPipelineResources(resources);
             return std::unexpected(pipeline_layout.error());
          }
+         if (auto descriptor_pool = createDescriptorPoolAndSets(resources); !descriptor_pool) {
+            destroyPipelineResources(resources);
+            return std::unexpected(descriptor_pool.error());
+         }
+         if (auto descriptor_updates = updateFallbackDescriptorSets(resources); !descriptor_updates) {
+            destroyPipelineResources(resources);
+            return std::unexpected(descriptor_updates.error());
+         }
 
          resources.summary.shader_module_count = resources.shader_modules.size();
          resources.summary.descriptor_set_layout_count = resources.descriptor_set_layouts.size();
@@ -1620,8 +1719,10 @@ namespace vve::v3 {
       [[nodiscard]] std::expected<void, vve::Error>
       createDescriptorSetLayouts(VulkanPipelineResources &resources, const PipelineLayoutDesc &layout) {
          resources.descriptor_set_layouts.reserve(layout.descriptor_sets.size());
+         resources.descriptor_bindings.reserve(layout.descriptor_sets.size());
          for (const auto &descriptor_set : layout.descriptor_sets) {
             std::map<std::uint32_t, VkDescriptorSetLayoutBinding> bindings_by_index{};
+            std::map<std::uint32_t, PipelineDescriptorBindingDesc> binding_descs_by_index{};
             for (const auto &binding : descriptor_set.bindings) {
                const auto type = descriptorType(binding.kind);
                if (!type.has_value()) {
@@ -1654,13 +1755,20 @@ namespace vve::v3 {
                }
 
                bindings_by_index.emplace(binding.binding, vk_binding);
+               binding_descs_by_index.emplace(binding.binding, binding);
             }
 
             std::vector<VkDescriptorSetLayoutBinding> bindings{};
+            std::vector<PipelineDescriptorBindingDesc> binding_descs{};
             bindings.reserve(bindings_by_index.size());
             for (const auto &[binding_index, binding] : bindings_by_index) {
                (void)binding_index;
                bindings.push_back(binding);
+            }
+            binding_descs.reserve(binding_descs_by_index.size());
+            for (const auto &[binding_index, binding_desc] : binding_descs_by_index) {
+               (void)binding_index;
+               binding_descs.push_back(binding_desc);
             }
 
             const VkDescriptorSetLayoutCreateInfo create_info{
@@ -1678,8 +1786,402 @@ namespace vve::v3 {
             }
 
             resources.descriptor_set_layouts.push_back(descriptor_set_layout);
+            resources.descriptor_bindings.push_back(std::move(binding_descs));
          }
 
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      createDescriptorPoolAndSets(VulkanPipelineResources &resources) {
+         if (resources.descriptor_set_layouts.empty()) {
+            return {};
+         }
+
+         std::map<VkDescriptorType, std::uint32_t> descriptor_counts{};
+         for (const auto &descriptor_set : resources.descriptor_bindings) {
+            for (const auto &binding : descriptor_set) {
+               const auto type = descriptorType(binding.kind);
+               if (type.has_value()) {
+                  ++descriptor_counts[*type];
+               }
+            }
+         }
+         if (descriptor_counts.empty()) {
+            return {};
+         }
+
+         std::vector<VkDescriptorPoolSize> pool_sizes{};
+         pool_sizes.reserve(descriptor_counts.size());
+         for (const auto &[type, count] : descriptor_counts) {
+            pool_sizes.push_back(VkDescriptorPoolSize{.type = type, .descriptorCount = count});
+         }
+
+         const VkDescriptorPoolCreateInfo pool_info{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+                                                    .pNext = nullptr,
+                                                    .flags = 0,
+                                                    .maxSets =
+                                                        static_cast<std::uint32_t>(resources.descriptor_set_layouts.size()),
+                                                    .poolSizeCount =
+                                                        static_cast<std::uint32_t>(pool_sizes.size()),
+                                                    .pPoolSizes = pool_sizes.data()};
+         VkResult result = vkCreateDescriptorPool(device_, &pool_info, nullptr, &resources.descriptor_pool);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateDescriptorPool failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         resources.descriptor_sets.resize(resources.descriptor_set_layouts.size(), VK_NULL_HANDLE);
+         const VkDescriptorSetAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                                                         .pNext = nullptr,
+                                                         .descriptorPool = resources.descriptor_pool,
+                                                         .descriptorSetCount =
+                                                             static_cast<std::uint32_t>(resources.descriptor_sets.size()),
+                                                         .pSetLayouts = resources.descriptor_set_layouts.data()};
+         result = vkAllocateDescriptorSets(device_, &allocate_info, resources.descriptor_sets.data());
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkAllocateDescriptorSets failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         return {};
+      }
+
+      [[nodiscard]] std::expected<std::size_t, vve::Error>
+      createFallbackDescriptorBuffer(VulkanPipelineResources &resources, VkDescriptorType descriptor_type,
+                                     const PipelineDescriptorBindingDesc &binding) {
+         VkBufferUsageFlags usage = 0;
+         if (descriptor_type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
+            usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+         } else if (descriptor_type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+            usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+         } else {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto bytes = fallbackDescriptorBufferBytes(binding);
+         VulkanGpuBufferResources buffer_resource{};
+         if (auto create_result = createVulkanBuffer(buffer_resource, usage, std::span<const std::byte>{bytes});
+             !create_result) {
+            destroyBufferResources(buffer_resource);
+            return std::unexpected(create_result.error());
+         }
+
+         const auto index = resources.descriptor_buffers.size();
+         resources.descriptor_buffers.push_back(VulkanDescriptorBufferResource{
+             .buffer = buffer_resource.buffer,
+             .memory = buffer_resource.memory,
+             .size = static_cast<VkDeviceSize>(bytes.size())});
+         buffer_resource.buffer = VK_NULL_HANDLE;
+         buffer_resource.memory = VK_NULL_HANDLE;
+         return index;
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      initializeFallbackImage(VkImage image, VkClearColorValue clear_color) {
+         if (command_pool_ == VK_NULL_HANDLE || graphics_queue_ == VK_NULL_HANDLE || image == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         VkCommandBuffer command_buffer = VK_NULL_HANDLE;
+         const VkCommandBufferAllocateInfo allocate_info{
+             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+             .pNext = nullptr,
+             .commandPool = command_pool_,
+             .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+             .commandBufferCount = 1};
+         VkResult result = vkAllocateCommandBuffers(device_, &allocate_info, &command_buffer);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkAllocateCommandBuffers(fallback image) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkCommandBufferBeginInfo begin_info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                                                   .pNext = nullptr,
+                                                   .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+                                                   .pInheritanceInfo = nullptr};
+         result = vkBeginCommandBuffer(command_buffer, &begin_info);
+         if (result != VK_SUCCESS) {
+            vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
+            std::cerr << "[VulkanGraphicsBackend] vkBeginCommandBuffer(fallback image) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkImageSubresourceRange range{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                             .baseMipLevel = 0,
+                                             .levelCount = 1,
+                                             .baseArrayLayer = 0,
+                                             .layerCount = 1};
+         const VkImageMemoryBarrier to_transfer{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                .pNext = nullptr,
+                                                .srcAccessMask = 0,
+                                                .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                                                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                                                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                .image = image,
+                                                .subresourceRange = range};
+         vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                              0, nullptr, 0, nullptr, 1, &to_transfer);
+         vkCmdClearColorImage(command_buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &range);
+         const VkImageMemoryBarrier to_shader_read{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                   .pNext = nullptr,
+                                                   .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                                                   .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+                                                   .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                   .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                                   .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                   .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                   .image = image,
+                                                   .subresourceRange = range};
+         vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+                              0, nullptr, 0, nullptr, 1, &to_shader_read);
+
+         result = vkEndCommandBuffer(command_buffer);
+         if (result != VK_SUCCESS) {
+            vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
+            std::cerr << "[VulkanGraphicsBackend] vkEndCommandBuffer(fallback image) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkSubmitInfo submit_info{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                        .pNext = nullptr,
+                                        .waitSemaphoreCount = 0,
+                                        .pWaitSemaphores = nullptr,
+                                        .pWaitDstStageMask = nullptr,
+                                        .commandBufferCount = 1,
+                                        .pCommandBuffers = &command_buffer,
+                                        .signalSemaphoreCount = 0,
+                                        .pSignalSemaphores = nullptr};
+         result = vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
+         if (result == VK_SUCCESS) {
+            result = vkQueueWaitIdle(graphics_queue_);
+         }
+         vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] fallback image initialization failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         return {};
+      }
+
+      [[nodiscard]] std::expected<std::size_t, vve::Error>
+      createFallbackSampledImage(VulkanPipelineResources &resources,
+                                 const PipelineDescriptorBindingDesc &binding) {
+         VulkanDescriptorImageResource image_resource{};
+         const VkImageCreateInfo image_info{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                                            .pNext = nullptr,
+                                            .flags = 0,
+                                            .imageType = VK_IMAGE_TYPE_2D,
+                                            .format = VK_FORMAT_R8G8B8A8_UNORM,
+                                            .extent = {.width = 1, .height = 1, .depth = 1},
+                                            .mipLevels = 1,
+                                            .arrayLayers = 1,
+                                            .samples = VK_SAMPLE_COUNT_1_BIT,
+                                            .tiling = VK_IMAGE_TILING_OPTIMAL,
+                                            .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                                            .queueFamilyIndexCount = 0,
+                                            .pQueueFamilyIndices = nullptr,
+                                            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED};
+         VkResult result = vkCreateImage(device_, &image_info, nullptr, &image_resource.image);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateImage(fallback texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         VkMemoryRequirements requirements{};
+         vkGetImageMemoryRequirements(device_, image_resource.image, &requirements);
+         const auto memory_type = findMemoryType(requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+         if (!memory_type) {
+            vkDestroyImage(device_, image_resource.image, nullptr);
+            return std::unexpected(memory_type.error());
+         }
+
+         const VkMemoryAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                                                  .pNext = nullptr,
+                                                  .allocationSize = requirements.size,
+                                                  .memoryTypeIndex = *memory_type};
+         result = vkAllocateMemory(device_, &allocate_info, nullptr, &image_resource.memory);
+         if (result != VK_SUCCESS) {
+            vkDestroyImage(device_, image_resource.image, nullptr);
+            std::cerr << "[VulkanGraphicsBackend] vkAllocateMemory(fallback texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         result = vkBindImageMemory(device_, image_resource.image, image_resource.memory, 0);
+         if (result != VK_SUCCESS) {
+            vkFreeMemory(device_, image_resource.memory, nullptr);
+            vkDestroyImage(device_, image_resource.image, nullptr);
+            std::cerr << "[VulkanGraphicsBackend] vkBindImageMemory(fallback texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkImageViewCreateInfo view_info{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                               .pNext = nullptr,
+                                               .flags = 0,
+                                               .image = image_resource.image,
+                                               .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                                               .format = VK_FORMAT_R8G8B8A8_UNORM,
+                                               .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                              .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                              .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                              .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+                                               .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                                    .baseMipLevel = 0,
+                                                                    .levelCount = 1,
+                                                                    .baseArrayLayer = 0,
+                                                                    .layerCount = 1}};
+         result = vkCreateImageView(device_, &view_info, nullptr, &image_resource.image_view);
+         if (result != VK_SUCCESS) {
+            vkFreeMemory(device_, image_resource.memory, nullptr);
+            vkDestroyImage(device_, image_resource.image, nullptr);
+            std::cerr << "[VulkanGraphicsBackend] vkCreateImageView(fallback texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         if (auto init_result = initializeFallbackImage(image_resource.image, fallbackTextureClearColor(binding));
+             !init_result) {
+            vkDestroyImageView(device_, image_resource.image_view, nullptr);
+            vkFreeMemory(device_, image_resource.memory, nullptr);
+            vkDestroyImage(device_, image_resource.image, nullptr);
+            return std::unexpected(init_result.error());
+         }
+
+         const auto index = resources.descriptor_images.size();
+         resources.descriptor_images.push_back(image_resource);
+         return index;
+      }
+
+      [[nodiscard]] std::expected<std::size_t, vve::Error>
+      createFallbackSampler(VulkanPipelineResources &resources) {
+         const VkSamplerCreateInfo sampler_info{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                                                .pNext = nullptr,
+                                                .flags = 0,
+                                                .magFilter = VK_FILTER_LINEAR,
+                                                .minFilter = VK_FILTER_LINEAR,
+                                                .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                                                .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                                                .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                                                .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                                                .mipLodBias = 0.0F,
+                                                .anisotropyEnable = VK_FALSE,
+                                                .maxAnisotropy = 1.0F,
+                                                .compareEnable = VK_FALSE,
+                                                .compareOp = VK_COMPARE_OP_ALWAYS,
+                                                .minLod = 0.0F,
+                                                .maxLod = 0.0F,
+                                                .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+                                                .unnormalizedCoordinates = VK_FALSE};
+         VkSampler sampler = VK_NULL_HANDLE;
+         const VkResult result = vkCreateSampler(device_, &sampler_info, nullptr, &sampler);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateSampler(fallback) failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const auto index = resources.descriptor_samplers.size();
+         resources.descriptor_samplers.push_back(sampler);
+         return index;
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      updateFallbackDescriptorSets(VulkanPipelineResources &resources) {
+         if (resources.descriptor_sets.empty()) {
+            return {};
+         }
+
+         std::size_t descriptor_count = 0;
+         for (const auto &descriptor_set : resources.descriptor_bindings) {
+            descriptor_count += descriptor_set.size();
+         }
+
+         std::vector<VkDescriptorBufferInfo> buffer_infos{};
+         std::vector<VkDescriptorImageInfo> image_infos{};
+         std::vector<VkWriteDescriptorSet> writes{};
+         buffer_infos.reserve(descriptor_count);
+         image_infos.reserve(descriptor_count);
+         writes.reserve(descriptor_count);
+
+         for (std::size_t set_index = 0; set_index < resources.descriptor_bindings.size(); ++set_index) {
+            if (set_index >= resources.descriptor_sets.size() ||
+                resources.descriptor_sets[set_index] == VK_NULL_HANDLE) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            for (const auto &binding : resources.descriptor_bindings[set_index]) {
+               const auto type = descriptorType(binding.kind);
+               if (!type.has_value()) {
+                  continue;
+               }
+
+               VkDescriptorBufferInfo *buffer_info = nullptr;
+               VkDescriptorImageInfo *image_info = nullptr;
+               if (*type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || *type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+                  const auto buffer_index = createFallbackDescriptorBuffer(resources, *type, binding);
+                  if (!buffer_index) {
+                     return std::unexpected(buffer_index.error());
+                  }
+                  const auto &buffer = resources.descriptor_buffers[*buffer_index];
+                  buffer_infos.push_back(VkDescriptorBufferInfo{.buffer = buffer.buffer,
+                                                                .offset = 0,
+                                                                .range = buffer.size});
+                  buffer_info = &buffer_infos.back();
+               } else if (*type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) {
+                  const auto image_index = createFallbackSampledImage(resources, binding);
+                  if (!image_index) {
+                     return std::unexpected(image_index.error());
+                  }
+                  const auto &image = resources.descriptor_images[*image_index];
+                  image_infos.push_back(VkDescriptorImageInfo{.sampler = VK_NULL_HANDLE,
+                                                              .imageView = image.image_view,
+                                                              .imageLayout = image.layout});
+                  image_info = &image_infos.back();
+               } else if (*type == VK_DESCRIPTOR_TYPE_SAMPLER) {
+                  const auto sampler_index = createFallbackSampler(resources);
+                  if (!sampler_index) {
+                     return std::unexpected(sampler_index.error());
+                  }
+                  image_infos.push_back(VkDescriptorImageInfo{.sampler = resources.descriptor_samplers[*sampler_index],
+                                                              .imageView = VK_NULL_HANDLE,
+                                                              .imageLayout = VK_IMAGE_LAYOUT_UNDEFINED});
+                  image_info = &image_infos.back();
+               } else {
+                  std::cerr << "[VulkanGraphicsBackend] unsupported fallback descriptor type for binding "
+                            << binding.binding << '\n';
+                  return std::unexpected(vve::Error::invalid_argument);
+               }
+
+               writes.push_back(VkWriteDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                                     .pNext = nullptr,
+                                                     .dstSet = resources.descriptor_sets[set_index],
+                                                     .dstBinding = binding.binding,
+                                                     .dstArrayElement = 0,
+                                                     .descriptorCount = 1,
+                                                     .descriptorType = *type,
+                                                     .pImageInfo = image_info,
+                                                     .pBufferInfo = buffer_info,
+                                                     .pTexelBufferView = nullptr});
+            }
+         }
+
+         if (!writes.empty()) {
+            vkUpdateDescriptorSets(device_, static_cast<std::uint32_t>(writes.size()), writes.data(), 0, nullptr);
+         }
          return {};
       }
 
@@ -2505,8 +3007,21 @@ namespace vve::v3 {
                return std::unexpected(vve::Error::invalid_argument);
             }
 
+            const auto pipeline_resource =
+                pipeline_resources_.find(pipeline->second.summary.backend_resources.value.value());
+            if (pipeline_resource == pipeline_resources_.end() ||
+                pipeline_resource->second.pipeline_layout == VK_NULL_HANDLE) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
             const VkDeviceSize vertex_offset = 0;
             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->second.pipeline);
+            if (!pipeline_resource->second.descriptor_sets.empty()) {
+               vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                       pipeline_resource->second.pipeline_layout, 0,
+                                       static_cast<std::uint32_t>(pipeline_resource->second.descriptor_sets.size()),
+                                       pipeline_resource->second.descriptor_sets.data(), 0, nullptr);
+            }
             vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer->second.buffer, &vertex_offset);
             vkCmdBindIndexBuffer(command_buffer, index_buffer->second.buffer, 0, VK_INDEX_TYPE_UINT32);
             vkCmdDrawIndexed(command_buffer, packet.index_count, packet.instance_count, packet.first_index,
@@ -2691,12 +3206,55 @@ namespace vve::v3 {
             resources.pipeline_layout = VK_NULL_HANDLE;
          }
 
+         if (resources.descriptor_pool != VK_NULL_HANDLE) {
+            vkDestroyDescriptorPool(device_, resources.descriptor_pool, nullptr);
+            resources.descriptor_pool = VK_NULL_HANDLE;
+         }
+         resources.descriptor_sets.clear();
+
+         for (auto sampler : resources.descriptor_samplers) {
+            if (sampler != VK_NULL_HANDLE) {
+               vkDestroySampler(device_, sampler, nullptr);
+            }
+         }
+         resources.descriptor_samplers.clear();
+
+         for (auto &image : resources.descriptor_images) {
+            if (image.image_view != VK_NULL_HANDLE) {
+               vkDestroyImageView(device_, image.image_view, nullptr);
+               image.image_view = VK_NULL_HANDLE;
+            }
+            if (image.image != VK_NULL_HANDLE) {
+               vkDestroyImage(device_, image.image, nullptr);
+               image.image = VK_NULL_HANDLE;
+            }
+            if (image.memory != VK_NULL_HANDLE) {
+               vkFreeMemory(device_, image.memory, nullptr);
+               image.memory = VK_NULL_HANDLE;
+            }
+         }
+         resources.descriptor_images.clear();
+
+         for (auto &buffer : resources.descriptor_buffers) {
+            if (buffer.buffer != VK_NULL_HANDLE) {
+               vkDestroyBuffer(device_, buffer.buffer, nullptr);
+               buffer.buffer = VK_NULL_HANDLE;
+            }
+            if (buffer.memory != VK_NULL_HANDLE) {
+               vkFreeMemory(device_, buffer.memory, nullptr);
+               buffer.memory = VK_NULL_HANDLE;
+            }
+            buffer.size = 0;
+         }
+         resources.descriptor_buffers.clear();
+
          for (auto descriptor_set_layout : resources.descriptor_set_layouts) {
             if (descriptor_set_layout != VK_NULL_HANDLE) {
                vkDestroyDescriptorSetLayout(device_, descriptor_set_layout, nullptr);
             }
          }
          resources.descriptor_set_layouts.clear();
+         resources.descriptor_bindings.clear();
 
          for (auto shader_module : resources.shader_modules) {
             if (shader_module.module != VK_NULL_HANDLE) {
