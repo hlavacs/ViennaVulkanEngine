@@ -229,6 +229,17 @@ namespace vve::v3 {
          return aliases;
       }
 
+      /// @brief Renderer ids that have a complete runtime path in this implementation stage.
+      [[nodiscard]] const std::set<std::string_view> &implementedRendererIds() {
+         static const std::set<std::string_view> implemented{"forward"};
+         return implemented;
+      }
+
+      /// @brief Returns whether a canonical renderer id is currently executable.
+      [[nodiscard]] bool isImplementedRendererId(std::string_view renderer_id) {
+         return implementedRendererIds().contains(renderer_id);
+      }
+
       /// @brief Maps Slang reflection binding labels to backend descriptor categories.
       [[nodiscard]] const std::map<std::string_view, DescriptorBindingKind> &descriptorBindingKindMap() {
          static const std::map<std::string_view, DescriptorBindingKind> kinds{
@@ -590,23 +601,6 @@ namespace vve::v3 {
                    desc.depth_write_enabled && desc.depth_format != GraphicsDepthFormat::none &&
                    desc.color_attachment_count == 1 && desc.vertex_binding_count == 1 &&
                    desc.vertex_attribute_count >= 5;
-         }
-
-         if (desc.renderer_id == "deferred") {
-            return desc.main_kernel == RenderKernelId::deferred_gbuffer &&
-                   desc.topology == GraphicsPrimitiveTopology::triangle_list &&
-                   desc.depth_test_enabled && desc.depth_write_enabled &&
-                   desc.depth_format != GraphicsDepthFormat::none && desc.color_attachment_count >= 3 &&
-                   desc.vertex_binding_count == 1 && desc.vertex_attribute_count >= 5;
-         }
-
-         if (desc.renderer_id == "path_tracing") {
-            return desc.main_kernel == RenderKernelId::path_trace &&
-                   desc.topology == GraphicsPrimitiveTopology::triangle_list &&
-                   desc.cull_mode == GraphicsCullMode::none && !desc.depth_test_enabled &&
-                   !desc.depth_write_enabled && desc.depth_format == GraphicsDepthFormat::none &&
-                   desc.color_attachment_count == 1 && desc.vertex_binding_count == 0 &&
-                   desc.vertex_attribute_count == 0;
          }
 
          return false;
@@ -1399,9 +1393,11 @@ namespace vve::v3 {
       /// @brief Returns all renderer descriptors supported by this Vulkan backend.
       [[nodiscard]] std::vector<RendererDesc> supportedRenderers() const {
          std::vector<RendererDesc> renderers{};
-         renderers.reserve(rendererRegistry().size());
+         renderers.reserve(implementedRendererIds().size());
          for (const auto &[id, renderer] : rendererRegistry()) {
-            (void)id;
+            if (!isImplementedRendererId(id)) {
+               continue;
+            }
             renderers.push_back(renderer);
          }
          return renderers;
@@ -1417,6 +1413,11 @@ namespace vve::v3 {
          const auto renderer = rendererRegistry().find(*canonical_id);
          if (renderer == rendererRegistry().end()) {
             return std::unexpected(vve::Error::internal_error);
+         }
+         if (!isImplementedRendererId(*canonical_id)) {
+            std::cerr << "[VulkanGraphicsBackend] renderer '" << *canonical_id
+                      << "' is recognized but not implemented in v3 yet\n";
+            return std::unexpected(vve::Error::unsupported_version);
          }
 
          return renderer->second;

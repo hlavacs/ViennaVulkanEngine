@@ -169,36 +169,9 @@ namespace vve::v3 {
          return desc;
       }
 
-      if (binding.renderer_id == "deferred" && binding.main_kernel == RenderKernelId::deferred_gbuffer) {
-         desc.topology = GraphicsPrimitiveTopology::triangle_list;
-         desc.cull_mode = GraphicsCullMode::back;
-         desc.front_face = GraphicsFrontFace::counter_clockwise;
-         desc.depth_test_enabled = true;
-         desc.depth_write_enabled = true;
-         desc.depth_compare = GraphicsDepthCompareOp::less_equal;
-         desc.blending_enabled = false;
-         desc.color_format = GraphicsColorFormat::rgba16_float;
-         desc.depth_format = GraphicsDepthFormat::depth32_float;
-         desc.color_attachment_count = 4;
-         desc.vertex_binding_count = 1;
-         desc.vertex_attribute_count = 5;
-         return desc;
-      }
-
-      if (binding.renderer_id == "path_tracing" && binding.main_kernel == RenderKernelId::path_trace) {
-         desc.topology = GraphicsPrimitiveTopology::triangle_list;
-         desc.cull_mode = GraphicsCullMode::none;
-         desc.front_face = GraphicsFrontFace::counter_clockwise;
-         desc.depth_test_enabled = false;
-         desc.depth_write_enabled = false;
-         desc.depth_compare = GraphicsDepthCompareOp::always;
-         desc.blending_enabled = false;
-         desc.color_format = GraphicsColorFormat::rgba16_float;
-         desc.depth_format = GraphicsDepthFormat::none;
-         desc.color_attachment_count = 1;
-         desc.vertex_binding_count = 0;
-         desc.vertex_attribute_count = 0;
-         return desc;
+      if ((binding.renderer_id == "deferred" && binding.main_kernel == RenderKernelId::deferred_gbuffer) ||
+          (binding.renderer_id == "path_tracing" && binding.main_kernel == RenderKernelId::path_trace)) {
+         return std::unexpected(vve::Error::unsupported_version);
       }
 
       return std::unexpected(vve::Error::invalid_argument);

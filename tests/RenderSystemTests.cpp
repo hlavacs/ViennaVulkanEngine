@@ -307,11 +307,13 @@ int main() {
       return 1;
    }
 
-   if (!graphUsesKernel(render_system, backend, "deferred", vve::v3::RenderKernelId::deferred_gbuffer)) {
+   const auto unavailable_deferred = backend.createRenderer("deferred");
+   if (unavailable_deferred || unavailable_deferred.error() != vve::Error::unsupported_version) {
       return 2;
    }
 
-   if (!graphUsesKernel(render_system, backend, "path_tracing", vve::v3::RenderKernelId::path_trace)) {
+   const auto unavailable_path_tracing = backend.createRenderer("path_tracing");
+   if (unavailable_path_tracing || unavailable_path_tracing.error() != vve::Error::unsupported_version) {
       return 3;
    }
 
@@ -319,50 +321,38 @@ int main() {
       return 4;
    }
 
-   if (!pipelineBindsRenderer(render_system, backend, "deferred", vve::v3::RenderKernelId::deferred_gbuffer)) {
+   if (!pipelineRequestRequiresBackendInit(render_system, backend, "forward")) {
       return 5;
    }
 
-   if (!pipelineRequestRequiresBackendInit(render_system, backend, "forward")) {
+   const auto forward = backend.createRenderer("forward");
+   if (!forward) {
       return 6;
    }
 
-   if (!pipelineRequestRequiresBackendInit(render_system, backend, "deferred")) {
-      return 7;
-   }
-
-   if (!pipelineRequestRequiresBackendInit(render_system, backend, "path_tracing")) {
-      return 8;
-   }
-
-   const auto forward = backend.createRenderer("forward");
-   const auto deferred = backend.createRenderer("deferred");
-   if (!forward || !deferred) {
-      return 9;
-   }
-
    auto incompatible = testPipeline(render_system, *forward);
-   incompatible.pipeline_layout = testLayout(*deferred, incompatible.shader_program);
+   incompatible.pipeline_layout.renderer =
+       vve::v3::RendererHandle{.value = vve::Handle::fromHash(std::string_view{"tests.render.unavailable"})};
    incompatible.backend_resources = testResources(incompatible.pipeline_layout);
    const auto rejected = render_system.bindPipelineResources(incompatible);
    if (rejected || rejected.error() != vve::Error::invalid_argument) {
-      return 10;
+      return 7;
    }
 
    auto invalid_binding_source = testPipeline(render_system, *forward);
    const auto valid_binding = render_system.bindPipelineResources(invalid_binding_source);
    if (!valid_binding) {
-      return 11;
+      return 8;
    }
    auto invalid_binding = *valid_binding;
    invalid_binding.main_kernel = vve::v3::RenderKernelId::path_trace;
    const auto invalid_pipeline_request = render_system.createGraphicsPipeline(backend, invalid_binding);
    if (invalid_pipeline_request || invalid_pipeline_request.error() != vve::Error::invalid_argument) {
-      return 12;
+      return 9;
    }
 
    if (!drawPacketsReferenceUploadedMesh(render_system, backend)) {
-      return 13;
+      return 10;
    }
 
    return 0;

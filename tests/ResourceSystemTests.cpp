@@ -211,46 +211,39 @@ int main() {
    }
 
    const auto deferred_renderer = backend.createRenderer("deferred");
-   if (!deferred_renderer) {
+   if (deferred_renderer || deferred_renderer.error() != vve::Error::unsupported_version) {
       return 17;
-   }
-
-   const auto deferred_layout = backend.createPipelineLayout(*deferred_renderer, *deferred_shader);
-   if (!deferred_layout || deferred_layout->renderer_id != "deferred" ||
-       deferred_layout->shader_program.value != deferred_shader->handle.value ||
-       deferred_layout->shader_program.value == forward_layout->shader_program.value) {
-      return 18;
    }
 
    const auto missing_shader = resource_system.loadShaderProgram(repository_root / "src/versions/v3/shaders/missing.slang",
                                                                  shader_system, vve::RendererKind::forward_renderer,
                                                                  vve::ShadowKind::none);
    if (missing_shader || missing_shader.error() != vve::Error::file_not_found) {
-      return 19;
+      return 18;
    }
 
    const auto backend_init = backend.init();
    if (!backend_init) {
-      return 20;
+      return 19;
    }
 
    const auto imported_scene =
        makeTriangleScene(repository_root / "tests/triangle_scene.gltf", repository_root / "assets/fox/Texture.png");
    const auto register_scene = resource_system.registerImportedScene(imported_scene, imported_scene.source_path);
    if (!register_scene) {
-      return 21;
+      return 20;
    }
 
    vve::v3::SceneSystem scene_system{};
    auto scene = scene_system.instantiate(imported_scene);
    if (!scene) {
-      return 22;
+      return 21;
    }
 
    const auto upload = resource_system.uploadResources(vve::v3::FrameContext{.frame_index = 1, .delta_seconds = 0.016},
                                                        *scene, backend);
    if (!upload) {
-      return 23;
+      return 22;
    }
 
    if (scene->gpu_textures.size() != 1 ||
@@ -259,7 +252,7 @@ int main() {
        !scene->gpu_mesh_indices.contains(imported_scene.meshes.front().handle.value.value()) ||
        scene->gpu_materials.size() != 1 ||
        !scene->gpu_material_indices.contains(imported_scene.materials.front().handle.value.value())) {
-      return 24;
+      return 23;
    }
 
    const auto &gpu_texture = scene->gpu_textures.front();

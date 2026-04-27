@@ -33,8 +33,8 @@ int main() {
    vve::v3::GraphicsBackend backend{};
 
    const auto supported = backend.supportedRenderers();
-   if (!hasRendererId(supported, "forward") || !hasRendererId(supported, "deferred") ||
-       !hasRendererId(supported, "path_tracing")) {
+   if (!hasRendererId(supported, "forward") || hasRendererId(supported, "deferred") ||
+       hasRendererId(supported, "path_tracing")) {
       return 1;
    }
 
@@ -51,14 +51,12 @@ int main() {
    }
 
    const auto deferred_alias = backend.createRenderer("deferred-renderer");
-   if (!deferred_alias || deferred_alias->id != "deferred" ||
-       deferred_alias->main_kernel != vve::v3::RenderKernelId::deferred_gbuffer) {
+   if (deferred_alias || deferred_alias.error() != vve::Error::unsupported_version) {
       return 4;
    }
 
    const auto path_tracer_alias = backend.createRenderer("path-tracer");
-   if (!path_tracer_alias || path_tracer_alias->id != "path_tracing" ||
-       path_tracer_alias->main_kernel != vve::v3::RenderKernelId::path_trace) {
+   if (path_tracer_alias || path_tracer_alias.error() != vve::Error::unsupported_version) {
       return 5;
    }
 
