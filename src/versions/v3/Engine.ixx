@@ -331,6 +331,7 @@ namespace vve::v3 {
       }
 
       runtime_ = std::move(*runtime);
+      detail::rebindRuntimeReferences(runtime_);
       const auto instance_extensions = runtime_.window_system.vulkanInstanceExtensions();
       if (!instance_extensions) {
          return std::unexpected(instance_extensions.error());

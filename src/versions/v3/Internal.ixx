@@ -166,6 +166,8 @@ export namespace vve::v3::detail {
                           const TaskExecutionContext &execution_context);
    /// @brief Assembles the concrete v3 runtime from the runtime descriptor.
    [[nodiscard]] VVE_API std::expected<Runtime, vve::Error> createRuntime(const EngineRuntimeDesc &desc);
+   /// @brief Rebinds runtime-owned facades that store references to sibling subsystems after a runtime move.
+   VVE_API void rebindRuntimeReferences(Runtime &runtime);
    /// @brief Creates backend-owned Vulkan resources for each assembled window render pipeline.
    [[nodiscard]] VVE_API std::expected<void, vve::Error> createRuntimePipelineResources(Runtime &runtime);
    /// @brief Binds backend pipeline resources to the selected renderer instances.

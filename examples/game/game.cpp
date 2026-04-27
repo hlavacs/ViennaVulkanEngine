@@ -2,10 +2,15 @@
 #include <array>
 #include <cmath>
 #include <cstdint>
+#include <cstdlib>
 #include <expected>
+#include <filesystem>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <string_view>
+#include <utility>
+#include <vector>
 
 import VEEngine;
 import VEEngine.V3;
@@ -15,6 +20,82 @@ import VEEngine.V3;
  * @brief Interactive example that drives a small user-system-based game loop.
  */
 namespace {
+
+[[nodiscard]] std::optional<std::filesystem::path>
+firstExistingPath(const std::vector<std::filesystem::path>& candidates) {
+    for (const auto& candidate : candidates) {
+        std::error_code error_code{};
+        if (std::filesystem::is_regular_file(candidate, error_code) && !error_code) {
+            return std::filesystem::weakly_canonical(candidate, error_code);
+        }
+    }
+
+    return std::nullopt;
+}
+
+[[nodiscard]] std::filesystem::path executableDirectory(char** argv) {
+    if (argv == nullptr || argv[0] == nullptr || argv[0][0] == '\0') {
+        return {};
+    }
+
+    std::error_code error_code{};
+    const auto executable_path = std::filesystem::absolute(std::filesystem::path(argv[0]), error_code);
+    if (error_code) {
+        return {};
+    }
+
+    return executable_path.parent_path();
+}
+
+void appendGameSceneCandidates(std::vector<std::filesystem::path>& candidates, const std::filesystem::path& root) {
+    if (root.empty()) {
+        return;
+    }
+
+    candidates.push_back(root / "assets" / "fox" / "Fox.gltf");
+    candidates.push_back(root / "assets" / "sea_keep_lonely_watcher" / "scene.gltf");
+}
+
+[[nodiscard]] std::optional<std::filesystem::path> resolveGameScenePath(int argc, char** argv) {
+    for (int argument_index = 1; argument_index < argc; ++argument_index) {
+        if (argv[argument_index] == nullptr || argv[argument_index][0] == '\0') {
+            continue;
+        }
+
+        const std::string_view argument{argv[argument_index]};
+        if (argument == "--scene" && argument_index + 1 < argc && argv[argument_index + 1] != nullptr) {
+            if (auto direct_path = firstExistingPath({std::filesystem::path(argv[argument_index + 1])})) {
+                return direct_path;
+            }
+            ++argument_index;
+            continue;
+        }
+
+        if (!argument.empty() && argument.front() != '-') {
+            if (auto direct_path = firstExistingPath({std::filesystem::path(std::string(argument))})) {
+                return direct_path;
+            }
+        }
+    }
+
+    if (const char* environment_path = std::getenv("VVE_GAME_SCENE");
+        environment_path != nullptr && environment_path[0] != '\0') {
+        if (auto environment_scene = firstExistingPath({std::filesystem::path(environment_path)})) {
+            return environment_scene;
+        }
+    }
+
+    const auto current_directory = std::filesystem::current_path();
+    const auto executable_directory = executableDirectory(argv);
+
+    std::vector<std::filesystem::path> candidates{};
+    appendGameSceneCandidates(candidates, current_directory);
+    appendGameSceneCandidates(candidates, current_directory.parent_path());
+    appendGameSceneCandidates(candidates, executable_directory);
+    appendGameSceneCandidates(candidates, executable_directory.parent_path().parent_path());
+    appendGameSceneCandidates(candidates, executable_directory.parent_path().parent_path().parent_path());
+    return firstExistingPath(candidates);
+}
 
 /**
  * @brief Example gameplay component storing planar velocity.
@@ -33,6 +114,10 @@ struct Velocity {
  */
 class SimpleGameSystem final {
 public:
+    /// @brief Creates the sample system with the scene rendered behind the input demo.
+    explicit SimpleGameSystem(std::filesystem::path scene_path = {})
+        : scene_path_(std::move(scene_path)) {}
+
     /// @brief Returns the system name shown in diagnostics.
     [[nodiscard]] std::string_view name() const noexcept {
         return "SimpleGameSystem";
@@ -51,6 +136,19 @@ public:
         }
 
         player_ = *player_result;
+
+        if (scene_path_.empty()) {
+            return std::unexpected(vve::Error::invalid_argument);
+        }
+
+        std::cout << '[' << name() << "] loading scene: " << scene_path_.string() << '\n';
+        if (const auto load_result = world.loadScene(scene_path_); !load_result) {
+            return std::unexpected(load_result.error());
+        }
+
+        if (const auto camera_result = updateCamera(world, vve::math::zeroVec3()); !camera_result) {
+            return std::unexpected(camera_result.error());
+        }
 
         std::cout << '[' << name() << "] spawned entity " << player_.value() << '\n';
         printWindowInventory(world);
@@ -122,6 +220,11 @@ public:
         transform.translation.x = std::clamp(transform.translation.x, -limit_x, limit_x);
         transform.translation.y = std::clamp(transform.translation.y, -limit_y, limit_y);
 
+        const auto camera_result = updateCamera(world, transform.translation);
+        if (!camera_result) {
+            return std::unexpected(camera_result.error());
+        }
+
         if (const auto set_transform_result = world.setTransform(player_, transform); !set_transform_result) {
             return std::unexpected(set_transform_result.error());
         }
@@ -152,9 +255,12 @@ public:
             const auto tools_window = world.findWindow("tools");
             const auto player_x = static_cast<int>(std::lround(transform.translation.x));
             const auto player_y = static_cast<int>(std::lround(transform.translation.y));
+            const auto camera = cameraForPlayer(transform.translation);
             std::cout << '[' << name() << "] player=(" << player_x << ", " << player_y << ')'
                       << " velocity=(" << static_cast<int>(std::lround(velocity.x)) << ", "
                       << static_cast<int>(std::lround(velocity.y)) << ')'
+                      << " camera=(" << camera.position.x << ", " << camera.position.y << ", "
+                      << camera.position.z << ')'
                       << " keys=" << key_state_string;
             if (main_window) {
                 std::cout << " main=" << main_window->width << 'x' << main_window->height
@@ -174,6 +280,29 @@ public:
     }
 
 private:
+    [[nodiscard]] vve::Camera cameraForPlayer(const vve::math::Vec3& player_position) const {
+        constexpr float world_to_camera = 0.01F;
+
+        vve::Camera camera{};
+        camera.position = vve::math::Vec3(
+            player_position.x * world_to_camera,
+            1.5F - (player_position.y * world_to_camera),
+            8.0F);
+        camera.view_transform = vve::math::translate(
+            vve::math::identityMat4(),
+            vve::math::Vec3(-camera.position.x, -camera.position.y, -camera.position.z));
+        camera.vertical_fov_radians = 0.9F;
+        camera.near_plane = 0.1F;
+        camera.far_plane = 1000.0F;
+        return camera;
+    }
+
+    [[nodiscard]] std::expected<void, vve::Error> updateCamera(
+        vve::World& world,
+        const vve::math::Vec3& player_position) const {
+        return world.setCamera(cameraForPlayer(player_position));
+    }
+
     void printWindowInventory(vve::World& world) {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
@@ -190,6 +319,8 @@ private:
 
     /// @brief Handle of the player entity created during initialization.
     vve::Handle player_{};
+    /// @brief Runtime scene loaded so public camera changes are visible.
+    std::filesystem::path scene_path_{};
     /// @brief Tracks time until the next heartbeat log line.
     double log_accumulator_seconds_{0.0};
     /// @brief Stores the last emitted key-state summary so repeated idle frames stay quiet.
@@ -200,15 +331,21 @@ private:
  * @brief Runs the interactive game example.
  * @return Process exit code expected by the example launcher.
  */
-int main(int, char **) {
+int main(int argc, char** argv) {
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
+
+    const auto scene_path = resolveGameScenePath(argc, argv);
+    if (!scene_path) {
+        std::cerr << "[game] unable to locate a game scene. Pass --scene <path> or set VVE_GAME_SCENE.\n";
+        return 1;
+    }
 
     // Configure a two-window sample runtime so the example exercises the
     auto engine = vve::makeEngine( // multi-window API shape exposed by the engine.
         vve::ApplicationName{"game"},
         vve::EnableValidation{true},
-        vve::makeUserSystems(SimpleGameSystem{}),
+        vve::makeUserSystems(SimpleGameSystem{*scene_path}),
         vve::Windows{
             .value = {
                 vve::WindowDesc{

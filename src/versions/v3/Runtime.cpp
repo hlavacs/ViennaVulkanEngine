@@ -301,6 +301,17 @@ namespace vve::v3::detail {
    }
 
    /**
+    * @brief Rebinds runtime-owned facades that hold references to sibling subsystems.
+    * @param runtime Runtime whose owning storage is already in its final address.
+    */
+   void rebindRuntimeReferences(Runtime &runtime) {
+      if (runtime.scene_loader != nullptr) {
+         runtime.scene_loader =
+             std::make_unique<SceneLoader>(runtime.asset_system, runtime.resource_system, runtime.scene_system);
+      }
+   }
+
+   /**
     * @brief Creates backend-owned Vulkan resources for all assembled window render pipelines.
     * @param runtime Runtime whose pipelines already contain reflected pipeline layout descriptions.
     * @return Empty success result, or the first backend/resource-system error.
