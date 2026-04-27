@@ -1,12 +1,16 @@
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <cstdlib>
 #include <expected>
 #include <filesystem>
 #include <iomanip>
 #include <iostream>
+#include <limits>
 #include <optional>
 #include <string>
 #include <string_view>
+#include <unordered_map>
 #include <vector>
 
 import VEEngine;
@@ -91,6 +95,7 @@ void appendSceneCandidates(std::vector<std::filesystem::path> &candidates, const
 }
 
 [[nodiscard]] bool wantsRuntimeSceneLoad(int argc, char **argv) {
+    std::optional<bool> command_line_choice{};
     for (int argument_index = 1; argument_index < argc; ++argument_index) {
         if (argv[argument_index] == nullptr) {
             continue;
@@ -98,8 +103,14 @@ void appendSceneCandidates(std::vector<std::filesystem::path> &candidates, const
 
         const std::string_view argument{argv[argument_index]};
         if (argument == "--load-runtime-scene") {
-            return true;
+            command_line_choice = true;
+        } else if (argument == "--list-only" || argument == "--no-runtime-scene") {
+            command_line_choice = false;
         }
+    }
+
+    if (command_line_choice.has_value()) {
+        return *command_line_choice;
     }
 
     if (const char *load_runtime_scene = std::getenv("VVE_SPONZA_LOAD_RUNTIME_SCENE");
@@ -108,7 +119,7 @@ void appendSceneCandidates(std::vector<std::filesystem::path> &candidates, const
         return value == "1" || value == "true" || value == "TRUE" || value == "on" || value == "ON";
     }
 
-    return false;
+    return true;
 }
 
 [[nodiscard]] std::optional<std::filesystem::path> resolveScenePath(int argc, char **argv) {
@@ -166,6 +177,195 @@ void printMat4(const vve::math::Mat4 &matrix, const std::string_view indent) {
         std::cout << indent << '[' << matrix[0][row] << ", " << matrix[1][row] << ", " << matrix[2][row] << ", "
                   << matrix[3][row] << "]\n";
     }
+}
+
+struct SceneBounds {
+    vve::math::Vec3 minimum{
+        std::numeric_limits<vve::math::Scalar>::max(),
+        std::numeric_limits<vve::math::Scalar>::max(),
+        std::numeric_limits<vve::math::Scalar>::max()};
+    vve::math::Vec3 maximum{
+        std::numeric_limits<vve::math::Scalar>::lowest(),
+        std::numeric_limits<vve::math::Scalar>::lowest(),
+        std::numeric_limits<vve::math::Scalar>::lowest()};
+    bool valid{false};
+};
+
+struct SponzaCameraPlan {
+    vve::Camera camera{};
+    vve::math::Vec3 target{vve::math::zeroVec3()};
+    SceneBounds bounds{};
+    vve::math::Scalar radius{vve::math::one()};
+    std::string source{"bounds"};
+};
+
+void includePoint(SceneBounds &bounds, const vve::math::Vec3 &point) {
+    bounds.minimum.x = std::min(bounds.minimum.x, point.x);
+    bounds.minimum.y = std::min(bounds.minimum.y, point.y);
+    bounds.minimum.z = std::min(bounds.minimum.z, point.z);
+    bounds.maximum.x = std::max(bounds.maximum.x, point.x);
+    bounds.maximum.y = std::max(bounds.maximum.y, point.y);
+    bounds.maximum.z = std::max(bounds.maximum.z, point.z);
+    bounds.valid = true;
+}
+
+[[nodiscard]] vve::math::Vec3 transformPoint(const vve::math::Mat4 &transform, const vve::math::Vec3 &point) {
+    const auto x = (transform[0][0] * point.x) + (transform[1][0] * point.y) + (transform[2][0] * point.z) +
+                   transform[3][0];
+    const auto y = (transform[0][1] * point.x) + (transform[1][1] * point.y) + (transform[2][1] * point.z) +
+                   transform[3][1];
+    const auto z = (transform[0][2] * point.x) + (transform[1][2] * point.y) + (transform[2][2] * point.z) +
+                   transform[3][2];
+    const auto w = (transform[0][3] * point.x) + (transform[1][3] * point.y) + (transform[2][3] * point.z) +
+                   transform[3][3];
+    if (std::abs(w) > static_cast<vve::math::Scalar>(0.00001)) {
+        return vve::math::Vec3(x / w, y / w, z / w);
+    }
+
+    return vve::math::Vec3(x, y, z);
+}
+
+[[nodiscard]] vve::math::Vec3 translationFromTransform(const vve::math::Mat4 &transform) {
+    return vve::math::Vec3(transform[3][0], transform[3][1], transform[3][2]);
+}
+
+[[nodiscard]] vve::math::Scalar distanceSquared(const vve::math::Vec3 &left, const vve::math::Vec3 &right) {
+    const auto x = left.x - right.x;
+    const auto y = left.y - right.y;
+    const auto z = left.z - right.z;
+    return (x * x) + (y * y) + (z * z);
+}
+
+void includeTransformedMeshBounds(SceneBounds &bounds, const vve::v3::ImportedMesh &mesh,
+                                  const vve::math::Mat4 &world_transform) {
+    if (mesh.vertices.empty()) {
+        return;
+    }
+
+    const auto &minimum = mesh.bounds_min;
+    const auto &maximum = mesh.bounds_max;
+    const std::array corners{
+        vve::math::Vec3(minimum.x, minimum.y, minimum.z),
+        vve::math::Vec3(maximum.x, minimum.y, minimum.z),
+        vve::math::Vec3(minimum.x, maximum.y, minimum.z),
+        vve::math::Vec3(maximum.x, maximum.y, minimum.z),
+        vve::math::Vec3(minimum.x, minimum.y, maximum.z),
+        vve::math::Vec3(maximum.x, minimum.y, maximum.z),
+        vve::math::Vec3(minimum.x, maximum.y, maximum.z),
+        vve::math::Vec3(maximum.x, maximum.y, maximum.z)};
+
+    for (const auto &corner : corners) {
+        includePoint(bounds, transformPoint(world_transform, corner));
+    }
+}
+
+[[nodiscard]] std::optional<SceneBounds> computeSceneBounds(const vve::v3::ImportedScene &scene) {
+    std::unordered_map<vve::Handle::value_type, const vve::v3::ImportedMesh *> meshes{};
+    meshes.reserve(scene.meshes.size());
+    for (const auto &mesh : scene.meshes) {
+        meshes.emplace(mesh.handle.value.value(), &mesh);
+    }
+
+    SceneBounds bounds{};
+    std::unordered_map<vve::Handle::value_type, vve::math::Mat4> world_transforms{};
+    world_transforms.reserve(scene.nodes.size());
+    for (const auto &node : scene.nodes) {
+        auto parent_transform = vve::math::identityMat4();
+        if (node.parent.value.isValid()) {
+            if (const auto parent = world_transforms.find(node.parent.value.value());
+                parent != world_transforms.end()) {
+                parent_transform = parent->second;
+            }
+        }
+
+        const auto world_transform = vve::math::multiply(parent_transform, node.local_transform);
+        world_transforms.emplace(node.handle.value.value(), world_transform);
+        for (const auto &mesh_instance : node.mesh_instances) {
+            const auto mesh = meshes.find(mesh_instance.mesh.value.value());
+            if (mesh != meshes.end() && mesh->second != nullptr) {
+                includeTransformedMeshBounds(bounds, *mesh->second, world_transform);
+            }
+        }
+    }
+
+    if (!bounds.valid) {
+        return std::nullopt;
+    }
+
+    return bounds;
+}
+
+[[nodiscard]] std::optional<vve::math::Vec3> findNodeWorldPosition(const vve::v3::ImportedScene &scene,
+                                                                   const std::string_view node_name) {
+    std::unordered_map<vve::Handle::value_type, vve::math::Mat4> world_transforms{};
+    world_transforms.reserve(scene.nodes.size());
+    for (const auto &node : scene.nodes) {
+        auto parent_transform = vve::math::identityMat4();
+        if (node.parent.value.isValid()) {
+            if (const auto parent = world_transforms.find(node.parent.value.value());
+                parent != world_transforms.end()) {
+                parent_transform = parent->second;
+            }
+        }
+
+        const auto world_transform = vve::math::multiply(parent_transform, node.local_transform);
+        world_transforms.emplace(node.handle.value.value(), world_transform);
+        if (node.name == node_name) {
+            return translationFromTransform(world_transform);
+        }
+    }
+
+    return std::nullopt;
+}
+
+[[nodiscard]] std::optional<SponzaCameraPlan> makeSponzaCameraPlan(const vve::v3::ImportedScene &scene) {
+    const auto bounds = computeSceneBounds(scene);
+    if (!bounds.has_value()) {
+        return std::nullopt;
+    }
+
+    const auto center = vve::math::Vec3(
+        (bounds->minimum.x + bounds->maximum.x) * static_cast<vve::math::Scalar>(0.5),
+        (bounds->minimum.y + bounds->maximum.y) * static_cast<vve::math::Scalar>(0.5),
+        (bounds->minimum.z + bounds->maximum.z) * static_cast<vve::math::Scalar>(0.5));
+    const auto extent = vve::math::Vec3(bounds->maximum.x - bounds->minimum.x,
+                                        bounds->maximum.y - bounds->minimum.y,
+                                        bounds->maximum.z - bounds->minimum.z);
+    const auto diagonal = std::sqrt((extent.x * extent.x) + (extent.y * extent.y) + (extent.z * extent.z));
+    const auto radius = std::max(diagonal * static_cast<vve::math::Scalar>(0.5), vve::math::one());
+    const auto camera_position = vve::math::Vec3(
+        center.x,
+        center.y + (radius * static_cast<vve::math::Scalar>(0.35)),
+        center.z + (radius * static_cast<vve::math::Scalar>(1.8)));
+    const auto near_plane = std::max(radius * static_cast<vve::math::Scalar>(0.001),
+                                     static_cast<vve::math::Scalar>(0.05));
+    const auto far_plane = std::max(radius * static_cast<vve::math::Scalar>(6.0),
+                                    static_cast<vve::math::Scalar>(100.0));
+    const auto authored_camera = findNodeWorldPosition(scene, "PhysCamera001");
+    const auto authored_target = findNodeWorldPosition(scene, "PhysCamera001.Target");
+    if (authored_camera.has_value() && authored_target.has_value() &&
+        distanceSquared(*authored_camera, *authored_target) > static_cast<vve::math::Scalar>(0.001)) {
+        return SponzaCameraPlan{
+            .camera = vve::Camera::lookAt(*authored_camera, *authored_target,
+                                          vve::math::Vec3(vve::math::zero(), vve::math::one(), vve::math::zero()),
+                                          static_cast<vve::math::Scalar>(1.02),
+                                          static_cast<vve::math::Scalar>(0.1),
+                                          std::max(radius * static_cast<vve::math::Scalar>(8.0),
+                                                   static_cast<vve::math::Scalar>(100.0))),
+            .target = *authored_target,
+            .bounds = *bounds,
+            .radius = radius,
+            .source = "PhysCamera001"};
+    }
+
+    return SponzaCameraPlan{
+        .camera = vve::Camera::lookAt(camera_position, center,
+                                      vve::math::Vec3(vve::math::zero(), vve::math::one(), vve::math::zero()),
+                                      static_cast<vve::math::Scalar>(0.75), near_plane, far_plane),
+        .target = center,
+        .bounds = *bounds,
+        .radius = radius,
+        .source = "bounds"};
 }
 
 void printTextures(const vve::v3::ImportedScene &scene) {
@@ -320,8 +520,11 @@ void printMainObjects(const vve::v3::ImportedScene &scene) {
 class SponzaLoaderSystem final {
 public:
     SponzaLoaderSystem() = default;
-    explicit SponzaLoaderSystem(std::filesystem::path scene_path, const bool load_runtime_scene = false)
-        : scene_path_(std::move(scene_path)), load_runtime_scene_(load_runtime_scene) {}
+    explicit SponzaLoaderSystem(std::filesystem::path scene_path, std::optional<SponzaCameraPlan> camera_plan,
+                                const bool load_runtime_scene = true)
+        : scene_path_(std::move(scene_path)),
+          camera_plan_(std::move(camera_plan)),
+          load_runtime_scene_(load_runtime_scene) {}
 
     [[nodiscard]] std::string_view name() const noexcept { return "SponzaLoaderSystem"; }
 
@@ -337,7 +540,7 @@ public:
         if (!load_runtime_scene_) {
             std::cout << '[' << name() << "] scene imported for object listing; runtime scene load disabled\n";
             std::cout << '[' << name()
-                      << "] pass --load-runtime-scene or set VVE_SPONZA_LOAD_RUNTIME_SCENE=1 to load it into the runtime\n";
+                      << "] omit --list-only or set VVE_SPONZA_LOAD_RUNTIME_SCENE=1 to load it into the runtime\n";
             printWindowInventory(world);
             loaded_ = true;
             return {};
@@ -347,6 +550,29 @@ public:
         if (const auto load_result = world.loadScene(scene_path_); !load_result) {
             std::cerr << '[' << name() << "] failed to load scene into runtime: " << scene_path_.string() << '\n';
             return std::unexpected(load_result.error());
+        }
+
+        if (camera_plan_.has_value()) {
+            const auto camera_entity = world.spawn(vve::CameraComponent{
+                .camera = camera_plan_->camera,
+                .window_id = "sponza.main"});
+            if (!camera_entity) {
+                return std::unexpected(camera_entity.error());
+            }
+
+            if (const auto camera_result = world.setActiveCamera(*camera_entity); !camera_result) {
+                return std::unexpected(camera_result.error());
+            }
+
+            std::cout << '[' << name() << "] camera source=" << camera_plan_->source << " position=";
+            printVec3(camera_plan_->camera.position);
+            std::cout << " target=";
+            printVec3(camera_plan_->target);
+            std::cout << " radius=" << camera_plan_->radius
+                      << " near=" << camera_plan_->camera.near_plane
+                      << " far=" << camera_plan_->camera.far_plane << '\n';
+        } else {
+            std::cout << '[' << name() << "] no scene bounds available; using the engine default camera\n";
         }
 
         loaded_ = true;
@@ -360,8 +586,11 @@ public:
         const vve::v3::FrameContext &frame_context,
         const vve::v3::WindowFrameData &window_frame) {
         (void)world;
-        (void)frame_context;
         (void)window_frame;
+        if (!frame_loop_logged_ && frame_context.frame_index > 0) {
+            std::cout << '[' << name() << "] frame loop active; scene resources upload incrementally\n";
+            frame_loop_logged_ = true;
+        }
         return {};
     }
 
@@ -381,8 +610,10 @@ private:
     }
 
     std::filesystem::path scene_path_{};
-    bool load_runtime_scene_{false};
+    std::optional<SponzaCameraPlan> camera_plan_{};
+    bool load_runtime_scene_{true};
     bool loaded_{false};
+    bool frame_loop_logged_{false};
 };
 
 } // namespace
@@ -400,6 +631,7 @@ int main(int argc, char **argv) {
     const bool verbose_scene_dump = wantsVerboseSceneDump(argc, argv);
     const bool load_runtime_scene = wantsRuntimeSceneLoad(argc, argv);
     const auto scene_path = resolveScenePath(argc, argv);
+    std::optional<SponzaCameraPlan> camera_plan{};
     if (!scene_path.has_value()) {
         std::cerr << "[sponza] Unable to locate the Sponza scene.\n";
         std::cerr << "[sponza] Pass the scene file path as the first argument or set VVE_SPONZA_SCENE.\n";
@@ -415,6 +647,16 @@ int main(int argc, char **argv) {
         }
 
         std::cout << std::fixed << std::setprecision(6);
+        camera_plan = makeSponzaCameraPlan(*imported_scene);
+        if (camera_plan.has_value()) {
+            std::cout << "[sponza] bounds min=";
+            printVec3(camera_plan->bounds.minimum);
+            std::cout << " max=";
+            printVec3(camera_plan->bounds.maximum);
+            std::cout << " radius=" << camera_plan->radius << '\n';
+        } else {
+            std::cout << "[sponza] unable to compute scene bounds; camera will use engine defaults\n";
+        }
         printMainObjects(*imported_scene);
         if (verbose_scene_dump) {
             printScene(*imported_scene);
@@ -426,7 +668,7 @@ int main(int argc, char **argv) {
     auto engine = vve::makeEngine(
         vve::ApplicationName{"sponza"},
         vve::EnableValidation{true},
-        vve::makeUserSystems(SponzaLoaderSystem{*scene_path, load_runtime_scene}),
+        vve::makeUserSystems(SponzaLoaderSystem{*scene_path, camera_plan, load_runtime_scene}),
         vve::Windows{
             .value = {
                 vve::WindowDesc{
