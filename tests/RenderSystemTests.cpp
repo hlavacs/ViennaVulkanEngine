@@ -171,6 +171,43 @@ namespace {
       return scene;
    }
 
+   /// @brief Adds a material with only the draw-state flags needed by sort tests.
+   [[nodiscard]] vve::v3::MaterialHandle addSortMaterial(vve::v3::SceneData &scene, std::string_view suffix,
+                                                         bool double_sided, bool alpha_blend) {
+      vve::v3::ImportedMaterial material{};
+      material.handle =
+          vve::v3::MaterialHandle{.value = vve::Handle::fromHash(std::string{"tests.render.sort.material."} + std::string{suffix})};
+      material.double_sided = double_sided;
+      material.alpha_blend = alpha_blend;
+      scene.material_indices.emplace(material.handle.value.value(), scene.materials.size());
+      scene.materials.push_back(std::move(material));
+      return scene.materials.back().handle;
+   }
+
+   /// @brief Adds a node translated along the renderer's default view axis.
+   [[nodiscard]] vve::v3::SceneNodeHandle addSortNode(vve::v3::SceneData &scene, std::string_view suffix,
+                                                      float z) {
+      vve::v3::SceneNodeDesc node{};
+      node.handle =
+          vve::v3::SceneNodeHandle{.value = vve::Handle::fromHash(std::string{"tests.render.sort.node."} + std::string{suffix})};
+      node.world_transform = vve::math::translate(vve::math::identityMat4(), vve::math::Vec3(0.0F, 0.0F, z));
+      scene.node_indices.emplace(node.handle.value.value(), scene.nodes.size());
+      scene.nodes.push_back(std::move(node));
+      return scene.nodes.back().handle;
+   }
+
+   /// @brief Adds one mesh instance using a per-instance material override.
+   void addSortMeshInstance(vve::v3::SceneData &scene, std::string_view suffix, vve::v3::SceneNodeHandle node,
+                            vve::v3::MaterialHandle material) {
+      const auto instance = vve::Handle::fromHash(std::string{"tests.render.sort.instance."} + std::string{suffix});
+      scene.mesh_instance_indices.emplace(instance.value(), scene.mesh_instances.size());
+      scene.mesh_instances.push_back(vve::v3::SceneMeshInstanceDesc{
+          .handle = instance,
+          .node = node,
+          .mesh = scene.meshes.front().handle,
+          .material_override = material});
+   }
+
    /// @brief Verifies that renderer binding stores the backend resources for the selected renderer.
    [[nodiscard]] bool pipelineBindsRenderer(vve::v3::RenderSystem &render_system, vve::v3::GraphicsBackend &backend,
                                             std::string_view renderer_id, vve::v3::RenderKernelId expected_kernel) {
@@ -295,6 +332,67 @@ namespace {
              packet.alpha_blend;
    }
 
+   /// @brief Verifies opaque bins precede transparent back-to-front ordering.
+   [[nodiscard]] bool drawPacketsAreSortedForForwardRenderer(vve::v3::RenderSystem &render_system,
+                                                             vve::v3::GraphicsBackend &backend) {
+      const auto renderer = backend.createRenderer("forward");
+      if (!renderer) {
+         return false;
+      }
+
+      const auto pipeline = testPipeline(render_system, *renderer);
+      const auto binding = render_system.bindPipelineResources(pipeline);
+      if (!binding) {
+         return false;
+      }
+
+      auto scene = testUploadedScene();
+      auto &near_alpha_material = scene.materials.front();
+      near_alpha_material.double_sided = false;
+      near_alpha_material.alpha_blend = true;
+      scene.nodes.front().world_transform =
+          vve::math::translate(vve::math::identityMat4(), vve::math::Vec3(0.0F, 0.0F, 2.0F));
+
+      const auto opaque = addSortMaterial(scene, "opaque", false, false);
+      const auto alpha_far = addSortMaterial(scene, "alpha_far", false, true);
+      const auto double_opaque = addSortMaterial(scene, "double_opaque", true, false);
+      const auto double_alpha_mid = addSortMaterial(scene, "double_alpha_mid", true, true);
+
+      addSortMeshInstance(scene, "opaque", addSortNode(scene, "opaque", 0.0F), opaque);
+      addSortMeshInstance(scene, "alpha_far", addSortNode(scene, "alpha_far", -8.0F), alpha_far);
+      addSortMeshInstance(scene, "double_opaque", addSortNode(scene, "double_opaque", 1.0F), double_opaque);
+      addSortMeshInstance(scene, "double_alpha_mid", addSortNode(scene, "double_alpha_mid", -2.0F),
+                          double_alpha_mid);
+
+      const auto build = render_system.buildDrawPackets(
+          vve::v3::FrameContext{.frame_index = 77, .delta_seconds = 0.0}, scene, pipeline.window, pipeline.graph);
+      if (!build) {
+         return false;
+      }
+
+      const auto packet_list = render_system.drawPackets(pipeline.window);
+      if (!packet_list || !packet_list->has_value() || (*packet_list)->packets.size() != 5) {
+         return false;
+      }
+
+      const auto &packets = (*packet_list)->packets;
+      return packets[0].material.value.value() == opaque.value.value() &&
+             packets[0].pipeline_variant == vve::v3::GraphicsPipelineVariant::opaque &&
+             packets[0].sort_bucket == 0 && packets[0].draw_index == 0 &&
+             packets[1].material.value.value() == double_opaque.value.value() &&
+             packets[1].pipeline_variant == vve::v3::GraphicsPipelineVariant::double_sided &&
+             packets[1].sort_bucket == 1 && packets[1].draw_index == 1 &&
+             packets[2].material.value.value() == alpha_far.value.value() &&
+             packets[2].pipeline_variant == vve::v3::GraphicsPipelineVariant::alpha_blend &&
+             packets[2].camera_depth > packets[3].camera_depth && packets[2].draw_index == 2 &&
+             packets[3].material.value.value() == double_alpha_mid.value.value() &&
+             packets[3].pipeline_variant == vve::v3::GraphicsPipelineVariant::double_sided_alpha_blend &&
+             packets[3].camera_depth > packets[4].camera_depth && packets[3].draw_index == 3 &&
+             packets[4].material.value.value() == scene.materials.front().handle.value.value() &&
+             packets[4].pipeline_variant == vve::v3::GraphicsPipelineVariant::alpha_blend &&
+             packets[4].draw_index == 4;
+   }
+
 } // namespace
 
 /**
@@ -359,6 +457,10 @@ int main() {
 
    if (!drawPacketsReferenceUploadedMesh(render_system, backend)) {
       return 10;
+   }
+
+   if (!drawPacketsAreSortedForForwardRenderer(render_system, backend)) {
+      return 11;
    }
 
    return 0;

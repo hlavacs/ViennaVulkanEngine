@@ -1131,6 +1131,8 @@ export namespace vve::v3 {
       RenderKernelId kernel{RenderKernelId::forward_opaque}; ///< Render kernel selected for the packet.
       GraphicsPipelineHandle graphics_pipeline{};       ///< Pipeline expected to record the packet.
       GraphicsPipelineVariant pipeline_variant{GraphicsPipelineVariant::opaque}; ///< Material-state pipeline variant selected for this draw.
+      std::uint32_t sort_bucket{0};                     ///< Coarse render-order bin used before depth sorting.
+      vve::math::Scalar camera_depth{vve::math::zero()}; ///< Positive depth along the current view direction.
       std::uint32_t draw_index{0};                       ///< Stable zero-based index within the packet list.
       SceneNodeHandle node{};                            ///< Scene node providing the transform.
       vve::Handle mesh_instance{};                       ///< Runtime mesh-instance handle represented by the packet.

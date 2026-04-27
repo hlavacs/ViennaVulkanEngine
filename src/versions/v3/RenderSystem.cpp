@@ -155,6 +155,65 @@ namespace vve::v3 {
       return GraphicsPipelineVariant::opaque;
    }
 
+   /// @brief Returns whether a forward variant requires transparent draw ordering.
+   [[nodiscard]] bool isTransparentVariant(GraphicsPipelineVariant variant) {
+      return variant == GraphicsPipelineVariant::alpha_blend ||
+             variant == GraphicsPipelineVariant::double_sided_alpha_blend;
+   }
+
+   /// @brief Maps variants to deterministic coarse bins before any depth ordering is applied.
+   [[nodiscard]] std::uint32_t pipelineVariantSortBucket(GraphicsPipelineVariant variant) {
+      switch (variant) {
+      case GraphicsPipelineVariant::opaque:
+         return 0;
+      case GraphicsPipelineVariant::double_sided:
+         return 1;
+      case GraphicsPipelineVariant::alpha_blend:
+         return 2;
+      case GraphicsPipelineVariant::double_sided_alpha_blend:
+         return 3;
+      }
+
+      return 0;
+   }
+
+   /// @brief Extracts the world-space translation from the object transform.
+   [[nodiscard]] vve::math::Vec3 worldTranslation(const vve::math::Mat4 &transform) {
+      return vve::math::Vec3(transform[3][0], transform[3][1], transform[3][2]);
+   }
+
+   /// @brief Estimates depth along the current default forward-renderer view.
+   [[nodiscard]] vve::math::Scalar defaultViewDepth(const vve::math::Mat4 &world_transform) {
+      constexpr vve::math::Scalar default_camera_z = static_cast<vve::math::Scalar>(6.0);
+      return default_camera_z - worldTranslation(world_transform).z;
+   }
+
+   /// @brief Orders packets for correct opaque/transparent rendering and stable descriptor keys.
+   void sortDrawPackets(Vector<DrawPacket> &packets) {
+      std::stable_sort(packets.begin(), packets.end(), [](const DrawPacket &lhs, const DrawPacket &rhs) {
+         const bool lhs_transparent = isTransparentVariant(lhs.pipeline_variant);
+         const bool rhs_transparent = isTransparentVariant(rhs.pipeline_variant);
+         if (lhs_transparent != rhs_transparent) {
+            return !lhs_transparent;
+         }
+         if (!lhs_transparent && lhs.sort_bucket != rhs.sort_bucket) {
+            return lhs.sort_bucket < rhs.sort_bucket;
+         }
+         if (lhs_transparent && lhs.camera_depth != rhs.camera_depth) {
+            return lhs.camera_depth > rhs.camera_depth;
+         }
+         if (lhs_transparent && lhs.sort_bucket != rhs.sort_bucket) {
+            return lhs.sort_bucket < rhs.sort_bucket;
+         }
+
+         return lhs.draw_index < rhs.draw_index;
+      });
+
+      for (std::size_t index = 0; index < packets.size(); ++index) {
+         packets[index].draw_index = static_cast<std::uint32_t>(index);
+      }
+   }
+
    /// @brief Returns the prepared graphics pipeline handle for a forward material-state variant.
    [[nodiscard]] GraphicsPipelineHandle graphicsPipelineForVariant(const RendererPipelineBinding &binding,
                                                                    GraphicsPipelineVariant variant) {
@@ -465,6 +524,7 @@ namespace vve::v3 {
                const bool alpha_blend = material_data != nullptr && material_data->alpha_blend;
                const auto pipeline_variant = forwardPipelineVariant(double_sided, alpha_blend);
                const auto graphics_pipeline = graphicsPipelineForVariant(binding->second, pipeline_variant);
+               const auto camera_depth = defaultViewDepth(node->world_transform);
                if (binding->second.graphics_pipeline_ready && !graphics_pipeline.value.isValid()) {
                   return std::unexpected(vve::Error::invalid_argument);
                }
@@ -474,6 +534,8 @@ namespace vve::v3 {
                                                     .kernel = pass->kernel,
                                                     .graphics_pipeline = graphics_pipeline,
                                                     .pipeline_variant = pipeline_variant,
+                                                    .sort_bucket = pipelineVariantSortBucket(pipeline_variant),
+                                                    .camera_depth = camera_depth,
                                                     .draw_index = static_cast<std::uint32_t>(packets.packets.size()),
                                                     .node = node->handle,
                                                     .mesh_instance = instance.handle,
@@ -500,6 +562,7 @@ namespace vve::v3 {
             }
          }
 
+         sortDrawPackets(packets.packets);
          draw_packet_lists_[window.value.value()] = std::move(packets);
          return {};
       }
