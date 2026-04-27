@@ -219,6 +219,10 @@ export namespace vve::v3 {
       /// @brief Returns backend swapchain metadata for an already-created window swapchain.
       [[nodiscard]] std::expected<std::optional<WindowSwapchainResources>, vve::Error>
       windowSwapchain(SwapchainHandle swapchain) const;
+      /// @brief Records the backend frame command buffer for one acquired swapchain image.
+      [[nodiscard]] std::expected<void, vve::Error> recordWindowFrame(SwapchainHandle swapchain);
+      /// @brief Submits the recorded backend frame command buffer for one swapchain.
+      [[nodiscard]] std::expected<void, vve::Error> submitWindowFrame(SwapchainHandle swapchain);
       /// @brief Performs backend begin-frame work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &frame_context);
       /// @brief Performs backend end-frame work.
@@ -289,14 +293,19 @@ export namespace vve::v3 {
                                                                      const SceneData &scene, WindowHandle window,
                                                                      const RenderGraph &render_graph);
       /// @brief Records render commands for a window render graph.
-      [[nodiscard]] std::expected<void, vve::Error> record(const FrameContext &frame_context, const SceneData &scene,
-                                                           WindowHandle window, const RenderGraph &render_graph);
+      [[nodiscard]] std::expected<void, vve::Error> record(GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend,
+                                                           const FrameContext &frame_context, const SceneData &scene,
+                                                           WindowHandle window, SwapchainHandle swapchain,
+                                                           const RenderGraph &render_graph);
       /// @brief Presents or otherwise consumes the produced frame output.
-      [[nodiscard]] std::expected<void, vve::Error> consumeOutput(const FrameContext &frame_context,
+      [[nodiscard]] std::expected<void, vve::Error> consumeOutput(GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend,
+                                                                  const FrameContext &frame_context,
                                                                   const SceneData &scene, WindowHandle window,
+                                                                  SwapchainHandle swapchain,
                                                                   const RenderGraph &render_graph);
       /// @brief Registers render tasks for all active window pipelines.
       void registerTasks(TaskGraphBuilder &builder, const SceneData &scene,
+                         GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend,
                          VectorConstRange<WindowRenderPipeline> render_pipelines);
 
    private:

@@ -271,20 +271,22 @@ namespace vve::v3 {
       }
 
       /// @brief Records placeholder render work for the supplied render graph.
-      [[nodiscard]] std::expected<void, vve::Error> record(const FrameContext &, const SceneData &, WindowHandle,
-                                                           const RenderGraph &render_graph) {
+      [[nodiscard]] std::expected<void, vve::Error> record(GraphicsBackend &graphics_backend, const FrameContext &,
+                                                           const SceneData &, WindowHandle,
+                                                           SwapchainHandle swapchain, const RenderGraph &render_graph) {
          for (const auto &pass : render_graph.passes) {
             // Iterating the passes keeps the placeholder implementation aligned
             // with the future shape where each pass will emit backend commands.
          }
 
-         return {};
+         return graphics_backend.recordWindowFrame(swapchain);
       }
 
       /// @brief Consumes the produced frame output for a window.
-      [[nodiscard]] std::expected<void, vve::Error> consumeOutput(const FrameContext &, const SceneData &, WindowHandle,
-                                                                  const RenderGraph &) {
-         return {};
+      [[nodiscard]] std::expected<void, vve::Error> consumeOutput(GraphicsBackend &graphics_backend,
+                                                                  const FrameContext &, const SceneData &, WindowHandle,
+                                                                  SwapchainHandle swapchain, const RenderGraph &) {
+         return graphics_backend.submitWindowFrame(swapchain);
       }
 
       /**
@@ -293,10 +295,11 @@ namespace vve::v3 {
        * @param scene Runtime scene data for the current graph build.
        * @param render_pipelines Per-window render graphs to wire into the task graph.
        */
-      void registerTasks(TaskGraphBuilder &builder, const SceneData &,
+      void registerTasks(TaskGraphBuilder &builder, const SceneData &, GraphicsBackend &graphics_backend,
                          VectorConstRange<WindowRenderPipeline> render_pipelines) {
          for (const auto &pipeline : render_pipelines) {
             const auto window = pipeline.window;
+            const auto swapchain = pipeline.swapchain.handle;
             const auto *render_graph = &pipeline.graph;
             const auto cull_visibility_gpu_name = std::format("task.window.{}.cull_visibility_gpu", pipeline.window_id);
             const auto build_draw_packets_name = std::format("task.window.{}.build_draw_packets", pipeline.window_id);
@@ -326,18 +329,18 @@ namespace vve::v3 {
                 pipeline.window);
             const auto record_render_graph_task = builder.addTask(
                 record_render_graph_name, TaskKernelId::record_render_graph,
-                detail::requireFrameScene([this, window, render_graph](const FrameContext &frame_context,
-                                                                       const SceneData &scene) {
-                   return record(frame_context, scene, window, *render_graph);
+                detail::requireFrameScene([this, &graphics_backend, window, swapchain, render_graph](
+                                             const FrameContext &frame_context, const SceneData &scene) {
+                   return record(graphics_backend, frame_context, scene, window, swapchain, *render_graph);
                 }),
                 {build_draw_packets_task}, {},
                 std::string("Record Render Graph (") + pipeline.window_id + ")", TaskPhase::render,
                 TaskScope::window, pipeline.window);
             const auto consume_frame_output_task = builder.addTask(
                 consume_frame_output_name, TaskKernelId::consume_frame_output,
-                detail::requireFrameScene([this, window, render_graph](const FrameContext &frame_context,
-                                                                       const SceneData &scene) {
-                   return consumeOutput(frame_context, scene, window, *render_graph);
+                detail::requireFrameScene([this, &graphics_backend, window, swapchain, render_graph](
+                                             const FrameContext &frame_context, const SceneData &scene) {
+                   return consumeOutput(graphics_backend, frame_context, scene, window, swapchain, *render_graph);
                 }),
                 {record_render_graph_task}, {},
                 std::string("Consume Frame Output (") + pipeline.window_id + ")", TaskPhase::render,
@@ -433,21 +436,26 @@ namespace vve::v3 {
 
    /// @brief Records render work through the public render-system facade.
    VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, record,
-                               (const FrameContext &frame_context, const SceneData &scene, WindowHandle window,
-                                const RenderGraph &render_graph),
-                               (frame_context, scene, window, render_graph), , std::expected<void, vve::Error>)
+                               (GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend,
+                                const FrameContext &frame_context, const SceneData &scene, WindowHandle window,
+                                SwapchainHandle swapchain, const RenderGraph &render_graph),
+                               (graphics_backend, frame_context, scene, window, swapchain, render_graph), ,
+                               std::expected<void, vve::Error>)
 
    /// @brief Consumes frame output through the public render-system facade.
    VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, consumeOutput,
-                               (const FrameContext &frame_context, const SceneData &scene, WindowHandle window,
-                                const RenderGraph &render_graph),
-                               (frame_context, scene, window, render_graph), , std::expected<void, vve::Error>)
+                               (GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend,
+                                const FrameContext &frame_context, const SceneData &scene, WindowHandle window,
+                                SwapchainHandle swapchain, const RenderGraph &render_graph),
+                               (graphics_backend, frame_context, scene, window, swapchain, render_graph), ,
+                               std::expected<void, vve::Error>)
 
    /// @brief Registers render tasks through the public render-system facade.
    VVE_V3_DEFINE_FACADE_VOID_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, registerTasks,
                                     (TaskGraphBuilder &builder, const SceneData &scene,
+                                     GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend,
                                      VectorConstRange<WindowRenderPipeline> render_pipelines),
-                                    (builder, scene, render_pipelines), )
+                                    (builder, scene, graphics_backend, render_pipelines), )
 
    /// @brief Emits the explicit render-system facade instantiation for v3.
    template class RenderSystemFacade<DefaultRenderSystemImplementation>;

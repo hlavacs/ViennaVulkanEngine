@@ -124,7 +124,7 @@ namespace vve::v3 {
 
          scene_system.registerTasks(builder, scene);
          resource_system.registerTasks(builder, scene);
-         render_system.registerTasks(builder, scene, render_pipelines);
+         render_system.registerTasks(builder, scene, graphics_backend, render_pipelines);
 
          attachSceneStartDependencies(builder, user_leaf_tasks);
          attachEndFrameDependencies(builder, render_pipelines);

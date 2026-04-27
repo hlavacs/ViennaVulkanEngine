@@ -301,6 +301,8 @@ namespace vve::v3 {
          std::uint32_t active_frame_slot{0};
          std::uint32_t active_image_index{0};
          bool frame_acquired{false};
+         bool command_recorded{false};
+         bool frame_submitted{false};
       };
 
       /// @brief Physical device and queue family selected for backend object creation.
@@ -1231,6 +1233,40 @@ namespace vve::v3 {
          return swapchain_it->second.summary;
       }
 
+      /// @brief Records clear work for one window's currently acquired swapchain image.
+      [[nodiscard]] std::expected<void, vve::Error> recordWindowFrame(SwapchainHandle swapchain) {
+         if (!initialized_) {
+            return std::unexpected(vve::Error::not_initialized);
+         }
+         if (!swapchain.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto swapchain_it = window_swapchains_.find(swapchain.value.value());
+         if (swapchain_it == window_swapchains_.end()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return recordWindowFrame(swapchain_it->second);
+      }
+
+      /// @brief Submits recorded clear work for one window's currently acquired swapchain image.
+      [[nodiscard]] std::expected<void, vve::Error> submitWindowFrame(SwapchainHandle swapchain) {
+         if (!initialized_) {
+            return std::unexpected(vve::Error::not_initialized);
+         }
+         if (!swapchain.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto swapchain_it = window_swapchains_.find(swapchain.value.value());
+         if (swapchain_it == window_swapchains_.end()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return submitWindowFrame(swapchain_it->second);
+      }
+
       /// @brief Performs begin-frame backend work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &) {
          if (!initialized_) {
@@ -1239,7 +1275,7 @@ namespace vve::v3 {
 
          for (auto &[handle, resources] : window_swapchains_) {
             (void)handle;
-            if (auto frame_result = acquireAndSubmitClear(resources); !frame_result) {
+            if (auto frame_result = acquireWindowFrame(resources); !frame_result) {
                return std::unexpected(frame_result.error());
             }
          }
@@ -2105,7 +2141,7 @@ namespace vve::v3 {
       }
 
       [[nodiscard]] std::expected<void, vve::Error>
-      acquireAndSubmitClear(VulkanWindowSwapchainResources &resources) {
+      acquireWindowFrame(VulkanWindowSwapchainResources &resources) {
          if (resources.swapchain == VK_NULL_HANDLE || resources.frame_sync.empty() ||
              resources.command_buffers.empty() || resources.framebuffers.empty()) {
             return {};
@@ -2136,11 +2172,47 @@ namespace vve::v3 {
          }
          const bool acquired_suboptimal = result == VK_SUBOPTIMAL_KHR;
 
-         if (auto record_result = recordSwapchainClearCommand(resources, image_index); !record_result) {
+         resources.active_frame_slot = resources.current_frame_slot;
+         resources.active_image_index = image_index;
+         resources.frame_acquired = true;
+         resources.command_recorded = false;
+         resources.frame_submitted = false;
+         resources.current_frame_slot =
+             (resources.current_frame_slot + 1U) % static_cast<std::uint32_t>(resources.frame_sync.size());
+         resources.summary.swapchain_dirty = resources.summary.swapchain_dirty || acquired_suboptimal;
+         updateSwapchainFrameSummary(resources);
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      recordWindowFrame(VulkanWindowSwapchainResources &resources) {
+         if (!resources.frame_acquired) {
+            return {};
+         }
+         if (resources.active_image_index >= resources.images.size()) {
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         if (auto record_result = recordSwapchainClearCommand(resources, resources.active_image_index); !record_result) {
             return std::unexpected(record_result.error());
          }
 
-         result = vkResetFences(device_, 1, &sync.render_fence);
+         resources.command_recorded = true;
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      submitWindowFrame(VulkanWindowSwapchainResources &resources) {
+         if (!resources.frame_acquired) {
+            return {};
+         }
+         if (!resources.command_recorded || resources.active_frame_slot >= resources.frame_sync.size() ||
+             resources.active_image_index >= resources.command_buffers.size()) {
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         auto &sync = resources.frame_sync[resources.active_frame_slot];
+         VkResult result = vkResetFences(device_, 1, &sync.render_fence);
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkResetFences failed for window '"
                       << resources.summary.window_id << "': " << string_VkResult(result) << '\n';
@@ -2154,7 +2226,7 @@ namespace vve::v3 {
                                         .pWaitSemaphores = &sync.image_available,
                                         .pWaitDstStageMask = &wait_stage,
                                         .commandBufferCount = 1,
-                                        .pCommandBuffers = &resources.command_buffers[image_index],
+                                        .pCommandBuffers = &resources.command_buffers[resources.active_image_index],
                                         .signalSemaphoreCount = 1,
                                         .pSignalSemaphores = &sync.render_finished};
          result = vkQueueSubmit(graphics_queue_, 1, &submit_info, sync.render_fence);
@@ -2164,12 +2236,7 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::internal_error);
          }
 
-         resources.active_frame_slot = resources.current_frame_slot;
-         resources.active_image_index = image_index;
-         resources.frame_acquired = true;
-         resources.current_frame_slot =
-             (resources.current_frame_slot + 1U) % static_cast<std::uint32_t>(resources.frame_sync.size());
-         resources.summary.swapchain_dirty = resources.summary.swapchain_dirty || acquired_suboptimal;
+         resources.frame_submitted = true;
          updateSwapchainFrameSummary(resources);
          return {};
       }
@@ -2179,6 +2246,9 @@ namespace vve::v3 {
          if (!resources.frame_acquired || resources.swapchain == VK_NULL_HANDLE ||
              resources.active_frame_slot >= resources.frame_sync.size()) {
             return {};
+         }
+         if (!resources.frame_submitted) {
+            return std::unexpected(vve::Error::internal_error);
          }
 
          auto &sync = resources.frame_sync[resources.active_frame_slot];
@@ -2192,6 +2262,8 @@ namespace vve::v3 {
                                              .pResults = nullptr};
          const VkResult result = vkQueuePresentKHR(graphics_queue_, &present_info);
          resources.frame_acquired = false;
+         resources.command_recorded = false;
+         resources.frame_submitted = false;
          if (result == VK_SUCCESS) {
             ++resources.summary.presented_frame_count;
             updateSwapchainFrameSummary(resources);
@@ -2442,6 +2514,14 @@ namespace vve::v3 {
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, windowSwapchain,
                                (SwapchainHandle swapchain), (swapchain), const,
                                std::expected<std::optional<WindowSwapchainResources>, vve::Error>)
+
+   /// @brief Records one acquired window frame through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, recordWindowFrame,
+                               (SwapchainHandle swapchain), (swapchain), , std::expected<void, vve::Error>)
+
+   /// @brief Submits one recorded window frame through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, submitWindowFrame,
+                               (SwapchainHandle swapchain), (swapchain), , std::expected<void, vve::Error>)
 
    /// @brief Begins a frame through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, beginFrame,
