@@ -2,6 +2,7 @@ module;
 
 #include <cctype>
 #include <cmath>
+#include <cstddef>
 #include "FacadeMacros.hpp"
 #include <cstdlib>
 #include <cstring>
@@ -23,6 +24,16 @@ import :Internal;
 namespace vve::v3 {
 
    namespace {
+
+      static_assert(std::is_standard_layout_v<ImportedVertex>,
+                    "ImportedVertex must stay standard-layout so Vulkan vertex attributes can use offsetof.");
+      static_assert(sizeof(ImportedVertex) <= static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()),
+                    "ImportedVertex is too large for VkVertexInputBindingDescription::stride.");
+
+      /// @brief Converts ImportedVertex member offsets to Vulkan's 32-bit vertex attribute offset type.
+      [[nodiscard]] constexpr std::uint32_t vertexOffset(std::size_t offset) {
+         return static_cast<std::uint32_t>(offset);
+      }
 
       /// @brief Converts a packed Vulkan version to major.minor.patch text.
       [[nodiscard]] std::string versionString(const std::uint32_t version) {
@@ -2837,29 +2848,30 @@ namespace vve::v3 {
             }
 
             vertex_bindings.push_back(VkVertexInputBindingDescription{.binding = 0,
-                                                                      .stride = 60,
+                                                                      .stride = static_cast<std::uint32_t>(
+                                                                          sizeof(ImportedVertex)),
                                                                       .inputRate = VK_VERTEX_INPUT_RATE_VERTEX});
             vertex_attributes = {
                 VkVertexInputAttributeDescription{.location = 0,
                                                   .binding = 0,
                                                   .format = VK_FORMAT_R32G32B32_SFLOAT,
-                                                  .offset = 0},
+                                                  .offset = vertexOffset(offsetof(ImportedVertex, position))},
                 VkVertexInputAttributeDescription{.location = 1,
                                                   .binding = 0,
                                                   .format = VK_FORMAT_R32G32B32_SFLOAT,
-                                                  .offset = 12},
+                                                  .offset = vertexOffset(offsetof(ImportedVertex, normal))},
                 VkVertexInputAttributeDescription{.location = 2,
                                                   .binding = 0,
                                                   .format = VK_FORMAT_R32G32B32_SFLOAT,
-                                                  .offset = 24},
+                                                  .offset = vertexOffset(offsetof(ImportedVertex, tangent))},
                 VkVertexInputAttributeDescription{.location = 3,
                                                   .binding = 0,
                                                   .format = VK_FORMAT_R32G32_SFLOAT,
-                                                  .offset = 36},
+                                                  .offset = vertexOffset(offsetof(ImportedVertex, texcoord0))},
                 VkVertexInputAttributeDescription{.location = 4,
                                                   .binding = 0,
                                                   .format = VK_FORMAT_R32G32B32A32_SFLOAT,
-                                                  .offset = 44}};
+                                                  .offset = vertexOffset(offsetof(ImportedVertex, color0))}};
          }
 
          const VkPipelineVertexInputStateCreateInfo vertex_input{
