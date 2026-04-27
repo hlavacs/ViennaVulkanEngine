@@ -301,6 +301,10 @@ namespace vve::v3 {
          VkExtent2D extent{};
          std::vector<VkImage> images{};
          std::vector<VkImageView> image_views{};
+         VkFormat depth_format{VK_FORMAT_UNDEFINED};
+         VkImage depth_image{VK_NULL_HANDLE};
+         VkDeviceMemory depth_memory{VK_NULL_HANDLE};
+         VkImageView depth_image_view{VK_NULL_HANDLE};
          VkRenderPass clear_render_pass{VK_NULL_HANDLE};
          std::vector<VkFramebuffer> framebuffers{};
          std::vector<VkCommandBuffer> command_buffers{};
@@ -1275,6 +1279,10 @@ namespace vve::v3 {
             destroyWindowSwapchainResources(resources);
             return std::unexpected(image_views.error());
          }
+         if (auto depth_resources = createSwapchainDepthResources(resources); !depth_resources) {
+            destroyWindowSwapchainResources(resources);
+            return std::unexpected(depth_resources.error());
+         }
          if (auto render_pass = createSwapchainClearRenderPass(resources); !render_pass) {
             destroyWindowSwapchainResources(resources);
             return std::unexpected(render_pass.error());
@@ -1296,12 +1304,17 @@ namespace vve::v3 {
          resources.summary.swapchain_created = resources.swapchain != VK_NULL_HANDLE;
          resources.summary.image_count = static_cast<std::uint32_t>(resources.images.size());
          resources.summary.image_view_count = static_cast<std::uint32_t>(resources.image_views.size());
+         resources.summary.depth_image_count = resources.depth_image == VK_NULL_HANDLE ? 0U : 1U;
+         resources.summary.depth_image_view_count = resources.depth_image_view == VK_NULL_HANDLE ? 0U : 1U;
          resources.summary.framebuffer_count = static_cast<std::uint32_t>(resources.framebuffers.size());
          resources.summary.frames_in_flight = static_cast<std::uint32_t>(resources.frame_sync.size());
          resources.summary.width = resources.extent.width;
          resources.summary.height = resources.extent.height;
          resources.summary.surface_format = string_VkFormat(resources.format);
+         resources.summary.depth_format = string_VkFormat(resources.depth_format);
          resources.summary.present_mode = string_VkPresentModeKHR(resources.present_mode);
+         resources.summary.depth_image_created = resources.depth_image != VK_NULL_HANDLE;
+         resources.summary.depth_image_view_created = resources.depth_image_view != VK_NULL_HANDLE;
          resources.summary.current_image_index = resources.active_image_index;
          resources.summary.frame_acquired = resources.frame_acquired;
          resources.summary.swapchain_dirty = false;
@@ -2121,6 +2134,96 @@ namespace vve::v3 {
       }
 
       [[nodiscard]] std::expected<void, vve::Error>
+      createSwapchainDepthResources(VulkanWindowSwapchainResources &resources) {
+         if (resources.extent.width == 0 || resources.extent.height == 0) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         constexpr VkFormat selected_depth_format = VK_FORMAT_D32_SFLOAT;
+         VkFormatProperties format_properties{};
+         vkGetPhysicalDeviceFormatProperties(physical_device_, selected_depth_format, &format_properties);
+         if ((format_properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0) {
+            std::cerr << "[VulkanGraphicsBackend] depth format " << string_VkFormat(selected_depth_format)
+                      << " does not support depth-stencil attachment usage\n";
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkImageCreateInfo image_info{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                                            .pNext = nullptr,
+                                            .flags = 0,
+                                            .imageType = VK_IMAGE_TYPE_2D,
+                                            .format = selected_depth_format,
+                                            .extent = {.width = resources.extent.width,
+                                                       .height = resources.extent.height,
+                                                       .depth = 1},
+                                            .mipLevels = 1,
+                                            .arrayLayers = 1,
+                                            .samples = VK_SAMPLE_COUNT_1_BIT,
+                                            .tiling = VK_IMAGE_TILING_OPTIMAL,
+                                            .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                                            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                                            .queueFamilyIndexCount = 0,
+                                            .pQueueFamilyIndices = nullptr,
+                                            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED};
+         VkResult result = vkCreateImage(device_, &image_info, nullptr, &resources.depth_image);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateImage(depth) failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         VkMemoryRequirements requirements{};
+         vkGetImageMemoryRequirements(device_, resources.depth_image, &requirements);
+         const auto memory_type = findMemoryType(requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+         if (!memory_type) {
+            return std::unexpected(memory_type.error());
+         }
+
+         const VkMemoryAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                                                  .pNext = nullptr,
+                                                  .allocationSize = requirements.size,
+                                                  .memoryTypeIndex = *memory_type};
+         result = vkAllocateMemory(device_, &allocate_info, nullptr, &resources.depth_memory);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkAllocateMemory(depth) failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         result = vkBindImageMemory(device_, resources.depth_image, resources.depth_memory, 0);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkBindImageMemory(depth) failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkImageViewCreateInfo view_info{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                               .pNext = nullptr,
+                                               .flags = 0,
+                                               .image = resources.depth_image,
+                                               .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                                               .format = selected_depth_format,
+                                               .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                              .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                              .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                              .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+                                               .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+                                                                    .baseMipLevel = 0,
+                                                                    .levelCount = 1,
+                                                                    .baseArrayLayer = 0,
+                                                                    .layerCount = 1}};
+         result = vkCreateImageView(device_, &view_info, nullptr, &resources.depth_image_view);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateImageView(depth) failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         resources.depth_format = selected_depth_format;
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
       createSwapchainClearRenderPass(VulkanWindowSwapchainResources &resources) {
          const VkAttachmentDescription color_attachment{.flags = 0,
                                                         .format = resources.format,
@@ -2574,6 +2677,20 @@ namespace vve::v3 {
             }
             resources.image_views.clear();
 
+            if (resources.depth_image_view != VK_NULL_HANDLE) {
+               vkDestroyImageView(device_, resources.depth_image_view, nullptr);
+               resources.depth_image_view = VK_NULL_HANDLE;
+            }
+            if (resources.depth_image != VK_NULL_HANDLE) {
+               vkDestroyImage(device_, resources.depth_image, nullptr);
+               resources.depth_image = VK_NULL_HANDLE;
+            }
+            if (resources.depth_memory != VK_NULL_HANDLE) {
+               vkFreeMemory(device_, resources.depth_memory, nullptr);
+               resources.depth_memory = VK_NULL_HANDLE;
+            }
+            resources.depth_format = VK_FORMAT_UNDEFINED;
+
             if (resources.swapchain != VK_NULL_HANDLE) {
                vkDestroySwapchainKHR(device_, resources.swapchain, nullptr);
                resources.swapchain = VK_NULL_HANDLE;
@@ -2587,6 +2704,10 @@ namespace vve::v3 {
          }
 
          resources.frame_acquired = false;
+         resources.summary.depth_image_created = false;
+         resources.summary.depth_image_view_created = false;
+         resources.summary.depth_image_count = 0;
+         resources.summary.depth_image_view_count = 0;
          resources.summary.frame_acquired = false;
       }
 
