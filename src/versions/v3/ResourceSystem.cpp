@@ -1,6 +1,7 @@
 module;
 
 #include "FacadeMacros.hpp"
+#include <cstring>
 
 module VEEngine.V3;
 import std;
@@ -44,6 +45,34 @@ namespace vve::v3 {
       seed.push_back(':');
       seed += vve::shadowKindName(shadow);
       return ShaderHandle{detail::makeStableHandle(seed)};
+   }
+
+   /// @brief Copies a segmented vector's object bytes into contiguous upload storage.
+   template <typename TValue> [[nodiscard]] std::vector<std::byte> copyObjectBytes(const Vector<TValue> &values) {
+      std::vector<std::byte> bytes(values.size() * sizeof(TValue));
+      auto *cursor = bytes.data();
+      for (const auto &value : values) {
+         std::memcpy(cursor, std::addressof(value), sizeof(TValue));
+         cursor += sizeof(TValue);
+      }
+      return bytes;
+   }
+
+   /// @brief Returns a uint32 count when a host-side range fits Vulkan draw/upload metadata.
+   [[nodiscard]] std::expected<std::uint32_t, vve::Error> checkedUint32(std::size_t value) {
+      if (value > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {
+         return std::unexpected(vve::Error::invalid_argument);
+      }
+      return static_cast<std::uint32_t>(value);
+   }
+
+   /// @brief Finds an uploaded mesh summary in mutable runtime scene data.
+   [[nodiscard]] std::optional<std::size_t> gpuMeshIndex(const SceneData &scene, MeshHandle mesh) {
+      const auto index_it = scene.gpu_mesh_indices.find(mesh.value.value());
+      if (index_it == scene.gpu_mesh_indices.end() || index_it->second >= scene.gpu_meshes.size()) {
+         return std::nullopt;
+      }
+      return index_it->second;
    }
 
    } // namespace
@@ -175,31 +204,114 @@ namespace vve::v3 {
          return records;
       }
 
-      /// @brief Simulates uploading imported resources to GPU memory.
-      [[nodiscard]] std::expected<void, vve::Error> uploadResources(const FrameContext &, const SceneData &) {
-         // Transition imported resources into GPU-visible state and bump their
-         for (auto &record : records_) { // generation to represent a new uploaded revision.
-            if (record.location == ResourceLocation::imported_blob || record.location == ResourceLocation::cpu_memory) {
-               record.location = ResourceLocation::gpu_memory;
-               ++record.generation;
+      /// @brief Uploads imported mesh resources to backend-owned GPU buffers.
+      [[nodiscard]] std::expected<void, vve::Error> uploadResources(const FrameContext &, SceneData &scene,
+                                                                    GraphicsBackend &graphics_backend) {
+         for (const auto &mesh : scene.meshes) {
+            if (mesh.vertices.empty() || mesh.indices.empty()) {
+               continue;
             }
+
+            auto *record = findRecord(mesh.handle.value);
+            if (record == nullptr) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            if (const auto existing_mesh = gpuMeshIndex(scene, mesh.handle);
+                existing_mesh.has_value() && scene.gpu_meshes[*existing_mesh].resident &&
+                scene.gpu_meshes[*existing_mesh].generation == record->generation) {
+               continue;
+            }
+
+            const auto vertex_count = checkedUint32(mesh.vertices.size());
+            const auto index_count = checkedUint32(mesh.indices.size());
+            const auto submesh_count = checkedUint32(mesh.submeshes.size());
+            if (!vertex_count || !index_count || !submesh_count) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            const auto uploaded_generation = record->generation + 1U;
+            const auto vertex_bytes = copyObjectBytes(mesh.vertices);
+            const auto index_bytes = copyObjectBytes(mesh.indices);
+
+            const auto vertex_buffer = graphics_backend.createBuffer(
+                mesh.handle.value, ResourceKind::mesh, GpuBufferUsage::vertex,
+                std::span<const std::byte>{vertex_bytes.data(), vertex_bytes.size()}, uploaded_generation);
+            if (!vertex_buffer) {
+               return std::unexpected(vertex_buffer.error());
+            }
+
+            const auto index_buffer = graphics_backend.createBuffer(
+                mesh.handle.value, ResourceKind::mesh, GpuBufferUsage::index,
+                std::span<const std::byte>{index_bytes.data(), index_bytes.size()}, uploaded_generation);
+            if (!index_buffer) {
+               [[maybe_unused]] const auto destroyed = graphics_backend.destroyBuffer(vertex_buffer->handle);
+               return std::unexpected(index_buffer.error());
+            }
+
+            upsertGpuMesh(scene, GpuMeshResources{.mesh = mesh.handle,
+                                                  .vertex_buffer = vertex_buffer->handle,
+                                                  .index_buffer = index_buffer->handle,
+                                                  .vertex_count = *vertex_count,
+                                                  .index_count = *index_count,
+                                                  .submesh_count = *submesh_count,
+                                                  .vertex_stride = sizeof(ImportedVertex),
+                                                  .vertex_byte_size = vertex_bytes.size(),
+                                                  .index_byte_size = index_bytes.size(),
+                                                  .generation = uploaded_generation,
+                                                  .resident = true});
+
+            record->location = ResourceLocation::gpu_memory;
+            record->generation = uploaded_generation;
+            upsertRecord(ResourceRecord{.id = vertex_buffer->handle.value,
+                                        .kind = ResourceKind::buffer,
+                                        .location = ResourceLocation::gpu_memory,
+                                        .generation = uploaded_generation,
+                                        .source_path = mesh.source_path.empty() ? scene.source_path
+                                                                                : mesh.source_path});
+            upsertRecord(ResourceRecord{.id = index_buffer->handle.value,
+                                        .kind = ResourceKind::buffer,
+                                        .location = ResourceLocation::gpu_memory,
+                                        .generation = uploaded_generation,
+                                        .source_path = mesh.source_path.empty() ? scene.source_path
+                                                                                : mesh.source_path});
          }
 
          return {};
       }
 
       /// @brief Registers the built-in resource upload task.
-      void registerTasks(TaskGraphBuilder &builder, const SceneData &) {
+      void registerTasks(TaskGraphBuilder &builder, const SceneData &, GraphicsBackend &graphics_backend) {
          [[maybe_unused]] const auto upload_resources_task = builder.addTask(
              "task.upload_resources", TaskKernelId::upload_resources,
-             detail::requireFrameScene([this](const FrameContext &frame_context, const SceneData &scene) {
-                return uploadResources(frame_context, scene);
+             detail::requireFrameScene([this, &graphics_backend](const FrameContext &frame_context, SceneData &scene) {
+                return uploadResources(frame_context, scene, graphics_backend);
              }),
              {TaskGraphBuilder::taskHandleFor("task.cull_visibility_cpu")}, {}, "Upload Resources",
              TaskPhase::resources);
       }
 
    private:
+      [[nodiscard]] ResourceRecord *findRecord(vve::Handle id) {
+         const auto record_index = record_indices_.find(id.value());
+         if (record_index == record_indices_.end() || record_index->second >= records_.size()) {
+            return nullptr;
+         }
+         return std::addressof(records_[record_index->second]);
+      }
+
+      void upsertGpuMesh(SceneData &scene, GpuMeshResources resources) {
+         const auto id = resources.mesh.value.value();
+         if (const auto gpu_mesh_index = scene.gpu_mesh_indices.find(id);
+             gpu_mesh_index != scene.gpu_mesh_indices.end() && gpu_mesh_index->second < scene.gpu_meshes.size()) {
+            scene.gpu_meshes[gpu_mesh_index->second] = std::move(resources);
+            return;
+         }
+
+         scene.gpu_mesh_indices.insert_or_assign(id, scene.gpu_meshes.size());
+         scene.gpu_meshes.push_back(std::move(resources));
+      }
+
       void upsertRecord(ResourceRecord record) {
          const auto id = record.id.value();
          if (const auto record_index = record_indices_.find(id); record_index != record_indices_.end()) {
@@ -252,12 +364,16 @@ namespace vve::v3 {
 
    /// @brief Uploads resources through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(ResourceSystemFacade, DefaultResourceSystemImplementation, uploadResources,
-                               (const FrameContext &frame_context, const SceneData &scene), (frame_context, scene), ,
+                               (const FrameContext &frame_context, SceneData &scene,
+                                GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend),
+                               (frame_context, scene, graphics_backend), ,
                                std::expected<void, vve::Error>)
 
    /// @brief Registers resource tasks through the public facade.
    VVE_V3_DEFINE_FACADE_VOID_METHOD(ResourceSystemFacade, DefaultResourceSystemImplementation, registerTasks,
-                                    (TaskGraphBuilder &builder, const SceneData &scene), (builder, scene), )
+                                    (TaskGraphBuilder &builder, const SceneData &scene,
+                                     GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend),
+                                    (builder, scene, graphics_backend), )
 
    /// @brief Emits the explicit resource-system facade instantiation for v3.
    template class ResourceSystemFacade<DefaultResourceSystemImplementation>;

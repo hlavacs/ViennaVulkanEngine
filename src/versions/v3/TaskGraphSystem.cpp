@@ -123,7 +123,7 @@ namespace vve::v3 {
          const auto user_leaf_tasks = collectPreSceneLeafTasks(builder, begin_frame, end_frame);
 
          scene_system.registerTasks(builder, scene);
-         resource_system.registerTasks(builder, scene);
+         resource_system.registerTasks(builder, scene, graphics_backend);
          render_system.registerTasks(builder, scene, graphics_backend, render_pipelines);
 
          attachSceneStartDependencies(builder, user_leaf_tasks);

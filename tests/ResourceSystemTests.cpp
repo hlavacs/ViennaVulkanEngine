@@ -45,6 +45,42 @@ namespace {
       });
    }
 
+   /// @brief Builds a small imported scene with one indexed triangle mesh.
+   [[nodiscard]] vve::v3::ImportedScene makeTriangleScene(const std::filesystem::path &source_path) {
+      const auto scene_handle = vve::v3::SceneHandle{
+          .value = vve::Handle::fromHash(std::string_view{"tests.resources.triangle_scene"})};
+      const auto mesh_handle = vve::v3::MeshHandle{
+          .value = vve::Handle::fromHash(std::string_view{"tests.resources.triangle_mesh"})};
+      const auto node_handle = vve::v3::SceneNodeHandle{
+          .value = vve::Handle::fromHash(std::string_view{"tests.resources.triangle_node"})};
+      const auto mesh_instance_handle = vve::Handle::fromHash(std::string_view{"tests.resources.triangle_instance"});
+
+      vve::v3::ImportedMesh mesh{};
+      mesh.handle = mesh_handle;
+      mesh.name = "triangle";
+      mesh.vertices.push_back(vve::v3::ImportedVertex{});
+      mesh.vertices.push_back(vve::v3::ImportedVertex{});
+      mesh.vertices.push_back(vve::v3::ImportedVertex{});
+      mesh.indices.push_back(0U);
+      mesh.indices.push_back(1U);
+      mesh.indices.push_back(2U);
+      mesh.submeshes.push_back(vve::v3::ImportedSubmesh{.index_offset = 0, .index_count = 3});
+      mesh.source_path = source_path;
+
+      vve::v3::ImportedSceneNode node{};
+      node.handle = node_handle;
+      node.name = "triangle_node";
+      node.mesh_instances.push_back(vve::v3::ImportedMeshInstance{.handle = mesh_instance_handle, .mesh = mesh_handle});
+
+      vve::v3::ImportedScene scene{};
+      scene.handle = scene_handle;
+      scene.name = "triangle_scene";
+      scene.source_path = source_path;
+      scene.meshes.push_back(std::move(mesh));
+      scene.nodes.push_back(std::move(node));
+      return scene;
+   }
+
 } // namespace
 
 /**
@@ -163,6 +199,83 @@ int main() {
                                                                  vve::ShadowKind::none);
    if (missing_shader || missing_shader.error() != vve::Error::file_not_found) {
       return 19;
+   }
+
+   const auto backend_init = backend.init();
+   if (!backend_init) {
+      return 20;
+   }
+
+   const auto imported_scene = makeTriangleScene(repository_root / "tests/triangle_scene.gltf");
+   const auto register_scene = resource_system.registerImportedScene(imported_scene, imported_scene.source_path);
+   if (!register_scene) {
+      return 21;
+   }
+
+   vve::v3::SceneSystem scene_system{};
+   auto scene = scene_system.instantiate(imported_scene);
+   if (!scene) {
+      return 22;
+   }
+
+   const auto upload = resource_system.uploadResources(vve::v3::FrameContext{.frame_index = 1, .delta_seconds = 0.016},
+                                                       *scene, backend);
+   if (!upload) {
+      return 23;
+   }
+
+   if (scene->gpu_meshes.size() != 1 || !scene->gpu_mesh_indices.contains(imported_scene.meshes.front().handle.value.value())) {
+      return 24;
+   }
+
+   const auto &gpu_mesh = scene->gpu_meshes.front();
+   if (gpu_mesh.mesh.value != imported_scene.meshes.front().handle.value || gpu_mesh.vertex_count != 3 ||
+       gpu_mesh.index_count != 3 || gpu_mesh.submesh_count != 1 ||
+       gpu_mesh.vertex_stride != sizeof(vve::v3::ImportedVertex) || !gpu_mesh.resident ||
+       !gpu_mesh.vertex_buffer.value.isValid() || !gpu_mesh.index_buffer.value.isValid()) {
+      return 25;
+   }
+
+   const auto vertex_buffer = backend.bufferResources(gpu_mesh.vertex_buffer);
+   const auto index_buffer = backend.bufferResources(gpu_mesh.index_buffer);
+   if (!vertex_buffer || !vertex_buffer->has_value() || !index_buffer || !index_buffer->has_value() ||
+       (*vertex_buffer)->byte_size != gpu_mesh.vertex_byte_size ||
+       (*index_buffer)->byte_size != gpu_mesh.index_byte_size) {
+      return 26;
+   }
+
+   const auto uploaded_records = resource_system.enumerate();
+   if (!uploaded_records) {
+      return 27;
+   }
+
+   const auto mesh_record = std::ranges::find_if(*uploaded_records, [&](const vve::v3::ResourceRecord &record) {
+      return record.id == imported_scene.meshes.front().handle.value && record.kind == vve::v3::ResourceKind::mesh &&
+             record.location == vve::v3::ResourceLocation::gpu_memory && record.generation == gpu_mesh.generation;
+   });
+   const auto vertex_record = std::ranges::find_if(*uploaded_records, [&](const vve::v3::ResourceRecord &record) {
+      return record.id == gpu_mesh.vertex_buffer.value && record.kind == vve::v3::ResourceKind::buffer &&
+             record.location == vve::v3::ResourceLocation::gpu_memory;
+   });
+   const auto index_record = std::ranges::find_if(*uploaded_records, [&](const vve::v3::ResourceRecord &record) {
+      return record.id == gpu_mesh.index_buffer.value && record.kind == vve::v3::ResourceKind::buffer &&
+             record.location == vve::v3::ResourceLocation::gpu_memory;
+   });
+   if (mesh_record == uploaded_records->end() || vertex_record == uploaded_records->end() ||
+       index_record == uploaded_records->end()) {
+      return 28;
+   }
+
+   const auto uploaded_generation = gpu_mesh.generation;
+   const auto uploaded_vertex_buffer = gpu_mesh.vertex_buffer;
+   const auto uploaded_index_buffer = gpu_mesh.index_buffer;
+   const auto upload_again = resource_system.uploadResources(vve::v3::FrameContext{.frame_index = 2, .delta_seconds = 0.016},
+                                                             *scene, backend);
+   if (!upload_again || scene->gpu_meshes.size() != 1 ||
+       scene->gpu_meshes.front().generation != uploaded_generation ||
+       scene->gpu_meshes.front().vertex_buffer.value != uploaded_vertex_buffer.value ||
+       scene->gpu_meshes.front().index_buffer.value != uploaded_index_buffer.value) {
+      return 29;
    }
 
    return 0;

@@ -36,6 +36,7 @@ export namespace vve::v3 {
    class ImGuiSystemImplementation;
 
    template <typename TImplementation> class ShaderSystemFacade;
+   template <typename TImplementation> class GraphicsBackendFacade;
 
    /// @brief Asset-import facade for source scene ingestion.
    template <typename TImplementation> class VVE_API AssetSystemFacade {
@@ -82,9 +83,11 @@ export namespace vve::v3 {
       [[nodiscard]] std::expected<std::vector<ResourceRecord>, vve::Error> enumerate() const;
       /// @brief Uploads resources needed for the current frame.
       [[nodiscard]] std::expected<void, vve::Error> uploadResources(const FrameContext &frame_context,
-                                                                    const SceneData &scene);
+                                                                    SceneData &scene,
+                                                                    GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend);
       /// @brief Registers resource-related tasks with the frame task graph.
-      void registerTasks(TaskGraphBuilder &builder, const SceneData &scene);
+      void registerTasks(TaskGraphBuilder &builder, const SceneData &scene,
+                         GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend);
 
    private:
       std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.
