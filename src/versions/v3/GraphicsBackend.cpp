@@ -2225,6 +2225,10 @@ namespace vve::v3 {
 
       [[nodiscard]] std::expected<void, vve::Error>
       createSwapchainClearRenderPass(VulkanWindowSwapchainResources &resources) {
+         if (resources.depth_format == VK_FORMAT_UNDEFINED || resources.depth_image_view == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
          const VkAttachmentDescription color_attachment{.flags = 0,
                                                         .format = resources.format,
                                                         .samples = VK_SAMPLE_COUNT_1_BIT,
@@ -2234,8 +2238,21 @@ namespace vve::v3 {
                                                         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
                                                         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
                                                         .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR};
+         const VkAttachmentDescription depth_attachment{
+             .flags = 0,
+             .format = resources.depth_format,
+             .samples = VK_SAMPLE_COUNT_1_BIT,
+             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+             .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+             .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+             .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+             .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+         const std::array attachments{color_attachment, depth_attachment};
          const VkAttachmentReference color_reference{.attachment = 0,
                                                      .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+         const VkAttachmentReference depth_reference{.attachment = 1,
+                                                     .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
          const VkSubpassDescription subpass{.flags = 0,
                                             .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
                                             .inputAttachmentCount = 0,
@@ -2243,29 +2260,34 @@ namespace vve::v3 {
                                             .colorAttachmentCount = 1,
                                             .pColorAttachments = &color_reference,
                                             .pResolveAttachments = nullptr,
-                                            .pDepthStencilAttachment = nullptr,
+                                            .pDepthStencilAttachment = &depth_reference,
                                             .preserveAttachmentCount = 0,
                                             .pPreserveAttachments = nullptr};
          const std::array dependencies{
              VkSubpassDependency{.srcSubpass = VK_SUBPASS_EXTERNAL,
                                  .dstSubpass = 0,
-                                 .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                 .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                 .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                                 .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
                                  .srcAccessMask = 0,
-                                 .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                 .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                                  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
                                  .dependencyFlags = 0},
              VkSubpassDependency{.srcSubpass = 0,
                                  .dstSubpass = VK_SUBPASS_EXTERNAL,
-                                 .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                 .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
                                  .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                                 .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                 .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                                  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
                                  .dstAccessMask = 0,
                                  .dependencyFlags = 0}};
          const VkRenderPassCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
                                                   .pNext = nullptr,
                                                   .flags = 0,
-                                                  .attachmentCount = 1,
-                                                  .pAttachments = &color_attachment,
+                                                  .attachmentCount = static_cast<std::uint32_t>(attachments.size()),
+                                                  .pAttachments = attachments.data(),
                                                   .subpassCount = 1,
                                                   .pSubpasses = &subpass,
                                                   .dependencyCount =
@@ -2285,19 +2307,19 @@ namespace vve::v3 {
       [[nodiscard]] std::expected<void, vve::Error>
       createSwapchainFramebuffers(VulkanWindowSwapchainResources &resources) {
          if (resources.clear_render_pass == VK_NULL_HANDLE || resources.extent.width == 0 ||
-             resources.extent.height == 0) {
+             resources.extent.height == 0 || resources.depth_image_view == VK_NULL_HANDLE) {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
          resources.framebuffers.reserve(resources.image_views.size());
          for (const auto image_view : resources.image_views) {
-            const VkImageView attachments[]{image_view};
+            const std::array attachments{image_view, resources.depth_image_view};
             const VkFramebufferCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
                                                       .pNext = nullptr,
                                                       .flags = 0,
                                                       .renderPass = resources.clear_render_pass,
-                                                      .attachmentCount = 1,
-                                                      .pAttachments = attachments,
+                                                      .attachmentCount = static_cast<std::uint32_t>(attachments.size()),
+                                                      .pAttachments = attachments.data(),
                                                       .width = resources.extent.width,
                                                       .height = resources.extent.height,
                                                       .layers = 1};
@@ -2406,15 +2428,17 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::internal_error);
          }
 
-         const VkClearValue clear_value{.color = windowClearColor(resources.summary)};
+         const std::array clear_values{VkClearValue{.color = windowClearColor(resources.summary)},
+                                       VkClearValue{.depthStencil = VkClearDepthStencilValue{.depth = 1.0F,
+                                                                                             .stencil = 0}}};
          const VkRenderPassBeginInfo render_pass_info{.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
                                                       .pNext = nullptr,
                                                       .renderPass = resources.clear_render_pass,
                                                       .framebuffer = resources.framebuffers[image_index],
                                                       .renderArea = {.offset = {.x = 0, .y = 0},
                                                                      .extent = resources.extent},
-                                                      .clearValueCount = 1,
-                                                      .pClearValues = &clear_value};
+                                                      .clearValueCount = static_cast<std::uint32_t>(clear_values.size()),
+                                                      .pClearValues = clear_values.data()};
          vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
          vkCmdEndRenderPass(command_buffer);
 
