@@ -877,6 +877,10 @@ namespace vve::v3 {
             return VK_FORMAT_B8G8R8A8_SRGB;
          case GraphicsColorFormat::rgba8_srgb:
             return VK_FORMAT_R8G8B8A8_SRGB;
+         case GraphicsColorFormat::bgra8_unorm:
+            return VK_FORMAT_B8G8R8A8_UNORM;
+         case GraphicsColorFormat::rgba8_unorm:
+            return VK_FORMAT_R8G8B8A8_UNORM;
          case GraphicsColorFormat::rgba16_float:
             return VK_FORMAT_R16G16B16A16_SFLOAT;
          }
@@ -894,6 +898,36 @@ namespace vve::v3 {
          }
 
          return VK_FORMAT_UNDEFINED;
+      }
+
+      /// @brief Converts a Vulkan swapchain format into backend-neutral pipeline metadata.
+      [[nodiscard]] std::optional<GraphicsColorFormat> graphicsColorFormat(VkFormat format) {
+         switch (format) {
+         case VK_FORMAT_B8G8R8A8_SRGB:
+            return GraphicsColorFormat::bgra8_srgb;
+         case VK_FORMAT_R8G8B8A8_SRGB:
+            return GraphicsColorFormat::rgba8_srgb;
+         case VK_FORMAT_B8G8R8A8_UNORM:
+            return GraphicsColorFormat::bgra8_unorm;
+         case VK_FORMAT_R8G8B8A8_UNORM:
+            return GraphicsColorFormat::rgba8_unorm;
+         case VK_FORMAT_R16G16B16A16_SFLOAT:
+            return GraphicsColorFormat::rgba16_float;
+         default:
+            return std::nullopt;
+         }
+      }
+
+      /// @brief Converts a Vulkan depth format into backend-neutral pipeline metadata.
+      [[nodiscard]] std::optional<GraphicsDepthFormat> graphicsDepthFormat(VkFormat format) {
+         switch (format) {
+         case VK_FORMAT_D32_SFLOAT:
+            return GraphicsDepthFormat::depth32_float;
+         case VK_FORMAT_UNDEFINED:
+            return GraphicsDepthFormat::none;
+         default:
+            return std::nullopt;
+         }
       }
 
       /// @brief Converts backend-neutral image formats to Vulkan formats.
@@ -963,14 +997,23 @@ namespace vve::v3 {
          }
       }
 
-      /// @brief Chooses the surface format used by Stage 11 swapchains.
+      /// @brief Chooses a swapchain surface format that can also build compatible graphics pipelines.
       [[nodiscard]] VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &formats) {
-         const auto preferred = std::ranges::find_if(formats, [](const VkSurfaceFormatKHR &format) {
-            return format.format == VK_FORMAT_B8G8R8A8_SRGB &&
-                   format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-         });
-         if (preferred != formats.end()) {
-            return *preferred;
+         constexpr std::array preferred_formats{
+             VK_FORMAT_B8G8R8A8_SRGB,
+             VK_FORMAT_R8G8B8A8_SRGB,
+             VK_FORMAT_B8G8R8A8_UNORM,
+             VK_FORMAT_R8G8B8A8_UNORM,
+             VK_FORMAT_R16G16B16A16_SFLOAT};
+
+         for (const auto preferred_format : preferred_formats) {
+            const auto preferred = std::ranges::find_if(formats, [preferred_format](const VkSurfaceFormatKHR &format) {
+               return format.format == preferred_format &&
+                      format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+            });
+            if (preferred != formats.end()) {
+               return *preferred;
+            }
          }
 
          return formats.empty() ? VkSurfaceFormatKHR{.format = VK_FORMAT_B8G8R8A8_SRGB,
@@ -1792,6 +1835,10 @@ namespace vve::v3 {
          resources.summary.frames_in_flight = static_cast<std::uint32_t>(resources.frame_sync.size());
          resources.summary.width = resources.extent.width;
          resources.summary.height = resources.extent.height;
+         resources.summary.color_attachment_format =
+             graphicsColorFormat(resources.format).value_or(GraphicsColorFormat::bgra8_srgb);
+         resources.summary.depth_attachment_format =
+             graphicsDepthFormat(resources.depth_format).value_or(GraphicsDepthFormat::depth32_float);
          resources.summary.surface_format = string_VkFormat(resources.format);
          resources.summary.depth_format = string_VkFormat(resources.depth_format);
          resources.summary.present_mode = string_VkPresentModeKHR(resources.present_mode);
@@ -3510,6 +3557,11 @@ namespace vve::v3 {
          const auto surface_format = chooseSurfaceFormat(*formats);
          const auto present_mode = choosePresentMode(*modes);
          const auto extent = chooseSwapchainExtent(capabilities, window);
+         if (!graphicsColorFormat(surface_format.format)) {
+            std::cerr << "[VulkanGraphicsBackend] unsupported swapchain color format for window '"
+                      << window.window_id << "': " << string_VkFormat(surface_format.format) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
          std::uint32_t image_count = capabilities.minImageCount + 1;
          if (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount) {
             image_count = capabilities.maxImageCount;
@@ -3657,6 +3709,11 @@ namespace vve::v3 {
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkBindImageMemory(depth) failed: " << string_VkResult(result)
                       << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+         if (!graphicsDepthFormat(selected_depth_format)) {
+            std::cerr << "[VulkanGraphicsBackend] unsupported swapchain depth format: "
+                      << string_VkFormat(selected_depth_format) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 

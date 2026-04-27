@@ -142,14 +142,16 @@ export namespace vve::v3 {
       less_equal  ///< Incoming depth may be less than or equal to stored depth.
    };
 
-   /// @brief Placeholder color attachment formats used before swapchain integration.
+   /// @brief Backend-neutral color attachment formats used by renderer-selected pipelines.
    enum class GraphicsColorFormat : std::uint32_t {
       bgra8_srgb = 0, ///< 8-bit BGRA sRGB color output.
       rgba8_srgb,     ///< 8-bit RGBA sRGB color output.
+      bgra8_unorm,    ///< 8-bit BGRA linear/unorm color output.
+      rgba8_unorm,    ///< 8-bit RGBA linear/unorm color output.
       rgba16_float    ///< 16-bit floating-point RGBA color output.
    };
 
-   /// @brief Placeholder depth attachment formats used before swapchain integration.
+   /// @brief Backend-neutral depth attachment formats used by renderer-selected pipelines.
    enum class GraphicsDepthFormat : std::uint32_t {
       none = 0,     ///< No depth attachment is used.
       depth32_float ///< 32-bit floating-point depth attachment.
@@ -1175,6 +1177,8 @@ export namespace vve::v3 {
       std::uint32_t frames_in_flight{0};        ///< Number of frame-sync slots allocated for this swapchain.
       std::uint32_t current_image_index{0};     ///< Last acquired swapchain image index.
       std::uint64_t presented_frame_count{0};   ///< Number of frames successfully presented by this swapchain.
+      GraphicsColorFormat color_attachment_format{GraphicsColorFormat::bgra8_srgb}; ///< Color target format for compatible pipelines.
+      GraphicsDepthFormat depth_attachment_format{GraphicsDepthFormat::depth32_float}; ///< Depth target format for compatible pipelines.
       std::string surface_format{};             ///< Chosen Vulkan surface format for diagnostics.
       std::string depth_format{};               ///< Chosen Vulkan depth format for diagnostics.
       std::string present_mode{};               ///< Chosen Vulkan present mode for diagnostics.
@@ -1196,6 +1200,8 @@ export namespace vve::v3 {
       PipelineResourceHandle backend_resources{};       ///< Backend Vulkan resource bundle used by the renderer.
       GraphicsPipelineHandle graphics_pipeline{};       ///< Graphics pipeline prepared for this renderer binding.
       RenderKernelId main_kernel{RenderKernelId::none}; ///< Primary render kernel selected by this renderer.
+      GraphicsColorFormat color_format{GraphicsColorFormat::bgra8_srgb}; ///< Window color target used by the renderer pipeline.
+      GraphicsDepthFormat depth_format{GraphicsDepthFormat::depth32_float}; ///< Window depth target used by the renderer pipeline.
       std::size_t shader_stage_count{0};                ///< Reflected shader stages available to the renderer.
       std::size_t descriptor_set_layout_count{0};       ///< Descriptor layouts available to the renderer.
       bool ready_for_pipeline_creation{false};          ///< Whether later Vulkan graphics-pipeline creation can start.

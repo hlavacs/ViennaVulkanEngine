@@ -326,14 +326,14 @@ namespace vve::v3 {
       if (auto pipeline_resources = detail::createRuntimePipelineResources(runtime_); !pipeline_resources) {
          return pipeline_resources;
       }
+      if (auto swapchains = detail::createRuntimeWindowSwapchains(runtime_); !swapchains) {
+         return swapchains;
+      }
       if (auto renderer_bindings = detail::bindRuntimeRendererPipelines(runtime_); !renderer_bindings) {
          return renderer_bindings;
       }
       if (auto graphics_pipelines = detail::createRuntimeGraphicsPipelines(runtime_); !graphics_pipelines) {
          return graphics_pipelines;
-      }
-      if (auto swapchains = detail::createRuntimeWindowSwapchains(runtime_); !swapchains) {
-         return swapchains;
       }
 
       if (runtime_.gui_system != nullptr) { // GUI support is optional and initialized only when present.

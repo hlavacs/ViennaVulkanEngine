@@ -86,6 +86,9 @@ namespace {
           .shader_program = shader,
           .pipeline_layout = layout,
           .backend_resources = testResources(layout),
+          .swapchain = vve::v3::WindowSwapchainResources{
+              .color_attachment_format = vve::v3::GraphicsColorFormat::rgba8_unorm,
+              .depth_attachment_format = vve::v3::GraphicsDepthFormat::depth32_float},
           .graph = render_system.buildStaticGraph(window, renderer)};
    }
 
@@ -188,6 +191,8 @@ namespace {
              binding->backend_resources.value == pipeline.backend_resources.handle.value &&
              binding->shader_program.value == pipeline.shader_program.value &&
              binding->main_kernel == expected_kernel &&
+             binding->color_format == pipeline.swapchain.color_attachment_format &&
+             binding->depth_format == pipeline.swapchain.depth_attachment_format &&
              binding->shader_stage_count == pipeline.pipeline_layout.shader_stages.size() &&
              binding->descriptor_set_layout_count == pipeline.pipeline_layout.descriptor_sets.size() &&
              binding->ready_for_pipeline_creation &&

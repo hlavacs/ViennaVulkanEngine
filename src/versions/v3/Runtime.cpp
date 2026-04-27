@@ -331,8 +331,8 @@ namespace vve::v3::detail {
    }
 
    /**
-    * @brief Binds backend-created pipeline resources to each selected renderer instance.
-    * @param runtime Runtime whose render pipelines already own backend pipeline resources.
+    * @brief Binds backend-created resources and swapchain targets to each selected renderer instance.
+    * @param runtime Runtime whose render pipelines already own backend resources and swapchains.
     * @return Empty success result, or the first renderer binding error.
     */
    std::expected<void, vve::Error> bindRuntimeRendererPipelines(Runtime &runtime) {

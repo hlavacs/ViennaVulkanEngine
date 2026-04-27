@@ -161,8 +161,8 @@ namespace vve::v3 {
          desc.depth_write_enabled = true;
          desc.depth_compare = GraphicsDepthCompareOp::less_equal;
          desc.blending_enabled = false;
-         desc.color_format = GraphicsColorFormat::bgra8_srgb;
-         desc.depth_format = GraphicsDepthFormat::depth32_float;
+         desc.color_format = binding.color_format;
+         desc.depth_format = binding.depth_format;
          desc.color_attachment_count = 1;
          desc.vertex_binding_count = 1;
          desc.vertex_attribute_count = 5;
@@ -275,6 +275,8 @@ namespace vve::v3 {
                                          .shader_program = pipeline.shader_program,
                                          .backend_resources = pipeline.backend_resources.handle,
                                          .main_kernel = pipeline.renderer.main_kernel,
+                                         .color_format = pipeline.swapchain.color_attachment_format,
+                                         .depth_format = pipeline.swapchain.depth_attachment_format,
                                          .shader_stage_count = pipeline.pipeline_layout.shader_stages.size(),
                                          .descriptor_set_layout_count =
                                              pipeline.backend_resources.descriptor_set_layout_count,
