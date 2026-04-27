@@ -323,6 +323,16 @@ namespace vve::v3 {
          VkDeviceMemory memory{VK_NULL_HANDLE};
       };
 
+      /// @brief Backend-owned Vulkan sampled image, view, sampler, and memory.
+      struct VulkanGpuImageResources {
+         GpuTextureResources summary{};
+         VkImage image{VK_NULL_HANDLE};
+         VkDeviceMemory memory{VK_NULL_HANDLE};
+         VkImageView image_view{VK_NULL_HANDLE};
+         VkSampler sampler{VK_NULL_HANDLE};
+         VkImageLayout layout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+      };
+
       /// @brief Per-frame synchronization objects used by one window swapchain.
       struct VulkanSwapchainFrameSync {
          VkSemaphore image_available{VK_NULL_HANDLE};
@@ -403,6 +413,39 @@ namespace vve::v3 {
          seed.push_back(':');
          seed += std::to_string(generation);
          return GpuBufferHandle{.value = vve::Handle::fromHash(seed)};
+      }
+
+      /// @brief Builds a stable GPU-image handle from owner, format, dimensions, and uploaded generation.
+      [[nodiscard]] GpuImageHandle gpuImageHandle(vve::Handle owner, ResourceKind owner_kind, GpuImageUsage usage,
+                                                  GpuImageFormat format, std::uint32_t width,
+                                                  std::uint32_t height, std::uint32_t generation) {
+         auto seed = std::string{"vulkan.image:"};
+         seed += std::to_string(owner.value());
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(owner_kind));
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(usage));
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(format));
+         seed.push_back(':');
+         seed += std::to_string(width);
+         seed.push_back(':');
+         seed += std::to_string(height);
+         seed.push_back(':');
+         seed += std::to_string(generation);
+         return GpuImageHandle{.value = vve::Handle::fromHash(seed)};
+      }
+
+      /// @brief Builds a stable sampler handle paired with one image upload generation.
+      [[nodiscard]] GpuSamplerHandle gpuSamplerHandle(vve::Handle owner, GpuImageHandle image,
+                                                      std::uint32_t generation) {
+         auto seed = std::string{"vulkan.sampler:"};
+         seed += std::to_string(owner.value());
+         seed.push_back(':');
+         seed += std::to_string(image.value.value());
+         seed.push_back(':');
+         seed += std::to_string(generation);
+         return GpuSamplerHandle{.value = vve::Handle::fromHash(seed)};
       }
 
       /// @brief Builds a stable swapchain-resource handle for one window.
@@ -716,6 +759,42 @@ namespace vve::v3 {
          }
 
          return VK_FORMAT_UNDEFINED;
+      }
+
+      /// @brief Converts backend-neutral image formats to Vulkan formats.
+      [[nodiscard]] std::optional<VkFormat> imageFormat(GpuImageFormat format) {
+         switch (format) {
+         case GpuImageFormat::rgba8_unorm:
+            return VK_FORMAT_R8G8B8A8_UNORM;
+         case GpuImageFormat::rgba8_srgb:
+            return VK_FORMAT_R8G8B8A8_SRGB;
+         case GpuImageFormat::bgra8_srgb:
+            return VK_FORMAT_B8G8R8A8_SRGB;
+         case GpuImageFormat::rgba16_float:
+            return VK_FORMAT_R16G16B16A16_SFLOAT;
+         case GpuImageFormat::depth32_float:
+         case GpuImageFormat::unknown:
+            return std::nullopt;
+         }
+
+         return std::nullopt;
+      }
+
+      /// @brief Returns the expected bytes per texel for upload validation.
+      [[nodiscard]] std::optional<std::size_t> imageFormatBytesPerTexel(GpuImageFormat format) {
+         switch (format) {
+         case GpuImageFormat::rgba8_unorm:
+         case GpuImageFormat::rgba8_srgb:
+         case GpuImageFormat::bgra8_srgb:
+            return 4U;
+         case GpuImageFormat::rgba16_float:
+            return 8U;
+         case GpuImageFormat::depth32_float:
+         case GpuImageFormat::unknown:
+            return std::nullopt;
+         }
+
+         return std::nullopt;
       }
 
       /// @brief Converts backend-neutral buffer usage to Vulkan buffer usage flags.
@@ -1414,6 +1493,96 @@ namespace vve::v3 {
          return {};
       }
 
+      /// @brief Creates a device-local sampled image and uploads RGBA pixel bytes through a staging buffer.
+      [[nodiscard]] std::expected<GpuTextureResources, vve::Error>
+      createSampledImage(vve::Handle owner, ResourceKind owner_kind, GpuImageFormat format,
+                         std::uint32_t width, std::uint32_t height,
+                         std::span<const std::byte> rgba_pixels, std::uint32_t generation) {
+         if (!initialized_ || physical_device_ == VK_NULL_HANDLE || device_ == VK_NULL_HANDLE ||
+             command_pool_ == VK_NULL_HANDLE || graphics_queue_ == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::not_initialized);
+         }
+         if (!owner.isValid() || owner_kind != ResourceKind::texture || width == 0 || height == 0 ||
+             rgba_pixels.empty() || generation == 0) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto vk_format = imageFormat(format);
+         const auto bytes_per_texel = imageFormatBytesPerTexel(format);
+         if (!vk_format.has_value() || !bytes_per_texel.has_value()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+         const auto expected_bytes = static_cast<std::size_t>(width) * static_cast<std::size_t>(height) *
+                                     *bytes_per_texel;
+         if (rgba_pixels.size() != expected_bytes) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto image_handle =
+             gpuImageHandle(owner, owner_kind, GpuImageUsage::sampled, format, width, height, generation);
+         const auto existing = images_.find(image_handle.value.value());
+         if (existing != images_.end()) {
+            return existing->second.summary;
+         }
+
+         VulkanGpuImageResources resources{};
+         resources.summary = GpuTextureResources{.texture = TextureHandle{.value = owner},
+                                                 .image = image_handle,
+                                                 .sampler = gpuSamplerHandle(owner, image_handle, generation),
+                                                 .usage = GpuImageUsage::sampled,
+                                                 .format = format,
+                                                 .width = width,
+                                                 .height = height,
+                                                 .mip_levels = 1,
+                                                 .array_layers = 1,
+                                                 .generation = generation};
+
+         if (auto create_result = createVulkanSampledImage(resources, *vk_format, rgba_pixels); !create_result) {
+            destroyImageResources(resources);
+            return std::unexpected(create_result.error());
+         }
+
+         resources.summary.image_created = resources.image != VK_NULL_HANDLE;
+         resources.summary.image_view_created = resources.image_view != VK_NULL_HANDLE;
+         resources.summary.sampler_created = resources.sampler != VK_NULL_HANDLE;
+         resources.summary.resident = resources.summary.image_created && resources.summary.image_view_created &&
+                                      resources.summary.sampler_created;
+         const auto summary = resources.summary;
+         images_.emplace(image_handle.value.value(), std::move(resources));
+         return summary;
+      }
+
+      /// @brief Returns backend sampled image metadata for an already-created GPU image.
+      [[nodiscard]] std::expected<std::optional<GpuTextureResources>, vve::Error>
+      imageResources(GpuImageHandle image) const {
+         if (!image.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto image_it = images_.find(image.value.value());
+         if (image_it == images_.end()) {
+            return std::optional<GpuTextureResources>{};
+         }
+
+         return image_it->second.summary;
+      }
+
+      /// @brief Destroys a backend-owned sampled image.
+      [[nodiscard]] std::expected<void, vve::Error> destroyImage(GpuImageHandle image) {
+         if (!image.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto image_it = images_.find(image.value.value());
+         if (image_it == images_.end()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         destroyImageResources(image_it->second);
+         images_.erase(image_it);
+         return {};
+      }
+
       /// @brief Creates surface, swapchain, and image views for one native window.
       [[nodiscard]] std::expected<WindowSwapchainResources, vve::Error>
       createWindowSwapchain(const NativeWindowHandle &window) {
@@ -1753,6 +1922,236 @@ namespace vve::v3 {
 
          std::memcpy(mapped, bytes.data(), bytes.size());
          vkUnmapMemory(device_, resources.memory);
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      createVulkanSampledImage(VulkanGpuImageResources &resources, VkFormat format,
+                               std::span<const std::byte> bytes) {
+         VulkanGpuBufferResources staging_buffer{};
+         if (auto staging_result = createVulkanBuffer(staging_buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, bytes);
+             !staging_result) {
+            destroyBufferResources(staging_buffer);
+            return std::unexpected(staging_result.error());
+         }
+
+         const VkImageCreateInfo image_info{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                                            .pNext = nullptr,
+                                            .flags = 0,
+                                            .imageType = VK_IMAGE_TYPE_2D,
+                                            .format = format,
+                                            .extent = {.width = resources.summary.width,
+                                                       .height = resources.summary.height,
+                                                       .depth = 1},
+                                            .mipLevels = resources.summary.mip_levels,
+                                            .arrayLayers = resources.summary.array_layers,
+                                            .samples = VK_SAMPLE_COUNT_1_BIT,
+                                            .tiling = VK_IMAGE_TILING_OPTIMAL,
+                                            .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                                            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                                            .queueFamilyIndexCount = 0,
+                                            .pQueueFamilyIndices = nullptr,
+                                            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED};
+         VkResult result = vkCreateImage(device_, &image_info, nullptr, &resources.image);
+         if (result != VK_SUCCESS) {
+            destroyBufferResources(staging_buffer);
+            std::cerr << "[VulkanGraphicsBackend] vkCreateImage(sampled texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         VkMemoryRequirements requirements{};
+         vkGetImageMemoryRequirements(device_, resources.image, &requirements);
+         const auto memory_type = findMemoryType(requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+         if (!memory_type) {
+            destroyBufferResources(staging_buffer);
+            return std::unexpected(memory_type.error());
+         }
+
+         const VkMemoryAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                                                  .pNext = nullptr,
+                                                  .allocationSize = requirements.size,
+                                                  .memoryTypeIndex = *memory_type};
+         result = vkAllocateMemory(device_, &allocate_info, nullptr, &resources.memory);
+         if (result != VK_SUCCESS) {
+            destroyBufferResources(staging_buffer);
+            std::cerr << "[VulkanGraphicsBackend] vkAllocateMemory(sampled texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         result = vkBindImageMemory(device_, resources.image, resources.memory, 0);
+         if (result != VK_SUCCESS) {
+            destroyBufferResources(staging_buffer);
+            std::cerr << "[VulkanGraphicsBackend] vkBindImageMemory(sampled texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         if (auto upload_result = uploadSampledImage(resources, staging_buffer.buffer); !upload_result) {
+            destroyBufferResources(staging_buffer);
+            return std::unexpected(upload_result.error());
+         }
+         destroyBufferResources(staging_buffer);
+
+         const VkImageViewCreateInfo view_info{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                               .pNext = nullptr,
+                                               .flags = 0,
+                                               .image = resources.image,
+                                               .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                                               .format = format,
+                                               .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                              .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                              .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                              .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+                                               .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                                    .baseMipLevel = 0,
+                                                                    .levelCount = resources.summary.mip_levels,
+                                                                    .baseArrayLayer = 0,
+                                                                    .layerCount = resources.summary.array_layers}};
+         result = vkCreateImageView(device_, &view_info, nullptr, &resources.image_view);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateImageView(sampled texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkSamplerCreateInfo sampler_info{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+                                                .pNext = nullptr,
+                                                .flags = 0,
+                                                .magFilter = VK_FILTER_LINEAR,
+                                                .minFilter = VK_FILTER_LINEAR,
+                                                .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                                                .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                                                .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                                                .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+                                                .mipLodBias = 0.0F,
+                                                .anisotropyEnable = VK_FALSE,
+                                                .maxAnisotropy = 1.0F,
+                                                .compareEnable = VK_FALSE,
+                                                .compareOp = VK_COMPARE_OP_ALWAYS,
+                                                .minLod = 0.0F,
+                                                .maxLod = 0.0F,
+                                                .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
+                                                .unnormalizedCoordinates = VK_FALSE};
+         result = vkCreateSampler(device_, &sampler_info, nullptr, &resources.sampler);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateSampler(sampled texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         resources.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      uploadSampledImage(const VulkanGpuImageResources &resources, VkBuffer staging_buffer) {
+         if (resources.image == VK_NULL_HANDLE || staging_buffer == VK_NULL_HANDLE ||
+             command_pool_ == VK_NULL_HANDLE || graphics_queue_ == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         VkCommandBuffer command_buffer = VK_NULL_HANDLE;
+         const VkCommandBufferAllocateInfo allocate_info{
+             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+             .pNext = nullptr,
+             .commandPool = command_pool_,
+             .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+             .commandBufferCount = 1};
+         VkResult result = vkAllocateCommandBuffers(device_, &allocate_info, &command_buffer);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkAllocateCommandBuffers(sampled texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkCommandBufferBeginInfo begin_info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                                                   .pNext = nullptr,
+                                                   .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+                                                   .pInheritanceInfo = nullptr};
+         result = vkBeginCommandBuffer(command_buffer, &begin_info);
+         if (result != VK_SUCCESS) {
+            vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
+            std::cerr << "[VulkanGraphicsBackend] vkBeginCommandBuffer(sampled texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkImageSubresourceRange range{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                             .baseMipLevel = 0,
+                                             .levelCount = resources.summary.mip_levels,
+                                             .baseArrayLayer = 0,
+                                             .layerCount = resources.summary.array_layers};
+         const VkImageMemoryBarrier to_transfer{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                .pNext = nullptr,
+                                                .srcAccessMask = 0,
+                                                .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                                                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                                                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                .image = resources.image,
+                                                .subresourceRange = range};
+         vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
+                              0, nullptr, 0, nullptr, 1, &to_transfer);
+
+         const VkBufferImageCopy copy_region{.bufferOffset = 0,
+                                             .bufferRowLength = 0,
+                                             .bufferImageHeight = 0,
+                                             .imageSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                                  .mipLevel = 0,
+                                                                  .baseArrayLayer = 0,
+                                                                  .layerCount = resources.summary.array_layers},
+                                             .imageOffset = {.x = 0, .y = 0, .z = 0},
+                                             .imageExtent = {.width = resources.summary.width,
+                                                             .height = resources.summary.height,
+                                                             .depth = 1}};
+         vkCmdCopyBufferToImage(command_buffer, staging_buffer, resources.image,
+                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
+
+         const VkImageMemoryBarrier to_shader_read{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                   .pNext = nullptr,
+                                                   .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                                                   .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+                                                   .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                                   .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                                                   .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                   .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                                   .image = resources.image,
+                                                   .subresourceRange = range};
+         vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
+                              0, nullptr, 0, nullptr, 1, &to_shader_read);
+
+         result = vkEndCommandBuffer(command_buffer);
+         if (result != VK_SUCCESS) {
+            vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
+            std::cerr << "[VulkanGraphicsBackend] vkEndCommandBuffer(sampled texture) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkSubmitInfo submit_info{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                        .pNext = nullptr,
+                                        .waitSemaphoreCount = 0,
+                                        .pWaitSemaphores = nullptr,
+                                        .pWaitDstStageMask = nullptr,
+                                        .commandBufferCount = 1,
+                                        .pCommandBuffers = &command_buffer,
+                                        .signalSemaphoreCount = 0,
+                                        .pSignalSemaphores = nullptr};
+         result = vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
+         if (result == VK_SUCCESS) {
+            result = vkQueueWaitIdle(graphics_queue_);
+         }
+         vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] sampled texture upload failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
          return {};
       }
 
@@ -3319,6 +3718,34 @@ namespace vve::v3 {
          resources.summary.memory_bound = false;
       }
 
+      void destroyImageResources(VulkanGpuImageResources &resources) noexcept {
+         if (device_ == VK_NULL_HANDLE) {
+            return;
+         }
+
+         if (resources.sampler != VK_NULL_HANDLE) {
+            vkDestroySampler(device_, resources.sampler, nullptr);
+            resources.sampler = VK_NULL_HANDLE;
+         }
+         if (resources.image_view != VK_NULL_HANDLE) {
+            vkDestroyImageView(device_, resources.image_view, nullptr);
+            resources.image_view = VK_NULL_HANDLE;
+         }
+         if (resources.image != VK_NULL_HANDLE) {
+            vkDestroyImage(device_, resources.image, nullptr);
+            resources.image = VK_NULL_HANDLE;
+         }
+         if (resources.memory != VK_NULL_HANDLE) {
+            vkFreeMemory(device_, resources.memory, nullptr);
+            resources.memory = VK_NULL_HANDLE;
+         }
+
+         resources.summary.image_created = false;
+         resources.summary.image_view_created = false;
+         resources.summary.sampler_created = false;
+         resources.summary.resident = false;
+      }
+
       void destroyPipelineResources(VulkanPipelineResources &resources) noexcept {
          if (device_ == VK_NULL_HANDLE) {
             return;
@@ -3510,6 +3937,12 @@ namespace vve::v3 {
          }
          buffers_.clear();
 
+         for (auto &[handle, resources] : images_) {
+            (void)handle;
+            destroyImageResources(resources);
+         }
+         images_.clear();
+
          if (command_pool_ != VK_NULL_HANDLE) {
             vkDestroyCommandPool(device_, command_pool_, nullptr);
             command_pool_ = VK_NULL_HANDLE;
@@ -3546,6 +3979,7 @@ namespace vve::v3 {
       std::unordered_map<vve::Handle::value_type, VulkanPipelineResources> pipeline_resources_{};
       std::unordered_map<vve::Handle::value_type, VulkanGraphicsPipelineResources> graphics_pipelines_{};
       std::unordered_map<vve::Handle::value_type, VulkanGpuBufferResources> buffers_{};
+      std::unordered_map<vve::Handle::value_type, VulkanGpuImageResources> images_{};
       std::unordered_map<vve::Handle::value_type, VulkanWindowSwapchainResources> window_swapchains_{};
       bool presentation_enabled_{false}; ///< Tracks whether platform presentation support was requested.
       bool initialized_{false}; ///< Tracks whether backend initialization has completed.
@@ -3621,6 +4055,23 @@ namespace vve::v3 {
    /// @brief Destroys a backend-owned GPU buffer through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, destroyBuffer,
                                (GpuBufferHandle buffer), (buffer), , std::expected<void, vve::Error>)
+
+   /// @brief Creates a backend-owned sampled image through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, createSampledImage,
+                               (vve::Handle owner, ResourceKind owner_kind, GpuImageFormat format,
+                                std::uint32_t width, std::uint32_t height,
+                                std::span<const std::byte> rgba_pixels, std::uint32_t generation),
+                               (owner, owner_kind, format, width, height, rgba_pixels, generation), ,
+                               std::expected<GpuTextureResources, vve::Error>)
+
+   /// @brief Returns backend sampled image metadata through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, imageResources,
+                               (GpuImageHandle image), (image), const,
+                               std::expected<std::optional<GpuTextureResources>, vve::Error>)
+
+   /// @brief Destroys a backend-owned sampled image through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, destroyImage,
+                               (GpuImageHandle image), (image), , std::expected<void, vve::Error>)
 
    /// @brief Creates window swapchain resources through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, createWindowSwapchain,

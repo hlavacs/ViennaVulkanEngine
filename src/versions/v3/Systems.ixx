@@ -222,6 +222,16 @@ export namespace vve::v3 {
       bufferResources(GpuBufferHandle buffer) const;
       /// @brief Destroys a backend-owned GPU buffer.
       [[nodiscard]] std::expected<void, vve::Error> destroyBuffer(GpuBufferHandle buffer);
+      /// @brief Creates a backend-owned sampled image and sampler from RGBA8 pixel bytes.
+      [[nodiscard]] std::expected<GpuTextureResources, vve::Error>
+      createSampledImage(vve::Handle owner, ResourceKind owner_kind, GpuImageFormat format,
+                         std::uint32_t width, std::uint32_t height,
+                         std::span<const std::byte> rgba_pixels, std::uint32_t generation);
+      /// @brief Returns backend sampled image metadata for an already-created GPU image.
+      [[nodiscard]] std::expected<std::optional<GpuTextureResources>, vve::Error>
+      imageResources(GpuImageHandle image) const;
+      /// @brief Destroys a backend-owned sampled image and sampler.
+      [[nodiscard]] std::expected<void, vve::Error> destroyImage(GpuImageHandle image);
       /// @brief Creates backend-owned surface and swapchain resources for one native window.
       [[nodiscard]] std::expected<WindowSwapchainResources, vve::Error>
       createWindowSwapchain(const NativeWindowHandle &window);

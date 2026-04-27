@@ -80,13 +80,20 @@ int main() {
    }
 
    const auto mesh_owner = vve::Handle::fromHash(std::string_view{"tests.graphics_backend.triangle_mesh"});
+   const auto texture_owner = vve::Handle::fromHash(std::string_view{"tests.graphics_backend.texture"});
    const std::array<float, 15> triangle_vertices{
        0.0F, -0.5F, 0.0F, 1.0F, 0.0F,
        0.5F, 0.5F, 0.0F, 0.0F, 1.0F,
        -0.5F, 0.5F, 0.0F, 0.0F, 0.0F};
    const std::array<std::uint32_t, 3> triangle_indices{0U, 1U, 2U};
+   const std::array<std::uint8_t, 16> texture_pixels{
+       255U, 0U, 0U, 255U,
+       0U, 255U, 0U, 255U,
+       0U, 0U, 255U, 255U,
+       255U, 255U, 255U, 255U};
    const auto vertex_bytes = std::as_bytes(std::span{triangle_vertices});
    const auto index_bytes = std::as_bytes(std::span{triangle_indices});
+   const auto texture_bytes = std::as_bytes(std::span{texture_pixels});
 
    const auto create_before_init = backend.createBuffer(mesh_owner, vve::v3::ResourceKind::mesh,
                                                         vve::v3::GpuBufferUsage::vertex, vertex_bytes, 1);
@@ -94,16 +101,22 @@ int main() {
       return 9;
    }
 
+   const auto image_before_init = backend.createSampledImage(
+       texture_owner, vve::v3::ResourceKind::texture, vve::v3::GpuImageFormat::rgba8_srgb, 2, 2, texture_bytes, 1);
+   if (image_before_init || image_before_init.error() != vve::Error::not_initialized) {
+      return 10;
+   }
+
    const auto init = backend.init();
    if (!init) {
-      return 10;
+      return 11;
    }
 
    const auto empty_upload = backend.createBuffer(mesh_owner, vve::v3::ResourceKind::mesh,
                                                  vve::v3::GpuBufferUsage::vertex,
                                                  std::span<const std::byte>{}, 1);
    if (empty_upload || empty_upload.error() != vve::Error::invalid_argument) {
-      return 11;
+      return 12;
    }
 
    const auto vertex_buffer = backend.createBuffer(mesh_owner, vve::v3::ResourceKind::mesh,
@@ -113,20 +126,20 @@ int main() {
        vertex_buffer->usage != vve::v3::GpuBufferUsage::vertex ||
        vertex_buffer->byte_size != vertex_bytes.size() || vertex_buffer->generation != 1 ||
        !vertex_buffer->buffer_created || !vertex_buffer->memory_bound) {
-      return 12;
+      return 13;
    }
 
    const auto duplicate_vertex_buffer = backend.createBuffer(mesh_owner, vve::v3::ResourceKind::mesh,
                                                             vve::v3::GpuBufferUsage::vertex, vertex_bytes, 1);
    if (!duplicate_vertex_buffer || duplicate_vertex_buffer->handle.value != vertex_buffer->handle.value) {
-      return 13;
+      return 14;
    }
 
    const auto vertex_lookup = backend.bufferResources(vertex_buffer->handle);
    if (!vertex_lookup || !vertex_lookup->has_value() ||
        (*vertex_lookup)->handle.value != vertex_buffer->handle.value ||
        (*vertex_lookup)->byte_size != vertex_buffer->byte_size) {
-      return 14;
+      return 15;
    }
 
    const auto index_buffer = backend.createBuffer(mesh_owner, vve::v3::ResourceKind::mesh,
@@ -135,22 +148,57 @@ int main() {
        index_buffer->usage != vve::v3::GpuBufferUsage::index ||
        index_buffer->byte_size != index_bytes.size() || !index_buffer->buffer_created ||
        !index_buffer->memory_bound) {
-      return 15;
+      return 16;
+   }
+
+   const auto texture_image = backend.createSampledImage(
+       texture_owner, vve::v3::ResourceKind::texture, vve::v3::GpuImageFormat::rgba8_srgb, 2, 2, texture_bytes, 1);
+   if (!texture_image || !texture_image->image.value.isValid() || !texture_image->sampler.value.isValid() ||
+       texture_image->texture.value != texture_owner || texture_image->format != vve::v3::GpuImageFormat::rgba8_srgb ||
+       texture_image->width != 2 || texture_image->height != 2 || texture_image->generation != 1 ||
+       !texture_image->image_created || !texture_image->image_view_created ||
+       !texture_image->sampler_created || !texture_image->resident) {
+      return 17;
+   }
+
+   const auto duplicate_texture_image = backend.createSampledImage(
+       texture_owner, vve::v3::ResourceKind::texture, vve::v3::GpuImageFormat::rgba8_srgb, 2, 2, texture_bytes, 1);
+   if (!duplicate_texture_image || duplicate_texture_image->image.value != texture_image->image.value ||
+       duplicate_texture_image->sampler.value != texture_image->sampler.value) {
+      return 18;
+   }
+
+   const auto texture_lookup = backend.imageResources(texture_image->image);
+   if (!texture_lookup || !texture_lookup->has_value() ||
+       (*texture_lookup)->image.value != texture_image->image.value ||
+       (*texture_lookup)->width != texture_image->width ||
+       (*texture_lookup)->height != texture_image->height) {
+      return 19;
+   }
+
+   const auto destroy_texture = backend.destroyImage(texture_image->image);
+   if (!destroy_texture) {
+      return 20;
+   }
+
+   const auto missing_texture = backend.imageResources(texture_image->image);
+   if (!missing_texture || missing_texture->has_value()) {
+      return 21;
    }
 
    const auto destroy_vertex = backend.destroyBuffer(vertex_buffer->handle);
    if (!destroy_vertex) {
-      return 16;
+      return 22;
    }
 
    const auto missing_vertex = backend.bufferResources(vertex_buffer->handle);
    if (!missing_vertex || missing_vertex->has_value()) {
-      return 17;
+      return 23;
    }
 
    const auto destroy_index = backend.destroyBuffer(index_buffer->handle);
    if (!destroy_index) {
-      return 18;
+      return 24;
    }
 
    return 0;

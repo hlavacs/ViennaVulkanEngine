@@ -2,6 +2,8 @@ module;
 
 #include "FacadeMacros.hpp"
 #include <cstring>
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
 
 module VEEngine.V3;
 import std;
@@ -76,6 +78,20 @@ namespace vve::v3 {
 
    static_assert(sizeof(MaterialConstantsUpload) == sizeof(float) * 16U);
 
+   /// @brief CPU-side decoded texture pixels ready for backend upload.
+   struct LoadedTexturePixels {
+      std::vector<std::byte> rgba_pixels{};
+      std::uint32_t width{0};
+      std::uint32_t height{0};
+      GpuImageFormat format{GpuImageFormat::unknown};
+   };
+
+   /// @brief Material texture bindings resolved against current GPU texture residency.
+   struct MaterialTextureBindingUpload {
+      Vector<GpuMaterialTextureBinding> bindings{};
+      bool all_resident{true};
+   };
+
    /// @brief Builds the material constant payload consumed by rasterizer.slang.
    [[nodiscard]] MaterialConstantsUpload materialConstantsUpload(const ImportedMaterial &material) {
       return MaterialConstantsUpload{
@@ -103,6 +119,15 @@ namespace vve::v3 {
       return index_it->second;
    }
 
+   /// @brief Finds an uploaded texture summary in mutable runtime scene data.
+   [[nodiscard]] std::optional<std::size_t> gpuTextureIndex(const SceneData &scene, TextureHandle texture) {
+      const auto index_it = scene.gpu_texture_indices.find(texture.value.value());
+      if (index_it == scene.gpu_texture_indices.end() || index_it->second >= scene.gpu_textures.size()) {
+         return std::nullopt;
+      }
+      return index_it->second;
+   }
+
    /// @brief Finds an uploaded material summary in mutable runtime scene data.
    [[nodiscard]] std::optional<std::size_t> gpuMaterialIndex(const SceneData &scene, MaterialHandle material) {
       const auto index_it = scene.gpu_material_indices.find(material.value.value());
@@ -110,6 +135,145 @@ namespace vve::v3 {
          return std::nullopt;
       }
       return index_it->second;
+   }
+
+   /// @brief Returns whether a material texture semantic is linear data rather than authored color.
+   [[nodiscard]] bool isLinearTextureSemantic(TextureSemantic semantic) {
+      switch (semantic) {
+      case TextureSemantic::normal:
+      case TextureSemantic::metallic_roughness:
+      case TextureSemantic::roughness:
+      case TextureSemantic::metallic:
+      case TextureSemantic::ambient_occlusion:
+         return true;
+      case TextureSemantic::unknown:
+      case TextureSemantic::base_color:
+      case TextureSemantic::specular:
+      case TextureSemantic::emissive:
+      case TextureSemantic::opacity:
+         return false;
+      }
+
+      return false;
+   }
+
+   /// @brief Picks the upload format for a texture from all material slots that reference it.
+   [[nodiscard]] GpuImageFormat textureFormatForReferences(const SceneData &scene, TextureHandle texture) {
+      for (const auto &material : scene.materials) {
+         for (const auto &texture_ref : material.textures) {
+            if (texture_ref.texture.value == texture.value && isLinearTextureSemantic(texture_ref.semantic)) {
+               return GpuImageFormat::rgba8_unorm;
+            }
+         }
+      }
+
+      return GpuImageFormat::rgba8_srgb;
+   }
+
+   /// @brief Decodes a file-backed texture into RGBA8 pixels. Missing and embedded textures remain non-resident.
+   [[nodiscard]] std::expected<std::optional<LoadedTexturePixels>, vve::Error>
+   loadTexturePixels(const ImportedTexture &texture, GpuImageFormat format) {
+      if (texture.embedded || texture.resolved_path.empty()) {
+         return std::optional<LoadedTexturePixels>{};
+      }
+
+      const auto texture_path = std::filesystem::absolute(texture.resolved_path);
+      if (!std::filesystem::exists(texture_path)) {
+         return std::optional<LoadedTexturePixels>{};
+      }
+
+      int width = 0;
+      int height = 0;
+      int channel_count = 0;
+      auto *pixels = stbi_load(texture_path.string().c_str(), &width, &height, &channel_count, STBI_rgb_alpha);
+      (void)channel_count;
+      if (pixels == nullptr || width <= 0 || height <= 0) {
+         if (pixels != nullptr) {
+            stbi_image_free(pixels);
+         }
+         return std::unexpected(vve::Error::io_error);
+      }
+
+      const auto width_value = static_cast<std::size_t>(width);
+      const auto height_value = static_cast<std::size_t>(height);
+      if (width_value > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()) ||
+          height_value > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()) ||
+          width_value > std::numeric_limits<std::size_t>::max() / height_value ||
+          width_value * height_value > std::numeric_limits<std::size_t>::max() / 4U) {
+         stbi_image_free(pixels);
+         return std::unexpected(vve::Error::invalid_argument);
+      }
+
+      const auto byte_count = width_value * height_value * 4U;
+      std::vector<std::byte> rgba_pixels(byte_count);
+      std::memcpy(rgba_pixels.data(), pixels, byte_count);
+      stbi_image_free(pixels);
+
+      return LoadedTexturePixels{.rgba_pixels = std::move(rgba_pixels),
+                                 .width = static_cast<std::uint32_t>(width_value),
+                                 .height = static_cast<std::uint32_t>(height_value),
+                                 .format = format};
+   }
+
+   /// @brief Looks up an uploaded texture summary by imported texture handle.
+   [[nodiscard]] const GpuTextureResources *findGpuTexture(const SceneData &scene, TextureHandle texture) {
+      const auto index = gpuTextureIndex(scene, texture);
+      if (!index.has_value()) {
+         return nullptr;
+      }
+
+      return std::addressof(scene.gpu_textures[*index]);
+   }
+
+   /// @brief Builds material texture bindings from currently resident texture uploads.
+   [[nodiscard]] std::expected<MaterialTextureBindingUpload, vve::Error>
+   materialTextureBindings(const SceneData &scene, const ImportedMaterial &material) {
+      MaterialTextureBindingUpload upload{};
+      for (const auto &texture_ref : material.textures) {
+         const auto *texture = findGpuTexture(scene, texture_ref.texture);
+         if (texture == nullptr || !texture->resident || !texture->image.value.isValid() ||
+             !texture->sampler.value.isValid()) {
+            upload.all_resident = false;
+            continue;
+         }
+
+         const auto binding_index = checkedUint32(upload.bindings.size());
+         if (!binding_index) {
+            return std::unexpected(binding_index.error());
+         }
+
+         upload.bindings.push_back(GpuMaterialTextureBinding{.texture = texture_ref.texture,
+                                                             .image = texture->image,
+                                                             .sampler = texture->sampler,
+                                                             .semantic = texture_ref.semantic,
+                                                             .binding = *binding_index,
+                                                             .uv_set = texture_ref.uv_set});
+      }
+
+      return upload;
+   }
+
+   /// @brief Returns whether an uploaded material already has the same resolved texture bindings.
+   [[nodiscard]] bool textureBindingsEqual(const Vector<GpuMaterialTextureBinding> &left,
+                                           const Vector<GpuMaterialTextureBinding> &right) {
+      if (left.size() != right.size()) {
+         return false;
+      }
+
+      for (std::size_t index = 0; index < left.size(); ++index) {
+         const auto &left_binding = left[index];
+         const auto &right_binding = right[index];
+         if (left_binding.texture.value != right_binding.texture.value ||
+             left_binding.image.value != right_binding.image.value ||
+             left_binding.sampler.value != right_binding.sampler.value ||
+             left_binding.semantic != right_binding.semantic ||
+             left_binding.binding != right_binding.binding ||
+             left_binding.uv_set != right_binding.uv_set) {
+            return false;
+         }
+      }
+
+      return true;
    }
 
    } // namespace
@@ -244,15 +408,63 @@ namespace vve::v3 {
       /// @brief Uploads imported mesh resources to backend-owned GPU buffers.
       [[nodiscard]] std::expected<void, vve::Error> uploadResources(const FrameContext &, SceneData &scene,
                                                                     GraphicsBackend &graphics_backend) {
+         for (const auto &texture : scene.textures) {
+            auto *record = findRecord(texture.handle.value);
+            if (record == nullptr) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            if (const auto existing_texture = gpuTextureIndex(scene, texture.handle);
+                existing_texture.has_value() && scene.gpu_textures[*existing_texture].resident &&
+                scene.gpu_textures[*existing_texture].generation == record->generation) {
+               continue;
+            }
+
+            const auto format = textureFormatForReferences(scene, texture.handle);
+            const auto decoded_texture = loadTexturePixels(texture, format);
+            if (!decoded_texture) {
+               return std::unexpected(decoded_texture.error());
+            }
+            if (!decoded_texture->has_value()) {
+               continue;
+            }
+
+            const auto &pixels = decoded_texture->value();
+            const auto uploaded_generation = record->generation + 1U;
+            const auto uploaded_texture = graphics_backend.createSampledImage(
+                texture.handle.value, ResourceKind::texture, pixels.format, pixels.width, pixels.height,
+                std::span<const std::byte>{pixels.rgba_pixels.data(), pixels.rgba_pixels.size()},
+                uploaded_generation);
+            if (!uploaded_texture) {
+               return std::unexpected(uploaded_texture.error());
+            }
+
+            upsertGpuTexture(scene, *uploaded_texture);
+            record->location = ResourceLocation::gpu_memory;
+            record->generation = uploaded_generation;
+            upsertRecord(ResourceRecord{.id = uploaded_texture->image.value,
+                                        .kind = ResourceKind::image,
+                                        .location = ResourceLocation::gpu_memory,
+                                        .generation = uploaded_generation,
+                                        .source_path = texture.resolved_path});
+         }
+
          for (const auto &material : scene.materials) {
             auto *record = findRecord(material.handle.value);
             if (record == nullptr) {
                return std::unexpected(vve::Error::invalid_argument);
             }
 
+            auto texture_bindings = materialTextureBindings(scene, material);
+            if (!texture_bindings) {
+               return std::unexpected(texture_bindings.error());
+            }
+
             if (const auto existing_material = gpuMaterialIndex(scene, material.handle);
                 existing_material.has_value() && scene.gpu_materials[*existing_material].constants_uploaded &&
-                scene.gpu_materials[*existing_material].generation == record->generation) {
+                scene.gpu_materials[*existing_material].generation == record->generation &&
+                scene.gpu_materials[*existing_material].textures_uploaded == texture_bindings->all_resident &&
+                textureBindingsEqual(scene.gpu_materials[*existing_material].textures, texture_bindings->bindings)) {
                continue;
             }
 
@@ -268,9 +480,10 @@ namespace vve::v3 {
 
             upsertGpuMaterial(scene, GpuMaterialResources{.material = material.handle,
                                                           .constants_buffer = constants_buffer->handle,
+                                                          .textures = std::move(texture_bindings->bindings),
                                                           .generation = uploaded_generation,
                                                           .constants_uploaded = true,
-                                                          .textures_uploaded = false});
+                                                          .textures_uploaded = texture_bindings->all_resident});
 
             record->location = ResourceLocation::gpu_memory;
             record->generation = uploaded_generation;
@@ -384,6 +597,19 @@ namespace vve::v3 {
 
          scene.gpu_mesh_indices.insert_or_assign(id, scene.gpu_meshes.size());
          scene.gpu_meshes.push_back(std::move(resources));
+      }
+
+      void upsertGpuTexture(SceneData &scene, GpuTextureResources resources) {
+         const auto id = resources.texture.value.value();
+         if (const auto gpu_texture_index = scene.gpu_texture_indices.find(id);
+             gpu_texture_index != scene.gpu_texture_indices.end() &&
+             gpu_texture_index->second < scene.gpu_textures.size()) {
+            scene.gpu_textures[gpu_texture_index->second] = std::move(resources);
+            return;
+         }
+
+         scene.gpu_texture_indices.insert_or_assign(id, scene.gpu_textures.size());
+         scene.gpu_textures.push_back(std::move(resources));
       }
 
       void upsertGpuMaterial(SceneData &scene, GpuMaterialResources resources) {

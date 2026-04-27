@@ -19,10 +19,12 @@ target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_DEFAULT_VULKAN_ICD="${
 
 find_package(assimp CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
+find_package(Stb REQUIRED)
 
 if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "" AND EXISTS "${VVE_VULKAN_SDK_ROOT}/include/glm/glm.hpp")
    target_include_directories(ViennaVulkanEngine BEFORE PUBLIC "${VVE_VULKAN_SDK_ROOT}/include")
 endif()
+target_include_directories(ViennaVulkanEngine PRIVATE "${Stb_INCLUDE_DIR}")
 
 if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "")
    file(TO_CMAKE_PATH "${VVE_VULKAN_SDK_ROOT}" VVE_VULKAN_SDK_ROOT_COMPILE_PATH)
