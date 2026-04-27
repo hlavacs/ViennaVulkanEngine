@@ -30,7 +30,7 @@ namespace vve::v3 {
       static_assert(sizeof(ImportedVertex) <= static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()),
                     "ImportedVertex is too large for VkVertexInputBindingDescription::stride.");
 
-      constexpr std::uint32_t maxDrawDescriptorSetCopies = 256;
+      constexpr std::uint32_t maxDrawDescriptorSetCopies = 4096;
 
       /// @brief Converts ImportedVertex member offsets to Vulkan's 32-bit vertex attribute offset type.
       [[nodiscard]] constexpr std::uint32_t vertexOffset(std::size_t offset) {
@@ -158,8 +158,12 @@ namespace vve::v3 {
       }
 
       /// @brief Builds a cache key for one material/texture descriptor-set payload.
-      [[nodiscard]] std::string drawDescriptorSetKey(const DrawPacket &packet) {
-         auto key = std::string{"material:"};
+      [[nodiscard]] std::string drawDescriptorSetKey(const DrawPacket &packet, std::uint32_t frame_slot) {
+         auto key = std::string{"slot:"};
+         key += std::to_string(frame_slot);
+         key += ":draw:";
+         key += std::to_string(packet.draw_index);
+         key += ":material:";
          key += std::to_string(packet.material.value.value());
          key.push_back(':');
          key += std::to_string(packet.material_constants_buffer.value.value());
@@ -399,6 +403,12 @@ namespace vve::v3 {
          PipelineDescriptorBindingDesc binding{};
       };
 
+      /// @brief Descriptor sets and per-draw uniform buffers cached for one draw key.
+      struct VulkanDrawDescriptorSetResources {
+         std::vector<VkDescriptorSet> descriptor_sets{};
+         std::vector<VulkanDescriptorBufferResource> frame_buffers{};
+      };
+
       /// @brief Backend-owned Vulkan objects created for one reflected pipeline layout.
       struct VulkanPipelineResources {
          PipelineBackendResources summary{};
@@ -410,7 +420,7 @@ namespace vve::v3 {
          std::vector<VulkanDescriptorBufferResource> descriptor_buffers{};
          std::vector<VulkanDescriptorImageResource> descriptor_images{};
          std::vector<VulkanDescriptorSamplerResource> descriptor_samplers{};
-         std::unordered_map<std::string, std::vector<VkDescriptorSet>> draw_descriptor_sets{};
+         std::unordered_map<std::string, VulkanDrawDescriptorSetResources> draw_descriptor_sets{};
          VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
       };
 
@@ -695,6 +705,17 @@ namespace vve::v3 {
                                       x,    y,    z,    1.0F};
       }
 
+      /// @brief Copies a math matrix into the column-major float payload used by Slang.
+      [[nodiscard]] std::array<float, 16> matrixPayload(const vve::math::Mat4 &matrix) {
+         std::array<float, 16> values{};
+         for (std::size_t column = 0; column < 4; ++column) {
+            for (std::size_t row = 0; row < 4; ++row) {
+               values[(column * 4U) + row] = static_cast<float>(matrix[column][row]);
+            }
+         }
+         return values;
+      }
+
       /// @brief Builds a Vulkan clip-space perspective projection matrix payload.
       [[nodiscard]] std::array<float, 16> perspectiveMatrixPayload(float aspect_ratio) {
          constexpr float pi = 3.14159265358979323846F;
@@ -717,6 +738,21 @@ namespace vve::v3 {
          return VulkanFrameConstants{.model = identityMatrixPayload(),
                                      .view = translationMatrixPayload(0.0F, -1.5F, -6.0F),
                                      .projection = perspectiveMatrixPayload(width / height)};
+      }
+
+      /// @brief Builds frame constants for one draw, including its scene-graph world transform.
+      [[nodiscard]] VulkanFrameConstants frameConstantsForDraw(VkExtent2D extent, const DrawPacket &packet) {
+         auto constants = frameConstantsForExtent(extent);
+         constants.model = matrixPayload(packet.world_transform);
+         return constants;
+      }
+
+      /// @brief Copies frame constants into an owned byte array for uniform-buffer uploads.
+      [[nodiscard]] std::array<std::byte, sizeof(VulkanFrameConstants)>
+      frameConstantsBytes(const VulkanFrameConstants &constants) {
+         std::array<std::byte, sizeof(VulkanFrameConstants)> bytes{};
+         std::memcpy(bytes.data(), &constants, sizeof(constants));
+         return bytes;
       }
 
       /// @brief Copies frame constants into a byte span when the descriptor buffer is large enough.
@@ -2879,7 +2915,8 @@ namespace vve::v3 {
 
       [[nodiscard]] std::expected<void, vve::Error>
       writeDrawDescriptorSets(VulkanPipelineResources &resources, const std::vector<VkDescriptorSet> &descriptor_sets,
-                              const DrawPacket &packet) {
+                              VulkanDrawDescriptorSetResources &draw_resources, const DrawPacket &packet,
+                              VkExtent2D extent) {
          std::size_t descriptor_count = 0;
          for (const auto &descriptor_set : resources.descriptor_bindings) {
             descriptor_count += descriptor_set.size();
@@ -2906,6 +2943,45 @@ namespace vve::v3 {
                VkDescriptorBufferInfo *buffer_info = nullptr;
                VkDescriptorImageInfo *image_info = nullptr;
                if (*type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || *type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+                  if (*type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER && isFrameConstantsBinding(binding)) {
+                     const auto constants = frameConstantsForDraw(extent, packet);
+                     const auto bytes = frameConstantsBytes(constants);
+                     VulkanGpuBufferResources buffer_resource{};
+                     if (auto create_result = createVulkanBuffer(
+                             buffer_resource, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                             std::span<const std::byte>{bytes.data(), bytes.size()});
+                         !create_result) {
+                        destroyBufferResources(buffer_resource);
+                        return std::unexpected(create_result.error());
+                     }
+
+                     const auto index = draw_resources.frame_buffers.size();
+                     draw_resources.frame_buffers.push_back(VulkanDescriptorBufferResource{
+                         .buffer = buffer_resource.buffer,
+                         .memory = buffer_resource.memory,
+                         .size = static_cast<VkDeviceSize>(bytes.size()),
+                         .descriptor_type = *type,
+                         .binding = binding});
+                     buffer_resource.buffer = VK_NULL_HANDLE;
+                     buffer_resource.memory = VK_NULL_HANDLE;
+                     const auto &buffer = draw_resources.frame_buffers[index];
+                     buffer_infos.push_back(VkDescriptorBufferInfo{.buffer = buffer.buffer,
+                                                                   .offset = 0,
+                                                                   .range = buffer.size});
+                     buffer_info = &buffer_infos.back();
+                     writes.push_back(VkWriteDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                                           .pNext = nullptr,
+                                                           .dstSet = descriptor_sets[set_index],
+                                                           .dstBinding = binding.binding,
+                                                           .dstArrayElement = 0,
+                                                           .descriptorCount = 1,
+                                                           .descriptorType = *type,
+                                                           .pImageInfo = nullptr,
+                                                           .pBufferInfo = buffer_info,
+                                                           .pTexelBufferView = nullptr});
+                     continue;
+                  }
+
                   const auto *uploaded_material_buffer =
                       *type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER && isMaterialConstantsBinding(binding)
                           ? uploadedBuffer(packet.material_constants_buffer, GpuBufferUsage::uniform)
@@ -2980,8 +3056,28 @@ namespace vve::v3 {
          return {};
       }
 
+      [[nodiscard]] std::expected<void, vve::Error>
+      updateDrawFrameDescriptorBuffers(const VulkanDrawDescriptorSetResources &draw_resources,
+                                       VkExtent2D extent, const DrawPacket &packet) {
+         const auto constants = frameConstantsForDraw(extent, packet);
+         const auto bytes = frameConstantsBytes(constants);
+         for (const auto &buffer : draw_resources.frame_buffers) {
+            if (buffer.descriptor_type != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
+                !isFrameConstantsBinding(buffer.binding)) {
+               continue;
+            }
+
+            if (auto update_result = updateDescriptorBufferBytes(buffer, bytes); !update_result) {
+               return std::unexpected(update_result.error());
+            }
+         }
+
+         return {};
+      }
+
       [[nodiscard]] std::expected<const std::vector<VkDescriptorSet> *, vve::Error>
-      descriptorSetsForDraw(VulkanPipelineResources &resources, const DrawPacket &packet) {
+      descriptorSetsForDraw(VulkanPipelineResources &resources, const DrawPacket &packet,
+                            VkExtent2D extent, std::uint32_t frame_slot) {
          if (resources.descriptor_sets.empty()) {
             return std::addressof(resources.descriptor_sets);
          }
@@ -2989,39 +3085,57 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         const auto key = drawDescriptorSetKey(packet);
+         const auto key = drawDescriptorSetKey(packet, frame_slot);
          if (const auto existing = resources.draw_descriptor_sets.find(key);
              existing != resources.draw_descriptor_sets.end()) {
-            return std::addressof(existing->second);
+            if (auto update_result = updateDrawFrameDescriptorBuffers(existing->second, extent, packet);
+                !update_result) {
+               return std::unexpected(update_result.error());
+            }
+            return std::addressof(existing->second.descriptor_sets);
          }
          if (resources.draw_descriptor_sets.size() >= maxDrawDescriptorSetCopies) {
             return std::unexpected(vve::Error::internal_error);
          }
 
-         std::vector<VkDescriptorSet> descriptor_sets(resources.descriptor_set_layouts.size(), VK_NULL_HANDLE);
+         VulkanDrawDescriptorSetResources draw_resources{};
+         draw_resources.descriptor_sets.resize(resources.descriptor_set_layouts.size(), VK_NULL_HANDLE);
          const VkDescriptorSetAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
                                                         .pNext = nullptr,
                                                         .descriptorPool = resources.descriptor_pool,
                                                         .descriptorSetCount =
-                                                            static_cast<std::uint32_t>(descriptor_sets.size()),
+                                                            static_cast<std::uint32_t>(draw_resources.descriptor_sets.size()),
                                                         .pSetLayouts = resources.descriptor_set_layouts.data()};
-         const VkResult result = vkAllocateDescriptorSets(device_, &allocate_info, descriptor_sets.data());
+         const VkResult result = vkAllocateDescriptorSets(device_, &allocate_info, draw_resources.descriptor_sets.data());
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkAllocateDescriptorSets(draw material) failed: "
                       << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 
-         if (auto write_result = writeDrawDescriptorSets(resources, descriptor_sets, packet); !write_result) {
+         if (auto write_result = writeDrawDescriptorSets(
+                 resources, draw_resources.descriptor_sets, draw_resources, packet, extent);
+             !write_result) {
             [[maybe_unused]] const auto free_result = vkFreeDescriptorSets(
-                device_, resources.descriptor_pool, static_cast<std::uint32_t>(descriptor_sets.size()),
-                descriptor_sets.data());
+                device_, resources.descriptor_pool,
+                static_cast<std::uint32_t>(draw_resources.descriptor_sets.size()),
+                draw_resources.descriptor_sets.data());
+            for (auto &buffer : draw_resources.frame_buffers) {
+               if (buffer.buffer != VK_NULL_HANDLE) {
+                  vkDestroyBuffer(device_, buffer.buffer, nullptr);
+                  buffer.buffer = VK_NULL_HANDLE;
+               }
+               if (buffer.memory != VK_NULL_HANDLE) {
+                  vkFreeMemory(device_, buffer.memory, nullptr);
+                  buffer.memory = VK_NULL_HANDLE;
+               }
+            }
             return std::unexpected(write_result.error());
          }
 
-         auto [descriptor_set, inserted] = resources.draw_descriptor_sets.emplace(key, std::move(descriptor_sets));
+         auto [descriptor_set, inserted] = resources.draw_descriptor_sets.emplace(key, std::move(draw_resources));
          (void)inserted;
-         return std::addressof(descriptor_set->second);
+         return std::addressof(descriptor_set->second.descriptor_sets);
       }
 
       [[nodiscard]] std::expected<void, vve::Error> createVulkanPipelineLayout(VulkanPipelineResources &resources) {
@@ -3862,7 +3976,8 @@ namespace vve::v3 {
                   return std::unexpected(frame_update.error());
                }
             }
-            const auto descriptor_sets = descriptorSetsForDraw(pipeline_resource->second, packet);
+            const auto descriptor_sets = descriptorSetsForDraw(pipeline_resource->second, packet,
+                                                               resources.extent, resources.active_frame_slot);
             if (!descriptor_sets) {
                return std::unexpected(descriptor_sets.error());
             }
@@ -4137,6 +4252,22 @@ namespace vve::v3 {
          }
          resources.descriptor_set_layouts.clear();
          resources.descriptor_bindings.clear();
+         for (auto &[key, draw_resources] : resources.draw_descriptor_sets) {
+            (void)key;
+            for (auto &buffer : draw_resources.frame_buffers) {
+               if (buffer.buffer != VK_NULL_HANDLE) {
+                  vkDestroyBuffer(device_, buffer.buffer, nullptr);
+                  buffer.buffer = VK_NULL_HANDLE;
+               }
+               if (buffer.memory != VK_NULL_HANDLE) {
+                  vkFreeMemory(device_, buffer.memory, nullptr);
+                  buffer.memory = VK_NULL_HANDLE;
+               }
+               buffer.size = 0;
+            }
+            draw_resources.frame_buffers.clear();
+            draw_resources.descriptor_sets.clear();
+         }
          resources.draw_descriptor_sets.clear();
 
          for (auto shader_module : resources.shader_modules) {
