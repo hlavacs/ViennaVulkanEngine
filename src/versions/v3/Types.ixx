@@ -1126,6 +1126,7 @@ export namespace vve::v3 {
       std::optional<std::uint32_t> material_index{};      ///< Runtime scene material index when the material is known.
       DrawMaterialConstants material_constants{};         ///< CPU material constants resolved for this draw.
       GpuBufferHandle material_constants_buffer{};        ///< Uploaded material constants buffer, when resident.
+      Vector<GpuMaterialTextureBinding> material_textures{}; ///< Uploaded material texture bindings, when resident.
       GpuBufferHandle vertex_buffer{};                   ///< Uploaded vertex buffer.
       GpuBufferHandle index_buffer{};                    ///< Uploaded index buffer.
       std::uint32_t first_index{0};                      ///< First index for indexed drawing.

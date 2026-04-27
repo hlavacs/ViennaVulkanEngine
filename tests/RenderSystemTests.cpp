@@ -95,6 +95,8 @@ namespace {
           .value = vve::Handle::fromHash(std::string_view{"tests.render.mesh"})};
       const auto material_handle = vve::v3::MaterialHandle{
           .value = vve::Handle::fromHash(std::string_view{"tests.render.material"})};
+      const auto texture_handle = vve::v3::TextureHandle{
+          .value = vve::Handle::fromHash(std::string_view{"tests.render.texture"})};
       const auto node_handle = vve::v3::SceneNodeHandle{
           .value = vve::Handle::fromHash(std::string_view{"tests.render.node"})};
       const auto mesh_instance_handle = vve::Handle::fromHash(std::string_view{"tests.render.mesh_instance"});
@@ -150,8 +152,16 @@ namespace {
       gpu_material.material = material_handle;
       gpu_material.constants_buffer = vve::v3::GpuBufferHandle{
           .value = vve::Handle::fromHash(std::string_view{"tests.render.material_constants"})};
+      gpu_material.textures.push_back(vve::v3::GpuMaterialTextureBinding{
+          .texture = texture_handle,
+          .image = vve::v3::GpuImageHandle{.value = vve::Handle::fromHash(std::string_view{"tests.render.image"})},
+          .sampler = vve::v3::GpuSamplerHandle{.value = vve::Handle::fromHash(std::string_view{"tests.render.sampler"})},
+          .semantic = vve::v3::TextureSemantic::base_color,
+          .binding = 0,
+          .uv_set = 0});
       gpu_material.generation = 7;
       gpu_material.constants_uploaded = true;
+      gpu_material.textures_uploaded = true;
       scene.gpu_material_indices.emplace(material_handle.value.value(), scene.gpu_materials.size());
       scene.gpu_materials.push_back(std::move(gpu_material));
 
@@ -251,6 +261,11 @@ namespace {
              packet.material.value.value() == submesh.material.value.value() &&
              packet.material_index.has_value() && *packet.material_index == 0 &&
              packet.material_constants_buffer.value.value() == gpu_material.constants_buffer.value.value() &&
+             packet.material_textures.size() == 1 &&
+             packet.material_textures.front().texture.value == gpu_material.textures.front().texture.value &&
+             packet.material_textures.front().image.value == gpu_material.textures.front().image.value &&
+             packet.material_textures.front().sampler.value == gpu_material.textures.front().sampler.value &&
+             packet.material_textures.front().semantic == vve::v3::TextureSemantic::base_color &&
              packet.material_constants.base_color_factor.x == material.base_color_factor.x &&
              packet.material_constants.base_color_factor.y == material.base_color_factor.y &&
              packet.material_constants.base_color_factor.z == material.base_color_factor.z &&

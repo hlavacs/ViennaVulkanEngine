@@ -424,6 +424,9 @@ namespace vve::v3 {
                                                         gpu_material != nullptr && gpu_material->constants_uploaded
                                                             ? gpu_material->constants_buffer
                                                             : GpuBufferHandle{},
+                                                    .material_textures =
+                                                        gpu_material != nullptr ? gpu_material->textures
+                                                                                : Vector<GpuMaterialTextureBinding>{},
                                                     .vertex_buffer = gpu_mesh->vertex_buffer,
                                                     .index_buffer = gpu_mesh->index_buffer,
                                                     .first_index = submesh.index_offset,

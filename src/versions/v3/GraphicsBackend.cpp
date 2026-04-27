@@ -30,6 +30,8 @@ namespace vve::v3 {
       static_assert(sizeof(ImportedVertex) <= static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max()),
                     "ImportedVertex is too large for VkVertexInputBindingDescription::stride.");
 
+      constexpr std::uint32_t maxDrawDescriptorSetCopies = 256;
+
       /// @brief Converts ImportedVertex member offsets to Vulkan's 32-bit vertex attribute offset type.
       [[nodiscard]] constexpr std::uint32_t vertexOffset(std::size_t offset) {
          return static_cast<std::uint32_t>(offset);
@@ -90,6 +92,90 @@ namespace vve::v3 {
       /// @brief Returns whether reflected text contains a case-insensitive token.
       [[nodiscard]] bool containsAsciiToken(std::string_view text, std::string_view token) {
          return asciiLower(text).find(asciiLower(token)) != std::string::npos;
+      }
+
+      /// @brief Returns whether two reflected bindings identify the same descriptor slot.
+      [[nodiscard]] bool sameDescriptorBinding(const PipelineDescriptorBindingDesc &left,
+                                               const PipelineDescriptorBindingDesc &right) {
+         return left.set == right.set && left.binding == right.binding && left.kind == right.kind;
+      }
+
+      /// @brief Returns whether a reflected uniform buffer represents material constants.
+      [[nodiscard]] bool isMaterialConstantsBinding(const PipelineDescriptorBindingDesc &binding) {
+         return binding.kind == DescriptorBindingKind::uniform_buffer &&
+                (containsAsciiToken(binding.name, "material") || containsAsciiToken(binding.type_name, "Material"));
+      }
+
+      /// @brief Maps texture/sampler binding names to imported material texture semantics.
+      [[nodiscard]] std::optional<TextureSemantic> textureSemanticForBinding(const PipelineDescriptorBindingDesc &binding) {
+         if (containsAsciiToken(binding.name, "baseColor") || containsAsciiToken(binding.name, "diffuse")) {
+            return TextureSemantic::base_color;
+         }
+         if (containsAsciiToken(binding.name, "normal")) {
+            return TextureSemantic::normal;
+         }
+         if (containsAsciiToken(binding.name, "metallicRoughness") ||
+             (containsAsciiToken(binding.name, "metallic") && containsAsciiToken(binding.name, "roughness"))) {
+            return TextureSemantic::metallic_roughness;
+         }
+         if (containsAsciiToken(binding.name, "roughness")) {
+            return TextureSemantic::roughness;
+         }
+         if (containsAsciiToken(binding.name, "metallic")) {
+            return TextureSemantic::metallic;
+         }
+         if (containsAsciiToken(binding.name, "specular")) {
+            return TextureSemantic::specular;
+         }
+         if (containsAsciiToken(binding.name, "emissive")) {
+            return TextureSemantic::emissive;
+         }
+         if (containsAsciiToken(binding.name, "opacity") || containsAsciiToken(binding.name, "alpha")) {
+            return TextureSemantic::opacity;
+         }
+         if (containsAsciiToken(binding.name, "occlusion") || containsAsciiToken(binding.name, "ambient")) {
+            return TextureSemantic::ambient_occlusion;
+         }
+
+         return std::nullopt;
+      }
+
+      /// @brief Finds the material texture intended for a reflected texture or sampler binding.
+      [[nodiscard]] const GpuMaterialTextureBinding *
+      materialTextureForBinding(const DrawPacket &packet, const PipelineDescriptorBindingDesc &binding) {
+         const auto semantic = textureSemanticForBinding(binding);
+         if (!semantic.has_value()) {
+            return nullptr;
+         }
+
+         for (const auto &texture : packet.material_textures) {
+            if (texture.semantic == *semantic && texture.image.value.isValid() && texture.sampler.value.isValid()) {
+               return std::addressof(texture);
+            }
+         }
+
+         return nullptr;
+      }
+
+      /// @brief Builds a cache key for one material/texture descriptor-set payload.
+      [[nodiscard]] std::string drawDescriptorSetKey(const DrawPacket &packet) {
+         auto key = std::string{"material:"};
+         key += std::to_string(packet.material.value.value());
+         key.push_back(':');
+         key += std::to_string(packet.material_constants_buffer.value.value());
+         for (const auto &texture : packet.material_textures) {
+            key.push_back('|');
+            key += std::to_string(static_cast<std::uint32_t>(texture.semantic));
+            key.push_back(':');
+            key += std::to_string(texture.binding);
+            key.push_back(':');
+            key += std::to_string(texture.uv_set);
+            key.push_back(':');
+            key += std::to_string(texture.image.value.value());
+            key.push_back(':');
+            key += std::to_string(texture.sampler.value.value());
+         }
+         return key;
       }
 
       /// @brief Stable renderer handle derived from the canonical backend id.
@@ -304,6 +390,13 @@ namespace vve::v3 {
          VkDeviceMemory memory{VK_NULL_HANDLE};
          VkImageView image_view{VK_NULL_HANDLE};
          VkImageLayout layout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+         PipelineDescriptorBindingDesc binding{};
+      };
+
+      /// @brief Backend-owned fallback sampler used before real material samplers are available.
+      struct VulkanDescriptorSamplerResource {
+         VkSampler sampler{VK_NULL_HANDLE};
+         PipelineDescriptorBindingDesc binding{};
       };
 
       /// @brief Backend-owned Vulkan objects created for one reflected pipeline layout.
@@ -316,7 +409,8 @@ namespace vve::v3 {
          std::vector<VkDescriptorSet> descriptor_sets{};
          std::vector<VulkanDescriptorBufferResource> descriptor_buffers{};
          std::vector<VulkanDescriptorImageResource> descriptor_images{};
-         std::vector<VkSampler> descriptor_samplers{};
+         std::vector<VulkanDescriptorSamplerResource> descriptor_samplers{};
+         std::unordered_map<std::string, std::vector<VkDescriptorSet>> draw_descriptor_sets{};
          VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
       };
 
@@ -2295,15 +2389,18 @@ namespace vve::v3 {
 
          std::vector<VkDescriptorPoolSize> pool_sizes{};
          pool_sizes.reserve(descriptor_counts.size());
+         const auto descriptor_copy_capacity = maxDrawDescriptorSetCopies + 1U;
          for (const auto &[type, count] : descriptor_counts) {
-            pool_sizes.push_back(VkDescriptorPoolSize{.type = type, .descriptorCount = count});
+            pool_sizes.push_back(VkDescriptorPoolSize{.type = type,
+                                                      .descriptorCount = count * descriptor_copy_capacity});
          }
 
          const VkDescriptorPoolCreateInfo pool_info{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
                                                     .pNext = nullptr,
-                                                    .flags = 0,
-                                                    .maxSets =
-                                                        static_cast<std::uint32_t>(resources.descriptor_set_layouts.size()),
+                                                    .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+                                                    .maxSets = static_cast<std::uint32_t>(
+                                                        resources.descriptor_set_layouts.size()) *
+                                                               descriptor_copy_capacity,
                                                     .poolSizeCount =
                                                         static_cast<std::uint32_t>(pool_sizes.size()),
                                                     .pPoolSizes = pool_sizes.data()};
@@ -2502,6 +2599,7 @@ namespace vve::v3 {
       createFallbackSampledImage(VulkanPipelineResources &resources,
                                  const PipelineDescriptorBindingDesc &binding) {
          VulkanDescriptorImageResource image_resource{};
+         image_resource.binding = binding;
          const VkImageCreateInfo image_info{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
                                             .pNext = nullptr,
                                             .flags = 0,
@@ -2591,7 +2689,7 @@ namespace vve::v3 {
       }
 
       [[nodiscard]] std::expected<std::size_t, vve::Error>
-      createFallbackSampler(VulkanPipelineResources &resources) {
+      createFallbackSampler(VulkanPipelineResources &resources, const PipelineDescriptorBindingDesc &binding) {
          const VkSamplerCreateInfo sampler_info{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                                                 .pNext = nullptr,
                                                 .flags = 0,
@@ -2619,7 +2717,8 @@ namespace vve::v3 {
          }
 
          const auto index = resources.descriptor_samplers.size();
-         resources.descriptor_samplers.push_back(sampler);
+         resources.descriptor_samplers.push_back(VulkanDescriptorSamplerResource{.sampler = sampler,
+                                                                                 .binding = binding});
          return index;
       }
 
@@ -2676,11 +2775,11 @@ namespace vve::v3 {
                                                               .imageLayout = image.layout});
                   image_info = &image_infos.back();
                } else if (*type == VK_DESCRIPTOR_TYPE_SAMPLER) {
-                  const auto sampler_index = createFallbackSampler(resources);
+                  const auto sampler_index = createFallbackSampler(resources, binding);
                   if (!sampler_index) {
                      return std::unexpected(sampler_index.error());
                   }
-                  image_infos.push_back(VkDescriptorImageInfo{.sampler = resources.descriptor_samplers[*sampler_index],
+                  image_infos.push_back(VkDescriptorImageInfo{.sampler = resources.descriptor_samplers[*sampler_index].sampler,
                                                               .imageView = VK_NULL_HANDLE,
                                                               .imageLayout = VK_IMAGE_LAYOUT_UNDEFINED});
                   image_info = &image_infos.back();
@@ -2707,6 +2806,222 @@ namespace vve::v3 {
             vkUpdateDescriptorSets(device_, static_cast<std::uint32_t>(writes.size()), writes.data(), 0, nullptr);
          }
          return {};
+      }
+
+      [[nodiscard]] const VulkanDescriptorBufferResource *
+      fallbackDescriptorBuffer(const VulkanPipelineResources &resources,
+                               const PipelineDescriptorBindingDesc &binding,
+                               VkDescriptorType descriptor_type) const {
+         for (const auto &buffer : resources.descriptor_buffers) {
+            if (buffer.descriptor_type == descriptor_type && sameDescriptorBinding(buffer.binding, binding) &&
+                buffer.buffer != VK_NULL_HANDLE) {
+               return std::addressof(buffer);
+            }
+         }
+
+         return nullptr;
+      }
+
+      [[nodiscard]] const VulkanDescriptorImageResource *
+      fallbackDescriptorImage(const VulkanPipelineResources &resources,
+                              const PipelineDescriptorBindingDesc &binding) const {
+         for (const auto &image : resources.descriptor_images) {
+            if (sameDescriptorBinding(image.binding, binding) && image.image_view != VK_NULL_HANDLE) {
+               return std::addressof(image);
+            }
+         }
+
+         return nullptr;
+      }
+
+      [[nodiscard]] const VulkanDescriptorSamplerResource *
+      fallbackDescriptorSampler(const VulkanPipelineResources &resources,
+                                const PipelineDescriptorBindingDesc &binding) const {
+         for (const auto &sampler : resources.descriptor_samplers) {
+            if (sameDescriptorBinding(sampler.binding, binding) && sampler.sampler != VK_NULL_HANDLE) {
+               return std::addressof(sampler);
+            }
+         }
+
+         return nullptr;
+      }
+
+      [[nodiscard]] const VulkanGpuBufferResources *
+      uploadedBuffer(GpuBufferHandle handle, GpuBufferUsage expected_usage) const {
+         if (!handle.value.isValid()) {
+            return nullptr;
+         }
+
+         const auto buffer = buffers_.find(handle.value.value());
+         if (buffer == buffers_.end() || buffer->second.buffer == VK_NULL_HANDLE ||
+             buffer->second.summary.usage != expected_usage) {
+            return nullptr;
+         }
+
+         return std::addressof(buffer->second);
+      }
+
+      [[nodiscard]] const VulkanGpuImageResources *
+      uploadedMaterialImage(const GpuMaterialTextureBinding *binding) const {
+         if (binding == nullptr || !binding->image.value.isValid() || !binding->sampler.value.isValid()) {
+            return nullptr;
+         }
+
+         const auto image = images_.find(binding->image.value.value());
+         if (image == images_.end() || image->second.image_view == VK_NULL_HANDLE ||
+             image->second.sampler == VK_NULL_HANDLE || !image->second.summary.resident ||
+             image->second.summary.sampler.value != binding->sampler.value) {
+            return nullptr;
+         }
+
+         return std::addressof(image->second);
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      writeDrawDescriptorSets(VulkanPipelineResources &resources, const std::vector<VkDescriptorSet> &descriptor_sets,
+                              const DrawPacket &packet) {
+         std::size_t descriptor_count = 0;
+         for (const auto &descriptor_set : resources.descriptor_bindings) {
+            descriptor_count += descriptor_set.size();
+         }
+
+         std::vector<VkDescriptorBufferInfo> buffer_infos{};
+         std::vector<VkDescriptorImageInfo> image_infos{};
+         std::vector<VkWriteDescriptorSet> writes{};
+         buffer_infos.reserve(descriptor_count);
+         image_infos.reserve(descriptor_count);
+         writes.reserve(descriptor_count);
+
+         for (std::size_t set_index = 0; set_index < resources.descriptor_bindings.size(); ++set_index) {
+            if (set_index >= descriptor_sets.size() || descriptor_sets[set_index] == VK_NULL_HANDLE) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            for (const auto &binding : resources.descriptor_bindings[set_index]) {
+               const auto type = descriptorType(binding.kind);
+               if (!type.has_value()) {
+                  continue;
+               }
+
+               VkDescriptorBufferInfo *buffer_info = nullptr;
+               VkDescriptorImageInfo *image_info = nullptr;
+               if (*type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER || *type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) {
+                  const auto *uploaded_material_buffer =
+                      *type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER && isMaterialConstantsBinding(binding)
+                          ? uploadedBuffer(packet.material_constants_buffer, GpuBufferUsage::uniform)
+                          : nullptr;
+                  if (uploaded_material_buffer != nullptr) {
+                     buffer_infos.push_back(VkDescriptorBufferInfo{
+                         .buffer = uploaded_material_buffer->buffer,
+                         .offset = 0,
+                         .range = static_cast<VkDeviceSize>(uploaded_material_buffer->summary.byte_size)});
+                  } else {
+                     const auto *fallback_buffer = fallbackDescriptorBuffer(resources, binding, *type);
+                     if (fallback_buffer == nullptr) {
+                        return std::unexpected(vve::Error::invalid_argument);
+                     }
+                     buffer_infos.push_back(VkDescriptorBufferInfo{.buffer = fallback_buffer->buffer,
+                                                                   .offset = 0,
+                                                                   .range = fallback_buffer->size});
+                  }
+                  buffer_info = &buffer_infos.back();
+               } else if (*type == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) {
+                  const auto *uploaded_image = uploadedMaterialImage(materialTextureForBinding(packet, binding));
+                  if (uploaded_image != nullptr) {
+                     image_infos.push_back(VkDescriptorImageInfo{.sampler = VK_NULL_HANDLE,
+                                                                 .imageView = uploaded_image->image_view,
+                                                                 .imageLayout = uploaded_image->layout});
+                  } else {
+                     const auto *fallback_image = fallbackDescriptorImage(resources, binding);
+                     if (fallback_image == nullptr) {
+                        return std::unexpected(vve::Error::invalid_argument);
+                     }
+                     image_infos.push_back(VkDescriptorImageInfo{.sampler = VK_NULL_HANDLE,
+                                                                 .imageView = fallback_image->image_view,
+                                                                 .imageLayout = fallback_image->layout});
+                  }
+                  image_info = &image_infos.back();
+               } else if (*type == VK_DESCRIPTOR_TYPE_SAMPLER) {
+                  const auto *uploaded_image = uploadedMaterialImage(materialTextureForBinding(packet, binding));
+                  if (uploaded_image != nullptr) {
+                     image_infos.push_back(VkDescriptorImageInfo{.sampler = uploaded_image->sampler,
+                                                                 .imageView = VK_NULL_HANDLE,
+                                                                 .imageLayout = VK_IMAGE_LAYOUT_UNDEFINED});
+                  } else {
+                     const auto *fallback_sampler = fallbackDescriptorSampler(resources, binding);
+                     if (fallback_sampler == nullptr) {
+                        return std::unexpected(vve::Error::invalid_argument);
+                     }
+                     image_infos.push_back(VkDescriptorImageInfo{.sampler = fallback_sampler->sampler,
+                                                                 .imageView = VK_NULL_HANDLE,
+                                                                 .imageLayout = VK_IMAGE_LAYOUT_UNDEFINED});
+                  }
+                  image_info = &image_infos.back();
+               } else {
+                  return std::unexpected(vve::Error::invalid_argument);
+               }
+
+               writes.push_back(VkWriteDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                                     .pNext = nullptr,
+                                                     .dstSet = descriptor_sets[set_index],
+                                                     .dstBinding = binding.binding,
+                                                     .dstArrayElement = 0,
+                                                     .descriptorCount = 1,
+                                                     .descriptorType = *type,
+                                                     .pImageInfo = image_info,
+                                                     .pBufferInfo = buffer_info,
+                                                     .pTexelBufferView = nullptr});
+            }
+         }
+
+         if (!writes.empty()) {
+            vkUpdateDescriptorSets(device_, static_cast<std::uint32_t>(writes.size()), writes.data(), 0, nullptr);
+         }
+         return {};
+      }
+
+      [[nodiscard]] std::expected<const std::vector<VkDescriptorSet> *, vve::Error>
+      descriptorSetsForDraw(VulkanPipelineResources &resources, const DrawPacket &packet) {
+         if (resources.descriptor_sets.empty()) {
+            return std::addressof(resources.descriptor_sets);
+         }
+         if (resources.descriptor_pool == VK_NULL_HANDLE || resources.descriptor_set_layouts.empty()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto key = drawDescriptorSetKey(packet);
+         if (const auto existing = resources.draw_descriptor_sets.find(key);
+             existing != resources.draw_descriptor_sets.end()) {
+            return std::addressof(existing->second);
+         }
+         if (resources.draw_descriptor_sets.size() >= maxDrawDescriptorSetCopies) {
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         std::vector<VkDescriptorSet> descriptor_sets(resources.descriptor_set_layouts.size(), VK_NULL_HANDLE);
+         const VkDescriptorSetAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                                                        .pNext = nullptr,
+                                                        .descriptorPool = resources.descriptor_pool,
+                                                        .descriptorSetCount =
+                                                            static_cast<std::uint32_t>(descriptor_sets.size()),
+                                                        .pSetLayouts = resources.descriptor_set_layouts.data()};
+         const VkResult result = vkAllocateDescriptorSets(device_, &allocate_info, descriptor_sets.data());
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkAllocateDescriptorSets(draw material) failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         if (auto write_result = writeDrawDescriptorSets(resources, descriptor_sets, packet); !write_result) {
+            [[maybe_unused]] const auto free_result = vkFreeDescriptorSets(
+                device_, resources.descriptor_pool, static_cast<std::uint32_t>(descriptor_sets.size()),
+                descriptor_sets.data());
+            return std::unexpected(write_result.error());
+         }
+
+         auto [descriptor_set, inserted] = resources.draw_descriptor_sets.emplace(key, std::move(descriptor_sets));
+         (void)inserted;
+         return std::addressof(descriptor_set->second);
       }
 
       [[nodiscard]] std::expected<void, vve::Error> createVulkanPipelineLayout(VulkanPipelineResources &resources) {
@@ -3547,14 +3862,18 @@ namespace vve::v3 {
                   return std::unexpected(frame_update.error());
                }
             }
+            const auto descriptor_sets = descriptorSetsForDraw(pipeline_resource->second, packet);
+            if (!descriptor_sets) {
+               return std::unexpected(descriptor_sets.error());
+            }
 
             const VkDeviceSize vertex_offset = 0;
             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->second.pipeline);
-            if (!pipeline_resource->second.descriptor_sets.empty()) {
+            if (!(*descriptor_sets)->empty()) {
                vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
                                        pipeline_resource->second.pipeline_layout, 0,
-                                       static_cast<std::uint32_t>(pipeline_resource->second.descriptor_sets.size()),
-                                       pipeline_resource->second.descriptor_sets.data(), 0, nullptr);
+                                       static_cast<std::uint32_t>((*descriptor_sets)->size()),
+                                       (*descriptor_sets)->data(), 0, nullptr);
             }
             vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer->second.buffer, &vertex_offset);
             vkCmdBindIndexBuffer(command_buffer, index_buffer->second.buffer, 0, VK_INDEX_TYPE_UINT32);
@@ -3774,9 +4093,10 @@ namespace vve::v3 {
          }
          resources.descriptor_sets.clear();
 
-         for (auto sampler : resources.descriptor_samplers) {
-            if (sampler != VK_NULL_HANDLE) {
-               vkDestroySampler(device_, sampler, nullptr);
+         for (auto &sampler : resources.descriptor_samplers) {
+            if (sampler.sampler != VK_NULL_HANDLE) {
+               vkDestroySampler(device_, sampler.sampler, nullptr);
+               sampler.sampler = VK_NULL_HANDLE;
             }
          }
          resources.descriptor_samplers.clear();
@@ -3817,6 +4137,7 @@ namespace vve::v3 {
          }
          resources.descriptor_set_layouts.clear();
          resources.descriptor_bindings.clear();
+         resources.draw_descriptor_sets.clear();
 
          for (auto shader_module : resources.shader_modules) {
             if (shader_module.module != VK_NULL_HANDLE) {
