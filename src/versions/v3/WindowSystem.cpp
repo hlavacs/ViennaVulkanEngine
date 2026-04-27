@@ -7,6 +7,7 @@ module;
 #define VVE_DEFINED_SDL_MAIN_HANDLED
 #endif
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_vulkan.h>
 #ifdef VVE_DEFINED_SDL_MAIN_HANDLED
 #undef SDL_MAIN_HANDLED
 #undef VVE_DEFINED_SDL_MAIN_HANDLED
@@ -96,6 +97,46 @@ namespace vve::v3 {
          return {};
       }
 
+      /// @brief Returns Vulkan instance extensions required by SDL for presentation.
+      [[nodiscard]] std::expected<std::vector<std::string>, vve::Error> vulkanInstanceExtensions() const {
+         if (!video_initialized_) {
+            return std::unexpected(vve::Error::not_initialized);
+         }
+
+         Uint32 extension_count = 0;
+         const char *const *const extensions = SDL_Vulkan_GetInstanceExtensions(&extension_count);
+         if (extensions == nullptr) {
+            std::cerr << "[SDL3WindowSystem] Failed to query Vulkan instance extensions: " << SDL_GetError() << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         std::vector<std::string> required_extensions{};
+         required_extensions.reserve(extension_count);
+         for (Uint32 extension_index = 0; extension_index < extension_count; ++extension_index) {
+            if (extensions[extension_index] != nullptr) {
+               required_extensions.emplace_back(extensions[extension_index]);
+            }
+         }
+
+         return required_extensions;
+      }
+
+      /// @brief Returns opaque native window handles used by the Vulkan backend.
+      [[nodiscard]] std::vector<NativeWindowHandle> nativeWindowHandles() const {
+         std::vector<NativeWindowHandle> handles{};
+         handles.reserve(windows_.size());
+         for (const auto &record : windows_) {
+            handles.push_back(NativeWindowHandle{.window = record.handle,
+                                                .window_id = record.id,
+                                                .native_window = record.window,
+                                                .width = record.state.width,
+                                                .height = record.state.height,
+                                                .vulkan_capable = record.vulkan_capable});
+         }
+
+         return handles;
+      }
+
       /**
        * @brief Polls SDL events and refreshes the frame-local event snapshot.
        * @param frame_context Current frame timing data.
@@ -149,6 +190,7 @@ namespace vve::v3 {
          std::string id{};            ///< Stable string id configured by the caller.
          SDL_Window *window{nullptr}; ///< Owned SDL window pointer.
          WindowState state{};         ///< Cached engine-facing window state.
+         bool vulkan_capable{false};  ///< Whether this window was created with SDL_WINDOW_VULKAN.
       };
 
       /// @brief Builds the SDL flag set for one engine window descriptor.
@@ -246,6 +288,7 @@ namespace vve::v3 {
          SDL_Window *const window =
              SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.width), static_cast<int>(desc.height), flags);
          SDL_Window *resolved_window = window;
+         bool vulkan_capable = true;
          if (resolved_window == nullptr) {
             const std::string vulkan_error = SDL_GetError();
             resolved_window = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.width), static_cast<int>(desc.height),
@@ -258,6 +301,7 @@ namespace vve::v3 {
 
             std::clog << "[SDL3WindowSystem] Vulkan-capable window creation is unavailable for '" << desc.id << "': "
                       << vulkan_error << ". Falling back to a standard SDL window.\n";
+            vulkan_capable = false;
          }
 
          positionWindow(resolved_window);
@@ -282,7 +326,8 @@ namespace vve::v3 {
                                                   .renderer_id = desc.renderer_id,
                                                   .focused = SDL_GetKeyboardFocus() == resolved_window,
                                                   .minimized = false,
-                                                  .should_close = false}};
+                                                  .should_close = false},
+                             .vulkan_capable = vulkan_capable};
 
          window_indices_[window_id] = windows_.size();
          windows_.push_back(std::move(record));
@@ -490,6 +535,14 @@ namespace vve::v3 {
    VVE_V3_DEFINE_FACADE_METHOD(WindowSystemFacade, SDL3WindowSystemImplementation, init,
                                (VectorConstRange<vve::WindowDesc> windows), (windows), ,
                                std::expected<void, vve::Error>)
+
+   /// @brief Returns SDL-required Vulkan instance extensions through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(WindowSystemFacade, SDL3WindowSystemImplementation, vulkanInstanceExtensions, (), (),
+                               const, std::expected<std::vector<std::string>, vve::Error>)
+
+   /// @brief Returns native window handles through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(WindowSystemFacade, SDL3WindowSystemImplementation, nativeWindowHandles, (), (), const,
+                               std::vector<NativeWindowHandle>)
 
    /// @brief Polls events through the public window-system facade.
    VVE_V3_DEFINE_FACADE_METHOD(WindowSystemFacade, SDL3WindowSystemImplementation, pollEvents,

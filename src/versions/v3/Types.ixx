@@ -984,6 +984,37 @@ export namespace vve::v3 {
       bool vulkan_pipeline_created{false};                      ///< Whether a real VkPipeline exists.
    };
 
+   /// @brief Opaque native window pointer exported by the platform window system.
+   struct NativeWindowHandle {
+      WindowHandle window{};            ///< Engine window represented by the native handle.
+      std::string window_id{};          ///< Stable window string id for diagnostics.
+      void *native_window{nullptr};     ///< Platform window pointer; SDL-backed in the v3 implementation.
+      std::uint32_t width{0};           ///< Current window width in pixels.
+      std::uint32_t height{0};          ///< Current window height in pixels.
+      bool vulkan_capable{false};       ///< Whether the native window was created for Vulkan presentation.
+   };
+
+   /// @brief Strong type for backend-owned window swapchain identifiers.
+   struct SwapchainHandle final {
+      vve::Handle value{}; ///< Underlying generic handle value.
+   };
+
+   /// @brief Summary of backend-owned Vulkan presentation resources for one window.
+   struct WindowSwapchainResources {
+      SwapchainHandle handle{};                 ///< Stable swapchain resource handle.
+      WindowHandle window{};                    ///< Window that owns the swapchain.
+      std::string window_id{};                  ///< Stable window string id.
+      std::uint32_t width{0};                   ///< Swapchain image extent width.
+      std::uint32_t height{0};                  ///< Swapchain image extent height.
+      std::uint32_t image_count{0};             ///< Number of swapchain images.
+      std::uint32_t image_view_count{0};        ///< Number of image views created by the backend.
+      std::string surface_format{};             ///< Chosen Vulkan surface format for diagnostics.
+      std::string present_mode{};               ///< Chosen Vulkan present mode for diagnostics.
+      bool surface_created{false};              ///< Whether a VkSurfaceKHR was created.
+      bool swapchain_created{false};            ///< Whether a VkSwapchainKHR was created.
+      bool swapchain_dirty{false};              ///< Whether resize events require later swapchain recreation.
+   };
+
    /// @brief Renderer-side binding of reflected layout data to backend Vulkan resources.
    struct RendererPipelineBinding {
       WindowHandle window{};                            ///< Window whose renderer instance owns the binding.
@@ -1030,6 +1061,7 @@ export namespace vve::v3 {
       PipelineBackendResources backend_resources{}; ///< Backend-owned Vulkan objects for the layout.
       RendererPipelineBinding renderer_binding{}; ///< Renderer-side binding for later graphics pipeline creation.
       GraphicsPipelineResources graphics_pipeline{}; ///< Backend graphics pipeline preparation summary.
+      WindowSwapchainResources swapchain{}; ///< Backend presentation resources for this window.
       RenderGraph graph{};     ///< Render graph executed for the window.
    };
 

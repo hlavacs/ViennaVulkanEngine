@@ -381,4 +381,59 @@ namespace vve::v3::detail {
       return {};
    }
 
+   /**
+    * @brief Creates backend-owned presentation resources for all assembled window render pipelines.
+    * @param runtime Runtime whose windows and graphics backend have already been initialized.
+    * @return Empty success result, or the first backend/window lookup error.
+    */
+   std::expected<void, vve::Error> createRuntimeWindowSwapchains(Runtime &runtime) {
+      const auto native_windows = runtime.window_system.nativeWindowHandles();
+      for (auto &pipeline : runtime.render_pipelines) {
+         const auto native_window = std::ranges::find_if(native_windows, [&pipeline](const NativeWindowHandle &window) {
+            return window.window.value.value() == pipeline.window.value.value();
+         });
+         if (native_window == native_windows.end()) {
+            std::cerr << "[VulkanRuntime] Missing native window handle for pipeline '" << pipeline.window_id << "'\n";
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto swapchain = runtime.graphics_backend.createWindowSwapchain(*native_window);
+         if (!swapchain) {
+            std::cerr << "[VulkanRuntime] Failed to create swapchain for window '" << pipeline.window_id
+                      << "' renderer='" << pipeline.renderer.id << "'\n";
+            return std::unexpected(swapchain.error());
+         }
+
+         pipeline.swapchain = *swapchain;
+      }
+
+      return {};
+   }
+
+   /**
+    * @brief Marks cached swapchain summaries dirty when the window system reports a resize event.
+    * @param runtime Runtime whose frame snapshot and render pipelines are being tracked.
+    */
+   void markRuntimeSwapchainsDirtyForResize(Runtime &runtime) {
+      if (runtime.window_frame == nullptr) {
+         return;
+      }
+
+      for (const auto &event : runtime.window_frame->events) {
+         if (event.type != WindowEventType::resized) {
+            continue;
+         }
+
+         for (auto &pipeline : runtime.render_pipelines) {
+            if (pipeline.window.value.value() != event.window.value.value()) {
+               continue;
+            }
+
+            pipeline.swapchain.swapchain_dirty = true;
+            pipeline.swapchain.width = static_cast<std::uint32_t>(std::max(event.a, 0));
+            pipeline.swapchain.height = static_cast<std::uint32_t>(std::max(event.b, 0));
+         }
+      }
+   }
+
 } // namespace vve::v3::detail

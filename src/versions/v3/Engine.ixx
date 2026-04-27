@@ -313,8 +313,13 @@ namespace vve::v3 {
       }
 
       runtime_ = std::move(*runtime);
-      // Initialize the backend before dependent systems such as GUI.
-      if (auto backend_result = runtime_.graphics_backend.init(); !backend_result) {
+      const auto instance_extensions = runtime_.window_system.vulkanInstanceExtensions();
+      if (!instance_extensions) {
+         return std::unexpected(instance_extensions.error());
+      }
+
+      // Initialize the backend with the platform presentation extensions before dependent systems such as GUI.
+      if (auto backend_result = runtime_.graphics_backend.init(*instance_extensions); !backend_result) {
          return backend_result;
       }
 
@@ -326,6 +331,9 @@ namespace vve::v3 {
       }
       if (auto graphics_pipelines = detail::createRuntimeGraphicsPipelines(runtime_); !graphics_pipelines) {
          return graphics_pipelines;
+      }
+      if (auto swapchains = detail::createRuntimeWindowSwapchains(runtime_); !swapchains) {
+         return swapchains;
       }
 
       if (runtime_.gui_system != nullptr) { // GUI support is optional and initialized only when present.
@@ -436,6 +444,7 @@ namespace vve::v3 {
       if (!execute_result) {
          return std::unexpected(execute_result.error());
       }
+      detail::markRuntimeSwapchainsDirtyForResize(runtime_);
 
       if (std::ranges::any_of(runtime_.window_frame->windows, // Treat close requests as a frame result, not an error.
                               [](const WindowState &window) { return window.should_close; })) {

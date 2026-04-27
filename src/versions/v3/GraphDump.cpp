@@ -190,14 +190,17 @@ namespace vve::v3::detail {
          // remain visually separated in the combined dump.
          output << "  subgraph cluster_render_" << pipeline.window.value.value() << " {\n";
          output << "    label=\""
-                << escapeDotLabel(std::format("Render Graph: {}\\nrenderer={}\\nshader={}\\nstages={} sets={} vk_modules={} bound={} vk_pipeline={}",
+                << escapeDotLabel(std::format("Render Graph: {}\\nrenderer={}\\nshader={}\\nstages={} sets={} vk_modules={} bound={} vk_pipeline={} swapchain={} images={} dirty={}",
                                               pipeline.window_id, pipeline.renderer.id,
                                               pipeline.shader_program.value.value(),
                                               pipeline.pipeline_layout.shader_stages.size(),
                                               pipeline.pipeline_layout.descriptor_sets.size(),
                                               pipeline.backend_resources.shader_module_count,
                                               pipeline.renderer_binding.ready_for_pipeline_creation ? "yes" : "no",
-                                              pipeline.graphics_pipeline.vulkan_pipeline_created ? "created" : "none"))
+                                              pipeline.graphics_pipeline.vulkan_pipeline_created ? "created" : "none",
+                                              pipeline.swapchain.swapchain_created ? "created" : "none",
+                                              pipeline.swapchain.image_count,
+                                              pipeline.swapchain.swapchain_dirty ? "yes" : "no"))
                 << "\";\n";
          output << "    color=\"#97c47f\";\n";
          output << "    style=rounded;\n";

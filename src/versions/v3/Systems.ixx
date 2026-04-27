@@ -154,6 +154,10 @@ export namespace vve::v3 {
       /// @brief Creates the configured runtime windows.
       [[nodiscard]] std::expected<void, vve::Error>
       init(VectorConstRange<vve::WindowDesc> windows);
+      /// @brief Returns Vulkan instance extensions required by the SDL window system.
+      [[nodiscard]] std::expected<std::vector<std::string>, vve::Error> vulkanInstanceExtensions() const;
+      /// @brief Returns opaque native window handles for backend presentation setup.
+      [[nodiscard]] std::vector<NativeWindowHandle> nativeWindowHandles() const;
       /// @brief Polls platform events for the current frame.
       [[nodiscard]] std::expected<void, vve::Error> pollEvents(const FrameContext &frame_context);
       /// @brief Returns the current frame's window and event snapshot.
@@ -185,6 +189,8 @@ export namespace vve::v3 {
       [[nodiscard]] vve::GraphicsApi api() const noexcept; 
       /// @brief Initializes backend resources.
       [[nodiscard]] std::expected<void, vve::Error> init();
+      /// @brief Initializes backend resources with platform-required Vulkan instance extensions.
+      [[nodiscard]] std::expected<void, vve::Error> init(const std::vector<std::string> &instance_extensions);
       /// @brief Returns renderers selectable by backend renderer id.
       [[nodiscard]] std::vector<RendererDesc> supportedRenderers() const;
       /// @brief Creates or resolves a backend renderer descriptor for a renderer id.
@@ -204,6 +210,12 @@ export namespace vve::v3 {
       /// @brief Returns backend graphics pipeline metadata for an already-created pipeline.
       [[nodiscard]] std::expected<std::optional<GraphicsPipelineResources>, vve::Error>
       graphicsPipelineResources(GraphicsPipelineHandle pipeline) const;
+      /// @brief Creates backend-owned surface and swapchain resources for one native window.
+      [[nodiscard]] std::expected<WindowSwapchainResources, vve::Error>
+      createWindowSwapchain(const NativeWindowHandle &window);
+      /// @brief Returns backend swapchain metadata for an already-created window swapchain.
+      [[nodiscard]] std::expected<std::optional<WindowSwapchainResources>, vve::Error>
+      windowSwapchain(SwapchainHandle swapchain) const;
       /// @brief Performs backend begin-frame work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &frame_context);
       /// @brief Performs backend end-frame work.

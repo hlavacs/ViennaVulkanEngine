@@ -3,6 +3,7 @@ module;
 #include <cctype>
 #include "FacadeMacros.hpp"
 #include <cstdlib>
+#include <SDL3/SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
 
@@ -275,6 +276,18 @@ namespace vve::v3 {
          VkPipeline pipeline{VK_NULL_HANDLE};
       };
 
+      /// @brief Backend-owned Vulkan presentation resources for one SDL window.
+      struct VulkanWindowSwapchainResources {
+         WindowSwapchainResources summary{};
+         VkSurfaceKHR surface{VK_NULL_HANDLE};
+         VkSwapchainKHR swapchain{VK_NULL_HANDLE};
+         VkFormat format{VK_FORMAT_UNDEFINED};
+         VkPresentModeKHR present_mode{VK_PRESENT_MODE_FIFO_KHR};
+         VkExtent2D extent{};
+         std::vector<VkImage> images{};
+         std::vector<VkImageView> image_views{};
+      };
+
       /// @brief Physical device and queue family selected for backend object creation.
       struct SelectedPhysicalDevice {
          VkPhysicalDevice device{VK_NULL_HANDLE};
@@ -305,6 +318,15 @@ namespace vve::v3 {
          seed.push_back(':');
          seed += std::to_string(static_cast<std::uint32_t>(desc.depth_format));
          return GraphicsPipelineHandle{.value = vve::Handle::fromHash(seed)};
+      }
+
+      /// @brief Builds a stable swapchain-resource handle for one window.
+      [[nodiscard]] SwapchainHandle swapchainHandle(const NativeWindowHandle &window) {
+         auto seed = std::string{"vulkan.swapchain:"};
+         seed += window.window_id;
+         seed.push_back(':');
+         seed += std::to_string(window.window.value.value());
+         return SwapchainHandle{.value = vve::Handle::fromHash(seed)};
       }
 
       /// @brief Returns whether a pipeline description matches the binding it was requested from.
@@ -487,8 +509,80 @@ namespace vve::v3 {
          return VK_FORMAT_UNDEFINED;
       }
 
+      /// @brief Adds a unique extension name to a mutable extension list.
+      void appendUniqueExtension(std::vector<std::string> &extensions, std::string_view extension) {
+         if (extension.empty()) {
+            return;
+         }
+
+         if (!std::ranges::contains(extensions, extension)) {
+            extensions.emplace_back(extension);
+         }
+      }
+
+      /// @brief Chooses the surface format used by Stage 11 swapchains.
+      [[nodiscard]] VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &formats) {
+         const auto preferred = std::ranges::find_if(formats, [](const VkSurfaceFormatKHR &format) {
+            return format.format == VK_FORMAT_B8G8R8A8_SRGB &&
+                   format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+         });
+         if (preferred != formats.end()) {
+            return *preferred;
+         }
+
+         return formats.empty() ? VkSurfaceFormatKHR{.format = VK_FORMAT_B8G8R8A8_SRGB,
+                                                     .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}
+                                : formats.front();
+      }
+
+      /// @brief Chooses a presentation mode that is available on every Vulkan implementation.
+      [[nodiscard]] VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR> &modes) {
+         if (std::ranges::contains(modes, VK_PRESENT_MODE_MAILBOX_KHR)) {
+            return VK_PRESENT_MODE_MAILBOX_KHR;
+         }
+         if (std::ranges::contains(modes, VK_PRESENT_MODE_FIFO_KHR)) {
+            return VK_PRESENT_MODE_FIFO_KHR;
+         }
+
+         return modes.empty() ? VK_PRESENT_MODE_FIFO_KHR : modes.front();
+      }
+
+      /// @brief Chooses the swapchain extent clamped to surface capabilities.
+      [[nodiscard]] VkExtent2D chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR &capabilities,
+                                                     const NativeWindowHandle &window) {
+         if (capabilities.currentExtent.width != std::numeric_limits<std::uint32_t>::max()) {
+            return capabilities.currentExtent;
+         }
+
+         const auto clamp_extent = [](std::uint32_t value, std::uint32_t minimum, std::uint32_t maximum) {
+            return std::min(std::max(value, minimum), maximum);
+         };
+         return VkExtent2D{.width = clamp_extent(std::max(window.width, 1U), capabilities.minImageExtent.width,
+                                                 capabilities.maxImageExtent.width),
+                           .height = clamp_extent(std::max(window.height, 1U), capabilities.minImageExtent.height,
+                                                  capabilities.maxImageExtent.height)};
+      }
+
+      /// @brief Chooses a composite-alpha mode accepted by the surface.
+      [[nodiscard]] VkCompositeAlphaFlagBitsKHR chooseCompositeAlpha(VkCompositeAlphaFlagsKHR supported) {
+         if ((supported & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) != 0) {
+            return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
+         }
+         if ((supported & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR) != 0) {
+            return VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
+         }
+         if ((supported & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR) != 0) {
+            return VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
+         }
+
+         return VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+      }
+
+      [[nodiscard]] bool hasDeviceExtension(VkPhysicalDevice device, const char *name);
+
       /// @brief Returns whether a physical device supports a queue family with graphics work.
-      [[nodiscard]] std::optional<std::uint32_t> graphicsQueueFamily(VkPhysicalDevice device) {
+      [[nodiscard]] std::optional<std::uint32_t> graphicsQueueFamily(VkInstance instance, VkPhysicalDevice device,
+                                                                     bool require_presentation) {
          std::uint32_t queue_family_count = 0;
          vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
          if (queue_family_count == 0) {
@@ -499,7 +593,8 @@ namespace vve::v3 {
          vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
          for (std::uint32_t index = 0; index < queue_family_count; ++index) {
             if ((queue_families[index].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0 &&
-                queue_families[index].queueCount > 0) {
+                queue_families[index].queueCount > 0 &&
+                (!require_presentation || SDL_Vulkan_GetPresentationSupport(instance, device, index))) {
                return index;
             }
          }
@@ -508,7 +603,8 @@ namespace vve::v3 {
       }
 
       /// @brief Selects the first physical device that can create graphics-capable resources.
-      [[nodiscard]] std::expected<SelectedPhysicalDevice, vve::Error> selectPhysicalDevice(VkInstance instance) {
+      [[nodiscard]] std::expected<SelectedPhysicalDevice, vve::Error>
+      selectPhysicalDevice(VkInstance instance, bool require_presentation) {
          std::uint32_t device_count = 0;
          VkResult result = vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
          if (result != VK_SUCCESS || device_count == 0) {
@@ -526,18 +622,31 @@ namespace vve::v3 {
 
          devices.resize(device_count);
          for (const auto device : devices) {
-            if (const auto queue_family = graphicsQueueFamily(device)) {
+            if (require_presentation && !hasDeviceExtension(device, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
+               continue;
+            }
+
+            if (const auto queue_family = graphicsQueueFamily(instance, device, require_presentation)) {
                return SelectedPhysicalDevice{.device = device, .graphics_queue_family = *queue_family};
             }
          }
 
-         std::cerr << "[VulkanGraphicsBackend] no graphics-capable Vulkan queue family found\n";
+         std::cerr << "[VulkanGraphicsBackend] no compatible Vulkan graphics/present queue family found\n";
          return std::unexpected(vve::Error::internal_error);
       }
 
       /// @brief Returns device extensions required for the selected physical device.
-      [[nodiscard]] std::vector<const char *> requiredDeviceExtensions(VkPhysicalDevice device) {
+      [[nodiscard]] std::expected<std::vector<const char *>, vve::Error>
+      requiredDeviceExtensions(VkPhysicalDevice device, bool require_swapchain) {
          std::vector<const char *> extensions{};
+         if (require_swapchain) {
+            if (!hasDeviceExtension(device, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
+               std::cerr << "[VulkanGraphicsBackend] selected device does not support "
+                         << VK_KHR_SWAPCHAIN_EXTENSION_NAME << '\n';
+               return std::unexpected(vve::Error::internal_error);
+            }
+            extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+         }
 #ifdef VK_KHR_portability_subset
          if (hasDeviceExtension(device, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME)) {
             extensions.push_back(VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
@@ -579,21 +688,35 @@ namespace vve::v3 {
          });
       }
 
-      /// @brief Creates a short-lived Vulkan instance for startup diagnostics.
-      [[nodiscard]] std::expected<VkInstance, vve::Error> createDiagnosticInstance() {
+      /// @brief Creates a Vulkan instance with backend and window-system extension requirements.
+      [[nodiscard]] std::expected<VkInstance, vve::Error>
+      createDiagnosticInstance(const std::vector<std::string> &required_instance_extensions = {}) {
          const auto extensions = enumerateInstanceExtensions();
          if (!extensions) {
             return std::unexpected(extensions.error());
          }
 
-         std::vector<const char *> enabled_extensions{};
+         std::vector<std::string> enabled_extension_names = required_instance_extensions;
          VkInstanceCreateFlags create_flags = 0;
          if (hasExtension(*extensions, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME)) {
-            enabled_extensions.push_back(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+            appendUniqueExtension(enabled_extension_names, VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
          }
          if (hasExtension(*extensions, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME)) {
-            enabled_extensions.push_back(VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
+            appendUniqueExtension(enabled_extension_names, VK_KHR_PORTABILITY_ENUMERATION_EXTENSION_NAME);
             create_flags |= VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR;
+         }
+         for (const auto &extension_name : enabled_extension_names) {
+            if (!hasExtension(*extensions, extension_name.c_str())) {
+               std::cerr << "[VulkanGraphicsBackend] required instance extension is unavailable: "
+                         << extension_name << '\n';
+               return std::unexpected(vve::Error::internal_error);
+            }
+         }
+
+         std::vector<const char *> enabled_extensions{};
+         enabled_extensions.reserve(enabled_extension_names.size());
+         for (const auto &extension_name : enabled_extension_names) {
+            enabled_extensions.push_back(extension_name.c_str());
          }
 
          const VkApplicationInfo app_info{.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -620,6 +743,10 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::internal_error);
          }
 
+         if (!required_instance_extensions.empty()) {
+            std::clog << "[VulkanGraphicsBackend] presentation_extensions="
+                      << required_instance_extensions.size() << '\n';
+         }
          std::clog << "[VulkanGraphicsBackend] portability_enumeration="
                    << ((create_flags & VK_INSTANCE_CREATE_ENUMERATE_PORTABILITY_BIT_KHR) != 0 ? "enabled" : "disabled")
                    << '\n';
@@ -750,6 +877,11 @@ namespace vve::v3 {
 
       /// @brief Initializes backend-owned state.
       [[nodiscard]] std::expected<void, vve::Error> init() {
+         return init(std::vector<std::string>{});
+      }
+
+      /// @brief Initializes backend-owned state with platform-required instance extensions.
+      [[nodiscard]] std::expected<void, vve::Error> init(const std::vector<std::string> &instance_extensions) {
          if (initialized_) {
             return {};
          }
@@ -761,7 +893,7 @@ namespace vve::v3 {
          std::clog << "[VulkanGraphicsBackend] VK_ICD_FILENAMES="
                    << (vk_icd_filenames.empty() ? "<loader default>" : vk_icd_filenames) << '\n';
 
-         const auto instance = createDiagnosticInstance();
+         const auto instance = createDiagnosticInstance(instance_extensions);
          if (!instance) {
             return std::unexpected(instance.error());
          }
@@ -772,7 +904,8 @@ namespace vve::v3 {
             return std::unexpected(device_result.error());
          }
 
-         const auto selected_device = selectPhysicalDevice(instance_);
+         const bool require_presentation = !instance_extensions.empty();
+         const auto selected_device = selectPhysicalDevice(instance_, require_presentation);
          if (!selected_device) {
             destroy();
             return std::unexpected(selected_device.error());
@@ -780,6 +913,7 @@ namespace vve::v3 {
 
          physical_device_ = selected_device->device;
          graphics_queue_family_ = selected_device->graphics_queue_family;
+         presentation_enabled_ = require_presentation;
          if (auto logical_device = createLogicalDevice(); !logical_device) {
             destroy();
             return std::unexpected(logical_device.error());
@@ -950,6 +1084,72 @@ namespace vve::v3 {
          return pipeline_it->second.summary;
       }
 
+      /// @brief Creates surface, swapchain, and image views for one native window.
+      [[nodiscard]] std::expected<WindowSwapchainResources, vve::Error>
+      createWindowSwapchain(const NativeWindowHandle &window) {
+         if (!initialized_ || !presentation_enabled_ || instance_ == VK_NULL_HANDLE || device_ == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::not_initialized);
+         }
+         if (!window.window.value.isValid() || window.window_id.empty() || window.native_window == nullptr ||
+             !window.vulkan_capable || window.width == 0 || window.height == 0) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto handle = swapchainHandle(window);
+         const auto existing = window_swapchains_.find(handle.value.value());
+         if (existing != window_swapchains_.end()) {
+            return existing->second.summary;
+         }
+
+         VulkanWindowSwapchainResources resources{};
+         resources.summary = WindowSwapchainResources{.handle = handle,
+                                                      .window = window.window,
+                                                      .window_id = window.window_id,
+                                                      .width = window.width,
+                                                      .height = window.height};
+
+         if (auto surface = createWindowSurface(resources, window); !surface) {
+            destroyWindowSwapchainResources(resources);
+            return std::unexpected(surface.error());
+         }
+         if (auto swapchain = createVulkanSwapchain(resources, window); !swapchain) {
+            destroyWindowSwapchainResources(resources);
+            return std::unexpected(swapchain.error());
+         }
+         if (auto image_views = createSwapchainImageViews(resources); !image_views) {
+            destroyWindowSwapchainResources(resources);
+            return std::unexpected(image_views.error());
+         }
+
+         resources.summary.surface_created = resources.surface != VK_NULL_HANDLE;
+         resources.summary.swapchain_created = resources.swapchain != VK_NULL_HANDLE;
+         resources.summary.image_count = static_cast<std::uint32_t>(resources.images.size());
+         resources.summary.image_view_count = static_cast<std::uint32_t>(resources.image_views.size());
+         resources.summary.width = resources.extent.width;
+         resources.summary.height = resources.extent.height;
+         resources.summary.surface_format = string_VkFormat(resources.format);
+         resources.summary.present_mode = string_VkPresentModeKHR(resources.present_mode);
+         resources.summary.swapchain_dirty = false;
+         const auto summary = resources.summary;
+         window_swapchains_.emplace(handle.value.value(), std::move(resources));
+         return summary;
+      }
+
+      /// @brief Returns backend swapchain metadata for an already-created window swapchain.
+      [[nodiscard]] std::expected<std::optional<WindowSwapchainResources>, vve::Error>
+      windowSwapchain(SwapchainHandle swapchain) const {
+         if (!swapchain.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto swapchain_it = window_swapchains_.find(swapchain.value.value());
+         if (swapchain_it == window_swapchains_.end()) {
+            return std::optional<WindowSwapchainResources>{};
+         }
+
+         return swapchain_it->second.summary;
+      }
+
       /// @brief Performs begin-frame backend work.
       [[nodiscard]] std::expected<void, vve::Error> beginFrame(const FrameContext &) {
          if (!initialized_) {
@@ -989,7 +1189,10 @@ namespace vve::v3 {
                                                          .queueFamilyIndex = graphics_queue_family_,
                                                          .queueCount = 1,
                                                          .pQueuePriorities = &queue_priority};
-         const auto enabled_extensions = requiredDeviceExtensions(physical_device_);
+         const auto enabled_extensions = requiredDeviceExtensions(physical_device_, presentation_enabled_);
+         if (!enabled_extensions) {
+            return std::unexpected(enabled_extensions.error());
+         }
          const VkDeviceCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                                               .pNext = nullptr,
                                               .flags = 0,
@@ -998,8 +1201,8 @@ namespace vve::v3 {
                                               .enabledLayerCount = 0,
                                               .ppEnabledLayerNames = nullptr,
                                               .enabledExtensionCount =
-                                                  static_cast<std::uint32_t>(enabled_extensions.size()),
-                                              .ppEnabledExtensionNames = enabled_extensions.data(),
+                                                  static_cast<std::uint32_t>(enabled_extensions->size()),
+                                              .ppEnabledExtensionNames = enabled_extensions->data(),
                                               .pEnabledFeatures = nullptr};
 
          const VkResult result = vkCreateDevice(physical_device_, &create_info, nullptr, &device_);
@@ -1409,6 +1612,179 @@ namespace vve::v3 {
          return {};
       }
 
+      [[nodiscard]] std::expected<void, vve::Error>
+      createWindowSurface(VulkanWindowSwapchainResources &resources, const NativeWindowHandle &window) {
+         VkSurfaceKHR surface = VK_NULL_HANDLE;
+         if (!SDL_Vulkan_CreateSurface(static_cast<SDL_Window *>(window.native_window), instance_, nullptr, &surface)) {
+            std::cerr << "[VulkanGraphicsBackend] SDL_Vulkan_CreateSurface failed for '" << window.window_id
+                      << "': " << SDL_GetError() << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         VkBool32 present_supported = VK_FALSE;
+         const VkResult present_result =
+             vkGetPhysicalDeviceSurfaceSupportKHR(physical_device_, graphics_queue_family_, surface, &present_supported);
+         if (present_result != VK_SUCCESS || present_supported != VK_TRUE) {
+            std::cerr << "[VulkanGraphicsBackend] selected queue cannot present to window '" << window.window_id
+                      << "' surface: " << string_VkResult(present_result) << '\n';
+            SDL_Vulkan_DestroySurface(instance_, surface, nullptr);
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         resources.surface = surface;
+         return {};
+      }
+
+      [[nodiscard]] std::expected<std::vector<VkSurfaceFormatKHR>, vve::Error>
+      surfaceFormats(VkSurfaceKHR surface, std::string_view window_id) const {
+         std::uint32_t format_count = 0;
+         VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device_, surface, &format_count, nullptr);
+         if (result != VK_SUCCESS || format_count == 0) {
+            std::cerr << "[VulkanGraphicsBackend] no surface formats for window '" << window_id
+                      << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         std::vector<VkSurfaceFormatKHR> formats(format_count);
+         result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device_, surface, &format_count, formats.data());
+         if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
+            std::cerr << "[VulkanGraphicsBackend] vkGetPhysicalDeviceSurfaceFormatsKHR failed for window '"
+                      << window_id << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+         formats.resize(format_count);
+         return formats;
+      }
+
+      [[nodiscard]] std::expected<std::vector<VkPresentModeKHR>, vve::Error>
+      presentModes(VkSurfaceKHR surface, std::string_view window_id) const {
+         std::uint32_t mode_count = 0;
+         VkResult result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device_, surface, &mode_count, nullptr);
+         if (result != VK_SUCCESS || mode_count == 0) {
+            std::cerr << "[VulkanGraphicsBackend] no present modes for window '" << window_id
+                      << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         std::vector<VkPresentModeKHR> modes(mode_count);
+         result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device_, surface, &mode_count, modes.data());
+         if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
+            std::cerr << "[VulkanGraphicsBackend] vkGetPhysicalDeviceSurfacePresentModesKHR failed for window '"
+                      << window_id << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+         modes.resize(mode_count);
+         return modes;
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      createVulkanSwapchain(VulkanWindowSwapchainResources &resources, const NativeWindowHandle &window) {
+         VkSurfaceCapabilitiesKHR capabilities{};
+         VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device_, resources.surface, &capabilities);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkGetPhysicalDeviceSurfaceCapabilitiesKHR failed for window '"
+                      << window.window_id << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const auto formats = surfaceFormats(resources.surface, window.window_id);
+         if (!formats) {
+            return std::unexpected(formats.error());
+         }
+         const auto modes = presentModes(resources.surface, window.window_id);
+         if (!modes) {
+            return std::unexpected(modes.error());
+         }
+
+         const auto surface_format = chooseSurfaceFormat(*formats);
+         const auto present_mode = choosePresentMode(*modes);
+         const auto extent = chooseSwapchainExtent(capabilities, window);
+         std::uint32_t image_count = capabilities.minImageCount + 1;
+         if (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount) {
+            image_count = capabilities.maxImageCount;
+         }
+
+         const VkSwapchainCreateInfoKHR create_info{.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+                                                    .pNext = nullptr,
+                                                    .flags = 0,
+                                                    .surface = resources.surface,
+                                                    .minImageCount = image_count,
+                                                    .imageFormat = surface_format.format,
+                                                    .imageColorSpace = surface_format.colorSpace,
+                                                    .imageExtent = extent,
+                                                    .imageArrayLayers = 1,
+                                                    .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                                                    .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                                                    .queueFamilyIndexCount = 0,
+                                                    .pQueueFamilyIndices = nullptr,
+                                                    .preTransform = capabilities.currentTransform,
+                                                    .compositeAlpha =
+                                                        chooseCompositeAlpha(capabilities.supportedCompositeAlpha),
+                                                    .presentMode = present_mode,
+                                                    .clipped = VK_TRUE,
+                                                    .oldSwapchain = VK_NULL_HANDLE};
+         result = vkCreateSwapchainKHR(device_, &create_info, nullptr, &resources.swapchain);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateSwapchainKHR failed for window '" << window.window_id
+                      << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         std::uint32_t actual_image_count = 0;
+         result = vkGetSwapchainImagesKHR(device_, resources.swapchain, &actual_image_count, nullptr);
+         if (result != VK_SUCCESS || actual_image_count == 0) {
+            std::cerr << "[VulkanGraphicsBackend] vkGetSwapchainImagesKHR failed for window '" << window.window_id
+                      << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         resources.images.resize(actual_image_count);
+         result = vkGetSwapchainImagesKHR(device_, resources.swapchain, &actual_image_count, resources.images.data());
+         if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
+            std::cerr << "[VulkanGraphicsBackend] vkGetSwapchainImagesKHR failed for window '" << window.window_id
+                      << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         resources.images.resize(actual_image_count);
+         resources.format = surface_format.format;
+         resources.present_mode = present_mode;
+         resources.extent = extent;
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      createSwapchainImageViews(VulkanWindowSwapchainResources &resources) {
+         resources.image_views.reserve(resources.images.size());
+         for (const auto image : resources.images) {
+            const VkImageViewCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                                                    .pNext = nullptr,
+                                                    .flags = 0,
+                                                    .image = image,
+                                                    .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                                                    .format = resources.format,
+                                                    .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                   .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                   .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                                                                   .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+                                                    .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                                                         .baseMipLevel = 0,
+                                                                         .levelCount = 1,
+                                                                         .baseArrayLayer = 0,
+                                                                         .layerCount = 1}};
+            VkImageView image_view = VK_NULL_HANDLE;
+            const VkResult result = vkCreateImageView(device_, &create_info, nullptr, &image_view);
+            if (result != VK_SUCCESS) {
+               std::cerr << "[VulkanGraphicsBackend] vkCreateImageView failed: " << string_VkResult(result)
+                         << '\n';
+               return std::unexpected(vve::Error::internal_error);
+            }
+            resources.image_views.push_back(image_view);
+         }
+
+         return {};
+      }
+
       void destroyPipelineResources(VulkanPipelineResources &resources) noexcept {
          if (device_ == VK_NULL_HANDLE) {
             return;
@@ -1450,7 +1826,35 @@ namespace vve::v3 {
          }
       }
 
+      void destroyWindowSwapchainResources(VulkanWindowSwapchainResources &resources) noexcept {
+         if (device_ != VK_NULL_HANDLE) {
+            for (auto image_view : resources.image_views) {
+               if (image_view != VK_NULL_HANDLE) {
+                  vkDestroyImageView(device_, image_view, nullptr);
+               }
+            }
+            resources.image_views.clear();
+
+            if (resources.swapchain != VK_NULL_HANDLE) {
+               vkDestroySwapchainKHR(device_, resources.swapchain, nullptr);
+               resources.swapchain = VK_NULL_HANDLE;
+            }
+         }
+
+         resources.images.clear();
+         if (instance_ != VK_NULL_HANDLE && resources.surface != VK_NULL_HANDLE) {
+            SDL_Vulkan_DestroySurface(instance_, resources.surface, nullptr);
+            resources.surface = VK_NULL_HANDLE;
+         }
+      }
+
       void destroy() noexcept {
+         for (auto &[handle, resources] : window_swapchains_) {
+            (void)handle;
+            destroyWindowSwapchainResources(resources);
+         }
+         window_swapchains_.clear();
+
          for (auto &[handle, resources] : graphics_pipelines_) {
             (void)handle;
             destroyGraphicsPipelineResources(resources);
@@ -1480,6 +1884,7 @@ namespace vve::v3 {
          graphics_queue_ = VK_NULL_HANDLE;
          physical_device_ = VK_NULL_HANDLE;
          graphics_queue_family_ = 0;
+         presentation_enabled_ = false;
          initialized_ = false;
       }
 
@@ -1491,6 +1896,8 @@ namespace vve::v3 {
       std::uint32_t graphics_queue_family_{0};    ///< Queue family used to create the logical device.
       std::unordered_map<vve::Handle::value_type, VulkanPipelineResources> pipeline_resources_{};
       std::unordered_map<vve::Handle::value_type, VulkanGraphicsPipelineResources> graphics_pipelines_{};
+      std::unordered_map<vve::Handle::value_type, VulkanWindowSwapchainResources> window_swapchains_{};
+      bool presentation_enabled_{false}; ///< Tracks whether platform presentation support was requested.
       bool initialized_{false}; ///< Tracks whether backend initialization has completed.
    };
 
@@ -1507,6 +1914,11 @@ namespace vve::v3 {
 
    /// @brief Initializes the backend through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, init, (), (), ,
+                               std::expected<void, vve::Error>)
+
+   /// @brief Initializes the backend with presentation extensions through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, init,
+                               (const std::vector<std::string> &instance_extensions), (instance_extensions), ,
                                std::expected<void, vve::Error>)
 
    /// @brief Returns supported renderer descriptors through the public facade.
@@ -1543,6 +1955,16 @@ namespace vve::v3 {
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation,
                                graphicsPipelineResources, (GraphicsPipelineHandle pipeline), (pipeline), const,
                                std::expected<std::optional<GraphicsPipelineResources>, vve::Error>)
+
+   /// @brief Creates window swapchain resources through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, createWindowSwapchain,
+                               (const NativeWindowHandle &window), (window), ,
+                               std::expected<WindowSwapchainResources, vve::Error>)
+
+   /// @brief Returns window swapchain metadata through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, windowSwapchain,
+                               (SwapchainHandle swapchain), (swapchain), const,
+                               std::expected<std::optional<WindowSwapchainResources>, vve::Error>)
 
    /// @brief Begins a frame through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, beginFrame,
