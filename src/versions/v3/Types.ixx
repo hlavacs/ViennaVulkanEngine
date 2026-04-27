@@ -1101,16 +1101,31 @@ export namespace vve::v3 {
       bool vulkan_pipeline_created{false};                      ///< Whether a real VkPipeline exists.
    };
 
+   /// @brief Material scalar payload resolved for one draw packet.
+   struct DrawMaterialConstants {
+      vve::math::Vec4 base_color_factor{
+          vve::math::Vec4(vve::math::one(), vve::math::one(), vve::math::one(), vve::math::one())}; ///< Base-color multiplier.
+      vve::math::Vec3 emissive_factor{vve::math::zeroVec3()}; ///< Emissive color multiplier.
+      vve::math::Scalar roughness_factor{vve::math::one()};   ///< Roughness scalar factor.
+      vve::math::Scalar metallic_factor{vve::math::zero()};   ///< Metallic scalar factor.
+      vve::math::Scalar normal_scale{vve::math::one()};       ///< Normal-map scale factor.
+      vve::math::Scalar alpha_cutoff{vve::math::zero()};      ///< Alpha cutoff used by masked materials.
+   };
+
    /// @brief One backend-neutral indexed draw command prepared from scene and resource data.
    struct DrawPacket {
       WindowHandle window{};                            ///< Window whose renderer will consume the packet.
       RenderPassHandle pass{};                          ///< Render pass that owns the packet.
       RenderKernelId kernel{RenderKernelId::forward_opaque}; ///< Render kernel selected for the packet.
       GraphicsPipelineHandle graphics_pipeline{};       ///< Pipeline expected to record the packet.
+      std::uint32_t draw_index{0};                       ///< Stable zero-based index within the packet list.
       SceneNodeHandle node{};                            ///< Scene node providing the transform.
       vve::Handle mesh_instance{};                       ///< Runtime mesh-instance handle represented by the packet.
       MeshHandle mesh{};                                 ///< Mesh resource to draw.
       MaterialHandle material{};                         ///< Material resource selected for the draw.
+      std::optional<std::uint32_t> material_index{};      ///< Runtime scene material index when the material is known.
+      DrawMaterialConstants material_constants{};         ///< CPU material constants resolved for this draw.
+      GpuBufferHandle material_constants_buffer{};        ///< Uploaded material constants buffer, when resident.
       GpuBufferHandle vertex_buffer{};                   ///< Uploaded vertex buffer.
       GpuBufferHandle index_buffer{};                    ///< Uploaded index buffer.
       std::uint32_t first_index{0};                      ///< First index for indexed drawing.

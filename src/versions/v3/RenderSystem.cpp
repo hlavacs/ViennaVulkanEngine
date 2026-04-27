@@ -97,6 +97,49 @@ namespace vve::v3 {
       return std::addressof(scene.materials[index->second]);
    }
 
+   /// @brief Looks up the runtime material index used by later GPU material tables.
+   [[nodiscard]] std::optional<std::uint32_t> findMaterialIndex(const SceneData &scene, MaterialHandle material) {
+      if (!material.value.isValid()) {
+         return std::nullopt;
+      }
+
+      const auto index = scene.material_indices.find(material.value.value());
+      if (index == scene.material_indices.end() || index->second >= scene.materials.size() ||
+          index->second > static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {
+         return std::nullopt;
+      }
+
+      return static_cast<std::uint32_t>(index->second);
+   }
+
+   /// @brief Looks up uploaded material resources by imported material handle.
+   [[nodiscard]] const GpuMaterialResources *findGpuMaterial(const SceneData &scene, MaterialHandle material) {
+      if (!material.value.isValid()) {
+         return nullptr;
+      }
+
+      const auto index = scene.gpu_material_indices.find(material.value.value());
+      if (index == scene.gpu_material_indices.end() || index->second >= scene.gpu_materials.size()) {
+         return nullptr;
+      }
+
+      return std::addressof(scene.gpu_materials[index->second]);
+   }
+
+   /// @brief Copies imported material scalars into the backend-neutral draw payload.
+   [[nodiscard]] DrawMaterialConstants drawMaterialConstants(const ImportedMaterial *material) {
+      if (material == nullptr) {
+         return {};
+      }
+
+      return DrawMaterialConstants{.base_color_factor = material->base_color_factor,
+                                   .emissive_factor = material->emissive_factor,
+                                   .roughness_factor = material->roughness_factor,
+                                   .metallic_factor = material->metallic_factor,
+                                   .normal_scale = material->normal_scale,
+                                   .alpha_cutoff = material->alpha_cutoff};
+   }
+
    /// @brief Builds renderer-specific graphics pipeline state from a validated renderer binding.
    [[nodiscard]] std::expected<GraphicsPipelineDesc, vve::Error>
    graphicsPipelineDescForBinding(const RendererPipelineBinding &binding) {
@@ -359,14 +402,28 @@ namespace vve::v3 {
 
                const auto material = instance.material_override.value_or(submesh.material);
                const auto *material_data = findMaterial(scene, material);
+               const auto material_index = findMaterialIndex(scene, material);
+               const auto *gpu_material = findGpuMaterial(scene, material);
+               if (packets.packets.size() >
+                   static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())) {
+                  return std::unexpected(vve::Error::invalid_argument);
+               }
+
                packets.packets.push_back(DrawPacket{.window = window,
                                                     .pass = pass->handle,
                                                     .kernel = pass->kernel,
                                                     .graphics_pipeline = binding->second.graphics_pipeline,
+                                                    .draw_index = static_cast<std::uint32_t>(packets.packets.size()),
                                                     .node = node->handle,
                                                     .mesh_instance = instance.handle,
                                                     .mesh = instance.mesh,
                                                     .material = material,
+                                                    .material_index = material_index,
+                                                    .material_constants = drawMaterialConstants(material_data),
+                                                    .material_constants_buffer =
+                                                        gpu_material != nullptr && gpu_material->constants_uploaded
+                                                            ? gpu_material->constants_buffer
+                                                            : GpuBufferHandle{},
                                                     .vertex_buffer = gpu_mesh->vertex_buffer,
                                                     .index_buffer = gpu_mesh->index_buffer,
                                                     .first_index = submesh.index_offset,

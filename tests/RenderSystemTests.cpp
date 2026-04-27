@@ -112,6 +112,12 @@ namespace {
 
       vve::v3::ImportedMaterial material{};
       material.handle = material_handle;
+      material.base_color_factor = vve::math::Vec4(0.25F, 0.5F, 0.75F, 0.9F);
+      material.emissive_factor = vve::math::Vec3(0.1F, 0.2F, 0.3F);
+      material.roughness_factor = 0.65F;
+      material.metallic_factor = 0.35F;
+      material.normal_scale = 1.75F;
+      material.alpha_cutoff = 0.4F;
       material.double_sided = true;
       material.alpha_blend = true;
       scene.material_indices.emplace(material_handle.value.value(), scene.materials.size());
@@ -139,6 +145,15 @@ namespace {
       gpu_mesh.resident = true;
       scene.gpu_mesh_indices.emplace(mesh_handle.value.value(), scene.gpu_meshes.size());
       scene.gpu_meshes.push_back(std::move(gpu_mesh));
+
+      vve::v3::GpuMaterialResources gpu_material{};
+      gpu_material.material = material_handle;
+      gpu_material.constants_buffer = vve::v3::GpuBufferHandle{
+          .value = vve::Handle::fromHash(std::string_view{"tests.render.material_constants"})};
+      gpu_material.generation = 7;
+      gpu_material.constants_uploaded = true;
+      scene.gpu_material_indices.emplace(material_handle.value.value(), scene.gpu_materials.size());
+      scene.gpu_materials.push_back(std::move(gpu_material));
 
       return scene;
    }
@@ -222,15 +237,34 @@ namespace {
 
       const auto &packet = (*packet_list)->packets.front();
       const auto &gpu_mesh = scene.gpu_meshes.front();
+      const auto &gpu_material = scene.gpu_materials.front();
       const auto &mesh_instance = scene.mesh_instances.front();
       const auto &submesh = scene.meshes.front().submeshes.front();
+      const auto &material = scene.materials.front();
       return packet.window.value == pipeline.window.value &&
              packet.pass.value.value() == pass->handle.value.value() &&
              packet.kernel == pass->kernel &&
+             packet.draw_index == 0 &&
              packet.node.value.value() == mesh_instance.node.value.value() &&
              packet.mesh_instance.value() == mesh_instance.handle.value() &&
              packet.mesh.value.value() == mesh_instance.mesh.value.value() &&
              packet.material.value.value() == submesh.material.value.value() &&
+             packet.material_index.has_value() && *packet.material_index == 0 &&
+             packet.material_constants_buffer.value.value() == gpu_material.constants_buffer.value.value() &&
+             packet.material_constants.base_color_factor.x == material.base_color_factor.x &&
+             packet.material_constants.base_color_factor.y == material.base_color_factor.y &&
+             packet.material_constants.base_color_factor.z == material.base_color_factor.z &&
+             packet.material_constants.base_color_factor.w == material.base_color_factor.w &&
+             packet.material_constants.emissive_factor.x == material.emissive_factor.x &&
+             packet.material_constants.emissive_factor.y == material.emissive_factor.y &&
+             packet.material_constants.emissive_factor.z == material.emissive_factor.z &&
+             packet.material_constants.roughness_factor == material.roughness_factor &&
+             packet.material_constants.metallic_factor == material.metallic_factor &&
+             packet.material_constants.normal_scale == material.normal_scale &&
+             packet.material_constants.alpha_cutoff == material.alpha_cutoff &&
+             packet.world_transform[3][0] == 1.0F &&
+             packet.world_transform[3][1] == 2.0F &&
+             packet.world_transform[3][2] == 3.0F &&
              packet.vertex_buffer.value.value() == gpu_mesh.vertex_buffer.value.value() &&
              packet.index_buffer.value.value() == gpu_mesh.index_buffer.value.value() &&
              packet.first_index == submesh.index_offset &&
