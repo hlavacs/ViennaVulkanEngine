@@ -174,8 +174,8 @@ export namespace vve::v3::detail {
    [[nodiscard]] VVE_API std::expected<void, vve::Error> createRuntimeGraphicsPipelines(Runtime &runtime);
    /// @brief Creates per-window Vulkan presentation resources.
    [[nodiscard]] VVE_API std::expected<void, vve::Error> createRuntimeWindowSwapchains(Runtime &runtime);
-   /// @brief Marks swapchain summaries dirty when resize events are observed.
-   VVE_API void markRuntimeSwapchainsDirtyForResize(Runtime &runtime);
+   /// @brief Synchronizes and recreates dirty swapchains after frame presentation.
+   [[nodiscard]] VVE_API std::expected<void, vve::Error> updateRuntimeWindowSwapchainsAfterFrame(Runtime &runtime);
 #ifndef NDEBUG
    /// @brief Registers the debug-only task that exports a combined task/render graph dump.
    VVE_API void registerDebugGraphDumpTask(std::function<const TaskGraph *()> task_graph_accessor,

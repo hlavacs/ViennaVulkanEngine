@@ -276,6 +276,13 @@ namespace vve::v3 {
          VkPipeline pipeline{VK_NULL_HANDLE};
       };
 
+      /// @brief Per-frame synchronization objects used by one window swapchain.
+      struct VulkanSwapchainFrameSync {
+         VkSemaphore image_available{VK_NULL_HANDLE};
+         VkSemaphore render_finished{VK_NULL_HANDLE};
+         VkFence render_fence{VK_NULL_HANDLE};
+      };
+
       /// @brief Backend-owned Vulkan presentation resources for one SDL window.
       struct VulkanWindowSwapchainResources {
          WindowSwapchainResources summary{};
@@ -286,6 +293,14 @@ namespace vve::v3 {
          VkExtent2D extent{};
          std::vector<VkImage> images{};
          std::vector<VkImageView> image_views{};
+         VkRenderPass clear_render_pass{VK_NULL_HANDLE};
+         std::vector<VkFramebuffer> framebuffers{};
+         std::vector<VkCommandBuffer> command_buffers{};
+         std::vector<VulkanSwapchainFrameSync> frame_sync{};
+         std::uint32_t current_frame_slot{0};
+         std::uint32_t active_frame_slot{0};
+         std::uint32_t active_image_index{0};
+         bool frame_acquired{false};
       };
 
       /// @brief Physical device and queue family selected for backend object creation.
@@ -576,6 +591,22 @@ namespace vve::v3 {
          }
 
          return VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+      }
+
+      /// @brief Returns the number of conservative frame-sync slots used by one window.
+      [[nodiscard]] std::uint32_t frameSyncSlotCount(std::size_t image_count) {
+         return static_cast<std::uint32_t>(std::max<std::size_t>(1U, std::min<std::size_t>(2U, image_count)));
+      }
+
+      /// @brief Builds a stable clear color so different windows are visually distinguishable.
+      [[nodiscard]] VkClearColorValue windowClearColor(const WindowSwapchainResources &summary) {
+         const auto bits = summary.handle.value.value();
+         const auto channel = [bits](std::uint32_t shift) {
+            const auto value = static_cast<std::uint8_t>((bits >> shift) & 0xFFU);
+            return 0.12F + (static_cast<float>(value) / 255.0F) * 0.32F;
+         };
+
+         return VkClearColorValue{.float32 = {channel(0U), channel(8U), channel(16U), 1.0F}};
       }
 
       [[nodiscard]] bool hasDeviceExtension(VkPhysicalDevice device, const char *name);
@@ -922,6 +953,10 @@ namespace vve::v3 {
             destroy();
             return std::unexpected(pipeline_cache.error());
          }
+         if (auto command_pool = createCommandPool(); !command_pool) {
+            destroy();
+            return std::unexpected(command_pool.error());
+         }
 
          initialized_ = true;
          return {};
@@ -1120,19 +1155,65 @@ namespace vve::v3 {
             destroyWindowSwapchainResources(resources);
             return std::unexpected(image_views.error());
          }
+         if (auto render_pass = createSwapchainClearRenderPass(resources); !render_pass) {
+            destroyWindowSwapchainResources(resources);
+            return std::unexpected(render_pass.error());
+         }
+         if (auto framebuffers = createSwapchainFramebuffers(resources); !framebuffers) {
+            destroyWindowSwapchainResources(resources);
+            return std::unexpected(framebuffers.error());
+         }
+         if (auto command_buffers = allocateSwapchainCommandBuffers(resources); !command_buffers) {
+            destroyWindowSwapchainResources(resources);
+            return std::unexpected(command_buffers.error());
+         }
+         if (auto frame_sync = createSwapchainFrameSync(resources); !frame_sync) {
+            destroyWindowSwapchainResources(resources);
+            return std::unexpected(frame_sync.error());
+         }
 
          resources.summary.surface_created = resources.surface != VK_NULL_HANDLE;
          resources.summary.swapchain_created = resources.swapchain != VK_NULL_HANDLE;
          resources.summary.image_count = static_cast<std::uint32_t>(resources.images.size());
          resources.summary.image_view_count = static_cast<std::uint32_t>(resources.image_views.size());
+         resources.summary.framebuffer_count = static_cast<std::uint32_t>(resources.framebuffers.size());
+         resources.summary.frames_in_flight = static_cast<std::uint32_t>(resources.frame_sync.size());
          resources.summary.width = resources.extent.width;
          resources.summary.height = resources.extent.height;
          resources.summary.surface_format = string_VkFormat(resources.format);
          resources.summary.present_mode = string_VkPresentModeKHR(resources.present_mode);
+         resources.summary.current_image_index = resources.active_image_index;
+         resources.summary.frame_acquired = resources.frame_acquired;
          resources.summary.swapchain_dirty = false;
          const auto summary = resources.summary;
          window_swapchains_.emplace(handle.value.value(), std::move(resources));
          return summary;
+      }
+
+      /// @brief Recreates surface, swapchain, framebuffers, and frame sync for one resized native window.
+      [[nodiscard]] std::expected<WindowSwapchainResources, vve::Error>
+      recreateWindowSwapchain(const NativeWindowHandle &window) {
+         if (!initialized_ || !presentation_enabled_ || instance_ == VK_NULL_HANDLE || device_ == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::not_initialized);
+         }
+         if (!window.window.value.isValid() || window.window_id.empty() || window.native_window == nullptr ||
+             !window.vulkan_capable || window.width == 0 || window.height == 0) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto handle = swapchainHandle(window);
+         const auto existing = window_swapchains_.find(handle.value.value());
+         if (existing != window_swapchains_.end()) {
+            if (const VkResult idle_result = vkDeviceWaitIdle(device_); idle_result != VK_SUCCESS) {
+               std::cerr << "[VulkanGraphicsBackend] vkDeviceWaitIdle failed before swapchain recreation for '"
+                         << window.window_id << "': " << string_VkResult(idle_result) << '\n';
+               return std::unexpected(vve::Error::internal_error);
+            }
+            destroyWindowSwapchainResources(existing->second);
+            window_swapchains_.erase(existing);
+         }
+
+         return createWindowSwapchain(window);
       }
 
       /// @brief Returns backend swapchain metadata for an already-created window swapchain.
@@ -1156,6 +1237,13 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::not_initialized);
          }
 
+         for (auto &[handle, resources] : window_swapchains_) {
+            (void)handle;
+            if (auto frame_result = acquireAndSubmitClear(resources); !frame_result) {
+               return std::unexpected(frame_result.error());
+            }
+         }
+
          return {};
       }
 
@@ -1163,6 +1251,13 @@ namespace vve::v3 {
       [[nodiscard]] std::expected<void, vve::Error> endFrame(const FrameContext &) {
          if (!initialized_) {
             return std::unexpected(vve::Error::not_initialized);
+         }
+
+         for (auto &[handle, resources] : window_swapchains_) {
+            (void)handle;
+            if (auto present_result = presentWindowFrame(resources); !present_result) {
+               return std::unexpected(present_result.error());
+            }
          }
 
          return {};
@@ -1225,6 +1320,20 @@ namespace vve::v3 {
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkCreatePipelineCache failed: " << string_VkResult(result)
                       << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error> createCommandPool() {
+         const VkCommandPoolCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+                                                   .pNext = nullptr,
+                                                   .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
+                                                   .queueFamilyIndex = graphics_queue_family_};
+         const VkResult result = vkCreateCommandPool(device_, &create_info, nullptr, &command_pool_);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateCommandPool failed: " << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 
@@ -1785,6 +1894,321 @@ namespace vve::v3 {
          return {};
       }
 
+      [[nodiscard]] std::expected<void, vve::Error>
+      createSwapchainClearRenderPass(VulkanWindowSwapchainResources &resources) {
+         const VkAttachmentDescription color_attachment{.flags = 0,
+                                                        .format = resources.format,
+                                                        .samples = VK_SAMPLE_COUNT_1_BIT,
+                                                        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                                        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+                                                        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                                        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+                                                        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR};
+         const VkAttachmentReference color_reference{.attachment = 0,
+                                                     .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+         const VkSubpassDescription subpass{.flags = 0,
+                                            .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                            .inputAttachmentCount = 0,
+                                            .pInputAttachments = nullptr,
+                                            .colorAttachmentCount = 1,
+                                            .pColorAttachments = &color_reference,
+                                            .pResolveAttachments = nullptr,
+                                            .pDepthStencilAttachment = nullptr,
+                                            .preserveAttachmentCount = 0,
+                                            .pPreserveAttachments = nullptr};
+         const std::array dependencies{
+             VkSubpassDependency{.srcSubpass = VK_SUBPASS_EXTERNAL,
+                                 .dstSubpass = 0,
+                                 .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                 .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                 .srcAccessMask = 0,
+                                 .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                 .dependencyFlags = 0},
+             VkSubpassDependency{.srcSubpass = 0,
+                                 .dstSubpass = VK_SUBPASS_EXTERNAL,
+                                 .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                 .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                 .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                 .dstAccessMask = 0,
+                                 .dependencyFlags = 0}};
+         const VkRenderPassCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+                                                  .pNext = nullptr,
+                                                  .flags = 0,
+                                                  .attachmentCount = 1,
+                                                  .pAttachments = &color_attachment,
+                                                  .subpassCount = 1,
+                                                  .pSubpasses = &subpass,
+                                                  .dependencyCount =
+                                                      static_cast<std::uint32_t>(dependencies.size()),
+                                                  .pDependencies = dependencies.data()};
+         const VkResult result =
+             vkCreateRenderPass(device_, &create_info, nullptr, &resources.clear_render_pass);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateRenderPass for swapchain clear failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      createSwapchainFramebuffers(VulkanWindowSwapchainResources &resources) {
+         if (resources.clear_render_pass == VK_NULL_HANDLE || resources.extent.width == 0 ||
+             resources.extent.height == 0) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         resources.framebuffers.reserve(resources.image_views.size());
+         for (const auto image_view : resources.image_views) {
+            const VkImageView attachments[]{image_view};
+            const VkFramebufferCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                                                      .pNext = nullptr,
+                                                      .flags = 0,
+                                                      .renderPass = resources.clear_render_pass,
+                                                      .attachmentCount = 1,
+                                                      .pAttachments = attachments,
+                                                      .width = resources.extent.width,
+                                                      .height = resources.extent.height,
+                                                      .layers = 1};
+            VkFramebuffer framebuffer = VK_NULL_HANDLE;
+            const VkResult result = vkCreateFramebuffer(device_, &create_info, nullptr, &framebuffer);
+            if (result != VK_SUCCESS) {
+               std::cerr << "[VulkanGraphicsBackend] vkCreateFramebuffer failed: " << string_VkResult(result)
+                         << '\n';
+               return std::unexpected(vve::Error::internal_error);
+            }
+            resources.framebuffers.push_back(framebuffer);
+         }
+
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      allocateSwapchainCommandBuffers(VulkanWindowSwapchainResources &resources) {
+         if (command_pool_ == VK_NULL_HANDLE || resources.images.empty()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         resources.command_buffers.resize(resources.images.size(), VK_NULL_HANDLE);
+         const VkCommandBufferAllocateInfo allocate_info{
+             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+             .pNext = nullptr,
+             .commandPool = command_pool_,
+             .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+             .commandBufferCount = static_cast<std::uint32_t>(resources.command_buffers.size())};
+         const VkResult result = vkAllocateCommandBuffers(device_, &allocate_info, resources.command_buffers.data());
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkAllocateCommandBuffers failed: " << string_VkResult(result)
+                      << '\n';
+            resources.command_buffers.clear();
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      createSwapchainFrameSync(VulkanWindowSwapchainResources &resources) {
+         const VkSemaphoreCreateInfo semaphore_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+                                                    .pNext = nullptr,
+                                                    .flags = 0};
+         const VkFenceCreateInfo fence_info{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+                                            .pNext = nullptr,
+                                            .flags = VK_FENCE_CREATE_SIGNALED_BIT};
+
+         const auto slot_count = frameSyncSlotCount(resources.images.size());
+         resources.frame_sync.reserve(slot_count);
+         for (std::uint32_t slot = 0; slot < slot_count; ++slot) {
+            VulkanSwapchainFrameSync sync{};
+            VkResult result = vkCreateSemaphore(device_, &semaphore_info, nullptr, &sync.image_available);
+            if (result != VK_SUCCESS) {
+               std::cerr << "[VulkanGraphicsBackend] vkCreateSemaphore(image_available) failed: "
+                         << string_VkResult(result) << '\n';
+               return std::unexpected(vve::Error::internal_error);
+            }
+
+            result = vkCreateSemaphore(device_, &semaphore_info, nullptr, &sync.render_finished);
+            if (result != VK_SUCCESS) {
+               std::cerr << "[VulkanGraphicsBackend] vkCreateSemaphore(render_finished) failed: "
+                         << string_VkResult(result) << '\n';
+               vkDestroySemaphore(device_, sync.image_available, nullptr);
+               return std::unexpected(vve::Error::internal_error);
+            }
+
+            result = vkCreateFence(device_, &fence_info, nullptr, &sync.render_fence);
+            if (result != VK_SUCCESS) {
+               std::cerr << "[VulkanGraphicsBackend] vkCreateFence failed: " << string_VkResult(result) << '\n';
+               vkDestroySemaphore(device_, sync.render_finished, nullptr);
+               vkDestroySemaphore(device_, sync.image_available, nullptr);
+               return std::unexpected(vve::Error::internal_error);
+            }
+
+            resources.frame_sync.push_back(sync);
+         }
+
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      recordSwapchainClearCommand(VulkanWindowSwapchainResources &resources, std::uint32_t image_index) {
+         if (image_index >= resources.command_buffers.size() || image_index >= resources.framebuffers.size() ||
+             resources.clear_render_pass == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto command_buffer = resources.command_buffers[image_index];
+         VkResult result = vkResetCommandBuffer(command_buffer, 0);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkResetCommandBuffer failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkCommandBufferBeginInfo begin_info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                                                   .pNext = nullptr,
+                                                   .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+                                                   .pInheritanceInfo = nullptr};
+         result = vkBeginCommandBuffer(command_buffer, &begin_info);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkBeginCommandBuffer failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkClearValue clear_value{.color = windowClearColor(resources.summary)};
+         const VkRenderPassBeginInfo render_pass_info{.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                                                      .pNext = nullptr,
+                                                      .renderPass = resources.clear_render_pass,
+                                                      .framebuffer = resources.framebuffers[image_index],
+                                                      .renderArea = {.offset = {.x = 0, .y = 0},
+                                                                     .extent = resources.extent},
+                                                      .clearValueCount = 1,
+                                                      .pClearValues = &clear_value};
+         vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+         vkCmdEndRenderPass(command_buffer);
+
+         result = vkEndCommandBuffer(command_buffer);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkEndCommandBuffer failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         return {};
+      }
+
+      void updateSwapchainFrameSummary(VulkanWindowSwapchainResources &resources) noexcept {
+         resources.summary.current_image_index = resources.active_image_index;
+         resources.summary.frame_acquired = resources.frame_acquired;
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      acquireAndSubmitClear(VulkanWindowSwapchainResources &resources) {
+         if (resources.swapchain == VK_NULL_HANDLE || resources.frame_sync.empty() ||
+             resources.command_buffers.empty() || resources.framebuffers.empty()) {
+            return {};
+         }
+         if (resources.frame_acquired) {
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         auto &sync = resources.frame_sync[resources.current_frame_slot];
+         VkResult result = vkWaitForFences(device_, 1, &sync.render_fence, VK_TRUE, UINT64_MAX);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkWaitForFences failed for window '"
+                      << resources.summary.window_id << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         std::uint32_t image_index = 0;
+         result = vkAcquireNextImageKHR(device_, resources.swapchain, UINT64_MAX, sync.image_available,
+                                        VK_NULL_HANDLE, &image_index);
+         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+            resources.summary.swapchain_dirty = true;
+            return {};
+         }
+         if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
+            std::cerr << "[VulkanGraphicsBackend] vkAcquireNextImageKHR failed for window '"
+                      << resources.summary.window_id << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+         const bool acquired_suboptimal = result == VK_SUBOPTIMAL_KHR;
+
+         if (auto record_result = recordSwapchainClearCommand(resources, image_index); !record_result) {
+            return std::unexpected(record_result.error());
+         }
+
+         result = vkResetFences(device_, 1, &sync.render_fence);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkResetFences failed for window '"
+                      << resources.summary.window_id << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         const VkPipelineStageFlags wait_stage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+         const VkSubmitInfo submit_info{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                        .pNext = nullptr,
+                                        .waitSemaphoreCount = 1,
+                                        .pWaitSemaphores = &sync.image_available,
+                                        .pWaitDstStageMask = &wait_stage,
+                                        .commandBufferCount = 1,
+                                        .pCommandBuffers = &resources.command_buffers[image_index],
+                                        .signalSemaphoreCount = 1,
+                                        .pSignalSemaphores = &sync.render_finished};
+         result = vkQueueSubmit(graphics_queue_, 1, &submit_info, sync.render_fence);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkQueueSubmit failed for window '"
+                      << resources.summary.window_id << "': " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         resources.active_frame_slot = resources.current_frame_slot;
+         resources.active_image_index = image_index;
+         resources.frame_acquired = true;
+         resources.current_frame_slot =
+             (resources.current_frame_slot + 1U) % static_cast<std::uint32_t>(resources.frame_sync.size());
+         resources.summary.swapchain_dirty = resources.summary.swapchain_dirty || acquired_suboptimal;
+         updateSwapchainFrameSummary(resources);
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      presentWindowFrame(VulkanWindowSwapchainResources &resources) {
+         if (!resources.frame_acquired || resources.swapchain == VK_NULL_HANDLE ||
+             resources.active_frame_slot >= resources.frame_sync.size()) {
+            return {};
+         }
+
+         auto &sync = resources.frame_sync[resources.active_frame_slot];
+         const VkPresentInfoKHR present_info{.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+                                             .pNext = nullptr,
+                                             .waitSemaphoreCount = 1,
+                                             .pWaitSemaphores = &sync.render_finished,
+                                             .swapchainCount = 1,
+                                             .pSwapchains = &resources.swapchain,
+                                             .pImageIndices = &resources.active_image_index,
+                                             .pResults = nullptr};
+         const VkResult result = vkQueuePresentKHR(graphics_queue_, &present_info);
+         resources.frame_acquired = false;
+         if (result == VK_SUCCESS) {
+            ++resources.summary.presented_frame_count;
+            updateSwapchainFrameSummary(resources);
+            return {};
+         }
+         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            resources.summary.swapchain_dirty = true;
+            updateSwapchainFrameSummary(resources);
+            return {};
+         }
+
+         std::cerr << "[VulkanGraphicsBackend] vkQueuePresentKHR failed for window '"
+                   << resources.summary.window_id << "': " << string_VkResult(result) << '\n';
+         updateSwapchainFrameSummary(resources);
+         return std::unexpected(vve::Error::internal_error);
+      }
+
       void destroyPipelineResources(VulkanPipelineResources &resources) noexcept {
          if (device_ == VK_NULL_HANDLE) {
             return;
@@ -1828,6 +2252,41 @@ namespace vve::v3 {
 
       void destroyWindowSwapchainResources(VulkanWindowSwapchainResources &resources) noexcept {
          if (device_ != VK_NULL_HANDLE) {
+            for (auto &sync : resources.frame_sync) {
+               if (sync.render_fence != VK_NULL_HANDLE) {
+                  vkDestroyFence(device_, sync.render_fence, nullptr);
+                  sync.render_fence = VK_NULL_HANDLE;
+               }
+               if (sync.render_finished != VK_NULL_HANDLE) {
+                  vkDestroySemaphore(device_, sync.render_finished, nullptr);
+                  sync.render_finished = VK_NULL_HANDLE;
+               }
+               if (sync.image_available != VK_NULL_HANDLE) {
+                  vkDestroySemaphore(device_, sync.image_available, nullptr);
+                  sync.image_available = VK_NULL_HANDLE;
+               }
+            }
+            resources.frame_sync.clear();
+
+            if (command_pool_ != VK_NULL_HANDLE && !resources.command_buffers.empty()) {
+               vkFreeCommandBuffers(device_, command_pool_,
+                                    static_cast<std::uint32_t>(resources.command_buffers.size()),
+                                    resources.command_buffers.data());
+               resources.command_buffers.clear();
+            }
+
+            for (auto framebuffer : resources.framebuffers) {
+               if (framebuffer != VK_NULL_HANDLE) {
+                  vkDestroyFramebuffer(device_, framebuffer, nullptr);
+               }
+            }
+            resources.framebuffers.clear();
+
+            if (resources.clear_render_pass != VK_NULL_HANDLE) {
+               vkDestroyRenderPass(device_, resources.clear_render_pass, nullptr);
+               resources.clear_render_pass = VK_NULL_HANDLE;
+            }
+
             for (auto image_view : resources.image_views) {
                if (image_view != VK_NULL_HANDLE) {
                   vkDestroyImageView(device_, image_view, nullptr);
@@ -1846,9 +2305,16 @@ namespace vve::v3 {
             SDL_Vulkan_DestroySurface(instance_, resources.surface, nullptr);
             resources.surface = VK_NULL_HANDLE;
          }
+
+         resources.frame_acquired = false;
+         resources.summary.frame_acquired = false;
       }
 
       void destroy() noexcept {
+         if (device_ != VK_NULL_HANDLE) {
+            (void)vkDeviceWaitIdle(device_);
+         }
+
          for (auto &[handle, resources] : window_swapchains_) {
             (void)handle;
             destroyWindowSwapchainResources(resources);
@@ -1866,6 +2332,11 @@ namespace vve::v3 {
             destroyPipelineResources(resources);
          }
          pipeline_resources_.clear();
+
+         if (command_pool_ != VK_NULL_HANDLE) {
+            vkDestroyCommandPool(device_, command_pool_, nullptr);
+            command_pool_ = VK_NULL_HANDLE;
+         }
 
          if (pipeline_cache_ != VK_NULL_HANDLE) {
             vkDestroyPipelineCache(device_, pipeline_cache_, nullptr);
@@ -1893,6 +2364,7 @@ namespace vve::v3 {
       VkDevice device_{VK_NULL_HANDLE};           ///< Logical device owning backend resources.
       VkQueue graphics_queue_{VK_NULL_HANDLE};    ///< Graphics-capable queue for future work.
       VkPipelineCache pipeline_cache_{VK_NULL_HANDLE}; ///< Backend-owned cache for future VkPipeline creation.
+      VkCommandPool command_pool_{VK_NULL_HANDLE}; ///< Command buffers used for presentation clears.
       std::uint32_t graphics_queue_family_{0};    ///< Queue family used to create the logical device.
       std::unordered_map<vve::Handle::value_type, VulkanPipelineResources> pipeline_resources_{};
       std::unordered_map<vve::Handle::value_type, VulkanGraphicsPipelineResources> graphics_pipelines_{};
@@ -1958,6 +2430,11 @@ namespace vve::v3 {
 
    /// @brief Creates window swapchain resources through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, createWindowSwapchain,
+                               (const NativeWindowHandle &window), (window), ,
+                               std::expected<WindowSwapchainResources, vve::Error>)
+
+   /// @brief Recreates window swapchain resources through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, recreateWindowSwapchain,
                                (const NativeWindowHandle &window), (window), ,
                                std::expected<WindowSwapchainResources, vve::Error>)
 

@@ -1008,10 +1008,15 @@ export namespace vve::v3 {
       std::uint32_t height{0};                  ///< Swapchain image extent height.
       std::uint32_t image_count{0};             ///< Number of swapchain images.
       std::uint32_t image_view_count{0};        ///< Number of image views created by the backend.
+      std::uint32_t framebuffer_count{0};       ///< Number of framebuffers created for presentation clears.
+      std::uint32_t frames_in_flight{0};        ///< Number of frame-sync slots allocated for this swapchain.
+      std::uint32_t current_image_index{0};     ///< Last acquired swapchain image index.
+      std::uint64_t presented_frame_count{0};   ///< Number of frames successfully presented by this swapchain.
       std::string surface_format{};             ///< Chosen Vulkan surface format for diagnostics.
       std::string present_mode{};               ///< Chosen Vulkan present mode for diagnostics.
       bool surface_created{false};              ///< Whether a VkSurfaceKHR was created.
       bool swapchain_created{false};            ///< Whether a VkSwapchainKHR was created.
+      bool frame_acquired{false};               ///< Whether an image is currently acquired for presentation.
       bool swapchain_dirty{false};              ///< Whether resize events require later swapchain recreation.
    };
 

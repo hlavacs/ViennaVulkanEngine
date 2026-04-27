@@ -444,7 +444,9 @@ namespace vve::v3 {
       if (!execute_result) {
          return std::unexpected(execute_result.error());
       }
-      detail::markRuntimeSwapchainsDirtyForResize(runtime_);
+      if (auto swapchain_update = detail::updateRuntimeWindowSwapchainsAfterFrame(runtime_); !swapchain_update) {
+         return std::unexpected(swapchain_update.error());
+      }
 
       if (std::ranges::any_of(runtime_.window_frame->windows, // Treat close requests as a frame result, not an error.
                               [](const WindowState &window) { return window.should_close; })) {

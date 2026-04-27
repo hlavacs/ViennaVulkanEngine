@@ -213,6 +213,9 @@ export namespace vve::v3 {
       /// @brief Creates backend-owned surface and swapchain resources for one native window.
       [[nodiscard]] std::expected<WindowSwapchainResources, vve::Error>
       createWindowSwapchain(const NativeWindowHandle &window);
+      /// @brief Recreates backend-owned swapchain resources for a resized native window.
+      [[nodiscard]] std::expected<WindowSwapchainResources, vve::Error>
+      recreateWindowSwapchain(const NativeWindowHandle &window);
       /// @brief Returns backend swapchain metadata for an already-created window swapchain.
       [[nodiscard]] std::expected<std::optional<WindowSwapchainResources>, vve::Error>
       windowSwapchain(SwapchainHandle swapchain) const;

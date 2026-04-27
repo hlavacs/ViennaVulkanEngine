@@ -411,12 +411,27 @@ namespace vve::v3::detail {
    }
 
    /**
-    * @brief Marks cached swapchain summaries dirty when the window system reports a resize event.
+    * @brief Synchronizes backend swapchain state and recreates dirty swapchains after presentation.
     * @param runtime Runtime whose frame snapshot and render pipelines are being tracked.
+    * @return Empty success result, or the first backend recreation error.
     */
-   void markRuntimeSwapchainsDirtyForResize(Runtime &runtime) {
+   std::expected<void, vve::Error> updateRuntimeWindowSwapchainsAfterFrame(Runtime &runtime) {
       if (runtime.window_frame == nullptr) {
-         return;
+         return {};
+      }
+
+      for (auto &pipeline : runtime.render_pipelines) {
+         if (!pipeline.swapchain.handle.value.isValid()) {
+            continue;
+         }
+
+         const auto backend_swapchain = runtime.graphics_backend.windowSwapchain(pipeline.swapchain.handle);
+         if (!backend_swapchain) {
+            return std::unexpected(backend_swapchain.error());
+         }
+         if (backend_swapchain->has_value()) {
+            pipeline.swapchain = **backend_swapchain;
+         }
       }
 
       for (const auto &event : runtime.window_frame->events) {
@@ -434,6 +449,37 @@ namespace vve::v3::detail {
             pipeline.swapchain.height = static_cast<std::uint32_t>(std::max(event.b, 0));
          }
       }
+
+      const auto native_windows = runtime.window_system.nativeWindowHandles();
+      for (auto &pipeline : runtime.render_pipelines) {
+         if (!pipeline.swapchain.swapchain_dirty) {
+            continue;
+         }
+
+         const auto native_window = std::ranges::find_if(native_windows, [&pipeline](const NativeWindowHandle &window) {
+            return window.window.value.value() == pipeline.window.value.value();
+         });
+         if (native_window == native_windows.end()) {
+            std::cerr << "[VulkanRuntime] Missing native window handle while recreating swapchain for '"
+                      << pipeline.window_id << "'\n";
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         if (native_window->width == 0 || native_window->height == 0) {
+            continue;
+         }
+
+         const auto recreated_swapchain = runtime.graphics_backend.recreateWindowSwapchain(*native_window);
+         if (!recreated_swapchain) {
+            std::cerr << "[VulkanRuntime] Failed to recreate swapchain for resized window '"
+                      << pipeline.window_id << "'\n";
+            return std::unexpected(recreated_swapchain.error());
+         }
+
+         pipeline.swapchain = *recreated_swapchain;
+      }
+
+      return {};
    }
 
 } // namespace vve::v3::detail
