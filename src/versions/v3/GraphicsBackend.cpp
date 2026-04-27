@@ -1366,6 +1366,12 @@ namespace vve::v3 {
 
       /// @brief Records clear work for one window's currently acquired swapchain image.
       [[nodiscard]] std::expected<void, vve::Error> recordWindowFrame(SwapchainHandle swapchain) {
+         return recordWindowFrame(swapchain, WindowDrawPacketList{});
+      }
+
+      /// @brief Records draw work for one window's currently acquired swapchain image.
+      [[nodiscard]] std::expected<void, vve::Error>
+      recordWindowFrame(SwapchainHandle swapchain, const WindowDrawPacketList &draw_packets) {
          if (!initialized_) {
             return std::unexpected(vve::Error::not_initialized);
          }
@@ -1378,7 +1384,7 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         return recordWindowFrame(swapchain_it->second);
+         return recordWindowFrame(swapchain_it->second, draw_packets);
       }
 
       /// @brief Submits recorded clear work for one window's currently acquired swapchain image.
@@ -2403,9 +2409,14 @@ namespace vve::v3 {
       }
 
       [[nodiscard]] std::expected<void, vve::Error>
-      recordSwapchainClearCommand(VulkanWindowSwapchainResources &resources, std::uint32_t image_index) {
+      recordSwapchainCommand(VulkanWindowSwapchainResources &resources, std::uint32_t image_index,
+                             const WindowDrawPacketList &draw_packets) {
          if (image_index >= resources.command_buffers.size() || image_index >= resources.framebuffers.size() ||
              resources.clear_render_pass == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+         if (draw_packets.window.value.isValid() &&
+             draw_packets.window.value.value() != resources.summary.window.value.value()) {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
@@ -2440,6 +2451,11 @@ namespace vve::v3 {
                                                       .clearValueCount = static_cast<std::uint32_t>(clear_values.size()),
                                                       .pClearValues = clear_values.data()};
          vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+         if (auto draw_result = recordDrawPackets(command_buffer, resources, draw_packets); !draw_result) {
+            vkCmdEndRenderPass(command_buffer);
+            [[maybe_unused]] const auto end_result = vkEndCommandBuffer(command_buffer);
+            return std::unexpected(draw_result.error());
+         }
          vkCmdEndRenderPass(command_buffer);
 
          result = vkEndCommandBuffer(command_buffer);
@@ -2447,6 +2463,54 @@ namespace vve::v3 {
             std::cerr << "[VulkanGraphicsBackend] vkEndCommandBuffer failed: " << string_VkResult(result)
                       << '\n';
             return std::unexpected(vve::Error::internal_error);
+         }
+
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      recordDrawPackets(VkCommandBuffer command_buffer, const VulkanWindowSwapchainResources &resources,
+                        const WindowDrawPacketList &draw_packets) {
+         if (draw_packets.packets.empty()) {
+            return {};
+         }
+
+         const VkViewport viewport{.x = 0.0F,
+                                   .y = 0.0F,
+                                   .width = static_cast<float>(resources.extent.width),
+                                   .height = static_cast<float>(resources.extent.height),
+                                   .minDepth = 0.0F,
+                                   .maxDepth = 1.0F};
+         const VkRect2D scissor{.offset = {.x = 0, .y = 0}, .extent = resources.extent};
+         vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+         vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+
+         for (const auto &packet : draw_packets.packets) {
+            if (!packet.window.value.isValid() ||
+                packet.window.value.value() != resources.summary.window.value.value() ||
+                packet.index_count == 0 || packet.instance_count == 0 ||
+                !packet.graphics_pipeline.value.isValid() || !packet.vertex_buffer.value.isValid() ||
+                !packet.index_buffer.value.isValid()) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            const auto pipeline = graphics_pipelines_.find(packet.graphics_pipeline.value.value());
+            const auto vertex_buffer = buffers_.find(packet.vertex_buffer.value.value());
+            const auto index_buffer = buffers_.find(packet.index_buffer.value.value());
+            if (pipeline == graphics_pipelines_.end() || pipeline->second.pipeline == VK_NULL_HANDLE ||
+                vertex_buffer == buffers_.end() || vertex_buffer->second.buffer == VK_NULL_HANDLE ||
+                vertex_buffer->second.summary.usage != GpuBufferUsage::vertex ||
+                index_buffer == buffers_.end() || index_buffer->second.buffer == VK_NULL_HANDLE ||
+                index_buffer->second.summary.usage != GpuBufferUsage::index) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            const VkDeviceSize vertex_offset = 0;
+            vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->second.pipeline);
+            vkCmdBindVertexBuffers(command_buffer, 0, 1, &vertex_buffer->second.buffer, &vertex_offset);
+            vkCmdBindIndexBuffer(command_buffer, index_buffer->second.buffer, 0, VK_INDEX_TYPE_UINT32);
+            vkCmdDrawIndexed(command_buffer, packet.index_count, packet.instance_count, packet.first_index,
+                             packet.vertex_offset, 0);
          }
 
          return {};
@@ -2502,7 +2566,7 @@ namespace vve::v3 {
       }
 
       [[nodiscard]] std::expected<void, vve::Error>
-      recordWindowFrame(VulkanWindowSwapchainResources &resources) {
+      recordWindowFrame(VulkanWindowSwapchainResources &resources, const WindowDrawPacketList &draw_packets) {
          if (!resources.frame_acquired) {
             return {};
          }
@@ -2510,7 +2574,8 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::internal_error);
          }
 
-         if (auto record_result = recordSwapchainClearCommand(resources, resources.active_image_index); !record_result) {
+         if (auto record_result = recordSwapchainCommand(resources, resources.active_image_index, draw_packets);
+             !record_result) {
             return std::unexpected(record_result.error());
          }
 
@@ -2894,6 +2959,11 @@ namespace vve::v3 {
    /// @brief Records one acquired window frame through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, recordWindowFrame,
                                (SwapchainHandle swapchain), (swapchain), , std::expected<void, vve::Error>)
+
+   /// @brief Records draw packets for one acquired window frame through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, recordWindowFrame,
+                               (SwapchainHandle swapchain, const WindowDrawPacketList &draw_packets),
+                               (swapchain, draw_packets), , std::expected<void, vve::Error>)
 
    /// @brief Submits one recorded window frame through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, submitWindowFrame,

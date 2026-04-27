@@ -402,14 +402,22 @@ namespace vve::v3 {
 
       /// @brief Records placeholder render work for the supplied render graph.
       [[nodiscard]] std::expected<void, vve::Error> record(GraphicsBackend &graphics_backend, const FrameContext &,
-                                                           const SceneData &, WindowHandle,
+                                                           const SceneData &, WindowHandle window,
                                                            SwapchainHandle swapchain, const RenderGraph &render_graph) {
          for (const auto &pass : render_graph.passes) {
             // Iterating the passes keeps the placeholder implementation aligned
             // with the future shape where each pass will emit backend commands.
          }
 
-         return graphics_backend.recordWindowFrame(swapchain);
+         const auto packets = drawPackets(window);
+         if (!packets) {
+            return std::unexpected(packets.error());
+         }
+         if (!packets->has_value()) {
+            return graphics_backend.recordWindowFrame(swapchain, WindowDrawPacketList{.window = window});
+         }
+
+         return graphics_backend.recordWindowFrame(swapchain, **packets);
       }
 
       /// @brief Consumes the produced frame output for a window.

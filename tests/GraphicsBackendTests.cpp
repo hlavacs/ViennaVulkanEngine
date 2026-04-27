@@ -72,6 +72,13 @@ int main() {
       return 7;
    }
 
+   const auto packet_record_before_init = backend.recordWindowFrame(
+       vve::v3::SwapchainHandle{.value = vve::Handle::fromHash(std::string_view{"tests.graphics_backend.swapchain"})},
+       vve::v3::WindowDrawPacketList{});
+   if (packet_record_before_init || packet_record_before_init.error() != vve::Error::not_initialized) {
+      return 8;
+   }
+
    const auto mesh_owner = vve::Handle::fromHash(std::string_view{"tests.graphics_backend.triangle_mesh"});
    const std::array<float, 15> triangle_vertices{
        0.0F, -0.5F, 0.0F, 1.0F, 0.0F,
@@ -84,19 +91,19 @@ int main() {
    const auto create_before_init = backend.createBuffer(mesh_owner, vve::v3::ResourceKind::mesh,
                                                         vve::v3::GpuBufferUsage::vertex, vertex_bytes, 1);
    if (create_before_init || create_before_init.error() != vve::Error::not_initialized) {
-      return 8;
+      return 9;
    }
 
    const auto init = backend.init();
    if (!init) {
-      return 9;
+      return 10;
    }
 
    const auto empty_upload = backend.createBuffer(mesh_owner, vve::v3::ResourceKind::mesh,
                                                  vve::v3::GpuBufferUsage::vertex,
                                                  std::span<const std::byte>{}, 1);
    if (empty_upload || empty_upload.error() != vve::Error::invalid_argument) {
-      return 10;
+      return 11;
    }
 
    const auto vertex_buffer = backend.createBuffer(mesh_owner, vve::v3::ResourceKind::mesh,
@@ -106,20 +113,20 @@ int main() {
        vertex_buffer->usage != vve::v3::GpuBufferUsage::vertex ||
        vertex_buffer->byte_size != vertex_bytes.size() || vertex_buffer->generation != 1 ||
        !vertex_buffer->buffer_created || !vertex_buffer->memory_bound) {
-      return 11;
+      return 12;
    }
 
    const auto duplicate_vertex_buffer = backend.createBuffer(mesh_owner, vve::v3::ResourceKind::mesh,
                                                             vve::v3::GpuBufferUsage::vertex, vertex_bytes, 1);
    if (!duplicate_vertex_buffer || duplicate_vertex_buffer->handle.value != vertex_buffer->handle.value) {
-      return 12;
+      return 13;
    }
 
    const auto vertex_lookup = backend.bufferResources(vertex_buffer->handle);
    if (!vertex_lookup || !vertex_lookup->has_value() ||
        (*vertex_lookup)->handle.value != vertex_buffer->handle.value ||
        (*vertex_lookup)->byte_size != vertex_buffer->byte_size) {
-      return 13;
+      return 14;
    }
 
    const auto index_buffer = backend.createBuffer(mesh_owner, vve::v3::ResourceKind::mesh,
@@ -128,22 +135,22 @@ int main() {
        index_buffer->usage != vve::v3::GpuBufferUsage::index ||
        index_buffer->byte_size != index_bytes.size() || !index_buffer->buffer_created ||
        !index_buffer->memory_bound) {
-      return 14;
+      return 15;
    }
 
    const auto destroy_vertex = backend.destroyBuffer(vertex_buffer->handle);
    if (!destroy_vertex) {
-      return 15;
+      return 16;
    }
 
    const auto missing_vertex = backend.bufferResources(vertex_buffer->handle);
    if (!missing_vertex || missing_vertex->has_value()) {
-      return 16;
+      return 17;
    }
 
    const auto destroy_index = backend.destroyBuffer(index_buffer->handle);
    if (!destroy_index) {
-      return 17;
+      return 18;
    }
 
    return 0;

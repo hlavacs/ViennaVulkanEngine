@@ -233,6 +233,9 @@ export namespace vve::v3 {
       windowSwapchain(SwapchainHandle swapchain) const;
       /// @brief Records the backend frame command buffer for one acquired swapchain image.
       [[nodiscard]] std::expected<void, vve::Error> recordWindowFrame(SwapchainHandle swapchain);
+      /// @brief Records draw packets into the backend frame command buffer for one acquired swapchain image.
+      [[nodiscard]] std::expected<void, vve::Error>
+      recordWindowFrame(SwapchainHandle swapchain, const WindowDrawPacketList &draw_packets);
       /// @brief Submits the recorded backend frame command buffer for one swapchain.
       [[nodiscard]] std::expected<void, vve::Error> submitWindowFrame(SwapchainHandle swapchain);
       /// @brief Performs backend begin-frame work.
