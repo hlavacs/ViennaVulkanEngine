@@ -44,6 +44,59 @@ namespace vve::v3 {
       });
    }
 
+   /// @brief Returns the pass that owns draw packets for a renderer kernel.
+   [[nodiscard]] const RenderPassDesc *findKernelPass(const RenderGraph &graph, RenderKernelId kernel) {
+      const auto pass = std::ranges::find_if(graph.passes, [kernel](const RenderPassDesc &candidate) {
+         return candidate.kernel == kernel;
+      });
+
+      return pass == graph.passes.end() ? nullptr : std::addressof(*pass);
+   }
+
+   /// @brief Looks up a scene node by handle.
+   [[nodiscard]] const SceneNodeDesc *findNode(const SceneData &scene, SceneNodeHandle node) {
+      const auto index = scene.node_indices.find(node.value.value());
+      if (index == scene.node_indices.end() || index->second >= scene.nodes.size()) {
+         return nullptr;
+      }
+
+      return std::addressof(scene.nodes[index->second]);
+   }
+
+   /// @brief Looks up imported mesh data by handle.
+   [[nodiscard]] const ImportedMesh *findMesh(const SceneData &scene, MeshHandle mesh) {
+      const auto index = scene.mesh_indices.find(mesh.value.value());
+      if (index == scene.mesh_indices.end() || index->second >= scene.meshes.size()) {
+         return nullptr;
+      }
+
+      return std::addressof(scene.meshes[index->second]);
+   }
+
+   /// @brief Looks up uploaded mesh buffers by imported mesh handle.
+   [[nodiscard]] const GpuMeshResources *findGpuMesh(const SceneData &scene, MeshHandle mesh) {
+      const auto index = scene.gpu_mesh_indices.find(mesh.value.value());
+      if (index == scene.gpu_mesh_indices.end() || index->second >= scene.gpu_meshes.size()) {
+         return nullptr;
+      }
+
+      return std::addressof(scene.gpu_meshes[index->second]);
+   }
+
+   /// @brief Looks up material draw-state flags by material handle.
+   [[nodiscard]] const ImportedMaterial *findMaterial(const SceneData &scene, MaterialHandle material) {
+      if (!material.value.isValid()) {
+         return nullptr;
+      }
+
+      const auto index = scene.material_indices.find(material.value.value());
+      if (index == scene.material_indices.end() || index->second >= scene.materials.size()) {
+         return nullptr;
+      }
+
+      return std::addressof(scene.materials[index->second]);
+   }
+
    /// @brief Builds renderer-specific graphics pipeline state from a validated renderer binding.
    [[nodiscard]] std::expected<GraphicsPipelineDesc, vve::Error>
    graphicsPipelineDescForBinding(const RendererPipelineBinding &binding) {
@@ -264,10 +317,87 @@ namespace vve::v3 {
          return {};
       }
 
-      /// @brief Performs placeholder draw-packet generation for one window graph.
-      [[nodiscard]] std::expected<void, vve::Error> buildDrawPackets(const FrameContext &, const SceneData &,
-                                                                     WindowHandle, const RenderGraph &) {
+      /// @brief Builds backend-neutral draw packets from uploaded mesh resources.
+      [[nodiscard]] std::expected<void, vve::Error> buildDrawPackets(const FrameContext &frame_context,
+                                                                     const SceneData &scene, WindowHandle window,
+                                                                     const RenderGraph &render_graph) {
+         if (!window.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto binding = renderer_bindings_.find(window.value.value());
+         if (binding == renderer_bindings_.end()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto *pass = findKernelPass(render_graph, binding->second.main_kernel);
+         if (pass == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         WindowDrawPacketList packets{.window = window, .frame_index = frame_context.frame_index};
+         for (const auto &instance : scene.mesh_instances) {
+            const auto *node = findNode(scene, instance.node);
+            const auto *mesh = findMesh(scene, instance.mesh);
+            const auto *gpu_mesh = findGpuMesh(scene, instance.mesh);
+            if (node == nullptr || mesh == nullptr) {
+               return std::unexpected(vve::Error::invalid_argument);
+            }
+            if (gpu_mesh == nullptr || !gpu_mesh->resident || !gpu_mesh->vertex_buffer.value.isValid() ||
+                !gpu_mesh->index_buffer.value.isValid()) {
+               continue;
+            }
+
+            for (const auto &submesh : mesh->submeshes) {
+               if (submesh.index_count == 0) {
+                  continue;
+               }
+               if (submesh.index_offset > gpu_mesh->index_count ||
+                   submesh.index_count > gpu_mesh->index_count - submesh.index_offset) {
+                  return std::unexpected(vve::Error::invalid_argument);
+               }
+
+               const auto material = instance.material_override.value_or(submesh.material);
+               const auto *material_data = findMaterial(scene, material);
+               packets.packets.push_back(DrawPacket{.window = window,
+                                                    .pass = pass->handle,
+                                                    .kernel = pass->kernel,
+                                                    .graphics_pipeline = binding->second.graphics_pipeline,
+                                                    .node = node->handle,
+                                                    .mesh_instance = instance.handle,
+                                                    .mesh = instance.mesh,
+                                                    .material = material,
+                                                    .vertex_buffer = gpu_mesh->vertex_buffer,
+                                                    .index_buffer = gpu_mesh->index_buffer,
+                                                    .first_index = submesh.index_offset,
+                                                    .index_count = submesh.index_count,
+                                                    .vertex_offset = 0,
+                                                    .instance_count = 1,
+                                                    .world_transform = node->world_transform,
+                                                    .double_sided =
+                                                        material_data != nullptr && material_data->double_sided,
+                                                    .alpha_blend =
+                                                        material_data != nullptr && material_data->alpha_blend});
+            }
+         }
+
+         draw_packet_lists_[window.value.value()] = std::move(packets);
          return {};
+      }
+
+      /// @brief Returns the latest draw packets built for a window.
+      [[nodiscard]] std::expected<std::optional<WindowDrawPacketList>, vve::Error>
+      drawPackets(WindowHandle window) const {
+         if (!window.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto packets = draw_packet_lists_.find(window.value.value());
+         if (packets == draw_packet_lists_.end()) {
+            return std::optional<WindowDrawPacketList>{};
+         }
+
+         return packets->second;
       }
 
       /// @brief Records placeholder render work for the supplied render graph.
@@ -387,6 +517,7 @@ namespace vve::v3 {
       vve::ShadowKind shadow_{vve::ShadowKind::none};                   ///< Selected shadowing strategy.
       std::string graphics_backend_name_{};                              ///< Backend name copied for stable render-graph labels.
       std::unordered_map<vve::Handle::value_type, RendererPipelineBinding> renderer_bindings_{};
+      std::unordered_map<vve::Handle::value_type, WindowDrawPacketList> draw_packet_lists_{};
       bool imgui_enabled_{true};                                        ///< Whether the GUI pass should be appended.
    };
 
@@ -433,6 +564,11 @@ namespace vve::v3 {
                                (const FrameContext &frame_context, const SceneData &scene, WindowHandle window,
                                 const RenderGraph &render_graph),
                                (frame_context, scene, window, render_graph), , std::expected<void, vve::Error>)
+
+   /// @brief Returns draw packets through the public render-system facade.
+   VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, drawPackets,
+                               (WindowHandle window), (window), const,
+                               std::expected<std::optional<WindowDrawPacketList>, vve::Error>)
 
    /// @brief Records render work through the public render-system facade.
    VVE_V3_DEFINE_FACADE_METHOD(RenderSystemFacade, DefaultRenderSystemImplementation, record,

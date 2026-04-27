@@ -89,6 +89,60 @@ namespace {
           .graph = render_system.buildStaticGraph(window, renderer)};
    }
 
+   /// @brief Builds a minimal uploaded scene suitable for draw-packet generation tests.
+   [[nodiscard]] vve::v3::SceneData testUploadedScene() {
+      const auto mesh_handle = vve::v3::MeshHandle{
+          .value = vve::Handle::fromHash(std::string_view{"tests.render.mesh"})};
+      const auto material_handle = vve::v3::MaterialHandle{
+          .value = vve::Handle::fromHash(std::string_view{"tests.render.material"})};
+      const auto node_handle = vve::v3::SceneNodeHandle{
+          .value = vve::Handle::fromHash(std::string_view{"tests.render.node"})};
+      const auto mesh_instance_handle = vve::Handle::fromHash(std::string_view{"tests.render.mesh_instance"});
+
+      vve::v3::SceneData scene{};
+
+      vve::v3::ImportedMesh mesh{};
+      mesh.handle = mesh_handle;
+      mesh.submeshes.push_back(vve::v3::ImportedSubmesh{
+          .index_offset = 6,
+          .index_count = 12,
+          .material = material_handle});
+      scene.mesh_indices.emplace(mesh_handle.value.value(), scene.meshes.size());
+      scene.meshes.push_back(std::move(mesh));
+
+      vve::v3::ImportedMaterial material{};
+      material.handle = material_handle;
+      material.double_sided = true;
+      material.alpha_blend = true;
+      scene.material_indices.emplace(material_handle.value.value(), scene.materials.size());
+      scene.materials.push_back(std::move(material));
+
+      vve::v3::SceneNodeDesc node{};
+      node.handle = node_handle;
+      node.world_transform = vve::math::translate(vve::math::identityMat4(), vve::math::Vec3(1.0F, 2.0F, 3.0F));
+      scene.node_indices.emplace(node_handle.value.value(), scene.nodes.size());
+      scene.nodes.push_back(std::move(node));
+
+      scene.mesh_instance_indices.emplace(mesh_instance_handle.value(), scene.mesh_instances.size());
+      scene.mesh_instances.push_back(vve::v3::SceneMeshInstanceDesc{
+          .handle = mesh_instance_handle,
+          .node = node_handle,
+          .mesh = mesh_handle});
+
+      vve::v3::GpuMeshResources gpu_mesh{};
+      gpu_mesh.mesh = mesh_handle;
+      gpu_mesh.vertex_buffer =
+          vve::v3::GpuBufferHandle{.value = vve::Handle::fromHash(std::string_view{"tests.render.vertex_buffer"})};
+      gpu_mesh.index_buffer =
+          vve::v3::GpuBufferHandle{.value = vve::Handle::fromHash(std::string_view{"tests.render.index_buffer"})};
+      gpu_mesh.index_count = 24;
+      gpu_mesh.resident = true;
+      scene.gpu_mesh_indices.emplace(mesh_handle.value.value(), scene.gpu_meshes.size());
+      scene.gpu_meshes.push_back(std::move(gpu_mesh));
+
+      return scene;
+   }
+
    /// @brief Verifies that renderer binding stores the backend resources for the selected renderer.
    [[nodiscard]] bool pipelineBindsRenderer(vve::v3::RenderSystem &render_system, vve::v3::GraphicsBackend &backend,
                                             std::string_view renderer_id, vve::v3::RenderKernelId expected_kernel) {
@@ -132,6 +186,58 @@ namespace {
 
       const auto graphics_pipeline = render_system.createGraphicsPipeline(backend, *binding);
       return !graphics_pipeline && graphics_pipeline.error() == vve::Error::not_initialized;
+   }
+
+   /// @brief Verifies uploaded mesh resources are translated to backend-neutral draw packets.
+   [[nodiscard]] bool drawPacketsReferenceUploadedMesh(vve::v3::RenderSystem &render_system,
+                                                       vve::v3::GraphicsBackend &backend) {
+      const auto renderer = backend.createRenderer("forward");
+      if (!renderer) {
+         return false;
+      }
+
+      const auto pipeline = testPipeline(render_system, *renderer);
+      const auto binding = render_system.bindPipelineResources(pipeline);
+      if (!binding) {
+         return false;
+      }
+
+      const auto scene = testUploadedScene();
+      const auto *pass = mainPass(pipeline.graph);
+      if (pass == nullptr) {
+         return false;
+      }
+
+      const auto build = render_system.buildDrawPackets(
+          vve::v3::FrameContext{.frame_index = 42, .delta_seconds = 0.0}, scene, pipeline.window, pipeline.graph);
+      if (!build) {
+         return false;
+      }
+
+      const auto packet_list = render_system.drawPackets(pipeline.window);
+      if (!packet_list || !packet_list->has_value() || (*packet_list)->packets.size() != 1 ||
+          (*packet_list)->window.value != pipeline.window.value || (*packet_list)->frame_index != 42) {
+         return false;
+      }
+
+      const auto &packet = (*packet_list)->packets.front();
+      const auto &gpu_mesh = scene.gpu_meshes.front();
+      const auto &mesh_instance = scene.mesh_instances.front();
+      const auto &submesh = scene.meshes.front().submeshes.front();
+      return packet.window.value == pipeline.window.value &&
+             packet.pass.value.value() == pass->handle.value.value() &&
+             packet.kernel == pass->kernel &&
+             packet.node.value.value() == mesh_instance.node.value.value() &&
+             packet.mesh_instance.value() == mesh_instance.handle.value() &&
+             packet.mesh.value.value() == mesh_instance.mesh.value.value() &&
+             packet.material.value.value() == submesh.material.value.value() &&
+             packet.vertex_buffer.value.value() == gpu_mesh.vertex_buffer.value.value() &&
+             packet.index_buffer.value.value() == gpu_mesh.index_buffer.value.value() &&
+             packet.first_index == submesh.index_offset &&
+             packet.index_count == submesh.index_count &&
+             packet.instance_count == 1 &&
+             packet.double_sided &&
+             packet.alpha_blend;
    }
 
 } // namespace
@@ -204,6 +310,10 @@ int main() {
    const auto invalid_pipeline_request = render_system.createGraphicsPipeline(backend, invalid_binding);
    if (invalid_pipeline_request || invalid_pipeline_request.error() != vve::Error::invalid_argument) {
       return 12;
+   }
+
+   if (!drawPacketsReferenceUploadedMesh(render_system, backend)) {
+      return 13;
    }
 
    return 0;

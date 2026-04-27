@@ -304,6 +304,9 @@ export namespace vve::v3 {
       [[nodiscard]] std::expected<void, vve::Error> buildDrawPackets(const FrameContext &frame_context,
                                                                      const SceneData &scene, WindowHandle window,
                                                                      const RenderGraph &render_graph);
+      /// @brief Returns the latest draw packets built for a window, when present.
+      [[nodiscard]] std::expected<std::optional<WindowDrawPacketList>, vve::Error>
+      drawPackets(WindowHandle window) const;
       /// @brief Records render commands for a window render graph.
       [[nodiscard]] std::expected<void, vve::Error> record(GraphicsBackendFacade<VulkanGraphicsBackendImplementation> &graphics_backend,
                                                            const FrameContext &frame_context, const SceneData &scene,
