@@ -210,6 +210,15 @@ export namespace vve::v3 {
       /// @brief Returns backend graphics pipeline metadata for an already-created pipeline.
       [[nodiscard]] std::expected<std::optional<GraphicsPipelineResources>, vve::Error>
       graphicsPipelineResources(GraphicsPipelineHandle pipeline) const;
+      /// @brief Creates a backend-owned GPU buffer from CPU-visible bytes.
+      [[nodiscard]] std::expected<GpuBufferResources, vve::Error>
+      createBuffer(vve::Handle owner, ResourceKind owner_kind, GpuBufferUsage usage,
+                   std::span<const std::byte> bytes, std::uint32_t generation);
+      /// @brief Returns backend buffer metadata for an already-created GPU buffer.
+      [[nodiscard]] std::expected<std::optional<GpuBufferResources>, vve::Error>
+      bufferResources(GpuBufferHandle buffer) const;
+      /// @brief Destroys a backend-owned GPU buffer.
+      [[nodiscard]] std::expected<void, vve::Error> destroyBuffer(GpuBufferHandle buffer);
       /// @brief Creates backend-owned surface and swapchain resources for one native window.
       [[nodiscard]] std::expected<WindowSwapchainResources, vve::Error>
       createWindowSwapchain(const NativeWindowHandle &window);

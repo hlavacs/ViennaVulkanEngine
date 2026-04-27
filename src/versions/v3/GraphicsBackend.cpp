@@ -3,6 +3,7 @@ module;
 #include <cctype>
 #include "FacadeMacros.hpp"
 #include <cstdlib>
+#include <cstring>
 #include <SDL3/SDL_vulkan.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vk_enum_string_helper.h>
@@ -276,6 +277,13 @@ namespace vve::v3 {
          VkPipeline pipeline{VK_NULL_HANDLE};
       };
 
+      /// @brief Backend-owned Vulkan buffer and its bound device memory.
+      struct VulkanGpuBufferResources {
+         GpuBufferResources summary{};
+         VkBuffer buffer{VK_NULL_HANDLE};
+         VkDeviceMemory memory{VK_NULL_HANDLE};
+      };
+
       /// @brief Per-frame synchronization objects used by one window swapchain.
       struct VulkanSwapchainFrameSync {
          VkSemaphore image_available{VK_NULL_HANDLE};
@@ -335,6 +343,23 @@ namespace vve::v3 {
          seed.push_back(':');
          seed += std::to_string(static_cast<std::uint32_t>(desc.depth_format));
          return GraphicsPipelineHandle{.value = vve::Handle::fromHash(seed)};
+      }
+
+      /// @brief Builds a stable GPU-buffer handle from owner, usage, and uploaded generation.
+      [[nodiscard]] GpuBufferHandle gpuBufferHandle(vve::Handle owner, ResourceKind owner_kind,
+                                                    GpuBufferUsage usage, std::size_t byte_size,
+                                                    std::uint32_t generation) {
+         auto seed = std::string{"vulkan.buffer:"};
+         seed += std::to_string(owner.value());
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(owner_kind));
+         seed.push_back(':');
+         seed += std::to_string(static_cast<std::uint32_t>(usage));
+         seed.push_back(':');
+         seed += std::to_string(byte_size);
+         seed.push_back(':');
+         seed += std::to_string(generation);
+         return GpuBufferHandle{.value = vve::Handle::fromHash(seed)};
       }
 
       /// @brief Builds a stable swapchain-resource handle for one window.
@@ -524,6 +549,26 @@ namespace vve::v3 {
          }
 
          return VK_FORMAT_UNDEFINED;
+      }
+
+      /// @brief Converts backend-neutral buffer usage to Vulkan buffer usage flags.
+      [[nodiscard]] std::optional<VkBufferUsageFlags> bufferUsageFlags(GpuBufferUsage usage) {
+         switch (usage) {
+         case GpuBufferUsage::vertex:
+            return VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+         case GpuBufferUsage::index:
+            return VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+         case GpuBufferUsage::uniform:
+            return VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+         case GpuBufferUsage::storage:
+            return VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+         case GpuBufferUsage::staging:
+            return VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+         case GpuBufferUsage::unknown:
+            return std::nullopt;
+         }
+
+         return std::nullopt;
       }
 
       /// @brief Adds a unique extension name to a mutable extension list.
@@ -1121,6 +1166,79 @@ namespace vve::v3 {
          return pipeline_it->second.summary;
       }
 
+      /// @brief Creates a host-visible Vulkan buffer and copies CPU bytes into it.
+      [[nodiscard]] std::expected<GpuBufferResources, vve::Error>
+      createBuffer(vve::Handle owner, ResourceKind owner_kind, GpuBufferUsage usage,
+                   std::span<const std::byte> bytes, std::uint32_t generation) {
+         if (!initialized_ || physical_device_ == VK_NULL_HANDLE || device_ == VK_NULL_HANDLE) {
+            return std::unexpected(vve::Error::not_initialized);
+         }
+         if (!owner.isValid() || bytes.empty() || generation == 0) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto vk_usage = bufferUsageFlags(usage);
+         if (!vk_usage.has_value()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto handle = gpuBufferHandle(owner, owner_kind, usage, bytes.size(), generation);
+         const auto existing = buffers_.find(handle.value.value());
+         if (existing != buffers_.end()) {
+            return existing->second.summary;
+         }
+
+         VulkanGpuBufferResources resources{};
+         resources.summary = GpuBufferResources{.handle = handle,
+                                                .owner = owner,
+                                                .owner_kind = owner_kind,
+                                                .usage = usage,
+                                                .byte_size = bytes.size(),
+                                                .generation = generation};
+
+         if (auto result = createVulkanBuffer(resources, *vk_usage, bytes); !result) {
+            destroyBufferResources(resources);
+            return std::unexpected(result.error());
+         }
+
+         resources.summary.buffer_created = resources.buffer != VK_NULL_HANDLE;
+         resources.summary.memory_bound = resources.memory != VK_NULL_HANDLE;
+         const auto summary = resources.summary;
+         buffers_.emplace(handle.value.value(), std::move(resources));
+         return summary;
+      }
+
+      /// @brief Returns backend buffer metadata for an already-created GPU buffer.
+      [[nodiscard]] std::expected<std::optional<GpuBufferResources>, vve::Error>
+      bufferResources(GpuBufferHandle buffer) const {
+         if (!buffer.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto buffer_it = buffers_.find(buffer.value.value());
+         if (buffer_it == buffers_.end()) {
+            return std::optional<GpuBufferResources>{};
+         }
+
+         return buffer_it->second.summary;
+      }
+
+      /// @brief Destroys a backend-owned GPU buffer.
+      [[nodiscard]] std::expected<void, vve::Error> destroyBuffer(GpuBufferHandle buffer) {
+         if (!buffer.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         const auto buffer_it = buffers_.find(buffer.value.value());
+         if (buffer_it == buffers_.end()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         destroyBufferResources(buffer_it->second);
+         buffers_.erase(buffer_it);
+         return {};
+      }
+
       /// @brief Creates surface, swapchain, and image views for one native window.
       [[nodiscard]] std::expected<WindowSwapchainResources, vve::Error>
       createWindowSwapchain(const NativeWindowHandle &window) {
@@ -1373,6 +1491,78 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::internal_error);
          }
 
+         return {};
+      }
+
+      [[nodiscard]] std::expected<std::uint32_t, vve::Error>
+      findMemoryType(std::uint32_t type_bits, VkMemoryPropertyFlags required_properties) const {
+         VkPhysicalDeviceMemoryProperties memory_properties{};
+         vkGetPhysicalDeviceMemoryProperties(physical_device_, &memory_properties);
+         for (std::uint32_t memory_type = 0; memory_type < memory_properties.memoryTypeCount; ++memory_type) {
+            const bool type_supported = (type_bits & (1U << memory_type)) != 0;
+            const auto property_flags = memory_properties.memoryTypes[memory_type].propertyFlags;
+            if (type_supported && (property_flags & required_properties) == required_properties) {
+               return memory_type;
+            }
+         }
+
+         return std::unexpected(vve::Error::internal_error);
+      }
+
+      [[nodiscard]] std::expected<void, vve::Error>
+      createVulkanBuffer(VulkanGpuBufferResources &resources, VkBufferUsageFlags usage,
+                         std::span<const std::byte> bytes) {
+         const VkDeviceSize buffer_size = static_cast<VkDeviceSize>(bytes.size());
+         const VkBufferCreateInfo buffer_info{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                                              .pNext = nullptr,
+                                              .flags = 0,
+                                              .size = buffer_size,
+                                              .usage = usage,
+                                              .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                                              .queueFamilyIndexCount = 0,
+                                              .pQueueFamilyIndices = nullptr};
+
+         VkResult result = vkCreateBuffer(device_, &buffer_info, nullptr, &resources.buffer);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateBuffer failed: " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         VkMemoryRequirements requirements{};
+         vkGetBufferMemoryRequirements(device_, resources.buffer, &requirements);
+         const auto memory_type = findMemoryType(requirements.memoryTypeBits,
+                                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+         if (!memory_type) {
+            return std::unexpected(memory_type.error());
+         }
+
+         const VkMemoryAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                                                  .pNext = nullptr,
+                                                  .allocationSize = requirements.size,
+                                                  .memoryTypeIndex = *memory_type};
+         result = vkAllocateMemory(device_, &allocate_info, nullptr, &resources.memory);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkAllocateMemory(buffer) failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         result = vkBindBufferMemory(device_, resources.buffer, resources.memory, 0);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkBindBufferMemory failed: " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         void *mapped = nullptr;
+         result = vkMapMemory(device_, resources.memory, 0, buffer_size, 0, &mapped);
+         if (result != VK_SUCCESS || mapped == nullptr) {
+            std::cerr << "[VulkanGraphicsBackend] vkMapMemory(buffer) failed: " << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
+
+         std::memcpy(mapped, bytes.data(), bytes.size());
+         vkUnmapMemory(device_, resources.memory);
          return {};
       }
 
@@ -2281,6 +2471,24 @@ namespace vve::v3 {
          return std::unexpected(vve::Error::internal_error);
       }
 
+      void destroyBufferResources(VulkanGpuBufferResources &resources) noexcept {
+         if (device_ == VK_NULL_HANDLE) {
+            return;
+         }
+
+         if (resources.buffer != VK_NULL_HANDLE) {
+            vkDestroyBuffer(device_, resources.buffer, nullptr);
+            resources.buffer = VK_NULL_HANDLE;
+         }
+         if (resources.memory != VK_NULL_HANDLE) {
+            vkFreeMemory(device_, resources.memory, nullptr);
+            resources.memory = VK_NULL_HANDLE;
+         }
+
+         resources.summary.buffer_created = false;
+         resources.summary.memory_bound = false;
+      }
+
       void destroyPipelineResources(VulkanPipelineResources &resources) noexcept {
          if (device_ == VK_NULL_HANDLE) {
             return;
@@ -2405,6 +2613,12 @@ namespace vve::v3 {
          }
          pipeline_resources_.clear();
 
+         for (auto &[handle, resources] : buffers_) {
+            (void)handle;
+            destroyBufferResources(resources);
+         }
+         buffers_.clear();
+
          if (command_pool_ != VK_NULL_HANDLE) {
             vkDestroyCommandPool(device_, command_pool_, nullptr);
             command_pool_ = VK_NULL_HANDLE;
@@ -2440,6 +2654,7 @@ namespace vve::v3 {
       std::uint32_t graphics_queue_family_{0};    ///< Queue family used to create the logical device.
       std::unordered_map<vve::Handle::value_type, VulkanPipelineResources> pipeline_resources_{};
       std::unordered_map<vve::Handle::value_type, VulkanGraphicsPipelineResources> graphics_pipelines_{};
+      std::unordered_map<vve::Handle::value_type, VulkanGpuBufferResources> buffers_{};
       std::unordered_map<vve::Handle::value_type, VulkanWindowSwapchainResources> window_swapchains_{};
       bool presentation_enabled_{false}; ///< Tracks whether platform presentation support was requested.
       bool initialized_{false}; ///< Tracks whether backend initialization has completed.
@@ -2499,6 +2714,22 @@ namespace vve::v3 {
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation,
                                graphicsPipelineResources, (GraphicsPipelineHandle pipeline), (pipeline), const,
                                std::expected<std::optional<GraphicsPipelineResources>, vve::Error>)
+
+   /// @brief Creates a backend-owned GPU buffer through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, createBuffer,
+                               (vve::Handle owner, ResourceKind owner_kind, GpuBufferUsage usage,
+                                std::span<const std::byte> bytes, std::uint32_t generation),
+                               (owner, owner_kind, usage, bytes, generation), ,
+                               std::expected<GpuBufferResources, vve::Error>)
+
+   /// @brief Returns backend buffer metadata through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, bufferResources,
+                               (GpuBufferHandle buffer), (buffer), const,
+                               std::expected<std::optional<GpuBufferResources>, vve::Error>)
+
+   /// @brief Destroys a backend-owned GPU buffer through the public facade.
+   VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, destroyBuffer,
+                               (GpuBufferHandle buffer), (buffer), , std::expected<void, vve::Error>)
 
    /// @brief Creates window swapchain resources through the public facade.
    VVE_V3_DEFINE_FACADE_METHOD(GraphicsBackendFacade, VulkanGraphicsBackendImplementation, createWindowSwapchain,
