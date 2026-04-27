@@ -68,6 +68,19 @@ export namespace vve {
       math::Vec3 scale{math::one(), math::one(), math::one()};
    };
 
+   /// @brief Public camera description used by game code to drive rendering.
+   struct Camera {
+      math::Vec3 position{math::Vec3(math::zero(), static_cast<math::Scalar>(1.5),
+                                     static_cast<math::Scalar>(6.0))}; ///< World-space camera position.
+      math::Mat4 view_transform{math::translate(
+          math::identityMat4(),
+          math::Vec3(math::zero(), static_cast<math::Scalar>(-1.5),
+                     static_cast<math::Scalar>(-6.0)))}; ///< World-to-view transform.
+      math::Scalar vertical_fov_radians{static_cast<math::Scalar>(1.0471975511965976)}; ///< Vertical field of view.
+      math::Scalar near_plane{static_cast<math::Scalar>(0.1)}; ///< Near clip plane.
+      math::Scalar far_plane{static_cast<math::Scalar>(10000.0)}; ///< Far clip plane.
+   };
+
    /**
     * @brief Per-frame input snapshot exposed through `World`.
     *
@@ -115,6 +128,9 @@ export namespace vve {
          /// @brief Runtime callback used to request scene loading.
          std::expected<void, Error> (*load_scene)(void *context, const std::filesystem::path &path){nullptr};
          void *load_scene_context{nullptr};                       ///< Opaque callback context passed back to `load_scene`.
+         /// @brief Runtime callback used to update the active render camera.
+         std::expected<void, Error> (*set_camera)(void *context, const Camera &camera){nullptr};
+         void *set_camera_context{nullptr};                       ///< Opaque callback context passed back to `set_camera`.
       };
 
       /**
@@ -258,6 +274,7 @@ export namespace vve {
       [[nodiscard]] std::optional<WindowInfo> findWindow(std::string_view window_id) const;
       [[nodiscard]] const InputState &input() const;
       [[nodiscard]] std::expected<void, Error> loadScene(const std::filesystem::path &path);
+      [[nodiscard]] std::expected<void, Error> setCamera(const Camera &camera);
 
       [[nodiscard]] std::expected<std::optional<Transform>, Error> getTransform(Handle entity) const;
       [[nodiscard]] std::expected<void, Error> setTransform(Handle entity, const Transform &transform);
@@ -400,6 +417,12 @@ export namespace vve {
    template <typename TImplementation>
    inline std::expected<void, Error> WorldFacade<TImplementation>::loadScene(const std::filesystem::path &path) {
       return implementation_.loadScene(path);
+   }
+
+   /// @brief Updates the active render camera through the runtime bridge.
+   template <typename TImplementation>
+   inline std::expected<void, Error> WorldFacade<TImplementation>::setCamera(const Camera &camera) {
+      return implementation_.setCamera(camera);
    }
 
    /// @brief Returns an entity transform component if present.

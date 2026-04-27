@@ -74,6 +74,14 @@ namespace vve::v3 {
 
          return runtime_access_->load_scene(runtime_access_->load_scene_context, path);
       }
+      /// @brief Forwards an active-camera update through the bound runtime callback.
+      [[nodiscard]] std::expected<void, vve::Error> setCamera(const vve::Camera &camera) {
+         if (runtime_access_ == nullptr || runtime_access_->set_camera == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return runtime_access_->set_camera(runtime_access_->set_camera_context, camera);
+      }
       /// @brief Returns the transform component when present.
       [[nodiscard]] std::expected<std::optional<vve::Transform>, vve::Error> getTransform(vve::Handle entity) const {
          return getComponent<vve::Transform>(entity);

@@ -47,6 +47,23 @@ namespace vve::v3 {
       }
 
       /**
+       * @brief Adapts the world camera callback to a concrete engine instance.
+       * @tparam TEngine Engine implementation type receiving the callback.
+       * @param context Opaque engine pointer stored in `WorldRuntimeAccess`.
+       * @param camera Public camera description supplied by game code.
+       * @return Empty success result, or an error when the callback context is invalid.
+       */
+      template <typename TEngine>
+      [[nodiscard]] std::expected<void, vve::Error> setCameraThroughWorld(void *context,
+                                                                          const vve::Camera &camera) {
+         if (context == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return static_cast<TEngine *>(context)->setActiveCamera(camera);
+      }
+
+      /**
        * @brief Invokes a user system's optional `init(world)` hook when present.
        * @tparam TSystem User-system type.
        * @param system User-system instance.
@@ -223,6 +240,7 @@ namespace vve::v3 {
       [[nodiscard]] std::expected<bool, vve::Error> isInitialized() const noexcept;
       [[nodiscard]] std::expected<int, vve::Error> getVersionMajor() const noexcept;
       [[nodiscard]] std::expected<void, vve::Error> loadSceneFile(const std::filesystem::path &file_path);
+      [[nodiscard]] std::expected<void, vve::Error> setActiveCamera(const vve::Camera &camera);
 
    private:
       [[nodiscard]] std::expected<void, vve::Error> rebuildTaskGraph();
@@ -358,6 +376,9 @@ namespace vve::v3 {
       world_bridge_.runtime_access.input = &world_bridge_.input;
       world_bridge_.runtime_access.load_scene = &detail::loadSceneThroughWorld<BasicEngineImplementation<TUserSystems...>>;
       world_bridge_.runtime_access.load_scene_context = this;
+      world_bridge_.runtime_access.set_camera =
+          &detail::setCameraThroughWorld<BasicEngineImplementation<TUserSystems...>>;
+      world_bridge_.runtime_access.set_camera_context = this;
       // Prime world-visible caches before user init hooks run.
       detail::syncWorldWindows(*runtime_.window_frame, world_bridge_.windows);
       world_bridge_.runtime_access.windows_begin = world_bridge_.windows.cbegin();
@@ -506,6 +527,26 @@ namespace vve::v3 {
       scene_state_.scene = std::move(*scene);
       execution_state_.task_graph_dirty = true;
       return rebuildTaskGraph();
+   }
+
+   /**
+    * @brief Updates the active scene camera from game-facing world code.
+    * @param camera Public camera description supplied through `World`.
+    * @return Empty success result, or an error when no scene is active.
+    */
+   template <typename... TUserSystems>
+   std::expected<void, vve::Error>
+   BasicEngineImplementation<TUserSystems...>::setActiveCamera(const vve::Camera &camera) {
+      if (!*isInitialized() || !scene_state_.scene) {
+         return std::unexpected(vve::Error::not_initialized);
+      }
+
+      scene_state_.scene->active_camera = CameraFrameData{.position = camera.position,
+                                                          .view_transform = camera.view_transform,
+                                                          .vertical_fov_radians = camera.vertical_fov_radians,
+                                                          .near_plane = camera.near_plane,
+                                                          .far_plane = camera.far_plane};
+      return {};
    }
 
    /**

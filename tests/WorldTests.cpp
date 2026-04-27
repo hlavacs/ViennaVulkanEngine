@@ -1,3 +1,4 @@
+#include <expected>
 #include <string>
 
 import VEEngine;
@@ -25,6 +26,26 @@ namespace {
 
       [[nodiscard]] friend bool operator==(const Tag &, const Tag &) = default;
    };
+
+   /// @brief Captures a camera supplied through the runtime bridge.
+   struct CameraCapture {
+      /// @brief Last camera observed by the callback.
+      vve::Camera camera{};
+      /// @brief Whether the callback was invoked.
+      bool called{false};
+   };
+
+   /// @brief Runtime callback used to verify `World::setCamera()` forwarding.
+   [[nodiscard]] std::expected<void, vve::Error> captureCamera(void *context, const vve::Camera &camera) {
+      if (context == nullptr) {
+         return std::unexpected(vve::Error::invalid_argument);
+      }
+
+      auto &capture = *static_cast<CameraCapture *>(context);
+      capture.camera = camera;
+      capture.called = true;
+      return {};
+   }
 
 } // namespace
 
@@ -147,6 +168,40 @@ int main() {
 
    if (world.loadScene("assets/example.glb")) {
       return 18;
+   }
+
+   if (world.setCamera(vve::Camera{})) {
+      return 181;
+   }
+
+   vve::ECS<> runtime_ecs{};
+   CameraCapture camera_capture{};
+   vve::detail::WorldRuntimeAccess runtime_access{};
+   runtime_access.set_camera = &captureCamera;
+   runtime_access.set_camera_context = &camera_capture;
+
+   vve::World runtime_world{runtime_ecs, runtime_access};
+   vve::Camera camera{};
+   camera.position = vve::math::Vec3(2.0F, 3.0F, 4.0F);
+   camera.view_transform =
+       vve::math::translate(vve::math::identityMat4(), vve::math::Vec3(-2.0F, -3.0F, -4.0F));
+   camera.vertical_fov_radians = 0.75F;
+   camera.near_plane = 0.2F;
+   camera.far_plane = 250.0F;
+
+   if (!runtime_world.setCamera(camera)) {
+      return 182;
+   }
+
+   if (!camera_capture.called || camera_capture.camera.position.x != 2.0F ||
+       camera_capture.camera.position.y != 3.0F || camera_capture.camera.position.z != 4.0F ||
+       camera_capture.camera.view_transform[3][0] != -2.0F ||
+       camera_capture.camera.view_transform[3][1] != -3.0F ||
+       camera_capture.camera.view_transform[3][2] != -4.0F ||
+       camera_capture.camera.vertical_fov_radians != 0.75F ||
+       camera_capture.camera.near_plane != 0.2F ||
+       camera_capture.camera.far_plane != 250.0F) {
+      return 183;
    }
 
    vve::InputState input{};
