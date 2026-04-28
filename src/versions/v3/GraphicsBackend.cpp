@@ -730,10 +730,47 @@ namespace vve::v3 {
 
       static_assert(sizeof(VulkanFrameConstants) == sizeof(float) * 48U);
 
+      /// @brief CPU-side layout matching lights.slang LightData.
+      struct VulkanLightData {
+         std::uint32_t type{0};
+         float intensity{0.0F};
+         float inner_cone_cos{1.0F};
+         float outer_cone_cos{0.0F};
+         std::array<float, 3> position{};
+         float range{0.0F};
+         std::array<float, 3> direction{};
+         float padding0{0.0F};
+         std::array<float, 3> color{};
+         float padding1{0.0F};
+      };
+
+      static_assert(sizeof(VulkanLightData) == sizeof(float) * 16U);
+
+      /// @brief CPU-side layout matching lights.slang LightingConstants.
+      struct VulkanLightingConstants {
+         std::uint32_t light_count{0};
+         std::array<float, 3> padding0{};
+         std::array<float, 3> ambient_color{};
+         float padding1{0.0F};
+         std::array<VulkanLightData, maxForwardLightCount> lights{};
+      };
+
+      static_assert(offsetof(VulkanLightingConstants, light_count) == 0U);
+      static_assert(offsetof(VulkanLightingConstants, ambient_color) == 16U);
+      static_assert(offsetof(VulkanLightingConstants, lights) == 32U);
+      static_assert(sizeof(VulkanLightingConstants) == (sizeof(float) * 8U) +
+                                                        (sizeof(VulkanLightData) * maxForwardLightCount));
+
       /// @brief Returns whether a reflected uniform buffer represents per-frame camera data.
       [[nodiscard]] bool isFrameConstantsBinding(const PipelineDescriptorBindingDesc &binding) {
          return binding.kind == DescriptorBindingKind::uniform_buffer &&
                 (containsAsciiToken(binding.name, "frame") || containsAsciiToken(binding.type_name, "Frame"));
+      }
+
+      /// @brief Returns whether a reflected uniform buffer represents forward lighting data.
+      [[nodiscard]] bool isLightingConstantsBinding(const PipelineDescriptorBindingDesc &binding) {
+         return binding.kind == DescriptorBindingKind::uniform_buffer &&
+                (containsAsciiToken(binding.name, "lighting") || containsAsciiToken(binding.type_name, "Lighting"));
       }
 
       /// @brief Builds a column-major identity matrix payload for Slang float4x4 constants.
@@ -789,10 +826,62 @@ namespace vve::v3 {
                                      .projection = perspectiveMatrixPayload(width / height, packet.camera)};
       }
 
+      [[nodiscard]] std::uint32_t vulkanLightType(SceneLightType type) {
+         switch (type) {
+         case SceneLightType::directional:
+            return 0U;
+         case SceneLightType::point:
+            return 1U;
+         case SceneLightType::spot:
+            return 2U;
+         case SceneLightType::ambient:
+         case SceneLightType::unknown:
+            break;
+         }
+
+         return 0U;
+      }
+
+      [[nodiscard]] std::array<float, 3> vec3Payload(const vve::math::Vec3 &value) {
+         return std::array<float, 3>{static_cast<float>(value.x), static_cast<float>(value.y),
+                                     static_cast<float>(value.z)};
+      }
+
+      [[nodiscard]] VulkanLightingConstants lightingConstantsForDraw(const DrawPacket &packet) {
+         VulkanLightingConstants constants{};
+         constants.light_count = std::min(packet.lighting_constants.light_count,
+                                          static_cast<std::uint32_t>(maxForwardLightCount));
+         constants.ambient_color = vec3Payload(packet.lighting_constants.ambient_color);
+         for (std::size_t light_index = 0; light_index < constants.light_count; ++light_index) {
+            const auto &source = packet.lighting_constants.lights[light_index];
+            constants.lights[light_index] =
+                VulkanLightData{.type = vulkanLightType(source.type),
+                                .intensity = static_cast<float>(source.intensity),
+                                .inner_cone_cos = static_cast<float>(source.inner_cone_cos),
+                                .outer_cone_cos = static_cast<float>(source.outer_cone_cos),
+                                .position = vec3Payload(source.position),
+                                .range = static_cast<float>(source.range),
+                                .direction = vec3Payload(source.direction),
+                                .padding0 = 0.0F,
+                                .color = vec3Payload(source.color),
+                                .padding1 = 0.0F};
+         }
+
+         return constants;
+      }
+
       /// @brief Copies frame constants into an owned byte array for uniform-buffer uploads.
       [[nodiscard]] std::array<std::byte, sizeof(VulkanFrameConstants)>
       frameConstantsBytes(const VulkanFrameConstants &constants) {
          std::array<std::byte, sizeof(VulkanFrameConstants)> bytes{};
+         std::memcpy(bytes.data(), &constants, sizeof(constants));
+         return bytes;
+      }
+
+      /// @brief Copies lighting constants into an owned byte array for uniform-buffer uploads.
+      [[nodiscard]] std::array<std::byte, sizeof(VulkanLightingConstants)>
+      lightingConstantsBytes(const VulkanLightingConstants &constants) {
+         std::array<std::byte, sizeof(VulkanLightingConstants)> bytes{};
          std::memcpy(bytes.data(), &constants, sizeof(constants));
          return bytes;
       }
@@ -832,6 +921,12 @@ namespace vve::v3 {
             [[maybe_unused]] const bool frame_written =
                 writeFrameConstants(bytes, frameConstantsForExtent(VkExtent2D{.width = 1, .height = 1}));
          }
+         if (isLightingConstantsBinding(binding)) {
+            const auto lighting_bytes = lightingConstantsBytes(lightingConstantsForDraw(DrawPacket{}));
+            if (lighting_bytes.size() <= bytes.size()) {
+               std::memcpy(bytes.data(), lighting_bytes.data(), lighting_bytes.size());
+            }
+         }
          if (containsAsciiToken(binding.name, "frame") && !isFrameConstantsBinding(binding)) {
             write_identity(0);
             write_identity(64);
@@ -844,7 +939,7 @@ namespace vve::v3 {
             write_float(12, 1.0F);
             write_float(16, 1.0F);
          }
-         if (containsAsciiToken(binding.name, "lighting")) {
+         if (containsAsciiToken(binding.name, "lighting") && !isLightingConstantsBinding(binding)) {
             write_uint(0, 0U);
             write_float(4, 0.25F);
             write_float(8, 0.25F);
@@ -2660,6 +2755,45 @@ namespace vve::v3 {
                      continue;
                   }
 
+                  if (*type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER && isLightingConstantsBinding(binding)) {
+                     const auto constants = lightingConstantsForDraw(packet);
+                     const auto bytes = lightingConstantsBytes(constants);
+                     VulkanGpuBufferResources buffer_resource{};
+                     if (auto create_result = createVulkanBuffer(
+                             buffer_resource, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+                             std::span<const std::byte>{bytes.data(), bytes.size()});
+                         !create_result) {
+                        destroyBufferResources(buffer_resource);
+                        return std::unexpected(create_result.error());
+                     }
+
+                     const auto index = draw_resources.frame_buffers.size();
+                     draw_resources.frame_buffers.push_back(VulkanDescriptorBufferResource{
+                         .buffer = buffer_resource.buffer,
+                         .memory = buffer_resource.memory,
+                         .size = static_cast<VkDeviceSize>(bytes.size()),
+                         .descriptor_type = *type,
+                         .binding = binding});
+                     buffer_resource.buffer = VK_NULL_HANDLE;
+                     buffer_resource.memory = VK_NULL_HANDLE;
+                     const auto &buffer = draw_resources.frame_buffers[index];
+                     buffer_infos.push_back(VkDescriptorBufferInfo{.buffer = buffer.buffer,
+                                                                   .offset = 0,
+                                                                   .range = buffer.size});
+                     buffer_info = &buffer_infos.back();
+                     writes.push_back(VkWriteDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                                           .pNext = nullptr,
+                                                           .dstSet = descriptor_sets[set_index],
+                                                           .dstBinding = binding.binding,
+                                                           .dstArrayElement = 0,
+                                                           .descriptorCount = 1,
+                                                           .descriptorType = *type,
+                                                           .pImageInfo = nullptr,
+                                                           .pBufferInfo = buffer_info,
+                                                           .pTexelBufferView = nullptr});
+                     continue;
+                  }
+
                   const auto *uploaded_material_buffer =
                       *type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER && isMaterialConstantsBinding(binding)
                           ? uploadedBuffer(packet.material_constants_buffer, GpuBufferUsage::uniform)
@@ -2738,15 +2872,21 @@ namespace vve::v3 {
       updateDrawFrameDescriptorBuffers(const VulkanDrawDescriptorSetResources &draw_resources,
                                        VkExtent2D extent, const DrawPacket &packet) {
          const auto constants = frameConstantsForDraw(extent, packet);
-         const auto bytes = frameConstantsBytes(constants);
+         const auto frame_bytes = frameConstantsBytes(constants);
+         const auto lighting_bytes = lightingConstantsBytes(lightingConstantsForDraw(packet));
          for (const auto &buffer : draw_resources.frame_buffers) {
-            if (buffer.descriptor_type != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
-                !isFrameConstantsBinding(buffer.binding)) {
+            if (buffer.descriptor_type != VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) {
                continue;
             }
 
-            if (auto update_result = updateDescriptorBufferBytes(buffer, bytes); !update_result) {
-               return std::unexpected(update_result.error());
+            if (isFrameConstantsBinding(buffer.binding)) {
+               if (auto update_result = updateDescriptorBufferBytes(buffer, frame_bytes); !update_result) {
+                  return std::unexpected(update_result.error());
+               }
+            } else if (isLightingConstantsBinding(buffer.binding)) {
+               if (auto update_result = updateDescriptorBufferBytes(buffer, lighting_bytes); !update_result) {
+                  return std::unexpected(update_result.error());
+               }
             }
          }
 

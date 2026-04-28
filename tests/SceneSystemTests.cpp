@@ -44,6 +44,15 @@ int main() {
        .parent = vve::v3::SceneNodeHandle{vve::Handle{2}},
        .name = "Grandchild",
        .local_transform = vve::math::translate(vve::math::identityMat4(), vve::math::Vec3(3.0F, 0.0F, 0.0F))});
+   imported_scene.lights.push_back(vve::v3::ImportedLight{
+       .handle = vve::v3::LightHandle{vve::Handle{10}},
+       .node = vve::v3::SceneNodeHandle{vve::Handle{2}},
+       .name = "Key",
+       .type = vve::v3::SceneLightType::directional});
+   imported_scene.cameras.push_back(vve::v3::ImportedCamera{
+       .handle = vve::v3::CameraHandle{vve::Handle{11}},
+       .node = vve::v3::SceneNodeHandle{vve::Handle{3}},
+       .name = "Camera"});
 
    const auto scene_result = scene_system.instantiate(imported_scene);
    if (!scene_result) {
@@ -57,6 +66,15 @@ int main() {
 
    if (scene.nodes.size() != 3) {
       return 3;
+   }
+
+   if (scene.lights.size() != 1 || scene.lights.front().node.value.value() != 2 ||
+       scene.lights.front().type != vve::v3::SceneLightType::directional) {
+      return 13;
+   }
+
+   if (scene.cameras.size() != 1 || scene.cameras.front().node.value.value() != 3) {
+      return 14;
    }
 
    const auto root_translation = translationOf(scene.nodes[0].world_transform);

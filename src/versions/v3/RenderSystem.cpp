@@ -200,6 +200,179 @@ namespace vve::v3 {
       return vve::math::Vec3(x / w, y / w, z / w);
    }
 
+   /// @brief Transforms a local-space direction into world space without applying translation.
+   [[nodiscard]] vve::math::Vec3 transformVector(const vve::math::Mat4 &transform,
+                                                 const vve::math::Vec3 &direction) {
+      const auto x = (transform[0][0] * direction.x) + (transform[1][0] * direction.y) +
+                     (transform[2][0] * direction.z);
+      const auto y = (transform[0][1] * direction.x) + (transform[1][1] * direction.y) +
+                     (transform[2][1] * direction.z);
+      const auto z = (transform[0][2] * direction.x) + (transform[1][2] * direction.y) +
+                     (transform[2][2] * direction.z);
+      return vve::math::Vec3(x, y, z);
+   }
+
+   [[nodiscard]] vve::math::Vec3 addVec3(const vve::math::Vec3 &left, const vve::math::Vec3 &right) {
+      return vve::math::Vec3(left.x + right.x, left.y + right.y, left.z + right.z);
+   }
+
+   [[nodiscard]] vve::math::Vec3 scaleVec3(const vve::math::Vec3 &value, vve::math::Scalar scale) {
+      return vve::math::Vec3(value.x * scale, value.y * scale, value.z * scale);
+   }
+
+   [[nodiscard]] vve::math::Vec3 negateVec3(const vve::math::Vec3 &value) {
+      return vve::math::Vec3(-value.x, -value.y, -value.z);
+   }
+
+   [[nodiscard]] vve::math::Scalar distanceSquared(const vve::math::Vec3 &left,
+                                                   const vve::math::Vec3 &right) {
+      const auto x = left.x - right.x;
+      const auto y = left.y - right.y;
+      const auto z = left.z - right.z;
+      return (x * x) + (y * y) + (z * z);
+   }
+
+   [[nodiscard]] vve::math::Vec3 normalizeVec3(const vve::math::Vec3 &value,
+                                               const vve::math::Vec3 &fallback) {
+      const auto squared_length = distanceSquared(value, vve::math::zeroVec3());
+      if (squared_length <= static_cast<vve::math::Scalar>(0.000001)) {
+         return fallback;
+      }
+
+      const auto inverse_length = vve::math::one() / std::sqrt(squared_length);
+      return scaleVec3(value, inverse_length);
+   }
+
+   [[nodiscard]] vve::math::Scalar resolvedLightIntensity(const ImportedLight &light) {
+      const auto source_intensity = std::max(light.intensity, vve::math::zero());
+      switch (light.type) {
+      case SceneLightType::directional:
+         return source_intensity > vve::math::zero() ? source_intensity : static_cast<vve::math::Scalar>(1.25);
+      case SceneLightType::point:
+      case SceneLightType::spot:
+         return source_intensity > vve::math::one() ? source_intensity : static_cast<vve::math::Scalar>(2.5);
+      case SceneLightType::ambient:
+         return source_intensity > vve::math::zero() ? source_intensity : static_cast<vve::math::Scalar>(0.15);
+      case SceneLightType::unknown:
+         break;
+      }
+
+      return vve::math::zero();
+   }
+
+   [[nodiscard]] vve::math::Scalar resolvedLightRange(const ImportedLight &light) {
+      if (light.type != SceneLightType::point && light.type != SceneLightType::spot) {
+         return vve::math::zero();
+      }
+      if (light.range > vve::math::zero() && light.range < static_cast<vve::math::Scalar>(500.0)) {
+         return light.range;
+      }
+
+      return static_cast<vve::math::Scalar>(22.0);
+   }
+
+   struct PrioritizedDrawLight {
+      DrawLightConstants constants{};
+      vve::math::Scalar distance_squared{vve::math::zero()};
+      std::uint32_t priority{0};
+   };
+
+   [[nodiscard]] std::uint32_t lightPriority(SceneLightType type) {
+      switch (type) {
+      case SceneLightType::directional:
+         return 0;
+      case SceneLightType::spot:
+         return 1;
+      case SceneLightType::point:
+         return 2;
+      case SceneLightType::ambient:
+      case SceneLightType::unknown:
+         break;
+      }
+
+      return 3;
+   }
+
+   [[nodiscard]] DrawLightingConstants lightingConstantsForDrawPosition(const SceneData &scene,
+                                                                        const vve::math::Vec3 &draw_position) {
+      DrawLightingConstants lighting{};
+      std::vector<PrioritizedDrawLight> direct_lights{};
+      direct_lights.reserve(scene.lights.size());
+
+      for (const auto &light : scene.lights) {
+         if (light.type == SceneLightType::unknown) {
+            continue;
+         }
+
+         const auto *node = findNode(scene, light.node);
+         const auto world_transform = node == nullptr ? vve::math::identityMat4() : node->world_transform;
+         const auto world_position = transformPoint(world_transform, light.local_position);
+         const auto world_direction = normalizeVec3(
+             transformVector(world_transform, light.local_direction),
+             vve::math::Vec3(vve::math::zero(), -vve::math::one(), vve::math::zero()));
+         const auto intensity = resolvedLightIntensity(light);
+         if (intensity <= vve::math::zero()) {
+            continue;
+         }
+
+         if (light.type == SceneLightType::ambient) {
+            lighting.ambient_color = addVec3(lighting.ambient_color, scaleVec3(light.color, intensity));
+            continue;
+         }
+
+         direct_lights.push_back(PrioritizedDrawLight{
+             .constants = DrawLightConstants{
+                 .type = light.type,
+                 .position = world_position,
+                 .direction = light.type == SceneLightType::directional ? negateVec3(world_direction) : world_direction,
+                 .color = light.color,
+                 .intensity = intensity,
+                 .range = resolvedLightRange(light),
+                 .inner_cone_cos = light.inner_cone_cos,
+                 .outer_cone_cos = light.outer_cone_cos},
+             .distance_squared = light.type == SceneLightType::directional
+                                     ? vve::math::zero()
+                                     : distanceSquared(world_position, draw_position),
+             .priority = lightPriority(light.type)});
+      }
+
+      if (direct_lights.empty()) {
+         direct_lights.push_back(PrioritizedDrawLight{
+             .constants = DrawLightConstants{
+                 .type = SceneLightType::directional,
+                 .direction = normalizeVec3(
+                     vve::math::Vec3(static_cast<vve::math::Scalar>(0.35), static_cast<vve::math::Scalar>(0.75),
+                                     static_cast<vve::math::Scalar>(0.45)),
+                     vve::math::Vec3(vve::math::zero(), vve::math::one(), vve::math::zero())),
+                 .color = vve::math::oneVec3(),
+                 .intensity = static_cast<vve::math::Scalar>(1.0)},
+             .priority = 0});
+      }
+
+      std::sort(direct_lights.begin(), direct_lights.end(),
+                [](const PrioritizedDrawLight &left, const PrioritizedDrawLight &right) {
+                   if (left.priority != right.priority) {
+                      return left.priority < right.priority;
+                   }
+                   return left.distance_squared < right.distance_squared;
+                });
+
+      lighting.light_count = static_cast<std::uint32_t>(std::min(direct_lights.size(), maxForwardLightCount));
+      for (std::size_t light_index = 0; light_index < lighting.light_count; ++light_index) {
+         lighting.lights[light_index] = direct_lights[light_index].constants;
+      }
+
+      return lighting;
+   }
+
+   /// @brief Returns the world-space center of a mesh bounds box for per-object light selection.
+   [[nodiscard]] vve::math::Vec3 meshBoundsCenter(const ImportedMesh &mesh, const vve::math::Mat4 &world_transform) {
+      const auto center = vve::math::Vec3((mesh.bounds_min.x + mesh.bounds_max.x) * static_cast<vve::math::Scalar>(0.5),
+                                          (mesh.bounds_min.y + mesh.bounds_max.y) * static_cast<vve::math::Scalar>(0.5),
+                                          (mesh.bounds_min.z + mesh.bounds_max.z) * static_cast<vve::math::Scalar>(0.5));
+      return transformPoint(world_transform, center);
+   }
+
    /// @brief Estimates positive depth for one world-space point along the active camera's view direction.
    [[nodiscard]] vve::math::Scalar cameraViewDepth(const CameraFrameData &camera,
                                                    const vve::math::Vec3 &world_position) {
@@ -612,6 +785,8 @@ namespace vve::v3 {
                   continue;
                }
                const auto camera_depth = cameraViewDepth(active_camera, node->world_transform);
+               const auto lighting_constants = lightingConstantsForDrawPosition(
+                   scene, meshBoundsCenter(*mesh, node->world_transform));
                if (binding->second.graphics_pipeline_ready && !graphics_pipeline.value.isValid()) {
                   return std::unexpected(vve::Error::invalid_argument);
                }
@@ -631,6 +806,7 @@ namespace vve::v3 {
                                                     .material = material,
                                                     .material_index = material_index,
                                                     .material_constants = drawMaterialConstants(material_data),
+                                                    .lighting_constants = lighting_constants,
                                                     .material_constants_buffer =
                                                         gpu_material != nullptr && gpu_material->constants_uploaded
                                                             ? gpu_material->constants_buffer

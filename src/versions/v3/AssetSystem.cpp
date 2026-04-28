@@ -87,6 +87,171 @@ namespace vve::v3 {
          return vve::detail::mapValueOr(assimp_texture_semantic_map, texture_type, TextureSemantic::unknown);
       }
 
+      [[nodiscard]] SceneLightType mapLightType(const aiLightSourceType light_type) {
+         switch (light_type) {
+         case aiLightSource_DIRECTIONAL:
+            return SceneLightType::directional;
+         case aiLightSource_POINT:
+            return SceneLightType::point;
+         case aiLightSource_SPOT:
+            return SceneLightType::spot;
+         case aiLightSource_AMBIENT:
+            return SceneLightType::ambient;
+         default:
+            return SceneLightType::unknown;
+         }
+      }
+
+      [[nodiscard]] bool nearZero(const vve::math::Scalar value) {
+         return std::abs(value) <= static_cast<vve::math::Scalar>(0.000001);
+      }
+
+      [[nodiscard]] vve::math::Scalar lengthSquared(const vve::math::Vec3 &value) {
+         return (value.x * value.x) + (value.y * value.y) + (value.z * value.z);
+      }
+
+      [[nodiscard]] vve::math::Vec3 normalizeVec3(const vve::math::Vec3 &value,
+                                                  const vve::math::Vec3 &fallback) {
+         const auto squared_length = lengthSquared(value);
+         if (squared_length <= static_cast<vve::math::Scalar>(0.000001)) {
+            return fallback;
+         }
+
+         const auto inverse_length = vve::math::one() / std::sqrt(squared_length);
+         return vve::math::Vec3(value.x * inverse_length, value.y * inverse_length, value.z * inverse_length);
+      }
+
+      [[nodiscard]] vve::math::Vec3 visibleColor(const aiLight &light) {
+         auto color = toVec3(light.mColorDiffuse);
+         if (lengthSquared(color) > static_cast<vve::math::Scalar>(0.000001)) {
+            return color;
+         }
+
+         color = toVec3(light.mColorSpecular);
+         if (lengthSquared(color) > static_cast<vve::math::Scalar>(0.000001)) {
+            return color;
+         }
+
+         color = toVec3(light.mColorAmbient);
+         return lengthSquared(color) > static_cast<vve::math::Scalar>(0.000001) ? color : vve::math::oneVec3();
+      }
+
+      [[nodiscard]] vve::math::Scalar lightIntensityFromColor(const vve::math::Vec3 &color) {
+         return std::max({std::abs(color.x), std::abs(color.y), std::abs(color.z), vve::math::one()});
+      }
+
+      [[nodiscard]] vve::math::Scalar lightRangeFromAttenuation(const aiLight &light) {
+         const auto constant = static_cast<vve::math::Scalar>(light.mAttenuationConstant);
+         const auto linear = static_cast<vve::math::Scalar>(light.mAttenuationLinear);
+         const auto quadratic = static_cast<vve::math::Scalar>(light.mAttenuationQuadratic);
+         constexpr auto minimum_factor = static_cast<vve::math::Scalar>(100.0);
+
+         if (nearZero(constant) && nearZero(linear - vve::math::one()) && nearZero(quadratic)) {
+            return vve::math::zero();
+         }
+
+         if (nearZero(quadratic) && nearZero(linear)) {
+            return vve::math::zero();
+         }
+
+         if (!nearZero(quadratic)) {
+            const auto discriminant =
+                (linear * linear) - (static_cast<vve::math::Scalar>(4.0) * quadratic * (constant - minimum_factor));
+            if (discriminant <= vve::math::zero()) {
+               return vve::math::zero();
+            }
+
+            const auto range = (-linear + std::sqrt(discriminant)) /
+                               (static_cast<vve::math::Scalar>(2.0) * quadratic);
+            return range > vve::math::zero() && range < static_cast<vve::math::Scalar>(10000.0)
+                       ? range
+                       : vve::math::zero();
+         }
+
+         const auto range = (minimum_factor - constant) / linear;
+         return range > vve::math::zero() && range < static_cast<vve::math::Scalar>(10000.0)
+                    ? range
+                    : vve::math::zero();
+      }
+
+      [[nodiscard]] SceneNodeHandle findImportedNodeByName(const ImportedScene &scene, std::string_view name) {
+         if (name.empty()) {
+            return {};
+         }
+
+         const auto node = std::ranges::find_if(scene.nodes, [name](const ImportedSceneNode &candidate) {
+            return candidate.name == name;
+         });
+         return node == scene.nodes.end() ? SceneNodeHandle{} : node->handle;
+      }
+
+      [[nodiscard]] ImportedLight importLight(const aiLight &light, const std::uint32_t light_index,
+                                              const ImportedScene &scene, std::string_view scene_seed) {
+         const auto name =
+             light.mName.length > 0 ? std::string(light.mName.C_Str()) : std::format("Light_{}", light_index);
+         const auto color = visibleColor(light);
+         ImportedLight imported_light{};
+         imported_light.handle =
+             LightHandle{detail::makeStableHandle(std::format("{}::light::{}", scene_seed, light_index))};
+         imported_light.node = findImportedNodeByName(scene, name);
+         imported_light.name = name;
+         imported_light.type = mapLightType(light.mType);
+         imported_light.local_position = toVec3(light.mPosition);
+         imported_light.local_direction = normalizeVec3(
+             toVec3(light.mDirection),
+             vve::math::Vec3(vve::math::zero(), -vve::math::one(), vve::math::zero()));
+         imported_light.color = color;
+         imported_light.intensity = lightIntensityFromColor(color);
+         imported_light.range = lightRangeFromAttenuation(light);
+         imported_light.inner_cone_cos = imported_light.type == SceneLightType::spot
+                                             ? std::cos(static_cast<vve::math::Scalar>(light.mAngleInnerCone))
+                                             : vve::math::one();
+         imported_light.outer_cone_cos = imported_light.type == SceneLightType::spot
+                                             ? std::cos(static_cast<vve::math::Scalar>(light.mAngleOuterCone))
+                                             : vve::math::zero();
+         if (imported_light.outer_cone_cos > imported_light.inner_cone_cos) {
+            std::swap(imported_light.outer_cone_cos, imported_light.inner_cone_cos);
+         }
+
+         return imported_light;
+      }
+
+      [[nodiscard]] CameraFrameData cameraFrameDataFromAssimpCamera(const aiCamera &camera) {
+         const auto position = toVec3(camera.mPosition);
+         const auto look_direction = normalizeVec3(
+             toVec3(camera.mLookAt),
+             vve::math::Vec3(vve::math::zero(), vve::math::zero(), -vve::math::one()));
+         const auto up = normalizeVec3(
+             toVec3(camera.mUp),
+             vve::math::Vec3(vve::math::zero(), vve::math::one(), vve::math::zero()));
+         const auto target = vve::math::Vec3(position.x + look_direction.x, position.y + look_direction.y,
+                                             position.z + look_direction.z);
+         const auto aspect = std::max(static_cast<vve::math::Scalar>(camera.mAspect), vve::math::one());
+         const auto horizontal_fov = std::max(static_cast<vve::math::Scalar>(camera.mHorizontalFOV),
+                                              static_cast<vve::math::Scalar>(0.001));
+         const auto vertical_fov =
+             static_cast<vve::math::Scalar>(2.0) * std::atan(std::tan(horizontal_fov * static_cast<vve::math::Scalar>(0.5)) /
+                                                             aspect);
+         return CameraFrameData{.position = position,
+                                .view_transform = vve::math::lookAt(position, target, up),
+                                .vertical_fov_radians = vertical_fov,
+                                .near_plane = std::max(static_cast<vve::math::Scalar>(camera.mClipPlaneNear),
+                                                       static_cast<vve::math::Scalar>(0.001)),
+                                .far_plane = std::max(static_cast<vve::math::Scalar>(camera.mClipPlaneFar),
+                                                      static_cast<vve::math::Scalar>(1.0))};
+      }
+
+      [[nodiscard]] ImportedCamera importCamera(const aiCamera &camera, const std::uint32_t camera_index,
+                                                const ImportedScene &scene, std::string_view scene_seed) {
+         const auto name =
+             camera.mName.length > 0 ? std::string(camera.mName.C_Str()) : std::format("Camera_{}", camera_index);
+         return ImportedCamera{
+             .handle = CameraHandle{detail::makeStableHandle(std::format("{}::camera::{}", scene_seed, camera_index))},
+             .node = findImportedNodeByName(scene, name),
+             .name = name,
+             .camera = cameraFrameDataFromAssimpCamera(camera)};
+      }
+
       class TextureRegistry {
       public:
          TextureRegistry(ImportedScene &scene, std::filesystem::path source_directory, std::string_view scene_seed)
@@ -439,6 +604,22 @@ namespace vve::v3 {
                                                           next_node_index, next_mesh_instance_index);
              !node_result) {
             return std::unexpected(node_result.error());
+         }
+
+         scene.lights.reserve(source_scene->mNumLights);
+         for (unsigned light_index = 0; light_index < source_scene->mNumLights; ++light_index) {
+            if (source_scene->mLights[light_index] == nullptr) {
+               continue;
+            }
+            scene.lights.push_back(importLight(*source_scene->mLights[light_index], light_index, scene, scene_seed));
+         }
+
+         scene.cameras.reserve(source_scene->mNumCameras);
+         for (unsigned camera_index = 0; camera_index < source_scene->mNumCameras; ++camera_index) {
+            if (source_scene->mCameras[camera_index] == nullptr) {
+               continue;
+            }
+            scene.cameras.push_back(importCamera(*source_scene->mCameras[camera_index], camera_index, scene, scene_seed));
          }
 
          return scene;

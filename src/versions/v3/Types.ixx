@@ -226,6 +226,16 @@ export namespace vve::v3 {
       vve::Handle value{}; ///< Underlying generic handle value.
    };
 
+   /// @brief Strong type for imported light identifiers.
+   struct LightHandle final {
+      vve::Handle value{}; ///< Underlying generic handle value.
+   };
+
+   /// @brief Strong type for imported camera identifiers.
+   struct CameraHandle final {
+      vve::Handle value{}; ///< Underlying generic handle value.
+   };
+
    /// @brief Strong type for task-node identifiers.
    struct TaskNodeHandle final {
       vve::Handle value{}; ///< Underlying generic handle value.
@@ -316,6 +326,15 @@ export namespace vve::v3 {
       ambient_occlusion   ///< Ambient-occlusion texture.
    };
 
+   /// @brief Imported scene-light categories understood by the forward renderer.
+   enum class SceneLightType : std::uint32_t {
+      directional = 0, ///< Directional light with infinite distance.
+      point = 1,       ///< Punctual point light with distance attenuation.
+      spot = 2,        ///< Punctual spot light with cone attenuation.
+      ambient = 3,     ///< Ambient contribution folded into scene ambient color.
+      unknown = 4      ///< Light type is not supported by the renderer yet.
+   };
+
    /// @brief CPU-side vertex payload imported from a source scene.
    struct ImportedVertex {
       vve::math::Vec3 position{vve::math::zeroVec3()}; ///< Object-space vertex position.
@@ -396,6 +415,30 @@ export namespace vve::v3 {
       Vector<ImportedMeshInstance> mesh_instances{}; ///< Mesh instances attached to this node.
    };
 
+   /// @brief Imported light payload associated with an optional scene node.
+   struct ImportedLight {
+      LightHandle handle{};                              ///< Stable imported light handle.
+      SceneNodeHandle node{};                            ///< Scene node carrying this light transform, when known.
+      std::string name{};                                ///< Human-readable light name.
+      SceneLightType type{SceneLightType::unknown};      ///< Renderer-visible light kind.
+      vve::math::Vec3 local_position{vve::math::zeroVec3()}; ///< Position in the attached node's local space.
+      vve::math::Vec3 local_direction{
+          vve::math::Vec3(vve::math::zero(), -vve::math::one(), vve::math::zero())}; ///< Local shining direction.
+      vve::math::Vec3 color{vve::math::oneVec3()};       ///< Linear light color.
+      vve::math::Scalar intensity{vve::math::one()};     ///< Light intensity in importer units.
+      vve::math::Scalar range{vve::math::zero()};        ///< Effective range, or zero for unbounded lights.
+      vve::math::Scalar inner_cone_cos{vve::math::one()}; ///< Spot inner cone cosine.
+      vve::math::Scalar outer_cone_cos{vve::math::zero()}; ///< Spot outer cone cosine.
+   };
+
+   /// @brief Imported camera payload associated with an optional scene node.
+   struct ImportedCamera {
+      CameraHandle handle{};                         ///< Stable imported camera handle.
+      SceneNodeHandle node{};                        ///< Scene node carrying this camera transform, when known.
+      std::string name{};                            ///< Human-readable camera name.
+      CameraFrameData camera{};                      ///< Camera data converted to engine frame constants.
+   };
+
    /// @brief Scene asset payload produced by import and consumed by scene instantiation.
    struct ImportedScene {
       SceneHandle handle{};                 ///< Stable scene handle.
@@ -405,6 +448,8 @@ export namespace vve::v3 {
       Vector<ImportedMesh> meshes{};        ///< Imported meshes owned by the scene.
       Vector<ImportedMaterial> materials{}; ///< Imported materials owned by the scene.
       Vector<ImportedSceneNode> nodes{};    ///< Imported scene-node hierarchy.
+      Vector<ImportedLight> lights{};       ///< Imported lights attached to scene nodes when possible.
+      Vector<ImportedCamera> cameras{};     ///< Imported cameras attached to scene nodes when possible.
    };
 
    /// @brief Persistent record describing a registered engine resource.
@@ -518,6 +563,8 @@ export namespace vve::v3 {
       std::unordered_map<vve::Handle::value_type, std::size_t> node_indices{}; ///< Handle-to-index lookup cache for runtime scene nodes.
       Vector<SceneMeshInstanceDesc> mesh_instances{}; ///< Runtime mesh instances attached to scene nodes.
       std::unordered_map<vve::Handle::value_type, std::size_t> mesh_instance_indices{}; ///< Handle-to-index lookup cache for runtime mesh instances.
+      Vector<ImportedLight> lights{};       ///< Runtime lights preserved from imported scene data.
+      Vector<ImportedCamera> cameras{};     ///< Runtime cameras preserved from imported scene data.
       Vector<GpuMeshResources> gpu_meshes{}; ///< GPU-resident mesh summaries populated by the resource system.
       std::unordered_map<vve::Handle::value_type, std::size_t> gpu_mesh_indices{}; ///< Handle-to-index lookup cache for GPU mesh summaries.
       Vector<GpuTextureResources> gpu_textures{}; ///< GPU-resident texture summaries populated by the resource system.
@@ -694,6 +741,19 @@ export namespace vve::v3 {
       };
 
       return vve::detail::mapValueOr(names, semantic, std::string_view{"unknown"});
+   }
+
+   /// @brief Returns the stable diagnostic name for an imported scene light type.
+   [[nodiscard]] inline std::string_view sceneLightTypeName(SceneLightType type) {
+      static const std::map<SceneLightType, std::string_view> names{
+          {SceneLightType::directional, "directional"},
+          {SceneLightType::point, "point"},
+          {SceneLightType::spot, "spot"},
+          {SceneLightType::ambient, "ambient"},
+          {SceneLightType::unknown, "unknown"},
+      };
+
+      return vve::detail::mapValueOr(names, type, std::string_view{"unknown"});
    }
 
    /// @brief Returns the stable diagnostic name for a task scope.
@@ -1140,6 +1200,31 @@ export namespace vve::v3 {
       vve::math::Scalar alpha_cutoff{vve::math::zero()};      ///< Alpha cutoff used by masked materials.
    };
 
+   /// @brief Maximum number of direct lights passed to the current forward shader.
+   inline constexpr std::size_t maxForwardLightCount = 8;
+
+   /// @brief Per-light draw payload consumed by the forward lighting buffer.
+   struct DrawLightConstants {
+      SceneLightType type{SceneLightType::unknown};            ///< Shader-visible light category.
+      vve::math::Vec3 position{vve::math::zeroVec3()};         ///< World-space point/spot position.
+      vve::math::Vec3 direction{
+          vve::math::Vec3(vve::math::zero(), -vve::math::one(), vve::math::zero())}; ///< World-space light direction.
+      vve::math::Vec3 color{vve::math::oneVec3()};             ///< Linear light color.
+      vve::math::Scalar intensity{vve::math::one()};           ///< Light intensity after importer defaults.
+      vve::math::Scalar range{vve::math::zero()};              ///< Effective range for punctual lights.
+      vve::math::Scalar inner_cone_cos{vve::math::one()};      ///< Spot inner cone cosine.
+      vve::math::Scalar outer_cone_cos{vve::math::zero()};     ///< Spot outer cone cosine.
+   };
+
+   /// @brief Per-draw lighting payload consumed by the forward renderer.
+   struct DrawLightingConstants {
+      std::uint32_t light_count{0};                            ///< Number of active direct lights in `lights`.
+      vve::math::Vec3 ambient_color{
+          vve::math::Vec3(static_cast<vve::math::Scalar>(0.32), static_cast<vve::math::Scalar>(0.32),
+                          static_cast<vve::math::Scalar>(0.32))}; ///< Base ambient scene contribution.
+      std::array<DrawLightConstants, maxForwardLightCount> lights{}; ///< Closest/highest-priority direct lights.
+   };
+
    /// @brief One backend-neutral indexed draw command prepared from scene and resource data.
    struct DrawPacket {
       WindowHandle window{};                            ///< Window whose renderer will consume the packet.
@@ -1157,6 +1242,7 @@ export namespace vve::v3 {
       MaterialHandle material{};                         ///< Material resource selected for the draw.
       std::optional<std::uint32_t> material_index{};      ///< Runtime scene material index when the material is known.
       DrawMaterialConstants material_constants{};         ///< CPU material constants resolved for this draw.
+      DrawLightingConstants lighting_constants{};         ///< CPU lighting constants resolved for this draw.
       GpuBufferHandle material_constants_buffer{};        ///< Uploaded material constants buffer, when resident.
       Vector<GpuMaterialTextureBinding> material_textures{}; ///< Uploaded material texture bindings, when resident.
       GpuBufferHandle vertex_buffer{};                   ///< Uploaded vertex buffer.

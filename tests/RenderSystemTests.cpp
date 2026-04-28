@@ -146,6 +146,15 @@ namespace {
           .node = node_handle,
           .mesh = mesh_handle});
 
+      scene.lights.push_back(vve::v3::ImportedLight{
+          .handle = vve::v3::LightHandle{.value = vve::Handle::fromHash(std::string_view{"tests.render.light"})},
+          .node = node_handle,
+          .name = "Key",
+          .type = vve::v3::SceneLightType::directional,
+          .local_direction = vve::math::Vec3(0.0F, -1.0F, 0.0F),
+          .color = vve::math::Vec3(0.5F, 0.6F, 0.7F),
+          .intensity = 2.0F});
+
       vve::v3::GpuMeshResources gpu_mesh{};
       gpu_mesh.mesh = mesh_handle;
       gpu_mesh.vertex_buffer =
@@ -332,6 +341,12 @@ namespace {
              packet.material_constants.metallic_factor == material.metallic_factor &&
              packet.material_constants.normal_scale == material.normal_scale &&
              packet.material_constants.alpha_cutoff == material.alpha_cutoff &&
+             packet.lighting_constants.light_count == 1 &&
+             packet.lighting_constants.ambient_color.x == static_cast<vve::math::Scalar>(0.32) &&
+             packet.lighting_constants.lights.front().type == vve::v3::SceneLightType::directional &&
+             packet.lighting_constants.lights.front().direction.y == 1.0F &&
+             packet.lighting_constants.lights.front().color.z == 0.7F &&
+             packet.lighting_constants.lights.front().intensity == 2.0F &&
              packet.world_transform[3][0] == 1.0F &&
              packet.world_transform[3][1] == 2.0F &&
              packet.world_transform[3][2] == 3.0F &&
@@ -511,6 +526,79 @@ namespace {
              (*packet_list)->packets.front().camera_depth == 17.0F;
    }
 
+   /// @brief Verifies point-light selection follows the draw object instead of the viewer position.
+   [[nodiscard]] bool drawPacketLightingUsesMeshPosition(vve::v3::RenderSystem &render_system,
+                                                        vve::v3::GraphicsBackend &backend) {
+      const auto renderer = backend.createRenderer("forward");
+      if (!renderer) {
+         return false;
+      }
+
+      const auto pipeline = testPipeline(render_system, *renderer);
+      const auto binding = render_system.bindPipelineResources(pipeline);
+      if (!binding) {
+         return false;
+      }
+
+      auto scene = testUploadedScene();
+      scene.lights.clear();
+      scene.active_camera.position = vve::math::Vec3(1000.0F, 0.0F, 10.0F);
+
+      for (int light_index = 0; light_index < 8; ++light_index) {
+         vve::v3::SceneNodeDesc node{};
+         node.handle = vve::v3::SceneNodeHandle{
+             .value = vve::Handle::fromHash(std::format("tests.render.camera_light.node.{}", light_index))};
+         node.world_transform = vve::math::translate(
+             vve::math::identityMat4(),
+             vve::math::Vec3(1000.0F + static_cast<float>(light_index), 0.0F, 10.0F));
+         scene.node_indices.emplace(node.handle.value.value(), scene.nodes.size());
+         scene.nodes.push_back(node);
+         scene.lights.push_back(vve::v3::ImportedLight{
+             .handle = vve::v3::LightHandle{
+                 .value = vve::Handle::fromHash(std::format("tests.render.camera_light.{}", light_index))},
+             .node = node.handle,
+             .name = std::format("CameraLight{}", light_index),
+             .type = vve::v3::SceneLightType::point,
+             .color = vve::math::Vec3(0.0F, 1.0F, 0.0F),
+             .intensity = 2.0F,
+             .range = 22.0F});
+      }
+
+      vve::v3::SceneNodeDesc object_light_node{};
+      object_light_node.handle = vve::v3::SceneNodeHandle{
+          .value = vve::Handle::fromHash(std::string_view{"tests.render.object_light.node"})};
+      object_light_node.world_transform =
+          vve::math::translate(vve::math::identityMat4(), vve::math::Vec3(1.5F, 2.0F, 3.0F));
+      scene.node_indices.emplace(object_light_node.handle.value.value(), scene.nodes.size());
+      scene.nodes.push_back(object_light_node);
+      scene.lights.push_back(vve::v3::ImportedLight{
+          .handle = vve::v3::LightHandle{.value = vve::Handle::fromHash(std::string_view{"tests.render.object_light"})},
+          .node = object_light_node.handle,
+          .name = "ObjectLight",
+          .type = vve::v3::SceneLightType::point,
+          .color = vve::math::Vec3(1.0F, 0.0F, 0.0F),
+          .intensity = 2.0F,
+          .range = 22.0F});
+
+      const auto build = render_system.buildDrawPackets(
+          vve::v3::FrameContext{.frame_index = 94, .delta_seconds = 0.0}, scene, pipeline.window, pipeline.graph);
+      if (!build) {
+         return false;
+      }
+
+      const auto packet_list = render_system.drawPackets(pipeline.window);
+      if (!packet_list || !packet_list->has_value() || (*packet_list)->packets.size() != 1) {
+         return false;
+      }
+
+      const auto &lighting = (*packet_list)->packets.front().lighting_constants;
+      return std::ranges::any_of(lighting.lights.begin(), lighting.lights.begin() + lighting.light_count,
+                                 [](const vve::v3::DrawLightConstants &light) {
+                                    return light.type == vve::v3::SceneLightType::point && light.color.x == 1.0F &&
+                                           light.color.y == 0.0F;
+                                 });
+   }
+
 } // namespace
 
 /**
@@ -591,6 +679,10 @@ int main() {
 
    if (!drawPacketsKeepBoundsThatOverlapNearPlane(render_system, backend)) {
       return 14;
+   }
+
+   if (!drawPacketLightingUsesMeshPosition(render_system, backend)) {
+      return 15;
    }
 
    return 0;

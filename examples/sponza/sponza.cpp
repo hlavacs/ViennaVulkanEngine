@@ -516,6 +516,36 @@ void printNodes(const vve::v3::ImportedScene &scene) {
     }
 }
 
+void printLights(const vve::v3::ImportedScene &scene) {
+    std::cout << "Lights (" << scene.lights.size() << ")\n";
+    for (std::size_t light_index = 0; light_index < scene.lights.size(); ++light_index) {
+        const auto &light = scene.lights[light_index];
+        std::cout << "  [" << light_index << "] handle=" << rawHandle(light.handle.value)
+                  << " node=" << rawHandle(light.node.value)
+                  << " type=" << vve::v3::sceneLightTypeName(light.type)
+                  << " name=\"" << light.name << "\"\n";
+        std::cout << "    color=";
+        printVec3(light.color);
+        std::cout << " intensity=" << light.intensity
+                  << " range=" << light.range
+                  << " inner_cone_cos=" << light.inner_cone_cos
+                  << " outer_cone_cos=" << light.outer_cone_cos << '\n';
+    }
+}
+
+void printCameras(const vve::v3::ImportedScene &scene) {
+    std::cout << "Cameras (" << scene.cameras.size() << ")\n";
+    for (std::size_t camera_index = 0; camera_index < scene.cameras.size(); ++camera_index) {
+        const auto &camera = scene.cameras[camera_index];
+        std::cout << "  [" << camera_index << "] handle=" << rawHandle(camera.handle.value)
+                  << " node=" << rawHandle(camera.node.value)
+                  << " name=\"" << camera.name << "\""
+                  << " fov=" << camera.camera.vertical_fov_radians
+                  << " near=" << camera.camera.near_plane
+                  << " far=" << camera.camera.far_plane << '\n';
+    }
+}
+
 void printScene(const vve::v3::ImportedScene &scene) {
     std::cout << "Scene\n";
     std::cout << "  handle=" << rawHandle(scene.handle.value) << '\n';
@@ -525,10 +555,14 @@ void printScene(const vve::v3::ImportedScene &scene) {
     std::cout << "  material_count=" << scene.materials.size() << '\n';
     std::cout << "  mesh_count=" << scene.meshes.size() << '\n';
     std::cout << "  node_count=" << scene.nodes.size() << '\n';
+    std::cout << "  light_count=" << scene.lights.size() << '\n';
+    std::cout << "  camera_count=" << scene.cameras.size() << '\n';
     printTextures(scene);
     printMaterials(scene);
     printMeshes(scene);
     printNodes(scene);
+    printLights(scene);
+    printCameras(scene);
 }
 
 void printMainObjects(const vve::v3::ImportedScene &scene) {
@@ -536,7 +570,32 @@ void printMainObjects(const vve::v3::ImportedScene &scene) {
     std::cout << "  scene=\"" << scene.name << "\" meshes=" << scene.meshes.size()
               << " materials=" << scene.materials.size()
               << " textures=" << scene.textures.size()
-              << " nodes=" << scene.nodes.size() << '\n';
+              << " nodes=" << scene.nodes.size()
+              << " lights=" << scene.lights.size()
+              << " cameras=" << scene.cameras.size() << '\n';
+
+    std::cout << "  lights\n";
+    const auto shown_light_count = std::min<std::size_t>(scene.lights.size(), 8U);
+    for (std::size_t light_index = 0; light_index < shown_light_count; ++light_index) {
+        const auto &light = scene.lights[light_index];
+        std::cout << "    [" << light_index << "] type=" << vve::v3::sceneLightTypeName(light.type)
+                  << " name=\"" << light.name << "\" node=" << rawHandle(light.node.value) << '\n';
+    }
+    if (scene.lights.size() > shown_light_count) {
+        std::cout << "    ... " << (scene.lights.size() - shown_light_count) << " more\n";
+    } else if (scene.lights.empty()) {
+        std::cout << "    <none>\n";
+    }
+
+    std::cout << "  cameras\n";
+    for (std::size_t camera_index = 0; camera_index < scene.cameras.size(); ++camera_index) {
+        const auto &camera = scene.cameras[camera_index];
+        std::cout << "    [" << camera_index << "] name=\"" << camera.name
+                  << "\" node=" << rawHandle(camera.node.value) << '\n';
+    }
+    if (scene.cameras.empty()) {
+        std::cout << "    <none>\n";
+    }
 
     std::vector<const vve::v3::ImportedSceneNode *> root_nodes{};
     for (std::size_t node_index = 0; node_index < scene.nodes.size(); ++node_index) {

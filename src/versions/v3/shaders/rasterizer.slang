@@ -30,7 +30,9 @@ struct FrameConstants
 struct MaterialConstants
 {
     float4 baseColorFactor;
-    float normalScale;
+    float4 scalarFactors;
+    float4 emissiveFactor;
+    float4 reserved;
 };
 
 struct RasterizerParams
@@ -56,7 +58,7 @@ float3 sampleWorldNormal(VertexOutput input)
         gRasterizerParams.normalTexture.Sample(gRasterizerParams.normalSampler, input.texCoord).xyz
         * 2.0
         - 1.0;
-    sampledNormal.xy *= gRasterizerParams.material.normalScale;
+    sampledNormal.xy *= gRasterizerParams.material.scalarFactors.x;
 
     float xyLength = dot(sampledNormal.xy, sampledNormal.xy);
     sampledNormal.z = sqrt(saturate(1.0 - xyLength));
@@ -101,6 +103,11 @@ float4 fragmentMain(VertexOutput input) : SV_Target
         gRasterizerParams.baseColorSampler,
         input.texCoord);
     float4 surfaceColor = albedo * gRasterizerParams.material.baseColorFactor * input.color;
+    if (gRasterizerParams.material.scalarFactors.w > 0.0
+        && surfaceColor.a < gRasterizerParams.material.scalarFactors.w)
+    {
+        discard;
+    }
 
-    return float4(surfaceColor.rgb * lighting, surfaceColor.a);
+    return float4((surfaceColor.rgb * lighting) + gRasterizerParams.material.emissiveFactor.rgb, surfaceColor.a);
 }

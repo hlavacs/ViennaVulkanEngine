@@ -34,11 +34,12 @@ float computeDistanceAttenuation(float3 lightVector, float range)
         return 1.0;
     }
 
-    float attenuation = 1.0 / distanceSquared;
+    float distance = sqrt(distanceSquared);
+    float attenuation = 1.0 / max(1.0, distanceSquared * 0.04);
     if (range > 0.0)
     {
-        float distance = sqrt(distanceSquared);
-        float rangeFactor = saturate(1.0 - distance / range);
+        float normalizedDistance = saturate(distance / range);
+        float rangeFactor = saturate(1.0 - normalizedDistance * normalizedDistance);
         attenuation *= rangeFactor * rangeFactor;
     }
 

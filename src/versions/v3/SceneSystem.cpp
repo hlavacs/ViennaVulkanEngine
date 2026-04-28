@@ -206,6 +206,8 @@ namespace vve::v3 {
          instance.textures = scene.textures;
          instance.meshes = scene.meshes;
          instance.materials = scene.materials;
+         instance.lights = scene.lights;
+         instance.cameras = scene.cameras;
 
          if (auto texture_index_result =
                  rebuildHandleIndex(instance.textures, instance.texture_indices,
