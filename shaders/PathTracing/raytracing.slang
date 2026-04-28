@@ -186,6 +186,7 @@ bool isSkyPixel(float3 pos)
 
 bool isLightOccluded(in IntersectionRecord its, EmitterRecord emitterRecord) {
     RayDesc shadowRay = getRay(its, emitterRecord.direction);
+    shadowRay.TMax = emitterRecord.distance;
     HitPayload payload;
     const uint rayFlags = 0;
 
@@ -208,7 +209,13 @@ float3 getUnoccludedLightContribution(in IntersectionRecord its, in MaterialReco
 
     float3 bsdfEval = PrincipledEval(shaderRecord, material);
 
-    return emitterRecord.sampleEmission * bsdfEval;
+    float3 radiance = emitterRecord.sampleEmission * bsdfEval;
+
+    if (any(isnan(radiance)) || any(isinf(radiance))) {
+        radiance = float3(0.0);
+    }
+
+    return radiance;
 }
 
 float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inout Sampler sampler) {

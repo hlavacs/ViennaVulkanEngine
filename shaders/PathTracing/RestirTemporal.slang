@@ -78,7 +78,7 @@ void rgenMain()
     const uint MAX_TEMPORAL_INFLUENCE = 20;
 
     if (isSkyPixel(position)) {
-        Reservoir reservoir = Reservoir(0, 0.0, 0.0, 0);
+        Reservoir reservoir = createEmptyReservoir();
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
     } else {
         uint linear = (uint)launchID.x + (uint)launchID.y * (uint)launchSize.x;
@@ -94,27 +94,29 @@ void rgenMain()
 
         getInitialSurfaceData(launchID, launchSize, its, material);
 
-        Reservoir reservoir = Reservoir(0, 0.0, 0.0, 0);
+        Reservoir reservoir = createEmptyReservoir();
 
         // initial selection of 1 light of M
         for (uint i = 0; i < CANDIDATE_COUNT; i++)
         {
             uint lightIndex = sampler.UniformUIntFast(0, lightCount - 1);
 
-            p_hat = unoccludedLightRadianceCenter(lightIndex, its, material, sampler);
+            float4 samplePosition = float4(0.0);
+
+            p_hat = sampleUnoccludedLightRadiance(lightIndex, its, material, sampler, samplePosition);
 
             float w = p_hat / lightPdf;
 
-            UpdateReservoir(reservoir, lightIndex, w, 1, sampler);
+            UpdateReservoir(reservoir, lightIndex, samplePosition, w, 1, sampler);
         }
 
         if (IsReservoirValid(reservoir))
         {
             // Update weight with new radiance with visibility term!
-            float p_hat = length(occludedLightRadianceCenter(reservoir.lightSelected, its, material, sampler));
+            float p_hat = length(revaluateOccludedLightRadiance(reservoir, its, material));
             reservoir.lightWeight = p_hat > 0.0 ? (1.0 / max(p_hat, 0.001)) * reservoir.W_sum / reservoir.M : 0.0;
         } else {
-            reservoir = Reservoir(0, 0.0, 0.0, 0);
+            reservoir = createEmptyReservoir();
         }
 
         //reject history if reprojection error is too big

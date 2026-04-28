@@ -5,29 +5,10 @@ import Surface;
 import Materials;
 import BSDF;
 import ReservoirGI;
-
-bool UpdateReservoirGI(inout ReservoirGI reservoir, in ReservoirGI reservoirNew, float w, inout Sampler sampler)
-{
-    // 1. Sanity check for NaN/Inf
-    if (isnan(w) || isinf(w)) w = 0.0;
-
-    reservoir.W_sum += w;
-    reservoir.M += reservoirNew.M;
-
-    if (sampler.UniformFloat() < (w / reservoir.W_sum))
-    {
-        reservoir.position = reservoirNew.position;
-        reservoir.normal = reservoirNew.normal;
-        reservoir.radiance = reservoirNew.radiance;
-        reservoir.age = reservoirNew.age;
-        return true;
-    }
-
-    return false;
-}
+import Defines;
 
 bool IsReservoirValidGI(ReservoirGI reservoir) {
-    return reservoir.M > 0 && reservoir.W_sum > 0;
+    return reservoir.M > 0 && reservoir.W_sum > 0 && !isinf(reservoir.W_sum) && !isnan(reservoir.W_sum);
 }
 
 EmitterRecord getEmmitterRecordFromReservoir(ReservoirGI reservoir, IntersectionRecord its) {
@@ -43,6 +24,8 @@ EmitterRecord getEmmitterRecordFromReservoir(ReservoirGI reservoir, Intersection
     record.direction = normalize(toLight);
     // this is inaccurate which is maybe why one needs the jacobian. It would be possible to do this with a brdf evaluation at the secundary intersection, but one would have to store too much.
     record.sampleEmission = reservoir.radiance;
+
+    return record;
 }
 
 float getApproximateRadianceFromReservoir(in ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord material) {
@@ -51,11 +34,31 @@ float getApproximateRadianceFromReservoir(in ReservoirGI reservoir, in Intersect
     return length(getUnoccludedLightContribution(its, material, record));
 }
 
+//check for correctness
+bool isReservoirOccluded(in IntersectionRecord its, EmitterRecord emitterRecord) {
+    RayDesc shadowRay = getRay(its, emitterRecord.direction);
+    shadowRay.TMax = emitterRecord.distance;
+    HitPayload payload;
+    const uint rayFlags = 0;
+
+    // self blocked
+    if (dot(shadowRay.Direction, its.normal) < 0.0) {
+        return true;
+    }
+
+    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
+
+    if (payload.distance < emitterRecord.distance + EPSILON && payload.distance > emitterRecord.distance - EPSILON) {
+        return false;
+    }
+
+    return true;
+}
+
 float3 getGroundTruthRadianceFromReservoir(in ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord material) {
     EmitterRecord record = getEmmitterRecordFromReservoir(reservoir, its);
 
-    //This check is incorrect, it will alwys return occluded!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    bool occluded = isLightOccluded(its, record);
+    bool occluded = isReservoirOccluded(its, record);
 
     if (occluded) {
         return float3(0.0, 0.0, 0.0);
@@ -64,15 +67,33 @@ float3 getGroundTruthRadianceFromReservoir(in ReservoirGI reservoir, in Intersec
     return getUnoccludedLightContribution(its, material, record);
 }
 
-ReservoirGI CombineReservoirsGI(in ReservoirGI reservoir1, in ReservoirGI reservoir2, in IntersectionRecord its, in MaterialRecord material, inout Sampler sampler)
+void updateLightWeight(inout ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord material) {
+    float p_hat = getApproximateRadianceFromReservoir(reservoir, its, material);
+    reservoir.lightWeight = p_hat > 0.0 ? (1.0 / max(p_hat, 0.001)) * reservoir.W_sum / reservoir.M : 0.0;
+}
+
+bool CombineReservoirsGI(inout ReservoirGI reservoir, in ReservoirGI reservoirNew, in float targetPdf, inout Sampler sampler)
 {
-    float pHat2 = getApproximateRadianceFromReservoir(reservoir2, its, material);
-    float w2 = pHat2 * reservoir2.W_sum * float(reservoir2.M);
-    if (IsReservoirValidGI(reservoir2)) {
-        UpdateReservoirGI(reservoir1, reservoir2, w2, sampler);
+    float w = targetPdf * reservoirNew.W_sum * float(reservoirNew.M);
+
+    // 1. Sanity check for NaN/Inf
+    if (isnan(w) || isinf(w)) w = 0.0;
+
+    reservoir.W_sum += w;
+    reservoir.M += reservoirNew.M;
+
+    bool selected = sampler.UniformFloat() < (w / reservoir.W_sum);
+
+    if (selected)
+    {
+        reservoir.position = reservoirNew.position;
+        reservoir.normal = reservoirNew.normal;
+        reservoir.radiance = reservoirNew.radiance;
+        reservoir.age = reservoirNew.age;
+        return true;
     }
 
-    return reservoir1;
+    return selected;
 }
 
 ReservoirGI createInitialReservoirGI(in IntersectionRecord its, in MaterialRecord materialRecord, inout Sampler sampler) {
@@ -102,43 +123,49 @@ ReservoirGI createInitialReservoirGI(in IntersectionRecord its, in MaterialRecor
     reservoir.position = its_secondary.position;
     reservoir.normal = its_secondary.normal;
     reservoir.M = 1;
+
+    if (any(isnan(directLight_secondary)) || any(isinf(directLight_secondary))) {
+        directLight_secondary = float3(0.0);
+    }
+
     reservoir.radiance = directLight_secondary;
     // why reservoir.W_sum = 1.0 / shaderRecord.pdf; and not bsdf * directLight_secondary?
     // later we combine this reservoir with a empty main reservoir.
     // during combination we do bsdfEval(lacking pdf) * radiance * wsum (including pdf) * M
     // this is identical to doing bsdf * directLight_secondary
-    reservoir.W_sum = 1.0 / shaderRecord.pdf;
+    reservoir.W_sum = 1.0 / max(shaderRecord.pdf, 0.001);
+
+    if (any(isnan(reservoir.W_sum)) || any(isinf(reservoir.W_sum))) {
+        reservoir.W_sum = 0.0;
+    }
 
     return reservoir;
 }
 
-/*
-float3 evaluateReservoirGI(ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord materialRecord) {
-    float3 unnormalizedRadiance = getGroundTruthRadianceFromReservoir(reservoir, its, materialRecord);
-    float weight = length(reservoir.radiance) * reservoir.W_sum * float(reservoir.M);
-    float3 radiance = unnormalizedRadiance * weight;
-    return radiance;
+void finalizeGIResampling(
+    inout ReservoirGI reservoir,
+    float normalizationNumerator,
+    float normalizationDenominator)
+{
+    reservoir.W_sum = (normalizationDenominator == 0.0) ? 0.0 : (reservoir.W_sum * normalizationNumerator) / normalizationDenominator;
 }
-*/
 
-float3 evaluateReservoirGI(ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord materialRecord) {
+float3 evaluateReservoirGI(inout ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord materialRecord) {
     if (!IsReservoirValidGI(reservoir)) return float3(0.0);
 
-    // 1. Get the actual unshadowed contribution (BSDF * Radiance)
+    // Get the actual unshadowed contribution (BSDF * Radiance)
     float3 f_times_L = getGroundTruthRadianceFromReservoir(reservoir, its, materialRecord);
-
-    // 2. Re-calculate pHat for the "winner" at the current pixel
-    float pHat = length(f_times_L);
-
-    // 3. Calculate the normalization factor W
-    // W = (1 / pHat) * (W_sum / M)
-    float W = 0.0;
-    if (pHat > 0.0 && reservoir.M > 0) {
-        W = reservoir.W_sum / (pHat * float(reservoir.M));
-    }
-
-    return f_times_L * W;
+    return f_times_L * reservoir.W_sum;
 }
+
+void normalizeReservoir(inout ReservoirGI reservoirGI, float finalPHat) {
+    if (finalPHat > 0 && reservoirGI.M > 0) {
+        reservoirGI.W_sum = reservoirGI.W_sum / (float(reservoirGI.M) * finalPHat);
+    } else {
+        reservoirGI.W_sum = 0;
+    }
+}
+
 
 void getPartialJacobian(const float3 RecieverPos, const float3 SamplePos, const float3 SampleNormal, out float DistanceToSurfaceSqr, out float CosineEmissionAngle)
 {

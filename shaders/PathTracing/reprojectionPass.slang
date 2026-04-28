@@ -1,4 +1,5 @@
 import Reservoir;
+import ReservoirGI;
 
 [[vk::binding(0, 0)]]
 cbuffer UniformBufferObject
@@ -30,13 +31,22 @@ RWTexture2D<float4> outReprojectedLighting;
 [[vk::binding(5, 0)]]
 RWTexture2D<float4> outReprojectionError;
 
+[[vk::binding(6, 0)]]
+RWTexture2D<float4> outReprojectedPosition;
+
 //restir
 
-[[vk::binding(6, 0)]]
+[[vk::binding(7, 0)]]
 RWStructuredBuffer<Reservoir> inReservoir;
 
-[[vk::binding(7, 0)]]
+[[vk::binding(8, 0)]]
 RWStructuredBuffer<Reservoir> outReservoir;
+
+[[vk::binding(9, 0)]]
+RWStructuredBuffer<ReservoirGI> inReservoirGI;
+
+[[vk::binding(10, 0)]]
+RWStructuredBuffer<ReservoirGI> outReservoirGI;
 
 
 
@@ -87,8 +97,15 @@ void main(uint3 threadId: SV_DispatchThreadID) {
     if (predictedUVPrev.x >= 0.0 && predictedUVPrev.x <= 1.0 && predictedUVPrev.y >= 0.0 && predictedUVPrev.y <= 1.0) {
         storeReservoir(readReservoir(predictedIDPrev, launchSize, inReservoir), launchID, launchSize, outReservoir);
     } else {
-        Reservoir reservoir = Reservoir(0, 0.0, 0.0, 0);
+        Reservoir reservoir = createEmptyReservoir();
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
+    }
+
+    if (predictedUVPrev.x >= 0.0 && predictedUVPrev.x <= 1.0 && predictedUVPrev.y >= 0.0 && predictedUVPrev.y <= 1.0) {
+        storeReservoirGI(readReservoirGI(predictedIDPrev, launchSize, inReservoirGI), launchID, launchSize, outReservoirGI);
+    } else {
+        ReservoirGI reservoir = createEmptyReservoirGI();
+        storeReservoirGI(reservoir, launchID, launchSize, outReservoirGI);
     }
     
 
@@ -101,4 +118,5 @@ void main(uint3 threadId: SV_DispatchThreadID) {
 
     outReprojectedLighting[launchID] = float4(lightingReprojected, 1.0);
     outReprojectionError[launchID] = float4(length);
+    outReprojectedPosition[launchID] = positionReprojected;
 }

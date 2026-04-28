@@ -79,7 +79,7 @@ void rgenMain()
     const uint SAMPLE_RADIUS = 4;
 
     if (isSkyPixel(position)) {
-        Reservoir reservoir = Reservoir(0, 0.0, 0.0, 0);
+        Reservoir reservoir = createEmptyReservoir();
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
     } else {
         uint linear = (uint)launchID.x + (uint)launchID.y * (uint)launchSize.x;
@@ -130,7 +130,9 @@ void rgenMain()
 
         if (IsReservoirValid(reservoir))
         {
-            float3 radiance = groundTruthLightRadiance(reservoir.lightSelected, its, material, sampler);
+            float3 radiance = revaluateOccludedLightRadiance(reservoir, its, material);
+            //float3 radiance = resampleOccludedLightRadiance(reservoir, its, material, sampler);
+            
             output = radiance * reservoir.lightWeight;
             float p_hat = length(radiance);
             //maybe one shouldn't use this but I am unsure???
@@ -146,7 +148,7 @@ void rgenMain()
 
             //reservoir.lightWeight = p_hat > 0.0 ? (1.0 / max(p_hat, 0.001)) * reservoir.W_sum / reservoir.M : 0.0;
         } else {
-            reservoir = Reservoir(0, 0.0, 0.0, 0);
+            reservoir = createEmptyReservoir();
         }
 
         float3 albedo = inAlbedoAlpha[launchID].xyz;

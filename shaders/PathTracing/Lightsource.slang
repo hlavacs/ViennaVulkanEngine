@@ -199,6 +199,49 @@ EmitterRecord sampleDiskLightCenter(in LightSource light, in float3 origin, inou
     return rec;
 }
 
+// uses solid angle sampling to imporve noise levels
+EmitterRecord resampleSphereLight(in LightSource light,
+                                      in float3 origin,
+                                      in float3 samplePosition)
+{
+    // Inputs: light, shading point, RNG. Output: sampled emitter record.
+    EmitterRecord rec;
+
+    float3 C = samplePosition;
+    float3 P = origin;
+
+    float3 toLight = C - P;
+
+    rec.intersection = C;
+    rec.distance = length(toLight);
+    rec.direction = normalize(toLight);
+
+    // Final estimator for total emitted power Φ
+    rec.sampleEmission = light.emission.xyz / (4.0 * M_PI * rec.distance * rec.distance);
+
+    return rec;
+}
+
+EmitterRecord resampleDiskLight(in LightSource light, in float3 origin, in float3 samplePosition)
+{
+    // Inputs: light, shading point, RNG. Output: sampled emitter record.
+    EmitterRecord rec;
+
+    float3 C = samplePosition;
+    float3 P = origin;
+
+    float3 toLight = C - P;
+
+    rec.intersection = C;
+    rec.distance = length(toLight);
+    rec.direction = normalize(toLight);
+
+    // Final estimator for total emitted power Φ
+    rec.sampleEmission = light.emission.xyz / (4.0 * M_PI * rec.distance * rec.distance);
+
+    return rec;
+}
+
 public EmitterRecord sampleLightSource(in LightSource light, in float3 origin, inout Sampler sampler) {
     // Inputs: light, shading point, RNG. Output: sampled emitter record by type.
     EmitterRecord record;
@@ -207,6 +250,18 @@ public EmitterRecord sampleLightSource(in LightSource light, in float3 origin, i
         record = sampleSphereLight(light, origin, sampler);
     } else if (light.lightType == 1) {
         record = sampleDiskLight(light, origin, sampler);
+    }
+    return record;
+}
+
+public EmitterRecord resampleLightSource(in LightSource light, in float3 origin, float3 samplePosition) {
+    // Inputs: light, shading point, RNG. Output: sampled emitter record by type.
+    EmitterRecord record;
+
+    if (light.lightType == 0) {
+        record = resampleSphereLight(light, origin, samplePosition);
+    } else if (light.lightType == 1) {
+        record = resampleDiskLight(light, origin, samplePosition);
     }
     return record;
 }

@@ -61,6 +61,9 @@ namespace vve {
 		void createRestirTemporalDescriptors();
 		void createRestirSpatialDescriptors();
 
+		void createRestirGITemporalDescriptors();
+		void createRestirGISpatialDescriptors();
+
 		void createRenderTargetSampler();
 
 		/**
@@ -126,6 +129,7 @@ namespace vve {
 		RenderTarget* lightingReprojectedTarget;
 		RenderTarget* positionPreviousTarget;
 		RenderTarget* reprojectionErrorTarget;
+		RenderTarget* positionReprojectedTarget;
 
 		PipelineFilter* reprojectionPass;
 
@@ -143,11 +147,20 @@ namespace vve {
 		RenderTargetBuffer<ReservoirDI>* reservoirDI_A;
 		RenderTargetBuffer<ReservoirDI>* reservoirDI_B;
 
+		RenderTargetBuffer<ReservoirGI>* reservoirGI_A;
+		RenderTargetBuffer<ReservoirGI>* reservoirGI_B;
+
 		PiplineRaytraced* restir_temporal;
 		PiplineRaytraced* restir_spatial;
 
+		PiplineRaytraced* restirGI_temporal;
+		PiplineRaytraced* restirGI_spatial;
+
 		DescriptorManager* restir_temporal_descriptors;
 		DescriptorManager* restir_spatial_descriptors;
+
+		DescriptorManager* restirGI_temporal_descriptors;
+		DescriptorManager* restirGI_spatial_descriptors;
 
 		std::vector<RenderTarget*> allTargets;
 		std::vector<RenderTarget*> rayTracingTargets;

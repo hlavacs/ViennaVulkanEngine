@@ -88,10 +88,13 @@ void rgenMain()
 
     const uint CANDIDATE_COUNT = 32;
     const uint MAX_TEMPORAL_INFLUENCE = 20;
-    const uint MAX_AGE = 20;
+    const uint MAX_AGE = 500;
+
+    float selectedTargetPdf = 0.0;
+    float piSum = 0.0;
 
     if (isSkyPixel(position)) {
-        Reservoir reservoir = Reservoir(0, 0.0, 0.0, 0);
+        Reservoir reservoir = createEmptyReservoir();
         ReservoirGI reservoirGI = createEmptyReservoirGI();
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
         storeReservoirGI(reservoirGI, launchID, launchSize, outReservoirGI);
@@ -109,7 +112,7 @@ void rgenMain()
 
         getInitialSurfaceData(launchID, launchSize, its, material);
 
-        Reservoir reservoir = Reservoir(0, 0.0, 0.0, 0);
+        Reservoir reservoir = createEmptyReservoir();
         ReservoirGI reservoirGI = createEmptyReservoirGI();
 
         // initial selection of 1 light of M
@@ -117,26 +120,36 @@ void rgenMain()
         {
             uint lightIndex = sampler.UniformUIntFast(0, lightCount - 1);
 
-            p_hat = unoccludedLightRadianceCenter(lightIndex, its, material, sampler);
+            float4 samplePosition = float4(0.0);
+
+            p_hat = sampleUnoccludedLightRadiance(lightIndex, its, material, sampler, samplePosition);
 
             float w = p_hat / lightPdf;
 
-            UpdateReservoir(reservoir, lightIndex, w, 1, sampler);
+            UpdateReservoir(reservoir, lightIndex, samplePosition, w, 1, sampler);
         }
 
         // initial generation of GI sample
+        // ReservoirGI initialGISample = createInitialReservoirGI(its, material, sampler);
         ReservoirGI initialGISample = createInitialReservoirGI(its, material, sampler);
-        reservoirGI = CombineReservoirsGI(reservoirGI, initialGISample, its, material, sampler);
+
+        if (IsReservoirValidGI(initialGISample)) {
+            float targetPDF = getApproximateRadianceFromReservoir(initialGISample, its, material);
+            selectedTargetPdf = targetPDF;
+            piSum += targetPDF * initialGISample.M;
+            CombineReservoirsGI(reservoirGI, initialGISample, targetPDF, sampler);
+        }
+        
 
 
         //ser lightweight of DI reservoir using visibility
         if (IsReservoirValid(reservoir))
         {
             // Update weight with new radiance with visibility term!
-            float p_hat = length(occludedLightRadianceCenter(reservoir.lightSelected, its, material, sampler));
+            float p_hat = length(revaluateOccludedLightRadiance(reservoir, its, material));
             reservoir.lightWeight = p_hat > 0.0 ? (1.0 / max(p_hat, 0.001)) * reservoir.W_sum / reservoir.M : 0.0;
         } else {
-            reservoir = Reservoir(0, 0.0, 0.0, 0);
+            reservoir = createEmptyReservoir();
         }
 
         //reject history if reprojection error is too big
@@ -155,14 +168,26 @@ void rgenMain()
 
             temporalReservoirGI.W_sum *= jacobian;
 
-            temporalReservoirGI.M = min(MAX_TEMPORAL_INFLUENCE * reservoirGI.M, temporalReservoirGI.M);
+            temporalReservoirGI.M = min(MAX_TEMPORAL_INFLUENCE, temporalReservoirGI.M);
 
             temporalReservoirGI.age++;
 
-            if (temporalReservoirGI.age < MAX_AGE) {
-                reservoirGI = CombineReservoirsGI(reservoirGI, temporalReservoirGI, its, material, sampler);
+            if (IsReservoirValidGI(temporalReservoirGI) && temporalReservoirGI.age < MAX_AGE) {
+                float targetPDF = getApproximateRadianceFromReservoir(temporalReservoirGI, its, material);
+                if (CombineReservoirsGI(reservoirGI, temporalReservoirGI, targetPDF, sampler)) {
+                    selectedTargetPdf = targetPDF;
+                }
+                piSum += targetPDF * temporalReservoirGI.M;
             }
         }
+
+        //float normalizationNumerator = selectedTargetPdf;
+        //float normalizationDenominator = piSum * selectedTargetPdf;
+
+        float normalizationNumerator = 1.0;
+        float normalizationDenominator = selectedTargetPdf * float(reservoirGI.M);
+
+        finalizeGIResampling(reservoirGI, normalizationNumerator, normalizationDenominator);
 
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
         storeReservoirGI(reservoirGI, launchID, launchSize, outReservoirGI);

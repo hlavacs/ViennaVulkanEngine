@@ -5,6 +5,7 @@ struct ReservoirGI {
     float W_sum;
     uint M;
     uint age;
+    float lightWeight;
 }
 
 ReservoirGI createEmptyReservoirGI() {
