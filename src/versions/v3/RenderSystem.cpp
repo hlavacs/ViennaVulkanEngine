@@ -182,19 +182,80 @@ namespace vve::v3 {
       return vve::math::Vec3(transform[3][0], transform[3][1], transform[3][2]);
    }
 
+   /// @brief Transforms an object-space position into world space.
+   [[nodiscard]] vve::math::Vec3 transformPoint(const vve::math::Mat4 &transform,
+                                                const vve::math::Vec3 &position) {
+      const auto x = (transform[0][0] * position.x) + (transform[1][0] * position.y) +
+                     (transform[2][0] * position.z) + transform[3][0];
+      const auto y = (transform[0][1] * position.x) + (transform[1][1] * position.y) +
+                     (transform[2][1] * position.z) + transform[3][1];
+      const auto z = (transform[0][2] * position.x) + (transform[1][2] * position.y) +
+                     (transform[2][2] * position.z) + transform[3][2];
+      const auto w = (transform[0][3] * position.x) + (transform[1][3] * position.y) +
+                     (transform[2][3] * position.z) + transform[3][3];
+      if (w == vve::math::zero()) {
+         return vve::math::Vec3(x, y, z);
+      }
+
+      return vve::math::Vec3(x / w, y / w, z / w);
+   }
+
+   /// @brief Estimates positive depth for one world-space point along the active camera's view direction.
+   [[nodiscard]] vve::math::Scalar cameraViewDepth(const CameraFrameData &camera,
+                                                   const vve::math::Vec3 &world_position) {
+      const auto view_z = (camera.view_transform[0][2] * world_position.x) +
+                          (camera.view_transform[1][2] * world_position.y) +
+                          (camera.view_transform[2][2] * world_position.z) + camera.view_transform[3][2];
+      return -view_z;
+   }
+
    /// @brief Estimates positive depth along the active camera's view direction.
    [[nodiscard]] vve::math::Scalar cameraViewDepth(const CameraFrameData &camera,
                                                    const vve::math::Mat4 &world_transform) {
-      const auto position = worldTranslation(world_transform);
-      const auto view_z = (camera.view_transform[0][2] * position.x) +
-                          (camera.view_transform[1][2] * position.y) +
-                          (camera.view_transform[2][2] * position.z) + camera.view_transform[3][2];
-      return -view_z;
+      return cameraViewDepth(camera, worldTranslation(world_transform));
+   }
+
+   /// @brief Conservative camera-depth interval for a transformed mesh bounding box.
+   struct CameraDepthRange {
+      vve::math::Scalar minimum{vve::math::zero()};
+      vve::math::Scalar maximum{vve::math::zero()};
+   };
+
+   /// @brief Estimates the visible depth interval from all transformed mesh-bounds corners.
+   [[nodiscard]] CameraDepthRange meshCameraDepthRange(const CameraFrameData &camera, const ImportedMesh &mesh,
+                                                       const vve::math::Mat4 &world_transform) {
+      const auto minimum = mesh.bounds_min;
+      const auto maximum = mesh.bounds_max;
+      const std::array corners{
+          vve::math::Vec3(minimum.x, minimum.y, minimum.z),
+          vve::math::Vec3(maximum.x, minimum.y, minimum.z),
+          vve::math::Vec3(minimum.x, maximum.y, minimum.z),
+          vve::math::Vec3(maximum.x, maximum.y, minimum.z),
+          vve::math::Vec3(minimum.x, minimum.y, maximum.z),
+          vve::math::Vec3(maximum.x, minimum.y, maximum.z),
+          vve::math::Vec3(minimum.x, maximum.y, maximum.z),
+          vve::math::Vec3(maximum.x, maximum.y, maximum.z),
+      };
+
+      CameraDepthRange range{.minimum = std::numeric_limits<vve::math::Scalar>::max(),
+                             .maximum = std::numeric_limits<vve::math::Scalar>::lowest()};
+      for (const auto &corner : corners) {
+         const auto depth = cameraViewDepth(camera, transformPoint(world_transform, corner));
+         range.minimum = std::min(range.minimum, depth);
+         range.maximum = std::max(range.maximum, depth);
+      }
+
+      return range;
    }
 
    /// @brief Returns whether the object depth is inside the active camera clip range.
    [[nodiscard]] bool isInsideCameraClipRange(const CameraFrameData &camera, vve::math::Scalar camera_depth) {
       return camera_depth >= camera.near_plane && camera_depth <= camera.far_plane;
+   }
+
+   /// @brief Returns whether a depth interval intersects the active camera clip range.
+   [[nodiscard]] bool overlapsCameraClipRange(const CameraFrameData &camera, const CameraDepthRange &range) {
+      return range.maximum >= camera.near_plane && range.minimum <= camera.far_plane;
    }
 
    /// @brief Resolves the active camera for one window, falling back to the scene camera.
@@ -546,10 +607,11 @@ namespace vve::v3 {
                const bool alpha_blend = material_data != nullptr && material_data->alpha_blend;
                const auto pipeline_variant = forwardPipelineVariant(double_sided, alpha_blend);
                const auto graphics_pipeline = graphicsPipelineForVariant(binding->second, pipeline_variant);
-               const auto camera_depth = cameraViewDepth(active_camera, node->world_transform);
-               if (!isInsideCameraClipRange(active_camera, camera_depth)) {
+               const auto depth_range = meshCameraDepthRange(active_camera, *mesh, node->world_transform);
+               if (!overlapsCameraClipRange(active_camera, depth_range)) {
                   continue;
                }
+               const auto camera_depth = cameraViewDepth(active_camera, node->world_transform);
                if (binding->second.graphics_pipeline_ready && !graphics_pipeline.value.isValid()) {
                   return std::unexpected(vve::Error::invalid_argument);
                }

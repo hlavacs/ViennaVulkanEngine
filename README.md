@@ -31,13 +31,13 @@ The runtime resolves `libkosmickrisp_icd.json`, sets `VK_ICD_FILENAMES` before t
 For manual command-line launches, the same selector can be supplied per process:
 
 ```bash
-VVE_VULKAN_ICD=kosmickrisp bin/Mac/Debug/exe/game
+VVE_VULKAN_ICD=kosmickrisp bin/debug/exe/game
 ```
 
 A custom KosmicKrisp manifest can be supplied with:
 
 ```bash
-VVE_KOSMICKRISP_ICD=/path/to/libkosmickrisp_icd.json VVE_VULKAN_ICD=kosmickrisp bin/Mac/Debug/exe/game
+VVE_KOSMICKRISP_ICD=/path/to/libkosmickrisp_icd.json VVE_VULKAN_ICD=kosmickrisp bin/debug/exe/game
 ```
 
 The public `vve::Engine<>`, `vve::ECS<>`, and `vve::World` aliases are selected through a single namespace-style define:
@@ -89,11 +89,11 @@ cmake --preset release-macos-arm64-llvm
 cmake --build --preset build-release-macos-arm64-llvm
 ```
 
-Executables and libraries are written below the selected build directory and mirrored to the project root `bin` directory. The mirrored path is `bin/<Platform>/<Variant>`, for example `bin/Mac/Debug/exe/game`, `bin/Windows/Release/exe/game.exe`, or `bin/Linux/Debug/exe/game`. This keeps platform and variant binaries from overwriting each other while preserving a stable project-local `bin` path.
+Executables and libraries are written below the selected build directory and mirrored to the project root `bin` directory. The mirrored path uses only the build variant, for example `bin/debug/exe/game` or `bin/release/exe/game`. Platform names such as `Mac`, `Windows`, or `Linux` are not used below `bin`.
 
-VS Code is configured to use CMake Tools variants instead of presets so the `CMake: Select Variant` command offers `Debug` and `Release`. The VS Code variant builds use `build/vscode-Debug` and `build/vscode-Release`.
+VS Code is configured to use CMake Tools variants instead of presets so the `CMake: Select Variant` command offers `Debug` and `Release`. The VS Code variant builds use `build/vscode-debug` and `build/vscode-release`.
 
-The VS Code Run and Debug list intentionally contains only five launch entries: `game`, `physics`, `sponza`, `world tests`, and `all tests`. Each launch asks for `Platform` (`Mac`, `Windows`, `Linux`) and `Variant` (`Debug`, `Release`) and then runs the matching build task before launch. Select the platform that matches the machine running VS Code; these launch options are shared across operating systems, not cross-compilers.
+The VS Code Run and Debug list intentionally contains only five launch entries: `game`, `physics`, `sponza`, `world tests`, and `all tests`. Each launch asks for `Platform` (`Mac`, `Windows`, `Linux`) and `Variant` (`debug`, `release`) and then runs the matching build task before launch. Select the platform that matches the machine running VS Code; these launch options are shared across operating systems, not cross-compilers.
 
 If CMake Tools asks for a kit on Apple Silicon macOS, select `Homebrew LLVM arm64`. The workspace also uses `cmake/toolchains/macos-arm64-homebrew-llvm.cmake` so stale AppleClang kit selections are redirected to the Homebrew LLVM compiler required for `import std`.
 
@@ -150,7 +150,7 @@ cd vcpkg
 
 ## VS Code
 
-The launch entries run these task labels internally: `Build Mac Debug`, `Build Mac Release`, `Build Windows Debug`, `Build Windows Release`, `Build Linux Debug`, and `Build Linux Release`. To run tests in VS Code, use the `world tests` or `all tests` launch entry and choose the desired platform and variant.
+The launch entries run these task labels internally: `Build Mac debug`, `Build Mac release`, `Build Windows debug`, `Build Windows release`, `Build Linux debug`, and `Build Linux release`. To run tests in VS Code, use the `world tests` or `all tests` launch entry and choose the desired platform and variant.
 
 ## Unit Tests
 

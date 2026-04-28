@@ -445,6 +445,38 @@ namespace {
              (*visible_packets)->frame_index == 91;
    }
 
+   /// @brief Verifies near-plane culling keeps large meshes whose bounds still intersect the camera frustum.
+   [[nodiscard]] bool drawPacketsKeepBoundsThatOverlapNearPlane(vve::v3::RenderSystem &render_system,
+                                                                vve::v3::GraphicsBackend &backend) {
+      const auto renderer = backend.createRenderer("forward");
+      if (!renderer) {
+         return false;
+      }
+
+      const auto pipeline = testPipeline(render_system, *renderer);
+      const auto binding = render_system.bindPipelineResources(pipeline);
+      if (!binding) {
+         return false;
+      }
+
+      auto scene = testUploadedScene();
+      scene.meshes.front().bounds_min = vve::math::Vec3(-1.0F, -1.0F, -2.0F);
+      scene.meshes.front().bounds_max = vve::math::Vec3(1.0F, 1.0F, 0.0F);
+      scene.nodes.front().world_transform =
+          vve::math::translate(vve::math::identityMat4(), vve::math::Vec3(0.0F, 0.0F, 9.9F));
+
+      const auto build = render_system.buildDrawPackets(
+          vve::v3::FrameContext{.frame_index = 93, .delta_seconds = 0.0}, scene, pipeline.window, pipeline.graph);
+      if (!build) {
+         return false;
+      }
+
+      const auto packet_list = render_system.drawPackets(pipeline.window);
+      return packet_list && packet_list->has_value() && (*packet_list)->packets.size() == 1 &&
+             (*packet_list)->packets.front().camera_depth < scene.active_camera.near_plane &&
+             (*packet_list)->frame_index == 93;
+   }
+
    /// @brief Verifies a window-specific camera overrides the scene fallback camera for packet generation.
    [[nodiscard]] bool drawPacketsUseWindowCameraOverride(vve::v3::RenderSystem &render_system,
                                                          vve::v3::GraphicsBackend &backend) {
@@ -555,6 +587,10 @@ int main() {
 
    if (!drawPacketsUseWindowCameraOverride(render_system, backend)) {
       return 13;
+   }
+
+   if (!drawPacketsKeepBoundsThatOverlapNearPlane(render_system, backend)) {
+      return 14;
    }
 
    return 0;

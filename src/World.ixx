@@ -150,6 +150,9 @@ export namespace vve {
          /// @brief Runtime callback used to request scene loading.
          std::expected<void, Error> (*load_scene)(void *context, const std::filesystem::path &path){nullptr};
          void *load_scene_context{nullptr};                       ///< Opaque callback context passed back to `load_scene`.
+         /// @brief Runtime callback used to activate an already imported scene.
+         std::expected<void, Error> (*load_imported_scene)(void *context, const void *imported_scene){nullptr};
+         void *load_imported_scene_context{nullptr}; ///< Opaque callback context passed back to `load_imported_scene`.
          /// @brief Runtime callback used to update the active render camera.
          std::expected<void, Error> (*set_camera)(void *context, const Camera &camera){nullptr};
          void *set_camera_context{nullptr};                       ///< Opaque callback context passed back to `set_camera`.
@@ -300,6 +303,8 @@ export namespace vve {
       [[nodiscard]] std::optional<WindowInfo> findWindow(std::string_view window_id) const;
       [[nodiscard]] const InputState &input() const;
       [[nodiscard]] std::expected<void, Error> loadScene(const std::filesystem::path &path);
+      template <typename TImportedScene>
+      [[nodiscard]] std::expected<void, Error> loadImportedScene(const TImportedScene &scene);
       [[nodiscard]] std::expected<void, Error> setCamera(const Camera &camera);
       [[nodiscard]] std::expected<void, Error> setCamera(std::string_view window_id, const Camera &camera);
       [[nodiscard]] std::expected<void, Error> setActiveCamera(Handle camera_entity);
@@ -445,6 +450,13 @@ export namespace vve {
    template <typename TImplementation>
    inline std::expected<void, Error> WorldFacade<TImplementation>::loadScene(const std::filesystem::path &path) {
       return implementation_.loadScene(path);
+   }
+
+   /// @brief Activates a scene that was already imported by the selected engine version.
+   template <typename TImplementation>
+   template <typename TImportedScene>
+   inline std::expected<void, Error> WorldFacade<TImplementation>::loadImportedScene(const TImportedScene &scene) {
+      return implementation_.loadImportedScene(scene);
    }
 
    /// @brief Updates the active render camera through the runtime bridge.

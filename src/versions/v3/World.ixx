@@ -74,6 +74,16 @@ namespace vve::v3 {
 
          return runtime_access_->load_scene(runtime_access_->load_scene_context, path);
       }
+      /// @brief Forwards an already imported scene through the bound runtime callback.
+      template <typename TImportedScene>
+      [[nodiscard]] std::expected<void, vve::Error> loadImportedScene(const TImportedScene &scene) {
+         if (runtime_access_ == nullptr || runtime_access_->load_imported_scene == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return runtime_access_->load_imported_scene(runtime_access_->load_imported_scene_context,
+                                                     std::addressof(scene));
+      }
       /// @brief Forwards an active-camera update through the bound runtime callback.
       [[nodiscard]] std::expected<void, vve::Error> setCamera(const vve::Camera &camera) {
          if (runtime_access_ == nullptr || runtime_access_->set_camera == nullptr) {

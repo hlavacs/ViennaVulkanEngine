@@ -78,12 +78,6 @@ namespace vve::v3 {
 
    static_assert(sizeof(MaterialConstantsUpload) == sizeof(float) * 16U);
 
-   // Large scenes should reach the present loop quickly; textures can stream
-   // after fallback-shaded geometry is already visible.
-   constexpr std::size_t maxMaterialUploadsPerFrame = 64;
-   constexpr std::size_t maxMeshUploadsPerFrame = 16;
-   constexpr std::size_t maxTextureUploadsPerFrame = 1;
-
    /// @brief CPU-side decoded texture pixels ready for backend upload.
    struct LoadedTexturePixels {
       std::vector<std::byte> rgba_pixels{};
@@ -414,8 +408,8 @@ namespace vve::v3 {
       /// @brief Streams imported scene resources into backend-owned GPU objects.
       [[nodiscard]] std::expected<void, vve::Error> uploadResources(const FrameContext &, SceneData &scene,
                                                                     GraphicsBackend &graphics_backend) {
-         const auto upload_materials = [this, &scene, &graphics_backend](
-                                           std::size_t max_uploads) -> std::expected<std::size_t, vve::Error> {
+         const auto upload_materials = [this, &scene,
+                                        &graphics_backend]() -> std::expected<std::size_t, vve::Error> {
             std::size_t upload_count = 0;
             for (const auto &material : scene.materials) {
                auto *record = findRecord(material.handle.value);
@@ -434,10 +428,6 @@ namespace vve::v3 {
                    scene.gpu_materials[*existing_material].textures_uploaded == texture_bindings->all_resident &&
                    textureBindingsEqual(scene.gpu_materials[*existing_material].textures, texture_bindings->bindings)) {
                   continue;
-               }
-
-               if (upload_count >= max_uploads) {
-                  break;
                }
 
                const auto uploaded_generation = record->generation + 1U;
@@ -470,12 +460,10 @@ namespace vve::v3 {
             return upload_count;
          };
 
-         if (const auto material_uploads = upload_materials(maxMaterialUploadsPerFrame); !material_uploads) {
+         if (const auto material_uploads = upload_materials(); !material_uploads) {
             return std::unexpected(material_uploads.error());
          }
 
-         std::size_t mesh_uploads = 0;
-         bool mesh_backlog_remaining = false;
          for (const auto &mesh : scene.meshes) {
             if (mesh.vertices.empty() || mesh.indices.empty()) {
                continue;
@@ -489,11 +477,6 @@ namespace vve::v3 {
             if (const auto existing_mesh = gpuMeshIndex(scene, mesh.handle);
                 existing_mesh.has_value() && scene.gpu_meshes[*existing_mesh].resident &&
                 scene.gpu_meshes[*existing_mesh].generation == record->generation) {
-               continue;
-            }
-
-            if (mesh_uploads >= maxMeshUploadsPerFrame) {
-               mesh_backlog_remaining = true;
                continue;
             }
 
@@ -549,11 +532,6 @@ namespace vve::v3 {
                                         .generation = uploaded_generation,
                                         .source_path = mesh.source_path.empty() ? scene.source_path
                                                                                 : mesh.source_path});
-            ++mesh_uploads;
-         }
-
-         if (mesh_backlog_remaining) {
-            return {};
          }
 
          std::size_t texture_uploads = 0;
@@ -567,10 +545,6 @@ namespace vve::v3 {
                 existing_texture.has_value() && scene.gpu_textures[*existing_texture].resident &&
                 scene.gpu_textures[*existing_texture].generation == record->generation) {
                continue;
-            }
-
-            if (texture_uploads >= maxTextureUploadsPerFrame) {
-               break;
             }
 
             const auto format = textureFormatForReferences(scene, texture.handle);
@@ -604,7 +578,7 @@ namespace vve::v3 {
          }
 
          if (texture_uploads > 0) {
-            if (const auto material_uploads = upload_materials(maxMaterialUploadsPerFrame); !material_uploads) {
+            if (const auto material_uploads = upload_materials(); !material_uploads) {
                return std::unexpected(material_uploads.error());
             }
          }

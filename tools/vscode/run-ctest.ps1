@@ -2,8 +2,8 @@ param(
     [ValidateSet("Mac", "Windows", "Linux")]
     [string]$Platform = "Windows",
 
-    [ValidateSet("Debug", "Release")]
-    [string]$Variant = "Debug",
+    [ValidateSet("debug", "release")]
+    [string]$Variant = "debug",
 
     [string]$Filter = ""
 )
@@ -20,11 +20,12 @@ if (Test-Path $programFilesCtest) {
 
 switch ($Platform) {
     "Windows" {
-        $buildName = if ($Variant -eq "Debug") { "debug-windows" } else { "release-windows" }
+        $configuration = if ($Variant -eq "debug") { "Debug" } else { "Release" }
+        $buildName = if ($Variant -eq "debug") { "debug-windows" } else { "release-windows" }
         $buildDir = Join-Path $repoRoot "build\$buildName"
         $ctestArgs = @(
             "--test-dir", $buildDir,
-            "-C", $Variant,
+            "-C", $configuration,
             "--output-on-failure"
         )
     }
@@ -40,7 +41,7 @@ switch ($Platform) {
         )
     }
     "Linux" {
-        $buildName = if ($Variant -eq "Debug") { "debug-linux" } else { "release-linux" }
+        $buildName = if ($Variant -eq "debug") { "debug-linux" } else { "release-linux" }
         $buildDir = Join-Path $repoRoot "build\$buildName"
         $ctestArgs = @(
             "--test-dir", $buildDir,

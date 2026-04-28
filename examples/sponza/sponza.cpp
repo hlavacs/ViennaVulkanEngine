@@ -577,9 +577,11 @@ void printMainObjects(const vve::v3::ImportedScene &scene) {
 class SponzaLoaderSystem final {
 public:
     SponzaLoaderSystem() = default;
-    explicit SponzaLoaderSystem(std::filesystem::path scene_path, std::optional<SponzaCameraPlan> camera_plan,
+    explicit SponzaLoaderSystem(std::shared_ptr<const vve::v3::ImportedScene> imported_scene,
+                                std::optional<SponzaCameraPlan> camera_plan,
                                 const bool load_runtime_scene = true)
-        : scene_path_(std::move(scene_path)),
+        : imported_scene_(std::move(imported_scene)),
+          scene_path_(imported_scene_ == nullptr ? std::filesystem::path{} : imported_scene_->source_path),
           camera_plan_(std::move(camera_plan)),
           load_runtime_scene_(load_runtime_scene) {}
 
@@ -590,7 +592,7 @@ public:
             return {};
         }
 
-        if (scene_path_.empty()) {
+        if (imported_scene_ == nullptr || !imported_scene_->handle.value.isValid()) {
             return std::unexpected(vve::Error::invalid_argument);
         }
 
@@ -603,8 +605,8 @@ public:
             return {};
         }
 
-        std::cout << '[' << name() << "] loading scene into runtime: " << scene_path_.string() << '\n';
-        if (const auto load_result = world.loadScene(scene_path_); !load_result) {
+        std::cout << '[' << name() << "] loading imported scene into runtime: " << scene_path_.string() << '\n';
+        if (const auto load_result = world.loadImportedScene(*imported_scene_); !load_result) {
             std::cerr << '[' << name() << "] failed to load scene into runtime: " << scene_path_.string() << '\n';
             return std::unexpected(load_result.error());
         }
@@ -650,7 +652,7 @@ public:
         const vve::v3::WindowFrameData &window_frame) {
         (void)window_frame;
         if (!frame_loop_logged_ && frame_context.frame_index > 0) {
-            std::cout << '[' << name() << "] frame loop active; scene resources upload incrementally\n";
+            std::cout << '[' << name() << "] frame loop active; scene resources requested without per-frame limits\n";
             frame_loop_logged_ = true;
         }
 
@@ -786,6 +788,7 @@ private:
         std::cout << '\n';
     }
 
+    std::shared_ptr<const vve::v3::ImportedScene> imported_scene_{};
     std::filesystem::path scene_path_{};
     std::optional<SponzaCameraPlan> camera_plan_{};
     vve::Handle camera_entity_{};
@@ -818,6 +821,7 @@ int main(int argc, char **argv) {
     const bool verbose_scene_dump = wantsVerboseSceneDump(argc, argv);
     const bool load_runtime_scene = wantsRuntimeSceneLoad(argc, argv);
     const auto scene_path = resolveScenePath(argc, argv);
+    std::shared_ptr<const vve::v3::ImportedScene> imported_scene{};
     std::optional<SponzaCameraPlan> camera_plan{};
     if (!scene_path.has_value()) {
         std::cerr << "[sponza] Unable to locate the Sponza scene.\n";
@@ -827,11 +831,12 @@ int main(int argc, char **argv) {
         std::cout << "[sponza] using scene: " << scene_path->string() << '\n';
 
         vve::v3::AssetSystem asset_system{};
-        const auto imported_scene = asset_system.importScene(*scene_path);
-        if (!imported_scene) {
+        auto imported_scene_result = asset_system.importScene(*scene_path);
+        if (!imported_scene_result) {
             std::cerr << "[sponza] Failed to import scene: " << scene_path->string() << '\n';
             return 1;
         }
+        imported_scene = std::make_shared<vve::v3::ImportedScene>(std::move(*imported_scene_result));
 
         std::cout << std::fixed << std::setprecision(6);
         camera_plan = makeSponzaCameraPlan(*imported_scene);
@@ -855,7 +860,7 @@ int main(int argc, char **argv) {
     auto engine = vve::makeEngine(
         vve::ApplicationName{"sponza"},
         vve::EnableValidation{true},
-        vve::makeUserSystems(SponzaLoaderSystem{*scene_path, camera_plan, load_runtime_scene}),
+        vve::makeUserSystems(SponzaLoaderSystem{imported_scene, camera_plan, load_runtime_scene}),
         vve::Windows{
             .value = {
                 vve::WindowDesc{

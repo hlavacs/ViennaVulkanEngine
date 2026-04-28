@@ -9,16 +9,16 @@ script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 repo_root=$(CDPATH= cd -- "$script_dir/../.." && pwd)
 
 case "$platform:$variant" in
-    Mac:Debug)
-        build_dir="$repo_root/build/vscode-Debug"
+    Mac:debug)
+        build_dir="$repo_root/build/vscode-debug"
         ;;
-    Mac:Release)
-        build_dir="$repo_root/build/vscode-Release"
+    Mac:release)
+        build_dir="$repo_root/build/vscode-release"
         ;;
-    Linux:Debug)
+    Linux:debug)
         build_dir="$repo_root/build/debug-linux"
         ;;
-    Linux:Release)
+    Linux:release)
         build_dir="$repo_root/build/release-linux"
         ;;
     Windows:*)

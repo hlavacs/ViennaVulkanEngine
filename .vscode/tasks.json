@@ -33,7 +33,7 @@
             "problemMatcher": []
         },
         {
-            "label": "Configure Mac Debug",
+            "label": "Configure Mac debug",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
@@ -43,7 +43,7 @@
                 "-S",
                 "${workspaceFolder}",
                 "-B",
-                "${workspaceFolder}/build/vscode-Debug",
+                "${workspaceFolder}/build/vscode-debug",
                 "-G",
                 "Ninja",
                 "-DCMAKE_BUILD_TYPE=Debug",
@@ -58,7 +58,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Configure Mac Release",
+            "label": "Configure Mac release",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
@@ -68,7 +68,7 @@
                 "-S",
                 "${workspaceFolder}",
                 "-B",
-                "${workspaceFolder}/build/vscode-Release",
+                "${workspaceFolder}/build/vscode-release",
                 "-G",
                 "Ninja",
                 "-DCMAKE_BUILD_TYPE=Release",
@@ -83,7 +83,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Configure Windows Debug",
+            "label": "Configure Windows debug",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
@@ -99,7 +99,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Configure Windows Release",
+            "label": "Configure Windows release",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
@@ -115,7 +115,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Configure Linux Debug",
+            "label": "Configure Linux debug",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
@@ -131,7 +131,7 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Configure Linux Release",
+            "label": "Configure Linux release",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
@@ -147,15 +147,15 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Build Mac Debug",
+            "label": "Build Mac debug",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
-                "Configure Mac Debug"
+                "Configure Mac debug"
             ],
             "args": [
                 "--build",
-                "${workspaceFolder}/build/vscode-Debug"
+                "${workspaceFolder}/build/vscode-debug"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -167,15 +167,15 @@
             }
         },
         {
-            "label": "Build Mac Release",
+            "label": "Build Mac release",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
-                "Configure Mac Release"
+                "Configure Mac release"
             ],
             "args": [
                 "--build",
-                "${workspaceFolder}/build/vscode-Release"
+                "${workspaceFolder}/build/vscode-release"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -183,11 +183,11 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Build Windows Debug",
+            "label": "Build Windows debug",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
-                "Configure Windows Debug"
+                "Configure Windows debug"
             ],
             "args": [
                 "--build",
@@ -200,11 +200,11 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Build Windows Release",
+            "label": "Build Windows release",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
-                "Configure Windows Release"
+                "Configure Windows release"
             ],
             "args": [
                 "--build",
@@ -217,11 +217,11 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Build Linux Debug",
+            "label": "Build Linux debug",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
-                "Configure Linux Debug"
+                "Configure Linux debug"
             ],
             "args": [
                 "--build",
@@ -234,11 +234,11 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "Build Linux Release",
+            "label": "Build Linux release",
             "type": "shell",
             "command": "cmake",
             "dependsOn": [
-                "Configure Linux Release"
+                "Configure Linux release"
             ],
             "args": [
                 "--build",

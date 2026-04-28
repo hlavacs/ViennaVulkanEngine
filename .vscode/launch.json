@@ -5,7 +5,7 @@
             "name": "game",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/${input:platform}/${input:variant}/exe/game",
+            "program": "${workspaceFolder}/bin/${input:variant}/exe/game",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -24,7 +24,7 @@
             },
             "windows": {
                 "type": "cppvsdbg",
-                "program": "${workspaceFolder}\\bin\\${input:platform}\\${input:variant}\\exe\\game.exe",
+                "program": "${workspaceFolder}\\bin\\${input:variant}\\exe\\game.exe",
                 "environment": [],
                 "console": "integratedTerminal"
             }
@@ -33,7 +33,7 @@
             "name": "physics",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/${input:platform}/${input:variant}/exe/physics",
+            "program": "${workspaceFolder}/bin/${input:variant}/exe/physics",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -52,7 +52,7 @@
             },
             "windows": {
                 "type": "cppvsdbg",
-                "program": "${workspaceFolder}\\bin\\${input:platform}\\${input:variant}\\exe\\physics.exe",
+                "program": "${workspaceFolder}\\bin\\${input:variant}\\exe\\physics.exe",
                 "environment": [],
                 "console": "integratedTerminal"
             }
@@ -61,7 +61,7 @@
             "name": "sponza",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/${input:platform}/${input:variant}/exe/sponza",
+            "program": "${workspaceFolder}/bin/${input:variant}/exe/sponza",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -81,7 +81,7 @@
             },
             "windows": {
                 "type": "cppvsdbg",
-                "program": "${workspaceFolder}\\bin\\${input:platform}\\${input:variant}\\exe\\sponza.exe",
+                "program": "${workspaceFolder}\\bin\\${input:variant}\\exe\\sponza.exe",
                 "environment": [],
                 "console": "integratedTerminal"
             }
@@ -90,7 +90,7 @@
             "name": "world tests",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/${input:platform}/${input:variant}/exe/WorldTests",
+            "program": "${workspaceFolder}/bin/${input:variant}/exe/WorldTests",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
@@ -109,7 +109,7 @@
             },
             "windows": {
                 "type": "cppvsdbg",
-                "program": "${workspaceFolder}\\bin\\${input:platform}\\${input:variant}\\exe\\WorldTests.exe",
+                "program": "${workspaceFolder}\\bin\\${input:variant}\\exe\\WorldTests.exe",
                 "environment": [],
                 "console": "integratedTerminal"
             }
@@ -169,10 +169,10 @@
             "type": "pickString",
             "description": "Select build variant",
             "options": [
-                "Debug",
-                "Release"
+                "debug",
+                "release"
             ],
-            "default": "Debug"
+            "default": "debug"
         }
     ]
 }

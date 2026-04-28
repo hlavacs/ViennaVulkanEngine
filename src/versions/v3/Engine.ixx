@@ -47,6 +47,24 @@ namespace vve::v3 {
       }
 
       /**
+       * @brief Adapts the world imported-scene callback to a concrete engine instance.
+       * @tparam TEngine Engine implementation type receiving the callback.
+       * @param context Opaque engine pointer stored in `WorldRuntimeAccess`.
+       * @param imported_scene Opaque pointer to the selected v3 imported scene.
+       * @return Empty success result, or an error when the callback data is invalid.
+       */
+      template <typename TEngine>
+      [[nodiscard]] std::expected<void, vve::Error> loadImportedSceneThroughWorld(void *context,
+                                                                                  const void *imported_scene) {
+         if (context == nullptr || imported_scene == nullptr) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         return static_cast<TEngine *>(context)->loadImportedScene(
+             *static_cast<const ImportedScene *>(imported_scene));
+      }
+
+      /**
        * @brief Adapts the world camera callback to a concrete engine instance.
        * @tparam TEngine Engine implementation type receiving the callback.
        * @param context Opaque engine pointer stored in `WorldRuntimeAccess`.
@@ -268,6 +286,7 @@ namespace vve::v3 {
       [[nodiscard]] std::expected<bool, vve::Error> isInitialized() const noexcept;
       [[nodiscard]] std::expected<int, vve::Error> getVersionMajor() const noexcept;
       [[nodiscard]] std::expected<void, vve::Error> loadSceneFile(const std::filesystem::path &file_path);
+      [[nodiscard]] std::expected<void, vve::Error> loadImportedScene(const ImportedScene &imported_scene);
       [[nodiscard]] std::expected<void, vve::Error> setActiveCamera(const vve::Camera &camera);
       [[nodiscard]] std::expected<void, vve::Error> setActiveCamera(std::string_view window_id,
                                                                     const vve::Camera &camera);
@@ -407,6 +426,9 @@ namespace vve::v3 {
       world_bridge_.runtime_access.input = &world_bridge_.input;
       world_bridge_.runtime_access.load_scene = &detail::loadSceneThroughWorld<BasicEngineImplementation<TUserSystems...>>;
       world_bridge_.runtime_access.load_scene_context = this;
+      world_bridge_.runtime_access.load_imported_scene =
+          &detail::loadImportedSceneThroughWorld<BasicEngineImplementation<TUserSystems...>>;
+      world_bridge_.runtime_access.load_imported_scene_context = this;
       world_bridge_.runtime_access.set_camera =
           &detail::setCameraThroughWorld<BasicEngineImplementation<TUserSystems...>>;
       world_bridge_.runtime_access.set_camera_context = this;
@@ -558,6 +580,33 @@ namespace vve::v3 {
       }
 
       scene_state_.loaded_file_path = file_path; // Changing the scene invalidates the previously built frame graph.
+      scene_state_.scene = std::move(*scene);
+      execution_state_.task_graph_dirty = true;
+      return rebuildTaskGraph();
+   }
+
+   /**
+    * @brief Instantiates an already imported scene without reading its source file again.
+    * @param imported_scene Imported scene data produced by the v3 asset system.
+    * @return Empty success result, or a registration/instantiation error.
+    */
+   template <typename... TUserSystems>
+   std::expected<void, vve::Error>
+   BasicEngineImplementation<TUserSystems...>::loadImportedScene(const ImportedScene &imported_scene) {
+      if (!*isInitialized()) {
+         return std::unexpected(vve::Error::not_initialized);
+      }
+
+      if (!imported_scene.handle.value.isValid() || runtime_.scene_loader == nullptr) {
+         return std::unexpected(vve::Error::invalid_argument);
+      }
+
+      const auto scene = runtime_.scene_loader->loadImportedScene(imported_scene);
+      if (!scene) {
+         return std::unexpected(scene.error());
+      }
+
+      scene_state_.loaded_file_path = imported_scene.source_path;
       scene_state_.scene = std::move(*scene);
       execution_state_.task_graph_dirty = true;
       return rebuildTaskGraph();

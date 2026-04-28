@@ -137,6 +137,8 @@ export namespace vve::v3 {
       [[nodiscard]] std::string_view name() const noexcept;
       /// @brief Imports, registers, and instantiates a scene file into runtime scene data.
       [[nodiscard]] std::expected<SceneData, vve::Error> loadScene(const std::filesystem::path &file_path);
+      /// @brief Registers and instantiates a scene that was already imported by the asset system.
+      [[nodiscard]] std::expected<SceneData, vve::Error> loadImportedScene(const ImportedScene &scene);
 
    private:
       std::unique_ptr<TImplementation, void (*)(TImplementation *)> implementation_{nullptr, nullptr}; ///< Owned subsystem implementation hidden behind the facade boundary.

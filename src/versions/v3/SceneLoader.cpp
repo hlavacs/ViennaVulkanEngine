@@ -52,14 +52,28 @@ namespace vve::v3 {
             return std::unexpected(imported_scene.error());
          }
 
+         return loadImportedScene(*imported_scene);
+      }
+
+      /**
+       * @brief Registers and instantiates scene data that was already imported.
+       * @param imported_scene Imported scene content to activate.
+       * @return Runtime scene data on success, or the first orchestration error.
+       */
+      [[nodiscard]] std::expected<SceneData, vve::Error> loadImportedScene(const ImportedScene &imported_scene) {
+         if (!imported_scene.handle.value.isValid()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
          // Resource registration assigns stable engine handles before instantiation.
-         if (auto register_result = resource_system_.registerImportedScene(*imported_scene, file_path);
+         if (auto register_result =
+                 resource_system_.registerImportedScene(imported_scene, imported_scene.source_path);
              !register_result) {
             return std::unexpected(register_result.error());
          }
 
          // Scene instantiation produces the runtime scene representation consumed by systems.
-         return scene_system_.instantiate(*imported_scene);
+         return scene_system_.instantiate(imported_scene);
       }
 
    private:
@@ -84,6 +98,10 @@ namespace vve::v3 {
    VVE_V3_DEFINE_FACADE_METHOD(SceneLoaderFacade, DefaultSceneLoaderImplementation, loadScene,
                                (const std::filesystem::path &file_path), (file_path), ,
                                std::expected<SceneData, vve::Error>)
+
+   /// @brief Loads an already imported scene through the public scene-loader facade.
+   VVE_V3_DEFINE_FACADE_METHOD(SceneLoaderFacade, DefaultSceneLoaderImplementation, loadImportedScene,
+                               (const ImportedScene &scene), (scene), , std::expected<SceneData, vve::Error>)
 
    /// @brief Emits the explicit scene-loader facade instantiation for v3.
    template class SceneLoaderFacade<DefaultSceneLoaderImplementation>;
