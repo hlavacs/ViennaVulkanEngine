@@ -1,3 +1,5 @@
+add_subdirectory(versions/v3/vh)
+
 add_library(ViennaVulkanEngine SHARED)
 add_library(ViennaVulkanEngine::ViennaVulkanEngine ALIAS ViennaVulkanEngine)
 

@@ -10,6 +10,9 @@ if(VVE_TEST_SOURCES)
 
       add_executable("${test_name}" "${test_source}")
       target_link_libraries("${test_name}" PRIVATE ViennaVulkanEngine::ViennaVulkanEngine)
+      if(test_name STREQUAL "VulkanHelperTests")
+         target_link_libraries("${test_name}" PRIVATE vh::VulkanHelpers)
+      endif()
 
       if(APPLE AND VVE_GENERATED_MOLTENVK_ICD_MANIFEST)
          add_test(NAME "${test_name}" COMMAND
