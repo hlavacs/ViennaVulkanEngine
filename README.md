@@ -31,13 +31,13 @@ The runtime resolves `libkosmickrisp_icd.json`, sets `VK_ICD_FILENAMES` before t
 For manual command-line launches, the same selector can be supplied per process:
 
 ```bash
-VVE_VULKAN_ICD=kosmickrisp bin/exe/game
+VVE_VULKAN_ICD=kosmickrisp bin/Mac/Debug/exe/game
 ```
 
 A custom KosmicKrisp manifest can be supplied with:
 
 ```bash
-VVE_KOSMICKRISP_ICD=/path/to/libkosmickrisp_icd.json VVE_VULKAN_ICD=kosmickrisp bin/exe/game
+VVE_KOSMICKRISP_ICD=/path/to/libkosmickrisp_icd.json VVE_VULKAN_ICD=kosmickrisp bin/Mac/Debug/exe/game
 ```
 
 The public `vve::Engine<>`, `vve::ECS<>`, and `vve::World` aliases are selected through a single namespace-style define:
@@ -81,6 +81,21 @@ cmake --build --preset build-debug-linux
 cmake --preset debug-macos     # macOS
 cmake --build --preset build-debug-macos
 ```
+
+Release builds use matching `release-*` presets, for example:
+
+```bash
+cmake --preset release-macos-arm64-llvm
+cmake --build --preset build-release-macos-arm64-llvm
+```
+
+Executables and libraries are written below the selected build directory and mirrored to the project root `bin` directory. The mirrored path is `bin/<Platform>/<Variant>`, for example `bin/Mac/Debug/exe/game`, `bin/Windows/Release/exe/game.exe`, or `bin/Linux/Debug/exe/game`. This keeps platform and variant binaries from overwriting each other while preserving a stable project-local `bin` path.
+
+VS Code is configured to use CMake Tools variants instead of presets so the `CMake: Select Variant` command offers `Debug` and `Release`. The VS Code variant builds use `build/vscode-Debug` and `build/vscode-Release`.
+
+The VS Code Run and Debug list intentionally contains only five launch entries: `game`, `physics`, `sponza`, `world tests`, and `all tests`. Each launch asks for `Platform` (`Mac`, `Windows`, `Linux`) and `Variant` (`Debug`, `Release`) and then runs the matching build task before launch. Select the platform that matches the machine running VS Code; these launch options are shared across operating systems, not cross-compilers.
+
+If CMake Tools asks for a kit on Apple Silicon macOS, select `Homebrew LLVM arm64`. The workspace also uses `cmake/toolchains/macos-arm64-homebrew-llvm.cmake` so stale AppleClang kit selections are redirected to the Homebrew LLVM compiler required for `import std`.
 
 On Apple Silicon macOS with Homebrew LLVM, use the arm64 LLVM preset:
 
@@ -135,30 +150,7 @@ cd vcpkg
 
 ## VS Code
 
-The supported VS Code bootstrap task is `Bootstrap Debug`. It selects the correct host preset automatically and runs:
-
-```text
-Vcpkg Install -> Configure Debug -> Build Debug
-```
-
-Use that task when setting up the project on a new machine.
-
-To run unit tests in VS Code, use `Tasks: Run Task` and choose one of these tasks:
-
-- `Run Unit Tests`
-- `Build And Test Debug`
-
-`Run Unit Tests` executes the existing Debug test build in the workspace:
-
-```text
-ctest --test-dir <active CMake build directory> -C Debug --output-on-failure
-```
-
-`Build And Test Debug` runs:
-
-```text
-Build Debug -> Run Unit Tests
-```
+The launch entries run these task labels internally: `Build Mac Debug`, `Build Mac Release`, `Build Windows Debug`, `Build Windows Release`, `Build Linux Debug`, and `Build Linux Release`. To run tests in VS Code, use the `world tests` or `all tests` launch entry and choose the desired platform and variant.
 
 ## Unit Tests
 

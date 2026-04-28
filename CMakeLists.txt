@@ -242,39 +242,79 @@ if(WIN32)
    list(REMOVE_DUPLICATES VVE_WINDOWS_RUNTIME_DLLS)
 endif()
 
+set(VVE_OUTPUT_CONFIG_DIR "$<LOWER_CASE:$<CONFIG>>")
+set(VVE_ARCHIVE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/${VVE_OUTPUT_CONFIG_DIR}/lib")
+set(VVE_LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/${VVE_OUTPUT_CONFIG_DIR}/lib")
+set(VVE_RUNTIME_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/${VVE_OUTPUT_CONFIG_DIR}/exe")
+set(VVE_MODULE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/${VVE_OUTPUT_CONFIG_DIR}/dll")
+
+if(WIN32)
+   set(VVE_PROJECT_PLATFORM_DIR "Windows")
+elseif(APPLE)
+   set(VVE_PROJECT_PLATFORM_DIR "Mac")
+elseif(UNIX)
+   set(VVE_PROJECT_PLATFORM_DIR "Linux")
+else()
+   set(VVE_PROJECT_PLATFORM_DIR "${CMAKE_SYSTEM_NAME}")
+endif()
+
+set(VVE_PROJECT_CONFIG_DIR "$<CONFIG>")
+set(VVE_PROJECT_ARCHIVE_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_PLATFORM_DIR}/${VVE_PROJECT_CONFIG_DIR}/lib")
+set(VVE_PROJECT_LIBRARY_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_PLATFORM_DIR}/${VVE_PROJECT_CONFIG_DIR}/lib")
+set(VVE_PROJECT_RUNTIME_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_PLATFORM_DIR}/${VVE_PROJECT_CONFIG_DIR}/exe")
+set(VVE_PROJECT_MODULE_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_PLATFORM_DIR}/${VVE_PROJECT_CONFIG_DIR}/dll")
+
 if(WIN32 AND VVE_WINDOWS_RUNTIME_DLLS)
    add_custom_target(vve_copy_runtime_dlls
-      COMMAND "${CMAKE_COMMAND}" -E make_directory "${CMAKE_SOURCE_DIR}/bin/exe"
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${VVE_RUNTIME_OUTPUT_DIR}"
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${VVE_PROJECT_RUNTIME_OUTPUT_DIR}"
       COMMAND "${CMAKE_COMMAND}" -E copy_if_different
          ${VVE_WINDOWS_RUNTIME_DLLS}
-         "${CMAKE_SOURCE_DIR}/bin/exe"
+         "${VVE_RUNTIME_OUTPUT_DIR}"
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+         ${VVE_WINDOWS_RUNTIME_DLLS}
+         "${VVE_PROJECT_RUNTIME_OUTPUT_DIR}"
       COMMAND_EXPAND_LISTS
    )
 endif()
+
+function(vve_mirror_target_file target_name destination_dir)
+   add_custom_command(TARGET "${target_name}" POST_BUILD
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${destination_dir}"
+      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+         "$<TARGET_FILE:${target_name}>"
+         "${destination_dir}"
+      COMMAND_EXPAND_LISTS
+   )
+endfunction()
 
 function(vve_set_output_dirs target_name)
    get_target_property(target_type "${target_name}" TYPE)
 
    set_target_properties("${target_name}" PROPERTIES
-      ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/lib"
+      ARCHIVE_OUTPUT_DIRECTORY "${VVE_ARCHIVE_OUTPUT_DIR}"
    )
-   foreach(config ${CMAKE_CONFIGURATION_TYPES})
-      string(TOUPPER "${config}" config_upper)
-      set_target_properties("${target_name}" PROPERTIES
-         "ARCHIVE_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/lib"
-      )
-   endforeach()
 
    if(target_type STREQUAL "EXECUTABLE")
       set_target_properties("${target_name}" PROPERTIES
-         RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/exe"
+         RUNTIME_OUTPUT_DIRECTORY "${VVE_RUNTIME_OUTPUT_DIR}"
       )
-      foreach(config ${CMAKE_CONFIGURATION_TYPES})
-         string(TOUPPER "${config}" config_upper)
+      if(APPLE)
+         set(vve_executable_rpath "@loader_path/../lib")
+         if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "")
+            list(APPEND vve_executable_rpath "${VVE_VULKAN_SDK_ROOT}/lib")
+         endif()
          set_target_properties("${target_name}" PROPERTIES
-            "RUNTIME_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/exe"
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "${vve_executable_rpath}"
          )
-      endforeach()
+      elseif(UNIX)
+         set_target_properties("${target_name}" PROPERTIES
+            BUILD_WITH_INSTALL_RPATH TRUE
+            INSTALL_RPATH "$ORIGIN/../lib"
+         )
+      endif()
+      vve_mirror_target_file("${target_name}" "${VVE_PROJECT_RUNTIME_OUTPUT_DIR}")
 
       if(WIN32)
          if(TARGET vve_copy_runtime_dlls)
@@ -290,14 +330,9 @@ function(vve_set_output_dirs target_name)
    elseif(target_type STREQUAL "SHARED_LIBRARY")
       if(WIN32)
          set_target_properties("${target_name}" PROPERTIES
-            RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/exe"
+            RUNTIME_OUTPUT_DIRECTORY "${VVE_RUNTIME_OUTPUT_DIR}"
          )
-         foreach(config ${CMAKE_CONFIGURATION_TYPES})
-            string(TOUPPER "${config}" config_upper)
-            set_target_properties("${target_name}" PROPERTIES
-               "RUNTIME_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/exe"
-            )
-         endforeach()
+         vve_mirror_target_file("${target_name}" "${VVE_PROJECT_RUNTIME_OUTPUT_DIR}")
          if(TARGET vve_copy_runtime_dlls)
             add_dependencies("${target_name}" vve_copy_runtime_dlls)
          endif()
@@ -309,25 +344,15 @@ function(vve_set_output_dirs target_name)
          )
       else()
          set_target_properties("${target_name}" PROPERTIES
-            LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/lib"
+            LIBRARY_OUTPUT_DIRECTORY "${VVE_LIBRARY_OUTPUT_DIR}"
          )
-         foreach(config ${CMAKE_CONFIGURATION_TYPES})
-            string(TOUPPER "${config}" config_upper)
-            set_target_properties("${target_name}" PROPERTIES
-               "LIBRARY_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/lib"
-            )
-         endforeach()
+         vve_mirror_target_file("${target_name}" "${VVE_PROJECT_LIBRARY_OUTPUT_DIR}")
       endif()
    elseif(target_type STREQUAL "MODULE_LIBRARY")
       set_target_properties("${target_name}" PROPERTIES
-         LIBRARY_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin/dll"
+         LIBRARY_OUTPUT_DIRECTORY "${VVE_MODULE_OUTPUT_DIR}"
       )
-      foreach(config ${CMAKE_CONFIGURATION_TYPES})
-         string(TOUPPER "${config}" config_upper)
-         set_target_properties("${target_name}" PROPERTIES
-            "LIBRARY_OUTPUT_DIRECTORY_${config_upper}" "${CMAKE_SOURCE_DIR}/bin/dll"
-         )
-      endforeach()
+      vve_mirror_target_file("${target_name}" "${VVE_PROJECT_MODULE_OUTPUT_DIR}")
    endif()
 endfunction()
 

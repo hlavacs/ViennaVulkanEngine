@@ -2,228 +2,177 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Debug game",
+            "name": "game",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/exe/game",
+            "program": "${workspaceFolder}/bin/${input:platform}/${input:variant}/exe/game",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "VK_ICD_FILENAMES",
-                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
-                }
-            ],
+            "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "Build Debug"
+            "MIMode": "gdb",
+            "preLaunchTask": "Build ${input:platform} ${input:variant}",
+            "osx": {
+                "MIMode": "lldb",
+                "environment": [
+                    {
+                        "name": "VK_ICD_FILENAMES",
+                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/MoltenVK_icd.json"
+                    }
+                ]
+            },
+            "windows": {
+                "type": "cppvsdbg",
+                "program": "${workspaceFolder}\\bin\\${input:platform}\\${input:variant}\\exe\\game.exe",
+                "environment": [],
+                "console": "integratedTerminal"
+            }
         },
         {
-            "name": "Debug physics",
+            "name": "physics",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/exe/physics",
+            "program": "${workspaceFolder}/bin/${input:platform}/${input:variant}/exe/physics",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "VK_ICD_FILENAMES",
-                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
-                }
-            ],
+            "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "Build Debug"
+            "MIMode": "gdb",
+            "preLaunchTask": "Build ${input:platform} ${input:variant}",
+            "osx": {
+                "MIMode": "lldb",
+                "environment": [
+                    {
+                        "name": "VK_ICD_FILENAMES",
+                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/MoltenVK_icd.json"
+                    }
+                ]
+            },
+            "windows": {
+                "type": "cppvsdbg",
+                "program": "${workspaceFolder}\\bin\\${input:platform}\\${input:variant}\\exe\\physics.exe",
+                "environment": [],
+                "console": "integratedTerminal"
+            }
         },
         {
-            "name": "Debug sponza",
+            "name": "sponza",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/exe/sponza",
+            "program": "${workspaceFolder}/bin/${input:platform}/${input:variant}/exe/sponza",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "VK_ICD_FILENAMES",
-                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
-                }
-            ],
+            "environment": [],
             "externalConsole": false,
             "internalConsoleOptions": "openOnSessionStart",
-            "MIMode": "lldb",
-            "preLaunchTask": "Build Debug"
+            "MIMode": "gdb",
+            "preLaunchTask": "Build ${input:platform} ${input:variant}",
+            "osx": {
+                "MIMode": "lldb",
+                "environment": [
+                    {
+                        "name": "VK_ICD_FILENAMES",
+                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/MoltenVK_icd.json"
+                    }
+                ]
+            },
+            "windows": {
+                "type": "cppvsdbg",
+                "program": "${workspaceFolder}\\bin\\${input:platform}\\${input:variant}\\exe\\sponza.exe",
+                "environment": [],
+                "console": "integratedTerminal"
+            }
         },
         {
-            "name": "Debug WorldTests",
+            "name": "world tests",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/bin/exe/WorldTests",
+            "program": "${workspaceFolder}/bin/${input:platform}/${input:variant}/exe/WorldTests",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "VK_ICD_FILENAMES",
-                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
-                }
-            ],
+            "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "Build Debug"
+            "MIMode": "gdb",
+            "preLaunchTask": "Build ${input:platform} ${input:variant}",
+            "osx": {
+                "MIMode": "lldb",
+                "environment": [
+                    {
+                        "name": "VK_ICD_FILENAMES",
+                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/MoltenVK_icd.json"
+                    }
+                ]
+            },
+            "windows": {
+                "type": "cppvsdbg",
+                "program": "${workspaceFolder}\\bin\\${input:platform}\\${input:variant}\\exe\\WorldTests.exe",
+                "environment": [],
+                "console": "integratedTerminal"
+            }
         },
         {
-            "name": "Run all tests",
+            "name": "all tests",
             "type": "cppdbg",
             "request": "launch",
-            "program": "/usr/bin/env",
+            "program": "/bin/sh",
             "args": [
-                "VK_ICD_FILENAMES=${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json",
-                "ctest",
-                "--test-dir",
-                "${workspaceFolder}/build/debug-macos-arm64-llvm",
-                "--output-on-failure"
+                "${workspaceFolder}/tools/vscode/run-ctest.sh",
+                "${input:platform}",
+                "${input:variant}"
             ],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "VK_ICD_FILENAMES",
-                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
-                }
-            ],
+            "environment": [],
             "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "Build Debug",
-            "noDebug": true
-        },
-        {
-            "name": "Run WorldTests",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "/usr/bin/env",
-            "args": [
-                "VK_ICD_FILENAMES=${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json",
-                "ctest",
-                "--test-dir",
-                "${workspaceFolder}/build/debug-macos-arm64-llvm",
-                "--output-on-failure",
-                "-R",
-                "^WorldTests$"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [
-                {
-                    "name": "VK_ICD_FILENAMES",
-                    "value": "${workspaceFolder}/build/debug-macos-arm64-llvm/vulkan/icd.d/MoltenVK_icd.json"
-                }
-            ],
-            "externalConsole": false,
-            "MIMode": "lldb",
-            "preLaunchTask": "Build Debug",
-            "noDebug": true
-        },
-        {
-            "name": "Debug game (Windows)",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/exe/game.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "integratedTerminal",
-            "preLaunchTask": "Build Debug"
-        },
-        {
-            "name": "Debug physics (Windows)",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/exe/physics.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "integratedTerminal",
-            "preLaunchTask": "Build Debug"
-        },
-        {
-            "name": "Debug sponza (Windows)",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/exe/sponza.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "integratedTerminal",
-            "preLaunchTask": "Build Debug"
-        },
-        {
-            "name": "Debug WorldTests (Windows)",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/exe/WorldTests.exe",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "integratedTerminal",
-            "preLaunchTask": "Build Debug"
-        },
-        {
-            "name": "Run all tests (Windows)",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${env:ProgramFiles}/CMake/bin/ctest.exe",
-            "args": [
-                "--test-dir",
-                "${workspaceFolder}/build/debug-windows",
-                "-C",
-                "Debug",
-                "--output-on-failure"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "integratedTerminal",
-            "preLaunchTask": "Build Debug",
-            "noDebug": true
-        },
-        {
-            "name": "Run WorldTests (Windows)",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${env:ProgramFiles}/CMake/bin/ctest.exe",
-            "args": [
-                "--test-dir",
-                "${workspaceFolder}/build/debug-windows",
-                "-C",
-                "Debug",
-                "--output-on-failure",
-                "-R",
-                "^WorldTests$"
-            ],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "console": "integratedTerminal",
-            "preLaunchTask": "Build Debug",
-            "noDebug": true
+            "MIMode": "gdb",
+            "preLaunchTask": "Build ${input:platform} ${input:variant}",
+            "noDebug": true,
+            "osx": {
+                "MIMode": "lldb"
+            },
+            "windows": {
+                "type": "cppvsdbg",
+                "program": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-File",
+                    "${workspaceFolder}\\tools\\vscode\\run-ctest.ps1",
+                    "-Platform",
+                    "${input:platform}",
+                    "-Variant",
+                    "${input:variant}"
+                ],
+                "console": "integratedTerminal"
+            }
         }
     ],
-    "compounds": [
+    "inputs": [
         {
-            "name": "Debug all examples",
-            "configurations": [
-                "Debug game",
-                "Debug physics",
-                "Debug sponza"
+            "id": "platform",
+            "type": "pickString",
+            "description": "Select platform",
+            "options": [
+                "Mac",
+                "Windows",
+                "Linux"
             ],
-            "stopAll": true
+            "default": "Mac"
+        },
+        {
+            "id": "variant",
+            "type": "pickString",
+            "description": "Select build variant",
+            "options": [
+                "Debug",
+                "Release"
+            ],
+            "default": "Debug"
         }
     ]
 }

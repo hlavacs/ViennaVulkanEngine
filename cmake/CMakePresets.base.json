@@ -10,6 +10,14 @@
       }
     },
     {
+      "name": "release-base",
+      "hidden": true,
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "VVE_DEFAULT_VULKAN_ICD": "system"
+      }
+    },
+    {
       "name": "windows-base",
       "hidden": true,
       "environment": {
@@ -29,6 +37,18 @@
       }
     },
     {
+      "name": "release-windows",
+      "displayName": "Release (Windows)",
+      "inherits": [
+        "release-base",
+        "windows-base"
+      ],
+      "generator": "Visual Studio 17 2022",
+      "cacheVariables": {
+        "VVE_VCPKG_TRIPLET": "x64-windows"
+      }
+    },
+    {
       "name": "debug-linux",
       "displayName": "Debug (Linux)",
       "inherits": "debug-base",
@@ -39,12 +59,35 @@
       }
     },
     {
+      "name": "release-linux",
+      "displayName": "Release (Linux)",
+      "inherits": "release-base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "VVE_VCPKG_TRIPLET": "x64-linux"
+      }
+    },
+    {
       "name": "debug-macos",
       "displayName": "Debug (macOS)",
       "inherits": "debug-base",
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
+        "VVE_DEFAULT_VULKAN_ICD": "moltenvk",
+        "VVE_VCPKG_TRIPLET": "arm64-osx"
+      }
+    },
+    {
+      "name": "release-macos",
+      "displayName": "Release (macOS)",
+      "inherits": "release-base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
         "VVE_DEFAULT_VULKAN_ICD": "moltenvk",
         "VVE_VCPKG_TRIPLET": "arm64-osx"
       }
@@ -56,12 +99,19 @@
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "CMAKE_CXX_COMPILER": "/opt/homebrew/opt/llvm/bin/clang++",
-        "CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS": "/opt/homebrew/opt/llvm/bin/clang-scan-deps",
-        "CMAKE_CXX_MODULE_STD": "ON",
-        "CMAKE_CXX_STDLIB_MODULES_JSON": "/opt/homebrew/opt/llvm/lib/c++/libc++.modules.json",
-        "CMAKE_EXPERIMENTAL_CXX_IMPORT_STD": "451f2fe2-a8a2-47c3-bc32-94786d8fc91b",
-        "CMAKE_OSX_ARCHITECTURES": "arm64",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
+        "VVE_DEFAULT_VULKAN_ICD": "moltenvk",
+        "VVE_VCPKG_TRIPLET": "arm64-osx"
+      }
+    },
+    {
+      "name": "release-macos-arm64-llvm",
+      "displayName": "Release (macOS arm64 LLVM)",
+      "inherits": "release-base",
+      "generator": "Ninja",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
         "VVE_DEFAULT_VULKAN_ICD": "moltenvk",
         "VVE_VCPKG_TRIPLET": "arm64-osx"
       }
@@ -79,9 +129,25 @@
       "jobs": 16
     },
     {
+      "name": "build-release-windows",
+      "displayName": "Build Release (Windows)",
+      "configurePreset": "release-windows",
+      "environment": {
+        "PATH": "${sourceDir}/tools/shims;$penv{PATH}"
+      },
+      "configuration": "Release",
+      "jobs": 16
+    },
+    {
       "name": "build-debug-linux",
       "displayName": "Build Debug (Linux)",
       "configurePreset": "debug-linux",
+      "jobs": 16
+    },
+    {
+      "name": "build-release-linux",
+      "displayName": "Build Release (Linux)",
+      "configurePreset": "release-linux",
       "jobs": 16
     },
     {
@@ -91,9 +157,21 @@
       "jobs": 16
     },
     {
+      "name": "build-release-macos",
+      "displayName": "Build Release (macOS)",
+      "configurePreset": "release-macos",
+      "jobs": 16
+    },
+    {
       "name": "build-debug-macos-arm64-llvm",
       "displayName": "Build Debug (macOS arm64 LLVM)",
       "configurePreset": "debug-macos-arm64-llvm",
+      "jobs": 16
+    },
+    {
+      "name": "build-release-macos-arm64-llvm",
+      "displayName": "Build Release (macOS arm64 LLVM)",
+      "configurePreset": "release-macos-arm64-llvm",
       "jobs": 16
     }
   ]

@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Homebrew LLVM arm64",
+    "description": "Apple Silicon macOS kit for C++23 modules and import std.",
+    "compilers": {
+      "C": "/opt/homebrew/opt/llvm/bin/clang",
+      "CXX": "/opt/homebrew/opt/llvm/bin/clang++"
+    },
+    "preferredGenerator": {
+      "name": "Ninja"
+    },
+    "cmakeSettings": {
+      "CMAKE_TOOLCHAIN_FILE": "${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake"
+    },
+    "isTrusted": true
+  }
+]
