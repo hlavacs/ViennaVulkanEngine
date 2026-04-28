@@ -38,6 +38,11 @@ export namespace vh::low {
                                                     std::uint32_t queue_family,
                                                     void *context);
 
+   enum class PhysicalDeviceSelectionMode {
+      first_compatible,
+      highest_score
+   };
+
    struct PhysicalDeviceSelectionRequest {
       VkInstance instance{VK_NULL_HANDLE};
       VkQueueFlags required_queue_flags{VK_QUEUE_GRAPHICS_BIT};
@@ -45,6 +50,7 @@ export namespace vh::low {
       std::span<const char *const> optional_extensions{};
       PresentationSupportCallback presentation_support{nullptr};
       void *presentation_context{nullptr};
+      PhysicalDeviceSelectionMode selection_mode{PhysicalDeviceSelectionMode::first_compatible};
       bool prefer_discrete_gpu{true};
    };
 
@@ -124,6 +130,116 @@ export namespace vh::low {
       void *recorder_context{nullptr};
    };
 
+   struct SurfaceSupport {
+      VkSurfaceCapabilitiesKHR capabilities{};
+      std::vector<VkSurfaceFormatKHR> formats{};
+      std::vector<VkPresentModeKHR> present_modes{};
+   };
+
+   struct SwapchainRequest {
+      VkPhysicalDevice physical_device{VK_NULL_HANDLE};
+      VkDevice device{VK_NULL_HANDLE};
+      VkSurfaceKHR surface{VK_NULL_HANDLE};
+      std::uint32_t width{0};
+      std::uint32_t height{0};
+      VkImageUsageFlags image_usage{VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT};
+      VkCompositeAlphaFlagBitsKHR composite_alpha{VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR};
+      VkSwapchainKHR old_swapchain{VK_NULL_HANDLE};
+   };
+
+   struct SwapchainCreation {
+      VkSwapchainKHR swapchain{VK_NULL_HANDLE};
+      VkSurfaceFormatKHR surface_format{};
+      VkPresentModeKHR present_mode{VK_PRESENT_MODE_FIFO_KHR};
+      VkExtent2D extent{};
+      std::vector<VkImage> images{};
+   };
+
+   struct ImageView2DRequest {
+      VkDevice device{VK_NULL_HANDLE};
+      std::span<const VkImage> images{};
+      VkFormat format{VK_FORMAT_UNDEFINED};
+      VkImageAspectFlags aspect_mask{VK_IMAGE_ASPECT_COLOR_BIT};
+      std::uint32_t mip_levels{1};
+      std::uint32_t array_layers{1};
+   };
+
+   struct ColorDepthRenderPassRequest {
+      VkDevice device{VK_NULL_HANDLE};
+      std::span<const VkFormat> color_formats{};
+      VkFormat depth_format{VK_FORMAT_UNDEFINED};
+      VkAttachmentLoadOp color_load_op{VK_ATTACHMENT_LOAD_OP_DONT_CARE};
+      VkAttachmentStoreOp color_store_op{VK_ATTACHMENT_STORE_OP_STORE};
+      VkImageLayout color_initial_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+      VkImageLayout color_final_layout{VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+      VkAttachmentLoadOp depth_load_op{VK_ATTACHMENT_LOAD_OP_DONT_CARE};
+      VkAttachmentStoreOp depth_store_op{VK_ATTACHMENT_STORE_OP_DONT_CARE};
+      VkImageLayout depth_initial_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+      VkImageLayout depth_final_layout{VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+      bool external_dependencies{false};
+   };
+
+   struct FramebufferRequest {
+      VkDevice device{VK_NULL_HANDLE};
+      VkRenderPass render_pass{VK_NULL_HANDLE};
+      std::span<const VkImageView> color_image_views{};
+      VkImageView depth_image_view{VK_NULL_HANDLE};
+      VkExtent2D extent{};
+      std::uint32_t layers{1};
+   };
+
+   struct CommandBufferAllocationRequest {
+      VkDevice device{VK_NULL_HANDLE};
+      VkCommandPool command_pool{VK_NULL_HANDLE};
+      std::uint32_t count{0};
+      VkCommandBufferLevel level{VK_COMMAND_BUFFER_LEVEL_PRIMARY};
+   };
+
+   struct FrameSyncPrimitives {
+      VkSemaphore image_available{VK_NULL_HANDLE};
+      VkSemaphore render_finished{VK_NULL_HANDLE};
+      VkFence render_fence{VK_NULL_HANDLE};
+   };
+
+   struct DescriptorSetAllocationRequest {
+      VkDevice device{VK_NULL_HANDLE};
+      std::span<const VkDescriptorSetLayout> set_layouts{};
+      std::span<const VkDescriptorPoolSize> pool_sizes{};
+      std::uint32_t max_sets{0};
+      VkDescriptorPoolCreateFlags pool_flags{0};
+   };
+
+   struct DescriptorSetAllocation {
+      VkDescriptorPool pool{VK_NULL_HANDLE};
+      std::vector<VkDescriptorSet> sets{};
+   };
+
+   struct BufferToImageUpload2DRecording {
+      VkBuffer staging_buffer{VK_NULL_HANDLE};
+      VkImage image{VK_NULL_HANDLE};
+      std::uint32_t width{0};
+      std::uint32_t height{0};
+      VkImageAspectFlags aspect_mask{VK_IMAGE_ASPECT_COLOR_BIT};
+      std::uint32_t mip_levels{1};
+      std::uint32_t array_layers{1};
+      VkImageLayout old_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+      VkImageLayout transfer_layout{VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL};
+      VkImageLayout final_layout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+      VkPipelineStageFlags final_dst_stage_mask{VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                                                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
+   };
+
+   struct ClearColorImageRecording {
+      VkImage image{VK_NULL_HANDLE};
+      VkClearColorValue clear_color{};
+      VkImageAspectFlags aspect_mask{VK_IMAGE_ASPECT_COLOR_BIT};
+      VkImageLayout old_layout{VK_IMAGE_LAYOUT_UNDEFINED};
+      VkImageLayout transfer_layout{VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL};
+      VkImageLayout final_layout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+      VkPipelineStageFlags final_dst_stage_mask{VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
+                                                VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
+   };
+
    [[nodiscard]] std::string versionString(std::uint32_t version);
    [[nodiscard]] std::uint32_t chooseApiVersion(std::uint32_t available_version,
                                                 ApiVersionPolicy policy) noexcept;
@@ -152,6 +268,9 @@ export namespace vh::low {
                                                  std::vector<VkQueueFamilyProperties> &queue_families) noexcept;
    [[nodiscard]] VkResult enumerateDeviceExtensions(VkPhysicalDevice device,
                                                     std::vector<VkExtensionProperties> &extensions) noexcept;
+   [[nodiscard]] VkResult hasDeviceExtension(VkPhysicalDevice device,
+                                             std::string_view name,
+                                             bool &supported) noexcept;
    [[nodiscard]] VkResult selectPhysicalDevice(const PhysicalDeviceSelectionRequest &request,
                                                PhysicalDeviceSelection &selection) noexcept;
    [[nodiscard]] VkResult createDevice(const DeviceProfile &profile,
@@ -169,6 +288,49 @@ export namespace vh::low {
    void destroyImage2D(VkDevice device, Image2DAllocation &allocation) noexcept;
 
    [[nodiscard]] VkResult submitOneTimeCommands(const OneTimeSubmitRequest &request) noexcept;
+
+   [[nodiscard]] VkResult querySurfaceSupport(VkPhysicalDevice physical_device,
+                                              VkSurfaceKHR surface,
+                                              SurfaceSupport &support) noexcept;
+   [[nodiscard]] VkResult createSwapchain(const SwapchainRequest &request,
+                                          SwapchainCreation &creation) noexcept;
+   void destroySwapchain(VkDevice device, SwapchainCreation &creation) noexcept;
+   [[nodiscard]] VkResult createImageViews2D(const ImageView2DRequest &request,
+                                             std::vector<VkImageView> &image_views) noexcept;
+   void destroyImageViews(VkDevice device, std::vector<VkImageView> &image_views) noexcept;
+   [[nodiscard]] VkResult chooseSupportedDepthFormat(VkPhysicalDevice physical_device,
+                                                     std::span<const VkFormat> candidates,
+                                                     VkFormatFeatureFlags required_features,
+                                                     VkFormat &format) noexcept;
+   [[nodiscard]] VkResult createColorDepthRenderPass(const ColorDepthRenderPassRequest &request,
+                                                     VkRenderPass &render_pass) noexcept;
+   [[nodiscard]] VkResult createFramebuffers(const FramebufferRequest &request,
+                                             std::vector<VkFramebuffer> &framebuffers) noexcept;
+   void destroyFramebuffers(VkDevice device, std::vector<VkFramebuffer> &framebuffers) noexcept;
+   [[nodiscard]] VkResult allocateCommandBuffers(const CommandBufferAllocationRequest &request,
+                                                 std::vector<VkCommandBuffer> &command_buffers) noexcept;
+   [[nodiscard]] VkResult createFrameSyncPrimitives(VkDevice device,
+                                                    std::uint32_t count,
+                                                    VkFenceCreateFlags fence_flags,
+                                                    std::vector<FrameSyncPrimitives> &sync) noexcept;
+   void destroyFrameSyncPrimitives(VkDevice device,
+                                   std::vector<FrameSyncPrimitives> &sync) noexcept;
+   [[nodiscard]] VkResult createDescriptorSetLayout(VkDevice device,
+                                                    std::span<const VkDescriptorSetLayoutBinding> bindings,
+                                                    VkDescriptorSetLayout &layout,
+                                                    VkDescriptorSetLayoutCreateFlags flags = 0) noexcept;
+   [[nodiscard]] VkResult createDescriptorPoolAndAllocateSets(
+       const DescriptorSetAllocationRequest &request,
+       DescriptorSetAllocation &allocation) noexcept;
+   void destroyDescriptorSetAllocation(VkDevice device, DescriptorSetAllocation &allocation) noexcept;
+   [[nodiscard]] VkResult allocateDescriptorSets(VkDevice device,
+                                                 VkDescriptorPool pool,
+                                                 std::span<const VkDescriptorSetLayout> set_layouts,
+                                                 std::vector<VkDescriptorSet> &sets) noexcept;
+   [[nodiscard]] VkResult recordBufferToImageUpload2D(VkCommandBuffer command_buffer,
+                                                      const BufferToImageUpload2DRecording &recording) noexcept;
+   [[nodiscard]] VkResult recordClearColorImage(VkCommandBuffer command_buffer,
+                                                const ClearColorImageRecording &recording) noexcept;
 
    [[nodiscard]] VkSurfaceFormatKHR chooseSurfaceFormat(std::span<const VkSurfaceFormatKHR> formats) noexcept;
    [[nodiscard]] VkPresentModeKHR choosePresentMode(std::span<const VkPresentModeKHR> modes) noexcept;

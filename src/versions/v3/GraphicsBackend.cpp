@@ -13,6 +13,7 @@ module;
 module VEEngine.V3;
 import std;
 import :Internal;
+import vh.low;
 
 /**
  * @file
@@ -39,8 +40,7 @@ namespace vve::v3 {
 
       /// @brief Converts a packed Vulkan version to major.minor.patch text.
       [[nodiscard]] std::string versionString(const std::uint32_t version) {
-         return std::format("{}.{}.{}", VK_API_VERSION_MAJOR(version), VK_API_VERSION_MINOR(version),
-                            VK_API_VERSION_PATCH(version));
+         return vh::low::versionString(version);
       }
 
       /// @brief Reads an environment variable for diagnostics without mutating loader state.
@@ -999,19 +999,17 @@ namespace vve::v3 {
 
       /// @brief Returns the expected bytes per texel for upload validation.
       [[nodiscard]] std::optional<std::size_t> imageFormatBytesPerTexel(GpuImageFormat format) {
-         switch (format) {
-         case GpuImageFormat::rgba8_unorm:
-         case GpuImageFormat::rgba8_srgb:
-         case GpuImageFormat::bgra8_srgb:
-            return 4U;
-         case GpuImageFormat::rgba16_float:
-            return 8U;
-         case GpuImageFormat::depth32_float:
-         case GpuImageFormat::unknown:
+         const auto vk_format = imageFormat(format);
+         if (!vk_format.has_value()) {
             return std::nullopt;
          }
 
-         return std::nullopt;
+         const auto bytes_per_texel = vh::low::imageFormatBytesPerTexel(*vk_format);
+         if (!bytes_per_texel.has_value()) {
+            return std::nullopt;
+         }
+
+         return static_cast<std::size_t>(*bytes_per_texel);
       }
 
       /// @brief Converts backend-neutral buffer usage to Vulkan buffer usage flags.
@@ -1045,78 +1043,6 @@ namespace vve::v3 {
          }
       }
 
-      /// @brief Chooses a swapchain surface format that can also build compatible graphics pipelines.
-      [[nodiscard]] VkSurfaceFormatKHR chooseSurfaceFormat(const std::vector<VkSurfaceFormatKHR> &formats) {
-         constexpr std::array preferred_formats{
-             VK_FORMAT_B8G8R8A8_SRGB,
-             VK_FORMAT_R8G8B8A8_SRGB,
-             VK_FORMAT_B8G8R8A8_UNORM,
-             VK_FORMAT_R8G8B8A8_UNORM,
-             VK_FORMAT_R16G16B16A16_SFLOAT};
-
-         for (const auto preferred_format : preferred_formats) {
-            const auto preferred = std::ranges::find_if(formats, [preferred_format](const VkSurfaceFormatKHR &format) {
-               return format.format == preferred_format &&
-                      format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-            });
-            if (preferred != formats.end()) {
-               return *preferred;
-            }
-         }
-
-         return formats.empty() ? VkSurfaceFormatKHR{.format = VK_FORMAT_B8G8R8A8_SRGB,
-                                                     .colorSpace = VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}
-                                : formats.front();
-      }
-
-      /// @brief Chooses a presentation mode that is available on every Vulkan implementation.
-      [[nodiscard]] VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR> &modes) {
-         if (std::ranges::contains(modes, VK_PRESENT_MODE_MAILBOX_KHR)) {
-            return VK_PRESENT_MODE_MAILBOX_KHR;
-         }
-         if (std::ranges::contains(modes, VK_PRESENT_MODE_FIFO_KHR)) {
-            return VK_PRESENT_MODE_FIFO_KHR;
-         }
-
-         return modes.empty() ? VK_PRESENT_MODE_FIFO_KHR : modes.front();
-      }
-
-      /// @brief Chooses the swapchain extent clamped to surface capabilities.
-      [[nodiscard]] VkExtent2D chooseSwapchainExtent(const VkSurfaceCapabilitiesKHR &capabilities,
-                                                     const NativeWindowHandle &window) {
-         if (capabilities.currentExtent.width != std::numeric_limits<std::uint32_t>::max()) {
-            return capabilities.currentExtent;
-         }
-
-         const auto clamp_extent = [](std::uint32_t value, std::uint32_t minimum, std::uint32_t maximum) {
-            return std::min(std::max(value, minimum), maximum);
-         };
-         return VkExtent2D{.width = clamp_extent(std::max(window.width, 1U), capabilities.minImageExtent.width,
-                                                 capabilities.maxImageExtent.width),
-                           .height = clamp_extent(std::max(window.height, 1U), capabilities.minImageExtent.height,
-                                                  capabilities.maxImageExtent.height)};
-      }
-
-      /// @brief Chooses a composite-alpha mode accepted by the surface.
-      [[nodiscard]] VkCompositeAlphaFlagBitsKHR chooseCompositeAlpha(VkCompositeAlphaFlagsKHR supported) {
-         if ((supported & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR) != 0) {
-            return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-         }
-         if ((supported & VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR) != 0) {
-            return VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR;
-         }
-         if ((supported & VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR) != 0) {
-            return VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR;
-         }
-
-         return VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
-      }
-
-      /// @brief Returns the number of conservative frame-sync slots used by one window.
-      [[nodiscard]] std::uint32_t frameSyncSlotCount(std::size_t image_count) {
-         return static_cast<std::uint32_t>(std::max<std::size_t>(1U, std::min<std::size_t>(2U, image_count)));
-      }
-
       /// @brief Builds a stable clear color so different windows are visually distinguishable.
       [[nodiscard]] VkClearColorValue windowClearColor(const WindowSwapchainResources &summary) {
          const auto bits = summary.handle.value.value();
@@ -1130,59 +1056,36 @@ namespace vve::v3 {
 
       [[nodiscard]] bool hasDeviceExtension(VkPhysicalDevice device, const char *name);
 
-      /// @brief Returns whether a physical device supports a queue family with graphics work.
-      [[nodiscard]] std::optional<std::uint32_t> graphicsQueueFamily(VkInstance instance, VkPhysicalDevice device,
-                                                                     bool require_presentation) {
-         std::uint32_t queue_family_count = 0;
-         vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
-         if (queue_family_count == 0) {
-            return std::nullopt;
-         }
-
-         std::vector<VkQueueFamilyProperties> queue_families(queue_family_count);
-         vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, queue_families.data());
-         for (std::uint32_t index = 0; index < queue_family_count; ++index) {
-            if ((queue_families[index].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0 &&
-                queue_families[index].queueCount > 0 &&
-                (!require_presentation || SDL_Vulkan_GetPresentationSupport(instance, device, index))) {
-               return index;
-            }
-         }
-
-         return std::nullopt;
+      /// @brief Bridges SDL presentation probing into the stateless Vulkan helper selection API.
+      [[nodiscard]] VkBool32 sdlPresentationSupport(VkInstance instance, VkPhysicalDevice device,
+                                                    std::uint32_t queue_family, void *) {
+         return SDL_Vulkan_GetPresentationSupport(instance, device, queue_family) ? VK_TRUE : VK_FALSE;
       }
 
       /// @brief Selects the first physical device that can create graphics-capable resources.
       [[nodiscard]] std::expected<SelectedPhysicalDevice, vve::Error>
       selectPhysicalDevice(VkInstance instance, bool require_presentation) {
-         std::uint32_t device_count = 0;
-         VkResult result = vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
-         if (result != VK_SUCCESS || device_count == 0) {
+         std::vector<const char *> required_extensions{};
+         if (require_presentation) {
+            required_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+         }
+
+         vh::low::PhysicalDeviceSelection selection{};
+         const VkResult result = vh::low::selectPhysicalDevice(
+             vh::low::PhysicalDeviceSelectionRequest{
+                 .instance = instance,
+                 .required_queue_flags = VK_QUEUE_GRAPHICS_BIT,
+                 .required_extensions =
+                     std::span<const char *const>{required_extensions.data(), required_extensions.size()},
+                 .presentation_support = require_presentation ? sdlPresentationSupport : nullptr,
+                 .selection_mode = vh::low::PhysicalDeviceSelectionMode::first_compatible},
+             selection);
+         if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] no Vulkan physical device available for backend resources\n";
             return std::unexpected(vve::Error::internal_error);
          }
 
-         std::vector<VkPhysicalDevice> devices(device_count);
-         result = vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
-         if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-            std::cerr << "[VulkanGraphicsBackend] vkEnumeratePhysicalDevices failed: " << string_VkResult(result)
-                      << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         devices.resize(device_count);
-         for (const auto device : devices) {
-            if (require_presentation && !hasDeviceExtension(device, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
-               continue;
-            }
-
-            if (const auto queue_family = graphicsQueueFamily(instance, device, require_presentation)) {
-               return SelectedPhysicalDevice{.device = device, .graphics_queue_family = *queue_family};
-            }
-         }
-
-         std::cerr << "[VulkanGraphicsBackend] no compatible Vulkan graphics/present queue family found\n";
-         return std::unexpected(vve::Error::internal_error);
+         return SelectedPhysicalDevice{.device = selection.device, .graphics_queue_family = selection.queue_family};
       }
 
       /// @brief Returns device extensions required for the selected physical device.
@@ -1305,22 +1208,8 @@ namespace vve::v3 {
 
       /// @brief Returns whether a physical-device extension is advertised.
       [[nodiscard]] bool hasDeviceExtension(VkPhysicalDevice device, const char *name) {
-         std::uint32_t extension_count = 0;
-         if (vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr) != VK_SUCCESS) {
-            return false;
-         }
-
-         std::vector<VkExtensionProperties> extensions(extension_count);
-         if (extension_count == 0) {
-            return false;
-         }
-
-         if (vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, extensions.data()) != VK_SUCCESS) {
-            return false;
-         }
-
-         extensions.resize(extension_count);
-         return hasExtension(extensions, name);
+         bool supported = false;
+         return vh::low::hasDeviceExtension(device, name, supported) == VK_SUCCESS && supported;
       }
 
       /// @brief Logs physical-device and driver metadata exposed by the active Vulkan loader and ICD selection.
@@ -2032,36 +1921,26 @@ namespace vve::v3 {
 
    private:
       [[nodiscard]] std::expected<void, vve::Error> createLogicalDevice() {
-         const float queue_priority = 1.0F;
-         const VkDeviceQueueCreateInfo queue_create_info{.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-                                                         .pNext = nullptr,
-                                                         .flags = 0,
-                                                         .queueFamilyIndex = graphics_queue_family_,
-                                                         .queueCount = 1,
-                                                         .pQueuePriorities = &queue_priority};
          const auto enabled_extensions = requiredDeviceExtensions(physical_device_, presentation_enabled_);
          if (!enabled_extensions) {
             return std::unexpected(enabled_extensions.error());
          }
-         const VkDeviceCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                              .pNext = nullptr,
-                                              .flags = 0,
-                                              .queueCreateInfoCount = 1,
-                                              .pQueueCreateInfos = &queue_create_info,
-                                              .enabledLayerCount = 0,
-                                              .ppEnabledLayerNames = nullptr,
-                                              .enabledExtensionCount =
-                                                  static_cast<std::uint32_t>(enabled_extensions->size()),
-                                              .ppEnabledExtensionNames = enabled_extensions->data(),
-                                              .pEnabledFeatures = nullptr};
 
-         const VkResult result = vkCreateDevice(physical_device_, &create_info, nullptr, &device_);
+         vh::low::DeviceCreation creation{};
+         const VkResult result = vh::low::createDevice(
+             vh::low::DeviceProfile{
+                 .physical_device = physical_device_,
+                 .queue_family = graphics_queue_family_,
+                 .required_extensions =
+                     std::span<const char *const>{enabled_extensions->data(), enabled_extensions->size()}},
+             creation);
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkCreateDevice failed: " << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 
-         vkGetDeviceQueue(device_, graphics_queue_family_, 0, &graphics_queue_);
+         device_ = creation.device;
+         graphics_queue_ = creation.queue;
          return {};
       }
 
@@ -2099,71 +1978,36 @@ namespace vve::v3 {
       findMemoryType(std::uint32_t type_bits, VkMemoryPropertyFlags required_properties) const {
          VkPhysicalDeviceMemoryProperties memory_properties{};
          vkGetPhysicalDeviceMemoryProperties(physical_device_, &memory_properties);
-         for (std::uint32_t memory_type = 0; memory_type < memory_properties.memoryTypeCount; ++memory_type) {
-            const bool type_supported = (type_bits & (1U << memory_type)) != 0;
-            const auto property_flags = memory_properties.memoryTypes[memory_type].propertyFlags;
-            if (type_supported && (property_flags & required_properties) == required_properties) {
-               return memory_type;
-            }
+         const auto memory_type = vh::low::findMemoryType(memory_properties, type_bits, required_properties);
+         if (!memory_type.has_value()) {
+            return std::unexpected(vve::Error::internal_error);
          }
 
-         return std::unexpected(vve::Error::internal_error);
+         return *memory_type;
       }
 
       [[nodiscard]] std::expected<void, vve::Error>
       createVulkanBuffer(VulkanGpuBufferResources &resources, VkBufferUsageFlags usage,
                          std::span<const std::byte> bytes) {
-         const VkDeviceSize buffer_size = static_cast<VkDeviceSize>(bytes.size());
-         const VkBufferCreateInfo buffer_info{.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                                              .pNext = nullptr,
-                                              .flags = 0,
-                                              .size = buffer_size,
-                                              .usage = usage,
-                                              .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                                              .queueFamilyIndexCount = 0,
-                                              .pQueueFamilyIndices = nullptr};
-
-         VkResult result = vkCreateBuffer(device_, &buffer_info, nullptr, &resources.buffer);
+         vh::low::BufferAllocation allocation{};
+         const VkResult result = vh::low::allocateBuffer(
+             vh::low::BufferAllocationRequest{
+                 .physical_device = physical_device_,
+                 .device = device_,
+                 .size = static_cast<VkDeviceSize>(bytes.size()),
+                 .usage = usage,
+                 .memory_properties = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
+                                      VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                 .initial_data = bytes},
+             allocation);
          if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkCreateBuffer failed: " << string_VkResult(result) << '\n';
+            std::cerr << "[VulkanGraphicsBackend] Vulkan buffer allocation failed: "
+                      << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 
-         VkMemoryRequirements requirements{};
-         vkGetBufferMemoryRequirements(device_, resources.buffer, &requirements);
-         const auto memory_type = findMemoryType(requirements.memoryTypeBits,
-                                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT |
-                                                     VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-         if (!memory_type) {
-            return std::unexpected(memory_type.error());
-         }
-
-         const VkMemoryAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                                                  .pNext = nullptr,
-                                                  .allocationSize = requirements.size,
-                                                  .memoryTypeIndex = *memory_type};
-         result = vkAllocateMemory(device_, &allocate_info, nullptr, &resources.memory);
-         if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkAllocateMemory(buffer) failed: " << string_VkResult(result)
-                      << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         result = vkBindBufferMemory(device_, resources.buffer, resources.memory, 0);
-         if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkBindBufferMemory failed: " << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         void *mapped = nullptr;
-         result = vkMapMemory(device_, resources.memory, 0, buffer_size, 0, &mapped);
-         if (result != VK_SUCCESS || mapped == nullptr) {
-            std::cerr << "[VulkanGraphicsBackend] vkMapMemory(buffer) failed: " << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         std::memcpy(mapped, bytes.data(), bytes.size());
-         vkUnmapMemory(device_, resources.memory);
+         resources.buffer = allocation.buffer;
+         resources.memory = allocation.memory;
          return {};
       }
 
@@ -2177,111 +2021,38 @@ namespace vve::v3 {
             return std::unexpected(staging_result.error());
          }
 
-         const VkImageCreateInfo image_info{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                            .pNext = nullptr,
-                                            .flags = 0,
-                                            .imageType = VK_IMAGE_TYPE_2D,
-                                            .format = format,
-                                            .extent = {.width = resources.summary.width,
-                                                       .height = resources.summary.height,
-                                                       .depth = 1},
-                                            .mipLevels = resources.summary.mip_levels,
-                                            .arrayLayers = resources.summary.array_layers,
-                                            .samples = VK_SAMPLE_COUNT_1_BIT,
-                                            .tiling = VK_IMAGE_TILING_OPTIMAL,
-                                            .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                                            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                                            .queueFamilyIndexCount = 0,
-                                            .pQueueFamilyIndices = nullptr,
-                                            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED};
-         VkResult result = vkCreateImage(device_, &image_info, nullptr, &resources.image);
+         vh::low::Image2DAllocation allocation{};
+         const VkResult result = vh::low::allocateImage2D(
+             vh::low::Image2DAllocationRequest{
+                 .physical_device = physical_device_,
+                 .device = device_,
+                 .width = resources.summary.width,
+                 .height = resources.summary.height,
+                 .format = format,
+                 .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                 .aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT,
+                 .memory_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 .mip_levels = resources.summary.mip_levels,
+                 .array_layers = resources.summary.array_layers,
+                 .create_view = true,
+                 .create_sampler = true},
+             allocation);
          if (result != VK_SUCCESS) {
             destroyBufferResources(staging_buffer);
-            std::cerr << "[VulkanGraphicsBackend] vkCreateImage(sampled texture) failed: "
+            std::cerr << "[VulkanGraphicsBackend] sampled texture allocation failed: "
                       << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
-
-         VkMemoryRequirements requirements{};
-         vkGetImageMemoryRequirements(device_, resources.image, &requirements);
-         const auto memory_type = findMemoryType(requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-         if (!memory_type) {
-            destroyBufferResources(staging_buffer);
-            return std::unexpected(memory_type.error());
-         }
-
-         const VkMemoryAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                                                  .pNext = nullptr,
-                                                  .allocationSize = requirements.size,
-                                                  .memoryTypeIndex = *memory_type};
-         result = vkAllocateMemory(device_, &allocate_info, nullptr, &resources.memory);
-         if (result != VK_SUCCESS) {
-            destroyBufferResources(staging_buffer);
-            std::cerr << "[VulkanGraphicsBackend] vkAllocateMemory(sampled texture) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         result = vkBindImageMemory(device_, resources.image, resources.memory, 0);
-         if (result != VK_SUCCESS) {
-            destroyBufferResources(staging_buffer);
-            std::cerr << "[VulkanGraphicsBackend] vkBindImageMemory(sampled texture) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
+         resources.image = allocation.image;
+         resources.memory = allocation.memory;
+         resources.image_view = allocation.view;
+         resources.sampler = allocation.sampler;
 
          if (auto upload_result = uploadSampledImage(resources, staging_buffer.buffer); !upload_result) {
             destroyBufferResources(staging_buffer);
             return std::unexpected(upload_result.error());
          }
          destroyBufferResources(staging_buffer);
-
-         const VkImageViewCreateInfo view_info{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                               .pNext = nullptr,
-                                               .flags = 0,
-                                               .image = resources.image,
-                                               .viewType = VK_IMAGE_VIEW_TYPE_2D,
-                                               .format = format,
-                                               .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                              .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                              .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                              .a = VK_COMPONENT_SWIZZLE_IDENTITY},
-                                               .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                                                    .baseMipLevel = 0,
-                                                                    .levelCount = resources.summary.mip_levels,
-                                                                    .baseArrayLayer = 0,
-                                                                    .layerCount = resources.summary.array_layers}};
-         result = vkCreateImageView(device_, &view_info, nullptr, &resources.image_view);
-         if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkCreateImageView(sampled texture) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         const VkSamplerCreateInfo sampler_info{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-                                                .pNext = nullptr,
-                                                .flags = 0,
-                                                .magFilter = VK_FILTER_LINEAR,
-                                                .minFilter = VK_FILTER_LINEAR,
-                                                .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
-                                                .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-                                                .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-                                                .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
-                                                .mipLodBias = 0.0F,
-                                                .anisotropyEnable = VK_FALSE,
-                                                .maxAnisotropy = 1.0F,
-                                                .compareEnable = VK_FALSE,
-                                                .compareOp = VK_COMPARE_OP_ALWAYS,
-                                                .minLod = 0.0F,
-                                                .maxLod = 0.0F,
-                                                .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
-                                                .unnormalizedCoordinates = VK_FALSE};
-         result = vkCreateSampler(device_, &sampler_info, nullptr, &resources.sampler);
-         if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkCreateSampler(sampled texture) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
 
          resources.layout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
          return {};
@@ -2294,100 +2065,32 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         VkCommandBuffer command_buffer = VK_NULL_HANDLE;
-         const VkCommandBufferAllocateInfo allocate_info{
-             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-             .pNext = nullptr,
-             .commandPool = command_pool_,
-             .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-             .commandBufferCount = 1};
-         VkResult result = vkAllocateCommandBuffers(device_, &allocate_info, &command_buffer);
-         if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkAllocateCommandBuffers(sampled texture) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
+         struct UploadContext {
+            const VulkanGpuImageResources *resources{};
+            VkBuffer staging_buffer{VK_NULL_HANDLE};
+         } context{.resources = std::addressof(resources), .staging_buffer = staging_buffer};
 
-         const VkCommandBufferBeginInfo begin_info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                                                   .pNext = nullptr,
-                                                   .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-                                                   .pInheritanceInfo = nullptr};
-         result = vkBeginCommandBuffer(command_buffer, &begin_info);
-         if (result != VK_SUCCESS) {
-            vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
-            std::cerr << "[VulkanGraphicsBackend] vkBeginCommandBuffer(sampled texture) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         const VkImageSubresourceRange range{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                             .baseMipLevel = 0,
-                                             .levelCount = resources.summary.mip_levels,
-                                             .baseArrayLayer = 0,
-                                             .layerCount = resources.summary.array_layers};
-         const VkImageMemoryBarrier to_transfer{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                .pNext = nullptr,
-                                                .srcAccessMask = 0,
-                                                .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                                                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                                                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                                .image = resources.image,
-                                                .subresourceRange = range};
-         vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-                              0, nullptr, 0, nullptr, 1, &to_transfer);
-
-         const VkBufferImageCopy copy_region{.bufferOffset = 0,
-                                             .bufferRowLength = 0,
-                                             .bufferImageHeight = 0,
-                                             .imageSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                                                  .mipLevel = 0,
-                                                                  .baseArrayLayer = 0,
-                                                                  .layerCount = resources.summary.array_layers},
-                                             .imageOffset = {.x = 0, .y = 0, .z = 0},
-                                             .imageExtent = {.width = resources.summary.width,
-                                                             .height = resources.summary.height,
-                                                             .depth = 1}};
-         vkCmdCopyBufferToImage(command_buffer, staging_buffer, resources.image,
-                                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copy_region);
-
-         const VkImageMemoryBarrier to_shader_read{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                   .pNext = nullptr,
-                                                   .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                                                   .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-                                                   .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                   .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                                   .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                                   .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                                   .image = resources.image,
-                                                   .subresourceRange = range};
-         vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-                              0, nullptr, 0, nullptr, 1, &to_shader_read);
-
-         result = vkEndCommandBuffer(command_buffer);
-         if (result != VK_SUCCESS) {
-            vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
-            std::cerr << "[VulkanGraphicsBackend] vkEndCommandBuffer(sampled texture) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         const VkSubmitInfo submit_info{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                        .pNext = nullptr,
-                                        .waitSemaphoreCount = 0,
-                                        .pWaitSemaphores = nullptr,
-                                        .pWaitDstStageMask = nullptr,
-                                        .commandBufferCount = 1,
-                                        .pCommandBuffers = &command_buffer,
-                                        .signalSemaphoreCount = 0,
-                                        .pSignalSemaphores = nullptr};
-         result = vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
-         if (result == VK_SUCCESS) {
-            result = vkQueueWaitIdle(graphics_queue_);
-         }
-         vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
+         const VkResult result = vh::low::submitOneTimeCommands(
+             vh::low::OneTimeSubmitRequest{
+                 .device = device_,
+                 .queue = graphics_queue_,
+                 .command_pool = command_pool_,
+                 .recorder =
+                     [](VkCommandBuffer command_buffer, void *raw_context) noexcept -> VkResult {
+                        const auto *upload = static_cast<const UploadContext *>(raw_context);
+                        const auto &image_resources = *upload->resources;
+                        return vh::low::recordBufferToImageUpload2D(
+                            command_buffer,
+                            vh::low::BufferToImageUpload2DRecording{
+                                .staging_buffer = upload->staging_buffer,
+                                .image = image_resources.image,
+                                .width = image_resources.summary.width,
+                                .height = image_resources.summary.height,
+                                .aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                .mip_levels = image_resources.summary.mip_levels,
+                                .array_layers = image_resources.summary.array_layers});
+                     },
+                 .recorder_context = std::addressof(context)});
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] sampled texture upload failed: " << string_VkResult(result)
                       << '\n';
@@ -2484,14 +2187,9 @@ namespace vve::v3 {
                binding_descs.push_back(binding_desc);
             }
 
-            const VkDescriptorSetLayoutCreateInfo create_info{
-                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-                .pNext = nullptr,
-                .flags = 0,
-                .bindingCount = static_cast<std::uint32_t>(bindings.size()),
-                .pBindings = bindings.data()};
             VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
-            const VkResult result = vkCreateDescriptorSetLayout(device_, &create_info, nullptr, &descriptor_set_layout);
+            const VkResult result = vh::low::createDescriptorSetLayout(
+                device_, std::span<const VkDescriptorSetLayoutBinding>{bindings}, descriptor_set_layout);
             if (result != VK_SUCCESS) {
                std::cerr << "[VulkanGraphicsBackend] vkCreateDescriptorSetLayout failed: " << string_VkResult(result)
                          << '\n';
@@ -2532,35 +2230,24 @@ namespace vve::v3 {
                                                       .descriptorCount = count * descriptor_copy_capacity});
          }
 
-         const VkDescriptorPoolCreateInfo pool_info{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-                                                    .pNext = nullptr,
-                                                    .flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-                                                    .maxSets = static_cast<std::uint32_t>(
-                                                        resources.descriptor_set_layouts.size()) *
-                                                               descriptor_copy_capacity,
-                                                    .poolSizeCount =
-                                                        static_cast<std::uint32_t>(pool_sizes.size()),
-                                                    .pPoolSizes = pool_sizes.data()};
-         VkResult result = vkCreateDescriptorPool(device_, &pool_info, nullptr, &resources.descriptor_pool);
+         vh::low::DescriptorSetAllocation allocation{};
+         VkResult result = vh::low::createDescriptorPoolAndAllocateSets(
+             vh::low::DescriptorSetAllocationRequest{
+                 .device = device_,
+                 .set_layouts = std::span<const VkDescriptorSetLayout>{resources.descriptor_set_layouts},
+                 .pool_sizes = std::span<const VkDescriptorPoolSize>{pool_sizes},
+                 .max_sets = static_cast<std::uint32_t>(resources.descriptor_set_layouts.size()) *
+                             descriptor_copy_capacity,
+                 .pool_flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT},
+             allocation);
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkCreateDescriptorPool failed: " << string_VkResult(result)
                       << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 
-         resources.descriptor_sets.resize(resources.descriptor_set_layouts.size(), VK_NULL_HANDLE);
-         const VkDescriptorSetAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                         .pNext = nullptr,
-                                                         .descriptorPool = resources.descriptor_pool,
-                                                         .descriptorSetCount =
-                                                             static_cast<std::uint32_t>(resources.descriptor_sets.size()),
-                                                         .pSetLayouts = resources.descriptor_set_layouts.data()};
-         result = vkAllocateDescriptorSets(device_, &allocate_info, resources.descriptor_sets.data());
-         if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkAllocateDescriptorSets failed: " << string_VkResult(result)
-                      << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
+         resources.descriptor_pool = allocation.pool;
+         resources.descriptor_sets = std::move(allocation.sets);
 
          return {};
       }
@@ -2643,86 +2330,25 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         VkCommandBuffer command_buffer = VK_NULL_HANDLE;
-         const VkCommandBufferAllocateInfo allocate_info{
-             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-             .pNext = nullptr,
-             .commandPool = command_pool_,
-             .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-             .commandBufferCount = 1};
-         VkResult result = vkAllocateCommandBuffers(device_, &allocate_info, &command_buffer);
-         if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkAllocateCommandBuffers(fallback image) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
+         struct ClearContext {
+            VkImage image{VK_NULL_HANDLE};
+            VkClearColorValue clear_color{};
+         } context{.image = image, .clear_color = clear_color};
 
-         const VkCommandBufferBeginInfo begin_info{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-                                                   .pNext = nullptr,
-                                                   .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-                                                   .pInheritanceInfo = nullptr};
-         result = vkBeginCommandBuffer(command_buffer, &begin_info);
-         if (result != VK_SUCCESS) {
-            vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
-            std::cerr << "[VulkanGraphicsBackend] vkBeginCommandBuffer(fallback image) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         const VkImageSubresourceRange range{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                             .baseMipLevel = 0,
-                                             .levelCount = 1,
-                                             .baseArrayLayer = 0,
-                                             .layerCount = 1};
-         const VkImageMemoryBarrier to_transfer{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                .pNext = nullptr,
-                                                .srcAccessMask = 0,
-                                                .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                                                .oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                                                .newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                                .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                                .image = image,
-                                                .subresourceRange = range};
-         vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0,
-                              0, nullptr, 0, nullptr, 1, &to_transfer);
-         vkCmdClearColorImage(command_buffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear_color, 1, &range);
-         const VkImageMemoryBarrier to_shader_read{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-                                                   .pNext = nullptr,
-                                                   .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-                                                   .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-                                                   .oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                                   .newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                                   .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                                   .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-                                                   .image = image,
-                                                   .subresourceRange = range};
-         vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0,
-                              0, nullptr, 0, nullptr, 1, &to_shader_read);
-
-         result = vkEndCommandBuffer(command_buffer);
-         if (result != VK_SUCCESS) {
-            vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
-            std::cerr << "[VulkanGraphicsBackend] vkEndCommandBuffer(fallback image) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         const VkSubmitInfo submit_info{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                        .pNext = nullptr,
-                                        .waitSemaphoreCount = 0,
-                                        .pWaitSemaphores = nullptr,
-                                        .pWaitDstStageMask = nullptr,
-                                        .commandBufferCount = 1,
-                                        .pCommandBuffers = &command_buffer,
-                                        .signalSemaphoreCount = 0,
-                                        .pSignalSemaphores = nullptr};
-         result = vkQueueSubmit(graphics_queue_, 1, &submit_info, VK_NULL_HANDLE);
-         if (result == VK_SUCCESS) {
-            result = vkQueueWaitIdle(graphics_queue_);
-         }
-         vkFreeCommandBuffers(device_, command_pool_, 1, &command_buffer);
+         const VkResult result = vh::low::submitOneTimeCommands(
+             vh::low::OneTimeSubmitRequest{
+                 .device = device_,
+                 .queue = graphics_queue_,
+                 .command_pool = command_pool_,
+                 .recorder =
+                     [](VkCommandBuffer command_buffer, void *raw_context) noexcept -> VkResult {
+                        const auto *clear = static_cast<const ClearContext *>(raw_context);
+                        return vh::low::recordClearColorImage(
+                            command_buffer,
+                            vh::low::ClearColorImageRecording{.image = clear->image,
+                                                              .clear_color = clear->clear_color});
+                     },
+                 .recorder_context = std::addressof(context)});
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] fallback image initialization failed: "
                       << string_VkResult(result) << '\n';
@@ -2737,86 +2363,37 @@ namespace vve::v3 {
                                  const PipelineDescriptorBindingDesc &binding) {
          VulkanDescriptorImageResource image_resource{};
          image_resource.binding = binding;
-         const VkImageCreateInfo image_info{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                            .pNext = nullptr,
-                                            .flags = 0,
-                                            .imageType = VK_IMAGE_TYPE_2D,
-                                            .format = VK_FORMAT_R8G8B8A8_UNORM,
-                                            .extent = {.width = 1, .height = 1, .depth = 1},
-                                            .mipLevels = 1,
-                                            .arrayLayers = 1,
-                                            .samples = VK_SAMPLE_COUNT_1_BIT,
-                                            .tiling = VK_IMAGE_TILING_OPTIMAL,
-                                            .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
-                                            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                                            .queueFamilyIndexCount = 0,
-                                            .pQueueFamilyIndices = nullptr,
-                                            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED};
-         VkResult result = vkCreateImage(device_, &image_info, nullptr, &image_resource.image);
+         vh::low::Image2DAllocation allocation{};
+         const VkResult result = vh::low::allocateImage2D(
+             vh::low::Image2DAllocationRequest{
+                 .physical_device = physical_device_,
+                 .device = device_,
+                 .width = 1,
+                 .height = 1,
+                 .format = VK_FORMAT_R8G8B8A8_UNORM,
+                 .usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+                 .aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT,
+                 .memory_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                 .mip_levels = 1,
+                 .array_layers = 1,
+                 .create_view = true,
+                 .create_sampler = false},
+             allocation);
          if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkCreateImage(fallback texture) failed: "
+            std::cerr << "[VulkanGraphicsBackend] fallback texture allocation failed: "
                       << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
-
-         VkMemoryRequirements requirements{};
-         vkGetImageMemoryRequirements(device_, image_resource.image, &requirements);
-         const auto memory_type = findMemoryType(requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-         if (!memory_type) {
-            vkDestroyImage(device_, image_resource.image, nullptr);
-            return std::unexpected(memory_type.error());
-         }
-
-         const VkMemoryAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                                                  .pNext = nullptr,
-                                                  .allocationSize = requirements.size,
-                                                  .memoryTypeIndex = *memory_type};
-         result = vkAllocateMemory(device_, &allocate_info, nullptr, &image_resource.memory);
-         if (result != VK_SUCCESS) {
-            vkDestroyImage(device_, image_resource.image, nullptr);
-            std::cerr << "[VulkanGraphicsBackend] vkAllocateMemory(fallback texture) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         result = vkBindImageMemory(device_, image_resource.image, image_resource.memory, 0);
-         if (result != VK_SUCCESS) {
-            vkFreeMemory(device_, image_resource.memory, nullptr);
-            vkDestroyImage(device_, image_resource.image, nullptr);
-            std::cerr << "[VulkanGraphicsBackend] vkBindImageMemory(fallback texture) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         const VkImageViewCreateInfo view_info{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                               .pNext = nullptr,
-                                               .flags = 0,
-                                               .image = image_resource.image,
-                                               .viewType = VK_IMAGE_VIEW_TYPE_2D,
-                                               .format = VK_FORMAT_R8G8B8A8_UNORM,
-                                               .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                              .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                              .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                              .a = VK_COMPONENT_SWIZZLE_IDENTITY},
-                                               .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                                                    .baseMipLevel = 0,
-                                                                    .levelCount = 1,
-                                                                    .baseArrayLayer = 0,
-                                                                    .layerCount = 1}};
-         result = vkCreateImageView(device_, &view_info, nullptr, &image_resource.image_view);
-         if (result != VK_SUCCESS) {
-            vkFreeMemory(device_, image_resource.memory, nullptr);
-            vkDestroyImage(device_, image_resource.image, nullptr);
-            std::cerr << "[VulkanGraphicsBackend] vkCreateImageView(fallback texture) failed: "
-                      << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
+         image_resource.image = allocation.image;
+         image_resource.memory = allocation.memory;
+         image_resource.image_view = allocation.view;
 
          if (auto init_result = initializeFallbackImage(image_resource.image, fallbackTextureClearColor(binding));
              !init_result) {
-            vkDestroyImageView(device_, image_resource.image_view, nullptr);
-            vkFreeMemory(device_, image_resource.memory, nullptr);
-            vkDestroyImage(device_, image_resource.image, nullptr);
+            vh::low::Image2DAllocation allocation_to_destroy{.image = image_resource.image,
+                                                             .memory = image_resource.memory,
+                                                             .view = image_resource.image_view};
+            vh::low::destroyImage2D(device_, allocation_to_destroy);
             return std::unexpected(init_result.error());
          }
 
@@ -3200,14 +2777,10 @@ namespace vve::v3 {
          }
 
          VulkanDrawDescriptorSetResources draw_resources{};
-         draw_resources.descriptor_sets.resize(resources.descriptor_set_layouts.size(), VK_NULL_HANDLE);
-         const VkDescriptorSetAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-                                                        .pNext = nullptr,
-                                                        .descriptorPool = resources.descriptor_pool,
-                                                        .descriptorSetCount =
-                                                            static_cast<std::uint32_t>(draw_resources.descriptor_sets.size()),
-                                                        .pSetLayouts = resources.descriptor_set_layouts.data()};
-         const VkResult result = vkAllocateDescriptorSets(device_, &allocate_info, draw_resources.descriptor_sets.data());
+         const VkResult result = vh::low::allocateDescriptorSets(
+             device_, resources.descriptor_pool,
+             std::span<const VkDescriptorSetLayout>{resources.descriptor_set_layouts},
+             draw_resources.descriptor_sets);
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkAllocateDescriptorSets(draw material) failed: "
                       << string_VkResult(result) << '\n';
@@ -3222,14 +2795,11 @@ namespace vve::v3 {
                 static_cast<std::uint32_t>(draw_resources.descriptor_sets.size()),
                 draw_resources.descriptor_sets.data());
             for (auto &buffer : draw_resources.frame_buffers) {
-               if (buffer.buffer != VK_NULL_HANDLE) {
-                  vkDestroyBuffer(device_, buffer.buffer, nullptr);
-                  buffer.buffer = VK_NULL_HANDLE;
-               }
-               if (buffer.memory != VK_NULL_HANDLE) {
-                  vkFreeMemory(device_, buffer.memory, nullptr);
-                  buffer.memory = VK_NULL_HANDLE;
-               }
+               vh::low::BufferAllocation allocation{.buffer = buffer.buffer, .memory = buffer.memory};
+               vh::low::destroyBuffer(device_, allocation);
+               buffer.buffer = allocation.buffer;
+               buffer.memory = allocation.memory;
+               buffer.size = allocation.size;
             }
             return std::unexpected(write_result.error());
          }
@@ -3264,68 +2834,21 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         std::vector<VkAttachmentDescription> attachments{};
-         std::vector<VkAttachmentReference> color_references{};
-         attachments.reserve(desc.color_attachment_count + (desc.depth_format == GraphicsDepthFormat::none ? 0U : 1U));
-         color_references.reserve(desc.color_attachment_count);
-
-         for (std::uint32_t color_index = 0; color_index < desc.color_attachment_count; ++color_index) {
-            attachments.push_back(VkAttachmentDescription{.flags = 0,
-                                                          .format = colorFormat(desc.color_format),
-                                                          .samples = VK_SAMPLE_COUNT_1_BIT,
-                                                          .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                                                          .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-                                                          .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                                                          .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                                                          .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                                                          .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-            color_references.push_back(VkAttachmentReference{
-                .attachment = color_index,
-                .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
-         }
-
-         VkAttachmentReference depth_reference{.attachment = VK_ATTACHMENT_UNUSED,
-                                               .layout = VK_IMAGE_LAYOUT_UNDEFINED};
-         if (desc.depth_format != GraphicsDepthFormat::none) {
-            depth_reference = VkAttachmentReference{
-                .attachment = static_cast<std::uint32_t>(attachments.size()),
-                .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
-            attachments.push_back(VkAttachmentDescription{.flags = 0,
-                                                          .format = depthFormat(desc.depth_format),
-                                                          .samples = VK_SAMPLE_COUNT_1_BIT,
-                                                          .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                                                          .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                                                          .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                                                          .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                                                          .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                                                          .finalLayout =
-                                                              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL});
-         }
-
-         const VkSubpassDescription subpass{.flags = 0,
-                                            .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                            .inputAttachmentCount = 0,
-                                            .pInputAttachments = nullptr,
-                                            .colorAttachmentCount =
-                                                static_cast<std::uint32_t>(color_references.size()),
-                                            .pColorAttachments = color_references.data(),
-                                            .pResolveAttachments = nullptr,
-                                            .pDepthStencilAttachment =
-                                                desc.depth_format == GraphicsDepthFormat::none ? nullptr
-                                                                                               : &depth_reference,
-                                            .preserveAttachmentCount = 0,
-                                            .pPreserveAttachments = nullptr};
-         const VkRenderPassCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-                                                  .pNext = nullptr,
-                                                  .flags = 0,
-                                                  .attachmentCount =
-                                                      static_cast<std::uint32_t>(attachments.size()),
-                                                  .pAttachments = attachments.data(),
-                                                  .subpassCount = 1,
-                                                  .pSubpasses = &subpass,
-                                                  .dependencyCount = 0,
-                                                  .pDependencies = nullptr};
-         const VkResult result = vkCreateRenderPass(device_, &create_info, nullptr, &resources.render_pass);
+         std::vector<VkFormat> color_formats(desc.color_attachment_count, colorFormat(desc.color_format));
+         const VkResult result = vh::low::createColorDepthRenderPass(
+             vh::low::ColorDepthRenderPassRequest{
+                 .device = device_,
+                 .color_formats = std::span<const VkFormat>{color_formats},
+                 .depth_format = depthFormat(desc.depth_format),
+                 .color_load_op = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                 .color_store_op = VK_ATTACHMENT_STORE_OP_STORE,
+                 .color_initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
+                 .color_final_layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                 .depth_load_op = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                 .depth_store_op = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                 .depth_initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
+                 .depth_final_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL},
+             resources.render_pass);
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkCreateRenderPass failed: " << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
@@ -3546,156 +3069,50 @@ namespace vve::v3 {
          return {};
       }
 
-      [[nodiscard]] std::expected<std::vector<VkSurfaceFormatKHR>, vve::Error>
-      surfaceFormats(VkSurfaceKHR surface, std::string_view window_id) const {
-         std::uint32_t format_count = 0;
-         VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device_, surface, &format_count, nullptr);
-         if (result != VK_SUCCESS || format_count == 0) {
-            std::cerr << "[VulkanGraphicsBackend] no surface formats for window '" << window_id
-                      << "': " << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         std::vector<VkSurfaceFormatKHR> formats(format_count);
-         result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device_, surface, &format_count, formats.data());
-         if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-            std::cerr << "[VulkanGraphicsBackend] vkGetPhysicalDeviceSurfaceFormatsKHR failed for window '"
-                      << window_id << "': " << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-         formats.resize(format_count);
-         return formats;
-      }
-
-      [[nodiscard]] std::expected<std::vector<VkPresentModeKHR>, vve::Error>
-      presentModes(VkSurfaceKHR surface, std::string_view window_id) const {
-         std::uint32_t mode_count = 0;
-         VkResult result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device_, surface, &mode_count, nullptr);
-         if (result != VK_SUCCESS || mode_count == 0) {
-            std::cerr << "[VulkanGraphicsBackend] no present modes for window '" << window_id
-                      << "': " << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         std::vector<VkPresentModeKHR> modes(mode_count);
-         result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device_, surface, &mode_count, modes.data());
-         if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-            std::cerr << "[VulkanGraphicsBackend] vkGetPhysicalDeviceSurfacePresentModesKHR failed for window '"
-                      << window_id << "': " << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-         modes.resize(mode_count);
-         return modes;
-      }
-
       [[nodiscard]] std::expected<void, vve::Error>
       createVulkanSwapchain(VulkanWindowSwapchainResources &resources, const NativeWindowHandle &window) {
-         VkSurfaceCapabilitiesKHR capabilities{};
-         VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device_, resources.surface, &capabilities);
-         if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkGetPhysicalDeviceSurfaceCapabilitiesKHR failed for window '"
-                      << window.window_id << "': " << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         const auto formats = surfaceFormats(resources.surface, window.window_id);
-         if (!formats) {
-            return std::unexpected(formats.error());
-         }
-         const auto modes = presentModes(resources.surface, window.window_id);
-         if (!modes) {
-            return std::unexpected(modes.error());
-         }
-
-         const auto surface_format = chooseSurfaceFormat(*formats);
-         const auto present_mode = choosePresentMode(*modes);
-         const auto extent = chooseSwapchainExtent(capabilities, window);
-         if (!graphicsColorFormat(surface_format.format)) {
-            std::cerr << "[VulkanGraphicsBackend] unsupported swapchain color format for window '"
-                      << window.window_id << "': " << string_VkFormat(surface_format.format) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-         std::uint32_t image_count = capabilities.minImageCount + 1;
-         if (capabilities.maxImageCount > 0 && image_count > capabilities.maxImageCount) {
-            image_count = capabilities.maxImageCount;
-         }
-
-         const VkSwapchainCreateInfoKHR create_info{.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-                                                    .pNext = nullptr,
-                                                    .flags = 0,
-                                                    .surface = resources.surface,
-                                                    .minImageCount = image_count,
-                                                    .imageFormat = surface_format.format,
-                                                    .imageColorSpace = surface_format.colorSpace,
-                                                    .imageExtent = extent,
-                                                    .imageArrayLayers = 1,
-                                                    .imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                                                    .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                                                    .queueFamilyIndexCount = 0,
-                                                    .pQueueFamilyIndices = nullptr,
-                                                    .preTransform = capabilities.currentTransform,
-                                                    .compositeAlpha =
-                                                        chooseCompositeAlpha(capabilities.supportedCompositeAlpha),
-                                                    .presentMode = present_mode,
-                                                    .clipped = VK_TRUE,
-                                                    .oldSwapchain = VK_NULL_HANDLE};
-         result = vkCreateSwapchainKHR(device_, &create_info, nullptr, &resources.swapchain);
+         vh::low::SwapchainCreation creation{};
+         const VkResult result = vh::low::createSwapchain(
+             vh::low::SwapchainRequest{.physical_device = physical_device_,
+                                       .device = device_,
+                                       .surface = resources.surface,
+                                       .width = window.width,
+                                       .height = window.height,
+                                       .image_usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                                       .composite_alpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR},
+             creation);
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkCreateSwapchainKHR failed for window '" << window.window_id
                       << "': " << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
-
-         std::uint32_t actual_image_count = 0;
-         result = vkGetSwapchainImagesKHR(device_, resources.swapchain, &actual_image_count, nullptr);
-         if (result != VK_SUCCESS || actual_image_count == 0) {
-            std::cerr << "[VulkanGraphicsBackend] vkGetSwapchainImagesKHR failed for window '" << window.window_id
-                      << "': " << string_VkResult(result) << '\n';
+         if (!graphicsColorFormat(creation.surface_format.format)) {
+            std::cerr << "[VulkanGraphicsBackend] unsupported swapchain color format for window '"
+                      << window.window_id << "': " << string_VkFormat(creation.surface_format.format) << '\n';
+            vh::low::destroySwapchain(device_, creation);
             return std::unexpected(vve::Error::internal_error);
          }
 
-         resources.images.resize(actual_image_count);
-         result = vkGetSwapchainImagesKHR(device_, resources.swapchain, &actual_image_count, resources.images.data());
-         if (result != VK_SUCCESS && result != VK_INCOMPLETE) {
-            std::cerr << "[VulkanGraphicsBackend] vkGetSwapchainImagesKHR failed for window '" << window.window_id
-                      << "': " << string_VkResult(result) << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         resources.images.resize(actual_image_count);
-         resources.format = surface_format.format;
-         resources.present_mode = present_mode;
-         resources.extent = extent;
+         resources.swapchain = creation.swapchain;
+         resources.images = std::move(creation.images);
+         resources.format = creation.surface_format.format;
+         resources.present_mode = creation.present_mode;
+         resources.extent = creation.extent;
          return {};
       }
 
       [[nodiscard]] std::expected<void, vve::Error>
       createSwapchainImageViews(VulkanWindowSwapchainResources &resources) {
-         resources.image_views.reserve(resources.images.size());
-         for (const auto image : resources.images) {
-            const VkImageViewCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                                    .pNext = nullptr,
-                                                    .flags = 0,
-                                                    .image = image,
-                                                    .viewType = VK_IMAGE_VIEW_TYPE_2D,
-                                                    .format = resources.format,
-                                                    .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                                   .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                                   .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                                   .a = VK_COMPONENT_SWIZZLE_IDENTITY},
-                                                    .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
-                                                                         .baseMipLevel = 0,
-                                                                         .levelCount = 1,
-                                                                         .baseArrayLayer = 0,
-                                                                         .layerCount = 1}};
-            VkImageView image_view = VK_NULL_HANDLE;
-            const VkResult result = vkCreateImageView(device_, &create_info, nullptr, &image_view);
-            if (result != VK_SUCCESS) {
-               std::cerr << "[VulkanGraphicsBackend] vkCreateImageView failed: " << string_VkResult(result)
-                         << '\n';
-               return std::unexpected(vve::Error::internal_error);
-            }
-            resources.image_views.push_back(image_view);
+         const VkResult result = vh::low::createImageViews2D(
+             vh::low::ImageView2DRequest{.device = device_,
+                                         .images = std::span<const VkImage>{resources.images},
+                                         .format = resources.format,
+                                         .aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT},
+             resources.image_views);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateImageView failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
          }
 
          return {};
@@ -3707,61 +3124,14 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         constexpr VkFormat selected_depth_format = VK_FORMAT_D32_SFLOAT;
-         VkFormatProperties format_properties{};
-         vkGetPhysicalDeviceFormatProperties(physical_device_, selected_depth_format, &format_properties);
-         if ((format_properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0) {
-            std::cerr << "[VulkanGraphicsBackend] depth format " << string_VkFormat(selected_depth_format)
-                      << " does not support depth-stencil attachment usage\n";
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         const VkImageCreateInfo image_info{.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                            .pNext = nullptr,
-                                            .flags = 0,
-                                            .imageType = VK_IMAGE_TYPE_2D,
-                                            .format = selected_depth_format,
-                                            .extent = {.width = resources.extent.width,
-                                                       .height = resources.extent.height,
-                                                       .depth = 1},
-                                            .mipLevels = 1,
-                                            .arrayLayers = 1,
-                                            .samples = VK_SAMPLE_COUNT_1_BIT,
-                                            .tiling = VK_IMAGE_TILING_OPTIMAL,
-                                            .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-                                            .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-                                            .queueFamilyIndexCount = 0,
-                                            .pQueueFamilyIndices = nullptr,
-                                            .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED};
-         VkResult result = vkCreateImage(device_, &image_info, nullptr, &resources.depth_image);
+         constexpr std::array depth_candidates{VK_FORMAT_D32_SFLOAT};
+         VkFormat selected_depth_format = VK_FORMAT_UNDEFINED;
+         VkResult result = vh::low::chooseSupportedDepthFormat(
+             physical_device_, std::span<const VkFormat>{depth_candidates},
+             VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT, selected_depth_format);
          if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkCreateImage(depth) failed: " << string_VkResult(result)
-                      << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         VkMemoryRequirements requirements{};
-         vkGetImageMemoryRequirements(device_, resources.depth_image, &requirements);
-         const auto memory_type = findMemoryType(requirements.memoryTypeBits, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-         if (!memory_type) {
-            return std::unexpected(memory_type.error());
-         }
-
-         const VkMemoryAllocateInfo allocate_info{.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                                                  .pNext = nullptr,
-                                                  .allocationSize = requirements.size,
-                                                  .memoryTypeIndex = *memory_type};
-         result = vkAllocateMemory(device_, &allocate_info, nullptr, &resources.depth_memory);
-         if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkAllocateMemory(depth) failed: " << string_VkResult(result)
-                      << '\n';
-            return std::unexpected(vve::Error::internal_error);
-         }
-
-         result = vkBindImageMemory(device_, resources.depth_image, resources.depth_memory, 0);
-         if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkBindImageMemory(depth) failed: " << string_VkResult(result)
-                      << '\n';
+            std::cerr << "[VulkanGraphicsBackend] no supported depth format for swapchain depth attachment: "
+                      << string_VkResult(result) << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
          if (!graphicsDepthFormat(selected_depth_format)) {
@@ -3770,28 +3140,28 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::internal_error);
          }
 
-         const VkImageViewCreateInfo view_info{.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                                               .pNext = nullptr,
-                                               .flags = 0,
-                                               .image = resources.depth_image,
-                                               .viewType = VK_IMAGE_VIEW_TYPE_2D,
+         vh::low::Image2DAllocation allocation{};
+         result = vh::low::allocateImage2D(
+             vh::low::Image2DAllocationRequest{.physical_device = physical_device_,
+                                               .device = device_,
+                                               .width = resources.extent.width,
+                                               .height = resources.extent.height,
                                                .format = selected_depth_format,
-                                               .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                              .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                              .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                                                              .a = VK_COMPONENT_SWIZZLE_IDENTITY},
-                                               .subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
-                                                                    .baseMipLevel = 0,
-                                                                    .levelCount = 1,
-                                                                    .baseArrayLayer = 0,
-                                                                    .layerCount = 1}};
-         result = vkCreateImageView(device_, &view_info, nullptr, &resources.depth_image_view);
+                                               .usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                                               .aspect_mask = VK_IMAGE_ASPECT_DEPTH_BIT,
+                                               .memory_properties = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                                               .create_view = true,
+                                               .create_sampler = false},
+             allocation);
          if (result != VK_SUCCESS) {
-            std::cerr << "[VulkanGraphicsBackend] vkCreateImageView(depth) failed: " << string_VkResult(result)
+            std::cerr << "[VulkanGraphicsBackend] depth image allocation failed: " << string_VkResult(result)
                       << '\n';
             return std::unexpected(vve::Error::internal_error);
          }
 
+         resources.depth_image = allocation.image;
+         resources.depth_memory = allocation.memory;
+         resources.depth_image_view = allocation.view;
          resources.depth_format = selected_depth_format;
          return {};
       }
@@ -3802,72 +3172,22 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         const VkAttachmentDescription color_attachment{.flags = 0,
-                                                        .format = resources.format,
-                                                        .samples = VK_SAMPLE_COUNT_1_BIT,
-                                                        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-                                                        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-                                                        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-                                                        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-                                                        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-                                                        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR};
-         const VkAttachmentDescription depth_attachment{
-             .flags = 0,
-             .format = resources.depth_format,
-             .samples = VK_SAMPLE_COUNT_1_BIT,
-             .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-             .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-             .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-             .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-             .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-             .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
-         const std::array attachments{color_attachment, depth_attachment};
-         const VkAttachmentReference color_reference{.attachment = 0,
-                                                     .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
-         const VkAttachmentReference depth_reference{.attachment = 1,
-                                                     .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
-         const VkSubpassDescription subpass{.flags = 0,
-                                            .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-                                            .inputAttachmentCount = 0,
-                                            .pInputAttachments = nullptr,
-                                            .colorAttachmentCount = 1,
-                                            .pColorAttachments = &color_reference,
-                                            .pResolveAttachments = nullptr,
-                                            .pDepthStencilAttachment = &depth_reference,
-                                            .preserveAttachmentCount = 0,
-                                            .pPreserveAttachments = nullptr};
-         const std::array dependencies{
-             VkSubpassDependency{.srcSubpass = VK_SUBPASS_EXTERNAL,
-                                 .dstSubpass = 0,
-                                 .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                                                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                                 .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                                                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                                 .srcAccessMask = 0,
-                                 .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                                  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                                 .dependencyFlags = 0},
-             VkSubpassDependency{.srcSubpass = 0,
-                                 .dstSubpass = VK_SUBPASS_EXTERNAL,
-                                 .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                                                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
-                                 .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                                 .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
-                                                  VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-                                 .dstAccessMask = 0,
-                                 .dependencyFlags = 0}};
-         const VkRenderPassCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-                                                  .pNext = nullptr,
-                                                  .flags = 0,
-                                                  .attachmentCount = static_cast<std::uint32_t>(attachments.size()),
-                                                  .pAttachments = attachments.data(),
-                                                  .subpassCount = 1,
-                                                  .pSubpasses = &subpass,
-                                                  .dependencyCount =
-                                                      static_cast<std::uint32_t>(dependencies.size()),
-                                                  .pDependencies = dependencies.data()};
-         const VkResult result =
-             vkCreateRenderPass(device_, &create_info, nullptr, &resources.clear_render_pass);
+         const std::array color_formats{resources.format};
+         const VkResult result = vh::low::createColorDepthRenderPass(
+             vh::low::ColorDepthRenderPassRequest{
+                 .device = device_,
+                 .color_formats = std::span<const VkFormat>{color_formats},
+                 .depth_format = resources.depth_format,
+                 .color_load_op = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                 .color_store_op = VK_ATTACHMENT_STORE_OP_STORE,
+                 .color_initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
+                 .color_final_layout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+                 .depth_load_op = VK_ATTACHMENT_LOAD_OP_CLEAR,
+                 .depth_store_op = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                 .depth_initial_layout = VK_IMAGE_LAYOUT_UNDEFINED,
+                 .depth_final_layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                 .external_dependencies = true},
+             resources.clear_render_pass);
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkCreateRenderPass for swapchain clear failed: "
                       << string_VkResult(result) << '\n';
@@ -3884,26 +3204,19 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         resources.framebuffers.reserve(resources.image_views.size());
-         for (const auto image_view : resources.image_views) {
-            const std::array attachments{image_view, resources.depth_image_view};
-            const VkFramebufferCreateInfo create_info{.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                                                      .pNext = nullptr,
-                                                      .flags = 0,
-                                                      .renderPass = resources.clear_render_pass,
-                                                      .attachmentCount = static_cast<std::uint32_t>(attachments.size()),
-                                                      .pAttachments = attachments.data(),
-                                                      .width = resources.extent.width,
-                                                      .height = resources.extent.height,
-                                                      .layers = 1};
-            VkFramebuffer framebuffer = VK_NULL_HANDLE;
-            const VkResult result = vkCreateFramebuffer(device_, &create_info, nullptr, &framebuffer);
-            if (result != VK_SUCCESS) {
-               std::cerr << "[VulkanGraphicsBackend] vkCreateFramebuffer failed: " << string_VkResult(result)
-                         << '\n';
-               return std::unexpected(vve::Error::internal_error);
-            }
-            resources.framebuffers.push_back(framebuffer);
+         const VkResult result = vh::low::createFramebuffers(
+             vh::low::FramebufferRequest{
+                 .device = device_,
+                 .render_pass = resources.clear_render_pass,
+                 .color_image_views = std::span<const VkImageView>{resources.image_views},
+                 .depth_image_view = resources.depth_image_view,
+                 .extent = resources.extent,
+                 .layers = 1},
+             resources.framebuffers);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] vkCreateFramebuffer failed: " << string_VkResult(result)
+                      << '\n';
+            return std::unexpected(vve::Error::internal_error);
          }
 
          return {};
@@ -3915,18 +3228,16 @@ namespace vve::v3 {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
-         resources.command_buffers.resize(resources.images.size(), VK_NULL_HANDLE);
-         const VkCommandBufferAllocateInfo allocate_info{
-             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-             .pNext = nullptr,
-             .commandPool = command_pool_,
-             .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-             .commandBufferCount = static_cast<std::uint32_t>(resources.command_buffers.size())};
-         const VkResult result = vkAllocateCommandBuffers(device_, &allocate_info, resources.command_buffers.data());
+         const VkResult result = vh::low::allocateCommandBuffers(
+             vh::low::CommandBufferAllocationRequest{
+                 .device = device_,
+                 .command_pool = command_pool_,
+                 .count = static_cast<std::uint32_t>(resources.images.size()),
+                 .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY},
+             resources.command_buffers);
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkAllocateCommandBuffers failed: " << string_VkResult(result)
                       << '\n';
-            resources.command_buffers.clear();
             return std::unexpected(vve::Error::internal_error);
          }
 
@@ -3935,41 +3246,22 @@ namespace vve::v3 {
 
       [[nodiscard]] std::expected<void, vve::Error>
       createSwapchainFrameSync(VulkanWindowSwapchainResources &resources) {
-         const VkSemaphoreCreateInfo semaphore_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-                                                    .pNext = nullptr,
-                                                    .flags = 0};
-         const VkFenceCreateInfo fence_info{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
-                                            .pNext = nullptr,
-                                            .flags = VK_FENCE_CREATE_SIGNALED_BIT};
+         const auto image_count = static_cast<std::uint32_t>(std::min<std::size_t>(
+             resources.images.size(), static_cast<std::size_t>(std::numeric_limits<std::uint32_t>::max())));
+         std::vector<vh::low::FrameSyncPrimitives> sync{};
+         const VkResult result = vh::low::createFrameSyncPrimitives(
+             device_, vh::low::frameSyncSlotCount(image_count), VK_FENCE_CREATE_SIGNALED_BIT, sync);
+         if (result != VK_SUCCESS) {
+            std::cerr << "[VulkanGraphicsBackend] swapchain frame sync creation failed: "
+                      << string_VkResult(result) << '\n';
+            return std::unexpected(vve::Error::internal_error);
+         }
 
-         const auto slot_count = frameSyncSlotCount(resources.images.size());
-         resources.frame_sync.reserve(slot_count);
-         for (std::uint32_t slot = 0; slot < slot_count; ++slot) {
-            VulkanSwapchainFrameSync sync{};
-            VkResult result = vkCreateSemaphore(device_, &semaphore_info, nullptr, &sync.image_available);
-            if (result != VK_SUCCESS) {
-               std::cerr << "[VulkanGraphicsBackend] vkCreateSemaphore(image_available) failed: "
-                         << string_VkResult(result) << '\n';
-               return std::unexpected(vve::Error::internal_error);
-            }
-
-            result = vkCreateSemaphore(device_, &semaphore_info, nullptr, &sync.render_finished);
-            if (result != VK_SUCCESS) {
-               std::cerr << "[VulkanGraphicsBackend] vkCreateSemaphore(render_finished) failed: "
-                         << string_VkResult(result) << '\n';
-               vkDestroySemaphore(device_, sync.image_available, nullptr);
-               return std::unexpected(vve::Error::internal_error);
-            }
-
-            result = vkCreateFence(device_, &fence_info, nullptr, &sync.render_fence);
-            if (result != VK_SUCCESS) {
-               std::cerr << "[VulkanGraphicsBackend] vkCreateFence failed: " << string_VkResult(result) << '\n';
-               vkDestroySemaphore(device_, sync.render_finished, nullptr);
-               vkDestroySemaphore(device_, sync.image_available, nullptr);
-               return std::unexpected(vve::Error::internal_error);
-            }
-
-            resources.frame_sync.push_back(sync);
+         resources.frame_sync.reserve(sync.size());
+         for (const auto &entry : sync) {
+            resources.frame_sync.push_back(VulkanSwapchainFrameSync{.image_available = entry.image_available,
+                                                                    .render_finished = entry.render_finished,
+                                                                    .render_fence = entry.render_fence});
          }
 
          return {};
@@ -4262,14 +3554,10 @@ namespace vve::v3 {
             return;
          }
 
-         if (resources.buffer != VK_NULL_HANDLE) {
-            vkDestroyBuffer(device_, resources.buffer, nullptr);
-            resources.buffer = VK_NULL_HANDLE;
-         }
-         if (resources.memory != VK_NULL_HANDLE) {
-            vkFreeMemory(device_, resources.memory, nullptr);
-            resources.memory = VK_NULL_HANDLE;
-         }
+         vh::low::BufferAllocation allocation{.buffer = resources.buffer, .memory = resources.memory};
+         vh::low::destroyBuffer(device_, allocation);
+         resources.buffer = allocation.buffer;
+         resources.memory = allocation.memory;
 
          resources.summary.buffer_created = false;
          resources.summary.memory_bound = false;
@@ -4280,22 +3568,15 @@ namespace vve::v3 {
             return;
          }
 
-         if (resources.sampler != VK_NULL_HANDLE) {
-            vkDestroySampler(device_, resources.sampler, nullptr);
-            resources.sampler = VK_NULL_HANDLE;
-         }
-         if (resources.image_view != VK_NULL_HANDLE) {
-            vkDestroyImageView(device_, resources.image_view, nullptr);
-            resources.image_view = VK_NULL_HANDLE;
-         }
-         if (resources.image != VK_NULL_HANDLE) {
-            vkDestroyImage(device_, resources.image, nullptr);
-            resources.image = VK_NULL_HANDLE;
-         }
-         if (resources.memory != VK_NULL_HANDLE) {
-            vkFreeMemory(device_, resources.memory, nullptr);
-            resources.memory = VK_NULL_HANDLE;
-         }
+         vh::low::Image2DAllocation allocation{.image = resources.image,
+                                               .memory = resources.memory,
+                                               .view = resources.image_view,
+                                               .sampler = resources.sampler};
+         vh::low::destroyImage2D(device_, allocation);
+         resources.image = allocation.image;
+         resources.memory = allocation.memory;
+         resources.image_view = allocation.view;
+         resources.sampler = allocation.sampler;
 
          resources.summary.image_created = false;
          resources.summary.image_view_created = false;
@@ -4328,31 +3609,22 @@ namespace vve::v3 {
          resources.descriptor_samplers.clear();
 
          for (auto &image : resources.descriptor_images) {
-            if (image.image_view != VK_NULL_HANDLE) {
-               vkDestroyImageView(device_, image.image_view, nullptr);
-               image.image_view = VK_NULL_HANDLE;
-            }
-            if (image.image != VK_NULL_HANDLE) {
-               vkDestroyImage(device_, image.image, nullptr);
-               image.image = VK_NULL_HANDLE;
-            }
-            if (image.memory != VK_NULL_HANDLE) {
-               vkFreeMemory(device_, image.memory, nullptr);
-               image.memory = VK_NULL_HANDLE;
-            }
+            vh::low::Image2DAllocation allocation{.image = image.image,
+                                                  .memory = image.memory,
+                                                  .view = image.image_view};
+            vh::low::destroyImage2D(device_, allocation);
+            image.image = allocation.image;
+            image.memory = allocation.memory;
+            image.image_view = allocation.view;
          }
          resources.descriptor_images.clear();
 
          for (auto &buffer : resources.descriptor_buffers) {
-            if (buffer.buffer != VK_NULL_HANDLE) {
-               vkDestroyBuffer(device_, buffer.buffer, nullptr);
-               buffer.buffer = VK_NULL_HANDLE;
-            }
-            if (buffer.memory != VK_NULL_HANDLE) {
-               vkFreeMemory(device_, buffer.memory, nullptr);
-               buffer.memory = VK_NULL_HANDLE;
-            }
-            buffer.size = 0;
+            vh::low::BufferAllocation allocation{.buffer = buffer.buffer, .memory = buffer.memory};
+            vh::low::destroyBuffer(device_, allocation);
+            buffer.buffer = allocation.buffer;
+            buffer.memory = allocation.memory;
+            buffer.size = allocation.size;
          }
          resources.descriptor_buffers.clear();
 
@@ -4366,15 +3638,11 @@ namespace vve::v3 {
          for (auto &[key, draw_resources] : resources.draw_descriptor_sets) {
             (void)key;
             for (auto &buffer : draw_resources.frame_buffers) {
-               if (buffer.buffer != VK_NULL_HANDLE) {
-                  vkDestroyBuffer(device_, buffer.buffer, nullptr);
-                  buffer.buffer = VK_NULL_HANDLE;
-               }
-               if (buffer.memory != VK_NULL_HANDLE) {
-                  vkFreeMemory(device_, buffer.memory, nullptr);
-                  buffer.memory = VK_NULL_HANDLE;
-               }
-               buffer.size = 0;
+               vh::low::BufferAllocation allocation{.buffer = buffer.buffer, .memory = buffer.memory};
+               vh::low::destroyBuffer(device_, allocation);
+               buffer.buffer = allocation.buffer;
+               buffer.memory = allocation.memory;
+               buffer.size = allocation.size;
             }
             draw_resources.frame_buffers.clear();
             draw_resources.descriptor_sets.clear();
@@ -4430,37 +3698,22 @@ namespace vve::v3 {
                resources.command_buffers.clear();
             }
 
-            for (auto framebuffer : resources.framebuffers) {
-               if (framebuffer != VK_NULL_HANDLE) {
-                  vkDestroyFramebuffer(device_, framebuffer, nullptr);
-               }
-            }
-            resources.framebuffers.clear();
+            vh::low::destroyFramebuffers(device_, resources.framebuffers);
 
             if (resources.clear_render_pass != VK_NULL_HANDLE) {
                vkDestroyRenderPass(device_, resources.clear_render_pass, nullptr);
                resources.clear_render_pass = VK_NULL_HANDLE;
             }
 
-            for (auto image_view : resources.image_views) {
-               if (image_view != VK_NULL_HANDLE) {
-                  vkDestroyImageView(device_, image_view, nullptr);
-               }
-            }
-            resources.image_views.clear();
+            vh::low::destroyImageViews(device_, resources.image_views);
 
-            if (resources.depth_image_view != VK_NULL_HANDLE) {
-               vkDestroyImageView(device_, resources.depth_image_view, nullptr);
-               resources.depth_image_view = VK_NULL_HANDLE;
-            }
-            if (resources.depth_image != VK_NULL_HANDLE) {
-               vkDestroyImage(device_, resources.depth_image, nullptr);
-               resources.depth_image = VK_NULL_HANDLE;
-            }
-            if (resources.depth_memory != VK_NULL_HANDLE) {
-               vkFreeMemory(device_, resources.depth_memory, nullptr);
-               resources.depth_memory = VK_NULL_HANDLE;
-            }
+            vh::low::Image2DAllocation depth_allocation{.image = resources.depth_image,
+                                                        .memory = resources.depth_memory,
+                                                        .view = resources.depth_image_view};
+            vh::low::destroyImage2D(device_, depth_allocation);
+            resources.depth_image = depth_allocation.image;
+            resources.depth_memory = depth_allocation.memory;
+            resources.depth_image_view = depth_allocation.view;
             resources.depth_format = VK_FORMAT_UNDEFINED;
 
             if (resources.swapchain != VK_NULL_HANDLE) {

@@ -122,5 +122,41 @@ int main() {
       return 15;
    }
 
+   vh::low::SwapchainCreation swapchain{};
+   const auto swapchain_result =
+       vh::low::createSwapchain(vh::low::SwapchainRequest{}, swapchain);
+   if (swapchain_result != VK_ERROR_INITIALIZATION_FAILED ||
+       swapchain.swapchain != VK_NULL_HANDLE) {
+      return 16;
+   }
+
+   std::vector<VkCommandBuffer> command_buffers{};
+   const auto command_buffer_result =
+       vh::low::allocateCommandBuffers(vh::low::CommandBufferAllocationRequest{}, command_buffers);
+   if (command_buffer_result != VK_ERROR_INITIALIZATION_FAILED ||
+       !command_buffers.empty()) {
+      return 17;
+   }
+
+   VkDescriptorSetLayout descriptor_set_layout = VK_NULL_HANDLE;
+   const auto descriptor_layout_result =
+       vh::low::createDescriptorSetLayout(VK_NULL_HANDLE, {}, descriptor_set_layout);
+   if (descriptor_layout_result != VK_ERROR_INITIALIZATION_FAILED ||
+       descriptor_set_layout != VK_NULL_HANDLE) {
+      return 18;
+   }
+
+   const auto upload_recording_result =
+       vh::low::recordBufferToImageUpload2D(VK_NULL_HANDLE, vh::low::BufferToImageUpload2DRecording{});
+   if (upload_recording_result != VK_ERROR_INITIALIZATION_FAILED) {
+      return 19;
+   }
+
+   const auto clear_recording_result =
+       vh::low::recordClearColorImage(VK_NULL_HANDLE, vh::low::ClearColorImageRecording{});
+   if (clear_recording_result != VK_ERROR_INITIALIZATION_FAILED) {
+      return 20;
+   }
+
    return 0;
 }

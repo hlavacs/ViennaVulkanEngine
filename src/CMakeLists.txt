@@ -76,6 +76,7 @@ target_link_libraries(ViennaVulkanEngine
         assimp::assimp
         Vulkan::Vulkan
     PRIVATE
+        vh::VulkanHelpers
         slang::slang
         SDL3::SDL3
 )

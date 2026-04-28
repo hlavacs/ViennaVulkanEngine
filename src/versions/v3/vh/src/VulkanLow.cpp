@@ -461,6 +461,18 @@ namespace vh::low {
       }
    }
 
+   VkResult hasDeviceExtension(VkPhysicalDevice device, std::string_view name, bool &supported) noexcept {
+      supported = false;
+      std::vector<VkExtensionProperties> extensions{};
+      const VkResult result = enumerateDeviceExtensions(device, extensions);
+      if (result != VK_SUCCESS) {
+         return result;
+      }
+
+      supported = hasExtension(std::span<const VkExtensionProperties>{extensions}, name);
+      return VK_SUCCESS;
+   }
+
    VkResult selectPhysicalDevice(const PhysicalDeviceSelectionRequest &request,
                                  PhysicalDeviceSelection &selection) noexcept {
       try {
@@ -529,6 +541,11 @@ namespace vh::low {
             candidate.score = deviceTypeScore(candidate.properties.deviceType, request.prefer_discrete_gpu) +
                               static_cast<std::uint32_t>(candidate.enabled_extensions.size() * 10U) +
                               queue_families[*selected_queue].queueCount;
+
+            if (request.selection_mode == PhysicalDeviceSelectionMode::first_compatible) {
+               selection = std::move(candidate);
+               return VK_SUCCESS;
+            }
 
             if (!found || candidate.score > best.score) {
                best = std::move(candidate);
@@ -843,6 +860,638 @@ namespace vh::low {
       }
       free_command_buffer();
       return result;
+   }
+
+   VkResult querySurfaceSupport(VkPhysicalDevice physical_device,
+                                VkSurfaceKHR surface,
+                                SurfaceSupport &support) noexcept {
+      try {
+         support = {};
+         if (physical_device == VK_NULL_HANDLE || surface == VK_NULL_HANDLE) {
+            return VK_ERROR_INITIALIZATION_FAILED;
+         }
+
+         VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, surface, &support.capabilities);
+         if (result != VK_SUCCESS) {
+            return result;
+         }
+
+         std::uint32_t format_count = 0;
+         result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count, nullptr);
+         if (result != VK_SUCCESS || format_count == 0) {
+            return result == VK_SUCCESS ? VK_ERROR_FORMAT_NOT_SUPPORTED : result;
+         }
+         support.formats.resize(format_count);
+         result = vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, surface, &format_count,
+                                                       support.formats.data());
+         if (!isSuccessfulEnumerationResult(result)) {
+            support = {};
+            return result;
+         }
+         support.formats.resize(format_count);
+
+         std::uint32_t mode_count = 0;
+         result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &mode_count, nullptr);
+         if (result != VK_SUCCESS || mode_count == 0) {
+            support = {};
+            return result == VK_SUCCESS ? VK_ERROR_INITIALIZATION_FAILED : result;
+         }
+         support.present_modes.resize(mode_count);
+         result = vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, surface, &mode_count,
+                                                            support.present_modes.data());
+         if (!isSuccessfulEnumerationResult(result)) {
+            support = {};
+            return result;
+         }
+         support.present_modes.resize(mode_count);
+         return VK_SUCCESS;
+      } catch (const std::bad_alloc &) {
+         support = {};
+         return VK_ERROR_OUT_OF_HOST_MEMORY;
+      }
+   }
+
+   VkResult createSwapchain(const SwapchainRequest &request, SwapchainCreation &creation) noexcept {
+      try {
+         creation = {};
+         if (request.physical_device == VK_NULL_HANDLE || request.device == VK_NULL_HANDLE ||
+             request.surface == VK_NULL_HANDLE || request.width == 0 || request.height == 0 ||
+             request.image_usage == 0) {
+            return VK_ERROR_INITIALIZATION_FAILED;
+         }
+
+         SurfaceSupport support{};
+         if (const VkResult result = querySurfaceSupport(request.physical_device, request.surface, support);
+             result != VK_SUCCESS) {
+            return result;
+         }
+
+         const auto surface_format = chooseSurfaceFormat(std::span<const VkSurfaceFormatKHR>{support.formats});
+         const auto present_mode = choosePresentMode(std::span<const VkPresentModeKHR>{support.present_modes});
+         const auto extent = chooseSwapchainExtent(support.capabilities, request.width, request.height);
+         std::uint32_t image_count = support.capabilities.minImageCount + 1;
+         if (support.capabilities.maxImageCount > 0 && image_count > support.capabilities.maxImageCount) {
+            image_count = support.capabilities.maxImageCount;
+         }
+         const auto composite_alpha =
+             (support.capabilities.supportedCompositeAlpha & request.composite_alpha) != 0
+                 ? request.composite_alpha
+                 : chooseCompositeAlpha(support.capabilities.supportedCompositeAlpha);
+
+         const VkSwapchainCreateInfoKHR create_info{
+             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+             .pNext = nullptr,
+             .flags = 0,
+             .surface = request.surface,
+             .minImageCount = image_count,
+             .imageFormat = surface_format.format,
+             .imageColorSpace = surface_format.colorSpace,
+             .imageExtent = extent,
+             .imageArrayLayers = 1,
+             .imageUsage = request.image_usage,
+             .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,
+             .queueFamilyIndexCount = 0,
+             .pQueueFamilyIndices = nullptr,
+             .preTransform = support.capabilities.currentTransform,
+             .compositeAlpha = composite_alpha,
+             .presentMode = present_mode,
+             .clipped = VK_TRUE,
+             .oldSwapchain = request.old_swapchain};
+         VkResult result = vkCreateSwapchainKHR(request.device, &create_info, nullptr, &creation.swapchain);
+         if (result != VK_SUCCESS) {
+            creation = {};
+            return result;
+         }
+
+         std::uint32_t actual_image_count = 0;
+         result = vkGetSwapchainImagesKHR(request.device, creation.swapchain, &actual_image_count, nullptr);
+         if (result != VK_SUCCESS || actual_image_count == 0) {
+            destroySwapchain(request.device, creation);
+            return result == VK_SUCCESS ? VK_ERROR_INITIALIZATION_FAILED : result;
+         }
+
+         creation.images.resize(actual_image_count);
+         result = vkGetSwapchainImagesKHR(request.device, creation.swapchain, &actual_image_count,
+                                          creation.images.data());
+         if (!isSuccessfulEnumerationResult(result)) {
+            destroySwapchain(request.device, creation);
+            return result;
+         }
+         creation.images.resize(actual_image_count);
+         creation.surface_format = surface_format;
+         creation.present_mode = present_mode;
+         creation.extent = extent;
+         return VK_SUCCESS;
+      } catch (const std::bad_alloc &) {
+         destroySwapchain(request.device, creation);
+         return VK_ERROR_OUT_OF_HOST_MEMORY;
+      }
+   }
+
+   void destroySwapchain(VkDevice device, SwapchainCreation &creation) noexcept {
+      creation.images.clear();
+      if (device != VK_NULL_HANDLE && creation.swapchain != VK_NULL_HANDLE) {
+         vkDestroySwapchainKHR(device, creation.swapchain, nullptr);
+      }
+      creation = {};
+   }
+
+   VkResult createImageViews2D(const ImageView2DRequest &request,
+                               std::vector<VkImageView> &image_views) noexcept {
+      try {
+         image_views.clear();
+         if (request.device == VK_NULL_HANDLE || request.format == VK_FORMAT_UNDEFINED ||
+             request.aspect_mask == 0 || request.mip_levels == 0 || request.array_layers == 0) {
+            return VK_ERROR_INITIALIZATION_FAILED;
+         }
+
+         image_views.reserve(request.images.size());
+         for (const auto image : request.images) {
+            if (image == VK_NULL_HANDLE) {
+               destroyImageViews(request.device, image_views);
+               return VK_ERROR_INITIALIZATION_FAILED;
+            }
+            const VkImageViewCreateInfo create_info{
+                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .image = image,
+                .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                .format = request.format,
+                .components = {.r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                               .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                               .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                               .a = VK_COMPONENT_SWIZZLE_IDENTITY},
+                .subresourceRange = makeImageSubresourceRange(request.aspect_mask,
+                                                              request.mip_levels,
+                                                              request.array_layers)};
+            VkImageView image_view = VK_NULL_HANDLE;
+            const VkResult result = vkCreateImageView(request.device, &create_info, nullptr, &image_view);
+            if (result != VK_SUCCESS) {
+               destroyImageViews(request.device, image_views);
+               return result;
+            }
+            image_views.push_back(image_view);
+         }
+         return VK_SUCCESS;
+      } catch (const std::bad_alloc &) {
+         destroyImageViews(request.device, image_views);
+         return VK_ERROR_OUT_OF_HOST_MEMORY;
+      }
+   }
+
+   void destroyImageViews(VkDevice device, std::vector<VkImageView> &image_views) noexcept {
+      if (device != VK_NULL_HANDLE) {
+         for (const auto image_view : image_views) {
+            if (image_view != VK_NULL_HANDLE) {
+               vkDestroyImageView(device, image_view, nullptr);
+            }
+         }
+      }
+      image_views.clear();
+   }
+
+   VkResult chooseSupportedDepthFormat(VkPhysicalDevice physical_device,
+                                       std::span<const VkFormat> candidates,
+                                       VkFormatFeatureFlags required_features,
+                                       VkFormat &format) noexcept {
+      format = VK_FORMAT_UNDEFINED;
+      if (physical_device == VK_NULL_HANDLE || candidates.empty() || required_features == 0) {
+         return VK_ERROR_INITIALIZATION_FAILED;
+      }
+
+      for (const auto candidate : candidates) {
+         VkFormatProperties properties{};
+         vkGetPhysicalDeviceFormatProperties(physical_device, candidate, &properties);
+         if ((properties.optimalTilingFeatures & required_features) == required_features) {
+            format = candidate;
+            return VK_SUCCESS;
+         }
+      }
+
+      return VK_ERROR_FORMAT_NOT_SUPPORTED;
+   }
+
+   VkResult createColorDepthRenderPass(const ColorDepthRenderPassRequest &request,
+                                       VkRenderPass &render_pass) noexcept {
+      try {
+         render_pass = VK_NULL_HANDLE;
+         if (request.device == VK_NULL_HANDLE || request.color_formats.empty()) {
+            return VK_ERROR_INITIALIZATION_FAILED;
+         }
+
+         std::vector<VkAttachmentDescription> attachments{};
+         std::vector<VkAttachmentReference> color_references{};
+         attachments.reserve(request.color_formats.size() +
+                             (request.depth_format == VK_FORMAT_UNDEFINED ? 0U : 1U));
+         color_references.reserve(request.color_formats.size());
+
+         for (std::uint32_t color_index = 0; color_index < request.color_formats.size(); ++color_index) {
+            attachments.push_back(VkAttachmentDescription{.flags = 0,
+                                                          .format = request.color_formats[color_index],
+                                                          .samples = VK_SAMPLE_COUNT_1_BIT,
+                                                          .loadOp = request.color_load_op,
+                                                          .storeOp = request.color_store_op,
+                                                          .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                          .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                                          .initialLayout = request.color_initial_layout,
+                                                          .finalLayout = request.color_final_layout});
+            color_references.push_back(VkAttachmentReference{
+                .attachment = color_index,
+                .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL});
+         }
+
+         VkAttachmentReference depth_reference{.attachment = VK_ATTACHMENT_UNUSED,
+                                               .layout = VK_IMAGE_LAYOUT_UNDEFINED};
+         if (request.depth_format != VK_FORMAT_UNDEFINED) {
+            depth_reference = VkAttachmentReference{
+                .attachment = static_cast<std::uint32_t>(attachments.size()),
+                .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+            attachments.push_back(VkAttachmentDescription{.flags = 0,
+                                                          .format = request.depth_format,
+                                                          .samples = VK_SAMPLE_COUNT_1_BIT,
+                                                          .loadOp = request.depth_load_op,
+                                                          .storeOp = request.depth_store_op,
+                                                          .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                                          .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                                          .initialLayout = request.depth_initial_layout,
+                                                          .finalLayout = request.depth_final_layout});
+         }
+
+         const VkSubpassDescription subpass{
+             .flags = 0,
+             .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+             .inputAttachmentCount = 0,
+             .pInputAttachments = nullptr,
+             .colorAttachmentCount = static_cast<std::uint32_t>(color_references.size()),
+             .pColorAttachments = color_references.data(),
+             .pResolveAttachments = nullptr,
+             .pDepthStencilAttachment = request.depth_format == VK_FORMAT_UNDEFINED ? nullptr : &depth_reference,
+             .preserveAttachmentCount = 0,
+             .pPreserveAttachments = nullptr};
+         std::vector<VkSubpassDependency> dependencies{};
+         if (request.external_dependencies) {
+            dependencies = {
+                VkSubpassDependency{.srcSubpass = VK_SUBPASS_EXTERNAL,
+                                    .dstSubpass = 0,
+                                    .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                                    .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                                    .srcAccessMask = 0,
+                                    .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                                     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                                    .dependencyFlags = 0},
+                VkSubpassDependency{.srcSubpass = 0,
+                                    .dstSubpass = VK_SUBPASS_EXTERNAL,
+                                    .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                                    VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                                    .dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                    .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                                                     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                                    .dstAccessMask = 0,
+                                    .dependencyFlags = 0}};
+         }
+
+         const VkRenderPassCreateInfo create_info{
+             .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+             .pNext = nullptr,
+             .flags = 0,
+             .attachmentCount = static_cast<std::uint32_t>(attachments.size()),
+             .pAttachments = attachments.data(),
+             .subpassCount = 1,
+             .pSubpasses = &subpass,
+             .dependencyCount = static_cast<std::uint32_t>(dependencies.size()),
+             .pDependencies = dependencies.data()};
+         return vkCreateRenderPass(request.device, &create_info, nullptr, &render_pass);
+      } catch (const std::bad_alloc &) {
+         render_pass = VK_NULL_HANDLE;
+         return VK_ERROR_OUT_OF_HOST_MEMORY;
+      }
+   }
+
+   VkResult createFramebuffers(const FramebufferRequest &request,
+                               std::vector<VkFramebuffer> &framebuffers) noexcept {
+      try {
+         framebuffers.clear();
+         if (request.device == VK_NULL_HANDLE || request.render_pass == VK_NULL_HANDLE ||
+             request.color_image_views.empty() || request.extent.width == 0 || request.extent.height == 0 ||
+             request.layers == 0) {
+            return VK_ERROR_INITIALIZATION_FAILED;
+         }
+
+         framebuffers.reserve(request.color_image_views.size());
+         for (const auto color_view : request.color_image_views) {
+            if (color_view == VK_NULL_HANDLE) {
+               destroyFramebuffers(request.device, framebuffers);
+               return VK_ERROR_INITIALIZATION_FAILED;
+            }
+
+            std::array<VkImageView, 2> attachments{color_view, request.depth_image_view};
+            const std::uint32_t attachment_count = request.depth_image_view == VK_NULL_HANDLE ? 1U : 2U;
+            const VkFramebufferCreateInfo create_info{
+                .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .renderPass = request.render_pass,
+                .attachmentCount = attachment_count,
+                .pAttachments = attachments.data(),
+                .width = request.extent.width,
+                .height = request.extent.height,
+                .layers = request.layers};
+            VkFramebuffer framebuffer = VK_NULL_HANDLE;
+            const VkResult result = vkCreateFramebuffer(request.device, &create_info, nullptr, &framebuffer);
+            if (result != VK_SUCCESS) {
+               destroyFramebuffers(request.device, framebuffers);
+               return result;
+            }
+            framebuffers.push_back(framebuffer);
+         }
+         return VK_SUCCESS;
+      } catch (const std::bad_alloc &) {
+         destroyFramebuffers(request.device, framebuffers);
+         return VK_ERROR_OUT_OF_HOST_MEMORY;
+      }
+   }
+
+   void destroyFramebuffers(VkDevice device, std::vector<VkFramebuffer> &framebuffers) noexcept {
+      if (device != VK_NULL_HANDLE) {
+         for (const auto framebuffer : framebuffers) {
+            if (framebuffer != VK_NULL_HANDLE) {
+               vkDestroyFramebuffer(device, framebuffer, nullptr);
+            }
+         }
+      }
+      framebuffers.clear();
+   }
+
+   VkResult allocateCommandBuffers(const CommandBufferAllocationRequest &request,
+                                   std::vector<VkCommandBuffer> &command_buffers) noexcept {
+      try {
+         command_buffers.clear();
+         if (request.device == VK_NULL_HANDLE || request.command_pool == VK_NULL_HANDLE || request.count == 0) {
+            return VK_ERROR_INITIALIZATION_FAILED;
+         }
+
+         command_buffers.resize(request.count, VK_NULL_HANDLE);
+         const VkCommandBufferAllocateInfo allocate_info{
+             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+             .pNext = nullptr,
+             .commandPool = request.command_pool,
+             .level = request.level,
+             .commandBufferCount = request.count};
+         const VkResult result = vkAllocateCommandBuffers(request.device, &allocate_info, command_buffers.data());
+         if (result != VK_SUCCESS) {
+            command_buffers.clear();
+            return result;
+         }
+         return VK_SUCCESS;
+      } catch (const std::bad_alloc &) {
+         command_buffers.clear();
+         return VK_ERROR_OUT_OF_HOST_MEMORY;
+      }
+   }
+
+   VkResult createFrameSyncPrimitives(VkDevice device,
+                                      std::uint32_t count,
+                                      VkFenceCreateFlags fence_flags,
+                                      std::vector<FrameSyncPrimitives> &sync) noexcept {
+      try {
+         destroyFrameSyncPrimitives(device, sync);
+         if (device == VK_NULL_HANDLE || count == 0) {
+            return VK_ERROR_INITIALIZATION_FAILED;
+         }
+
+         sync.resize(count);
+         const VkSemaphoreCreateInfo semaphore_info{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+                                                    .pNext = nullptr,
+                                                    .flags = 0};
+         const VkFenceCreateInfo fence_info{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+                                            .pNext = nullptr,
+                                            .flags = fence_flags};
+         for (auto &entry : sync) {
+            VkResult result = vkCreateSemaphore(device, &semaphore_info, nullptr, &entry.image_available);
+            if (result != VK_SUCCESS) {
+               destroyFrameSyncPrimitives(device, sync);
+               return result;
+            }
+            result = vkCreateSemaphore(device, &semaphore_info, nullptr, &entry.render_finished);
+            if (result != VK_SUCCESS) {
+               destroyFrameSyncPrimitives(device, sync);
+               return result;
+            }
+            result = vkCreateFence(device, &fence_info, nullptr, &entry.render_fence);
+            if (result != VK_SUCCESS) {
+               destroyFrameSyncPrimitives(device, sync);
+               return result;
+            }
+         }
+         return VK_SUCCESS;
+      } catch (const std::bad_alloc &) {
+         destroyFrameSyncPrimitives(device, sync);
+         return VK_ERROR_OUT_OF_HOST_MEMORY;
+      }
+   }
+
+   void destroyFrameSyncPrimitives(VkDevice device, std::vector<FrameSyncPrimitives> &sync) noexcept {
+      if (device != VK_NULL_HANDLE) {
+         for (auto &entry : sync) {
+            if (entry.render_fence != VK_NULL_HANDLE) {
+               vkDestroyFence(device, entry.render_fence, nullptr);
+            }
+            if (entry.render_finished != VK_NULL_HANDLE) {
+               vkDestroySemaphore(device, entry.render_finished, nullptr);
+            }
+            if (entry.image_available != VK_NULL_HANDLE) {
+               vkDestroySemaphore(device, entry.image_available, nullptr);
+            }
+         }
+      }
+      sync.clear();
+   }
+
+   VkResult createDescriptorSetLayout(VkDevice device,
+                                      std::span<const VkDescriptorSetLayoutBinding> bindings,
+                                      VkDescriptorSetLayout &layout,
+                                      VkDescriptorSetLayoutCreateFlags flags) noexcept {
+      layout = VK_NULL_HANDLE;
+      if (device == VK_NULL_HANDLE) {
+         return VK_ERROR_INITIALIZATION_FAILED;
+      }
+
+      const VkDescriptorSetLayoutCreateInfo create_info{
+          .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+          .pNext = nullptr,
+          .flags = flags,
+          .bindingCount = static_cast<std::uint32_t>(bindings.size()),
+          .pBindings = bindings.data()};
+      return vkCreateDescriptorSetLayout(device, &create_info, nullptr, &layout);
+   }
+
+   VkResult createDescriptorPoolAndAllocateSets(const DescriptorSetAllocationRequest &request,
+                                                DescriptorSetAllocation &allocation) noexcept {
+      allocation = {};
+      if (request.device == VK_NULL_HANDLE) {
+         return VK_ERROR_INITIALIZATION_FAILED;
+      }
+      if (request.set_layouts.empty()) {
+         return VK_SUCCESS;
+      }
+      if (request.pool_sizes.empty()) {
+         return VK_ERROR_INITIALIZATION_FAILED;
+      }
+
+      const std::uint32_t max_sets =
+          request.max_sets == 0 ? static_cast<std::uint32_t>(request.set_layouts.size()) : request.max_sets;
+      const VkDescriptorPoolCreateInfo pool_info{
+          .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+          .pNext = nullptr,
+          .flags = request.pool_flags,
+          .maxSets = max_sets,
+          .poolSizeCount = static_cast<std::uint32_t>(request.pool_sizes.size()),
+          .pPoolSizes = request.pool_sizes.data()};
+      VkResult result = vkCreateDescriptorPool(request.device, &pool_info, nullptr, &allocation.pool);
+      if (result != VK_SUCCESS) {
+         allocation = {};
+         return result;
+      }
+
+      result = allocateDescriptorSets(request.device, allocation.pool, request.set_layouts, allocation.sets);
+      if (result != VK_SUCCESS) {
+         destroyDescriptorSetAllocation(request.device, allocation);
+         return result;
+      }
+      return VK_SUCCESS;
+   }
+
+   void destroyDescriptorSetAllocation(VkDevice device, DescriptorSetAllocation &allocation) noexcept {
+      allocation.sets.clear();
+      if (device != VK_NULL_HANDLE && allocation.pool != VK_NULL_HANDLE) {
+         vkDestroyDescriptorPool(device, allocation.pool, nullptr);
+      }
+      allocation.pool = VK_NULL_HANDLE;
+   }
+
+   VkResult allocateDescriptorSets(VkDevice device,
+                                   VkDescriptorPool pool,
+                                   std::span<const VkDescriptorSetLayout> set_layouts,
+                                   std::vector<VkDescriptorSet> &sets) noexcept {
+      try {
+         sets.clear();
+         if (device == VK_NULL_HANDLE || pool == VK_NULL_HANDLE) {
+            return VK_ERROR_INITIALIZATION_FAILED;
+         }
+         if (set_layouts.empty()) {
+            return VK_SUCCESS;
+         }
+
+         sets.resize(set_layouts.size(), VK_NULL_HANDLE);
+         const VkDescriptorSetAllocateInfo allocate_info{
+             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+             .pNext = nullptr,
+             .descriptorPool = pool,
+             .descriptorSetCount = static_cast<std::uint32_t>(sets.size()),
+             .pSetLayouts = set_layouts.data()};
+         const VkResult result = vkAllocateDescriptorSets(device, &allocate_info, sets.data());
+         if (result != VK_SUCCESS) {
+            sets.clear();
+            return result;
+         }
+         return VK_SUCCESS;
+      } catch (const std::bad_alloc &) {
+         sets.clear();
+         return VK_ERROR_OUT_OF_HOST_MEMORY;
+      }
+   }
+
+   VkResult recordBufferToImageUpload2D(VkCommandBuffer command_buffer,
+                                        const BufferToImageUpload2DRecording &recording) noexcept {
+      if (command_buffer == VK_NULL_HANDLE || recording.staging_buffer == VK_NULL_HANDLE ||
+          recording.image == VK_NULL_HANDLE || recording.width == 0 || recording.height == 0 ||
+          recording.aspect_mask == 0 || recording.mip_levels == 0 || recording.array_layers == 0) {
+         return VK_ERROR_INITIALIZATION_FAILED;
+      }
+
+      const auto range = makeImageSubresourceRange(recording.aspect_mask,
+                                                   recording.mip_levels,
+                                                   recording.array_layers);
+      const VkImageMemoryBarrier to_transfer{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                             .pNext = nullptr,
+                                             .srcAccessMask = 0,
+                                             .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                                             .oldLayout = recording.old_layout,
+                                             .newLayout = recording.transfer_layout,
+                                             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                             .image = recording.image,
+                                             .subresourceRange = range};
+      vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_transfer);
+
+      const VkBufferImageCopy copy_region{.bufferOffset = 0,
+                                          .bufferRowLength = 0,
+                                          .bufferImageHeight = 0,
+                                          .imageSubresource = {.aspectMask = recording.aspect_mask,
+                                                               .mipLevel = 0,
+                                                               .baseArrayLayer = 0,
+                                                               .layerCount = recording.array_layers},
+                                          .imageOffset = {.x = 0, .y = 0, .z = 0},
+                                          .imageExtent = {.width = recording.width,
+                                                          .height = recording.height,
+                                                          .depth = 1}};
+      vkCmdCopyBufferToImage(command_buffer, recording.staging_buffer, recording.image,
+                             recording.transfer_layout, 1, &copy_region);
+
+      const VkImageMemoryBarrier to_final{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                          .pNext = nullptr,
+                                          .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                                          .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+                                          .oldLayout = recording.transfer_layout,
+                                          .newLayout = recording.final_layout,
+                                          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                          .image = recording.image,
+                                          .subresourceRange = range};
+      vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, recording.final_dst_stage_mask,
+                           0, 0, nullptr, 0, nullptr, 1, &to_final);
+      return VK_SUCCESS;
+   }
+
+   VkResult recordClearColorImage(VkCommandBuffer command_buffer,
+                                  const ClearColorImageRecording &recording) noexcept {
+      if (command_buffer == VK_NULL_HANDLE || recording.image == VK_NULL_HANDLE || recording.aspect_mask == 0) {
+         return VK_ERROR_INITIALIZATION_FAILED;
+      }
+
+      const auto range = makeImageSubresourceRange(recording.aspect_mask, 1, 1);
+      const VkImageMemoryBarrier to_transfer{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                             .pNext = nullptr,
+                                             .srcAccessMask = 0,
+                                             .dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                                             .oldLayout = recording.old_layout,
+                                             .newLayout = recording.transfer_layout,
+                                             .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                             .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                             .image = recording.image,
+                                             .subresourceRange = range};
+      vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                           VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &to_transfer);
+      vkCmdClearColorImage(command_buffer, recording.image, recording.transfer_layout,
+                           &recording.clear_color, 1, &range);
+
+      const VkImageMemoryBarrier to_final{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                          .pNext = nullptr,
+                                          .srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+                                          .dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+                                          .oldLayout = recording.transfer_layout,
+                                          .newLayout = recording.final_layout,
+                                          .srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                          .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+                                          .image = recording.image,
+                                          .subresourceRange = range};
+      vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, recording.final_dst_stage_mask,
+                           0, 0, nullptr, 0, nullptr, 1, &to_final);
+      return VK_SUCCESS;
    }
 
    VkSurfaceFormatKHR chooseSurfaceFormat(std::span<const VkSurfaceFormatKHR> formats) noexcept {
