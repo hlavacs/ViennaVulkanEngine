@@ -260,7 +260,7 @@ int main() {
        !gpu_texture.image.value.isValid() || !gpu_texture.sampler.value.isValid() ||
        gpu_texture.usage != vve::v3::GpuImageUsage::sampled ||
        gpu_texture.format != vve::v3::GpuImageFormat::rgba8_srgb ||
-       gpu_texture.width == 0 || gpu_texture.height == 0 || gpu_texture.mip_levels != 1 ||
+       gpu_texture.width == 0 || gpu_texture.height == 0 || gpu_texture.mip_levels <= 1 ||
        gpu_texture.array_layers != 1 || !gpu_texture.image_created ||
        !gpu_texture.image_view_created || !gpu_texture.sampler_created || !gpu_texture.resident) {
       return 25;

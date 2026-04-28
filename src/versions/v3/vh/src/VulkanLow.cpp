@@ -100,23 +100,24 @@ namespace {
                                                                                  request.array_layers)};
    }
 
-   [[nodiscard]] VkSamplerCreateInfo makeLinearRepeatSamplerCreateInfo() noexcept {
+   [[nodiscard]] VkSamplerCreateInfo
+   makeLinearRepeatSamplerCreateInfo(const vh::low::Image2DAllocationRequest &request) noexcept {
       return VkSamplerCreateInfo{.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
                                  .pNext = nullptr,
                                  .flags = 0,
                                  .magFilter = VK_FILTER_LINEAR,
                                  .minFilter = VK_FILTER_LINEAR,
-                                 .mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                                 .mipmapMode = request.sampler_mipmap_mode,
                                  .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
                                  .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
                                  .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
                                  .mipLodBias = 0.0F,
-                                 .anisotropyEnable = VK_FALSE,
-                                 .maxAnisotropy = 1.0F,
+                                 .anisotropyEnable = request.sampler_anisotropy_enable,
+                                 .maxAnisotropy = request.sampler_max_anisotropy,
                                  .compareEnable = VK_FALSE,
                                  .compareOp = VK_COMPARE_OP_ALWAYS,
-                                 .minLod = 0.0F,
-                                 .maxLod = 0.0F,
+                                 .minLod = request.sampler_min_lod,
+                                 .maxLod = request.sampler_max_lod,
                                  .borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
                                  .unnormalizedCoordinates = VK_FALSE};
    }
@@ -714,6 +715,20 @@ namespace vh::low {
       allocation = {};
    }
 
+   std::uint32_t mipLevelCount2D(std::uint32_t width, std::uint32_t height) noexcept {
+      if (width == 0 || height == 0) {
+         return 0;
+      }
+
+      std::uint32_t levels = 1;
+      std::uint32_t largest_extent = std::max(width, height);
+      while (largest_extent > 1) {
+         largest_extent /= 2;
+         ++levels;
+      }
+      return levels;
+   }
+
    VkResult allocateImage2D(const Image2DAllocationRequest &request, Image2DAllocation &allocation) noexcept {
       allocation = {};
       if (request.physical_device == VK_NULL_HANDLE || request.device == VK_NULL_HANDLE ||
@@ -768,7 +783,7 @@ namespace vh::low {
       }
 
       if (request.create_sampler) {
-         const auto sampler_info = makeLinearRepeatSamplerCreateInfo();
+         const auto sampler_info = makeLinearRepeatSamplerCreateInfo(request);
          result = vkCreateSampler(request.device, &sampler_info, nullptr, &allocation.sampler);
          if (result != VK_SUCCESS) {
             destroyImage2D(request.device, allocation);
@@ -1439,8 +1454,14 @@ namespace vh::low {
                                           .imageExtent = {.width = recording.width,
                                                           .height = recording.height,
                                                           .depth = 1}};
+      const std::span<const VkBufferImageCopy> copy_regions =
+          recording.copy_regions.empty()
+              ? std::span<const VkBufferImageCopy>{std::addressof(copy_region), 1}
+              : recording.copy_regions;
       vkCmdCopyBufferToImage(command_buffer, recording.staging_buffer, recording.image,
-                             recording.transfer_layout, 1, &copy_region);
+                             recording.transfer_layout,
+                             static_cast<std::uint32_t>(copy_regions.size()),
+                             copy_regions.data());
 
       const VkImageMemoryBarrier to_final{.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                                           .pNext = nullptr,

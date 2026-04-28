@@ -33,6 +33,11 @@ namespace vve::v3 {
 
       constexpr std::uint32_t maxDrawDescriptorSetCopies = 4096;
 
+      struct MipmappedTextureUpload {
+         std::vector<std::byte> bytes{};
+         std::vector<VkBufferImageCopy> copy_regions{};
+      };
+
       /// @brief Converts ImportedVertex member offsets to Vulkan's 32-bit vertex attribute offset type.
       [[nodiscard]] constexpr std::uint32_t vertexOffset(std::size_t offset) {
          return static_cast<std::uint32_t>(offset);
@@ -1107,6 +1112,108 @@ namespace vve::v3 {
          return static_cast<std::size_t>(*bytes_per_texel);
       }
 
+      /// @brief Builds a complete tightly-packed CPU mip chain and Vulkan copy regions for a 2D texture upload.
+      [[nodiscard]] std::expected<MipmappedTextureUpload, vve::Error>
+      buildMipmappedTextureUpload(std::span<const std::byte> base_pixels,
+                                  std::uint32_t width,
+                                  std::uint32_t height,
+                                  std::uint32_t bytes_per_texel,
+                                  std::uint32_t mip_levels) {
+         if (base_pixels.empty() || width == 0 || height == 0 || bytes_per_texel == 0 || mip_levels == 0) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         std::uint32_t level_width = width;
+         std::uint32_t level_height = height;
+         std::size_t total_byte_count = 0;
+         for (std::uint32_t level = 0; level < mip_levels; ++level) {
+            total_byte_count += static_cast<std::size_t>(level_width) * static_cast<std::size_t>(level_height) *
+                                static_cast<std::size_t>(bytes_per_texel);
+            level_width = std::max(1U, level_width / 2U);
+            level_height = std::max(1U, level_height / 2U);
+         }
+
+         MipmappedTextureUpload upload{};
+         upload.bytes.resize(total_byte_count);
+         upload.copy_regions.reserve(mip_levels);
+
+         auto append_copy_region = [&](std::uint32_t level, std::uint32_t mip_width, std::uint32_t mip_height,
+                                       std::size_t byte_offset) {
+            upload.copy_regions.push_back(VkBufferImageCopy{
+                .bufferOffset = static_cast<VkDeviceSize>(byte_offset),
+                .bufferRowLength = 0,
+                .bufferImageHeight = 0,
+                .imageSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+                                     .mipLevel = level,
+                                     .baseArrayLayer = 0,
+                                     .layerCount = 1},
+                .imageOffset = {.x = 0, .y = 0, .z = 0},
+                .imageExtent = {.width = mip_width, .height = mip_height, .depth = 1}});
+         };
+
+         const std::size_t base_byte_count = static_cast<std::size_t>(width) * static_cast<std::size_t>(height) *
+                                             static_cast<std::size_t>(bytes_per_texel);
+         if (base_pixels.size() != base_byte_count) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         std::copy(base_pixels.begin(), base_pixels.end(), upload.bytes.begin());
+         append_copy_region(0, width, height, 0);
+
+         std::size_t previous_offset = 0;
+         std::uint32_t previous_width = width;
+         std::uint32_t previous_height = height;
+         std::size_t current_offset = base_byte_count;
+         for (std::uint32_t level = 1; level < mip_levels; ++level) {
+            const std::uint32_t current_width = std::max(1U, previous_width / 2U);
+            const std::uint32_t current_height = std::max(1U, previous_height / 2U);
+            append_copy_region(level, current_width, current_height, current_offset);
+
+            for (std::uint32_t y = 0; y < current_height; ++y) {
+               for (std::uint32_t x = 0; x < current_width; ++x) {
+                  for (std::uint32_t channel = 0; channel < bytes_per_texel; ++channel) {
+                     std::uint32_t sum = 0;
+                     std::uint32_t sample_count = 0;
+                     for (std::uint32_t sample_y = 0; sample_y < 2; ++sample_y) {
+                        const std::uint32_t source_y = y * 2U + sample_y;
+                        if (source_y >= previous_height) {
+                           continue;
+                        }
+                        for (std::uint32_t sample_x = 0; sample_x < 2; ++sample_x) {
+                           const std::uint32_t source_x = x * 2U + sample_x;
+                           if (source_x >= previous_width) {
+                              continue;
+                           }
+
+                           const std::size_t source_index =
+                               previous_offset +
+                               ((static_cast<std::size_t>(source_y) * previous_width + source_x) *
+                                    bytes_per_texel +
+                                channel);
+                           sum += std::to_integer<std::uint32_t>(upload.bytes[source_index]);
+                           ++sample_count;
+                        }
+                     }
+
+                     const std::size_t target_index =
+                         current_offset +
+                         ((static_cast<std::size_t>(y) * current_width + x) * bytes_per_texel + channel);
+                     upload.bytes[target_index] =
+                         static_cast<std::byte>((sum + sample_count / 2U) / sample_count);
+                  }
+               }
+            }
+
+            previous_offset = current_offset;
+            previous_width = current_width;
+            previous_height = current_height;
+            current_offset += static_cast<std::size_t>(current_width) * static_cast<std::size_t>(current_height) *
+                              static_cast<std::size_t>(bytes_per_texel);
+         }
+
+         return upload;
+      }
+
       /// @brief Converts backend-neutral buffer usage to Vulkan buffer usage flags.
       [[nodiscard]] std::optional<VkBufferUsageFlags> bufferUsageFlags(GpuBufferUsage usage) {
          switch (usage) {
@@ -1739,6 +1846,10 @@ namespace vve::v3 {
          if (rgba_pixels.size() != expected_bytes) {
             return std::unexpected(vve::Error::invalid_argument);
          }
+         const std::uint32_t mip_levels = vh::low::mipLevelCount2D(width, height);
+         if (mip_levels == 0) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
 
          const auto image_handle =
              gpuImageHandle(owner, owner_kind, GpuImageUsage::sampled, format, width, height, generation);
@@ -1755,7 +1866,7 @@ namespace vve::v3 {
                                                  .format = format,
                                                  .width = width,
                                                  .height = height,
-                                                 .mip_levels = 1,
+                                                 .mip_levels = mip_levels,
                                                  .array_layers = 1,
                                                  .generation = generation};
 
@@ -2021,13 +2132,27 @@ namespace vve::v3 {
             return std::unexpected(enabled_extensions.error());
          }
 
+         VkPhysicalDeviceFeatures available_features{};
+         vkGetPhysicalDeviceFeatures(physical_device_, &available_features);
+         VkPhysicalDeviceFeatures enabled_features{};
+         enabled_features.samplerAnisotropy = available_features.samplerAnisotropy;
+
+         VkPhysicalDeviceProperties device_properties{};
+         vkGetPhysicalDeviceProperties(physical_device_, &device_properties);
+         sampler_anisotropy_enabled_ = enabled_features.samplerAnisotropy == VK_TRUE;
+         max_sampler_anisotropy_ =
+             sampler_anisotropy_enabled_
+                 ? std::max(1.0F, std::min(16.0F, device_properties.limits.maxSamplerAnisotropy))
+                 : 1.0F;
+
          vh::low::DeviceCreation creation{};
          const VkResult result = vh::low::createDevice(
              vh::low::DeviceProfile{
                  .physical_device = physical_device_,
                  .queue_family = graphics_queue_family_,
                  .required_extensions =
-                     std::span<const char *const>{enabled_extensions->data(), enabled_extensions->size()}},
+                     std::span<const char *const>{enabled_extensions->data(), enabled_extensions->size()},
+                 .features = &enabled_features},
              creation);
          if (result != VK_SUCCESS) {
             std::cerr << "[VulkanGraphicsBackend] vkCreateDevice failed: " << string_VkResult(result) << '\n';
@@ -2109,8 +2234,25 @@ namespace vve::v3 {
       [[nodiscard]] std::expected<void, vve::Error>
       createVulkanSampledImage(VulkanGpuImageResources &resources, VkFormat format,
                                std::span<const std::byte> bytes) {
+         const auto bytes_per_texel = vh::low::imageFormatBytesPerTexel(format);
+         if (!bytes_per_texel.has_value()) {
+            return std::unexpected(vve::Error::invalid_argument);
+         }
+
+         auto upload = buildMipmappedTextureUpload(bytes,
+                                                   resources.summary.width,
+                                                   resources.summary.height,
+                                                   *bytes_per_texel,
+                                                   resources.summary.mip_levels);
+         if (!upload) {
+            return std::unexpected(upload.error());
+         }
+
          VulkanGpuBufferResources staging_buffer{};
-         if (auto staging_result = createVulkanBuffer(staging_buffer, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, bytes);
+         if (auto staging_result = createVulkanBuffer(
+                 staging_buffer,
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                 std::span<const std::byte>{upload->bytes.data(), upload->bytes.size()});
              !staging_result) {
             destroyBufferResources(staging_buffer);
             return std::unexpected(staging_result.error());
@@ -2130,7 +2272,13 @@ namespace vve::v3 {
                  .mip_levels = resources.summary.mip_levels,
                  .array_layers = resources.summary.array_layers,
                  .create_view = true,
-                 .create_sampler = true},
+                 .create_sampler = true,
+                 .sampler_mipmap_mode = resources.summary.mip_levels > 1 ? VK_SAMPLER_MIPMAP_MODE_LINEAR
+                                                                          : VK_SAMPLER_MIPMAP_MODE_NEAREST,
+                 .sampler_anisotropy_enable = sampler_anisotropy_enabled_ ? VK_TRUE : VK_FALSE,
+                 .sampler_max_anisotropy = max_sampler_anisotropy_,
+                 .sampler_min_lod = 0.0F,
+                 .sampler_max_lod = static_cast<float>(resources.summary.mip_levels - 1)},
              allocation);
          if (result != VK_SUCCESS) {
             destroyBufferResources(staging_buffer);
@@ -2143,7 +2291,8 @@ namespace vve::v3 {
          resources.image_view = allocation.view;
          resources.sampler = allocation.sampler;
 
-         if (auto upload_result = uploadSampledImage(resources, staging_buffer.buffer); !upload_result) {
+         if (auto upload_result = uploadSampledImage(resources, staging_buffer.buffer, upload->copy_regions);
+             !upload_result) {
             destroyBufferResources(staging_buffer);
             return std::unexpected(upload_result.error());
          }
@@ -2154,16 +2303,21 @@ namespace vve::v3 {
       }
 
       [[nodiscard]] std::expected<void, vve::Error>
-      uploadSampledImage(const VulkanGpuImageResources &resources, VkBuffer staging_buffer) {
+      uploadSampledImage(const VulkanGpuImageResources &resources,
+                         VkBuffer staging_buffer,
+                         std::span<const VkBufferImageCopy> copy_regions) {
          if (resources.image == VK_NULL_HANDLE || staging_buffer == VK_NULL_HANDLE ||
-             command_pool_ == VK_NULL_HANDLE || graphics_queue_ == VK_NULL_HANDLE) {
+             command_pool_ == VK_NULL_HANDLE || graphics_queue_ == VK_NULL_HANDLE || copy_regions.empty()) {
             return std::unexpected(vve::Error::invalid_argument);
          }
 
          struct UploadContext {
             const VulkanGpuImageResources *resources{};
             VkBuffer staging_buffer{VK_NULL_HANDLE};
-         } context{.resources = std::addressof(resources), .staging_buffer = staging_buffer};
+            std::span<const VkBufferImageCopy> copy_regions{};
+         } context{.resources = std::addressof(resources),
+                   .staging_buffer = staging_buffer,
+                   .copy_regions = copy_regions};
 
          const VkResult result = vh::low::submitOneTimeCommands(
              vh::low::OneTimeSubmitRequest{
@@ -2183,7 +2337,8 @@ namespace vve::v3 {
                                 .height = image_resources.summary.height,
                                 .aspect_mask = VK_IMAGE_ASPECT_COLOR_BIT,
                                 .mip_levels = image_resources.summary.mip_levels,
-                                .array_layers = image_resources.summary.array_layers});
+                                .array_layers = image_resources.summary.array_layers,
+                                .copy_regions = upload->copy_regions});
                      },
                  .recorder_context = std::addressof(context)});
          if (result != VK_SUCCESS) {
@@ -3933,6 +4088,8 @@ namespace vve::v3 {
          graphics_queue_ = VK_NULL_HANDLE;
          physical_device_ = VK_NULL_HANDLE;
          graphics_queue_family_ = 0;
+         sampler_anisotropy_enabled_ = false;
+         max_sampler_anisotropy_ = 1.0F;
          presentation_enabled_ = false;
          initialized_ = false;
       }
@@ -3944,6 +4101,8 @@ namespace vve::v3 {
       VkPipelineCache pipeline_cache_{VK_NULL_HANDLE}; ///< Backend-owned cache for future VkPipeline creation.
       VkCommandPool command_pool_{VK_NULL_HANDLE}; ///< Command buffers used for presentation clears.
       std::uint32_t graphics_queue_family_{0};    ///< Queue family used to create the logical device.
+      bool sampler_anisotropy_enabled_{false};     ///< Whether the logical device enables anisotropic sampling.
+      float max_sampler_anisotropy_{1.0F};         ///< Clamped sampler anisotropy used for texture sampling.
       std::unordered_map<vve::Handle::value_type, VulkanPipelineResources> pipeline_resources_{};
       std::unordered_map<vve::Handle::value_type, VulkanGraphicsPipelineResources> graphics_pipelines_{};
       std::unordered_map<vve::Handle::value_type, VulkanGpuBufferResources> buffers_{};

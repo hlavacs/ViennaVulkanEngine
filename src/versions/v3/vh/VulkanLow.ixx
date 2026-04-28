@@ -108,6 +108,11 @@ export namespace vh::low {
       std::uint32_t array_layers{1};
       bool create_view{true};
       bool create_sampler{false};
+      VkSamplerMipmapMode sampler_mipmap_mode{VK_SAMPLER_MIPMAP_MODE_NEAREST};
+      VkBool32 sampler_anisotropy_enable{VK_FALSE};
+      float sampler_max_anisotropy{1.0F};
+      float sampler_min_lod{0.0F};
+      float sampler_max_lod{0.0F};
    };
 
    struct Image2DAllocation {
@@ -227,6 +232,7 @@ export namespace vh::low {
       VkImageLayout final_layout{VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
       VkPipelineStageFlags final_dst_stage_mask{VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
                                                 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT};
+      std::span<const VkBufferImageCopy> copy_regions{};
    };
 
    struct ClearColorImageRecording {
@@ -283,6 +289,7 @@ export namespace vh::low {
    [[nodiscard]] VkResult allocateBuffer(const BufferAllocationRequest &request,
                                          BufferAllocation &allocation) noexcept;
    void destroyBuffer(VkDevice device, BufferAllocation &allocation) noexcept;
+   [[nodiscard]] std::uint32_t mipLevelCount2D(std::uint32_t width, std::uint32_t height) noexcept;
    [[nodiscard]] VkResult allocateImage2D(const Image2DAllocationRequest &request,
                                           Image2DAllocation &allocation) noexcept;
    void destroyImage2D(VkDevice device, Image2DAllocation &allocation) noexcept;

@@ -92,6 +92,10 @@ int main() {
        vh::low::imageFormatBytesPerTexel(VK_FORMAT_UNDEFINED).has_value()) {
       return 10;
    }
+   if (vh::low::mipLevelCount2D(1, 1) != 1 || vh::low::mipLevelCount2D(2, 2) != 2 ||
+       vh::low::mipLevelCount2D(8, 4) != 4 || vh::low::mipLevelCount2D(0, 4) != 0) {
+      return 21;
+   }
 
    vh::low::BufferAllocation allocation{};
    const auto buffer_result = vh::low::allocateBuffer(vh::low::BufferAllocationRequest{

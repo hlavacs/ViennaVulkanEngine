@@ -1,6 +1,7 @@
 module;
 
 #include "FacadeMacros.hpp"
+#include <cstdlib>
 #include <cstring>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
@@ -86,11 +87,126 @@ namespace vve::v3 {
       GpuImageFormat format{GpuImageFormat::unknown};
    };
 
+   /// @brief Default source-texture dimension uploaded by the educational renderer.
+   inline constexpr std::uint32_t defaultTextureUploadMaxDimension = 2048;
+
    /// @brief Material texture bindings resolved against current GPU texture residency.
    struct MaterialTextureBindingUpload {
       Vector<GpuMaterialTextureBinding> bindings{};
       bool all_resident{true};
    };
+
+   /// @brief Returns the configured max uploaded texture dimension.
+   [[nodiscard]] std::uint32_t textureUploadMaxDimension() {
+      const char *raw_value = std::getenv("VVE_TEXTURE_MAX_DIMENSION");
+      if (raw_value == nullptr || *raw_value == '\0') {
+         return defaultTextureUploadMaxDimension;
+      }
+
+      char *end = nullptr;
+      const auto parsed = std::strtoul(raw_value, &end, 10);
+      if (end == raw_value || parsed == 0 || parsed > std::numeric_limits<std::uint32_t>::max()) {
+         return defaultTextureUploadMaxDimension;
+      }
+      return static_cast<std::uint32_t>(parsed);
+   }
+
+   /// @brief Returns whether the current forward shader samples this material texture semantic.
+   [[nodiscard]] bool isForwardSampledTextureSemantic(TextureSemantic semantic) {
+      switch (semantic) {
+      case TextureSemantic::base_color:
+      case TextureSemantic::normal:
+         return true;
+      case TextureSemantic::unknown:
+      case TextureSemantic::metallic_roughness:
+      case TextureSemantic::roughness:
+      case TextureSemantic::metallic:
+      case TextureSemantic::specular:
+      case TextureSemantic::emissive:
+      case TextureSemantic::opacity:
+      case TextureSemantic::ambient_occlusion:
+         return false;
+      }
+
+      return false;
+   }
+
+   /// @brief Returns whether the current renderer needs this imported texture resident on the GPU.
+   [[nodiscard]] bool isForwardSampledTexture(const SceneData &scene, TextureHandle texture) {
+      for (const auto &material : scene.materials) {
+         for (const auto &texture_ref : material.textures) {
+            if (texture_ref.texture.value == texture.value &&
+                isForwardSampledTextureSemantic(texture_ref.semantic)) {
+               return true;
+            }
+         }
+      }
+
+      return false;
+   }
+
+   /// @brief Returns the byte count for a tightly packed RGBA8 mip chain.
+   [[nodiscard]] std::size_t mipmappedRgba8ByteCount(std::uint32_t width, std::uint32_t height) {
+      std::size_t byte_count = 0;
+      while (width > 0 && height > 0) {
+         byte_count += static_cast<std::size_t>(width) * static_cast<std::size_t>(height) * 4U;
+         if (width == 1 && height == 1) {
+            break;
+         }
+         width = std::max(1U, width / 2U);
+         height = std::max(1U, height / 2U);
+      }
+      return byte_count;
+   }
+
+   /// @brief Formats byte counts for texture memory diagnostics.
+   [[nodiscard]] double mib(std::size_t bytes) {
+      return static_cast<double>(bytes) / (1024.0 * 1024.0);
+   }
+
+   /// @brief Downsamples RGBA8 pixels by one half in each dimension using a small box filter.
+   [[nodiscard]] LoadedTexturePixels downsampleHalf(LoadedTexturePixels texture) {
+      const std::uint32_t target_width = std::max(1U, texture.width / 2U);
+      const std::uint32_t target_height = std::max(1U, texture.height / 2U);
+      std::vector<std::byte> downsampled(static_cast<std::size_t>(target_width) *
+                                         static_cast<std::size_t>(target_height) * 4U);
+
+      for (std::uint32_t y = 0; y < target_height; ++y) {
+         for (std::uint32_t x = 0; x < target_width; ++x) {
+            for (std::uint32_t channel = 0; channel < 4U; ++channel) {
+               std::uint32_t sum = 0;
+               std::uint32_t sample_count = 0;
+               for (std::uint32_t sample_y = 0; sample_y < 2U; ++sample_y) {
+                  const std::uint32_t source_y = y * 2U + sample_y;
+                  if (source_y >= texture.height) {
+                     continue;
+                  }
+                  for (std::uint32_t sample_x = 0; sample_x < 2U; ++sample_x) {
+                     const std::uint32_t source_x = x * 2U + sample_x;
+                     if (source_x >= texture.width) {
+                        continue;
+                     }
+
+                     const std::size_t source_index =
+                         (static_cast<std::size_t>(source_y) * texture.width + source_x) * 4U + channel;
+                     sum += std::to_integer<std::uint32_t>(texture.rgba_pixels[source_index]);
+                     ++sample_count;
+                  }
+               }
+
+               const std::size_t target_index =
+                   (static_cast<std::size_t>(y) * target_width + x) * 4U + channel;
+               downsampled[target_index] =
+                   static_cast<std::byte>((sum + sample_count / 2U) / sample_count);
+            }
+         }
+      }
+
+      texture.rgba_pixels = std::move(downsampled);
+      texture.width = target_width;
+      texture.height = target_height;
+      return texture;
+   }
 
    /// @brief Builds the material constant payload consumed by rasterizer.slang.
    [[nodiscard]] MaterialConstantsUpload materialConstantsUpload(const ImportedMaterial &material) {
@@ -209,10 +325,26 @@ namespace vve::v3 {
       std::memcpy(rgba_pixels.data(), pixels, byte_count);
       stbi_image_free(pixels);
 
-      return LoadedTexturePixels{.rgba_pixels = std::move(rgba_pixels),
-                                 .width = static_cast<std::uint32_t>(width_value),
-                                 .height = static_cast<std::uint32_t>(height_value),
-                                 .format = format};
+      const std::uint32_t source_width = static_cast<std::uint32_t>(width_value);
+      const std::uint32_t source_height = static_cast<std::uint32_t>(height_value);
+      auto loaded_texture = LoadedTexturePixels{.rgba_pixels = std::move(rgba_pixels),
+                                                .width = source_width,
+                                                .height = source_height,
+                                                .format = format};
+
+      const std::uint32_t max_dimension = textureUploadMaxDimension();
+      while (loaded_texture.width > max_dimension || loaded_texture.height > max_dimension) {
+         loaded_texture = downsampleHalf(std::move(loaded_texture));
+      }
+
+      if (loaded_texture.width != source_width || loaded_texture.height != source_height) {
+         std::clog << "[ResourceSystem] texture upload resized: " << texture.resolved_path.filename().string()
+                   << " " << source_width << "x" << source_height
+                   << " -> " << loaded_texture.width << "x" << loaded_texture.height
+                   << " max=" << max_dimension << '\n';
+      }
+
+      return loaded_texture;
    }
 
    /// @brief Looks up an uploaded texture summary by imported texture handle.
@@ -230,6 +362,10 @@ namespace vve::v3 {
    materialTextureBindings(const SceneData &scene, const ImportedMaterial &material) {
       MaterialTextureBindingUpload upload{};
       for (const auto &texture_ref : material.textures) {
+         if (!isForwardSampledTextureSemantic(texture_ref.semantic)) {
+            continue;
+         }
+
          const auto *texture = findGpuTexture(scene, texture_ref.texture);
          if (texture == nullptr || !texture->resident || !texture->image.value.isValid() ||
              !texture->sampler.value.isValid()) {
@@ -535,10 +671,17 @@ namespace vve::v3 {
          }
 
          std::size_t texture_uploads = 0;
+         std::size_t skipped_unused_textures = 0;
+         std::size_t uploaded_texture_mip_bytes = 0;
          for (const auto &texture : scene.textures) {
             auto *record = findRecord(texture.handle.value);
             if (record == nullptr) {
                return std::unexpected(vve::Error::invalid_argument);
+            }
+
+            if (!isForwardSampledTexture(scene, texture.handle)) {
+               ++skipped_unused_textures;
+               continue;
             }
 
             if (const auto existing_texture = gpuTextureIndex(scene, texture.handle);
@@ -557,12 +700,19 @@ namespace vve::v3 {
             }
 
             const auto &pixels = decoded_texture->value();
+            const auto estimated_mip_bytes = mipmappedRgba8ByteCount(pixels.width, pixels.height);
             const auto uploaded_generation = record->generation + 1U;
             const auto uploaded_texture = graphics_backend.createSampledImage(
                 texture.handle.value, ResourceKind::texture, pixels.format, pixels.width, pixels.height,
                 std::span<const std::byte>{pixels.rgba_pixels.data(), pixels.rgba_pixels.size()},
                 uploaded_generation);
             if (!uploaded_texture) {
+               std::cerr << "[ResourceSystem] texture upload failed after "
+                         << texture_uploads << " textures, estimated resident mip bytes="
+                         << mib(uploaded_texture_mip_bytes) << " MiB; failing texture="
+                         << texture.resolved_path.filename().string() << " "
+                         << pixels.width << "x" << pixels.height << " estimated="
+                         << mib(estimated_mip_bytes) << " MiB\n";
                return std::unexpected(uploaded_texture.error());
             }
 
@@ -575,9 +725,14 @@ namespace vve::v3 {
                                         .generation = uploaded_generation,
                                         .source_path = texture.resolved_path});
             ++texture_uploads;
+            uploaded_texture_mip_bytes += estimated_mip_bytes;
          }
 
          if (texture_uploads > 0) {
+            std::clog << "[ResourceSystem] texture upload summary: uploaded=" << texture_uploads
+                      << " skipped_unused=" << skipped_unused_textures
+                      << " estimated_resident_mips=" << mib(uploaded_texture_mip_bytes) << " MiB"
+                      << " max_dimension=" << textureUploadMaxDimension() << '\n';
             if (const auto material_uploads = upload_materials(); !material_uploads) {
                return std::unexpected(material_uploads.error());
             }

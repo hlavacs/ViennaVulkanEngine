@@ -154,6 +154,7 @@ int main() {
    if (!texture_image || !texture_image->image.value.isValid() || !texture_image->sampler.value.isValid() ||
        texture_image->texture.value != texture_owner || texture_image->format != vve::v3::GpuImageFormat::rgba8_srgb ||
        texture_image->width != 2 || texture_image->height != 2 || texture_image->generation != 1 ||
+       texture_image->mip_levels != 2 ||
        !texture_image->image_created || !texture_image->image_view_created ||
        !texture_image->sampler_created || !texture_image->resident) {
       return 17;
