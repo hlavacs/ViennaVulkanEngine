@@ -195,7 +195,8 @@ namespace vve {
 
         void recordCopyFromBuffer(GenericBuffer* srcBuffer, int currentFrame) {
             VkCommandBuffer cmd = commandManager->getCommandBuffer(currentFrame);
-            VkBufferCopy region{ 0, 0, size };
+            VkDeviceSize copySize = std::min(size, srcBuffer->getSize());
+            VkBufferCopy region{ 0, 0, copySize };
             vkCmdCopyBuffer(cmd, srcBuffer->getBuffer(), buffer, 1, &region);
         }
     };

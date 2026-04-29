@@ -114,7 +114,14 @@ public float3 glossyEval(in BSDFQueryRecord record, in MaterialRecord material, 
 
     float alpha = pow(material.roughness, 2.0);
 
-    return color * D(record.wm, alpha) * G(record.woShading, record.wiShading, alpha) / ((4 * record.wiShading.z * record.woShading.z)) * record.woShading.z;
+    //return color * D(record.wm, alpha) * G(record.woShading, record.wiShading, alpha) / ((4 * record.wiShading.z * record.woShading.z)) * record.woShading.z;
+
+    if (record.wiShading.z * record.woShading.z > 0.01) {
+        return color * D(record.wm, alpha) * G(record.woShading, record.wiShading, alpha) / ((4 * record.wiShading.z * record.woShading.z)) * record.woShading.z;
+    } else {
+        return float3(0.0);
+    }
+    
 
     //return color * D(record.wm, alpha) * G(record.woShading, record.wiShading, alpha) * (1.0 - F) / ((4 * record.wiShading.z * record.woShading.z)) * record.woShading.z;
 }

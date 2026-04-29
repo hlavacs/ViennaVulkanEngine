@@ -48,7 +48,20 @@ RWStructuredBuffer<ReservoirGI> inReservoirGI;
 [[vk::binding(10, 0)]]
 RWStructuredBuffer<ReservoirGI> outReservoirGI;
 
-
+void clampReadID(inout int2 readID, in int2 launchSize) {
+    if (readID.x < 0) {
+        readID.x = 0;
+    }
+    if (readID.y < 0) {
+        readID.y = 0;
+    }
+    if (readID.x > launchSize.x - 1) {
+        readID.x = launchSize.x - 1;
+    }
+    if (readID.y > launchSize.y - 1) {
+        readID.y = launchSize.y - 1;
+    }
+}
 
 [shader("compute")]
 [numthreads(16, 16, 1)]
@@ -94,6 +107,12 @@ void main(uint3 threadId: SV_DispatchThreadID) {
     //+0.5 because typconversion rounds down
     uint2 predictedIDPrev = (uint2)(predictedUVPrevClamped * (dims -1.0) + 0.5);
 
+    //clamped out of bounds
+    storeReservoir(readReservoir(predictedIDPrev, launchSize, inReservoir), launchID, launchSize, outReservoir);
+    storeReservoirGI(readReservoirGI(predictedIDPrev, launchSize, inReservoirGI), launchID, launchSize, outReservoirGI);
+
+    //discard out of bounds
+    /*
     if (predictedUVPrev.x >= 0.0 && predictedUVPrev.x <= 1.0 && predictedUVPrev.y >= 0.0 && predictedUVPrev.y <= 1.0) {
         storeReservoir(readReservoir(predictedIDPrev, launchSize, inReservoir), launchID, launchSize, outReservoir);
     } else {
@@ -107,6 +126,7 @@ void main(uint3 threadId: SV_DispatchThreadID) {
         ReservoirGI reservoir = createEmptyReservoirGI();
         storeReservoirGI(reservoir, launchID, launchSize, outReservoirGI);
     }
+    */
     
 
     float length = length(positionReprojected - position);

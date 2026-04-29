@@ -191,6 +191,10 @@ void rgenMain()
 
                 if (IsReservoirValidGI(reservoirGISpatial)) {
                     float jacobian = getJacobian(inPosition[launchID].xyz, inPosition[readID].xyz, reservoirGISpatial.position, reservoirGISpatial.normal);
+                    if (!validateJacobian(jacobian))
+                    {
+                        continue;
+                    }
                     float targetPDF = getApproximateRadianceFromReservoir(reservoirGISpatial, its, material);
                     if (CombineReservoirsGI(reservoirGI, reservoirGISpatial, targetPDF * jacobian, sampler)) {
                         selectedTargetPdf = targetPDF;

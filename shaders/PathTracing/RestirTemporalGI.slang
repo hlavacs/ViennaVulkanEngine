@@ -88,7 +88,7 @@ void rgenMain()
 
     const uint CANDIDATE_COUNT = 32;
     const uint MAX_TEMPORAL_INFLUENCE = 20;
-    const uint MAX_AGE = 500;
+    const uint MAX_AGE = 25;
 
     float selectedTargetPdf = 0.0;
     float piSum = 0.0;
@@ -154,7 +154,7 @@ void rgenMain()
 
         //reject history if reprojection error is too big
         //better system needed in the future
-        if (inReprojectionError[launchID].x < 0.5) {
+        if (inReprojectionError[launchID].x < 0.1) {
             Reservoir temporalReservoir = readReservoir(launchID, launchSize, inReservoir);
             // restrict influence from past samples.
             // this may not be optimal, the real time raytracing engine handles this diffrently
@@ -164,20 +164,22 @@ void rgenMain()
             // GI
             ReservoirGI temporalReservoirGI = readReservoirGI(launchID, launchSize, inReservoirGI);
 
-            float jacobian = getJacobian(inPosition[launchID].xyz, inPositionPrevious[launchID].xyz, temporalReservoirGI.position, temporalReservoirGI.normal);
-
-            temporalReservoirGI.W_sum *= jacobian;
-
-            temporalReservoirGI.M = min(MAX_TEMPORAL_INFLUENCE, temporalReservoirGI.M);
-
-            temporalReservoirGI.age++;
-
+            
             if (IsReservoirValidGI(temporalReservoirGI) && temporalReservoirGI.age < MAX_AGE) {
-                float targetPDF = getApproximateRadianceFromReservoir(temporalReservoirGI, its, material);
-                if (CombineReservoirsGI(reservoirGI, temporalReservoirGI, targetPDF, sampler)) {
-                    selectedTargetPdf = targetPDF;
+                float jacobian = getJacobian(inPosition[launchID].xyz, inPositionPrevious[launchID].xyz, temporalReservoirGI.position, temporalReservoirGI.normal);
+
+                if (validateJacobian(jacobian)) {
+
+                    temporalReservoirGI.W_sum *= jacobian;
+                    temporalReservoirGI.M = min(MAX_TEMPORAL_INFLUENCE, temporalReservoirGI.M);
+                    temporalReservoirGI.age++;
+                    
+                    float targetPDF = getApproximateRadianceFromReservoir(temporalReservoirGI, its, material);
+                    if (CombineReservoirsGI(reservoirGI, temporalReservoirGI, targetPDF, sampler)) {
+                        selectedTargetPdf = targetPDF;
+                    }
+                    piSum += targetPDF * temporalReservoirGI.M;
                 }
-                piSum += targetPDF * temporalReservoirGI.M;
             }
         }
 

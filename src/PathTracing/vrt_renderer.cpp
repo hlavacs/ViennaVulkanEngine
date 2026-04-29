@@ -385,6 +385,7 @@ namespace vve {
 
         allTargets.push_back(combinedTarget);
         allTargets.push_back(accumulatedLightingTarget);
+        allTargets.push_back(positionReprojectedTarget);
 
 
         //rasterizer pipline
@@ -584,6 +585,7 @@ namespace vve {
     }
 
     void RendererRayTraced::resizeWindow() {
+        vkDeviceWaitIdle(device);
         swapchain->recreateSwapChain();
 
         for (RenderTarget* target : allTargets) {

@@ -8,7 +8,7 @@ import ReservoirGI;
 import Defines;
 
 bool IsReservoirValidGI(ReservoirGI reservoir) {
-    return reservoir.M > 0 && reservoir.W_sum > 0 && !isinf(reservoir.W_sum) && !isnan(reservoir.W_sum);
+    return reservoir.M > 0 && reservoir.W_sum > 0 && !isinf(reservoir.W_sum) && !isnan(reservoir.W_sum) && !any(isinf(reservoir.radiance)) && !any(isnan(reservoir.radiance));
 }
 
 EmitterRecord getEmmitterRecordFromReservoir(ReservoirGI reservoir, IntersectionRecord its) {
@@ -190,4 +190,15 @@ float getJacobian(float3 recieverPos, float3 neighborReceiverPos, float3 neighbo
         jacobian = 0.0;
 
     return jacobian;
+}
+
+bool validateJacobian(inout float jacobian)
+{
+    if (jacobian > 10.0 || jacobian < 1 / 10.0) {
+        return false;
+    }
+
+    jacobian = clamp(jacobian, 1 / 3.0, 3.0);
+
+    return true;
 }
