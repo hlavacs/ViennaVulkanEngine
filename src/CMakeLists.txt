@@ -69,6 +69,18 @@ target_sources(ViennaVulkanEngine
             versions/v3/Systems.ixx
             versions/v3/Internal.ixx
             versions/v3/Engine.ixx
+            versions/v4/Vector.ixx
+            versions/v4/ECS.ixx
+            versions/v4/Types.ixx
+            versions/v4/World.ixx
+            versions/v4/Assets.ixx
+            versions/v4/Resources.ixx
+            versions/v4/Graphs.ixx
+            versions/v4/Shaders.ixx
+            versions/v4/Renderer.ixx
+            versions/v4/Gui.ixx
+            versions/v4/WindowSystem.ixx
+            versions/v4/Engine.ixx
 )
 
 target_link_libraries(ViennaVulkanEngine

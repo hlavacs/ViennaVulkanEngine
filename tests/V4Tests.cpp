@@ -1,0 +1,349 @@
+#include <cmath>
+#include <expected>
+#include <string>
+#include <string_view>
+
+import VEEngine.V4;
+
+namespace {
+
+struct Velocity {
+   float x{0.0F};
+};
+
+struct CountingSystem {
+   int *init_count{nullptr};
+   int *update_count{nullptr};
+   std::uint64_t *last_frame{nullptr};
+
+   std::expected<void, vve::v4::Error> init(vve::v4::World &world) {
+      if (init_count != nullptr) {
+         ++*init_count;
+      }
+      return world.windows().empty() ? std::unexpected(vve::v4::Error::missing_object)
+                                     : std::expected<void, vve::v4::Error>{};
+   }
+
+   std::expected<void, vve::v4::Error> update(vve::v4::World &, const vve::v4::FrameContext &frame,
+                                              const vve::v4::WindowFrameData &window_frame) {
+      if (update_count != nullptr) {
+         ++*update_count;
+      }
+      if (last_frame != nullptr) {
+         *last_frame = frame.frame_index;
+      }
+      if (window_frame.windows.empty()) {
+         return std::unexpected(vve::v4::Error::missing_object);
+      }
+      return {};
+   }
+};
+
+[[nodiscard]] bool nearly(float lhs, float rhs) {
+   return std::abs(lhs - rhs) < 0.0001F;
+}
+
+[[nodiscard]] int testHandles() {
+   using namespace vve::v4;
+
+   static_assert(sizeof(Handle) == sizeof(std::uint64_t));
+   const auto mesh = makeHandle(ObjectKind::mesh, 41);
+   if (!mesh.valid() || mesh.kind() != ObjectKind::mesh || mesh.index() != 41) {
+      return 1;
+   }
+   const auto material = makeHandle(ObjectKind::material, 41);
+   if (mesh == material || !(mesh < material)) {
+      return 2;
+   }
+   if (Handle{}.valid()) {
+      return 3;
+   }
+   return 0;
+}
+
+[[nodiscard]] int testStrongMathTypes() {
+   using namespace vve::v4;
+
+   const auto transform = Transform{
+      .position = Position{Vec3{1.0F, 2.0F, 3.0F}},
+      .rotation = Rotation{},
+      .scale = Scale{Vec3{2.0F, 2.0F, 2.0F}}};
+
+   if (!nearly(transform.position.value.x, 1.0F) ||
+       !nearly(transform.position.value.y, 2.0F) ||
+       !nearly(transform.position.value.z, 3.0F)) {
+      return 10;
+   }
+   if (!nearly(transform.scale.value.x, 2.0F) ||
+       !nearly(Direction{}.value.z, -1.0F)) {
+      return 11;
+   }
+   return 0;
+}
+
+[[nodiscard]] int testECS() {
+   using namespace vve::v4;
+
+   ECS ecs{};
+   const auto entity = ecs.create();
+   if (!entity.valid() || entity.kind() != ObjectKind::entity || !ecs.exists(entity)) {
+      return 20;
+   }
+   if (!ecs.add(entity, Position{Vec3{1.0F, 0.0F, 0.0F}})) {
+      return 21;
+   }
+   if (ecs.add(entity, Position{})) {
+      return 22;
+   }
+   if (!ecs.put(entity, Velocity{3.0F})) {
+      return 23;
+   }
+   const auto position = ecs.get<Position>(entity);
+   const auto velocity = ecs.get<Velocity>(entity);
+   if (!position || !velocity || !nearly(position->value.x, 1.0F) || !nearly(velocity->x, 3.0F)) {
+      return 24;
+   }
+   if (ecs.view<Position, Velocity>().size() != 1) {
+      return 25;
+   }
+   if (!ecs.remove<Velocity>(entity)) {
+      return 26;
+   }
+   const auto missing_velocity = ecs.tryGet<Velocity>(entity);
+   if (!missing_velocity || missing_velocity->has_value()) {
+      return 27;
+   }
+   if (!ecs.erase(entity) || ecs.exists(entity)) {
+      return 28;
+   }
+   return 0;
+}
+
+[[nodiscard]] int testDescriptorCatalog() {
+   using namespace vve::v4;
+
+   ObjectCatalog catalog{};
+   const auto scene = makeHandle(ObjectKind::scene, 0);
+   const auto node = makeHandle(ObjectKind::node, 0);
+   const auto child = makeHandle(ObjectKind::node, 1);
+   const auto mesh = makeHandle(ObjectKind::mesh, 0);
+   const auto material = makeHandle(ObjectKind::material, 0);
+   const auto texture = makeHandle(ObjectKind::texture, 0);
+   const auto light = makeHandle(ObjectKind::light, 0);
+   const auto camera = makeHandle(ObjectKind::camera, 0);
+
+   if (!catalog.textures.add(TextureDescriptor{.handle = texture,
+                                               .name = "stone",
+                                               .source = "stone.png",
+                                               .width = 1024,
+                                               .height = 512,
+                                               .channels = 4})) {
+      return 30;
+   }
+   if (!catalog.materials.add(MaterialDescriptor{
+          .handle = material,
+          .name = "stone_mat",
+          .textures = {TextureBinding{.texture = texture, .semantic = TextureSemantic::base_color}}})) {
+      return 31;
+   }
+   if (!catalog.meshes.add(MeshDescriptor{
+          .handle = mesh,
+          .name = "arch",
+          .vertex_count = 3,
+          .index_count = 3,
+          .material = material})) {
+      return 32;
+   }
+   if (!catalog.nodes.add(NodeDescriptor{
+          .handle = node,
+          .name = "root",
+          .meshes = {MeshUse{.mesh = mesh, .material = material}}})) {
+      return 33;
+   }
+   if (!catalog.nodes.add(NodeDescriptor{.handle = child, .name = "child"})) {
+      return 34;
+   }
+   if (!catalog.lights.add(LightDescriptor{.handle = light, .name = "sun", .kind = LightKind::directional}) ||
+       !catalog.cameras.add(CameraDescriptor{.handle = camera, .name = "camera"})) {
+      return 35;
+   }
+   auto tree = Tree{.root = node};
+   tree.addChild(node, child);
+   if (!catalog.scenes.add(SceneDescriptor{.handle = scene,
+                                           .name = "scene",
+                                           .tree = std::move(tree),
+                                           .nodes = {node, child},
+                                           .meshes = {mesh},
+                                           .materials = {material},
+                                           .textures = {texture},
+                                           .lights = {light},
+                                           .cameras = {camera}})) {
+      return 36;
+   }
+
+   const auto *mesh_descriptor = catalog.meshes.find(mesh);
+   const auto *material_descriptor = catalog.materials.find(material);
+   const auto *scene_descriptor = catalog.scenes.find(scene);
+   if (mesh_descriptor == nullptr || material_descriptor == nullptr || scene_descriptor == nullptr) {
+      return 37;
+   }
+   const auto [first_child, last_child] = scene_descriptor->tree.childRange(node);
+   if (mesh_descriptor->material != material ||
+       material_descriptor->textures.front().texture != texture ||
+       scene_descriptor->meshes.front() != mesh ||
+       scene_descriptor->tree.root != node ||
+       first_child == last_child ||
+       first_child->second != child) {
+      return 38;
+   }
+   if (catalog.meshes.add(*mesh_descriptor)) {
+      return 39;
+   }
+   if (catalog.meshes.add(MeshDescriptor{.handle = {}, .name = "bad"})) {
+      return 49;
+   }
+   return 0;
+}
+
+[[nodiscard]] int testInputAndWorld() {
+   using namespace vve::v4;
+
+   const auto window = makeHandle(ObjectKind::window, 0);
+   InputState input{};
+   input.pressKey('W');
+   if (!input.isKeyDown('W') || !input.wasKeyPressed('W')) {
+      return 60;
+   }
+   input.beginFrame();
+   if (!input.isKeyDown('W') || input.wasKeyPressed('W')) {
+      return 61;
+   }
+   input.releaseKey('W');
+   if (input.isKeyDown('W') || !input.wasKeyReleased('W')) {
+      return 62;
+   }
+   input.setMousePosition(window, Vec2{10.0F, 20.0F});
+   input.addMouseDelta(window, Vec2{1.0F, 2.0F});
+   input.addMouseWheelDelta(window, Vec2{0.0F, -1.0F});
+   const auto position = input.mousePosition(window);
+   if (!position || !nearly(position->x, 10.0F) || !nearly(input.mouseDelta(window).y, 2.0F) ||
+       !nearly(input.mouseWheelDelta(window).y, -1.0F)) {
+      return 63;
+   }
+
+   World world{};
+   world.windows().push_back(WindowInfo{.handle = window, .id = "main", .title = "test"});
+   const auto entity = world.spawn(Transform{}, Velocity{2.0F});
+   if (!entity || world.findWindow("main") == nullptr) {
+      return 64;
+   }
+   const auto velocity = world.getComponent<Velocity>(*entity);
+   if (!velocity || !velocity->has_value() || !nearly((*velocity)->x, 2.0F)) {
+      return 65;
+   }
+   if (!world.setActiveCamera(*entity) || !world.activeCamera().has_value()) {
+      return 66;
+   }
+   return 0;
+}
+
+[[nodiscard]] int testStubSystems() {
+   using namespace vve::v4;
+
+   int init_count = 0;
+   int update_count = 0;
+   std::uint64_t last_frame = 99;
+   auto engine = makeEngine(ApplicationName{"test"},
+                            MaxFrames{2},
+                            Windows{.value = {WindowDesc{.id = "main",
+                                                          .title = "hidden",
+                                                          .width = 64,
+                                                          .height = 64,
+                                                          .visible = false}}},
+                            makeUserSystems(CountingSystem{.init_count = &init_count,
+                                                           .update_count = &update_count,
+                                                           .last_frame = &last_frame}));
+   if (engine.versionMajor() != 4 || engine.versionName() != std::string_view{"v4"}) {
+      return 40;
+   }
+   if (!engine.init()) {
+      return 41;
+   }
+   const auto scene = engine.assets().addScene("stub");
+   if (!scene || scene->kind() != ObjectKind::scene ||
+       engine.assets().catalog().scenes.find(*scene) == nullptr) {
+      return 42;
+   }
+   const auto resource = engine.resources().add(ResourceKind::mesh, "mesh");
+   if (!resource || engine.resources().find(*resource) == nullptr) {
+      return 43;
+   }
+   const auto task = makeHandle(ObjectKind::task, 0);
+   const auto child_task = makeHandle(ObjectKind::task, 1);
+   if (!engine.tasks().add(TaskNode{.handle = task, .name = "task"}) ||
+       !engine.tasks().add(TaskNode{.handle = child_task, .name = "child-task"}) ||
+       engine.tasks().find(task) == nullptr) {
+      return 44;
+   }
+   engine.tasks().addEdge(task, child_task);
+   const auto [task_child, task_child_end] = engine.tasks().graph().childRange(task);
+   if (task_child == task_child_end || task_child->second != child_task) {
+      return 45;
+   }
+   const auto pass = makeHandle(ObjectKind::render_pass, 0);
+   const auto child_pass = makeHandle(ObjectKind::render_pass, 1);
+   if (!engine.renderGraph().add(RenderPassNode{.handle = pass, .name = "pass"}) ||
+       !engine.renderGraph().add(RenderPassNode{.handle = child_pass, .name = "child-pass"}) ||
+       engine.renderGraph().find(pass) == nullptr) {
+      return 46;
+   }
+   engine.renderGraph().addEdge(pass, child_pass);
+   const auto [pass_child, pass_child_end] = engine.renderGraph().graph().childRange(pass);
+   if (pass_child == pass_child_end || pass_child->second != child_pass) {
+      return 47;
+   }
+   const auto shader = makeHandle(ObjectKind::shader, 0);
+   if (!engine.shaders().add(ShaderDescriptor{.handle = shader,
+                                              .name = "shader",
+                                              .stages = {ShaderStage::vertex, ShaderStage::fragment}}) ||
+       engine.shaders().find(shader) == nullptr) {
+      return 48;
+   }
+   const auto label = engine.gui().label("hello");
+   if (!label || engine.gui().find(*label) == nullptr) {
+      return 50;
+   }
+   const auto first = engine.step();
+   const auto second = engine.step();
+   if (!first || !second || *first != FrameStatus::running || *second != FrameStatus::stopped) {
+      return 51;
+   }
+   if (init_count != 1 || update_count != 2 || last_frame != 1 || engine.world().findWindow("main") == nullptr) {
+      return 52;
+   }
+   return 0;
+}
+
+} // namespace
+
+int main() {
+   if (const int result = testHandles(); result != 0) {
+      return result;
+   }
+   if (const int result = testStrongMathTypes(); result != 0) {
+      return result;
+   }
+   if (const int result = testECS(); result != 0) {
+      return result;
+   }
+   if (const int result = testDescriptorCatalog(); result != 0) {
+      return result;
+   }
+   if (const int result = testInputAndWorld(); result != 0) {
+      return result;
+   }
+   if (const int result = testStubSystems(); result != 0) {
+      return result;
+   }
+   return 0;
+}
