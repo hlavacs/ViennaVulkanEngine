@@ -118,7 +118,26 @@ public:
     [[nodiscard]] std::expected<void, ve::Error> init(ve::World& world) {
         std::cout << '[' << name() << "] scene path: " << scene_path_.string() << '\n';
         std::cout << '[' << name() << "] v4 runtime shell is active\n";
-        std::cout << '[' << name() << "] v4 Assimp import, resource upload, and rendering are not implemented yet\n";
+        const auto scene_handle = world.loadScene(scene_path_);
+        if (!scene_handle) {
+            std::cerr << '[' << name() << "] Assimp import failed: "
+                      << ve::errorName(scene_handle.error()) << '\n';
+            return std::unexpected(scene_handle.error());
+        }
+
+        const auto* catalog = world.objectCatalog();
+        if (catalog == nullptr) {
+            return std::unexpected(ve::Error::missing_object);
+        }
+        const auto* scene = catalog->scenes.find(*scene_handle);
+        if (scene == nullptr) {
+            return std::unexpected(ve::Error::missing_object);
+        }
+
+        std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value
+                  << " name=" << scene->name << '\n';
+        printSceneInventory(*catalog, *scene);
+        std::cout << '[' << name() << "] v4 resource upload and rendering are not implemented yet\n";
         printWindowInventory(world);
         return {};
     }
@@ -149,7 +168,71 @@ private:
         std::cout << '\n';
     }
 
-    std::filesystem::path scene_path_{}; ///< Resolved Sponza file path reserved for the next v4 stage.
+    void printSceneInventory(const ve::ObjectCatalog& catalog, const ve::SceneDescriptor& scene) const {
+        std::cout << '[' << name() << "] counts: nodes=" << scene.nodes.size()
+                  << " meshes=" << scene.meshes.size()
+                  << " materials=" << scene.materials.size()
+                  << " textures=" << scene.textures.size()
+                  << " lights=" << scene.lights.size()
+                  << " cameras=" << scene.cameras.size() << '\n';
+        printMeshes(catalog, scene.meshes);
+        printTextures(catalog, scene.textures);
+        printLights(catalog, scene.lights);
+        printCameras(catalog, scene.cameras);
+    }
+
+    void printMeshes(const ve::ObjectCatalog& catalog, const ve::Vector<ve::Handle>& handles) const {
+        std::cout << '[' << name() << "] meshes:\n";
+        for (const auto handle : handles) {
+            const auto* mesh = catalog.meshes.find(handle);
+            if (mesh == nullptr) {
+                continue;
+            }
+            std::cout << "  mesh " << mesh->handle.value << " name=" << mesh->name
+                      << " vertices=" << mesh->vertex_count
+                      << " indices=" << mesh->index_count
+                      << " material=" << mesh->material.value << '\n';
+        }
+    }
+
+    void printTextures(const ve::ObjectCatalog& catalog, const ve::Vector<ve::Handle>& handles) const {
+        std::cout << '[' << name() << "] textures:\n";
+        for (const auto handle : handles) {
+            const auto* texture = catalog.textures.find(handle);
+            if (texture == nullptr) {
+                continue;
+            }
+            std::cout << "  texture " << texture->handle.value << " name=" << texture->name
+                      << " source=" << texture->source.string()
+                      << " size=" << texture->width << 'x' << texture->height << '\n';
+        }
+    }
+
+    void printLights(const ve::ObjectCatalog& catalog, const ve::Vector<ve::Handle>& handles) const {
+        std::cout << '[' << name() << "] lights:\n";
+        for (const auto handle : handles) {
+            const auto* light = catalog.lights.find(handle);
+            if (light == nullptr) {
+                continue;
+            }
+            std::cout << "  light " << light->handle.value << " name=" << light->name
+                      << " intensity=" << light->intensity << '\n';
+        }
+    }
+
+    void printCameras(const ve::ObjectCatalog& catalog, const ve::Vector<ve::Handle>& handles) const {
+        std::cout << '[' << name() << "] cameras:\n";
+        for (const auto handle : handles) {
+            const auto* camera = catalog.cameras.find(handle);
+            if (camera == nullptr) {
+                continue;
+            }
+            std::cout << "  camera " << camera->handle.value << " name=" << camera->name
+                      << " near=" << camera->near_plane << " far=" << camera->far_plane << '\n';
+        }
+    }
+
+    std::filesystem::path scene_path_{}; ///< Resolved Sponza file imported during init().
     bool frame_loop_logged_{false};      ///< Keeps the runtime heartbeat to one line.
 };
 

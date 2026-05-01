@@ -23,6 +23,8 @@ export namespace vve::v4 {
       std::string title{"VVE v4"};  ///< Platform window title.
       std::uint32_t width{960};     ///< Initial width in pixels.
       std::uint32_t height{540};    ///< Initial height in pixels.
+      std::optional<int> x{};       ///< Optional initial screen x coordinate.
+      std::optional<int> y{};       ///< Optional initial screen y coordinate.
       std::string renderer_id{};    ///< Renderer id selected for this window.
       bool resizable{true};         ///< Enables platform resizing.
       bool visible{true};           ///< Shows the window after creation.
@@ -217,14 +219,37 @@ export namespace vve::v4 {
       /// @brief Returns the current active camera handle when one has been selected.
       [[nodiscard]] std::optional<Entity> activeCamera() const { return active_camera_; }
 
-      /// @brief Placeholder scene-loading hook so examples can keep a stable call site.
-      [[nodiscard]] std::expected<void, Error> loadScene(const std::filesystem::path &) { return {}; }
+      /// @brief Installs the runtime scene loader used by loadScene().
+      void setSceneLoader(std::function<std::expected<Handle, Error>(const std::filesystem::path &)> loader) {
+         scene_loader_ = std::move(loader);
+      }
+
+      /// @brief Installs a read-only object-catalog provider for examples and diagnostics.
+      void setCatalogProvider(std::function<const ObjectCatalog *()> provider) {
+         catalog_provider_ = std::move(provider);
+      }
+
+      /// @brief Imports a scene through the runtime loader and returns the scene handle.
+      [[nodiscard]] std::expected<Handle, Error> loadScene(const std::filesystem::path &path) {
+         if (!scene_loader_) {
+            return std::unexpected(Error::missing_object);
+         }
+         return scene_loader_(path);
+      }
+
+      /// @brief Returns the runtime object catalog when an engine has connected one.
+      [[nodiscard]] const ObjectCatalog *objectCatalog() const {
+         return catalog_provider_ ? catalog_provider_() : nullptr;
+      }
 
    private:
       ECS ecs_{};                         ///< Runtime entity/component storage.
       InputState input_{};                ///< Current input snapshot.
       Vector<WindowInfo> windows_{};      ///< Current platform windows.
       std::optional<Entity> active_camera_{}; ///< Optional camera selected by the application.
+      /// @brief Runtime callback that imports a scene into the asset catalog.
+      std::function<std::expected<Handle, Error>(const std::filesystem::path &)> scene_loader_{};
+      std::function<const ObjectCatalog *()> catalog_provider_{}; ///< Runtime catalog access hook.
    };
 
 } // namespace vve::v4

@@ -1,5 +1,7 @@
 #include <cmath>
 #include <expected>
+#include <filesystem>
+#include <fstream>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -262,6 +264,44 @@ struct CountingSystem {
    return 0;
 }
 
+[[nodiscard]] int testAssimpSceneImport() {
+   using namespace vve::v4;
+
+   const auto path = std::filesystem::temp_directory_path() / "vve_v4_assimp_triangle.obj";
+   {
+      std::ofstream file{path};
+      file << "o Triangle\n"
+           << "v 0 0 0\n"
+           << "v 1 0 0\n"
+           << "v 0 1 0\n"
+           << "f 1 2 3\n";
+   }
+
+   AssetSystem assets{};
+   const auto scene_handle = assets.loadScene(path);
+   std::error_code remove_error{};
+   std::filesystem::remove(path, remove_error);
+
+   if (!scene_handle) {
+      return 70;
+   }
+   const auto *scene = assets.catalog().scenes.find(*scene_handle);
+   if (scene == nullptr || !scene->tree.root.valid() || scene->nodes.empty() || scene->meshes.empty()) {
+      return 71;
+   }
+   const auto *mesh = assets.catalog().meshes.find(scene->meshes.front());
+   if (mesh == nullptr || mesh->vertex_count != 3 || mesh->index_count != 3) {
+      return 72;
+   }
+   if (mesh->material.valid() && assets.catalog().materials.find(mesh->material) == nullptr) {
+      return 73;
+   }
+   if (assets.catalog().nodes.find(scene->tree.root) == nullptr) {
+      return 74;
+   }
+   return 0;
+}
+
 [[nodiscard]] int testStubSystems() {
    using namespace vve::v4;
 
@@ -274,6 +314,15 @@ struct CountingSystem {
                                                           .title = "hidden",
                                                           .width = 64,
                                                           .height = 64,
+                                                          .x = 20,
+                                                          .y = 20,
+                                                          .visible = false},
+                                               WindowDesc{.id = "tools",
+                                                          .title = "hidden-tools",
+                                                          .width = 64,
+                                                          .height = 64,
+                                                          .x = 100,
+                                                          .y = 20,
                                                           .visible = false}}},
                             makeUserSystems(CountingSystem{.init_count = &init_count,
                                                            .update_count = &update_count,
@@ -336,6 +385,9 @@ struct CountingSystem {
    if (init_count != 1 || update_count != 2 || last_frame != 1 || engine.world().findWindow("main") == nullptr) {
       return 52;
    }
+   if (engine.world().windows().size() != 2 || engine.world().findWindow("tools") == nullptr) {
+      return 53;
+   }
    return 0;
 }
 
@@ -355,6 +407,9 @@ int main() {
       return result;
    }
    if (const int result = testInputAndWorld(); result != 0) {
+      return result;
+   }
+   if (const int result = testAssimpSceneImport(); result != 0) {
       return result;
    }
    if (const int result = testStubSystems(); result != 0) {

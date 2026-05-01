@@ -127,6 +127,13 @@ namespace vve::v4 {
             return std::unexpected(Error::platform_error);
          }
 
+         if (desc.x.has_value() || desc.y.has_value()) {
+            int x = 0;
+            int y = 0;
+            SDL_GetWindowPosition(window, &x, &y);
+            SDL_SetWindowPosition(window, desc.x.value_or(x), desc.y.value_or(y));
+         }
+
          int width = 0;
          int height = 0;
          SDL_GetWindowSize(window, &width, &height);

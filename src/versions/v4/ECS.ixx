@@ -16,7 +16,8 @@ export namespace vve::v4 {
       missing_object,      ///< A requested object descriptor does not exist.
       duplicate_component, ///< An entity already owns the component being added.
       missing_component,   ///< An entity does not own the requested component.
-      platform_error       ///< SDL or platform-window operation failed.
+      platform_error,      ///< SDL or platform-window operation failed.
+      asset_import_failed  ///< Asset import failed in the loader backend.
    };
 
    /// @brief Converts v4 errors into stable diagnostic text.
@@ -29,7 +30,8 @@ export namespace vve::v4 {
          {Error::missing_object,      "missing_object"},
          {Error::duplicate_component, "duplicate_component"},
          {Error::missing_component,   "missing_component"},
-         {Error::platform_error,      "platform_error"}};
+         {Error::platform_error,      "platform_error"},
+         {Error::asset_import_failed, "asset_import_failed"}};
       const auto it = names.find(error);
       return it == names.end() ? std::string_view{"unknown"} : it->second;
    }

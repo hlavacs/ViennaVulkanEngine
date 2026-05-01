@@ -123,6 +123,12 @@ export namespace vve::v4 {
             return result;
          }
          world_.windows() = window_system_.snapshot();
+         world_.setSceneLoader([this](const std::filesystem::path &path) {
+            return assets_.loadScene(path);
+         });
+         world_.setCatalogProvider([this]() -> const ObjectCatalog * {
+            return std::addressof(assets_.catalog());
+         });
          last_frame_time_ = std::chrono::steady_clock::now();
          initialized_ = true;
          return initSystems();

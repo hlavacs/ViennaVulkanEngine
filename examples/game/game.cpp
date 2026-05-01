@@ -318,6 +318,8 @@ int main(int argc, char** argv) {
                     .title = "VVE Game",
                     .width = 640,
                     .height = 480,
+                    .x = 80,
+                    .y = 120,
                     .renderer_id = "forward",
                     .resizable = true,
                     .visible = true
@@ -327,6 +329,8 @@ int main(int argc, char** argv) {
                     .title = "VVE Tools",
                     .width = 400,
                     .height = 480,
+                    .x = 760,
+                    .y = 120,
                     .renderer_id = "forward",
                     .resizable = true,
                     .visible = true
