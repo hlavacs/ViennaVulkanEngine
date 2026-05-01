@@ -10,6 +10,7 @@ export namespace vve::v4 {
    /// @brief Small error vocabulary used by the v4 stub systems.
    enum class Error {
       ok,                  ///< Operation completed successfully.
+      invalid_argument,    ///< A caller supplied an invalid argument value.
       invalid_handle,      ///< A handle was empty or unknown to the owner.
       duplicate_object,    ///< A descriptor map already contains the object.
       missing_object,      ///< A requested object descriptor does not exist.
@@ -22,6 +23,7 @@ export namespace vve::v4 {
    [[nodiscard]] inline std::string_view errorName(Error error) {
       static const std::map<Error, std::string_view> names{
          {Error::ok,                  "ok"},
+         {Error::invalid_argument,    "invalid_argument"},
          {Error::invalid_handle,      "invalid_handle"},
          {Error::duplicate_object,    "duplicate_object"},
          {Error::missing_object,      "missing_object"},

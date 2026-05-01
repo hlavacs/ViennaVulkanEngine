@@ -2,6 +2,7 @@
 #include <expected>
 #include <string>
 #include <string_view>
+#include <type_traits>
 
 import VEEngine.V4;
 
@@ -64,17 +65,31 @@ struct CountingSystem {
 [[nodiscard]] int testStrongMathTypes() {
    using namespace vve::v4;
 
-   const auto transform = Transform{
-      .position = Position{Vec3{1.0F, 2.0F, 3.0F}},
-      .rotation = Rotation{},
-      .scale = Scale{Vec3{2.0F, 2.0F, 2.0F}}};
+   static_assert(std::is_same_v<Transform, vve::Transform>);
+   static_assert(std::is_same_v<Camera, vve::Camera>);
+   static_assert(std::is_same_v<Bounds, vve::Bounds>);
 
-   if (!nearly(transform.position.value.x, 1.0F) ||
-       !nearly(transform.position.value.y, 2.0F) ||
-       !nearly(transform.position.value.z, 3.0F)) {
+   const auto identity = math::identityMat4();
+   const auto translated = math::translate(identity, math::Vec3{1.0F, 2.0F, 3.0F});
+   const auto view = math::lookAt(math::Vec3{0.0F, 0.0F, 1.0F},
+                                  math::Vec3{0.0F, 0.0F, 0.0F},
+                                  math::Vec3{0.0F, 1.0F, 0.0F});
+   const auto projection = math::perspective(0.9F, 1.0F, 0.1F, 10.0F);
+   if (!nearly(translated[3].x, 1.0F) || !nearly(view[3].z, -1.0F) || nearly(projection[1].y, 0.0F)) {
+      return 9;
+   }
+
+   const auto transform = Transform{
+      .translation = Vec3{1.0F, 2.0F, 3.0F},
+      .rotation = identityQuat(),
+      .scale = Vec3{2.0F, 2.0F, 2.0F}};
+
+   if (!nearly(transform.translation.x, 1.0F) ||
+       !nearly(transform.translation.y, 2.0F) ||
+       !nearly(transform.translation.z, 3.0F)) {
       return 10;
    }
-   if (!nearly(transform.scale.value.x, 2.0F) ||
+   if (!nearly(transform.scale.x, 2.0F) ||
        !nearly(Direction{}.value.z, -1.0F)) {
       return 11;
    }

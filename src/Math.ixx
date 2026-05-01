@@ -19,10 +19,10 @@ import std;
 
 /**
  * @file
- * @brief Math facade used by the public engine API.
+ * @brief Math and geometry facade used by every engine version.
  *
  * Engine-facing code should depend on this module instead of raw GLM types so
- * the scalar precision policy remains selectable at build time.
+ * the scalar precision policy and common geometry value types stay unified.
  */
 export namespace vve::math {
 
@@ -96,3 +96,70 @@ export namespace vve::math {
    [[nodiscard]] inline Mat4 inverse(const Mat4 &matrix) { return glm::inverse(matrix); }
 
 } // namespace vve::math
+
+export namespace vve {
+
+   /// @brief Strong wrapper for world or local position values.
+   struct Position {
+      math::Vec3 value{math::zeroVec3()}; ///< Wrapped coordinate.
+   };
+
+   /// @brief Strong wrapper for vectors that should be interpreted as directions.
+   struct Direction {
+      math::Vec3 value{math::Vec3(math::zero(), math::zero(), -math::one())}; ///< Wrapped direction.
+   };
+
+   /// @brief Strong wrapper for non-uniform scale factors.
+   struct Scale {
+      math::Vec3 value{math::oneVec3()}; ///< Wrapped scale vector.
+   };
+
+   /// @brief Strong wrapper for quaternion rotations.
+   struct Rotation {
+      math::Quat value{math::identityQuat()}; ///< Wrapped orientation.
+   };
+
+   /// @brief Standard transform component shared by all engine versions.
+   struct Transform {
+      math::Vec3 translation{math::zeroVec3()}; ///< Local or world-space translation.
+      math::Quat rotation{math::identityQuat()}; ///< Local or world-space orientation.
+      math::Vec3 scale{math::oneVec3()};        ///< Local or world-space non-uniform scale.
+   };
+
+   /// @brief Axis-aligned bounds described by minimum and maximum positions.
+   struct Bounds {
+      Position minimum{}; ///< Minimum corner.
+      Position maximum{}; ///< Maximum corner.
+      bool valid{false};  ///< False until at least one point has been included.
+   };
+
+   /// @brief Public camera description used by game code and renderers.
+   struct Camera {
+      math::Vec3 position{math::Vec3(math::zero(), static_cast<math::Scalar>(1.5),
+                                     static_cast<math::Scalar>(6.0))}; ///< World-space camera position.
+      math::Mat4 view_transform{math::translate(
+          math::identityMat4(),
+          math::Vec3(math::zero(), static_cast<math::Scalar>(-1.5),
+                     static_cast<math::Scalar>(-6.0)))}; ///< World-to-view transform.
+      math::Scalar vertical_fov_radians{static_cast<math::Scalar>(1.0471975511965976)}; ///< Vertical FOV.
+      math::Scalar near_plane{static_cast<math::Scalar>(0.1)}; ///< Near clip plane.
+      math::Scalar far_plane{static_cast<math::Scalar>(10000.0)}; ///< Far clip plane.
+
+      /// @brief Builds a camera from an eye position and target point.
+      [[nodiscard]] static Camera lookAt(const math::Vec3 &position, const math::Vec3 &target,
+                                         const math::Vec3 &up = math::Vec3(math::zero(), math::one(), math::zero()),
+                                         math::Scalar vertical_fov_radians =
+                                             static_cast<math::Scalar>(1.0471975511965976),
+                                         math::Scalar near_plane = static_cast<math::Scalar>(0.1),
+                                         math::Scalar far_plane = static_cast<math::Scalar>(10000.0)) {
+         Camera camera{};
+         camera.position = position;
+         camera.view_transform = math::lookAt(position, target, up);
+         camera.vertical_fov_radians = vertical_fov_radians;
+         camera.near_plane = near_plane;
+         camera.far_plane = far_plane;
+         return camera;
+      }
+   };
+
+} // namespace vve

@@ -12,14 +12,15 @@
 #include <utility>
 #include <vector>
 
-import VEEngine;
-import VEEngine.V3;
+import VEEngine.V4;
 
 /**
  * @file
  * @brief Interactive example that drives a small user-system-based game loop.
  */
 namespace {
+
+namespace ve = vve::v4;
 
 [[nodiscard]] std::optional<std::filesystem::path>
 firstExistingPath(const std::vector<std::filesystem::path>& candidates) {
@@ -114,7 +115,7 @@ struct Velocity {
  */
 class SimpleGameSystem final {
 public:
-    /// @brief Creates the sample system with the scene rendered behind the input demo.
+    /// @brief Creates the sample system with a scene path reserved for future v4 rendering.
     explicit SimpleGameSystem(std::filesystem::path scene_path = {})
         : scene_path_(std::move(scene_path)) {}
 
@@ -127,40 +128,26 @@ public:
      * @brief Creates the example player entity.
      * @param world Game-facing world facade provided by the engine.
      */
-    [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
+    [[nodiscard]] std::expected<void, ve::Error> init(ve::World& world) {
         // The example spawns one entity with a transform and velocity so the
         // update loop can demonstrate world and input access.
-        const auto player_result = world.spawn(vve::Transform{}, Velocity{});
+        const auto player_result = world.spawn(ve::Transform{}, Velocity{});
         if (!player_result) {
             return std::unexpected(player_result.error());
         }
 
         player_ = *player_result;
 
-        const auto camera_result = world.spawn(vve::CameraComponent{
-            .camera = cameraForPlayer(vve::math::zeroVec3()),
-            .window_id = "main"
-        });
-        if (!camera_result) {
-            return std::unexpected(camera_result.error());
-        }
-
-        camera_ = *camera_result;
-
         if (scene_path_.empty()) {
-            return std::unexpected(vve::Error::invalid_argument);
+            return std::unexpected(ve::Error::invalid_argument);
         }
 
-        std::cout << '[' << name() << "] loading scene: " << scene_path_.string() << '\n';
+        std::cout << '[' << name() << "] registering scene path: " << scene_path_.string() << '\n';
         if (const auto load_result = world.loadScene(scene_path_); !load_result) {
             return std::unexpected(load_result.error());
         }
 
-        if (const auto camera_result = updateCamera(world, vve::math::zeroVec3()); !camera_result) {
-            return std::unexpected(camera_result.error());
-        }
-
-        std::cout << '[' << name() << "] spawned entity " << player_.value() << '\n';
+        std::cout << '[' << name() << "] spawned entity " << player_.value << '\n';
         printWindowInventory(world);
         return {};
     }
@@ -171,12 +158,12 @@ public:
      * @param frame_context Timing data for the current frame.
      * @param window_frame Current window snapshot, unused by this example.
      */
-    [[nodiscard]] std::expected<void, vve::Error> update(
-        vve::World& world,
-        const vve::v3::FrameContext& frame_context,
-        const vve::v3::WindowFrameData&) {
-        if (!player_.isValid()) {
-            return std::unexpected(vve::Error::invalid_argument);
+    [[nodiscard]] std::expected<void, ve::Error> update(
+        ve::World& world,
+        const ve::FrameContext& frame_context,
+        const ve::WindowFrameData&) {
+        if (!player_.valid()) {
+            return std::unexpected(ve::Error::invalid_argument);
         }
 
         // Fetch the current velocity and transform copies through the world
@@ -192,7 +179,7 @@ public:
         }
 
         if (!transform_result->has_value() || !velocity_result->has_value()) {
-            return std::unexpected(vve::Error::invalid_argument);
+            return std::unexpected(ve::Error::invalid_argument);
         }
 
         auto transform = **transform_result;
@@ -216,7 +203,7 @@ public:
 
         // Reset the player back to the origin when R is pressed.
         if (input.wasKeyPressed('R') || input.wasKeyPressed('r')) {
-            transform.translation = vve::math::zeroVec3();
+            transform.translation = ve::zeroVec3();
         }
 
         // Integrate velocity using the frame delta and clamp movement to a
@@ -229,11 +216,6 @@ public:
 
         transform.translation.x = std::clamp(transform.translation.x, -limit_x, limit_x);
         transform.translation.y = std::clamp(transform.translation.y, -limit_y, limit_y);
-
-        const auto camera_result = updateCamera(world, transform.translation);
-        if (!camera_result) {
-            return std::unexpected(camera_result.error());
-        }
 
         if (const auto set_transform_result = world.setTransform(player_, transform); !set_transform_result) {
             return std::unexpected(set_transform_result.error());
@@ -265,12 +247,9 @@ public:
             const auto tools_window = world.findWindow("tools");
             const auto player_x = static_cast<int>(std::lround(transform.translation.x));
             const auto player_y = static_cast<int>(std::lround(transform.translation.y));
-            const auto camera = cameraForPlayer(transform.translation);
             std::cout << '[' << name() << "] player=(" << player_x << ", " << player_y << ')'
                       << " velocity=(" << static_cast<int>(std::lround(velocity.x)) << ", "
                       << static_cast<int>(std::lround(velocity.y)) << ')'
-                      << " camera=(" << camera.position.x << ", " << camera.position.y << ", "
-                      << camera.position.z << ')'
                       << " keys=" << key_state_string;
             if (main_window) {
                 std::cout << " main=" << main_window->width << 'x' << main_window->height
@@ -290,37 +269,7 @@ public:
     }
 
 private:
-    [[nodiscard]] vve::Camera cameraForPlayer(const vve::math::Vec3& player_position) const {
-        constexpr float world_to_camera = 0.01F;
-
-        const auto camera_position = vve::math::Vec3(
-            player_position.x * world_to_camera,
-            1.5F - (player_position.y * world_to_camera),
-            8.0F);
-        const auto camera_target = vve::math::Vec3(camera_position.x, camera_position.y, 0.0F);
-        return vve::Camera::lookAt(camera_position, camera_target,
-                                   vve::math::Vec3(0.0F, 1.0F, 0.0F),
-                                   0.9F, 0.1F, 1000.0F);
-    }
-
-    [[nodiscard]] std::expected<void, vve::Error> updateCamera(
-        vve::World& world,
-        const vve::math::Vec3& player_position) const {
-        if (!camera_.isValid()) {
-            return std::unexpected(vve::Error::invalid_argument);
-        }
-
-        if (const auto camera_component_result = world.setComponent(
-                camera_,
-                vve::CameraComponent{.camera = cameraForPlayer(player_position), .window_id = "main"});
-            !camera_component_result) {
-            return std::unexpected(camera_component_result.error());
-        }
-
-        return world.setActiveCamera(camera_);
-    }
-
-    void printWindowInventory(vve::World& world) {
+    void printWindowInventory(ve::World& world) {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
         for (const auto& window : world.windows()) {
@@ -335,9 +284,7 @@ private:
     }
 
     /// @brief Handle of the player entity created during initialization.
-    vve::Handle player_{};
-    /// @brief Handle of the camera entity used as the active view.
-    vve::Handle camera_{};
+    ve::Handle player_{};
     /// @brief Runtime scene loaded so public camera changes are visible.
     std::filesystem::path scene_path_{};
     /// @brief Tracks time until the next heartbeat log line.
@@ -361,13 +308,12 @@ int main(int argc, char** argv) {
     }
 
     // Configure a two-window sample runtime so the example exercises the
-    auto engine = vve::makeEngine( // multi-window API shape exposed by the engine.
-        vve::ApplicationName{"game"},
-        vve::EnableValidation{true},
-        vve::makeUserSystems(SimpleGameSystem{*scene_path}),
-        vve::Windows{
+    auto engine = ve::makeEngine( // multi-window API shape exposed by the engine.
+        ve::ApplicationName{"game"},
+        ve::makeUserSystems(SimpleGameSystem{*scene_path}),
+        ve::Windows{
             .value = {
-                vve::WindowDesc{
+                ve::WindowDesc{
                     .id = "main",
                     .title = "VVE Game",
                     .width = 640,
@@ -376,7 +322,7 @@ int main(int argc, char** argv) {
                     .resizable = true,
                     .visible = true
                 },
-                vve::WindowDesc{
+                ve::WindowDesc{
                     .id = "tools",
                     .title = "VVE Tools",
                     .width = 400,
@@ -396,7 +342,7 @@ int main(int argc, char** argv) {
     
 
     if (const auto init_result = engine.init(); !init_result) {
-        std::cerr << "[game] engine.init failed: " << vve::errorName(init_result.error()) << '\n';
+        std::cerr << "[game] engine.init failed: " << ve::errorName(init_result.error()) << '\n';
         return 1;
     }
 
@@ -404,11 +350,11 @@ int main(int argc, char** argv) {
     while (true) { // engine's explicit `FrameStatus` contract.
         const auto step_result = engine.step();
         if (!step_result) {
-            std::cerr << "[game] engine.step failed: " << vve::errorName(step_result.error()) << '\n';
+            std::cerr << "[game] engine.step failed: " << ve::errorName(step_result.error()) << '\n';
             return 1;
         }
 
-        if (*step_result == vve::FrameStatus::should_close) {
+        if (*step_result == ve::FrameStatus::should_close) {
             break;
         }
     }

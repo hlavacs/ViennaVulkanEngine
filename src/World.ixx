@@ -58,45 +58,6 @@ export namespace vve {
       bool should_close{false}; ///< Whether the window has requested closure.
    };
 
-   /// @brief Standard transform component used by world helper methods.
-   struct Transform {
-      /// @brief World-space translation.
-      math::Vec3 translation{math::zeroVec3()};
-      /// @brief World-space orientation.
-      math::Quat rotation{math::identityQuat()};
-      /// @brief Non-uniform scale.
-      math::Vec3 scale{math::one(), math::one(), math::one()};
-   };
-
-   /// @brief Public camera description used by game code to drive rendering.
-   struct Camera {
-      math::Vec3 position{math::Vec3(math::zero(), static_cast<math::Scalar>(1.5),
-                                     static_cast<math::Scalar>(6.0))}; ///< World-space camera position.
-      math::Mat4 view_transform{math::translate(
-          math::identityMat4(),
-          math::Vec3(math::zero(), static_cast<math::Scalar>(-1.5),
-                     static_cast<math::Scalar>(-6.0)))}; ///< World-to-view transform.
-      math::Scalar vertical_fov_radians{static_cast<math::Scalar>(1.0471975511965976)}; ///< Vertical field of view.
-      math::Scalar near_plane{static_cast<math::Scalar>(0.1)}; ///< Near clip plane.
-      math::Scalar far_plane{static_cast<math::Scalar>(10000.0)}; ///< Far clip plane.
-
-      /// @brief Builds a camera from an eye position and target point.
-      [[nodiscard]] static Camera lookAt(const math::Vec3 &position, const math::Vec3 &target,
-                                         const math::Vec3 &up = math::Vec3(math::zero(), math::one(), math::zero()),
-                                         math::Scalar vertical_fov_radians =
-                                             static_cast<math::Scalar>(1.0471975511965976),
-                                         math::Scalar near_plane = static_cast<math::Scalar>(0.1),
-                                         math::Scalar far_plane = static_cast<math::Scalar>(10000.0)) {
-         Camera camera{};
-         camera.position = position;
-         camera.view_transform = math::lookAt(position, target, up);
-         camera.vertical_fov_radians = vertical_fov_radians;
-         camera.near_plane = near_plane;
-         camera.far_plane = far_plane;
-         return camera;
-      }
-   };
-
    /// @brief Camera component that can be attached to an entity and selected as the active view.
    struct CameraComponent {
       Camera camera{};       ///< Camera data stored on the entity.

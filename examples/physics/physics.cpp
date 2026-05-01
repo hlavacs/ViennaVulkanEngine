@@ -5,8 +5,7 @@
 #include <iostream>
 #include <string_view>
 
-import VEEngine;
-import VEEngine.V3;
+import VEEngine.V4;
 
 /**
  * @file
@@ -15,13 +14,15 @@ import VEEngine.V3;
 
 namespace {
 
+namespace ve = vve::v4;
+
 class PhysicsShellSystem final {
 public:
     [[nodiscard]] std::string_view name() const noexcept {
         return "PhysicsShellSystem";
     }
 
-    [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
+    [[nodiscard]] std::expected<void, ve::Error> init(ve::World& world) {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
         for (const auto& window : world.windows()) {
@@ -36,10 +37,24 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<void, vve::Error> update(
-        vve::World& world,
-        const vve::v3::FrameContext& frame_context,
-        const vve::v3::WindowFrameData&) {
+    [[nodiscard]] std::expected<void, ve::Error> update(
+        ve::World& world,
+        const ve::FrameContext& frame_context,
+        const ve::WindowFrameData&) {
+        const auto& input = world.input();
+        if (input.isKeyDown('A') || input.isKeyDown('a')) {
+            body_x_ -= 120.0 * frame_context.delta_seconds;
+        }
+        if (input.isKeyDown('D') || input.isKeyDown('d')) {
+            body_x_ += 120.0 * frame_context.delta_seconds;
+        }
+        if (input.isKeyDown('W') || input.isKeyDown('w')) {
+            body_y_ -= 120.0 * frame_context.delta_seconds;
+        }
+        if (input.isKeyDown('S') || input.isKeyDown('s')) {
+            body_y_ += 120.0 * frame_context.delta_seconds;
+        }
+
         log_accumulator_seconds_ += frame_context.delta_seconds;
         if (log_accumulator_seconds_ < 1.0) {
             return {};
@@ -53,15 +68,25 @@ public:
             return {};
         }
 
+        const auto mouse_delta = input.mouseDelta(main_window->handle);
         std::cout << " physics.main=" << main_window->width << 'x' << main_window->height
                   << '[' << main_window->renderer_id << ']'
                   << (main_window->focused ? "[focused]" : "")
-                  << (main_window->minimized ? "[minimized]" : "") << '\n';
+                  << (main_window->minimized ? "[minimized]" : "")
+                  << " body=(" << body_x_ << ", " << body_y_ << ')'
+                  << " keys="
+                  << (input.isKeyDown('W') || input.isKeyDown('w') ? 'W' : '-')
+                  << (input.isKeyDown('A') || input.isKeyDown('a') ? 'A' : '-')
+                  << (input.isKeyDown('S') || input.isKeyDown('s') ? 'S' : '-')
+                  << (input.isKeyDown('D') || input.isKeyDown('d') ? 'D' : '-')
+                  << " mouse_delta=(" << mouse_delta.x << ", " << mouse_delta.y << ")\n";
         return {};
     }
 
 private:
     double log_accumulator_seconds_{0.0};
+    double body_x_{0.0};
+    double body_y_{0.0};
 };
 
 } // namespace
@@ -75,12 +100,12 @@ int main(int, char **) {
     std::cerr << std::unitbuf;
 
     // The physics sample currently exercises only engine startup and runtime
-    auto engine = vve::makeEngine( // execution. Physics itself is expected to arrive through a user system.
-        vve::ApplicationName{"physics"},
-        vve::makeUserSystems(PhysicsShellSystem{}),
-        vve::Windows{
+    auto engine = ve::makeEngine( // execution. Physics itself is expected to arrive through a user system.
+        ve::ApplicationName{"physics"},
+        ve::makeUserSystems(PhysicsShellSystem{}),
+        ve::Windows{
             .value = {
-                vve::WindowDesc{
+                ve::WindowDesc{
                     .id = "physics.main",
                     .title = "VVE Physics Sandbox",
                     .width = 800,
@@ -93,12 +118,12 @@ int main(int, char **) {
         });
 
     if (const auto init_result = engine.init(); !init_result) {
-        std::cerr << "[physics] engine.init failed: " << vve::errorName(init_result.error()) << '\n';
+        std::cerr << "[physics] engine.init failed: " << ve::errorName(init_result.error()) << '\n';
         return 1;
     }
 
     if (const auto run_result = engine.run(); !run_result) {
-        std::cerr << "[physics] engine.run failed: " << vve::errorName(run_result.error()) << '\n';
+        std::cerr << "[physics] engine.run failed: " << ve::errorName(run_result.error()) << '\n';
         return 1;
     }
 
@@ -107,5 +132,5 @@ int main(int, char **) {
         return 1;
     }
 
-    return *version_major == 3 ? 0 : 1;
+    return *version_major == 4 ? 0 : 1;
 }

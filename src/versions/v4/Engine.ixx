@@ -187,7 +187,7 @@ export namespace vve::v4 {
       /// @brief Applies the startup-window typed option.
       void applyOption(Windows option) { windows_ = std::move(option); }
       /// @brief Applies the user-system typed option.
-      void applyOption(UserSystems<TSystems...> option) { systems_ = std::move(option.value); }
+      void applyOption(UserSystems<TSystems...> option) { systems_.emplace(std::move(option.value)); }
       /// @brief Ignores unknown option types so examples can evolve one option at a time.
       template <typename TOption> void applyOption(TOption &&) {}
 
@@ -205,18 +205,24 @@ export namespace vve::v4 {
 
       /// @brief Calls init(World&) on each user system when that hook exists.
       [[nodiscard]] std::expected<void, Error> initSystems() {
+         if (!systems_.has_value()) {
+            return {};
+         }
          auto result = std::expected<void, Error>{};
-         std::apply([&](auto &...system) { ((result ? result = initOne(system) : result), ...); }, systems_);
+         std::apply([&](auto &...system) { ((result ? result = initOne(system) : result), ...); }, *systems_);
          return result;
       }
 
       /// @brief Calls the best matching update hook on each user system.
       [[nodiscard]] std::expected<void, Error> updateSystems(const FrameContext &frame,
                                                             const WindowFrameData &window_frame) {
+         if (!systems_.has_value()) {
+            return {};
+         }
          auto result = std::expected<void, Error>{};
          std::apply([&](auto &...system) {
             ((result ? result = updateOne(system, frame, window_frame) : result), ...);
-         }, systems_);
+         }, *systems_);
          return result;
       }
 
@@ -257,7 +263,7 @@ export namespace vve::v4 {
       RenderGraph render_graph_{};             ///< Render pass graph facade.
       ShaderSystem shaders_{};                 ///< Shader descriptor facade.
       GuiSystem gui_{};                        ///< GUI descriptor facade.
-      std::tuple<TSystems...> systems_{};      ///< User systems supplied by the application.
+      std::optional<std::tuple<TSystems...>> systems_{}; ///< User systems supplied by the application.
       std::chrono::steady_clock::time_point last_frame_time_{}; ///< Timestamp of the previous step().
       std::uint64_t frame_{0};                 ///< Number of completed step() calls.
       bool initialized_{false};                ///< True after init() succeeds.

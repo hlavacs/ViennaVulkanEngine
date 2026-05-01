@@ -1,82 +1,42 @@
-module;
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/ext/quaternion_double.hpp>
-#include <glm/ext/quaternion_float.hpp>
-#include <glm/ext/vector_double2.hpp>
-#include <glm/ext/vector_double3.hpp>
-#include <glm/ext/vector_double4.hpp>
-#include <glm/ext/vector_float2.hpp>
-#include <glm/ext/vector_float3.hpp>
-#include <glm/ext/vector_float4.hpp>
-
 export module VEEngine.V4:Types;
 import std;
 export import :ECS;
+export import VEEngine;
 
 /// @file
-/// @brief Strong math wrappers and handle-addressable descriptor types for v4.
+/// @brief v4 handle-addressable descriptor types built on the shared Math.ixx geometry layer.
 
 export namespace vve::v4 {
 
-#if defined(VVE_MATH_USE_DOUBLE)
-   using Scalar = double;     ///< Engine scalar type when double precision is enabled.
-   using Vec2   = glm::dvec2; ///< GLM 2D vector using the selected scalar precision.
-   using Vec3   = glm::dvec3; ///< GLM 3D vector using the selected scalar precision.
-   using Vec4   = glm::dvec4; ///< GLM 4D vector using the selected scalar precision.
-   using Quat   = glm::dquat; ///< GLM quaternion using the selected scalar precision.
-#else
-   using Scalar = float;     ///< Engine scalar type used by the default v4 build.
-   using Vec2   = glm::vec2; ///< GLM 2D vector using the selected scalar precision.
-   using Vec3   = glm::vec3; ///< GLM 3D vector using the selected scalar precision.
-   using Vec4   = glm::vec4; ///< GLM 4D vector using the selected scalar precision.
-   using Quat   = glm::quat; ///< GLM quaternion using the selected scalar precision.
-#endif
+   namespace math = ::vve::math; ///< Version-local alias for the shared math namespace.
+
+   using Scalar = math::Scalar; ///< Short alias for the configured math scalar type.
+   using Vec2   = math::Vec2;   ///< Short alias for the configured 2D vector type.
+   using Vec3   = math::Vec3;   ///< Short alias for the configured 3D vector type.
+   using Vec4   = math::Vec4;   ///< Short alias for the configured 4D vector type.
+   using Quat   = math::Quat;   ///< Short alias for the configured quaternion type.
+   using Mat4   = math::Mat4;   ///< Short alias for the configured 4x4 matrix type.
 
    /// @brief Returns the additive identity for the selected scalar type.
-   [[nodiscard]] inline constexpr Scalar zero() noexcept { return static_cast<Scalar>(0); }
+   [[nodiscard]] inline constexpr Scalar zero() noexcept { return math::zero(); }
    /// @brief Returns the multiplicative identity for the selected scalar type.
-   [[nodiscard]] inline constexpr Scalar one() noexcept { return static_cast<Scalar>(1); }
+   [[nodiscard]] inline constexpr Scalar one() noexcept { return math::one(); }
    /// @brief Returns the zero vector.
-   [[nodiscard]] inline Vec3 zeroVec3() noexcept { return Vec3(zero(), zero(), zero()); }
+   [[nodiscard]] inline Vec3 zeroVec3() noexcept { return math::zeroVec3(); }
    /// @brief Returns a vector with all coordinates set to one.
-   [[nodiscard]] inline Vec3 oneVec3() noexcept { return Vec3(one(), one(), one()); }
+   [[nodiscard]] inline Vec3 oneVec3() noexcept { return math::oneVec3(); }
    /// @brief Returns the identity rotation.
-   [[nodiscard]] inline Quat identityQuat() noexcept { return Quat(one(), zero(), zero(), zero()); }
+   [[nodiscard]] inline Quat identityQuat() noexcept { return math::identityQuat(); }
+   /// @brief Returns a 4x4 identity matrix.
+   [[nodiscard]] inline Mat4 identityMat4() noexcept { return math::identityMat4(); }
 
-   /// @brief Strong wrapper for world or local position values.
-   struct Position {
-      Vec3 value{zeroVec3()}; ///< Wrapped GLM coordinate.
-   };
-
-   /// @brief Strong wrapper for orientation vectors that should be interpreted as directions.
-   struct Direction {
-      Vec3 value{0.0F, 0.0F, -1.0F}; ///< Wrapped GLM direction; defaults to forward.
-   };
-
-   /// @brief Strong wrapper for non-uniform scale factors.
-   struct Scale {
-      Vec3 value{oneVec3()}; ///< Wrapped GLM scale vector.
-   };
-
-   /// @brief Strong wrapper for quaternion rotations.
-   struct Rotation {
-      Quat value{identityQuat()}; ///< Wrapped GLM quaternion.
-   };
-
-   /// @brief Transform kept as explicit strong fields for textbook readability.
-   struct Transform {
-      Position position{}; ///< Local position.
-      Rotation rotation{}; ///< Local orientation.
-      Scale scale{};       ///< Local scale.
-   };
-
-   /// @brief Axis-aligned bounds in descriptor space.
-   struct Bounds {
-      Position minimum{}; ///< Minimum corner.
-      Position maximum{}; ///< Maximum corner.
-      bool valid{false};  ///< False until at least one point has been included.
-   };
+   using Position  = ::vve::Position;  ///< Shared strong position wrapper.
+   using Direction = ::vve::Direction; ///< Shared strong direction wrapper.
+   using Scale     = ::vve::Scale;     ///< Shared strong scale wrapper.
+   using Rotation  = ::vve::Rotation;  ///< Shared strong rotation wrapper.
+   using Transform = ::vve::Transform; ///< Shared transform component.
+   using Bounds    = ::vve::Bounds;    ///< Shared axis-aligned bounds type.
+   using Camera    = ::vve::Camera;    ///< Shared camera geometry type.
 
    /// @brief Material texture slot meaning.
    enum class TextureSemantic {
