@@ -17,7 +17,8 @@ export namespace vve::v4 {
       duplicate_component, ///< An entity already owns the component being added.
       missing_component,   ///< An entity does not own the requested component.
       platform_error,      ///< SDL or platform-window operation failed.
-      asset_import_failed  ///< Asset import failed in the loader backend.
+      asset_import_failed, ///< Asset import failed in the loader backend.
+      cycle_detected       ///< A graph contains at least one dependency cycle.
    };
 
    /// @brief Converts v4 errors into stable diagnostic text.
@@ -31,7 +32,8 @@ export namespace vve::v4 {
          {Error::duplicate_component, "duplicate_component"},
          {Error::missing_component,   "missing_component"},
          {Error::platform_error,      "platform_error"},
-         {Error::asset_import_failed, "asset_import_failed"}};
+         {Error::asset_import_failed, "asset_import_failed"},
+         {Error::cycle_detected,      "cycle_detected"}};
       const auto it = names.find(error);
       return it == names.end() ? std::string_view{"unknown"} : it->second;
    }

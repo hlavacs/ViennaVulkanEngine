@@ -89,6 +89,54 @@ export namespace vve::v4 {
       void addEdge(Handle from, Handle to) { edges.emplace(from, to); }
       /// @brief Returns all outgoing edges for a node handle.
       [[nodiscard]] auto childRange(Handle node) const { return edges.equal_range(node); }
+      /// @brief Returns nodes in dependency order, or cycle_detected when the graph is cyclic.
+      [[nodiscard]] std::expected<Vector<Handle>, Error> topologicalOrder(const Vector<Handle> &nodes) const {
+         std::map<Handle, std::uint32_t> incoming{};
+         std::map<Handle, Vector<Handle>> outgoing{};
+         for (const auto node : nodes) {
+            if (!node.valid()) {
+               return std::unexpected(Error::invalid_handle);
+            }
+            incoming.try_emplace(node, 0);
+         }
+
+         for (const auto &[from, to] : edges) {
+            if (!from.valid() || !to.valid()) {
+               return std::unexpected(Error::invalid_handle);
+            }
+            if (!incoming.contains(from) || !incoming.contains(to)) {
+               return std::unexpected(Error::missing_object);
+            }
+            outgoing[from].push_back(to);
+            ++incoming[to];
+         }
+
+         std::set<Handle> ready{};
+         Vector<Handle> ordered{};
+         ordered.reserve(incoming.size());
+         for (const auto &[node, count] : incoming) {
+            if (count == 0) {
+               ready.insert(node);
+            }
+         }
+
+         while (!ready.empty()) {
+            const auto node = *ready.begin();
+            ready.erase(ready.begin());
+            ordered.push_back(node);
+            for (const auto child : outgoing[node]) {
+               auto &count = incoming[child];
+               if (--count == 0) {
+                  ready.insert(child);
+               }
+            }
+         }
+
+         if (ordered.size() != incoming.size()) {
+            return std::unexpected(Error::cycle_detected);
+         }
+         return ordered;
+      }
    };
 
    /// @brief Scene graph node descriptor stored by handle in ObjectCatalog.

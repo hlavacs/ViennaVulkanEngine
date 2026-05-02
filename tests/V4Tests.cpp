@@ -264,6 +264,47 @@ struct CountingSystem {
    return 0;
 }
 
+[[nodiscard]] int testGraphTopologicalOrder() {
+   using namespace vve::v4;
+
+   const auto a = makeHandle(ObjectKind::task, 0);
+   const auto b = makeHandle(ObjectKind::task, 1);
+   const auto c = makeHandle(ObjectKind::task, 2);
+   const auto d = makeHandle(ObjectKind::task, 3);
+
+   Graph graph{};
+   graph.addEdge(a, c);
+   graph.addEdge(b, c);
+   graph.addEdge(c, d);
+   const auto ordered = graph.topologicalOrder(Vector<Handle>{a, b, c, d});
+   if (!ordered || ordered->size() != 4 || ordered->at(0) != a || ordered->at(1) != b ||
+       ordered->at(2) != c || ordered->at(3) != d) {
+      return 75;
+   }
+
+   Graph cyclic{};
+   cyclic.addEdge(a, b);
+   cyclic.addEdge(b, a);
+   const auto cycle = cyclic.topologicalOrder(Vector<Handle>{a, b});
+   if (cycle || cycle.error() != Error::cycle_detected) {
+      return 76;
+   }
+
+   Graph missing_node{};
+   missing_node.addEdge(a, b);
+   const auto missing = missing_node.topologicalOrder(Vector<Handle>{a});
+   if (missing || missing.error() != Error::missing_object) {
+      return 77;
+   }
+
+   Graph invalid_node{};
+   const auto invalid = invalid_node.topologicalOrder(Vector<Handle>{Handle{}});
+   if (invalid || invalid.error() != Error::invalid_handle) {
+      return 78;
+   }
+   return 0;
+}
+
 [[nodiscard]] int testAssimpSceneImport() {
    using namespace vve::v4;
 
@@ -354,10 +395,16 @@ struct CountingSystem {
    if (task_child == task_child_end || task_child->second != child_task) {
       return 45;
    }
+   const auto task_order = engine.tasks().topologicalOrder();
+   if (!task_order || task_order->size() != 2 || task_order->front() != task || task_order->back() != child_task) {
+      return 54;
+   }
    const auto pass = makeHandle(ObjectKind::render_pass, 0);
    const auto child_pass = makeHandle(ObjectKind::render_pass, 1);
+   const auto isolated_pass = makeHandle(ObjectKind::render_pass, 2);
    if (!engine.renderGraph().add(RenderPassNode{.handle = pass, .name = "pass"}) ||
        !engine.renderGraph().add(RenderPassNode{.handle = child_pass, .name = "child-pass"}) ||
+       !engine.renderGraph().add(RenderPassNode{.handle = isolated_pass, .name = "isolated-pass"}) ||
        engine.renderGraph().find(pass) == nullptr) {
       return 46;
    }
@@ -365,6 +412,11 @@ struct CountingSystem {
    const auto [pass_child, pass_child_end] = engine.renderGraph().graph().childRange(pass);
    if (pass_child == pass_child_end || pass_child->second != child_pass) {
       return 47;
+   }
+   const auto pass_order = engine.renderGraph().topologicalOrder();
+   if (!pass_order || pass_order->size() != 3 || pass_order->at(0) != pass ||
+       pass_order->at(1) != child_pass || pass_order->at(2) != isolated_pass) {
+      return 55;
    }
    const auto shader = makeHandle(ObjectKind::shader, 0);
    if (!engine.shaders().add(ShaderDescriptor{.handle = shader,
@@ -407,6 +459,9 @@ int main() {
       return result;
    }
    if (const int result = testInputAndWorld(); result != 0) {
+      return result;
+   }
+   if (const int result = testGraphTopologicalOrder(); result != 0) {
       return result;
    }
    if (const int result = testAssimpSceneImport(); result != 0) {

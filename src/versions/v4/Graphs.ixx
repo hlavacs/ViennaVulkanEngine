@@ -28,6 +28,15 @@ export namespace vve::v4 {
       void addEdge(Handle from, Handle to) { graph_.addEdge(from, to); }
       /// @brief Finds a task by handle, or returns null.
       [[nodiscard]] const TaskNode *find(Handle handle) const { return tasks_.find(handle); }
+      /// @brief Returns tasks in dependency order and preserves isolated tasks.
+      [[nodiscard]] std::expected<Vector<Handle>, Error> topologicalOrder() const {
+         Vector<Handle> nodes{};
+         nodes.reserve(tasks_.size());
+         for (const auto &[handle, _] : tasks_.all()) {
+            nodes.push_back(handle);
+         }
+         return graph_.topologicalOrder(nodes);
+      }
       /// @brief Returns task graph topology.
       [[nodiscard]] const Graph &graph() const { return graph_; }
       /// @brief Returns task count.
@@ -47,6 +56,15 @@ export namespace vve::v4 {
       void addEdge(Handle from, Handle to) { graph_.addEdge(from, to); }
       /// @brief Finds a render pass by handle, or returns null.
       [[nodiscard]] const RenderPassNode *find(Handle handle) const { return passes_.find(handle); }
+      /// @brief Returns render passes in dependency order and preserves isolated passes.
+      [[nodiscard]] std::expected<Vector<Handle>, Error> topologicalOrder() const {
+         Vector<Handle> nodes{};
+         nodes.reserve(passes_.size());
+         for (const auto &[handle, _] : passes_.all()) {
+            nodes.push_back(handle);
+         }
+         return graph_.topologicalOrder(nodes);
+      }
       /// @brief Returns render graph topology.
       [[nodiscard]] const Graph &graph() const { return graph_; }
       /// @brief Returns render pass count.
