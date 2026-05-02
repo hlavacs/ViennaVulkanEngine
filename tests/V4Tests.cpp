@@ -50,14 +50,16 @@ struct CountingSystem {
    using namespace vve::v4;
 
    static_assert(sizeof(Handle) == sizeof(std::uint64_t));
-   const auto mesh = makeHandle(ObjectKind::mesh, 41);
-   if (!mesh.valid() || mesh.kind() != ObjectKind::mesh || mesh.index() != 41) {
+   const auto counter = makeCounterHandle(41);
+   if (!counter.valid() || !counter.isCounter() || counter.isSlotMapIndex() || counter.id() != 41) {
       return 1;
    }
-   const auto material = makeHandle(ObjectKind::material, 41);
-   if (mesh == material || !(mesh < material)) {
+   const auto slot = makeSlotMapHandle(7, 3);
+   if (!slot.valid() || slot.isCounter() || !slot.isSlotMapIndex() || slot.slotIndex() != 7 || slot.generation() != 3) {
       return 2;
    }
+   const auto next_counter = makeCounterHandle(42);
+   if (counter == next_counter || !(counter < next_counter)) { return 4; }
    if (Handle{}.valid()) {
       return 3;
    }
@@ -103,7 +105,7 @@ struct CountingSystem {
 
    ECS ecs{};
    const auto entity = ecs.create();
-   if (!entity.valid() || entity.kind() != ObjectKind::entity || !ecs.exists(entity)) {
+   if (!entity.valid() || !entity.isCounter() || !ecs.exists(entity)) {
       return 20;
    }
    if (!ecs.add(entity, Position{Vec3{1.0F, 0.0F, 0.0F}})) {
@@ -140,14 +142,14 @@ struct CountingSystem {
    using namespace vve::v4;
 
    ObjectCatalog catalog{};
-   const auto scene = makeHandle(ObjectKind::scene, 0);
-   const auto node = makeHandle(ObjectKind::node, 0);
-   const auto child = makeHandle(ObjectKind::node, 1);
-   const auto mesh = makeHandle(ObjectKind::mesh, 0);
-   const auto material = makeHandle(ObjectKind::material, 0);
-   const auto texture = makeHandle(ObjectKind::texture, 0);
-   const auto light = makeHandle(ObjectKind::light, 0);
-   const auto camera = makeHandle(ObjectKind::camera, 0);
+   const auto scene = makeCounterHandle(100);
+   const auto node = makeCounterHandle(101);
+   const auto child = makeCounterHandle(102);
+   const auto mesh = makeCounterHandle(103);
+   const auto material = makeCounterHandle(104);
+   const auto texture = makeCounterHandle(105);
+   const auto light = makeCounterHandle(106);
+   const auto camera = makeCounterHandle(107);
 
    if (!catalog.textures.add(TextureDescriptor{.handle = texture,
                                                .name = "stone",
@@ -225,7 +227,7 @@ struct CountingSystem {
 [[nodiscard]] int testInputAndWorld() {
    using namespace vve::v4;
 
-   const auto window = makeHandle(ObjectKind::window, 0);
+   const auto window = makeCounterHandle(200);
    InputState input{};
    input.pressKey('W');
    if (!input.isKeyDown('W') || !input.wasKeyPressed('W')) {
@@ -267,10 +269,10 @@ struct CountingSystem {
 [[nodiscard]] int testGraphTopologicalOrder() {
    using namespace vve::v4;
 
-   const auto a = makeHandle(ObjectKind::task, 0);
-   const auto b = makeHandle(ObjectKind::task, 1);
-   const auto c = makeHandle(ObjectKind::task, 2);
-   const auto d = makeHandle(ObjectKind::task, 3);
+   const auto a = makeCounterHandle(300);
+   const auto b = makeCounterHandle(301);
+   const auto c = makeCounterHandle(302);
+   const auto d = makeCounterHandle(303);
 
    Graph graph{};
    graph.addEdge(a, c);
@@ -375,16 +377,15 @@ struct CountingSystem {
       return 41;
    }
    const auto scene = engine.assets().addScene("stub");
-   if (!scene || scene->kind() != ObjectKind::scene ||
-       engine.assets().catalog().scenes.find(*scene) == nullptr) {
+   if (!scene || !scene->isCounter() || engine.assets().catalog().scenes.find(*scene) == nullptr) {
       return 42;
    }
    const auto resource = engine.resources().add(ResourceKind::mesh, "mesh");
    if (!resource || engine.resources().find(*resource) == nullptr) {
       return 43;
    }
-   const auto task = makeHandle(ObjectKind::task, 0);
-   const auto child_task = makeHandle(ObjectKind::task, 1);
+   const auto task = makeCounterHandle(400);
+   const auto child_task = makeCounterHandle(401);
    if (!engine.tasks().add(TaskNode{.handle = task, .name = "task"}) ||
        !engine.tasks().add(TaskNode{.handle = child_task, .name = "child-task"}) ||
        engine.tasks().find(task) == nullptr) {
@@ -399,9 +400,9 @@ struct CountingSystem {
    if (!task_order || task_order->size() != 2 || task_order->front() != task || task_order->back() != child_task) {
       return 54;
    }
-   const auto pass = makeHandle(ObjectKind::render_pass, 0);
-   const auto child_pass = makeHandle(ObjectKind::render_pass, 1);
-   const auto isolated_pass = makeHandle(ObjectKind::render_pass, 2);
+   const auto pass = makeCounterHandle(500);
+   const auto child_pass = makeCounterHandle(501);
+   const auto isolated_pass = makeCounterHandle(502);
    if (!engine.renderGraph().add(RenderPassNode{.handle = pass, .name = "pass"}) ||
        !engine.renderGraph().add(RenderPassNode{.handle = child_pass, .name = "child-pass"}) ||
        !engine.renderGraph().add(RenderPassNode{.handle = isolated_pass, .name = "isolated-pass"}) ||
@@ -418,7 +419,7 @@ struct CountingSystem {
        pass_order->at(1) != child_pass || pass_order->at(2) != isolated_pass) {
       return 55;
    }
-   const auto shader = makeHandle(ObjectKind::shader, 0);
+   const auto shader = makeCounterHandle(600);
    if (!engine.shaders().add(ShaderDescriptor{.handle = shader,
                                               .name = "shader",
                                               .stages = {ShaderStage::vertex, ShaderStage::fragment}}) ||

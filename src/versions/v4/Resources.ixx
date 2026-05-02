@@ -30,7 +30,7 @@ export namespace vve::v4 {
    public:
       /// @brief Adds a resource descriptor and returns its handle.
       [[nodiscard]] std::expected<Handle, Error> add(ResourceKind kind, std::string name) {
-         auto handle = makeHandle(ObjectKind::resource, static_cast<std::uint32_t>(resources_.size()));
+         auto handle = makeCounterHandle();
          auto added = resources_.add(ResourceDescriptor{.handle = handle, .kind = kind, .name = std::move(name)});
          if (!added) { return std::unexpected(added.error()); }
          return handle;

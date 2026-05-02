@@ -38,41 +38,33 @@ export namespace vve::v4 {
       return it == names.end() ? std::string_view{"unknown"} : it->second;
    }
 
-   /// @brief High 32-bit category stored inside every v4 handle.
-   enum class ObjectKind : std::uint32_t {
-      unknown     = 0,  ///< Invalid or unclassified object.
-      entity      = 1,  ///< ECS entity.
-      scene       = 2,  ///< Imported or authored scene.
-      node        = 3,  ///< Scene graph node.
-      mesh        = 4,  ///< Mesh geometry descriptor.
-      material    = 5,  ///< Material descriptor.
-      texture     = 6,  ///< Texture descriptor.
-      light       = 7,  ///< Light descriptor.
-      camera      = 8,  ///< Camera descriptor.
-      shader      = 9,  ///< Shader program descriptor.
-      resource    = 10, ///< Generic resource descriptor.
-      task        = 11, ///< Task-graph node.
-      render_pass = 12, ///< Render-graph pass node.
-      gui         = 13, ///< GUI object descriptor.
-      window      = 14  ///< Runtime SDL window descriptor.
-   };
-
-   /// @brief Opaque 64-bit id: high bits store ObjectKind, low bits store one-based index.
+   /// @brief Opaque 64-bit id prepared for counter handles and future slot-map handles.
    struct Handle {
+      static constexpr std::uint32_t generation_bits{16};                 ///< Future slot-map generation bit count.
+      static constexpr std::uint32_t id_bits{64 - generation_bits - 1};    ///< Counter/id bit count.
+      static constexpr std::uint64_t counter_bit{1ULL << 63U};             ///< High bit marks counter handles.
+      static constexpr std::uint64_t id_mask{(1ULL << id_bits) - 1ULL};    ///< Low id/index bits.
+      static constexpr std::uint64_t generation_mask{~counter_bit & ~id_mask}; ///< Middle generation bits.
+
       std::uint64_t value{0}; ///< Raw handle value; zero is invalid.
 
       /// @brief Returns true when this handle is not the invalid zero value.
       [[nodiscard]] constexpr bool valid() const noexcept { return value != 0; }
 
-      /// @brief Extracts the object category from the high 32 bits.
-      [[nodiscard]] constexpr ObjectKind kind() const noexcept {
-         return static_cast<ObjectKind>(static_cast<std::uint32_t>(value >> 32U));
-      }
+      /// @brief Returns true when the handle stores an upward-counted id.
+      [[nodiscard]] constexpr bool isCounter() const noexcept { return (value & counter_bit) != 0; }
 
-      /// @brief Extracts the zero-based object index from the low 32 bits.
-      [[nodiscard]] constexpr std::uint32_t index() const noexcept {
-         return static_cast<std::uint32_t>(value & 0xFFFFFFFFULL) - 1U;
-      }
+      /// @brief Returns true when the handle is shaped as a future slot-map index.
+      [[nodiscard]] constexpr bool isSlotMapIndex() const noexcept { return valid() && !isCounter(); }
+
+      /// @brief Extracts the future slot-map generation counter.
+      [[nodiscard]] constexpr std::uint64_t generation() const noexcept { return (value & generation_mask) >> id_bits; }
+
+      /// @brief Extracts the low id bits used by both counter and slot-map handles.
+      [[nodiscard]] constexpr std::uint64_t id() const noexcept { return value & id_mask; }
+
+      /// @brief Names the id bits as a slot index for future slot-map users.
+      [[nodiscard]] constexpr std::uint64_t slotIndex() const noexcept { return id(); }
 
       [[nodiscard]] friend constexpr bool operator==(Handle, Handle) noexcept = default;
       [[nodiscard]] friend constexpr auto operator<=>(Handle, Handle) noexcept = default;
@@ -80,10 +72,20 @@ export namespace vve::v4 {
 
    static_assert(sizeof(Handle) == sizeof(std::uint64_t));
 
-   /// @brief Creates a non-zero handle from object kind and zero-based index.
-   [[nodiscard]] constexpr Handle makeHandle(ObjectKind kind, std::uint32_t index) noexcept {
-      return Handle{(static_cast<std::uint64_t>(kind) << 32U) |
-                    (static_cast<std::uint64_t>(index) + 1U)};
+   /// @brief Builds a future slot-map handle from slot index and generation.
+   [[nodiscard]] constexpr Handle makeSlotMapHandle(std::uint64_t slot_index, std::uint64_t generation) noexcept {
+      return Handle{((generation << Handle::id_bits) & Handle::generation_mask) | (slot_index & Handle::id_mask)};
+   }
+
+   /// @brief Builds an upward-counted non-slot-map handle from an explicit id.
+   [[nodiscard]] constexpr Handle makeCounterHandle(std::uint64_t id) noexcept {
+      return Handle{Handle::counter_bit | (id & Handle::id_mask)};
+   }
+
+   /// @brief Builds an upward-counted non-slot-map handle from the module-global counter.
+   [[nodiscard]] inline Handle makeCounterHandle() {
+      static std::atomic_uint64_t next_id{1};
+      return makeCounterHandle(next_id.fetch_add(1, std::memory_order_relaxed));
    }
 
    using Entity = Handle; ///< ECS entity id; kept as an alias so every object uses one handle type.
@@ -91,9 +93,9 @@ export namespace vve::v4 {
    /// @brief Forward declaration for the trait-configurable ECS.
    template <typename TTraits> class BasicECS;
 
-   /// @brief Default ECS trait: entities use ObjectKind::entity handles.
+   /// @brief Default ECS trait reserved for future slot-map policy knobs.
    struct DefaultECSTraits {
-      static constexpr ObjectKind entity_kind = ObjectKind::entity; ///< Kind tag for newly created entities.
+      static constexpr bool use_slot_map_handles{false}; ///< Slot maps are not implemented in this v4 skeleton yet.
    };
 
    /// @brief Small component store keyed by 64-bit entity handles.
@@ -114,7 +116,8 @@ export namespace vve::v4 {
    public:
       /// @brief Creates a live entity with a fresh 64-bit handle.
       [[nodiscard]] Entity create() {
-         const auto entity = makeHandle(TTraits::entity_kind, next_entity_++);
+         static_assert(!TTraits::use_slot_map_handles, "v4 prepares slot-map handles but has no slot map yet");
+         const auto entity = makeCounterHandle();
          alive_.insert(entity);
          return entity;
       }
@@ -223,7 +226,6 @@ export namespace vve::v4 {
          return typed_pool != nullptr && typed_pool->data.contains(entity);
       }
 
-      std::uint32_t next_entity_{0};                              ///< Next zero-based entity index.
       std::set<Entity> alive_{};                                   ///< Live entity handles.
       std::map<std::type_index, std::unique_ptr<PoolBase>> pools_{}; ///< Component pools by type.
    };

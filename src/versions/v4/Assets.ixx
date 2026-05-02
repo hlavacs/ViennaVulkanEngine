@@ -22,8 +22,8 @@ export namespace vve::v4 {
       [[nodiscard]] ObjectCatalog &catalog();
       /// @brief Returns the read-only object catalog.
       [[nodiscard]] const ObjectCatalog &catalog() const;
-      /// @brief Allocates the next handle for an object kind.
-      [[nodiscard]] Handle next(ObjectKind kind);
+      /// @brief Allocates the next counter handle.
+      [[nodiscard]] Handle next();
       /// @brief Adds an empty scene descriptor and returns its handle.
       [[nodiscard]] std::expected<Handle, Error> addScene(std::string name);
       /// @brief Imports a scene file through Assimp and returns the v4 scene handle.
@@ -31,7 +31,6 @@ export namespace vve::v4 {
 
    private:
       ObjectCatalog catalog_{};                         ///< All loaded object descriptors.
-      std::map<ObjectKind, std::uint32_t> next_indices_{}; ///< Per-kind handle counters.
    };
 
 } // namespace vve::v4
@@ -138,7 +137,7 @@ namespace vve::v4 {
          const auto key = source.string();
          if (const auto existing = textures.find(key); existing != textures.end()) { return existing->second; }
 
-         auto texture = TextureDescriptor{.handle = assets.next(ObjectKind::texture),
+         auto texture = TextureDescriptor{.handle = assets.next(),
                                           .name = source.filename().string(),
                                           .source = source};
          if (key.starts_with('*')) {
@@ -167,7 +166,7 @@ namespace vve::v4 {
             if (source != nullptr) { source->Get(AI_MATKEY_NAME, name); }
 
             auto material = MaterialDescriptor{
-               .handle = assets.next(ObjectKind::material),
+               .handle = assets.next(),
                .name = readableName(name, "Material_" + std::to_string(material_index))};
 
             if (source != nullptr) {
@@ -223,7 +222,7 @@ namespace vve::v4 {
 
             const auto material = source->mMaterialIndex < materials.size() ? materials[source->mMaterialIndex]
                                                                             : Handle{};
-            auto mesh = MeshDescriptor{.handle = assets.next(ObjectKind::mesh),
+            auto mesh = MeshDescriptor{.handle = assets.next(),
                                        .name = readableName(source->mName, "Mesh_" + std::to_string(mesh_index)),
                                        .vertex_count = source->mNumVertices,
                                        .index_count = index_count,
@@ -242,7 +241,7 @@ namespace vve::v4 {
                                                             const Vector<Handle> &meshes,
                                                             SceneDescriptor &scene,
                                                             Handle parent = {}) {
-         auto node = NodeDescriptor{.handle = assets.next(ObjectKind::node),
+         auto node = NodeDescriptor{.handle = assets.next(),
                                     .name = readableName(source.mName, "Node_" + std::to_string(scene.nodes.size())),
                                     .transform = toTransform(source.mTransformation)};
          for (unsigned mesh_slot = 0; mesh_slot < source.mNumMeshes; ++mesh_slot) {
@@ -286,7 +285,7 @@ namespace vve::v4 {
             const auto color = visibleColor(*source);
             const auto intensity = std::max({std::abs(color.x), std::abs(color.y), std::abs(color.z), one()});
             auto light = LightDescriptor{
-               .handle = assets.next(ObjectKind::light),
+               .handle = assets.next(),
                .name = readableName(source->mName, "Light_" + std::to_string(light_index)),
                .kind = mapLightKind(source->mType),
                .position = Position{toVec3(source->mPosition)},
@@ -309,7 +308,7 @@ namespace vve::v4 {
             const auto aspect = std::max(static_cast<Scalar>(source->mAspect), one());
             const auto horizontal = std::max(static_cast<Scalar>(source->mHorizontalFOV), Scalar{0.001F});
             const auto vertical = Scalar{2} * std::atan(std::tan(horizontal * Scalar{0.5F}) / aspect);
-            auto camera = CameraDescriptor{.handle = assets.next(ObjectKind::camera),
+            auto camera = CameraDescriptor{.handle = assets.next(),
                                            .name = readableName(source->mName,
                                                                 "Camera_" + std::to_string(camera_index)),
                                            .position = Position{toVec3(source->mPosition)},
@@ -339,7 +338,7 @@ namespace vve::v4 {
          const auto camera_handles = importCameras(assets, source);
          if (!camera_handles) { return std::unexpected(camera_handles.error()); }
 
-         auto scene = SceneDescriptor{.handle = assets.next(ObjectKind::scene),
+         auto scene = SceneDescriptor{.handle = assets.next(),
                                       .name = path.filename().string(),
                                       .meshes = *mesh_handles,
                                       .materials = material_handles->materials,
@@ -365,10 +364,10 @@ namespace vve::v4 {
 
    const ObjectCatalog &AssetSystem::catalog() const { return catalog_; }
 
-   Handle AssetSystem::next(ObjectKind kind) { return makeHandle(kind, next_indices_[kind]++); }
+   Handle AssetSystem::next() { return makeCounterHandle(); }
 
    std::expected<Handle, Error> AssetSystem::addScene(std::string name) {
-      const auto handle = next(ObjectKind::scene);
+      const auto handle = next();
       auto scene = SceneDescriptor{.handle = handle, .name = std::move(name)};
       if (auto added = catalog_.scenes.add(std::move(scene)); !added) { return std::unexpected(added.error()); }
       return handle;
