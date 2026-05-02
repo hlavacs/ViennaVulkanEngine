@@ -73,8 +73,8 @@ export namespace vve::v4 {
    static_assert(sizeof(Handle) == sizeof(std::uint64_t));
 
    /// @brief Builds a future slot-map handle from slot index and generation.
-   [[nodiscard]] constexpr Handle makeSlotMapHandle(std::uint64_t slot_index, std::uint64_t generation) noexcept {
-      return Handle{((generation << Handle::id_bits) & Handle::generation_mask) | (slot_index & Handle::id_mask)};
+   [[nodiscard]] constexpr Handle makeSlotMapHandle(std::uint32_t slot_index, std::uint32_t generation) noexcept {
+      return Handle{((((std::uint64_t) generation) << Handle::id_bits) & Handle::generation_mask) | (((std::uint64_t) slot_index) & Handle::id_mask)};
    }
 
    /// @brief Builds an upward-counted non-slot-map handle from an explicit id.
