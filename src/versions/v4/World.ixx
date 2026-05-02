@@ -141,14 +141,19 @@ export namespace vve::v4 {
    public:
       /// @brief Returns the runtime ECS.
       [[nodiscard]] ECS &ecs() { return ecs_; }
+
       /// @brief Returns the runtime ECS.
       [[nodiscard]] const ECS &ecs() const { return ecs_; }
+
       /// @brief Returns the current input snapshot.
       [[nodiscard]] InputState &input() { return input_; }
+
       /// @brief Returns the current input snapshot.
       [[nodiscard]] const InputState &input() const { return input_; }
+
       /// @brief Returns mutable runtime window states for engine synchronization.
       [[nodiscard]] Vector<WindowInfo> &windows() { return windows_; }
+
       /// @brief Returns read-only runtime window states.
       [[nodiscard]] const Vector<WindowInfo> &windows() const { return windows_; }
 

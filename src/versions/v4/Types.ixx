@@ -19,14 +19,19 @@ export namespace vve::v4 {
 
    /// @brief Returns the additive identity for the selected scalar type.
    [[nodiscard]] inline constexpr Scalar zero() noexcept { return math::zero(); }
+
    /// @brief Returns the multiplicative identity for the selected scalar type.
    [[nodiscard]] inline constexpr Scalar one() noexcept { return math::one(); }
+
    /// @brief Returns the zero vector.
    [[nodiscard]] inline Vec3 zeroVec3() noexcept { return math::zeroVec3(); }
+
    /// @brief Returns a vector with all coordinates set to one.
    [[nodiscard]] inline Vec3 oneVec3() noexcept { return math::oneVec3(); }
+
    /// @brief Returns the identity rotation.
    [[nodiscard]] inline Quat identityQuat() noexcept { return math::identityQuat(); }
+
    /// @brief Returns a 4x4 identity matrix.
    [[nodiscard]] inline Mat4 identityMat4() noexcept { return math::identityMat4(); }
 
@@ -77,8 +82,10 @@ export namespace vve::v4 {
 
       /// @brief Adds one parent-to-child tree edge.
       void addChild(Handle parent, Handle child) { children.emplace(parent, child); }
+
       /// @brief Returns all children for a parent handle.
       [[nodiscard]] auto childRange(Handle parent) const { return children.equal_range(parent); }
+
    };
 
    /// @brief Generic directed graph topology stored as parent-to-child handle edges.
@@ -87,8 +94,10 @@ export namespace vve::v4 {
 
       /// @brief Adds one directed edge.
       void addEdge(Handle from, Handle to) { edges.emplace(from, to); }
+
       /// @brief Returns all outgoing edges for a node handle.
       [[nodiscard]] auto childRange(Handle node) const { return edges.equal_range(node); }
+
       /// @brief Returns nodes in dependency order, or cycle_detected when the graph is cyclic.
       [[nodiscard]] std::expected<Vector<Handle>, Error> topologicalOrder(const Vector<Handle> &nodes) const {
          std::map<Handle, std::uint32_t> incoming{};
@@ -125,6 +134,7 @@ export namespace vve::v4 {
          if (ordered.size() != incoming.size()) { return std::unexpected(Error::cycle_detected); }
          return ordered;
       }
+
    };
 
    /// @brief Scene graph node descriptor stored by handle in ObjectCatalog.
@@ -222,8 +232,10 @@ export namespace vve::v4 {
 
       /// @brief Returns true when the map contains the handle.
       [[nodiscard]] bool contains(Handle handle) const { return descriptors_.contains(handle); }
+
       /// @brief Returns descriptor count.
       [[nodiscard]] std::size_t size() const { return descriptors_.size(); }
+
       /// @brief Exposes read-only descriptor storage for tests and iteration.
       [[nodiscard]] const std::map<Handle, TDescriptor> &all() const { return descriptors_; }
 

@@ -91,26 +91,37 @@ export namespace vve::v4 {
 
       /// @brief Returns the major engine version.
       [[nodiscard]] std::uint32_t versionMajor() const { return 4; }
+
       /// @brief Returns the major engine version through a v3-shaped accessor.
       [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept { return 4; }
+
       /// @brief Returns the printable engine version name.
       [[nodiscard]] std::string_view versionName() const { return "v4"; }
+
       /// @brief Returns the example-facing world facade.
       [[nodiscard]] World &world() { return world_; }
+
       /// @brief Returns the example-facing world facade.
       [[nodiscard]] const World &world() const { return world_; }
+
       /// @brief Returns the asset system.
       [[nodiscard]] AssetSystem &assets() { return assets_; }
+
       /// @brief Returns the resource system.
       [[nodiscard]] ResourceSystem &resources() { return resources_; }
+
       /// @brief Returns the task graph.
       [[nodiscard]] TaskGraph &tasks() { return tasks_; }
+
       /// @brief Returns the render graph.
       [[nodiscard]] RenderGraph &renderGraph() { return render_graph_; }
+
       /// @brief Returns the shader system.
       [[nodiscard]] ShaderSystem &shaders() { return shaders_; }
+
       /// @brief Returns the GUI system.
       [[nodiscard]] GuiSystem &gui() { return gui_; }
+
       /// @brief Returns the runtime ECS.
       [[nodiscard]] ECS &ecs() { return world_.ecs(); }
 
@@ -180,12 +191,16 @@ export namespace vve::v4 {
 
       /// @brief Applies the application-name typed option.
       void applyOption(ApplicationName option) { application_name_ = std::move(option); }
+
       /// @brief Applies the frame-cap typed option.
       void applyOption(MaxFrames option) { max_frames_ = option; }
+
       /// @brief Applies the startup-window typed option.
       void applyOption(Windows option) { windows_ = std::move(option); }
+
       /// @brief Applies the user-system typed option.
       void applyOption(UserSystems<TSystems...> option) { systems_.emplace(std::move(option.value)); }
+
       /// @brief Ignores unknown option types so examples can evolve one option at a time.
       template <typename TOption> void applyOption(TOption &&) {}
 

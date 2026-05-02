@@ -26,6 +26,7 @@ export namespace vve::v4 {
 
       /// @brief Finds a widget by handle, or returns null.
       [[nodiscard]] const GuiWidget *find(Handle handle) const { return widgets_.find(handle); }
+
       /// @brief Returns widget count.
       [[nodiscard]] std::size_t size() const { return widgets_.size(); }
 

@@ -63,14 +63,17 @@ export namespace vve::v4 {
 
       /// @brief Returns true when this handle is not the invalid zero value.
       [[nodiscard]] constexpr bool valid() const noexcept { return value != 0; }
+
       /// @brief Extracts the object category from the high 32 bits.
       [[nodiscard]] constexpr ObjectKind kind() const noexcept {
          return static_cast<ObjectKind>(static_cast<std::uint32_t>(value >> 32U));
       }
+
       /// @brief Extracts the zero-based object index from the low 32 bits.
       [[nodiscard]] constexpr std::uint32_t index() const noexcept {
          return static_cast<std::uint32_t>(value & 0xFFFFFFFFULL) - 1U;
       }
+
       [[nodiscard]] friend constexpr bool operator==(Handle, Handle) noexcept = default;
       [[nodiscard]] friend constexpr auto operator<=>(Handle, Handle) noexcept = default;
    };
@@ -105,6 +108,7 @@ export namespace vve::v4 {
       template <typename T> struct Pool final : PoolBase {
          std::map<Handle, T> data{}; ///< Components keyed by owning entity handle.
          void erase(Handle entity) override { data.erase(entity); }
+
       };
 
    public:

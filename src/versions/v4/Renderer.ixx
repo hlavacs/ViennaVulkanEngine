@@ -24,6 +24,7 @@ export namespace vve::v4 {
                                    .id = "forward",
                                    .shadow_maps = true};
       }
+
    };
 
 } // namespace vve::v4

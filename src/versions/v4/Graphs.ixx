@@ -24,10 +24,13 @@ export namespace vve::v4 {
    public:
       /// @brief Adds a task node.
       [[nodiscard]] std::expected<void, Error> add(TaskNode node) { return tasks_.add(std::move(node)); }
+
       /// @brief Adds one directed task edge.
       void addEdge(Handle from, Handle to) { graph_.addEdge(from, to); }
+
       /// @brief Finds a task by handle, or returns null.
       [[nodiscard]] const TaskNode *find(Handle handle) const { return tasks_.find(handle); }
+
       /// @brief Returns tasks in dependency order and preserves isolated tasks.
       [[nodiscard]] std::expected<Vector<Handle>, Error> topologicalOrder() const {
          Vector<Handle> nodes{};
@@ -35,8 +38,10 @@ export namespace vve::v4 {
          for (const auto &[handle, _] : tasks_.all()) { nodes.push_back(handle); }
          return graph_.topologicalOrder(nodes);
       }
+
       /// @brief Returns task graph topology.
       [[nodiscard]] const Graph &graph() const { return graph_; }
+
       /// @brief Returns task count.
       [[nodiscard]] std::size_t size() const { return tasks_.size(); }
 
@@ -50,10 +55,13 @@ export namespace vve::v4 {
    public:
       /// @brief Adds a render pass node.
       [[nodiscard]] std::expected<void, Error> add(RenderPassNode pass) { return passes_.add(std::move(pass)); }
+
       /// @brief Adds one directed render-pass edge.
       void addEdge(Handle from, Handle to) { graph_.addEdge(from, to); }
+
       /// @brief Finds a render pass by handle, or returns null.
       [[nodiscard]] const RenderPassNode *find(Handle handle) const { return passes_.find(handle); }
+
       /// @brief Returns render passes in dependency order and preserves isolated passes.
       [[nodiscard]] std::expected<Vector<Handle>, Error> topologicalOrder() const {
          Vector<Handle> nodes{};
@@ -61,8 +69,10 @@ export namespace vve::v4 {
          for (const auto &[handle, _] : passes_.all()) { nodes.push_back(handle); }
          return graph_.topologicalOrder(nodes);
       }
+
       /// @brief Returns render graph topology.
       [[nodiscard]] const Graph &graph() const { return graph_; }
+
       /// @brief Returns render pass count.
       [[nodiscard]] std::size_t size() const { return passes_.size(); }
 

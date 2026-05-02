@@ -38,6 +38,7 @@ export namespace vve::v4 {
 
       /// @brief Finds a resource by handle, or returns null.
       [[nodiscard]] const ResourceDescriptor *find(Handle handle) const { return resources_.find(handle); }
+
       /// @brief Returns the number of registered resources.
       [[nodiscard]] std::size_t size() const { return resources_.size(); }
 
