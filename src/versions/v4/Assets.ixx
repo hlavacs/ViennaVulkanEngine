@@ -125,9 +125,7 @@ namespace vve::v4 {
       /// @brief Resolves material texture references relative to the imported scene file.
       [[nodiscard]] std::filesystem::path texturePath(const aiString &path, const std::filesystem::path &scene_dir) {
          const auto raw = std::filesystem::path(path.C_Str());
-         if (raw.empty() || raw.is_absolute() || raw.string().starts_with('*')) {
-            return raw;
-         }
+         if (raw.empty() || raw.is_absolute() || raw.string().starts_with('*')) { return raw; }
          return normalizePath(scene_dir / raw);
       }
 
@@ -138,9 +136,7 @@ namespace vve::v4 {
                                                                std::map<std::string, Handle> &textures,
                                                                Vector<Handle> &scene_textures) {
          const auto key = source.string();
-         if (const auto existing = textures.find(key); existing != textures.end()) {
-            return existing->second;
-         }
+         if (const auto existing = textures.find(key); existing != textures.end()) { return existing->second; }
 
          auto texture = TextureDescriptor{.handle = assets.next(ObjectKind::texture),
                                           .name = source.filename().string(),
@@ -153,9 +149,7 @@ namespace vve::v4 {
             }
          }
 
-         if (auto added = assets.catalog().textures.add(texture); !added) {
-            return std::unexpected(added.error());
-         }
+         if (auto added = assets.catalog().textures.add(texture); !added) { return std::unexpected(added.error()); }
          textures.emplace(key, texture.handle);
          scene_textures.push_back(texture.handle);
          return texture.handle;
@@ -170,9 +164,7 @@ namespace vve::v4 {
          for (unsigned material_index = 0; material_index < scene.mNumMaterials; ++material_index) {
             const auto *source = scene.mMaterials[material_index];
             aiString name{};
-            if (source != nullptr) {
-               source->Get(AI_MATKEY_NAME, name);
-            }
+            if (source != nullptr) { source->Get(AI_MATKEY_NAME, name); }
 
             auto material = MaterialDescriptor{
                .handle = assets.next(ObjectKind::material),
@@ -182,14 +174,10 @@ namespace vve::v4 {
                for (const auto &[type, semantic] : texture_semantics) {
                   for (unsigned slot = 0; slot < source->GetTextureCount(type); ++slot) {
                      aiString path{};
-                     if (source->GetTexture(type, slot, &path) != AI_SUCCESS) {
-                        continue;
-                     }
+                     if (source->GetTexture(type, slot, &path) != AI_SUCCESS) { continue; }
                      const auto texture = importTexture(assets, scene, texturePath(path, scene_dir), textures,
                                                         imported.textures);
-                     if (!texture) {
-                        return std::unexpected(texture.error());
-                     }
+                     if (!texture) { return std::unexpected(texture.error()); }
                      material.textures.push_back(TextureBinding{.texture = *texture, .semantic = semantic});
                   }
                }
@@ -210,9 +198,7 @@ namespace vve::v4 {
          Vector<Handle> meshes(scene.mNumMeshes);
          for (unsigned mesh_index = 0; mesh_index < scene.mNumMeshes; ++mesh_index) {
             const auto *source = scene.mMeshes[mesh_index];
-            if (source == nullptr) {
-               continue;
-            }
+            if (source == nullptr) { continue; }
 
             Bounds bounds{};
             if (source->mNumVertices > 0 && source->mVertices != nullptr) {
@@ -243,9 +229,7 @@ namespace vve::v4 {
                                        .index_count = index_count,
                                        .material = material,
                                        .bounds = bounds};
-            if (auto added = assets.catalog().meshes.add(mesh); !added) {
-               return std::unexpected(added.error());
-            }
+            if (auto added = assets.catalog().meshes.add(mesh); !added) { return std::unexpected(added.error()); }
             meshes[mesh_index] = mesh.handle;
          }
          return meshes;
@@ -263,9 +247,7 @@ namespace vve::v4 {
                                     .transform = toTransform(source.mTransformation)};
          for (unsigned mesh_slot = 0; mesh_slot < source.mNumMeshes; ++mesh_slot) {
             const auto mesh_index = source.mMeshes[mesh_slot];
-            if (mesh_index >= meshes.size() || !meshes[mesh_index].valid()) {
-               continue;
-            }
+            if (mesh_index >= meshes.size() || !meshes[mesh_index].valid()) { continue; }
             const auto *mesh = source_scene.mMeshes[mesh_index];
             const auto material = mesh != nullptr && mesh->mMaterialIndex < scene.materials.size()
                                     ? scene.materials[mesh->mMaterialIndex]
@@ -285,9 +267,7 @@ namespace vve::v4 {
          scene.nodes.push_back(handle);
 
          for (unsigned child = 0; child < source.mNumChildren; ++child) {
-            if (source.mChildren[child] == nullptr) {
-               continue;
-            }
+            if (source.mChildren[child] == nullptr) { continue; }
             if (auto imported = importNode(assets, source_scene, *source.mChildren[child], meshes, scene, handle);
                 !imported) {
                return std::unexpected(imported.error());
@@ -302,9 +282,7 @@ namespace vve::v4 {
          lights.reserve(scene.mNumLights);
          for (unsigned light_index = 0; light_index < scene.mNumLights; ++light_index) {
             const auto *source = scene.mLights[light_index];
-            if (source == nullptr) {
-               continue;
-            }
+            if (source == nullptr) { continue; }
             const auto color = visibleColor(*source);
             const auto intensity = std::max({std::abs(color.x), std::abs(color.y), std::abs(color.z), one()});
             auto light = LightDescriptor{
@@ -315,9 +293,7 @@ namespace vve::v4 {
                .direction = Direction{toVec3(source->mDirection)},
                .color = color,
                .intensity = intensity};
-            if (auto added = assets.catalog().lights.add(light); !added) {
-               return std::unexpected(added.error());
-            }
+            if (auto added = assets.catalog().lights.add(light); !added) { return std::unexpected(added.error()); }
             lights.push_back(light.handle);
          }
          return lights;
@@ -329,9 +305,7 @@ namespace vve::v4 {
          cameras.reserve(scene.mNumCameras);
          for (unsigned camera_index = 0; camera_index < scene.mNumCameras; ++camera_index) {
             const auto *source = scene.mCameras[camera_index];
-            if (source == nullptr) {
-               continue;
-            }
+            if (source == nullptr) { continue; }
             const auto aspect = std::max(static_cast<Scalar>(source->mAspect), one());
             const auto horizontal = std::max(static_cast<Scalar>(source->mHorizontalFOV), Scalar{0.001F});
             const auto vertical = Scalar{2} * std::atan(std::tan(horizontal * Scalar{0.5F}) / aspect);
@@ -345,9 +319,7 @@ namespace vve::v4 {
                                                                   Scalar{0.001F}),
                                            .far_plane = std::max(static_cast<Scalar>(source->mClipPlaneFar),
                                                                  Scalar{1})};
-            if (auto added = assets.catalog().cameras.add(camera); !added) {
-               return std::unexpected(added.error());
-            }
+            if (auto added = assets.catalog().cameras.add(camera); !added) { return std::unexpected(added.error()); }
             cameras.push_back(camera.handle);
          }
          return cameras;
@@ -359,21 +331,13 @@ namespace vve::v4 {
                                                              const std::filesystem::path &path) {
          const auto scene_dir = path.parent_path();
          const auto material_handles = importMaterials(assets, source, scene_dir);
-         if (!material_handles) {
-            return std::unexpected(material_handles.error());
-         }
+         if (!material_handles) { return std::unexpected(material_handles.error()); }
          const auto mesh_handles = importMeshes(assets, source, material_handles->materials);
-         if (!mesh_handles) {
-            return std::unexpected(mesh_handles.error());
-         }
+         if (!mesh_handles) { return std::unexpected(mesh_handles.error()); }
          const auto light_handles = importLights(assets, source);
-         if (!light_handles) {
-            return std::unexpected(light_handles.error());
-         }
+         if (!light_handles) { return std::unexpected(light_handles.error()); }
          const auto camera_handles = importCameras(assets, source);
-         if (!camera_handles) {
-            return std::unexpected(camera_handles.error());
-         }
+         if (!camera_handles) { return std::unexpected(camera_handles.error()); }
 
          auto scene = SceneDescriptor{.handle = assets.next(ObjectKind::scene),
                                       .name = path.filename().string(),
@@ -406,25 +370,19 @@ namespace vve::v4 {
    std::expected<Handle, Error> AssetSystem::addScene(std::string name) {
       const auto handle = next(ObjectKind::scene);
       auto scene = SceneDescriptor{.handle = handle, .name = std::move(name)};
-      if (auto added = catalog_.scenes.add(std::move(scene)); !added) {
-         return std::unexpected(added.error());
-      }
+      if (auto added = catalog_.scenes.add(std::move(scene)); !added) { return std::unexpected(added.error()); }
       return handle;
    }
 
    std::expected<Handle, Error> AssetSystem::loadScene(const std::filesystem::path &source) {
-      if (source.empty()) {
-         return std::unexpected(Error::invalid_argument);
-      }
+      if (source.empty()) { return std::unexpected(Error::invalid_argument); }
       const auto path = normalizePath(source);
       Assimp::Importer importer{};
       constexpr auto flags = aiProcess_Triangulate | aiProcess_JoinIdenticalVertices |
                              aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace |
                              aiProcess_ImproveCacheLocality;
       const aiScene *scene = importer.ReadFile(path.string(), flags);
-      if (scene == nullptr || scene->mRootNode == nullptr) {
-         return std::unexpected(Error::asset_import_failed);
-      }
+      if (scene == nullptr || scene->mRootNode == nullptr) { return std::unexpected(Error::asset_import_failed); }
       return importScene(*this, *scene, path);
    }
 

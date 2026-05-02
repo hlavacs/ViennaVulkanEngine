@@ -62,13 +62,9 @@ namespace vve::v4 {
       /// @brief Destroys SDL windows and tears down video if this object initialized it.
       ~Impl() {
          for (auto &record : records) {
-            if (record.window != nullptr) {
-               SDL_DestroyWindow(record.window);
-            }
+            if (record.window != nullptr) { SDL_DestroyWindow(record.window); }
          }
-         if (video_initialized) {
-            SDL_QuitSubSystem(SDL_INIT_VIDEO);
-         }
+         if (video_initialized) { SDL_QuitSubSystem(SDL_INIT_VIDEO); }
       }
 
       /// @brief Finds a mutable window record by SDL window id.
@@ -85,9 +81,7 @@ namespace vve::v4 {
 
       /// @brief Marks every window as closing after SDL emits a process-wide quit event.
       void closeAll() {
-         for (auto &record : records) {
-            record.info.should_close = true;
-         }
+         for (auto &record : records) { record.info.should_close = true; }
       }
 
       bool video_initialized{false};                 ///< True after SDL video init succeeds.
@@ -107,25 +101,17 @@ namespace vve::v4 {
 
    std::expected<void, Error> WindowSystem::init(const Windows &windows) {
       SDL_SetMainReady();
-      if (SDL_InitSubSystem(SDL_INIT_VIDEO) == false) {
-         return std::unexpected(Error::platform_error);
-      }
+      if (SDL_InitSubSystem(SDL_INIT_VIDEO) == false) { return std::unexpected(Error::platform_error); }
       impl_->video_initialized = true;
 
       for (const auto &desc : windows.value) {
          SDL_WindowFlags flags = 0;
-         if (desc.resizable) {
-            flags |= SDL_WINDOW_RESIZABLE;
-         }
-         if (!desc.visible) {
-            flags |= SDL_WINDOW_HIDDEN;
-         }
+         if (desc.resizable) { flags |= SDL_WINDOW_RESIZABLE; }
+         if (!desc.visible) { flags |= SDL_WINDOW_HIDDEN; }
 
          SDL_Window *const window = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.width),
                                                      static_cast<int>(desc.height), flags);
-         if (window == nullptr) {
-            return std::unexpected(Error::platform_error);
-         }
+         if (window == nullptr) { return std::unexpected(Error::platform_error); }
 
          if (desc.x.has_value() || desc.y.has_value()) {
             int x = 0;
@@ -165,9 +151,7 @@ namespace vve::v4 {
             impl_->closeAll();
             break;
          case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
-            if (auto *record = impl_->find(event.window.windowID)) {
-               record->info.should_close = true;
-            }
+            if (auto *record = impl_->find(event.window.windowID)) { record->info.should_close = true; }
             break;
          case SDL_EVENT_WINDOW_RESIZED:
             if (auto *record = impl_->find(event.window.windowID)) {
@@ -176,24 +160,16 @@ namespace vve::v4 {
             }
             break;
          case SDL_EVENT_WINDOW_FOCUS_GAINED:
-            if (auto *record = impl_->find(event.window.windowID)) {
-               record->info.focused = true;
-            }
+            if (auto *record = impl_->find(event.window.windowID)) { record->info.focused = true; }
             break;
          case SDL_EVENT_WINDOW_FOCUS_LOST:
-            if (auto *record = impl_->find(event.window.windowID)) {
-               record->info.focused = false;
-            }
+            if (auto *record = impl_->find(event.window.windowID)) { record->info.focused = false; }
             break;
          case SDL_EVENT_WINDOW_MINIMIZED:
-            if (auto *record = impl_->find(event.window.windowID)) {
-               record->info.minimized = true;
-            }
+            if (auto *record = impl_->find(event.window.windowID)) { record->info.minimized = true; }
             break;
          case SDL_EVENT_WINDOW_RESTORED:
-            if (auto *record = impl_->find(event.window.windowID)) {
-               record->info.minimized = false;
-            }
+            if (auto *record = impl_->find(event.window.windowID)) { record->info.minimized = false; }
             break;
          case SDL_EVENT_KEY_DOWN:
             if (event.key.repeat) {
@@ -227,9 +203,7 @@ namespace vve::v4 {
    Vector<WindowInfo> WindowSystem::snapshot() const {
       Vector<WindowInfo> result{};
       result.reserve(impl_->records.size());
-      for (const auto &record : impl_->records) {
-         result.push_back(record.info);
-      }
+      for (const auto &record : impl_->records) { result.push_back(record.info); }
       return result;
    }
 

@@ -32,9 +32,7 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<Vector<Handle>, Error> topologicalOrder() const {
          Vector<Handle> nodes{};
          nodes.reserve(tasks_.size());
-         for (const auto &[handle, _] : tasks_.all()) {
-            nodes.push_back(handle);
-         }
+         for (const auto &[handle, _] : tasks_.all()) { nodes.push_back(handle); }
          return graph_.topologicalOrder(nodes);
       }
       /// @brief Returns task graph topology.
@@ -60,9 +58,7 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<Vector<Handle>, Error> topologicalOrder() const {
          Vector<Handle> nodes{};
          nodes.reserve(passes_.size());
-         for (const auto &[handle, _] : passes_.all()) {
-            nodes.push_back(handle);
-         }
+         for (const auto &[handle, _] : passes_.all()) { nodes.push_back(handle); }
          return graph_.topologicalOrder(nodes);
       }
       /// @brief Returns render graph topology.

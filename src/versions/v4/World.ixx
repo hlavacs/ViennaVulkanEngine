@@ -75,9 +75,7 @@ export namespace vve::v4 {
 
       /// @brief Records a key-down edge and held state.
       void pressKey(std::int32_t keycode) {
-         if (!keys_down_.contains(keycode)) {
-            keys_pressed_.insert(keycode);
-         }
+         if (!keys_down_.contains(keycode)) { keys_pressed_.insert(keycode); }
          keys_down_.insert(keycode);
       }
 
@@ -209,9 +207,7 @@ export namespace vve::v4 {
 
       /// @brief Stores the active camera handle; renderers can interpret it later.
       [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera) {
-         if (!ecs_.exists(camera)) {
-            return std::unexpected(Error::invalid_handle);
-         }
+         if (!ecs_.exists(camera)) { return std::unexpected(Error::invalid_handle); }
          active_camera_ = camera;
          return {};
       }
@@ -231,9 +227,7 @@ export namespace vve::v4 {
 
       /// @brief Imports a scene through the runtime loader and returns the scene handle.
       [[nodiscard]] std::expected<Handle, Error> loadScene(const std::filesystem::path &path) {
-         if (!scene_loader_) {
-            return std::unexpected(Error::missing_object);
-         }
+         if (!scene_loader_) { return std::unexpected(Error::missing_object); }
          return scene_loader_(path);
       }
 

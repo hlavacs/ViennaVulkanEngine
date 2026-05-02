@@ -94,19 +94,13 @@ export namespace vve::v4 {
          std::map<Handle, std::uint32_t> incoming{};
          std::map<Handle, Vector<Handle>> outgoing{};
          for (const auto node : nodes) {
-            if (!node.valid()) {
-               return std::unexpected(Error::invalid_handle);
-            }
+            if (!node.valid()) { return std::unexpected(Error::invalid_handle); }
             incoming.try_emplace(node, 0);
          }
 
          for (const auto &[from, to] : edges) {
-            if (!from.valid() || !to.valid()) {
-               return std::unexpected(Error::invalid_handle);
-            }
-            if (!incoming.contains(from) || !incoming.contains(to)) {
-               return std::unexpected(Error::missing_object);
-            }
+            if (!from.valid() || !to.valid()) { return std::unexpected(Error::invalid_handle); }
+            if (!incoming.contains(from) || !incoming.contains(to)) { return std::unexpected(Error::missing_object); }
             outgoing[from].push_back(to);
             ++incoming[to];
          }
@@ -115,9 +109,7 @@ export namespace vve::v4 {
          Vector<Handle> ordered{};
          ordered.reserve(incoming.size());
          for (const auto &[node, count] : incoming) {
-            if (count == 0) {
-               ready.insert(node);
-            }
+            if (count == 0) { ready.insert(node); }
          }
 
          while (!ready.empty()) {
@@ -126,15 +118,11 @@ export namespace vve::v4 {
             ordered.push_back(node);
             for (const auto child : outgoing[node]) {
                auto &count = incoming[child];
-               if (--count == 0) {
-                  ready.insert(child);
-               }
+               if (--count == 0) { ready.insert(child); }
             }
          }
 
-         if (ordered.size() != incoming.size()) {
-            return std::unexpected(Error::cycle_detected);
-         }
+         if (ordered.size() != incoming.size()) { return std::unexpected(Error::cycle_detected); }
          return ordered;
       }
    };
@@ -214,13 +202,9 @@ export namespace vve::v4 {
    public:
       /// @brief Inserts a descriptor; descriptors must expose a valid `handle` member.
       [[nodiscard]] std::expected<void, Error> add(TDescriptor descriptor) {
-         if (!descriptor.handle.valid()) {
-            return std::unexpected(Error::invalid_handle);
-         }
+         if (!descriptor.handle.valid()) { return std::unexpected(Error::invalid_handle); }
          const auto [_, inserted] = descriptors_.emplace(descriptor.handle, std::move(descriptor));
-         if (!inserted) {
-            return std::unexpected(Error::duplicate_object);
-         }
+         if (!inserted) { return std::unexpected(Error::duplicate_object); }
          return {};
       }
 

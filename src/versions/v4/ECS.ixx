@@ -120,52 +120,36 @@ export namespace vve::v4 {
 
       /// @brief Erases a live entity and all of its attached components.
       [[nodiscard]] std::expected<void, Error> erase(Entity entity) {
-         if (!alive_.erase(entity)) {
-            return std::unexpected(Error::invalid_handle);
-         }
-         for (auto &[_, pool] : pools_) {
-            pool->erase(entity);
-         }
+         if (!alive_.erase(entity)) { return std::unexpected(Error::invalid_handle); }
+         for (auto &[_, pool] : pools_) { pool->erase(entity); }
          return {};
       }
 
       /// @brief Adds a component; fails if the entity is invalid or already has the component.
       template <typename T>
       [[nodiscard]] std::expected<void, Error> add(Entity entity, T component) {
-         if (!exists(entity)) {
-            return std::unexpected(Error::invalid_handle);
-         }
+         if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
          auto &data = pool<T>().data;
          const auto [_, inserted] = data.emplace(entity, std::move(component));
-         if (!inserted) {
-            return std::unexpected(Error::duplicate_component);
-         }
+         if (!inserted) { return std::unexpected(Error::duplicate_component); }
          return {};
       }
 
       /// @brief Reads a required component by value.
       template <typename T>
       [[nodiscard]] std::expected<T, Error> get(Entity entity) const {
-         if (!exists(entity)) {
-            return std::unexpected(Error::invalid_handle);
-         }
+         if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
          const auto *typed_pool = findPool<T>();
-         if (typed_pool == nullptr) {
-            return std::unexpected(Error::missing_component);
-         }
+         if (typed_pool == nullptr) { return std::unexpected(Error::missing_component); }
          const auto it = typed_pool->data.find(entity);
-         if (it == typed_pool->data.end()) {
-            return std::unexpected(Error::missing_component);
-         }
+         if (it == typed_pool->data.end()) { return std::unexpected(Error::missing_component); }
          return it->second;
       }
 
       /// @brief Reads an optional component; invalid entities still produce an error.
       template <typename T>
       [[nodiscard]] std::expected<std::optional<T>, Error> tryGet(Entity entity) const {
-         if (!exists(entity)) {
-            return std::unexpected(Error::invalid_handle);
-         }
+         if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
          const auto *typed_pool = findPool<T>();
          if (typed_pool == nullptr) {
             return std::optional<T>{};
@@ -177,9 +161,7 @@ export namespace vve::v4 {
       /// @brief Inserts or replaces a component on a live entity.
       template <typename T>
       [[nodiscard]] std::expected<void, Error> put(Entity entity, T component) {
-         if (!exists(entity)) {
-            return std::unexpected(Error::invalid_handle);
-         }
+         if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
          pool<T>().data.insert_or_assign(entity, std::move(component));
          return {};
       }
@@ -187,9 +169,7 @@ export namespace vve::v4 {
       /// @brief Tests whether a live entity owns a component type.
       template <typename T>
       [[nodiscard]] std::expected<bool, Error> has(Entity entity) const {
-         if (!exists(entity)) {
-            return std::unexpected(Error::invalid_handle);
-         }
+         if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
          const auto *typed_pool = findPool<T>();
          return typed_pool != nullptr && typed_pool->data.contains(entity);
       }
@@ -197,12 +177,8 @@ export namespace vve::v4 {
       /// @brief Removes a component if present; missing components are ignored.
       template <typename T>
       [[nodiscard]] std::expected<void, Error> remove(Entity entity) {
-         if (!exists(entity)) {
-            return std::unexpected(Error::invalid_handle);
-         }
-         if (auto *typed_pool = findPool<T>()) {
-            typed_pool->data.erase(entity);
-         }
+         if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
+         if (auto *typed_pool = findPool<T>()) { typed_pool->data.erase(entity); }
          return {};
       }
 
@@ -211,9 +187,7 @@ export namespace vve::v4 {
       [[nodiscard]] Vector<Entity> view() const {
          Vector<Entity> result{};
          for (const auto entity : alive_) {
-            if ((contains<T>(entity) && ...)) {
-               result.push_back(entity);
-            }
+            if ((contains<T>(entity) && ...)) { result.push_back(entity); }
          }
          return result;
       }
@@ -223,9 +197,7 @@ export namespace vve::v4 {
       template <typename T> [[nodiscard]] Pool<T> &pool() {
          const std::type_index key{typeid(T)};
          auto &slot = pools_[key];
-         if (!slot) {
-            slot = std::make_unique<Pool<T>>();
-         }
+         if (!slot) { slot = std::make_unique<Pool<T>>(); }
          return static_cast<Pool<T> &>(*slot);
       }
 

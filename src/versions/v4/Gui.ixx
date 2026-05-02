@@ -20,9 +20,7 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<Handle, Error> label(std::string text) {
          const auto handle = makeHandle(ObjectKind::gui, static_cast<std::uint32_t>(widgets_.size()));
          auto added = widgets_.add(GuiWidget{.handle = handle, .label = std::move(text)});
-         if (!added) {
-            return std::unexpected(added.error());
-         }
+         if (!added) { return std::unexpected(added.error()); }
          return handle;
       }
 

@@ -119,9 +119,7 @@ export namespace vve::v4 {
          if (initialized_) {
             return {};
          }
-         if (const auto result = window_system_.init(windows_); !result) {
-            return result;
-         }
+         if (const auto result = window_system_.init(windows_); !result) { return result; }
          world_.windows() = window_system_.snapshot();
          world_.setSceneLoader([this](const std::filesystem::path &path) {
             return assets_.loadScene(path);
@@ -137,15 +135,11 @@ export namespace vve::v4 {
       /// @brief Runs the engine until a window closes, a system fails, or the frame cap is reached.
       [[nodiscard]] std::expected<void, Error> run() {
          if (!initialized_) {
-            if (const auto result = init(); !result) {
-               return result;
-            }
+            if (const auto result = init(); !result) { return result; }
          }
          while (true) {
             const auto status = step();
-            if (!status) {
-               return std::unexpected(status.error());
-            }
+            if (!status) { return std::unexpected(status.error()); }
             if (*status == FrameStatus::stopped) {
                return {};
             }
@@ -154,9 +148,7 @@ export namespace vve::v4 {
 
       /// @brief Polls input, updates World window state, and calls optional user-system update hooks.
       [[nodiscard]] std::expected<FrameStatus, Error> step() {
-         if (!initialized_) {
-            return std::unexpected(Error::missing_object);
-         }
+         if (!initialized_) { return std::unexpected(Error::missing_object); }
          if (const auto result = window_system_.poll(world_.input()); !result) {
             return std::unexpected(result.error());
          }
