@@ -75,6 +75,12 @@ export namespace vve::v4 {
       /// @brief Creates an engine with default options.
       Engine() { applyDefaults(); }
 
+      /// @brief Engines stay stationary because World stores references into this object.
+      Engine(const Engine &) = delete;
+      Engine(Engine &&) = delete;
+      Engine &operator=(const Engine &) = delete;
+      Engine &operator=(Engine &&) = delete;
+
       /// @brief Creates an engine from the compact compatibility config.
       explicit Engine(EngineConfig config) {
          applyOption(std::move(config));
@@ -123,7 +129,7 @@ export namespace vve::v4 {
       [[nodiscard]] GuiSystem &gui() { return gui_; }
 
       /// @brief Returns the runtime ECS.
-      [[nodiscard]] ECS &ecs() { return world_.ecs(); }
+      [[nodiscard]] ECS &ecs() { return ecs_; }
 
       /// @brief Creates SDL windows and calls optional user-system init(World&) hooks.
       [[nodiscard]] std::expected<void, Error> init() {
@@ -268,7 +274,8 @@ export namespace vve::v4 {
       ApplicationName application_name_{};      ///< Name used for default window titles.
       MaxFrames max_frames_{};                 ///< Optional frame cap.
       Windows windows_{};                      ///< Startup window descriptors.
-      World world_{};                          ///< Example-facing runtime state.
+      ECS ecs_{};                              ///< Runtime entity/component storage owned by the engine.
+      World world_{ecs_};                      ///< Example-facing facade over runtime state.
       WindowSystem window_system_{};           ///< SDL platform window owner.
       AssetSystem assets_{};                   ///< Asset and object catalog facade.
       ResourceSystem resources_{};             ///< Resource descriptor facade.

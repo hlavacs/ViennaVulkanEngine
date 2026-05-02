@@ -139,6 +139,9 @@ export namespace vve::v4 {
    /// @brief User-visible state facade used by examples and systems.
    class World {
    public:
+      /// @brief Creates a facade over ECS storage owned by a higher-level runtime.
+      explicit World(ECS &ecs) noexcept : ecs_(ecs) {}
+
       /// @brief Returns the runtime ECS.
       [[nodiscard]] ECS &ecs() { return ecs_; }
 
@@ -242,7 +245,7 @@ export namespace vve::v4 {
       }
 
    private:
-      ECS ecs_{};                         ///< Runtime entity/component storage.
+      ECS &ecs_;                          ///< Non-owning runtime entity/component storage.
       InputState input_{};                ///< Current input snapshot.
       Vector<WindowInfo> windows_{};      ///< Current platform windows.
       std::optional<Entity> active_camera_{}; ///< Optional camera selected by the application.

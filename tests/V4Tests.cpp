@@ -250,7 +250,11 @@ struct CountingSystem {
       return 63;
    }
 
-   World world{};
+   ECS ecs{};
+   World world{ecs};
+   if (std::addressof(world.ecs()) != std::addressof(ecs)) {
+      return 67;
+   }
    world.windows().push_back(WindowInfo{.handle = window, .id = "main", .title = "test"});
    const auto entity = world.spawn(Transform{}, Velocity{2.0F});
    if (!entity || world.findWindow("main") == nullptr) {
@@ -372,6 +376,9 @@ struct CountingSystem {
                                                            .last_frame = &last_frame}));
    if (engine.versionMajor() != 4 || engine.versionName() != std::string_view{"v4"}) {
       return 40;
+   }
+   if (std::addressof(engine.ecs()) != std::addressof(engine.world().ecs())) {
+      return 56;
    }
    if (!engine.init()) {
       return 41;
