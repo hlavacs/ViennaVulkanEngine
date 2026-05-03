@@ -19,7 +19,7 @@ import VEEngine.V4;
  */
 namespace {
 
-namespace ve = vve::v4;
+namespace ve = vve;
 
 [[nodiscard]] std::optional<std::filesystem::path>
 firstExistingPath(const std::vector<std::filesystem::path>& candidates) {

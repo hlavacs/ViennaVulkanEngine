@@ -14,7 +14,7 @@ import VEEngine.V4;
 
 namespace {
 
-namespace ve = vve::v4;
+namespace ve = vve;
 
 class PhysicsShellSystem final {
 public:

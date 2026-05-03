@@ -1,6 +1,7 @@
 export module VEEngine.V4:ECS;
 import std;
 export import :Vector;
+export import VEEngine;
 
 /// @file
 /// @brief Minimal handle-based ECS for the educational v4 engine skeleton.
@@ -38,114 +39,13 @@ export namespace vve::v4 {
       return it == names.end() ? std::string_view{"unknown"} : it->second;
    }
 
-   /// @brief Opaque 64-bit id prepared for counter handles and future slot-map handles.
-   struct Handle {
-      static constexpr std::uint32_t generation_bits{16};                 ///< Future slot-map generation bit count.
-      static constexpr std::uint32_t id_bits{64 - generation_bits - 1};    ///< Counter/id bit count.
-      static constexpr std::uint64_t counter_bit{1ULL << 63U};             ///< High bit marks counter handles.
-      static constexpr std::uint64_t id_mask{(1ULL << id_bits) - 1ULL};    ///< Low id/index bits.
-      static constexpr std::uint64_t generation_mask{~counter_bit & ~id_mask}; ///< Middle generation bits.
-
-      std::uint64_t value{0}; ///< Raw handle value; zero is invalid.
-
-      /// @brief Returns true when this handle is not the invalid zero value.
-      [[nodiscard]] constexpr bool valid() const noexcept { return value != 0; }
-
-      /// @brief Returns true when the handle stores an upward-counted id.
-      [[nodiscard]] constexpr bool isCounter() const noexcept { return (value & counter_bit) != 0; }
-
-      /// @brief Returns true when the handle is shaped as a future slot-map index.
-      [[nodiscard]] constexpr bool isSlotMapIndex() const noexcept { return valid() && !isCounter(); }
-
-      /// @brief Extracts the future slot-map generation counter.
-      [[nodiscard]] constexpr std::uint64_t generation() const noexcept { return (value & generation_mask) >> id_bits; }
-
-      /// @brief Extracts the low id bits used by both counter and slot-map handles.
-      [[nodiscard]] constexpr std::uint64_t id() const noexcept { return value & id_mask; }
-
-      /// @brief Names the id bits as a slot index for future slot-map users.
-      [[nodiscard]] constexpr std::uint64_t slotIndex() const noexcept { return id(); }
-
-      [[nodiscard]] friend constexpr bool operator==(Handle, Handle) noexcept = default;
-      [[nodiscard]] friend constexpr auto operator<=>(Handle, Handle) noexcept = default;
-   };
-
-   static_assert(sizeof(Handle) == sizeof(std::uint64_t));
-
-   /// @brief Type-safe handle wrapper; all categories share the same 64-bit storage but not the same C++ type.
-   template <typename TTag> struct TypedHandle {
-      Handle value{}; ///< Wrapped raw handle.
-
-      constexpr TypedHandle() noexcept = default;
-      /// @brief Wraps an existing raw handle explicitly.
-      explicit constexpr TypedHandle(Handle raw) noexcept : value(raw) {}
-
-      /// @brief Returns true when this handle is not the invalid zero value.
-      [[nodiscard]] constexpr bool valid() const noexcept { return value.valid(); }
-
-      /// @brief Returns true when the handle stores an upward-counted id.
-      [[nodiscard]] constexpr bool isCounter() const noexcept { return value.isCounter(); }
-
-      /// @brief Returns true when the handle is shaped as a future slot-map index.
-      [[nodiscard]] constexpr bool isSlotMapIndex() const noexcept { return value.isSlotMapIndex(); }
-
-      /// @brief Extracts the future slot-map generation counter.
-      [[nodiscard]] constexpr std::uint64_t generation() const noexcept { return value.generation(); }
-
-      /// @brief Extracts the low id bits used by both counter and slot-map handles.
-      [[nodiscard]] constexpr std::uint64_t id() const noexcept { return value.id(); }
-
-      /// @brief Names the id bits as a slot index for future slot-map users.
-      [[nodiscard]] constexpr std::uint64_t slotIndex() const noexcept { return value.slotIndex(); }
-
-      /// @brief Returns the wrapped raw handle for diagnostics or low-level APIs.
-      [[nodiscard]] constexpr Handle raw() const noexcept { return value; }
-
-      [[nodiscard]] friend constexpr bool operator==(TypedHandle, TypedHandle) noexcept = default;
-      [[nodiscard]] friend constexpr auto operator<=>(TypedHandle, TypedHandle) noexcept = default;
-   };
-
-   static_assert(sizeof(TypedHandle<struct SizeCheckTag>) == sizeof(std::uint64_t));
-
-   /// @brief Builds a future slot-map handle from slot index and generation.
-   [[nodiscard]] constexpr Handle makeSlotMapHandle(std::uint32_t slot_index, std::uint32_t generation) noexcept {
-      const auto generation_bits = (static_cast<std::uint64_t>(generation) << Handle::id_bits) &
-                                   Handle::generation_mask;
-      const auto index_bits = static_cast<std::uint64_t>(slot_index) & Handle::id_mask;
-      return Handle{generation_bits | index_bits};
-   }
-
-   /// @brief Builds an upward-counted non-slot-map handle from an explicit id.
-   [[nodiscard]] constexpr Handle makeCounterHandle(std::uint64_t id) noexcept {
-      return Handle{Handle::counter_bit | (id & Handle::id_mask)};
-   }
-
-   /// @brief Builds an upward-counted non-slot-map handle from the module-global counter.
-   [[nodiscard]] inline Handle makeCounterHandle() {
-      static std::atomic_uint64_t next_id{1};
-      return makeCounterHandle(next_id.fetch_add(1, std::memory_order_relaxed));
-   }
-
-   /// @brief Builds a typed future slot-map handle from slot index and generation.
-   template <typename THandle>
-   [[nodiscard]] constexpr THandle makeTypedSlotMapHandle(std::uint32_t slot_index,
-                                                          std::uint32_t generation) noexcept {
-      return THandle{makeSlotMapHandle(slot_index, generation)};
-   }
-
-   /// @brief Builds a typed upward-counted non-slot-map handle from an explicit id.
-   template <typename THandle>
-   [[nodiscard]] constexpr THandle makeTypedCounterHandle(std::uint64_t id) noexcept {
-      return THandle{makeCounterHandle(id)};
-   }
-
-   /// @brief Builds a typed upward-counted non-slot-map handle from the module-global counter.
-   template <typename THandle> [[nodiscard]] inline THandle makeTypedCounterHandle() {
-      return THandle{makeCounterHandle()};
-   }
-
-   struct EntityTag;     ///< Tag for ECS entity handles.
-   using Entity = TypedHandle<EntityTag>; ///< ECS entity id.
+   using Handle = ::vve::Handle;                    ///< Facade-level raw 64-bit handle.
+   template <typename TTag> using TypedHandle = ::vve::TypedHandle<TTag>; ///< Facade-level typed handle.
+   using Entity = ::vve::Entity;                    ///< Facade-level ECS entity id.
+   using ::vve::makeCounterHandle;                  ///< Facade-level counter-handle builder.
+   using ::vve::makeSlotMapHandle;                  ///< Facade-level slot-map handle builder.
+   using ::vve::makeTypedCounterHandle;             ///< Facade-level typed counter-handle builder.
+   using ::vve::makeTypedSlotMapHandle;             ///< Facade-level typed slot-map handle builder.
 
    /// @brief Forward declaration for the trait-configurable ECS.
    template <typename TTraits> class BasicECS;

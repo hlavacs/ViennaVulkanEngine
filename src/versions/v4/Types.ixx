@@ -55,35 +55,20 @@ export namespace vve::v4 {
    using Bounds         = ::vve::Bounds;         ///< Shared axis-aligned bounds type.
    using Camera         = ::vve::Camera;         ///< Shared camera geometry type.
 
-   struct SceneTag;      ///< Tag for scene handles.
-   struct NodeTag;       ///< Tag for scene-node handles.
-   struct MeshTag;       ///< Tag for mesh handles.
-   struct MaterialTag;   ///< Tag for material handles.
-   struct TextureTag;    ///< Tag for texture handles.
-   struct LightTag;      ///< Tag for light handles.
-   struct CameraTag;     ///< Tag for camera descriptor handles.
-   struct WindowTag;     ///< Tag for runtime window handles.
-   struct ResourceTag;   ///< Tag for resource handles.
-   struct ShaderTag;     ///< Tag for shader handles.
-   struct TaskTag;       ///< Tag for task handles.
-   struct RenderPassTag; ///< Tag for render-pass handles.
-   struct RendererTag;   ///< Tag for renderer descriptor handles.
-   struct GuiWidgetTag;  ///< Tag for GUI widget handles.
-
-   using SceneHandle      = TypedHandle<SceneTag>;      ///< Strong handle for scene descriptors.
-   using NodeHandle       = TypedHandle<NodeTag>;       ///< Strong handle for scene-node descriptors.
-   using MeshHandle       = TypedHandle<MeshTag>;       ///< Strong handle for mesh descriptors.
-   using MaterialHandle   = TypedHandle<MaterialTag>;   ///< Strong handle for material descriptors.
-   using TextureHandle    = TypedHandle<TextureTag>;    ///< Strong handle for texture descriptors.
-   using LightHandle      = TypedHandle<LightTag>;      ///< Strong handle for light descriptors.
-   using CameraHandle     = TypedHandle<CameraTag>;     ///< Strong handle for camera descriptors.
-   using WindowHandle     = TypedHandle<WindowTag>;     ///< Strong handle for runtime windows.
-   using ResourceHandle   = TypedHandle<ResourceTag>;   ///< Strong handle for resources.
-   using ShaderHandle     = TypedHandle<ShaderTag>;     ///< Strong handle for shader descriptors.
-   using TaskHandle       = TypedHandle<TaskTag>;       ///< Strong handle for task descriptors.
-   using RenderPassHandle = TypedHandle<RenderPassTag>; ///< Strong handle for render passes.
-   using RendererHandle   = TypedHandle<RendererTag>;   ///< Strong handle for renderer descriptors.
-   using GuiWidgetHandle  = TypedHandle<GuiWidgetTag>;  ///< Strong handle for GUI widgets.
+   using SceneHandle      = ::vve::SceneHandle;      ///< Facade-level scene descriptor handle.
+   using NodeHandle       = ::vve::NodeHandle;       ///< Facade-level scene-node descriptor handle.
+   using MeshHandle       = ::vve::MeshHandle;       ///< Facade-level mesh descriptor handle.
+   using MaterialHandle   = ::vve::MaterialHandle;   ///< Facade-level material descriptor handle.
+   using TextureHandle    = ::vve::TextureHandle;    ///< Facade-level texture descriptor handle.
+   using LightHandle      = ::vve::LightHandle;      ///< Facade-level light descriptor handle.
+   using CameraHandle     = ::vve::CameraHandle;     ///< Facade-level camera descriptor handle.
+   using WindowHandle     = ::vve::WindowHandle;     ///< Facade-level runtime window handle.
+   using ResourceHandle   = ::vve::ResourceHandle;   ///< Facade-level resource handle.
+   using ShaderHandle     = ::vve::ShaderHandle;     ///< Facade-level shader descriptor handle.
+   using TaskHandle       = ::vve::TaskHandle;       ///< Facade-level task descriptor handle.
+   using RenderPassHandle = ::vve::RenderPassHandle; ///< Facade-level render-pass descriptor handle.
+   using RendererHandle   = ::vve::RendererHandle;   ///< Facade-level renderer descriptor handle.
+   using GuiWidgetHandle  = ::vve::GuiWidgetHandle;  ///< Facade-level GUI widget handle.
 
    /// @brief Material texture slot meaning.
    enum class TextureSemantic {

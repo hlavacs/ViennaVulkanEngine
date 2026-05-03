@@ -523,6 +523,29 @@ struct CountingSystem {
    return 0;
 }
 
+[[nodiscard]] int testFacadeNames() {
+   using namespace vve;
+
+   static_assert(sizeof(SceneHandle) == sizeof(std::uint64_t));
+   static_assert(!std::is_same_v<MeshHandle, TextureHandle>);
+   static_assert(!std::is_convertible_v<MeshHandle, TextureHandle>);
+
+   ObjectCatalog catalog{};
+   const auto mesh = makeTypedCounterHandle<MeshHandle>(700);
+   if (!catalog.meshes.add(MeshDescriptor{.handle = mesh,
+                                          .name = ObjectName{.value = "facade-mesh"},
+                                          .vertex_count = VertexCount{.value = 1},
+                                          .index_count = IndexCount{.value = 0}})) {
+      return 80;
+   }
+
+   auto engine = makeEngine(ApplicationName{"facade-test"}, MaxFrames{});
+   if (engine.versionMajor() != 4 || catalog.meshes.find(mesh) == nullptr) {
+      return 81;
+   }
+   return 0;
+}
+
 } // namespace
 
 int main() {
@@ -548,6 +571,9 @@ int main() {
       return result;
    }
    if (const int result = testStubSystems(); result != 0) {
+      return result;
+   }
+   if (const int result = testFacadeNames(); result != 0) {
       return result;
    }
    return 0;
