@@ -21,7 +21,7 @@ export namespace vve::v4 {
    /// @brief Backward-compatible compact config; typed options are preferred for new examples.
    struct EngineConfig {
       std::string application_name{"v4"}; ///< Human-readable application name.
-      std::uint32_t max_frames{0};        ///< Zero means no frame limit.
+      FrameCount max_frames{};            ///< Zero means no frame limit.
    };
 
    /// @brief Heterogeneous user-system storage used by makeEngine().
@@ -175,14 +175,16 @@ export namespace vve::v4 {
          const std::chrono::duration<double> delta = now - last_frame_time_;
          last_frame_time_ = now;
 
-         const FrameContext frame{.frame_index = frame_, .delta_time = DeltaTime{.seconds = delta.count()}};
+         const FrameContext frame{.frame_index = FrameCount{.value = frame_},
+                                  .delta_time = DeltaTime{.seconds = delta.count()}};
          const WindowFrameData window_frame{.windows = world_.windows()};
          if (const auto result = updateSystems(frame, window_frame); !result) {
             return std::unexpected(result.error());
          }
 
          ++frame_;
-         if (window_system_.anyShouldClose() || (max_frames_.value > 0 && frame_ >= max_frames_.value)) {
+         if (window_system_.anyShouldClose() ||
+             (max_frames_.value.value > 0 && frame_ >= max_frames_.value.value)) {
             return FrameStatus::stopped;
          }
          return FrameStatus::running;

@@ -135,7 +135,7 @@ public:
         }
 
         std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value
-                  << " name=" << scene->name << '\n';
+                  << " name=" << scene->name.value << '\n';
         printSceneInventory(*catalog, *scene);
         std::cout << '[' << name() << "] v4 resource upload and rendering are not implemented yet\n";
         printWindowInventory(world);
@@ -146,7 +146,7 @@ public:
         ve::World&,
         const ve::FrameContext& frame_context,
         const ve::WindowFrameData&) {
-        if (!frame_loop_logged_ && frame_context.frame_index > 0) {
+        if (!frame_loop_logged_ && frame_context.frame_index.value > 0) {
             std::cout << '[' << name() << "] frame loop active; close the window to exit\n";
             frame_loop_logged_ = true;
         }
@@ -160,7 +160,7 @@ private:
         for (const auto& window : world.windows()) {
             printed_any = true;
             std::cout << ' ' << window.id << '=' << window.extent.width << 'x' << window.extent.height
-                      << '[' << window.renderer_id << ']';
+                      << '[' << window.renderer_id.value << ']';
         }
         if (!printed_any) {
             std::cout << " <none>";
@@ -188,9 +188,9 @@ private:
             if (mesh == nullptr) {
                 continue;
             }
-            std::cout << "  mesh " << mesh->handle.value << " name=" << mesh->name
-                      << " vertices=" << mesh->vertex_count
-                      << " indices=" << mesh->index_count
+            std::cout << "  mesh " << mesh->handle.value << " name=" << mesh->name.value
+                      << " vertices=" << mesh->vertex_count.value
+                      << " indices=" << mesh->index_count.value
                       << " material=" << mesh->material.value << '\n';
         }
     }
@@ -202,7 +202,7 @@ private:
             if (texture == nullptr) {
                 continue;
             }
-            std::cout << "  texture " << texture->handle.value << " name=" << texture->name
+            std::cout << "  texture " << texture->handle.value << " name=" << texture->name.value
                       << " source=" << texture->source.string()
                       << " size=" << texture->extent.width << 'x' << texture->extent.height << '\n';
         }
@@ -215,7 +215,7 @@ private:
             if (light == nullptr) {
                 continue;
             }
-            std::cout << "  light " << light->handle.value << " name=" << light->name
+            std::cout << "  light " << light->handle.value << " name=" << light->name.value
                       << " intensity=" << light->intensity.value << '\n';
         }
     }
@@ -227,7 +227,7 @@ private:
             if (camera == nullptr) {
                 continue;
             }
-            std::cout << "  camera " << camera->handle.value << " name=" << camera->name
+            std::cout << "  camera " << camera->handle.value << " name=" << camera->name.value
                       << " near=" << camera->clip.near_plane << " far=" << camera->clip.far_plane << '\n';
         }
     }
@@ -261,7 +261,7 @@ int main(int argc, char** argv) {
                     .id = "sponza.main",
                     .title = "VVE Sponza",
                     .extent = ve::PixelExtent{.width = 960, .height = 540},
-                    .renderer_id = "forward",
+                    .renderer_id = ve::RendererId{.value = "forward"},
                     .resizable = true,
                     .visible = true
                 }

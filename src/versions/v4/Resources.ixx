@@ -22,14 +22,14 @@ export namespace vve::v4 {
    struct ResourceDescriptor {
       Handle handle{};                              ///< Stable resource handle.
       ResourceKind kind{ResourceKind::unknown};     ///< Resource category.
-      std::string name{};                           ///< Human-readable resource name.
+      ObjectName name{};                            ///< Human-readable resource name.
    };
 
    /// @brief Minimal resource table; real upload and residency are future steps.
    class ResourceSystem {
    public:
       /// @brief Adds a resource descriptor and returns its handle.
-      [[nodiscard]] std::expected<Handle, Error> add(ResourceKind kind, std::string name) {
+      [[nodiscard]] std::expected<Handle, Error> add(ResourceKind kind, ObjectName name) {
          auto handle = makeCounterHandle();
          auto added = resources_.add(ResourceDescriptor{.handle = handle, .kind = kind, .name = std::move(name)});
          if (!added) { return std::unexpected(added.error()); }

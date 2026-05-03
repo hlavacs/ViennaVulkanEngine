@@ -10,13 +10,13 @@ export namespace vve::v4 {
    /// @brief A scheduled unit of CPU work.
    struct TaskNode {
       Handle handle{};    ///< Stable task handle.
-      std::string name{}; ///< Human-readable task name.
+      ObjectName name{};  ///< Human-readable task name.
    };
 
    /// @brief A future render graph pass descriptor.
    struct RenderPassNode {
       Handle handle{};    ///< Stable render-pass handle.
-      std::string name{}; ///< Human-readable pass name.
+      ObjectName name{};  ///< Human-readable pass name.
    };
 
    /// @brief Minimal task graph table.

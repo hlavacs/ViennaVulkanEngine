@@ -252,12 +252,12 @@ public:
                       << " keys=" << key_state_string;
             if (main_window) {
                 std::cout << " main=" << main_window->extent.width << 'x' << main_window->extent.height
-                          << '[' << main_window->renderer_id << ']'
+                          << '[' << main_window->renderer_id.value << ']'
                           << (main_window->focused ? "[focused]" : "");
             }
             if (tools_window) {
                 std::cout << " tools=" << tools_window->extent.width << 'x' << tools_window->extent.height
-                          << '[' << tools_window->renderer_id << ']'
+                          << '[' << tools_window->renderer_id.value << ']'
                           << (tools_window->focused ? "[focused]" : "");
             }
             std::cout << '\n';
@@ -274,7 +274,7 @@ private:
         for (const auto& window : world.windows()) {
             printed_any = true;
             std::cout << ' ' << window.id << '=' << window.extent.width << 'x' << window.extent.height
-                      << '[' << window.renderer_id << ']';
+                      << '[' << window.renderer_id.value << ']';
         }
         if (!printed_any) {
             std::cout << " <none>";
@@ -318,7 +318,7 @@ int main(int argc, char** argv) {
                     .extent = ve::PixelExtent{.width = 640, .height = 480},
                     .x = 80,
                     .y = 120,
-                    .renderer_id = "forward",
+                    .renderer_id = ve::RendererId{.value = "forward"},
                     .resizable = true,
                     .visible = true
                 },
@@ -328,7 +328,7 @@ int main(int argc, char** argv) {
                     .extent = ve::PixelExtent{.width = 400, .height = 480},
                     .x = 760,
                     .y = 120,
-                    .renderer_id = "forward",
+                    .renderer_id = ve::RendererId{.value = "forward"},
                     .resizable = true,
                     .visible = true
                 }

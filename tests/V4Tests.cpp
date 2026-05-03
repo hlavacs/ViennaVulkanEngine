@@ -33,7 +33,7 @@ struct CountingSystem {
          ++*update_count;
       }
       if (last_frame != nullptr) {
-         *last_frame = frame.frame_index;
+         *last_frame = frame.frame_index.value;
       }
       if (window_frame.windows.empty()) {
          return std::unexpected(vve::v4::Error::missing_object);
@@ -200,42 +200,42 @@ struct CountingSystem {
    const auto camera = makeCounterHandle(107);
 
    if (!catalog.textures.add(TextureDescriptor{.handle = texture,
-                                               .name = "stone",
+                                               .name = ObjectName{.value = "stone"},
                                                .source = "stone.png",
                                                .extent = PixelExtent{.width = 1024, .height = 512},
-                                               .channels = 4})) {
+                                               .channels = TextureChannelCount{.value = 4}})) {
       return 30;
    }
    if (!catalog.materials.add(MaterialDescriptor{
           .handle = material,
-          .name = "stone_mat",
+          .name = ObjectName{.value = "stone_mat"},
           .textures = {TextureBinding{.texture = texture, .semantic = TextureSemantic::base_color}}})) {
       return 31;
    }
    if (!catalog.meshes.add(MeshDescriptor{
           .handle = mesh,
-          .name = "arch",
-          .vertex_count = 3,
-          .index_count = 3,
+          .name = ObjectName{.value = "arch"},
+          .vertex_count = VertexCount{.value = 3},
+          .index_count = IndexCount{.value = 3},
           .material = material})) {
       return 32;
    }
    if (!catalog.nodes.add(NodeDescriptor{
           .handle = node,
-          .name = "root",
+          .name = ObjectName{.value = "root"},
           .meshes = {MeshUse{.mesh = mesh, .material = material}}})) {
       return 33;
    }
-   if (!catalog.nodes.add(NodeDescriptor{.handle = child, .name = "child"})) {
+   if (!catalog.nodes.add(NodeDescriptor{.handle = child, .name = ObjectName{.value = "child"}})) {
       return 34;
    }
    if (!catalog.lights.add(LightDescriptor{.handle = light,
-                                           .name = "sun",
+                                           .name = ObjectName{.value = "sun"},
                                            .kind = LightKind::directional,
                                            .color = LinearColor{.value = Vec3{0.9F, 0.8F, 0.7F}},
                                            .intensity = LightIntensity{.value = 4.0F}}) ||
        !catalog.cameras.add(CameraDescriptor{.handle = camera,
-                                             .name = "camera",
+                                             .name = ObjectName{.value = "camera"},
                                              .fov_y = FovY{.radians = 0.8F},
                                              .clip = ClipPlanes{.near_plane = 0.2F, .far_plane = 200.0F}})) {
       return 35;
@@ -243,7 +243,7 @@ struct CountingSystem {
    auto tree = Tree{.root = node};
    tree.addChild(node, child);
    if (!catalog.scenes.add(SceneDescriptor{.handle = scene,
-                                           .name = "scene",
+                                           .name = ObjectName{.value = "scene"},
                                            .tree = std::move(tree),
                                            .nodes = {node, child},
                                            .meshes = {mesh},
@@ -280,7 +280,7 @@ struct CountingSystem {
    if (catalog.meshes.add(*mesh_descriptor)) {
       return 39;
    }
-   if (catalog.meshes.add(MeshDescriptor{.handle = {}, .name = "bad"})) {
+   if (catalog.meshes.add(MeshDescriptor{.handle = {}, .name = ObjectName{.value = "bad"}})) {
       return 49;
    }
    return 0;
@@ -399,7 +399,7 @@ struct CountingSystem {
       return 71;
    }
    const auto *mesh = assets.catalog().meshes.find(scene->meshes.front());
-   if (mesh == nullptr || mesh->vertex_count != 3 || mesh->index_count != 3) {
+   if (mesh == nullptr || mesh->vertex_count.value != 3 || mesh->index_count.value != 3) {
       return 72;
    }
    if (mesh->material.valid() && assets.catalog().materials.find(mesh->material) == nullptr) {
@@ -418,7 +418,7 @@ struct CountingSystem {
    int update_count = 0;
    std::uint64_t last_frame = 99;
    auto engine = makeEngine(ApplicationName{"test"},
-                            MaxFrames{2},
+                            MaxFrames{.value = FrameCount{.value = 2}},
                             Windows{.value = {WindowDesc{.id = "main",
                                                           .title = "hidden",
                                                           .extent = PixelExtent{.width = 64, .height = 64},
@@ -443,18 +443,18 @@ struct CountingSystem {
    if (!engine.init()) {
       return 41;
    }
-   const auto scene = engine.assets().addScene("stub");
+   const auto scene = engine.assets().addScene(ObjectName{.value = "stub"});
    if (!scene || !scene->isCounter() || engine.assets().catalog().scenes.find(*scene) == nullptr) {
       return 42;
    }
-   const auto resource = engine.resources().add(ResourceKind::mesh, "mesh");
+   const auto resource = engine.resources().add(ResourceKind::mesh, ObjectName{.value = "mesh"});
    if (!resource || engine.resources().find(*resource) == nullptr) {
       return 43;
    }
    const auto task = makeCounterHandle(400);
    const auto child_task = makeCounterHandle(401);
-   if (!engine.tasks().add(TaskNode{.handle = task, .name = "task"}) ||
-       !engine.tasks().add(TaskNode{.handle = child_task, .name = "child-task"}) ||
+   if (!engine.tasks().add(TaskNode{.handle = task, .name = ObjectName{.value = "task"}}) ||
+       !engine.tasks().add(TaskNode{.handle = child_task, .name = ObjectName{.value = "child-task"}}) ||
        engine.tasks().find(task) == nullptr) {
       return 44;
    }
@@ -470,9 +470,10 @@ struct CountingSystem {
    const auto pass = makeCounterHandle(500);
    const auto child_pass = makeCounterHandle(501);
    const auto isolated_pass = makeCounterHandle(502);
-   if (!engine.renderGraph().add(RenderPassNode{.handle = pass, .name = "pass"}) ||
-       !engine.renderGraph().add(RenderPassNode{.handle = child_pass, .name = "child-pass"}) ||
-       !engine.renderGraph().add(RenderPassNode{.handle = isolated_pass, .name = "isolated-pass"}) ||
+   if (!engine.renderGraph().add(RenderPassNode{.handle = pass, .name = ObjectName{.value = "pass"}}) ||
+       !engine.renderGraph().add(RenderPassNode{.handle = child_pass, .name = ObjectName{.value = "child-pass"}}) ||
+       !engine.renderGraph().add(RenderPassNode{.handle = isolated_pass,
+                                                .name = ObjectName{.value = "isolated-pass"}}) ||
        engine.renderGraph().find(pass) == nullptr) {
       return 46;
    }
@@ -488,7 +489,7 @@ struct CountingSystem {
    }
    const auto shader = makeCounterHandle(600);
    if (!engine.shaders().add(ShaderDescriptor{.handle = shader,
-                                              .name = "shader",
+                                              .name = ObjectName{.value = "shader"},
                                               .stages = {ShaderStage::vertex, ShaderStage::fragment}}) ||
        engine.shaders().find(shader) == nullptr) {
       return 48;

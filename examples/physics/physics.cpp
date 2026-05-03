@@ -28,7 +28,7 @@ public:
         for (const auto& window : world.windows()) {
             printed_any = true;
             std::cout << ' ' << window.id << '=' << window.extent.width << 'x' << window.extent.height
-                      << '[' << window.renderer_id << ']';
+                      << '[' << window.renderer_id.value << ']';
         }
         if (!printed_any) {
             std::cout << " <none>";
@@ -70,7 +70,7 @@ public:
 
         const auto mouse_delta = input.mouseDelta(main_window->handle);
         std::cout << " physics.main=" << main_window->extent.width << 'x' << main_window->extent.height
-                  << '[' << main_window->renderer_id << ']'
+                  << '[' << main_window->renderer_id.value << ']'
                   << (main_window->focused ? "[focused]" : "")
                   << (main_window->minimized ? "[minimized]" : "")
                   << " body=(" << body_x_ << ", " << body_y_ << ')'
@@ -109,7 +109,7 @@ int main(int, char **) {
                     .id = "physics.main",
                     .title = "VVE Physics Sandbox",
                     .extent = ve::PixelExtent{.width = 800, .height = 450},
-                    .renderer_id = "forward",
+                    .renderer_id = ve::RendererId{.value = "forward"},
                     .resizable = true,
                     .visible = true
                 }

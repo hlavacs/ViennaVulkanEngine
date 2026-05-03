@@ -11,7 +11,7 @@ export namespace vve::v4 {
    /// @brief Renderer choice descriptor returned by the factory.
    struct RendererDescriptor {
       Handle handle{};              ///< Stable renderer descriptor handle.
-      std::string id{"forward"};    ///< Renderer id chosen by the application.
+      RendererId id{.value = "forward"}; ///< Renderer id chosen by the application.
       bool shadow_maps{true};       ///< Whether this renderer intends to use shadow maps.
    };
 
@@ -21,7 +21,7 @@ export namespace vve::v4 {
       /// @brief Creates the default forward-renderer descriptor.
       [[nodiscard]] RendererDescriptor createForwardRenderer() const {
          return RendererDescriptor{.handle = makeCounterHandle(),
-                                   .id = "forward",
+                                   .id = RendererId{.value = "forward"},
                                    .shadow_maps = true};
       }
 

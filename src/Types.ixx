@@ -60,6 +60,36 @@ export namespace vve {
       std::uint32_t height{0}; ///< Height in pixels.
    };
 
+   /// @brief Strong wrapper for human-readable object names.
+   struct ObjectName {
+      std::string value{}; ///< Wrapped display or diagnostic name.
+   };
+
+   /// @brief Strong wrapper for renderer selection identifiers.
+   struct RendererId {
+      std::string value{}; ///< Wrapped renderer identifier.
+   };
+
+   /// @brief Strong wrapper for frame counts and frame indices.
+   struct FrameCount {
+      std::uint64_t value{0}; ///< Wrapped frame count.
+   };
+
+   /// @brief Strong wrapper for source vertex counts.
+   struct VertexCount {
+      std::uint64_t value{0}; ///< Wrapped vertex count.
+   };
+
+   /// @brief Strong wrapper for source index counts.
+   struct IndexCount {
+      std::uint64_t value{0}; ///< Wrapped index count.
+   };
+
+   /// @brief Strong wrapper for texture channel counts.
+   struct TextureChannelCount {
+      std::uint32_t value{0}; ///< Wrapped channel count.
+   };
+
    /// @brief Standard transform component shared by all active engine layers.
    struct Transform {
       Position translation{}; ///< Local or world-space translation.

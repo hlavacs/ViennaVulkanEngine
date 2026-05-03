@@ -25,7 +25,7 @@ export namespace vve::v4 {
       /// @brief Allocates the next counter handle.
       [[nodiscard]] Handle next();
       /// @brief Adds an empty scene descriptor and returns its handle.
-      [[nodiscard]] std::expected<Handle, Error> addScene(std::string name);
+      [[nodiscard]] std::expected<Handle, Error> addScene(ObjectName name);
       /// @brief Imports a scene file through Assimp and returns the v4 scene handle.
       [[nodiscard]] std::expected<Handle, Error> loadScene(const std::filesystem::path &source);
 
@@ -140,7 +140,7 @@ namespace vve::v4 {
          if (const auto existing = textures.find(key); existing != textures.end()) { return existing->second; }
 
          auto texture = TextureDescriptor{.handle = assets.next(),
-                                          .name = source.filename().string(),
+                                          .name = ObjectName{.value = source.filename().string()},
                                           .source = source};
          if (key.starts_with('*')) {
             const auto index = static_cast<std::size_t>(std::strtoull(key.c_str() + 1, nullptr, 10));
@@ -169,7 +169,7 @@ namespace vve::v4 {
 
             auto material = MaterialDescriptor{
                .handle = assets.next(),
-               .name = readableName(name, "Material_" + std::to_string(material_index))};
+               .name = ObjectName{.value = readableName(name, "Material_" + std::to_string(material_index))}};
 
             if (source != nullptr) {
                for (const auto &[type, semantic] : texture_semantics) {
@@ -221,9 +221,11 @@ namespace vve::v4 {
             const auto material = source->mMaterialIndex < materials.size() ? materials[source->mMaterialIndex]
                                                                             : Handle{};
             auto mesh = MeshDescriptor{.handle = assets.next(),
-                                       .name = readableName(source->mName, "Mesh_" + std::to_string(mesh_index)),
-                                       .vertex_count = source->mNumVertices,
-                                       .index_count = index_count,
+                                       .name = ObjectName{
+                                          .value = readableName(source->mName,
+                                                                "Mesh_" + std::to_string(mesh_index))},
+                                       .vertex_count = VertexCount{.value = source->mNumVertices},
+                                       .index_count = IndexCount{.value = index_count},
                                        .material = material,
                                        .bounds = bounds};
             if (auto added = assets.catalog().meshes.add(mesh); !added) { return std::unexpected(added.error()); }
@@ -240,7 +242,9 @@ namespace vve::v4 {
                                                             SceneDescriptor &scene,
                                                             Handle parent = {}) {
          auto node = NodeDescriptor{.handle = assets.next(),
-                                    .name = readableName(source.mName, "Node_" + std::to_string(scene.nodes.size())),
+                                    .name = ObjectName{
+                                       .value = readableName(source.mName,
+                                                             "Node_" + std::to_string(scene.nodes.size()))},
                                     .transform = toTransform(source.mTransformation)};
          for (unsigned mesh_slot = 0; mesh_slot < source.mNumMeshes; ++mesh_slot) {
             const auto mesh_index = source.mMeshes[mesh_slot];
@@ -285,7 +289,7 @@ namespace vve::v4 {
                                              math::max(std::abs(color.value.z), one()));
             auto light = LightDescriptor{
                .handle = assets.next(),
-               .name = readableName(source->mName, "Light_" + std::to_string(light_index)),
+               .name = ObjectName{.value = readableName(source->mName, "Light_" + std::to_string(light_index))},
                .kind = mapLightKind(source->mType),
                .position = Position{.value = toVec3(source->mPosition)},
                .direction = Direction{.value = toVec3(source->mDirection)},
@@ -308,8 +312,9 @@ namespace vve::v4 {
             const auto horizontal = math::max(static_cast<Scalar>(source->mHorizontalFOV), Scalar{0.001F});
             const auto vertical = Scalar{2} * std::atan(std::tan(horizontal * Scalar{0.5F}) / aspect);
             auto camera = CameraDescriptor{.handle = assets.next(),
-                                           .name = readableName(source->mName,
-                                                                "Camera_" + std::to_string(camera_index)),
+                                           .name = ObjectName{
+                                              .value = readableName(source->mName,
+                                                                    "Camera_" + std::to_string(camera_index))},
                                            .position = Position{.value = toVec3(source->mPosition)},
                                            .forward = Direction{.value = toVec3(source->mLookAt)},
                                            .fov_y = FovY{.radians = vertical},
@@ -339,7 +344,7 @@ namespace vve::v4 {
          if (!camera_handles) { return std::unexpected(camera_handles.error()); }
 
          auto scene = SceneDescriptor{.handle = assets.next(),
-                                      .name = path.filename().string(),
+                                      .name = ObjectName{.value = path.filename().string()},
                                       .meshes = *mesh_handles,
                                       .materials = material_handles->materials,
                                       .textures = material_handles->textures,
@@ -366,7 +371,7 @@ namespace vve::v4 {
 
    Handle AssetSystem::next() { return makeCounterHandle(); }
 
-   std::expected<Handle, Error> AssetSystem::addScene(std::string name) {
+   std::expected<Handle, Error> AssetSystem::addScene(ObjectName name) {
       const auto handle = next();
       auto scene = SceneDescriptor{.handle = handle, .name = std::move(name)};
       if (auto added = catalog_.scenes.add(std::move(scene)); !added) { return std::unexpected(added.error()); }

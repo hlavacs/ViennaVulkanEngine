@@ -14,7 +14,7 @@ export namespace vve::v4 {
 
    /// @brief Optional frame cap; zero means the engine runs until a window asks to close.
    struct MaxFrames {
-      std::uint32_t value{0}; ///< Maximum number of step() calls before the engine stops.
+      FrameCount value{}; ///< Maximum number of step() calls before the engine stops.
    };
 
    /// @brief Window creation descriptor kept deliberately close to v3's public shape.
@@ -24,7 +24,7 @@ export namespace vve::v4 {
       PixelExtent extent{.width = 960, .height = 540}; ///< Initial pixel dimensions.
       std::optional<int> x{};       ///< Optional initial screen x coordinate.
       std::optional<int> y{};       ///< Optional initial screen y coordinate.
-      std::string renderer_id{};    ///< Renderer id selected for this window.
+      RendererId renderer_id{};     ///< Renderer id selected for this window.
       bool resizable{true};         ///< Enables platform resizing.
       bool visible{true};           ///< Shows the window after creation.
    };
@@ -40,7 +40,7 @@ export namespace vve::v4 {
       std::string id{};            ///< Stable id copied from WindowDesc.
       std::string title{};         ///< Current platform title.
       PixelExtent extent{};        ///< Current pixel dimensions.
-      std::string renderer_id{};   ///< Renderer id selected for this window.
+      RendererId renderer_id{};    ///< Renderer id selected for this window.
       bool focused{false};         ///< True while the window has keyboard focus.
       bool minimized{false};       ///< True while the platform reports a minimized window.
       bool should_close{false};    ///< True after a close request.
@@ -48,7 +48,7 @@ export namespace vve::v4 {
 
    /// @brief Per-step timing and frame index passed to user systems.
    struct FrameContext {
-      std::uint64_t frame_index{0};   ///< Zero-based frame index.
+      FrameCount frame_index{};       ///< Zero-based frame index.
       DeltaTime delta_time{};         ///< Elapsed wall-clock time since the previous frame.
    };
 

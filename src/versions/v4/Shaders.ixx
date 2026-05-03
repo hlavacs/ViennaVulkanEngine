@@ -17,7 +17,7 @@ export namespace vve::v4 {
    /// @brief Shader program descriptor with placeholder reflection data.
    struct ShaderDescriptor {
       Handle handle{};                         ///< Stable shader handle.
-      std::string name{};                      ///< Human-readable shader name.
+      ObjectName name{};                       ///< Human-readable shader name.
       Vector<ShaderStage> stages{};            ///< Shader stages present in the program.
       Vector<std::string> reflected_bindings{}; ///< Placeholder binding names from reflection.
    };

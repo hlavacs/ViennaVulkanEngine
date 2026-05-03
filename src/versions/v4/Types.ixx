@@ -45,6 +45,12 @@ export namespace vve::v4 {
    using ClipPlanes     = ::vve::ClipPlanes;     ///< Shared strong camera clip-plane wrapper.
    using DeltaTime      = ::vve::DeltaTime;      ///< Shared strong frame delta-time wrapper.
    using PixelExtent    = ::vve::PixelExtent;    ///< Shared strong pixel-extent wrapper.
+   using ObjectName     = ::vve::ObjectName;     ///< Shared strong object-name wrapper.
+   using RendererId     = ::vve::RendererId;     ///< Shared strong renderer-id wrapper.
+   using FrameCount     = ::vve::FrameCount;     ///< Shared strong frame-count wrapper.
+   using VertexCount    = ::vve::VertexCount;    ///< Shared strong vertex-count wrapper.
+   using IndexCount     = ::vve::IndexCount;     ///< Shared strong index-count wrapper.
+   using TextureChannelCount = ::vve::TextureChannelCount; ///< Shared strong texture-channel-count wrapper.
    using Transform      = ::vve::Transform;      ///< Shared transform component.
    using Bounds         = ::vve::Bounds;         ///< Shared axis-aligned bounds type.
    using Camera         = ::vve::Camera;         ///< Shared camera geometry type.
@@ -146,7 +152,7 @@ export namespace vve::v4 {
    /// @brief Scene graph node descriptor stored by handle in ObjectCatalog.
    struct NodeDescriptor {
       Handle handle{};               ///< Stable 64-bit node handle.
-      std::string name{};            ///< Human-readable node name.
+      ObjectName name{};             ///< Human-readable node name.
       Transform transform{};         ///< Local transform.
       Vector<MeshUse> meshes{};      ///< Mesh/material pairs attached to this node.
    };
@@ -154,9 +160,9 @@ export namespace vve::v4 {
    /// @brief Mesh geometry descriptor; actual vertex buffers are added later.
    struct MeshDescriptor {
       Handle handle{};              ///< Stable 64-bit mesh handle.
-      std::string name{};           ///< Human-readable mesh name.
-      std::uint64_t vertex_count{0}; ///< Number of vertices in source geometry.
-      std::uint64_t index_count{0};  ///< Number of indices in source geometry.
+      ObjectName name{};            ///< Human-readable mesh name.
+      VertexCount vertex_count{};   ///< Number of vertices in source geometry.
+      IndexCount index_count{};     ///< Number of indices in source geometry.
       Handle material{};            ///< Default material handle.
       Bounds bounds{};              ///< Object-space bounds.
    };
@@ -164,23 +170,23 @@ export namespace vve::v4 {
    /// @brief Material descriptor referencing textures by handle.
    struct MaterialDescriptor {
       Handle handle{};                  ///< Stable 64-bit material handle.
-      std::string name{};               ///< Human-readable material name.
+      ObjectName name{};                ///< Human-readable material name.
       Vector<TextureBinding> textures{}; ///< Texture slots used by this material.
    };
 
    /// @brief Texture descriptor; pixel storage and GPU upload are future steps.
    struct TextureDescriptor {
       Handle handle{};             ///< Stable 64-bit texture handle.
-      std::string name{};          ///< Human-readable texture name.
+      ObjectName name{};           ///< Human-readable texture name.
       std::filesystem::path source{}; ///< Source file path or logical asset path.
       PixelExtent extent{};        ///< Source dimensions in pixels.
-      std::uint32_t channels{0};   ///< Source channel count.
+      TextureChannelCount channels{}; ///< Source channel count.
    };
 
    /// @brief Light descriptor used by renderers and scene systems.
    struct LightDescriptor {
       Handle handle{};                    ///< Stable 64-bit light handle.
-      std::string name{};                 ///< Human-readable light name.
+      ObjectName name{};                  ///< Human-readable light name.
       LightKind kind{LightKind::unknown}; ///< Light shape.
       Position position{};                ///< Light position for point/spot lights.
       Direction direction{};              ///< Light direction for directional/spot lights.
@@ -191,7 +197,7 @@ export namespace vve::v4 {
    /// @brief Camera descriptor used to create runtime cameras.
    struct CameraDescriptor {
       Handle handle{};                    ///< Stable 64-bit camera handle.
-      std::string name{};                 ///< Human-readable camera name.
+      ObjectName name{};                  ///< Human-readable camera name.
       Position position{};                ///< Camera position.
       Direction forward{};                ///< Camera forward direction.
       FovY fov_y{};                       ///< Vertical field of view.
@@ -201,7 +207,7 @@ export namespace vve::v4 {
    /// @brief Scene descriptor stores only handles to objects kept in descriptor maps.
    struct SceneDescriptor {
       Handle handle{};           ///< Stable 64-bit scene handle.
-      std::string name{};        ///< Human-readable scene name.
+      ObjectName name{};         ///< Human-readable scene name.
       Tree tree{};               ///< Scene hierarchy; nodes do not store child vectors.
       Vector<Handle> nodes{};    ///< All node handles in the scene.
       Vector<Handle> meshes{};   ///< Mesh handles used by the scene.
