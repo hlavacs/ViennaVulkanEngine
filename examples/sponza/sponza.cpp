@@ -134,7 +134,7 @@ public:
             return std::unexpected(ve::Error::missing_object);
         }
 
-        std::cout << '[' << name() << "] imported scene handle=" << scene_handle->raw().value
+        std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value
                   << " name=" << scene->name.value << '\n';
         printSceneInventory(*catalog, *scene);
         std::cout << '[' << name() << "] v4 resource upload and rendering are not implemented yet\n";
@@ -188,10 +188,10 @@ private:
             if (mesh == nullptr) {
                 continue;
             }
-            std::cout << "  mesh " << mesh->handle.raw().value << " name=" << mesh->name.value
+            std::cout << "  mesh " << mesh->handle.value << " name=" << mesh->name.value
                       << " vertices=" << mesh->vertex_count.value
                       << " indices=" << mesh->index_count.value
-                      << " material=" << mesh->material.raw().value << '\n';
+                      << " material=" << mesh->material.value << '\n';
         }
     }
 
@@ -202,7 +202,7 @@ private:
             if (texture == nullptr) {
                 continue;
             }
-            std::cout << "  texture " << texture->handle.raw().value << " name=" << texture->name.value
+            std::cout << "  texture " << texture->handle.value << " name=" << texture->name.value
                       << " source=" << texture->source.string()
                       << " size=" << texture->extent.width << 'x' << texture->extent.height << '\n';
         }
@@ -215,7 +215,7 @@ private:
             if (light == nullptr) {
                 continue;
             }
-            std::cout << "  light " << light->handle.raw().value << " name=" << light->name.value
+            std::cout << "  light " << light->handle.value << " name=" << light->name.value
                       << " intensity=" << light->intensity.value << '\n';
         }
     }
@@ -227,7 +227,7 @@ private:
             if (camera == nullptr) {
                 continue;
             }
-            std::cout << "  camera " << camera->handle.raw().value << " name=" << camera->name.value
+            std::cout << "  camera " << camera->handle.value << " name=" << camera->name.value
                       << " near=" << camera->clip.near_plane << " far=" << camera->clip.far_plane << '\n';
         }
     }

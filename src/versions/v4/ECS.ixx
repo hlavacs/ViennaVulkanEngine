@@ -39,13 +39,11 @@ export namespace vve::v4 {
       return it == names.end() ? std::string_view{"unknown"} : it->second;
    }
 
-   using Handle = ::vve::Handle;                    ///< Facade-level raw 64-bit handle.
    template <typename TTag> using TypedHandle = ::vve::TypedHandle<TTag>; ///< Facade-level typed handle.
    using Entity = ::vve::Entity;                    ///< Facade-level ECS entity id.
    using ::vve::makeCounterHandle;                  ///< Facade-level counter-handle builder.
-   using ::vve::makeSlotMapHandle;                  ///< Facade-level slot-map handle builder.
-   using ::vve::makeTypedCounterHandle;             ///< Facade-level typed counter-handle builder.
-   using ::vve::makeTypedSlotMapHandle;             ///< Facade-level typed slot-map handle builder.
+   using ::vve::makeHandleForTest;                  ///< Facade-level deterministic test-handle builder.
+   using ::vve::makeSlotMapHandleForTest;           ///< Facade-level deterministic slot-map test builder.
 
    /// @brief Forward declaration for the trait-configurable ECS.
    template <typename TTraits> class BasicECS;
@@ -74,7 +72,7 @@ export namespace vve::v4 {
       /// @brief Creates a live entity with a fresh 64-bit handle.
       [[nodiscard]] Entity create() {
          static_assert(!TTraits::use_slot_map_handles, "v4 prepares slot-map handles but has no slot map yet");
-         const auto entity = makeTypedCounterHandle<Entity>();
+         const auto entity = makeCounterHandle<Entity>();
          alive_.insert(entity);
          return entity;
       }

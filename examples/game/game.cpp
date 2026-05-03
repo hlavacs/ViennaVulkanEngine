@@ -146,7 +146,7 @@ public:
             return std::unexpected(load_result.error());
         }
 
-        std::cout << '[' << name() << "] spawned entity " << player_.raw().value << '\n';
+        std::cout << '[' << name() << "] spawned entity " << player_.value << '\n';
         printWindowInventory(world);
         return {};
     }

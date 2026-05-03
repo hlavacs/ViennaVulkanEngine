@@ -19,7 +19,7 @@ export namespace vve::v4 {
    public:
       /// @brief Adds a text label and returns its handle.
       [[nodiscard]] std::expected<GuiWidgetHandle, Error> label(std::string text) {
-         const auto handle = makeTypedCounterHandle<GuiWidgetHandle>();
+         const auto handle = makeCounterHandle<GuiWidgetHandle>();
          auto added = widgets_.add(GuiWidget{.handle = handle, .label = std::move(text)});
          if (!added) { return std::unexpected(added.error()); }
          return handle;

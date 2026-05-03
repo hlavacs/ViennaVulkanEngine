@@ -49,28 +49,27 @@ struct CountingSystem {
 [[nodiscard]] int testHandles() {
    using namespace vve::v4;
 
-   static_assert(sizeof(Handle) == sizeof(std::uint64_t));
    static_assert(sizeof(SceneHandle) == sizeof(std::uint64_t));
    static_assert(!std::is_same_v<MeshHandle, TextureHandle>);
    static_assert(!std::is_convertible_v<MeshHandle, TextureHandle>);
-   const auto counter = makeCounterHandle(41);
+   const auto counter = makeHandleForTest<MeshHandle>(41);
    if (!counter.valid() || !counter.isCounter() || counter.isSlotMapIndex() || counter.id() != 41) {
       return 1;
    }
-   const auto slot = makeSlotMapHandle(7, 3);
+   const auto slot = makeSlotMapHandleForTest<NodeHandle>(7, 3);
    if (!slot.valid() || slot.isCounter() || !slot.isSlotMapIndex() || slot.slotIndex() != 7 || slot.generation() != 3) {
       return 2;
    }
-   const auto next_counter = makeCounterHandle(42);
+   const auto next_counter = makeHandleForTest<MeshHandle>(42);
    if (counter == next_counter || !(counter < next_counter)) { return 4; }
-   if (Handle{}.valid()) {
+   if (MeshHandle{}.valid()) {
       return 3;
    }
-   const auto typed_counter = makeTypedCounterHandle<MeshHandle>(43);
-   const auto typed_slot = makeTypedSlotMapHandle<NodeHandle>(5, 2);
-   if (!typed_counter.valid() || !typed_counter.isCounter() || typed_counter.id() != 43) {
+   const auto runtime_counter = makeCounterHandle<TextureHandle>();
+   if (!runtime_counter.valid() || !runtime_counter.isCounter()) {
       return 5;
    }
+   const auto typed_slot = makeSlotMapHandleForTest<NodeHandle>(5, 2);
    if (!typed_slot.valid() || typed_slot.isCounter() || typed_slot.slotIndex() != 5 || typed_slot.generation() != 2) {
       return 6;
    }
@@ -201,14 +200,14 @@ struct CountingSystem {
    using namespace vve::v4;
 
    ObjectCatalog catalog{};
-   const auto scene = makeTypedCounterHandle<SceneHandle>(100);
-   const auto node = makeTypedCounterHandle<NodeHandle>(101);
-   const auto child = makeTypedCounterHandle<NodeHandle>(102);
-   const auto mesh = makeTypedCounterHandle<MeshHandle>(103);
-   const auto material = makeTypedCounterHandle<MaterialHandle>(104);
-   const auto texture = makeTypedCounterHandle<TextureHandle>(105);
-   const auto light = makeTypedCounterHandle<LightHandle>(106);
-   const auto camera = makeTypedCounterHandle<CameraHandle>(107);
+   const auto scene = makeHandleForTest<SceneHandle>(100);
+   const auto node = makeHandleForTest<NodeHandle>(101);
+   const auto child = makeHandleForTest<NodeHandle>(102);
+   const auto mesh = makeHandleForTest<MeshHandle>(103);
+   const auto material = makeHandleForTest<MaterialHandle>(104);
+   const auto texture = makeHandleForTest<TextureHandle>(105);
+   const auto light = makeHandleForTest<LightHandle>(106);
+   const auto camera = makeHandleForTest<CameraHandle>(107);
 
    if (!catalog.textures.add(TextureDescriptor{.handle = texture,
                                                .name = ObjectName{.value = "stone"},
@@ -300,7 +299,7 @@ struct CountingSystem {
 [[nodiscard]] int testInputAndWorld() {
    using namespace vve::v4;
 
-   const auto window = makeTypedCounterHandle<WindowHandle>(200);
+   const auto window = makeHandleForTest<WindowHandle>(200);
    InputState input{};
    input.pressKey('W');
    if (!input.isKeyDown('W') || !input.wasKeyPressed('W')) {
@@ -346,10 +345,10 @@ struct CountingSystem {
 [[nodiscard]] int testGraphTopologicalOrder() {
    using namespace vve::v4;
 
-   const auto a = makeTypedCounterHandle<TaskHandle>(300);
-   const auto b = makeTypedCounterHandle<TaskHandle>(301);
-   const auto c = makeTypedCounterHandle<TaskHandle>(302);
-   const auto d = makeTypedCounterHandle<TaskHandle>(303);
+   const auto a = makeHandleForTest<TaskHandle>(300);
+   const auto b = makeHandleForTest<TaskHandle>(301);
+   const auto c = makeHandleForTest<TaskHandle>(302);
+   const auto d = makeHandleForTest<TaskHandle>(303);
 
    Graph<TaskHandle> graph{};
    graph.addEdge(a, c);
@@ -462,8 +461,8 @@ struct CountingSystem {
    if (!resource || engine.resources().find(*resource) == nullptr) {
       return 43;
    }
-   const auto task = makeTypedCounterHandle<TaskHandle>(400);
-   const auto child_task = makeTypedCounterHandle<TaskHandle>(401);
+   const auto task = makeHandleForTest<TaskHandle>(400);
+   const auto child_task = makeHandleForTest<TaskHandle>(401);
    if (!engine.tasks().add(TaskNode{.handle = task, .name = ObjectName{.value = "task"}}) ||
        !engine.tasks().add(TaskNode{.handle = child_task, .name = ObjectName{.value = "child-task"}}) ||
        engine.tasks().find(task) == nullptr) {
@@ -478,9 +477,9 @@ struct CountingSystem {
    if (!task_order || task_order->size() != 2 || task_order->front() != task || task_order->back() != child_task) {
       return 54;
    }
-   const auto pass = makeTypedCounterHandle<RenderPassHandle>(500);
-   const auto child_pass = makeTypedCounterHandle<RenderPassHandle>(501);
-   const auto isolated_pass = makeTypedCounterHandle<RenderPassHandle>(502);
+   const auto pass = makeHandleForTest<RenderPassHandle>(500);
+   const auto child_pass = makeHandleForTest<RenderPassHandle>(501);
+   const auto isolated_pass = makeHandleForTest<RenderPassHandle>(502);
    if (!engine.renderGraph().add(RenderPassNode{.handle = pass, .name = ObjectName{.value = "pass"}}) ||
        !engine.renderGraph().add(RenderPassNode{.handle = child_pass, .name = ObjectName{.value = "child-pass"}}) ||
        !engine.renderGraph().add(RenderPassNode{.handle = isolated_pass,
@@ -498,7 +497,7 @@ struct CountingSystem {
        pass_order->at(1) != child_pass || pass_order->at(2) != isolated_pass) {
       return 55;
    }
-   const auto shader = makeTypedCounterHandle<ShaderHandle>(600);
+   const auto shader = makeHandleForTest<ShaderHandle>(600);
    if (!engine.shaders().add(ShaderDescriptor{.handle = shader,
                                               .name = ObjectName{.value = "shader"},
                                               .stages = {ShaderStage::vertex, ShaderStage::fragment}}) ||
@@ -531,7 +530,7 @@ struct CountingSystem {
    static_assert(!std::is_convertible_v<MeshHandle, TextureHandle>);
 
    ObjectCatalog catalog{};
-   const auto mesh = makeTypedCounterHandle<MeshHandle>(700);
+   const auto mesh = makeHandleForTest<MeshHandle>(700);
    if (!catalog.meshes.add(MeshDescriptor{.handle = mesh,
                                           .name = ObjectName{.value = "facade-mesh"},
                                           .vertex_count = VertexCount{.value = 1},

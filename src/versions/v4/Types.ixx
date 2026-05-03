@@ -241,7 +241,7 @@ export namespace vve::v4 {
       Vector<CameraHandle> cameras{}; ///< Camera handles used by the scene.
    };
 
-   /// @brief Simple descriptor table keyed by Handle.
+   /// @brief Simple descriptor table keyed by each descriptor's typed handle.
    template <typename TDescriptor> class DescriptorMap {
    public:
       using HandleType = typename TDescriptor::HandleType; ///< Strong handle accepted by this map.

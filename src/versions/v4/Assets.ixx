@@ -23,7 +23,7 @@ export namespace vve::v4 {
       /// @brief Returns the read-only object catalog.
       [[nodiscard]] const ObjectCatalog &catalog() const;
       /// @brief Allocates the next counter handle.
-      template <typename THandle> [[nodiscard]] THandle next() { return makeTypedCounterHandle<THandle>(); }
+      template <typename THandle> [[nodiscard]] THandle next() { return makeCounterHandle<THandle>(); }
       /// @brief Adds an empty scene descriptor and returns its handle.
       [[nodiscard]] std::expected<SceneHandle, Error> addScene(ObjectName name);
       /// @brief Imports a scene file through Assimp and returns the v4 scene handle.

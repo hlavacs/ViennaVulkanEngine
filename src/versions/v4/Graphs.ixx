@@ -3,7 +3,7 @@ import std;
 export import :Types;
 
 /// @file
-/// @brief Handle-addressed task and render graph stubs.
+/// @brief Typed-handle-addressed task and render graph stubs.
 
 export namespace vve::v4 {
 

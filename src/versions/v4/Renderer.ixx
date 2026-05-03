@@ -21,7 +21,7 @@ export namespace vve::v4 {
    public:
       /// @brief Creates the default forward-renderer descriptor.
       [[nodiscard]] RendererDescriptor createForwardRenderer() const {
-         return RendererDescriptor{.handle = makeTypedCounterHandle<RendererHandle>(),
+         return RendererDescriptor{.handle = makeCounterHandle<RendererHandle>(),
                                    .id = RendererId{.value = "forward"},
                                    .shadow_maps = true};
       }
