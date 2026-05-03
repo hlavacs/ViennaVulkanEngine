@@ -11,25 +11,6 @@ export namespace vve {
 
    template <typename T> using Vector = std::vector<T>; ///< Facade dynamic array type.
 
-   using Scalar = math::Scalar; ///< Facade scalar type.
-   using Vec2   = math::Vec2;   ///< Facade 2D vector type.
-   using Vec3   = math::Vec3;   ///< Facade 3D vector type.
-   using Vec4   = math::Vec4;   ///< Facade 4D vector type.
-   using Quat   = math::Quat;   ///< Facade quaternion type.
-   using Mat4   = math::Mat4;   ///< Facade 4x4 matrix type.
-
-   [[nodiscard]] inline constexpr Scalar zero() noexcept { return math::zero(); } ///< Scalar zero.
-
-   [[nodiscard]] inline constexpr Scalar one() noexcept { return math::one(); } ///< Scalar one.
-
-   [[nodiscard]] inline Vec3 zeroVec3() noexcept { return math::zeroVec3(); } ///< Zero 3D vector.
-
-   [[nodiscard]] inline Vec3 oneVec3() noexcept { return math::oneVec3(); } ///< One-filled 3D vector.
-
-   [[nodiscard]] inline Quat identityQuat() noexcept { return math::identityQuat(); } ///< Identity rotation.
-
-   [[nodiscard]] inline Mat4 identityMat4() noexcept { return math::identityMat4(); } ///< Identity matrix.
-
    /// @brief Strong wrapper for world or local position values.
    struct Position {
       math::Vec3 value{math::zeroVec3()}; ///< Wrapped coordinate.
@@ -481,17 +462,17 @@ export namespace vve {
       }
 
       /// @brief Stores the latest mouse position for one window.
-      void setMousePosition(WindowHandle window, Vec2 position) { mouse_position_[window] = position; }
+      void setMousePosition(WindowHandle window, math::Vec2 position) { mouse_position_[window] = position; }
 
       /// @brief Accumulates mouse movement for the current frame.
-      void addMouseDelta(WindowHandle window, Vec2 delta) {
-         const auto [it, _] = mouse_delta_.try_emplace(window, Vec2{zero(), zero()});
+      void addMouseDelta(WindowHandle window, math::Vec2 delta) {
+         const auto [it, _] = mouse_delta_.try_emplace(window, math::Vec2{math::zero(), math::zero()});
          it->second = math::add(it->second, delta);
       }
 
       /// @brief Accumulates mouse-wheel movement for the current frame.
-      void addMouseWheelDelta(WindowHandle window, Vec2 delta) {
-         const auto [it, _] = mouse_wheel_delta_.try_emplace(window, Vec2{zero(), zero()});
+      void addMouseWheelDelta(WindowHandle window, math::Vec2 delta) {
+         const auto [it, _] = mouse_wheel_delta_.try_emplace(window, math::Vec2{math::zero(), math::zero()});
          it->second = math::add(it->second, delta);
       }
 
@@ -505,30 +486,30 @@ export namespace vve {
       [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const { return keys_released_.contains(keycode); }
 
       /// @brief Returns the latest mouse position for a window, if any motion event was seen.
-      [[nodiscard]] std::optional<Vec2> mousePosition(WindowHandle window) const {
+      [[nodiscard]] std::optional<math::Vec2> mousePosition(WindowHandle window) const {
          const auto it = mouse_position_.find(window);
-         return it == mouse_position_.end() ? std::optional<Vec2>{} : std::optional<Vec2>{it->second};
+         return it == mouse_position_.end() ? std::optional<math::Vec2>{} : std::optional<math::Vec2>{it->second};
       }
 
       /// @brief Returns accumulated mouse delta for a window in the current frame.
-      [[nodiscard]] Vec2 mouseDelta(WindowHandle window) const {
+      [[nodiscard]] math::Vec2 mouseDelta(WindowHandle window) const {
          const auto it = mouse_delta_.find(window);
-         return it == mouse_delta_.end() ? Vec2{} : it->second;
+         return it == mouse_delta_.end() ? math::Vec2{} : it->second;
       }
 
       /// @brief Returns accumulated mouse-wheel delta for a window in the current frame.
-      [[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const {
+      [[nodiscard]] math::Vec2 mouseWheelDelta(WindowHandle window) const {
          const auto it = mouse_wheel_delta_.find(window);
-         return it == mouse_wheel_delta_.end() ? Vec2{} : it->second;
+         return it == mouse_wheel_delta_.end() ? math::Vec2{} : it->second;
       }
 
    private:
       std::set<std::int32_t> keys_down_{};               ///< Keys currently held down.
       std::set<std::int32_t> keys_pressed_{};            ///< Keys pressed this frame.
       std::set<std::int32_t> keys_released_{};           ///< Keys released this frame.
-      std::map<WindowHandle, Vec2> mouse_position_{};    ///< Last mouse position by window.
-      std::map<WindowHandle, Vec2> mouse_delta_{};       ///< Frame-local mouse delta by window.
-      std::map<WindowHandle, Vec2> mouse_wheel_delta_{}; ///< Frame-local wheel delta by window.
+      std::map<WindowHandle, math::Vec2> mouse_position_{};    ///< Last mouse position by window.
+      std::map<WindowHandle, math::Vec2> mouse_delta_{};       ///< Frame-local mouse delta by window.
+      std::map<WindowHandle, math::Vec2> mouse_wheel_delta_{}; ///< Frame-local wheel delta by window.
    };
 
    /// @brief Default ECS trait reserved for future slot-map policy knobs.

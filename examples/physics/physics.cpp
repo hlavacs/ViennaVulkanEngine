@@ -14,15 +14,13 @@ import VEEngine.V4;
 
 namespace {
 
-namespace ve = vve;
-
 class PhysicsShellSystem final {
 public:
     [[nodiscard]] std::string_view name() const noexcept {
         return "PhysicsShellSystem";
     }
 
-    [[nodiscard]] std::expected<void, ve::Error> init(ve::World& world) {
+    [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
         for (const auto& window : world.windows()) {
@@ -37,10 +35,10 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<void, ve::Error> update(
-        ve::World& world,
-        const ve::FrameContext& frame_context,
-        const ve::WindowFrameData&) {
+    [[nodiscard]] std::expected<void, vve::Error> update(
+        vve::World& world,
+        const vve::FrameContext& frame_context,
+        const vve::WindowFrameData&) {
         const auto& input = world.input();
         if (input.isKeyDown('A') || input.isKeyDown('a')) {
             body_x_ -= 120.0 * frame_context.delta_time.seconds;
@@ -100,16 +98,16 @@ int main(int, char **) {
     std::cerr << std::unitbuf;
 
     // The physics sample currently exercises only engine startup and runtime
-    auto engine = ve::makeEngine( // execution. Physics itself is expected to arrive through a user system.
-        ve::ApplicationName{"physics"},
-        ve::makeUserSystems(PhysicsShellSystem{}),
-        ve::Windows{
+    auto engine = vve::makeEngine( // execution. Physics itself is expected to arrive through a user system.
+        vve::ApplicationName{"physics"},
+        vve::makeUserSystems(PhysicsShellSystem{}),
+        vve::Windows{
             .value = {
-                ve::WindowDesc{
+                vve::WindowDesc{
                     .id = "physics.main",
                     .title = "VVE Physics Sandbox",
-                    .extent = ve::PixelExtent{.width = 800, .height = 450},
-                    .renderer_id = ve::RendererId{.value = "forward"},
+                    .extent = vve::PixelExtent{.width = 800, .height = 450},
+                    .renderer_id = vve::RendererId{.value = "forward"},
                     .resizable = true,
                     .visible = true
                 }
@@ -117,12 +115,12 @@ int main(int, char **) {
         });
 
     if (const auto init_result = engine.init(); !init_result) {
-        std::cerr << "[physics] engine.init failed: " << ve::errorName(init_result.error()) << '\n';
+        std::cerr << "[physics] engine.init failed: " << vve::errorName(init_result.error()) << '\n';
         return 1;
     }
 
     if (const auto run_result = engine.run(); !run_result) {
-        std::cerr << "[physics] engine.run failed: " << ve::errorName(run_result.error()) << '\n';
+        std::cerr << "[physics] engine.run failed: " << vve::errorName(run_result.error()) << '\n';
         return 1;
     }
 

@@ -19,8 +19,6 @@ import VEEngine.V4;
  */
 namespace {
 
-namespace ve = vve;
-
 [[nodiscard]] std::optional<std::filesystem::path>
 firstExistingPath(const std::vector<std::filesystem::path>& candidates) {
     for (const auto& candidate : candidates) {
@@ -127,10 +125,10 @@ public:
      * @brief Creates the example player entity.
      * @param world Game-facing world facade provided by the engine.
      */
-    [[nodiscard]] std::expected<void, ve::Error> init(ve::World& world) {
+    [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
         // The example spawns one entity with a transform and velocity so the
         // update loop can demonstrate world and input access.
-        const auto player_result = world.spawn(ve::Transform{}, Velocity{});
+        const auto player_result = world.spawn(vve::Transform{}, Velocity{});
         if (!player_result) {
             return std::unexpected(player_result.error());
         }
@@ -138,7 +136,7 @@ public:
         player_ = *player_result;
 
         if (scene_path_.empty()) {
-            return std::unexpected(ve::Error::invalid_argument);
+            return std::unexpected(vve::Error::invalid_argument);
         }
 
         std::cout << '[' << name() << "] registering scene path: " << scene_path_.string() << '\n';
@@ -157,12 +155,12 @@ public:
      * @param frame_context Timing data for the current frame.
      * @param window_frame Current window snapshot, unused by this example.
      */
-    [[nodiscard]] std::expected<void, ve::Error> update(
-        ve::World& world,
-        const ve::FrameContext& frame_context,
-        const ve::WindowFrameData&) {
+    [[nodiscard]] std::expected<void, vve::Error> update(
+        vve::World& world,
+        const vve::FrameContext& frame_context,
+        const vve::WindowFrameData&) {
         if (!player_.valid()) {
-            return std::unexpected(ve::Error::invalid_argument);
+            return std::unexpected(vve::Error::invalid_argument);
         }
 
         // Fetch the current velocity and transform copies through the world
@@ -178,7 +176,7 @@ public:
         }
 
         if (!transform_result->has_value() || !velocity_result->has_value()) {
-            return std::unexpected(ve::Error::invalid_argument);
+            return std::unexpected(vve::Error::invalid_argument);
         }
 
         auto transform = **transform_result;
@@ -202,7 +200,7 @@ public:
 
         // Reset the player back to the origin when R is pressed.
         if (input.wasKeyPressed('R') || input.wasKeyPressed('r')) {
-            transform.translation = ve::Position{.value = ve::zeroVec3()};
+            transform.translation = vve::Position{};
         }
 
         // Integrate velocity using the frame delta and clamp movement to a
@@ -213,8 +211,8 @@ public:
         constexpr float limit_x = 400.0F;
         constexpr float limit_y = 225.0F;
 
-        transform.translation.value.x = ve::math::clamp(transform.translation.value.x, -limit_x, limit_x);
-        transform.translation.value.y = ve::math::clamp(transform.translation.value.y, -limit_y, limit_y);
+        transform.translation.value.x = vve::math::clamp(transform.translation.value.x, -limit_x, limit_x);
+        transform.translation.value.y = vve::math::clamp(transform.translation.value.y, -limit_y, limit_y);
 
         if (const auto set_transform_result = world.setTransform(player_, transform); !set_transform_result) {
             return std::unexpected(set_transform_result.error());
@@ -268,7 +266,7 @@ public:
     }
 
 private:
-    void printWindowInventory(ve::World& world) {
+    void printWindowInventory(vve::World& world) {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
         for (const auto& window : world.windows()) {
@@ -283,7 +281,7 @@ private:
     }
 
     /// @brief Typed handle of the player entity created during initialization.
-    ve::Entity player_{};
+    vve::Entity player_{};
     /// @brief Runtime scene loaded so public camera changes are visible.
     std::filesystem::path scene_path_{};
     /// @brief Tracks time until the next heartbeat log line.
@@ -307,28 +305,28 @@ int main(int argc, char** argv) {
     }
 
     // Configure a two-window sample runtime so the example exercises the
-    auto engine = ve::makeEngine( // multi-window API shape exposed by the engine.
-        ve::ApplicationName{"game"},
-        ve::makeUserSystems(SimpleGameSystem{*scene_path}),
-        ve::Windows{
+    auto engine = vve::makeEngine( // multi-window API shape exposed by the engine.
+        vve::ApplicationName{"game"},
+        vve::makeUserSystems(SimpleGameSystem{*scene_path}),
+        vve::Windows{
             .value = {
-                ve::WindowDesc{
+                vve::WindowDesc{
                     .id = "main",
                     .title = "VVE Game",
-                    .extent = ve::PixelExtent{.width = 640, .height = 480},
+                    .extent = vve::PixelExtent{.width = 640, .height = 480},
                     .x = 80,
                     .y = 120,
-                    .renderer_id = ve::RendererId{.value = "forward"},
+                    .renderer_id = vve::RendererId{.value = "forward"},
                     .resizable = true,
                     .visible = true
                 },
-                ve::WindowDesc{
+                vve::WindowDesc{
                     .id = "tools",
                     .title = "VVE Tools",
-                    .extent = ve::PixelExtent{.width = 400, .height = 480},
+                    .extent = vve::PixelExtent{.width = 400, .height = 480},
                     .x = 760,
                     .y = 120,
-                    .renderer_id = ve::RendererId{.value = "forward"},
+                    .renderer_id = vve::RendererId{.value = "forward"},
                     .resizable = true,
                     .visible = true
                 }
@@ -343,7 +341,7 @@ int main(int argc, char** argv) {
     
 
     if (const auto init_result = engine.init(); !init_result) {
-        std::cerr << "[game] engine.init failed: " << ve::errorName(init_result.error()) << '\n';
+        std::cerr << "[game] engine.init failed: " << vve::errorName(init_result.error()) << '\n';
         return 1;
     }
 
@@ -351,11 +349,11 @@ int main(int argc, char** argv) {
     while (true) { // engine's explicit `FrameStatus` contract.
         const auto step_result = engine.step();
         if (!step_result) {
-            std::cerr << "[game] engine.step failed: " << ve::errorName(step_result.error()) << '\n';
+            std::cerr << "[game] engine.step failed: " << vve::errorName(step_result.error()) << '\n';
             return 1;
         }
 
-        if (*step_result == ve::FrameStatus::should_close) {
+        if (*step_result == vve::FrameStatus::should_close) {
             break;
         }
     }

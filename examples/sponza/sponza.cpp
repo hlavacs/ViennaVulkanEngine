@@ -16,8 +16,6 @@ import VEEngine.V4;
 
 namespace {
 
-namespace ve = vve;
-
 [[nodiscard]] std::optional<std::filesystem::path>
 firstExistingPath(const std::vector<std::filesystem::path>& candidates) {
     for (const auto& candidate : candidates) {
@@ -115,23 +113,23 @@ public:
         return "SponzaRuntimeStubSystem";
     }
 
-    [[nodiscard]] std::expected<void, ve::Error> init(ve::World& world) {
+    [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
         std::cout << '[' << name() << "] scene path: " << scene_path_.string() << '\n';
         std::cout << '[' << name() << "] v4 runtime shell is active\n";
         const auto scene_handle = world.loadScene(scene_path_);
         if (!scene_handle) {
             std::cerr << '[' << name() << "] Assimp import failed: "
-                      << ve::errorName(scene_handle.error()) << '\n';
+                      << vve::errorName(scene_handle.error()) << '\n';
             return std::unexpected(scene_handle.error());
         }
 
         const auto* catalog = world.objectCatalog();
         if (catalog == nullptr) {
-            return std::unexpected(ve::Error::missing_object);
+            return std::unexpected(vve::Error::missing_object);
         }
         const auto* scene = catalog->scenes.find(*scene_handle);
         if (scene == nullptr) {
-            return std::unexpected(ve::Error::missing_object);
+            return std::unexpected(vve::Error::missing_object);
         }
 
         std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value
@@ -142,10 +140,10 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<void, ve::Error> update(
-        ve::World&,
-        const ve::FrameContext& frame_context,
-        const ve::WindowFrameData&) {
+    [[nodiscard]] std::expected<void, vve::Error> update(
+        vve::World&,
+        const vve::FrameContext& frame_context,
+        const vve::WindowFrameData&) {
         if (!frame_loop_logged_ && frame_context.frame_index.value > 0) {
             std::cout << '[' << name() << "] frame loop active; close the window to exit\n";
             frame_loop_logged_ = true;
@@ -154,7 +152,7 @@ public:
     }
 
 private:
-    void printWindowInventory(const ve::World& world) const {
+    void printWindowInventory(const vve::World& world) const {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
         for (const auto& window : world.windows()) {
@@ -168,7 +166,7 @@ private:
         std::cout << '\n';
     }
 
-    void printSceneInventory(const ve::ObjectCatalog& catalog, const ve::SceneDescriptor& scene) const {
+    void printSceneInventory(const vve::ObjectCatalog& catalog, const vve::SceneDescriptor& scene) const {
         std::cout << '[' << name() << "] counts: nodes=" << scene.nodes.size()
                   << " meshes=" << scene.meshes.size()
                   << " materials=" << scene.materials.size()
@@ -181,7 +179,7 @@ private:
         printCameras(catalog, scene.cameras);
     }
 
-    void printMeshes(const ve::ObjectCatalog& catalog, const ve::Vector<ve::MeshHandle>& handles) const {
+    void printMeshes(const vve::ObjectCatalog& catalog, const vve::Vector<vve::MeshHandle>& handles) const {
         std::cout << '[' << name() << "] meshes:\n";
         for (const auto handle : handles) {
             const auto* mesh = catalog.meshes.find(handle);
@@ -195,7 +193,7 @@ private:
         }
     }
 
-    void printTextures(const ve::ObjectCatalog& catalog, const ve::Vector<ve::TextureHandle>& handles) const {
+    void printTextures(const vve::ObjectCatalog& catalog, const vve::Vector<vve::TextureHandle>& handles) const {
         std::cout << '[' << name() << "] textures:\n";
         for (const auto handle : handles) {
             const auto* texture = catalog.textures.find(handle);
@@ -208,7 +206,7 @@ private:
         }
     }
 
-    void printLights(const ve::ObjectCatalog& catalog, const ve::Vector<ve::LightHandle>& handles) const {
+    void printLights(const vve::ObjectCatalog& catalog, const vve::Vector<vve::LightHandle>& handles) const {
         std::cout << '[' << name() << "] lights:\n";
         for (const auto handle : handles) {
             const auto* light = catalog.lights.find(handle);
@@ -220,7 +218,7 @@ private:
         }
     }
 
-    void printCameras(const ve::ObjectCatalog& catalog, const ve::Vector<ve::CameraHandle>& handles) const {
+    void printCameras(const vve::ObjectCatalog& catalog, const vve::Vector<vve::CameraHandle>& handles) const {
         std::cout << '[' << name() << "] cameras:\n";
         for (const auto handle : handles) {
             const auto* camera = catalog.cameras.find(handle);
@@ -252,16 +250,16 @@ int main(int argc, char** argv) {
         return 1;
     }
 
-    auto engine = ve::makeEngine(
-        ve::ApplicationName{"sponza"},
-        ve::makeUserSystems(SponzaRuntimeStubSystem{*scene_path}),
-        ve::Windows{
+    auto engine = vve::makeEngine(
+        vve::ApplicationName{"sponza"},
+        vve::makeUserSystems(SponzaRuntimeStubSystem{*scene_path}),
+        vve::Windows{
             .value = {
-                ve::WindowDesc{
+                vve::WindowDesc{
                     .id = "sponza.main",
                     .title = "VVE Sponza",
-                    .extent = ve::PixelExtent{.width = 960, .height = 540},
-                    .renderer_id = ve::RendererId{.value = "forward"},
+                    .extent = vve::PixelExtent{.width = 960, .height = 540},
+                    .renderer_id = vve::RendererId{.value = "forward"},
                     .resizable = true,
                     .visible = true
                 }
@@ -269,12 +267,12 @@ int main(int argc, char** argv) {
         });
 
     if (const auto init_result = engine.init(); !init_result) {
-        std::cerr << "[sponza] engine.init failed: " << ve::errorName(init_result.error()) << '\n';
+        std::cerr << "[sponza] engine.init failed: " << vve::errorName(init_result.error()) << '\n';
         return 1;
     }
 
     if (const auto run_result = engine.run(); !run_result) {
-        std::cerr << "[sponza] engine.run failed: " << ve::errorName(run_result.error()) << '\n';
+        std::cerr << "[sponza] engine.run failed: " << vve::errorName(run_result.error()) << '\n';
         return 1;
     }
 
