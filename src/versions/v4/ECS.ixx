@@ -74,7 +74,10 @@ export namespace vve::v4 {
 
    /// @brief Builds a future slot-map handle from slot index and generation.
    [[nodiscard]] constexpr Handle makeSlotMapHandle(std::uint32_t slot_index, std::uint32_t generation) noexcept {
-      return Handle{((((std::uint64_t) generation) << Handle::id_bits) & Handle::generation_mask) | (((std::uint64_t) slot_index) & Handle::id_mask)};
+      const auto generation_bits = (static_cast<std::uint64_t>(generation) << Handle::id_bits) &
+                                   Handle::generation_mask;
+      const auto index_bits = static_cast<std::uint64_t>(slot_index) & Handle::id_mask;
+      return Handle{generation_bits | index_bits};
    }
 
    /// @brief Builds an upward-counted non-slot-map handle from an explicit id.

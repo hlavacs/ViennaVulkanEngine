@@ -119,6 +119,38 @@ export namespace vve {
       math::Quat value{math::identityQuat()}; ///< Wrapped orientation.
    };
 
+   /// @brief Strong wrapper for linear RGB color values.
+   struct LinearColor {
+      math::Vec3 value{math::oneVec3()}; ///< Wrapped linear RGB color.
+   };
+
+   /// @brief Strong wrapper for relative light intensity.
+   struct LightIntensity {
+      math::Scalar value{math::one()}; ///< Wrapped non-negative intensity scale.
+   };
+
+   /// @brief Strong wrapper for vertical field-of-view angles.
+   struct FovY {
+      math::Scalar radians{static_cast<math::Scalar>(1.0471975511965976)}; ///< Wrapped vertical FOV in radians.
+   };
+
+   /// @brief Strong wrapper for near and far clipping planes.
+   struct ClipPlanes {
+      math::Scalar near_plane{static_cast<math::Scalar>(0.1)};     ///< Near clip distance.
+      math::Scalar far_plane{static_cast<math::Scalar>(10000.0)}; ///< Far clip distance.
+   };
+
+   /// @brief Strong wrapper for frame delta time.
+   struct DeltaTime {
+      double seconds{1.0 / 60.0}; ///< Elapsed seconds.
+   };
+
+   /// @brief Strong wrapper for pixel dimensions.
+   struct PixelExtent {
+      std::uint32_t width{0};  ///< Width in pixels.
+      std::uint32_t height{0}; ///< Height in pixels.
+   };
+
    /// @brief Standard transform component shared by all engine versions.
    struct Transform {
       math::Vec3 translation{math::zeroVec3()}; ///< Local or world-space translation.

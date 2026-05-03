@@ -35,13 +35,19 @@ export namespace vve::v4 {
    /// @brief Returns a 4x4 identity matrix.
    [[nodiscard]] inline Mat4 identityMat4() noexcept { return math::identityMat4(); }
 
-   using Position  = ::vve::Position;  ///< Shared strong position wrapper.
-   using Direction = ::vve::Direction; ///< Shared strong direction wrapper.
-   using Scale     = ::vve::Scale;     ///< Shared strong scale wrapper.
-   using Rotation  = ::vve::Rotation;  ///< Shared strong rotation wrapper.
-   using Transform = ::vve::Transform; ///< Shared transform component.
-   using Bounds    = ::vve::Bounds;    ///< Shared axis-aligned bounds type.
-   using Camera    = ::vve::Camera;    ///< Shared camera geometry type.
+   using Position       = ::vve::Position;       ///< Shared strong position wrapper.
+   using Direction      = ::vve::Direction;      ///< Shared strong direction wrapper.
+   using Scale          = ::vve::Scale;          ///< Shared strong scale wrapper.
+   using Rotation       = ::vve::Rotation;       ///< Shared strong rotation wrapper.
+   using LinearColor    = ::vve::LinearColor;    ///< Shared strong linear RGB color wrapper.
+   using LightIntensity = ::vve::LightIntensity; ///< Shared strong light-intensity wrapper.
+   using FovY           = ::vve::FovY;           ///< Shared strong vertical field-of-view wrapper.
+   using ClipPlanes     = ::vve::ClipPlanes;     ///< Shared strong camera clip-plane wrapper.
+   using DeltaTime      = ::vve::DeltaTime;      ///< Shared strong frame delta-time wrapper.
+   using PixelExtent    = ::vve::PixelExtent;    ///< Shared strong pixel-extent wrapper.
+   using Transform      = ::vve::Transform;      ///< Shared transform component.
+   using Bounds         = ::vve::Bounds;         ///< Shared axis-aligned bounds type.
+   using Camera         = ::vve::Camera;         ///< Shared camera geometry type.
 
    /// @brief Material texture slot meaning.
    enum class TextureSemantic {

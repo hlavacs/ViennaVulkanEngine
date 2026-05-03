@@ -72,6 +72,12 @@ struct CountingSystem {
    static_assert(std::is_same_v<Transform, vve::Transform>);
    static_assert(std::is_same_v<Camera, vve::Camera>);
    static_assert(std::is_same_v<Bounds, vve::Bounds>);
+   static_assert(std::is_same_v<LinearColor, vve::LinearColor>);
+   static_assert(std::is_same_v<LightIntensity, vve::LightIntensity>);
+   static_assert(std::is_same_v<FovY, vve::FovY>);
+   static_assert(std::is_same_v<ClipPlanes, vve::ClipPlanes>);
+   static_assert(std::is_same_v<DeltaTime, vve::DeltaTime>);
+   static_assert(std::is_same_v<PixelExtent, vve::PixelExtent>);
 
    const auto identity = math::identityMat4();
    const auto translated = math::translate(identity, math::Vec3{1.0F, 2.0F, 3.0F});
@@ -96,6 +102,21 @@ struct CountingSystem {
    if (!nearly(transform.scale.x, 2.0F) ||
        !nearly(Direction{}.value.z, -1.0F)) {
       return 11;
+   }
+
+   const auto color = LinearColor{.value = Vec3{0.25F, 0.5F, 1.0F}};
+   const auto intensity = LightIntensity{.value = 3.0F};
+   const auto fov_y = FovY{.radians = 0.75F};
+   const auto clip = ClipPlanes{.near_plane = 0.25F, .far_plane = 250.0F};
+   const auto delta = DeltaTime{.seconds = 0.5};
+   const auto extent = PixelExtent{.width = 640, .height = 480};
+   if (!nearly(color.value.y, 0.5F) || !nearly(intensity.value, 3.0F) ||
+       !nearly(fov_y.radians, 0.75F)) {
+      return 12;
+   }
+   if (!nearly(clip.near_plane, 0.25F) || !nearly(clip.far_plane, 250.0F) ||
+       delta.seconds != 0.5 || extent.width != 640 || extent.height != 480) {
+      return 13;
    }
    return 0;
 }
