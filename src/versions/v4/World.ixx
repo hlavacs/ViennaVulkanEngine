@@ -36,7 +36,7 @@ export namespace vve::v4 {
 
    /// @brief Runtime window state exposed through World.
    struct WindowInfo {
-      Handle handle{};             ///< 64-bit runtime window handle.
+      WindowHandle handle{};       ///< 64-bit runtime window handle.
       std::string id{};            ///< Stable id copied from WindowDesc.
       std::string title{};         ///< Current platform title.
       PixelExtent extent{};        ///< Current pixel dimensions.
@@ -84,16 +84,16 @@ export namespace vve::v4 {
       }
 
       /// @brief Stores the latest mouse position for one window.
-      void setMousePosition(Handle window, Vec2 position) { mouse_position_[window] = position; }
+      void setMousePosition(WindowHandle window, Vec2 position) { mouse_position_[window] = position; }
 
       /// @brief Accumulates mouse movement for the current frame.
-      void addMouseDelta(Handle window, Vec2 delta) {
+      void addMouseDelta(WindowHandle window, Vec2 delta) {
          const auto [it, _] = mouse_delta_.try_emplace(window, Vec2{zero(), zero()});
          it->second = math::add(it->second, delta);
       }
 
       /// @brief Accumulates mouse-wheel movement for the current frame.
-      void addMouseWheelDelta(Handle window, Vec2 delta) {
+      void addMouseWheelDelta(WindowHandle window, Vec2 delta) {
          const auto [it, _] = mouse_wheel_delta_.try_emplace(window, Vec2{zero(), zero()});
          it->second = math::add(it->second, delta);
       }
@@ -108,19 +108,19 @@ export namespace vve::v4 {
       [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const { return keys_released_.contains(keycode); }
 
       /// @brief Returns the latest mouse position for a window, if any motion event was seen.
-      [[nodiscard]] std::optional<Vec2> mousePosition(Handle window) const {
+      [[nodiscard]] std::optional<Vec2> mousePosition(WindowHandle window) const {
          const auto it = mouse_position_.find(window);
          return it == mouse_position_.end() ? std::optional<Vec2>{} : std::optional<Vec2>{it->second};
       }
 
       /// @brief Returns accumulated mouse delta for a window in the current frame.
-      [[nodiscard]] Vec2 mouseDelta(Handle window) const {
+      [[nodiscard]] Vec2 mouseDelta(WindowHandle window) const {
          const auto it = mouse_delta_.find(window);
          return it == mouse_delta_.end() ? Vec2{} : it->second;
       }
 
       /// @brief Returns accumulated mouse-wheel delta for a window in the current frame.
-      [[nodiscard]] Vec2 mouseWheelDelta(Handle window) const {
+      [[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const {
          const auto it = mouse_wheel_delta_.find(window);
          return it == mouse_wheel_delta_.end() ? Vec2{} : it->second;
       }
@@ -129,9 +129,9 @@ export namespace vve::v4 {
       std::set<std::int32_t> keys_down_{};             ///< Keys currently held down.
       std::set<std::int32_t> keys_pressed_{};          ///< Keys pressed this frame.
       std::set<std::int32_t> keys_released_{};         ///< Keys released this frame.
-      std::map<Handle, Vec2> mouse_position_{};        ///< Last mouse position by window.
-      std::map<Handle, Vec2> mouse_delta_{};           ///< Frame-local mouse delta by window.
-      std::map<Handle, Vec2> mouse_wheel_delta_{};     ///< Frame-local wheel delta by window.
+      std::map<WindowHandle, Vec2> mouse_position_{};  ///< Last mouse position by window.
+      std::map<WindowHandle, Vec2> mouse_delta_{};     ///< Frame-local mouse delta by window.
+      std::map<WindowHandle, Vec2> mouse_wheel_delta_{}; ///< Frame-local wheel delta by window.
    };
 
    /// @brief User-visible state facade used by examples and systems.
@@ -222,7 +222,7 @@ export namespace vve::v4 {
       [[nodiscard]] std::optional<Entity> activeCamera() const { return active_camera_; }
 
       /// @brief Installs the runtime scene loader used by loadScene().
-      void setSceneLoader(std::function<std::expected<Handle, Error>(const std::filesystem::path &)> loader) {
+      void setSceneLoader(std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> loader) {
          scene_loader_ = std::move(loader);
       }
 
@@ -232,7 +232,7 @@ export namespace vve::v4 {
       }
 
       /// @brief Imports a scene through the runtime loader and returns the scene handle.
-      [[nodiscard]] std::expected<Handle, Error> loadScene(const std::filesystem::path &path) {
+      [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &path) {
          if (!scene_loader_) { return std::unexpected(Error::missing_object); }
          return scene_loader_(path);
       }
@@ -248,7 +248,7 @@ export namespace vve::v4 {
       Vector<WindowInfo> windows_{};      ///< Current platform windows.
       std::optional<Entity> active_camera_{}; ///< Optional camera selected by the application.
       /// @brief Runtime callback that imports a scene into the asset catalog.
-      std::function<std::expected<Handle, Error>(const std::filesystem::path &)> scene_loader_{};
+      std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> scene_loader_{};
       std::function<const ObjectCatalog *()> catalog_provider_{}; ///< Runtime catalog access hook.
    };
 

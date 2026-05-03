@@ -20,7 +20,8 @@ export namespace vve::v4 {
 
    /// @brief Resource descriptor addressed by a 64-bit handle.
    struct ResourceDescriptor {
-      Handle handle{};                              ///< Stable resource handle.
+      using HandleType = ResourceHandle;            ///< Descriptor handle type.
+      ResourceHandle handle{};                      ///< Stable resource handle.
       ResourceKind kind{ResourceKind::unknown};     ///< Resource category.
       ObjectName name{};                            ///< Human-readable resource name.
    };
@@ -29,15 +30,15 @@ export namespace vve::v4 {
    class ResourceSystem {
    public:
       /// @brief Adds a resource descriptor and returns its handle.
-      [[nodiscard]] std::expected<Handle, Error> add(ResourceKind kind, ObjectName name) {
-         auto handle = makeCounterHandle();
+      [[nodiscard]] std::expected<ResourceHandle, Error> add(ResourceKind kind, ObjectName name) {
+         auto handle = makeTypedCounterHandle<ResourceHandle>();
          auto added = resources_.add(ResourceDescriptor{.handle = handle, .kind = kind, .name = std::move(name)});
          if (!added) { return std::unexpected(added.error()); }
          return handle;
       }
 
       /// @brief Finds a resource by handle, or returns null.
-      [[nodiscard]] const ResourceDescriptor *find(Handle handle) const { return resources_.find(handle); }
+      [[nodiscard]] const ResourceDescriptor *find(ResourceHandle handle) const { return resources_.find(handle); }
 
       /// @brief Returns the number of registered resources.
       [[nodiscard]] std::size_t size() const { return resources_.size(); }

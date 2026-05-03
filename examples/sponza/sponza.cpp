@@ -134,7 +134,7 @@ public:
             return std::unexpected(ve::Error::missing_object);
         }
 
-        std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value
+        std::cout << '[' << name() << "] imported scene handle=" << scene_handle->raw().value
                   << " name=" << scene->name.value << '\n';
         printSceneInventory(*catalog, *scene);
         std::cout << '[' << name() << "] v4 resource upload and rendering are not implemented yet\n";
@@ -181,53 +181,53 @@ private:
         printCameras(catalog, scene.cameras);
     }
 
-    void printMeshes(const ve::ObjectCatalog& catalog, const ve::Vector<ve::Handle>& handles) const {
+    void printMeshes(const ve::ObjectCatalog& catalog, const ve::Vector<ve::MeshHandle>& handles) const {
         std::cout << '[' << name() << "] meshes:\n";
         for (const auto handle : handles) {
             const auto* mesh = catalog.meshes.find(handle);
             if (mesh == nullptr) {
                 continue;
             }
-            std::cout << "  mesh " << mesh->handle.value << " name=" << mesh->name.value
+            std::cout << "  mesh " << mesh->handle.raw().value << " name=" << mesh->name.value
                       << " vertices=" << mesh->vertex_count.value
                       << " indices=" << mesh->index_count.value
-                      << " material=" << mesh->material.value << '\n';
+                      << " material=" << mesh->material.raw().value << '\n';
         }
     }
 
-    void printTextures(const ve::ObjectCatalog& catalog, const ve::Vector<ve::Handle>& handles) const {
+    void printTextures(const ve::ObjectCatalog& catalog, const ve::Vector<ve::TextureHandle>& handles) const {
         std::cout << '[' << name() << "] textures:\n";
         for (const auto handle : handles) {
             const auto* texture = catalog.textures.find(handle);
             if (texture == nullptr) {
                 continue;
             }
-            std::cout << "  texture " << texture->handle.value << " name=" << texture->name.value
+            std::cout << "  texture " << texture->handle.raw().value << " name=" << texture->name.value
                       << " source=" << texture->source.string()
                       << " size=" << texture->extent.width << 'x' << texture->extent.height << '\n';
         }
     }
 
-    void printLights(const ve::ObjectCatalog& catalog, const ve::Vector<ve::Handle>& handles) const {
+    void printLights(const ve::ObjectCatalog& catalog, const ve::Vector<ve::LightHandle>& handles) const {
         std::cout << '[' << name() << "] lights:\n";
         for (const auto handle : handles) {
             const auto* light = catalog.lights.find(handle);
             if (light == nullptr) {
                 continue;
             }
-            std::cout << "  light " << light->handle.value << " name=" << light->name.value
+            std::cout << "  light " << light->handle.raw().value << " name=" << light->name.value
                       << " intensity=" << light->intensity.value << '\n';
         }
     }
 
-    void printCameras(const ve::ObjectCatalog& catalog, const ve::Vector<ve::Handle>& handles) const {
+    void printCameras(const ve::ObjectCatalog& catalog, const ve::Vector<ve::CameraHandle>& handles) const {
         std::cout << '[' << name() << "] cameras:\n";
         for (const auto handle : handles) {
             const auto* camera = catalog.cameras.find(handle);
             if (camera == nullptr) {
                 continue;
             }
-            std::cout << "  camera " << camera->handle.value << " name=" << camera->name.value
+            std::cout << "  camera " << camera->handle.raw().value << " name=" << camera->name.value
                       << " near=" << camera->clip.near_plane << " far=" << camera->clip.far_plane << '\n';
         }
     }

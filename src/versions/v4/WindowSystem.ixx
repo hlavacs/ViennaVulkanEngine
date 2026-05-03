@@ -124,7 +124,7 @@ namespace vve::v4 {
          int height = 0;
          SDL_GetWindowSize(window, &width, &height);
 
-         auto info = WindowInfo{.handle = makeCounterHandle(),
+         auto info = WindowInfo{.handle = makeTypedCounterHandle<WindowHandle>(),
                                 .id = desc.id,
                                 .title = desc.title,
                                 .extent = PixelExtent{.width = static_cast<std::uint32_t>(std::max(width, 0)),

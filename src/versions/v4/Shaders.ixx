@@ -16,7 +16,8 @@ export namespace vve::v4 {
 
    /// @brief Shader program descriptor with placeholder reflection data.
    struct ShaderDescriptor {
-      Handle handle{};                         ///< Stable shader handle.
+      using HandleType = ShaderHandle;         ///< Descriptor handle type.
+      ShaderHandle handle{};                   ///< Stable shader handle.
       ObjectName name{};                       ///< Human-readable shader name.
       Vector<ShaderStage> stages{};            ///< Shader stages present in the program.
       Vector<std::string> reflected_bindings{}; ///< Placeholder binding names from reflection.
@@ -31,7 +32,7 @@ export namespace vve::v4 {
       }
 
       /// @brief Finds a shader by handle, or returns null.
-      [[nodiscard]] const ShaderDescriptor *find(Handle handle) const { return shaders_.find(handle); }
+      [[nodiscard]] const ShaderDescriptor *find(ShaderHandle handle) const { return shaders_.find(handle); }
 
    private:
       DescriptorMap<ShaderDescriptor> shaders_{}; ///< Shader descriptors by handle.

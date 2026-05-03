@@ -72,6 +72,41 @@ export namespace vve::v4 {
 
    static_assert(sizeof(Handle) == sizeof(std::uint64_t));
 
+   /// @brief Type-safe handle wrapper; all categories share the same 64-bit storage but not the same C++ type.
+   template <typename TTag> struct TypedHandle {
+      Handle value{}; ///< Wrapped raw handle.
+
+      constexpr TypedHandle() noexcept = default;
+      /// @brief Wraps an existing raw handle explicitly.
+      explicit constexpr TypedHandle(Handle raw) noexcept : value(raw) {}
+
+      /// @brief Returns true when this handle is not the invalid zero value.
+      [[nodiscard]] constexpr bool valid() const noexcept { return value.valid(); }
+
+      /// @brief Returns true when the handle stores an upward-counted id.
+      [[nodiscard]] constexpr bool isCounter() const noexcept { return value.isCounter(); }
+
+      /// @brief Returns true when the handle is shaped as a future slot-map index.
+      [[nodiscard]] constexpr bool isSlotMapIndex() const noexcept { return value.isSlotMapIndex(); }
+
+      /// @brief Extracts the future slot-map generation counter.
+      [[nodiscard]] constexpr std::uint64_t generation() const noexcept { return value.generation(); }
+
+      /// @brief Extracts the low id bits used by both counter and slot-map handles.
+      [[nodiscard]] constexpr std::uint64_t id() const noexcept { return value.id(); }
+
+      /// @brief Names the id bits as a slot index for future slot-map users.
+      [[nodiscard]] constexpr std::uint64_t slotIndex() const noexcept { return value.slotIndex(); }
+
+      /// @brief Returns the wrapped raw handle for diagnostics or low-level APIs.
+      [[nodiscard]] constexpr Handle raw() const noexcept { return value; }
+
+      [[nodiscard]] friend constexpr bool operator==(TypedHandle, TypedHandle) noexcept = default;
+      [[nodiscard]] friend constexpr auto operator<=>(TypedHandle, TypedHandle) noexcept = default;
+   };
+
+   static_assert(sizeof(TypedHandle<struct SizeCheckTag>) == sizeof(std::uint64_t));
+
    /// @brief Builds a future slot-map handle from slot index and generation.
    [[nodiscard]] constexpr Handle makeSlotMapHandle(std::uint32_t slot_index, std::uint32_t generation) noexcept {
       const auto generation_bits = (static_cast<std::uint64_t>(generation) << Handle::id_bits) &
@@ -91,7 +126,26 @@ export namespace vve::v4 {
       return makeCounterHandle(next_id.fetch_add(1, std::memory_order_relaxed));
    }
 
-   using Entity = Handle; ///< ECS entity id; kept as an alias so every object uses one handle type.
+   /// @brief Builds a typed future slot-map handle from slot index and generation.
+   template <typename THandle>
+   [[nodiscard]] constexpr THandle makeTypedSlotMapHandle(std::uint32_t slot_index,
+                                                          std::uint32_t generation) noexcept {
+      return THandle{makeSlotMapHandle(slot_index, generation)};
+   }
+
+   /// @brief Builds a typed upward-counted non-slot-map handle from an explicit id.
+   template <typename THandle>
+   [[nodiscard]] constexpr THandle makeTypedCounterHandle(std::uint64_t id) noexcept {
+      return THandle{makeCounterHandle(id)};
+   }
+
+   /// @brief Builds a typed upward-counted non-slot-map handle from the module-global counter.
+   template <typename THandle> [[nodiscard]] inline THandle makeTypedCounterHandle() {
+      return THandle{makeCounterHandle()};
+   }
+
+   struct EntityTag;     ///< Tag for ECS entity handles.
+   using Entity = TypedHandle<EntityTag>; ///< ECS entity id.
 
    /// @brief Forward declaration for the trait-configurable ECS.
    template <typename TTraits> class BasicECS;
@@ -106,13 +160,13 @@ export namespace vve::v4 {
       /// @brief Type-erased base so destruction can erase components from every pool.
       struct PoolBase {
          virtual ~PoolBase() = default;
-         virtual void erase(Handle entity) = 0;
+         virtual void erase(Entity entity) = 0;
       };
 
       /// @brief Concrete component pool for one component type.
       template <typename T> struct Pool final : PoolBase {
-         std::map<Handle, T> data{}; ///< Components keyed by owning entity handle.
-         void erase(Handle entity) override { data.erase(entity); }
+         std::map<Entity, T> data{}; ///< Components keyed by owning entity handle.
+         void erase(Entity entity) override { data.erase(entity); }
 
       };
 
@@ -120,7 +174,7 @@ export namespace vve::v4 {
       /// @brief Creates a live entity with a fresh 64-bit handle.
       [[nodiscard]] Entity create() {
          static_assert(!TTraits::use_slot_map_handles, "v4 prepares slot-map handles but has no slot map yet");
-         const auto entity = makeCounterHandle();
+         const auto entity = makeTypedCounterHandle<Entity>();
          alive_.insert(entity);
          return entity;
       }

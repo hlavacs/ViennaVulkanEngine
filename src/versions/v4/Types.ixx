@@ -55,6 +55,36 @@ export namespace vve::v4 {
    using Bounds         = ::vve::Bounds;         ///< Shared axis-aligned bounds type.
    using Camera         = ::vve::Camera;         ///< Shared camera geometry type.
 
+   struct SceneTag;      ///< Tag for scene handles.
+   struct NodeTag;       ///< Tag for scene-node handles.
+   struct MeshTag;       ///< Tag for mesh handles.
+   struct MaterialTag;   ///< Tag for material handles.
+   struct TextureTag;    ///< Tag for texture handles.
+   struct LightTag;      ///< Tag for light handles.
+   struct CameraTag;     ///< Tag for camera descriptor handles.
+   struct WindowTag;     ///< Tag for runtime window handles.
+   struct ResourceTag;   ///< Tag for resource handles.
+   struct ShaderTag;     ///< Tag for shader handles.
+   struct TaskTag;       ///< Tag for task handles.
+   struct RenderPassTag; ///< Tag for render-pass handles.
+   struct RendererTag;   ///< Tag for renderer descriptor handles.
+   struct GuiWidgetTag;  ///< Tag for GUI widget handles.
+
+   using SceneHandle      = TypedHandle<SceneTag>;      ///< Strong handle for scene descriptors.
+   using NodeHandle       = TypedHandle<NodeTag>;       ///< Strong handle for scene-node descriptors.
+   using MeshHandle       = TypedHandle<MeshTag>;       ///< Strong handle for mesh descriptors.
+   using MaterialHandle   = TypedHandle<MaterialTag>;   ///< Strong handle for material descriptors.
+   using TextureHandle    = TypedHandle<TextureTag>;    ///< Strong handle for texture descriptors.
+   using LightHandle      = TypedHandle<LightTag>;      ///< Strong handle for light descriptors.
+   using CameraHandle     = TypedHandle<CameraTag>;     ///< Strong handle for camera descriptors.
+   using WindowHandle     = TypedHandle<WindowTag>;     ///< Strong handle for runtime windows.
+   using ResourceHandle   = TypedHandle<ResourceTag>;   ///< Strong handle for resources.
+   using ShaderHandle     = TypedHandle<ShaderTag>;     ///< Strong handle for shader descriptors.
+   using TaskHandle       = TypedHandle<TaskTag>;       ///< Strong handle for task descriptors.
+   using RenderPassHandle = TypedHandle<RenderPassTag>; ///< Strong handle for render passes.
+   using RendererHandle   = TypedHandle<RendererTag>;   ///< Strong handle for renderer descriptors.
+   using GuiWidgetHandle  = TypedHandle<GuiWidgetTag>;  ///< Strong handle for GUI widgets.
+
    /// @brief Material texture slot meaning.
    enum class TextureSemantic {
       unknown,    ///< Unclassified texture use.
@@ -76,44 +106,46 @@ export namespace vve::v4 {
 
    /// @brief A material reference to one texture descriptor.
    struct TextureBinding {
-      Handle texture{};                                    ///< Referenced TextureDescriptor handle.
+      TextureHandle texture{};                             ///< Referenced TextureDescriptor handle.
       TextureSemantic semantic{TextureSemantic::unknown};  ///< Intended material slot.
       std::uint32_t uv_set{0};                             ///< UV channel used by the texture.
    };
 
    /// @brief A scene node reference to renderable geometry and material.
    struct MeshUse {
-      Handle mesh{};     ///< Referenced MeshDescriptor handle.
-      Handle material{}; ///< Referenced MaterialDescriptor handle.
+      MeshHandle mesh{};         ///< Referenced MeshDescriptor handle.
+      MaterialHandle material{}; ///< Referenced MaterialDescriptor handle.
    };
 
    /// @brief Tree topology: one root plus parent-to-child handle edges.
-   struct Tree {
-      Handle root{};                           ///< Root node handle.
-      std::multimap<Handle, Handle> children{}; ///< Parent node handle mapped to child node handles.
+   template <typename THandle> struct BasicTree {
+      THandle root{};                             ///< Root node handle.
+      std::multimap<THandle, THandle> children{}; ///< Parent node handle mapped to child node handles.
 
       /// @brief Adds one parent-to-child tree edge.
-      void addChild(Handle parent, Handle child) { children.emplace(parent, child); }
+      void addChild(THandle parent, THandle child) { children.emplace(parent, child); }
 
       /// @brief Returns all children for a parent handle.
-      [[nodiscard]] auto childRange(Handle parent) const { return children.equal_range(parent); }
+      [[nodiscard]] auto childRange(THandle parent) const { return children.equal_range(parent); }
 
    };
 
+   using Tree = BasicTree<NodeHandle>; ///< Scene-tree topology uses node handles.
+
    /// @brief Generic directed graph topology stored as parent-to-child handle edges.
-   struct Graph {
-      std::multimap<Handle, Handle> edges{}; ///< Source node handle mapped to destination node handles.
+   template <typename THandle> struct Graph {
+      std::multimap<THandle, THandle> edges{}; ///< Source node handle mapped to destination node handles.
 
       /// @brief Adds one directed edge.
-      void addEdge(Handle from, Handle to) { edges.emplace(from, to); }
+      void addEdge(THandle from, THandle to) { edges.emplace(from, to); }
 
       /// @brief Returns all outgoing edges for a node handle.
-      [[nodiscard]] auto childRange(Handle node) const { return edges.equal_range(node); }
+      [[nodiscard]] auto childRange(THandle node) const { return edges.equal_range(node); }
 
       /// @brief Returns nodes in dependency order, or cycle_detected when the graph is cyclic.
-      [[nodiscard]] std::expected<Vector<Handle>, Error> topologicalOrder(const Vector<Handle> &nodes) const {
-         std::map<Handle, std::uint32_t> incoming{};
-         std::map<Handle, Vector<Handle>> outgoing{};
+      [[nodiscard]] std::expected<Vector<THandle>, Error> topologicalOrder(const Vector<THandle> &nodes) const {
+         std::map<THandle, std::uint32_t> incoming{};
+         std::map<THandle, Vector<THandle>> outgoing{};
          for (const auto node : nodes) {
             if (!node.valid()) { return std::unexpected(Error::invalid_handle); }
             incoming.try_emplace(node, 0);
@@ -126,8 +158,8 @@ export namespace vve::v4 {
             ++incoming[to];
          }
 
-         std::set<Handle> ready{};
-         Vector<Handle> ordered{};
+         std::set<THandle> ready{};
+         Vector<THandle> ordered{};
          ordered.reserve(incoming.size());
          for (const auto &[node, count] : incoming) {
             if (count == 0) { ready.insert(node); }
@@ -151,7 +183,8 @@ export namespace vve::v4 {
 
    /// @brief Scene graph node descriptor stored by handle in ObjectCatalog.
    struct NodeDescriptor {
-      Handle handle{};               ///< Stable 64-bit node handle.
+      using HandleType = NodeHandle; ///< Descriptor handle type.
+      NodeHandle handle{};           ///< Stable 64-bit node handle.
       ObjectName name{};             ///< Human-readable node name.
       Transform transform{};         ///< Local transform.
       Vector<MeshUse> meshes{};      ///< Mesh/material pairs attached to this node.
@@ -159,24 +192,27 @@ export namespace vve::v4 {
 
    /// @brief Mesh geometry descriptor; actual vertex buffers are added later.
    struct MeshDescriptor {
-      Handle handle{};              ///< Stable 64-bit mesh handle.
+      using HandleType = MeshHandle; ///< Descriptor handle type.
+      MeshHandle handle{};          ///< Stable 64-bit mesh handle.
       ObjectName name{};            ///< Human-readable mesh name.
       VertexCount vertex_count{};   ///< Number of vertices in source geometry.
       IndexCount index_count{};     ///< Number of indices in source geometry.
-      Handle material{};            ///< Default material handle.
+      MaterialHandle material{};    ///< Default material handle.
       Bounds bounds{};              ///< Object-space bounds.
    };
 
    /// @brief Material descriptor referencing textures by handle.
    struct MaterialDescriptor {
-      Handle handle{};                  ///< Stable 64-bit material handle.
+      using HandleType = MaterialHandle; ///< Descriptor handle type.
+      MaterialHandle handle{};           ///< Stable 64-bit material handle.
       ObjectName name{};                ///< Human-readable material name.
       Vector<TextureBinding> textures{}; ///< Texture slots used by this material.
    };
 
    /// @brief Texture descriptor; pixel storage and GPU upload are future steps.
    struct TextureDescriptor {
-      Handle handle{};             ///< Stable 64-bit texture handle.
+      using HandleType = TextureHandle; ///< Descriptor handle type.
+      TextureHandle handle{};      ///< Stable 64-bit texture handle.
       ObjectName name{};           ///< Human-readable texture name.
       std::filesystem::path source{}; ///< Source file path or logical asset path.
       PixelExtent extent{};        ///< Source dimensions in pixels.
@@ -185,7 +221,8 @@ export namespace vve::v4 {
 
    /// @brief Light descriptor used by renderers and scene systems.
    struct LightDescriptor {
-      Handle handle{};                    ///< Stable 64-bit light handle.
+      using HandleType = LightHandle;     ///< Descriptor handle type.
+      LightHandle handle{};               ///< Stable 64-bit light handle.
       ObjectName name{};                  ///< Human-readable light name.
       LightKind kind{LightKind::unknown}; ///< Light shape.
       Position position{};                ///< Light position for point/spot lights.
@@ -196,7 +233,8 @@ export namespace vve::v4 {
 
    /// @brief Camera descriptor used to create runtime cameras.
    struct CameraDescriptor {
-      Handle handle{};                    ///< Stable 64-bit camera handle.
+      using HandleType = CameraHandle;    ///< Descriptor handle type.
+      CameraHandle handle{};              ///< Stable 64-bit camera handle.
       ObjectName name{};                  ///< Human-readable camera name.
       Position position{};                ///< Camera position.
       Direction forward{};                ///< Camera forward direction.
@@ -206,20 +244,23 @@ export namespace vve::v4 {
 
    /// @brief Scene descriptor stores only handles to objects kept in descriptor maps.
    struct SceneDescriptor {
-      Handle handle{};           ///< Stable 64-bit scene handle.
-      ObjectName name{};         ///< Human-readable scene name.
-      Tree tree{};               ///< Scene hierarchy; nodes do not store child vectors.
-      Vector<Handle> nodes{};    ///< All node handles in the scene.
-      Vector<Handle> meshes{};   ///< Mesh handles used by the scene.
-      Vector<Handle> materials{}; ///< Material handles used by the scene.
-      Vector<Handle> textures{}; ///< Texture handles used by the scene.
-      Vector<Handle> lights{};   ///< Light handles used by the scene.
-      Vector<Handle> cameras{};  ///< Camera handles used by the scene.
+      using HandleType = SceneHandle; ///< Descriptor handle type.
+      SceneHandle handle{};           ///< Stable 64-bit scene handle.
+      ObjectName name{};              ///< Human-readable scene name.
+      Tree tree{};                    ///< Scene hierarchy; nodes do not store child vectors.
+      Vector<NodeHandle> nodes{};     ///< All node handles in the scene.
+      Vector<MeshHandle> meshes{};    ///< Mesh handles used by the scene.
+      Vector<MaterialHandle> materials{}; ///< Material handles used by the scene.
+      Vector<TextureHandle> textures{}; ///< Texture handles used by the scene.
+      Vector<LightHandle> lights{};   ///< Light handles used by the scene.
+      Vector<CameraHandle> cameras{}; ///< Camera handles used by the scene.
    };
 
    /// @brief Simple descriptor table keyed by Handle.
    template <typename TDescriptor> class DescriptorMap {
    public:
+      using HandleType = typename TDescriptor::HandleType; ///< Strong handle accepted by this map.
+
       /// @brief Inserts a descriptor; descriptors must expose a valid `handle` member.
       [[nodiscard]] std::expected<void, Error> add(TDescriptor descriptor) {
          if (!descriptor.handle.valid()) { return std::unexpected(Error::invalid_handle); }
@@ -229,28 +270,28 @@ export namespace vve::v4 {
       }
 
       /// @brief Finds a descriptor by handle, or returns null.
-      [[nodiscard]] const TDescriptor *find(Handle handle) const {
+      [[nodiscard]] const TDescriptor *find(HandleType handle) const {
          const auto it = descriptors_.find(handle);
          return it == descriptors_.end() ? nullptr : std::addressof(it->second);
       }
 
       /// @brief Finds a mutable descriptor by handle, or returns null.
-      [[nodiscard]] TDescriptor *find(Handle handle) {
+      [[nodiscard]] TDescriptor *find(HandleType handle) {
          const auto it = descriptors_.find(handle);
          return it == descriptors_.end() ? nullptr : std::addressof(it->second);
       }
 
       /// @brief Returns true when the map contains the handle.
-      [[nodiscard]] bool contains(Handle handle) const { return descriptors_.contains(handle); }
+      [[nodiscard]] bool contains(HandleType handle) const { return descriptors_.contains(handle); }
 
       /// @brief Returns descriptor count.
       [[nodiscard]] std::size_t size() const { return descriptors_.size(); }
 
       /// @brief Exposes read-only descriptor storage for tests and iteration.
-      [[nodiscard]] const std::map<Handle, TDescriptor> &all() const { return descriptors_; }
+      [[nodiscard]] const std::map<HandleType, TDescriptor> &all() const { return descriptors_; }
 
    private:
-      std::map<Handle, TDescriptor> descriptors_{}; ///< Ordered descriptor storage.
+      std::map<HandleType, TDescriptor> descriptors_{}; ///< Ordered descriptor storage.
    };
 
    /// @brief Central imported-object catalog; every loaded object is found by 64-bit handle.

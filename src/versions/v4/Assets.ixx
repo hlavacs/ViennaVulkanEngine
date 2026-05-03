@@ -23,11 +23,11 @@ export namespace vve::v4 {
       /// @brief Returns the read-only object catalog.
       [[nodiscard]] const ObjectCatalog &catalog() const;
       /// @brief Allocates the next counter handle.
-      [[nodiscard]] Handle next();
+      template <typename THandle> [[nodiscard]] THandle next() { return makeTypedCounterHandle<THandle>(); }
       /// @brief Adds an empty scene descriptor and returns its handle.
-      [[nodiscard]] std::expected<Handle, Error> addScene(ObjectName name);
+      [[nodiscard]] std::expected<SceneHandle, Error> addScene(ObjectName name);
       /// @brief Imports a scene file through Assimp and returns the v4 scene handle.
-      [[nodiscard]] std::expected<Handle, Error> loadScene(const std::filesystem::path &source);
+      [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &source);
 
    private:
       ObjectCatalog catalog_{};                         ///< All loaded object descriptors.
@@ -53,8 +53,8 @@ namespace vve::v4 {
 
       /// @brief Imported material handles plus texture handles referenced by those materials.
       struct ImportedMaterials {
-         Vector<Handle> materials{}; ///< Imported material descriptor handles.
-         Vector<Handle> textures{};  ///< Imported texture descriptor handles.
+         Vector<MaterialHandle> materials{}; ///< Imported material descriptor handles.
+         Vector<TextureHandle> textures{};   ///< Imported texture descriptor handles.
       };
 
       /// @brief Returns a stable filesystem spelling when possible.
@@ -131,15 +131,15 @@ namespace vve::v4 {
       }
 
       /// @brief Imports one texture reference and reuses duplicate path descriptors.
-      [[nodiscard]] std::expected<Handle, Error> importTexture(AssetSystem &assets,
-                                                               const aiScene &scene,
-                                                               const std::filesystem::path &source,
-                                                               std::map<std::string, Handle> &textures,
-                                                               Vector<Handle> &scene_textures) {
+      [[nodiscard]] std::expected<TextureHandle, Error> importTexture(AssetSystem &assets,
+                                                                      const aiScene &scene,
+                                                                      const std::filesystem::path &source,
+                                                                      std::map<std::string, TextureHandle> &textures,
+                                                                      Vector<TextureHandle> &scene_textures) {
          const auto key = source.string();
          if (const auto existing = textures.find(key); existing != textures.end()) { return existing->second; }
 
-         auto texture = TextureDescriptor{.handle = assets.next(),
+         auto texture = TextureDescriptor{.handle = assets.next<TextureHandle>(),
                                           .name = ObjectName{.value = source.filename().string()},
                                           .source = source};
          if (key.starts_with('*')) {
@@ -160,15 +160,15 @@ namespace vve::v4 {
       [[nodiscard]] std::expected<ImportedMaterials, Error> importMaterials(AssetSystem &assets,
                                                                            const aiScene &scene,
                                                                            const std::filesystem::path &scene_dir) {
-         auto imported = ImportedMaterials{.materials = Vector<Handle>(scene.mNumMaterials)};
-         std::map<std::string, Handle> textures{};
+         auto imported = ImportedMaterials{.materials = Vector<MaterialHandle>(scene.mNumMaterials)};
+         std::map<std::string, TextureHandle> textures{};
          for (unsigned material_index = 0; material_index < scene.mNumMaterials; ++material_index) {
             const auto *source = scene.mMaterials[material_index];
             aiString name{};
             if (source != nullptr) { source->Get(AI_MATKEY_NAME, name); }
 
             auto material = MaterialDescriptor{
-               .handle = assets.next(),
+               .handle = assets.next<MaterialHandle>(),
                .name = ObjectName{.value = readableName(name, "Material_" + std::to_string(material_index))}};
 
             if (source != nullptr) {
@@ -193,10 +193,10 @@ namespace vve::v4 {
       }
 
       /// @brief Computes simple vertex-count, index-count, material, and bounds descriptors.
-      [[nodiscard]] std::expected<Vector<Handle>, Error> importMeshes(AssetSystem &assets,
-                                                                      const aiScene &scene,
-                                                                      const Vector<Handle> &materials) {
-         Vector<Handle> meshes(scene.mNumMeshes);
+      [[nodiscard]] std::expected<Vector<MeshHandle>, Error> importMeshes(AssetSystem &assets,
+                                                                          const aiScene &scene,
+                                                                          const Vector<MaterialHandle> &materials) {
+         Vector<MeshHandle> meshes(scene.mNumMeshes);
          for (unsigned mesh_index = 0; mesh_index < scene.mNumMeshes; ++mesh_index) {
             const auto *source = scene.mMeshes[mesh_index];
             if (source == nullptr) { continue; }
@@ -219,8 +219,8 @@ namespace vve::v4 {
             }
 
             const auto material = source->mMaterialIndex < materials.size() ? materials[source->mMaterialIndex]
-                                                                            : Handle{};
-            auto mesh = MeshDescriptor{.handle = assets.next(),
+                                                                            : MaterialHandle{};
+            auto mesh = MeshDescriptor{.handle = assets.next<MeshHandle>(),
                                        .name = ObjectName{
                                           .value = readableName(source->mName,
                                                                 "Mesh_" + std::to_string(mesh_index))},
@@ -235,13 +235,13 @@ namespace vve::v4 {
       }
 
       /// @brief Imports one scene-graph node and its children into descriptor maps and topology.
-      [[nodiscard]] std::expected<Handle, Error> importNode(AssetSystem &assets,
-                                                            const aiScene &source_scene,
-                                                            const aiNode &source,
-                                                            const Vector<Handle> &meshes,
-                                                            SceneDescriptor &scene,
-                                                            Handle parent = {}) {
-         auto node = NodeDescriptor{.handle = assets.next(),
+      [[nodiscard]] std::expected<NodeHandle, Error> importNode(AssetSystem &assets,
+                                                                const aiScene &source_scene,
+                                                                const aiNode &source,
+                                                                const Vector<MeshHandle> &meshes,
+                                                                SceneDescriptor &scene,
+                                                                NodeHandle parent = {}) {
+         auto node = NodeDescriptor{.handle = assets.next<NodeHandle>(),
                                     .name = ObjectName{
                                        .value = readableName(source.mName,
                                                              "Node_" + std::to_string(scene.nodes.size()))},
@@ -252,7 +252,7 @@ namespace vve::v4 {
             const auto *mesh = source_scene.mMeshes[mesh_index];
             const auto material = mesh != nullptr && mesh->mMaterialIndex < scene.materials.size()
                                     ? scene.materials[mesh->mMaterialIndex]
-                                    : Handle{};
+                                    : MaterialHandle{};
             node.meshes.push_back(MeshUse{.mesh = meshes[mesh_index], .material = material});
          }
 
@@ -278,8 +278,8 @@ namespace vve::v4 {
       }
 
       /// @brief Imports Assimp lights into v4 light descriptors.
-      [[nodiscard]] std::expected<Vector<Handle>, Error> importLights(AssetSystem &assets, const aiScene &scene) {
-         Vector<Handle> lights{};
+      [[nodiscard]] std::expected<Vector<LightHandle>, Error> importLights(AssetSystem &assets, const aiScene &scene) {
+         Vector<LightHandle> lights{};
          lights.reserve(scene.mNumLights);
          for (unsigned light_index = 0; light_index < scene.mNumLights; ++light_index) {
             const auto *source = scene.mLights[light_index];
@@ -288,7 +288,7 @@ namespace vve::v4 {
             const auto intensity = math::max(math::max(std::abs(color.value.x), std::abs(color.value.y)),
                                              math::max(std::abs(color.value.z), one()));
             auto light = LightDescriptor{
-               .handle = assets.next(),
+               .handle = assets.next<LightHandle>(),
                .name = ObjectName{.value = readableName(source->mName, "Light_" + std::to_string(light_index))},
                .kind = mapLightKind(source->mType),
                .position = Position{.value = toVec3(source->mPosition)},
@@ -302,8 +302,9 @@ namespace vve::v4 {
       }
 
       /// @brief Imports Assimp cameras into v4 camera descriptors.
-      [[nodiscard]] std::expected<Vector<Handle>, Error> importCameras(AssetSystem &assets, const aiScene &scene) {
-         Vector<Handle> cameras{};
+      [[nodiscard]] std::expected<Vector<CameraHandle>, Error> importCameras(AssetSystem &assets,
+                                                                             const aiScene &scene) {
+         Vector<CameraHandle> cameras{};
          cameras.reserve(scene.mNumCameras);
          for (unsigned camera_index = 0; camera_index < scene.mNumCameras; ++camera_index) {
             const auto *source = scene.mCameras[camera_index];
@@ -311,7 +312,7 @@ namespace vve::v4 {
             const auto aspect = math::max(static_cast<Scalar>(source->mAspect), one());
             const auto horizontal = math::max(static_cast<Scalar>(source->mHorizontalFOV), Scalar{0.001F});
             const auto vertical = Scalar{2} * std::atan(std::tan(horizontal * Scalar{0.5F}) / aspect);
-            auto camera = CameraDescriptor{.handle = assets.next(),
+            auto camera = CameraDescriptor{.handle = assets.next<CameraHandle>(),
                                            .name = ObjectName{
                                               .value = readableName(source->mName,
                                                                     "Camera_" + std::to_string(camera_index))},
@@ -330,9 +331,9 @@ namespace vve::v4 {
       }
 
       /// @brief Converts an Assimp scene into v4 descriptors.
-      [[nodiscard]] std::expected<Handle, Error> importScene(AssetSystem &assets,
-                                                             const aiScene &source,
-                                                             const std::filesystem::path &path) {
+      [[nodiscard]] std::expected<SceneHandle, Error> importScene(AssetSystem &assets,
+                                                                  const aiScene &source,
+                                                                  const std::filesystem::path &path) {
          const auto scene_dir = path.parent_path();
          const auto material_handles = importMaterials(assets, source, scene_dir);
          if (!material_handles) { return std::unexpected(material_handles.error()); }
@@ -343,7 +344,7 @@ namespace vve::v4 {
          const auto camera_handles = importCameras(assets, source);
          if (!camera_handles) { return std::unexpected(camera_handles.error()); }
 
-         auto scene = SceneDescriptor{.handle = assets.next(),
+         auto scene = SceneDescriptor{.handle = assets.next<SceneHandle>(),
                                       .name = ObjectName{.value = path.filename().string()},
                                       .meshes = *mesh_handles,
                                       .materials = material_handles->materials,
@@ -369,16 +370,14 @@ namespace vve::v4 {
 
    const ObjectCatalog &AssetSystem::catalog() const { return catalog_; }
 
-   Handle AssetSystem::next() { return makeCounterHandle(); }
-
-   std::expected<Handle, Error> AssetSystem::addScene(ObjectName name) {
-      const auto handle = next();
+   std::expected<SceneHandle, Error> AssetSystem::addScene(ObjectName name) {
+      const auto handle = next<SceneHandle>();
       auto scene = SceneDescriptor{.handle = handle, .name = std::move(name)};
       if (auto added = catalog_.scenes.add(std::move(scene)); !added) { return std::unexpected(added.error()); }
       return handle;
    }
 
-   std::expected<Handle, Error> AssetSystem::loadScene(const std::filesystem::path &source) {
+   std::expected<SceneHandle, Error> AssetSystem::loadScene(const std::filesystem::path &source) {
       if (source.empty()) { return std::unexpected(Error::invalid_argument); }
       const auto path = normalizePath(source);
       Assimp::Importer importer{};

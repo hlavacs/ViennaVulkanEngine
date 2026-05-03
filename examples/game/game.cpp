@@ -146,7 +146,7 @@ public:
             return std::unexpected(load_result.error());
         }
 
-        std::cout << '[' << name() << "] spawned entity " << player_.value << '\n';
+        std::cout << '[' << name() << "] spawned entity " << player_.raw().value << '\n';
         printWindowInventory(world);
         return {};
     }
@@ -282,8 +282,8 @@ private:
         std::cout << '\n';
     }
 
-    /// @brief Handle of the player entity created during initialization.
-    ve::Handle player_{};
+    /// @brief Typed handle of the player entity created during initialization.
+    ve::Entity player_{};
     /// @brief Runtime scene loaded so public camera changes are visible.
     std::filesystem::path scene_path_{};
     /// @brief Tracks time until the next heartbeat log line.
