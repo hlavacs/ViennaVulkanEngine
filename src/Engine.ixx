@@ -1,4 +1,5 @@
 export module VEEngine;
+export import :Error;
 export import :Math;
 export import :Types;
 

@@ -10,30 +10,10 @@ export import :Gui;
 
 export namespace vve::v4 {
 
-   /// @brief Result of one engine frame.
-   enum class FrameStatus {
-      running,                  ///< Engine can continue stepping.
-      stopped,                  ///< Engine stopped because a close request or frame cap was reached.
-      continue_running = running, ///< Alias kept close to v3-style wording.
-      should_close     = stopped  ///< Alias kept close to v3-style wording.
-   };
-
-   /// @brief Backward-compatible compact config; typed options are preferred for new examples.
-   struct EngineConfig {
-      std::string application_name{"v4"}; ///< Human-readable application name.
-      FrameCount max_frames{};            ///< Zero means no frame limit.
-   };
-
-   /// @brief Heterogeneous user-system storage used by makeEngine().
-   template <typename... TSystems> struct UserSystems {
-      std::tuple<TSystems...> value{}; ///< User systems stored by value.
-   };
-
-   /// @brief Builds a user-system bundle while preserving concrete system types.
-   template <typename... TSystems> [[nodiscard]] auto makeUserSystems(TSystems &&...systems) {
-      return UserSystems<std::remove_cvref_t<TSystems>...>{
-         .value = std::tuple<std::remove_cvref_t<TSystems>...>{std::forward<TSystems>(systems)...}};
-   }
+   using ::vve::EngineConfig;    ///< Facade compact engine config.
+   using ::vve::FrameStatus;     ///< Facade frame-loop result.
+   using ::vve::UserSystems;     ///< Facade user-system bundle.
+   using ::vve::makeUserSystems; ///< Facade user-system factory.
 
    namespace detail {
 
@@ -314,50 +294,7 @@ export namespace vve::v4 {
 
 export namespace vve {
 
-   template <typename T> using Vector = v4::Vector<T>; ///< Facade vector alias for the active v4 backend.
-
-   using v4::ApplicationName;   ///< Facade application-name option.
-   using v4::CameraDescriptor;  ///< Facade camera descriptor.
-   using v4::Engine;            ///< Facade engine template for advanced callers.
-   using v4::EngineConfig;      ///< Facade compact engine config.
-   using v4::Error;             ///< Facade error vocabulary.
-   using v4::FrameContext;      ///< Facade per-frame timing context.
-   using v4::FrameStatus;       ///< Facade frame-loop result.
-   using v4::Graph;             ///< Facade typed graph topology.
-   using v4::InputState;        ///< Facade input snapshot.
-   using v4::LightDescriptor;   ///< Facade light descriptor.
-   using v4::LightKind;         ///< Facade light kind enum.
-   using v4::MaterialDescriptor; ///< Facade material descriptor.
-   using v4::MaxFrames;         ///< Facade max-frame option.
-   using v4::MeshDescriptor;    ///< Facade mesh descriptor.
-   using v4::MeshUse;           ///< Facade mesh-use descriptor.
-   using v4::NodeDescriptor;    ///< Facade scene-node descriptor.
-   using v4::ObjectCatalog;     ///< Facade imported-object catalog.
-   using v4::RenderPassNode;    ///< Facade render-pass node descriptor.
-   using v4::ResourceDescriptor; ///< Facade resource descriptor.
-   using v4::ResourceKind;      ///< Facade resource kind enum.
-   using v4::SceneDescriptor;   ///< Facade scene descriptor.
-   using v4::ShaderDescriptor;  ///< Facade shader descriptor.
-   using v4::ShaderStage;       ///< Facade shader stage enum.
-   using v4::TaskNode;          ///< Facade task-node descriptor.
-   using v4::TextureBinding;    ///< Facade texture binding descriptor.
-   using v4::TextureDescriptor; ///< Facade texture descriptor.
-   using v4::TextureSemantic;   ///< Facade texture semantic enum.
-   using v4::Tree;              ///< Facade scene-tree topology.
-   using v4::UserSystems;       ///< Facade user-system bundle.
-   using v4::WindowDesc;        ///< Facade window creation descriptor.
-   using v4::WindowFrameData;   ///< Facade per-frame window snapshot.
-   using v4::WindowInfo;        ///< Facade runtime window state.
-   using v4::Windows;           ///< Facade startup-window collection.
-   using v4::World;             ///< Facade world object.
-   using v4::errorName;         ///< Facade error-name helper.
-   using v4::identityMat4;      ///< Facade math convenience helper.
-   using v4::identityQuat;      ///< Facade math convenience helper.
-   using v4::makeEngine;        ///< Facade engine factory.
-   using v4::makeUserSystems;   ///< Facade user-system factory.
-   using v4::one;               ///< Facade scalar one helper.
-   using v4::oneVec3;           ///< Facade vector one helper.
-   using v4::zero;              ///< Facade scalar zero helper.
-   using v4::zeroVec3;          ///< Facade vector zero helper.
+   using v4::Engine;     ///< Facade engine template backed by the active v4 implementation.
+   using v4::makeEngine; ///< Facade engine factory backed by the active v4 implementation.
 
 } // namespace vve

@@ -4,7 +4,7 @@ export import :ECS;
 export import VEEngine;
 
 /// @file
-/// @brief v4 handle-addressable descriptor types built on the shared Math.ixx geometry layer.
+/// @brief v4 aliases for facade data plus v4-internal graph/resource handle types.
 
 export namespace vve::v4 {
 
@@ -17,107 +17,69 @@ export namespace vve::v4 {
    using Quat   = math::Quat;   ///< Short alias for the configured quaternion type.
    using Mat4   = math::Mat4;   ///< Short alias for the configured 4x4 matrix type.
 
-   /// @brief Returns the additive identity for the selected scalar type.
-   [[nodiscard]] inline constexpr Scalar zero() noexcept { return math::zero(); }
+   [[nodiscard]] inline constexpr Scalar zero() noexcept { return math::zero(); } ///< Scalar zero.
 
-   /// @brief Returns the multiplicative identity for the selected scalar type.
-   [[nodiscard]] inline constexpr Scalar one() noexcept { return math::one(); }
+   [[nodiscard]] inline constexpr Scalar one() noexcept { return math::one(); } ///< Scalar one.
 
-   /// @brief Returns the zero vector.
-   [[nodiscard]] inline Vec3 zeroVec3() noexcept { return math::zeroVec3(); }
+   [[nodiscard]] inline Vec3 zeroVec3() noexcept { return math::zeroVec3(); } ///< Zero 3D vector.
 
-   /// @brief Returns a vector with all coordinates set to one.
-   [[nodiscard]] inline Vec3 oneVec3() noexcept { return math::oneVec3(); }
+   [[nodiscard]] inline Vec3 oneVec3() noexcept { return math::oneVec3(); } ///< One-filled 3D vector.
 
-   /// @brief Returns the identity rotation.
-   [[nodiscard]] inline Quat identityQuat() noexcept { return math::identityQuat(); }
+   [[nodiscard]] inline Quat identityQuat() noexcept { return math::identityQuat(); } ///< Identity rotation.
 
-   /// @brief Returns a 4x4 identity matrix.
-   [[nodiscard]] inline Mat4 identityMat4() noexcept { return math::identityMat4(); }
+   [[nodiscard]] inline Mat4 identityMat4() noexcept { return math::identityMat4(); } ///< Identity matrix.
 
-   using Position       = ::vve::Position;       ///< Shared strong position wrapper.
-   using Direction      = ::vve::Direction;      ///< Shared strong direction wrapper.
-   using Scale          = ::vve::Scale;          ///< Shared strong scale wrapper.
-   using Rotation       = ::vve::Rotation;       ///< Shared strong rotation wrapper.
-   using LinearColor    = ::vve::LinearColor;    ///< Shared strong linear RGB color wrapper.
-   using LightIntensity = ::vve::LightIntensity; ///< Shared strong light-intensity wrapper.
-   using FovY           = ::vve::FovY;           ///< Shared strong vertical field-of-view wrapper.
-   using ClipPlanes     = ::vve::ClipPlanes;     ///< Shared strong camera clip-plane wrapper.
-   using DeltaTime      = ::vve::DeltaTime;      ///< Shared strong frame delta-time wrapper.
-   using PixelExtent    = ::vve::PixelExtent;    ///< Shared strong pixel-extent wrapper.
-   using ObjectName     = ::vve::ObjectName;     ///< Shared strong object-name wrapper.
-   using RendererId     = ::vve::RendererId;     ///< Shared strong renderer-id wrapper.
-   using FrameCount     = ::vve::FrameCount;     ///< Shared strong frame-count wrapper.
-   using VertexCount    = ::vve::VertexCount;    ///< Shared strong vertex-count wrapper.
-   using IndexCount     = ::vve::IndexCount;     ///< Shared strong index-count wrapper.
-   using TextureChannelCount = ::vve::TextureChannelCount; ///< Shared strong texture-channel-count wrapper.
-   using Transform      = ::vve::Transform;      ///< Shared transform component.
-   using Bounds         = ::vve::Bounds;         ///< Shared axis-aligned bounds type.
-   using Camera         = ::vve::Camera;         ///< Shared camera geometry type.
+   using ::vve::Bounds;
+   using ::vve::Camera;
+   using ::vve::CameraDescriptor;
+   using ::vve::CameraHandle;
+   using ::vve::ClipPlanes;
+   using ::vve::DeltaTime;
+   using ::vve::DescriptorMap;
+   using ::vve::Direction;
+   using ::vve::FovY;
+   using ::vve::FrameCount;
+   using ::vve::IndexCount;
+   using ::vve::LightDescriptor;
+   using ::vve::LightHandle;
+   using ::vve::LightIntensity;
+   using ::vve::LightKind;
+   using ::vve::LinearColor;
+   using ::vve::MaterialDescriptor;
+   using ::vve::MaterialHandle;
+   using ::vve::MeshDescriptor;
+   using ::vve::MeshHandle;
+   using ::vve::MeshUse;
+   using ::vve::NodeDescriptor;
+   using ::vve::NodeHandle;
+   using ::vve::ObjectCatalog;
+   using ::vve::ObjectName;
+   using ::vve::PixelExtent;
+   using ::vve::Position;
+   using ::vve::RendererId;
+   using ::vve::Rotation;
+   using ::vve::Scale;
+   using ::vve::SceneDescriptor;
+   using ::vve::SceneHandle;
+   using ::vve::TextureBinding;
+   using ::vve::TextureChannelCount;
+   using ::vve::TextureDescriptor;
+   using ::vve::TextureHandle;
+   using ::vve::TextureSemantic;
+   using ::vve::Transform;
+   using ::vve::Tree;
+   using ::vve::VertexCount;
 
-   using SceneHandle      = ::vve::SceneHandle;      ///< Facade-level scene descriptor handle.
-   using NodeHandle       = ::vve::NodeHandle;       ///< Facade-level scene-node descriptor handle.
-   using MeshHandle       = ::vve::MeshHandle;       ///< Facade-level mesh descriptor handle.
-   using MaterialHandle   = ::vve::MaterialHandle;   ///< Facade-level material descriptor handle.
-   using TextureHandle    = ::vve::TextureHandle;    ///< Facade-level texture descriptor handle.
-   using LightHandle      = ::vve::LightHandle;      ///< Facade-level light descriptor handle.
-   using CameraHandle     = ::vve::CameraHandle;     ///< Facade-level camera descriptor handle.
-   using WindowHandle     = ::vve::WindowHandle;     ///< Facade-level runtime window handle.
-   using ResourceHandle   = ::vve::ResourceHandle;   ///< Facade-level resource handle.
-   using ShaderHandle     = ::vve::ShaderHandle;     ///< Facade-level shader descriptor handle.
-   using TaskHandle       = ::vve::TaskHandle;       ///< Facade-level task descriptor handle.
-   using RenderPassHandle = ::vve::RenderPassHandle; ///< Facade-level render-pass descriptor handle.
-   using RendererHandle   = ::vve::RendererHandle;   ///< Facade-level renderer descriptor handle.
-   using GuiWidgetHandle  = ::vve::GuiWidgetHandle;  ///< Facade-level GUI widget handle.
+   template <typename THandle> using BasicTree = ::vve::BasicTree<THandle>; ///< Facade tree topology.
 
-   /// @brief Material texture slot meaning.
-   enum class TextureSemantic {
-      unknown,    ///< Unclassified texture use.
-      base_color, ///< Color/albedo texture.
-      normal,     ///< Tangent-space normal texture.
-      roughness,  ///< Roughness texture.
-      metallic,   ///< Metallic texture.
-      emissive,   ///< Emissive texture.
-      occlusion   ///< Ambient-occlusion texture.
-   };
+   using ResourceHandle   = TypedHandle<decltype([] {})>; ///< v4-internal resource handle.
+   using ShaderHandle     = TypedHandle<decltype([] {})>; ///< v4-internal shader descriptor handle.
+   using TaskHandle       = TypedHandle<decltype([] {})>; ///< v4-internal task descriptor handle.
+   using RenderPassHandle = TypedHandle<decltype([] {})>; ///< v4-internal render-pass handle.
+   using RendererHandle   = TypedHandle<decltype([] {})>; ///< v4-internal renderer descriptor handle.
+   using GuiWidgetHandle  = TypedHandle<decltype([] {})>; ///< v4-internal GUI widget handle.
 
-   /// @brief High-level light shape.
-   enum class LightKind {
-      unknown,     ///< Unclassified light.
-      directional, ///< Direction-only light such as the sun.
-      point,       ///< Point light with position.
-      spot         ///< Spot light with position and direction.
-   };
-
-   /// @brief A material reference to one texture descriptor.
-   struct TextureBinding {
-      TextureHandle texture{};                             ///< Referenced TextureDescriptor handle.
-      TextureSemantic semantic{TextureSemantic::unknown};  ///< Intended material slot.
-      std::uint32_t uv_set{0};                             ///< UV channel used by the texture.
-   };
-
-   /// @brief A scene node reference to renderable geometry and material.
-   struct MeshUse {
-      MeshHandle mesh{};         ///< Referenced MeshDescriptor handle.
-      MaterialHandle material{}; ///< Referenced MaterialDescriptor handle.
-   };
-
-   /// @brief Tree topology: one root plus parent-to-child handle edges.
-   template <typename THandle> struct BasicTree {
-      THandle root{};                             ///< Root node handle.
-      std::multimap<THandle, THandle> children{}; ///< Parent node handle mapped to child node handles.
-
-      /// @brief Adds one parent-to-child tree edge.
-      void addChild(THandle parent, THandle child) { children.emplace(parent, child); }
-
-      /// @brief Returns all children for a parent handle.
-      [[nodiscard]] auto childRange(THandle parent) const { return children.equal_range(parent); }
-
-   };
-
-   using Tree = BasicTree<NodeHandle>; ///< Scene-tree topology uses node handles.
-
-   /// @brief Generic directed graph topology stored as parent-to-child handle edges.
+   /// @brief Generic directed graph topology used by v4 task and render graphs.
    template <typename THandle> struct Graph {
       std::multimap<THandle, THandle> edges{}; ///< Source node handle mapped to destination node handles.
 
@@ -164,130 +126,6 @@ export namespace vve::v4 {
          return ordered;
       }
 
-   };
-
-   /// @brief Scene graph node descriptor stored by handle in ObjectCatalog.
-   struct NodeDescriptor {
-      using HandleType = NodeHandle; ///< Descriptor handle type.
-      NodeHandle handle{};           ///< Stable 64-bit node handle.
-      ObjectName name{};             ///< Human-readable node name.
-      Transform transform{};         ///< Local transform.
-      Vector<MeshUse> meshes{};      ///< Mesh/material pairs attached to this node.
-   };
-
-   /// @brief Mesh geometry descriptor; actual vertex buffers are added later.
-   struct MeshDescriptor {
-      using HandleType = MeshHandle; ///< Descriptor handle type.
-      MeshHandle handle{};          ///< Stable 64-bit mesh handle.
-      ObjectName name{};            ///< Human-readable mesh name.
-      VertexCount vertex_count{};   ///< Number of vertices in source geometry.
-      IndexCount index_count{};     ///< Number of indices in source geometry.
-      MaterialHandle material{};    ///< Default material handle.
-      Bounds bounds{};              ///< Object-space bounds.
-   };
-
-   /// @brief Material descriptor referencing textures by handle.
-   struct MaterialDescriptor {
-      using HandleType = MaterialHandle; ///< Descriptor handle type.
-      MaterialHandle handle{};           ///< Stable 64-bit material handle.
-      ObjectName name{};                ///< Human-readable material name.
-      Vector<TextureBinding> textures{}; ///< Texture slots used by this material.
-   };
-
-   /// @brief Texture descriptor; pixel storage and GPU upload are future steps.
-   struct TextureDescriptor {
-      using HandleType = TextureHandle; ///< Descriptor handle type.
-      TextureHandle handle{};      ///< Stable 64-bit texture handle.
-      ObjectName name{};           ///< Human-readable texture name.
-      std::filesystem::path source{}; ///< Source file path or logical asset path.
-      PixelExtent extent{};        ///< Source dimensions in pixels.
-      TextureChannelCount channels{}; ///< Source channel count.
-   };
-
-   /// @brief Light descriptor used by renderers and scene systems.
-   struct LightDescriptor {
-      using HandleType = LightHandle;     ///< Descriptor handle type.
-      LightHandle handle{};               ///< Stable 64-bit light handle.
-      ObjectName name{};                  ///< Human-readable light name.
-      LightKind kind{LightKind::unknown}; ///< Light shape.
-      Position position{};                ///< Light position for point/spot lights.
-      Direction direction{};              ///< Light direction for directional/spot lights.
-      LinearColor color{};                ///< Linear light color.
-      LightIntensity intensity{};         ///< Relative light intensity.
-   };
-
-   /// @brief Camera descriptor used to create runtime cameras.
-   struct CameraDescriptor {
-      using HandleType = CameraHandle;    ///< Descriptor handle type.
-      CameraHandle handle{};              ///< Stable 64-bit camera handle.
-      ObjectName name{};                  ///< Human-readable camera name.
-      Position position{};                ///< Camera position.
-      Direction forward{};                ///< Camera forward direction.
-      FovY fov_y{};                       ///< Vertical field of view.
-      ClipPlanes clip{};                  ///< Near and far clipping planes.
-   };
-
-   /// @brief Scene descriptor stores only handles to objects kept in descriptor maps.
-   struct SceneDescriptor {
-      using HandleType = SceneHandle; ///< Descriptor handle type.
-      SceneHandle handle{};           ///< Stable 64-bit scene handle.
-      ObjectName name{};              ///< Human-readable scene name.
-      Tree tree{};                    ///< Scene hierarchy; nodes do not store child vectors.
-      Vector<NodeHandle> nodes{};     ///< All node handles in the scene.
-      Vector<MeshHandle> meshes{};    ///< Mesh handles used by the scene.
-      Vector<MaterialHandle> materials{}; ///< Material handles used by the scene.
-      Vector<TextureHandle> textures{}; ///< Texture handles used by the scene.
-      Vector<LightHandle> lights{};   ///< Light handles used by the scene.
-      Vector<CameraHandle> cameras{}; ///< Camera handles used by the scene.
-   };
-
-   /// @brief Simple descriptor table keyed by each descriptor's typed handle.
-   template <typename TDescriptor> class DescriptorMap {
-   public:
-      using HandleType = typename TDescriptor::HandleType; ///< Strong handle accepted by this map.
-
-      /// @brief Inserts a descriptor; descriptors must expose a valid `handle` member.
-      [[nodiscard]] std::expected<void, Error> add(TDescriptor descriptor) {
-         if (!descriptor.handle.valid()) { return std::unexpected(Error::invalid_handle); }
-         const auto [_, inserted] = descriptors_.emplace(descriptor.handle, std::move(descriptor));
-         if (!inserted) { return std::unexpected(Error::duplicate_object); }
-         return {};
-      }
-
-      /// @brief Finds a descriptor by handle, or returns null.
-      [[nodiscard]] const TDescriptor *find(HandleType handle) const {
-         const auto it = descriptors_.find(handle);
-         return it == descriptors_.end() ? nullptr : std::addressof(it->second);
-      }
-
-      /// @brief Finds a mutable descriptor by handle, or returns null.
-      [[nodiscard]] TDescriptor *find(HandleType handle) {
-         const auto it = descriptors_.find(handle);
-         return it == descriptors_.end() ? nullptr : std::addressof(it->second);
-      }
-
-      /// @brief Returns true when the map contains the handle.
-      [[nodiscard]] bool contains(HandleType handle) const { return descriptors_.contains(handle); }
-
-      /// @brief Returns descriptor count.
-      [[nodiscard]] std::size_t size() const { return descriptors_.size(); }
-
-      /// @brief Exposes read-only descriptor storage for tests and iteration.
-      [[nodiscard]] const std::map<HandleType, TDescriptor> &all() const { return descriptors_; }
-
-   private:
-      std::map<HandleType, TDescriptor> descriptors_{}; ///< Ordered descriptor storage.
-   };
-
-   /// @brief Central imported-object catalog; every loaded object is found by 64-bit handle.
-   struct ObjectCatalog {
-      DescriptorMap<SceneDescriptor> scenes{};       ///< Scenes by handle.
-      DescriptorMap<NodeDescriptor> nodes{};         ///< Nodes by handle.
-      DescriptorMap<MeshDescriptor> meshes{};        ///< Meshes by handle.
-      DescriptorMap<MaterialDescriptor> materials{}; ///< Materials by handle.
-      DescriptorMap<TextureDescriptor> textures{};   ///< Textures by handle.
-      DescriptorMap<LightDescriptor> lights{};       ///< Lights by handle.
-      DescriptorMap<CameraDescriptor> cameras{};     ///< Cameras by handle.
    };
 
 } // namespace vve::v4

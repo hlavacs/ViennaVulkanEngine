@@ -34,6 +34,7 @@ target_sources(ViennaVulkanEngine
     PUBLIC
         FILE_SET CXX_MODULES FILES
             Math.ixx
+            Error.ixx
             Types.ixx
             Engine.ixx
             versions/v4/Vector.ixx
