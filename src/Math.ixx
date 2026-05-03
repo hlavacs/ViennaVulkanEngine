@@ -15,14 +15,13 @@ module;
 #include <glm/ext/vector_float4.hpp>
 
 export module VEEngine:Math;
-import std;
 
 /**
  * @file
- * @brief Math and geometry facade used by every engine version.
+ * @brief Thin math facade over GLM and the selected engine scalar policy.
  *
- * Engine-facing code should depend on this module instead of raw GLM types so
- * the scalar precision policy and common geometry value types stay unified.
+ * This partition intentionally contains only math aliases and stateless helper
+ * functions. Strong semantic engine value types live in VEEngine:Types.
  */
 export namespace vve::math {
 
@@ -73,6 +72,9 @@ export namespace vve::math {
    /// @brief Multiplies two 4x4 matrices without exposing GLM at call sites.
    [[nodiscard]] inline Mat4 multiply(const Mat4 &lhs, const Mat4 &rhs) { return lhs * rhs; }
 
+   /// @brief Subtracts one 3D vector from another without exposing GLM operators at call sites.
+   [[nodiscard]] inline Vec3 subtract(const Vec3 &lhs, const Vec3 &rhs) { return lhs - rhs; }
+
    /// @brief Returns `matrix` translated by `offset`.
    [[nodiscard]] inline Mat4 translate(const Mat4 &matrix, const Vec3 &offset) {
       return glm::translate(matrix, offset);
@@ -96,101 +98,3 @@ export namespace vve::math {
    [[nodiscard]] inline Mat4 inverse(const Mat4 &matrix) { return glm::inverse(matrix); }
 
 } // namespace vve::math
-
-export namespace vve {
-
-   /// @brief Strong wrapper for world or local position values.
-   struct Position {
-      math::Vec3 value{math::zeroVec3()}; ///< Wrapped coordinate.
-   };
-
-   /// @brief Strong wrapper for vectors that should be interpreted as directions.
-   struct Direction {
-      math::Vec3 value{math::Vec3(math::zero(), math::zero(), -math::one())}; ///< Wrapped direction.
-   };
-
-   /// @brief Strong wrapper for non-uniform scale factors.
-   struct Scale {
-      math::Vec3 value{math::oneVec3()}; ///< Wrapped scale vector.
-   };
-
-   /// @brief Strong wrapper for quaternion rotations.
-   struct Rotation {
-      math::Quat value{math::identityQuat()}; ///< Wrapped orientation.
-   };
-
-   /// @brief Strong wrapper for linear RGB color values.
-   struct LinearColor {
-      math::Vec3 value{math::oneVec3()}; ///< Wrapped linear RGB color.
-   };
-
-   /// @brief Strong wrapper for relative light intensity.
-   struct LightIntensity {
-      math::Scalar value{math::one()}; ///< Wrapped non-negative intensity scale.
-   };
-
-   /// @brief Strong wrapper for vertical field-of-view angles.
-   struct FovY {
-      math::Scalar radians{static_cast<math::Scalar>(1.0471975511965976)}; ///< Wrapped vertical FOV in radians.
-   };
-
-   /// @brief Strong wrapper for near and far clipping planes.
-   struct ClipPlanes {
-      math::Scalar near_plane{static_cast<math::Scalar>(0.1)};     ///< Near clip distance.
-      math::Scalar far_plane{static_cast<math::Scalar>(10000.0)}; ///< Far clip distance.
-   };
-
-   /// @brief Strong wrapper for frame delta time.
-   struct DeltaTime {
-      double seconds{1.0 / 60.0}; ///< Elapsed seconds.
-   };
-
-   /// @brief Strong wrapper for pixel dimensions.
-   struct PixelExtent {
-      std::uint32_t width{0};  ///< Width in pixels.
-      std::uint32_t height{0}; ///< Height in pixels.
-   };
-
-   /// @brief Standard transform component shared by all active engine layers.
-   struct Transform {
-      Position translation{}; ///< Local or world-space translation.
-      Rotation rotation{};    ///< Local or world-space orientation.
-      Scale scale{};          ///< Local or world-space non-uniform scale.
-   };
-
-   /// @brief Axis-aligned bounds described by minimum and maximum positions.
-   struct Bounds {
-      Position minimum{}; ///< Minimum corner.
-      Position maximum{}; ///< Maximum corner.
-      bool valid{false};  ///< False until at least one point has been included.
-   };
-
-   /// @brief Public camera description used by game code and renderers.
-   struct Camera {
-      Position position{.value = math::Vec3(math::zero(), static_cast<math::Scalar>(1.5),
-                                            static_cast<math::Scalar>(6.0))}; ///< World-space camera position.
-      Direction forward{.value = math::Vec3(math::zero(), math::zero(), -math::one())}; ///< View direction.
-      math::Mat4 view_transform{math::translate(
-          math::identityMat4(),
-          math::Vec3(math::zero(), static_cast<math::Scalar>(-1.5),
-                     static_cast<math::Scalar>(-6.0)))}; ///< World-to-view transform.
-      FovY fov_y{};      ///< Vertical field of view.
-      ClipPlanes clip{}; ///< Near/far clip planes.
-
-      /// @brief Builds a camera from an eye position and target point.
-      [[nodiscard]] static Camera lookAt(Position position, Position target,
-                                         Direction up = Direction{.value = math::Vec3(math::zero(), math::one(),
-                                                                                     math::zero())},
-                                         FovY fov_y = {}, ClipPlanes clip = {}) {
-         Camera camera{};
-         camera.position = position;
-         camera.forward = Direction{.value = target.value - position.value};
-         camera.view_transform = math::lookAt(position.value, target.value, up.value);
-         camera.fov_y = fov_y;
-         camera.clip = clip;
-         return camera;
-      }
-
-   };
-
-} // namespace vve
