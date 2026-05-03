@@ -32,7 +32,7 @@ if(CMAKE_GENERATOR MATCHES "^Visual Studio")
    endif()
 endif()
 
-project(ViennaVulkanEngine VERSION 3.0.0 LANGUAGES CXX)
+project(ViennaVulkanEngine VERSION 4.0.0 LANGUAGES CXX)
 
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
    include(CTest)
@@ -58,13 +58,15 @@ endif()
 set(VVE_VULKAN_SDK_ROOT "" CACHE PATH "Root directory of the Vulkan SDK used for Vulkan and Slang packages")
 if(VVE_VULKAN_SDK_ROOT STREQUAL "")
    if(DEFINED ENV{VULKAN_SDK} AND NOT "$ENV{VULKAN_SDK}" STREQUAL "")
-      set(VVE_VULKAN_SDK_ROOT "$ENV{VULKAN_SDK}" CACHE PATH "Root directory of the Vulkan SDK used for Vulkan and Slang packages" FORCE)
+      set(VVE_VULKAN_SDK_ROOT "$ENV{VULKAN_SDK}"
+         CACHE PATH "Root directory of the Vulkan SDK used for Vulkan and Slang packages" FORCE)
    elseif(APPLE AND DEFINED ENV{HOME})
       file(GLOB VVE_VULKAN_SDK_CANDIDATES LIST_DIRECTORIES true "$ENV{HOME}/VulkanSDK/*/macOS")
       if(VVE_VULKAN_SDK_CANDIDATES)
          list(SORT VVE_VULKAN_SDK_CANDIDATES COMPARE NATURAL ORDER DESCENDING)
          list(GET VVE_VULKAN_SDK_CANDIDATES 0 VVE_VULKAN_SDK_DETECTED_ROOT)
-         set(VVE_VULKAN_SDK_ROOT "${VVE_VULKAN_SDK_DETECTED_ROOT}" CACHE PATH "Root directory of the Vulkan SDK used for Vulkan and Slang packages" FORCE)
+         set(VVE_VULKAN_SDK_ROOT "${VVE_VULKAN_SDK_DETECTED_ROOT}"
+            CACHE PATH "Root directory of the Vulkan SDK used for Vulkan and Slang packages" FORCE)
       endif()
    endif()
 endif()
@@ -108,9 +110,11 @@ if(APPLE AND NOT VVE_VULKAN_SDK_ROOT STREQUAL "")
 endif()
 
 if(EXISTS "${VVE_VCPKG_INSTALLED_DIR}/share/sdl3/SDL3Config.cmake")
-   set(SDL3_DIR "${VVE_VCPKG_INSTALLED_DIR}/share/sdl3" CACHE PATH "SDL3 package configuration directory from vcpkg_installed" FORCE)
+   set(SDL3_DIR "${VVE_VCPKG_INSTALLED_DIR}/share/sdl3"
+      CACHE PATH "SDL3 package configuration directory from vcpkg_installed" FORCE)
 elseif(EXISTS "${VVE_VCPKG_INSTALLED_DIR}/share/SDL3/SDL3Config.cmake")
-   set(SDL3_DIR "${VVE_VCPKG_INSTALLED_DIR}/share/SDL3" CACHE PATH "SDL3 package configuration directory from vcpkg_installed" FORCE)
+   set(SDL3_DIR "${VVE_VCPKG_INSTALLED_DIR}/share/SDL3"
+      CACHE PATH "SDL3 package configuration directory from vcpkg_installed" FORCE)
 endif()
 
 find_package(Vulkan REQUIRED)
