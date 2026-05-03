@@ -36,6 +36,9 @@ target_sources(ViennaVulkanEngine
             Math.ixx
             Error.ixx
             Types.ixx
+            ECS.ixx
+            Window.ixx
+            World.ixx
             Engine.ixx
             versions/v4/Vector.ixx
             versions/v4/ECS.ixx
