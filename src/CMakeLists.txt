@@ -36,6 +36,7 @@ target_sources(ViennaVulkanEngine
             Math.ixx
             Error.ixx
             Types.ixx
+            Graph.ixx
             ECS.ixx
             Window.ixx
             World.ixx

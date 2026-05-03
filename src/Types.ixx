@@ -246,30 +246,6 @@ export namespace vve {
       MaterialHandle material{}; ///< Referenced material handle.
    };
 
-   /// @brief Tree topology: one root plus parent-to-child handle edges.
-   template <typename THandle> struct BasicTree {
-      THandle root{};                             ///< Root node handle.
-      std::multimap<THandle, THandle> children{}; ///< Parent node handle mapped to child node handles.
-
-      /// @brief Adds one parent-to-child tree edge.
-      void addChild(THandle parent, THandle child) { children.emplace(parent, child); }
-
-      /// @brief Returns all children for a parent handle.
-      [[nodiscard]] auto childRange(THandle parent) const { return children.equal_range(parent); }
-
-   };
-
-   using Tree = BasicTree<NodeHandle>; ///< Scene-tree topology uses node handles.
-
-   /// @brief Scene graph node descriptor stored by handle in ObjectCatalog.
-   struct NodeDescriptor {
-      using HandleType = NodeHandle; ///< Descriptor handle type.
-      NodeHandle handle{};           ///< Stable node handle.
-      ObjectName name{};             ///< Human-readable node name.
-      Transform transform{};         ///< Local transform.
-      Vector<MeshUse> meshes{};      ///< Mesh/material pairs attached to this node.
-   };
-
    /// @brief Mesh geometry descriptor; actual vertex buffers are added later.
    struct MeshDescriptor {
       using HandleType = MeshHandle; ///< Descriptor handle type.
@@ -322,20 +298,6 @@ export namespace vve {
       ClipPlanes clip{};               ///< Near and far clipping planes.
    };
 
-   /// @brief Scene descriptor stores only handles to objects kept in descriptor maps.
-   struct SceneDescriptor {
-      using HandleType = SceneHandle;     ///< Descriptor handle type.
-      SceneHandle handle{};               ///< Stable scene handle.
-      ObjectName name{};                  ///< Human-readable scene name.
-      Tree tree{};                        ///< Scene hierarchy; nodes do not store child vectors.
-      Vector<NodeHandle> nodes{};         ///< All node handles in the scene.
-      Vector<MeshHandle> meshes{};        ///< Mesh handles used by the scene.
-      Vector<MaterialHandle> materials{}; ///< Material handles used by the scene.
-      Vector<TextureHandle> textures{};   ///< Texture handles used by the scene.
-      Vector<LightHandle> lights{};       ///< Light handles used by the scene.
-      Vector<CameraHandle> cameras{};     ///< Camera handles used by the scene.
-   };
-
    /// @brief Simple descriptor table keyed by each descriptor's typed handle.
    template <typename TDescriptor> class DescriptorMap {
    public:
@@ -372,17 +334,6 @@ export namespace vve {
 
    private:
       std::map<HandleType, TDescriptor> descriptors_{}; ///< Ordered descriptor storage.
-   };
-
-   /// @brief Central imported-object catalog; every loaded object is found by 64-bit handle.
-   struct ObjectCatalog {
-      DescriptorMap<SceneDescriptor> scenes{};       ///< Scenes by handle.
-      DescriptorMap<NodeDescriptor> nodes{};         ///< Nodes by handle.
-      DescriptorMap<MeshDescriptor> meshes{};        ///< Meshes by handle.
-      DescriptorMap<MaterialDescriptor> materials{}; ///< Materials by handle.
-      DescriptorMap<TextureDescriptor> textures{};   ///< Textures by handle.
-      DescriptorMap<LightDescriptor> lights{};       ///< Lights by handle.
-      DescriptorMap<CameraDescriptor> cameras{};     ///< Cameras by handle.
    };
 
 } // namespace vve

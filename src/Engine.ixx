@@ -2,6 +2,7 @@ export module VEEngine;
 export import :Error;
 export import :Math;
 export import :Types;
+export import :Graph;
 export import :ECS;
 export import :Window;
 export import :World;

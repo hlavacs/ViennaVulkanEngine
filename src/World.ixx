@@ -1,6 +1,7 @@
 export module VEEngine:World;
 import std;
 export import :ECS;
+export import :Graph;
 export import :Window;
 
 /**

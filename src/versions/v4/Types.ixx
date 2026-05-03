@@ -39,6 +39,7 @@ export namespace vve::v4 {
    using ::vve::Direction;
    using ::vve::FovY;
    using ::vve::FrameCount;
+   using ::vve::Graph;
    using ::vve::IndexCount;
    using ::vve::LightDescriptor;
    using ::vve::LightHandle;
@@ -78,54 +79,5 @@ export namespace vve::v4 {
    using RenderPassHandle = TypedHandle<decltype([] {})>; ///< v4-internal render-pass handle.
    using RendererHandle   = TypedHandle<decltype([] {})>; ///< v4-internal renderer descriptor handle.
    using GuiWidgetHandle  = TypedHandle<decltype([] {})>; ///< v4-internal GUI widget handle.
-
-   /// @brief Generic directed graph topology used by v4 task and render graphs.
-   template <typename THandle> struct Graph {
-      std::multimap<THandle, THandle> edges{}; ///< Source node handle mapped to destination node handles.
-
-      /// @brief Adds one directed edge.
-      void addEdge(THandle from, THandle to) { edges.emplace(from, to); }
-
-      /// @brief Returns all outgoing edges for a node handle.
-      [[nodiscard]] auto childRange(THandle node) const { return edges.equal_range(node); }
-
-      /// @brief Returns nodes in dependency order, or cycle_detected when the graph is cyclic.
-      [[nodiscard]] std::expected<Vector<THandle>, Error> topologicalOrder(const Vector<THandle> &nodes) const {
-         std::map<THandle, std::uint32_t> incoming{};
-         std::map<THandle, Vector<THandle>> outgoing{};
-         for (const auto node : nodes) {
-            if (!node.valid()) { return std::unexpected(Error::invalid_handle); }
-            incoming.try_emplace(node, 0);
-         }
-
-         for (const auto &[from, to] : edges) {
-            if (!from.valid() || !to.valid()) { return std::unexpected(Error::invalid_handle); }
-            if (!incoming.contains(from) || !incoming.contains(to)) { return std::unexpected(Error::missing_object); }
-            outgoing[from].push_back(to);
-            ++incoming[to];
-         }
-
-         std::set<THandle> ready{};
-         Vector<THandle> ordered{};
-         ordered.reserve(incoming.size());
-         for (const auto &[node, count] : incoming) {
-            if (count == 0) { ready.insert(node); }
-         }
-
-         while (!ready.empty()) {
-            const auto node = *ready.begin();
-            ready.erase(ready.begin());
-            ordered.push_back(node);
-            for (const auto child : outgoing[node]) {
-               auto &count = incoming[child];
-               if (--count == 0) { ready.insert(child); }
-            }
-         }
-
-         if (ordered.size() != incoming.size()) { return std::unexpected(Error::cycle_detected); }
-         return ordered;
-      }
-
-   };
 
 } // namespace vve::v4
