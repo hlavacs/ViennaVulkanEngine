@@ -2,6 +2,7 @@
 #include <expected>
 #include <filesystem>
 #include <fstream>
+#include <optional>
 #include <string>
 #include <string_view>
 #include <type_traits>
@@ -329,15 +330,25 @@ struct CountingSystem {
    }
    world.windows().push_back(WindowInfo{.handle = window, .id = "main", .title = "test"});
    const auto entity = world.spawn(Transform{}, Velocity{2.0F});
-   if (!entity || world.findWindow("main") == nullptr) {
+   const auto camera = world.spawn(Camera{});
+   if (!entity || !camera || world.findWindow("main") == nullptr) {
       return 64;
    }
    const auto velocity = world.getComponent<Velocity>(*entity);
    if (!velocity || !velocity->has_value() || !nearly((*velocity)->x, 2.0F)) {
       return 65;
    }
-   if (!world.setActiveCamera(*entity) || !world.activeCamera().has_value()) {
+   const auto main_camera = world.setWindowCamera("main", *camera) ? world.windowCamera("main")
+                                                                   : std::optional<Entity>{};
+   if (!main_camera || *main_camera != *camera) {
       return 66;
+   }
+   if (!world.clearWindowCamera(window) || world.windowCamera(window).has_value()) {
+      return 68;
+   }
+   const auto active_camera = world.setActiveCamera(*camera) ? world.activeCamera() : std::optional<Entity>{};
+   if (!active_camera || *active_camera != *camera) {
+      return 69;
    }
    return 0;
 }
@@ -453,6 +464,10 @@ struct CountingSystem {
    if (!engine.init()) {
       return 41;
    }
+   const auto camera = engine.world().spawn(Camera{});
+   if (!camera || !engine.world().setWindowCamera("main", *camera)) {
+      return 57;
+   }
    const auto scene = engine.assets().addScene(ObjectName{.value = "stub"});
    if (!scene || !scene->isCounter() || engine.assets().catalog().scenes.find(*scene) == nullptr) {
       return 42;
@@ -518,6 +533,10 @@ struct CountingSystem {
    }
    if (engine.world().windows().size() != 2 || engine.world().findWindow("tools") == nullptr) {
       return 53;
+   }
+   const auto main_camera = engine.world().windowCamera("main");
+   if (!main_camera || *main_camera != *camera) {
+      return 58;
    }
    return 0;
 }

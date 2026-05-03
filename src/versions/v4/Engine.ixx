@@ -117,7 +117,7 @@ export namespace vve::v4 {
             return {};
          }
          if (const auto result = window_system_.init(windows_); !result) { return result; }
-         world_.windows() = window_system_.snapshot();
+         refreshWorldWindows();
          world_.setSceneLoader([this](const std::filesystem::path &path) {
             return assets_.loadScene(path);
          });
@@ -149,7 +149,7 @@ export namespace vve::v4 {
          if (const auto result = window_system_.poll(world_.input()); !result) {
             return std::unexpected(result.error());
          }
-         world_.windows() = window_system_.snapshot();
+         refreshWorldWindows();
 
          const auto now = std::chrono::steady_clock::now();
          const std::chrono::duration<double> delta = now - last_frame_time_;
@@ -202,6 +202,19 @@ export namespace vve::v4 {
                window.title = application_name_.value;
             }
          }
+      }
+
+      /// @brief Refreshes platform window state while preserving World-owned camera assignments.
+      void refreshWorldWindows() {
+         auto windows = window_system_.snapshot();
+         for (auto &window : windows) {
+            if (const auto *old = world_.findWindow(window.handle); old != nullptr) {
+               window.camera = old->camera;
+            } else if (const auto *old_by_id = world_.findWindow(window.id); old_by_id != nullptr) {
+               window.camera = old_by_id->camera;
+            }
+         }
+         world_.windows() = std::move(windows);
       }
 
       /// @brief Calls init(World&) on each user system when that hook exists.

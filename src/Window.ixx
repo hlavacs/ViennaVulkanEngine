@@ -32,6 +32,7 @@ export namespace vve {
       std::string title{};      ///< Current platform title.
       PixelExtent extent{};     ///< Current pixel dimensions.
       RendererId renderer_id{}; ///< Renderer id selected for this window.
+      std::optional<Entity> camera{}; ///< Camera entity rendered through this window, when selected.
       bool focused{false};      ///< True while the window has keyboard focus.
       bool minimized{false};    ///< True while the platform reports a minimized window.
       bool should_close{false}; ///< True after a close request.

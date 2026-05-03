@@ -55,9 +55,25 @@ export namespace vve {
          return it == windows_.end() ? nullptr : std::addressof(*it);
       }
 
+      /// @brief Finds a mutable window by runtime handle.
+      [[nodiscard]] WindowInfo *findWindow(WindowHandle handle) {
+         const auto it = std::ranges::find_if(windows_, [handle](const WindowInfo &window) {
+            return window.handle == handle;
+         });
+         return it == windows_.end() ? nullptr : std::addressof(*it);
+      }
+
       /// @brief Finds a read-only window by string id.
       [[nodiscard]] const WindowInfo *findWindow(std::string_view id) const {
          const auto it = std::ranges::find_if(windows_, [id](const WindowInfo &window) { return window.id == id; });
+         return it == windows_.end() ? nullptr : std::addressof(*it);
+      }
+
+      /// @brief Finds a read-only window by runtime handle.
+      [[nodiscard]] const WindowInfo *findWindow(WindowHandle handle) const {
+         const auto it = std::ranges::find_if(windows_, [handle](const WindowInfo &window) {
+            return window.handle == handle;
+         });
          return it == windows_.end() ? nullptr : std::addressof(*it);
       }
 
@@ -102,15 +118,67 @@ export namespace vve {
          return getComponent<Transform>(entity);
       }
 
-      /// @brief Stores the active camera handle; renderers can interpret it later.
-      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera) {
+      /// @brief Assigns a camera entity to one window.
+      [[nodiscard]] std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera) {
          if (!ecs_.exists(camera)) { return std::unexpected(Error::invalid_handle); }
-         active_camera_ = camera;
+         auto *info = findWindow(window);
+         if (info == nullptr) { return std::unexpected(Error::invalid_handle); }
+         info->camera = camera;
          return {};
       }
 
-      /// @brief Returns the current active camera handle when one has been selected.
-      [[nodiscard]] std::optional<Entity> activeCamera() const { return active_camera_; }
+      /// @brief Assigns a camera entity to one window found by id.
+      [[nodiscard]] std::expected<void, Error> setWindowCamera(std::string_view window_id, Entity camera) {
+         if (!ecs_.exists(camera)) { return std::unexpected(Error::invalid_handle); }
+         auto *info = findWindow(window_id);
+         if (info == nullptr) { return std::unexpected(Error::invalid_handle); }
+         info->camera = camera;
+         return {};
+      }
+
+      /// @brief Clears the camera assignment for one window.
+      [[nodiscard]] std::expected<void, Error> clearWindowCamera(WindowHandle window) {
+         auto *info = findWindow(window);
+         if (info == nullptr) { return std::unexpected(Error::invalid_handle); }
+         info->camera.reset();
+         return {};
+      }
+
+      /// @brief Clears the camera assignment for one window found by id.
+      [[nodiscard]] std::expected<void, Error> clearWindowCamera(std::string_view window_id) {
+         auto *info = findWindow(window_id);
+         if (info == nullptr) { return std::unexpected(Error::invalid_handle); }
+         info->camera.reset();
+         return {};
+      }
+
+      /// @brief Returns the camera assigned to one window.
+      [[nodiscard]] std::optional<Entity> windowCamera(WindowHandle window) const {
+         const auto *info = findWindow(window);
+         return info == nullptr ? std::optional<Entity>{} : info->camera;
+      }
+
+      /// @brief Returns the camera assigned to one window found by id.
+      [[nodiscard]] std::optional<Entity> windowCamera(std::string_view window_id) const {
+         const auto *info = findWindow(window_id);
+         return info == nullptr ? std::optional<Entity>{} : info->camera;
+      }
+
+      /// @brief Compatibility helper: assigns one camera to every current window.
+      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera) {
+         if (!ecs_.exists(camera)) { return std::unexpected(Error::invalid_handle); }
+         if (windows_.empty()) { return std::unexpected(Error::missing_object); }
+         for (auto &window : windows_) { window.camera = camera; }
+         return {};
+      }
+
+      /// @brief Compatibility helper: returns the first selected window camera.
+      [[nodiscard]] std::optional<Entity> activeCamera() const {
+         const auto it = std::ranges::find_if(windows_, [](const WindowInfo &window) {
+            return window.camera.has_value();
+         });
+         return it == windows_.end() ? std::optional<Entity>{} : it->camera;
+      }
 
       /// @brief Installs the runtime scene loader used by loadScene().
       void setSceneLoader(std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> loader) {
@@ -137,7 +205,6 @@ export namespace vve {
       ECS &ecs_;                          ///< Non-owning runtime entity/component storage.
       InputState input_{};                ///< Current input snapshot.
       Vector<WindowInfo> windows_{};      ///< Current platform windows.
-      std::optional<Entity> active_camera_{}; ///< Optional camera selected by the application.
       /// @brief Runtime callback that imports a scene into the asset catalog.
       std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> scene_loader_{};
       std::function<const ObjectCatalog *()> catalog_provider_{}; ///< Runtime catalog access hook.
