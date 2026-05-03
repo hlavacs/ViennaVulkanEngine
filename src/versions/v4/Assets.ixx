@@ -86,7 +86,9 @@ namespace vve::v4 {
          aiQuaternion rotation{};
          aiVector3D translation{};
          matrix.Decompose(scale, rotation, translation);
-         return Transform{.translation = toVec3(translation), .rotation = toQuat(rotation), .scale = toVec3(scale)};
+         return Transform{.translation = Position{.value = toVec3(translation)},
+                          .rotation = Rotation{.value = toQuat(rotation)},
+                          .scale = Scale{.value = toVec3(scale)}};
       }
 
       /// @brief Returns a readable Assimp name or a generated fallback.
@@ -109,16 +111,16 @@ namespace vve::v4 {
       }
 
       /// @brief Returns the first non-black Assimp light color, or white.
-      [[nodiscard]] Vec3 visibleColor(const aiLight &light) {
+      [[nodiscard]] LinearColor visibleColor(const aiLight &light) {
          const auto diffuse = toVec3(light.mColorDiffuse);
          if ((diffuse.x * diffuse.x) + (diffuse.y * diffuse.y) + (diffuse.z * diffuse.z) > Scalar{0}) {
-            return diffuse;
+            return LinearColor{.value = diffuse};
          }
          const auto specular = toVec3(light.mColorSpecular);
          if ((specular.x * specular.x) + (specular.y * specular.y) + (specular.z * specular.z) > Scalar{0}) {
-            return specular;
+            return LinearColor{.value = specular};
          }
-         return oneVec3();
+         return LinearColor{.value = oneVec3()};
       }
 
       /// @brief Resolves material texture references relative to the imported scene file.
@@ -143,8 +145,8 @@ namespace vve::v4 {
          if (key.starts_with('*')) {
             const auto index = static_cast<std::size_t>(std::strtoull(key.c_str() + 1, nullptr, 10));
             if (index < scene.mNumTextures && scene.mTextures[index] != nullptr) {
-               texture.width = scene.mTextures[index]->mWidth;
-               texture.height = scene.mTextures[index]->mHeight;
+               texture.extent = PixelExtent{.width = scene.mTextures[index]->mWidth,
+                                            .height = scene.mTextures[index]->mHeight};
             }
          }
 
@@ -283,15 +285,16 @@ namespace vve::v4 {
             const auto *source = scene.mLights[light_index];
             if (source == nullptr) { continue; }
             const auto color = visibleColor(*source);
-            const auto intensity = std::max({std::abs(color.x), std::abs(color.y), std::abs(color.z), one()});
+            const auto intensity = std::max({std::abs(color.value.x), std::abs(color.value.y),
+                                             std::abs(color.value.z), one()});
             auto light = LightDescriptor{
                .handle = assets.next(),
                .name = readableName(source->mName, "Light_" + std::to_string(light_index)),
                .kind = mapLightKind(source->mType),
-               .position = Position{toVec3(source->mPosition)},
-               .direction = Direction{toVec3(source->mDirection)},
+               .position = Position{.value = toVec3(source->mPosition)},
+               .direction = Direction{.value = toVec3(source->mDirection)},
                .color = color,
-               .intensity = intensity};
+               .intensity = LightIntensity{.value = intensity}};
             if (auto added = assets.catalog().lights.add(light); !added) { return std::unexpected(added.error()); }
             lights.push_back(light.handle);
          }
@@ -311,13 +314,14 @@ namespace vve::v4 {
             auto camera = CameraDescriptor{.handle = assets.next(),
                                            .name = readableName(source->mName,
                                                                 "Camera_" + std::to_string(camera_index)),
-                                           .position = Position{toVec3(source->mPosition)},
-                                           .forward = Direction{toVec3(source->mLookAt)},
-                                           .fov_y_radians = vertical,
-                                           .near_plane = std::max(static_cast<Scalar>(source->mClipPlaneNear),
-                                                                  Scalar{0.001F}),
-                                           .far_plane = std::max(static_cast<Scalar>(source->mClipPlaneFar),
-                                                                 Scalar{1})};
+                                           .position = Position{.value = toVec3(source->mPosition)},
+                                           .forward = Direction{.value = toVec3(source->mLookAt)},
+                                           .fov_y = FovY{.radians = vertical},
+                                           .clip = ClipPlanes{
+                                              .near_plane = std::max(static_cast<Scalar>(source->mClipPlaneNear),
+                                                                     Scalar{0.001F}),
+                                              .far_plane = std::max(static_cast<Scalar>(source->mClipPlaneFar),
+                                                                    Scalar{1})}};
             if (auto added = assets.catalog().cameras.add(camera); !added) { return std::unexpected(added.error()); }
             cameras.push_back(camera.handle);
          }

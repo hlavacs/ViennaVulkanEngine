@@ -203,19 +203,19 @@ public:
 
         // Reset the player back to the origin when R is pressed.
         if (input.wasKeyPressed('R') || input.wasKeyPressed('r')) {
-            transform.translation = ve::zeroVec3();
+            transform.translation = ve::Position{.value = ve::zeroVec3()};
         }
 
         // Integrate velocity using the frame delta and clamp movement to a
         // screen-like rectangle for the sample.
-        transform.translation.x += velocity.x * static_cast<float>(frame_context.delta_seconds);
-        transform.translation.y += velocity.y * static_cast<float>(frame_context.delta_seconds);
+        transform.translation.value.x += velocity.x * static_cast<float>(frame_context.delta_time.seconds);
+        transform.translation.value.y += velocity.y * static_cast<float>(frame_context.delta_time.seconds);
 
         constexpr float limit_x = 400.0F;
         constexpr float limit_y = 225.0F;
 
-        transform.translation.x = std::clamp(transform.translation.x, -limit_x, limit_x);
-        transform.translation.y = std::clamp(transform.translation.y, -limit_y, limit_y);
+        transform.translation.value.x = std::clamp(transform.translation.value.x, -limit_x, limit_x);
+        transform.translation.value.y = std::clamp(transform.translation.value.y, -limit_y, limit_y);
 
         if (const auto set_transform_result = world.setTransform(player_, transform); !set_transform_result) {
             return std::unexpected(set_transform_result.error());
@@ -234,7 +234,7 @@ public:
         };
         const std::string key_state_string{key_state.data(), key_state.size()};
         const bool movement_key_held = key_state_string != "----";
-        log_accumulator_seconds_ += frame_context.delta_seconds;
+        log_accumulator_seconds_ += frame_context.delta_time.seconds;
         const bool periodic_log = log_accumulator_seconds_ >= 1.0;
         const bool key_state_changed = key_state_string != last_logged_key_state_;
         if (periodic_log) {
@@ -245,19 +245,19 @@ public:
         if (movement_key_held || key_state_changed || reset_pressed || periodic_log) { // immediately observable.
             const auto main_window = world.findWindow("main");
             const auto tools_window = world.findWindow("tools");
-            const auto player_x = static_cast<int>(std::lround(transform.translation.x));
-            const auto player_y = static_cast<int>(std::lround(transform.translation.y));
+            const auto player_x = static_cast<int>(std::lround(transform.translation.value.x));
+            const auto player_y = static_cast<int>(std::lround(transform.translation.value.y));
             std::cout << '[' << name() << "] player=(" << player_x << ", " << player_y << ')'
                       << " velocity=(" << static_cast<int>(std::lround(velocity.x)) << ", "
                       << static_cast<int>(std::lround(velocity.y)) << ')'
                       << " keys=" << key_state_string;
             if (main_window) {
-                std::cout << " main=" << main_window->width << 'x' << main_window->height
+                std::cout << " main=" << main_window->extent.width << 'x' << main_window->extent.height
                           << '[' << main_window->renderer_id << ']'
                           << (main_window->focused ? "[focused]" : "");
             }
             if (tools_window) {
-                std::cout << " tools=" << tools_window->width << 'x' << tools_window->height
+                std::cout << " tools=" << tools_window->extent.width << 'x' << tools_window->extent.height
                           << '[' << tools_window->renderer_id << ']'
                           << (tools_window->focused ? "[focused]" : "");
             }
@@ -274,7 +274,7 @@ private:
         bool printed_any = false;
         for (const auto& window : world.windows()) {
             printed_any = true;
-            std::cout << ' ' << window.id << '=' << window.width << 'x' << window.height
+            std::cout << ' ' << window.id << '=' << window.extent.width << 'x' << window.extent.height
                       << '[' << window.renderer_id << ']';
         }
         if (!printed_any) {
@@ -316,8 +316,7 @@ int main(int argc, char** argv) {
                 ve::WindowDesc{
                     .id = "main",
                     .title = "VVE Game",
-                    .width = 640,
-                    .height = 480,
+                    .extent = ve::PixelExtent{.width = 640, .height = 480},
                     .x = 80,
                     .y = 120,
                     .renderer_id = "forward",
@@ -327,8 +326,7 @@ int main(int argc, char** argv) {
                 ve::WindowDesc{
                     .id = "tools",
                     .title = "VVE Tools",
-                    .width = 400,
-                    .height = 480,
+                    .extent = ve::PixelExtent{.width = 400, .height = 480},
                     .x = 760,
                     .y = 120,
                     .renderer_id = "forward",

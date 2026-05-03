@@ -159,7 +159,7 @@ private:
         bool printed_any = false;
         for (const auto& window : world.windows()) {
             printed_any = true;
-            std::cout << ' ' << window.id << '=' << window.width << 'x' << window.height
+            std::cout << ' ' << window.id << '=' << window.extent.width << 'x' << window.extent.height
                       << '[' << window.renderer_id << ']';
         }
         if (!printed_any) {
@@ -204,7 +204,7 @@ private:
             }
             std::cout << "  texture " << texture->handle.value << " name=" << texture->name
                       << " source=" << texture->source.string()
-                      << " size=" << texture->width << 'x' << texture->height << '\n';
+                      << " size=" << texture->extent.width << 'x' << texture->extent.height << '\n';
         }
     }
 
@@ -216,7 +216,7 @@ private:
                 continue;
             }
             std::cout << "  light " << light->handle.value << " name=" << light->name
-                      << " intensity=" << light->intensity << '\n';
+                      << " intensity=" << light->intensity.value << '\n';
         }
     }
 
@@ -228,7 +228,7 @@ private:
                 continue;
             }
             std::cout << "  camera " << camera->handle.value << " name=" << camera->name
-                      << " near=" << camera->near_plane << " far=" << camera->far_plane << '\n';
+                      << " near=" << camera->clip.near_plane << " far=" << camera->clip.far_plane << '\n';
         }
     }
 
@@ -260,8 +260,7 @@ int main(int argc, char** argv) {
                 ve::WindowDesc{
                     .id = "sponza.main",
                     .title = "VVE Sponza",
-                    .width = 960,
-                    .height = 540,
+                    .extent = ve::PixelExtent{.width = 960, .height = 540},
                     .renderer_id = "forward",
                     .resizable = true,
                     .visible = true

@@ -90,16 +90,16 @@ struct CountingSystem {
    }
 
    const auto transform = Transform{
-      .translation = Vec3{1.0F, 2.0F, 3.0F},
-      .rotation = identityQuat(),
-      .scale = Vec3{2.0F, 2.0F, 2.0F}};
+      .translation = Position{.value = Vec3{1.0F, 2.0F, 3.0F}},
+      .rotation = Rotation{.value = identityQuat()},
+      .scale = Scale{.value = Vec3{2.0F, 2.0F, 2.0F}}};
 
-   if (!nearly(transform.translation.x, 1.0F) ||
-       !nearly(transform.translation.y, 2.0F) ||
-       !nearly(transform.translation.z, 3.0F)) {
+   if (!nearly(transform.translation.value.x, 1.0F) ||
+       !nearly(transform.translation.value.y, 2.0F) ||
+       !nearly(transform.translation.value.z, 3.0F)) {
       return 10;
    }
-   if (!nearly(transform.scale.x, 2.0F) ||
+   if (!nearly(transform.scale.value.x, 2.0F) ||
        !nearly(Direction{}.value.z, -1.0F)) {
       return 11;
    }
@@ -117,6 +117,15 @@ struct CountingSystem {
    if (!nearly(clip.near_plane, 0.25F) || !nearly(clip.far_plane, 250.0F) ||
        delta.seconds != 0.5 || extent.width != 640 || extent.height != 480) {
       return 13;
+   }
+   const auto camera = Camera::lookAt(Position{.value = Vec3{0.0F, 1.0F, 5.0F}},
+                                      Position{.value = Vec3{0.0F, 1.0F, 0.0F}},
+                                      Direction{.value = Vec3{0.0F, 1.0F, 0.0F}},
+                                      fov_y,
+                                      clip);
+   if (!nearly(camera.position.value.z, 5.0F) || !nearly(camera.forward.value.z, -5.0F) ||
+       !nearly(camera.fov_y.radians, 0.75F) || !nearly(camera.clip.far_plane, 250.0F)) {
+      return 14;
    }
    return 0;
 }
@@ -175,8 +184,7 @@ struct CountingSystem {
    if (!catalog.textures.add(TextureDescriptor{.handle = texture,
                                                .name = "stone",
                                                .source = "stone.png",
-                                               .width = 1024,
-                                               .height = 512,
+                                               .extent = PixelExtent{.width = 1024, .height = 512},
                                                .channels = 4})) {
       return 30;
    }
@@ -203,8 +211,15 @@ struct CountingSystem {
    if (!catalog.nodes.add(NodeDescriptor{.handle = child, .name = "child"})) {
       return 34;
    }
-   if (!catalog.lights.add(LightDescriptor{.handle = light, .name = "sun", .kind = LightKind::directional}) ||
-       !catalog.cameras.add(CameraDescriptor{.handle = camera, .name = "camera"})) {
+   if (!catalog.lights.add(LightDescriptor{.handle = light,
+                                           .name = "sun",
+                                           .kind = LightKind::directional,
+                                           .color = LinearColor{.value = Vec3{0.9F, 0.8F, 0.7F}},
+                                           .intensity = LightIntensity{.value = 4.0F}}) ||
+       !catalog.cameras.add(CameraDescriptor{.handle = camera,
+                                             .name = "camera",
+                                             .fov_y = FovY{.radians = 0.8F},
+                                             .clip = ClipPlanes{.near_plane = 0.2F, .far_plane = 200.0F}})) {
       return 35;
    }
    auto tree = Tree{.root = node};
@@ -224,7 +239,11 @@ struct CountingSystem {
    const auto *mesh_descriptor = catalog.meshes.find(mesh);
    const auto *material_descriptor = catalog.materials.find(material);
    const auto *scene_descriptor = catalog.scenes.find(scene);
-   if (mesh_descriptor == nullptr || material_descriptor == nullptr || scene_descriptor == nullptr) {
+   const auto *texture_descriptor = catalog.textures.find(texture);
+   const auto *light_descriptor = catalog.lights.find(light);
+   const auto *camera_descriptor = catalog.cameras.find(camera);
+   if (mesh_descriptor == nullptr || material_descriptor == nullptr || scene_descriptor == nullptr ||
+       texture_descriptor == nullptr || light_descriptor == nullptr || camera_descriptor == nullptr) {
       return 37;
    }
    const auto [first_child, last_child] = scene_descriptor->tree.childRange(node);
@@ -235,6 +254,10 @@ struct CountingSystem {
        first_child == last_child ||
        first_child->second != child) {
       return 38;
+   }
+   if (texture_descriptor->extent.width != 1024 || !nearly(light_descriptor->intensity.value, 4.0F) ||
+       !nearly(camera_descriptor->clip.near_plane, 0.2F)) {
+      return 29;
    }
    if (catalog.meshes.add(*mesh_descriptor)) {
       return 39;
@@ -380,15 +403,13 @@ struct CountingSystem {
                             MaxFrames{2},
                             Windows{.value = {WindowDesc{.id = "main",
                                                           .title = "hidden",
-                                                          .width = 64,
-                                                          .height = 64,
+                                                          .extent = PixelExtent{.width = 64, .height = 64},
                                                           .x = 20,
                                                           .y = 20,
                                                           .visible = false},
                                                WindowDesc{.id = "tools",
                                                           .title = "hidden-tools",
-                                                          .width = 64,
-                                                          .height = 64,
+                                                          .extent = PixelExtent{.width = 64, .height = 64},
                                                           .x = 100,
                                                           .y = 20,
                                                           .visible = false}}},

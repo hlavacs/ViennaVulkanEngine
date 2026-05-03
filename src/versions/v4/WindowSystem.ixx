@@ -109,8 +109,8 @@ namespace vve::v4 {
          if (desc.resizable) { flags |= SDL_WINDOW_RESIZABLE; }
          if (!desc.visible) { flags |= SDL_WINDOW_HIDDEN; }
 
-         SDL_Window *const window = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.width),
-                                                     static_cast<int>(desc.height), flags);
+         SDL_Window *const window = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.extent.width),
+                                                     static_cast<int>(desc.extent.height), flags);
          if (window == nullptr) { return std::unexpected(Error::platform_error); }
 
          if (desc.x.has_value() || desc.y.has_value()) {
@@ -127,8 +127,8 @@ namespace vve::v4 {
          auto info = WindowInfo{.handle = makeCounterHandle(),
                                 .id = desc.id,
                                 .title = desc.title,
-                                .width = static_cast<std::uint32_t>(std::max(width, 0)),
-                                .height = static_cast<std::uint32_t>(std::max(height, 0)),
+                                .extent = PixelExtent{.width = static_cast<std::uint32_t>(std::max(width, 0)),
+                                                      .height = static_cast<std::uint32_t>(std::max(height, 0))},
                                 .renderer_id = desc.renderer_id,
                                 .focused = SDL_GetKeyboardFocus() == window,
                                 .minimized = false,
@@ -154,8 +154,9 @@ namespace vve::v4 {
             break;
          case SDL_EVENT_WINDOW_RESIZED:
             if (auto *record = impl_->find(event.window.windowID)) {
-               record->info.width = static_cast<std::uint32_t>(std::max(event.window.data1, 0));
-               record->info.height = static_cast<std::uint32_t>(std::max(event.window.data2, 0));
+               record->info.extent = PixelExtent{
+                  .width = static_cast<std::uint32_t>(std::max(event.window.data1, 0)),
+                  .height = static_cast<std::uint32_t>(std::max(event.window.data2, 0))};
             }
             break;
          case SDL_EVENT_WINDOW_FOCUS_GAINED:

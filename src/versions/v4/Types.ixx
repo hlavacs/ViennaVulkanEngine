@@ -173,8 +173,7 @@ export namespace vve::v4 {
       Handle handle{};             ///< Stable 64-bit texture handle.
       std::string name{};          ///< Human-readable texture name.
       std::filesystem::path source{}; ///< Source file path or logical asset path.
-      std::uint32_t width{0};      ///< Source width in pixels.
-      std::uint32_t height{0};     ///< Source height in pixels.
+      PixelExtent extent{};        ///< Source dimensions in pixels.
       std::uint32_t channels{0};   ///< Source channel count.
    };
 
@@ -185,8 +184,8 @@ export namespace vve::v4 {
       LightKind kind{LightKind::unknown}; ///< Light shape.
       Position position{};                ///< Light position for point/spot lights.
       Direction direction{};              ///< Light direction for directional/spot lights.
-      Vec3 color{1.0F, 1.0F, 1.0F};       ///< Linear light color.
-      Scalar intensity{1.0F};             ///< Relative light intensity.
+      LinearColor color{};                ///< Linear light color.
+      LightIntensity intensity{};         ///< Relative light intensity.
    };
 
    /// @brief Camera descriptor used to create runtime cameras.
@@ -195,9 +194,8 @@ export namespace vve::v4 {
       std::string name{};                 ///< Human-readable camera name.
       Position position{};                ///< Camera position.
       Direction forward{};                ///< Camera forward direction.
-      Scalar fov_y_radians{1.0471976F};   ///< Vertical field of view.
-      Scalar near_plane{0.1F};            ///< Near clipping plane.
-      Scalar far_plane{1000.0F};          ///< Far clipping plane.
+      FovY fov_y{};                       ///< Vertical field of view.
+      ClipPlanes clip{};                  ///< Near and far clipping planes.
    };
 
    /// @brief Scene descriptor stores only handles to objects kept in descriptor maps.

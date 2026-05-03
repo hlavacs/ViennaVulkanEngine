@@ -151,11 +151,11 @@ export namespace vve {
       std::uint32_t height{0}; ///< Height in pixels.
    };
 
-   /// @brief Standard transform component shared by all engine versions.
+   /// @brief Standard transform component shared by all active engine layers.
    struct Transform {
-      math::Vec3 translation{math::zeroVec3()}; ///< Local or world-space translation.
-      math::Quat rotation{math::identityQuat()}; ///< Local or world-space orientation.
-      math::Vec3 scale{math::oneVec3()};        ///< Local or world-space non-uniform scale.
+      Position translation{}; ///< Local or world-space translation.
+      Rotation rotation{};    ///< Local or world-space orientation.
+      Scale scale{};          ///< Local or world-space non-uniform scale.
    };
 
    /// @brief Axis-aligned bounds described by minimum and maximum positions.
@@ -167,31 +167,30 @@ export namespace vve {
 
    /// @brief Public camera description used by game code and renderers.
    struct Camera {
-      math::Vec3 position{math::Vec3(math::zero(), static_cast<math::Scalar>(1.5),
-                                     static_cast<math::Scalar>(6.0))}; ///< World-space camera position.
+      Position position{.value = math::Vec3(math::zero(), static_cast<math::Scalar>(1.5),
+                                            static_cast<math::Scalar>(6.0))}; ///< World-space camera position.
+      Direction forward{.value = math::Vec3(math::zero(), math::zero(), -math::one())}; ///< View direction.
       math::Mat4 view_transform{math::translate(
           math::identityMat4(),
           math::Vec3(math::zero(), static_cast<math::Scalar>(-1.5),
                      static_cast<math::Scalar>(-6.0)))}; ///< World-to-view transform.
-      math::Scalar vertical_fov_radians{static_cast<math::Scalar>(1.0471975511965976)}; ///< Vertical FOV.
-      math::Scalar near_plane{static_cast<math::Scalar>(0.1)}; ///< Near clip plane.
-      math::Scalar far_plane{static_cast<math::Scalar>(10000.0)}; ///< Far clip plane.
+      FovY fov_y{};      ///< Vertical field of view.
+      ClipPlanes clip{}; ///< Near/far clip planes.
 
       /// @brief Builds a camera from an eye position and target point.
-      [[nodiscard]] static Camera lookAt(const math::Vec3 &position, const math::Vec3 &target,
-                                         const math::Vec3 &up = math::Vec3(math::zero(), math::one(), math::zero()),
-                                         math::Scalar vertical_fov_radians =
-                                             static_cast<math::Scalar>(1.0471975511965976),
-                                         math::Scalar near_plane = static_cast<math::Scalar>(0.1),
-                                         math::Scalar far_plane = static_cast<math::Scalar>(10000.0)) {
+      [[nodiscard]] static Camera lookAt(Position position, Position target,
+                                         Direction up = Direction{.value = math::Vec3(math::zero(), math::one(),
+                                                                                     math::zero())},
+                                         FovY fov_y = {}, ClipPlanes clip = {}) {
          Camera camera{};
          camera.position = position;
-         camera.view_transform = math::lookAt(position, target, up);
-         camera.vertical_fov_radians = vertical_fov_radians;
-         camera.near_plane = near_plane;
-         camera.far_plane = far_plane;
+         camera.forward = Direction{.value = target.value - position.value};
+         camera.view_transform = math::lookAt(position.value, target.value, up.value);
+         camera.fov_y = fov_y;
+         camera.clip = clip;
          return camera;
       }
+
    };
 
 } // namespace vve

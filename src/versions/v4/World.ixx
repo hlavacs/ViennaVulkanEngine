@@ -21,8 +21,7 @@ export namespace vve::v4 {
    struct WindowDesc {
       std::string id{"main"};       ///< Stable application-local window id.
       std::string title{"VVE v4"};  ///< Platform window title.
-      std::uint32_t width{960};     ///< Initial width in pixels.
-      std::uint32_t height{540};    ///< Initial height in pixels.
+      PixelExtent extent{.width = 960, .height = 540}; ///< Initial pixel dimensions.
       std::optional<int> x{};       ///< Optional initial screen x coordinate.
       std::optional<int> y{};       ///< Optional initial screen y coordinate.
       std::string renderer_id{};    ///< Renderer id selected for this window.
@@ -40,8 +39,7 @@ export namespace vve::v4 {
       Handle handle{};             ///< 64-bit runtime window handle.
       std::string id{};            ///< Stable id copied from WindowDesc.
       std::string title{};         ///< Current platform title.
-      std::uint32_t width{0};      ///< Current width in pixels.
-      std::uint32_t height{0};     ///< Current height in pixels.
+      PixelExtent extent{};        ///< Current pixel dimensions.
       std::string renderer_id{};   ///< Renderer id selected for this window.
       bool focused{false};         ///< True while the window has keyboard focus.
       bool minimized{false};       ///< True while the platform reports a minimized window.
@@ -51,7 +49,7 @@ export namespace vve::v4 {
    /// @brief Per-step timing and frame index passed to user systems.
    struct FrameContext {
       std::uint64_t frame_index{0};   ///< Zero-based frame index.
-      double delta_seconds{1.0 / 60}; ///< Elapsed wall-clock time since the previous frame.
+      DeltaTime delta_time{};         ///< Elapsed wall-clock time since the previous frame.
    };
 
    /// @brief Snapshot passed to user systems that want window data for the current frame.

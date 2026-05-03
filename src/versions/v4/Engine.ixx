@@ -175,7 +175,7 @@ export namespace vve::v4 {
          const std::chrono::duration<double> delta = now - last_frame_time_;
          last_frame_time_ = now;
 
-         const FrameContext frame{.frame_index = frame_, .delta_seconds = delta.count()};
+         const FrameContext frame{.frame_index = frame_, .delta_time = DeltaTime{.seconds = delta.count()}};
          const WindowFrameData window_frame{.windows = world_.windows()};
          if (const auto result = updateSystems(frame, window_frame); !result) {
             return std::unexpected(result.error());

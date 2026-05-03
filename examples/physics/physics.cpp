@@ -27,7 +27,7 @@ public:
         bool printed_any = false;
         for (const auto& window : world.windows()) {
             printed_any = true;
-            std::cout << ' ' << window.id << '=' << window.width << 'x' << window.height
+            std::cout << ' ' << window.id << '=' << window.extent.width << 'x' << window.extent.height
                       << '[' << window.renderer_id << ']';
         }
         if (!printed_any) {
@@ -43,19 +43,19 @@ public:
         const ve::WindowFrameData&) {
         const auto& input = world.input();
         if (input.isKeyDown('A') || input.isKeyDown('a')) {
-            body_x_ -= 120.0 * frame_context.delta_seconds;
+            body_x_ -= 120.0 * frame_context.delta_time.seconds;
         }
         if (input.isKeyDown('D') || input.isKeyDown('d')) {
-            body_x_ += 120.0 * frame_context.delta_seconds;
+            body_x_ += 120.0 * frame_context.delta_time.seconds;
         }
         if (input.isKeyDown('W') || input.isKeyDown('w')) {
-            body_y_ -= 120.0 * frame_context.delta_seconds;
+            body_y_ -= 120.0 * frame_context.delta_time.seconds;
         }
         if (input.isKeyDown('S') || input.isKeyDown('s')) {
-            body_y_ += 120.0 * frame_context.delta_seconds;
+            body_y_ += 120.0 * frame_context.delta_time.seconds;
         }
 
-        log_accumulator_seconds_ += frame_context.delta_seconds;
+        log_accumulator_seconds_ += frame_context.delta_time.seconds;
         if (log_accumulator_seconds_ < 1.0) {
             return {};
         }
@@ -69,7 +69,7 @@ public:
         }
 
         const auto mouse_delta = input.mouseDelta(main_window->handle);
-        std::cout << " physics.main=" << main_window->width << 'x' << main_window->height
+        std::cout << " physics.main=" << main_window->extent.width << 'x' << main_window->extent.height
                   << '[' << main_window->renderer_id << ']'
                   << (main_window->focused ? "[focused]" : "")
                   << (main_window->minimized ? "[minimized]" : "")
@@ -108,8 +108,7 @@ int main(int, char **) {
                 ve::WindowDesc{
                     .id = "physics.main",
                     .title = "VVE Physics Sandbox",
-                    .width = 800,
-                    .height = 450,
+                    .extent = ve::PixelExtent{.width = 800, .height = 450},
                     .renderer_id = "forward",
                     .resizable = true,
                     .visible = true
