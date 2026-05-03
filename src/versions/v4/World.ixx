@@ -89,13 +89,13 @@ export namespace vve::v4 {
       /// @brief Accumulates mouse movement for the current frame.
       void addMouseDelta(Handle window, Vec2 delta) {
          const auto [it, _] = mouse_delta_.try_emplace(window, Vec2{zero(), zero()});
-         it->second += delta;
+         it->second = math::add(it->second, delta);
       }
 
       /// @brief Accumulates mouse-wheel movement for the current frame.
       void addMouseWheelDelta(Handle window, Vec2 delta) {
          const auto [it, _] = mouse_wheel_delta_.try_emplace(window, Vec2{zero(), zero()});
-         it->second += delta;
+         it->second = math::add(it->second, delta);
       }
 
       /// @brief Returns whether a key is currently held down.

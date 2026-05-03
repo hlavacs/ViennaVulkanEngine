@@ -113,11 +113,11 @@ namespace vve::v4 {
       /// @brief Returns the first non-black Assimp light color, or white.
       [[nodiscard]] LinearColor visibleColor(const aiLight &light) {
          const auto diffuse = toVec3(light.mColorDiffuse);
-         if ((diffuse.x * diffuse.x) + (diffuse.y * diffuse.y) + (diffuse.z * diffuse.z) > Scalar{0}) {
+         if (math::lengthSquared(diffuse) > Scalar{0}) {
             return LinearColor{.value = diffuse};
          }
          const auto specular = toVec3(light.mColorSpecular);
-         if ((specular.x * specular.x) + (specular.y * specular.y) + (specular.z * specular.z) > Scalar{0}) {
+         if (math::lengthSquared(specular) > Scalar{0}) {
             return LinearColor{.value = specular};
          }
          return LinearColor{.value = oneVec3()};
@@ -208,12 +208,8 @@ namespace vve::v4 {
                bounds.maximum.value = bounds.minimum.value;
                for (unsigned vertex = 1; vertex < source->mNumVertices; ++vertex) {
                   const auto point = toVec3(source->mVertices[vertex]);
-                  bounds.minimum.value.x = std::min(bounds.minimum.value.x, point.x);
-                  bounds.minimum.value.y = std::min(bounds.minimum.value.y, point.y);
-                  bounds.minimum.value.z = std::min(bounds.minimum.value.z, point.z);
-                  bounds.maximum.value.x = std::max(bounds.maximum.value.x, point.x);
-                  bounds.maximum.value.y = std::max(bounds.maximum.value.y, point.y);
-                  bounds.maximum.value.z = std::max(bounds.maximum.value.z, point.z);
+                  bounds.minimum.value = math::min(bounds.minimum.value, point);
+                  bounds.maximum.value = math::max(bounds.maximum.value, point);
                }
             }
 
@@ -285,8 +281,8 @@ namespace vve::v4 {
             const auto *source = scene.mLights[light_index];
             if (source == nullptr) { continue; }
             const auto color = visibleColor(*source);
-            const auto intensity = std::max({std::abs(color.value.x), std::abs(color.value.y),
-                                             std::abs(color.value.z), one()});
+            const auto intensity = math::max(math::max(std::abs(color.value.x), std::abs(color.value.y)),
+                                             math::max(std::abs(color.value.z), one()));
             auto light = LightDescriptor{
                .handle = assets.next(),
                .name = readableName(source->mName, "Light_" + std::to_string(light_index)),
@@ -308,8 +304,8 @@ namespace vve::v4 {
          for (unsigned camera_index = 0; camera_index < scene.mNumCameras; ++camera_index) {
             const auto *source = scene.mCameras[camera_index];
             if (source == nullptr) { continue; }
-            const auto aspect = std::max(static_cast<Scalar>(source->mAspect), one());
-            const auto horizontal = std::max(static_cast<Scalar>(source->mHorizontalFOV), Scalar{0.001F});
+            const auto aspect = math::max(static_cast<Scalar>(source->mAspect), one());
+            const auto horizontal = math::max(static_cast<Scalar>(source->mHorizontalFOV), Scalar{0.001F});
             const auto vertical = Scalar{2} * std::atan(std::tan(horizontal * Scalar{0.5F}) / aspect);
             auto camera = CameraDescriptor{.handle = assets.next(),
                                            .name = readableName(source->mName,
@@ -318,10 +314,10 @@ namespace vve::v4 {
                                            .forward = Direction{.value = toVec3(source->mLookAt)},
                                            .fov_y = FovY{.radians = vertical},
                                            .clip = ClipPlanes{
-                                              .near_plane = std::max(static_cast<Scalar>(source->mClipPlaneNear),
-                                                                     Scalar{0.001F}),
-                                              .far_plane = std::max(static_cast<Scalar>(source->mClipPlaneFar),
-                                                                    Scalar{1})}};
+                                              .near_plane = math::max(static_cast<Scalar>(source->mClipPlaneNear),
+                                                                      Scalar{0.001F}),
+                                              .far_plane = math::max(static_cast<Scalar>(source->mClipPlaneFar),
+                                                                     Scalar{1})}};
             if (auto added = assets.catalog().cameras.add(camera); !added) { return std::unexpected(added.error()); }
             cameras.push_back(camera.handle);
          }

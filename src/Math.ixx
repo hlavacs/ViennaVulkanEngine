@@ -1,6 +1,7 @@
 module;
 
 #define GLM_ENABLE_EXPERIMENTAL
+#include <glm/common.hpp>
 #include <glm/ext/matrix_double4x4.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
 #include <glm/ext/matrix_transform.hpp>
@@ -13,6 +14,7 @@ module;
 #include <glm/ext/vector_float2.hpp>
 #include <glm/ext/vector_float3.hpp>
 #include <glm/ext/vector_float4.hpp>
+#include <glm/geometric.hpp>
 
 export module VEEngine:Math;
 
@@ -72,8 +74,105 @@ export namespace vve::math {
    /// @brief Multiplies two 4x4 matrices without exposing GLM at call sites.
    [[nodiscard]] inline Mat4 multiply(const Mat4 &lhs, const Mat4 &rhs) { return lhs * rhs; }
 
+   /// @brief Adds two 2D vectors without exposing GLM operators at call sites.
+   [[nodiscard]] inline Vec2 add(const Vec2 &lhs, const Vec2 &rhs) { return lhs + rhs; }
+
+   /// @brief Adds two 3D vectors without exposing GLM operators at call sites.
+   [[nodiscard]] inline Vec3 add(const Vec3 &lhs, const Vec3 &rhs) { return lhs + rhs; }
+
+   /// @brief Adds two 4D vectors without exposing GLM operators at call sites.
+   [[nodiscard]] inline Vec4 add(const Vec4 &lhs, const Vec4 &rhs) { return lhs + rhs; }
+
+   /// @brief Subtracts one 2D vector from another without exposing GLM operators at call sites.
+   [[nodiscard]] inline Vec2 subtract(const Vec2 &lhs, const Vec2 &rhs) { return lhs - rhs; }
+
    /// @brief Subtracts one 3D vector from another without exposing GLM operators at call sites.
    [[nodiscard]] inline Vec3 subtract(const Vec3 &lhs, const Vec3 &rhs) { return lhs - rhs; }
+
+   /// @brief Subtracts one 4D vector from another without exposing GLM operators at call sites.
+   [[nodiscard]] inline Vec4 subtract(const Vec4 &lhs, const Vec4 &rhs) { return lhs - rhs; }
+
+   /// @brief Scales a 2D vector by a scalar factor.
+   [[nodiscard]] inline Vec2 scale(const Vec2 &value, Scalar factor) { return value * factor; }
+
+   /// @brief Scales a 3D vector by a scalar factor.
+   [[nodiscard]] inline Vec3 scale(const Vec3 &value, Scalar factor) { return value * factor; }
+
+   /// @brief Scales a 4D vector by a scalar factor.
+   [[nodiscard]] inline Vec4 scale(const Vec4 &value, Scalar factor) { return value * factor; }
+
+   /// @brief Returns the dot product of two 2D vectors.
+   [[nodiscard]] inline Scalar dot(const Vec2 &lhs, const Vec2 &rhs) { return glm::dot(lhs, rhs); }
+
+   /// @brief Returns the dot product of two 3D vectors.
+   [[nodiscard]] inline Scalar dot(const Vec3 &lhs, const Vec3 &rhs) { return glm::dot(lhs, rhs); }
+
+   /// @brief Returns the dot product of two 4D vectors.
+   [[nodiscard]] inline Scalar dot(const Vec4 &lhs, const Vec4 &rhs) { return glm::dot(lhs, rhs); }
+
+   /// @brief Returns the cross product of two 3D vectors.
+   [[nodiscard]] inline Vec3 cross(const Vec3 &lhs, const Vec3 &rhs) { return glm::cross(lhs, rhs); }
+
+   /// @brief Returns the squared length of a 2D vector.
+   [[nodiscard]] inline Scalar lengthSquared(const Vec2 &value) { return dot(value, value); }
+
+   /// @brief Returns the squared length of a 3D vector.
+   [[nodiscard]] inline Scalar lengthSquared(const Vec3 &value) { return dot(value, value); }
+
+   /// @brief Returns the squared length of a 4D vector.
+   [[nodiscard]] inline Scalar lengthSquared(const Vec4 &value) { return dot(value, value); }
+
+   /// @brief Returns the Euclidean length of a 2D vector.
+   [[nodiscard]] inline Scalar length(const Vec2 &value) { return glm::length(value); }
+
+   /// @brief Returns the Euclidean length of a 3D vector.
+   [[nodiscard]] inline Scalar length(const Vec3 &value) { return glm::length(value); }
+
+   /// @brief Returns the Euclidean length of a 4D vector.
+   [[nodiscard]] inline Scalar length(const Vec4 &value) { return glm::length(value); }
+
+   /// @brief Returns a unit-length 2D vector pointing in the same direction.
+   [[nodiscard]] inline Vec2 normalize(const Vec2 &value) { return glm::normalize(value); }
+
+   /// @brief Returns a unit-length 3D vector pointing in the same direction.
+   [[nodiscard]] inline Vec3 normalize(const Vec3 &value) { return glm::normalize(value); }
+
+   /// @brief Returns a unit-length 4D vector pointing in the same direction.
+   [[nodiscard]] inline Vec4 normalize(const Vec4 &value) { return glm::normalize(value); }
+
+   /// @brief Returns the smaller scalar value.
+   [[nodiscard]] inline constexpr Scalar min(Scalar lhs, Scalar rhs) noexcept { return lhs < rhs ? lhs : rhs; }
+
+   /// @brief Returns the component-wise minimum of two 2D vectors.
+   [[nodiscard]] inline Vec2 min(const Vec2 &lhs, const Vec2 &rhs) { return glm::min(lhs, rhs); }
+
+   /// @brief Returns the component-wise minimum of two 3D vectors.
+   [[nodiscard]] inline Vec3 min(const Vec3 &lhs, const Vec3 &rhs) { return glm::min(lhs, rhs); }
+
+   /// @brief Returns the component-wise minimum of two 4D vectors.
+   [[nodiscard]] inline Vec4 min(const Vec4 &lhs, const Vec4 &rhs) { return glm::min(lhs, rhs); }
+
+   /// @brief Returns the larger scalar value.
+   [[nodiscard]] inline constexpr Scalar max(Scalar lhs, Scalar rhs) noexcept { return lhs > rhs ? lhs : rhs; }
+
+   /// @brief Returns the component-wise maximum of two 2D vectors.
+   [[nodiscard]] inline Vec2 max(const Vec2 &lhs, const Vec2 &rhs) { return glm::max(lhs, rhs); }
+
+   /// @brief Returns the component-wise maximum of two 3D vectors.
+   [[nodiscard]] inline Vec3 max(const Vec3 &lhs, const Vec3 &rhs) { return glm::max(lhs, rhs); }
+
+   /// @brief Returns the component-wise maximum of two 4D vectors.
+   [[nodiscard]] inline Vec4 max(const Vec4 &lhs, const Vec4 &rhs) { return glm::max(lhs, rhs); }
+
+   /// @brief Clamps a scalar value into an inclusive range.
+   [[nodiscard]] inline constexpr Scalar clamp(Scalar value, Scalar low, Scalar high) noexcept {
+      return max(low, min(value, high));
+   }
+
+   /// @brief Clamps a 3D vector component-wise into an inclusive range.
+   [[nodiscard]] inline Vec3 clamp(const Vec3 &value, const Vec3 &low, const Vec3 &high) {
+      return glm::clamp(value, low, high);
+   }
 
    /// @brief Returns `matrix` translated by `offset`.
    [[nodiscard]] inline Mat4 translate(const Mat4 &matrix, const Vec3 &offset) {

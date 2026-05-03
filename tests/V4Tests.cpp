@@ -88,6 +88,24 @@ struct CountingSystem {
    if (!nearly(translated[3].x, 1.0F) || !nearly(view[3].z, -1.0F) || nearly(projection[1].y, 0.0F)) {
       return 9;
    }
+   const auto added = math::add(Vec3{1.0F, 2.0F, 3.0F}, Vec3{4.0F, 5.0F, 6.0F});
+   const auto subtracted = math::subtract(added, Vec3{1.0F, 1.0F, 1.0F});
+   const auto scaled = math::scale(subtracted, Scalar{0.5F});
+   const auto normalized = math::normalize(Vec3{0.0F, 3.0F, 4.0F});
+   const auto minimum = math::min(Vec3{2.0F, -1.0F, 7.0F}, Vec3{1.0F, 3.0F, 4.0F});
+   const auto maximum = math::max(Vec3{2.0F, -1.0F, 7.0F}, Vec3{1.0F, 3.0F, 4.0F});
+   if (!nearly(added.z, 9.0F) || !nearly(subtracted.x, 4.0F) || !nearly(scaled.y, 3.0F)) {
+      return 15;
+   }
+   if (!nearly(math::length(Vec3{0.0F, 3.0F, 4.0F}), 5.0F) || !nearly(normalized.z, 0.8F) ||
+       !nearly(math::dot(Vec3{1.0F, 2.0F, 3.0F}, Vec3{2.0F, 0.0F, 1.0F}), 5.0F)) {
+      return 16;
+   }
+   if (!nearly(math::cross(Vec3{1.0F, 0.0F, 0.0F}, Vec3{0.0F, 1.0F, 0.0F}).z, 1.0F) ||
+       !nearly(minimum.x, 1.0F) || !nearly(maximum.z, 7.0F) ||
+       !nearly(math::clamp(Scalar{5.0F}, Scalar{1.0F}, Scalar{3.0F}), 3.0F)) {
+      return 17;
+   }
 
    const auto transform = Transform{
       .translation = Position{.value = Vec3{1.0F, 2.0F, 3.0F}},

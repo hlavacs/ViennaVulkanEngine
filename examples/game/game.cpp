@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <array>
 #include <cmath>
 #include <cstdint>
@@ -214,8 +213,8 @@ public:
         constexpr float limit_x = 400.0F;
         constexpr float limit_y = 225.0F;
 
-        transform.translation.value.x = std::clamp(transform.translation.value.x, -limit_x, limit_x);
-        transform.translation.value.y = std::clamp(transform.translation.value.y, -limit_y, limit_y);
+        transform.translation.value.x = ve::math::clamp(transform.translation.value.x, -limit_x, limit_x);
+        transform.translation.value.y = ve::math::clamp(transform.translation.value.y, -limit_y, limit_y);
 
         if (const auto set_transform_result = world.setTransform(player_, transform); !set_transform_result) {
             return std::unexpected(set_transform_result.error());
