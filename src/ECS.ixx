@@ -34,4 +34,8 @@ export namespace vve {
          { ecs.template view<Transform>() } -> std::same_as<Vector<Entity>>;
       }; ///< Contract for the public ECS class template.
 
+   static_assert(ECSTraitsLike<DefaultECSTraits>);
+   static_assert(ECSLike<BasicECS<>>);
+   static_assert(ECSLike<ECS>);
+
 } // namespace vve

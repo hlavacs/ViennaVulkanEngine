@@ -63,4 +63,8 @@ export namespace vve {
       { value.value } -> std::same_as<Vector<WindowDesc> &>;
    }; ///< Contract for startup window collections.
 
+   static_assert(InputStateLike<InputState>);
+   static_assert(WindowDescLike<WindowDesc> && WindowInfoLike<WindowInfo>);
+   static_assert(WindowFrameDataLike<WindowFrameData> && WindowsLike<Windows>);
+
 } // namespace vve

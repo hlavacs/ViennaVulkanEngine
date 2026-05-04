@@ -34,4 +34,7 @@ export namespace vve {
          { graph.topologicalOrder(nodes) } -> std::same_as<std::expected<std::vector<THandle>, Error>>;
       }; ///< Contract for public directed graph topology templates.
 
+   static_assert(BasicTreeLike<BasicTree<NodeHandle>, NodeHandle>);
+   static_assert(GraphLike<Graph<NodeHandle>, NodeHandle>);
+
 } // namespace vve

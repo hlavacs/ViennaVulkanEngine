@@ -19,4 +19,7 @@ export namespace vve {
          { errorName(error) } -> std::convertible_to<std::string_view>;
       }; ///< Contract for the errorName(Error) diagnostic function.
 
+   static_assert(ErrorLike<Error>);
+   static_assert(ErrorNameFunctionLike<>);
+
 } // namespace vve

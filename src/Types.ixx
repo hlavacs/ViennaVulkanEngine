@@ -271,4 +271,27 @@ export namespace vve {
       { makeSlotMapHandleForTest<THandle>(std::uint32_t{1}, std::uint32_t{1}) } -> std::same_as<THandle>;
    }; ///< Contract for makeSlotMapHandleForTest<THandle>(slot, generation).
 
+   static_assert(VectorLike<Vector<int>, int>);
+   static_assert(TypedHandleLike<Entity> && TypedHandleLike<MeshHandle>);
+   static_assert(EntityLike<Entity> && SceneHandleLike<SceneHandle> && WindowHandleLike<WindowHandle>);
+   static_assert(NodeHandleLike<NodeHandle> && MeshHandleLike<MeshHandle>);
+   static_assert(MaterialHandleLike<MaterialHandle> && TextureHandleLike<TextureHandle>);
+   static_assert(LightHandleLike<LightHandle> && CameraHandleLike<CameraHandle>);
+   static_assert(PositionLike<Position> && DirectionLike<Direction> && ScaleLike<Scale>);
+   static_assert(RotationLike<Rotation> && LinearColorLike<LinearColor>);
+   static_assert(LightIntensityLike<LightIntensity> && FovYLike<FovY>);
+   static_assert(ClipPlanesLike<ClipPlanes> && DeltaTimeLike<DeltaTime>);
+   static_assert(PixelExtentLike<PixelExtent> && ObjectNameLike<ObjectName>);
+   static_assert(RendererIdLike<RendererId> && FrameCountLike<FrameCount>);
+   static_assert(VertexCountLike<VertexCount> && IndexCountLike<IndexCount>);
+   static_assert(TextureChannelCountLike<TextureChannelCount>);
+   static_assert(TransformLike<Transform> && BoundsLike<Bounds> && CameraLike<Camera>);
+   static_assert(TextureBindingLike<TextureBinding> && MeshUseLike<MeshUse>);
+   static_assert(NodeDescriptorLike<NodeDescriptor> && MeshDescriptorLike<MeshDescriptor>);
+   static_assert(MaterialDescriptorLike<MaterialDescriptor> && TextureDescriptorLike<TextureDescriptor>);
+   static_assert(LightDescriptorLike<LightDescriptor> && CameraDescriptorLike<CameraDescriptor>);
+   static_assert(TreeLike<Tree> && SceneDescriptorLike<SceneDescriptor> && ObjectCatalogLike<ObjectCatalog>);
+   static_assert(CounterHandleFactoryLike<MeshHandle> && TestHandleFactoryLike<MeshHandle>);
+   static_assert(SlotMapHandleFactoryLike<MeshHandle>);
+
 } // namespace vve

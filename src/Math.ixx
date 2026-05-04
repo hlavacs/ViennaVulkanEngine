@@ -94,6 +94,14 @@ export namespace vve::math {
       { multiply(m, m) } -> std::same_as<Mat4>;
    };
 
+   static_assert(ScalarLike<Scalar> && Vec2Like<Vec2> && Vec3Like<Vec3> && Vec4Like<Vec4>);
+   static_assert(QuatLike<Quat> && Mat4Like<Mat4>);
+   static_assert(ZeroFunctionLike<> && OneFunctionLike<>);
+   static_assert(IdentityQuatFunctionLike<> && IdentityMat4FunctionLike<>);
+   static_assert(UnitVectorFunctionLike<> && ArithmeticFunctionLike<>);
+   static_assert(GeometryFunctionLike<> && ComparisonFunctionLike<>);
+   static_assert(MultiplyFunctionLike<>);
+
 } // namespace vve::math
 
 export namespace vve {
@@ -118,5 +126,8 @@ export namespace vve {
    template <typename T> concept Vec4Like   = math::Vec4Like<T>;   ///< 4D vector contract.
    template <typename T> concept QuatLike   = math::QuatLike<T>;   ///< Quaternion contract.
    template <typename T> concept Mat4Like   = math::Mat4Like<T>;   ///< 4x4 matrix contract.
+
+   static_assert(ScalarLike<Scalar> && Vec2Like<Vec2> && Vec3Like<Vec3> && Vec4Like<Vec4>);
+   static_assert(QuatLike<Quat> && Mat4Like<Mat4>);
 
 } // namespace vve
