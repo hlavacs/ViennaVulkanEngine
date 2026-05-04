@@ -517,8 +517,8 @@ struct CountingSystem {
    }
    const auto task = makeHandleForTest<TaskHandle>(400);
    const auto child_task = makeHandleForTest<TaskHandle>(401);
-   if (!engine.tasks().add(TaskNode{.handle = task, .name = ObjectName{.value = "task"}}) ||
-       !engine.tasks().add(TaskNode{.handle = child_task, .name = ObjectName{.value = "child-task"}}) ||
+   if (!engine.tasks().add(TaskNode{.handle = task, .name = "task"}) ||
+       !engine.tasks().add(TaskNode{.handle = child_task, .name = "child-task"}) ||
        engine.tasks().find(task) == nullptr) {
       return 44;
    }
@@ -537,10 +537,9 @@ struct CountingSystem {
    const auto pass = makeHandleForTest<RenderPassHandle>(500);
    const auto child_pass = makeHandleForTest<RenderPassHandle>(501);
    const auto isolated_pass = makeHandleForTest<RenderPassHandle>(502);
-   if (!engine.renderGraph().add(RenderPassNode{.handle = pass, .name = ObjectName{.value = "pass"}}) ||
-       !engine.renderGraph().add(RenderPassNode{.handle = child_pass, .name = ObjectName{.value = "child-pass"}}) ||
-       !engine.renderGraph().add(RenderPassNode{.handle = isolated_pass,
-                                                .name = ObjectName{.value = "isolated-pass"}}) ||
+   if (!engine.renderGraph().add(RenderPassNode{.handle = pass, .name = "pass"}) ||
+       !engine.renderGraph().add(RenderPassNode{.handle = child_pass, .name = "child-pass"}) ||
+       !engine.renderGraph().add(RenderPassNode{.handle = isolated_pass, .name = "isolated-pass"}) ||
        engine.renderGraph().find(pass) == nullptr) {
       return 46;
    }
@@ -590,21 +589,17 @@ struct CountingSystem {
    using namespace vve;
 
    static_assert(sizeof(SceneHandle) == sizeof(std::uint64_t));
-   static_assert(!std::is_same_v<MeshHandle, TextureHandle>);
-   static_assert(!std::is_convertible_v<MeshHandle, TextureHandle>);
-
-   ObjectCatalog catalog{};
-   const auto mesh = makeHandleForTest<MeshHandle>(700);
-   if (!catalog.meshes.add(MeshDescriptor{.handle = mesh,
-                                          .name = ObjectName{.value = "facade-mesh"},
-                                          .vertex_count = VertexCount{.value = 1},
-                                          .index_count = IndexCount{.value = 0}})) {
+   const auto scene = makeHandleForTest<SceneHandle>(700);
+   if (!scene.valid()) {
       return 80;
    }
 
    auto engine = makeEngine(ApplicationName{"facade-test"}, MaxFrames{});
-   if (engine.versionMajor() != 4 || catalog.meshes.find(mesh) == nullptr) {
+   if (engine.versionMajor() != 4) {
       return 81;
+   }
+   if (engineImplementationNamespaceName != std::string_view{"v4"}) {
+      return 82;
    }
    return 0;
 }

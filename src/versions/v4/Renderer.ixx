@@ -1,6 +1,5 @@
 export module VEEngine.V4:Renderer;
 import std;
-export import :Graphs;
 export import :Shaders;
 
 /// @file

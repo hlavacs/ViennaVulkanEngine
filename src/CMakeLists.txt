@@ -13,6 +13,11 @@ set(VVE_DEFAULT_VULKAN_ICD "" CACHE STRING "Default Vulkan ICD selector used whe
 set_property(CACHE VVE_DEFAULT_VULKAN_ICD PROPERTY STRINGS "" "system" "moltenvk" "kosmickrisp")
 target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_DEFAULT_VULKAN_ICD="${VVE_DEFAULT_VULKAN_ICD}")
 
+set(VVE_ENGINE_IMPLEMENTATION_NAMESPACE "v4" CACHE STRING "Engine implementation namespace exposed by the facade")
+set_property(CACHE VVE_ENGINE_IMPLEMENTATION_NAMESPACE PROPERTY STRINGS "v4")
+target_compile_definitions(ViennaVulkanEngine
+    PUBLIC VVE_ENGINE_IMPLEMENTATION_NAMESPACE=${VVE_ENGINE_IMPLEMENTATION_NAMESPACE})
+
 find_package(assimp CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
 if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "" AND EXISTS "${VVE_VULKAN_SDK_ROOT}/include/glm/glm.hpp")
@@ -35,6 +40,7 @@ target_sources(ViennaVulkanEngine
         FILE_SET CXX_MODULES FILES
             Math.ixx
             Error.ixx
+            versions/v4/Graph.ixx
             Types.ixx
             Graph.ixx
             ECS.ixx
@@ -47,7 +53,6 @@ target_sources(ViennaVulkanEngine
             versions/v4/World.ixx
             versions/v4/Assets.ixx
             versions/v4/Resources.ixx
-            versions/v4/Graphs.ixx
             versions/v4/Shaders.ixx
             versions/v4/Renderer.ixx
             versions/v4/Gui.ixx

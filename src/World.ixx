@@ -186,20 +186,10 @@ export namespace vve {
          scene_loader_ = std::move(loader);
       }
 
-      /// @brief Installs a read-only object-catalog provider for examples and diagnostics.
-      void setCatalogProvider(std::function<const ObjectCatalog *()> provider) {
-         catalog_provider_ = std::move(provider);
-      }
-
       /// @brief Imports a scene through the runtime loader and returns the scene handle.
       [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &path) {
          if (!scene_loader_) { return std::unexpected(Error::missing_object); }
          return scene_loader_(path);
-      }
-
-      /// @brief Returns the runtime object catalog when an engine has connected one.
-      [[nodiscard]] const ObjectCatalog *objectCatalog() const {
-         return catalog_provider_ ? catalog_provider_() : nullptr;
       }
 
    private:
@@ -208,7 +198,6 @@ export namespace vve {
       Vector<WindowInfo> windows_{};      ///< Current platform windows.
       /// @brief Runtime callback that imports a scene into the asset catalog.
       std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> scene_loader_{};
-      std::function<const ObjectCatalog *()> catalog_provider_{}; ///< Runtime catalog access hook.
    };
 
    /// @brief Backward-compatible compact config; typed options are preferred for new examples.

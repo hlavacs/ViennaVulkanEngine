@@ -116,25 +116,22 @@ public:
     [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
         std::cout << '[' << name() << "] scene path: " << scene_path_.string() << '\n';
         std::cout << '[' << name() << "] v4 runtime shell is active\n";
-        const auto scene_handle = world.loadScene(scene_path_);
+        const auto scene_handle = assets_.loadScene(scene_path_);
         if (!scene_handle) {
             std::cerr << '[' << name() << "] Assimp import failed: "
                       << vve::errorName(scene_handle.error()) << '\n';
             return std::unexpected(scene_handle.error());
         }
 
-        const auto* catalog = world.objectCatalog();
-        if (catalog == nullptr) {
-            return std::unexpected(vve::Error::missing_object);
-        }
-        const auto* scene = catalog->scenes.find(*scene_handle);
+        const auto& catalog = assets_.catalog();
+        const auto* scene = catalog.scenes.find(*scene_handle);
         if (scene == nullptr) {
             return std::unexpected(vve::Error::missing_object);
         }
 
         std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value
                   << " name=" << scene->name.value << '\n';
-        printSceneInventory(*catalog, *scene);
+        printSceneInventory(catalog, *scene);
         std::cout << '[' << name() << "] v4 resource upload and rendering are not implemented yet\n";
         printWindowInventory(world);
         return {};
@@ -166,7 +163,7 @@ private:
         std::cout << '\n';
     }
 
-    void printSceneInventory(const vve::ObjectCatalog& catalog, const vve::SceneDescriptor& scene) const {
+    void printSceneInventory(const vve::v4::ObjectCatalog& catalog, const vve::v4::SceneDescriptor& scene) const {
         std::cout << '[' << name() << "] counts: nodes=" << scene.nodes.size()
                   << " meshes=" << scene.meshes.size()
                   << " materials=" << scene.materials.size()
@@ -179,7 +176,7 @@ private:
         printCameras(catalog, scene.cameras);
     }
 
-    void printMeshes(const vve::ObjectCatalog& catalog, const vve::Vector<vve::MeshHandle>& handles) const {
+    void printMeshes(const vve::v4::ObjectCatalog& catalog, const vve::Vector<vve::v4::MeshHandle>& handles) const {
         std::cout << '[' << name() << "] meshes:\n";
         for (const auto handle : handles) {
             const auto* mesh = catalog.meshes.find(handle);
@@ -193,7 +190,8 @@ private:
         }
     }
 
-    void printTextures(const vve::ObjectCatalog& catalog, const vve::Vector<vve::TextureHandle>& handles) const {
+    void printTextures(const vve::v4::ObjectCatalog& catalog,
+                       const vve::Vector<vve::v4::TextureHandle>& handles) const {
         std::cout << '[' << name() << "] textures:\n";
         for (const auto handle : handles) {
             const auto* texture = catalog.textures.find(handle);
@@ -206,7 +204,7 @@ private:
         }
     }
 
-    void printLights(const vve::ObjectCatalog& catalog, const vve::Vector<vve::LightHandle>& handles) const {
+    void printLights(const vve::v4::ObjectCatalog& catalog, const vve::Vector<vve::v4::LightHandle>& handles) const {
         std::cout << '[' << name() << "] lights:\n";
         for (const auto handle : handles) {
             const auto* light = catalog.lights.find(handle);
@@ -218,7 +216,8 @@ private:
         }
     }
 
-    void printCameras(const vve::ObjectCatalog& catalog, const vve::Vector<vve::CameraHandle>& handles) const {
+    void printCameras(const vve::v4::ObjectCatalog& catalog,
+                      const vve::Vector<vve::v4::CameraHandle>& handles) const {
         std::cout << '[' << name() << "] cameras:\n";
         for (const auto handle : handles) {
             const auto* camera = catalog.cameras.find(handle);
@@ -231,6 +230,7 @@ private:
     }
 
     std::filesystem::path scene_path_{}; ///< Resolved Sponza file imported during init().
+    vve::v4::AssetSystem assets_{};      ///< v4 import catalog kept outside the public World facade.
     bool frame_loop_logged_{false};      ///< Keeps the runtime heartbeat to one line.
 };
 

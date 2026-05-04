@@ -1,3 +1,12 @@
+module;
+
+#ifndef VVE_ENGINE_IMPLEMENTATION_NAMESPACE
+#define VVE_ENGINE_IMPLEMENTATION_NAMESPACE v4
+#endif
+
+#define VVE_DETAIL_STRINGIFY_IMPL(value) #value
+#define VVE_DETAIL_STRINGIFY(value) VVE_DETAIL_STRINGIFY_IMPL(value)
+
 export module VEEngine.V4;
 import std;
 export import :WindowSystem;
@@ -120,9 +129,6 @@ export namespace vve::v4 {
          refreshWorldWindows();
          world_.setSceneLoader([this](const std::filesystem::path &path) {
             return assets_.loadScene(path);
-         });
-         world_.setCatalogProvider([this]() -> const ObjectCatalog * {
-            return std::addressof(assets_.catalog());
          });
          last_frame_time_ = std::chrono::steady_clock::now();
          initialized_ = true;
@@ -307,7 +313,12 @@ export namespace vve::v4 {
 
 export namespace vve {
 
-   using v4::Engine;     ///< Facade engine template backed by the active v4 implementation.
-   using v4::makeEngine; ///< Facade engine factory backed by the active v4 implementation.
+   namespace implementation = VVE_ENGINE_IMPLEMENTATION_NAMESPACE; ///< Active implementation namespace.
+
+   inline constexpr std::string_view engineImplementationNamespaceName{
+      VVE_DETAIL_STRINGIFY(VVE_ENGINE_IMPLEMENTATION_NAMESPACE)}; ///< Active implementation namespace name.
+
+   using implementation::Engine;     ///< Facade engine template backed by the selected implementation.
+   using implementation::makeEngine; ///< Facade engine factory backed by the selected implementation.
 
 } // namespace vve
