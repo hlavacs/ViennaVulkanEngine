@@ -1,10 +1,10 @@
 export module VEEngine:Graph;
 import std;
-export import :Types;
+export import :Error;
 
 /**
  * @file
- * @brief Shared typed-handle graph, tree, and scene-node topology types.
+ * @brief Shared typed-handle graph and tree topology templates.
  */
 export namespace vve {
 
@@ -21,8 +21,6 @@ export namespace vve {
 
    };
 
-   using Tree = BasicTree<NodeHandle>; ///< Scene-tree topology uses node handles.
-
    /// @brief Generic directed graph topology addressed by typed handles.
    template <typename THandle> struct Graph {
       std::multimap<THandle, THandle> edges{}; ///< Source node handle mapped to destination node handles.
@@ -34,9 +32,10 @@ export namespace vve {
       [[nodiscard]] auto childRange(THandle node) const { return edges.equal_range(node); }
 
       /// @brief Returns nodes in dependency order, or cycle_detected when the graph is cyclic.
-      [[nodiscard]] std::expected<Vector<THandle>, Error> topologicalOrder(const Vector<THandle> &nodes) const {
+      [[nodiscard]] std::expected<std::vector<THandle>, Error>
+      topologicalOrder(const std::vector<THandle> &nodes) const {
          std::map<THandle, std::uint32_t> incoming{};
-         std::map<THandle, Vector<THandle>> outgoing{};
+         std::map<THandle, std::vector<THandle>> outgoing{};
          for (const auto node : nodes) {
             if (!node.valid()) { return std::unexpected(Error::invalid_handle); }
             incoming.try_emplace(node, 0);
@@ -50,7 +49,7 @@ export namespace vve {
          }
 
          std::set<THandle> ready{};
-         Vector<THandle> ordered{};
+         std::vector<THandle> ordered{};
          ordered.reserve(incoming.size());
          for (const auto &[node, count] : incoming) {
             if (count == 0) { ready.insert(node); }
@@ -71,39 +70,4 @@ export namespace vve {
       }
 
    };
-
-   /// @brief Scene graph node descriptor stored by handle in ObjectCatalog.
-   struct NodeDescriptor {
-      using HandleType = NodeHandle; ///< Descriptor handle type.
-      NodeHandle handle{};           ///< Stable node handle.
-      ObjectName name{};             ///< Human-readable node name.
-      Transform transform{};         ///< Local transform.
-      Vector<MeshUse> meshes{};      ///< Mesh/material pairs attached to this node.
-   };
-
-   /// @brief Scene descriptor stores only handles to objects kept in descriptor maps.
-   struct SceneDescriptor {
-      using HandleType = SceneHandle;     ///< Descriptor handle type.
-      SceneHandle handle{};               ///< Stable scene handle.
-      ObjectName name{};                  ///< Human-readable scene name.
-      Tree tree{};                        ///< Scene hierarchy; nodes do not store child vectors.
-      Vector<NodeHandle> nodes{};         ///< All node handles in the scene.
-      Vector<MeshHandle> meshes{};        ///< Mesh handles used by the scene.
-      Vector<MaterialHandle> materials{}; ///< Material handles used by the scene.
-      Vector<TextureHandle> textures{};   ///< Texture handles used by the scene.
-      Vector<LightHandle> lights{};       ///< Light handles used by the scene.
-      Vector<CameraHandle> cameras{};     ///< Camera handles used by the scene.
-   };
-
-   /// @brief Central imported-object catalog; every loaded object is found by 64-bit handle.
-   struct ObjectCatalog {
-      DescriptorMap<SceneDescriptor> scenes{};       ///< Scenes by handle.
-      DescriptorMap<NodeDescriptor> nodes{};         ///< Nodes by handle.
-      DescriptorMap<MeshDescriptor> meshes{};        ///< Meshes by handle.
-      DescriptorMap<MaterialDescriptor> materials{}; ///< Materials by handle.
-      DescriptorMap<TextureDescriptor> textures{};   ///< Textures by handle.
-      DescriptorMap<LightDescriptor> lights{};       ///< Lights by handle.
-      DescriptorMap<CameraDescriptor> cameras{};     ///< Cameras by handle.
-   };
-
 } // namespace vve
