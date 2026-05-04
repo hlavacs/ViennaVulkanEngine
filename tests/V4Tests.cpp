@@ -294,6 +294,9 @@ struct CountingSystem {
    if (catalog.meshes.add(MeshDescriptor{.handle = {}, .name = ObjectName{.value = "bad"}})) {
       return 49;
    }
+   if (!catalog.meshes.remove(mesh) || catalog.meshes.find(mesh) != nullptr) {
+      return 82;
+   }
    return 0;
 }
 
@@ -365,6 +368,16 @@ struct CountingSystem {
    graph.addEdge(a, c);
    graph.addEdge(b, c);
    graph.addEdge(c, d);
+   const auto [incoming_c, incoming_c_end] = graph.parentRange(c);
+   bool has_a_parent = false;
+   bool has_b_parent = false;
+   for (auto it = incoming_c; it != incoming_c_end; ++it) {
+      has_a_parent = has_a_parent || it->second == a;
+      has_b_parent = has_b_parent || it->second == b;
+   }
+   if (!has_a_parent || !has_b_parent) {
+      return 88;
+   }
    const auto ordered = graph.topologicalOrder(Vector<TaskHandle>{a, b, c, d});
    if (!ordered || ordered->size() != 4 || ordered->at(0) != a || ordered->at(1) != b ||
        ordered->at(2) != c || ordered->at(3) != d) {
@@ -390,6 +403,32 @@ struct CountingSystem {
    const auto invalid = invalid_node.topologicalOrder(Vector<TaskHandle>{TaskHandle{}});
    if (invalid || invalid.error() != Error::invalid_handle) {
       return 78;
+   }
+
+   graph.removeNode(c);
+   const auto after_remove = graph.topologicalOrder(Vector<TaskHandle>{a, b, d});
+   if (!after_remove || after_remove->size() != 3 ||
+       after_remove->at(0) != a || after_remove->at(1) != b || after_remove->at(2) != d) {
+      return 83;
+   }
+
+   BasicTree<TaskHandle> tree{.root = a};
+   tree.addChild(a, b);
+   tree.addChild(b, c);
+   const auto parent_b = tree.parentOf(b);
+   const auto parent_c = tree.parentOf(c);
+   if (!parent_b || !parent_c || *parent_b != a || *parent_c != b) {
+      return 89;
+   }
+   tree.removeNode(b);
+   const auto [root_child, root_child_end] = tree.childRange(a);
+   const auto [removed_child, removed_child_end] = tree.childRange(b);
+   if (root_child != root_child_end || removed_child != removed_child_end || tree.root != a) {
+      return 84;
+   }
+   tree.removeNode(a);
+   if (tree.root.valid()) {
+      return 85;
    }
    return 0;
 }
@@ -492,6 +531,9 @@ struct CountingSystem {
    if (!task_order || task_order->size() != 2 || task_order->front() != task || task_order->back() != child_task) {
       return 54;
    }
+   if (!engine.tasks().remove(child_task) || engine.tasks().find(child_task) != nullptr) {
+      return 86;
+   }
    const auto pass = makeHandleForTest<RenderPassHandle>(500);
    const auto child_pass = makeHandleForTest<RenderPassHandle>(501);
    const auto isolated_pass = makeHandleForTest<RenderPassHandle>(502);
@@ -511,6 +553,9 @@ struct CountingSystem {
    if (!pass_order || pass_order->size() != 3 || pass_order->at(0) != pass ||
        pass_order->at(1) != child_pass || pass_order->at(2) != isolated_pass) {
       return 55;
+   }
+   if (!engine.renderGraph().remove(child_pass) || engine.renderGraph().find(child_pass) != nullptr) {
+      return 87;
    }
    const auto shader = makeHandleForTest<ShaderHandle>(600);
    if (!engine.shaders().add(ShaderDescriptor{.handle = shader,

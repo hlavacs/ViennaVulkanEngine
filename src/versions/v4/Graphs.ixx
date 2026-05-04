@@ -30,6 +30,13 @@ export namespace vve::v4 {
       /// @brief Adds one directed task edge.
       void addEdge(TaskHandle from, TaskHandle to) { graph_.addEdge(from, to); }
 
+      /// @brief Removes one task node and all graph edges touching it.
+      [[nodiscard]] std::expected<void, Error> remove(TaskHandle handle) {
+         if (const auto removed = tasks_.remove(handle); !removed) { return removed; }
+         graph_.removeNode(handle);
+         return {};
+      }
+
       /// @brief Finds a task by handle, or returns null.
       [[nodiscard]] const TaskNode *find(TaskHandle handle) const { return tasks_.find(handle); }
 
@@ -60,6 +67,13 @@ export namespace vve::v4 {
 
       /// @brief Adds one directed render-pass edge.
       void addEdge(RenderPassHandle from, RenderPassHandle to) { graph_.addEdge(from, to); }
+
+      /// @brief Removes one render-pass node and all graph edges touching it.
+      [[nodiscard]] std::expected<void, Error> remove(RenderPassHandle handle) {
+         if (const auto removed = passes_.remove(handle); !removed) { return removed; }
+         graph_.removeNode(handle);
+         return {};
+      }
 
       /// @brief Finds a render pass by handle, or returns null.
       [[nodiscard]] const RenderPassNode *find(RenderPassHandle handle) const { return passes_.find(handle); }

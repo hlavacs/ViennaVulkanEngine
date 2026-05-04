@@ -351,6 +351,13 @@ export namespace vve {
       /// @brief Returns true when the map contains the handle.
       [[nodiscard]] bool contains(HandleType handle) const { return descriptors_.contains(handle); }
 
+      /// @brief Removes a descriptor by handle.
+      [[nodiscard]] std::expected<void, Error> remove(HandleType handle) {
+         if (!handle.valid()) { return std::unexpected(Error::invalid_handle); }
+         if (descriptors_.erase(handle) == 0) { return std::unexpected(Error::missing_object); }
+         return {};
+      }
+
       /// @brief Returns descriptor count.
       [[nodiscard]] std::size_t size() const { return descriptors_.size(); }
 
