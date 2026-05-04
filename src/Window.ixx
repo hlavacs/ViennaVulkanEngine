@@ -64,7 +64,9 @@ export namespace vve {
    }; ///< Contract for startup window collections.
 
    static_assert(InputStateLike<InputState>);
-   static_assert(WindowDescLike<WindowDesc> && WindowInfoLike<WindowInfo>);
-   static_assert(WindowFrameDataLike<WindowFrameData> && WindowsLike<Windows>);
+   static_assert(WindowDescLike<WindowDesc>);
+   static_assert(WindowFrameDataLike<WindowFrameData>);
+   static_assert(WindowInfoLike<WindowInfo>);
+   static_assert(WindowsLike<Windows>);
 
 } // namespace vve

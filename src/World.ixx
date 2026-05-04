@@ -82,10 +82,13 @@ export namespace vve {
       { makeUserSystems(systems...) } -> std::same_as<UserSystems<std::remove_cvref_t<TSystems>...>>;
    }; ///< Contract for makeUserSystems(...).
 
-   static_assert(ApplicationNameLike<ApplicationName> && MaxFramesLike<MaxFrames>);
-   static_assert(FrameContextLike<FrameContext> && FrameStatusLike<FrameStatus>);
-   static_assert(EngineConfigLike<EngineConfig> && UserSystemsLike<UserSystems<>>);
-   static_assert(WorldLike<World>);
+   static_assert(ApplicationNameLike<ApplicationName>);
+   static_assert(EngineConfigLike<EngineConfig>);
+   static_assert(FrameContextLike<FrameContext>);
+   static_assert(FrameStatusLike<FrameStatus>);
    static_assert(MakeUserSystemsFunctionLike<>);
+   static_assert(MaxFramesLike<MaxFrames>);
+   static_assert(UserSystemsLike<UserSystems<>>);
+   static_assert(WorldLike<World>);
 
 } // namespace vve

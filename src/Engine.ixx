@@ -76,9 +76,10 @@ export namespace vve {
    }; ///< Contract for makeEngine(...).
 
    static_assert(AssetSystemLike<AssetSystem>);
-   static_assert(GuiWidgetHandleLike<GuiWidgetHandle> && GuiWidgetLike<GuiWidget>);
-   static_assert(GuiSystemLike<GuiSystem>);
    static_assert(EngineLike<Engine<>>);
+   static_assert(GuiSystemLike<GuiSystem>);
+   static_assert(GuiWidgetHandleLike<GuiWidgetHandle>);
+   static_assert(GuiWidgetLike<GuiWidget>);
    static_assert(MakeEngineFunctionLike<>);
    static_assert(MakeEngineFunctionLike<ApplicationName, MaxFrames>);
 

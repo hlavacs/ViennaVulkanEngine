@@ -94,13 +94,21 @@ export namespace vve::math {
       { multiply(m, m) } -> std::same_as<Mat4>;
    };
 
-   static_assert(ScalarLike<Scalar> && Vec2Like<Vec2> && Vec3Like<Vec3> && Vec4Like<Vec4>);
-   static_assert(QuatLike<Quat> && Mat4Like<Mat4>);
-   static_assert(ZeroFunctionLike<> && OneFunctionLike<>);
-   static_assert(IdentityQuatFunctionLike<> && IdentityMat4FunctionLike<>);
-   static_assert(UnitVectorFunctionLike<> && ArithmeticFunctionLike<>);
-   static_assert(GeometryFunctionLike<> && ComparisonFunctionLike<>);
+   static_assert(ArithmeticFunctionLike<>);
+   static_assert(ComparisonFunctionLike<>);
+   static_assert(GeometryFunctionLike<>);
+   static_assert(IdentityMat4FunctionLike<>);
+   static_assert(IdentityQuatFunctionLike<>);
+   static_assert(Mat4Like<Mat4>);
    static_assert(MultiplyFunctionLike<>);
+   static_assert(OneFunctionLike<>);
+   static_assert(QuatLike<Quat>);
+   static_assert(ScalarLike<Scalar>);
+   static_assert(UnitVectorFunctionLike<>);
+   static_assert(Vec2Like<Vec2>);
+   static_assert(Vec3Like<Vec3>);
+   static_assert(Vec4Like<Vec4>);
+   static_assert(ZeroFunctionLike<>);
 
 } // namespace vve::math
 
@@ -127,7 +135,11 @@ export namespace vve {
    template <typename T> concept QuatLike   = math::QuatLike<T>;   ///< Quaternion contract.
    template <typename T> concept Mat4Like   = math::Mat4Like<T>;   ///< 4x4 matrix contract.
 
-   static_assert(ScalarLike<Scalar> && Vec2Like<Vec2> && Vec3Like<Vec3> && Vec4Like<Vec4>);
-   static_assert(QuatLike<Quat> && Mat4Like<Mat4>);
+   static_assert(Mat4Like<Mat4>);
+   static_assert(QuatLike<Quat>);
+   static_assert(ScalarLike<Scalar>);
+   static_assert(Vec2Like<Vec2>);
+   static_assert(Vec3Like<Vec3>);
+   static_assert(Vec4Like<Vec4>);
 
 } // namespace vve
