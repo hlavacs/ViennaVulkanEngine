@@ -19,11 +19,6 @@ export import :Gui;
 
 export namespace vve::v4 {
 
-   using ::vve::EngineConfig;    ///< Facade compact engine config.
-   using ::vve::FrameStatus;     ///< Facade frame-loop result.
-   using ::vve::UserSystems;     ///< Facade user-system bundle.
-   using ::vve::makeUserSystems; ///< Facade user-system factory.
-
    namespace detail {
 
       /// @brief Primary trait for detecting UserSystems options.
@@ -101,18 +96,6 @@ export namespace vve::v4 {
 
       /// @brief Returns the asset system.
       [[nodiscard]] AssetSystem &assets() { return assets_; }
-
-      /// @brief Returns the resource system.
-      [[nodiscard]] ResourceSystem &resources() { return resources_; }
-
-      /// @brief Returns the task graph.
-      [[nodiscard]] TaskGraph &tasks() { return tasks_; }
-
-      /// @brief Returns the render graph.
-      [[nodiscard]] RenderGraph &renderGraph() { return render_graph_; }
-
-      /// @brief Returns the shader system.
-      [[nodiscard]] ShaderSystem &shaders() { return shaders_; }
 
       /// @brief Returns the GUI system.
       [[nodiscard]] GuiSystem &gui() { return gui_; }
@@ -310,15 +293,3 @@ export namespace vve::v4 {
    }
 
 } // namespace vve::v4
-
-export namespace vve {
-
-   namespace implementation = VVE_ENGINE_IMPLEMENTATION_NAMESPACE; ///< Active implementation namespace.
-
-   inline constexpr std::string_view engineImplementationNamespaceName{
-      VVE_DETAIL_STRINGIFY(VVE_ENGINE_IMPLEMENTATION_NAMESPACE)}; ///< Active implementation namespace name.
-
-   using implementation::Engine;     ///< Facade engine template backed by the selected implementation.
-   using implementation::makeEngine; ///< Facade engine factory backed by the selected implementation.
-
-} // namespace vve

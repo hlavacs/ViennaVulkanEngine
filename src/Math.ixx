@@ -1,199 +1,122 @@
-module;
-
-#define GLM_ENABLE_EXPERIMENTAL
-#include <glm/common.hpp>
-#include <glm/ext/matrix_double4x4.hpp>
-#include <glm/ext/matrix_float4x4.hpp>
-#include <glm/ext/matrix_transform.hpp>
-#include <glm/ext/quaternion_double.hpp>
-#include <glm/ext/quaternion_float.hpp>
-#include <glm/ext/scalar_constants.hpp>
-#include <glm/ext/vector_double2.hpp>
-#include <glm/ext/vector_double3.hpp>
-#include <glm/ext/vector_double4.hpp>
-#include <glm/ext/vector_float2.hpp>
-#include <glm/ext/vector_float3.hpp>
-#include <glm/ext/vector_float4.hpp>
-#include <glm/geometric.hpp>
-
 export module VEEngine:Math;
+import std;
+import VEEngine.V4;
 
 /**
  * @file
- * @brief Thin math facade over GLM and the selected engine scalar policy.
- *
- * This partition intentionally contains only math aliases and stateless helper
- * functions. Strong semantic engine value types live in VEEngine:Types.
+ * @brief Public math contract backed by the selected engine implementation.
  */
 export namespace vve::math {
 
-#if defined(VVE_MATH_USE_DOUBLE)
-   using Scalar = double;   ///< Scalar type selected for engine math at compile time.
-   using Vec2 = glm::dvec2; ///< Two-component vector using the selected scalar precision.
-   using Vec3 = glm::dvec3; ///< Three-component vector using the selected scalar precision.
-   using Vec4 = glm::dvec4; ///< Four-component vector using the selected scalar precision.
-   using Quat = glm::dquat; ///< Quaternion using the selected scalar precision.
-   using Mat4 = glm::dmat4; ///< 4x4 matrix using the selected scalar precision.
-#else
-   using Scalar = float;   ///< Scalar type selected for engine math at compile time.
-   using Vec2 = glm::vec2; ///< Two-component vector using the selected scalar precision.
-   using Vec3 = glm::vec3; ///< Three-component vector using the selected scalar precision.
-   using Vec4 = glm::vec4; ///< Four-component vector using the selected scalar precision.
-   using Quat = glm::quat; ///< Quaternion using the selected scalar precision.
-   using Mat4 = glm::mat4; ///< 4x4 matrix using the selected scalar precision.
-#endif
+   using Scalar = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::Scalar; ///< Facade scalar type.
+   using Vec2   = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::Vec2;   ///< Facade 2D vector.
+   using Vec3   = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::Vec3;   ///< Facade 3D vector.
+   using Vec4   = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::Vec4;   ///< Facade 4D vector.
+   using Quat   = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::Quat;   ///< Facade quaternion.
+   using Mat4   = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::Mat4;   ///< Facade 4x4 matrix.
 
-   /// @brief Returns the additive identity for the configured scalar type.
-   [[nodiscard]] inline constexpr Scalar zero() noexcept { return static_cast<Scalar>(0); }
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::add;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::clamp;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::cross;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::dot;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::identityMat4;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::identityQuat;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::inverse;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::length;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::lengthSquared;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::lookAt;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::max;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::min;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::multiply;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::normalize;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::one;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::oneVec3;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::perspective;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::scale;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::subtract;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::translate;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::zero;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::zeroVec3;
 
-   /// @brief Returns the multiplicative identity for the configured scalar type.
-   [[nodiscard]] inline constexpr Scalar one() noexcept { return static_cast<Scalar>(1); }
+   template <typename T> concept ScalarLike = std::same_as<std::remove_cvref_t<T>, Scalar>; ///< Scalar contract.
+   template <typename T> concept Vec2Like   = std::same_as<std::remove_cvref_t<T>, Vec2>;   ///< 2D vector contract.
+   template <typename T> concept Vec3Like   = std::same_as<std::remove_cvref_t<T>, Vec3>;   ///< 3D vector contract.
+   template <typename T> concept Vec4Like   = std::same_as<std::remove_cvref_t<T>, Vec4>;   ///< 4D vector contract.
+   template <typename T> concept QuatLike   = std::same_as<std::remove_cvref_t<T>, Quat>;   ///< Quaternion contract.
+   template <typename T> concept Mat4Like   = std::same_as<std::remove_cvref_t<T>, Mat4>;   ///< 4x4 matrix contract.
 
-   /// @brief Returns a 4x4 identity matrix.
-   [[nodiscard]] inline Mat4 identityMat4() noexcept { return Mat4(one()); }
-
-   /// @brief Returns a vector with all components set to one.
-   [[nodiscard]] inline Vec3 oneVec3() noexcept { return Vec3(one(), one(), one()); }
-
-   /// @brief Returns a zero-initialized three-component vector.
-   [[nodiscard]] inline Vec3 zeroVec3() noexcept { return Vec3(zero(), zero(), zero()); }
-
-   /// @brief Returns the identity quaternion.
-   [[nodiscard]] inline Quat identityQuat() noexcept { return Quat(one(), zero(), zero(), zero()); }
-
-   /// @brief Multiplies two quaternions without exposing GLM at call sites.
-   [[nodiscard]] inline Quat multiply(const Quat &lhs, const Quat &rhs) noexcept {
-      // Keep this wrapper explicit so engine-facing code does not depend on
-      // GLM operator conventions at call sites.
-      return Quat(lhs.w * rhs.w - lhs.x * rhs.x - lhs.y * rhs.y - lhs.z * rhs.z,
-                  lhs.w * rhs.x + lhs.x * rhs.w + lhs.y * rhs.z - lhs.z * rhs.y,
-                  lhs.w * rhs.y - lhs.x * rhs.z + lhs.y * rhs.w + lhs.z * rhs.x,
-                  lhs.w * rhs.z + lhs.x * rhs.y - lhs.y * rhs.x + lhs.z * rhs.w);
-   }
-
-   /// @brief Multiplies two 4x4 matrices without exposing GLM at call sites.
-   [[nodiscard]] inline Mat4 multiply(const Mat4 &lhs, const Mat4 &rhs) { return lhs * rhs; }
-
-   /// @brief Adds two 2D vectors without exposing GLM operators at call sites.
-   [[nodiscard]] inline Vec2 add(const Vec2 &lhs, const Vec2 &rhs) { return lhs + rhs; }
-
-   /// @brief Adds two 3D vectors without exposing GLM operators at call sites.
-   [[nodiscard]] inline Vec3 add(const Vec3 &lhs, const Vec3 &rhs) { return lhs + rhs; }
-
-   /// @brief Adds two 4D vectors without exposing GLM operators at call sites.
-   [[nodiscard]] inline Vec4 add(const Vec4 &lhs, const Vec4 &rhs) { return lhs + rhs; }
-
-   /// @brief Subtracts one 2D vector from another without exposing GLM operators at call sites.
-   [[nodiscard]] inline Vec2 subtract(const Vec2 &lhs, const Vec2 &rhs) { return lhs - rhs; }
-
-   /// @brief Subtracts one 3D vector from another without exposing GLM operators at call sites.
-   [[nodiscard]] inline Vec3 subtract(const Vec3 &lhs, const Vec3 &rhs) { return lhs - rhs; }
-
-   /// @brief Subtracts one 4D vector from another without exposing GLM operators at call sites.
-   [[nodiscard]] inline Vec4 subtract(const Vec4 &lhs, const Vec4 &rhs) { return lhs - rhs; }
-
-   /// @brief Scales a 2D vector by a scalar factor.
-   [[nodiscard]] inline Vec2 scale(const Vec2 &value, Scalar factor) { return value * factor; }
-
-   /// @brief Scales a 3D vector by a scalar factor.
-   [[nodiscard]] inline Vec3 scale(const Vec3 &value, Scalar factor) { return value * factor; }
-
-   /// @brief Scales a 4D vector by a scalar factor.
-   [[nodiscard]] inline Vec4 scale(const Vec4 &value, Scalar factor) { return value * factor; }
-
-   /// @brief Returns the dot product of two 2D vectors.
-   [[nodiscard]] inline Scalar dot(const Vec2 &lhs, const Vec2 &rhs) { return glm::dot(lhs, rhs); }
-
-   /// @brief Returns the dot product of two 3D vectors.
-   [[nodiscard]] inline Scalar dot(const Vec3 &lhs, const Vec3 &rhs) { return glm::dot(lhs, rhs); }
-
-   /// @brief Returns the dot product of two 4D vectors.
-   [[nodiscard]] inline Scalar dot(const Vec4 &lhs, const Vec4 &rhs) { return glm::dot(lhs, rhs); }
-
-   /// @brief Returns the cross product of two 3D vectors.
-   [[nodiscard]] inline Vec3 cross(const Vec3 &lhs, const Vec3 &rhs) { return glm::cross(lhs, rhs); }
-
-   /// @brief Returns the squared length of a 2D vector.
-   [[nodiscard]] inline Scalar lengthSquared(const Vec2 &value) { return dot(value, value); }
-
-   /// @brief Returns the squared length of a 3D vector.
-   [[nodiscard]] inline Scalar lengthSquared(const Vec3 &value) { return dot(value, value); }
-
-   /// @brief Returns the squared length of a 4D vector.
-   [[nodiscard]] inline Scalar lengthSquared(const Vec4 &value) { return dot(value, value); }
-
-   /// @brief Returns the Euclidean length of a 2D vector.
-   [[nodiscard]] inline Scalar length(const Vec2 &value) { return glm::length(value); }
-
-   /// @brief Returns the Euclidean length of a 3D vector.
-   [[nodiscard]] inline Scalar length(const Vec3 &value) { return glm::length(value); }
-
-   /// @brief Returns the Euclidean length of a 4D vector.
-   [[nodiscard]] inline Scalar length(const Vec4 &value) { return glm::length(value); }
-
-   /// @brief Returns a unit-length 2D vector pointing in the same direction.
-   [[nodiscard]] inline Vec2 normalize(const Vec2 &value) { return glm::normalize(value); }
-
-   /// @brief Returns a unit-length 3D vector pointing in the same direction.
-   [[nodiscard]] inline Vec3 normalize(const Vec3 &value) { return glm::normalize(value); }
-
-   /// @brief Returns a unit-length 4D vector pointing in the same direction.
-   [[nodiscard]] inline Vec4 normalize(const Vec4 &value) { return glm::normalize(value); }
-
-   /// @brief Returns the smaller scalar value.
-   [[nodiscard]] inline constexpr Scalar min(Scalar lhs, Scalar rhs) noexcept { return lhs < rhs ? lhs : rhs; }
-
-   /// @brief Returns the component-wise minimum of two 2D vectors.
-   [[nodiscard]] inline Vec2 min(const Vec2 &lhs, const Vec2 &rhs) { return glm::min(lhs, rhs); }
-
-   /// @brief Returns the component-wise minimum of two 3D vectors.
-   [[nodiscard]] inline Vec3 min(const Vec3 &lhs, const Vec3 &rhs) { return glm::min(lhs, rhs); }
-
-   /// @brief Returns the component-wise minimum of two 4D vectors.
-   [[nodiscard]] inline Vec4 min(const Vec4 &lhs, const Vec4 &rhs) { return glm::min(lhs, rhs); }
-
-   /// @brief Returns the larger scalar value.
-   [[nodiscard]] inline constexpr Scalar max(Scalar lhs, Scalar rhs) noexcept { return lhs > rhs ? lhs : rhs; }
-
-   /// @brief Returns the component-wise maximum of two 2D vectors.
-   [[nodiscard]] inline Vec2 max(const Vec2 &lhs, const Vec2 &rhs) { return glm::max(lhs, rhs); }
-
-   /// @brief Returns the component-wise maximum of two 3D vectors.
-   [[nodiscard]] inline Vec3 max(const Vec3 &lhs, const Vec3 &rhs) { return glm::max(lhs, rhs); }
-
-   /// @brief Returns the component-wise maximum of two 4D vectors.
-   [[nodiscard]] inline Vec4 max(const Vec4 &lhs, const Vec4 &rhs) { return glm::max(lhs, rhs); }
-
-   /// @brief Clamps a scalar value into an inclusive range.
-   [[nodiscard]] inline constexpr Scalar clamp(Scalar value, Scalar low, Scalar high) noexcept {
-      return max(low, min(value, high));
-   }
-
-   /// @brief Clamps a 3D vector component-wise into an inclusive range.
-   [[nodiscard]] inline Vec3 clamp(const Vec3 &value, const Vec3 &low, const Vec3 &high) {
-      return glm::clamp(value, low, high);
-   }
-
-   /// @brief Returns `matrix` translated by `offset`.
-   [[nodiscard]] inline Mat4 translate(const Mat4 &matrix, const Vec3 &offset) {
-      return glm::translate(matrix, offset);
-   }
-
-   /// @brief Returns `matrix` scaled by `factors`.
-   [[nodiscard]] inline Mat4 scale(const Mat4 &matrix, const Vec3 &factors) { return glm::scale(matrix, factors); }
-
-   /// @brief Builds a right-handed world-to-view transform looking from `eye` toward `center`.
-   [[nodiscard]] inline Mat4 lookAt(const Vec3 &eye, const Vec3 &center, const Vec3 &up) {
-      return glm::lookAt(eye, center, up);
-   }
-
-   /// @brief Builds a perspective projection matrix.
-   [[nodiscard]] inline Mat4 perspective(Scalar field_of_view_radians, Scalar aspect_ratio, Scalar near_plane,
-                                         Scalar far_plane) {
-      return glm::perspective(field_of_view_radians, aspect_ratio, near_plane, far_plane);
-   }
-
-   /// @brief Returns the inverse of `matrix`.
-   [[nodiscard]] inline Mat4 inverse(const Mat4 &matrix) { return glm::inverse(matrix); }
+   template <typename = void> concept ZeroFunctionLike = requires { { zero() } -> std::same_as<Scalar>; };
+   template <typename = void> concept OneFunctionLike = requires { { one() } -> std::same_as<Scalar>; };
+   template <typename = void> concept IdentityQuatFunctionLike = requires {
+      { identityQuat() } -> std::same_as<Quat>;
+   };
+   template <typename = void> concept IdentityMat4FunctionLike = requires {
+      { identityMat4() } -> std::same_as<Mat4>;
+   };
+   template <typename = void> concept UnitVectorFunctionLike = requires {
+      { zeroVec3() } -> std::same_as<Vec3>;
+      { oneVec3() } -> std::same_as<Vec3>;
+   };
+   template <typename = void> concept ArithmeticFunctionLike =
+      requires(Vec2 a2, Vec2 b2, Vec3 a3, Vec3 b3, Vec4 a4, Vec4 b4, Scalar scalar) {
+         { add(a2, b2) } -> std::same_as<Vec2>;
+         { add(a3, b3) } -> std::same_as<Vec3>;
+         { add(a4, b4) } -> std::same_as<Vec4>;
+         { subtract(a2, b2) } -> std::same_as<Vec2>;
+         { subtract(a3, b3) } -> std::same_as<Vec3>;
+         { subtract(a4, b4) } -> std::same_as<Vec4>;
+         { scale(a2, scalar) } -> std::same_as<Vec2>;
+         { scale(a3, scalar) } -> std::same_as<Vec3>;
+         { scale(a4, scalar) } -> std::same_as<Vec4>;
+      };
+   template <typename = void> concept GeometryFunctionLike = requires(Vec3 a, Vec3 b, Mat4 m, Scalar scalar) {
+      { dot(a, b) } -> std::same_as<Scalar>;
+      { cross(a, b) } -> std::same_as<Vec3>;
+      { length(a) } -> std::same_as<Scalar>;
+      { lengthSquared(a) } -> std::same_as<Scalar>;
+      { normalize(a) } -> std::same_as<Vec3>;
+      { lookAt(a, b, a) } -> std::same_as<Mat4>;
+      { perspective(scalar, scalar, scalar, scalar) } -> std::same_as<Mat4>;
+      { translate(m, a) } -> std::same_as<Mat4>;
+      { inverse(m) } -> std::same_as<Mat4>;
+   };
+   template <typename = void> concept ComparisonFunctionLike =
+      requires(Scalar scalar, Vec3 a, Vec3 b) {
+         { min(scalar, scalar) } -> std::same_as<Scalar>;
+         { max(scalar, scalar) } -> std::same_as<Scalar>;
+         { min(a, b) } -> std::same_as<Vec3>;
+         { max(a, b) } -> std::same_as<Vec3>;
+         { clamp(scalar, scalar, scalar) } -> std::same_as<Scalar>;
+         { clamp(a, b, a) } -> std::same_as<Vec3>;
+      };
+   template <typename = void> concept MultiplyFunctionLike = requires(Quat q, Mat4 m) {
+      { multiply(q, q) } -> std::same_as<Quat>;
+      { multiply(m, m) } -> std::same_as<Mat4>;
+   };
 
 } // namespace vve::math
+
+export namespace vve {
+
+   using Scalar = math::Scalar; ///< Facade scalar type.
+   using Vec2   = math::Vec2;   ///< Facade 2D vector.
+   using Vec3   = math::Vec3;   ///< Facade 3D vector.
+   using Vec4   = math::Vec4;   ///< Facade 4D vector.
+   using Quat   = math::Quat;   ///< Facade quaternion.
+   using Mat4   = math::Mat4;   ///< Facade 4x4 matrix.
+
+   using math::identityMat4;
+   using math::identityQuat;
+   using math::one;
+   using math::oneVec3;
+   using math::zero;
+   using math::zeroVec3;
+
+   template <typename T> concept ScalarLike = math::ScalarLike<T>; ///< Scalar contract.
+   template <typename T> concept Vec2Like   = math::Vec2Like<T>;   ///< 2D vector contract.
+   template <typename T> concept Vec3Like   = math::Vec3Like<T>;   ///< 3D vector contract.
+   template <typename T> concept Vec4Like   = math::Vec4Like<T>;   ///< 4D vector contract.
+   template <typename T> concept QuatLike   = math::QuatLike<T>;   ///< Quaternion contract.
+   template <typename T> concept Mat4Like   = math::Mat4Like<T>;   ///< 4x4 matrix contract.
+
+} // namespace vve

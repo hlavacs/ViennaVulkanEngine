@@ -1,4 +1,4 @@
-export module VEEngine:V4Graph;
+export module VEEngine.V4:Graph;
 import std;
 export import :Error;
 

@@ -1,23 +1,37 @@
-module;
-
-#ifndef VVE_ENGINE_IMPLEMENTATION_NAMESPACE
-#define VVE_ENGINE_IMPLEMENTATION_NAMESPACE v4
-#endif
-
 export module VEEngine:Graph;
-export import :V4Graph;
+import std;
+import VEEngine.V4;
+import :Error;
+import :Types;
 
 /**
  * @file
- * @brief Public graph and tree topology facades backed by the active engine version.
+ * @brief Public graph contract backed by the selected engine implementation.
  */
 export namespace vve {
 
    template <typename THandle>
-   using HandleHash = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::HandleHash<THandle>; ///< Active handle hasher.
+   using BasicTree = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicTree<THandle>; ///< Facade tree topology.
    template <typename THandle>
-   using BasicTree = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicTree<THandle>; ///< Active tree facade.
-   template <typename THandle>
-   using Graph = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Graph<THandle>; ///< Active graph facade.
+   using Graph = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Graph<THandle>; ///< Facade directed graph topology.
+
+   template <typename TTree, typename THandle> concept BasicTreeLike =
+      requires(TTree tree, THandle parent, THandle child) {
+         { tree.root } -> std::same_as<THandle &>;
+         tree.addChild(parent, child);
+         tree.removeNode(child);
+         { tree.childRange(parent) };
+         { tree.parentOf(child) } -> std::same_as<std::optional<THandle>>;
+      }; ///< Contract for public tree topology templates.
+
+   template <typename TGraph, typename THandle> concept GraphLike =
+      requires(TGraph graph, THandle from, THandle to, Vector<THandle> nodes) {
+         graph.addEdge(from, to);
+         graph.removeEdge(from, to);
+         graph.removeNode(from);
+         { graph.childRange(from) };
+         { graph.parentRange(to) };
+         { graph.topologicalOrder(nodes) } -> std::same_as<std::expected<std::vector<THandle>, Error>>;
+      }; ///< Contract for public directed graph topology templates.
 
 } // namespace vve

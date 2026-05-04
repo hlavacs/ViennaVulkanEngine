@@ -38,6 +38,8 @@ endif()
 target_sources(ViennaVulkanEngine
     PUBLIC
         FILE_SET CXX_MODULES FILES
+            versions/v4/Error.ixx
+            versions/v4/Math.ixx
             Math.ixx
             Error.ixx
             versions/v4/Graph.ixx

@@ -7,7 +7,7 @@
 #include <string_view>
 #include <vector>
 
-import VEEngine.V4;
+import VEEngine;
 
 /**
  * @file
@@ -163,7 +163,7 @@ private:
         std::cout << '\n';
     }
 
-    void printSceneInventory(const vve::v4::ObjectCatalog& catalog, const vve::v4::SceneDescriptor& scene) const {
+    void printSceneInventory(const vve::ObjectCatalog& catalog, const vve::SceneDescriptor& scene) const {
         std::cout << '[' << name() << "] counts: nodes=" << scene.nodes.size()
                   << " meshes=" << scene.meshes.size()
                   << " materials=" << scene.materials.size()
@@ -176,7 +176,7 @@ private:
         printCameras(catalog, scene.cameras);
     }
 
-    void printMeshes(const vve::v4::ObjectCatalog& catalog, const vve::Vector<vve::v4::MeshHandle>& handles) const {
+    void printMeshes(const vve::ObjectCatalog& catalog, const vve::Vector<vve::MeshHandle>& handles) const {
         std::cout << '[' << name() << "] meshes:\n";
         for (const auto handle : handles) {
             const auto* mesh = catalog.meshes.find(handle);
@@ -190,8 +190,7 @@ private:
         }
     }
 
-    void printTextures(const vve::v4::ObjectCatalog& catalog,
-                       const vve::Vector<vve::v4::TextureHandle>& handles) const {
+    void printTextures(const vve::ObjectCatalog& catalog, const vve::Vector<vve::TextureHandle>& handles) const {
         std::cout << '[' << name() << "] textures:\n";
         for (const auto handle : handles) {
             const auto* texture = catalog.textures.find(handle);
@@ -204,7 +203,7 @@ private:
         }
     }
 
-    void printLights(const vve::v4::ObjectCatalog& catalog, const vve::Vector<vve::v4::LightHandle>& handles) const {
+    void printLights(const vve::ObjectCatalog& catalog, const vve::Vector<vve::LightHandle>& handles) const {
         std::cout << '[' << name() << "] lights:\n";
         for (const auto handle : handles) {
             const auto* light = catalog.lights.find(handle);
@@ -216,8 +215,7 @@ private:
         }
     }
 
-    void printCameras(const vve::v4::ObjectCatalog& catalog,
-                      const vve::Vector<vve::v4::CameraHandle>& handles) const {
+    void printCameras(const vve::ObjectCatalog& catalog, const vve::Vector<vve::CameraHandle>& handles) const {
         std::cout << '[' << name() << "] cameras:\n";
         for (const auto handle : handles) {
             const auto* camera = catalog.cameras.find(handle);
@@ -230,7 +228,7 @@ private:
     }
 
     std::filesystem::path scene_path_{}; ///< Resolved Sponza file imported during init().
-    vve::v4::AssetSystem assets_{};      ///< v4 import catalog kept outside the public World facade.
+    vve::AssetSystem assets_{};          ///< Import catalog accessed through the public facade.
     bool frame_loop_logged_{false};      ///< Keeps the runtime heartbeat to one line.
 };
 

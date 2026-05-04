@@ -7,7 +7,7 @@
 #include <string_view>
 #include <type_traits>
 
-import VEEngine.V4;
+import VEEngine;
 
 namespace {
 
@@ -20,16 +20,16 @@ struct CountingSystem {
    int *update_count{nullptr};
    std::uint64_t *last_frame{nullptr};
 
-   std::expected<void, vve::v4::Error> init(vve::v4::World &world) {
+   std::expected<void, vve::Error> init(vve::World &world) {
       if (init_count != nullptr) {
          ++*init_count;
       }
-      return world.windows().empty() ? std::unexpected(vve::v4::Error::missing_object)
-                                     : std::expected<void, vve::v4::Error>{};
+      return world.windows().empty() ? std::unexpected(vve::Error::missing_object)
+                                     : std::expected<void, vve::Error>{};
    }
 
-   std::expected<void, vve::v4::Error> update(vve::v4::World &, const vve::v4::FrameContext &frame,
-                                              const vve::v4::WindowFrameData &window_frame) {
+   std::expected<void, vve::Error> update(vve::World &, const vve::FrameContext &frame,
+                                          const vve::WindowFrameData &window_frame) {
       if (update_count != nullptr) {
          ++*update_count;
       }
@@ -37,7 +37,7 @@ struct CountingSystem {
          *last_frame = frame.frame_index.value;
       }
       if (window_frame.windows.empty()) {
-         return std::unexpected(vve::v4::Error::missing_object);
+         return std::unexpected(vve::Error::missing_object);
       }
       return {};
    }
@@ -47,8 +47,60 @@ struct CountingSystem {
    return std::abs(lhs - rhs) < 0.0001F;
 }
 
+[[nodiscard]] int testFacadeContracts() {
+   using namespace vve;
+
+   static_assert(ErrorLike<Error>);
+   static_assert(ErrorNameFunctionLike<>);
+   static_assert(ScalarLike<Scalar> && Vec2Like<Vec2> && Vec3Like<Vec3> && Vec4Like<Vec4>);
+   static_assert(QuatLike<Quat> && Mat4Like<Mat4>);
+   static_assert(math::ZeroFunctionLike<> && math::OneFunctionLike<>);
+   static_assert(math::IdentityQuatFunctionLike<> && math::IdentityMat4FunctionLike<>);
+   static_assert(math::UnitVectorFunctionLike<> && math::ArithmeticFunctionLike<>);
+   static_assert(math::GeometryFunctionLike<> && math::ComparisonFunctionLike<>);
+   static_assert(math::MultiplyFunctionLike<>);
+   static_assert(VectorLike<Vector<int>, int>);
+   static_assert(TypedHandleLike<MeshHandle> && EntityLike<Entity>);
+   static_assert(SceneHandleLike<SceneHandle> && WindowHandleLike<WindowHandle>);
+   static_assert(NodeHandleLike<NodeHandle> && MeshHandleLike<MeshHandle>);
+   static_assert(MaterialHandleLike<MaterialHandle> && TextureHandleLike<TextureHandle>);
+   static_assert(LightHandleLike<LightHandle> && CameraHandleLike<CameraHandle>);
+   static_assert(PositionLike<Position> && DirectionLike<Direction> && ScaleLike<Scale>);
+   static_assert(RotationLike<Rotation> && LinearColorLike<LinearColor>);
+   static_assert(LightIntensityLike<LightIntensity> && FovYLike<FovY>);
+   static_assert(ClipPlanesLike<ClipPlanes> && DeltaTimeLike<DeltaTime>);
+   static_assert(PixelExtentLike<PixelExtent> && ObjectNameLike<ObjectName>);
+   static_assert(RendererIdLike<RendererId> && FrameCountLike<FrameCount>);
+   static_assert(VertexCountLike<VertexCount> && IndexCountLike<IndexCount>);
+   static_assert(TextureChannelCountLike<TextureChannelCount>);
+   static_assert(TransformLike<Transform> && BoundsLike<Bounds> && CameraLike<Camera>);
+   static_assert(TextureBindingLike<TextureBinding> && MeshUseLike<MeshUse>);
+   static_assert(NodeDescriptorLike<NodeDescriptor> && MeshDescriptorLike<MeshDescriptor>);
+   static_assert(MaterialDescriptorLike<MaterialDescriptor> && TextureDescriptorLike<TextureDescriptor>);
+   static_assert(LightDescriptorLike<LightDescriptor> && CameraDescriptorLike<CameraDescriptor>);
+   static_assert(TreeLike<Tree> && SceneDescriptorLike<SceneDescriptor> && ObjectCatalogLike<ObjectCatalog>);
+   static_assert(CounterHandleFactoryLike<MeshHandle> && TestHandleFactoryLike<MeshHandle>);
+   static_assert(SlotMapHandleFactoryLike<MeshHandle>);
+   static_assert(ECSTraitsLike<DefaultECSTraits> && ECSLike<ECS>);
+   static_assert(InputStateLike<InputState> && WindowDescLike<WindowDesc>);
+   static_assert(WindowInfoLike<WindowInfo> && WindowFrameDataLike<WindowFrameData>);
+   static_assert(WindowsLike<Windows>);
+   static_assert(BasicTreeLike<BasicTree<NodeHandle>, NodeHandle>);
+   static_assert(GraphLike<Graph<NodeHandle>, NodeHandle>);
+   static_assert(ApplicationNameLike<ApplicationName> && MaxFramesLike<MaxFrames>);
+   static_assert(FrameContextLike<FrameContext> && FrameStatusLike<FrameStatus>);
+   static_assert(EngineConfigLike<EngineConfig> && UserSystemsLike<UserSystems<CountingSystem>, CountingSystem>);
+   static_assert(WorldLike<World>);
+   static_assert(AssetSystemLike<AssetSystem> && GuiWidgetHandleLike<GuiWidgetHandle>);
+   static_assert(GuiWidgetLike<GuiWidget> && GuiSystemLike<GuiSystem>);
+   static_assert(EngineLike<Engine<>> && MakeEngineFunctionLike<>);
+   static_assert(MakeEngineFunctionLike<ApplicationName, MaxFrames>);
+   static_assert(MakeUserSystemsFunctionLike<CountingSystem>);
+   return 0;
+}
+
 [[nodiscard]] int testHandles() {
-   using namespace vve::v4;
+   using namespace vve;
 
    static_assert(sizeof(SceneHandle) == sizeof(std::uint64_t));
    static_assert(!std::is_same_v<MeshHandle, TextureHandle>);
@@ -78,7 +130,7 @@ struct CountingSystem {
 }
 
 [[nodiscard]] int testStrongMathTypes() {
-   using namespace vve::v4;
+   using namespace vve;
 
    static_assert(std::is_same_v<Transform, vve::Transform>);
    static_assert(std::is_same_v<Camera, vve::Camera>);
@@ -160,7 +212,7 @@ struct CountingSystem {
 }
 
 [[nodiscard]] int testECS() {
-   using namespace vve::v4;
+   using namespace vve;
 
    ECS ecs{};
    const auto entity = ecs.create();
@@ -198,7 +250,7 @@ struct CountingSystem {
 }
 
 [[nodiscard]] int testDescriptorCatalog() {
-   using namespace vve::v4;
+   using namespace vve;
 
    ObjectCatalog catalog{};
    const auto scene = makeHandleForTest<SceneHandle>(100);
@@ -301,7 +353,7 @@ struct CountingSystem {
 }
 
 [[nodiscard]] int testInputAndWorld() {
-   using namespace vve::v4;
+   using namespace vve;
 
    const auto window = makeHandleForTest<WindowHandle>(200);
    InputState input{};
@@ -357,14 +409,14 @@ struct CountingSystem {
 }
 
 [[nodiscard]] int testGraphTopologicalOrder() {
-   using namespace vve::v4;
+   using namespace vve;
 
-   const auto a = makeHandleForTest<TaskHandle>(300);
-   const auto b = makeHandleForTest<TaskHandle>(301);
-   const auto c = makeHandleForTest<TaskHandle>(302);
-   const auto d = makeHandleForTest<TaskHandle>(303);
+   const auto a = makeHandleForTest<NodeHandle>(300);
+   const auto b = makeHandleForTest<NodeHandle>(301);
+   const auto c = makeHandleForTest<NodeHandle>(302);
+   const auto d = makeHandleForTest<NodeHandle>(303);
 
-   Graph<TaskHandle> graph{};
+   Graph<NodeHandle> graph{};
    graph.addEdge(a, c);
    graph.addEdge(b, c);
    graph.addEdge(c, d);
@@ -378,41 +430,41 @@ struct CountingSystem {
    if (!has_a_parent || !has_b_parent) {
       return 88;
    }
-   const auto ordered = graph.topologicalOrder(Vector<TaskHandle>{a, b, c, d});
+   const auto ordered = graph.topologicalOrder(Vector<NodeHandle>{a, b, c, d});
    if (!ordered || ordered->size() != 4 || ordered->at(0) != a || ordered->at(1) != b ||
        ordered->at(2) != c || ordered->at(3) != d) {
       return 75;
    }
 
-   Graph<TaskHandle> cyclic{};
+   Graph<NodeHandle> cyclic{};
    cyclic.addEdge(a, b);
    cyclic.addEdge(b, a);
-   const auto cycle = cyclic.topologicalOrder(Vector<TaskHandle>{a, b});
+   const auto cycle = cyclic.topologicalOrder(Vector<NodeHandle>{a, b});
    if (cycle || cycle.error() != Error::cycle_detected) {
       return 76;
    }
 
-   Graph<TaskHandle> missing_node{};
+   Graph<NodeHandle> missing_node{};
    missing_node.addEdge(a, b);
-   const auto missing = missing_node.topologicalOrder(Vector<TaskHandle>{a});
+   const auto missing = missing_node.topologicalOrder(Vector<NodeHandle>{a});
    if (missing || missing.error() != Error::missing_object) {
       return 77;
    }
 
-   Graph<TaskHandle> invalid_node{};
-   const auto invalid = invalid_node.topologicalOrder(Vector<TaskHandle>{TaskHandle{}});
+   Graph<NodeHandle> invalid_node{};
+   const auto invalid = invalid_node.topologicalOrder(Vector<NodeHandle>{NodeHandle{}});
    if (invalid || invalid.error() != Error::invalid_handle) {
       return 78;
    }
 
    graph.removeNode(c);
-   const auto after_remove = graph.topologicalOrder(Vector<TaskHandle>{a, b, d});
+   const auto after_remove = graph.topologicalOrder(Vector<NodeHandle>{a, b, d});
    if (!after_remove || after_remove->size() != 3 ||
        after_remove->at(0) != a || after_remove->at(1) != b || after_remove->at(2) != d) {
       return 83;
    }
 
-   BasicTree<TaskHandle> tree{.root = a};
+   BasicTree<NodeHandle> tree{.root = a};
    tree.addChild(a, b);
    tree.addChild(b, c);
    const auto parent_b = tree.parentOf(b);
@@ -434,7 +486,7 @@ struct CountingSystem {
 }
 
 [[nodiscard]] int testAssimpSceneImport() {
-   using namespace vve::v4;
+   using namespace vve;
 
    const auto path = std::filesystem::temp_directory_path() / "vve_v4_assimp_triangle.obj";
    {
@@ -472,7 +524,7 @@ struct CountingSystem {
 }
 
 [[nodiscard]] int testStubSystems() {
-   using namespace vve::v4;
+   using namespace vve;
 
    int init_count = 0;
    int update_count = 0;
@@ -510,58 +562,6 @@ struct CountingSystem {
    const auto scene = engine.assets().addScene(ObjectName{.value = "stub"});
    if (!scene || !scene->isCounter() || engine.assets().catalog().scenes.find(*scene) == nullptr) {
       return 42;
-   }
-   const auto resource = engine.resources().add(ResourceKind::mesh, ObjectName{.value = "mesh"});
-   if (!resource || engine.resources().find(*resource) == nullptr) {
-      return 43;
-   }
-   const auto task = makeHandleForTest<TaskHandle>(400);
-   const auto child_task = makeHandleForTest<TaskHandle>(401);
-   if (!engine.tasks().add(TaskNode{.handle = task, .name = "task"}) ||
-       !engine.tasks().add(TaskNode{.handle = child_task, .name = "child-task"}) ||
-       engine.tasks().find(task) == nullptr) {
-      return 44;
-   }
-   engine.tasks().addEdge(task, child_task);
-   const auto [task_child, task_child_end] = engine.tasks().graph().childRange(task);
-   if (task_child == task_child_end || task_child->second != child_task) {
-      return 45;
-   }
-   const auto task_order = engine.tasks().topologicalOrder();
-   if (!task_order || task_order->size() != 2 || task_order->front() != task || task_order->back() != child_task) {
-      return 54;
-   }
-   if (!engine.tasks().remove(child_task) || engine.tasks().find(child_task) != nullptr) {
-      return 86;
-   }
-   const auto pass = makeHandleForTest<RenderPassHandle>(500);
-   const auto child_pass = makeHandleForTest<RenderPassHandle>(501);
-   const auto isolated_pass = makeHandleForTest<RenderPassHandle>(502);
-   if (!engine.renderGraph().add(RenderPassNode{.handle = pass, .name = "pass"}) ||
-       !engine.renderGraph().add(RenderPassNode{.handle = child_pass, .name = "child-pass"}) ||
-       !engine.renderGraph().add(RenderPassNode{.handle = isolated_pass, .name = "isolated-pass"}) ||
-       engine.renderGraph().find(pass) == nullptr) {
-      return 46;
-   }
-   engine.renderGraph().addEdge(pass, child_pass);
-   const auto [pass_child, pass_child_end] = engine.renderGraph().graph().childRange(pass);
-   if (pass_child == pass_child_end || pass_child->second != child_pass) {
-      return 47;
-   }
-   const auto pass_order = engine.renderGraph().topologicalOrder();
-   if (!pass_order || pass_order->size() != 3 || pass_order->at(0) != pass ||
-       pass_order->at(1) != child_pass || pass_order->at(2) != isolated_pass) {
-      return 55;
-   }
-   if (!engine.renderGraph().remove(child_pass) || engine.renderGraph().find(child_pass) != nullptr) {
-      return 87;
-   }
-   const auto shader = makeHandleForTest<ShaderHandle>(600);
-   if (!engine.shaders().add(ShaderDescriptor{.handle = shader,
-                                              .name = ObjectName{.value = "shader"},
-                                              .stages = {ShaderStage::vertex, ShaderStage::fragment}}) ||
-       engine.shaders().find(shader) == nullptr) {
-      return 48;
    }
    const auto label = engine.gui().label("hello");
    if (!label || engine.gui().find(*label) == nullptr) {
@@ -607,6 +607,9 @@ struct CountingSystem {
 } // namespace
 
 int main() {
+   if (const int result = testFacadeContracts(); result != 0) {
+      return result;
+   }
    if (const int result = testHandles(); result != 0) {
       return result;
    }

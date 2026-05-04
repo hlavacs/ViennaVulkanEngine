@@ -1,205 +1,274 @@
 export module VEEngine:Types;
 import std;
-export import :Error;
-export import :Math;
-export import :Graph;
+import VEEngine.V4;
+import :Error;
+import :Math;
 
 /**
  * @file
- * @brief Upper-layer semantic engine types built from the thin math facade.
+ * @brief Public type contract backed by the selected engine implementation.
  */
 export namespace vve {
 
-   template <typename T> using Vector = std::vector<T>; ///< Facade dynamic array type.
+   template <typename T>
+   using Vector = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Vector<T>; ///< Facade dynamic array type.
 
-   /// @brief Strong wrapper for world or local position values.
-   struct Position {
-      math::Vec3 value{math::zeroVec3()}; ///< Wrapped coordinate.
-   };
+   template <typename TTag>
+   using TypedHandle = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::TypedHandle<TTag>; ///< Facade typed handle.
 
-   /// @brief Strong wrapper for vectors that should be interpreted as directions.
-   struct Direction {
-      math::Vec3 value{math::Vec3(math::zero(), math::zero(), -math::one())}; ///< Wrapped direction.
-   };
+   using Bounds              = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Bounds;              ///< Facade bounds type.
+   using Camera              = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Camera;              ///< Facade camera type.
+   using CameraDescriptor    = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::CameraDescriptor;    ///< Imported camera data.
+   using CameraHandle        = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::CameraHandle;        ///< Camera descriptor handle.
+   using ClipPlanes          = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::ClipPlanes;          ///< Facade clip planes.
+   using DeltaTime           = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::DeltaTime;           ///< Facade delta time.
+   using Direction           = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Direction;           ///< Facade direction type.
+   using Entity              = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Entity;              ///< Facade ECS entity.
+   using FovY                = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::FovY;                ///< Facade vertical FOV.
+   using FrameCount          = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::FrameCount;          ///< Facade frame count.
+   using IndexCount          = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::IndexCount;          ///< Imported index count.
+   using LightDescriptor     = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::LightDescriptor;     ///< Imported light data.
+   using LightHandle         = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::LightHandle;         ///< Light descriptor handle.
+   using LightIntensity      = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::LightIntensity;      ///< Facade light intensity.
+   using LightKind           = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::LightKind;           ///< Facade light kind.
+   using LinearColor         = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::LinearColor;         ///< Facade linear color.
+   using MaterialDescriptor  = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::MaterialDescriptor;  ///< Imported material data.
+   using MaterialHandle      = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::MaterialHandle; ///< Material descriptor handle.
+   using MeshDescriptor      = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::MeshDescriptor;      ///< Imported mesh data.
+   using MeshHandle          = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::MeshHandle;          ///< Mesh descriptor handle.
+   using MeshUse             = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::MeshUse;             ///< Node mesh reference.
+   using NodeDescriptor      = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::NodeDescriptor;      ///< Imported node data.
+   using NodeHandle          = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::NodeHandle;          ///< Node descriptor handle.
+   using ObjectCatalog       = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::ObjectCatalog;       ///< Imported object catalog.
+   using ObjectName          = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::ObjectName;          ///< Facade object name.
+   using PixelExtent         = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::PixelExtent;         ///< Facade pixel extent.
+   using Position            = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Position;            ///< Facade position.
+   using RendererId          = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::RendererId;          ///< Facade renderer id.
+   using Rotation            = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Rotation;            ///< Facade rotation.
+   using Scale               = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Scale;               ///< Facade scale.
+   using SceneDescriptor     = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::SceneDescriptor;     ///< Imported scene data.
+   using SceneHandle         = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::SceneHandle;         ///< Scene descriptor handle.
+   using TextureBinding      = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::TextureBinding;      ///< Material texture binding.
+   using TextureChannelCount = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::TextureChannelCount; ///< Texture channel count.
+   using TextureDescriptor   = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::TextureDescriptor;   ///< Imported texture data.
+   using TextureHandle       = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::TextureHandle;       ///< Texture descriptor handle.
+   using TextureSemantic     = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::TextureSemantic;     ///< Texture slot semantic.
+   using Transform           = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Transform;           ///< Facade transform.
+   using Tree                = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Tree;                ///< Facade scene tree.
+   using VertexCount         = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::VertexCount;         ///< Imported vertex count.
+   using WindowHandle        = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowHandle;        ///< Runtime window handle.
 
-   /// @brief Strong wrapper for non-uniform scale factors.
-   struct Scale {
-      math::Vec3 value{math::oneVec3()}; ///< Wrapped scale vector.
-   };
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::makeCounterHandle;        ///< Facade counter-handle builder.
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::makeHandleForTest;        ///< Facade deterministic handle builder.
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::makeSlotMapHandleForTest; ///< Facade slot-map test handle builder.
 
-   /// @brief Strong wrapper for quaternion rotations.
-   struct Rotation {
-      math::Quat value{math::identityQuat()}; ///< Wrapped orientation.
-   };
+   template <typename TContainer, typename TValue> concept VectorLike =
+      requires(TContainer container, TValue value) {
+         { container.push_back(value) };
+         { container.size() } -> std::convertible_to<std::size_t>;
+         { container.begin() };
+         { container.end() };
+      }; ///< Contract for the public dynamic array alias.
 
-   /// @brief Strong wrapper for linear RGB color values.
-   struct LinearColor {
-      math::Vec3 value{math::oneVec3()}; ///< Wrapped linear RGB color.
-   };
+   template <typename THandle> concept TypedHandleLike =
+      requires(THandle handle) {
+         { THandle::counter_bit } -> std::convertible_to<std::uint64_t>;
+         { THandle::id_mask } -> std::convertible_to<std::uint64_t>;
+         { handle.value } -> std::convertible_to<std::uint64_t>;
+         { handle.valid() } -> std::same_as<bool>;
+         { handle.isCounter() } -> std::same_as<bool>;
+         { handle.isSlotMapIndex() } -> std::same_as<bool>;
+         { handle.generation() } -> std::convertible_to<std::uint64_t>;
+         { handle.id() } -> std::convertible_to<std::uint64_t>;
+         { handle.slotIndex() } -> std::convertible_to<std::uint64_t>;
+      }; ///< Contract for all public 64-bit typed handle aliases.
 
-   /// @brief Strong wrapper for relative light intensity.
-   struct LightIntensity {
-      math::Scalar value{math::one()}; ///< Wrapped non-negative intensity scale.
-   };
+   template <typename T> concept EntityLike =
+      TypedHandleLike<T> && std::same_as<std::remove_cvref_t<T>, Entity>;
+   template <typename T> concept SceneHandleLike =
+      TypedHandleLike<T> && std::same_as<std::remove_cvref_t<T>, SceneHandle>;
+   template <typename T> concept WindowHandleLike =
+      TypedHandleLike<T> && std::same_as<std::remove_cvref_t<T>, WindowHandle>;
+   template <typename T> concept NodeHandleLike =
+      TypedHandleLike<T> && std::same_as<std::remove_cvref_t<T>, NodeHandle>;
+   template <typename T> concept MeshHandleLike =
+      TypedHandleLike<T> && std::same_as<std::remove_cvref_t<T>, MeshHandle>;
+   template <typename T> concept MaterialHandleLike =
+      TypedHandleLike<T> && std::same_as<std::remove_cvref_t<T>, MaterialHandle>;
+   template <typename T> concept TextureHandleLike =
+      TypedHandleLike<T> && std::same_as<std::remove_cvref_t<T>, TextureHandle>;
+   template <typename T> concept LightHandleLike =
+      TypedHandleLike<T> && std::same_as<std::remove_cvref_t<T>, LightHandle>;
+   template <typename T> concept CameraHandleLike =
+      TypedHandleLike<T> && std::same_as<std::remove_cvref_t<T>, CameraHandle>;
 
-   /// @brief Strong wrapper for vertical field-of-view angles.
-   struct FovY {
-      math::Scalar radians{static_cast<math::Scalar>(1.0471975511965976)}; ///< Wrapped vertical FOV in radians.
-   };
+   template <typename T> concept PositionLike = requires(T value) {
+      { value.value } -> std::same_as<Vec3 &>;
+   }; ///< Contract for position wrappers.
+   template <typename T> concept DirectionLike = requires(T value) {
+      { value.value } -> std::same_as<Vec3 &>;
+   }; ///< Contract for direction wrappers.
+   template <typename T> concept ScaleLike = requires(T value) {
+      { value.value } -> std::same_as<Vec3 &>;
+   }; ///< Contract for scale wrappers.
+   template <typename T> concept RotationLike = requires(T value) {
+      { value.value } -> std::same_as<Quat &>;
+   }; ///< Contract for rotation wrappers.
+   template <typename T> concept LinearColorLike = requires(T value) {
+      { value.value } -> std::same_as<Vec3 &>;
+   }; ///< Contract for linear-color wrappers.
+   template <typename T> concept LightIntensityLike = requires(T value) {
+      { value.value } -> std::same_as<Scalar &>;
+   }; ///< Contract for light-intensity wrappers.
+   template <typename T> concept FovYLike = requires(T value) {
+      { value.radians } -> std::same_as<Scalar &>;
+   }; ///< Contract for vertical field-of-view wrappers.
+   template <typename T> concept ClipPlanesLike = requires(T value) {
+      { value.near_plane } -> std::same_as<Scalar &>;
+      { value.far_plane } -> std::same_as<Scalar &>;
+   }; ///< Contract for clip-plane wrappers.
+   template <typename T> concept DeltaTimeLike = requires(T value) {
+      { value.seconds } -> std::same_as<double &>;
+   }; ///< Contract for frame-delta wrappers.
+   template <typename T> concept PixelExtentLike = requires(T value) {
+      { value.width } -> std::same_as<std::uint32_t &>;
+      { value.height } -> std::same_as<std::uint32_t &>;
+   }; ///< Contract for pixel-extent wrappers.
+   template <typename T> concept ObjectNameLike = requires(T value) {
+      { value.value } -> std::same_as<std::string &>;
+   }; ///< Contract for object-name wrappers.
+   template <typename T> concept RendererIdLike = requires(T value) {
+      { value.value } -> std::same_as<std::string &>;
+   }; ///< Contract for renderer-id wrappers.
+   template <typename T> concept FrameCountLike = requires(T value) {
+      { value.value } -> std::same_as<std::uint64_t &>;
+   }; ///< Contract for frame-count wrappers.
+   template <typename T> concept VertexCountLike = requires(T value) {
+      { value.value } -> std::same_as<std::uint64_t &>;
+   }; ///< Contract for vertex-count wrappers.
+   template <typename T> concept IndexCountLike = requires(T value) {
+      { value.value } -> std::same_as<std::uint64_t &>;
+   }; ///< Contract for index-count wrappers.
+   template <typename T> concept TextureChannelCountLike = requires(T value) {
+      { value.value } -> std::same_as<std::uint32_t &>;
+   }; ///< Contract for texture-channel wrappers.
 
-   /// @brief Strong wrapper for near and far clipping planes.
-   struct ClipPlanes {
-      math::Scalar near_plane{static_cast<math::Scalar>(0.1)};     ///< Near clip distance.
-      math::Scalar far_plane{static_cast<math::Scalar>(10000.0)}; ///< Far clip distance.
-   };
+   template <typename T> concept TransformLike = requires(T value) {
+      { value.translation } -> std::same_as<Position &>;
+      { value.rotation } -> std::same_as<Rotation &>;
+      { value.scale } -> std::same_as<Scale &>;
+   }; ///< Contract for transform structs.
+   template <typename T> concept BoundsLike = requires(T value) {
+      { value.minimum } -> std::same_as<Position &>;
+      { value.maximum } -> std::same_as<Position &>;
+      { value.valid } -> std::same_as<bool &>;
+   }; ///< Contract for axis-aligned bounds structs.
+   template <typename T> concept CameraLike =
+      requires(std::remove_cvref_t<T> camera, Position position, Direction up, FovY fov, ClipPlanes clip) {
+         { camera.position } -> std::same_as<Position &>;
+         { camera.forward } -> std::same_as<Direction &>;
+         { camera.view_transform } -> std::same_as<Mat4 &>;
+         { camera.fov_y } -> std::same_as<FovY &>;
+         { camera.clip } -> std::same_as<ClipPlanes &>;
+         { std::remove_cvref_t<T>::lookAt(position, position, up, fov, clip) } ->
+            std::same_as<std::remove_cvref_t<T>>;
+      }; ///< Contract for camera structs.
 
-   /// @brief Strong wrapper for frame delta time.
-   struct DeltaTime {
-      double seconds{1.0 / 60.0}; ///< Elapsed seconds.
-   };
+   template <typename T> concept TextureBindingLike = requires(T value) {
+      { value.texture } -> std::same_as<TextureHandle &>;
+      { value.semantic } -> std::same_as<TextureSemantic &>;
+      { value.uv_set } -> std::same_as<std::uint32_t &>;
+   }; ///< Contract for material texture bindings.
+   template <typename T> concept MeshUseLike = requires(T value) {
+      { value.mesh } -> std::same_as<MeshHandle &>;
+      { value.material } -> std::same_as<MaterialHandle &>;
+   }; ///< Contract for node mesh references.
+   template <typename T> concept NodeDescriptorLike = requires(T value) {
+      typename T::HandleType;
+      { value.handle } -> std::same_as<NodeHandle &>;
+      { value.name } -> std::same_as<ObjectName &>;
+      { value.transform } -> std::same_as<Transform &>;
+      { value.meshes } -> std::same_as<Vector<MeshUse> &>;
+   }; ///< Contract for imported node descriptors.
+   template <typename T> concept MeshDescriptorLike = requires(T value) {
+      typename T::HandleType;
+      { value.handle } -> std::same_as<MeshHandle &>;
+      { value.name } -> std::same_as<ObjectName &>;
+      { value.vertex_count } -> std::same_as<VertexCount &>;
+      { value.index_count } -> std::same_as<IndexCount &>;
+      { value.material } -> std::same_as<MaterialHandle &>;
+      { value.bounds } -> std::same_as<Bounds &>;
+   }; ///< Contract for imported mesh descriptors.
+   template <typename T> concept MaterialDescriptorLike = requires(T value) {
+      typename T::HandleType;
+      { value.handle } -> std::same_as<MaterialHandle &>;
+      { value.name } -> std::same_as<ObjectName &>;
+      { value.textures } -> std::same_as<Vector<TextureBinding> &>;
+   }; ///< Contract for imported material descriptors.
+   template <typename T> concept TextureDescriptorLike = requires(T value) {
+      typename T::HandleType;
+      { value.handle } -> std::same_as<TextureHandle &>;
+      { value.name } -> std::same_as<ObjectName &>;
+      { value.source } -> std::same_as<std::filesystem::path &>;
+      { value.extent } -> std::same_as<PixelExtent &>;
+      { value.channels } -> std::same_as<TextureChannelCount &>;
+   }; ///< Contract for imported texture descriptors.
+   template <typename T> concept LightDescriptorLike = requires(T value) {
+      typename T::HandleType;
+      { value.handle } -> std::same_as<LightHandle &>;
+      { value.name } -> std::same_as<ObjectName &>;
+      { value.kind } -> std::same_as<LightKind &>;
+      { value.position } -> std::same_as<Position &>;
+      { value.direction } -> std::same_as<Direction &>;
+      { value.color } -> std::same_as<LinearColor &>;
+      { value.intensity } -> std::same_as<LightIntensity &>;
+   }; ///< Contract for imported light descriptors.
+   template <typename T> concept CameraDescriptorLike = requires(T value) {
+      typename T::HandleType;
+      { value.handle } -> std::same_as<CameraHandle &>;
+      { value.name } -> std::same_as<ObjectName &>;
+      { value.position } -> std::same_as<Position &>;
+      { value.forward } -> std::same_as<Direction &>;
+      { value.fov_y } -> std::same_as<FovY &>;
+      { value.clip } -> std::same_as<ClipPlanes &>;
+   }; ///< Contract for imported camera descriptors.
+   template <typename T> concept TreeLike = requires(T tree, NodeHandle parent, NodeHandle child) {
+      { tree.root } -> std::same_as<NodeHandle &>;
+      tree.addChild(parent, child);
+      tree.removeNode(child);
+      { tree.childRange(parent) };
+      { tree.parentOf(child) } -> std::same_as<std::optional<NodeHandle>>;
+   }; ///< Contract for scene tree topology.
+   template <typename T> concept SceneDescriptorLike = requires(T value) {
+      typename T::HandleType;
+      { value.handle } -> std::same_as<SceneHandle &>;
+      { value.name } -> std::same_as<ObjectName &>;
+      { value.tree } -> std::same_as<Tree &>;
+      { value.nodes } -> std::same_as<Vector<NodeHandle> &>;
+      { value.meshes } -> std::same_as<Vector<MeshHandle> &>;
+      { value.materials } -> std::same_as<Vector<MaterialHandle> &>;
+      { value.textures } -> std::same_as<Vector<TextureHandle> &>;
+      { value.lights } -> std::same_as<Vector<LightHandle> &>;
+      { value.cameras } -> std::same_as<Vector<CameraHandle> &>;
+   }; ///< Contract for imported scene descriptors.
+   template <typename T> concept ObjectCatalogLike = requires(T catalog) {
+      { catalog.scenes.add(SceneDescriptor{}) } -> std::same_as<std::expected<void, Error>>;
+      { catalog.nodes.add(NodeDescriptor{}) } -> std::same_as<std::expected<void, Error>>;
+      { catalog.meshes.find(MeshHandle{}) } -> std::same_as<MeshDescriptor *>;
+      { catalog.materials.find(MaterialHandle{}) } -> std::same_as<MaterialDescriptor *>;
+      { catalog.textures.remove(TextureHandle{}) } -> std::same_as<std::expected<void, Error>>;
+      { catalog.lights.contains(LightHandle{}) } -> std::same_as<bool>;
+      { catalog.cameras.size() } -> std::convertible_to<std::size_t>;
+   }; ///< Contract for the public imported-object catalog.
 
-   /// @brief Strong wrapper for pixel dimensions.
-   struct PixelExtent {
-      std::uint32_t width{0};  ///< Width in pixels.
-      std::uint32_t height{0}; ///< Height in pixels.
-   };
-
-   /// @brief Strong wrapper for human-readable object names.
-   struct ObjectName {
-      std::string value{}; ///< Wrapped display or diagnostic name.
-   };
-
-   /// @brief Strong wrapper for renderer selection identifiers.
-   struct RendererId {
-      std::string value{}; ///< Wrapped renderer identifier.
-   };
-
-   /// @brief Strong wrapper for frame counts and frame indices.
-   struct FrameCount {
-      std::uint64_t value{0}; ///< Wrapped frame count.
-   };
-
-   /// @brief Type-safe handle wrapper; categories share 64-bit storage but not the same C++ type.
-   template <typename TTag> struct TypedHandle {
-      static constexpr std::uint32_t generation_bits{16};                 ///< Future generation bit count.
-      static constexpr std::uint32_t id_bits{64 - generation_bits - 1};    ///< Counter/id bit count.
-      static constexpr std::uint64_t counter_bit{1ULL << 63U};             ///< High bit marks counter handles.
-      static constexpr std::uint64_t id_mask{(1ULL << id_bits) - 1ULL};    ///< Low id/index bits.
-      static constexpr std::uint64_t generation_mask{~counter_bit & ~id_mask}; ///< Middle generation bits.
-
-      std::uint64_t value{0}; ///< Raw 64-bit handle value; zero is invalid.
-
-      /// @brief Returns true when this handle is not the invalid zero value.
-      [[nodiscard]] constexpr bool valid() const noexcept { return value != 0; }
-
-      /// @brief Returns true when the handle stores an upward-counted id.
-      [[nodiscard]] constexpr bool isCounter() const noexcept { return (value & counter_bit) != 0; }
-
-      /// @brief Returns true when the handle is shaped as a future slot-map index.
-      [[nodiscard]] constexpr bool isSlotMapIndex() const noexcept { return valid() && !isCounter(); }
-
-      /// @brief Extracts the future slot-map generation counter.
-      [[nodiscard]] constexpr std::uint64_t generation() const noexcept { return (value & generation_mask) >> id_bits; }
-
-      /// @brief Extracts the low id bits used by both counter and slot-map handles.
-      [[nodiscard]] constexpr std::uint64_t id() const noexcept { return value & id_mask; }
-
-      /// @brief Names the id bits as a slot index for future slot-map users.
-      [[nodiscard]] constexpr std::uint64_t slotIndex() const noexcept { return id(); }
-
-      [[nodiscard]] friend constexpr bool operator==(TypedHandle, TypedHandle) noexcept = default;
-      [[nodiscard]] friend constexpr auto operator<=>(TypedHandle, TypedHandle) noexcept = default;
-   };
-
-   static_assert(sizeof(TypedHandle<decltype([] {})>) == sizeof(std::uint64_t));
-
-   namespace detail {
-
-      /// @brief Returns the next process-local id used by all typed counter handles.
-      [[nodiscard]] inline std::uint64_t nextCounterHandleId() {
-         static std::atomic_uint64_t next_id{1};
-         return next_id.fetch_add(1, std::memory_order_relaxed);
-      }
-
-   } // namespace detail
-
-   /// @brief Builds a typed upward-counted non-slot-map handle from the module-global counter.
-   template <typename THandle> [[nodiscard]] inline THandle makeCounterHandle() {
-      const auto id = detail::nextCounterHandleId();
-      return THandle{.value = THandle::counter_bit | (id & THandle::id_mask)};
-   }
-
-   /// @brief Builds a deterministic typed counter handle for tests and examples that need stable ids.
-   template <typename THandle>
-   [[nodiscard]] constexpr THandle makeHandleForTest(std::uint64_t id) noexcept {
-      return THandle{.value = THandle::counter_bit | (id & THandle::id_mask)};
-   }
-
-   /// @brief Builds a deterministic future slot-map handle for tests of the prepared bit layout.
-   template <typename THandle>
-   [[nodiscard]] constexpr THandle makeSlotMapHandleForTest(std::uint32_t slot_index,
-                                                            std::uint32_t generation) noexcept {
-      const auto generation_bits = (static_cast<std::uint64_t>(generation) << THandle::id_bits) &
-                                   THandle::generation_mask;
-      const auto index_bits = static_cast<std::uint64_t>(slot_index) & THandle::id_mask;
-      return THandle{.value = generation_bits | index_bits};
-   }
-
-   using Entity       = TypedHandle<decltype([] {})>; ///< Strong handle for ECS entities.
-   using SceneHandle  = TypedHandle<decltype([] {})>; ///< Strong handle returned by scene-loading calls.
-   using WindowHandle = TypedHandle<decltype([] {})>; ///< Strong handle for runtime windows.
-
-   /// @brief Standard transform component shared by all active engine layers.
-   struct Transform {
-      Position translation{}; ///< Local or world-space translation.
-      Rotation rotation{};    ///< Local or world-space orientation.
-      Scale scale{};          ///< Local or world-space non-uniform scale.
-   };
-
-   /// @brief Axis-aligned bounds described by minimum and maximum positions.
-   struct Bounds {
-      Position minimum{}; ///< Minimum corner.
-      Position maximum{}; ///< Maximum corner.
-      bool valid{false};  ///< False until at least one point has been included.
-   };
-
-   /// @brief Public camera description used by game code and renderers.
-   struct Camera {
-      /// @brief World-space camera position.
-      Position position{.value = math::Vec3(math::zero(), static_cast<math::Scalar>(1.5),
-                                            static_cast<math::Scalar>(6.0))};
-      /// @brief View direction.
-      Direction forward{.value = math::Vec3(math::zero(), math::zero(), -math::one())};
-      /// @brief World-to-view transform.
-      math::Mat4 view_transform{math::translate(
-          math::identityMat4(),
-          math::Vec3(math::zero(), static_cast<math::Scalar>(-1.5),
-                     static_cast<math::Scalar>(-6.0)))};
-      FovY fov_y{};      ///< Vertical field of view.
-      ClipPlanes clip{}; ///< Near/far clip planes.
-
-      /// @brief Builds a camera from an eye position and target point.
-      [[nodiscard]] static Camera lookAt(Position position, Position target,
-                                         Direction up = Direction{
-                                            .value = math::Vec3(math::zero(), math::one(), math::zero())},
-                                         FovY fov_y = {}, ClipPlanes clip = {}) {
-         Camera camera{};
-         camera.position = position;
-         camera.forward = Direction{.value = math::subtract(target.value, position.value)};
-         camera.view_transform = math::lookAt(position.value, target.value, up.value);
-         camera.fov_y = fov_y;
-         camera.clip = clip;
-         return camera;
-      }
-
-   };
-
-   /// @brief High-level light shape visible to apps creating or inspecting lights.
-   enum class LightKind {
-      unknown,     ///< Unclassified light.
-      directional, ///< Direction-only light such as the sun.
-      point,       ///< Point light with position.
-      spot         ///< Spot light with position and direction.
-   };
+   template <typename THandle> concept CounterHandleFactoryLike = TypedHandleLike<THandle> && requires {
+      { makeCounterHandle<THandle>() } -> std::same_as<THandle>;
+   }; ///< Contract for makeCounterHandle<THandle>().
+   template <typename THandle> concept TestHandleFactoryLike = TypedHandleLike<THandle> && requires {
+      { makeHandleForTest<THandle>(std::uint64_t{1}) } -> std::same_as<THandle>;
+   }; ///< Contract for makeHandleForTest<THandle>(id).
+   template <typename THandle> concept SlotMapHandleFactoryLike = TypedHandleLike<THandle> && requires {
+      { makeSlotMapHandleForTest<THandle>(std::uint32_t{1}, std::uint32_t{1}) } -> std::same_as<THandle>;
+   }; ///< Contract for makeSlotMapHandleForTest<THandle>(slot, generation).
 
 } // namespace vve
