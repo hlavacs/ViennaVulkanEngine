@@ -8,6 +8,7 @@ export namespace vve::v4 {
 
    /// @brief Type-safe handle wrapper; categories share 64-bit storage but not the same C++ type.
    template <typename TTag> struct TypedHandle {
+      using tag_type = TTag;                                             ///< Handle category tag type.
       static constexpr std::uint32_t generation_bits{16};                 ///< Future generation bit count.
       static constexpr std::uint32_t id_bits{64 - generation_bits - 1};    ///< Counter/id bit count.
       static constexpr std::uint64_t counter_bit{1ULL << 63U};             ///< High bit marks counter handles.
@@ -32,7 +33,11 @@ export namespace vve::v4 {
    /// @brief Hashes typed handles by their 64-bit payload for unordered topology side tables.
    template <typename THandle> struct HandleHash {
       [[nodiscard]] std::size_t operator()(THandle handle) const noexcept {
-         return std::hash<decltype(THandle::value)>{}(handle.value);
+         if constexpr (requires { handle.value; }) {
+            return std::hash<std::uint64_t>{}(handle.value);
+         } else {
+            return std::hash<std::uint64_t>{}(handle.value());
+         }
       }
    };
 

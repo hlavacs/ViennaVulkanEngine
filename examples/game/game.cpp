@@ -125,7 +125,7 @@ public:
      * @brief Creates the example player entity.
      * @param world Game-facing world facade provided by the engine.
      */
-    [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
+    template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
         // The example spawns one entity with a transform and velocity so the
         // update loop can demonstrate world and input access.
         const auto player_result = world.spawn(vve::Transform{}, Velocity{});
@@ -144,7 +144,7 @@ public:
             return std::unexpected(load_result.error());
         }
 
-        std::cout << '[' << name() << "] spawned entity " << player_.value << '\n';
+        std::cout << '[' << name() << "] spawned entity " << player_.value() << '\n';
         printWindowInventory(world);
         return {};
     }
@@ -155,8 +155,8 @@ public:
      * @param frame_context Timing data for the current frame.
      * @param window_frame Current window snapshot, unused by this example.
      */
-    [[nodiscard]] std::expected<void, vve::Error> update(
-        vve::World& world,
+    template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> update(
+        TWorld& world,
         const vve::FrameContext& frame_context,
         const vve::WindowFrameData&) {
         if (!player_.valid()) {
@@ -165,7 +165,7 @@ public:
 
         // Fetch the current velocity and transform copies through the world
         // facade before applying input-driven changes.
-        const auto velocity_result = world.getComponent<Velocity>(player_);
+        const auto velocity_result = world.template getComponent<Velocity>(player_);
         if (!velocity_result) {
             return std::unexpected(velocity_result.error());
         }
@@ -187,16 +187,16 @@ public:
         float acceleration_x = 0.0F;
         float acceleration_y = 0.0F;
         if (input.isKeyDown('A') || input.isKeyDown('a')) {
-            acceleration_x = -1.0F;
+            acceleration_x = -10.0F;
         }
         if (input.isKeyDown('D') || input.isKeyDown('d')) {
-            acceleration_x = 1.0F;
+            acceleration_x = 10.0F;
         }
         if (input.isKeyDown('W') || input.isKeyDown('w')) {
-            acceleration_y = 1.0F;
+            acceleration_y = 10.0F;
         }
         if (input.isKeyDown('S') || input.isKeyDown('s')) {
-            acceleration_y = -1.0F;
+            acceleration_y = -10.0F;
         }
         velocity.x += acceleration_x * delta_seconds;
         velocity.y += acceleration_y * delta_seconds;
@@ -214,7 +214,8 @@ public:
             return std::unexpected(set_transform_result.error());
         }
 
-        if (const auto put_velocity_result = world.setComponent(player_, velocity); !put_velocity_result) {
+        if (const auto put_velocity_result = world.template setComponent<Velocity>(player_, velocity);
+            !put_velocity_result) {
             return std::unexpected(put_velocity_result.error());
         }
 
@@ -256,7 +257,7 @@ public:
     }
 
 private:
-    void printWindowInventory(vve::World& world) {
+    template <typename TWorld> void printWindowInventory(TWorld& world) {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
         for (const auto& window : world.windows()) {

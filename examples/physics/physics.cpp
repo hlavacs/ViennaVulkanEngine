@@ -20,7 +20,7 @@ public:
         return "PhysicsShellSystem";
     }
 
-    [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
+    template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
         for (const auto& window : world.windows()) {
@@ -35,8 +35,8 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<void, vve::Error> update(
-        vve::World& world,
+    template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> update(
+        TWorld& world,
         const vve::FrameContext& frame_context,
         const vve::WindowFrameData&) {
         const auto& input = world.input();

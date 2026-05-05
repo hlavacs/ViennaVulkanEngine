@@ -9,106 +9,40 @@ import :Types;
  */
 export namespace vve {
 
-   template <typename... TSystems> class Engine;
-   class World;
-
    class InputState {
    public:
       InputState() = default;
-      InputState(const InputState &) = delete;
-      InputState(InputState &&) = delete;
-      InputState &operator=(const InputState &) = delete;
-      InputState &operator=(InputState &&) = delete;
+      InputState(const InputState &) = default;
+      InputState(InputState &&) noexcept = default;
+      InputState &operator=(const InputState &) = default;
+      InputState &operator=(InputState &&) noexcept = default;
 
-      void beginFrame() { impl().beginFrame(); }
-      void holdKey(std::int32_t keycode) { impl().holdKey(keycode); }
-      void pressKey(std::int32_t keycode) { impl().pressKey(keycode); }
-      void releaseKey(std::int32_t keycode) { impl().releaseKey(keycode); }
-      void setMousePosition(WindowHandle window, Vec2 position) { impl().setMousePosition(window, position); }
-      void addMouseDelta(WindowHandle window, Vec2 delta) { impl().addMouseDelta(window, delta); }
-      void addMouseWheelDelta(WindowHandle window, Vec2 delta) { impl().addMouseWheelDelta(window, delta); }
+      void beginFrame() { impl_.beginFrame(); }
+      void holdKey(std::int32_t keycode) { impl_.holdKey(keycode); }
+      void pressKey(std::int32_t keycode) { impl_.pressKey(keycode); }
+      void releaseKey(std::int32_t keycode) { impl_.releaseKey(keycode); }
+      void setMousePosition(WindowHandle window, Vec2 position) { impl_.setMousePosition(window, position); }
+      void addMouseDelta(WindowHandle window, Vec2 delta) { impl_.addMouseDelta(window, delta); }
+      void addMouseWheelDelta(WindowHandle window, Vec2 delta) { impl_.addMouseWheelDelta(window, delta); }
 
-      [[nodiscard]] bool isKeyDown(std::int32_t keycode) const { return impl().isKeyDown(keycode); }
-      [[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const { return impl().wasKeyPressed(keycode); }
-      [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const { return impl().wasKeyReleased(keycode); }
+      [[nodiscard]] bool isKeyDown(std::int32_t keycode) const { return impl_.isKeyDown(keycode); }
+      [[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const { return impl_.wasKeyPressed(keycode); }
+      [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const { return impl_.wasKeyReleased(keycode); }
       [[nodiscard]] std::optional<Vec2> mousePosition(WindowHandle window) const {
-         return impl().mousePosition(window);
+         return impl_.mousePosition(window);
       }
-      [[nodiscard]] Vec2 mouseDelta(WindowHandle window) const { return impl().mouseDelta(window); }
-      [[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const { return impl().mouseWheelDelta(window); }
+      [[nodiscard]] Vec2 mouseDelta(WindowHandle window) const { return impl_.mouseDelta(window); }
+      [[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const { return impl_.mouseWheelDelta(window); }
 
    private:
       using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::InputState;
 
-      explicit InputState(Impl &implementation) noexcept : impl_{std::addressof(implementation)} {}
-
-      [[nodiscard]] Impl &impl() { return *impl_; }
-      [[nodiscard]] const Impl &impl() const { return *impl_; }
-
-      Impl owned_{};
-      Impl *impl_{std::addressof(owned_)};
-
-      template <typename... TSystems> friend class Engine;
-      friend class World;
+      Impl impl_{};
    }; ///< Facade input snapshot.
 
    using WindowDesc      = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowDesc;      ///< Facade window descriptor.
    using WindowFrameData = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData; ///< Per-frame window snapshot.
    using WindowInfo      = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowInfo;      ///< Runtime window state.
    using Windows         = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Windows;         ///< Startup window collection.
-
-   template <typename T> concept InputStateLike =
-      requires(T input, WindowHandle window, Vec2 position, Vec2 delta, std::int32_t keycode) {
-         input.beginFrame();
-         input.holdKey(keycode);
-         input.pressKey(keycode);
-         input.releaseKey(keycode);
-         input.setMousePosition(window, position);
-         input.addMouseDelta(window, delta);
-         input.addMouseWheelDelta(window, delta);
-         { input.isKeyDown(keycode) } -> std::same_as<bool>;
-         { input.wasKeyPressed(keycode) } -> std::same_as<bool>;
-         { input.wasKeyReleased(keycode) } -> std::same_as<bool>;
-         { input.mousePosition(window) } -> std::same_as<std::optional<Vec2>>;
-         { input.mouseDelta(window) } -> std::same_as<Vec2>;
-         { input.mouseWheelDelta(window) } -> std::same_as<Vec2>;
-      }; ///< Contract for the public input snapshot class.
-
-   template <typename T> concept WindowDescLike = requires(T value) {
-      { value.id } -> std::same_as<std::string &>;
-      { value.title } -> std::same_as<std::string &>;
-      { value.extent } -> std::same_as<PixelExtent &>;
-      { value.x } -> std::same_as<std::optional<int> &>;
-      { value.y } -> std::same_as<std::optional<int> &>;
-      { value.renderer_id } -> std::same_as<RendererId &>;
-      { value.resizable } -> std::same_as<bool &>;
-      { value.visible } -> std::same_as<bool &>;
-   }; ///< Contract for window creation descriptors.
-
-   template <typename T> concept WindowInfoLike = requires(T value) {
-      { value.handle } -> std::same_as<WindowHandle &>;
-      { value.id } -> std::same_as<std::string &>;
-      { value.title } -> std::same_as<std::string &>;
-      { value.extent } -> std::same_as<PixelExtent &>;
-      { value.renderer_id } -> std::same_as<RendererId &>;
-      { value.camera } -> std::same_as<std::optional<Entity> &>;
-      { value.focused } -> std::same_as<bool &>;
-      { value.minimized } -> std::same_as<bool &>;
-      { value.should_close } -> std::same_as<bool &>;
-   }; ///< Contract for runtime window records.
-
-   template <typename T> concept WindowFrameDataLike = requires(T value) {
-      { value.windows } -> std::same_as<Vector<WindowInfo> &>;
-   }; ///< Contract for per-frame window snapshots.
-
-   template <typename T> concept WindowsLike = requires(T value) {
-      { value.value } -> std::same_as<Vector<WindowDesc> &>;
-   }; ///< Contract for startup window collections.
-
-   static_assert(InputStateLike<InputState>);
-   static_assert(WindowDescLike<WindowDesc>);
-   static_assert(WindowFrameDataLike<WindowFrameData>);
-   static_assert(WindowInfoLike<WindowInfo>);
-   static_assert(WindowsLike<Windows>);
 
 } // namespace vve

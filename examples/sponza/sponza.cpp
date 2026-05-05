@@ -113,7 +113,7 @@ public:
         return "SponzaRuntimeStubSystem";
     }
 
-    [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
+    template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
         std::cout << '[' << name() << "] scene path: " << scene_path_.string() << '\n';
         std::cout << '[' << name() << "] v4 runtime shell is active\n";
         const auto scene_handle = assets_.loadScene(scene_path_);
@@ -129,7 +129,7 @@ public:
             return std::unexpected(vve::Error::missing_object);
         }
 
-        std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value
+        std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value()
                   << " name=" << scene->name.value << '\n';
         printSceneInventory(catalog, *scene);
         std::cout << '[' << name() << "] v4 resource upload and rendering are not implemented yet\n";
@@ -137,8 +137,8 @@ public:
         return {};
     }
 
-    [[nodiscard]] std::expected<void, vve::Error> update(
-        vve::World&,
+    template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> update(
+        TWorld&,
         const vve::FrameContext& frame_context,
         const vve::WindowFrameData&) {
         if (!frame_loop_logged_ && frame_context.frame_index.value > 0) {
@@ -149,7 +149,7 @@ public:
     }
 
 private:
-    void printWindowInventory(const vve::World& world) const {
+    template <typename TWorld> void printWindowInventory(const TWorld& world) const {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
         for (const auto& window : world.windows()) {
@@ -176,7 +176,7 @@ private:
         printCameras(catalog, scene.cameras);
     }
 
-    void printMeshes(const vve::ObjectCatalog& catalog, const vve::Vector<vve::MeshHandle>& handles) const {
+    template <typename THandles> void printMeshes(const vve::ObjectCatalog& catalog, const THandles& handles) const {
         std::cout << '[' << name() << "] meshes:\n";
         for (const auto handle : handles) {
             const auto* mesh = catalog.meshes.find(handle);
@@ -190,7 +190,7 @@ private:
         }
     }
 
-    void printTextures(const vve::ObjectCatalog& catalog, const vve::Vector<vve::TextureHandle>& handles) const {
+    template <typename THandles> void printTextures(const vve::ObjectCatalog& catalog, const THandles& handles) const {
         std::cout << '[' << name() << "] textures:\n";
         for (const auto handle : handles) {
             const auto* texture = catalog.textures.find(handle);
@@ -203,7 +203,7 @@ private:
         }
     }
 
-    void printLights(const vve::ObjectCatalog& catalog, const vve::Vector<vve::LightHandle>& handles) const {
+    template <typename THandles> void printLights(const vve::ObjectCatalog& catalog, const THandles& handles) const {
         std::cout << '[' << name() << "] lights:\n";
         for (const auto handle : handles) {
             const auto* light = catalog.lights.find(handle);
@@ -215,7 +215,7 @@ private:
         }
     }
 
-    void printCameras(const vve::ObjectCatalog& catalog, const vve::Vector<vve::CameraHandle>& handles) const {
+    template <typename THandles> void printCameras(const vve::ObjectCatalog& catalog, const THandles& handles) const {
         std::cout << '[' << name() << "] cameras:\n";
         for (const auto handle : handles) {
             const auto* camera = catalog.cameras.find(handle);

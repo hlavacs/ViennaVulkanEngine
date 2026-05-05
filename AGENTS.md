@@ -2,7 +2,26 @@
 
 ## Purpose
 
-This repository is building a reusable, ECS-first game engine in modern C++.
+This repository is building a reusable, ECS-first game engine in modern C++23.
+
+
+## Architecture
+
+
+## Implementation Principles
+
+
+## Subsystems
+
+
+
+
+## Strong Types
+
+
+
+
+
 
 Primary priorities, in order:
 
