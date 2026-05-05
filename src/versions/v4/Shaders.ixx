@@ -14,33 +14,53 @@ export namespace vve::v4 {
       compute   ///< Compute shader stage.
    };
 
-   /// @brief Shader program descriptor with placeholder reflection data.
-   struct ShaderDescriptor {
-      using HandleType = ShaderHandle;         ///< Descriptor handle type.
-      ShaderHandle handle{};                   ///< Stable shader handle.
-      ObjectName name{};                       ///< Human-readable shader name.
-      Vector<ShaderStage> stages{};            ///< Shader stages present in the program.
+} // namespace vve::v4
+
+namespace vve::v4 {
+
+   /// @brief Internal shader program record.
+   struct ShaderRecord {
+      ShaderHandle handle{};                    ///< Stable shader handle.
+      ObjectName name{};                        ///< Human-readable shader name.
+      Vector<ShaderStage> stages{};             ///< Shader stages present in the program.
       Vector<std::string> reflected_bindings{}; ///< Placeholder binding names from reflection.
    };
+
+} // namespace vve::v4
+
+export namespace vve::v4 {
 
    /// @brief Minimal shader table; no Slang calls happen in this stub.
    class ShaderSystem {
    public:
-      /// @brief Adds a shader descriptor.
-      [[nodiscard]] std::expected<void, Error> add(ShaderDescriptor shader) {
-         if (!shader.handle.valid()) { return std::unexpected(Error::invalid_handle); }
-         const auto [_, inserted] = shaders_.emplace(shader.handle, std::move(shader));
-         return inserted ? std::expected<void, Error>{} : std::unexpected(Error::duplicate_object);
+      /// @brief Adds a shader record and returns its handle.
+      [[nodiscard]] std::expected<ShaderHandle, Error> addShader(ObjectName name, Vector<ShaderStage> stages) {
+         const auto handle = makeCounterHandle<ShaderHandle>();
+         const auto [_, inserted] = shaders_.emplace(
+            handle, ShaderRecord{.handle = handle, .name = std::move(name), .stages = std::move(stages)});
+         if (!inserted) { return std::unexpected(Error::duplicate_object); }
+         return handle;
       }
 
-      /// @brief Finds a shader by handle, or returns null.
-      [[nodiscard]] const ShaderDescriptor *find(ShaderHandle handle) const {
+      /// @brief Returns whether a shader exists.
+      [[nodiscard]] bool containsShader(ShaderHandle handle) const { return shaders_.contains(handle); }
+
+      /// @brief Returns the shader name.
+      [[nodiscard]] std::expected<ObjectName, Error> shaderName(ShaderHandle handle) const {
          const auto shader = shaders_.find(handle);
-         return shader == shaders_.end() ? nullptr : std::addressof(shader->second);
+         if (shader == shaders_.end()) { return std::unexpected(Error::missing_object); }
+         return shader->second.name;
+      }
+
+      /// @brief Returns the number of stages in a shader program.
+      [[nodiscard]] std::expected<std::size_t, Error> shaderStageCount(ShaderHandle handle) const {
+         const auto shader = shaders_.find(handle);
+         if (shader == shaders_.end()) { return std::unexpected(Error::missing_object); }
+         return shader->second.stages.size();
       }
 
    private:
-      std::map<ShaderHandle, ShaderDescriptor> shaders_{}; ///< Shader descriptors by handle.
+      std::map<ShaderHandle, ShaderRecord> shaders_{}; ///< Shaders by handle.
    };
 
 } // namespace vve::v4

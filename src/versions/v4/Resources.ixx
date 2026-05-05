@@ -18,37 +18,55 @@ export namespace vve::v4 {
       image     ///< Image resource.
    };
 
-   /// @brief Resource descriptor addressed by a 64-bit handle.
-   struct ResourceDescriptor {
-      using HandleType = ResourceHandle;            ///< Descriptor handle type.
-      ResourceHandle handle{};                      ///< Stable resource handle.
-      ResourceKind kind{ResourceKind::unknown};     ///< Resource category.
-      ObjectName name{};                            ///< Human-readable resource name.
+} // namespace vve::v4
+
+namespace vve::v4 {
+
+   /// @brief Internal resource record addressed by a resource handle.
+   struct ResourceRecord {
+      ResourceHandle handle{};                  ///< Stable resource handle.
+      ResourceKind kind{ResourceKind::unknown}; ///< Resource category.
+      ObjectName name{};                        ///< Human-readable resource name.
    };
+
+} // namespace vve::v4
+
+export namespace vve::v4 {
 
    /// @brief Minimal resource table; real upload and residency are future steps.
    class ResourceSystem {
    public:
-      /// @brief Adds a resource descriptor and returns its handle.
+      /// @brief Adds a resource and returns its handle.
       [[nodiscard]] std::expected<ResourceHandle, Error> add(ResourceKind kind, ObjectName name) {
          auto handle = makeCounterHandle<ResourceHandle>();
          const auto [_, inserted] = resources_.emplace(
-            handle, ResourceDescriptor{.handle = handle, .kind = kind, .name = std::move(name)});
+            handle, ResourceRecord{.handle = handle, .kind = kind, .name = std::move(name)});
          if (!inserted) { return std::unexpected(Error::duplicate_object); }
          return handle;
       }
 
-      /// @brief Finds a resource by handle, or returns null.
-      [[nodiscard]] const ResourceDescriptor *find(ResourceHandle handle) const {
+      /// @brief Returns whether a resource exists.
+      [[nodiscard]] bool contains(ResourceHandle handle) const { return resources_.contains(handle); }
+
+      /// @brief Returns the name for a resource.
+      [[nodiscard]] std::expected<ObjectName, Error> resourceName(ResourceHandle handle) const {
          const auto resource = resources_.find(handle);
-         return resource == resources_.end() ? nullptr : std::addressof(resource->second);
+         if (resource == resources_.end()) { return std::unexpected(Error::missing_object); }
+         return resource->second.name;
+      }
+
+      /// @brief Returns the kind for a resource.
+      [[nodiscard]] std::expected<ResourceKind, Error> resourceKind(ResourceHandle handle) const {
+         const auto resource = resources_.find(handle);
+         if (resource == resources_.end()) { return std::unexpected(Error::missing_object); }
+         return resource->second.kind;
       }
 
       /// @brief Returns the number of registered resources.
-      [[nodiscard]] std::size_t size() const { return resources_.size(); }
+      [[nodiscard]] std::size_t resourceCount() const { return resources_.size(); }
 
    private:
-      std::map<ResourceHandle, ResourceDescriptor> resources_{}; ///< Resource descriptors by handle.
+      std::map<ResourceHandle, ResourceRecord> resources_{}; ///< Resources by handle.
    };
 
 } // namespace vve::v4
