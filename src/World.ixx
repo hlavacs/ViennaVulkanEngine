@@ -91,24 +91,9 @@ export namespace vve {
       [[nodiscard]] AssetSystem assets() { return AssetSystem{impl_.assets()}; }
       [[nodiscard]] GuiSystem gui() { return GuiSystem{impl_.gui()}; }
       [[nodiscard]] WindowSystem windowSystem() { return WindowSystem{impl_.windowSystem()}; }
+      [[nodiscard]] WindowSystem windowSystem() const { return WindowSystem{const_cast<Impl &>(impl_).windowSystem()}; }
       [[nodiscard]] InputState input() { return InputState{impl_.input()}; }
       [[nodiscard]] InputState input() const { return InputState{const_cast<Impl &>(impl_).input()}; }
-      [[nodiscard]] std::size_t windowCount() const { return impl_.windows().size(); }
-      [[nodiscard]] Vector<Window> windows() const {
-         Vector<Window> result{};
-         result.reserve(impl_.windows().size());
-         for (const auto &window : impl_.windows()) { result.push_back(Window{window}); }
-         return result;
-      }
-
-      [[nodiscard]] std::optional<Window> findWindow(std::string_view id) const {
-         const auto *window = impl_.findWindow(id);
-         return window == nullptr ? std::optional<Window>{} : std::optional<Window>{Window{*window}};
-      }
-      [[nodiscard]] std::optional<Window> findWindow(WindowHandle handle) const {
-         const auto *window = impl_.findWindow(handle);
-         return window == nullptr ? std::optional<Window>{} : std::optional<Window>{Window{*window}};
-      }
 
       template <typename... TComponents>
       [[nodiscard]] std::expected<Entity, Error> spawn(TComponents &&...components) {

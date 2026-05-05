@@ -1,126 +1,16 @@
 export module VEEngine.V4:World;
 import std;
 export import :ECS;
+export import :Window;
 
 /// @file
-/// @brief v4 world, window/input data, and frame-option implementation types.
+/// @brief v4 world state and frame-option implementation types.
 
 export namespace vve::v4 {
 
    class AssetSystem;
    class GuiSystem;
    class WindowSystem;
-
-   /// @brief Window creation descriptor kept deliberately close to v3's public shape.
-   struct WindowDesc {
-      std::string id{"main"};       ///< Stable application-local window id.
-      std::string title{"VVE v4"};  ///< Platform window title.
-      PixelExtent extent{.width = 960, .height = 540}; ///< Initial pixel dimensions.
-      std::optional<int> x{};       ///< Optional initial screen x coordinate.
-      std::optional<int> y{};       ///< Optional initial screen y coordinate.
-      RendererId renderer_id{};     ///< Renderer id selected for this window.
-      bool resizable{true};         ///< Enables platform resizing.
-      bool visible{true};           ///< Shows the window after creation.
-   };
-
-   /// @brief Collection wrapper for all windows created during engine init().
-   struct Windows {
-      Vector<WindowDesc> value{WindowDesc{}}; ///< Startup windows; defaults to one main window.
-   };
-
-   /// @brief Runtime window state exposed through World.
-   struct WindowInfo {
-      WindowHandle handle{};    ///< 64-bit runtime window handle.
-      std::string id{};         ///< Stable id copied from WindowDesc.
-      std::string title{};      ///< Current platform title.
-      PixelExtent extent{};     ///< Current pixel dimensions.
-      RendererId renderer_id{}; ///< Renderer id selected for this window.
-      std::optional<Entity> camera{}; ///< Camera entity rendered through this window, when selected.
-      bool focused{false};      ///< True while the window has keyboard focus.
-      bool minimized{false};    ///< True while the platform reports a minimized window.
-      bool should_close{false}; ///< True after a close request.
-   };
-
-   /// @brief Snapshot passed to user systems that want window data for the current frame.
-   struct WindowFrameData {
-      Vector<WindowInfo> windows{}; ///< Window states after event polling.
-   };
-
-   /// @brief Keyboard and mouse snapshot; held keys are independent of OS key-repeat speed.
-   class InputState {
-   public:
-      void beginFrame() {
-         keys_pressed_.clear();
-         keys_released_.clear();
-         mouse_delta_.clear();
-         mouse_wheel_delta_.clear();
-      }
-
-      void holdKey(std::int32_t keycode) { keys_down_.insert(normalizeKey(keycode)); }
-
-      void pressKey(std::int32_t keycode) {
-         const auto key = normalizeKey(keycode);
-         if (!keys_down_.contains(key)) { keys_pressed_.insert(key); }
-         keys_down_.insert(key);
-      }
-
-      void releaseKey(std::int32_t keycode) {
-         const auto key = normalizeKey(keycode);
-         keys_down_.erase(key);
-         keys_pressed_.erase(key);
-         keys_released_.insert(key);
-      }
-
-      void setMousePosition(WindowHandle window, Vec2 position) { mouse_position_[window] = position; }
-
-      void addMouseDelta(WindowHandle window, Vec2 delta) {
-         const auto [it, _] = mouse_delta_.try_emplace(window, Vec2{zero(), zero()});
-         it->second = math::add(it->second, delta);
-      }
-
-      void addMouseWheelDelta(WindowHandle window, Vec2 delta) {
-         const auto [it, _] = mouse_wheel_delta_.try_emplace(window, Vec2{zero(), zero()});
-         it->second = math::add(it->second, delta);
-      }
-
-      [[nodiscard]] bool isKeyDown(std::int32_t keycode) const { return keys_down_.contains(normalizeKey(keycode)); }
-      [[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const {
-         return keys_pressed_.contains(normalizeKey(keycode));
-      }
-      [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const {
-         return keys_released_.contains(normalizeKey(keycode));
-      }
-
-      [[nodiscard]] std::optional<Vec2> mousePosition(WindowHandle window) const {
-         const auto it = mouse_position_.find(window);
-         return it == mouse_position_.end() ? std::optional<Vec2>{} : std::optional<Vec2>{it->second};
-      }
-
-      [[nodiscard]] Vec2 mouseDelta(WindowHandle window) const {
-         const auto it = mouse_delta_.find(window);
-         return it == mouse_delta_.end() ? Vec2{} : it->second;
-      }
-
-      [[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const {
-         const auto it = mouse_wheel_delta_.find(window);
-         return it == mouse_wheel_delta_.end() ? Vec2{} : it->second;
-      }
-
-   private:
-      [[nodiscard]] static std::int32_t normalizeKey(std::int32_t keycode) {
-         if (keycode >= static_cast<std::int32_t>('A') && keycode <= static_cast<std::int32_t>('Z')) {
-            return keycode - static_cast<std::int32_t>('A') + static_cast<std::int32_t>('a');
-         }
-         return keycode;
-      }
-
-      std::set<std::int32_t> keys_down_{};
-      std::set<std::int32_t> keys_pressed_{};
-      std::set<std::int32_t> keys_released_{};
-      std::map<WindowHandle, Vec2> mouse_position_{};
-      std::map<WindowHandle, Vec2> mouse_delta_{};
-      std::map<WindowHandle, Vec2> mouse_wheel_delta_{};
-   };
 
    /// @brief User-visible state facade used by examples and systems.
    class World {
@@ -138,6 +28,7 @@ export namespace vve::v4 {
       [[nodiscard]] AssetSystem &assets() { return *assets_; }
       [[nodiscard]] GuiSystem &gui() { return *gui_; }
       [[nodiscard]] WindowSystem &windowSystem() { return *window_system_; }
+      [[nodiscard]] const WindowSystem &windowSystem() const { return *window_system_; }
       [[nodiscard]] InputState &input() { return input_; }
       [[nodiscard]] const InputState &input() const { return input_; }
       [[nodiscard]] Vector<WindowInfo> &windows() { return windows_; }

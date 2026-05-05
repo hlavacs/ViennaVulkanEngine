@@ -24,8 +24,8 @@ struct CountingSystem {
       if (init_count != nullptr) {
          ++*init_count;
       }
-      return world.windows().empty() ? std::unexpected(vve::Error::missing_object)
-                                     : std::expected<void, vve::Error>{};
+      return world.windowSystem().windowCount() == 0 ? std::unexpected(vve::Error::missing_object)
+                                                     : std::expected<void, vve::Error>{};
    }
 
    template <typename TWorld, typename TWindowFrame>
@@ -337,7 +337,8 @@ struct CountingSystem {
    }
    const auto entity = world.spawn(Transform{}, Velocity{2.0F});
    const auto camera = world.spawn(Camera{});
-   if (!entity || !camera || world.windowCount() != 0 || world.findWindow("main").has_value()) {
+   if (!entity || !camera || world.windowSystem().windowCount() != 0 ||
+       world.windowSystem().findWindow("main").has_value()) {
       return 64;
    }
    const auto velocity = world.getComponent<Velocity>(*entity);
@@ -431,7 +432,7 @@ struct CountingSystem {
    if (!first || !second || *first != FrameStatus::running || *second != FrameStatus::stopped) {
       return 51;
    }
-   if (init_count != 1 || update_count != 2 || last_frame != 1 || !engine.world().findWindow("main")) {
+   if (init_count != 1 || update_count != 2 || last_frame != 1 || !engine.world().windowSystem().findWindow("main")) {
       return 52;
    }
    if (engine.world().windowSystem().windowCount() != 2 || !engine.world().windowSystem().findWindow("tools")) {

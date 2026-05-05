@@ -10,6 +10,7 @@ module;
 export module VEEngine.V4;
 import std;
 export import VEEngine.V4.Math;
+export import :World;
 export import :WindowSystem;
 export import :Assets;
 export import :Renderer;

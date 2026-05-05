@@ -8,6 +8,7 @@ target_sources(ViennaVulkanEngine
          Vector.ixx
          ECS.ixx
          Types.ixx
+         Window.ixx
          World.ixx
          Assets.ixx
          Resources.ixx

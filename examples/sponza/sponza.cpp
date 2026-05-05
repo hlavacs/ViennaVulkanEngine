@@ -144,7 +144,8 @@ private:
     template <typename TWorld> void printWindowInventory(const TWorld& world) const {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
-        for (const auto& window : world.windows()) {
+        for (const auto& window_ref : world.windowSystem().windows()) {
+            const auto& window = window_ref.get();
             printed_any = true;
             std::cout << ' ' << window.id << '=' << window.extent.width << 'x' << window.extent.height
                       << '[' << window.renderer_id.value << ']';

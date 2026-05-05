@@ -174,7 +174,7 @@ int main() {
    }
 
    // A world without runtime access should expose empty window and input state.
-   if (world.findWindow("main").has_value()) {
+   if (world.windowSystem().findWindow("main").has_value()) {
       return 16;
    }
 

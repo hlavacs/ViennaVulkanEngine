@@ -230,8 +230,8 @@ public:
         const bool movement_key_held = key_state_string != "----";
 
         if (movement_key_held || reset_pressed) {
-            const auto main_window = world.findWindow("main");
-            const auto tools_window = world.findWindow("tools");
+            const auto main_window = world.windowSystem().findWindow("main");
+            const auto tools_window = world.windowSystem().findWindow("tools");
             const auto player_x = static_cast<int>(std::lround(transform.translation.value.x));
             const auto player_y = static_cast<int>(std::lround(transform.translation.value.y));
             std::cout << '[' << name() << "] player=(" << player_x << ", " << player_y << ')'
@@ -260,7 +260,8 @@ private:
     template <typename TWorld> void printWindowInventory(TWorld& world) {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
-        for (const auto& window : world.windows()) {
+        for (const auto& window_ref : world.windowSystem().windows()) {
+            const auto& window = window_ref.get();
             printed_any = true;
             std::cout << ' ' << window.id << '=' << window.extent.width << 'x' << window.extent.height
                       << '[' << window.renderer_id.value << ']';
