@@ -16,7 +16,7 @@ module;
 #include <glm/ext/vector_float4.hpp>
 #include <glm/geometric.hpp>
 
-export module VEEngine.V4:Math;
+export module VEEngine.V4.Math;
 
 /// @file
 /// @brief v4 math implementation over GLM and the selected scalar policy.

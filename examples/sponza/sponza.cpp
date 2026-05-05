@@ -163,7 +163,7 @@ private:
         std::cout << '\n';
     }
 
-    void printSceneInventory(const vve::ObjectCatalog& catalog, const vve::SceneDescriptor& scene) const {
+    template <typename TCatalog, typename TScene> void printSceneInventory(const TCatalog& catalog, const TScene& scene) const {
         std::cout << '[' << name() << "] counts: nodes=" << scene.nodes.size()
                   << " meshes=" << scene.meshes.size()
                   << " materials=" << scene.materials.size()
@@ -176,53 +176,53 @@ private:
         printCameras(catalog, scene.cameras);
     }
 
-    template <typename THandles> void printMeshes(const vve::ObjectCatalog& catalog, const THandles& handles) const {
+    template <typename TCatalog, typename THandles> void printMeshes(const TCatalog& catalog, const THandles& handles) const {
         std::cout << '[' << name() << "] meshes:\n";
         for (const auto handle : handles) {
             const auto* mesh = catalog.meshes.find(handle);
             if (mesh == nullptr) {
                 continue;
             }
-            std::cout << "  mesh " << mesh->handle.value << " name=" << mesh->name.value
+            std::cout << "  mesh " << mesh->handle.value() << " name=" << mesh->name.value
                       << " vertices=" << mesh->vertex_count.value
                       << " indices=" << mesh->index_count.value
-                      << " material=" << mesh->material.value << '\n';
+                      << " material=" << mesh->material.value() << '\n';
         }
     }
 
-    template <typename THandles> void printTextures(const vve::ObjectCatalog& catalog, const THandles& handles) const {
+    template <typename TCatalog, typename THandles> void printTextures(const TCatalog& catalog, const THandles& handles) const {
         std::cout << '[' << name() << "] textures:\n";
         for (const auto handle : handles) {
             const auto* texture = catalog.textures.find(handle);
             if (texture == nullptr) {
                 continue;
             }
-            std::cout << "  texture " << texture->handle.value << " name=" << texture->name.value
+            std::cout << "  texture " << texture->handle.value() << " name=" << texture->name.value
                       << " source=" << texture->source.string()
                       << " size=" << texture->extent.width << 'x' << texture->extent.height << '\n';
         }
     }
 
-    template <typename THandles> void printLights(const vve::ObjectCatalog& catalog, const THandles& handles) const {
+    template <typename TCatalog, typename THandles> void printLights(const TCatalog& catalog, const THandles& handles) const {
         std::cout << '[' << name() << "] lights:\n";
         for (const auto handle : handles) {
             const auto* light = catalog.lights.find(handle);
             if (light == nullptr) {
                 continue;
             }
-            std::cout << "  light " << light->handle.value << " name=" << light->name.value
+            std::cout << "  light " << light->handle.value() << " name=" << light->name.value
                       << " intensity=" << light->intensity.value << '\n';
         }
     }
 
-    template <typename THandles> void printCameras(const vve::ObjectCatalog& catalog, const THandles& handles) const {
+    template <typename TCatalog, typename THandles> void printCameras(const TCatalog& catalog, const THandles& handles) const {
         std::cout << '[' << name() << "] cameras:\n";
         for (const auto handle : handles) {
             const auto* camera = catalog.cameras.find(handle);
             if (camera == nullptr) {
                 continue;
             }
-            std::cout << "  camera " << camera->handle.value << " name=" << camera->name.value
+            std::cout << "  camera " << camera->handle.value() << " name=" << camera->name.value
                       << " near=" << camera->clip.near_plane << " far=" << camera->clip.far_plane << '\n';
         }
     }

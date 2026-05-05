@@ -1,8 +1,8 @@
 export module VEEngine:ECS;
 import std;
 import VEEngine.V4;
-import :Error;
-import :Types;
+import VEEngine.Error;
+import VEEngine.Types;
 
 /**
  * @file

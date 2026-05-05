@@ -43,13 +43,23 @@ Engine implementations must expose specific subsystems with the enforced interfa
 - ECS: an Entity Component System that can hold entities with any data type.
 - Assets: Management of any 3D or audio related resource on a high abstract level.
 - Window: Window information like number, renderer, camera, size.
-- World: main interface for user interaction with the world.
+- World: main interface for user interaction with the world. Its API must offer enough member functions
+to access and change all world, scene and asset data without exposing internal descriptor types like
+SceneDescriptor or ObjectCatalogue. 
 
 Additionally the facade defines numerous low level structs for storing pure data, like Position, 
 Velocity, Orientation, etc. These must be used in the engine implementations accordingly and are typical data structures used in game engines.
 
-Internal data like object descriptors are not part of the facade. The user states what he wants, 
-the engine decides how this is done without exposing details about internal implementation.
+Internal data are not part of the facade. The user states what he wants, 
+the engine decides how this is done without exposing details about internal implementation. This also involves the containers storing these descriptors. 
+
+Examples for internal data structures are 
+- ObjectCatalogues
+- SceneDescriptors
+- NodeDescriptors used for creating internal DAGs or trees.
+
+Descriptors that might be exposed to the user must be composed by facade defined data types only. However, as a general principle, user intercation should be via functions, not data structures.
+
 
 
 ## Strong Types

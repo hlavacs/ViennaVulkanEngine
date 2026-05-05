@@ -1,6 +1,6 @@
-export module VEEngine:Handle;
+export module VEEngine.Handle;
 import std;
-import VEEngine.V4;
+import VEEngine.V4.Handle;
 
 /**
  * @file
@@ -12,12 +12,6 @@ export namespace vve {
    public:
       using tag_type = TTag;
       using implementation_type = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::TypedHandle<TTag>;
-
-      static constexpr std::uint32_t generation_bits{implementation_type::generation_bits};
-      static constexpr std::uint32_t id_bits{implementation_type::id_bits};
-      static constexpr std::uint64_t counter_bit{implementation_type::counter_bit};
-      static constexpr std::uint64_t id_mask{implementation_type::id_mask};
-      static constexpr std::uint64_t generation_mask{implementation_type::generation_mask};
 
       constexpr TypedHandle() noexcept = default;
       constexpr explicit TypedHandle(std::uint64_t value) noexcept : impl_{.value = value} {}

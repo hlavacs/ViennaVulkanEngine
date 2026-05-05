@@ -1,7 +1,7 @@
 export module VEEngine:Window;
 import std;
 import VEEngine.V4;
-import :Types;
+import VEEngine.Types;
 
 /**
  * @file

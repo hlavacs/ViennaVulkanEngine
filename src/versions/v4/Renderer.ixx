@@ -1,8 +1,8 @@
 export module VEEngine.V4:Renderer;
 import std;
 export import :Shaders;
-export import :Graph;
-export import :Handle;
+export import VEEngine.V4.Graph;
+export import VEEngine.V4.Handle;
 
 /// @file
 /// @brief Renderer-selection stubs; actual Vulkan renderers are intentionally absent.

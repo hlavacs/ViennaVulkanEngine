@@ -1,4 +1,4 @@
-export module VEEngine.V4:Handle;
+export module VEEngine.V4.Handle;
 import std;
 
 /// @file
@@ -53,24 +53,36 @@ export namespace vve::v4 {
 
    /// @brief Builds a typed upward-counted non-slot-map handle from the module-global counter.
    template <typename THandle> [[nodiscard]] inline THandle makeCounterHandle() {
-      const auto id = detail::nextCounterHandleId();
-      return THandle{.value = THandle::counter_bit | (id & THandle::id_mask)};
+      if constexpr (requires { typename THandle::implementation_type; }) {
+         return THandle{makeCounterHandle<typename THandle::implementation_type>()};
+      } else {
+         const auto id = detail::nextCounterHandleId();
+         return THandle{THandle::counter_bit | (id & THandle::id_mask)};
+      }
    }
 
    /// @brief Builds a deterministic typed counter handle for tests and examples that need stable ids.
    template <typename THandle>
    [[nodiscard]] constexpr THandle makeHandleForTest(std::uint64_t id) noexcept {
-      return THandle{.value = THandle::counter_bit | (id & THandle::id_mask)};
+      if constexpr (requires { typename THandle::implementation_type; }) {
+         return THandle{makeHandleForTest<typename THandle::implementation_type>(id)};
+      } else {
+         return THandle{THandle::counter_bit | (id & THandle::id_mask)};
+      }
    }
 
    /// @brief Builds a deterministic future slot-map handle for tests of the prepared bit layout.
    template <typename THandle>
    [[nodiscard]] constexpr THandle makeSlotMapHandleForTest(std::uint32_t slot_index,
                                                             std::uint32_t generation) noexcept {
-      const auto generation_bits = (static_cast<std::uint64_t>(generation) << THandle::id_bits) &
-                                   THandle::generation_mask;
-      const auto index_bits = static_cast<std::uint64_t>(slot_index) & THandle::id_mask;
-      return THandle{.value = generation_bits | index_bits};
+      if constexpr (requires { typename THandle::implementation_type; }) {
+         return THandle{makeSlotMapHandleForTest<typename THandle::implementation_type>(slot_index, generation)};
+      } else {
+         const auto generation_bits = (static_cast<std::uint64_t>(generation) << THandle::id_bits) &
+                                      THandle::generation_mask;
+         const auto index_bits = static_cast<std::uint64_t>(slot_index) & THandle::id_mask;
+         return THandle{generation_bits | index_bits};
+      }
    }
 
 } // namespace vve::v4

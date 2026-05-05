@@ -2,8 +2,8 @@ export module VEEngine:World;
 import std;
 import VEEngine.V4;
 import :ECS;
-import :Error;
-import :Types;
+import VEEngine.Error;
+import VEEngine.Types;
 import :Window;
 
 /**

@@ -1,6 +1,6 @@
-export module VEEngine:Error;
+export module VEEngine.Error;
 import std;
-import VEEngine.V4;
+import VEEngine.V4.Error;
 
 /**
  * @file

@@ -1,6 +1,6 @@
-export module VEEngine:Math;
+export module VEEngine.Math;
 import std;
-import VEEngine.V4;
+import VEEngine.V4.Math;
 
 /**
  * @file

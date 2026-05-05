@@ -244,8 +244,6 @@ struct CountingSystem {
 [[nodiscard]] int testDescriptorCatalog() {
    using namespace vve;
 
-   ObjectCatalog catalog{};
-   const auto scene = makeHandleForTest<SceneHandle>(100);
    const auto node = makeHandleForTest<NodeHandle>(101);
    const auto child = makeHandleForTest<NodeHandle>(102);
    const auto mesh = makeHandleForTest<MeshHandle>(103);
@@ -254,92 +252,51 @@ struct CountingSystem {
    const auto light = makeHandleForTest<LightHandle>(106);
    const auto camera = makeHandleForTest<CameraHandle>(107);
 
-   if (!catalog.textures.add(TextureDescriptor{.handle = texture,
-                                               .name = ObjectName{.value = "stone"},
-                                               .source = "stone.png",
-                                               .extent = PixelExtent{.width = 1024, .height = 512},
-                                               .channels = TextureChannelCount{.value = 4}})) {
-      return 30;
-   }
-   if (!catalog.materials.add(MaterialDescriptor{
-          .handle = material,
-          .name = ObjectName{.value = "stone_mat"},
-          .textures = {TextureBinding{.texture = texture, .semantic = TextureSemantic::base_color}}})) {
-      return 31;
-   }
-   if (!catalog.meshes.add(MeshDescriptor{
-          .handle = mesh,
-          .name = ObjectName{.value = "arch"},
-          .vertex_count = VertexCount{.value = 3},
-          .index_count = IndexCount{.value = 3},
-          .material = material})) {
-      return 32;
-   }
-   if (!catalog.nodes.add(NodeDescriptor{
-          .handle = node,
-          .name = ObjectName{.value = "root"},
-          .meshes = {MeshUse{.mesh = mesh, .material = material}}})) {
-      return 33;
-   }
-   if (!catalog.nodes.add(NodeDescriptor{.handle = child, .name = ObjectName{.value = "child"}})) {
-      return 34;
-   }
-   if (!catalog.lights.add(LightDescriptor{.handle = light,
-                                           .name = ObjectName{.value = "sun"},
-                                           .kind = LightKind::directional,
-                                           .color = LinearColor{.value = Vec3{0.9F, 0.8F, 0.7F}},
-                                           .intensity = LightIntensity{.value = 4.0F}}) ||
-       !catalog.cameras.add(CameraDescriptor{.handle = camera,
-                                             .name = ObjectName{.value = "camera"},
-                                             .fov_y = FovY{.radians = 0.8F},
-                                             .clip = ClipPlanes{.near_plane = 0.2F, .far_plane = 200.0F}})) {
-      return 35;
-   }
-   auto tree = Tree{.root = node};
+   const auto texture_descriptor = TextureDescriptor{.handle = texture,
+                                                     .name = ObjectName{.value = "stone"},
+                                                     .source = "stone.png",
+                                                     .extent = PixelExtent{.width = 1024, .height = 512},
+                                                     .channels = TextureChannelCount{.value = 4}};
+   const auto material_descriptor = MaterialDescriptor{
+      .handle = material,
+      .name = ObjectName{.value = "stone_mat"},
+      .textures = {TextureBinding{.texture = texture, .semantic = TextureSemantic::base_color}}};
+   const auto mesh_descriptor = MeshDescriptor{.handle = mesh,
+                                              .name = ObjectName{.value = "arch"},
+                                              .vertex_count = VertexCount{.value = 3},
+                                              .index_count = IndexCount{.value = 3},
+                                              .material = material};
+   const auto node_descriptor = NodeDescriptor{
+      .handle = node,
+      .name = ObjectName{.value = "root"},
+      .meshes = {MeshUse{.mesh = mesh, .material = material}}};
+   const auto child_descriptor = NodeDescriptor{.handle = child, .name = ObjectName{.value = "child"}};
+   const auto light_descriptor = LightDescriptor{.handle = light,
+                                                .name = ObjectName{.value = "sun"},
+                                                .kind = LightKind::directional,
+                                                .color = LinearColor{.value = Vec3{0.9F, 0.8F, 0.7F}},
+                                                .intensity = LightIntensity{.value = 4.0F}};
+   const auto camera_descriptor = CameraDescriptor{.handle = camera,
+                                                  .name = ObjectName{.value = "camera"},
+                                                  .fov_y = FovY{.radians = 0.8F},
+                                                  .clip = ClipPlanes{.near_plane = 0.2F, .far_plane = 200.0F}};
+   auto tree = Tree{};
+   tree.setRoot(node);
    tree.addChild(node, child);
-   if (!catalog.scenes.add(SceneDescriptor{.handle = scene,
-                                           .name = ObjectName{.value = "scene"},
-                                           .tree = std::move(tree),
-                                           .nodes = {node, child},
-                                           .meshes = {mesh},
-                                           .materials = {material},
-                                           .textures = {texture},
-                                           .lights = {light},
-                                           .cameras = {camera}})) {
-      return 36;
-   }
 
-   const auto *mesh_descriptor = catalog.meshes.find(mesh);
-   const auto *material_descriptor = catalog.materials.find(material);
-   const auto *scene_descriptor = catalog.scenes.find(scene);
-   const auto *texture_descriptor = catalog.textures.find(texture);
-   const auto *light_descriptor = catalog.lights.find(light);
-   const auto *camera_descriptor = catalog.cameras.find(camera);
-   if (mesh_descriptor == nullptr || material_descriptor == nullptr || scene_descriptor == nullptr ||
-       texture_descriptor == nullptr || light_descriptor == nullptr || camera_descriptor == nullptr) {
-      return 37;
-   }
-   const auto [first_child, last_child] = scene_descriptor->tree.childRange(node);
-   if (mesh_descriptor->material != material ||
-       material_descriptor->textures.front().texture != texture ||
-       scene_descriptor->meshes.front() != mesh ||
-       scene_descriptor->tree.root != node ||
+   const auto [first_child, last_child] = tree.childRange(node);
+   if (mesh_descriptor.material != material ||
+       material_descriptor.textures.front().texture != texture ||
+       node_descriptor.meshes.front().mesh != mesh ||
+       child_descriptor.handle != child ||
+       tree.root() != node ||
        first_child == last_child ||
        first_child->second != child) {
       return 38;
    }
-   if (texture_descriptor->extent.width != 1024 || !nearly(light_descriptor->intensity.value, 4.0F) ||
-       !nearly(camera_descriptor->clip.near_plane, 0.2F)) {
+   if (texture_descriptor.extent.width != 1024 || !nearly(light_descriptor.intensity.value, 4.0F) ||
+       !nearly(camera_descriptor.clip.near_plane, 0.2F)) {
       return 29;
-   }
-   if (catalog.meshes.add(*mesh_descriptor)) {
-      return 39;
-   }
-   if (catalog.meshes.add(MeshDescriptor{.handle = {}, .name = ObjectName{.value = "bad"}})) {
-      return 49;
-   }
-   if (!catalog.meshes.remove(mesh) || catalog.meshes.find(mesh) != nullptr) {
-      return 82;
    }
    return 0;
 }

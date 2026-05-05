@@ -9,11 +9,12 @@ module;
 
 export module VEEngine.V4;
 import std;
+export import VEEngine.V4.Math;
 export import :WindowSystem;
 export import :Assets;
 export import :Renderer;
-export import :Graph;
-export import :Handle;
+export import VEEngine.V4.Graph;
+export import VEEngine.V4.Handle;
 export import :Gui;
 
 /// @file

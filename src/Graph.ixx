@@ -1,9 +1,9 @@
 export module VEEngine:Graph;
 import std;
-import VEEngine.V4;
-import :Error;
-import :Vector;
-import :Types;
+import VEEngine.V4.Graph;
+import VEEngine.Error;
+import VEEngine.Vector;
+import VEEngine.Types;
 
 /**
  * @file
@@ -15,20 +15,16 @@ export namespace vve {
    public:
       [[nodiscard]] THandle root() const { return impl_.root; }
       void setRoot(THandle root) { impl_.root = root; }
-
       void addChild(THandle parent, THandle child) { impl_.addChild(parent, child); }
-
       void removeNode(THandle handle) { impl_.removeNode(handle); }
-
       [[nodiscard]] auto childRange(THandle parent) const { return impl_.childRange(parent); }
-
       [[nodiscard]] std::optional<THandle> parentOf(THandle child) const { return impl_.parentOf(child); }
 
    private:
-      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicTree<THandle>;
-
-      mutable Impl impl_{};
+      VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicTree<THandle> impl_{}; ///< Wrapped tree implementation.
    }; ///< Facade tree topology.
+
+   using Tree = BasicTree<NodeHandle>; ///< Facade scene tree topology.
 
    template <typename THandle> class Graph {
    public:

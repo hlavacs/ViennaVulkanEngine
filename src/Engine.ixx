@@ -10,11 +10,11 @@ module;
 export module VEEngine;
 import std;
 import VEEngine.V4;
-export import :Error;
-export import :Math;
-export import :Handle;
-export import :Vector;
-export import :Types;
+export import VEEngine.Error;
+export import VEEngine.Math;
+export import VEEngine.Handle;
+export import VEEngine.Vector;
+export import VEEngine.Types;
 export import :Graph;
 export import :ECS;
 export import :Window;
@@ -41,8 +41,8 @@ export namespace vve {
       AssetSystem &operator=(const AssetSystem &) = delete;
       AssetSystem &operator=(AssetSystem &&) noexcept = default;
 
-      [[nodiscard]] ObjectCatalog &catalog() { return impl_.catalog(); }
-      [[nodiscard]] const ObjectCatalog &catalog() const { return impl_.catalog(); }
+      [[nodiscard]] decltype(auto) catalog() { return impl_.catalog(); }
+      [[nodiscard]] decltype(auto) catalog() const { return impl_.catalog(); }
       [[nodiscard]] std::expected<SceneHandle, Error> addScene(ObjectName name) {
          return impl_.addScene(std::move(name));
       }

@@ -1,8 +1,8 @@
-export module VEEngine.V4:Graph;
+export module VEEngine.V4.Graph;
 import std;
-export import :Error;
-export import :Handle;
-export import :Vector;
+export import VEEngine.V4.Error;
+export import VEEngine.V4.Handle;
+export import VEEngine.V4.Vector;
 
 /**
  * @file
