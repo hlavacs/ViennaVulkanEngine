@@ -30,11 +30,11 @@ export namespace vve {
          return result;
       }
       [[nodiscard]] std::optional<Window> findWindow(std::string_view id) const {
-         const auto *window = impl_.findWindow(id);
+         auto *window = impl_.findWindow(id);
          return window == nullptr ? std::optional<Window>{} : std::optional<Window>{Window{*window}};
       }
       [[nodiscard]] std::optional<Window> findWindow(WindowHandle handle) const {
-         const auto *window = impl_.findWindow(handle);
+         auto *window = impl_.findWindow(handle);
          return window == nullptr ? std::optional<Window>{} : std::optional<Window>{Window{*window}};
       }
 

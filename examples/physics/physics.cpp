@@ -26,8 +26,9 @@ public:
         for (const auto& window_ref : world.windowSystem().windows()) {
             const auto& window = window_ref.get();
             printed_any = true;
-            std::cout << ' ' << window.id << '=' << window.extent.width << 'x' << window.extent.height
-                      << '[' << window.renderer_id.value << ']';
+            const auto extent = window.extent();
+            std::cout << ' ' << window.id() << '=' << extent.width << 'x' << extent.height
+                      << '[' << window.rendererId().value << ']';
         }
         if (!printed_any) {
             std::cout << " <none>";
@@ -67,11 +68,12 @@ public:
             return {};
         }
 
-        const auto mouse_delta = input.mouseDelta(main_window->handle);
-        std::cout << " physics.main=" << main_window->extent.width << 'x' << main_window->extent.height
-                  << '[' << main_window->renderer_id.value << ']'
-                  << (main_window->focused ? "[focused]" : "")
-                  << (main_window->minimized ? "[minimized]" : "")
+        const auto mouse_delta = input.mouseDelta(main_window->handle());
+        const auto extent = main_window->extent();
+        std::cout << " physics.main=" << extent.width << 'x' << extent.height
+                  << '[' << main_window->rendererId().value << ']'
+                  << (main_window->focused() ? "[focused]" : "")
+                  << (main_window->minimized() ? "[minimized]" : "")
                   << " body=(" << body_x_ << ", " << body_y_ << ')'
                   << " keys="
                   << (input.isKeyDown('W') || input.isKeyDown('w') ? 'W' : '-')

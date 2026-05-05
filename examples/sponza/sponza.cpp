@@ -147,8 +147,9 @@ private:
         for (const auto& window_ref : world.windowSystem().windows()) {
             const auto& window = window_ref.get();
             printed_any = true;
-            std::cout << ' ' << window.id << '=' << window.extent.width << 'x' << window.extent.height
-                      << '[' << window.renderer_id.value << ']';
+            const auto extent = window.extent();
+            std::cout << ' ' << window.id() << '=' << extent.width << 'x' << extent.height
+                      << '[' << window.rendererId().value << ']';
         }
         if (!printed_any) {
             std::cout << " <none>";

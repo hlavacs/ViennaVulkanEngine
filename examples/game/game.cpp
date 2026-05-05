@@ -241,14 +241,16 @@ public:
                       << static_cast<int>(std::lround(acceleration_y)) << ')'
                       << " keys=" << key_state_string;
             if (main_window) {
-                std::cout << " main=" << main_window->extent.width << 'x' << main_window->extent.height
-                          << '[' << main_window->renderer_id.value << ']'
-                          << (main_window->focused ? "[focused]" : "");
+                const auto extent = main_window->extent();
+                std::cout << " main=" << extent.width << 'x' << extent.height
+                          << '[' << main_window->rendererId().value << ']'
+                          << (main_window->focused() ? "[focused]" : "");
             }
             if (tools_window) {
-                std::cout << " tools=" << tools_window->extent.width << 'x' << tools_window->extent.height
-                          << '[' << tools_window->renderer_id.value << ']'
-                          << (tools_window->focused ? "[focused]" : "");
+                const auto extent = tools_window->extent();
+                std::cout << " tools=" << extent.width << 'x' << extent.height
+                          << '[' << tools_window->rendererId().value << ']'
+                          << (tools_window->focused() ? "[focused]" : "");
             }
             std::cout << '\n';
         }
@@ -263,8 +265,9 @@ private:
         for (const auto& window_ref : world.windowSystem().windows()) {
             const auto& window = window_ref.get();
             printed_any = true;
-            std::cout << ' ' << window.id << '=' << window.extent.width << 'x' << window.extent.height
-                      << '[' << window.renderer_id.value << ']';
+            const auto extent = window.extent();
+            std::cout << ' ' << window.id() << '=' << extent.width << 'x' << extent.height
+                      << '[' << window.rendererId().value << ']';
         }
         if (!printed_any) {
             std::cout << " <none>";

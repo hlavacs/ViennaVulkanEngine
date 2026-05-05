@@ -58,70 +58,23 @@ export namespace vve::v4 {
    /// @brief Keyboard and mouse snapshot; held keys are independent of OS key-repeat speed.
    class InputState {
    public:
-      void beginFrame() {
-         keys_pressed_.clear();
-         keys_released_.clear();
-         mouse_delta_.clear();
-         mouse_wheel_delta_.clear();
-      }
+      void beginFrame();
+      void holdKey(std::int32_t keycode);
+      void pressKey(std::int32_t keycode);
+      void releaseKey(std::int32_t keycode);
+      void setMousePosition(WindowHandle window, Vec2 position);
+      void addMouseDelta(WindowHandle window, Vec2 delta);
+      void addMouseWheelDelta(WindowHandle window, Vec2 delta);
 
-      void holdKey(std::int32_t keycode) { keys_down_.insert(normalizeKey(keycode)); }
-
-      void pressKey(std::int32_t keycode) {
-         const auto key = normalizeKey(keycode);
-         if (!keys_down_.contains(key)) { keys_pressed_.insert(key); }
-         keys_down_.insert(key);
-      }
-
-      void releaseKey(std::int32_t keycode) {
-         const auto key = normalizeKey(keycode);
-         keys_down_.erase(key);
-         keys_pressed_.erase(key);
-         keys_released_.insert(key);
-      }
-
-      void setMousePosition(WindowHandle window, Vec2 position) { mouse_position_[window] = position; }
-
-      void addMouseDelta(WindowHandle window, Vec2 delta) {
-         const auto [it, _] = mouse_delta_.try_emplace(window, Vec2{zero(), zero()});
-         it->second = math::add(it->second, delta);
-      }
-
-      void addMouseWheelDelta(WindowHandle window, Vec2 delta) {
-         const auto [it, _] = mouse_wheel_delta_.try_emplace(window, Vec2{zero(), zero()});
-         it->second = math::add(it->second, delta);
-      }
-
-      [[nodiscard]] bool isKeyDown(std::int32_t keycode) const { return keys_down_.contains(normalizeKey(keycode)); }
-      [[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const {
-         return keys_pressed_.contains(normalizeKey(keycode));
-      }
-      [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const {
-         return keys_released_.contains(normalizeKey(keycode));
-      }
-
-      [[nodiscard]] std::optional<Vec2> mousePosition(WindowHandle window) const {
-         const auto it = mouse_position_.find(window);
-         return it == mouse_position_.end() ? std::optional<Vec2>{} : std::optional<Vec2>{it->second};
-      }
-
-      [[nodiscard]] Vec2 mouseDelta(WindowHandle window) const {
-         const auto it = mouse_delta_.find(window);
-         return it == mouse_delta_.end() ? Vec2{} : it->second;
-      }
-
-      [[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const {
-         const auto it = mouse_wheel_delta_.find(window);
-         return it == mouse_wheel_delta_.end() ? Vec2{} : it->second;
-      }
+      [[nodiscard]] bool isKeyDown(std::int32_t keycode) const;
+      [[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const;
+      [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const;
+      [[nodiscard]] std::optional<Vec2> mousePosition(WindowHandle window) const;
+      [[nodiscard]] Vec2 mouseDelta(WindowHandle window) const;
+      [[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const;
 
    private:
-      [[nodiscard]] static std::int32_t normalizeKey(std::int32_t keycode) {
-         if (keycode >= static_cast<std::int32_t>('A') && keycode <= static_cast<std::int32_t>('Z')) {
-            return keycode - static_cast<std::int32_t>('A') + static_cast<std::int32_t>('a');
-         }
-         return keycode;
-      }
+      [[nodiscard]] static std::int32_t normalizeKey(std::int32_t keycode);
 
       std::set<std::int32_t> keys_down_{};                      ///< Keys currently held down.
       std::set<std::int32_t> keys_pressed_{};                   ///< Keys pressed this frame.
@@ -145,6 +98,15 @@ export namespace vve::v4 {
       [[nodiscard]] SDL_WindowID sdlId() const noexcept;
       [[nodiscard]] WindowInfo &info() noexcept;
       [[nodiscard]] const WindowInfo &info() const noexcept;
+      [[nodiscard]] WindowHandle handle() const noexcept;
+      [[nodiscard]] std::string_view id() const noexcept;
+      [[nodiscard]] std::string_view title() const noexcept;
+      [[nodiscard]] PixelExtent extent() const noexcept;
+      [[nodiscard]] RendererId rendererId() const;
+      [[nodiscard]] std::optional<Entity> camera() const;
+      [[nodiscard]] bool focused() const noexcept;
+      [[nodiscard]] bool minimized() const noexcept;
+      [[nodiscard]] bool shouldClose() const noexcept;
 
    private:
       void reset() noexcept;
@@ -157,6 +119,72 @@ export namespace vve::v4 {
 } // namespace vve::v4
 
 namespace vve::v4 {
+
+   void InputState::beginFrame() {
+      keys_pressed_.clear();
+      keys_released_.clear();
+      mouse_delta_.clear();
+      mouse_wheel_delta_.clear();
+   }
+
+   void InputState::holdKey(std::int32_t keycode) { keys_down_.insert(normalizeKey(keycode)); }
+
+   void InputState::pressKey(std::int32_t keycode) {
+      const auto key = normalizeKey(keycode);
+      if (!keys_down_.contains(key)) { keys_pressed_.insert(key); }
+      keys_down_.insert(key);
+   }
+
+   void InputState::releaseKey(std::int32_t keycode) {
+      const auto key = normalizeKey(keycode);
+      keys_down_.erase(key);
+      keys_pressed_.erase(key);
+      keys_released_.insert(key);
+   }
+
+   void InputState::setMousePosition(WindowHandle window, Vec2 position) { mouse_position_[window] = position; }
+
+   void InputState::addMouseDelta(WindowHandle window, Vec2 delta) {
+      const auto [it, _] = mouse_delta_.try_emplace(window, Vec2{zero(), zero()});
+      it->second = math::add(it->second, delta);
+   }
+
+   void InputState::addMouseWheelDelta(WindowHandle window, Vec2 delta) {
+      const auto [it, _] = mouse_wheel_delta_.try_emplace(window, Vec2{zero(), zero()});
+      it->second = math::add(it->second, delta);
+   }
+
+   bool InputState::isKeyDown(std::int32_t keycode) const { return keys_down_.contains(normalizeKey(keycode)); }
+
+   bool InputState::wasKeyPressed(std::int32_t keycode) const {
+      return keys_pressed_.contains(normalizeKey(keycode));
+   }
+
+   bool InputState::wasKeyReleased(std::int32_t keycode) const {
+      return keys_released_.contains(normalizeKey(keycode));
+   }
+
+   std::optional<Vec2> InputState::mousePosition(WindowHandle window) const {
+      const auto it = mouse_position_.find(window);
+      return it == mouse_position_.end() ? std::optional<Vec2>{} : std::optional<Vec2>{it->second};
+   }
+
+   Vec2 InputState::mouseDelta(WindowHandle window) const {
+      const auto it = mouse_delta_.find(window);
+      return it == mouse_delta_.end() ? Vec2{} : it->second;
+   }
+
+   Vec2 InputState::mouseWheelDelta(WindowHandle window) const {
+      const auto it = mouse_wheel_delta_.find(window);
+      return it == mouse_wheel_delta_.end() ? Vec2{} : it->second;
+   }
+
+   std::int32_t InputState::normalizeKey(std::int32_t keycode) {
+      if (keycode >= static_cast<std::int32_t>('A') && keycode <= static_cast<std::int32_t>('Z')) {
+         return keycode - static_cast<std::int32_t>('A') + static_cast<std::int32_t>('a');
+      }
+      return keycode;
+   }
 
    Window::Window(SDL_Window *window, SDL_WindowID sdl_id, WindowInfo info) noexcept
        : window_{window}, sdl_id_{sdl_id}, info_{std::move(info)} {}
@@ -185,6 +213,24 @@ namespace vve::v4 {
    WindowInfo &Window::info() noexcept { return info_; }
 
    const WindowInfo &Window::info() const noexcept { return info_; }
+
+   WindowHandle Window::handle() const noexcept { return info_.handle; }
+
+   std::string_view Window::id() const noexcept { return info_.id; }
+
+   std::string_view Window::title() const noexcept { return info_.title; }
+
+   PixelExtent Window::extent() const noexcept { return info_.extent; }
+
+   RendererId Window::rendererId() const { return info_.renderer_id; }
+
+   std::optional<Entity> Window::camera() const { return info_.camera; }
+
+   bool Window::focused() const noexcept { return info_.focused; }
+
+   bool Window::minimized() const noexcept { return info_.minimized; }
+
+   bool Window::shouldClose() const noexcept { return info_.should_close; }
 
    void Window::reset() noexcept {
       if (window_ != nullptr) {

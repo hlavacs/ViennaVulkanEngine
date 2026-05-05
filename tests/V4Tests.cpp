@@ -297,7 +297,8 @@ struct CountingSystem {
    using namespace vve;
 
    const auto window = makeHandleForTest<WindowHandle>(200);
-   InputState input{};
+   auto input_engine = makeEngine(ApplicationName{"input-test"});
+   auto input = input_engine.world().input();
    input.pressKey('W');
    if (!input.isKeyDown('W') || !input.wasKeyPressed('W')) {
       return 60;
