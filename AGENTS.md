@@ -45,6 +45,12 @@ Engine implementations must expose specific subsystems with the enforced interfa
 - Window: Window information like number, renderer, camera, size.
 - World: main interface for user interaction with the world.
 
+Additionally the facade defines numerous low level structs for storing pure data, like Position, 
+Velocity, Orientation, etc. These must be used in the engine implementations accordingly and are typical data structures used in game engines.
+
+Internal data like object descriptors are not part of the facade. The user states what he wants, 
+the engine decides how this is done without exposing details about internal implementation.
+
 
 ## Strong Types
 
@@ -54,6 +60,7 @@ Engine implementations must expose specific subsystems with the enforced interfa
 - Use types to prevent category mistakes, invalid combinations, and accidental misuse.
 - Strong types should improve correctness without creating excessive ceremony on hot paths.
 - Distinguish public semantic types from internal storage-efficient representations where needed.
+- The name of a strong type should reflect its semantic meaning.
 
 
 ## External Depenencies
@@ -65,7 +72,7 @@ The engine mainly links to the official Vulkan SDK and uses the libraries contai
 - Add extensive Doxygen compatible comments to the code.
 - Each file, function, class, struct gets a header explaining why it is there and if necessary input, output and return parameters.
 - In a struct or enum or class, each member variable or value must have its own comment line at the end. 
-- Function declarations should not have comments, only definitions.
+- Function declarations should not have function header comments, only definitions.
 - When adding comments, try to minimize the number of lines in the file. If max line length allows, put comments in the same line after the code.
 - Add comments to roughly 30 to 50 percent of all code lines.
 - If a new code block, e.g., a loop, begins, add comments in front of it to explain what the following code does.
@@ -88,9 +95,9 @@ The engine mainly links to the official Vulkan SDK and uses the libraries contai
 
 - Keep the number of lines as low as possible and feasible. 
 - Do not bloat, do not introduce new classes or structs without asking.
-- Do not violate the meta engine to engine implementation rules.
-- Do not introduce layers of abstraction wihtout asking.
-- Do nto introduce functionality that is covered by std.
+- Do not violate the meta engine facade to engine implementation rules.
+- Do not introduce layers of abstraction without asking.
+- Do not introduce functionality that is already covered by std.
 - Keeop the code readable, slim, expressive.
 - Always document the code.
 - If in doubt, ask. 
@@ -98,46 +105,13 @@ The engine mainly links to the official Vulkan SDK and uses the libraries contai
 
 ## Expectations for debugging
 
-When debugging:
-
-1. state the observed symptom
-2. identify the relevant subsystem boundary
-3. trace the likely execution and data path
-4. identify ownership/lifecycle assumptions involved
-5. distinguish root cause from downstream effects
-6. propose the smallest fix that addresses the cause
-7. mention architectural follow-up if the bug points to a systemic design weakness
-
-For engine bugs, be especially alert to:
-
-- invalid lifetime assumptions
-- ordering problems across phases
-- resource invalidation
-- stale handles/references
-- structural ECS mutation issues
-- synchronization issues
-- hidden subsystem coupling
-- API ambiguity
-- backend/state desynchronization
-- performance regressions caused by innocent-looking abstractions
-
-Do not treat every bug as grounds for a large rewrite.
+If tracking runtime errors try outputting internal data into a textfile, then 
+fread the file to understand what was wring.
 
 
 ## Expectations for tests
 
-When adding or updating tests:
-
-- test observable behavior and contracts
-- test subsystem boundaries and API semantics
-- add focused regression tests for the actual bug or risk
-- test ECS invariants and lifecycle expectations where relevant
-- prefer tests that validate ownership/lifetime behavior when that is part of correctness
-- avoid excessive mocking that hides architecture problems
-- test extension points when introducing them
-- test patterns and contracts, not incidental implementation trivia
-- include performance-sensitive tests or benchmarks where performance is a design requirement
-
-If testing is difficult because architecture is unclear or too coupled, say so explicitly and identify the boundary problem.
+All classes and functions should have unit tests.
+All example programs should have extensive test paths.
 
 
