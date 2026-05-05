@@ -1,0 +1,19 @@
+target_sources(ViennaVulkanEngine
+   PUBLIC
+      FILE_SET CXX_MODULES FILES
+         Error.ixx
+         Math.ixx
+         Handle.ixx
+         Graph.ixx
+         Vector.ixx
+         ECS.ixx
+         Types.ixx
+         World.ixx
+         Assets.ixx
+         Resources.ixx
+         Shaders.ixx
+         Renderer.ixx
+         Gui.ixx
+         WindowSystem.ixx
+         Engine.ixx
+)

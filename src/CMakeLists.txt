@@ -38,31 +38,18 @@ endif()
 target_sources(ViennaVulkanEngine
     PUBLIC
         FILE_SET CXX_MODULES FILES
-            versions/v4/Error.ixx
-            versions/v4/Math.ixx
-            versions/v4/Handle.ixx
             Math.ixx
             Error.ixx
             Handle.ixx
-            versions/v4/Graph.ixx
             Types.ixx
             Graph.ixx
             ECS.ixx
             Window.ixx
             World.ixx
             Engine.ixx
-            versions/v4/Vector.ixx
-            versions/v4/ECS.ixx
-            versions/v4/Types.ixx
-            versions/v4/World.ixx
-            versions/v4/Assets.ixx
-            versions/v4/Resources.ixx
-            versions/v4/Shaders.ixx
-            versions/v4/Renderer.ixx
-            versions/v4/Gui.ixx
-            versions/v4/WindowSystem.ixx
-            versions/v4/Engine.ixx
 )
+
+add_subdirectory("versions/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}")
 
 target_link_libraries(ViennaVulkanEngine
     PUBLIC
