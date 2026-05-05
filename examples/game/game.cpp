@@ -158,7 +158,7 @@ public:
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> update(
         TWorld& world,
         const vve::FrameContext& frame_context,
-        const vve::WindowFrameData&) {
+        const auto&) {
         if (!player_.valid()) {
             return std::unexpected(vve::Error::invalid_argument);
         }
@@ -295,30 +295,23 @@ int main(int argc, char** argv) {
     auto engine = vve::makeEngine( // multi-window API shape exposed by the engine.
         vve::ApplicationName{"game"},
         vve::makeUserSystems(SimpleGameSystem{*scene_path}),
-        vve::Windows{
-            .value = {
-                vve::WindowDesc{
-                    .id = "main",
-                    .title = "VVE Game",
-                    .extent = vve::PixelExtent{.width = 640, .height = 480},
-                    .x = 80,
-                    .y = 120,
-                    .renderer_id = vve::RendererId{.value = "forward"},
-                    .resizable = true,
-                    .visible = true
-                },
-                vve::WindowDesc{
-                    .id = "tools",
-                    .title = "VVE Tools",
-                    .extent = vve::PixelExtent{.width = 400, .height = 480},
-                    .x = 760,
-                    .y = 120,
-                    .renderer_id = vve::RendererId{.value = "forward"},
-                    .resizable = true,
-                    .visible = true
-                }
-            }
-        });
+        vve::WindowSetups{
+            vve::WindowSetup{}
+                .id("main")
+                .title("VVE Game")
+                .extent(vve::PixelExtent{.width = 640, .height = 480})
+                .position(80, 120)
+                .renderer(vve::RendererId{.value = "forward"})
+                .resizable(true)
+                .visible(true),
+            vve::WindowSetup{}
+                .id("tools")
+                .title("VVE Tools")
+                .extent(vve::PixelExtent{.width = 400, .height = 480})
+                .position(760, 120)
+                .renderer(vve::RendererId{.value = "forward"})
+                .resizable(true)
+                .visible(true)});
 
     const auto version_major = engine.getVersionMajor();
     if (!version_major) {

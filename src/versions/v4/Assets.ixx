@@ -28,6 +28,22 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<SceneHandle, Error> addScene(ObjectName name);
       /// @brief Imports a scene file through Assimp and returns the v4 scene handle.
       [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &source);
+      /// @brief Returns whether an imported scene exists.
+      [[nodiscard]] bool containsScene(SceneHandle scene) const;
+      /// @brief Returns the imported scene name.
+      [[nodiscard]] std::expected<ObjectName, Error> sceneName(SceneHandle scene) const;
+      /// @brief Returns the number of nodes in an imported scene.
+      [[nodiscard]] std::expected<std::size_t, Error> sceneNodeCount(SceneHandle scene) const;
+      /// @brief Returns the number of meshes referenced by an imported scene.
+      [[nodiscard]] std::expected<std::size_t, Error> sceneMeshCount(SceneHandle scene) const;
+      /// @brief Returns the number of materials referenced by an imported scene.
+      [[nodiscard]] std::expected<std::size_t, Error> sceneMaterialCount(SceneHandle scene) const;
+      /// @brief Returns the number of textures referenced by an imported scene.
+      [[nodiscard]] std::expected<std::size_t, Error> sceneTextureCount(SceneHandle scene) const;
+      /// @brief Returns the number of lights referenced by an imported scene.
+      [[nodiscard]] std::expected<std::size_t, Error> sceneLightCount(SceneHandle scene) const;
+      /// @brief Returns the number of cameras referenced by an imported scene.
+      [[nodiscard]] std::expected<std::size_t, Error> sceneCameraCount(SceneHandle scene) const;
 
    private:
       ObjectCatalog catalog_{};                         ///< All loaded object descriptors.
@@ -369,6 +385,50 @@ namespace vve::v4 {
    ObjectCatalog &AssetSystem::catalog() { return catalog_; }
 
    const ObjectCatalog &AssetSystem::catalog() const { return catalog_; }
+
+   bool AssetSystem::containsScene(SceneHandle scene) const { return catalog_.scenes.contains(scene); }
+
+   std::expected<ObjectName, Error> AssetSystem::sceneName(SceneHandle scene) const {
+      const auto *descriptor = catalog_.scenes.find(scene);
+      if (descriptor == nullptr) { return std::unexpected(Error::missing_object); }
+      return descriptor->name;
+   }
+
+   std::expected<std::size_t, Error> AssetSystem::sceneNodeCount(SceneHandle scene) const {
+      const auto *descriptor = catalog_.scenes.find(scene);
+      if (descriptor == nullptr) { return std::unexpected(Error::missing_object); }
+      return descriptor->nodes.size();
+   }
+
+   std::expected<std::size_t, Error> AssetSystem::sceneMeshCount(SceneHandle scene) const {
+      const auto *descriptor = catalog_.scenes.find(scene);
+      if (descriptor == nullptr) { return std::unexpected(Error::missing_object); }
+      return descriptor->meshes.size();
+   }
+
+   std::expected<std::size_t, Error> AssetSystem::sceneMaterialCount(SceneHandle scene) const {
+      const auto *descriptor = catalog_.scenes.find(scene);
+      if (descriptor == nullptr) { return std::unexpected(Error::missing_object); }
+      return descriptor->materials.size();
+   }
+
+   std::expected<std::size_t, Error> AssetSystem::sceneTextureCount(SceneHandle scene) const {
+      const auto *descriptor = catalog_.scenes.find(scene);
+      if (descriptor == nullptr) { return std::unexpected(Error::missing_object); }
+      return descriptor->textures.size();
+   }
+
+   std::expected<std::size_t, Error> AssetSystem::sceneLightCount(SceneHandle scene) const {
+      const auto *descriptor = catalog_.scenes.find(scene);
+      if (descriptor == nullptr) { return std::unexpected(Error::missing_object); }
+      return descriptor->lights.size();
+   }
+
+   std::expected<std::size_t, Error> AssetSystem::sceneCameraCount(SceneHandle scene) const {
+      const auto *descriptor = catalog_.scenes.find(scene);
+      if (descriptor == nullptr) { return std::unexpected(Error::missing_object); }
+      return descriptor->cameras.size();
+   }
 
    std::expected<SceneHandle, Error> AssetSystem::addScene(ObjectName name) {
       const auto handle = next<SceneHandle>();

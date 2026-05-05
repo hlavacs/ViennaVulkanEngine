@@ -15,7 +15,6 @@ export import VEEngine.Math;
 export import VEEngine.Handle;
 export import VEEngine.Vector;
 export import VEEngine.Types;
-export import :Graph;
 export import :ECS;
 export import :Window;
 export import :World;
@@ -28,53 +27,52 @@ export namespace vve {
    inline constexpr std::string_view engineImplementationNamespaceName{
       VVE_DETAIL_STRINGIFY(VVE_ENGINE_IMPLEMENTATION_NAMESPACE)}; ///< Active implementation namespace name.
 
-   using GuiWidget       = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::GuiWidget;       ///< Public GUI widget data.
-   using GuiWidgetHandle = TypedHandle<typename VVE_ENGINE_IMPLEMENTATION_NAMESPACE::GuiWidgetHandle::tag_type>; ///< GUI widget handle.
-
    template <typename... TSystems> class Engine;
 
    class AssetSystem {
+      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::AssetSystem;
+
    public:
-      AssetSystem() = default;
+      AssetSystem() : impl_{std::make_shared<Impl>()} {}
+      explicit AssetSystem(Impl &implementation)
+         : impl_{std::shared_ptr<Impl>(std::addressof(implementation), [](Impl *) {})} {}
       AssetSystem(const AssetSystem &) = delete;
       AssetSystem(AssetSystem &&) noexcept = default;
       AssetSystem &operator=(const AssetSystem &) = delete;
       AssetSystem &operator=(AssetSystem &&) noexcept = default;
 
-      [[nodiscard]] decltype(auto) catalog() { return impl_.catalog(); }
-      [[nodiscard]] decltype(auto) catalog() const { return impl_.catalog(); }
       [[nodiscard]] std::expected<SceneHandle, Error> addScene(ObjectName name) {
-         return impl_.addScene(std::move(name));
+         return impl_->addScene(std::move(name));
       }
       [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &source) {
-         return impl_.loadScene(source);
+         return impl_->loadScene(source);
+      }
+      [[nodiscard]] bool containsScene(SceneHandle scene) const { return impl_->containsScene(scene); }
+      [[nodiscard]] std::expected<ObjectName, Error> sceneName(SceneHandle scene) const {
+         return impl_->sceneName(scene);
+      }
+      [[nodiscard]] std::expected<std::size_t, Error> sceneNodeCount(SceneHandle scene) const {
+         return impl_->sceneNodeCount(scene);
+      }
+      [[nodiscard]] std::expected<std::size_t, Error> sceneMeshCount(SceneHandle scene) const {
+         return impl_->sceneMeshCount(scene);
+      }
+      [[nodiscard]] std::expected<std::size_t, Error> sceneMaterialCount(SceneHandle scene) const {
+         return impl_->sceneMaterialCount(scene);
+      }
+      [[nodiscard]] std::expected<std::size_t, Error> sceneTextureCount(SceneHandle scene) const {
+         return impl_->sceneTextureCount(scene);
+      }
+      [[nodiscard]] std::expected<std::size_t, Error> sceneLightCount(SceneHandle scene) const {
+         return impl_->sceneLightCount(scene);
+      }
+      [[nodiscard]] std::expected<std::size_t, Error> sceneCameraCount(SceneHandle scene) const {
+         return impl_->sceneCameraCount(scene);
       }
 
    private:
-      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::AssetSystem;
-
-      Impl impl_{};
+      std::shared_ptr<Impl> impl_{};
    }; ///< Public asset importer.
-
-   class GuiSystem {
-   public:
-      GuiSystem() = default;
-      GuiSystem(const GuiSystem &) = delete;
-      GuiSystem(GuiSystem &&) noexcept = default;
-      GuiSystem &operator=(const GuiSystem &) = delete;
-      GuiSystem &operator=(GuiSystem &&) noexcept = default;
-
-      [[nodiscard]] std::expected<GuiWidgetHandle, Error> label(std::string text) {
-         return impl_.label(std::move(text));
-      }
-      [[nodiscard]] const GuiWidget *find(GuiWidgetHandle handle) const { return impl_.find(handle); }
-      [[nodiscard]] std::size_t size() const { return impl_.size(); }
-
-   private:
-      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::GuiSystem;
-
-      Impl impl_{};
-   }; ///< Public GUI descriptor system.
 
    template <typename... TSystems> class Engine {
    public:
@@ -89,15 +87,14 @@ export namespace vve {
 
       template <typename... TOptions>
          requires(sizeof...(TOptions) > 0)
-      explicit Engine(TOptions &&...options) : impl_{std::forward<TOptions>(options)...} {}
+      explicit Engine(TOptions &&...options) : impl_{implementationOption(std::forward<TOptions>(options))...} {}
 
       [[nodiscard]] std::uint32_t versionMajor() const { return impl_.versionMajor(); }
       [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept { return impl_.getVersionMajor(); }
       [[nodiscard]] std::string_view versionName() const { return impl_.versionName(); }
-      [[nodiscard]] decltype(auto) world() { return impl_.world(); }
-      [[nodiscard]] decltype(auto) world() const { return impl_.world(); }
-      [[nodiscard]] decltype(auto) assets() { return impl_.assets(); }
-      [[nodiscard]] decltype(auto) gui() { return impl_.gui(); }
+      [[nodiscard]] World world() { return World{impl_.world()}; }
+      [[nodiscard]] World world() const { return World{const_cast<Impl &>(impl_).world()}; }
+      [[nodiscard]] AssetSystem assets() { return AssetSystem{impl_.assets()}; }
       [[nodiscard]] decltype(auto) ecs() { return impl_.ecs(); }
 
       [[nodiscard]] std::expected<void, Error> init() { return impl_.init(); }
@@ -106,6 +103,14 @@ export namespace vve {
 
    private:
       using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Engine<TSystems...>;
+
+      static VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Windows implementationOption(WindowSetups option) {
+         return option;
+      }
+
+      template <typename TOption> static decltype(auto) implementationOption(TOption &&option) {
+         return std::forward<TOption>(option);
+      }
 
       Impl impl_{};
    }; ///< Facade engine template.

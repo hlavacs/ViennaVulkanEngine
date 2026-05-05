@@ -123,15 +123,17 @@ public:
             return std::unexpected(scene_handle.error());
         }
 
-        const auto& catalog = assets_.catalog();
-        const auto* scene = catalog.scenes.find(*scene_handle);
-        if (scene == nullptr) {
+        if (!assets_.containsScene(*scene_handle)) {
             return std::unexpected(vve::Error::missing_object);
+        }
+        const auto scene_name = assets_.sceneName(*scene_handle);
+        if (!scene_name) {
+            return std::unexpected(scene_name.error());
         }
 
         std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value()
-                  << " name=" << scene->name.value << '\n';
-        printSceneInventory(catalog, *scene);
+                  << " name=" << scene_name->value << '\n';
+        printSceneInventory(*scene_handle);
         std::cout << '[' << name() << "] v4 resource upload and rendering are not implemented yet\n";
         printWindowInventory(world);
         return {};
@@ -140,7 +142,7 @@ public:
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> update(
         TWorld&,
         const vve::FrameContext& frame_context,
-        const vve::WindowFrameData&) {
+        const auto&) {
         if (!frame_loop_logged_ && frame_context.frame_index.value > 0) {
             std::cout << '[' << name() << "] frame loop active; close the window to exit\n";
             frame_loop_logged_ = true;
@@ -163,68 +165,19 @@ private:
         std::cout << '\n';
     }
 
-    template <typename TCatalog, typename TScene> void printSceneInventory(const TCatalog& catalog, const TScene& scene) const {
-        std::cout << '[' << name() << "] counts: nodes=" << scene.nodes.size()
-                  << " meshes=" << scene.meshes.size()
-                  << " materials=" << scene.materials.size()
-                  << " textures=" << scene.textures.size()
-                  << " lights=" << scene.lights.size()
-                  << " cameras=" << scene.cameras.size() << '\n';
-        printMeshes(catalog, scene.meshes);
-        printTextures(catalog, scene.textures);
-        printLights(catalog, scene.lights);
-        printCameras(catalog, scene.cameras);
-    }
-
-    template <typename TCatalog, typename THandles> void printMeshes(const TCatalog& catalog, const THandles& handles) const {
-        std::cout << '[' << name() << "] meshes:\n";
-        for (const auto handle : handles) {
-            const auto* mesh = catalog.meshes.find(handle);
-            if (mesh == nullptr) {
-                continue;
-            }
-            std::cout << "  mesh " << mesh->handle.value() << " name=" << mesh->name.value
-                      << " vertices=" << mesh->vertex_count.value
-                      << " indices=" << mesh->index_count.value
-                      << " material=" << mesh->material.value() << '\n';
-        }
-    }
-
-    template <typename TCatalog, typename THandles> void printTextures(const TCatalog& catalog, const THandles& handles) const {
-        std::cout << '[' << name() << "] textures:\n";
-        for (const auto handle : handles) {
-            const auto* texture = catalog.textures.find(handle);
-            if (texture == nullptr) {
-                continue;
-            }
-            std::cout << "  texture " << texture->handle.value() << " name=" << texture->name.value
-                      << " source=" << texture->source.string()
-                      << " size=" << texture->extent.width << 'x' << texture->extent.height << '\n';
-        }
-    }
-
-    template <typename TCatalog, typename THandles> void printLights(const TCatalog& catalog, const THandles& handles) const {
-        std::cout << '[' << name() << "] lights:\n";
-        for (const auto handle : handles) {
-            const auto* light = catalog.lights.find(handle);
-            if (light == nullptr) {
-                continue;
-            }
-            std::cout << "  light " << light->handle.value() << " name=" << light->name.value
-                      << " intensity=" << light->intensity.value << '\n';
-        }
-    }
-
-    template <typename TCatalog, typename THandles> void printCameras(const TCatalog& catalog, const THandles& handles) const {
-        std::cout << '[' << name() << "] cameras:\n";
-        for (const auto handle : handles) {
-            const auto* camera = catalog.cameras.find(handle);
-            if (camera == nullptr) {
-                continue;
-            }
-            std::cout << "  camera " << camera->handle.value() << " name=" << camera->name.value
-                      << " near=" << camera->clip.near_plane << " far=" << camera->clip.far_plane << '\n';
-        }
+    void printSceneInventory(vve::SceneHandle scene) const {
+        const auto nodes = assets_.sceneNodeCount(scene).value_or(0);
+        const auto meshes = assets_.sceneMeshCount(scene).value_or(0);
+        const auto materials = assets_.sceneMaterialCount(scene).value_or(0);
+        const auto textures = assets_.sceneTextureCount(scene).value_or(0);
+        const auto lights = assets_.sceneLightCount(scene).value_or(0);
+        const auto cameras = assets_.sceneCameraCount(scene).value_or(0);
+        std::cout << '[' << name() << "] counts: nodes=" << nodes
+                  << " meshes=" << meshes
+                  << " materials=" << materials
+                  << " textures=" << textures
+                  << " lights=" << lights
+                  << " cameras=" << cameras << '\n';
     }
 
     std::filesystem::path scene_path_{}; ///< Resolved Sponza file imported during init().
@@ -251,18 +204,14 @@ int main(int argc, char** argv) {
     auto engine = vve::makeEngine(
         vve::ApplicationName{"sponza"},
         vve::makeUserSystems(SponzaRuntimeStubSystem{*scene_path}),
-        vve::Windows{
-            .value = {
-                vve::WindowDesc{
-                    .id = "sponza.main",
-                    .title = "VVE Sponza",
-                    .extent = vve::PixelExtent{.width = 960, .height = 540},
-                    .renderer_id = vve::RendererId{.value = "forward"},
-                    .resizable = true,
-                    .visible = true
-                }
-            }
-        });
+        vve::WindowSetups{
+            vve::WindowSetup{}
+                .id("sponza.main")
+                .title("VVE Sponza")
+                .extent(vve::PixelExtent{.width = 960, .height = 540})
+                .renderer(vve::RendererId{.value = "forward"})
+                .resizable(true)
+                .visible(true)});
 
     if (const auto init_result = engine.init(); !init_result) {
         std::cerr << "[sponza] engine.init failed: " << vve::errorName(init_result.error()) << '\n';

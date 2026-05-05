@@ -43,7 +43,6 @@ target_sources(ViennaVulkanEngine
             Handle.ixx
             Vector.ixx
             Types.ixx
-            Graph.ixx
             ECS.ixx
             Window.ixx
             World.ixx

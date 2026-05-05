@@ -38,7 +38,7 @@ public:
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> update(
         TWorld& world,
         const vve::FrameContext& frame_context,
-        const vve::WindowFrameData&) {
+        const auto&) {
         const auto& input = world.input();
         if (input.isKeyDown('A') || input.isKeyDown('a')) {
             body_x_ -= 120.0 * frame_context.delta_time.seconds;
@@ -101,18 +101,14 @@ int main(int, char **) {
     auto engine = vve::makeEngine( // execution. Physics itself is expected to arrive through a user system.
         vve::ApplicationName{"physics"},
         vve::makeUserSystems(PhysicsShellSystem{}),
-        vve::Windows{
-            .value = {
-                vve::WindowDesc{
-                    .id = "physics.main",
-                    .title = "VVE Physics Sandbox",
-                    .extent = vve::PixelExtent{.width = 800, .height = 450},
-                    .renderer_id = vve::RendererId{.value = "forward"},
-                    .resizable = true,
-                    .visible = true
-                }
-            }
-        });
+        vve::WindowSetups{
+            vve::WindowSetup{}
+                .id("physics.main")
+                .title("VVE Physics Sandbox")
+                .extent(vve::PixelExtent{.width = 800, .height = 450})
+                .renderer(vve::RendererId{.value = "forward"})
+                .resizable(true)
+                .visible(true)});
 
     if (const auto init_result = engine.init(); !init_result) {
         std::cerr << "[physics] engine.init failed: " << vve::errorName(init_result.error()) << '\n';

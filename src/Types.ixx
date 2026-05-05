@@ -98,6 +98,36 @@ export namespace vve {
       std::uint64_t value{0}; ///< Wrapped frame count.
    };
 
+   /// @brief Human-readable application name selected by the user program.
+   struct ApplicationName {
+      std::string value{"v4"}; ///< Name shown in diagnostics and default window titles.
+   };
+
+   /// @brief Optional frame cap; zero lets the engine run until a close request.
+   struct MaxFrames {
+      FrameCount value{}; ///< Maximum number of step() calls.
+   };
+
+   /// @brief Per-frame timing context passed to user systems.
+   struct FrameContext {
+      FrameCount frame_index{}; ///< Zero-based frame index.
+      DeltaTime delta_time{};   ///< Time elapsed since the previous frame.
+   };
+
+   /// @brief Compact engine configuration kept for simple setup paths.
+   struct EngineConfig {
+      std::string application_name{"v4"}; ///< Human-readable application name.
+      FrameCount max_frames{};            ///< Maximum frame count; zero means uncapped.
+   };
+
+   /// @brief Result of one engine frame.
+   enum class FrameStatus {
+      running,                    ///< Engine can continue stepping.
+      stopped,                    ///< Engine stopped because a close request or frame cap was reached.
+      continue_running = running, ///< Compatibility spelling for running.
+      should_close     = stopped  ///< Compatibility spelling for stopped.
+   };
+
    /// @brief Strong wrapper for source vertex counts.
    struct VertexCount {
       std::uint64_t value{0}; ///< Wrapped vertex count.

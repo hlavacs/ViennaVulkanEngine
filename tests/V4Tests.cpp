@@ -28,9 +28,9 @@ struct CountingSystem {
                                      : std::expected<void, vve::Error>{};
    }
 
-   template <typename TWorld>
+   template <typename TWorld, typename TWindowFrame>
    std::expected<void, vve::Error> update(TWorld &, const vve::FrameContext &frame,
-                                          const vve::WindowFrameData &window_frame) {
+                                          const TWindowFrame &window_frame) {
       if (update_count != nullptr) {
          ++*update_count;
       }
@@ -280,18 +280,10 @@ struct CountingSystem {
                                                   .name = ObjectName{.value = "camera"},
                                                   .fov_y = FovY{.radians = 0.8F},
                                                   .clip = ClipPlanes{.near_plane = 0.2F, .far_plane = 200.0F}};
-   auto tree = Tree{};
-   tree.setRoot(node);
-   tree.addChild(node, child);
-
-   const auto [first_child, last_child] = tree.childRange(node);
    if (mesh_descriptor.material != material ||
        material_descriptor.textures.front().texture != texture ||
        node_descriptor.meshes.front().mesh != mesh ||
-       child_descriptor.handle != child ||
-       tree.root() != node ||
-       first_child == last_child ||
-       first_child->second != child) {
+       child_descriptor.handle != child) {
       return 38;
    }
    if (texture_descriptor.extent.width != 1024 || !nearly(light_descriptor.intensity.value, 4.0F) ||
@@ -343,105 +335,14 @@ struct CountingSystem {
    if (!world.ecs().exists(ecs_entity)) {
       return 67;
    }
-   world.windows().push_back(WindowInfo{.handle = window, .id = "main", .title = "test"});
    const auto entity = world.spawn(Transform{}, Velocity{2.0F});
    const auto camera = world.spawn(Camera{});
-   if (!entity || !camera || world.findWindow("main") == nullptr) {
+   if (!entity || !camera || world.windowCount() != 0 || world.findWindow("main").has_value()) {
       return 64;
    }
    const auto velocity = world.getComponent<Velocity>(*entity);
    if (!velocity || !velocity->has_value() || !nearly((*velocity)->x, 2.0F)) {
       return 65;
-   }
-   const auto main_camera = world.setWindowCamera("main", *camera) ? world.windowCamera("main")
-                                                                   : std::optional<Entity>{};
-   if (!main_camera || *main_camera != *camera) {
-      return 66;
-   }
-   if (!world.clearWindowCamera(window) || world.windowCamera(window).has_value()) {
-      return 68;
-   }
-   const auto active_camera = world.setActiveCamera(*camera) ? world.activeCamera() : std::optional<Entity>{};
-   if (!active_camera || *active_camera != *camera) {
-      return 69;
-   }
-   return 0;
-}
-
-[[nodiscard]] int testGraphTopologicalOrder() {
-   using namespace vve;
-
-   const auto a = makeHandleForTest<NodeHandle>(300);
-   const auto b = makeHandleForTest<NodeHandle>(301);
-   const auto c = makeHandleForTest<NodeHandle>(302);
-   const auto d = makeHandleForTest<NodeHandle>(303);
-
-   Graph<NodeHandle> graph{};
-   graph.addEdge(a, c);
-   graph.addEdge(b, c);
-   graph.addEdge(c, d);
-   const auto [incoming_c, incoming_c_end] = graph.parentRange(c);
-   bool has_a_parent = false;
-   bool has_b_parent = false;
-   for (auto it = incoming_c; it != incoming_c_end; ++it) {
-      has_a_parent = has_a_parent || it->second == a;
-      has_b_parent = has_b_parent || it->second == b;
-   }
-   if (!has_a_parent || !has_b_parent) {
-      return 88;
-   }
-   const auto ordered = graph.topologicalOrder(Vector<NodeHandle>{a, b, c, d});
-   if (!ordered || ordered->size() != 4 || ordered->at(0) != a || ordered->at(1) != b ||
-       ordered->at(2) != c || ordered->at(3) != d) {
-      return 75;
-   }
-
-   Graph<NodeHandle> cyclic{};
-   cyclic.addEdge(a, b);
-   cyclic.addEdge(b, a);
-   const auto cycle = cyclic.topologicalOrder(Vector<NodeHandle>{a, b});
-   if (cycle || cycle.error() != Error::cycle_detected) {
-      return 76;
-   }
-
-   Graph<NodeHandle> missing_node{};
-   missing_node.addEdge(a, b);
-   const auto missing = missing_node.topologicalOrder(Vector<NodeHandle>{a});
-   if (missing || missing.error() != Error::missing_object) {
-      return 77;
-   }
-
-   Graph<NodeHandle> invalid_node{};
-   const auto invalid = invalid_node.topologicalOrder(Vector<NodeHandle>{NodeHandle{}});
-   if (invalid || invalid.error() != Error::invalid_handle) {
-      return 78;
-   }
-
-   graph.removeNode(c);
-   const auto after_remove = graph.topologicalOrder(Vector<NodeHandle>{a, b, d});
-   if (!after_remove || after_remove->size() != 3 ||
-       after_remove->at(0) != a || after_remove->at(1) != b || after_remove->at(2) != d) {
-      return 83;
-   }
-
-   BasicTree<NodeHandle> tree{};
-   tree.setRoot(a);
-   tree.addChild(a, b);
-   tree.addChild(b, c);
-   const auto parent_b = tree.parentOf(b);
-   const auto parent_c = tree.parentOf(c);
-   if (!parent_b || !parent_c || *parent_b != a || *parent_c != b) {
-      return 89;
-   }
-   tree.removeNode(b);
-   const auto [root_child, root_child_end] = tree.childRange(a);
-   const auto [removed_child, removed_child_end] = tree.childRange(b);
-   if (root_child != root_child_end || removed_child != removed_child_end || tree.root() != a) {
-      return 84;
-   }
-   tree.removeNode(a);
-   if (tree.root().valid()) {
-      return 85;
    }
    return 0;
 }
@@ -467,18 +368,20 @@ struct CountingSystem {
    if (!scene_handle) {
       return 70;
    }
-   const auto *scene = assets.catalog().scenes.find(*scene_handle);
-   if (scene == nullptr || !scene->tree.root.valid() || scene->nodes.empty() || scene->meshes.empty()) {
+   const auto scene_name = assets.sceneName(*scene_handle);
+   const auto node_count = assets.sceneNodeCount(*scene_handle);
+   const auto mesh_count = assets.sceneMeshCount(*scene_handle);
+   const auto material_count = assets.sceneMaterialCount(*scene_handle);
+   if (!assets.containsScene(*scene_handle) || !scene_name || scene_name->value != path.filename().string()) {
       return 71;
    }
-   const auto *mesh = assets.catalog().meshes.find(scene->meshes.front());
-   if (mesh == nullptr || mesh->vertex_count.value != 3 || mesh->index_count.value != 3) {
+   if (!node_count || *node_count == 0 || !mesh_count || *mesh_count == 0) {
       return 72;
    }
-   if (mesh->material.valid() && assets.catalog().materials.find(mesh->material) == nullptr) {
+   if (!material_count || *material_count == 0) {
       return 73;
    }
-   if (assets.catalog().nodes.find(scene->tree.root) == nullptr) {
+   if (assets.containsScene(SceneHandle{})) {
       return 74;
    }
    return 0;
@@ -492,18 +395,18 @@ struct CountingSystem {
    std::uint64_t last_frame = 99;
    auto engine = makeEngine(ApplicationName{"test"},
                             MaxFrames{.value = FrameCount{.value = 2}},
-                            Windows{.value = {WindowDesc{.id = "main",
-                                                          .title = "hidden",
-                                                          .extent = PixelExtent{.width = 64, .height = 64},
-                                                          .x = 20,
-                                                          .y = 20,
-                                                          .visible = false},
-                                               WindowDesc{.id = "tools",
-                                                          .title = "hidden-tools",
-                                                          .extent = PixelExtent{.width = 64, .height = 64},
-                                                          .x = 100,
-                                                          .y = 20,
-                                                          .visible = false}}},
+                            WindowSetups{WindowSetup{}
+                                            .id("main")
+                                            .title("hidden")
+                                            .extent(PixelExtent{.width = 64, .height = 64})
+                                            .position(20, 20)
+                                            .visible(false),
+                                         WindowSetup{}
+                                            .id("tools")
+                                            .title("hidden-tools")
+                                            .extent(PixelExtent{.width = 64, .height = 64})
+                                            .position(100, 20)
+                                            .visible(false)},
                             makeUserSystems(CountingSystem{.init_count = &init_count,
                                                            .update_count = &update_count,
                                                            .last_frame = &last_frame}));
@@ -521,22 +424,18 @@ struct CountingSystem {
       return 57;
    }
    const auto scene = engine.assets().addScene(ObjectName{.value = "stub"});
-   if (!scene || !scene->isCounter() || engine.assets().catalog().scenes.find(*scene) == nullptr) {
+   if (!scene || !scene->isCounter() || !engine.assets().containsScene(*scene)) {
       return 42;
-   }
-   const auto label = engine.gui().label("hello");
-   if (!label || engine.gui().find(*label) == nullptr) {
-      return 50;
    }
    const auto first = engine.step();
    const auto second = engine.step();
    if (!first || !second || *first != FrameStatus::running || *second != FrameStatus::stopped) {
       return 51;
    }
-   if (init_count != 1 || update_count != 2 || last_frame != 1 || engine.world().findWindow("main") == nullptr) {
+   if (init_count != 1 || update_count != 2 || last_frame != 1 || !engine.world().findWindow("main")) {
       return 52;
    }
-   if (engine.world().windows().size() != 2 || engine.world().findWindow("tools") == nullptr) {
+   if (engine.world().windowCount() != 2 || !engine.world().findWindow("tools")) {
       return 53;
    }
    const auto main_camera = engine.world().windowCamera("main");
@@ -586,9 +485,6 @@ int main() {
       return result;
    }
    if (const int result = testInputAndWorld(); result != 0) {
-      return result;
-   }
-   if (const int result = testGraphTopologicalOrder(); result != 0) {
       return result;
    }
    if (const int result = testAssimpSceneImport(); result != 0) {

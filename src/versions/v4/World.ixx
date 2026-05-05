@@ -7,22 +7,6 @@ export import :ECS;
 
 export namespace vve::v4 {
 
-   /// @brief Human-readable application name used by the platform layer.
-   struct ApplicationName {
-      std::string value{"v4"}; ///< Name shown in diagnostics and default window titles.
-   };
-
-   /// @brief Optional frame cap; zero means the engine runs until a window asks to close.
-   struct MaxFrames {
-      FrameCount value{}; ///< Maximum number of step() calls before the engine stops.
-   };
-
-   /// @brief Per-step timing and frame index passed to user systems.
-   struct FrameContext {
-      FrameCount frame_index{}; ///< Zero-based frame index.
-      DeltaTime delta_time{};   ///< Elapsed wall-clock time since the previous frame.
-   };
-
    /// @brief Window creation descriptor kept deliberately close to v3's public shape.
    struct WindowDesc {
       std::string id{"main"};       ///< Stable application-local window id.
@@ -272,20 +256,6 @@ export namespace vve::v4 {
       InputState input_{};
       Vector<WindowInfo> windows_{};
       std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> scene_loader_{};
-   };
-
-   /// @brief Backward-compatible compact config; typed options are preferred for new examples.
-   struct EngineConfig {
-      std::string application_name{"v4"}; ///< Human-readable application name.
-      FrameCount max_frames{};            ///< Zero means no frame limit.
-   };
-
-   /// @brief Result of one engine frame.
-   enum class FrameStatus {
-      running,                    ///< Engine can continue stepping.
-      stopped,                    ///< Engine stopped because a close request or frame cap was reached.
-      continue_running = running, ///< Alias kept close to v3-style wording.
-      should_close     = stopped  ///< Alias kept close to v3-style wording.
    };
 
    /// @brief Heterogeneous user-system storage used by makeEngine().

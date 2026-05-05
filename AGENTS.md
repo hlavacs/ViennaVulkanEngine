@@ -41,11 +41,12 @@ Engine implementations must expose specific subsystems with the enforced interfa
 - Vector: a basic vector like data container, requires iterators.
 - Engine: This is created by the user app and handles main frame events.
 - ECS: an Entity Component System that can hold entities with any data type.
-- Assets: Management of any 3D or audio related resource on a high abstract level.
 - Window: Window information like number, renderer, camera, size.
+- Assets: A wrapper over the internal asset system. The wrapper exposes specific public functions that enable users to load from disk and purge assets, create objects. 
+- GUI: wrapper over the GUI system implementation. The wrapper offers public hooks for creating widgets. Must work with ImGUI. 
 - World: main interface for user interaction with the world. Its API must offer enough member functions
 to access and change all world, scene and asset data without exposing internal descriptor types like
-SceneDescriptor or ObjectCatalogue. 
+SceneDescriptor or ObjectCatalogue. It allows for retrieving windows, the asset and GUI wrappers, 
 
 Additionally the facade defines numerous low level structs for storing pure data, like Position, 
 Velocity, Orientation, etc. These must be used in the engine implementations accordingly and are typical data structures used in game engines.

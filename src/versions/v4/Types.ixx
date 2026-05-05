@@ -36,6 +36,12 @@ export namespace vve::v4 {
    using LightHandle    = vve::LightHandle;    ///< v4 light descriptor handle contract.
    using CameraHandle   = vve::CameraHandle;   ///< v4 imported-camera descriptor handle contract.
 
+   using ApplicationName = vve::ApplicationName; ///< v4 app-name contract.
+   using EngineConfig    = vve::EngineConfig;    ///< v4 compact engine config contract.
+   using FrameContext    = vve::FrameContext;    ///< v4 frame context contract.
+   using FrameStatus     = vve::FrameStatus;     ///< v4 frame status contract.
+   using MaxFrames       = vve::MaxFrames;       ///< v4 frame-cap option contract.
+
    using Tree = BasicTree<NodeHandle>; ///< v4 scene-tree topology.
 
    using ResourceHandle  = TypedHandle<decltype([] {})>; ///< v4-internal resource handle.
