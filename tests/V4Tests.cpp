@@ -242,58 +242,6 @@ struct CountingSystem {
    return 0;
 }
 
-[[nodiscard]] int testDescriptorCatalog() {
-   using namespace vve;
-
-   const auto node = makeHandleForTest<NodeHandle>(101);
-   const auto child = makeHandleForTest<NodeHandle>(102);
-   const auto mesh = makeHandleForTest<MeshHandle>(103);
-   const auto material = makeHandleForTest<MaterialHandle>(104);
-   const auto texture = makeHandleForTest<TextureHandle>(105);
-   const auto light = makeHandleForTest<LightHandle>(106);
-   const auto camera = makeHandleForTest<CameraHandle>(107);
-
-   const auto texture_descriptor = TextureDescriptor{.handle = texture,
-                                                     .name = ObjectName{.value = "stone"},
-                                                     .source = "stone.png",
-                                                     .extent = PixelExtent{.width = 1024, .height = 512},
-                                                     .channels = TextureChannelCount{.value = 4}};
-   const auto material_descriptor = MaterialDescriptor{
-      .handle = material,
-      .name = ObjectName{.value = "stone_mat"},
-      .textures = {TextureBinding{.texture = texture, .semantic = TextureSemantic::base_color}}};
-   const auto mesh_descriptor = MeshDescriptor{.handle = mesh,
-                                              .name = ObjectName{.value = "arch"},
-                                              .vertex_count = VertexCount{.value = 3},
-                                              .index_count = IndexCount{.value = 3},
-                                              .material = material};
-   const auto node_descriptor = NodeDescriptor{
-      .handle = node,
-      .name = ObjectName{.value = "root"},
-      .meshes = {MeshUse{.mesh = mesh, .material = material}}};
-   const auto child_descriptor = NodeDescriptor{.handle = child, .name = ObjectName{.value = "child"}};
-   const auto light_descriptor = LightDescriptor{.handle = light,
-                                                .name = ObjectName{.value = "sun"},
-                                                .kind = LightKind::directional,
-                                                .color = LinearColor{.value = Vec3{0.9F, 0.8F, 0.7F}},
-                                                .intensity = LightIntensity{.value = 4.0F}};
-   const auto camera_descriptor = CameraDescriptor{.handle = camera,
-                                                  .name = ObjectName{.value = "camera"},
-                                                  .fov_y = FovY{.radians = 0.8F},
-                                                  .clip = ClipPlanes{.near_plane = 0.2F, .far_plane = 200.0F}};
-   if (mesh_descriptor.material != material ||
-       material_descriptor.textures.front().texture != texture ||
-       node_descriptor.meshes.front().mesh != mesh ||
-       child_descriptor.handle != child) {
-      return 38;
-   }
-   if (texture_descriptor.extent.width != 1024 || !nearly(light_descriptor.intensity.value, 4.0F) ||
-       !nearly(camera_descriptor.clip.near_plane, 0.2F)) {
-      return 29;
-   }
-   return 0;
-}
-
 [[nodiscard]] int testInputAndWorld() {
    using namespace vve;
 
@@ -481,9 +429,6 @@ int main() {
       return result;
    }
    if (const int result = testECS(); result != 0) {
-      return result;
-   }
-   if (const int result = testDescriptorCatalog(); result != 0) {
       return result;
    }
    if (const int result = testInputAndWorld(); result != 0) {

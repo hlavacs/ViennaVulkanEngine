@@ -139,9 +139,6 @@ export namespace vve {
       }
       [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera) { return impl_.setActiveCamera(camera); }
       [[nodiscard]] std::optional<Entity> activeCamera() const { return impl_.activeCamera(); }
-      void setSceneLoader(std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> loader) {
-         impl_.setSceneLoader(std::move(loader));
-      }
       [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &path) {
          return impl_.loadScene(path);
       }

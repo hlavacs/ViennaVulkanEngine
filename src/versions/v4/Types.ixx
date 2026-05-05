@@ -58,7 +58,6 @@ export namespace vve::v4 {
    using vve::FrameCount;          ///< Public frame-count contract.
    using vve::IndexCount;          ///< Public index-count contract.
    using vve::LightIntensity;      ///< Public light-intensity contract.
-   using vve::LightKind;           ///< Public light-kind contract.
    using vve::LinearColor;         ///< Public linear-color contract.
    using vve::ObjectName;          ///< Public object-name contract.
    using vve::PixelExtent;         ///< Public pixel-extent contract.
@@ -67,17 +66,101 @@ export namespace vve::v4 {
    using vve::Rotation;            ///< Public rotation contract.
    using vve::Scale;               ///< Public scale contract.
    using vve::TextureChannelCount; ///< Public texture-channel-count contract.
-   using vve::TextureBinding;      ///< Public texture binding contract.
-   using vve::TextureDescriptor;   ///< Public texture descriptor contract.
-   using vve::TextureSemantic;     ///< Public texture semantic contract.
    using vve::Transform;           ///< Public transform contract.
    using vve::VertexCount;         ///< Public vertex-count contract.
-   using vve::CameraDescriptor;   ///< Public camera descriptor contract.
-   using vve::LightDescriptor;    ///< Public light descriptor contract.
-   using vve::MaterialDescriptor; ///< Public material descriptor contract.
-   using vve::MeshDescriptor;     ///< Public mesh descriptor contract.
-   using vve::MeshUse;            ///< Public mesh use contract.
-   using vve::NodeDescriptor;     ///< Public node descriptor contract.
+
+   /// @brief Internal material texture slot meaning for imported assets.
+   enum class TextureSemantic {
+      unknown,    ///< Unclassified texture use.
+      base_color, ///< Color/albedo texture.
+      normal,     ///< Tangent-space normal texture.
+      roughness,  ///< Roughness texture.
+      metallic,   ///< Metallic texture.
+      emissive,   ///< Emissive texture.
+      occlusion   ///< Ambient-occlusion texture.
+   };
+
+   /// @brief Internal imported-light shape classification.
+   enum class LightKind {
+      unknown,     ///< Unclassified light.
+      directional, ///< Direction-only light such as the sun.
+      point,       ///< Point light with position.
+      spot         ///< Spot light with position and direction.
+   };
+
+   /// @brief Internal material reference to one texture descriptor.
+   struct TextureBinding {
+      TextureHandle texture{};                            ///< Referenced texture handle.
+      TextureSemantic semantic{TextureSemantic::unknown}; ///< Intended material slot.
+      std::uint32_t uv_set{0};                            ///< UV channel used by the texture.
+   };
+
+   /// @brief Internal scene node reference to renderable geometry and material.
+   struct MeshUse {
+      MeshHandle mesh{};         ///< Referenced mesh handle.
+      MaterialHandle material{}; ///< Referenced material handle.
+   };
+
+   /// @brief Internal scene graph node descriptor stored by handle in the object catalog.
+   struct NodeDescriptor {
+      using HandleType = NodeHandle; ///< Descriptor handle type.
+      NodeHandle handle{};           ///< Stable node handle.
+      ObjectName name{};             ///< Human-readable node name.
+      Transform transform{};         ///< Local transform.
+      Vector<MeshUse> meshes{};      ///< Mesh/material pairs attached to this node.
+   };
+
+   /// @brief Internal mesh geometry descriptor; actual vertex buffers are implementation work.
+   struct MeshDescriptor {
+      using HandleType = MeshHandle; ///< Descriptor handle type.
+      MeshHandle handle{};           ///< Stable mesh handle.
+      ObjectName name{};             ///< Human-readable mesh name.
+      VertexCount vertex_count{};    ///< Number of vertices in source geometry.
+      IndexCount index_count{};      ///< Number of indices in source geometry.
+      MaterialHandle material{};     ///< Default material handle.
+      Bounds bounds{};               ///< Object-space bounds.
+   };
+
+   /// @brief Internal material descriptor referencing textures by handle.
+   struct MaterialDescriptor {
+      using HandleType = MaterialHandle; ///< Descriptor handle type.
+      MaterialHandle handle{};           ///< Stable material handle.
+      ObjectName name{};                 ///< Human-readable material name.
+      Vector<TextureBinding> textures{}; ///< Texture slots used by this material.
+   };
+
+   /// @brief Internal texture descriptor; pixel storage and GPU upload are implementation work.
+   struct TextureDescriptor {
+      using HandleType = TextureHandle;    ///< Descriptor handle type.
+      TextureHandle handle{};              ///< Stable texture handle.
+      ObjectName name{};                   ///< Human-readable texture name.
+      std::filesystem::path source{};      ///< Source file path or logical asset path.
+      PixelExtent extent{};                ///< Source dimensions in pixels.
+      TextureChannelCount channels{};      ///< Source channel count.
+   };
+
+   /// @brief Internal imported-light descriptor.
+   struct LightDescriptor {
+      using HandleType = LightHandle;     ///< Descriptor handle type.
+      LightHandle handle{};               ///< Stable light handle.
+      ObjectName name{};                  ///< Human-readable light name.
+      LightKind kind{LightKind::unknown}; ///< Light shape.
+      Position position{};                ///< Light position for point/spot lights.
+      Direction direction{};              ///< Light direction for directional/spot lights.
+      LinearColor color{};                ///< Linear light color.
+      LightIntensity intensity{};         ///< Relative light intensity.
+   };
+
+   /// @brief Internal imported-camera descriptor.
+   struct CameraDescriptor {
+      using HandleType = CameraHandle; ///< Descriptor handle type.
+      CameraHandle handle{};           ///< Stable camera handle.
+      ObjectName name{};               ///< Human-readable camera name.
+      Position position{};             ///< Camera position.
+      Direction forward{};             ///< Camera forward direction.
+      FovY fov_y{};                    ///< Vertical field of view.
+      ClipPlanes clip{};               ///< Near and far clipping planes.
+   };
 
    /// @brief Scene descriptor stores handles to objects kept in the v4 object catalog.
    struct SceneDescriptor {
