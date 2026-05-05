@@ -25,18 +25,31 @@ export namespace vve::v4 {
 
    using TaskHandle = TypedHandle<decltype([] {})>; ///< v4 CPU task graph node handle.
 
-   /// @brief A scheduled unit of CPU work.
-   struct TaskNode {
-      using HandleType = TaskHandle; ///< Descriptor handle type.
+} // namespace vve::v4
+
+namespace vve::v4 {
+
+   /// @brief Internal scheduled unit of CPU work.
+   struct TaskRecord {
+      using HandleType = TaskHandle; ///< Table handle type.
       TaskHandle handle{};           ///< Stable task handle.
-      std::string name{};            ///< Human-readable task name.
+      ObjectName name{};             ///< Human-readable task name.
    };
+
+} // namespace vve::v4
+
+export namespace vve::v4 {
 
    /// @brief Minimal task graph table.
    class TaskGraph {
    public:
-      /// @brief Adds a task node.
-      [[nodiscard]] std::expected<void, Error> add(TaskNode node) { return tasks_.add(std::move(node)); }
+      /// @brief Adds a task and returns its handle.
+      [[nodiscard]] std::expected<TaskHandle, Error> addTask(ObjectName name) {
+         const auto handle = makeCounterHandle<TaskHandle>();
+         auto added = tasks_.add(TaskRecord{.handle = handle, .name = std::move(name)});
+         if (!added) { return std::unexpected(added.error()); }
+         return handle;
+      }
 
       /// @brief Adds one directed task edge.
       void addEdge(TaskHandle from, TaskHandle to) { graph_.addEdge(from, to); }
@@ -48,8 +61,15 @@ export namespace vve::v4 {
          return {};
       }
 
-      /// @brief Finds a task by handle, or returns null.
-      [[nodiscard]] const TaskNode *find(TaskHandle handle) const { return tasks_.find(handle); }
+      /// @brief Returns whether a task exists.
+      [[nodiscard]] bool contains(TaskHandle handle) const { return tasks_.find(handle) != nullptr; }
+
+      /// @brief Returns the task name.
+      [[nodiscard]] std::expected<ObjectName, Error> taskName(TaskHandle handle) const {
+         const auto *task = tasks_.find(handle);
+         if (task == nullptr) { return std::unexpected(Error::missing_object); }
+         return task->name;
+      }
 
       /// @brief Returns tasks in dependency order and preserves isolated tasks.
       [[nodiscard]] std::expected<Vector<TaskHandle>, Error> topologicalOrder() const {
@@ -63,11 +83,11 @@ export namespace vve::v4 {
       [[nodiscard]] const Graph<TaskHandle> &graph() const { return graph_; }
 
       /// @brief Returns task count.
-      [[nodiscard]] std::size_t size() const { return tasks_.size(); }
+      [[nodiscard]] std::size_t taskCount() const { return tasks_.size(); }
 
    private:
-      detail::GraphNodeTable<TaskNode> tasks_{}; ///< Tasks by handle.
-      Graph<TaskHandle> graph_{};                ///< Task dependency edges.
+      detail::GraphNodeTable<TaskRecord> tasks_{}; ///< Tasks by handle.
+      Graph<TaskHandle> graph_{};                  ///< Task dependency edges.
    };
 
    namespace detail {
