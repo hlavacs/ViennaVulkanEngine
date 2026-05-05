@@ -44,9 +44,12 @@ Engine implementations must expose specific subsystems with the enforced interfa
 - Window: Window information like number, renderer, camera, size.
 - Assets: A wrapper over the internal asset system. The wrapper exposes specific public functions that enable users to load from disk and purge assets, create objects. 
 - GUI: wrapper over the GUI system implementation. The wrapper offers public hooks for creating widgets. Must work with ImGUI. 
-- World: main interface for user interaction with the world. Its API must offer enough member functions
-to access and change all world, scene and asset data without exposing internal descriptor types like
-SceneDescriptor or ObjectCatalogue. It allows for retrieving windows, the asset and GUI wrappers, 
+- World: main interface for user interaction with the world. 
+  - Its API must offer enough member functions to access and change all world, scene and asset data without exposing internal descriptor types like SceneDescriptor or ObjectCatalogue. 
+  - World contains references to: Asset wrapper, GUI wrapper, Engine wrapper, Windows wrapper. It allows for getting references to them.
+  - World wrapper is a run time binder that binds all necessary subsystem wrappers into one class.
+  - A reference to it can be obtained through a call to an Engine member function.
+  - The world wrapper is actually created by the Engine impementation, which creates a World wrapper over the actual World implementation.
 
 Additionally the facade defines numerous low level structs for storing pure data, like Position, 
 Velocity, Orientation, etc. These must be used in the engine implementations accordingly and are typical data structures used in game engines.

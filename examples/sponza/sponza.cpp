@@ -116,24 +116,14 @@ public:
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
         std::cout << '[' << name() << "] scene path: " << scene_path_.string() << '\n';
         std::cout << '[' << name() << "] v4 runtime shell is active\n";
-        const auto scene_handle = assets_.loadScene(scene_path_);
+        const auto scene_handle = world.loadScene(scene_path_);
         if (!scene_handle) {
             std::cerr << '[' << name() << "] Assimp import failed: "
                       << vve::errorName(scene_handle.error()) << '\n';
             return std::unexpected(scene_handle.error());
         }
 
-        if (!assets_.containsScene(*scene_handle)) {
-            return std::unexpected(vve::Error::missing_object);
-        }
-        const auto scene_name = assets_.sceneName(*scene_handle);
-        if (!scene_name) {
-            return std::unexpected(scene_name.error());
-        }
-
-        std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value()
-                  << " name=" << scene_name->value << '\n';
-        printSceneInventory(*scene_handle);
+        std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value() << '\n';
         std::cout << '[' << name() << "] v4 resource upload and rendering are not implemented yet\n";
         printWindowInventory(world);
         return {};
@@ -165,23 +155,7 @@ private:
         std::cout << '\n';
     }
 
-    void printSceneInventory(vve::SceneHandle scene) const {
-        const auto nodes = assets_.sceneNodeCount(scene).value_or(0);
-        const auto meshes = assets_.sceneMeshCount(scene).value_or(0);
-        const auto materials = assets_.sceneMaterialCount(scene).value_or(0);
-        const auto textures = assets_.sceneTextureCount(scene).value_or(0);
-        const auto lights = assets_.sceneLightCount(scene).value_or(0);
-        const auto cameras = assets_.sceneCameraCount(scene).value_or(0);
-        std::cout << '[' << name() << "] counts: nodes=" << nodes
-                  << " meshes=" << meshes
-                  << " materials=" << materials
-                  << " textures=" << textures
-                  << " lights=" << lights
-                  << " cameras=" << cameras << '\n';
-    }
-
     std::filesystem::path scene_path_{}; ///< Resolved Sponza file imported during init().
-    vve::AssetSystem assets_{};          ///< Import catalog accessed through the public facade.
     bool frame_loop_logged_{false};      ///< Keeps the runtime heartbeat to one line.
 };
 

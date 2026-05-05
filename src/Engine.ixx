@@ -18,6 +18,8 @@ export import VEEngine.Types;
 export import :ECS;
 export import :Window;
 export import :World;
+export import :Assets;
+export import :Gui;
 
 /// @file
 /// @brief Public engine facade; users import this module and use only namespace vve.
@@ -28,51 +30,6 @@ export namespace vve {
       VVE_DETAIL_STRINGIFY(VVE_ENGINE_IMPLEMENTATION_NAMESPACE)}; ///< Active implementation namespace name.
 
    template <typename... TSystems> class Engine;
-
-   class AssetSystem {
-      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::AssetSystem;
-
-   public:
-      AssetSystem() : impl_{std::make_shared<Impl>()} {}
-      explicit AssetSystem(Impl &implementation)
-         : impl_{std::shared_ptr<Impl>(std::addressof(implementation), [](Impl *) {})} {}
-      AssetSystem(const AssetSystem &) = delete;
-      AssetSystem(AssetSystem &&) noexcept = default;
-      AssetSystem &operator=(const AssetSystem &) = delete;
-      AssetSystem &operator=(AssetSystem &&) noexcept = default;
-
-      [[nodiscard]] std::expected<SceneHandle, Error> addScene(ObjectName name) {
-         return impl_->addScene(std::move(name));
-      }
-      [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &source) {
-         return impl_->loadScene(source);
-      }
-      [[nodiscard]] bool containsScene(SceneHandle scene) const { return impl_->containsScene(scene); }
-      [[nodiscard]] std::expected<ObjectName, Error> sceneName(SceneHandle scene) const {
-         return impl_->sceneName(scene);
-      }
-      [[nodiscard]] std::expected<std::size_t, Error> sceneNodeCount(SceneHandle scene) const {
-         return impl_->sceneNodeCount(scene);
-      }
-      [[nodiscard]] std::expected<std::size_t, Error> sceneMeshCount(SceneHandle scene) const {
-         return impl_->sceneMeshCount(scene);
-      }
-      [[nodiscard]] std::expected<std::size_t, Error> sceneMaterialCount(SceneHandle scene) const {
-         return impl_->sceneMaterialCount(scene);
-      }
-      [[nodiscard]] std::expected<std::size_t, Error> sceneTextureCount(SceneHandle scene) const {
-         return impl_->sceneTextureCount(scene);
-      }
-      [[nodiscard]] std::expected<std::size_t, Error> sceneLightCount(SceneHandle scene) const {
-         return impl_->sceneLightCount(scene);
-      }
-      [[nodiscard]] std::expected<std::size_t, Error> sceneCameraCount(SceneHandle scene) const {
-         return impl_->sceneCameraCount(scene);
-      }
-
-   private:
-      std::shared_ptr<Impl> impl_{};
-   }; ///< Public asset importer.
 
    template <typename... TSystems> class Engine {
    public:
@@ -95,6 +52,7 @@ export namespace vve {
       [[nodiscard]] World world() { return World{impl_.world()}; }
       [[nodiscard]] World world() const { return World{const_cast<Impl &>(impl_).world()}; }
       [[nodiscard]] AssetSystem assets() { return AssetSystem{impl_.assets()}; }
+      [[nodiscard]] GuiSystem gui() { return GuiSystem{impl_.gui()}; }
       [[nodiscard]] decltype(auto) ecs() { return impl_.ecs(); }
 
       [[nodiscard]] std::expected<void, Error> init() { return impl_.init(); }

@@ -360,7 +360,8 @@ struct CountingSystem {
            << "f 1 2 3\n";
    }
 
-   AssetSystem assets{};
+   auto engine = makeEngine(ApplicationName{"asset-import"});
+   auto assets = engine.assets();
    const auto scene_handle = assets.loadScene(path);
    std::error_code remove_error{};
    std::filesystem::remove(path, remove_error);
