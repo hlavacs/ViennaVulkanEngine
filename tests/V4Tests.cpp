@@ -206,7 +206,8 @@ struct CountingSystem {
 [[nodiscard]] int testECS() {
    using namespace vve;
 
-   ECS ecs{};
+   auto engine = makeEngine(ApplicationName{"ecs-test"});
+   auto ecs = engine.world().ecs();
    const auto entity = ecs.create();
    if (!entity.valid() || !entity.isCounter() || !ecs.exists(entity)) {
       return 20;

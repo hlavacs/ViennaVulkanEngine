@@ -86,8 +86,8 @@ export namespace vve {
       World &operator=(const World &) = delete;
       World &operator=(World &&) = delete;
 
-      [[nodiscard]] decltype(auto) ecs() { return impl_.ecs(); }
-      [[nodiscard]] decltype(auto) ecs() const { return impl_.ecs(); }
+      [[nodiscard]] ECS ecs() { return ECS{impl_.ecs()}; }
+      [[nodiscard]] ECS ecs() const { return ECS{const_cast<Impl &>(impl_).ecs()}; }
       [[nodiscard]] AssetSystem assets() { return AssetSystem{impl_.assets()}; }
       [[nodiscard]] GuiSystem gui() { return GuiSystem{impl_.gui()}; }
       [[nodiscard]] WindowSystem windowSystem() { return WindowSystem{impl_.windowSystem()}; }

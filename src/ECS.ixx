@@ -16,12 +16,14 @@ export namespace vve {
    class World;
 
    template <typename TTraits = DefaultECSTraits> class BasicECS {
+      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicECS<TTraits>;
+
    public:
-      BasicECS() = default;
+      explicit BasicECS(Impl &implementation) : impl_{implementation} {}
       BasicECS(const BasicECS &) = default;
       BasicECS(BasicECS &&) noexcept = default;
-      BasicECS &operator=(const BasicECS &) = default;
-      BasicECS &operator=(BasicECS &&) noexcept = default;
+      BasicECS &operator=(const BasicECS &) = delete;
+      BasicECS &operator=(BasicECS &&) noexcept = delete;
 
       [[nodiscard]] Entity create() { return impl_.create(); }
       [[nodiscard]] bool exists(Entity entity) const { return impl_.exists(entity); }
@@ -60,23 +62,23 @@ export namespace vve {
       }
 
    private:
-      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicECS<TTraits>;
-
       [[nodiscard]] Impl &impl() { return impl_; }
       [[nodiscard]] const Impl &impl() const { return impl_; }
 
-      Impl impl_{};
+      Impl &impl_;
 
       friend class World;
    }; ///< Facade ECS template.
 
    class ECS : public BasicECS<> {
+      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::ECS;
+
    public:
-      ECS() = default;
+      explicit ECS(Impl &implementation) : BasicECS<>{implementation} {}
       ECS(const ECS &) = default;
       ECS(ECS &&) noexcept = default;
-      ECS &operator=(const ECS &) = default;
-      ECS &operator=(ECS &&) noexcept = default;
+      ECS &operator=(const ECS &) = delete;
+      ECS &operator=(ECS &&) noexcept = delete;
    }; ///< Default facade ECS.
 
 } // namespace vve
