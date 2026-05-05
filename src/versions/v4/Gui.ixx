@@ -20,19 +20,22 @@ export namespace vve::v4 {
       /// @brief Adds a text label and returns its handle.
       [[nodiscard]] std::expected<GuiWidgetHandle, Error> label(std::string text) {
          const auto handle = makeCounterHandle<GuiWidgetHandle>();
-         auto added = widgets_.add(GuiWidget{.handle = handle, .label = std::move(text)});
-         if (!added) { return std::unexpected(added.error()); }
+         const auto [_, inserted] = widgets_.emplace(handle, GuiWidget{.handle = handle, .label = std::move(text)});
+         if (!inserted) { return std::unexpected(Error::duplicate_object); }
          return handle;
       }
 
       /// @brief Finds a widget by handle, or returns null.
-      [[nodiscard]] const GuiWidget *find(GuiWidgetHandle handle) const { return widgets_.find(handle); }
+      [[nodiscard]] const GuiWidget *find(GuiWidgetHandle handle) const {
+         const auto widget = widgets_.find(handle);
+         return widget == widgets_.end() ? nullptr : std::addressof(widget->second);
+      }
 
       /// @brief Returns widget count.
       [[nodiscard]] std::size_t size() const { return widgets_.size(); }
 
    private:
-      DescriptorMap<GuiWidget> widgets_{}; ///< Widgets by handle.
+      std::map<GuiWidgetHandle, GuiWidget> widgets_{}; ///< Widgets by handle.
    };
 
 } // namespace vve::v4

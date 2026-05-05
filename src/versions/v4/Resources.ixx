@@ -32,19 +32,23 @@ export namespace vve::v4 {
       /// @brief Adds a resource descriptor and returns its handle.
       [[nodiscard]] std::expected<ResourceHandle, Error> add(ResourceKind kind, ObjectName name) {
          auto handle = makeCounterHandle<ResourceHandle>();
-         auto added = resources_.add(ResourceDescriptor{.handle = handle, .kind = kind, .name = std::move(name)});
-         if (!added) { return std::unexpected(added.error()); }
+         const auto [_, inserted] = resources_.emplace(
+            handle, ResourceDescriptor{.handle = handle, .kind = kind, .name = std::move(name)});
+         if (!inserted) { return std::unexpected(Error::duplicate_object); }
          return handle;
       }
 
       /// @brief Finds a resource by handle, or returns null.
-      [[nodiscard]] const ResourceDescriptor *find(ResourceHandle handle) const { return resources_.find(handle); }
+      [[nodiscard]] const ResourceDescriptor *find(ResourceHandle handle) const {
+         const auto resource = resources_.find(handle);
+         return resource == resources_.end() ? nullptr : std::addressof(resource->second);
+      }
 
       /// @brief Returns the number of registered resources.
       [[nodiscard]] std::size_t size() const { return resources_.size(); }
 
    private:
-      DescriptorMap<ResourceDescriptor> resources_{}; ///< Resource descriptors by handle.
+      std::map<ResourceHandle, ResourceDescriptor> resources_{}; ///< Resource descriptors by handle.
    };
 
 } // namespace vve::v4

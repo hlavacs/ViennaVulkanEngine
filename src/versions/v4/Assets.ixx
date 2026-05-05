@@ -9,6 +9,7 @@ module;
 export module VEEngine.V4:Assets;
 import std;
 export import :Types;
+import :AssetTypes;
 
 /// @file
 /// @brief Assimp-backed v4 asset import into handle-addressable descriptors.

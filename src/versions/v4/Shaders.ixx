@@ -28,14 +28,19 @@ export namespace vve::v4 {
    public:
       /// @brief Adds a shader descriptor.
       [[nodiscard]] std::expected<void, Error> add(ShaderDescriptor shader) {
-         return shaders_.add(std::move(shader));
+         if (!shader.handle.valid()) { return std::unexpected(Error::invalid_handle); }
+         const auto [_, inserted] = shaders_.emplace(shader.handle, std::move(shader));
+         return inserted ? std::expected<void, Error>{} : std::unexpected(Error::duplicate_object);
       }
 
       /// @brief Finds a shader by handle, or returns null.
-      [[nodiscard]] const ShaderDescriptor *find(ShaderHandle handle) const { return shaders_.find(handle); }
+      [[nodiscard]] const ShaderDescriptor *find(ShaderHandle handle) const {
+         const auto shader = shaders_.find(handle);
+         return shader == shaders_.end() ? nullptr : std::addressof(shader->second);
+      }
 
    private:
-      DescriptorMap<ShaderDescriptor> shaders_{}; ///< Shader descriptors by handle.
+      std::map<ShaderHandle, ShaderDescriptor> shaders_{}; ///< Shader descriptors by handle.
    };
 
 } // namespace vve::v4
