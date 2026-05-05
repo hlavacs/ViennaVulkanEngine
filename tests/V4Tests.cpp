@@ -324,6 +324,9 @@ struct CountingSystem {
    const auto node_count = assets.sceneNodeCount(*scene_handle);
    const auto mesh_count = assets.sceneMeshCount(*scene_handle);
    const auto material_count = assets.sceneMaterialCount(*scene_handle);
+   const auto texture_count = assets.sceneTextureCount(*scene_handle);
+   const auto light_count = assets.sceneLightCount(*scene_handle);
+   const auto camera_count = assets.sceneCameraCount(*scene_handle);
    if (!assets.containsScene(*scene_handle) || !scene_name || scene_name->value != path.filename().string()) {
       return 71;
    }
@@ -333,8 +336,12 @@ struct CountingSystem {
    if (!material_count || *material_count == 0) {
       return 73;
    }
-   if (assets.containsScene(SceneHandle{})) {
+   if (!texture_count || !light_count || !camera_count || *texture_count != 0 || *light_count != 0 ||
+       *camera_count != 0) {
       return 74;
+   }
+   if (assets.containsScene(SceneHandle{}) || assets.sceneName(SceneHandle{})) {
+      return 75;
    }
    return 0;
 }
