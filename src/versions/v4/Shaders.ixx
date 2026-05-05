@@ -1,6 +1,6 @@
 export module VEEngine.V4:Shaders;
 import std;
-export import :Resources;
+export import :Types;
 
 /// @file
 /// @brief Stub shader descriptors; Slang compilation/reflection will plug in later.

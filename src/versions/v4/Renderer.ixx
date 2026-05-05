@@ -1,6 +1,6 @@
 export module VEEngine.V4:Renderer;
 import std;
-export import :Shaders;
+export import :Types;
 export import VEEngine.V4.Handle;
 
 /// @file
