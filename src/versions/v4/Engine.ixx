@@ -79,9 +79,6 @@ export namespace vve::v4 {
          return graph_.topologicalOrder(nodes);
       }
 
-      /// @brief Returns task graph topology.
-      [[nodiscard]] const Graph<TaskHandle> &graph() const { return graph_; }
-
       /// @brief Returns task count.
       [[nodiscard]] std::size_t taskCount() const { return tasks_.size(); }
 

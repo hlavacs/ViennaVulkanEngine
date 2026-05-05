@@ -65,9 +65,6 @@ export namespace vve::v4 {
          return graph_.topologicalOrder(nodes);
       }
 
-      /// @brief Returns render graph topology.
-      [[nodiscard]] const Graph<RenderPassHandle> &graph() const { return graph_; }
-
       /// @brief Returns render pass count.
       [[nodiscard]] std::size_t passCount() const { return passes_.size(); }
 
