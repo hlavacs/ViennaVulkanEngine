@@ -3,6 +3,7 @@ import std;
 import VEEngine.V4;
 import :Error;
 import :Math;
+import :Handle;
 
 /**
  * @file
@@ -12,9 +13,6 @@ export namespace vve {
 
    template <typename T>
    using Vector = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Vector<T>; ///< Facade dynamic array type.
-
-   template <typename TTag>
-   using TypedHandle = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::TypedHandle<TTag>; ///< Facade typed handle.
 
    using Bounds              = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Bounds;              ///< Facade bounds type.
    using Camera              = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Camera;              ///< Facade camera type.
@@ -58,10 +56,6 @@ export namespace vve {
    using VertexCount         = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::VertexCount;         ///< Imported vertex count.
    using WindowHandle        = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowHandle;        ///< Runtime window handle.
 
-   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::makeCounterHandle;        ///< Facade counter-handle builder.
-   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::makeHandleForTest;        ///< Facade deterministic handle builder.
-   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::makeSlotMapHandleForTest; ///< Facade slot-map test handle builder.
-
    template <typename TContainer, typename TValue> concept VectorLike =
       requires(TContainer container, TValue value) {
          { container.push_back(value) };
@@ -69,19 +63,6 @@ export namespace vve {
          { container.begin() };
          { container.end() };
       }; ///< Contract for the public dynamic array alias.
-
-   template <typename THandle> concept TypedHandleLike =
-      requires(THandle handle) {
-         { THandle::counter_bit } -> std::convertible_to<std::uint64_t>;
-         { THandle::id_mask } -> std::convertible_to<std::uint64_t>;
-         { handle.value } -> std::convertible_to<std::uint64_t>;
-         { handle.valid() } -> std::same_as<bool>;
-         { handle.isCounter() } -> std::same_as<bool>;
-         { handle.isSlotMapIndex() } -> std::same_as<bool>;
-         { handle.generation() } -> std::convertible_to<std::uint64_t>;
-         { handle.id() } -> std::convertible_to<std::uint64_t>;
-         { handle.slotIndex() } -> std::convertible_to<std::uint64_t>;
-      }; ///< Contract for all public 64-bit typed handle aliases.
 
    template <typename T> concept EntityLike =
       TypedHandleLike<T> && std::same_as<std::remove_cvref_t<T>, Entity>;
@@ -260,16 +241,6 @@ export namespace vve {
       { catalog.lights.contains(LightHandle{}) } -> std::same_as<bool>;
       { catalog.cameras.size() } -> std::convertible_to<std::size_t>;
    }; ///< Contract for the public imported-object catalog.
-
-   template <typename THandle> concept CounterHandleFactoryLike = TypedHandleLike<THandle> && requires {
-      { makeCounterHandle<THandle>() } -> std::same_as<THandle>;
-   }; ///< Contract for makeCounterHandle<THandle>().
-   template <typename THandle> concept TestHandleFactoryLike = TypedHandleLike<THandle> && requires {
-      { makeHandleForTest<THandle>(std::uint64_t{1}) } -> std::same_as<THandle>;
-   }; ///< Contract for makeHandleForTest<THandle>(id).
-   template <typename THandle> concept SlotMapHandleFactoryLike = TypedHandleLike<THandle> && requires {
-      { makeSlotMapHandleForTest<THandle>(std::uint32_t{1}, std::uint32_t{1}) } -> std::same_as<THandle>;
-   }; ///< Contract for makeSlotMapHandleForTest<THandle>(slot, generation).
 
    static_assert(BoundsLike<Bounds>);
    static_assert(CameraDescriptorLike<CameraDescriptor>);

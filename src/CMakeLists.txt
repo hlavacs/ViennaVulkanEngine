@@ -40,8 +40,10 @@ target_sources(ViennaVulkanEngine
         FILE_SET CXX_MODULES FILES
             versions/v4/Error.ixx
             versions/v4/Math.ixx
+            versions/v4/Handle.ixx
             Math.ixx
             Error.ixx
+            Handle.ixx
             versions/v4/Graph.ixx
             Types.ixx
             Graph.ixx

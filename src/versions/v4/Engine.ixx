@@ -12,12 +12,61 @@ import std;
 export import :WindowSystem;
 export import :Assets;
 export import :Renderer;
+export import :Graph;
+export import :Handle;
 export import :Gui;
 
 /// @file
 /// @brief Small v4 runtime facade: world, SDL windows, input, systems, and stub subsystems.
 
 export namespace vve::v4 {
+
+   using TaskHandle = TypedHandle<decltype([] {})>; ///< v4 CPU task graph node handle.
+
+   /// @brief A scheduled unit of CPU work.
+   struct TaskNode {
+      using HandleType = TaskHandle; ///< Descriptor handle type.
+      TaskHandle handle{};           ///< Stable task handle.
+      std::string name{};            ///< Human-readable task name.
+   };
+
+   /// @brief Minimal task graph table.
+   class TaskGraph {
+   public:
+      /// @brief Adds a task node.
+      [[nodiscard]] std::expected<void, Error> add(TaskNode node) { return tasks_.add(std::move(node)); }
+
+      /// @brief Adds one directed task edge.
+      void addEdge(TaskHandle from, TaskHandle to) { graph_.addEdge(from, to); }
+
+      /// @brief Removes one task node and all graph edges touching it.
+      [[nodiscard]] std::expected<void, Error> remove(TaskHandle handle) {
+         if (const auto removed = tasks_.remove(handle); !removed) { return removed; }
+         graph_.removeNode(handle);
+         return {};
+      }
+
+      /// @brief Finds a task by handle, or returns null.
+      [[nodiscard]] const TaskNode *find(TaskHandle handle) const { return tasks_.find(handle); }
+
+      /// @brief Returns tasks in dependency order and preserves isolated tasks.
+      [[nodiscard]] std::expected<std::vector<TaskHandle>, Error> topologicalOrder() const {
+         std::vector<TaskHandle> nodes{};
+         nodes.reserve(tasks_.size());
+         for (const auto &[handle, _] : tasks_.all()) { nodes.push_back(handle); }
+         return graph_.topologicalOrder(nodes);
+      }
+
+      /// @brief Returns task graph topology.
+      [[nodiscard]] const Graph<TaskHandle> &graph() const { return graph_; }
+
+      /// @brief Returns task count.
+      [[nodiscard]] std::size_t size() const { return tasks_.size(); }
+
+   private:
+      detail::GraphNodeTable<TaskNode> tasks_{}; ///< Tasks by handle.
+      Graph<TaskHandle> graph_{};                ///< Task dependency edges.
+   };
 
    namespace detail {
 

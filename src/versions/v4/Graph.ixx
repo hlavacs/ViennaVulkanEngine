@@ -1,60 +1,13 @@
 export module VEEngine.V4:Graph;
 import std;
 export import :Error;
+export import :Handle;
 
 /**
  * @file
- * @brief v4 implementation of typed-handle tree, graph, task graph, and render graph topology.
+ * @brief v4 implementation of typed-handle tree and directed graph topology.
  */
 export namespace vve::v4 {
-
-   namespace detail {
-
-      /// @brief Lightweight v4 graph handle; shaped like facade typed handles without importing facade types.
-      template <typename TTag> struct GraphHandle {
-         static constexpr std::uint32_t generation_bits{16};              ///< Future generation bit count.
-         static constexpr std::uint32_t id_bits{64 - generation_bits - 1}; ///< Counter/id bit count.
-         static constexpr std::uint64_t counter_bit{1ULL << 63U};          ///< High bit marks counter handles.
-         static constexpr std::uint64_t id_mask{(1ULL << id_bits) - 1ULL}; ///< Low id/index bits.
-         static constexpr std::uint64_t generation_mask{~counter_bit & ~id_mask}; ///< Middle generation bits.
-
-         std::uint64_t value{0}; ///< Raw 64-bit handle value; zero is invalid.
-
-         /// @brief Returns true when this handle is not the invalid zero value.
-         [[nodiscard]] constexpr bool valid() const noexcept { return value != 0; }
-
-         /// @brief Returns true when the handle stores an upward-counted id.
-         [[nodiscard]] constexpr bool isCounter() const noexcept { return (value & counter_bit) != 0; }
-
-         /// @brief Returns true when the handle is shaped as a future slot-map index.
-         [[nodiscard]] constexpr bool isSlotMapIndex() const noexcept { return valid() && !isCounter(); }
-
-         /// @brief Extracts the future slot-map generation counter.
-         [[nodiscard]] constexpr std::uint64_t generation() const noexcept {
-            return (value & generation_mask) >> id_bits;
-         }
-
-         /// @brief Extracts the low id bits used by both counter and slot-map handles.
-         [[nodiscard]] constexpr std::uint64_t id() const noexcept { return value & id_mask; }
-
-         /// @brief Names the id bits as a slot index for future slot-map users.
-         [[nodiscard]] constexpr std::uint64_t slotIndex() const noexcept { return id(); }
-
-         [[nodiscard]] friend constexpr bool operator==(GraphHandle, GraphHandle) noexcept = default;
-         [[nodiscard]] friend constexpr auto operator<=>(GraphHandle, GraphHandle) noexcept = default;
-      };
-
-   } // namespace detail
-
-   using TaskHandle       = detail::GraphHandle<decltype([] {})>; ///< v4-internal task descriptor handle.
-   using RenderPassHandle = detail::GraphHandle<decltype([] {})>; ///< v4-internal render-pass handle.
-
-   /// @brief Hashes typed handles by their 64-bit payload for unordered topology side tables.
-   template <typename THandle> struct HandleHash {
-      [[nodiscard]] std::size_t operator()(THandle handle) const noexcept {
-         return std::hash<decltype(THandle::value)>{}(handle.value);
-      }
-   };
 
    /// @brief Tree topology: one root plus parent-to-child and child-to-parent maps.
    template <typename THandle> struct BasicTree {
@@ -199,7 +152,7 @@ export namespace vve::v4 {
 
    namespace detail {
 
-      /// @brief Tiny ordered table for graph-owned descriptors; avoids a dependency cycle with facade Types.
+      /// @brief Tiny ordered table for subsystem-owned graph descriptors.
       template <typename TNode> class GraphNodeTable {
       public:
          using HandleType = typename TNode::HandleType; ///< Strong handle accepted by this table.
@@ -236,95 +189,5 @@ export namespace vve::v4 {
       };
 
    } // namespace detail
-
-   /// @brief A scheduled unit of CPU work.
-   struct TaskNode {
-      using HandleType = TaskHandle; ///< Descriptor handle type.
-      TaskHandle handle{};           ///< Stable task handle.
-      std::string name{};            ///< Human-readable task name.
-   };
-
-   /// @brief A future render graph pass descriptor.
-   struct RenderPassNode {
-      using HandleType = RenderPassHandle; ///< Descriptor handle type.
-      RenderPassHandle handle{};           ///< Stable render-pass handle.
-      std::string name{};                  ///< Human-readable pass name.
-   };
-
-   /// @brief Minimal task graph table.
-   class TaskGraph {
-   public:
-      /// @brief Adds a task node.
-      [[nodiscard]] std::expected<void, Error> add(TaskNode node) { return tasks_.add(std::move(node)); }
-
-      /// @brief Adds one directed task edge.
-      void addEdge(TaskHandle from, TaskHandle to) { graph_.addEdge(from, to); }
-
-      /// @brief Removes one task node and all graph edges touching it.
-      [[nodiscard]] std::expected<void, Error> remove(TaskHandle handle) {
-         if (const auto removed = tasks_.remove(handle); !removed) { return removed; }
-         graph_.removeNode(handle);
-         return {};
-      }
-
-      /// @brief Finds a task by handle, or returns null.
-      [[nodiscard]] const TaskNode *find(TaskHandle handle) const { return tasks_.find(handle); }
-
-      /// @brief Returns tasks in dependency order and preserves isolated tasks.
-      [[nodiscard]] std::expected<std::vector<TaskHandle>, Error> topologicalOrder() const {
-         std::vector<TaskHandle> nodes{};
-         nodes.reserve(tasks_.size());
-         for (const auto &[handle, _] : tasks_.all()) { nodes.push_back(handle); }
-         return graph_.topologicalOrder(nodes);
-      }
-
-      /// @brief Returns task graph topology.
-      [[nodiscard]] const Graph<TaskHandle> &graph() const { return graph_; }
-
-      /// @brief Returns task count.
-      [[nodiscard]] std::size_t size() const { return tasks_.size(); }
-
-   private:
-      detail::GraphNodeTable<TaskNode> tasks_{}; ///< Tasks by handle.
-      Graph<TaskHandle> graph_{};                ///< Task dependency edges.
-   };
-
-   /// @brief Minimal render graph table.
-   class RenderGraph {
-   public:
-      /// @brief Adds a render pass node.
-      [[nodiscard]] std::expected<void, Error> add(RenderPassNode pass) { return passes_.add(std::move(pass)); }
-
-      /// @brief Adds one directed render-pass edge.
-      void addEdge(RenderPassHandle from, RenderPassHandle to) { graph_.addEdge(from, to); }
-
-      /// @brief Removes one render-pass node and all graph edges touching it.
-      [[nodiscard]] std::expected<void, Error> remove(RenderPassHandle handle) {
-         if (const auto removed = passes_.remove(handle); !removed) { return removed; }
-         graph_.removeNode(handle);
-         return {};
-      }
-
-      /// @brief Finds a render pass by handle, or returns null.
-      [[nodiscard]] const RenderPassNode *find(RenderPassHandle handle) const { return passes_.find(handle); }
-
-      /// @brief Returns render passes in dependency order and preserves isolated passes.
-      [[nodiscard]] std::expected<std::vector<RenderPassHandle>, Error> topologicalOrder() const {
-         std::vector<RenderPassHandle> nodes{};
-         nodes.reserve(passes_.size());
-         for (const auto &[handle, _] : passes_.all()) { nodes.push_back(handle); }
-         return graph_.topologicalOrder(nodes);
-      }
-
-      /// @brief Returns render graph topology.
-      [[nodiscard]] const Graph<RenderPassHandle> &graph() const { return graph_; }
-
-      /// @brief Returns render pass count.
-      [[nodiscard]] std::size_t size() const { return passes_.size(); }
-
-   private:
-      detail::GraphNodeTable<RenderPassNode> passes_{}; ///< Render passes by handle.
-      Graph<RenderPassHandle> graph_{};                 ///< Render-pass ordering edges.
-   };
 
 } // namespace vve::v4
