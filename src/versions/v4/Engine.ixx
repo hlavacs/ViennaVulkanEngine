@@ -14,7 +14,6 @@ export import :World;
 export import :WindowSystem;
 export import :Assets;
 export import :Renderer;
-export import VEEngine.V4.Graph;
 export import VEEngine.V4.Handle;
 export import :Gui;
 
@@ -34,6 +33,105 @@ namespace vve::v4 {
       using HandleType = TaskHandle; ///< Table handle type.
       TaskHandle handle{};           ///< Stable task handle.
       ObjectName name{};             ///< Human-readable task name.
+   };
+
+   /// @brief Internal ordered table for task records.
+   class TaskRecordTable {
+   public:
+      [[nodiscard]] std::expected<void, Error> add(TaskRecord task) {
+         if (!task.handle.valid()) { return std::unexpected(Error::invalid_handle); }
+         const auto [_, inserted] = tasks_.emplace(task.handle, std::move(task));
+         if (!inserted) { return std::unexpected(Error::duplicate_object); }
+         return {};
+      }
+
+      [[nodiscard]] std::expected<void, Error> remove(TaskHandle handle) {
+         if (!handle.valid()) { return std::unexpected(Error::invalid_handle); }
+         if (tasks_.erase(handle) == 0) { return std::unexpected(Error::missing_object); }
+         return {};
+      }
+
+      [[nodiscard]] const TaskRecord *find(TaskHandle handle) const {
+         const auto task = tasks_.find(handle);
+         return task == tasks_.end() ? nullptr : std::addressof(task->second);
+      }
+
+      [[nodiscard]] std::size_t size() const { return tasks_.size(); }
+      [[nodiscard]] const std::map<TaskHandle, TaskRecord> &all() const { return tasks_; }
+
+   private:
+      std::map<TaskHandle, TaskRecord> tasks_{}; ///< Task records by handle.
+   };
+
+   /// @brief Internal directed topology for CPU task dependencies.
+   class TaskTopology {
+   public:
+      void addEdge(TaskHandle from, TaskHandle to) {
+         outgoing_.emplace(from, to);
+         incoming_.emplace(to, from);
+      }
+
+      void removeNode(TaskHandle node) {
+         const auto [first_child, last_child] = outgoing_.equal_range(node);
+         for (auto it = first_child; it != last_child; ++it) { removeIncomingEdge(it->second, node); }
+         outgoing_.erase(node);
+
+         const auto [first_parent, last_parent] = incoming_.equal_range(node);
+         for (auto it = first_parent; it != last_parent; ++it) { removeOutgoingEdge(it->second, node); }
+         incoming_.erase(node);
+      }
+
+      [[nodiscard]] std::expected<Vector<TaskHandle>, Error> topologicalOrder(const Vector<TaskHandle> &nodes) const {
+         std::map<TaskHandle, std::uint32_t> incoming_counts{};
+         std::map<TaskHandle, Vector<TaskHandle>> ordered_children{};
+         for (const auto node : nodes) {
+            if (!node.valid()) { return std::unexpected(Error::invalid_handle); }
+            incoming_counts.try_emplace(node, 0);
+         }
+
+         for (const auto &[from, to] : outgoing_) {
+            if (!from.valid() || !to.valid()) { return std::unexpected(Error::invalid_handle); }
+            if (!incoming_counts.contains(from) || !incoming_counts.contains(to)) {
+               return std::unexpected(Error::missing_object);
+            }
+            ordered_children[from].push_back(to);
+            ++incoming_counts[to];
+         }
+
+         std::set<TaskHandle> ready{};
+         Vector<TaskHandle> ordered{};
+         ordered.reserve(incoming_counts.size());
+         for (const auto &[node, count] : incoming_counts) {
+            if (count == 0) { ready.insert(node); }
+         }
+
+         while (!ready.empty()) {
+            const auto node = *ready.begin();
+            ready.erase(ready.begin());
+            ordered.push_back(node);
+            for (const auto child : ordered_children[node]) {
+               auto &count = incoming_counts[child];
+               if (--count == 0) { ready.insert(child); }
+            }
+         }
+
+         if (ordered.size() != incoming_counts.size()) { return std::unexpected(Error::cycle_detected); }
+         return ordered;
+      }
+
+   private:
+      void removeOutgoingEdge(TaskHandle from, TaskHandle to) {
+         auto [first, last] = outgoing_.equal_range(from);
+         for (auto it = first; it != last;) { it = it->second == to ? outgoing_.erase(it) : std::next(it); }
+      }
+
+      void removeIncomingEdge(TaskHandle to, TaskHandle from) {
+         auto [first, last] = incoming_.equal_range(to);
+         for (auto it = first; it != last;) { it = it->second == from ? incoming_.erase(it) : std::next(it); }
+      }
+
+      std::unordered_multimap<TaskHandle, TaskHandle, HandleHash<TaskHandle>> outgoing_{}; ///< Forward edges.
+      std::unordered_multimap<TaskHandle, TaskHandle, HandleHash<TaskHandle>> incoming_{}; ///< Reverse edges.
    };
 
 } // namespace vve::v4
@@ -83,8 +181,8 @@ export namespace vve::v4 {
       [[nodiscard]] std::size_t taskCount() const { return tasks_.size(); }
 
    private:
-      detail::GraphNodeTable<TaskRecord> tasks_{}; ///< Tasks by handle.
-      Graph<TaskHandle> graph_{};                  ///< Task dependency edges.
+      TaskRecordTable tasks_{}; ///< Tasks by handle.
+      TaskTopology graph_{};    ///< Task dependency edges.
    };
 
    namespace detail {

@@ -4,7 +4,6 @@ target_sources(ViennaVulkanEngine
          Error.ixx
          Math.ixx
          Handle.ixx
-         Graph.ixx
          Vector.ixx
          ECS.ixx
          Types.ixx

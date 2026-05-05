@@ -9,14 +9,36 @@ module;
 export module VEEngine.V4:Assets;
 import std;
 export import :Types;
-import VEEngine.V4.Graph;
 
 /// @file
 /// @brief Assimp-backed v4 asset import into handle-addressable descriptors.
 
 namespace vve::v4 {
 
-   using Tree = BasicTree<NodeHandle>; ///< Internal scene-tree topology.
+   /// @brief Internal scene-tree topology for imported asset nodes.
+   struct SceneTree {
+      NodeHandle root{}; ///< Root node handle.
+      std::unordered_multimap<NodeHandle, NodeHandle, HandleHash<NodeHandle>> children{}; ///< Parent to children.
+      std::unordered_map<NodeHandle, NodeHandle, HandleHash<NodeHandle>> parents{}; ///< Child to parent.
+
+      /// @brief Adds one parent-to-child tree edge.
+      void addChild(NodeHandle parent, NodeHandle child) {
+         if (const auto old_parent = parents.find(child); old_parent != parents.end()) {
+            removeChildEdge(old_parent->second, child);
+         }
+         children.emplace(parent, child);
+         parents[child] = parent;
+      }
+
+   private:
+      /// @brief Removes all matching parent-to-child edges.
+      void removeChildEdge(NodeHandle parent, NodeHandle child) {
+         auto [first, last] = children.equal_range(parent);
+         for (auto it = first; it != last;) { it = it->second == child ? children.erase(it) : std::next(it); }
+      }
+   };
+
+   using Tree = SceneTree; ///< Internal scene-tree topology.
 
    /// @brief Internal material texture slot meaning for imported assets.
    enum class TextureSemantic {
