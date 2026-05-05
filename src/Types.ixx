@@ -4,15 +4,13 @@ import VEEngine.V4;
 import :Error;
 import :Math;
 import :Handle;
+import :Vector;
 
 /**
  * @file
  * @brief Public type contract backed by the selected engine implementation.
  */
 export namespace vve {
-
-   template <typename T>
-   using Vector = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Vector<T>; ///< Facade dynamic array type.
 
    using Bounds              = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Bounds;              ///< Facade bounds type.
    using Camera              = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Camera;              ///< Facade camera type.
@@ -55,14 +53,6 @@ export namespace vve {
    using Tree                = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Tree;                ///< Facade scene tree.
    using VertexCount         = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::VertexCount;         ///< Imported vertex count.
    using WindowHandle        = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowHandle;        ///< Runtime window handle.
-
-   template <typename TContainer, typename TValue> concept VectorLike =
-      requires(TContainer container, TValue value) {
-         { container.push_back(value) };
-         { container.size() } -> std::convertible_to<std::size_t>;
-         { container.begin() };
-         { container.end() };
-      }; ///< Contract for the public dynamic array alias.
 
    template <typename T> concept EntityLike =
       TypedHandleLike<T> && std::same_as<std::remove_cvref_t<T>, Entity>;

@@ -168,6 +168,60 @@ struct CountingSystem {
    return 0;
 }
 
+[[nodiscard]] int testVector() {
+   using namespace vve;
+
+   Vector<int> values{};
+   static_assert(VectorLike<decltype(values), int>);
+   static_assert(std::same_as<VectorConstRange<int>, decltype(makeRange(values))>);
+   if (!values.empty() || values.capacity() != 0 || values.segmentCount() != 0 || values.segmentSize() != 256) {
+      return 90;
+   }
+
+   for (int value = 0; value < 260; ++value) {
+      values.push_back(value);
+   }
+   if (values.size() != 260 || values.segmentCount() != 2 || values.capacity() != 512 ||
+       values.front() != 0 || values.back() != 259 || values.at(128) != 128) {
+      return 91;
+   }
+
+   auto *stable_address = std::addressof(values[4]);
+   values.push_back(260);
+   if (std::addressof(values[4]) != stable_address || values.back() != 260) {
+      return 92;
+   }
+
+   const auto inserted = values.insert(values.cbegin() + 1, 777);
+   if (inserted == values.end() || *inserted != 777 || values[2] != 1) {
+      return 93;
+   }
+   const auto erased = values.erase(values.cbegin() + 1);
+   if (erased == values.end() || *erased != 1 || values[1] != 1) {
+      return 94;
+   }
+
+   values.resize(300, -1);
+   if (values.size() != 300 || values.back() != -1) {
+      return 95;
+   }
+   values.appendRange(std::initializer_list<int>{301, 302});
+   if (values.size() != 302 || values.back() != 302) {
+      return 96;
+   }
+
+   const auto range = makeRange(values);
+   if (std::ranges::distance(range) != static_cast<std::ptrdiff_t>(values.size())) {
+      return 97;
+   }
+
+   values.clear();
+   if (!values.empty() || values.capacity() != 512) {
+      return 98;
+   }
+   return 0;
+}
+
 [[nodiscard]] int testStrongMathTypes() {
    using namespace vve;
 
@@ -650,6 +704,9 @@ int main() {
       return result;
    }
    if (const int result = testHandles(); result != 0) {
+      return result;
+   }
+   if (const int result = testVector(); result != 0) {
       return result;
    }
    if (const int result = testStrongMathTypes(); result != 0) {

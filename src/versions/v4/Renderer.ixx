@@ -38,8 +38,8 @@ export namespace vve::v4 {
       [[nodiscard]] const RenderPassNode *find(RenderPassHandle handle) const { return passes_.find(handle); }
 
       /// @brief Returns render passes in dependency order and preserves isolated passes.
-      [[nodiscard]] std::expected<std::vector<RenderPassHandle>, Error> topologicalOrder() const {
-         std::vector<RenderPassHandle> nodes{};
+      [[nodiscard]] std::expected<Vector<RenderPassHandle>, Error> topologicalOrder() const {
+         Vector<RenderPassHandle> nodes{};
          nodes.reserve(passes_.size());
          for (const auto &[handle, _] : passes_.all()) { nodes.push_back(handle); }
          return graph_.topologicalOrder(nodes);

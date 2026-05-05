@@ -13,6 +13,7 @@ import VEEngine.V4;
 export import :Error;
 export import :Math;
 export import :Handle;
+export import :Vector;
 export import :Types;
 export import :Graph;
 export import :ECS;

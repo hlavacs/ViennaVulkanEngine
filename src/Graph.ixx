@@ -2,6 +2,7 @@ export module VEEngine:Graph;
 import std;
 import VEEngine.V4;
 import :Error;
+import :Vector;
 import :Types;
 
 /**
@@ -31,7 +32,7 @@ export namespace vve {
          graph.removeNode(from);
          { graph.childRange(from) };
          { graph.parentRange(to) };
-         { graph.topologicalOrder(nodes) } -> std::same_as<std::expected<std::vector<THandle>, Error>>;
+         { graph.topologicalOrder(nodes) } -> std::same_as<std::expected<Vector<THandle>, Error>>;
       }; ///< Contract for public directed graph topology templates.
 
    static_assert(BasicTreeLike<BasicTree<NodeHandle>, NodeHandle>);

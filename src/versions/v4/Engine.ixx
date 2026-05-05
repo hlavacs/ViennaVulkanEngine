@@ -50,8 +50,8 @@ export namespace vve::v4 {
       [[nodiscard]] const TaskNode *find(TaskHandle handle) const { return tasks_.find(handle); }
 
       /// @brief Returns tasks in dependency order and preserves isolated tasks.
-      [[nodiscard]] std::expected<std::vector<TaskHandle>, Error> topologicalOrder() const {
-         std::vector<TaskHandle> nodes{};
+      [[nodiscard]] std::expected<Vector<TaskHandle>, Error> topologicalOrder() const {
+         Vector<TaskHandle> nodes{};
          nodes.reserve(tasks_.size());
          for (const auto &[handle, _] : tasks_.all()) { nodes.push_back(handle); }
          return graph_.topologicalOrder(nodes);

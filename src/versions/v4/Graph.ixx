@@ -2,6 +2,7 @@ export module VEEngine.V4:Graph;
 import std;
 export import :Error;
 export import :Handle;
+export import :Vector;
 
 /**
  * @file
@@ -109,10 +110,10 @@ export namespace vve::v4 {
 
    public:
       /// @brief Returns nodes in dependency order, or cycle_detected when the graph is cyclic.
-      [[nodiscard]] std::expected<std::vector<THandle>, Error>
-      topologicalOrder(const std::vector<THandle> &nodes) const {
+      [[nodiscard]] std::expected<Vector<THandle>, Error>
+      topologicalOrder(const Vector<THandle> &nodes) const {
          std::map<THandle, std::uint32_t> incoming_counts{};
-         std::map<THandle, std::vector<THandle>> ordered_children{};
+         std::map<THandle, Vector<THandle>> ordered_children{};
          for (const auto node : nodes) {
             if (!node.valid()) { return std::unexpected(Error::invalid_handle); }
             incoming_counts.try_emplace(node, 0);
@@ -128,7 +129,7 @@ export namespace vve::v4 {
          }
 
          std::set<THandle> ready{};
-         std::vector<THandle> ordered{};
+         Vector<THandle> ordered{};
          ordered.reserve(incoming_counts.size());
          for (const auto &[node, count] : incoming_counts) {
             if (count == 0) { ready.insert(node); }
