@@ -329,8 +329,8 @@ struct CountingSystem {
       return 63;
    }
 
-   ECS ecs{};
-   World world{ecs};
+   auto engine = makeEngine(ApplicationName{"world-test"});
+   auto world = engine.world();
    const auto ecs_entity = world.ecs().create();
    if (!world.ecs().exists(ecs_entity)) {
       return 67;
@@ -361,7 +361,7 @@ struct CountingSystem {
    }
 
    auto engine = makeEngine(ApplicationName{"asset-import"});
-   auto assets = engine.assets();
+   auto assets = engine.world().assets();
    const auto scene_handle = assets.loadScene(path);
    std::error_code remove_error{};
    std::filesystem::remove(path, remove_error);
@@ -414,9 +414,6 @@ struct CountingSystem {
    if (engine.versionMajor() != 4 || engine.versionName() != std::string_view{"v4"}) {
       return 40;
    }
-   if (std::addressof(engine.ecs()) != std::addressof(engine.world().ecs())) {
-      return 56;
-   }
    if (!engine.init()) {
       return 41;
    }
@@ -424,8 +421,9 @@ struct CountingSystem {
    if (!camera || !engine.world().setWindowCamera("main", *camera)) {
       return 57;
    }
-   const auto scene = engine.assets().addScene(ObjectName{.value = "stub"});
-   if (!scene || !scene->isCounter() || !engine.assets().containsScene(*scene)) {
+   auto assets = engine.world().assets();
+   const auto scene = assets.addScene(ObjectName{.value = "stub"});
+   if (!scene || !scene->isCounter() || !assets.containsScene(*scene)) {
       return 42;
    }
    const auto first = engine.step();
@@ -436,7 +434,7 @@ struct CountingSystem {
    if (init_count != 1 || update_count != 2 || last_frame != 1 || !engine.world().findWindow("main")) {
       return 52;
    }
-   if (engine.world().windowCount() != 2 || !engine.world().findWindow("tools")) {
+   if (engine.world().windowSystem().windowCount() != 2 || !engine.world().windowSystem().findWindow("tools")) {
       return 53;
    }
    const auto main_camera = engine.world().windowCamera("main");

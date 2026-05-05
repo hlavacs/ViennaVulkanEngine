@@ -107,7 +107,10 @@ export namespace vve::v4 {
    template <typename... TSystems> class Engine {
    public:
       /// @brief Creates an engine with default options.
-      Engine() { applyDefaults(); }
+      Engine() {
+         bindWorld();
+         applyDefaults();
+      }
 
       /// @brief Engines stay stationary because World stores references into this object.
       Engine(const Engine &) = delete;
@@ -117,6 +120,7 @@ export namespace vve::v4 {
 
       /// @brief Creates an engine from the compact compatibility config.
       explicit Engine(EngineConfig config) {
+         bindWorld();
          applyOption(std::move(config));
          applyDefaults();
       }
@@ -125,6 +129,7 @@ export namespace vve::v4 {
       template <typename... TOptions>
          requires(sizeof...(TOptions) > 0)
       explicit Engine(TOptions &&...options) {
+         bindWorld();
          (applyOption(std::forward<TOptions>(options)), ...);
          applyDefaults();
       }
@@ -210,6 +215,9 @@ export namespace vve::v4 {
       }
 
    private:
+      /// @brief Applies the compact compatibility config.
+      void bindWorld() { world_.bindSubsystems(assets_, gui_, window_system_); }
+
       /// @brief Applies the compact compatibility config.
       void applyOption(EngineConfig config) {
          application_name_.value = std::move(config.application_name);

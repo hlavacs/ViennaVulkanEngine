@@ -39,18 +39,19 @@ Engine implementations must expose specific subsystems with the enforced interfa
 - Handle: Handles are strongly typed wrappers around uint64_t and id any resource.
 - Math: Provides all math related functions.
 - Vector: a basic vector like data container, requires iterators.
-- Engine: This is created by the user app and handles main frame events.
+- Engine: This is created by the user app and handles main frame events. It owns its own Engine implementation and can return a world wrapper by value.
 - ECS: an Entity Component System that can hold entities with any data type.
-- WindowSystem: a window manager that holds all windows in a container.
+- WindowSystem: a window manager that holds all windows in a container.  There is a WindowSystem wrapper in the facade, and an implementation. The WindowSysten implementation owns the Window implementations, and can return Window wrappers.
 - Window: Window information like number, renderer, camera, size.
 - Assets: A wrapper over the internal asset system. The wrapper exposes specific public functions that enable users to load from disk and purge assets, create objects. 
 - GUI: wrapper over the GUI system implementation. The wrapper offers public hooks for creating widgets. Must work with ImGUI. 
-- World: main interface for user interaction with the world. 
+- World: main interface for user interaction with the world and runtime binder.
   - Its API must offer enough member functions to access and change all world, scene and asset data without exposing internal descriptor types like SceneDescriptor or ObjectCatalogue. 
-  - World contains references to: ECS wrapper, Asset wrapper, GUI wrapper, Engine wrapper, Windows wrapper. It allows for getting references to them.
-  - World wrapper is a run time binder that binds all necessary subsystem wrappers into one class.
-  - A reference to it can be obtained through a call to an Engine member function.
-  - The world wrapper is actually created by the Engine impementation, which creates a World wrapper over the actual World implementation.
+  - World implementation contains references to: ECS wrapper, Asset wrapper, GUI wrapper, Engine wrapper, WindowSystem wrapper. It allows for getting references to them.
+  - World wrapper is a runtime binder that binds all necessary subsystem wrappers into one class.
+  - A value type for it can be obtained through a call to an Engine member function.
+  - The world wrapper is actually created by the Engine impementation, which creates a World wrapper over the actual World implementation and returns it by value.
+  - The engine wrapper owns its own engine implementation, but does not own any more wrappers or implementations.
 
 Additionally the facade defines numerous low level structs for storing pure data, like Position, 
 Velocity, Orientation, etc. These must be used in the engine implementations accordingly and are typical data structures used in game engines.

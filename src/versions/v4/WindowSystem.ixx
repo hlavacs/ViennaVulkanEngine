@@ -38,6 +38,14 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<void, Error> poll(InputState &input);
       /// @brief Returns a copy of the current window-state snapshot.
       [[nodiscard]] Vector<WindowInfo> snapshot() const;
+      /// @brief Returns read-only references to owned window states.
+      [[nodiscard]] Vector<std::reference_wrapper<const WindowInfo>> windows() const;
+      /// @brief Returns the number of owned windows.
+      [[nodiscard]] std::size_t windowCount() const;
+      /// @brief Finds a read-only window by application id.
+      [[nodiscard]] const WindowInfo *findWindow(std::string_view id) const;
+      /// @brief Finds a read-only window by runtime handle.
+      [[nodiscard]] const WindowInfo *findWindow(WindowHandle handle) const;
       /// @brief Returns true when any window has requested closing.
       [[nodiscard]] bool anyShouldClose() const;
 
@@ -201,6 +209,29 @@ namespace vve::v4 {
       result.reserve(impl_->records.size());
       for (const auto &record : impl_->records) { result.push_back(record.info); }
       return result;
+   }
+
+   Vector<std::reference_wrapper<const WindowInfo>> WindowSystem::windows() const {
+      Vector<std::reference_wrapper<const WindowInfo>> result{};
+      result.reserve(impl_->records.size());
+      for (const auto &record : impl_->records) { result.push_back(std::cref(record.info)); }
+      return result;
+   }
+
+   std::size_t WindowSystem::windowCount() const { return impl_->records.size(); }
+
+   const WindowInfo *WindowSystem::findWindow(std::string_view id) const {
+      const auto it = std::ranges::find_if(impl_->records, [id](const Impl::Record &record) {
+         return record.info.id == id;
+      });
+      return it == impl_->records.end() ? nullptr : std::addressof(it->info);
+   }
+
+   const WindowInfo *WindowSystem::findWindow(WindowHandle handle) const {
+      const auto it = std::ranges::find_if(impl_->records, [handle](const Impl::Record &record) {
+         return record.info.handle == handle;
+      });
+      return it == impl_->records.end() ? nullptr : std::addressof(it->info);
    }
 
    bool WindowSystem::anyShouldClose() const {

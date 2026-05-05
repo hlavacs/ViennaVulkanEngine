@@ -7,6 +7,10 @@ export import :ECS;
 
 export namespace vve::v4 {
 
+   class AssetSystem;
+   class GuiSystem;
+   class WindowSystem;
+
    /// @brief Window creation descriptor kept deliberately close to v3's public shape.
    struct WindowDesc {
       std::string id{"main"};       ///< Stable application-local window id.
@@ -123,8 +127,17 @@ export namespace vve::v4 {
    public:
       explicit World(ECS &ecs) noexcept : ecs_(ecs) {}
 
+      void bindSubsystems(AssetSystem &assets, GuiSystem &gui, WindowSystem &window_system) noexcept {
+         assets_ = std::addressof(assets);
+         gui_ = std::addressof(gui);
+         window_system_ = std::addressof(window_system);
+      }
+
       [[nodiscard]] ECS &ecs() { return ecs_; }
       [[nodiscard]] const ECS &ecs() const { return ecs_; }
+      [[nodiscard]] AssetSystem &assets() { return *assets_; }
+      [[nodiscard]] GuiSystem &gui() { return *gui_; }
+      [[nodiscard]] WindowSystem &windowSystem() { return *window_system_; }
       [[nodiscard]] InputState &input() { return input_; }
       [[nodiscard]] const InputState &input() const { return input_; }
       [[nodiscard]] Vector<WindowInfo> &windows() { return windows_; }
@@ -253,6 +266,9 @@ export namespace vve::v4 {
 
    private:
       ECS &ecs_;
+      AssetSystem *assets_{};
+      GuiSystem *gui_{};
+      WindowSystem *window_system_{};
       InputState input_{};
       Vector<WindowInfo> windows_{};
       std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> scene_loader_{};

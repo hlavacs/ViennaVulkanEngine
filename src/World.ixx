@@ -5,6 +5,9 @@ import :ECS;
 import VEEngine.Error;
 import VEEngine.Types;
 import :Window;
+import :WindowSystem;
+import :Assets;
+import :Gui;
 
 /**
  * @file
@@ -77,87 +80,89 @@ export namespace vve {
       using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::World;
 
    public:
-      explicit World(ECS &ecs) : impl_{std::make_shared<Impl>(ecs.impl())} {}
-      explicit World(Impl &implementation) : impl_{std::shared_ptr<Impl>(std::addressof(implementation), [](Impl *) {})} {}
+      explicit World(Impl &implementation) : impl_{implementation} {}
       World(const World &) = delete;
       World(World &&) noexcept = default;
       World &operator=(const World &) = delete;
       World &operator=(World &&) = delete;
 
-      [[nodiscard]] decltype(auto) ecs() { return impl_->ecs(); }
-      [[nodiscard]] decltype(auto) ecs() const { return impl_->ecs(); }
-      [[nodiscard]] InputState input() { return InputState{impl_->input()}; }
-      [[nodiscard]] InputState input() const { return InputState{const_cast<Impl &>(*impl_).input()}; }
-      [[nodiscard]] std::size_t windowCount() const { return impl_->windows().size(); }
+      [[nodiscard]] decltype(auto) ecs() { return impl_.ecs(); }
+      [[nodiscard]] decltype(auto) ecs() const { return impl_.ecs(); }
+      [[nodiscard]] AssetSystem assets() { return AssetSystem{impl_.assets()}; }
+      [[nodiscard]] GuiSystem gui() { return GuiSystem{impl_.gui()}; }
+      [[nodiscard]] WindowSystem windowSystem() { return WindowSystem{impl_.windowSystem()}; }
+      [[nodiscard]] InputState input() { return InputState{impl_.input()}; }
+      [[nodiscard]] InputState input() const { return InputState{const_cast<Impl &>(impl_).input()}; }
+      [[nodiscard]] std::size_t windowCount() const { return impl_.windows().size(); }
       [[nodiscard]] Vector<Window> windows() const {
          Vector<Window> result{};
-         result.reserve(impl_->windows().size());
-         for (const auto &window : impl_->windows()) { result.push_back(Window{window}); }
+         result.reserve(impl_.windows().size());
+         for (const auto &window : impl_.windows()) { result.push_back(Window{window}); }
          return result;
       }
 
       [[nodiscard]] std::optional<Window> findWindow(std::string_view id) const {
-         const auto *window = impl_->findWindow(id);
+         const auto *window = impl_.findWindow(id);
          return window == nullptr ? std::optional<Window>{} : std::optional<Window>{Window{*window}};
       }
       [[nodiscard]] std::optional<Window> findWindow(WindowHandle handle) const {
-         const auto *window = impl_->findWindow(handle);
+         const auto *window = impl_.findWindow(handle);
          return window == nullptr ? std::optional<Window>{} : std::optional<Window>{Window{*window}};
       }
 
       template <typename... TComponents>
       [[nodiscard]] std::expected<Entity, Error> spawn(TComponents &&...components) {
-         return impl_->spawn(std::forward<TComponents>(components)...);
+         return impl_.spawn(std::forward<TComponents>(components)...);
       }
 
       template <typename T> [[nodiscard]] std::expected<void, Error> addComponent(Entity entity, T component) {
-         return impl_->template addComponent<T>(entity, std::move(component));
+         return impl_.template addComponent<T>(entity, std::move(component));
       }
 
       template <typename T> [[nodiscard]] std::expected<void, Error> setComponent(Entity entity, T component) {
-         return impl_->template setComponent<T>(entity, std::move(component));
+         return impl_.template setComponent<T>(entity, std::move(component));
       }
 
       template <typename T> [[nodiscard]] std::expected<std::optional<T>, Error> getComponent(Entity entity) const {
-         return impl_->template getComponent<T>(entity);
+         return impl_.template getComponent<T>(entity);
       }
 
-      [[nodiscard]] std::expected<void, Error> destroy(Entity entity) { return impl_->destroy(entity); }
+      [[nodiscard]] std::expected<void, Error> destroy(Entity entity) { return impl_.destroy(entity); }
       [[nodiscard]] std::expected<void, Error> setTransform(Entity entity, Transform transform) {
-         return impl_->setTransform(std::move(entity), std::move(transform));
+         return impl_.setTransform(std::move(entity), std::move(transform));
       }
       [[nodiscard]] std::expected<std::optional<Transform>, Error> getTransform(Entity entity) const {
-         return impl_->getTransform(std::move(entity));
+         return impl_.getTransform(std::move(entity));
       }
       [[nodiscard]] std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera) {
-         return impl_->setWindowCamera(window, camera);
+         return impl_.setWindowCamera(window, camera);
       }
       [[nodiscard]] std::expected<void, Error> setWindowCamera(std::string_view window_id, Entity camera) {
-         return impl_->setWindowCamera(window_id, camera);
+         return impl_.setWindowCamera(window_id, camera);
       }
       [[nodiscard]] std::expected<void, Error> clearWindowCamera(WindowHandle window) {
-         return impl_->clearWindowCamera(window);
+         return impl_.clearWindowCamera(window);
       }
       [[nodiscard]] std::expected<void, Error> clearWindowCamera(std::string_view window_id) {
-         return impl_->clearWindowCamera(window_id);
+         return impl_.clearWindowCamera(window_id);
       }
       [[nodiscard]] std::optional<Entity> windowCamera(WindowHandle window) const {
-         return impl_->windowCamera(window);
+         return impl_.windowCamera(window);
       }
       [[nodiscard]] std::optional<Entity> windowCamera(std::string_view window_id) const {
-         return impl_->windowCamera(window_id);
+         return impl_.windowCamera(window_id);
       }
-      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera) { return impl_->setActiveCamera(camera); }
-      [[nodiscard]] std::optional<Entity> activeCamera() const { return impl_->activeCamera(); }
+      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera) { return impl_.setActiveCamera(camera); }
+      [[nodiscard]] std::optional<Entity> activeCamera() const { return impl_.activeCamera(); }
       void setSceneLoader(std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> loader) {
-         impl_->setSceneLoader(std::move(loader));
+         impl_.setSceneLoader(std::move(loader));
       }
       [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &path) {
-         return impl_->loadScene(path);
+         return impl_.loadScene(path);
       }
 
    private:
-      std::shared_ptr<Impl> impl_{};
+      Impl &impl_;
    }; ///< Facade world type.
 
    template <typename... TSystems>

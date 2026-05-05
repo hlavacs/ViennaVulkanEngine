@@ -17,6 +17,7 @@ export import VEEngine.Vector;
 export import VEEngine.Types;
 export import :ECS;
 export import :Window;
+export import :WindowSystem;
 export import :World;
 export import :Assets;
 export import :Gui;
@@ -36,9 +37,9 @@ export namespace vve {
       Engine() = default;
 
       Engine(const Engine &) = delete;
-      Engine(Engine &&) noexcept = default;
+      Engine(Engine &&) = delete;
       Engine &operator=(const Engine &) = delete;
-      Engine &operator=(Engine &&) noexcept = default;
+      Engine &operator=(Engine &&) = delete;
 
       explicit Engine(EngineConfig config) : impl_{std::move(config)} {}
 
@@ -51,9 +52,6 @@ export namespace vve {
       [[nodiscard]] std::string_view versionName() const { return impl_.versionName(); }
       [[nodiscard]] World world() { return World{impl_.world()}; }
       [[nodiscard]] World world() const { return World{const_cast<Impl &>(impl_).world()}; }
-      [[nodiscard]] AssetSystem assets() { return AssetSystem{impl_.assets()}; }
-      [[nodiscard]] GuiSystem gui() { return GuiSystem{impl_.gui()}; }
-      [[nodiscard]] decltype(auto) ecs() { return impl_.ecs(); }
 
       [[nodiscard]] std::expected<void, Error> init() { return impl_.init(); }
       [[nodiscard]] std::expected<void, Error> run() { return impl_.run(); }
