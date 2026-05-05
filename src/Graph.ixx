@@ -11,10 +11,56 @@ import :Types;
  */
 export namespace vve {
 
-   template <typename THandle>
-   using BasicTree = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicTree<THandle>; ///< Facade tree topology.
-   template <typename THandle>
-   using Graph = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Graph<THandle>; ///< Facade directed graph topology.
+   template <typename THandle> class BasicTree {
+   public:
+      THandle root{}; ///< Public root handle required by the tree contract.
+
+      void addChild(THandle parent, THandle child) {
+         syncToImplementation();
+         impl_.addChild(parent, child);
+         syncFromImplementation();
+      }
+
+      void removeNode(THandle handle) {
+         syncToImplementation();
+         impl_.removeNode(handle);
+         syncFromImplementation();
+      }
+
+      [[nodiscard]] auto childRange(THandle parent) const {
+         syncToImplementation();
+         return impl_.childRange(parent);
+      }
+
+      [[nodiscard]] std::optional<THandle> parentOf(THandle child) const {
+         syncToImplementation();
+         return impl_.parentOf(child);
+      }
+
+   private:
+      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicTree<THandle>;
+
+      void syncToImplementation() const { impl_.root = root; }
+      void syncFromImplementation() { root = impl_.root; }
+
+      mutable Impl impl_{};
+   }; ///< Facade tree topology.
+
+   template <typename THandle> class Graph {
+   public:
+      void addEdge(THandle from, THandle to) { impl_.addEdge(from, to); }
+      void removeEdge(THandle from, THandle to) { impl_.removeEdge(from, to); }
+      void removeNode(THandle handle) { impl_.removeNode(handle); }
+
+      [[nodiscard]] auto childRange(THandle from) const { return impl_.childRange(from); }
+      [[nodiscard]] auto parentRange(THandle to) const { return impl_.parentRange(to); }
+      [[nodiscard]] std::expected<Vector<THandle>, Error> topologicalOrder(Vector<THandle> nodes) const {
+         return impl_.topologicalOrder(std::move(nodes));
+      }
+
+   private:
+      VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Graph<THandle> impl_{};
+   }; ///< Facade directed graph topology.
 
    template <typename TTree, typename THandle> concept BasicTreeLike =
       requires(TTree tree, THandle parent, THandle child) {

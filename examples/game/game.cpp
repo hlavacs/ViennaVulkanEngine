@@ -182,37 +182,33 @@ public:
         auto transform = **transform_result;
         auto velocity = **velocity_result;
         const auto& input = world.input();
+        const auto delta_seconds = static_cast<float>(frame_context.delta_time.seconds);
 
-        velocity.x = 0.0F; // Reset velocity every frame so movement is purely input driven.
-        velocity.y = 0.0F;
+        float acceleration_x = 0.0F;
+        float acceleration_y = 0.0F;
         if (input.isKeyDown('A') || input.isKeyDown('a')) {
-            velocity.x -= 160.0F;
+            acceleration_x = -1.0F;
         }
         if (input.isKeyDown('D') || input.isKeyDown('d')) {
-            velocity.x += 160.0F;
+            acceleration_x = 1.0F;
         }
         if (input.isKeyDown('W') || input.isKeyDown('w')) {
-            velocity.y -= 90.0F;
+            acceleration_y = 1.0F;
         }
         if (input.isKeyDown('S') || input.isKeyDown('s')) {
-            velocity.y += 90.0F;
+            acceleration_y = -1.0F;
         }
+        velocity.x += acceleration_x * delta_seconds;
+        velocity.y += acceleration_y * delta_seconds;
 
         // Reset the player back to the origin when R is pressed.
         if (input.wasKeyPressed('R') || input.wasKeyPressed('r')) {
             transform.translation = vve::Position{};
+            velocity = Velocity{};
         }
 
-        // Integrate velocity using the frame delta and clamp movement to a
-        // screen-like rectangle for the sample.
-        transform.translation.value.x += velocity.x * static_cast<float>(frame_context.delta_time.seconds);
-        transform.translation.value.y += velocity.y * static_cast<float>(frame_context.delta_time.seconds);
-
-        constexpr float limit_x = 400.0F;
-        constexpr float limit_y = 225.0F;
-
-        transform.translation.value.x = vve::math::clamp(transform.translation.value.x, -limit_x, limit_x);
-        transform.translation.value.y = vve::math::clamp(transform.translation.value.y, -limit_y, limit_y);
+        transform.translation.value.x += velocity.x * delta_seconds;
+        transform.translation.value.y += velocity.y * delta_seconds;
 
         if (const auto set_transform_result = world.setTransform(player_, transform); !set_transform_result) {
             return std::unexpected(set_transform_result.error());
@@ -231,15 +227,8 @@ public:
         };
         const std::string key_state_string{key_state.data(), key_state.size()};
         const bool movement_key_held = key_state_string != "----";
-        log_accumulator_seconds_ += frame_context.delta_time.seconds;
-        const bool periodic_log = log_accumulator_seconds_ >= 1.0;
-        const bool key_state_changed = key_state_string != last_logged_key_state_;
-        if (periodic_log) {
-            log_accumulator_seconds_ = 0.0;
-        }
 
-        // While movement keys are held, print every frame so repeated input is
-        if (movement_key_held || key_state_changed || reset_pressed || periodic_log) { // immediately observable.
+        if (movement_key_held || reset_pressed) {
             const auto main_window = world.findWindow("main");
             const auto tools_window = world.findWindow("tools");
             const auto player_x = static_cast<int>(std::lround(transform.translation.value.x));
@@ -247,6 +236,8 @@ public:
             std::cout << '[' << name() << "] player=(" << player_x << ", " << player_y << ')'
                       << " velocity=(" << static_cast<int>(std::lround(velocity.x)) << ", "
                       << static_cast<int>(std::lround(velocity.y)) << ')'
+                      << " acceleration=(" << static_cast<int>(std::lround(acceleration_x)) << ", "
+                      << static_cast<int>(std::lround(acceleration_y)) << ')'
                       << " keys=" << key_state_string;
             if (main_window) {
                 std::cout << " main=" << main_window->extent.width << 'x' << main_window->extent.height
@@ -259,7 +250,6 @@ public:
                           << (tools_window->focused ? "[focused]" : "");
             }
             std::cout << '\n';
-            last_logged_key_state_ = key_state_string;
         }
 
         return {};
@@ -284,10 +274,6 @@ private:
     vve::Entity player_{};
     /// @brief Runtime scene loaded so public camera changes are visible.
     std::filesystem::path scene_path_{};
-    /// @brief Tracks time until the next heartbeat log line.
-    double log_accumulator_seconds_{0.0};
-    /// @brief Stores the last emitted key-state summary so repeated idle frames stay quiet.
-    std::string last_logged_key_state_{"----"};
 };
 
 /**

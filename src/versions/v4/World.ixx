@@ -68,16 +68,19 @@ export namespace vve::v4 {
          mouse_wheel_delta_.clear();
       }
 
-      void holdKey(std::int32_t keycode) { keys_down_.insert(keycode); }
+      void holdKey(std::int32_t keycode) { keys_down_.insert(normalizeKey(keycode)); }
 
       void pressKey(std::int32_t keycode) {
-         if (!keys_down_.contains(keycode)) { keys_pressed_.insert(keycode); }
-         keys_down_.insert(keycode);
+         const auto key = normalizeKey(keycode);
+         if (!keys_down_.contains(key)) { keys_pressed_.insert(key); }
+         keys_down_.insert(key);
       }
 
       void releaseKey(std::int32_t keycode) {
-         keys_down_.erase(keycode);
-         keys_released_.insert(keycode);
+         const auto key = normalizeKey(keycode);
+         keys_down_.erase(key);
+         keys_pressed_.erase(key);
+         keys_released_.insert(key);
       }
 
       void setMousePosition(WindowHandle window, Vec2 position) { mouse_position_[window] = position; }
@@ -92,9 +95,13 @@ export namespace vve::v4 {
          it->second = math::add(it->second, delta);
       }
 
-      [[nodiscard]] bool isKeyDown(std::int32_t keycode) const { return keys_down_.contains(keycode); }
-      [[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const { return keys_pressed_.contains(keycode); }
-      [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const { return keys_released_.contains(keycode); }
+      [[nodiscard]] bool isKeyDown(std::int32_t keycode) const { return keys_down_.contains(normalizeKey(keycode)); }
+      [[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const {
+         return keys_pressed_.contains(normalizeKey(keycode));
+      }
+      [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const {
+         return keys_released_.contains(normalizeKey(keycode));
+      }
 
       [[nodiscard]] std::optional<Vec2> mousePosition(WindowHandle window) const {
          const auto it = mouse_position_.find(window);
@@ -112,6 +119,13 @@ export namespace vve::v4 {
       }
 
    private:
+      [[nodiscard]] static std::int32_t normalizeKey(std::int32_t keycode) {
+         if (keycode >= static_cast<std::int32_t>('A') && keycode <= static_cast<std::int32_t>('Z')) {
+            return keycode - static_cast<std::int32_t>('A') + static_cast<std::int32_t>('a');
+         }
+         return keycode;
+      }
+
       std::set<std::int32_t> keys_down_{};
       std::set<std::int32_t> keys_pressed_{};
       std::set<std::int32_t> keys_released_{};

@@ -172,11 +172,7 @@ namespace vve::v4 {
             if (auto *record = impl_->find(event.window.windowID)) { record->info.minimized = false; }
             break;
          case SDL_EVENT_KEY_DOWN:
-            if (event.key.repeat) {
-               input.holdKey(static_cast<std::int32_t>(event.key.key));
-            } else {
-               input.pressKey(static_cast<std::int32_t>(event.key.key));
-            }
+            if (!event.key.repeat) { input.pressKey(static_cast<std::int32_t>(event.key.key)); }
             break;
          case SDL_EVENT_KEY_UP:
             input.releaseKey(static_cast<std::int32_t>(event.key.key));

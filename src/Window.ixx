@@ -9,7 +9,49 @@ import :Types;
  */
 export namespace vve {
 
-   using InputState      = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::InputState;      ///< Facade input snapshot.
+   template <typename... TSystems> class Engine;
+   class World;
+
+   class InputState {
+   public:
+      InputState() = default;
+      InputState(const InputState &) = delete;
+      InputState(InputState &&) = delete;
+      InputState &operator=(const InputState &) = delete;
+      InputState &operator=(InputState &&) = delete;
+
+      void beginFrame() { impl().beginFrame(); }
+      void holdKey(std::int32_t keycode) { impl().holdKey(keycode); }
+      void pressKey(std::int32_t keycode) { impl().pressKey(keycode); }
+      void releaseKey(std::int32_t keycode) { impl().releaseKey(keycode); }
+      void setMousePosition(WindowHandle window, Vec2 position) { impl().setMousePosition(window, position); }
+      void addMouseDelta(WindowHandle window, Vec2 delta) { impl().addMouseDelta(window, delta); }
+      void addMouseWheelDelta(WindowHandle window, Vec2 delta) { impl().addMouseWheelDelta(window, delta); }
+
+      [[nodiscard]] bool isKeyDown(std::int32_t keycode) const { return impl().isKeyDown(keycode); }
+      [[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const { return impl().wasKeyPressed(keycode); }
+      [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const { return impl().wasKeyReleased(keycode); }
+      [[nodiscard]] std::optional<Vec2> mousePosition(WindowHandle window) const {
+         return impl().mousePosition(window);
+      }
+      [[nodiscard]] Vec2 mouseDelta(WindowHandle window) const { return impl().mouseDelta(window); }
+      [[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const { return impl().mouseWheelDelta(window); }
+
+   private:
+      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::InputState;
+
+      explicit InputState(Impl &implementation) noexcept : impl_{std::addressof(implementation)} {}
+
+      [[nodiscard]] Impl &impl() { return *impl_; }
+      [[nodiscard]] const Impl &impl() const { return *impl_; }
+
+      Impl owned_{};
+      Impl *impl_{std::addressof(owned_)};
+
+      template <typename... TSystems> friend class Engine;
+      friend class World;
+   }; ///< Facade input snapshot.
+
    using WindowDesc      = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowDesc;      ///< Facade window descriptor.
    using WindowFrameData = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData; ///< Per-frame window snapshot.
    using WindowInfo      = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowInfo;      ///< Runtime window state.

@@ -459,8 +459,18 @@ struct CountingSystem {
       return 61;
    }
    input.releaseKey('W');
-   if (input.isKeyDown('W') || !input.wasKeyReleased('W')) {
+   if (input.isKeyDown('W') || input.isKeyDown('w') || !input.wasKeyReleased('W') || !input.wasKeyReleased('w')) {
       return 62;
+   }
+   input.beginFrame();
+   input.pressKey('W');
+   if (!input.isKeyDown('w') || !input.wasKeyPressed('w')) {
+      return 68;
+   }
+   input.releaseKey('w');
+   if (input.isKeyDown('W') || input.isKeyDown('w') || input.wasKeyPressed('W') || input.wasKeyPressed('w') ||
+       !input.wasKeyReleased('W') || !input.wasKeyReleased('w')) {
+      return 69;
    }
    input.setMousePosition(window, Vec2{10.0F, 20.0F});
    input.addMouseDelta(window, Vec2{1.0F, 2.0F});
@@ -557,7 +567,8 @@ struct CountingSystem {
       return 83;
    }
 
-   BasicTree<NodeHandle> tree{.root = a};
+   BasicTree<NodeHandle> tree{};
+   tree.root = a;
    tree.addChild(a, b);
    tree.addChild(b, c);
    const auto parent_b = tree.parentOf(b);

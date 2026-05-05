@@ -17,12 +17,108 @@ export namespace vve {
    using FrameContext    = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::FrameContext;    ///< Per-frame timing context.
    using FrameStatus     = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::FrameStatus;     ///< One-frame loop result.
    using MaxFrames       = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::MaxFrames;       ///< Facade frame-cap option.
-   using World           = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::World;           ///< Facade world type.
+
+   class World {
+   public:
+      explicit World(ECS &ecs)
+         : owned_{std::make_unique<Impl>(ecs.impl())}, impl_{owned_.get()}, ecs_{std::addressof(ecs)},
+           input_{impl().input()} {}
+      World(const World &) = delete;
+      World(World &&) = delete;
+      World &operator=(const World &) = delete;
+      World &operator=(World &&) = delete;
+
+      [[nodiscard]] ECS &ecs() { return *ecs_; }
+      [[nodiscard]] const ECS &ecs() const { return *ecs_; }
+      [[nodiscard]] InputState &input() { return input_; }
+      [[nodiscard]] const InputState &input() const { return input_; }
+      [[nodiscard]] Vector<WindowInfo> &windows() { return impl().windows(); }
+      [[nodiscard]] const Vector<WindowInfo> &windows() const { return impl().windows(); }
+
+      [[nodiscard]] WindowInfo *findWindow(std::string_view id) { return impl().findWindow(id); }
+      [[nodiscard]] WindowInfo *findWindow(WindowHandle handle) { return impl().findWindow(handle); }
+      [[nodiscard]] const WindowInfo *findWindow(std::string_view id) const { return impl().findWindow(id); }
+      [[nodiscard]] const WindowInfo *findWindow(WindowHandle handle) const { return impl().findWindow(handle); }
+
+      template <typename... TComponents>
+      [[nodiscard]] std::expected<Entity, Error> spawn(TComponents &&...components) {
+         return impl().spawn(std::forward<TComponents>(components)...);
+      }
+
+      template <typename T> [[nodiscard]] std::expected<void, Error> addComponent(Entity entity, T component) {
+         return impl().template addComponent<T>(entity, std::move(component));
+      }
+
+      template <typename T> [[nodiscard]] std::expected<void, Error> setComponent(Entity entity, T component) {
+         return impl().template setComponent<T>(entity, std::move(component));
+      }
+
+      template <typename T> [[nodiscard]] std::expected<std::optional<T>, Error> getComponent(Entity entity) const {
+         return impl().template getComponent<T>(entity);
+      }
+
+      [[nodiscard]] std::expected<void, Error> destroy(Entity entity) { return impl().destroy(entity); }
+      [[nodiscard]] std::expected<void, Error> setTransform(Entity entity, Transform transform) {
+         return impl().setTransform(std::move(entity), std::move(transform));
+      }
+      [[nodiscard]] std::expected<std::optional<Transform>, Error> getTransform(Entity entity) const {
+         return impl().getTransform(std::move(entity));
+      }
+      [[nodiscard]] std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera) {
+         return impl().setWindowCamera(window, camera);
+      }
+      [[nodiscard]] std::expected<void, Error> setWindowCamera(std::string_view window_id, Entity camera) {
+         return impl().setWindowCamera(window_id, camera);
+      }
+      [[nodiscard]] std::expected<void, Error> clearWindowCamera(WindowHandle window) {
+         return impl().clearWindowCamera(window);
+      }
+      [[nodiscard]] std::expected<void, Error> clearWindowCamera(std::string_view window_id) {
+         return impl().clearWindowCamera(window_id);
+      }
+      [[nodiscard]] std::optional<Entity> windowCamera(WindowHandle window) const {
+         return impl().windowCamera(window);
+      }
+      [[nodiscard]] std::optional<Entity> windowCamera(std::string_view window_id) const {
+         return impl().windowCamera(window_id);
+      }
+      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera) { return impl().setActiveCamera(camera); }
+      [[nodiscard]] std::optional<Entity> activeCamera() const { return impl().activeCamera(); }
+      void setSceneLoader(std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> loader) {
+         impl().setSceneLoader(std::move(loader));
+      }
+      [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &path) {
+         return impl().loadScene(path);
+      }
+
+   private:
+      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::World;
+
+      World(Impl &implementation, ECS &ecs)
+         : impl_{std::addressof(implementation)}, ecs_{std::addressof(ecs)}, input_{impl().input()} {}
+
+      [[nodiscard]] Impl &impl() { return *impl_; }
+      [[nodiscard]] const Impl &impl() const { return *impl_; }
+
+      std::unique_ptr<Impl> owned_{};
+      Impl *impl_{nullptr};
+      ECS *ecs_{nullptr};
+      InputState input_;
+
+      template <typename... TSystems> friend class Engine;
+   }; ///< Facade world type.
 
    template <typename... TSystems>
    using UserSystems = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystems<TSystems...>; ///< User systems bundle.
 
-   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::makeUserSystems; ///< Facade user-system bundle factory.
+   struct MakeUserSystems {
+      template <typename... TSystems> [[nodiscard]] auto operator()(TSystems &&...systems) const {
+         return UserSystems<std::remove_cvref_t<TSystems>...>{
+            .value = std::tuple<std::remove_cvref_t<TSystems>...>{std::forward<TSystems>(systems)...}};
+      }
+   }; ///< Callable facade user-system bundle factory.
+
+   inline constexpr MakeUserSystems makeUserSystems{}; ///< Facade user-system bundle factory.
 
    template <typename T> concept ApplicationNameLike = requires(T value) {
       { value.value } -> std::same_as<std::string &>;

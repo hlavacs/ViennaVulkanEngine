@@ -12,10 +12,77 @@ export namespace vve {
 
    using DefaultECSTraits = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::DefaultECSTraits; ///< Facade ECS traits.
 
-   template <typename TTraits = DefaultECSTraits>
-   using BasicECS = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicECS<TTraits>; ///< Facade ECS template.
+   template <typename... TSystems> class Engine;
+   class World;
 
-   using ECS = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::ECS; ///< Default facade ECS.
+   template <typename TTraits = DefaultECSTraits> class BasicECS {
+   public:
+      BasicECS() = default;
+      BasicECS(const BasicECS &) = delete;
+      BasicECS(BasicECS &&) = delete;
+      BasicECS &operator=(const BasicECS &) = delete;
+      BasicECS &operator=(BasicECS &&) = delete;
+
+      [[nodiscard]] Entity create() { return impl().create(); }
+      [[nodiscard]] bool exists(Entity entity) const { return impl().exists(entity); }
+      [[nodiscard]] std::expected<void, Error> erase(Entity entity) { return impl().erase(entity); }
+
+      template <typename T> [[nodiscard]] std::expected<void, Error> add(Entity entity, T component) {
+         return impl().template add<T>(entity, std::move(component));
+      }
+
+      template <typename T> [[nodiscard]] std::expected<T, Error> get(Entity entity) const {
+         return impl().template get<T>(entity);
+      }
+
+      template <typename T> [[nodiscard]] std::expected<std::optional<T>, Error> tryGet(Entity entity) const {
+         return impl().template tryGet<T>(entity);
+      }
+
+      template <typename T> [[nodiscard]] std::expected<void, Error> put(Entity entity, T component) {
+         return impl().template put<T>(entity, std::move(component));
+      }
+
+      template <typename T> [[nodiscard]] std::expected<bool, Error> has(Entity entity) const {
+         return impl().template has<T>(entity);
+      }
+
+      template <typename T> [[nodiscard]] std::expected<void, Error> remove(Entity entity) {
+         return impl().template remove<T>(entity);
+      }
+
+      template <typename... T> [[nodiscard]] Vector<Entity> view() const { return impl().template view<T...>(); }
+
+   protected:
+      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicECS<TTraits>;
+
+      explicit BasicECS(Impl &implementation) noexcept : impl_{std::addressof(implementation)} {}
+
+   private:
+      [[nodiscard]] Impl &impl() { return *impl_; }
+      [[nodiscard]] const Impl &impl() const { return *impl_; }
+
+      Impl owned_{};
+      Impl *impl_{std::addressof(owned_)};
+
+      template <typename... TSystems> friend class Engine;
+      friend class World;
+   }; ///< Facade ECS template.
+
+   class ECS : public BasicECS<> {
+   public:
+      ECS() = default;
+      ECS(const ECS &) = delete;
+      ECS(ECS &&) = delete;
+      ECS &operator=(const ECS &) = delete;
+      ECS &operator=(ECS &&) = delete;
+
+   private:
+      explicit ECS(VVE_ENGINE_IMPLEMENTATION_NAMESPACE::ECS &implementation) noexcept : BasicECS<>(implementation) {}
+
+      template <typename... TSystems> friend class Engine;
+      friend class World;
+   }; ///< Default facade ECS.
 
    template <typename T> concept ECSTraitsLike =
       requires { { T::use_slot_map_handles } -> std::convertible_to<bool>; }; ///< Contract for ECS traits.
