@@ -27,7 +27,7 @@ For instance, defining VVE_ENGINE_IMPLEMENTATION_NAMESPACE to be v4 results in u
 Facades are defined in a facade pattern through wrapper classes and functions. Every class that is seen by the user lives in the facade layer as a wrapper. Wrappers have exactly one private member variable impl_ which is of type 
 ```cpp
   using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::<WRAPPED_CLASS>;
-  Impl impl_{};
+  Impl &impl_{};
 ```
 where wrapped class is a specific class of the implementation layer.
 Wrappers mimic each method of the implementation, receive the same parameters and then forward them to the implementation. This way the contract is enforced and restricted to the allowed interface.
@@ -41,12 +41,13 @@ Engine implementations must expose specific subsystems with the enforced interfa
 - Vector: a basic vector like data container, requires iterators.
 - Engine: This is created by the user app and handles main frame events.
 - ECS: an Entity Component System that can hold entities with any data type.
+- WindowSystem: a window manager that holds all windows in a container.
 - Window: Window information like number, renderer, camera, size.
 - Assets: A wrapper over the internal asset system. The wrapper exposes specific public functions that enable users to load from disk and purge assets, create objects. 
 - GUI: wrapper over the GUI system implementation. The wrapper offers public hooks for creating widgets. Must work with ImGUI. 
 - World: main interface for user interaction with the world. 
   - Its API must offer enough member functions to access and change all world, scene and asset data without exposing internal descriptor types like SceneDescriptor or ObjectCatalogue. 
-  - World contains references to: Asset wrapper, GUI wrapper, Engine wrapper, Windows wrapper. It allows for getting references to them.
+  - World contains references to: ECS wrapper, Asset wrapper, GUI wrapper, Engine wrapper, Windows wrapper. It allows for getting references to them.
   - World wrapper is a run time binder that binds all necessary subsystem wrappers into one class.
   - A reference to it can be obtained through a call to an Engine member function.
   - The world wrapper is actually created by the Engine impementation, which creates a World wrapper over the actual World implementation.
