@@ -31,32 +31,6 @@ export namespace vve::v4 {
       [[nodiscard]] const WindowSystem &windowSystem() const { return *window_system_; }
       [[nodiscard]] InputState &input() { return input_; }
       [[nodiscard]] const InputState &input() const { return input_; }
-      [[nodiscard]] Vector<WindowInfo> &windows() { return windows_; }
-      [[nodiscard]] const Vector<WindowInfo> &windows() const { return windows_; }
-
-      [[nodiscard]] WindowInfo *findWindow(std::string_view id) {
-         const auto it = std::ranges::find_if(windows_, [id](const WindowInfo &window) { return window.id == id; });
-         return it == windows_.end() ? nullptr : std::addressof(*it);
-      }
-
-      [[nodiscard]] WindowInfo *findWindow(WindowHandle handle) {
-         const auto it = std::ranges::find_if(windows_, [handle](const WindowInfo &window) {
-            return window.handle == handle;
-         });
-         return it == windows_.end() ? nullptr : std::addressof(*it);
-      }
-
-      [[nodiscard]] const WindowInfo *findWindow(std::string_view id) const {
-         const auto it = std::ranges::find_if(windows_, [id](const WindowInfo &window) { return window.id == id; });
-         return it == windows_.end() ? nullptr : std::addressof(*it);
-      }
-
-      [[nodiscard]] const WindowInfo *findWindow(WindowHandle handle) const {
-         const auto it = std::ranges::find_if(windows_, [handle](const WindowInfo &window) {
-            return window.handle == handle;
-         });
-         return it == windows_.end() ? nullptr : std::addressof(*it);
-      }
 
       template <typename... TComponents>
       [[nodiscard]] std::expected<Entity, Error> spawn(TComponents &&...components) {
@@ -94,57 +68,36 @@ export namespace vve::v4 {
 
       [[nodiscard]] std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera) {
          if (!ecs_.exists(camera)) { return std::unexpected(Error::invalid_handle); }
-         auto *info = findWindow(window);
-         if (info == nullptr) { return std::unexpected(Error::invalid_handle); }
-         info->camera = camera;
-         return {};
+         return window_system_->setWindowCamera(window, camera);
       }
 
       [[nodiscard]] std::expected<void, Error> setWindowCamera(std::string_view window_id, Entity camera) {
          if (!ecs_.exists(camera)) { return std::unexpected(Error::invalid_handle); }
-         auto *info = findWindow(window_id);
-         if (info == nullptr) { return std::unexpected(Error::invalid_handle); }
-         info->camera = camera;
-         return {};
+         return window_system_->setWindowCamera(window_id, camera);
       }
 
       [[nodiscard]] std::expected<void, Error> clearWindowCamera(WindowHandle window) {
-         auto *info = findWindow(window);
-         if (info == nullptr) { return std::unexpected(Error::invalid_handle); }
-         info->camera.reset();
-         return {};
+         return window_system_->clearWindowCamera(window);
       }
 
       [[nodiscard]] std::expected<void, Error> clearWindowCamera(std::string_view window_id) {
-         auto *info = findWindow(window_id);
-         if (info == nullptr) { return std::unexpected(Error::invalid_handle); }
-         info->camera.reset();
-         return {};
+         return window_system_->clearWindowCamera(window_id);
       }
 
       [[nodiscard]] std::optional<Entity> windowCamera(WindowHandle window) const {
-         const auto *info = findWindow(window);
-         return info == nullptr ? std::optional<Entity>{} : info->camera;
+         return window_system_->windowCamera(window);
       }
 
       [[nodiscard]] std::optional<Entity> windowCamera(std::string_view window_id) const {
-         const auto *info = findWindow(window_id);
-         return info == nullptr ? std::optional<Entity>{} : info->camera;
+         return window_system_->windowCamera(window_id);
       }
 
       [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera) {
          if (!ecs_.exists(camera)) { return std::unexpected(Error::invalid_handle); }
-         if (windows_.empty()) { return std::unexpected(Error::missing_object); }
-         for (auto &window : windows_) { window.camera = camera; }
-         return {};
+         return window_system_->setActiveCamera(camera);
       }
 
-      [[nodiscard]] std::optional<Entity> activeCamera() const {
-         const auto it = std::ranges::find_if(windows_, [](const WindowInfo &window) {
-            return window.camera.has_value();
-         });
-         return it == windows_.end() ? std::optional<Entity>{} : it->camera;
-      }
+      [[nodiscard]] std::optional<Entity> activeCamera() const { return window_system_->activeCamera(); }
 
       void setSceneLoader(std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> loader) {
          scene_loader_ = std::move(loader);
@@ -161,7 +114,6 @@ export namespace vve::v4 {
       GuiSystem *gui_{};
       WindowSystem *window_system_{};
       InputState input_{};
-      Vector<WindowInfo> windows_{};
       std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> scene_loader_{};
    };
 
