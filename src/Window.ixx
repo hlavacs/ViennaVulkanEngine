@@ -10,6 +10,67 @@ import VEEngine.Vector;
  */
 export namespace vve {
 
+   class WindowSetup {
+      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowDesc;
+
+   public:
+      WindowSetup() = default;
+
+      [[nodiscard]] WindowSetup &id(std::string value) {
+         impl_.id = std::move(value);
+         return *this;
+      }
+      [[nodiscard]] WindowSetup &title(std::string value) {
+         impl_.title = std::move(value);
+         return *this;
+      }
+      [[nodiscard]] WindowSetup &extent(PixelExtent value) {
+         impl_.extent = value;
+         return *this;
+      }
+      [[nodiscard]] WindowSetup &position(int x, int y) {
+         impl_.x = x;
+         impl_.y = y;
+         return *this;
+      }
+      [[nodiscard]] WindowSetup &renderer(RendererId value) {
+         impl_.renderer_id = std::move(value);
+         return *this;
+      }
+      [[nodiscard]] WindowSetup &resizable(bool value) {
+         impl_.resizable = value;
+         return *this;
+      }
+      [[nodiscard]] WindowSetup &visible(bool value) {
+         impl_.visible = value;
+         return *this;
+      }
+
+      [[nodiscard]] operator Impl() const { return impl_; }
+
+   private:
+      Impl impl_{};
+   }; ///< Facade startup window option.
+
+   class WindowSetups {
+      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Windows;
+
+   public:
+      WindowSetups() = default;
+      WindowSetups(std::initializer_list<WindowSetup> windows) {
+         impl_.value.clear();
+         impl_.value.reserve(windows.size());
+         for (const auto &window : windows) { impl_.value.push_back(window); }
+      }
+
+      void add(WindowSetup window) { impl_.value.push_back(std::move(window)); }
+
+      [[nodiscard]] operator Impl() const { return impl_; }
+
+   private:
+      Impl impl_{};
+   }; ///< Facade startup window collection option.
+
    class InputState {
       using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::InputState;
 
@@ -92,6 +153,28 @@ export namespace vve {
          auto *window = impl_.findWindow(handle);
          return window == nullptr ? std::optional<Window>{} : std::optional<Window>{Window{*window}};
       }
+      [[nodiscard]] std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera) {
+         return impl_.setWindowCamera(window, camera);
+      }
+      [[nodiscard]] std::expected<void, Error> setWindowCamera(std::string_view id, Entity camera) {
+         return impl_.setWindowCamera(id, camera);
+      }
+      [[nodiscard]] std::expected<void, Error> clearWindowCamera(WindowHandle window) {
+         return impl_.clearWindowCamera(window);
+      }
+      [[nodiscard]] std::expected<void, Error> clearWindowCamera(std::string_view id) {
+         return impl_.clearWindowCamera(id);
+      }
+      [[nodiscard]] std::optional<Entity> windowCamera(WindowHandle window) const {
+         return impl_.windowCamera(window);
+      }
+      [[nodiscard]] std::optional<Entity> windowCamera(std::string_view id) const {
+         return impl_.windowCamera(id);
+      }
+      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera) {
+         return impl_.setActiveCamera(camera);
+      }
+      [[nodiscard]] std::optional<Entity> activeCamera() const { return impl_.activeCamera(); }
 
    private:
       Impl &impl_;

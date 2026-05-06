@@ -60,22 +60,25 @@ int main() {
    if (!engine.init()) { return 1; }
 
    auto world = engine.world();
+   auto window_system = world.windowSystem();
    const auto camera = world.spawn(vve::Camera{});
    if (!camera) { return 2; }
 
-   if (!world.setWindowCamera("main", *camera)) { return 3; }
-   const auto main_window_after_direct_set = world.windowSystem().findWindow("main");
-   const auto tools_window_after_direct_set = world.windowSystem().findWindow("tools");
+   if (!window_system.setWindowCamera("main", *camera)) { return 3; }
+   const auto main_window_after_direct_set = window_system.findWindow("main");
+   const auto tools_window_after_direct_set = window_system.findWindow("tools");
    if (!main_window_after_direct_set || !tools_window_after_direct_set) { return 4; }
    if (!sameCamera(main_window_after_direct_set->camera(), *camera)) { return 5; }
    if (tools_window_after_direct_set->camera().has_value()) { return 6; }
 
-   if (!world.setActiveCamera(*camera)) { return 7; }
-   const auto main_window_after_active_set = world.windowSystem().findWindow("main");
-   const auto tools_window_after_active_set = world.windowSystem().findWindow("tools");
+   if (!window_system.setActiveCamera(*camera)) { return 7; }
+   const auto main_window_after_active_set = window_system.findWindow("main");
+   const auto tools_window_after_active_set = window_system.findWindow("tools");
    if (!main_window_after_active_set || !tools_window_after_active_set) { return 8; }
    if (!sameCamera(main_window_after_active_set->camera(), *camera)) { return 9; }
    if (!sameCamera(tools_window_after_active_set->camera(), *camera)) { return 10; }
+   if (!sameCamera(window_system.windowCamera("main"), *camera)) { return 19; }
+   if (!sameCamera(window_system.activeCamera(), *camera)) { return 20; }
 
    const auto status = engine.step();
    if (!status || *status != vve::FrameStatus::stopped) { return 11; }
@@ -83,12 +86,12 @@ int main() {
    if (!sameCamera(frame_main_camera, *camera)) { return 13; }
    if (!sameCamera(frame_tools_camera, *camera)) { return 14; }
 
-   if (!world.clearWindowCamera("main")) { return 15; }
-   if (world.windowCamera("main").has_value()) { return 16; }
+   if (!window_system.clearWindowCamera("main")) { return 15; }
+   if (window_system.windowCamera("main").has_value()) { return 16; }
 
-   const auto tools_window = world.windowSystem().findWindow("tools");
-   if (!tools_window || !world.clearWindowCamera(tools_window->handle())) { return 17; }
-   if (world.activeCamera().has_value()) { return 18; }
+   const auto tools_window = window_system.findWindow("tools");
+   if (!tools_window || !window_system.clearWindowCamera(tools_window->handle())) { return 17; }
+   if (window_system.activeCamera().has_value()) { return 18; }
 
    return 0;
 }
