@@ -495,11 +495,13 @@ struct CountingSystem {
    if (!engine.init()) {
       return 41;
    }
-   const auto camera = engine.world().spawn(Camera{});
-   if (!camera || !engine.world().setWindowCamera("main", *camera)) {
+   auto world = engine.world();
+   auto window_system = world.windowSystem();
+   const auto camera = world.spawn(Camera{});
+   if (!camera || !window_system.setWindowCamera("main", *camera)) {
       return 57;
    }
-   auto assets = engine.world().assets();
+   auto assets = world.assets();
    const auto scene = assets.addScene(ObjectName{.value = "stub"});
    if (!scene || !scene->isCounter() || !assets.containsScene(*scene)) {
       return 42;
@@ -509,13 +511,13 @@ struct CountingSystem {
    if (!first || !second || *first != FrameStatus::running || *second != FrameStatus::stopped) {
       return 51;
    }
-   if (init_count != 1 || update_count != 2 || last_frame != 1 || !engine.world().windowSystem().findWindow("main")) {
+   if (init_count != 1 || update_count != 2 || last_frame != 1 || !window_system.findWindow("main")) {
       return 52;
    }
-   if (engine.world().windowSystem().windowCount() != 2 || !engine.world().windowSystem().findWindow("tools")) {
+   if (window_system.windowCount() != 2 || !window_system.findWindow("tools")) {
       return 53;
    }
-   const auto main_camera = engine.world().windowCamera("main");
+   const auto main_camera = window_system.windowCamera("main");
    if (!main_camera || *main_camera != *camera) {
       return 58;
    }

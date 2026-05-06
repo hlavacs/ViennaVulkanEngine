@@ -66,39 +66,6 @@ export namespace vve::v4 {
          return getComponent<Transform>(entity);
       }
 
-      [[nodiscard]] std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera) {
-         if (!ecs_.exists(camera)) { return std::unexpected(Error::invalid_handle); }
-         return window_system_->setWindowCamera(window, camera);
-      }
-
-      [[nodiscard]] std::expected<void, Error> setWindowCamera(std::string_view window_id, Entity camera) {
-         if (!ecs_.exists(camera)) { return std::unexpected(Error::invalid_handle); }
-         return window_system_->setWindowCamera(window_id, camera);
-      }
-
-      [[nodiscard]] std::expected<void, Error> clearWindowCamera(WindowHandle window) {
-         return window_system_->clearWindowCamera(window);
-      }
-
-      [[nodiscard]] std::expected<void, Error> clearWindowCamera(std::string_view window_id) {
-         return window_system_->clearWindowCamera(window_id);
-      }
-
-      [[nodiscard]] std::optional<Entity> windowCamera(WindowHandle window) const {
-         return window_system_->windowCamera(window);
-      }
-
-      [[nodiscard]] std::optional<Entity> windowCamera(std::string_view window_id) const {
-         return window_system_->windowCamera(window_id);
-      }
-
-      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera) {
-         if (!ecs_.exists(camera)) { return std::unexpected(Error::invalid_handle); }
-         return window_system_->setActiveCamera(camera);
-      }
-
-      [[nodiscard]] std::optional<Entity> activeCamera() const { return window_system_->activeCamera(); }
-
       void setSceneLoader(std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> loader) {
          scene_loader_ = std::move(loader);
       }

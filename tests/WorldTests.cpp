@@ -27,12 +27,13 @@ int main() {
    if (!engine.init()) { return 1; }
 
    auto world = engine.world();
+   auto window_system = world.windowSystem();
    const auto camera = world.spawn(vve::Camera{});
-   if (!camera || !world.setActiveCamera(*camera)) { return 2; }
-   const auto active = world.activeCamera();
+   if (!camera || !window_system.setActiveCamera(*camera)) { return 2; }
+   const auto active = window_system.activeCamera();
    if (!active || *active != *camera) { return 3; }
-   if (!world.setWindowCamera("main", *camera)) { return 4; }
-   const auto window_camera = world.windowCamera("main");
+   if (!window_system.setWindowCamera("main", *camera)) { return 4; }
+   const auto window_camera = window_system.windowCamera("main");
    if (!window_camera || *window_camera != *camera) { return 5; }
 
    const auto transform = vve::Transform{

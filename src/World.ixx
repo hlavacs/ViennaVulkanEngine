@@ -57,26 +57,6 @@ export namespace vve {
       [[nodiscard]] std::expected<std::optional<Transform>, Error> getTransform(Entity entity) const {
          return impl_.getTransform(std::move(entity));
       }
-      [[nodiscard]] std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera) {
-         return impl_.setWindowCamera(window, camera);
-      }
-      [[nodiscard]] std::expected<void, Error> setWindowCamera(std::string_view window_id, Entity camera) {
-         return impl_.setWindowCamera(window_id, camera);
-      }
-      [[nodiscard]] std::expected<void, Error> clearWindowCamera(WindowHandle window) {
-         return impl_.clearWindowCamera(window);
-      }
-      [[nodiscard]] std::expected<void, Error> clearWindowCamera(std::string_view window_id) {
-         return impl_.clearWindowCamera(window_id);
-      }
-      [[nodiscard]] std::optional<Entity> windowCamera(WindowHandle window) const {
-         return impl_.windowCamera(window);
-      }
-      [[nodiscard]] std::optional<Entity> windowCamera(std::string_view window_id) const {
-         return impl_.windowCamera(window_id);
-      }
-      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera) { return impl_.setActiveCamera(camera); }
-      [[nodiscard]] std::optional<Entity> activeCamera() const { return impl_.activeCamera(); }
       [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &path) {
          return impl_.loadScene(path);
       }

@@ -135,7 +135,7 @@ public:
         if (!plane_entity || !cuboid_entity || !light_entity || !camera_entity) {
             return std::unexpected(vve::Error::invalid_argument);
         }
-        if (const auto camera_result = world.setActiveCamera(*camera_entity); !camera_result) {
+        if (const auto camera_result = world.windowSystem().setActiveCamera(*camera_entity); !camera_result) {
             return std::unexpected(camera_result.error());
         }
 
