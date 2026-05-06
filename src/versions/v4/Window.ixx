@@ -130,8 +130,12 @@ export namespace vve::v4 {
       [[nodiscard]] std::string_view name() const noexcept;
       /// @brief Creates all startup windows from descriptors.
       [[nodiscard]] std::expected<void, Error> init(const Windows &windows);
-      /// @brief Polls SDL events and mutates the supplied input snapshot.
-      [[nodiscard]] std::expected<void, Error> poll(InputState &input);
+      /// @brief Polls SDL events and mutates the owned input snapshot.
+      [[nodiscard]] std::expected<void, Error> poll();
+      /// @brief Returns the owned input state.
+      [[nodiscard]] InputState &input();
+      /// @brief Returns the owned input state.
+      [[nodiscard]] const InputState &input() const;
       /// @brief Returns a copy of the current window-state snapshot.
       [[nodiscard]] Vector<WindowInfo> snapshot() const;
       /// @brief Returns references to owned window implementations.
@@ -353,6 +357,7 @@ namespace vve::v4 {
       }
 
       bool video_initialized{false};                 ///< True after SDL video init succeeds.
+      InputState input{};                            ///< Keyboard and mouse state produced by polling.
       Vector<Window> windows{};                      ///< Owned window implementations.
       std::map<SDL_WindowID, std::size_t> indices{}; ///< SDL id to window index.
    };
@@ -366,6 +371,10 @@ namespace vve::v4 {
    WindowSystem &WindowSystem::operator=(WindowSystem &&) noexcept = default;
 
    std::string_view WindowSystem::name() const noexcept { return "SDL3WindowSystem"; }
+
+   InputState &WindowSystem::input() { return impl_->input; }
+
+   const InputState &WindowSystem::input() const { return impl_->input; }
 
    std::expected<void, Error> WindowSystem::init(const Windows &windows) {
       const auto needs_platform_windows = std::ranges::any_of(windows.value, [](const WindowDesc &desc) {
@@ -420,7 +429,8 @@ namespace vve::v4 {
       return {};
    }
 
-   std::expected<void, Error> WindowSystem::poll(InputState &input) {
+   std::expected<void, Error> WindowSystem::poll() {
+      auto &input = impl_->input;
       input.beginFrame();
       if (!impl_->video_initialized) { return {}; }
       SDL_Event event{};

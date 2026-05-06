@@ -41,7 +41,7 @@ public:
         TWorld& world,
         const vve::FrameContext& frame_context,
         const auto&) {
-        const auto& input = world.input();
+        const auto input = world.windowSystem().input();
         if (input.isKeyDown('A') || input.isKeyDown('a')) {
             body_x_ -= 120.0 * frame_context.delta_time.seconds;
         }

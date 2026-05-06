@@ -307,7 +307,7 @@ export namespace vve::v4 {
       /// @brief Polls input and calls optional user-system update hooks.
       [[nodiscard]] std::expected<FrameStatus, Error> step() {
          if (!initialized_) { return std::unexpected(Error::missing_object); }
-         if (const auto result = window_system_.poll(world_.input()); !result) {
+         if (const auto result = window_system_.poll(); !result) {
             return std::unexpected(result.error());
          }
 

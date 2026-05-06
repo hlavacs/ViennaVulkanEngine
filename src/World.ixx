@@ -30,8 +30,6 @@ export namespace vve {
       [[nodiscard]] GuiSystem gui() { return GuiSystem{impl_.gui()}; }
       [[nodiscard]] WindowSystem windowSystem() { return WindowSystem{impl_.windowSystem()}; }
       [[nodiscard]] WindowSystem windowSystem() const { return WindowSystem{const_cast<Impl &>(impl_).windowSystem()}; }
-      [[nodiscard]] InputState input() { return InputState{impl_.input()}; }
-      [[nodiscard]] InputState input() const { return InputState{const_cast<Impl &>(impl_).input()}; }
 
       template <typename... TComponents>
       [[nodiscard]] std::expected<Entity, Error> spawn(TComponents &&...components) {

@@ -29,8 +29,6 @@ export namespace vve::v4 {
       [[nodiscard]] GuiSystem &gui() { return *gui_; }
       [[nodiscard]] WindowSystem &windowSystem() { return *window_system_; }
       [[nodiscard]] const WindowSystem &windowSystem() const { return *window_system_; }
-      [[nodiscard]] InputState &input() { return input_; }
-      [[nodiscard]] const InputState &input() const { return input_; }
 
       template <typename... TComponents>
       [[nodiscard]] std::expected<Entity, Error> spawn(TComponents &&...components) {
@@ -80,7 +78,6 @@ export namespace vve::v4 {
       AssetSystem *assets_{};
       GuiSystem *gui_{};
       WindowSystem *window_system_{};
-      InputState input_{};
       std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> scene_loader_{};
    };
 

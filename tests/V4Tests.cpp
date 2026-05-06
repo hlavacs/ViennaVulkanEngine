@@ -296,7 +296,7 @@ struct CountingSystem {
 
    const auto window = makeHandleForTest<WindowHandle>(200);
    auto input_engine = makeEngine(ApplicationName{"input-test"});
-   auto input = input_engine.world().input();
+   auto input = input_engine.world().windowSystem().input();
    input.pressKey('W');
    if (!input.isKeyDown('W') || !input.wasKeyPressed('W')) {
       return 60;

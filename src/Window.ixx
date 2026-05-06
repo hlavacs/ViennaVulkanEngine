@@ -137,6 +137,8 @@ export namespace vve {
       WindowSystem &operator=(WindowSystem &&) noexcept = delete;
 
       [[nodiscard]] std::string_view name() const noexcept { return impl_.name(); }
+      [[nodiscard]] InputState input() { return InputState{impl_.input()}; }
+      [[nodiscard]] InputState input() const { return InputState{const_cast<Impl &>(impl_).input()}; }
       [[nodiscard]] std::size_t windowCount() const { return impl_.windowCount(); }
       [[nodiscard]] Vector<Window> windows() const {
          Vector<Window> result{};

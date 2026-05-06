@@ -1,8 +1,15 @@
 import VEEngine;
 
 int main() {
-   auto engine = vve::makeEngine(vve::ApplicationName{"window-input-tests"});
-   auto input = engine.world().input();
+   auto engine = vve::makeEngine(
+      vve::ApplicationName{"window-input-tests"},
+      vve::MaxFrames{.value = vve::FrameCount{.value = 1}},
+      vve::WindowSetups{vve::WindowSetup{}
+                           .id("main")
+                           .title("window-input-tests")
+                           .extent(vve::PixelExtent{.width = 64, .height = 64})
+                           .visible(false)});
+   auto input = engine.world().windowSystem().input();
    const auto window = vve::makeHandleForTest<vve::WindowHandle>(77);
 
    input.pressKey('W');
@@ -25,6 +32,14 @@ int main() {
    if (input.mouseWheelDelta(window).y != -1.0F) { return 7; }
    input.beginFrame();
    if (input.mouseDelta(window).x != 0.0F || input.mouseWheelDelta(window).y != 0.0F) { return 8; }
+
+   input.pressKey('Q');
+   if (!input.isKeyDown('Q') || !input.wasKeyPressed('Q')) { return 9; }
+   if (!engine.init()) { return 10; }
+
+   const auto status = engine.step();
+   if (!status || *status != vve::FrameStatus::stopped) { return 11; }
+   if (!input.isKeyDown('Q') || input.wasKeyPressed('Q')) { return 12; }
 
    return 0;
 }

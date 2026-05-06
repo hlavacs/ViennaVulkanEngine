@@ -181,7 +181,7 @@ public:
 
         auto transform = **transform_result;
         auto velocity = **velocity_result;
-        const auto& input = world.input();
+        const auto input = world.windowSystem().input();
         const auto delta_seconds = static_cast<float>(frame_context.delta_time.seconds);
 
         float acceleration_x = 0.0F;
