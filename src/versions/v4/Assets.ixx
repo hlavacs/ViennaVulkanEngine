@@ -222,6 +222,82 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<std::size_t, Error> sceneLightCount(SceneHandle scene) const;
       /// @brief Returns the number of cameras referenced by an imported scene.
       [[nodiscard]] std::expected<std::size_t, Error> sceneCameraCount(SceneHandle scene) const;
+      /// @brief Returns the root node of an imported scene.
+      [[nodiscard]] std::expected<NodeHandle, Error> sceneRootNode(SceneHandle scene) const;
+      /// @brief Returns all node handles referenced by an imported scene.
+      [[nodiscard]] std::expected<Vector<NodeHandle>, Error> sceneNodes(SceneHandle scene) const;
+      /// @brief Returns all mesh handles referenced by an imported scene.
+      [[nodiscard]] std::expected<Vector<MeshHandle>, Error> sceneMeshes(SceneHandle scene) const;
+      /// @brief Returns all material handles referenced by an imported scene.
+      [[nodiscard]] std::expected<Vector<MaterialHandle>, Error> sceneMaterials(SceneHandle scene) const;
+      /// @brief Returns all texture handles referenced by an imported scene.
+      [[nodiscard]] std::expected<Vector<TextureHandle>, Error> sceneTextures(SceneHandle scene) const;
+      /// @brief Returns all light handles referenced by an imported scene.
+      [[nodiscard]] std::expected<Vector<LightHandle>, Error> sceneLights(SceneHandle scene) const;
+      /// @brief Returns all camera handles referenced by an imported scene.
+      [[nodiscard]] std::expected<Vector<CameraHandle>, Error> sceneCameras(SceneHandle scene) const;
+      /// @brief Returns children of one node within one imported scene tree.
+      [[nodiscard]] std::expected<Vector<NodeHandle>, Error> sceneNodeChildren(SceneHandle scene,
+                                                                               NodeHandle node) const;
+      /// @brief Returns the parent of one node within one imported scene tree.
+      [[nodiscard]] std::expected<std::optional<NodeHandle>, Error> sceneNodeParent(SceneHandle scene,
+                                                                                    NodeHandle node) const;
+
+      /// @brief Returns a node name.
+      [[nodiscard]] std::expected<ObjectName, Error> nodeName(NodeHandle node) const;
+      /// @brief Returns a node local transform.
+      [[nodiscard]] std::expected<Transform, Error> nodeTransform(NodeHandle node) const;
+      /// @brief Returns mesh handles attached to one node.
+      [[nodiscard]] std::expected<Vector<MeshHandle>, Error> nodeMeshes(NodeHandle node) const;
+      /// @brief Returns material handles attached to one node.
+      [[nodiscard]] std::expected<Vector<MaterialHandle>, Error> nodeMaterials(NodeHandle node) const;
+
+      /// @brief Returns a mesh name.
+      [[nodiscard]] std::expected<ObjectName, Error> meshName(MeshHandle mesh) const;
+      /// @brief Returns a mesh vertex count.
+      [[nodiscard]] std::expected<VertexCount, Error> meshVertexCount(MeshHandle mesh) const;
+      /// @brief Returns a mesh index count.
+      [[nodiscard]] std::expected<IndexCount, Error> meshIndexCount(MeshHandle mesh) const;
+      /// @brief Returns a mesh default material.
+      [[nodiscard]] std::expected<MaterialHandle, Error> meshMaterial(MeshHandle mesh) const;
+      /// @brief Returns mesh object-space bounds.
+      [[nodiscard]] std::expected<Bounds, Error> meshBounds(MeshHandle mesh) const;
+
+      /// @brief Returns a material name.
+      [[nodiscard]] std::expected<ObjectName, Error> materialName(MaterialHandle material) const;
+      /// @brief Returns texture handles referenced by one material.
+      [[nodiscard]] std::expected<Vector<TextureHandle>, Error> materialTextures(MaterialHandle material) const;
+
+      /// @brief Returns a texture name.
+      [[nodiscard]] std::expected<ObjectName, Error> textureName(TextureHandle texture) const;
+      /// @brief Returns a texture source path.
+      [[nodiscard]] std::expected<std::filesystem::path, Error> textureSource(TextureHandle texture) const;
+      /// @brief Returns a texture source extent.
+      [[nodiscard]] std::expected<PixelExtent, Error> textureExtent(TextureHandle texture) const;
+      /// @brief Returns a texture source channel count.
+      [[nodiscard]] std::expected<TextureChannelCount, Error> textureChannels(TextureHandle texture) const;
+
+      /// @brief Returns a light name.
+      [[nodiscard]] std::expected<ObjectName, Error> lightName(LightHandle light) const;
+      /// @brief Returns a light position.
+      [[nodiscard]] std::expected<Position, Error> lightPosition(LightHandle light) const;
+      /// @brief Returns a light direction.
+      [[nodiscard]] std::expected<Direction, Error> lightDirection(LightHandle light) const;
+      /// @brief Returns a light color.
+      [[nodiscard]] std::expected<LinearColor, Error> lightColor(LightHandle light) const;
+      /// @brief Returns a light intensity.
+      [[nodiscard]] std::expected<LightIntensity, Error> lightIntensity(LightHandle light) const;
+
+      /// @brief Returns a camera name.
+      [[nodiscard]] std::expected<ObjectName, Error> cameraName(CameraHandle camera) const;
+      /// @brief Returns a camera position.
+      [[nodiscard]] std::expected<Position, Error> cameraPosition(CameraHandle camera) const;
+      /// @brief Returns a camera forward direction.
+      [[nodiscard]] std::expected<Direction, Error> cameraForward(CameraHandle camera) const;
+      /// @brief Returns a camera vertical field of view.
+      [[nodiscard]] std::expected<FovY, Error> cameraFovY(CameraHandle camera) const;
+      /// @brief Returns camera clipping planes.
+      [[nodiscard]] std::expected<ClipPlanes, Error> cameraClip(CameraHandle camera) const;
 
    private:
       ObjectCatalog catalog_{};                         ///< All loaded object descriptors.
@@ -472,7 +548,8 @@ namespace vve::v4 {
       }
 
       /// @brief Imports Assimp lights into v4 light descriptors.
-      [[nodiscard]] std::expected<Vector<LightHandle>, Error> importLights(ObjectCatalog &catalog, const aiScene &scene) {
+      [[nodiscard]] std::expected<Vector<LightHandle>, Error> importLights(ObjectCatalog &catalog,
+                                                                           const aiScene &scene) {
          Vector<LightHandle> lights{};
          lights.reserve(scene.mNumLights);
          for (unsigned light_index = 0; light_index < scene.mNumLights; ++light_index) {
@@ -558,6 +635,28 @@ namespace vve::v4 {
          return handle;
       }
 
+      /// @brief Returns whether a handle is listed in a vector.
+      template <typename THandle> [[nodiscard]] bool containsHandle(const Vector<THandle> &handles, THandle handle) {
+         return std::ranges::find(handles, handle) != handles.end();
+      }
+
+      /// @brief Finds a scene descriptor or reports a missing object.
+      [[nodiscard]] std::expected<const SceneDescriptor *, Error> findScene(const ObjectCatalog &catalog,
+                                                                            SceneHandle scene) {
+         const auto *descriptor = catalog.scenes.find(scene);
+         if (descriptor == nullptr) { return std::unexpected(Error::missing_object); }
+         return descriptor;
+      }
+
+      /// @brief Finds a typed descriptor or reports a missing object.
+      template <typename TDescriptor>
+      [[nodiscard]] std::expected<const TDescriptor *, Error>
+      findDescriptor(const DescriptorMap<TDescriptor> &descriptors, typename TDescriptor::HandleType handle) {
+         const auto *descriptor = descriptors.find(handle);
+         if (descriptor == nullptr) { return std::unexpected(Error::missing_object); }
+         return descriptor;
+      }
+
    } // namespace
 
    bool AssetSystem::containsScene(SceneHandle scene) const { return catalog_.scenes.contains(scene); }
@@ -602,6 +701,230 @@ namespace vve::v4 {
       const auto *descriptor = catalog_.scenes.find(scene);
       if (descriptor == nullptr) { return std::unexpected(Error::missing_object); }
       return descriptor->cameras.size();
+   }
+
+   std::expected<NodeHandle, Error> AssetSystem::sceneRootNode(SceneHandle scene) const {
+      const auto descriptor = findScene(catalog_, scene);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      if (!(*descriptor)->tree.root.valid()) { return std::unexpected(Error::missing_object); }
+      return (*descriptor)->tree.root;
+   }
+
+   std::expected<Vector<NodeHandle>, Error> AssetSystem::sceneNodes(SceneHandle scene) const {
+      const auto descriptor = findScene(catalog_, scene);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->nodes;
+   }
+
+   std::expected<Vector<MeshHandle>, Error> AssetSystem::sceneMeshes(SceneHandle scene) const {
+      const auto descriptor = findScene(catalog_, scene);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->meshes;
+   }
+
+   std::expected<Vector<MaterialHandle>, Error> AssetSystem::sceneMaterials(SceneHandle scene) const {
+      const auto descriptor = findScene(catalog_, scene);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->materials;
+   }
+
+   std::expected<Vector<TextureHandle>, Error> AssetSystem::sceneTextures(SceneHandle scene) const {
+      const auto descriptor = findScene(catalog_, scene);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->textures;
+   }
+
+   std::expected<Vector<LightHandle>, Error> AssetSystem::sceneLights(SceneHandle scene) const {
+      const auto descriptor = findScene(catalog_, scene);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->lights;
+   }
+
+   std::expected<Vector<CameraHandle>, Error> AssetSystem::sceneCameras(SceneHandle scene) const {
+      const auto descriptor = findScene(catalog_, scene);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->cameras;
+   }
+
+   std::expected<Vector<NodeHandle>, Error> AssetSystem::sceneNodeChildren(SceneHandle scene, NodeHandle node) const {
+      const auto descriptor = findScene(catalog_, scene);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      if (!containsHandle((*descriptor)->nodes, node)) { return std::unexpected(Error::missing_object); }
+
+      Vector<NodeHandle> result{};
+      result.reserve((*descriptor)->tree.children.count(node));
+      const auto [first, last] = (*descriptor)->tree.children.equal_range(node);
+      for (auto it = first; it != last; ++it) { result.push_back(it->second); }
+      return result;
+   }
+
+   std::expected<std::optional<NodeHandle>, Error> AssetSystem::sceneNodeParent(SceneHandle scene,
+                                                                                NodeHandle node) const {
+      const auto descriptor = findScene(catalog_, scene);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      if (!containsHandle((*descriptor)->nodes, node)) { return std::unexpected(Error::missing_object); }
+      const auto parent = (*descriptor)->tree.parents.find(node);
+      if (parent == (*descriptor)->tree.parents.end()) { return std::optional<NodeHandle>{}; }
+      return parent->second;
+   }
+
+   std::expected<ObjectName, Error> AssetSystem::nodeName(NodeHandle node) const {
+      const auto descriptor = findDescriptor(catalog_.nodes, node);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->name;
+   }
+
+   std::expected<Transform, Error> AssetSystem::nodeTransform(NodeHandle node) const {
+      const auto descriptor = findDescriptor(catalog_.nodes, node);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->transform;
+   }
+
+   std::expected<Vector<MeshHandle>, Error> AssetSystem::nodeMeshes(NodeHandle node) const {
+      const auto descriptor = findDescriptor(catalog_.nodes, node);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      Vector<MeshHandle> result{};
+      result.reserve((*descriptor)->meshes.size());
+      for (const auto &mesh_use : (*descriptor)->meshes) { result.push_back(mesh_use.mesh); }
+      return result;
+   }
+
+   std::expected<Vector<MaterialHandle>, Error> AssetSystem::nodeMaterials(NodeHandle node) const {
+      const auto descriptor = findDescriptor(catalog_.nodes, node);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      Vector<MaterialHandle> result{};
+      result.reserve((*descriptor)->meshes.size());
+      for (const auto &mesh_use : (*descriptor)->meshes) { result.push_back(mesh_use.material); }
+      return result;
+   }
+
+   std::expected<ObjectName, Error> AssetSystem::meshName(MeshHandle mesh) const {
+      const auto descriptor = findDescriptor(catalog_.meshes, mesh);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->name;
+   }
+
+   std::expected<VertexCount, Error> AssetSystem::meshVertexCount(MeshHandle mesh) const {
+      const auto descriptor = findDescriptor(catalog_.meshes, mesh);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->vertex_count;
+   }
+
+   std::expected<IndexCount, Error> AssetSystem::meshIndexCount(MeshHandle mesh) const {
+      const auto descriptor = findDescriptor(catalog_.meshes, mesh);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->index_count;
+   }
+
+   std::expected<MaterialHandle, Error> AssetSystem::meshMaterial(MeshHandle mesh) const {
+      const auto descriptor = findDescriptor(catalog_.meshes, mesh);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->material;
+   }
+
+   std::expected<Bounds, Error> AssetSystem::meshBounds(MeshHandle mesh) const {
+      const auto descriptor = findDescriptor(catalog_.meshes, mesh);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->bounds;
+   }
+
+   std::expected<ObjectName, Error> AssetSystem::materialName(MaterialHandle material) const {
+      const auto descriptor = findDescriptor(catalog_.materials, material);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->name;
+   }
+
+   std::expected<Vector<TextureHandle>, Error> AssetSystem::materialTextures(MaterialHandle material) const {
+      const auto descriptor = findDescriptor(catalog_.materials, material);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      Vector<TextureHandle> result{};
+      result.reserve((*descriptor)->textures.size());
+      for (const auto &binding : (*descriptor)->textures) { result.push_back(binding.texture); }
+      return result;
+   }
+
+   std::expected<ObjectName, Error> AssetSystem::textureName(TextureHandle texture) const {
+      const auto descriptor = findDescriptor(catalog_.textures, texture);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->name;
+   }
+
+   std::expected<std::filesystem::path, Error> AssetSystem::textureSource(TextureHandle texture) const {
+      const auto descriptor = findDescriptor(catalog_.textures, texture);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->source;
+   }
+
+   std::expected<PixelExtent, Error> AssetSystem::textureExtent(TextureHandle texture) const {
+      const auto descriptor = findDescriptor(catalog_.textures, texture);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->extent;
+   }
+
+   std::expected<TextureChannelCount, Error> AssetSystem::textureChannels(TextureHandle texture) const {
+      const auto descriptor = findDescriptor(catalog_.textures, texture);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->channels;
+   }
+
+   std::expected<ObjectName, Error> AssetSystem::lightName(LightHandle light) const {
+      const auto descriptor = findDescriptor(catalog_.lights, light);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->name;
+   }
+
+   std::expected<Position, Error> AssetSystem::lightPosition(LightHandle light) const {
+      const auto descriptor = findDescriptor(catalog_.lights, light);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->position;
+   }
+
+   std::expected<Direction, Error> AssetSystem::lightDirection(LightHandle light) const {
+      const auto descriptor = findDescriptor(catalog_.lights, light);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->direction;
+   }
+
+   std::expected<LinearColor, Error> AssetSystem::lightColor(LightHandle light) const {
+      const auto descriptor = findDescriptor(catalog_.lights, light);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->color;
+   }
+
+   std::expected<LightIntensity, Error> AssetSystem::lightIntensity(LightHandle light) const {
+      const auto descriptor = findDescriptor(catalog_.lights, light);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->intensity;
+   }
+
+   std::expected<ObjectName, Error> AssetSystem::cameraName(CameraHandle camera) const {
+      const auto descriptor = findDescriptor(catalog_.cameras, camera);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->name;
+   }
+
+   std::expected<Position, Error> AssetSystem::cameraPosition(CameraHandle camera) const {
+      const auto descriptor = findDescriptor(catalog_.cameras, camera);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->position;
+   }
+
+   std::expected<Direction, Error> AssetSystem::cameraForward(CameraHandle camera) const {
+      const auto descriptor = findDescriptor(catalog_.cameras, camera);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->forward;
+   }
+
+   std::expected<FovY, Error> AssetSystem::cameraFovY(CameraHandle camera) const {
+      const auto descriptor = findDescriptor(catalog_.cameras, camera);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->fov_y;
+   }
+
+   std::expected<ClipPlanes, Error> AssetSystem::cameraClip(CameraHandle camera) const {
+      const auto descriptor = findDescriptor(catalog_.cameras, camera);
+      if (!descriptor) { return std::unexpected(descriptor.error()); }
+      return (*descriptor)->clip;
    }
 
    std::expected<SceneHandle, Error> AssetSystem::addScene(ObjectName name) {

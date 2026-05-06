@@ -327,6 +327,12 @@ struct CountingSystem {
    const auto texture_count = assets.sceneTextureCount(*scene_handle);
    const auto light_count = assets.sceneLightCount(*scene_handle);
    const auto camera_count = assets.sceneCameraCount(*scene_handle);
+   const auto scene_nodes = assets.sceneNodes(*scene_handle);
+   const auto scene_meshes = assets.sceneMeshes(*scene_handle);
+   const auto scene_materials = assets.sceneMaterials(*scene_handle);
+   const auto scene_textures = assets.sceneTextures(*scene_handle);
+   const auto scene_lights = assets.sceneLights(*scene_handle);
+   const auto scene_cameras = assets.sceneCameras(*scene_handle);
    if (!assets.containsScene(*scene_handle) || !scene_name || scene_name->value != path.filename().string()) {
       return 71;
    }
@@ -342,6 +348,71 @@ struct CountingSystem {
    }
    if (assets.containsScene(SceneHandle{}) || assets.sceneName(SceneHandle{})) {
       return 75;
+   }
+   if (!scene_nodes || !scene_meshes || !scene_materials || !scene_textures || !scene_lights || !scene_cameras) {
+      return 76;
+   }
+   if (scene_nodes->size() != *node_count || scene_meshes->size() != *mesh_count ||
+       scene_materials->size() != *material_count || !scene_textures->empty() || !scene_lights->empty() ||
+       !scene_cameras->empty()) {
+      return 77;
+   }
+
+   const auto root = assets.sceneRootNode(*scene_handle);
+   if (!root || !root->valid() || !assets.nodeName(*root) || !assets.nodeTransform(*root)) {
+      return 78;
+   }
+   const auto root_parent = assets.sceneNodeParent(*scene_handle, *root);
+   const auto root_children = assets.sceneNodeChildren(*scene_handle, *root);
+   if (!root_parent || root_parent->has_value() || !root_children) {
+      return 79;
+   }
+
+   NodeHandle mesh_node{};
+   MeshHandle mesh{};
+   MaterialHandle material{};
+   for (const auto node : *scene_nodes) {
+      const auto node_meshes = assets.nodeMeshes(node);
+      const auto node_materials = assets.nodeMaterials(node);
+      if (!node_meshes || !node_materials || node_meshes->size() != node_materials->size()) {
+         return 83;
+      }
+      if (!node_meshes->empty()) {
+         mesh_node = node;
+         mesh = node_meshes->front();
+         material = node_materials->front();
+         break;
+      }
+   }
+   if (!mesh_node.valid() || !mesh.valid() || !material.valid()) {
+      return 84;
+   }
+
+   const auto parent = assets.sceneNodeParent(*scene_handle, mesh_node);
+   const auto vertex_count = assets.meshVertexCount(mesh);
+   const auto index_count = assets.meshIndexCount(mesh);
+   const auto mesh_material = assets.meshMaterial(mesh);
+   const auto bounds = assets.meshBounds(mesh);
+   if (!parent || !vertex_count || !index_count || !mesh_material || !bounds || !assets.meshName(mesh)) {
+      return 85;
+   }
+   if (vertex_count->value != 3 || index_count->value != 3 || *mesh_material != material || !bounds->valid) {
+      return 86;
+   }
+   if (!nearly(bounds->minimum.value.x, 0.0F) || !nearly(bounds->maximum.value.x, 1.0F) ||
+       !nearly(bounds->maximum.value.y, 1.0F)) {
+      return 87;
+   }
+
+   const auto material_name = assets.materialName(material);
+   const auto material_textures = assets.materialTextures(material);
+   if (!material_name || !material_textures || !material_textures->empty()) {
+      return 88;
+   }
+   if (assets.textureName(makeHandleForTest<TextureHandle>(9000)) ||
+       assets.lightName(makeHandleForTest<LightHandle>(9001)) ||
+       assets.cameraName(makeHandleForTest<CameraHandle>(9002))) {
+      return 89;
    }
    return 0;
 }

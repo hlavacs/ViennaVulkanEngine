@@ -48,8 +48,119 @@ export namespace vve {
       [[nodiscard]] std::expected<std::size_t, Error> sceneCameraCount(SceneHandle scene) const {
          return impl_.sceneCameraCount(scene);
       }
+      [[nodiscard]] std::expected<NodeHandle, Error> sceneRootNode(SceneHandle scene) const {
+         return impl_.sceneRootNode(scene);
+      }
+      [[nodiscard]] std::expected<Vector<NodeHandle>, Error> sceneNodes(SceneHandle scene) const {
+         return facadeVector<NodeHandle>(impl_.sceneNodes(scene));
+      }
+      [[nodiscard]] std::expected<Vector<MeshHandle>, Error> sceneMeshes(SceneHandle scene) const {
+         return facadeVector<MeshHandle>(impl_.sceneMeshes(scene));
+      }
+      [[nodiscard]] std::expected<Vector<MaterialHandle>, Error> sceneMaterials(SceneHandle scene) const {
+         return facadeVector<MaterialHandle>(impl_.sceneMaterials(scene));
+      }
+      [[nodiscard]] std::expected<Vector<TextureHandle>, Error> sceneTextures(SceneHandle scene) const {
+         return facadeVector<TextureHandle>(impl_.sceneTextures(scene));
+      }
+      [[nodiscard]] std::expected<Vector<LightHandle>, Error> sceneLights(SceneHandle scene) const {
+         return facadeVector<LightHandle>(impl_.sceneLights(scene));
+      }
+      [[nodiscard]] std::expected<Vector<CameraHandle>, Error> sceneCameras(SceneHandle scene) const {
+         return facadeVector<CameraHandle>(impl_.sceneCameras(scene));
+      }
+      [[nodiscard]] std::expected<Vector<NodeHandle>, Error> sceneNodeChildren(SceneHandle scene,
+                                                                               NodeHandle node) const {
+         return facadeVector<NodeHandle>(impl_.sceneNodeChildren(scene, node));
+      }
+      [[nodiscard]] std::expected<std::optional<NodeHandle>, Error> sceneNodeParent(SceneHandle scene,
+                                                                                    NodeHandle node) const {
+         return impl_.sceneNodeParent(scene, node);
+      }
+
+      [[nodiscard]] std::expected<ObjectName, Error> nodeName(NodeHandle node) const { return impl_.nodeName(node); }
+      [[nodiscard]] std::expected<Transform, Error> nodeTransform(NodeHandle node) const {
+         return impl_.nodeTransform(node);
+      }
+      [[nodiscard]] std::expected<Vector<MeshHandle>, Error> nodeMeshes(NodeHandle node) const {
+         return facadeVector<MeshHandle>(impl_.nodeMeshes(node));
+      }
+      [[nodiscard]] std::expected<Vector<MaterialHandle>, Error> nodeMaterials(NodeHandle node) const {
+         return facadeVector<MaterialHandle>(impl_.nodeMaterials(node));
+      }
+
+      [[nodiscard]] std::expected<ObjectName, Error> meshName(MeshHandle mesh) const { return impl_.meshName(mesh); }
+      [[nodiscard]] std::expected<VertexCount, Error> meshVertexCount(MeshHandle mesh) const {
+         return impl_.meshVertexCount(mesh);
+      }
+      [[nodiscard]] std::expected<IndexCount, Error> meshIndexCount(MeshHandle mesh) const {
+         return impl_.meshIndexCount(mesh);
+      }
+      [[nodiscard]] std::expected<MaterialHandle, Error> meshMaterial(MeshHandle mesh) const {
+         return impl_.meshMaterial(mesh);
+      }
+      [[nodiscard]] std::expected<Bounds, Error> meshBounds(MeshHandle mesh) const { return impl_.meshBounds(mesh); }
+
+      [[nodiscard]] std::expected<ObjectName, Error> materialName(MaterialHandle material) const {
+         return impl_.materialName(material);
+      }
+      [[nodiscard]] std::expected<Vector<TextureHandle>, Error> materialTextures(MaterialHandle material) const {
+         return facadeVector<TextureHandle>(impl_.materialTextures(material));
+      }
+
+      [[nodiscard]] std::expected<ObjectName, Error> textureName(TextureHandle texture) const {
+         return impl_.textureName(texture);
+      }
+      [[nodiscard]] std::expected<std::filesystem::path, Error> textureSource(TextureHandle texture) const {
+         return impl_.textureSource(texture);
+      }
+      [[nodiscard]] std::expected<PixelExtent, Error> textureExtent(TextureHandle texture) const {
+         return impl_.textureExtent(texture);
+      }
+      [[nodiscard]] std::expected<TextureChannelCount, Error> textureChannels(TextureHandle texture) const {
+         return impl_.textureChannels(texture);
+      }
+
+      [[nodiscard]] std::expected<ObjectName, Error> lightName(LightHandle light) const {
+         return impl_.lightName(light);
+      }
+      [[nodiscard]] std::expected<Position, Error> lightPosition(LightHandle light) const {
+         return impl_.lightPosition(light);
+      }
+      [[nodiscard]] std::expected<Direction, Error> lightDirection(LightHandle light) const {
+         return impl_.lightDirection(light);
+      }
+      [[nodiscard]] std::expected<LinearColor, Error> lightColor(LightHandle light) const {
+         return impl_.lightColor(light);
+      }
+      [[nodiscard]] std::expected<LightIntensity, Error> lightIntensity(LightHandle light) const {
+         return impl_.lightIntensity(light);
+      }
+
+      [[nodiscard]] std::expected<ObjectName, Error> cameraName(CameraHandle camera) const {
+         return impl_.cameraName(camera);
+      }
+      [[nodiscard]] std::expected<Position, Error> cameraPosition(CameraHandle camera) const {
+         return impl_.cameraPosition(camera);
+      }
+      [[nodiscard]] std::expected<Direction, Error> cameraForward(CameraHandle camera) const {
+         return impl_.cameraForward(camera);
+      }
+      [[nodiscard]] std::expected<FovY, Error> cameraFovY(CameraHandle camera) const {
+         return impl_.cameraFovY(camera);
+      }
+      [[nodiscard]] std::expected<ClipPlanes, Error> cameraClip(CameraHandle camera) const {
+         return impl_.cameraClip(camera);
+      }
 
    private:
+      template <typename T>
+      [[nodiscard]] static std::expected<Vector<T>, Error>
+      facadeVector(std::expected<typename Vector<T>::implementation_type, Error> values) {
+         if (!values) { return std::unexpected(values.error()); }
+         return Vector<T>{std::move(*values)};
+      }
+
       Impl &impl_;
    }; ///< Public asset-system wrapper.
 
