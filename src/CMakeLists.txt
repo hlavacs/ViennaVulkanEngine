@@ -45,7 +45,6 @@ target_sources(ViennaVulkanEngine
             Types.ixx
             ECS.ixx
             Window.ixx
-            WindowSystem.ixx
             World.ixx
             Assets.ixx
             Gui.ixx

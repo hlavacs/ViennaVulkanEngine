@@ -14,6 +14,5 @@ target_sources(ViennaVulkanEngine
          Shaders.ixx
          Renderer.ixx
          Gui.ixx
-         WindowSystem.ixx
          Engine.ixx
 )

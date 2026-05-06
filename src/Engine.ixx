@@ -17,7 +17,6 @@ export import VEEngine.Vector;
 export import VEEngine.Types;
 export import :ECS;
 export import :Window;
-export import :WindowSystem;
 export import :World;
 export import :Assets;
 export import :Gui;

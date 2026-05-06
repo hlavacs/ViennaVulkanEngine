@@ -5,7 +5,6 @@ import :ECS;
 import VEEngine.Error;
 import VEEngine.Types;
 import :Window;
-import :WindowSystem;
 import :Assets;
 import :Gui;
 
