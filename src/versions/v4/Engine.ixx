@@ -224,194 +224,45 @@ export namespace vve::v4 {
    /// @brief Educational v4 engine shell with SDL windows and a tiny world facade.
    template <typename... TSystems> class Engine {
    public:
-      /// @brief Creates an engine with default options.
-      Engine() {
-         bindWorld();
-         applyDefaults();
-      }
-
-      /// @brief Engines stay stationary because World stores references into this object.
+      Engine();
       Engine(const Engine &) = delete;
       Engine(Engine &&) = delete;
       Engine &operator=(const Engine &) = delete;
       Engine &operator=(Engine &&) = delete;
+      explicit Engine(EngineConfig config);
 
-      /// @brief Creates an engine from the compact compatibility config.
-      explicit Engine(EngineConfig config) {
-         bindWorld();
-         applyOption(std::move(config));
-         applyDefaults();
-      }
-
-      /// @brief Creates an engine from typed options such as ApplicationName, Windows, and UserSystems.
       template <typename... TOptions>
          requires(sizeof...(TOptions) > 0)
-      explicit Engine(TOptions &&...options) {
-         bindWorld();
-         (applyOption(std::forward<TOptions>(options)), ...);
-         applyDefaults();
-      }
+      explicit Engine(TOptions &&...options);
 
-      /// @brief Returns the major engine version.
-      [[nodiscard]] std::uint32_t versionMajor() const { return 4; }
-
-      /// @brief Returns the major engine version through a v3-shaped accessor.
-      [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept { return 4; }
-
-      /// @brief Returns the printable engine version name.
-      [[nodiscard]] std::string_view versionName() const { return "v4"; }
-
-      /// @brief Returns the example-facing world facade.
-      [[nodiscard]] World &world() { return world_; }
-
-      /// @brief Returns the example-facing world facade.
-      [[nodiscard]] const World &world() const { return world_; }
-
-      /// @brief Returns the asset system.
-      [[nodiscard]] AssetSystem &assets() { return assets_; }
-
-      /// @brief Returns the GUI system.
-      [[nodiscard]] GuiSystem &gui() { return gui_; }
-
-      /// @brief Returns the runtime ECS.
-      [[nodiscard]] ECS &ecs() { return ecs_; }
-
-      /// @brief Creates SDL windows and calls optional user-system init(World&) hooks.
-      [[nodiscard]] std::expected<void, Error> init() {
-         if (initialized_) {
-            return {};
-         }
-         if (const auto result = window_system_.init(windows_); !result) { return result; }
-         last_frame_time_ = std::chrono::steady_clock::now();
-         initialized_ = true;
-         return initSystems();
-      }
-
-      /// @brief Runs the engine until a window closes, a system fails, or the frame cap is reached.
-      [[nodiscard]] std::expected<void, Error> run() {
-         if (!initialized_) {
-            if (const auto result = init(); !result) { return result; }
-         }
-         while (true) {
-            const auto status = step();
-            if (!status) { return std::unexpected(status.error()); }
-            if (*status == FrameStatus::stopped) {
-               return {};
-            }
-         }
-      }
-
-      /// @brief Polls input and calls optional user-system update hooks.
-      [[nodiscard]] std::expected<FrameStatus, Error> step() {
-         if (!initialized_) { return std::unexpected(Error::missing_object); }
-         if (const auto result = window_system_.poll(); !result) {
-            return std::unexpected(result.error());
-         }
-
-         const auto now = std::chrono::steady_clock::now();
-         const std::chrono::duration<double> delta = now - last_frame_time_;
-         last_frame_time_ = now;
-
-         const FrameContext frame{.frame_index = FrameCount{.value = frame_},
-                                  .delta_time = DeltaTime{.seconds = delta.count()}};
-         const WindowFrameData window_frame{.windows = window_system_.snapshot()};
-         if (const auto result = updateSystems(frame, window_frame); !result) {
-            return std::unexpected(result.error());
-         }
-
-         ++frame_;
-         if (window_system_.anyShouldClose() ||
-             (max_frames_.value.value > 0 && frame_ >= max_frames_.value.value)) {
-            return FrameStatus::stopped;
-         }
-         return FrameStatus::running;
-      }
+      [[nodiscard]] std::uint32_t versionMajor() const;
+      [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept;
+      [[nodiscard]] std::string_view versionName() const;
+      [[nodiscard]] World &world();
+      [[nodiscard]] const World &world() const;
+      [[nodiscard]] AssetSystem &assets();
+      [[nodiscard]] GuiSystem &gui();
+      [[nodiscard]] ECS &ecs();
+      [[nodiscard]] std::expected<void, Error> init();
+      [[nodiscard]] std::expected<void, Error> run();
+      [[nodiscard]] std::expected<FrameStatus, Error> step();
 
    private:
-      /// @brief Applies the compact compatibility config.
-      void bindWorld() { world_.bindSubsystems(assets_, gui_, window_system_); }
-
-      /// @brief Applies the compact compatibility config.
-      void applyOption(EngineConfig config) {
-         application_name_.value = std::move(config.application_name);
-         max_frames_.value = config.max_frames;
-      }
-
-      /// @brief Applies the application-name typed option.
-      void applyOption(ApplicationName option) { application_name_ = std::move(option); }
-
-      /// @brief Applies the frame-cap typed option.
-      void applyOption(MaxFrames option) { max_frames_ = option; }
-
-      /// @brief Applies the startup-window typed option.
-      void applyOption(Windows option) { windows_ = std::move(option); }
-
-      /// @brief Applies the user-system typed option.
-      void applyOption(UserSystems<TSystems...> option) { systems_.emplace(std::move(option.value)); }
-
-      /// @brief Ignores unknown option types so examples can evolve one option at a time.
-      template <typename TOption> void applyOption(TOption &&) {}
-
-      /// @brief Fills small defaults after options have been applied.
-      void applyDefaults() {
-         if (windows_.value.empty()) {
-            windows_.value.push_back(WindowDesc{});
-         }
-         for (auto &window : windows_.value) {
-            if (window.title == WindowDesc{}.title && application_name_.value != ApplicationName{}.value) {
-               window.title = application_name_.value;
-            }
-         }
-      }
-
-      /// @brief Calls init(World&) on each user system when that hook exists.
-      [[nodiscard]] std::expected<void, Error> initSystems() {
-         if (!systems_.has_value()) {
-            return {};
-         }
-         auto result = std::expected<void, Error>{};
-         std::apply([&](auto &...system) { ((result ? result = initOne(system) : result), ...); }, *systems_);
-         return result;
-      }
-
-      /// @brief Calls the best matching update hook on each user system.
+      void bindWorld();
+      void applyOption(EngineConfig config);
+      void applyOption(ApplicationName option);
+      void applyOption(MaxFrames option);
+      void applyOption(Windows option);
+      void applyOption(UserSystems<TSystems...> option);
+      template <typename TOption> void applyOption(TOption &&);
+      void applyDefaults();
+      [[nodiscard]] std::expected<void, Error> initSystems();
       [[nodiscard]] std::expected<void, Error> updateSystems(const FrameContext &frame,
-                                                            const WindowFrameData &window_frame) {
-         if (!systems_.has_value()) {
-            return {};
-         }
-         auto result = std::expected<void, Error>{};
-         std::apply([&](auto &...system) {
-            ((result ? result = updateOne(system, frame, window_frame) : result), ...);
-         }, *systems_);
-         return result;
-      }
-
-      /// @brief Calls one system's init hook if present.
-      template <typename TSystem> [[nodiscard]] std::expected<void, Error> initOne(TSystem &system) {
-         if constexpr (requires { system.init(world_); }) {
-            return detail::callSystemHook([&]() -> decltype(auto) { return system.init(world_); });
-         } else {
-            return {};
-         }
-      }
-
-      /// @brief Calls one system's most expressive update hook if present.
+                                                            const WindowFrameData &window_frame);
+      template <typename TSystem> [[nodiscard]] std::expected<void, Error> initOne(TSystem &system);
       template <typename TSystem>
       [[nodiscard]] std::expected<void, Error> updateOne(TSystem &system, const FrameContext &frame,
-                                                         const WindowFrameData &window_frame) {
-         if constexpr (requires { system.update(world_, frame, window_frame); }) {
-            return detail::callSystemHook([&]() -> decltype(auto) {
-               return system.update(world_, frame, window_frame);
-            });
-         } else if constexpr (requires { system.update(world_, frame); }) {
-            return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_, frame); });
-         } else if constexpr (requires { system.update(world_); }) {
-            return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_); });
-         } else {
-            return {};
-         }
-      }
+                                                         const WindowFrameData &window_frame);
 
       ApplicationName application_name_{};      ///< Name used for default window titles.
       MaxFrames max_frames_{};                 ///< Optional frame cap.
@@ -430,6 +281,193 @@ export namespace vve::v4 {
       std::uint64_t frame_{0};                 ///< Number of completed step() calls.
       bool initialized_{false};                ///< True after init() succeeds.
    };
+
+   /// @brief Creates an engine with default options.
+   template <typename... TSystems> Engine<TSystems...>::Engine() {
+      bindWorld();
+      applyDefaults();
+   }
+
+   /// @brief Creates an engine from the compact compatibility config.
+   template <typename... TSystems> Engine<TSystems...>::Engine(EngineConfig config) {
+      bindWorld();
+      applyOption(std::move(config));
+      applyDefaults();
+   }
+
+   /// @brief Creates an engine from typed options such as ApplicationName, Windows, and UserSystems.
+   template <typename... TSystems>
+   template <typename... TOptions>
+      requires(sizeof...(TOptions) > 0)
+   Engine<TSystems...>::Engine(TOptions &&...options) {
+      bindWorld();
+      (applyOption(std::forward<TOptions>(options)), ...);
+      applyDefaults();
+   }
+
+   /// @brief Returns the major engine version.
+   template <typename... TSystems> std::uint32_t Engine<TSystems...>::versionMajor() const { return 4; }
+
+   /// @brief Returns the major engine version through a v3-shaped accessor.
+   template <typename... TSystems>
+   std::expected<int, Error> Engine<TSystems...>::getVersionMajor() const noexcept {
+      return 4;
+   }
+
+   /// @brief Returns the printable engine version name.
+   template <typename... TSystems> std::string_view Engine<TSystems...>::versionName() const { return "v4"; }
+
+   /// @brief Returns the example-facing world facade.
+   template <typename... TSystems> World &Engine<TSystems...>::world() { return world_; }
+
+   /// @brief Returns the example-facing world facade.
+   template <typename... TSystems> const World &Engine<TSystems...>::world() const { return world_; }
+
+   /// @brief Returns the asset system.
+   template <typename... TSystems> AssetSystem &Engine<TSystems...>::assets() { return assets_; }
+
+   /// @brief Returns the GUI system.
+   template <typename... TSystems> GuiSystem &Engine<TSystems...>::gui() { return gui_; }
+
+   /// @brief Returns the runtime ECS.
+   template <typename... TSystems> ECS &Engine<TSystems...>::ecs() { return ecs_; }
+
+   /// @brief Creates SDL windows and calls optional user-system init(World&) hooks.
+   template <typename... TSystems> std::expected<void, Error> Engine<TSystems...>::init() {
+      if (initialized_) { return {}; }
+      if (const auto result = window_system_.init(windows_); !result) { return result; }
+      last_frame_time_ = std::chrono::steady_clock::now();
+      initialized_ = true;
+      return initSystems();
+   }
+
+   /// @brief Runs the engine until a window closes, a system fails, or the frame cap is reached.
+   template <typename... TSystems> std::expected<void, Error> Engine<TSystems...>::run() {
+      if (!initialized_) {
+         if (const auto result = init(); !result) { return result; }
+      }
+      while (true) {
+         const auto status = step();
+         if (!status) { return std::unexpected(status.error()); }
+         if (*status == FrameStatus::stopped) { return {}; }
+      }
+   }
+
+   /// @brief Polls input and calls optional user-system update hooks.
+   template <typename... TSystems> std::expected<FrameStatus, Error> Engine<TSystems...>::step() {
+      if (!initialized_) { return std::unexpected(Error::missing_object); }
+      if (const auto result = window_system_.poll(); !result) { return std::unexpected(result.error()); }
+
+      const auto now = std::chrono::steady_clock::now();
+      const std::chrono::duration<double> delta = now - last_frame_time_;
+      last_frame_time_ = now;
+
+      const FrameContext frame{.frame_index = FrameCount{.value = frame_},
+                               .delta_time = DeltaTime{.seconds = delta.count()}};
+      const WindowFrameData window_frame{.windows = window_system_.snapshot()};
+      if (const auto result = updateSystems(frame, window_frame); !result) {
+         return std::unexpected(result.error());
+      }
+
+      ++frame_;
+      if (window_system_.anyShouldClose() || (max_frames_.value.value > 0 && frame_ >= max_frames_.value.value)) {
+         return FrameStatus::stopped;
+      }
+      return FrameStatus::running;
+   }
+
+   /// @brief Binds World to the subsystems owned by Engine.
+   template <typename... TSystems> void Engine<TSystems...>::bindWorld() {
+      world_.bindSubsystems(assets_, gui_, window_system_);
+   }
+
+   /// @brief Applies the compact compatibility config.
+   template <typename... TSystems> void Engine<TSystems...>::applyOption(EngineConfig config) {
+      application_name_.value = std::move(config.application_name);
+      max_frames_.value = config.max_frames;
+   }
+
+   /// @brief Applies the application-name typed option.
+   template <typename... TSystems> void Engine<TSystems...>::applyOption(ApplicationName option) {
+      application_name_ = std::move(option);
+   }
+
+   /// @brief Applies the frame-cap typed option.
+   template <typename... TSystems> void Engine<TSystems...>::applyOption(MaxFrames option) { max_frames_ = option; }
+
+   /// @brief Applies the startup-window typed option.
+   template <typename... TSystems> void Engine<TSystems...>::applyOption(Windows option) {
+      windows_ = std::move(option);
+   }
+
+   /// @brief Applies the user-system typed option.
+   template <typename... TSystems> void Engine<TSystems...>::applyOption(UserSystems<TSystems...> option) {
+      systems_.emplace(std::move(option.value));
+   }
+
+   /// @brief Ignores unknown option types so examples can evolve one option at a time.
+   template <typename... TSystems>
+   template <typename TOption>
+   void Engine<TSystems...>::applyOption(TOption &&) {}
+
+   /// @brief Fills small defaults after options have been applied.
+   template <typename... TSystems> void Engine<TSystems...>::applyDefaults() {
+      if (windows_.value.empty()) { windows_.value.push_back(WindowDesc{}); }
+      for (auto &window : windows_.value) {
+         if (window.title == WindowDesc{}.title && application_name_.value != ApplicationName{}.value) {
+            window.title = application_name_.value;
+         }
+      }
+   }
+
+   /// @brief Calls init(World&) on each user system when that hook exists.
+   template <typename... TSystems> std::expected<void, Error> Engine<TSystems...>::initSystems() {
+      if (!systems_.has_value()) { return {}; }
+      auto result = std::expected<void, Error>{};
+      std::apply([&](auto &...system) { ((result ? result = initOne(system) : result), ...); }, *systems_);
+      return result;
+   }
+
+   /// @brief Calls the best matching update hook on each user system.
+   template <typename... TSystems>
+   std::expected<void, Error> Engine<TSystems...>::updateSystems(const FrameContext &frame,
+                                                                 const WindowFrameData &window_frame) {
+      if (!systems_.has_value()) { return {}; }
+      auto result = std::expected<void, Error>{};
+      std::apply([&](auto &...system) {
+         ((result ? result = updateOne(system, frame, window_frame) : result), ...);
+      }, *systems_);
+      return result;
+   }
+
+   /// @brief Calls one system's init hook if present.
+   template <typename... TSystems>
+   template <typename TSystem>
+   std::expected<void, Error> Engine<TSystems...>::initOne(TSystem &system) {
+      if constexpr (requires { system.init(world_); }) {
+         return detail::callSystemHook([&]() -> decltype(auto) { return system.init(world_); });
+      } else {
+         return {};
+      }
+   }
+
+   /// @brief Calls one system's most expressive update hook if present.
+   template <typename... TSystems>
+   template <typename TSystem>
+   std::expected<void, Error> Engine<TSystems...>::updateOne(TSystem &system, const FrameContext &frame,
+                                                             const WindowFrameData &window_frame) {
+      if constexpr (requires { system.update(world_, frame, window_frame); }) {
+         return detail::callSystemHook([&]() -> decltype(auto) {
+            return system.update(world_, frame, window_frame);
+         });
+      } else if constexpr (requires { system.update(world_, frame); }) {
+         return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_, frame); });
+      } else if constexpr (requires { system.update(world_); }) {
+         return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_); });
+      } else {
+         return {};
+      }
+   }
 
    namespace detail {
 

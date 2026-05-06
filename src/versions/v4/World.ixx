@@ -15,20 +15,16 @@ export namespace vve::v4 {
    /// @brief User-visible state facade used by examples and systems.
    class World {
    public:
-      explicit World(ECS &ecs) noexcept : ecs_(ecs) {}
+      explicit World(ECS &ecs) noexcept;
 
-      void bindSubsystems(AssetSystem &assets, GuiSystem &gui, WindowSystem &window_system) noexcept {
-         assets_ = std::addressof(assets);
-         gui_ = std::addressof(gui);
-         window_system_ = std::addressof(window_system);
-      }
+      void bindSubsystems(AssetSystem &assets, GuiSystem &gui, WindowSystem &window_system) noexcept;
 
-      [[nodiscard]] ECS &ecs() { return ecs_; }
-      [[nodiscard]] const ECS &ecs() const { return ecs_; }
-      [[nodiscard]] AssetSystem &assets() { return *assets_; }
-      [[nodiscard]] GuiSystem &gui() { return *gui_; }
-      [[nodiscard]] WindowSystem &windowSystem() { return *window_system_; }
-      [[nodiscard]] const WindowSystem &windowSystem() const { return *window_system_; }
+      [[nodiscard]] ECS &ecs();
+      [[nodiscard]] const ECS &ecs() const;
+      [[nodiscard]] AssetSystem &assets();
+      [[nodiscard]] GuiSystem &gui();
+      [[nodiscard]] WindowSystem &windowSystem();
+      [[nodiscard]] const WindowSystem &windowSystem() const;
 
    private:
       ECS &ecs_;
@@ -36,6 +32,34 @@ export namespace vve::v4 {
       GuiSystem *gui_{};
       WindowSystem *window_system_{};
    };
+
+   /// @brief Creates a world context bound to the engine-owned ECS.
+   inline World::World(ECS &ecs) noexcept : ecs_(ecs) {}
+
+   /// @brief Binds the subsystem references returned by this world context.
+   inline void World::bindSubsystems(AssetSystem &assets, GuiSystem &gui, WindowSystem &window_system) noexcept {
+      assets_ = std::addressof(assets);
+      gui_ = std::addressof(gui);
+      window_system_ = std::addressof(window_system);
+   }
+
+   /// @brief Returns the ECS implementation owned by the engine.
+   inline ECS &World::ecs() { return ecs_; }
+
+   /// @brief Returns the ECS implementation owned by the engine.
+   inline const ECS &World::ecs() const { return ecs_; }
+
+   /// @brief Returns the asset-system implementation bound by the engine.
+   inline AssetSystem &World::assets() { return *assets_; }
+
+   /// @brief Returns the GUI-system implementation bound by the engine.
+   inline GuiSystem &World::gui() { return *gui_; }
+
+   /// @brief Returns the window-system implementation bound by the engine.
+   inline WindowSystem &World::windowSystem() { return *window_system_; }
+
+   /// @brief Returns the window-system implementation bound by the engine.
+   inline const WindowSystem &World::windowSystem() const { return *window_system_; }
 
    /// @brief Heterogeneous user-system storage used by makeEngine().
    template <typename... TSystems> struct UserSystems {
