@@ -30,55 +30,11 @@ export namespace vve::v4 {
       [[nodiscard]] WindowSystem &windowSystem() { return *window_system_; }
       [[nodiscard]] const WindowSystem &windowSystem() const { return *window_system_; }
 
-      template <typename... TComponents>
-      [[nodiscard]] std::expected<Entity, Error> spawn(TComponents &&...components) {
-         const Entity entity = ecs_.create();
-         if constexpr (sizeof...(TComponents) > 0) {
-            if ((!ecs_.add(entity, std::forward<TComponents>(components)) || ...)) {
-               (void)ecs_.erase(entity);
-               return std::unexpected(Error::duplicate_component);
-            }
-         }
-         return entity;
-      }
-
-      template <typename T> [[nodiscard]] std::expected<void, Error> addComponent(Entity entity, T component) {
-         return ecs_.add(entity, std::move(component));
-      }
-
-      template <typename T> [[nodiscard]] std::expected<void, Error> setComponent(Entity entity, T component) {
-         return ecs_.put(entity, std::move(component));
-      }
-
-      template <typename T> [[nodiscard]] std::expected<std::optional<T>, Error> getComponent(Entity entity) const {
-         return ecs_.tryGet<T>(entity);
-      }
-
-      [[nodiscard]] std::expected<void, Error> destroy(Entity entity) { return ecs_.erase(entity); }
-
-      [[nodiscard]] std::expected<void, Error> setTransform(Entity entity, Transform transform) {
-         return setComponent(entity, std::move(transform));
-      }
-
-      [[nodiscard]] std::expected<std::optional<Transform>, Error> getTransform(Entity entity) const {
-         return getComponent<Transform>(entity);
-      }
-
-      void setSceneLoader(std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> loader) {
-         scene_loader_ = std::move(loader);
-      }
-
-      [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &path) {
-         if (!scene_loader_) { return std::unexpected(Error::missing_object); }
-         return scene_loader_(path);
-      }
-
    private:
       ECS &ecs_;
       AssetSystem *assets_{};
       GuiSystem *gui_{};
       WindowSystem *window_system_{};
-      std::function<std::expected<SceneHandle, Error>(const std::filesystem::path &)> scene_loader_{};
    };
 
    /// @brief Heterogeneous user-system storage used by makeEngine().

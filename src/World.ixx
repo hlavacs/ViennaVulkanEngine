@@ -2,8 +2,6 @@ export module VEEngine:World;
 import std;
 import VEEngine.V4;
 import :ECS;
-import VEEngine.Error;
-import VEEngine.Types;
 import :Window;
 import :Assets;
 import :Gui;
@@ -30,34 +28,6 @@ export namespace vve {
       [[nodiscard]] GuiSystem gui() { return GuiSystem{impl_.gui()}; }
       [[nodiscard]] WindowSystem windowSystem() { return WindowSystem{impl_.windowSystem()}; }
       [[nodiscard]] WindowSystem windowSystem() const { return WindowSystem{const_cast<Impl &>(impl_).windowSystem()}; }
-
-      template <typename... TComponents>
-      [[nodiscard]] std::expected<Entity, Error> spawn(TComponents &&...components) {
-         return impl_.spawn(std::forward<TComponents>(components)...);
-      }
-
-      template <typename T> [[nodiscard]] std::expected<void, Error> addComponent(Entity entity, T component) {
-         return impl_.template addComponent<T>(entity, std::move(component));
-      }
-
-      template <typename T> [[nodiscard]] std::expected<void, Error> setComponent(Entity entity, T component) {
-         return impl_.template setComponent<T>(entity, std::move(component));
-      }
-
-      template <typename T> [[nodiscard]] std::expected<std::optional<T>, Error> getComponent(Entity entity) const {
-         return impl_.template getComponent<T>(entity);
-      }
-
-      [[nodiscard]] std::expected<void, Error> destroy(Entity entity) { return impl_.destroy(entity); }
-      [[nodiscard]] std::expected<void, Error> setTransform(Entity entity, Transform transform) {
-         return impl_.setTransform(std::move(entity), std::move(transform));
-      }
-      [[nodiscard]] std::expected<std::optional<Transform>, Error> getTransform(Entity entity) const {
-         return impl_.getTransform(std::move(entity));
-      }
-      [[nodiscard]] std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &path) {
-         return impl_.loadScene(path);
-      }
 
    private:
       Impl &impl_;

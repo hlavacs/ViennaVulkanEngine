@@ -282,9 +282,6 @@ export namespace vve::v4 {
             return {};
          }
          if (const auto result = window_system_.init(windows_); !result) { return result; }
-         world_.setSceneLoader([this](const std::filesystem::path &path) {
-            return assets_.loadScene(path);
-         });
          last_frame_time_ = std::chrono::steady_clock::now();
          initialized_ = true;
          return initSystems();

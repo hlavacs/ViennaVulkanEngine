@@ -35,6 +35,8 @@ Wrappers mimic each method of the implementation, receive the same parameters an
 A facade wrapper class should be one class declaration and function definitions at the same time.
 An implementation of a wrapper class should first make a full class declaration only and afterwards make the member function definitions separately. Other classes in the implementation layer can use both formats.
 
+Do not duplicate code. There is one system responsible and it has the only implementation for its functionality. Wrappers can forward calls to them.
+
 ## Facade Structure
 
 Engine implementations must expose specific subsystems with the enforced interface.

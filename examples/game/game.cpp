@@ -126,21 +126,23 @@ public:
      * @param world Game-facing world facade provided by the engine.
      */
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
-        // The example spawns one entity with a transform and velocity so the
-        // update loop can demonstrate world and input access.
-        const auto player_result = world.spawn(vve::Transform{}, Velocity{});
-        if (!player_result) {
-            return std::unexpected(player_result.error());
+        // The example creates one entity with a transform and velocity so the
+        // update loop can demonstrate explicit ECS and input access.
+        decltype(auto) ecs = world.ecs();
+        player_ = ecs.create();
+        if (const auto result = ecs.add(player_, vve::Transform{}); !result) {
+            return std::unexpected(result.error());
         }
-
-        player_ = *player_result;
+        if (const auto result = ecs.add(player_, Velocity{}); !result) {
+            return std::unexpected(result.error());
+        }
 
         if (scene_path_.empty()) {
             return std::unexpected(vve::Error::invalid_argument);
         }
 
         std::cout << '[' << name() << "] registering scene path: " << scene_path_.string() << '\n';
-        if (const auto load_result = world.loadScene(scene_path_); !load_result) {
+        if (const auto load_result = world.assets().loadScene(scene_path_); !load_result) {
             return std::unexpected(load_result.error());
         }
 
@@ -163,14 +165,15 @@ public:
             return std::unexpected(vve::Error::invalid_argument);
         }
 
-        // Fetch the current velocity and transform copies through the world
-        // facade before applying input-driven changes.
-        const auto velocity_result = world.template getComponent<Velocity>(player_);
+        // Fetch the current velocity and transform copies through the ECS
+        // before applying input-driven changes.
+        decltype(auto) ecs = world.ecs();
+        const auto velocity_result = ecs.template tryGet<Velocity>(player_);
         if (!velocity_result) {
             return std::unexpected(velocity_result.error());
         }
 
-        const auto transform_result = world.getTransform(player_);
+        const auto transform_result = ecs.template tryGet<vve::Transform>(player_);
         if (!transform_result) {
             return std::unexpected(transform_result.error());
         }
@@ -210,12 +213,11 @@ public:
         transform.translation.value.x += velocity.x * delta_seconds;
         transform.translation.value.y += velocity.y * delta_seconds;
 
-        if (const auto set_transform_result = world.setTransform(player_, transform); !set_transform_result) {
+        if (const auto set_transform_result = ecs.put(player_, transform); !set_transform_result) {
             return std::unexpected(set_transform_result.error());
         }
 
-        if (const auto put_velocity_result = world.template setComponent<Velocity>(player_, velocity);
-            !put_velocity_result) {
+        if (const auto put_velocity_result = ecs.put(player_, velocity); !put_velocity_result) {
             return std::unexpected(put_velocity_result.error());
         }
 

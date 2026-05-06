@@ -330,17 +330,20 @@ struct CountingSystem {
 
    auto engine = makeEngine(ApplicationName{"world-test"});
    auto world = engine.world();
-   const auto ecs_entity = world.ecs().create();
-   if (!world.ecs().exists(ecs_entity)) {
+   auto ecs = world.ecs();
+   const auto ecs_entity = ecs.create();
+   if (!ecs.exists(ecs_entity)) {
       return 67;
    }
-   const auto entity = world.spawn(Transform{}, Velocity{2.0F});
-   const auto camera = world.spawn(Camera{});
-   if (!entity || !camera || world.windowSystem().windowCount() != 0 ||
-       world.windowSystem().findWindow("main").has_value()) {
+   const auto entity = ecs.create();
+   const auto camera = ecs.create();
+   if (const auto result = ecs.add(entity, Transform{}); !result) { return 64; }
+   if (const auto result = ecs.add(entity, Velocity{2.0F}); !result) { return 64; }
+   if (const auto result = ecs.add(camera, Camera{}); !result) { return 64; }
+   if (world.windowSystem().windowCount() != 0 || world.windowSystem().findWindow("main").has_value()) {
       return 64;
    }
-   const auto velocity = world.getComponent<Velocity>(*entity);
+   const auto velocity = ecs.tryGet<Velocity>(entity);
    if (!velocity || !velocity->has_value() || !nearly((*velocity)->x, 2.0F)) {
       return 65;
    }
@@ -497,10 +500,10 @@ struct CountingSystem {
    }
    auto world = engine.world();
    auto window_system = world.windowSystem();
-   const auto camera = world.spawn(Camera{});
-   if (!camera || !window_system.setWindowCamera("main", *camera)) {
-      return 57;
-   }
+   auto ecs = world.ecs();
+   const auto camera = ecs.create();
+   if (const auto result = ecs.add(camera, Camera{}); !result) { return 57; }
+   if (!window_system.setWindowCamera("main", camera)) { return 57; }
    auto assets = world.assets();
    const auto scene = assets.addScene(ObjectName{.value = "stub"});
    if (!scene || !scene->isCounter() || !assets.containsScene(*scene)) {
@@ -518,7 +521,7 @@ struct CountingSystem {
       return 53;
    }
    const auto main_camera = window_system.windowCamera("main");
-   if (!main_camera || *main_camera != *camera) {
+   if (!main_camera || *main_camera != camera) {
       return 58;
    }
    return 0;

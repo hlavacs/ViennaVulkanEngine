@@ -60,31 +60,32 @@ int main() {
    if (!engine.init()) { return 1; }
 
    auto world = engine.world();
+   auto ecs = world.ecs();
    auto window_system = world.windowSystem();
-   const auto camera = world.spawn(vve::Camera{});
-   if (!camera) { return 2; }
+   const auto camera = ecs.create();
+   if (const auto result = ecs.add(camera, vve::Camera{}); !result) { return 2; }
 
-   if (!window_system.setWindowCamera("main", *camera)) { return 3; }
+   if (!window_system.setWindowCamera("main", camera)) { return 3; }
    const auto main_window_after_direct_set = window_system.findWindow("main");
    const auto tools_window_after_direct_set = window_system.findWindow("tools");
    if (!main_window_after_direct_set || !tools_window_after_direct_set) { return 4; }
-   if (!sameCamera(main_window_after_direct_set->camera(), *camera)) { return 5; }
+   if (!sameCamera(main_window_after_direct_set->camera(), camera)) { return 5; }
    if (tools_window_after_direct_set->camera().has_value()) { return 6; }
 
-   if (!window_system.setActiveCamera(*camera)) { return 7; }
+   if (!window_system.setActiveCamera(camera)) { return 7; }
    const auto main_window_after_active_set = window_system.findWindow("main");
    const auto tools_window_after_active_set = window_system.findWindow("tools");
    if (!main_window_after_active_set || !tools_window_after_active_set) { return 8; }
-   if (!sameCamera(main_window_after_active_set->camera(), *camera)) { return 9; }
-   if (!sameCamera(tools_window_after_active_set->camera(), *camera)) { return 10; }
-   if (!sameCamera(window_system.windowCamera("main"), *camera)) { return 19; }
-   if (!sameCamera(window_system.activeCamera(), *camera)) { return 20; }
+   if (!sameCamera(main_window_after_active_set->camera(), camera)) { return 9; }
+   if (!sameCamera(tools_window_after_active_set->camera(), camera)) { return 10; }
+   if (!sameCamera(window_system.windowCamera("main"), camera)) { return 19; }
+   if (!sameCamera(window_system.activeCamera(), camera)) { return 20; }
 
    const auto status = engine.step();
    if (!status || *status != vve::FrameStatus::stopped) { return 11; }
    if (updates != 1 || window_count != 2) { return 12; }
-   if (!sameCamera(frame_main_camera, *camera)) { return 13; }
-   if (!sameCamera(frame_tools_camera, *camera)) { return 14; }
+   if (!sameCamera(frame_main_camera, camera)) { return 13; }
+   if (!sameCamera(frame_tools_camera, camera)) { return 14; }
 
    if (!window_system.clearWindowCamera("main")) { return 15; }
    if (window_system.windowCamera("main").has_value()) { return 16; }

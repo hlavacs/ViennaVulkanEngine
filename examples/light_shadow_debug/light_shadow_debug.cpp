@@ -128,14 +128,33 @@ public:
     [[nodiscard]] std::string_view name() const noexcept { return "LightShadowDebugSystem"; }
 
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld &world) {
-        const auto plane_entity = world.spawn(vve::Transform{}, plane_);
-        const auto cuboid_entity = world.spawn(vve::Transform{}, cuboid_);
-        const auto light_entity = world.spawn(vve::Transform{}, light_);
-        const auto camera_entity = world.spawn(camera_);
-        if (!plane_entity || !cuboid_entity || !light_entity || !camera_entity) {
-            return std::unexpected(vve::Error::invalid_argument);
+        decltype(auto) ecs = world.ecs();
+        const auto plane_entity = ecs.create();
+        const auto cuboid_entity = ecs.create();
+        const auto light_entity = ecs.create();
+        const auto camera_entity = ecs.create();
+        if (const auto result = ecs.add(plane_entity, vve::Transform{}); !result) {
+            return std::unexpected(result.error());
         }
-        if (const auto camera_result = world.windowSystem().setActiveCamera(*camera_entity); !camera_result) {
+        if (const auto result = ecs.add(plane_entity, plane_); !result) {
+            return std::unexpected(result.error());
+        }
+        if (const auto result = ecs.add(cuboid_entity, vve::Transform{}); !result) {
+            return std::unexpected(result.error());
+        }
+        if (const auto result = ecs.add(cuboid_entity, cuboid_); !result) {
+            return std::unexpected(result.error());
+        }
+        if (const auto result = ecs.add(light_entity, vve::Transform{}); !result) {
+            return std::unexpected(result.error());
+        }
+        if (const auto result = ecs.add(light_entity, light_); !result) {
+            return std::unexpected(result.error());
+        }
+        if (const auto result = ecs.add(camera_entity, camera_); !result) {
+            return std::unexpected(result.error());
+        }
+        if (const auto camera_result = world.windowSystem().setActiveCamera(camera_entity); !camera_result) {
             return std::unexpected(camera_result.error());
         }
 
@@ -147,10 +166,10 @@ public:
         file << std::fixed << std::setprecision(6);
         file << "vve_light_shadow_debug_scene=1\n";
         file << "coordinate_system=right_handed_y_up\n";
-        file << "plane_entity=" << plane_entity->value() << '\n';
-        file << "cuboid_entity=" << cuboid_entity->value() << '\n';
-        file << "light_entity=" << light_entity->value() << '\n';
-        file << "camera_entity=" << camera_entity->value() << '\n';
+        file << "plane_entity=" << plane_entity.value() << '\n';
+        file << "cuboid_entity=" << cuboid_entity.value() << '\n';
+        file << "light_entity=" << light_entity.value() << '\n';
+        file << "camera_entity=" << camera_entity.value() << '\n';
         writeVec3(file, "plane.center", plane_.center);
         file << "plane.half_extent=" << plane_.half_extent.x << ',' << plane_.half_extent.y << '\n';
         writeVec3(file, "cuboid.minimum", cuboid_.minimum);
