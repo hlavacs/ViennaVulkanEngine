@@ -22,7 +22,7 @@ The common interface is defined in the src folder and does not contain any imple
 The engine implementations are situated in the src/versions folder and are completely isolated from each other. This is the implementation layer. The meta engine can be compiled to contain all engine implementations or just one. Each game engine is isolated with its own namespace. For instance, v4 lives in the namespace vve::v4, source files are located in folder src/versions/v4.
 
 When compiling their game, game apps are compiled and linked against the meta engine. Which engine implementation is then used is defined by the define VVE_ENGINE_IMPLEMENTATION_NAMESPACE. This define can be done as compiler parameter or as compiler präprocessor directive #define.
-For instance, defining VVE_ENGINE_IMPLEMENTATION_NAMESPACE to be v4 results in using thr engine implementation living in namespace vve::v4.
+For instance, defining VVE_ENGINE_IMPLEMENTATION_NAMESPACE to be v4 results in using the engine implementation living in namespace vve::v4.
 
 Facades are defined in a facade pattern through wrapper classes and functions. Every class that is seen by the user lives in the facade layer as a wrapper. Wrappers have exactly one private member variable impl_ which is of type 
 ```cpp
@@ -49,9 +49,11 @@ Engine implementations must expose specific subsystems with the enforced interfa
 - Assets: A wrapper over the internal asset system. The wrapper exposes specific public functions that enable users to load from disk and purge assets, create objects. 
 - GUI: wrapper over the GUI system implementation. The wrapper offers public hooks for creating widgets. Must work with ImGUI. 
 - World: main interface for user interaction with the world and runtime binder.
+  - World does not story data itself but holds references to other subsystems and delegates calls to them.
+  - World can also return wrappers of these subsystems to tthe user app
   - Its API must offer enough member functions to access and change all world, scene and asset data without exposing internal descriptor types like SceneDescriptor or ObjectCatalogue. 
-  - World implementation contains references to: ECS wrapper, Asset wrapper, GUI wrapper, Engine wrapper, WindowSystem wrapper. It allows for getting references to them.
-  - World wrapper is a runtime binder that binds all necessary subsystem wrappers into one class.
+  - World implementation contains references to: ECS implementation, Asset implementation, GUI implementation, Engine implementation, WindowSystem implementation. It allows for getting references to them.
+  - World wrapper is a wrapper over world implementation and does not hold any data itself. It forwards references to systems held in the implementation like ECS as wrapper to the caller.
   - A value type for it can be obtained through a call to an Engine member function.
   - The world wrapper is actually created by the Engine impementation, which creates a World wrapper over the actual World implementation and returns it by value.
   - The engine wrapper owns its own engine implementation, but does not own any more wrappers or implementations.

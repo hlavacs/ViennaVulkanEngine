@@ -148,6 +148,22 @@ export namespace vve::v4 {
       [[nodiscard]] Window *findWindow(WindowHandle handle);
       /// @brief Finds a read-only window implementation by runtime handle.
       [[nodiscard]] const Window *findWindow(WindowHandle handle) const;
+      /// @brief Assigns the camera rendered through a window handle.
+      [[nodiscard]] std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera);
+      /// @brief Assigns the camera rendered through an application-local window id.
+      [[nodiscard]] std::expected<void, Error> setWindowCamera(std::string_view id, Entity camera);
+      /// @brief Clears the camera rendered through a window handle.
+      [[nodiscard]] std::expected<void, Error> clearWindowCamera(WindowHandle window);
+      /// @brief Clears the camera rendered through an application-local window id.
+      [[nodiscard]] std::expected<void, Error> clearWindowCamera(std::string_view id);
+      /// @brief Returns the camera rendered through a window handle, when selected.
+      [[nodiscard]] std::optional<Entity> windowCamera(WindowHandle window) const;
+      /// @brief Returns the camera rendered through an application-local window id, when selected.
+      [[nodiscard]] std::optional<Entity> windowCamera(std::string_view id) const;
+      /// @brief Assigns the active camera to all windows.
+      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera);
+      /// @brief Returns the first assigned window camera, when any window has one.
+      [[nodiscard]] std::optional<Entity> activeCamera() const;
       /// @brief Returns true when any window has requested closing.
       [[nodiscard]] bool anyShouldClose() const;
 
@@ -490,6 +506,57 @@ namespace vve::v4 {
    Window *WindowSystem::findWindow(WindowHandle handle) { return impl_->find(handle); }
 
    const Window *WindowSystem::findWindow(WindowHandle handle) const { return impl_->find(handle); }
+
+   std::expected<void, Error> WindowSystem::setWindowCamera(WindowHandle window, Entity camera) {
+      auto *window_impl = impl_->find(window);
+      if (window_impl == nullptr) { return std::unexpected(Error::invalid_handle); }
+      window_impl->info().camera = camera;
+      return {};
+   }
+
+   std::expected<void, Error> WindowSystem::setWindowCamera(std::string_view id, Entity camera) {
+      auto *window_impl = impl_->find(id);
+      if (window_impl == nullptr) { return std::unexpected(Error::invalid_handle); }
+      window_impl->info().camera = camera;
+      return {};
+   }
+
+   std::expected<void, Error> WindowSystem::clearWindowCamera(WindowHandle window) {
+      auto *window_impl = impl_->find(window);
+      if (window_impl == nullptr) { return std::unexpected(Error::invalid_handle); }
+      window_impl->info().camera.reset();
+      return {};
+   }
+
+   std::expected<void, Error> WindowSystem::clearWindowCamera(std::string_view id) {
+      auto *window_impl = impl_->find(id);
+      if (window_impl == nullptr) { return std::unexpected(Error::invalid_handle); }
+      window_impl->info().camera.reset();
+      return {};
+   }
+
+   std::optional<Entity> WindowSystem::windowCamera(WindowHandle window) const {
+      const auto *window_impl = impl_->find(window);
+      return window_impl == nullptr ? std::optional<Entity>{} : window_impl->info().camera;
+   }
+
+   std::optional<Entity> WindowSystem::windowCamera(std::string_view id) const {
+      const auto *window_impl = impl_->find(id);
+      return window_impl == nullptr ? std::optional<Entity>{} : window_impl->info().camera;
+   }
+
+   std::expected<void, Error> WindowSystem::setActiveCamera(Entity camera) {
+      if (impl_->windows.empty()) { return std::unexpected(Error::missing_object); }
+      for (auto &window : impl_->windows) { window.info().camera = camera; }
+      return {};
+   }
+
+   std::optional<Entity> WindowSystem::activeCamera() const {
+      const auto it = std::ranges::find_if(impl_->windows, [](const Window &window) {
+         return window.info().camera.has_value();
+      });
+      return it == impl_->windows.end() ? std::optional<Entity>{} : it->info().camera;
+   }
 
    bool WindowSystem::anyShouldClose() const {
       return std::ranges::any_of(impl_->windows, [](const Window &window) {
