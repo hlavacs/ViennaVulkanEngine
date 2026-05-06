@@ -40,18 +40,18 @@ A custom KosmicKrisp manifest can be supplied with:
 VVE_KOSMICKRISP_ICD=/path/to/libkosmickrisp_icd.json VVE_VULKAN_ICD=kosmickrisp bin/debug/exe/game
 ```
 
-The public `vve::Engine<>`, `vve::ECS<>`, and `vve::World` aliases are selected through a single namespace-style define:
+The public `vve::Engine<>`, `vve::ECS`, and `vve::World` facade types are backed by one implementation namespace:
 
 ```text
-VVE_DEFAULT_ENGINE_NAMESPACE
+VVE_ENGINE_IMPLEMENTATION_NAMESPACE
 ```
 
-This value is used directly in qualified names such as `vve::v3::...`, so no numeric selector layer is needed. `vve::ECS<>` and `vve::World` follow the engine namespace automatically.
+The facade keeps user code in namespace `vve`; implementation-specific code lives below the selected engine namespace.
 
-The CMake target exposes matching cache variables. The current codebase supports value `v3`:
+The CMake target exposes the matching cache variable. The active educational implementation is `v4`:
 
 ```powershell
-cmake --preset debug-windows -DVVE_DEFAULT_ENGINE_NAMESPACE=v3
+cmake --preset debug-windows -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=v4
 cmake --build --preset build-debug-windows
 ```
 

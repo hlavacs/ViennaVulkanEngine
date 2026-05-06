@@ -58,6 +58,7 @@ target_link_libraries(ViennaVulkanEngine
         assimp::assimp
     PRIVATE
         SDL3::SDL3
+        slang::slang
 )
 
 vve_set_output_dirs(ViennaVulkanEngine)

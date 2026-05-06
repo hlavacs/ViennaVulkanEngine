@@ -1,59 +1,60 @@
-#include <string_view>
+#include <expected>
 
-import std;
 import VEEngine;
-import VEEngine.V3;
 
-/**
- * @file
- * @brief Regression test for user-system engine specialization.
- *
- * The test verifies that a user system can be supplied through `makeEngine()`
- * and that the returned engine is still backed by the expected v3 runtime.
- */
 namespace {
 
-/**
- * @brief Minimal user system used to exercise user-system detection.
- */
-class CounterSystem final {
-public:
-    /// @brief Returns the system name used by engine task registration.
-    [[nodiscard]] std::string_view name() const noexcept {
-        return "CounterSystem";
-    }
+struct CountingSystem {
+   int *init_count{};
+   int *update_count{};
+   std::uint64_t *last_frame{};
+   std::size_t *last_window_count{};
 
-    /**
-     * @brief Optional initialization hook used by the engine.
-     * @param world Game-facing world facade passed to user systems.
-     */
-    [[nodiscard]] std::expected<void, vve::Error> init(vve::World& world) {
-        // Creating an entity proves that the world facade is wired up before
-        const auto entity = world.createEntity(); // user-system initialization executes.
-        if (!entity) {
-            return std::unexpected(entity.error());
-        }
+   template <typename TWorld> std::expected<void, vve::Error> init(TWorld &world) {
+      if (init_count != nullptr) { ++*init_count; }
+      return world.windowSystem().windowCount() == 0 ? std::unexpected(vve::Error::missing_object)
+                                                     : std::expected<void, vve::Error>{};
+   }
 
-        return {};
-    }
+   template <typename TWorld, typename TWindowFrame>
+   std::expected<void, vve::Error> update(TWorld &, const vve::FrameContext &frame,
+                                          const TWindowFrame &window_frame) {
+      if (update_count != nullptr) { ++*update_count; }
+      if (last_frame != nullptr) { *last_frame = frame.frame_index.value; }
+      if (last_window_count != nullptr) { *last_window_count = window_frame.windows.size(); }
+      return window_frame.windows.empty() ? std::unexpected(vve::Error::missing_object)
+                                          : std::expected<void, vve::Error>{};
+   }
 };
 
 } // namespace
 
-/**
- * @brief Executes the user-system integration regression.
- * @return Process exit code expected by the lightweight test runner.
- */
 int main() {
-    // Creating the engine through `makeUserSystems()` should specialize the
-    auto engine = vve::makeEngine( // engine type without changing the selected runtime version.
-        vve::ApplicationName{"user-systems"},
-        vve::makeUserSystems(CounterSystem{}));
+   int init_count = 0;
+   int update_count = 0;
+   std::uint64_t last_frame = 99;
+   std::size_t last_window_count = 0;
 
-    const auto version_major = engine.getVersionMajor();
-    if (!version_major || *version_major != 3) {
-        return 1;
-    }
+   auto engine = vve::makeEngine(
+      vve::ApplicationName{"user-system-tests"},
+      vve::MaxFrames{.value = vve::FrameCount{.value = 2}},
+      vve::WindowSetups{vve::WindowSetup{}
+                           .id("main")
+                           .title("user-system-tests")
+                           .extent(vve::PixelExtent{.width = 64, .height = 64})
+                           .visible(false)},
+      vve::makeUserSystems(CountingSystem{.init_count = &init_count,
+                                           .update_count = &update_count,
+                                           .last_frame = &last_frame,
+                                           .last_window_count = &last_window_count}));
 
-    return 0;
+   if (!engine.init()) { return 1; }
+   const auto first = engine.step();
+   const auto second = engine.step();
+   if (!first || !second || *first != vve::FrameStatus::running || *second != vve::FrameStatus::stopped) {
+      return 2;
+   }
+   if (init_count != 1 || update_count != 2 || last_frame != 1 || last_window_count != 1) { return 3; }
+
+   return 0;
 }

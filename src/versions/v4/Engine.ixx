@@ -13,9 +13,9 @@ export import VEEngine.V4.Math;
 export import :World;
 export import :Window;
 export import :Assets;
-import :Renderer;
-import :Resources;
-import :Shaders;
+export import :Renderer;
+export import :Resources;
+export import :Shaders;
 export import VEEngine.V4.Handle;
 export import :Gui;
 

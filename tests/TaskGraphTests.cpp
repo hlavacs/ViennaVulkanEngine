@@ -1,158 +1,36 @@
-#include <string_view>
-#include <vector>
+import VEEngine.V4;
 
-import std;
-import VEEngine;
-import VEEngine.V3;
-
-/**
- * @file
- * @brief Regression tests for task-graph construction and execution.
- */
-namespace {
-
-/**
- * @brief Test task system that appends a marker when executed.
- */
-class RecordingTaskSystem final : public vve::v3::ITaskSystem {
-public:
-    /// @brief Creates the recording task system over the shared event vector.
-    explicit RecordingTaskSystem(std::vector<int>& events)
-        : events_(events) {
-    }
-
-    /// @brief Returns the task-system name for diagnostics.
-    [[nodiscard]] std::string_view name() const noexcept override {
-        return "RecordingTaskSystem";
-    }
-
-    /// @brief Registers a single post-frame task that records execution.
-    void registerTasks(
-        vve::v3::TaskGraphBuilder& builder,
-        const vve::v3::SceneData&) override {
-        [[maybe_unused]] const auto game_update = builder.addTask(
-            "game.update",
-            vve::v3::TaskKernelId::none,
-            [this](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Error> {
-                events_.push_back(3);
-                return {};
-            },
-            {vve::v3::TaskGraphBuilder::taskHandleFor("engine.upload")},
-            {},
-            {},
-            vve::v3::TaskPhase::post_frame);
-    }
-
-private:
-    std::vector<int>& events_; ///< Shared event log used to verify execution order.
-};
-
-} // namespace
-
-/**
- * @brief Executes the task-graph regression tests.
- * @return Process exit code expected by the lightweight test runner.
- */
 int main() {
-    {
-        // Verify that task execution respects dependency order, including tasks
-        std::vector<int> events{}; // registered later by user task systems.
-        vve::v3::TaskGraphBuilder builder{};
+   vve::v4::TaskGraph graph{};
+   const auto upload = graph.addTask(vve::v4::ObjectName{.value = "upload"});
+   const auto simulate = graph.addTask(vve::v4::ObjectName{.value = "simulate"});
+   const auto render = graph.addTask(vve::v4::ObjectName{.value = "render"});
+   if (!upload || !simulate || !render || graph.taskCount() != 3) { return 1; }
 
-        const auto transforms = builder.addTask(
-            "engine.transforms",
-            vve::v3::TaskKernelId::update_transforms,
-            [&events](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Error> {
-                events.push_back(1);
-                return {};
-            });
+   graph.addEdge(*upload, *simulate);
+   graph.addEdge(*simulate, *render);
+   const auto ordered = graph.topologicalOrder();
+   if (!ordered || ordered->size() != 3) { return 2; }
+   if ((*ordered)[0] != *upload || (*ordered)[1] != *simulate || (*ordered)[2] != *render) { return 3; }
 
-        const auto uploads = builder.addTask(
-            "engine.upload",
-            vve::v3::TaskKernelId::upload_resources,
-            [&events](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Error> {
-                events.push_back(2);
-                return {};
-            },
-            {transforms});
+   const auto name = graph.taskName(*simulate);
+   if (!name || name->value != "simulate") { return 4; }
 
-        RecordingTaskSystem system(events);
-        system.registerTasks(builder, {});
+   if (!graph.remove(*simulate) || graph.contains(*simulate) || graph.taskCount() != 2) { return 5; }
+   const auto after_remove = graph.topologicalOrder();
+   if (!after_remove || after_remove->size() != 2) { return 6; }
 
-        if (!builder.containsTask("engine.upload")) {
-            return 4;
-        }
+   const auto missing = graph.taskName(*simulate);
+   if (missing || missing.error() != vve::v4::Error::missing_object) { return 7; }
 
-        [[maybe_unused]] const auto late_update = builder.addTask(
-            "game.late_update",
-            vve::v3::TaskKernelId::none,
-            [&events](const vve::v3::TaskExecutionContext&) -> std::expected<void, vve::Error> {
-                events.push_back(4);
-                return {};
-            },
-            {},
-            {},
-            {},
-            vve::v3::TaskPhase::post_frame);
-        [[maybe_unused]] const auto dependency_added = builder.addDependency("game.late_update", "game.update");
+   vve::v4::TaskGraph cycle{};
+   const auto a = cycle.addTask(vve::v4::ObjectName{.value = "a"});
+   const auto b = cycle.addTask(vve::v4::ObjectName{.value = "b"});
+   if (!a || !b) { return 8; }
+   cycle.addEdge(*a, *b);
+   cycle.addEdge(*b, *a);
+   const auto cycle_order = cycle.topologicalOrder();
+   if (cycle_order || cycle_order.error() != vve::v4::Error::cycle_detected) { return 9; }
 
-        const auto graph = std::move(builder).build();
-        const vve::v3::FrameContext frame_context{
-            .frame_index = 7,
-            .delta_seconds = 0.016
-        };
-        vve::v3::SceneData scene{};
-        const auto result = vve::v3::executeTaskGraph(
-            graph,
-            vve::v3::TaskExecutionContext{
-                .frame_context = &frame_context,
-                .scene = &scene
-            });
-        if (!result) {
-            return 1;
-        }
-
-        const std::vector<int> expected{1, 2, 3, 4};
-        if (events != expected) {
-            return 2;
-        }
-    }
-
-    {
-        vve::v3::TaskGraphBuilder builder{}; // Graph compilation must reject dependencies on missing tasks.
-        [[maybe_unused]] const auto invalid_task = builder.addTask(
-            "task.invalid",
-            vve::v3::TaskKernelId::none,
-            {},
-            {vve::v3::TaskNodeHandle{vve::Handle::fromHash(std::string_view{"task.missing"})}});
-
-        const auto graph = std::move(builder).build();
-        const auto result = vve::v3::executeTaskGraph(graph, {});
-        if (result || result.error() != vve::Error::invalid_argument) {
-            return 3;
-        }
-    }
-
-    {
-        vve::v3::TaskGraphBuilder builder{}; // Invalid phase ordering must be caught during graph validation.
-        [[maybe_unused]] const auto end_frame = builder.addTask(
-            "task.end_frame",
-            vve::v3::TaskKernelId::end_frame);
-        [[maybe_unused]] const auto invalid_user_update = builder.addTask(
-            "task.invalid_phase",
-            vve::v3::TaskKernelId::none,
-            {},
-            {vve::v3::TaskGraphBuilder::taskHandleFor("task.end_frame")},
-            {},
-            {},
-            vve::v3::TaskPhase::user_update);
-
-        const auto graph = std::move(builder).build();
-        const auto result = vve::v3::executeTaskGraph(graph, {});
-        if (result || result.error() != vve::Error::invalid_argument) {
-            return 5;
-        }
-    }
-
-    return 0;
+   return 0;
 }
