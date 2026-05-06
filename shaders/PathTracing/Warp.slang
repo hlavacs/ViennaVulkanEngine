@@ -44,6 +44,11 @@ public float3 squareToUniformSphere(in float2 sample)
     return float3(r * cosPhi, r * sinPhi, z);
 }
 
+public float squareToUniformSpherePdf(in float3 v) {
+    // Input: sphere direction. Output: PDF value for uniform sphere.
+    return 1 / (4.0f * M_PI);
+}
+
 // This potentially generates a cosine sample
 public float3 squareToUniformHemisphere(in float2 sample) {
     // Input: 2D uniform sample. Output: uniform direction on hemisphere.

@@ -7,56 +7,8 @@ import BSDF;
 import ColorSpace;
 import Surface;
 import raytracing;
+import Bidrirectional_Raytracing;
 
-IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
-    // Inputs: RNG. Output: first-bounce integration state.
-    float2 launchID = (float2)DispatchRaysIndex().xy;        // Current pixel (x,y)
-    float2 launchSize = (float2)DispatchRaysDimensions().xy; // Image size (width,height)
-
-    IntersectionRecord its;
-
-    RayDesc cameraRay = getInitialRay(launchID, launchSize);
-
-    its.position = inPosition[int2(launchID)].xyz;
-    its.normal = inNormal[int2(launchID)].xyz;
-    its.frame = Frame(its.normal);
-    its.direction = cameraRay.Direction;
-
-    MaterialRecord material;
-    material.albedo = inAlbedoAlpha[int2(launchID)].xyz;
-    material.alpha = inAlbedoAlpha[int2(launchID)].w;
-    //Incorrect but not needed
-    material.normal = float3(0.0,0.0,1.0);
-    material.roughness = inSpec[int2(launchID)].x;
-    material.metalness = inSpec[int2(launchID)].y;
-    material.ior = inSpec[int2(launchID)].z;
-
-    float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
-
-    if (dot(its.normal, its.direction) > 0.0) {
-        its.normal *= -1.0;
-        shadingNormal *= -1.0;
-    }
-
-    material.shadingFrame = Frame(shadingNormal);
-
-    float3 directLight = directRaycast(its, material, sampler);
-    
-    BSDFQueryRecord record = constructBSDFRecord(its, material, false);
-
-    float3 bsdf = samplePrincipled(record, material, sampler);
-    // RayDesc indirectRay = getRay(its, its.frame.toWorld(record.wo));
-    RayDesc indirectRay = getRay(its, record.woWorld);
-
-    IntegrationStepQueryRecord integrationStep;
-
-    integrationStep.directLight = directLight;
-    integrationStep.indirectLight = float3(0.0);
-    integrationStep.throughput = bsdf;
-    integrationStep.indirectRay = indirectRay;
-
-    return integrationStep;
-}
 
 float3 groundTruthLightRadiance(in uint lightIndex, in IntersectionRecord its, in MaterialRecord material, inout Sampler sampler) {
     LightSource light = lightBuffer[lightIndex];
@@ -126,6 +78,45 @@ IntegrationStepQueryRecord integratorDirect(inout Sampler sampler) {
     return integrationStep;
 }
 
+// Indirect Integrator
+IntegrationStepQueryRecord integratorBidirectional(inout Sampler sampler, ) {
+
+    int2 launchID = (int2)DispatchRaysIndex().xy;        // Current pixel (x,y)
+    int2 launchSize = (int2)DispatchRaysDimensions().xy; // Image size (width,height)
+
+    IntersectionRecord its;
+    MaterialRecord material;
+
+    getInitialSurfaceData(launchID, launchSize, its, material);
+
+    float pdf = 1.0 / float(lightVertexCacheSize);
+
+    uint sampleCount = 10;
+    float3 radiance = 0.0;
+
+    for (uint i = 0; i < sampleCount; i++) {
+        uint index = sampler.UniformUIntFast(0, lightVertexCacheSize - 1);
+        LightVertex lightVertex = lightVertexCache[index];
+
+        radiance += getOccludedLightContributionFromConnection(its, material, lightVertex) / pdf;
+    }
+    
+    IntegrationStepQueryRecord integrationStep;
+
+    integrationStep.directLight = float3(0.0);
+    integrationStep.indirectLight = radiance / sampleCount;
+    integrationStep.throughput = float3(0.0);
+    // integrationStep.indirectRay = indirectRay;
+
+    return integrationStep;
+}
+
+[[vk::binding(3, 0)]]
+cbuffer UniformBufferBidirectional
+{
+    uint lightVertexCacheSize;
+};
+
 [[vk::binding(0, 2)]]
 RWTexture2D<float4> inAlbedoAlpha;
 
@@ -143,6 +134,9 @@ RWTexture2D<float4> inShadingNormal;
 
 [[vk::binding(5, 2)]]
 RWTexture2D<float4> outImage;
+
+[[vk::binding(6, 2)]]
+RWStructuredBuffer<LightVertex> lightVertexCache;
 
 
 
@@ -166,12 +160,13 @@ void rgenMain()
 
         Sampler sampler = Sampler(pixelSeed);
 
-        IntegrationStepQueryRecord outputRecord = integratorDirect(sampler);
+        IntegrationStepQueryRecord outputDirectRecord = integratorDirect(sampler);
+        IntegrationStepQueryRecord outputIndirectRecord = integratorBidirectional(sampler);
         // outImage[int2(launchID)] = float4(LinearToSRGB(outputColor), 1.0);
         float3 albedo = inAlbedoAlpha[int2(launchID)].xyz;
         //works for now, but terrible with reprojection errors
 
-        float3 outputColor = outputRecord.directLight + outputRecord.indirectLight;
+        float3 outputColor = outputDirectRecord.directLight + outputIndirectRecord.indirectLight;
 
         
         //this works for now but is likley to break with slight reprojection errors.

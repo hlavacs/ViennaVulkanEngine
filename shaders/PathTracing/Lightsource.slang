@@ -282,7 +282,7 @@ public EmitterRecord sampleLightSourceCenter(in LightSource light, in float3 ori
 public EmitterRecord sampleRandomLightSourceWeighted(in StructuredBuffer<LightSource> lightSources, in float3 origin, inout Sampler sampler) {
     // Inputs: light buffer, shading point, RNG. Output: sampled emitter record with selection PDF folded in.
     float pdf = 0.0;
-    LightSource light = chooseRandomLightSourceWeighted(lightSources, sampler, pdf);
+    LightSource light = chooseRandomLightSourceWeighted(lightSources, sampler, pdf, 0);
     EmitterRecord record = sampleLightSource(light, origin, sampler);
 
     record.sampleEmission = record.sampleEmission / pdf;
@@ -315,16 +315,16 @@ public EmitterRecord sampleRandomLightSource(in StructuredBuffer<LightSource> li
     return record;
 }
 
-LightSource chooseRandomLightSource(in StructuredBuffer<LightSource> lightSources, inout Sampler sampler, inout float pdf, in uint lightCount) {
+public LightSource chooseRandomLightSource(in StructuredBuffer<LightSource> lightSources, inout Sampler sampler, inout float pdf, in uint lightCount) {
     uint index = sampler.UniformUIntFast(0, lightCount - 1);
     pdf = 1.0 / float(lightCount);
     return lightSources[index];
 }
 
-LightSource chooseRandomLightSourceWeighted(in StructuredBuffer<LightSource> lightSources, inout Sampler sampler, inout float pdf) {
+public  LightSource chooseRandomLightSourceWeighted(in StructuredBuffer<LightSource> lightSources, inout Sampler sampler, inout float pdf, inout uint index) {
     // Inputs: light buffer, RNG. Output: chosen light and its selection PDF.
     float rand = sampler.UniformFloat();
-    uint index = 0;
+    index = 0;
     LightSource chosenLight;
     while (true) {
         LightSource light = lightSources[index];
