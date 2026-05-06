@@ -9,3 +9,7 @@ endif()
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/sponza/CMakeLists.txt")
     add_subdirectory(sponza)
 endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/light_shadow_debug/CMakeLists.txt")
+    add_subdirectory(light_shadow_debug)
+endif()

@@ -2,6 +2,7 @@
 #include <expected>
 #include <filesystem>
 #include <fstream>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <string_view>
@@ -48,7 +49,55 @@ struct CountingSystem {
    return std::abs(lhs - rhs) < 0.0001F;
 }
 
+[[nodiscard]] std::optional<std::filesystem::path> findRepositoryRoot() {
+   auto path = std::filesystem::current_path();
+   while (!path.empty()) {
+      if (std::filesystem::exists(path / "src/versions/v4/shaders/Forward.slang")) {
+         return path;
+      }
+      const auto parent = path.parent_path();
+      if (parent == path) { break; }
+      path = parent;
+   }
+   return std::nullopt;
+}
+
+[[nodiscard]] std::optional<std::string> readTextFile(const std::filesystem::path &path) {
+   std::ifstream file{path};
+   if (!file) { return std::nullopt; }
+   return std::string{std::istreambuf_iterator<char>{file}, std::istreambuf_iterator<char>{}};
+}
+
+[[nodiscard]] bool containsText(const std::string &text, std::string_view needle) {
+   return text.find(needle) != std::string::npos;
+}
+
 [[nodiscard]] int testFacadeContracts() {
+   return 0;
+}
+
+[[nodiscard]] int testV4ShaderSources() {
+   const auto root = findRepositoryRoot();
+   if (!root) { return 110; }
+
+   const auto lighting = readTextFile(*root / "src/versions/v4/shaders/Lighting.slang");
+   const auto forward = readTextFile(*root / "src/versions/v4/shaders/Forward.slang");
+   if (!lighting || !forward) { return 111; }
+
+   if (!containsText(*lighting, "VveLightingConstants") ||
+       !containsText(*lighting, "VveLightingResult") ||
+       !containsText(*lighting, "vveEvaluateDirectionalLight") ||
+       !containsText(*lighting, "shadowFactor")) {
+      return 112;
+   }
+
+   if (!containsText(*forward, "#include \"Lighting.slang\"") ||
+       !containsText(*forward, "vveForwardVertexMain") ||
+       !containsText(*forward, "vveForwardFragmentMain") ||
+       !containsText(*forward, "VveForwardDebugSample") ||
+       !containsText(*forward, "SV_Target4")) {
+      return 113;
+   }
    return 0;
 }
 
@@ -495,6 +544,9 @@ struct CountingSystem {
 
 int main() {
    if (const int result = testFacadeContracts(); result != 0) {
+      return result;
+   }
+   if (const int result = testV4ShaderSources(); result != 0) {
       return result;
    }
    if (const int result = testHandles(); result != 0) {
