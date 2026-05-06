@@ -352,14 +352,31 @@ namespace vve::v4 {
    std::string_view WindowSystem::name() const noexcept { return "SDL3WindowSystem"; }
 
    std::expected<void, Error> WindowSystem::init(const Windows &windows) {
-      SDL_SetMainReady();
-      if (SDL_InitSubSystem(SDL_INIT_VIDEO) == false) { return std::unexpected(Error::platform_error); }
-      impl_->video_initialized = true;
+      const auto needs_platform_windows = std::ranges::any_of(windows.value, [](const WindowDesc &desc) {
+         return desc.visible;
+      });
+      if (needs_platform_windows) {
+         SDL_SetMainReady();
+         if (SDL_InitSubSystem(SDL_INIT_VIDEO) == false) { return std::unexpected(Error::platform_error); }
+         impl_->video_initialized = true;
+      }
 
       for (const auto &desc : windows.value) {
+         auto info = WindowInfo{.handle = makeCounterHandle<WindowHandle>(),
+                                .id = desc.id,
+                                .title = desc.title,
+                                .extent = desc.extent,
+                                .renderer_id = desc.renderer_id,
+                                .focused = false,
+                                .minimized = false,
+                                .should_close = false};
+         if (!desc.visible) {
+            impl_->windows.emplace_back(nullptr, 0, std::move(info));
+            continue;
+         }
+
          SDL_WindowFlags flags = 0;
          if (desc.resizable) { flags |= SDL_WINDOW_RESIZABLE; }
-         if (!desc.visible) { flags |= SDL_WINDOW_HIDDEN; }
 
          SDL_Window *const window = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.extent.width),
                                                      static_cast<int>(desc.extent.height), flags);
@@ -376,15 +393,9 @@ namespace vve::v4 {
          int height = 0;
          SDL_GetWindowSize(window, &width, &height);
 
-         auto info = WindowInfo{.handle = makeCounterHandle<WindowHandle>(),
-                                .id = desc.id,
-                                .title = desc.title,
-                                .extent = PixelExtent{.width = static_cast<std::uint32_t>(std::max(width, 0)),
-                                                      .height = static_cast<std::uint32_t>(std::max(height, 0))},
-                                .renderer_id = desc.renderer_id,
-                                .focused = SDL_GetKeyboardFocus() == window,
-                                .minimized = false,
-                                .should_close = false};
+         info.extent = PixelExtent{.width = static_cast<std::uint32_t>(std::max(width, 0)),
+                                   .height = static_cast<std::uint32_t>(std::max(height, 0))};
+         info.focused = SDL_GetKeyboardFocus() == window;
          const SDL_WindowID id = SDL_GetWindowID(window);
          impl_->indices[id] = impl_->windows.size();
          impl_->windows.emplace_back(window, id, std::move(info));
@@ -395,6 +406,7 @@ namespace vve::v4 {
 
    std::expected<void, Error> WindowSystem::poll(InputState &input) {
       input.beginFrame();
+      if (!impl_->video_initialized) { return {}; }
       SDL_Event event{};
       while (SDL_PollEvent(&event)) {
          switch (event.type) {
