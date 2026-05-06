@@ -116,14 +116,32 @@ public:
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
         std::cout << '[' << name() << "] scene path: " << scene_path_.string() << '\n';
         std::cout << '[' << name() << "] v4 runtime shell is active\n";
-        const auto scene_handle = world.loadScene(scene_path_);
-        if (!scene_handle) {
+        auto assets = world.assets();
+        const auto loaded_scene = assets.loadScene(scene_path_);
+        if (!loaded_scene) {
             std::cerr << '[' << name() << "] Assimp import failed: "
-                      << vve::errorName(scene_handle.error()) << '\n';
-            return std::unexpected(scene_handle.error());
+                      << vve::errorName(loaded_scene.error()) << '\n';
+            return std::unexpected(loaded_scene.error());
         }
 
-        std::cout << '[' << name() << "] imported scene handle=" << scene_handle->value() << '\n';
+        scene_ = *loaded_scene;
+        const auto nodes = assets.sceneNodeCount(scene_);
+        const auto meshes = assets.sceneMeshCount(scene_);
+        const auto materials = assets.sceneMaterialCount(scene_);
+        const auto textures = assets.sceneTextureCount(scene_);
+        const auto lights = assets.sceneLightCount(scene_);
+        const auto cameras = assets.sceneCameraCount(scene_);
+        if (!nodes || !meshes || !materials || !textures || !lights || !cameras) {
+            return std::unexpected(vve::Error::missing_object);
+        }
+
+        std::cout << '[' << name() << "] stored scene handle=" << scene_.value()
+                  << " nodes=" << *nodes
+                  << " meshes=" << *meshes
+                  << " materials=" << *materials
+                  << " textures=" << *textures
+                  << " lights=" << *lights
+                  << " cameras=" << *cameras << '\n';
         std::cout << '[' << name() << "] v4 resource upload and rendering are not implemented yet\n";
         printWindowInventory(world);
         return {};
@@ -158,6 +176,7 @@ private:
     }
 
     std::filesystem::path scene_path_{}; ///< Resolved Sponza file imported during init().
+    vve::SceneHandle scene_{};           ///< Scene stored in the facade asset system.
     bool frame_loop_logged_{false};      ///< Keeps the runtime heartbeat to one line.
 };
 
