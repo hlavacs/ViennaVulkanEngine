@@ -250,18 +250,6 @@ export namespace vve::v4 {
          }
       }
 
-      /// @brief Converts a window id into a compact filesystem-safe graph dump stem.
-      [[nodiscard]] inline std::string graphFileStem(std::string_view text) {
-         std::string result{};
-         result.reserve(text.size());
-         for (const char ch : text) {
-            const bool safe = (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
-                              (ch >= '0' && ch <= '9') || ch == '-' || ch == '_';
-            result.push_back(safe ? ch : '_');
-         }
-         return result.empty() ? "window" : result;
-      }
-
    } // namespace detail
 
    /// @brief Educational v4 engine shell with SDL windows and lightweight world views.
@@ -429,32 +417,6 @@ export namespace vve::v4 {
       return FrameStatus::running;
    }
 
-   /// @brief Writes task and render graph JSON dumps into a debug directory.
-   template <typename... TSystems>
-   std::expected<void, Error> Engine<TSystems...>::writeDebugGraphs(const std::filesystem::path &directory) const {
-      const auto task_path = directory / "task_graph.json";
-      const auto render_path = directory / "render_graph.json";
-      if (const auto result = tasks_.writeJson(task_path, "v4 task graph"); !result) { return result; }
-      if (const auto result = render_graph_.writeJson(render_path, "v4 render graph"); !result) { return result; }
-
-      const RenderSystem render_system{};
-      for (const auto &window : window_system_.snapshot()) {
-         auto renderer_id = window.renderer_id.value.empty() ? RendererId{.value = "forward"} : window.renderer_id;
-         const auto renderer = render_system.createRenderer(renderer_id);
-         if (!renderer) { return std::unexpected(renderer.error()); }
-
-         const std::array pass_lists{renderer->passes, gui_.passes()};
-         const auto graph = render_system.buildRenderGraph(pass_lists);
-         if (!graph) { return std::unexpected(graph.error()); }
-
-         const auto file = directory / ("render_graph_" + detail::graphFileStem(window.id) + ".json");
-         const auto name = "v4 render graph window=" + window.id + " renderer=" + renderer->id.value;
-         if (const auto result = graph->writeJson(file, name); !result) { return result; }
-      }
-
-      return {};
-   }
-
    /// @brief Applies the compact compatibility config.
    template <typename... TSystems> void Engine<TSystems...>::applyOption(EngineConfig config) {
       application_name_.value = std::move(config.application_name);
@@ -612,6 +574,48 @@ export namespace vve::v4 {
       using TUserSystems = typename detail::FindUserSystemsOption<UserSystems<>, TOptions...>::type;
       using TEngine = typename detail::EngineTypeFromUserSystems<TUserSystems>::type;
       return TEngine(std::forward<TOptions>(options)...);
+   }
+
+   namespace detail {
+
+      /// @brief Converts a window id into a compact filesystem-safe graph dump stem.
+      [[nodiscard]] inline std::string graphFileStem(std::string_view text) {
+         std::string result{};
+         result.reserve(text.size());
+         for (const char ch : text) {
+            const bool safe = (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+                              (ch >= '0' && ch <= '9') || ch == '-' || ch == '_';
+            result.push_back(safe ? ch : '_');
+         }
+         return result.empty() ? "window" : result;
+      }
+
+   } // namespace detail
+
+   /// @brief Writes task and render graph JSON dumps into a debug directory.
+   template <typename... TSystems>
+   std::expected<void, Error> Engine<TSystems...>::writeDebugGraphs(const std::filesystem::path &directory) const {
+      const auto task_path = directory / "task_graph.json";
+      const auto render_path = directory / "render_graph.json";
+      if (const auto result = tasks_.writeJson(task_path, "v4 task graph"); !result) { return result; }
+      if (const auto result = render_graph_.writeJson(render_path, "v4 render graph"); !result) { return result; }
+
+      const RenderSystem render_system{};
+      for (const auto &window : window_system_.snapshot()) {
+         auto renderer_id = window.renderer_id.value.empty() ? RendererId{.value = "forward"} : window.renderer_id;
+         const auto renderer = render_system.createRenderer(renderer_id);
+         if (!renderer) { return std::unexpected(renderer.error()); }
+
+         const std::array pass_lists{renderer->passes, gui_.passes()};
+         const auto graph = render_system.buildRenderGraph(pass_lists);
+         if (!graph) { return std::unexpected(graph.error()); }
+
+         const auto file = directory / ("render_graph_" + detail::graphFileStem(window.id) + ".json");
+         const auto name = "v4 render graph window=" + window.id + " renderer=" + renderer->id.value;
+         if (const auto result = graph->writeJson(file, name); !result) { return result; }
+      }
+
+      return {};
    }
 
 } // namespace vve::v4
