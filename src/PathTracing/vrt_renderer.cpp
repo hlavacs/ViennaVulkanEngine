@@ -56,6 +56,10 @@ namespace vve {
             delete buffer;
         }
 
+        for (HostBuffer<BidirectionalUniforms>* buffer : bidirectionalUniformsBuffer) {
+            delete buffer;
+        }
+
         //render targets
         for (RenderTarget* target : allTargets) {
             delete target;
@@ -66,6 +70,8 @@ namespace vve {
 
         delete reservoirGI_A;
         delete reservoirGI_B;
+
+        delete lightVertexCache;
 
         delete swapchain;
         vkDestroyDevice(device, nullptr);
@@ -83,6 +89,15 @@ namespace vve {
     PerFrameDescriptorPlacment* RendererRayTraced::getUniformBufferDescriptorInput(int binding, VkShaderStageFlags stageFlags) {
         std::vector<DescriptorInput*> uniformBufferDescriptorInputs{};
         for (GenericBuffer* buffer : uniformBuffer_c) {
+            DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stageFlags);
+            uniformBufferDescriptorInputs.push_back(descriptorInput);
+        }
+        return new PerFrameDescriptorPlacment(uniformBufferDescriptorInputs, binding);
+    }
+
+    PerFrameDescriptorPlacment* RendererRayTraced::getBidirectionalUniformBufferDescriptorInput(int binding, VkShaderStageFlags stageFlags) {
+        std::vector<DescriptorInput*> uniformBufferDescriptorInputs{};
+        for (GenericBuffer* buffer : bidirectionalUniformsBuffer) {
             DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stageFlags);
             uniformBufferDescriptorInputs.push_back(descriptorInput);
         }
@@ -124,6 +139,34 @@ namespace vve {
 
         rtTargetsDescriptors->finalize();
         rtTargetsDescriptors->update();
+    }
+
+    void RendererRayTraced::createBidirectionalTargetsDescriptors() {
+        bidirectionalPathTracingDescriptors = new DescriptorManager(device);
+
+        bidirectionalPathTracingDescriptors->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        bidirectionalPathTracingDescriptors->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        bidirectionalPathTracingDescriptors->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        bidirectionalPathTracingDescriptors->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        bidirectionalPathTracingDescriptors->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        bidirectionalPathTracingDescriptors->addDescriptorInput(RtTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        bidirectionalPathTracingDescriptors->addDescriptorInput(lightVertexCache->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        PerFrameDescriptorPlacment* uniformBidirectionalBufferDescriptors = getBidirectionalUniformBufferDescriptorInput(7, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+        bidirectionalPathTracingDescriptors->addDescriptorInput(uniformBidirectionalBufferDescriptors);
+
+        bidirectionalPathTracingDescriptors->finalize();
+        bidirectionalPathTracingDescriptors->update();
+    }
+
+    void RendererRayTraced::createLightVertexGenerationDescriptors() {
+        lightVertexGenerationFullDescriptors = new DescriptorManager(device);
+
+        lightVertexGenerationFullDescriptors->addDescriptorInput(lightVertexCache->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        lightVertexGenerationFullDescriptors->finalize();
+        lightVertexGenerationFullDescriptors->update();
     }
 
     void RendererRayTraced::createCombinePassDescriptors() {
@@ -302,6 +345,8 @@ namespace vve {
         commandManager = new CommandManager(device, physicalDevice, surface, graphicsQueue);
         swapchain = new SwapChain(physicalDevice, device, surface, presentQueue, commandManager, m_windowSDLState().m_sdlWindow);
 
+        lightVertexCacheSize = VkExtent2D(100000, 1);
+
         //textureManager = new TextureManager(device, physicalDevice, commandManager);
 
         auto textureManagerUnique = std::make_unique<TextureManager>("Texture Manager", m_engine, device, physicalDevice, commandManager);
@@ -327,6 +372,11 @@ namespace vve {
         uniformBuffer_c.resize(MAX_FRAMES_IN_FLIGHT);
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             uniformBuffer_c[i] = new HostBuffer<UniformBufferObject>(1, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 0, device, physicalDevice);
+        }
+
+        bidirectionalUniformsBuffer.resize(MAX_FRAMES_IN_FLIGHT);
+        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            bidirectionalUniformsBuffer[i] = new HostBuffer<BidirectionalUniforms>(1, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 0, device, physicalDevice);
         }
 
 
@@ -359,6 +409,8 @@ namespace vve {
 
         reservoirGI_A = new RenderTargetBuffer(swapchain->getExtent().width, swapchain->getExtent().height, ReservoirGI(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
         reservoirGI_B = new RenderTargetBuffer(swapchain->getExtent().width, swapchain->getExtent().height, ReservoirGI(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+
+        lightVertexCache = new RenderTargetBuffer(lightVertexCacheSize.width, 1, LightVertex(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
 
         //raytracing
         RtTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
@@ -437,6 +489,30 @@ namespace vve {
         raytracer->initRayTracingPipeline();
 
 
+
+
+        createLightVertexGenerationDescriptors();
+
+
+        lightVertexGenerationFull = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, rtDescriptors, lightVertexGenerationFullDescriptors, lightVertexCacheSize, "shaders/PathTracing/raygen_light_vertex_generation_full.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+        lightVertexGenerationFull->initRayTracingPipeline();
+
+        createBidirectionalTargetsDescriptors();
+
+
+        bidirectionalPathTracing = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, rtDescriptors, bidirectionalPathTracingDescriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_bidirectional.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+
+
+        bidirectionalPathTracing->bindRenderTarget(albedoTarget);
+        bidirectionalPathTracing->bindRenderTarget(normalTarget);
+        bidirectionalPathTracing->bindRenderTarget(specTarget);
+        bidirectionalPathTracing->bindRenderTarget(positionTarget);
+        bidirectionalPathTracing->bindRenderTarget(shadingNormalTarget);
+
+        bidirectionalPathTracing->bindRenderTarget(RtTarget);
+
+        bidirectionalPathTracing->initRayTracingPipeline();
 
 
         createRestirTemporalDescriptors();
@@ -638,8 +714,11 @@ namespace vve {
         //restir_temporal->recordCommandBuffer(currentFrame);
         //restir_spatial->recordCommandBuffer(currentFrame);
 
-        restirGI_temporal->recordCommandBuffer(currentFrame);
-        restirGI_spatial->recordCommandBuffer(currentFrame);
+        //restirGI_temporal->recordCommandBuffer(currentFrame);
+        //restirGI_spatial->recordCommandBuffer(currentFrame);
+
+        lightVertexGenerationFull->recordCommandBuffer(currentFrame);
+        bidirectionalPathTracing->recordCommandBuffer(currentFrame);
 
         combinePass->recordCommandBuffer(currentFrame);
         //copy images to previous image buffers
@@ -652,6 +731,8 @@ namespace vve {
 
         reservoirDI_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirDI_B->getBuffer(currentFrame), currentFrame);
         reservoirGI_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirGI_B->getBuffer(currentFrame), currentFrame);
+
+        lightVertexCache->getBuffer(nextFrame)->recordCopyFromBuffer(lightVertexCache->getBuffer(currentFrame), currentFrame);
 
         swapchain->recordImageTransfer(currentFrame, combinedTarget);
         //swapchain->recordImageTransfer(currentFrame, albedoTarget);
@@ -682,6 +763,14 @@ namespace vve {
         uniforms = ubo;
 
         uniformBuffer_c[currentImage]->updateBuffer(&ubo, 1);
+
+
+        BidirectionalUniforms uboBDPT{};
+
+        uboBDPT.LVCSize = lightVertexCacheSize.width;
+
+        bidirectionalUniformsBuffer[currentImage]->updateBuffer(&uboBDPT, 1);
+
     }
 
     bool RendererRayTraced::OnPrepareNextFrame(Message message) {

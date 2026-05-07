@@ -19,6 +19,7 @@ struct LightVertex {
     uint lightIndex;
     uint materialIndex;
     uint age;
+    uint lastReevaluation;
     float selectionPdf;
     float importance;
 }
@@ -93,8 +94,9 @@ LightVertex generateLightVertex(inout Sampler sampler) {
     lightVertex.hitPosition = float4(its.position, 1.0);
     lightVertex.importance = 0.0;
     lightVertex.lightIndex = lightIndex;
-    //likely needs all pdfs
-    lightVertex.radiance = light.emission / (pdf);
+    // likely needs all pdfs
+    lightVertex.radiance = light.emission / (pdf * lightSurfaceSelectionPdf * lightDirectionSelectionPdf);
+    //lightVertex.radiance = light.emission / (pdf);
     lightVertex.samplePosition = float4(lightSurfacePosition, 1.0);
     lightVertex.selectionPdf = 1.0;
     lightVertex.normal = float4(its.normal, 1.0);
@@ -133,8 +135,8 @@ EmitterRecord getEmitterRecordFromConnection(in EmitterRecord fromLightSource, i
     emitterRecord.distance = length(its.position - itsConnection.position);
     emitterRecord.intersection = itsConnection.position;
     float3 bsdfEvalConnection = getUnoccludedLightContribution(itsConnection, materialRecordConnection, fromLightSource);
-    //likely needs to be devided by distance squared
-    emitterRecord.sampleEmission = bsdfEvalConnection;
+    // likely needs to be devided by distance squared
+    emitterRecord.sampleEmission = bsdfEvalConnection / (emitterRecord.distance * emitterRecord.distance);
 
     return emitterRecord;
 }

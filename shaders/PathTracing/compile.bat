@@ -26,6 +26,12 @@ slangc RestirTemporalGI.slang -entry rgenMain -target spirv -o raygen_restirGI_t
 rem --- Raygen shader ---
 slangc RestirSpatialGI.slang -entry rgenMain -target spirv -o raygen_restirGI_spatial.rgen.spv -DRAY_TRACING
 
+rem --- Raygen shader ---
+slangc Bidirectional_Integrator.slang -entry rgenMain -target spirv -o raygen_bidirectional.rgen.spv -DRAY_TRACING
+
+rem --- Raygen shader ---
+slangc LVC_generation_Full.slang -entry rgenMain -target spirv -o raygen_light_vertex_generation_full.rgen.spv -DRAY_TRACING
+
 rem --- Miss shader ---
 slangc rtbasic.slang -entry rmissMain -target spirv -o miss.rmiss.spv -DRAY_TRACING
 

@@ -52,10 +52,15 @@ namespace vve {
 		void createLogicalDevice();
 
 		PerFrameDescriptorPlacment* getUniformBufferDescriptorInput(int binding, VkShaderStageFlags stageFlags);
+		PerFrameDescriptorPlacment* getBidirectionalUniformBufferDescriptorInput(int binding, VkShaderStageFlags stageFlags);
 
 		void createCommonDescriptors();
 		void createRtDescriptors();
 		void createRtTargetsDescriptors();
+
+		void createBidirectionalTargetsDescriptors();
+		void createLightVertexGenerationDescriptors();
+
 		void createCombinePassDescriptors();
 		void createReprojectPassDescriptors();
 		void createRestirTemporalDescriptors();
@@ -103,7 +108,7 @@ namespace vve {
 		uint32_t presentQueueIndex;
 
 		uint32_t currentFrame = 0;
-		uint32_t nextFrame = 0;
+		uint32_t nextFrame = 1;
 		bool framebufferResized = false;
 
 		DescriptorManager* commonDescriptors;
@@ -150,11 +155,20 @@ namespace vve {
 		RenderTargetBuffer<ReservoirGI>* reservoirGI_A;
 		RenderTargetBuffer<ReservoirGI>* reservoirGI_B;
 
+		VkExtent2D lightVertexCacheSize;
+		RenderTargetBuffer<LightVertex>* lightVertexCache;
+
 		PiplineRaytraced* restir_temporal;
 		PiplineRaytraced* restir_spatial;
 
 		PiplineRaytraced* restirGI_temporal;
 		PiplineRaytraced* restirGI_spatial;
+
+		PiplineRaytraced* lightVertexGenerationFull;
+		PiplineRaytraced* bidirectionalPathTracing;
+
+		DescriptorManager* lightVertexGenerationFullDescriptors;
+		DescriptorManager* bidirectionalPathTracingDescriptors;
 
 		DescriptorManager* restir_temporal_descriptors;
 		DescriptorManager* restir_spatial_descriptors;
@@ -170,6 +184,8 @@ namespace vve {
 		UniformBufferObject uniforms;
 
 		std::vector<HostBuffer<UniformBufferObject>*> uniformBuffer_c;
+
+		std::vector<HostBuffer<BidirectionalUniforms>*> bidirectionalUniformsBuffer;
 
 		VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtProperties{
 		VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR };

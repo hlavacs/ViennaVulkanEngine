@@ -97,8 +97,9 @@ IntegrationStepQueryRecord integratorBidirectional(inout Sampler sampler, ) {
     for (uint i = 0; i < sampleCount; i++) {
         uint index = sampler.UniformUIntFast(0, lightVertexCacheSize - 1);
         LightVertex lightVertex = lightVertexCache[index];
-
-        radiance += getOccludedLightContributionFromConnection(its, material, lightVertex) / pdf;
+        //do not devide by the pdf
+        //radiance += getOccludedLightContributionFromConnection(its, material, lightVertex) / pdf;
+        radiance += getOccludedLightContributionFromConnection(its, material, lightVertex);
     }
     
     IntegrationStepQueryRecord integrationStep;
@@ -110,12 +111,6 @@ IntegrationStepQueryRecord integratorBidirectional(inout Sampler sampler, ) {
 
     return integrationStep;
 }
-
-[[vk::binding(3, 0)]]
-cbuffer UniformBufferBidirectional
-{
-    uint lightVertexCacheSize;
-};
 
 [[vk::binding(0, 2)]]
 RWTexture2D<float4> inAlbedoAlpha;
@@ -138,6 +133,11 @@ RWTexture2D<float4> outImage;
 [[vk::binding(6, 2)]]
 RWStructuredBuffer<LightVertex> lightVertexCache;
 
+[[vk::binding(7, 2)]]
+cbuffer UniformBufferBidirectional
+{
+    uint lightVertexCacheSize;
+};
 
 
 // Ray generation shader - entry point for each pixel

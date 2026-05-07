@@ -282,7 +282,8 @@ public EmitterRecord sampleLightSourceCenter(in LightSource light, in float3 ori
 public EmitterRecord sampleRandomLightSourceWeighted(in StructuredBuffer<LightSource> lightSources, in float3 origin, inout Sampler sampler) {
     // Inputs: light buffer, shading point, RNG. Output: sampled emitter record with selection PDF folded in.
     float pdf = 0.0;
-    LightSource light = chooseRandomLightSourceWeighted(lightSources, sampler, pdf, 0);
+    uint index = 0;
+    LightSource light = chooseRandomLightSourceWeighted(lightSources, sampler, pdf, index);
     EmitterRecord record = sampleLightSource(light, origin, sampler);
 
     record.sampleEmission = record.sampleEmission / pdf;
@@ -344,7 +345,6 @@ public  LightSource chooseRandomLightSourceWeighted(in StructuredBuffer<LightSou
 }
 
 float lightSourcePdf(in StructuredBuffer<LightSource> lightSources, in uint index) {
-    uint index = 0;
     LightSource light = lightSources[index];
     if (index == 0) {
         return light.accumulativeSampleWeight;
