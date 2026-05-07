@@ -305,6 +305,7 @@ export namespace vve::v4 {
       RendererHandle handle{};                 ///< Stable renderer descriptor handle.
       RendererId id{.value = "forward"};       ///< Renderer id chosen by the application.
       bool shadow_maps{true};                  ///< Whether this renderer intends to use shadow maps.
+      std::span<const RendererPassContract> passes{}; ///< Concrete renderer pass contract.
    };
 
    /// @brief Minimal renderer factory; later it will choose concrete renderer implementations by id.
@@ -326,19 +327,23 @@ export namespace vve::v4 {
    private:
       /// @brief One row in the renderer registry.
       struct RendererChoice {
-         std::string_view id{}; ///< Renderer selector id.
-         bool shadow_maps{};    ///< Whether the renderer uses shadow maps.
+         std::string_view id{};                        ///< Renderer selector id.
+         bool shadow_maps{};                           ///< Whether the renderer uses shadow maps.
+         std::span<const RendererPassContract> passes{}; ///< Concrete pass contract.
       };
 
       /// @brief Creates a renderer descriptor from one registry row.
       [[nodiscard]] static RendererDescriptor createDescriptor(RendererChoice choice) {
          return RendererDescriptor{.handle = makeCounterHandle<RendererHandle>(),
                                    .id = RendererId{.value = std::string(choice.id)},
-                                   .shadow_maps = choice.shadow_maps};
+                                   .shadow_maps = choice.shadow_maps,
+                                   .passes = choice.passes};
       }
 
       inline static constexpr std::array renderer_choices{
-          RendererChoice{.id = RendererForward::id(), .shadow_maps = RendererForward::usesShadowMaps()}};
+          RendererChoice{.id = RendererForward::id(),
+                         .shadow_maps = RendererForward::usesShadowMaps(),
+                         .passes = RendererForward::passes()}};
 
    };
 
