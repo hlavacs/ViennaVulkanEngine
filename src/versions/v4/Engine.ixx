@@ -121,6 +121,10 @@ namespace vve::v4 {
          return ordered;
       }
 
+      template <typename TFunction> void forEachEdge(TFunction &&function) const {
+         for (const auto &[from, to] : outgoing_) { std::invoke(function, from, to); }
+      }
+
    private:
       void removeOutgoingEdge(TaskHandle from, TaskHandle to) {
          auto [first, last] = outgoing_.equal_range(from);
@@ -181,6 +185,54 @@ export namespace vve::v4 {
 
       /// @brief Returns task count.
       [[nodiscard]] std::size_t taskCount() const { return tasks_.size(); }
+
+      [[nodiscard]] std::string toJson(std::string_view name = "task_graph") const {
+         std::string json{};
+         json += "{\n  \"kind\": \"task_graph\",\n  \"name\": ";
+         detail::appendJsonString(json, name);
+         json += ",\n  \"nodes\": [";
+
+         bool first_node{true};
+         for (const auto &[handle, task] : tasks_.all()) {
+            json += first_node ? "\n" : ",\n";
+            first_node = false;
+            json += "    {\"id\": ";
+            detail::appendJsonString(json, detail::jsonHandleId(handle));
+            json += ", \"name\": ";
+            detail::appendJsonString(json, task.name.value);
+            json += "}";
+         }
+
+         json += "\n  ],\n  \"edges\": [";
+         std::vector<std::pair<TaskHandle, TaskHandle>> edges{};
+         graph_.forEachEdge([&](TaskHandle from, TaskHandle to) { edges.emplace_back(from, to); });
+         std::ranges::sort(edges);
+
+         bool first_edge{true};
+         for (const auto [from, to] : edges) {
+            const auto *from_task = tasks_.find(from);
+            const auto *to_task = tasks_.find(to);
+            json += first_edge ? "\n" : ",\n";
+            first_edge = false;
+            json += "    {\"from\": ";
+            detail::appendJsonString(json, detail::jsonHandleId(from));
+            json += ", \"to\": ";
+            detail::appendJsonString(json, detail::jsonHandleId(to));
+            json += ", \"from_name\": ";
+            detail::appendJsonString(json, from_task == nullptr ? "" : from_task->name.value);
+            json += ", \"to_name\": ";
+            detail::appendJsonString(json, to_task == nullptr ? "" : to_task->name.value);
+            json += "}";
+         }
+
+         json += "\n  ]\n}\n";
+         return json;
+      }
+
+      [[nodiscard]] std::expected<void, Error> writeJson(const std::filesystem::path &path,
+                                                         std::string_view name = "task_graph") const {
+         return detail::writeJsonFile(path, toJson(name));
+      }
 
    private:
       TaskRecordTable tasks_{}; ///< Tasks by handle.

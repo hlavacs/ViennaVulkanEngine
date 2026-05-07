@@ -1,3 +1,5 @@
+#include <filesystem>
+
 import VEEngine.V4;
 
 int main() {
@@ -19,18 +21,30 @@ int main() {
    const auto forward_handle = graph.passHandle("forward");
    if (!forward_handle || *forward_handle != *forward) { return 5; }
 
-   if (!graph.remove(*forward) || graph.contains(*forward) || graph.passCount() != 2) { return 6; }
+   const auto json = graph.toJson("Unit Render Graph");
+   if (!json.contains("\"kind\": \"render_graph\"")) { return 6; }
+   if (!json.contains("\"name\": \"Unit Render Graph\"")) { return 7; }
+   if (!json.contains("\"name\": \"forward\"")) { return 8; }
+   if (!json.contains("\"from_name\": \"shadow\"")) { return 9; }
+   if (!json.contains("\"to_name\": \"forward\"")) { return 10; }
+
+   const auto path = std::filesystem::temp_directory_path() / "vve_render_graph_test.json";
+   const auto written = graph.writeJson(path, "Unit Render Graph");
+   if (!written || !std::filesystem::exists(path)) { return 11; }
+   std::filesystem::remove(path);
+
+   if (!graph.remove(*forward) || graph.contains(*forward) || graph.passCount() != 2) { return 12; }
    const auto after_remove = graph.topologicalOrder();
-   if (!after_remove || after_remove->size() != 2) { return 7; }
+   if (!after_remove || after_remove->size() != 2) { return 13; }
 
    vve::v4::RenderGraph cycle{};
    const auto a = cycle.addPass(vve::v4::ObjectName{.value = "a"});
    const auto b = cycle.addPass(vve::v4::ObjectName{.value = "b"});
-   if (!a || !b) { return 8; }
+   if (!a || !b) { return 14; }
    cycle.addEdge(*a, *b);
    cycle.addEdge(*b, *a);
    const auto cycle_order = cycle.topologicalOrder();
-   if (cycle_order || cycle_order.error() != vve::v4::Error::cycle_detected) { return 9; }
+   if (cycle_order || cycle_order.error() != vve::v4::Error::cycle_detected) { return 15; }
 
    return 0;
 }

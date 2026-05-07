@@ -55,6 +55,9 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<RenderPassHandle, Error> passHandle(std::string_view name) const;
       [[nodiscard]] std::expected<Vector<RenderPassHandle>, Error> topologicalOrder() const;
       [[nodiscard]] std::size_t passCount() const;
+      [[nodiscard]] std::string toJson(std::string_view name = "render_graph") const;
+      [[nodiscard]] std::expected<void, Error> writeJson(const std::filesystem::path &path,
+                                                         std::string_view name = "render_graph") const;
 
    private:
       using EdgeMap = std::unordered_multimap<RenderPassHandle, RenderPassHandle, HandleHash<RenderPassHandle>>;
@@ -112,6 +115,57 @@ export namespace vve::v4 {
          if (pass_name.value == name) { return handle; }
       }
       return std::unexpected(Error::missing_object);
+   }
+
+   /// @brief Returns a simple node-and-edge JSON dump for graph visualization tools.
+   inline std::string RenderGraph::toJson(std::string_view name) const {
+      std::string json{};
+      json += "{\n  \"kind\": \"render_graph\",\n  \"name\": ";
+      detail::appendJsonString(json, name);
+      json += ",\n  \"nodes\": [";
+
+      bool first_node{true};
+      for (const auto &[handle, pass_name] : passes_) {
+         json += first_node ? "\n" : ",\n";
+         first_node = false;
+         json += "    {\"id\": ";
+         detail::appendJsonString(json, detail::jsonHandleId(handle));
+         json += ", \"name\": ";
+         detail::appendJsonString(json, pass_name.value);
+         json += "}";
+      }
+
+      json += "\n  ],\n  \"edges\": [";
+      std::vector<std::pair<RenderPassHandle, RenderPassHandle>> edges{};
+      edges.reserve(outgoing_.size());
+      for (const auto &[from, to] : outgoing_) { edges.emplace_back(from, to); }
+      std::ranges::sort(edges);
+
+      bool first_edge{true};
+      for (const auto [from, to] : edges) {
+         const auto from_name = passes_.find(from);
+         const auto to_name = passes_.find(to);
+         json += first_edge ? "\n" : ",\n";
+         first_edge = false;
+         json += "    {\"from\": ";
+         detail::appendJsonString(json, detail::jsonHandleId(from));
+         json += ", \"to\": ";
+         detail::appendJsonString(json, detail::jsonHandleId(to));
+         json += ", \"from_name\": ";
+         detail::appendJsonString(json, from_name == passes_.end() ? "" : from_name->second.value);
+         json += ", \"to_name\": ";
+         detail::appendJsonString(json, to_name == passes_.end() ? "" : to_name->second.value);
+         json += "}";
+      }
+
+      json += "\n  ]\n}\n";
+      return json;
+   }
+
+   /// @brief Writes the render graph JSON dump to disk.
+   inline std::expected<void, Error> RenderGraph::writeJson(const std::filesystem::path &path,
+                                                            std::string_view name) const {
+      return detail::writeJsonFile(path, toJson(name));
    }
 
    /// @brief Returns render passes in dependency order and preserves isolated passes.
