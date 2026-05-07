@@ -55,6 +55,10 @@ export namespace vve {
       [[nodiscard]] std::expected<void, Error> init() { return impl_.init(); }
       [[nodiscard]] std::expected<void, Error> run() { return impl_.run(); }
       [[nodiscard]] std::expected<FrameStatus, Error> step() { return impl_.step(); }
+      [[nodiscard]] std::expected<void, Error>
+      writeDebugGraphs(const std::filesystem::path &directory = "graph_dumps") const {
+         return impl_.writeDebugGraphs(directory);
+      }
 
    private:
       using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Engine<TSystems...>;

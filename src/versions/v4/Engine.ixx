@@ -241,6 +241,8 @@ export namespace vve::v4 {
 
    namespace detail {
 
+      inline constexpr std::int32_t debugDumpGraphHotkey{0x40000042}; ///< SDL keycode for F9.
+
       /// @brief Primary trait for detecting UserSystems options.
       template <typename T> struct IsUserSystemsOption : std::false_type {};
 
@@ -298,6 +300,8 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<void, Error> init();
       [[nodiscard]] std::expected<void, Error> run();
       [[nodiscard]] std::expected<FrameStatus, Error> step();
+      [[nodiscard]] std::expected<void, Error>
+      writeDebugGraphs(const std::filesystem::path &directory = "graph_dumps") const;
 
    private:
       void bindWorld();
@@ -315,6 +319,7 @@ export namespace vve::v4 {
       template <typename TSystem>
       [[nodiscard]] std::expected<void, Error> updateOne(TSystem &system, const FrameContext &frame,
                                                          const WindowFrameData &window_frame);
+      [[nodiscard]] std::expected<void, Error> buildDefaultGraphs();
 
       ApplicationName application_name_{};      ///< Name used for default window titles.
       MaxFrames max_frames_{};                 ///< Optional frame cap.
@@ -388,6 +393,7 @@ export namespace vve::v4 {
    template <typename... TSystems> std::expected<void, Error> Engine<TSystems...>::init() {
       if (initialized_) { return {}; }
       if (const auto result = window_system_.init(windows_); !result) { return result; }
+      if (const auto result = buildDefaultGraphs(); !result) { return result; }
       last_frame_time_ = std::chrono::steady_clock::now();
       initialized_ = true;
       return initSystems();
@@ -409,6 +415,9 @@ export namespace vve::v4 {
    template <typename... TSystems> std::expected<FrameStatus, Error> Engine<TSystems...>::step() {
       if (!initialized_) { return std::unexpected(Error::missing_object); }
       if (const auto result = window_system_.poll(); !result) { return std::unexpected(result.error()); }
+      if (window_system_.input().wasKeyPressed(detail::debugDumpGraphHotkey)) {
+         if (const auto result = writeDebugGraphs(); !result) { return std::unexpected(result.error()); }
+      }
 
       const auto now = std::chrono::steady_clock::now();
       const std::chrono::duration<double> delta = now - last_frame_time_;
@@ -426,6 +435,15 @@ export namespace vve::v4 {
          return FrameStatus::stopped;
       }
       return FrameStatus::running;
+   }
+
+   /// @brief Writes task and render graph JSON dumps into a debug directory.
+   template <typename... TSystems>
+   std::expected<void, Error> Engine<TSystems...>::writeDebugGraphs(const std::filesystem::path &directory) const {
+      const auto task_path = directory / "task_graph.json";
+      const auto render_path = directory / "render_graph.json";
+      if (const auto result = tasks_.writeJson(task_path, "v4 task graph"); !result) { return result; }
+      return render_graph_.writeJson(render_path, "v4 render graph");
    }
 
    /// @brief Binds World to the subsystems owned by Engine.
@@ -470,6 +488,32 @@ export namespace vve::v4 {
             window.title = application_name_.value;
          }
       }
+   }
+
+   /// @brief Builds simple inspectable default graphs for debug dumps and teaching.
+   template <typename... TSystems> std::expected<void, Error> Engine<TSystems...>::buildDefaultGraphs() {
+      tasks_ = {};
+      render_graph_ = {};
+
+      const auto begin = tasks_.addTask(ObjectName{.value = "task.frame_begin"});
+      const auto poll = tasks_.addTask(ObjectName{.value = "task.poll_window_events"});
+      const auto update = tasks_.addTask(ObjectName{.value = "task.update_systems"});
+      const auto render = tasks_.addTask(ObjectName{.value = "task.render_graph"});
+      const auto finish = tasks_.addTask(ObjectName{.value = "task.frame_finished"});
+      if (!begin || !poll || !update || !render || !finish) { return std::unexpected(Error::internal_error); }
+
+      tasks_.addEdge(*begin, *poll);
+      tasks_.addEdge(*poll, *update);
+      tasks_.addEdge(*update, *render);
+      tasks_.addEdge(*render, *finish);
+
+      const RenderSystem render_system{};
+      const auto renderer = render_system.createForwardRenderer();
+      const std::array pass_lists{renderer.passes, gui_.passes()};
+      const auto graph = render_system.buildRenderGraph(pass_lists);
+      if (!graph) { return std::unexpected(graph.error()); }
+      render_graph_ = *graph;
+      return {};
    }
 
    /// @brief Calls init(World&) on each user system when that hook exists.
