@@ -1,5 +1,6 @@
 export module VEEngine.V4:Gui;
 import std;
+export import :RenderPass;
 export import :Types;
 
 /// @file
@@ -24,10 +25,29 @@ export namespace vve::v4 {
       [[nodiscard]] bool containsWidget(GuiWidgetHandle handle) const;
       [[nodiscard]] std::expected<std::string, Error> widgetLabel(GuiWidgetHandle handle) const;
       [[nodiscard]] std::size_t widgetCount() const;
+      [[nodiscard]] static constexpr std::span<const RenderPassContract> passes() noexcept;
 
    private:
       std::map<GuiWidgetHandle, GuiWidgetRecord> widgets_{}; ///< Widgets by handle.
    };
+
+} // namespace vve::v4
+
+namespace vve::v4::detail {
+
+   inline constexpr std::array gui_dependencies{RenderMilestone::scene_color}; ///< GUI needs scene color.
+   inline constexpr std::array gui_pass_contracts{                             ///< GUI overlay pass contract.
+       RenderPassContract{.id = RenderMilestone::gui,
+                          .depends_on = gui_dependencies,
+                          .shader_file = "Gui.slang",
+                          .vertex_entry = "vveGuiVertexMain",
+                          .fragment_entry = "vveGuiFragmentMain",
+                          .inputs = "scene color target, GUI draw data",
+                          .outputs = "color target with GUI overlay"}};
+
+} // namespace vve::v4::detail
+
+export namespace vve::v4 {
 
    /// @brief Adds a text label and returns its handle.
    inline std::expected<GuiWidgetHandle, Error> GuiSystem::label(std::string text) {
@@ -49,5 +69,8 @@ export namespace vve::v4 {
 
    /// @brief Returns widget count.
    inline std::size_t GuiSystem::widgetCount() const { return widgets_.size(); }
+
+   /// @brief Returns the GUI system render pass list.
+   constexpr std::span<const RenderPassContract> GuiSystem::passes() noexcept { return detail::gui_pass_contracts; }
 
 } // namespace vve::v4
