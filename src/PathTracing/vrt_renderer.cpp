@@ -36,6 +36,8 @@ namespace vve {
         //piplines
         rasterizer->freeResources();
         raytracer->freeResources();
+        lightVertexGenerationFull->freeResources();
+        bidirectionalPathTracing->freeResources();
         combinePass->freeResources();
         reprojectionPass->freeResources();
         restir_temporal->freeResources();
@@ -474,7 +476,7 @@ namespace vve {
         createRtTargetsDescriptors();
 
 
-        raytracer = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, rtDescriptors, rtTargetsDescriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_direct.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        raytracer = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, rtDescriptors, rtTargetsDescriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_indirect.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
         
 
@@ -676,6 +678,7 @@ namespace vve {
         rasterizer->recreateFrameBuffers(swapchain->getExtent());
 
         rtTargetsDescriptors->update();
+        bidirectionalPathTracingDescriptors->update();
         combinePassDescriptors->update();
         reprojectionPassDescriptors->update();
         restir_temporal_descriptors->update(); 
@@ -684,6 +687,7 @@ namespace vve {
         restirGI_spatial_descriptors->update();
 
         raytracer->setExtent(swapchain->getExtent());
+        bidirectionalPathTracing->setExtent(swapchain->getExtent());
         restir_temporal->setExtent(swapchain->getExtent());
         restir_spatial->setExtent(swapchain->getExtent());
         restirGI_temporal->setExtent(swapchain->getExtent());
@@ -732,7 +736,7 @@ namespace vve {
         reservoirDI_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirDI_B->getBuffer(currentFrame), currentFrame);
         reservoirGI_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirGI_B->getBuffer(currentFrame), currentFrame);
 
-        lightVertexCache->getBuffer(nextFrame)->recordCopyFromBuffer(lightVertexCache->getBuffer(currentFrame), currentFrame);
+        //lightVertexCache->getBuffer(nextFrame)->recordCopyFromBuffer(lightVertexCache->getBuffer(currentFrame), currentFrame);
 
         swapchain->recordImageTransfer(currentFrame, combinedTarget);
         //swapchain->recordImageTransfer(currentFrame, albedoTarget);

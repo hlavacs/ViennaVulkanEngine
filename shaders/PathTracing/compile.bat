@@ -15,6 +15,9 @@ rem --- Raygen shader ---
 slangc Direct_Raytracer.slang -entry rgenMain -target spirv -o raygen_direct.rgen.spv -DRAY_TRACING
 
 rem --- Raygen shader ---
+slangc Indirect_Integrator.slang -entry rgenMain -target spirv -o raygen_indirect.rgen.spv -DRAY_TRACING
+
+rem --- Raygen shader ---
 slangc RestirTemporal.slang -entry rgenMain -target spirv -o raygen_restir_temporal.rgen.spv -DRAY_TRACING
 
 rem --- Raygen shader ---

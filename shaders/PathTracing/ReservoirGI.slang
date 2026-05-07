@@ -9,7 +9,7 @@ struct ReservoirGI {
 }
 
 ReservoirGI createEmptyReservoirGI() {
-    return ReservoirGI(float3(0.0), float3(0.0, 0.0, 1.0), float3(0.0), 0.0, 0, 0);
+    return ReservoirGI(float3(0.0), float3(0.0, 0.0, 1.0), float3(0.0), 0.0, 0, 0, 0.0);
 }
 
 ReservoirGI readReservoirGI(in uint2 launchID, int2 launchSize, in RWStructuredBuffer<ReservoirGI> reservoirGIBuffer) {

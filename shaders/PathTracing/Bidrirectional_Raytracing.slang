@@ -95,7 +95,8 @@ LightVertex generateLightVertex(inout Sampler sampler) {
     lightVertex.importance = 0.0;
     lightVertex.lightIndex = lightIndex;
     // likely needs all pdfs
-    lightVertex.radiance = light.emission / (pdf * lightSurfaceSelectionPdf * lightDirectionSelectionPdf);
+    //lightVertex.radiance = light.emission / (pdf * lightSurfaceSelectionPdf * lightDirectionSelectionPdf);
+    lightVertex.radiance = light.emission / (pdf);
     //lightVertex.radiance = light.emission / (pdf);
     lightVertex.samplePosition = float4(lightSurfacePosition, 1.0);
     lightVertex.selectionPdf = 1.0;
@@ -110,7 +111,9 @@ LightVertex generateLightVertex(inout Sampler sampler) {
 IntersectionRecord getIntersectionRecordFromLightVertex(in LightVertex lightVertex, in IntersectionRecord its) {
     IntersectionRecord itsConnection;
 
-    itsConnection.direction = normalize(its.position - lightVertex.hitPosition.xyz);
+    // its.direction is the reay direction aka ingoing instead of outgoing bsdf inverts this
+    // itsConnection.direction = normalize(its.position - lightVertex.hitPosition.xyz);
+    itsConnection.direction = normalize(lightVertex.hitPosition.xyz - its.position);
     itsConnection.materialIdx = lightVertex.materialIndex;
     itsConnection.normal = lightVertex.normal.xyz;
     itsConnection.position = lightVertex.hitPosition.xyz;
@@ -121,14 +124,15 @@ IntersectionRecord getIntersectionRecordFromLightVertex(in LightVertex lightVert
 
 EmitterRecord getEmitterRecordFromLightVertex(in LightVertex lightVertex) {
     EmitterRecord emitterRecord;
-    emitterRecord.direction = lightVertex.samplePosition.xyz - lightVertex.hitPosition.xyz;
-    emitterRecord.distance = length(emitterRecord.direction);
+    emitterRecord.direction = normalize(lightVertex.samplePosition.xyz - lightVertex.hitPosition.xyz);
+    emitterRecord.distance = length(lightVertex.samplePosition.xyz - lightVertex.hitPosition.xyz);
     emitterRecord.intersection = lightVertex.hitPosition.xyz;
     emitterRecord.sampleEmission = lightVertex.radiance.xyz;
 
     return emitterRecord;
 }
 
+/*
 EmitterRecord getEmitterRecordFromConnection(in EmitterRecord fromLightSource, in IntersectionRecord its, in IntersectionRecord itsConnection, in MaterialRecord materialRecordConnection) {
     EmitterRecord emitterRecord;
     emitterRecord.direction = -itsConnection.direction;
@@ -136,7 +140,32 @@ EmitterRecord getEmitterRecordFromConnection(in EmitterRecord fromLightSource, i
     emitterRecord.intersection = itsConnection.position;
     float3 bsdfEvalConnection = getUnoccludedLightContribution(itsConnection, materialRecordConnection, fromLightSource);
     // likely needs to be devided by distance squared
-    emitterRecord.sampleEmission = bsdfEvalConnection / (emitterRecord.distance * emitterRecord.distance);
+
+    float cosThetaLight = saturate(dot(itsConnection.normal, emitterRecord.direction));
+
+    emitterRecord.sampleEmission = bsdfEvalConnection * (cosThetaLight / (emitterRecord.distance * emitterRecord.distance));
+
+    return emitterRecord;
+}
+    */
+
+
+EmitterRecord getEmitterRecordFromConnection(in EmitterRecord fromLightSource, in IntersectionRecord its, in IntersectionRecord itsConnection, in MaterialRecord materialRecordConnection) {
+    EmitterRecord emitterRecord;
+    // emitterRecord.direction = itsConnection.direction;
+    emitterRecord.direction = normalize(itsConnection.position - its.position);
+    emitterRecord.distance = length(itsConnection.position - its.position);
+    emitterRecord.intersection = itsConnection.position;
+    float3 bsdfEvalConnection = getUnoccludedLightContribution(itsConnection, materialRecordConnection, fromLightSource);
+    // likely needs to be devided by distance squared
+
+    //not sure if this is correct, but it makes the result less biased looking
+    float cosThetaLight = saturate(dot(itsConnection.normal, -emitterRecord.direction));
+    //float cosThetaLight = 1.0;
+
+    //emitterRecord.sampleEmission = bsdfEvalConnection * (cosThetaLight / (emitterRecord.distance * emitterRecord.distance));
+
+    emitterRecord.sampleEmission = bsdfEvalConnection * (cosThetaLight / (emitterRecord.distance * emitterRecord.distance));
 
     return emitterRecord;
 }
@@ -150,6 +179,7 @@ float3 getUnoccludedLightContributionFromConnection(in IntersectionRecord its, i
     EmitterRecord emitterRecord = getEmitterRecordFromLightVertex(lightVertex);
     EmitterRecord emitterRecordFromConnection = getEmitterRecordFromConnection(emitterRecord, its, itsConnection, materialRecordConnection);
 
+    //normals are flipped on backfacing geometry resulting in light leaking through
     float3 radiance = getUnoccludedLightContribution(its, material, emitterRecordFromConnection);
 
     return radiance;
