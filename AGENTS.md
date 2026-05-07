@@ -126,6 +126,8 @@ The engine mainly links to the official Vulkan SDK and uses the libraries contai
 - Keeop the code readable, slim, expressive.
 - Always document the code.
 - If in doubt, ask. 
+- Avoid if sequences if there are many choices. Prefer constexpr data structures that selectors 
+can be used to index into.
 
 
 ## Expectations for debugging

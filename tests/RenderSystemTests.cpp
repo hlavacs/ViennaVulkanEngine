@@ -12,6 +12,13 @@ int main() {
    const auto second = render_system.createForwardRenderer();
    if (!second.handle.valid() || second.handle == renderer.handle) { return 4; }
 
+   const auto selected = render_system.createRenderer(vve::v4::RendererId{.value = "forward"});
+   if (!selected || selected->id.value != "forward") { return 5; }
+   if (!selected->handle.valid() || selected->handle == renderer.handle) { return 6; }
+
+   const auto unsupported = render_system.createRenderer(vve::v4::RendererId{.value = "deferred"});
+   if (unsupported || unsupported.error() != vve::v4::Error::invalid_argument) { return 7; }
+
    vve::v4::RenderScene scene{};
    const auto material = scene.addMaterial(vve::v4::RenderMaterial{
       .base_color = vve::v4::LinearColor{.value = vve::v4::Vec3(0.75F, 0.50F, 0.25F)},
@@ -30,17 +37,17 @@ int main() {
    const auto mesh = scene.addMesh(std::move(vertices), std::move(indices),
                                    vve::v4::Bounds{.valid = true});
    const auto instance = scene.addInstance(mesh, material);
-   if (!mesh.valid() || !material.valid() || !instance) { return 5; }
-   if (scene.meshCount() != 1 || scene.materialCount() != 1 || scene.instanceCount() != 1) { return 6; }
-   if (!scene.findMesh(mesh) || !scene.findMaterial(material) || !scene.findInstance(*instance)) { return 7; }
+   if (!mesh.valid() || !material.valid() || !instance) { return 8; }
+   if (scene.meshCount() != 1 || scene.materialCount() != 1 || scene.instanceCount() != 1) { return 9; }
+   if (!scene.findMesh(mesh) || !scene.findMaterial(material) || !scene.findInstance(*instance)) { return 10; }
 
    scene.setCamera(vve::v4::RenderCamera{.target_extent = vve::v4::PixelExtent{.width = 640, .height = 480}});
    scene.setDirectionalLight(vve::v4::RenderDirectionalLight{});
-   if (!scene.camera() || !scene.directionalLight()) { return 8; }
-   if (scene.camera()->target_extent.width != 640) { return 9; }
+   if (!scene.camera() || !scene.directionalLight()) { return 11; }
+   if (scene.camera()->target_extent.width != 640) { return 12; }
 
    const auto missing = scene.addInstance(vve::v4::RenderMeshHandle{}, material);
-   if (missing || missing.error() != vve::v4::Error::missing_object) { return 10; }
+   if (missing || missing.error() != vve::v4::Error::missing_object) { return 13; }
 
    return 0;
 }

@@ -310,12 +310,35 @@ export namespace vve::v4 {
    /// @brief Minimal renderer factory; later it will choose concrete renderer implementations by id.
    class RenderSystem {
    public:
+      /// @brief Creates a renderer descriptor from a user-selected renderer id.
+      [[nodiscard]] std::expected<RendererDescriptor, Error> createRenderer(RendererId id) const {
+         const auto selector = std::string_view{id.value};
+         const auto match = std::ranges::find(renderer_choices, selector, &RendererChoice::id);
+         if (match != renderer_choices.end()) { return createDescriptor(*match); }
+         return std::unexpected(Error::invalid_argument);
+      }
+
       /// @brief Creates the default forward-renderer descriptor.
       [[nodiscard]] RendererDescriptor createForwardRenderer() const {
-         return RendererDescriptor{.handle = makeCounterHandle<RendererHandle>(),
-                                   .id = RendererId{.value = std::string(RendererForward::id())},
-                                   .shadow_maps = RendererForward::usesShadowMaps()};
+         return createDescriptor(renderer_choices.front());
       }
+
+   private:
+      /// @brief One row in the renderer registry.
+      struct RendererChoice {
+         std::string_view id{}; ///< Renderer selector id.
+         bool shadow_maps{};    ///< Whether the renderer uses shadow maps.
+      };
+
+      /// @brief Creates a renderer descriptor from one registry row.
+      [[nodiscard]] static RendererDescriptor createDescriptor(RendererChoice choice) {
+         return RendererDescriptor{.handle = makeCounterHandle<RendererHandle>(),
+                                   .id = RendererId{.value = std::string(choice.id)},
+                                   .shadow_maps = choice.shadow_maps};
+      }
+
+      inline static constexpr std::array renderer_choices{
+          RendererChoice{.id = RendererForward::id(), .shadow_maps = RendererForward::usesShadowMaps()}};
 
    };
 
