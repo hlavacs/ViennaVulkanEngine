@@ -20,26 +20,27 @@ export namespace vve::v4 {
       inline static constexpr std::string_view raytraced_scene{"raytraced_scene"};     ///< Ray-traced scene color.
       inline static constexpr std::string_view scene_color{"scene_color"};             ///< Main scene color is ready.
       inline static constexpr std::string_view gui{"gui"};                             ///< GUI overlay has been drawn.
-      inline static constexpr std::string_view present{"present"};                     ///< Back buffer is presentable.
+      inline static constexpr std::string_view frame_finished{"frame_finished"};       ///< Frame is ready to present.
 
       inline static constexpr std::array values{frame_begin, depth_prepass, shadow_depth, raytraced_shadow, gbuffer,
-                                                deferred_lighting, raytraced_scene, scene_color, gui, present};
+                                                deferred_lighting, raytraced_scene, scene_color, gui, frame_finished};
 
       [[nodiscard]] constexpr auto begin() const noexcept { return values.begin(); } ///< First milestone iterator.
       [[nodiscard]] constexpr auto end() const noexcept { return values.end(); }     ///< Past-end milestone iterator.
       [[nodiscard]] constexpr std::size_t size() const noexcept { return values.size(); } ///< Milestone count.
-      [[nodiscard]] static constexpr std::span<const std::string_view> all() noexcept { return values; } ///< All ids.
+      [[nodiscard]] static constexpr std::span<const std::string_view> all() noexcept { return values; } ///< All names.
    };
 
-   /// @brief One planned render pass and the educational data needed to verify it.
+   /// @brief One planned render node and the educational data needed to verify it.
    struct RenderPassContract {
-      std::string_view id{};                          ///< Pass selector id.
-      std::span<const std::string_view> depends_on{}; ///< Pass ids that must complete first.
+      std::string_view name{};                        ///< Pass or milestone name.
+      std::span<const std::string_view> depends_on{}; ///< Node names that must complete first.
       std::string_view shader_file{};                 ///< Slang source file used by the pass.
       std::string_view vertex_entry{};                ///< Vertex shader entry point.
       std::string_view fragment_entry{};              ///< Fragment shader entry point.
       std::string_view inputs{};                      ///< Human-readable pass inputs.
       std::string_view outputs{};                     ///< Human-readable pass outputs.
+      bool milestone{};                               ///< True for meta nodes that anchor real passes.
       bool writes_debug_data{};                       ///< Whether this pass writes host-verifiable data.
    };
 
@@ -51,6 +52,7 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<void, Error> remove(RenderPassHandle handle);
       [[nodiscard]] bool contains(RenderPassHandle handle) const;
       [[nodiscard]] std::expected<ObjectName, Error> passName(RenderPassHandle handle) const;
+      [[nodiscard]] std::expected<RenderPassHandle, Error> passHandle(std::string_view name) const;
       [[nodiscard]] std::expected<Vector<RenderPassHandle>, Error> topologicalOrder() const;
       [[nodiscard]] std::size_t passCount() const;
 
@@ -102,6 +104,14 @@ export namespace vve::v4 {
       const auto pass = passes_.find(handle);
       if (pass == passes_.end()) { return std::unexpected(Error::missing_object); }
       return pass->second;
+   }
+
+   /// @brief Returns the render pass handle for a name.
+   inline std::expected<RenderPassHandle, Error> RenderGraph::passHandle(std::string_view name) const {
+      for (const auto &[handle, pass_name] : passes_) {
+         if (pass_name.value == name) { return handle; }
+      }
+      return std::unexpected(Error::missing_object);
    }
 
    /// @brief Returns render passes in dependency order and preserves isolated passes.

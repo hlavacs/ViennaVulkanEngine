@@ -101,7 +101,7 @@ export namespace vve::v4 {
       RendererHandle handle{};                      ///< Stable renderer descriptor handle.
       RendererId id{.value = "forward"};            ///< Renderer id chosen by the application.
       bool shadow_maps{true};                       ///< Whether this renderer intends to use shadow maps.
-      std::span<const RenderPassContract> passes{}; ///< Flat renderer-owned pass list.
+      std::span<const RenderPassContract> passes{}; ///< Renderer-owned nodes and explicit dependencies.
    };
 
    /// @brief Minimal renderer factory and render-pass DAG builder.
@@ -133,17 +133,13 @@ namespace vve::v4::detail {
    struct RendererChoice {
       std::string_view id{};                        ///< Renderer selector id.
       bool shadow_maps{};                           ///< Whether the renderer uses shadow maps.
-      std::span<const RenderPassContract> passes{}; ///< Concrete pass contract.
+      std::span<const RenderPassContract> passes{}; ///< Concrete render graph nodes.
    };
 
    inline constexpr std::array renderer_choices{ ///< Compile-time renderer registry.
        RendererChoice{.id = RendererForward::id(),
                       .shadow_maps = RendererForward::usesShadowMaps(),
                       .passes = RendererForward::passes()}};
-
-   inline constexpr std::array milestone_passes{ ///< General render milestones owned by the render system.
-       RenderPassContract{.id = RenderMilestone::frame_begin,
-                          .outputs = "root of the frame render graph"}};
 
 } // namespace vve::v4::detail
 
@@ -255,18 +251,11 @@ namespace vve::v4 {
    RenderSystem::buildRenderGraph(std::span<const std::span<const RenderPassContract>> pass_lists) const {
       RenderGraph graph{};
       std::map<std::string_view, RenderPassHandle> pass_handles{};
-      for (const auto &pass : detail::milestone_passes) {
-         const auto added = addPass(graph, pass_handles, pass);
-         if (!added) { return std::unexpected(added.error()); }
-      }
       for (const auto passes : pass_lists) {
          for (const auto &pass : passes) {
             const auto added = addPass(graph, pass_handles, pass);
             if (!added) { return std::unexpected(added.error()); }
          }
-      }
-      if (const auto linked = addDependencies(graph, pass_handles, detail::milestone_passes); !linked) {
-         return std::unexpected(linked.error());
       }
       for (const auto passes : pass_lists) {
          if (const auto linked = addDependencies(graph, pass_handles, passes); !linked) {
@@ -278,15 +267,15 @@ namespace vve::v4 {
       return graph;
    }
 
-   /// @brief Adds one pass node to the graph and rejects duplicate ids.
+   /// @brief Adds one pass node and merges duplicate names so systems can share milestones.
    inline std::expected<void, Error>
    RenderSystem::addPass(RenderGraph &graph, std::map<std::string_view, RenderPassHandle> &handles,
                          const RenderPassContract &pass) {
-      if (pass.id.empty()) { return std::unexpected(Error::invalid_argument); }
-      if (handles.contains(pass.id)) { return std::unexpected(Error::duplicate_object); }
-      auto handle = graph.addPass(ObjectName{.value = std::string(pass.id)});
+      if (pass.name.empty()) { return std::unexpected(Error::invalid_argument); }
+      if (handles.contains(pass.name)) { return {}; }
+      auto handle = graph.addPass(ObjectName{.value = std::string(pass.name)});
       if (!handle) { return std::unexpected(handle.error()); }
-      handles.emplace(pass.id, *handle);
+      handles.emplace(pass.name, *handle);
       return {};
    }
 
@@ -295,7 +284,7 @@ namespace vve::v4 {
    RenderSystem::addDependencies(RenderGraph &graph, const std::map<std::string_view, RenderPassHandle> &handles,
                                  std::span<const RenderPassContract> passes) {
       for (const auto &pass : passes) {
-         const auto pass_handle = handles.at(pass.id);
+         const auto pass_handle = handles.at(pass.name);
          for (const auto dependency : pass.depends_on) {
             const auto dependency_handle = handles.find(dependency);
             if (dependency.empty()) { return std::unexpected(Error::invalid_argument); }

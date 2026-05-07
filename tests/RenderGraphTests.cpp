@@ -16,18 +16,21 @@ int main() {
    const auto pass_name = graph.passName(*forward);
    if (!pass_name || pass_name->value != "forward") { return 4; }
 
-   if (!graph.remove(*forward) || graph.contains(*forward) || graph.passCount() != 2) { return 5; }
+   const auto forward_handle = graph.passHandle("forward");
+   if (!forward_handle || *forward_handle != *forward) { return 5; }
+
+   if (!graph.remove(*forward) || graph.contains(*forward) || graph.passCount() != 2) { return 6; }
    const auto after_remove = graph.topologicalOrder();
-   if (!after_remove || after_remove->size() != 2) { return 6; }
+   if (!after_remove || after_remove->size() != 2) { return 7; }
 
    vve::v4::RenderGraph cycle{};
    const auto a = cycle.addPass(vve::v4::ObjectName{.value = "a"});
    const auto b = cycle.addPass(vve::v4::ObjectName{.value = "b"});
-   if (!a || !b) { return 7; }
+   if (!a || !b) { return 8; }
    cycle.addEdge(*a, *b);
    cycle.addEdge(*b, *a);
    const auto cycle_order = cycle.topologicalOrder();
-   if (cycle_order || cycle_order.error() != vve::v4::Error::cycle_detected) { return 8; }
+   if (cycle_order || cycle_order.error() != vve::v4::Error::cycle_detected) { return 9; }
 
    return 0;
 }
