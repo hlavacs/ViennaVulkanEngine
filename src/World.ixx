@@ -16,7 +16,7 @@ export namespace vve {
       using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::World;
 
    public:
-      explicit World(Impl &implementation) : impl_{implementation} {}
+      explicit World(Impl implementation) : impl_{std::move(implementation)} {}
       World(const World &) = delete;
       World(World &&) noexcept = default;
       World &operator=(const World &) = delete;
@@ -30,7 +30,7 @@ export namespace vve {
       [[nodiscard]] WindowSystem windowSystem() const { return WindowSystem{const_cast<Impl &>(impl_).windowSystem()}; }
 
    private:
-      Impl &impl_;
+      Impl impl_;
    }; ///< Facade world type.
 
    template <typename... TSystems>

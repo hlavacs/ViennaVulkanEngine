@@ -264,7 +264,7 @@ export namespace vve::v4 {
 
    } // namespace detail
 
-   /// @brief Educational v4 engine shell with SDL windows and a tiny world facade.
+   /// @brief Educational v4 engine shell with SDL windows and lightweight world views.
    template <typename... TSystems> class Engine {
    public:
       Engine();
@@ -281,8 +281,8 @@ export namespace vve::v4 {
       [[nodiscard]] std::uint32_t versionMajor() const;
       [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept;
       [[nodiscard]] std::string_view versionName() const;
-      [[nodiscard]] World &world();
-      [[nodiscard]] const World &world() const;
+      [[nodiscard]] World world();
+      [[nodiscard]] World world() const;
       [[nodiscard]] AssetSystem &assets();
       [[nodiscard]] GuiSystem &gui();
       [[nodiscard]] ECS &ecs();
@@ -293,7 +293,6 @@ export namespace vve::v4 {
       writeDebugGraphs(const std::filesystem::path &directory = "graph_dumps") const;
 
    private:
-      void bindWorld();
       void applyOption(EngineConfig config);
       void applyOption(ApplicationName option);
       void applyOption(MaxFrames option);
@@ -316,7 +315,6 @@ export namespace vve::v4 {
       MaxFrames max_frames_{};                 ///< Optional frame cap.
       Windows windows_{};                      ///< Startup window descriptors.
       ECS ecs_{};                              ///< Runtime entity/component storage owned by the engine.
-      World world_{ecs_};                      ///< Example-facing facade over runtime state.
       WindowSystem window_system_{};           ///< SDL platform window owner.
       AssetSystem assets_{};                   ///< Asset and object catalog facade.
       ResourceSystem resources_{};             ///< Resource descriptor facade.
@@ -332,13 +330,11 @@ export namespace vve::v4 {
 
    /// @brief Creates an engine with default options.
    template <typename... TSystems> Engine<TSystems...>::Engine() {
-      bindWorld();
       applyDefaults();
    }
 
    /// @brief Creates an engine from the compact compatibility config.
    template <typename... TSystems> Engine<TSystems...>::Engine(EngineConfig config) {
-      bindWorld();
       applyOption(std::move(config));
       applyDefaults();
    }
@@ -348,7 +344,6 @@ export namespace vve::v4 {
    template <typename... TOptions>
       requires(sizeof...(TOptions) > 0)
    Engine<TSystems...>::Engine(TOptions &&...options) {
-      bindWorld();
       (applyOption(std::forward<TOptions>(options)), ...);
       applyDefaults();
    }
@@ -365,11 +360,17 @@ export namespace vve::v4 {
    /// @brief Returns the printable engine version name.
    template <typename... TSystems> std::string_view Engine<TSystems...>::versionName() const { return "v4"; }
 
-   /// @brief Returns the example-facing world facade.
-   template <typename... TSystems> World &Engine<TSystems...>::world() { return world_; }
+   /// @brief Creates an example-facing world view over engine-owned subsystems.
+   template <typename... TSystems> World Engine<TSystems...>::world() {
+      auto result = World{ecs_};
+      result.bindSubsystems(assets_, gui_, window_system_);
+      return result;
+   }
 
-   /// @brief Returns the example-facing world facade.
-   template <typename... TSystems> const World &Engine<TSystems...>::world() const { return world_; }
+   /// @brief Creates an example-facing world view from a const engine handle.
+   template <typename... TSystems> World Engine<TSystems...>::world() const {
+      return const_cast<Engine<TSystems...> *>(this)->world();
+   }
 
    /// @brief Returns the asset system.
    template <typename... TSystems> AssetSystem &Engine<TSystems...>::assets() { return assets_; }
@@ -452,11 +453,6 @@ export namespace vve::v4 {
       }
 
       return {};
-   }
-
-   /// @brief Binds World to the subsystems owned by Engine.
-   template <typename... TSystems> void Engine<TSystems...>::bindWorld() {
-      world_.bindSubsystems(assets_, gui_, window_system_);
    }
 
    /// @brief Applies the compact compatibility config.
@@ -572,8 +568,9 @@ export namespace vve::v4 {
    template <typename... TSystems>
    template <typename TSystem>
    std::expected<void, Error> Engine<TSystems...>::initOne(TSystem &system) {
-      if constexpr (requires { system.init(world_); }) {
-         return detail::callSystemHook([&]() -> decltype(auto) { return system.init(world_); });
+      auto world_view = world();
+      if constexpr (requires { system.init(world_view); }) {
+         return detail::callSystemHook([&]() -> decltype(auto) { return system.init(world_view); });
       } else {
          return {};
       }
@@ -584,14 +581,15 @@ export namespace vve::v4 {
    template <typename TSystem>
    std::expected<void, Error> Engine<TSystems...>::updateOne(TSystem &system, const FrameContext &frame,
                                                              const WindowFrameData &window_frame) {
-      if constexpr (requires { system.update(world_, frame, window_frame); }) {
+      auto world_view = world();
+      if constexpr (requires { system.update(world_view, frame, window_frame); }) {
          return detail::callSystemHook([&]() -> decltype(auto) {
-            return system.update(world_, frame, window_frame);
+            return system.update(world_view, frame, window_frame);
          });
-      } else if constexpr (requires { system.update(world_, frame); }) {
-         return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_, frame); });
-      } else if constexpr (requires { system.update(world_); }) {
-         return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_); });
+      } else if constexpr (requires { system.update(world_view, frame); }) {
+         return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_view, frame); });
+      } else if constexpr (requires { system.update(world_view); }) {
+         return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_view); });
       } else {
          return {};
       }
