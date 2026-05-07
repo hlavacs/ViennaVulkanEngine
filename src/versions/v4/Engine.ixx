@@ -13,7 +13,7 @@ export import VEEngine.V4.Math;
 export import :World;
 export import :Window;
 export import :Assets;
-export import :Renderer;
+export import :RenderSystem;
 export import :Resources;
 export import :Shaders;
 export import VEEngine.V4.Handle;

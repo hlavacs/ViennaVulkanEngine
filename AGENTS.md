@@ -37,6 +37,8 @@ An implementation of a wrapper class should first make a full class declaration 
 
 Do not duplicate code. There is one system responsible and it has the only implementation for its functionality. Wrappers can forward calls to them.
 
+Keep the file structure lean and simple, keep number of files as small as possible, but do not overload single files. ideally file sizes schon not exceed 500 LOC.
+
 ## Facade Structure
 
 Engine implementations must expose specific subsystems with the enforced interface.
