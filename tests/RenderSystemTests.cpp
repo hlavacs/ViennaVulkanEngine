@@ -19,6 +19,18 @@ int main() {
    if (renderer.passes[1].fragment_entry != "vveForwardFragmentMain") { return 12; }
    if (!renderer.passes[0].writes_debug_data || !renderer.passes[1].writes_debug_data) { return 13; }
 
+   const auto milestones = vve::v4::RenderMilestone{};
+   std::size_t milestone_count{};
+   bool found_shadow_depth{};
+   bool found_present{};
+   for (const auto milestone : milestones) {
+      ++milestone_count;
+      found_shadow_depth |= milestone == vve::v4::RenderMilestone::shadow_depth;
+      found_present |= milestone == vve::v4::RenderMilestone::present;
+   }
+   if (milestone_count != vve::v4::RenderMilestone::all().size()) { return 35; }
+   if (!found_shadow_depth || !found_present) { return 36; }
+
    const auto second = render_system.createForwardRenderer();
    if (!second.handle.valid() || second.handle == renderer.handle) { return 14; }
 
