@@ -3,7 +3,7 @@ import std;
 export import :Types;
 
 /// @file
-/// @brief Render-pass contracts, milestones, and the small render-pass DAG.
+/// @brief Render-pass contracts, milestones, and a small dependency graph.
 
 export namespace vve::v4 {
 
@@ -15,7 +15,7 @@ export namespace vve::v4 {
       inline static constexpr std::string_view depth_prepass{"depth_prepass"};         ///< Camera depth is available.
       inline static constexpr std::string_view shadow_depth{"shadow_depth"};           ///< Shadow-map input is ready.
       inline static constexpr std::string_view raytraced_shadow{"raytraced_shadow"};   ///< Ray-traced shadow input.
-      inline static constexpr std::string_view gbuffer{"gbuffer"}; ///< Deferred G-buffer is available.
+      inline static constexpr std::string_view gbuffer{"gbuffer"};                     ///< Deferred G-buffer is ready.
       inline static constexpr std::string_view deferred_lighting{"deferred_lighting"}; ///< Deferred lighting is ready.
       inline static constexpr std::string_view raytraced_scene{"raytraced_scene"};     ///< Ray-traced scene color.
       inline static constexpr std::string_view scene_color{"scene_color"};             ///< Main scene color is ready.
@@ -43,58 +43,7 @@ export namespace vve::v4 {
       bool writes_debug_data{};                       ///< Whether this pass writes host-verifiable data.
    };
 
-   /// @brief One flat pass list supplied by a renderer or another engine system.
-   struct RenderPassList {
-      std::span<const RenderPassContract> passes{}; ///< Passes supplied by one producer.
-   };
-
-} // namespace vve::v4
-
-namespace vve::v4 {
-
-   /// @brief Internal render graph pass record.
-   struct RenderPassRecord {
-      using HandleType = RenderPassHandle; ///< Table handle type.
-      RenderPassHandle handle{};           ///< Stable render-pass handle.
-      ObjectName name{};                   ///< Human-readable pass name.
-   };
-
-   /// @brief Internal ordered table for render-pass records.
-   class RenderPassRecordTable {
-   public:
-      [[nodiscard]] std::expected<void, Error> add(RenderPassRecord pass);
-      [[nodiscard]] std::expected<void, Error> remove(RenderPassHandle handle);
-      [[nodiscard]] const RenderPassRecord *find(RenderPassHandle handle) const;
-      [[nodiscard]] std::size_t size() const;
-      [[nodiscard]] const std::map<RenderPassHandle, RenderPassRecord> &all() const;
-
-   private:
-      std::map<RenderPassHandle, RenderPassRecord> passes_{}; ///< Render-pass records by handle.
-   };
-
-   /// @brief Internal directed topology for render-pass dependencies.
-   class RenderPassTopology {
-   public:
-      void addEdge(RenderPassHandle from, RenderPassHandle to);
-      void removeNode(RenderPassHandle node);
-      [[nodiscard]] std::expected<Vector<RenderPassHandle>, Error>
-      topologicalOrder(const Vector<RenderPassHandle> &nodes) const;
-
-   private:
-      void removeOutgoingEdge(RenderPassHandle from, RenderPassHandle to);
-      void removeIncomingEdge(RenderPassHandle to, RenderPassHandle from);
-
-      using EdgeMap = std::unordered_multimap<RenderPassHandle, RenderPassHandle, HandleHash<RenderPassHandle>>;
-
-      EdgeMap outgoing_{}; ///< Forward edges.
-      EdgeMap incoming_{}; ///< Reverse edges.
-   };
-
-} // namespace vve::v4
-
-export namespace vve::v4 {
-
-   /// @brief Minimal render graph table.
+   /// @brief Minimal DAG storing pass names and dependency edges.
    class RenderGraph {
    public:
       [[nodiscard]] std::expected<RenderPassHandle, Error> addPass(ObjectName name);
@@ -106,67 +55,60 @@ export namespace vve::v4 {
       [[nodiscard]] std::size_t passCount() const;
 
    private:
-      RenderPassRecordTable passes_{}; ///< Render passes by handle.
-      RenderPassTopology graph_{};     ///< Render-pass ordering edges.
+      using EdgeMap = std::unordered_multimap<RenderPassHandle, RenderPassHandle, HandleHash<RenderPassHandle>>;
+
+      void removeOutgoingEdge(RenderPassHandle from, RenderPassHandle to);
+      void removeIncomingEdge(RenderPassHandle to, RenderPassHandle from);
+
+      std::map<RenderPassHandle, ObjectName> passes_{}; ///< Pass names by handle.
+      EdgeMap outgoing_{};                              ///< Forward dependency edges.
+      EdgeMap incoming_{};                              ///< Reverse dependency edges.
    };
 
-} // namespace vve::v4
-
-namespace vve::v4 {
-
-   /// @brief Adds one render-pass record.
-   inline std::expected<void, Error> RenderPassRecordTable::add(RenderPassRecord pass) {
-      if (!pass.handle.valid()) { return std::unexpected(Error::invalid_handle); }
-      const auto [_, inserted] = passes_.emplace(pass.handle, std::move(pass));
+   /// @brief Adds a render pass and returns its handle.
+   inline std::expected<RenderPassHandle, Error> RenderGraph::addPass(ObjectName name) {
+      const auto handle = makeCounterHandle<RenderPassHandle>();
+      const auto [_, inserted] = passes_.emplace(handle, std::move(name));
       if (!inserted) { return std::unexpected(Error::duplicate_object); }
-      return {};
+      return handle;
    }
 
-   /// @brief Removes one render-pass record.
-   inline std::expected<void, Error> RenderPassRecordTable::remove(RenderPassHandle handle) {
-      if (!handle.valid()) { return std::unexpected(Error::invalid_handle); }
-      if (passes_.erase(handle) == 0) { return std::unexpected(Error::missing_object); }
-      return {};
-   }
-
-   /// @brief Returns a render-pass record or nullptr.
-   inline const RenderPassRecord *RenderPassRecordTable::find(RenderPassHandle handle) const {
-      const auto pass = passes_.find(handle);
-      return pass == passes_.end() ? nullptr : std::addressof(pass->second);
-   }
-
-   /// @brief Returns record count.
-   inline std::size_t RenderPassRecordTable::size() const { return passes_.size(); }
-
-   /// @brief Returns all records for deterministic graph traversal.
-   inline const std::map<RenderPassHandle, RenderPassRecord> &RenderPassRecordTable::all() const { return passes_; }
-
-   /// @brief Adds one dependency edge.
-   inline void RenderPassTopology::addEdge(RenderPassHandle from, RenderPassHandle to) {
+   /// @brief Adds one directed render-pass edge.
+   inline void RenderGraph::addEdge(RenderPassHandle from, RenderPassHandle to) {
       outgoing_.emplace(from, to);
       incoming_.emplace(to, from);
    }
 
-   /// @brief Removes a node and every edge touching it.
-   inline void RenderPassTopology::removeNode(RenderPassHandle node) {
-      const auto [first_child, last_child] = outgoing_.equal_range(node);
-      for (auto it = first_child; it != last_child; ++it) { removeIncomingEdge(it->second, node); }
-      outgoing_.erase(node);
+   /// @brief Removes one render-pass node and all graph edges touching it.
+   inline std::expected<void, Error> RenderGraph::remove(RenderPassHandle handle) {
+      if (!handle.valid()) { return std::unexpected(Error::invalid_handle); }
+      if (passes_.erase(handle) == 0) { return std::unexpected(Error::missing_object); }
 
-      const auto [first_parent, last_parent] = incoming_.equal_range(node);
-      for (auto it = first_parent; it != last_parent; ++it) { removeOutgoingEdge(it->second, node); }
-      incoming_.erase(node);
+      const auto [first_child, last_child] = outgoing_.equal_range(handle);
+      for (auto it = first_child; it != last_child; ++it) { removeIncomingEdge(it->second, handle); }
+      outgoing_.erase(handle);
+
+      const auto [first_parent, last_parent] = incoming_.equal_range(handle);
+      for (auto it = first_parent; it != last_parent; ++it) { removeOutgoingEdge(it->second, handle); }
+      incoming_.erase(handle);
+      return {};
    }
 
-   /// @brief Returns nodes in dependency order and reports invalid, missing, or cyclic edges.
-   inline std::expected<Vector<RenderPassHandle>, Error>
-   RenderPassTopology::topologicalOrder(const Vector<RenderPassHandle> &nodes) const {
+   /// @brief Returns whether a render pass exists.
+   inline bool RenderGraph::contains(RenderPassHandle handle) const { return passes_.contains(handle); }
+
+   /// @brief Returns the render pass name.
+   inline std::expected<ObjectName, Error> RenderGraph::passName(RenderPassHandle handle) const {
+      const auto pass = passes_.find(handle);
+      if (pass == passes_.end()) { return std::unexpected(Error::missing_object); }
+      return pass->second;
+   }
+
+   /// @brief Returns render passes in dependency order and preserves isolated passes.
+   inline std::expected<Vector<RenderPassHandle>, Error> RenderGraph::topologicalOrder() const {
       std::map<RenderPassHandle, std::uint32_t> incoming_counts{};
       std::map<RenderPassHandle, Vector<RenderPassHandle>> ordered_children{};
-      for (const auto node : nodes) {
-         if (!node.valid()) { return std::unexpected(Error::invalid_handle); }
-         incoming_counts.try_emplace(node, 0);
-      }
+      for (const auto &[handle, _] : passes_) { incoming_counts.try_emplace(handle, 0); }
 
       for (const auto &[from, to] : outgoing_) {
          if (!from.valid() || !to.valid()) { return std::unexpected(Error::invalid_handle); }
@@ -198,55 +140,19 @@ namespace vve::v4 {
       return ordered;
    }
 
+   /// @brief Returns render pass count.
+   inline std::size_t RenderGraph::passCount() const { return passes_.size(); }
+
    /// @brief Removes one forward edge.
-   inline void RenderPassTopology::removeOutgoingEdge(RenderPassHandle from, RenderPassHandle to) {
+   inline void RenderGraph::removeOutgoingEdge(RenderPassHandle from, RenderPassHandle to) {
       auto [first, last] = outgoing_.equal_range(from);
       for (auto it = first; it != last;) { it = it->second == to ? outgoing_.erase(it) : std::next(it); }
    }
 
    /// @brief Removes one reverse edge.
-   inline void RenderPassTopology::removeIncomingEdge(RenderPassHandle to, RenderPassHandle from) {
+   inline void RenderGraph::removeIncomingEdge(RenderPassHandle to, RenderPassHandle from) {
       auto [first, last] = incoming_.equal_range(to);
       for (auto it = first; it != last;) { it = it->second == from ? incoming_.erase(it) : std::next(it); }
    }
-
-   /// @brief Adds a render pass and returns its handle.
-   inline std::expected<RenderPassHandle, Error> RenderGraph::addPass(ObjectName name) {
-      const auto handle = makeCounterHandle<RenderPassHandle>();
-      auto added = passes_.add(RenderPassRecord{.handle = handle, .name = std::move(name)});
-      if (!added) { return std::unexpected(added.error()); }
-      return handle;
-   }
-
-   /// @brief Adds one directed render-pass edge.
-   inline void RenderGraph::addEdge(RenderPassHandle from, RenderPassHandle to) { graph_.addEdge(from, to); }
-
-   /// @brief Removes one render-pass node and all graph edges touching it.
-   inline std::expected<void, Error> RenderGraph::remove(RenderPassHandle handle) {
-      if (const auto removed = passes_.remove(handle); !removed) { return removed; }
-      graph_.removeNode(handle);
-      return {};
-   }
-
-   /// @brief Returns whether a render pass exists.
-   inline bool RenderGraph::contains(RenderPassHandle handle) const { return passes_.find(handle) != nullptr; }
-
-   /// @brief Returns the render pass name.
-   inline std::expected<ObjectName, Error> RenderGraph::passName(RenderPassHandle handle) const {
-      const auto *pass = passes_.find(handle);
-      if (pass == nullptr) { return std::unexpected(Error::missing_object); }
-      return pass->name;
-   }
-
-   /// @brief Returns render passes in dependency order and preserves isolated passes.
-   inline std::expected<Vector<RenderPassHandle>, Error> RenderGraph::topologicalOrder() const {
-      Vector<RenderPassHandle> nodes{};
-      nodes.reserve(passes_.size());
-      for (const auto &[handle, _] : passes_.all()) { nodes.push_back(handle); }
-      return graph_.topologicalOrder(nodes);
-   }
-
-   /// @brief Returns render pass count.
-   inline std::size_t RenderGraph::passCount() const { return passes_.size(); }
 
 } // namespace vve::v4

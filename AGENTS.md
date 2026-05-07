@@ -39,6 +39,8 @@ Do not duplicate code. There is one system responsible and it has the only imple
 
 Keep the file structure lean and simple, keep number of files as small as possible, but do not overload single files. ideally file sizes schon not exceed 500 LOC.
 
+Keep the number of structs and classes at a minimum. Try to create few general templated solutions and derive special solutions from them. For instance, containers like trees or graphs, etc.
+
 ## Facade Structure
 
 Engine implementations must expose specific subsystems with the enforced interface.

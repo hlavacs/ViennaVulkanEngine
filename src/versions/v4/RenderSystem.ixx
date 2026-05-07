@@ -110,7 +110,10 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<RendererDescriptor, Error> createRenderer(RendererId id) const;
       [[nodiscard]] RendererDescriptor createForwardRenderer() const;
       [[nodiscard]] std::expected<RenderGraph, Error> buildRenderGraph(const RendererDescriptor &renderer) const;
-      [[nodiscard]] std::expected<RenderGraph, Error> buildRenderGraph(std::span<const RenderPassList> lists) const;
+      [[nodiscard]] std::expected<RenderGraph, Error>
+      buildRenderGraph(std::span<const RenderPassContract> passes) const;
+      [[nodiscard]] std::expected<RenderGraph, Error>
+      buildRenderGraph(std::span<const std::span<const RenderPassContract>> pass_lists) const;
 
    private:
       [[nodiscard]] static std::expected<void, Error>
@@ -237,21 +240,27 @@ namespace vve::v4 {
 
    /// @brief Builds and validates the render-pass DAG from a renderer's flat pass list.
    inline std::expected<RenderGraph, Error> RenderSystem::buildRenderGraph(const RendererDescriptor &renderer) const {
-      const std::array lists{RenderPassList{.passes = renderer.passes}};
+      return buildRenderGraph(renderer.passes);
+   }
+
+   /// @brief Builds and validates the render-pass DAG from flat pass lists supplied by engine systems.
+   inline std::expected<RenderGraph, Error>
+   RenderSystem::buildRenderGraph(std::span<const RenderPassContract> passes) const {
+      const std::array lists{passes};
       return buildRenderGraph(lists);
    }
 
    /// @brief Builds and validates the render-pass DAG from flat pass lists supplied by engine systems.
    inline std::expected<RenderGraph, Error>
-   RenderSystem::buildRenderGraph(std::span<const RenderPassList> lists) const {
+   RenderSystem::buildRenderGraph(std::span<const std::span<const RenderPassContract>> pass_lists) const {
       RenderGraph graph{};
       std::map<std::string_view, RenderPassHandle> pass_handles{};
       for (const auto &pass : detail::milestone_passes) {
          const auto added = addPass(graph, pass_handles, pass);
          if (!added) { return std::unexpected(added.error()); }
       }
-      for (const auto list : lists) {
-         for (const auto &pass : list.passes) {
+      for (const auto passes : pass_lists) {
+         for (const auto &pass : passes) {
             const auto added = addPass(graph, pass_handles, pass);
             if (!added) { return std::unexpected(added.error()); }
          }
@@ -259,8 +268,8 @@ namespace vve::v4 {
       if (const auto linked = addDependencies(graph, pass_handles, detail::milestone_passes); !linked) {
          return std::unexpected(linked.error());
       }
-      for (const auto list : lists) {
-         if (const auto linked = addDependencies(graph, pass_handles, list.passes); !linked) {
+      for (const auto passes : pass_lists) {
+         if (const auto linked = addDependencies(graph, pass_handles, passes); !linked) {
             return std::unexpected(linked.error());
          }
       }

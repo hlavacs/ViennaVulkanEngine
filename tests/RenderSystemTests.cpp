@@ -56,8 +56,7 @@ int main() {
    if (!third_pass || third_pass->value != vve::v4::RenderMilestone::scene_color) { return 23; }
 
    const vve::v4::GuiSystem gui_system{};
-   const std::array system_lists{vve::v4::RenderPassList{.passes = renderer.passes},
-                                 vve::v4::RenderPassList{.passes = gui_system.passes()}};
+   const std::array system_lists{renderer.passes, gui_system.passes()};
    const auto gui_graph = render_system.buildRenderGraph(system_lists);
    if (!gui_graph || gui_graph->passCount() != 4) { return 24; }
 
@@ -75,7 +74,7 @@ int main() {
                                    .depends_on = deferred_lighting_deps},
        vve::v4::RenderPassContract{.id = vve::v4::RenderMilestone::scene_color,
                                    .depends_on = deferred_scene_deps}};
-   const auto deferred_graph = render_system.buildRenderGraph(std::array{vve::v4::RenderPassList{deferred_passes}});
+   const auto deferred_graph = render_system.buildRenderGraph(deferred_passes);
    if (!deferred_graph || deferred_graph->passCount() != 5) { return 25; }
 
    const std::array forward_ray_shadow_deps{vve::v4::RenderMilestone::frame_begin};
@@ -86,7 +85,7 @@ int main() {
        vve::v4::RenderPassContract{.id = vve::v4::RenderMilestone::scene_color,
                                    .depends_on = forward_ray_shadow_scene_deps}};
    const auto forward_ray_shadow_graph =
-       render_system.buildRenderGraph(std::array{vve::v4::RenderPassList{forward_ray_shadow_passes}});
+       render_system.buildRenderGraph(forward_ray_shadow_passes);
    if (!forward_ray_shadow_graph || forward_ray_shadow_graph->passCount() != 3) { return 26; }
 
    const std::array ray_scene_deps{vve::v4::RenderMilestone::frame_begin};
@@ -96,13 +95,12 @@ int main() {
                                    .depends_on = ray_scene_deps},
        vve::v4::RenderPassContract{.id = vve::v4::RenderMilestone::scene_color,
                                    .depends_on = ray_scene_color_deps}};
-   const auto ray_scene_graph = render_system.buildRenderGraph(std::array{vve::v4::RenderPassList{ray_scene_passes}});
+   const auto ray_scene_graph = render_system.buildRenderGraph(ray_scene_passes);
    if (!ray_scene_graph || ray_scene_graph->passCount() != 3) { return 27; }
 
    const std::array bad_dependencies{std::string_view{"missing"}};
    const std::array bad_passes{vve::v4::RenderPassContract{.id = "bad", .depends_on = bad_dependencies}};
-   const std::array bad_lists{vve::v4::RenderPassList{.passes = bad_passes}};
-   const auto bad_graph = render_system.buildRenderGraph(bad_lists);
+   const auto bad_graph = render_system.buildRenderGraph(bad_passes);
    if (bad_graph || bad_graph.error() != vve::v4::Error::missing_object) { return 28; }
 
    vve::v4::RenderScene scene{};
