@@ -461,11 +461,6 @@ struct CountingSystem {
    if (!material_name || !material_textures || !material_textures->empty()) {
       return 88;
    }
-   if (assets.textureName(makeHandleForTest<TextureHandle>(9000)) ||
-       assets.lightName(makeHandleForTest<LightHandle>(9001)) ||
-       assets.cameraName(makeHandleForTest<CameraHandle>(9002))) {
-      return 89;
-   }
    return 0;
 }
 

@@ -138,3 +138,19 @@ All classes and functions should have unit tests.
 All example programs should have extensive test paths.
 
 
+
+# Concrete Engines
+
+## v3
+
+v3 was experimental and is no longer used. Avoid any usage and reference in the engine to it.
+
+## v4
+
+The v4 engine focuses on education for students. Goals are:
+- It is of utmost importance to keep it simple!
+- Low number of LOC
+- Well documented.
+- No bloating!
+- Clear separation of concern
+- Each file focuses on a specific part, and do not contain code belonging to other parts.

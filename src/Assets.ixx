@@ -108,51 +108,6 @@ export namespace vve {
          return facadeVector<TextureHandle>(impl_.materialTextures(material));
       }
 
-      [[nodiscard]] std::expected<ObjectName, Error> textureName(TextureHandle texture) const {
-         return impl_.textureName(texture);
-      }
-      [[nodiscard]] std::expected<std::filesystem::path, Error> textureSource(TextureHandle texture) const {
-         return impl_.textureSource(texture);
-      }
-      [[nodiscard]] std::expected<PixelExtent, Error> textureExtent(TextureHandle texture) const {
-         return impl_.textureExtent(texture);
-      }
-      [[nodiscard]] std::expected<TextureChannelCount, Error> textureChannels(TextureHandle texture) const {
-         return impl_.textureChannels(texture);
-      }
-
-      [[nodiscard]] std::expected<ObjectName, Error> lightName(LightHandle light) const {
-         return impl_.lightName(light);
-      }
-      [[nodiscard]] std::expected<Position, Error> lightPosition(LightHandle light) const {
-         return impl_.lightPosition(light);
-      }
-      [[nodiscard]] std::expected<Direction, Error> lightDirection(LightHandle light) const {
-         return impl_.lightDirection(light);
-      }
-      [[nodiscard]] std::expected<LinearColor, Error> lightColor(LightHandle light) const {
-         return impl_.lightColor(light);
-      }
-      [[nodiscard]] std::expected<LightIntensity, Error> lightIntensity(LightHandle light) const {
-         return impl_.lightIntensity(light);
-      }
-
-      [[nodiscard]] std::expected<ObjectName, Error> cameraName(CameraHandle camera) const {
-         return impl_.cameraName(camera);
-      }
-      [[nodiscard]] std::expected<Position, Error> cameraPosition(CameraHandle camera) const {
-         return impl_.cameraPosition(camera);
-      }
-      [[nodiscard]] std::expected<Direction, Error> cameraForward(CameraHandle camera) const {
-         return impl_.cameraForward(camera);
-      }
-      [[nodiscard]] std::expected<FovY, Error> cameraFovY(CameraHandle camera) const {
-         return impl_.cameraFovY(camera);
-      }
-      [[nodiscard]] std::expected<ClipPlanes, Error> cameraClip(CameraHandle camera) const {
-         return impl_.cameraClip(camera);
-      }
-
    private:
       template <typename T>
       [[nodiscard]] static std::expected<Vector<T>, Error>
