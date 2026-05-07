@@ -31,7 +31,13 @@ int main() {
                            .id("main")
                            .title("world-tests")
                            .extent(vve::PixelExtent{.width = 64, .height = 64})
-                           .visible(false)});
+                           .renderer(vve::RendererId{.value = "forward"})
+                           .visible(false),
+                         vve::WindowSetup{}
+                            .id("tools")
+                            .title("world-tools")
+                            .extent(vve::PixelExtent{.width = 64, .height = 64})
+                            .visible(false)});
    if (!engine.init()) { return 1; }
 
    const auto dump_dir = std::filesystem::temp_directory_path() / "vve_world_debug_graphs";
@@ -39,11 +45,16 @@ int main() {
    if (const auto dumped = engine.writeDebugGraphs(dump_dir); !dumped) { return 2; }
    const auto task_graph = dump_dir / "task_graph.json";
    const auto render_graph = dump_dir / "render_graph.json";
+   const auto main_graph = dump_dir / "render_graph_main.json";
+   const auto tools_graph = dump_dir / "render_graph_tools.json";
    if (!std::filesystem::exists(task_graph) || !std::filesystem::exists(render_graph)) { return 3; }
+   if (!std::filesystem::exists(main_graph) || !std::filesystem::exists(tools_graph)) { return 3; }
    if (!fileContains(task_graph, "task.poll_window_events") || !fileContains(task_graph, "\"edges\"")) { return 4; }
    if (!fileContains(render_graph, "forward.color_pass") || !fileContains(render_graph, "gui.overlay_pass")) {
       return 5;
    }
+   if (!fileContains(main_graph, "window=main renderer=forward")) { return 5; }
+   if (!fileContains(tools_graph, "window=tools renderer=forward")) { return 5; }
    std::filesystem::remove_all(dump_dir);
 
    auto world = engine.world();

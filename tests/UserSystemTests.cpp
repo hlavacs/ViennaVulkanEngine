@@ -1,4 +1,6 @@
 #include <expected>
+#include <filesystem>
+#include <fstream>
 
 import VEEngine;
 
@@ -27,6 +29,12 @@ struct CountingSystem {
    }
 };
 
+[[nodiscard]] bool fileContains(const std::filesystem::path &path, std::string_view text) {
+   std::ifstream input(path, std::ios::binary);
+   const std::string content{std::istreambuf_iterator<char>{input}, std::istreambuf_iterator<char>{}};
+   return content.contains(text);
+}
+
 } // namespace
 
 int main() {
@@ -49,12 +57,21 @@ int main() {
                                            .last_window_count = &last_window_count}));
 
    if (!engine.init()) { return 1; }
+   const auto dump_dir = std::filesystem::temp_directory_path() / "vve_user_system_debug_graphs";
+   std::filesystem::remove_all(dump_dir);
+   if (const auto dumped = engine.writeDebugGraphs(dump_dir); !dumped) { return 2; }
+   const auto task_graph = dump_dir / "task_graph.json";
+   if (!fileContains(task_graph, "task.update_system.") || !fileContains(task_graph, "CountingSystem")) {
+      return 3;
+   }
+   std::filesystem::remove_all(dump_dir);
+
    const auto first = engine.step();
    const auto second = engine.step();
    if (!first || !second || *first != vve::FrameStatus::running || *second != vve::FrameStatus::stopped) {
-      return 2;
+      return 4;
    }
-   if (init_count != 1 || update_count != 2 || last_frame != 1 || last_window_count != 1) { return 3; }
+   if (init_count != 1 || update_count != 2 || last_frame != 1 || last_window_count != 1) { return 5; }
 
    return 0;
 }

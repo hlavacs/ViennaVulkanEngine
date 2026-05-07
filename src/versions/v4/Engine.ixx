@@ -273,6 +273,29 @@ export namespace vve::v4 {
          }
       }
 
+      /// @brief Returns a readable user-system name for debug graph nodes.
+      template <typename TSystem> [[nodiscard]] std::string systemDebugName(const TSystem &system) {
+         if constexpr (requires { std::string_view{system.name()}; }) {
+            return std::string{std::string_view{system.name()}};
+         } else if constexpr (requires { std::string_view{TSystem::name()}; }) {
+            return std::string{std::string_view{TSystem::name()}};
+         } else {
+            return typeid(TSystem).name();
+         }
+      }
+
+      /// @brief Converts a window id into a compact filesystem-safe graph dump stem.
+      [[nodiscard]] inline std::string graphFileStem(std::string_view text) {
+         std::string result{};
+         result.reserve(text.size());
+         for (const char ch : text) {
+            const bool safe = (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+                              (ch >= '0' && ch <= '9') || ch == '-' || ch == '_';
+            result.push_back(safe ? ch : '_');
+         }
+         return result.empty() ? "window" : result;
+      }
+
    } // namespace detail
 
    /// @brief Educational v4 engine shell with SDL windows and a tiny world facade.
@@ -320,6 +343,8 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<void, Error> updateOne(TSystem &system, const FrameContext &frame,
                                                          const WindowFrameData &window_frame);
       [[nodiscard]] std::expected<void, Error> buildDefaultGraphs();
+      template <typename TSystem>
+      [[nodiscard]] std::expected<TaskHandle, Error> addSystemTask(TaskHandle previous, TSystem &system);
 
       ApplicationName application_name_{};      ///< Name used for default window titles.
       MaxFrames max_frames_{};                 ///< Optional frame cap.
@@ -443,7 +468,24 @@ export namespace vve::v4 {
       const auto task_path = directory / "task_graph.json";
       const auto render_path = directory / "render_graph.json";
       if (const auto result = tasks_.writeJson(task_path, "v4 task graph"); !result) { return result; }
-      return render_graph_.writeJson(render_path, "v4 render graph");
+      if (const auto result = render_graph_.writeJson(render_path, "v4 render graph"); !result) { return result; }
+
+      const RenderSystem render_system{};
+      for (const auto &window : window_system_.snapshot()) {
+         auto renderer_id = window.renderer_id.value.empty() ? RendererId{.value = "forward"} : window.renderer_id;
+         const auto renderer = render_system.createRenderer(renderer_id);
+         if (!renderer) { return std::unexpected(renderer.error()); }
+
+         const std::array pass_lists{renderer->passes, gui_.passes()};
+         const auto graph = render_system.buildRenderGraph(pass_lists);
+         if (!graph) { return std::unexpected(graph.error()); }
+
+         const auto file = directory / ("render_graph_" + detail::graphFileStem(window.id) + ".json");
+         const auto name = "v4 render graph window=" + window.id + " renderer=" + renderer->id.value;
+         if (const auto result = graph->writeJson(file, name); !result) { return result; }
+      }
+
+      return {};
    }
 
    /// @brief Binds World to the subsystems owned by Engine.
@@ -497,14 +539,27 @@ export namespace vve::v4 {
 
       const auto begin = tasks_.addTask(ObjectName{.value = "task.frame_begin"});
       const auto poll = tasks_.addTask(ObjectName{.value = "task.poll_window_events"});
-      const auto update = tasks_.addTask(ObjectName{.value = "task.update_systems"});
       const auto render = tasks_.addTask(ObjectName{.value = "task.render_graph"});
       const auto finish = tasks_.addTask(ObjectName{.value = "task.frame_finished"});
-      if (!begin || !poll || !update || !render || !finish) { return std::unexpected(Error::internal_error); }
+      if (!begin || !poll || !render || !finish) { return std::unexpected(Error::internal_error); }
 
       tasks_.addEdge(*begin, *poll);
-      tasks_.addEdge(*poll, *update);
-      tasks_.addEdge(*update, *render);
+      auto previous = *poll;
+      if (systems_.has_value()) {
+         std::expected<void, Error> result{};
+         std::apply([&](auto &...system) {
+            ((result ? [&] {
+                auto task = addSystemTask(previous, system);
+                if (!task) {
+                   result = std::unexpected(task.error());
+                } else {
+                   previous = *task;
+                }
+             }() : void()), ...);
+         }, *systems_);
+         if (!result) { return result; }
+      }
+      tasks_.addEdge(previous, *render);
       tasks_.addEdge(*render, *finish);
 
       const RenderSystem render_system{};
@@ -514,6 +569,17 @@ export namespace vve::v4 {
       if (!graph) { return std::unexpected(graph.error()); }
       render_graph_ = *graph;
       return {};
+   }
+
+   /// @brief Adds one user-system update node after the previous frame task.
+   template <typename... TSystems>
+   template <typename TSystem>
+   std::expected<TaskHandle, Error> Engine<TSystems...>::addSystemTask(TaskHandle previous, TSystem &system) {
+      auto name = std::string{"task.update_system."} + detail::systemDebugName(system);
+      const auto task = tasks_.addTask(ObjectName{.value = std::move(name)});
+      if (!task) { return std::unexpected(task.error()); }
+      tasks_.addEdge(previous, *task);
+      return *task;
    }
 
    /// @brief Calls init(World&) on each user system when that hook exists.
