@@ -145,6 +145,11 @@ namespace vve::v4 {
 
    namespace {
 
+      template <typename T> using Expected = std::expected<T, Error>;           ///< Local expected shorthand.
+      template <typename T> using VectorExpected = Expected<Vector<T>>;         ///< Local vector-result shorthand.
+      using CountExpected = Expected<std::size_t>;                              ///< Local count-result shorthand.
+      using NameExpected = Expected<ObjectName>;                                ///< Local name-result shorthand.
+
       /// @brief Common texture slots students expect when inspecting imported materials.
       constexpr std::array texture_types{aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR, aiTextureType_NORMALS,
                                          aiTextureType_HEIGHT, aiTextureType_DIFFUSE_ROUGHNESS,
@@ -220,9 +225,17 @@ namespace vve::v4 {
          return value->size();
       }
 
+      [[nodiscard]] std::expected<const Scene *, Error> sceneWithNode(const Catalog &catalog, SceneHandle scene,
+                                                                      NodeHandle node) {
+         const auto value = require(catalog.scenes, scene);
+         if (!value) { return std::unexpected(value.error()); }
+         if (!contains((*value)->nodes, node)) { return std::unexpected(Error::missing_object); }
+         return *value;
+      }
+
       [[nodiscard]] TextureHandle texture(const std::filesystem::path &source,
-                                                                std::map<std::string, TextureHandle> &known,
-                                                                Vector<TextureHandle> &scene_textures) {
+                                          std::map<std::string, TextureHandle> &known,
+                                          Vector<TextureHandle> &scene_textures) {
          const auto key = source.string();
          if (const auto it = known.find(key); it != known.end()) { return it->second; }
          const auto handle = makeCounterHandle<TextureHandle>();
@@ -399,33 +412,23 @@ namespace vve::v4 {
 
    bool AssetSystem::containsScene(SceneHandle scene) const { return catalog_.scenes.contains(scene); }
 
-   std::expected<ObjectName, Error> AssetSystem::sceneName(SceneHandle scene) const {
-      return sceneField(catalog_, scene, &Scene::name);
-   }
+   NameExpected AssetSystem::sceneName(SceneHandle scene) const { return sceneField(catalog_, scene, &Scene::name); }
 
-   std::expected<std::size_t, Error> AssetSystem::sceneNodeCount(SceneHandle scene) const {
-      return sizeOf(sceneNodes(scene));
-   }
+   CountExpected AssetSystem::sceneNodeCount(SceneHandle scene) const { return sizeOf(sceneNodes(scene)); }
 
-   std::expected<std::size_t, Error> AssetSystem::sceneMeshCount(SceneHandle scene) const {
-      return sizeOf(sceneMeshes(scene));
-   }
+   CountExpected AssetSystem::sceneMeshCount(SceneHandle scene) const { return sizeOf(sceneMeshes(scene)); }
 
-   std::expected<std::size_t, Error> AssetSystem::sceneMaterialCount(SceneHandle scene) const {
+   CountExpected AssetSystem::sceneMaterialCount(SceneHandle scene) const {
       return sizeOf(sceneMaterials(scene));
    }
 
-   std::expected<std::size_t, Error> AssetSystem::sceneTextureCount(SceneHandle scene) const {
+   CountExpected AssetSystem::sceneTextureCount(SceneHandle scene) const {
       return sizeOf(sceneTextures(scene));
    }
 
-   std::expected<std::size_t, Error> AssetSystem::sceneLightCount(SceneHandle scene) const {
-      return sizeOf(sceneLights(scene));
-   }
+   CountExpected AssetSystem::sceneLightCount(SceneHandle scene) const { return sizeOf(sceneLights(scene)); }
 
-   std::expected<std::size_t, Error> AssetSystem::sceneCameraCount(SceneHandle scene) const {
-      return sizeOf(sceneCameras(scene));
-   }
+   CountExpected AssetSystem::sceneCameraCount(SceneHandle scene) const { return sizeOf(sceneCameras(scene)); }
 
    std::expected<NodeHandle, Error> AssetSystem::sceneRootNode(SceneHandle scene) const {
       const auto root = sceneField(catalog_, scene, &Scene::tree);
@@ -434,94 +437,85 @@ namespace vve::v4 {
       return root->root;
    }
 
-   std::expected<Vector<NodeHandle>, Error> AssetSystem::sceneNodes(SceneHandle scene) const {
+   VectorExpected<NodeHandle> AssetSystem::sceneNodes(SceneHandle scene) const {
       return sceneField(catalog_, scene, &Scene::nodes);
    }
 
-   std::expected<Vector<MeshHandle>, Error> AssetSystem::sceneMeshes(SceneHandle scene) const {
+   VectorExpected<MeshHandle> AssetSystem::sceneMeshes(SceneHandle scene) const {
       return sceneField(catalog_, scene, &Scene::meshes);
    }
 
-   std::expected<Vector<MaterialHandle>, Error> AssetSystem::sceneMaterials(SceneHandle scene) const {
+   VectorExpected<MaterialHandle> AssetSystem::sceneMaterials(SceneHandle scene) const {
       return sceneField(catalog_, scene, &Scene::materials);
    }
 
-   std::expected<Vector<TextureHandle>, Error> AssetSystem::sceneTextures(SceneHandle scene) const {
+   VectorExpected<TextureHandle> AssetSystem::sceneTextures(SceneHandle scene) const {
       return sceneField(catalog_, scene, &Scene::textures);
    }
 
-   std::expected<Vector<LightHandle>, Error> AssetSystem::sceneLights(SceneHandle scene) const {
+   VectorExpected<LightHandle> AssetSystem::sceneLights(SceneHandle scene) const {
       return sceneField(catalog_, scene, &Scene::lights);
    }
 
-   std::expected<Vector<CameraHandle>, Error> AssetSystem::sceneCameras(SceneHandle scene) const {
+   VectorExpected<CameraHandle> AssetSystem::sceneCameras(SceneHandle scene) const {
       return sceneField(catalog_, scene, &Scene::cameras);
    }
 
    std::expected<Vector<NodeHandle>, Error> AssetSystem::sceneNodeChildren(SceneHandle scene, NodeHandle node) const {
-      const auto nodes = sceneNodes(scene);
-      const auto tree = sceneField(catalog_, scene, &Scene::tree);
-      if (!nodes) { return std::unexpected(nodes.error()); }
-      if (!tree) { return std::unexpected(tree.error()); }
-      if (!contains(*nodes, node)) { return std::unexpected(Error::missing_object); }
+      const auto source = sceneWithNode(catalog_, scene, node);
+      if (!source) { return std::unexpected(source.error()); }
       Vector<NodeHandle> result{};
-      const auto [first, last] = tree->children.equal_range(node);
+      const auto [first, last] = (*source)->tree.children.equal_range(node);
       for (auto it = first; it != last; ++it) { result.push_back(it->second); }
       return result;
    }
 
    std::expected<std::optional<NodeHandle>, Error> AssetSystem::sceneNodeParent(SceneHandle scene,
                                                                                 NodeHandle node) const {
-      const auto nodes = sceneNodes(scene);
-      const auto tree = sceneField(catalog_, scene, &Scene::tree);
-      if (!nodes) { return std::unexpected(nodes.error()); }
-      if (!tree) { return std::unexpected(tree.error()); }
-      if (!contains(*nodes, node)) { return std::unexpected(Error::missing_object); }
-      const auto parent = tree->parents.find(node);
-      return parent == tree->parents.end() ? std::optional<NodeHandle>{} : std::optional<NodeHandle>{parent->second};
+      const auto source = sceneWithNode(catalog_, scene, node);
+      if (!source) { return std::unexpected(source.error()); }
+      const auto parent = (*source)->tree.parents.find(node);
+      return parent == (*source)->tree.parents.end() ? std::optional<NodeHandle>{}
+                                                     : std::optional<NodeHandle>{parent->second};
    }
 
-   std::expected<ObjectName, Error> AssetSystem::nodeName(NodeHandle node) const {
-      return field(catalog_.nodes, node, &Node::name);
-   }
+   NameExpected AssetSystem::nodeName(NodeHandle node) const { return field(catalog_.nodes, node, &Node::name); }
 
-   std::expected<Transform, Error> AssetSystem::nodeTransform(NodeHandle node) const {
+   Expected<Transform> AssetSystem::nodeTransform(NodeHandle node) const {
       return field(catalog_.nodes, node, &Node::transform);
    }
 
-   std::expected<Vector<MeshHandle>, Error> AssetSystem::nodeMeshes(NodeHandle node) const {
+   VectorExpected<MeshHandle> AssetSystem::nodeMeshes(NodeHandle node) const {
       return field(catalog_.nodes, node, &Node::meshes);
    }
 
-   std::expected<Vector<MaterialHandle>, Error> AssetSystem::nodeMaterials(NodeHandle node) const {
+   VectorExpected<MaterialHandle> AssetSystem::nodeMaterials(NodeHandle node) const {
       return field(catalog_.nodes, node, &Node::materials);
    }
 
-   std::expected<ObjectName, Error> AssetSystem::meshName(MeshHandle mesh) const {
-      return field(catalog_.meshes, mesh, &Mesh::name);
-   }
+   NameExpected AssetSystem::meshName(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &Mesh::name); }
 
-   std::expected<VertexCount, Error> AssetSystem::meshVertexCount(MeshHandle mesh) const {
+   Expected<VertexCount> AssetSystem::meshVertexCount(MeshHandle mesh) const {
       return field(catalog_.meshes, mesh, &Mesh::vertex_count);
    }
 
-   std::expected<IndexCount, Error> AssetSystem::meshIndexCount(MeshHandle mesh) const {
+   Expected<IndexCount> AssetSystem::meshIndexCount(MeshHandle mesh) const {
       return field(catalog_.meshes, mesh, &Mesh::index_count);
    }
 
-   std::expected<MaterialHandle, Error> AssetSystem::meshMaterial(MeshHandle mesh) const {
+   Expected<MaterialHandle> AssetSystem::meshMaterial(MeshHandle mesh) const {
       return field(catalog_.meshes, mesh, &Mesh::material);
    }
 
-   std::expected<Bounds, Error> AssetSystem::meshBounds(MeshHandle mesh) const {
+   Expected<Bounds> AssetSystem::meshBounds(MeshHandle mesh) const {
       return field(catalog_.meshes, mesh, &Mesh::bounds);
    }
 
-   std::expected<ObjectName, Error> AssetSystem::materialName(MaterialHandle material) const {
+   NameExpected AssetSystem::materialName(MaterialHandle material) const {
       return field(catalog_.materials, material, &Material::name);
    }
 
-   std::expected<Vector<TextureHandle>, Error> AssetSystem::materialTextures(MaterialHandle material) const {
+   VectorExpected<TextureHandle> AssetSystem::materialTextures(MaterialHandle material) const {
       return field(catalog_.materials, material, &Material::textures);
    }
 

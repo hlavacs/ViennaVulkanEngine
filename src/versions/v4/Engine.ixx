@@ -281,11 +281,6 @@ export namespace vve::v4 {
       writeDebugGraphs(const std::filesystem::path &directory = "graph_dumps") const;
 
    private:
-      void applyOption(EngineConfig config);
-      void applyOption(ApplicationName option);
-      void applyOption(MaxFrames option);
-      void applyOption(Windows option);
-      void applyOption(UserSystems<TSystems...> option);
       template <typename TOption> void applyOption(TOption &&);
       void applyDefaults();
       [[nodiscard]] std::expected<void, Error> initSystems();
@@ -350,9 +345,7 @@ export namespace vve::v4 {
 
    /// @brief Creates an example-facing world view over engine-owned subsystems.
    template <typename... TSystems> World Engine<TSystems...>::world() {
-      auto result = World{ecs_};
-      result.bindSubsystems(assets_, gui_, window_system_);
-      return result;
+      return World{ecs_, assets_, gui_, window_system_};
    }
 
    /// @brief Creates an example-facing world view from a const engine handle.
@@ -417,34 +410,25 @@ export namespace vve::v4 {
       return FrameStatus::running;
    }
 
-   /// @brief Applies the compact compatibility config.
-   template <typename... TSystems> void Engine<TSystems...>::applyOption(EngineConfig config) {
-      application_name_.value = std::move(config.application_name);
-      max_frames_.value = config.max_frames;
-   }
-
-   /// @brief Applies the application-name typed option.
-   template <typename... TSystems> void Engine<TSystems...>::applyOption(ApplicationName option) {
-      application_name_ = std::move(option);
-   }
-
-   /// @brief Applies the frame-cap typed option.
-   template <typename... TSystems> void Engine<TSystems...>::applyOption(MaxFrames option) { max_frames_ = option; }
-
-   /// @brief Applies the startup-window typed option.
-   template <typename... TSystems> void Engine<TSystems...>::applyOption(Windows option) {
-      windows_ = std::move(option);
-   }
-
-   /// @brief Applies the user-system typed option.
-   template <typename... TSystems> void Engine<TSystems...>::applyOption(UserSystems<TSystems...> option) {
-      systems_.emplace(std::move(option.value));
-   }
-
-   /// @brief Ignores unknown option types so examples can evolve one option at a time.
+   /// @brief Applies typed engine options; unknown option types are ignored.
    template <typename... TSystems>
    template <typename TOption>
-   void Engine<TSystems...>::applyOption(TOption &&) {}
+   void Engine<TSystems...>::applyOption(TOption &&option) {
+      using Option = std::remove_cvref_t<TOption>;
+      if constexpr (std::same_as<Option, EngineConfig>) {
+         auto config = std::forward<TOption>(option);
+         application_name_.value = std::move(config.application_name);
+         max_frames_.value = config.max_frames;
+      } else if constexpr (std::same_as<Option, ApplicationName>) {
+         application_name_ = std::forward<TOption>(option);
+      } else if constexpr (std::same_as<Option, MaxFrames>) {
+         max_frames_ = std::forward<TOption>(option);
+      } else if constexpr (std::same_as<Option, Windows>) {
+         windows_ = std::forward<TOption>(option);
+      } else if constexpr (std::same_as<Option, UserSystems<TSystems...>>) {
+         systems_.emplace(std::forward<TOption>(option).value);
+      }
+   }
 
    /// @brief Fills small defaults after options have been applied.
    template <typename... TSystems> void Engine<TSystems...>::applyDefaults() {

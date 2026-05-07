@@ -126,52 +126,34 @@ export namespace vve::v4 {
       WindowSystem(const WindowSystem &) = delete;       ///< SDL windows cannot be copied safely.
       WindowSystem &operator=(const WindowSystem &) = delete; ///< SDL windows cannot be copied safely.
 
-      /// @brief Returns the implementation name for diagnostics.
-      [[nodiscard]] std::string_view name() const noexcept;
-      /// @brief Creates all startup windows from descriptors.
-      [[nodiscard]] std::expected<void, Error> init(const Windows &windows);
-      /// @brief Polls SDL events and mutates the owned input snapshot.
-      [[nodiscard]] std::expected<void, Error> poll();
-      /// @brief Returns the owned input state.
-      [[nodiscard]] InputState &input();
-      /// @brief Returns the owned input state.
-      [[nodiscard]] const InputState &input() const;
-      /// @brief Returns a copy of the current window-state snapshot.
-      [[nodiscard]] Vector<WindowInfo> snapshot() const;
-      /// @brief Returns references to owned window implementations.
-      [[nodiscard]] Vector<std::reference_wrapper<Window>> windows();
-      /// @brief Returns read-only references to owned window implementations.
-      [[nodiscard]] Vector<std::reference_wrapper<const Window>> windows() const;
-      /// @brief Returns the number of owned windows.
-      [[nodiscard]] std::size_t windowCount() const;
-      /// @brief Finds a window implementation by application id.
-      [[nodiscard]] Window *findWindow(std::string_view id);
-      /// @brief Finds a read-only window implementation by application id.
-      [[nodiscard]] const Window *findWindow(std::string_view id) const;
-      /// @brief Finds a window implementation by runtime handle.
-      [[nodiscard]] Window *findWindow(WindowHandle handle);
-      /// @brief Finds a read-only window implementation by runtime handle.
-      [[nodiscard]] const Window *findWindow(WindowHandle handle) const;
-      /// @brief Assigns the camera rendered through a window handle.
-      [[nodiscard]] std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera);
-      /// @brief Assigns the camera rendered through an application-local window id.
-      [[nodiscard]] std::expected<void, Error> setWindowCamera(std::string_view id, Entity camera);
-      /// @brief Clears the camera rendered through a window handle.
-      [[nodiscard]] std::expected<void, Error> clearWindowCamera(WindowHandle window);
-      /// @brief Clears the camera rendered through an application-local window id.
-      [[nodiscard]] std::expected<void, Error> clearWindowCamera(std::string_view id);
-      /// @brief Returns the camera rendered through a window handle, when selected.
-      [[nodiscard]] std::optional<Entity> windowCamera(WindowHandle window) const;
-      /// @brief Returns the camera rendered through an application-local window id, when selected.
-      [[nodiscard]] std::optional<Entity> windowCamera(std::string_view id) const;
-      /// @brief Assigns the active camera to all windows.
-      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera);
-      /// @brief Returns the first assigned window camera, when any window has one.
-      [[nodiscard]] std::optional<Entity> activeCamera() const;
-      /// @brief Returns true when any window has requested closing.
-      [[nodiscard]] bool anyShouldClose() const;
+      [[nodiscard]] std::string_view name() const noexcept; ///< Returns the implementation name for diagnostics.
+      [[nodiscard]] std::expected<void, Error> init(const Windows &windows); ///< Creates startup windows.
+      [[nodiscard]] std::expected<void, Error> poll(); ///< Polls SDL events and updates input/window state.
+      [[nodiscard]] InputState &input(); ///< Returns the owned input state.
+      [[nodiscard]] const InputState &input() const; ///< Returns the owned input state.
+      [[nodiscard]] Vector<WindowInfo> snapshot() const; ///< Returns a copy of current window states.
+      [[nodiscard]] Vector<std::reference_wrapper<Window>> windows(); ///< Returns owned window references.
+      [[nodiscard]] Vector<std::reference_wrapper<const Window>> windows() const; ///< Returns const references.
+      [[nodiscard]] std::size_t windowCount() const; ///< Returns the number of owned windows.
+      [[nodiscard]] Window *findWindow(std::string_view id); ///< Finds a window by application id.
+      [[nodiscard]] const Window *findWindow(std::string_view id) const; ///< Finds a const window by id.
+      [[nodiscard]] Window *findWindow(WindowHandle handle); ///< Finds a window by runtime handle.
+      [[nodiscard]] const Window *findWindow(WindowHandle handle) const; ///< Finds a const window by handle.
+      [[nodiscard]] std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera); ///< Sets camera.
+      [[nodiscard]] std::expected<void, Error> setWindowCamera(std::string_view id, Entity camera); ///< Sets camera.
+      [[nodiscard]] std::expected<void, Error> clearWindowCamera(WindowHandle window); ///< Clears camera.
+      [[nodiscard]] std::expected<void, Error> clearWindowCamera(std::string_view id); ///< Clears camera.
+      [[nodiscard]] std::optional<Entity> windowCamera(WindowHandle window) const; ///< Returns selected camera.
+      [[nodiscard]] std::optional<Entity> windowCamera(std::string_view id) const; ///< Returns selected camera.
+      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera); ///< Assigns camera to all windows.
+      [[nodiscard]] std::optional<Entity> activeCamera() const; ///< Returns the first selected camera.
+      [[nodiscard]] bool anyShouldClose() const; ///< Returns true when any window should close.
 
    private:
+      template <typename TKey, typename TFunction>
+      [[nodiscard]] std::expected<void, Error> editWindow(TKey key, TFunction function);
+      template <typename TKey> [[nodiscard]] std::optional<Entity> cameraFor(TKey key) const;
+
       struct Impl;                 ///< SDL-owning implementation hidden from module importers.
       std::unique_ptr<Impl> impl_; ///< Pimpl keeps SDL headers out of the public v4 module.
    };
@@ -517,43 +499,40 @@ namespace vve::v4 {
 
    const Window *WindowSystem::findWindow(WindowHandle handle) const { return impl_->find(handle); }
 
-   std::expected<void, Error> WindowSystem::setWindowCamera(WindowHandle window, Entity camera) {
-      auto *window_impl = impl_->find(window);
-      if (window_impl == nullptr) { return std::unexpected(Error::invalid_handle); }
-      window_impl->info().camera = camera;
+   /// @brief Edits one selected window or reports an invalid selector.
+   template <typename TKey, typename TFunction>
+   std::expected<void, Error> WindowSystem::editWindow(TKey key, TFunction function) {
+      auto *window = impl_->find(key);
+      if (window == nullptr) { return std::unexpected(Error::invalid_handle); }
+      std::invoke(std::move(function), *window);
       return {};
+   }
+
+   /// @brief Returns the selected camera for one window selector.
+   template <typename TKey> std::optional<Entity> WindowSystem::cameraFor(TKey key) const {
+      const auto *window = impl_->find(key);
+      return window == nullptr ? std::optional<Entity>{} : window->info().camera;
+   }
+
+   std::expected<void, Error> WindowSystem::setWindowCamera(WindowHandle window, Entity camera) {
+      return editWindow(window, [camera](Window &selected) { selected.info().camera = camera; });
    }
 
    std::expected<void, Error> WindowSystem::setWindowCamera(std::string_view id, Entity camera) {
-      auto *window_impl = impl_->find(id);
-      if (window_impl == nullptr) { return std::unexpected(Error::invalid_handle); }
-      window_impl->info().camera = camera;
-      return {};
+      return editWindow(id, [camera](Window &selected) { selected.info().camera = camera; });
    }
 
    std::expected<void, Error> WindowSystem::clearWindowCamera(WindowHandle window) {
-      auto *window_impl = impl_->find(window);
-      if (window_impl == nullptr) { return std::unexpected(Error::invalid_handle); }
-      window_impl->info().camera.reset();
-      return {};
+      return editWindow(window, [](Window &selected) { selected.info().camera.reset(); });
    }
 
    std::expected<void, Error> WindowSystem::clearWindowCamera(std::string_view id) {
-      auto *window_impl = impl_->find(id);
-      if (window_impl == nullptr) { return std::unexpected(Error::invalid_handle); }
-      window_impl->info().camera.reset();
-      return {};
+      return editWindow(id, [](Window &selected) { selected.info().camera.reset(); });
    }
 
-   std::optional<Entity> WindowSystem::windowCamera(WindowHandle window) const {
-      const auto *window_impl = impl_->find(window);
-      return window_impl == nullptr ? std::optional<Entity>{} : window_impl->info().camera;
-   }
+   std::optional<Entity> WindowSystem::windowCamera(WindowHandle window) const { return cameraFor(window); }
 
-   std::optional<Entity> WindowSystem::windowCamera(std::string_view id) const {
-      const auto *window_impl = impl_->find(id);
-      return window_impl == nullptr ? std::optional<Entity>{} : window_impl->info().camera;
-   }
+   std::optional<Entity> WindowSystem::windowCamera(std::string_view id) const { return cameraFor(id); }
 
    std::expected<void, Error> WindowSystem::setActiveCamera(Entity camera) {
       if (impl_->windows.empty()) { return std::unexpected(Error::missing_object); }
