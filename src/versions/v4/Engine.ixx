@@ -147,57 +147,6 @@ export namespace vve::v4 {
    /// @brief Returns task count.
    inline std::size_t TaskGraph::taskCount() const { return tasks_.size(); }
 
-   /// @brief Returns a simple node-and-edge JSON dump for graph visualization tools.
-   inline std::string TaskGraph::toJson(std::string_view name) const {
-      std::string json{};
-      json += "{\n  \"kind\": \"task_graph\",\n  \"name\": ";
-      detail::appendJsonString(json, name);
-      json += ",\n  \"nodes\": [";
-
-      bool first_node{true};
-      for (const auto &[handle, task_name] : tasks_) {
-         json += first_node ? "\n" : ",\n";
-         first_node = false;
-         json += "    {\"id\": ";
-         detail::appendJsonString(json, detail::jsonHandleId(handle));
-         json += ", \"name\": ";
-         detail::appendJsonString(json, task_name.value);
-         json += "}";
-      }
-
-      json += "\n  ],\n  \"edges\": [";
-      std::vector<std::pair<TaskHandle, TaskHandle>> edges{};
-      edges.reserve(outgoing_.size());
-      for (const auto &[from, to] : outgoing_) { edges.emplace_back(from, to); }
-      std::ranges::sort(edges);
-
-      bool first_edge{true};
-      for (const auto [from, to] : edges) {
-         const auto from_name = tasks_.find(from);
-         const auto to_name = tasks_.find(to);
-         json += first_edge ? "\n" : ",\n";
-         first_edge = false;
-         json += "    {\"from\": ";
-         detail::appendJsonString(json, detail::jsonHandleId(from));
-         json += ", \"to\": ";
-         detail::appendJsonString(json, detail::jsonHandleId(to));
-         json += ", \"from_name\": ";
-         detail::appendJsonString(json, from_name == tasks_.end() ? "" : from_name->second.value);
-         json += ", \"to_name\": ";
-         detail::appendJsonString(json, to_name == tasks_.end() ? "" : to_name->second.value);
-         json += "}";
-      }
-
-      json += "\n  ]\n}\n";
-      return json;
-   }
-
-   /// @brief Writes the task graph JSON dump to disk.
-   inline std::expected<void, Error> TaskGraph::writeJson(const std::filesystem::path &path,
-                                                          std::string_view name) const {
-      return detail::writeJsonFile(path, toJson(name));
-   }
-
    /// @brief Removes one forward edge.
    inline void TaskGraph::removeOutgoingEdge(TaskHandle from, TaskHandle to) {
       auto [first, last] = outgoing_.equal_range(from);
@@ -248,6 +197,7 @@ export namespace vve::v4 {
       template <typename TOption> void applyOption(TOption &&);
       void applyDefaults();
       [[nodiscard]] std::expected<void, Error> buildDefaultGraphs();
+      [[nodiscard]] static std::string graphFileStem(std::string_view text);
 
       ApplicationName application_name_{};      ///< Name used for default window titles.
       MaxFrames max_frames_{};                 ///< Optional frame cap.
@@ -418,21 +368,68 @@ export namespace vve::v4 {
       return Engine{std::forward<TOptions>(options)...};
    }
 
-   namespace detail {
+   /// @brief Converts a window id into a compact filesystem-safe graph dump stem.
+   inline std::string Engine::graphFileStem(std::string_view text) {
+      std::string result{};
+      result.reserve(text.size());
+      for (const char ch : text) {
+         const bool safe = (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
+                           (ch >= '0' && ch <= '9') || ch == '-' || ch == '_';
+         result.push_back(safe ? ch : '_');
+      }
+      return result.empty() ? "window" : result;
+   }
 
-      /// @brief Converts a window id into a compact filesystem-safe graph dump stem.
-      [[nodiscard]] inline std::string graphFileStem(std::string_view text) {
-         std::string result{};
-         result.reserve(text.size());
-         for (const char ch : text) {
-            const bool safe = (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
-                              (ch >= '0' && ch <= '9') || ch == '-' || ch == '_';
-            result.push_back(safe ? ch : '_');
-         }
-         return result.empty() ? "window" : result;
+   /// @brief Returns a simple node-and-edge JSON dump for graph visualization tools.
+   inline std::string TaskGraph::toJson(std::string_view name) const {
+      std::string json{};
+      json += "{\n  \"kind\": \"task_graph\",\n  \"name\": ";
+      detail::appendJsonString(json, name);
+      json += ",\n  \"nodes\": [";
+
+      bool first_node{true};
+      for (const auto &[handle, task_name] : tasks_) {
+         json += first_node ? "\n" : ",\n";
+         first_node = false;
+         json += "    {\"id\": ";
+         detail::appendJsonString(json, detail::jsonHandleId(handle));
+         json += ", \"name\": ";
+         detail::appendJsonString(json, task_name.value);
+         json += "}";
       }
 
-   } // namespace detail
+      json += "\n  ],\n  \"edges\": [";
+      std::vector<std::pair<TaskHandle, TaskHandle>> edges{};
+      edges.reserve(outgoing_.size());
+      for (const auto &[from, to] : outgoing_) { edges.emplace_back(from, to); }
+      std::ranges::sort(edges);
+
+      bool first_edge{true};
+      for (const auto [from, to] : edges) {
+         const auto from_name = tasks_.find(from);
+         const auto to_name = tasks_.find(to);
+         json += first_edge ? "\n" : ",\n";
+         first_edge = false;
+         json += "    {\"from\": ";
+         detail::appendJsonString(json, detail::jsonHandleId(from));
+         json += ", \"to\": ";
+         detail::appendJsonString(json, detail::jsonHandleId(to));
+         json += ", \"from_name\": ";
+         detail::appendJsonString(json, from_name == tasks_.end() ? "" : from_name->second.value);
+         json += ", \"to_name\": ";
+         detail::appendJsonString(json, to_name == tasks_.end() ? "" : to_name->second.value);
+         json += "}";
+      }
+
+      json += "\n  ]\n}\n";
+      return json;
+   }
+
+   /// @brief Writes the task graph JSON dump to disk.
+   inline std::expected<void, Error> TaskGraph::writeJson(const std::filesystem::path &path,
+                                                          std::string_view name) const {
+      return detail::writeJsonFile(path, toJson(name));
+   }
 
    /// @brief Writes task and render graph JSON dumps into a debug directory.
    inline std::expected<void, Error> Engine::writeDebugGraphs(const std::filesystem::path &directory) const {
@@ -451,7 +448,7 @@ export namespace vve::v4 {
          const auto graph = render_system.buildRenderGraph(pass_lists);
          if (!graph) { return std::unexpected(graph.error()); }
 
-         const auto file = directory / ("render_graph_" + detail::graphFileStem(window.id) + ".json");
+         const auto file = directory / ("render_graph_" + graphFileStem(window.id) + ".json");
          const auto name = "v4 render graph window=" + window.id + " renderer=" + renderer->id.value;
          if (const auto result = graph->writeJson(file, name); !result) { return result; }
       }

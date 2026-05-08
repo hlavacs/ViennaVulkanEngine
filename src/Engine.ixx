@@ -29,81 +29,47 @@ export namespace vve {
    inline constexpr std::string_view engineImplementationNamespaceName{
       VVE_DETAIL_STRINGIFY(VVE_ENGINE_IMPLEMENTATION_NAMESPACE)}; ///< Active implementation namespace name.
 
-   template <typename... TSystems> class Engine;
-
-   namespace detail {
-
-      template <typename... TSystems>
-      [[nodiscard]] VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
-      makeUserSystemTasks(const std::tuple<TSystems...> &systems);
-
-   } // namespace detail
-
    template <typename... TSystems> class Engine {
    public:
-      Engine() = default;
+      Engine();
 
       Engine(const Engine &) = delete;
       Engine(Engine &&) = delete;
       Engine &operator=(const Engine &) = delete;
       Engine &operator=(Engine &&) = delete;
 
-      explicit Engine(EngineConfig config) : impl_{std::move(config)} {}
+      explicit Engine(EngineConfig config);
 
       template <typename... TOptions>
          requires(sizeof...(TOptions) > 0)
-      explicit Engine(TOptions &&...options) : impl_{implementationOption(options)...} {
-         (applyOption(std::forward<TOptions>(options)), ...);
-      }
+      explicit Engine(TOptions &&...options);
 
-      [[nodiscard]] std::uint32_t versionMajor() const { return impl_.versionMajor(); }
-      [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept { return impl_.getVersionMajor(); }
-      [[nodiscard]] std::string_view versionName() const { return impl_.versionName(); }
-      [[nodiscard]] auto world() { return makeWorld(); }
-      [[nodiscard]] auto world() const { return const_cast<Engine *>(this)->world(); }
+      [[nodiscard]] std::uint32_t versionMajor() const;
+      [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept;
+      [[nodiscard]] std::string_view versionName() const;
+      [[nodiscard]] auto world();
+      [[nodiscard]] auto world() const;
 
       [[nodiscard]] std::expected<void, Error> init();
       [[nodiscard]] std::expected<void, Error> run();
       [[nodiscard]] std::expected<FrameStatus, Error> step();
       [[nodiscard]] std::expected<void, Error>
-      writeDebugGraphs(const std::filesystem::path &directory = "graph_dumps") const {
-         return impl_.writeDebugGraphs(directory);
-      }
+      writeDebugGraphs(const std::filesystem::path &directory = "graph_dumps") const;
 
    private:
       using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Engine;
 
-      static VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Windows implementationOption(WindowSetups option) {
-         return option;
-      }
+      static VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Windows implementationOption(WindowSetups option);
       template <typename... TUserSystems>
       static VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
-      implementationOption(const UserSystems<TUserSystems...> &systems) {
-         return detail::makeUserSystemTasks(systems.value);
-      }
+      implementationOption(const UserSystems<TUserSystems...> &systems);
       template <typename... TUserSystems>
       static VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
-      implementationOption(UserSystems<TUserSystems...> &systems) {
-         return detail::makeUserSystemTasks(systems.value);
-      }
+      implementationOption(UserSystems<TUserSystems...> &systems);
 
-      template <typename TOption> static decltype(auto) implementationOption(TOption &&option) {
-         return std::forward<TOption>(option);
-      }
+      template <typename TOption> static decltype(auto) implementationOption(TOption &&option);
 
-      [[nodiscard]] auto makeWorld() {
-         auto make_base = [&] {
-            return World{std::ref(ecs_), std::ref(assets_), std::ref(gui_), std::ref(window_system_)};
-         };
-         if constexpr (sizeof...(TSystems) == 0) {
-            return make_base();
-         } else {
-            return std::apply([&](auto &...system) {
-               return World{std::ref(ecs_), std::ref(assets_), std::ref(gui_),
-                            std::ref(window_system_), std::ref(system)...};
-            }, *systems_);
-         }
-      }
+      [[nodiscard]] auto makeWorld();
       template <typename TOption> void applyOption(TOption &&option);
       [[nodiscard]] std::expected<void, Error> initSystems();
       [[nodiscard]] std::expected<void, Error> updateSystems(const FrameContext &frame);
@@ -112,6 +78,12 @@ export namespace vve {
       [[nodiscard]] std::expected<void, Error>
       updateOne(TSystem &system, const FrameContext &frame,
                 const VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData &window_frame);
+      template <typename TCallable>
+      [[nodiscard]] static std::expected<void, Error> callSystemHook(TCallable &&callable);
+      template <typename TSystem> [[nodiscard]] static std::string systemDebugName(const TSystem &system);
+      template <typename... TUserSystems>
+      [[nodiscard]] static VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
+      makeUserSystemTasks(const std::tuple<TUserSystems...> &systems);
 
       Impl impl_{};
       ECS ecs_{impl_.ecs()};                   ///< Public ECS wrapper referenced by world views.
@@ -125,36 +97,6 @@ export namespace vve {
    }; ///< Facade engine template.
 
    namespace detail {
-
-      template <typename TCallable> [[nodiscard]] std::expected<void, Error> callSystemHook(TCallable &&callable) {
-         using TResult = std::invoke_result_t<TCallable>;
-         if constexpr (std::same_as<TResult, std::expected<void, Error>>) {
-            return std::invoke(std::forward<TCallable>(callable));
-         } else {
-            std::invoke(std::forward<TCallable>(callable));
-            return {};
-         }
-      }
-
-      template <typename TSystem> [[nodiscard]] std::string systemDebugName(const TSystem &system) {
-         if constexpr (requires { std::string_view{system.name()}; }) {
-            return std::string{std::string_view{system.name()}};
-         } else if constexpr (requires { std::string_view{TSystem::name()}; }) {
-            return std::string{std::string_view{TSystem::name()}};
-         } else {
-            return typeid(TSystem).name();
-         }
-      }
-
-      template <typename... TSystems>
-      [[nodiscard]] VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
-      makeUserSystemTasks(const std::tuple<TSystems...> &systems) {
-         VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks result{};
-         std::apply([&](const auto &...system) {
-            (result.value.push_back(ObjectName{.value = "task.update_system." + systemDebugName(system)}), ...);
-         }, systems);
-         return result;
-      }
 
       template <typename T> struct IsUserSystemsOption : std::false_type {};
       template <typename... TSystems> struct IsUserSystemsOption<UserSystems<TSystems...>> : std::true_type {};
@@ -178,14 +120,122 @@ export namespace vve {
    } // namespace detail
 
    struct MakeEngine {
-      template <typename... TOptions> [[nodiscard]] auto operator()(TOptions &&...options) const {
-         using TUserSystems = typename detail::FindUserSystemsOption<UserSystems<>, TOptions...>::type;
-         using TEngine = typename detail::EngineTypeFromUserSystems<TUserSystems>::type;
-         return TEngine(std::forward<TOptions>(options)...);
-      }
+      template <typename... TOptions> [[nodiscard]] auto operator()(TOptions &&...options) const;
    }; ///< Callable facade engine factory.
 
+   template <typename... TOptions> auto MakeEngine::operator()(TOptions &&...options) const {
+      using TUserSystems = typename detail::FindUserSystemsOption<UserSystems<>, TOptions...>::type;
+      using TEngine = typename detail::EngineTypeFromUserSystems<TUserSystems>::type;
+      return TEngine(std::forward<TOptions>(options)...);
+   }
+
    inline constexpr MakeEngine makeEngine{}; ///< Facade engine factory.
+
+   template <typename... TSystems> Engine<TSystems...>::Engine() = default;
+
+   template <typename... TSystems>
+   Engine<TSystems...>::Engine(EngineConfig config) : impl_{std::move(config)} {}
+
+   template <typename... TSystems>
+   template <typename... TOptions>
+      requires(sizeof...(TOptions) > 0)
+   Engine<TSystems...>::Engine(TOptions &&...options) : impl_{implementationOption(options)...} {
+      (applyOption(std::forward<TOptions>(options)), ...);
+   }
+
+   template <typename... TSystems> std::uint32_t Engine<TSystems...>::versionMajor() const {
+      return impl_.versionMajor();
+   }
+
+   template <typename... TSystems> std::expected<int, Error> Engine<TSystems...>::getVersionMajor() const noexcept {
+      return impl_.getVersionMajor();
+   }
+
+   template <typename... TSystems> std::string_view Engine<TSystems...>::versionName() const {
+      return impl_.versionName();
+   }
+
+   template <typename... TSystems> auto Engine<TSystems...>::world() {
+      return makeWorld();
+   }
+
+   template <typename... TSystems> auto Engine<TSystems...>::world() const {
+      return const_cast<Engine *>(this)->world();
+   }
+
+   template <typename... TSystems>
+   VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Windows Engine<TSystems...>::implementationOption(WindowSetups option) {
+      return option;
+   }
+
+   template <typename... TSystems>
+   template <typename... TUserSystems>
+   VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
+   Engine<TSystems...>::implementationOption(const UserSystems<TUserSystems...> &systems) {
+      return makeUserSystemTasks(systems.value);
+   }
+
+   template <typename... TSystems>
+   template <typename... TUserSystems>
+   VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
+   Engine<TSystems...>::implementationOption(UserSystems<TUserSystems...> &systems) {
+      return makeUserSystemTasks(systems.value);
+   }
+
+   template <typename... TSystems>
+   template <typename TOption>
+   decltype(auto) Engine<TSystems...>::implementationOption(TOption &&option) {
+      return std::forward<TOption>(option);
+   }
+
+   template <typename... TSystems> auto Engine<TSystems...>::makeWorld() {
+      auto make_base = [&] {
+         return World{std::ref(ecs_), std::ref(assets_), std::ref(gui_), std::ref(window_system_)};
+      };
+      if constexpr (sizeof...(TSystems) == 0) {
+         return make_base();
+      } else {
+         return std::apply([&](auto &...system) {
+            return World{std::ref(ecs_), std::ref(assets_), std::ref(gui_),
+                         std::ref(window_system_), std::ref(system)...};
+         }, *systems_);
+      }
+   }
+
+   template <typename... TSystems>
+   template <typename TCallable>
+   std::expected<void, Error> Engine<TSystems...>::callSystemHook(TCallable &&callable) {
+      using TResult = std::invoke_result_t<TCallable>;
+      if constexpr (std::same_as<TResult, std::expected<void, Error>>) {
+         return std::invoke(std::forward<TCallable>(callable));
+      } else {
+         std::invoke(std::forward<TCallable>(callable));
+         return {};
+      }
+   }
+
+   template <typename... TSystems>
+   template <typename TSystem>
+   std::string Engine<TSystems...>::systemDebugName(const TSystem &system) {
+      if constexpr (requires { std::string_view{system.name()}; }) {
+         return std::string{std::string_view{system.name()}};
+      } else if constexpr (requires { std::string_view{TSystem::name()}; }) {
+         return std::string{std::string_view{TSystem::name()}};
+      } else {
+         return typeid(TSystem).name();
+      }
+   }
+
+   template <typename... TSystems>
+   template <typename... TUserSystems>
+   VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
+   Engine<TSystems...>::makeUserSystemTasks(const std::tuple<TUserSystems...> &systems) {
+      VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks result{};
+      std::apply([&](const auto &...system) {
+         (result.value.push_back(ObjectName{.value = "task.update_system." + systemDebugName(system)}), ...);
+      }, systems);
+      return result;
+   }
 
    template <typename... TSystems>
    template <typename TOption>
@@ -252,7 +302,7 @@ export namespace vve {
    std::expected<void, Error> Engine<TSystems...>::initOne(TSystem &system) {
       auto world_view = world();
       if constexpr (requires { system.init(world_view); }) {
-         return detail::callSystemHook([&]() -> decltype(auto) { return system.init(world_view); });
+         return callSystemHook([&]() -> decltype(auto) { return system.init(world_view); });
       } else {
          return {};
       }
@@ -265,16 +315,22 @@ export namespace vve {
                                   const VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData &window_frame) {
       auto world_view = world();
       if constexpr (requires { system.update(world_view, frame, window_frame); }) {
-         return detail::callSystemHook([&]() -> decltype(auto) {
+         return callSystemHook([&]() -> decltype(auto) {
             return system.update(world_view, frame, window_frame);
          });
       } else if constexpr (requires { system.update(world_view, frame); }) {
-         return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_view, frame); });
+         return callSystemHook([&]() -> decltype(auto) { return system.update(world_view, frame); });
       } else if constexpr (requires { system.update(world_view); }) {
-         return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_view); });
+         return callSystemHook([&]() -> decltype(auto) { return system.update(world_view); });
       } else {
          return {};
       }
+   }
+
+   template <typename... TSystems>
+   std::expected<void, Error>
+   Engine<TSystems...>::writeDebugGraphs(const std::filesystem::path &directory) const {
+      return impl_.writeDebugGraphs(directory);
    }
 
 } // namespace vve

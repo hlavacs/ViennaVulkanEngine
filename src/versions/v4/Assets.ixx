@@ -20,20 +20,9 @@ namespace vve::v4 {
       using Handle = typename T::Handle;                      ///< Strong handle type accepted by this table.
       std::map<Handle, T> data{};                             ///< Ordered descriptor storage.
 
-      [[nodiscard]] std::expected<void, Error> add(T value) {  ///< Stores one descriptor by its own handle.
-         if (!value.handle.valid()) { return std::unexpected(Error::invalid_handle); }
-         if (auto [_, ok] = data.emplace(value.handle, std::move(value)); !ok) {
-            return std::unexpected(Error::duplicate_object);
-         }
-         return {};
-      }
-
-      [[nodiscard]] const T *find(Handle handle) const {       ///< Finds a descriptor or returns nullptr.
-         const auto it = data.find(handle);
-         return it == data.end() ? nullptr : std::addressof(it->second);
-      }
-
-      [[nodiscard]] bool contains(Handle handle) const { return data.contains(handle); } ///< Tests membership.
+      [[nodiscard]] std::expected<void, Error> add(T value);
+      [[nodiscard]] const T *find(Handle handle) const;
+      [[nodiscard]] bool contains(Handle handle) const;
    };
 
    /// @brief Imported scene tree: root handle plus parent/child edge maps.
@@ -96,6 +85,30 @@ namespace vve::v4 {
 
 } // namespace vve::v4
 
+namespace vve::v4 {
+
+   /// @brief Stores one descriptor by its own handle.
+   template <typename T> std::expected<void, Error> Table<T>::add(T value) {
+      if (!value.handle.valid()) { return std::unexpected(Error::invalid_handle); }
+      if (auto [_, ok] = data.emplace(value.handle, std::move(value)); !ok) {
+         return std::unexpected(Error::duplicate_object);
+      }
+      return {};
+   }
+
+   /// @brief Finds a descriptor or returns nullptr.
+   template <typename T> const T *Table<T>::find(typename Table<T>::Handle handle) const {
+      const auto it = data.find(handle);
+      return it == data.end() ? nullptr : std::addressof(it->second);
+   }
+
+   /// @brief Tests table membership.
+   template <typename T> bool Table<T>::contains(typename Table<T>::Handle handle) const {
+      return data.contains(handle);
+   }
+
+} // namespace vve::v4
+
 export namespace vve::v4 {
 
    /// @brief Asset facade that owns imported scene descriptors.
@@ -136,6 +149,61 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<Vector<TextureHandle>, Error> materialTextures(MaterialHandle material) const;
 
    private:
+      /// @brief Result of importing all materials.
+      struct MaterialImport {
+         Vector<MaterialHandle> materials{}; ///< Material handles by Assimp material index.
+         Vector<TextureHandle> textures{};   ///< Unique texture handles referenced by the scene.
+      };
+
+      /// @brief Common texture slots students expect when inspecting imported materials.
+      inline static constexpr std::array texture_types{aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR,
+                                                       aiTextureType_NORMALS, aiTextureType_HEIGHT,
+                                                       aiTextureType_DIFFUSE_ROUGHNESS, aiTextureType_METALNESS,
+                                                       aiTextureType_EMISSIVE, aiTextureType_AMBIENT_OCCLUSION,
+                                                       aiTextureType_LIGHTMAP};
+
+      [[nodiscard]] static std::filesystem::path normalized(std::filesystem::path path);
+      [[nodiscard]] static Vec3 vec3(const aiVector3D &v);
+      [[nodiscard]] static Quat quat(const aiQuaternion &q);
+      [[nodiscard]] static Transform transform(const aiMatrix4x4 &matrix);
+      [[nodiscard]] static std::string name(const aiString &text, std::string fallback);
+      [[nodiscard]] static std::filesystem::path texturePath(const aiString &path,
+                                                             const std::filesystem::path &scene_dir);
+      template <typename T>
+      [[nodiscard]] static std::expected<const T *, Error> require(const Table<T> &table,
+                                                                   typename T::Handle handle);
+      template <typename T> [[nodiscard]] static bool contains(const Vector<T> &values, T value);
+      template <typename T>
+      [[nodiscard]] static std::expected<T, Error> sceneField(const Catalog &catalog, SceneHandle handle,
+                                                              T Scene::*field);
+      template <typename Descriptor, typename T>
+      [[nodiscard]] static std::expected<T, Error> field(const Table<Descriptor> &table,
+                                                         typename Descriptor::Handle handle,
+                                                         T Descriptor::*member);
+      template <typename T>
+      [[nodiscard]] static std::expected<std::size_t, Error>
+      sizeOf(std::expected<Vector<T>, Error> value);
+      [[nodiscard]] static std::expected<const Scene *, Error> sceneWithNode(const Catalog &catalog,
+                                                                             SceneHandle scene,
+                                                                             NodeHandle node);
+      [[nodiscard]] static TextureHandle texture(const std::filesystem::path &source,
+                                                 std::map<std::string, TextureHandle> &known,
+                                                 Vector<TextureHandle> &scene_textures);
+      [[nodiscard]] static std::expected<MaterialImport, Error> materials(Catalog &catalog, const aiScene &scene,
+                                                                          const std::filesystem::path &scene_dir);
+      [[nodiscard]] static Bounds boundsOf(const aiMesh &source);
+      [[nodiscard]] static std::uint64_t indexCount(const aiMesh &source);
+      [[nodiscard]] static std::expected<Vector<MeshHandle>, Error>
+      meshes(Catalog &catalog, const aiScene &scene, const Vector<MaterialHandle> &material_handles);
+      [[nodiscard]] static std::expected<NodeHandle, Error> node(Catalog &catalog, const aiScene &source_scene,
+                                                                 const aiNode &source,
+                                                                 const Vector<MeshHandle> &mesh_handles,
+                                                                 Scene &scene, NodeHandle parent = {});
+      [[nodiscard]] static Vector<LightHandle> lights(const aiScene &scene);
+      [[nodiscard]] static Vector<CameraHandle> cameras(const aiScene &scene);
+      [[nodiscard]] static std::expected<SceneHandle, Error> import(Catalog &catalog, const aiScene &source,
+                                                                    const std::filesystem::path &path);
+
       Catalog catalog_{}; ///< All descriptors loaded through this asset system.
    };
 
@@ -143,35 +211,21 @@ export namespace vve::v4 {
 
 namespace vve::v4 {
 
-   namespace {
+   template <typename T> using Expected = std::expected<T, Error>;           ///< Local expected shorthand.
+   template <typename T> using VectorExpected = Expected<Vector<T>>;         ///< Local vector-result shorthand.
+   using CountExpected = Expected<std::size_t>;                              ///< Local count-result shorthand.
+   using NameExpected = Expected<ObjectName>;                                ///< Local name-result shorthand.
 
-      template <typename T> using Expected = std::expected<T, Error>;           ///< Local expected shorthand.
-      template <typename T> using VectorExpected = Expected<Vector<T>>;         ///< Local vector-result shorthand.
-      using CountExpected = Expected<std::size_t>;                              ///< Local count-result shorthand.
-      using NameExpected = Expected<ObjectName>;                                ///< Local name-result shorthand.
-
-      /// @brief Common texture slots students expect when inspecting imported materials.
-      constexpr std::array texture_types{aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR, aiTextureType_NORMALS,
-                                         aiTextureType_HEIGHT, aiTextureType_DIFFUSE_ROUGHNESS,
-                                         aiTextureType_METALNESS, aiTextureType_EMISSIVE,
-                                         aiTextureType_AMBIENT_OCCLUSION, aiTextureType_LIGHTMAP};
-
-      /// @brief Result of importing all materials.
-      struct MaterialImport {
-         Vector<MaterialHandle> materials{}; ///< Material handles by Assimp material index.
-         Vector<TextureHandle> textures{};   ///< Unique texture handles referenced by the scene.
-      };
-
-      [[nodiscard]] std::filesystem::path normalized(std::filesystem::path path) { ///< Canonical path if possible.
+      std::filesystem::path AssetSystem::normalized(std::filesystem::path path) { ///< Canonical path if possible.
          std::error_code error{};
          const auto canonical = std::filesystem::weakly_canonical(path, error);
          return error ? path.lexically_normal() : canonical;
       }
 
-      [[nodiscard]] Vec3 vec3(const aiVector3D &v) { return Vec3(v.x, v.y, v.z); } ///< Assimp vector conversion.
-      [[nodiscard]] Quat quat(const aiQuaternion &q) { return Quat(q.w, q.x, q.y, q.z); } ///< Quaternion conversion.
+      Vec3 AssetSystem::vec3(const aiVector3D &v) { return Vec3(v.x, v.y, v.z); } ///< Assimp vector conversion.
+      Quat AssetSystem::quat(const aiQuaternion &q) { return Quat(q.w, q.x, q.y, q.z); } ///< Quaternion conversion.
 
-      [[nodiscard]] Transform transform(const aiMatrix4x4 &matrix) { ///< Converts Assimp local transforms.
+      Transform AssetSystem::transform(const aiMatrix4x4 &matrix) { ///< Converts Assimp local transforms.
          aiVector3D scale{};
          aiQuaternion rotation{};
          aiVector3D translation{};
@@ -181,61 +235,60 @@ namespace vve::v4 {
                           .scale = Scale{.value = vec3(scale)}};
       }
 
-      [[nodiscard]] std::string name(const aiString &text, std::string fallback) { ///< Name or generated fallback.
+      std::string AssetSystem::name(const aiString &text, std::string fallback) { ///< Name or generated fallback.
          return text.length > 0 ? std::string{text.C_Str()} : std::move(fallback);
       }
 
-      [[nodiscard]] std::filesystem::path texturePath(const aiString &path, const std::filesystem::path &scene_dir) {
+      std::filesystem::path AssetSystem::texturePath(const aiString &path,
+                                                     const std::filesystem::path &scene_dir) {
          auto result = std::filesystem::path(path.C_Str());
          if (result.empty() || result.is_absolute() || result.string().starts_with('*')) { return result; }
          return normalized(scene_dir / result);
       }
 
-      template <typename T> [[nodiscard]] std::expected<const T *, Error> require(const Table<T> &table,
-                                                                                  typename T::Handle handle) {
+      template <typename T>
+      std::expected<const T *, Error> AssetSystem::require(const Table<T> &table, typename T::Handle handle) {
          const auto *value = table.find(handle);
          if (value == nullptr) { return std::unexpected(Error::missing_object); }
          return value;
       }
 
-      template <typename T> [[nodiscard]] bool contains(const Vector<T> &values, T value) {
+      template <typename T> bool AssetSystem::contains(const Vector<T> &values, T value) {
          return std::ranges::find(values, value) != values.end();
       }
 
-      template <typename T> [[nodiscard]] std::expected<T, Error> sceneField(const Catalog &catalog,
-                                                                             SceneHandle handle,
-                                                                             T Scene::*field) {
+      template <typename T>
+      std::expected<T, Error> AssetSystem::sceneField(const Catalog &catalog, SceneHandle handle, T Scene::*field) {
          const auto scene = require(catalog.scenes, handle);
          if (!scene) { return std::unexpected(scene.error()); }
          return (*scene)->*field;
       }
 
       template <typename Descriptor, typename T>
-      [[nodiscard]] std::expected<T, Error> field(const Table<Descriptor> &table,
-                                                  typename Descriptor::Handle handle,
-                                                  T Descriptor::*member) {
+      std::expected<T, Error> AssetSystem::field(const Table<Descriptor> &table,
+                                                 typename Descriptor::Handle handle, T Descriptor::*member) {
          const auto descriptor = require(table, handle);
          if (!descriptor) { return std::unexpected(descriptor.error()); }
          return (*descriptor)->*member;
       }
 
       template <typename T>
-      [[nodiscard]] std::expected<std::size_t, Error> sizeOf(std::expected<Vector<T>, Error> value) {
+      std::expected<std::size_t, Error> AssetSystem::sizeOf(std::expected<Vector<T>, Error> value) {
          if (!value) { return std::unexpected(value.error()); }
          return value->size();
       }
 
-      [[nodiscard]] std::expected<const Scene *, Error> sceneWithNode(const Catalog &catalog, SceneHandle scene,
-                                                                      NodeHandle node) {
+      std::expected<const Scene *, Error> AssetSystem::sceneWithNode(const Catalog &catalog, SceneHandle scene,
+                                                                     NodeHandle node) {
          const auto value = require(catalog.scenes, scene);
          if (!value) { return std::unexpected(value.error()); }
          if (!contains((*value)->nodes, node)) { return std::unexpected(Error::missing_object); }
          return *value;
       }
 
-      [[nodiscard]] TextureHandle texture(const std::filesystem::path &source,
-                                          std::map<std::string, TextureHandle> &known,
-                                          Vector<TextureHandle> &scene_textures) {
+      TextureHandle AssetSystem::texture(const std::filesystem::path &source,
+                                         std::map<std::string, TextureHandle> &known,
+                                         Vector<TextureHandle> &scene_textures) {
          const auto key = source.string();
          if (const auto it = known.find(key); it != known.end()) { return it->second; }
          const auto handle = makeCounterHandle<TextureHandle>();
@@ -244,8 +297,8 @@ namespace vve::v4 {
          return handle;
       }
 
-      [[nodiscard]] std::expected<MaterialImport, Error> materials(Catalog &catalog, const aiScene &scene,
-                                                                   const std::filesystem::path &scene_dir) {
+      std::expected<AssetSystem::MaterialImport, Error>
+      AssetSystem::materials(Catalog &catalog, const aiScene &scene, const std::filesystem::path &scene_dir) {
          MaterialImport result{.materials = Vector<MaterialHandle>(scene.mNumMaterials)};
          std::map<std::string, TextureHandle> known_textures{};
          for (unsigned i = 0; i < scene.mNumMaterials; ++i) {
@@ -270,7 +323,7 @@ namespace vve::v4 {
          return result;
       }
 
-      [[nodiscard]] Bounds boundsOf(const aiMesh &source) { ///< Computes object-space bounds from source vertices.
+      Bounds AssetSystem::boundsOf(const aiMesh &source) { ///< Computes object-space bounds from source vertices.
          Bounds bounds{};
          if (source.mNumVertices == 0 || source.mVertices == nullptr) { return bounds; }
          bounds.valid = true;
@@ -283,14 +336,14 @@ namespace vve::v4 {
          return bounds;
       }
 
-      [[nodiscard]] std::uint64_t indexCount(const aiMesh &source) { ///< Counts all indices in all faces.
+      std::uint64_t AssetSystem::indexCount(const aiMesh &source) { ///< Counts all indices in all faces.
          std::uint64_t result = 0;
          for (unsigned face = 0; face < source.mNumFaces; ++face) { result += source.mFaces[face].mNumIndices; }
          return result;
       }
 
-      [[nodiscard]] std::expected<Vector<MeshHandle>, Error> meshes(Catalog &catalog, const aiScene &scene,
-                                                                    const Vector<MaterialHandle> &material_handles) {
+      std::expected<Vector<MeshHandle>, Error>
+      AssetSystem::meshes(Catalog &catalog, const aiScene &scene, const Vector<MaterialHandle> &material_handles) {
          Vector<MeshHandle> result(scene.mNumMeshes);
          for (unsigned i = 0; i < scene.mNumMeshes; ++i) {
             const auto *source = scene.mMeshes[i];
@@ -310,9 +363,9 @@ namespace vve::v4 {
          return result;
       }
 
-      [[nodiscard]] std::expected<NodeHandle, Error> node(Catalog &catalog, const aiScene &source_scene,
-                                                          const aiNode &source, const Vector<MeshHandle> &mesh_handles,
-                                                          Scene &scene, NodeHandle parent = {}) {
+      std::expected<NodeHandle, Error>
+      AssetSystem::node(Catalog &catalog, const aiScene &source_scene, const aiNode &source,
+                        const Vector<MeshHandle> &mesh_handles, Scene &scene, NodeHandle parent) {
          auto item = Node{.handle = makeCounterHandle<NodeHandle>(),
                           .name = ObjectName{.value = name(source.mName, "Node_" + std::to_string(scene.nodes.size()))},
                           .transform = transform(source.mTransformation)};
@@ -345,7 +398,7 @@ namespace vve::v4 {
          return handle;
       }
 
-      [[nodiscard]] Vector<LightHandle> lights(const aiScene &scene) {
+      Vector<LightHandle> AssetSystem::lights(const aiScene &scene) {
          Vector<LightHandle> result{};
          result.reserve(scene.mNumLights);
          for (unsigned i = 0; i < scene.mNumLights; ++i) {
@@ -354,7 +407,7 @@ namespace vve::v4 {
          return result;
       }
 
-      [[nodiscard]] Vector<CameraHandle> cameras(const aiScene &scene) {
+      Vector<CameraHandle> AssetSystem::cameras(const aiScene &scene) {
          Vector<CameraHandle> result{};
          result.reserve(scene.mNumCameras);
          for (unsigned i = 0; i < scene.mNumCameras; ++i) {
@@ -363,8 +416,8 @@ namespace vve::v4 {
          return result;
       }
 
-      [[nodiscard]] std::expected<SceneHandle, Error> import(Catalog &catalog, const aiScene &source,
-                                                             const std::filesystem::path &path) {
+      std::expected<SceneHandle, Error>
+      AssetSystem::import(Catalog &catalog, const aiScene &source, const std::filesystem::path &path) {
          const auto imported_materials = materials(catalog, source, path.parent_path());
          if (!imported_materials) { return std::unexpected(imported_materials.error()); }
          const auto imported_meshes = meshes(catalog, source, imported_materials->materials);
@@ -388,8 +441,6 @@ namespace vve::v4 {
          if (auto added = catalog.scenes.add(std::move(scene)); !added) { return std::unexpected(added.error()); }
          return handle;
       }
-
-   } // namespace
 
    std::expected<SceneHandle, Error> AssetSystem::addScene(ObjectName name) {
       auto scene = Scene{.handle = makeCounterHandle<SceneHandle>(), .name = std::move(name)};
