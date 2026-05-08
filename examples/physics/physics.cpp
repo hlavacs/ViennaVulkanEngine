@@ -23,8 +23,7 @@ public:
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
-        for (const auto& window_ref : world.windowSystem().windows()) {
-            const auto& window = window_ref.get();
+        for (const auto& window : world.template get<vve::WindowSystem>().windows()) {
             printed_any = true;
             const auto extent = window.extent();
             std::cout << ' ' << window.id() << '=' << extent.width << 'x' << extent.height
@@ -41,7 +40,7 @@ public:
         TWorld& world,
         const vve::FrameContext& frame_context,
         const auto&) {
-        const auto input = world.windowSystem().input();
+        const auto input = world.template get<vve::WindowSystem>().input();
         if (input.isKeyDown('A') || input.isKeyDown('a')) {
             body_x_ -= 120.0 * frame_context.delta_time.seconds;
         }
@@ -61,7 +60,7 @@ public:
         }
         log_accumulator_seconds_ = 0.0;
 
-        const auto main_window = world.windowSystem().findWindow("physics.main");
+        const auto main_window = world.template get<vve::WindowSystem>().findWindow("physics.main");
         std::cout << '[' << name() << ']';
         if (!main_window) {
             std::cout << " physics.main=<missing>\n";

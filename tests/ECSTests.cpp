@@ -22,7 +22,7 @@ struct Name {
 
 int main() {
    auto engine = vve::makeEngine(vve::ApplicationName{"ecs-tests"});
-   auto ecs = engine.world().ecs();
+   auto ecs = engine.world().get<vve::ECS>();
 
    const auto entity = ecs.create();
    if (!entity.valid() || !ecs.exists(entity)) { return 1; }

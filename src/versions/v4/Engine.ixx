@@ -10,7 +10,7 @@ module;
 export module VEEngine.V4;
 import std;
 export import VEEngine.V4.Math;
-export import :World;
+export import :ECS;
 export import :Window;
 export import :Assets;
 export import :RenderSystem;
@@ -20,11 +20,16 @@ export import VEEngine.V4.Handle;
 export import :Gui;
 
 /// @file
-/// @brief Small v4 runtime facade: world, SDL windows, input, systems, and stub subsystems.
+/// @brief Small v4 runtime facade: SDL windows, input, graphs, and stub subsystems.
 
 export namespace vve::v4 {
 
    using TaskHandle = TypedHandle<decltype([] {})>; ///< v4 CPU task graph node handle.
+
+   /// @brief User-system task names supplied by the facade for graph dumps.
+   struct UserSystemTasks {
+      Vector<ObjectName> value{}; ///< Task names already formatted for the task graph.
+   };
 
 } // namespace vve::v4
 
@@ -209,51 +214,10 @@ export namespace vve::v4 {
 
       inline constexpr std::int32_t debugDumpGraphHotkey{0x40000042}; ///< SDL keycode for F9.
 
-      /// @brief Primary trait for detecting UserSystems options.
-      template <typename T> struct IsUserSystemsOption : std::false_type {};
-
-      /// @brief Specialization that detects UserSystems options.
-      template <typename... TSystems> struct IsUserSystemsOption<UserSystems<TSystems...>> : std::true_type {};
-
-      /// @brief Finds the first UserSystems option in an option pack.
-      template <typename TDefault, typename... TOptions> struct FindUserSystemsOption {
-         using type = TDefault; ///< Fallback when no user-system bundle is provided.
-      };
-
-      /// @brief Recursive option-pack scanner.
-      template <typename TDefault, typename TFirst, typename... TRest>
-      struct FindUserSystemsOption<TDefault, TFirst, TRest...> {
-         using TNormalized = std::remove_cvref_t<TFirst>; ///< Option type stripped of references and cv-qualifiers.
-         using type = std::conditional_t<IsUserSystemsOption<TNormalized>::value, TNormalized,
-                                         typename FindUserSystemsOption<TDefault, TRest...>::type>;
-      };
-
-      /// @brief Invokes a system hook and accepts either void or expected<void, Error>.
-      template <typename TCallable> [[nodiscard]] std::expected<void, Error> callSystemHook(TCallable &&callable) {
-         using TResult = std::invoke_result_t<TCallable>;
-         if constexpr (std::same_as<TResult, std::expected<void, Error>>) {
-            return std::invoke(std::forward<TCallable>(callable));
-         } else {
-            std::invoke(std::forward<TCallable>(callable));
-            return {};
-         }
-      }
-
-      /// @brief Returns a readable user-system name for debug graph nodes.
-      template <typename TSystem> [[nodiscard]] std::string systemDebugName(const TSystem &system) {
-         if constexpr (requires { std::string_view{system.name()}; }) {
-            return std::string{std::string_view{system.name()}};
-         } else if constexpr (requires { std::string_view{TSystem::name()}; }) {
-            return std::string{std::string_view{TSystem::name()}};
-         } else {
-            return typeid(TSystem).name();
-         }
-      }
-
    } // namespace detail
 
-   /// @brief Educational v4 engine shell with SDL windows and lightweight world views.
-   template <typename... TSystems> class Engine {
+   /// @brief Educational v4 engine shell with SDL windows and lightweight subsystems.
+   class Engine {
    public:
       Engine();
       Engine(const Engine &) = delete;
@@ -269,11 +233,11 @@ export namespace vve::v4 {
       [[nodiscard]] std::uint32_t versionMajor() const;
       [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept;
       [[nodiscard]] std::string_view versionName() const;
-      [[nodiscard]] World world();
-      [[nodiscard]] World world() const;
       [[nodiscard]] AssetSystem &assets();
       [[nodiscard]] GuiSystem &gui();
       [[nodiscard]] ECS &ecs();
+      [[nodiscard]] WindowSystem &windowSystem();
+      [[nodiscard]] const WindowSystem &windowSystem() const;
       [[nodiscard]] std::expected<void, Error> init();
       [[nodiscard]] std::expected<void, Error> run();
       [[nodiscard]] std::expected<FrameStatus, Error> step();
@@ -283,16 +247,7 @@ export namespace vve::v4 {
    private:
       template <typename TOption> void applyOption(TOption &&);
       void applyDefaults();
-      [[nodiscard]] std::expected<void, Error> initSystems();
-      [[nodiscard]] std::expected<void, Error> updateSystems(const FrameContext &frame,
-                                                            const WindowFrameData &window_frame);
-      template <typename TSystem> [[nodiscard]] std::expected<void, Error> initOne(TSystem &system);
-      template <typename TSystem>
-      [[nodiscard]] std::expected<void, Error> updateOne(TSystem &system, const FrameContext &frame,
-                                                         const WindowFrameData &window_frame);
       [[nodiscard]] std::expected<void, Error> buildDefaultGraphs();
-      template <typename TSystem>
-      [[nodiscard]] std::expected<TaskHandle, Error> addSystemTask(TaskHandle previous, TSystem &system);
 
       ApplicationName application_name_{};      ///< Name used for default window titles.
       MaxFrames max_frames_{};                 ///< Optional frame cap.
@@ -305,75 +260,71 @@ export namespace vve::v4 {
       RenderGraph render_graph_{};             ///< Render pass graph facade.
       ShaderSystem shaders_{};                 ///< Shader descriptor facade.
       GuiSystem gui_{};                        ///< GUI descriptor facade.
-      std::optional<std::tuple<TSystems...>> systems_{}; ///< User systems supplied by the application.
+      Vector<ObjectName> user_system_tasks_{}; ///< User-system task names supplied by the facade.
       std::chrono::steady_clock::time_point last_frame_time_{}; ///< Timestamp of the previous step().
       std::uint64_t frame_{0};                 ///< Number of completed step() calls.
       bool initialized_{false};                ///< True after init() succeeds.
    };
 
    /// @brief Creates an engine with default options.
-   template <typename... TSystems> Engine<TSystems...>::Engine() {
+   inline Engine::Engine() {
       applyDefaults();
    }
 
    /// @brief Creates an engine from the compact compatibility config.
-   template <typename... TSystems> Engine<TSystems...>::Engine(EngineConfig config) {
+   inline Engine::Engine(EngineConfig config) {
       applyOption(std::move(config));
       applyDefaults();
    }
 
-   /// @brief Creates an engine from typed options such as ApplicationName, Windows, and UserSystems.
-   template <typename... TSystems>
+   /// @brief Creates an engine from typed options such as ApplicationName, Windows, and UserSystemTasks.
    template <typename... TOptions>
       requires(sizeof...(TOptions) > 0)
-   Engine<TSystems...>::Engine(TOptions &&...options) {
+   Engine::Engine(TOptions &&...options) {
       (applyOption(std::forward<TOptions>(options)), ...);
       applyDefaults();
    }
 
    /// @brief Returns the major engine version.
-   template <typename... TSystems> std::uint32_t Engine<TSystems...>::versionMajor() const { return 4; }
+   inline std::uint32_t Engine::versionMajor() const { return 4; }
 
    /// @brief Returns the major engine version through a v3-shaped accessor.
-   template <typename... TSystems>
-   std::expected<int, Error> Engine<TSystems...>::getVersionMajor() const noexcept {
+   inline std::expected<int, Error> Engine::getVersionMajor() const noexcept {
       return 4;
    }
 
    /// @brief Returns the printable engine version name.
-   template <typename... TSystems> std::string_view Engine<TSystems...>::versionName() const { return "v4"; }
-
-   /// @brief Creates an example-facing world view over engine-owned subsystems.
-   template <typename... TSystems> World Engine<TSystems...>::world() {
-      return World{ecs_, assets_, gui_, window_system_};
-   }
-
-   /// @brief Creates an example-facing world view from a const engine handle.
-   template <typename... TSystems> World Engine<TSystems...>::world() const {
-      return const_cast<Engine<TSystems...> *>(this)->world();
-   }
+   inline std::string_view Engine::versionName() const { return "v4"; }
 
    /// @brief Returns the asset system.
-   template <typename... TSystems> AssetSystem &Engine<TSystems...>::assets() { return assets_; }
+   inline AssetSystem &Engine::assets() { return assets_; }
 
    /// @brief Returns the GUI system.
-   template <typename... TSystems> GuiSystem &Engine<TSystems...>::gui() { return gui_; }
+   inline GuiSystem &Engine::gui() { return gui_; }
 
    /// @brief Returns the runtime ECS.
-   template <typename... TSystems> ECS &Engine<TSystems...>::ecs() { return ecs_; }
+   inline ECS &Engine::ecs() { return ecs_; }
 
-   /// @brief Creates SDL windows and calls optional user-system init(World&) hooks.
-   template <typename... TSystems> std::expected<void, Error> Engine<TSystems...>::init() {
+   /// @brief Returns the implementation window system.
+   inline WindowSystem &Engine::windowSystem() { return window_system_; }
+
+   /// @brief Returns the implementation window system.
+   inline const WindowSystem &Engine::windowSystem() const {
+      return window_system_;
+   }
+
+   /// @brief Creates SDL windows and default graphs.
+   inline std::expected<void, Error> Engine::init() {
       if (initialized_) { return {}; }
       if (const auto result = window_system_.init(windows_); !result) { return result; }
       if (const auto result = buildDefaultGraphs(); !result) { return result; }
       last_frame_time_ = std::chrono::steady_clock::now();
       initialized_ = true;
-      return initSystems();
+      return {};
    }
 
    /// @brief Runs the engine until a window closes, a system fails, or the frame cap is reached.
-   template <typename... TSystems> std::expected<void, Error> Engine<TSystems...>::run() {
+   inline std::expected<void, Error> Engine::run() {
       if (!initialized_) {
          if (const auto result = init(); !result) { return result; }
       }
@@ -384,8 +335,8 @@ export namespace vve::v4 {
       }
    }
 
-   /// @brief Polls input and calls optional user-system update hooks.
-   template <typename... TSystems> std::expected<FrameStatus, Error> Engine<TSystems...>::step() {
+   /// @brief Polls input and advances the frame status.
+   inline std::expected<FrameStatus, Error> Engine::step() {
       if (!initialized_) { return std::unexpected(Error::missing_object); }
       if (const auto result = window_system_.poll(); !result) { return std::unexpected(result.error()); }
       if (window_system_.input().wasKeyPressed(detail::debugDumpGraphHotkey)) {
@@ -393,15 +344,7 @@ export namespace vve::v4 {
       }
 
       const auto now = std::chrono::steady_clock::now();
-      const std::chrono::duration<double> delta = now - last_frame_time_;
       last_frame_time_ = now;
-
-      const FrameContext frame{.frame_index = FrameCount{.value = frame_},
-                               .delta_time = DeltaTime{.seconds = delta.count()}};
-      const WindowFrameData window_frame{.windows = window_system_.snapshot()};
-      if (const auto result = updateSystems(frame, window_frame); !result) {
-         return std::unexpected(result.error());
-      }
 
       ++frame_;
       if (window_system_.anyShouldClose() || (max_frames_.value.value > 0 && frame_ >= max_frames_.value.value)) {
@@ -411,9 +354,8 @@ export namespace vve::v4 {
    }
 
    /// @brief Applies typed engine options; unknown option types are ignored.
-   template <typename... TSystems>
    template <typename TOption>
-   void Engine<TSystems...>::applyOption(TOption &&option) {
+   void Engine::applyOption(TOption &&option) {
       using Option = std::remove_cvref_t<TOption>;
       if constexpr (std::same_as<Option, EngineConfig>) {
          auto config = std::forward<TOption>(option);
@@ -425,13 +367,13 @@ export namespace vve::v4 {
          max_frames_ = std::forward<TOption>(option);
       } else if constexpr (std::same_as<Option, Windows>) {
          windows_ = std::forward<TOption>(option);
-      } else if constexpr (std::same_as<Option, UserSystems<TSystems...>>) {
-         systems_.emplace(std::forward<TOption>(option).value);
+      } else if constexpr (std::same_as<Option, UserSystemTasks>) {
+         user_system_tasks_ = std::forward<TOption>(option).value;
       }
    }
 
    /// @brief Fills small defaults after options have been applied.
-   template <typename... TSystems> void Engine<TSystems...>::applyDefaults() {
+   inline void Engine::applyDefaults() {
       if (windows_.value.empty()) { windows_.value.push_back(WindowDesc{}); }
       for (auto &window : windows_.value) {
          if (window.title == WindowDesc{}.title && application_name_.value != ApplicationName{}.value) {
@@ -441,7 +383,7 @@ export namespace vve::v4 {
    }
 
    /// @brief Builds simple inspectable default graphs for debug dumps and teaching.
-   template <typename... TSystems> std::expected<void, Error> Engine<TSystems...>::buildDefaultGraphs() {
+   inline std::expected<void, Error> Engine::buildDefaultGraphs() {
       tasks_ = {};
       render_graph_ = {};
 
@@ -453,19 +395,11 @@ export namespace vve::v4 {
 
       tasks_.addEdge(*begin, *poll);
       auto previous = *poll;
-      if (systems_.has_value()) {
-         std::expected<void, Error> result{};
-         std::apply([&](auto &...system) {
-            ((result ? [&] {
-                auto task = addSystemTask(previous, system);
-                if (!task) {
-                   result = std::unexpected(task.error());
-                } else {
-                   previous = *task;
-                }
-             }() : void()), ...);
-         }, *systems_);
-         if (!result) { return result; }
+      for (const auto &task_name : user_system_tasks_) {
+         const auto task = tasks_.addTask(task_name);
+         if (!task) { return std::unexpected(task.error()); }
+         tasks_.addEdge(previous, *task);
+         previous = *task;
       }
       tasks_.addEdge(previous, *render);
       tasks_.addEdge(*render, *finish);
@@ -479,85 +413,9 @@ export namespace vve::v4 {
       return {};
    }
 
-   /// @brief Adds one user-system update node after the previous frame task.
-   template <typename... TSystems>
-   template <typename TSystem>
-   std::expected<TaskHandle, Error> Engine<TSystems...>::addSystemTask(TaskHandle previous, TSystem &system) {
-      auto name = std::string{"task.update_system."} + detail::systemDebugName(system);
-      const auto task = tasks_.addTask(ObjectName{.value = std::move(name)});
-      if (!task) { return std::unexpected(task.error()); }
-      tasks_.addEdge(previous, *task);
-      return *task;
-   }
-
-   /// @brief Calls init(World&) on each user system when that hook exists.
-   template <typename... TSystems> std::expected<void, Error> Engine<TSystems...>::initSystems() {
-      if (!systems_.has_value()) { return {}; }
-      auto result = std::expected<void, Error>{};
-      std::apply([&](auto &...system) { ((result ? result = initOne(system) : result), ...); }, *systems_);
-      return result;
-   }
-
-   /// @brief Calls the best matching update hook on each user system.
-   template <typename... TSystems>
-   std::expected<void, Error> Engine<TSystems...>::updateSystems(const FrameContext &frame,
-                                                                 const WindowFrameData &window_frame) {
-      if (!systems_.has_value()) { return {}; }
-      auto result = std::expected<void, Error>{};
-      std::apply([&](auto &...system) {
-         ((result ? result = updateOne(system, frame, window_frame) : result), ...);
-      }, *systems_);
-      return result;
-   }
-
-   /// @brief Calls one system's init hook if present.
-   template <typename... TSystems>
-   template <typename TSystem>
-   std::expected<void, Error> Engine<TSystems...>::initOne(TSystem &system) {
-      auto world_view = world();
-      if constexpr (requires { system.init(world_view); }) {
-         return detail::callSystemHook([&]() -> decltype(auto) { return system.init(world_view); });
-      } else {
-         return {};
-      }
-   }
-
-   /// @brief Calls one system's most expressive update hook if present.
-   template <typename... TSystems>
-   template <typename TSystem>
-   std::expected<void, Error> Engine<TSystems...>::updateOne(TSystem &system, const FrameContext &frame,
-                                                             const WindowFrameData &window_frame) {
-      auto world_view = world();
-      if constexpr (requires { system.update(world_view, frame, window_frame); }) {
-         return detail::callSystemHook([&]() -> decltype(auto) {
-            return system.update(world_view, frame, window_frame);
-         });
-      } else if constexpr (requires { system.update(world_view, frame); }) {
-         return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_view, frame); });
-      } else if constexpr (requires { system.update(world_view); }) {
-         return detail::callSystemHook([&]() -> decltype(auto) { return system.update(world_view); });
-      } else {
-         return {};
-      }
-   }
-
-   namespace detail {
-
-      /// @brief Maps a UserSystems option to the matching Engine specialization.
-      template <typename TUserSystems> struct EngineTypeFromUserSystems;
-
-      /// @brief Specialization that injects user-system types into Engine.
-      template <typename... TSystems> struct EngineTypeFromUserSystems<UserSystems<TSystems...>> {
-         using type = Engine<TSystems...>; ///< Engine specialization for this user-system pack.
-      };
-
-   } // namespace detail
-
    /// @brief Builds a v4 engine from typed options in any order.
    template <typename... TOptions> [[nodiscard]] auto makeEngine(TOptions &&...options) {
-      using TUserSystems = typename detail::FindUserSystemsOption<UserSystems<>, TOptions...>::type;
-      using TEngine = typename detail::EngineTypeFromUserSystems<TUserSystems>::type;
-      return TEngine(std::forward<TOptions>(options)...);
+      return Engine{std::forward<TOptions>(options)...};
    }
 
    namespace detail {
@@ -577,8 +435,7 @@ export namespace vve::v4 {
    } // namespace detail
 
    /// @brief Writes task and render graph JSON dumps into a debug directory.
-   template <typename... TSystems>
-   std::expected<void, Error> Engine<TSystems...>::writeDebugGraphs(const std::filesystem::path &directory) const {
+   inline std::expected<void, Error> Engine::writeDebugGraphs(const std::filesystem::path &directory) const {
       const auto task_path = directory / "task_graph.json";
       const auto render_path = directory / "render_graph.json";
       if (const auto result = tasks_.writeJson(task_path, "v4 task graph"); !result) { return result; }

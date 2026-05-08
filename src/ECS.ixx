@@ -13,7 +13,7 @@ export namespace vve {
    using DefaultECSTraits = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::DefaultECSTraits; ///< Facade ECS traits.
 
    template <typename... TSystems> class Engine;
-   class World;
+   template <typename... TObjects> class World;
 
    template <typename TTraits = DefaultECSTraits> class BasicECS {
       using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicECS<TTraits>;
@@ -67,7 +67,7 @@ export namespace vve {
 
       Impl &impl_;
 
-      friend class World;
+      template <typename... TObjects> friend class World;
    }; ///< Facade ECS template.
 
    class ECS : public BasicECS<> {

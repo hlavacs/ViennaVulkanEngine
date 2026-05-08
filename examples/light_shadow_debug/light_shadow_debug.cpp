@@ -128,7 +128,7 @@ public:
     [[nodiscard]] std::string_view name() const noexcept { return "LightShadowDebugSystem"; }
 
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld &world) {
-        decltype(auto) ecs = world.ecs();
+        auto ecs = world.template get<vve::ECS>();
         const auto plane_entity = ecs.create();
         const auto cuboid_entity = ecs.create();
         const auto light_entity = ecs.create();
@@ -154,7 +154,8 @@ public:
         if (const auto result = ecs.add(camera_entity, camera_); !result) {
             return std::unexpected(result.error());
         }
-        if (const auto camera_result = world.windowSystem().setActiveCamera(camera_entity); !camera_result) {
+        if (const auto camera_result = world.template get<vve::WindowSystem>().setActiveCamera(camera_entity);
+            !camera_result) {
             return std::unexpected(camera_result.error());
         }
 

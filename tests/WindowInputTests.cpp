@@ -9,7 +9,7 @@ int main() {
                            .title("window-input-tests")
                            .extent(vve::PixelExtent{.width = 64, .height = 64})
                            .visible(false)});
-   auto input = engine.world().windowSystem().input();
+   auto input = engine.world().get<vve::WindowSystem>().input();
    const auto window = vve::makeHandleForTest<vve::WindowHandle>(77);
 
    input.pressKey('W');

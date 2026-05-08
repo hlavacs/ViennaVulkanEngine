@@ -15,7 +15,7 @@ int main() {
    }
 
    auto engine = vve::makeEngine(vve::ApplicationName{"scene-tests"});
-   auto assets = engine.world().assets();
+   auto assets = engine.world().get<vve::AssetSystem>();
    const auto scene = assets.loadScene(path);
    std::error_code error{};
    std::filesystem::remove(path, error);

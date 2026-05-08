@@ -25,8 +25,9 @@ struct CountingSystem {
       if (init_count != nullptr) {
          ++*init_count;
       }
-      return world.windowSystem().windowCount() == 0 ? std::unexpected(vve::Error::missing_object)
-                                                     : std::expected<void, vve::Error>{};
+      return world.template get<vve::WindowSystem>().windowCount() == 0
+                ? std::unexpected(vve::Error::missing_object)
+                : std::expected<void, vve::Error>{};
    }
 
    template <typename TWorld, typename TWindowFrame>
@@ -256,7 +257,7 @@ struct CountingSystem {
    using namespace vve;
 
    auto engine = makeEngine(ApplicationName{"ecs-test"});
-   auto ecs = engine.world().ecs();
+   auto ecs = engine.world().get<vve::ECS>();
    const auto entity = ecs.create();
    if (!entity.valid() || !entity.isCounter() || !ecs.exists(entity)) {
       return 20;
@@ -296,7 +297,7 @@ struct CountingSystem {
 
    const auto window = makeHandleForTest<WindowHandle>(200);
    auto input_engine = makeEngine(ApplicationName{"input-test"});
-   auto input = input_engine.world().windowSystem().input();
+   auto input = input_engine.world().get<vve::WindowSystem>().input();
    input.pressKey('W');
    if (!input.isKeyDown('W') || !input.wasKeyPressed('W')) {
       return 60;
@@ -330,7 +331,7 @@ struct CountingSystem {
 
    auto engine = makeEngine(ApplicationName{"world-test"});
    auto world = engine.world();
-   auto ecs = world.ecs();
+   auto ecs = world.get<vve::ECS>();
    const auto ecs_entity = ecs.create();
    if (!ecs.exists(ecs_entity)) {
       return 67;
@@ -340,7 +341,8 @@ struct CountingSystem {
    if (const auto result = ecs.add(entity, Transform{}); !result) { return 64; }
    if (const auto result = ecs.add(entity, Velocity{2.0F}); !result) { return 64; }
    if (const auto result = ecs.add(camera, Camera{}); !result) { return 64; }
-   if (world.windowSystem().windowCount() != 0 || world.windowSystem().findWindow("main").has_value()) {
+   auto window_system = world.get<vve::WindowSystem>();
+   if (window_system.windowCount() != 0 || window_system.findWindow("main").has_value()) {
       return 64;
    }
    const auto velocity = ecs.tryGet<Velocity>(entity);
@@ -364,7 +366,7 @@ struct CountingSystem {
    }
 
    auto engine = makeEngine(ApplicationName{"asset-import"});
-   auto assets = engine.world().assets();
+   auto assets = engine.world().get<vve::AssetSystem>();
    const auto scene_handle = assets.loadScene(path);
    std::error_code remove_error{};
    std::filesystem::remove(path, remove_error);
@@ -494,12 +496,12 @@ struct CountingSystem {
       return 41;
    }
    auto world = engine.world();
-   auto window_system = world.windowSystem();
-   auto ecs = world.ecs();
+   auto window_system = world.get<vve::WindowSystem>();
+   auto ecs = world.get<vve::ECS>();
    const auto camera = ecs.create();
    if (const auto result = ecs.add(camera, Camera{}); !result) { return 57; }
    if (!window_system.setWindowCamera("main", camera)) { return 57; }
-   auto assets = world.assets();
+   auto assets = world.get<vve::AssetSystem>();
    const auto scene = assets.addScene(ObjectName{.value = "stub"});
    if (!scene || !scene->isCounter() || !assets.containsScene(*scene)) {
       return 42;

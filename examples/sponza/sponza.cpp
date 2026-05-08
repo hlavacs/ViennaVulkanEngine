@@ -116,7 +116,7 @@ public:
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
         std::cout << '[' << name() << "] scene path: " << scene_path_.string() << '\n';
         std::cout << '[' << name() << "] v4 runtime shell is active\n";
-        auto assets = world.assets();
+        auto assets = world.template get<vve::AssetSystem>();
         const auto loaded_scene = assets.loadScene(scene_path_);
         if (!loaded_scene) {
             std::cerr << '[' << name() << "] Assimp import failed: "
@@ -162,8 +162,7 @@ private:
     template <typename TWorld> void printWindowInventory(const TWorld& world) const {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
-        for (const auto& window_ref : world.windowSystem().windows()) {
-            const auto& window = window_ref.get();
+        for (const auto& window : world.template get<vve::WindowSystem>().windows()) {
             printed_any = true;
             const auto extent = window.extent();
             std::cout << ' ' << window.id() << '=' << extent.width << 'x' << extent.height

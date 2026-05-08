@@ -128,7 +128,7 @@ public:
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
         // The example creates one entity with a transform and velocity so the
         // update loop can demonstrate explicit ECS and input access.
-        decltype(auto) ecs = world.ecs();
+        auto ecs = world.template get<vve::ECS>();
         player_ = ecs.create();
         if (const auto result = ecs.add(player_, vve::Transform{}); !result) {
             return std::unexpected(result.error());
@@ -142,7 +142,7 @@ public:
         }
 
         std::cout << '[' << name() << "] registering scene path: " << scene_path_.string() << '\n';
-        if (const auto load_result = world.assets().loadScene(scene_path_); !load_result) {
+        if (const auto load_result = world.template get<vve::AssetSystem>().loadScene(scene_path_); !load_result) {
             return std::unexpected(load_result.error());
         }
 
@@ -167,7 +167,7 @@ public:
 
         // Fetch the current velocity and transform copies through the ECS
         // before applying input-driven changes.
-        decltype(auto) ecs = world.ecs();
+        auto ecs = world.template get<vve::ECS>();
         const auto velocity_result = ecs.template tryGet<Velocity>(player_);
         if (!velocity_result) {
             return std::unexpected(velocity_result.error());
@@ -184,7 +184,7 @@ public:
 
         auto transform = **transform_result;
         auto velocity = **velocity_result;
-        const auto input = world.windowSystem().input();
+        const auto input = world.template get<vve::WindowSystem>().input();
         const auto delta_seconds = static_cast<float>(frame_context.delta_time.seconds);
 
         float acceleration_x = 0.0F;
@@ -232,8 +232,9 @@ public:
         const bool movement_key_held = key_state_string != "----";
 
         if (movement_key_held || reset_pressed) {
-            const auto main_window = world.windowSystem().findWindow("main");
-            const auto tools_window = world.windowSystem().findWindow("tools");
+            const auto window_system = world.template get<vve::WindowSystem>();
+            const auto main_window = window_system.findWindow("main");
+            const auto tools_window = window_system.findWindow("tools");
             const auto player_x = static_cast<int>(std::lround(transform.translation.value.x));
             const auto player_y = static_cast<int>(std::lround(transform.translation.value.y));
             std::cout << '[' << name() << "] player=(" << player_x << ", " << player_y << ')'
@@ -264,8 +265,7 @@ private:
     template <typename TWorld> void printWindowInventory(TWorld& world) {
         std::cout << '[' << name() << "] windows:";
         bool printed_any = false;
-        for (const auto& window_ref : world.windowSystem().windows()) {
-            const auto& window = window_ref.get();
+        for (const auto& window : world.template get<vve::WindowSystem>().windows()) {
             printed_any = true;
             const auto extent = window.extent();
             std::cout << ' ' << window.id() << '=' << extent.width << 'x' << extent.height

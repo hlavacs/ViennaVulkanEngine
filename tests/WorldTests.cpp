@@ -1,7 +1,9 @@
 #include <cmath>
 #include <filesystem>
 #include <fstream>
+#include <functional>
 #include <string>
+#include <type_traits>
 
 import VEEngine;
 
@@ -10,6 +12,10 @@ namespace {
 struct Tag {
    std::string value{};
 };
+
+static_assert(std::constructible_from<vve::World<std::reference_wrapper<Tag>>, std::reference_wrapper<Tag>>);
+static_assert(!std::constructible_from<vve::World<Tag>, Tag>);
+static_assert(!std::constructible_from<vve::World<std::reference_wrapper<Tag *>>, std::reference_wrapper<Tag *>>);
 
 [[nodiscard]] bool nearly(float lhs, float rhs) {
    return std::abs(lhs - rhs) < 0.0001F;
@@ -58,8 +64,8 @@ int main() {
    std::filesystem::remove_all(dump_dir);
 
    auto world = engine.world();
-   auto ecs = world.ecs();
-   auto window_system = world.windowSystem();
+   auto ecs = world.get<vve::ECS>();
+   auto window_system = world.get<vve::WindowSystem>();
    const auto camera = ecs.create();
    if (const auto result = ecs.add(camera, vve::Camera{}); !result) { return 6; }
    if (!window_system.setActiveCamera(camera)) { return 6; }
