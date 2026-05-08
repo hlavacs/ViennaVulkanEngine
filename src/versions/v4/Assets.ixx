@@ -9,11 +9,14 @@ module;
 export module VEEngine.V4:Assets;
 import std;
 export import :Types;
+import :Graph;
 
 /// @file
 /// @brief Compact Assimp-backed asset system for the educational v4 engine.
 
 namespace vve::v4 {
+
+   using SceneTree = Tree<NodeHandle>; ///< Asset scene tree over imported node handles.
 
    /// @brief Minimal handle table used by all imported descriptor types.
    template <typename T> struct Table {
@@ -23,13 +26,6 @@ namespace vve::v4 {
       [[nodiscard]] std::expected<void, Error> add(T value);
       [[nodiscard]] const T *find(Handle handle) const;
       [[nodiscard]] bool contains(Handle handle) const;
-   };
-
-   /// @brief Imported scene tree: root handle plus parent/child edge maps.
-   struct Tree {
-      NodeHandle root{}; ///< Root node handle.
-      std::unordered_multimap<NodeHandle, NodeHandle, HandleHash<NodeHandle>> children{}; ///< Parent to children.
-      std::unordered_map<NodeHandle, NodeHandle, HandleHash<NodeHandle>> parents{};       ///< Child to parent.
    };
 
    /// @brief Scene node descriptor.
@@ -66,7 +62,7 @@ namespace vve::v4 {
       using Handle = SceneHandle;      ///< Handle category.
       SceneHandle handle{};            ///< Stable scene handle.
       ObjectName name{};               ///< Source file name.
-      Tree tree{};                     ///< Parent/child node topology.
+      SceneTree tree{};                ///< Parent/child node topology.
       Vector<NodeHandle> nodes{};      ///< All node handles.
       Vector<MeshHandle> meshes{};     ///< All mesh handles.
       Vector<MaterialHandle> materials{}; ///< All material handles.
@@ -381,12 +377,8 @@ namespace vve::v4 {
 
          const auto handle = item.handle;
          if (auto added = catalog.nodes.add(std::move(item)); !added) { return std::unexpected(added.error()); }
-         if (parent.valid()) {
-            scene.tree.children.emplace(parent, handle);
-            scene.tree.parents.emplace(handle, parent);
-         } else {
-            scene.tree.root = handle;
-         }
+         const auto linked = parent.valid() ? scene.tree.addChild(parent, handle) : scene.tree.setRoot(handle);
+         if (!linked) { return std::unexpected(linked.error()); }
          scene.nodes.push_back(handle);
 
          for (unsigned i = 0; i < source.mNumChildren; ++i) {
@@ -515,19 +507,14 @@ namespace vve::v4 {
    std::expected<Vector<NodeHandle>, Error> AssetSystem::sceneNodeChildren(SceneHandle scene, NodeHandle node) const {
       const auto source = sceneWithNode(catalog_, scene, node);
       if (!source) { return std::unexpected(source.error()); }
-      Vector<NodeHandle> result{};
-      const auto [first, last] = (*source)->tree.children.equal_range(node);
-      for (auto it = first; it != last; ++it) { result.push_back(it->second); }
-      return result;
+      return (*source)->tree.children(node);
    }
 
    std::expected<std::optional<NodeHandle>, Error> AssetSystem::sceneNodeParent(SceneHandle scene,
                                                                                 NodeHandle node) const {
       const auto source = sceneWithNode(catalog_, scene, node);
       if (!source) { return std::unexpected(source.error()); }
-      const auto parent = (*source)->tree.parents.find(node);
-      return parent == (*source)->tree.parents.end() ? std::optional<NodeHandle>{}
-                                                     : std::optional<NodeHandle>{parent->second};
+      return (*source)->tree.parent(node);
    }
 
    NameExpected AssetSystem::nodeName(NodeHandle node) const { return field(catalog_.nodes, node, &Node::name); }

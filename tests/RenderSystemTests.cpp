@@ -51,7 +51,7 @@ int main() {
    if (unsupported || unsupported.error() != vve::v4::Error::invalid_argument) { return 25; }
 
    const auto graph = render_system.buildRenderGraph(renderer);
-   if (!graph || graph->passCount() != 6) { return 26; }
+   if (!graph || graph->nodeCount() != 6) { return 26; }
 
    const auto order = graph->topologicalOrder();
    if (!order || order->size() != 6) { return 27; }
@@ -61,21 +61,21 @@ int main() {
                                    vve::v4::RenderMilestone::scene_color,
                                    vve::v4::RenderMilestone::frame_finished};
    for (std::size_t i{}; i < expected_order.size(); ++i) {
-      const auto pass_name = graph->passName((*order)[i]);
+      const auto pass_name = graph->nodeName((*order)[i]);
       if (!pass_name || pass_name->value != expected_order[i]) { return 28; }
    }
 
-   const auto color_handle = graph->passHandle(vve::v4::RenderMilestone::scene_color);
+   const auto color_handle = graph->nodeHandle(vve::v4::RenderMilestone::scene_color);
    if (!color_handle || !graph->contains(*color_handle)) { return 29; }
 
    const vve::v4::GuiSystem gui_system{};
    const std::array system_lists{renderer.passes, gui_system.passes()};
    const auto gui_graph = render_system.buildRenderGraph(system_lists);
-   if (!gui_graph || gui_graph->passCount() != 8) { return 30; }
+   if (!gui_graph || gui_graph->nodeCount() != 8) { return 30; }
 
    const auto gui_order = gui_graph->topologicalOrder();
    if (!gui_order || gui_order->empty()) { return 31; }
-   const auto last_gui_pass = gui_graph->passName(gui_order->back());
+   const auto last_gui_pass = gui_graph->nodeName(gui_order->back());
    if (!last_gui_pass || last_gui_pass->value != vve::v4::RenderMilestone::frame_finished) { return 32; }
 
    constexpr std::string_view deferred_gbuffer_pass{"deferred.gbuffer_pass"};
@@ -115,7 +115,7 @@ int main() {
                                    .depends_on = deferred_finished_deps,
                                    .milestone = true}};
    const auto deferred_graph = render_system.buildRenderGraph(deferred_passes);
-   if (!deferred_graph || deferred_graph->passCount() != 10) { return 33; }
+   if (!deferred_graph || deferred_graph->nodeCount() != 10) { return 33; }
 
    constexpr std::string_view ray_shadow_pass{"forward.raytraced_shadow_pass"};
    const std::array ray_shadow_pass_deps{vve::v4::RenderMilestone::frame_begin};
@@ -137,7 +137,7 @@ int main() {
                                    .depends_on = ray_shadow_finished_deps,
                                    .milestone = true}};
    const auto forward_ray_shadow_graph = render_system.buildRenderGraph(forward_ray_shadow_passes);
-   if (!forward_ray_shadow_graph || forward_ray_shadow_graph->passCount() != 6) { return 34; }
+   if (!forward_ray_shadow_graph || forward_ray_shadow_graph->nodeCount() != 6) { return 34; }
 
    constexpr std::string_view ray_scene_pass{"raytracing.scene_pass"};
    const std::array ray_scene_pass_deps{vve::v4::RenderMilestone::frame_begin};
@@ -157,7 +157,7 @@ int main() {
                                    .depends_on = ray_scene_finished_deps,
                                    .milestone = true}};
    const auto ray_scene_graph = render_system.buildRenderGraph(ray_scene_passes);
-   if (!ray_scene_graph || ray_scene_graph->passCount() != 5) { return 35; }
+   if (!ray_scene_graph || ray_scene_graph->nodeCount() != 5) { return 35; }
 
    const std::array bad_dependencies{std::string_view{"missing"}};
    const std::array bad_passes{vve::v4::RenderPassContract{.name = "bad", .depends_on = bad_dependencies}};

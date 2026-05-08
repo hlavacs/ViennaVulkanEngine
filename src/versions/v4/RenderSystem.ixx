@@ -273,7 +273,7 @@ namespace vve::v4 {
                          const RenderPassContract &pass) {
       if (pass.name.empty()) { return std::unexpected(Error::invalid_argument); }
       if (handles.contains(pass.name)) { return {}; }
-      auto handle = graph.addPass(ObjectName{.value = std::string(pass.name)});
+      auto handle = graph.addNode(ObjectName{.value = std::string(pass.name)});
       if (!handle) { return std::unexpected(handle.error()); }
       handles.emplace(pass.name, *handle);
       return {};

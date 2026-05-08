@@ -7,6 +7,7 @@ target_sources(ViennaVulkanEngine
          Vector.ixx
          ECS.ixx
          Types.ixx
+         Graph.ixx
          Window.ixx
          Assets.ixx
          Resources.ixx

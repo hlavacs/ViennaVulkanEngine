@@ -4,10 +4,10 @@ import VEEngine.V4;
 
 int main() {
    vve::v4::TaskGraph graph{};
-   const auto upload = graph.addTask(vve::v4::ObjectName{.value = "upload"});
-   const auto simulate = graph.addTask(vve::v4::ObjectName{.value = "simulate"});
-   const auto render = graph.addTask(vve::v4::ObjectName{.value = "render"});
-   if (!upload || !simulate || !render || graph.taskCount() != 3) { return 1; }
+   const auto upload = graph.addNode(vve::v4::ObjectName{.value = "upload"});
+   const auto simulate = graph.addNode(vve::v4::ObjectName{.value = "simulate"});
+   const auto render = graph.addNode(vve::v4::ObjectName{.value = "render"});
+   if (!upload || !simulate || !render || graph.nodeCount() != 3) { return 1; }
 
    graph.addEdge(*upload, *simulate);
    graph.addEdge(*simulate, *render);
@@ -15,13 +15,13 @@ int main() {
    if (!ordered || ordered->size() != 3) { return 2; }
    if ((*ordered)[0] != *upload || (*ordered)[1] != *simulate || (*ordered)[2] != *render) { return 3; }
 
-   const auto name = graph.taskName(*simulate);
+   const auto name = graph.nodeName(*simulate);
    if (!name || name->value != "simulate") { return 4; }
 
-   const auto found = graph.taskHandle("simulate");
+   const auto found = graph.nodeHandle("simulate");
    if (!found || *found != *simulate) { return 5; }
 
-   const auto json = graph.toJson("Unit Task Graph");
+   const auto json = graph.toJson("task_graph", "Unit Task Graph");
    if (!json.contains("\"kind\": \"task_graph\"")) { return 6; }
    if (!json.contains("\"name\": \"Unit Task Graph\"")) { return 7; }
    if (!json.contains("\"name\": \"simulate\"")) { return 8; }
@@ -29,20 +29,20 @@ int main() {
    if (!json.contains("\"to_name\": \"simulate\"")) { return 10; }
 
    const auto path = std::filesystem::temp_directory_path() / "vve_task_graph_test.json";
-   const auto written = graph.writeJson(path, "Unit Task Graph");
+   const auto written = graph.writeJson(path, "task_graph", "Unit Task Graph");
    if (!written || !std::filesystem::exists(path)) { return 11; }
    std::filesystem::remove(path);
 
-   if (!graph.remove(*simulate) || graph.contains(*simulate) || graph.taskCount() != 2) { return 12; }
+   if (!graph.remove(*simulate) || graph.contains(*simulate) || graph.nodeCount() != 2) { return 12; }
    const auto after_remove = graph.topologicalOrder();
    if (!after_remove || after_remove->size() != 2) { return 13; }
 
-   const auto missing = graph.taskName(*simulate);
+   const auto missing = graph.nodeName(*simulate);
    if (missing || missing.error() != vve::v4::Error::missing_object) { return 14; }
 
    vve::v4::TaskGraph cycle{};
-   const auto a = cycle.addTask(vve::v4::ObjectName{.value = "a"});
-   const auto b = cycle.addTask(vve::v4::ObjectName{.value = "b"});
+   const auto a = cycle.addNode(vve::v4::ObjectName{.value = "a"});
+   const auto b = cycle.addNode(vve::v4::ObjectName{.value = "b"});
    if (!a || !b) { return 15; }
    cycle.addEdge(*a, *b);
    cycle.addEdge(*b, *a);
