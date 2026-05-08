@@ -30,11 +30,13 @@ EmitterRecord getEmmitterRecordFromReservoir(ReservoirGI reservoir, Intersection
 
 float getApproximateRadianceFromReservoir(in ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord material) {
     EmitterRecord record = getEmmitterRecordFromReservoir(reservoir, its);
+    
     // maybe I need to devide by reservoir.M here
     return length(getUnoccludedLightContribution(its, material, record));
 }
 
 //check for correctness
+/*
 bool isReservoirOccluded(in IntersectionRecord its, EmitterRecord emitterRecord) {
     RayDesc shadowRay = getRay(its, emitterRecord.direction);
     shadowRay.TMax = emitterRecord.distance;
@@ -54,6 +56,33 @@ bool isReservoirOccluded(in IntersectionRecord its, EmitterRecord emitterRecord)
 
     return true;
 }
+    */
+
+bool isReservoirOccluded(in IntersectionRecord its, EmitterRecord emitterRecord) {
+    // 1. Use a robust offset to prevent self-intersection
+    RayDesc shadowRay;
+    shadowRay.Origin = its.position + (its.normal * 0.001);
+    shadowRay.Direction = emitterRecord.direction;
+    shadowRay.TMin = 0.0;
+    // 2. Stop the ray just BEFORE it reaches the target point
+    shadowRay.TMax = emitterRecord.distance - 0.001;
+
+    // 3. Horizon check (using a small epsilon to allow grazing lights)
+    if (dot(shadowRay.Direction, its.normal) < 1e-4f) {
+        return true;
+    }
+
+    HitPayload payload;
+    payload.hit = false; // Ensure this is initialized!
+
+    // 4. Optimization: Use flags to stop at the very first hit
+    const uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
+
+    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
+
+    // If the ray hit anything before reaching the target, it's occluded
+    return payload.hit;
+}
 
 float3 getGroundTruthRadianceFromReservoir(in ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord material) {
     EmitterRecord record = getEmmitterRecordFromReservoir(reservoir, its);
@@ -65,6 +94,17 @@ float3 getGroundTruthRadianceFromReservoir(in ReservoirGI reservoir, in Intersec
     }
 
     return getUnoccludedLightContribution(its, material, record);
+}
+
+float getApproximateRadianceFromReservoirCheck(in ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord material) {
+    EmitterRecord record = getEmmitterRecordFromReservoir(reservoir, its);
+
+    if (dot(record.direction, its.normal) < 0.0) {
+        return 0.0;
+    }
+
+    // maybe I need to devide by reservoir.M here
+    return length(getUnoccludedLightContribution(its, material, record));
 }
 
 void updateLightWeight(inout ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord material) {

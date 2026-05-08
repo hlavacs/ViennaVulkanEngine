@@ -134,16 +134,16 @@ IntegrationStepQueryRecord integratorIndirect(inout Sampler sampler) {
     int2 launchSize = (int2)DispatchRaysDimensions().xy; // Image size (width,height)
 
     IntersectionRecord its;
-    MaterialRecord material;
+    MaterialRecord materialRecord;
 
-    getInitialSurfaceData(launchID, launchSize, its, material);
+    getInitialSurfaceData(launchID, launchSize, its, materialRecord);
 
     uint sampleCount = 10;
     float3 radiance = float3(0.0);
 
     for (uint i = 0; i < sampleCount; i++) {
-        BSDFQueryRecord record = constructBSDFRecord(its, material, false);
-        float3 throughput = samplePrincipled(record, material, sampler);
+        BSDFQueryRecord record = constructBSDFRecord(its, materialRecord, false);
+        float3 throughput = samplePrincipled(record, materialRecord, sampler);
         // RayDesc indirectRay = getRay(its, its.frame.toWorld(record.wo));
         RayDesc indirectRay = getRay(its, record.woWorld);
 
@@ -155,12 +155,18 @@ IntegrationStepQueryRecord integratorIndirect(inout Sampler sampler) {
             continue;
         }
 
-        IntersectionRecord its = getIntersectionInfo(payload, indirectRay);
+        IntersectionRecord itsSecundary = getIntersectionInfo(payload, indirectRay);
 
-        Material material = materials[its.materialIdx];
-        MaterialRecord materialRecord = getMaterialProperties(material, textures, its.uv, its.frame);
+        Material material = materials[itsSecundary.materialIdx];
+        MaterialRecord materialRecordSecundary = getMaterialProperties(material, textures, itsSecundary.uv, itsSecundary.frame);
 
-        float3 directLight = directRaycast(its, materialRecord, sampler);
+        //cosine between normal of second bounce and direction from second bounce to first bounce
+        //Multiplieng this on the second bounce (not the first) makes the result look less biased. I have no clue why
+        //maybe it accounts for the fact that I am less likley to hit a specifiec point on a angeled surface than on a surface facing me.
+        //I encountered this in sampling triangle light sources, there this term was needed. But again it might just be a happy accident.
+        float cosThetaSecondray = saturate(dot(itsSecundary.normal, -record.woWorld));
+
+        float3 directLight = directRaycast(itsSecundary, materialRecordSecundary, sampler) * cosThetaSecondray;
 
         radiance += directLight * throughput;
     }

@@ -88,6 +88,7 @@ void rgenMain()
 
     const uint CANDIDATE_COUNT = 32;
     const uint MAX_TEMPORAL_INFLUENCE = 20;
+    const uint MAX_TEMPORAL_INFLUENCE_GI = 20;
     const uint MAX_AGE = 25;
 
     float selectedTargetPdf = 0.0;
@@ -171,7 +172,7 @@ void rgenMain()
                 if (validateJacobian(jacobian)) {
 
                     temporalReservoirGI.W_sum *= jacobian;
-                    temporalReservoirGI.M = min(MAX_TEMPORAL_INFLUENCE, temporalReservoirGI.M);
+                    temporalReservoirGI.M = min(MAX_TEMPORAL_INFLUENCE_GI, temporalReservoirGI.M);
                     temporalReservoirGI.age++;
                     
                     float targetPDF = getApproximateRadianceFromReservoir(temporalReservoirGI, its, material);

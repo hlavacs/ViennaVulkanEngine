@@ -195,10 +195,14 @@ void rgenMain()
                     {
                         continue;
                     }
+                    //float targetPDF = length(getGroundTruthRadianceFromReservoir(reservoirGISpatial, its, material));
                     float targetPDF = getApproximateRadianceFromReservoir(reservoirGISpatial, its, material);
-                    if (CombineReservoirsGI(reservoirGI, reservoirGISpatial, targetPDF * jacobian, sampler)) {
-                        selectedTargetPdf = targetPDF;
+                    if (targetPDF > 0.0) {
+                        if (CombineReservoirsGI(reservoirGI, reservoirGISpatial, targetPDF * jacobian, sampler)) {
+                            selectedTargetPdf = targetPDF;
+                        }
                     }
+
                     piSum += targetPDF * (float)reservoirGISpatial.M;
                 }
             }

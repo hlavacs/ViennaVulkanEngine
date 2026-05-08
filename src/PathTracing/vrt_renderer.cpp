@@ -718,11 +718,11 @@ namespace vve {
         //restir_temporal->recordCommandBuffer(currentFrame);
         //restir_spatial->recordCommandBuffer(currentFrame);
 
-        //restirGI_temporal->recordCommandBuffer(currentFrame);
-        //restirGI_spatial->recordCommandBuffer(currentFrame);
+        restirGI_temporal->recordCommandBuffer(currentFrame);
+        restirGI_spatial->recordCommandBuffer(currentFrame);
 
-        lightVertexGenerationFull->recordCommandBuffer(currentFrame);
-        bidirectionalPathTracing->recordCommandBuffer(currentFrame);
+        //lightVertexGenerationFull->recordCommandBuffer(currentFrame);
+        //bidirectionalPathTracing->recordCommandBuffer(currentFrame);
 
         combinePass->recordCommandBuffer(currentFrame);
         //copy images to previous image buffers
