@@ -193,5 +193,33 @@ int main() {
    const auto missing = scene.addInstance(vve::v4::RenderMeshHandle{}, material);
    if (missing || missing.error() != vve::v4::Error::missing_object) { return 42; }
 
+   vve::v4::RenderScene debug_scene{};
+   const auto plane_material = debug_scene.addMaterial();
+   const auto cuboid_material = debug_scene.addMaterial();
+   const auto plane_mesh = debug_scene.addPlaneMesh(vve::v4::Vec2{3.0F, 3.0F});
+   const auto cuboid_mesh = debug_scene.addCuboidMesh(vve::v4::Vec3{-0.225F, 0.0F, -0.225F},
+                                                      vve::v4::Vec3{0.225F, 2.0F, 0.225F});
+   const auto plane_instance = debug_scene.addInstance(plane_mesh, plane_material);
+   const auto cuboid_instance = debug_scene.addInstance(cuboid_mesh, cuboid_material);
+   if (!plane_instance || !cuboid_instance) { return 43; }
+   if (debug_scene.meshCount() != 2 || debug_scene.materialCount() != 2 || debug_scene.instanceCount() != 2) {
+      return 44;
+   }
+
+   const auto *plane_source = debug_scene.findMesh(plane_mesh);
+   const auto *cuboid_source = debug_scene.findMesh(cuboid_mesh);
+   if (plane_source == nullptr || cuboid_source == nullptr) { return 45; }
+   if (plane_source->vertices.size() != 4 || plane_source->indices.size() != 6) { return 46; }
+   if (cuboid_source->vertices.size() != 24 || cuboid_source->indices.size() != 36) { return 47; }
+   if (!plane_source->bounds.valid || !cuboid_source->bounds.valid) { return 48; }
+   if (cuboid_source->bounds.maximum.value.y != 2.0F) { return 49; }
+
+   debug_scene.setCamera(vve::v4::RenderCamera{.target_extent = vve::v4::PixelExtent{.width = 960, .height = 540}});
+   debug_scene.setDirectionalLight(vve::v4::RenderDirectionalLight{});
+   if (!debug_scene.camera() || !debug_scene.directionalLight()) { return 50; }
+   if (debug_scene.camera()->target_extent.width != 960 || debug_scene.camera()->target_extent.height != 540) {
+      return 51;
+   }
+
    return 0;
 }

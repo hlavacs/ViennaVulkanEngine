@@ -12,13 +12,13 @@ export import VEEngine.Vector;
 export namespace vve {
 
    using Entity         = TypedHandle<decltype([](){})>;   ///< Facade ECS entity.
-   using SceneHandle    = TypedHandle<decltype([](){})>;    ///< Scene descriptor handle.
+   using SceneHandle    = TypedHandle<decltype([](){})>;   ///< Scene descriptor handle.
    using WindowHandle   = TypedHandle<decltype([](){})>;   ///< Runtime window handle.
-   using NodeHandle     = TypedHandle<decltype([](){})>;     ///< Node descriptor handle.
-   using MeshHandle     = TypedHandle<decltype([](){})>;     ///< Mesh descriptor handle.
-   using MaterialHandle = TypedHandle<decltype([](){})>; ///< Material descriptor handle.
-   using TextureHandle  = TypedHandle<decltype([](){})>;  ///< Texture descriptor handle.
-   using LightHandle    = TypedHandle<decltype([](){})>;    ///< Light descriptor handle.
+   using NodeHandle     = TypedHandle<decltype([](){})>;   ///< Node descriptor handle.
+   using MeshHandle     = TypedHandle<decltype([](){})>;   ///< Mesh descriptor handle.
+   using MaterialHandle = TypedHandle<decltype([](){})>;   ///< Material descriptor handle.
+   using TextureHandle  = TypedHandle<decltype([](){})>;   ///< Texture descriptor handle.
+   using LightHandle    = TypedHandle<decltype([](){})>;   ///< Light descriptor handle.
    using CameraHandle   = TypedHandle<decltype([](){})>;   ///< Camera descriptor handle.
 
    /// @brief Strong wrapper for world or local position values.

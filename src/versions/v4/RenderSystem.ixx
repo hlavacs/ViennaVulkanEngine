@@ -71,6 +71,8 @@ export namespace vve::v4 {
       [[nodiscard]] RenderMaterialHandle addMaterial(RenderMaterial material = {});
       [[nodiscard]] RenderMeshHandle addMesh(Vector<RenderVertex> vertices, Vector<std::uint32_t> indices,
                                              Bounds bounds = {});
+      [[nodiscard]] RenderMeshHandle addPlaneMesh(Vec2 half_extent);
+      [[nodiscard]] RenderMeshHandle addCuboidMesh(Vec3 minimum, Vec3 maximum);
       [[nodiscard]] std::expected<RenderInstanceHandle, Error>
       addInstance(RenderMeshHandle mesh, RenderMaterialHandle material, Transform local = {},
                   Mat4 world = identityMat4());
@@ -88,6 +90,9 @@ export namespace vve::v4 {
       [[nodiscard]] const Vector<RenderInstance> &instances() const;
 
    private:
+      static void appendFace(Vector<RenderVertex> &vertices, Vector<std::uint32_t> &indices,
+                             Vec3 normal, std::array<Vec3, 4> corners);
+
       Vector<RenderMesh> meshes_{};                   ///< CPU meshes awaiting upload.
       Vector<RenderMaterial> materials_{};            ///< CPU materials awaiting descriptor creation.
       Vector<RenderInstance> instances_{};            ///< Draw items.
@@ -161,6 +166,64 @@ namespace vve::v4 {
                              .bounds = bounds};
       meshes_.push_back(std::move(mesh));
       return meshes_.back().handle;
+   }
+
+   /// @brief Adds a y-up plane mesh centered at the local origin.
+   inline RenderMeshHandle RenderScene::addPlaneMesh(Vec2 half_extent) {
+      const auto hx = half_extent.x;
+      const auto hz = half_extent.y;
+      const auto up = Vec3(zero(), one(), zero());
+      auto vertices = Vector<RenderVertex>{
+          RenderVertex{.position = Vec3(-hx, zero(), -hz), .normal = up, .uv = Vec2{0.0F, 0.0F}},
+          RenderVertex{.position = Vec3( hx, zero(), -hz), .normal = up, .uv = Vec2{1.0F, 0.0F}},
+          RenderVertex{.position = Vec3( hx, zero(),  hz), .normal = up, .uv = Vec2{1.0F, 1.0F}},
+          RenderVertex{.position = Vec3(-hx, zero(),  hz), .normal = up, .uv = Vec2{0.0F, 1.0F}}};
+      auto indices = Vector<std::uint32_t>{0, 1, 2, 0, 2, 3};
+      return addMesh(std::move(vertices), std::move(indices),
+                     Bounds{.minimum = Position{.value = Vec3(-hx, zero(), -hz)},
+                            .maximum = Position{.value = Vec3( hx, zero(),  hz)}, .valid = true});
+   }
+
+   /// @brief Adds a cuboid mesh with separate face vertices so each face keeps a clean normal.
+   inline RenderMeshHandle RenderScene::addCuboidMesh(Vec3 minimum, Vec3 maximum) {
+      auto vertices = Vector<RenderVertex>{};
+      auto indices = Vector<std::uint32_t>{};
+      vertices.reserve(24);
+      indices.reserve(36);
+
+      appendFace(vertices, indices, Vec3( zero(),  zero(),  one()), {Vec3(minimum.x, minimum.y, maximum.z),
+                 Vec3(maximum.x, minimum.y, maximum.z), Vec3(maximum.x, maximum.y, maximum.z),
+                 Vec3(minimum.x, maximum.y, maximum.z)});
+      appendFace(vertices, indices, Vec3( zero(),  zero(), -one()), {Vec3(maximum.x, minimum.y, minimum.z),
+                 Vec3(minimum.x, minimum.y, minimum.z), Vec3(minimum.x, maximum.y, minimum.z),
+                 Vec3(maximum.x, maximum.y, minimum.z)});
+      appendFace(vertices, indices, Vec3( one(),   zero(),  zero()), {Vec3(maximum.x, minimum.y, maximum.z),
+                 Vec3(maximum.x, minimum.y, minimum.z), Vec3(maximum.x, maximum.y, minimum.z),
+                 Vec3(maximum.x, maximum.y, maximum.z)});
+      appendFace(vertices, indices, Vec3(-one(),   zero(),  zero()), {Vec3(minimum.x, minimum.y, minimum.z),
+                 Vec3(minimum.x, minimum.y, maximum.z), Vec3(minimum.x, maximum.y, maximum.z),
+                 Vec3(minimum.x, maximum.y, minimum.z)});
+      appendFace(vertices, indices, Vec3( zero(),  one(),   zero()), {Vec3(minimum.x, maximum.y, maximum.z),
+                 Vec3(maximum.x, maximum.y, maximum.z), Vec3(maximum.x, maximum.y, minimum.z),
+                 Vec3(minimum.x, maximum.y, minimum.z)});
+      appendFace(vertices, indices, Vec3( zero(), -one(),   zero()), {Vec3(minimum.x, minimum.y, minimum.z),
+                 Vec3(maximum.x, minimum.y, minimum.z), Vec3(maximum.x, minimum.y, maximum.z),
+                 Vec3(minimum.x, minimum.y, maximum.z)});
+
+      return addMesh(std::move(vertices), std::move(indices),
+                     Bounds{.minimum = Position{.value = minimum},
+                            .maximum = Position{.value = maximum}, .valid = true});
+   }
+
+   /// @brief Appends one independent quad face as two triangles.
+   inline void RenderScene::appendFace(Vector<RenderVertex> &vertices, Vector<std::uint32_t> &indices,
+                                       Vec3 normal, std::array<Vec3, 4> corners) {
+      const auto base = static_cast<std::uint32_t>(vertices.size());
+      const std::array uvs{Vec2{0.0F, 0.0F}, Vec2{1.0F, 0.0F}, Vec2{1.0F, 1.0F}, Vec2{0.0F, 1.0F}};
+      for (std::size_t i{}; i < corners.size(); ++i) {
+         vertices.push_back(RenderVertex{.position = corners[i], .normal = normal, .uv = uvs[i]});
+      }
+      for (const auto index : std::array{0U, 1U, 2U, 0U, 2U, 3U}) { indices.push_back(base + index); }
    }
 
    /// @brief Adds one render instance if mesh and material handles are known.

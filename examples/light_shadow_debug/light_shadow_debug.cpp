@@ -10,6 +10,7 @@
 #include <string_view>
 
 import VEEngine;
+import VEEngine.V4;
 
 /**
  * @file
@@ -159,6 +160,10 @@ public:
             return std::unexpected(camera_result.error());
         }
 
+        auto render_scene = buildRenderScene();
+        if (!render_scene) { return std::unexpected(render_scene.error()); }
+        render_scene_ = std::move(*render_scene);
+
         const auto output_directory = output_path_.parent_path();
         if (!output_directory.empty()) { std::filesystem::create_directories(output_directory); }
 
@@ -183,6 +188,12 @@ public:
         writeVec3(file, "camera.target", camera_target_);
         file << "camera.fov_y=" << camera_.fov_y.radians << '\n';
         file << "camera.clip=" << camera_.clip.near_plane << ',' << camera_.clip.far_plane << '\n';
+        file << "render_scene.mesh_count=" << render_scene_.meshCount() << '\n';
+        file << "render_scene.material_count=" << render_scene_.materialCount() << '\n';
+        file << "render_scene.instance_count=" << render_scene_.instanceCount() << '\n';
+        file << "render_scene.camera=" << render_scene_.camera().has_value() << '\n';
+        file << "render_scene.directional_light=" << render_scene_.directionalLight().has_value() << '\n';
+        writeRenderSceneMeshes(file);
 
         for (const auto &sample : samples_) {
             const auto result = evaluateSample(sample, light_, cuboid_);
@@ -199,6 +210,42 @@ public:
     }
 
 private:
+    /// @brief Builds the CPU render scene that the future Vulkan pass will upload.
+    [[nodiscard]] std::expected<vve::v4::RenderScene, vve::Error> buildRenderScene() const {
+        auto scene = vve::v4::RenderScene{};
+        const auto plane_material = scene.addMaterial(vve::v4::RenderMaterial{
+            .base_color = vve::LinearColor{.value = vve::Vec3{0.55F, 0.55F, 0.55F}}});
+        const auto cuboid_material = scene.addMaterial(vve::v4::RenderMaterial{
+            .base_color = vve::LinearColor{.value = vve::Vec3{0.80F, 0.72F, 0.62F}}});
+        const auto plane_mesh = scene.addPlaneMesh(plane_.half_extent);
+        const auto cuboid_mesh = scene.addCuboidMesh(cuboid_.minimum, cuboid_.maximum);
+
+        const auto plane = scene.addInstance(plane_mesh, plane_material,
+                                             vve::Transform{.translation = vve::Position{.value = plane_.center}});
+        if (!plane) { return std::unexpected(plane.error()); }
+        const auto cuboid = scene.addInstance(cuboid_mesh, cuboid_material);
+        if (!cuboid) { return std::unexpected(cuboid.error()); }
+
+        scene.setCamera(vve::v4::RenderCamera{.camera = camera_, .target_extent = render_extent_});
+        scene.setDirectionalLight(vve::v4::RenderDirectionalLight{.direction_to_light = light_.direction_to_light,
+                                                                  .color = light_.color,
+                                                                  .intensity = light_.intensity,
+                                                                  .ambient = light_.ambient});
+        return scene;
+    }
+
+    /// @brief Writes renderable mesh sizes into the verification text file.
+    void writeRenderSceneMeshes(std::ofstream &file) const {
+        std::size_t index{};
+        for (const auto &instance : render_scene_.instances()) {
+            const auto *mesh = render_scene_.findMesh(instance.mesh);
+            if (mesh == nullptr) { continue; }
+            file << "render_scene.instance." << index << ".vertices=" << mesh->vertices.size() << '\n';
+            file << "render_scene.instance." << index << ".indices=" << mesh->indices.size() << '\n';
+            ++index;
+        }
+    }
+
     DebugPlane plane_{.center = vve::Vec3{0.0F, 0.0F, 0.0F}, .half_extent = vve::Vec2{3.0F, 3.0F}};
     DebugCuboid cuboid_{.minimum = vve::Vec3{-0.225F, 0.0F, -0.225F},
                         .maximum = vve::Vec3{0.225F, 2.0F, 0.225F}};
@@ -222,6 +269,8 @@ private:
         DebugSamplePoint{.name = "cuboid_lit_side",
                          .position = vve::Vec3{-0.225F, 1.0F, 0.0F},
                          .normal = vve::Vec3{-1.0F, 0.0F, 0.0F}}};
+    vve::PixelExtent render_extent_{.width = 960, .height = 540}; ///< CPU render target size.
+    vve::v4::RenderScene render_scene_{};                         ///< CPU scene prepared for GPU upload.
     std::filesystem::path output_path_{};
 };
 
