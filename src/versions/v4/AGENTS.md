@@ -68,5 +68,6 @@
   - tooling/editor
   - networking
 
+## Vulkan API
 
-  
+Vulkan related code should be put into a library in folder vh. there should be two layers. a stateful layer defining structs that store vulkan related objects, making full use of the C++ interface. and a stateless layer that consists of true functions that just have in and out parameters but do not access global state. also the stateless layer functions should not receive or return structs from the stateful layer, only Vulkan objects, including handles, or data related stuff. this way the statless layer remains portable and can be used in other projects without enforcing to use the stateful layer structs.

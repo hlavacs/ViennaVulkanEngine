@@ -105,6 +105,7 @@ int main() {
    if (shared_value != 42) { return 6; }
    if (engine.world().get<SharedSystem>().value != 77) { return 7; }
    if (render_system.renderedFrameCount() != 2 || render_system.lastRenderedWindowCount() != 1) { return 10; }
+   if (render_system.preparedGpuTargetCount() != 0) { return 11; }
 
    return 0;
 }

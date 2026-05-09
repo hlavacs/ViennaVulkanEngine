@@ -2,6 +2,7 @@ add_library(ViennaVulkanEngine SHARED)
 add_library(ViennaVulkanEngine::ViennaVulkanEngine ALIAS ViennaVulkanEngine)
 
 target_compile_features(ViennaVulkanEngine PUBLIC cxx_std_23)
+target_compile_definitions(ViennaVulkanEngine PUBLIC VULKAN_HPP_NO_EXCEPTIONS)
 target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_ENGINE_BUILD)
 
 option(VVE_MATH_USE_DOUBLE "Build the engine math layer with double precision" OFF)
@@ -60,6 +61,7 @@ target_link_libraries(ViennaVulkanEngine
     PRIVATE
         SDL3::SDL3
         slang::slang
+        Vulkan::Vulkan
 )
 
 vve_set_output_dirs(ViennaVulkanEngine)

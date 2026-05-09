@@ -6,6 +6,7 @@ module;
 #endif
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
+#include <SDL3/SDL_vulkan.h>
 #ifdef VVE_V4_DEFINED_SDL_MAIN_HANDLED
 #undef SDL_MAIN_HANDLED
 #undef VVE_V4_DEFINED_SDL_MAIN_HANDLED
@@ -364,6 +365,9 @@ namespace vve::v4 {
       });
       if (needs_platform_windows) {
          SDL_SetMainReady();
+#ifdef VVE_SDL_VULKAN_LIBRARY
+         SDL_SetHint(SDL_HINT_VULKAN_LIBRARY, VVE_SDL_VULKAN_LIBRARY);
+#endif
          if (SDL_InitSubSystem(SDL_INIT_VIDEO) == false) { return std::unexpected(Error::platform_error); }
          impl_->video_initialized = true;
       }
@@ -382,7 +386,7 @@ namespace vve::v4 {
             continue;
          }
 
-         SDL_WindowFlags flags = 0;
+         SDL_WindowFlags flags = SDL_WINDOW_VULKAN;
          if (desc.resizable) { flags |= SDL_WINDOW_RESIZABLE; }
 
          SDL_Window *const window = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.extent.width),

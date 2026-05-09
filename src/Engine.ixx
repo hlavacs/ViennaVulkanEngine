@@ -276,9 +276,7 @@ export namespace vve {
       const FrameContext frame{.frame_index = FrameCount{.value = frame_},
                                .delta_time = DeltaTime{.seconds = delta.count()}};
       if (const auto result = updateSystems(frame); !result) { return std::unexpected(result.error()); }
-      const VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData render_frame{
-         .windows = impl_.windowSystem().snapshot()};
-      if (const auto result = impl_.renderSystem().renderFrame(render_frame); !result) {
+      if (const auto result = impl_.renderSystem().renderFrame(impl_.windowSystem()); !result) {
          return std::unexpected(result.error());
       }
       last_frame_time_ = now;

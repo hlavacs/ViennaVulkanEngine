@@ -43,6 +43,7 @@ export namespace vve {
       [[nodiscard]] bool hasSceneDirectionalLight() const { return impl_.hasSceneDirectionalLight(); }
       [[nodiscard]] std::uint64_t renderedFrameCount() const { return impl_.renderedFrameCount(); }
       [[nodiscard]] std::size_t lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }
+      [[nodiscard]] std::size_t preparedGpuTargetCount() const { return impl_.preparedGpuTargetCount(); }
 
    private:
       Impl &impl_; ///< Selected implementation render system.
