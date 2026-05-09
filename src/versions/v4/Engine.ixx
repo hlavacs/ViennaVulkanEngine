@@ -62,6 +62,8 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<int, Error> getVersionMajor() const noexcept;
       [[nodiscard]] std::string_view versionName() const;
       [[nodiscard]] AssetSystem &assets();
+      [[nodiscard]] RenderSystem &renderSystem();
+      [[nodiscard]] const RenderSystem &renderSystem() const;
       [[nodiscard]] GuiSystem &gui();
       [[nodiscard]] ECS &ecs();
       [[nodiscard]] WindowSystem &windowSystem();
@@ -84,6 +86,7 @@ export namespace vve::v4 {
       ECS ecs_{};                              ///< Runtime entity/component storage owned by the engine.
       WindowSystem window_system_{};           ///< SDL platform window owner.
       AssetSystem assets_{};                   ///< Asset and object catalog facade.
+      RenderSystem render_system_{};           ///< Renderer selection and active CPU render scene.
       ResourceSystem resources_{};             ///< Resource descriptor facade.
       TaskGraph tasks_{};                      ///< CPU task graph facade.
       RenderGraph render_graph_{};             ///< Render pass graph facade.
@@ -127,6 +130,12 @@ export namespace vve::v4 {
 
    /// @brief Returns the asset system.
    inline AssetSystem &Engine::assets() { return assets_; }
+
+   /// @brief Returns the render system.
+   inline RenderSystem &Engine::renderSystem() { return render_system_; }
+
+   /// @brief Returns the render system.
+   inline const RenderSystem &Engine::renderSystem() const { return render_system_; }
 
    /// @brief Returns the GUI system.
    inline GuiSystem &Engine::gui() { return gui_; }
@@ -233,10 +242,9 @@ export namespace vve::v4 {
       tasks_.addEdge(previous, *render);
       tasks_.addEdge(*render, *finish);
 
-      const RenderSystem render_system{};
-      const auto renderer = render_system.createForwardRenderer();
+      const auto renderer = render_system_.createForwardRenderer();
       const std::array pass_lists{renderer.passes, gui_.passes()};
-      const auto graph = render_system.buildRenderGraph(pass_lists);
+      const auto graph = render_system_.buildRenderGraph(pass_lists);
       if (!graph) { return std::unexpected(graph.error()); }
       render_graph_ = *graph;
       return {};
@@ -268,14 +276,13 @@ export namespace vve::v4 {
          return result;
       }
 
-      const RenderSystem render_system{};
       for (const auto &window : window_system_.snapshot()) {
          auto renderer_id = window.renderer_id.value.empty() ? RendererId{.value = "forward"} : window.renderer_id;
-         const auto renderer = render_system.createRenderer(renderer_id);
+         const auto renderer = render_system_.createRenderer(renderer_id);
          if (!renderer) { return std::unexpected(renderer.error()); }
 
          const std::array pass_lists{renderer->passes, gui_.passes()};
-         const auto graph = render_system.buildRenderGraph(pass_lists);
+         const auto graph = render_system_.buildRenderGraph(pass_lists);
          if (!graph) { return std::unexpected(graph.error()); }
 
          const auto file = directory / ("render_graph_" + graphFileStem(window.id) + ".json");

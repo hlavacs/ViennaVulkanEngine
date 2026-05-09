@@ -24,6 +24,14 @@ struct CountingSystem {
          *shared_value = shared.value;
          shared.value = 77;
       }
+      auto &render_system = world.template get<vve::RenderSystem>();
+      render_system.clearScene();
+      if (const auto result = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{}); !result) {
+         return result;
+      }
+      render_system.setCamera(vve::Camera{}, vve::PixelExtent{.width = 64, .height = 64});
+      render_system.setDirectionalLight(vve::Direction{}, vve::LinearColor{}, vve::LightIntensity{},
+                                        vve::LinearColor{});
       return world.template get<vve::WindowSystem>().windowCount() == 0
                 ? std::unexpected(vve::Error::missing_object)
                 : std::expected<void, vve::Error>{};
@@ -71,6 +79,14 @@ int main() {
                                            .shared_value = &shared_value}));
 
    if (!engine.init()) { return 1; }
+   auto world = engine.world();
+   auto &render_system = world.get<vve::RenderSystem>();
+   if (render_system.sceneMeshCount() != 1 || render_system.sceneMaterialCount() != 1 ||
+       render_system.sceneInstanceCount() != 1) {
+      return 8;
+   }
+   if (!render_system.hasSceneCamera() || !render_system.hasSceneDirectionalLight()) { return 9; }
+
    const auto dump_dir = std::filesystem::temp_directory_path() / "vve_user_system_debug_graphs";
    std::filesystem::remove_all(dump_dir);
    if (const auto dumped = engine.writeDebugGraphs(dump_dir); !dumped) { return 2; }
@@ -88,6 +104,7 @@ int main() {
    if (init_count != 1 || update_count != 2 || last_frame != 1 || last_window_count != 1) { return 5; }
    if (shared_value != 42) { return 6; }
    if (engine.world().get<SharedSystem>().value != 77) { return 7; }
+   if (render_system.renderedFrameCount() != 2 || render_system.lastRenderedWindowCount() != 1) { return 10; }
 
    return 0;
 }

@@ -47,6 +47,7 @@ target_sources(ViennaVulkanEngine
             Window.ixx
             World.ixx
             Assets.ixx
+            RenderSystem.ixx
             Gui.ixx
             Engine.ixx
 )

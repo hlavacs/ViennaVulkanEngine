@@ -19,6 +19,7 @@ export import :ECS;
 export import :Window;
 export import :World;
 export import :Assets;
+export import :RenderSystem;
 export import :Gui;
 
 /// @file
@@ -90,6 +91,7 @@ export namespace vve {
       AssetSystem assets_{impl_.assets()};     ///< Public asset-system wrapper referenced by world views.
       GuiSystem gui_{impl_.gui()};             ///< Public GUI wrapper referenced by world views.
       WindowSystem window_system_{impl_.windowSystem()}; ///< Public window wrapper referenced by world views.
+      RenderSystem render_system_{impl_.renderSystem()}; ///< Public render wrapper referenced by world views.
       std::optional<std::tuple<TSystems...>> systems_{}; ///< User systems supplied by the application.
       std::chrono::steady_clock::time_point last_frame_time_{}; ///< Timestamp of the previous facade step().
       std::uint64_t frame_{0};                 ///< Number of completed facade step() calls.
@@ -190,14 +192,15 @@ export namespace vve {
 
    template <typename... TSystems> auto Engine<TSystems...>::makeWorld() {
       auto make_base = [&] {
-         return World{std::ref(ecs_), std::ref(assets_), std::ref(gui_), std::ref(window_system_)};
+         return World{std::ref(ecs_), std::ref(assets_), std::ref(gui_), std::ref(window_system_),
+                      std::ref(render_system_)};
       };
       if constexpr (sizeof...(TSystems) == 0) {
          return make_base();
       } else {
          return std::apply([&](auto &...system) {
             return World{std::ref(ecs_), std::ref(assets_), std::ref(gui_),
-                         std::ref(window_system_), std::ref(system)...};
+                         std::ref(window_system_), std::ref(render_system_), std::ref(system)...};
          }, *systems_);
       }
    }
@@ -273,6 +276,11 @@ export namespace vve {
       const FrameContext frame{.frame_index = FrameCount{.value = frame_},
                                .delta_time = DeltaTime{.seconds = delta.count()}};
       if (const auto result = updateSystems(frame); !result) { return std::unexpected(result.error()); }
+      const VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData render_frame{
+         .windows = impl_.windowSystem().snapshot()};
+      if (const auto result = impl_.renderSystem().renderFrame(render_frame); !result) {
+         return std::unexpected(result.error());
+      }
       last_frame_time_ = now;
       ++frame_;
       return *status;

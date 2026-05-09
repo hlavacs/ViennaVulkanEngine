@@ -213,12 +213,31 @@ int main() {
    if (cuboid_source->vertices.size() != 24 || cuboid_source->indices.size() != 36) { return 47; }
    if (!plane_source->bounds.valid || !cuboid_source->bounds.valid) { return 48; }
    if (cuboid_source->bounds.maximum.value.y != 2.0F) { return 49; }
+   if (debug_scene.vertexCount() != 28 || debug_scene.indexCount() != 42) { return 52; }
 
    debug_scene.setCamera(vve::v4::RenderCamera{.target_extent = vve::v4::PixelExtent{.width = 960, .height = 540}});
    debug_scene.setDirectionalLight(vve::v4::RenderDirectionalLight{});
    if (!debug_scene.camera() || !debug_scene.directionalLight()) { return 50; }
    if (debug_scene.camera()->target_extent.width != 960 || debug_scene.camera()->target_extent.height != 540) {
       return 51;
+   }
+
+   vve::v4::RenderSystem stateful_render_system{};
+   if (const auto result = stateful_render_system.addPlane(vve::v4::Vec2{2.0F, 2.0F}, vve::v4::LinearColor{});
+       !result) {
+      return 53;
+   }
+   stateful_render_system.setCamera(vve::v4::Camera{}, vve::v4::PixelExtent{.width = 320, .height = 200});
+   stateful_render_system.setDirectionalLight(vve::v4::Direction{}, vve::v4::LinearColor{},
+                                              vve::v4::LightIntensity{}, vve::v4::LinearColor{});
+   if (stateful_render_system.sceneMeshCount() != 1 || stateful_render_system.sceneVertexCount() != 4) {
+      return 54;
+   }
+   const auto frame = vve::v4::WindowFrameData{.windows = vve::v4::Vector<vve::v4::WindowInfo>{vve::v4::WindowInfo{}}};
+   if (const auto result = stateful_render_system.renderFrame(frame); !result) { return 55; }
+   if (stateful_render_system.renderedFrameCount() != 1 ||
+       stateful_render_system.lastRenderedWindowCount() != 1) {
+      return 56;
    }
 
    return 0;

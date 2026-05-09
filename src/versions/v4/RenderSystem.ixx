@@ -2,6 +2,7 @@ export module VEEngine.V4:RenderSystem;
 import std;
 export import :RenderPass;
 import :RendererForward;
+import :Window;
 
 /// @file
 /// @brief CPU render data and renderer selection system.
@@ -85,6 +86,8 @@ export namespace vve::v4 {
       [[nodiscard]] std::size_t meshCount() const;
       [[nodiscard]] std::size_t materialCount() const;
       [[nodiscard]] std::size_t instanceCount() const;
+      [[nodiscard]] std::size_t vertexCount() const;
+      [[nodiscard]] std::size_t indexCount() const;
       [[nodiscard]] const std::optional<RenderCamera> &camera() const;
       [[nodiscard]] const std::optional<RenderDirectionalLight> &directionalLight() const;
       [[nodiscard]] const Vector<RenderInstance> &instances() const;
@@ -119,6 +122,24 @@ export namespace vve::v4 {
       buildRenderGraph(std::span<const RenderPassContract> passes) const;
       [[nodiscard]] std::expected<RenderGraph, Error>
       buildRenderGraph(std::span<const std::span<const RenderPassContract>> pass_lists) const;
+      [[nodiscard]] std::expected<void, Error> addPlane(Vec2 half_extent, LinearColor color,
+                                                        Transform transform = {});
+      [[nodiscard]] std::expected<void, Error> addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
+                                                         Transform transform = {});
+      void clearScene();
+      void setCamera(Camera camera, PixelExtent extent);
+      void setDirectionalLight(Direction direction_to_light, LinearColor color,
+                               LightIntensity intensity, LinearColor ambient);
+      [[nodiscard]] std::size_t sceneMeshCount() const;
+      [[nodiscard]] std::size_t sceneMaterialCount() const;
+      [[nodiscard]] std::size_t sceneInstanceCount() const;
+      [[nodiscard]] std::size_t sceneVertexCount() const;
+      [[nodiscard]] std::size_t sceneIndexCount() const;
+      [[nodiscard]] bool hasSceneCamera() const;
+      [[nodiscard]] bool hasSceneDirectionalLight() const;
+      [[nodiscard]] std::expected<void, Error> renderFrame(const WindowFrameData &windows);
+      [[nodiscard]] std::uint64_t renderedFrameCount() const;
+      [[nodiscard]] std::size_t lastRenderedWindowCount() const;
 
    private:
       [[nodiscard]] static std::expected<void, Error>
@@ -128,6 +149,10 @@ export namespace vve::v4 {
       addDependencies(RenderGraph &graph, const std::map<std::string_view, RenderPassHandle> &handles,
                       std::span<const RenderPassContract> passes);
       [[nodiscard]] static RendererDescriptor createDescriptor(detail::RendererChoice choice);
+
+      RenderScene scene_{};                    ///< Active CPU render scene awaiting GPU upload.
+      std::uint64_t rendered_frames_{0};       ///< Number of frame hooks reached.
+      std::size_t last_rendered_window_count_{0}; ///< Last non-closed window count.
    };
 
 } // namespace vve::v4
@@ -275,6 +300,20 @@ namespace vve::v4 {
    /// @brief Returns instance count.
    inline std::size_t RenderScene::instanceCount() const { return instances_.size(); }
 
+   /// @brief Returns total source vertex count.
+   inline std::size_t RenderScene::vertexCount() const {
+      std::size_t result{};
+      for (const auto &mesh : meshes_) { result += mesh.vertices.size(); }
+      return result;
+   }
+
+   /// @brief Returns total source index count.
+   inline std::size_t RenderScene::indexCount() const {
+      std::size_t result{};
+      for (const auto &mesh : meshes_) { result += mesh.indices.size(); }
+      return result;
+   }
+
    /// @brief Returns the active render camera if one was set.
    inline const std::optional<RenderCamera> &RenderScene::camera() const { return camera_; }
 
@@ -329,6 +368,81 @@ namespace vve::v4 {
       if (const auto order = graph.topologicalOrder(); !order) { return std::unexpected(order.error()); }
       return graph;
    }
+
+   /// @brief Adds a renderable plane primitive to the active CPU scene.
+   inline std::expected<void, Error> RenderSystem::addPlane(Vec2 half_extent, LinearColor color,
+                                                            Transform transform) {
+      const auto material = scene_.addMaterial(RenderMaterial{.base_color = color});
+      const auto mesh = scene_.addPlaneMesh(half_extent);
+      if (const auto instance = scene_.addInstance(mesh, material, transform); !instance) {
+         return std::unexpected(instance.error());
+      }
+      return {};
+   }
+
+   /// @brief Adds a renderable cuboid primitive to the active CPU scene.
+   inline std::expected<void, Error> RenderSystem::addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
+                                                             Transform transform) {
+      const auto material = scene_.addMaterial(RenderMaterial{.base_color = color});
+      const auto mesh = scene_.addCuboidMesh(minimum, maximum);
+      if (const auto instance = scene_.addInstance(mesh, material, transform); !instance) {
+         return std::unexpected(instance.error());
+      }
+      return {};
+   }
+
+   /// @brief Clears the active CPU render scene.
+   inline void RenderSystem::clearScene() { scene_.clear(); }
+
+   /// @brief Sets the active render camera in the CPU scene.
+   inline void RenderSystem::setCamera(Camera camera, PixelExtent extent) {
+      scene_.setCamera(RenderCamera{.camera = std::move(camera), .target_extent = extent});
+   }
+
+   /// @brief Sets the active directional light in the CPU scene.
+   inline void RenderSystem::setDirectionalLight(Direction direction_to_light, LinearColor color,
+                                                 LightIntensity intensity, LinearColor ambient) {
+      scene_.setDirectionalLight(RenderDirectionalLight{.direction_to_light = direction_to_light,
+                                                       .color = color,
+                                                       .intensity = intensity,
+                                                       .ambient = ambient});
+   }
+
+   /// @brief Returns mesh count in the active CPU scene.
+   inline std::size_t RenderSystem::sceneMeshCount() const { return scene_.meshCount(); }
+
+   /// @brief Returns material count in the active CPU scene.
+   inline std::size_t RenderSystem::sceneMaterialCount() const { return scene_.materialCount(); }
+
+   /// @brief Returns instance count in the active CPU scene.
+   inline std::size_t RenderSystem::sceneInstanceCount() const { return scene_.instanceCount(); }
+
+   /// @brief Returns total vertex count in the active CPU scene.
+   inline std::size_t RenderSystem::sceneVertexCount() const { return scene_.vertexCount(); }
+
+   /// @brief Returns total index count in the active CPU scene.
+   inline std::size_t RenderSystem::sceneIndexCount() const { return scene_.indexCount(); }
+
+   /// @brief Reports whether the active CPU scene has a camera.
+   inline bool RenderSystem::hasSceneCamera() const { return scene_.camera().has_value(); }
+
+   /// @brief Reports whether the active CPU scene has a directional light.
+   inline bool RenderSystem::hasSceneDirectionalLight() const { return scene_.directionalLight().has_value(); }
+
+   /// @brief Records that a frame reached the renderer; Vulkan execution is added in the next stage.
+   inline std::expected<void, Error> RenderSystem::renderFrame(const WindowFrameData &windows) {
+      last_rendered_window_count_ = std::ranges::count_if(windows.windows, [](const WindowInfo &window) {
+         return !window.should_close;
+      });
+      ++rendered_frames_;
+      return {};
+   }
+
+   /// @brief Returns how many frame hooks reached the render system.
+   inline std::uint64_t RenderSystem::renderedFrameCount() const { return rendered_frames_; }
+
+   /// @brief Returns the last frame's non-closed window count.
+   inline std::size_t RenderSystem::lastRenderedWindowCount() const { return last_rendered_window_count_; }
 
    /// @brief Adds one pass node and merges duplicate names so systems can share milestones.
    inline std::expected<void, Error>
