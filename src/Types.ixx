@@ -11,25 +11,15 @@ export import VEEngine.Vector;
  */
 export namespace vve {
 
-   struct EntityTag;   ///< Entity handle category.
-   struct SceneTag;    ///< Scene handle category.
-   struct WindowTag;   ///< Window handle category.
-   struct NodeTag;     ///< Scene node handle category.
-   struct MeshTag;     ///< Mesh handle category.
-   struct MaterialTag; ///< Material handle category.
-   struct TextureTag;  ///< Texture handle category.
-   struct LightTag;    ///< Light handle category.
-   struct CameraTag;   ///< Camera handle category.
-
-   using Entity         = TypedHandle<EntityTag>;   ///< Facade ECS entity.
-   using SceneHandle    = TypedHandle<SceneTag>;    ///< Scene descriptor handle.
-   using WindowHandle   = TypedHandle<WindowTag>;   ///< Runtime window handle.
-   using NodeHandle     = TypedHandle<NodeTag>;     ///< Node descriptor handle.
-   using MeshHandle     = TypedHandle<MeshTag>;     ///< Mesh descriptor handle.
-   using MaterialHandle = TypedHandle<MaterialTag>; ///< Material descriptor handle.
-   using TextureHandle  = TypedHandle<TextureTag>;  ///< Texture descriptor handle.
-   using LightHandle    = TypedHandle<LightTag>;    ///< Light descriptor handle.
-   using CameraHandle   = TypedHandle<CameraTag>;   ///< Camera descriptor handle.
+   using Entity         = TypedHandle<decltype([](){})>;   ///< Facade ECS entity.
+   using SceneHandle    = TypedHandle<decltype([](){})>;    ///< Scene descriptor handle.
+   using WindowHandle   = TypedHandle<decltype([](){})>;   ///< Runtime window handle.
+   using NodeHandle     = TypedHandle<decltype([](){})>;     ///< Node descriptor handle.
+   using MeshHandle     = TypedHandle<decltype([](){})>;     ///< Mesh descriptor handle.
+   using MaterialHandle = TypedHandle<decltype([](){})>; ///< Material descriptor handle.
+   using TextureHandle  = TypedHandle<decltype([](){})>;  ///< Texture descriptor handle.
+   using LightHandle    = TypedHandle<decltype([](){})>;    ///< Light descriptor handle.
+   using CameraHandle   = TypedHandle<decltype([](){})>;   ///< Camera descriptor handle.
 
    /// @brief Strong wrapper for world or local position values.
    struct Position {
