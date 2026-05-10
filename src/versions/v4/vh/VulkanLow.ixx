@@ -1072,7 +1072,7 @@ namespace vve::v4::vh::low {
       }
 
       auto push_range = vk::PushConstantRange{};
-      push_range.stageFlags = vk::ShaderStageFlagBits::eVertex;
+      push_range.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
       push_range.offset = 0;
       push_range.size = 32U * static_cast<std::uint32_t>(sizeof(float));
       auto layout_info = vk::PipelineLayoutCreateInfo{};
@@ -1417,7 +1417,7 @@ namespace vve::v4::vh::low {
       command_buffer.setScissor(0, 1, &scissor);
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
       command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, 1, &debug_set, 0, nullptr);
-      command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0,
+      command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
                                    32U * static_cast<std::uint32_t>(sizeof(float)),
                                    scene_constants.data());
       command_buffer.bindVertexBuffers(0, 1, &vertex_buffer, &vertex_offset);

@@ -53,6 +53,7 @@ struct VveSceneVertexOutput
 {
     float4 clipPosition : SV_Position; ///< Clip-space position.
     float3 color : TEXCOORD0;          ///< Interpolated debug color.
+    float3 normal : TEXCOORD1;         ///< Interpolated world-space normal.
 };
 
 /// @brief Applies the column-major camera matrix used by the CPU verification code.
@@ -132,6 +133,7 @@ VveSceneVertexOutput vveSceneUnlitVertexMain(VveSceneVertexInput input, uint ver
     VveSceneVertexOutput output;
     output.clipPosition = clipPosition;
     output.color = input.color;
+    output.normal = input.normal;
     return output;
 }
 
@@ -142,9 +144,13 @@ float4 vveSceneShadowVertexMain(VveSceneVertexInput input) : SV_Position
     return vveSceneLightClipFromWorld(input.position);
 }
 
-/// @brief Returns the uploaded flat debug color.
+/// @brief Applies the verified one-directional-light model to the uploaded debug color.
 [shader("fragment")]
 float4 vveSceneUnlitFragmentMain(VveSceneVertexOutput input) : SV_Target0
 {
-    return float4(input.color, 1.0);
+    float3 unitNormal = vveSafeNormalize(input.normal);
+    float3 directionToLight = vveSafeNormalize(gVveScene.lightDirectionIntensity.xyz);
+    float nDotL = max(0.0, dot(unitNormal, directionToLight));
+    float3 direct = gVveScene.lightColor.xyz * (gVveScene.lightDirectionIntensity.w * nDotL);
+    return float4(input.color * (gVveScene.ambientColor.xyz + direct), 1.0);
 }
