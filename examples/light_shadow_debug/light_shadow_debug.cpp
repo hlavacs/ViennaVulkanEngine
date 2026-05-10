@@ -259,21 +259,32 @@ int main(int argc, char **argv) {
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
 
+    const auto reference_path = outputPath(argc, argv);
     auto engine = vve::makeEngine(
         vve::ApplicationName{"light-shadow-debug"},
         vve::MaxFrames{.value = vve::FrameCount{.value = 1}},
-        vve::makeUserSystems(LightShadowDebugSystem{outputPath(argc, argv)}),
+        vve::makeUserSystems(LightShadowDebugSystem{reference_path}),
         vve::WindowSetups{vve::WindowSetup{}
                               .id("light-shadow-debug.main")
                               .title("VVE Light Shadow Debug")
                               .extent(vve::PixelExtent{.width = 960, .height = 540})
                               .renderer(vve::RendererId{.value = "forward"})
                               .resizable(false)
-                              .visible(false)});
+                              .visible(true)});
 
-    if (const auto init_result = engine.init(); !init_result) {
-        std::cerr << "[light_shadow_debug] engine.init failed: " << vve::errorName(init_result.error()) << '\n';
+    if (const auto run_result = engine.run(); !run_result) {
+        std::cerr << "[light_shadow_debug] engine.run failed: " << vve::errorName(run_result.error()) << '\n';
         return 1;
+    }
+    auto world = engine.world();
+    auto &render_system = world.template get<vve::RenderSystem>();
+    if (std::ofstream file{reference_path, std::ios::app}) {
+        const auto clear_color = render_system.lastClearColor();
+        file << "engine.rendered_frames=" << render_system.renderedFrameCount() << '\n';
+        file << "engine.prepared_gpu_targets=" << render_system.preparedGpuTargetCount() << '\n';
+        file << "engine.frame_presented=" << render_system.presentedFrameCount() << '\n';
+        file << "engine.clear_color=" << clear_color[0] << ',' << clear_color[1] << ','
+             << clear_color[2] << ',' << clear_color[3] << '\n';
     }
     return 0;
 }

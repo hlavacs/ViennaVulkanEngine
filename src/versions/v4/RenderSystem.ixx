@@ -141,8 +141,10 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<void, Error> renderFrame(const WindowFrameData &windows);
       [[nodiscard]] std::expected<void, Error> renderFrame(WindowSystem &windows);
       [[nodiscard]] std::uint64_t renderedFrameCount() const;
+      [[nodiscard]] std::uint64_t presentedFrameCount() const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const;
       [[nodiscard]] std::size_t preparedGpuTargetCount() const;
+      [[nodiscard]] std::array<float, 4> lastClearColor() const;
 
    private:
       [[nodiscard]] static std::expected<void, Error>
@@ -178,6 +180,12 @@ namespace vve::v4::detail {
 } // namespace vve::v4::detail
 
 namespace vve::v4 {
+
+   namespace detail {
+
+      inline constexpr std::array clear_color{0.10F, 0.20F, 0.30F, 1.00F}; ///< First GPU-frame proof color.
+
+   } // namespace detail
 
    /// @brief Adds a material and returns its stable handle.
    inline RenderMaterialHandle RenderScene::addMaterial(RenderMaterial material) {
@@ -445,17 +453,24 @@ namespace vve::v4 {
    /// @brief Prepares native Vulkan targets, then records the frame hook snapshot.
    inline std::expected<void, Error> RenderSystem::renderFrame(WindowSystem &windows) {
       if (const auto result = vulkan_.prepare(windows); !result) { return result; }
+      if (const auto result = vulkan_.renderClear(detail::clear_color); !result) { return result; }
       return renderFrame(WindowFrameData{.windows = windows.snapshot()});
    }
 
    /// @brief Returns how many frame hooks reached the render system.
    inline std::uint64_t RenderSystem::renderedFrameCount() const { return rendered_frames_; }
 
+   /// @brief Returns how many Vulkan clear/present frame batches completed.
+   inline std::uint64_t RenderSystem::presentedFrameCount() const { return vulkan_.presentedFrameCount(); }
+
    /// @brief Returns the last frame's non-closed window count.
    inline std::size_t RenderSystem::lastRenderedWindowCount() const { return last_rendered_window_count_; }
 
    /// @brief Returns how many visible native windows have prepared Vulkan frame targets.
    inline std::size_t RenderSystem::preparedGpuTargetCount() const { return vulkan_.targetCount(); }
+
+   /// @brief Returns the fixed color used by the most recent Vulkan clear frame.
+   inline std::array<float, 4> RenderSystem::lastClearColor() const { return vulkan_.lastClearColor(); }
 
    /// @brief Adds one pass node and merges duplicate names so systems can share milestones.
    inline std::expected<void, Error>

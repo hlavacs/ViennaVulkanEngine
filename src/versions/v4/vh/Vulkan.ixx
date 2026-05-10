@@ -25,6 +25,7 @@ export namespace vve::v4::vh {
       vk::Image depth_image{};                ///< Depth attachment image.
       vk::DeviceMemory depth_memory{};        ///< Device-local depth memory.
       vk::ImageView depth_view{};             ///< Depth attachment view.
+      std::vector<vk::ImageLayout> layouts{}; ///< Current swapchain image layouts.
    };
 
    /// @brief Owns Vulkan instance, device, and frame targets for visible windows.
@@ -38,8 +39,11 @@ export namespace vve::v4::vh {
       FrameHost &operator=(const FrameHost &) = delete;
 
       [[nodiscard]] std::expected<void, Error> prepare(WindowSystem &windows);
+      [[nodiscard]] std::expected<void, Error> renderClear(const std::array<float, 4> &color);
       [[nodiscard]] std::size_t targetCount() const;
       [[nodiscard]] bool ready() const;
+      [[nodiscard]] std::uint64_t presentedFrameCount() const;
+      [[nodiscard]] std::array<float, 4> lastClearColor() const;
 
    private:
       [[nodiscard]] std::expected<void, Error> createInstance();
@@ -48,7 +52,10 @@ export namespace vve::v4::vh {
       [[nodiscard]] std::expected<void, Error> createDevice(std::span<const vk::SurfaceKHR> surfaces);
       [[nodiscard]] std::expected<void, Error> createSwapchain(FrameTarget &target, Window &window);
       [[nodiscard]] std::expected<void, Error> createDepth(FrameTarget &target);
+      [[nodiscard]] std::expected<void, Error> createFrameExecutor();
+      [[nodiscard]] std::expected<void, Error> clearTarget(FrameTarget &target, const vk::ClearColorValue &color);
       [[nodiscard]] bool matches(std::span<const std::reference_wrapper<Window>> windows) const;
+      void destroyFrameExecutor();
       void destroyTargets();
       void reset();
 
@@ -57,7 +64,14 @@ export namespace vve::v4::vh {
       vk::Device device_{};
       vk::Queue queue_{};
       std::uint32_t queue_family_{};
+      vk::CommandPool command_pool_{};
+      vk::CommandBuffer command_buffer_{};
+      vk::Semaphore frame_timeline_{};
+      vk::Fence acquire_fence_{};
       std::vector<FrameTarget> targets_{};
+      std::uint64_t timeline_value_{0};
+      std::uint64_t presented_frames_{0};
+      std::array<float, 4> last_clear_color_{};
    };
 
 } // namespace vve::v4::vh
@@ -74,7 +88,14 @@ namespace vve::v4::vh {
          device_{std::exchange(other.device_, nullptr)},
          queue_{std::exchange(other.queue_, nullptr)},
          queue_family_{std::exchange(other.queue_family_, 0)},
-         targets_{std::move(other.targets_)} {}
+         command_pool_{std::exchange(other.command_pool_, nullptr)},
+         command_buffer_{std::exchange(other.command_buffer_, nullptr)},
+         frame_timeline_{std::exchange(other.frame_timeline_, nullptr)},
+         acquire_fence_{std::exchange(other.acquire_fence_, nullptr)},
+         targets_{std::move(other.targets_)},
+         timeline_value_{std::exchange(other.timeline_value_, 0)},
+         presented_frames_{std::exchange(other.presented_frames_, 0)},
+         last_clear_color_{std::exchange(other.last_clear_color_, {})} {}
 
    /// @brief Moves ownership of all Vulkan objects.
    FrameHost &FrameHost::operator=(FrameHost &&other) noexcept {
@@ -85,7 +106,14 @@ namespace vve::v4::vh {
          device_ = std::exchange(other.device_, nullptr);
          queue_ = std::exchange(other.queue_, nullptr);
          queue_family_ = std::exchange(other.queue_family_, 0);
+         command_pool_ = std::exchange(other.command_pool_, nullptr);
+         command_buffer_ = std::exchange(other.command_buffer_, nullptr);
+         frame_timeline_ = std::exchange(other.frame_timeline_, nullptr);
+         acquire_fence_ = std::exchange(other.acquire_fence_, nullptr);
          targets_ = std::move(other.targets_);
+         timeline_value_ = std::exchange(other.timeline_value_, 0);
+         presented_frames_ = std::exchange(other.presented_frames_, 0);
+         last_clear_color_ = std::exchange(other.last_clear_color_, {});
       }
       return *this;
    }
@@ -102,11 +130,29 @@ namespace vve::v4::vh {
       return rebuildTargets(native);
    }
 
+   /// @brief Clears and presents all prepared targets once using dynamic rendering.
+   std::expected<void, Error> FrameHost::renderClear(const std::array<float, 4> &color) {
+      if (!ready()) { return {}; }
+      const auto clear = vk::ClearColorValue{color};
+      for (auto &target : targets_) {
+         if (const auto result = clearTarget(target, clear); !result) { return result; }
+      }
+      last_clear_color_ = color;
+      ++presented_frames_;
+      return {};
+   }
+
    /// @brief Returns how many frame targets are currently prepared.
    std::size_t FrameHost::targetCount() const { return targets_.size(); }
 
    /// @brief Reports whether at least one drawable Vulkan target exists.
    bool FrameHost::ready() const { return static_cast<bool>(instance_ && device_ && !targets_.empty()); }
+
+   /// @brief Returns how many clear/present frame batches completed.
+   std::uint64_t FrameHost::presentedFrameCount() const { return presented_frames_; }
+
+   /// @brief Returns the fixed clear color used by the most recent clear frame.
+   std::array<float, 4> FrameHost::lastClearColor() const { return last_clear_color_; }
 
    /// @brief Creates the Vulkan instance using SDL's required platform extensions.
    std::expected<void, Error> FrameHost::createInstance() {
@@ -165,7 +211,8 @@ namespace vve::v4::vh {
          return std::unexpected(Error::platform_error);
       }
       const auto result = low::createDevice(physical_device_, queue_family_, extensions, &device_, &queue_);
-      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
+      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+      return createFrameExecutor();
    }
 
    /// @brief Creates swapchain images and color views for one frame target.
@@ -176,6 +223,7 @@ namespace vve::v4::vh {
                                                        &target.swapchain, &target.color_format, &extent,
                                                        &target.images, &target.views);
       target.extent = PixelExtent{.width = extent.width, .height = extent.height};
+      target.layouts.assign(target.images.size(), vk::ImageLayout::eUndefined);
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
    }
 
@@ -185,6 +233,52 @@ namespace vve::v4::vh {
       const auto result = low::createDepthTarget(physical_device_, device_, extent, &target.depth_format,
                                                  &target.depth_image, &target.depth_memory, &target.depth_view);
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
+   }
+
+   /// @brief Creates reusable frame command and timeline synchronization objects.
+   std::expected<void, Error> FrameHost::createFrameExecutor() {
+      const auto result = low::createFrameExecutor(device_, queue_family_, &command_pool_, &command_buffer_,
+                                                   &frame_timeline_, &acquire_fence_);
+      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
+   }
+
+   /// @brief Acquires, clears, submits, waits, and presents one target image.
+   std::expected<void, Error> FrameHost::clearTarget(FrameTarget &target, const vk::ClearColorValue &color) {
+      if (device_.resetFences(1, &acquire_fence_) != vk::Result::eSuccess) {
+         return std::unexpected(Error::platform_error);
+      }
+
+      std::uint32_t image_index{};
+      auto result = device_.acquireNextImageKHR(target.swapchain, std::numeric_limits<std::uint64_t>::max(),
+                                                nullptr, acquire_fence_, &image_index);
+      if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+         return std::unexpected(Error::platform_error);
+      }
+      result = device_.waitForFences(1, &acquire_fence_, VK_TRUE, std::numeric_limits<std::uint64_t>::max());
+      if (result != vk::Result::eSuccess || image_index >= target.images.size()) {
+         return std::unexpected(Error::platform_error);
+      }
+
+      const auto old_layout = target.layouts[image_index];
+      result = low::recordSwapchainClear(device_, command_pool_, command_buffer_, target.images[image_index],
+                                         target.views[image_index],
+                                         vk::Extent2D{target.extent.width, target.extent.height},
+                                         old_layout, color);
+      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+
+      result = low::submitAndWait(device_, queue_, command_buffer_, frame_timeline_, ++timeline_value_);
+      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+
+      auto present = vk::PresentInfoKHR{};
+      present.swapchainCount = 1;
+      present.pSwapchains = &target.swapchain;
+      present.pImageIndices = &image_index;
+      result = queue_.presentKHR(&present);
+      if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+         return std::unexpected(Error::platform_error);
+      }
+      target.layouts[image_index] = vk::ImageLayout::ePresentSrcKHR;
+      return {};
    }
 
    /// @brief Checks whether prepared targets still match current native windows.
@@ -198,6 +292,19 @@ namespace vve::v4::vh {
                 const auto b = window.get().extent();
                 return a.width == b.width && a.height == b.height;
              }, &FrameTarget::extent);
+   }
+
+   /// @brief Destroys reusable frame command and timeline synchronization objects.
+   void FrameHost::destroyFrameExecutor() {
+      if (device_) { static_cast<void>(device_.waitIdle()); }
+      if (acquire_fence_) { device_.destroyFence(acquire_fence_); }
+      if (frame_timeline_) { device_.destroySemaphore(frame_timeline_); }
+      if (command_pool_) { device_.destroyCommandPool(command_pool_); }
+      command_buffer_ = nullptr;
+      command_pool_ = nullptr;
+      frame_timeline_ = nullptr;
+      acquire_fence_ = nullptr;
+      timeline_value_ = 0;
    }
 
    /// @brief Destroys swapchains, depth images, image views, and presentation surfaces.
@@ -220,6 +327,7 @@ namespace vve::v4::vh {
    /// @brief Destroys every Vulkan object owned by this frame host.
    void FrameHost::reset() {
       destroyTargets();
+      destroyFrameExecutor();
       if (device_) {
          device_.destroy();
          device_ = nullptr;

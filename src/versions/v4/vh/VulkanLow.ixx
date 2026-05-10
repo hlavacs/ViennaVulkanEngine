@@ -36,6 +36,16 @@ export namespace vve::v4::vh::low {
    [[nodiscard]] vk::Result
    createDepthTarget(vk::PhysicalDevice physical_device, vk::Device device, vk::Extent2D extent, vk::Format *format,
                      vk::Image *image, vk::DeviceMemory *memory, vk::ImageView *view);
+   [[nodiscard]] vk::Result
+   createFrameExecutor(vk::Device device, std::uint32_t queue_family, vk::CommandPool *pool,
+                       vk::CommandBuffer *command_buffer, vk::Semaphore *timeline, vk::Fence *acquire_fence);
+   [[nodiscard]] vk::Result
+   recordSwapchainClear(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer, vk::Image image,
+                        vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
+                        const vk::ClearColorValue &clear_color);
+   [[nodiscard]] vk::Result
+   submitAndWait(vk::Device device, vk::Queue queue, vk::CommandBuffer command_buffer, vk::Semaphore timeline,
+                 std::uint64_t value);
 
 } // namespace vve::v4::vh::low
 
@@ -664,6 +674,118 @@ namespace vve::v4::vh::low {
       view_info.format = *format;
       view_info.subresourceRange = range;
       return device.createImageView(&view_info, nullptr, view);
+   }
+
+   /// @brief Creates reusable command and timeline objects for one serial frame executor.
+   vk::Result createFrameExecutor(vk::Device device, std::uint32_t queue_family, vk::CommandPool *pool,
+                                  vk::CommandBuffer *command_buffer, vk::Semaphore *timeline,
+                                  vk::Fence *acquire_fence) {
+      auto pool_info = vk::CommandPoolCreateInfo{};
+      pool_info.flags = vk::CommandPoolCreateFlagBits::eResetCommandBuffer;
+      pool_info.queueFamilyIndex = queue_family;
+      auto result = device.createCommandPool(&pool_info, nullptr, pool);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto buffer_info = vk::CommandBufferAllocateInfo{};
+      buffer_info.commandPool = *pool;
+      buffer_info.level = vk::CommandBufferLevel::ePrimary;
+      buffer_info.commandBufferCount = 1;
+      result = device.allocateCommandBuffers(&buffer_info, command_buffer);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto timeline_info = vk::SemaphoreTypeCreateInfo{};
+      timeline_info.semaphoreType = vk::SemaphoreType::eTimeline;
+      timeline_info.initialValue = 0;
+      auto semaphore_info = vk::SemaphoreCreateInfo{};
+      semaphore_info.pNext = &timeline_info;
+      result = device.createSemaphore(&semaphore_info, nullptr, timeline);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto fence_info = vk::FenceCreateInfo{};
+      return device.createFence(&fence_info, nullptr, acquire_fence);
+   }
+
+   /// @brief Records a dynamic-rendering pass that clears one acquired swapchain image.
+   vk::Result recordSwapchainClear(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
+                                   vk::Image image, vk::ImageView view, vk::Extent2D extent,
+                                   vk::ImageLayout old_layout, const vk::ClearColorValue &clear_color) {
+      auto result = device.resetCommandPool(pool);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto begin = vk::CommandBufferBeginInfo{};
+      begin.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+      result = command_buffer.begin(&begin);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto range = vk::ImageSubresourceRange{};
+      range.aspectMask = vk::ImageAspectFlagBits::eColor;
+      range.levelCount = 1;
+      range.layerCount = 1;
+
+      auto to_attachment = vk::ImageMemoryBarrier2{};
+      to_attachment.srcStageMask = vk::PipelineStageFlagBits2::eNone;
+      to_attachment.srcAccessMask = vk::AccessFlagBits2::eNone;
+      to_attachment.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+      to_attachment.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+      to_attachment.oldLayout = old_layout;
+      to_attachment.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+      to_attachment.image = image;
+      to_attachment.subresourceRange = range;
+      auto dependency = vk::DependencyInfo{};
+      dependency.imageMemoryBarrierCount = 1;
+      dependency.pImageMemoryBarriers = &to_attachment;
+      command_buffer.pipelineBarrier2(&dependency);
+
+      auto clear = vk::ClearValue{};
+      clear.color = clear_color;
+      auto attachment = vk::RenderingAttachmentInfo{};
+      attachment.imageView = view;
+      attachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+      attachment.loadOp = vk::AttachmentLoadOp::eClear;
+      attachment.storeOp = vk::AttachmentStoreOp::eStore;
+      attachment.clearValue = clear;
+      auto rendering = vk::RenderingInfo{};
+      rendering.renderArea = vk::Rect2D{vk::Offset2D{0, 0}, extent};
+      rendering.layerCount = 1;
+      rendering.colorAttachmentCount = 1;
+      rendering.pColorAttachments = &attachment;
+      command_buffer.beginRendering(&rendering);
+      command_buffer.endRendering();
+
+      auto to_present = to_attachment;
+      to_present.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+      to_present.srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+      to_present.dstStageMask = vk::PipelineStageFlagBits2::eNone;
+      to_present.dstAccessMask = vk::AccessFlagBits2::eNone;
+      to_present.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+      to_present.newLayout = vk::ImageLayout::ePresentSrcKHR;
+      dependency.pImageMemoryBarriers = &to_present;
+      command_buffer.pipelineBarrier2(&dependency);
+      return command_buffer.end();
+   }
+
+   /// @brief Submits one command buffer, signals a timeline value, and waits for that value on the host.
+   vk::Result submitAndWait(vk::Device device, vk::Queue queue, vk::CommandBuffer command_buffer,
+                            vk::Semaphore timeline, std::uint64_t value) {
+      auto command = vk::CommandBufferSubmitInfo{};
+      command.commandBuffer = command_buffer;
+      auto signal = vk::SemaphoreSubmitInfo{};
+      signal.semaphore = timeline;
+      signal.value = value;
+      signal.stageMask = vk::PipelineStageFlagBits2::eAllCommands;
+      auto submit = vk::SubmitInfo2{};
+      submit.commandBufferInfoCount = 1;
+      submit.pCommandBufferInfos = &command;
+      submit.signalSemaphoreInfoCount = 1;
+      submit.pSignalSemaphoreInfos = &signal;
+      const auto result = queue.submit2(1, &submit, nullptr);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto wait = vk::SemaphoreWaitInfo{};
+      wait.semaphoreCount = 1;
+      wait.pSemaphores = &timeline;
+      wait.pValues = &value;
+      return device.waitSemaphores(&wait, std::numeric_limits<std::uint64_t>::max());
    }
 
 } // namespace vve::v4::vh::low

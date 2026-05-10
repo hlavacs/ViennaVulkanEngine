@@ -42,8 +42,10 @@ export namespace vve {
       [[nodiscard]] bool hasSceneCamera() const { return impl_.hasSceneCamera(); }
       [[nodiscard]] bool hasSceneDirectionalLight() const { return impl_.hasSceneDirectionalLight(); }
       [[nodiscard]] std::uint64_t renderedFrameCount() const { return impl_.renderedFrameCount(); }
+      [[nodiscard]] std::uint64_t presentedFrameCount() const { return impl_.presentedFrameCount(); }
       [[nodiscard]] std::size_t lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }
       [[nodiscard]] std::size_t preparedGpuTargetCount() const { return impl_.preparedGpuTargetCount(); }
+      [[nodiscard]] std::array<float, 4> lastClearColor() const { return impl_.lastClearColor(); }
 
    private:
       Impl &impl_; ///< Selected implementation render system.
