@@ -46,6 +46,25 @@ namespace vve::v4::vh::low::detail {
       std::uint32_t rank{};
    };
 
+   struct ModernFeatures {
+      bool timeline_semaphore{};
+      bool synchronization2{};
+      bool dynamic_rendering{};
+      bool descriptor_indexing{};
+      bool sampled_image_update_after_bind{};
+      bool storage_buffer_update_after_bind{};
+      bool partially_bound{};
+      bool variable_descriptor_count{};
+      bool runtime_descriptor_array{};
+      bool descriptor_buffer{};
+      bool descriptor_buffer_image_layout_ignored{};
+      bool descriptor_buffer_push_descriptors{};
+      bool maintenance4{};
+      bool dynamic_rendering_local_read{};
+      bool maintenance5{};
+      bool maintenance6{};
+   };
+
    [[nodiscard]] VpProfileProperties profile(const char *name, std::uint32_t version) {
       auto result = VpProfileProperties{};
       std::snprintf(result.profileName, VP_MAX_PROFILE_NAME_SIZE, "%s", name);
@@ -120,6 +139,142 @@ namespace vve::v4::vh::low::detail {
    void appendUnique(std::vector<std::string> &names, std::string_view name) {
       const auto exists = std::ranges::any_of(names, [name](const std::string &known) { return known == name; });
       if (!exists) { names.emplace_back(name); }
+   }
+
+   [[nodiscard]] std::uint32_t preferredApiVersion(std::uint32_t supported) {
+#ifdef VK_API_VERSION_1_4
+      if (supported >= VK_API_VERSION_1_4) { return VK_API_VERSION_1_4; }
+#endif
+      if (supported >= VK_API_VERSION_1_3) { return VK_API_VERSION_1_3; }
+      return supported;
+   }
+
+   [[nodiscard]] std::uint32_t apiRank(std::uint32_t version) {
+#ifdef VK_API_VERSION_1_4
+      if (version >= VK_API_VERSION_1_4) { return 2; }
+#endif
+      if (version >= VK_API_VERSION_1_3) { return 1; }
+      return 0;
+   }
+
+   [[nodiscard]] ModernFeatures modernFeatures(vk::PhysicalDevice device,
+                                               std::span<const vk::ExtensionProperties> extensions) {
+      const auto has_descriptor_buffer =
+#ifdef VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME
+         hasExtension(extensions, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
+#else
+         false;
+#endif
+      auto descriptor_buffer = vk::PhysicalDeviceDescriptorBufferFeaturesEXT{};
+      auto features14 = vk::PhysicalDeviceVulkan14Features{};
+      auto features13 = vk::PhysicalDeviceVulkan13Features{};
+      auto features12 = vk::PhysicalDeviceVulkan12Features{};
+      auto features2 = vk::PhysicalDeviceFeatures2{};
+      const auto api_version = device.getProperties().apiVersion;
+      features2.pNext = &features12;
+      features12.pNext = &features13;
+#ifdef VK_API_VERSION_1_4
+      if (api_version >= VK_API_VERSION_1_4) {
+         features13.pNext = &features14;
+         if (has_descriptor_buffer) { features14.pNext = &descriptor_buffer; }
+      } else
+#endif
+      if (has_descriptor_buffer) {
+         features13.pNext = &descriptor_buffer;
+      }
+      device.getFeatures2(&features2);
+      return ModernFeatures{.timeline_semaphore = features12.timelineSemaphore == VK_TRUE,
+                            .synchronization2 = features13.synchronization2 == VK_TRUE,
+                            .dynamic_rendering = features13.dynamicRendering == VK_TRUE,
+                            .descriptor_indexing = features12.descriptorIndexing == VK_TRUE,
+                            .sampled_image_update_after_bind =
+                               features12.descriptorBindingSampledImageUpdateAfterBind == VK_TRUE,
+                            .storage_buffer_update_after_bind =
+                               features12.descriptorBindingStorageBufferUpdateAfterBind == VK_TRUE,
+                            .partially_bound = features12.descriptorBindingPartiallyBound == VK_TRUE,
+                            .variable_descriptor_count =
+                               features12.descriptorBindingVariableDescriptorCount == VK_TRUE,
+                            .runtime_descriptor_array = features12.runtimeDescriptorArray == VK_TRUE,
+                            .descriptor_buffer = descriptor_buffer.descriptorBuffer == VK_TRUE,
+                            .descriptor_buffer_image_layout_ignored =
+                               descriptor_buffer.descriptorBufferImageLayoutIgnored == VK_TRUE,
+                            .descriptor_buffer_push_descriptors =
+                               descriptor_buffer.descriptorBufferPushDescriptors == VK_TRUE,
+                            .maintenance4 = features13.maintenance4 == VK_TRUE,
+                            .dynamic_rendering_local_read =
+                               features14.dynamicRenderingLocalRead == VK_TRUE,
+                            .maintenance5 = features14.maintenance5 == VK_TRUE,
+                            .maintenance6 = features14.maintenance6 == VK_TRUE};
+   }
+
+   [[nodiscard]] bool hasRequiredModernFeatures(const ModernFeatures &features) {
+      const auto indexed_sets = features.descriptor_indexing && features.sampled_image_update_after_bind &&
+                                features.storage_buffer_update_after_bind && features.partially_bound &&
+                                features.variable_descriptor_count && features.runtime_descriptor_array;
+      return features.timeline_semaphore && features.synchronization2 && features.dynamic_rendering &&
+             (features.descriptor_buffer || indexed_sets);
+   }
+
+   [[nodiscard]] std::uint32_t featureRank(const ModernFeatures &features) {
+      const auto optional = std::array{features.descriptor_buffer,
+                                       features.descriptor_buffer_image_layout_ignored,
+                                       features.descriptor_buffer_push_descriptors,
+                                       features.descriptor_indexing,
+                                       features.sampled_image_update_after_bind,
+                                       features.storage_buffer_update_after_bind,
+                                       features.partially_bound,
+                                       features.variable_descriptor_count,
+                                       features.runtime_descriptor_array,
+                                       features.maintenance4,
+                                       features.dynamic_rendering_local_read,
+                                       features.maintenance5,
+                                       features.maintenance6};
+      return static_cast<std::uint32_t>(std::ranges::count(optional, true));
+   }
+
+   [[nodiscard]] std::uint32_t descriptorModelRank(const ModernFeatures &features) {
+      if (features.descriptor_buffer) { return 2; }
+      if (hasRequiredModernFeatures(features)) { return 1; }
+      return 0;
+   }
+
+   void enableModernFeatures(const ModernFeatures &support, std::uint32_t api_version,
+                             vk::PhysicalDeviceFeatures2 &features2,
+                             vk::PhysicalDeviceVulkan12Features &features12,
+                             vk::PhysicalDeviceVulkan13Features &features13,
+                             vk::PhysicalDeviceVulkan14Features &features14,
+                             vk::PhysicalDeviceDescriptorBufferFeaturesEXT &descriptor_buffer) {
+      features2.pNext = &features12;
+      features12.pNext = &features13;
+      features12.timelineSemaphore = VK_TRUE;
+      features12.descriptorIndexing = support.descriptor_indexing ? VK_TRUE : VK_FALSE;
+      features12.descriptorBindingSampledImageUpdateAfterBind =
+         support.sampled_image_update_after_bind ? VK_TRUE : VK_FALSE;
+      features12.descriptorBindingStorageBufferUpdateAfterBind =
+         support.storage_buffer_update_after_bind ? VK_TRUE : VK_FALSE;
+      features12.descriptorBindingPartiallyBound = support.partially_bound ? VK_TRUE : VK_FALSE;
+      features12.descriptorBindingVariableDescriptorCount = support.variable_descriptor_count ? VK_TRUE : VK_FALSE;
+      features12.runtimeDescriptorArray = support.runtime_descriptor_array ? VK_TRUE : VK_FALSE;
+      features13.synchronization2 = VK_TRUE;
+      features13.dynamicRendering = VK_TRUE;
+      features13.maintenance4 = support.maintenance4 ? VK_TRUE : VK_FALSE;
+#ifdef VK_API_VERSION_1_4
+      if (api_version >= VK_API_VERSION_1_4) {
+         features13.pNext = &features14;
+         features14.dynamicRenderingLocalRead = support.dynamic_rendering_local_read ? VK_TRUE : VK_FALSE;
+         features14.maintenance5 = support.maintenance5 ? VK_TRUE : VK_FALSE;
+         features14.maintenance6 = support.maintenance6 ? VK_TRUE : VK_FALSE;
+         if (support.descriptor_buffer) { features14.pNext = &descriptor_buffer; }
+      } else
+#endif
+      if (support.descriptor_buffer) {
+         features13.pNext = &descriptor_buffer;
+      }
+      descriptor_buffer.descriptorBuffer = support.descriptor_buffer ? VK_TRUE : VK_FALSE;
+      descriptor_buffer.descriptorBufferImageLayoutIgnored =
+         support.descriptor_buffer_image_layout_ignored ? VK_TRUE : VK_FALSE;
+      descriptor_buffer.descriptorBufferPushDescriptors =
+         support.descriptor_buffer_push_descriptors ? VK_TRUE : VK_FALSE;
    }
 
    [[nodiscard]] std::vector<std::string>
@@ -242,6 +397,7 @@ namespace vve::v4::vh::low {
       const auto available = instanceExtensions();
       std::uint32_t api_version = VK_API_VERSION_1_0;
       if (vk::enumerateInstanceVersion(&api_version) != vk::Result::eSuccess) { api_version = VK_API_VERSION_1_0; }
+      api_version = detail::preferredApiVersion(api_version);
       for (const auto &extension : detail::profileInstanceExtensions(available)) {
          detail::appendUnique(extensions, extension);
       }
@@ -287,13 +443,20 @@ namespace vve::v4::vh::low {
          vk::PhysicalDevice device{};
          std::uint32_t queue_family{};
          std::uint32_t type_rank{};
+         std::uint32_t api_rank{};
          std::uint32_t profile_rank{};
+         std::uint32_t descriptor_rank{};
+         std::uint32_t feature_rank{};
          std::vector<std::string> extensions{};
       };
       auto best = std::optional<Candidate>{};
       for (const auto candidate : devices) {
          const auto available = deviceExtensions(candidate);
          if (!hasExtension(available, VK_KHR_SWAPCHAIN_EXTENSION_NAME)) { continue; }
+         const auto properties = candidate.getProperties();
+         if (detail::apiRank(properties.apiVersion) == 0) { continue; }
+         const auto modern_features = detail::modernFeatures(candidate, available);
+         if (!detail::hasRequiredModernFeatures(modern_features)) { continue; }
          const auto supported_profile = detail::highestProfile(instance, candidate);
 
          auto queues = candidate.getQueueFamilyProperties();
@@ -309,19 +472,29 @@ namespace vve::v4::vh::low {
             auto enabled = supported_profile ? detail::profileDeviceExtensions(supported_profile->profile, available)
                                              : std::vector<std::string>{};
             detail::appendUnique(enabled, VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+#ifdef VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME
+            if (modern_features.descriptor_buffer) {
+               detail::appendUnique(enabled, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
+            }
+#endif
 #ifdef VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME
             if (hasExtension(available, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME)) {
                detail::appendUnique(enabled, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
             }
 #endif
-            const auto properties = candidate.getProperties();
             const auto option = Candidate{.device = candidate,
                                           .queue_family = i,
                                           .type_rank = detail::typeRank(properties.deviceType),
+                                          .api_rank = detail::apiRank(properties.apiVersion),
                                           .profile_rank = supported_profile ? supported_profile->rank : 0U,
+                                          .descriptor_rank = detail::descriptorModelRank(modern_features),
+                                          .feature_rank = detail::featureRank(modern_features),
                                           .extensions = std::move(enabled)};
-            if (!best || std::tie(option.type_rank, option.profile_rank) >
-                             std::tie(best->type_rank, best->profile_rank)) {
+            if (!best ||
+                std::tie(option.type_rank, option.api_rank, option.profile_rank, option.descriptor_rank,
+                         option.feature_rank) >
+                   std::tie(best->type_rank, best->api_rank, best->profile_rank, best->descriptor_rank,
+                            best->feature_rank)) {
                best = option;
             }
          }
@@ -337,9 +510,27 @@ namespace vve::v4::vh::low {
    /// @brief Creates a logical device and retrieves one graphics/present queue.
    vk::Result createDevice(vk::PhysicalDevice physical_device, std::uint32_t queue_family,
                            std::span<const std::string> extensions, vk::Device *device, vk::Queue *queue) {
+      const auto api_version = physical_device.getProperties().apiVersion;
+      const auto available = deviceExtensions(physical_device);
+      const auto support = detail::modernFeatures(physical_device, available);
+      if (detail::apiRank(api_version) == 0 || !detail::hasRequiredModernFeatures(support)) {
+         return vk::Result::eErrorFeatureNotPresent;
+      }
+      auto enabled = std::vector<std::string>(extensions.begin(), extensions.end());
+#ifdef VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME
+      if (support.descriptor_buffer) { detail::appendUnique(enabled, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME); }
+#endif
       auto extension_names = std::vector<const char *>{};
-      extension_names.reserve(extensions.size());
-      for (const auto &extension : extensions) { extension_names.push_back(extension.c_str()); }
+      extension_names.reserve(enabled.size());
+      for (const auto &extension : enabled) { extension_names.push_back(extension.c_str()); }
+
+      auto features14 = vk::PhysicalDeviceVulkan14Features{};
+      auto features13 = vk::PhysicalDeviceVulkan13Features{};
+      auto features12 = vk::PhysicalDeviceVulkan12Features{};
+      auto descriptor_buffer = vk::PhysicalDeviceDescriptorBufferFeaturesEXT{};
+      auto features2 = vk::PhysicalDeviceFeatures2{};
+      detail::enableModernFeatures(support, api_version, features2, features12, features13, features14,
+                                   descriptor_buffer);
 
       auto priority = 1.0F;
       auto queue_info = vk::DeviceQueueCreateInfo{};
@@ -347,6 +538,7 @@ namespace vve::v4::vh::low {
       queue_info.queueCount = 1;
       queue_info.pQueuePriorities = &priority;
       auto info = vk::DeviceCreateInfo{};
+      info.pNext = &features2;
       info.queueCreateInfoCount = 1;
       info.pQueueCreateInfos = &queue_info;
       info.enabledExtensionCount = static_cast<std::uint32_t>(extension_names.size());
