@@ -135,6 +135,13 @@ VveSceneVertexOutput vveSceneUnlitVertexMain(VveSceneVertexInput input, uint ver
     return output;
 }
 
+/// @brief Emits only light-space depth for the first verifiable shadow-map pass.
+[shader("vertex")]
+float4 vveSceneShadowVertexMain(VveSceneVertexInput input) : SV_Position
+{
+    return vveSceneLightClipFromWorld(input.position);
+}
+
 /// @brief Returns the uploaded flat debug color.
 [shader("fragment")]
 float4 vveSceneUnlitFragmentMain(VveSceneVertexOutput input) : SV_Target0

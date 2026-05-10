@@ -29,6 +29,20 @@ export namespace vve {
       bool valid{};                        ///< Whether this slot contains a sample.
    };
 
+   /// @brief Public CPU/GPU comparison point for downloaded shadow-depth data.
+   struct RenderShadowDepthSample {
+      std::uint32_t triangle_id{}; ///< Source triangle used for the centroid sample.
+      Vec3 world{zeroVec3()};      ///< World-space centroid.
+      Vec3 light_ndc{zeroVec3()};  ///< Directional-light normalized device coordinate.
+      std::uint32_t pixel_x{};     ///< Shadow-map texel x coordinate.
+      std::uint32_t pixel_y{};     ///< Shadow-map texel y coordinate.
+      float expected_depth{};      ///< CPU-computed light-space depth.
+      float gpu_depth{};           ///< Downloaded shadow-map depth.
+      float error{};               ///< Absolute CPU/GPU depth mismatch.
+      bool has_gpu{};              ///< Whether the depth image was downloaded.
+      bool valid{};                ///< Whether this slot contains a sample.
+   };
+
    class RenderSystem {
       using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::RenderSystem;
 
@@ -76,6 +90,9 @@ export namespace vve {
       [[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const;
+      [[nodiscard]] std::size_t sceneShadowDepthSampleCount() const;
+      [[nodiscard]] std::optional<RenderShadowDepthSample> sceneShadowDepthSample(std::size_t index) const;
+      [[nodiscard]] std::optional<float> sceneShadowDepthError(std::size_t index) const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }
       [[nodiscard]] std::size_t preparedGpuTargetCount() const { return impl_.preparedGpuTargetCount(); }
       [[nodiscard]] std::array<float, 4> lastClearColor() const { return impl_.lastClearColor(); }
@@ -150,6 +167,32 @@ export namespace vve {
    /// @brief Returns the CPU/GPU lighting-term mismatch for one sample.
    inline std::optional<float> RenderSystem::sceneDebugLightingError(std::size_t index) const {
       return impl_.sceneDebugLightingError(index);
+   }
+
+   /// @brief Returns how many shadow-depth proof samples are available.
+   inline std::size_t RenderSystem::sceneShadowDepthSampleCount() const {
+      return impl_.sceneShadowDepthSampleCount();
+   }
+
+   /// @brief Returns one downloaded shadow-depth proof sample.
+   inline std::optional<RenderShadowDepthSample> RenderSystem::sceneShadowDepthSample(std::size_t index) const {
+      const auto sample = impl_.sceneShadowDepthSample(index);
+      if (!sample) { return {}; }
+      return RenderShadowDepthSample{.triangle_id = sample->triangle_id,
+                                     .world = sample->world,
+                                     .light_ndc = sample->light_ndc,
+                                     .pixel_x = sample->pixel_x,
+                                     .pixel_y = sample->pixel_y,
+                                     .expected_depth = sample->expected_depth,
+                                     .gpu_depth = sample->gpu_depth,
+                                     .error = sample->error,
+                                     .has_gpu = sample->has_gpu,
+                                     .valid = sample->valid};
+   }
+
+   /// @brief Returns the CPU/GPU shadow-depth mismatch for one proof sample.
+   inline std::optional<float> RenderSystem::sceneShadowDepthError(std::size_t index) const {
+      return impl_.sceneShadowDepthError(index);
    }
 
 } // namespace vve

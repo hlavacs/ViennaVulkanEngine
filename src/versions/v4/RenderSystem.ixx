@@ -94,6 +94,20 @@ export namespace vve::v4 {
       bool valid{};                        ///< Whether this slot contains a sample.
    };
 
+   /// @brief CPU/GPU comparison point for the first downloaded shadow-depth image.
+   struct RenderShadowDepthSample {
+      std::uint32_t triangle_id{}; ///< Source triangle used for the centroid sample.
+      Vec3 world{zeroVec3()};      ///< World-space centroid.
+      Vec3 light_ndc{zeroVec3()};  ///< Directional-light normalized device coordinate.
+      std::uint32_t pixel_x{};     ///< Shadow-map texel x coordinate.
+      std::uint32_t pixel_y{};     ///< Shadow-map texel y coordinate.
+      float expected_depth{};      ///< CPU-computed light-space depth.
+      float gpu_depth{};           ///< Downloaded shadow-map depth.
+      float error{};               ///< Absolute CPU/GPU depth mismatch.
+      bool has_gpu{};              ///< Whether the depth image was downloaded.
+      bool valid{};                ///< Whether this slot contains a sample.
+   };
+
    /// @brief Minimal CPU render scene built before Vulkan upload.
    class RenderScene {
    public:
@@ -183,6 +197,9 @@ export namespace vve::v4 {
       [[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const;
+      [[nodiscard]] std::size_t sceneShadowDepthSampleCount() const;
+      [[nodiscard]] std::optional<RenderShadowDepthSample> sceneShadowDepthSample(std::size_t index) const;
+      [[nodiscard]] std::optional<float> sceneShadowDepthError(std::size_t index) const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const;
       [[nodiscard]] std::size_t preparedGpuTargetCount() const;
       [[nodiscard]] std::array<float, 4> lastClearColor() const;
@@ -190,6 +207,7 @@ export namespace vve::v4 {
    private:
       [[nodiscard]] std::expected<void, Error> ensureTriangleShader();
       [[nodiscard]] std::expected<void, Error> ensureSceneShader();
+      [[nodiscard]] std::expected<void, Error> ensureSceneShadowShader();
       [[nodiscard]] std::expected<void, Error> buildSceneDrawData();
       [[nodiscard]] static std::expected<void, Error>
       addPass(RenderGraph &graph, std::map<std::string_view, RenderPassHandle> &handles,
@@ -204,14 +222,17 @@ export namespace vve::v4 {
       ShaderSystem shaders_{};                 ///< Built-in renderer shader compiler/cache.
       std::optional<ShaderHandle> triangle_shader_{}; ///< Compiled smoke-test triangle shader.
       std::optional<ShaderHandle> scene_shader_{}; ///< Compiled uploaded-scene unlit shader.
+      std::optional<ShaderHandle> scene_shadow_shader_{}; ///< Compiled uploaded-scene shadow shader.
       std::vector<std::uint32_t> triangle_vertex_spirv_{}; ///< Cached triangle vertex SPIR-V.
       std::vector<std::uint32_t> triangle_fragment_spirv_{}; ///< Cached triangle fragment SPIR-V.
       std::vector<std::uint32_t> scene_vertex_spirv_{}; ///< Cached unlit scene vertex SPIR-V.
       std::vector<std::uint32_t> scene_fragment_spirv_{}; ///< Cached unlit scene fragment SPIR-V.
+      std::vector<std::uint32_t> scene_shadow_vertex_spirv_{}; ///< Cached shadow vertex SPIR-V.
       std::vector<vh::SceneVertex> scene_vertices_{}; ///< Flattened debug scene vertices.
       std::vector<std::uint32_t> scene_indices_{}; ///< Flattened debug scene indices.
       std::array<float, 32> scene_frame_constants_{}; ///< Camera and light push constants.
       std::array<RenderDebugSample, 2> scene_cpu_debug_{}; ///< CPU camera-transform samples.
+      std::array<RenderShadowDepthSample, 2> scene_shadow_debug_{}; ///< CPU shadow-depth proof samples.
       std::uint64_t rendered_frames_{0};       ///< Number of frame hooks reached.
       std::size_t last_rendered_window_count_{0}; ///< Last non-closed window count.
    };
@@ -426,6 +447,41 @@ namespace vve::v4 {
                           vec3Error(cpu.light_ndc, gpu.light_ndc),
                           std::abs(cpu.light_depth - gpu.light_depth),
                           cpu.inside_light == gpu.inside_light ? 0.0F : 1.0F});
+      }
+
+      /// @brief Converts light NDC to the texel convention used by the shadow-map viewport.
+      inline std::uint32_t shadowPixel(float ndc, std::uint32_t extent) {
+         const auto maximum = static_cast<float>(extent > 0 ? extent - 1 : 0);
+         return static_cast<std::uint32_t>(std::clamp(std::round((ndc * 0.5F + 0.5F) * maximum), 0.0F, maximum));
+      }
+
+      /// @brief Builds one CPU shadow-map sample from a triangle centroid.
+      inline RenderShadowDepthSample
+      shadowSample(std::uint32_t triangle_id, std::span<const vh::SceneVertex> vertices,
+                   std::span<const std::uint32_t> indices, const RenderDirectionalLight &light,
+                   std::array<float, 4> center_radius, PixelExtent shadow_extent) {
+         const auto offset = static_cast<std::size_t>(triangle_id) * 3U;
+         if (offset + 2U >= indices.size()) { return {}; }
+         const auto index0 = indices[offset];
+         const auto index1 = indices[offset + 1U];
+         const auto index2 = indices[offset + 2U];
+         if (index0 >= vertices.size() || index1 >= vertices.size() || index2 >= vertices.size()) { return {}; }
+
+         const auto point = [&](std::uint32_t index) {
+            const auto &vertex = vertices[index];
+            return Vec3{vertex.x, vertex.y, vertex.z};
+         };
+         const auto world = math::scale(math::add(math::add(point(index0), point(index1)), point(index2)), 1.0F / 3.0F);
+         const auto light_ndc = ndc(lightClip(world, light, center_radius));
+         return RenderShadowDepthSample{.triangle_id = triangle_id,
+                                        .world = world,
+                                        .light_ndc = light_ndc,
+                                        .pixel_x = shadowPixel(light_ndc.x, shadow_extent.width),
+                                        .pixel_y = shadowPixel(light_ndc.y, shadow_extent.height),
+                                        .expected_depth = light_ndc.z,
+                                        .valid = std::abs(light_ndc.x) <= 1.0F &&
+                                                 std::abs(light_ndc.y) <= 1.0F &&
+                                                 light_ndc.z >= 0.0F && light_ndc.z <= 1.0F};
       }
 
    } // namespace detail
@@ -699,10 +755,13 @@ namespace vve::v4 {
       if (vulkan_.ready()) {
          if (scene_.instanceCount() > 0) {
             if (const auto shader = ensureSceneShader(); !shader) { return shader; }
+            if (const auto shader = ensureSceneShadowShader(); !shader) { return shader; }
             if (const auto data = buildSceneDrawData(); !data) { return data; }
             if (const auto result = vulkan_.renderScene(detail::clear_color, scene_vertex_spirv_, "main",
-                                                        scene_fragment_spirv_, "main", scene_vertices_,
-                                                        scene_indices_, static_cast<std::uint32_t>(scene_.meshCount()),
+                                                        scene_fragment_spirv_, "main",
+                                                        scene_shadow_vertex_spirv_, "main",
+                                                        scene_vertices_, scene_indices_,
+                                                        static_cast<std::uint32_t>(scene_.meshCount()),
                                                         static_cast<std::uint32_t>(scene_.instanceCount()),
                                                         scene_frame_constants_); !result) {
                return result;
@@ -796,6 +855,31 @@ namespace vve::v4 {
       return detail::lightingError(*cpu, *gpu);
    }
 
+   /// @brief Returns how many CPU shadow-depth proof samples were prepared.
+   inline std::size_t RenderSystem::sceneShadowDepthSampleCount() const {
+      return static_cast<std::size_t>(std::ranges::count_if(scene_shadow_debug_,
+                                                            &RenderShadowDepthSample::valid));
+   }
+
+   /// @brief Returns one CPU/GPU shadow-depth proof sample.
+   inline std::optional<RenderShadowDepthSample> RenderSystem::sceneShadowDepthSample(std::size_t index) const {
+      if (index >= scene_shadow_debug_.size() || !scene_shadow_debug_[index].valid) { return {}; }
+      auto result = scene_shadow_debug_[index];
+      const auto depth = vulkan_.sceneShadowDepth(result.pixel_x, result.pixel_y);
+      if (!depth) { return result; }
+      result.gpu_depth = *depth;
+      result.error = std::abs(result.expected_depth - result.gpu_depth);
+      result.has_gpu = true;
+      return result;
+   }
+
+   /// @brief Returns the CPU/GPU shadow-depth mismatch for one proof sample.
+   inline std::optional<float> RenderSystem::sceneShadowDepthError(std::size_t index) const {
+      const auto sample = sceneShadowDepthSample(index);
+      if (!sample || !sample->has_gpu) { return {}; }
+      return sample->error;
+   }
+
    /// @brief Returns the last frame's non-closed window count.
    inline std::size_t RenderSystem::lastRenderedWindowCount() const { return last_rendered_window_count_; }
 
@@ -843,12 +927,28 @@ namespace vve::v4 {
       return {};
    }
 
+   /// @brief Compiles and caches the depth-only uploaded-scene shadow shader.
+   inline std::expected<void, Error> RenderSystem::ensureSceneShadowShader() {
+      if (scene_shadow_shader_.has_value()) { return {}; }
+      const auto source = std::filesystem::path{VVE_V4_SHADER_SOURCE_DIR} / "SceneUnlit.slang";
+      auto shader = shaders_.compileAndReflect(source, Vector<std::string>{"vveSceneShadowVertexMain"});
+      if (!shader) { return std::unexpected(shader.error()); }
+
+      auto vertex = shaders_.stageSpirv(*shader, ShaderStage::vertex);
+      if (!vertex) { return std::unexpected(vertex.error()); }
+
+      scene_shadow_shader_ = *shader;
+      scene_shadow_vertex_spirv_.assign(vertex->begin(), vertex->end());
+      return {};
+   }
+
    /// @brief Flattens the active CPU scene into one small uploaded-geometry draw packet.
    inline std::expected<void, Error> RenderSystem::buildSceneDrawData() {
       if (!scene_.camera()) { return std::unexpected(Error::missing_object); }
       scene_vertices_.clear();
       scene_indices_.clear();
       scene_cpu_debug_.fill(RenderDebugSample{});
+      scene_shadow_debug_.fill(RenderShadowDepthSample{});
       const auto clip_from_world = detail::clipFromWorld(*scene_.camera());
       const auto light = scene_.directionalLight().value_or(RenderDirectionalLight{});
       for (const auto &instance : scene_.instances()) {
@@ -873,6 +973,7 @@ namespace vve::v4 {
          for (const auto index : mesh->indices) { scene_indices_.push_back(base + index); }
       }
       if (scene_vertices_.empty() || scene_indices_.empty()) { return std::unexpected(Error::missing_object); }
+      if (scene_indices_.size() < 3U) { return std::unexpected(Error::invalid_argument); }
       const auto center_radius = detail::lightCenterRadius(scene_vertices_);
       scene_frame_constants_ = detail::frameConstants(clip_from_world, light, center_radius);
       constexpr auto debug_vertices = std::array{0U, 6U};
@@ -882,6 +983,16 @@ namespace vve::v4 {
             scene_cpu_debug_[slot] =
                detail::cpuSample(vertex_id, scene_vertices_[vertex_id], clip_from_world, light, center_radius);
          }
+      }
+      const auto triangle_count = static_cast<std::uint32_t>(scene_indices_.size() / 3U);
+      const auto first_triangle = triangle_count > 11U ? 10U : 0U;
+      const auto second_triangle = triangle_count > 11U ? 11U : std::min(1U, triangle_count - 1U);
+      const auto shadow_extent = vulkan_.sceneShadowExtent();
+      const auto shadow_triangles = std::array{first_triangle, second_triangle};
+      for (std::size_t slot{}; slot < shadow_triangles.size(); ++slot) {
+         scene_shadow_debug_[slot] = detail::shadowSample(shadow_triangles[slot], scene_vertices_,
+                                                          scene_indices_, light, center_radius,
+                                                          shadow_extent);
       }
       return {};
    }

@@ -37,6 +37,9 @@ export namespace vve::v4::vh::low {
    createDepthTarget(vk::PhysicalDevice physical_device, vk::Device device, vk::Extent2D extent, vk::Format *format,
                      vk::Image *image, vk::DeviceMemory *memory, vk::ImageView *view);
    [[nodiscard]] vk::Result
+   createShadowDepthTarget(vk::PhysicalDevice physical_device, vk::Device device, vk::Extent2D extent,
+                           vk::Image *image, vk::DeviceMemory *memory, vk::ImageView *view);
+   [[nodiscard]] vk::Result
    createFrameExecutor(vk::Device device, std::uint32_t queue_family, vk::CommandPool *pool,
                        vk::CommandBuffer *command_buffer, vk::Semaphore *timeline, vk::Fence *acquire_fence);
    [[nodiscard]] vk::Result
@@ -63,6 +66,10 @@ export namespace vve::v4::vh::low {
                        std::span<const std::uint32_t> fragment_spirv, std::string_view fragment_entry,
                        vk::PipelineLayout *layout, vk::Pipeline *pipeline);
    [[nodiscard]] vk::Result
+   createSceneShadowPipeline(vk::Device device, std::span<const std::uint32_t> vertex_spirv,
+                             std::string_view vertex_entry, vk::PipelineLayout *layout,
+                             vk::Pipeline *pipeline);
+   [[nodiscard]] vk::Result
    recordSwapchainTriangle(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                            vk::Image image, vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
                            vk::Pipeline pipeline, const vk::ClearColorValue &clear_color);
@@ -74,6 +81,12 @@ export namespace vve::v4::vh::low {
                         vk::Buffer index_buffer, vk::DescriptorSet debug_set, vk::Buffer debug_buffer,
                         vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
                         std::span<const float> scene_constants, const vk::ClearColorValue &clear_color);
+   [[nodiscard]] vk::Result
+   recordSceneShadowDepth(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
+                          vk::Image depth_image, vk::ImageView depth_view, vk::Extent2D extent,
+                          vk::ImageLayout old_layout, vk::PipelineLayout layout, vk::Pipeline pipeline,
+                          vk::Buffer vertex_buffer, vk::Buffer index_buffer, std::uint32_t index_count,
+                          std::span<const float> scene_constants, vk::Buffer readback_buffer);
    [[nodiscard]] vk::Result
    submitAndWait(vk::Device device, vk::Queue queue, vk::CommandBuffer command_buffer, vk::Semaphore timeline,
                  std::uint64_t value);
@@ -707,6 +720,54 @@ namespace vve::v4::vh::low {
       return device.createImageView(&view_info, nullptr, view);
    }
 
+   /// @brief Creates a readable D32 shadow-map depth image and its view.
+   vk::Result createShadowDepthTarget(vk::PhysicalDevice physical_device, vk::Device device, vk::Extent2D extent,
+                                      vk::Image *image, vk::DeviceMemory *memory, vk::ImageView *view) {
+      const auto props = physical_device.getFormatProperties(vk::Format::eD32Sfloat);
+      if ((props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment) !=
+          vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
+         return vk::Result::eErrorFormatNotSupported;
+      }
+
+      auto image_info = vk::ImageCreateInfo{};
+      image_info.imageType = vk::ImageType::e2D;
+      image_info.format = vk::Format::eD32Sfloat;
+      image_info.extent = vk::Extent3D{extent.width, extent.height, 1};
+      image_info.mipLevels = 1;
+      image_info.arrayLayers = 1;
+      image_info.samples = vk::SampleCountFlagBits::e1;
+      image_info.tiling = vk::ImageTiling::eOptimal;
+      image_info.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment |
+                         vk::ImageUsageFlagBits::eTransferSrc |
+                         vk::ImageUsageFlagBits::eSampled;
+      auto result = device.createImage(&image_info, nullptr, image);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      const auto requirements = device.getImageMemoryRequirements(*image);
+      const auto memory_type = findMemoryType(physical_device, requirements.memoryTypeBits,
+                                              vk::MemoryPropertyFlagBits::eDeviceLocal);
+      if (!memory_type) { return vk::Result::eErrorMemoryMapFailed; }
+
+      auto memory_info = vk::MemoryAllocateInfo{};
+      memory_info.allocationSize = requirements.size;
+      memory_info.memoryTypeIndex = *memory_type;
+      result = device.allocateMemory(&memory_info, nullptr, memory);
+      if (result != vk::Result::eSuccess) { return result; }
+      result = device.bindImageMemory(*image, *memory, 0);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto range = vk::ImageSubresourceRange{};
+      range.aspectMask = vk::ImageAspectFlagBits::eDepth;
+      range.levelCount = 1;
+      range.layerCount = 1;
+      auto view_info = vk::ImageViewCreateInfo{};
+      view_info.image = *image;
+      view_info.viewType = vk::ImageViewType::e2D;
+      view_info.format = vk::Format::eD32Sfloat;
+      view_info.subresourceRange = range;
+      return device.createImageView(&view_info, nullptr, view);
+   }
+
    /// @brief Creates reusable command and timeline objects for one serial frame executor.
    vk::Result createFrameExecutor(vk::Device device, std::uint32_t queue_family, vk::CommandPool *pool,
                                   vk::CommandBuffer *command_buffer, vk::Semaphore *timeline,
@@ -1111,6 +1172,90 @@ namespace vve::v4::vh::low {
       return result;
    }
 
+   /// @brief Creates the depth-only graphics pipeline used by the first shadow-map proof.
+   vk::Result createSceneShadowPipeline(vk::Device device, std::span<const std::uint32_t> vertex_spirv,
+                                        std::string_view vertex_entry, vk::PipelineLayout *layout,
+                                        vk::Pipeline *pipeline) {
+      auto shader_info = vk::ShaderModuleCreateInfo{};
+      shader_info.codeSize = vertex_spirv.size_bytes();
+      shader_info.pCode = vertex_spirv.data();
+      vk::ShaderModule vertex_shader{};
+      auto result = device.createShaderModule(&shader_info, nullptr, &vertex_shader);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto push_range = vk::PushConstantRange{};
+      push_range.stageFlags = vk::ShaderStageFlagBits::eVertex;
+      push_range.offset = 0;
+      push_range.size = 32U * static_cast<std::uint32_t>(sizeof(float));
+      auto layout_info = vk::PipelineLayoutCreateInfo{};
+      layout_info.pushConstantRangeCount = 1;
+      layout_info.pPushConstantRanges = &push_range;
+      result = device.createPipelineLayout(&layout_info, nullptr, layout);
+      if (result != vk::Result::eSuccess) {
+         device.destroyShaderModule(vertex_shader);
+         return result;
+      }
+
+      const auto vertex_name = std::string{vertex_entry};
+      auto stage = vk::PipelineShaderStageCreateInfo{};
+      stage.stage = vk::ShaderStageFlagBits::eVertex;
+      stage.module = vertex_shader;
+      stage.pName = vertex_name.c_str();
+      auto binding = vk::VertexInputBindingDescription{};
+      binding.binding = 0;
+      binding.stride = 9U * static_cast<std::uint32_t>(sizeof(float));
+      binding.inputRate = vk::VertexInputRate::eVertex;
+      auto attributes = std::array{vk::VertexInputAttributeDescription{}};
+      attributes[0].location = 0;
+      attributes[0].binding = 0;
+      attributes[0].format = vk::Format::eR32G32B32Sfloat;
+      attributes[0].offset = 0;
+      auto vertex_input = vk::PipelineVertexInputStateCreateInfo{};
+      vertex_input.vertexBindingDescriptionCount = 1;
+      vertex_input.pVertexBindingDescriptions = &binding;
+      vertex_input.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributes.size());
+      vertex_input.pVertexAttributeDescriptions = attributes.data();
+
+      auto assembly = vk::PipelineInputAssemblyStateCreateInfo{};
+      assembly.topology = vk::PrimitiveTopology::eTriangleList;
+      auto viewport_state = vk::PipelineViewportStateCreateInfo{};
+      viewport_state.viewportCount = 1;
+      viewport_state.scissorCount = 1;
+      auto raster = vk::PipelineRasterizationStateCreateInfo{};
+      raster.polygonMode = vk::PolygonMode::eFill;
+      raster.cullMode = vk::CullModeFlagBits::eNone;
+      raster.frontFace = vk::FrontFace::eCounterClockwise;
+      raster.lineWidth = 1.0F;
+      auto multisample = vk::PipelineMultisampleStateCreateInfo{};
+      multisample.rasterizationSamples = vk::SampleCountFlagBits::e1;
+      auto depth = vk::PipelineDepthStencilStateCreateInfo{};
+      depth.depthTestEnable = VK_TRUE;
+      depth.depthWriteEnable = VK_TRUE;
+      depth.depthCompareOp = vk::CompareOp::eLess;
+      constexpr std::array dynamic_states{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+      auto dynamic = vk::PipelineDynamicStateCreateInfo{};
+      dynamic.dynamicStateCount = static_cast<std::uint32_t>(dynamic_states.size());
+      dynamic.pDynamicStates = dynamic_states.data();
+      auto rendering = vk::PipelineRenderingCreateInfo{};
+      rendering.depthAttachmentFormat = vk::Format::eD32Sfloat;
+      auto info = vk::GraphicsPipelineCreateInfo{};
+      info.pNext = &rendering;
+      info.stageCount = 1;
+      info.pStages = &stage;
+      info.pVertexInputState = &vertex_input;
+      info.pInputAssemblyState = &assembly;
+      info.pViewportState = &viewport_state;
+      info.pRasterizationState = &raster;
+      info.pMultisampleState = &multisample;
+      info.pDepthStencilState = &depth;
+      info.pDynamicState = &dynamic;
+      info.layout = *layout;
+      result = device.createGraphicsPipelines(nullptr, 1, &info, nullptr, pipeline);
+      device.destroyShaderModule(vertex_shader);
+      if (result != vk::Result::eSuccess) { device.destroyPipelineLayout(*layout); }
+      return result;
+   }
+
    /// @brief Records a dynamic-rendering pass that clears then draws one hardcoded triangle.
    vk::Result recordSwapchainTriangle(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                                       vk::Image image, vk::ImageView view, vk::Extent2D extent,
@@ -1297,6 +1442,104 @@ namespace vve::v4::vh::low {
       to_present.newLayout = vk::ImageLayout::ePresentSrcKHR;
       dependency.pImageMemoryBarriers = &to_present;
       command_buffer.pipelineBarrier2(&dependency);
+      return command_buffer.end();
+   }
+
+   /// @brief Records a depth-only scene pass and copies the shadow depth image to a host buffer.
+   vk::Result recordSceneShadowDepth(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
+                                     vk::Image depth_image, vk::ImageView depth_view, vk::Extent2D extent,
+                                     vk::ImageLayout old_layout, vk::PipelineLayout layout,
+                                     vk::Pipeline pipeline, vk::Buffer vertex_buffer, vk::Buffer index_buffer,
+                                     std::uint32_t index_count, std::span<const float> scene_constants,
+                                     vk::Buffer readback_buffer) {
+      if (scene_constants.size() < 32 || !readback_buffer) { return vk::Result::eErrorInitializationFailed; }
+
+      auto result = device.resetCommandPool(pool);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto begin = vk::CommandBufferBeginInfo{};
+      begin.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+      result = command_buffer.begin(&begin);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto depth_range = vk::ImageSubresourceRange{};
+      depth_range.aspectMask = vk::ImageAspectFlagBits::eDepth;
+      depth_range.levelCount = 1;
+      depth_range.layerCount = 1;
+      auto to_depth = vk::ImageMemoryBarrier2{};
+      to_depth.dstStageMask = vk::PipelineStageFlagBits2::eEarlyFragmentTests |
+                              vk::PipelineStageFlagBits2::eLateFragmentTests;
+      to_depth.dstAccessMask = vk::AccessFlagBits2::eDepthStencilAttachmentRead |
+                               vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
+      to_depth.oldLayout = old_layout;
+      to_depth.newLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+      to_depth.image = depth_image;
+      to_depth.subresourceRange = depth_range;
+      auto dependency = vk::DependencyInfo{};
+      dependency.imageMemoryBarrierCount = 1;
+      dependency.pImageMemoryBarriers = &to_depth;
+      command_buffer.pipelineBarrier2(&dependency);
+
+      auto clear = vk::ClearValue{};
+      clear.depthStencil = vk::ClearDepthStencilValue{1.0F, 0};
+      auto depth_attachment = vk::RenderingAttachmentInfo{};
+      depth_attachment.imageView = depth_view;
+      depth_attachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+      depth_attachment.loadOp = vk::AttachmentLoadOp::eClear;
+      depth_attachment.storeOp = vk::AttachmentStoreOp::eStore;
+      depth_attachment.clearValue = clear;
+      auto rendering = vk::RenderingInfo{};
+      rendering.renderArea = vk::Rect2D{vk::Offset2D{0, 0}, extent};
+      rendering.layerCount = 1;
+      rendering.pDepthAttachment = &depth_attachment;
+      command_buffer.beginRendering(&rendering);
+
+      auto viewport = vk::Viewport{0.0F, 0.0F, static_cast<float>(extent.width), static_cast<float>(extent.height),
+                                   0.0F, 1.0F};
+      auto scissor = vk::Rect2D{vk::Offset2D{0, 0}, extent};
+      const auto vertex_offset = vk::DeviceSize{};
+      command_buffer.setViewport(0, 1, &viewport);
+      command_buffer.setScissor(0, 1, &scissor);
+      command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+      command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0,
+                                   32U * static_cast<std::uint32_t>(sizeof(float)),
+                                   scene_constants.data());
+      command_buffer.bindVertexBuffers(0, 1, &vertex_buffer, &vertex_offset);
+      command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint32);
+      command_buffer.drawIndexed(index_count, 1, 0, 0, 0);
+      command_buffer.endRendering();
+
+      auto to_transfer = to_depth;
+      to_transfer.srcStageMask = vk::PipelineStageFlagBits2::eLateFragmentTests;
+      to_transfer.srcAccessMask = vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
+      to_transfer.dstStageMask = vk::PipelineStageFlagBits2::eCopy;
+      to_transfer.dstAccessMask = vk::AccessFlagBits2::eTransferRead;
+      to_transfer.oldLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+      to_transfer.newLayout = vk::ImageLayout::eTransferSrcOptimal;
+      dependency.pImageMemoryBarriers = &to_transfer;
+      command_buffer.pipelineBarrier2(&dependency);
+
+      auto subresource = vk::ImageSubresourceLayers{};
+      subresource.aspectMask = vk::ImageAspectFlagBits::eDepth;
+      subresource.layerCount = 1;
+      auto region = vk::BufferImageCopy{};
+      region.imageSubresource = subresource;
+      region.imageExtent = vk::Extent3D{extent.width, extent.height, 1};
+      command_buffer.copyImageToBuffer(depth_image, vk::ImageLayout::eTransferSrcOptimal,
+                                       readback_buffer, 1, &region);
+
+      auto to_host = vk::BufferMemoryBarrier2{};
+      to_host.srcStageMask = vk::PipelineStageFlagBits2::eCopy;
+      to_host.srcAccessMask = vk::AccessFlagBits2::eTransferWrite;
+      to_host.dstStageMask = vk::PipelineStageFlagBits2::eHost;
+      to_host.dstAccessMask = vk::AccessFlagBits2::eHostRead;
+      to_host.buffer = readback_buffer;
+      to_host.offset = 0;
+      to_host.size = VK_WHOLE_SIZE;
+      auto buffer_dependency = vk::DependencyInfo{};
+      buffer_dependency.bufferMemoryBarrierCount = 1;
+      buffer_dependency.pBufferMemoryBarriers = &to_host;
+      command_buffer.pipelineBarrier2(&buffer_dependency);
       return command_buffer.end();
    }
 

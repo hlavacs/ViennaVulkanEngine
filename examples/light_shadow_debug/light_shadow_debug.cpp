@@ -169,6 +169,20 @@ void writeRenderDebugSample(std::ofstream &file, std::string_view name, const vv
     file << prefix << ".valid=" << sample.valid << '\n';
 }
 
+void writeShadowDepthSample(std::ofstream &file, std::string_view name,
+                            const vve::RenderShadowDepthSample &sample) {
+    const auto prefix = std::string{name};
+    file << prefix << ".triangle_id=" << sample.triangle_id << '\n';
+    writeVec3(file, prefix + ".world", sample.world);
+    writeVec3(file, prefix + ".light_ndc", sample.light_ndc);
+    file << prefix << ".pixel=" << sample.pixel_x << ',' << sample.pixel_y << '\n';
+    file << prefix << ".expected_depth=" << sample.expected_depth << '\n';
+    file << prefix << ".gpu_depth=" << sample.gpu_depth << '\n';
+    file << prefix << ".error=" << sample.error << '\n';
+    file << prefix << ".has_gpu=" << sample.has_gpu << '\n';
+    file << prefix << ".valid=" << sample.valid << '\n';
+}
+
 [[nodiscard]] std::filesystem::path outputPath(int argc, char **argv) {
     for (auto index = 1; index + 1 < argc; ++index) {
         if (std::string_view{argv[index]} == "--output") { return std::filesystem::path{argv[index + 1]}; }
@@ -352,6 +366,8 @@ int main(int argc, char **argv) {
     auto &render_system = world.template get<vve::RenderSystem>();
     bool gpu_verified{};
     bool all_gpu_samples_match{true};
+    bool shadow_verified{};
+    bool all_shadow_samples_match{true};
     if (std::ofstream file{reference_path, std::ios::app}) {
         const auto clear_color = render_system.lastClearColor();
         file << "engine.rendered_frames=" << render_system.renderedFrameCount() << '\n';
@@ -397,10 +413,21 @@ int main(int argc, char **argv) {
             gpu_verified |= gpu.has_value();
             all_gpu_samples_match &= sample_matches;
         }
+        file << "shadow_depth.sample_count=" << render_system.sceneShadowDepthSampleCount() << '\n';
+        for (std::size_t index{}; index < render_system.sceneShadowDepthSampleCount(); ++index) {
+            const auto sample = render_system.sceneShadowDepthSample(index);
+            if (!sample) { continue; }
+            writeShadowDepthSample(file, "shadow_depth.sample" + std::to_string(index), *sample);
+            const auto matches = sample->has_gpu && sample->error < 3.0e-2F;
+            file << "shadow_depth.sample" << index << ".matches=" << matches << '\n';
+            shadow_verified |= sample->has_gpu;
+            all_shadow_samples_match &= matches;
+        }
     } else {
         std::cerr << "[light_shadow_debug] could not write " << reference_path << '\n';
         return 2;
     }
     if (!inspect && (!gpu_verified || !all_gpu_samples_match)) { return 3; }
+    if (!inspect && (!shadow_verified || !all_shadow_samples_match)) { return 4; }
     return 0;
 }
