@@ -35,6 +35,11 @@ export namespace vve::v4::vh {
       vk::DeviceMemory scene_vertex_memory{}; ///< Memory backing the scene vertex buffer.
       vk::Buffer scene_indices{};             ///< Host-visible index buffer.
       vk::DeviceMemory scene_index_memory{};  ///< Memory backing the scene index buffer.
+      vk::DescriptorSetLayout scene_debug_layout{}; ///< Layout for shader debug readback.
+      vk::DescriptorPool scene_debug_pool{};         ///< Pool owning the debug descriptor set.
+      vk::DescriptorSet scene_debug_set{};           ///< Storage-buffer descriptor for debug readback.
+      vk::Buffer scene_debug_buffer{};               ///< Host-visible shader debug buffer.
+      vk::DeviceMemory scene_debug_memory{};         ///< Memory backing the shader debug buffer.
       std::uint32_t scene_vertex_count{};      ///< Uploaded vertex count.
       std::uint32_t scene_index_count{};       ///< Uploaded index count.
    };
@@ -48,6 +53,21 @@ export namespace vve::v4::vh {
       float g{}; ///< Linear green channel.
       float b{}; ///< Linear blue channel.
    };
+
+   inline constexpr std::uint32_t invalid_scene_debug_vertex =
+      std::numeric_limits<std::uint32_t>::max(); ///< Sentinel used by empty debug slots.
+
+   /// @brief Exact GPU-side vertex sample copied from the debug storage buffer.
+   struct SceneDebugSample {
+      std::uint32_t vertex_id{invalid_scene_debug_vertex}; ///< Vertex id written by the shader.
+      std::array<float, 3> padding0{};                     ///< Matches shader 16-byte struct alignment.
+      std::array<float, 3> world{};                        ///< GPU-observed world position.
+      float padding1{};                                    ///< Matches shader 16-byte struct alignment.
+      std::array<float, 4> clip{};                         ///< GPU-computed clip position.
+      std::array<float, 3> ndc{};                          ///< GPU-computed NDC position.
+      float depth{};                                       ///< GPU-computed Vulkan depth.
+   };
+   static_assert(sizeof(SceneDebugSample) == 64);
 
    /// @brief Owns Vulkan instance, device, and frame targets for visible windows.
    class FrameHost {
@@ -81,6 +101,8 @@ export namespace vve::v4::vh {
       [[nodiscard]] std::uint64_t sceneInstanceDrawCount() const;
       [[nodiscard]] std::uint32_t sceneVertexCount() const;
       [[nodiscard]] std::uint32_t sceneIndexCount() const;
+      [[nodiscard]] std::size_t sceneDebugSampleCount() const;
+      [[nodiscard]] std::optional<SceneDebugSample> sceneDebugSample(std::size_t index) const;
       [[nodiscard]] std::array<float, 4> lastClearColor() const;
 
    private:
@@ -103,6 +125,9 @@ export namespace vve::v4::vh {
       [[nodiscard]] std::expected<void, Error>
       uploadScene(FrameTarget &target, std::span<const SceneVertex> vertices,
                   std::span<const std::uint32_t> indices);
+      [[nodiscard]] std::expected<void, Error> createSceneDebugTarget(FrameTarget &target);
+      [[nodiscard]] std::expected<void, Error> clearSceneDebugTarget(FrameTarget &target);
+      [[nodiscard]] std::expected<void, Error> readSceneDebugTarget(FrameTarget &target);
       [[nodiscard]] std::expected<void, Error> drawTriangleTarget(FrameTarget &target,
                                                                   const vk::ClearColorValue &color);
       [[nodiscard]] std::expected<void, Error> drawSceneTarget(FrameTarget &target,
@@ -131,6 +156,7 @@ export namespace vve::v4::vh {
       std::uint64_t scene_instance_draws_{0};
       std::uint32_t scene_vertex_count_{0};
       std::uint32_t scene_index_count_{0};
+      std::array<SceneDebugSample, 2> scene_debug_samples_{}; ///< Last shader debug readback samples.
       std::array<float, 4> last_clear_color_{};
    };
 
@@ -161,6 +187,7 @@ namespace vve::v4::vh {
          scene_instance_draws_{std::exchange(other.scene_instance_draws_, 0)},
          scene_vertex_count_{std::exchange(other.scene_vertex_count_, 0)},
          scene_index_count_{std::exchange(other.scene_index_count_, 0)},
+         scene_debug_samples_{std::exchange(other.scene_debug_samples_, {})},
          last_clear_color_{std::exchange(other.last_clear_color_, {})} {}
 
    /// @brief Moves ownership of all Vulkan objects.
@@ -185,6 +212,7 @@ namespace vve::v4::vh {
          scene_instance_draws_ = std::exchange(other.scene_instance_draws_, 0);
          scene_vertex_count_ = std::exchange(other.scene_vertex_count_, 0);
          scene_index_count_ = std::exchange(other.scene_index_count_, 0);
+         scene_debug_samples_ = std::exchange(other.scene_debug_samples_, {});
          last_clear_color_ = std::exchange(other.last_clear_color_, {});
       }
       return *this;
@@ -248,12 +276,15 @@ namespace vve::v4::vh {
 
       const auto clear = vk::ClearColorValue{color};
       for (auto &target : targets_) {
+         if (const auto result = createSceneDebugTarget(target); !result) { return result; }
          if (const auto result = createScenePipeline(target, vertex_spirv, vertex_entry,
                                                      fragment_spirv, fragment_entry); !result) {
             return result;
          }
          if (const auto result = uploadScene(target, vertices, indices); !result) { return result; }
+         if (const auto result = clearSceneDebugTarget(target); !result) { return result; }
          if (const auto result = drawSceneTarget(target, clear, clip_from_world); !result) { return result; }
+         if (const auto result = readSceneDebugTarget(target); !result) { return result; }
       }
       last_clear_color_ = color;
       scene_uploads_ += targets_.size();
@@ -294,6 +325,20 @@ namespace vve::v4::vh {
 
    /// @brief Returns the last uploaded scene index count.
    std::uint32_t FrameHost::sceneIndexCount() const { return scene_index_count_; }
+
+   /// @brief Returns how many GPU scene-debug sample slots contain data.
+   std::size_t FrameHost::sceneDebugSampleCount() const {
+      return static_cast<std::size_t>(std::ranges::count_if(scene_debug_samples_, [](const auto &sample) {
+         return sample.vertex_id != invalid_scene_debug_vertex;
+      }));
+   }
+
+   /// @brief Returns one GPU scene-debug sample if the shader wrote it.
+   std::optional<SceneDebugSample> FrameHost::sceneDebugSample(std::size_t index) const {
+      if (index >= scene_debug_samples_.size()) { return {}; }
+      const auto sample = scene_debug_samples_[index];
+      return sample.vertex_id == invalid_scene_debug_vertex ? std::optional<SceneDebugSample>{} : sample;
+   }
 
    /// @brief Returns the fixed clear color used by the most recent clear frame.
    std::array<float, 4> FrameHost::lastClearColor() const { return last_clear_color_; }
@@ -408,7 +453,7 @@ namespace vve::v4::vh {
                                   std::string_view fragment_entry) {
       if (target.scene_pipeline) { return {}; }
       const auto result = low::createScenePipeline(device_, target.color_format, target.depth_format,
-                                                   vertex_spirv, vertex_entry,
+                                                   target.scene_debug_layout, vertex_spirv, vertex_entry,
                                                    fragment_spirv, fragment_entry,
                                                    &target.scene_layout, &target.scene_pipeline);
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
@@ -449,6 +494,33 @@ namespace vve::v4::vh {
       target.scene_vertex_count = static_cast<std::uint32_t>(vertices.size());
       target.scene_index_count = static_cast<std::uint32_t>(indices.size());
       return {};
+   }
+
+   /// @brief Creates the storage buffer and descriptor used by shader debug samples.
+   std::expected<void, Error> FrameHost::createSceneDebugTarget(FrameTarget &target) {
+      if (target.scene_debug_buffer) { return {}; }
+      const auto size = vk::DeviceSize{sizeof(SceneDebugSample) * scene_debug_samples_.size()};
+      auto result = low::createHostBuffer(physical_device_, device_, size, vk::BufferUsageFlagBits::eStorageBuffer,
+                                          &target.scene_debug_buffer, &target.scene_debug_memory);
+      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+      result = low::createStorageDescriptor(device_, target.scene_debug_buffer, size, &target.scene_debug_layout,
+                                            &target.scene_debug_pool, &target.scene_debug_set);
+      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
+   }
+
+   /// @brief Resets shader debug samples before recording a scene draw.
+   std::expected<void, Error> FrameHost::clearSceneDebugTarget(FrameTarget &target) {
+      scene_debug_samples_.fill(SceneDebugSample{});
+      const auto bytes = std::as_bytes(std::span{scene_debug_samples_});
+      const auto result = low::writeBuffer(device_, target.scene_debug_memory, bytes);
+      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
+   }
+
+   /// @brief Reads shader debug samples after GPU execution has completed.
+   std::expected<void, Error> FrameHost::readSceneDebugTarget(FrameTarget &target) {
+      const auto bytes = std::as_writable_bytes(std::span{scene_debug_samples_});
+      const auto result = low::readBuffer(device_, target.scene_debug_memory, bytes);
+      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
    }
 
    /// @brief Acquires, clears, submits, waits, and presents one target image.
@@ -552,7 +624,9 @@ namespace vve::v4::vh {
                                          vk::Extent2D{target.extent.width, target.extent.height},
                                          target.layouts[image_index], target.depth_image, target.depth_view,
                                          target.depth_layout, target.scene_layout, target.scene_pipeline,
-                                         target.scene_vertices, target.scene_indices,
+                                         target.scene_vertices, target.scene_indices, target.scene_debug_set,
+                                         target.scene_debug_buffer,
+                                         sizeof(SceneDebugSample) * scene_debug_samples_.size(),
                                          target.scene_index_count, clip_from_world, color);
       if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
 
@@ -610,6 +684,10 @@ namespace vve::v4::vh {
          if (target.scene_vertex_memory) { device_.freeMemory(target.scene_vertex_memory); }
          if (target.scene_indices) { device_.destroyBuffer(target.scene_indices); }
          if (target.scene_index_memory) { device_.freeMemory(target.scene_index_memory); }
+         if (target.scene_debug_pool) { device_.destroyDescriptorPool(target.scene_debug_pool); }
+         if (target.scene_debug_layout) { device_.destroyDescriptorSetLayout(target.scene_debug_layout); }
+         if (target.scene_debug_buffer) { device_.destroyBuffer(target.scene_debug_buffer); }
+         if (target.scene_debug_memory) { device_.freeMemory(target.scene_debug_memory); }
          if (target.depth_view) { device_.destroyImageView(target.depth_view); }
          if (target.depth_image) { device_.destroyImage(target.depth_image); }
          if (target.depth_memory) { device_.freeMemory(target.depth_memory); }

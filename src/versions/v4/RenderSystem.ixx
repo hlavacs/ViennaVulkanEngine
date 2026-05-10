@@ -74,6 +74,16 @@ export namespace vve::v4 {
       PixelExtent target_extent{.width = 1, .height = 1}; ///< Render target size.
    };
 
+   /// @brief CPU or GPU camera-transform sample used by the verification example.
+   struct RenderDebugSample {
+      std::uint32_t vertex_id{}; ///< Source vertex id.
+      Vec3 world{zeroVec3()};    ///< World-space vertex position.
+      Vec4 clip{};               ///< Clip-space position.
+      Vec3 ndc{zeroVec3()};      ///< Normalized device coordinate.
+      float depth{};             ///< Vulkan depth value.
+      bool valid{};              ///< Whether this slot contains a sample.
+   };
+
    /// @brief Minimal CPU render scene built before Vulkan upload.
    class RenderScene {
    public:
@@ -156,6 +166,11 @@ export namespace vve::v4 {
       [[nodiscard]] std::uint64_t sceneInstanceDrawCount() const;
       [[nodiscard]] std::uint32_t sceneDrawVertexCount() const;
       [[nodiscard]] std::uint32_t sceneDrawIndexCount() const;
+      [[nodiscard]] std::size_t sceneDebugSampleCount() const;
+      [[nodiscard]] std::optional<RenderDebugSample> sceneCpuDebugSample(std::size_t index) const;
+      [[nodiscard]] std::optional<RenderDebugSample> sceneGpuDebugSample(std::size_t index) const;
+      [[nodiscard]] std::optional<float> sceneDebugClipError(std::size_t index) const;
+      [[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const;
       [[nodiscard]] std::size_t preparedGpuTargetCount() const;
       [[nodiscard]] std::array<float, 4> lastClearColor() const;
@@ -184,6 +199,7 @@ export namespace vve::v4 {
       std::vector<vh::SceneVertex> scene_vertices_{}; ///< Flattened debug scene vertices.
       std::vector<std::uint32_t> scene_indices_{}; ///< Flattened debug scene indices.
       std::array<float, 16> scene_clip_from_world_{}; ///< Column-major world-to-clip camera matrix.
+      std::array<RenderDebugSample, 2> scene_cpu_debug_{}; ///< CPU camera-transform samples.
       std::uint64_t rendered_frames_{0};       ///< Number of frame hooks reached.
       std::size_t last_rendered_window_count_{0}; ///< Last non-closed window count.
    };
@@ -231,6 +247,44 @@ namespace vve::v4 {
             }
          }
          return result;
+      }
+
+      /// @brief Converts a clip position to Vulkan normalized device coordinates.
+      inline Vec3 ndc(Vec4 clip) {
+         const auto inverse_w = std::abs(clip.w) > 1.0e-6F ? 1.0F / clip.w : 0.0F;
+         return Vec3{clip.x * inverse_w, clip.y * inverse_w, clip.z * inverse_w};
+      }
+
+      /// @brief Builds the CPU-side sample equivalent to the GPU shader debug write.
+      inline RenderDebugSample cpuSample(std::uint32_t vertex_id, const vh::SceneVertex &vertex, Mat4 clip_from_world) {
+         const auto world = Vec3{vertex.x, vertex.y, vertex.z};
+         const auto clip = math::multiply(clip_from_world, Vec4{world.x, world.y, world.z, 1.0F});
+         const auto sample_ndc = ndc(clip);
+         return RenderDebugSample{.vertex_id = vertex_id,
+                                  .world = world,
+                                  .clip = clip,
+                                  .ndc = sample_ndc,
+                                  .depth = sample_ndc.z,
+                                  .valid = true};
+      }
+
+      /// @brief Converts the compact Vulkan readback sample to the render-system debug type.
+      inline RenderDebugSample gpuSample(const vh::SceneDebugSample &sample) {
+         const auto world = Vec3{sample.world[0], sample.world[1], sample.world[2]};
+         const auto clip = Vec4{sample.clip[0], sample.clip[1], sample.clip[2], sample.clip[3]};
+         const auto sample_ndc = Vec3{sample.ndc[0], sample.ndc[1], sample.ndc[2]};
+         return RenderDebugSample{.vertex_id = sample.vertex_id,
+                                  .world = world,
+                                  .clip = clip,
+                                  .ndc = sample_ndc,
+                                  .depth = sample.depth,
+                                  .valid = sample.vertex_id != vh::invalid_scene_debug_vertex};
+      }
+
+      /// @brief Computes the maximum absolute clip-coordinate difference.
+      inline float clipError(const RenderDebugSample &cpu, const RenderDebugSample &gpu) {
+         return std::max({std::abs(cpu.clip.x - gpu.clip.x), std::abs(cpu.clip.y - gpu.clip.y),
+                          std::abs(cpu.clip.z - gpu.clip.z), std::abs(cpu.clip.w - gpu.clip.w)});
       }
 
    } // namespace detail
@@ -550,6 +604,41 @@ namespace vve::v4 {
    /// @brief Returns how many indices were uploaded by the scene draw path.
    inline std::uint32_t RenderSystem::sceneDrawIndexCount() const { return vulkan_.sceneIndexCount(); }
 
+   /// @brief Returns how many CPU/GPU debug sample slots are expected for the scene draw.
+   inline std::size_t RenderSystem::sceneDebugSampleCount() const {
+      return static_cast<std::size_t>(std::ranges::count_if(scene_cpu_debug_, &RenderDebugSample::valid));
+   }
+
+   /// @brief Returns one CPU-computed debug sample.
+   inline std::optional<RenderDebugSample> RenderSystem::sceneCpuDebugSample(std::size_t index) const {
+      if (index >= scene_cpu_debug_.size() || !scene_cpu_debug_[index].valid) { return {}; }
+      return scene_cpu_debug_[index];
+   }
+
+   /// @brief Returns one GPU-computed debug sample read back from Vulkan.
+   inline std::optional<RenderDebugSample> RenderSystem::sceneGpuDebugSample(std::size_t index) const {
+      const auto sample = vulkan_.sceneDebugSample(index);
+      if (!sample) { return {}; }
+      auto result = detail::gpuSample(*sample);
+      return result.valid ? std::optional<RenderDebugSample>{result} : std::optional<RenderDebugSample>{};
+   }
+
+   /// @brief Returns the CPU/GPU clip-space mismatch for one sample.
+   inline std::optional<float> RenderSystem::sceneDebugClipError(std::size_t index) const {
+      const auto cpu = sceneCpuDebugSample(index);
+      const auto gpu = sceneGpuDebugSample(index);
+      if (!cpu || !gpu) { return {}; }
+      return detail::clipError(*cpu, *gpu);
+   }
+
+   /// @brief Returns the CPU/GPU depth mismatch for one sample.
+   inline std::optional<float> RenderSystem::sceneDebugDepthError(std::size_t index) const {
+      const auto cpu = sceneCpuDebugSample(index);
+      const auto gpu = sceneGpuDebugSample(index);
+      if (!cpu || !gpu) { return {}; }
+      return std::abs(cpu->depth - gpu->depth);
+   }
+
    /// @brief Returns the last frame's non-closed window count.
    inline std::size_t RenderSystem::lastRenderedWindowCount() const { return last_rendered_window_count_; }
 
@@ -602,7 +691,9 @@ namespace vve::v4 {
       if (!scene_.camera()) { return std::unexpected(Error::missing_object); }
       scene_vertices_.clear();
       scene_indices_.clear();
-      scene_clip_from_world_ = detail::columns(detail::clipFromWorld(*scene_.camera()));
+      scene_cpu_debug_.fill(RenderDebugSample{});
+      const auto clip_from_world = detail::clipFromWorld(*scene_.camera());
+      scene_clip_from_world_ = detail::columns(clip_from_world);
       for (const auto &instance : scene_.instances()) {
          const auto *mesh = scene_.findMesh(instance.mesh);
          const auto *material = scene_.findMaterial(instance.material);
@@ -622,6 +713,13 @@ namespace vve::v4 {
          for (const auto index : mesh->indices) { scene_indices_.push_back(base + index); }
       }
       if (scene_vertices_.empty() || scene_indices_.empty()) { return std::unexpected(Error::missing_object); }
+      constexpr auto debug_vertices = std::array{0U, 6U};
+      for (std::size_t slot{}; slot < debug_vertices.size(); ++slot) {
+         const auto vertex_id = debug_vertices[slot];
+         if (vertex_id < scene_vertices_.size()) {
+            scene_cpu_debug_[slot] = detail::cpuSample(vertex_id, scene_vertices_[vertex_id], clip_from_world);
+         }
+      }
       return {};
    }
 

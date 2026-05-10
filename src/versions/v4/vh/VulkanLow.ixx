@@ -44,6 +44,10 @@ export namespace vve::v4::vh::low {
                     vk::BufferUsageFlags usage, vk::Buffer *buffer, vk::DeviceMemory *memory);
    [[nodiscard]] vk::Result writeBuffer(vk::Device device, vk::DeviceMemory memory,
                                          std::span<const std::byte> bytes);
+   [[nodiscard]] vk::Result readBuffer(vk::Device device, vk::DeviceMemory memory, std::span<std::byte> bytes);
+   [[nodiscard]] vk::Result
+   createStorageDescriptor(vk::Device device, vk::Buffer buffer, vk::DeviceSize size,
+                           vk::DescriptorSetLayout *layout, vk::DescriptorPool *pool, vk::DescriptorSet *set);
    [[nodiscard]] vk::Result
    recordSwapchainClear(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer, vk::Image image,
                         vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
@@ -54,6 +58,7 @@ export namespace vve::v4::vh::low {
                           std::string_view fragment_entry, vk::PipelineLayout *layout, vk::Pipeline *pipeline);
    [[nodiscard]] vk::Result
    createScenePipeline(vk::Device device, vk::Format color_format, vk::Format depth_format,
+                       vk::DescriptorSetLayout debug_layout,
                        std::span<const std::uint32_t> vertex_spirv, std::string_view vertex_entry,
                        std::span<const std::uint32_t> fragment_spirv, std::string_view fragment_entry,
                        vk::PipelineLayout *layout, vk::Pipeline *pipeline);
@@ -66,7 +71,8 @@ export namespace vve::v4::vh::low {
                         vk::Image image, vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
                         vk::Image depth_image, vk::ImageView depth_view, vk::ImageLayout depth_old_layout,
                         vk::PipelineLayout layout, vk::Pipeline pipeline, vk::Buffer vertex_buffer,
-                        vk::Buffer index_buffer, std::uint32_t index_count,
+                        vk::Buffer index_buffer, vk::DescriptorSet debug_set, vk::Buffer debug_buffer,
+                        vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
                         std::span<const float> clip_from_world, const vk::ClearColorValue &clear_color);
    [[nodiscard]] vk::Result
    submitAndWait(vk::Device device, vk::Queue queue, vk::CommandBuffer command_buffer, vk::Semaphore timeline,
@@ -781,6 +787,61 @@ namespace vve::v4::vh::low {
       return vk::Result::eSuccess;
    }
 
+   /// @brief Reads bytes from a host-visible coherent Vulkan buffer allocation.
+   vk::Result readBuffer(vk::Device device, vk::DeviceMemory memory, std::span<std::byte> bytes) {
+      void *mapped{};
+      auto result = device.mapMemory(memory, 0, bytes.size(), {}, &mapped);
+      if (result != vk::Result::eSuccess) { return result; }
+      std::ranges::copy(std::span{static_cast<std::byte *>(mapped), bytes.size()}, bytes.begin());
+      device.unmapMemory(memory);
+      return vk::Result::eSuccess;
+   }
+
+   /// @brief Creates one storage-buffer descriptor set for shader debug readback.
+   vk::Result createStorageDescriptor(vk::Device device, vk::Buffer buffer, vk::DeviceSize size,
+                                      vk::DescriptorSetLayout *layout, vk::DescriptorPool *pool,
+                                      vk::DescriptorSet *set) {
+      auto binding = vk::DescriptorSetLayoutBinding{};
+      binding.binding = 0;
+      binding.descriptorType = vk::DescriptorType::eStorageBuffer;
+      binding.descriptorCount = 1;
+      binding.stageFlags = vk::ShaderStageFlagBits::eVertex;
+      auto layout_info = vk::DescriptorSetLayoutCreateInfo{};
+      layout_info.bindingCount = 1;
+      layout_info.pBindings = &binding;
+      auto result = device.createDescriptorSetLayout(&layout_info, nullptr, layout);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto pool_size = vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 1};
+      auto pool_info = vk::DescriptorPoolCreateInfo{};
+      pool_info.maxSets = 1;
+      pool_info.poolSizeCount = 1;
+      pool_info.pPoolSizes = &pool_size;
+      result = device.createDescriptorPool(&pool_info, nullptr, pool);
+      if (result != vk::Result::eSuccess) {
+         device.destroyDescriptorSetLayout(*layout);
+         *layout = nullptr;
+         return result;
+      }
+
+      auto allocate_info = vk::DescriptorSetAllocateInfo{};
+      allocate_info.descriptorPool = *pool;
+      allocate_info.descriptorSetCount = 1;
+      allocate_info.pSetLayouts = layout;
+      result = device.allocateDescriptorSets(&allocate_info, set);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto buffer_info = vk::DescriptorBufferInfo{buffer, 0, size};
+      auto write = vk::WriteDescriptorSet{};
+      write.dstSet = *set;
+      write.dstBinding = 0;
+      write.descriptorCount = 1;
+      write.descriptorType = vk::DescriptorType::eStorageBuffer;
+      write.pBufferInfo = &buffer_info;
+      device.updateDescriptorSets(1, &write, 0, nullptr);
+      return vk::Result::eSuccess;
+   }
+
    /// @brief Records a dynamic-rendering pass that clears one acquired swapchain image.
    vk::Result recordSwapchainClear(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                                    vk::Image image, vk::ImageView view, vk::Extent2D extent,
@@ -927,6 +988,7 @@ namespace vve::v4::vh::low {
 
    /// @brief Creates a position/color input graphics pipeline for uploaded debug scene geometry.
    vk::Result createScenePipeline(vk::Device device, vk::Format color_format, vk::Format depth_format,
+                                  vk::DescriptorSetLayout debug_layout,
                                   std::span<const std::uint32_t> vertex_spirv,
                                   std::string_view vertex_entry,
                                   std::span<const std::uint32_t> fragment_spirv,
@@ -953,6 +1015,8 @@ namespace vve::v4::vh::low {
       push_range.offset = 0;
       push_range.size = 16U * static_cast<std::uint32_t>(sizeof(float));
       auto layout_info = vk::PipelineLayoutCreateInfo{};
+      layout_info.setLayoutCount = 1;
+      layout_info.pSetLayouts = &debug_layout;
       layout_info.pushConstantRangeCount = 1;
       layout_info.pPushConstantRanges = &push_range;
       result = device.createPipelineLayout(&layout_info, nullptr, layout);
@@ -1112,9 +1176,11 @@ namespace vve::v4::vh::low {
                                    vk::ImageLayout old_layout, vk::Image depth_image, vk::ImageView depth_view,
                                    vk::ImageLayout depth_old_layout, vk::PipelineLayout layout,
                                    vk::Pipeline pipeline, vk::Buffer vertex_buffer, vk::Buffer index_buffer,
-                                   std::uint32_t index_count, std::span<const float> clip_from_world,
+                                   vk::DescriptorSet debug_set, vk::Buffer debug_buffer,
+                                   vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
+                                   std::span<const float> clip_from_world,
                                    const vk::ClearColorValue &clear_color) {
-      if (clip_from_world.size() < 16) { return vk::Result::eErrorInitializationFailed; }
+      if (clip_from_world.size() < 16 || !debug_buffer) { return vk::Result::eErrorInitializationFailed; }
 
       auto result = device.resetCommandPool(pool);
       if (result != vk::Result::eSuccess) { return result; }
@@ -1156,6 +1222,19 @@ namespace vve::v4::vh::low {
       dependency.pImageMemoryBarriers = &to_depth;
       command_buffer.pipelineBarrier2(&dependency);
 
+      auto to_shader = vk::BufferMemoryBarrier2{};
+      to_shader.srcStageMask = vk::PipelineStageFlagBits2::eHost;
+      to_shader.srcAccessMask = vk::AccessFlagBits2::eHostWrite;
+      to_shader.dstStageMask = vk::PipelineStageFlagBits2::eVertexShader;
+      to_shader.dstAccessMask = vk::AccessFlagBits2::eShaderStorageRead | vk::AccessFlagBits2::eShaderStorageWrite;
+      to_shader.buffer = debug_buffer;
+      to_shader.offset = 0;
+      to_shader.size = debug_buffer_size;
+      auto buffer_dependency = vk::DependencyInfo{};
+      buffer_dependency.bufferMemoryBarrierCount = 1;
+      buffer_dependency.pBufferMemoryBarriers = &to_shader;
+      command_buffer.pipelineBarrier2(&buffer_dependency);
+
       auto clear = vk::ClearValue{};
       clear.color = clear_color;
       auto attachment = vk::RenderingAttachmentInfo{};
@@ -1187,6 +1266,7 @@ namespace vve::v4::vh::low {
       command_buffer.setViewport(0, 1, &viewport);
       command_buffer.setScissor(0, 1, &scissor);
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+      command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, 1, &debug_set, 0, nullptr);
       command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0,
                                    16U * static_cast<std::uint32_t>(sizeof(float)),
                                    clip_from_world.data());
@@ -1194,6 +1274,14 @@ namespace vve::v4::vh::low {
       command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint32);
       command_buffer.drawIndexed(index_count, 1, 0, 0, 0);
       command_buffer.endRendering();
+
+      auto to_host = to_shader;
+      to_host.srcStageMask = vk::PipelineStageFlagBits2::eVertexShader;
+      to_host.srcAccessMask = vk::AccessFlagBits2::eShaderStorageWrite;
+      to_host.dstStageMask = vk::PipelineStageFlagBits2::eHost;
+      to_host.dstAccessMask = vk::AccessFlagBits2::eHostRead;
+      buffer_dependency.pBufferMemoryBarriers = &to_host;
+      command_buffer.pipelineBarrier2(&buffer_dependency);
 
       auto to_present = to_attachment;
       to_present.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;

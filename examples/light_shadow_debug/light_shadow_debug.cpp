@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <optional>
+#include <string>
 #include <string_view>
 
 import VEEngine;
@@ -146,6 +147,16 @@ void writeCameraPoint(std::ofstream &file, std::string_view name,
     file << prefix << ".depth=" << ndc.z << '\n';
     file << prefix << ".inside_clip=" << (std::abs(ndc.x) <= 1.0F && std::abs(ndc.y) <= 1.0F &&
                                           ndc.z >= 0.0F && ndc.z <= 1.0F) << '\n';
+}
+
+void writeRenderDebugSample(std::ofstream &file, std::string_view name, const vve::RenderDebugSample &sample) {
+    const auto prefix = std::string{name};
+    file << prefix << ".vertex_id=" << sample.vertex_id << '\n';
+    writeVec3(file, prefix + ".world", sample.world);
+    writeVec4(file, prefix + ".clip", sample.clip);
+    writeVec3(file, prefix + ".ndc", sample.ndc);
+    file << prefix << ".depth=" << sample.depth << '\n';
+    file << prefix << ".valid=" << sample.valid << '\n';
 }
 
 [[nodiscard]] std::filesystem::path outputPath(int argc, char **argv) {
@@ -343,6 +354,20 @@ int main(int argc, char **argv) {
         file << "engine.scene_index_count=" << render_system.sceneDrawIndexCount() << '\n';
         file << "engine.clear_color=" << clear_color[0] << ',' << clear_color[1] << ','
              << clear_color[2] << ',' << clear_color[3] << '\n';
+        file << "gpu_debug.sample_count=" << render_system.sceneDebugSampleCount() << '\n';
+        for (std::size_t index{}; index < render_system.sceneDebugSampleCount(); ++index) {
+            const auto cpu = render_system.sceneCpuDebugSample(index);
+            const auto gpu = render_system.sceneGpuDebugSample(index);
+            if (cpu) { writeRenderDebugSample(file, "gpu_debug.sample" + std::to_string(index) + ".cpu", *cpu); }
+            if (gpu) { writeRenderDebugSample(file, "gpu_debug.sample" + std::to_string(index) + ".gpu", *gpu); }
+            const auto clip_error = render_system.sceneDebugClipError(index);
+            const auto depth_error = render_system.sceneDebugDepthError(index);
+            file << "gpu_debug.sample" << index << ".has_gpu=" << gpu.has_value() << '\n';
+            if (clip_error) { file << "gpu_debug.sample" << index << ".clip_error=" << *clip_error << '\n'; }
+            if (depth_error) { file << "gpu_debug.sample" << index << ".depth_error=" << *depth_error << '\n'; }
+            file << "gpu_debug.sample" << index << ".matches="
+                 << (clip_error.value_or(1.0F) < 1.0e-4F && depth_error.value_or(1.0F) < 1.0e-5F) << '\n';
+        }
     }
     return 0;
 }

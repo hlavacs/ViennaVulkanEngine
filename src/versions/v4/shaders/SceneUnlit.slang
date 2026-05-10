@@ -18,6 +18,18 @@ struct VveSceneCamera
 
 [[vk::push_constant]] ConstantBuffer<VveSceneCamera> gVveScene; ///< Tiny camera block for unlit geometry.
 
+/// @brief One exact GPU-side vertex sample copied back for CPU comparison.
+struct VveSceneDebugSample
+{
+    uint vertexId;        ///< Source vertex id, or 0xffffffff when unused.
+    float3 worldPosition; ///< Uploaded world position.
+    float4 clipPosition;  ///< GPU-computed clip position.
+    float3 ndcPosition;   ///< GPU-computed normalized device coordinate.
+    float depth;          ///< GPU-computed Vulkan depth.
+};
+
+RWStructuredBuffer<VveSceneDebugSample> gVveSceneDebug : register(u0, space0); ///< Debug readback samples.
+
 /// @brief Vertex-to-fragment payload.
 struct VveSceneVertexOutput
 {
@@ -35,12 +47,31 @@ float4 vveSceneClipFromWorld(float3 position)
            (gVveScene.clipFromWorld3 * p.w);
 }
 
+/// @brief Stores deterministic vertex samples used by the host proof file.
+void vveWriteSceneDebug(uint vertexId, float3 worldPosition, float4 clipPosition)
+{
+    uint sampleIndex = vertexId == 0 ? 0 : (vertexId == 6 ? 1 : 2);
+    if (sampleIndex >= 2) { return; }
+
+    float inverseW = abs(clipPosition.w) > 1.0e-6 ? rcp(clipPosition.w) : 0.0;
+    VveSceneDebugSample sample;
+    sample.vertexId = vertexId;
+    sample.worldPosition = worldPosition;
+    sample.clipPosition = clipPosition;
+    sample.ndcPosition = clipPosition.xyz * inverseW;
+    sample.depth = sample.ndcPosition.z;
+    gVveSceneDebug[sampleIndex] = sample;
+}
+
 /// @brief Transforms the uploaded debug vertex with a real camera, but no lighting yet.
 [shader("vertex")]
-VveSceneVertexOutput vveSceneUnlitVertexMain(VveSceneVertexInput input)
+VveSceneVertexOutput vveSceneUnlitVertexMain(VveSceneVertexInput input, uint vertexId : SV_VertexID)
 {
+    float4 clipPosition = vveSceneClipFromWorld(input.position);
+    vveWriteSceneDebug(vertexId, input.position, clipPosition);
+
     VveSceneVertexOutput output;
-    output.clipPosition = vveSceneClipFromWorld(input.position);
+    output.clipPosition = clipPosition;
     output.color = input.color;
     return output;
 }

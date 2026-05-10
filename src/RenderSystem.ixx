@@ -10,6 +10,15 @@ import VEEngine.Types;
  */
 export namespace vve {
 
+   struct RenderDebugSample {
+      std::uint32_t vertex_id{}; ///< Source vertex id.
+      Vec3 world{zeroVec3()};    ///< World-space vertex position.
+      Vec4 clip{};               ///< Clip-space position.
+      Vec3 ndc{zeroVec3()};      ///< Normalized device coordinate.
+      float depth{};             ///< Vulkan depth value.
+      bool valid{};              ///< Whether this slot contains a sample.
+   };
+
    class RenderSystem {
       using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::RenderSystem;
 
@@ -50,6 +59,11 @@ export namespace vve {
       [[nodiscard]] std::uint64_t sceneInstanceDrawCount() const;
       [[nodiscard]] std::uint32_t sceneDrawVertexCount() const;
       [[nodiscard]] std::uint32_t sceneDrawIndexCount() const;
+      [[nodiscard]] std::size_t sceneDebugSampleCount() const;
+      [[nodiscard]] std::optional<RenderDebugSample> sceneCpuDebugSample(std::size_t index) const;
+      [[nodiscard]] std::optional<RenderDebugSample> sceneGpuDebugSample(std::size_t index) const;
+      [[nodiscard]] std::optional<float> sceneDebugClipError(std::size_t index) const;
+      [[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }
       [[nodiscard]] std::size_t preparedGpuTargetCount() const { return impl_.preparedGpuTargetCount(); }
       [[nodiscard]] std::array<float, 4> lastClearColor() const { return impl_.lastClearColor(); }
@@ -72,5 +86,34 @@ export namespace vve {
 
    /// @brief Returns how many indices were uploaded by the scene draw path.
    inline std::uint32_t RenderSystem::sceneDrawIndexCount() const { return impl_.sceneDrawIndexCount(); }
+
+   /// @brief Returns how many debug sample slots are expected for the scene draw.
+   inline std::size_t RenderSystem::sceneDebugSampleCount() const { return impl_.sceneDebugSampleCount(); }
+
+   /// @brief Returns one CPU-computed render debug sample.
+   inline std::optional<RenderDebugSample> RenderSystem::sceneCpuDebugSample(std::size_t index) const {
+      auto sample = impl_.sceneCpuDebugSample(index);
+      if (!sample) { return {}; }
+      return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
+                               .ndc = sample->ndc, .depth = sample->depth, .valid = sample->valid};
+   }
+
+   /// @brief Returns one GPU-computed render debug sample.
+   inline std::optional<RenderDebugSample> RenderSystem::sceneGpuDebugSample(std::size_t index) const {
+      auto sample = impl_.sceneGpuDebugSample(index);
+      if (!sample) { return {}; }
+      return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
+                               .ndc = sample->ndc, .depth = sample->depth, .valid = sample->valid};
+   }
+
+   /// @brief Returns the CPU/GPU clip-space mismatch for one sample.
+   inline std::optional<float> RenderSystem::sceneDebugClipError(std::size_t index) const {
+      return impl_.sceneDebugClipError(index);
+   }
+
+   /// @brief Returns the CPU/GPU depth mismatch for one sample.
+   inline std::optional<float> RenderSystem::sceneDebugDepthError(std::size_t index) const {
+      return impl_.sceneDebugDepthError(index);
+   }
 
 } // namespace vve
