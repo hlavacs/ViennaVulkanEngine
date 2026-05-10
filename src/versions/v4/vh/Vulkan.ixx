@@ -44,14 +44,17 @@ export namespace vve::v4::vh {
       std::uint32_t scene_index_count{};       ///< Uploaded index count.
    };
 
-   /// @brief One uploaded debug-scene vertex: clip-space x/y plus RGB color.
+   /// @brief One uploaded debug-scene vertex: world position, normal, and RGB color.
    struct SceneVertex {
-      float x{}; ///< World-space x position.
-      float y{}; ///< World-space y position.
-      float z{}; ///< World-space z position.
-      float r{}; ///< Linear red channel.
-      float g{}; ///< Linear green channel.
-      float b{}; ///< Linear blue channel.
+      float x{};  ///< World-space x position.
+      float y{};  ///< World-space y position.
+      float z{};  ///< World-space z position.
+      float nx{}; ///< World-space normal x component.
+      float ny{}; ///< World-space normal y component.
+      float nz{}; ///< World-space normal z component.
+      float r{};  ///< Linear red channel.
+      float g{};  ///< Linear green channel.
+      float b{};  ///< Linear blue channel.
    };
 
    inline constexpr std::uint32_t invalid_scene_debug_vertex =
@@ -66,8 +69,18 @@ export namespace vve::v4::vh {
       std::array<float, 4> clip{};                         ///< GPU-computed clip position.
       std::array<float, 3> ndc{};                          ///< GPU-computed NDC position.
       float depth{};                                       ///< GPU-computed Vulkan depth.
+      std::array<float, 3> normal{};                       ///< GPU-normalized surface normal.
+      float n_dot_l{};                                     ///< GPU-computed Lambert term.
+      std::array<float, 3> direction_to_light{};           ///< GPU-normalized direction to light.
+      float intensity{};                                   ///< Direct-light intensity.
+      std::array<float, 3> ambient_lighting{};             ///< Ambient light contribution.
+      float direct_factor{};                               ///< Direct-light scalar factor.
+      std::array<float, 3> direct_lighting{};              ///< Direct light contribution.
+      float unused0{};                                     ///< Layout padding visible to the host.
+      std::array<float, 3> final_lighting{};               ///< Ambient plus direct lighting.
+      float unused1{};                                     ///< Layout padding visible to the host.
    };
-   static_assert(sizeof(SceneDebugSample) == 64);
+   static_assert(sizeof(SceneDebugSample) == 144);
 
    /// @brief Owns Vulkan instance, device, and frame targets for visible windows.
    class FrameHost {
@@ -90,7 +103,7 @@ export namespace vve::v4::vh {
                   std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                   std::string_view fragment_entry, std::span<const SceneVertex> vertices,
                   std::span<const std::uint32_t> indices, std::uint32_t mesh_count,
-                  std::uint32_t instance_count, std::span<const float> clip_from_world);
+                  std::uint32_t instance_count, std::span<const float> scene_constants);
       [[nodiscard]] std::size_t targetCount() const;
       [[nodiscard]] bool ready() const;
       [[nodiscard]] std::uint64_t presentedFrameCount() const;
@@ -132,7 +145,7 @@ export namespace vve::v4::vh {
                                                                   const vk::ClearColorValue &color);
       [[nodiscard]] std::expected<void, Error> drawSceneTarget(FrameTarget &target,
                                                                const vk::ClearColorValue &color,
-                                                               std::span<const float> clip_from_world);
+                                                               std::span<const float> scene_constants);
       [[nodiscard]] bool matches(std::span<const std::reference_wrapper<Window>> windows) const;
       void destroyFrameExecutor();
       void destroyTargets();
@@ -268,9 +281,9 @@ namespace vve::v4::vh {
                           std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                           std::string_view fragment_entry, std::span<const SceneVertex> vertices,
                           std::span<const std::uint32_t> indices, std::uint32_t mesh_count,
-                          std::uint32_t instance_count, std::span<const float> clip_from_world) {
+                          std::uint32_t instance_count, std::span<const float> scene_constants) {
       if (!ready()) { return {}; }
-      if (vertices.empty() || indices.empty() || clip_from_world.size() < 16) {
+      if (vertices.empty() || indices.empty() || scene_constants.size() < 28) {
          return std::unexpected(Error::invalid_argument);
       }
 
@@ -283,7 +296,7 @@ namespace vve::v4::vh {
          }
          if (const auto result = uploadScene(target, vertices, indices); !result) { return result; }
          if (const auto result = clearSceneDebugTarget(target); !result) { return result; }
-         if (const auto result = drawSceneTarget(target, clear, clip_from_world); !result) { return result; }
+         if (const auto result = drawSceneTarget(target, clear, scene_constants); !result) { return result; }
          if (const auto result = readSceneDebugTarget(target); !result) { return result; }
       }
       last_clear_color_ = color;
@@ -603,7 +616,7 @@ namespace vve::v4::vh {
    /// @brief Acquires, clears, draws uploaded scene geometry, submits, waits, and presents one target image.
    std::expected<void, Error>
    FrameHost::drawSceneTarget(FrameTarget &target, const vk::ClearColorValue &color,
-                              std::span<const float> clip_from_world) {
+                              std::span<const float> scene_constants) {
       if (device_.resetFences(1, &acquire_fence_) != vk::Result::eSuccess) {
          return std::unexpected(Error::platform_error);
       }
@@ -627,7 +640,7 @@ namespace vve::v4::vh {
                                          target.scene_vertices, target.scene_indices, target.scene_debug_set,
                                          target.scene_debug_buffer,
                                          sizeof(SceneDebugSample) * scene_debug_samples_.size(),
-                                         target.scene_index_count, clip_from_world, color);
+                                         target.scene_index_count, scene_constants, color);
       if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
 
       result = low::submitAndWait(device_, queue_, command_buffer_, frame_timeline_, ++timeline_value_);

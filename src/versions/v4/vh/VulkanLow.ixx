@@ -73,7 +73,7 @@ export namespace vve::v4::vh::low {
                         vk::PipelineLayout layout, vk::Pipeline pipeline, vk::Buffer vertex_buffer,
                         vk::Buffer index_buffer, vk::DescriptorSet debug_set, vk::Buffer debug_buffer,
                         vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
-                        std::span<const float> clip_from_world, const vk::ClearColorValue &clear_color);
+                        std::span<const float> scene_constants, const vk::ClearColorValue &clear_color);
    [[nodiscard]] vk::Result
    submitAndWait(vk::Device device, vk::Queue queue, vk::CommandBuffer command_buffer, vk::Semaphore timeline,
                  std::uint64_t value);
@@ -1013,7 +1013,7 @@ namespace vve::v4::vh::low {
       auto push_range = vk::PushConstantRange{};
       push_range.stageFlags = vk::ShaderStageFlagBits::eVertex;
       push_range.offset = 0;
-      push_range.size = 16U * static_cast<std::uint32_t>(sizeof(float));
+      push_range.size = 28U * static_cast<std::uint32_t>(sizeof(float));
       auto layout_info = vk::PipelineLayoutCreateInfo{};
       layout_info.setLayoutCount = 1;
       layout_info.pSetLayouts = &debug_layout;
@@ -1038,9 +1038,10 @@ namespace vve::v4::vh::low {
 
       auto binding = vk::VertexInputBindingDescription{};
       binding.binding = 0;
-      binding.stride = 6U * static_cast<std::uint32_t>(sizeof(float));
+      binding.stride = 9U * static_cast<std::uint32_t>(sizeof(float));
       binding.inputRate = vk::VertexInputRate::eVertex;
       auto attributes = std::array{vk::VertexInputAttributeDescription{},
+                                   vk::VertexInputAttributeDescription{},
                                    vk::VertexInputAttributeDescription{}};
       attributes[0].location = 0;
       attributes[0].binding = 0;
@@ -1050,6 +1051,10 @@ namespace vve::v4::vh::low {
       attributes[1].binding = 0;
       attributes[1].format = vk::Format::eR32G32B32Sfloat;
       attributes[1].offset = 3U * static_cast<std::uint32_t>(sizeof(float));
+      attributes[2].location = 2;
+      attributes[2].binding = 0;
+      attributes[2].format = vk::Format::eR32G32B32Sfloat;
+      attributes[2].offset = 6U * static_cast<std::uint32_t>(sizeof(float));
       auto vertex_input = vk::PipelineVertexInputStateCreateInfo{};
       vertex_input.vertexBindingDescriptionCount = 1;
       vertex_input.pVertexBindingDescriptions = &binding;
@@ -1178,9 +1183,9 @@ namespace vve::v4::vh::low {
                                    vk::Pipeline pipeline, vk::Buffer vertex_buffer, vk::Buffer index_buffer,
                                    vk::DescriptorSet debug_set, vk::Buffer debug_buffer,
                                    vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
-                                   std::span<const float> clip_from_world,
+                                   std::span<const float> scene_constants,
                                    const vk::ClearColorValue &clear_color) {
-      if (clip_from_world.size() < 16 || !debug_buffer) { return vk::Result::eErrorInitializationFailed; }
+      if (scene_constants.size() < 28 || !debug_buffer) { return vk::Result::eErrorInitializationFailed; }
 
       auto result = device.resetCommandPool(pool);
       if (result != vk::Result::eSuccess) { return result; }
@@ -1268,8 +1273,8 @@ namespace vve::v4::vh::low {
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
       command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, 1, &debug_set, 0, nullptr);
       command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0,
-                                   16U * static_cast<std::uint32_t>(sizeof(float)),
-                                   clip_from_world.data());
+                                   28U * static_cast<std::uint32_t>(sizeof(float)),
+                                   scene_constants.data());
       command_buffer.bindVertexBuffers(0, 1, &vertex_buffer, &vertex_offset);
       command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint32);
       command_buffer.drawIndexed(index_count, 1, 0, 0, 0);

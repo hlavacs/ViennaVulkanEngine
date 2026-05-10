@@ -155,7 +155,13 @@ void writeRenderDebugSample(std::ofstream &file, std::string_view name, const vv
     writeVec3(file, prefix + ".world", sample.world);
     writeVec4(file, prefix + ".clip", sample.clip);
     writeVec3(file, prefix + ".ndc", sample.ndc);
+    writeVec3(file, prefix + ".normal", sample.normal);
+    writeVec3(file, prefix + ".direction_to_light", sample.direction_to_light);
+    writeVec3(file, prefix + ".ambient_lighting", sample.ambient_lighting);
+    writeVec3(file, prefix + ".direct_lighting", sample.direct_lighting);
+    writeVec3(file, prefix + ".final_lighting", sample.final_lighting);
     file << prefix << ".depth=" << sample.depth << '\n';
+    file << prefix << ".n_dot_l=" << sample.n_dot_l << '\n';
     file << prefix << ".valid=" << sample.valid << '\n';
 }
 
@@ -362,11 +368,18 @@ int main(int argc, char **argv) {
             if (gpu) { writeRenderDebugSample(file, "gpu_debug.sample" + std::to_string(index) + ".gpu", *gpu); }
             const auto clip_error = render_system.sceneDebugClipError(index);
             const auto depth_error = render_system.sceneDebugDepthError(index);
+            const auto lighting_error = render_system.sceneDebugLightingError(index);
             file << "gpu_debug.sample" << index << ".has_gpu=" << gpu.has_value() << '\n';
             if (clip_error) { file << "gpu_debug.sample" << index << ".clip_error=" << *clip_error << '\n'; }
             if (depth_error) { file << "gpu_debug.sample" << index << ".depth_error=" << *depth_error << '\n'; }
+            if (lighting_error) {
+                file << "gpu_debug.sample" << index << ".lighting_error=" << *lighting_error << '\n';
+            }
+            file << "gpu_debug.sample" << index << ".lighting_matches="
+                 << (lighting_error.value_or(1.0F) < 1.0e-5F) << '\n';
             file << "gpu_debug.sample" << index << ".matches="
-                 << (clip_error.value_or(1.0F) < 1.0e-4F && depth_error.value_or(1.0F) < 1.0e-5F) << '\n';
+                 << (clip_error.value_or(1.0F) < 1.0e-4F && depth_error.value_or(1.0F) < 1.0e-5F &&
+                     lighting_error.value_or(1.0F) < 1.0e-5F) << '\n';
         }
     }
     return 0;

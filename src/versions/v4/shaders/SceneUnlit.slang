@@ -1,22 +1,26 @@
 /// @file Minimal unlit scene shader for the first uploaded-geometry renderer milestone.
 
-/// @brief CPU-provided vertex format: world-space position plus a linear RGB color.
+/// @brief CPU-provided vertex format: world-space position, normal, and linear RGB color.
 struct VveSceneVertexInput
 {
     float3 position : POSITION; ///< World-space position.
+    float3 normal : NORMAL;     ///< World-space normal.
     float3 color : COLOR0;      ///< Flat debug color.
 };
 
-/// @brief Per-frame camera transform supplied as a push constant.
-struct VveSceneCamera
+/// @brief Per-frame camera and one directional light supplied as push constants.
+struct VveSceneFrame
 {
     float4 clipFromWorld0; ///< First column of the world-to-clip matrix.
     float4 clipFromWorld1; ///< Second column of the world-to-clip matrix.
     float4 clipFromWorld2; ///< Third column of the world-to-clip matrix.
     float4 clipFromWorld3; ///< Fourth column of the world-to-clip matrix.
+    float4 lightDirectionIntensity; ///< xyz direction to light, w intensity.
+    float4 lightColor;              ///< xyz direct light color.
+    float4 ambientColor;            ///< xyz ambient light color.
 };
 
-[[vk::push_constant]] ConstantBuffer<VveSceneCamera> gVveScene; ///< Tiny camera block for unlit geometry.
+[[vk::push_constant]] ConstantBuffer<VveSceneFrame> gVveScene; ///< Tiny frame block for debug geometry.
 
 /// @brief One exact GPU-side vertex sample copied back for CPU comparison.
 struct VveSceneDebugSample
@@ -26,6 +30,16 @@ struct VveSceneDebugSample
     float4 clipPosition;  ///< GPU-computed clip position.
     float3 ndcPosition;   ///< GPU-computed normalized device coordinate.
     float depth;          ///< GPU-computed Vulkan depth.
+    float3 normal;        ///< GPU-normalized surface normal.
+    float nDotL;          ///< Lambert cosine term.
+    float3 directionToLight; ///< GPU-normalized direction to light.
+    float intensity;      ///< Direct-light intensity.
+    float3 ambientLighting; ///< Ambient lighting term.
+    float directFactor;   ///< Scalar direct-light factor.
+    float3 directLighting; ///< Direct lighting term.
+    float unused0;        ///< Keeps CPU and shader layout explicit.
+    float3 finalLighting; ///< Ambient plus direct lighting.
+    float unused1;        ///< Keeps CPU and shader layout explicit.
 };
 
 RWStructuredBuffer<VveSceneDebugSample> gVveSceneDebug : register(u0, space0); ///< Debug readback samples.
@@ -47,19 +61,40 @@ float4 vveSceneClipFromWorld(float3 position)
            (gVveScene.clipFromWorld3 * p.w);
 }
 
+/// @brief Normalizes vectors defensively so CPU and GPU verification agree on degenerate data.
+float3 vveSafeNormalize(float3 value)
+{
+    float len = length(value);
+    return len > 1.0e-6 ? value / len : float3(0.0);
+}
+
 /// @brief Stores deterministic vertex samples used by the host proof file.
-void vveWriteSceneDebug(uint vertexId, float3 worldPosition, float4 clipPosition)
+void vveWriteSceneDebug(uint vertexId, float3 worldPosition, float3 normal, float4 clipPosition)
 {
     uint sampleIndex = vertexId == 0 ? 0 : (vertexId == 6 ? 1 : 2);
     if (sampleIndex >= 2) { return; }
 
     float inverseW = abs(clipPosition.w) > 1.0e-6 ? rcp(clipPosition.w) : 0.0;
+    float3 unitNormal = vveSafeNormalize(normal);
+    float3 directionToLight = vveSafeNormalize(gVveScene.lightDirectionIntensity.xyz);
+    float nDotL = max(0.0, dot(unitNormal, directionToLight));
+    float directFactor = gVveScene.lightDirectionIntensity.w * nDotL;
     VveSceneDebugSample sample;
     sample.vertexId = vertexId;
     sample.worldPosition = worldPosition;
     sample.clipPosition = clipPosition;
     sample.ndcPosition = clipPosition.xyz * inverseW;
     sample.depth = sample.ndcPosition.z;
+    sample.normal = unitNormal;
+    sample.nDotL = nDotL;
+    sample.directionToLight = directionToLight;
+    sample.intensity = gVveScene.lightDirectionIntensity.w;
+    sample.ambientLighting = gVveScene.ambientColor.xyz;
+    sample.directFactor = directFactor;
+    sample.directLighting = gVveScene.lightColor.xyz * directFactor;
+    sample.unused0 = 0.0;
+    sample.finalLighting = sample.ambientLighting + sample.directLighting;
+    sample.unused1 = 0.0;
     gVveSceneDebug[sampleIndex] = sample;
 }
 
@@ -68,7 +103,7 @@ void vveWriteSceneDebug(uint vertexId, float3 worldPosition, float4 clipPosition
 VveSceneVertexOutput vveSceneUnlitVertexMain(VveSceneVertexInput input, uint vertexId : SV_VertexID)
 {
     float4 clipPosition = vveSceneClipFromWorld(input.position);
-    vveWriteSceneDebug(vertexId, input.position, clipPosition);
+    vveWriteSceneDebug(vertexId, input.position, input.normal, clipPosition);
 
     VveSceneVertexOutput output;
     output.clipPosition = clipPosition;

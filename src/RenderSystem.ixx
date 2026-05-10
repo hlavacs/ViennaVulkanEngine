@@ -11,12 +11,18 @@ import VEEngine.Types;
 export namespace vve {
 
    struct RenderDebugSample {
-      std::uint32_t vertex_id{}; ///< Source vertex id.
-      Vec3 world{zeroVec3()};    ///< World-space vertex position.
-      Vec4 clip{};               ///< Clip-space position.
-      Vec3 ndc{zeroVec3()};      ///< Normalized device coordinate.
-      float depth{};             ///< Vulkan depth value.
-      bool valid{};              ///< Whether this slot contains a sample.
+      std::uint32_t vertex_id{};           ///< Source vertex id.
+      Vec3 world{zeroVec3()};              ///< World-space vertex position.
+      Vec4 clip{};                         ///< Clip-space position.
+      Vec3 ndc{zeroVec3()};                ///< Normalized device coordinate.
+      Vec3 normal{zeroVec3()};             ///< Normal used for lighting.
+      Vec3 direction_to_light{zeroVec3()}; ///< Direction from surface to light.
+      Vec3 ambient_lighting{zeroVec3()};   ///< Ambient light contribution.
+      Vec3 direct_lighting{zeroVec3()};    ///< Direct light contribution.
+      Vec3 final_lighting{zeroVec3()};     ///< Ambient plus direct lighting.
+      float depth{};                       ///< Vulkan depth value.
+      float n_dot_l{};                     ///< Lambert cosine term.
+      bool valid{};                        ///< Whether this slot contains a sample.
    };
 
    class RenderSystem {
@@ -64,6 +70,7 @@ export namespace vve {
       [[nodiscard]] std::optional<RenderDebugSample> sceneGpuDebugSample(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugClipError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const;
+      [[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }
       [[nodiscard]] std::size_t preparedGpuTargetCount() const { return impl_.preparedGpuTargetCount(); }
       [[nodiscard]] std::array<float, 4> lastClearColor() const { return impl_.lastClearColor(); }
@@ -95,7 +102,12 @@ export namespace vve {
       auto sample = impl_.sceneCpuDebugSample(index);
       if (!sample) { return {}; }
       return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
-                               .ndc = sample->ndc, .depth = sample->depth, .valid = sample->valid};
+                               .ndc = sample->ndc, .normal = sample->normal,
+                               .direction_to_light = sample->direction_to_light,
+                               .ambient_lighting = sample->ambient_lighting,
+                               .direct_lighting = sample->direct_lighting,
+                               .final_lighting = sample->final_lighting, .depth = sample->depth,
+                               .n_dot_l = sample->n_dot_l, .valid = sample->valid};
    }
 
    /// @brief Returns one GPU-computed render debug sample.
@@ -103,7 +115,12 @@ export namespace vve {
       auto sample = impl_.sceneGpuDebugSample(index);
       if (!sample) { return {}; }
       return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
-                               .ndc = sample->ndc, .depth = sample->depth, .valid = sample->valid};
+                               .ndc = sample->ndc, .normal = sample->normal,
+                               .direction_to_light = sample->direction_to_light,
+                               .ambient_lighting = sample->ambient_lighting,
+                               .direct_lighting = sample->direct_lighting,
+                               .final_lighting = sample->final_lighting, .depth = sample->depth,
+                               .n_dot_l = sample->n_dot_l, .valid = sample->valid};
    }
 
    /// @brief Returns the CPU/GPU clip-space mismatch for one sample.
@@ -114,6 +131,11 @@ export namespace vve {
    /// @brief Returns the CPU/GPU depth mismatch for one sample.
    inline std::optional<float> RenderSystem::sceneDebugDepthError(std::size_t index) const {
       return impl_.sceneDebugDepthError(index);
+   }
+
+   /// @brief Returns the CPU/GPU lighting-term mismatch for one sample.
+   inline std::optional<float> RenderSystem::sceneDebugLightingError(std::size_t index) const {
+      return impl_.sceneDebugLightingError(index);
    }
 
 } // namespace vve
