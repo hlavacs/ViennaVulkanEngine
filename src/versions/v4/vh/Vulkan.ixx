@@ -67,8 +67,11 @@ export namespace vve::v4::vh {
       std::array<float, 3> world{};                        ///< GPU-observed world position.
       float padding1{};                                    ///< Matches shader 16-byte struct alignment.
       std::array<float, 4> clip{};                         ///< GPU-computed clip position.
+      std::array<float, 4> light_clip{};                   ///< GPU-computed light clip position.
       std::array<float, 3> ndc{};                          ///< GPU-computed NDC position.
       float depth{};                                       ///< GPU-computed Vulkan depth.
+      std::array<float, 3> light_ndc{};                    ///< GPU-computed light NDC position.
+      float light_depth{};                                 ///< GPU-computed light depth.
       std::array<float, 3> normal{};                       ///< GPU-normalized surface normal.
       float n_dot_l{};                                     ///< GPU-computed Lambert term.
       std::array<float, 3> direction_to_light{};           ///< GPU-normalized direction to light.
@@ -80,7 +83,7 @@ export namespace vve::v4::vh {
       std::array<float, 3> final_lighting{};               ///< Ambient plus direct lighting.
       float unused1{};                                     ///< Layout padding visible to the host.
    };
-   static_assert(sizeof(SceneDebugSample) == 144);
+   static_assert(sizeof(SceneDebugSample) == 176);
 
    /// @brief Owns Vulkan instance, device, and frame targets for visible windows.
    class FrameHost {
@@ -283,7 +286,7 @@ namespace vve::v4::vh {
                           std::span<const std::uint32_t> indices, std::uint32_t mesh_count,
                           std::uint32_t instance_count, std::span<const float> scene_constants) {
       if (!ready()) { return {}; }
-      if (vertices.empty() || indices.empty() || scene_constants.size() < 28) {
+      if (vertices.empty() || indices.empty() || scene_constants.size() < 32) {
          return std::unexpected(Error::invalid_argument);
       }
 

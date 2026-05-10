@@ -18,6 +18,7 @@ struct VveSceneFrame
     float4 lightDirectionIntensity; ///< xyz direction to light, w intensity.
     float4 lightColor;              ///< xyz direct light color.
     float4 ambientColor;            ///< xyz ambient light color.
+    float4 lightCenterRadius;        ///< xyz light-space center, w orthographic half size.
 };
 
 [[vk::push_constant]] ConstantBuffer<VveSceneFrame> gVveScene; ///< Tiny frame block for debug geometry.
@@ -28,8 +29,11 @@ struct VveSceneDebugSample
     uint vertexId;        ///< Source vertex id, or 0xffffffff when unused.
     float3 worldPosition; ///< Uploaded world position.
     float4 clipPosition;  ///< GPU-computed clip position.
+    float4 lightClipPosition; ///< GPU-computed directional-light clip position.
     float3 ndcPosition;   ///< GPU-computed normalized device coordinate.
     float depth;          ///< GPU-computed Vulkan depth.
+    float3 lightNdcPosition; ///< GPU-computed directional-light NDC position.
+    float lightDepth;     ///< GPU-computed directional-light depth.
     float3 normal;        ///< GPU-normalized surface normal.
     float nDotL;          ///< Lambert cosine term.
     float3 directionToLight; ///< GPU-normalized direction to light.
@@ -68,6 +72,21 @@ float3 vveSafeNormalize(float3 value)
     return len > 1.0e-6 ? value / len : float3(0.0);
 }
 
+/// @brief Converts world space into a compact directional-light orthographic space.
+float4 vveSceneLightClipFromWorld(float3 position)
+{
+    float3 directionToLight = vveSafeNormalize(gVveScene.lightDirectionIntensity.xyz);
+    float3 seed = abs(directionToLight.y) > 0.95 ? float3(1.0, 0.0, 0.0) : float3(0.0, 1.0, 0.0);
+    float3 right = vveSafeNormalize(cross(seed, directionToLight));
+    float3 up = cross(directionToLight, right);
+    float3 delta = position - gVveScene.lightCenterRadius.xyz;
+    float radius = max(gVveScene.lightCenterRadius.w, 1.0e-4);
+    return float4(dot(delta, right) / radius,
+                  -dot(delta, up) / radius,
+                  (radius - dot(delta, directionToLight)) / (2.0 * radius),
+                  1.0);
+}
+
 /// @brief Stores deterministic vertex samples used by the host proof file.
 void vveWriteSceneDebug(uint vertexId, float3 worldPosition, float3 normal, float4 clipPosition)
 {
@@ -75,6 +94,8 @@ void vveWriteSceneDebug(uint vertexId, float3 worldPosition, float3 normal, floa
     if (sampleIndex >= 2) { return; }
 
     float inverseW = abs(clipPosition.w) > 1.0e-6 ? rcp(clipPosition.w) : 0.0;
+    float4 lightClipPosition = vveSceneLightClipFromWorld(worldPosition);
+    float lightInverseW = abs(lightClipPosition.w) > 1.0e-6 ? rcp(lightClipPosition.w) : 0.0;
     float3 unitNormal = vveSafeNormalize(normal);
     float3 directionToLight = vveSafeNormalize(gVveScene.lightDirectionIntensity.xyz);
     float nDotL = max(0.0, dot(unitNormal, directionToLight));
@@ -83,8 +104,11 @@ void vveWriteSceneDebug(uint vertexId, float3 worldPosition, float3 normal, floa
     sample.vertexId = vertexId;
     sample.worldPosition = worldPosition;
     sample.clipPosition = clipPosition;
+    sample.lightClipPosition = lightClipPosition;
     sample.ndcPosition = clipPosition.xyz * inverseW;
     sample.depth = sample.ndcPosition.z;
+    sample.lightNdcPosition = lightClipPosition.xyz * lightInverseW;
+    sample.lightDepth = sample.lightNdcPosition.z;
     sample.normal = unitNormal;
     sample.nDotL = nDotL;
     sample.directionToLight = directionToLight;

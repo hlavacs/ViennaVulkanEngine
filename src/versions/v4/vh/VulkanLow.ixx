@@ -1013,7 +1013,7 @@ namespace vve::v4::vh::low {
       auto push_range = vk::PushConstantRange{};
       push_range.stageFlags = vk::ShaderStageFlagBits::eVertex;
       push_range.offset = 0;
-      push_range.size = 28U * static_cast<std::uint32_t>(sizeof(float));
+      push_range.size = 32U * static_cast<std::uint32_t>(sizeof(float));
       auto layout_info = vk::PipelineLayoutCreateInfo{};
       layout_info.setLayoutCount = 1;
       layout_info.pSetLayouts = &debug_layout;
@@ -1185,7 +1185,7 @@ namespace vve::v4::vh::low {
                                    vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
                                    std::span<const float> scene_constants,
                                    const vk::ClearColorValue &clear_color) {
-      if (scene_constants.size() < 28 || !debug_buffer) { return vk::Result::eErrorInitializationFailed; }
+      if (scene_constants.size() < 32 || !debug_buffer) { return vk::Result::eErrorInitializationFailed; }
 
       auto result = device.resetCommandPool(pool);
       if (result != vk::Result::eSuccess) { return result; }
@@ -1273,7 +1273,7 @@ namespace vve::v4::vh::low {
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
       command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, 1, &debug_set, 0, nullptr);
       command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0,
-                                   28U * static_cast<std::uint32_t>(sizeof(float)),
+                                   32U * static_cast<std::uint32_t>(sizeof(float)),
                                    scene_constants.data());
       command_buffer.bindVertexBuffers(0, 1, &vertex_buffer, &vertex_offset);
       command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint32);

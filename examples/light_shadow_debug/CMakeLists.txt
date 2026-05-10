@@ -5,3 +5,8 @@ add_executable(light_shadow_debug
 target_link_libraries(light_shadow_debug PRIVATE ViennaVulkanEngine::ViennaVulkanEngine)
 
 vve_set_output_dirs(light_shadow_debug)
+
+if(BUILD_TESTING)
+    add_test(NAME LightShadowDebugExample
+        COMMAND light_shadow_debug --output "$<TARGET_FILE_DIR:light_shadow_debug>/light_shadow_debug.txt")
+endif()

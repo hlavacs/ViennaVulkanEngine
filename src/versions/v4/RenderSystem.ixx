@@ -79,14 +79,18 @@ export namespace vve::v4 {
       std::uint32_t vertex_id{};           ///< Source vertex id.
       Vec3 world{zeroVec3()};              ///< World-space vertex position.
       Vec4 clip{};                         ///< Clip-space position.
+      Vec4 light_clip{};                   ///< Directional-light clip-space position.
       Vec3 ndc{zeroVec3()};                ///< Normalized device coordinate.
+      Vec3 light_ndc{zeroVec3()};          ///< Directional-light normalized device coordinate.
       Vec3 normal{zeroVec3()};             ///< Normal used for lighting.
       Vec3 direction_to_light{zeroVec3()}; ///< Direction from surface to light.
       Vec3 ambient_lighting{zeroVec3()};   ///< Ambient light contribution.
       Vec3 direct_lighting{zeroVec3()};    ///< Direct light contribution.
       Vec3 final_lighting{zeroVec3()};     ///< Ambient plus direct lighting.
       float depth{};                       ///< Vulkan depth value.
+      float light_depth{};                 ///< Directional-light depth value.
       float n_dot_l{};                     ///< Lambert cosine term.
+      bool inside_light{};                 ///< Whether the sample is inside the light projection.
       bool valid{};                        ///< Whether this slot contains a sample.
    };
 
@@ -177,6 +181,7 @@ export namespace vve::v4 {
       [[nodiscard]] std::optional<RenderDebugSample> sceneGpuDebugSample(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugClipError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const;
+      [[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const;
       [[nodiscard]] std::size_t preparedGpuTargetCount() const;
@@ -205,7 +210,7 @@ export namespace vve::v4 {
       std::vector<std::uint32_t> scene_fragment_spirv_{}; ///< Cached unlit scene fragment SPIR-V.
       std::vector<vh::SceneVertex> scene_vertices_{}; ///< Flattened debug scene vertices.
       std::vector<std::uint32_t> scene_indices_{}; ///< Flattened debug scene indices.
-      std::array<float, 28> scene_frame_constants_{}; ///< Camera and light push constants.
+      std::array<float, 32> scene_frame_constants_{}; ///< Camera and light push constants.
       std::array<RenderDebugSample, 2> scene_cpu_debug_{}; ///< CPU camera-transform samples.
       std::uint64_t rendered_frames_{0};       ///< Number of frame hooks reached.
       std::size_t last_rendered_window_count_{0}; ///< Last non-closed window count.
@@ -267,9 +272,42 @@ namespace vve::v4 {
          return math::length(value) > 1.0e-6F ? math::normalize(value) : zeroVec3();
       }
 
+      /// @brief Computes a compact center/radius for the debug directional-light projection.
+      inline std::array<float, 4> lightCenterRadius(std::span<const vh::SceneVertex> vertices) {
+         if (vertices.empty()) { return {0.0F, 0.0F, 0.0F, 1.0F}; }
+         auto minimum = Vec3{vertices.front().x, vertices.front().y, vertices.front().z};
+         auto maximum = minimum;
+         for (const auto &vertex : vertices) {
+            const auto position = Vec3{vertex.x, vertex.y, vertex.z};
+            minimum = math::min(minimum, position);
+            maximum = math::max(maximum, position);
+         }
+         const auto center = math::scale(math::add(minimum, maximum), 0.5F);
+         const auto diagonal = math::subtract(maximum, minimum);
+         const auto radius = std::max(1.0F, static_cast<float>(math::length(diagonal) * 0.65F));
+         return {static_cast<float>(center.x), static_cast<float>(center.y), static_cast<float>(center.z), radius};
+      }
+
+      /// @brief Converts world coordinates into the same directional-light space used by the shader.
+      inline Vec4 lightClip(Vec3 world, const RenderDirectionalLight &light, std::array<float, 4> center_radius) {
+         const auto direction = safeNormalize(light.direction_to_light.value);
+         const auto seed = std::abs(direction.y) > 0.95F ? Vec3(1.0F, 0.0F, 0.0F) : Vec3(0.0F, 1.0F, 0.0F);
+         const auto right = safeNormalize(math::cross(seed, direction));
+         const auto up = math::cross(direction, right);
+         const auto center = Vec3{center_radius[0], center_radius[1], center_radius[2]};
+         const auto radius = std::max(center_radius[3], 1.0e-4F);
+         const auto delta = math::subtract(world, center);
+         return Vec4{math::dot(delta, right) / radius,
+                     -math::dot(delta, up) / radius,
+                     (radius - math::dot(delta, direction)) / (2.0F * radius),
+                     1.0F};
+      }
+
       /// @brief Packs the camera matrix and directional light into the shader push-constant layout.
-      inline std::array<float, 28> frameConstants(Mat4 clip_from_world, const RenderDirectionalLight &light) {
-         auto result = std::array<float, 28>{};
+      inline std::array<float, 32>
+      frameConstants(Mat4 clip_from_world, const RenderDirectionalLight &light,
+                     std::array<float, 4> center_radius) {
+         auto result = std::array<float, 32>{};
          const auto matrix = columns(clip_from_world);
          std::ranges::copy(matrix, result.begin());
          const auto direction = safeNormalize(light.direction_to_light.value);
@@ -282,7 +320,20 @@ namespace vve::v4 {
                                               static_cast<float>(light.ambient.value.y),
                                               static_cast<float>(light.ambient.value.z), 0.0F};
          std::ranges::copy(light_values, result.begin() + 16);
+         std::ranges::copy(center_radius, result.begin() + 28);
          return result;
+      }
+
+      /// @brief Adds directional-light clip/depth terms to a debug sample.
+      inline RenderDebugSample
+      lightSpaceSample(RenderDebugSample sample, const RenderDirectionalLight &light,
+                       std::array<float, 4> center_radius) {
+         sample.light_clip = lightClip(sample.world, light, center_radius);
+         sample.light_ndc = ndc(sample.light_clip);
+         sample.light_depth = sample.light_ndc.z;
+         sample.inside_light = std::abs(sample.light_ndc.x) <= 1.0F && std::abs(sample.light_ndc.y) <= 1.0F &&
+                               sample.light_depth >= 0.0F && sample.light_depth <= 1.0F;
+         return sample;
       }
 
       /// @brief Returns the CPU lighting terms used to verify the shader.
@@ -299,7 +350,7 @@ namespace vve::v4 {
       /// @brief Builds the CPU-side sample equivalent to the GPU shader debug write.
       inline RenderDebugSample
       cpuSample(std::uint32_t vertex_id, const vh::SceneVertex &vertex, Mat4 clip_from_world,
-                const RenderDirectionalLight &light) {
+                const RenderDirectionalLight &light, std::array<float, 4> center_radius) {
          const auto world = Vec3{vertex.x, vertex.y, vertex.z};
          const auto clip = math::multiply(clip_from_world, Vec4{world.x, world.y, world.z, 1.0F});
          const auto sample_ndc = ndc(clip);
@@ -310,7 +361,7 @@ namespace vve::v4 {
                                          .normal = Vec3{vertex.nx, vertex.ny, vertex.nz},
                                          .depth = sample_ndc.z,
                                          .valid = true};
-         return lightSample(result, light);
+         return lightSample(lightSpaceSample(result, light, center_radius), light);
       }
 
       /// @brief Converts the compact Vulkan readback sample to the render-system debug type.
@@ -321,7 +372,11 @@ namespace vve::v4 {
          return RenderDebugSample{.vertex_id = sample.vertex_id,
                                   .world = world,
                                   .clip = clip,
+                                  .light_clip = Vec4{sample.light_clip[0], sample.light_clip[1],
+                                                     sample.light_clip[2], sample.light_clip[3]},
                                   .ndc = sample_ndc,
+                                  .light_ndc = Vec3{sample.light_ndc[0], sample.light_ndc[1],
+                                                    sample.light_ndc[2]},
                                   .normal = Vec3{sample.normal[0], sample.normal[1], sample.normal[2]},
                                   .direction_to_light = Vec3{sample.direction_to_light[0],
                                                              sample.direction_to_light[1],
@@ -333,7 +388,11 @@ namespace vve::v4 {
                                   .final_lighting = Vec3{sample.final_lighting[0], sample.final_lighting[1],
                                                          sample.final_lighting[2]},
                                   .depth = sample.depth,
+                                  .light_depth = sample.light_depth,
                                   .n_dot_l = sample.n_dot_l,
+                                  .inside_light = std::abs(sample.light_ndc[0]) <= 1.0F &&
+                                                  std::abs(sample.light_ndc[1]) <= 1.0F &&
+                                                  sample.light_depth >= 0.0F && sample.light_depth <= 1.0F,
                                   .valid = sample.vertex_id != vh::invalid_scene_debug_vertex};
       }
 
@@ -355,6 +414,18 @@ namespace vve::v4 {
                           vec3Error(cpu.ambient_lighting, gpu.ambient_lighting),
                           vec3Error(cpu.direct_lighting, gpu.direct_lighting),
                           vec3Error(cpu.final_lighting, gpu.final_lighting)});
+      }
+
+      /// @brief Computes the maximum absolute directional-light-space difference.
+      inline float lightSpaceError(const RenderDebugSample &cpu, const RenderDebugSample &gpu) {
+         const auto light_clip_error = std::max({std::abs(cpu.light_clip.x - gpu.light_clip.x),
+                                                 std::abs(cpu.light_clip.y - gpu.light_clip.y),
+                                                 std::abs(cpu.light_clip.z - gpu.light_clip.z),
+                                                 std::abs(cpu.light_clip.w - gpu.light_clip.w)});
+         return std::max({light_clip_error,
+                          vec3Error(cpu.light_ndc, gpu.light_ndc),
+                          std::abs(cpu.light_depth - gpu.light_depth),
+                          cpu.inside_light == gpu.inside_light ? 0.0F : 1.0F});
       }
 
    } // namespace detail
@@ -709,6 +780,14 @@ namespace vve::v4 {
       return std::abs(cpu->depth - gpu->depth);
    }
 
+   /// @brief Returns the CPU/GPU directional-light-space mismatch for one sample.
+   inline std::optional<float> RenderSystem::sceneDebugLightSpaceError(std::size_t index) const {
+      const auto cpu = sceneCpuDebugSample(index);
+      const auto gpu = sceneGpuDebugSample(index);
+      if (!cpu || !gpu) { return {}; }
+      return detail::lightSpaceError(*cpu, *gpu);
+   }
+
    /// @brief Returns the CPU/GPU lighting-term mismatch for one sample.
    inline std::optional<float> RenderSystem::sceneDebugLightingError(std::size_t index) const {
       const auto cpu = sceneCpuDebugSample(index);
@@ -772,7 +851,6 @@ namespace vve::v4 {
       scene_cpu_debug_.fill(RenderDebugSample{});
       const auto clip_from_world = detail::clipFromWorld(*scene_.camera());
       const auto light = scene_.directionalLight().value_or(RenderDirectionalLight{});
-      scene_frame_constants_ = detail::frameConstants(clip_from_world, light);
       for (const auto &instance : scene_.instances()) {
          const auto *mesh = scene_.findMesh(instance.mesh);
          const auto *material = scene_.findMaterial(instance.material);
@@ -795,11 +873,14 @@ namespace vve::v4 {
          for (const auto index : mesh->indices) { scene_indices_.push_back(base + index); }
       }
       if (scene_vertices_.empty() || scene_indices_.empty()) { return std::unexpected(Error::missing_object); }
+      const auto center_radius = detail::lightCenterRadius(scene_vertices_);
+      scene_frame_constants_ = detail::frameConstants(clip_from_world, light, center_radius);
       constexpr auto debug_vertices = std::array{0U, 6U};
       for (std::size_t slot{}; slot < debug_vertices.size(); ++slot) {
          const auto vertex_id = debug_vertices[slot];
          if (vertex_id < scene_vertices_.size()) {
-            scene_cpu_debug_[slot] = detail::cpuSample(vertex_id, scene_vertices_[vertex_id], clip_from_world, light);
+            scene_cpu_debug_[slot] =
+               detail::cpuSample(vertex_id, scene_vertices_[vertex_id], clip_from_world, light, center_radius);
          }
       }
       return {};

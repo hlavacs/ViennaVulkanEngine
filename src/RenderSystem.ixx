@@ -14,14 +14,18 @@ export namespace vve {
       std::uint32_t vertex_id{};           ///< Source vertex id.
       Vec3 world{zeroVec3()};              ///< World-space vertex position.
       Vec4 clip{};                         ///< Clip-space position.
+      Vec4 light_clip{};                   ///< Directional-light clip-space position.
       Vec3 ndc{zeroVec3()};                ///< Normalized device coordinate.
+      Vec3 light_ndc{zeroVec3()};          ///< Directional-light normalized device coordinate.
       Vec3 normal{zeroVec3()};             ///< Normal used for lighting.
       Vec3 direction_to_light{zeroVec3()}; ///< Direction from surface to light.
       Vec3 ambient_lighting{zeroVec3()};   ///< Ambient light contribution.
       Vec3 direct_lighting{zeroVec3()};    ///< Direct light contribution.
       Vec3 final_lighting{zeroVec3()};     ///< Ambient plus direct lighting.
       float depth{};                       ///< Vulkan depth value.
+      float light_depth{};                 ///< Directional-light depth value.
       float n_dot_l{};                     ///< Lambert cosine term.
+      bool inside_light{};                 ///< Whether the sample is inside the light projection.
       bool valid{};                        ///< Whether this slot contains a sample.
    };
 
@@ -70,6 +74,7 @@ export namespace vve {
       [[nodiscard]] std::optional<RenderDebugSample> sceneGpuDebugSample(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugClipError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const;
+      [[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }
       [[nodiscard]] std::size_t preparedGpuTargetCount() const { return impl_.preparedGpuTargetCount(); }
@@ -102,12 +107,14 @@ export namespace vve {
       auto sample = impl_.sceneCpuDebugSample(index);
       if (!sample) { return {}; }
       return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
-                               .ndc = sample->ndc, .normal = sample->normal,
+                               .light_clip = sample->light_clip, .ndc = sample->ndc,
+                               .light_ndc = sample->light_ndc, .normal = sample->normal,
                                .direction_to_light = sample->direction_to_light,
                                .ambient_lighting = sample->ambient_lighting,
                                .direct_lighting = sample->direct_lighting,
                                .final_lighting = sample->final_lighting, .depth = sample->depth,
-                               .n_dot_l = sample->n_dot_l, .valid = sample->valid};
+                               .light_depth = sample->light_depth, .n_dot_l = sample->n_dot_l,
+                               .inside_light = sample->inside_light, .valid = sample->valid};
    }
 
    /// @brief Returns one GPU-computed render debug sample.
@@ -115,12 +122,14 @@ export namespace vve {
       auto sample = impl_.sceneGpuDebugSample(index);
       if (!sample) { return {}; }
       return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
-                               .ndc = sample->ndc, .normal = sample->normal,
+                               .light_clip = sample->light_clip, .ndc = sample->ndc,
+                               .light_ndc = sample->light_ndc, .normal = sample->normal,
                                .direction_to_light = sample->direction_to_light,
                                .ambient_lighting = sample->ambient_lighting,
                                .direct_lighting = sample->direct_lighting,
                                .final_lighting = sample->final_lighting, .depth = sample->depth,
-                               .n_dot_l = sample->n_dot_l, .valid = sample->valid};
+                               .light_depth = sample->light_depth, .n_dot_l = sample->n_dot_l,
+                               .inside_light = sample->inside_light, .valid = sample->valid};
    }
 
    /// @brief Returns the CPU/GPU clip-space mismatch for one sample.
@@ -131,6 +140,11 @@ export namespace vve {
    /// @brief Returns the CPU/GPU depth mismatch for one sample.
    inline std::optional<float> RenderSystem::sceneDebugDepthError(std::size_t index) const {
       return impl_.sceneDebugDepthError(index);
+   }
+
+   /// @brief Returns the CPU/GPU directional-light-space mismatch for one sample.
+   inline std::optional<float> RenderSystem::sceneDebugLightSpaceError(std::size_t index) const {
+      return impl_.sceneDebugLightSpaceError(index);
    }
 
    /// @brief Returns the CPU/GPU lighting-term mismatch for one sample.
