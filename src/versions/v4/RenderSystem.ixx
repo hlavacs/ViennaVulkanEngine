@@ -183,6 +183,7 @@ export namespace vve::v4 {
       std::vector<std::uint32_t> scene_fragment_spirv_{}; ///< Cached unlit scene fragment SPIR-V.
       std::vector<vh::SceneVertex> scene_vertices_{}; ///< Flattened debug scene vertices.
       std::vector<std::uint32_t> scene_indices_{}; ///< Flattened debug scene indices.
+      std::array<float, 16> scene_clip_from_world_{}; ///< Column-major world-to-clip camera matrix.
       std::uint64_t rendered_frames_{0};       ///< Number of frame hooks reached.
       std::size_t last_rendered_window_count_{0}; ///< Last non-closed window count.
    };
@@ -211,10 +212,25 @@ namespace vve::v4 {
 
       inline constexpr std::array clear_color{0.10F, 0.20F, 0.30F, 1.00F}; ///< First GPU-frame proof color.
 
-      /// @brief Projects the first debug scene into fixed clip space before camera math exists.
-      inline Vec2 projectDebugScene(Vec3 p) {
-         const auto y = (p.y * 0.32F) - (p.z * 0.10F) - 0.45F;
-         return Vec2{(p.x * 0.22F) + (p.z * 0.10F), -y};
+      /// @brief Builds the Vulkan clip transform used by the unlit scene proof renderer.
+      inline Mat4 clipFromWorld(const RenderCamera &camera) {
+         const auto width = static_cast<Scalar>(camera.target_extent.width);
+         const auto height = static_cast<Scalar>(camera.target_extent.height == 0 ? 1 : camera.target_extent.height);
+         const auto projection = math::perspectiveVulkan(camera.camera.fov_y.radians, width / height,
+                                                         camera.camera.clip.near_plane,
+                                                         camera.camera.clip.far_plane);
+         return math::multiply(projection, camera.camera.view_transform);
+      }
+
+      /// @brief Stores a GLM-style column-major matrix as push-constant floats.
+      inline std::array<float, 16> columns(Mat4 matrix) {
+         auto result = std::array<float, 16>{};
+         for (std::size_t column{}; column < 4; ++column) {
+            for (std::size_t row{}; row < 4; ++row) {
+               result[(column * 4) + row] = static_cast<float>(matrix[column][row]);
+            }
+         }
+         return result;
       }
 
    } // namespace detail
@@ -492,7 +508,8 @@ namespace vve::v4 {
             if (const auto result = vulkan_.renderScene(detail::clear_color, scene_vertex_spirv_, "main",
                                                         scene_fragment_spirv_, "main", scene_vertices_,
                                                         scene_indices_, static_cast<std::uint32_t>(scene_.meshCount()),
-                                                        static_cast<std::uint32_t>(scene_.instanceCount())); !result) {
+                                                        static_cast<std::uint32_t>(scene_.instanceCount()),
+                                                        scene_clip_from_world_); !result) {
                return result;
             }
          } else {
@@ -582,8 +599,10 @@ namespace vve::v4 {
 
    /// @brief Flattens the active CPU scene into one small uploaded-geometry draw packet.
    inline std::expected<void, Error> RenderSystem::buildSceneDrawData() {
+      if (!scene_.camera()) { return std::unexpected(Error::missing_object); }
       scene_vertices_.clear();
       scene_indices_.clear();
+      scene_clip_from_world_ = detail::columns(detail::clipFromWorld(*scene_.camera()));
       for (const auto &instance : scene_.instances()) {
          const auto *mesh = scene_.findMesh(instance.mesh);
          const auto *material = scene_.findMaterial(instance.material);
@@ -593,9 +612,9 @@ namespace vve::v4 {
          const auto color = material->base_color.value;
          for (const auto &vertex : mesh->vertices) {
             const auto world = math::add(vertex.position, instance.local_transform.translation.value);
-            const auto clip = detail::projectDebugScene(world);
-            scene_vertices_.push_back(vh::SceneVertex{.x = static_cast<float>(clip.x),
-                                                      .y = static_cast<float>(clip.y),
+            scene_vertices_.push_back(vh::SceneVertex{.x = static_cast<float>(world.x),
+                                                      .y = static_cast<float>(world.y),
+                                                      .z = static_cast<float>(world.z),
                                                       .r = static_cast<float>(color.x),
                                                       .g = static_cast<float>(color.y),
                                                       .b = static_cast<float>(color.z)});

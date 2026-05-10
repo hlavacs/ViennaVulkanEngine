@@ -53,9 +53,10 @@ export namespace vve::v4::vh::low {
                           std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                           std::string_view fragment_entry, vk::PipelineLayout *layout, vk::Pipeline *pipeline);
    [[nodiscard]] vk::Result
-   createScenePipeline(vk::Device device, vk::Format color_format, std::span<const std::uint32_t> vertex_spirv,
-                       std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
-                       std::string_view fragment_entry, vk::PipelineLayout *layout, vk::Pipeline *pipeline);
+   createScenePipeline(vk::Device device, vk::Format color_format, vk::Format depth_format,
+                       std::span<const std::uint32_t> vertex_spirv, std::string_view vertex_entry,
+                       std::span<const std::uint32_t> fragment_spirv, std::string_view fragment_entry,
+                       vk::PipelineLayout *layout, vk::Pipeline *pipeline);
    [[nodiscard]] vk::Result
    recordSwapchainTriangle(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                            vk::Image image, vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
@@ -63,8 +64,10 @@ export namespace vve::v4::vh::low {
    [[nodiscard]] vk::Result
    recordSwapchainScene(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                         vk::Image image, vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
-                        vk::Pipeline pipeline, vk::Buffer vertex_buffer, vk::Buffer index_buffer,
-                        std::uint32_t index_count, const vk::ClearColorValue &clear_color);
+                        vk::Image depth_image, vk::ImageView depth_view, vk::ImageLayout depth_old_layout,
+                        vk::PipelineLayout layout, vk::Pipeline pipeline, vk::Buffer vertex_buffer,
+                        vk::Buffer index_buffer, std::uint32_t index_count,
+                        std::span<const float> clip_from_world, const vk::ClearColorValue &clear_color);
    [[nodiscard]] vk::Result
    submitAndWait(vk::Device device, vk::Queue queue, vk::CommandBuffer command_buffer, vk::Semaphore timeline,
                  std::uint64_t value);
@@ -923,7 +926,7 @@ namespace vve::v4::vh::low {
    }
 
    /// @brief Creates a position/color input graphics pipeline for uploaded debug scene geometry.
-   vk::Result createScenePipeline(vk::Device device, vk::Format color_format,
+   vk::Result createScenePipeline(vk::Device device, vk::Format color_format, vk::Format depth_format,
                                   std::span<const std::uint32_t> vertex_spirv,
                                   std::string_view vertex_entry,
                                   std::span<const std::uint32_t> fragment_spirv,
@@ -945,7 +948,13 @@ namespace vve::v4::vh::low {
          return result;
       }
 
+      auto push_range = vk::PushConstantRange{};
+      push_range.stageFlags = vk::ShaderStageFlagBits::eVertex;
+      push_range.offset = 0;
+      push_range.size = 16U * static_cast<std::uint32_t>(sizeof(float));
       auto layout_info = vk::PipelineLayoutCreateInfo{};
+      layout_info.pushConstantRangeCount = 1;
+      layout_info.pPushConstantRanges = &push_range;
       result = device.createPipelineLayout(&layout_info, nullptr, layout);
       if (result != vk::Result::eSuccess) {
          device.destroyShaderModule(fragment_shader);
@@ -965,18 +974,18 @@ namespace vve::v4::vh::low {
 
       auto binding = vk::VertexInputBindingDescription{};
       binding.binding = 0;
-      binding.stride = 5U * static_cast<std::uint32_t>(sizeof(float));
+      binding.stride = 6U * static_cast<std::uint32_t>(sizeof(float));
       binding.inputRate = vk::VertexInputRate::eVertex;
       auto attributes = std::array{vk::VertexInputAttributeDescription{},
                                    vk::VertexInputAttributeDescription{}};
       attributes[0].location = 0;
       attributes[0].binding = 0;
-      attributes[0].format = vk::Format::eR32G32Sfloat;
+      attributes[0].format = vk::Format::eR32G32B32Sfloat;
       attributes[0].offset = 0;
       attributes[1].location = 1;
       attributes[1].binding = 0;
       attributes[1].format = vk::Format::eR32G32B32Sfloat;
-      attributes[1].offset = 2U * static_cast<std::uint32_t>(sizeof(float));
+      attributes[1].offset = 3U * static_cast<std::uint32_t>(sizeof(float));
       auto vertex_input = vk::PipelineVertexInputStateCreateInfo{};
       vertex_input.vertexBindingDescriptionCount = 1;
       vertex_input.pVertexBindingDescriptions = &binding;
@@ -995,6 +1004,10 @@ namespace vve::v4::vh::low {
       raster.lineWidth = 1.0F;
       auto multisample = vk::PipelineMultisampleStateCreateInfo{};
       multisample.rasterizationSamples = vk::SampleCountFlagBits::e1;
+      auto depth = vk::PipelineDepthStencilStateCreateInfo{};
+      depth.depthTestEnable = VK_TRUE;
+      depth.depthWriteEnable = VK_TRUE;
+      depth.depthCompareOp = vk::CompareOp::eLess;
       auto blend_attachment = vk::PipelineColorBlendAttachmentState{};
       blend_attachment.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
                                         vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
@@ -1008,6 +1021,7 @@ namespace vve::v4::vh::low {
       auto rendering = vk::PipelineRenderingCreateInfo{};
       rendering.colorAttachmentCount = 1;
       rendering.pColorAttachmentFormats = &color_format;
+      rendering.depthAttachmentFormat = depth_format;
       auto info = vk::GraphicsPipelineCreateInfo{};
       info.pNext = &rendering;
       info.stageCount = static_cast<std::uint32_t>(stages.size());
@@ -1017,6 +1031,7 @@ namespace vve::v4::vh::low {
       info.pViewportState = &viewport_state;
       info.pRasterizationState = &raster;
       info.pMultisampleState = &multisample;
+      info.pDepthStencilState = &depth;
       info.pColorBlendState = &blend;
       info.pDynamicState = &dynamic;
       info.layout = *layout;
@@ -1094,9 +1109,13 @@ namespace vve::v4::vh::low {
    /// @brief Records a dynamic-rendering pass that clears then draws uploaded indexed geometry.
    vk::Result recordSwapchainScene(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                                    vk::Image image, vk::ImageView view, vk::Extent2D extent,
-                                   vk::ImageLayout old_layout, vk::Pipeline pipeline,
-                                   vk::Buffer vertex_buffer, vk::Buffer index_buffer,
-                                   std::uint32_t index_count, const vk::ClearColorValue &clear_color) {
+                                   vk::ImageLayout old_layout, vk::Image depth_image, vk::ImageView depth_view,
+                                   vk::ImageLayout depth_old_layout, vk::PipelineLayout layout,
+                                   vk::Pipeline pipeline, vk::Buffer vertex_buffer, vk::Buffer index_buffer,
+                                   std::uint32_t index_count, std::span<const float> clip_from_world,
+                                   const vk::ClearColorValue &clear_color) {
+      if (clip_from_world.size() < 16) { return vk::Result::eErrorInitializationFailed; }
+
       auto result = device.resetCommandPool(pool);
       if (result != vk::Result::eSuccess) { return result; }
 
@@ -1105,20 +1124,36 @@ namespace vve::v4::vh::low {
       result = command_buffer.begin(&begin);
       if (result != vk::Result::eSuccess) { return result; }
 
-      auto range = vk::ImageSubresourceRange{};
-      range.aspectMask = vk::ImageAspectFlagBits::eColor;
-      range.levelCount = 1;
-      range.layerCount = 1;
+      auto color_range = vk::ImageSubresourceRange{};
+      color_range.aspectMask = vk::ImageAspectFlagBits::eColor;
+      color_range.levelCount = 1;
+      color_range.layerCount = 1;
       auto to_attachment = vk::ImageMemoryBarrier2{};
       to_attachment.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
       to_attachment.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
       to_attachment.oldLayout = old_layout;
       to_attachment.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
       to_attachment.image = image;
-      to_attachment.subresourceRange = range;
+      to_attachment.subresourceRange = color_range;
       auto dependency = vk::DependencyInfo{};
       dependency.imageMemoryBarrierCount = 1;
       dependency.pImageMemoryBarriers = &to_attachment;
+      command_buffer.pipelineBarrier2(&dependency);
+
+      auto depth_range = vk::ImageSubresourceRange{};
+      depth_range.aspectMask = vk::ImageAspectFlagBits::eDepth;
+      depth_range.levelCount = 1;
+      depth_range.layerCount = 1;
+      auto to_depth = vk::ImageMemoryBarrier2{};
+      to_depth.dstStageMask = vk::PipelineStageFlagBits2::eEarlyFragmentTests |
+                              vk::PipelineStageFlagBits2::eLateFragmentTests;
+      to_depth.dstAccessMask = vk::AccessFlagBits2::eDepthStencilAttachmentRead |
+                               vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
+      to_depth.oldLayout = depth_old_layout;
+      to_depth.newLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+      to_depth.image = depth_image;
+      to_depth.subresourceRange = depth_range;
+      dependency.pImageMemoryBarriers = &to_depth;
       command_buffer.pipelineBarrier2(&dependency);
 
       auto clear = vk::ClearValue{};
@@ -1129,11 +1164,20 @@ namespace vve::v4::vh::low {
       attachment.loadOp = vk::AttachmentLoadOp::eClear;
       attachment.storeOp = vk::AttachmentStoreOp::eStore;
       attachment.clearValue = clear;
+      auto depth_clear = vk::ClearValue{};
+      depth_clear.depthStencil = vk::ClearDepthStencilValue{1.0F, 0};
+      auto depth_attachment = vk::RenderingAttachmentInfo{};
+      depth_attachment.imageView = depth_view;
+      depth_attachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+      depth_attachment.loadOp = vk::AttachmentLoadOp::eClear;
+      depth_attachment.storeOp = vk::AttachmentStoreOp::eStore;
+      depth_attachment.clearValue = depth_clear;
       auto rendering = vk::RenderingInfo{};
       rendering.renderArea = vk::Rect2D{vk::Offset2D{0, 0}, extent};
       rendering.layerCount = 1;
       rendering.colorAttachmentCount = 1;
       rendering.pColorAttachments = &attachment;
+      rendering.pDepthAttachment = &depth_attachment;
       command_buffer.beginRendering(&rendering);
 
       auto viewport = vk::Viewport{0.0F, 0.0F, static_cast<float>(extent.width), static_cast<float>(extent.height),
@@ -1143,6 +1187,9 @@ namespace vve::v4::vh::low {
       command_buffer.setViewport(0, 1, &viewport);
       command_buffer.setScissor(0, 1, &scissor);
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+      command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0,
+                                   16U * static_cast<std::uint32_t>(sizeof(float)),
+                                   clip_from_world.data());
       command_buffer.bindVertexBuffers(0, 1, &vertex_buffer, &vertex_offset);
       command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint32);
       command_buffer.drawIndexed(index_count, 1, 0, 0, 0);

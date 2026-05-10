@@ -114,6 +114,40 @@ void writeVec3(std::ofstream &file, std::string_view name, vve::Vec3 value) {
     file << name << '=' << value.x << ',' << value.y << ',' << value.z << '\n';
 }
 
+void writeVec4(std::ofstream &file, std::string_view name, vve::Vec4 value) {
+    file << name << '=' << value.x << ',' << value.y << ',' << value.z << ',' << value.w << '\n';
+}
+
+[[nodiscard]] vve::Mat4 cameraClipFromWorld(const vve::Camera &camera, vve::PixelExtent extent) {
+    const auto height = static_cast<vve::Scalar>(extent.height == 0 ? 1 : extent.height);
+    const auto aspect = static_cast<vve::Scalar>(extent.width) / height;
+    const auto projection = vve::math::perspectiveVulkan(camera.fov_y.radians, aspect,
+                                                         camera.clip.near_plane, camera.clip.far_plane);
+    return vve::math::multiply(projection, camera.view_transform);
+}
+
+[[nodiscard]] vve::Vec4 clipPosition(const vve::Mat4 &clip_from_world, vve::Vec3 position) {
+    return vve::math::multiply(clip_from_world, vve::Vec4{position.x, position.y, position.z, 1.0F});
+}
+
+[[nodiscard]] vve::Vec3 ndcPosition(vve::Vec4 clip) {
+    const auto inverse_w = std::abs(clip.w) > 1.0e-6F ? 1.0F / clip.w : 0.0F;
+    return vve::Vec3{clip.x * inverse_w, clip.y * inverse_w, clip.z * inverse_w};
+}
+
+void writeCameraPoint(std::ofstream &file, std::string_view name,
+                      const vve::Mat4 &clip_from_world, vve::Vec3 position) {
+    const auto prefix = std::string{name};
+    const auto clip = clipPosition(clip_from_world, position);
+    const auto ndc = ndcPosition(clip);
+    writeVec3(file, prefix + ".world", position);
+    writeVec4(file, prefix + ".clip", clip);
+    writeVec3(file, prefix + ".ndc", ndc);
+    file << prefix << ".depth=" << ndc.z << '\n';
+    file << prefix << ".inside_clip=" << (std::abs(ndc.x) <= 1.0F && std::abs(ndc.y) <= 1.0F &&
+                                          ndc.z >= 0.0F && ndc.z <= 1.0F) << '\n';
+}
+
 [[nodiscard]] std::filesystem::path outputPath(int argc, char **argv) {
     for (auto index = 1; index + 1 < argc; ++index) {
         if (std::string_view{argv[index]} == "--output") { return std::filesystem::path{argv[index + 1]}; }
@@ -192,6 +226,16 @@ public:
         writeVec3(file, "camera.target", camera_target_);
         file << "camera.fov_y=" << camera_.fov_y.radians << '\n';
         file << "camera.clip=" << camera_.clip.near_plane << ',' << camera_.clip.far_plane << '\n';
+        file << "camera.depth_range=0,1\n";
+        file << "camera.depth_test=less\n";
+        const auto clip_from_world = cameraClipFromWorld(camera_, render_extent_);
+        const auto plane_vertex = add(plane_.center, vve::Vec3{-plane_.half_extent.x, 0.0F, -plane_.half_extent.y});
+        const auto cuboid_vertex = cuboid_.maximum;
+        writeCameraPoint(file, "camera_debug.plane_vertex", clip_from_world, plane_vertex);
+        writeCameraPoint(file, "camera_debug.cuboid_vertex", clip_from_world, cuboid_vertex);
+        file << "camera_debug.cuboid_depth_less_than_plane="
+             << (ndcPosition(clipPosition(clip_from_world, cuboid_vertex)).z <
+                 ndcPosition(clipPosition(clip_from_world, plane_vertex)).z) << '\n';
         file << "render_scene.mesh_count=" << render_system.sceneMeshCount() << '\n';
         file << "render_scene.material_count=" << render_system.sceneMaterialCount() << '\n';
         file << "render_scene.instance_count=" << render_system.sceneInstanceCount() << '\n';

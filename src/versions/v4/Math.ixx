@@ -1,6 +1,7 @@
 module;
 
 #define GLM_ENABLE_EXPERIMENTAL
+#include <cmath>
 #include <glm/common.hpp>
 #include <glm/ext/matrix_double4x4.hpp>
 #include <glm/ext/matrix_float4x4.hpp>
@@ -53,6 +54,7 @@ export namespace vve::v4::math {
    }
 
    [[nodiscard]] inline Mat4 multiply(const Mat4 &lhs, const Mat4 &rhs) { return lhs * rhs; }
+   [[nodiscard]] inline Vec4 multiply(const Mat4 &lhs, const Vec4 &rhs) { return lhs * rhs; }
    [[nodiscard]] inline Vec2 add(const Vec2 &lhs, const Vec2 &rhs) { return lhs + rhs; }
    [[nodiscard]] inline Vec3 add(const Vec3 &lhs, const Vec3 &rhs) { return lhs + rhs; }
    [[nodiscard]] inline Vec4 add(const Vec4 &lhs, const Vec4 &rhs) { return lhs + rhs; }
@@ -99,6 +101,17 @@ export namespace vve::v4::math {
    [[nodiscard]] inline Mat4 perspective(Scalar field_of_view_radians, Scalar aspect_ratio, Scalar near_plane,
                                          Scalar far_plane) {
       return glm::perspective(field_of_view_radians, aspect_ratio, near_plane, far_plane);
+   }
+   [[nodiscard]] inline Mat4 perspectiveVulkan(Scalar field_of_view_radians, Scalar aspect_ratio, Scalar near_plane,
+                                               Scalar far_plane) {
+      auto result = Mat4(zero());
+      const auto f = one() / static_cast<Scalar>(std::tan(field_of_view_radians / static_cast<Scalar>(2)));
+      result[0][0] = f / aspect_ratio;
+      result[1][1] = -f;
+      result[2][2] = far_plane / (near_plane - far_plane);
+      result[2][3] = -one();
+      result[3][2] = (far_plane * near_plane) / (near_plane - far_plane);
+      return result;
    }
    [[nodiscard]] inline Mat4 inverse(const Mat4 &matrix) { return glm::inverse(matrix); }
 

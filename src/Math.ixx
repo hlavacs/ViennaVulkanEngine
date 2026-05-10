@@ -32,6 +32,7 @@ export namespace vve::math {
    using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::one;
    using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::oneVec3;
    using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::perspective;
+   using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::perspectiveVulkan;
    using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::scale;
    using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::subtract;
    using VVE_ENGINE_IMPLEMENTATION_NAMESPACE::math::translate;

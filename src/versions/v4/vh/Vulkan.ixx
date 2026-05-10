@@ -25,6 +25,7 @@ export namespace vve::v4::vh {
       vk::Image depth_image{};                ///< Depth attachment image.
       vk::DeviceMemory depth_memory{};        ///< Device-local depth memory.
       vk::ImageView depth_view{};             ///< Depth attachment view.
+      vk::ImageLayout depth_layout{};         ///< Current depth image layout.
       std::vector<vk::ImageLayout> layouts{}; ///< Current swapchain image layouts.
       vk::PipelineLayout triangle_layout{};   ///< Pipeline layout for the smoke-test triangle.
       vk::Pipeline triangle_pipeline{};        ///< Pipeline used to draw the smoke-test triangle.
@@ -40,8 +41,9 @@ export namespace vve::v4::vh {
 
    /// @brief One uploaded debug-scene vertex: clip-space x/y plus RGB color.
    struct SceneVertex {
-      float x{}; ///< Clip-space x position.
-      float y{}; ///< Clip-space y position.
+      float x{}; ///< World-space x position.
+      float y{}; ///< World-space y position.
+      float z{}; ///< World-space z position.
       float r{}; ///< Linear red channel.
       float g{}; ///< Linear green channel.
       float b{}; ///< Linear blue channel.
@@ -68,7 +70,7 @@ export namespace vve::v4::vh {
                   std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                   std::string_view fragment_entry, std::span<const SceneVertex> vertices,
                   std::span<const std::uint32_t> indices, std::uint32_t mesh_count,
-                  std::uint32_t instance_count);
+                  std::uint32_t instance_count, std::span<const float> clip_from_world);
       [[nodiscard]] std::size_t targetCount() const;
       [[nodiscard]] bool ready() const;
       [[nodiscard]] std::uint64_t presentedFrameCount() const;
@@ -104,7 +106,8 @@ export namespace vve::v4::vh {
       [[nodiscard]] std::expected<void, Error> drawTriangleTarget(FrameTarget &target,
                                                                   const vk::ClearColorValue &color);
       [[nodiscard]] std::expected<void, Error> drawSceneTarget(FrameTarget &target,
-                                                               const vk::ClearColorValue &color);
+                                                               const vk::ClearColorValue &color,
+                                                               std::span<const float> clip_from_world);
       [[nodiscard]] bool matches(std::span<const std::reference_wrapper<Window>> windows) const;
       void destroyFrameExecutor();
       void destroyTargets();
@@ -237,9 +240,11 @@ namespace vve::v4::vh {
                           std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                           std::string_view fragment_entry, std::span<const SceneVertex> vertices,
                           std::span<const std::uint32_t> indices, std::uint32_t mesh_count,
-                          std::uint32_t instance_count) {
+                          std::uint32_t instance_count, std::span<const float> clip_from_world) {
       if (!ready()) { return {}; }
-      if (vertices.empty() || indices.empty()) { return std::unexpected(Error::invalid_argument); }
+      if (vertices.empty() || indices.empty() || clip_from_world.size() < 16) {
+         return std::unexpected(Error::invalid_argument);
+      }
 
       const auto clear = vk::ClearColorValue{color};
       for (auto &target : targets_) {
@@ -248,7 +253,7 @@ namespace vve::v4::vh {
             return result;
          }
          if (const auto result = uploadScene(target, vertices, indices); !result) { return result; }
-         if (const auto result = drawSceneTarget(target, clear); !result) { return result; }
+         if (const auto result = drawSceneTarget(target, clear, clip_from_world); !result) { return result; }
       }
       last_clear_color_ = color;
       scene_uploads_ += targets_.size();
@@ -371,6 +376,7 @@ namespace vve::v4::vh {
       const auto extent = vk::Extent2D{target.extent.width, target.extent.height};
       const auto result = low::createDepthTarget(physical_device_, device_, extent, &target.depth_format,
                                                  &target.depth_image, &target.depth_memory, &target.depth_view);
+      target.depth_layout = vk::ImageLayout::eUndefined;
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
    }
 
@@ -401,7 +407,8 @@ namespace vve::v4::vh {
                                   std::span<const std::uint32_t> fragment_spirv,
                                   std::string_view fragment_entry) {
       if (target.scene_pipeline) { return {}; }
-      const auto result = low::createScenePipeline(device_, target.color_format, vertex_spirv, vertex_entry,
+      const auto result = low::createScenePipeline(device_, target.color_format, target.depth_format,
+                                                   vertex_spirv, vertex_entry,
                                                    fragment_spirv, fragment_entry,
                                                    &target.scene_layout, &target.scene_pipeline);
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
@@ -522,7 +529,9 @@ namespace vve::v4::vh {
    }
 
    /// @brief Acquires, clears, draws uploaded scene geometry, submits, waits, and presents one target image.
-   std::expected<void, Error> FrameHost::drawSceneTarget(FrameTarget &target, const vk::ClearColorValue &color) {
+   std::expected<void, Error>
+   FrameHost::drawSceneTarget(FrameTarget &target, const vk::ClearColorValue &color,
+                              std::span<const float> clip_from_world) {
       if (device_.resetFences(1, &acquire_fence_) != vk::Result::eSuccess) {
          return std::unexpected(Error::platform_error);
       }
@@ -541,9 +550,10 @@ namespace vve::v4::vh {
       result = low::recordSwapchainScene(device_, command_pool_, command_buffer_, target.images[image_index],
                                          target.views[image_index],
                                          vk::Extent2D{target.extent.width, target.extent.height},
-                                         target.layouts[image_index], target.scene_pipeline,
+                                         target.layouts[image_index], target.depth_image, target.depth_view,
+                                         target.depth_layout, target.scene_layout, target.scene_pipeline,
                                          target.scene_vertices, target.scene_indices,
-                                         target.scene_index_count, color);
+                                         target.scene_index_count, clip_from_world, color);
       if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
 
       result = low::submitAndWait(device_, queue_, command_buffer_, frame_timeline_, ++timeline_value_);
@@ -558,6 +568,7 @@ namespace vve::v4::vh {
          return std::unexpected(Error::platform_error);
       }
       target.layouts[image_index] = vk::ImageLayout::ePresentSrcKHR;
+      target.depth_layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
       return {};
    }
 
