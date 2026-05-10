@@ -44,6 +44,14 @@ export namespace vve::v4::vh::low {
                         vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
                         const vk::ClearColorValue &clear_color);
    [[nodiscard]] vk::Result
+   createTrianglePipeline(vk::Device device, vk::Format color_format, std::span<const std::uint32_t> vertex_spirv,
+                          std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
+                          std::string_view fragment_entry, vk::PipelineLayout *layout, vk::Pipeline *pipeline);
+   [[nodiscard]] vk::Result
+   recordSwapchainTriangle(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
+                           vk::Image image, vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
+                           vk::Pipeline pipeline, const vk::ClearColorValue &clear_color);
+   [[nodiscard]] vk::Result
    submitAndWait(vk::Device device, vk::Queue queue, vk::CommandBuffer command_buffer, vk::Semaphore timeline,
                  std::uint64_t value);
 
@@ -750,6 +758,155 @@ namespace vve::v4::vh::low {
       rendering.colorAttachmentCount = 1;
       rendering.pColorAttachments = &attachment;
       command_buffer.beginRendering(&rendering);
+      command_buffer.endRendering();
+
+      auto to_present = to_attachment;
+      to_present.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+      to_present.srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+      to_present.dstStageMask = vk::PipelineStageFlagBits2::eNone;
+      to_present.dstAccessMask = vk::AccessFlagBits2::eNone;
+      to_present.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+      to_present.newLayout = vk::ImageLayout::ePresentSrcKHR;
+      dependency.pImageMemoryBarriers = &to_present;
+      command_buffer.pipelineBarrier2(&dependency);
+      return command_buffer.end();
+   }
+
+   /// @brief Creates a no-input graphics pipeline for the hardcoded triangle shader.
+   vk::Result createTrianglePipeline(vk::Device device, vk::Format color_format,
+                                     std::span<const std::uint32_t> vertex_spirv,
+                                     std::string_view vertex_entry,
+                                     std::span<const std::uint32_t> fragment_spirv,
+                                     std::string_view fragment_entry,
+                                     vk::PipelineLayout *layout, vk::Pipeline *pipeline) {
+      auto shader_info = vk::ShaderModuleCreateInfo{};
+      shader_info.codeSize = vertex_spirv.size_bytes();
+      shader_info.pCode = vertex_spirv.data();
+      vk::ShaderModule vertex_shader{};
+      auto result = device.createShaderModule(&shader_info, nullptr, &vertex_shader);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      shader_info.codeSize = fragment_spirv.size_bytes();
+      shader_info.pCode = fragment_spirv.data();
+      vk::ShaderModule fragment_shader{};
+      result = device.createShaderModule(&shader_info, nullptr, &fragment_shader);
+      if (result != vk::Result::eSuccess) {
+         device.destroyShaderModule(vertex_shader);
+         return result;
+      }
+
+      auto layout_info = vk::PipelineLayoutCreateInfo{};
+      result = device.createPipelineLayout(&layout_info, nullptr, layout);
+      if (result != vk::Result::eSuccess) {
+         device.destroyShaderModule(fragment_shader);
+         device.destroyShaderModule(vertex_shader);
+         return result;
+      }
+
+      const auto vertex_name = std::string{vertex_entry};
+      const auto fragment_name = std::string{fragment_entry};
+      auto stages = std::array{vk::PipelineShaderStageCreateInfo{}, vk::PipelineShaderStageCreateInfo{}};
+      stages[0].stage = vk::ShaderStageFlagBits::eVertex;
+      stages[0].module = vertex_shader;
+      stages[0].pName = vertex_name.c_str();
+      stages[1].stage = vk::ShaderStageFlagBits::eFragment;
+      stages[1].module = fragment_shader;
+      stages[1].pName = fragment_name.c_str();
+      auto vertex_input = vk::PipelineVertexInputStateCreateInfo{};
+      auto assembly = vk::PipelineInputAssemblyStateCreateInfo{};
+      assembly.topology = vk::PrimitiveTopology::eTriangleList;
+      auto viewport_state = vk::PipelineViewportStateCreateInfo{};
+      viewport_state.viewportCount = 1;
+      viewport_state.scissorCount = 1;
+      auto raster = vk::PipelineRasterizationStateCreateInfo{};
+      raster.polygonMode = vk::PolygonMode::eFill;
+      raster.cullMode = vk::CullModeFlagBits::eNone;
+      raster.frontFace = vk::FrontFace::eCounterClockwise;
+      raster.lineWidth = 1.0F;
+      auto multisample = vk::PipelineMultisampleStateCreateInfo{};
+      multisample.rasterizationSamples = vk::SampleCountFlagBits::e1;
+      auto blend_attachment = vk::PipelineColorBlendAttachmentState{};
+      blend_attachment.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                                        vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
+      auto blend = vk::PipelineColorBlendStateCreateInfo{};
+      blend.attachmentCount = 1;
+      blend.pAttachments = &blend_attachment;
+      constexpr std::array dynamic_states{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+      auto dynamic = vk::PipelineDynamicStateCreateInfo{};
+      dynamic.dynamicStateCount = static_cast<std::uint32_t>(dynamic_states.size());
+      dynamic.pDynamicStates = dynamic_states.data();
+      auto rendering = vk::PipelineRenderingCreateInfo{};
+      rendering.colorAttachmentCount = 1;
+      rendering.pColorAttachmentFormats = &color_format;
+      auto info = vk::GraphicsPipelineCreateInfo{};
+      info.pNext = &rendering;
+      info.stageCount = static_cast<std::uint32_t>(stages.size());
+      info.pStages = stages.data();
+      info.pVertexInputState = &vertex_input;
+      info.pInputAssemblyState = &assembly;
+      info.pViewportState = &viewport_state;
+      info.pRasterizationState = &raster;
+      info.pMultisampleState = &multisample;
+      info.pColorBlendState = &blend;
+      info.pDynamicState = &dynamic;
+      info.layout = *layout;
+      result = device.createGraphicsPipelines(nullptr, 1, &info, nullptr, pipeline);
+      device.destroyShaderModule(fragment_shader);
+      device.destroyShaderModule(vertex_shader);
+      if (result != vk::Result::eSuccess) { device.destroyPipelineLayout(*layout); }
+      return result;
+   }
+
+   /// @brief Records a dynamic-rendering pass that clears then draws one hardcoded triangle.
+   vk::Result recordSwapchainTriangle(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
+                                      vk::Image image, vk::ImageView view, vk::Extent2D extent,
+                                      vk::ImageLayout old_layout, vk::Pipeline pipeline,
+                                      const vk::ClearColorValue &clear_color) {
+      auto result = device.resetCommandPool(pool);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto begin = vk::CommandBufferBeginInfo{};
+      begin.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+      result = command_buffer.begin(&begin);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto range = vk::ImageSubresourceRange{};
+      range.aspectMask = vk::ImageAspectFlagBits::eColor;
+      range.levelCount = 1;
+      range.layerCount = 1;
+      auto to_attachment = vk::ImageMemoryBarrier2{};
+      to_attachment.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+      to_attachment.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+      to_attachment.oldLayout = old_layout;
+      to_attachment.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+      to_attachment.image = image;
+      to_attachment.subresourceRange = range;
+      auto dependency = vk::DependencyInfo{};
+      dependency.imageMemoryBarrierCount = 1;
+      dependency.pImageMemoryBarriers = &to_attachment;
+      command_buffer.pipelineBarrier2(&dependency);
+
+      auto clear = vk::ClearValue{};
+      clear.color = clear_color;
+      auto attachment = vk::RenderingAttachmentInfo{};
+      attachment.imageView = view;
+      attachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+      attachment.loadOp = vk::AttachmentLoadOp::eClear;
+      attachment.storeOp = vk::AttachmentStoreOp::eStore;
+      attachment.clearValue = clear;
+      auto rendering = vk::RenderingInfo{};
+      rendering.renderArea = vk::Rect2D{vk::Offset2D{0, 0}, extent};
+      rendering.layerCount = 1;
+      rendering.colorAttachmentCount = 1;
+      rendering.pColorAttachments = &attachment;
+      command_buffer.beginRendering(&rendering);
+      auto viewport = vk::Viewport{0.0F, 0.0F, static_cast<float>(extent.width), static_cast<float>(extent.height),
+                                   0.0F, 1.0F};
+      auto scissor = vk::Rect2D{vk::Offset2D{0, 0}, extent};
+      command_buffer.setViewport(0, 1, &viewport);
+      command_buffer.setScissor(0, 1, &scissor);
+      command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+      command_buffer.draw(3, 1, 0, 0);
       command_buffer.endRendering();
 
       auto to_present = to_attachment;

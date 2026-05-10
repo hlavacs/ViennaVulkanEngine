@@ -121,6 +121,12 @@ void writeVec3(std::ofstream &file, std::string_view name, vve::Vec3 value) {
     return std::filesystem::path{"bin/debug/verify/light_shadow_reference.txt"};
 }
 
+[[nodiscard]] bool inspectMode(int argc, char **argv) {
+    return std::any_of(argv + 1, argv + argc, [](const char *argument) {
+        return std::string_view{argument} == "--inspect";
+    });
+}
+
 class LightShadowDebugSystem final {
 public:
     explicit LightShadowDebugSystem(std::filesystem::path output_path) : output_path_{std::move(output_path)} {}
@@ -260,9 +266,10 @@ int main(int argc, char **argv) {
     std::cerr << std::unitbuf;
 
     const auto reference_path = outputPath(argc, argv);
+    const auto inspect = inspectMode(argc, argv);
     auto engine = vve::makeEngine(
         vve::ApplicationName{"light-shadow-debug"},
-        vve::MaxFrames{.value = vve::FrameCount{.value = 1}},
+        vve::MaxFrames{.value = vve::FrameCount{.value = inspect ? 0U : 1U}},
         vve::makeUserSystems(LightShadowDebugSystem{reference_path}),
         vve::WindowSetups{vve::WindowSetup{}
                               .id("light-shadow-debug.main")
@@ -283,6 +290,8 @@ int main(int argc, char **argv) {
         file << "engine.rendered_frames=" << render_system.renderedFrameCount() << '\n';
         file << "engine.prepared_gpu_targets=" << render_system.preparedGpuTargetCount() << '\n';
         file << "engine.frame_presented=" << render_system.presentedFrameCount() << '\n';
+        file << "engine.triangle_drawn=" << render_system.triangleDrawCount() << '\n';
+        file << "engine.triangle_vertex_count=" << render_system.triangleVertexCount() << '\n';
         file << "engine.clear_color=" << clear_color[0] << ',' << clear_color[1] << ','
              << clear_color[2] << ',' << clear_color[3] << '\n';
     }

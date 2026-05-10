@@ -76,5 +76,17 @@ int main() {
    const auto has_debug_sample = shader_system.hasReflectedType(*shader, "VveForwardDebugSample");
    if (!has_debug_sample || !*has_debug_sample) { return 8; }
 
+   const auto triangle_path = *root / "src/versions/v4/shaders/Triangle.slang";
+   auto triangle = shader_system.compileAndReflect(
+      triangle_path, vve::v4::Vector<std::string>{"vveTriangleVertexMain", "vveTriangleFragmentMain"});
+   if (!triangle) { return 9; }
+
+   const auto triangle_vertex_words = shader_system.stageSpirv(*triangle, vve::v4::ShaderStage::vertex);
+   const auto triangle_fragment_words = shader_system.stageSpirv(*triangle, vve::v4::ShaderStage::fragment);
+   if (!triangle_vertex_words || !triangle_fragment_words ||
+       triangle_vertex_words->empty() || triangle_fragment_words->empty()) {
+      return 10;
+   }
+
    return 0;
 }

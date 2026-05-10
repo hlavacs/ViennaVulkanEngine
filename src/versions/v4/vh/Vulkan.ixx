@@ -26,6 +26,8 @@ export namespace vve::v4::vh {
       vk::DeviceMemory depth_memory{};        ///< Device-local depth memory.
       vk::ImageView depth_view{};             ///< Depth attachment view.
       std::vector<vk::ImageLayout> layouts{}; ///< Current swapchain image layouts.
+      vk::PipelineLayout triangle_layout{};   ///< Pipeline layout for the smoke-test triangle.
+      vk::Pipeline triangle_pipeline{};        ///< Pipeline used to draw the smoke-test triangle.
    };
 
    /// @brief Owns Vulkan instance, device, and frame targets for visible windows.
@@ -40,9 +42,15 @@ export namespace vve::v4::vh {
 
       [[nodiscard]] std::expected<void, Error> prepare(WindowSystem &windows);
       [[nodiscard]] std::expected<void, Error> renderClear(const std::array<float, 4> &color);
+      [[nodiscard]] std::expected<void, Error>
+      renderTriangle(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
+                     std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
+                     std::string_view fragment_entry);
       [[nodiscard]] std::size_t targetCount() const;
       [[nodiscard]] bool ready() const;
       [[nodiscard]] std::uint64_t presentedFrameCount() const;
+      [[nodiscard]] std::uint64_t triangleDrawCount() const;
+      [[nodiscard]] std::uint32_t triangleVertexCount() const;
       [[nodiscard]] std::array<float, 4> lastClearColor() const;
 
    private:
@@ -54,6 +62,12 @@ export namespace vve::v4::vh {
       [[nodiscard]] std::expected<void, Error> createDepth(FrameTarget &target);
       [[nodiscard]] std::expected<void, Error> createFrameExecutor();
       [[nodiscard]] std::expected<void, Error> clearTarget(FrameTarget &target, const vk::ClearColorValue &color);
+      [[nodiscard]] std::expected<void, Error>
+      createTrianglePipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
+                             std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
+                             std::string_view fragment_entry);
+      [[nodiscard]] std::expected<void, Error> drawTriangleTarget(FrameTarget &target,
+                                                                  const vk::ClearColorValue &color);
       [[nodiscard]] bool matches(std::span<const std::reference_wrapper<Window>> windows) const;
       void destroyFrameExecutor();
       void destroyTargets();
@@ -71,6 +85,7 @@ export namespace vve::v4::vh {
       std::vector<FrameTarget> targets_{};
       std::uint64_t timeline_value_{0};
       std::uint64_t presented_frames_{0};
+      std::uint64_t triangle_draws_{0};
       std::array<float, 4> last_clear_color_{};
    };
 
@@ -95,6 +110,7 @@ namespace vve::v4::vh {
          targets_{std::move(other.targets_)},
          timeline_value_{std::exchange(other.timeline_value_, 0)},
          presented_frames_{std::exchange(other.presented_frames_, 0)},
+         triangle_draws_{std::exchange(other.triangle_draws_, 0)},
          last_clear_color_{std::exchange(other.last_clear_color_, {})} {}
 
    /// @brief Moves ownership of all Vulkan objects.
@@ -113,6 +129,7 @@ namespace vve::v4::vh {
          targets_ = std::move(other.targets_);
          timeline_value_ = std::exchange(other.timeline_value_, 0);
          presented_frames_ = std::exchange(other.presented_frames_, 0);
+         triangle_draws_ = std::exchange(other.triangle_draws_, 0);
          last_clear_color_ = std::exchange(other.last_clear_color_, {});
       }
       return *this;
@@ -142,6 +159,26 @@ namespace vve::v4::vh {
       return {};
    }
 
+   /// @brief Clears, draws one hardcoded triangle, and presents every prepared target.
+   std::expected<void, Error>
+   FrameHost::renderTriangle(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
+                             std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
+                             std::string_view fragment_entry) {
+      if (!ready()) { return {}; }
+      const auto clear = vk::ClearColorValue{color};
+      for (auto &target : targets_) {
+         if (const auto result = createTrianglePipeline(target, vertex_spirv, vertex_entry,
+                                                        fragment_spirv, fragment_entry); !result) {
+            return result;
+         }
+         if (const auto result = drawTriangleTarget(target, clear); !result) { return result; }
+      }
+      last_clear_color_ = color;
+      triangle_draws_ += targets_.size();
+      ++presented_frames_;
+      return {};
+   }
+
    /// @brief Returns how many frame targets are currently prepared.
    std::size_t FrameHost::targetCount() const { return targets_.size(); }
 
@@ -150,6 +187,12 @@ namespace vve::v4::vh {
 
    /// @brief Returns how many clear/present frame batches completed.
    std::uint64_t FrameHost::presentedFrameCount() const { return presented_frames_; }
+
+   /// @brief Returns how many hardcoded triangle draw calls completed.
+   std::uint64_t FrameHost::triangleDrawCount() const { return triangle_draws_; }
+
+   /// @brief Returns the hardcoded triangle vertex count.
+   std::uint32_t FrameHost::triangleVertexCount() const { return 3; }
 
    /// @brief Returns the fixed clear color used by the most recent clear frame.
    std::array<float, 4> FrameHost::lastClearColor() const { return last_clear_color_; }
@@ -242,6 +285,19 @@ namespace vve::v4::vh {
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
    }
 
+   /// @brief Creates the smoke-test triangle pipeline for one target if needed.
+   std::expected<void, Error>
+   FrameHost::createTrianglePipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
+                                     std::string_view vertex_entry,
+                                     std::span<const std::uint32_t> fragment_spirv,
+                                     std::string_view fragment_entry) {
+      if (target.triangle_pipeline) { return {}; }
+      const auto result = low::createTrianglePipeline(device_, target.color_format, vertex_spirv, vertex_entry,
+                                                      fragment_spirv, fragment_entry,
+                                                      &target.triangle_layout, &target.triangle_pipeline);
+      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
+   }
+
    /// @brief Acquires, clears, submits, waits, and presents one target image.
    std::expected<void, Error> FrameHost::clearTarget(FrameTarget &target, const vk::ClearColorValue &color) {
       if (device_.resetFences(1, &acquire_fence_) != vk::Result::eSuccess) {
@@ -264,6 +320,44 @@ namespace vve::v4::vh {
                                          target.views[image_index],
                                          vk::Extent2D{target.extent.width, target.extent.height},
                                          old_layout, color);
+      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+
+      result = low::submitAndWait(device_, queue_, command_buffer_, frame_timeline_, ++timeline_value_);
+      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+
+      auto present = vk::PresentInfoKHR{};
+      present.swapchainCount = 1;
+      present.pSwapchains = &target.swapchain;
+      present.pImageIndices = &image_index;
+      result = queue_.presentKHR(&present);
+      if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+         return std::unexpected(Error::platform_error);
+      }
+      target.layouts[image_index] = vk::ImageLayout::ePresentSrcKHR;
+      return {};
+   }
+
+   /// @brief Acquires, clears, draws a triangle, submits, waits, and presents one target image.
+   std::expected<void, Error> FrameHost::drawTriangleTarget(FrameTarget &target, const vk::ClearColorValue &color) {
+      if (device_.resetFences(1, &acquire_fence_) != vk::Result::eSuccess) {
+         return std::unexpected(Error::platform_error);
+      }
+
+      std::uint32_t image_index{};
+      auto result = device_.acquireNextImageKHR(target.swapchain, std::numeric_limits<std::uint64_t>::max(),
+                                                nullptr, acquire_fence_, &image_index);
+      if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+         return std::unexpected(Error::platform_error);
+      }
+      result = device_.waitForFences(1, &acquire_fence_, VK_TRUE, std::numeric_limits<std::uint64_t>::max());
+      if (result != vk::Result::eSuccess || image_index >= target.images.size()) {
+         return std::unexpected(Error::platform_error);
+      }
+
+      result = low::recordSwapchainTriangle(device_, command_pool_, command_buffer_, target.images[image_index],
+                                            target.views[image_index],
+                                            vk::Extent2D{target.extent.width, target.extent.height},
+                                            target.layouts[image_index], target.triangle_pipeline, color);
       if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
 
       result = low::submitAndWait(device_, queue_, command_buffer_, frame_timeline_, ++timeline_value_);
@@ -311,6 +405,8 @@ namespace vve::v4::vh {
    void FrameHost::destroyTargets() {
       if (device_) { static_cast<void>(device_.waitIdle()); }
       for (auto &target : std::views::reverse(targets_)) {
+         if (target.triangle_pipeline) { device_.destroyPipeline(target.triangle_pipeline); }
+         if (target.triangle_layout) { device_.destroyPipelineLayout(target.triangle_layout); }
          if (target.depth_view) { device_.destroyImageView(target.depth_view); }
          if (target.depth_image) { device_.destroyImage(target.depth_image); }
          if (target.depth_memory) { device_.freeMemory(target.depth_memory); }

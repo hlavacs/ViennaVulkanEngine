@@ -43,6 +43,8 @@ export namespace vve {
       [[nodiscard]] bool hasSceneDirectionalLight() const { return impl_.hasSceneDirectionalLight(); }
       [[nodiscard]] std::uint64_t renderedFrameCount() const { return impl_.renderedFrameCount(); }
       [[nodiscard]] std::uint64_t presentedFrameCount() const { return impl_.presentedFrameCount(); }
+      [[nodiscard]] std::uint64_t triangleDrawCount() const { return impl_.triangleDrawCount(); }
+      [[nodiscard]] std::uint32_t triangleVertexCount() const { return impl_.triangleVertexCount(); }
       [[nodiscard]] std::size_t lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }
       [[nodiscard]] std::size_t preparedGpuTargetCount() const { return impl_.preparedGpuTargetCount(); }
       [[nodiscard]] std::array<float, 4> lastClearColor() const { return impl_.lastClearColor(); }

@@ -78,6 +78,8 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<ObjectName, Error> shaderName(ShaderHandle handle) const;
       [[nodiscard]] std::expected<std::size_t, Error> shaderStageCount(ShaderHandle handle) const;
       [[nodiscard]] std::expected<std::size_t, Error> spirvWordCount(ShaderHandle handle, ShaderStage stage) const;
+      [[nodiscard]] std::expected<Vector<std::uint32_t>, Error> stageSpirv(ShaderHandle handle,
+                                                                           ShaderStage stage) const;
       [[nodiscard]] std::expected<bool, Error> hasReflectedBinding(ShaderHandle handle, std::string_view name) const;
       [[nodiscard]] std::expected<bool, Error> hasReflectedType(ShaderHandle handle, std::string_view name) const;
       [[nodiscard]] std::expected<Vector<ShaderBindingReflection>, Error> reflectedBindings(ShaderHandle handle) const;
@@ -388,6 +390,17 @@ namespace vve::v4 {
       });
       if (it == shader->binaries.end()) { return std::unexpected(Error::missing_object); }
       return it->spirv.size();
+   }
+
+   std::expected<Vector<std::uint32_t>, Error> ShaderSystem::stageSpirv(ShaderHandle handle,
+                                                                        ShaderStage stage) const {
+      const auto *shader = find(handle);
+      if (shader == nullptr) { return std::unexpected(Error::missing_object); }
+      const auto it = std::ranges::find_if(shader->binaries, [stage](const auto &binary) {
+         return binary.stage == stage;
+      });
+      if (it == shader->binaries.end()) { return std::unexpected(Error::missing_object); }
+      return it->spirv;
    }
 
    std::expected<bool, Error> ShaderSystem::hasReflectedBinding(ShaderHandle handle, std::string_view name) const {

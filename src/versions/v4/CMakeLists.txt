@@ -24,9 +24,14 @@ target_sources(ViennaVulkanEngine
 set(VVE_V4_SHADER_FILES
    "${CMAKE_CURRENT_LIST_DIR}/shaders/Lighting.slang"
    "${CMAKE_CURRENT_LIST_DIR}/shaders/Forward.slang"
+   "${CMAKE_CURRENT_LIST_DIR}/shaders/Triangle.slang"
 )
 set_source_files_properties(${VVE_V4_SHADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 target_sources(ViennaVulkanEngine PRIVATE ${VVE_V4_SHADER_FILES})
+
+file(TO_CMAKE_PATH "${CMAKE_CURRENT_LIST_DIR}/shaders" VVE_V4_SHADER_SOURCE_DIR_COMPILE_PATH)
+target_compile_definitions(ViennaVulkanEngine
+   PRIVATE VVE_V4_SHADER_SOURCE_DIR="${VVE_V4_SHADER_SOURCE_DIR_COMPILE_PATH}")
 
 add_custom_target(vve_v4_shaders ALL
    COMMAND "${CMAKE_COMMAND}" -E make_directory

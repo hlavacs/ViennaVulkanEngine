@@ -1,7 +1,14 @@
+module;
+
+#ifndef VVE_V4_SHADER_SOURCE_DIR
+#define VVE_V4_SHADER_SOURCE_DIR "src/versions/v4/shaders"
+#endif
+
 export module VEEngine.V4:RenderSystem;
 import std;
 export import :RenderPass;
 import :RendererForward;
+import :Shaders;
 import :Vulkan;
 import :Window;
 
@@ -142,11 +149,14 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<void, Error> renderFrame(WindowSystem &windows);
       [[nodiscard]] std::uint64_t renderedFrameCount() const;
       [[nodiscard]] std::uint64_t presentedFrameCount() const;
+      [[nodiscard]] std::uint64_t triangleDrawCount() const;
+      [[nodiscard]] std::uint32_t triangleVertexCount() const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const;
       [[nodiscard]] std::size_t preparedGpuTargetCount() const;
       [[nodiscard]] std::array<float, 4> lastClearColor() const;
 
    private:
+      [[nodiscard]] std::expected<void, Error> ensureTriangleShader();
       [[nodiscard]] static std::expected<void, Error>
       addPass(RenderGraph &graph, std::map<std::string_view, RenderPassHandle> &handles,
               const RenderPassContract &pass);
@@ -157,6 +167,10 @@ export namespace vve::v4 {
 
       RenderScene scene_{};                    ///< Active CPU render scene awaiting GPU upload.
       vh::FrameHost vulkan_{};                 ///< Visible-window Vulkan frame targets.
+      ShaderSystem shaders_{};                 ///< Built-in renderer shader compiler/cache.
+      std::optional<ShaderHandle> triangle_shader_{}; ///< Compiled smoke-test triangle shader.
+      std::vector<std::uint32_t> triangle_vertex_spirv_{}; ///< Cached triangle vertex SPIR-V.
+      std::vector<std::uint32_t> triangle_fragment_spirv_{}; ///< Cached triangle fragment SPIR-V.
       std::uint64_t rendered_frames_{0};       ///< Number of frame hooks reached.
       std::size_t last_rendered_window_count_{0}; ///< Last non-closed window count.
    };
@@ -453,7 +467,13 @@ namespace vve::v4 {
    /// @brief Prepares native Vulkan targets, then records the frame hook snapshot.
    inline std::expected<void, Error> RenderSystem::renderFrame(WindowSystem &windows) {
       if (const auto result = vulkan_.prepare(windows); !result) { return result; }
-      if (const auto result = vulkan_.renderClear(detail::clear_color); !result) { return result; }
+      if (vulkan_.ready()) {
+         if (const auto shader = ensureTriangleShader(); !shader) { return shader; }
+         if (const auto result = vulkan_.renderTriangle(detail::clear_color, triangle_vertex_spirv_,
+                                                        "main", triangle_fragment_spirv_, "main"); !result) {
+            return result;
+         }
+      }
       return renderFrame(WindowFrameData{.windows = windows.snapshot()});
    }
 
@@ -463,6 +483,12 @@ namespace vve::v4 {
    /// @brief Returns how many Vulkan clear/present frame batches completed.
    inline std::uint64_t RenderSystem::presentedFrameCount() const { return vulkan_.presentedFrameCount(); }
 
+   /// @brief Returns how many hardcoded triangle draw calls completed.
+   inline std::uint64_t RenderSystem::triangleDrawCount() const { return vulkan_.triangleDrawCount(); }
+
+   /// @brief Returns the hardcoded triangle vertex count.
+   inline std::uint32_t RenderSystem::triangleVertexCount() const { return vulkan_.triangleVertexCount(); }
+
    /// @brief Returns the last frame's non-closed window count.
    inline std::size_t RenderSystem::lastRenderedWindowCount() const { return last_rendered_window_count_; }
 
@@ -471,6 +497,25 @@ namespace vve::v4 {
 
    /// @brief Returns the fixed color used by the most recent Vulkan clear frame.
    inline std::array<float, 4> RenderSystem::lastClearColor() const { return vulkan_.lastClearColor(); }
+
+   /// @brief Compiles and caches the built-in hardcoded triangle shader.
+   inline std::expected<void, Error> RenderSystem::ensureTriangleShader() {
+      if (triangle_shader_.has_value()) { return {}; }
+      const auto source = std::filesystem::path{VVE_V4_SHADER_SOURCE_DIR} / "Triangle.slang";
+      auto shader = shaders_.compileAndReflect(
+         source, Vector<std::string>{"vveTriangleVertexMain", "vveTriangleFragmentMain"});
+      if (!shader) { return std::unexpected(shader.error()); }
+
+      auto vertex = shaders_.stageSpirv(*shader, ShaderStage::vertex);
+      if (!vertex) { return std::unexpected(vertex.error()); }
+      auto fragment = shaders_.stageSpirv(*shader, ShaderStage::fragment);
+      if (!fragment) { return std::unexpected(fragment.error()); }
+
+      triangle_shader_ = *shader;
+      triangle_vertex_spirv_.assign(vertex->begin(), vertex->end());
+      triangle_fragment_spirv_.assign(fragment->begin(), fragment->end());
+      return {};
+   }
 
    /// @brief Adds one pass node and merges duplicate names so systems can share milestones.
    inline std::expected<void, Error>

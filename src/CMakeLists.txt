@@ -58,9 +58,9 @@ add_subdirectory("versions/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}")
 target_link_libraries(ViennaVulkanEngine
     PUBLIC
         assimp::assimp
+        slang::slang
     PRIVATE
         SDL3::SDL3
-        slang::slang
         Vulkan::Vulkan
 )
 
