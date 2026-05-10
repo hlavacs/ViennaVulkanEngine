@@ -88,5 +88,10 @@ int main() {
       return 10;
    }
 
+   const auto scene_path = *root / "src/versions/v4/shaders/SceneUnlit.slang";
+   auto scene = shader_system.compileAndReflect(
+      scene_path, vve::v4::Vector<std::string>{"vveSceneUnlitVertexMain", "vveSceneUnlitFragmentMain"});
+   if (!scene) { return 11; }
+
    return 0;
 }

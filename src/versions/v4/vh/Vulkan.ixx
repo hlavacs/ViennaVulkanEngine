@@ -28,6 +28,23 @@ export namespace vve::v4::vh {
       std::vector<vk::ImageLayout> layouts{}; ///< Current swapchain image layouts.
       vk::PipelineLayout triangle_layout{};   ///< Pipeline layout for the smoke-test triangle.
       vk::Pipeline triangle_pipeline{};        ///< Pipeline used to draw the smoke-test triangle.
+      vk::PipelineLayout scene_layout{};      ///< Pipeline layout for uploaded unlit scene geometry.
+      vk::Pipeline scene_pipeline{};          ///< Pipeline used to draw uploaded unlit scene geometry.
+      vk::Buffer scene_vertices{};            ///< Host-visible position/color vertex buffer.
+      vk::DeviceMemory scene_vertex_memory{}; ///< Memory backing the scene vertex buffer.
+      vk::Buffer scene_indices{};             ///< Host-visible index buffer.
+      vk::DeviceMemory scene_index_memory{};  ///< Memory backing the scene index buffer.
+      std::uint32_t scene_vertex_count{};      ///< Uploaded vertex count.
+      std::uint32_t scene_index_count{};       ///< Uploaded index count.
+   };
+
+   /// @brief One uploaded debug-scene vertex: clip-space x/y plus RGB color.
+   struct SceneVertex {
+      float x{}; ///< Clip-space x position.
+      float y{}; ///< Clip-space y position.
+      float r{}; ///< Linear red channel.
+      float g{}; ///< Linear green channel.
+      float b{}; ///< Linear blue channel.
    };
 
    /// @brief Owns Vulkan instance, device, and frame targets for visible windows.
@@ -46,11 +63,22 @@ export namespace vve::v4::vh {
       renderTriangle(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
                      std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                      std::string_view fragment_entry);
+      [[nodiscard]] std::expected<void, Error>
+      renderScene(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
+                  std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
+                  std::string_view fragment_entry, std::span<const SceneVertex> vertices,
+                  std::span<const std::uint32_t> indices, std::uint32_t mesh_count,
+                  std::uint32_t instance_count);
       [[nodiscard]] std::size_t targetCount() const;
       [[nodiscard]] bool ready() const;
       [[nodiscard]] std::uint64_t presentedFrameCount() const;
       [[nodiscard]] std::uint64_t triangleDrawCount() const;
       [[nodiscard]] std::uint32_t triangleVertexCount() const;
+      [[nodiscard]] std::uint64_t sceneUploadCount() const;
+      [[nodiscard]] std::uint64_t sceneMeshDrawCount() const;
+      [[nodiscard]] std::uint64_t sceneInstanceDrawCount() const;
+      [[nodiscard]] std::uint32_t sceneVertexCount() const;
+      [[nodiscard]] std::uint32_t sceneIndexCount() const;
       [[nodiscard]] std::array<float, 4> lastClearColor() const;
 
    private:
@@ -66,8 +94,17 @@ export namespace vve::v4::vh {
       createTrianglePipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
                              std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                              std::string_view fragment_entry);
+      [[nodiscard]] std::expected<void, Error>
+      createScenePipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
+                          std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
+                          std::string_view fragment_entry);
+      [[nodiscard]] std::expected<void, Error>
+      uploadScene(FrameTarget &target, std::span<const SceneVertex> vertices,
+                  std::span<const std::uint32_t> indices);
       [[nodiscard]] std::expected<void, Error> drawTriangleTarget(FrameTarget &target,
                                                                   const vk::ClearColorValue &color);
+      [[nodiscard]] std::expected<void, Error> drawSceneTarget(FrameTarget &target,
+                                                               const vk::ClearColorValue &color);
       [[nodiscard]] bool matches(std::span<const std::reference_wrapper<Window>> windows) const;
       void destroyFrameExecutor();
       void destroyTargets();
@@ -86,6 +123,11 @@ export namespace vve::v4::vh {
       std::uint64_t timeline_value_{0};
       std::uint64_t presented_frames_{0};
       std::uint64_t triangle_draws_{0};
+      std::uint64_t scene_uploads_{0};
+      std::uint64_t scene_mesh_draws_{0};
+      std::uint64_t scene_instance_draws_{0};
+      std::uint32_t scene_vertex_count_{0};
+      std::uint32_t scene_index_count_{0};
       std::array<float, 4> last_clear_color_{};
    };
 
@@ -111,6 +153,11 @@ namespace vve::v4::vh {
          timeline_value_{std::exchange(other.timeline_value_, 0)},
          presented_frames_{std::exchange(other.presented_frames_, 0)},
          triangle_draws_{std::exchange(other.triangle_draws_, 0)},
+         scene_uploads_{std::exchange(other.scene_uploads_, 0)},
+         scene_mesh_draws_{std::exchange(other.scene_mesh_draws_, 0)},
+         scene_instance_draws_{std::exchange(other.scene_instance_draws_, 0)},
+         scene_vertex_count_{std::exchange(other.scene_vertex_count_, 0)},
+         scene_index_count_{std::exchange(other.scene_index_count_, 0)},
          last_clear_color_{std::exchange(other.last_clear_color_, {})} {}
 
    /// @brief Moves ownership of all Vulkan objects.
@@ -130,6 +177,11 @@ namespace vve::v4::vh {
          timeline_value_ = std::exchange(other.timeline_value_, 0);
          presented_frames_ = std::exchange(other.presented_frames_, 0);
          triangle_draws_ = std::exchange(other.triangle_draws_, 0);
+         scene_uploads_ = std::exchange(other.scene_uploads_, 0);
+         scene_mesh_draws_ = std::exchange(other.scene_mesh_draws_, 0);
+         scene_instance_draws_ = std::exchange(other.scene_instance_draws_, 0);
+         scene_vertex_count_ = std::exchange(other.scene_vertex_count_, 0);
+         scene_index_count_ = std::exchange(other.scene_index_count_, 0);
          last_clear_color_ = std::exchange(other.last_clear_color_, {});
       }
       return *this;
@@ -179,6 +231,35 @@ namespace vve::v4::vh {
       return {};
    }
 
+   /// @brief Uploads, clears, draws the debug scene, and presents every prepared target.
+   std::expected<void, Error>
+   FrameHost::renderScene(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
+                          std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
+                          std::string_view fragment_entry, std::span<const SceneVertex> vertices,
+                          std::span<const std::uint32_t> indices, std::uint32_t mesh_count,
+                          std::uint32_t instance_count) {
+      if (!ready()) { return {}; }
+      if (vertices.empty() || indices.empty()) { return std::unexpected(Error::invalid_argument); }
+
+      const auto clear = vk::ClearColorValue{color};
+      for (auto &target : targets_) {
+         if (const auto result = createScenePipeline(target, vertex_spirv, vertex_entry,
+                                                     fragment_spirv, fragment_entry); !result) {
+            return result;
+         }
+         if (const auto result = uploadScene(target, vertices, indices); !result) { return result; }
+         if (const auto result = drawSceneTarget(target, clear); !result) { return result; }
+      }
+      last_clear_color_ = color;
+      scene_uploads_ += targets_.size();
+      scene_mesh_draws_ += static_cast<std::uint64_t>(mesh_count) * targets_.size();
+      scene_instance_draws_ += static_cast<std::uint64_t>(instance_count) * targets_.size();
+      scene_vertex_count_ = static_cast<std::uint32_t>(vertices.size());
+      scene_index_count_ = static_cast<std::uint32_t>(indices.size());
+      ++presented_frames_;
+      return {};
+   }
+
    /// @brief Returns how many frame targets are currently prepared.
    std::size_t FrameHost::targetCount() const { return targets_.size(); }
 
@@ -193,6 +274,21 @@ namespace vve::v4::vh {
 
    /// @brief Returns the hardcoded triangle vertex count.
    std::uint32_t FrameHost::triangleVertexCount() const { return 3; }
+
+   /// @brief Returns how many scene buffer uploads completed.
+   std::uint64_t FrameHost::sceneUploadCount() const { return scene_uploads_; }
+
+   /// @brief Returns how many mesh draws were represented by the last scene draw path.
+   std::uint64_t FrameHost::sceneMeshDrawCount() const { return scene_mesh_draws_; }
+
+   /// @brief Returns how many instance draws were represented by the last scene draw path.
+   std::uint64_t FrameHost::sceneInstanceDrawCount() const { return scene_instance_draws_; }
+
+   /// @brief Returns the last uploaded scene vertex count.
+   std::uint32_t FrameHost::sceneVertexCount() const { return scene_vertex_count_; }
+
+   /// @brief Returns the last uploaded scene index count.
+   std::uint32_t FrameHost::sceneIndexCount() const { return scene_index_count_; }
 
    /// @brief Returns the fixed clear color used by the most recent clear frame.
    std::array<float, 4> FrameHost::lastClearColor() const { return last_clear_color_; }
@@ -298,6 +394,56 @@ namespace vve::v4::vh {
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
    }
 
+   /// @brief Creates the uploaded-scene pipeline for one target if needed.
+   std::expected<void, Error>
+   FrameHost::createScenePipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
+                                  std::string_view vertex_entry,
+                                  std::span<const std::uint32_t> fragment_spirv,
+                                  std::string_view fragment_entry) {
+      if (target.scene_pipeline) { return {}; }
+      const auto result = low::createScenePipeline(device_, target.color_format, vertex_spirv, vertex_entry,
+                                                   fragment_spirv, fragment_entry,
+                                                   &target.scene_layout, &target.scene_pipeline);
+      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
+   }
+
+   /// @brief Uploads scene vertex and index data directly into host-visible buffers for the proof renderer.
+   std::expected<void, Error>
+   FrameHost::uploadScene(FrameTarget &target, std::span<const SceneVertex> vertices,
+                          std::span<const std::uint32_t> indices) {
+      const auto vertex_bytes = std::as_bytes(vertices);
+      const auto index_bytes = std::as_bytes(indices);
+      const auto same_size = target.scene_vertex_count == vertices.size() &&
+                             target.scene_index_count == indices.size();
+      if (!target.scene_vertices || !target.scene_indices || !same_size) {
+         if (target.scene_vertices) { device_.destroyBuffer(target.scene_vertices); }
+         if (target.scene_vertex_memory) { device_.freeMemory(target.scene_vertex_memory); }
+         if (target.scene_indices) { device_.destroyBuffer(target.scene_indices); }
+         if (target.scene_index_memory) { device_.freeMemory(target.scene_index_memory); }
+         target.scene_vertices = nullptr;
+         target.scene_vertex_memory = nullptr;
+         target.scene_indices = nullptr;
+         target.scene_index_memory = nullptr;
+
+         auto created = low::createHostBuffer(physical_device_, device_, vertex_bytes.size(),
+                                              vk::BufferUsageFlagBits::eVertexBuffer,
+                                              &target.scene_vertices, &target.scene_vertex_memory);
+         if (created != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+         created = low::createHostBuffer(physical_device_, device_, index_bytes.size(),
+                                         vk::BufferUsageFlagBits::eIndexBuffer,
+                                         &target.scene_indices, &target.scene_index_memory);
+         if (created != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+      }
+
+      auto result = low::writeBuffer(device_, target.scene_vertex_memory, vertex_bytes);
+      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+      result = low::writeBuffer(device_, target.scene_index_memory, index_bytes);
+      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+      target.scene_vertex_count = static_cast<std::uint32_t>(vertices.size());
+      target.scene_index_count = static_cast<std::uint32_t>(indices.size());
+      return {};
+   }
+
    /// @brief Acquires, clears, submits, waits, and presents one target image.
    std::expected<void, Error> FrameHost::clearTarget(FrameTarget &target, const vk::ClearColorValue &color) {
       if (device_.resetFences(1, &acquire_fence_) != vk::Result::eSuccess) {
@@ -375,6 +521,46 @@ namespace vve::v4::vh {
       return {};
    }
 
+   /// @brief Acquires, clears, draws uploaded scene geometry, submits, waits, and presents one target image.
+   std::expected<void, Error> FrameHost::drawSceneTarget(FrameTarget &target, const vk::ClearColorValue &color) {
+      if (device_.resetFences(1, &acquire_fence_) != vk::Result::eSuccess) {
+         return std::unexpected(Error::platform_error);
+      }
+
+      std::uint32_t image_index{};
+      auto result = device_.acquireNextImageKHR(target.swapchain, std::numeric_limits<std::uint64_t>::max(),
+                                                nullptr, acquire_fence_, &image_index);
+      if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+         return std::unexpected(Error::platform_error);
+      }
+      result = device_.waitForFences(1, &acquire_fence_, VK_TRUE, std::numeric_limits<std::uint64_t>::max());
+      if (result != vk::Result::eSuccess || image_index >= target.images.size()) {
+         return std::unexpected(Error::platform_error);
+      }
+
+      result = low::recordSwapchainScene(device_, command_pool_, command_buffer_, target.images[image_index],
+                                         target.views[image_index],
+                                         vk::Extent2D{target.extent.width, target.extent.height},
+                                         target.layouts[image_index], target.scene_pipeline,
+                                         target.scene_vertices, target.scene_indices,
+                                         target.scene_index_count, color);
+      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+
+      result = low::submitAndWait(device_, queue_, command_buffer_, frame_timeline_, ++timeline_value_);
+      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+
+      auto present = vk::PresentInfoKHR{};
+      present.swapchainCount = 1;
+      present.pSwapchains = &target.swapchain;
+      present.pImageIndices = &image_index;
+      result = queue_.presentKHR(&present);
+      if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
+         return std::unexpected(Error::platform_error);
+      }
+      target.layouts[image_index] = vk::ImageLayout::ePresentSrcKHR;
+      return {};
+   }
+
    /// @brief Checks whether prepared targets still match current native windows.
    bool FrameHost::matches(std::span<const std::reference_wrapper<Window>> windows) const {
       if (targets_.size() != windows.size()) { return false; }
@@ -407,6 +593,12 @@ namespace vve::v4::vh {
       for (auto &target : std::views::reverse(targets_)) {
          if (target.triangle_pipeline) { device_.destroyPipeline(target.triangle_pipeline); }
          if (target.triangle_layout) { device_.destroyPipelineLayout(target.triangle_layout); }
+         if (target.scene_pipeline) { device_.destroyPipeline(target.scene_pipeline); }
+         if (target.scene_layout) { device_.destroyPipelineLayout(target.scene_layout); }
+         if (target.scene_vertices) { device_.destroyBuffer(target.scene_vertices); }
+         if (target.scene_vertex_memory) { device_.freeMemory(target.scene_vertex_memory); }
+         if (target.scene_indices) { device_.destroyBuffer(target.scene_indices); }
+         if (target.scene_index_memory) { device_.freeMemory(target.scene_index_memory); }
          if (target.depth_view) { device_.destroyImageView(target.depth_view); }
          if (target.depth_image) { device_.destroyImage(target.depth_image); }
          if (target.depth_memory) { device_.freeMemory(target.depth_memory); }

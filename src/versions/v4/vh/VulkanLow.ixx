@@ -40,6 +40,11 @@ export namespace vve::v4::vh::low {
    createFrameExecutor(vk::Device device, std::uint32_t queue_family, vk::CommandPool *pool,
                        vk::CommandBuffer *command_buffer, vk::Semaphore *timeline, vk::Fence *acquire_fence);
    [[nodiscard]] vk::Result
+   createHostBuffer(vk::PhysicalDevice physical_device, vk::Device device, vk::DeviceSize size,
+                    vk::BufferUsageFlags usage, vk::Buffer *buffer, vk::DeviceMemory *memory);
+   [[nodiscard]] vk::Result writeBuffer(vk::Device device, vk::DeviceMemory memory,
+                                         std::span<const std::byte> bytes);
+   [[nodiscard]] vk::Result
    recordSwapchainClear(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer, vk::Image image,
                         vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
                         const vk::ClearColorValue &clear_color);
@@ -48,9 +53,18 @@ export namespace vve::v4::vh::low {
                           std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                           std::string_view fragment_entry, vk::PipelineLayout *layout, vk::Pipeline *pipeline);
    [[nodiscard]] vk::Result
+   createScenePipeline(vk::Device device, vk::Format color_format, std::span<const std::uint32_t> vertex_spirv,
+                       std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
+                       std::string_view fragment_entry, vk::PipelineLayout *layout, vk::Pipeline *pipeline);
+   [[nodiscard]] vk::Result
    recordSwapchainTriangle(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                            vk::Image image, vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
                            vk::Pipeline pipeline, const vk::ClearColorValue &clear_color);
+   [[nodiscard]] vk::Result
+   recordSwapchainScene(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
+                        vk::Image image, vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
+                        vk::Pipeline pipeline, vk::Buffer vertex_buffer, vk::Buffer index_buffer,
+                        std::uint32_t index_count, const vk::ClearColorValue &clear_color);
    [[nodiscard]] vk::Result
    submitAndWait(vk::Device device, vk::Queue queue, vk::CommandBuffer command_buffer, vk::Semaphore timeline,
                  std::uint64_t value);
@@ -713,6 +727,57 @@ namespace vve::v4::vh::low {
       return device.createFence(&fence_info, nullptr, acquire_fence);
    }
 
+   /// @brief Creates one host-visible buffer for the first direct CPU upload path.
+   vk::Result createHostBuffer(vk::PhysicalDevice physical_device, vk::Device device, vk::DeviceSize size,
+                               vk::BufferUsageFlags usage, vk::Buffer *buffer, vk::DeviceMemory *memory) {
+      if (size == 0) { return vk::Result::eErrorInitializationFailed; }
+
+      auto info = vk::BufferCreateInfo{};
+      info.size = size;
+      info.usage = usage;
+      info.sharingMode = vk::SharingMode::eExclusive;
+      auto result = device.createBuffer(&info, nullptr, buffer);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      const auto requirements = device.getBufferMemoryRequirements(*buffer);
+      const auto flags = vk::MemoryPropertyFlagBits::eHostVisible | vk::MemoryPropertyFlagBits::eHostCoherent;
+      const auto memory_type = findMemoryType(physical_device, requirements.memoryTypeBits, flags);
+      if (!memory_type) {
+         device.destroyBuffer(*buffer);
+         *buffer = nullptr;
+         return vk::Result::eErrorMemoryMapFailed;
+      }
+
+      auto memory_info = vk::MemoryAllocateInfo{};
+      memory_info.allocationSize = requirements.size;
+      memory_info.memoryTypeIndex = *memory_type;
+      result = device.allocateMemory(&memory_info, nullptr, memory);
+      if (result != vk::Result::eSuccess) {
+         device.destroyBuffer(*buffer);
+         *buffer = nullptr;
+         return result;
+      }
+
+      result = device.bindBufferMemory(*buffer, *memory, 0);
+      if (result != vk::Result::eSuccess) {
+         device.freeMemory(*memory);
+         device.destroyBuffer(*buffer);
+         *memory = nullptr;
+         *buffer = nullptr;
+      }
+      return result;
+   }
+
+   /// @brief Writes bytes into a host-visible coherent Vulkan buffer allocation.
+   vk::Result writeBuffer(vk::Device device, vk::DeviceMemory memory, std::span<const std::byte> bytes) {
+      void *mapped{};
+      auto result = device.mapMemory(memory, 0, bytes.size(), {}, &mapped);
+      if (result != vk::Result::eSuccess) { return result; }
+      std::ranges::copy(bytes, static_cast<std::byte *>(mapped));
+      device.unmapMemory(memory);
+      return vk::Result::eSuccess;
+   }
+
    /// @brief Records a dynamic-rendering pass that clears one acquired swapchain image.
    vk::Result recordSwapchainClear(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                                    vk::Image image, vk::ImageView view, vk::Extent2D extent,
@@ -857,6 +922,111 @@ namespace vve::v4::vh::low {
       return result;
    }
 
+   /// @brief Creates a position/color input graphics pipeline for uploaded debug scene geometry.
+   vk::Result createScenePipeline(vk::Device device, vk::Format color_format,
+                                  std::span<const std::uint32_t> vertex_spirv,
+                                  std::string_view vertex_entry,
+                                  std::span<const std::uint32_t> fragment_spirv,
+                                  std::string_view fragment_entry,
+                                  vk::PipelineLayout *layout, vk::Pipeline *pipeline) {
+      auto shader_info = vk::ShaderModuleCreateInfo{};
+      shader_info.codeSize = vertex_spirv.size_bytes();
+      shader_info.pCode = vertex_spirv.data();
+      vk::ShaderModule vertex_shader{};
+      auto result = device.createShaderModule(&shader_info, nullptr, &vertex_shader);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      shader_info.codeSize = fragment_spirv.size_bytes();
+      shader_info.pCode = fragment_spirv.data();
+      vk::ShaderModule fragment_shader{};
+      result = device.createShaderModule(&shader_info, nullptr, &fragment_shader);
+      if (result != vk::Result::eSuccess) {
+         device.destroyShaderModule(vertex_shader);
+         return result;
+      }
+
+      auto layout_info = vk::PipelineLayoutCreateInfo{};
+      result = device.createPipelineLayout(&layout_info, nullptr, layout);
+      if (result != vk::Result::eSuccess) {
+         device.destroyShaderModule(fragment_shader);
+         device.destroyShaderModule(vertex_shader);
+         return result;
+      }
+
+      const auto vertex_name = std::string{vertex_entry};
+      const auto fragment_name = std::string{fragment_entry};
+      auto stages = std::array{vk::PipelineShaderStageCreateInfo{}, vk::PipelineShaderStageCreateInfo{}};
+      stages[0].stage = vk::ShaderStageFlagBits::eVertex;
+      stages[0].module = vertex_shader;
+      stages[0].pName = vertex_name.c_str();
+      stages[1].stage = vk::ShaderStageFlagBits::eFragment;
+      stages[1].module = fragment_shader;
+      stages[1].pName = fragment_name.c_str();
+
+      auto binding = vk::VertexInputBindingDescription{};
+      binding.binding = 0;
+      binding.stride = 5U * static_cast<std::uint32_t>(sizeof(float));
+      binding.inputRate = vk::VertexInputRate::eVertex;
+      auto attributes = std::array{vk::VertexInputAttributeDescription{},
+                                   vk::VertexInputAttributeDescription{}};
+      attributes[0].location = 0;
+      attributes[0].binding = 0;
+      attributes[0].format = vk::Format::eR32G32Sfloat;
+      attributes[0].offset = 0;
+      attributes[1].location = 1;
+      attributes[1].binding = 0;
+      attributes[1].format = vk::Format::eR32G32B32Sfloat;
+      attributes[1].offset = 2U * static_cast<std::uint32_t>(sizeof(float));
+      auto vertex_input = vk::PipelineVertexInputStateCreateInfo{};
+      vertex_input.vertexBindingDescriptionCount = 1;
+      vertex_input.pVertexBindingDescriptions = &binding;
+      vertex_input.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributes.size());
+      vertex_input.pVertexAttributeDescriptions = attributes.data();
+
+      auto assembly = vk::PipelineInputAssemblyStateCreateInfo{};
+      assembly.topology = vk::PrimitiveTopology::eTriangleList;
+      auto viewport_state = vk::PipelineViewportStateCreateInfo{};
+      viewport_state.viewportCount = 1;
+      viewport_state.scissorCount = 1;
+      auto raster = vk::PipelineRasterizationStateCreateInfo{};
+      raster.polygonMode = vk::PolygonMode::eFill;
+      raster.cullMode = vk::CullModeFlagBits::eNone;
+      raster.frontFace = vk::FrontFace::eCounterClockwise;
+      raster.lineWidth = 1.0F;
+      auto multisample = vk::PipelineMultisampleStateCreateInfo{};
+      multisample.rasterizationSamples = vk::SampleCountFlagBits::e1;
+      auto blend_attachment = vk::PipelineColorBlendAttachmentState{};
+      blend_attachment.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
+                                        vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
+      auto blend = vk::PipelineColorBlendStateCreateInfo{};
+      blend.attachmentCount = 1;
+      blend.pAttachments = &blend_attachment;
+      constexpr std::array dynamic_states{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
+      auto dynamic = vk::PipelineDynamicStateCreateInfo{};
+      dynamic.dynamicStateCount = static_cast<std::uint32_t>(dynamic_states.size());
+      dynamic.pDynamicStates = dynamic_states.data();
+      auto rendering = vk::PipelineRenderingCreateInfo{};
+      rendering.colorAttachmentCount = 1;
+      rendering.pColorAttachmentFormats = &color_format;
+      auto info = vk::GraphicsPipelineCreateInfo{};
+      info.pNext = &rendering;
+      info.stageCount = static_cast<std::uint32_t>(stages.size());
+      info.pStages = stages.data();
+      info.pVertexInputState = &vertex_input;
+      info.pInputAssemblyState = &assembly;
+      info.pViewportState = &viewport_state;
+      info.pRasterizationState = &raster;
+      info.pMultisampleState = &multisample;
+      info.pColorBlendState = &blend;
+      info.pDynamicState = &dynamic;
+      info.layout = *layout;
+      result = device.createGraphicsPipelines(nullptr, 1, &info, nullptr, pipeline);
+      device.destroyShaderModule(fragment_shader);
+      device.destroyShaderModule(vertex_shader);
+      if (result != vk::Result::eSuccess) { device.destroyPipelineLayout(*layout); }
+      return result;
+   }
+
    /// @brief Records a dynamic-rendering pass that clears then draws one hardcoded triangle.
    vk::Result recordSwapchainTriangle(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                                       vk::Image image, vk::ImageView view, vk::Extent2D extent,
@@ -907,6 +1077,75 @@ namespace vve::v4::vh::low {
       command_buffer.setScissor(0, 1, &scissor);
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
       command_buffer.draw(3, 1, 0, 0);
+      command_buffer.endRendering();
+
+      auto to_present = to_attachment;
+      to_present.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+      to_present.srcAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+      to_present.dstStageMask = vk::PipelineStageFlagBits2::eNone;
+      to_present.dstAccessMask = vk::AccessFlagBits2::eNone;
+      to_present.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
+      to_present.newLayout = vk::ImageLayout::ePresentSrcKHR;
+      dependency.pImageMemoryBarriers = &to_present;
+      command_buffer.pipelineBarrier2(&dependency);
+      return command_buffer.end();
+   }
+
+   /// @brief Records a dynamic-rendering pass that clears then draws uploaded indexed geometry.
+   vk::Result recordSwapchainScene(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
+                                   vk::Image image, vk::ImageView view, vk::Extent2D extent,
+                                   vk::ImageLayout old_layout, vk::Pipeline pipeline,
+                                   vk::Buffer vertex_buffer, vk::Buffer index_buffer,
+                                   std::uint32_t index_count, const vk::ClearColorValue &clear_color) {
+      auto result = device.resetCommandPool(pool);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto begin = vk::CommandBufferBeginInfo{};
+      begin.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
+      result = command_buffer.begin(&begin);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto range = vk::ImageSubresourceRange{};
+      range.aspectMask = vk::ImageAspectFlagBits::eColor;
+      range.levelCount = 1;
+      range.layerCount = 1;
+      auto to_attachment = vk::ImageMemoryBarrier2{};
+      to_attachment.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
+      to_attachment.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
+      to_attachment.oldLayout = old_layout;
+      to_attachment.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
+      to_attachment.image = image;
+      to_attachment.subresourceRange = range;
+      auto dependency = vk::DependencyInfo{};
+      dependency.imageMemoryBarrierCount = 1;
+      dependency.pImageMemoryBarriers = &to_attachment;
+      command_buffer.pipelineBarrier2(&dependency);
+
+      auto clear = vk::ClearValue{};
+      clear.color = clear_color;
+      auto attachment = vk::RenderingAttachmentInfo{};
+      attachment.imageView = view;
+      attachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+      attachment.loadOp = vk::AttachmentLoadOp::eClear;
+      attachment.storeOp = vk::AttachmentStoreOp::eStore;
+      attachment.clearValue = clear;
+      auto rendering = vk::RenderingInfo{};
+      rendering.renderArea = vk::Rect2D{vk::Offset2D{0, 0}, extent};
+      rendering.layerCount = 1;
+      rendering.colorAttachmentCount = 1;
+      rendering.pColorAttachments = &attachment;
+      command_buffer.beginRendering(&rendering);
+
+      auto viewport = vk::Viewport{0.0F, 0.0F, static_cast<float>(extent.width), static_cast<float>(extent.height),
+                                   0.0F, 1.0F};
+      auto scissor = vk::Rect2D{vk::Offset2D{0, 0}, extent};
+      const auto vertex_offset = vk::DeviceSize{};
+      command_buffer.setViewport(0, 1, &viewport);
+      command_buffer.setScissor(0, 1, &scissor);
+      command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
+      command_buffer.bindVertexBuffers(0, 1, &vertex_buffer, &vertex_offset);
+      command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint32);
+      command_buffer.drawIndexed(index_count, 1, 0, 0, 0);
       command_buffer.endRendering();
 
       auto to_present = to_attachment;

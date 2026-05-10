@@ -25,6 +25,7 @@ set(VVE_V4_SHADER_FILES
    "${CMAKE_CURRENT_LIST_DIR}/shaders/Lighting.slang"
    "${CMAKE_CURRENT_LIST_DIR}/shaders/Forward.slang"
    "${CMAKE_CURRENT_LIST_DIR}/shaders/Triangle.slang"
+   "${CMAKE_CURRENT_LIST_DIR}/shaders/SceneUnlit.slang"
 )
 set_source_files_properties(${VVE_V4_SHADER_FILES} PROPERTIES HEADER_FILE_ONLY TRUE)
 target_sources(ViennaVulkanEngine PRIVATE ${VVE_V4_SHADER_FILES})

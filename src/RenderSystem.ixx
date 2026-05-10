@@ -45,6 +45,11 @@ export namespace vve {
       [[nodiscard]] std::uint64_t presentedFrameCount() const { return impl_.presentedFrameCount(); }
       [[nodiscard]] std::uint64_t triangleDrawCount() const { return impl_.triangleDrawCount(); }
       [[nodiscard]] std::uint32_t triangleVertexCount() const { return impl_.triangleVertexCount(); }
+      [[nodiscard]] std::uint64_t sceneUploadCount() const;
+      [[nodiscard]] std::uint64_t sceneMeshDrawCount() const;
+      [[nodiscard]] std::uint64_t sceneInstanceDrawCount() const;
+      [[nodiscard]] std::uint32_t sceneDrawVertexCount() const;
+      [[nodiscard]] std::uint32_t sceneDrawIndexCount() const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }
       [[nodiscard]] std::size_t preparedGpuTargetCount() const { return impl_.preparedGpuTargetCount(); }
       [[nodiscard]] std::array<float, 4> lastClearColor() const { return impl_.lastClearColor(); }
@@ -52,5 +57,20 @@ export namespace vve {
    private:
       Impl &impl_; ///< Selected implementation render system.
    }; ///< Public render-system wrapper.
+
+   /// @brief Returns how many scene uploads completed.
+   inline std::uint64_t RenderSystem::sceneUploadCount() const { return impl_.sceneUploadCount(); }
+
+   /// @brief Returns how many source meshes were drawn by the uploaded scene path.
+   inline std::uint64_t RenderSystem::sceneMeshDrawCount() const { return impl_.sceneMeshDrawCount(); }
+
+   /// @brief Returns how many source instances were drawn by the uploaded scene path.
+   inline std::uint64_t RenderSystem::sceneInstanceDrawCount() const { return impl_.sceneInstanceDrawCount(); }
+
+   /// @brief Returns how many vertices were uploaded by the scene draw path.
+   inline std::uint32_t RenderSystem::sceneDrawVertexCount() const { return impl_.sceneDrawVertexCount(); }
+
+   /// @brief Returns how many indices were uploaded by the scene draw path.
+   inline std::uint32_t RenderSystem::sceneDrawIndexCount() const { return impl_.sceneDrawIndexCount(); }
 
 } // namespace vve

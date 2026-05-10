@@ -292,6 +292,11 @@ int main(int argc, char **argv) {
         file << "engine.frame_presented=" << render_system.presentedFrameCount() << '\n';
         file << "engine.triangle_drawn=" << render_system.triangleDrawCount() << '\n';
         file << "engine.triangle_vertex_count=" << render_system.triangleVertexCount() << '\n';
+        file << "engine.scene_uploaded=" << render_system.sceneUploadCount() << '\n';
+        file << "engine.scene_meshes_drawn=" << render_system.sceneMeshDrawCount() << '\n';
+        file << "engine.scene_instances_drawn=" << render_system.sceneInstanceDrawCount() << '\n';
+        file << "engine.scene_vertex_count=" << render_system.sceneDrawVertexCount() << '\n';
+        file << "engine.scene_index_count=" << render_system.sceneDrawIndexCount() << '\n';
         file << "engine.clear_color=" << clear_color[0] << ',' << clear_color[1] << ','
              << clear_color[2] << ',' << clear_color[3] << '\n';
     }

@@ -151,12 +151,19 @@ export namespace vve::v4 {
       [[nodiscard]] std::uint64_t presentedFrameCount() const;
       [[nodiscard]] std::uint64_t triangleDrawCount() const;
       [[nodiscard]] std::uint32_t triangleVertexCount() const;
+      [[nodiscard]] std::uint64_t sceneUploadCount() const;
+      [[nodiscard]] std::uint64_t sceneMeshDrawCount() const;
+      [[nodiscard]] std::uint64_t sceneInstanceDrawCount() const;
+      [[nodiscard]] std::uint32_t sceneDrawVertexCount() const;
+      [[nodiscard]] std::uint32_t sceneDrawIndexCount() const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const;
       [[nodiscard]] std::size_t preparedGpuTargetCount() const;
       [[nodiscard]] std::array<float, 4> lastClearColor() const;
 
    private:
       [[nodiscard]] std::expected<void, Error> ensureTriangleShader();
+      [[nodiscard]] std::expected<void, Error> ensureSceneShader();
+      [[nodiscard]] std::expected<void, Error> buildSceneDrawData();
       [[nodiscard]] static std::expected<void, Error>
       addPass(RenderGraph &graph, std::map<std::string_view, RenderPassHandle> &handles,
               const RenderPassContract &pass);
@@ -169,8 +176,13 @@ export namespace vve::v4 {
       vh::FrameHost vulkan_{};                 ///< Visible-window Vulkan frame targets.
       ShaderSystem shaders_{};                 ///< Built-in renderer shader compiler/cache.
       std::optional<ShaderHandle> triangle_shader_{}; ///< Compiled smoke-test triangle shader.
+      std::optional<ShaderHandle> scene_shader_{}; ///< Compiled uploaded-scene unlit shader.
       std::vector<std::uint32_t> triangle_vertex_spirv_{}; ///< Cached triangle vertex SPIR-V.
       std::vector<std::uint32_t> triangle_fragment_spirv_{}; ///< Cached triangle fragment SPIR-V.
+      std::vector<std::uint32_t> scene_vertex_spirv_{}; ///< Cached unlit scene vertex SPIR-V.
+      std::vector<std::uint32_t> scene_fragment_spirv_{}; ///< Cached unlit scene fragment SPIR-V.
+      std::vector<vh::SceneVertex> scene_vertices_{}; ///< Flattened debug scene vertices.
+      std::vector<std::uint32_t> scene_indices_{}; ///< Flattened debug scene indices.
       std::uint64_t rendered_frames_{0};       ///< Number of frame hooks reached.
       std::size_t last_rendered_window_count_{0}; ///< Last non-closed window count.
    };
@@ -198,6 +210,12 @@ namespace vve::v4 {
    namespace detail {
 
       inline constexpr std::array clear_color{0.10F, 0.20F, 0.30F, 1.00F}; ///< First GPU-frame proof color.
+
+      /// @brief Projects the first debug scene into fixed clip space before camera math exists.
+      inline Vec2 projectDebugScene(Vec3 p) {
+         const auto y = (p.y * 0.32F) - (p.z * 0.10F) - 0.45F;
+         return Vec2{(p.x * 0.22F) + (p.z * 0.10F), -y};
+      }
 
    } // namespace detail
 
@@ -468,10 +486,21 @@ namespace vve::v4 {
    inline std::expected<void, Error> RenderSystem::renderFrame(WindowSystem &windows) {
       if (const auto result = vulkan_.prepare(windows); !result) { return result; }
       if (vulkan_.ready()) {
-         if (const auto shader = ensureTriangleShader(); !shader) { return shader; }
-         if (const auto result = vulkan_.renderTriangle(detail::clear_color, triangle_vertex_spirv_,
-                                                        "main", triangle_fragment_spirv_, "main"); !result) {
-            return result;
+         if (scene_.instanceCount() > 0) {
+            if (const auto shader = ensureSceneShader(); !shader) { return shader; }
+            if (const auto data = buildSceneDrawData(); !data) { return data; }
+            if (const auto result = vulkan_.renderScene(detail::clear_color, scene_vertex_spirv_, "main",
+                                                        scene_fragment_spirv_, "main", scene_vertices_,
+                                                        scene_indices_, static_cast<std::uint32_t>(scene_.meshCount()),
+                                                        static_cast<std::uint32_t>(scene_.instanceCount())); !result) {
+               return result;
+            }
+         } else {
+            if (const auto shader = ensureTriangleShader(); !shader) { return shader; }
+            if (const auto result = vulkan_.renderTriangle(detail::clear_color, triangle_vertex_spirv_,
+                                                           "main", triangle_fragment_spirv_, "main"); !result) {
+               return result;
+            }
          }
       }
       return renderFrame(WindowFrameData{.windows = windows.snapshot()});
@@ -488,6 +517,21 @@ namespace vve::v4 {
 
    /// @brief Returns the hardcoded triangle vertex count.
    inline std::uint32_t RenderSystem::triangleVertexCount() const { return vulkan_.triangleVertexCount(); }
+
+   /// @brief Returns how many scene buffer uploads completed.
+   inline std::uint64_t RenderSystem::sceneUploadCount() const { return vulkan_.sceneUploadCount(); }
+
+   /// @brief Returns how many source meshes were drawn by the uploaded scene path.
+   inline std::uint64_t RenderSystem::sceneMeshDrawCount() const { return vulkan_.sceneMeshDrawCount(); }
+
+   /// @brief Returns how many source instances were drawn by the uploaded scene path.
+   inline std::uint64_t RenderSystem::sceneInstanceDrawCount() const { return vulkan_.sceneInstanceDrawCount(); }
+
+   /// @brief Returns how many vertices were uploaded by the scene draw path.
+   inline std::uint32_t RenderSystem::sceneDrawVertexCount() const { return vulkan_.sceneVertexCount(); }
+
+   /// @brief Returns how many indices were uploaded by the scene draw path.
+   inline std::uint32_t RenderSystem::sceneDrawIndexCount() const { return vulkan_.sceneIndexCount(); }
 
    /// @brief Returns the last frame's non-closed window count.
    inline std::size_t RenderSystem::lastRenderedWindowCount() const { return last_rendered_window_count_; }
@@ -514,6 +558,51 @@ namespace vve::v4 {
       triangle_shader_ = *shader;
       triangle_vertex_spirv_.assign(vertex->begin(), vertex->end());
       triangle_fragment_spirv_.assign(fragment->begin(), fragment->end());
+      return {};
+   }
+
+   /// @brief Compiles and caches the built-in uploaded-scene unlit shader.
+   inline std::expected<void, Error> RenderSystem::ensureSceneShader() {
+      if (scene_shader_.has_value()) { return {}; }
+      const auto source = std::filesystem::path{VVE_V4_SHADER_SOURCE_DIR} / "SceneUnlit.slang";
+      auto shader = shaders_.compileAndReflect(
+         source, Vector<std::string>{"vveSceneUnlitVertexMain", "vveSceneUnlitFragmentMain"});
+      if (!shader) { return std::unexpected(shader.error()); }
+
+      auto vertex = shaders_.stageSpirv(*shader, ShaderStage::vertex);
+      if (!vertex) { return std::unexpected(vertex.error()); }
+      auto fragment = shaders_.stageSpirv(*shader, ShaderStage::fragment);
+      if (!fragment) { return std::unexpected(fragment.error()); }
+
+      scene_shader_ = *shader;
+      scene_vertex_spirv_.assign(vertex->begin(), vertex->end());
+      scene_fragment_spirv_.assign(fragment->begin(), fragment->end());
+      return {};
+   }
+
+   /// @brief Flattens the active CPU scene into one small uploaded-geometry draw packet.
+   inline std::expected<void, Error> RenderSystem::buildSceneDrawData() {
+      scene_vertices_.clear();
+      scene_indices_.clear();
+      for (const auto &instance : scene_.instances()) {
+         const auto *mesh = scene_.findMesh(instance.mesh);
+         const auto *material = scene_.findMaterial(instance.material);
+         if (mesh == nullptr || material == nullptr) { return std::unexpected(Error::missing_object); }
+
+         const auto base = static_cast<std::uint32_t>(scene_vertices_.size());
+         const auto color = material->base_color.value;
+         for (const auto &vertex : mesh->vertices) {
+            const auto world = math::add(vertex.position, instance.local_transform.translation.value);
+            const auto clip = detail::projectDebugScene(world);
+            scene_vertices_.push_back(vh::SceneVertex{.x = static_cast<float>(clip.x),
+                                                      .y = static_cast<float>(clip.y),
+                                                      .r = static_cast<float>(color.x),
+                                                      .g = static_cast<float>(color.y),
+                                                      .b = static_cast<float>(color.z)});
+         }
+         for (const auto index : mesh->indices) { scene_indices_.push_back(base + index); }
+      }
+      if (scene_vertices_.empty() || scene_indices_.empty()) { return std::unexpected(Error::missing_object); }
       return {};
    }
 
