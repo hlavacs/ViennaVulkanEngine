@@ -76,7 +76,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
-        "VVE_DEFAULT_VULKAN_ICD": "moltenvk",
+        "VVE_DEFAULT_VULKAN_ICD": "kosmickrisp",
         "VVE_VCPKG_TRIPLET": "arm64-osx"
       }
     },
@@ -88,7 +88,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
-        "VVE_DEFAULT_VULKAN_ICD": "moltenvk",
+        "VVE_DEFAULT_VULKAN_ICD": "kosmickrisp",
         "VVE_VCPKG_TRIPLET": "arm64-osx"
       }
     },
@@ -100,7 +100,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
-        "VVE_DEFAULT_VULKAN_ICD": "moltenvk",
+        "VVE_DEFAULT_VULKAN_ICD": "kosmickrisp",
         "VVE_VCPKG_TRIPLET": "arm64-osx"
       }
     },
@@ -112,7 +112,7 @@
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
-        "VVE_DEFAULT_VULKAN_ICD": "moltenvk",
+        "VVE_DEFAULT_VULKAN_ICD": "kosmickrisp",
         "VVE_VCPKG_TRIPLET": "arm64-osx"
       }
     }

@@ -32,9 +32,9 @@ case "$platform:$variant" in
 esac
 
 if [ "$platform" = "Mac" ]; then
-    moltenvk_manifest="$build_dir/vulkan/icd.d/MoltenVK_icd.json"
-    if [ -f "$moltenvk_manifest" ]; then
-        export VK_ICD_FILENAMES="$moltenvk_manifest"
+    kosmickrisp_manifest="$build_dir/vulkan/icd.d/libkosmickrisp_icd.json"
+    if [ -f "$kosmickrisp_manifest" ]; then
+        export VK_ICD_FILENAMES="$kosmickrisp_manifest"
     fi
 fi
 

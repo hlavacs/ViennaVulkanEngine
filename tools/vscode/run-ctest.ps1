@@ -31,7 +31,7 @@ switch ($Platform) {
     }
     "Mac" {
         $buildDir = Join-Path $repoRoot "build\vscode-$Variant"
-        $manifest = Join-Path $buildDir "vulkan\icd.d\MoltenVK_icd.json"
+        $manifest = Join-Path $buildDir "vulkan\icd.d\libkosmickrisp_icd.json"
         if (Test-Path $manifest) {
             $env:VK_ICD_FILENAMES = $manifest
         }

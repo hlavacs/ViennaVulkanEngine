@@ -18,7 +18,7 @@
                 "environment": [
                     {
                         "name": "VK_ICD_FILENAMES",
-                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/MoltenVK_icd.json"
+                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/libkosmickrisp_icd.json"
                     }
                 ]
             },
@@ -46,7 +46,7 @@
                 "environment": [
                     {
                         "name": "VK_ICD_FILENAMES",
-                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/MoltenVK_icd.json"
+                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/libkosmickrisp_icd.json"
                     }
                 ]
             },
@@ -75,7 +75,7 @@
                 "environment": [
                     {
                         "name": "VK_ICD_FILENAMES",
-                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/MoltenVK_icd.json"
+                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/libkosmickrisp_icd.json"
                     }
                 ]
             },
@@ -103,7 +103,7 @@
                 "environment": [
                     {
                         "name": "VK_ICD_FILENAMES",
-                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/MoltenVK_icd.json"
+                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/libkosmickrisp_icd.json"
                     }
                 ]
             },

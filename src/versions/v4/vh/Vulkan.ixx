@@ -1,4 +1,5 @@
 module;
+#include <cstdlib>
 #include <SDL3/SDL_vulkan.h>
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
@@ -207,6 +208,57 @@ export namespace vve::v4::vh {
 
 namespace vve::v4::vh::detail {
 
+   /// @brief Reads one process environment variable.
+   [[nodiscard]] std::string environmentValue(const char *name) {
+      const char *value = std::getenv(name);
+      return value == nullptr ? std::string{} : std::string{value};
+   }
+
+   /// @brief Returns the CMake-selected ICD when the user did not override it.
+   [[nodiscard]] std::string defaultVulkanIcd() {
+#ifdef VVE_DEFAULT_VULKAN_ICD
+      return std::string{VVE_DEFAULT_VULKAN_ICD};
+#else
+      return {};
+#endif
+   }
+
+   /// @brief Returns the generated ICD manifest for a known driver selector.
+   [[nodiscard]] std::optional<std::filesystem::path> icdManifest(std::string_view selector) {
+      if (selector == "moltenvk") {
+#ifdef VVE_MOLTENVK_ICD_MANIFEST
+         return std::filesystem::path{VVE_MOLTENVK_ICD_MANIFEST};
+#else
+         return {};
+#endif
+      }
+      if (selector == "kosmickrisp") {
+#ifdef VVE_KOSMICKRISP_ICD_MANIFEST
+         return std::filesystem::path{VVE_KOSMICKRISP_ICD_MANIFEST};
+#else
+         return {};
+#endif
+      }
+      return {};
+   }
+
+   /// @brief Applies the default ICD only when the user did not already choose one.
+   void configureVulkanIcd() {
+      if (!environmentValue("VK_ICD_FILENAMES").empty()) { return; }
+      auto selector = environmentValue("VVE_VULKAN_ICD");
+      if (selector.empty()) { selector = defaultVulkanIcd(); }
+      if (selector.empty() || selector == "system") { return; }
+
+      const auto manifest = icdManifest(selector);
+      if (!manifest || !std::filesystem::is_regular_file(*manifest)) { return; }
+      const auto value = manifest->string();
+#if defined(_WIN32)
+      _putenv_s("VK_ICD_FILENAMES", value.c_str());
+#else
+      setenv("VK_ICD_FILENAMES", value.c_str(), 1);
+#endif
+   }
+
    /// @brief Checks whether a Vulkan-Hpp RAII wrapper currently contains a live raw handle.
    template <typename THandle> [[nodiscard]] bool has(const THandle &handle) {
       return static_cast<bool>(*handle);
@@ -373,6 +425,7 @@ namespace vve::v4::vh {
 
    /// @brief Creates the Vulkan instance using SDL's required platform extensions.
    std::expected<void, Error> FrameHost::createInstance() {
+      detail::configureVulkanIcd();
       std::uint32_t sdl_count{};
       const char *const *sdl_extensions = SDL_Vulkan_GetInstanceExtensions(&sdl_count);
       if (sdl_extensions == nullptr) { return std::unexpected(Error::platform_error); }
