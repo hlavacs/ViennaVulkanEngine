@@ -121,6 +121,8 @@ namespace vve::v4::vh::low::detail {
       bool dynamic_rendering_local_read{};
       bool maintenance5{};
       bool maintenance6{};
+      bool shader_draw_parameters{};
+      bool vertex_pipeline_stores_and_atomics{};
    };
 
    [[nodiscard]] VpProfileProperties profile(const char *name, std::uint32_t version) {
@@ -199,6 +201,11 @@ namespace vve::v4::vh::low::detail {
       if (!exists) { names.emplace_back(name); }
    }
 
+   void appendIfAvailable(std::vector<std::string> &names, std::span<const vk::ExtensionProperties> properties,
+                          std::string_view name) {
+      if (hasExtension(properties, name)) { appendUnique(names, name); }
+   }
+
    [[nodiscard]] std::uint32_t preferredApiVersion(std::uint32_t supported) {
 #ifdef VK_API_VERSION_1_4
       if (supported >= VK_API_VERSION_1_4) { return VK_API_VERSION_1_4; }
@@ -227,9 +234,11 @@ namespace vve::v4::vh::low::detail {
       auto features14 = vk::PhysicalDeviceVulkan14Features{};
       auto features13 = vk::PhysicalDeviceVulkan13Features{};
       auto features12 = vk::PhysicalDeviceVulkan12Features{};
+      auto features11 = vk::PhysicalDeviceVulkan11Features{};
       auto features2 = vk::PhysicalDeviceFeatures2{};
       const auto api_version = device.getProperties().apiVersion;
-      features2.pNext = &features12;
+      features2.pNext = &features11;
+      features11.pNext = &features12;
       features12.pNext = &features13;
 #ifdef VK_API_VERSION_1_4
       if (api_version >= VK_API_VERSION_1_4) {
@@ -262,7 +271,10 @@ namespace vve::v4::vh::low::detail {
                             .dynamic_rendering_local_read =
                                features14.dynamicRenderingLocalRead == VK_TRUE,
                             .maintenance5 = features14.maintenance5 == VK_TRUE,
-                            .maintenance6 = features14.maintenance6 == VK_TRUE};
+                            .maintenance6 = features14.maintenance6 == VK_TRUE,
+                            .shader_draw_parameters = features11.shaderDrawParameters == VK_TRUE,
+                            .vertex_pipeline_stores_and_atomics =
+                               features2.features.vertexPipelineStoresAndAtomics == VK_TRUE};
    }
 
    [[nodiscard]] bool hasRequiredModernFeatures(const ModernFeatures &features) {
@@ -270,6 +282,7 @@ namespace vve::v4::vh::low::detail {
                                 features.storage_buffer_update_after_bind && features.partially_bound &&
                                 features.variable_descriptor_count && features.runtime_descriptor_array;
       return features.timeline_semaphore && features.synchronization2 && features.dynamic_rendering &&
+             features.shader_draw_parameters && features.vertex_pipeline_stores_and_atomics &&
              (features.descriptor_buffer || indexed_sets);
    }
 
@@ -286,7 +299,9 @@ namespace vve::v4::vh::low::detail {
                                        features.maintenance4,
                                        features.dynamic_rendering_local_read,
                                        features.maintenance5,
-                                       features.maintenance6};
+                                       features.maintenance6,
+                                       features.shader_draw_parameters,
+                                       features.vertex_pipeline_stores_and_atomics};
       return static_cast<std::uint32_t>(std::ranges::count(optional, true));
    }
 
@@ -298,11 +313,16 @@ namespace vve::v4::vh::low::detail {
 
    void enableModernFeatures(const ModernFeatures &support, std::uint32_t api_version,
                              vk::PhysicalDeviceFeatures2 &features2,
+                             vk::PhysicalDeviceVulkan11Features &features11,
                              vk::PhysicalDeviceVulkan12Features &features12,
                              vk::PhysicalDeviceVulkan13Features &features13,
                              vk::PhysicalDeviceVulkan14Features &features14,
                              vk::PhysicalDeviceDescriptorBufferFeaturesEXT &descriptor_buffer) {
-      features2.pNext = &features12;
+      features2.pNext = &features11;
+      features2.features.vertexPipelineStoresAndAtomics =
+         support.vertex_pipeline_stores_and_atomics ? VK_TRUE : VK_FALSE;
+      features11.pNext = &features12;
+      features11.shaderDrawParameters = support.shader_draw_parameters ? VK_TRUE : VK_FALSE;
       features12.pNext = &features13;
       features12.timelineSemaphore = VK_TRUE;
       features12.descriptorIndexing = support.descriptor_indexing ? VK_TRUE : VK_FALSE;
@@ -629,11 +649,7 @@ namespace vve::v4::vh::low {
                detail::appendUnique(enabled, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME);
             }
 #endif
-#ifdef VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME
-            if (hasExtension(available, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME)) {
-               detail::appendUnique(enabled, VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME);
-            }
-#endif
+            detail::appendIfAvailable(enabled, available, "VK_KHR_portability_subset");
             const auto option = Candidate{.device = candidate,
                                           .queue_family = i,
                                           .type_rank = detail::typeRank(properties.deviceType),
@@ -672,6 +688,7 @@ namespace vve::v4::vh::low {
 #ifdef VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME
       if (support.descriptor_buffer) { detail::appendUnique(enabled, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME); }
 #endif
+      detail::appendIfAvailable(enabled, available, "VK_KHR_portability_subset");
       auto extension_names = std::vector<const char *>{};
       extension_names.reserve(enabled.size());
       for (const auto &extension : enabled) { extension_names.push_back(extension.c_str()); }
@@ -679,9 +696,10 @@ namespace vve::v4::vh::low {
       auto features14 = vk::PhysicalDeviceVulkan14Features{};
       auto features13 = vk::PhysicalDeviceVulkan13Features{};
       auto features12 = vk::PhysicalDeviceVulkan12Features{};
+      auto features11 = vk::PhysicalDeviceVulkan11Features{};
       auto descriptor_buffer = vk::PhysicalDeviceDescriptorBufferFeaturesEXT{};
       auto features2 = vk::PhysicalDeviceFeatures2{};
-      detail::enableModernFeatures(support, api_version, features2, features12, features13, features14,
+      detail::enableModernFeatures(support, api_version, features2, features11, features12, features13, features14,
                                    descriptor_buffer);
 
       auto priority = 1.0F;

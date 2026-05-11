@@ -343,13 +343,9 @@ namespace vve::v4 {
          return std::unexpected(Error::internal_error);
       }
 
-      std::array options{slang::CompilerOptionEntry{
-         .name = slang::CompilerOptionName::VulkanEmitReflection,
-         .value = {.kind = slang::CompilerOptionValueKind::Int, .intValue0 = 1}}};
       Slang::ComPtr<slang::IComponentType> linked_program{};
       diagnostics.setNull();
-      if (SLANG_FAILED(program->linkWithOptions(linked_program.writeRef(), static_cast<std::uint32_t>(options.size()),
-                                                options.data(), diagnostics.writeRef()))) {
+      if (SLANG_FAILED(program->link(linked_program.writeRef(), diagnostics.writeRef()))) {
          return std::unexpected(Error::internal_error);
       }
 
