@@ -95,10 +95,14 @@ export namespace vve::v4::vh {
       float direct_factor{};                               ///< Direct-light scalar factor.
       std::array<float, 3> direct_lighting{};              ///< Direct light contribution.
       float unused0{};                                     ///< Layout padding visible to the host.
-      std::array<float, 3> final_lighting{};               ///< Ambient plus direct lighting.
+      std::array<float, 3> point_lighting{};               ///< Point light contribution.
       float unused1{};                                     ///< Layout padding visible to the host.
+      std::array<float, 3> spot_lighting{};                ///< Spot light contribution.
+      float unused2{};                                     ///< Layout padding visible to the host.
+      std::array<float, 3> final_lighting{};               ///< Ambient plus direct lighting.
+      float unused3{};                                     ///< Layout padding visible to the host.
    };
-   static_assert(sizeof(SceneDebugSample) == 192);
+   static_assert(sizeof(SceneDebugSample) == 224);
 
    /// @brief Owns Vulkan instance, device, and frame targets for visible windows.
    class FrameHost {
@@ -330,7 +334,7 @@ namespace vve::v4::vh {
                           std::span<const std::uint32_t> indices, std::uint32_t mesh_count,
                           std::uint32_t instance_count, std::span<const float> scene_constants) {
       if (!ready()) { return {}; }
-      if (vertices.empty() || indices.empty() || scene_constants.size() < 32) {
+      if (vertices.empty() || indices.empty() || scene_constants.size() < 52) {
          return std::unexpected(Error::invalid_argument);
       }
 
@@ -583,7 +587,7 @@ namespace vve::v4::vh {
       if (detail::has(target.scene_pipeline)) { return {}; }
       const auto push_range = vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex |
                                                     vk::ShaderStageFlagBits::eFragment, 0,
-                                                    32U * static_cast<std::uint32_t>(sizeof(float))};
+                                                    52U * static_cast<std::uint32_t>(sizeof(float))};
       const auto set_layouts = std::array{*target.scene_debug_layout};
       const auto push_ranges = std::array{push_range};
       const auto color_formats = std::array{target.color_format};
@@ -616,7 +620,7 @@ namespace vve::v4::vh {
                                         std::string_view vertex_entry) {
       if (detail::has(target.shadow_pipeline)) { return {}; }
       const auto push_range = vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0,
-                                                    32U * static_cast<std::uint32_t>(sizeof(float))};
+                                                    52U * static_cast<std::uint32_t>(sizeof(float))};
       const auto push_ranges = std::array{push_range};
       const auto stride = 9U * static_cast<std::uint32_t>(sizeof(float));
       const auto vertex_binding = vk::VertexInputBindingDescription{0, stride, vk::VertexInputRate::eVertex};

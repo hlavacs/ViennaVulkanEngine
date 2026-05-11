@@ -19,6 +19,11 @@ struct VveSceneFrame
     float4 lightColor;              ///< xyz direct light color.
     float4 ambientColor;            ///< xyz ambient light color.
     float4 lightCenterRadius;        ///< xyz light-space center, w orthographic half size.
+    float4 pointPositionRange;       ///< xyz point light position, w range.
+    float4 pointColorIntensity;      ///< xyz point light color, w intensity.
+    float4 spotPositionRange;        ///< xyz spot light position, w range.
+    float4 spotDirectionCone;        ///< xyz spot direction, w outer cone angle.
+    float4 spotColorIntensity;       ///< xyz spot light color, w intensity.
 };
 
 [[vk::push_constant]] ConstantBuffer<VveSceneFrame> gVveScene; ///< Tiny frame block for debug geometry.
@@ -46,8 +51,12 @@ struct VveSceneDebugSample
     float directFactor;   ///< Scalar direct-light factor.
     float3 directLighting; ///< Direct lighting term.
     float unused0;        ///< Keeps CPU and shader layout explicit.
-    float3 finalLighting; ///< Ambient plus direct lighting.
+    float3 pointLighting; ///< Point-light term.
     float unused1;        ///< Keeps CPU and shader layout explicit.
+    float3 spotLighting;  ///< Spot-light term.
+    float unused2;        ///< Keeps CPU and shader layout explicit.
+    float3 finalLighting; ///< Ambient plus direct lighting.
+    float unused3;        ///< Keeps CPU and shader layout explicit.
 };
 
 RWStructuredBuffer<VveSceneDebugSample> gVveSceneDebug : register(u0, space0); ///< Debug readback samples.
@@ -61,6 +70,7 @@ struct VveSceneVertexOutput
     float3 color : TEXCOORD0;          ///< Interpolated debug color.
     float3 normal : TEXCOORD1;         ///< Interpolated world-space normal.
     float4 lightClipPosition : TEXCOORD2; ///< Interpolated directional-light clip position.
+    float3 worldPosition : TEXCOORD3;  ///< Interpolated world-space position.
 };
 
 /// @brief Applies the column-major camera matrix used by the CPU verification code.
@@ -119,6 +129,36 @@ void vveSceneShadowTerms(float3 lightNdc, float nDotL, out float sampledDepth, o
     factor = lightNdc.z - bias <= sampledDepth ? 1.0 : 0.0;
 }
 
+/// @brief Computes one point-light contribution.
+float3 vvePointLighting(float3 worldPosition, float3 normal)
+{
+    float3 offset = gVveScene.pointPositionRange.xyz - worldPosition;
+    float distanceToLight = length(offset);
+    if (distanceToLight <= 1.0e-6 || gVveScene.pointPositionRange.w <= 1.0e-6) { return float3(0.0); }
+    float3 directionToLight = offset / distanceToLight;
+    float nDotL = max(0.0, dot(normal, directionToLight));
+    float attenuation = max(0.0, 1.0 - (distanceToLight / gVveScene.pointPositionRange.w));
+    attenuation *= attenuation;
+    return gVveScene.pointColorIntensity.xyz * (gVveScene.pointColorIntensity.w * nDotL * attenuation);
+}
+
+/// @brief Computes one spot-light contribution.
+float3 vveSpotLighting(float3 worldPosition, float3 normal)
+{
+    float3 offset = gVveScene.spotPositionRange.xyz - worldPosition;
+    float distanceToLight = length(offset);
+    if (distanceToLight <= 1.0e-6 || gVveScene.spotPositionRange.w <= 1.0e-6) { return float3(0.0); }
+    float3 directionToLight = offset / distanceToLight;
+    float3 fromLight = -directionToLight;
+    float cone = cos(max(0.01, gVveScene.spotDirectionCone.w));
+    float spot = saturate((dot(fromLight, vveSafeNormalize(gVveScene.spotDirectionCone.xyz)) - cone) /
+                          max(1.0e-6, 1.0 - cone));
+    float nDotL = max(0.0, dot(normal, directionToLight));
+    float attenuation = max(0.0, 1.0 - (distanceToLight / gVveScene.spotPositionRange.w));
+    attenuation *= attenuation;
+    return gVveScene.spotColorIntensity.xyz * (gVveScene.spotColorIntensity.w * nDotL * attenuation * spot);
+}
+
 /// @brief Stores deterministic vertex samples used by the host proof file.
 void vveWriteSceneDebug(uint vertexId, float3 worldPosition, float3 normal, float4 clipPosition)
 {
@@ -152,8 +192,13 @@ void vveWriteSceneDebug(uint vertexId, float3 worldPosition, float3 normal, floa
     sample.directFactor = directFactor;
     sample.directLighting = gVveScene.lightColor.xyz * directFactor;
     sample.unused0 = 0.0;
-    sample.finalLighting = sample.ambientLighting + sample.directLighting;
+    sample.pointLighting = vvePointLighting(worldPosition, unitNormal);
     sample.unused1 = 0.0;
+    sample.spotLighting = vveSpotLighting(worldPosition, unitNormal);
+    sample.unused2 = 0.0;
+    sample.finalLighting = sample.ambientLighting + sample.directLighting +
+                           sample.pointLighting + sample.spotLighting;
+    sample.unused3 = 0.0;
     gVveSceneDebug[sampleIndex] = sample;
 }
 
@@ -169,6 +214,7 @@ VveSceneVertexOutput vveSceneUnlitVertexMain(VveSceneVertexInput input, uint ver
     output.color = input.color;
     output.normal = input.normal;
     output.lightClipPosition = vveSceneLightClipFromWorld(input.position);
+    output.worldPosition = input.position;
     return output;
 }
 
@@ -193,5 +239,7 @@ float4 vveSceneUnlitFragmentMain(VveSceneVertexOutput input) : SV_Target0
     float shadowFactor;
     vveSceneShadowTerms(lightNdc, nDotL, sampledDepth, shadowBias, shadowFactor);
     float3 direct = gVveScene.lightColor.xyz * (gVveScene.lightDirectionIntensity.w * nDotL * shadowFactor);
-    return float4(input.color * (gVveScene.ambientColor.xyz + direct), 1.0);
+    float3 point = vvePointLighting(input.worldPosition, unitNormal);
+    float3 spot = vveSpotLighting(input.worldPosition, unitNormal);
+    return float4(input.color * (gVveScene.ambientColor.xyz + direct + point + spot), 1.0);
 }

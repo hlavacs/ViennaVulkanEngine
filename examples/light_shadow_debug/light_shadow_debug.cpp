@@ -35,6 +35,22 @@ struct DebugDirectionalLight {
     vve::LinearColor ambient{};          ///< Ambient term.
 };
 
+struct DebugPointLight {
+    vve::Position position{};         ///< World-space light position.
+    vve::LinearColor color{};         ///< Linear RGB light color.
+    vve::LightIntensity intensity{};  ///< Direct-light intensity.
+    vve::LightRange range{};          ///< Influence range.
+};
+
+struct DebugSpotLight {
+    vve::Position position{};         ///< World-space light position.
+    vve::Direction direction{};       ///< Direction from light toward the scene.
+    vve::LinearColor color{};         ///< Linear RGB light color.
+    vve::LightIntensity intensity{};  ///< Direct-light intensity.
+    vve::LightRange range{};          ///< Influence range.
+    vve::SpotConeAngle cone{};        ///< Outer cone angle.
+};
+
 struct DebugSamplePoint {
     std::string_view name{}; ///< Stable sample name used by verification scripts.
     vve::Vec3 position{};    ///< World-space sample position.
@@ -45,6 +61,8 @@ struct DebugSampleResult {
     DebugSamplePoint sample{};   ///< Input sample definition.
     float n_dot_l{};             ///< Lambert cosine term.
     float shadow_factor{};       ///< 0 means shadowed, 1 means lit.
+    vve::Vec3 point_lighting{};  ///< Point-light contribution.
+    vve::Vec3 spot_lighting{};   ///< Spot-light contribution.
     vve::Vec3 final_lighting{};  ///< Ambient plus direct lighting.
     vve::Vec3 final_color{};     ///< White material lit by final_lighting.
 };
@@ -55,6 +73,10 @@ struct DebugSampleResult {
 
 [[nodiscard]] vve::Vec3 add(vve::Vec3 lhs, vve::Vec3 rhs) {
     return vve::Vec3{lhs.x + rhs.x, lhs.y + rhs.y, lhs.z + rhs.z};
+}
+
+[[nodiscard]] vve::Vec3 subtract(vve::Vec3 lhs, vve::Vec3 rhs) {
+    return vve::Vec3{lhs.x - rhs.x, lhs.y - rhs.y, lhs.z - rhs.z};
 }
 
 [[nodiscard]] vve::Vec3 scale(vve::Vec3 value, float factor) {
@@ -92,8 +114,34 @@ struct DebugSampleResult {
     return far_t > epsilon;
 }
 
+[[nodiscard]] vve::Vec3 pointLighting(vve::Vec3 position, vve::Vec3 normal, const DebugPointLight &light) {
+    const auto offset = subtract(light.position.value, position);
+    const auto distance = length(offset);
+    if (distance <= 1.0e-6F || light.range.value <= 1.0e-6F) { return vve::Vec3{}; }
+    const auto direction_to_light = scale(offset, 1.0F / distance);
+    const auto n_dot_l = std::max(0.0F, dot(normal, direction_to_light));
+    const auto distance_factor = std::max(0.0F, 1.0F - (distance / light.range.value));
+    return scale(light.color.value, light.intensity.value * n_dot_l * distance_factor * distance_factor);
+}
+
+[[nodiscard]] vve::Vec3 spotLighting(vve::Vec3 position, vve::Vec3 normal, const DebugSpotLight &light) {
+    const auto offset = subtract(light.position.value, position);
+    const auto distance = length(offset);
+    if (distance <= 1.0e-6F || light.range.value <= 1.0e-6F) { return vve::Vec3{}; }
+    const auto direction_to_light = scale(offset, 1.0F / distance);
+    const auto from_light = scale(direction_to_light, -1.0F);
+    const auto cone = std::cos(std::max(0.01F, light.cone.radians));
+    const auto spot = std::clamp((dot(from_light, normalize(light.direction.value)) - cone) /
+                                 std::max(1.0e-6F, 1.0F - cone), 0.0F, 1.0F);
+    const auto n_dot_l = std::max(0.0F, dot(normal, direction_to_light));
+    const auto distance_factor = std::max(0.0F, 1.0F - (distance / light.range.value));
+    return scale(light.color.value, light.intensity.value * n_dot_l * distance_factor * distance_factor * spot);
+}
+
 [[nodiscard]] DebugSampleResult evaluateSample(const DebugSamplePoint &sample,
                                                const DebugDirectionalLight &light,
+                                               const DebugPointLight &point_light,
+                                               const DebugSpotLight &spot_light,
                                                const DebugCuboid &cuboid) {
     const auto normal = normalize(sample.normal);
     const auto direction_to_light = normalize(light.direction_to_light.value);
@@ -102,11 +150,15 @@ struct DebugSampleResult {
     const auto shadowed = intersectsCuboid(ray_origin, direction_to_light, cuboid);
     const auto shadow_factor = shadowed ? 0.0F : 1.0F;
     const auto direct = scale(light.color.value, light.intensity.value * n_dot_l * shadow_factor);
-    const auto final_lighting = add(light.ambient.value, direct);
+    const auto point = pointLighting(sample.position, normal, point_light);
+    const auto spot = spotLighting(sample.position, normal, spot_light);
+    const auto final_lighting = add(add(light.ambient.value, direct), add(point, spot));
 
     return DebugSampleResult{.sample = sample,
                              .n_dot_l = n_dot_l,
                              .shadow_factor = shadow_factor,
+                             .point_lighting = point,
+                             .spot_lighting = spot,
                              .final_lighting = final_lighting,
                              .final_color = final_lighting};
 }
@@ -161,6 +213,8 @@ void writeRenderDebugSample(std::ofstream &file, std::string_view name, const vv
     writeVec3(file, prefix + ".direction_to_light", sample.direction_to_light);
     writeVec3(file, prefix + ".ambient_lighting", sample.ambient_lighting);
     writeVec3(file, prefix + ".direct_lighting", sample.direct_lighting);
+    writeVec3(file, prefix + ".point_lighting", sample.point_lighting);
+    writeVec3(file, prefix + ".spot_lighting", sample.spot_lighting);
     writeVec3(file, prefix + ".final_lighting", sample.final_lighting);
     file << prefix << ".depth=" << sample.depth << '\n';
     file << prefix << ".light_depth=" << sample.light_depth << '\n';
@@ -211,6 +265,8 @@ public:
         const auto plane_entity = ecs.create();
         const auto cuboid_entity = ecs.create();
         const auto light_entity = ecs.create();
+        const auto point_light_entity = ecs.create();
+        const auto spot_light_entity = ecs.create();
         const auto camera_entity = ecs.create();
         if (const auto result = ecs.add(plane_entity, vve::Transform{}); !result) {
             return std::unexpected(result.error());
@@ -228,6 +284,20 @@ public:
             return std::unexpected(result.error());
         }
         if (const auto result = ecs.add(light_entity, light_); !result) {
+            return std::unexpected(result.error());
+        }
+        if (const auto result = ecs.add(point_light_entity, vve::Transform{.translation = point_light_.position});
+            !result) {
+            return std::unexpected(result.error());
+        }
+        if (const auto result = ecs.add(point_light_entity, point_light_); !result) {
+            return std::unexpected(result.error());
+        }
+        if (const auto result = ecs.add(spot_light_entity, vve::Transform{.translation = spot_light_.position});
+            !result) {
+            return std::unexpected(result.error());
+        }
+        if (const auto result = ecs.add(spot_light_entity, spot_light_); !result) {
             return std::unexpected(result.error());
         }
         if (const auto result = ecs.add(camera_entity, camera_); !result) {
@@ -252,6 +322,8 @@ public:
         file << "plane_entity=" << plane_entity.value() << '\n';
         file << "cuboid_entity=" << cuboid_entity.value() << '\n';
         file << "light_entity=" << light_entity.value() << '\n';
+        file << "point_light_entity=" << point_light_entity.value() << '\n';
+        file << "spot_light_entity=" << spot_light_entity.value() << '\n';
         file << "camera_entity=" << camera_entity.value() << '\n';
         writeVec3(file, "plane.center", plane_.center);
         file << "plane.half_extent=" << plane_.half_extent.x << ',' << plane_.half_extent.y << '\n';
@@ -261,6 +333,16 @@ public:
         writeVec3(file, "light.color", light_.color.value);
         file << "light.intensity=" << light_.intensity.value << '\n';
         writeVec3(file, "light.ambient", light_.ambient.value);
+        writeVec3(file, "point_light.position", point_light_.position.value);
+        writeVec3(file, "point_light.color", point_light_.color.value);
+        file << "point_light.intensity=" << point_light_.intensity.value << '\n';
+        file << "point_light.range=" << point_light_.range.value << '\n';
+        writeVec3(file, "spot_light.position", spot_light_.position.value);
+        writeVec3(file, "spot_light.direction", normalize(spot_light_.direction.value));
+        writeVec3(file, "spot_light.color", spot_light_.color.value);
+        file << "spot_light.intensity=" << spot_light_.intensity.value << '\n';
+        file << "spot_light.range=" << spot_light_.range.value << '\n';
+        file << "spot_light.cone=" << spot_light_.cone.radians << '\n';
         writeVec3(file, "camera.position", camera_.position.value);
         writeVec3(file, "camera.target", camera_target_);
         file << "camera.fov_y=" << camera_.fov_y.radians << '\n';
@@ -282,13 +364,19 @@ public:
         file << "render_scene.index_count=" << render_system.sceneIndexCount() << '\n';
         file << "render_scene.camera=" << render_system.hasSceneCamera() << '\n';
         file << "render_scene.directional_light=" << render_system.hasSceneDirectionalLight() << '\n';
+        file << "render_scene.point_light=" << render_system.hasScenePointLight() << '\n';
+        file << "render_scene.spot_light=" << render_system.hasSceneSpotLight() << '\n';
 
         for (const auto &sample : samples_) {
-            const auto result = evaluateSample(sample, light_, cuboid_);
+            const auto result = evaluateSample(sample, light_, point_light_, spot_light_, cuboid_);
             file << "sample." << result.sample.name << ".n_dot_l=" << result.n_dot_l << '\n';
             file << "sample." << result.sample.name << ".shadow_factor=" << result.shadow_factor << '\n';
             writeVec3(file, "sample." + std::string{result.sample.name} + ".position", result.sample.position);
             writeVec3(file, "sample." + std::string{result.sample.name} + ".normal", result.sample.normal);
+            writeVec3(file, "sample." + std::string{result.sample.name} + ".point_lighting",
+                      result.point_lighting);
+            writeVec3(file, "sample." + std::string{result.sample.name} + ".spot_lighting",
+                      result.spot_lighting);
             writeVec3(file, "sample." + std::string{result.sample.name} + ".final_lighting", result.final_lighting);
             writeVec3(file, "sample." + std::string{result.sample.name} + ".final_color", result.final_color);
         }
@@ -312,6 +400,10 @@ private:
         }
         render_system.setCamera(camera_, render_extent_);
         render_system.setDirectionalLight(light_.direction_to_light, light_.color, light_.intensity, light_.ambient);
+        render_system.setPointLight(point_light_.position, point_light_.color, point_light_.intensity,
+                                    point_light_.range);
+        render_system.setSpotLight(spot_light_.position, spot_light_.direction, spot_light_.color,
+                                   spot_light_.intensity, spot_light_.range, spot_light_.cone);
         return {};
     }
 
@@ -322,6 +414,16 @@ private:
                                  .color = vve::LinearColor{.value = vve::Vec3{1.0F, 0.94F, 0.84F}},
                                  .intensity = vve::LightIntensity{.value = 1.25F},
                                  .ambient = vve::LinearColor{.value = vve::Vec3{0.08F, 0.09F, 0.10F}}};
+    DebugPointLight point_light_{.position = vve::Position{.value = vve::Vec3{-1.1F, 1.25F, 1.1F}},
+                                 .color = vve::LinearColor{.value = vve::Vec3{0.65F, 0.80F, 1.0F}},
+                                 .intensity = vve::LightIntensity{.value = 1.6F},
+                                 .range = vve::LightRange{.value = 3.5F}};
+    DebugSpotLight spot_light_{.position = vve::Position{.value = vve::Vec3{1.6F, 2.4F, 1.4F}},
+                               .direction = vve::Direction{.value = vve::Vec3{-1.0F, -1.3F, -0.8F}},
+                               .color = vve::LinearColor{.value = vve::Vec3{1.0F, 0.72F, 0.42F}},
+                               .intensity = vve::LightIntensity{.value = 2.0F},
+                               .range = vve::LightRange{.value = 4.0F},
+                               .cone = vve::SpotConeAngle{.radians = 0.60F}};
     vve::Vec3 camera_target_{0.0F, 0.75F, 0.0F};
     vve::Camera camera_{vve::Camera::lookAt(vve::Position{.value = vve::Vec3{-3.0F, 1.8F, 3.2F}},
                                             vve::Position{.value = camera_target_},

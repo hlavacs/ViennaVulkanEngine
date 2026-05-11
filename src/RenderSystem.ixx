@@ -21,6 +21,8 @@ export namespace vve {
       Vec3 direction_to_light{zeroVec3()}; ///< Direction from surface to light.
       Vec3 ambient_lighting{zeroVec3()};   ///< Ambient light contribution.
       Vec3 direct_lighting{zeroVec3()};    ///< Direct light contribution.
+      Vec3 point_lighting{zeroVec3()};     ///< Point-light contribution.
+      Vec3 spot_lighting{zeroVec3()};      ///< Spot-light contribution.
       Vec3 final_lighting{zeroVec3()};     ///< Ambient plus direct lighting.
       float depth{};                       ///< Vulkan depth value.
       float light_depth{};                 ///< Directional-light depth value.
@@ -51,37 +53,36 @@ export namespace vve {
       using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::RenderSystem;
 
    public:
-      explicit RenderSystem(Impl &implementation) : impl_{implementation} {}
+      explicit RenderSystem(Impl &implementation);
       RenderSystem(const RenderSystem &) = default;
       RenderSystem(RenderSystem &&) noexcept = default;
       RenderSystem &operator=(const RenderSystem &) = delete;
       RenderSystem &operator=(RenderSystem &&) noexcept = delete;
 
-      void clearScene() { impl_.clearScene(); }
-      void setCamera(Camera camera, PixelExtent extent) { impl_.setCamera(std::move(camera), extent); }
+      void clearScene();
+      void setCamera(Camera camera, PixelExtent extent);
       void setDirectionalLight(Direction direction_to_light, LinearColor color,
-                               LightIntensity intensity, LinearColor ambient) {
-         impl_.setDirectionalLight(direction_to_light, color, intensity, ambient);
-      }
+                               LightIntensity intensity, LinearColor ambient);
+      void setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range);
+      void setSpotLight(Position position, Direction direction, LinearColor color,
+                        LightIntensity intensity, LightRange range, SpotConeAngle cone);
       [[nodiscard]] std::expected<void, Error> addPlane(Vec2 half_extent, LinearColor color,
-                                                        Transform transform = {}) {
-         return impl_.addPlane(half_extent, color, transform);
-      }
+                                                        Transform transform = {});
       [[nodiscard]] std::expected<void, Error> addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
-                                                         Transform transform = {}) {
-         return impl_.addCuboid(minimum, maximum, color, transform);
-      }
-      [[nodiscard]] std::size_t sceneMeshCount() const { return impl_.sceneMeshCount(); }
-      [[nodiscard]] std::size_t sceneMaterialCount() const { return impl_.sceneMaterialCount(); }
-      [[nodiscard]] std::size_t sceneInstanceCount() const { return impl_.sceneInstanceCount(); }
-      [[nodiscard]] std::size_t sceneVertexCount() const { return impl_.sceneVertexCount(); }
-      [[nodiscard]] std::size_t sceneIndexCount() const { return impl_.sceneIndexCount(); }
-      [[nodiscard]] bool hasSceneCamera() const { return impl_.hasSceneCamera(); }
-      [[nodiscard]] bool hasSceneDirectionalLight() const { return impl_.hasSceneDirectionalLight(); }
-      [[nodiscard]] std::uint64_t renderedFrameCount() const { return impl_.renderedFrameCount(); }
-      [[nodiscard]] std::uint64_t presentedFrameCount() const { return impl_.presentedFrameCount(); }
-      [[nodiscard]] std::uint64_t triangleDrawCount() const { return impl_.triangleDrawCount(); }
-      [[nodiscard]] std::uint32_t triangleVertexCount() const { return impl_.triangleVertexCount(); }
+                                                         Transform transform = {});
+      [[nodiscard]] std::size_t sceneMeshCount() const;
+      [[nodiscard]] std::size_t sceneMaterialCount() const;
+      [[nodiscard]] std::size_t sceneInstanceCount() const;
+      [[nodiscard]] std::size_t sceneVertexCount() const;
+      [[nodiscard]] std::size_t sceneIndexCount() const;
+      [[nodiscard]] bool hasSceneCamera() const;
+      [[nodiscard]] bool hasSceneDirectionalLight() const;
+      [[nodiscard]] bool hasScenePointLight() const;
+      [[nodiscard]] bool hasSceneSpotLight() const;
+      [[nodiscard]] std::uint64_t renderedFrameCount() const;
+      [[nodiscard]] std::uint64_t presentedFrameCount() const;
+      [[nodiscard]] std::uint64_t triangleDrawCount() const;
+      [[nodiscard]] std::uint32_t triangleVertexCount() const;
       [[nodiscard]] std::uint64_t sceneUploadCount() const;
       [[nodiscard]] std::uint64_t sceneMeshDrawCount() const;
       [[nodiscard]] std::uint64_t sceneInstanceDrawCount() const;
@@ -98,13 +99,91 @@ export namespace vve {
       [[nodiscard]] std::size_t sceneShadowDepthSampleCount() const;
       [[nodiscard]] std::optional<RenderShadowDepthSample> sceneShadowDepthSample(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneShadowDepthError(std::size_t index) const;
-      [[nodiscard]] std::size_t lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }
-      [[nodiscard]] std::size_t preparedGpuTargetCount() const { return impl_.preparedGpuTargetCount(); }
-      [[nodiscard]] std::array<float, 4> lastClearColor() const { return impl_.lastClearColor(); }
+      [[nodiscard]] std::size_t lastRenderedWindowCount() const;
+      [[nodiscard]] std::size_t preparedGpuTargetCount() const;
+      [[nodiscard]] std::array<float, 4> lastClearColor() const;
 
    private:
       Impl &impl_; ///< Selected implementation render system.
    }; ///< Public render-system wrapper.
+
+   /// @brief Wraps the selected render-system implementation.
+   inline RenderSystem::RenderSystem(Impl &implementation) : impl_{implementation} {}
+
+   /// @brief Clears the active CPU scene.
+   inline void RenderSystem::clearScene() { impl_.clearScene(); }
+
+   /// @brief Sets the active scene camera.
+   inline void RenderSystem::setCamera(Camera camera, PixelExtent extent) { impl_.setCamera(std::move(camera), extent); }
+
+   /// @brief Sets the active directional light.
+   inline void RenderSystem::setDirectionalLight(Direction direction_to_light, LinearColor color,
+                                                 LightIntensity intensity, LinearColor ambient) {
+      impl_.setDirectionalLight(direction_to_light, color, intensity, ambient);
+   }
+
+   /// @brief Sets the active point light.
+   inline void RenderSystem::setPointLight(Position position, LinearColor color,
+                                           LightIntensity intensity, LightRange range) {
+      impl_.setPointLight(position, color, intensity, range);
+   }
+
+   /// @brief Sets the active spotlight.
+   inline void RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
+                                          LightIntensity intensity, LightRange range, SpotConeAngle cone) {
+      impl_.setSpotLight(position, direction, color, intensity, range, cone);
+   }
+
+   /// @brief Adds a colored plane to the active CPU scene.
+   inline std::expected<void, Error> RenderSystem::addPlane(Vec2 half_extent, LinearColor color,
+                                                            Transform transform) {
+      return impl_.addPlane(half_extent, color, transform);
+   }
+
+   /// @brief Adds a colored cuboid to the active CPU scene.
+   inline std::expected<void, Error> RenderSystem::addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
+                                                             Transform transform) {
+      return impl_.addCuboid(minimum, maximum, color, transform);
+   }
+
+   /// @brief Returns mesh count in the active CPU scene.
+   inline std::size_t RenderSystem::sceneMeshCount() const { return impl_.sceneMeshCount(); }
+
+   /// @brief Returns material count in the active CPU scene.
+   inline std::size_t RenderSystem::sceneMaterialCount() const { return impl_.sceneMaterialCount(); }
+
+   /// @brief Returns instance count in the active CPU scene.
+   inline std::size_t RenderSystem::sceneInstanceCount() const { return impl_.sceneInstanceCount(); }
+
+   /// @brief Returns source vertex count in the active CPU scene.
+   inline std::size_t RenderSystem::sceneVertexCount() const { return impl_.sceneVertexCount(); }
+
+   /// @brief Returns source index count in the active CPU scene.
+   inline std::size_t RenderSystem::sceneIndexCount() const { return impl_.sceneIndexCount(); }
+
+   /// @brief Reports whether the active CPU scene has a camera.
+   inline bool RenderSystem::hasSceneCamera() const { return impl_.hasSceneCamera(); }
+
+   /// @brief Reports whether the active CPU scene has a directional light.
+   inline bool RenderSystem::hasSceneDirectionalLight() const { return impl_.hasSceneDirectionalLight(); }
+
+   /// @brief Reports whether the active CPU scene has a point light.
+   inline bool RenderSystem::hasScenePointLight() const { return impl_.hasScenePointLight(); }
+
+   /// @brief Reports whether the active CPU scene has a spotlight.
+   inline bool RenderSystem::hasSceneSpotLight() const { return impl_.hasSceneSpotLight(); }
+
+   /// @brief Returns the number of frames accepted by the render system.
+   inline std::uint64_t RenderSystem::renderedFrameCount() const { return impl_.renderedFrameCount(); }
+
+   /// @brief Returns the number of frames presented by the render system.
+   inline std::uint64_t RenderSystem::presentedFrameCount() const { return impl_.presentedFrameCount(); }
+
+   /// @brief Returns the number of smoke-test triangle draws.
+   inline std::uint64_t RenderSystem::triangleDrawCount() const { return impl_.triangleDrawCount(); }
+
+   /// @brief Returns the number of smoke-test triangle vertices.
+   inline std::uint32_t RenderSystem::triangleVertexCount() const { return impl_.triangleVertexCount(); }
 
    /// @brief Returns how many scene uploads completed.
    inline std::uint64_t RenderSystem::sceneUploadCount() const { return impl_.sceneUploadCount(); }
@@ -134,6 +213,8 @@ export namespace vve {
                                .direction_to_light = sample->direction_to_light,
                                .ambient_lighting = sample->ambient_lighting,
                                .direct_lighting = sample->direct_lighting,
+                               .point_lighting = sample->point_lighting,
+                               .spot_lighting = sample->spot_lighting,
                                .final_lighting = sample->final_lighting, .depth = sample->depth,
                                .light_depth = sample->light_depth,
                                .sampled_shadow_depth = sample->sampled_shadow_depth,
@@ -153,6 +234,8 @@ export namespace vve {
                                .direction_to_light = sample->direction_to_light,
                                .ambient_lighting = sample->ambient_lighting,
                                .direct_lighting = sample->direct_lighting,
+                               .point_lighting = sample->point_lighting,
+                               .spot_lighting = sample->spot_lighting,
                                .final_lighting = sample->final_lighting, .depth = sample->depth,
                                .light_depth = sample->light_depth,
                                .sampled_shadow_depth = sample->sampled_shadow_depth,
@@ -212,5 +295,14 @@ export namespace vve {
    inline std::optional<float> RenderSystem::sceneShadowDepthError(std::size_t index) const {
       return impl_.sceneShadowDepthError(index);
    }
+
+   /// @brief Returns how many visible windows were considered by the last frame.
+   inline std::size_t RenderSystem::lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }
+
+   /// @brief Returns how many Vulkan targets are prepared.
+   inline std::size_t RenderSystem::preparedGpuTargetCount() const { return impl_.preparedGpuTargetCount(); }
+
+   /// @brief Returns the last clear color used by the renderer.
+   inline std::array<float, 4> RenderSystem::lastClearColor() const { return impl_.lastClearColor(); }
 
 } // namespace vve

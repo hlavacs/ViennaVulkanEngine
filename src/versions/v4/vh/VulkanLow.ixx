@@ -1206,7 +1206,7 @@ namespace vve::v4::vh::low {
                                    vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
                                    std::span<const float> scene_constants,
                                    const vk::ClearColorValue &clear_color) {
-      if (scene_constants.size() < 32 || !debug_buffer) { return vk::Result::eErrorInitializationFailed; }
+      if (scene_constants.size() < 52 || !debug_buffer) { return vk::Result::eErrorInitializationFailed; }
 
       auto result = detail::beginOneTime(device, pool, command_buffer);
       if (result != vk::Result::eSuccess) { return result; }
@@ -1266,7 +1266,7 @@ namespace vve::v4::vh::low {
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
       command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, 1, &debug_set, 0, nullptr);
       command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
-                                   32U * static_cast<std::uint32_t>(sizeof(float)),
+                                   52U * static_cast<std::uint32_t>(sizeof(float)),
                                    scene_constants.data());
       command_buffer.bindVertexBuffers(0, 1, &vertex_buffer, &vertex_offset);
       command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint32);
@@ -1297,7 +1297,7 @@ namespace vve::v4::vh::low {
                                      vk::Pipeline pipeline, vk::Buffer vertex_buffer, vk::Buffer index_buffer,
                                      std::uint32_t index_count, std::span<const float> scene_constants,
                                      vk::Buffer readback_buffer) {
-      if (scene_constants.size() < 32 || !readback_buffer) { return vk::Result::eErrorInitializationFailed; }
+      if (scene_constants.size() < 52 || !readback_buffer) { return vk::Result::eErrorInitializationFailed; }
 
       auto result = detail::beginOneTime(device, pool, command_buffer);
       if (result != vk::Result::eSuccess) { return result; }
@@ -1332,7 +1332,7 @@ namespace vve::v4::vh::low {
       detail::setViewportAndScissor(command_buffer, extent);
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
       command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0,
-                                   32U * static_cast<std::uint32_t>(sizeof(float)),
+                                   52U * static_cast<std::uint32_t>(sizeof(float)),
                                    scene_constants.data());
       command_buffer.bindVertexBuffers(0, 1, &vertex_buffer, &vertex_offset);
       command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint32);

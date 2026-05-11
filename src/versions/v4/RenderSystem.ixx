@@ -68,6 +68,24 @@ export namespace vve::v4 {
       Mat4 light_view_projection{identityMat4()};                      ///< Future shadow-map light matrix.
    };
 
+   /// @brief Point light used by the debug forward-lighting path.
+   struct RenderPointLight {
+      Position position{};                         ///< Light position in world space.
+      LinearColor color{.value = oneVec3()};       ///< Direct light color.
+      LightIntensity intensity{.value = zero()};   ///< Direct light intensity.
+      LightRange range{.value = static_cast<Scalar>(1)}; ///< Influence radius.
+   };
+
+   /// @brief Spot light used by the debug forward-lighting path.
+   struct RenderSpotLight {
+      Position position{};                         ///< Light position in world space.
+      Direction direction{.value = Vec3(zero(), -one(), zero())}; ///< Direction from light toward the scene.
+      LinearColor color{.value = oneVec3()};       ///< Direct light color.
+      LightIntensity intensity{.value = zero()};   ///< Direct light intensity.
+      LightRange range{.value = static_cast<Scalar>(1)}; ///< Influence radius.
+      SpotConeAngle cone{};                        ///< Outer cone angle.
+   };
+
    /// @brief Camera data consumed by render passes.
    struct RenderCamera {
       Camera camera{};                                    ///< Facade camera description.
@@ -86,6 +104,8 @@ export namespace vve::v4 {
       Vec3 direction_to_light{zeroVec3()}; ///< Direction from surface to light.
       Vec3 ambient_lighting{zeroVec3()};   ///< Ambient light contribution.
       Vec3 direct_lighting{zeroVec3()};    ///< Direct light contribution.
+      Vec3 point_lighting{zeroVec3()};     ///< Point-light contribution.
+      Vec3 spot_lighting{zeroVec3()};      ///< Spot-light contribution.
       Vec3 final_lighting{zeroVec3()};     ///< Ambient plus direct lighting.
       float depth{};                       ///< Vulkan depth value.
       float light_depth{};                 ///< Directional-light depth value.
@@ -125,6 +145,8 @@ export namespace vve::v4 {
                   Mat4 world = identityMat4());
       void setCamera(RenderCamera camera);
       void setDirectionalLight(RenderDirectionalLight light);
+      void setPointLight(RenderPointLight light);
+      void setSpotLight(RenderSpotLight light);
       void clear();
       [[nodiscard]] const RenderMesh *findMesh(RenderMeshHandle handle) const;
       [[nodiscard]] const RenderMaterial *findMaterial(RenderMaterialHandle handle) const;
@@ -136,6 +158,8 @@ export namespace vve::v4 {
       [[nodiscard]] std::size_t indexCount() const;
       [[nodiscard]] const std::optional<RenderCamera> &camera() const;
       [[nodiscard]] const std::optional<RenderDirectionalLight> &directionalLight() const;
+      [[nodiscard]] const std::optional<RenderPointLight> &pointLight() const;
+      [[nodiscard]] const std::optional<RenderSpotLight> &spotLight() const;
       [[nodiscard]] const Vector<RenderInstance> &instances() const;
 
    private:
@@ -147,6 +171,8 @@ export namespace vve::v4 {
       Vector<RenderInstance> instances_{};            ///< Draw items.
       std::optional<RenderCamera> camera_{};          ///< Optional active camera.
       std::optional<RenderDirectionalLight> light_{}; ///< Optional active directional light.
+      std::optional<RenderPointLight> point_light_{}; ///< Optional active point light.
+      std::optional<RenderSpotLight> spot_light_{};   ///< Optional active spot light.
    };
 
    /// @brief Renderer choice descriptor returned by RenderSystem.
@@ -176,6 +202,9 @@ export namespace vve::v4 {
       void setCamera(Camera camera, PixelExtent extent);
       void setDirectionalLight(Direction direction_to_light, LinearColor color,
                                LightIntensity intensity, LinearColor ambient);
+      void setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range);
+      void setSpotLight(Position position, Direction direction, LinearColor color,
+                        LightIntensity intensity, LightRange range, SpotConeAngle cone);
       [[nodiscard]] std::size_t sceneMeshCount() const;
       [[nodiscard]] std::size_t sceneMaterialCount() const;
       [[nodiscard]] std::size_t sceneInstanceCount() const;
@@ -183,6 +212,8 @@ export namespace vve::v4 {
       [[nodiscard]] std::size_t sceneIndexCount() const;
       [[nodiscard]] bool hasSceneCamera() const;
       [[nodiscard]] bool hasSceneDirectionalLight() const;
+      [[nodiscard]] bool hasScenePointLight() const;
+      [[nodiscard]] bool hasSceneSpotLight() const;
       [[nodiscard]] std::expected<void, Error> renderFrame(const WindowFrameData &windows);
       [[nodiscard]] std::expected<void, Error> renderFrame(WindowSystem &windows);
       [[nodiscard]] std::uint64_t renderedFrameCount() const;
@@ -235,7 +266,7 @@ export namespace vve::v4 {
       std::vector<std::uint32_t> scene_shadow_vertex_spirv_{}; ///< Cached shadow vertex SPIR-V.
       std::vector<vh::SceneVertex> scene_vertices_{}; ///< Flattened debug scene vertices.
       std::vector<std::uint32_t> scene_indices_{}; ///< Flattened debug scene indices.
-      std::array<float, 32> scene_frame_constants_{}; ///< Camera and light push constants.
+      std::array<float, 52> scene_frame_constants_{}; ///< Camera and light push constants.
       std::array<RenderDebugSample, 2> scene_cpu_debug_{}; ///< CPU camera-transform samples.
       std::array<RenderShadowDepthSample, 2> scene_shadow_debug_{}; ///< CPU shadow-depth proof samples.
       std::uint64_t rendered_frames_{0};       ///< Number of frame hooks reached.
@@ -329,14 +360,42 @@ namespace vve::v4 {
                      1.0F};
       }
 
-      /// @brief Packs the camera matrix and directional light into the shader push-constant layout.
-      inline std::array<float, 32>
+      /// @brief Evaluates a point light at one surface point.
+      inline Vec3 pointLighting(Vec3 world, Vec3 normal, const RenderPointLight &light) {
+         const auto offset = math::subtract(light.position.value, world);
+         const auto distance = static_cast<float>(math::length(offset));
+         if (distance <= 1.0e-6F || light.range.value <= 1.0e-6F) { return zeroVec3(); }
+         const auto direction_to_light = math::scale(offset, 1.0F / distance);
+         const auto n_dot_l = std::max(0.0F, math::dot(normal, direction_to_light));
+         const auto attenuation = std::pow(std::max(0.0F, 1.0F - (distance / light.range.value)), 2.0F);
+         return math::scale(light.color.value, light.intensity.value * n_dot_l * attenuation);
+      }
+
+      /// @brief Evaluates a spot light at one surface point.
+      inline Vec3 spotLighting(Vec3 world, Vec3 normal, const RenderSpotLight &light) {
+         const auto offset = math::subtract(light.position.value, world);
+         const auto distance = static_cast<float>(math::length(offset));
+         if (distance <= 1.0e-6F || light.range.value <= 1.0e-6F) { return zeroVec3(); }
+         const auto direction_to_light = math::scale(offset, 1.0F / distance);
+         const auto from_light = math::scale(direction_to_light, -1.0F);
+         const auto cone = std::cos(std::max(0.01F, light.cone.radians));
+         const auto spot = std::clamp((math::dot(from_light, safeNormalize(light.direction.value)) - cone) /
+                                      std::max(1.0e-6F, 1.0F - cone), 0.0F, 1.0F);
+         const auto n_dot_l = std::max(0.0F, math::dot(normal, direction_to_light));
+         const auto attenuation = std::pow(std::max(0.0F, 1.0F - (distance / light.range.value)), 2.0F);
+         return math::scale(light.color.value, light.intensity.value * n_dot_l * attenuation * spot);
+      }
+
+      /// @brief Packs the camera matrix and three debug lights into the shader push-constant layout.
+      inline std::array<float, 52>
       frameConstants(Mat4 clip_from_world, const RenderDirectionalLight &light,
+                     const RenderPointLight &point_light, const RenderSpotLight &spot_light,
                      std::array<float, 4> center_radius) {
-         auto result = std::array<float, 32>{};
+         auto result = std::array<float, 52>{};
          const auto matrix = columns(clip_from_world);
          std::ranges::copy(matrix, result.begin());
          const auto direction = safeNormalize(light.direction_to_light.value);
+         const auto spot_direction = safeNormalize(spot_light.direction.value);
          const auto light_values = std::array{static_cast<float>(direction.x), static_cast<float>(direction.y),
                                               static_cast<float>(direction.z), light.intensity.value,
                                               static_cast<float>(light.color.value.x),
@@ -347,6 +406,27 @@ namespace vve::v4 {
                                               static_cast<float>(light.ambient.value.z), 0.0F};
          std::ranges::copy(light_values, result.begin() + 16);
          std::ranges::copy(center_radius, result.begin() + 28);
+         const auto local_values = std::array{static_cast<float>(point_light.position.value.x),
+                                              static_cast<float>(point_light.position.value.y),
+                                              static_cast<float>(point_light.position.value.z),
+                                              static_cast<float>(point_light.range.value),
+                                              static_cast<float>(point_light.color.value.x),
+                                              static_cast<float>(point_light.color.value.y),
+                                              static_cast<float>(point_light.color.value.z),
+                                              static_cast<float>(point_light.intensity.value),
+                                              static_cast<float>(spot_light.position.value.x),
+                                              static_cast<float>(spot_light.position.value.y),
+                                              static_cast<float>(spot_light.position.value.z),
+                                              static_cast<float>(spot_light.range.value),
+                                              static_cast<float>(spot_direction.x),
+                                              static_cast<float>(spot_direction.y),
+                                              static_cast<float>(spot_direction.z),
+                                              static_cast<float>(spot_light.cone.radians),
+                                              static_cast<float>(spot_light.color.value.x),
+                                              static_cast<float>(spot_light.color.value.y),
+                                              static_cast<float>(spot_light.color.value.z),
+                                              static_cast<float>(spot_light.intensity.value)};
+         std::ranges::copy(local_values, result.begin() + 32);
          return result;
       }
 
@@ -363,13 +443,18 @@ namespace vve::v4 {
       }
 
       /// @brief Returns the CPU lighting terms used to verify the shader.
-      inline RenderDebugSample lightSample(RenderDebugSample sample, const RenderDirectionalLight &light) {
+      inline RenderDebugSample lightSample(RenderDebugSample sample, const RenderDirectionalLight &light,
+                                           const RenderPointLight &point_light,
+                                           const RenderSpotLight &spot_light) {
          sample.normal = safeNormalize(sample.normal);
          sample.direction_to_light = safeNormalize(light.direction_to_light.value);
          sample.n_dot_l = std::max(0.0F, math::dot(sample.normal, sample.direction_to_light));
          sample.ambient_lighting = light.ambient.value;
          sample.direct_lighting = math::scale(light.color.value, light.intensity.value * sample.n_dot_l);
-         sample.final_lighting = math::add(sample.ambient_lighting, sample.direct_lighting);
+         sample.point_lighting = pointLighting(sample.world, sample.normal, point_light);
+         sample.spot_lighting = spotLighting(sample.world, sample.normal, spot_light);
+         sample.final_lighting = math::add(math::add(sample.ambient_lighting, sample.direct_lighting),
+                                           math::add(sample.point_lighting, sample.spot_lighting));
          sample.shadow_bias = std::max(0.0005F, 0.003F * (1.0F - sample.n_dot_l));
          sample.shadow_factor = 1.0F;
          return sample;
@@ -378,7 +463,8 @@ namespace vve::v4 {
       /// @brief Builds the CPU-side sample equivalent to the GPU shader debug write.
       inline RenderDebugSample
       cpuSample(std::uint32_t vertex_id, const vh::SceneVertex &vertex, Mat4 clip_from_world,
-                const RenderDirectionalLight &light, std::array<float, 4> center_radius) {
+                const RenderDirectionalLight &light, const RenderPointLight &point_light,
+                const RenderSpotLight &spot_light, std::array<float, 4> center_radius) {
          const auto world = Vec3{vertex.x, vertex.y, vertex.z};
          const auto clip = math::multiply(clip_from_world, Vec4{world.x, world.y, world.z, 1.0F});
          const auto sample_ndc = ndc(clip);
@@ -389,7 +475,7 @@ namespace vve::v4 {
                                          .normal = Vec3{vertex.nx, vertex.ny, vertex.nz},
                                          .depth = sample_ndc.z,
                                          .valid = true};
-         return lightSample(lightSpaceSample(result, light, center_radius), light);
+         return lightSample(lightSpaceSample(result, light, center_radius), light, point_light, spot_light);
       }
 
       /// @brief Converts the compact Vulkan readback sample to the render-system debug type.
@@ -413,6 +499,10 @@ namespace vve::v4 {
                                                            sample.ambient_lighting[2]},
                                   .direct_lighting = Vec3{sample.direct_lighting[0], sample.direct_lighting[1],
                                                           sample.direct_lighting[2]},
+                                  .point_lighting = Vec3{sample.point_lighting[0], sample.point_lighting[1],
+                                                         sample.point_lighting[2]},
+                                  .spot_lighting = Vec3{sample.spot_lighting[0], sample.spot_lighting[1],
+                                                        sample.spot_lighting[2]},
                                   .final_lighting = Vec3{sample.final_lighting[0], sample.final_lighting[1],
                                                          sample.final_lighting[2]},
                                   .depth = sample.depth,
@@ -445,6 +535,8 @@ namespace vve::v4 {
                           vec3Error(cpu.direction_to_light, gpu.direction_to_light),
                           vec3Error(cpu.ambient_lighting, gpu.ambient_lighting),
                           vec3Error(cpu.direct_lighting, gpu.direct_lighting),
+                          vec3Error(cpu.point_lighting, gpu.point_lighting),
+                          vec3Error(cpu.spot_lighting, gpu.spot_lighting),
                           vec3Error(cpu.final_lighting, gpu.final_lighting)});
       }
 
@@ -592,8 +684,22 @@ namespace vve::v4 {
    /// @brief Sets the active directional light.
    inline void RenderScene::setDirectionalLight(RenderDirectionalLight light) { light_ = std::move(light); }
 
+   /// @brief Sets the active point light.
+   inline void RenderScene::setPointLight(RenderPointLight light) { point_light_ = std::move(light); }
+
+   /// @brief Sets the active spot light.
+   inline void RenderScene::setSpotLight(RenderSpotLight light) { spot_light_ = std::move(light); }
+
    /// @brief Clears CPU render scene state.
-   inline void RenderScene::clear() { meshes_ = {}; materials_ = {}; instances_ = {}; camera_ = {}; light_ = {}; }
+   inline void RenderScene::clear() {
+      meshes_ = {};
+      materials_ = {};
+      instances_ = {};
+      camera_ = {};
+      light_ = {};
+      point_light_ = {};
+      spot_light_ = {};
+   }
 
    /// @brief Finds one mesh by handle.
    inline const RenderMesh *RenderScene::findMesh(RenderMeshHandle handle) const {
@@ -641,6 +747,12 @@ namespace vve::v4 {
 
    /// @brief Returns the active directional light if one was set.
    inline const std::optional<RenderDirectionalLight> &RenderScene::directionalLight() const { return light_; }
+
+   /// @brief Returns the active point light if one was set.
+   inline const std::optional<RenderPointLight> &RenderScene::pointLight() const { return point_light_; }
+
+   /// @brief Returns the active spot light if one was set.
+   inline const std::optional<RenderSpotLight> &RenderScene::spotLight() const { return spot_light_; }
 
    /// @brief Returns all render instances.
    inline const Vector<RenderInstance> &RenderScene::instances() const { return instances_; }
@@ -730,6 +842,21 @@ namespace vve::v4 {
                                                        .ambient = ambient});
    }
 
+   /// @brief Sets the active point light in the CPU scene.
+   inline void RenderSystem::setPointLight(Position position, LinearColor color,
+                                           LightIntensity intensity, LightRange range) {
+      scene_.setPointLight(RenderPointLight{.position = position, .color = color,
+                                            .intensity = intensity, .range = range});
+   }
+
+   /// @brief Sets the active spot light in the CPU scene.
+   inline void RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
+                                          LightIntensity intensity, LightRange range,
+                                          SpotConeAngle cone) {
+      scene_.setSpotLight(RenderSpotLight{.position = position, .direction = direction, .color = color,
+                                          .intensity = intensity, .range = range, .cone = cone});
+   }
+
    /// @brief Returns mesh count in the active CPU scene.
    inline std::size_t RenderSystem::sceneMeshCount() const { return scene_.meshCount(); }
 
@@ -750,6 +877,12 @@ namespace vve::v4 {
 
    /// @brief Reports whether the active CPU scene has a directional light.
    inline bool RenderSystem::hasSceneDirectionalLight() const { return scene_.directionalLight().has_value(); }
+
+   /// @brief Reports whether the active CPU scene has a point light.
+   inline bool RenderSystem::hasScenePointLight() const { return scene_.pointLight().has_value(); }
+
+   /// @brief Reports whether the active CPU scene has a spot light.
+   inline bool RenderSystem::hasSceneSpotLight() const { return scene_.spotLight().has_value(); }
 
    /// @brief Records that a frame reached the renderer; Vulkan execution is added in the next stage.
    inline std::expected<void, Error> RenderSystem::renderFrame(const WindowFrameData &windows) {
@@ -974,6 +1107,8 @@ namespace vve::v4 {
       scene_shadow_debug_.fill(RenderShadowDepthSample{});
       const auto clip_from_world = detail::clipFromWorld(*scene_.camera());
       const auto light = scene_.directionalLight().value_or(RenderDirectionalLight{});
+      const auto point_light = scene_.pointLight().value_or(RenderPointLight{});
+      const auto spot_light = scene_.spotLight().value_or(RenderSpotLight{});
       for (const auto &instance : scene_.instances()) {
          const auto *mesh = scene_.findMesh(instance.mesh);
          const auto *material = scene_.findMaterial(instance.material);
@@ -998,13 +1133,14 @@ namespace vve::v4 {
       if (scene_vertices_.empty() || scene_indices_.empty()) { return std::unexpected(Error::missing_object); }
       if (scene_indices_.size() < 3U) { return std::unexpected(Error::invalid_argument); }
       const auto center_radius = detail::lightCenterRadius(scene_vertices_);
-      scene_frame_constants_ = detail::frameConstants(clip_from_world, light, center_radius);
+      scene_frame_constants_ = detail::frameConstants(clip_from_world, light, point_light, spot_light, center_radius);
       constexpr auto debug_vertices = std::array{0U, 6U};
       for (std::size_t slot{}; slot < debug_vertices.size(); ++slot) {
          const auto vertex_id = debug_vertices[slot];
          if (vertex_id < scene_vertices_.size()) {
             scene_cpu_debug_[slot] =
-               detail::cpuSample(vertex_id, scene_vertices_[vertex_id], clip_from_world, light, center_radius);
+               detail::cpuSample(vertex_id, scene_vertices_[vertex_id], clip_from_world, light,
+                                 point_light, spot_light, center_radius);
          }
       }
       const auto triangle_count = static_cast<std::uint32_t>(scene_indices_.size() / 3U);

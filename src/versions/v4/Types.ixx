@@ -55,6 +55,7 @@ export namespace vve::v4 {
    using vve::FrameCount;          ///< Public frame-count contract.
    using vve::IndexCount;          ///< Public index-count contract.
    using vve::LightIntensity;      ///< Public light-intensity contract.
+   using vve::LightRange;          ///< Public light-range contract.
    using vve::LinearColor;         ///< Public linear-color contract.
    using vve::ObjectName;          ///< Public object-name contract.
    using vve::PixelExtent;         ///< Public pixel-extent contract.
@@ -62,6 +63,7 @@ export namespace vve::v4 {
    using vve::RendererId;          ///< Public renderer-id contract.
    using vve::Rotation;            ///< Public rotation contract.
    using vve::Scale;               ///< Public scale contract.
+   using vve::SpotConeAngle;       ///< Public spotlight-cone contract.
    using vve::TextureChannelCount; ///< Public texture-channel-count contract.
    using vve::Transform;           ///< Public transform contract.
    using vve::VertexCount;         ///< Public vertex-count contract.

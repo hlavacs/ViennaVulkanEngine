@@ -51,6 +51,16 @@ export namespace vve {
       Scalar value{one()}; ///< Wrapped non-negative intensity scale.
    };
 
+   /// @brief Strong wrapper for finite light influence distance.
+   struct LightRange {
+      Scalar value{static_cast<Scalar>(10)}; ///< Wrapped range in world units.
+   };
+
+   /// @brief Strong wrapper for spotlight outer cone angle.
+   struct SpotConeAngle {
+      Scalar radians{static_cast<Scalar>(0.75)}; ///< Wrapped outer cone angle in radians.
+   };
+
    /// @brief Strong wrapper for vertical field-of-view angles.
    struct FovY {
       Scalar radians{static_cast<Scalar>(1.0471975511965976)}; ///< Wrapped vertical FOV in radians.
