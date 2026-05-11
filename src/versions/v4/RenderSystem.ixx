@@ -89,6 +89,10 @@ export namespace vve::v4 {
       Vec3 final_lighting{zeroVec3()};     ///< Ambient plus direct lighting.
       float depth{};                       ///< Vulkan depth value.
       float light_depth{};                 ///< Directional-light depth value.
+      float sampled_shadow_depth{};        ///< Shadow-map depth sampled by the shader.
+      float shadow_depth_delta{};          ///< Light depth minus sampled shadow depth.
+      float shadow_bias{};                 ///< Bias used by the shadow comparison.
+      float shadow_factor{};               ///< One when lit, zero when shadowed.
       float n_dot_l{};                     ///< Lambert cosine term.
       bool inside_light{};                 ///< Whether the sample is inside the light projection.
       bool valid{};                        ///< Whether this slot contains a sample.
@@ -197,6 +201,7 @@ export namespace vve::v4 {
       [[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const;
+      [[nodiscard]] std::optional<float> sceneDebugShadowSampleError(std::size_t index) const;
       [[nodiscard]] std::size_t sceneShadowDepthSampleCount() const;
       [[nodiscard]] std::optional<RenderShadowDepthSample> sceneShadowDepthSample(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneShadowDepthError(std::size_t index) const;
@@ -365,6 +370,8 @@ namespace vve::v4 {
          sample.ambient_lighting = light.ambient.value;
          sample.direct_lighting = math::scale(light.color.value, light.intensity.value * sample.n_dot_l);
          sample.final_lighting = math::add(sample.ambient_lighting, sample.direct_lighting);
+         sample.shadow_bias = std::max(0.0005F, 0.003F * (1.0F - sample.n_dot_l));
+         sample.shadow_factor = 1.0F;
          return sample;
       }
 
@@ -410,6 +417,10 @@ namespace vve::v4 {
                                                          sample.final_lighting[2]},
                                   .depth = sample.depth,
                                   .light_depth = sample.light_depth,
+                                  .sampled_shadow_depth = sample.sampled_shadow_depth,
+                                  .shadow_depth_delta = sample.shadow_depth_delta,
+                                  .shadow_bias = sample.shadow_bias,
+                                  .shadow_factor = sample.shadow_factor,
                                   .n_dot_l = sample.n_dot_l,
                                   .inside_light = std::abs(sample.light_ndc[0]) <= 1.0F &&
                                                   std::abs(sample.light_ndc[1]) <= 1.0F &&
@@ -853,6 +864,18 @@ namespace vve::v4 {
       const auto gpu = sceneGpuDebugSample(index);
       if (!cpu || !gpu) { return {}; }
       return detail::lightingError(*cpu, *gpu);
+   }
+
+   /// @brief Returns the shader-sampled shadow depth mismatch against the copied shadow map.
+   inline std::optional<float> RenderSystem::sceneDebugShadowSampleError(std::size_t index) const {
+      const auto gpu = sceneGpuDebugSample(index);
+      if (!gpu) { return {}; }
+      if (!gpu->inside_light) { return std::abs(gpu->sampled_shadow_depth - 1.0F); }
+      const auto extent = vulkan_.sceneShadowExtent();
+      const auto depth = vulkan_.sceneShadowDepth(detail::shadowPixel(gpu->light_ndc.x, extent.width),
+                                                  detail::shadowPixel(gpu->light_ndc.y, extent.height));
+      return depth ? std::optional<float>{std::abs(gpu->sampled_shadow_depth - *depth)}
+                   : std::optional<float>{};
    }
 
    /// @brief Returns how many CPU shadow-depth proof samples were prepared.

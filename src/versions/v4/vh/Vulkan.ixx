@@ -40,6 +40,7 @@ export namespace vve::v4::vh {
       vk::Image shadow_depth_image{};         ///< Directional shadow depth image.
       vk::DeviceMemory shadow_depth_memory{}; ///< Memory backing the shadow depth image.
       vk::ImageView shadow_depth_view{};      ///< Shadow depth image view.
+      vk::Sampler shadow_sampler{};           ///< Sampler used to verify shadow-map reads.
       vk::ImageLayout shadow_depth_layout{};  ///< Current shadow depth image layout.
       vk::Buffer shadow_readback{};           ///< Host-visible shadow depth readback buffer.
       vk::DeviceMemory shadow_readback_memory{}; ///< Memory backing the shadow readback buffer.
@@ -80,6 +81,10 @@ export namespace vve::v4::vh {
       float depth{};                                       ///< GPU-computed Vulkan depth.
       std::array<float, 3> light_ndc{};                    ///< GPU-computed light NDC position.
       float light_depth{};                                 ///< GPU-computed light depth.
+      float sampled_shadow_depth{};                        ///< Shadow depth sampled by the shader.
+      float shadow_depth_delta{};                          ///< Light depth minus sampled shadow depth.
+      float shadow_bias{};                                  ///< Bias used by the shadow comparison.
+      float shadow_factor{};                                ///< One when lit, zero when shadowed.
       std::array<float, 3> normal{};                       ///< GPU-normalized surface normal.
       float n_dot_l{};                                     ///< GPU-computed Lambert term.
       std::array<float, 3> direction_to_light{};           ///< GPU-normalized direction to light.
@@ -91,7 +96,7 @@ export namespace vve::v4::vh {
       std::array<float, 3> final_lighting{};               ///< Ambient plus direct lighting.
       float unused1{};                                     ///< Layout padding visible to the host.
    };
-   static_assert(sizeof(SceneDebugSample) == 176);
+   static_assert(sizeof(SceneDebugSample) == 192);
 
    /// @brief Owns Vulkan instance, device, and frame targets for visible windows.
    class FrameHost {
@@ -313,6 +318,7 @@ namespace vve::v4::vh {
 
       const auto clear = vk::ClearColorValue{color};
       for (auto &target : targets_) {
+         if (const auto result = createSceneShadowTarget(target); !result) { return result; }
          if (const auto result = createSceneDebugTarget(target); !result) { return result; }
          if (const auto result = createScenePipeline(target, vertex_spirv, vertex_entry,
                                                      fragment_spirv, fragment_entry); !result) {
@@ -323,7 +329,6 @@ namespace vve::v4::vh {
             return result;
          }
          if (const auto result = uploadScene(target, vertices, indices); !result) { return result; }
-         if (const auto result = createSceneShadowTarget(target); !result) { return result; }
          if (const auto result = clearSceneDebugTarget(target); !result) { return result; }
          if (const auto result = drawSceneShadowTarget(target, scene_constants); !result) { return result; }
          if (const auto result = drawSceneTarget(target, clear, scene_constants); !result) { return result; }
@@ -563,13 +568,15 @@ namespace vve::v4::vh {
 
    /// @brief Creates the shadow depth image and host readback buffer.
    std::expected<void, Error> FrameHost::createSceneShadowTarget(FrameTarget &target) {
-      if (target.shadow_depth_image && target.shadow_readback) { return {}; }
+      if (target.shadow_depth_image && target.shadow_readback && target.shadow_sampler) { return {}; }
       const auto extent = sceneShadowExtent();
       const auto vk_extent = vk::Extent2D{extent.width, extent.height};
       auto result = low::createShadowDepthTarget(physical_device_, device_, vk_extent,
                                                  &target.shadow_depth_image,
                                                  &target.shadow_depth_memory,
                                                  &target.shadow_depth_view);
+      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+      result = low::createShadowSampler(device_, &target.shadow_sampler);
       if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
 
       target.shadow_depth_layout = vk::ImageLayout::eUndefined;
@@ -588,8 +595,9 @@ namespace vve::v4::vh {
       auto result = low::createHostBuffer(physical_device_, device_, size, vk::BufferUsageFlagBits::eStorageBuffer,
                                           &target.scene_debug_buffer, &target.scene_debug_memory);
       if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
-      result = low::createStorageDescriptor(device_, target.scene_debug_buffer, size, &target.scene_debug_layout,
-                                            &target.scene_debug_pool, &target.scene_debug_set);
+      result = low::createSceneDescriptor(device_, target.scene_debug_buffer, size, target.shadow_depth_view,
+                                          target.shadow_sampler, &target.scene_debug_layout,
+                                          &target.scene_debug_pool, &target.scene_debug_set);
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
    }
 
@@ -708,9 +716,10 @@ namespace vve::v4::vh {
                                          target.views[image_index],
                                          vk::Extent2D{target.extent.width, target.extent.height},
                                          target.layouts[image_index], target.depth_image, target.depth_view,
-                                         target.depth_layout, target.scene_layout, target.scene_pipeline,
-                                         target.scene_vertices, target.scene_indices, target.scene_debug_set,
-                                         target.scene_debug_buffer,
+                                         target.depth_layout, target.shadow_depth_image,
+                                         target.shadow_depth_layout, target.scene_layout,
+                                         target.scene_pipeline, target.scene_vertices, target.scene_indices,
+                                         target.scene_debug_set, target.scene_debug_buffer,
                                          sizeof(SceneDebugSample) * scene_debug_samples_.size(),
                                          target.scene_index_count, scene_constants, color);
       if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
@@ -728,6 +737,7 @@ namespace vve::v4::vh {
       }
       target.layouts[image_index] = vk::ImageLayout::ePresentSrcKHR;
       target.depth_layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+      target.shadow_depth_layout = vk::ImageLayout::eShaderReadOnlyOptimal;
       return {};
    }
 
@@ -795,6 +805,7 @@ namespace vve::v4::vh {
          if (target.scene_index_memory) { device_.freeMemory(target.scene_index_memory); }
          if (target.shadow_readback) { device_.destroyBuffer(target.shadow_readback); }
          if (target.shadow_readback_memory) { device_.freeMemory(target.shadow_readback_memory); }
+         if (target.shadow_sampler) { device_.destroySampler(target.shadow_sampler); }
          if (target.shadow_depth_view) { device_.destroyImageView(target.shadow_depth_view); }
          if (target.shadow_depth_image) { device_.destroyImage(target.shadow_depth_image); }
          if (target.shadow_depth_memory) { device_.freeMemory(target.shadow_depth_memory); }

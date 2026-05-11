@@ -164,6 +164,10 @@ void writeRenderDebugSample(std::ofstream &file, std::string_view name, const vv
     writeVec3(file, prefix + ".final_lighting", sample.final_lighting);
     file << prefix << ".depth=" << sample.depth << '\n';
     file << prefix << ".light_depth=" << sample.light_depth << '\n';
+    file << prefix << ".sampled_shadow_depth=" << sample.sampled_shadow_depth << '\n';
+    file << prefix << ".shadow_depth_delta=" << sample.shadow_depth_delta << '\n';
+    file << prefix << ".shadow_bias=" << sample.shadow_bias << '\n';
+    file << prefix << ".shadow_factor=" << sample.shadow_factor << '\n';
     file << prefix << ".n_dot_l=" << sample.n_dot_l << '\n';
     file << prefix << ".inside_light=" << sample.inside_light << '\n';
     file << prefix << ".valid=" << sample.valid << '\n';
@@ -314,7 +318,7 @@ private:
     DebugPlane plane_{.center = vve::Vec3{0.0F, 0.0F, 0.0F}, .half_extent = vve::Vec2{3.0F, 3.0F}};
     DebugCuboid cuboid_{.minimum = vve::Vec3{-0.225F, 0.0F, -0.225F},
                         .maximum = vve::Vec3{0.225F, 2.0F, 0.225F}};
-    DebugDirectionalLight light_{.direction_to_light = vve::Direction{.value = vve::Vec3{-0.55F, 0.85F, 0.35F}},
+    DebugDirectionalLight light_{.direction_to_light = vve::Direction{.value = vve::Vec3{0.55F, 0.85F, 0.35F}},
                                  .color = vve::LinearColor{.value = vve::Vec3{1.0F, 0.94F, 0.84F}},
                                  .intensity = vve::LightIntensity{.value = 1.25F},
                                  .ambient = vve::LinearColor{.value = vve::Vec3{0.08F, 0.09F, 0.10F}}};
@@ -329,11 +333,11 @@ private:
                          .position = vve::Vec3{-1.70F, 0.0F, 1.30F},
                          .normal = vve::Vec3{0.0F, 1.0F, 0.0F}},
         DebugSamplePoint{.name = "plane_shadow",
-                         .position = vve::Vec3{0.75F, 0.0F, -0.45F},
+                         .position = vve::Vec3{-0.75F, 0.0F, -0.45F},
                          .normal = vve::Vec3{0.0F, 1.0F, 0.0F}},
         DebugSamplePoint{.name = "cuboid_lit_side",
-                         .position = vve::Vec3{-0.225F, 1.0F, 0.0F},
-                         .normal = vve::Vec3{-1.0F, 0.0F, 0.0F}}};
+                         .position = vve::Vec3{0.225F, 1.0F, 0.0F},
+                         .normal = vve::Vec3{1.0F, 0.0F, 0.0F}}};
     vve::PixelExtent render_extent_{.width = 960, .height = 540}; ///< CPU render target size.
     std::filesystem::path output_path_{};
 };
@@ -392,6 +396,7 @@ int main(int argc, char **argv) {
             const auto depth_error = render_system.sceneDebugDepthError(index);
             const auto light_space_error = render_system.sceneDebugLightSpaceError(index);
             const auto lighting_error = render_system.sceneDebugLightingError(index);
+            const auto shadow_sample_error = render_system.sceneDebugShadowSampleError(index);
             file << "gpu_debug.sample" << index << ".has_gpu=" << gpu.has_value() << '\n';
             if (clip_error) { file << "gpu_debug.sample" << index << ".clip_error=" << *clip_error << '\n'; }
             if (depth_error) { file << "gpu_debug.sample" << index << ".depth_error=" << *depth_error << '\n'; }
@@ -405,10 +410,16 @@ int main(int argc, char **argv) {
             }
             file << "gpu_debug.sample" << index << ".lighting_matches="
                  << (lighting_error.value_or(1.0F) < 1.0e-5F) << '\n';
+            if (shadow_sample_error) {
+                file << "gpu_debug.sample" << index << ".shadow_sample_error=" << *shadow_sample_error << '\n';
+            }
+            file << "gpu_debug.sample" << index << ".shadow_sample_matches="
+                 << (shadow_sample_error.value_or(1.0F) < 1.0e-5F) << '\n';
             const auto sample_matches = clip_error.value_or(1.0F) < 1.0e-4F &&
                                         depth_error.value_or(1.0F) < 1.0e-5F &&
                                         light_space_error.value_or(1.0F) < 1.0e-5F &&
-                                        lighting_error.value_or(1.0F) < 1.0e-5F;
+                                        lighting_error.value_or(1.0F) < 1.0e-5F &&
+                                        shadow_sample_error.value_or(1.0F) < 1.0e-5F;
             file << "gpu_debug.sample" << index << ".matches=" << sample_matches << '\n';
             gpu_verified |= gpu.has_value();
             all_gpu_samples_match &= sample_matches;

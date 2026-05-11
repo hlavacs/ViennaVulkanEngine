@@ -24,6 +24,10 @@ export namespace vve {
       Vec3 final_lighting{zeroVec3()};     ///< Ambient plus direct lighting.
       float depth{};                       ///< Vulkan depth value.
       float light_depth{};                 ///< Directional-light depth value.
+      float sampled_shadow_depth{};        ///< Shadow-map depth sampled by the shader.
+      float shadow_depth_delta{};          ///< Light depth minus sampled shadow depth.
+      float shadow_bias{};                 ///< Bias used by the shadow comparison.
+      float shadow_factor{};               ///< One when lit, zero when shadowed.
       float n_dot_l{};                     ///< Lambert cosine term.
       bool inside_light{};                 ///< Whether the sample is inside the light projection.
       bool valid{};                        ///< Whether this slot contains a sample.
@@ -90,6 +94,7 @@ export namespace vve {
       [[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const;
+      [[nodiscard]] std::optional<float> sceneDebugShadowSampleError(std::size_t index) const;
       [[nodiscard]] std::size_t sceneShadowDepthSampleCount() const;
       [[nodiscard]] std::optional<RenderShadowDepthSample> sceneShadowDepthSample(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneShadowDepthError(std::size_t index) const;
@@ -130,7 +135,11 @@ export namespace vve {
                                .ambient_lighting = sample->ambient_lighting,
                                .direct_lighting = sample->direct_lighting,
                                .final_lighting = sample->final_lighting, .depth = sample->depth,
-                               .light_depth = sample->light_depth, .n_dot_l = sample->n_dot_l,
+                               .light_depth = sample->light_depth,
+                               .sampled_shadow_depth = sample->sampled_shadow_depth,
+                               .shadow_depth_delta = sample->shadow_depth_delta,
+                               .shadow_bias = sample->shadow_bias, .shadow_factor = sample->shadow_factor,
+                               .n_dot_l = sample->n_dot_l,
                                .inside_light = sample->inside_light, .valid = sample->valid};
    }
 
@@ -145,7 +154,11 @@ export namespace vve {
                                .ambient_lighting = sample->ambient_lighting,
                                .direct_lighting = sample->direct_lighting,
                                .final_lighting = sample->final_lighting, .depth = sample->depth,
-                               .light_depth = sample->light_depth, .n_dot_l = sample->n_dot_l,
+                               .light_depth = sample->light_depth,
+                               .sampled_shadow_depth = sample->sampled_shadow_depth,
+                               .shadow_depth_delta = sample->shadow_depth_delta,
+                               .shadow_bias = sample->shadow_bias, .shadow_factor = sample->shadow_factor,
+                               .n_dot_l = sample->n_dot_l,
                                .inside_light = sample->inside_light, .valid = sample->valid};
    }
 
@@ -167,6 +180,11 @@ export namespace vve {
    /// @brief Returns the CPU/GPU lighting-term mismatch for one sample.
    inline std::optional<float> RenderSystem::sceneDebugLightingError(std::size_t index) const {
       return impl_.sceneDebugLightingError(index);
+   }
+
+   /// @brief Returns the shader-sampled shadow depth mismatch against the copied shadow map.
+   inline std::optional<float> RenderSystem::sceneDebugShadowSampleError(std::size_t index) const {
+      return impl_.sceneDebugShadowSampleError(index);
    }
 
    /// @brief Returns how many shadow-depth proof samples are available.
