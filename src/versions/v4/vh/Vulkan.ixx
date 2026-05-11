@@ -164,6 +164,8 @@ export namespace vve::v4::vh {
       [[nodiscard]] std::expected<void, Error> createSceneDebugTarget(FrameTarget &target);
       [[nodiscard]] std::expected<void, Error> clearSceneDebugTarget(FrameTarget &target);
       [[nodiscard]] std::expected<void, Error> readSceneDebugTarget(FrameTarget &target);
+      template <typename TRecord> [[nodiscard]] std::expected<void, Error>
+      presentFrame(FrameTarget &target, TRecord &&record);
       [[nodiscard]] std::expected<void, Error> drawTriangleTarget(FrameTarget &target,
                                                                   const vk::ClearColorValue &color);
       [[nodiscard]] std::expected<void, Error> drawSceneTarget(FrameTarget &target,
@@ -200,6 +202,30 @@ export namespace vve::v4::vh {
    };
 
 } // namespace vve::v4::vh
+
+namespace vve::v4::vh::detail {
+
+   /// @brief Destroy helpers keep FrameTarget teardown compact and visibly symmetric.
+   inline void destroy(vk::Device device, vk::Pipeline &handle) { if (handle) { device.destroyPipeline(handle); } }
+   inline void destroy(vk::Device device, vk::PipelineLayout &handle) {
+      if (handle) { device.destroyPipelineLayout(handle); }
+   }
+   inline void destroy(vk::Device device, vk::Buffer &handle) { if (handle) { device.destroyBuffer(handle); } }
+   inline void destroy(vk::Device device, vk::DeviceMemory &handle) { if (handle) { device.freeMemory(handle); } }
+   inline void destroy(vk::Device device, vk::ImageView &handle) { if (handle) { device.destroyImageView(handle); } }
+   inline void destroy(vk::Device device, vk::Image &handle) { if (handle) { device.destroyImage(handle); } }
+   inline void destroy(vk::Device device, vk::Sampler &handle) { if (handle) { device.destroySampler(handle); } }
+   inline void destroy(vk::Device device, vk::DescriptorPool &handle) {
+      if (handle) { device.destroyDescriptorPool(handle); }
+   }
+   inline void destroy(vk::Device device, vk::DescriptorSetLayout &handle) {
+      if (handle) { device.destroyDescriptorSetLayout(handle); }
+   }
+   inline void destroy(vk::Device device, vk::SwapchainKHR &handle) {
+      if (handle) { device.destroySwapchainKHR(handle); }
+   }
+
+} // namespace vve::v4::vh::detail
 
 namespace vve::v4::vh {
 
@@ -499,9 +525,10 @@ namespace vve::v4::vh {
                                      std::span<const std::uint32_t> fragment_spirv,
                                      std::string_view fragment_entry) {
       if (target.triangle_pipeline) { return {}; }
-      const auto result = low::createTrianglePipeline(device_, target.color_format, vertex_spirv, vertex_entry,
-                                                      fragment_spirv, fragment_entry,
-                                                      &target.triangle_layout, &target.triangle_pipeline);
+      const auto color_formats = std::array{target.color_format};
+      const auto result = low::createGraphicsPipeline(device_, vertex_spirv, vertex_entry, fragment_spirv,
+                                                      fragment_entry, {}, {}, {}, {}, color_formats, {},
+                                                      false, &target.triangle_layout, &target.triangle_pipeline);
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
    }
 
@@ -512,10 +539,26 @@ namespace vve::v4::vh {
                                   std::span<const std::uint32_t> fragment_spirv,
                                   std::string_view fragment_entry) {
       if (target.scene_pipeline) { return {}; }
-      const auto result = low::createScenePipeline(device_, target.color_format, target.depth_format,
-                                                   target.scene_debug_layout, vertex_spirv, vertex_entry,
-                                                   fragment_spirv, fragment_entry,
-                                                   &target.scene_layout, &target.scene_pipeline);
+      const auto push_range = vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex |
+                                                    vk::ShaderStageFlagBits::eFragment, 0,
+                                                    32U * static_cast<std::uint32_t>(sizeof(float))};
+      const auto set_layouts = std::array{target.scene_debug_layout};
+      const auto push_ranges = std::array{push_range};
+      const auto color_formats = std::array{target.color_format};
+      const auto stride = 9U * static_cast<std::uint32_t>(sizeof(float));
+      const auto vertex_binding = vk::VertexInputBindingDescription{0, stride, vk::VertexInputRate::eVertex};
+      const auto bindings = std::array{vertex_binding};
+      const auto attributes = std::array{vk::VertexInputAttributeDescription{0, 0, vk::Format::eR32G32B32Sfloat, 0},
+                                         vk::VertexInputAttributeDescription{1, 0, vk::Format::eR32G32B32Sfloat,
+                                                                            3U * static_cast<std::uint32_t>(
+                                                                                    sizeof(float))},
+                                         vk::VertexInputAttributeDescription{2, 0, vk::Format::eR32G32B32Sfloat,
+                                                                            6U * static_cast<std::uint32_t>(
+                                                                                    sizeof(float))}};
+      const auto result = low::createGraphicsPipeline(device_, vertex_spirv, vertex_entry, fragment_spirv,
+                                                      fragment_entry, set_layouts, push_ranges, bindings,
+                                                      attributes, color_formats, target.depth_format, true,
+                                                      &target.scene_layout, &target.scene_pipeline);
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
    }
 
@@ -524,8 +567,17 @@ namespace vve::v4::vh {
    FrameHost::createSceneShadowPipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
                                         std::string_view vertex_entry) {
       if (target.shadow_pipeline) { return {}; }
-      const auto result = low::createSceneShadowPipeline(device_, vertex_spirv, vertex_entry,
-                                                         &target.shadow_layout, &target.shadow_pipeline);
+      const auto push_range = vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0,
+                                                    32U * static_cast<std::uint32_t>(sizeof(float))};
+      const auto push_ranges = std::array{push_range};
+      const auto stride = 9U * static_cast<std::uint32_t>(sizeof(float));
+      const auto vertex_binding = vk::VertexInputBindingDescription{0, stride, vk::VertexInputRate::eVertex};
+      const auto bindings = std::array{vertex_binding};
+      const auto attributes = std::array{vk::VertexInputAttributeDescription{0, 0,
+                                                                            vk::Format::eR32G32B32Sfloat, 0}};
+      const auto result = low::createGraphicsPipeline(device_, vertex_spirv, vertex_entry, {}, {}, {}, push_ranges,
+                                                      bindings, attributes, {}, vk::Format::eD32Sfloat, true,
+                                                      &target.shadow_layout, &target.shadow_pipeline);
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
    }
 
@@ -616,8 +668,9 @@ namespace vve::v4::vh {
       return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
    }
 
-   /// @brief Acquires, clears, submits, waits, and presents one target image.
-   std::expected<void, Error> FrameHost::clearTarget(FrameTarget &target, const vk::ClearColorValue &color) {
+   /// @brief Acquires one swapchain image, lets a caller record work, submits, waits, and presents.
+   template <typename TRecord>
+   std::expected<void, Error> FrameHost::presentFrame(FrameTarget &target, TRecord &&record) {
       if (device_.resetFences(1, &acquire_fence_) != vk::Result::eSuccess) {
          return std::unexpected(Error::platform_error);
       }
@@ -633,11 +686,7 @@ namespace vve::v4::vh {
          return std::unexpected(Error::platform_error);
       }
 
-      const auto old_layout = target.layouts[image_index];
-      result = low::recordSwapchainClear(device_, command_pool_, command_buffer_, target.images[image_index],
-                                         target.views[image_index],
-                                         vk::Extent2D{target.extent.width, target.extent.height},
-                                         old_layout, color);
+      result = std::forward<TRecord>(record)(image_index);
       if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
 
       result = low::submitAndWait(device_, queue_, command_buffer_, frame_timeline_, ++timeline_value_);
@@ -655,87 +704,43 @@ namespace vve::v4::vh {
       return {};
    }
 
+   /// @brief Acquires, clears, submits, waits, and presents one target image.
+   std::expected<void, Error> FrameHost::clearTarget(FrameTarget &target, const vk::ClearColorValue &color) {
+      return presentFrame(target, [&](std::uint32_t image_index) {
+         return low::recordSwapchainClear(device_, command_pool_, command_buffer_, target.images[image_index],
+                                          target.views[image_index],
+                                          vk::Extent2D{target.extent.width, target.extent.height},
+                                          target.layouts[image_index], color);
+      });
+   }
+
    /// @brief Acquires, clears, draws a triangle, submits, waits, and presents one target image.
    std::expected<void, Error> FrameHost::drawTriangleTarget(FrameTarget &target, const vk::ClearColorValue &color) {
-      if (device_.resetFences(1, &acquire_fence_) != vk::Result::eSuccess) {
-         return std::unexpected(Error::platform_error);
-      }
-
-      std::uint32_t image_index{};
-      auto result = device_.acquireNextImageKHR(target.swapchain, std::numeric_limits<std::uint64_t>::max(),
-                                                nullptr, acquire_fence_, &image_index);
-      if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
-         return std::unexpected(Error::platform_error);
-      }
-      result = device_.waitForFences(1, &acquire_fence_, VK_TRUE, std::numeric_limits<std::uint64_t>::max());
-      if (result != vk::Result::eSuccess || image_index >= target.images.size()) {
-         return std::unexpected(Error::platform_error);
-      }
-
-      result = low::recordSwapchainTriangle(device_, command_pool_, command_buffer_, target.images[image_index],
-                                            target.views[image_index],
-                                            vk::Extent2D{target.extent.width, target.extent.height},
-                                            target.layouts[image_index], target.triangle_pipeline, color);
-      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
-
-      result = low::submitAndWait(device_, queue_, command_buffer_, frame_timeline_, ++timeline_value_);
-      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
-
-      auto present = vk::PresentInfoKHR{};
-      present.swapchainCount = 1;
-      present.pSwapchains = &target.swapchain;
-      present.pImageIndices = &image_index;
-      result = queue_.presentKHR(&present);
-      if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
-         return std::unexpected(Error::platform_error);
-      }
-      target.layouts[image_index] = vk::ImageLayout::ePresentSrcKHR;
-      return {};
+      return presentFrame(target, [&](std::uint32_t image_index) {
+         return low::recordSwapchainTriangle(device_, command_pool_, command_buffer_, target.images[image_index],
+                                             target.views[image_index],
+                                             vk::Extent2D{target.extent.width, target.extent.height},
+                                             target.layouts[image_index], target.triangle_pipeline, color);
+      });
    }
 
    /// @brief Acquires, clears, draws uploaded scene geometry, submits, waits, and presents one target image.
    std::expected<void, Error>
    FrameHost::drawSceneTarget(FrameTarget &target, const vk::ClearColorValue &color,
                               std::span<const float> scene_constants) {
-      if (device_.resetFences(1, &acquire_fence_) != vk::Result::eSuccess) {
-         return std::unexpected(Error::platform_error);
-      }
-
-      std::uint32_t image_index{};
-      auto result = device_.acquireNextImageKHR(target.swapchain, std::numeric_limits<std::uint64_t>::max(),
-                                                nullptr, acquire_fence_, &image_index);
-      if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
-         return std::unexpected(Error::platform_error);
-      }
-      result = device_.waitForFences(1, &acquire_fence_, VK_TRUE, std::numeric_limits<std::uint64_t>::max());
-      if (result != vk::Result::eSuccess || image_index >= target.images.size()) {
-         return std::unexpected(Error::platform_error);
-      }
-
-      result = low::recordSwapchainScene(device_, command_pool_, command_buffer_, target.images[image_index],
-                                         target.views[image_index],
-                                         vk::Extent2D{target.extent.width, target.extent.height},
-                                         target.layouts[image_index], target.depth_image, target.depth_view,
-                                         target.depth_layout, target.shadow_depth_image,
-                                         target.shadow_depth_layout, target.scene_layout,
-                                         target.scene_pipeline, target.scene_vertices, target.scene_indices,
-                                         target.scene_debug_set, target.scene_debug_buffer,
-                                         sizeof(SceneDebugSample) * scene_debug_samples_.size(),
-                                         target.scene_index_count, scene_constants, color);
-      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
-
-      result = low::submitAndWait(device_, queue_, command_buffer_, frame_timeline_, ++timeline_value_);
-      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
-
-      auto present = vk::PresentInfoKHR{};
-      present.swapchainCount = 1;
-      present.pSwapchains = &target.swapchain;
-      present.pImageIndices = &image_index;
-      result = queue_.presentKHR(&present);
-      if (result != vk::Result::eSuccess && result != vk::Result::eSuboptimalKHR) {
-         return std::unexpected(Error::platform_error);
-      }
-      target.layouts[image_index] = vk::ImageLayout::ePresentSrcKHR;
+      const auto result = presentFrame(target, [&](std::uint32_t image_index) {
+         return low::recordSwapchainScene(device_, command_pool_, command_buffer_, target.images[image_index],
+                                          target.views[image_index],
+                                          vk::Extent2D{target.extent.width, target.extent.height},
+                                          target.layouts[image_index], target.depth_image, target.depth_view,
+                                          target.depth_layout, target.shadow_depth_image,
+                                          target.shadow_depth_layout, target.scene_layout,
+                                          target.scene_pipeline, target.scene_vertices, target.scene_indices,
+                                          target.scene_debug_set, target.scene_debug_buffer,
+                                          sizeof(SceneDebugSample) * scene_debug_samples_.size(),
+                                          target.scene_index_count, scene_constants, color);
+      });
+      if (!result) { return result; }
       target.depth_layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
       target.shadow_depth_layout = vk::ImageLayout::eShaderReadOnlyOptimal;
       return {};
@@ -793,31 +798,31 @@ namespace vve::v4::vh {
    void FrameHost::destroyTargets() {
       if (device_) { static_cast<void>(device_.waitIdle()); }
       for (auto &target : std::views::reverse(targets_)) {
-         if (target.triangle_pipeline) { device_.destroyPipeline(target.triangle_pipeline); }
-         if (target.triangle_layout) { device_.destroyPipelineLayout(target.triangle_layout); }
-         if (target.scene_pipeline) { device_.destroyPipeline(target.scene_pipeline); }
-         if (target.scene_layout) { device_.destroyPipelineLayout(target.scene_layout); }
-         if (target.shadow_pipeline) { device_.destroyPipeline(target.shadow_pipeline); }
-         if (target.shadow_layout) { device_.destroyPipelineLayout(target.shadow_layout); }
-         if (target.scene_vertices) { device_.destroyBuffer(target.scene_vertices); }
-         if (target.scene_vertex_memory) { device_.freeMemory(target.scene_vertex_memory); }
-         if (target.scene_indices) { device_.destroyBuffer(target.scene_indices); }
-         if (target.scene_index_memory) { device_.freeMemory(target.scene_index_memory); }
-         if (target.shadow_readback) { device_.destroyBuffer(target.shadow_readback); }
-         if (target.shadow_readback_memory) { device_.freeMemory(target.shadow_readback_memory); }
-         if (target.shadow_sampler) { device_.destroySampler(target.shadow_sampler); }
-         if (target.shadow_depth_view) { device_.destroyImageView(target.shadow_depth_view); }
-         if (target.shadow_depth_image) { device_.destroyImage(target.shadow_depth_image); }
-         if (target.shadow_depth_memory) { device_.freeMemory(target.shadow_depth_memory); }
-         if (target.scene_debug_pool) { device_.destroyDescriptorPool(target.scene_debug_pool); }
-         if (target.scene_debug_layout) { device_.destroyDescriptorSetLayout(target.scene_debug_layout); }
-         if (target.scene_debug_buffer) { device_.destroyBuffer(target.scene_debug_buffer); }
-         if (target.scene_debug_memory) { device_.freeMemory(target.scene_debug_memory); }
-         if (target.depth_view) { device_.destroyImageView(target.depth_view); }
-         if (target.depth_image) { device_.destroyImage(target.depth_image); }
-         if (target.depth_memory) { device_.freeMemory(target.depth_memory); }
-         for (const auto view : target.views) { device_.destroyImageView(view); }
-         if (target.swapchain) { device_.destroySwapchainKHR(target.swapchain); }
+         detail::destroy(device_, target.triangle_pipeline);
+         detail::destroy(device_, target.triangle_layout);
+         detail::destroy(device_, target.scene_pipeline);
+         detail::destroy(device_, target.scene_layout);
+         detail::destroy(device_, target.shadow_pipeline);
+         detail::destroy(device_, target.shadow_layout);
+         detail::destroy(device_, target.scene_vertices);
+         detail::destroy(device_, target.scene_vertex_memory);
+         detail::destroy(device_, target.scene_indices);
+         detail::destroy(device_, target.scene_index_memory);
+         detail::destroy(device_, target.shadow_readback);
+         detail::destroy(device_, target.shadow_readback_memory);
+         detail::destroy(device_, target.shadow_sampler);
+         detail::destroy(device_, target.shadow_depth_view);
+         detail::destroy(device_, target.shadow_depth_image);
+         detail::destroy(device_, target.shadow_depth_memory);
+         detail::destroy(device_, target.scene_debug_pool);
+         detail::destroy(device_, target.scene_debug_layout);
+         detail::destroy(device_, target.scene_debug_buffer);
+         detail::destroy(device_, target.scene_debug_memory);
+         detail::destroy(device_, target.depth_view);
+         detail::destroy(device_, target.depth_image);
+         detail::destroy(device_, target.depth_memory);
+         for (auto view : target.views) { detail::destroy(device_, view); }
+         detail::destroy(device_, target.swapchain);
          if (target.surface) {
             SDL_Vulkan_DestroySurface(static_cast<VkInstance>(instance_),
                                       static_cast<VkSurfaceKHR>(target.surface), nullptr);

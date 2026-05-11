@@ -41,6 +41,11 @@ export namespace vve::v4::vh::low {
                            vk::Image *image, vk::DeviceMemory *memory, vk::ImageView *view);
    [[nodiscard]] vk::Result createShadowSampler(vk::Device device, vk::Sampler *sampler);
    [[nodiscard]] vk::Result
+   createImageTarget(vk::PhysicalDevice physical_device, vk::Device device, vk::Extent2D extent,
+                     vk::Format format, vk::ImageUsageFlags usage, vk::FormatFeatureFlags features,
+                     vk::ImageAspectFlags aspect, vk::Image *image, vk::DeviceMemory *memory,
+                     vk::ImageView *view);
+   [[nodiscard]] vk::Result
    createFrameExecutor(vk::Device device, std::uint32_t queue_family, vk::CommandPool *pool,
                        vk::CommandBuffer *command_buffer, vk::Semaphore *timeline, vk::Fence *acquire_fence);
    [[nodiscard]] vk::Result
@@ -58,19 +63,15 @@ export namespace vve::v4::vh::low {
                         vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
                         const vk::ClearColorValue &clear_color);
    [[nodiscard]] vk::Result
-   createTrianglePipeline(vk::Device device, vk::Format color_format, std::span<const std::uint32_t> vertex_spirv,
+   createGraphicsPipeline(vk::Device device, std::span<const std::uint32_t> vertex_spirv,
                           std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
-                          std::string_view fragment_entry, vk::PipelineLayout *layout, vk::Pipeline *pipeline);
-   [[nodiscard]] vk::Result
-   createScenePipeline(vk::Device device, vk::Format color_format, vk::Format depth_format,
-                       vk::DescriptorSetLayout debug_layout,
-                       std::span<const std::uint32_t> vertex_spirv, std::string_view vertex_entry,
-                       std::span<const std::uint32_t> fragment_spirv, std::string_view fragment_entry,
-                       vk::PipelineLayout *layout, vk::Pipeline *pipeline);
-   [[nodiscard]] vk::Result
-   createSceneShadowPipeline(vk::Device device, std::span<const std::uint32_t> vertex_spirv,
-                             std::string_view vertex_entry, vk::PipelineLayout *layout,
-                             vk::Pipeline *pipeline);
+                          std::string_view fragment_entry,
+                          std::span<const vk::DescriptorSetLayout> set_layouts,
+                          std::span<const vk::PushConstantRange> push_ranges,
+                          std::span<const vk::VertexInputBindingDescription> vertex_bindings,
+                          std::span<const vk::VertexInputAttributeDescription> vertex_attributes,
+                          std::span<const vk::Format> color_formats, vk::Format depth_format,
+                          bool depth_enabled, vk::PipelineLayout *layout, vk::Pipeline *pipeline);
    [[nodiscard]] vk::Result
    recordSwapchainTriangle(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                            vk::Image image, vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
@@ -332,6 +333,100 @@ namespace vve::v4::vh::low::detail {
          support.descriptor_buffer_image_layout_ignored ? VK_TRUE : VK_FALSE;
       descriptor_buffer.descriptorBufferPushDescriptors =
          support.descriptor_buffer_push_descriptors ? VK_TRUE : VK_FALSE;
+   }
+
+   [[nodiscard]] vk::ImageSubresourceRange imageRange(vk::ImageAspectFlags aspect) {
+      auto range = vk::ImageSubresourceRange{};
+      range.aspectMask = aspect;
+      range.levelCount = 1;
+      range.layerCount = 1;
+      return range;
+   }
+
+   [[nodiscard]] vk::ImageMemoryBarrier2
+   imageBarrier(vk::Image image, vk::ImageAspectFlags aspect, vk::ImageLayout old_layout,
+                vk::ImageLayout new_layout, vk::PipelineStageFlags2 src_stage,
+                vk::AccessFlags2 src_access, vk::PipelineStageFlags2 dst_stage,
+                vk::AccessFlags2 dst_access) {
+      auto barrier = vk::ImageMemoryBarrier2{};
+      barrier.srcStageMask = src_stage;
+      barrier.srcAccessMask = src_access;
+      barrier.dstStageMask = dst_stage;
+      barrier.dstAccessMask = dst_access;
+      barrier.oldLayout = old_layout;
+      barrier.newLayout = new_layout;
+      barrier.image = image;
+      barrier.subresourceRange = imageRange(aspect);
+      return barrier;
+   }
+
+   void imageBarrier(vk::CommandBuffer command_buffer, const vk::ImageMemoryBarrier2 &barrier) {
+      auto dependency = vk::DependencyInfo{};
+      dependency.imageMemoryBarrierCount = 1;
+      dependency.pImageMemoryBarriers = &barrier;
+      command_buffer.pipelineBarrier2(&dependency);
+   }
+
+   void bufferBarrier(vk::CommandBuffer command_buffer, const vk::BufferMemoryBarrier2 &barrier) {
+      auto dependency = vk::DependencyInfo{};
+      dependency.bufferMemoryBarrierCount = 1;
+      dependency.pBufferMemoryBarriers = &barrier;
+      command_buffer.pipelineBarrier2(&dependency);
+   }
+
+   [[nodiscard]] vk::BufferMemoryBarrier2
+   bufferBarrier(vk::Buffer buffer, vk::DeviceSize size, vk::PipelineStageFlags2 src_stage,
+                 vk::AccessFlags2 src_access, vk::PipelineStageFlags2 dst_stage, vk::AccessFlags2 dst_access) {
+      auto barrier = vk::BufferMemoryBarrier2{};
+      barrier.srcStageMask = src_stage;
+      barrier.srcAccessMask = src_access;
+      barrier.dstStageMask = dst_stage;
+      barrier.dstAccessMask = dst_access;
+      barrier.buffer = buffer;
+      barrier.offset = 0;
+      barrier.size = size;
+      return barrier;
+   }
+
+   [[nodiscard]] vk::Result beginOneTime(vk::Device device, vk::CommandPool pool,
+                                         vk::CommandBuffer command_buffer) {
+      auto result = device.resetCommandPool(pool);
+      if (result != vk::Result::eSuccess) { return result; }
+      auto begin = vk::CommandBufferBeginInfo{vk::CommandBufferUsageFlagBits::eOneTimeSubmit};
+      return command_buffer.begin(&begin);
+   }
+
+   [[nodiscard]] vk::RenderingAttachmentInfo colorAttachment(vk::ImageView view,
+                                                             const vk::ClearColorValue &clear_color) {
+      auto clear = vk::ClearValue{};
+      clear.color = clear_color;
+      auto attachment = vk::RenderingAttachmentInfo{};
+      attachment.imageView = view;
+      attachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
+      attachment.loadOp = vk::AttachmentLoadOp::eClear;
+      attachment.storeOp = vk::AttachmentStoreOp::eStore;
+      attachment.clearValue = clear;
+      return attachment;
+   }
+
+   [[nodiscard]] vk::RenderingAttachmentInfo depthAttachment(vk::ImageView view) {
+      auto clear = vk::ClearValue{};
+      clear.depthStencil = vk::ClearDepthStencilValue{1.0F, 0};
+      auto attachment = vk::RenderingAttachmentInfo{};
+      attachment.imageView = view;
+      attachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+      attachment.loadOp = vk::AttachmentLoadOp::eClear;
+      attachment.storeOp = vk::AttachmentStoreOp::eStore;
+      attachment.clearValue = clear;
+      return attachment;
+   }
+
+   void setViewportAndScissor(vk::CommandBuffer command_buffer, vk::Extent2D extent) {
+      auto viewport = vk::Viewport{0.0F, 0.0F, static_cast<float>(extent.width), static_cast<float>(extent.height),
+                                   0.0F, 1.0F};
+      auto scissor = vk::Rect2D{vk::Offset2D{0, 0}, extent};
+      command_buffer.setViewport(0, 1, &viewport);
+      command_buffer.setScissor(0, 1, &scissor);
    }
 
    [[nodiscard]] std::vector<std::string>
@@ -672,103 +767,77 @@ namespace vve::v4::vh::low {
       return vk::Result::eSuccess;
    }
 
+   /// @brief Creates a device-local image, its memory, and a matching 2D image view.
+   vk::Result createImageTarget(vk::PhysicalDevice physical_device, vk::Device device, vk::Extent2D extent,
+                                vk::Format format, vk::ImageUsageFlags usage, vk::FormatFeatureFlags features,
+                                vk::ImageAspectFlags aspect, vk::Image *image, vk::DeviceMemory *memory,
+                                vk::ImageView *view) {
+      const auto props = physical_device.getFormatProperties(format);
+      if ((props.optimalTilingFeatures & features) != features) { return vk::Result::eErrorFormatNotSupported; }
+
+      auto image_info = vk::ImageCreateInfo{};
+      image_info.imageType = vk::ImageType::e2D;
+      image_info.format = format;
+      image_info.extent = vk::Extent3D{extent.width, extent.height, 1};
+      image_info.mipLevels = 1;
+      image_info.arrayLayers = 1;
+      image_info.samples = vk::SampleCountFlagBits::e1;
+      image_info.tiling = vk::ImageTiling::eOptimal;
+      image_info.usage = usage;
+      auto result = device.createImage(&image_info, nullptr, image);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      const auto requirements = device.getImageMemoryRequirements(*image);
+      const auto memory_type = findMemoryType(physical_device, requirements.memoryTypeBits,
+                                              vk::MemoryPropertyFlagBits::eDeviceLocal);
+      if (!memory_type) { return vk::Result::eErrorMemoryMapFailed; }
+
+      auto memory_info = vk::MemoryAllocateInfo{};
+      memory_info.allocationSize = requirements.size;
+      memory_info.memoryTypeIndex = *memory_type;
+      result = device.allocateMemory(&memory_info, nullptr, memory);
+      if (result != vk::Result::eSuccess) { return result; }
+      result = device.bindImageMemory(*image, *memory, 0);
+      if (result != vk::Result::eSuccess) { return result; }
+
+      auto range = vk::ImageSubresourceRange{};
+      range.aspectMask = aspect;
+      range.levelCount = 1;
+      range.layerCount = 1;
+      auto view_info = vk::ImageViewCreateInfo{};
+      view_info.image = *image;
+      view_info.viewType = vk::ImageViewType::e2D;
+      view_info.format = format;
+      view_info.subresourceRange = range;
+      return device.createImageView(&view_info, nullptr, view);
+   }
+
    /// @brief Creates a device-local depth image, allocates memory, binds it, and creates its view.
    vk::Result createDepthTarget(vk::PhysicalDevice physical_device, vk::Device device, vk::Extent2D extent,
                                 vk::Format *format, vk::Image *image, vk::DeviceMemory *memory,
                                 vk::ImageView *view) {
       constexpr auto formats = std::array{vk::Format::eD32Sfloat, vk::Format::eD24UnormS8Uint,
                                           vk::Format::eD32SfloatS8Uint};
+      const auto features = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
       const auto it = std::ranges::find_if(formats, [&](vk::Format candidate) {
-         const auto props = physical_device.getFormatProperties(candidate);
-         return (props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment) ==
-                vk::FormatFeatureFlagBits::eDepthStencilAttachment;
+         return (physical_device.getFormatProperties(candidate).optimalTilingFeatures & features) == features;
       });
       if (it == formats.end()) { return vk::Result::eErrorFormatNotSupported; }
 
       *format = *it;
-      auto image_info = vk::ImageCreateInfo{};
-      image_info.imageType = vk::ImageType::e2D;
-      image_info.format = *format;
-      image_info.extent = vk::Extent3D{extent.width, extent.height, 1};
-      image_info.mipLevels = 1;
-      image_info.arrayLayers = 1;
-      image_info.samples = vk::SampleCountFlagBits::e1;
-      image_info.tiling = vk::ImageTiling::eOptimal;
-      image_info.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment;
-      auto result = device.createImage(&image_info, nullptr, image);
-      if (result != vk::Result::eSuccess) { return result; }
-
-      const auto requirements = device.getImageMemoryRequirements(*image);
-      const auto memory_type = findMemoryType(physical_device, requirements.memoryTypeBits,
-                                              vk::MemoryPropertyFlagBits::eDeviceLocal);
-      if (!memory_type) { return vk::Result::eErrorMemoryMapFailed; }
-
-      auto memory_info = vk::MemoryAllocateInfo{};
-      memory_info.allocationSize = requirements.size;
-      memory_info.memoryTypeIndex = *memory_type;
-      result = device.allocateMemory(&memory_info, nullptr, memory);
-      if (result != vk::Result::eSuccess) { return result; }
-      result = device.bindImageMemory(*image, *memory, 0);
-      if (result != vk::Result::eSuccess) { return result; }
-
-      auto range = vk::ImageSubresourceRange{};
-      range.aspectMask = vk::ImageAspectFlagBits::eDepth;
-      range.levelCount = 1;
-      range.layerCount = 1;
-      auto view_info = vk::ImageViewCreateInfo{};
-      view_info.image = *image;
-      view_info.viewType = vk::ImageViewType::e2D;
-      view_info.format = *format;
-      view_info.subresourceRange = range;
-      return device.createImageView(&view_info, nullptr, view);
+      return createImageTarget(physical_device, device, extent, *format,
+                               vk::ImageUsageFlagBits::eDepthStencilAttachment, features,
+                               vk::ImageAspectFlagBits::eDepth, image, memory, view);
    }
 
    /// @brief Creates a readable D32 shadow-map depth image and its view.
    vk::Result createShadowDepthTarget(vk::PhysicalDevice physical_device, vk::Device device, vk::Extent2D extent,
                                       vk::Image *image, vk::DeviceMemory *memory, vk::ImageView *view) {
-      const auto props = physical_device.getFormatProperties(vk::Format::eD32Sfloat);
-      if ((props.optimalTilingFeatures & vk::FormatFeatureFlagBits::eDepthStencilAttachment) !=
-          vk::FormatFeatureFlagBits::eDepthStencilAttachment) {
-         return vk::Result::eErrorFormatNotSupported;
-      }
-
-      auto image_info = vk::ImageCreateInfo{};
-      image_info.imageType = vk::ImageType::e2D;
-      image_info.format = vk::Format::eD32Sfloat;
-      image_info.extent = vk::Extent3D{extent.width, extent.height, 1};
-      image_info.mipLevels = 1;
-      image_info.arrayLayers = 1;
-      image_info.samples = vk::SampleCountFlagBits::e1;
-      image_info.tiling = vk::ImageTiling::eOptimal;
-      image_info.usage = vk::ImageUsageFlagBits::eDepthStencilAttachment |
-                         vk::ImageUsageFlagBits::eTransferSrc |
+      const auto features = vk::FormatFeatureFlagBits::eDepthStencilAttachment;
+      const auto usage = vk::ImageUsageFlagBits::eDepthStencilAttachment | vk::ImageUsageFlagBits::eTransferSrc |
                          vk::ImageUsageFlagBits::eSampled;
-      auto result = device.createImage(&image_info, nullptr, image);
-      if (result != vk::Result::eSuccess) { return result; }
-
-      const auto requirements = device.getImageMemoryRequirements(*image);
-      const auto memory_type = findMemoryType(physical_device, requirements.memoryTypeBits,
-                                              vk::MemoryPropertyFlagBits::eDeviceLocal);
-      if (!memory_type) { return vk::Result::eErrorMemoryMapFailed; }
-
-      auto memory_info = vk::MemoryAllocateInfo{};
-      memory_info.allocationSize = requirements.size;
-      memory_info.memoryTypeIndex = *memory_type;
-      result = device.allocateMemory(&memory_info, nullptr, memory);
-      if (result != vk::Result::eSuccess) { return result; }
-      result = device.bindImageMemory(*image, *memory, 0);
-      if (result != vk::Result::eSuccess) { return result; }
-
-      auto range = vk::ImageSubresourceRange{};
-      range.aspectMask = vk::ImageAspectFlagBits::eDepth;
-      range.levelCount = 1;
-      range.layerCount = 1;
-      auto view_info = vk::ImageViewCreateInfo{};
-      view_info.image = *image;
-      view_info.viewType = vk::ImageViewType::e2D;
-      view_info.format = vk::Format::eD32Sfloat;
-      view_info.subresourceRange = range;
-      return device.createImageView(&view_info, nullptr, view);
+      return createImageTarget(physical_device, device, extent, vk::Format::eD32Sfloat, usage, features,
+                               vk::ImageAspectFlagBits::eDepth, image, memory, view);
    }
 
    /// @brief Creates the nearest sampler used for exact shadow-depth verification.
@@ -930,41 +999,17 @@ namespace vve::v4::vh::low {
    vk::Result recordSwapchainClear(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                                    vk::Image image, vk::ImageView view, vk::Extent2D extent,
                                    vk::ImageLayout old_layout, const vk::ClearColorValue &clear_color) {
-      auto result = device.resetCommandPool(pool);
+      auto result = detail::beginOneTime(device, pool, command_buffer);
       if (result != vk::Result::eSuccess) { return result; }
 
-      auto begin = vk::CommandBufferBeginInfo{};
-      begin.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-      result = command_buffer.begin(&begin);
-      if (result != vk::Result::eSuccess) { return result; }
+      auto to_attachment = detail::imageBarrier(image, vk::ImageAspectFlagBits::eColor, old_layout,
+                                                vk::ImageLayout::eColorAttachmentOptimal,
+                                                vk::PipelineStageFlagBits2::eNone, vk::AccessFlagBits2::eNone,
+                                                vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                                vk::AccessFlagBits2::eColorAttachmentWrite);
+      detail::imageBarrier(command_buffer, to_attachment);
 
-      auto range = vk::ImageSubresourceRange{};
-      range.aspectMask = vk::ImageAspectFlagBits::eColor;
-      range.levelCount = 1;
-      range.layerCount = 1;
-
-      auto to_attachment = vk::ImageMemoryBarrier2{};
-      to_attachment.srcStageMask = vk::PipelineStageFlagBits2::eNone;
-      to_attachment.srcAccessMask = vk::AccessFlagBits2::eNone;
-      to_attachment.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
-      to_attachment.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
-      to_attachment.oldLayout = old_layout;
-      to_attachment.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-      to_attachment.image = image;
-      to_attachment.subresourceRange = range;
-      auto dependency = vk::DependencyInfo{};
-      dependency.imageMemoryBarrierCount = 1;
-      dependency.pImageMemoryBarriers = &to_attachment;
-      command_buffer.pipelineBarrier2(&dependency);
-
-      auto clear = vk::ClearValue{};
-      clear.color = clear_color;
-      auto attachment = vk::RenderingAttachmentInfo{};
-      attachment.imageView = view;
-      attachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-      attachment.loadOp = vk::AttachmentLoadOp::eClear;
-      attachment.storeOp = vk::AttachmentStoreOp::eStore;
-      attachment.clearValue = clear;
+      auto attachment = detail::colorAttachment(view, clear_color);
       auto rendering = vk::RenderingInfo{};
       rendering.renderArea = vk::Rect2D{vk::Offset2D{0, 0}, extent};
       rendering.layerCount = 1;
@@ -980,18 +1025,21 @@ namespace vve::v4::vh::low {
       to_present.dstAccessMask = vk::AccessFlagBits2::eNone;
       to_present.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
       to_present.newLayout = vk::ImageLayout::ePresentSrcKHR;
-      dependency.pImageMemoryBarriers = &to_present;
-      command_buffer.pipelineBarrier2(&dependency);
+      detail::imageBarrier(command_buffer, to_present);
       return command_buffer.end();
    }
 
-   /// @brief Creates a no-input graphics pipeline for the hardcoded triangle shader.
-   vk::Result createTrianglePipeline(vk::Device device, vk::Format color_format,
-                                     std::span<const std::uint32_t> vertex_spirv,
+   /// @brief Creates one dynamic-rendering graphics pipeline from explicit Vulkan descriptions.
+   vk::Result createGraphicsPipeline(vk::Device device, std::span<const std::uint32_t> vertex_spirv,
                                      std::string_view vertex_entry,
                                      std::span<const std::uint32_t> fragment_spirv,
                                      std::string_view fragment_entry,
-                                     vk::PipelineLayout *layout, vk::Pipeline *pipeline) {
+                                     std::span<const vk::DescriptorSetLayout> set_layouts,
+                                     std::span<const vk::PushConstantRange> push_ranges,
+                                     std::span<const vk::VertexInputBindingDescription> vertex_bindings,
+                                     std::span<const vk::VertexInputAttributeDescription> vertex_attributes,
+                                     std::span<const vk::Format> color_formats, vk::Format depth_format,
+                                     bool depth_enabled, vk::PipelineLayout *layout, vk::Pipeline *pipeline) {
       auto shader_info = vk::ShaderModuleCreateInfo{};
       shader_info.codeSize = vertex_spirv.size_bytes();
       shader_info.pCode = vertex_spirv.data();
@@ -999,19 +1047,25 @@ namespace vve::v4::vh::low {
       auto result = device.createShaderModule(&shader_info, nullptr, &vertex_shader);
       if (result != vk::Result::eSuccess) { return result; }
 
-      shader_info.codeSize = fragment_spirv.size_bytes();
-      shader_info.pCode = fragment_spirv.data();
       vk::ShaderModule fragment_shader{};
-      result = device.createShaderModule(&shader_info, nullptr, &fragment_shader);
-      if (result != vk::Result::eSuccess) {
-         device.destroyShaderModule(vertex_shader);
-         return result;
+      if (!fragment_spirv.empty()) {
+         shader_info.codeSize = fragment_spirv.size_bytes();
+         shader_info.pCode = fragment_spirv.data();
+         result = device.createShaderModule(&shader_info, nullptr, &fragment_shader);
+         if (result != vk::Result::eSuccess) {
+            device.destroyShaderModule(vertex_shader);
+            return result;
+         }
       }
 
       auto layout_info = vk::PipelineLayoutCreateInfo{};
+      layout_info.setLayoutCount = static_cast<std::uint32_t>(set_layouts.size());
+      layout_info.pSetLayouts = set_layouts.data();
+      layout_info.pushConstantRangeCount = static_cast<std::uint32_t>(push_ranges.size());
+      layout_info.pPushConstantRanges = push_ranges.data();
       result = device.createPipelineLayout(&layout_info, nullptr, layout);
       if (result != vk::Result::eSuccess) {
-         device.destroyShaderModule(fragment_shader);
+         if (fragment_shader) { device.destroyShaderModule(fragment_shader); }
          device.destroyShaderModule(vertex_shader);
          return result;
       }
@@ -1022,128 +1076,11 @@ namespace vve::v4::vh::low {
       stages[0].stage = vk::ShaderStageFlagBits::eVertex;
       stages[0].module = vertex_shader;
       stages[0].pName = vertex_name.c_str();
-      stages[1].stage = vk::ShaderStageFlagBits::eFragment;
-      stages[1].module = fragment_shader;
-      stages[1].pName = fragment_name.c_str();
       auto vertex_input = vk::PipelineVertexInputStateCreateInfo{};
-      auto assembly = vk::PipelineInputAssemblyStateCreateInfo{};
-      assembly.topology = vk::PrimitiveTopology::eTriangleList;
-      auto viewport_state = vk::PipelineViewportStateCreateInfo{};
-      viewport_state.viewportCount = 1;
-      viewport_state.scissorCount = 1;
-      auto raster = vk::PipelineRasterizationStateCreateInfo{};
-      raster.polygonMode = vk::PolygonMode::eFill;
-      raster.cullMode = vk::CullModeFlagBits::eNone;
-      raster.frontFace = vk::FrontFace::eCounterClockwise;
-      raster.lineWidth = 1.0F;
-      auto multisample = vk::PipelineMultisampleStateCreateInfo{};
-      multisample.rasterizationSamples = vk::SampleCountFlagBits::e1;
-      auto blend_attachment = vk::PipelineColorBlendAttachmentState{};
-      blend_attachment.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
-                                        vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
-      auto blend = vk::PipelineColorBlendStateCreateInfo{};
-      blend.attachmentCount = 1;
-      blend.pAttachments = &blend_attachment;
-      constexpr std::array dynamic_states{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-      auto dynamic = vk::PipelineDynamicStateCreateInfo{};
-      dynamic.dynamicStateCount = static_cast<std::uint32_t>(dynamic_states.size());
-      dynamic.pDynamicStates = dynamic_states.data();
-      auto rendering = vk::PipelineRenderingCreateInfo{};
-      rendering.colorAttachmentCount = 1;
-      rendering.pColorAttachmentFormats = &color_format;
-      auto info = vk::GraphicsPipelineCreateInfo{};
-      info.pNext = &rendering;
-      info.stageCount = static_cast<std::uint32_t>(stages.size());
-      info.pStages = stages.data();
-      info.pVertexInputState = &vertex_input;
-      info.pInputAssemblyState = &assembly;
-      info.pViewportState = &viewport_state;
-      info.pRasterizationState = &raster;
-      info.pMultisampleState = &multisample;
-      info.pColorBlendState = &blend;
-      info.pDynamicState = &dynamic;
-      info.layout = *layout;
-      result = device.createGraphicsPipelines(nullptr, 1, &info, nullptr, pipeline);
-      device.destroyShaderModule(fragment_shader);
-      device.destroyShaderModule(vertex_shader);
-      if (result != vk::Result::eSuccess) { device.destroyPipelineLayout(*layout); }
-      return result;
-   }
-
-   /// @brief Creates a position/color input graphics pipeline for uploaded debug scene geometry.
-   vk::Result createScenePipeline(vk::Device device, vk::Format color_format, vk::Format depth_format,
-                                  vk::DescriptorSetLayout debug_layout,
-                                  std::span<const std::uint32_t> vertex_spirv,
-                                  std::string_view vertex_entry,
-                                  std::span<const std::uint32_t> fragment_spirv,
-                                  std::string_view fragment_entry,
-                                  vk::PipelineLayout *layout, vk::Pipeline *pipeline) {
-      auto shader_info = vk::ShaderModuleCreateInfo{};
-      shader_info.codeSize = vertex_spirv.size_bytes();
-      shader_info.pCode = vertex_spirv.data();
-      vk::ShaderModule vertex_shader{};
-      auto result = device.createShaderModule(&shader_info, nullptr, &vertex_shader);
-      if (result != vk::Result::eSuccess) { return result; }
-
-      shader_info.codeSize = fragment_spirv.size_bytes();
-      shader_info.pCode = fragment_spirv.data();
-      vk::ShaderModule fragment_shader{};
-      result = device.createShaderModule(&shader_info, nullptr, &fragment_shader);
-      if (result != vk::Result::eSuccess) {
-         device.destroyShaderModule(vertex_shader);
-         return result;
-      }
-
-      auto push_range = vk::PushConstantRange{};
-      push_range.stageFlags = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
-      push_range.offset = 0;
-      push_range.size = 32U * static_cast<std::uint32_t>(sizeof(float));
-      auto layout_info = vk::PipelineLayoutCreateInfo{};
-      layout_info.setLayoutCount = 1;
-      layout_info.pSetLayouts = &debug_layout;
-      layout_info.pushConstantRangeCount = 1;
-      layout_info.pPushConstantRanges = &push_range;
-      result = device.createPipelineLayout(&layout_info, nullptr, layout);
-      if (result != vk::Result::eSuccess) {
-         device.destroyShaderModule(fragment_shader);
-         device.destroyShaderModule(vertex_shader);
-         return result;
-      }
-
-      const auto vertex_name = std::string{vertex_entry};
-      const auto fragment_name = std::string{fragment_entry};
-      auto stages = std::array{vk::PipelineShaderStageCreateInfo{}, vk::PipelineShaderStageCreateInfo{}};
-      stages[0].stage = vk::ShaderStageFlagBits::eVertex;
-      stages[0].module = vertex_shader;
-      stages[0].pName = vertex_name.c_str();
-      stages[1].stage = vk::ShaderStageFlagBits::eFragment;
-      stages[1].module = fragment_shader;
-      stages[1].pName = fragment_name.c_str();
-
-      auto binding = vk::VertexInputBindingDescription{};
-      binding.binding = 0;
-      binding.stride = 9U * static_cast<std::uint32_t>(sizeof(float));
-      binding.inputRate = vk::VertexInputRate::eVertex;
-      auto attributes = std::array{vk::VertexInputAttributeDescription{},
-                                   vk::VertexInputAttributeDescription{},
-                                   vk::VertexInputAttributeDescription{}};
-      attributes[0].location = 0;
-      attributes[0].binding = 0;
-      attributes[0].format = vk::Format::eR32G32B32Sfloat;
-      attributes[0].offset = 0;
-      attributes[1].location = 1;
-      attributes[1].binding = 0;
-      attributes[1].format = vk::Format::eR32G32B32Sfloat;
-      attributes[1].offset = 3U * static_cast<std::uint32_t>(sizeof(float));
-      attributes[2].location = 2;
-      attributes[2].binding = 0;
-      attributes[2].format = vk::Format::eR32G32B32Sfloat;
-      attributes[2].offset = 6U * static_cast<std::uint32_t>(sizeof(float));
-      auto vertex_input = vk::PipelineVertexInputStateCreateInfo{};
-      vertex_input.vertexBindingDescriptionCount = 1;
-      vertex_input.pVertexBindingDescriptions = &binding;
-      vertex_input.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributes.size());
-      vertex_input.pVertexAttributeDescriptions = attributes.data();
+      vertex_input.vertexBindingDescriptionCount = static_cast<std::uint32_t>(vertex_bindings.size());
+      vertex_input.pVertexBindingDescriptions = vertex_bindings.data();
+      vertex_input.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(vertex_attributes.size());
+      vertex_input.pVertexAttributeDescriptions = vertex_attributes.data();
 
       auto assembly = vk::PipelineInputAssemblyStateCreateInfo{};
       assembly.topology = vk::PrimitiveTopology::eTriangleList;
@@ -1164,116 +1101,39 @@ namespace vve::v4::vh::low {
       auto blend_attachment = vk::PipelineColorBlendAttachmentState{};
       blend_attachment.colorWriteMask = vk::ColorComponentFlagBits::eR | vk::ColorComponentFlagBits::eG |
                                         vk::ColorComponentFlagBits::eB | vk::ColorComponentFlagBits::eA;
+      auto blend_attachments = std::vector<vk::PipelineColorBlendAttachmentState>(color_formats.size(),
+                                                                                  blend_attachment);
       auto blend = vk::PipelineColorBlendStateCreateInfo{};
-      blend.attachmentCount = 1;
-      blend.pAttachments = &blend_attachment;
+      blend.attachmentCount = static_cast<std::uint32_t>(blend_attachments.size());
+      blend.pAttachments = blend_attachments.data();
       constexpr std::array dynamic_states{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
       auto dynamic = vk::PipelineDynamicStateCreateInfo{};
       dynamic.dynamicStateCount = static_cast<std::uint32_t>(dynamic_states.size());
       dynamic.pDynamicStates = dynamic_states.data();
       auto rendering = vk::PipelineRenderingCreateInfo{};
-      rendering.colorAttachmentCount = 1;
-      rendering.pColorAttachmentFormats = &color_format;
+      rendering.colorAttachmentCount = static_cast<std::uint32_t>(color_formats.size());
+      rendering.pColorAttachmentFormats = color_formats.data();
       rendering.depthAttachmentFormat = depth_format;
       auto info = vk::GraphicsPipelineCreateInfo{};
       info.pNext = &rendering;
-      info.stageCount = static_cast<std::uint32_t>(stages.size());
+      if (fragment_shader) {
+         stages[1].stage = vk::ShaderStageFlagBits::eFragment;
+         stages[1].module = fragment_shader;
+         stages[1].pName = fragment_name.c_str();
+      }
+      info.stageCount = fragment_shader ? 2U : 1U;
       info.pStages = stages.data();
       info.pVertexInputState = &vertex_input;
       info.pInputAssemblyState = &assembly;
       info.pViewportState = &viewport_state;
       info.pRasterizationState = &raster;
       info.pMultisampleState = &multisample;
-      info.pDepthStencilState = &depth;
-      info.pColorBlendState = &blend;
+      info.pDepthStencilState = depth_enabled ? &depth : nullptr;
+      info.pColorBlendState = color_formats.empty() ? nullptr : &blend;
       info.pDynamicState = &dynamic;
       info.layout = *layout;
       result = device.createGraphicsPipelines(nullptr, 1, &info, nullptr, pipeline);
-      device.destroyShaderModule(fragment_shader);
-      device.destroyShaderModule(vertex_shader);
-      if (result != vk::Result::eSuccess) { device.destroyPipelineLayout(*layout); }
-      return result;
-   }
-
-   /// @brief Creates the depth-only graphics pipeline used by the first shadow-map proof.
-   vk::Result createSceneShadowPipeline(vk::Device device, std::span<const std::uint32_t> vertex_spirv,
-                                        std::string_view vertex_entry, vk::PipelineLayout *layout,
-                                        vk::Pipeline *pipeline) {
-      auto shader_info = vk::ShaderModuleCreateInfo{};
-      shader_info.codeSize = vertex_spirv.size_bytes();
-      shader_info.pCode = vertex_spirv.data();
-      vk::ShaderModule vertex_shader{};
-      auto result = device.createShaderModule(&shader_info, nullptr, &vertex_shader);
-      if (result != vk::Result::eSuccess) { return result; }
-
-      auto push_range = vk::PushConstantRange{};
-      push_range.stageFlags = vk::ShaderStageFlagBits::eVertex;
-      push_range.offset = 0;
-      push_range.size = 32U * static_cast<std::uint32_t>(sizeof(float));
-      auto layout_info = vk::PipelineLayoutCreateInfo{};
-      layout_info.pushConstantRangeCount = 1;
-      layout_info.pPushConstantRanges = &push_range;
-      result = device.createPipelineLayout(&layout_info, nullptr, layout);
-      if (result != vk::Result::eSuccess) {
-         device.destroyShaderModule(vertex_shader);
-         return result;
-      }
-
-      const auto vertex_name = std::string{vertex_entry};
-      auto stage = vk::PipelineShaderStageCreateInfo{};
-      stage.stage = vk::ShaderStageFlagBits::eVertex;
-      stage.module = vertex_shader;
-      stage.pName = vertex_name.c_str();
-      auto binding = vk::VertexInputBindingDescription{};
-      binding.binding = 0;
-      binding.stride = 9U * static_cast<std::uint32_t>(sizeof(float));
-      binding.inputRate = vk::VertexInputRate::eVertex;
-      auto attributes = std::array{vk::VertexInputAttributeDescription{}};
-      attributes[0].location = 0;
-      attributes[0].binding = 0;
-      attributes[0].format = vk::Format::eR32G32B32Sfloat;
-      attributes[0].offset = 0;
-      auto vertex_input = vk::PipelineVertexInputStateCreateInfo{};
-      vertex_input.vertexBindingDescriptionCount = 1;
-      vertex_input.pVertexBindingDescriptions = &binding;
-      vertex_input.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributes.size());
-      vertex_input.pVertexAttributeDescriptions = attributes.data();
-
-      auto assembly = vk::PipelineInputAssemblyStateCreateInfo{};
-      assembly.topology = vk::PrimitiveTopology::eTriangleList;
-      auto viewport_state = vk::PipelineViewportStateCreateInfo{};
-      viewport_state.viewportCount = 1;
-      viewport_state.scissorCount = 1;
-      auto raster = vk::PipelineRasterizationStateCreateInfo{};
-      raster.polygonMode = vk::PolygonMode::eFill;
-      raster.cullMode = vk::CullModeFlagBits::eNone;
-      raster.frontFace = vk::FrontFace::eCounterClockwise;
-      raster.lineWidth = 1.0F;
-      auto multisample = vk::PipelineMultisampleStateCreateInfo{};
-      multisample.rasterizationSamples = vk::SampleCountFlagBits::e1;
-      auto depth = vk::PipelineDepthStencilStateCreateInfo{};
-      depth.depthTestEnable = VK_TRUE;
-      depth.depthWriteEnable = VK_TRUE;
-      depth.depthCompareOp = vk::CompareOp::eLess;
-      constexpr std::array dynamic_states{vk::DynamicState::eViewport, vk::DynamicState::eScissor};
-      auto dynamic = vk::PipelineDynamicStateCreateInfo{};
-      dynamic.dynamicStateCount = static_cast<std::uint32_t>(dynamic_states.size());
-      dynamic.pDynamicStates = dynamic_states.data();
-      auto rendering = vk::PipelineRenderingCreateInfo{};
-      rendering.depthAttachmentFormat = vk::Format::eD32Sfloat;
-      auto info = vk::GraphicsPipelineCreateInfo{};
-      info.pNext = &rendering;
-      info.stageCount = 1;
-      info.pStages = &stage;
-      info.pVertexInputState = &vertex_input;
-      info.pInputAssemblyState = &assembly;
-      info.pViewportState = &viewport_state;
-      info.pRasterizationState = &raster;
-      info.pMultisampleState = &multisample;
-      info.pDepthStencilState = &depth;
-      info.pDynamicState = &dynamic;
-      info.layout = *layout;
-      result = device.createGraphicsPipelines(nullptr, 1, &info, nullptr, pipeline);
+      if (fragment_shader) { device.destroyShaderModule(fragment_shader); }
       device.destroyShaderModule(vertex_shader);
       if (result != vk::Result::eSuccess) { device.destroyPipelineLayout(*layout); }
       return result;
@@ -1284,49 +1144,24 @@ namespace vve::v4::vh::low {
                                       vk::Image image, vk::ImageView view, vk::Extent2D extent,
                                       vk::ImageLayout old_layout, vk::Pipeline pipeline,
                                       const vk::ClearColorValue &clear_color) {
-      auto result = device.resetCommandPool(pool);
+      auto result = detail::beginOneTime(device, pool, command_buffer);
       if (result != vk::Result::eSuccess) { return result; }
 
-      auto begin = vk::CommandBufferBeginInfo{};
-      begin.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-      result = command_buffer.begin(&begin);
-      if (result != vk::Result::eSuccess) { return result; }
+      auto to_attachment = detail::imageBarrier(image, vk::ImageAspectFlagBits::eColor, old_layout,
+                                                vk::ImageLayout::eColorAttachmentOptimal,
+                                                vk::PipelineStageFlagBits2::eNone, vk::AccessFlagBits2::eNone,
+                                                vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                                vk::AccessFlagBits2::eColorAttachmentWrite);
+      detail::imageBarrier(command_buffer, to_attachment);
 
-      auto range = vk::ImageSubresourceRange{};
-      range.aspectMask = vk::ImageAspectFlagBits::eColor;
-      range.levelCount = 1;
-      range.layerCount = 1;
-      auto to_attachment = vk::ImageMemoryBarrier2{};
-      to_attachment.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
-      to_attachment.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
-      to_attachment.oldLayout = old_layout;
-      to_attachment.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-      to_attachment.image = image;
-      to_attachment.subresourceRange = range;
-      auto dependency = vk::DependencyInfo{};
-      dependency.imageMemoryBarrierCount = 1;
-      dependency.pImageMemoryBarriers = &to_attachment;
-      command_buffer.pipelineBarrier2(&dependency);
-
-      auto clear = vk::ClearValue{};
-      clear.color = clear_color;
-      auto attachment = vk::RenderingAttachmentInfo{};
-      attachment.imageView = view;
-      attachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-      attachment.loadOp = vk::AttachmentLoadOp::eClear;
-      attachment.storeOp = vk::AttachmentStoreOp::eStore;
-      attachment.clearValue = clear;
+      auto attachment = detail::colorAttachment(view, clear_color);
       auto rendering = vk::RenderingInfo{};
       rendering.renderArea = vk::Rect2D{vk::Offset2D{0, 0}, extent};
       rendering.layerCount = 1;
       rendering.colorAttachmentCount = 1;
       rendering.pColorAttachments = &attachment;
       command_buffer.beginRendering(&rendering);
-      auto viewport = vk::Viewport{0.0F, 0.0F, static_cast<float>(extent.width), static_cast<float>(extent.height),
-                                   0.0F, 1.0F};
-      auto scissor = vk::Rect2D{vk::Offset2D{0, 0}, extent};
-      command_buffer.setViewport(0, 1, &viewport);
-      command_buffer.setScissor(0, 1, &scissor);
+      detail::setViewportAndScissor(command_buffer, extent);
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
       command_buffer.draw(3, 1, 0, 0);
       command_buffer.endRendering();
@@ -1338,8 +1173,7 @@ namespace vve::v4::vh::low {
       to_present.dstAccessMask = vk::AccessFlagBits2::eNone;
       to_present.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
       to_present.newLayout = vk::ImageLayout::ePresentSrcKHR;
-      dependency.pImageMemoryBarriers = &to_present;
-      command_buffer.pipelineBarrier2(&dependency);
+      detail::imageBarrier(command_buffer, to_present);
       return command_buffer.end();
    }
 
@@ -1356,100 +1190,51 @@ namespace vve::v4::vh::low {
                                    const vk::ClearColorValue &clear_color) {
       if (scene_constants.size() < 32 || !debug_buffer) { return vk::Result::eErrorInitializationFailed; }
 
-      auto result = device.resetCommandPool(pool);
+      auto result = detail::beginOneTime(device, pool, command_buffer);
       if (result != vk::Result::eSuccess) { return result; }
 
-      auto begin = vk::CommandBufferBeginInfo{};
-      begin.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-      result = command_buffer.begin(&begin);
-      if (result != vk::Result::eSuccess) { return result; }
+      auto to_attachment = detail::imageBarrier(image, vk::ImageAspectFlagBits::eColor, old_layout,
+                                                vk::ImageLayout::eColorAttachmentOptimal,
+                                                vk::PipelineStageFlagBits2::eNone, vk::AccessFlagBits2::eNone,
+                                                vk::PipelineStageFlagBits2::eColorAttachmentOutput,
+                                                vk::AccessFlagBits2::eColorAttachmentWrite);
+      detail::imageBarrier(command_buffer, to_attachment);
 
-      auto color_range = vk::ImageSubresourceRange{};
-      color_range.aspectMask = vk::ImageAspectFlagBits::eColor;
-      color_range.levelCount = 1;
-      color_range.layerCount = 1;
-      auto to_attachment = vk::ImageMemoryBarrier2{};
-      to_attachment.dstStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
-      to_attachment.dstAccessMask = vk::AccessFlagBits2::eColorAttachmentWrite;
-      to_attachment.oldLayout = old_layout;
-      to_attachment.newLayout = vk::ImageLayout::eColorAttachmentOptimal;
-      to_attachment.image = image;
-      to_attachment.subresourceRange = color_range;
-      auto dependency = vk::DependencyInfo{};
-      dependency.imageMemoryBarrierCount = 1;
-      dependency.pImageMemoryBarriers = &to_attachment;
-      command_buffer.pipelineBarrier2(&dependency);
-
-      auto depth_range = vk::ImageSubresourceRange{};
-      depth_range.aspectMask = vk::ImageAspectFlagBits::eDepth;
-      depth_range.levelCount = 1;
-      depth_range.layerCount = 1;
-      auto to_depth = vk::ImageMemoryBarrier2{};
+      auto depth_src_stage = vk::PipelineStageFlags2{};
+      auto depth_src_access = vk::AccessFlags2{};
       if (depth_old_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
-         to_depth.srcStageMask = vk::PipelineStageFlagBits2::eVertexShader |
-                                 vk::PipelineStageFlagBits2::eFragmentShader;
-         to_depth.srcAccessMask = vk::AccessFlagBits2::eShaderSampledRead;
+         depth_src_stage = vk::PipelineStageFlagBits2::eVertexShader |
+                           vk::PipelineStageFlagBits2::eFragmentShader;
+         depth_src_access = vk::AccessFlagBits2::eShaderSampledRead;
       } else if (depth_old_layout == vk::ImageLayout::eTransferSrcOptimal) {
-         to_depth.srcStageMask = vk::PipelineStageFlagBits2::eCopy;
-         to_depth.srcAccessMask = vk::AccessFlagBits2::eTransferRead;
+         depth_src_stage = vk::PipelineStageFlagBits2::eCopy;
+         depth_src_access = vk::AccessFlagBits2::eTransferRead;
       }
-      to_depth.dstStageMask = vk::PipelineStageFlagBits2::eEarlyFragmentTests |
-                              vk::PipelineStageFlagBits2::eLateFragmentTests;
-      to_depth.dstAccessMask = vk::AccessFlagBits2::eDepthStencilAttachmentRead |
-                               vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
-      to_depth.oldLayout = depth_old_layout;
-      to_depth.newLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-      to_depth.image = depth_image;
-      to_depth.subresourceRange = depth_range;
-      dependency.pImageMemoryBarriers = &to_depth;
-      command_buffer.pipelineBarrier2(&dependency);
+      auto to_depth = detail::imageBarrier(depth_image, vk::ImageAspectFlagBits::eDepth, depth_old_layout,
+                                           vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                                           depth_src_stage, depth_src_access,
+                                           vk::PipelineStageFlagBits2::eEarlyFragmentTests |
+                                           vk::PipelineStageFlagBits2::eLateFragmentTests,
+                                           vk::AccessFlagBits2::eDepthStencilAttachmentRead |
+                                           vk::AccessFlagBits2::eDepthStencilAttachmentWrite);
+      detail::imageBarrier(command_buffer, to_depth);
 
-      auto shadow_range = vk::ImageSubresourceRange{};
-      shadow_range.aspectMask = vk::ImageAspectFlagBits::eDepth;
-      shadow_range.levelCount = 1;
-      shadow_range.layerCount = 1;
-      auto shadow_to_shader = vk::ImageMemoryBarrier2{};
-      shadow_to_shader.srcStageMask = vk::PipelineStageFlagBits2::eCopy;
-      shadow_to_shader.srcAccessMask = vk::AccessFlagBits2::eTransferRead;
-      shadow_to_shader.dstStageMask = vk::PipelineStageFlagBits2::eVertexShader |
-                                      vk::PipelineStageFlagBits2::eFragmentShader;
-      shadow_to_shader.dstAccessMask = vk::AccessFlagBits2::eShaderSampledRead;
-      shadow_to_shader.oldLayout = shadow_old_layout;
-      shadow_to_shader.newLayout = vk::ImageLayout::eShaderReadOnlyOptimal;
-      shadow_to_shader.image = shadow_image;
-      shadow_to_shader.subresourceRange = shadow_range;
-      dependency.pImageMemoryBarriers = &shadow_to_shader;
-      command_buffer.pipelineBarrier2(&dependency);
+      auto shadow_to_shader = detail::imageBarrier(
+         shadow_image, vk::ImageAspectFlagBits::eDepth, shadow_old_layout, vk::ImageLayout::eShaderReadOnlyOptimal,
+         vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferRead,
+         vk::PipelineStageFlagBits2::eVertexShader | vk::PipelineStageFlagBits2::eFragmentShader,
+         vk::AccessFlagBits2::eShaderSampledRead);
+      detail::imageBarrier(command_buffer, shadow_to_shader);
 
-      auto to_shader = vk::BufferMemoryBarrier2{};
-      to_shader.srcStageMask = vk::PipelineStageFlagBits2::eHost;
-      to_shader.srcAccessMask = vk::AccessFlagBits2::eHostWrite;
-      to_shader.dstStageMask = vk::PipelineStageFlagBits2::eVertexShader;
-      to_shader.dstAccessMask = vk::AccessFlagBits2::eShaderStorageRead | vk::AccessFlagBits2::eShaderStorageWrite;
-      to_shader.buffer = debug_buffer;
-      to_shader.offset = 0;
-      to_shader.size = debug_buffer_size;
-      auto buffer_dependency = vk::DependencyInfo{};
-      buffer_dependency.bufferMemoryBarrierCount = 1;
-      buffer_dependency.pBufferMemoryBarriers = &to_shader;
-      command_buffer.pipelineBarrier2(&buffer_dependency);
+      auto to_shader = detail::bufferBarrier(debug_buffer, debug_buffer_size, vk::PipelineStageFlagBits2::eHost,
+                                             vk::AccessFlagBits2::eHostWrite,
+                                             vk::PipelineStageFlagBits2::eVertexShader,
+                                             vk::AccessFlagBits2::eShaderStorageRead |
+                                             vk::AccessFlagBits2::eShaderStorageWrite);
+      detail::bufferBarrier(command_buffer, to_shader);
 
-      auto clear = vk::ClearValue{};
-      clear.color = clear_color;
-      auto attachment = vk::RenderingAttachmentInfo{};
-      attachment.imageView = view;
-      attachment.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
-      attachment.loadOp = vk::AttachmentLoadOp::eClear;
-      attachment.storeOp = vk::AttachmentStoreOp::eStore;
-      attachment.clearValue = clear;
-      auto depth_clear = vk::ClearValue{};
-      depth_clear.depthStencil = vk::ClearDepthStencilValue{1.0F, 0};
-      auto depth_attachment = vk::RenderingAttachmentInfo{};
-      depth_attachment.imageView = depth_view;
-      depth_attachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-      depth_attachment.loadOp = vk::AttachmentLoadOp::eClear;
-      depth_attachment.storeOp = vk::AttachmentStoreOp::eStore;
-      depth_attachment.clearValue = depth_clear;
+      auto attachment = detail::colorAttachment(view, clear_color);
+      auto depth_attachment = detail::depthAttachment(depth_view);
       auto rendering = vk::RenderingInfo{};
       rendering.renderArea = vk::Rect2D{vk::Offset2D{0, 0}, extent};
       rendering.layerCount = 1;
@@ -1458,12 +1243,8 @@ namespace vve::v4::vh::low {
       rendering.pDepthAttachment = &depth_attachment;
       command_buffer.beginRendering(&rendering);
 
-      auto viewport = vk::Viewport{0.0F, 0.0F, static_cast<float>(extent.width), static_cast<float>(extent.height),
-                                   0.0F, 1.0F};
-      auto scissor = vk::Rect2D{vk::Offset2D{0, 0}, extent};
       const auto vertex_offset = vk::DeviceSize{};
-      command_buffer.setViewport(0, 1, &viewport);
-      command_buffer.setScissor(0, 1, &scissor);
+      detail::setViewportAndScissor(command_buffer, extent);
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
       command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, 1, &debug_set, 0, nullptr);
       command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
@@ -1474,13 +1255,11 @@ namespace vve::v4::vh::low {
       command_buffer.drawIndexed(index_count, 1, 0, 0, 0);
       command_buffer.endRendering();
 
-      auto to_host = to_shader;
-      to_host.srcStageMask = vk::PipelineStageFlagBits2::eVertexShader;
-      to_host.srcAccessMask = vk::AccessFlagBits2::eShaderStorageWrite;
-      to_host.dstStageMask = vk::PipelineStageFlagBits2::eHost;
-      to_host.dstAccessMask = vk::AccessFlagBits2::eHostRead;
-      buffer_dependency.pBufferMemoryBarriers = &to_host;
-      command_buffer.pipelineBarrier2(&buffer_dependency);
+      auto to_host = detail::bufferBarrier(debug_buffer, debug_buffer_size, vk::PipelineStageFlagBits2::eVertexShader,
+                                           vk::AccessFlagBits2::eShaderStorageWrite,
+                                           vk::PipelineStageFlagBits2::eHost,
+                                           vk::AccessFlagBits2::eHostRead);
+      detail::bufferBarrier(command_buffer, to_host);
 
       auto to_present = to_attachment;
       to_present.srcStageMask = vk::PipelineStageFlagBits2::eColorAttachmentOutput;
@@ -1489,8 +1268,7 @@ namespace vve::v4::vh::low {
       to_present.dstAccessMask = vk::AccessFlagBits2::eNone;
       to_present.oldLayout = vk::ImageLayout::eColorAttachmentOptimal;
       to_present.newLayout = vk::ImageLayout::ePresentSrcKHR;
-      dependency.pImageMemoryBarriers = &to_present;
-      command_buffer.pipelineBarrier2(&dependency);
+      detail::imageBarrier(command_buffer, to_present);
       return command_buffer.end();
    }
 
@@ -1503,60 +1281,37 @@ namespace vve::v4::vh::low {
                                      vk::Buffer readback_buffer) {
       if (scene_constants.size() < 32 || !readback_buffer) { return vk::Result::eErrorInitializationFailed; }
 
-      auto result = device.resetCommandPool(pool);
+      auto result = detail::beginOneTime(device, pool, command_buffer);
       if (result != vk::Result::eSuccess) { return result; }
 
-      auto begin = vk::CommandBufferBeginInfo{};
-      begin.flags = vk::CommandBufferUsageFlagBits::eOneTimeSubmit;
-      result = command_buffer.begin(&begin);
-      if (result != vk::Result::eSuccess) { return result; }
-
-      auto depth_range = vk::ImageSubresourceRange{};
-      depth_range.aspectMask = vk::ImageAspectFlagBits::eDepth;
-      depth_range.levelCount = 1;
-      depth_range.layerCount = 1;
-      auto to_depth = vk::ImageMemoryBarrier2{};
+      auto depth_src_stage = vk::PipelineStageFlags2{};
+      auto depth_src_access = vk::AccessFlags2{};
       if (old_layout == vk::ImageLayout::eShaderReadOnlyOptimal) {
-         to_depth.srcStageMask = vk::PipelineStageFlagBits2::eVertexShader |
-                                 vk::PipelineStageFlagBits2::eFragmentShader;
-         to_depth.srcAccessMask = vk::AccessFlagBits2::eShaderSampledRead;
+         depth_src_stage = vk::PipelineStageFlagBits2::eVertexShader |
+                           vk::PipelineStageFlagBits2::eFragmentShader;
+         depth_src_access = vk::AccessFlagBits2::eShaderSampledRead;
       } else if (old_layout == vk::ImageLayout::eTransferSrcOptimal) {
-         to_depth.srcStageMask = vk::PipelineStageFlagBits2::eCopy;
-         to_depth.srcAccessMask = vk::AccessFlagBits2::eTransferRead;
+         depth_src_stage = vk::PipelineStageFlagBits2::eCopy;
+         depth_src_access = vk::AccessFlagBits2::eTransferRead;
       }
-      to_depth.dstStageMask = vk::PipelineStageFlagBits2::eEarlyFragmentTests |
-                              vk::PipelineStageFlagBits2::eLateFragmentTests;
-      to_depth.dstAccessMask = vk::AccessFlagBits2::eDepthStencilAttachmentRead |
-                               vk::AccessFlagBits2::eDepthStencilAttachmentWrite;
-      to_depth.oldLayout = old_layout;
-      to_depth.newLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-      to_depth.image = depth_image;
-      to_depth.subresourceRange = depth_range;
-      auto dependency = vk::DependencyInfo{};
-      dependency.imageMemoryBarrierCount = 1;
-      dependency.pImageMemoryBarriers = &to_depth;
-      command_buffer.pipelineBarrier2(&dependency);
+      auto to_depth = detail::imageBarrier(depth_image, vk::ImageAspectFlagBits::eDepth, old_layout,
+                                           vk::ImageLayout::eDepthStencilAttachmentOptimal,
+                                           depth_src_stage, depth_src_access,
+                                           vk::PipelineStageFlagBits2::eEarlyFragmentTests |
+                                           vk::PipelineStageFlagBits2::eLateFragmentTests,
+                                           vk::AccessFlagBits2::eDepthStencilAttachmentRead |
+                                           vk::AccessFlagBits2::eDepthStencilAttachmentWrite);
+      detail::imageBarrier(command_buffer, to_depth);
 
-      auto clear = vk::ClearValue{};
-      clear.depthStencil = vk::ClearDepthStencilValue{1.0F, 0};
-      auto depth_attachment = vk::RenderingAttachmentInfo{};
-      depth_attachment.imageView = depth_view;
-      depth_attachment.imageLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-      depth_attachment.loadOp = vk::AttachmentLoadOp::eClear;
-      depth_attachment.storeOp = vk::AttachmentStoreOp::eStore;
-      depth_attachment.clearValue = clear;
+      auto depth_attachment = detail::depthAttachment(depth_view);
       auto rendering = vk::RenderingInfo{};
       rendering.renderArea = vk::Rect2D{vk::Offset2D{0, 0}, extent};
       rendering.layerCount = 1;
       rendering.pDepthAttachment = &depth_attachment;
       command_buffer.beginRendering(&rendering);
 
-      auto viewport = vk::Viewport{0.0F, 0.0F, static_cast<float>(extent.width), static_cast<float>(extent.height),
-                                   0.0F, 1.0F};
-      auto scissor = vk::Rect2D{vk::Offset2D{0, 0}, extent};
       const auto vertex_offset = vk::DeviceSize{};
-      command_buffer.setViewport(0, 1, &viewport);
-      command_buffer.setScissor(0, 1, &scissor);
+      detail::setViewportAndScissor(command_buffer, extent);
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
       command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0,
                                    32U * static_cast<std::uint32_t>(sizeof(float)),
@@ -1573,8 +1328,7 @@ namespace vve::v4::vh::low {
       to_transfer.dstAccessMask = vk::AccessFlagBits2::eTransferRead;
       to_transfer.oldLayout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
       to_transfer.newLayout = vk::ImageLayout::eTransferSrcOptimal;
-      dependency.pImageMemoryBarriers = &to_transfer;
-      command_buffer.pipelineBarrier2(&dependency);
+      detail::imageBarrier(command_buffer, to_transfer);
 
       auto subresource = vk::ImageSubresourceLayers{};
       subresource.aspectMask = vk::ImageAspectFlagBits::eDepth;
@@ -1585,18 +1339,11 @@ namespace vve::v4::vh::low {
       command_buffer.copyImageToBuffer(depth_image, vk::ImageLayout::eTransferSrcOptimal,
                                        readback_buffer, 1, &region);
 
-      auto to_host = vk::BufferMemoryBarrier2{};
-      to_host.srcStageMask = vk::PipelineStageFlagBits2::eCopy;
-      to_host.srcAccessMask = vk::AccessFlagBits2::eTransferWrite;
-      to_host.dstStageMask = vk::PipelineStageFlagBits2::eHost;
-      to_host.dstAccessMask = vk::AccessFlagBits2::eHostRead;
-      to_host.buffer = readback_buffer;
-      to_host.offset = 0;
-      to_host.size = VK_WHOLE_SIZE;
-      auto buffer_dependency = vk::DependencyInfo{};
-      buffer_dependency.bufferMemoryBarrierCount = 1;
-      buffer_dependency.pBufferMemoryBarriers = &to_host;
-      command_buffer.pipelineBarrier2(&buffer_dependency);
+      auto to_host = detail::bufferBarrier(readback_buffer, VK_WHOLE_SIZE, vk::PipelineStageFlagBits2::eCopy,
+                                           vk::AccessFlagBits2::eTransferWrite,
+                                           vk::PipelineStageFlagBits2::eHost,
+                                           vk::AccessFlagBits2::eHostRead);
+      detail::bufferBarrier(command_buffer, to_host);
       return command_buffer.end();
    }
 
