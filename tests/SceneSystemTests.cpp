@@ -39,8 +39,14 @@ int main() {
    const auto vertex_count = assets.meshVertexCount(mesh);
    const auto index_count = assets.meshIndexCount(mesh);
    const auto bounds = assets.meshBounds(mesh);
-   if (!vertex_count || !index_count || !bounds) { return 6; }
+   const auto positions = assets.meshPositions(mesh);
+   const auto normals = assets.meshNormals(mesh);
+   const auto texcoords = assets.meshTexcoords(mesh);
+   const auto indices = assets.meshIndices(mesh);
+   if (!vertex_count || !index_count || !bounds || !positions || !normals || !texcoords || !indices) { return 6; }
    if (vertex_count->value != 3 || index_count->value != 3 || !bounds->valid) { return 7; }
+   if (positions->size() != 3 || normals->size() != 3 || texcoords->size() != 3 || indices->size() != 3) { return 8; }
+   if (indices->at(0) != 0 || indices->at(1) != 1 || indices->at(2) != 2) { return 9; }
 
    return 0;
 }

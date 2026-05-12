@@ -47,6 +47,10 @@ namespace vve::v4 {
       IndexCount index_count{};        ///< Source index count.
       MaterialHandle material{};       ///< Default material.
       Bounds bounds{};                 ///< Object-space bounds.
+      Vector<Vec3> positions{};        ///< Imported vertex positions.
+      Vector<Vec3> normals{};          ///< Imported vertex normals.
+      Vector<Vec2> texcoords{};        ///< Imported first UV set.
+      Vector<std::uint32_t> indices{}; ///< Imported triangle indices.
    };
 
    /// @brief Material descriptor containing only texture handles.
@@ -141,6 +145,10 @@ export namespace vve::v4 {
       [[nodiscard]] std::expected<IndexCount, Error> meshIndexCount(MeshHandle mesh) const;
       [[nodiscard]] std::expected<MaterialHandle, Error> meshMaterial(MeshHandle mesh) const;
       [[nodiscard]] std::expected<Bounds, Error> meshBounds(MeshHandle mesh) const;
+      [[nodiscard]] std::expected<Vector<Vec3>, Error> meshPositions(MeshHandle mesh) const;
+      [[nodiscard]] std::expected<Vector<Vec3>, Error> meshNormals(MeshHandle mesh) const;
+      [[nodiscard]] std::expected<Vector<Vec2>, Error> meshTexcoords(MeshHandle mesh) const;
+      [[nodiscard]] std::expected<Vector<std::uint32_t>, Error> meshIndices(MeshHandle mesh) const;
       [[nodiscard]] std::expected<ObjectName, Error> materialName(MaterialHandle material) const;
       [[nodiscard]] std::expected<Vector<TextureHandle>, Error> materialTextures(MaterialHandle material) const;
 
@@ -349,10 +357,26 @@ namespace vve::v4 {
                                      : MaterialHandle{};
             auto item = Mesh{.handle = makeCounterHandle<MeshHandle>(),
                              .name = ObjectName{.value = name(source->mName, "Mesh_" + std::to_string(i))},
-                             .vertex_count = VertexCount{.value = source->mNumVertices},
-                             .index_count = IndexCount{.value = indexCount(*source)},
                              .material = material,
                              .bounds = boundsOf(*source)};
+            item.positions.reserve(source->mNumVertices);
+            item.normals.reserve(source->mNumVertices);
+            item.texcoords.reserve(source->mNumVertices);
+            for (unsigned vertex = 0; vertex < source->mNumVertices; ++vertex) {
+               item.positions.push_back(source->mVertices != nullptr ? vec3(source->mVertices[vertex]) : zeroVec3());
+               item.normals.push_back(source->HasNormals() ? vec3(source->mNormals[vertex]) : zeroVec3());
+               const auto uv = source->HasTextureCoords(0) ? source->mTextureCoords[0][vertex] : aiVector3D{};
+               item.texcoords.push_back(Vec2{uv.x, uv.y});
+            }
+            item.indices.reserve(static_cast<std::size_t>(indexCount(*source)));
+            for (unsigned face = 0; face < source->mNumFaces; ++face) {
+               const auto &source_face = source->mFaces[face];
+               for (unsigned index = 0; index < source_face.mNumIndices; ++index) {
+                  item.indices.push_back(source_face.mIndices[index]);
+               }
+            }
+            item.vertex_count = VertexCount{.value = item.positions.size()};
+            item.index_count = IndexCount{.value = item.indices.size()};
             if (auto added = catalog.meshes.add(item); !added) { return std::unexpected(added.error()); }
             result[i] = item.handle;
          }
@@ -547,6 +571,22 @@ namespace vve::v4 {
 
    Expected<Bounds> AssetSystem::meshBounds(MeshHandle mesh) const {
       return field(catalog_.meshes, mesh, &Mesh::bounds);
+   }
+
+   VectorExpected<Vec3> AssetSystem::meshPositions(MeshHandle mesh) const {
+      return field(catalog_.meshes, mesh, &Mesh::positions);
+   }
+
+   VectorExpected<Vec3> AssetSystem::meshNormals(MeshHandle mesh) const {
+      return field(catalog_.meshes, mesh, &Mesh::normals);
+   }
+
+   VectorExpected<Vec2> AssetSystem::meshTexcoords(MeshHandle mesh) const {
+      return field(catalog_.meshes, mesh, &Mesh::texcoords);
+   }
+
+   VectorExpected<std::uint32_t> AssetSystem::meshIndices(MeshHandle mesh) const {
+      return field(catalog_.meshes, mesh, &Mesh::indices);
    }
 
    NameExpected AssetSystem::materialName(MaterialHandle material) const {

@@ -100,6 +100,18 @@ export namespace vve {
          return impl_.meshMaterial(mesh);
       }
       [[nodiscard]] std::expected<Bounds, Error> meshBounds(MeshHandle mesh) const { return impl_.meshBounds(mesh); }
+      [[nodiscard]] std::expected<Vector<Vec3>, Error> meshPositions(MeshHandle mesh) const {
+         return facadeVector<Vec3>(impl_.meshPositions(mesh));
+      }
+      [[nodiscard]] std::expected<Vector<Vec3>, Error> meshNormals(MeshHandle mesh) const {
+         return facadeVector<Vec3>(impl_.meshNormals(mesh));
+      }
+      [[nodiscard]] std::expected<Vector<Vec2>, Error> meshTexcoords(MeshHandle mesh) const {
+         return facadeVector<Vec2>(impl_.meshTexcoords(mesh));
+      }
+      [[nodiscard]] std::expected<Vector<std::uint32_t>, Error> meshIndices(MeshHandle mesh) const {
+         return facadeVector<std::uint32_t>(impl_.meshIndices(mesh));
+      }
 
       [[nodiscard]] std::expected<ObjectName, Error> materialName(MaterialHandle material) const {
          return impl_.materialName(material);

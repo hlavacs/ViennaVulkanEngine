@@ -439,7 +439,12 @@ struct CountingSystem {
    const auto index_count = assets.meshIndexCount(mesh);
    const auto mesh_material = assets.meshMaterial(mesh);
    const auto bounds = assets.meshBounds(mesh);
-   if (!parent || !vertex_count || !index_count || !mesh_material || !bounds || !assets.meshName(mesh)) {
+   const auto positions = assets.meshPositions(mesh);
+   const auto normals = assets.meshNormals(mesh);
+   const auto texcoords = assets.meshTexcoords(mesh);
+   const auto indices = assets.meshIndices(mesh);
+   if (!parent || !vertex_count || !index_count || !mesh_material || !bounds || !assets.meshName(mesh) ||
+       !positions || !normals || !texcoords || !indices) {
       return 85;
    }
    if (vertex_count->value != 3 || index_count->value != 3 || *mesh_material != material || !bounds->valid) {
@@ -449,11 +454,18 @@ struct CountingSystem {
        !nearly(bounds->maximum.value.y, 1.0F)) {
       return 87;
    }
+   if (positions->size() != 3 || normals->size() != 3 || texcoords->size() != 3 || indices->size() != 3) {
+      return 88;
+   }
+   if (!nearly(positions->at(1).x, 1.0F) || !nearly(positions->at(2).y, 1.0F) ||
+       indices->at(0) != 0 || indices->at(1) != 1 || indices->at(2) != 2) {
+      return 89;
+   }
 
    const auto material_name = assets.materialName(material);
    const auto material_textures = assets.materialTextures(material);
    if (!material_name || !material_textures || !material_textures->empty()) {
-      return 88;
+      return 90;
    }
    return 0;
 }
