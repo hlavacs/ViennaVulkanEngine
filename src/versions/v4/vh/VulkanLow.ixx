@@ -56,7 +56,8 @@ export namespace vve::v4::vh::low {
    [[nodiscard]] vk::Result readBuffer(vk::Device device, vk::DeviceMemory memory, std::span<std::byte> bytes);
    [[nodiscard]] vk::Result
    createSceneDescriptor(vk::Device device, vk::Buffer debug_buffer, vk::DeviceSize debug_size,
-                         vk::ImageView shadow_view, vk::Sampler shadow_sampler,
+                         vk::ImageView shadow_view, vk::ImageView spot_shadow_view,
+                         vk::Sampler shadow_sampler,
                          vk::DescriptorSetLayout *layout, vk::DescriptorPool *pool, vk::DescriptorSet *set);
    [[nodiscard]] vk::Result
    recordSwapchainClear(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer, vk::Image image,
@@ -81,6 +82,7 @@ export namespace vve::v4::vh::low {
                         vk::Image image, vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
                         vk::Image depth_image, vk::ImageView depth_view, vk::ImageLayout depth_old_layout,
                         vk::Image shadow_image, vk::ImageLayout shadow_old_layout,
+                        vk::Image spot_shadow_image, vk::ImageLayout spot_shadow_old_layout,
                         vk::PipelineLayout layout, vk::Pipeline pipeline, vk::Buffer vertex_buffer,
                         vk::Buffer index_buffer, vk::DescriptorSet debug_set, vk::Buffer debug_buffer,
                         vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
@@ -963,7 +965,8 @@ namespace vve::v4::vh::low {
 
    /// @brief Creates the descriptor set for scene debug output and shadow-map sampling.
    vk::Result createSceneDescriptor(vk::Device device, vk::Buffer debug_buffer, vk::DeviceSize debug_size,
-                                    vk::ImageView shadow_view, vk::Sampler shadow_sampler,
+                                    vk::ImageView shadow_view, vk::ImageView spot_shadow_view,
+                                    vk::Sampler shadow_sampler,
                                     vk::DescriptorSetLayout *layout, vk::DescriptorPool *pool,
                                     vk::DescriptorSet *set) {
       constexpr auto shader_stages = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
@@ -972,6 +975,8 @@ namespace vve::v4::vh::low {
                                  vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eSampledImage, 1,
                                                                 shader_stages},
                                  vk::DescriptorSetLayoutBinding{2, vk::DescriptorType::eSampler, 1,
+                                                                shader_stages},
+                                 vk::DescriptorSetLayoutBinding{3, vk::DescriptorType::eSampledImage, 1,
                                                                 shader_stages}};
       auto layout_info = vk::DescriptorSetLayoutCreateInfo{};
       layout_info.bindingCount = static_cast<std::uint32_t>(bindings.size());
@@ -980,7 +985,7 @@ namespace vve::v4::vh::low {
       if (result != vk::Result::eSuccess) { return result; }
 
       auto pool_sizes = std::array{vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 1},
-                                   vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 1},
+                                   vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 2},
                                    vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1}};
       auto pool_info = vk::DescriptorPoolCreateInfo{};
       pool_info.maxSets = 1;
@@ -1002,13 +1007,16 @@ namespace vve::v4::vh::low {
 
       auto buffer_info = vk::DescriptorBufferInfo{debug_buffer, 0, debug_size};
       auto image_info = vk::DescriptorImageInfo{{}, shadow_view, vk::ImageLayout::eShaderReadOnlyOptimal};
+      auto spot_image_info = vk::DescriptorImageInfo{{}, spot_shadow_view, vk::ImageLayout::eShaderReadOnlyOptimal};
       auto sampler_info = vk::DescriptorImageInfo{shadow_sampler, {}, vk::ImageLayout::eUndefined};
       auto writes = std::array{vk::WriteDescriptorSet{*set, 0, 0, 1, vk::DescriptorType::eStorageBuffer, nullptr,
                                                       &buffer_info},
                                vk::WriteDescriptorSet{*set, 1, 0, 1, vk::DescriptorType::eSampledImage,
                                                       &image_info},
                                vk::WriteDescriptorSet{*set, 2, 0, 1, vk::DescriptorType::eSampler,
-                                                      &sampler_info}};
+                                                      &sampler_info},
+                               vk::WriteDescriptorSet{*set, 3, 0, 1, vk::DescriptorType::eSampledImage,
+                                                      &spot_image_info}};
       device.updateDescriptorSets(static_cast<std::uint32_t>(writes.size()), writes.data(), 0, nullptr);
       return vk::Result::eSuccess;
    }
@@ -1200,7 +1208,8 @@ namespace vve::v4::vh::low {
                                    vk::Image image, vk::ImageView view, vk::Extent2D extent,
                                    vk::ImageLayout old_layout, vk::Image depth_image, vk::ImageView depth_view,
                                    vk::ImageLayout depth_old_layout, vk::Image shadow_image,
-                                   vk::ImageLayout shadow_old_layout, vk::PipelineLayout layout,
+                                   vk::ImageLayout shadow_old_layout, vk::Image spot_shadow_image,
+                                   vk::ImageLayout spot_shadow_old_layout, vk::PipelineLayout layout,
                                    vk::Pipeline pipeline, vk::Buffer vertex_buffer, vk::Buffer index_buffer,
                                    vk::DescriptorSet debug_set, vk::Buffer debug_buffer,
                                    vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
@@ -1243,6 +1252,14 @@ namespace vve::v4::vh::low {
          vk::PipelineStageFlagBits2::eVertexShader | vk::PipelineStageFlagBits2::eFragmentShader,
          vk::AccessFlagBits2::eShaderSampledRead);
       detail::imageBarrier(command_buffer, shadow_to_shader);
+
+      auto spot_shadow_to_shader = detail::imageBarrier(
+         spot_shadow_image, vk::ImageAspectFlagBits::eDepth, spot_shadow_old_layout,
+         vk::ImageLayout::eShaderReadOnlyOptimal,
+         vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferRead,
+         vk::PipelineStageFlagBits2::eVertexShader | vk::PipelineStageFlagBits2::eFragmentShader,
+         vk::AccessFlagBits2::eShaderSampledRead);
+      detail::imageBarrier(command_buffer, spot_shadow_to_shader);
 
       auto to_shader = detail::bufferBarrier(debug_buffer, debug_buffer_size, vk::PipelineStageFlagBits2::eHost,
                                              vk::AccessFlagBits2::eHostWrite,
