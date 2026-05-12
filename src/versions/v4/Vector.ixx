@@ -134,8 +134,23 @@ export namespace vve::v4 {
          [[nodiscard]] friend bool operator==(const basic_iterator &, const basic_iterator &) = default;
 
          /// @brief Compares iterator positions within the same container.
-         [[nodiscard]] friend auto operator<=>(const basic_iterator &lhs, const basic_iterator &rhs) {
-            return lhs.index_ <=> rhs.index_;
+         [[nodiscard]] friend bool operator<(const basic_iterator &lhs, const basic_iterator &rhs) {
+            return lhs.index_ < rhs.index_;
+         }
+
+         /// @brief Compares iterator positions within the same container.
+         [[nodiscard]] friend bool operator>(const basic_iterator &lhs, const basic_iterator &rhs) {
+            return rhs < lhs;
+         }
+
+         /// @brief Compares iterator positions within the same container.
+         [[nodiscard]] friend bool operator<=(const basic_iterator &lhs, const basic_iterator &rhs) {
+            return !(rhs < lhs);
+         }
+
+         /// @brief Compares iterator positions within the same container.
+         [[nodiscard]] friend bool operator>=(const basic_iterator &lhs, const basic_iterator &rhs) {
+            return !(lhs < rhs);
          }
 
       private:

@@ -10,7 +10,9 @@
       "name": "Ninja"
     },
     "cmakeSettings": {
-      "CMAKE_TOOLCHAIN_FILE": "${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake"
+      "CMAKE_TOOLCHAIN_FILE": "${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
+      "VVE_DEFAULT_VULKAN_ICD": "kosmickrisp",
+      "VVE_VCPKG_TRIPLET": "arm64-osx"
     },
     "isTrusted": true
   }

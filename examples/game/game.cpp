@@ -1,15 +1,4 @@
-#include <array>
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <expected>
-#include <filesystem>
-#include <iostream>
-#include <optional>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
+import std;
 
 import VEEngine;
 

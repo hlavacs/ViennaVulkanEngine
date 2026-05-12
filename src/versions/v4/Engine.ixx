@@ -25,7 +25,9 @@ export import :Gui;
 
 export namespace vve::v4 {
 
-   using TaskHandle = TypedHandle<decltype([] {})>; ///< v4 CPU task graph node handle.
+   struct TaskHandleTag {}; ///< v4 CPU task graph node handle tag.
+
+   using TaskHandle = TypedHandle<TaskHandleTag>; ///< v4 CPU task graph node handle.
 
    /// @brief User-system task names supplied by the facade for graph dumps.
    struct UserSystemTasks {

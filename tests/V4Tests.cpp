@@ -1,12 +1,4 @@
-#include <cmath>
-#include <expected>
-#include <filesystem>
-#include <fstream>
-#include <iterator>
-#include <optional>
-#include <string>
-#include <string_view>
-#include <type_traits>
+import std;
 
 import VEEngine;
 

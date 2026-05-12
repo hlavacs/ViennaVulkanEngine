@@ -11,15 +11,25 @@ export import VEEngine.Vector;
  */
 export namespace vve {
 
-   using Entity         = TypedHandle<decltype([](){})>;   ///< Facade ECS entity.
-   using SceneHandle    = TypedHandle<decltype([](){})>;   ///< Scene descriptor handle.
-   using WindowHandle   = TypedHandle<decltype([](){})>;   ///< Runtime window handle.
-   using NodeHandle     = TypedHandle<decltype([](){})>;   ///< Node descriptor handle.
-   using MeshHandle     = TypedHandle<decltype([](){})>;   ///< Mesh descriptor handle.
-   using MaterialHandle = TypedHandle<decltype([](){})>;   ///< Material descriptor handle.
-   using TextureHandle  = TypedHandle<decltype([](){})>;   ///< Texture descriptor handle.
-   using LightHandle    = TypedHandle<decltype([](){})>;   ///< Light descriptor handle.
-   using CameraHandle   = TypedHandle<decltype([](){})>;   ///< Camera descriptor handle.
+   struct EntityTag {};         ///< Facade ECS entity handle tag.
+   struct SceneHandleTag {};    ///< Scene descriptor handle tag.
+   struct WindowHandleTag {};   ///< Runtime window handle tag.
+   struct NodeHandleTag {};     ///< Node descriptor handle tag.
+   struct MeshHandleTag {};     ///< Mesh descriptor handle tag.
+   struct MaterialHandleTag {}; ///< Material descriptor handle tag.
+   struct TextureHandleTag {};  ///< Texture descriptor handle tag.
+   struct LightHandleTag {};    ///< Light descriptor handle tag.
+   struct CameraHandleTag {};   ///< Camera descriptor handle tag.
+
+   using Entity         = TypedHandle<EntityTag>;         ///< Facade ECS entity.
+   using SceneHandle    = TypedHandle<SceneHandleTag>;    ///< Scene descriptor handle.
+   using WindowHandle   = TypedHandle<WindowHandleTag>;   ///< Runtime window handle.
+   using NodeHandle     = TypedHandle<NodeHandleTag>;     ///< Node descriptor handle.
+   using MeshHandle     = TypedHandle<MeshHandleTag>;     ///< Mesh descriptor handle.
+   using MaterialHandle = TypedHandle<MaterialHandleTag>; ///< Material descriptor handle.
+   using TextureHandle  = TypedHandle<TextureHandleTag>;  ///< Texture descriptor handle.
+   using LightHandle    = TypedHandle<LightHandleTag>;    ///< Light descriptor handle.
+   using CameraHandle   = TypedHandle<CameraHandleTag>;   ///< Camera descriptor handle.
 
    /// @brief Strong wrapper for world or local position values.
    struct Position {
@@ -166,9 +176,9 @@ export namespace vve {
       FovY fov_y{};      ///< Vertical field of view.
       ClipPlanes clip{}; ///< Near/far clip planes.
 
-      [[nodiscard]] static Camera lookAt(Position position, Position target,
-                                         Direction up = Direction{.value = Vec3(zero(), one(), zero())},
-                                         FovY fov_y = {}, ClipPlanes clip = {}) {
+      [[nodiscard]] static inline Camera lookAt(Position position, Position target,
+                                                Direction up = Direction{.value = Vec3(zero(), one(), zero())},
+                                                FovY fov_y = {}, ClipPlanes clip = {}) {
          Camera camera{};
          camera.position = position;
          camera.forward = Direction{.value = math::subtract(target.value, position.value)};

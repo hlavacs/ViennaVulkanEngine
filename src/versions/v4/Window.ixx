@@ -12,6 +12,12 @@ module;
 #undef VVE_V4_DEFINED_SDL_MAIN_HANDLED
 #endif
 
+#if defined(_WIN32) && defined(VVE_ENGINE_BUILD)
+#define VVE_V4_API __declspec(dllexport)
+#else
+#define VVE_V4_API
+#endif
+
 export module VEEngine.V4:Window;
 import std;
 export import :Types;
@@ -59,23 +65,23 @@ export namespace vve::v4 {
    /// @brief Keyboard and mouse snapshot; held keys are independent of OS key-repeat speed.
    class InputState {
    public:
-      void beginFrame();
-      void holdKey(std::int32_t keycode);
-      void pressKey(std::int32_t keycode);
-      void releaseKey(std::int32_t keycode);
-      void setMousePosition(WindowHandle window, Vec2 position);
-      void addMouseDelta(WindowHandle window, Vec2 delta);
-      void addMouseWheelDelta(WindowHandle window, Vec2 delta);
+      VVE_V4_API void beginFrame();
+      VVE_V4_API void holdKey(std::int32_t keycode);
+      VVE_V4_API void pressKey(std::int32_t keycode);
+      VVE_V4_API void releaseKey(std::int32_t keycode);
+      VVE_V4_API void setMousePosition(WindowHandle window, Vec2 position);
+      VVE_V4_API void addMouseDelta(WindowHandle window, Vec2 delta);
+      VVE_V4_API void addMouseWheelDelta(WindowHandle window, Vec2 delta);
 
-      [[nodiscard]] bool isKeyDown(std::int32_t keycode) const;
-      [[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const;
-      [[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const;
-      [[nodiscard]] std::optional<Vec2> mousePosition(WindowHandle window) const;
-      [[nodiscard]] Vec2 mouseDelta(WindowHandle window) const;
-      [[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const;
+      [[nodiscard]] VVE_V4_API bool isKeyDown(std::int32_t keycode) const;
+      [[nodiscard]] VVE_V4_API bool wasKeyPressed(std::int32_t keycode) const;
+      [[nodiscard]] VVE_V4_API bool wasKeyReleased(std::int32_t keycode) const;
+      [[nodiscard]] VVE_V4_API std::optional<Vec2> mousePosition(WindowHandle window) const;
+      [[nodiscard]] VVE_V4_API Vec2 mouseDelta(WindowHandle window) const;
+      [[nodiscard]] VVE_V4_API Vec2 mouseWheelDelta(WindowHandle window) const;
 
    private:
-      [[nodiscard]] static std::int32_t normalizeKey(std::int32_t keycode);
+      [[nodiscard]] static VVE_V4_API std::int32_t normalizeKey(std::int32_t keycode);
 
       std::set<std::int32_t> keys_down_{};                      ///< Keys currently held down.
       std::set<std::int32_t> keys_pressed_{};                   ///< Keys pressed this frame.
@@ -88,29 +94,29 @@ export namespace vve::v4 {
    /// @brief Owned v4 platform window implementation.
    class Window {
    public:
-      Window(SDL_Window *window, SDL_WindowID sdl_id, WindowInfo info) noexcept;
-      ~Window();
-      Window(Window &&other) noexcept;
-      Window &operator=(Window &&other) noexcept;
+      VVE_V4_API Window(SDL_Window *window, SDL_WindowID sdl_id, WindowInfo info) noexcept;
+      VVE_V4_API ~Window();
+      VVE_V4_API Window(Window &&other) noexcept;
+      VVE_V4_API Window &operator=(Window &&other) noexcept;
       Window(const Window &) = delete;
       Window &operator=(const Window &) = delete;
 
-      [[nodiscard]] SDL_Window *native() const noexcept;
-      [[nodiscard]] SDL_WindowID sdlId() const noexcept;
-      [[nodiscard]] WindowInfo &info() noexcept;
-      [[nodiscard]] const WindowInfo &info() const noexcept;
-      [[nodiscard]] WindowHandle handle() const noexcept;
-      [[nodiscard]] std::string_view id() const noexcept;
-      [[nodiscard]] std::string_view title() const noexcept;
-      [[nodiscard]] PixelExtent extent() const noexcept;
-      [[nodiscard]] RendererId rendererId() const;
-      [[nodiscard]] std::optional<Entity> camera() const;
-      [[nodiscard]] bool focused() const noexcept;
-      [[nodiscard]] bool minimized() const noexcept;
-      [[nodiscard]] bool shouldClose() const noexcept;
+      [[nodiscard]] VVE_V4_API SDL_Window *native() const noexcept;
+      [[nodiscard]] VVE_V4_API SDL_WindowID sdlId() const noexcept;
+      [[nodiscard]] VVE_V4_API WindowInfo &info() noexcept;
+      [[nodiscard]] VVE_V4_API const WindowInfo &info() const noexcept;
+      [[nodiscard]] VVE_V4_API WindowHandle handle() const noexcept;
+      [[nodiscard]] VVE_V4_API std::string_view id() const noexcept;
+      [[nodiscard]] VVE_V4_API std::string_view title() const noexcept;
+      [[nodiscard]] VVE_V4_API PixelExtent extent() const noexcept;
+      [[nodiscard]] VVE_V4_API RendererId rendererId() const;
+      [[nodiscard]] VVE_V4_API std::optional<Entity> camera() const;
+      [[nodiscard]] VVE_V4_API bool focused() const noexcept;
+      [[nodiscard]] VVE_V4_API bool minimized() const noexcept;
+      [[nodiscard]] VVE_V4_API bool shouldClose() const noexcept;
 
    private:
-      void reset() noexcept;
+      VVE_V4_API void reset() noexcept;
 
       SDL_Window *window_{}; ///< Owned SDL window.
       SDL_WindowID sdl_id_{}; ///< SDL-local window id.
@@ -120,35 +126,35 @@ export namespace vve::v4 {
    /// @brief Owns SDL windows and translates platform events into input and window state.
    class WindowSystem {
    public:
-      WindowSystem();             ///< Creates an empty window system.
-      ~WindowSystem();            ///< Destroys owned SDL windows and shuts down the video subsystem.
+      VVE_V4_API WindowSystem();  ///< Creates an empty window system.
+      ~WindowSystem(); ///< Destroys owned SDL windows and shuts down the video subsystem.
       WindowSystem(WindowSystem &&) noexcept;            ///< Moves the window system and owned implementation.
       WindowSystem &operator=(WindowSystem &&) noexcept; ///< Moves the window system and owned implementation.
       WindowSystem(const WindowSystem &) = delete;       ///< SDL windows cannot be copied safely.
       WindowSystem &operator=(const WindowSystem &) = delete; ///< SDL windows cannot be copied safely.
 
-      [[nodiscard]] std::string_view name() const noexcept; ///< Returns the implementation name for diagnostics.
-      [[nodiscard]] std::expected<void, Error> init(const Windows &windows); ///< Creates startup windows.
-      [[nodiscard]] std::expected<void, Error> poll(); ///< Polls SDL events and updates input/window state.
-      [[nodiscard]] InputState &input(); ///< Returns the owned input state.
-      [[nodiscard]] const InputState &input() const; ///< Returns the owned input state.
-      [[nodiscard]] Vector<WindowInfo> snapshot() const; ///< Returns a copy of current window states.
-      [[nodiscard]] Vector<std::reference_wrapper<Window>> windows(); ///< Returns owned window references.
-      [[nodiscard]] Vector<std::reference_wrapper<const Window>> windows() const; ///< Returns const references.
-      [[nodiscard]] std::size_t windowCount() const; ///< Returns the number of owned windows.
-      [[nodiscard]] Window *findWindow(std::string_view id); ///< Finds a window by application id.
-      [[nodiscard]] const Window *findWindow(std::string_view id) const; ///< Finds a const window by id.
-      [[nodiscard]] Window *findWindow(WindowHandle handle); ///< Finds a window by runtime handle.
-      [[nodiscard]] const Window *findWindow(WindowHandle handle) const; ///< Finds a const window by handle.
-      [[nodiscard]] std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera); ///< Sets camera.
-      [[nodiscard]] std::expected<void, Error> setWindowCamera(std::string_view id, Entity camera); ///< Sets camera.
-      [[nodiscard]] std::expected<void, Error> clearWindowCamera(WindowHandle window); ///< Clears camera.
-      [[nodiscard]] std::expected<void, Error> clearWindowCamera(std::string_view id); ///< Clears camera.
-      [[nodiscard]] std::optional<Entity> windowCamera(WindowHandle window) const; ///< Returns selected camera.
-      [[nodiscard]] std::optional<Entity> windowCamera(std::string_view id) const; ///< Returns selected camera.
-      [[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera); ///< Assigns camera to all windows.
-      [[nodiscard]] std::optional<Entity> activeCamera() const; ///< Returns the first selected camera.
-      [[nodiscard]] bool anyShouldClose() const; ///< Returns true when any window should close.
+      [[nodiscard]] VVE_V4_API std::string_view name() const noexcept; ///< Returns implementation name.
+      [[nodiscard]] VVE_V4_API std::expected<void, Error> init(const Windows &windows); ///< Creates startup windows.
+      [[nodiscard]] VVE_V4_API std::expected<void, Error> poll(); ///< Polls SDL events and updates state.
+      [[nodiscard]] VVE_V4_API InputState &input(); ///< Returns the owned input state.
+      [[nodiscard]] VVE_V4_API const InputState &input() const; ///< Returns the owned input state.
+      [[nodiscard]] VVE_V4_API Vector<WindowInfo> snapshot() const; ///< Returns current window states.
+      [[nodiscard]] VVE_V4_API Vector<std::reference_wrapper<Window>> windows(); ///< Owned window refs.
+      [[nodiscard]] VVE_V4_API Vector<std::reference_wrapper<const Window>> windows() const; ///< Const refs.
+      [[nodiscard]] VVE_V4_API std::size_t windowCount() const; ///< Returns owned window count.
+      [[nodiscard]] VVE_V4_API Window *findWindow(std::string_view id); ///< Finds a window by application id.
+      [[nodiscard]] VVE_V4_API const Window *findWindow(std::string_view id) const; ///< Finds a const window by id.
+      [[nodiscard]] VVE_V4_API Window *findWindow(WindowHandle handle); ///< Finds a window by runtime handle.
+      [[nodiscard]] VVE_V4_API const Window *findWindow(WindowHandle handle) const; ///< Finds a const window.
+      [[nodiscard]] VVE_V4_API std::expected<void, Error> setWindowCamera(WindowHandle window, Entity camera); ///< Sets camera.
+      [[nodiscard]] VVE_V4_API std::expected<void, Error> setWindowCamera(std::string_view id, Entity camera); ///< Sets camera.
+      [[nodiscard]] VVE_V4_API std::expected<void, Error> clearWindowCamera(WindowHandle window); ///< Clears camera.
+      [[nodiscard]] VVE_V4_API std::expected<void, Error> clearWindowCamera(std::string_view id); ///< Clears camera.
+      [[nodiscard]] VVE_V4_API std::optional<Entity> windowCamera(WindowHandle window) const; ///< Selected camera.
+      [[nodiscard]] VVE_V4_API std::optional<Entity> windowCamera(std::string_view id) const; ///< Selected camera.
+      [[nodiscard]] VVE_V4_API std::expected<void, Error> setActiveCamera(Entity camera); ///< Assigns camera.
+      [[nodiscard]] VVE_V4_API std::optional<Entity> activeCamera() const; ///< Returns the first selected camera.
+      [[nodiscard]] VVE_V4_API bool anyShouldClose() const; ///< Returns true when any window should close.
 
    private:
       template <typename TKey, typename TFunction>
@@ -161,85 +167,85 @@ export namespace vve::v4 {
 
 } // namespace vve::v4
 
-namespace vve::v4 {
+export namespace vve::v4 {
 
-   void InputState::beginFrame() {
+   VVE_V4_API void InputState::beginFrame() {
       keys_pressed_.clear();
       keys_released_.clear();
       mouse_delta_.clear();
       mouse_wheel_delta_.clear();
    }
 
-   void InputState::holdKey(std::int32_t keycode) { keys_down_.insert(normalizeKey(keycode)); }
+   VVE_V4_API void InputState::holdKey(std::int32_t keycode) { keys_down_.insert(normalizeKey(keycode)); }
 
-   void InputState::pressKey(std::int32_t keycode) {
+   VVE_V4_API void InputState::pressKey(std::int32_t keycode) {
       const auto key = normalizeKey(keycode);
       if (!keys_down_.contains(key)) { keys_pressed_.insert(key); }
       keys_down_.insert(key);
    }
 
-   void InputState::releaseKey(std::int32_t keycode) {
+   VVE_V4_API void InputState::releaseKey(std::int32_t keycode) {
       const auto key = normalizeKey(keycode);
       keys_down_.erase(key);
       keys_pressed_.erase(key);
       keys_released_.insert(key);
    }
 
-   void InputState::setMousePosition(WindowHandle window, Vec2 position) { mouse_position_[window] = position; }
+   VVE_V4_API void InputState::setMousePosition(WindowHandle window, Vec2 position) { mouse_position_[window] = position; }
 
-   void InputState::addMouseDelta(WindowHandle window, Vec2 delta) {
+   VVE_V4_API void InputState::addMouseDelta(WindowHandle window, Vec2 delta) {
       const auto [it, _] = mouse_delta_.try_emplace(window, Vec2{zero(), zero()});
       it->second = math::add(it->second, delta);
    }
 
-   void InputState::addMouseWheelDelta(WindowHandle window, Vec2 delta) {
+   VVE_V4_API void InputState::addMouseWheelDelta(WindowHandle window, Vec2 delta) {
       const auto [it, _] = mouse_wheel_delta_.try_emplace(window, Vec2{zero(), zero()});
       it->second = math::add(it->second, delta);
    }
 
-   bool InputState::isKeyDown(std::int32_t keycode) const { return keys_down_.contains(normalizeKey(keycode)); }
+   VVE_V4_API bool InputState::isKeyDown(std::int32_t keycode) const { return keys_down_.contains(normalizeKey(keycode)); }
 
-   bool InputState::wasKeyPressed(std::int32_t keycode) const {
+   VVE_V4_API bool InputState::wasKeyPressed(std::int32_t keycode) const {
       return keys_pressed_.contains(normalizeKey(keycode));
    }
 
-   bool InputState::wasKeyReleased(std::int32_t keycode) const {
+   VVE_V4_API bool InputState::wasKeyReleased(std::int32_t keycode) const {
       return keys_released_.contains(normalizeKey(keycode));
    }
 
-   std::optional<Vec2> InputState::mousePosition(WindowHandle window) const {
+   VVE_V4_API std::optional<Vec2> InputState::mousePosition(WindowHandle window) const {
       const auto it = mouse_position_.find(window);
       return it == mouse_position_.end() ? std::optional<Vec2>{} : std::optional<Vec2>{it->second};
    }
 
-   Vec2 InputState::mouseDelta(WindowHandle window) const {
+   VVE_V4_API Vec2 InputState::mouseDelta(WindowHandle window) const {
       const auto it = mouse_delta_.find(window);
       return it == mouse_delta_.end() ? Vec2{} : it->second;
    }
 
-   Vec2 InputState::mouseWheelDelta(WindowHandle window) const {
+   VVE_V4_API Vec2 InputState::mouseWheelDelta(WindowHandle window) const {
       const auto it = mouse_wheel_delta_.find(window);
       return it == mouse_wheel_delta_.end() ? Vec2{} : it->second;
    }
 
-   std::int32_t InputState::normalizeKey(std::int32_t keycode) {
+   VVE_V4_API std::int32_t InputState::normalizeKey(std::int32_t keycode) {
       if (keycode >= static_cast<std::int32_t>('A') && keycode <= static_cast<std::int32_t>('Z')) {
          return keycode - static_cast<std::int32_t>('A') + static_cast<std::int32_t>('a');
       }
       return keycode;
    }
 
-   Window::Window(SDL_Window *window, SDL_WindowID sdl_id, WindowInfo info) noexcept
+   VVE_V4_API Window::Window(SDL_Window *window, SDL_WindowID sdl_id, WindowInfo info) noexcept
        : window_{window}, sdl_id_{sdl_id}, info_{std::move(info)} {}
 
-   Window::~Window() { reset(); }
+   VVE_V4_API Window::~Window() { reset(); }
 
-   Window::Window(Window &&other) noexcept
+   VVE_V4_API Window::Window(Window &&other) noexcept
        : window_{std::exchange(other.window_, nullptr)},
          sdl_id_{std::exchange(other.sdl_id_, 0)},
          info_{std::move(other.info_)} {}
 
-   Window &Window::operator=(Window &&other) noexcept {
+   VVE_V4_API Window &Window::operator=(Window &&other) noexcept {
       if (this != std::addressof(other)) {
          reset();
          window_ = std::exchange(other.window_, nullptr);
@@ -249,33 +255,33 @@ namespace vve::v4 {
       return *this;
    }
 
-   SDL_Window *Window::native() const noexcept { return window_; }
+   VVE_V4_API SDL_Window *Window::native() const noexcept { return window_; }
 
-   SDL_WindowID Window::sdlId() const noexcept { return sdl_id_; }
+   VVE_V4_API SDL_WindowID Window::sdlId() const noexcept { return sdl_id_; }
 
-   WindowInfo &Window::info() noexcept { return info_; }
+   VVE_V4_API WindowInfo &Window::info() noexcept { return info_; }
 
-   const WindowInfo &Window::info() const noexcept { return info_; }
+   VVE_V4_API const WindowInfo &Window::info() const noexcept { return info_; }
 
-   WindowHandle Window::handle() const noexcept { return info_.handle; }
+   VVE_V4_API WindowHandle Window::handle() const noexcept { return info_.handle; }
 
-   std::string_view Window::id() const noexcept { return info_.id; }
+   VVE_V4_API std::string_view Window::id() const noexcept { return info_.id; }
 
-   std::string_view Window::title() const noexcept { return info_.title; }
+   VVE_V4_API std::string_view Window::title() const noexcept { return info_.title; }
 
-   PixelExtent Window::extent() const noexcept { return info_.extent; }
+   VVE_V4_API PixelExtent Window::extent() const noexcept { return info_.extent; }
 
-   RendererId Window::rendererId() const { return info_.renderer_id; }
+   VVE_V4_API RendererId Window::rendererId() const { return info_.renderer_id; }
 
-   std::optional<Entity> Window::camera() const { return info_.camera; }
+   VVE_V4_API std::optional<Entity> Window::camera() const { return info_.camera; }
 
-   bool Window::focused() const noexcept { return info_.focused; }
+   VVE_V4_API bool Window::focused() const noexcept { return info_.focused; }
 
-   bool Window::minimized() const noexcept { return info_.minimized; }
+   VVE_V4_API bool Window::minimized() const noexcept { return info_.minimized; }
 
-   bool Window::shouldClose() const noexcept { return info_.should_close; }
+   VVE_V4_API bool Window::shouldClose() const noexcept { return info_.should_close; }
 
-   void Window::reset() noexcept {
+   VVE_V4_API void Window::reset() noexcept {
       if (window_ != nullptr) {
          SDL_DestroyWindow(window_);
          window_ = nullptr;
@@ -285,10 +291,7 @@ namespace vve::v4 {
    /// @brief Hidden implementation that stores owned v4 window implementations.
    struct WindowSystem::Impl {
       /// @brief Destroys SDL windows and tears down video if this object initialized it.
-      ~Impl() {
-         windows.clear();
-         if (video_initialized) { SDL_QuitSubSystem(SDL_INIT_VIDEO); }
-      }
+      VVE_V4_API ~Impl();
 
       /// @brief Finds a mutable window implementation by SDL window id.
       [[nodiscard]] Window *find(SDL_WindowID id) {
@@ -345,7 +348,12 @@ namespace vve::v4 {
       std::map<SDL_WindowID, std::size_t> indices{}; ///< SDL id to window index.
    };
 
-   WindowSystem::WindowSystem() : impl_{std::make_unique<Impl>()} {}
+   VVE_V4_API WindowSystem::Impl::~Impl() {
+      windows.clear();
+      if (video_initialized) { SDL_QuitSubSystem(SDL_INIT_VIDEO); }
+   }
+
+   VVE_V4_API WindowSystem::WindowSystem() : impl_{std::make_unique<Impl>()} {}
 
    WindowSystem::~WindowSystem() = default;
 
@@ -353,13 +361,13 @@ namespace vve::v4 {
 
    WindowSystem &WindowSystem::operator=(WindowSystem &&) noexcept = default;
 
-   std::string_view WindowSystem::name() const noexcept { return "SDL3WindowSystem"; }
+   VVE_V4_API std::string_view WindowSystem::name() const noexcept { return "SDL3WindowSystem"; }
 
-   InputState &WindowSystem::input() { return impl_->input; }
+   VVE_V4_API InputState &WindowSystem::input() { return impl_->input; }
 
-   const InputState &WindowSystem::input() const { return impl_->input; }
+   VVE_V4_API const InputState &WindowSystem::input() const { return impl_->input; }
 
-   std::expected<void, Error> WindowSystem::init(const Windows &windows) {
+   VVE_V4_API std::expected<void, Error> WindowSystem::init(const Windows &windows) {
       const auto needs_platform_windows = std::ranges::any_of(windows.value, [](const WindowDesc &desc) {
          return desc.visible;
       });
@@ -415,7 +423,7 @@ namespace vve::v4 {
       return {};
    }
 
-   std::expected<void, Error> WindowSystem::poll() {
+   VVE_V4_API std::expected<void, Error> WindowSystem::poll() {
       auto &input = impl_->input;
       input.beginFrame();
       if (!impl_->video_initialized) { return {}; }
@@ -472,36 +480,36 @@ namespace vve::v4 {
       return {};
    }
 
-   Vector<WindowInfo> WindowSystem::snapshot() const {
+   VVE_V4_API Vector<WindowInfo> WindowSystem::snapshot() const {
       Vector<WindowInfo> result{};
       result.reserve(impl_->windows.size());
       for (const auto &window : impl_->windows) { result.push_back(window.info()); }
       return result;
    }
 
-   Vector<std::reference_wrapper<Window>> WindowSystem::windows() {
+   VVE_V4_API Vector<std::reference_wrapper<Window>> WindowSystem::windows() {
       Vector<std::reference_wrapper<Window>> result{};
       result.reserve(impl_->windows.size());
       for (auto &window : impl_->windows) { result.push_back(std::ref(window)); }
       return result;
    }
 
-   Vector<std::reference_wrapper<const Window>> WindowSystem::windows() const {
+   VVE_V4_API Vector<std::reference_wrapper<const Window>> WindowSystem::windows() const {
       Vector<std::reference_wrapper<const Window>> result{};
       result.reserve(impl_->windows.size());
       for (const auto &window : impl_->windows) { result.push_back(std::cref(window)); }
       return result;
    }
 
-   std::size_t WindowSystem::windowCount() const { return impl_->windows.size(); }
+   VVE_V4_API std::size_t WindowSystem::windowCount() const { return impl_->windows.size(); }
 
-   Window *WindowSystem::findWindow(std::string_view id) { return impl_->find(id); }
+   VVE_V4_API Window *WindowSystem::findWindow(std::string_view id) { return impl_->find(id); }
 
-   const Window *WindowSystem::findWindow(std::string_view id) const { return impl_->find(id); }
+   VVE_V4_API const Window *WindowSystem::findWindow(std::string_view id) const { return impl_->find(id); }
 
-   Window *WindowSystem::findWindow(WindowHandle handle) { return impl_->find(handle); }
+   VVE_V4_API Window *WindowSystem::findWindow(WindowHandle handle) { return impl_->find(handle); }
 
-   const Window *WindowSystem::findWindow(WindowHandle handle) const { return impl_->find(handle); }
+   VVE_V4_API const Window *WindowSystem::findWindow(WindowHandle handle) const { return impl_->find(handle); }
 
    /// @brief Edits one selected window or reports an invalid selector.
    template <typename TKey, typename TFunction>
@@ -518,40 +526,40 @@ namespace vve::v4 {
       return window == nullptr ? std::optional<Entity>{} : window->info().camera;
    }
 
-   std::expected<void, Error> WindowSystem::setWindowCamera(WindowHandle window, Entity camera) {
+   VVE_V4_API std::expected<void, Error> WindowSystem::setWindowCamera(WindowHandle window, Entity camera) {
       return editWindow(window, [camera](Window &selected) { selected.info().camera = camera; });
    }
 
-   std::expected<void, Error> WindowSystem::setWindowCamera(std::string_view id, Entity camera) {
+   VVE_V4_API std::expected<void, Error> WindowSystem::setWindowCamera(std::string_view id, Entity camera) {
       return editWindow(id, [camera](Window &selected) { selected.info().camera = camera; });
    }
 
-   std::expected<void, Error> WindowSystem::clearWindowCamera(WindowHandle window) {
+   VVE_V4_API std::expected<void, Error> WindowSystem::clearWindowCamera(WindowHandle window) {
       return editWindow(window, [](Window &selected) { selected.info().camera.reset(); });
    }
 
-   std::expected<void, Error> WindowSystem::clearWindowCamera(std::string_view id) {
+   VVE_V4_API std::expected<void, Error> WindowSystem::clearWindowCamera(std::string_view id) {
       return editWindow(id, [](Window &selected) { selected.info().camera.reset(); });
    }
 
-   std::optional<Entity> WindowSystem::windowCamera(WindowHandle window) const { return cameraFor(window); }
+   VVE_V4_API std::optional<Entity> WindowSystem::windowCamera(WindowHandle window) const { return cameraFor(window); }
 
-   std::optional<Entity> WindowSystem::windowCamera(std::string_view id) const { return cameraFor(id); }
+   VVE_V4_API std::optional<Entity> WindowSystem::windowCamera(std::string_view id) const { return cameraFor(id); }
 
-   std::expected<void, Error> WindowSystem::setActiveCamera(Entity camera) {
+   VVE_V4_API std::expected<void, Error> WindowSystem::setActiveCamera(Entity camera) {
       if (impl_->windows.empty()) { return std::unexpected(Error::missing_object); }
       for (auto &window : impl_->windows) { window.info().camera = camera; }
       return {};
    }
 
-   std::optional<Entity> WindowSystem::activeCamera() const {
+   VVE_V4_API std::optional<Entity> WindowSystem::activeCamera() const {
       const auto it = std::ranges::find_if(impl_->windows, [](const Window &window) {
          return window.info().camera.has_value();
       });
       return it == impl_->windows.end() ? std::optional<Entity>{} : it->info().camera;
    }
 
-   bool WindowSystem::anyShouldClose() const {
+   VVE_V4_API bool WindowSystem::anyShouldClose() const {
       return std::ranges::any_of(impl_->windows, [](const Window &window) {
          return window.info().should_close;
       });

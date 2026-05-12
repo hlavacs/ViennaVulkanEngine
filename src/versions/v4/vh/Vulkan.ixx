@@ -4,6 +4,12 @@ module;
 #include <vulkan/vulkan.hpp>
 #include <vulkan/vulkan_raii.hpp>
 
+#if defined(_WIN32) && defined(VVE_ENGINE_BUILD)
+#define VVE_V4_API __declspec(dllexport)
+#else
+#define VVE_V4_API
+#endif
+
 export module VEEngine.V4:Vulkan;
 import std;
 import :VulkanLow;
@@ -150,13 +156,13 @@ export namespace vve::v4::vh {
       FrameHost(const FrameHost &) = delete;
       FrameHost &operator=(const FrameHost &) = delete;
 
-      [[nodiscard]] std::expected<void, Error> prepare(WindowSystem &windows);
-      [[nodiscard]] std::expected<void, Error> renderClear(const std::array<float, 4> &color);
-      [[nodiscard]] std::expected<void, Error>
+      [[nodiscard]] VVE_V4_API std::expected<void, Error> prepare(WindowSystem &windows);
+      [[nodiscard]] VVE_V4_API std::expected<void, Error> renderClear(const std::array<float, 4> &color);
+      [[nodiscard]] VVE_V4_API std::expected<void, Error>
       renderTriangle(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
                      std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                      std::string_view fragment_entry);
-      [[nodiscard]] std::expected<void, Error>
+      [[nodiscard]] VVE_V4_API std::expected<void, Error>
       renderScene(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
                   std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                   std::string_view fragment_entry, std::span<const std::uint32_t> shadow_vertex_spirv,
@@ -168,24 +174,25 @@ export namespace vve::v4::vh {
 	                  std::span<const SceneVertex> vertices, std::span<const std::uint32_t> indices,
                   std::uint32_t mesh_count, std::uint32_t instance_count,
                   std::span<const float> scene_constants);
-      [[nodiscard]] std::size_t targetCount() const;
-      [[nodiscard]] bool ready() const;
-      [[nodiscard]] std::uint64_t presentedFrameCount() const;
-      [[nodiscard]] std::uint64_t triangleDrawCount() const;
-      [[nodiscard]] std::uint32_t triangleVertexCount() const;
-      [[nodiscard]] std::uint64_t sceneUploadCount() const;
-      [[nodiscard]] std::uint64_t sceneMeshDrawCount() const;
-      [[nodiscard]] std::uint64_t sceneInstanceDrawCount() const;
-      [[nodiscard]] std::uint32_t sceneVertexCount() const;
-      [[nodiscard]] std::uint32_t sceneIndexCount() const;
-      [[nodiscard]] std::size_t sceneDebugSampleCount() const;
-      [[nodiscard]] std::optional<SceneDebugSample> sceneDebugSample(std::size_t index) const;
-      [[nodiscard]] PixelExtent sceneShadowExtent() const;
-      [[nodiscard]] std::optional<float> sceneShadowDepth(std::uint32_t x, std::uint32_t y) const;
-      [[nodiscard]] std::optional<float> sceneSpotShadowDepth(std::uint32_t x, std::uint32_t y) const;
-      [[nodiscard]] std::optional<float> scenePointShadowDepth(std::uint32_t face,
-                                                               std::uint32_t x, std::uint32_t y) const;
-      [[nodiscard]] std::array<float, 4> lastClearColor() const;
+      [[nodiscard]] VVE_V4_API std::size_t targetCount() const;
+      [[nodiscard]] VVE_V4_API bool ready() const;
+      [[nodiscard]] VVE_V4_API std::uint64_t presentedFrameCount() const;
+      [[nodiscard]] VVE_V4_API std::uint64_t triangleDrawCount() const;
+      [[nodiscard]] VVE_V4_API std::uint32_t triangleVertexCount() const;
+      [[nodiscard]] VVE_V4_API std::uint64_t sceneUploadCount() const;
+      [[nodiscard]] VVE_V4_API std::uint64_t sceneMeshDrawCount() const;
+      [[nodiscard]] VVE_V4_API std::uint64_t sceneInstanceDrawCount() const;
+      [[nodiscard]] VVE_V4_API std::uint32_t sceneVertexCount() const;
+      [[nodiscard]] VVE_V4_API std::uint32_t sceneIndexCount() const;
+      [[nodiscard]] VVE_V4_API std::size_t sceneDebugSampleCount() const;
+      [[nodiscard]] VVE_V4_API std::optional<SceneDebugSample> sceneDebugSample(std::size_t index) const;
+      [[nodiscard]] VVE_V4_API PixelExtent sceneShadowExtent() const;
+      [[nodiscard]] VVE_V4_API std::optional<float> sceneShadowDepth(std::uint32_t x, std::uint32_t y) const;
+      [[nodiscard]] VVE_V4_API std::optional<float> sceneSpotShadowDepth(std::uint32_t x, std::uint32_t y) const;
+      [[nodiscard]] VVE_V4_API std::optional<float> scenePointShadowDepth(std::uint32_t face,
+                                                                          std::uint32_t x,
+                                                                          std::uint32_t y) const;
+      [[nodiscard]] VVE_V4_API std::array<float, 4> lastClearColor() const;
 
    private:
       [[nodiscard]] std::expected<void, Error> createInstance();
@@ -322,7 +329,7 @@ namespace vve::v4::vh::detail {
 
 } // namespace vve::v4::vh::detail
 
-namespace vve::v4::vh {
+export namespace vve::v4::vh {
 
    /// @brief Releases all owned Vulkan objects.
    FrameHost::~FrameHost() = default;
@@ -334,7 +341,7 @@ namespace vve::v4::vh {
    FrameHost &FrameHost::operator=(FrameHost &&other) noexcept = default;
 
    /// @brief Ensures every visible native SDL window has a swapchain and depth image.
-   std::expected<void, Error> FrameHost::prepare(WindowSystem &windows) {
+   VVE_V4_API std::expected<void, Error> FrameHost::prepare(WindowSystem &windows) {
       auto refs = windows.windows();
       auto native = std::vector<std::reference_wrapper<Window>>{};
       for (Window &window : refs | std::views::transform([](auto ref) -> Window & { return ref.get(); })) {
@@ -346,7 +353,7 @@ namespace vve::v4::vh {
    }
 
    /// @brief Clears and presents all prepared targets once using dynamic rendering.
-   std::expected<void, Error> FrameHost::renderClear(const std::array<float, 4> &color) {
+   VVE_V4_API std::expected<void, Error> FrameHost::renderClear(const std::array<float, 4> &color) {
       if (!ready()) { return {}; }
       const auto clear = vk::ClearColorValue{color};
       for (auto &target : targets_) {
@@ -359,7 +366,7 @@ namespace vve::v4::vh {
 
    /// @brief Clears, draws one hardcoded triangle, and presents every prepared target.
    std::expected<void, Error>
-   FrameHost::renderTriangle(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
+   VVE_V4_API FrameHost::renderTriangle(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
                              std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                              std::string_view fragment_entry) {
       if (!ready()) { return {}; }
@@ -379,7 +386,7 @@ namespace vve::v4::vh {
 
    /// @brief Uploads, clears, draws the debug scene, and presents every prepared target.
    std::expected<void, Error>
-   FrameHost::renderScene(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
+   VVE_V4_API FrameHost::renderScene(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
                           std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                           std::string_view fragment_entry, std::span<const std::uint32_t> shadow_vertex_spirv,
 	                          std::string_view shadow_vertex_entry,
@@ -432,56 +439,56 @@ namespace vve::v4::vh {
    }
 
    /// @brief Returns how many frame targets are currently prepared.
-   std::size_t FrameHost::targetCount() const { return targets_.size(); }
+   VVE_V4_API std::size_t FrameHost::targetCount() const { return targets_.size(); }
 
    /// @brief Reports whether at least one drawable Vulkan target exists.
-   bool FrameHost::ready() const {
+   VVE_V4_API bool FrameHost::ready() const {
       return detail::has(instance_) && detail::has(device_) && !targets_.empty();
    }
 
    /// @brief Returns how many clear/present frame batches completed.
-   std::uint64_t FrameHost::presentedFrameCount() const { return presented_frames_; }
+   VVE_V4_API std::uint64_t FrameHost::presentedFrameCount() const { return presented_frames_; }
 
    /// @brief Returns how many hardcoded triangle draw calls completed.
-   std::uint64_t FrameHost::triangleDrawCount() const { return triangle_draws_; }
+   VVE_V4_API std::uint64_t FrameHost::triangleDrawCount() const { return triangle_draws_; }
 
    /// @brief Returns the hardcoded triangle vertex count.
-   std::uint32_t FrameHost::triangleVertexCount() const { return 3; }
+   VVE_V4_API std::uint32_t FrameHost::triangleVertexCount() const { return 3; }
 
    /// @brief Returns how many scene buffer uploads completed.
-   std::uint64_t FrameHost::sceneUploadCount() const { return scene_uploads_; }
+   VVE_V4_API std::uint64_t FrameHost::sceneUploadCount() const { return scene_uploads_; }
 
    /// @brief Returns how many mesh draws were represented by the last scene draw path.
-   std::uint64_t FrameHost::sceneMeshDrawCount() const { return scene_mesh_draws_; }
+   VVE_V4_API std::uint64_t FrameHost::sceneMeshDrawCount() const { return scene_mesh_draws_; }
 
    /// @brief Returns how many instance draws were represented by the last scene draw path.
-   std::uint64_t FrameHost::sceneInstanceDrawCount() const { return scene_instance_draws_; }
+   VVE_V4_API std::uint64_t FrameHost::sceneInstanceDrawCount() const { return scene_instance_draws_; }
 
    /// @brief Returns the last uploaded scene vertex count.
-   std::uint32_t FrameHost::sceneVertexCount() const { return scene_vertex_count_; }
+   VVE_V4_API std::uint32_t FrameHost::sceneVertexCount() const { return scene_vertex_count_; }
 
    /// @brief Returns the last uploaded scene index count.
-   std::uint32_t FrameHost::sceneIndexCount() const { return scene_index_count_; }
+   VVE_V4_API std::uint32_t FrameHost::sceneIndexCount() const { return scene_index_count_; }
 
    /// @brief Returns how many GPU scene-debug sample slots contain data.
-   std::size_t FrameHost::sceneDebugSampleCount() const {
+   VVE_V4_API std::size_t FrameHost::sceneDebugSampleCount() const {
       return static_cast<std::size_t>(std::ranges::count_if(scene_debug_samples_, [](const auto &sample) {
          return sample.vertex_id != invalid_scene_debug_vertex;
       }));
    }
 
    /// @brief Returns one GPU scene-debug sample if the shader wrote it.
-   std::optional<SceneDebugSample> FrameHost::sceneDebugSample(std::size_t index) const {
+   VVE_V4_API std::optional<SceneDebugSample> FrameHost::sceneDebugSample(std::size_t index) const {
       if (index >= scene_debug_samples_.size()) { return {}; }
       const auto sample = scene_debug_samples_[index];
       return sample.vertex_id == invalid_scene_debug_vertex ? std::optional<SceneDebugSample>{} : sample;
    }
 
    /// @brief Returns the fixed shadow-map extent used by the first proof pass.
-   PixelExtent FrameHost::sceneShadowExtent() const { return PixelExtent{.width = 1024, .height = 1024}; }
+   VVE_V4_API PixelExtent FrameHost::sceneShadowExtent() const { return PixelExtent{.width = 1024, .height = 1024}; }
 
    /// @brief Returns one copied shadow depth value if the latest pass produced it.
-   std::optional<float> FrameHost::sceneShadowDepth(std::uint32_t x, std::uint32_t y) const {
+   VVE_V4_API std::optional<float> FrameHost::sceneShadowDepth(std::uint32_t x, std::uint32_t y) const {
       const auto extent = sceneShadowExtent();
       if (x >= extent.width || y >= extent.height) { return {}; }
       const auto index = static_cast<std::size_t>(y) * extent.width + x;
@@ -490,7 +497,7 @@ namespace vve::v4::vh {
    }
 
    /// @brief Returns one copied spot shadow depth value if the latest pass produced it.
-	   std::optional<float> FrameHost::sceneSpotShadowDepth(std::uint32_t x, std::uint32_t y) const {
+	   VVE_V4_API std::optional<float> FrameHost::sceneSpotShadowDepth(std::uint32_t x, std::uint32_t y) const {
 	      const auto extent = sceneShadowExtent();
 	      if (x >= extent.width || y >= extent.height) { return {}; }
 	      const auto index = static_cast<std::size_t>(y) * extent.width + x;
@@ -499,7 +506,7 @@ namespace vve::v4::vh {
 	   }
 
 	   /// @brief Returns one copied point shadow depth value if the latest pass produced it.
-	   std::optional<float> FrameHost::scenePointShadowDepth(std::uint32_t face, std::uint32_t x, std::uint32_t y) const {
+	   VVE_V4_API std::optional<float> FrameHost::scenePointShadowDepth(std::uint32_t face, std::uint32_t x, std::uint32_t y) const {
 	      const auto extent = sceneShadowExtent();
 	      if (face >= scene_point_shadow_depths_.size() || x >= extent.width || y >= extent.height) { return {}; }
 	      const auto index = static_cast<std::size_t>(y) * extent.width + x;
@@ -508,7 +515,7 @@ namespace vve::v4::vh {
 	   }
 
    /// @brief Returns the fixed clear color used by the most recent clear frame.
-   std::array<float, 4> FrameHost::lastClearColor() const { return last_clear_color_; }
+   VVE_V4_API std::array<float, 4> FrameHost::lastClearColor() const { return last_clear_color_; }
 
    /// @brief Creates the Vulkan instance using SDL's required platform extensions.
    std::expected<void, Error> FrameHost::createInstance() {

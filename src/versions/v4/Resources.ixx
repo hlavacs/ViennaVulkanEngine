@@ -37,7 +37,7 @@ export namespace vve::v4 {
    class ResourceSystem {
    public:
       /// @brief Adds a resource and returns its handle.
-      [[nodiscard]] std::expected<ResourceHandle, Error> add(ResourceKind kind, ObjectName name) {
+      [[nodiscard]] inline std::expected<ResourceHandle, Error> add(ResourceKind kind, ObjectName name) {
          auto handle = makeCounterHandle<ResourceHandle>();
          const auto [_, inserted] = resources_.emplace(
             handle, ResourceRecord{.handle = handle, .kind = kind, .name = std::move(name)});
@@ -46,24 +46,24 @@ export namespace vve::v4 {
       }
 
       /// @brief Returns whether a resource exists.
-      [[nodiscard]] bool contains(ResourceHandle handle) const { return resources_.contains(handle); }
+      [[nodiscard]] inline bool contains(ResourceHandle handle) const { return resources_.contains(handle); }
 
       /// @brief Returns the name for a resource.
-      [[nodiscard]] std::expected<ObjectName, Error> resourceName(ResourceHandle handle) const {
+      [[nodiscard]] inline std::expected<ObjectName, Error> resourceName(ResourceHandle handle) const {
          const auto resource = resources_.find(handle);
          if (resource == resources_.end()) { return std::unexpected(Error::missing_object); }
          return resource->second.name;
       }
 
       /// @brief Returns the kind for a resource.
-      [[nodiscard]] std::expected<ResourceKind, Error> resourceKind(ResourceHandle handle) const {
+      [[nodiscard]] inline std::expected<ResourceKind, Error> resourceKind(ResourceHandle handle) const {
          const auto resource = resources_.find(handle);
          if (resource == resources_.end()) { return std::unexpected(Error::missing_object); }
          return resource->second.kind;
       }
 
       /// @brief Returns the number of registered resources.
-      [[nodiscard]] std::size_t resourceCount() const { return resources_.size(); }
+      [[nodiscard]] inline std::size_t resourceCount() const { return resources_.size(); }
 
    private:
       std::map<ResourceHandle, ResourceRecord> resources_{}; ///< Resources by handle.

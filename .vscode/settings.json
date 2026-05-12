@@ -2,12 +2,6 @@
 	"C_Cpp.errorSquiggles": "disabled",
 	"cmake.useCMakePresets": "never",
 	"cmake.configureOnOpen": false,
-	"cmake.generator": "Ninja",
-	"cmake.showSystemKits": false,
-	"cmake.buildDirectory": "${workspaceFolder}/build/vscode-${variant:buildType}",
-	"cmake.configureSettings": {
-		"CMAKE_TOOLCHAIN_FILE": "${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
-		"VVE_DEFAULT_VULKAN_ICD": "moltenvk",
-		"VVE_VCPKG_TRIPLET": "arm64-osx"
-	}
+	"cmake.showSystemKits": true,
+	"cmake.buildDirectory": "${workspaceFolder}/build/vscode-${variant:buildType}"
 }

@@ -36,9 +36,9 @@ export namespace vve::v4 {
 namespace vve::v4::detail {
 
    inline constexpr std::string_view gui_overlay_pass{"gui.overlay_pass"};         ///< Real GUI overlay pass.
-   inline constexpr std::array gui_pass_dependencies{RenderMilestone::scene_color}; ///< GUI needs scene color.
+   inline constexpr std::array gui_pass_dependencies{RenderMilestone::scene_color()}; ///< GUI needs scene color.
    inline constexpr std::array gui_done_dependencies{gui_overlay_pass};             ///< GUI milestone input.
-   inline constexpr std::array gui_frame_dependencies{RenderMilestone::gui};        ///< Final frame input.
+   inline constexpr std::array gui_frame_dependencies{RenderMilestone::gui()};        ///< Final frame input.
    inline constexpr std::array gui_pass_contracts{                                  ///< GUI graph wiring.
        RenderPassContract{.name = gui_overlay_pass,
                           .depends_on = gui_pass_dependencies,
@@ -47,11 +47,11 @@ namespace vve::v4::detail {
                           .fragment_entry = "vveGuiFragmentMain",
                           .inputs = "scene color target, GUI draw data",
                           .outputs = "color target with GUI overlay"},
-       RenderPassContract{.name = RenderMilestone::gui,
+       RenderPassContract{.name = RenderMilestone::gui(),
                           .depends_on = gui_done_dependencies,
                           .outputs = "GUI overlay is ready",
                           .milestone = true},
-       RenderPassContract{.name = RenderMilestone::frame_finished,
+       RenderPassContract{.name = RenderMilestone::frame_finished(),
                           .depends_on = gui_frame_dependencies,
                           .outputs = "frame can be presented",
                           .milestone = true}};

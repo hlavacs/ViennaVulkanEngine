@@ -296,7 +296,10 @@ namespace vve::v4 {
       std::vector<std::pair<THandle, THandle>> edges{};
       edges.reserve(outgoing_.size());
       for (const auto &[from, to] : outgoing_) { edges.emplace_back(from, to); }
-      std::ranges::sort(edges);
+      std::ranges::sort(edges, [](const auto &lhs, const auto &rhs) {
+         if (lhs.first == rhs.first) { return lhs.second < rhs.second; }
+         return lhs.first < rhs.first;
+      });
 
       bool first_edge{true};
       for (const auto [from, to] : edges) {

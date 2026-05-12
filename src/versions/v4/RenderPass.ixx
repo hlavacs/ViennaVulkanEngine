@@ -8,28 +8,32 @@ export import :Graph;
 
 export namespace vve::v4 {
 
-   using RenderPassHandle = TypedHandle<decltype([] {})>; ///< v4 render-pass graph node handle.
+   struct RenderPassHandleTag {}; ///< v4 render-pass graph node handle tag.
+
+   using RenderPassHandle = TypedHandle<RenderPassHandleTag>; ///< v4 render-pass graph node handle.
 
    /// @brief Iterable milestone container used as dependency anchors between systems.
    struct RenderMilestone {
-      inline static constexpr std::string_view frame_begin{"frame_begin"};             ///< Root of each frame graph.
-      inline static constexpr std::string_view depth_prepass{"depth_prepass"};         ///< Camera depth is available.
-      inline static constexpr std::string_view shadow_depth{"shadow_depth"};           ///< Shadow-map input is ready.
-      inline static constexpr std::string_view raytraced_shadow{"raytraced_shadow"};   ///< Ray-traced shadow input.
-      inline static constexpr std::string_view gbuffer{"gbuffer"};                     ///< Deferred G-buffer is ready.
-      inline static constexpr std::string_view deferred_lighting{"deferred_lighting"}; ///< Deferred lighting is ready.
-      inline static constexpr std::string_view raytraced_scene{"raytraced_scene"};     ///< Ray-traced scene color.
-      inline static constexpr std::string_view scene_color{"scene_color"};             ///< Main scene color is ready.
-      inline static constexpr std::string_view gui{"gui"};                             ///< GUI overlay has been drawn.
-      inline static constexpr std::string_view frame_finished{"frame_finished"};       ///< Frame is ready to present.
+      [[nodiscard]] static constexpr std::string_view frame_begin() noexcept { return "frame_begin"; }
+      [[nodiscard]] static constexpr std::string_view depth_prepass() noexcept { return "depth_prepass"; }
+      [[nodiscard]] static constexpr std::string_view shadow_depth() noexcept { return "shadow_depth"; }
+      [[nodiscard]] static constexpr std::string_view raytraced_shadow() noexcept { return "raytraced_shadow"; }
+      [[nodiscard]] static constexpr std::string_view gbuffer() noexcept { return "gbuffer"; }
+      [[nodiscard]] static constexpr std::string_view deferred_lighting() noexcept { return "deferred_lighting"; }
+      [[nodiscard]] static constexpr std::string_view raytraced_scene() noexcept { return "raytraced_scene"; }
+      [[nodiscard]] static constexpr std::string_view scene_color() noexcept { return "scene_color"; }
+      [[nodiscard]] static constexpr std::string_view gui() noexcept { return "gui"; }
+      [[nodiscard]] static constexpr std::string_view frame_finished() noexcept { return "frame_finished"; }
+      [[nodiscard]] static constexpr std::array<std::string_view, 10> all() noexcept {
+         return {frame_begin(), depth_prepass(), shadow_depth(), raytraced_shadow(), gbuffer(), deferred_lighting(),
+                 raytraced_scene(), scene_color(), gui(), frame_finished()};
+      }
 
-      inline static constexpr std::array values{frame_begin, depth_prepass, shadow_depth, raytraced_shadow, gbuffer,
-                                                deferred_lighting, raytraced_scene, scene_color, gui, frame_finished};
+      std::array<std::string_view, 10> values{all()}; ///< Ordered milestone names.
 
       [[nodiscard]] constexpr auto begin() const noexcept { return values.begin(); } ///< First milestone iterator.
       [[nodiscard]] constexpr auto end() const noexcept { return values.end(); }     ///< Past-end milestone iterator.
       [[nodiscard]] constexpr std::size_t size() const noexcept { return values.size(); } ///< Milestone count.
-      [[nodiscard]] static constexpr std::span<const std::string_view> all() noexcept { return values; } ///< All names.
    };
 
    /// @brief One planned render node and the educational data needed to verify it.

@@ -72,6 +72,9 @@ export namespace vve {
 
       [[nodiscard]] auto makeWorld();
       template <typename TOption> void applyOption(TOption &&option);
+      template <typename... TUserSystems> void applyOption(const UserSystems<TUserSystems...> &systems);
+      template <typename... TUserSystems> void applyOption(UserSystems<TUserSystems...> &systems);
+      template <typename... TUserSystems> void applyOption(UserSystems<TUserSystems...> &&systems);
       [[nodiscard]] std::expected<void, Error> initSystems();
       [[nodiscard]] std::expected<void, Error> updateSystems(const FrameContext &frame);
       template <typename TSystem> [[nodiscard]] std::expected<void, Error> initOne(TSystem &system);
@@ -79,8 +82,6 @@ export namespace vve {
       [[nodiscard]] std::expected<void, Error>
       updateOne(TSystem &system, const FrameContext &frame,
                 const VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData &window_frame);
-      template <typename TCallable>
-      [[nodiscard]] static std::expected<void, Error> callSystemHook(TCallable &&callable);
       template <typename TSystem> [[nodiscard]] static std::string systemDebugName(const TSystem &system);
       template <typename... TUserSystems>
       [[nodiscard]] static VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
@@ -118,6 +119,57 @@ export namespace vve {
       template <typename... TSystems> struct EngineTypeFromUserSystems<UserSystems<TSystems...>> {
          using type = Engine<TSystems...>;
       };
+
+      template <std::size_t TPriority> struct Priority : Priority<TPriority - 1> {};
+      template <> struct Priority<0> {};
+
+      template <typename TCallable> [[nodiscard]] std::expected<void, Error> callSystemHook(TCallable &&callable) {
+         using TResult = std::invoke_result_t<TCallable>;
+         if constexpr (std::same_as<TResult, std::expected<void, Error>>) {
+            return std::invoke(std::forward<TCallable>(callable));
+         } else {
+            std::invoke(std::forward<TCallable>(callable));
+            return {};
+         }
+      }
+
+      template <typename TSystem, typename TWorld>
+      [[nodiscard]] auto invokeUserSystemInit(TSystem &system, TWorld &world, Priority<1>)
+         -> decltype(system.init(world), std::expected<void, Error>{}) {
+         return callSystemHook([&]() -> decltype(auto) { return system.init(world); });
+      }
+
+      template <typename TSystem, typename TWorld>
+      [[nodiscard]] std::expected<void, Error> invokeUserSystemInit(TSystem &, TWorld &, Priority<0>) {
+         return {};
+      }
+
+      template <typename TSystem, typename TWorld, typename TWindowFrame>
+      [[nodiscard]] auto invokeUserSystemUpdate(TSystem &system, TWorld &world, const FrameContext &frame,
+                                                const TWindowFrame &window_frame, Priority<3>)
+         -> decltype(system.update(world, frame, window_frame), std::expected<void, Error>{}) {
+         return callSystemHook([&]() -> decltype(auto) { return system.update(world, frame, window_frame); });
+      }
+
+      template <typename TSystem, typename TWorld, typename TWindowFrame>
+      [[nodiscard]] auto invokeUserSystemUpdate(TSystem &system, TWorld &world, const FrameContext &frame,
+                                                const TWindowFrame &, Priority<2>)
+         -> decltype(system.update(world, frame), std::expected<void, Error>{}) {
+         return callSystemHook([&]() -> decltype(auto) { return system.update(world, frame); });
+      }
+
+      template <typename TSystem, typename TWorld, typename TWindowFrame>
+      [[nodiscard]] auto invokeUserSystemUpdate(TSystem &system, TWorld &world, const FrameContext &,
+                                                const TWindowFrame &, Priority<1>)
+         -> decltype(system.update(world), std::expected<void, Error>{}) {
+         return callSystemHook([&]() -> decltype(auto) { return system.update(world); });
+      }
+
+      template <typename TSystem, typename TWorld, typename TWindowFrame>
+      [[nodiscard]] std::expected<void, Error> invokeUserSystemUpdate(TSystem &, TWorld &, const FrameContext &,
+                                                                      const TWindowFrame &, Priority<0>) {
+         return {};
+      }
 
    } // namespace detail
 
@@ -206,18 +258,6 @@ export namespace vve {
    }
 
    template <typename... TSystems>
-   template <typename TCallable>
-   std::expected<void, Error> Engine<TSystems...>::callSystemHook(TCallable &&callable) {
-      using TResult = std::invoke_result_t<TCallable>;
-      if constexpr (std::same_as<TResult, std::expected<void, Error>>) {
-         return std::invoke(std::forward<TCallable>(callable));
-      } else {
-         std::invoke(std::forward<TCallable>(callable));
-         return {};
-      }
-   }
-
-   template <typename... TSystems>
    template <typename TSystem>
    std::string Engine<TSystems...>::systemDebugName(const TSystem &system) {
       if constexpr (requires { std::string_view{system.name()}; }) {
@@ -243,10 +283,34 @@ export namespace vve {
    template <typename... TSystems>
    template <typename TOption>
    void Engine<TSystems...>::applyOption(TOption &&option) {
-      using Option = std::remove_cvref_t<TOption>;
-      if constexpr (std::same_as<Option, UserSystems<TSystems...>>) {
-         systems_.emplace(std::forward<TOption>(option).value);
+      if constexpr (requires { std::forward<TOption>(option).value; }) {
+         using Value = std::remove_cvref_t<decltype(std::forward<TOption>(option).value)>;
+         if constexpr (std::same_as<Value, std::tuple<TSystems...>>) {
+            systems_.emplace(std::forward<TOption>(option).value);
+         } else {
+            (void)option;
+         }
+      } else {
+         (void)option;
       }
+   }
+
+   template <typename... TSystems>
+   template <typename... TUserSystems>
+   void Engine<TSystems...>::applyOption(const UserSystems<TUserSystems...> &systems) {
+      systems_.emplace(systems.value);
+   }
+
+   template <typename... TSystems>
+   template <typename... TUserSystems>
+   void Engine<TSystems...>::applyOption(UserSystems<TUserSystems...> &systems) {
+      systems_.emplace(systems.value);
+   }
+
+   template <typename... TSystems>
+   template <typename... TUserSystems>
+   void Engine<TSystems...>::applyOption(UserSystems<TUserSystems...> &&systems) {
+      systems_.emplace(std::move(systems.value));
    }
 
    template <typename... TSystems> std::expected<void, Error> Engine<TSystems...>::init() {
@@ -307,11 +371,7 @@ export namespace vve {
    template <typename TSystem>
    std::expected<void, Error> Engine<TSystems...>::initOne(TSystem &system) {
       auto world_view = world();
-      if constexpr (requires { system.init(world_view); }) {
-         return callSystemHook([&]() -> decltype(auto) { return system.init(world_view); });
-      } else {
-         return {};
-      }
+      return detail::invokeUserSystemInit(system, world_view, detail::Priority<1>{});
    }
 
    template <typename... TSystems>
@@ -320,17 +380,7 @@ export namespace vve {
    Engine<TSystems...>::updateOne(TSystem &system, const FrameContext &frame,
                                   const VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData &window_frame) {
       auto world_view = world();
-      if constexpr (requires { system.update(world_view, frame, window_frame); }) {
-         return callSystemHook([&]() -> decltype(auto) {
-            return system.update(world_view, frame, window_frame);
-         });
-      } else if constexpr (requires { system.update(world_view, frame); }) {
-         return callSystemHook([&]() -> decltype(auto) { return system.update(world_view, frame); });
-      } else if constexpr (requires { system.update(world_view); }) {
-         return callSystemHook([&]() -> decltype(auto) { return system.update(world_view); });
-      } else {
-         return {};
-      }
+      return detail::invokeUserSystemUpdate(system, world_view, frame, window_frame, detail::Priority<3>{});
    }
 
    template <typename... TSystems>

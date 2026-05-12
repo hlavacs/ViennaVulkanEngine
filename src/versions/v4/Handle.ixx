@@ -25,7 +25,9 @@ export namespace vve::v4 {
       [[nodiscard]] constexpr std::uint64_t slotIndex() const noexcept { return id(); }
 
       [[nodiscard]] friend constexpr bool operator==(TypedHandle, TypedHandle) noexcept = default;
-      [[nodiscard]] friend constexpr auto operator<=>(TypedHandle, TypedHandle) noexcept = default;
+      [[nodiscard]] friend constexpr bool operator<(TypedHandle lhs, TypedHandle rhs) noexcept {
+         return lhs.value < rhs.value;
+      }
    };
 
    static_assert(sizeof(TypedHandle<decltype([] {})>) == sizeof(std::uint64_t));
@@ -33,10 +35,10 @@ export namespace vve::v4 {
    /// @brief Hashes typed handles by their 64-bit payload for unordered topology side tables.
    template <typename THandle> struct HandleHash {
       [[nodiscard]] std::size_t operator()(THandle handle) const noexcept {
-         if constexpr (requires { handle.value; }) {
-            return std::hash<std::uint64_t>{}(handle.value);
-         } else {
+         if constexpr (requires(THandle value) { { value.value() } -> std::convertible_to<std::uint64_t>; }) {
             return std::hash<std::uint64_t>{}(handle.value());
+         } else {
+            return std::hash<std::uint64_t>{}(handle.value);
          }
       }
    };

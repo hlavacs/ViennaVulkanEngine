@@ -1,6 +1,10 @@
 add_library(ViennaVulkanEngine SHARED)
 add_library(ViennaVulkanEngine::ViennaVulkanEngine ALIAS ViennaVulkanEngine)
 
+if(WIN32)
+    set_target_properties(ViennaVulkanEngine PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+endif()
+
 target_compile_features(ViennaVulkanEngine PUBLIC cxx_std_23)
 target_compile_definitions(ViennaVulkanEngine PUBLIC VULKAN_HPP_NO_EXCEPTIONS)
 target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_ENGINE_BUILD)
@@ -62,6 +66,16 @@ target_sources(ViennaVulkanEngine
             Gui.ixx
             Engine.ixx
 )
+
+if(MSVC)
+    set(VVE_MSVC_STD_MODULE_COMPAT_SOURCE "${CMAKE_CURRENT_BINARY_DIR}/MsvcStdModuleCompat.cpp")
+    file(GENERATE OUTPUT "${VVE_MSVC_STD_MODULE_COMPAT_SOURCE}" CONTENT [[
+#if defined(_MSC_VER)
+extern "C" int _Avx2WmemEnabled = 0;
+#endif
+]])
+    target_sources(ViennaVulkanEngine INTERFACE "${VVE_MSVC_STD_MODULE_COMPAT_SOURCE}")
+endif()
 
 add_subdirectory("versions/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}")
 

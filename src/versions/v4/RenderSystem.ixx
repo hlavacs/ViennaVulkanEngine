@@ -17,13 +17,36 @@ import :Window;
 
 export namespace vve::v4 {
 
-   using RenderMeshHandle     = TypedHandle<decltype([] {})>; ///< v4 render mesh handle.
-   using RenderMaterialHandle = TypedHandle<decltype([] {})>; ///< v4 render material handle.
-   using RenderInstanceHandle = TypedHandle<decltype([] {})>; ///< v4 render instance handle.
+   struct RenderMeshHandleTag {};     ///< v4 render mesh handle tag.
+   struct RenderMaterialHandleTag {}; ///< v4 render material handle tag.
+   struct RenderInstanceHandleTag {}; ///< v4 render instance handle tag.
+
+   using RenderMeshHandle     = TypedHandle<RenderMeshHandleTag>;     ///< v4 render mesh handle.
+   using RenderMaterialHandle = TypedHandle<RenderMaterialHandleTag>; ///< v4 render material handle.
+   using RenderInstanceHandle = TypedHandle<RenderInstanceHandleTag>; ///< v4 render instance handle.
 
 } // namespace vve::v4
 
-namespace vve::v4::detail { struct RendererChoice; }
+namespace vve::v4::detail {
+
+   struct RendererChoice;
+
+   /// @brief Orders string views without depending on std comparison-category objects in importers.
+   struct StringViewLess {
+      [[nodiscard]] inline bool operator()(std::string_view lhs, std::string_view rhs) const noexcept {
+         const auto count = std::min(lhs.size(), rhs.size());
+         for (std::size_t index{}; index < count; ++index) {
+            const auto left = static_cast<unsigned char>(lhs[index]);
+            const auto right = static_cast<unsigned char>(rhs[index]);
+            if (left != right) { return left < right; }
+         }
+         return lhs.size() < rhs.size();
+      }
+   };
+
+   using RenderPassHandleMap = std::map<std::string_view, RenderPassHandle, StringViewLess>;
+
+} // namespace vve::v4::detail
 
 export namespace vve::v4 {
 
@@ -276,10 +299,10 @@ export namespace vve::v4 {
 	      [[nodiscard]] std::expected<void, Error> ensureScenePointShadowShader();
       [[nodiscard]] std::expected<void, Error> buildSceneDrawData();
       [[nodiscard]] static std::expected<void, Error>
-      addPass(RenderGraph &graph, std::map<std::string_view, RenderPassHandle> &handles,
+      addPass(RenderGraph &graph, detail::RenderPassHandleMap &handles,
               const RenderPassContract &pass);
       [[nodiscard]] static std::expected<void, Error>
-      addDependencies(RenderGraph &graph, const std::map<std::string_view, RenderPassHandle> &handles,
+      addDependencies(RenderGraph &graph, const detail::RenderPassHandleMap &handles,
                       std::span<const RenderPassContract> passes);
       [[nodiscard]] static RendererDescriptor createDescriptor(detail::RendererChoice choice);
 
@@ -956,7 +979,7 @@ namespace vve::v4 {
    inline std::expected<RenderGraph, Error>
    RenderSystem::buildRenderGraph(std::span<const std::span<const RenderPassContract>> pass_lists) const {
       RenderGraph graph{};
-      std::map<std::string_view, RenderPassHandle> pass_handles{};
+      detail::RenderPassHandleMap pass_handles{};
       for (const auto passes : pass_lists) {
          for (const auto &pass : passes) {
             const auto added = addPass(graph, pass_handles, pass);
@@ -1511,7 +1534,7 @@ namespace vve::v4 {
 
    /// @brief Adds one pass node and merges duplicate names so systems can share milestones.
    inline std::expected<void, Error>
-   RenderSystem::addPass(RenderGraph &graph, std::map<std::string_view, RenderPassHandle> &handles,
+   RenderSystem::addPass(RenderGraph &graph, detail::RenderPassHandleMap &handles,
                          const RenderPassContract &pass) {
       if (pass.name.empty()) { return std::unexpected(Error::invalid_argument); }
       if (handles.contains(pass.name)) { return {}; }
@@ -1523,7 +1546,7 @@ namespace vve::v4 {
 
    /// @brief Adds all dependency edges for one flat pass list.
    inline std::expected<void, Error>
-   RenderSystem::addDependencies(RenderGraph &graph, const std::map<std::string_view, RenderPassHandle> &handles,
+   RenderSystem::addDependencies(RenderGraph &graph, const detail::RenderPassHandleMap &handles,
                                  std::span<const RenderPassContract> passes) {
       for (const auto &pass : passes) {
          const auto pass_handle = handles.at(pass.name);

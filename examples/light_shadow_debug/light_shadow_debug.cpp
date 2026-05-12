@@ -1,14 +1,4 @@
-#include <algorithm>
-#include <array>
-#include <cmath>
-#include <expected>
-#include <filesystem>
-#include <fstream>
-#include <iomanip>
-#include <iostream>
-#include <optional>
-#include <string>
-#include <string_view>
+import std;
 
 import VEEngine;
 

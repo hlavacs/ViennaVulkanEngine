@@ -3,6 +3,12 @@ module;
 #include <slang/slang-com-ptr.h>
 #include <slang/slang.h>
 
+#if defined(_WIN32) && defined(VVE_ENGINE_BUILD)
+#define VVE_V4_API __declspec(dllexport)
+#else
+#define VVE_V4_API
+#endif
+
 export module VEEngine.V4:Shaders;
 import std;
 export import :Types;
@@ -71,19 +77,24 @@ export namespace vve::v4 {
    /// @brief Slang-backed shader table storing SPIR-V and reflection data.
    class ShaderSystem {
    public:
-      [[nodiscard]] std::expected<ShaderHandle, Error> addShader(ObjectName name, Vector<ShaderStage> stages);
-      [[nodiscard]] std::expected<ShaderHandle, Error> compileAndReflect(const std::filesystem::path &source,
-                                                                         Vector<std::string> entry_points);
-      [[nodiscard]] bool containsShader(ShaderHandle handle) const;
-      [[nodiscard]] std::expected<ObjectName, Error> shaderName(ShaderHandle handle) const;
-      [[nodiscard]] std::expected<std::size_t, Error> shaderStageCount(ShaderHandle handle) const;
-      [[nodiscard]] std::expected<std::size_t, Error> spirvWordCount(ShaderHandle handle, ShaderStage stage) const;
-      [[nodiscard]] std::expected<Vector<std::uint32_t>, Error> stageSpirv(ShaderHandle handle,
-                                                                           ShaderStage stage) const;
-      [[nodiscard]] std::expected<bool, Error> hasReflectedBinding(ShaderHandle handle, std::string_view name) const;
-      [[nodiscard]] std::expected<bool, Error> hasReflectedType(ShaderHandle handle, std::string_view name) const;
-      [[nodiscard]] std::expected<Vector<ShaderBindingReflection>, Error> reflectedBindings(ShaderHandle handle) const;
-      [[nodiscard]] std::expected<Vector<ShaderEntryPointReflection>, Error>
+      [[nodiscard]] VVE_V4_API std::expected<ShaderHandle, Error> addShader(ObjectName name,
+                                                                            Vector<ShaderStage> stages);
+      [[nodiscard]] VVE_V4_API std::expected<ShaderHandle, Error>
+      compileAndReflect(const std::filesystem::path &source, Vector<std::string> entry_points);
+      [[nodiscard]] VVE_V4_API bool containsShader(ShaderHandle handle) const;
+      [[nodiscard]] VVE_V4_API std::expected<ObjectName, Error> shaderName(ShaderHandle handle) const;
+      [[nodiscard]] VVE_V4_API std::expected<std::size_t, Error> shaderStageCount(ShaderHandle handle) const;
+      [[nodiscard]] VVE_V4_API std::expected<std::size_t, Error> spirvWordCount(ShaderHandle handle,
+                                                                               ShaderStage stage) const;
+      [[nodiscard]] VVE_V4_API std::expected<Vector<std::uint32_t>, Error> stageSpirv(ShaderHandle handle,
+                                                                                      ShaderStage stage) const;
+      [[nodiscard]] VVE_V4_API std::expected<bool, Error> hasReflectedBinding(ShaderHandle handle,
+                                                                              std::string_view name) const;
+      [[nodiscard]] VVE_V4_API std::expected<bool, Error> hasReflectedType(ShaderHandle handle,
+                                                                           std::string_view name) const;
+      [[nodiscard]] VVE_V4_API std::expected<Vector<ShaderBindingReflection>, Error>
+      reflectedBindings(ShaderHandle handle) const;
+      [[nodiscard]] VVE_V4_API std::expected<Vector<ShaderEntryPointReflection>, Error>
       reflectedEntryPoints(ShaderHandle handle) const;
 
    private:
@@ -110,10 +121,10 @@ export namespace vve::v4 {
 
 } // namespace vve::v4
 
-namespace vve::v4 {
+export namespace vve::v4 {
 
    /// @brief Adds a shader record without compiling, useful for small table tests.
-   std::expected<ShaderHandle, Error> ShaderSystem::addShader(ObjectName name, Vector<ShaderStage> stages) {
+   VVE_V4_API std::expected<ShaderHandle, Error> ShaderSystem::addShader(ObjectName name, Vector<ShaderStage> stages) {
       const auto handle = makeCounterHandle<ShaderHandle>();
       const auto [_, inserted] = shaders_.emplace(
          handle, ShaderRecord{.handle = handle, .name = std::move(name), .stages = std::move(stages)});
@@ -122,17 +133,17 @@ namespace vve::v4 {
    }
 
    /// @brief Returns whether a shader exists.
-   bool ShaderSystem::containsShader(ShaderHandle handle) const { return shaders_.contains(handle); }
+   VVE_V4_API bool ShaderSystem::containsShader(ShaderHandle handle) const { return shaders_.contains(handle); }
 
    /// @brief Returns the shader name.
-   std::expected<ObjectName, Error> ShaderSystem::shaderName(ShaderHandle handle) const {
+   VVE_V4_API std::expected<ObjectName, Error> ShaderSystem::shaderName(ShaderHandle handle) const {
       const auto shader = shaders_.find(handle);
       if (shader == shaders_.end()) { return std::unexpected(Error::missing_object); }
       return shader->second.name;
    }
 
    /// @brief Returns the number of stages in a shader program.
-   std::expected<std::size_t, Error> ShaderSystem::shaderStageCount(ShaderHandle handle) const {
+   VVE_V4_API std::expected<std::size_t, Error> ShaderSystem::shaderStageCount(ShaderHandle handle) const {
       const auto shader = shaders_.find(handle);
       if (shader == shaders_.end()) { return std::unexpected(Error::missing_object); }
       return shader->second.stages.size();
@@ -293,7 +304,7 @@ namespace vve::v4 {
       }
    }
 
-   std::expected<ShaderHandle, Error> ShaderSystem::compileAndReflect(const std::filesystem::path &source,
+   VVE_V4_API std::expected<ShaderHandle, Error> ShaderSystem::compileAndReflect(const std::filesystem::path &source,
                                                                       Vector<std::string> entry_points) {
       if (source.empty() || entry_points.empty()) { return std::unexpected(Error::invalid_argument); }
       if (!std::filesystem::is_regular_file(source)) { return std::unexpected(Error::file_not_found); }
@@ -378,7 +389,7 @@ namespace vve::v4 {
       return handle;
    }
 
-   std::expected<std::size_t, Error> ShaderSystem::spirvWordCount(ShaderHandle handle, ShaderStage stage) const {
+   VVE_V4_API std::expected<std::size_t, Error> ShaderSystem::spirvWordCount(ShaderHandle handle, ShaderStage stage) const {
       const auto *shader = find(handle);
       if (shader == nullptr) { return std::unexpected(Error::missing_object); }
       const auto it = std::ranges::find_if(shader->binaries, [stage](const auto &binary) {
@@ -388,7 +399,7 @@ namespace vve::v4 {
       return it->spirv.size();
    }
 
-   std::expected<Vector<std::uint32_t>, Error> ShaderSystem::stageSpirv(ShaderHandle handle,
+   VVE_V4_API std::expected<Vector<std::uint32_t>, Error> ShaderSystem::stageSpirv(ShaderHandle handle,
                                                                         ShaderStage stage) const {
       const auto *shader = find(handle);
       if (shader == nullptr) { return std::unexpected(Error::missing_object); }
@@ -399,7 +410,7 @@ namespace vve::v4 {
       return it->spirv;
    }
 
-   std::expected<bool, Error> ShaderSystem::hasReflectedBinding(ShaderHandle handle, std::string_view name) const {
+   VVE_V4_API std::expected<bool, Error> ShaderSystem::hasReflectedBinding(ShaderHandle handle, std::string_view name) const {
       const auto *shader = find(handle);
       if (shader == nullptr) { return std::unexpected(Error::missing_object); }
       return std::ranges::any_of(shader->reflection.bindings, [name](const auto &binding) {
@@ -407,7 +418,7 @@ namespace vve::v4 {
       });
    }
 
-   std::expected<bool, Error> ShaderSystem::hasReflectedType(ShaderHandle handle, std::string_view name) const {
+   VVE_V4_API std::expected<bool, Error> ShaderSystem::hasReflectedType(ShaderHandle handle, std::string_view name) const {
       const auto *shader = find(handle);
       if (shader == nullptr) { return std::unexpected(Error::missing_object); }
       return std::ranges::any_of(shader->reflection.type_names, [name](const auto &type) {
@@ -415,14 +426,14 @@ namespace vve::v4 {
       });
    }
 
-   std::expected<Vector<ShaderBindingReflection>, Error> ShaderSystem::reflectedBindings(ShaderHandle handle) const {
+   VVE_V4_API std::expected<Vector<ShaderBindingReflection>, Error> ShaderSystem::reflectedBindings(ShaderHandle handle) const {
       const auto *shader = find(handle);
       if (shader == nullptr) { return std::unexpected(Error::missing_object); }
       return shader->reflection.bindings;
    }
 
    std::expected<Vector<ShaderEntryPointReflection>, Error>
-   ShaderSystem::reflectedEntryPoints(ShaderHandle handle) const {
+   VVE_V4_API ShaderSystem::reflectedEntryPoints(ShaderHandle handle) const {
       const auto *shader = find(handle);
       if (shader == nullptr) { return std::unexpected(Error::missing_object); }
       return shader->reflection.entry_points;

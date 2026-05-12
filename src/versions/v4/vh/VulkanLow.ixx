@@ -138,15 +138,9 @@ namespace vve::v4::vh::low::detail {
 
    [[nodiscard]] std::vector<VpProfileProperties> rankedProfiles() {
       auto result = std::vector<VpProfileProperties>{};
-#ifdef VP_KHR_ROADMAP_2026_NAME
-      result.push_back(profile(VP_KHR_ROADMAP_2026_NAME, VP_KHR_ROADMAP_2026_SPEC_VERSION));
-#endif
-#ifdef VP_KHR_ROADMAP_2024_NAME
-      result.push_back(profile(VP_KHR_ROADMAP_2024_NAME, VP_KHR_ROADMAP_2024_SPEC_VERSION));
-#endif
-#ifdef VP_KHR_ROADMAP_2022_NAME
-      result.push_back(profile(VP_KHR_ROADMAP_2022_NAME, VP_KHR_ROADMAP_2022_SPEC_VERSION));
-#endif
+      // Roadmap profiles intentionally probe future optional extensions and
+      // Vulkan Profiles logs every missing item. Use quieter compatibility
+      // profiles here; concrete renderer requirements are checked separately.
 #ifdef VP_LUNARG_DESKTOP_BASELINE_2024_NAME
       result.push_back(profile(VP_LUNARG_DESKTOP_BASELINE_2024_NAME,
                                VP_LUNARG_DESKTOP_BASELINE_2024_SPEC_VERSION));

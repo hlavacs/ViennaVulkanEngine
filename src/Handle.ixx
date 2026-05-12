@@ -35,14 +35,14 @@ export namespace vve {
       [[nodiscard]] friend constexpr bool operator==(implementation_type lhs, TypedHandle rhs) noexcept {
          return lhs == rhs.impl_;
       }
-      [[nodiscard]] friend constexpr auto operator<=>(TypedHandle lhs, TypedHandle rhs) noexcept {
-         return lhs.impl_ <=> rhs.impl_;
+      [[nodiscard]] friend constexpr bool operator<(TypedHandle lhs, TypedHandle rhs) noexcept {
+         return lhs.impl_ < rhs.impl_;
       }
-      [[nodiscard]] friend constexpr auto operator<=>(TypedHandle lhs, implementation_type rhs) noexcept {
-         return lhs.impl_ <=> rhs;
+      [[nodiscard]] friend constexpr bool operator<(TypedHandle lhs, implementation_type rhs) noexcept {
+         return lhs.impl_ < rhs;
       }
-      [[nodiscard]] friend constexpr auto operator<=>(implementation_type lhs, TypedHandle rhs) noexcept {
-         return lhs <=> rhs.impl_;
+      [[nodiscard]] friend constexpr bool operator<(implementation_type lhs, TypedHandle rhs) noexcept {
+         return lhs < rhs.impl_;
       }
 
    private:

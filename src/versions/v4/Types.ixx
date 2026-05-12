@@ -41,10 +41,15 @@ export namespace vve::v4 {
    using FrameStatus     = vve::FrameStatus;     ///< v4 frame status contract.
    using MaxFrames       = vve::MaxFrames;       ///< v4 frame-cap option contract.
 
-   using ResourceHandle  = TypedHandle<decltype([] {})>; ///< v4-internal resource handle.
-   using ShaderHandle    = TypedHandle<decltype([] {})>; ///< v4-internal shader descriptor handle.
-   using RendererHandle  = TypedHandle<decltype([] {})>; ///< v4-internal renderer descriptor handle.
-   using GuiWidgetHandle = TypedHandle<decltype([] {})>; ///< v4-internal GUI widget handle.
+   struct ResourceHandleTag {};  ///< v4-internal resource handle tag.
+   struct ShaderHandleTag {};    ///< v4-internal shader descriptor handle tag.
+   struct RendererHandleTag {};  ///< v4-internal renderer descriptor handle tag.
+   struct GuiWidgetHandleTag {}; ///< v4-internal GUI widget handle tag.
+
+   using ResourceHandle  = TypedHandle<ResourceHandleTag>;  ///< v4-internal resource handle.
+   using ShaderHandle    = TypedHandle<ShaderHandleTag>;    ///< v4-internal shader descriptor handle.
+   using RendererHandle  = TypedHandle<RendererHandleTag>;  ///< v4-internal renderer descriptor handle.
+   using GuiWidgetHandle = TypedHandle<GuiWidgetHandleTag>; ///< v4-internal GUI widget handle.
 
    using vve::Bounds;              ///< Public axis-aligned bounds contract.
    using vve::Camera;              ///< Public camera contract.
