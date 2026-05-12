@@ -14,11 +14,13 @@ export namespace vve {
       std::uint32_t vertex_id{};           ///< Source vertex id.
       Vec3 world{zeroVec3()};              ///< World-space vertex position.
       Vec4 clip{};                         ///< Clip-space position.
-      Vec4 light_clip{};                   ///< Directional-light clip-space position.
-      Vec4 spot_light_clip{};              ///< Spot-light clip-space position.
-      Vec3 ndc{zeroVec3()};                ///< Normalized device coordinate.
-      Vec3 light_ndc{zeroVec3()};          ///< Directional-light normalized device coordinate.
-      Vec3 spot_light_ndc{zeroVec3()};     ///< Spot-light normalized device coordinate.
+	      Vec4 light_clip{};                   ///< Directional-light clip-space position.
+	      Vec4 spot_light_clip{};              ///< Spot-light clip-space position.
+	      Vec4 point_light_clip{};             ///< Point-light face clip-space position.
+	      Vec3 ndc{zeroVec3()};                ///< Normalized device coordinate.
+	      Vec3 light_ndc{zeroVec3()};          ///< Directional-light normalized device coordinate.
+	      Vec3 spot_light_ndc{zeroVec3()};     ///< Spot-light normalized device coordinate.
+	      Vec3 point_light_ndc{zeroVec3()};    ///< Point-light face normalized device coordinate.
       Vec3 normal{zeroVec3()};             ///< Normal used for lighting.
       Vec3 direction_to_light{zeroVec3()}; ///< Direction from surface to light.
       Vec3 ambient_lighting{zeroVec3()};   ///< Ambient light contribution.
@@ -27,26 +29,34 @@ export namespace vve {
       Vec3 spot_lighting{zeroVec3()};      ///< Spot-light contribution.
       Vec3 final_lighting{zeroVec3()};     ///< Ambient plus direct lighting.
       float depth{};                       ///< Vulkan depth value.
-      float light_depth{};                 ///< Directional-light depth value.
-      float spot_light_depth{};            ///< Spot-light depth value.
+	      float light_depth{};                 ///< Directional-light depth value.
+	      float spot_light_depth{};            ///< Spot-light depth value.
+	      float point_light_depth{};           ///< Point-light face depth value.
       float sampled_shadow_depth{};        ///< Shadow-map depth sampled by the shader.
       float shadow_depth_delta{};          ///< Light depth minus sampled shadow depth.
       float shadow_bias{};                 ///< Bias used by the shadow comparison.
       float shadow_factor{};               ///< One when lit, zero when shadowed.
       float sampled_spot_shadow_depth{};   ///< Spot shadow-map depth sampled by the shader.
       float spot_shadow_depth_delta{};     ///< Spot depth minus sampled spot shadow depth.
-      float spot_shadow_bias{};            ///< Bias used by the spot shadow comparison.
-      float spot_shadow_factor{};          ///< One when spot-lit, zero when spot-shadowed.
-      float n_dot_l{};                     ///< Lambert cosine term.
-      bool inside_light{};                 ///< Whether the sample is inside the light projection.
-      bool inside_spot_light{};            ///< Whether the sample is inside the spot projection.
-      bool valid{};                        ///< Whether this slot contains a sample.
-   };
+	      float spot_shadow_bias{};            ///< Bias used by the spot shadow comparison.
+	      float spot_shadow_factor{};          ///< One when spot-lit, zero when spot-shadowed.
+	      float sampled_point_shadow_depth{};  ///< Point shadow-map depth sampled by the shader.
+	      float point_shadow_depth_delta{};    ///< Point depth minus sampled point shadow depth.
+	      float point_shadow_bias{};           ///< Bias used by the point shadow comparison.
+	      float point_shadow_factor{};         ///< One when point-lit, zero when point-shadowed.
+	      std::uint32_t point_shadow_face{};   ///< Selected point shadow face.
+	      float n_dot_l{};                     ///< Lambert cosine term.
+	      bool inside_light{};                 ///< Whether the sample is inside the light projection.
+	      bool inside_spot_light{};            ///< Whether the sample is inside the spot projection.
+	      bool inside_point_light{};           ///< Whether the sample is inside the selected point face.
+	      bool valid{};                        ///< Whether this slot contains a sample.
+	   };
 
    /// @brief Public CPU/GPU comparison point for downloaded shadow-depth data.
    struct RenderShadowDepthSample {
-      std::uint32_t triangle_id{}; ///< Source triangle used for the centroid sample.
-      Vec3 world{zeroVec3()};      ///< World-space centroid.
+	      std::uint32_t triangle_id{}; ///< Source triangle used for the centroid sample.
+	      std::uint32_t face_index{};  ///< Point-shadow face, or zero for 2D light maps.
+	      Vec3 world{zeroVec3()};      ///< World-space centroid.
       Vec3 light_ndc{zeroVec3()};  ///< Directional-light normalized device coordinate.
       std::uint32_t pixel_x{};     ///< Shadow-map texel x coordinate.
       std::uint32_t pixel_y{};     ///< Shadow-map texel y coordinate.
@@ -101,17 +111,22 @@ export namespace vve {
       [[nodiscard]] std::optional<RenderDebugSample> sceneGpuDebugSample(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugClipError(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const;
-      [[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const;
-      [[nodiscard]] std::optional<float> sceneDebugSpotLightSpaceError(std::size_t index) const;
-      [[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const;
-      [[nodiscard]] std::optional<float> sceneDebugShadowSampleError(std::size_t index) const;
-      [[nodiscard]] std::optional<float> sceneDebugSpotShadowSampleError(std::size_t index) const;
+	      [[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const;
+	      [[nodiscard]] std::optional<float> sceneDebugSpotLightSpaceError(std::size_t index) const;
+	      [[nodiscard]] std::optional<float> sceneDebugPointLightSpaceError(std::size_t index) const;
+	      [[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const;
+	      [[nodiscard]] std::optional<float> sceneDebugShadowSampleError(std::size_t index) const;
+	      [[nodiscard]] std::optional<float> sceneDebugSpotShadowSampleError(std::size_t index) const;
+	      [[nodiscard]] std::optional<float> sceneDebugPointShadowSampleError(std::size_t index) const;
       [[nodiscard]] std::size_t sceneShadowDepthSampleCount() const;
       [[nodiscard]] std::optional<RenderShadowDepthSample> sceneShadowDepthSample(std::size_t index) const;
       [[nodiscard]] std::optional<float> sceneShadowDepthError(std::size_t index) const;
-      [[nodiscard]] std::size_t sceneSpotShadowDepthSampleCount() const;
-      [[nodiscard]] std::optional<RenderShadowDepthSample> sceneSpotShadowDepthSample(std::size_t index) const;
-      [[nodiscard]] std::optional<float> sceneSpotShadowDepthError(std::size_t index) const;
+	      [[nodiscard]] std::size_t sceneSpotShadowDepthSampleCount() const;
+	      [[nodiscard]] std::optional<RenderShadowDepthSample> sceneSpotShadowDepthSample(std::size_t index) const;
+	      [[nodiscard]] std::optional<float> sceneSpotShadowDepthError(std::size_t index) const;
+	      [[nodiscard]] std::size_t scenePointShadowDepthSampleCount() const;
+	      [[nodiscard]] std::optional<RenderShadowDepthSample> scenePointShadowDepthSample(std::size_t index) const;
+	      [[nodiscard]] std::optional<float> scenePointShadowDepthError(std::size_t index) const;
       [[nodiscard]] std::size_t lastRenderedWindowCount() const;
       [[nodiscard]] std::size_t preparedGpuTargetCount() const;
       [[nodiscard]] std::array<float, 4> lastClearColor() const;
@@ -220,54 +235,72 @@ export namespace vve {
    inline std::optional<RenderDebugSample> RenderSystem::sceneCpuDebugSample(std::size_t index) const {
       auto sample = impl_.sceneCpuDebugSample(index);
       if (!sample) { return {}; }
-      return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
-                               .light_clip = sample->light_clip, .spot_light_clip = sample->spot_light_clip,
-                               .ndc = sample->ndc, .light_ndc = sample->light_ndc,
-                               .spot_light_ndc = sample->spot_light_ndc, .normal = sample->normal,
+	      return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
+	                               .light_clip = sample->light_clip, .spot_light_clip = sample->spot_light_clip,
+	                               .point_light_clip = sample->point_light_clip,
+	                               .ndc = sample->ndc, .light_ndc = sample->light_ndc,
+	                               .spot_light_ndc = sample->spot_light_ndc,
+	                               .point_light_ndc = sample->point_light_ndc, .normal = sample->normal,
                                .direction_to_light = sample->direction_to_light,
                                .ambient_lighting = sample->ambient_lighting,
                                .direct_lighting = sample->direct_lighting,
                                .point_lighting = sample->point_lighting,
                                .spot_lighting = sample->spot_lighting,
-                               .final_lighting = sample->final_lighting, .depth = sample->depth,
-                               .light_depth = sample->light_depth, .spot_light_depth = sample->spot_light_depth,
+	                               .final_lighting = sample->final_lighting, .depth = sample->depth,
+	                               .light_depth = sample->light_depth, .spot_light_depth = sample->spot_light_depth,
+	                               .point_light_depth = sample->point_light_depth,
                                .sampled_shadow_depth = sample->sampled_shadow_depth,
                                .shadow_depth_delta = sample->shadow_depth_delta,
                                .shadow_bias = sample->shadow_bias, .shadow_factor = sample->shadow_factor,
                                .sampled_spot_shadow_depth = sample->sampled_spot_shadow_depth,
-                               .spot_shadow_depth_delta = sample->spot_shadow_depth_delta,
-                               .spot_shadow_bias = sample->spot_shadow_bias,
-                               .spot_shadow_factor = sample->spot_shadow_factor,
-                               .n_dot_l = sample->n_dot_l,
-                               .inside_light = sample->inside_light,
-                               .inside_spot_light = sample->inside_spot_light, .valid = sample->valid};
+	                               .spot_shadow_depth_delta = sample->spot_shadow_depth_delta,
+	                               .spot_shadow_bias = sample->spot_shadow_bias,
+	                               .spot_shadow_factor = sample->spot_shadow_factor,
+	                               .sampled_point_shadow_depth = sample->sampled_point_shadow_depth,
+	                               .point_shadow_depth_delta = sample->point_shadow_depth_delta,
+	                               .point_shadow_bias = sample->point_shadow_bias,
+	                               .point_shadow_factor = sample->point_shadow_factor,
+	                               .point_shadow_face = sample->point_shadow_face,
+	                               .n_dot_l = sample->n_dot_l,
+	                               .inside_light = sample->inside_light,
+	                               .inside_spot_light = sample->inside_spot_light,
+	                               .inside_point_light = sample->inside_point_light, .valid = sample->valid};
    }
 
    /// @brief Returns one GPU-computed render debug sample.
    inline std::optional<RenderDebugSample> RenderSystem::sceneGpuDebugSample(std::size_t index) const {
       auto sample = impl_.sceneGpuDebugSample(index);
       if (!sample) { return {}; }
-      return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
-                               .light_clip = sample->light_clip, .spot_light_clip = sample->spot_light_clip,
-                               .ndc = sample->ndc, .light_ndc = sample->light_ndc,
-                               .spot_light_ndc = sample->spot_light_ndc, .normal = sample->normal,
+	      return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
+	                               .light_clip = sample->light_clip, .spot_light_clip = sample->spot_light_clip,
+	                               .point_light_clip = sample->point_light_clip,
+	                               .ndc = sample->ndc, .light_ndc = sample->light_ndc,
+	                               .spot_light_ndc = sample->spot_light_ndc,
+	                               .point_light_ndc = sample->point_light_ndc, .normal = sample->normal,
                                .direction_to_light = sample->direction_to_light,
                                .ambient_lighting = sample->ambient_lighting,
                                .direct_lighting = sample->direct_lighting,
                                .point_lighting = sample->point_lighting,
                                .spot_lighting = sample->spot_lighting,
-                               .final_lighting = sample->final_lighting, .depth = sample->depth,
-                               .light_depth = sample->light_depth, .spot_light_depth = sample->spot_light_depth,
+	                               .final_lighting = sample->final_lighting, .depth = sample->depth,
+	                               .light_depth = sample->light_depth, .spot_light_depth = sample->spot_light_depth,
+	                               .point_light_depth = sample->point_light_depth,
                                .sampled_shadow_depth = sample->sampled_shadow_depth,
                                .shadow_depth_delta = sample->shadow_depth_delta,
                                .shadow_bias = sample->shadow_bias, .shadow_factor = sample->shadow_factor,
                                .sampled_spot_shadow_depth = sample->sampled_spot_shadow_depth,
-                               .spot_shadow_depth_delta = sample->spot_shadow_depth_delta,
-                               .spot_shadow_bias = sample->spot_shadow_bias,
-                               .spot_shadow_factor = sample->spot_shadow_factor,
-                               .n_dot_l = sample->n_dot_l,
-                               .inside_light = sample->inside_light,
-                               .inside_spot_light = sample->inside_spot_light, .valid = sample->valid};
+	                               .spot_shadow_depth_delta = sample->spot_shadow_depth_delta,
+	                               .spot_shadow_bias = sample->spot_shadow_bias,
+	                               .spot_shadow_factor = sample->spot_shadow_factor,
+	                               .sampled_point_shadow_depth = sample->sampled_point_shadow_depth,
+	                               .point_shadow_depth_delta = sample->point_shadow_depth_delta,
+	                               .point_shadow_bias = sample->point_shadow_bias,
+	                               .point_shadow_factor = sample->point_shadow_factor,
+	                               .point_shadow_face = sample->point_shadow_face,
+	                               .n_dot_l = sample->n_dot_l,
+	                               .inside_light = sample->inside_light,
+	                               .inside_spot_light = sample->inside_spot_light,
+	                               .inside_point_light = sample->inside_point_light, .valid = sample->valid};
    }
 
    /// @brief Returns the CPU/GPU clip-space mismatch for one sample.
@@ -286,9 +319,14 @@ export namespace vve {
    }
 
    /// @brief Returns the CPU/GPU spot-light-space mismatch for one sample.
-   inline std::optional<float> RenderSystem::sceneDebugSpotLightSpaceError(std::size_t index) const {
-      return impl_.sceneDebugSpotLightSpaceError(index);
-   }
+	   inline std::optional<float> RenderSystem::sceneDebugSpotLightSpaceError(std::size_t index) const {
+	      return impl_.sceneDebugSpotLightSpaceError(index);
+	   }
+
+	   /// @brief Returns the CPU/GPU point-light-space mismatch for one sample.
+	   inline std::optional<float> RenderSystem::sceneDebugPointLightSpaceError(std::size_t index) const {
+	      return impl_.sceneDebugPointLightSpaceError(index);
+	   }
 
    /// @brief Returns the CPU/GPU lighting-term mismatch for one sample.
    inline std::optional<float> RenderSystem::sceneDebugLightingError(std::size_t index) const {
@@ -301,9 +339,14 @@ export namespace vve {
    }
 
    /// @brief Returns the shader-sampled spot shadow depth mismatch against the copied spot map.
-   inline std::optional<float> RenderSystem::sceneDebugSpotShadowSampleError(std::size_t index) const {
-      return impl_.sceneDebugSpotShadowSampleError(index);
-   }
+	   inline std::optional<float> RenderSystem::sceneDebugSpotShadowSampleError(std::size_t index) const {
+	      return impl_.sceneDebugSpotShadowSampleError(index);
+	   }
+
+	   /// @brief Returns the shader-sampled point shadow depth mismatch against the copied point map.
+	   inline std::optional<float> RenderSystem::sceneDebugPointShadowSampleError(std::size_t index) const {
+	      return impl_.sceneDebugPointShadowSampleError(index);
+	   }
 
    /// @brief Returns how many shadow-depth proof samples are available.
    inline std::size_t RenderSystem::sceneShadowDepthSampleCount() const {
@@ -314,8 +357,9 @@ export namespace vve {
    inline std::optional<RenderShadowDepthSample> RenderSystem::sceneShadowDepthSample(std::size_t index) const {
       const auto sample = impl_.sceneShadowDepthSample(index);
       if (!sample) { return {}; }
-      return RenderShadowDepthSample{.triangle_id = sample->triangle_id,
-                                     .world = sample->world,
+	      return RenderShadowDepthSample{.triangle_id = sample->triangle_id,
+	                                     .face_index = sample->face_index,
+	                                     .world = sample->world,
                                      .light_ndc = sample->light_ndc,
                                      .pixel_x = sample->pixel_x,
                                      .pixel_y = sample->pixel_y,
@@ -341,6 +385,7 @@ export namespace vve {
       const auto sample = impl_.sceneSpotShadowDepthSample(index);
       if (!sample) { return {}; }
       return RenderShadowDepthSample{.triangle_id = sample->triangle_id,
+                                     .face_index = sample->face_index,
                                      .world = sample->world,
                                      .light_ndc = sample->light_ndc,
                                      .pixel_x = sample->pixel_x,
@@ -354,8 +399,35 @@ export namespace vve {
 
    /// @brief Returns the CPU/GPU spot shadow-depth mismatch for one proof sample.
    inline std::optional<float> RenderSystem::sceneSpotShadowDepthError(std::size_t index) const {
-      return impl_.sceneSpotShadowDepthError(index);
-   }
+	      return impl_.sceneSpotShadowDepthError(index);
+	   }
+
+	   /// @brief Returns how many point shadow-depth proof samples are available.
+	   inline std::size_t RenderSystem::scenePointShadowDepthSampleCount() const {
+	      return impl_.scenePointShadowDepthSampleCount();
+	   }
+
+	   /// @brief Returns one downloaded point shadow-depth proof sample.
+	   inline std::optional<RenderShadowDepthSample> RenderSystem::scenePointShadowDepthSample(std::size_t index) const {
+	      const auto sample = impl_.scenePointShadowDepthSample(index);
+	      if (!sample) { return {}; }
+	      return RenderShadowDepthSample{.triangle_id = sample->triangle_id,
+	                                     .face_index = sample->face_index,
+	                                     .world = sample->world,
+	                                     .light_ndc = sample->light_ndc,
+	                                     .pixel_x = sample->pixel_x,
+	                                     .pixel_y = sample->pixel_y,
+	                                     .expected_depth = sample->expected_depth,
+	                                     .gpu_depth = sample->gpu_depth,
+	                                     .error = sample->error,
+	                                     .has_gpu = sample->has_gpu,
+	                                     .valid = sample->valid};
+	   }
+
+	   /// @brief Returns the CPU/GPU point shadow-depth mismatch for one proof sample.
+	   inline std::optional<float> RenderSystem::scenePointShadowDepthError(std::size_t index) const {
+	      return impl_.scenePointShadowDepthError(index);
+	   }
 
    /// @brief Returns how many visible windows were considered by the last frame.
    inline std::size_t RenderSystem::lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }

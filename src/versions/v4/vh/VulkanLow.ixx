@@ -55,10 +55,10 @@ export namespace vve::v4::vh::low {
                                          std::span<const std::byte> bytes);
    [[nodiscard]] vk::Result readBuffer(vk::Device device, vk::DeviceMemory memory, std::span<std::byte> bytes);
    [[nodiscard]] vk::Result
-   createSceneDescriptor(vk::Device device, vk::Buffer debug_buffer, vk::DeviceSize debug_size,
-                         vk::ImageView shadow_view, vk::ImageView spot_shadow_view,
-                         vk::Sampler shadow_sampler,
-                         vk::DescriptorSetLayout *layout, vk::DescriptorPool *pool, vk::DescriptorSet *set);
+	   createSceneDescriptor(vk::Device device, vk::Buffer debug_buffer, vk::DeviceSize debug_size,
+	                         vk::ImageView shadow_view, vk::ImageView spot_shadow_view,
+	                         std::span<const vk::ImageView> point_shadow_views, vk::Sampler shadow_sampler,
+	                         vk::DescriptorSetLayout *layout, vk::DescriptorPool *pool, vk::DescriptorSet *set);
    [[nodiscard]] vk::Result
    recordSwapchainClear(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer, vk::Image image,
                         vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
@@ -80,10 +80,12 @@ export namespace vve::v4::vh::low {
    [[nodiscard]] vk::Result
    recordSwapchainScene(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
                         vk::Image image, vk::ImageView view, vk::Extent2D extent, vk::ImageLayout old_layout,
-                        vk::Image depth_image, vk::ImageView depth_view, vk::ImageLayout depth_old_layout,
-                        vk::Image shadow_image, vk::ImageLayout shadow_old_layout,
-                        vk::Image spot_shadow_image, vk::ImageLayout spot_shadow_old_layout,
-                        vk::PipelineLayout layout, vk::Pipeline pipeline, vk::Buffer vertex_buffer,
+	                        vk::Image depth_image, vk::ImageView depth_view, vk::ImageLayout depth_old_layout,
+	                        vk::Image shadow_image, vk::ImageLayout shadow_old_layout,
+	                        vk::Image spot_shadow_image, vk::ImageLayout spot_shadow_old_layout,
+	                        std::span<const vk::Image> point_shadow_images,
+	                        std::span<const vk::ImageLayout> point_shadow_old_layouts,
+	                        vk::PipelineLayout layout, vk::Pipeline pipeline, vk::Buffer vertex_buffer,
                         vk::Buffer index_buffer, vk::DescriptorSet debug_set, vk::Buffer debug_buffer,
                         vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
                         std::span<const float> scene_constants, const vk::ClearColorValue &clear_color);
@@ -964,29 +966,42 @@ namespace vve::v4::vh::low {
    }
 
    /// @brief Creates the descriptor set for scene debug output and shadow-map sampling.
-   vk::Result createSceneDescriptor(vk::Device device, vk::Buffer debug_buffer, vk::DeviceSize debug_size,
-                                    vk::ImageView shadow_view, vk::ImageView spot_shadow_view,
-                                    vk::Sampler shadow_sampler,
-                                    vk::DescriptorSetLayout *layout, vk::DescriptorPool *pool,
-                                    vk::DescriptorSet *set) {
-      constexpr auto shader_stages = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
-      auto bindings = std::array{vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eStorageBuffer, 1,
-                                                                shader_stages},
-                                 vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eSampledImage, 1,
-                                                                shader_stages},
-                                 vk::DescriptorSetLayoutBinding{2, vk::DescriptorType::eSampler, 1,
-                                                                shader_stages},
-                                 vk::DescriptorSetLayoutBinding{3, vk::DescriptorType::eSampledImage, 1,
-                                                                shader_stages}};
+	   vk::Result createSceneDescriptor(vk::Device device, vk::Buffer debug_buffer, vk::DeviceSize debug_size,
+	                                    vk::ImageView shadow_view, vk::ImageView spot_shadow_view,
+	                                    std::span<const vk::ImageView> point_shadow_views, vk::Sampler shadow_sampler,
+	                                    vk::DescriptorSetLayout *layout, vk::DescriptorPool *pool,
+	                                    vk::DescriptorSet *set) {
+	      if (point_shadow_views.size() != 6U) { return vk::Result::eErrorInitializationFailed; }
+	      constexpr auto shader_stages = vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment;
+	      auto bindings = std::array{vk::DescriptorSetLayoutBinding{0, vk::DescriptorType::eStorageBuffer, 1,
+	                                                                shader_stages},
+	                                 vk::DescriptorSetLayoutBinding{1, vk::DescriptorType::eSampledImage, 1,
+	                                                                shader_stages},
+	                                 vk::DescriptorSetLayoutBinding{2, vk::DescriptorType::eSampler, 1,
+	                                                                shader_stages},
+	                                 vk::DescriptorSetLayoutBinding{3, vk::DescriptorType::eSampledImage, 1,
+	                                                                shader_stages},
+	                                 vk::DescriptorSetLayoutBinding{4, vk::DescriptorType::eSampledImage, 1,
+	                                                                shader_stages},
+	                                 vk::DescriptorSetLayoutBinding{5, vk::DescriptorType::eSampledImage, 1,
+	                                                                shader_stages},
+	                                 vk::DescriptorSetLayoutBinding{6, vk::DescriptorType::eSampledImage, 1,
+	                                                                shader_stages},
+	                                 vk::DescriptorSetLayoutBinding{7, vk::DescriptorType::eSampledImage, 1,
+	                                                                shader_stages},
+	                                 vk::DescriptorSetLayoutBinding{8, vk::DescriptorType::eSampledImage, 1,
+	                                                                shader_stages},
+	                                 vk::DescriptorSetLayoutBinding{9, vk::DescriptorType::eSampledImage, 1,
+	                                                                shader_stages}};
       auto layout_info = vk::DescriptorSetLayoutCreateInfo{};
       layout_info.bindingCount = static_cast<std::uint32_t>(bindings.size());
       layout_info.pBindings = bindings.data();
       auto result = device.createDescriptorSetLayout(&layout_info, nullptr, layout);
       if (result != vk::Result::eSuccess) { return result; }
 
-      auto pool_sizes = std::array{vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 1},
-                                   vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 2},
-                                   vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1}};
+	      auto pool_sizes = std::array{vk::DescriptorPoolSize{vk::DescriptorType::eStorageBuffer, 1},
+	                                   vk::DescriptorPoolSize{vk::DescriptorType::eSampledImage, 8},
+	                                   vk::DescriptorPoolSize{vk::DescriptorType::eSampler, 1}};
       auto pool_info = vk::DescriptorPoolCreateInfo{};
       pool_info.maxSets = 1;
       pool_info.poolSizeCount = static_cast<std::uint32_t>(pool_sizes.size());
@@ -1005,18 +1020,34 @@ namespace vve::v4::vh::low {
       result = device.allocateDescriptorSets(&allocate_info, set);
       if (result != vk::Result::eSuccess) { return result; }
 
-      auto buffer_info = vk::DescriptorBufferInfo{debug_buffer, 0, debug_size};
-      auto image_info = vk::DescriptorImageInfo{{}, shadow_view, vk::ImageLayout::eShaderReadOnlyOptimal};
-      auto spot_image_info = vk::DescriptorImageInfo{{}, spot_shadow_view, vk::ImageLayout::eShaderReadOnlyOptimal};
-      auto sampler_info = vk::DescriptorImageInfo{shadow_sampler, {}, vk::ImageLayout::eUndefined};
-      auto writes = std::array{vk::WriteDescriptorSet{*set, 0, 0, 1, vk::DescriptorType::eStorageBuffer, nullptr,
-                                                      &buffer_info},
-                               vk::WriteDescriptorSet{*set, 1, 0, 1, vk::DescriptorType::eSampledImage,
-                                                      &image_info},
-                               vk::WriteDescriptorSet{*set, 2, 0, 1, vk::DescriptorType::eSampler,
-                                                      &sampler_info},
-                               vk::WriteDescriptorSet{*set, 3, 0, 1, vk::DescriptorType::eSampledImage,
-                                                      &spot_image_info}};
+	      auto buffer_info = vk::DescriptorBufferInfo{debug_buffer, 0, debug_size};
+	      auto image_info = vk::DescriptorImageInfo{{}, shadow_view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	      auto spot_image_info = vk::DescriptorImageInfo{{}, spot_shadow_view, vk::ImageLayout::eShaderReadOnlyOptimal};
+	      auto point_infos = std::array<vk::DescriptorImageInfo, 6>{};
+	      for (std::size_t i{}; i < point_infos.size(); ++i) {
+	         point_infos[i] = vk::DescriptorImageInfo{{}, point_shadow_views[i], vk::ImageLayout::eShaderReadOnlyOptimal};
+	      }
+	      auto sampler_info = vk::DescriptorImageInfo{shadow_sampler, {}, vk::ImageLayout::eUndefined};
+	      auto writes = std::array{vk::WriteDescriptorSet{*set, 0, 0, 1, vk::DescriptorType::eStorageBuffer, nullptr,
+	                                                      &buffer_info},
+	                               vk::WriteDescriptorSet{*set, 1, 0, 1, vk::DescriptorType::eSampledImage,
+	                                                      &image_info},
+	                               vk::WriteDescriptorSet{*set, 2, 0, 1, vk::DescriptorType::eSampler,
+	                                                      &sampler_info},
+	                               vk::WriteDescriptorSet{*set, 3, 0, 1, vk::DescriptorType::eSampledImage,
+	                                                      &spot_image_info},
+	                               vk::WriteDescriptorSet{*set, 4, 0, 1, vk::DescriptorType::eSampledImage,
+	                                                      &point_infos[0]},
+	                               vk::WriteDescriptorSet{*set, 5, 0, 1, vk::DescriptorType::eSampledImage,
+	                                                      &point_infos[1]},
+	                               vk::WriteDescriptorSet{*set, 6, 0, 1, vk::DescriptorType::eSampledImage,
+	                                                      &point_infos[2]},
+	                               vk::WriteDescriptorSet{*set, 7, 0, 1, vk::DescriptorType::eSampledImage,
+	                                                      &point_infos[3]},
+	                               vk::WriteDescriptorSet{*set, 8, 0, 1, vk::DescriptorType::eSampledImage,
+	                                                      &point_infos[4]},
+	                               vk::WriteDescriptorSet{*set, 9, 0, 1, vk::DescriptorType::eSampledImage,
+	                                                      &point_infos[5]}};
       device.updateDescriptorSets(static_cast<std::uint32_t>(writes.size()), writes.data(), 0, nullptr);
       return vk::Result::eSuccess;
    }
@@ -1204,18 +1235,23 @@ namespace vve::v4::vh::low {
    }
 
    /// @brief Records a dynamic-rendering pass that clears then draws uploaded indexed geometry.
-   vk::Result recordSwapchainScene(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
-                                   vk::Image image, vk::ImageView view, vk::Extent2D extent,
-                                   vk::ImageLayout old_layout, vk::Image depth_image, vk::ImageView depth_view,
-                                   vk::ImageLayout depth_old_layout, vk::Image shadow_image,
-                                   vk::ImageLayout shadow_old_layout, vk::Image spot_shadow_image,
-                                   vk::ImageLayout spot_shadow_old_layout, vk::PipelineLayout layout,
-                                   vk::Pipeline pipeline, vk::Buffer vertex_buffer, vk::Buffer index_buffer,
-                                   vk::DescriptorSet debug_set, vk::Buffer debug_buffer,
-                                   vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
-                                   std::span<const float> scene_constants,
-                                   const vk::ClearColorValue &clear_color) {
-      if (scene_constants.size() < 52 || !debug_buffer) { return vk::Result::eErrorInitializationFailed; }
+	   vk::Result recordSwapchainScene(vk::Device device, vk::CommandPool pool, vk::CommandBuffer command_buffer,
+	                                   vk::Image image, vk::ImageView view, vk::Extent2D extent,
+	                                   vk::ImageLayout old_layout, vk::Image depth_image, vk::ImageView depth_view,
+	                                   vk::ImageLayout depth_old_layout, vk::Image shadow_image,
+	                                   vk::ImageLayout shadow_old_layout, vk::Image spot_shadow_image,
+	                                   vk::ImageLayout spot_shadow_old_layout,
+	                                   std::span<const vk::Image> point_shadow_images,
+	                                   std::span<const vk::ImageLayout> point_shadow_old_layouts,
+	                                   vk::PipelineLayout layout,
+	                                   vk::Pipeline pipeline, vk::Buffer vertex_buffer, vk::Buffer index_buffer,
+	                                   vk::DescriptorSet debug_set, vk::Buffer debug_buffer,
+	                                   vk::DeviceSize debug_buffer_size, std::uint32_t index_count,
+	                                   std::span<const float> scene_constants,
+	                                   const vk::ClearColorValue &clear_color) {
+	      if (scene_constants.size() < 56 || !debug_buffer || point_shadow_images.size() != point_shadow_old_layouts.size()) {
+	         return vk::Result::eErrorInitializationFailed;
+	      }
 
       auto result = detail::beginOneTime(device, pool, command_buffer);
       if (result != vk::Result::eSuccess) { return result; }
@@ -1253,13 +1289,23 @@ namespace vve::v4::vh::low {
          vk::AccessFlagBits2::eShaderSampledRead);
       detail::imageBarrier(command_buffer, shadow_to_shader);
 
-      auto spot_shadow_to_shader = detail::imageBarrier(
-         spot_shadow_image, vk::ImageAspectFlagBits::eDepth, spot_shadow_old_layout,
-         vk::ImageLayout::eShaderReadOnlyOptimal,
-         vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferRead,
-         vk::PipelineStageFlagBits2::eVertexShader | vk::PipelineStageFlagBits2::eFragmentShader,
-         vk::AccessFlagBits2::eShaderSampledRead);
-      detail::imageBarrier(command_buffer, spot_shadow_to_shader);
+	      auto spot_shadow_to_shader = detail::imageBarrier(
+	         spot_shadow_image, vk::ImageAspectFlagBits::eDepth, spot_shadow_old_layout,
+	         vk::ImageLayout::eShaderReadOnlyOptimal,
+	         vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferRead,
+	         vk::PipelineStageFlagBits2::eVertexShader | vk::PipelineStageFlagBits2::eFragmentShader,
+	         vk::AccessFlagBits2::eShaderSampledRead);
+	      detail::imageBarrier(command_buffer, spot_shadow_to_shader);
+
+	      for (std::size_t i{}; i < point_shadow_images.size(); ++i) {
+	         auto point_shadow_to_shader = detail::imageBarrier(
+	            point_shadow_images[i], vk::ImageAspectFlagBits::eDepth, point_shadow_old_layouts[i],
+	            vk::ImageLayout::eShaderReadOnlyOptimal,
+	            vk::PipelineStageFlagBits2::eCopy, vk::AccessFlagBits2::eTransferRead,
+	            vk::PipelineStageFlagBits2::eVertexShader | vk::PipelineStageFlagBits2::eFragmentShader,
+	            vk::AccessFlagBits2::eShaderSampledRead);
+	         detail::imageBarrier(command_buffer, point_shadow_to_shader);
+	      }
 
       auto to_shader = detail::bufferBarrier(debug_buffer, debug_buffer_size, vk::PipelineStageFlagBits2::eHost,
                                              vk::AccessFlagBits2::eHostWrite,
@@ -1282,9 +1328,9 @@ namespace vve::v4::vh::low {
       detail::setViewportAndScissor(command_buffer, extent);
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
       command_buffer.bindDescriptorSets(vk::PipelineBindPoint::eGraphics, layout, 0, 1, &debug_set, 0, nullptr);
-      command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
-                                   52U * static_cast<std::uint32_t>(sizeof(float)),
-                                   scene_constants.data());
+	      command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex | vk::ShaderStageFlagBits::eFragment, 0,
+	                                   56U * static_cast<std::uint32_t>(sizeof(float)),
+	                                   scene_constants.data());
       command_buffer.bindVertexBuffers(0, 1, &vertex_buffer, &vertex_offset);
       command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint32);
       command_buffer.drawIndexed(index_count, 1, 0, 0, 0);
@@ -1314,7 +1360,7 @@ namespace vve::v4::vh::low {
                                      vk::Pipeline pipeline, vk::Buffer vertex_buffer, vk::Buffer index_buffer,
                                      std::uint32_t index_count, std::span<const float> scene_constants,
                                      vk::Buffer readback_buffer) {
-      if (scene_constants.size() < 52 || !readback_buffer) { return vk::Result::eErrorInitializationFailed; }
+	      if (scene_constants.size() < 56 || !readback_buffer) { return vk::Result::eErrorInitializationFailed; }
 
       auto result = detail::beginOneTime(device, pool, command_buffer);
       if (result != vk::Result::eSuccess) { return result; }
@@ -1348,9 +1394,9 @@ namespace vve::v4::vh::low {
       const auto vertex_offset = vk::DeviceSize{};
       detail::setViewportAndScissor(command_buffer, extent);
       command_buffer.bindPipeline(vk::PipelineBindPoint::eGraphics, pipeline);
-      command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0,
-                                   52U * static_cast<std::uint32_t>(sizeof(float)),
-                                   scene_constants.data());
+	      command_buffer.pushConstants(layout, vk::ShaderStageFlagBits::eVertex, 0,
+	                                   56U * static_cast<std::uint32_t>(sizeof(float)),
+	                                   scene_constants.data());
       command_buffer.bindVertexBuffers(0, 1, &vertex_buffer, &vertex_offset);
       command_buffer.bindIndexBuffer(index_buffer, 0, vk::IndexType::eUint32);
       command_buffer.drawIndexed(index_count, 1, 0, 0, 0);

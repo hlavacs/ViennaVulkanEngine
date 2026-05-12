@@ -14,6 +14,8 @@ import :Window;
 
 export namespace vve::v4::vh {
 
+   inline constexpr std::size_t point_shadow_face_count = 6; ///< Number of 90-degree point-light shadow faces.
+
    /// @brief Vulkan objects associated with one drawable window.
    struct FrameTarget {
       WindowHandle window{};                       ///< Engine window owning this target.
@@ -37,6 +39,8 @@ export namespace vve::v4::vh {
       vk::raii::Pipeline shadow_pipeline{nullptr};       ///< Depth-only pipeline for directional shadows.
       vk::raii::PipelineLayout spot_shadow_layout{nullptr}; ///< Pipeline layout for the spot shadow-depth pass.
       vk::raii::Pipeline spot_shadow_pipeline{nullptr};  ///< Depth-only pipeline for spot shadows.
+      vk::raii::PipelineLayout point_shadow_layout{nullptr}; ///< Pipeline layout for point shadow-depth faces.
+      vk::raii::Pipeline point_shadow_pipeline{nullptr}; ///< Depth-only pipeline for point shadows.
       vk::raii::DeviceMemory scene_vertex_memory{nullptr}; ///< Memory backing the scene vertex buffer.
       vk::raii::Buffer scene_vertices{nullptr};          ///< Host-visible position/color vertex buffer.
       vk::raii::DeviceMemory scene_index_memory{nullptr}; ///< Memory backing the scene index buffer.
@@ -54,6 +58,12 @@ export namespace vve::v4::vh {
       vk::ImageLayout spot_shadow_depth_layout{};          ///< Current spot shadow depth image layout.
       vk::raii::DeviceMemory spot_shadow_readback_memory{nullptr}; ///< Memory backing spot shadow readback.
       vk::raii::Buffer spot_shadow_readback{nullptr};      ///< Host-visible spot shadow depth readback buffer.
+      std::vector<vk::raii::DeviceMemory> point_shadow_depth_memory{}; ///< Memory for point shadow faces.
+      std::vector<vk::raii::Image> point_shadow_depth_images{}; ///< Point shadow face images.
+      std::vector<vk::raii::ImageView> point_shadow_depth_views{}; ///< Point shadow face image views.
+      std::vector<vk::ImageLayout> point_shadow_depth_layouts{}; ///< Current point shadow layouts.
+      std::vector<vk::raii::DeviceMemory> point_shadow_readback_memory{}; ///< Point readback memory.
+      std::vector<vk::raii::Buffer> point_shadow_readback{}; ///< Point shadow face readback buffers.
       vk::raii::DescriptorSetLayout scene_debug_layout{nullptr}; ///< Layout for shader debug readback.
       vk::raii::DescriptorPool scene_debug_pool{nullptr};         ///< Pool owning the debug descriptor set.
       vk::DescriptorSet scene_debug_set{};                       ///< Pool-owned descriptor set.
@@ -102,6 +112,17 @@ export namespace vve::v4::vh {
       float spot_shadow_depth_delta{};                     ///< Spot light depth minus sampled spot depth.
       float spot_shadow_bias{};                            ///< Bias used by the spot shadow comparison.
       float spot_shadow_factor{};                          ///< One when spot-lit, zero when spot-shadowed.
+      std::array<float, 4> point_light_clip{};             ///< GPU-computed point light clip position.
+      std::array<float, 3> point_light_ndc{};              ///< GPU-computed point light NDC position.
+      float point_light_depth{};                           ///< GPU-computed point light depth.
+      float sampled_point_shadow_depth{};                  ///< Point shadow depth sampled by the shader.
+      float point_shadow_depth_delta{};                    ///< Point depth minus sampled point depth.
+      float point_shadow_bias{};                           ///< Bias used by the point shadow comparison.
+      float point_shadow_factor{};                         ///< One when point-lit, zero when point-shadowed.
+      float point_shadow_face{};                           ///< Selected point shadow face.
+      float inside_point_light{};                          ///< One when sample is inside point shadow face.
+      float unused_point0{};                               ///< Layout padding visible to the host.
+      float unused_point1{};                               ///< Layout padding visible to the host.
       std::array<float, 3> normal{};                       ///< GPU-normalized surface normal.
       float n_dot_l{};                                     ///< GPU-computed Lambert term.
       std::array<float, 3> direction_to_light{};           ///< GPU-normalized direction to light.
@@ -116,8 +137,8 @@ export namespace vve::v4::vh {
       float unused2{};                                     ///< Layout padding visible to the host.
       std::array<float, 3> final_lighting{};               ///< Ambient plus direct lighting.
       float unused3{};                                     ///< Layout padding visible to the host.
-   };
-   static_assert(sizeof(SceneDebugSample) == 272);
+	   };
+	   static_assert(sizeof(SceneDebugSample) == 336);
 
    /// @brief Owns Vulkan instance, device, and frame targets for visible windows.
    class FrameHost {
@@ -139,10 +160,12 @@ export namespace vve::v4::vh {
       renderScene(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
                   std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                   std::string_view fragment_entry, std::span<const std::uint32_t> shadow_vertex_spirv,
-                  std::string_view shadow_vertex_entry,
-                  std::span<const std::uint32_t> spot_shadow_vertex_spirv,
-                  std::string_view spot_shadow_vertex_entry,
-                  std::span<const SceneVertex> vertices, std::span<const std::uint32_t> indices,
+	                  std::string_view shadow_vertex_entry,
+	                  std::span<const std::uint32_t> spot_shadow_vertex_spirv,
+	                  std::string_view spot_shadow_vertex_entry,
+	                  std::span<const std::uint32_t> point_shadow_vertex_spirv,
+	                  std::string_view point_shadow_vertex_entry,
+	                  std::span<const SceneVertex> vertices, std::span<const std::uint32_t> indices,
                   std::uint32_t mesh_count, std::uint32_t instance_count,
                   std::span<const float> scene_constants);
       [[nodiscard]] std::size_t targetCount() const;
@@ -160,6 +183,8 @@ export namespace vve::v4::vh {
       [[nodiscard]] PixelExtent sceneShadowExtent() const;
       [[nodiscard]] std::optional<float> sceneShadowDepth(std::uint32_t x, std::uint32_t y) const;
       [[nodiscard]] std::optional<float> sceneSpotShadowDepth(std::uint32_t x, std::uint32_t y) const;
+      [[nodiscard]] std::optional<float> scenePointShadowDepth(std::uint32_t face,
+                                                               std::uint32_t x, std::uint32_t y) const;
       [[nodiscard]] std::array<float, 4> lastClearColor() const;
 
    private:
@@ -185,6 +210,9 @@ export namespace vve::v4::vh {
       [[nodiscard]] std::expected<void, Error>
       createSceneSpotShadowPipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
                                     std::string_view vertex_entry);
+      [[nodiscard]] std::expected<void, Error>
+      createScenePointShadowPipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
+                                     std::string_view vertex_entry);
       [[nodiscard]] std::expected<void, Error>
       uploadScene(FrameTarget &target, std::span<const SceneVertex> vertices,
                   std::span<const std::uint32_t> indices);
@@ -228,6 +256,7 @@ export namespace vve::v4::vh {
       std::array<SceneDebugSample, 2> scene_debug_samples_{}; ///< Last shader debug readback samples.
       std::vector<float> scene_shadow_depths_{}; ///< Last shadow-depth image copied back to the host.
       std::vector<float> scene_spot_shadow_depths_{}; ///< Last spot shadow-depth image copied back to the host.
+      std::array<std::vector<float>, point_shadow_face_count> scene_point_shadow_depths_{}; ///< Point face depths.
       std::array<float, 4> last_clear_color_{};
    };
 
@@ -353,16 +382,18 @@ namespace vve::v4::vh {
    FrameHost::renderScene(const std::array<float, 4> &color, std::span<const std::uint32_t> vertex_spirv,
                           std::string_view vertex_entry, std::span<const std::uint32_t> fragment_spirv,
                           std::string_view fragment_entry, std::span<const std::uint32_t> shadow_vertex_spirv,
-                          std::string_view shadow_vertex_entry,
-                          std::span<const std::uint32_t> spot_shadow_vertex_spirv,
-                          std::string_view spot_shadow_vertex_entry,
-                          std::span<const SceneVertex> vertices, std::span<const std::uint32_t> indices,
-                          std::uint32_t mesh_count, std::uint32_t instance_count,
-                          std::span<const float> scene_constants) {
-      if (!ready()) { return {}; }
-      if (vertices.empty() || indices.empty() || scene_constants.size() < 52) {
-         return std::unexpected(Error::invalid_argument);
-      }
+	                          std::string_view shadow_vertex_entry,
+	                          std::span<const std::uint32_t> spot_shadow_vertex_spirv,
+	                          std::string_view spot_shadow_vertex_entry,
+	                          std::span<const std::uint32_t> point_shadow_vertex_spirv,
+	                          std::string_view point_shadow_vertex_entry,
+	                          std::span<const SceneVertex> vertices, std::span<const std::uint32_t> indices,
+	                          std::uint32_t mesh_count, std::uint32_t instance_count,
+	                          std::span<const float> scene_constants) {
+	      if (!ready()) { return {}; }
+	      if (vertices.empty() || indices.empty() || scene_constants.size() < 56) {
+	         return std::unexpected(Error::invalid_argument);
+	      }
 
       const auto clear = vk::ClearColorValue{color};
       for (auto &target : targets_) {
@@ -376,10 +407,14 @@ namespace vve::v4::vh {
                                                           shadow_vertex_entry); !result) {
             return result;
          }
-         if (const auto result = createSceneSpotShadowPipeline(target, spot_shadow_vertex_spirv,
-                                                              spot_shadow_vertex_entry); !result) {
-            return result;
-         }
+	         if (const auto result = createSceneSpotShadowPipeline(target, spot_shadow_vertex_spirv,
+	                                                              spot_shadow_vertex_entry); !result) {
+	            return result;
+	         }
+	         if (const auto result = createScenePointShadowPipeline(target, point_shadow_vertex_spirv,
+	                                                               point_shadow_vertex_entry); !result) {
+	            return result;
+	         }
          if (const auto result = uploadScene(target, vertices, indices); !result) { return result; }
          if (const auto result = clearSceneDebugTarget(target); !result) { return result; }
          if (const auto result = drawSceneShadowTarget(target, scene_constants); !result) { return result; }
@@ -455,13 +490,22 @@ namespace vve::v4::vh {
    }
 
    /// @brief Returns one copied spot shadow depth value if the latest pass produced it.
-   std::optional<float> FrameHost::sceneSpotShadowDepth(std::uint32_t x, std::uint32_t y) const {
-      const auto extent = sceneShadowExtent();
-      if (x >= extent.width || y >= extent.height) { return {}; }
-      const auto index = static_cast<std::size_t>(y) * extent.width + x;
-      return index < scene_spot_shadow_depths_.size() ? std::optional<float>{scene_spot_shadow_depths_[index]}
-                                                      : std::optional<float>{};
-   }
+	   std::optional<float> FrameHost::sceneSpotShadowDepth(std::uint32_t x, std::uint32_t y) const {
+	      const auto extent = sceneShadowExtent();
+	      if (x >= extent.width || y >= extent.height) { return {}; }
+	      const auto index = static_cast<std::size_t>(y) * extent.width + x;
+	      return index < scene_spot_shadow_depths_.size() ? std::optional<float>{scene_spot_shadow_depths_[index]}
+	                                                      : std::optional<float>{};
+	   }
+
+	   /// @brief Returns one copied point shadow depth value if the latest pass produced it.
+	   std::optional<float> FrameHost::scenePointShadowDepth(std::uint32_t face, std::uint32_t x, std::uint32_t y) const {
+	      const auto extent = sceneShadowExtent();
+	      if (face >= scene_point_shadow_depths_.size() || x >= extent.width || y >= extent.height) { return {}; }
+	      const auto index = static_cast<std::size_t>(y) * extent.width + x;
+	      const auto &depths = scene_point_shadow_depths_[face];
+	      return index < depths.size() ? std::optional<float>{depths[index]} : std::optional<float>{};
+	   }
 
    /// @brief Returns the fixed clear color used by the most recent clear frame.
    std::array<float, 4> FrameHost::lastClearColor() const { return last_clear_color_; }
@@ -624,9 +668,9 @@ namespace vve::v4::vh {
                                   std::span<const std::uint32_t> fragment_spirv,
                                   std::string_view fragment_entry) {
       if (detail::has(target.scene_pipeline)) { return {}; }
-      const auto push_range = vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex |
-                                                    vk::ShaderStageFlagBits::eFragment, 0,
-                                                    52U * static_cast<std::uint32_t>(sizeof(float))};
+	      const auto push_range = vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex |
+	                                                    vk::ShaderStageFlagBits::eFragment, 0,
+	                                                    56U * static_cast<std::uint32_t>(sizeof(float))};
       const auto set_layouts = std::array{*target.scene_debug_layout};
       const auto push_ranges = std::array{push_range};
       const auto color_formats = std::array{target.color_format};
@@ -658,8 +702,8 @@ namespace vve::v4::vh {
    FrameHost::createSceneShadowPipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
                                         std::string_view vertex_entry) {
       if (detail::has(target.shadow_pipeline)) { return {}; }
-      const auto push_range = vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0,
-                                                    52U * static_cast<std::uint32_t>(sizeof(float))};
+	      const auto push_range = vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0,
+	                                                    56U * static_cast<std::uint32_t>(sizeof(float))};
       const auto push_ranges = std::array{push_range};
       const auto stride = 9U * static_cast<std::uint32_t>(sizeof(float));
       const auto vertex_binding = vk::VertexInputBindingDescription{0, stride, vk::VertexInputRate::eVertex};
@@ -679,12 +723,12 @@ namespace vve::v4::vh {
    }
 
    /// @brief Creates the spot shadow-depth pipeline for one target if needed.
-   std::expected<void, Error>
-   FrameHost::createSceneSpotShadowPipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
-                                            std::string_view vertex_entry) {
+	   std::expected<void, Error>
+	   FrameHost::createSceneSpotShadowPipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
+	                                            std::string_view vertex_entry) {
       if (detail::has(target.spot_shadow_pipeline)) { return {}; }
-      const auto push_range = vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0,
-                                                    52U * static_cast<std::uint32_t>(sizeof(float))};
+	      const auto push_range = vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0,
+	                                                    56U * static_cast<std::uint32_t>(sizeof(float))};
       const auto push_ranges = std::array{push_range};
       const auto stride = 9U * static_cast<std::uint32_t>(sizeof(float));
       const auto vertex_binding = vk::VertexInputBindingDescription{0, stride, vk::VertexInputRate::eVertex};
@@ -700,10 +744,35 @@ namespace vve::v4::vh {
          target.spot_shadow_layout = vk::raii::PipelineLayout{device_, static_cast<VkPipelineLayout>(raw_layout)};
          target.spot_shadow_pipeline = vk::raii::Pipeline{device_, static_cast<VkPipeline>(raw_pipeline)};
       }
-      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
-   }
+	      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
+	   }
 
-   /// @brief Uploads scene vertex and index data directly into host-visible buffers for the proof renderer.
+	   /// @brief Creates the point shadow-depth pipeline for one target if needed.
+	   std::expected<void, Error>
+	   FrameHost::createScenePointShadowPipeline(FrameTarget &target, std::span<const std::uint32_t> vertex_spirv,
+	                                             std::string_view vertex_entry) {
+	      if (detail::has(target.point_shadow_pipeline)) { return {}; }
+	      const auto push_range = vk::PushConstantRange{vk::ShaderStageFlagBits::eVertex, 0,
+	                                                    56U * static_cast<std::uint32_t>(sizeof(float))};
+	      const auto push_ranges = std::array{push_range};
+	      const auto stride = 9U * static_cast<std::uint32_t>(sizeof(float));
+	      const auto vertex_binding = vk::VertexInputBindingDescription{0, stride, vk::VertexInputRate::eVertex};
+	      const auto bindings = std::array{vertex_binding};
+	      const auto attributes = std::array{vk::VertexInputAttributeDescription{0, 0,
+	                                                                            vk::Format::eR32G32B32Sfloat, 0}};
+	      auto raw_layout = vk::PipelineLayout{};
+	      auto raw_pipeline = vk::Pipeline{};
+	      const auto result = low::createGraphicsPipeline(*device_, vertex_spirv, vertex_entry, {}, {}, {}, push_ranges,
+	                                                      bindings, attributes, {}, vk::Format::eD32Sfloat, true,
+	                                                      &raw_layout, &raw_pipeline);
+	      if (result == vk::Result::eSuccess) {
+	         target.point_shadow_layout = vk::raii::PipelineLayout{device_, static_cast<VkPipelineLayout>(raw_layout)};
+	         target.point_shadow_pipeline = vk::raii::Pipeline{device_, static_cast<VkPipeline>(raw_pipeline)};
+	      }
+	      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
+	   }
+
+	   /// @brief Uploads scene vertex and index data directly into host-visible buffers for the proof renderer.
    std::expected<void, Error>
    FrameHost::uploadScene(FrameTarget &target, std::span<const SceneVertex> vertices,
                           std::span<const std::uint32_t> indices) {
@@ -747,11 +816,13 @@ namespace vve::v4::vh {
 
    /// @brief Creates the shadow depth image and host readback buffer.
    std::expected<void, Error> FrameHost::createSceneShadowTarget(FrameTarget &target) {
-      if (detail::has(target.shadow_depth_image) && detail::has(target.shadow_readback) &&
-          detail::has(target.spot_shadow_depth_image) && detail::has(target.spot_shadow_readback) &&
-          detail::has(target.shadow_sampler)) {
-         return {};
-      }
+	      if (detail::has(target.shadow_depth_image) && detail::has(target.shadow_readback) &&
+	          detail::has(target.spot_shadow_depth_image) && detail::has(target.spot_shadow_readback) &&
+	          target.point_shadow_depth_images.size() == point_shadow_face_count &&
+	          target.point_shadow_readback.size() == point_shadow_face_count &&
+	          detail::has(target.shadow_sampler)) {
+	         return {};
+	      }
       const auto extent = sceneShadowExtent();
       const auto vk_extent = vk::Extent2D{extent.width, extent.height};
       auto raw_image = vk::Image{};
@@ -800,13 +871,44 @@ namespace vve::v4::vh {
       raw_buffer_memory = nullptr;
       result = low::createHostBuffer(*physical_device_, *device_, spot_bytes.size(),
                                      vk::BufferUsageFlagBits::eTransferDst, &raw_buffer, &raw_buffer_memory);
-      if (result == vk::Result::eSuccess) {
-         target.spot_shadow_readback_memory =
-            vk::raii::DeviceMemory{device_, static_cast<VkDeviceMemory>(raw_buffer_memory)};
-         target.spot_shadow_readback = vk::raii::Buffer{device_, static_cast<VkBuffer>(raw_buffer)};
-      }
-      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
-   }
+	      if (result == vk::Result::eSuccess) {
+	         target.spot_shadow_readback_memory =
+	            vk::raii::DeviceMemory{device_, static_cast<VkDeviceMemory>(raw_buffer_memory)};
+	         target.spot_shadow_readback = vk::raii::Buffer{device_, static_cast<VkBuffer>(raw_buffer)};
+	      }
+	      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+
+	      target.point_shadow_depth_memory.clear();
+	      target.point_shadow_depth_images.clear();
+	      target.point_shadow_depth_views.clear();
+	      target.point_shadow_depth_layouts.clear();
+	      target.point_shadow_readback_memory.clear();
+	      target.point_shadow_readback.clear();
+	      scene_point_shadow_depths_ = {};
+	      for (std::size_t face{}; face < point_shadow_face_count; ++face) {
+	         raw_image = nullptr;
+	         raw_memory = nullptr;
+	         raw_view = nullptr;
+	         result = low::createShadowDepthTarget(*physical_device_, *device_, vk_extent,
+	                                               &raw_image, &raw_memory, &raw_view);
+	         if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+	         target.point_shadow_depth_memory.emplace_back(device_, static_cast<VkDeviceMemory>(raw_memory));
+	         target.point_shadow_depth_images.emplace_back(device_, static_cast<VkImage>(raw_image));
+	         target.point_shadow_depth_views.emplace_back(device_, static_cast<VkImageView>(raw_view));
+	         target.point_shadow_depth_layouts.push_back(vk::ImageLayout::eUndefined);
+
+	         scene_point_shadow_depths_[face].assign(static_cast<std::size_t>(extent.width) * extent.height, 1.0F);
+	         raw_buffer = nullptr;
+	         raw_buffer_memory = nullptr;
+	         const auto face_bytes = std::as_writable_bytes(std::span{scene_point_shadow_depths_[face]});
+	         result = low::createHostBuffer(*physical_device_, *device_, face_bytes.size(),
+	                                        vk::BufferUsageFlagBits::eTransferDst, &raw_buffer, &raw_buffer_memory);
+	         if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+	         target.point_shadow_readback_memory.emplace_back(device_, static_cast<VkDeviceMemory>(raw_buffer_memory));
+	         target.point_shadow_readback.emplace_back(device_, static_cast<VkBuffer>(raw_buffer));
+	      }
+	      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
+	   }
 
    /// @brief Creates the storage buffer and descriptor used by shader debug samples.
    std::expected<void, Error> FrameHost::createSceneDebugTarget(FrameTarget &target) {
@@ -822,9 +924,12 @@ namespace vve::v4::vh {
 
       auto raw_layout = vk::DescriptorSetLayout{};
       auto raw_pool = vk::DescriptorPool{};
-      result = low::createSceneDescriptor(*device_, *target.scene_debug_buffer, size, *target.shadow_depth_view,
-                                          *target.spot_shadow_depth_view, *target.shadow_sampler, &raw_layout, &raw_pool,
-                                          &target.scene_debug_set);
+	      auto point_views = std::vector<vk::ImageView>{};
+	      point_views.reserve(target.point_shadow_depth_views.size());
+	      for (const auto &view : target.point_shadow_depth_views) { point_views.push_back(*view); }
+	      result = low::createSceneDescriptor(*device_, *target.scene_debug_buffer, size, *target.shadow_depth_view,
+	                                          *target.spot_shadow_depth_view, point_views, *target.shadow_sampler,
+	                                          &raw_layout, &raw_pool, &target.scene_debug_set);
       if (result == vk::Result::eSuccess) {
          target.scene_debug_layout =
             vk::raii::DescriptorSetLayout{device_, static_cast<VkDescriptorSetLayout>(raw_layout)};
@@ -908,27 +1013,32 @@ namespace vve::v4::vh {
 
    /// @brief Acquires, clears, draws uploaded scene geometry, submits, waits, and presents one target image.
    std::expected<void, Error>
-   FrameHost::drawSceneTarget(FrameTarget &target, const vk::ClearColorValue &color,
-                              std::span<const float> scene_constants) {
-      const auto result = presentFrame(target, [&](std::uint32_t image_index) {
-         return low::recordSwapchainScene(*device_, *command_pool_, *command_buffer_, target.images[image_index],
-                                          *target.views[image_index],
-                                          vk::Extent2D{target.extent.width, target.extent.height},
-                                          target.layouts[image_index], *target.depth_image, *target.depth_view,
-                                          target.depth_layout, *target.shadow_depth_image,
-                                          target.shadow_depth_layout, *target.spot_shadow_depth_image,
-                                          target.spot_shadow_depth_layout, *target.scene_layout,
-                                          *target.scene_pipeline, *target.scene_vertices, *target.scene_indices,
-                                          target.scene_debug_set, *target.scene_debug_buffer,
+	   FrameHost::drawSceneTarget(FrameTarget &target, const vk::ClearColorValue &color,
+	                              std::span<const float> scene_constants) {
+	      const auto result = presentFrame(target, [&](std::uint32_t image_index) {
+	         auto point_images = std::vector<vk::Image>{};
+	         point_images.reserve(target.point_shadow_depth_images.size());
+	         for (const auto &image : target.point_shadow_depth_images) { point_images.push_back(*image); }
+	         return low::recordSwapchainScene(*device_, *command_pool_, *command_buffer_, target.images[image_index],
+	                                          *target.views[image_index],
+	                                          vk::Extent2D{target.extent.width, target.extent.height},
+	                                          target.layouts[image_index], *target.depth_image, *target.depth_view,
+	                                          target.depth_layout, *target.shadow_depth_image,
+	                                          target.shadow_depth_layout, *target.spot_shadow_depth_image,
+	                                          target.spot_shadow_depth_layout, point_images,
+	                                          target.point_shadow_depth_layouts, *target.scene_layout,
+	                                          *target.scene_pipeline, *target.scene_vertices, *target.scene_indices,
+	                                          target.scene_debug_set, *target.scene_debug_buffer,
                                           sizeof(SceneDebugSample) * scene_debug_samples_.size(),
                                           target.scene_index_count, scene_constants, color);
       });
       if (!result) { return result; }
-      target.depth_layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
-      target.shadow_depth_layout = vk::ImageLayout::eShaderReadOnlyOptimal;
-      target.spot_shadow_depth_layout = vk::ImageLayout::eShaderReadOnlyOptimal;
-      return {};
-   }
+	      target.depth_layout = vk::ImageLayout::eDepthStencilAttachmentOptimal;
+	      target.shadow_depth_layout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	      target.spot_shadow_depth_layout = vk::ImageLayout::eShaderReadOnlyOptimal;
+	      std::ranges::fill(target.point_shadow_depth_layouts, vk::ImageLayout::eShaderReadOnlyOptimal);
+	      return {};
+	   }
 
    /// @brief Draws uploaded scene geometry into the shadow depth image and reads it back.
    std::expected<void, Error>
@@ -963,11 +1073,35 @@ namespace vve::v4::vh {
       result = low::submitAndWait(*device_, *queue_, *command_buffer_, *frame_timeline_, ++timeline_value_);
       if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
 
-      target.spot_shadow_depth_layout = vk::ImageLayout::eTransferSrcOptimal;
-      const auto spot_bytes = std::as_writable_bytes(std::span{scene_spot_shadow_depths_});
-      result = low::readBuffer(*device_, *target.spot_shadow_readback_memory, spot_bytes);
-      return result == vk::Result::eSuccess ? std::expected<void, Error>{} : std::unexpected(Error::platform_error);
-   }
+	      target.spot_shadow_depth_layout = vk::ImageLayout::eTransferSrcOptimal;
+	      const auto spot_bytes = std::as_writable_bytes(std::span{scene_spot_shadow_depths_});
+	      result = low::readBuffer(*device_, *target.spot_shadow_readback_memory, spot_bytes);
+	      if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+
+	      auto point_constants = std::vector<float>{scene_constants.begin(), scene_constants.end()};
+	      for (std::size_t face{}; face < point_shadow_face_count; ++face) {
+	         point_constants[52] = static_cast<float>(face);
+	         result = low::recordSceneShadowDepth(*device_, *command_pool_, *command_buffer_,
+	                                              *target.point_shadow_depth_images[face],
+	                                              *target.point_shadow_depth_views[face],
+	                                              vk::Extent2D{extent.width, extent.height},
+	                                              target.point_shadow_depth_layouts[face],
+	                                              *target.point_shadow_layout, *target.point_shadow_pipeline,
+	                                              *target.scene_vertices, *target.scene_indices,
+	                                              target.scene_index_count, point_constants,
+	                                              *target.point_shadow_readback[face]);
+	         if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+
+	         result = low::submitAndWait(*device_, *queue_, *command_buffer_, *frame_timeline_, ++timeline_value_);
+	         if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+
+	         target.point_shadow_depth_layouts[face] = vk::ImageLayout::eTransferSrcOptimal;
+	         const auto point_bytes = std::as_writable_bytes(std::span{scene_point_shadow_depths_[face]});
+	         result = low::readBuffer(*device_, *target.point_shadow_readback_memory[face], point_bytes);
+	         if (result != vk::Result::eSuccess) { return std::unexpected(Error::platform_error); }
+	      }
+	      return {};
+	   }
 
    /// @brief Checks whether prepared targets still match current native windows.
    bool FrameHost::matches(std::span<const std::reference_wrapper<Window>> windows) const {
@@ -1006,9 +1140,10 @@ namespace vve::v4::vh {
       device_.clear();
       physical_device_.clear();
       queue_family_ = 0;
-      scene_shadow_depths_.clear();
-      scene_spot_shadow_depths_.clear();
-      instance_.clear();
-   }
+	      scene_shadow_depths_.clear();
+	      scene_spot_shadow_depths_.clear();
+	      for (auto &depths : scene_point_shadow_depths_) { depths.clear(); }
+	      instance_.clear();
+	   }
 
 } // namespace vve::v4::vh

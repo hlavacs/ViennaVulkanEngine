@@ -24,6 +24,7 @@ struct VveSceneFrame
     float4 spotPositionRange;        ///< xyz spot light position, w range.
     float4 spotDirectionCone;        ///< xyz spot direction, w outer cone angle.
     float4 spotColorIntensity;       ///< xyz spot light color, w intensity.
+    float4 pointShadowFace;          ///< x selects one of the six point-shadow faces.
 };
 
 [[vk::push_constant]] ConstantBuffer<VveSceneFrame> gVveScene; ///< Tiny frame block for debug geometry.
@@ -50,6 +51,17 @@ struct VveSceneDebugSample
     float spotShadowDepthDelta; ///< Spot depth minus sampled spot shadow depth.
     float spotShadowBias; ///< Bias used by the spot shadow comparison.
     float spotShadowFactor; ///< One when spot-lit, zero when spot-shadowed.
+    float4 pointLightClipPosition; ///< GPU-computed point-light face clip position.
+    float3 pointLightNdcPosition; ///< GPU-computed point-light face NDC position.
+    float pointLightDepth; ///< GPU-computed point-light face depth.
+    float sampledPointShadowDepth; ///< Depth sampled from the point shadow face.
+    float pointShadowDepthDelta; ///< Point depth minus sampled point shadow depth.
+    float pointShadowBias; ///< Bias used by the point shadow comparison.
+    float pointShadowFactor; ///< One when point-lit, zero when point-shadowed.
+    float pointShadowFace; ///< Selected point-shadow face.
+    float insidePointLight; ///< One when the sample is inside the selected point-shadow face.
+    float unusedPoint0; ///< Keeps CPU and shader layout explicit.
+    float unusedPoint1; ///< Keeps CPU and shader layout explicit.
     float3 normal;        ///< GPU-normalized surface normal.
     float nDotL;          ///< Lambert cosine term.
     float3 directionToLight; ///< GPU-normalized direction to light.
@@ -70,6 +82,12 @@ RWStructuredBuffer<VveSceneDebugSample> gVveSceneDebug : register(u0, space0); /
 Texture2D<float> gVveSceneShadowDepth : register(t1, space0); ///< Shadow depth sampled for proof data.
 SamplerState gVveSceneShadowSampler : register(s2, space0); ///< Sampler used by the proof shadow read.
 Texture2D<float> gVveSceneSpotShadowDepth : register(t3, space0); ///< Spot shadow depth sampled for proof data.
+Texture2D<float> gVveScenePointShadowDepth0 : register(t4, space0); ///< +X point shadow face.
+Texture2D<float> gVveScenePointShadowDepth1 : register(t5, space0); ///< -X point shadow face.
+Texture2D<float> gVveScenePointShadowDepth2 : register(t6, space0); ///< +Y point shadow face.
+Texture2D<float> gVveScenePointShadowDepth3 : register(t7, space0); ///< -Y point shadow face.
+Texture2D<float> gVveScenePointShadowDepth4 : register(t8, space0); ///< +Z point shadow face.
+Texture2D<float> gVveScenePointShadowDepth5 : register(t9, space0); ///< -Z point shadow face.
 
 /// @brief Vertex-to-fragment payload.
 struct VveSceneVertexOutput
@@ -130,6 +148,42 @@ float4 vveSceneSpotLightClipFromWorld(float3 position)
     return float4(dot(delta, right) / tanCone, -dot(delta, up) / tanCone, z, w);
 }
 
+/// @brief Selects the point-shadow face whose axis best matches the vector from the light to the point.
+uint vveScenePointShadowFace(float3 fromLight)
+{
+    float3 a = abs(fromLight);
+    if (a.x >= a.y && a.x >= a.z) { return fromLight.x >= 0.0 ? 0 : 1; }
+    if (a.y >= a.z) { return fromLight.y >= 0.0 ? 2 : 3; }
+    return fromLight.z >= 0.0 ? 4 : 5;
+}
+
+/// @brief Returns the canonical direction for one point-shadow face.
+float3 vveScenePointFaceDirection(uint face)
+{
+    if (face == 0) { return float3( 1.0,  0.0,  0.0); }
+    if (face == 1) { return float3(-1.0,  0.0,  0.0); }
+    if (face == 2) { return float3( 0.0,  1.0,  0.0); }
+    if (face == 3) { return float3( 0.0, -1.0,  0.0); }
+    if (face == 4) { return float3( 0.0,  0.0,  1.0); }
+    return float3(0.0, 0.0, -1.0);
+}
+
+/// @brief Converts world space into one perspective face of the point-light shadow map.
+float4 vveScenePointLightClipFromWorld(float3 position, uint face)
+{
+    float3 direction = vveScenePointFaceDirection(face);
+    float3 seed = abs(direction.y) > 0.95 ? float3(0.0, 0.0, 1.0) : float3(0.0, 1.0, 0.0);
+    float3 right = vveSafeNormalize(cross(seed, direction));
+    float3 up = cross(direction, right);
+    float3 delta = position - gVveScene.pointPositionRange.xyz;
+    float forwardDistance = dot(delta, direction);
+    float range = max(gVveScene.pointPositionRange.w, 0.10);
+    float nearDistance = max(0.02, range * 0.01);
+    float w = max(forwardDistance, 1.0e-4);
+    float z = ((forwardDistance - nearDistance) / max(1.0e-4, range - nearDistance)) * w;
+    return float4(dot(delta, right), -dot(delta, up), z, w);
+}
+
 /// @brief Computes a hard-shadow comparison against the verified directional shadow map.
 void vveSceneShadowTerms(float3 lightNdc, float nDotL, out float sampledDepth, out float bias, out float factor)
 {
@@ -178,6 +232,43 @@ void vveSceneSpotShadowTerms(float3 lightNdc, float nDotL, out float sampledDept
     factor = lightNdc.z - bias <= sampledDepth ? 1.0 : 0.0;
 }
 
+/// @brief Samples one of the six point-shadow depth faces.
+float vveScenePointShadowDepth(uint face, float2 uv)
+{
+    if (face == 0) { return gVveScenePointShadowDepth0.SampleLevel(gVveSceneShadowSampler, uv, 0.0); }
+    if (face == 1) { return gVveScenePointShadowDepth1.SampleLevel(gVveSceneShadowSampler, uv, 0.0); }
+    if (face == 2) { return gVveScenePointShadowDepth2.SampleLevel(gVveSceneShadowSampler, uv, 0.0); }
+    if (face == 3) { return gVveScenePointShadowDepth3.SampleLevel(gVveSceneShadowSampler, uv, 0.0); }
+    if (face == 4) { return gVveScenePointShadowDepth4.SampleLevel(gVveSceneShadowSampler, uv, 0.0); }
+    return gVveScenePointShadowDepth5.SampleLevel(gVveSceneShadowSampler, uv, 0.0);
+}
+
+/// @brief Computes a hard-shadow comparison against the selected point-shadow face.
+void vveScenePointShadowTerms(float3 pointNdc, uint face, float nDotL,
+                              out float sampledDepth, out float bias, out float factor, out float inside)
+{
+    float2 shadowUv = (pointNdc.xy * 0.5) + 0.5;
+    bool insideShadow = shadowUv.x >= 0.0 && shadowUv.x <= 1.0 && shadowUv.y >= 0.0 && shadowUv.y <= 1.0 &&
+                        pointNdc.z >= 0.0 && pointNdc.z <= 1.0;
+    inside = insideShadow ? 1.0 : 0.0;
+    if (!insideShadow) {
+        sampledDepth = 1.0;
+        bias = 0.0;
+        factor = 1.0;
+        return;
+    }
+
+    uint shadowWidth;
+    uint shadowHeight;
+    gVveScenePointShadowDepth0.GetDimensions(shadowWidth, shadowHeight);
+    float2 shadowMax = float2(float(shadowWidth - 1), float(shadowHeight - 1));
+    uint2 shadowPixel = uint2(clamp(round(shadowUv * shadowMax), float2(0.0), shadowMax));
+    float2 shadowTexelCenter = (float2(shadowPixel) + 0.5) / float2(float(shadowWidth), float(shadowHeight));
+    sampledDepth = vveScenePointShadowDepth(face, shadowTexelCenter);
+    bias = max(0.0005, 0.003 * (1.0 - nDotL));
+    factor = pointNdc.z - bias <= sampledDepth ? 1.0 : 0.0;
+}
+
 /// @brief Computes one point-light contribution.
 float3 vvePointLighting(float3 worldPosition, float3 normal)
 {
@@ -219,11 +310,16 @@ void vveWriteSceneDebug(uint vertexId, float3 worldPosition, float3 normal, floa
     float lightInverseW = abs(lightClipPosition.w) > 1.0e-6 ? rcp(lightClipPosition.w) : 0.0;
     float4 spotLightClipPosition = vveSceneSpotLightClipFromWorld(worldPosition);
     float spotLightInverseW = abs(spotLightClipPosition.w) > 1.0e-6 ? rcp(spotLightClipPosition.w) : 0.0;
+    uint pointShadowFace = vveScenePointShadowFace(worldPosition - gVveScene.pointPositionRange.xyz);
+    float4 pointLightClipPosition = vveScenePointLightClipFromWorld(worldPosition, pointShadowFace);
+    float pointLightInverseW = abs(pointLightClipPosition.w) > 1.0e-6 ? rcp(pointLightClipPosition.w) : 0.0;
     float3 unitNormal = vveSafeNormalize(normal);
     float3 directionToLight = vveSafeNormalize(gVveScene.lightDirectionIntensity.xyz);
     float3 directionToSpot = vveSafeNormalize(gVveScene.spotPositionRange.xyz - worldPosition);
+    float3 directionToPoint = vveSafeNormalize(gVveScene.pointPositionRange.xyz - worldPosition);
     float nDotL = max(0.0, dot(unitNormal, directionToLight));
     float nDotSpot = max(0.0, dot(unitNormal, directionToSpot));
+    float nDotPoint = max(0.0, dot(unitNormal, directionToPoint));
     float directFactor = gVveScene.lightDirectionIntensity.w * nDotL;
     VveSceneDebugSample sample;
     sample.vertexId = vertexId;
@@ -243,6 +339,16 @@ void vveWriteSceneDebug(uint vertexId, float3 worldPosition, float3 normal, floa
     vveSceneSpotShadowTerms(sample.spotLightNdcPosition, nDotSpot, sample.sampledSpotShadowDepth,
                             sample.spotShadowBias, sample.spotShadowFactor);
     sample.spotShadowDepthDelta = sample.spotLightDepth - sample.sampledSpotShadowDepth;
+    sample.pointLightClipPosition = pointLightClipPosition;
+    sample.pointLightNdcPosition = pointLightClipPosition.xyz * pointLightInverseW;
+    sample.pointLightDepth = sample.pointLightNdcPosition.z;
+    vveScenePointShadowTerms(sample.pointLightNdcPosition, pointShadowFace, nDotPoint,
+                             sample.sampledPointShadowDepth, sample.pointShadowBias,
+                             sample.pointShadowFactor, sample.insidePointLight);
+    sample.pointShadowDepthDelta = sample.pointLightDepth - sample.sampledPointShadowDepth;
+    sample.pointShadowFace = float(pointShadowFace);
+    sample.unusedPoint0 = 0.0;
+    sample.unusedPoint1 = 0.0;
     sample.normal = unitNormal;
     sample.nDotL = nDotL;
     sample.directionToLight = directionToLight;
@@ -291,6 +397,13 @@ float4 vveSceneSpotShadowVertexMain(VveSceneVertexInput input) : SV_Position
     return vveSceneSpotLightClipFromWorld(input.position);
 }
 
+/// @brief Emits only one point-light-space face depth for the point shadow-map pass.
+[shader("vertex")]
+float4 vveScenePointShadowVertexMain(VveSceneVertexInput input) : SV_Position
+{
+    return vveScenePointLightClipFromWorld(input.position, uint(gVveScene.pointShadowFace.x));
+}
+
 /// @brief Applies the verified one-directional-light model to the uploaded debug color.
 [shader("fragment")]
 float4 vveSceneUnlitFragmentMain(VveSceneVertexOutput input) : SV_Target0
@@ -305,7 +418,19 @@ float4 vveSceneUnlitFragmentMain(VveSceneVertexOutput input) : SV_Target0
     float shadowFactor;
     vveSceneShadowTerms(lightNdc, nDotL, sampledDepth, shadowBias, shadowFactor);
     float3 direct = gVveScene.lightColor.xyz * (gVveScene.lightDirectionIntensity.w * nDotL * shadowFactor);
-    float3 point = vvePointLighting(input.worldPosition, unitNormal);
+    uint pointShadowFace = vveScenePointShadowFace(input.worldPosition - gVveScene.pointPositionRange.xyz);
+    float4 pointLightClipPosition = vveScenePointLightClipFromWorld(input.worldPosition, pointShadowFace);
+    float pointLightInverseW = abs(pointLightClipPosition.w) > 1.0e-6 ? rcp(pointLightClipPosition.w) : 0.0;
+    float3 pointLightNdc = pointLightClipPosition.xyz * pointLightInverseW;
+    float3 directionToPoint = vveSafeNormalize(gVveScene.pointPositionRange.xyz - input.worldPosition);
+    float nDotPoint = max(0.0, dot(unitNormal, directionToPoint));
+    float sampledPointDepth;
+    float pointShadowBias;
+    float pointShadowFactor;
+    float insidePoint;
+    vveScenePointShadowTerms(pointLightNdc, pointShadowFace, nDotPoint, sampledPointDepth,
+                             pointShadowBias, pointShadowFactor, insidePoint);
+    float3 point = vvePointLighting(input.worldPosition, unitNormal) * pointShadowFactor;
     float4 spotLightClipPosition = vveSceneSpotLightClipFromWorld(input.worldPosition);
     float spotLightInverseW = abs(spotLightClipPosition.w) > 1.0e-6 ? rcp(spotLightClipPosition.w) : 0.0;
     float3 spotLightNdc = spotLightClipPosition.xyz * spotLightInverseW;

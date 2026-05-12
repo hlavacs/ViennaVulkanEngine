@@ -44,6 +44,13 @@ struct DebugSpotLight {
     vve::SpotConeAngle cone{};        ///< Outer cone angle.
 };
 
+struct DebugPointLight {
+    vve::Position position{};        ///< World-space light position.
+    vve::LinearColor color{};        ///< Linear RGB light color.
+    vve::LightIntensity intensity{}; ///< Direct-light intensity.
+    vve::LightRange range{};         ///< Influence range.
+};
+
 struct DebugSamplePoint {
     std::string_view name{}; ///< Stable sample name used by verification scripts.
     vve::Vec3 position{};    ///< World-space sample position.
@@ -121,8 +128,19 @@ struct DebugSampleResult {
     return scale(light.color.value, light.intensity.value * n_dot_l * distance_factor * distance_factor * spot);
 }
 
+[[nodiscard]] vve::Vec3 pointLighting(vve::Vec3 position, vve::Vec3 normal, const DebugPointLight &light) {
+    const auto offset = subtract(light.position.value, position);
+    const auto distance = length(offset);
+    if (distance <= 1.0e-6F || light.range.value <= 1.0e-6F) { return vve::Vec3{}; }
+    const auto direction_to_light = scale(offset, 1.0F / distance);
+    const auto n_dot_l = std::max(0.0F, dot(normal, direction_to_light));
+    const auto distance_factor = std::max(0.0F, 1.0F - (distance / light.range.value));
+    return scale(light.color.value, light.intensity.value * n_dot_l * distance_factor * distance_factor);
+}
+
 [[nodiscard]] DebugSampleResult evaluateSample(const DebugSamplePoint &sample,
                                                const DebugDirectionalLight &light,
+                                               const DebugPointLight &point_light,
                                                const DebugSpotLight &spot_light,
                                                const DebugCuboid &cuboid) {
     const auto normal = normalize(sample.normal);
@@ -132,13 +150,14 @@ struct DebugSampleResult {
     const auto shadowed = intersectsCuboid(ray_origin, direction_to_light, cuboid);
     const auto shadow_factor = shadowed ? 0.0F : 1.0F;
     const auto direct = scale(light.color.value, light.intensity.value * n_dot_l * shadow_factor);
+    const auto point = pointLighting(sample.position, normal, point_light);
     const auto spot = spotLighting(sample.position, normal, spot_light);
-    const auto final_lighting = add(add(light.ambient.value, direct), spot);
+    const auto final_lighting = add(add(add(light.ambient.value, direct), point), spot);
 
     return DebugSampleResult{.sample = sample,
                              .n_dot_l = n_dot_l,
                              .shadow_factor = shadow_factor,
-                             .point_lighting = vve::Vec3{},
+                             .point_lighting = point,
                              .spot_lighting = spot,
                              .final_lighting = final_lighting,
                              .final_color = final_lighting};
@@ -189,9 +208,11 @@ void writeRenderDebugSample(std::ofstream &file, std::string_view name, const vv
     writeVec4(file, prefix + ".clip", sample.clip);
     writeVec4(file, prefix + ".light_clip", sample.light_clip);
     writeVec4(file, prefix + ".spot_light_clip", sample.spot_light_clip);
+    writeVec4(file, prefix + ".point_light_clip", sample.point_light_clip);
     writeVec3(file, prefix + ".ndc", sample.ndc);
     writeVec3(file, prefix + ".light_ndc", sample.light_ndc);
     writeVec3(file, prefix + ".spot_light_ndc", sample.spot_light_ndc);
+    writeVec3(file, prefix + ".point_light_ndc", sample.point_light_ndc);
     writeVec3(file, prefix + ".normal", sample.normal);
     writeVec3(file, prefix + ".direction_to_light", sample.direction_to_light);
     writeVec3(file, prefix + ".ambient_lighting", sample.ambient_lighting);
@@ -202,6 +223,7 @@ void writeRenderDebugSample(std::ofstream &file, std::string_view name, const vv
     file << prefix << ".depth=" << sample.depth << '\n';
     file << prefix << ".light_depth=" << sample.light_depth << '\n';
     file << prefix << ".spot_light_depth=" << sample.spot_light_depth << '\n';
+    file << prefix << ".point_light_depth=" << sample.point_light_depth << '\n';
     file << prefix << ".sampled_shadow_depth=" << sample.sampled_shadow_depth << '\n';
     file << prefix << ".shadow_depth_delta=" << sample.shadow_depth_delta << '\n';
     file << prefix << ".shadow_bias=" << sample.shadow_bias << '\n';
@@ -210,9 +232,15 @@ void writeRenderDebugSample(std::ofstream &file, std::string_view name, const vv
     file << prefix << ".spot_shadow_depth_delta=" << sample.spot_shadow_depth_delta << '\n';
     file << prefix << ".spot_shadow_bias=" << sample.spot_shadow_bias << '\n';
     file << prefix << ".spot_shadow_factor=" << sample.spot_shadow_factor << '\n';
+    file << prefix << ".sampled_point_shadow_depth=" << sample.sampled_point_shadow_depth << '\n';
+    file << prefix << ".point_shadow_depth_delta=" << sample.point_shadow_depth_delta << '\n';
+    file << prefix << ".point_shadow_bias=" << sample.point_shadow_bias << '\n';
+    file << prefix << ".point_shadow_factor=" << sample.point_shadow_factor << '\n';
+    file << prefix << ".point_shadow_face=" << sample.point_shadow_face << '\n';
     file << prefix << ".n_dot_l=" << sample.n_dot_l << '\n';
     file << prefix << ".inside_light=" << sample.inside_light << '\n';
     file << prefix << ".inside_spot_light=" << sample.inside_spot_light << '\n';
+    file << prefix << ".inside_point_light=" << sample.inside_point_light << '\n';
     file << prefix << ".valid=" << sample.valid << '\n';
 }
 
@@ -220,6 +248,7 @@ void writeShadowDepthSample(std::ofstream &file, std::string_view name,
                             const vve::RenderShadowDepthSample &sample) {
     const auto prefix = std::string{name};
     file << prefix << ".triangle_id=" << sample.triangle_id << '\n';
+    file << prefix << ".face_index=" << sample.face_index << '\n';
     writeVec3(file, prefix + ".world", sample.world);
     writeVec3(file, prefix + ".light_ndc", sample.light_ndc);
     file << prefix << ".pixel=" << sample.pixel_x << ',' << sample.pixel_y << '\n';
@@ -255,6 +284,7 @@ public:
         const auto cuboid_entity = ecs.create();
         const auto light_entity = ecs.create();
         const auto spot_light_entity = ecs.create();
+        const auto point_light_entity = ecs.create();
         const auto camera_entity = ecs.create();
         if (const auto result = ecs.add(plane_entity, vve::Transform{}); !result) {
             return std::unexpected(result.error());
@@ -281,6 +311,13 @@ public:
         if (const auto result = ecs.add(spot_light_entity, spot_light_); !result) {
             return std::unexpected(result.error());
         }
+        if (const auto result = ecs.add(point_light_entity, vve::Transform{.translation = point_light_.position});
+            !result) {
+            return std::unexpected(result.error());
+        }
+        if (const auto result = ecs.add(point_light_entity, point_light_); !result) {
+            return std::unexpected(result.error());
+        }
         if (const auto result = ecs.add(camera_entity, camera_); !result) {
             return std::unexpected(result.error());
         }
@@ -304,6 +341,7 @@ public:
         file << "cuboid_entity=" << cuboid_entity.value() << '\n';
         file << "light_entity=" << light_entity.value() << '\n';
         file << "spot_light_entity=" << spot_light_entity.value() << '\n';
+        file << "point_light_entity=" << point_light_entity.value() << '\n';
         file << "camera_entity=" << camera_entity.value() << '\n';
         writeVec3(file, "plane.center", plane_.center);
         file << "plane.half_extent=" << plane_.half_extent.x << ',' << plane_.half_extent.y << '\n';
@@ -319,6 +357,10 @@ public:
         file << "spot_light.intensity=" << spot_light_.intensity.value << '\n';
         file << "spot_light.range=" << spot_light_.range.value << '\n';
         file << "spot_light.cone=" << spot_light_.cone.radians << '\n';
+        writeVec3(file, "point_light.position", point_light_.position.value);
+        writeVec3(file, "point_light.color", point_light_.color.value);
+        file << "point_light.intensity=" << point_light_.intensity.value << '\n';
+        file << "point_light.range=" << point_light_.range.value << '\n';
         writeVec3(file, "camera.position", camera_.position.value);
         writeVec3(file, "camera.target", camera_target_);
         file << "camera.fov_y=" << camera_.fov_y.radians << '\n';
@@ -344,7 +386,7 @@ public:
         file << "render_scene.spot_light=" << render_system.hasSceneSpotLight() << '\n';
 
         for (const auto &sample : samples_) {
-            const auto result = evaluateSample(sample, light_, spot_light_, cuboid_);
+            const auto result = evaluateSample(sample, light_, point_light_, spot_light_, cuboid_);
             file << "sample." << result.sample.name << ".n_dot_l=" << result.n_dot_l << '\n';
             file << "sample." << result.sample.name << ".shadow_factor=" << result.shadow_factor << '\n';
             writeVec3(file, "sample." + std::string{result.sample.name} + ".position", result.sample.position);
@@ -376,6 +418,8 @@ private:
         }
         render_system.setCamera(camera_, render_extent_);
         render_system.setDirectionalLight(light_.direction_to_light, light_.color, light_.intensity, light_.ambient);
+        render_system.setPointLight(point_light_.position, point_light_.color,
+                                    point_light_.intensity, point_light_.range);
         render_system.setSpotLight(spot_light_.position, spot_light_.direction, spot_light_.color,
                                    spot_light_.intensity, spot_light_.range, spot_light_.cone);
         return {};
@@ -394,6 +438,10 @@ private:
                                .intensity = vve::LightIntensity{.value = 5.0F},
                                .range = vve::LightRange{.value = 6.0F},
                                .cone = vve::SpotConeAngle{.radians = 0.78F}};
+    DebugPointLight point_light_{.position = vve::Position{.value = vve::Vec3{2.40F, 1.35F, 1.10F}},
+                                 .color = vve::LinearColor{.value = vve::Vec3{0.45F, 0.70F, 1.0F}},
+                                 .intensity = vve::LightIntensity{.value = 7.0F},
+                                 .range = vve::LightRange{.value = 6.0F}};
     vve::Vec3 camera_target_{0.0F, 0.75F, 0.0F};
     vve::Camera camera_{vve::Camera::lookAt(vve::Position{.value = vve::Vec3{-3.0F, 1.8F, 3.2F}},
                                             vve::Position{.value = camera_target_},
@@ -444,8 +492,10 @@ int main(int argc, char **argv) {
     bool all_gpu_samples_match{true};
     bool shadow_verified{};
     bool spot_shadow_verified{};
+    bool point_shadow_verified{};
     bool all_shadow_samples_match{true};
     bool all_spot_shadow_samples_match{true};
+    bool all_point_shadow_samples_match{true};
     if (std::ofstream file{reference_path, std::ios::app}) {
         const auto clear_color = render_system.lastClearColor();
         file << "engine.rendered_frames=" << render_system.renderedFrameCount() << '\n';
@@ -470,9 +520,11 @@ int main(int argc, char **argv) {
             const auto depth_error = render_system.sceneDebugDepthError(index);
             const auto light_space_error = render_system.sceneDebugLightSpaceError(index);
             const auto spot_light_space_error = render_system.sceneDebugSpotLightSpaceError(index);
+            const auto point_light_space_error = render_system.sceneDebugPointLightSpaceError(index);
             const auto lighting_error = render_system.sceneDebugLightingError(index);
             const auto shadow_sample_error = render_system.sceneDebugShadowSampleError(index);
             const auto spot_shadow_sample_error = render_system.sceneDebugSpotShadowSampleError(index);
+            const auto point_shadow_sample_error = render_system.sceneDebugPointShadowSampleError(index);
             file << "gpu_debug.sample" << index << ".has_gpu=" << gpu.has_value() << '\n';
             if (clip_error) { file << "gpu_debug.sample" << index << ".clip_error=" << *clip_error << '\n'; }
             if (depth_error) { file << "gpu_debug.sample" << index << ".depth_error=" << *depth_error << '\n'; }
@@ -487,6 +539,12 @@ int main(int argc, char **argv) {
             }
             file << "gpu_debug.sample" << index << ".spot_light_space_matches="
                  << (spot_light_space_error.value_or(1.0F) < 1.0e-5F) << '\n';
+            if (point_light_space_error) {
+                file << "gpu_debug.sample" << index << ".point_light_space_error="
+                     << *point_light_space_error << '\n';
+            }
+            file << "gpu_debug.sample" << index << ".point_light_space_matches="
+                 << (point_light_space_error.value_or(1.0F) < 1.0e-5F) << '\n';
             if (lighting_error) {
                 file << "gpu_debug.sample" << index << ".lighting_error=" << *lighting_error << '\n';
             }
@@ -503,13 +561,21 @@ int main(int argc, char **argv) {
             }
             file << "gpu_debug.sample" << index << ".spot_shadow_sample_matches="
                  << (spot_shadow_sample_error.value_or(1.0F) < 1.0e-5F) << '\n';
+            if (point_shadow_sample_error) {
+                file << "gpu_debug.sample" << index << ".point_shadow_sample_error="
+                     << *point_shadow_sample_error << '\n';
+            }
+            file << "gpu_debug.sample" << index << ".point_shadow_sample_matches="
+                 << (point_shadow_sample_error.value_or(1.0F) < 1.0e-5F) << '\n';
             const auto sample_matches = clip_error.value_or(1.0F) < 1.0e-4F &&
                                         depth_error.value_or(1.0F) < 1.0e-5F &&
                                         light_space_error.value_or(1.0F) < 1.0e-5F &&
                                         spot_light_space_error.value_or(1.0F) < 1.0e-5F &&
+                                        point_light_space_error.value_or(1.0F) < 1.0e-5F &&
                                         lighting_error.value_or(1.0F) < 1.0e-5F &&
                                         shadow_sample_error.value_or(1.0F) < 1.0e-5F &&
-                                        spot_shadow_sample_error.value_or(1.0F) < 1.0e-5F;
+                                        spot_shadow_sample_error.value_or(1.0F) < 1.0e-5F &&
+                                        point_shadow_sample_error.value_or(1.0F) < 1.0e-5F;
             file << "gpu_debug.sample" << index << ".matches=" << sample_matches << '\n';
             gpu_verified |= gpu.has_value();
             all_gpu_samples_match &= sample_matches;
@@ -534,6 +600,18 @@ int main(int argc, char **argv) {
             spot_shadow_verified |= sample->has_gpu;
             all_spot_shadow_samples_match &= matches;
         }
+        file << "point_shadow_depth.sample_count=" << render_system.scenePointShadowDepthSampleCount() << '\n';
+        for (std::size_t index{}; index < render_system.scenePointShadowDepthSampleCount(); ++index) {
+            const auto sample = render_system.scenePointShadowDepthSample(index);
+            if (!sample) { continue; }
+            writeShadowDepthSample(file, "point_shadow_depth.sample" + std::to_string(index), *sample);
+            const auto shadowed = sample->has_gpu && sample->expected_depth > sample->gpu_depth + 3.0e-2F;
+            const auto matches = sample->has_gpu && (sample->error < 3.0e-2F || shadowed);
+            file << "point_shadow_depth.sample" << index << ".shadowed=" << shadowed << '\n';
+            file << "point_shadow_depth.sample" << index << ".matches=" << matches << '\n';
+            point_shadow_verified |= sample->has_gpu;
+            all_point_shadow_samples_match &= matches;
+        }
     } else {
         std::cerr << "[light_shadow_debug] could not write " << reference_path << '\n';
         return 2;
@@ -541,5 +619,6 @@ int main(int argc, char **argv) {
     if (!inspect && (!gpu_verified || !all_gpu_samples_match)) { return 3; }
     if (!inspect && (!shadow_verified || !all_shadow_samples_match)) { return 4; }
     if (!inspect && (!spot_shadow_verified || !all_spot_shadow_samples_match)) { return 5; }
+    if (!inspect && (!point_shadow_verified || !all_point_shadow_samples_match)) { return 6; }
     return 0;
 }
