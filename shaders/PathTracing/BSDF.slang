@@ -246,6 +246,8 @@ public float3 sampleDiffuse(inout BSDFQueryRecord record, in MaterialRecord mate
     return DiffuseEval(record, material) / pdf;
 }
 
+/*
+
 public float3 PrincipledEval(in BSDFQueryRecord record, in MaterialRecord material) {
     // Inputs: BSDF record, material. Output: combined principled BSDF value (RGB).
     float eta = convertIORLevel(material.ior);
@@ -254,7 +256,7 @@ public float3 PrincipledEval(in BSDFQueryRecord record, in MaterialRecord materi
         record.wm = record.woShading + record.wiShading;
         record.wm = normalize(record.wm);
     }
-    
+
     float F = 0.0;
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG > 0.0) F = fresnel(dot(record.wiShading, record.wm), eta);
@@ -285,7 +287,7 @@ public float PrincipledPdf(in BSDFQueryRecord record, in MaterialRecord material
         record.wm = record.woShading + record.wiShading;
         record.wm = normalize(record.wm);
     }
-    
+
     float F = 0.0;
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG > 0) F = fresnel(dot(record.wiShading, record.wm), eta);
@@ -312,7 +314,7 @@ public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord m
         float alpha = pow(material.roughness, 2.0);
         record.wm = squareToGGX(record.wiShading, sample, alpha);
     }
-    
+
     record.wmSet = true;
 
     float F = 0.0;
@@ -337,14 +339,7 @@ public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord m
     weights[1] = specularInfluence + weights[0];
     weights[2] = metallicInfluence + weights[1];
 
-    /*
-    float pdfs[3];
-    pdfs[0] = diffuseInfluence;
-    pdfs[1] = specularInfluence;
-    pdfs[2] = metallicInfluence;
 
-    float pdf = 1.0;
-    */
 
     float rand = sampler.UniformFloat();
     LightInteraction chosenInteraction = LightInteraction::DIFFUSE;
@@ -372,3 +367,48 @@ public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord m
 
     //return PrincipledEval(record, material) / PrincipledPdf(record, material) / pdf;
 }
+
+*/
+
+public float3 PrincipledEval(in BSDFQueryRecord record, in MaterialRecord material) {
+
+    float cosWiG = dot(record.geometryNormal, record.wiWorld);
+    if (cosWiG <= 0) return float3(0);
+    float cosWoG = dot(record.geometryNormal, record.woWorld);
+    if (cosWoG <= 0) return float3(0);
+
+    return float3(0.5) / M_PI * record.woShading.z;
+    // return material.albedo / M_PI * cosineTerm;
+}
+
+public float PrincipledPdf(in BSDFQueryRecord record, in MaterialRecord material) {
+    float cosWiG = dot(record.geometryNormal, record.wiWorld);
+    if (cosWiG <= 0) return 0.0;
+    float cosWoG = dot(record.geometryNormal, record.woWorld);
+    if (cosWoG <= 0) return 0.0;
+
+    return squareToCosineHemispherePdf(record.woShading);
+}
+
+public float3 samplePrincipled(inout BSDFQueryRecord record, in MaterialRecord material, inout Sampler sampler) {
+    float cosWiG = dot(record.geometryNormal, record.wiWorld);
+    if (cosWiG <= 0) return 0.0;
+
+    Frame geoFrame = Frame(record.geometryNormal);
+
+    float2 sample = sampler.UniformFloat2();
+    record.woShading = squareToCosineHemisphere(sample);
+    record.woWorld = geoFrame.toWorld(record.woShading);
+
+    record.eta = 1.0;
+    record.wm = float3(0.0, 0.0, 1.0);
+    // moved record.wo.z out of the shader!
+    // return DiffuseEval(record, material) / DiffusePdf(record, material) * record.wo.z;
+
+    float pdf = PrincipledPdf(record, material);
+
+    record.pdf = pdf;
+
+    return PrincipledEval(record, material) / pdf;
+}
+

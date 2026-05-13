@@ -74,6 +74,11 @@ namespace vve {
         uint32_t lightCount;
         uint32_t x_dimensions;
         uint32_t y_dimensions;
+
+        uint32_t isFirstFrame;
+        uint32_t pad0;
+        uint32_t pad1;
+        uint32_t pad2;
     };
 
     /** Material slot that can be a texture or constant RGB. */

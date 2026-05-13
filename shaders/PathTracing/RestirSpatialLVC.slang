@@ -7,10 +7,11 @@ import BSDF;
 import ColorSpace;
 import Surface;
 import raytracing;
+import Bidrirectional_Raytracing;
 import Reservoir;
-import ReservoirGI;
 import RestirDI;
-import RestirGI;
+import ReservoirLVC;
+import RestirLVC;
 
 [[vk::binding(0, 2)]]
 RWTexture2D<float4> inAlbedoAlpha;
@@ -37,10 +38,11 @@ RWStructuredBuffer<Reservoir> inReservoir;
 RWStructuredBuffer<Reservoir> outReservoir;
 
 [[vk::binding(8, 2)]]
-RWStructuredBuffer<ReservoirGI> inReservoirGI;
+RWStructuredBuffer<ReservoirLVC> inReservoirLVC;
 
 [[vk::binding(9, 2)]]
-RWStructuredBuffer<ReservoirGI> outReservoirGI;
+RWStructuredBuffer<ReservoirLVC> outReservoirLVC;
+
 
 void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout IntersectionRecord its, inout MaterialRecord material) {
     RayDesc cameraRay = getInitialRay(launchID, launchSize);
@@ -69,22 +71,6 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
     material.shadingFrame = Frame(shadingNormal);
 }
 
-void clampReadID(inout int2 readID, in int2 launchSize) {
-    if (readID.x < 0) {
-        readID.x = 0;
-    }
-    if (readID.y < 0) {
-        readID.y = 0;
-    }
-    if (readID.x > launchSize.x - 1) {
-        readID.x = launchSize.x - 1;
-    }
-    if (readID.y > launchSize.y - 1) {
-        readID.y = launchSize.y - 1;
-    }
-}
-
-
 // Ray generation shader - entry point for each pixel
 [shader("raygeneration")]
 void rgenMain()
@@ -101,16 +87,15 @@ void rgenMain()
     const uint SPATIAL_SAMPLES = 6;
     const uint SAMPLE_RADIUS = 4;
 
-    const uint SPATIAL_SAMPLES_GI = 24;
-    const uint SAMPLE_RADIUS_GI = 12;
     const uint MAX_SPATIAL_INFLUENCE_GI = 10;
+    const uint SPATIAL_SAMPLES_GI = 12;
+    const uint SAMPLE_RADIUS_GI = 6;
 
     if (isSkyPixel(position)) {
         Reservoir reservoir = createEmptyReservoir();
-        ReservoirGI reservoirGI = createEmptyReservoirGI();
+        ReservoirLVC reservoirLVC = createEmptyReservoirLVC();
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
-        storeReservoirGI(reservoirGI, launchID, launchSize, outReservoirGI);
-        outImage[launchID] = float4(0.0);
+        storeReservoirLVC(reservoirLVC, launchID, launchSize, outReservoirLVC);
     } else {
         uint linear = (uint)launchID.x + (uint)launchID.y * (uint)launchSize.x;
         uint pixelSeed = Hash(linear ^ (seed * 0x9E3779B9u));
@@ -126,22 +111,11 @@ void rgenMain()
         getInitialSurfaceData(launchID, launchSize, its, material);
 
         Reservoir reservoir = readReservoir(launchID, launchSize, inReservoir);
-        ReservoirGI reservoirGI = createEmptyReservoirGI();
-        ReservoirGI initialGIReservoir = readReservoirGI(launchID, launchSize, inReservoirGI);
-
-        float selectedTargetPdf = 0.0;
-        float piSum = 0.0;
-
-        if (IsReservoirValidGI(initialGIReservoir)) {
-            float targetPDF = getApproximateRadianceFromReservoir(initialGIReservoir, its, material);
-            selectedTargetPdf = targetPDF;
-            piSum += targetPDF * (float)initialGIReservoir.M;
-            CombineReservoirsGI(reservoirGI, initialGIReservoir, targetPDF, sampler);
-        }
-
 
         float3 normal = inNormal[launchID].xyz;
         float3 position = inPosition[launchID].xyz;
+
+        float3 output = float3(0.0);
 
         for (uint i = 0; i < SPATIAL_SAMPLES; i++) {
             int x = sampler.UniformUIntFast(0, 2 * SAMPLE_RADIUS) - SAMPLE_RADIUS;
@@ -150,25 +124,41 @@ void rgenMain()
             int2 offset = int2(x, y);
 
             int2 readID = launchID + offset;
-            clampReadID(readID, launchSize);
 
             float3 normalSpatial = inNormal[readID].xyz;
             float3 positionSpatial = inPosition[readID].xyz;
 
             if (dot(normal, normalSpatial) >= 0.9 && length(positionSpatial - position) < 0.25) {
                 Reservoir reservoirSpatial = readReservoir(readID, launchSize, inReservoir);
+
                 // restrict influence from past samples.
                 // this may not be optimal, the real time raytracing engine handles this diffrently
+ 
                 reservoirSpatial.M = min(MAX_SPATIAL_INFLUENCE * reservoir.M, reservoirSpatial.M);
 
                 if(IsReservoirValid(reservoirSpatial)){
                     reservoir = CombineReservoirs(reservoir, reservoirSpatial, its, material, sampler);
                 }
-
-
                 
             }     
         }
+
+        if (IsReservoirValid(reservoir))
+        {
+            float3 radiance = revaluateOccludedLightRadiance(reservoir, its, material);
+            //float3 radiance = resampleOccludedLightRadiance(reservoir, its, material, sampler);
+
+            //output = radiance * reservoir.lightWeight;
+            output = clamp(output, 0.0, 1000.0);
+            float p_hat = length(radiance);
+        } else {
+            reservoir = createEmptyReservoir();
+        }
+
+
+        //GI
+
+        ReservoirLVC reservoirLVC = readReservoirLVC(launchID, launchSize, inReservoirLVC);
 
         for (uint i = 0; i < SPATIAL_SAMPLES_GI; i++) {
             int x = sampler.UniformUIntFast(0, 2 * SAMPLE_RADIUS_GI) - SAMPLE_RADIUS_GI;
@@ -177,69 +167,37 @@ void rgenMain()
             int2 offset = int2(x, y);
 
             int2 readID = launchID + offset;
-            clampReadID(readID, launchSize);
 
             float3 normalSpatial = inNormal[readID].xyz;
             float3 positionSpatial = inPosition[readID].xyz;
 
-            if (dot(normal, normalSpatial) >= 0.8 && length(positionSpatial - position) < 1.0) {
-                ReservoirGI reservoirGISpatial = readReservoirGI(readID, launchSize, inReservoirGI);
+            if (dot(normal, normalSpatial) >= 0.9 && length(positionSpatial - position) < 0.25) {
+                ReservoirLVC reservoirSpatialLVC = readReservoirLVC(readID, launchSize, inReservoirLVC);
 
                 // restrict influence from past samples.
                 // this may not be optimal, the real time raytracing engine handles this diffrently
-                reservoirGISpatial.M = min(MAX_SPATIAL_INFLUENCE_GI, reservoirGISpatial.M);
+                reservoirSpatialLVC.M = min(MAX_SPATIAL_INFLUENCE_GI * reservoirLVC.M, reservoirSpatialLVC.M);
 
-                if (IsReservoirValidGI(reservoirGISpatial)) {
-                    float jacobian = getJacobian(inPosition[launchID].xyz, inPosition[readID].xyz, reservoirGISpatial.position, reservoirGISpatial.normal);
-                    if (!validateJacobian(jacobian))
-                    {
-                        continue;
-                    }
-                    //float targetPDF = length(getGroundTruthRadianceFromReservoir(reservoirGISpatial, its, material));
-                    float targetPDF = getApproximateRadianceFromReservoir(reservoirGISpatial, its, material);
-                    if (targetPDF > 0.0) {
-                        if (CombineReservoirsGI(reservoirGI, reservoirGISpatial, targetPDF * jacobian, sampler)) {
-                            selectedTargetPdf = targetPDF;
-                        }
-                    }
-
-                    piSum += targetPDF * (float)reservoirGISpatial.M;
+                if (IsReservoirValidLVC(reservoirSpatialLVC)) {
+                    reservoirLVC = CombineReservoirsLVC(reservoirLVC, reservoirSpatialLVC, its, material, sampler);
                 }
             }
         }
 
-        float3 output = float3(0.0);
-
-        if (IsReservoirValid(reservoir))
+        if (IsReservoirValidLVC(reservoirLVC))
         {
-            float3 radiance = revaluateOccludedLightRadiance(reservoir, its, material);
-            //output = radiance * reservoir.lightWeight;
+            float3 radiance = getOccludedLightContributionFromConnection(its, material, reservoirLVC.LVCIndex);
+
+            output += radiance * reservoirLVC.lightWeight;
         } else {
-            reservoir = createEmptyReservoir();
-        }
-
-        //float normalizationNumerator = selectedTargetPdf;
-        //float normalizationDenominator = piSum * selectedTargetPdf;
-
-        float normalizationNumerator = 1.0;
-        float normalizationDenominator = selectedTargetPdf * float(reservoirGI.M);
-
-        finalizeGIResampling(reservoirGI, normalizationNumerator, normalizationDenominator);
-
-        if (IsReservoirValidGI(reservoirGI))
-        {
-            float3 radiance = evaluateReservoirGI(reservoirGI, its, material);
-
-            output += radiance;
-        } else {
-            reservoirGI = createEmptyReservoirGI();
+            reservoirLVC = createEmptyReservoirLVC();
         }
 
         float3 albedo = inAlbedoAlpha[launchID].xyz;
         float3 lighting = output / max(albedo,0.001);
 
         storeReservoir(reservoir, launchID, launchSize, outReservoir);
-        storeReservoirGI(reservoirGI, launchID, launchSize, outReservoirGI);
+        storeReservoirLVC(reservoirLVC, launchID, launchSize, outReservoirLVC);
         outImage[launchID] = float4(lighting, 1.0);
     }
 }

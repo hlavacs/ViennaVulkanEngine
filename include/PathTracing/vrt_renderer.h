@@ -56,6 +56,7 @@ namespace vve {
 
 		void createCommonDescriptors();
 		void createRtDescriptors();
+		void createBidirectionalDescriptors();
 		void createRtTargetsDescriptors();
 
 		void createBidirectionalTargetsDescriptors();
@@ -68,6 +69,9 @@ namespace vve {
 
 		void createRestirGITemporalDescriptors();
 		void createRestirGISpatialDescriptors();
+
+		void createRestirLVCTemporalDescriptors();
+		void createRestirLVCSpatialDescriptors();
 
 		void createRenderTargetSampler();
 
@@ -113,6 +117,7 @@ namespace vve {
 
 		DescriptorManager* commonDescriptors;
 		DescriptorManager* rtDescriptors;
+		DescriptorManager* BidirectionalDescriptors;
 		DescriptorManager* rtTargetsDescriptors;
 		DescriptorManager* combinePassDescriptors;
 		DescriptorManager* reprojectionPassDescriptors;
@@ -155,6 +160,9 @@ namespace vve {
 		RenderTargetBuffer<ReservoirGI>* reservoirGI_A;
 		RenderTargetBuffer<ReservoirGI>* reservoirGI_B;
 
+		RenderTargetBuffer<ReservoirLVC>* reservoirLVC_A;
+		RenderTargetBuffer<ReservoirLVC>* reservoirLVC_B;
+
 		VkExtent2D lightVertexCacheSize;
 		RenderTargetBuffer<LightVertex>* lightVertexCache;
 
@@ -164,11 +172,15 @@ namespace vve {
 		PiplineRaytraced* restirGI_temporal;
 		PiplineRaytraced* restirGI_spatial;
 
+		PiplineRaytraced* restirLVC_temporal;
+		PiplineRaytraced* restirLVC_spatial;
+
 		PiplineRaytraced* lightVertexGenerationFull;
+		PiplineRaytraced* lightVertexGenerationRandomReplacment;
 		PiplineRaytraced* bidirectionalPathTracing;
 
 		DescriptorManager* lightVertexGenerationFullDescriptors;
-		DescriptorManager* bidirectionalPathTracingDescriptors;
+		DescriptorManager* bidirectionalTargetDescriptors;
 
 		DescriptorManager* restir_temporal_descriptors;
 		DescriptorManager* restir_spatial_descriptors;
@@ -176,12 +188,18 @@ namespace vve {
 		DescriptorManager* restirGI_temporal_descriptors;
 		DescriptorManager* restirGI_spatial_descriptors;
 
+		DescriptorManager* restirLVC_temporal_descriptors;
+		DescriptorManager* restirLVC_spatial_descriptors;
+
 		std::vector<RenderTarget*> allTargets;
 		std::vector<RenderTarget*> rayTracingTargets;
 
 		VkSampler targetSampler{};
 
 		UniformBufferObject uniforms;
+
+		//using int here instead of bool for alighnment reasons
+		int isFirstFrame = 1;
 
 		std::vector<HostBuffer<UniformBufferObject>*> uniformBuffer_c;
 

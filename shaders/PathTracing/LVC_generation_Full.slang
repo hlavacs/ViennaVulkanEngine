@@ -2,9 +2,6 @@ import Bidrirectional_Raytracing;
 import raytracing;
 import Random;
 
-[[vk::binding(0, 2)]]
-RWStructuredBuffer<LightVertex> lightVertexCache;
-
 [shader("raygeneration")]
 void rgenMain()
 {

@@ -35,6 +35,15 @@ slangc Bidirectional_Integrator.slang -entry rgenMain -target spirv -o raygen_bi
 rem --- Raygen shader ---
 slangc LVC_generation_Full.slang -entry rgenMain -target spirv -o raygen_light_vertex_generation_full.rgen.spv -DRAY_TRACING
 
+rem --- Raygen shader ---
+slangc LVC_generation_random_replacment.slang -entry rgenMain -target spirv -o raygen_light_vertex_generation_random_replacment.rgen.spv -DRAY_TRACING
+
+rem --- Raygen shader ---
+slangc RestirTemporalLVC.slang -entry rgenMain -target spirv -o raygen_restirLVC_temporal.rgen.spv -DRAY_TRACING
+
+rem --- Raygen shader ---
+slangc RestirSpatialLVC.slang -entry rgenMain -target spirv -o raygen_restirLVC_spatial.rgen.spv -DRAY_TRACING
+
 rem --- Miss shader ---
 slangc rtbasic.slang -entry rmissMain -target spirv -o miss.rmiss.spv -DRAY_TRACING
 

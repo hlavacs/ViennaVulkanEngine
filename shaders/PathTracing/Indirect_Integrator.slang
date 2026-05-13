@@ -46,7 +46,7 @@ IntegrationStepQueryRecord simulateFirstBounce(inout Sampler sampler) {
 
     float3 bsdf = samplePrincipled(record, material, sampler);
     // RayDesc indirectRay = getRay(its, its.frame.toWorld(record.wo));
-    RayDesc indirectRay = getRay(its, record.woWorld);
+    RayDesc indirectRay = getRayOffset(its, record.woWorld);
 
     IntegrationStepQueryRecord integrationStep;
 
@@ -145,7 +145,7 @@ IntegrationStepQueryRecord integratorIndirect(inout Sampler sampler) {
         BSDFQueryRecord record = constructBSDFRecord(its, materialRecord, false);
         float3 throughput = samplePrincipled(record, materialRecord, sampler);
         // RayDesc indirectRay = getRay(its, its.frame.toWorld(record.wo));
-        RayDesc indirectRay = getRay(its, record.woWorld);
+        RayDesc indirectRay = getRayOffset(its, record.woWorld);
 
         HitPayload payload;
         const uint rayFlags = 0;
@@ -164,7 +164,9 @@ IntegrationStepQueryRecord integratorIndirect(inout Sampler sampler) {
         //Multiplieng this on the second bounce (not the first) makes the result look less biased. I have no clue why
         //maybe it accounts for the fact that I am less likley to hit a specifiec point on a angeled surface than on a surface facing me.
         //I encountered this in sampling triangle light sources, there this term was needed. But again it might just be a happy accident.
-        float cosThetaSecondray = saturate(dot(itsSecundary.normal, -record.woWorld));
+        //float cosThetaSecondray = saturate(dot(itsSecundary.normal, -record.woWorld));
+
+        float cosThetaSecondray = 1.0;
 
         float3 directLight = directRaycast(itsSecundary, materialRecordSecundary, sampler) * cosThetaSecondray;
 
@@ -227,7 +229,9 @@ void rgenMain()
         float3 albedo = inAlbedoAlpha[int2(launchID)].xyz;
         //works for now, but terrible with reprojection errors
 
-        float3 outputColor = outputRecord.directLight + outputRecordIndirect.indirectLight;
+        //float3 outputColor = outputRecord.directLight + outputRecordIndirect.indirectLight;
+
+        float3 outputColor = outputRecordIndirect.indirectLight;
 
         
         //this works for now but is likley to break with slight reprojection errors.

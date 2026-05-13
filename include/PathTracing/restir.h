@@ -91,6 +91,21 @@ namespace vve {
         }
     };
 
+    //16 bytes
+    struct ReservoirLVC {
+        uint32_t lightSelected;
+        float lightWeight;
+        float W_sum;
+        uint32_t M;
+
+        ReservoirLVC() {
+            lightSelected = 0;
+            lightWeight = 0.0;
+            W_sum = 0.0;
+            M = 0;
+        }
+    };
+
     struct BidirectionalUniforms {
         uint32_t LVCSize;
     };

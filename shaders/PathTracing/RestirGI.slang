@@ -58,36 +58,12 @@ bool isReservoirOccluded(in IntersectionRecord its, EmitterRecord emitterRecord)
 }
     */
 
-bool isReservoirOccluded(in IntersectionRecord its, EmitterRecord emitterRecord) {
-    // 1. Use a robust offset to prevent self-intersection
-    RayDesc shadowRay;
-    shadowRay.Origin = its.position + (its.normal * 0.001);
-    shadowRay.Direction = emitterRecord.direction;
-    shadowRay.TMin = 0.0;
-    // 2. Stop the ray just BEFORE it reaches the target point
-    shadowRay.TMax = emitterRecord.distance - 0.001;
 
-    // 3. Horizon check (using a small epsilon to allow grazing lights)
-    if (dot(shadowRay.Direction, its.normal) < 1e-4f) {
-        return true;
-    }
-
-    HitPayload payload;
-    payload.hit = false; // Ensure this is initialized!
-
-    // 4. Optimization: Use flags to stop at the very first hit
-    const uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH | RAY_FLAG_SKIP_CLOSEST_HIT_SHADER;
-
-    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
-
-    // If the ray hit anything before reaching the target, it's occluded
-    return payload.hit;
-}
 
 float3 getGroundTruthRadianceFromReservoir(in ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord material) {
     EmitterRecord record = getEmmitterRecordFromReservoir(reservoir, its);
 
-    bool occluded = isReservoirOccluded(its, record);
+    bool occluded = isSurfacePointOccluded(its, record);
 
     if (occluded) {
         return float3(0.0, 0.0, 0.0);
@@ -136,6 +112,8 @@ bool CombineReservoirsGI(inout ReservoirGI reservoir, in ReservoirGI reservoirNe
     return selected;
 }
 
+
+
 ReservoirGI createInitialReservoirGI(in IntersectionRecord its, in MaterialRecord materialRecord, inout Sampler sampler) {
 
     ReservoirGI reservoir = createEmptyReservoirGI();
@@ -143,7 +121,7 @@ ReservoirGI createInitialReservoirGI(in IntersectionRecord its, in MaterialRecor
     BSDFQueryRecord shaderRecord = constructBSDFRecord(its, materialRecord, false);
 
     float3 bsdf = samplePrincipled(shaderRecord, materialRecord, sampler);
-    RayDesc indirectRay = getRayInternal(its, shaderRecord.woWorld);
+    RayDesc indirectRay = getRayOffset(its, shaderRecord.woWorld);
 
     HitPayload payload;
     const uint rayFlags = 0;

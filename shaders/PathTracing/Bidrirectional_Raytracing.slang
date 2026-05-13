@@ -8,6 +8,14 @@ import Surface;
 import Materials;
 import BSDF;
 
+[[vk::binding(5, 1)]]
+RWStructuredBuffer<LightVertex> lightVertexCache;
+
+[[vk::binding(6, 1)]]
+cbuffer UniformBufferBidirectional
+{
+    uint lightVertexCacheSize;
+};
 
 struct LightVertex {
     float4 radiance;
@@ -77,7 +85,7 @@ LightVertex generateLightVertex(inout Sampler sampler) {
         lightVertex.hitPosition = float4(0.0);
         lightVertex.importance = 0.0;
         lightVertex.lightIndex = lightIndex;
-        lightVertex.radiance = 0.0;
+        lightVertex.radiance = float4(0.0);
         lightVertex.samplePosition = float4(lightSurfacePosition, 1.0);
         lightVertex.selectionPdf = 1.0;
         lightVertex.normal = float4(0.0);
@@ -106,6 +114,11 @@ LightVertex generateLightVertex(inout Sampler sampler) {
     lightVertex.uv = its.uv;
 
     return lightVertex;
+}
+
+bool isLightVertexValid(uint lightVertexIndex) {
+    LightVertex lightVertex = lightVertexCache[lightVertexIndex];
+    return length(lightVertex.radiance) >= 0.0;
 }
 
 IntersectionRecord getIntersectionRecordFromLightVertex(in LightVertex lightVertex, in IntersectionRecord its) {
@@ -165,19 +178,45 @@ EmitterRecord getEmitterRecordFromConnection(in EmitterRecord fromLightSource, i
 
     //emitterRecord.sampleEmission = bsdfEvalConnection * (cosThetaLight / (emitterRecord.distance * emitterRecord.distance));
 
-    emitterRecord.sampleEmission = bsdfEvalConnection * (cosThetaLight / (emitterRecord.distance * emitterRecord.distance));
+    float distSq = max(emitterRecord.distance * emitterRecord.distance, 0.01);
+
+    emitterRecord.sampleEmission = bsdfEvalConnection * (cosThetaLight / (distSq));
 
     return emitterRecord;
 }
 
-float3 getUnoccludedLightContributionFromConnection(in IntersectionRecord its, in MaterialRecord material, in LightVertex lightVertex) {
+float3 getUnoccludedLightContributionFromConnection(in IntersectionRecord its, in MaterialRecord material, in uint lightVertexIndex) {
+
+    LightVertex lightVertex = lightVertexCache[lightVertexIndex];
 
     IntersectionRecord itsConnection = getIntersectionRecordFromLightVertex(lightVertex, its);
+
+    //low distance is clearly a problem but better ffix needed!
+    if (length(itsConnection.position - its.position) < 0.01) {
+        return float3(0.0);
+    }
+
+
     Material materialConnection = materials[itsConnection.materialIdx];
     MaterialRecord materialRecordConnection = getMaterialProperties(materialConnection, textures, itsConnection.uv, itsConnection.frame);
 
     EmitterRecord emitterRecord = getEmitterRecordFromLightVertex(lightVertex);
     EmitterRecord emitterRecordFromConnection = getEmitterRecordFromConnection(emitterRecord, its, itsConnection, materialRecordConnection);
+
+    if (dot(itsConnection.normal, -emitterRecordFromConnection.direction) < 0.0) {
+        return float3(0.0);
+    }
+
+    if (dot(emitterRecordFromConnection.direction, its.normal) < 1e-4f) {
+        return float3(0.0);
+    }
+
+    // check if we hit a backface
+    /*
+    if (dot(materialRecordConnection.shadingFrame.n, -emitterRecordFromConnection.direction) < 0.0) {
+        return float3(0.0);
+    }
+        */
 
     //normals are flipped on backfacing geometry resulting in light leaking through
     float3 radiance = getUnoccludedLightContribution(its, material, emitterRecordFromConnection);
@@ -185,15 +224,66 @@ float3 getUnoccludedLightContributionFromConnection(in IntersectionRecord its, i
     return radiance;
 }
 
-float3 getOccludedLightContributionFromConnection(in IntersectionRecord its, in MaterialRecord material, in LightVertex lightVertex) {
+// this code sometimes still returns false posiitives iit is completly unclear why
+bool isSurfacePointOccludedTest(in IntersectionRecord its, in IntersectionRecord itsConnection, EmitterRecord emitterRecord) {
+    // 1. Use a robust offset to prevent self-intersection
+    RayDesc shadowRay;
+    // shadowRay.Origin = its.position + (its.normal * 0.001);
+    shadowRay.Origin = its.position;
+    shadowRay.Direction = normalize(emitterRecord.direction);
+    shadowRay.TMin = 0.001;
+    // 2. Stop the ray just BEFORE it reaches the target point
+    shadowRay.TMax = emitterRecord.distance - 0.001;
+
+    // 3. Horizon check (using a small epsilon to allow grazing lights)
+    if (dot(shadowRay.Direction, its.normal) < 1e-4f) {
+        return true;
+    }
+
+
+
+    HitPayload payload;
+    payload.hit = false; // Ensure this is initialized!
+
+    // 4. Optimization: Use flags to stop at the very first hit
+    const uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
+
+    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
+
+    // If the ray hit anything before reaching the target, it's occluded
+    return payload.hit;
+}
+
+float3 getOccludedLightContributionFromConnection(in IntersectionRecord its, in MaterialRecord material, in uint lightVertexIndex) {
+
+    LightVertex lightVertex = lightVertexCache[lightVertexIndex];
+
     IntersectionRecord itsConnection = getIntersectionRecordFromLightVertex(lightVertex, its);
+
+    if (length(itsConnection.position - its.position) < 0.01) {
+        return float3(0.0);
+    }
+
+
+
     Material materialConnection = materials[itsConnection.materialIdx];
     MaterialRecord materialRecordConnection = getMaterialProperties(materialConnection, textures, itsConnection.uv, itsConnection.frame);
 
     EmitterRecord emitterRecord = getEmitterRecordFromLightVertex(lightVertex);
     EmitterRecord emitterRecordFromConnection = getEmitterRecordFromConnection(emitterRecord, its, itsConnection, materialRecordConnection);
 
-    if (isLightOccluded(its, emitterRecordFromConnection)) {
+    //check if we hit a backface
+    if (dot(itsConnection.normal, -emitterRecordFromConnection.direction) < 0.0) {
+        return float3(0.0);
+    }
+
+    /*
+    if (dot(materialRecordConnection.shadingFrame.n, -emitterRecordFromConnection.direction) < 0.0) {
+        return float3(0.0);
+    }
+        */
+
+    if (isSurfacePointOccludedTest(its, itsConnection, emitterRecordFromConnection)) {
         return float3(0.0);
     }
 

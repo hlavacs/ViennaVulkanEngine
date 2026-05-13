@@ -39,6 +39,8 @@ cbuffer UniformBufferObject
     uint lightCount;
     uint x_dimensions;
     uint y_dimensions;
+
+    uint isFirstFrame;
 };
 
 [[vk::binding(1, 0)]]
@@ -162,6 +164,29 @@ RayDesc getRayInternal(in IntersectionRecord its, float3 castDirection) {
     return ray;
 }
 
+float3 offset_ray(float3 p, float3 n) {
+    const float epsilon = 1.0 / 32.0;
+    const float float_scale = 1.0 / 65536.0;
+    const float int_scale = 256.0;
+
+    int3 i = int3(n * int_scale);
+    float3 p_i = asfloat(asint(p) + select(p < 0, -i, i));
+    return select(abs(p) < epsilon, p + float_scale * n, p_i);
+}
+
+RayDesc getRayOffset(in IntersectionRecord its, float3 castDirection) {
+    // Inputs: intersection and cast direction. Output: ray offset based on side.
+    RayDesc ray;
+    // ray.Origin = its.position + (its.normal * 0.001);
+    ray.Origin = offset_ray(its.position, its.normal);
+
+    ray.Direction = normalize(castDirection);
+    ray.TMin = 0.0;      // Minimum distance to avoid self-intersection
+    ray.TMax = INFINITE; // Maximum distance (infinite for primary rays)
+
+    return ray;
+}
+
 RayDesc getInitialRay(in float2 launchID, in float2 launchSize) {
     // Inputs: pixel coordinates and image size. Output: camera ray in world space.
 
@@ -185,7 +210,7 @@ bool isSkyPixel(float3 pos)
 }
 
 bool isLightOccluded(in IntersectionRecord its, EmitterRecord emitterRecord) {
-    RayDesc shadowRay = getRay(its, emitterRecord.direction);
+    RayDesc shadowRay = getRayOffset(its, emitterRecord.direction);
     shadowRay.TMax = emitterRecord.distance;
     HitPayload payload;
     const uint rayFlags = 0;
@@ -204,6 +229,34 @@ bool isLightOccluded(in IntersectionRecord its, EmitterRecord emitterRecord) {
     return false;
 }
 
+// this code sometimes still returns false posiitives iit is completly unclear why
+bool isSurfacePointOccluded(in IntersectionRecord its, EmitterRecord emitterRecord) {
+    // 1. Use a robust offset to prevent self-intersection
+    RayDesc shadowRay;
+    // shadowRay.Origin = its.position + (its.normal * 0.001);
+    shadowRay.Origin = offset_ray(its.position, its.normal);
+    shadowRay.Direction = normalize(emitterRecord.direction);
+    shadowRay.TMin = 0.0;
+    // 2. Stop the ray just BEFORE it reaches the target point
+    shadowRay.TMax = emitterRecord.distance - 0.001;
+
+    // 3. Horizon check (using a small epsilon to allow grazing lights)
+    if (dot(shadowRay.Direction, its.normal) < 1e-4f) {
+        return true;
+    }
+
+    HitPayload payload;
+    payload.hit = false; // Ensure this is initialized!
+
+    // 4. Optimization: Use flags to stop at the very first hit
+    const uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
+
+    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
+
+    // If the ray hit anything before reaching the target, it's occluded
+    return payload.hit;
+}
+
 float3 getUnoccludedLightContribution(in IntersectionRecord its, in MaterialRecord material, in EmitterRecord emitterRecord) {
     BSDFQueryRecord shaderRecord = constructBSDFRecord(its, material, emitterRecord.direction, true);
 
@@ -215,7 +268,9 @@ float3 getUnoccludedLightContribution(in IntersectionRecord its, in MaterialReco
         radiance = float3(0.0);
     }
 
-    return radiance;
+    // bsdf can return negativ values !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    //fix this
+    return max(0.0, radiance);
 }
 
 float3 directRaycast(in IntersectionRecord its, in MaterialRecord material, inout Sampler sampler) {
