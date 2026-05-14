@@ -63,10 +63,12 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
 
     float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
 
+    
     if (dot(its.normal, its.direction) > 0.0) {
         its.normal *= -1.0;
         shadingNormal *= -1.0;
     }
+        
 
     material.shadingFrame = Frame(shadingNormal);
 }
@@ -89,7 +91,7 @@ void rgenMain()
 
     const uint MAX_SPATIAL_INFLUENCE_GI = 10;
     const uint SPATIAL_SAMPLES_GI = 12;
-    const uint SAMPLE_RADIUS_GI = 6;
+    const uint SAMPLE_RADIUS_GI = 12;
 
     if (isSkyPixel(position)) {
         Reservoir reservoir = createEmptyReservoir();
@@ -178,6 +180,8 @@ void rgenMain()
                 // this may not be optimal, the real time raytracing engine handles this diffrently
                 reservoirSpatialLVC.M = min(MAX_SPATIAL_INFLUENCE_GI * reservoirLVC.M, reservoirSpatialLVC.M);
 
+                //reservoirSpatialLVC.M = min(MAX_SPATIAL_INFLUENCE_GI, reservoirSpatialLVC.M);
+
                 if (IsReservoirValidLVC(reservoirSpatialLVC)) {
                     reservoirLVC = CombineReservoirsLVC(reservoirLVC, reservoirSpatialLVC, its, material, sampler);
                 }
@@ -187,7 +191,6 @@ void rgenMain()
         if (IsReservoirValidLVC(reservoirLVC))
         {
             float3 radiance = getOccludedLightContributionFromConnection(its, material, reservoirLVC.LVCIndex);
-
             output += radiance * reservoirLVC.lightWeight;
         } else {
             reservoirLVC = createEmptyReservoirLVC();

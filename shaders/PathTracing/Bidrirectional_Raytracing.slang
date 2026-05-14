@@ -51,6 +51,7 @@ struct LightVertex {
 }
 */
 
+
 LightVertex generateLightVertex(inout Sampler sampler) {
     LightVertex lightVertex;
     
@@ -66,8 +67,9 @@ LightVertex generateLightVertex(inout Sampler sampler) {
 
     Frame lightFrame = Frame(lightSurfaceDirection);
 
+    sample = sampler.UniformFloat2();
     float3 lightDirectionLocal = squareToUniformHemisphere(sample);
-    float lightDirectionSelectionPdf = squareToUniformHemispherePdf(lightSurfaceDirection);
+    float lightDirectionSelectionPdf = squareToUniformHemispherePdf(lightDirectionLocal);
     float3 lightSampleDirection = lightFrame.toWorld(lightDirectionLocal);
 
     RayDesc ray;
@@ -104,6 +106,14 @@ LightVertex generateLightVertex(inout Sampler sampler) {
     lightVertex.lightIndex = lightIndex;
     // likely needs all pdfs
     //lightVertex.radiance = light.emission / (pdf * lightSurfaceSelectionPdf * lightDirectionSelectionPdf);
+
+    float distance = length(its.position - lightSurfacePosition);
+    //float cosHit = saturate(dot(its.normal, -normalize(lightSampleDirection)));
+
+    //lightVertex.radiance = (light.emission * cosHit / (distance * distance)) / (pdf * lightSurfaceSelectionPdf);
+
+    // lightVertex.radiance = (light.emission / (distance * distance));
+    //lightVertex.radiance = light.emission;
     lightVertex.radiance = light.emission / (pdf);
     //lightVertex.radiance = light.emission / (pdf);
     lightVertex.samplePosition = float4(lightSurfacePosition, 1.0);
@@ -173,6 +183,7 @@ EmitterRecord getEmitterRecordFromConnection(in EmitterRecord fromLightSource, i
     // likely needs to be devided by distance squared
 
     //not sure if this is correct, but it makes the result less biased looking
+    //moved to generate!
     float cosThetaLight = saturate(dot(itsConnection.normal, -emitterRecord.direction));
     //float cosThetaLight = 1.0;
 
@@ -180,7 +191,15 @@ EmitterRecord getEmitterRecordFromConnection(in EmitterRecord fromLightSource, i
 
     float distSq = max(emitterRecord.distance * emitterRecord.distance, 0.01);
 
-    emitterRecord.sampleEmission = bsdfEvalConnection * (cosThetaLight / (distSq));
+    //float distSq = 1.0;
+
+    //float distSq = 10.0;
+
+    emitterRecord.sampleEmission = bsdfEvalConnection * cosThetaLight / distSq;
+
+    //emitterRecord.sampleEmission = bsdfEvalConnection * cosThetaLight;
+
+    //emitterRecord.sampleEmission = bsdfEvalConnection;
 
     return emitterRecord;
 }
@@ -188,6 +207,10 @@ EmitterRecord getEmitterRecordFromConnection(in EmitterRecord fromLightSource, i
 float3 getUnoccludedLightContributionFromConnection(in IntersectionRecord its, in MaterialRecord material, in uint lightVertexIndex) {
 
     LightVertex lightVertex = lightVertexCache[lightVertexIndex];
+
+    if (length(lightVertex.radiance) <= 0.0) {
+        return float3(0.0);
+    }
 
     IntersectionRecord itsConnection = getIntersectionRecordFromLightVertex(lightVertex, its);
 
@@ -206,6 +229,12 @@ float3 getUnoccludedLightContributionFromConnection(in IntersectionRecord its, i
     if (dot(itsConnection.normal, -emitterRecordFromConnection.direction) < 0.0) {
         return float3(0.0);
     }
+
+    //if the primary and secundary normal are not facing each other they cannot be connected
+    /*
+    if (dot(its.normal, itsConnection.normal) > 0.0) {
+        return float3(0.0);
+    }*/
 
     if (dot(emitterRecordFromConnection.direction, its.normal) < 1e-4f) {
         return float3(0.0);
@@ -258,13 +287,22 @@ float3 getOccludedLightContributionFromConnection(in IntersectionRecord its, in 
 
     LightVertex lightVertex = lightVertexCache[lightVertexIndex];
 
+    if (length(lightVertex.radiance) <= 0.0) {
+        return float3(0.0);
+    }
+
     IntersectionRecord itsConnection = getIntersectionRecordFromLightVertex(lightVertex, its);
 
     if (length(itsConnection.position - its.position) < 0.01) {
         return float3(0.0);
     }
 
-
+    // if the primary and secundary normal are not facing each other they cannot be connected
+    /*
+    if (dot(its.normal, itsConnection.normal) > 0.0) {
+        return float3(0.0);
+    }
+        */
 
     Material materialConnection = materials[itsConnection.materialIdx];
     MaterialRecord materialRecordConnection = getMaterialProperties(materialConnection, textures, itsConnection.uv, itsConnection.frame);

@@ -41,6 +41,7 @@ float convertIORLevel(float iorLevel) {
     return 1.0 + iorLevel;
 }
 
+/*
 public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in MaterialRecord material, in bool isShadowQuery) {
     // Inputs: intersection, material, shadow flag. Output: initialized query record.
     BSDFQueryRecord record;
@@ -58,6 +59,32 @@ public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in Materia
     record.wiShading = material.shadingFrame.toLocal(-its.direction);
     record.wiWorld = -its.direction;
     record.woShading = material.shadingFrame.toLocal(outDirection);
+    record.woWorld = outDirection;
+    record.geometryNormal = its.normal;
+    record.wmSet = false;
+    record.isShadowQuery = isShadowQuery;
+    return record;
+}
+
+*/
+
+public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in MaterialRecord material, in bool isShadowQuery) {
+    // Inputs: intersection, material, shadow flag. Output: initialized query record.
+    BSDFQueryRecord record;
+    record.wiShading = its.frame.toLocal(-its.direction);
+    record.wiWorld = -its.direction;
+    record.geometryNormal = its.normal;
+    record.wmSet = false;
+    record.isShadowQuery = isShadowQuery;
+    return record;
+}
+
+public BSDFQueryRecord constructBSDFRecord(in IntersectionRecord its, in MaterialRecord material, float3 outDirection, in bool isShadowQuery) {
+    // Inputs: intersection, material, outgoing world direction, shadow flag. Output: initialized query record.
+    BSDFQueryRecord record;
+    record.wiShading = its.frame.toLocal(-its.direction);
+    record.wiWorld = -its.direction;
+    record.woShading = its.frame.toLocal(outDirection);
     record.woWorld = outDirection;
     record.geometryNormal = its.normal;
     record.wmSet = false;

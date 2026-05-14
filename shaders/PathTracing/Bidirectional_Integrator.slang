@@ -91,7 +91,7 @@ IntegrationStepQueryRecord integratorBidirectional(inout Sampler sampler, ) {
 
     float pdf = 1.0 / float(lightVertexCacheSize);
 
-    uint sampleCount = 10;
+    uint sampleCount = 25;
     float3 radiance = 0.0;
 
     for (uint i = 0; i < sampleCount; i++) {
@@ -157,7 +157,8 @@ void rgenMain()
         float3 albedo = inAlbedoAlpha[int2(launchID)].xyz;
         //works for now, but terrible with reprojection errors
 
-        float3 outputColor = outputDirectRecord.directLight + outputIndirectRecord.indirectLight;
+        //float3 outputColor = outputDirectRecord.directLight + outputIndirectRecord.indirectLight;
+        float3 outputColor = outputIndirectRecord.indirectLight;
 
         
         //this works for now but is likley to break with slight reprojection errors.

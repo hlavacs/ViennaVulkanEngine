@@ -62,10 +62,12 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
 
     float3 shadingNormal = inShadingNormal[int2(launchID)].xyz;
 
+    
     if (dot(its.normal, its.direction) > 0.0) {
         its.normal *= -1.0;
         shadingNormal *= -1.0;
     }
+        
 
     material.shadingFrame = Frame(shadingNormal);
 }
@@ -86,7 +88,7 @@ void rgenMain()
     const uint CANDIDATE_COUNT = 32;
     const uint MAX_TEMPORAL_INFLUENCE = 20;
 
-    const uint CANDIDATE_COUNT_GI = 32;
+    const uint CANDIDATE_COUNT_GI = 128;
     const uint MAX_TEMPORAL_INFLUENCE_GI = 20;
 
     if (isSkyPixel(position)) {
@@ -152,23 +154,21 @@ void rgenMain()
         for (uint i = 0; i < CANDIDATE_COUNT_GI; i++)
         {
             uint lightVertexIndex = sampler.UniformUIntFast(0, lightVertexCacheSize - 1);
+            p_hat = length(getUnoccludedLightContributionFromConnection(its, material, lightVertexIndex));
 
-            if (isLightVertexValid(lightVertexIndex)) {
-                p_hat = length(getUnoccludedLightContributionFromConnection(its, material, lightVertexIndex));
+            float w = p_hat;
 
-                // float w = p_hat / lightPdf;
-                // no pdf needed as far as I know
-                float w = p_hat;
-
-                UpdateReservoirLVC(reservoirLVC, lightVertexIndex, w, 1, sampler);
-            }
+            UpdateReservoirLVC(reservoirLVC, lightVertexIndex, w, 1, sampler);
         }
 
         if (IsReservoirValidLVC(reservoirLVC))
         {
             // Update weight with new radiance with visibility term!
             float p_hat = length(getOccludedLightContributionFromConnection(its, material, reservoirLVC.LVCIndex));
+
             reservoirLVC.lightWeight = p_hat > 0.0 ? (1.0 / max(p_hat, 0.001)) * reservoirLVC.W_sum / reservoirLVC.M : 0.0;
+
+            
         } else {
             reservoirLVC = createEmptyReservoirLVC();
         }
@@ -181,10 +181,14 @@ void rgenMain()
 
             //if temporal light vertex has age 0 it was newly generated invalidating the temporal history
             LightVertex lightVertexTemporal = lightVertexCache[temporalReservoirLVC.LVCIndex];
+            
             if (lightVertexTemporal.age != 0) {
                 // restrict influence from past samples.
                 temporalReservoirLVC.M = min(MAX_TEMPORAL_INFLUENCE_GI * reservoirLVC.M, temporalReservoirLVC.M);
-                //reservoirLVC = CombineReservoirsLVC(reservoirLVC, temporalReservoirLVC, its, material, sampler);
+
+                //temporalReservoirLVC.M = min(MAX_TEMPORAL_INFLUENCE_GI, temporalReservoirLVC.M);
+
+                reservoirLVC = CombineReservoirsLVC(reservoirLVC, temporalReservoirLVC, its, material, sampler);
             }   
         }
 

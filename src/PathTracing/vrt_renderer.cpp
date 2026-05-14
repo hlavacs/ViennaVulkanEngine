@@ -409,7 +409,7 @@ namespace vve {
         commandManager = new CommandManager(device, physicalDevice, surface, graphicsQueue);
         swapchain = new SwapChain(physicalDevice, device, surface, presentQueue, commandManager, m_windowSDLState().m_sdlWindow);
 
-        lightVertexCacheSize = VkExtent2D(100000, 1);
+        lightVertexCacheSize = VkExtent2D(200000, 1);
 
         //textureManager = new TextureManager(device, physicalDevice, commandManager);
 
@@ -825,7 +825,7 @@ namespace vve {
         rasterizer->recordCommandBuffer(currentFrame);
         reprojectionPass->recordCommandBuffer(currentFrame);
 
-        raytracer->recordCommandBuffer(currentFrame);
+        //raytracer->recordCommandBuffer(currentFrame);
 
         //restir_temporal->recordCommandBuffer(currentFrame);
         //restir_spatial->recordCommandBuffer(currentFrame);
@@ -835,10 +835,11 @@ namespace vve {
 
         //lightVertexGenerationFull->recordCommandBuffer(currentFrame);
         lightVertexGenerationRandomReplacment->recordCommandBuffer(currentFrame);
+        //very clearly biased!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //bidirectionalPathTracing->recordCommandBuffer(currentFrame);
 
-        //restirLVC_temporal->recordCommandBuffer(currentFrame);
-        //restirLVC_spatial->recordCommandBuffer(currentFrame);
+        restirLVC_temporal->recordCommandBuffer(currentFrame);
+        restirLVC_spatial->recordCommandBuffer(currentFrame);
 
         combinePass->recordCommandBuffer(currentFrame);
         //copy images to previous image buffers
@@ -851,7 +852,7 @@ namespace vve {
 
         reservoirDI_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirDI_B->getBuffer(currentFrame), currentFrame);
         reservoirGI_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirGI_B->getBuffer(currentFrame), currentFrame);
-        reservoirLVC_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirLVC_B->getBuffer(currentFrame), currentFrame);
+        //reservoirLVC_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirLVC_B->getBuffer(currentFrame), currentFrame);
 
         lightVertexCache->getBuffer(nextFrame)->recordCopyFromBuffer(lightVertexCache->getBuffer(currentFrame), currentFrame);
 

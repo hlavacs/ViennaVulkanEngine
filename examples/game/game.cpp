@@ -43,6 +43,8 @@ class MyGame : public vve::System {
 
         //inline static std::string test_scene_gltf{ "assets/shader_room_gltf/test_scene.gltf" };
         inline static std::string test_scene_gltf{ "assets/sponza/sponza.gltf" };
+        inline static std::string test_scene_penetrationTest_gltf{ "assets/light_penetration/light_penetration.gltf" };
+
 
         bool OnLoadLevel( Message message ) {
             auto msg = message.template GetData<vve::System::MsgLoadLevel>();	
@@ -73,11 +75,14 @@ class MyGame : public vve::System {
 
             //m_engine.PlaySound(vve::Filename{ "assets/sounds/dance.mp3" }, -1, 50);
             m_engine.SetVolume(m_volume);
-            m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{ test_scene_gltf }, aiProcess_FlipWindingOrder,
-                vve::Position{ {0.0,0.0,0.0} }, vve::Rotation{ mat3_t{1.0f} }, vve::Scale{ vec3_t{1.0f} });
+            m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{ test_scene_gltf }, aiProcess_FlipWindingOrder, vve::Position{ {0.0,0.0,0.0} }, vve::Rotation{ mat3_t{1.0f} }, vve::Scale{ vec3_t{1.0f} });
+            //m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{ test_scene_penetrationTest_gltf }, aiProcess_FlipWindingOrder, vve::Position{ {0.0,0.0,0.0} }, vve::Rotation{ mat3_t{1.0f} }, vve::Scale{ vec3_t{1.0f} });
+
             
             m_engine.CreateVRTSphereLight(vve::Name{}, vve::ParentHandle{}, vec3_t{ 2000.0f }, 0.5f, vve::Position{ {7.44097f,-0.608485f,4.85042f} });
             m_engine.CreateVRTSphereLight(vve::Name{}, vve::ParentHandle{}, vec3_t{ 2000.0f }, 0.5f, vve::Position{ {-5.81945f,0.797917f,2.57471f} });
+
+            //m_engine.CreateVRTSphereLight(vve::Name{}, vve::ParentHandle{}, vec3_t{ 2000.0f }, 0.001f, vve::Position{ {4.50462,3.30285 ,1.16441} });
 
             std::mt19937 rng(2);
 

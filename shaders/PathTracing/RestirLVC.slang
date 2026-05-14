@@ -9,13 +9,14 @@ import Bidrirectional_Raytracing;
 
 bool UpdateReservoirLVC(inout ReservoirLVC reservoir, uint LVCIndex, float w, uint count, inout Sampler sampler)
 {
+
+    reservoir.M += count;
+
     // 1. Sanity check for NaN/Inf
     if (isnan(w) || isinf(w) || w <= 0.0) {
         return false;
     } else {
         reservoir.W_sum += w;
-        reservoir.M += count;
-
         if (sampler.UniformFloat() < (w / reservoir.W_sum))
         {
             reservoir.LVCIndex = LVCIndex;

@@ -13,16 +13,17 @@ void rgenMain()
 
     Sampler sampler = Sampler(pixelSeed);
 
-    /*
-    if (sampler.UniformFloat() < 0.1 || isFirstFrame == 1) {
+    
+    if (sampler.UniformFloat() < 0.05 || isFirstFrame == 1) {
         LightVertex lightVertex = generateLightVertex(sampler);
 
         lightVertexCache[launchID.x] = lightVertex;
     } else {
         lightVertexCache[launchID.x].age++;
     }
-        */
+        
 
+        /*
     if (isFirstFrame == 1) {
         LightVertex lightVertex = generateLightVertex(sampler);
 
@@ -30,4 +31,5 @@ void rgenMain()
     } else {
         lightVertexCache[launchID.x].age++;
     }
+        */
 }
