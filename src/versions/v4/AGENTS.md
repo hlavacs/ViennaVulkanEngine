@@ -1,3 +1,13 @@
+## User interactions
+
+- Create scene from file: all assets are loaded from file and all entities are automatically created  and rendered as decribed in the file
+- Load scene from file: all assets are loaded from the file, but no entities are created yet
+- Create entity: create single entity by refering to assets like mesh, textures, normal maps etc. that have been loaded from a file.
+- Move/rotate/hide/unhide entities
+- Erase entities
+- Purge assets
+Users should not have to explicitly deal with assets other than when creating an entity.
+
 
 ## Data-oriented design
 
@@ -30,7 +40,6 @@
 - DAGs should clarify execution and synchronization, not become ceremonial graph-building overhead.
 - The dependency model should support future parallel execution, frame scheduling, and debugging.
 - Systems that participate in scheduling should make read/write/resource dependencies visible.
-
 
 
 ## Reflection
@@ -67,6 +76,7 @@
   - scripting
   - tooling/editor
   - networking
+ 
 
 ## Vulkan API
 
