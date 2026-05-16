@@ -122,5 +122,6 @@ int main(int, char **) {
         return 1;
     }
 
-    return *version_major == 4 ? 0 : 1;
+    const auto expected_major = vve::engineImplementationNamespaceName == std::string_view{"v5"} ? 5 : 4;
+    return *version_major == expected_major ? 0 : 1;
 }

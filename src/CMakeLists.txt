@@ -28,10 +28,21 @@ if(NOT VVE_GENERATED_KOSMICKRISP_ICD_MANIFEST STREQUAL "")
       PRIVATE VVE_KOSMICKRISP_ICD_MANIFEST="${VVE_KOSMICKRISP_ICD_MANIFEST_COMPILE_PATH}")
 endif()
 
-set(VVE_ENGINE_IMPLEMENTATION_NAMESPACE "v4" CACHE STRING "Engine implementation namespace exposed by the facade")
-set_property(CACHE VVE_ENGINE_IMPLEMENTATION_NAMESPACE PROPERTY STRINGS "v4")
+set(VVE_ENGINE_IMPLEMENTATION_NAMESPACE "v5" CACHE STRING "Engine implementation namespace exposed by the facade")
+set_property(CACHE VVE_ENGINE_IMPLEMENTATION_NAMESPACE PROPERTY STRINGS "v4" "v5")
+option(VVE_BUILD_ENGINE_V4 "Build the legacy v4 implementation beside the selected engine" OFF)
+if(NOT VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "v4" AND
+   NOT VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "v5")
+    message(FATAL_ERROR "VVE_ENGINE_IMPLEMENTATION_NAMESPACE must be v4 or v5")
+endif()
 target_compile_definitions(ViennaVulkanEngine
     PUBLIC VVE_ENGINE_IMPLEMENTATION_NAMESPACE=${VVE_ENGINE_IMPLEMENTATION_NAMESPACE})
+
+if(VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "v5")
+    target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_ENGINE_IMPLEMENTATION_IS_V5)
+else()
+    target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_ENGINE_IMPLEMENTATION_IS_V4)
+endif()
 
 find_package(assimp CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
@@ -77,7 +88,13 @@ extern "C" int _Avx2WmemEnabled = 0;
     target_sources(ViennaVulkanEngine INTERFACE "${VVE_MSVC_STD_MODULE_COMPAT_SOURCE}")
 endif()
 
-add_subdirectory("versions/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}")
+add_subdirectory("versions/v5")
+target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_ENGINE_HAS_V5)
+
+if(VVE_BUILD_ENGINE_V4 OR VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "v4")
+    add_subdirectory("versions/v4")
+    target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_ENGINE_HAS_V4)
+endif()
 
 target_link_libraries(ViennaVulkanEngine
     PUBLIC

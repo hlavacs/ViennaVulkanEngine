@@ -1,7 +1,7 @@
 module;
 
 #ifndef VVE_ENGINE_IMPLEMENTATION_NAMESPACE
-#define VVE_ENGINE_IMPLEMENTATION_NAMESPACE v4
+#define VVE_ENGINE_IMPLEMENTATION_NAMESPACE v5
 #endif
 
 #define VVE_DETAIL_STRINGIFY_IMPL(value) #value
@@ -9,7 +9,11 @@ module;
 
 export module VEEngine;
 import std;
+#if defined(VVE_ENGINE_IMPLEMENTATION_IS_V5)
+import VEEngine.V5;
+#else
 import VEEngine.V4;
+#endif
 export import VEEngine.Error;
 export import VEEngine.Math;
 export import VEEngine.Handle;

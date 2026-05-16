@@ -1,6 +1,10 @@
 export module VEEngine.Error;
 import std;
+#if defined(VVE_ENGINE_IMPLEMENTATION_IS_V5)
+import VEEngine.V5.Error;
+#else
 import VEEngine.V4.Error;
+#endif
 
 /**
  * @file

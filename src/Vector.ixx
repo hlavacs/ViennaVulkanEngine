@@ -1,6 +1,10 @@
 export module VEEngine.Vector;
 import std;
+#if defined(VVE_ENGINE_IMPLEMENTATION_IS_V5)
+import VEEngine.V5.Vector;
+#else
 import VEEngine.V4.Vector;
+#endif
 
 /**
  * @file

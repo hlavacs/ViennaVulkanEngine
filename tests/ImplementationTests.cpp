@@ -38,6 +38,11 @@ struct CountingSystem {
    }
 };
 
+[[nodiscard]] std::filesystem::path selectedShaderPath(std::string_view file_name) {
+   return std::filesystem::path{"src/versions"} / std::string{vve::engineImplementationNamespaceName} / "shaders" /
+          std::string{file_name};
+}
+
 [[nodiscard]] bool nearly(float lhs, float rhs) {
    return std::abs(lhs - rhs) < 0.0001F;
 }
@@ -45,7 +50,7 @@ struct CountingSystem {
 [[nodiscard]] std::optional<std::filesystem::path> findRepositoryRoot() {
    auto path = std::filesystem::current_path();
    while (!path.empty()) {
-      if (std::filesystem::exists(path / "src/versions/v4/shaders/Forward.slang")) {
+      if (std::filesystem::exists(path / selectedShaderPath("Forward.slang"))) {
          return path;
       }
       const auto parent = path.parent_path();
@@ -65,16 +70,20 @@ struct CountingSystem {
    return text.find(needle) != std::string::npos;
 }
 
+[[nodiscard]] std::uint32_t expectedEngineMajor() {
+   return vve::engineImplementationNamespaceName == std::string_view{"v5"} ? 5U : 4U;
+}
+
 [[nodiscard]] int testFacadeContracts() {
    return 0;
 }
 
-[[nodiscard]] int testV4ShaderSources() {
+[[nodiscard]] int testSelectedShaderSources() {
    const auto root = findRepositoryRoot();
    if (!root) { return 110; }
 
-   const auto lighting = readTextFile(*root / "src/versions/v4/shaders/Lighting.slang");
-   const auto forward = readTextFile(*root / "src/versions/v4/shaders/Forward.slang");
+   const auto lighting = readTextFile(*root / selectedShaderPath("Lighting.slang"));
+   const auto forward = readTextFile(*root / selectedShaderPath("Forward.slang"));
    if (!lighting || !forward) { return 111; }
 
    if (!containsText(*lighting, "VveLightingConstants") ||
@@ -493,7 +502,7 @@ struct CountingSystem {
                             makeUserSystems(CountingSystem{.init_count = &init_count,
                                                            .update_count = &update_count,
                                                            .last_frame = &last_frame}));
-   if (engine.versionMajor() != 4 || engine.versionName() != std::string_view{"v4"}) {
+   if (engine.versionMajor() != expectedEngineMajor() || engine.versionName() != engineImplementationNamespaceName) {
       return 40;
    }
    if (!engine.init()) {
@@ -537,10 +546,10 @@ struct CountingSystem {
    }
 
    auto engine = makeEngine(ApplicationName{"facade-test"}, MaxFrames{});
-   if (engine.versionMajor() != 4) {
+   if (engine.versionMajor() != expectedEngineMajor()) {
       return 81;
    }
-   if (engineImplementationNamespaceName != std::string_view{"v4"}) {
+   if (engine.versionName() != engineImplementationNamespaceName) {
       return 82;
    }
    return 0;
@@ -552,7 +561,7 @@ int main() {
    if (const int result = testFacadeContracts(); result != 0) {
       return result;
    }
-   if (const int result = testV4ShaderSources(); result != 0) {
+   if (const int result = testSelectedShaderSources(); result != 0) {
       return result;
    }
    if (const int result = testHandles(); result != 0) {

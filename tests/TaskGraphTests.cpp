@@ -1,12 +1,18 @@
 #include <filesystem>
 
+#if defined(VVE_ENGINE_IMPLEMENTATION_IS_V5)
+import VEEngine.V5;
+namespace ve = vve::v5;
+#else
 import VEEngine.V4;
+namespace ve = vve::v4;
+#endif
 
 int main() {
-   vve::v4::TaskGraph graph{};
-   const auto upload = graph.addNode(vve::v4::ObjectName{.value = "upload"});
-   const auto simulate = graph.addNode(vve::v4::ObjectName{.value = "simulate"});
-   const auto render = graph.addNode(vve::v4::ObjectName{.value = "render"});
+   ve::TaskGraph graph{};
+   const auto upload = graph.addNode(ve::ObjectName{.value = "upload"});
+   const auto simulate = graph.addNode(ve::ObjectName{.value = "simulate"});
+   const auto render = graph.addNode(ve::ObjectName{.value = "render"});
    if (!upload || !simulate || !render || graph.nodeCount() != 3) { return 1; }
 
    graph.addEdge(*upload, *simulate);
@@ -38,16 +44,16 @@ int main() {
    if (!after_remove || after_remove->size() != 2) { return 13; }
 
    const auto missing = graph.nodeName(*simulate);
-   if (missing || missing.error() != vve::v4::Error::missing_object) { return 14; }
+   if (missing || missing.error() != ve::Error::missing_object) { return 14; }
 
-   vve::v4::TaskGraph cycle{};
-   const auto a = cycle.addNode(vve::v4::ObjectName{.value = "a"});
-   const auto b = cycle.addNode(vve::v4::ObjectName{.value = "b"});
+   ve::TaskGraph cycle{};
+   const auto a = cycle.addNode(ve::ObjectName{.value = "a"});
+   const auto b = cycle.addNode(ve::ObjectName{.value = "b"});
    if (!a || !b) { return 15; }
    cycle.addEdge(*a, *b);
    cycle.addEdge(*b, *a);
    const auto cycle_order = cycle.topologicalOrder();
-   if (cycle_order || cycle_order.error() != vve::v4::Error::cycle_detected) { return 16; }
+   if (cycle_order || cycle_order.error() != ve::Error::cycle_detected) { return 16; }
 
    return 0;
 }

@@ -1,12 +1,18 @@
 #include <filesystem>
 
+#if defined(VVE_ENGINE_IMPLEMENTATION_IS_V5)
+import VEEngine.V5;
+namespace ve = vve::v5;
+#else
 import VEEngine.V4;
+namespace ve = vve::v4;
+#endif
 
 int main() {
-   vve::v4::RenderGraph graph{};
-   const auto shadow = graph.addNode(vve::v4::ObjectName{.value = "shadow"});
-   const auto forward = graph.addNode(vve::v4::ObjectName{.value = "forward"});
-   const auto present = graph.addNode(vve::v4::ObjectName{.value = "present"});
+   ve::RenderGraph graph{};
+   const auto shadow = graph.addNode(ve::ObjectName{.value = "shadow"});
+   const auto forward = graph.addNode(ve::ObjectName{.value = "forward"});
+   const auto present = graph.addNode(ve::ObjectName{.value = "present"});
    if (!shadow || !forward || !present || graph.nodeCount() != 3) { return 1; }
 
    graph.addEdge(*shadow, *forward);
@@ -37,14 +43,14 @@ int main() {
    const auto after_remove = graph.topologicalOrder();
    if (!after_remove || after_remove->size() != 2) { return 13; }
 
-   vve::v4::RenderGraph cycle{};
-   const auto a = cycle.addNode(vve::v4::ObjectName{.value = "a"});
-   const auto b = cycle.addNode(vve::v4::ObjectName{.value = "b"});
+   ve::RenderGraph cycle{};
+   const auto a = cycle.addNode(ve::ObjectName{.value = "a"});
+   const auto b = cycle.addNode(ve::ObjectName{.value = "b"});
    if (!a || !b) { return 14; }
    cycle.addEdge(*a, *b);
    cycle.addEdge(*b, *a);
    const auto cycle_order = cycle.topologicalOrder();
-   if (cycle_order || cycle_order.error() != vve::v4::Error::cycle_detected) { return 15; }
+   if (cycle_order || cycle_order.error() != ve::Error::cycle_detected) { return 15; }
 
    return 0;
 }

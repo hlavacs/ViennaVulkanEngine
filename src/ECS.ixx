@@ -1,6 +1,10 @@
 export module VEEngine:ECS;
 import std;
+#if defined(VVE_ENGINE_IMPLEMENTATION_IS_V5)
+import VEEngine.V5;
+#else
 import VEEngine.V4;
+#endif
 import VEEngine.Error;
 import VEEngine.Types;
 
