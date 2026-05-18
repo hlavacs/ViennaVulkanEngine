@@ -113,13 +113,19 @@ namespace vve {
 	/**
 	 * @brief Create and register the renderer systems
 	 */
-	void Engine::CreateRenderer(){
-		RegisterSystem(std::make_unique<RendererVulkan>( m_rendererVulkanName,  *this, m_windowName ) );
-		RegisterSystem(std::make_unique<RendererImgui>(  m_rendererImguiName,   *this, m_windowName ) );
-		if (m_type == vve::RendererType::RENDERER_TYPE_FORWARD)
-			RegisterSystem(std::make_unique<RendererForward>(m_rendererForwardName, *this, m_windowName) );
-		else 
-			RegisterSystem(std::make_unique<RendererDeferred>(m_rendererDeferredName, *this, m_windowName) );
+	void Engine::CreateRenderer() {
+		RegisterSystem(std::make_unique<RendererImgui>(m_rendererImguiName, *this, m_windowName));
+
+		if( m_type == RendererType::RENDERER_TYPE_RAYTRACING ) {
+			RegisterSystem(std::make_unique<RendererRaytracing>("VVE Renderer Vulkan Raytracing", *this, m_windowName));
+		} else {
+			RegisterSystem(std::make_unique<RendererVulkan>(m_rendererVulkanName, *this, m_windowName));
+			if( m_type == RendererType::RENDERER_TYPE_FORWARD ) {
+				RegisterSystem(std::make_unique<RendererForward>(m_rendererForwardName, *this, m_windowName));
+			} else {
+				RegisterSystem(std::make_unique<RendererDeferred>(m_rendererDeferredName, *this, m_windowName));
+			}
+		}
 	};
 
 	/**
