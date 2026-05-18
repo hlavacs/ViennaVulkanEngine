@@ -1,7 +1,5 @@
 #pragma once
 
-#include <any>
-
 namespace vve {
 
 	//-------------------------------------------------------------------------------------------------------
@@ -11,7 +9,7 @@ namespace vve {
      * @brief Bare Vulkan ray tracing renderer.
      *
      * This class mirrors the structure of vve::RendererVulkan but is tailored for
-     * a hardware accelerated ray tracing pipeline (VK_KHR_ray_tracing_pipeline /
+     * a hardware-accelerated ray tracing pipeline (VK_KHR_ray_tracing_pipeline /
      * VK_KHR_acceleration_structure). It is intended as a skeleton that will, in
      * perspective, implement the following:
      *   1. Enable the ray tracing device/instance extensions.
@@ -29,17 +27,14 @@ namespace vve {
          */
 		RendererRaytracing(std::string systemName, Engine& engine, std::string windowName);
 
-		/**
-         * @brief Destructor for the ray tracing renderer.
-         */
-		virtual ~RendererRaytracing();
+		~RendererRaytracing() override;
 
 	protected:
-		// --- Engine lifecycle / message callbacks (mirrors RendererVulkan) ---
+		// --- Engine lifecycle / message callbacks  ---
 
 		/// Append the ray tracing instance/device extensions to the requested set.
 		bool OnExtensions(Message message);
-		/// Initialize device resources, acceleration structures and the RT pipeline.
+		/// Initialize device resources, acceleration structures, and the RT pipeline.
 		bool OnInit(Message message);
 
 		bool OnPrepareNextFrame(Message message);
@@ -53,16 +48,10 @@ namespace vve {
 
 		bool OnQuit(Message message);
 
-		// --- Ray tracing specific setup steps (called from OnInit) ---
-
-		/// (1) Query ray tracing properties/features once the device is created.
 		void InitRayTracingProperties();
-		/// (2) Build the bottom- and top-level acceleration structures.
 		void CreateAccelerationStructures();
-		/// (3) Create the ray tracing pipeline and the shader binding table.
 		void CreateRayTracingPipeline();
 		void CreateShaderBindingTable();
-		/// Storage image the ray generation shader writes to before blit/present.
 		void CreateStorageImage();
 
 		// --- Validation / extensions ---
@@ -81,7 +70,8 @@ namespace vve {
 													   VK_EXT_SHADER_OBJECT_EXTENSION_NAME,
 													   VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
 													   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
-													   VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME
+													   VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+													   VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME
 #ifdef __APPLE__
 													   ,
 													   VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME
@@ -104,9 +94,35 @@ namespace vve {
 			VmaAllocation m_allocation{nullptr};
 		};
 		std::vector<AccelerationStructure> m_bottomLevelAS;
+		// Handles of the meshes that own the BLAS at the same index in m_bottomLevelAS.
+		std::vector<vecs::Handle> m_bottomLevelASMeshes;
 		AccelerationStructure m_topLevelAS;
+		// Set to true whenever the set of meshes changed and the TLAS must be rebuilt.
+		bool m_accelerationStructureDirty{false};
 
-		// --- Ray tracing pipeline + shader binding table ---
+		// Ray tracing pipeline properties (shaderGroupHandleSize / alignment, etc.)
+		VkPhysicalDeviceRayTracingPipelinePropertiesKHR m_rtPipelineProperties{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+
+		void CreateDeviceAndSwapChain();
+		void RecreateSwapChain();
+		VkDeviceAddress GetBufferDeviceAddress(VkBuffer buffer);
+		void CreateAccelerationStructureBuffer(AccelerationStructure& as, VkDeviceSize size);
+		AccelerationStructure CreateBottomLevelAS(vvh::Mesh& mesh);
+		void CreateTopLevelAS();
+		void DestroyAccelerationStructure(const AccelerationStructure& as);
+		void UpdateDescriptorSets();
+		VkShaderModule LoadShaderModule(const std::string& path);
+		static void RecordImageLayoutTransition(VkCommandBuffer cmd,
+												VkImage image,
+												VkImageLayout oldLayout,
+												VkImageLayout newLayout,
+												VkPipelineStageFlags srcStage,
+												VkPipelineStageFlags dstStage,
+												VkAccessFlags srcAccess,
+												VkAccessFlags dstAccess);
+
+		// Ray tracing pipeline + shader binding table
 		VkDescriptorSetLayout m_descriptorSetLayout{VK_NULL_HANDLE};
 		VkDescriptorPool m_descriptorPool{VK_NULL_HANDLE};
 		std::vector<VkDescriptorSet> m_descriptorSets;
@@ -115,7 +131,7 @@ namespace vve {
 
 		std::vector<VkRayTracingShaderGroupCreateInfoKHR> m_shaderGroups;
 
-		// Shader binding table buffers (raygen / miss / hit).
+		// Shader binding table buffers (raygen / miss / hit)
 		struct ShaderBindingTable {
 			VkBuffer m_buffer{VK_NULL_HANDLE};
 			VmaAllocation m_allocation{nullptr};
@@ -130,10 +146,17 @@ namespace vve {
 		std::string m_missShaderPath{"shaders/Raytracing/miss.rmiss.spv"};
 		std::string m_closestHitShaderPath{"shaders/Raytracing/closesthit.rchit.spv"};
 
+		// --- Camera uniform buffer (view / projection used by the raygen shader) ---
+		vvh::Buffer m_uniformBuffer;
+
 		// --- Storage image written by the ray generation shader ---
 		vvh::Image m_storageImage;
 
-		// --- Command + synchronization (mirrors RendererVulkan) ---
+		// --- Render pass + framebuffers for the shared swap chain (so overlay
+		//     renderers such as ImGui can draw into it after the ray tracing blit) ---
+		VkRenderPass m_renderPass{VK_NULL_HANDLE};
+
+		// --- Command + synchronization ---
 		VkCommandPool m_commandPool{VK_NULL_HANDLE};
 		std::vector<VkCommandBuffer> m_commandBuffers;
 		std::vector<VkSemaphore> m_imageAvailableSemaphores;

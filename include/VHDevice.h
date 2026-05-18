@@ -369,6 +369,7 @@ namespace vvh {
 		SwapChain& m_swapChain;
 		DepthImage& m_depthImage;
 		VkRenderPass& m_renderPass;
+		VkImageUsageFlags m_imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	};
 
 	template<typename T = DevRecreateSwapChainInfo>
@@ -720,6 +721,7 @@ namespace vvh {
 		const VkPhysicalDevice& m_physicalDevice;
 		const VkDevice& m_device;
 		SwapChain& m_swapChain;
+		VkImageUsageFlags m_imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 	};
 
 	template<typename T = DevCreateSwapChainInfo>
@@ -744,7 +746,7 @@ namespace vvh {
 		createInfo.imageColorSpace = surfaceFormat.colorSpace;
 		createInfo.imageExtent = extent;
 		createInfo.imageArrayLayers = 1;
-		createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+		createInfo.imageUsage = info.m_imageUsage;
 
 		QueueFamilyIndices indices = DevFindQueueFamilies(info);
 		uint32_t queueFamilyIndices[] = { indices.graphicsFamily.value(), indices.presentFamily.value() };
