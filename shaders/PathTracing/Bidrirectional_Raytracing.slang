@@ -7,6 +7,7 @@ import Defines;
 import Surface;
 import Materials;
 import BSDF;
+import LightVertex;
 
 [[vk::binding(5, 1)]]
 RWStructuredBuffer<LightVertex> lightVertexCache;
@@ -15,23 +16,9 @@ RWStructuredBuffer<LightVertex> lightVertexCache;
 cbuffer UniformBufferBidirectional
 {
     uint lightVertexCacheSize;
+    float importanceSum;
+    float pKeepSum;
 };
-
-struct LightVertex {
-    float4 radiance;
-    float4 samplePosition;
-    float4 hitPosition;
-    float4 normal;
-    float4 tangent;
-    float2 uv;
-    uint lightIndex;
-    uint materialIndex;
-    uint age;
-    uint lastReevaluation;
-    float selectionPdf;
-    float importance;
-}
-
 
     // this only works with consistent instance indices which is bad
 /*

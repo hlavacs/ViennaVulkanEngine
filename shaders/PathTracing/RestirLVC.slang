@@ -6,6 +6,7 @@ import Materials;
 import BSDF;
 import ReservoirLVC;
 import Bidrirectional_Raytracing;
+import LightVertex;
 
 bool UpdateReservoirLVC(inout ReservoirLVC reservoir, uint LVCIndex, float w, uint count, inout Sampler sampler)
 {

@@ -1,6 +1,7 @@
 import Bidrirectional_Raytracing;
 import raytracing;
 import Random;
+import LightVertex;
 
 [shader("raygeneration")]
 void rgenMain()

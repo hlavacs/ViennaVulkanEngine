@@ -12,6 +12,7 @@ import Reservoir;
 import RestirDI;
 import ReservoirLVC;
 import RestirLVC;
+import LightVertex;
 
 [[vk::binding(0, 2)]]
 RWTexture2D<float4> inAlbedoAlpha;

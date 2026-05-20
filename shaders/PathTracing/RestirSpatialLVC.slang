@@ -12,6 +12,7 @@ import Reservoir;
 import RestirDI;
 import ReservoirLVC;
 import RestirLVC;
+import LightVertex;
 
 [[vk::binding(0, 2)]]
 RWTexture2D<float4> inAlbedoAlpha;
@@ -42,6 +43,8 @@ RWStructuredBuffer<ReservoirLVC> inReservoirLVC;
 
 [[vk::binding(9, 2)]]
 RWStructuredBuffer<ReservoirLVC> outReservoirLVC;
+
+
 
 
 void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout IntersectionRecord its, inout MaterialRecord material) {
