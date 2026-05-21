@@ -46,7 +46,6 @@ export namespace vve::v5 {
       std::string_view inputs{};                      ///< Human-readable pass inputs.
       std::string_view outputs{};                     ///< Human-readable pass outputs.
       bool milestone{};                               ///< True for meta nodes that anchor real passes.
-      bool writes_debug_data{};                       ///< Whether this pass writes host-verifiable data.
    };
 
    using RenderGraph = Graph<RenderPassHandle>; ///< Generic DAG for renderer pass dependencies.

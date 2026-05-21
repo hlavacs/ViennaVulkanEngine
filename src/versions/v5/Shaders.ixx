@@ -14,7 +14,7 @@ import std;
 export import :Types;
 
 /// @file
-/// @brief Slang-backed shader compilation and compact reflection records for v5 renderers.
+/// @brief Slang-backed shader compilation and compact reflection records for v5 experiments.
 
 export namespace vve::v5 {
 
@@ -298,9 +298,6 @@ export namespace vve::v5 {
 
       for (const auto &entry : entry_points) {
          collectEntryPoint(reflection, layout->findEntryPointByName(entry.c_str()));
-      }
-      for (const auto *type : {"VveForwardDebugSample", "VveForwardParams", "VveLightingConstants"}) {
-         if (layout->findTypeByName(type) != nullptr) { reflection.type_names.push_back(type); }
       }
    }
 

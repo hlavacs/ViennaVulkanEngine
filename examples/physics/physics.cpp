@@ -93,6 +93,7 @@ private:
 int main(int, char **) {
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
+    std::cout << "[physics] engine=" << vve::engineImplementationNamespaceName << '\n';
 
     // The physics sample currently exercises only engine startup and runtime
     auto engine = vve::makeEngine( // execution. Physics itself is expected to arrive through a user system.

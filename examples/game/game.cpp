@@ -279,6 +279,7 @@ private:
 int main(int argc, char** argv) {
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
+    std::cout << "[game] engine=" << vve::engineImplementationNamespaceName << '\n';
 
     const auto scene_path = resolveGameScenePath(argc, argv);
     if (!scene_path) {

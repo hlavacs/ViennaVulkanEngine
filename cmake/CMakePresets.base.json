@@ -6,7 +6,8 @@
       "hidden": true,
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "VVE_DEFAULT_VULKAN_ICD": "system"
+        "VVE_DEFAULT_VULKAN_ICD": "system",
+        "VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "v4"
       }
     },
     {
@@ -14,7 +15,8 @@
       "hidden": true,
       "binaryDir": "${sourceDir}/build/${presetName}",
       "cacheVariables": {
-        "VVE_DEFAULT_VULKAN_ICD": "system"
+        "VVE_DEFAULT_VULKAN_ICD": "system",
+        "VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "v4"
       }
     },
     {

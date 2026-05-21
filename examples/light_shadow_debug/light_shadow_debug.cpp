@@ -457,6 +457,7 @@ private:
 int main(int argc, char **argv) {
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
+    std::cout << "[light_shadow_debug] engine=" << vve::engineImplementationNamespaceName << '\n';
 
     const auto reference_path = outputPath(argc, argv);
     const auto inspect = inspectMode(argc, argv);
