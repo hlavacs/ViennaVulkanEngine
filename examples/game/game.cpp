@@ -101,7 +101,7 @@ struct Velocity {
  */
 class SimpleGameSystem final {
 public:
-    /// @brief Creates the sample system with a scene path reserved for future v4 rendering.
+    /// @brief Creates the sample system with a scene path reserved for v5 rendering.
     explicit SimpleGameSystem(std::filesystem::path scene_path = {})
         : scene_path_(std::move(scene_path)) {}
 

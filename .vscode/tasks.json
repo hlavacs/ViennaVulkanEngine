@@ -49,6 +49,7 @@
                 "-DCMAKE_BUILD_TYPE=Debug",
                 "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
                 "-DVVE_DEFAULT_VULKAN_ICD=moltenvk",
+                "-DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=v5",
                 "-DVVE_VCPKG_TRIPLET=arm64-osx",
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
             ],
@@ -74,6 +75,7 @@
                 "-DCMAKE_BUILD_TYPE=Release",
                 "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
                 "-DVVE_DEFAULT_VULKAN_ICD=moltenvk",
+                "-DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=v5",
                 "-DVVE_VCPKG_TRIPLET=arm64-osx",
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
             ],

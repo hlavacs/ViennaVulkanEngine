@@ -4,7 +4,7 @@ import VEEngine;
 
 /**
  * @file
- * @brief Deterministic light/shadow verification scene for the future v4 forward renderer.
+ * @brief Deterministic light/shadow verification scene for the v5 forward renderer.
  */
 namespace {
 
@@ -262,6 +262,18 @@ void writeShadowDepthSample(std::ofstream &file, std::string_view name,
     });
 }
 
+/**
+ * @brief Checks whether GPU-dependent verification exits should be suppressed.
+ * @param argc Number of command-line arguments.
+ * @param argv Command-line argument vector.
+ * @return True when the example should only validate CPU scene setup and startup.
+ */
+[[nodiscard]] bool skipGpuAsserts(int argc, char **argv) {
+    return std::any_of(argv + 1, argv + argc, [](const char *argument) {
+        return std::string_view{argument} == "--skip-gpu-asserts";
+    });
+}
+
 class LightShadowDebugSystem final {
 public:
     explicit LightShadowDebugSystem(std::filesystem::path output_path) : output_path_{std::move(output_path)} {}
@@ -461,6 +473,7 @@ int main(int argc, char **argv) {
 
     const auto reference_path = outputPath(argc, argv);
     const auto inspect = inspectMode(argc, argv);
+    const auto skip_gpu_asserts = skipGpuAsserts(argc, argv);
     auto engine = vve::makeEngine(
         vve::ApplicationName{"light-shadow-debug"},
         vve::MaxFrames{.value = vve::FrameCount{.value = inspect ? 0U : 1U}},
@@ -607,9 +620,9 @@ int main(int argc, char **argv) {
         std::cerr << "[light_shadow_debug] could not write " << reference_path << '\n';
         return 2;
     }
-    if (!inspect && (!gpu_verified || !all_gpu_samples_match)) { return 3; }
-    if (!inspect && (!shadow_verified || !all_shadow_samples_match)) { return 4; }
-    if (!inspect && (!spot_shadow_verified || !all_spot_shadow_samples_match)) { return 5; }
-    if (!inspect && (!point_shadow_verified || !all_point_shadow_samples_match)) { return 6; }
+    if (!inspect && !skip_gpu_asserts && (!gpu_verified || !all_gpu_samples_match)) { return 3; }
+    if (!inspect && !skip_gpu_asserts && (!shadow_verified || !all_shadow_samples_match)) { return 4; }
+    if (!inspect && !skip_gpu_asserts && (!spot_shadow_verified || !all_spot_shadow_samples_match)) { return 5; }
+    if (!inspect && !skip_gpu_asserts && (!point_shadow_verified || !all_point_shadow_samples_match)) { return 6; }
     return 0;
 }

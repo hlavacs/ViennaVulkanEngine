@@ -5,7 +5,7 @@
 	"cmake.showSystemKits": true,
 	"cmake.buildDirectory": "${workspaceFolder}/build/vscode-${variant:buildType}",
 	"cmake.configureSettings": {
-		"VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "v4",
+		"VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "v5",
 		"VVE_VCPKG_TRIPLET": "x64-windows",
 		"VVE_DEFAULT_VULKAN_ICD": "system"
 	}

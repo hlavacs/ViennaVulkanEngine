@@ -110,7 +110,7 @@ export namespace vve {
 
    /// @brief Human-readable application name selected by the user program.
    struct ApplicationName {
-      std::string value{"v4"}; ///< Name shown in diagnostics and default window titles.
+      std::string value{"v5"}; ///< Name shown in diagnostics and default window titles.
    };
 
    /// @brief Optional frame cap; zero lets the engine run until a close request.
@@ -126,7 +126,7 @@ export namespace vve {
 
    /// @brief Compact engine configuration kept for simple setup paths.
    struct EngineConfig {
-      std::string application_name{"v4"}; ///< Human-readable application name.
+      std::string application_name{"v5"}; ///< Human-readable application name.
       FrameCount max_frames{};            ///< Maximum frame count; zero means uncapped.
    };
 

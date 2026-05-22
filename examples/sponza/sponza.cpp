@@ -4,7 +4,7 @@ import VEEngine;
 
 /**
  * @file
- * @brief v4 Sponza runtime stub: creates a window and reports the scene path.
+ * @brief v5 Sponza runtime stub: creates a window and reports the scene path.
  */
 
 namespace {
@@ -108,7 +108,7 @@ public:
 
     template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
         std::cout << '[' << name() << "] scene path: " << scene_path_.string() << '\n';
-        std::cout << '[' << name() << "] v4 runtime shell is active\n";
+        std::cout << '[' << name() << "] v5 runtime shell is active\n";
         auto assets = world.template get<vve::AssetSystem>();
         const auto loaded_scene = assets.loadScene(scene_path_);
         if (!loaded_scene) {
@@ -135,7 +135,7 @@ public:
                   << " textures=" << *textures
                   << " lights=" << *lights
                   << " cameras=" << *cameras << '\n';
-        std::cout << '[' << name() << "] v4 resource upload and rendering are not implemented yet\n";
+        std::cout << '[' << name() << "] v5 resource upload and rendering are not implemented yet\n";
         printWindowInventory(world);
         return {};
     }
@@ -175,7 +175,7 @@ private:
 } // namespace
 
 /**
- * @brief Runs the v4 Sponza stub.
+ * @brief Runs the v5 Sponza stub.
  * @return Process exit code expected by the example launcher.
  */
 int main(int argc, char** argv) {
