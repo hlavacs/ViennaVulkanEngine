@@ -15,6 +15,6 @@ void main(uint3 threadId: SV_DispatchThreadID) {
     LightVertex lightVertex = lightVertexCache[launchID.x];
 
     // needs VK_EXT_shader_atomic_float and VK_EXT_subgroup_optimize_atomic_reduce
-    importanceSum[0].reduceAdd(lightVertex.importance);
+    importanceSum[0].add(lightVertex.importance);
 }
 

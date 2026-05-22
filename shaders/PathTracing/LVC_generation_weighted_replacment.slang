@@ -2,6 +2,13 @@ import Bidrirectional_Raytracing;
 import raytracing;
 import Random;
 import LightVertex;
+import LVC_replacment;
+
+[[vk::binding(0, 2)]]
+RWStructuredBuffer<Atomic<float>> importanceSum;
+
+[[vk::binding(1, 2)]]
+RWStructuredBuffer<Atomic<float>> keepSum;
 
 [shader("raygeneration")]
 void rgenMain()
@@ -14,24 +21,23 @@ void rgenMain()
 
     Sampler sampler = Sampler(pixelSeed);
 
-    
-    if (sampler.UniformFloat() < 0.05 || isFirstFrame == 1) {
-        LightVertex lightVertex = generateLightVertex(sampler);
+    LightVertex lightVertexOld = lightVertexCache[launchID.x];
 
-        lightVertexCache[launchID.x] = lightVertex;
-    } else {
-        lightVertexCache[launchID.x].age++;
-    }
+    float importanceSumF = importanceSum[0].load();
+
+    float pKeep = getKeepProbability(lightVertexOld.importance, importanceSumF, lightVertexCacheSize); 
+    float avgKeep = keepSum[0].load() / lightVertexCacheSize;
+
+    if (sampler.UniformFloat() < pKeep || isFirstFrame == 1) {
+        lightVertexOld.importance = 0.0;
+        lightVertexOld.age++;
+        lightVertexOld.selectionPdf *= (pKeep / avgKeep);
+
+        lightVertexCache[launchID.x] = lightVertexOld;
         
-
-        /*
-    if (isFirstFrame == 1) {
-        LightVertex lightVertex = generateLightVertex(sampler);
-
-        lightVertexCache[launchID.x] = lightVertex;
     } else {
-        lightVertexCache[launchID.x].age++;
+        LightVertex lightVertexNew = generateLightVertex(sampler);
+        lightVertexCache[launchID.x] = lightVertexNew;       
     }
-        */
 }
 

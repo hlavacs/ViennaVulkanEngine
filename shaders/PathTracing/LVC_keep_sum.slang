@@ -7,8 +7,14 @@ RWStructuredBuffer<LightVertex> lightVertexCache;
 [[vk::binding(1, 0)]]
 RWStructuredBuffer <Atomic<float>> importanceSum;
 
-[[vk::binding(1, 0)]]
+[[vk::binding(2, 0)]]
 RWStructuredBuffer<Atomic<float>> keepSum;
+
+[[vk::binding(3, 0)]]
+cbuffer UniformBufferBidirectional
+{
+    uint lightVertexCacheSize;
+};
 
 //The compute shader cpu side has the tread count per work group hardcoded this needs to be changed!!!!!!!!
 [shader("compute")]
@@ -20,9 +26,9 @@ void main(uint3 threadId: SV_DispatchThreadID) {
 
     float importanceSumF = importanceSum[0].load();
 
-    float pKeep = getKeepProbability(lightVertex.importance, importanceSumF);
+    float pKeep = getKeepProbability(lightVertex.importance, importanceSumF, lightVertexCacheSize);
 
     // needs VK_EXT_shader_atomic_float and VK_EXT_subgroup_optimize_atomic_reduce
-    keepSum[0].reduceAdd(pKeep);
+    keepSum[0].add(pKeep);
 }
 

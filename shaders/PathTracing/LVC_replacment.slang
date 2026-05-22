@@ -1,8 +1,6 @@
-import Bidrirectional_Raytracing;
 
 
-
-float getKeepProbability(float importance, float importanceSum) {
+float getKeepProbability(float importance, float importanceSum, uint lightVertexCacheSize) {
 
     float replacementRate = 0.1;
     float k = 5.0;

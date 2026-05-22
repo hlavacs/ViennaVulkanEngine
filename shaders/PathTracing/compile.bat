@@ -8,6 +8,10 @@ slangc combinePass.slang -entry main -target spirv -o combinePass.spv
 
 slangc reprojectionPass.slang -entry main -target spirv -o reprojectionPass.spv
 
+slangc LVC_importance_sum.slang -entry main -target spirv -o importanceReduction.spv
+
+slangc LVC_keep_sum.slang -entry main -target spirv -o keepProbReduction.spv
+
 rem --- Raygen shader ---
 slangc rtbasic.slang -entry rgenMain -target spirv -o raygen.rgen.spv -DRAY_TRACING
 
@@ -37,6 +41,9 @@ slangc LVC_generation_Full.slang -entry rgenMain -target spirv -o raygen_light_v
 
 rem --- Raygen shader ---
 slangc LVC_generation_random_replacment.slang -entry rgenMain -target spirv -o raygen_light_vertex_generation_random_replacment.rgen.spv -DRAY_TRACING
+
+rem --- Raygen shader ---
+slangc LVC_generation_weighted_replacment.slang -entry rgenMain -target spirv -o raygen_light_vertex_generation_weighted_replacment.rgen.spv -DRAY_TRACING
 
 rem --- Raygen shader ---
 slangc RestirTemporalLVC.slang -entry rgenMain -target spirv -o raygen_restirLVC_temporal.rgen.spv -DRAY_TRACING

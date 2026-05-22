@@ -181,13 +181,29 @@ namespace vve {
     }
 
     void RendererRayTraced::createLightVertexGenerationDescriptors() {
-        lightVertexGenerationFullDescriptors = new DescriptorManager(device);
+        lightVertexGenerationDescriptors = new DescriptorManager(device);
 
-        lightVertexGenerationFullDescriptors->addDescriptorInput(lightVertexCache->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        lightVertexGenerationDescriptors->addDescriptorInput(importanceSum->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        lightVertexGenerationDescriptors->addDescriptorInput(keepProbSum->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
-        lightVertexGenerationFullDescriptors->finalize();
-        lightVertexGenerationFullDescriptors->update();
+        lightVertexGenerationDescriptors->finalize();
+        lightVertexGenerationDescriptors->update();
     }
+
+    void RendererRayTraced::createReductionDescriptors() {
+        reductionDescriptors = new DescriptorManager(device);
+
+        reductionDescriptors->addDescriptorInput(lightVertexCache->getDescriptorInput(0, VK_SHADER_STAGE_COMPUTE_BIT));
+        reductionDescriptors->addDescriptorInput(importanceSum->getDescriptorInput(1, VK_SHADER_STAGE_COMPUTE_BIT));
+        reductionDescriptors->addDescriptorInput(keepProbSum->getDescriptorInput(2, VK_SHADER_STAGE_COMPUTE_BIT));
+        PerFrameDescriptorPlacment* uniformBidirectionalBufferDescriptors = getBidirectionalUniformBufferDescriptorInput(3, VK_SHADER_STAGE_COMPUTE_BIT);
+        reductionDescriptors->addDescriptorInput(uniformBidirectionalBufferDescriptors);
+
+        reductionDescriptors->finalize();
+        reductionDescriptors->update();
+    }
+
+    
 
     void RendererRayTraced::createCombinePassDescriptors() {
         combinePassDescriptors = new DescriptorManager(device);
@@ -523,10 +539,6 @@ namespace vve {
         rasterizer->bindDepthRenderTarget(depthTarget);
         rasterizer->initGraphicsPipeline();
 
-
-
-
-
         rayTracingTargets.push_back(albedoTarget);
         rayTracingTargets.push_back(normalTarget);
         rayTracingTargets.push_back(specTarget);
@@ -554,17 +566,31 @@ namespace vve {
         raytracer->initRayTracingPipeline();
 
 
-
+        importanceSum = new RenderTargetBuffer(1, 1, glm::vec4(0.0f), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
+        keepProbSum = new RenderTargetBuffer(1, 1, glm::vec4(0.0f), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
 
         createLightVertexGenerationDescriptors();
         createBidirectionalDescriptors();
 
 
-        lightVertexGenerationFull = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, lightVertexGenerationFullDescriptors, lightVertexCacheSize, "shaders/PathTracing/raygen_light_vertex_generation_full.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+        lightVertexGenerationFull = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, lightVertexGenerationDescriptors, lightVertexCacheSize, "shaders/PathTracing/raygen_light_vertex_generation_full.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
         lightVertexGenerationFull->initRayTracingPipeline();
 
-        lightVertexGenerationRandomReplacment = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, lightVertexGenerationFullDescriptors, lightVertexCacheSize, "shaders/PathTracing/raygen_light_vertex_generation_random_replacment.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+        lightVertexGenerationRandomReplacment = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, lightVertexGenerationDescriptors, lightVertexCacheSize, "shaders/PathTracing/raygen_light_vertex_generation_random_replacment.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
         lightVertexGenerationRandomReplacment->initRayTracingPipeline();
+
+
+        //weighted Replacment
+        createReductionDescriptors();
+        importanceReductionPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, lightVertexCacheSize, VkExtent2D(256, 1), "shaders/PathTracing/importanceReduction.spv");
+        keepProbReductionPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, lightVertexCacheSize, VkExtent2D(256, 1), "shaders/PathTracing/keepProbReduction.spv");
+
+        importanceReductionPass->initComputePipeline();
+        keepProbReductionPass->initComputePipeline();
+
+        lightVertexGenerationWeightedReplacment = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, lightVertexGenerationDescriptors, lightVertexCacheSize, "shaders/PathTracing/raygen_light_vertex_generation_weighted_replacment.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+        lightVertexGenerationWeightedReplacment->initRayTracingPipeline();
+
 
         createBidirectionalTargetsDescriptors();
 
@@ -705,7 +731,7 @@ namespace vve {
 
 
         createReprojectPassDescriptors();
-        reprojectionPass = new PipelineFilter(device, physicalDevice, commandManager, reprojectionPassDescriptors, swapchain->getExtent(), "shaders/PathTracing/reprojectionPass.spv");
+        reprojectionPass = new PipelineFilter(device, physicalDevice, commandManager, reprojectionPassDescriptors, swapchain->getExtent(), VkExtent2D(16,16), "shaders/PathTracing/reprojectionPass.spv");
         reprojectionPass->bindRenderTarget(positionTarget);
         reprojectionPass->bindRenderTarget(positionPreviousTarget);
         reprojectionPass->bindRenderTarget(lightingPreviousTarget);
@@ -718,7 +744,7 @@ namespace vve {
 
 
         createCombinePassDescriptors();
-        combinePass = new PipelineFilter(device, physicalDevice, commandManager, combinePassDescriptors, swapchain->getExtent(), "shaders/PathTracing/combinePass.spv");
+        combinePass = new PipelineFilter(device, physicalDevice, commandManager, combinePassDescriptors, swapchain->getExtent(), VkExtent2D(16, 16), "shaders/PathTracing/combinePass.spv");
 
         combinePass->bindRenderTarget(RtTarget);
         combinePass->bindRenderTarget(albedoTarget);
@@ -834,7 +860,10 @@ namespace vve {
         //restirGI_spatial->recordCommandBuffer(currentFrame);
 
         //lightVertexGenerationFull->recordCommandBuffer(currentFrame);
-        lightVertexGenerationRandomReplacment->recordCommandBuffer(currentFrame);
+        importanceReductionPass->recordCommandBuffer(currentFrame);
+        keepProbReductionPass->recordCommandBuffer(currentFrame);
+        //lightVertexGenerationRandomReplacment->recordCommandBuffer(currentFrame);
+        lightVertexGenerationWeightedReplacment->recordCommandBuffer(currentFrame);
         //very clearly biased!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         //bidirectionalPathTracing->recordCommandBuffer(currentFrame);
 
@@ -1032,6 +1061,12 @@ namespace vve {
         indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
         indexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
 
+        VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomicFloatFeatures{};
+        atomicFloatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
+
+        atomicFloatFeatures.shaderBufferFloat32AtomicAdd = VK_TRUE;
+        atomicFloatFeatures.shaderBufferFloat32Atomics = VK_TRUE;
+
 
         // Build the selector with your requirements
         auto phys_device_ret = selector
@@ -1046,6 +1081,7 @@ namespace vve {
             .add_required_extension_features(accelFeatures)
             .add_required_extension_features(rtPipelineFeatures)
             .add_required_extension_features(bdaFeatures)
+            .add_required_extension_features(atomicFloatFeatures)
             .select();
 
         // Handle errors

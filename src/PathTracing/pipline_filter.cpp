@@ -22,9 +22,9 @@ namespace vve {
     }
 
     PipelineFilter::PipelineFilter(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager,
-        DescriptorManager* targetsDescriptors, VkExtent2D extent, std::string shaderFile)
+        DescriptorManager* targetsDescriptors, VkExtent2D extent, VkExtent2D workgroupSize, std::string shaderFile)
         : device(device), physicalDevice(physicalDevice), commandManager(commandManager),
-        targetsDescriptors(targetsDescriptors), extent(extent), shaderFile(shaderFile){}
+        targetsDescriptors(targetsDescriptors), extent(extent), workgroupSize(workgroupSize), shaderFile(shaderFile){}
 
     void PipelineFilter::setExtent(VkExtent2D extent) {
         this->extent = extent;
@@ -106,8 +106,8 @@ namespace vve {
 
         // Calculate dispatch groups based on image extent and your shader's local_size
         // Assuming a standard local_size_x = 16, local_size_y = 16 in your compute shader
-        uint32_t groupCountX = (extent.width + 15) / 16;
-        uint32_t groupCountY = (extent.height + 15) / 16;
+        uint32_t groupCountX = (extent.width + (workgroupSize.width - 1)) / workgroupSize.width;
+        uint32_t groupCountY = (extent.height + (workgroupSize.height -1)) / workgroupSize.height;
 
         // Dispatch compute workload
         vkCmdDispatch(cmd, groupCountX, groupCountY, 1);

@@ -16,8 +16,6 @@ RWStructuredBuffer<LightVertex> lightVertexCache;
 cbuffer UniformBufferBidirectional
 {
     uint lightVertexCacheSize;
-    float importanceSum;
-    float pKeepSum;
 };
 
     // this only works with consistent instance indices which is bad

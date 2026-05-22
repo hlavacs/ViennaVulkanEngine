@@ -62,6 +62,8 @@ namespace vve {
 		void createBidirectionalTargetsDescriptors();
 		void createLightVertexGenerationDescriptors();
 
+		void createReductionDescriptors();
+
 		void createCombinePassDescriptors();
 		void createReprojectPassDescriptors();
 		void createRestirTemporalDescriptors();
@@ -93,7 +95,8 @@ namespace vve {
 		VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME,
 		VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
 		VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
-		VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME
+		VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
+		VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME
 		};
 
 		vkb::Instance vkbInstance;
@@ -148,6 +151,18 @@ namespace vve {
 		PipelineFilter* combinePass;
 
 
+		//reduction piplines
+		PipelineFilter* importanceReductionPass;
+		PipelineFilter* keepProbReductionPass;
+
+		RenderTargetBuffer<glm::vec4>* importanceSum;
+		RenderTargetBuffer<glm::vec4>* keepProbSum;
+
+		DescriptorManager* reductionDescriptors;
+
+
+
+
 		RenderTarget* albedoTarget;
 		RenderTarget* normalTarget;
 		RenderTarget* specTarget;
@@ -163,6 +178,8 @@ namespace vve {
 		RenderTargetBuffer<ReservoirLVC>* reservoirLVC_A;
 		RenderTargetBuffer<ReservoirLVC>* reservoirLVC_B;
 
+
+
 		VkExtent2D lightVertexCacheSize;
 		RenderTargetBuffer<LightVertex>* lightVertexCache;
 
@@ -177,9 +194,10 @@ namespace vve {
 
 		PiplineRaytraced* lightVertexGenerationFull;
 		PiplineRaytraced* lightVertexGenerationRandomReplacment;
+		PiplineRaytraced* lightVertexGenerationWeightedReplacment;
 		PiplineRaytraced* bidirectionalPathTracing;
 
-		DescriptorManager* lightVertexGenerationFullDescriptors;
+		DescriptorManager* lightVertexGenerationDescriptors;
 		DescriptorManager* bidirectionalTargetDescriptors;
 
 		DescriptorManager* restir_temporal_descriptors;
