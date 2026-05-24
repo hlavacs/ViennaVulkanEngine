@@ -582,8 +582,10 @@ namespace vve {
 
         //weighted Replacment
         createReductionDescriptors();
-        importanceReductionPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, lightVertexCacheSize, VkExtent2D(256, 1), "shaders/PathTracing/importanceReduction.spv");
-        keepProbReductionPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, lightVertexCacheSize, VkExtent2D(256, 1), "shaders/PathTracing/keepProbReduction.spv");
+
+        //missing pipline barrier The first one needs compute shader the second one raygen shader!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        importanceReductionPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, lightVertexCacheSize, VkExtent2D(256, 1), "shaders/PathTracing/importanceReduction.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        keepProbReductionPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, lightVertexCacheSize, VkExtent2D(256, 1), "shaders/PathTracing/keepProbReduction.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 
         importanceReductionPass->initComputePipeline();
         keepProbReductionPass->initComputePipeline();
@@ -731,7 +733,7 @@ namespace vve {
 
 
         createReprojectPassDescriptors();
-        reprojectionPass = new PipelineFilter(device, physicalDevice, commandManager, reprojectionPassDescriptors, swapchain->getExtent(), VkExtent2D(16,16), "shaders/PathTracing/reprojectionPass.spv");
+        reprojectionPass = new PipelineFilter(device, physicalDevice, commandManager, reprojectionPassDescriptors, swapchain->getExtent(), VkExtent2D(16,16), "shaders/PathTracing/reprojectionPass.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
         reprojectionPass->bindRenderTarget(positionTarget);
         reprojectionPass->bindRenderTarget(positionPreviousTarget);
         reprojectionPass->bindRenderTarget(lightingPreviousTarget);
@@ -744,7 +746,7 @@ namespace vve {
 
 
         createCombinePassDescriptors();
-        combinePass = new PipelineFilter(device, physicalDevice, commandManager, combinePassDescriptors, swapchain->getExtent(), VkExtent2D(16, 16), "shaders/PathTracing/combinePass.spv");
+        combinePass = new PipelineFilter(device, physicalDevice, commandManager, combinePassDescriptors, swapchain->getExtent(), VkExtent2D(16, 16), "shaders/PathTracing/combinePass.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
         combinePass->bindRenderTarget(RtTarget);
         combinePass->bindRenderTarget(albedoTarget);

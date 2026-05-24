@@ -15,6 +15,8 @@ namespace vve {
         VkExtent2D extent;
         VkExtent2D workgroupSize;
 
+        VkPipelineStageFlagBits barrierStage;
+
         std::vector<RenderTarget*> renderTargets;
 
         std::string shaderFile;
@@ -53,7 +55,7 @@ namespace vve {
          * @param extent Render area extent.
          */
         PipelineFilter(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager,
-            DescriptorManager* targetsDescriptors, VkExtent2D extent, VkExtent2D workgroupSize, std::string shaderFile);
+            DescriptorManager* targetsDescriptors, VkExtent2D extent, VkExtent2D workgroupSize, std::string shaderFile, VkPipelineStageFlagBits barrierStage);
 
         /**
          * Update the render extent.

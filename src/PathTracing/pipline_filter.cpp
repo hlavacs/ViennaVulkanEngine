@@ -22,9 +22,9 @@ namespace vve {
     }
 
     PipelineFilter::PipelineFilter(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager,
-        DescriptorManager* targetsDescriptors, VkExtent2D extent, VkExtent2D workgroupSize, std::string shaderFile)
+        DescriptorManager* targetsDescriptors, VkExtent2D extent, VkExtent2D workgroupSize, std::string shaderFile, VkPipelineStageFlagBits barrierStage)
         : device(device), physicalDevice(physicalDevice), commandManager(commandManager),
-        targetsDescriptors(targetsDescriptors), extent(extent), workgroupSize(workgroupSize), shaderFile(shaderFile){}
+        targetsDescriptors(targetsDescriptors), extent(extent), workgroupSize(workgroupSize), shaderFile(shaderFile), barrierStage(barrierStage){}
 
     void PipelineFilter::setExtent(VkExtent2D extent) {
         this->extent = extent;
@@ -118,11 +118,11 @@ namespace vve {
         barrier.srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-
+        //needs user definable pipline barrier!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
         vkCmdPipelineBarrier(
             cmd,
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,   // Source stage: Compute
-            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,  // Dest stage
+            barrierStage,  // Dest stage
             0,
             1, &barrier,
             0, nullptr,
