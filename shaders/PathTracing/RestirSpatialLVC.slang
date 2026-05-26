@@ -193,17 +193,14 @@ void rgenMain()
 
         if (IsReservoirValidLVC(reservoirLVC))
         {
-            float3 radiance = getOccludedLightContributionFromConnection(its, material, reservoirLVC.LVCIndex);
+            float3 radiance = getOccludedLightContributionFromConnectionNoPDF(its, material, reservoirLVC.LVCIndex);
             LightVertex lightVertex = lightVertexCache[reservoirLVC.LVCIndex];
-            //output += (radiance * reservoirLVC.lightWeight) / lightVertex.selectionPdf;
-            output += (radiance * reservoirLVC.lightWeight);
-            //right now importance is not an atomic, so the addition will give false results, which does not lead to Bias, but can
-            //lead to increased noise. It is advisable to seperate importance from the Light Vertex, since no local copies of atomics 
-            //can be created.
-            lightVertexCache[reservoirLVC.LVCIndex].importance += length(radiance) * reservoirLVC.lightWeight;
-
-
-
+            output += (radiance * reservoirLVC.lightWeight) / lightVertex.selectionPdf;
+            //output += (radiance * reservoirLVC.lightWeight);
+            // right now importance is not an atomic, so the addition will give false results, which does not lead to Bias, but can
+            // lead to increased noise. It is advisable to seperate importance from the Light Vertex, since no local copies of atomics
+            // can be created.
+            lightVertexCache[reservoirLVC.LVCIndex].importance += (length(radiance) * reservoirLVC.lightWeight) / lightSourcePdf(lightBuffer, lightVertex.lightIndex);
         } else {
             reservoirLVC = createEmptyReservoirLVC();
         }

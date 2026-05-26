@@ -362,6 +362,21 @@ namespace vve {
 
         /** @return Element count currently allocated. */
         size_t getCount() const { return count; }
+
+
+        std::vector<T> getData() {
+            vkDeviceWaitIdle(device);    
+            std::vector<T> result(count);
+            size_t byteCount = count * sizeof(T);
+
+            // Copy data from mapped memory into vector
+            std::memcpy(result.data(), mappedMemory, byteCount);
+
+            vkDeviceWaitIdle(device);
+            return result;
+        }
+
+
     };
 
 

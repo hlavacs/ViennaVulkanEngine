@@ -344,7 +344,7 @@ public  LightSource chooseRandomLightSourceWeighted(in StructuredBuffer<LightSou
     return chosenLight;
 }
 
-float lightSourcePdf(in StructuredBuffer<LightSource> lightSources, in uint index) {
+public float lightSourcePdf(in StructuredBuffer<LightSource> lightSources, in uint index) {
     LightSource light = lightSources[index];
     if (index == 0) {
         return light.accumulativeSampleWeight;

@@ -155,8 +155,8 @@ namespace vve {
 		PipelineFilter* importanceReductionPass;
 		PipelineFilter* keepProbReductionPass;
 
-		RenderTargetBuffer<glm::vec4>* importanceSum;
-		RenderTargetBuffer<glm::vec4>* keepProbSum;
+		RenderTargetBufferDebug<glm::vec4>* importanceSum;
+		RenderTargetBufferDebug<glm::vec4>* keepProbSum;
 
 		DescriptorManager* reductionDescriptors;
 

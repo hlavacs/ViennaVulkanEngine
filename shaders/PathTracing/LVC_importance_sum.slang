@@ -16,5 +16,7 @@ void main(uint3 threadId: SV_DispatchThreadID) {
 
     // needs VK_EXT_shader_atomic_float and VK_EXT_subgroup_optimize_atomic_reduce
     importanceSum[0].add(lightVertex.importance);
+
+    //importanceSum[0] = 1000.0;
 }
 

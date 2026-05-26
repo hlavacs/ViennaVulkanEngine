@@ -74,7 +74,7 @@ LightVertex generateLightVertex(inout Sampler sampler) {
         lightVertex.lightIndex = lightIndex;
         lightVertex.radiance = float4(0.0);
         lightVertex.samplePosition = float4(lightSurfacePosition, 1.0);
-        lightVertex.selectionPdf = 1.0;
+        lightVertex.selectionPdf = pdf;
         lightVertex.normal = float4(0.0);
         lightVertex.tangent = float4(0.0);
         lightVertex.materialIndex = 0;
@@ -99,7 +99,10 @@ LightVertex generateLightVertex(inout Sampler sampler) {
 
     // lightVertex.radiance = (light.emission / (distance * distance));
     //lightVertex.radiance = light.emission;
-    lightVertex.radiance = light.emission / (pdf);
+    //pdf division later
+    //lightVertex.radiance = light.emission / (pdf);
+
+    lightVertex.radiance = light.emission;
     //lightVertex.radiance = light.emission / (pdf);
     lightVertex.samplePosition = float4(lightSurfacePosition, 1.0);
     lightVertex.selectionPdf = 1.0;
@@ -235,7 +238,9 @@ float3 getUnoccludedLightContributionFromConnection(in IntersectionRecord its, i
     //normals are flipped on backfacing geometry resulting in light leaking through
     float3 radiance = getUnoccludedLightContribution(its, material, emitterRecordFromConnection);
 
-    return radiance;
+    return radiance / lightVertex.selectionPdf;
+    //return radiance / lightSourcePdf(lightBuffer, lightVertex.lightIndex);
+    
 }
 
 // this code sometimes still returns false posiitives iit is completly unclear why
@@ -311,6 +316,58 @@ float3 getOccludedLightContributionFromConnection(in IntersectionRecord its, in 
     }
 
     float3 radiance = getUnoccludedLightContribution(its, material, emitterRecordFromConnection);
+
+    return radiance / lightVertex.selectionPdf;
+
+    //return radiance / lightSourcePdf(lightBuffer, lightVertex.lightIndex);
+}
+
+
+float3 getOccludedLightContributionFromConnectionNoPDF(in IntersectionRecord its, in MaterialRecord material, in uint lightVertexIndex) {
+
+    LightVertex lightVertex = lightVertexCache[lightVertexIndex];
+
+    if (length(lightVertex.radiance) <= 0.0) {
+        return float3(0.0);
+    }
+
+    IntersectionRecord itsConnection = getIntersectionRecordFromLightVertex(lightVertex, its);
+
+    if (length(itsConnection.position - its.position) < 0.01) {
+        return float3(0.0);
+    }
+
+    // if the primary and secundary normal are not facing each other they cannot be connected
+    /*
+    if (dot(its.normal, itsConnection.normal) > 0.0) {
+        return float3(0.0);
+    }
+        */
+
+    Material materialConnection = materials[itsConnection.materialIdx];
+    MaterialRecord materialRecordConnection = getMaterialProperties(materialConnection, textures, itsConnection.uv, itsConnection.frame);
+
+    EmitterRecord emitterRecord = getEmitterRecordFromLightVertex(lightVertex);
+    EmitterRecord emitterRecordFromConnection = getEmitterRecordFromConnection(emitterRecord, its, itsConnection, materialRecordConnection);
+
+    // check if we hit a backface
+    if (dot(itsConnection.normal, -emitterRecordFromConnection.direction) < 0.0) {
+        return float3(0.0);
+    }
+
+    /*
+    if (dot(materialRecordConnection.shadingFrame.n, -emitterRecordFromConnection.direction) < 0.0) {
+        return float3(0.0);
+    }
+        */
+
+    if (isSurfacePointOccludedTest(its, itsConnection, emitterRecordFromConnection)) {
+        return float3(0.0);
+    }
+
+    float3 radiance = getUnoccludedLightContribution(its, material, emitterRecordFromConnection);
+
+    // return radiance / lightVertex.selectionPdf;
 
     return radiance;
 }

@@ -425,7 +425,7 @@ namespace vve {
         commandManager = new CommandManager(device, physicalDevice, surface, graphicsQueue);
         swapchain = new SwapChain(physicalDevice, device, surface, presentQueue, commandManager, m_windowSDLState().m_sdlWindow);
 
-        lightVertexCacheSize = VkExtent2D(200000, 1);
+        lightVertexCacheSize = VkExtent2D(50000, 1);
 
         //textureManager = new TextureManager(device, physicalDevice, commandManager);
 
@@ -566,8 +566,8 @@ namespace vve {
         raytracer->initRayTracingPipeline();
 
 
-        importanceSum = new RenderTargetBuffer(1, 1, glm::vec4(0.0f), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
-        keepProbSum = new RenderTargetBuffer(1, 1, glm::vec4(0.0f), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
+        importanceSum = new RenderTargetBufferDebug(1, 1, glm::vec4(0.0f), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
+        keepProbSum = new RenderTargetBufferDebug(1, 1, glm::vec4(0.0f), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, commandManager, device, physicalDevice);
 
         createLightVertexGenerationDescriptors();
         createBidirectionalDescriptors();
@@ -863,11 +863,18 @@ namespace vve {
 
         //lightVertexGenerationFull->recordCommandBuffer(currentFrame);
         importanceReductionPass->recordCommandBuffer(currentFrame);
+
+        //std::vector<glm::vec4> importanceSumCapture = importanceSum->getData(currentFrame);
+        //std::cout << "The importance Sum is: " << importanceSumCapture[0].x << "\n";
+
         keepProbReductionPass->recordCommandBuffer(currentFrame);
-        //lightVertexGenerationRandomReplacment->recordCommandBuffer(currentFrame);
+        //std::vector<glm::vec4> keepSumCapture = keepProbSum->getData(currentFrame);
+        //std::cout << "The keep Sum is: " << keepSumCapture[0].x << "\n";
+
         lightVertexGenerationWeightedReplacment->recordCommandBuffer(currentFrame);
-        //very clearly biased!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
         //bidirectionalPathTracing->recordCommandBuffer(currentFrame);
+        //lightVertexGenerationRandomReplacment->recordCommandBuffer(currentFrame);
 
         restirLVC_temporal->recordCommandBuffer(currentFrame);
         restirLVC_spatial->recordCommandBuffer(currentFrame);
