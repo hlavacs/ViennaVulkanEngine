@@ -9,80 +9,80 @@ import VEEngine.Error;
 import VEEngine.Types;
 
 /**
- * @file
- * @brief Public ECS contract backed by the selected engine implementation.
- */
+	* @file
+	* @brief Public ECS contract backed by the selected engine implementation.
+	*/
 export namespace vve {
 
-   using DefaultECSTraits = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::DefaultECSTraits; ///< Facade ECS traits.
+	using DefaultECSTraits = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::DefaultECSTraits;	///< Facade ECS traits.
 
-   template <typename... TSystems> class Engine;
-   template <typename... TObjects> class World;
+	template <typename... TSystems> class Engine;
+	template <typename... TObjects> class World;
 
-   template <typename TTraits = DefaultECSTraits> class BasicECS {
-      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicECS<TTraits>;
+	template <typename TTraits = DefaultECSTraits> class BasicECS {
+		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicECS<TTraits>;
 
-   public:
-      explicit BasicECS(Impl &implementation) : impl_{implementation} {}
-      BasicECS(const BasicECS &) = default;
-      BasicECS(BasicECS &&) noexcept = default;
-      BasicECS &operator=(const BasicECS &) = delete;
-      BasicECS &operator=(BasicECS &&) noexcept = delete;
+	public:
+		explicit BasicECS(Impl &implementation) : impl_{implementation} {}
+		BasicECS(const BasicECS &) = default;
+		BasicECS(BasicECS &&) noexcept = default;
+		BasicECS &operator=(const BasicECS &) = delete;
+		BasicECS &operator=(BasicECS &&) noexcept = delete;
 
-      [[nodiscard]] Entity create() { return impl_.create(); }
-      [[nodiscard]] bool exists(Entity entity) const { return impl_.exists(entity); }
-      [[nodiscard]] std::expected<void, Error> erase(Entity entity) { return impl_.erase(entity); }
+		[[nodiscard]] Entity create() { return impl_.create(); }
+		[[nodiscard]] bool exists(Entity entity) const { return impl_.exists(entity); }
+		[[nodiscard]] std::expected<void, Error> erase(Entity entity) { return impl_.erase(entity); }
 
-      template <typename T> [[nodiscard]] std::expected<void, Error> add(Entity entity, T component) {
-         return impl_.template add<T>(entity, std::move(component));
-      }
+		template <typename T> [[nodiscard]] std::expected<void, Error> add(Entity entity, T component) {
+			return impl_.template add<T>(entity, std::move(component));
+		}
 
-      template <typename T> [[nodiscard]] std::expected<T, Error> get(Entity entity) const {
-         return impl_.template get<T>(entity);
-      }
+		template <typename T> [[nodiscard]] std::expected<T, Error> get(Entity entity) const {
+			return impl_.template get<T>(entity);
+		}
 
-      template <typename T> [[nodiscard]] std::expected<std::optional<T>, Error> tryGet(Entity entity) const {
-         return impl_.template tryGet<T>(entity);
-      }
+		template <typename T> [[nodiscard]] std::expected<std::optional<T>, Error> tryGet(Entity entity) const {
+			return impl_.template tryGet<T>(entity);
+		}
 
-      template <typename T> [[nodiscard]] std::expected<void, Error> put(Entity entity, T component) {
-         return impl_.template put<T>(entity, std::move(component));
-      }
+		template <typename T> [[nodiscard]] std::expected<void, Error> put(Entity entity, T component) {
+			return impl_.template put<T>(entity, std::move(component));
+		}
 
-      template <typename T> [[nodiscard]] std::expected<bool, Error> has(Entity entity) const {
-         return impl_.template has<T>(entity);
-      }
+		template <typename T> [[nodiscard]] std::expected<bool, Error> has(Entity entity) const {
+			return impl_.template has<T>(entity);
+		}
 
-      template <typename T> [[nodiscard]] std::expected<void, Error> remove(Entity entity) {
-         return impl_.template remove<T>(entity);
-      }
+		template <typename T> [[nodiscard]] std::expected<void, Error> remove(Entity entity) {
+			return impl_.template remove<T>(entity);
+		}
 
-      template <typename... T> [[nodiscard]] Vector<Entity> view() const {
-         Vector<Entity> result{};
-         for (const auto entity : impl_.template view<T...>()) {
-            result.push_back(Entity{entity});
-         }
-         return result;
-      }
+		template <typename... T> [[nodiscard]] Vector<Entity> view() const {
+			Vector<Entity> result{};
+			for (const auto entity : impl_.template view<T...>()) {
+				result.push_back(Entity{entity});
+			}
+			return result;
+		}
 
-   private:
-      [[nodiscard]] Impl &impl() { return impl_; }
-      [[nodiscard]] const Impl &impl() const { return impl_; }
+	private:
+		[[nodiscard]] Impl &impl() { return impl_; }
+		[[nodiscard]] const Impl &impl() const { return impl_; }
 
-      Impl &impl_;
+		Impl &impl_;
 
-      template <typename... TObjects> friend class World;
-   }; ///< Facade ECS template.
+		template <typename... TObjects> friend class World;
+	};																											///< Facade ECS template.
 
-   class ECS : public BasicECS<> {
-      using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::ECS;
+	class ECS : public BasicECS<> {
+		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::ECS;
 
-   public:
-      explicit ECS(Impl &implementation) : BasicECS<>{implementation} {}
-      ECS(const ECS &) = default;
-      ECS(ECS &&) noexcept = default;
-      ECS &operator=(const ECS &) = delete;
-      ECS &operator=(ECS &&) noexcept = delete;
-   }; ///< Default facade ECS.
+	public:
+		explicit ECS(Impl &implementation) : BasicECS<>{implementation} {}
+		ECS(const ECS &) = default;
+		ECS(ECS &&) noexcept = default;
+		ECS &operator=(const ECS &) = delete;
+		ECS &operator=(ECS &&) noexcept = delete;
+	};																											///< Default facade ECS.
 
 } // namespace vve

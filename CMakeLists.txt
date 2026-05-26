@@ -266,13 +266,13 @@ endif()
 set(VVE_OUTPUT_CONFIG_DIR "$<LOWER_CASE:$<CONFIG>>")
 set(VVE_ARCHIVE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/${VVE_OUTPUT_CONFIG_DIR}/lib")
 set(VVE_LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/${VVE_OUTPUT_CONFIG_DIR}/lib")
-set(VVE_RUNTIME_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/${VVE_OUTPUT_CONFIG_DIR}/exe")
 set(VVE_MODULE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/${VVE_OUTPUT_CONFIG_DIR}/dll")
 set(VVE_PROJECT_CONFIG_DIR "${VVE_OUTPUT_CONFIG_DIR}")
 set(VVE_PROJECT_ARCHIVE_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/lib")
 set(VVE_PROJECT_LIBRARY_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/lib")
 set(VVE_PROJECT_RUNTIME_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/exe")
 set(VVE_PROJECT_MODULE_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/dll")
+set(VVE_RUNTIME_OUTPUT_DIR "${VVE_PROJECT_RUNTIME_OUTPUT_DIR}")
 
 if(WIN32 AND VVE_WINDOWS_RUNTIME_DLLS)
    add_custom_target(vve_copy_runtime_dlls
@@ -289,13 +289,15 @@ if(WIN32 AND VVE_WINDOWS_RUNTIME_DLLS)
 endif()
 
 function(vve_mirror_target_file target_name destination_dir)
-   add_custom_command(TARGET "${target_name}" POST_BUILD
-      COMMAND "${CMAKE_COMMAND}" -E make_directory "${destination_dir}"
-      COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-         "$<TARGET_FILE:${target_name}>"
-         "${destination_dir}"
-      COMMAND_EXPAND_LISTS
-   )
+   if(NOT VVE_RUNTIME_OUTPUT_DIR STREQUAL destination_dir)
+      add_custom_command(TARGET "${target_name}" POST_BUILD
+         COMMAND "${CMAKE_COMMAND}" -E make_directory "${destination_dir}"
+         COMMAND "${CMAKE_COMMAND}" -E copy_if_different
+            "$<TARGET_FILE:${target_name}>"
+            "${destination_dir}"
+         COMMAND_EXPAND_LISTS
+      )
+   endif()
 endfunction()
 
 function(vve_set_output_dirs target_name)
