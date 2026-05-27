@@ -155,6 +155,8 @@ namespace vve {
 		PipelineFilter* importanceReductionPass;
 		PipelineFilter* keepProbReductionPass;
 
+		PipelineFilter* sumResetPass;
+
 		RenderTargetBufferDebug<glm::vec4>* importanceSum;
 		RenderTargetBufferDebug<glm::vec4>* keepProbSum;
 

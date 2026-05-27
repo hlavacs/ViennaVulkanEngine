@@ -12,6 +12,8 @@ slangc LVC_importance_sum.slang -entry main -target spirv -o importanceReduction
 
 slangc LVC_keep_sum.slang -entry main -target spirv -o keepProbReduction.spv
 
+slangc LVC_reset.slang -entry main -target spirv -o sumReset.spv
+
 rem --- Raygen shader ---
 slangc rtbasic.slang -entry rgenMain -target spirv -o raygen.rgen.spv -DRAY_TRACING
 

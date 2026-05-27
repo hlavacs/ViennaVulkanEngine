@@ -89,8 +89,8 @@ void rgenMain()
     float3 position = inPosition[int2(launchID)].xyz;
 
     const uint MAX_SPATIAL_INFLUENCE = 10;
-    const uint SPATIAL_SAMPLES = 6;
-    const uint SAMPLE_RADIUS = 4;
+    const uint SPATIAL_SAMPLES = 12;
+    const uint SAMPLE_RADIUS = 12;
 
     const uint MAX_SPATIAL_INFLUENCE_GI = 10;
     const uint SPATIAL_SAMPLES_GI = 12;
@@ -200,7 +200,12 @@ void rgenMain()
             // right now importance is not an atomic, so the addition will give false results, which does not lead to Bias, but can
             // lead to increased noise. It is advisable to seperate importance from the Light Vertex, since no local copies of atomics
             // can be created.
-            lightVertexCache[reservoirLVC.LVCIndex].importance += (length(radiance) * reservoirLVC.lightWeight) / lightSourcePdf(lightBuffer, lightVertex.lightIndex);
+
+            float3 cameraPosition = viewInv[3].xyz;
+
+            float distance = length(position - cameraPosition);
+
+            lightVertexCache[reservoirLVC.LVCIndex].importance += ((length(radiance) * reservoirLVC.lightWeight) / lightSourcePdf(lightBuffer, lightVertex.lightIndex));
         } else {
             reservoirLVC = createEmptyReservoirLVC();
         }

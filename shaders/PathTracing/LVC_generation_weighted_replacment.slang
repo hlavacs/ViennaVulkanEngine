@@ -31,6 +31,9 @@ void rgenMain()
 
     float avgImportance = importanceSum[0].load() / lightVertexCacheSize;
 
+    // related concepts for research:
+    // this is a Continuous-State Markov Chain
+    // continuous version of the Chapman-Kolmogorov equation
     if (sampler.UniformFloat() < pKeep || isFirstFrame == 1) {
         // 1. Evaluate the generation PDF for the OLD vertex's current state
         // (You must implement this function based on how generateLightVertex() samples space)
@@ -70,8 +73,5 @@ void rgenMain()
         lightVertexCache[launchID.x] = lightVertexNew;       
     }
     */
-
-    importanceSum[0] = 0.0;
-    keepSum[0] = 0.0;
 }
 

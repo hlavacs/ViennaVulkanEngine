@@ -7,7 +7,7 @@ float getKeepProbability(float importance, float importanceSum, uint lightVertex
     }
 
     float replacementRate = 0.025;
-    float k = 0.5;
+    float k = 5.0;
 
 
     float avgImportance = importanceSum / lightVertexCacheSize;

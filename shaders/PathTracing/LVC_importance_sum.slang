@@ -10,8 +10,8 @@ RWStructuredBuffer <Atomic<float>> importanceSum;
 [shader("compute")]
 [numthreads(256, 1, 1)]
 void main(uint3 threadId: SV_DispatchThreadID) {
-    int2 launchID = threadId.xy;  
-
+    int2 launchID = threadId.xy;
+    
     LightVertex lightVertex = lightVertexCache[launchID.x];
 
     // needs VK_EXT_shader_atomic_float and VK_EXT_subgroup_optimize_atomic_reduce

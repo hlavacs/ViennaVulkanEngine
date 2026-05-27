@@ -583,12 +583,16 @@ namespace vve {
         //weighted Replacment
         createReductionDescriptors();
 
-        //missing pipline barrier The first one needs compute shader the second one raygen shader!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        sumResetPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, VkExtent2D(1,1), VkExtent2D(1, 1), "shaders/PathTracing/sumReset.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
         importanceReductionPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, lightVertexCacheSize, VkExtent2D(256, 1), "shaders/PathTracing/importanceReduction.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
         keepProbReductionPass = new PipelineFilter(device, physicalDevice, commandManager, reductionDescriptors, lightVertexCacheSize, VkExtent2D(256, 1), "shaders/PathTracing/keepProbReduction.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
 
+
+        sumResetPass->initComputePipeline();
         importanceReductionPass->initComputePipeline();
         keepProbReductionPass->initComputePipeline();
+
+
 
         lightVertexGenerationWeightedReplacment = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, lightVertexGenerationDescriptors, lightVertexCacheSize, "shaders/PathTracing/raygen_light_vertex_generation_weighted_replacment.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
         lightVertexGenerationWeightedReplacment->initRayTracingPipeline();
@@ -825,6 +829,8 @@ namespace vve {
         restir_spatial_descriptors->update();
         restirGI_temporal_descriptors->update();
         restirGI_spatial_descriptors->update();
+        restirLVC_temporal_descriptors->update();
+        restirLVC_spatial_descriptors->update();
 
         raytracer->setExtent(swapchain->getExtent());
         bidirectionalPathTracing->setExtent(swapchain->getExtent());
@@ -832,6 +838,10 @@ namespace vve {
         restir_spatial->setExtent(swapchain->getExtent());
         restirGI_temporal->setExtent(swapchain->getExtent());
         restirGI_spatial->setExtent(swapchain->getExtent());
+
+        restirLVC_temporal->setExtent(swapchain->getExtent());
+        restirLVC_spatial->setExtent(swapchain->getExtent());
+
         combinePass->setExtent(swapchain->getExtent());
         reprojectionPass->setExtent(swapchain->getExtent());
         m_engine.SendMsg(MsgWindowSize{});
@@ -862,14 +872,17 @@ namespace vve {
         //restirGI_spatial->recordCommandBuffer(currentFrame);
 
         //lightVertexGenerationFull->recordCommandBuffer(currentFrame);
+
+        sumResetPass->recordCommandBuffer(currentFrame);
+
         importanceReductionPass->recordCommandBuffer(currentFrame);
 
-        //std::vector<glm::vec4> importanceSumCapture = importanceSum->getData(currentFrame);
-        //std::cout << "The importance Sum is: " << importanceSumCapture[0].x << "\n";
+        std::vector<glm::vec4> importanceSumCapture = importanceSum->getData(currentFrame);
+        std::cout << "The importance Sum is: " << importanceSumCapture[0].x << "\n";
 
         keepProbReductionPass->recordCommandBuffer(currentFrame);
-        //std::vector<glm::vec4> keepSumCapture = keepProbSum->getData(currentFrame);
-        //std::cout << "The keep Sum is: " << keepSumCapture[0].x << "\n";
+        std::vector<glm::vec4> keepSumCapture = keepProbSum->getData(currentFrame);
+        std::cout << "The keep Sum is: " << keepSumCapture[0].x << "\n";
 
         lightVertexGenerationWeightedReplacment->recordCommandBuffer(currentFrame);
 
