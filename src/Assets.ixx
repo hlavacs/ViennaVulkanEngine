@@ -18,109 +18,109 @@ export namespace vve {
 		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::AssetSystem;
 
 	public:
-		explicit AssetSystem(Impl &implementation) : impl_{implementation} {}
+		inline explicit AssetSystem(Impl &implementation) : impl_{implementation} {}
 		AssetSystem(const AssetSystem &) = default;
 		AssetSystem(AssetSystem &&) noexcept = default;
 		AssetSystem &operator=(const AssetSystem &) = delete;
 		AssetSystem &operator=(AssetSystem &&) noexcept = delete;
 
-		[[nodiscard]] auto addScene(ObjectName name)									-> std::expected<SceneHandle, Error>{
+		[[nodiscard]] inline auto addScene(ObjectName name)									-> std::expected<SceneHandle, Error>{
 			return impl_.addScene(std::move(name));
 		}
-		[[nodiscard]] auto loadScene(const std::filesystem::path &source)		-> std::expected<SceneHandle, Error>{
+		[[nodiscard]] inline auto loadScene(const std::filesystem::path &source)		-> std::expected<SceneHandle, Error>{
 			return impl_.loadScene(source);
 		}
-		[[nodiscard]] bool containsScene(SceneHandle scene) const { return impl_.containsScene(scene); }
-		[[nodiscard]] auto sceneName(SceneHandle scene) const						-> std::expected<ObjectName, Error>{
+		[[nodiscard]] inline bool containsScene(SceneHandle scene) const { return impl_.containsScene(scene); }
+		[[nodiscard]] inline auto sceneName(SceneHandle scene) const						-> std::expected<ObjectName, Error>{
 			return impl_.sceneName(scene);
 		}
-		[[nodiscard]] auto sceneNodeCount(SceneHandle scene) const				-> std::expected<std::size_t, Error>{
+		[[nodiscard]] inline auto sceneNodeCount(SceneHandle scene) const				-> std::expected<std::size_t, Error>{
 			return impl_.sceneNodeCount(scene);
 		}
-		[[nodiscard]] auto sceneMeshCount(SceneHandle scene) const				-> std::expected<std::size_t, Error>{
+		[[nodiscard]] inline auto sceneMeshCount(SceneHandle scene) const				-> std::expected<std::size_t, Error>{
 			return impl_.sceneMeshCount(scene);
 		}
-		[[nodiscard]] auto sceneMaterialCount(SceneHandle scene) const			-> std::expected<std::size_t, Error>{
+		[[nodiscard]] inline auto sceneMaterialCount(SceneHandle scene) const			-> std::expected<std::size_t, Error>{
 			return impl_.sceneMaterialCount(scene);
 		}
-		[[nodiscard]] auto sceneTextureCount(SceneHandle scene) const			-> std::expected<std::size_t, Error>{
+		[[nodiscard]] inline auto sceneTextureCount(SceneHandle scene) const			-> std::expected<std::size_t, Error>{
 			return impl_.sceneTextureCount(scene);
 		}
-		[[nodiscard]] auto sceneLightCount(SceneHandle scene) const				-> std::expected<std::size_t, Error>{
+		[[nodiscard]] inline auto sceneLightCount(SceneHandle scene) const				-> std::expected<std::size_t, Error>{
 			return impl_.sceneLightCount(scene);
 		}
-		[[nodiscard]] auto sceneCameraCount(SceneHandle scene) const			-> std::expected<std::size_t, Error>{
+		[[nodiscard]] inline auto sceneCameraCount(SceneHandle scene) const			-> std::expected<std::size_t, Error>{
 			return impl_.sceneCameraCount(scene);
 		}
-		[[nodiscard]] auto sceneRootNode(SceneHandle scene) const				-> std::expected<NodeHandle, Error>{
+		[[nodiscard]] inline auto sceneRootNode(SceneHandle scene) const				-> std::expected<NodeHandle, Error>{
 			return impl_.sceneRootNode(scene);
 		}
-		[[nodiscard]] auto sceneNodes(SceneHandle scene) const					-> std::expected<Vector<NodeHandle>, Error>{
+		[[nodiscard]] inline auto sceneNodes(SceneHandle scene) const					-> std::expected<Vector<NodeHandle>, Error>{
 			return facadeVector<NodeHandle>(impl_.sceneNodes(scene));
 		}
-		[[nodiscard]] auto sceneMeshes(SceneHandle scene) const					-> std::expected<Vector<MeshHandle>, Error>{
+		[[nodiscard]] inline auto sceneMeshes(SceneHandle scene) const					-> std::expected<Vector<MeshHandle>, Error>{
 			return facadeVector<MeshHandle>(impl_.sceneMeshes(scene));
 		}
-		[[nodiscard]] auto sceneMaterials(SceneHandle scene) const				-> std::expected<Vector<MaterialHandle>, Error>{
+		[[nodiscard]] inline auto sceneMaterials(SceneHandle scene) const				-> std::expected<Vector<MaterialHandle>, Error>{
 			return facadeVector<MaterialHandle>(impl_.sceneMaterials(scene));
 		}
-		[[nodiscard]] auto sceneTextures(SceneHandle scene) const				-> std::expected<Vector<TextureHandle>, Error>{
+		[[nodiscard]] inline auto sceneTextures(SceneHandle scene) const				-> std::expected<Vector<TextureHandle>, Error>{
 			return facadeVector<TextureHandle>(impl_.sceneTextures(scene));
 		}
-		[[nodiscard]] auto sceneLights(SceneHandle scene) const					-> std::expected<Vector<LightHandle>, Error>{
+		[[nodiscard]] inline auto sceneLights(SceneHandle scene) const					-> std::expected<Vector<LightHandle>, Error>{
 			return facadeVector<LightHandle>(impl_.sceneLights(scene));
 		}
-		[[nodiscard]] auto sceneCameras(SceneHandle scene) const					-> std::expected<Vector<CameraHandle>, Error>{
+		[[nodiscard]] inline auto sceneCameras(SceneHandle scene) const					-> std::expected<Vector<CameraHandle>, Error>{
 			return facadeVector<CameraHandle>(impl_.sceneCameras(scene));
 		}
-		[[nodiscard]] std::expected<Vector<NodeHandle>, Error> sceneNodeChildren(SceneHandle scene,
+		[[nodiscard]] inline std::expected<Vector<NodeHandle>, Error> sceneNodeChildren(SceneHandle scene,
 																											NodeHandle node) const {
 			return facadeVector<NodeHandle>(impl_.sceneNodeChildren(scene, node));
 		}
-		[[nodiscard]] std::expected<std::optional<NodeHandle>, Error> sceneNodeParent(SceneHandle scene,
+		[[nodiscard]] inline std::expected<std::optional<NodeHandle>, Error> sceneNodeParent(SceneHandle scene,
 																												NodeHandle node) const {
 			return impl_.sceneNodeParent(scene, node);
 		}
 
-		[[nodiscard]] std::expected<ObjectName, Error> nodeName(NodeHandle node) const { return impl_.nodeName(node); }
-		[[nodiscard]] auto nodeTransform(NodeHandle node) const					-> std::expected<Transform, Error>{
+		[[nodiscard]] inline std::expected<ObjectName, Error> nodeName(NodeHandle node) const { return impl_.nodeName(node); }
+		[[nodiscard]] inline auto nodeTransform(NodeHandle node) const					-> std::expected<Transform, Error>{
 			return impl_.nodeTransform(node);
 		}
-		[[nodiscard]] auto nodeMeshes(NodeHandle node) const						-> std::expected<Vector<MeshHandle>, Error>{
+		[[nodiscard]] inline auto nodeMeshes(NodeHandle node) const						-> std::expected<Vector<MeshHandle>, Error>{
 			return facadeVector<MeshHandle>(impl_.nodeMeshes(node));
 		}
-		[[nodiscard]] auto nodeMaterials(NodeHandle node) const					-> std::expected<Vector<MaterialHandle>, Error>{
+		[[nodiscard]] inline auto nodeMaterials(NodeHandle node) const					-> std::expected<Vector<MaterialHandle>, Error>{
 			return facadeVector<MaterialHandle>(impl_.nodeMaterials(node));
 		}
 
-		[[nodiscard]] std::expected<ObjectName, Error> meshName(MeshHandle mesh) const { return impl_.meshName(mesh); }
-		[[nodiscard]] auto meshVertexCount(MeshHandle mesh) const				-> std::expected<VertexCount, Error>{
+		[[nodiscard]] inline std::expected<ObjectName, Error> meshName(MeshHandle mesh) const { return impl_.meshName(mesh); }
+		[[nodiscard]] inline auto meshVertexCount(MeshHandle mesh) const				-> std::expected<VertexCount, Error>{
 			return impl_.meshVertexCount(mesh);
 		}
-		[[nodiscard]] auto meshIndexCount(MeshHandle mesh) const					-> std::expected<IndexCount, Error>{
+		[[nodiscard]] inline auto meshIndexCount(MeshHandle mesh) const					-> std::expected<IndexCount, Error>{
 			return impl_.meshIndexCount(mesh);
 		}
-		[[nodiscard]] auto meshMaterial(MeshHandle mesh) const					-> std::expected<MaterialHandle, Error>{
+		[[nodiscard]] inline auto meshMaterial(MeshHandle mesh) const					-> std::expected<MaterialHandle, Error>{
 			return impl_.meshMaterial(mesh);
 		}
-		[[nodiscard]] std::expected<Bounds, Error> meshBounds(MeshHandle mesh) const { return impl_.meshBounds(mesh); }
-		[[nodiscard]] auto meshPositions(MeshHandle mesh) const					-> std::expected<Vector<Vec3>, Error>{
+		[[nodiscard]] inline std::expected<Bounds, Error> meshBounds(MeshHandle mesh) const { return impl_.meshBounds(mesh); }
+		[[nodiscard]] inline auto meshPositions(MeshHandle mesh) const					-> std::expected<Vector<Vec3>, Error>{
 			return facadeVector<Vec3>(impl_.meshPositions(mesh));
 		}
-		[[nodiscard]] auto meshNormals(MeshHandle mesh) const						-> std::expected<Vector<Vec3>, Error>{
+		[[nodiscard]] inline auto meshNormals(MeshHandle mesh) const						-> std::expected<Vector<Vec3>, Error>{
 			return facadeVector<Vec3>(impl_.meshNormals(mesh));
 		}
-		[[nodiscard]] auto meshTexcoords(MeshHandle mesh) const					-> std::expected<Vector<Vec2>, Error>{
+		[[nodiscard]] inline auto meshTexcoords(MeshHandle mesh) const					-> std::expected<Vector<Vec2>, Error>{
 			return facadeVector<Vec2>(impl_.meshTexcoords(mesh));
 		}
-		[[nodiscard]] auto meshIndices(MeshHandle mesh) const						-> std::expected<Vector<std::uint32_t>, Error>{
+		[[nodiscard]] inline auto meshIndices(MeshHandle mesh) const						-> std::expected<Vector<std::uint32_t>, Error>{
 			return facadeVector<std::uint32_t>(impl_.meshIndices(mesh));
 		}
 
-		[[nodiscard]] auto materialName(MaterialHandle material) const			-> std::expected<ObjectName, Error>{
+		[[nodiscard]] inline auto materialName(MaterialHandle material) const			-> std::expected<ObjectName, Error>{
 			return impl_.materialName(material);
 		}
-		[[nodiscard]] auto materialTextures(MaterialHandle material) const	-> std::expected<Vector<TextureHandle>, Error>{
+		[[nodiscard]] inline auto materialTextures(MaterialHandle material) const	-> std::expected<Vector<TextureHandle>, Error>{
 			return facadeVector<TextureHandle>(impl_.materialTextures(material));
 		}
 

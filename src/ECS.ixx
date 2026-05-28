@@ -23,15 +23,15 @@ export namespace vve {
 		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::BasicECS<TTraits>;
 
 	public:
-		explicit BasicECS(Impl &implementation) : impl_{implementation} {}
+		inline explicit BasicECS(Impl &implementation) : impl_{implementation} {}
 		BasicECS(const BasicECS &) = default;
 		BasicECS(BasicECS &&) noexcept = default;
 		BasicECS &operator=(const BasicECS &) = delete;
 		BasicECS &operator=(BasicECS &&) noexcept = delete;
 
-		[[nodiscard]] Entity create() { return impl_.create(); }
-		[[nodiscard]] bool exists(Entity entity) const { return impl_.exists(entity); }
-		[[nodiscard]] std::expected<void, Error> erase(Entity entity) { return impl_.erase(entity); }
+		[[nodiscard]] inline Entity create() { return impl_.create(); }
+		[[nodiscard]] inline bool exists(Entity entity) const { return impl_.exists(entity); }
+		[[nodiscard]] inline std::expected<void, Error> erase(Entity entity) { return impl_.erase(entity); }
 
 		template <typename T> [[nodiscard]] std::expected<void, Error> add(Entity entity, T component) {
 			return impl_.template add<T>(entity, std::move(component));
@@ -66,8 +66,8 @@ export namespace vve {
 		}
 
 	private:
-		[[nodiscard]] Impl &impl() { return impl_; }
-		[[nodiscard]] const Impl &impl() const { return impl_; }
+		[[nodiscard]] inline Impl &impl() { return impl_; }
+		[[nodiscard]] inline const Impl &impl() const { return impl_; }
 
 		Impl &impl_;
 
@@ -78,7 +78,7 @@ export namespace vve {
 		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::ECS;
 
 	public:
-		explicit ECS(Impl &implementation) : BasicECS<>{implementation} {}
+		inline explicit ECS(Impl &implementation) : BasicECS<>{implementation} {}
 		ECS(const ECS &) = default;
 		ECS(ECS &&) noexcept = default;
 		ECS &operator=(const ECS &) = delete;

@@ -18,39 +18,39 @@ export namespace vve {
 		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowDesc;
 
 	public:
-		WindowSetup() = default;
+		inline WindowSetup() = default;
 
-		[[nodiscard]] WindowSetup &id(std::string value) {
+		[[nodiscard]] inline WindowSetup &id(std::string value) {
 			impl_.id = std::move(value);
 			return *this;
 		}
-		[[nodiscard]] WindowSetup &title(std::string value) {
+		[[nodiscard]] inline WindowSetup &title(std::string value) {
 			impl_.title = std::move(value);
 			return *this;
 		}
-		[[nodiscard]] WindowSetup &extent(PixelExtent value) {
+		[[nodiscard]] inline WindowSetup &extent(PixelExtent value) {
 			impl_.extent = value;
 			return *this;
 		}
-		[[nodiscard]] WindowSetup &position(int x, int y) {
+		[[nodiscard]] inline WindowSetup &position(int x, int y) {
 			impl_.x = x;
 			impl_.y = y;
 			return *this;
 		}
-		[[nodiscard]] WindowSetup &renderer(RendererId value) {
+		[[nodiscard]] inline WindowSetup &renderer(RendererId value) {
 			impl_.renderer_id = std::move(value);
 			return *this;
 		}
-		[[nodiscard]] WindowSetup &resizable(bool value) {
+		[[nodiscard]] inline WindowSetup &resizable(bool value) {
 			impl_.resizable = value;
 			return *this;
 		}
-		[[nodiscard]] WindowSetup &visible(bool value) {
+		[[nodiscard]] inline WindowSetup &visible(bool value) {
 			impl_.visible = value;
 			return *this;
 		}
 
-		[[nodiscard]] operator Impl() const { return impl_; }
+		[[nodiscard]] inline operator Impl() const { return impl_; }
 
 	private:
 		Impl impl_{};
@@ -60,16 +60,16 @@ export namespace vve {
 		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Windows;
 
 	public:
-		WindowSetups() = default;
-		WindowSetups(std::initializer_list<WindowSetup> windows) {
+		inline WindowSetups() = default;
+		inline WindowSetups(std::initializer_list<WindowSetup> windows) {
 			impl_.value.clear();
 			impl_.value.reserve(windows.size());
 			for (const auto &window : windows) { impl_.value.push_back(window); }
 		}
 
-		void add(WindowSetup window) { impl_.value.push_back(std::move(window)); }
+		inline void add(WindowSetup window) { impl_.value.push_back(std::move(window)); }
 
-		[[nodiscard]] operator Impl() const { return impl_; }
+		[[nodiscard]] inline operator Impl() const { return impl_; }
 
 	private:
 		Impl impl_{};
@@ -79,28 +79,28 @@ export namespace vve {
 		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::InputState;
 
 	public:
-		explicit InputState(Impl &implementation) : impl_{implementation} {}
+		inline explicit InputState(Impl &implementation) : impl_{implementation} {}
 		InputState(const InputState &) = default;
 		InputState(InputState &&) noexcept = default;
 		InputState &operator=(const InputState &) = delete;
 		InputState &operator=(InputState &&) noexcept = delete;
 
-		void beginFrame() { impl_.beginFrame(); }
-		void holdKey(std::int32_t keycode) { impl_.holdKey(keycode); }
-		void pressKey(std::int32_t keycode) { impl_.pressKey(keycode); }
-		void releaseKey(std::int32_t keycode) { impl_.releaseKey(keycode); }
-		void setMousePosition(WindowHandle window, Vec2 position) { impl_.setMousePosition(window, position); }
-		void addMouseDelta(WindowHandle window, Vec2 delta) { impl_.addMouseDelta(window, delta); }
-		void addMouseWheelDelta(WindowHandle window, Vec2 delta) { impl_.addMouseWheelDelta(window, delta); }
+		inline void beginFrame() { impl_.beginFrame(); }
+		inline void holdKey(std::int32_t keycode) { impl_.holdKey(keycode); }
+		inline void pressKey(std::int32_t keycode) { impl_.pressKey(keycode); }
+		inline void releaseKey(std::int32_t keycode) { impl_.releaseKey(keycode); }
+		inline void setMousePosition(WindowHandle window, Vec2 position) { impl_.setMousePosition(window, position); }
+		inline void addMouseDelta(WindowHandle window, Vec2 delta) { impl_.addMouseDelta(window, delta); }
+		inline void addMouseWheelDelta(WindowHandle window, Vec2 delta) { impl_.addMouseWheelDelta(window, delta); }
 
-		[[nodiscard]] bool isKeyDown(std::int32_t keycode) const { return impl_.isKeyDown(keycode); }
-		[[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const { return impl_.wasKeyPressed(keycode); }
-		[[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const { return impl_.wasKeyReleased(keycode); }
-		[[nodiscard]] auto mousePosition(WindowHandle window) const					-> std::optional<Vec2>{
+		[[nodiscard]] inline bool isKeyDown(std::int32_t keycode) const { return impl_.isKeyDown(keycode); }
+		[[nodiscard]] inline bool wasKeyPressed(std::int32_t keycode) const { return impl_.wasKeyPressed(keycode); }
+		[[nodiscard]] inline bool wasKeyReleased(std::int32_t keycode) const { return impl_.wasKeyReleased(keycode); }
+		[[nodiscard]] inline auto mousePosition(WindowHandle window) const					-> std::optional<Vec2>{
 			return impl_.mousePosition(window);
 		}
-		[[nodiscard]] Vec2 mouseDelta(WindowHandle window) const { return impl_.mouseDelta(window); }
-		[[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const { return impl_.mouseWheelDelta(window); }
+		[[nodiscard]] inline Vec2 mouseDelta(WindowHandle window) const { return impl_.mouseDelta(window); }
+		[[nodiscard]] inline Vec2 mouseWheelDelta(WindowHandle window) const { return impl_.mouseWheelDelta(window); }
 
 	private:
 		Impl &impl_;
@@ -110,21 +110,21 @@ export namespace vve {
 		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Window;
 
 	public:
-		explicit Window(Impl &implementation) : impl_{implementation} {}
+		inline explicit Window(Impl &implementation) : impl_{implementation} {}
 		Window(const Window &) = default;
 		Window(Window &&) noexcept = default;
 		Window &operator=(const Window &) = delete;
 		Window &operator=(Window &&) noexcept = delete;
 
-		[[nodiscard]] WindowHandle handle() const { return impl_.info().handle; }
-		[[nodiscard]] std::string_view id() const { return impl_.info().id; }
-		[[nodiscard]] std::string_view title() const { return impl_.info().title; }
-		[[nodiscard]] PixelExtent extent() const { return impl_.info().extent; }
-		[[nodiscard]] RendererId rendererId() const { return impl_.info().renderer_id; }
-		[[nodiscard]] std::optional<Entity> camera() const { return impl_.info().camera; }
-		[[nodiscard]] bool focused() const { return impl_.info().focused; }
-		[[nodiscard]] bool minimized() const { return impl_.info().minimized; }
-		[[nodiscard]] bool shouldClose() const { return impl_.info().should_close; }
+		[[nodiscard]] inline WindowHandle handle() const { return impl_.info().handle; }
+		[[nodiscard]] inline std::string_view id() const { return impl_.info().id; }
+		[[nodiscard]] inline std::string_view title() const { return impl_.info().title; }
+		[[nodiscard]] inline PixelExtent extent() const { return impl_.info().extent; }
+		[[nodiscard]] inline RendererId rendererId() const { return impl_.info().renderer_id; }
+		[[nodiscard]] inline std::optional<Entity> camera() const { return impl_.info().camera; }
+		[[nodiscard]] inline bool focused() const { return impl_.info().focused; }
+		[[nodiscard]] inline bool minimized() const { return impl_.info().minimized; }
+		[[nodiscard]] inline bool shouldClose() const { return impl_.info().should_close; }
 
 	private:
 		Impl &impl_;
@@ -134,53 +134,53 @@ export namespace vve {
 		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowSystem;
 
 	public:
-		explicit WindowSystem(Impl &implementation) : impl_{implementation} {}
+		inline explicit WindowSystem(Impl &implementation) : impl_{implementation} {}
 		WindowSystem(const WindowSystem &) = default;
 		WindowSystem(WindowSystem &&) noexcept = default;
 		WindowSystem &operator=(const WindowSystem &) = delete;
 		WindowSystem &operator=(WindowSystem &&) noexcept = delete;
 
-		[[nodiscard]] std::string_view name() const noexcept { return impl_.name(); }
-		[[nodiscard]] InputState input() { return InputState{impl_.input()}; }
-		[[nodiscard]] InputState input() const { return InputState{const_cast<Impl &>(impl_).input()}; }
-		[[nodiscard]] std::size_t windowCount() const { return impl_.windowCount(); }
-		[[nodiscard]] auto windows() const													-> Vector<Window>{
+		[[nodiscard]] inline std::string_view name() const noexcept { return impl_.name(); }
+		[[nodiscard]] inline InputState input() { return InputState{impl_.input()}; }
+		[[nodiscard]] inline InputState input() const { return InputState{const_cast<Impl &>(impl_).input()}; }
+		[[nodiscard]] inline std::size_t windowCount() const { return impl_.windowCount(); }
+		[[nodiscard]] inline auto windows() const													-> Vector<Window>{
 			Vector<Window> result{};
 			const auto implementation_windows = impl_.windows();
 			result.reserve(implementation_windows.size());
 			for (const auto window : implementation_windows) { result.push_back(Window{window.get()}); }
 			return result;
 		}
-		[[nodiscard]] auto findWindow(std::string_view id) const						-> std::optional<Window>{
+		[[nodiscard]] inline auto findWindow(std::string_view id) const						-> std::optional<Window>{
 			auto *window = impl_.findWindow(id);
 			return window == nullptr ? std::optional<Window>{} : std::optional<Window>{Window{*window}};
 		}
-		[[nodiscard]] auto findWindow(WindowHandle handle) const						-> std::optional<Window>{
+		[[nodiscard]] inline auto findWindow(WindowHandle handle) const						-> std::optional<Window>{
 			auto *window = impl_.findWindow(handle);
 			return window == nullptr ? std::optional<Window>{} : std::optional<Window>{Window{*window}};
 		}
-		[[nodiscard]] auto setWindowCamera(WindowHandle window, Entity camera)	-> std::expected<void, Error>{
+		[[nodiscard]] inline auto setWindowCamera(WindowHandle window, Entity camera)	-> std::expected<void, Error>{
 			return impl_.setWindowCamera(window, camera);
 		}
-		[[nodiscard]] auto setWindowCamera(std::string_view id, Entity camera)	-> std::expected<void, Error>{
+		[[nodiscard]] inline auto setWindowCamera(std::string_view id, Entity camera)	-> std::expected<void, Error>{
 			return impl_.setWindowCamera(id, camera);
 		}
-		[[nodiscard]] auto clearWindowCamera(WindowHandle window)					-> std::expected<void, Error>{
+		[[nodiscard]] inline auto clearWindowCamera(WindowHandle window)					-> std::expected<void, Error>{
 			return impl_.clearWindowCamera(window);
 		}
-		[[nodiscard]] auto clearWindowCamera(std::string_view id)					-> std::expected<void, Error>{
+		[[nodiscard]] inline auto clearWindowCamera(std::string_view id)					-> std::expected<void, Error>{
 			return impl_.clearWindowCamera(id);
 		}
-		[[nodiscard]] auto windowCamera(WindowHandle window) const					-> std::optional<Entity>{
+		[[nodiscard]] inline auto windowCamera(WindowHandle window) const					-> std::optional<Entity>{
 			return impl_.windowCamera(window);
 		}
-		[[nodiscard]] auto windowCamera(std::string_view id) const					-> std::optional<Entity>{
+		[[nodiscard]] inline auto windowCamera(std::string_view id) const					-> std::optional<Entity>{
 			return impl_.windowCamera(id);
 		}
-		[[nodiscard]] auto setActiveCamera(Entity camera)								-> std::expected<void, Error>{
+		[[nodiscard]] inline auto setActiveCamera(Entity camera)								-> std::expected<void, Error>{
 			return impl_.setActiveCamera(camera);
 		}
-		[[nodiscard]] std::optional<Entity> activeCamera() const { return impl_.activeCamera(); }
+		[[nodiscard]] inline std::optional<Entity> activeCamera() const { return impl_.activeCamera(); }
 
 	private:
 		Impl &impl_;

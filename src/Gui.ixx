@@ -16,7 +16,7 @@ export namespace vve {
 		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::GuiSystem;
 
 	public:
-		explicit GuiSystem(Impl &implementation) : impl_{implementation} {}
+		inline explicit GuiSystem(Impl &implementation) : impl_{implementation} {}
 		GuiSystem(const GuiSystem &) = default;
 		GuiSystem(GuiSystem &&) noexcept = default;
 		GuiSystem &operator=(const GuiSystem &) = delete;

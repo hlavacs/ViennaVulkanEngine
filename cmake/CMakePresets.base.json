@@ -33,7 +33,7 @@
         "debug-base",
         "windows-base"
       ],
-      "generator": "Visual Studio 17 2022",
+      "generator": "Visual Studio 18 2026",
       "cacheVariables": {
         "VVE_VCPKG_TRIPLET": "x64-windows"
       }
@@ -45,7 +45,7 @@
         "release-base",
         "windows-base"
       ],
-      "generator": "Visual Studio 17 2022",
+      "generator": "Visual Studio 18 2026",
       "cacheVariables": {
         "VVE_VCPKG_TRIPLET": "x64-windows"
       }
