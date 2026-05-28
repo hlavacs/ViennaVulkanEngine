@@ -190,6 +190,38 @@ void rgenMain()
                 //temporalReservoirLVC.M = min(MAX_TEMPORAL_INFLUENCE_GI, temporalReservoirLVC.M);
 
                 reservoirLVC = CombineReservoirsLVC(reservoirLVC, temporalReservoirLVC, its, material, sampler);
+            } else {
+                // find  best matching valid history from  the neighbours
+                float bestDistance = 1000.0;
+                ReservoirLVC bestMatchReservoir;
+                bool foundValidReservoir = false;
+
+                for (int x = -1; x <= 1; x++) {
+                    for (int y = -1; y <= 1; y++) {
+                        int2 offset = int2(x, y);
+                        uint2 readID = launchID + offset;
+
+                        float3 positionNeighbour = inPosition[int2(readID)].xyz;
+                        float distance = length(positionNeighbour - position);
+
+                        if (distance < bestDistance) {
+                            ReservoirLVC neighbourReservoirLVC = readReservoirLVC(readID, launchSize, inReservoirLVC);
+                            // if temporal light vertex has age 0 it was newly generated invalidating the temporal history
+                            LightVertex lightVertexNeighbour = lightVertexCache[neighbourReservoirLVC.LVCIndex];
+
+                            if (lightVertexNeighbour.age != 0) {
+                                bestMatchReservoir = neighbourReservoirLVC;
+                                bestMatchReservoir.M = min(MAX_TEMPORAL_INFLUENCE_GI * reservoirLVC.M, bestMatchReservoir.M);
+                                bestDistance = distance;
+                                foundValidReservoir = true;
+                            }
+                        }
+                    } 
+                }
+
+                if (foundValidReservoir) {
+                    reservoirLVC = CombineReservoirsLVC(reservoirLVC, bestMatchReservoir, its, material, sampler);
+                }
             }   
         }
 

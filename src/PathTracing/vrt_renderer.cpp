@@ -878,11 +878,11 @@ namespace vve {
         importanceReductionPass->recordCommandBuffer(currentFrame);
 
         std::vector<glm::vec4> importanceSumCapture = importanceSum->getData(currentFrame);
-        std::cout << "The importance Sum is: " << importanceSumCapture[0].x << "\n";
+        std::cout << "The importance average is: " << importanceSumCapture[0].x / lightVertexCacheSize.width << "\n";
 
         keepProbReductionPass->recordCommandBuffer(currentFrame);
         std::vector<glm::vec4> keepSumCapture = keepProbSum->getData(currentFrame);
-        std::cout << "The keep Sum is: " << keepSumCapture[0].x << "\n";
+        std::cout << "The keep average is: " << keepSumCapture[0].x / lightVertexCacheSize.width << "\n";
 
         lightVertexGenerationWeightedReplacment->recordCommandBuffer(currentFrame);
 

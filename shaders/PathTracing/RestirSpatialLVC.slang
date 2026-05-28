@@ -129,6 +129,7 @@ void rgenMain()
             int2 offset = int2(x, y);
 
             int2 readID = launchID + offset;
+            clampReadID(readID, launchSize);
 
             float3 normalSpatial = inNormal[readID].xyz;
             float3 positionSpatial = inPosition[readID].xyz;
@@ -172,6 +173,7 @@ void rgenMain()
             int2 offset = int2(x, y);
 
             int2 readID = launchID + offset;
+            clampReadID(readID, launchSize);
 
             float3 normalSpatial = inNormal[readID].xyz;
             float3 positionSpatial = inPosition[readID].xyz;
@@ -195,15 +197,17 @@ void rgenMain()
         {
             float3 radiance = getOccludedLightContributionFromConnectionNoPDF(its, material, reservoirLVC.LVCIndex);
             LightVertex lightVertex = lightVertexCache[reservoirLVC.LVCIndex];
+
+            float3 cameraPosition = viewInv[3].xyz;
+            float distance = length(position - cameraPosition);
+
             output += (radiance * reservoirLVC.lightWeight) / lightVertex.selectionPdf;
             //output += (radiance * reservoirLVC.lightWeight);
             // right now importance is not an atomic, so the addition will give false results, which does not lead to Bias, but can
             // lead to increased noise. It is advisable to seperate importance from the Light Vertex, since no local copies of atomics
             // can be created.
 
-            float3 cameraPosition = viewInv[3].xyz;
-
-            float distance = length(position - cameraPosition);
+            
 
             lightVertexCache[reservoirLVC.LVCIndex].importance += ((length(radiance) * reservoirLVC.lightWeight) / lightSourcePdf(lightBuffer, lightVertex.lightIndex));
         } else {

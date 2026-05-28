@@ -31,6 +31,21 @@ bool UpdateReservoirLVC(inout ReservoirLVC reservoir, uint LVCIndex, float w, ui
 
 }
 
+void clampReadID(inout int2 readID, in int2 launchSize) {
+    if (readID.x < 0) {
+        readID.x = 0;
+    }
+    if (readID.y < 0) {
+        readID.y = 0;
+    }
+    if (readID.x > launchSize.x - 1) {
+        readID.x = launchSize.x - 1;
+    }
+    if (readID.y > launchSize.y - 1) {
+        readID.y = launchSize.y - 1;
+    }
+}
+
 bool IsReservoirValidLVC(ReservoirLVC reservoir) {
     return reservoir.M > 0 && reservoir.W_sum > 0;
 }
