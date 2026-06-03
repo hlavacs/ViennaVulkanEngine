@@ -140,7 +140,7 @@ namespace vve {
 			break;
 		case vve::RendererType::RENDERER_TYPE_RAYTRACING:		
 			RegisterSystem(std::make_unique<RendererRayTraced>(m_rendererRaytracingName, *this, m_windowName));
-			//RegisterSystem(std::make_unique<RendererImgui>(m_rendererImguiName, *this, m_windowName));
+			RegisterSystem(std::make_unique<RendererImgui>(m_rendererImguiName, *this, m_windowName));
 			break;
 		}
 	};

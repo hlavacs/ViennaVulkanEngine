@@ -86,6 +86,8 @@ namespace vve {
 		void resizeWindow();
 
 
+		VkRenderPass imguiRenderPass = VK_NULL_HANDLE;
+
 		std::string m_windowName;
 		vecs::Ref<WindowState> 		m_windowState{};
 		vecs::Ref<WindowSDLState> 	m_windowSDLState{};

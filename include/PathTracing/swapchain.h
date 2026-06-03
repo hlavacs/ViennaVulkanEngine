@@ -22,6 +22,10 @@ namespace vve {
         VkExtent2D swapChainExtent;
         VkQueue presentQueue;
 
+        //only required for imgui!
+        std::vector<VkFramebuffer> framebuffers{};
+        VkRenderPass imguiRenderPass = VK_NULL_HANDLE;
+
         std::vector<VkSemaphore> imageAvailableSemaphores;
 
         std::vector<uint32_t> imageIndices;
@@ -90,6 +94,10 @@ namespace vve {
          * @return Image-available semaphore for the frame.
          */
         VkSemaphore getImageAvailableSemaphore(int currentFrame);
+
+        void createImGuiFramebuffers(RenderTarget* depthTarget, VkRenderPass imguiRenderPass);
+
+        std::vector<VkFramebuffer> getImguiFrameBuffer();
     };
 
 }

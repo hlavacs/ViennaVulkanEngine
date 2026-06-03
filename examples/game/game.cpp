@@ -162,19 +162,12 @@ class MyGame : public vve::System {
 				}
                 ImGui::End();
             }
-
-            if( m_state == State::STATE_DEAD ) {
-                ImGui::Begin("Game State");
-                ImGui::TextUnformatted("Game Over");
-                if (ImGui::Button("Restart")) {
-                    m_state = State::STATE_RUNNING;
-                    m_time_left = c_max_time;
-                    m_cubes_left = c_number_cubes;
-                    m_engine.PlaySound( vve::Filename{"assets/sounds/dance.mp3"}, -1 );
-                }
-                ImGui::End();
-            }
             */
+
+           
+            ImGui::ShowDemoWindow();
+            
+            
             return false;
         }
 

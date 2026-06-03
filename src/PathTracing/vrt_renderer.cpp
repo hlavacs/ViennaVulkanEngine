@@ -771,22 +771,40 @@ namespace vve {
 		if( !(iterBegin != iterEnd)) {
 			m_vulkanStateHandle = m_registry.Insert(VulkanState{});
 			m_vkState = m_registry.Get<VulkanState&>(m_vulkanStateHandle);
-			return false;
-		}
-		auto [handleV, stateV] = *iterBegin;
-		m_vulkanStateHandle = handleV;
-		m_vkState = stateV;
+        }
+        else {
+            auto [handleV, stateV] = *iterBegin;
+            m_vulkanStateHandle = handleV;
+            m_vkState = stateV;
+        }
+
+        
+
 
 
         m_vkState().m_instance = instance;
         m_vkState().m_device = device;
+        
+        m_vkState().m_depthMapFormat = VK_FORMAT_D32_SFLOAT;
 
         vvh::SwapChain engineSwapchain;
         engineSwapchain.m_swapChain = swapchain->getSwapchain();
         engineSwapchain.m_swapChainExtent = swapchain->getExtent();
         engineSwapchain.m_swapChainImageFormat = swapchain->getFormat();
+
+        vvh::RenCreateRenderPass({
+            .m_depthFormat = m_vkState().m_depthMapFormat,
+            .m_device = m_vkState().m_device,
+            .m_swapChain = engineSwapchain,
+            .m_clear = false,
+            .m_renderPass = imguiRenderPass
+        });
+
+        swapchain->createImGuiFramebuffers(depthTarget, imguiRenderPass);
+
+        engineSwapchain.m_swapChainFramebuffers = swapchain->getImguiFrameBuffer();
         m_vkState().m_swapChain = engineSwapchain;
-        m_vkState().m_depthMapFormat = VK_FORMAT_D32_SFLOAT;
+        
 
         m_vkState().m_physicalDevice = physicalDevice;
         m_vkState().m_graphicsQueue = graphicsQueue;
@@ -797,6 +815,16 @@ namespace vve {
         m_vkState().m_queueFamilies = indices;
 
         m_vkState().m_surface = surface;
+
+        m_vkState().m_currentFrame = 0;
+        m_vkState().m_imageIndex = 0;
+
+        // initialize volk for imgui
+        volkInitialize();
+        volkLoadInstance(m_vkState().m_instance);
+        volkLoadDevice(m_vkState().m_device);
+
+        vvh::setVolkInstance(instance);
 
        
 

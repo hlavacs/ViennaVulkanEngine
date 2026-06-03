@@ -5,6 +5,11 @@ namespace vvh {
 
 	inline VkInstance volkInstance;
 
+
+	inline void setVolkInstance(VkInstance instance) {
+		volkInstance = instance;
+	}
+
 	//---------------------------------------------------------------------------------------------
 
 	inline bool DevCheckValidationLayerSupport(const std::vector<std::string>& validationLayers) {

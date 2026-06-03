@@ -31,10 +31,13 @@ namespace vve {
         swapChainImageFormat = vkbSwapchain.image_format;
         swapChainExtent = vkbSwapchain.extent;
 
+
+
         for (VkImage vkimage : swapChainImages) {
             Image* image = new Image(vkimage, swapChainExtent.width, swapChainExtent.height, swapChainImageFormat, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
             images.push_back(image);
         }
+
     }
 
     void SwapChain::cleanupSwapChain() {
@@ -138,5 +141,50 @@ namespace vve {
 
     VkSemaphore SwapChain::getImageAvailableSemaphore(int currentFrame) {
         return imageAvailableSemaphores[currentFrame];
+    }
+
+    void SwapChain::createImGuiFramebuffers(RenderTarget* depthTarget, VkRenderPass imguiRenderPass)
+    {
+        for (auto fb : framebuffers)
+        {
+            vkDestroyFramebuffer(device, fb, nullptr);
+        }
+
+        framebuffers.clear();
+        framebuffers.resize(images.size());
+
+        for (size_t i = 0; i < images.size(); i++)
+        {
+            std::array<VkImageView, 2> attachments =
+            {
+                images[i]->getImageView(),
+                depthTarget->getImage(0)->getImageView()
+            };
+
+            VkFramebufferCreateInfo framebufferInfo{};
+            framebufferInfo.sType =
+                VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+            framebufferInfo.renderPass = imguiRenderPass;
+            framebufferInfo.attachmentCount =
+                static_cast<uint32_t>(attachments.size());
+            framebufferInfo.pAttachments = attachments.data();
+            framebufferInfo.width = swapChainExtent.width;
+            framebufferInfo.height = swapChainExtent.height;
+            framebufferInfo.layers = 1;
+
+            if (vkCreateFramebuffer(
+                device,
+                &framebufferInfo,
+                nullptr,
+                &framebuffers[i]) != VK_SUCCESS)
+            {
+                throw std::runtime_error(
+                    "Failed to create ImGui framebuffer!");
+            }
+        }
+    }
+
+    std::vector<VkFramebuffer> SwapChain::getImguiFrameBuffer() {
+        return framebuffers;
     }
 }

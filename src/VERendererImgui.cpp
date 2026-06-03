@@ -98,7 +98,7 @@ namespace vve {
     bool RendererImgui::OnPrepareNextFrame(Message message) {
 	    ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL3_NewFrame();
-        ImGui::NewFrame();
+        ImGui::NewFrame();		
 		return false;
     }
 
@@ -108,7 +108,6 @@ namespace vve {
      * @return false
      */
     bool RendererImgui::OnRecordNextFrame(Message message) {
-
         vkResetCommandBuffer(m_commandBuffers[m_vkState().m_currentFrame],  0);
 
 		vvh::ComBeginCommandBuffer({.m_commandBuffer = m_commandBuffers[m_vkState().m_currentFrame]});
