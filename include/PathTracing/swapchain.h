@@ -82,6 +82,8 @@ namespace vve {
          */
         void recordImageTransfer(int currentFrame, RenderTarget* target);
 
+        void recordImagePresentLayoutTransition(int currentFrame);
+
         /**
          * Present the current swapchain image.
          * @param currentFrame Frame index.

@@ -422,7 +422,12 @@ namespace vve {
         pickPhysicalDevice();
         createLogicalDevice();
 
-        commandManager = new CommandManager(device, physicalDevice, surface, graphicsQueue);
+
+        auto comandManagerManagerUnique = std::make_unique<CommandManager>("Command Manager", m_engine, device, physicalDevice, surface, graphicsQueue);
+        commandManager = comandManagerManagerUnique.get();
+        m_engine.RegisterSystem(std::move(comandManagerManagerUnique));
+
+        //commandManager = new CommandManager(device, physicalDevice, surface, graphicsQueue);
         swapchain = new SwapChain(physicalDevice, device, surface, presentQueue, commandManager, m_windowSDLState().m_sdlWindow);
 
         lightVertexCacheSize = VkExtent2D(50000, 1);
@@ -938,6 +943,9 @@ namespace vve {
         swapchain->recordImageTransfer(currentFrame, combinedTarget);
         //swapchain->recordImageTransfer(currentFrame, albedoTarget);
 
+        //imgui will queue its command buffer after this
+        commandManager->QueueCommandBufferForExecution(currentFrame);
+
         return false;
     }
 
@@ -1006,6 +1014,10 @@ namespace vve {
     
 
     bool RendererRayTraced::OnRenderNextFrame(Message message) {
+
+        //transition swapchain image to present optimal
+        swapchain->recordImagePresentLayoutTransition(currentFrame);
+        commandManager->QueueCommandBufferPresentForExecution(currentFrame);
 
         commandManager->executeCommand(currentFrame, swapchain->getImageAvailableSemaphore(currentFrame));
 

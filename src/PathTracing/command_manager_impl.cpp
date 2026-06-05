@@ -8,7 +8,7 @@
 
 namespace vve {
 	CommandManager::~CommandManager() {
-		
+
 	}
 
 	void CommandManager::freeResources() {
@@ -23,11 +23,32 @@ namespace vve {
 		}
 	}
 
-	CommandManager::CommandManager(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkQueue& graphicsQueue) :
-		device(device), physicalDevice(physicalDevice), surface(surface), graphicsQueue(graphicsQueue){
+	CommandManager::CommandManager(std::string systemName, Engine& engine, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkQueue& graphicsQueue) :
+		System{ systemName, engine }, device(device), physicalDevice(physicalDevice), surface(surface), graphicsQueue(graphicsQueue) {
 		createCommandPool();
 		createCommandBuffer();
 		createSyncObjects();
+
+		engine.RegisterCallbacks({
+			{this,  3750, "INIT", [this](Message& message) { return OnInit(message); } }});
+	}
+
+	bool CommandManager::OnInit(Message message) {
+		//load the vkState object
+		auto view = m_registry.GetView<vecs::Handle, VulkanState&>();
+		auto iterBegin = view.begin();
+		auto iterEnd = view.end();
+		if (!(iterBegin != iterEnd)) {
+			m_vulkanStateHandle = m_registry.Insert(VulkanState{});
+			m_vkState = m_registry.Get<VulkanState&>(m_vulkanStateHandle);
+		}
+		else {
+			auto [handleV, stateV] = *iterBegin;
+			m_vulkanStateHandle = handleV;
+			m_vkState = stateV;
+		}
+
+		return false;
 	}
 
 	void CommandManager::createSyncObjects() {
@@ -78,6 +99,18 @@ namespace vve {
 		if (vkAllocateCommandBuffers(device, &allocInfo, commandBuffers.data()) != VK_SUCCESS) {
 			throw std::runtime_error("failed to allocate command buffers!");
 		}
+
+		commandBuffersPresent.resize(MAX_FRAMES_IN_FLIGHT);
+
+		VkCommandBufferAllocateInfo allocInfoPresent{};
+		allocInfoPresent.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+		allocInfoPresent.commandPool = commandPool;
+		allocInfoPresent.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+		allocInfoPresent.commandBufferCount = (uint32_t)commandBuffersPresent.size();
+
+		if (vkAllocateCommandBuffers(device, &allocInfoPresent, commandBuffersPresent.data()) != VK_SUCCESS) {
+			throw std::runtime_error("failed to allocate command buffers!");
+		}
 	}
 
 	VkCommandBuffer CommandManager::beginSingleTimeCommand() {
@@ -119,6 +152,10 @@ namespace vve {
 		return commandBuffers[currentFrame];
 	}
 
+	VkCommandBuffer CommandManager::getCommandBufferPresent(int currentFrame) {
+		return commandBuffersPresent[currentFrame];
+	}
+
 	VkCommandBuffer* CommandManager::getCommandBufferPtr(int currentFrame) {
 		return &commandBuffers[currentFrame];
 	}
@@ -134,10 +171,66 @@ namespace vve {
 		if (vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo) != VK_SUCCESS) {
 			throw std::runtime_error("failed to begin recording command buffer!");
 		}
+
+		vkResetCommandBuffer(commandBuffersPresent[currentFrame], 0);
+		VkCommandBufferBeginInfo beginInfoPresent{};
+		beginInfoPresent.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+		beginInfoPresent.flags = 0; // Optional
+		beginInfoPresent.pInheritanceInfo = nullptr; // Optional
+
+		if (vkBeginCommandBuffer(commandBuffersPresent[currentFrame], &beginInfoPresent) != VK_SUCCESS) {
+			throw std::runtime_error("failed to begin recording command buffer!");
+		}
 	}
 
-	//vkAcquireNextImageKHR needs to be done before submitting the command buffer add semaphore input!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	//comand manager needs to become a system. in record next frame we push the command buffer of the command manager into the global m_commandBuffersSubmit queue.
+	//after that imgui will put its command buffer into the m_commandBuffersSubmit. executeCommand then has to execute all comand buffers in the global queue 
+	//I guess the semaphore and fence have to be put into the last command buffer.
+	//remove command buffers again from m_commandBuffersSubmit afet submitted.
+
+	
+	void CommandManager::QueueCommandBufferForExecution(int currentFrame) {
+		m_vkState().m_commandBuffersSubmit.push_back(commandBuffers[currentFrame]);
+	};
+
+	void CommandManager::QueueCommandBufferPresentForExecution(int currentFrame) {
+		m_vkState().m_commandBuffersSubmit.push_back(commandBuffersPresent[currentFrame]);
+	};
+	
+
 	void CommandManager::executeCommand(int currentFrame, VkSemaphore ImageAvailableSemaphore) {
+
+		if (vkEndCommandBuffer(commandBuffers[currentFrame]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to record command buffer!");
+		}
+
+		if (vkEndCommandBuffer(commandBuffersPresent[currentFrame]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to record present command buffer!");
+		}
+
+		VkSubmitInfo submitInfo{};
+		submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+		VkSemaphore waitSemaphores[] = { ImageAvailableSemaphore };
+		VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+		submitInfo.waitSemaphoreCount = 1;
+		submitInfo.pWaitSemaphores = waitSemaphores;
+		submitInfo.pWaitDstStageMask = waitStages;
+		submitInfo.commandBufferCount = m_vkState().m_commandBuffersSubmit.size();
+		submitInfo.pCommandBuffers = m_vkState().m_commandBuffersSubmit.data();
+		VkSemaphore signalSemaphores[] = { renderFinishedSemaphores[currentFrame] };
+		submitInfo.signalSemaphoreCount = 1;
+		submitInfo.pSignalSemaphores = signalSemaphores;
+
+		if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS) {
+			throw std::runtime_error("failed to submit draw command buffer!");
+		}
+
+		m_vkState().m_commandBuffersSubmit = std::vector<VkCommandBuffer>();
+	}
+
+	/*
+		void CommandManager::executeCommand(int currentFrame, VkSemaphore ImageAvailableSemaphore) {
 
 		if (vkEndCommandBuffer(commandBuffers[currentFrame]) != VK_SUCCESS) {
 			throw std::runtime_error("failed to record command buffer!");
@@ -161,6 +254,9 @@ namespace vve {
 			throw std::runtime_error("failed to submit draw command buffer!");
 		}
 	}
+	*/
+
+
 	VkSemaphore CommandManager::getRenderFinishedSemaphores(int currentFrame) {
 		return renderFinishedSemaphores[currentFrame];
 	}

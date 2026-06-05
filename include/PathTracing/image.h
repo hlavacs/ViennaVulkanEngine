@@ -66,7 +66,7 @@ namespace vve {
         }
 
 
-        void transitionImageLayout(VkImageLayout newLayout, VkCommandBuffer cmd);
+        
         void copyFromImage(Image* srcImage, VkImageLayout newLayout, VkCommandBuffer cmd);
 
 
@@ -157,6 +157,8 @@ namespace vve {
                 1, &imgBarrier         // image barriers
             );
         }
+
+        void transitionImageLayout(VkImageLayout newLayout, VkCommandBuffer cmd);
 
 
         /**

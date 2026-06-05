@@ -20,7 +20,7 @@ namespace vve {
 
 
 	/** Manages command buffers, command pools, and frame sync objects. */
-	class CommandManager {
+	class CommandManager : public System {
 
 	private:
 		VkDevice device;
@@ -29,8 +29,12 @@ namespace vve {
 		VkQueue graphicsQueue;
 		VkCommandPool commandPool{};
 		std::vector<VkCommandBuffer> commandBuffers{};
+		std::vector<VkCommandBuffer> commandBuffersPresent{};
 		std::vector<VkSemaphore> renderFinishedSemaphores;
 		std::vector<VkFence> inFlightFences;
+
+		vecs::Ref<VulkanState> m_vkState{};
+		vecs::Handle m_vulkanStateHandle{};
 	
 		/** Create a command pool for the graphics queue family. */
 		void createCommandPool();
@@ -56,10 +60,12 @@ namespace vve {
 		 * @param surface Surface used for present queue selection.
 		 * @param graphicsQueue Graphics queue handle.
 		 */
-		CommandManager(VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkQueue& graphicsQueue);
+		CommandManager(std::string systemName, Engine& engine, VkDevice device, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkQueue& graphicsQueue);
 
 		/** Release owned Vulkan resources. */
 		~CommandManager();
+
+		bool OnInit(Message message);
 
 		/** Explicitly free Vulkan resources (destructor-safe). */
 		void freeResources();
@@ -74,6 +80,8 @@ namespace vve {
 		 * @return Pointer to command buffer for the given frame index.
 		 */
 		VkCommandBuffer* getCommandBufferPtr(int currentFrame);
+
+		VkCommandBuffer getCommandBufferPresent(int currentFrame);
 
 		/**
 		 * Begin a single-time command buffer.
@@ -108,6 +116,9 @@ namespace vve {
 		 * @param currentFrame Frame index.
 		 */
 		void waitForFence(int currentFrame);
+
+		void QueueCommandBufferForExecution(int currentFrame);
+		void QueueCommandBufferPresentForExecution(int currentFrame);
 
 	};
 

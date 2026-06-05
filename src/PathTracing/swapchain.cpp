@@ -117,7 +117,13 @@ namespace vve {
     }
 
     void SwapChain::recordImageTransfer(int currentFrame, RenderTarget* target) {
-        images[imageIndices[currentFrame]]->recordCopyFromImage(target->getImage(currentFrame), VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, currentFrame);
+        // transition it to color attachment optimal for imgui
+        images[imageIndices[currentFrame]]->recordCopyFromImage(target->getImage(currentFrame), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, currentFrame);
+    }
+
+    void SwapChain::recordImagePresentLayoutTransition(int currentFrame) {
+        //tansition image to present optimal after imgui
+        images[imageIndices[currentFrame]]->transitionImageLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, commandManager->getCommandBufferPresent(currentFrame));
     }
 
     VkResult SwapChain::presentImage(int currentFrame, VkSemaphore renderCompletSemaphore) {
