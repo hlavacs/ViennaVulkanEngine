@@ -79,34 +79,33 @@ IntegrationStepQueryRecord integratorDirect(inout Sampler sampler) {
 }
 
 // Indirect Integrator
-IntegrationStepQueryRecord integratorBidirectional(inout Sampler sampler, ) {
-
-    int2 launchID = (int2)DispatchRaysIndex().xy;        // Current pixel (x,y)
-    int2 launchSize = (int2)DispatchRaysDimensions().xy; // Image size (width,height)
+IntegrationStepQueryRecord integratorBidirectional(inout Sampler sampler) {
+    int2 launchID = (int2)DispatchRaysIndex().xy;
+    int2 launchSize = (int2)DispatchRaysDimensions().xy;
 
     IntersectionRecord its;
     MaterialRecord material;
-
     getInitialSurfaceData(launchID, launchSize, its, material);
 
-    float pdf = 1.0 / float(lightVertexCacheSize);
-
-    uint sampleCount = 25;
+    uint sampleCount = 150;
     float3 radiance = 0.0;
+
+    float cameraAreaPDF = calculateCameraVertexAreaPdf(its, view, viewInv, proj, launchSize);
 
     for (uint i = 0; i < sampleCount; i++) {
         uint index = sampler.UniformUIntFast(0, lightVertexCacheSize - 1);
-        // do not devide by the pdf
-        // radiance += getOccludedLightContributionFromConnection(its, material, lightVertex) / pdf;
-        radiance += getOccludedLightContributionFromConnection(its, material, index);
-    }
-    
-    IntegrationStepQueryRecord integrationStep;
 
+        // Accumulate raw unweighted connection contributions
+        radiance += getOccludedLightContributionFromConnectionTest(its, material, index, cameraAreaPDF);
+    }
+
+    IntegrationStepQueryRecord integrationStep;
     integrationStep.directLight = float3(0.0);
-    integrationStep.indirectLight = radiance / sampleCount;
+
+    // Divide by sampleCount for the Monte Carlo average,
+    // and multiply by cacheSelectionPdf to account for the cache size normalization.
+    integrationStep.indirectLight = (radiance / float(sampleCount));
     integrationStep.throughput = float3(0.0);
-    // integrationStep.indirectRay = indirectRay;
 
     return integrationStep;
 }

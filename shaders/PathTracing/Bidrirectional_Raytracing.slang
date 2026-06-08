@@ -18,43 +18,29 @@ cbuffer UniformBufferBidirectional
     uint lightVertexCacheSize;
 };
 
-    // this only works with consistent instance indices which is bad
-/*
-struct LightVertex {
-    float4 radiance;
-    float4 samplePosition;
-    float4 hitPosition; // only required for light path validation
-
-    float4 barycentrics;
-    uint triangleIdx;
-    uint instanceIdx;
-
-    uint lightIndex;
-    uint age;
-    float selectionPdf;
-    float importance;
+float lightVertexPDF(in StructuredBuffer<LightSource> lightSources, in LightVertex lightVertex) {
+    //float distance = length(lightVertex.samplePosition - lightVertex.hitPosition);
+    return lightSourcePdf(lightBuffer, lightVertex.lightIndex);
 }
-*/
-
 
 LightVertex generateLightVertex(inout Sampler sampler) {
     LightVertex lightVertex;
-    
+
     float pdf = 0.0;
     uint lightIndex = 0;
     LightSource light = chooseRandomLightSourceWeighted(lightBuffer, sampler, pdf, lightIndex);
 
-    //we assume sphere light for now!!!!!!!!
     float2 sample = sampler.UniformFloat2();
     float3 lightSurfaceDirection = squareToUniformSphere(sample);
     float lightSurfaceSelectionPdf = squareToUniformSpherePdf(lightSurfaceDirection);
     float3 lightSurfacePosition = light.position.xyz + (lightSurfaceDirection * light.radius);
 
+    float lightArea = 4.0 * light.radius * light.radius * M_PI;
     Frame lightFrame = Frame(lightSurfaceDirection);
 
     sample = sampler.UniformFloat2();
-    float3 lightDirectionLocal = squareToUniformHemisphere(sample);
-    float lightDirectionSelectionPdf = squareToUniformHemispherePdf(lightDirectionLocal);
+    float3 lightDirectionLocal = squareToCosineHemisphere(sample);
+    float lightDirectionSelectionPdf = squareToCosineHemispherePdf(lightDirectionLocal);
     float3 lightSampleDirection = lightFrame.toWorld(lightDirectionLocal);
 
     RayDesc ray;
@@ -68,18 +54,8 @@ LightVertex generateLightVertex(inout Sampler sampler) {
     TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, ray, payload);
 
     if (!payload.hit) {
-        lightVertex.age = 0;
-        lightVertex.hitPosition = float4(0.0);
-        lightVertex.importance = 0.0;
-        lightVertex.lightIndex = lightIndex;
+        // ... (Keep your old miss shader initialization, but set radiance to 0.0)
         lightVertex.radiance = float4(0.0);
-        lightVertex.samplePosition = float4(lightSurfacePosition, 1.0);
-        lightVertex.selectionPdf = pdf;
-        lightVertex.normal = float4(0.0);
-        lightVertex.tangent = float4(0.0);
-        lightVertex.materialIndex = 0;
-        lightVertex.uv = float2(0.0);
-
         return lightVertex;
     }
 
@@ -89,23 +65,19 @@ LightVertex generateLightVertex(inout Sampler sampler) {
     lightVertex.hitPosition = float4(its.position, 1.0);
     lightVertex.importance = 0.0;
     lightVertex.lightIndex = lightIndex;
-    // likely needs all pdfs
-    //lightVertex.radiance = light.emission / (pdf * lightSurfaceSelectionPdf * lightDirectionSelectionPdf);
 
     float distance = length(its.position - lightSurfacePosition);
-    //float cosHit = saturate(dot(its.normal, -normalize(lightSampleDirection)));
+    float cosHit = saturate(dot(its.normal, -normalize(lightSampleDirection)));
 
-    //lightVertex.radiance = (light.emission * cosHit / (distance * distance)) / (pdf * lightSurfaceSelectionPdf);
+    // FIX 1: Store the true path throughput (alpha^L) instead of raw emission.
+    // This is the total power of the path prefix divided by the emission PDFs.
+    lightVertex.radiance = float4((light.emission.xyz * lightArea * M_PI) / pdf, 1.0);
 
-    // lightVertex.radiance = (light.emission / (distance * distance));
-    //lightVertex.radiance = light.emission;
-    //pdf division later
-    //lightVertex.radiance = light.emission / (pdf);
-
-    lightVertex.radiance = light.emission;
-    //lightVertex.radiance = light.emission / (pdf);
     lightVertex.samplePosition = float4(lightSurfacePosition, 1.0);
-    lightVertex.selectionPdf = 1.0;
+
+    // We still keep the tracking PDF exactly the same for MIS calculations later!
+    lightVertex.selectionPdf = pdf * (1.0 / lightArea) * lightDirectionSelectionPdf * (cosHit / (distance * distance));
+
     lightVertex.normal = float4(its.normal, 1.0);
     lightVertex.tangent = float4(its.tangent, 1.0);
     lightVertex.materialIndex = its.materialIdx;
@@ -143,51 +115,19 @@ EmitterRecord getEmitterRecordFromLightVertex(in LightVertex lightVertex) {
     return emitterRecord;
 }
 
-/*
-EmitterRecord getEmitterRecordFromConnection(in EmitterRecord fromLightSource, in IntersectionRecord its, in IntersectionRecord itsConnection, in MaterialRecord materialRecordConnection) {
-    EmitterRecord emitterRecord;
-    emitterRecord.direction = -itsConnection.direction;
-    emitterRecord.distance = length(its.position - itsConnection.position);
-    emitterRecord.intersection = itsConnection.position;
-    float3 bsdfEvalConnection = getUnoccludedLightContribution(itsConnection, materialRecordConnection, fromLightSource);
-    // likely needs to be devided by distance squared
-
-    float cosThetaLight = saturate(dot(itsConnection.normal, emitterRecord.direction));
-
-    emitterRecord.sampleEmission = bsdfEvalConnection * (cosThetaLight / (emitterRecord.distance * emitterRecord.distance));
-
-    return emitterRecord;
-}
-    */
-
 
 EmitterRecord getEmitterRecordFromConnection(in EmitterRecord fromLightSource, in IntersectionRecord its, in IntersectionRecord itsConnection, in MaterialRecord materialRecordConnection) {
     EmitterRecord emitterRecord;
-    // emitterRecord.direction = itsConnection.direction;
     emitterRecord.direction = normalize(itsConnection.position - its.position);
     emitterRecord.distance = length(itsConnection.position - its.position);
     emitterRecord.intersection = itsConnection.position;
     float3 bsdfEvalConnection = getUnoccludedLightContribution(itsConnection, materialRecordConnection, fromLightSource);
-    // likely needs to be devided by distance squared
 
-    //not sure if this is correct, but it makes the result less biased looking
-    //moved to generate!
     float cosThetaLight = saturate(dot(itsConnection.normal, -emitterRecord.direction));
-    //float cosThetaLight = 1.0;
-
-    //emitterRecord.sampleEmission = bsdfEvalConnection * (cosThetaLight / (emitterRecord.distance * emitterRecord.distance));
 
     float distSq = max(emitterRecord.distance * emitterRecord.distance, 0.01);
 
-    //float distSq = 1.0;
-
-    //float distSq = 10.0;
-
     emitterRecord.sampleEmission = bsdfEvalConnection * cosThetaLight / distSq;
-
-    //emitterRecord.sampleEmission = bsdfEvalConnection * cosThetaLight;
-
-    //emitterRecord.sampleEmission = bsdfEvalConnection;
 
     return emitterRecord;
 }
@@ -259,8 +199,6 @@ bool isSurfacePointOccludedTest(in IntersectionRecord its, in IntersectionRecord
         return true;
     }
 
-
-
     HitPayload payload;
     payload.hit = false; // Ensure this is initialized!
 
@@ -272,6 +210,30 @@ bool isSurfacePointOccludedTest(in IntersectionRecord its, in IntersectionRecord
     // If the ray hit anything before reaching the target, it's occluded
     return payload.hit;
 }
+
+bool isSurfacePointOccluded(in float3 startPos, in float3 endPos, in float3 normal) {
+    RayDesc shadowRay;
+    // Offset origin slightly along the normal to prevent self-intersection
+    shadowRay.Origin = startPos + (normal * 0.001);
+
+    float3 toTarget = endPos - startPos;
+    float distance = length(toTarget);
+
+    shadowRay.Direction = toTarget / distance;
+    shadowRay.TMin = 0.0;
+    shadowRay.TMax = distance - 0.001; // Stop just before target
+
+    // Horizon check
+    if (dot(shadowRay.Direction, normal) <= 0.0) return true;
+
+    HitPayload payload;
+    payload.hit = false;
+    const uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
+    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
+
+    return payload.hit;
+}
+
 
 float3 getOccludedLightContributionFromConnection(in IntersectionRecord its, in MaterialRecord material, in uint lightVertexIndex) {
 
@@ -287,13 +249,6 @@ float3 getOccludedLightContributionFromConnection(in IntersectionRecord its, in 
         return float3(0.0);
     }
 
-    // if the primary and secundary normal are not facing each other they cannot be connected
-    /*
-    if (dot(its.normal, itsConnection.normal) > 0.0) {
-        return float3(0.0);
-    }
-        */
-
     Material materialConnection = materials[itsConnection.materialIdx];
     MaterialRecord materialRecordConnection = getMaterialProperties(materialConnection, textures, itsConnection.uv, itsConnection.frame);
 
@@ -305,12 +260,6 @@ float3 getOccludedLightContributionFromConnection(in IntersectionRecord its, in 
         return float3(0.0);
     }
 
-    /*
-    if (dot(materialRecordConnection.shadingFrame.n, -emitterRecordFromConnection.direction) < 0.0) {
-        return float3(0.0);
-    }
-        */
-
     if (isSurfacePointOccludedTest(its, itsConnection, emitterRecordFromConnection)) {
         return float3(0.0);
     }
@@ -318,8 +267,105 @@ float3 getOccludedLightContributionFromConnection(in IntersectionRecord its, in 
     float3 radiance = getUnoccludedLightContribution(its, material, emitterRecordFromConnection);
 
     return radiance / lightVertex.selectionPdf;
+}
 
-    //return radiance / lightSourcePdf(lightBuffer, lightVertex.lightIndex);
+float calculateCameraVertexAreaPdf(in IntersectionRecord itsCamera, float4x4 view, float4x4 viewInv, float4x4 proj, int2 launchSize) {
+    // 1. Transform the world-space ray direction into view-space.
+    // This allows us to find the angle of the ray relative to the camera's optical axis (Z-axis).
+    // Note: Adjust the mul() order if your engine uses column-major matrices!
+    float3 viewDir = mul(view, float4(itsCamera.direction, 0.0)).xyz;
+    float cosThetaCam = abs(viewDir.z);
+
+    if (cosThetaCam < 1e-5f) return 0.0f;
+
+    // 2. Compute the solid angle PDF (p_omega) of the camera ray.
+    // This calculates the angular tightness of a single pixel.
+    float screenArea = float(launchSize.x * launchSize.y);
+    float projFactors = proj[0][0] * proj[1][1]; // 1/tan(fovX/2) * 1/tan(fovY/2)
+
+    // Derived from the Jacobian changing pixel area to view-space area to solid angle
+    float p_omega = (screenArea * projFactors) / (4.0f * pow(cosThetaCam, 3.0f));
+
+    // 3. Extract the camera's world-space position to calculate the distance.
+    float3 cameraWorldPos = mul(viewInv, float4(0.0f, 0.0f, 0.0f, 1.0f)).xyz;
+
+    float distance = length(itsCamera.position - cameraWorldPos);
+    if (distance < 1e-5f) return 0.0f;
+
+    // 4. Convert the solid angle PDF to a surface area PDF at the hit point z1.
+    float cosTheta_z1 = saturate(dot(itsCamera.normal, -itsCamera.direction));
+
+    float cameraVertexAreaPdf = p_omega * (cosTheta_z1 / (distance * distance));
+
+    return cameraVertexAreaPdf;
+}
+
+float3 getOccludedLightContributionFromConnectionTest(in IntersectionRecord itsCamera,
+                                                      in MaterialRecord materialCamera,
+                                                      in uint lightVertexIndex,
+                                                      in float cameraVertexAreaPdf)
+{
+    LightVertex y1 = lightVertexCache[lightVertexIndex];
+    if (length(y1.radiance) <= 0.0) return float3(0.0);
+
+    // 1. Calculate Connection Geometry
+    float3 dir_C2L = y1.hitPosition.xyz - itsCamera.position;
+    float distance = length(dir_C2L);
+    if (distance < 0.001) return float3(0.0);
+
+    dir_C2L /= distance;
+    float3 dir_L2C = -dir_C2L;
+    float distSq = distance * distance;
+
+    // 2. Visibility Check
+    if (isSurfacePointOccluded(itsCamera.position, y1.hitPosition.xyz, itsCamera.normal)) {
+        return float3(0.0);
+    }
+
+    // 3. Evaluate Camera BSDF (z1)
+    BSDFQueryRecord bsdfRecCamera = constructBSDFRecord(itsCamera, materialCamera, dir_C2L, true);
+    float3 bsdf_z1 = PrincipledEval(bsdfRecCamera, materialCamera);
+
+    // 4. Evaluate Light Vertex BSDF (y1)
+    float3 dir_L2LightSource = normalize(y1.samplePosition.xyz - y1.hitPosition.xyz);
+
+    IntersectionRecord itsLight;
+    itsLight.position = y1.hitPosition.xyz;
+    itsLight.normal = y1.normal.xyz;
+    itsLight.tangent = y1.tangent.xyz;
+    itsLight.frame = Frame(itsLight.normal, itsLight.tangent);
+    itsLight.direction = -dir_L2LightSource;
+
+    Material materialLight = materials[y1.materialIndex];
+    MaterialRecord matRecLight = getMaterialProperties(materialLight, textures, y1.uv, itsLight.frame);
+
+    BSDFQueryRecord bsdfRecLight = constructBSDFRecord(itsLight, matRecLight, dir_L2C, true);
+    float3 bsdf_y1 = PrincipledEval(bsdfRecLight, matRecLight);
+
+    if (any(isnan(bsdf_z1)) || any(isnan(bsdf_y1))) return float3(0.0);
+
+    // 5. Geometry Term
+    float3 throughput = (bsdf_z1 * bsdf_y1) / distSq;
+
+    // 6. Calculate Backward Area PDFs across the bridge for MIS
+    float pdf_z1_to_y1_solidAngle = PrincipledPdf(bsdfRecCamera, materialCamera);
+    float cosTheta_y1 = saturate(dot(itsLight.normal, dir_L2C));
+    float backwardPdf_y1 = pdf_z1_to_y1_solidAngle * (cosTheta_y1 / distSq);
+
+    float pdf_y1_to_z1_solidAngle = PrincipledPdf(bsdfRecLight, matRecLight);
+    float cosTheta_z1 = saturate(dot(itsCamera.normal, dir_C2L));
+    float backwardPdf_z1 = pdf_y1_to_z1_solidAngle * (cosTheta_z1 / distSq);
+
+    // 7. Calculate MIS Weight
+    float ratio_PT = backwardPdf_y1 / y1.selectionPdf;
+    float ratio_LT = backwardPdf_z1 / cameraVertexAreaPdf;
+    float misWeight = 1.0 / (ratio_PT + 1.0 + ratio_LT);
+
+    // FIX 2: Do NOT divide by y1.selectionPdf here anymore!
+    // y1.radiance already scales by the inverted emission PDF.
+    float3 finalRadiance = y1.radiance.xyz * throughput * misWeight;
+
+    return max(0.0, finalRadiance);
 }
 
 

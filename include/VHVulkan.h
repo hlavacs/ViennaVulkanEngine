@@ -260,6 +260,18 @@ namespace vvh {
 		glm::vec4 m_material{ 0.0f, 1.0f, 0.0f, 0.0f }; // x = metallic, y = roughness, zw will be ao in future
 	};
 
+	enum  RenderMethode {
+		FORWARD,
+		BACKWARD,
+		RESTIRDI,
+		RESTIRGI,
+		RESTIRLVC
+	};
+
+	struct VRTSettings {
+		RenderMethode methode;
+	};
+
 	struct VRTMaterial {
 		uint32_t index = 0;
 		bool registered = false;

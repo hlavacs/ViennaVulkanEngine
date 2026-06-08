@@ -138,7 +138,7 @@ IntegrationStepQueryRecord integratorIndirect(inout Sampler sampler) {
 
     getInitialSurfaceData(launchID, launchSize, its, materialRecord);
 
-    uint sampleCount = 10;
+    uint sampleCount = 50;
     float3 radiance = float3(0.0);
 
     for (uint i = 0; i < sampleCount; i++) {

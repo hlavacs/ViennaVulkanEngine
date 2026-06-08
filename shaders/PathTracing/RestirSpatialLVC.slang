@@ -207,9 +207,9 @@ void rgenMain()
             // lead to increased noise. It is advisable to seperate importance from the Light Vertex, since no local copies of atomics
             // can be created.
 
-            
+            lightVertexCache[reservoirLVC.LVCIndex].importance += ((length(radiance) * reservoirLVC.lightWeight) / lightVertexPDF(lightBuffer, lightVertex)) * (distance * distance);
 
-            lightVertexCache[reservoirLVC.LVCIndex].importance += ((length(radiance) * reservoirLVC.lightWeight) / lightSourcePdf(lightBuffer, lightVertex.lightIndex));
+            //lightVertexCache[reservoirLVC.LVCIndex].importance += ((length(radiance) * reservoirLVC.lightWeight) / lightSourcePdf(lightBuffer, lightVertex.lightIndex));
         } else {
             reservoirLVC = createEmptyReservoirLVC();
         }

@@ -103,13 +103,24 @@ class MyGame : public vve::System {
             }
             */
 
-            
-
-
             GetCamera();
             m_registry.Get<vve::Rotation&>(m_cameraHandle)() = mat3_t{ glm::rotate(mat4_t{1.0f}, 3.14152f/2.0f, vec3_t{1.0f, 0.0f, 0.0f}) };
             auto pos = m_registry.Get<vve::Position&>(m_cameraNodeHandle);
             pos() = vec3_t(0.0f, 0.0f, 0.5f);
+
+
+            auto view = m_registry.GetView<vecs::Handle, vvh::VRTSettings&>();
+            auto iterBegin = view.begin();
+            auto iterEnd = view.end();
+            if (!(iterBegin != iterEnd)) {
+                m_renderSettingsHandle = m_registry.Insert(vvh::VRTSettings{});
+                m_renderSettings = m_registry.Get<vvh::VRTSettings&>(m_renderSettingsHandle);
+            }
+            else {
+                auto [handleV, stateV] = *iterBegin;
+                m_renderSettingsHandle = handleV;
+                m_renderSettings = stateV;
+            }
 
             return false;
             
@@ -165,7 +176,43 @@ class MyGame : public vve::System {
             */
 
            
-            ImGui::ShowDemoWindow();
+            //ImGui::ShowDemoWindow();
+
+
+            if (ImGui::BeginCombo("RenderMethode", renderMethodeOptions[current].c_str()))
+            {
+                for (int i = 0; i < renderMethodeOptions.size(); ++i)
+                {
+                    bool selected = (current == i);
+
+                    if (ImGui::Selectable(renderMethodeOptions[i].c_str(), selected))
+                        current = i;
+                    // Do something immediately
+                    switch (current)
+                    {
+                    case 0:
+                        m_renderSettings().methode = vvh::RenderMethode::FORWARD;
+                        break;
+                    case 1:
+                        m_renderSettings().methode = vvh::RenderMethode::BACKWARD;
+                        break;
+                    case 2:
+                        m_renderSettings().methode = vvh::RenderMethode::RESTIRDI;
+                        break;
+                    case 3:
+                        m_renderSettings().methode = vvh::RenderMethode::RESTIRGI;
+                        break;
+                    case 4:
+                        m_renderSettings().methode = vvh::RenderMethode::RESTIRLVC;
+                        break;
+                    }
+
+                    if (selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+
+                ImGui::EndCombo();
+            }
             
             
             return false;
@@ -180,6 +227,20 @@ class MyGame : public vve::System {
 		vecs::Handle m_cameraHandle{};
 		vecs::Handle m_cameraNodeHandle{};
 		float m_volume{MIX_MAX_VOLUME / 2.0};
+
+        std::vector<std::string> renderMethodeOptions = {
+            "Forward",
+            "Backward",
+            "RestirDI",
+            "RestirGI",
+            "RestirLVC"
+        };
+
+        int current = 0;
+
+        vecs::Ref<vvh::VRTSettings> m_renderSettings{};
+        vecs::Handle m_renderSettingsHandle{};
+
     };
     
     

@@ -213,7 +213,7 @@ void rgenMain()
         if (IsReservoirValid(reservoir))
         {
             float3 radiance = revaluateOccludedLightRadiance(reservoir, its, material);
-            output = radiance * reservoir.lightWeight;
+            //output = radiance * reservoir.lightWeight;
         } else {
             reservoir = createEmptyReservoir();
         }

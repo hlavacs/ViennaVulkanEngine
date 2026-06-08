@@ -768,21 +768,37 @@ namespace vve {
         combinePass->initComputePipeline();
 
 
+        //get render Settings
+
+
+        auto viewS = m_registry.GetView<vecs::Handle, vvh::VRTSettings&>();
+        auto iterBeginS = viewS.begin();
+        auto iterEndS = viewS.end();
+        if (!(iterBeginS != iterEndS)) {
+            m_renderSettingsHandle = m_registry.Insert(vvh::VRTSettings{});
+            m_renderSettings = m_registry.Get<vvh::VRTSettings&>(m_renderSettingsHandle);
+        }
+        else {
+            auto [handleS, stateS] = *iterBeginS;
+            m_renderSettingsHandle = handleS;
+            m_renderSettings = stateS;
+        }
+
+
         //upload data to VkState
 
-		auto view = m_registry.GetView<vecs::Handle, VulkanState&>();
-		auto iterBegin = view.begin();
-		auto iterEnd = view.end();
-		if( !(iterBegin != iterEnd)) {
-			m_vulkanStateHandle = m_registry.Insert(VulkanState{});
-			m_vkState = m_registry.Get<VulkanState&>(m_vulkanStateHandle);
+        auto view = m_registry.GetView<vecs::Handle, VulkanState&>();
+        auto iterBegin = view.begin();
+        auto iterEnd = view.end();
+        if (!(iterBegin != iterEnd)) {
+            m_vulkanStateHandle = m_registry.Insert(VulkanState{});
+            m_vkState = m_registry.Get<VulkanState&>(m_vulkanStateHandle);
         }
         else {
             auto [handleV, stateV] = *iterBegin;
             m_vulkanStateHandle = handleV;
             m_vkState = stateV;
         }
-
         
 
 
@@ -896,6 +912,47 @@ namespace vve {
         rasterizer->recordCommandBuffer(currentFrame);
         reprojectionPass->recordCommandBuffer(currentFrame);
 
+
+        switch (m_renderSettings().methode)
+        {
+        case vvh::RenderMethode::FORWARD:
+            raytracer->recordCommandBuffer(currentFrame);
+            break;
+        case vvh::RenderMethode::BACKWARD:
+            lightVertexGenerationFull->recordCommandBuffer(currentFrame);
+            bidirectionalPathTracing->recordCommandBuffer(currentFrame);
+            break;
+        case  vvh::RenderMethode::RESTIRDI:
+            restir_temporal->recordCommandBuffer(currentFrame);
+            restir_spatial->recordCommandBuffer(currentFrame);
+            break;
+        case  vvh::RenderMethode::RESTIRGI:
+            restirGI_temporal->recordCommandBuffer(currentFrame);
+            restirGI_spatial->recordCommandBuffer(currentFrame);
+            break;
+        case  vvh::RenderMethode::RESTIRLVC:
+            sumResetPass->recordCommandBuffer(currentFrame);
+
+            importanceReductionPass->recordCommandBuffer(currentFrame);
+
+            std::vector<glm::vec4> importanceSumCapture = importanceSum->getData(currentFrame);
+            std::cout << "The importance average is: " << importanceSumCapture[0].x / lightVertexCacheSize.width << "\n";
+
+            keepProbReductionPass->recordCommandBuffer(currentFrame);
+            std::vector<glm::vec4> keepSumCapture = keepProbSum->getData(currentFrame);
+            std::cout << "The keep average is: " << keepSumCapture[0].x / lightVertexCacheSize.width << "\n";
+
+            lightVertexGenerationWeightedReplacment->recordCommandBuffer(currentFrame);
+
+            //lightVertexGenerationRandomReplacment->recordCommandBuffer(currentFrame);
+
+            restirLVC_temporal->recordCommandBuffer(currentFrame);
+            restirLVC_spatial->recordCommandBuffer(currentFrame);
+            break;
+        }
+
+
+
         //raytracer->recordCommandBuffer(currentFrame);
 
         //restir_temporal->recordCommandBuffer(currentFrame);
@@ -906,24 +963,7 @@ namespace vve {
 
         //lightVertexGenerationFull->recordCommandBuffer(currentFrame);
 
-        sumResetPass->recordCommandBuffer(currentFrame);
-
-        importanceReductionPass->recordCommandBuffer(currentFrame);
-
-        std::vector<glm::vec4> importanceSumCapture = importanceSum->getData(currentFrame);
-        std::cout << "The importance average is: " << importanceSumCapture[0].x / lightVertexCacheSize.width << "\n";
-
-        keepProbReductionPass->recordCommandBuffer(currentFrame);
-        std::vector<glm::vec4> keepSumCapture = keepProbSum->getData(currentFrame);
-        std::cout << "The keep average is: " << keepSumCapture[0].x / lightVertexCacheSize.width << "\n";
-
-        lightVertexGenerationWeightedReplacment->recordCommandBuffer(currentFrame);
-
-        //bidirectionalPathTracing->recordCommandBuffer(currentFrame);
-        //lightVertexGenerationRandomReplacment->recordCommandBuffer(currentFrame);
-
-        restirLVC_temporal->recordCommandBuffer(currentFrame);
-        restirLVC_spatial->recordCommandBuffer(currentFrame);
+        
 
         combinePass->recordCommandBuffer(currentFrame);
         //copy images to previous image buffers

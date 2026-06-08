@@ -36,8 +36,10 @@ void rgenMain()
     // continuous version of the Chapman-Kolmogorov equation
     if (sampler.UniformFloat() < pKeep || isFirstFrame == 1) {
         // 1. Evaluate the generation PDF for the OLD vertex's current state
-        // (You must implement this function based on how generateLightVertex() samples space)
-        float pGen = lightSourcePdf(lightBuffer, lightVertexOld.lightIndex);
+
+        //the pdf is almost certainly incorret and this is compounding the error. But then again it makes no sense why this only happens in the distance
+        //also try to use atomics for the importance accumulation to see if that makes a diffrence
+        float pGen = lightVertexPDF(lightBuffer, lightVertexOld);
 
         // 2. Track the continuous PDF evolution
         if (isFirstFrame == 1) {
@@ -53,7 +55,7 @@ void rgenMain()
     } else {
         LightVertex lightVertexNew = generateLightVertex(sampler);
         // When freshly generated, its selection PDF is just its birth PDF
-        lightVertexNew.selectionPdf = lightSourcePdf(lightBuffer, lightVertexOld.lightIndex);
+        //lightVertexNew.selectionPdf = lightVertexPDF(lightBuffer, lightVertexNew);
         lightVertexCache[launchID.x] = lightVertexNew;
     }
 

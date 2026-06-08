@@ -6,7 +6,7 @@ float getKeepProbability(float importance, float importanceSum, uint lightVertex
         return 0.0;
     }
 
-    float replacementRate = 0.025;
+    float replacementRate = 0.0;
     float k = 5.0;
 
 
