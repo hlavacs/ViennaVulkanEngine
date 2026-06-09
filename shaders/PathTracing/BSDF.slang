@@ -408,6 +408,17 @@ public float3 PrincipledEval(in BSDFQueryRecord record, in MaterialRecord materi
     // return material.albedo / M_PI * cosineTerm;
 }
 
+public float3 PrincipledEvalNoCosine(in BSDFQueryRecord record, in MaterialRecord material) {
+
+    float cosWiG = dot(record.geometryNormal, record.wiWorld);
+    if (cosWiG <= 0) return float3(0);
+    float cosWoG = dot(record.geometryNormal, record.woWorld);
+    if (cosWoG <= 0) return float3(0);
+
+    return float3(0.5) / M_PI;
+    // return material.albedo / M_PI * cosineTerm;
+}
+
 public float PrincipledPdf(in BSDFQueryRecord record, in MaterialRecord material) {
     float cosWiG = dot(record.geometryNormal, record.wiWorld);
     if (cosWiG <= 0) return 0.0;

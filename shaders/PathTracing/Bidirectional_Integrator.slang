@@ -90,13 +90,15 @@ IntegrationStepQueryRecord integratorBidirectional(inout Sampler sampler) {
     uint sampleCount = 150;
     float3 radiance = 0.0;
 
-    float cameraAreaPDF = calculateCameraVertexAreaPdf(its, view, viewInv, proj, launchSize);
+    //float cameraAreaPDF = calculateCameraVertexAreaPdf(its, view, viewInv, proj, launchSize);
 
     for (uint i = 0; i < sampleCount; i++) {
         uint index = sampler.UniformUIntFast(0, lightVertexCacheSize - 1);
 
         // Accumulate raw unweighted connection contributions
-        radiance += getOccludedLightContributionFromConnectionTest(its, material, index, cameraAreaPDF);
+        radiance += getOccludedLightContributionFromConnection(its, material, index);
+
+        //radiance += getOccludedLightContributionFromConnection(its, material, index) ;
     }
 
     IntegrationStepQueryRecord integrationStep;
