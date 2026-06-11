@@ -976,7 +976,7 @@ namespace vve {
 
         reservoirDI_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirDI_B->getBuffer(currentFrame), currentFrame);
         reservoirGI_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirGI_B->getBuffer(currentFrame), currentFrame);
-        //reservoirLVC_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirLVC_B->getBuffer(currentFrame), currentFrame);
+        reservoirLVC_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirLVC_B->getBuffer(currentFrame), currentFrame);
 
         lightVertexCache->getBuffer(nextFrame)->recordCopyFromBuffer(lightVertexCache->getBuffer(currentFrame), currentFrame);
 

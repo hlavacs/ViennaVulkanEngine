@@ -18,9 +18,27 @@ cbuffer UniformBufferBidirectional
     uint lightVertexCacheSize;
 };
 
+/*
 float lightVertexPDF(in StructuredBuffer<LightSource> lightSources, in LightVertex lightVertex) {
     //float distance = length(lightVertex.samplePosition - lightVertex.hitPosition);
     return lightSourcePdf(lightBuffer, lightVertex.lightIndex);
+}
+    */
+
+float lightVertexPDF(in StructuredBuffer<LightSource> lightSources, in LightVertex lightVertex) {
+    // float distance = length(lightVertex.samplePosition - lightVertex.hitPosition);
+    float pdf = lightSourcePdf(lightBuffer, lightVertex.lightIndex);
+
+    float distance = length(lightVertex.samplePosition - lightVertex.hitPosition);
+
+    LightSource light = lightBuffer[lightVertex.lightIndex];
+
+    float lightArea = 4.0 * light.radius * light.radius * M_PI;
+
+    float lightDirectionSelectionPdf = dot(normalize(lightVertex.samplePosition - light.position), normalize(lightVertex.hitPosition - lightVertex.samplePosition)) / (M_PI);
+    float cosinLtoLightSourceOnL = max(0.0, dot(lightVertex.normal, normalize(lightVertex.samplePosition - lightVertex.hitPosition)));
+
+    return pdf * (1.0 / lightArea) * lightDirectionSelectionPdf * (cosinLtoLightSourceOnL / (distance * distance));
 }
 
 LightVertex generateLightVertex(inout Sampler sampler) {
@@ -55,8 +73,19 @@ LightVertex generateLightVertex(inout Sampler sampler) {
     TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, ray, payload);
 
     if (!payload.hit) {
-        // ... (Keep your old miss shader initialization, but set radiance to 0.0)
         lightVertex.radiance = float4(0.0);
+        lightVertex.age = 0;
+        lightVertex.hitPosition = float4(0.0);
+        lightVertex.importance = 0.0;
+        lightVertex.lightIndex = lightIndex;
+        lightVertex.samplePosition = float4(0.0);
+        lightVertex.selectionPdf = 0.0;
+
+        lightVertex.normal = float4(0.0);
+        lightVertex.tangent = float4(0.0);
+        lightVertex.materialIndex = 0;
+        lightVertex.uv = float2(0.0);
+
         return lightVertex;
     }
 
@@ -74,13 +103,15 @@ LightVertex generateLightVertex(inout Sampler sampler) {
     //move the cosine to the geometry term for consistency
     //light area cancels out with the pdf the light source does not get brighter because it gets larger in this render engine!
     //the cosine should also cancel out with the cosine in the pdf
-    lightVertex.radiance = light.emission * cosLightSource / lightArea;
+    lightVertex.radiance = light.emission / lightArea;
 
     lightVertex.samplePosition = float4(lightSurfacePosition, 1.0);
 
     // We still keep the tracking PDF exactly the same for MIS calculations later!
     // probability of choosing point on light source * the probability of choosing the light vertex
-    // lightDirectionSelectionPdf will cancel out cosLightSource
+    // lightDirectionSelectionPdf will cancel out cosThetaOnLight
+    // cosinLtoLightSourceOnL will later cancel out during rendering
+    // cosinLtoLightSourceOnL
     lightVertex.selectionPdf = pdf * (1.0 / lightArea) * lightDirectionSelectionPdf * (cosinLtoLightSourceOnL / (distance * distance));
 
 
@@ -185,7 +216,12 @@ EmitterRecord getEmitterRecordFromLightVertex(in LightVertex lightVertex) {
 
     float distSq = max(emitterRecord.distance * emitterRecord.distance, 0.01);
 
-    emitterRecord.sampleEmission = lightVertex.radiance.xyz / distSq;
+    LightSource light = lightBuffer[lightVertex.lightIndex];
+    float cosThetaOnLight = dot(normalize(lightVertex.samplePosition - light.position), normalize(lightVertex.hitPosition - lightVertex.samplePosition));
+
+    emitterRecord.sampleEmission = (lightVertex.radiance.xyz * cosThetaOnLight / distSq) / lightVertex.selectionPdf;
+
+
 
     return emitterRecord;
 }
@@ -253,7 +289,7 @@ float3 getUnoccludedLightContributionFromConnection(in IntersectionRecord its, i
     //normals are flipped on backfacing geometry resulting in light leaking through
     float3 radiance = getUnoccludedLightContribution(its, material, emitterRecordFromConnection);
 
-    return radiance / lightVertex.selectionPdf;
+    return radiance;
     //return radiance / lightSourcePdf(lightBuffer, lightVertex.lightIndex);
     
 }
@@ -341,7 +377,11 @@ float3 getOccludedLightContributionFromConnection(in IntersectionRecord its, in 
 
     float3 radiance = getUnoccludedLightContribution(its, material, emitterRecordFromConnection);
 
-    return radiance / lightVertex.selectionPdf;
+    //almost certainly double count but lets go with
+    //float cosAtEye = max(0.0, dot(its.normal, emitterRecordFromConnection.direction));
+    //radiance *= cosAtEye;
+
+    return radiance;
 }
 
 /*
@@ -443,6 +483,86 @@ float3 getOccludedLightContributionFromConnectionTest(in IntersectionRecord itsC
     return max(0.0, finalRadiance);
 }
 
+float3 getOccludedLightContributionFromConnectionExact(
+    in IntersectionRecord itsCamera,
+    in MaterialRecord materialCamera,
+    in uint lightVertexIndex)
+{
+    LightVertex y1 = lightVertexCache[lightVertexIndex];
+    if (length(y1.radiance) <= 0.0)
+        return float3(0.0);
+
+    float3 dir_C2L = y1.hitPosition.xyz - itsCamera.position;
+    float dist_C = length(dir_C2L);
+    if (dist_C < 0.01) // original uses 0.01
+        return float3(0.0);
+    dir_C2L /= dist_C;
+    float3 dir_L2C = -dir_C2L;
+
+    IntersectionRecord itsLight;
+    itsLight.position = y1.hitPosition.xyz;
+    itsLight.normal = y1.normal.xyz;
+    itsLight.tangent = y1.tangent.xyz;
+    itsLight.frame = Frame(itsLight.normal, itsLight.tangent);
+    itsLight.direction = dir_C2L; // incoming direction from camera
+    itsLight.materialIdx = y1.materialIndex;
+    itsLight.uv = y1.uv;
+
+    Material materialLight = materials[y1.materialIndex];
+    MaterialRecord matRecLight = getMaterialProperties(materialLight, textures,
+                                                       itsLight.uv, itsLight.frame);
+
+    float3 dir_L2Source = y1.samplePosition.xyz - y1.hitPosition.xyz;
+    float dist_L = length(dir_L2Source);
+    if (dist_L < 0.001)
+        return float3(0.0);
+    dir_L2Source /= dist_L;
+    float distSqL = max(dist_L * dist_L, 0.01);
+    float3 sampleEmission_L = y1.radiance.xyz / distSqL;
+
+    BSDFQueryRecord bsdfRecLight = constructBSDFRecord(itsLight, matRecLight,
+                                                       dir_L2Source, true);
+    float3 bsdf_y1 = PrincipledEval(bsdfRecLight, matRecLight);
+
+    float3 bsdfEvalConnection = sampleEmission_L * bsdf_y1;
+
+    float cosThetaLight = saturate(dot(itsLight.normal, dir_L2C));
+    float distSqC = max(dist_C * dist_C, 0.01);
+    float3 sampleEmission_C = bsdfEvalConnection * cosThetaLight / distSqC;
+
+    if (cosThetaLight <= 0.0)
+        return float3(0.0);
+
+    RayDesc shadowRay;
+    shadowRay.Origin = itsCamera.position;
+    shadowRay.Direction = dir_C2L; // already normalized
+    shadowRay.TMin = 0.001;
+    shadowRay.TMax = dist_C - 0.001;
+
+    if (dot(shadowRay.Direction, itsCamera.normal) < 1e-4f)
+        return float3(0.0);
+
+    HitPayload payload;
+    payload.hit = false;
+    const uint rayFlags = RAY_FLAG_ACCEPT_FIRST_HIT_AND_END_SEARCH;
+    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
+    if (payload.hit)
+        return float3(0.0);
+
+    BSDFQueryRecord bsdfRecCamera = constructBSDFRecord(itsCamera, materialCamera,
+                                                        dir_C2L, true);
+    float3 bsdf_z1 = PrincipledEval(bsdfRecCamera, materialCamera);
+
+    float3 radiance = bsdf_z1 * sampleEmission_C;
+
+    if (any(isnan(radiance)) || any(isinf(radiance)))
+        return float3(0.0);
+
+    float3 finalRadiance = radiance / y1.selectionPdf;
+
+    return max(0.0, finalRadiance);
+}
+
 /*
 
 float3 getOccludedLightContributionFromConnectionTest(in IntersectionRecord itsCamera,
@@ -514,6 +634,22 @@ float3 getOccludedLightContributionFromConnectionTest(in IntersectionRecord itsC
 }
 */
 
+EmitterRecord getEmitterRecordFromLightVertexNoPDF(in LightVertex lightVertex) {
+    EmitterRecord emitterRecord;
+    emitterRecord.direction = normalize(lightVertex.samplePosition.xyz - lightVertex.hitPosition.xyz);
+    emitterRecord.distance = length(lightVertex.samplePosition.xyz - lightVertex.hitPosition.xyz);
+    emitterRecord.intersection = lightVertex.hitPosition.xyz;
+
+    float distSq = max(emitterRecord.distance * emitterRecord.distance, 0.01);
+
+    LightSource light = lightBuffer[lightVertex.lightIndex];
+    float cosThetaOnLight = dot(normalize(lightVertex.samplePosition - light.position), normalize(lightVertex.hitPosition - lightVertex.samplePosition));
+
+    emitterRecord.sampleEmission = (lightVertex.radiance.xyz * cosThetaOnLight / distSq);
+
+
+    return emitterRecord;
+}
 
 float3 getOccludedLightContributionFromConnectionNoPDF(in IntersectionRecord its, in MaterialRecord material, in uint lightVertexIndex) {
 
@@ -539,7 +675,7 @@ float3 getOccludedLightContributionFromConnectionNoPDF(in IntersectionRecord its
     Material materialConnection = materials[itsConnection.materialIdx];
     MaterialRecord materialRecordConnection = getMaterialProperties(materialConnection, textures, itsConnection.uv, itsConnection.frame);
 
-    EmitterRecord emitterRecord = getEmitterRecordFromLightVertex(lightVertex);
+    EmitterRecord emitterRecord = getEmitterRecordFromLightVertexNoPDF(lightVertex);
     EmitterRecord emitterRecordFromConnection = getEmitterRecordFromConnection(emitterRecord, its, itsConnection, materialRecordConnection);
 
     // check if we hit a backface

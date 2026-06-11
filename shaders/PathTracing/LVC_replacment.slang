@@ -2,11 +2,21 @@
 
 float getKeepProbability(float importance, float importanceSum, uint lightVertexCacheSize) {
 
+    /*
+    if (importance < 0.001) {
+        return 0.0;
+    } else {
+        return 1.0;
+    }
+        */
+
+        /*
     if (importance < 0.001) {
         return 0.0;
     }
+        */
 
-    float replacementRate = 0.0;
+    float replacementRate = 0.1;
     float k = 5.0;
 
 

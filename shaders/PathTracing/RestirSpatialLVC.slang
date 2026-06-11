@@ -44,7 +44,39 @@ RWStructuredBuffer<ReservoirLVC> inReservoirLVC;
 [[vk::binding(9, 2)]]
 RWStructuredBuffer<ReservoirLVC> outReservoirLVC;
 
+// Indirect Integrator
+IntegrationStepQueryRecord integratorBidirectional(inout Sampler sampler) {
+    int2 launchID = (int2)DispatchRaysIndex().xy;
+    int2 launchSize = (int2)DispatchRaysDimensions().xy;
 
+    IntersectionRecord its;
+    MaterialRecord material;
+    getInitialSurfaceData(launchID, launchSize, its, material);
+
+    uint sampleCount = 150;
+    float3 radiance = 0.0;
+
+    // float cameraAreaPDF = calculateCameraVertexAreaPdf(its, view, viewInv, proj, launchSize);
+
+    for (uint i = 0; i < sampleCount; i++) {
+        uint index = sampler.UniformUIntFast(0, lightVertexCacheSize - 1);
+
+        // Accumulate raw unweighted connection contributions
+        radiance += getOccludedLightContributionFromConnection(its, material, index);
+
+        // radiance += getOccludedLightContributionFromConnection(its, material, index) ;
+    }
+
+    IntegrationStepQueryRecord integrationStep;
+    integrationStep.directLight = float3(0.0);
+
+    // Divide by sampleCount for the Monte Carlo average,
+    // and multiply by cacheSelectionPdf to account for the cache size normalization.
+    integrationStep.indirectLight = (radiance / float(sampleCount));
+    integrationStep.throughput = float3(0.0);
+
+    return integrationStep;
+}
 
 
 void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout IntersectionRecord its, inout MaterialRecord material) {
@@ -93,7 +125,7 @@ void rgenMain()
     const uint SAMPLE_RADIUS = 12;
 
     const uint MAX_SPATIAL_INFLUENCE_GI = 10;
-    const uint SPATIAL_SAMPLES_GI = 12;
+    const uint SPATIAL_SAMPLES_GI = 36;
     const uint SAMPLE_RADIUS_GI = 12;
 
     if (isSkyPixel(position)) {
@@ -178,7 +210,7 @@ void rgenMain()
             float3 normalSpatial = inNormal[readID].xyz;
             float3 positionSpatial = inPosition[readID].xyz;
 
-            if (dot(normal, normalSpatial) >= 0.9 && length(positionSpatial - position) < 0.25) {
+            if (dot(normal, normalSpatial) >= 0.9 && length(positionSpatial - position) < 0.5) {
                 ReservoirLVC reservoirSpatialLVC = readReservoirLVC(readID, launchSize, inReservoirLVC);
 
                 // restrict influence from past samples.
@@ -201,18 +233,36 @@ void rgenMain()
             float3 cameraPosition = viewInv[3].xyz;
             float distance = length(position - cameraPosition);
 
+            float distance2 = length(position - lightVertex.hitPosition.xyz);
+
+            float originalPDF = lightVertexPDF(lightBuffer, lightVertex);
+            float modifiedPDF = lightVertex.selectionPdf;
+
+            //none of these show the dimming problem alone or when combined with 1 other, but all 3 combined do show the problem clearly
+            // output += reservoirLVC.lightWeight;
+            // output += (radiance * reservoirLVC.lightWeight);
+            //output += radiance / lightVertex.selectionPdf * 0.1;
+            //output += (reservoirLVC.lightWeight) / lightVertex.selectionPdf * 0.001;
+
             output += (radiance * reservoirLVC.lightWeight) / lightVertex.selectionPdf;
+
+            //output += 1.0 * (radiance);
             //output += (radiance * reservoirLVC.lightWeight);
             // right now importance is not an atomic, so the addition will give false results, which does not lead to Bias, but can
             // lead to increased noise. It is advisable to seperate importance from the Light Vertex, since no local copies of atomics
             // can be created.
 
-            lightVertexCache[reservoirLVC.LVCIndex].importance += ((length(radiance) * reservoirLVC.lightWeight) / lightVertexPDF(lightBuffer, lightVertex)) * (distance * distance);
-
+            lightVertexCache[reservoirLVC.LVCIndex].importance += 1.0 * distance * distance;
+            //lightVertexCache[reservoirLVC.LVCIndex].importance += ((length(radiance) * reservoirLVC.lightWeight) / lightVertexPDF(lightBuffer, lightVertex)) * (distance * distance);
             //lightVertexCache[reservoirLVC.LVCIndex].importance += ((length(radiance) * reservoirLVC.lightWeight) / lightSourcePdf(lightBuffer, lightVertex.lightIndex));
         } else {
             reservoirLVC = createEmptyReservoirLVC();
         }
+
+        //IntegrationStepQueryRecord outputIndirectRecord = integratorBidirectional(sampler);
+
+        //output = outputIndirectRecord.indirectLight;
+
 
         float3 albedo = inAlbedoAlpha[launchID].xyz;
         float3 lighting = output / max(albedo,0.001);
