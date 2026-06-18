@@ -379,3 +379,4 @@ namespace vvh {
 #include "VHSync.h"
 #include "VHCommand.h"
 #include "VHRender.h"
+#include "VHRaytracing.h"
