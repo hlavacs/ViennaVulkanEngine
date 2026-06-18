@@ -23,6 +23,7 @@ void rgenMain()
 
     HitPayload payload;
     payload.color = float3(0.0, 0.0, 0.0);
+    payload.depth = 0;
 
     // AS, flags, instance mask, sbt offset, sbt stride, miss index, ray, payload.
     TraceRay(topLevelAS, RAY_FLAG_NONE, 0xff, 0, 0, 0, ray, payload);

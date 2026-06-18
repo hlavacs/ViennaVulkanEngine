@@ -1,6 +1,9 @@
 #pragma once
 
 namespace vve {
+	enum class RayMaskFlags : uint32_t {
+		ShadowRay = 0b10
+	};
 
 	//-------------------------------------------------------------------------------------------------------
 	// Vulkan Ray Tracing Renderer
@@ -71,7 +74,8 @@ namespace vve {
 													   VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME,
 													   VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME,
 													   VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME,
-													   VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME
+													   VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+													   VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME
 #ifdef __APPLE__
 													   ,
 													   VK_KHR_PORTABILITY_SUBSET_EXTENSION_NAME
@@ -85,6 +89,9 @@ namespace vve {
 				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
 		VkPhysicalDeviceShaderObjectFeaturesEXT m_shaderObjectFeatures{
 				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT};
+		// Descriptor indexing (bindless texture array for the closest-hit shader).
+		VkPhysicalDeviceDescriptorIndexingFeatures m_descriptorIndexingFeatures{
+				VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES};
 
 		// --- Acceleration structures ---
 		struct AccelerationStructure {
@@ -144,7 +151,20 @@ namespace vve {
 		// Ray tracing shaders authored in Slang and compiled to SPIR-V.
 		std::string m_raygenShaderPath{"shaders/Raytracing/raygen.rgen.spv"};
 		std::string m_missShaderPath{"shaders/Raytracing/miss.rmiss.spv"};
+		std::string m_shadowMissShaderPath{"shaders/Raytracing/shadowmiss.rmiss.spv"};
 		std::string m_closestHitShaderPath{"shaders/Raytracing/closesthit.rchit.spv"};
+
+		// --- Whitted shading data exposed to the closest-hit shader ---
+		static constexpr uint32_t MAX_RT_TEXTURES = 256;
+		static constexpr uint32_t MAX_RT_INSTANCES = 1024;
+
+		glm::ivec4 UpdateLights();
+
+		vvh::Buffer m_instanceDataBuffer;
+		vvh::Buffer m_lightsBuffer;
+		uint32_t m_instanceCount{0};
+		// Bindless texture descriptors written to the closest-hit texture array.
+		std::vector<VkDescriptorImageInfo> m_textureInfos;
 
 		// --- Camera uniform buffer (view / projection used by the raygen shader) ---
 		vvh::Buffer m_uniformBuffer;

@@ -86,6 +86,8 @@ namespace vve {
 	struct CameraRT {
 		glm::mat4 viewInverse;
 		glm::mat4 projInverse;
+		glm::vec4 cameraPos{0.0f}; // xyz = world space camera position
+		glm::ivec4 numLights{0};   // x=point, y=directional, z=spot, w=total
 	};
 
 	/**
@@ -159,10 +161,18 @@ namespace vve {
 		m_accelFeature.accelerationStructure = VK_TRUE;
 		m_rtPipelineFeature.rayTracingPipeline = VK_TRUE;
 
-		// Chain: features2 -> bufferDeviceAddress -> accelerationStructure -> rayTracingPipeline
+		// Descriptor indexing for the bindless texture array used by the hit shader.
+		m_descriptorIndexingFeatures.runtimeDescriptorArray = VK_TRUE;
+		m_descriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+		m_descriptorIndexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
+		m_descriptorIndexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
+
+		// Chain: features2 -> bufferDeviceAddress -> accelerationStructure ->
+		//        rayTracingPipeline -> descriptorIndexing
 		bufferDeviceAddressFeatures.pNext = &m_accelFeature;
 		m_accelFeature.pNext = &m_rtPipelineFeature;
-		m_rtPipelineFeature.pNext = nullptr;
+		m_rtPipelineFeature.pNext = &m_descriptorIndexingFeatures;
+		m_descriptorIndexingFeatures.pNext = nullptr;
 
 		VkPhysicalDeviceFeatures2 deviceFeatures2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
 		deviceFeatures2.features = deviceFeatures;
@@ -294,6 +304,20 @@ namespace vve {
 							   .m_usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
 							   .m_size = uboSize,
 							   .m_buffer = m_uniformBuffer});
+
+		// Per-instance material/geometry SSBO read by the closest-hit shader.
+		vvh::BufCreateBuffers({.m_device = m_vkState().m_device,
+							   .m_vmaAllocator = m_vkState().m_vmaAllocator,
+							   .m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+							   .m_size = MAX_RT_INSTANCES * sizeof(vvh::rt::InstanceDataGpu),
+							   .m_buffer = m_instanceDataBuffer});
+
+		// Scene lights SSBO read by the closest-hit shader.
+		vvh::BufCreateBuffers({.m_device = m_vkState().m_device,
+							   .m_vmaAllocator = m_vkState().m_vmaAllocator,
+							   .m_usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+							   .m_size = MAX_NUMBER_LIGHTS * sizeof(vvh::Light),
+							   .m_buffer = m_lightsBuffer});
 	}
 
 	/**
@@ -540,6 +564,12 @@ namespace vve {
 			return t;
 		};
 
+		// Per-instance material / geometry records consumed by the closest-hit
+		// shader, kept in lock-step with `instances` (indexed by instanceCustomIndex).
+		std::vector<vvh::rt::InstanceDataGpu> instanceData;
+		m_textureInfos.clear();
+		std::unordered_map<VkImageView, int32_t> textureSlots;
+
 		// One TLAS instance per scene object: reference the BLAS built for the
 		// object's mesh and place it with the object's local-to-world matrix.
 		// Using identity transforms here would collapse every object onto the
@@ -550,20 +580,101 @@ namespace vve {
 				if( m_bottomLevelASMeshes[i] != mh ) {
 					continue;
 				}
+				if( instanceData.size() >= MAX_RT_INSTANCES ) {
+					break;
+				}
+
 				VkAccelerationStructureInstanceKHR instance{};
 				instance.transform = toVkTransform(lToW());
-				instance.instanceCustomIndex = i;
-				instance.mask = 0xFF;
+				// The custom index selects the matching InstanceData record below.
+				instance.instanceCustomIndex = static_cast<uint32_t>(instanceData.size());
+				// Light-visualizer entities (those carrying a light component) keep
+				// their marker mesh in the TLAS so primary/reflection rays still draw
+				// them, but we clear the ShadowRay bit so shadow rays (traced with the
+				// ShadowRay mask) skip them and the lights no longer self-occlude.
+				const bool isLightMarker = m_registry.Has<PointLight>(oHandle) || m_registry.Has<SpotLight>(oHandle) ||
+										   m_registry.Has<DirectionalLight>(oHandle);
+				instance.mask = false ? 0xFF & ~static_cast<uint32_t>(RayMaskFlags::ShadowRay) : 0xFF;
 				instance.instanceShaderBindingTableRecordOffset = 0;
 				instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 				instance.accelerationStructureReference = m_bottomLevelAS[i].m_deviceAddress;
 				instances.push_back(instance);
+
+				// --- Build the per-instance material / geometry record ---
+				auto mesh = m_registry.Get<vvh::Mesh&>(mh);
+				const std::string type = mesh().m_verticesData.getType();
+				const auto offs = mesh().m_verticesData.getOffsets();
+				auto blockOffset = [&](char c) -> uint32_t {
+					auto p = type.find(c);
+					return p == std::string::npos ? 0u : static_cast<uint32_t>(offs[p]);
+				};
+
+				using InstanceFlags = vvh::rt::InstanceFlags;
+				vvh::rt::InstanceDataGpu rec{};
+				rec.vertexAddress = GetBufferDeviceAddress(mesh().m_vertexBuffer);
+				rec.indexAddress = GetBufferDeviceAddress(mesh().m_indexBuffer);
+				rec.normalOffset = blockOffset('N');
+				rec.uvOffset = blockOffset('U');
+				rec.colorOffset = blockOffset('C');
+				if( type.find('N') != std::string::npos ) {
+					rec.flags |= vvh::ToUnderlying(InstanceFlags::HasNormal);
+				}
+				if( type.find('U') != std::string::npos ) {
+					rec.flags |= vvh::ToUnderlying(InstanceFlags::HasUv);
+				}
+				if( type.find('C') != std::string::npos ) {
+					rec.flags |= vvh::ToUnderlying(InstanceFlags::HasVertexColor);
+				}
+
+				if( m_registry.Has<vvh::Color>(oHandle) ) {
+					const auto& col = m_registry.Get<vvh::Color>(oHandle);
+					rec.ambient = col.m_ambientColor;
+					rec.diffuse = col.m_diffuseColor;
+					rec.specular = col.m_specularColor;
+					rec.flags |= vvh::ToUnderlying(InstanceFlags::HasMaterialColor);
+					rec.reflectivity = glm::clamp(col.m_specularColor.w, 0.0f, 1.0f);
+				}
+
+				// Per-object UV tiling (matches the Forward/Deferred rasterizers).
+				if( m_registry.Has<UVScale>(oHandle) ) {
+					rec.uvScale = glm::vec2(m_registry.Get<UVScale>(oHandle)());
+				}
+
+				rec.textureIndex = -1;
+				if( m_registry.Has<TextureHandle>(oHandle) && (rec.flags & vvh::ToUnderlying(InstanceFlags::HasUv)) ) {
+					const auto& tHandle = m_registry.Get<TextureHandle>(oHandle);
+					const vvh::Image& texture = m_registry.Get<vvh::Image&>(tHandle);
+					if( texture.m_mapImageView != VK_NULL_HANDLE ) {
+						auto it = textureSlots.find(texture.m_mapImageView);
+						if( it != textureSlots.end() ) {
+							rec.textureIndex = it->second;
+						} else if( m_textureInfos.size() < MAX_RT_TEXTURES ) {
+							rec.textureIndex = static_cast<int32_t>(m_textureInfos.size());
+							textureSlots[texture.m_mapImageView] = rec.textureIndex;
+							VkDescriptorImageInfo info{};
+							info.sampler = texture.m_mapSampler;
+							info.imageView = texture.m_mapImageView;
+							info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+							m_textureInfos.push_back(info);
+						}
+					}
+				}
+
+				instanceData.push_back(rec);
 				break;
 			}
 		}
 
 		if( instances.empty() ) {
 			return;
+		}
+
+		// Upload the per-instance records for the closest-hit shader.
+		m_instanceCount = static_cast<uint32_t>(instanceData.size());
+		if( m_instanceCount > 0 && m_instanceDataBuffer.m_uniformBuffersMapped[0] != nullptr ) {
+			memcpy(m_instanceDataBuffer.m_uniformBuffersMapped[0],
+				   instanceData.data(),
+				   instanceData.size() * sizeof(vvh::rt::InstanceDataGpu));
 		}
 
 		VkDeviceSize instancesSize = sizeof(VkAccelerationStructureInstanceKHR) * instances.size();
@@ -701,10 +812,42 @@ namespace vve {
 		uboBinding.binding = 2;
 		uboBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
 		uboBinding.descriptorCount = 1;
-		uboBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+		uboBinding.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
 
-		std::array bindings = {accelBinding, storageImageBinding, uboBinding};
+		// Binding 3: per-instance material/geometry SSBO (closest hit).
+		VkDescriptorSetLayoutBinding instanceBinding{};
+		instanceBinding.binding = 3;
+		instanceBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		instanceBinding.descriptorCount = 1;
+		instanceBinding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+
+		// Binding 4: scene lights SSBO (closest hit).
+		VkDescriptorSetLayoutBinding lightsBinding{};
+		lightsBinding.binding = 4;
+		lightsBinding.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		lightsBinding.descriptorCount = 1;
+		lightsBinding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+
+		// Binding 5: bindless texture array (closest hit).
+		VkDescriptorSetLayoutBinding textureBinding{};
+		textureBinding.binding = 5;
+		textureBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		textureBinding.descriptorCount = MAX_RT_TEXTURES;
+		textureBinding.stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+
+		std::array bindings = {
+				accelBinding, storageImageBinding, uboBinding, instanceBinding, lightsBinding, textureBinding};
+
+		// The texture array is partially bound: only the used slots are written.
+		std::array<VkDescriptorBindingFlags, 6> bindingFlags{};
+		bindingFlags[5] = VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT;
+		VkDescriptorSetLayoutBindingFlagsCreateInfo bindingFlagsInfo{
+				VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO};
+		bindingFlagsInfo.bindingCount = static_cast<uint32_t>(bindingFlags.size());
+		bindingFlagsInfo.pBindingFlags = bindingFlags.data();
+
 		VkDescriptorSetLayoutCreateInfo layoutInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO};
+		layoutInfo.pNext = &bindingFlagsInfo;
 		layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
 		layoutInfo.pBindings = bindings.data();
 		if( vkCreateDescriptorSetLayout(m_vkState().m_device, &layoutInfo, nullptr, &m_descriptorSetLayout) !=
@@ -724,9 +867,10 @@ namespace vve {
 		// --- Shader stages ---
 		VkShaderModule raygenModule = LoadShaderModule(m_raygenShaderPath);
 		VkShaderModule missModule = LoadShaderModule(m_missShaderPath);
+		VkShaderModule shadowMissModule = LoadShaderModule(m_shadowMissShaderPath);
 		VkShaderModule chitModule = LoadShaderModule(m_closestHitShaderPath);
 
-		std::array<VkPipelineShaderStageCreateInfo, 3> stages{};
+		std::array<VkPipelineShaderStageCreateInfo, 4> stages{};
 		stages[0] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
 		stages[0].stage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
 		stages[0].module = raygenModule;
@@ -736,11 +880,15 @@ namespace vve {
 		stages[1].module = missModule;
 		stages[1].pName = "main";
 		stages[2] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
-		stages[2].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
-		stages[2].module = chitModule;
+		stages[2].stage = VK_SHADER_STAGE_MISS_BIT_KHR;
+		stages[2].module = shadowMissModule;
 		stages[2].pName = "main";
+		stages[3] = {VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO};
+		stages[3].stage = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR;
+		stages[3].module = chitModule;
+		stages[3].pName = "main";
 
-		// --- Shader groups: raygen (0), miss (1), closest-hit (2) ---
+		// --- Shader groups: raygen (0), miss (1), shadow miss (2), closest-hit (3) ---
 		m_shaderGroups.clear();
 		VkRayTracingShaderGroupCreateInfoKHR group{VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR};
 		group.generalShader = VK_SHADER_UNUSED_KHR;
@@ -753,22 +901,30 @@ namespace vve {
 		group.generalShader = 0;
 		m_shaderGroups.push_back(group);
 
-		// miss
+		// miss (primary / reflection rays)
 		group.generalShader = 1;
+		m_shaderGroups.push_back(group);
+
+		// shadow miss (shadow rays)
+		group.generalShader = 2;
 		m_shaderGroups.push_back(group);
 
 		// closest hit (triangles hit group)
 		group.type = VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR;
 		group.generalShader = VK_SHADER_UNUSED_KHR;
-		group.closestHitShader = 2;
+		group.closestHitShader = 3;
 		m_shaderGroups.push_back(group);
+
+		// Recursion: primary -> reflection chain + shadow rays. Clamp to device limit.
+		uint32_t desiredDepth = 4;
+		uint32_t maxDepth = std::min(desiredDepth, m_rtPipelineProperties.maxRayRecursionDepth);
 
 		VkRayTracingPipelineCreateInfoKHR pipelineInfo{VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR};
 		pipelineInfo.stageCount = static_cast<uint32_t>(stages.size());
 		pipelineInfo.pStages = stages.data();
 		pipelineInfo.groupCount = static_cast<uint32_t>(m_shaderGroups.size());
 		pipelineInfo.pGroups = m_shaderGroups.data();
-		pipelineInfo.maxPipelineRayRecursionDepth = 1;
+		pipelineInfo.maxPipelineRayRecursionDepth = maxDepth;
 		pipelineInfo.layout = m_pipelineLayout;
 
 		if( vkCreateRayTracingPipelinesKHR(
@@ -779,13 +935,16 @@ namespace vve {
 
 		vkDestroyShaderModule(m_vkState().m_device, raygenModule, nullptr);
 		vkDestroyShaderModule(m_vkState().m_device, missModule, nullptr);
+		vkDestroyShaderModule(m_vkState().m_device, shadowMissModule, nullptr);
 		vkDestroyShaderModule(m_vkState().m_device, chitModule, nullptr);
 
 		// --- Descriptor pool + set ---
-		std::array<VkDescriptorPoolSize, 3> poolSizes{};
+		std::array<VkDescriptorPoolSize, 5> poolSizes{};
 		poolSizes[0] = {VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1};
 		poolSizes[1] = {VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1};
 		poolSizes[2] = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1};
+		poolSizes[3] = {VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2};
+		poolSizes[4] = {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, MAX_RT_TEXTURES};
 
 		VkDescriptorPoolCreateInfo poolInfo{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
 		poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());
@@ -823,9 +982,14 @@ namespace vve {
 			throw std::runtime_error("Failed to get ray tracing shader group handles");
 		}
 
-		auto createSBT = [&](ShaderBindingTable& sbt, uint32_t groupIndex) {
+		// Builds an SBT region holding `recordCount` consecutive group handles
+		// (starting at firstGroup). The miss region needs two records: the
+		// primary/reflection miss (group 1) and the shadow miss (group 2).
+		auto createSBT = [&](ShaderBindingTable& sbt, uint32_t firstGroup, uint32_t recordCount) {
+			const VkDeviceSize regionSize = static_cast<VkDeviceSize>(handleSizeAligned) * recordCount;
+
 			VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-			bufferInfo.size = handleSizeAligned;
+			bufferInfo.size = regionSize;
 			bufferInfo.usage = VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR |
 							   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 			bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
@@ -845,16 +1009,21 @@ namespace vve {
 										 &sbt.m_allocation,
 										 &allocInfo);
 
-			memcpy(allocInfo.pMappedData, shaderHandleStorage.data() + groupIndex * handleSize, handleSize);
+			auto* dst = static_cast<uint8_t*>(allocInfo.pMappedData);
+			for( uint32_t i = 0; i < recordCount; ++i ) {
+				memcpy(dst + i * handleSizeAligned,
+					   shaderHandleStorage.data() + (firstGroup + i) * handleSize,
+					   handleSize);
+			}
 
 			sbt.m_region.deviceAddress = GetBufferDeviceAddress(sbt.m_buffer);
 			sbt.m_region.stride = handleSizeAligned;
-			sbt.m_region.size = handleSizeAligned;
+			sbt.m_region.size = regionSize;
 		};
 
-		createSBT(m_raygenSBT, 0);
-		createSBT(m_missSBT, 1);
-		createSBT(m_hitSBT, 2);
+		createSBT(m_raygenSBT, 0, 1); // raygen (group 0)
+		createSBT(m_missSBT, 1, 2);	  // miss (group 1) + shadow miss (group 2)
+		createSBT(m_hitSBT, 3, 1);	  // closest hit (group 3)
 	}
 
 	/**
@@ -952,6 +1121,46 @@ namespace vve {
 		bufferWrite.pBufferInfo = &bufferInfo;
 		writes.push_back(bufferWrite);
 
+		// Binding 3: per-instance material/geometry SSBO.
+		VkDescriptorBufferInfo instanceInfo{};
+		instanceInfo.buffer = m_instanceDataBuffer.m_uniformBuffers[0];
+		instanceInfo.offset = 0;
+		instanceInfo.range = m_instanceDataBuffer.m_bufferSize;
+
+		VkWriteDescriptorSet instanceWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+		instanceWrite.dstSet = m_descriptorSets[0];
+		instanceWrite.dstBinding = 3;
+		instanceWrite.descriptorCount = 1;
+		instanceWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		instanceWrite.pBufferInfo = &instanceInfo;
+		writes.push_back(instanceWrite);
+
+		// Binding 4: scene lights SSBO.
+		VkDescriptorBufferInfo lightsInfo{};
+		lightsInfo.buffer = m_lightsBuffer.m_uniformBuffers[0];
+		lightsInfo.offset = 0;
+		lightsInfo.range = m_lightsBuffer.m_bufferSize;
+
+		VkWriteDescriptorSet lightsWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+		lightsWrite.dstSet = m_descriptorSets[0];
+		lightsWrite.dstBinding = 4;
+		lightsWrite.descriptorCount = 1;
+		lightsWrite.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+		lightsWrite.pBufferInfo = &lightsInfo;
+		writes.push_back(lightsWrite);
+
+		// Binding 5: bindless texture array (only the used, partially-bound slots).
+		VkWriteDescriptorSet textureWrite{VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET};
+		if( !m_textureInfos.empty() ) {
+			textureWrite.dstSet = m_descriptorSets[0];
+			textureWrite.dstBinding = 5;
+			textureWrite.dstArrayElement = 0;
+			textureWrite.descriptorCount = static_cast<uint32_t>(m_textureInfos.size());
+			textureWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			textureWrite.pImageInfo = m_textureInfos.data();
+			writes.push_back(textureWrite);
+		}
+
 		vkUpdateDescriptorSets(m_vkState().m_device, static_cast<uint32_t>(writes.size()), writes.data(), 0, nullptr);
 	}
 
@@ -983,6 +1192,25 @@ namespace vve {
 	}
 
 	/**
+	 * @brief Gathers all scene lights into the lights SSBO read by the hit shader.
+	 * @return Per-type light counts (x=point, y=directional, z=spot, w=total).
+	 */
+	glm::ivec4 RendererRaytracing::UpdateLights() {
+		std::vector<vvh::Light> lights(MAX_NUMBER_LIGHTS);
+		int total = 0;
+		glm::ivec4 counts{0};
+		counts.x = RegisterLight<PointLight>(1.0f, lights, total);
+		counts.y = RegisterLight<DirectionalLight>(2.0f, lights, total);
+		counts.z = RegisterLight<SpotLight>(3.0f, lights, total);
+		counts.w = total;
+
+		if( total > 0 && m_lightsBuffer.m_uniformBuffersMapped[0] != nullptr ) {
+			memcpy(m_lightsBuffer.m_uniformBuffersMapped[0], lights.data(), total * sizeof(vvh::Light));
+		}
+		return counts;
+	}
+
+	/**
 	 * @brief Prepares the next frame: rebuilds the TLAS if needed, updates the
 	 *        camera UBO, and acquires the next swap chain image.
 	 */
@@ -1003,13 +1231,18 @@ namespace vve {
 
 		vkWaitForFences(m_vkState().m_device, 1, &m_fences[m_vkState().m_currentFrame], VK_TRUE, UINT64_MAX);
 
-		// Update the camera (view / projection inverse) used by the raygen shader.
+		// Gather scene lights for the closest-hit shader.
+		glm::ivec4 lightCounts = UpdateLights();
+
+		// Update the camera (view / projection inverse, position, light counts).
 		auto cameraView = m_registry.GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>();
 		if( cameraView.begin() != cameraView.end() ) {
 			auto [lToW, view, proj] = *cameraView.begin();
 			CameraRT cam{};
 			cam.viewInverse = glm::inverse(view());
 			cam.projInverse = glm::inverse(proj());
+			cam.cameraPos = glm::vec4(glm::vec3(lToW()[3]), 1.0f);
+			cam.numLights = lightCounts;
 			memcpy(m_uniformBuffer.m_uniformBuffersMapped[0], &cam, sizeof(cam));
 		}
 
@@ -1217,6 +1450,14 @@ namespace vve {
 		vvh::BufDestroyBuffer2({.m_device = m_vkState().m_device,
 								.m_vmaAllocator = m_vkState().m_vmaAllocator,
 								.m_buffers = m_uniformBuffer});
+
+		// Whitted shading buffers (per-instance data + lights).
+		vvh::BufDestroyBuffer2({.m_device = m_vkState().m_device,
+								.m_vmaAllocator = m_vkState().m_vmaAllocator,
+								.m_buffers = m_instanceDataBuffer});
+		vvh::BufDestroyBuffer2({.m_device = m_vkState().m_device,
+								.m_vmaAllocator = m_vkState().m_vmaAllocator,
+								.m_buffers = m_lightsBuffer});
 
 		// Mesh vertex / index buffers.
 		for( auto geometry : m_registry.GetView<vvh::Mesh&>() ) {
