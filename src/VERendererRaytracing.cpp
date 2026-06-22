@@ -230,7 +230,7 @@ namespace vve {
 								   .m_physicalDevice = m_vkState().m_physicalDevice,
 								   .m_device = m_vkState().m_device,
 								   .m_queueFamilyIndex = m_vkState().m_queueFamilies.graphicsFamily.value(),
-								   .m_commandPool = m_commandPool});
+								   .m_commandPool = m_commandPool}); // FIXME Why call this twice?
 
 		vvh::ComCreateCommandBuffers({.m_device = m_vkState().m_device,
 									  .m_commandPool = m_commandPool,
@@ -458,7 +458,7 @@ namespace vve {
 		geometry.geometry.triangles.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR;
 		geometry.geometry.triangles.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT;
 		geometry.geometry.triangles.vertexData = vertexAddress;
-		geometry.geometry.triangles.vertexStride = sizeof(glm::vec3);
+		geometry.geometry.triangles.vertexStride = sizeof(vec3_t);
 		geometry.geometry.triangles.maxVertex = numVertices > 0 ? numVertices - 1 : 0;
 		geometry.geometry.triangles.indexType = VK_INDEX_TYPE_UINT32;
 		geometry.geometry.triangles.indexData = indexAddress;
@@ -578,13 +578,7 @@ namespace vve {
 				instance.transform = toVkTransform(lToW());
 				// The custom index selects the matching InstanceData record below.
 				instance.instanceCustomIndex = static_cast<uint32_t>(instanceData.size());
-				// Light-visualizer entities (those carrying a light component) keep
-				// their marker mesh in the TLAS so primary/reflection rays still draw
-				// them, but we clear the ShadowRay bit so shadow rays (traced with the
-				// ShadowRay mask) skip them and the lights no longer self-occlude.
-				const bool isLightMarker = m_registry.Has<PointLight>(oHandle) || m_registry.Has<SpotLight>(oHandle) ||
-										   m_registry.Has<DirectionalLight>(oHandle);
-				instance.mask = false ? 0xFF & ~static_cast<uint32_t>(RayMaskFlags::ShadowRay) : 0xFF;
+				instance.mask = 0xFF;
 				instance.instanceShaderBindingTableRecordOffset = 0;
 				instance.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
 				instance.accelerationStructureReference = m_bottomLevelAS[i].m_deviceAddress;
@@ -594,8 +588,8 @@ namespace vve {
 				auto mesh = m_registry.Get<vvh::Mesh&>(mh);
 				const std::string type = mesh().m_verticesData.getType();
 				const auto offs = mesh().m_verticesData.getOffsets();
-				auto blockOffset = [&](char c) -> uint32_t {
-					auto p = type.find(c);
+				auto blockOffset = [&](const char c) -> uint32_t {
+					const auto p = type.find(c);
 					return p == std::string::npos ? 0u : static_cast<uint32_t>(offs[p]);
 				};
 
@@ -617,12 +611,12 @@ namespace vve {
 				}
 
 				if( m_registry.Has<vvh::Color>(oHandle) ) {
-					const auto& col = m_registry.Get<vvh::Color>(oHandle);
-					rec.ambient = col.m_ambientColor;
-					rec.diffuse = col.m_diffuseColor;
-					rec.specular = col.m_specularColor;
+					const auto& [ambientColor, diffuseColor, specularColor] = m_registry.Get<vvh::Color>(oHandle);
+					rec.ambient = ambientColor;
+					rec.diffuse = diffuseColor;
+					rec.specular = specularColor;
 					rec.flags |= vvh::ToUnderlying(InstanceFlags::HasMaterialColor);
-					rec.reflectivity = glm::clamp(col.m_specularColor.w, 0.0f, 1.0f);
+					rec.reflectivity = glm::clamp(specularColor.w, 0.0f, 1.0f);
 				}
 
 				// Per-object UV tiling (matches the Forward/Deferred rasterizers).
@@ -975,7 +969,7 @@ namespace vve {
 		// Builds an SBT region holding `recordCount` consecutive group handles
 		// (starting at firstGroup). The miss region needs two records: the
 		// primary/reflection miss (group 1) and the shadow miss (group 2).
-		auto createSBT = [&](ShaderBindingTable& sbt, uint32_t firstGroup, uint32_t recordCount) {
+		auto createSBT = [&](ShaderBindingTable& sbt, const uint32_t firstGroup, const uint32_t recordCount) {
 			const VkDeviceSize regionSize = static_cast<VkDeviceSize>(handleSizeAligned) * recordCount;
 
 			VkBufferCreateInfo bufferInfo{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
