@@ -5,15 +5,15 @@
 void rgenMain()
 {
     // Current pixel and full image size.
-    uint2 launchID = DispatchRaysIndex().xy;
-    float2 launchSize = (float2)DispatchRaysDimensions().xy;
+    const uint2 launchID = DispatchRaysIndex().xy;
+    const float2 launchSize = (float2)DispatchRaysDimensions().xy;
 
     // Pixel center to normalized device coordinates in [-1, 1].
-    float2 pixelCenter = (float2)launchID + float2(0.5, 0.5);
-    float2 ndc = pixelCenter / launchSize * 2.0 - 1.0;
+    const float2 pixelCenter = (float2)launchID + float2(0.5, 0.5);
+    const float2 ndc = pixelCenter / launchSize * 2.0 - 1.0;
 
     // Build a primary ray from the inverse camera matrices.
-    float4 target = mul(camera.projInverse, float4(ndc, 1.0, 1.0));
+    const float4 target = mul(camera.projInverse, float4(ndc, 1.0, 1.0));
 
     RayDesc ray;
     ray.Origin = mul(camera.viewInverse, float4(0.0, 0.0, 0.0, 1.0)).xyz;
