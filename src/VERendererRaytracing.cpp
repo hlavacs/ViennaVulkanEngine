@@ -81,16 +81,6 @@ namespace vve {
 	}
 
 	/**
-	 * @brief Camera data uploaded to the ray generation shader.
-	 */
-	struct CameraRT {
-		glm::mat4 viewInverse;
-		glm::mat4 projInverse;
-		glm::vec4 cameraPos{0.0f}; // xyz = world space camera position
-		glm::ivec4 numLights{0};   // x=point, y=directional, z=spot, w=total
-	};
-
-	/**
 	 * @brief Creates the instance, surface, device, VMA allocator, and swap chain.
 	 *
 	 * The logical device and the VMA allocator
@@ -298,7 +288,7 @@ namespace vve {
 		vvh::SynCreateFences({.m_device = m_vkState().m_device, .m_size = MAX_FRAMES_IN_FLIGHT, .m_fences = m_fences});
 
 		// Camera uniform buffer (view / projection inverse) used by the raygen shader.
-		VkDeviceSize uboSize = sizeof(CameraRT);
+		VkDeviceSize uboSize = sizeof(vvh::rt::CameraRT);
 		vvh::BufCreateBuffers({.m_device = m_vkState().m_device,
 							   .m_vmaAllocator = m_vkState().m_vmaAllocator,
 							   .m_usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
@@ -1238,7 +1228,7 @@ namespace vve {
 		auto cameraView = m_registry.GetView<LocalToWorldMatrix&, ViewMatrix&, ProjectionMatrix&>();
 		if( cameraView.begin() != cameraView.end() ) {
 			auto [lToW, view, proj] = *cameraView.begin();
-			CameraRT cam{};
+			vvh::rt::CameraRT cam{};
 			cam.viewInverse = glm::inverse(view());
 			cam.projInverse = glm::inverse(proj());
 			cam.cameraPos = glm::vec4(glm::vec3(lToW()[3]), 1.0f);

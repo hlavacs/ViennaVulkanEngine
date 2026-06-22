@@ -24,4 +24,14 @@ namespace vvh::rt {
 		HasVertexColor = 0x4,
 		HasMaterialColor = 0x8,
 	};
+
+	/**
+	 * @brief Camera data uploaded to the ray generation shader.
+	 */
+	struct CameraRT {
+		glm::mat4 viewInverse;
+		glm::mat4 projInverse;
+		glm::vec4 cameraPos{0.0f}; // xyz = world space camera position
+		glm::ivec4 numLights{0};   // x=point, y=directional, z=spot, w=total
+	};
 } // namespace vvh::rt
