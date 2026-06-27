@@ -147,11 +147,15 @@ All example programs should have extensive test paths.
 
 # Concrete Engines
 
-## v3
+Concrete engines are defined in the respective subfolders. Each subfolder contains its own AGENTS.md.
+Ignore the AGENTS.md files of other engines, only read and analyse the AGENTS.md of the respective folder
+that contains the engine under consideration.
+
+## src/versions/v3
 
 v3 was experimental and is no longer used. Avoid any usage and reference in the engine to it.
 
-## v4
+## src/versions/v4
 
 The v4 engine focuses on education for students. Goals are:
 - It is of utmost importance to keep it simple!
@@ -160,3 +164,11 @@ The v4 engine focuses on education for students. Goals are:
 - No bloating!
 - Clear separation of concern
 - Each file focuses on a specific part, and do not contain code belonging to other parts.
+
+## src/versions/v5
+
+The v5 engine is the new goal. Goals are the same as v4. 
+
+## src/versions/simple
+
+The simple engine should be the bare engine minimum. 
