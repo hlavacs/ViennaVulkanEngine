@@ -13,3 +13,7 @@ endif()
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/light_shadow_debug/CMakeLists.txt")
     add_subdirectory(light_shadow_debug)
 endif()
+
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/simple_forward_demo/CMakeLists.txt")
+    add_subdirectory(simple_forward_demo)
+endif()

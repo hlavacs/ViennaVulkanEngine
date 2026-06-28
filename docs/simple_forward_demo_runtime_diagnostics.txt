@@ -1,0 +1,6 @@
+teardown: readback buffer live before cleanup=1
+teardown: readback memory live before cleanup=1
+teardown: readback buffer live after cleanup=0
+teardown: readback memory live after cleanup=0
+teardown: renderer device live before cleanup=1
+teardown: renderer device live after cleanup=0

@@ -1,0 +1,13 @@
+simple_forward_demo SDL video driver: cocoa
+simple_forward_demo window created
+simple_forward_demo scene loaded before renderer init
+simple_forward_demo renderer init
+simple_forward_demo readback create vk_result=0
+simple_forward_demo frame 1 drawn
+simple_forward_demo capture wait vk_result=0
+simple_forward_demo readback capture vk_result=0
+simple_forward_demo readback png_written=true, path=simple_forward_demo_capture.png
+simple_forward_demo frame 2 drawn
+simple_forward_demo frame 3 drawn
+simple_forward_demo device idle
+simple_forward_demo cleanup done
