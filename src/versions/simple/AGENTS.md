@@ -24,6 +24,8 @@ The simple engine should be the bare engine minimum. Just to render objects, and
 - Add code comments and function and class headers. 
 - At the start of each file provide an overviw over the functional objects (classes, enums, types, structs, ...) and their purpose in this file.
 - The engine should not use Python anywhere, also not for testign. It can use cmd or bash scripts.
+- The Renderer should be a simple forward renderer. As Vulkan render path and Slang expample vertex and pixel shaders, use the Vulkan Tutorial and adapt if needed.
+
 
 
 

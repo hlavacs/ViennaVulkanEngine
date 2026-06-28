@@ -94,6 +94,8 @@ Descriptors that might be exposed to the user must be composed by facade defined
 
 The engine mainly links to the official Vulkan SDK and uses the libraries contained there. Additonally it may use libraries like Assimp ot STB. These external libraries are downloaded using vcpkg.
 
+On Mac you should KosmicKrisp, not MoltenVk.
+
 ### Code Documentation
 
 - Add extensive Doxygen compatible comments to the code.
@@ -131,25 +133,37 @@ The engine mainly links to the official Vulkan SDK and uses the libraries contai
 - Avoid if sequences if there are many choices. Prefer constexpr data structures that selectors 
 can be used to index into.
 
+## Expectations for Examples
+
+Examples are implemented in the examples folder. The showcase a certain aspect of rendering, use the official API
+of the facade, and do not depend on anything specific to a specific engine. Instead they must work
+for all engines.
 
 ## Expectations for debugging
 
 If tracking runtime errors try outputting internal data into a textfile, then 
 fread the file to understand what was wring.
+Do not rely on Python for anything in any engine. Testng should rely on C++ tests.
+Always include a lighweight data layer for carrying small sets of debugging information that can be
+checked automatically by an LLM later. 
 
 
 ## Expectations for tests
 
 All classes and functions should have unit tests.
 All example programs should have extensive test paths.
+Tests should produce debugging data that lets a calling LLM detect errors, locate errors and fix errors.
 
 
 
 # Concrete Engines
 
-Concrete engines are defined in the respective subfolders. Each subfolder contains its own AGENTS.md.
+Concrete engines are defined in the respective subfolder of src/versions. Each subfolder contains its own engine and AGENTS.md.
 Ignore the AGENTS.md files of other engines, only read and analyse the AGENTS.md of the respective folder
 that contains the engine under consideration.
+Engines must be completely isolated from each other. It must never refer to another engine, or use something from another engine.
+If instructions say: use this from another engine, then do not make an alias etc ro anything of this engien. Instead create new functionality for the concrete engine but make it similar to the functionality of the referred engine.
+
 
 ## src/versions/v3
 
