@@ -1,0 +1,3 @@
+engine=simple
+frames=1
+renderer=standalone-simple-forward
