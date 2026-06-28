@@ -114,6 +114,22 @@ LightVertex generateLightVertex(inout Sampler sampler) {
     // cosinLtoLightSourceOnL
     lightVertex.selectionPdf = pdf * (1.0 / lightArea) * lightDirectionSelectionPdf * (cosinLtoLightSourceOnL / (distance * distance));
 
+    /*
+    // 1. Area PDF of choosing the specific point on the light source
+    float p_y0 = pdf / lightArea;
+
+    // 2. Solid angle PDF of the cosine-weighted direction
+    float p_omega = cosLightSource / M_PI;
+
+    // 3. Conversion factor from solid angle to area measure at the hit surface
+    // Note: We use max(0.0001, distance * distance) to prevent division by zero in tight corners
+    float distSq = max(0.0001, distance * distance);
+    float geometryFactor = cosinLtoLightSourceOnL / distSq;
+
+    // 4. The full area PDF of generating this specific light vertex from the specific point on the light
+    lightVertex.selectionPdf = p_y0 * p_omega * geometryFactor;
+    */
+
 
     lightVertex.normal = float4(its.normal, 1.0);
     lightVertex.tangent = float4(its.tangent, 1.0);
@@ -220,8 +236,6 @@ EmitterRecord getEmitterRecordFromLightVertex(in LightVertex lightVertex) {
     float cosThetaOnLight = dot(normalize(lightVertex.samplePosition - light.position), normalize(lightVertex.hitPosition - lightVertex.samplePosition));
 
     emitterRecord.sampleEmission = (lightVertex.radiance.xyz * cosThetaOnLight / distSq) / lightVertex.selectionPdf;
-
-
 
     return emitterRecord;
 }

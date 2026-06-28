@@ -41,6 +41,23 @@ cbuffer UniformBufferObject
     uint y_dimensions;
 
     uint isFirstFrame;
+    uint illuminationDomain;
+    float accumulationFactor;
+    uint directSampleCount;
+
+    uint indirectSampleCountForward;
+    uint indirectSampleCountBidirectional;
+    uint candidateSamplesRestirDi;
+    uint spatialSamplesRestirDI;
+
+    uint spatialRadiusRestirDI;
+    uint candidateSamplesRestirGI;
+    uint spatialSamplesRestirGI;
+    uint spatialRadiusRestirGI;
+
+    uint candidateSamplesRestirLVC;
+    uint spatialSamplesRestirLVC;
+    uint spatialRadiusRestirLVC;
 };
 
 [[vk::binding(1, 0)]]

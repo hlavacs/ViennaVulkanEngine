@@ -125,7 +125,7 @@ void rgenMain()
     const uint SAMPLE_RADIUS = 12;
 
     const uint MAX_SPATIAL_INFLUENCE_GI = 10;
-    const uint SPATIAL_SAMPLES_GI = 36;
+    const uint SPATIAL_SAMPLES_GI = 24;
     const uint SAMPLE_RADIUS_GI = 12;
 
     if (isSkyPixel(position)) {
@@ -186,7 +186,7 @@ void rgenMain()
             float3 radiance = revaluateOccludedLightRadiance(reservoir, its, material);
             //float3 radiance = resampleOccludedLightRadiance(reservoir, its, material, sampler);
 
-            //output = radiance * reservoir.lightWeight;
+            output = radiance * reservoir.lightWeight;
             output = clamp(output, 0.0, 1000.0);
             float p_hat = length(radiance);
         } else {

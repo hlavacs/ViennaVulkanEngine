@@ -160,35 +160,17 @@ class MyGame : public vve::System {
         }
     
         bool OnRecordNextFrame(Message message) { 
-            /*
-            if( m_state == State::STATE_RUNNING ) {
-                ImGui::Begin("Game State");
-                char buffer[100];
-                std::snprintf(buffer, 100, "Time Left: %.2f s", m_time_left);
-                ImGui::TextUnformatted(buffer);
-                std::snprintf(buffer, 100, "Cubes Left: %d", m_cubes_left);
-                ImGui::TextUnformatted(buffer);
-				if (ImGui::SliderFloat("Sound Volume", &m_volume, 0, MIX_MAX_VOLUME)) {
-					m_engine.SetVolume(m_volume);
-				}
-                ImGui::End();
-            }
-            */
 
-           
-            //ImGui::ShowDemoWindow();
-
-
-            if (ImGui::BeginCombo("RenderMethode", renderMethodeOptions[current].c_str()))
+            if (ImGui::BeginCombo("RenderMethode", renderMethodeOptions[current_render_methode].c_str()))
             {
                 for (int i = 0; i < renderMethodeOptions.size(); ++i)
                 {
-                    bool selected = (current == i);
+                    bool selected = (current_render_methode == i);
 
                     if (ImGui::Selectable(renderMethodeOptions[i].c_str(), selected))
-                        current = i;
+                        current_render_methode = i;
                     // Do something immediately
-                    switch (current)
+                    switch (current_render_methode)
                     {
                     case 0:
                         m_renderSettings().methode = vvh::RenderMethode::FORWARD;
@@ -197,13 +179,43 @@ class MyGame : public vve::System {
                         m_renderSettings().methode = vvh::RenderMethode::BACKWARD;
                         break;
                     case 2:
-                        m_renderSettings().methode = vvh::RenderMethode::RESTIRDI;
-                        break;
-                    case 3:
                         m_renderSettings().methode = vvh::RenderMethode::RESTIRGI;
                         break;
-                    case 4:
+                    case 3:
                         m_renderSettings().methode = vvh::RenderMethode::RESTIRLVC;
+                        break;
+                    case 4:
+                        m_renderSettings().methode = vvh::RenderMethode::RESTIRLVCCOMBINED;
+                        break;
+                    }
+
+
+                    if (selected)
+                        ImGui::SetItemDefaultFocus();
+                }
+
+                ImGui::EndCombo();
+            }
+
+            if (ImGui::BeginCombo("Illumination Domain", illuminationDomainOptions[current_illumination_domain].c_str()))
+            {
+                for (int i = 0; i < illuminationDomainOptions.size(); ++i)
+                {
+                    bool selected = (current_illumination_domain == i);
+
+                    if (ImGui::Selectable(illuminationDomainOptions[i].c_str(), selected))
+                        current_illumination_domain = i;
+                    // Do something immediately
+                    switch (current_illumination_domain)
+                    {
+                    case 0:
+                        m_renderSettings().domain = vvh::IlluminationDomain::COMBINED;
+                        break;
+                    case 1:
+                        m_renderSettings().domain = vvh::IlluminationDomain::DIRECT;
+                        break;
+                    case 2:
+                        m_renderSettings().domain = vvh::IlluminationDomain::INDIRECT;
                         break;
                     }
 
@@ -231,12 +243,20 @@ class MyGame : public vve::System {
         std::vector<std::string> renderMethodeOptions = {
             "Forward",
             "Backward",
-            "RestirDI",
             "RestirGI",
-            "RestirLVC"
+            "RestirLVC",
+            "RestirLVC Combined"
         };
 
-        int current = 0;
+        std::vector<std::string> illuminationDomainOptions = {
+            "Direct and Indirect Illumination",
+            "Direct Illumination Only",
+            "Indirect Illumination Only"
+        };
+
+        int current_render_methode = 0;
+
+        int current_illumination_domain = 0;
 
         vecs::Ref<vvh::VRTSettings> m_renderSettings{};
         vecs::Handle m_renderSettingsHandle{};

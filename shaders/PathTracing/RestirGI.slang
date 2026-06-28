@@ -35,31 +35,6 @@ float getApproximateRadianceFromReservoir(in ReservoirGI reservoir, in Intersect
     return length(getUnoccludedLightContribution(its, material, record));
 }
 
-//check for correctness
-/*
-bool isReservoirOccluded(in IntersectionRecord its, EmitterRecord emitterRecord) {
-    RayDesc shadowRay = getRay(its, emitterRecord.direction);
-    shadowRay.TMax = emitterRecord.distance;
-    HitPayload payload;
-    const uint rayFlags = 0;
-
-    // self blocked
-    if (dot(shadowRay.Direction, its.normal) < 0.0) {
-        return true;
-    }
-
-    TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, shadowRay, payload);
-
-    if (payload.distance < emitterRecord.distance + EPSILON && payload.distance > emitterRecord.distance - EPSILON) {
-        return false;
-    }
-
-    return true;
-}
-    */
-
-
-
 float3 getGroundTruthRadianceFromReservoir(in ReservoirGI reservoir, in IntersectionRecord its, in MaterialRecord material) {
     EmitterRecord record = getEmmitterRecordFromReservoir(reservoir, its);
 

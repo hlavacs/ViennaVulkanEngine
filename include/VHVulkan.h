@@ -263,13 +263,38 @@ namespace vvh {
 	enum  RenderMethode {
 		FORWARD,
 		BACKWARD,
-		RESTIRDI,
 		RESTIRGI,
-		RESTIRLVC
+		RESTIRLVC,
+		RESTIRLVCCOMBINED
+	};
+
+	enum  IlluminationDomain {
+		COMBINED,
+		DIRECT,
+		INDIRECT
 	};
 
 	struct VRTSettings {
 		RenderMethode methode;
+		IlluminationDomain domain;
+
+		float accumulationFactor = 0.2;
+
+		int directSampleCount = 10;
+		int indirectSampleCountForward = 10;
+		int indirectSampleCountBidirectional = 10;
+
+		int candidateSamplesRestirDi = 32;
+		int spatialSamplesRestirDI = 6;
+		int spatialRadiusRestirDI = 4;
+
+		int candidateSamplesRestirGI = 1;
+		int spatialSamplesRestirGI = 24;
+		int spatialRadiusRestirGI = 12;
+
+		int candidateSamplesRestirLVC = 16;
+		int spatialSamplesRestirLVC = 24;
+		int spatialRadiusRestirLVC = 12;
 	};
 
 	struct VRTMaterial {

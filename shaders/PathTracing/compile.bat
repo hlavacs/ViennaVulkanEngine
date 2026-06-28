@@ -24,12 +24,6 @@ rem --- Raygen shader ---
 slangc Indirect_Integrator.slang -entry rgenMain -target spirv -o raygen_indirect.rgen.spv -DRAY_TRACING
 
 rem --- Raygen shader ---
-slangc RestirTemporal.slang -entry rgenMain -target spirv -o raygen_restir_temporal.rgen.spv -DRAY_TRACING
-
-rem --- Raygen shader ---
-slangc RestirSpatial.slang -entry rgenMain -target spirv -o raygen_restir_spatial.rgen.spv -DRAY_TRACING
-
-rem --- Raygen shader ---
 slangc RestirTemporalGI.slang -entry rgenMain -target spirv -o raygen_restirGI_temporal.rgen.spv -DRAY_TRACING
 
 rem --- Raygen shader ---
@@ -52,6 +46,12 @@ slangc RestirTemporalLVC.slang -entry rgenMain -target spirv -o raygen_restirLVC
 
 rem --- Raygen shader ---
 slangc RestirSpatialLVC.slang -entry rgenMain -target spirv -o raygen_restirLVC_spatial.rgen.spv -DRAY_TRACING
+
+rem --- Raygen shader ---
+slangc RestirLVC_Combined_Temporal.slang -entry rgenMain -target spirv -o raygen_restirLVC_temporal_combined.rgen.spv -DRAY_TRACING
+
+rem --- Raygen shader ---
+slangc RestirLVC_Combined_Spatial.slang -entry rgenMain -target spirv -o raygen_restirLVC_spatial_combined.rgen.spv -DRAY_TRACING
 
 rem --- Miss shader ---
 slangc rtbasic.slang -entry rmissMain -target spirv -o miss.rmiss.spv -DRAY_TRACING

@@ -138,7 +138,7 @@ IntegrationStepQueryRecord integratorIndirect(inout Sampler sampler) {
 
     getInitialSurfaceData(launchID, launchSize, its, materialRecord);
 
-    uint sampleCount = 50;
+    uint sampleCount = indirectSampleCountForward;
     float3 radiance = float3(0.0);
 
     for (uint i = 0; i < sampleCount; i++) {
@@ -223,15 +223,19 @@ void rgenMain()
 
         Sampler sampler = Sampler(pixelSeed);
 
-        IntegrationStepQueryRecord outputRecord = integratorDirect(sampler);
-        IntegrationStepQueryRecord outputRecordIndirect = integratorIndirect(sampler);
-        // outImage[int2(launchID)] = float4(LinearToSRGB(outputColor), 1.0);
         float3 albedo = inAlbedoAlpha[int2(launchID)].xyz;
         //works for now, but terrible with reprojection errors
 
-        //float3 outputColor = outputRecord.directLight + outputRecordIndirect.indirectLight;
+        float3 outputColor = 0.0;
 
-        float3 outputColor = outputRecordIndirect.indirectLight;
+        if (illuminationDomain == 0 || illuminationDomain == 1) {
+            IntegrationStepQueryRecord outputRecord = integratorDirect(sampler);
+            outputColor += outputRecord.directLight;
+        }
+        if (illuminationDomain == 0 || illuminationDomain == 2) {
+            IntegrationStepQueryRecord outputRecordIndirect = integratorIndirect(sampler);
+            outputColor += outputRecordIndirect.indirectLight;
+        }
 
         
         //this works for now but is likley to break with slight reprojection errors.

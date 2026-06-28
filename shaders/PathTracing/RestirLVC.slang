@@ -26,9 +26,6 @@ bool UpdateReservoirLVC(inout ReservoirLVC reservoir, uint LVCIndex, float w, ui
 
         return false;
     }
-
-
-
 }
 
 void clampReadID(inout int2 readID, in int2 launchSize) {

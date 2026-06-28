@@ -31,7 +31,6 @@ void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout Intersect
     its.frame = Frame(its.normal);
     its.direction = cameraRay.Direction;
 
-    
     material.albedo = inAlbedoAlpha[launchID].xyz;
     material.alpha = inAlbedoAlpha[launchID].w;
     // Incorrect but not needed
@@ -87,7 +86,7 @@ IntegrationStepQueryRecord integratorBidirectional(inout Sampler sampler) {
     MaterialRecord material;
     getInitialSurfaceData(launchID, launchSize, its, material);
 
-    uint sampleCount = 150;
+    uint sampleCount = indirectSampleCountBidirectional;
     float3 radiance = 0.0;
 
     //float cameraAreaPDF = calculateCameraVertexAreaPdf(its, view, viewInv, proj, launchSize);
@@ -152,14 +151,19 @@ void rgenMain()
 
         Sampler sampler = Sampler(pixelSeed);
 
-        IntegrationStepQueryRecord outputDirectRecord = integratorDirect(sampler);
-        IntegrationStepQueryRecord outputIndirectRecord = integratorBidirectional(sampler);
-        // outImage[int2(launchID)] = float4(LinearToSRGB(outputColor), 1.0);
         float3 albedo = inAlbedoAlpha[int2(launchID)].xyz;
         //works for now, but terrible with reprojection errors
 
-        //float3 outputColor = outputDirectRecord.directLight + outputIndirectRecord.indirectLight;
-        float3 outputColor = outputIndirectRecord.indirectLight;
+        float3 outputColor = 0.0;
+
+        if (illuminationDomain == 0 || illuminationDomain == 1) {
+            IntegrationStepQueryRecord outputRecord = integratorDirect(sampler);
+            outputColor += outputRecord.directLight;
+        }
+        if (illuminationDomain == 0 || illuminationDomain == 2) {
+            IntegrationStepQueryRecord outputIndirectRecord = integratorBidirectional(sampler);
+            outputColor += outputIndirectRecord.indirectLight;
+        }
 
         
         //this works for now but is likley to break with slight reprojection errors.

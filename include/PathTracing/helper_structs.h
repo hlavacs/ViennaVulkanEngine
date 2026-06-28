@@ -76,9 +76,27 @@ namespace vve {
         uint32_t y_dimensions;
 
         uint32_t isFirstFrame;
+        uint32_t illuminationDomain;
+        float accumulationFactor;
+        uint32_t directSampleCount;
+
+        uint32_t indirectSampleCountForward;
+        uint32_t indirectSampleCountBidirectional;
+        uint32_t candidateSamplesRestirDi;
+        uint32_t spatialSamplesRestirDI;
+
+        uint32_t spatialRadiusRestirDI;
+        uint32_t candidateSamplesRestirGI;
+        uint32_t spatialSamplesRestirGI;
+        uint32_t spatialRadiusRestirGI;
+
+        uint32_t candidateSamplesRestirLVC;
+        uint32_t spatialSamplesRestirLVC;
+        uint32_t spatialRadiusRestirLVC;
         uint32_t pad0;
-        uint32_t pad1;
-        uint32_t pad2;
+
+        //uint32_t pad1;
+        //uint32_t pad2;
     };
 
     /** Material slot that can be a texture or constant RGB. */

@@ -376,6 +376,42 @@ namespace vve {
         restirLVC_spatial_descriptors->update();
     }
 
+    void RendererRayTraced::createRestirLVCTemporalDescriptorsCombined() {
+        restirLVC_temporal_descriptors_combined = new DescriptorManager(device);
+
+        restirLVC_temporal_descriptors_combined->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirLVC_temporal_descriptors_combined->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirLVC_temporal_descriptors_combined->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirLVC_temporal_descriptors_combined->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirLVC_temporal_descriptors_combined->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirLVC_temporal_descriptors_combined->addDescriptorInput(reprojectionErrorTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restirLVC_temporal_descriptors_combined->addDescriptorInput(reservoirDI_B->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restirLVC_temporal_descriptors_combined->addDescriptorInput(reservoirDI_A->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restirLVC_temporal_descriptors_combined->finalize();
+        restirLVC_temporal_descriptors_combined->update();
+    }
+
+    void RendererRayTraced::createRestirLVCSpatialDescriptorsCombined() {
+        restirLVC_spatial_descriptors_combined = new DescriptorManager(device);
+
+        restirLVC_spatial_descriptors_combined->addDescriptorInput(albedoTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirLVC_spatial_descriptors_combined->addDescriptorInput(normalTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirLVC_spatial_descriptors_combined->addDescriptorInput(specTarget->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirLVC_spatial_descriptors_combined->addDescriptorInput(positionTarget->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirLVC_spatial_descriptors_combined->addDescriptorInput(shadingNormalTarget->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        restirLVC_spatial_descriptors_combined->addDescriptorInput(RtTarget->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restirLVC_spatial_descriptors_combined->addDescriptorInput(reservoirDI_A->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restirLVC_spatial_descriptors_combined->addDescriptorInput(reservoirDI_B->getDescriptorInput(7, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restirLVC_spatial_descriptors_combined->finalize();
+        restirLVC_spatial_descriptors_combined->update();
+    }
+
     void RendererRayTraced::createRenderTargetSampler() {
          VkPhysicalDeviceProperties properties{};
          vkGetPhysicalDeviceProperties(physicalDevice, &properties);
@@ -741,6 +777,42 @@ namespace vve {
         std::cout << "created  restirLVC spatial pipline \n";
 
 
+        //RestirLVC_Combined
+
+        createRestirLVCTemporalDescriptorsCombined();
+
+        //needs diffrent pipline barrier!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        restirLVC_temporal_combined = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, restirLVC_temporal_descriptors_combined, swapchain->getExtent(), "shaders/PathTracing/raygen_restirLVC_temporal_combined.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+
+        restirLVC_temporal_combined->bindRenderTarget(albedoTarget);
+        restirLVC_temporal_combined->bindRenderTarget(normalTarget);
+        restirLVC_temporal_combined->bindRenderTarget(specTarget);
+        restirLVC_temporal_combined->bindRenderTarget(positionTarget);
+        restirLVC_temporal_combined->bindRenderTarget(shadingNormalTarget);
+
+        restirLVC_temporal_combined->bindRenderTarget(reprojectionErrorTarget);
+
+        restirLVC_temporal_combined->bindRenderTarget(positionReprojectedTarget);
+
+
+        restirLVC_temporal_combined->initRayTracingPipeline();
+
+
+        createRestirLVCSpatialDescriptorsCombined();
+
+        restirLVC_spatial_combined = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, BidirectionalDescriptors, restirLVC_spatial_descriptors_combined, swapchain->getExtent(), "shaders/PathTracing/raygen_restirLVC_spatial_combined.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+        restirLVC_spatial_combined->bindRenderTarget(albedoTarget);
+        restirLVC_spatial_combined->bindRenderTarget(normalTarget);
+        restirLVC_spatial_combined->bindRenderTarget(specTarget);
+        restirLVC_spatial_combined->bindRenderTarget(positionTarget);
+        restirLVC_spatial_combined->bindRenderTarget(shadingNormalTarget);
+
+        restirLVC_spatial_combined->bindRenderTarget(RtTarget);
+
+        restirLVC_spatial_combined->initRayTracingPipeline();
+
+
         createReprojectPassDescriptors();
         reprojectionPass = new PipelineFilter(device, physicalDevice, commandManager, reprojectionPassDescriptors, swapchain->getExtent(), VkExtent2D(16,16), "shaders/PathTracing/reprojectionPass.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
         reprojectionPass->bindRenderTarget(positionTarget);
@@ -881,6 +953,9 @@ namespace vve {
         restirLVC_temporal_descriptors->update();
         restirLVC_spatial_descriptors->update();
 
+        restirLVC_temporal_descriptors_combined->update();
+        restirLVC_spatial_descriptors_combined->update();
+
         raytracer->setExtent(swapchain->getExtent());
         bidirectionalPathTracing->setExtent(swapchain->getExtent());
         restir_temporal->setExtent(swapchain->getExtent());
@@ -890,6 +965,9 @@ namespace vve {
 
         restirLVC_temporal->setExtent(swapchain->getExtent());
         restirLVC_spatial->setExtent(swapchain->getExtent());
+
+        restirLVC_temporal_combined->setExtent(swapchain->getExtent());
+        restirLVC_spatial_combined->setExtent(swapchain->getExtent());
 
         combinePass->setExtent(swapchain->getExtent());
         reprojectionPass->setExtent(swapchain->getExtent());
@@ -916,21 +994,24 @@ namespace vve {
         switch (m_renderSettings().methode)
         {
         case vvh::RenderMethode::FORWARD:
+        {
             raytracer->recordCommandBuffer(currentFrame);
             break;
+        }
         case vvh::RenderMethode::BACKWARD:
+        {
             lightVertexGenerationFull->recordCommandBuffer(currentFrame);
             bidirectionalPathTracing->recordCommandBuffer(currentFrame);
             break;
-        case  vvh::RenderMethode::RESTIRDI:
-            restir_temporal->recordCommandBuffer(currentFrame);
-            restir_spatial->recordCommandBuffer(currentFrame);
-            break;
+        }
         case  vvh::RenderMethode::RESTIRGI:
+        {
             restirGI_temporal->recordCommandBuffer(currentFrame);
             restirGI_spatial->recordCommandBuffer(currentFrame);
             break;
+        }
         case  vvh::RenderMethode::RESTIRLVC:
+        {
             sumResetPass->recordCommandBuffer(currentFrame);
 
             importanceReductionPass->recordCommandBuffer(currentFrame);
@@ -943,12 +1024,37 @@ namespace vve {
             std::cout << "The keep average is: " << keepSumCapture[0].x / lightVertexCacheSize.width << "\n";
 
             lightVertexGenerationWeightedReplacment->recordCommandBuffer(currentFrame);
-
+            
             //lightVertexGenerationRandomReplacment->recordCommandBuffer(currentFrame);
 
             restirLVC_temporal->recordCommandBuffer(currentFrame);
             restirLVC_spatial->recordCommandBuffer(currentFrame);
             break;
+        }
+        case  vvh::RenderMethode::RESTIRLVCCOMBINED:
+        {
+            
+            sumResetPass->recordCommandBuffer(currentFrame);
+
+            importanceReductionPass->recordCommandBuffer(currentFrame);
+
+            std::vector<glm::vec4> importanceSumCaptureCombined = importanceSum->getData(currentFrame);
+            std::cout << "The importance average is: " << importanceSumCaptureCombined[0].x / lightVertexCacheSize.width << "\n";
+
+            keepProbReductionPass->recordCommandBuffer(currentFrame);
+            std::vector<glm::vec4> keepSumCaptureCombined = keepProbSum->getData(currentFrame);
+            std::cout << "The keep average is: " << keepSumCaptureCombined[0].x / lightVertexCacheSize.width << "\n";
+            
+            lightVertexGenerationWeightedReplacment->recordCommandBuffer(currentFrame);
+            
+            //lightVertexGenerationRandomReplacment->recordCommandBuffer(currentFrame);
+
+            restirLVC_temporal_combined->recordCommandBuffer(currentFrame);
+            restirLVC_spatial_combined->recordCommandBuffer(currentFrame);
+
+            std::cout << "this pipline runs \n";
+            break;
+        }
         }
 
 
@@ -1009,6 +1115,36 @@ namespace vve {
         ubo.x_dimensions = swapchain->getExtent().width;
         ubo.y_dimensions = swapchain->getExtent().height;
         ubo.isFirstFrame = isFirstFrame;
+
+        switch (m_renderSettings().domain) {
+        case vvh::IlluminationDomain::COMBINED:
+            ubo.illuminationDomain = 0;
+            break;
+        case vvh::IlluminationDomain::DIRECT:
+            ubo.illuminationDomain = 1;
+            break;
+        case vvh::IlluminationDomain::INDIRECT:
+            ubo.illuminationDomain = 2;
+            break;
+        }
+
+        ubo.accumulationFactor = m_renderSettings().accumulationFactor;
+        ubo.directSampleCount = m_renderSettings().directSampleCount;
+        ubo.indirectSampleCountForward = m_renderSettings().indirectSampleCountForward;
+        ubo.indirectSampleCountBidirectional = m_renderSettings().indirectSampleCountBidirectional;
+
+        ubo.candidateSamplesRestirDi = m_renderSettings().candidateSamplesRestirDi;
+        ubo.candidateSamplesRestirGI = m_renderSettings().candidateSamplesRestirGI;
+        ubo.candidateSamplesRestirLVC = m_renderSettings().candidateSamplesRestirLVC;
+
+        ubo.spatialRadiusRestirDI = m_renderSettings().spatialRadiusRestirDI;
+        ubo.spatialRadiusRestirGI = m_renderSettings().spatialRadiusRestirGI;
+        ubo.spatialRadiusRestirLVC = m_renderSettings().spatialRadiusRestirLVC;
+
+        ubo.spatialSamplesRestirDI = m_renderSettings().spatialSamplesRestirDI;
+        ubo.spatialSamplesRestirGI = m_renderSettings().spatialSamplesRestirGI;
+        ubo.spatialSamplesRestirLVC = m_renderSettings().spatialSamplesRestirLVC;
+
 
         isFirstFrame = 0;
 

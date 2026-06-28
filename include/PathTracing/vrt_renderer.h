@@ -75,6 +75,9 @@ namespace vve {
 		void createRestirLVCTemporalDescriptors();
 		void createRestirLVCSpatialDescriptors();
 
+		void createRestirLVCTemporalDescriptorsCombined();
+		void createRestirLVCSpatialDescriptorsCombined();
+
 		void createRenderTargetSampler();
 
 		/**
@@ -196,6 +199,9 @@ namespace vve {
 		PiplineRaytraced* restirLVC_temporal;
 		PiplineRaytraced* restirLVC_spatial;
 
+		PiplineRaytraced* restirLVC_temporal_combined;
+		PiplineRaytraced* restirLVC_spatial_combined;
+
 		PiplineRaytraced* lightVertexGenerationFull;
 		PiplineRaytraced* lightVertexGenerationRandomReplacment;
 		PiplineRaytraced* lightVertexGenerationWeightedReplacment;
@@ -212,6 +218,9 @@ namespace vve {
 
 		DescriptorManager* restirLVC_temporal_descriptors;
 		DescriptorManager* restirLVC_spatial_descriptors;
+
+		DescriptorManager* restirLVC_temporal_descriptors_combined;
+		DescriptorManager* restirLVC_spatial_descriptors_combined;
 
 		std::vector<RenderTarget*> allTargets;
 		std::vector<RenderTarget*> rayTracingTargets;
