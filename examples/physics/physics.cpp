@@ -1,128 +1,80 @@
-import std;
+#define SDL_MAIN_HANDLED
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+#include <vulkan/vulkan.h>
 
-import VEEngine;
+import std;
+import VEEngine.Simple.Renderer;
+import VEEngine.Simple.Scene;
 
 /**
  * @file
- * @brief Minimal runtime example that boots the engine and runs the frame loop.
+ * @brief Minimal physics shell running on the standalone simple renderer.
  */
-
 namespace {
 
-class PhysicsShellSystem final {
-public:
-    [[nodiscard]] std::string_view name() const noexcept {
-        return "PhysicsShellSystem";
-    }
-
-    template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
-        std::cout << '[' << name() << "] windows:";
-        bool printed_any = false;
-        for (const auto& window : world.template get<vve::WindowSystem>().windows()) {
-            printed_any = true;
-            const auto extent = window.extent();
-            std::cout << ' ' << window.id() << '=' << extent.width << 'x' << extent.height
-                      << '[' << window.rendererId().value << ']';
-        }
-        if (!printed_any) {
-            std::cout << " <none>";
-        }
-        std::cout << '\n';
-        return {};
-    }
-
-    template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> update(
-        TWorld& world,
-        const vve::FrameContext& frame_context,
-        const auto&) {
-        const auto input = world.template get<vve::WindowSystem>().input();
-        if (input.isKeyDown('A') || input.isKeyDown('a')) {
-            body_x_ -= 120.0 * frame_context.delta_time.seconds;
-        }
-        if (input.isKeyDown('D') || input.isKeyDown('d')) {
-            body_x_ += 120.0 * frame_context.delta_time.seconds;
-        }
-        if (input.isKeyDown('W') || input.isKeyDown('w')) {
-            body_y_ -= 120.0 * frame_context.delta_time.seconds;
-        }
-        if (input.isKeyDown('S') || input.isKeyDown('s')) {
-            body_y_ += 120.0 * frame_context.delta_time.seconds;
-        }
-
-        log_accumulator_seconds_ += frame_context.delta_time.seconds;
-        if (log_accumulator_seconds_ < 1.0) {
-            return {};
-        }
-        log_accumulator_seconds_ = 0.0;
-
-        const auto main_window = world.template get<vve::WindowSystem>().findWindow("physics.main");
-        std::cout << '[' << name() << ']';
-        if (!main_window) {
-            std::cout << " physics.main=<missing>\n";
-            return {};
-        }
-
-        const auto mouse_delta = input.mouseDelta(main_window->handle());
-        const auto extent = main_window->extent();
-        std::cout << " physics.main=" << extent.width << 'x' << extent.height
-                  << '[' << main_window->rendererId().value << ']'
-                  << (main_window->focused() ? "[focused]" : "")
-                  << (main_window->minimized() ? "[minimized]" : "")
-                  << " body=(" << body_x_ << ", " << body_y_ << ')'
-                  << " keys="
-                  << (input.isKeyDown('W') || input.isKeyDown('w') ? 'W' : '-')
-                  << (input.isKeyDown('A') || input.isKeyDown('a') ? 'A' : '-')
-                  << (input.isKeyDown('S') || input.isKeyDown('s') ? 'S' : '-')
-                  << (input.isKeyDown('D') || input.isKeyDown('d') ? 'D' : '-')
-                  << " mouse_delta=(" << mouse_delta.x << ", " << mouse_delta.y << ")\n";
-        return {};
-    }
-
-private:
-    double log_accumulator_seconds_{0.0};
-    double body_x_{0.0};
-    double body_y_{0.0};
-};
+[[nodiscard]] int frameLimit(int argc, char **argv) {
+	for (int index = 1; index + 1 < argc; ++index) {
+		if (argv[index] == nullptr || argv[index + 1] == nullptr) {
+			continue;
+		}
+		if (std::string_view{argv[index]} != "--frames") {
+			continue;
+		}
+		int value{};
+		const std::string_view text{argv[index + 1]};
+		const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
+		if (result.ec == std::errc{} && value >= 0) {
+			return value;
+		}
+	}
+	return 1;
+}
 
 } // namespace
 
-/**
- * @brief Runs the physics sample shell.
- * @return Process exit code expected by the example launcher.
- */
-int main(int, char **) {
-    std::cout << std::unitbuf;
-    std::cerr << std::unitbuf;
-    std::cout << "[physics] engine=" << vve::engineImplementationNamespaceName << '\n';
+int main(int argc, char **argv) {
+	std::cout << std::unitbuf;
+	std::cerr << std::unitbuf;
+	std::cout << "[physics] engine=simple\n";
 
-    // The physics sample currently exercises only engine startup and runtime
-    auto engine = vve::makeEngine( // execution. Physics itself is expected to arrive through a user system.
-        vve::ApplicationName{"physics"},
-        vve::makeUserSystems(PhysicsShellSystem{}),
-        vve::WindowSetups{
-            vve::WindowSetup{}
-                .id("physics.main")
-                .title("VVE Physics Sandbox")
-                .extent(vve::PixelExtent{.width = 800, .height = 450})
-                .renderer(vve::RendererId{.value = "forward"})
-                .resizable(true)
-                .visible(true)});
+	SDL_SetMainReady();
+#ifdef VVE_SDL_VULKAN_LIBRARY
+	SDL_SetHint(SDL_HINT_VULKAN_LIBRARY, VVE_SDL_VULKAN_LIBRARY);
+#endif
+	if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+		std::cerr << "[physics] SDL video init failed: " << SDL_GetError() << '\n';
+		return 1;
+	}
 
-    if (const auto init_result = engine.init(); !init_result) {
-        std::cerr << "[physics] engine.init failed: " << vve::errorName(init_result.error()) << '\n';
-        return 1;
-    }
+	SDL_Window *const window = SDL_CreateWindow("VVE Simple Physics", 800, 450, SDL_WINDOW_VULKAN);
+	if (window == nullptr) {
+		std::cerr << "[physics] SDL Vulkan window creation failed: " << SDL_GetError() << '\n';
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+		return 2;
+	}
 
-    if (const auto run_result = engine.run(); !run_result) {
-        std::cerr << "[physics] engine.run failed: " << vve::errorName(run_result.error()) << '\n';
-        return 1;
-    }
+	vve::simple::Renderer renderer{};
+	renderer.loadScene(vve::simple::makeSampleScene());
+	if (const VkResult result = renderer.init(window); result != VK_SUCCESS) {
+		std::cerr << "[physics] simple renderer init failed: vk_result=" << static_cast<int>(result) << '\n';
+		renderer.cleanup();
+		SDL_DestroyWindow(window);
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+		return 3;
+	}
 
-    const auto version_major = engine.getVersionMajor();
-    if (!version_major) {
-        return 1;
-    }
+	const int maxFrames = frameLimit(argc, argv);
+	for (int frame{}; frame < maxFrames; ++frame) {
+		SDL_Event event{};
+		while (SDL_PollEvent(&event)) {}
+		renderer.drawFrame(nullptr);
+	}
 
-    const auto expected_major = vve::engineImplementationNamespaceName == std::string_view{"v5"} ? 5 : 4;
-    return *version_major == expected_major ? 0 : 1;
+	(void)vkDeviceWaitIdle(renderer.device.device);
+	renderer.cleanup();
+	SDL_DestroyWindow(window);
+	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	std::cout << "[physics] frames=" << maxFrames << '\n';
+	return 0;
 }

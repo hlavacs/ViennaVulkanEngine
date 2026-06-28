@@ -18,6 +18,8 @@ export import VEEngine.V5;
 	*/
 export namespace vve::simple {
 
+	inline constexpr std::string_view engineImplementationNamespaceName{"simple"}; ///< Simple-engine facade name.
+
 	using Engine = vve::v5::Engine;                    ///< Shared concrete v5 engine owner.
 	using MakeEngine = vve::MakeEngine;                ///< Shared facade engine factory type.
 	using Error = vve::v5::Error;                      ///< Shared operation error type returned by engine calls.

@@ -31,8 +31,7 @@ target_sources(ViennaVulkanEngineSimple
          World.ixx
 )
 
-set(VVE_SIMPLE_FORWARD_VERTEX_SHADER "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_forward.vert.slang")
-set(VVE_SIMPLE_FORWARD_FRAGMENT_SHADER "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_forward.frag.slang")
+set(VVE_SIMPLE_FORWARD_SHADER "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_forward.slang")
 set(VVE_SIMPLE_SHADER_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 set(VVE_SIMPLE_FORWARD_VERTEX_SPV "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/simple_forward.vert.spv")
 set(VVE_SIMPLE_FORWARD_FRAGMENT_SPV "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/simple_forward.frag.spv")
@@ -68,10 +67,10 @@ endif()
 add_custom_command(
    OUTPUT "${VVE_SIMPLE_FORWARD_VERTEX_SPV}"
    COMMAND "${CMAKE_COMMAND}" -E make_directory "${VVE_SIMPLE_SHADER_OUTPUT_DIR}"
-   COMMAND "${VVE_SIMPLE_SLANGC}" "${VVE_SIMPLE_FORWARD_VERTEX_SHADER}"
+   COMMAND "${VVE_SIMPLE_SLANGC}" "${VVE_SIMPLE_FORWARD_SHADER}"
       -target spirv -profile spirv_1_4 -stage vertex -entry vertexMain -fvk-use-entrypoint-name
       -o "${VVE_SIMPLE_FORWARD_VERTEX_SPV}"
-   DEPENDS "${VVE_SIMPLE_FORWARD_VERTEX_SHADER}"
+   DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}"
    COMMENT "Compiling simple forward vertex shader"
    VERBATIM
 )
@@ -79,10 +78,10 @@ add_custom_command(
 add_custom_command(
    OUTPUT "${VVE_SIMPLE_FORWARD_FRAGMENT_SPV}"
    COMMAND "${CMAKE_COMMAND}" -E make_directory "${VVE_SIMPLE_SHADER_OUTPUT_DIR}"
-   COMMAND "${VVE_SIMPLE_SLANGC}" "${VVE_SIMPLE_FORWARD_FRAGMENT_SHADER}"
+   COMMAND "${VVE_SIMPLE_SLANGC}" "${VVE_SIMPLE_FORWARD_SHADER}"
       -target spirv -profile spirv_1_4 -stage fragment -entry fragmentMain -fvk-use-entrypoint-name
       -o "${VVE_SIMPLE_FORWARD_FRAGMENT_SPV}"
-   DEPENDS "${VVE_SIMPLE_FORWARD_FRAGMENT_SHADER}"
+   DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}"
    COMMENT "Compiling simple forward fragment shader"
    VERBATIM
 )

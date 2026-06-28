@@ -1,215 +1,80 @@
-import std;
+#define SDL_MAIN_HANDLED
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
+#include <vulkan/vulkan.h>
 
-import VEEngine;
+import std;
+import VEEngine.Simple.Renderer;
+import VEEngine.Simple.Scene;
 
 /**
  * @file
- * @brief v5 Sponza runtime stub: creates a window and reports the scene path.
+ * @brief Sponza example shell running on the standalone simple renderer.
  */
-
 namespace {
 
-[[nodiscard]] std::optional<std::filesystem::path>
-firstExistingPath(const std::vector<std::filesystem::path>& candidates) {
-    for (const auto& candidate : candidates) {
-        std::error_code error_code{};
-        if (std::filesystem::exists(candidate, error_code) && !error_code) {
-            return std::filesystem::weakly_canonical(candidate, error_code);
-        }
-    }
-    return std::nullopt;
+[[nodiscard]] int frameLimit(int argc, char **argv) {
+	for (int index = 1; index + 1 < argc; ++index) {
+		if (argv[index] == nullptr || argv[index + 1] == nullptr) {
+			continue;
+		}
+		if (std::string_view{argv[index]} != "--frames") {
+			continue;
+		}
+		int value{};
+		const std::string_view text{argv[index + 1]};
+		const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
+		if (result.ec == std::errc{} && value >= 0) {
+			return value;
+		}
+	}
+	return 1;
 }
-
-void appendSceneCandidates(std::vector<std::filesystem::path>& candidates, const std::filesystem::path& root) {
-    if (root.empty()) {
-        return;
-    }
-
-    const std::vector<std::filesystem::path> scene_file_names{
-        "Sponza.gltf",
-        "Sponza.glb",
-        "NewSponza_Main_glTF_003.gltf"
-    };
-    const std::vector<std::filesystem::path> scene_directories{
-        root,
-        root / "Sponza",
-        root / "sponza",
-        root / "assets" / "Sponza",
-        root / "assets" / "sponza",
-        root / "main_sponza"
-    };
-
-    for (const auto& directory : scene_directories) {
-        for (const auto& file_name : scene_file_names) {
-            candidates.push_back(directory / file_name);
-        }
-    }
-}
-
-[[nodiscard]] std::filesystem::path executableDirectory(char** argv) {
-    if (argv == nullptr || argv[0] == nullptr || argv[0][0] == '\0') {
-        return {};
-    }
-
-    std::error_code error_code{};
-    const auto executable_path = std::filesystem::absolute(std::filesystem::path(argv[0]), error_code);
-    return error_code ? std::filesystem::path{} : executable_path.parent_path();
-}
-
-[[nodiscard]] std::optional<std::filesystem::path> resolveScenePath(int argc, char** argv) {
-    for (int argument_index = 1; argument_index < argc; ++argument_index) {
-        if (argv[argument_index] == nullptr || argv[argument_index][0] == '\0') {
-            continue;
-        }
-
-        const std::string_view argument{argv[argument_index]};
-        if (argument == "--scene" && argument_index + 1 < argc && argv[argument_index + 1] != nullptr) {
-            if (auto direct_path = firstExistingPath({std::filesystem::path(argv[argument_index + 1])})) {
-                return direct_path;
-            }
-            ++argument_index;
-            continue;
-        }
-
-        if (!argument.empty() && argument.front() != '-') {
-            if (auto direct_path = firstExistingPath({std::filesystem::path(std::string(argument))})) {
-                return direct_path;
-            }
-        }
-    }
-
-    if (const char* environment_path = std::getenv("VVE_SPONZA_SCENE");
-        environment_path != nullptr && environment_path[0] != '\0') {
-        if (auto environment_scene = firstExistingPath({std::filesystem::path(environment_path)})) {
-            return environment_scene;
-        }
-    }
-
-    const auto current_directory = std::filesystem::current_path();
-    const auto executable_directory = executableDirectory(argv);
-
-    std::vector<std::filesystem::path> candidates{};
-    appendSceneCandidates(candidates, current_directory);
-    appendSceneCandidates(candidates, current_directory.parent_path());
-    appendSceneCandidates(candidates, executable_directory);
-    appendSceneCandidates(candidates, executable_directory.parent_path().parent_path());
-    appendSceneCandidates(candidates, executable_directory.parent_path().parent_path().parent_path());
-    return firstExistingPath(candidates);
-}
-
-class SponzaRuntimeStubSystem final {
-public:
-    explicit SponzaRuntimeStubSystem(std::filesystem::path scene_path)
-        : scene_path_(std::move(scene_path)) {}
-
-    [[nodiscard]] std::string_view name() const noexcept {
-        return "SponzaRuntimeStubSystem";
-    }
-
-    template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> init(TWorld& world) {
-        std::cout << '[' << name() << "] scene path: " << scene_path_.string() << '\n';
-        std::cout << '[' << name() << "] v5 runtime shell is active\n";
-        auto assets = world.template get<vve::AssetSystem>();
-        const auto loaded_scene = assets.loadScene(scene_path_);
-        if (!loaded_scene) {
-            std::cerr << '[' << name() << "] Assimp import failed: "
-                      << vve::errorName(loaded_scene.error()) << '\n';
-            return std::unexpected(loaded_scene.error());
-        }
-
-        scene_ = *loaded_scene;
-        const auto nodes = assets.sceneNodeCount(scene_);
-        const auto meshes = assets.sceneMeshCount(scene_);
-        const auto materials = assets.sceneMaterialCount(scene_);
-        const auto textures = assets.sceneTextureCount(scene_);
-        const auto lights = assets.sceneLightCount(scene_);
-        const auto cameras = assets.sceneCameraCount(scene_);
-        if (!nodes || !meshes || !materials || !textures || !lights || !cameras) {
-            return std::unexpected(vve::Error::missing_object);
-        }
-
-        std::cout << '[' << name() << "] stored scene handle=" << scene_.value()
-                  << " nodes=" << *nodes
-                  << " meshes=" << *meshes
-                  << " materials=" << *materials
-                  << " textures=" << *textures
-                  << " lights=" << *lights
-                  << " cameras=" << *cameras << '\n';
-        std::cout << '[' << name() << "] v5 resource upload and rendering are not implemented yet\n";
-        printWindowInventory(world);
-        return {};
-    }
-
-    template <typename TWorld> [[nodiscard]] std::expected<void, vve::Error> update(
-        TWorld&,
-        const vve::FrameContext& frame_context,
-        const auto&) {
-        if (!frame_loop_logged_ && frame_context.frame_index.value > 0) {
-            std::cout << '[' << name() << "] frame loop active; close the window to exit\n";
-            frame_loop_logged_ = true;
-        }
-        return {};
-    }
-
-private:
-    template <typename TWorld> void printWindowInventory(const TWorld& world) const {
-        std::cout << '[' << name() << "] windows:";
-        bool printed_any = false;
-        for (const auto& window : world.template get<vve::WindowSystem>().windows()) {
-            printed_any = true;
-            const auto extent = window.extent();
-            std::cout << ' ' << window.id() << '=' << extent.width << 'x' << extent.height
-                      << '[' << window.rendererId().value << ']';
-        }
-        if (!printed_any) {
-            std::cout << " <none>";
-        }
-        std::cout << '\n';
-    }
-
-    std::filesystem::path scene_path_{}; ///< Resolved Sponza file imported during init().
-    vve::SceneHandle scene_{};           ///< Scene stored in the facade asset system.
-    bool frame_loop_logged_{false};      ///< Keeps the runtime heartbeat to one line.
-};
 
 } // namespace
 
-/**
- * @brief Runs the v5 Sponza stub.
- * @return Process exit code expected by the example launcher.
- */
-int main(int argc, char** argv) {
-    std::cout << std::unitbuf;
-    std::cerr << std::unitbuf;
-    std::cout << "[sponza] engine=" << vve::engineImplementationNamespaceName << '\n';
+int main(int argc, char **argv) {
+	std::cout << std::unitbuf;
+	std::cerr << std::unitbuf;
+	std::cout << "[sponza] engine=simple\n";
 
-    const auto scene_path = resolveScenePath(argc, argv);
-    if (!scene_path) {
-        std::cerr << "[sponza] unable to locate a Sponza scene. Pass --scene <path> or set VVE_SPONZA_SCENE.\n";
-        return 1;
-    }
+	SDL_SetMainReady();
+#ifdef VVE_SDL_VULKAN_LIBRARY
+	SDL_SetHint(SDL_HINT_VULKAN_LIBRARY, VVE_SDL_VULKAN_LIBRARY);
+#endif
+	if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
+		std::cerr << "[sponza] SDL video init failed: " << SDL_GetError() << '\n';
+		return 1;
+	}
 
-    auto engine = vve::makeEngine(
-        vve::ApplicationName{"sponza"},
-        vve::makeUserSystems(SponzaRuntimeStubSystem{*scene_path}),
-        vve::WindowSetups{
-            vve::WindowSetup{}
-                .id("sponza.main")
-                .title("VVE Sponza")
-                .extent(vve::PixelExtent{.width = 960, .height = 540})
-                .renderer(vve::RendererId{.value = "forward"})
-                .resizable(true)
-                .visible(true)});
+	SDL_Window *const window = SDL_CreateWindow("VVE Simple Sponza", 1280, 720, SDL_WINDOW_VULKAN);
+	if (window == nullptr) {
+		std::cerr << "[sponza] SDL Vulkan window creation failed: " << SDL_GetError() << '\n';
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+		return 2;
+	}
 
-    if (const auto init_result = engine.init(); !init_result) {
-        std::cerr << "[sponza] engine.init failed: " << vve::errorName(init_result.error()) << '\n';
-        return 1;
-    }
+	vve::simple::Renderer renderer{};
+	renderer.loadScene(vve::simple::makeSampleScene());
+	if (const VkResult result = renderer.init(window); result != VK_SUCCESS) {
+		std::cerr << "[sponza] simple renderer init failed: vk_result=" << static_cast<int>(result) << '\n';
+		renderer.cleanup();
+		SDL_DestroyWindow(window);
+		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+		return 3;
+	}
 
-    if (const auto run_result = engine.run(); !run_result) {
-        std::cerr << "[sponza] engine.run failed: " << vve::errorName(run_result.error()) << '\n';
-        return 1;
-    }
+	const int maxFrames = frameLimit(argc, argv);
+	for (int frame{}; frame < maxFrames; ++frame) {
+		SDL_Event event{};
+		while (SDL_PollEvent(&event)) {}
+		renderer.drawFrame(nullptr);
+	}
 
-    return 0;
+	(void)vkDeviceWaitIdle(renderer.device.device);
+	renderer.cleanup();
+	SDL_DestroyWindow(window);
+	SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	std::cout << "[sponza] frames=" << maxFrames << '\n';
+	return 0;
 }
