@@ -1,6 +1,6 @@
 export module VEEngine.Simple.Assets;
 import std;
-export import VEEngine.V5:Assets;
+export import VEEngine.V5;
 
 /**
 	* @file

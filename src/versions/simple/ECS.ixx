@@ -1,6 +1,6 @@
 export module VEEngine.Simple.ECS;
 import std;
-export import VEEngine.V5:ECS;
+export import VEEngine.V5;
 
 /**
 	* @file

@@ -90,6 +90,7 @@ endif()
 
 add_subdirectory("versions/v5")
 target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_ENGINE_HAS_V5)
+add_subdirectory("versions/simple")
 
 if(VVE_BUILD_ENGINE_V4 OR VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "v4")
     add_subdirectory("versions/v4")

@@ -1,6 +1,6 @@
 export module VEEngine.Simple.WindowSystem;
 import std;
-export import VEEngine.V5:Window;
+export import VEEngine.V5;
 
 /**
 	* @file

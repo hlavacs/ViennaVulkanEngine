@@ -1,6 +1,6 @@
 export module VEEngine.Simple.Graph;
 import std;
-export import VEEngine.V5:Graph;
+export import VEEngine.V5;
 
 /**
 	* @file

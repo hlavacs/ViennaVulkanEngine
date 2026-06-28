@@ -1,7 +1,6 @@
 export module VEEngine.Simple.SceneGraph;
 import std;
-export import VEEngine.V5:Assets;
-export import VEEngine.V5:Graph;
+export import VEEngine.V5;
 
 /**
 	* @file

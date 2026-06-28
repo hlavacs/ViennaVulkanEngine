@@ -1,6 +1,6 @@
 export module VEEngine.Simple.GUI;
 import std;
-export import VEEngine.V5:Gui;
+export import VEEngine.V5;
 
 /**
 	* @file
