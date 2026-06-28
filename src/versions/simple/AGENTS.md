@@ -17,6 +17,7 @@ The simple engine should be the bare engine minimum. Just to render objects, and
 - Basis is Specification 1.4.
 - It should provide a simple, minimal debugging layer that transports debugging information for Slang, SDL3 windows, rendering output. 
 - It should use the light shadow debug example from v5 that produces some known output that can stored in a PNG for automatic analysis.
+- The debugging example light shadow debug should not be part of the simple engine, but be in the examples folder. 
 - The LLM should ingest this output and analyse whether the current version produces the correct result.
 - The goal is to let an LLM do the heavy lifiting, to the LLM should be able to reliably detect bugs through the debuggin output.
 - Debugging information that is collected and moved e.g. from GPU to CPU should be kept at a minimum necessary. 
