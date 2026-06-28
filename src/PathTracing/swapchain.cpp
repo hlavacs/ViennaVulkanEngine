@@ -190,6 +190,13 @@ namespace vve {
         }
     }
 
+    void SwapChain::recreateImGuiFrameBuffers(RenderTarget* depthTarget, VkRenderPass imguiRenderPass) {
+        for (VkFramebuffer frameBuffer : framebuffers) {
+            vkDestroyFramebuffer(device, frameBuffer, nullptr);
+        }
+        createImGuiFramebuffers(depthTarget, imguiRenderPass);
+    }
+
     std::vector<VkFramebuffer> SwapChain::getImguiFrameBuffer() {
         return framebuffers;
     }

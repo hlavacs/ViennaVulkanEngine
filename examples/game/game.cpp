@@ -173,10 +173,10 @@ class MyGame : public vve::System {
                     switch (current_render_methode)
                     {
                     case 0:
-                        m_renderSettings().methode = vvh::RenderMethode::FORWARD;
+                        m_renderSettings().methode = vvh::RenderMethode::BACKWARD;
                         break;
                     case 1:
-                        m_renderSettings().methode = vvh::RenderMethode::BACKWARD;
+                        m_renderSettings().methode = vvh::RenderMethode::FORWARD;
                         break;
                     case 2:
                         m_renderSettings().methode = vvh::RenderMethode::RESTIRGI;
@@ -241,8 +241,8 @@ class MyGame : public vve::System {
 		float m_volume{MIX_MAX_VOLUME / 2.0};
 
         std::vector<std::string> renderMethodeOptions = {
-            "Forward",
             "Backward",
+            "Forward",
             "RestirGI",
             "RestirLVC",
             "RestirLVC Combined"

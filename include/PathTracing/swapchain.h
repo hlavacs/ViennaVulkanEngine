@@ -99,6 +99,8 @@ namespace vve {
 
         void createImGuiFramebuffers(RenderTarget* depthTarget, VkRenderPass imguiRenderPass);
 
+        void recreateImGuiFrameBuffers(RenderTarget* depthTarget, VkRenderPass imguiRenderPass);
+
         std::vector<VkFramebuffer> getImguiFrameBuffer();
     };
 
