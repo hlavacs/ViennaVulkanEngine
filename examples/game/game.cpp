@@ -72,6 +72,9 @@ int main(int argc, char **argv) {
 
 	vve::simple::Renderer renderer{};
 	renderer.loadScene(makeGameScene());
+	const vve::simple::SpotLight defaultSpotLight{renderer.scene.spotLight}; ///< Saved startup spot light for key-toggle restore.
+	const vve::simple::PointLight defaultPointLight{renderer.scene.pointLight}; ///< Saved startup point light for key-toggle restore.
+	const vve::simple::DirectionalLight defaultDirectionalLight{renderer.scene.directionalLight}; ///< Saved startup directional light for key-toggle restore.
 	if (const VkResult result = renderer.init(window); result != VK_SUCCESS) {
 		std::cerr << "[game] simple renderer init failed: vk_result=" << static_cast<int>(result)
 				  << ", sdl_error=" << SDL_GetError() << '\n';
@@ -84,6 +87,9 @@ int main(int argc, char **argv) {
 	const int maxFrames = frameLimit(argc, argv).value_or(0);
 	int frame{};
 	bool running = true;
+	bool spotLightEnabled = true;                                                             ///< Tracks whether the spot light contributes.
+	bool pointLightEnabled = true;                                                            ///< Tracks whether the point light contributes.
+	bool directionalLightEnabled = true;                                                      ///< Tracks whether the directional light contributes.
 	vve::simple::Vec3 cameraEye{0.0F, 6.0F, 9.0F};                                      ///< Matches the renderer default eye.
 	const vve::simple::Vec3 initialTarget{0.0F, 1.0F, 0.0F};                              ///< Matches the renderer default target.
 	const vve::simple::Vec3 worldUp{0.0F, 1.0F, 0.0F};                                    ///< Stable up axis for view and strafing.
@@ -101,6 +107,34 @@ int main(int argc, char **argv) {
 			}
 			if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_ESCAPE) {
 				running = false;
+			}
+			if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_O && !event.key.repeat) {
+				spotLightEnabled = !spotLightEnabled;
+				renderer.scene.spotLight = defaultSpotLight;                                   // Restore exact startup values before muting.
+				if (!spotLightEnabled) {
+					renderer.scene.spotLight.intensity.value = 0.0F;
+					renderer.scene.spotLight.ambient = 0.0F;
+					renderer.scene.spotLight.range.value = 0.0F;
+				}
+				std::cout << "[game] spot light " << (spotLightEnabled ? "on" : "off") << '\n';
+			}
+			if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_P && !event.key.repeat) {
+				pointLightEnabled = !pointLightEnabled;
+				renderer.scene.pointLight = defaultPointLight;                                 // Restore exact startup values before muting.
+				if (!pointLightEnabled) {
+					renderer.scene.pointLight.intensity = 0.0F;
+					renderer.scene.pointLight.ambient = 0.0F;
+					renderer.scene.pointLight.range = 0.0F;
+				}
+			}
+			if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_L && !event.key.repeat) {
+				directionalLightEnabled = !directionalLightEnabled;
+				renderer.scene.directionalLight = defaultDirectionalLight;                     // Restore exact startup values before muting.
+				if (!directionalLightEnabled) {
+					renderer.scene.directionalLight.intensity.value = 0.0F;
+					renderer.scene.directionalLight.ambient = 0.0F;
+				}
+				std::cout << "[game] directional light " << (directionalLightEnabled ? "on" : "off") << '\n';
 			}
 		}
 
