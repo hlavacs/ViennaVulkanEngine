@@ -28,6 +28,8 @@ export namespace vve::simple {
 		VulkanImageViews imageViews{};         ///< Owned color image views for swapchain images.
 		VulkanDepthImage depthImage{};         ///< Owned swapchain-sized depth attachment image and view.
 		ShadowMap shadowMap{};                 ///< Owned unbound shadow-map image reserved for later shadow rendering.
+		ShadowMap dirShadowMap{};              ///< Owned directional shadow-map image reserved for later shadow rendering.
+		ShadowMap spotShadowMap{};             ///< Owned spot shadow-map image reserved for later shadow rendering.
 		TextureImage objectTexture{};           ///< Owned optional base-color texture bound only when the loaded scene requests one.
 		TextureImage defaultObjectTexture{};    ///< Owned opaque-white texture bound when the scene has no base-color texture.
 		VulkanRenderPass renderPass{};         ///< Owned forward render pass for swapchain color output.
@@ -63,6 +65,8 @@ export namespace vve::simple {
 			const std::string vertSpirvPath{shaderDir + "/simple_forward.vert.spv"};
 			const std::string fragSpirvPath{shaderDir + "/simple_forward.frag.spv"};
 			const std::string shadowVertSpirvPath{shaderDir + "/simple_forward.shadow.vert.spv"};
+			const std::string dirShadowVertSpirvPath{shaderDir + "/simple_forward.dir_shadow.vert.spv"}; ///< Directional shadow vertex shader.
+			const std::string spotShadowVertSpirvPath{shaderDir + "/simple_forward.spot_shadow.vert.spv"}; ///< Spot shadow vertex shader.
 
 			window = sdlWindow;
 			if (window == nullptr) { return VK_ERROR_INITIALIZATION_FAILED; }
@@ -102,6 +106,12 @@ export namespace vve::simple {
 			result = shadowMap.create(physicalDevice.physicalDevice, device.device);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
+			result = dirShadowMap.create(physicalDevice.physicalDevice, device.device);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			result = spotShadowMap.create(physicalDevice.physicalDevice, device.device);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
 			result = renderPass.create(device.device, swapchain.imageFormat);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
@@ -115,7 +125,13 @@ export namespace vve::simple {
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
 			VulkanVertexInputDescription vertexInput{}; // Fixed mesh vertex layout shared by forward and shadow pipelines.
-			result = shadowMap.createPipeline(descriptorSetLayout.descriptorSetLayout, shadowVertSpirvPath, vertexInput);
+			result = shadowMap.createPipeline(descriptorSetLayout.descriptorSetLayout, shadowVertSpirvPath, "shadowVertexMain", vertexInput);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			result = dirShadowMap.createPipeline(descriptorSetLayout.descriptorSetLayout, dirShadowVertSpirvPath, "shadowVertexMainDir", vertexInput);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			result = spotShadowMap.createPipeline(descriptorSetLayout.descriptorSetLayout, spotShadowVertSpirvPath, "shadowVertexMainSpot", vertexInput);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
 			result = vertShaderModule.create(device.device, vertSpirvPath);
@@ -161,11 +177,15 @@ export namespace vve::simple {
 			}
 			const TextureImage &descriptorTexture{hasObjectTexture ? objectTexture : defaultObjectTexture};
 
-			// Bind each frame descriptor set to its matching uniform buffer, shadow map, and object texture slot.
+			// Bind each frame descriptor set to its matching uniform buffer, shadow maps, and object texture slot.
 			for (std::uint32_t frame{}; frame < framesInFlight; ++frame) {
 				result = descriptorSets.writeUniformBuffer(frame, uniformBuffers.buffers[frame].buffer, sizeof(FrameUniforms));
 				if (result != VK_SUCCESS) { cleanup(); return result; }
 				result = descriptorSets.writeShadowMap(frame, shadowMap.view, shadowMap.sampler);
+				if (result != VK_SUCCESS) { cleanup(); return result; }
+				result = descriptorSets.writeDirShadowMap(frame, dirShadowMap.view, dirShadowMap.sampler);
+				if (result != VK_SUCCESS) { cleanup(); return result; }
+				result = descriptorSets.writeSpotShadowMap(frame, spotShadowMap.view, spotShadowMap.sampler);
 				if (result != VK_SUCCESS) { cleanup(); return result; }
 				result = descriptorSets.writeObjectTexture(frame, descriptorTexture);
 				if (result != VK_SUCCESS) { cleanup(); return result; }
@@ -228,17 +248,34 @@ export namespace vve::simple {
 
 			const Scalar aspectRatio{swapchain.extent.height == 0U ? one() : static_cast<Scalar>(swapchain.extent.width) / static_cast<Scalar>(swapchain.extent.height)}; ///< Live swapchain aspect with a zero-height guard.
 			const PointLight light{scene.pointLight};
+			const DirectionalLight dirLight{scene.directionalLight}; ///< Directional light data uploaded for future shader use.
+			const SpotLight spot{scene.spotLight}; ///< Spot light data uploaded for future shader use.
+			const Vec3 dirLightDirection{normalize(dirLight.direction)}; ///< Normalized world-space direction keeps uniform packing stable.
+			const Vec3 spotDirection{normalize(spot.direction)}; ///< Normalized world-space direction keeps uniform packing stable.
 			const Vec3 lightCenter{zeroVec3()}; ///< Origin-centered debug scene framing.
 			const Vec3 shadowSurfaceLightDir{normalize(subtract(light.position, lightCenter))}; ///< Point-light direction approximated by one shadow map.
 			const Vec3 lightEye{light.position}; ///< Place the shadow camera at the point light for the current simple approximation.
 			const Scalar lightExtent{static_cast<Scalar>(4.0)}; ///< Light-space half-size covers the 4x4 floor and tall cube.
+			const Vec3 dirLightEye{subtract(lightCenter, scale(dirLightDirection, lightExtent))}; ///< Directional shadow camera aimed at the scene origin.
+			const Scalar spotLightFov{std::clamp(spot.outerConeAngle.radians * static_cast<Scalar>(2), static_cast<Scalar>(0.001), static_cast<Scalar>(3.0))}; ///< Spot-light cone field of view.
+			const Scalar spotLightFar{std::isfinite(spot.range.value) && spot.range.value > zero() ? spot.range.value : static_cast<Scalar>(0.001)}; ///< Positive spot-light far plane.
+			const Mat4 spotLightViewProj{multiply(perspectiveVulkan(spotLightFov, one(), static_cast<Scalar>(0.1), spotLightFar), lookAt(spot.position, add(spot.position, spotDirection), Vec3{zero(), one(), zero()}))}; ///< Spot-light projection for future shadows.
 			const FrameUniforms frameUniforms{ // Shared camera matrices keep the sample cubes inside Vulkan clip space.
 				.view = lookAt(cameraEye, cameraTarget, Vec3{zero(), one(), zero()}),
 				.projection = perspectiveVulkan(static_cast<Scalar>(0.7853981633974483), aspectRatio, static_cast<Scalar>(0.1), static_cast<Scalar>(100.0)),
 				.lightViewProj = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(lightEye, lightCenter, Vec3{zero(), one(), zero()})),
+				.dirLightViewProj = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(dirLightEye, lightCenter, Vec3{zero(), one(), zero()})),
+				.spotLightViewProj = spotLightViewProj,
 				.lightPositionRange = Vec4{light.position.x, light.position.y, light.position.z, light.range},
 				.lightColorIntensity = Vec4{light.color.x, light.color.y, light.color.z, light.intensity},
 				.lightShadowAmbient = Vec4{shadowSurfaceLightDir.x, shadowSurfaceLightDir.y, shadowSurfaceLightDir.z, light.ambient},
+				.dirLightDirection = Vec4{dirLightDirection.x, dirLightDirection.y, dirLightDirection.z, zero()}, ///< Directional light vector with unused w.
+				.dirLightColorIntensity = Vec4{dirLight.color.x, dirLight.color.y, dirLight.color.z, dirLight.intensity.value}, ///< Directional tint with intensity in w.
+				.dirLightShadowAmbient = Vec4{zero(), zero(), zero(), dirLight.ambient}, ///< Directional ambient term packed in w.
+				.spotLightPositionRange = Vec4{spot.position.x, spot.position.y, spot.position.z, spot.range.value}, ///< Spot xyz position with range in w.
+				.spotLightColorIntensity = Vec4{spot.color.x, spot.color.y, spot.color.z, spot.intensity.value}, ///< Spot rgb color with intensity in w.
+				.spotLightDirection = Vec4{spotDirection.x, spotDirection.y, spotDirection.z, zero()}, ///< Spot xyz direction with unused w.
+				.spotLightConeAmbient = Vec4{std::cos(spot.innerConeAngle.radians), std::cos(spot.outerConeAngle.radians), zero(), spot.ambient}, ///< Spot x inner cosine, y outer cosine, z unused, w ambient.
 			};
 			result = uniformBuffers.update(currentFrame, frameUniforms);
 			if (result != VK_SUCCESS) { return; }
@@ -295,11 +332,15 @@ export namespace vve::simple {
 			graphicsPipeline.cleanup();
 			fragShaderModule.cleanup();
 			vertShaderModule.cleanup();
+			spotShadowMap.cleanupPipeline();
+			dirShadowMap.cleanupPipeline();
 			shadowMap.cleanupPipeline();
 			pipelineLayout.cleanup();
 			descriptorSetLayout.cleanup();
 			framebuffers.cleanup();
 			renderPass.cleanup();
+			spotShadowMap.cleanup();
+			dirShadowMap.cleanup();
 			shadowMap.cleanup();
 			depthImage.cleanup();
 			imageViews.cleanup();
@@ -324,6 +365,8 @@ export namespace vve::simple {
 			if (frameIndex >= commandBuffers.commandBuffers.size() || frameIndex >= descriptorSets.descriptorSets.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
 			if (imageIndex >= framebuffers.framebuffers.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
 			if (shadowMap.renderPass == VK_NULL_HANDLE || shadowMap.framebuffer == VK_NULL_HANDLE || shadowMap.pipeline == VK_NULL_HANDLE || shadowMap.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (dirShadowMap.renderPass == VK_NULL_HANDLE || dirShadowMap.framebuffer == VK_NULL_HANDLE || dirShadowMap.pipeline == VK_NULL_HANDLE || dirShadowMap.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (spotShadowMap.renderPass == VK_NULL_HANDLE || spotShadowMap.framebuffer == VK_NULL_HANDLE || spotShadowMap.pipeline == VK_NULL_HANDLE || spotShadowMap.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkCommandBuffer commandBuffer{commandBuffers.commandBuffers[frameIndex]};
 			VkResult result = vkResetCommandBuffer(commandBuffer, 0U);
@@ -363,6 +406,36 @@ export namespace vve::simple {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline);
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
 			drawUploadedObjects(shadowMap.pipelineLayout);
+			vkCmdEndRenderPass(commandBuffer);
+
+			const VkRenderPassBeginInfo dirShadowPassInfo{
+				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+				.renderPass = dirShadowMap.renderPass,
+				.framebuffer = dirShadowMap.framebuffer,
+				.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
+				.clearValueCount = 1U,
+				.pClearValues = &shadowClear,
+			};
+
+			vkCmdBeginRenderPass(commandBuffer, &dirShadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dirShadowMap.pipeline);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dirShadowMap.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
+			drawUploadedObjects(dirShadowMap.pipelineLayout);
+			vkCmdEndRenderPass(commandBuffer);
+
+			const VkRenderPassBeginInfo spotShadowPassInfo{
+				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+				.renderPass = spotShadowMap.renderPass,
+				.framebuffer = spotShadowMap.framebuffer,
+				.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
+				.clearValueCount = 1U,
+				.pClearValues = &shadowClear,
+			};
+
+			vkCmdBeginRenderPass(commandBuffer, &spotShadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, spotShadowMap.pipeline);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, spotShadowMap.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
+			drawUploadedObjects(spotShadowMap.pipelineLayout);
 			vkCmdEndRenderPass(commandBuffer);
 
 			constexpr std::array<float, 4U> skyBackgroundColor{0.45F, 0.70F, 1.00F, 1.00F}; // Sky background for the forward color pass.

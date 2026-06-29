@@ -2,6 +2,7 @@ export module VEEngine.Simple.Scene;
 import std;
 import VEEngine.Simple.Math;
 import VEEngine.Simple.Mesh;
+import VEEngine.Types;
 
 /**
 	* @file
@@ -31,11 +32,33 @@ export namespace vve::simple {
 		Scalar ambient{0.18F};            ///< Scene-wide ambient term for unlit surfaces.
 	};
 
+	/// @brief Directional light parameters used by future simple forward shading.
+	struct DirectionalLight {
+		Vec3 direction{-0.45F, -0.8F, 0.35F};        ///< World-space direction from the light toward the scene.
+		Vec3 color{0.95F, 0.98F, 1.0F};              ///< RGB light tint applied to the direct component.
+		LightIntensity intensity{.value = 1.4F};     ///< Multiplier for directional diffuse and specular lighting.
+		Scalar ambient{0.06F};                       ///< Ambient term contributed by this light.
+	};
+
+	/// @brief Spot light parameters used by future simple forward shading.
+	struct SpotLight {
+		Vec3 position{0.0F, 4.0F, 3.0F};             ///< World-space light position.
+		Vec3 direction{0.0F, -0.85F, -0.45F};        ///< World-space direction from the light toward the scene.
+		Vec3 color{1.0F, 0.9F, 0.72F};               ///< RGB light tint applied to the direct component.
+		LightIntensity intensity{.value = 4.0F};     ///< Multiplier for spotlight diffuse and specular lighting.
+		LightRange range{.value = 8.0F};             ///< Distance where direct light fades to zero.
+		SpotConeAngle innerConeAngle{.radians = 0.35F}; ///< Angle where the spot light remains fully bright.
+		SpotConeAngle outerConeAngle{.radians = 0.65F}; ///< Angle where the spot light fades to zero.
+		Scalar ambient{0.04F};                       ///< Ambient term contributed by this light.
+	};
+
 	/// @brief Host-side scene container with drawable objects in submission order.
 	struct Scene {
 		std::vector<Object> objects{};                                ///< Drawable objects owned by this CPU scene.
 		std::optional<std::filesystem::path> baseColorTexture{};      ///< Optional scene base-color image path for future texture uploads.
 		PointLight pointLight{};                                      ///< Active point light driving shading.
+		DirectionalLight directionalLight{};                          ///< Active directional light driving future shading.
+		SpotLight spotLight{};                                        ///< Active spot light driving future shading.
 	};
 
 	/**
@@ -67,6 +90,20 @@ export namespace vve::simple {
 			Object{.mesh = makeCube(), .model = identityMat4()},                                      ///< Center cube.
 			Object{.mesh = makeCube(), .model = translate(identityMat4(), Vec3{-1.5F, 0.0F, 0.0F})}, ///< Left cube.
 			Object{.mesh = makeCube(), .model = translate(identityMat4(), Vec3{1.5F, 0.0F, 0.0F})},  ///< Right cube.
+		}, .directionalLight = DirectionalLight{
+			.direction = Vec3{-0.55F, -0.78F, 0.30F},       ///< Cool grazing light crosses all three cubes.
+			.color = Vec3{0.65F, 0.82F, 1.0F},             ///< Blue daylight tint separates it from the point light.
+			.intensity = {.value = 0.75F},                 ///< Moderate strength makes directional shading visible.
+			.ambient = 0.025F,                             ///< Low ambient keeps directional shadows readable.
+		}, .spotLight = SpotLight{
+			.position = Vec3{1.45F, 4.8F, -1.45F},          ///< Warm cone starts above the right side of the scene.
+			.direction = Vec3{0.10F, -0.98F, -0.16F},       ///< Cone aims down across the center cube cluster.
+			.color = Vec3{1.0F, 0.58F, 0.38F},             ///< Orange tint makes spot contribution distinct.
+			.intensity = {.value = 2.2F},                  ///< Focused strength makes spot highlights visible.
+			.range = {.value = 5.8F},                      ///< Range covers the cube group without lighting everything.
+			.innerConeAngle = {.radians = 0.28F},          ///< Tight inner cone creates a clear bright core.
+			.outerConeAngle = {.radians = 0.58F},          ///< Wider outer cone gives a visible falloff band.
+			.ambient = 0.02F,                              ///< Small ambient contribution preserves shadow contrast.
 		}};
 	}
 

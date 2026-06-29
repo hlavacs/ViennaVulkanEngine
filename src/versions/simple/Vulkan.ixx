@@ -988,11 +988,12 @@ export namespace vve::simple {
 			* @brief Creates the unused depth-only graphics pipeline for future shadow rendering.
 			*
 			* @param setLayout Existing frame-uniform descriptor-set layout used as set 0.
-			* @param shadowVertexSpirvPath Path to simple_forward.shadow.vert.spv.
+			* @param shadowVertexSpirvPath Path to the shadow vertex SPIR-V file.
+			* @param vertexEntry Entry point name contained in the shadow vertex SPIR-V module.
 			* @param vertexInput Existing mesh vertex layout shared with the forward pipeline.
 			* @return VK_SUCCESS when the shadow pipeline is available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult createPipeline(VkDescriptorSetLayout setLayout, std::string_view shadowVertexSpirvPath, const VulkanVertexInputDescription &vertexInput);
+		[[nodiscard]] VkResult createPipeline(VkDescriptorSetLayout setLayout, std::string_view shadowVertexSpirvPath, std::string_view vertexEntry, const VulkanVertexInputDescription &vertexInput);
 
 		/**
 			* @brief Destroys the shadow graphics pipeline and pipeline layout before render-pass teardown.
@@ -1200,17 +1201,17 @@ export namespace vve::simple {
 		~VulkanFramebuffers() { cleanup(); }
 	};
 
-	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms, the shadow map, and one object texture; no pipeline layout is created here.
+	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms, shadow maps, and one object texture; no pipeline layout is created here.
 	struct VulkanDescriptorSetLayout {
 		VkDevice device{VK_NULL_HANDLE};                                  ///< Borrowed Vulkan logical device used to destroy the layout.
-		VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};         ///< Owned descriptor-set layout for set 0 frame uniforms, shadow map, and object texture.
+		VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};         ///< Owned descriptor-set layout for set 0 frame uniforms, shadow maps, and object texture.
 
 		VulkanDescriptorSetLayout() = default;
 		VulkanDescriptorSetLayout(const VulkanDescriptorSetLayout &) = delete;
 		VulkanDescriptorSetLayout &operator=(const VulkanDescriptorSetLayout &) = delete;
 
 		/**
-			* @brief Creates set 0 with binding 0 as FrameUniforms, binding 1 as the shadow map, and binding 2 as one object texture.
+			* @brief Creates set 0 with binding 0 as FrameUniforms, bindings 1, 3, and 4 as shadow maps, and binding 2 as one object texture.
 			*
 			* @param owningDevice Logical device that owns the created descriptor-set layout.
 			* @return VK_SUCCESS when the descriptor-set layout is available, otherwise a Vulkan error code.
@@ -1240,7 +1241,21 @@ export namespace vve::simple {
 				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 				.pImmutableSamplers = nullptr,
 			}; ///< Binding 2 reserves one sampled object base-color texture for later fragment shading.
-			const std::array bindings{frameUniformBinding, shadowMapBinding, objectTextureBinding};
+			const VkDescriptorSetLayoutBinding dirShadowMapBinding{
+				.binding = 3U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = 1U,
+				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+				.pImmutableSamplers = nullptr,
+			}; ///< Binding 3 exposes the sampled directional shadow map to the fragment shader.
+			const VkDescriptorSetLayoutBinding spotShadowMapBinding{
+				.binding = 4U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = 1U,
+				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+				.pImmutableSamplers = nullptr,
+			}; ///< Binding 4 exposes the sampled spot shadow map to the fragment shader.
+			const std::array bindings{frameUniformBinding, shadowMapBinding, objectTextureBinding, dirShadowMapBinding, spotShadowMapBinding};
 			const VkDescriptorSetLayoutCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 				.bindingCount = static_cast<std::uint32_t>(bindings.size()),
@@ -1413,9 +1428,9 @@ export namespace vve::simple {
 		* @param vertexInput Existing mesh vertex binding and attribute description.
 		* @return VK_SUCCESS when the pipeline layout and pipeline are ready, otherwise a Vulkan error code.
 		*/
-	[[nodiscard]] VkResult ShadowMap::createPipeline(VkDescriptorSetLayout setLayout, std::string_view shadowVertexSpirvPath, const VulkanVertexInputDescription &vertexInput) {
+	[[nodiscard]] VkResult ShadowMap::createPipeline(VkDescriptorSetLayout setLayout, std::string_view shadowVertexSpirvPath, std::string_view vertexEntry, const VulkanVertexInputDescription &vertexInput) {
 		cleanupPipeline();
-		if (device == VK_NULL_HANDLE || renderPass == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+		if (device == VK_NULL_HANDLE || renderPass == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE || vertexEntry.empty()) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 		VulkanShaderModule shadowVertexModule{}; // Temporary module is only needed while creating the pipeline.
 		VkResult result = shadowVertexModule.create(device, shadowVertexSpirvPath);
@@ -1437,12 +1452,11 @@ export namespace vve::simple {
 		result = vkCreatePipelineLayout(device, &layoutInfo, nullptr, &pipelineLayout);
 		if (result != VK_SUCCESS) { cleanupPipeline(); return result; }
 
-		constexpr char vertexEntry[]{"shadowVertexMain"};
 		const VkPipelineShaderStageCreateInfo shaderStage{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
 			.stage = VK_SHADER_STAGE_VERTEX_BIT,
 			.module = shadowVertexModule.shaderModule,
-			.pName = vertexEntry,
+			.pName = vertexEntry.data(),
 		};
 
 		const VkVertexInputBindingDescription &binding = vertexInput.binding;
@@ -2674,7 +2688,7 @@ export namespace vve::simple {
 
 			const std::array poolSizes{
 				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = maxSets},
-				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = maxSets * 2U},
+				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = maxSets * 4U},
 			};
 			const VkDescriptorPoolCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -2802,6 +2816,66 @@ export namespace vve::simple {
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
 				.dstBinding = 1U,
+				.dstArrayElement = 0U,
+				.descriptorCount = 1U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &imageInfo,
+			};
+
+			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
+			return VK_SUCCESS;
+		}
+
+		/**
+			* @brief Writes one frame descriptor set with its binding-3 sampled directional shadow map.
+			*
+			* @param frameIndex Frame set index to update.
+			* @param imageView Directional shadow-map image view bound to descriptor binding 3.
+			* @param sampler Directional shadow-map sampler bound to descriptor binding 3.
+			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
+			*/
+		[[nodiscard]] VkResult writeDirShadowMap(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
+			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			const VkDescriptorImageInfo imageInfo{
+				.sampler = sampler,
+				.imageView = imageView,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+			const VkWriteDescriptorSet write{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSets[frameIndex],
+				.dstBinding = 3U,
+				.dstArrayElement = 0U,
+				.descriptorCount = 1U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &imageInfo,
+			};
+
+			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
+			return VK_SUCCESS;
+		}
+
+		/**
+			* @brief Writes one frame descriptor set with its binding-4 sampled spot shadow map.
+			*
+			* @param frameIndex Frame set index to update.
+			* @param imageView Spot shadow-map image view bound to descriptor binding 4.
+			* @param sampler Spot shadow-map sampler bound to descriptor binding 4.
+			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
+			*/
+		[[nodiscard]] VkResult writeSpotShadowMap(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
+			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			const VkDescriptorImageInfo imageInfo{
+				.sampler = sampler,
+				.imageView = imageView,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+			const VkWriteDescriptorSet write{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSets[frameIndex],
+				.dstBinding = 4U,
 				.dstArrayElement = 0U,
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -2954,9 +3028,18 @@ export namespace vve::simple {
 		Mat4 view{};        ///< shared camera view matrix
 		Mat4 projection{};  ///< shared camera projection matrix
 		Mat4 lightViewProj{}; ///< light view-projection for the upcoming shadow pass
+		Mat4 dirLightViewProj{}; ///< directional-light view-projection for future shadow data
+		Mat4 spotLightViewProj{}; ///< spot-light view-projection for future shadow data
 		Vec4 lightPositionRange{};    ///< xyz world-space point-light position, w range
 		Vec4 lightColorIntensity{};   ///< rgb direct-light color, w direct-light intensity
 		Vec4 lightShadowAmbient{};    ///< xyz shadow-map direction approximation, w ambient term
+		Vec4 dirLightDirection{};     ///< xyz world-space directional-light direction, w unused
+		Vec4 dirLightColorIntensity{}; ///< rgb directional-light color, w directional-light intensity
+		Vec4 dirLightShadowAmbient{}; ///< xyz directional shadow-map direction, w directional ambient term
+		Vec4 spotLightPositionRange{}; ///< xyz world-space spot-light position, w range
+		Vec4 spotLightColorIntensity{}; ///< rgb spot-light color, w spot-light intensity
+		Vec4 spotLightDirection{};    ///< xyz spot-light light-to-scene direction, w unused
+		Vec4 spotLightConeAmbient{};  ///< x inner cone cosine, y outer cone cosine, z unused, w ambient term
 	};
 
 	/// @brief Minimal per-frame uniform-buffer owner for shared view and projection data.

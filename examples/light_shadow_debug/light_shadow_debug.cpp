@@ -39,6 +39,20 @@ namespace {
 		.intensity = 4.5F,
 		.range = 7.5F,
 		.ambient = 0.08F,
+	}, .directionalLight = vve::simple::DirectionalLight{
+		.direction = vve::simple::Vec3{-0.55F, -0.78F, 0.30F}, ///< Cool grazing light crosses the floor.
+		.color = vve::simple::Vec3{0.65F, 0.82F, 1.0F},
+		.intensity = {.value = 0.75F},
+		.ambient = 0.025F,
+	}, .spotLight = vve::simple::SpotLight{
+		.position = vve::simple::Vec3{1.45F, 4.8F, -1.45F}, ///< Warm cone hangs over the lit floor marker region.
+		.direction = vve::simple::Vec3{0.10F, -0.98F, -0.16F},
+		.color = vve::simple::Vec3{1.0F, 0.58F, 0.38F},
+		.intensity = {.value = 2.2F},
+		.range = {.value = 5.8F},
+		.innerConeAngle = {.radians = 0.28F},
+		.outerConeAngle = {.radians = 0.58F},
+		.ambient = 0.02F,
 	}};
 }
 
@@ -48,7 +62,11 @@ namespace {
 			return std::filesystem::path{argv[index + 1]};
 		}
 	}
-	return "light_shadow_debug.txt";
+	if (argc > 0 && argv[0] != nullptr) {
+		const auto executableDirectory = std::filesystem::absolute(std::filesystem::path{argv[0]}).parent_path();
+		return executableDirectory.parent_path() / "verify" / "light_shadow_debug.txt";
+	}
+	return std::filesystem::path{"verify"} / "light_shadow_debug.txt";
 }
 
 [[nodiscard]] int frameLimit(int argc, char **argv) {

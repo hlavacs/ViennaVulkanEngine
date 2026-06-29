@@ -15,9 +15,18 @@ struct FrameUniforms
     float4x4 view;       ///< Camera view matrix shared by all objects in the frame.
     float4x4 projection; ///< Camera projection matrix shared by all objects in the frame.
     float4x4 lightViewProj; ///< Light view-projection matrix for the upcoming shadow pass.
+    float4x4 dirLightViewProj; ///< Directional-light view-projection matrix for future shadow data.
+    float4x4 spotLightViewProj; ///< Spot-light view-projection matrix for future shadow data.
     float4 lightPositionRange;    ///< xyz world-space point-light position, w range.
     float4 lightColorIntensity;   ///< rgb direct-light color, w direct-light intensity.
     float4 lightShadowAmbient;    ///< xyz shadow-map direction approximation, w ambient contribution.
+    float4 dirLightDirection;     ///< xyz world-space directional-light direction, w unused.
+    float4 dirLightColorIntensity; ///< rgb directional-light color, w directional-light intensity.
+    float4 dirLightShadowAmbient; ///< xyz directional shadow-map direction, w directional ambient contribution.
+    float4 spotLightPositionRange; ///< xyz world-space spot-light position, w range.
+    float4 spotLightColorIntensity; ///< rgb spot-light color, w spot-light intensity.
+    float4 spotLightDirection;    ///< xyz spot-light light-to-scene direction, w unused.
+    float4 spotLightConeAmbient;  ///< x inner cone cosine, y outer cone cosine, z unused, w ambient contribution.
 };
 
 struct ObjectPushConstants
@@ -62,6 +71,12 @@ Sampler2D shadowMap; ///< Directional light depth map sampled by the forward fra
 [[vk::binding(2, 0)]]
 Sampler2D baseColorTexture; ///< Optional object base-color texture sampled only when the push constant enables it.
 
+[[vk::binding(3, 0)]]
+Sampler2D dirShadowMap; ///< Directional light depth map sampled by the forward fragment stage.
+
+[[vk::binding(4, 0)]]
+Sampler2D spotShadowMap; ///< Spot light depth map sampled by the forward fragment stage.
+
 [[vk::push_constant]]
 ObjectPushConstants object; ///< Per-object transform constants.
 
@@ -82,6 +97,18 @@ VertexOutput vertexMain(VertexInput input)
 float4 shadowVertexMain(VertexInput input) : SV_Position
 {
     return mul(frame.lightViewProj, mul(object.model, float4(input.position, 1.0)));
+}
+
+[shader("vertex")]
+float4 shadowVertexMainDir(VertexInput input) : SV_Position
+{
+    return mul(frame.dirLightViewProj, mul(object.model, float4(input.position, 1.0)));
+}
+
+[shader("vertex")]
+float4 shadowVertexMainSpot(VertexInput input) : SV_Position
+{
+    return mul(frame.spotLightViewProj, mul(object.model, float4(input.position, 1.0)));
 }
 
 [shader("fragment")]
@@ -110,6 +137,40 @@ FragmentOutput fragmentMain(FragmentInput input)
     const float diffuse = max(dot(normal, surfaceLightDir), 0.0);        ///< Lambertian light response.
     const float3 halfVector = normalize(surfaceLightDir + viewDir);      ///< Blinn-Phong halfway direction between light and eye.
     const float specular = specularStrength * pow(max(dot(normal, halfVector), 0.0), shininess); ///< Shadowed highlight response.
+    const float3 dirSurfaceLightDir = normalize(-frame.dirLightDirection.xyz); ///< Directional-light surface-to-light vector.
+    const float dirDiffuse = max(dot(normal, dirSurfaceLightDir), 0.0);  ///< Directional Lambertian light response.
+    const float3 dirHalfVector = normalize(dirSurfaceLightDir + viewDir); ///< Directional Blinn-Phong halfway direction.
+    const float dirSpecular = specularStrength * pow(max(dot(normal, dirHalfVector), 0.0), shininess); ///< Directional highlight response.
+    const float3 dirLight = frame.dirLightColorIntensity.rgb * frame.dirLightColorIntensity.w; ///< Directional light color scaled by intensity.
+    const float dirAmbient = frame.dirLightShadowAmbient.w;              ///< Directional ambient contribution without shadowing.
+    const float4 dirLightClip = mul(frame.dirLightViewProj, float4(input.worldPos, 1.0)); ///< Fragment position in directional light clip space.
+    const float3 dirLightNdc = dirLightClip.xyz / dirLightClip.w;        ///< Directional light depth remains in 0..1 after divide.
+    const float2 dirShadowUv = (dirLightNdc.xy * 0.5) + 0.5;             ///< Convert directional light NDC XY to shadow texture UVs.
+    const bool insideDirShadowMap = dirShadowUv.x >= 0.0 && dirShadowUv.x <= 1.0 &&
+        dirShadowUv.y >= 0.0 && dirShadowUv.y <= 1.0 && dirLightNdc.z >= 0.0 && dirLightNdc.z <= 1.0; ///< Reject fragments outside directional light coverage.
+    const float dirStoredDepth = dirShadowMap.Sample(dirShadowUv).r;     ///< Closest surface depth from the directional light pass.
+    const float dirShadowFactor = insideDirShadowMap && dirLightNdc.z - 0.001 > dirStoredDepth ? 0.35 : 1.0; ///< Small 0.001 compare bias complements shadow-pass slope-scaled rasterizer bias.
+    const float3 spotToLight = frame.spotLightPositionRange.xyz - input.worldPos; ///< Vector from fragment to the spot light.
+    const float spotDistance = length(spotToLight);                      ///< Fragment-spot distance for falloff.
+    const float3 spotLightDir = spotToLight / max(spotDistance, 0.001);  ///< Spot surface-to-light vector for direct response.
+    const float spotRange = max(frame.spotLightPositionRange.w, 0.001);  ///< Positive spot range for stable attenuation.
+    const float spotRangeValid = frame.spotLightPositionRange.w > 0.0 ? 1.0 : 0.0; ///< Disable spot light for invalid ranges.
+    const float spotRangeFalloff = saturate(1.0 - (spotDistance / spotRange)) * spotRangeValid; ///< Fade spot light at the configured range.
+    const float spotAttenuation = spotRangeFalloff * spotRangeFalloff;   ///< Spot quadratic distance falloff.
+    const float spotDiffuse = max(dot(normal, spotLightDir), 0.0);       ///< Spot Lambertian light response.
+    const float3 spotHalfVector = normalize(spotLightDir + viewDir);     ///< Spot Blinn-Phong halfway direction.
+    const float spotSpecular = specularStrength * pow(max(dot(normal, spotHalfVector), 0.0), shininess); ///< Spot highlight response.
+    const float spotCos = dot(normalize(-spotLightDir), normalize(frame.spotLightDirection.xyz)); ///< Spot angle cosine for cone falloff.
+    const float spotConeFalloff = smoothstep(frame.spotLightConeAmbient.y, frame.spotLightConeAmbient.x, spotCos); ///< Spot cone angular falloff.
+    const float3 spotLight = frame.spotLightColorIntensity.rgb * frame.spotLightColorIntensity.w; ///< Spot light color scaled by intensity.
+    const float spotAmbient = frame.spotLightConeAmbient.w;              ///< Spot ambient contribution without shadowing.
+    const float4 spotLightClip = mul(frame.spotLightViewProj, float4(input.worldPos, 1.0)); ///< Fragment position in spot light clip space.
+    const float3 spotLightNdc = spotLightClip.xyz / spotLightClip.w;     ///< Spot light depth remains in 0..1 after divide.
+    const float2 spotShadowUv = (spotLightNdc.xy * 0.5) + 0.5;           ///< Convert spot light NDC XY to shadow texture UVs.
+    const bool insideSpotShadowMap = spotShadowUv.x >= 0.0 && spotShadowUv.x <= 1.0 &&
+        spotShadowUv.y >= 0.0 && spotShadowUv.y <= 1.0 && spotLightNdc.z >= 0.0 && spotLightNdc.z <= 1.0; ///< Reject fragments outside spot light coverage.
+    const float spotStoredDepth = spotShadowMap.Sample(spotShadowUv).r;  ///< Closest surface depth from the spot light pass.
+    const float spotShadowFactor = insideSpotShadowMap && spotLightNdc.z - 0.001 > spotStoredDepth ? 0.35 : 1.0; ///< Small 0.001 compare bias complements shadow-pass slope-scaled rasterizer bias.
     const float4 lightClip = mul(frame.lightViewProj, float4(input.worldPos, 1.0)); ///< Fragment position in light clip space.
     const float3 lightNdc = lightClip.xyz / lightClip.w;                ///< Vulkan light depth remains in 0..1 after divide.
     const float2 shadowUv = (lightNdc.xy * 0.5) + 0.5;                  ///< Convert light NDC XY to shadow texture UVs.
@@ -121,6 +182,6 @@ FragmentOutput fragmentMain(FragmentInput input)
     if (object.useBaseColorTexture != 0) {
         baseColor *= baseColorTexture.Sample(input.texCoord).rgb;        ///< Optional texture modulates the material before lighting.
     }
-    output.color = float4(baseColor * (ambient + lightColor * ((diffuse + specular) * lightIntensity * attenuation * shadowFactor)), 1.0); ///< Apply point light plus shadowed Blinn-Phong.
+    output.color = float4(baseColor * (ambient + lightColor * ((diffuse + specular) * lightIntensity * attenuation * shadowFactor) + dirAmbient + dirLight * ((dirDiffuse + dirSpecular) * dirShadowFactor) + spotAmbient + spotLight * ((spotDiffuse + spotSpecular) * spotAttenuation * spotConeFalloff * spotShadowFactor)), 1.0); ///< Apply point, directional, and spot Blinn-Phong.
     return output;
 }
