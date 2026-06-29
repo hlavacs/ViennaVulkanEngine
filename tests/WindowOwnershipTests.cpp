@@ -57,7 +57,7 @@ int main() {
    if (!engine.init()) { return 1; }
 
    auto world = engine.world();
-   auto ecs = world.get<vve::ECS>();
+   auto &ecs = world.get<vve::ECS>();
    auto window_system = world.get<vve::WindowSystem>();
    const auto camera = ecs.create();
    if (const auto result = ecs.add(camera, vve::Camera{}); !result) { return 2; }

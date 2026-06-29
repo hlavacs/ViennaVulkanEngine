@@ -3,12 +3,11 @@ add_executable(sponza
 )
 
 target_link_libraries(sponza PRIVATE
-    ViennaVulkanEngineSimple
     ViennaVulkanEngine::ViennaVulkanEngine
 )
 
 add_dependencies(sponza
-    ViennaVulkanEngineSimple
+    ViennaVulkanEngine
     vve_simple_shaders
 )
 

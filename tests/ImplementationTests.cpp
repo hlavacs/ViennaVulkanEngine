@@ -258,7 +258,7 @@ struct CountingSystem {
    using namespace vve;
 
    auto engine = makeEngine(ApplicationName{"ecs-test"});
-   auto ecs = engine.world().get<vve::ECS>();
+   auto &ecs = engine.world().get<vve::ECS>();
    const auto entity = ecs.create();
    if (!entity.valid() || !entity.isCounter() || !ecs.exists(entity)) {
       return 20;
@@ -332,7 +332,7 @@ struct CountingSystem {
 
    auto engine = makeEngine(ApplicationName{"world-test"});
    auto world = engine.world();
-   auto ecs = world.get<vve::ECS>();
+   auto &ecs = world.get<vve::ECS>();
    const auto ecs_entity = ecs.create();
    if (!ecs.exists(ecs_entity)) {
       return 67;
@@ -510,7 +510,7 @@ struct CountingSystem {
    }
    auto world = engine.world();
    auto window_system = world.get<vve::WindowSystem>();
-   auto ecs = world.get<vve::ECS>();
+   auto &ecs = world.get<vve::ECS>();
    const auto camera = ecs.create();
    if (const auto result = ecs.add(camera, Camera{}); !result) { return 57; }
    if (!window_system.setWindowCamera("main", camera)) { return 57; }

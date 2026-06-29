@@ -3,12 +3,11 @@ add_executable(physics
 )
 
 target_link_libraries(physics PRIVATE
-    ViennaVulkanEngineSimple
     ViennaVulkanEngine::ViennaVulkanEngine
 )
 
 add_dependencies(physics
-    ViennaVulkanEngineSimple
+    ViennaVulkanEngine
     vve_simple_shaders
 )
 

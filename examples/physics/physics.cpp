@@ -1,18 +1,13 @@
-#define SDL_MAIN_HANDLED
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
-#include <vulkan/vulkan.h>
-
 import std;
-import VEEngine.Simple;
-import VEEngine.Simple.Scene;
+import VEEngine;
 
 /**
  * @file
- * @brief Minimal physics shell running on the standalone simple renderer.
+ * @brief Minimal physics shell running through the public engine facade.
  */
 namespace {
 
+/// @brief Reads the optional frame count used by automated example runs.
 [[nodiscard]] int frameLimit(int argc, char **argv) {
 	for (int index = 1; index + 1 < argc; ++index) {
 		if (argv[index] == nullptr || argv[index + 1] == nullptr) {
@@ -36,44 +31,37 @@ namespace {
 int main(int argc, char **argv) {
 	std::cout << std::unitbuf;
 	std::cerr << std::unitbuf;
-	std::cout << "[physics] engine=simple\n";
+	std::cout << "[physics] engine=" << vve::engineImplementationNamespaceName << '\n';
 
-	SDL_SetMainReady();
-#ifdef VVE_SDL_VULKAN_LIBRARY
-	SDL_SetHint(SDL_HINT_VULKAN_LIBRARY, VVE_SDL_VULKAN_LIBRARY);
-#endif
-	if (!SDL_InitSubSystem(SDL_INIT_VIDEO)) {
-		std::cerr << "[physics] SDL video init failed: " << SDL_GetError() << '\n';
+	auto engine = vve::makeEngine(
+		vve::ApplicationName{"physics"},
+		vve::WindowSetups{vve::WindowSetup{}
+								.id("main")
+								.title("VVE Physics")
+								.extent(vve::PixelExtent{.width = 800, .height = 450})
+								.renderer(vve::RendererId{.value = "forward"})});
+
+	if (const auto result = engine.init(); !result) {
+		std::cerr << "[physics] engine init failed: error=" << vve::errorName(result.error()) << '\n';
 		return 1;
 	}
 
-	SDL_Window *const window = SDL_CreateWindow("VVE Simple Physics", 800, 450, SDL_WINDOW_VULKAN);
-	if (window == nullptr) {
-		std::cerr << "[physics] SDL Vulkan window creation failed: " << SDL_GetError() << '\n';
-		SDL_QuitSubSystem(SDL_INIT_VIDEO);
+	auto render_system = engine.world().get<vve::RenderSystem>();
+	if (const auto result = render_system.loadSampleScene(); !result) {
+		std::cerr << "[physics] sample scene load failed: error=" << vve::errorName(result.error()) << '\n';
 		return 2;
 	}
 
-	vve::simple::RenderSystem renderSystem{};
-	renderSystem.loadScene(vve::simple::makeSampleScene());
-	if (const auto result = renderSystem.initialize(window); !result) {
-		std::cerr << "[physics] simple renderer init failed: error=" << static_cast<int>(result.error()) << '\n';
-		renderSystem.shutdown();
-		SDL_DestroyWindow(window);
-		SDL_QuitSubSystem(SDL_INIT_VIDEO);
-		return 3;
+	const int max_frames = frameLimit(argc, argv);
+	for (int frame{}; frame < max_frames; ++frame) {
+		const auto status = engine.step();
+		if (!status) {
+			std::cerr << "[physics] frame failed: error=" << vve::errorName(status.error()) << '\n';
+			return 3;
+		}
+		if (*status == vve::FrameStatus::stopped) { break; }
 	}
 
-	const int maxFrames = frameLimit(argc, argv);
-	for (int frame{}; frame < maxFrames; ++frame) {
-		SDL_Event event{};
-		while (SDL_PollEvent(&event)) {}
-		renderSystem.drawFrame();
-	}
-
-	renderSystem.shutdown();
-	SDL_DestroyWindow(window);
-	SDL_QuitSubSystem(SDL_INIT_VIDEO);
-	std::cout << "[physics] frames=" << maxFrames << '\n';
+	std::cout << "[physics] frames=" << max_frames << '\n';
 	return 0;
 }

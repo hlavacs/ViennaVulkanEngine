@@ -3,12 +3,11 @@ add_executable(game
 )
 
 target_link_libraries(game PRIVATE
-    ViennaVulkanEngineSimple
     ViennaVulkanEngine::ViennaVulkanEngine
 )
 
 add_dependencies(game
-    ViennaVulkanEngineSimple
+    ViennaVulkanEngine
     vve_simple_shaders
 )
 

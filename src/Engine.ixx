@@ -1,15 +1,7 @@
 module;
 
-#ifndef VVE_ENGINE_IMPLEMENTATION_NAMESPACE
-#define VVE_ENGINE_IMPLEMENTATION_NAMESPACE simple
-#endif
-
-#define VVE_DETAIL_STRINGIFY_IMPL(value) #value
-#define VVE_DETAIL_STRINGIFY(value) VVE_DETAIL_STRINGIFY_IMPL(value)
-
 export module VEEngine;
 import std;
-import VEEngine.Simple;
 export import VEEngine.Error;
 export import VEEngine.Math;
 export import VEEngine.Handle;
@@ -27,8 +19,66 @@ export import :Gui;
 
 export namespace vve {
 
-	inline constexpr std::string_view engineImplementationNamespaceName{
-		VVE_DETAIL_STRINGIFY(VVE_ENGINE_IMPLEMENTATION_NAMESPACE)};	///< Active implementation namespace name.
+	inline constexpr std::string_view engineImplementationNamespaceName{"simple"};	///< Active implementation namespace name.
+
+	struct WindowFrameInfo {
+		WindowHandle handle{};								///< Runtime window handle.
+		std::string id{};									///< Stable application-local window id.
+		std::string title{};								///< Platform window title.
+		PixelExtent extent{};								///< Current pixel dimensions.
+		RendererId renderer_id{};							///< Renderer selected for this window.
+		std::optional<Entity> camera{};					///< Camera rendered through this window, when selected.
+		bool focused{false};								///< True while the window has keyboard focus.
+		bool minimized{false};								///< True while the platform reports a minimized window.
+		bool should_close{false};							///< True after a close request.
+	};															///< Facade frame snapshot for one window.
+
+	struct WindowFrameData {
+		Vector<WindowFrameInfo> windows{};				///< Window states after event polling.
+	};															///< Facade frame snapshot passed to user systems.
+
+	namespace detail {
+
+		struct EngineWindowSetup {
+			std::string id{"main"};						///< Stable application-local window id.
+			std::string title{"VVE simple"};			///< Platform window title.
+			PixelExtent extent{.width = 960, .height = 540};	///< Initial pixel dimensions.
+			std::optional<int> x{};						///< Optional initial screen x coordinate.
+			std::optional<int> y{};						///< Optional initial screen y coordinate.
+			RendererId renderer_id{};					///< Renderer selected for this window.
+			bool resizable{true};						///< Enables platform resizing.
+			bool visible{true};							///< Shows the window after creation.
+		};													///< Opaque startup window descriptor for implementation conversion.
+
+		struct EngineStartupOptions {
+			EngineConfig config{};						///< Compact startup configuration.
+			std::optional<std::vector<EngineWindowSetup>> windows{};	///< Optional startup windows.
+			Vector<ObjectName> user_system_tasks{};	///< User-system task names for debug graphs.
+		};													///< Facade-owned startup options consumed by the implementation unit.
+
+		struct EngineState;								///< Opaque owning engine implementation state.
+		struct EngineStateDeleter {
+			void operator()(EngineState *state) const noexcept;
+		};													///< Deletes the opaque engine state in the implementation unit.
+
+		using EngineStateHandle = std::unique_ptr<EngineState, EngineStateDeleter>;	///< Owning engine state handle.
+
+		[[nodiscard]] EngineStateHandle makeEngineState(EngineStartupOptions options);
+		[[nodiscard]] auto engineVersionMajor(const EngineState &state)								-> std::uint32_t;
+		[[nodiscard]] auto engineGetVersionMajor(const EngineState &state) noexcept				-> std::expected<int, Error>;
+		[[nodiscard]] auto engineVersionName(const EngineState &state)								-> std::string_view;
+		[[nodiscard]] auto engineAssets(EngineState &state)											-> void *;
+		[[nodiscard]] auto engineGui(EngineState &state)												-> void *;
+		[[nodiscard]] auto engineWindowSystem(EngineState &state)									-> void *;
+		[[nodiscard]] auto engineRenderSystem(EngineState &state)									-> void *;
+		[[nodiscard]] auto engineInit(EngineState &state)											-> std::expected<void, Error>;
+		[[nodiscard]] auto engineStep(EngineState &state)											-> std::expected<FrameStatus, Error>;
+		[[nodiscard]] auto engineWindowFrame(EngineState &state)										-> WindowFrameData;
+		[[nodiscard]] auto engineRenderFrame(EngineState &state)										-> std::expected<void, Error>;
+		[[nodiscard]] auto engineWriteDebugGraphs(const EngineState &state, const std::filesystem::path &directory)
+			-> std::expected<void, Error>;
+
+	} // namespace detail
 
 	template <typename... TSystems> class Engine {
 	public:
@@ -58,18 +108,16 @@ export namespace vve {
 		writeDebugGraphs(const std::filesystem::path &directory = "graph_dumps") const;
 
 	private:
-		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Engine;
+		explicit Engine(detail::EngineStartupOptions options);
 
-		static auto implementationOption(WindowSetups option)								-> VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Windows;
+		template <typename... TOptions> static auto startupOptions(TOptions &&...options)	-> detail::EngineStartupOptions;
+		template <typename TOption> static void appendStartupOption(detail::EngineStartupOptions &options, TOption &&option);
+		static void appendStartupOption(detail::EngineStartupOptions &options, WindowSetups option);
 		template <typename... TUserSystems>
-		static VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
-		implementationOption(const UserSystems<TUserSystems...> &systems);
+		static void appendStartupOption(detail::EngineStartupOptions &options,
+												  const UserSystems<TUserSystems...> &systems);
 		template <typename... TUserSystems>
-		static VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
-		implementationOption(UserSystems<TUserSystems...> &systems);
-
-		template <typename TOption> static decltype(auto) implementationOption(TOption &&option);
-
+		static void appendStartupOption(detail::EngineStartupOptions &options, UserSystems<TUserSystems...> &systems);
 		[[nodiscard]] auto makeWorld();
 		template <typename TOption> void applyOption(TOption &&option);
 		template <typename... TUserSystems> void applyOption(const UserSystems<TUserSystems...> &systems);
@@ -80,19 +128,17 @@ export namespace vve {
 		template <typename TSystem> [[nodiscard]] std::expected<void, Error> initOne(TSystem &system);
 		template <typename TSystem>
 		[[nodiscard]] std::expected<void, Error>
-		updateOne(TSystem &system, const FrameContext &frame,
-						const VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData &window_frame);
+		updateOne(TSystem &system, const FrameContext &frame, const WindowFrameData &window_frame);
 		template <typename TSystem> [[nodiscard]] static std::string systemDebugName(const TSystem &system);
 		template <typename... TUserSystems>
-		[[nodiscard]] static VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
-		makeUserSystemTasks(const std::tuple<TUserSystems...> &systems);
+		static void appendUserSystemTasks(detail::EngineStartupOptions &options, const std::tuple<TUserSystems...> &systems);
 
-		Impl impl_{};
-		ECS ecs_{impl_.ecs()};													///< Public ECS wrapper referenced by world views.
-		AssetSystem assets_{impl_.assets()};								///< Public asset-system wrapper referenced by world views.
-		GuiSystem gui_{impl_.gui()};											///< Public GUI wrapper referenced by world views.
-		WindowSystem window_system_{impl_.windowSystem()};				///< Public window wrapper referenced by world views.
-		RenderSystem render_system_{impl_.renderSystem()};				///< Public render wrapper referenced by world views.
+		detail::EngineStateHandle state_;								///< Opaque owning engine implementation state.
+		ECS ecs_{};																///< Public ECS container referenced by world views.
+		AssetSystem assets_;												///< Public asset-system wrapper referenced by world views.
+		GuiSystem gui_;														///< Public GUI wrapper referenced by world views.
+		WindowSystem window_system_;										///< Public window wrapper referenced by world views.
+		RenderSystem render_system_;										///< Public render wrapper referenced by world views.
 		std::optional<std::tuple<TSystems...>> systems_{};				///< User systems supplied by the application.
 		std::chrono::steady_clock::time_point last_frame_time_{};	///< Timestamp of the previous facade step().
 		std::uint64_t frame_{0};												///< Number of completed facade step() calls.
@@ -185,28 +231,34 @@ export namespace vve {
 
 	inline constexpr MakeEngine makeEngine{};	///< Facade engine factory.
 
-	template <typename... TSystems> Engine<TSystems...>::Engine() = default;
+	template <typename... TSystems> Engine<TSystems...>::Engine() : Engine{detail::EngineStartupOptions{}} {}
 
 	template <typename... TSystems>
-	Engine<TSystems...>::Engine(EngineConfig config) : impl_{std::move(config)} {}
+	Engine<TSystems...>::Engine(detail::EngineStartupOptions options)
+		: state_{detail::makeEngineState(std::move(options))}, ecs_{},
+		  assets_{detail::engineAssets(*state_)}, gui_{detail::engineGui(*state_)},
+		  window_system_{detail::engineWindowSystem(*state_)}, render_system_{detail::engineRenderSystem(*state_)} {}
+
+	template <typename... TSystems>
+	Engine<TSystems...>::Engine(EngineConfig config) : Engine{startupOptions(std::move(config))} {}
 
 	template <typename... TSystems>
 	template <typename... TOptions>
 		requires(sizeof...(TOptions) > 0)
-	Engine<TSystems...>::Engine(TOptions &&...options) : impl_{implementationOption(options)...} {
+	Engine<TSystems...>::Engine(TOptions &&...options) : Engine{startupOptions(options...)} {
 		(applyOption(std::forward<TOptions>(options)), ...);
 	}
 
 	template <typename... TSystems> std::uint32_t Engine<TSystems...>::versionMajor() const {
-		return impl_.versionMajor();
+		return detail::engineVersionMajor(*state_);
 	}
 
 	template <typename... TSystems> std::expected<int, Error> Engine<TSystems...>::getVersionMajor() const noexcept {
-		return impl_.getVersionMajor();
+		return detail::engineGetVersionMajor(*state_);
 	}
 
 	template <typename... TSystems> std::string_view Engine<TSystems...>::versionName() const {
-		return impl_.versionName();
+		return detail::engineVersionName(*state_);
 	}
 
 	template <typename... TSystems> auto Engine<TSystems...>::world() {
@@ -218,28 +270,58 @@ export namespace vve {
 	}
 
 	template <typename... TSystems>
-	VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Windows Engine<TSystems...>::implementationOption(WindowSetups option) {
-		return option;
-	}
-
-	template <typename... TSystems>
-	template <typename... TUserSystems>
-	VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
-	Engine<TSystems...>::implementationOption(const UserSystems<TUserSystems...> &systems) {
-		return makeUserSystemTasks(systems.value);
-	}
-
-	template <typename... TSystems>
-	template <typename... TUserSystems>
-	VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
-	Engine<TSystems...>::implementationOption(UserSystems<TUserSystems...> &systems) {
-		return makeUserSystemTasks(systems.value);
+	template <typename... TOptions>
+	auto Engine<TSystems...>::startupOptions(TOptions &&...options) -> detail::EngineStartupOptions {
+		auto result = detail::EngineStartupOptions{};
+		(appendStartupOption(result, std::forward<TOptions>(options)), ...);
+		return result;
 	}
 
 	template <typename... TSystems>
 	template <typename TOption>
-	decltype(auto) Engine<TSystems...>::implementationOption(TOption &&option) {
-		return std::forward<TOption>(option);
+	void Engine<TSystems...>::appendStartupOption(detail::EngineStartupOptions &options, TOption &&option) {
+		using Option = std::remove_cvref_t<TOption>;
+		if constexpr (std::same_as<Option, EngineConfig>) {
+			options.config = std::forward<TOption>(option);
+		} else if constexpr (std::same_as<Option, ApplicationName>) {
+			options.config.application_name = std::forward<TOption>(option).value;
+		} else if constexpr (std::same_as<Option, MaxFrames>) {
+			options.config.max_frames = std::forward<TOption>(option).value;
+		} else {
+			(void)options;
+			(void)option;
+		}
+	}
+
+	template <typename... TSystems>
+	void Engine<TSystems...>::appendStartupOption(detail::EngineStartupOptions &options, WindowSetups option) {
+		auto windows = std::vector<detail::EngineWindowSetup>{};
+		windows.reserve(option.value_.size());
+		for (auto &window : option.value_) {
+			windows.push_back(detail::EngineWindowSetup{.id = std::move(window.id_),
+																	  .title = std::move(window.title_),
+																	  .extent = window.extent_,
+																	  .x = window.x_,
+																	  .y = window.y_,
+																	  .renderer_id = std::move(window.renderer_id_),
+																	  .resizable = window.resizable_,
+																	  .visible = window.visible_});
+		}
+		options.windows = std::move(windows);
+	}
+
+	template <typename... TSystems>
+	template <typename... TUserSystems>
+	void Engine<TSystems...>::appendStartupOption(detail::EngineStartupOptions &options,
+																 const UserSystems<TUserSystems...> &systems) {
+		appendUserSystemTasks(options, systems.value);
+	}
+
+	template <typename... TSystems>
+	template <typename... TUserSystems>
+	void Engine<TSystems...>::appendStartupOption(detail::EngineStartupOptions &options,
+																 UserSystems<TUserSystems...> &systems) {
+		appendUserSystemTasks(options, systems.value);
 	}
 
 	template <typename... TSystems> auto Engine<TSystems...>::makeWorld() {
@@ -271,13 +353,11 @@ export namespace vve {
 
 	template <typename... TSystems>
 	template <typename... TUserSystems>
-	VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks
-	Engine<TSystems...>::makeUserSystemTasks(const std::tuple<TUserSystems...> &systems) {
-		VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks result{};
+	void Engine<TSystems...>::appendUserSystemTasks(detail::EngineStartupOptions &options,
+																	const std::tuple<TUserSystems...> &systems) {
 		std::apply([&](const auto &...system) {
-			(result.value.push_back(ObjectName{.value = "task.update_system." + systemDebugName(system)}), ...);
+			(options.user_system_tasks.push_back(ObjectName{.value = "task.update_system." + systemDebugName(system)}), ...);
 		}, systems);
-		return result;
 	}
 
 	template <typename... TSystems>
@@ -314,7 +394,7 @@ export namespace vve {
 	}
 
 	template <typename... TSystems> std::expected<void, Error> Engine<TSystems...>::init() {
-		if (const auto result = impl_.init(); !result) { return result; }
+		if (const auto result = detail::engineInit(*state_); !result) { return result; }
 		if (systems_initialized_) { return {}; }
 		if (const auto result = initSystems(); !result) { return result; }
 		last_frame_time_ = std::chrono::steady_clock::now();
@@ -334,13 +414,13 @@ export namespace vve {
 	template <typename... TSystems> std::expected<FrameStatus, Error> Engine<TSystems...>::step() {
 		const auto now = std::chrono::steady_clock::now();
 		const std::chrono::duration<double> delta = now - last_frame_time_;
-		const auto status = impl_.step();
+		const auto status = detail::engineStep(*state_);
 		if (!status) { return std::unexpected(status.error()); }
 
 		const FrameContext frame{.frame_index = FrameCount{.value = frame_},
 											.delta_time = DeltaTime{.seconds = delta.count()}};
 		if (const auto result = updateSystems(frame); !result) { return std::unexpected(result.error()); }
-		if (const auto result = impl_.renderSystem().renderFrame(impl_.windowSystem()); !result) {
+		if (const auto result = detail::engineRenderFrame(*state_); !result) {
 			return std::unexpected(result.error());
 		}
 		last_frame_time_ = now;
@@ -359,8 +439,7 @@ export namespace vve {
 	std::expected<void, Error> Engine<TSystems...>::updateSystems(const FrameContext &frame) {
 		if (!systems_.has_value()) { return {}; }
 		auto result = std::expected<void, Error>{};
-		const VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData window_frame{
-			.windows = impl_.windowSystem().snapshot()};
+		const auto window_frame = detail::engineWindowFrame(*state_);
 		std::apply([&](auto &...system) {
 			((result ? result = updateOne(system, frame, window_frame) : result), ...);
 		}, *systems_);
@@ -377,8 +456,7 @@ export namespace vve {
 	template <typename... TSystems>
 	template <typename TSystem>
 	std::expected<void, Error>
-	Engine<TSystems...>::updateOne(TSystem &system, const FrameContext &frame,
-												const VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData &window_frame) {
+	Engine<TSystems...>::updateOne(TSystem &system, const FrameContext &frame, const WindowFrameData &window_frame) {
 		auto world_view = world();
 		return detail::invokeUserSystemUpdate(system, world_view, frame, window_frame, detail::Priority<3>{});
 	}
@@ -386,7 +464,7 @@ export namespace vve {
 	template <typename... TSystems>
 	std::expected<void, Error>
 	Engine<TSystems...>::writeDebugGraphs(const std::filesystem::path &directory) const {
-		return impl_.writeDebugGraphs(directory);
+		return detail::engineWriteDebugGraphs(*state_, directory);
 	}
 
 } // namespace vve

@@ -4,6 +4,7 @@ export import VEEngine.Error;
 export import VEEngine.Handle;
 export import VEEngine.Math;
 export import VEEngine.Vector;
+import VEEngine.Entity;
 
 /**
 	* @file
@@ -11,7 +12,9 @@ export import VEEngine.Vector;
 	*/
 export namespace vve {
 
-	struct EntityTag {};													///< Facade ECS entity handle tag.
+	using vve::EntityTag;												///< Facade ECS entity handle tag.
+	using vve::Entity;													///< Facade ECS entity.
+
 	struct SceneHandleTag {};											///< Scene descriptor handle tag.
 	struct WindowHandleTag {};											///< Runtime window handle tag.
 	struct NodeHandleTag {};											///< Node descriptor handle tag.
@@ -21,7 +24,6 @@ export namespace vve {
 	struct LightHandleTag {};											///< Light descriptor handle tag.
 	struct CameraHandleTag {};											///< Camera descriptor handle tag.
 
-	using Entity	= TypedHandle<EntityTag>;				///< Facade ECS entity.
 	using SceneHandle	= TypedHandle<SceneHandleTag>;		///< Scene descriptor handle.
 	using WindowHandle	= TypedHandle<WindowHandleTag>;		///< Runtime window handle.
 	using NodeHandle	= TypedHandle<NodeHandleTag>;			///< Node descriptor handle.

@@ -1,6 +1,5 @@
 export module VEEngine:RenderSystem;
 import std;
-import VEEngine.Simple;
 import VEEngine.Error;
 import VEEngine.Types;
 
@@ -9,6 +8,8 @@ import VEEngine.Types;
 	* @brief Public render-system facade backed by the selected engine implementation.
 	*/
 export namespace vve {
+
+	template <typename... TSystems> class Engine;
 
 	struct RenderDebugSample {
 		std::uint32_t vertex_id{};					///< Source vertex id.
@@ -68,26 +69,31 @@ export namespace vve {
 	};
 
 	class RenderSystem {
-		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::RenderSystem;
-
 	public:
-		explicit RenderSystem(Impl &implementation);
 		RenderSystem(const RenderSystem &) = default;
 		RenderSystem(RenderSystem &&) noexcept = default;
 		RenderSystem &operator=(const RenderSystem &) = delete;
 		RenderSystem &operator=(RenderSystem &&) noexcept = delete;
 
 		auto clearScene()																													-> void;
+		[[nodiscard]] auto loadSampleScene()																						-> std::expected<void, Error>;
 		auto setCamera(Camera camera, PixelExtent extent)																		-> void;
 		void setDirectionalLight(Direction direction_to_light, LinearColor color,
 											LightIntensity intensity, LinearColor ambient);
 		auto setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range)	-> void;
+		auto setPointLight(Position position, LinearColor color, LightIntensity intensity,
+								 LightRange range, LinearColor ambient)															-> void;
 		void setSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone);
+		void setSpotLight(Position position, Direction direction, LinearColor color,
+								LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient);
 		[[nodiscard]] std::expected<void, Error> addPlane(Vec2 half_extent, LinearColor color,
 																			Transform transform = {});
 		[[nodiscard]] std::expected<void, Error> addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
 																			Transform transform = {});
+		[[nodiscard]] std::expected<void, Error> addTexturedCuboid(Vec3 minimum, Vec3 maximum,
+																					 std::filesystem::path base_color_texture,
+																					 Transform transform = {});
 		[[nodiscard]] auto sceneMeshCount() const																					-> std::size_t;
 		[[nodiscard]] auto sceneMaterialCount() const																			-> std::size_t;
 		[[nodiscard]] auto sceneInstanceCount() const																			-> std::size_t;
@@ -97,6 +103,7 @@ export namespace vve {
 		[[nodiscard]] auto hasSceneDirectionalLight() const																	-> bool;
 		[[nodiscard]] auto hasScenePointLight() const																			-> bool;
 		[[nodiscard]] auto hasSceneSpotLight() const																				-> bool;
+		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path)						-> std::expected<void, Error>;
 		[[nodiscard]] auto renderedFrameCount() const																			-> std::uint64_t;
 		[[nodiscard]] auto presentedFrameCount() const																			-> std::uint64_t;
 		[[nodiscard]] auto triangleDrawCount() const																				-> std::uint64_t;
@@ -132,310 +139,11 @@ export namespace vve {
 		[[nodiscard]] auto lastClearColor() const																					-> std::array<float, 4>;
 
 	private:
-		Impl &impl_;									///< Selected implementation render system.
+		template <typename... TSystems> friend class Engine;
+
+		explicit RenderSystem(void *implementation) noexcept;
+
+		void *impl_{};									///< Opaque non-owning implementation pointer.
 	};	///< Public render-system wrapper.
-
-	/// @brief Wraps the selected render-system implementation.
-	inline RenderSystem::RenderSystem(Impl &implementation) : impl_{implementation} {}
-
-	/// @brief Clears the active CPU scene.
-	inline void RenderSystem::clearScene() { impl_.clearScene(); }
-
-	/// @brief Sets the active scene camera.
-	inline void RenderSystem::setCamera(Camera camera, PixelExtent extent) { impl_.setCamera(std::move(camera), extent); }
-
-	/// @brief Sets the active directional light.
-	inline void RenderSystem::setDirectionalLight(Direction direction_to_light, LinearColor color,
-																	LightIntensity intensity, LinearColor ambient) {
-		impl_.setDirectionalLight(direction_to_light, color, intensity, ambient);
-	}
-
-	/// @brief Sets the active point light.
-	inline void RenderSystem::setPointLight(Position position, LinearColor color,
-															LightIntensity intensity, LightRange range) {
-		impl_.setPointLight(position, color, intensity, range);
-	}
-
-	/// @brief Sets the active spotlight.
-	inline void RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
-														LightIntensity intensity, LightRange range, SpotConeAngle cone) {
-		impl_.setSpotLight(position, direction, color, intensity, range, cone);
-	}
-
-	/// @brief Adds a colored plane to the active CPU scene.
-	inline std::expected<void, Error> RenderSystem::addPlane(Vec2 half_extent, LinearColor color,
-																				Transform transform) {
-		return impl_.addPlane(half_extent, color, transform);
-	}
-
-	/// @brief Adds a colored cuboid to the active CPU scene.
-	inline std::expected<void, Error> RenderSystem::addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
-																					Transform transform) {
-		return impl_.addCuboid(minimum, maximum, color, transform);
-	}
-
-	/// @brief Returns mesh count in the active CPU scene.
-	inline std::size_t RenderSystem::sceneMeshCount() const { return impl_.sceneMeshCount(); }
-
-	/// @brief Returns material count in the active CPU scene.
-	inline std::size_t RenderSystem::sceneMaterialCount() const { return impl_.sceneMaterialCount(); }
-
-	/// @brief Returns instance count in the active CPU scene.
-	inline std::size_t RenderSystem::sceneInstanceCount() const { return impl_.sceneInstanceCount(); }
-
-	/// @brief Returns source vertex count in the active CPU scene.
-	inline std::size_t RenderSystem::sceneVertexCount() const { return impl_.sceneVertexCount(); }
-
-	/// @brief Returns source index count in the active CPU scene.
-	inline std::size_t RenderSystem::sceneIndexCount() const { return impl_.sceneIndexCount(); }
-
-	/// @brief Reports whether the active CPU scene has a camera.
-	inline bool RenderSystem::hasSceneCamera() const { return impl_.hasSceneCamera(); }
-
-	/// @brief Reports whether the active CPU scene has a directional light.
-	inline bool RenderSystem::hasSceneDirectionalLight() const { return impl_.hasSceneDirectionalLight(); }
-
-	/// @brief Reports whether the active CPU scene has a point light.
-	inline bool RenderSystem::hasScenePointLight() const { return impl_.hasScenePointLight(); }
-
-	/// @brief Reports whether the active CPU scene has a spotlight.
-	inline bool RenderSystem::hasSceneSpotLight() const { return impl_.hasSceneSpotLight(); }
-
-	/// @brief Returns the number of frames accepted by the render system.
-	inline std::uint64_t RenderSystem::renderedFrameCount() const { return impl_.renderedFrameCount(); }
-
-	/// @brief Returns the number of frames presented by the render system.
-	inline std::uint64_t RenderSystem::presentedFrameCount() const { return impl_.presentedFrameCount(); }
-
-	/// @brief Returns the number of smoke-test triangle draws.
-	inline std::uint64_t RenderSystem::triangleDrawCount() const { return impl_.triangleDrawCount(); }
-
-	/// @brief Returns the number of smoke-test triangle vertices.
-	inline std::uint32_t RenderSystem::triangleVertexCount() const { return impl_.triangleVertexCount(); }
-
-	/// @brief Returns how many scene uploads completed.
-	inline std::uint64_t RenderSystem::sceneUploadCount() const { return impl_.sceneUploadCount(); }
-
-	/// @brief Returns how many source meshes were drawn by the uploaded scene path.
-	inline std::uint64_t RenderSystem::sceneMeshDrawCount() const { return impl_.sceneMeshDrawCount(); }
-
-	/// @brief Returns how many source instances were drawn by the uploaded scene path.
-	inline std::uint64_t RenderSystem::sceneInstanceDrawCount() const { return impl_.sceneInstanceDrawCount(); }
-
-	/// @brief Returns how many vertices were uploaded by the scene draw path.
-	inline std::uint32_t RenderSystem::sceneDrawVertexCount() const { return impl_.sceneDrawVertexCount(); }
-
-	/// @brief Returns how many indices were uploaded by the scene draw path.
-	inline std::uint32_t RenderSystem::sceneDrawIndexCount() const { return impl_.sceneDrawIndexCount(); }
-
-	/// @brief Returns how many debug sample slots are expected for the scene draw.
-	inline std::size_t RenderSystem::sceneDebugSampleCount() const { return impl_.sceneDebugSampleCount(); }
-
-	/// @brief Returns one CPU-computed render debug sample.
-	inline auto RenderSystem::sceneCpuDebugSample(std::size_t index) const				-> std::optional<RenderDebugSample>{
-		auto sample = impl_.sceneCpuDebugSample(index);
-		if (!sample) { return {}; }
-	      return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
-	                               .light_clip = sample->light_clip, .spot_light_clip = sample->spot_light_clip,
-	                               .point_light_clip = sample->point_light_clip,
-	                               .ndc = sample->ndc, .light_ndc = sample->light_ndc,
-	                               .spot_light_ndc = sample->spot_light_ndc,
-	                               .point_light_ndc = sample->point_light_ndc, .normal = sample->normal,
-											.direction_to_light = sample->direction_to_light,
-											.ambient_lighting = sample->ambient_lighting,
-											.direct_lighting = sample->direct_lighting,
-											.point_lighting = sample->point_lighting,
-											.spot_lighting = sample->spot_lighting,
-	                               .final_lighting = sample->final_lighting, .depth = sample->depth,
-	                               .light_depth = sample->light_depth, .spot_light_depth = sample->spot_light_depth,
-	                               .point_light_depth = sample->point_light_depth,
-											.sampled_shadow_depth = sample->sampled_shadow_depth,
-											.shadow_depth_delta = sample->shadow_depth_delta,
-											.shadow_bias = sample->shadow_bias, .shadow_factor = sample->shadow_factor,
-											.sampled_spot_shadow_depth = sample->sampled_spot_shadow_depth,
-	                               .spot_shadow_depth_delta = sample->spot_shadow_depth_delta,
-	                               .spot_shadow_bias = sample->spot_shadow_bias,
-	                               .spot_shadow_factor = sample->spot_shadow_factor,
-	                               .sampled_point_shadow_depth = sample->sampled_point_shadow_depth,
-	                               .point_shadow_depth_delta = sample->point_shadow_depth_delta,
-	                               .point_shadow_bias = sample->point_shadow_bias,
-	                               .point_shadow_factor = sample->point_shadow_factor,
-	                               .point_shadow_face = sample->point_shadow_face,
-	                               .n_dot_l = sample->n_dot_l,
-	                               .inside_light = sample->inside_light,
-	                               .inside_spot_light = sample->inside_spot_light,
-	                               .inside_point_light = sample->inside_point_light, .valid = sample->valid};
-	}
-
-	/// @brief Returns one GPU-computed render debug sample.
-	inline auto RenderSystem::sceneGpuDebugSample(std::size_t index) const				-> std::optional<RenderDebugSample>{
-		auto sample = impl_.sceneGpuDebugSample(index);
-		if (!sample) { return {}; }
-	      return RenderDebugSample{.vertex_id = sample->vertex_id, .world = sample->world, .clip = sample->clip,
-	                               .light_clip = sample->light_clip, .spot_light_clip = sample->spot_light_clip,
-	                               .point_light_clip = sample->point_light_clip,
-	                               .ndc = sample->ndc, .light_ndc = sample->light_ndc,
-	                               .spot_light_ndc = sample->spot_light_ndc,
-	                               .point_light_ndc = sample->point_light_ndc, .normal = sample->normal,
-											.direction_to_light = sample->direction_to_light,
-											.ambient_lighting = sample->ambient_lighting,
-											.direct_lighting = sample->direct_lighting,
-											.point_lighting = sample->point_lighting,
-											.spot_lighting = sample->spot_lighting,
-	                               .final_lighting = sample->final_lighting, .depth = sample->depth,
-	                               .light_depth = sample->light_depth, .spot_light_depth = sample->spot_light_depth,
-	                               .point_light_depth = sample->point_light_depth,
-											.sampled_shadow_depth = sample->sampled_shadow_depth,
-											.shadow_depth_delta = sample->shadow_depth_delta,
-											.shadow_bias = sample->shadow_bias, .shadow_factor = sample->shadow_factor,
-											.sampled_spot_shadow_depth = sample->sampled_spot_shadow_depth,
-	                               .spot_shadow_depth_delta = sample->spot_shadow_depth_delta,
-	                               .spot_shadow_bias = sample->spot_shadow_bias,
-	                               .spot_shadow_factor = sample->spot_shadow_factor,
-	                               .sampled_point_shadow_depth = sample->sampled_point_shadow_depth,
-	                               .point_shadow_depth_delta = sample->point_shadow_depth_delta,
-	                               .point_shadow_bias = sample->point_shadow_bias,
-	                               .point_shadow_factor = sample->point_shadow_factor,
-	                               .point_shadow_face = sample->point_shadow_face,
-	                               .n_dot_l = sample->n_dot_l,
-	                               .inside_light = sample->inside_light,
-	                               .inside_spot_light = sample->inside_spot_light,
-	                               .inside_point_light = sample->inside_point_light, .valid = sample->valid};
-	}
-
-	/// @brief Returns the CPU/GPU clip-space mismatch for one sample.
-	inline auto RenderSystem::sceneDebugClipError(std::size_t index) const				-> std::optional<float>{
-		return impl_.sceneDebugClipError(index);
-	}
-
-	/// @brief Returns the CPU/GPU depth mismatch for one sample.
-	inline auto RenderSystem::sceneDebugDepthError(std::size_t index) const				-> std::optional<float>{
-		return impl_.sceneDebugDepthError(index);
-	}
-
-	/// @brief Returns the CPU/GPU directional-light-space mismatch for one sample.
-	inline auto RenderSystem::sceneDebugLightSpaceError(std::size_t index) const		-> std::optional<float>{
-		return impl_.sceneDebugLightSpaceError(index);
-	}
-
-	/// @brief Returns the CPU/GPU spot-light-space mismatch for one sample.
-	   inline auto RenderSystem::sceneDebugSpotLightSpaceError(std::size_t index) const								-> std::optional<float>{
-	      return impl_.sceneDebugSpotLightSpaceError(index);
-	   }
-
-	   /// @brief Returns the CPU/GPU point-light-space mismatch for one sample.
-	   inline auto RenderSystem::sceneDebugPointLightSpaceError(std::size_t index) const							-> std::optional<float>{
-	      return impl_.sceneDebugPointLightSpaceError(index);
-	   }
-
-	/// @brief Returns the CPU/GPU lighting-term mismatch for one sample.
-	inline auto RenderSystem::sceneDebugLightingError(std::size_t index) const			-> std::optional<float>{
-		return impl_.sceneDebugLightingError(index);
-	}
-
-	/// @brief Returns the shader-sampled shadow depth mismatch against the copied shadow map.
-	inline auto RenderSystem::sceneDebugShadowSampleError(std::size_t index) const	-> std::optional<float>{
-		return impl_.sceneDebugShadowSampleError(index);
-	}
-
-	/// @brief Returns the shader-sampled spot shadow depth mismatch against the copied spot map.
-	   inline auto RenderSystem::sceneDebugSpotShadowSampleError(std::size_t index) const							-> std::optional<float>{
-	      return impl_.sceneDebugSpotShadowSampleError(index);
-	   }
-
-	   /// @brief Returns the shader-sampled point shadow depth mismatch against the copied point map.
-	   inline auto RenderSystem::sceneDebugPointShadowSampleError(std::size_t index) const							-> std::optional<float>{
-	      return impl_.sceneDebugPointShadowSampleError(index);
-	   }
-
-	/// @brief Returns how many shadow-depth proof samples are available.
-	inline auto RenderSystem::sceneShadowDepthSampleCount() const							-> std::size_t{
-		return impl_.sceneShadowDepthSampleCount();
-	}
-
-	/// @brief Returns one downloaded shadow-depth proof sample.
-	inline auto RenderSystem::sceneShadowDepthSample(std::size_t index) const			-> std::optional<RenderShadowDepthSample>{
-		const auto sample = impl_.sceneShadowDepthSample(index);
-		if (!sample) { return {}; }
-	      return RenderShadowDepthSample{.triangle_id = sample->triangle_id,
-	                                     .face_index = sample->face_index,
-	                                     .world = sample->world,
-													.light_ndc = sample->light_ndc,
-													.pixel_x = sample->pixel_x,
-													.pixel_y = sample->pixel_y,
-													.expected_depth = sample->expected_depth,
-													.gpu_depth = sample->gpu_depth,
-													.error = sample->error,
-													.has_gpu = sample->has_gpu,
-													.valid = sample->valid};
-	}
-
-	/// @brief Returns the CPU/GPU shadow-depth mismatch for one proof sample.
-	inline auto RenderSystem::sceneShadowDepthError(std::size_t index) const			-> std::optional<float>{
-		return impl_.sceneShadowDepthError(index);
-	}
-
-	/// @brief Returns how many spot shadow-depth proof samples are available.
-	inline auto RenderSystem::sceneSpotShadowDepthSampleCount() const						-> std::size_t{
-		return impl_.sceneSpotShadowDepthSampleCount();
-	}
-
-	/// @brief Returns one downloaded spot shadow-depth proof sample.
-	inline auto RenderSystem::sceneSpotShadowDepthSample(std::size_t index) const		-> std::optional<RenderShadowDepthSample>{
-		const auto sample = impl_.sceneSpotShadowDepthSample(index);
-		if (!sample) { return {}; }
-		return RenderShadowDepthSample{.triangle_id = sample->triangle_id,
-													.face_index = sample->face_index,
-													.world = sample->world,
-													.light_ndc = sample->light_ndc,
-													.pixel_x = sample->pixel_x,
-													.pixel_y = sample->pixel_y,
-													.expected_depth = sample->expected_depth,
-													.gpu_depth = sample->gpu_depth,
-													.error = sample->error,
-													.has_gpu = sample->has_gpu,
-													.valid = sample->valid};
-	}
-
-	/// @brief Returns the CPU/GPU spot shadow-depth mismatch for one proof sample.
-	inline auto RenderSystem::sceneSpotShadowDepthError(std::size_t index) const		-> std::optional<float>{
-	      return impl_.sceneSpotShadowDepthError(index);
-	   }
-
-	   /// @brief Returns how many point shadow-depth proof samples are available.
-	   inline auto RenderSystem::scenePointShadowDepthSampleCount() const												-> std::size_t{
-	      return impl_.scenePointShadowDepthSampleCount();
-	   }
-
-	   /// @brief Returns one downloaded point shadow-depth proof sample.
-	   inline auto RenderSystem::scenePointShadowDepthSample(std::size_t index) const								-> std::optional<RenderShadowDepthSample>{
-	      const auto sample = impl_.scenePointShadowDepthSample(index);
-	      if (!sample) { return {}; }
-	      return RenderShadowDepthSample{.triangle_id = sample->triangle_id,
-	                                     .face_index = sample->face_index,
-	                                     .world = sample->world,
-	                                     .light_ndc = sample->light_ndc,
-	                                     .pixel_x = sample->pixel_x,
-	                                     .pixel_y = sample->pixel_y,
-	                                     .expected_depth = sample->expected_depth,
-	                                     .gpu_depth = sample->gpu_depth,
-	                                     .error = sample->error,
-	                                     .has_gpu = sample->has_gpu,
-	                                     .valid = sample->valid};
-	   }
-
-	   /// @brief Returns the CPU/GPU point shadow-depth mismatch for one proof sample.
-	   inline auto RenderSystem::scenePointShadowDepthError(std::size_t index) const									-> std::optional<float>{
-	      return impl_.scenePointShadowDepthError(index);
-	   }
-
-	/// @brief Returns how many visible windows were considered by the last frame.
-	inline std::size_t RenderSystem::lastRenderedWindowCount() const { return impl_.lastRenderedWindowCount(); }
-
-	/// @brief Returns how many Vulkan targets are prepared.
-	inline std::size_t RenderSystem::preparedGpuTargetCount() const { return impl_.preparedGpuTargetCount(); }
-
-	/// @brief Returns the last clear color used by the renderer.
-	inline std::array<float, 4> RenderSystem::lastClearColor() const { return impl_.lastClearColor(); }
 
 } // namespace vve

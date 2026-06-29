@@ -64,7 +64,7 @@ int main() {
    std::filesystem::remove_all(dump_dir);
 
    auto world = engine.world();
-   auto ecs = world.get<vve::ECS>();
+   auto &ecs = world.get<vve::ECS>();
    auto window_system = world.get<vve::WindowSystem>();
    const auto camera = ecs.create();
    if (const auto result = ecs.add(camera, vve::Camera{}); !result) { return 6; }

@@ -63,15 +63,23 @@ target_sources(ViennaVulkanEngine
             Math.ixx
             Error.ixx
             Handle.ixx
+            Entity.ixx
             Vector.ixx
             Types.ixx
             ECS.ixx
+            ECSContainer.ixx
             Window.ixx
             World.ixx
             Assets.ixx
             RenderSystem.ixx
             Gui.ixx
             Engine.ixx
+    PRIVATE
+        Assets.cpp
+        Engine.cpp
+        Gui.cpp
+        RenderSystem.cpp
+        Window.cpp
 )
 
 if(MSVC)

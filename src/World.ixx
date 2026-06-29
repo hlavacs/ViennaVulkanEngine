@@ -1,6 +1,5 @@
 export module VEEngine:World;
 import std;
-import VEEngine.Simple;
 import :ECS;
 import :Window;
 import :Assets;

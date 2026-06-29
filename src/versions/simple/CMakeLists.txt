@@ -1,8 +1,8 @@
 target_sources(ViennaVulkanEngine
    PRIVATE
       "${CMAKE_CURRENT_LIST_DIR}/stb_image_write_impl.cpp"
-   PUBLIC
-      FILE_SET CXX_MODULES FILES
+   PRIVATE
+      FILE_SET simple_modules TYPE CXX_MODULES FILES
          Error.ixx
          Math.ixx
          Handle.ixx
@@ -26,9 +26,6 @@ target_sources(ViennaVulkanEngine
          WindowSystem.ixx
          World.ixx
 )
-
-add_library(ViennaVulkanEngineSimple INTERFACE)
-target_link_libraries(ViennaVulkanEngineSimple INTERFACE ViennaVulkanEngine::ViennaVulkanEngine Vulkan::Vulkan)
 
 set(VVE_SIMPLE_FORWARD_SHADER "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_forward.slang")
 set(VVE_SIMPLE_SHADER_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")

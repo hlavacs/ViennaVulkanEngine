@@ -3,12 +3,11 @@ add_executable(light_shadow_debug
 )
 
 target_link_libraries(light_shadow_debug PRIVATE
-    ViennaVulkanEngineSimple
     ViennaVulkanEngine::ViennaVulkanEngine
 )
 
 add_dependencies(light_shadow_debug
-    ViennaVulkanEngineSimple
+    ViennaVulkanEngine
     vve_simple_shaders
 )
 
