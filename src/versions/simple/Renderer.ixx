@@ -13,7 +13,7 @@ import VEEngine.Simple.Vulkan;
 	* @brief Vulkan renderer skeleton for the simple forward renderer.
 	*
 	* Functional objects:
-	* - Renderer owns the current CPU scene, swapchain image stack, depth attachment, unbound shadow map and shadow pipeline, forward render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, frame command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes needed before rendering.
+	* - Renderer owns the current CPU scene, swapchain image stack, depth attachment, unbound shadow map and shadow pipeline, optional object texture, default object texture, forward render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, frame command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes needed before rendering.
 	*/
 export namespace vve::simple {
 
@@ -28,6 +28,8 @@ export namespace vve::simple {
 		VulkanImageViews imageViews{};         ///< Owned color image views for swapchain images.
 		VulkanDepthImage depthImage{};         ///< Owned swapchain-sized depth attachment image and view.
 		ShadowMap shadowMap{};                 ///< Owned unbound shadow-map image reserved for later shadow rendering.
+		TextureImage objectTexture{};           ///< Owned optional base-color texture bound only when the loaded scene requests one.
+		TextureImage defaultObjectTexture{};    ///< Owned opaque-white texture bound when the scene has no base-color texture.
 		VulkanRenderPass renderPass{};         ///< Owned forward render pass for swapchain color output.
 		VulkanFramebuffers framebuffers{};     ///< Owned swapchain framebuffers for render-pass attachments.
 		VulkanDescriptorSetLayout descriptorSetLayout{}; ///< Owned frame-uniform and shadow-map descriptor-set layout.
@@ -44,6 +46,8 @@ export namespace vve::simple {
 		std::vector<VulkanMesh> meshes{};      ///< Owned GPU meshes uploaded from the current scene objects.
 		SDL_Window *window{nullptr};           ///< Borrowed SDL window used to create the Vulkan surface.
 		Scene scene{}; ///< CPU scene data kept in STL containers until renderer upload exists.
+		Vec3 cameraEye{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}; ///< World-space camera position used for the frame view matrix.
+		Vec3 cameraTarget{zero(), one(), zero()}; ///< World-space point looked at by the frame view matrix.
 		std::optional<std::uint32_t> lastRenderedImageIndex{}; ///< Swapchain image index from the last acquired, rendered, and presented frame.
 		std::optional<VkResult> lastReadbackCaptureResult{}; ///< Result from the optional in-frame readback capture.
 
@@ -148,11 +152,22 @@ export namespace vve::simple {
 			result = descriptorSets.create(device.device, descriptorPool.descriptorPool, descriptorSetLayout.descriptorSetLayout, framesInFlight);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
-			// Bind each frame descriptor set to its matching uniform buffer and the already-created shadow map.
+			// Upload the optional scene base-color texture once descriptor sets and upload commands exist.
+			const bool hasObjectTexture{scene.baseColorTexture.has_value() && objectTexture.create(physicalDevice.physicalDevice, device.device, device.graphicsQueue, commandPool.commandPool, *scene.baseColorTexture) == VK_SUCCESS};
+			if (!hasObjectTexture) {
+				constexpr std::array opaqueWhitePixel{std::byte{255U}, std::byte{255U}, std::byte{255U}, std::byte{255U}}; // Valid fallback for unused texture descriptors.
+				result = defaultObjectTexture.create(physicalDevice.physicalDevice, device.device, device.graphicsQueue, commandPool.commandPool, std::span{opaqueWhitePixel}, VkExtent2D{.width = 1U, .height = 1U});
+				if (result != VK_SUCCESS) { cleanup(); return result; }
+			}
+			const TextureImage &descriptorTexture{hasObjectTexture ? objectTexture : defaultObjectTexture};
+
+			// Bind each frame descriptor set to its matching uniform buffer, shadow map, and object texture slot.
 			for (std::uint32_t frame{}; frame < framesInFlight; ++frame) {
 				result = descriptorSets.writeUniformBuffer(frame, uniformBuffers.buffers[frame].buffer, sizeof(FrameUniforms));
 				if (result != VK_SUCCESS) { cleanup(); return result; }
 				result = descriptorSets.writeShadowMap(frame, shadowMap.view, shadowMap.sampler);
+				if (result != VK_SUCCESS) { cleanup(); return result; }
+				result = descriptorSets.writeObjectTexture(frame, descriptorTexture);
 				if (result != VK_SUCCESS) { cleanup(); return result; }
 			}
 
@@ -172,6 +187,17 @@ export namespace vve::simple {
 			* @param nextScene Scene data prepared by the caller.
 			*/
 		void loadScene(Scene nextScene) { scene = std::move(nextScene); }
+
+		/**
+			* @brief Stores the camera eye and target used by future frame uniform updates.
+			*
+			* @param eye World-space camera position.
+			* @param target World-space point the camera looks at.
+			*/
+		void setCamera(Vec3 eye, Vec3 target) {
+			cameraEye = eye;
+			cameraTarget = target;
+		}
 
 		/**
 			* @brief Draws one swapchain frame through the per-frame synchronization objects.
@@ -206,7 +232,7 @@ export namespace vve::simple {
 			const Vec3 lightEye{subtract(lightCenter, scale(lightDir, static_cast<Scalar>(8.0)))}; ///< Back up the light to enclose the floor and cube.
 			const Scalar lightExtent{static_cast<Scalar>(4.0)}; ///< Light-space half-size covers the 4x4 floor and tall cube.
 			const FrameUniforms frameUniforms{ // Shared camera matrices keep the sample cubes inside Vulkan clip space.
-				.view = lookAt(Vec3{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}, Vec3{zero(), one(), zero()}, Vec3{zero(), one(), zero()}),
+				.view = lookAt(cameraEye, cameraTarget, Vec3{zero(), one(), zero()}),
 				.projection = perspectiveVulkan(static_cast<Scalar>(0.7853981633974483), aspectRatio, static_cast<Scalar>(0.1), static_cast<Scalar>(100.0)),
 				.lightViewProj = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(lightEye, lightCenter, Vec3{zero(), one(), zero()})),
 			};
@@ -254,6 +280,8 @@ export namespace vve::simple {
 		void cleanup() {
 			for (auto mesh = meshes.rbegin(); mesh != meshes.rend(); ++mesh) { mesh->cleanup(); }
 			meshes.clear();
+			objectTexture.cleanup();
+			defaultObjectTexture.cleanup();
 			descriptorSets.cleanup();
 			descriptorPool.cleanup();
 			uniformBuffers.cleanup();
@@ -308,9 +336,11 @@ export namespace vve::simple {
 
 					const VkBuffer vertexBuffers[]{mesh.vertexBuffer.buffer};
 					const VkDeviceSize offsets[]{0U};
+					const Object &object = scene.objects[objectIndex];
+					const ObjectPushConstants pushConstants{.model = object.model, .useBaseColorTexture = object.useBaseColorTexture};
 					vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, vertexBuffers, offsets);
 					vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0U, VK_INDEX_TYPE_UINT32);
-					vkCmdPushConstants(commandBuffer, activePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0U, sizeof(float) * 16U, &scene.objects[objectIndex].model);
+					vkCmdPushConstants(commandBuffer, activePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0U, sizeof(ObjectPushConstants), &pushConstants);
 					vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1U, 0U, 0, 0U);
 					++objectIndex;
 				}
@@ -331,7 +361,8 @@ export namespace vve::simple {
 			drawUploadedObjects(shadowMap.pipelineLayout);
 			vkCmdEndRenderPass(commandBuffer);
 
-			const std::array<VkClearValue, 2U> clearValues{{{.color = {.float32 = {0.0F, 0.0F, 0.0F, 1.0F}}}, {.depthStencil = {.depth = 1.0F, .stencil = 0U}}}}; // Index 1 clears depth to the far plane.
+			constexpr std::array<float, 4U> skyBackgroundColor{0.45F, 0.70F, 1.00F, 1.00F}; // Sky background for the forward color pass.
+			const std::array<VkClearValue, 2U> clearValues{{{.color = {.float32 = {skyBackgroundColor[0], skyBackgroundColor[1], skyBackgroundColor[2], skyBackgroundColor[3]}}}, {.depthStencil = {.depth = 1.0F, .stencil = 0U}}}}; // Index 1 clears depth to the far plane.
 			const VkRenderPassBeginInfo renderPassInfo{
 				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
 				.renderPass = renderPass.renderPass,

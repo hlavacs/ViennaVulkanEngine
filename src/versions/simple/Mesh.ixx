@@ -28,35 +28,36 @@ export namespace vve::simple {
 	/**
 		* @brief Creates a colored unit cube as CPU-only indexed sample geometry.
 		*
-		* @return Mesh with one quad per face, distinct face colors, and two triangles per face.
+		* @return Mesh with one quad per face, uniform vertex color, and two triangles per face.
 		*/
 	Mesh makeCube() {
+		constexpr std::array<float, 3> cubeColor{0.55F, 0.55F, 0.55F}; ///< Uniform color avoids vertex interpolation gradients.
 		return Mesh{
 			.vertices{
-				{{{-0.5F, -0.5F, 0.5F}},  {{1.0F, 0.0F, 0.0F}}, {{0.0F, 0.0F}}}, ///< Front face lower left.
-				{{{0.5F, -0.5F, 0.5F}},   {{0.0F, 1.0F, 0.0F}}, {{1.0F, 0.0F}}}, ///< Front face lower right.
-				{{{0.5F, 0.5F, 0.5F}},    {{0.0F, 0.0F, 1.0F}}, {{1.0F, 1.0F}}}, ///< Front face upper right.
-				{{{-0.5F, 0.5F, 0.5F}},   {{1.0F, 1.0F, 0.0F}}, {{0.0F, 1.0F}}}, ///< Front face upper left.
-				{{{0.5F, -0.5F, -0.5F}},  {{1.0F, 0.0F, 1.0F}}, {{0.0F, 0.0F}}}, ///< Back face lower left.
-				{{{-0.5F, -0.5F, -0.5F}}, {{0.0F, 1.0F, 1.0F}}, {{1.0F, 0.0F}}}, ///< Back face lower right.
-				{{{-0.5F, 0.5F, -0.5F}},  {{1.0F, 0.5F, 0.0F}}, {{1.0F, 1.0F}}}, ///< Back face upper right.
-				{{{0.5F, 0.5F, -0.5F}},   {{0.5F, 0.0F, 1.0F}}, {{0.0F, 1.0F}}}, ///< Back face upper left.
-				{{{-0.5F, -0.5F, -0.5F}}, {{0.7F, 0.2F, 0.2F}}, {{0.0F, 0.0F}}}, ///< Left face lower left.
-				{{{-0.5F, -0.5F, 0.5F}},  {{0.2F, 0.7F, 0.2F}}, {{1.0F, 0.0F}}}, ///< Left face lower right.
-				{{{-0.5F, 0.5F, 0.5F}},   {{0.2F, 0.2F, 0.7F}}, {{1.0F, 1.0F}}}, ///< Left face upper right.
-				{{{-0.5F, 0.5F, -0.5F}},  {{0.8F, 0.8F, 0.2F}}, {{0.0F, 1.0F}}}, ///< Left face upper left.
-				{{{0.5F, -0.5F, 0.5F}},   {{0.8F, 0.2F, 0.8F}}, {{0.0F, 0.0F}}}, ///< Right face lower left.
-				{{{0.5F, -0.5F, -0.5F}},  {{0.2F, 0.8F, 0.8F}}, {{1.0F, 0.0F}}}, ///< Right face lower right.
-				{{{0.5F, 0.5F, -0.5F}},   {{1.0F, 0.6F, 0.2F}}, {{1.0F, 1.0F}}}, ///< Right face upper right.
-				{{{0.5F, 0.5F, 0.5F}},    {{0.6F, 0.2F, 1.0F}}, {{0.0F, 1.0F}}}, ///< Right face upper left.
-				{{{-0.5F, 0.5F, 0.5F}},   {{0.9F, 0.1F, 0.3F}}, {{0.0F, 0.0F}}}, ///< Top face lower left.
-				{{{0.5F, 0.5F, 0.5F}},    {{0.3F, 0.9F, 0.1F}}, {{1.0F, 0.0F}}}, ///< Top face lower right.
-				{{{0.5F, 0.5F, -0.5F}},   {{0.1F, 0.3F, 0.9F}}, {{1.0F, 1.0F}}}, ///< Top face upper right.
-				{{{-0.5F, 0.5F, -0.5F}},  {{0.9F, 0.9F, 0.1F}}, {{0.0F, 1.0F}}}, ///< Top face upper left.
-				{{{-0.5F, -0.5F, -0.5F}}, {{0.1F, 0.9F, 0.9F}}, {{0.0F, 0.0F}}}, ///< Bottom face lower left.
-				{{{0.5F, -0.5F, -0.5F}},  {{0.9F, 0.1F, 0.9F}}, {{1.0F, 0.0F}}}, ///< Bottom face lower right.
-				{{{0.5F, -0.5F, 0.5F}},   {{0.6F, 0.6F, 0.6F}}, {{1.0F, 1.0F}}}, ///< Bottom face upper right.
-				{{{-0.5F, -0.5F, 0.5F}},  {{1.0F, 1.0F, 1.0F}}, {{0.0F, 1.0F}}}, ///< Bottom face upper left.
+				{{{-0.5F, -0.5F, 0.5F}},  cubeColor, {{0.0F, 0.0F}}}, ///< Front face lower left.
+				{{{0.5F, -0.5F, 0.5F}},   cubeColor, {{1.0F, 0.0F}}}, ///< Front face lower right.
+				{{{0.5F, 0.5F, 0.5F}},    cubeColor, {{1.0F, 1.0F}}}, ///< Front face upper right.
+				{{{-0.5F, 0.5F, 0.5F}},   cubeColor, {{0.0F, 1.0F}}}, ///< Front face upper left.
+				{{{0.5F, -0.5F, -0.5F}},  cubeColor, {{0.0F, 0.0F}}}, ///< Back face lower left.
+				{{{-0.5F, -0.5F, -0.5F}}, cubeColor, {{1.0F, 0.0F}}}, ///< Back face lower right.
+				{{{-0.5F, 0.5F, -0.5F}},  cubeColor, {{1.0F, 1.0F}}}, ///< Back face upper right.
+				{{{0.5F, 0.5F, -0.5F}},   cubeColor, {{0.0F, 1.0F}}}, ///< Back face upper left.
+				{{{-0.5F, -0.5F, -0.5F}}, cubeColor, {{0.0F, 0.0F}}}, ///< Left face lower left.
+				{{{-0.5F, -0.5F, 0.5F}},  cubeColor, {{1.0F, 0.0F}}}, ///< Left face lower right.
+				{{{-0.5F, 0.5F, 0.5F}},   cubeColor, {{1.0F, 1.0F}}}, ///< Left face upper right.
+				{{{-0.5F, 0.5F, -0.5F}},  cubeColor, {{0.0F, 1.0F}}}, ///< Left face upper left.
+				{{{0.5F, -0.5F, 0.5F}},   cubeColor, {{0.0F, 0.0F}}}, ///< Right face lower left.
+				{{{0.5F, -0.5F, -0.5F}},  cubeColor, {{1.0F, 0.0F}}}, ///< Right face lower right.
+				{{{0.5F, 0.5F, -0.5F}},   cubeColor, {{1.0F, 1.0F}}}, ///< Right face upper right.
+				{{{0.5F, 0.5F, 0.5F}},    cubeColor, {{0.0F, 1.0F}}}, ///< Right face upper left.
+				{{{-0.5F, 0.5F, 0.5F}},   cubeColor, {{0.0F, 0.0F}}}, ///< Top face lower left.
+				{{{0.5F, 0.5F, 0.5F}},    cubeColor, {{1.0F, 0.0F}}}, ///< Top face lower right.
+				{{{0.5F, 0.5F, -0.5F}},   cubeColor, {{1.0F, 1.0F}}}, ///< Top face upper right.
+				{{{-0.5F, 0.5F, -0.5F}},  cubeColor, {{0.0F, 1.0F}}}, ///< Top face upper left.
+				{{{-0.5F, -0.5F, -0.5F}}, cubeColor, {{0.0F, 0.0F}}}, ///< Bottom face lower left.
+				{{{0.5F, -0.5F, -0.5F}},  cubeColor, {{1.0F, 0.0F}}}, ///< Bottom face lower right.
+				{{{0.5F, -0.5F, 0.5F}},   cubeColor, {{1.0F, 1.0F}}}, ///< Bottom face upper right.
+				{{{-0.5F, -0.5F, 0.5F}},  cubeColor, {{0.0F, 1.0F}}}, ///< Bottom face upper left.
 			},
 			.indices{
 				0U, 1U, 2U, 2U, 3U, 0U,       ///< Front face triangles.

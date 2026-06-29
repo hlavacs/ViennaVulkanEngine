@@ -19,7 +19,8 @@ struct FrameUniforms
 
 struct ObjectPushConstants
 {
-    float4x4 model; ///< Object-local model matrix selected before each draw call.
+    float4x4 model;              ///< Object-local model matrix selected before each draw call.
+    uint useBaseColorTexture;    ///< Non-zero when the object wants the optional base-color texture.
 };
 
 struct VertexInput
@@ -34,12 +35,14 @@ struct VertexOutput
     float4 position : SV_Position;                       ///< Clip-space position consumed by Vulkan.
     [[vk::location(0)]] float3 color    : COLOR0;         ///< Interpolated vertex color for simple forward output.
     [[vk::location(1)]] float3 worldPos : TEXCOORD0;      ///< Interpolated world-space position for flat lighting.
+    [[vk::location(2)]] float2 texCoord : TEXCOORD1;      ///< Interpolated texture coordinate for later material sampling.
 };
 
 struct FragmentInput
 {
     [[vk::location(0)]] float3 color    : COLOR0;    ///< Interpolated vertex color.
     [[vk::location(1)]] float3 worldPos : TEXCOORD0; ///< Interpolated world-space position.
+    [[vk::location(2)]] float2 texCoord : TEXCOORD1; ///< Interpolated texture coordinate for later material sampling.
 };
 
 struct FragmentOutput
@@ -53,6 +56,9 @@ ConstantBuffer<FrameUniforms> frame; ///< Frame-wide camera constants.
 [[vk::binding(1, 0)]]
 Sampler2D shadowMap; ///< Directional light depth map sampled by the forward fragment stage.
 
+[[vk::binding(2, 0)]]
+Sampler2D baseColorTexture; ///< Optional object base-color texture sampled only when the push constant enables it.
+
 [[vk::push_constant]]
 ObjectPushConstants object; ///< Per-object transform constants.
 
@@ -65,6 +71,7 @@ VertexOutput vertexMain(VertexInput input)
     output.position = mul(frame.projection, viewPosition);
     output.color = input.color;
     output.worldPos = worldPosition.xyz;
+    output.texCoord = input.texCoord; ///< Preserve vertex UVs for the fragment interface.
     return output;
 }
 
@@ -79,9 +86,20 @@ FragmentOutput fragmentMain(FragmentInput input)
 {
     FragmentOutput output;
     const float ambient = 0.2;                                           ///< Base light keeps back faces visible.
+    const float shininess = 32.0;                                        ///< Fixed Blinn-Phong highlight exponent.
+    const float specularStrength = 0.3;                                  ///< Modest highlight strength for colored surfaces.
     const float3 lightDir = normalize(float3(-0.5, -1.0, 0.5));          ///< Directional light points downward toward the camera.
     const float3 normal = normalize(cross(ddx(input.worldPos), ddy(input.worldPos))); ///< Flat geometric face normal.
-    const float diffuse = max(dot(normal, normalize(-lightDir)), 0.0);   ///< Lambertian light response.
+    const float3 surfaceLightDir = normalize(-lightDir);                 ///< Surface-to-light vector preserves the existing Lambert direction.
+    const float3 viewOffset = float3(frame.view[0][3], frame.view[1][3], frame.view[2][3]); ///< View translation from the existing matrix.
+    const float3 cameraPos = -float3(
+        dot(float3(frame.view[0][0], frame.view[1][0], frame.view[2][0]), viewOffset),
+        dot(float3(frame.view[0][1], frame.view[1][1], frame.view[2][1]), viewOffset),
+        dot(float3(frame.view[0][2], frame.view[1][2], frame.view[2][2]), viewOffset)); ///< World eye from inverse rigid view transform.
+    const float3 viewDir = normalize(cameraPos - input.worldPos);        ///< Surface-to-eye vector for view-dependent highlights.
+    const float diffuse = max(dot(normal, surfaceLightDir), 0.0);        ///< Lambertian light response.
+    const float3 halfVector = normalize(surfaceLightDir + viewDir);      ///< Blinn-Phong halfway direction between light and eye.
+    const float specular = specularStrength * pow(max(dot(normal, halfVector), 0.0), shininess); ///< Shadowed highlight response.
     const float4 lightClip = mul(frame.lightViewProj, float4(input.worldPos, 1.0)); ///< Fragment position in light clip space.
     const float3 lightNdc = lightClip.xyz / lightClip.w;                ///< Vulkan light depth remains in 0..1 after divide.
     const float2 shadowUv = (lightNdc.xy * 0.5) + 0.5;                  ///< Convert light NDC XY to shadow texture UVs.
@@ -89,6 +107,10 @@ FragmentOutput fragmentMain(FragmentInput input)
         shadowUv.y >= 0.0 && shadowUv.y <= 1.0 && lightNdc.z >= 0.0 && lightNdc.z <= 1.0; ///< Reject fragments outside light coverage.
     const float storedDepth = shadowMap.Sample(shadowUv).r;             ///< Closest surface depth from the light pass.
     const float shadowFactor = insideShadowMap && lightNdc.z - 0.001 > storedDepth ? 0.35 : 1.0; ///< Small 0.001 compare bias complements shadow-pass slope-scaled rasterizer bias.
-    output.color = float4(input.color * (ambient + diffuse * shadowFactor), 1.0); ///< Apply ambient, diffuse, and hard shadowing to the vertex color.
+    float3 baseColor = input.color;                                      ///< Vertex color remains the default material color.
+    if (object.useBaseColorTexture != 0) {
+        baseColor *= baseColorTexture.Sample(input.texCoord).rgb;        ///< Optional texture modulates the material before lighting.
+    }
+    output.color = float4(baseColor * (ambient + (diffuse + specular) * shadowFactor), 1.0); ///< Apply ambient plus shadowed Blinn-Phong light.
     return output;
 }

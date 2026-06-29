@@ -7,6 +7,15 @@ module;
 #include <SDL3/SDL_main.h>
 #include <vulkan/vulkan.h>
 #include <SDL3/SDL_vulkan.h>
+#ifndef STB_IMAGE_IMPLEMENTATION
+#define STB_IMAGE_IMPLEMENTATION
+#define VVE_SIMPLE_DEFINED_STB_IMAGE_IMPLEMENTATION
+#endif
+#include <stb_image.h>
+#ifdef VVE_SIMPLE_DEFINED_STB_IMAGE_IMPLEMENTATION
+#undef STB_IMAGE_IMPLEMENTATION
+#undef VVE_SIMPLE_DEFINED_STB_IMAGE_IMPLEMENTATION
+#endif
 #include <stb_image_write.h>
 #ifdef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
 #undef SDL_MAIN_HANDLED
@@ -33,7 +42,7 @@ import VEEngine.Simple.Math;
 	* - ShadowMap owns one square sampled D32 depth image, view, sampler, backing memory, and unused shadow pipeline.
 	* - VulkanRenderPass owns only VkRenderPass creation and teardown for a single forward color subpass.
 	* - VulkanFramebuffers owns only VkFramebuffer creation and teardown for borrowed swapchain image views.
-	* - VulkanDescriptorSetLayout owns only VkDescriptorSetLayout creation and teardown for frame uniforms and shadow-map sampling.
+	* - VulkanDescriptorSetLayout owns only VkDescriptorSetLayout creation and teardown for frame uniforms, shadow-map sampling, and object-texture sampling.
 	* - VulkanVertexInputDescription stores the fixed Vertex binding and attribute layout for the forward pipeline.
 	* - VulkanPipelineLayout owns only VkPipelineLayout creation and teardown for one descriptor set and model push constants.
 	* - VulkanShaderModule owns only VkShaderModule creation from SPIR-V bytes and teardown.
@@ -43,15 +52,24 @@ import VEEngine.Simple.Math;
 	* - VulkanFrameSync owns per-frame semaphores and fences for the simple forward renderer.
 	* - VulkanBuffer owns one VkBuffer and its backing VkDeviceMemory allocation.
 	* - VulkanReadback copies one finished color VkImage into a host-visible VulkanBuffer and exposes CPU pixel bytes.
+	* - TextureImage owns one sampled RGBA8 texture image, view, sampler, and backing memory.
 	* - writeReadbackPng encodes VulkanReadback bytes as deterministic opaque RGBA8 PNG files.
-	* - VulkanDescriptorPool owns only VkDescriptorPool creation and teardown for uniform-buffer and shadow-map descriptor sets.
-	* - VulkanDescriptorSets allocates per-frame uniform-buffer and shadow-map descriptor sets from a borrowed pool and layout.
+	* - VulkanDescriptorPool owns only VkDescriptorPool creation and teardown for uniform-buffer, shadow-map, and object-texture descriptor sets.
+	* - VulkanDescriptorSets allocates per-frame uniform-buffer, shadow-map, and object-texture descriptor sets from a borrowed pool and layout.
 	* - VulkanMesh owns the vertex and index buffers and index count for one uploaded CPU mesh.
+	* - ObjectPushConstants stores per-object draw data copied through Vulkan push constants.
 	* - FrameUniforms stores the shared view and projection matrices for set 0 binding 0.
 	* - VulkanUniformBuffers owns one host-visible FrameUniforms buffer per frame.
 	*/
 export namespace vve::simple {
 	struct VulkanVertexInputDescription; ///< Fixed mesh vertex layout reused by forward and shadow pipelines.
+	struct TextureImage;                 ///< Internal sampled texture image owner for later material bindings.
+
+	/// @brief Plain per-object push-constant data matching the Slang ObjectPushConstants block layout.
+	struct ObjectPushConstants {
+		Mat4 model{};                          ///< Object-local model matrix selected before each draw call.
+		std::uint32_t useBaseColorTexture{0U}; ///< Non-zero when the object wants the optional base-color texture.
+	};
 
 	/// @brief Minimal Vulkan root object; no device, surface, swapchain, commands, or sync are created here.
 	struct VulkanInstance {
@@ -770,6 +788,7 @@ export namespace vve::simple {
 
 	private:
 		friend struct ShadowMap; ///< Allows the shadow map to reuse the depth-image memory-type selector.
+		friend struct TextureImage; ///< Allows texture uploads to reuse the image memory-type selector.
 
 		/**
 			* @brief Finds the first physical-device memory type satisfying a type mask and required properties.
@@ -1181,17 +1200,17 @@ export namespace vve::simple {
 		~VulkanFramebuffers() { cleanup(); }
 	};
 
-	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms and the shadow map; no pipeline layout is created here.
+	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms, the shadow map, and one object texture; no pipeline layout is created here.
 	struct VulkanDescriptorSetLayout {
 		VkDevice device{VK_NULL_HANDLE};                                  ///< Borrowed Vulkan logical device used to destroy the layout.
-		VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};         ///< Owned descriptor-set layout for set 0 frame uniforms and shadow map.
+		VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};         ///< Owned descriptor-set layout for set 0 frame uniforms, shadow map, and object texture.
 
 		VulkanDescriptorSetLayout() = default;
 		VulkanDescriptorSetLayout(const VulkanDescriptorSetLayout &) = delete;
 		VulkanDescriptorSetLayout &operator=(const VulkanDescriptorSetLayout &) = delete;
 
 		/**
-			* @brief Creates set 0 with binding 0 as vertex/fragment FrameUniforms and binding 1 as a fragment shadow-map sampler.
+			* @brief Creates set 0 with binding 0 as FrameUniforms, binding 1 as the shadow map, and binding 2 as one object texture.
 			*
 			* @param owningDevice Logical device that owns the created descriptor-set layout.
 			* @return VK_SUCCESS when the descriptor-set layout is available, otherwise a Vulkan error code.
@@ -1213,8 +1232,15 @@ export namespace vve::simple {
 				.descriptorCount = 1U,
 				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 				.pImmutableSamplers = nullptr,
-			};
-			const std::array bindings{frameUniformBinding, shadowMapBinding};
+			}; ///< Binding 1 exposes the sampled shadow map to the fragment shader.
+			const VkDescriptorSetLayoutBinding objectTextureBinding{
+				.binding = 2U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = 1U,
+				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+				.pImmutableSamplers = nullptr,
+			}; ///< Binding 2 reserves one sampled object base-color texture for later fragment shading.
+			const std::array bindings{frameUniformBinding, shadowMapBinding, objectTextureBinding};
 			const VkDescriptorSetLayoutCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 				.bindingCount = static_cast<std::uint32_t>(bindings.size()),
@@ -1269,7 +1295,7 @@ export namespace vve::simple {
 		VulkanPipelineLayout &operator=(const VulkanPipelineLayout &) = delete;
 
 		/**
-			* @brief Creates a pipeline layout with one descriptor set and one vertex-visible model matrix push constant range.
+			* @brief Creates a pipeline layout with one descriptor set and one vertex-visible object push constant range.
 			*
 			* @param owningDevice Logical device that owns the created pipeline layout.
 			* @param setLayout Descriptor-set layout used as set 0 by the graphics pipeline.
@@ -1280,9 +1306,9 @@ export namespace vve::simple {
 			if (owningDevice == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkPushConstantRange modelPushConstants{
-				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				.offset = 0U,
-				.size = sizeof(float) * 16U,
+				.size = sizeof(ObjectPushConstants),
 			};
 			const VkPipelineLayoutCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -1396,9 +1422,9 @@ export namespace vve::simple {
 		if (result != VK_SUCCESS) { return result; }
 
 		const VkPushConstantRange modelPushConstants{
-			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 			.offset = 0U,
-			.size = sizeof(float) * 16U,
+			.size = sizeof(ObjectPushConstants),
 		};
 		const VkPipelineLayoutCreateInfo layoutInfo{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
@@ -2164,6 +2190,8 @@ export namespace vve::simple {
 		~VulkanReadback() { cleanup(); }
 
 	private:
+		friend struct TextureImage; ///< Allows texture upload commands to reuse the local color-image transition helper.
+
 		/**
 			* @brief Records the layout transitions and image-to-buffer copy into one primary command buffer.
 			*
@@ -2254,10 +2282,13 @@ export namespace vve::simple {
 			* @brief Selects the conservative pipeline stage used for a color-image layout.
 			*
 			* @param layout Vulkan image layout being synchronized.
-			* @return Pipeline stage compatible with the supported readback layouts.
+			* @return Pipeline stage compatible with the supported color-image layouts.
 			*/
 		[[nodiscard]] static VkPipelineStageFlags stageMask(VkImageLayout layout) {
+			if (layout == VK_IMAGE_LAYOUT_UNDEFINED) { return VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; }
 			if (layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) { return VK_PIPELINE_STAGE_TRANSFER_BIT; }
+			if (layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) { return VK_PIPELINE_STAGE_TRANSFER_BIT; }
+			if (layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) { return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; }
 			if (layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) { return VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT; }
 			return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 		}
@@ -2267,10 +2298,13 @@ export namespace vve::simple {
 			*
 			* @param layout Vulkan image layout being synchronized.
 			* @param destination True when the layout is the barrier destination layout.
-			* @return Access mask compatible with the supported readback layouts.
+			* @return Access mask compatible with the supported color-image layouts.
 			*/
 		[[nodiscard]] static VkAccessFlags accessMask(VkImageLayout layout, bool destination) {
+			if (layout == VK_IMAGE_LAYOUT_UNDEFINED) { return 0U; }
 			if (layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) { return VK_ACCESS_TRANSFER_READ_BIT; }
+			if (layout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) { return VK_ACCESS_TRANSFER_WRITE_BIT; }
+			if (layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) { return destination ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_SHADER_READ_BIT; }
 			if (layout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) { return destination ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; }
 			return 0U;
 		}
@@ -2293,6 +2327,286 @@ export namespace vve::simple {
 				default:
 					return std::nullopt;
 			}
+		}
+	};
+
+	/// @brief Internal owner for one sampled 8-bit RGBA texture image uploaded with a staging buffer.
+	struct TextureImage {
+		VkDevice device{VK_NULL_HANDLE};              ///< Borrowed Vulkan logical device used to destroy texture resources.
+		VkImage image{VK_NULL_HANDLE};                ///< Owned device-local sampled color image.
+		VkDeviceMemory memory{VK_NULL_HANDLE};        ///< Owned device-local memory backing the texture image.
+		VkImageView view{VK_NULL_HANDLE};             ///< Owned RGBA image view for shader sampling.
+		VkSampler sampler{VK_NULL_HANDLE};            ///< Owned linear repeat sampler for texture reads.
+		VkExtent2D extent{};                          ///< Loaded texture width and height in pixels.
+
+		TextureImage() = default;
+		TextureImage(const TextureImage &) = delete;
+		TextureImage &operator=(const TextureImage &) = delete;
+
+		/**
+			* @brief Loads an RGBA file from disk and uploads it into a sampled SRGB Vulkan image.
+			*
+			* @param physicalDevice Physical device used to select memory types.
+			* @param owningDevice Logical device that owns the image, view, sampler, and upload commands.
+			* @param graphicsQueue Queue used for the one-time staging copy submission.
+			* @param commandPool Command pool used for the temporary upload command buffer.
+			* @param imagePath Filesystem path passed to stb_image for 8-bit RGBA loading.
+			* @return VK_SUCCESS when the texture is ready for descriptor binding, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult create(
+			VkPhysicalDevice physicalDevice,
+			VkDevice owningDevice,
+			VkQueue graphicsQueue,
+			VkCommandPool commandPool,
+			const std::filesystem::path &imagePath
+		) {
+			cleanup();
+			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || graphicsQueue == VK_NULL_HANDLE || commandPool == VK_NULL_HANDLE || imagePath.empty()) {
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+
+			int width{};
+			int height{};
+			int channels{};
+			const auto pathString = imagePath.string(); // stb_image requires a null-terminated filesystem path.
+			auto pixels = std::unique_ptr<stbi_uc, decltype(&stbi_image_free)>{
+				stbi_load(pathString.c_str(), &width, &height, &channels, STBI_rgb_alpha),
+				stbi_image_free
+			};
+			if (!pixels || width <= 0 || height <= 0) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			const auto textureExtent = VkExtent2D{.width = static_cast<std::uint32_t>(width), .height = static_cast<std::uint32_t>(height)};
+			const VkDeviceSize byteCount = static_cast<VkDeviceSize>(textureExtent.width) * textureExtent.height * 4U;
+			return create(physicalDevice, owningDevice, graphicsQueue, commandPool, std::span{reinterpret_cast<const std::byte *>(pixels.get()), static_cast<std::size_t>(byteCount)}, textureExtent);
+		}
+
+		/**
+			* @brief Uploads tight RGBA bytes into a sampled SRGB Vulkan image.
+			*
+			* @param physicalDevice Physical device used to select memory types.
+			* @param owningDevice Logical device that owns the image, view, sampler, and upload commands.
+			* @param graphicsQueue Queue used for the one-time staging copy submission.
+			* @param commandPool Command pool used for the temporary upload command buffer.
+			* @param rgbaPixels CPU-side 8-bit RGBA pixels matching extent width times height.
+			* @param textureExtent Texture width and height in pixels.
+			* @return VK_SUCCESS when the texture is ready for descriptor binding, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult create(
+			VkPhysicalDevice physicalDevice,
+			VkDevice owningDevice,
+			VkQueue graphicsQueue,
+			VkCommandPool commandPool,
+			std::span<const std::byte> rgbaPixels,
+			VkExtent2D textureExtent
+		) {
+			cleanup();
+			const VkDeviceSize byteCount = static_cast<VkDeviceSize>(textureExtent.width) * textureExtent.height * 4U;
+			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || graphicsQueue == VK_NULL_HANDLE || commandPool == VK_NULL_HANDLE || textureExtent.width == 0U || textureExtent.height == 0U || rgbaPixels.size() != static_cast<std::size_t>(byteCount)) {
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+
+			VulkanBuffer stagingBuffer{};
+			VkResult result = stagingBuffer.create(
+				physicalDevice,
+				owningDevice,
+				byteCount,
+				VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			);
+			if (result != VK_SUCCESS) { return result; }
+
+			result = stagingBuffer.upload(rgbaPixels.data(), byteCount);
+			if (result != VK_SUCCESS) { return result; }
+
+			device = owningDevice;
+			extent = textureExtent;
+			result = createImage(physicalDevice);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			result = uploadFrom(stagingBuffer.buffer, graphicsQueue, commandPool);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			result = createViewAndSampler();
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+			return VK_SUCCESS;
+		}
+
+		/**
+			* @brief Destroys the owned sampler, view, image, memory, and clears the borrowed device handle.
+			*/
+		void cleanup() {
+			if (sampler != VK_NULL_HANDLE) { vkDestroySampler(device, sampler, nullptr); }
+			if (view != VK_NULL_HANDLE) { vkDestroyImageView(device, view, nullptr); }
+			if (image != VK_NULL_HANDLE) { vkDestroyImage(device, image, nullptr); }
+			if (memory != VK_NULL_HANDLE) { vkFreeMemory(device, memory, nullptr); }
+			sampler = VK_NULL_HANDLE;
+			view = VK_NULL_HANDLE;
+			image = VK_NULL_HANDLE;
+			memory = VK_NULL_HANDLE;
+			extent = {};
+			device = VK_NULL_HANDLE;
+		}
+
+		/**
+			* @brief Destroys the owned texture image resources on scope exit.
+			*/
+		~TextureImage() { cleanup(); }
+
+	private:
+		/**
+			* @brief Creates and binds the device-local sampled image allocation.
+			*
+			* @param physicalDevice Physical device used to query image memory requirements.
+			* @return VK_SUCCESS when the image and memory binding are ready, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult createImage(VkPhysicalDevice physicalDevice) {
+			const VkImageCreateInfo imageInfo{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+				.imageType = VK_IMAGE_TYPE_2D,
+				.format = VK_FORMAT_R8G8B8A8_SRGB,
+				.extent = {.width = extent.width, .height = extent.height, .depth = 1U},
+				.mipLevels = 1U,
+				.arrayLayers = 1U,
+				.samples = VK_SAMPLE_COUNT_1_BIT,
+				.tiling = VK_IMAGE_TILING_OPTIMAL,
+				.usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			};
+
+			VkResult result = vkCreateImage(device, &imageInfo, nullptr, &image);
+			if (result != VK_SUCCESS) { return result; }
+
+			VkMemoryRequirements requirements{};
+			vkGetImageMemoryRequirements(device, image, &requirements);
+			const std::optional<std::uint32_t> memoryType = VulkanDepthImage::findMemoryType(
+				physicalDevice,
+				requirements.memoryTypeBits,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+			);
+			if (!memoryType.has_value()) { return VK_ERROR_FEATURE_NOT_PRESENT; }
+
+			const VkMemoryAllocateInfo allocateInfo{
+				.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+				.allocationSize = requirements.size,
+				.memoryTypeIndex = *memoryType,
+			};
+
+			result = vkAllocateMemory(device, &allocateInfo, nullptr, &memory);
+			if (result != VK_SUCCESS) { return result; }
+			return vkBindImageMemory(device, image, memory, 0U);
+		}
+
+		/**
+			* @brief Uploads staging-buffer pixels with one command buffer and leaves the image shader-readable.
+			*
+			* @param stagingBuffer Borrowed transfer-source buffer containing RGBA pixel bytes.
+			* @param graphicsQueue Queue receiving the one-time upload command buffer.
+			* @param commandPool Command pool used to allocate the temporary primary command buffer.
+			* @return VK_SUCCESS when the copy has completed on the queue, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult uploadFrom(VkBuffer stagingBuffer, VkQueue graphicsQueue, VkCommandPool commandPool) {
+			VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
+			const VkCommandBufferAllocateInfo allocateInfo{
+				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+				.commandPool = commandPool,
+				.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+				.commandBufferCount = 1U,
+			};
+			VkResult result = vkAllocateCommandBuffers(device, &allocateInfo, &commandBuffer);
+			if (result != VK_SUCCESS) { return result; }
+
+			VkFence fence{VK_NULL_HANDLE};
+			const VkFenceCreateInfo fenceInfo{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+			result = vkCreateFence(device, &fenceInfo, nullptr, &fence);
+			if (result != VK_SUCCESS) { vkFreeCommandBuffers(device, commandPool, 1U, &commandBuffer); return result; }
+
+			result = recordUpload(commandBuffer, stagingBuffer);
+			if (result == VK_SUCCESS) {
+				const VkSubmitInfo submitInfo{
+					.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+					.commandBufferCount = 1U,
+					.pCommandBuffers = &commandBuffer,
+				};
+				result = vkQueueSubmit(graphicsQueue, 1U, &submitInfo, fence);
+			}
+			if (result == VK_SUCCESS) { result = vkWaitForFences(device, 1U, &fence, VK_TRUE, UINT64_MAX); }
+
+			vkDestroyFence(device, fence, nullptr);
+			vkFreeCommandBuffers(device, commandPool, 1U, &commandBuffer);
+			return result;
+		}
+
+		/**
+			* @brief Records the texture layout transitions and buffer-to-image copy.
+			*
+			* @param commandBuffer Temporary primary command buffer receiving upload commands.
+			* @param stagingBuffer Borrowed transfer-source buffer containing tightly packed RGBA pixels.
+			* @return VK_SUCCESS when recording completed, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult recordUpload(VkCommandBuffer commandBuffer, VkBuffer stagingBuffer) {
+			const VkCommandBufferBeginInfo beginInfo{
+				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+				.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+			};
+			VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+			if (result != VK_SUCCESS) { return result; }
+
+			VulkanReadback::transitionImage(commandBuffer, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			const VkBufferImageCopy copyRegion{
+				.bufferOffset = 0U,
+				.bufferRowLength = 0U,
+				.bufferImageHeight = 0U,
+				.imageSubresource = {
+					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+					.mipLevel = 0U,
+					.baseArrayLayer = 0U,
+					.layerCount = 1U,
+				},
+				.imageOffset = {.x = 0, .y = 0, .z = 0},
+				.imageExtent = {.width = extent.width, .height = extent.height, .depth = 1U},
+			};
+			vkCmdCopyBufferToImage(commandBuffer, stagingBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1U, &copyRegion);
+			VulkanReadback::transitionImage(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			return vkEndCommandBuffer(commandBuffer);
+		}
+
+		/**
+			* @brief Creates the sampled RGBA image view and linear repeat sampler.
+			*
+			* @return VK_SUCCESS when both sampling handles are ready, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult createViewAndSampler() {
+			const VkImageViewCreateInfo viewInfo{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				.image = image,
+				.viewType = VK_IMAGE_VIEW_TYPE_2D,
+				.format = VK_FORMAT_R8G8B8A8_SRGB,
+				.subresourceRange = {
+					.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+					.baseMipLevel = 0U,
+					.levelCount = 1U,
+					.baseArrayLayer = 0U,
+					.layerCount = 1U,
+				},
+			};
+
+			VkResult result = vkCreateImageView(device, &viewInfo, nullptr, &view);
+			if (result != VK_SUCCESS) { return result; }
+
+			const VkSamplerCreateInfo samplerInfo{
+				.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+				.magFilter = VK_FILTER_LINEAR,
+				.minFilter = VK_FILTER_LINEAR,
+				.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+				.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+				.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+				.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+				.minLod = 0.0F,
+				.maxLod = 1.0F,
+			};
+
+			return vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
 		}
 	};
 
@@ -2338,7 +2652,7 @@ export namespace vve::simple {
 		return stbi_write_png(path.c_str(), static_cast<int>(extent.width), static_cast<int>(extent.height), 4, rgbaPixels.data(), stride) != 0;
 	}
 
-	/// @brief Minimal Vulkan descriptor-pool owner for uniform-buffer and shadow-map descriptor sets.
+	/// @brief Minimal Vulkan descriptor-pool owner for uniform-buffer, shadow-map, and object-texture descriptor sets.
 	struct VulkanDescriptorPool {
 		VkDevice device{VK_NULL_HANDLE};                       ///< Borrowed device used to destroy the pool.
 		VkDescriptorPool descriptorPool{VK_NULL_HANDLE};        ///< Owned descriptor pool.
@@ -2348,7 +2662,7 @@ export namespace vve::simple {
 		VulkanDescriptorPool &operator=(const VulkanDescriptorPool &) = delete;
 
 		/**
-			* @brief Creates a descriptor pool for per-frame uniform-buffer and shadow-map descriptor sets.
+			* @brief Creates a descriptor pool for per-frame uniform-buffer, shadow-map, and object-texture descriptor sets.
 			*
 			* @param owningDevice Logical device that owns the descriptor pool.
 			* @param maxSets Maximum descriptor-set count and descriptor count per binding.
@@ -2360,7 +2674,7 @@ export namespace vve::simple {
 
 			const std::array poolSizes{
 				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = maxSets},
-				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = maxSets},
+				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = maxSets * 2U},
 			};
 			const VkDescriptorPoolCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -2393,7 +2707,7 @@ export namespace vve::simple {
 		~VulkanDescriptorPool() { cleanup(); }
 	};
 
-	/// @brief Minimal Vulkan descriptor-set owner for per-frame uniform-buffer and shadow-map bindings.
+	/// @brief Minimal Vulkan descriptor-set owner for per-frame uniform-buffer, shadow-map, and object-texture bindings.
 	struct VulkanDescriptorSets {
 		VkDevice device{VK_NULL_HANDLE};                         ///< Borrowed device used for allocation and updates.
 		VkDescriptorPool descriptorPool{VK_NULL_HANDLE};          ///< Borrowed pool that owns the allocations; sets are freed implicitly with the pool.
@@ -2488,6 +2802,35 @@ export namespace vve::simple {
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
 				.dstBinding = 1U,
+				.dstArrayElement = 0U,
+				.descriptorCount = 1U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &imageInfo,
+			};
+
+			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
+			return VK_SUCCESS;
+		}
+
+		/**
+			* @brief Writes one frame descriptor set with its reserved binding-2 sampled object texture.
+			*
+			* @param frameIndex Frame set index to update.
+			* @param texture Object base-color texture bound to descriptor binding 2.
+			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
+		*/
+		[[nodiscard]] VkResult writeObjectTexture(std::uint32_t frameIndex, const TextureImage &texture) {
+			if (frameIndex >= descriptorSets.size() || texture.view == VK_NULL_HANDLE || texture.sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			const VkDescriptorImageInfo imageInfo{
+				.sampler = texture.sampler,
+				.imageView = texture.view,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+			const VkWriteDescriptorSet write{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSets[frameIndex],
+				.dstBinding = 2U,
 				.dstArrayElement = 0U,
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,

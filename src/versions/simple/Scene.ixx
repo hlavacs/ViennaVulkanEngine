@@ -17,13 +17,15 @@ export namespace vve::simple {
 
 	/// @brief Host-side drawable object with geometry and a local-to-world transform.
 	struct Object {
-		Mesh mesh{};  ///< CPU geometry used by one drawable object.
-		Mat4 model{}; ///< Model matrix placing the mesh in world space.
+		Mesh mesh{};                              ///< CPU geometry used by one drawable object.
+		Mat4 model{};                             ///< Model matrix placing the mesh in world space.
+		std::uint32_t useBaseColorTexture{0U};    ///< Non-zero when the object wants the optional base-color texture.
 	};
 
 	/// @brief Host-side scene container with drawable objects in submission order.
 	struct Scene {
-		std::vector<Object> objects{}; ///< Drawable objects owned by this CPU scene.
+		std::vector<Object> objects{};                                ///< Drawable objects owned by this CPU scene.
+		std::optional<std::filesystem::path> baseColorTexture{};      ///< Optional scene base-color image path for future texture uploads.
 	};
 
 	/**
@@ -33,12 +35,13 @@ export namespace vve::simple {
 		* @return Mesh containing one flat quad with neutral debug coloring.
 		*/
 	Mesh makePlane(Vec2 halfExtent) {
+		constexpr std::array<float, 3> planeColor{0.1F, 0.6F, 0.2F}; ///< Uniform green ground color avoids vertex gradients.
 		return Mesh{
 			.vertices{
-				{{{-halfExtent.x, 0.0F, -halfExtent.y}}, {{0.55F, 0.55F, 0.55F}}, {{0.0F, 0.0F}}}, ///< Back left floor corner.
-				{{{halfExtent.x, 0.0F, -halfExtent.y}},  {{0.55F, 0.55F, 0.55F}}, {{1.0F, 0.0F}}}, ///< Back right floor corner.
-				{{{halfExtent.x, 0.0F, halfExtent.y}},   {{0.65F, 0.65F, 0.65F}}, {{1.0F, 1.0F}}}, ///< Front right floor corner.
-				{{{-halfExtent.x, 0.0F, halfExtent.y}},  {{0.65F, 0.65F, 0.65F}}, {{0.0F, 1.0F}}}, ///< Front left floor corner.
+				{{{-halfExtent.x, 0.0F, -halfExtent.y}}, planeColor, {{0.0F, 0.0F}}}, ///< Back left floor corner.
+				{{{halfExtent.x, 0.0F, -halfExtent.y}},  planeColor, {{1.0F, 0.0F}}}, ///< Back right floor corner.
+				{{{halfExtent.x, 0.0F, halfExtent.y}},   planeColor, {{1.0F, 1.0F}}}, ///< Front right floor corner.
+				{{{-halfExtent.x, 0.0F, halfExtent.y}},  planeColor, {{0.0F, 1.0F}}}, ///< Front left floor corner.
 			},
 			.indices{0U, 2U, 1U, 0U, 3U, 2U}, ///< Two triangles with the +Y top face front-facing.
 		};
