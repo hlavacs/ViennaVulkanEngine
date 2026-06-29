@@ -7,6 +7,7 @@ import std;
 export import :RenderPass;
 import :Window;
 import VEEngine.Simple.Vulkan;
+import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Renderer;
 
@@ -103,6 +104,7 @@ export namespace vve::simple {
 		LinearColor color{.value = oneVec3()};										///< Direct light color.
 		LightIntensity intensity{.value = zero()};								///< Direct light intensity.
 		LightRange range{.value = static_cast<Scalar>(1)};						///< Influence radius.
+		LinearColor ambient{.value = Vec3(0.04F, 0.04F, 0.04F)};				///< Small ambient term.
 	};
 
 	/// @brief Spot light resource data.
@@ -112,6 +114,7 @@ export namespace vve::simple {
 		LinearColor color{.value = oneVec3()};										///< Direct light color.
 		LightIntensity intensity{.value = zero()};								///< Direct light intensity.
 		LightRange range{.value = static_cast<Scalar>(1)};						///< Influence radius.
+		LinearColor ambient{.value = Vec3(0.04F, 0.04F, 0.04F)};				///< Small ambient term.
 		SpotConeAngle cone{};															///< Outer cone angle.
 	};
 
@@ -268,13 +271,20 @@ export namespace vve::simple {
 																			Transform transform = {});
 		[[nodiscard]] std::expected<void, Error> addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
 																			Transform transform = {});
+		[[nodiscard]] std::expected<void, Error> addTexturedCuboid(Vec3 minimum, Vec3 maximum,
+																					 std::filesystem::path base_color_texture,
+																					 Transform transform = {});
 		auto clearScene()																													-> void;
 		auto setCamera(Camera camera, PixelExtent extent)																		-> void;
 		void setDirectionalLight(Direction direction_to_light, LinearColor color,
 											LightIntensity intensity, LinearColor ambient);
 		auto setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range)	-> void;
+		auto setPointLight(Position position, LinearColor color,
+									LightIntensity intensity, LightRange range, LinearColor ambient)			-> void;
 		void setSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone);
+		void setSpotLight(Position position, Direction direction, LinearColor color,
+								LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient);
 		auto loadScene(Scene scene)																									-> void;
 		[[nodiscard]] auto initialize(SDL_Window *window)																			-> std::expected<void, Error>;
 		auto shutdown()																													-> void;
@@ -294,6 +304,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto hasSceneDirectionalLight() const																	-> bool;
 		[[nodiscard]] auto hasScenePointLight() const																			-> bool;
 		[[nodiscard]] auto hasSceneSpotLight() const																				-> bool;
+		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path)						-> std::expected<void, Error>;
 		[[nodiscard]] auto renderFrame(const WindowFrameData &windows)														-> std::expected<void, Error>;
 		[[nodiscard]] auto renderFrame(WindowSystem &windows)																	-> std::expected<void, Error>;
 		[[nodiscard]] auto renderedFrameCount() const																			-> std::uint64_t;
@@ -338,6 +349,7 @@ export namespace vve::simple {
 								std::span<const RenderPassContract> passes);
 		[[nodiscard]] const RenderResource *find(RenderResourceHandle handle) const;
 		[[nodiscard]] const RenderFunction *find(RenderFunctionHandle handle) const;
+		[[nodiscard]] auto appendBackendObject(RenderInstanceHandle instance)										-> std::expected<void, Error>;
 
 		RenderScene scene_{};															///< Active CPU render scene.
 		Renderer renderer_{};															///< Concrete Vulkan forward renderer backend.
@@ -381,7 +393,10 @@ namespace vve::simple {
 	inline void RenderScene::appendFace(Vector<RenderVertex> &vertices, Vector<std::uint32_t> &indices,
 													Vec3 normal, std::array<Vec3, 4> corners) {
 		const auto base = static_cast<std::uint32_t>(vertices.size());
-		for (const auto corner : corners) { vertices.push_back(RenderVertex{.position = corner, .normal = normal}); }
+		const auto uvs = std::array{Vec2{0.0F, 0.0F}, Vec2{1.0F, 0.0F}, Vec2{1.0F, 1.0F}, Vec2{0.0F, 1.0F}};
+		for (std::size_t corner_index{}; corner_index < corners.size(); ++corner_index) {
+			vertices.push_back(RenderVertex{.position = corners[corner_index], .normal = normal, .uv = uvs[corner_index]});
+		}
 		for (const auto index : std::array{0U, 1U, 2U, 0U, 2U, 3U}) { indices.push_back(base + index); }
 	}
 
@@ -408,8 +423,8 @@ namespace vve::simple {
 		auto vertices = Vector<RenderVertex>{};
 		auto indices = Vector<std::uint32_t>{};
 		appendFace(vertices, indices, Vec3{0.0F, 1.0F, 0.0F},
-						{Vec3{-half_extent.x, 0.0F, -half_extent.y}, Vec3{half_extent.x, 0.0F, -half_extent.y},
-						Vec3{half_extent.x, 0.0F, half_extent.y}, Vec3{-half_extent.x, 0.0F, half_extent.y}});
+						{Vec3{-half_extent.x, 0.0F, -half_extent.y}, Vec3{-half_extent.x, 0.0F, half_extent.y},
+						Vec3{half_extent.x, 0.0F, half_extent.y}, Vec3{half_extent.x, 0.0F, -half_extent.y}});
 		const auto bounds = Bounds{.minimum = Position{.value = Vec3{-half_extent.x, 0.0F, -half_extent.y}},
 											.maximum = Position{.value = Vec3{half_extent.x, 0.0F, half_extent.y}},
 											.valid = true};
@@ -644,12 +659,43 @@ namespace vve::simple {
 		return function == nullptr ? std::unexpected(Error::missing_object) : std::expected<ObjectName, Error>{function->name};
 	}
 
+	/// @brief Mirrors one facade scene instance into the backend scene that the renderer uploads.
+	inline auto RenderSystem::appendBackendObject(RenderInstanceHandle instance_handle)					-> std::expected<void, Error>{
+		const auto *instance = scene_.findInstance(instance_handle);
+		if (instance == nullptr) { return std::unexpected(Error::missing_object); }
+		const auto *mesh = scene_.findMesh(instance->mesh);
+		const auto *material = scene_.findMaterial(instance->material);
+		if (mesh == nullptr || material == nullptr) { return std::unexpected(Error::missing_object); }
+
+		auto backend_mesh = Mesh{};
+		backend_mesh.vertices.reserve(mesh->vertices.size());
+		backend_mesh.indices.reserve(mesh->indices.size());
+		const auto color = std::array{material->base_color.value.x, material->base_color.value.y,
+											 material->base_color.value.z};
+		for (const RenderVertex &vertex : mesh->vertices) {
+			backend_mesh.vertices.push_back(Vertex{.position = {vertex.position.x, vertex.position.y, vertex.position.z},
+																.color = color,
+																.texCoord = {vertex.uv.x, vertex.uv.y}});
+		}
+		for (const auto index : mesh->indices) { backend_mesh.indices.push_back(index); }
+
+		auto model = translate(identityMat4(), instance->local_transform.translation.value);
+		model = scale(model, instance->local_transform.scale.value);
+		const auto use_texture = !material->base_color_texture_source.empty();
+		if (use_texture) { renderer_.scene.baseColorTexture = material->base_color_texture_source; }
+		renderer_.scene.objects.push_back(Object{.mesh = std::move(backend_mesh),
+															.model = model,
+															.useBaseColorTexture = use_texture ? 1U : 0U});
+		return {};
+	}
+
 	/// @brief Adds a plane mesh, material, and instance to the CPU scene.
 	inline auto RenderSystem::addPlane(Vec2 half_extent, LinearColor color, Transform transform)	-> std::expected<void, Error>{
 		const auto material = scene_.addMaterial(RenderMaterial{.base_color = color});
 		const auto mesh = scene_.addPlaneMesh(half_extent);
 		auto instance = scene_.addInstance(mesh, material, transform);
-		return instance ? std::expected<void, Error>{} : std::unexpected(instance.error());
+		if (!instance) { return std::unexpected(instance.error()); }
+		return appendBackendObject(*instance);
 	}
 
 	/// @brief Adds a cuboid mesh, material, and instance to the CPU scene.
@@ -658,27 +704,95 @@ namespace vve::simple {
 		const auto material = scene_.addMaterial(RenderMaterial{.base_color = color});
 		const auto mesh = scene_.addCuboidMesh(minimum, maximum);
 		auto instance = scene_.addInstance(mesh, material, transform);
-		return instance ? std::expected<void, Error>{} : std::unexpected(instance.error());
+		if (!instance) { return std::unexpected(instance.error()); }
+		return appendBackendObject(*instance);
 	}
 
-	inline void RenderSystem::clearScene() { scene_.clear(); }
+	/// @brief Adds a cuboid that requests the backend scene base-color texture.
+	inline std::expected<void, Error>
+	RenderSystem::addTexturedCuboid(Vec3 minimum, Vec3 maximum, std::filesystem::path base_color_texture,
+											  Transform transform) {
+		if (base_color_texture.empty()) { return std::unexpected(Error::io_error); }
+		auto texture_file = std::ifstream{base_color_texture, std::ios::binary};
+		if (!texture_file) { return std::unexpected(Error::io_error); }
+
+		const auto material = scene_.addMaterial(RenderMaterial{.base_color = LinearColor{.value = oneVec3()},
+																			 .base_color_texture = makeCounterHandle<TextureHandle>(),
+																			 .base_color_texture_source = base_color_texture});
+		const auto mesh = scene_.addCuboidMesh(minimum, maximum);
+		auto instance = scene_.addInstance(mesh, material, transform);
+		if (!instance) { return std::unexpected(instance.error()); }
+		return appendBackendObject(*instance);
+	}
+
+	inline void RenderSystem::clearScene() {
+		scene_.clear();
+		renderer_.scene.objects.clear();
+		renderer_.scene.baseColorTexture.reset();
+	}
 	inline auto RenderSystem::setCamera(Camera camera, PixelExtent extent)								-> void{
+		const auto eye = camera.position.value;
+		const auto target = math::add(eye, camera.forward.value);
+		renderer_.setCamera(eye, target);
 		scene_.setCamera(RenderCamera{.camera = std::move(camera), .target_extent = extent});
 	}
 	inline void RenderSystem::setDirectionalLight(Direction direction_to_light, LinearColor color,
 																	LightIntensity intensity, LinearColor ambient) {
+		renderer_.scene.directionalLight = DirectionalLight{
+			.direction = direction_to_light.value,
+			.color = color.value,
+			.intensity = intensity,
+			.ambient = ambient.value.x};
 		scene_.setDirectionalLight(RenderDirectionalLight{.direction_to_light = direction_to_light,
 																			.color = color, .intensity = intensity, .ambient = ambient});
 	}
 	inline void RenderSystem::setPointLight(Position position, LinearColor color,
 															LightIntensity intensity, LightRange range) {
+		renderer_.scene.pointLight = PointLight{
+			.position = position.value,
+			.color = color.value,
+			.intensity = intensity.value,
+			.range = range.value,
+			.ambient = renderer_.scene.pointLight.ambient};
 		scene_.setPointLight(RenderPointLight{.position = position, .color = color,
 															.intensity = intensity, .range = range});
 	}
+	inline void RenderSystem::setPointLight(Position position, LinearColor color,
+															LightIntensity intensity, LightRange range, LinearColor ambient) {
+		renderer_.scene.pointLight = PointLight{.position = position.value,
+															 .color = color.value,
+															 .intensity = intensity.value,
+															 .range = range.value,
+															 .ambient = ambient.value.x};
+		scene_.setPointLight(RenderPointLight{.position = position, .color = color,
+															.intensity = intensity, .range = range, .ambient = ambient});
+	}
 	inline void RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
 														LightIntensity intensity, LightRange range, SpotConeAngle cone) {
+		renderer_.scene.spotLight = SpotLight{.position = position.value,
+														  .direction = direction.value,
+														  .color = color.value,
+														  .intensity = intensity,
+														  .range = range,
+														  .innerConeAngle = renderer_.scene.spotLight.innerConeAngle,
+														  .outerConeAngle = cone,
+														  .ambient = renderer_.scene.spotLight.ambient};
 		scene_.setSpotLight(RenderSpotLight{.position = position, .direction = direction, .color = color,
 														.intensity = intensity, .range = range, .cone = cone});
+	}
+	inline void RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
+														LightIntensity intensity, LightRange range,
+														SpotConeAngle cone, LinearColor ambient) {
+		renderer_.scene.spotLight = SpotLight{.position = position.value,
+														  .direction = direction.value,
+														  .color = color.value,
+														  .intensity = intensity,
+														  .range = range,
+														  .innerConeAngle = renderer_.scene.spotLight.innerConeAngle,
+														  .outerConeAngle = cone,
+														  .ambient = ambient.value.x};
+		scene_.setSpotLight(RenderSpotLight{.position = position, .direction = direction, .color = color,
+														.intensity = intensity, .range = range, .ambient = ambient, .cone = cone});
 	}
 
 	inline auto RenderSystem::loadScene(Scene scene)																-> void{
@@ -741,6 +855,40 @@ namespace vve::simple {
 	inline bool RenderSystem::hasSceneDirectionalLight() const { return scene_.directionalLight().has_value(); }
 	inline bool RenderSystem::hasScenePointLight() const { return scene_.pointLight().has_value(); }
 	inline bool RenderSystem::hasSceneSpotLight() const { return scene_.spotLight().has_value(); }
+
+	/// @brief Copies the last rendered swapchain image and writes it as a PNG.
+	auto RenderSystem::captureFrameToPng(const std::filesystem::path &output_path)	-> std::expected<void, Error>{
+		if (!initialized_) { return std::unexpected(Error::not_initialized); }
+		if (output_path.empty()) { return std::unexpected(Error::invalid_argument); }
+		if (!renderer_.lastRenderedImageIndex) { return std::unexpected(Error::missing_object); }
+		if (*renderer_.lastRenderedImageIndex >= renderer_.swapchain.images.size()) {
+			return std::unexpected(Error::internal_error);
+		}
+
+		if (const auto parent = output_path.parent_path(); !parent.empty()) {
+			auto error = std::error_code{};
+			std::filesystem::create_directories(parent, error);
+			if (error) { return std::unexpected(Error::io_error); }
+		}
+
+		auto readback = VulkanReadback{};
+		VkResult result = readback.create(renderer_.physicalDevice.physicalDevice, renderer_.device.device,
+													 renderer_.device.graphicsQueue, renderer_.commandPool.commandPool,
+													 renderer_.swapchain.extent, renderer_.swapchain.imageFormat);
+		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+
+		result = vkDeviceWaitIdle(renderer_.device.device);
+		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+		const auto image = renderer_.swapchain.images[*renderer_.lastRenderedImageIndex];
+		result = readback.capture(image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+
+		const auto output = output_path.string();
+		if (!writeReadbackPng(readback.pixelBytes(), renderer_.swapchain.extent, renderer_.swapchain.imageFormat, output)) {
+			return std::unexpected(Error::io_error);
+		}
+		return {};
+	}
 
 	/// @brief Records a frame without creating GPU objects.
 	inline auto RenderSystem::renderFrame(const WindowFrameData &windows)								-> std::expected<void, Error>{
