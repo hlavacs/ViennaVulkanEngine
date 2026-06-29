@@ -2954,6 +2954,9 @@ export namespace vve::simple {
 		Mat4 view{};        ///< shared camera view matrix
 		Mat4 projection{};  ///< shared camera projection matrix
 		Mat4 lightViewProj{}; ///< light view-projection for the upcoming shadow pass
+		Vec4 lightPositionRange{};    ///< xyz world-space point-light position, w range
+		Vec4 lightColorIntensity{};   ///< rgb direct-light color, w direct-light intensity
+		Vec4 lightShadowAmbient{};    ///< xyz shadow-map direction approximation, w ambient term
 	};
 
 	/// @brief Minimal per-frame uniform-buffer owner for shared view and projection data.

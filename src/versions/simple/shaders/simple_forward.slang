@@ -15,6 +15,9 @@ struct FrameUniforms
     float4x4 view;       ///< Camera view matrix shared by all objects in the frame.
     float4x4 projection; ///< Camera projection matrix shared by all objects in the frame.
     float4x4 lightViewProj; ///< Light view-projection matrix for the upcoming shadow pass.
+    float4 lightPositionRange;    ///< xyz world-space point-light position, w range.
+    float4 lightColorIntensity;   ///< rgb direct-light color, w direct-light intensity.
+    float4 lightShadowAmbient;    ///< xyz shadow-map direction approximation, w ambient contribution.
 };
 
 struct ObjectPushConstants
@@ -85,18 +88,25 @@ float4 shadowVertexMain(VertexInput input) : SV_Position
 FragmentOutput fragmentMain(FragmentInput input)
 {
     FragmentOutput output;
-    const float ambient = 0.2;                                           ///< Base light keeps back faces visible.
+    const float ambient = frame.lightShadowAmbient.w;                    ///< Base light keeps back faces visible.
     const float shininess = 32.0;                                        ///< Fixed Blinn-Phong highlight exponent.
     const float specularStrength = 0.3;                                  ///< Modest highlight strength for colored surfaces.
-    const float3 lightDir = normalize(float3(-0.5, -1.0, 0.5));          ///< Directional light points downward toward the camera.
-    const float3 normal = normalize(cross(ddx(input.worldPos), ddy(input.worldPos))); ///< Flat geometric face normal.
-    const float3 surfaceLightDir = normalize(-lightDir);                 ///< Surface-to-light vector preserves the existing Lambert direction.
+    const float3 lightColor = frame.lightColorIntensity.rgb;             ///< Scene-selected direct-light color.
+    const float lightIntensity = frame.lightColorIntensity.w;            ///< Scene-selected direct-light strength.
+    const float3 rawNormal = normalize(cross(ddx(input.worldPos), ddy(input.worldPos))); ///< Flat geometric face normal from screen derivatives.
+    const float3 lightOffset = frame.lightPositionRange.xyz - input.worldPos; ///< Vector from fragment to the point light.
+    const float distanceToLight = length(lightOffset);                  ///< Fragment-light distance for falloff.
+    const float3 surfaceLightDir = lightOffset / max(distanceToLight, 0.001); ///< Point-light direction changes across the scene.
+    const float lightRange = max(frame.lightPositionRange.w, 0.001);    ///< Avoid division by zero for malformed scene data.
+    const float rangeFalloff = saturate(1.0 - (distanceToLight / lightRange)); ///< Fade direct light at the configured range.
+    const float attenuation = rangeFalloff * rangeFalloff;              ///< Smooth enough quadratic falloff for the debug scene.
     const float3 viewOffset = float3(frame.view[0][3], frame.view[1][3], frame.view[2][3]); ///< View translation from the existing matrix.
     const float3 cameraPos = -float3(
         dot(float3(frame.view[0][0], frame.view[1][0], frame.view[2][0]), viewOffset),
         dot(float3(frame.view[0][1], frame.view[1][1], frame.view[2][1]), viewOffset),
         dot(float3(frame.view[0][2], frame.view[1][2], frame.view[2][2]), viewOffset)); ///< World eye from inverse rigid view transform.
     const float3 viewDir = normalize(cameraPos - input.worldPos);        ///< Surface-to-eye vector for view-dependent highlights.
+    const float3 normal = dot(rawNormal, viewDir) < 0.0 ? -rawNormal : rawNormal; ///< Keep visible debug faces lit even when winding flips derivative normals.
     const float diffuse = max(dot(normal, surfaceLightDir), 0.0);        ///< Lambertian light response.
     const float3 halfVector = normalize(surfaceLightDir + viewDir);      ///< Blinn-Phong halfway direction between light and eye.
     const float specular = specularStrength * pow(max(dot(normal, halfVector), 0.0), shininess); ///< Shadowed highlight response.
@@ -111,6 +121,6 @@ FragmentOutput fragmentMain(FragmentInput input)
     if (object.useBaseColorTexture != 0) {
         baseColor *= baseColorTexture.Sample(input.texCoord).rgb;        ///< Optional texture modulates the material before lighting.
     }
-    output.color = float4(baseColor * (ambient + (diffuse + specular) * shadowFactor), 1.0); ///< Apply ambient plus shadowed Blinn-Phong light.
+    output.color = float4(baseColor * (ambient + lightColor * ((diffuse + specular) * lightIntensity * attenuation * shadowFactor)), 1.0); ///< Apply point light plus shadowed Blinn-Phong.
     return output;
 }

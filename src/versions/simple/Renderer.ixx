@@ -227,14 +227,18 @@ export namespace vve::simple {
 			if (result != VK_SUCCESS) { return; }
 
 			const Scalar aspectRatio{swapchain.extent.height == 0U ? one() : static_cast<Scalar>(swapchain.extent.width) / static_cast<Scalar>(swapchain.extent.height)}; ///< Live swapchain aspect with a zero-height guard.
-			const Vec3 lightDir{normalize(Vec3{static_cast<Scalar>(-0.5), static_cast<Scalar>(-1.0), static_cast<Scalar>(0.5)})}; ///< Matches the shader directional light.
+			const PointLight light{scene.pointLight};
 			const Vec3 lightCenter{zeroVec3()}; ///< Origin-centered debug scene framing.
-			const Vec3 lightEye{subtract(lightCenter, scale(lightDir, static_cast<Scalar>(8.0)))}; ///< Back up the light to enclose the floor and cube.
+			const Vec3 shadowSurfaceLightDir{normalize(subtract(light.position, lightCenter))}; ///< Point-light direction approximated by one shadow map.
+			const Vec3 lightEye{light.position}; ///< Place the shadow camera at the point light for the current simple approximation.
 			const Scalar lightExtent{static_cast<Scalar>(4.0)}; ///< Light-space half-size covers the 4x4 floor and tall cube.
 			const FrameUniforms frameUniforms{ // Shared camera matrices keep the sample cubes inside Vulkan clip space.
 				.view = lookAt(cameraEye, cameraTarget, Vec3{zero(), one(), zero()}),
 				.projection = perspectiveVulkan(static_cast<Scalar>(0.7853981633974483), aspectRatio, static_cast<Scalar>(0.1), static_cast<Scalar>(100.0)),
 				.lightViewProj = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(lightEye, lightCenter, Vec3{zero(), one(), zero()})),
+				.lightPositionRange = Vec4{light.position.x, light.position.y, light.position.z, light.range},
+				.lightColorIntensity = Vec4{light.color.x, light.color.y, light.color.z, light.intensity},
+				.lightShadowAmbient = Vec4{shadowSurfaceLightDir.x, shadowSurfaceLightDir.y, shadowSurfaceLightDir.z, light.ambient},
 			};
 			result = uniformBuffers.update(currentFrame, frameUniforms);
 			if (result != VK_SUCCESS) { return; }

@@ -22,10 +22,20 @@ export namespace vve::simple {
 		std::uint32_t useBaseColorTexture{0U};    ///< Non-zero when the object wants the optional base-color texture.
 	};
 
+	/// @brief Point light parameters used by the simple forward pass.
+	struct PointLight {
+		Vec3 position{2.0F, 3.5F, -2.0F}; ///< World-space light position.
+		Vec3 color{1.0F, 0.96F, 0.82F};   ///< RGB light tint applied to the direct component.
+		Scalar intensity{3.0F};           ///< Multiplier for diffuse and specular lighting.
+		Scalar range{7.0F};               ///< Distance where direct light fades to zero.
+		Scalar ambient{0.18F};            ///< Scene-wide ambient term for unlit surfaces.
+	};
+
 	/// @brief Host-side scene container with drawable objects in submission order.
 	struct Scene {
 		std::vector<Object> objects{};                                ///< Drawable objects owned by this CPU scene.
 		std::optional<std::filesystem::path> baseColorTexture{};      ///< Optional scene base-color image path for future texture uploads.
+		PointLight pointLight{};                                      ///< Active point light driving shading.
 	};
 
 	/**
