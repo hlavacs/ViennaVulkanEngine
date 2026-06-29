@@ -48,11 +48,11 @@ VVE_ENGINE_IMPLEMENTATION_NAMESPACE
 
 The facade keeps user code in namespace `vve`; implementation-specific code lives below the selected engine namespace.
 
-The CMake target exposes the matching cache variable. The active educational implementation is `v5`;
-legacy `v4` is only built when explicitly selected or when `VVE_BUILD_ENGINE_V4=ON`:
+The CMake target exposes the matching cache variable. The active educational implementation is `simple`;
+`v3`, `v4`, and `v5` are retired and are not built:
 
 ```powershell
-cmake --preset debug-windows -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=v5
+cmake --preset debug-windows -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple
 cmake --build --preset build-debug-windows
 ```
 

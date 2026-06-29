@@ -21,7 +21,7 @@ import VEEngine.Simple.Vulkan;
  *
  * @return Zero after the renderer draws the fixed frame count, non-zero with the failing stage and backend error text.
  */
-int main() {
+int main(int argc, char **argv) {
 	SDL_SetMainReady();
 #ifdef VVE_SDL_VULKAN_LIBRARY
 	SDL_SetHint(SDL_HINT_VULKAN_LIBRARY, VVE_SDL_VULKAN_LIBRARY);
@@ -58,7 +58,11 @@ int main() {
 	}
 	std::println("simple_forward_demo renderer init");
 
-	constexpr std::string_view capturePath{"simple_forward_demo_capture.png"}; // Stable path used by automatic image analysis.
+	const auto executablePath = argc > 0 && argv[0] != nullptr ? std::filesystem::path{argv[0]} : std::filesystem::path{};
+	const auto executableDirectory = executablePath.has_parent_path() ? executablePath.parent_path() : std::filesystem::current_path();
+	const std::filesystem::path capturePath{executableDirectory.parent_path() / "verify" / "simple_forward_demo_capture.png"}; // Stable path used by automatic image analysis.
+	std::filesystem::create_directories(capturePath.parent_path());
+	const std::string capturePathText = capturePath.string();
 	vve::simple::VulkanReadback readback{};
 	const VkResult readbackCreateResult = readback.create(
 		renderer.physicalDevice.physicalDevice,
@@ -88,9 +92,9 @@ int main() {
 				readback.pixelBytes(),
 				renderer.swapchain.extent,
 				renderer.swapchain.imageFormat,
-				capturePath);
+				capturePathText);
 			std::println("simple_forward_demo readback capture vk_result={}", static_cast<int>(captureResult));
-			std::println("simple_forward_demo readback png_written={}, path={}", pngWritten, capturePath);
+			std::println("simple_forward_demo readback png_written={}, path={}", pngWritten, capturePathText);
 
 			// Summarize the captured bytes so automated checks can reject clear-only frames.
 			std::filesystem::create_directories("docs");

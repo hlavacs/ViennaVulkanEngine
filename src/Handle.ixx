@@ -1,10 +1,6 @@
 export module VEEngine.Handle;
 import std;
-#if defined(VVE_ENGINE_IMPLEMENTATION_IS_V5)
-import VEEngine.V5.Handle;
-#else
-import VEEngine.V4.Handle;
-#endif
+import VEEngine.Simple.Handle;
 
 /**
 	* @file

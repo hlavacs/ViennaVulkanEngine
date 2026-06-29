@@ -1,33 +1,194 @@
-export module VEEngine.Simple.ECS;
+export module VEEngine.Simple:ECS;
 import std;
-export import VEEngine.V5;
+export import :Types;
 
-/**
-	* @file
-	* @brief Simple-engine ECS aliases backed by the v5 entity-component helper.
-	*
-	* Functional objects:
-	* - Entity names the shared facade-visible entity identity.
-	* - DefaultECSTraits, BasicECS, and ECS name the reused v5 registry surface.
-	* - Error and Vector name the result and view types used by the ECS operations.
-	*
-	* The simple engine reuses the v5 ECS directly. Entity lifetime and arbitrary component
-	* storage stay in `VEEngine.V5:ECS`; scene graph links, asset ownership, and renderer state
-	* remain separate subsystem responsibilities.
-	*/
+/// @file
+/// @brief simple ECS implementation.
+
 export namespace vve::simple {
 
-	using Entity = vve::v5::Entity;						  ///< Shared entity identity used as the ECS component key.
-	using Error = vve::v5::Error;							  ///< Shared operation error type returned by ECS functions.
+	/// @brief Default ECS trait reserved for future slot-map policy knobs.
+	struct DefaultECSTraits {
+		static constexpr bool use_slot_map_handles{false};	///< Slot maps are not implemented in this skeleton yet.
+	};
 
-	template <typename T, std::size_t SegmentSize = 256>
-	using Vector = vve::v5::Vector<T, SegmentSize>; ///< Shared vector result type used by ECS views.
+	/// @brief Small component store keyed by simple entity handles.
+	template <typename TTraits = DefaultECSTraits> class BasicECS {
+		struct PoolBase {
+			virtual ~PoolBase() = default;
+			virtual void erase(Entity entity) = 0;
+		};
 
-	using DefaultECSTraits = vve::v5::DefaultECSTraits; ///< Shared ECS policy traits for registry construction.
+		template <typename T> struct Pool final : PoolBase {
+			std::map<Entity, T> data{};
+			void erase(Entity entity) override { data.erase(entity); }
+		};
 
-	template <typename TTraits = DefaultECSTraits>
-	using BasicECS = vve::v5::BasicECS<TTraits>; ///< Shared registry with create, erase, component, and view operations.
+	public:
+		[[nodiscard]] auto create()								-> Entity;
 
-	using ECS = vve::v5::ECS; ///< Default shared ECS registry type for simple-engine entity/component storage.
+		[[nodiscard]] auto exists(Entity entity) const		-> bool;
+
+		[[nodiscard]] auto erase(Entity entity)				-> std::expected<void, Error>;
+
+		template <typename T>
+		[[nodiscard]] auto add(Entity entity, T component)	-> std::expected<void, Error>;
+
+		template <typename T>
+		[[nodiscard]] auto get(Entity entity) const			-> std::expected<T, Error>;
+
+		template <typename T>
+		[[nodiscard]] auto tryGet(Entity entity) const		-> std::expected<std::optional<T>, Error>;
+
+		template <typename T>
+		[[nodiscard]] auto put(Entity entity, T component)	-> std::expected<void, Error>;
+
+		template <typename T>
+		[[nodiscard]] auto has(Entity entity) const			-> std::expected<bool, Error>;
+
+		template <typename T>
+		[[nodiscard]] auto remove(Entity entity)				-> std::expected<void, Error>;
+
+		template <typename... T>
+		[[nodiscard]] auto view() const							-> Vector<Entity>;
+
+	private:
+		template <typename T> [[nodiscard]] Pool<T> &pool();
+
+		template <typename T> [[nodiscard]] const Pool<T> *findPool() const;
+
+		template <typename T> [[nodiscard]] Pool<T> *findPool();
+
+		template <typename T> [[nodiscard]] bool contains(Entity entity) const;
+
+		std::set<Entity> alive_{};
+		std::map<std::type_index, std::unique_ptr<PoolBase>> pools_{};
+	};
+
+	/// @brief Creates a new live entity handle.
+	template <typename TTraits> Entity BasicECS<TTraits>::create() {
+		static_assert(!TTraits::use_slot_map_handles, "simple prepares slot-map handles but has no slot map yet");
+		const auto entity = makeCounterHandle<Entity>();
+		alive_.insert(entity);
+		return entity;
+	}
+
+	/// @brief Returns whether an entity is still alive.
+	template <typename TTraits> bool BasicECS<TTraits>::exists(Entity entity) const { return alive_.contains(entity); }
+
+	/// @brief Erases an entity and all of its components.
+	template <typename TTraits> std::expected<void, Error> BasicECS<TTraits>::erase(Entity entity) {
+		if (!alive_.erase(entity)) { return std::unexpected(Error::invalid_handle); }
+		for (auto &[_, pool] : pools_) { pool->erase(entity); }
+		return {};
+	}
+
+	/// @brief Adds a component to an entity that does not already have that component type.
+	template <typename TTraits>
+	template <typename T>
+	std::expected<void, Error> BasicECS<TTraits>::add(Entity entity, T component) {
+		if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
+		auto &data = pool<T>().data;
+		const auto [_, inserted] = data.emplace(entity, std::move(component));
+		if (!inserted) { return std::unexpected(Error::duplicate_component); }
+		return {};
+	}
+
+	/// @brief Returns a required component copy.
+	template <typename TTraits>
+	template <typename T>
+	std::expected<T, Error> BasicECS<TTraits>::get(Entity entity) const {
+		if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
+		const auto *typed_pool = findPool<T>();
+		if (typed_pool == nullptr) { return std::unexpected(Error::missing_component); }
+		const auto it = typed_pool->data.find(entity);
+		if (it == typed_pool->data.end()) { return std::unexpected(Error::missing_component); }
+		return it->second;
+	}
+
+	/// @brief Returns an optional component copy.
+	template <typename TTraits>
+	template <typename T>
+	std::expected<std::optional<T>, Error> BasicECS<TTraits>::tryGet(Entity entity) const {
+		if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
+		const auto *typed_pool = findPool<T>();
+		if (typed_pool == nullptr) { return std::optional<T>{}; }
+		const auto it = typed_pool->data.find(entity);
+		return it == typed_pool->data.end() ? std::optional<T>{} : std::optional<T>{it->second};
+	}
+
+	/// @brief Inserts or replaces one component for an entity.
+	template <typename TTraits>
+	template <typename T>
+	std::expected<void, Error> BasicECS<TTraits>::put(Entity entity, T component) {
+		if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
+		pool<T>().data.insert_or_assign(entity, std::move(component));
+		return {};
+	}
+
+	/// @brief Returns whether an entity has a component of one type.
+	template <typename TTraits>
+	template <typename T>
+	std::expected<bool, Error> BasicECS<TTraits>::has(Entity entity) const {
+		if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
+		const auto *typed_pool = findPool<T>();
+		return typed_pool != nullptr && typed_pool->data.contains(entity);
+	}
+
+	/// @brief Removes one component type from an entity.
+	template <typename TTraits>
+	template <typename T>
+	std::expected<void, Error> BasicECS<TTraits>::remove(Entity entity) {
+		if (!exists(entity)) { return std::unexpected(Error::invalid_handle); }
+		if (auto *typed_pool = findPool<T>()) { typed_pool->data.erase(entity); }
+		return {};
+	}
+
+	/// @brief Returns all entities that have every requested component type.
+	template <typename TTraits>
+	template <typename... T>
+	Vector<Entity> BasicECS<TTraits>::view() const {
+		Vector<Entity> result{};
+		for (const auto entity : alive_) {
+			if ((contains<T>(entity) && ...)) { result.push_back(entity); }
+		}
+		return result;
+	}
+
+	/// @brief Returns a mutable component pool and creates it on first use.
+	template <typename TTraits>
+	template <typename T>
+	typename BasicECS<TTraits>::template Pool<T> &BasicECS<TTraits>::pool() {
+		const std::type_index key{typeid(T)};
+		auto &slot = pools_[key];
+		if (!slot) { slot = std::make_unique<Pool<T>>(); }
+		return static_cast<Pool<T> &>(*slot);
+	}
+
+	/// @brief Returns a read-only component pool when it exists.
+	template <typename TTraits>
+	template <typename T>
+	const typename BasicECS<TTraits>::template Pool<T> *BasicECS<TTraits>::findPool() const {
+		const auto it = pools_.find(std::type_index(typeid(T)));
+		return it == pools_.end() ? nullptr : static_cast<const Pool<T> *>(it->second.get());
+	}
+
+	/// @brief Returns a mutable component pool when it exists.
+	template <typename TTraits>
+	template <typename T>
+	typename BasicECS<TTraits>::template Pool<T> *BasicECS<TTraits>::findPool() {
+		const auto it = pools_.find(std::type_index(typeid(T)));
+		return it == pools_.end() ? nullptr : static_cast<Pool<T> *>(it->second.get());
+	}
+
+	/// @brief Returns whether a component pool contains one entity.
+	template <typename TTraits>
+	template <typename T>
+	bool BasicECS<TTraits>::contains(Entity entity) const {
+		const auto *typed_pool = findPool<T>();
+		return typed_pool != nullptr && typed_pool->data.contains(entity);
+	}
+
+	using ECS = BasicECS<>;	///< Default simple ECS type.
 
 } // namespace vve::simple

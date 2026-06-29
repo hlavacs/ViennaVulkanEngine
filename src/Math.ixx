@@ -1,10 +1,6 @@
 export module VEEngine.Math;
 import std;
-#if defined(VVE_ENGINE_IMPLEMENTATION_IS_V5)
-import VEEngine.V5.Math;
-#else
-import VEEngine.V4.Math;
-#endif
+import VEEngine.Simple.Math;
 
 /**
 	* @file

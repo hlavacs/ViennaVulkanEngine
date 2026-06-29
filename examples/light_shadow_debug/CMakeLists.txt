@@ -14,7 +14,7 @@ add_dependencies(light_shadow_debug
 
 vve_set_output_dirs(light_shadow_debug)
 
-if(BUILD_TESTING AND VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "v5")
+if(BUILD_TESTING AND VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
     add_test(NAME LightShadowDebugExample
-        COMMAND light_shadow_debug --skip-gpu-asserts --output "$<TARGET_FILE_DIR:light_shadow_debug>/light_shadow_debug.txt")
+        COMMAND light_shadow_debug --skip-gpu-asserts --output "$<TARGET_FILE_DIR:light_shadow_debug>/../verify/light_shadow_debug.txt")
 endif()

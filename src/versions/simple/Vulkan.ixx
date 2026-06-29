@@ -30,9 +30,10 @@ import VEEngine.Simple.Math;
 	* - VulkanSwapchain owns only VkSwapchainKHR creation and swapchain image retrieval.
 	* - VulkanImageViews owns only VkImageView creation and teardown for borrowed swapchain images.
 	* - VulkanDepthImage owns one depth VkImage, its device memory, and its VkImageView.
+	* - ShadowMap owns one square sampled D32 depth image, view, sampler, backing memory, and unused shadow pipeline.
 	* - VulkanRenderPass owns only VkRenderPass creation and teardown for a single forward color subpass.
 	* - VulkanFramebuffers owns only VkFramebuffer creation and teardown for borrowed swapchain image views.
-	* - VulkanDescriptorSetLayout owns only VkDescriptorSetLayout creation and teardown for frame uniforms.
+	* - VulkanDescriptorSetLayout owns only VkDescriptorSetLayout creation and teardown for frame uniforms and shadow-map sampling.
 	* - VulkanVertexInputDescription stores the fixed Vertex binding and attribute layout for the forward pipeline.
 	* - VulkanPipelineLayout owns only VkPipelineLayout creation and teardown for one descriptor set and model push constants.
 	* - VulkanShaderModule owns only VkShaderModule creation from SPIR-V bytes and teardown.
@@ -43,13 +44,14 @@ import VEEngine.Simple.Math;
 	* - VulkanBuffer owns one VkBuffer and its backing VkDeviceMemory allocation.
 	* - VulkanReadback copies one finished color VkImage into a host-visible VulkanBuffer and exposes CPU pixel bytes.
 	* - writeReadbackPng encodes VulkanReadback bytes as deterministic opaque RGBA8 PNG files.
-	* - VulkanDescriptorPool owns only VkDescriptorPool creation and teardown for uniform-buffer descriptor sets.
-	* - VulkanDescriptorSets allocates per-frame uniform-buffer descriptor sets from a borrowed pool and layout.
+	* - VulkanDescriptorPool owns only VkDescriptorPool creation and teardown for uniform-buffer and shadow-map descriptor sets.
+	* - VulkanDescriptorSets allocates per-frame uniform-buffer and shadow-map descriptor sets from a borrowed pool and layout.
 	* - VulkanMesh owns the vertex and index buffers and index count for one uploaded CPU mesh.
 	* - FrameUniforms stores the shared view and projection matrices for set 0 binding 0.
 	* - VulkanUniformBuffers owns one host-visible FrameUniforms buffer per frame.
 	*/
 export namespace vve::simple {
+	struct VulkanVertexInputDescription; ///< Fixed mesh vertex layout reused by forward and shadow pipelines.
 
 	/// @brief Minimal Vulkan root object; no device, surface, swapchain, commands, or sync are created here.
 	struct VulkanInstance {
@@ -767,6 +769,8 @@ export namespace vve::simple {
 		~VulkanDepthImage() { cleanup(); }
 
 	private:
+		friend struct ShadowMap; ///< Allows the shadow map to reuse the depth-image memory-type selector.
+
 		/**
 			* @brief Finds the first physical-device memory type satisfying a type mask and required properties.
 			*
@@ -792,6 +796,219 @@ export namespace vve::simple {
 
 			return std::nullopt;
 		}
+	};
+
+	/// @brief Minimal standalone shadow-map owner; it is not bound or rendered by the forward renderer yet.
+	struct ShadowMap {
+		static constexpr std::uint32_t resolution{1024U};          ///< Fixed square shadow-map side length in pixels.
+		VkDevice device{VK_NULL_HANDLE};                           ///< Borrowed Vulkan logical device used to destroy resources.
+		VkImage image{VK_NULL_HANDLE};                             ///< Owned D32 depth image handle.
+		VkDeviceMemory memory{VK_NULL_HANDLE};                     ///< Owned device-local memory backing the depth image.
+		VkImageView view{VK_NULL_HANDLE};                          ///< Owned depth image view for attachment and sampling use.
+		VkSampler sampler{VK_NULL_HANDLE};                         ///< Owned clamp sampler for later shadow-map reads.
+		VkRenderPass renderPass{VK_NULL_HANDLE};                   ///< Owned depth-only render pass compatible with the shadow image.
+		VkFramebuffer framebuffer{VK_NULL_HANDLE};                 ///< Owned square framebuffer attaching the shadow depth view.
+		VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};           ///< Owned layout for frame uniforms and model push constants.
+		VkPipeline pipeline{VK_NULL_HANDLE};                       ///< Owned depth-only shadow graphics pipeline, currently unused.
+
+		ShadowMap() = default;
+		ShadowMap(const ShadowMap &) = delete;
+		ShadowMap &operator=(const ShadowMap &) = delete;
+
+		/**
+			* @brief Creates a square D32 depth image usable as a depth attachment and sampled image.
+			*
+			* @param physicalDevice Physical device used to query memory types.
+			* @param owningDevice Logical device that owns the image, memory, view, and sampler.
+			* @return VK_SUCCESS when the shadow-map resources are ready, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, VkDevice owningDevice) {
+			cleanup();
+			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			device = owningDevice;
+			/// @brief Depth image descriptor for a fixed-size sampled shadow attachment.
+			const VkImageCreateInfo imageInfo{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+				.imageType = VK_IMAGE_TYPE_2D,
+				.format = VK_FORMAT_D32_SFLOAT,
+				.extent = {.width = resolution, .height = resolution, .depth = 1U},
+				.mipLevels = 1U,
+				.arrayLayers = 1U,
+				.samples = VK_SAMPLE_COUNT_1_BIT,
+				.tiling = VK_IMAGE_TILING_OPTIMAL,
+				.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+			};
+
+			VkResult result = vkCreateImage(device, &imageInfo, nullptr, &image);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			VkMemoryRequirements requirements{};
+			vkGetImageMemoryRequirements(device, image, &requirements);
+			const std::optional<std::uint32_t> memoryType = VulkanDepthImage::findMemoryType(
+				physicalDevice,
+				requirements.memoryTypeBits,
+				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+			);
+			if (!memoryType.has_value()) { cleanup(); return VK_ERROR_FEATURE_NOT_PRESENT; }
+
+			/// @brief Device-local allocation descriptor for the shadow-map image.
+			const VkMemoryAllocateInfo allocateInfo{
+				.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+				.allocationSize = requirements.size,
+				.memoryTypeIndex = *memoryType,
+			};
+
+			result = vkAllocateMemory(device, &allocateInfo, nullptr, &memory);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			result = vkBindImageMemory(device, image, memory, 0U);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			/// @brief Depth-only view descriptor for future depth attachment and sampling use.
+			const VkImageViewCreateInfo viewInfo{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+				.image = image,
+				.viewType = VK_IMAGE_VIEW_TYPE_2D,
+				.format = VK_FORMAT_D32_SFLOAT,
+				.subresourceRange = {
+					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+					.baseMipLevel = 0U,
+					.levelCount = 1U,
+					.baseArrayLayer = 0U,
+					.layerCount = 1U,
+				},
+			};
+
+			result = vkCreateImageView(device, &viewInfo, nullptr, &view);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			/// @brief Clamp sampler descriptor for future depth sampling without comparison state.
+			const VkSamplerCreateInfo samplerInfo{
+				.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+				.magFilter = VK_FILTER_LINEAR,
+				.minFilter = VK_FILTER_LINEAR,
+				.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
+				.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				.minLod = 0.0F,
+				.maxLod = 1.0F,
+			};
+
+			result = vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			const VkAttachmentDescription attachment{
+				.format = VK_FORMAT_D32_SFLOAT,
+				.samples = VK_SAMPLE_COUNT_1_BIT,
+				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+				.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+				.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+			const VkAttachmentReference depthReference{
+				.attachment = 0U,
+				.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+			};
+			const VkSubpassDescription subpass{
+				.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+				.pDepthStencilAttachment = &depthReference,
+			};
+			/// @brief Shadow depth writes must be visible before the forward pass samples them.
+			const std::array<VkSubpassDependency, 2U> dependencies{{
+				{
+					.srcSubpass = VK_SUBPASS_EXTERNAL,
+					.dstSubpass = 0U,
+					.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+				},
+				{
+					.srcSubpass = 0U,
+					.dstSubpass = VK_SUBPASS_EXTERNAL,
+					.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+					.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+					.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+				},
+			}};
+			const VkRenderPassCreateInfo renderPassInfo{
+				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+				.attachmentCount = 1U,
+				.pAttachments = &attachment,
+				.subpassCount = 1U,
+				.pSubpasses = &subpass,
+				.dependencyCount = static_cast<std::uint32_t>(dependencies.size()),
+				.pDependencies = dependencies.data(),
+			};
+
+			result = vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			const VkFramebufferCreateInfo framebufferInfo{
+				.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+				.renderPass = renderPass,
+				.attachmentCount = 1U,
+				.pAttachments = &view,
+				.width = resolution,
+				.height = resolution,
+				.layers = 1U,
+			};
+
+			result = vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffer);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+			return VK_SUCCESS;
+		}
+
+		/**
+			* @brief Creates the unused depth-only graphics pipeline for future shadow rendering.
+			*
+			* @param setLayout Existing frame-uniform descriptor-set layout used as set 0.
+			* @param shadowVertexSpirvPath Path to simple_forward.shadow.vert.spv.
+			* @param vertexInput Existing mesh vertex layout shared with the forward pipeline.
+			* @return VK_SUCCESS when the shadow pipeline is available, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult createPipeline(VkDescriptorSetLayout setLayout, std::string_view shadowVertexSpirvPath, const VulkanVertexInputDescription &vertexInput);
+
+		/**
+			* @brief Destroys the shadow graphics pipeline and pipeline layout before render-pass teardown.
+			*/
+		void cleanupPipeline() {
+			if (pipeline != VK_NULL_HANDLE) { vkDestroyPipeline(device, pipeline, nullptr); }
+			if (pipelineLayout != VK_NULL_HANDLE) { vkDestroyPipelineLayout(device, pipelineLayout, nullptr); }
+			pipeline = VK_NULL_HANDLE;
+			pipelineLayout = VK_NULL_HANDLE;
+		}
+
+		/**
+			* @brief Destroys the owned shadow framebuffer, render pass, sampler, depth image view, image, and memory.
+			*/
+		void cleanup() {
+			cleanupPipeline();
+			if (framebuffer != VK_NULL_HANDLE) { vkDestroyFramebuffer(device, framebuffer, nullptr); }
+			if (renderPass != VK_NULL_HANDLE) { vkDestroyRenderPass(device, renderPass, nullptr); }
+			if (sampler != VK_NULL_HANDLE) { vkDestroySampler(device, sampler, nullptr); }
+			if (view != VK_NULL_HANDLE) { vkDestroyImageView(device, view, nullptr); }
+			if (image != VK_NULL_HANDLE) { vkDestroyImage(device, image, nullptr); }
+			if (memory != VK_NULL_HANDLE) { vkFreeMemory(device, memory, nullptr); }
+			framebuffer = VK_NULL_HANDLE;
+			renderPass = VK_NULL_HANDLE;
+			sampler = VK_NULL_HANDLE;
+			view = VK_NULL_HANDLE;
+			image = VK_NULL_HANDLE;
+			memory = VK_NULL_HANDLE;
+			device = VK_NULL_HANDLE;
+		}
+
+		/**
+			* @brief Destroys the owned shadow-map resources on scope exit.
+			*/
+		~ShadowMap() { cleanup(); }
 	};
 
 	/// @brief Minimal Vulkan render-pass owner; no image views, pipeline, framebuffers, commands, or sync are created here.
@@ -964,17 +1181,17 @@ export namespace vve::simple {
 		~VulkanFramebuffers() { cleanup(); }
 	};
 
-	/// @brief Minimal Vulkan descriptor-set-layout owner for the frame-uniform set; no pipeline layout is created here.
+	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms and the shadow map; no pipeline layout is created here.
 	struct VulkanDescriptorSetLayout {
 		VkDevice device{VK_NULL_HANDLE};                                  ///< Borrowed Vulkan logical device used to destroy the layout.
-		VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};         ///< Owned descriptor-set layout for set 0 frame uniforms.
+		VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};         ///< Owned descriptor-set layout for set 0 frame uniforms and shadow map.
 
 		VulkanDescriptorSetLayout() = default;
 		VulkanDescriptorSetLayout(const VulkanDescriptorSetLayout &) = delete;
 		VulkanDescriptorSetLayout &operator=(const VulkanDescriptorSetLayout &) = delete;
 
 		/**
-			* @brief Creates set 0 with binding 0 as the vertex-visible FrameUniforms uniform buffer.
+			* @brief Creates set 0 with binding 0 as vertex/fragment FrameUniforms and binding 1 as a fragment shadow-map sampler.
 			*
 			* @param owningDevice Logical device that owns the created descriptor-set layout.
 			* @return VK_SUCCESS when the descriptor-set layout is available, otherwise a Vulkan error code.
@@ -987,13 +1204,21 @@ export namespace vve::simple {
 				.binding = 0U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 				.descriptorCount = 1U,
-				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
 				.pImmutableSamplers = nullptr,
 			};
+			const VkDescriptorSetLayoutBinding shadowMapBinding{
+				.binding = 1U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = 1U,
+				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+				.pImmutableSamplers = nullptr,
+			};
+			const std::array bindings{frameUniformBinding, shadowMapBinding};
 			const VkDescriptorSetLayoutCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-				.bindingCount = 1U,
-				.pBindings = &frameUniformBinding,
+				.bindingCount = static_cast<std::uint32_t>(bindings.size()),
+				.pBindings = bindings.data(),
 			};
 
 			device = owningDevice;
@@ -1153,6 +1378,131 @@ export namespace vve::simple {
 			*/
 		~VulkanShaderModule() { cleanup(); }
 	};
+
+	/**
+		* @brief Creates the fixed-function shadow graphics pipeline for the depth-only shadow render pass.
+		*
+		* @param setLayout Existing frame-uniform descriptor-set layout used as set 0.
+		* @param shadowVertexSpirvPath Path to the shadow vertex SPIR-V binary.
+		* @param vertexInput Existing mesh vertex binding and attribute description.
+		* @return VK_SUCCESS when the pipeline layout and pipeline are ready, otherwise a Vulkan error code.
+		*/
+	[[nodiscard]] VkResult ShadowMap::createPipeline(VkDescriptorSetLayout setLayout, std::string_view shadowVertexSpirvPath, const VulkanVertexInputDescription &vertexInput) {
+		cleanupPipeline();
+		if (device == VK_NULL_HANDLE || renderPass == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+		VulkanShaderModule shadowVertexModule{}; // Temporary module is only needed while creating the pipeline.
+		VkResult result = shadowVertexModule.create(device, shadowVertexSpirvPath);
+		if (result != VK_SUCCESS) { return result; }
+
+		const VkPushConstantRange modelPushConstants{
+			.stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+			.offset = 0U,
+			.size = sizeof(float) * 16U,
+		};
+		const VkPipelineLayoutCreateInfo layoutInfo{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+			.setLayoutCount = 1U,
+			.pSetLayouts = &setLayout,
+			.pushConstantRangeCount = 1U,
+			.pPushConstantRanges = &modelPushConstants,
+		};
+
+		result = vkCreatePipelineLayout(device, &layoutInfo, nullptr, &pipelineLayout);
+		if (result != VK_SUCCESS) { cleanupPipeline(); return result; }
+
+		constexpr char vertexEntry[]{"shadowVertexMain"};
+		const VkPipelineShaderStageCreateInfo shaderStage{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+			.stage = VK_SHADER_STAGE_VERTEX_BIT,
+			.module = shadowVertexModule.shaderModule,
+			.pName = vertexEntry,
+		};
+
+		const VkVertexInputBindingDescription &binding = vertexInput.binding;
+		const auto &attributes = vertexInput.attributes;
+		const VkPipelineVertexInputStateCreateInfo vertexInputState{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+			.vertexBindingDescriptionCount = 1U,
+			.pVertexBindingDescriptions = &binding,
+			.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributes.size()),
+			.pVertexAttributeDescriptions = attributes.data(),
+		};
+		const VkPipelineInputAssemblyStateCreateInfo inputAssembly{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+			.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+			.primitiveRestartEnable = VK_FALSE,
+		};
+		const VkExtent2D extent{.width = resolution, .height = resolution};
+		const VkViewport viewport{
+			.x = 0.0F,
+			.y = 0.0F,
+			.width = static_cast<float>(extent.width),
+			.height = static_cast<float>(extent.height),
+			.minDepth = 0.0F,
+			.maxDepth = 1.0F,
+		};
+		const VkRect2D scissor{.offset = {.x = 0, .y = 0}, .extent = extent};
+		const VkPipelineViewportStateCreateInfo viewportState{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+			.viewportCount = 1U,
+			.pViewports = &viewport,
+			.scissorCount = 1U,
+			.pScissors = &scissor,
+		};
+		const VkPipelineRasterizationStateCreateInfo rasterizer{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+			.depthClampEnable = VK_FALSE,
+			.rasterizerDiscardEnable = VK_FALSE,
+			.polygonMode = VK_POLYGON_MODE_FILL,
+			.cullMode = VK_CULL_MODE_NONE,			///< Shadow pass renders all faces because orthoVulkan Y-flip inverts winding.
+			.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
+			.depthBiasEnable = VK_TRUE,
+			.depthBiasConstantFactor = 0.0F,			///< Constant depth bias is removed for visible contact shadows.
+			.depthBiasSlopeFactor = 0.0F,			///< Slope depth bias is removed for visible contact shadows.
+			.lineWidth = 1.0F,
+		};
+		const VkPipelineMultisampleStateCreateInfo multisampling{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+			.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+			.sampleShadingEnable = VK_FALSE,
+		};
+		const VkPipelineColorBlendStateCreateInfo colorBlending{ ///< No color attachments or fragment shader are used.
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+			.logicOpEnable = VK_FALSE,
+			.attachmentCount = 0U,
+			.pAttachments = nullptr,
+		};
+		const VkPipelineDepthStencilStateCreateInfo depthStencil{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+			.depthTestEnable = VK_TRUE,
+			.depthWriteEnable = VK_TRUE,
+			.depthCompareOp = VK_COMPARE_OP_LESS,
+			.depthBoundsTestEnable = VK_FALSE,
+			.stencilTestEnable = VK_FALSE,
+		};
+		const VkGraphicsPipelineCreateInfo createInfo{
+			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+			.stageCount = 1U,
+			.pStages = &shaderStage,
+			.pVertexInputState = &vertexInputState,
+			.pInputAssemblyState = &inputAssembly,
+			.pViewportState = &viewportState,
+			.pRasterizationState = &rasterizer,
+			.pMultisampleState = &multisampling,
+			.pDepthStencilState = &depthStencil,
+			.pColorBlendState = &colorBlending,
+			.pDynamicState = nullptr,
+			.layout = pipelineLayout,
+			.renderPass = renderPass,
+			.subpass = 0U,
+			.basePipelineHandle = VK_NULL_HANDLE,
+		};
+
+		result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1U, &createInfo, nullptr, &pipeline);
+		if (result != VK_SUCCESS) { cleanupPipeline(); }
+		return result;
+	}
 
 	/// @brief Minimal Vulkan graphics-pipeline owner for the simple forward color pass.
 	struct VulkanGraphicsPipeline {
@@ -1988,7 +2338,7 @@ export namespace vve::simple {
 		return stbi_write_png(path.c_str(), static_cast<int>(extent.width), static_cast<int>(extent.height), 4, rgbaPixels.data(), stride) != 0;
 	}
 
-	/// @brief Minimal Vulkan descriptor-pool owner for uniform-buffer descriptor sets.
+	/// @brief Minimal Vulkan descriptor-pool owner for uniform-buffer and shadow-map descriptor sets.
 	struct VulkanDescriptorPool {
 		VkDevice device{VK_NULL_HANDLE};                       ///< Borrowed device used to destroy the pool.
 		VkDescriptorPool descriptorPool{VK_NULL_HANDLE};        ///< Owned descriptor pool.
@@ -1998,25 +2348,25 @@ export namespace vve::simple {
 		VulkanDescriptorPool &operator=(const VulkanDescriptorPool &) = delete;
 
 		/**
-			* @brief Creates a descriptor pool for uniform-buffer descriptor sets.
+			* @brief Creates a descriptor pool for per-frame uniform-buffer and shadow-map descriptor sets.
 			*
 			* @param owningDevice Logical device that owns the descriptor pool.
-			* @param maxSets Maximum descriptor-set count and uniform-buffer descriptor count.
+			* @param maxSets Maximum descriptor-set count and descriptor count per binding.
 			* @return VK_SUCCESS when the descriptor pool is available, otherwise a Vulkan error code.
 			*/
 		[[nodiscard]] VkResult create(VkDevice owningDevice, std::uint32_t maxSets) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-			const VkDescriptorPoolSize poolSize{
-				.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				.descriptorCount = maxSets,
+			const std::array poolSizes{
+				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = maxSets},
+				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = maxSets},
 			};
 			const VkDescriptorPoolCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 				.maxSets = maxSets,
-				.poolSizeCount = 1U,
-				.pPoolSizes = &poolSize,
+				.poolSizeCount = static_cast<std::uint32_t>(poolSizes.size()),
+				.pPoolSizes = poolSizes.data(),
 			};
 
 			device = owningDevice;
@@ -2043,7 +2393,7 @@ export namespace vve::simple {
 		~VulkanDescriptorPool() { cleanup(); }
 	};
 
-	/// @brief Minimal Vulkan descriptor-set owner for per-frame uniform-buffer bindings.
+	/// @brief Minimal Vulkan descriptor-set owner for per-frame uniform-buffer and shadow-map bindings.
 	struct VulkanDescriptorSets {
 		VkDevice device{VK_NULL_HANDLE};                         ///< Borrowed device used for allocation and updates.
 		VkDescriptorPool descriptorPool{VK_NULL_HANDLE};          ///< Borrowed pool that owns the allocations; sets are freed implicitly with the pool.
@@ -2112,6 +2462,36 @@ export namespace vve::simple {
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
 				.pBufferInfo = &bufferInfo,
+			};
+
+			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
+			return VK_SUCCESS;
+		}
+
+		/**
+			* @brief Writes one frame descriptor set with its binding-1 sampled shadow map.
+			*
+			* @param frameIndex Frame set index to update.
+			* @param imageView Shadow-map image view bound to descriptor binding 1.
+			* @param sampler Shadow-map sampler bound to descriptor binding 1.
+			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
+			*/
+		[[nodiscard]] VkResult writeShadowMap(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
+			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			const VkDescriptorImageInfo imageInfo{
+				.sampler = sampler,
+				.imageView = imageView,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+			const VkWriteDescriptorSet write{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSets[frameIndex],
+				.dstBinding = 1U,
+				.dstArrayElement = 0U,
+				.descriptorCount = 1U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &imageInfo,
 			};
 
 			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
@@ -2230,6 +2610,7 @@ export namespace vve::simple {
 	struct FrameUniforms {
 		Mat4 view{};        ///< shared camera view matrix
 		Mat4 projection{};  ///< shared camera projection matrix
+		Mat4 lightViewProj{}; ///< light view-projection for the upcoming shadow pass
 	};
 
 	/// @brief Minimal per-frame uniform-buffer owner for shared view and projection data.

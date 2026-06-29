@@ -13,7 +13,7 @@ import VEEngine.Simple.Vulkan;
 	* @brief Vulkan renderer skeleton for the simple forward renderer.
 	*
 	* Functional objects:
-	* - Renderer owns the current CPU scene, swapchain image stack, depth attachment, forward render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, frame command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes needed before rendering.
+	* - Renderer owns the current CPU scene, swapchain image stack, depth attachment, unbound shadow map and shadow pipeline, forward render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, frame command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes needed before rendering.
 	*/
 export namespace vve::simple {
 
@@ -27,9 +27,10 @@ export namespace vve::simple {
 		VulkanSwapchain swapchain{};           ///< Owned swapchain wrapper for presentation images.
 		VulkanImageViews imageViews{};         ///< Owned color image views for swapchain images.
 		VulkanDepthImage depthImage{};         ///< Owned swapchain-sized depth attachment image and view.
+		ShadowMap shadowMap{};                 ///< Owned unbound shadow-map image reserved for later shadow rendering.
 		VulkanRenderPass renderPass{};         ///< Owned forward render pass for swapchain color output.
 		VulkanFramebuffers framebuffers{};     ///< Owned swapchain framebuffers for render-pass attachments.
-		VulkanDescriptorSetLayout descriptorSetLayout{}; ///< Owned frame-uniform descriptor-set layout.
+		VulkanDescriptorSetLayout descriptorSetLayout{}; ///< Owned frame-uniform and shadow-map descriptor-set layout.
 		VulkanPipelineLayout pipelineLayout{}; ///< Owned graphics pipeline layout using the frame descriptor set.
 		VulkanShaderModule vertShaderModule{}; ///< Owned forward vertex shader module.
 		VulkanShaderModule fragShaderModule{}; ///< Owned forward fragment shader module.
@@ -38,8 +39,8 @@ export namespace vve::simple {
 		VulkanCommandBuffers commandBuffers{}; ///< Owned primary command buffers, one for each frame in flight.
 		VulkanFrameSync frameSync{};           ///< Owned per-frame semaphores and fences for rendering.
 		VulkanUniformBuffers uniformBuffers{}; ///< Owned per-frame uniform buffers for camera and object data.
-		VulkanDescriptorPool descriptorPool{}; ///< Owned descriptor pool for per-frame uniform descriptor sets.
-		VulkanDescriptorSets descriptorSets{}; ///< Owned per-frame descriptor sets binding frame uniform buffers.
+		VulkanDescriptorPool descriptorPool{}; ///< Owned descriptor pool for per-frame uniform and shadow-map descriptor sets.
+		VulkanDescriptorSets descriptorSets{}; ///< Owned per-frame descriptor sets binding frame uniform buffers and the shadow map.
 		std::vector<VulkanMesh> meshes{};      ///< Owned GPU meshes uploaded from the current scene objects.
 		SDL_Window *window{nullptr};           ///< Borrowed SDL window used to create the Vulkan surface.
 		Scene scene{}; ///< CPU scene data kept in STL containers until renderer upload exists.
@@ -47,7 +48,7 @@ export namespace vve::simple {
 		std::optional<VkResult> lastReadbackCaptureResult{}; ///< Result from the optional in-frame readback capture.
 
 		/**
-			* @brief Initializes the Vulkan instance, device, swapchain, image views, depth attachment, render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes.
+			* @brief Initializes the Vulkan instance, device, swapchain, image views, depth attachment, shadow map, render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes.
 			*
 			* @param sdlWindow Borrowed SDL window that owns the native platform surface.
 			* @return VK_SUCCESS after graphics-pipeline bring-up, otherwise the first failing Vulkan result.
@@ -57,6 +58,7 @@ export namespace vve::simple {
 			const std::string shaderDir{VVE_SIMPLE_SHADER_DIR};
 			const std::string vertSpirvPath{shaderDir + "/simple_forward.vert.spv"};
 			const std::string fragSpirvPath{shaderDir + "/simple_forward.frag.spv"};
+			const std::string shadowVertSpirvPath{shaderDir + "/simple_forward.shadow.vert.spv"};
 
 			window = sdlWindow;
 			if (window == nullptr) { return VK_ERROR_INITIALIZATION_FAILED; }
@@ -93,6 +95,9 @@ export namespace vve::simple {
 			result = depthImage.create(physicalDevice.physicalDevice, device.device, swapchain.extent);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
+			result = shadowMap.create(physicalDevice.physicalDevice, device.device);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
 			result = renderPass.create(device.device, swapchain.imageFormat);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
@@ -105,13 +110,16 @@ export namespace vve::simple {
 			result = pipelineLayout.create(device.device, descriptorSetLayout.descriptorSetLayout);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
+			VulkanVertexInputDescription vertexInput{}; // Fixed mesh vertex layout shared by forward and shadow pipelines.
+			result = shadowMap.createPipeline(descriptorSetLayout.descriptorSetLayout, shadowVertSpirvPath, vertexInput);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
 			result = vertShaderModule.create(device.device, vertSpirvPath);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
 			result = fragShaderModule.create(device.device, fragSpirvPath);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
-			VulkanVertexInputDescription vertexInput{}; // Fixed mesh vertex layout for the forward pipeline.
 			result = graphicsPipeline.create(
 				device.device,
 				renderPass.renderPass,
@@ -140,9 +148,11 @@ export namespace vve::simple {
 			result = descriptorSets.create(device.device, descriptorPool.descriptorPool, descriptorSetLayout.descriptorSetLayout, framesInFlight);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
-			// Bind each frame descriptor set to its matching uniform buffer.
+			// Bind each frame descriptor set to its matching uniform buffer and the already-created shadow map.
 			for (std::uint32_t frame{}; frame < framesInFlight; ++frame) {
 				result = descriptorSets.writeUniformBuffer(frame, uniformBuffers.buffers[frame].buffer, sizeof(FrameUniforms));
+				if (result != VK_SUCCESS) { cleanup(); return result; }
+				result = descriptorSets.writeShadowMap(frame, shadowMap.view, shadowMap.sampler);
 				if (result != VK_SUCCESS) { cleanup(); return result; }
 			}
 
@@ -191,9 +201,14 @@ export namespace vve::simple {
 			if (result != VK_SUCCESS) { return; }
 
 			const Scalar aspectRatio{swapchain.extent.height == 0U ? one() : static_cast<Scalar>(swapchain.extent.width) / static_cast<Scalar>(swapchain.extent.height)}; ///< Live swapchain aspect with a zero-height guard.
+			const Vec3 lightDir{normalize(Vec3{static_cast<Scalar>(-0.5), static_cast<Scalar>(-1.0), static_cast<Scalar>(0.5)})}; ///< Matches the shader directional light.
+			const Vec3 lightCenter{zeroVec3()}; ///< Origin-centered debug scene framing.
+			const Vec3 lightEye{subtract(lightCenter, scale(lightDir, static_cast<Scalar>(8.0)))}; ///< Back up the light to enclose the floor and cube.
+			const Scalar lightExtent{static_cast<Scalar>(4.0)}; ///< Light-space half-size covers the 4x4 floor and tall cube.
 			const FrameUniforms frameUniforms{ // Shared camera matrices keep the sample cubes inside Vulkan clip space.
-				.view = lookAt(Vec3{zero(), zero(), static_cast<Scalar>(5.0)}, zeroVec3(), Vec3{zero(), one(), zero()}),
+				.view = lookAt(Vec3{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}, Vec3{zero(), one(), zero()}, Vec3{zero(), one(), zero()}),
 				.projection = perspectiveVulkan(static_cast<Scalar>(0.7853981633974483), aspectRatio, static_cast<Scalar>(0.1), static_cast<Scalar>(100.0)),
+				.lightViewProj = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(lightEye, lightCenter, Vec3{zero(), one(), zero()})),
 			};
 			result = uniformBuffers.update(currentFrame, frameUniforms);
 			if (result != VK_SUCCESS) { return; }
@@ -248,10 +263,12 @@ export namespace vve::simple {
 			graphicsPipeline.cleanup();
 			fragShaderModule.cleanup();
 			vertShaderModule.cleanup();
+			shadowMap.cleanupPipeline();
 			pipelineLayout.cleanup();
 			descriptorSetLayout.cleanup();
 			framebuffers.cleanup();
 			renderPass.cleanup();
+			shadowMap.cleanup();
 			depthImage.cleanup();
 			imageViews.cleanup();
 			swapchain.cleanup();
@@ -274,6 +291,7 @@ export namespace vve::simple {
 		[[nodiscard]] VkResult recordCommandBuffer(std::uint32_t frameIndex, std::uint32_t imageIndex) {
 			if (frameIndex >= commandBuffers.commandBuffers.size() || frameIndex >= descriptorSets.descriptorSets.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
 			if (imageIndex >= framebuffers.framebuffers.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (shadowMap.renderPass == VK_NULL_HANDLE || shadowMap.framebuffer == VK_NULL_HANDLE || shadowMap.pipeline == VK_NULL_HANDLE || shadowMap.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkCommandBuffer commandBuffer{commandBuffers.commandBuffers[frameIndex]};
 			VkResult result = vkResetCommandBuffer(commandBuffer, 0U);
@@ -282,6 +300,36 @@ export namespace vve::simple {
 			const VkCommandBufferBeginInfo beginInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 			result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
 			if (result != VK_SUCCESS) { return result; }
+
+			const auto drawUploadedObjects = [&](VkPipelineLayout activePipelineLayout) {
+				std::size_t objectIndex{}; // Meshes and scene objects share submission order.
+				for (const VulkanMesh &mesh : meshes) {
+					if (objectIndex >= scene.objects.size()) { break; }
+
+					const VkBuffer vertexBuffers[]{mesh.vertexBuffer.buffer};
+					const VkDeviceSize offsets[]{0U};
+					vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, vertexBuffers, offsets);
+					vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0U, VK_INDEX_TYPE_UINT32);
+					vkCmdPushConstants(commandBuffer, activePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0U, sizeof(float) * 16U, &scene.objects[objectIndex].model);
+					vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1U, 0U, 0, 0U);
+					++objectIndex;
+				}
+			};
+			const VkClearValue shadowClear{.depthStencil = {.depth = 1.0F, .stencil = 0U}}; // Shadow depth starts at the far plane.
+			const VkRenderPassBeginInfo shadowPassInfo{
+				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+				.renderPass = shadowMap.renderPass,
+				.framebuffer = shadowMap.framebuffer,
+				.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
+				.clearValueCount = 1U,
+				.pClearValues = &shadowClear,
+			};
+
+			vkCmdBeginRenderPass(commandBuffer, &shadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline);
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
+			drawUploadedObjects(shadowMap.pipelineLayout);
+			vkCmdEndRenderPass(commandBuffer);
 
 			const std::array<VkClearValue, 2U> clearValues{{{.color = {.float32 = {0.0F, 0.0F, 0.0F, 1.0F}}}, {.depthStencil = {.depth = 1.0F, .stencil = 0U}}}}; // Index 1 clears depth to the far plane.
 			const VkRenderPassBeginInfo renderPassInfo{
@@ -296,19 +344,7 @@ export namespace vve::simple {
 			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-
-			std::size_t objectIndex{}; // Meshes and scene objects share submission order.
-			for (const VulkanMesh &mesh : meshes) {
-				if (objectIndex >= scene.objects.size()) { break; }
-
-				const VkBuffer vertexBuffers[]{mesh.vertexBuffer.buffer};
-				const VkDeviceSize offsets[]{0U};
-				vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, vertexBuffers, offsets);
-				vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0U, VK_INDEX_TYPE_UINT32);
-				vkCmdPushConstants(commandBuffer, pipelineLayout.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0U, sizeof(float) * 16U, &scene.objects[objectIndex].model);
-				vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1U, 0U, 0, 0U);
-				++objectIndex;
-			}
+			drawUploadedObjects(pipelineLayout.pipelineLayout);
 
 			vkCmdEndRenderPass(commandBuffer);
 			result = vkEndCommandBuffer(commandBuffer);
