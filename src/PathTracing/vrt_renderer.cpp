@@ -927,26 +927,7 @@ namespace vve {
     void RendererRayTraced::resizeWindow() {
         vkDeviceWaitIdle(device);
         swapchain->recreateSwapChain();
-        swapchain->recreateImGuiFrameBuffers(depthTarget, imguiRenderPass);
         
-
-        vvh::SwapChain engineSwapchain;
-        engineSwapchain.m_swapChain = swapchain->getSwapchain();
-        engineSwapchain.m_swapChainExtent = swapchain->getExtent();
-        engineSwapchain.m_swapChainImageFormat = swapchain->getFormat();
-
-        vvh::RenCreateRenderPass({
-            .m_depthFormat = m_vkState().m_depthMapFormat,
-            .m_device = m_vkState().m_device,
-            .m_swapChain = engineSwapchain,
-            .m_clear = false,
-            .m_renderPass = imguiRenderPass
-            });
-
-        swapchain->createImGuiFramebuffers(depthTarget, imguiRenderPass);
-
-        engineSwapchain.m_swapChainFramebuffers = swapchain->getImguiFrameBuffer();
-        m_vkState().m_swapChain = engineSwapchain;
 
         for (RenderTarget* target : allTargets) {
             target->recreateRenderTarget(swapchain->getExtent().width, swapchain->getExtent().height);
@@ -991,6 +972,28 @@ namespace vve {
 
         combinePass->setExtent(swapchain->getExtent());
         reprojectionPass->setExtent(swapchain->getExtent());
+
+
+        vvh::SwapChain engineSwapchain;
+        engineSwapchain.m_swapChain = swapchain->getSwapchain();
+        engineSwapchain.m_swapChainExtent = swapchain->getExtent();
+        engineSwapchain.m_swapChainImageFormat = swapchain->getFormat();
+
+        vvh::RenCreateRenderPass({
+            .m_depthFormat = m_vkState().m_depthMapFormat,
+            .m_device = m_vkState().m_device,
+            .m_swapChain = engineSwapchain,
+            .m_clear = false,
+            .m_renderPass = imguiRenderPass
+            });
+
+        swapchain->createImGuiFramebuffers(depthTarget, imguiRenderPass);
+
+        engineSwapchain.m_swapChainFramebuffers = swapchain->getImguiFrameBuffer();
+        m_vkState().m_swapChain = engineSwapchain;
+
+
+
         m_engine.SendMsg(MsgWindowSize{});
         //send Message window resized maybe (aspect ratio incorrect)
     }
