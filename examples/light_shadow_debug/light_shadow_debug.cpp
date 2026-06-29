@@ -16,13 +16,22 @@ import VEEngine.Simple.Vulkan;
  */
 namespace {
 
+[[nodiscard]] vve::simple::Mesh coloredMesh(vve::simple::Mesh mesh, std::array<float, 3U> color) {
+	for (auto &vertex : mesh.vertices) { vertex.color = color; }
+	return mesh;
+}
+
 [[nodiscard]] vve::simple::Scene makeShadowTestScene() {
 	const auto cubeModel = vve::simple::scale(
 		vve::simple::translate(vve::simple::identityMat4(), vve::simple::Vec3{0.0F, 1.0F, -0.75F}),
 		vve::simple::Vec3{0.8F, 2.0F, 0.8F}); // Tall cube rests on the XZ floor inside the fixed debug camera.
+	const auto lightMarkerModel = vve::simple::scale(
+		vve::simple::translate(vve::simple::identityMat4(), vve::simple::Vec3{2.3F, 3.2F, -2.0F}),
+		vve::simple::Vec3{0.25F, 0.25F, 0.25F}); // Visible marker on the same side as the hardcoded directional light.
 	return vve::simple::Scene{.objects{
 		vve::simple::Object{.mesh = vve::simple::makePlane(vve::simple::Vec2{4.0F, 4.0F}), .model = vve::simple::identityMat4()}, ///< Large centered floor.
 		vve::simple::Object{.mesh = vve::simple::makeCube(), .model = cubeModel},                                                ///< Single shadow caster.
+		vve::simple::Object{.mesh = coloredMesh(vve::simple::makeCube(), {1.0F, 0.9F, 0.1F}), .model = lightMarkerModel},       ///< Visible directional-light marker.
 	}};
 }
 
