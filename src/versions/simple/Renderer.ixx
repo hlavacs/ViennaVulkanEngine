@@ -53,6 +53,8 @@ export namespace vve::simple {
 		std::optional<std::uint32_t> lastRenderedImageIndex{}; ///< Swapchain image index from the last acquired, rendered, and presented frame.
 		std::optional<VkResult> lastReadbackCaptureResult{}; ///< Result from the optional in-frame readback capture.
 
+		~Renderer() { cleanup(); }
+
 		/**
 			* @brief Initializes the Vulkan instance, device, swapchain, image views, depth attachment, shadow map, render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes.
 			*
@@ -224,6 +226,12 @@ export namespace vve::simple {
 			*/
 		void drawFrame(VulkanReadback *readback = nullptr) {
 			lastReadbackCaptureResult.reset();
+			const auto windowExtent = currentWindowPixelExtent();
+			if (windowExtent.width == 0U || windowExtent.height == 0U) { return; }
+			if (windowExtent.width != swapchain.extent.width || windowExtent.height != swapchain.extent.height) {
+				if (recreateSwapchain(windowExtent) != VK_SUCCESS) { return; }
+			}
+
 			const std::size_t frameCount{frameSync.inFlightFences.size()}; // Existing sync count defines frames in flight.
 			if (frameCount == 0U || frameSync.imageAvailableSemaphores.size() < frameCount || frameSync.renderFinishedSemaphores.empty()) { return; }
 			if (commandBuffers.commandBuffers.size() < frameCount || device.device == VK_NULL_HANDLE || swapchain.swapchain == VK_NULL_HANDLE) { return; }
@@ -238,7 +246,8 @@ export namespace vve::simple {
 
 			std::uint32_t imageIndex{};
 			result = vkAcquireNextImageKHR(device.device, swapchain.swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-			if (result == VK_ERROR_OUT_OF_DATE_KHR || result != VK_SUCCESS) { return; }
+			if (result == VK_ERROR_OUT_OF_DATE_KHR) { (void)recreateSwapchain(currentWindowPixelExtent()); return; }
+			if (result != VK_SUCCESS) { return; }
 			if (imageIndex >= frameSync.renderFinishedSemaphores.size()) { return; }
 			const VkSemaphore renderFinishedSemaphore{frameSync.renderFinishedSemaphores[imageIndex]}; // Present-wait semaphore follows the acquired swapchain image.
 			if (renderFinishedSemaphore == VK_NULL_HANDLE) { return; }
@@ -309,7 +318,11 @@ export namespace vve::simple {
 				.pImageIndices = &imageIndex,
 			};
 			result = vkQueuePresentKHR(device.presentQueue, &presentInfo);
-			if (result == VK_ERROR_OUT_OF_DATE_KHR || result != VK_SUCCESS) { return; }
+			if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+				(void)recreateSwapchain(currentWindowPixelExtent());
+				return;
+			}
+			if (result != VK_SUCCESS) { return; }
 
 			lastRenderedImageIndex = imageIndex;
 			currentFrame = static_cast<std::uint32_t>((currentFrame + 1U) % frameCount);
@@ -319,6 +332,7 @@ export namespace vve::simple {
 		* @brief Releases Vulkan device resources in reverse creation order.
 			*/
 		void cleanup() {
+			if (device.device != VK_NULL_HANDLE) { (void)vkDeviceWaitIdle(device.device); }
 			for (auto mesh = meshes.rbegin(); mesh != meshes.rend(); ++mesh) { mesh->cleanup(); }
 			meshes.clear();
 			objectTexture.cleanup();
@@ -353,6 +367,68 @@ export namespace vve::simple {
 
 	private:
 		std::uint32_t currentFrame{0U}; ///< Index of the frame synchronization set used by the next draw.
+
+		[[nodiscard]] VkExtent2D currentWindowPixelExtent() const {
+			if (window == nullptr) { return {}; }
+			int width{};
+			int height{};
+			SDL_GetWindowSizeInPixels(window, &width, &height);
+			return VkExtent2D{
+				.width = static_cast<std::uint32_t>(std::max(width, 0)),
+				.height = static_cast<std::uint32_t>(std::max(height, 0)),
+			};
+		}
+
+		[[nodiscard]] VkResult recreateSwapchain(VkExtent2D requestedExtent) {
+			if (requestedExtent.width == 0U || requestedExtent.height == 0U) { return VK_NOT_READY; }
+			if (physicalDevice.physicalDevice == VK_NULL_HANDLE || device.device == VK_NULL_HANDLE ||
+				 surface.surface == VK_NULL_HANDLE || !physicalDevice.graphicsQueueFamily ||
+				 !physicalDevice.presentQueueFamily || vertShaderModule.shaderModule == VK_NULL_HANDLE ||
+				 fragShaderModule.shaderModule == VK_NULL_HANDLE || pipelineLayout.pipelineLayout == VK_NULL_HANDLE) {
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+
+			VkResult result = vkDeviceWaitIdle(device.device);
+			if (result != VK_SUCCESS) { return result; }
+
+			graphicsPipeline.cleanup();
+			framebuffers.cleanup();
+			renderPass.cleanup();
+			depthImage.cleanup();
+			imageViews.cleanup();
+			frameSync.cleanup();
+			swapchain.cleanup();
+
+			result = swapchain.create(physicalDevice.physicalDevice, device.device, surface.surface,
+											  *physicalDevice.graphicsQueueFamily, *physicalDevice.presentQueueFamily,
+											  requestedExtent.width, requestedExtent.height);
+			if (result != VK_SUCCESS) { return result; }
+
+			result = imageViews.create(device.device, swapchain.images, swapchain.imageFormat);
+			if (result != VK_SUCCESS) { return result; }
+
+			result = depthImage.create(physicalDevice.physicalDevice, device.device, swapchain.extent);
+			if (result != VK_SUCCESS) { return result; }
+
+			result = renderPass.create(device.device, swapchain.imageFormat);
+			if (result != VK_SUCCESS) { return result; }
+
+			result = framebuffers.create(device.device, renderPass.renderPass, imageViews.views, swapchain.extent, depthImage.view);
+			if (result != VK_SUCCESS) { return result; }
+
+			VulkanVertexInputDescription vertexInput{};
+			result = graphicsPipeline.create(device.device, renderPass.renderPass, pipelineLayout.pipelineLayout,
+													 vertShaderModule.shaderModule, fragShaderModule.shaderModule, vertexInput,
+													 swapchain.extent);
+			if (result != VK_SUCCESS) { return result; }
+
+			result = frameSync.create(device.device, framesInFlight, static_cast<std::uint32_t>(swapchain.images.size()));
+			if (result != VK_SUCCESS) { return result; }
+
+			currentFrame = 0U;
+			lastRenderedImageIndex.reset();
+			return VK_SUCCESS;
+		}
 
 		/**
 			* @brief Records one forward render pass for a swapchain image into a frame command buffer.
