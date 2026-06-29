@@ -1,7 +1,14 @@
+module;
+#include <SDL3/SDL_video.h>
+#include <vulkan/vulkan_core.h>
+
 export module VEEngine.Simple:RenderSystem;
 import std;
 export import :RenderPass;
 import :Window;
+import VEEngine.Simple.Vulkan;
+import VEEngine.Simple.Scene;
+import VEEngine.Simple.Renderer;
 
 /// @file
 /// @brief Compact simple render-resource model with no concrete renderer backend.
@@ -268,6 +275,16 @@ export namespace vve::simple {
 		auto setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range)	-> void;
 		void setSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone);
+		auto loadScene(Scene scene)																									-> void;
+		[[nodiscard]] auto initialize(SDL_Window *window)																			-> std::expected<void, Error>;
+		auto shutdown()																													-> void;
+		auto setCamera(Vec3 eye, Vec3 target)																						-> void;
+		auto drawFrame(VulkanReadback *readback = nullptr)																		-> void;
+		[[nodiscard]] auto scene()																									-> Scene &;
+		[[nodiscard]] auto scene() const																							-> const Scene &;
+		[[nodiscard]] auto backend()																								-> Renderer &;
+		[[nodiscard]] auto backend() const																						-> const Renderer &;
+		[[nodiscard]] auto initialized() const																					-> bool;
 		[[nodiscard]] auto sceneMeshCount() const																					-> std::size_t;
 		[[nodiscard]] auto sceneMaterialCount() const																			-> std::size_t;
 		[[nodiscard]] auto sceneInstanceCount() const																			-> std::size_t;
@@ -323,11 +340,13 @@ export namespace vve::simple {
 		[[nodiscard]] const RenderFunction *find(RenderFunctionHandle handle) const;
 
 		RenderScene scene_{};															///< Active CPU render scene.
+		Renderer renderer_{};															///< Concrete Vulkan forward renderer backend.
 		Vector<RenderResource> resources_{};										///< Generic render resource registry.
 		Vector<RenderFunction> functions_{};										///< Generic render function registry.
 		std::uint64_t rendered_frames_{0};											///< Number of accepted frame calls.
 		std::size_t last_window_count_{0};											///< Last non-closed window count.
 		std::array<float, 4> last_clear_color_{0.0F, 0.0F, 0.0F, 1.0F};	///< Stub clear color.
+		bool initialized_{false};														///< True after the concrete renderer is initialized.
 	};
 
 } // namespace vve::simple
@@ -662,6 +681,57 @@ namespace vve::simple {
 														.intensity = intensity, .range = range, .cone = cone});
 	}
 
+	inline auto RenderSystem::loadScene(Scene scene)																-> void{
+		renderer_.loadScene(std::move(scene));
+	}
+
+	inline auto RenderSystem::initialize(SDL_Window *window)														-> std::expected<void, Error>{
+		if (initialized_) { return {}; }
+		if (window == nullptr) { return std::unexpected(Error::invalid_argument); }
+		const VkResult result = renderer_.init(window);
+		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+		initialized_ = true;
+		return {};
+	}
+
+	inline auto RenderSystem::shutdown()																				-> void{
+		if (initialized_) {
+			(void)vkDeviceWaitIdle(renderer_.device.device);
+			renderer_.cleanup();
+			initialized_ = false;
+		}
+	}
+
+	inline auto RenderSystem::setCamera(Vec3 eye, Vec3 target)													-> void{
+		renderer_.setCamera(eye, target);
+	}
+
+	inline auto RenderSystem::drawFrame(VulkanReadback *readback)												-> void{
+		if (!initialized_) { return; }
+		renderer_.drawFrame(readback);
+		++rendered_frames_;
+	}
+
+	inline auto RenderSystem::scene()																					-> Scene &{
+		return renderer_.scene;
+	}
+
+	inline auto RenderSystem::scene() const																			-> const Scene &{
+		return renderer_.scene;
+	}
+
+	inline auto RenderSystem::backend()																				-> Renderer &{
+		return renderer_;
+	}
+
+	inline auto RenderSystem::backend() const																		-> const Renderer &{
+		return renderer_;
+	}
+
+	inline auto RenderSystem::initialized() const																	-> bool{
+		return initialized_;
+	}
+
 	inline std::size_t RenderSystem::sceneMeshCount() const { return scene_.meshCount(); }
 	inline std::size_t RenderSystem::sceneMaterialCount() const { return scene_.materialCount(); }
 	inline std::size_t RenderSystem::sceneInstanceCount() const { return scene_.instanceCount(); }
@@ -677,7 +747,11 @@ namespace vve::simple {
 		last_window_count_ = std::ranges::count_if(windows.windows, [](const WindowInfo &window) {
 			return !window.should_close;
 		});
-		++rendered_frames_;
+		if (initialized_) {
+			drawFrame();
+		} else {
+			++rendered_frames_;
+		}
 		return {};
 	}
 

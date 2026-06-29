@@ -4,7 +4,7 @@
 #include <vulkan/vulkan.h>
 
 import std;
-import VEEngine.Simple.Renderer;
+import VEEngine.Simple;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vulkan;
 
@@ -42,21 +42,22 @@ int main(int argc, char **argv) {
 	}
 	std::println("simple_forward_demo window created");
 
-	vve::simple::Renderer renderer{}; // Renderer owns all Vulkan objects created after scene upload data is loaded.
-	renderer.loadScene(vve::simple::makeSampleScene());
+	vve::simple::RenderSystem renderSystem{}; // RenderSystem owns the concrete Vulkan backend.
+	renderSystem.loadScene(vve::simple::makeSampleScene());
 	std::println("simple_forward_demo scene loaded before renderer init");
 
-	if (const VkResult result = renderer.init(window); result != VK_SUCCESS) {
+	if (const auto result = renderSystem.initialize(window); !result) {
 		std::println(stderr,
 						 "simple_forward_demo failed: stage=renderer init, vk_result={}, sdl_error={}",
-						 static_cast<int>(result),
+						 static_cast<int>(result.error()),
 						 SDL_GetError());
-		renderer.cleanup();
+		renderSystem.shutdown();
 		SDL_DestroyWindow(window);
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 		return 3;
 	}
 	std::println("simple_forward_demo renderer init");
+	auto &renderer = renderSystem.backend(); // Transitional access for readback diagnostics.
 
 	const auto executablePath = argc > 0 && argv[0] != nullptr ? std::filesystem::path{argv[0]} : std::filesystem::path{};
 	const auto executableDirectory = executablePath.has_parent_path() ? executablePath.parent_path() : std::filesystem::current_path();
@@ -77,7 +78,7 @@ int main(int argc, char **argv) {
 	for (int frame = 0; frame < 3; ++frame) {
 		SDL_Event event{};
 		while (SDL_PollEvent(&event)) {}
-		renderer.drawFrame(frame == 0 ? &readback : nullptr);
+		renderSystem.drawFrame(frame == 0 ? &readback : nullptr);
 		std::println("simple_forward_demo frame {} drawn", frame + 1);
 
 		// Capture only the first fixed frame after presentation work has reached idle.
@@ -185,7 +186,7 @@ int main(int argc, char **argv) {
 	if (const VkResult result = vkDeviceWaitIdle(renderer.device.device); result != VK_SUCCESS) {
 		std::println(stderr, "simple_forward_demo failed: stage=device idle wait, vk_result={}", static_cast<int>(result));
 		readback.cleanup();
-		renderer.cleanup();
+		renderSystem.shutdown();
 		SDL_DestroyWindow(window);
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 		return 4;
@@ -200,7 +201,7 @@ int main(int argc, char **argv) {
 	teardownDiagnostics << "teardown: readback buffer live after cleanup=" << (readback.buffer.buffer != VK_NULL_HANDLE) << '\n';
 	teardownDiagnostics << "teardown: readback memory live after cleanup=" << (readback.buffer.memory != VK_NULL_HANDLE) << '\n';
 	teardownDiagnostics << "teardown: renderer device live before cleanup=" << (renderer.device.device != VK_NULL_HANDLE) << '\n';
-	renderer.cleanup();
+	renderSystem.shutdown();
 	teardownDiagnostics << "teardown: renderer device live after cleanup=" << (renderer.device.device != VK_NULL_HANDLE) << '\n';
 	SDL_DestroyWindow(window);
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);

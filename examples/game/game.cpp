@@ -6,7 +6,7 @@
 import std;
 import VEEngine.Simple.Math;
 import VEEngine.Simple.Mesh;
-import VEEngine.Simple.Renderer;
+import VEEngine.Simple;
 import VEEngine.Simple.Scene;
 
 /**
@@ -70,15 +70,15 @@ int main(int argc, char **argv) {
 		return 2;
 	}
 
-	vve::simple::Renderer renderer{};
-	renderer.loadScene(makeGameScene());
-	const vve::simple::SpotLight defaultSpotLight{renderer.scene.spotLight}; ///< Saved startup spot light for key-toggle restore.
-	const vve::simple::PointLight defaultPointLight{renderer.scene.pointLight}; ///< Saved startup point light for key-toggle restore.
-	const vve::simple::DirectionalLight defaultDirectionalLight{renderer.scene.directionalLight}; ///< Saved startup directional light for key-toggle restore.
-	if (const VkResult result = renderer.init(window); result != VK_SUCCESS) {
-		std::cerr << "[game] simple renderer init failed: vk_result=" << static_cast<int>(result)
+	vve::simple::RenderSystem renderSystem{};
+	renderSystem.loadScene(makeGameScene());
+	const vve::simple::SpotLight defaultSpotLight{renderSystem.scene().spotLight}; ///< Saved startup spot light for key-toggle restore.
+	const vve::simple::PointLight defaultPointLight{renderSystem.scene().pointLight}; ///< Saved startup point light for key-toggle restore.
+	const vve::simple::DirectionalLight defaultDirectionalLight{renderSystem.scene().directionalLight}; ///< Saved startup directional light for key-toggle restore.
+	if (const auto result = renderSystem.initialize(window); !result) {
+		std::cerr << "[game] simple renderer init failed: error=" << static_cast<int>(result.error())
 				  << ", sdl_error=" << SDL_GetError() << '\n';
-		renderer.cleanup();
+		renderSystem.shutdown();
 		SDL_DestroyWindow(window);
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 		return 3;
@@ -110,29 +110,29 @@ int main(int argc, char **argv) {
 			}
 			if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_O && !event.key.repeat) {
 				spotLightEnabled = !spotLightEnabled;
-				renderer.scene.spotLight = defaultSpotLight;                                   // Restore exact startup values before muting.
+				renderSystem.scene().spotLight = defaultSpotLight;                              // Restore exact startup values before muting.
 				if (!spotLightEnabled) {
-					renderer.scene.spotLight.intensity.value = 0.0F;
-					renderer.scene.spotLight.ambient = 0.0F;
-					renderer.scene.spotLight.range.value = 0.0F;
+					renderSystem.scene().spotLight.intensity.value = 0.0F;
+					renderSystem.scene().spotLight.ambient = 0.0F;
+					renderSystem.scene().spotLight.range.value = 0.0F;
 				}
 				std::cout << "[game] spot light " << (spotLightEnabled ? "on" : "off") << '\n';
 			}
 			if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_P && !event.key.repeat) {
 				pointLightEnabled = !pointLightEnabled;
-				renderer.scene.pointLight = defaultPointLight;                                 // Restore exact startup values before muting.
+				renderSystem.scene().pointLight = defaultPointLight;                            // Restore exact startup values before muting.
 				if (!pointLightEnabled) {
-					renderer.scene.pointLight.intensity = 0.0F;
-					renderer.scene.pointLight.ambient = 0.0F;
-					renderer.scene.pointLight.range = 0.0F;
+					renderSystem.scene().pointLight.intensity = 0.0F;
+					renderSystem.scene().pointLight.ambient = 0.0F;
+					renderSystem.scene().pointLight.range = 0.0F;
 				}
 			}
 			if (event.type == SDL_EVENT_KEY_DOWN && event.key.key == SDLK_L && !event.key.repeat) {
 				directionalLightEnabled = !directionalLightEnabled;
-				renderer.scene.directionalLight = defaultDirectionalLight;                     // Restore exact startup values before muting.
+				renderSystem.scene().directionalLight = defaultDirectionalLight;                // Restore exact startup values before muting.
 				if (!directionalLightEnabled) {
-					renderer.scene.directionalLight.intensity.value = 0.0F;
-					renderer.scene.directionalLight.ambient = 0.0F;
+					renderSystem.scene().directionalLight.intensity.value = 0.0F;
+					renderSystem.scene().directionalLight.ambient = 0.0F;
 				}
 				std::cout << "[game] directional light " << (directionalLightEnabled ? "on" : "off") << '\n';
 			}
@@ -169,13 +169,12 @@ int main(int argc, char **argv) {
 			cameraEye = vve::simple::add(cameraEye, vve::simple::scale(right, moveStep));
 		}
 
-		renderer.setCamera(cameraEye, vve::simple::add(cameraEye, forward));
-		renderer.drawFrame(nullptr);
+		renderSystem.setCamera(cameraEye, vve::simple::add(cameraEye, forward));
+		renderSystem.drawFrame();
 		++frame;
 	}
 
-	(void)vkDeviceWaitIdle(renderer.device.device);
-	renderer.cleanup();
+	renderSystem.shutdown();
 	SDL_DestroyWindow(window);
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	std::cout << "[game] frames=" << frame << '\n';

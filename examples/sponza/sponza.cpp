@@ -4,7 +4,7 @@
 #include <vulkan/vulkan.h>
 
 import std;
-import VEEngine.Simple.Renderer;
+import VEEngine.Simple;
 import VEEngine.Simple.Scene;
 
 /**
@@ -54,11 +54,11 @@ int main(int argc, char **argv) {
 		return 2;
 	}
 
-	vve::simple::Renderer renderer{};
-	renderer.loadScene(vve::simple::makeSampleScene());
-	if (const VkResult result = renderer.init(window); result != VK_SUCCESS) {
-		std::cerr << "[sponza] simple renderer init failed: vk_result=" << static_cast<int>(result) << '\n';
-		renderer.cleanup();
+	vve::simple::RenderSystem renderSystem{};
+	renderSystem.loadScene(vve::simple::makeSampleScene());
+	if (const auto result = renderSystem.initialize(window); !result) {
+		std::cerr << "[sponza] simple renderer init failed: error=" << static_cast<int>(result.error()) << '\n';
+		renderSystem.shutdown();
 		SDL_DestroyWindow(window);
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 		return 3;
@@ -68,11 +68,10 @@ int main(int argc, char **argv) {
 	for (int frame{}; frame < maxFrames; ++frame) {
 		SDL_Event event{};
 		while (SDL_PollEvent(&event)) {}
-		renderer.drawFrame(nullptr);
+		renderSystem.drawFrame();
 	}
 
-	(void)vkDeviceWaitIdle(renderer.device.device);
-	renderer.cleanup();
+	renderSystem.shutdown();
 	SDL_DestroyWindow(window);
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 	std::cout << "[sponza] frames=" << maxFrames << '\n';

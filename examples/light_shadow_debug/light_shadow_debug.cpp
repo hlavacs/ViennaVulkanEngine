@@ -6,7 +6,7 @@
 import std;
 import VEEngine.Simple.Math;
 import VEEngine.Simple.Mesh;
-import VEEngine.Simple.Renderer;
+import VEEngine.Simple;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vulkan;
 
@@ -116,15 +116,16 @@ int main(int argc, char **argv) {
 		return 2;
 	}
 
-	vve::simple::Renderer renderer{};
-	renderer.loadScene(makeShadowTestScene());
-	if (const VkResult result = renderer.init(window); result != VK_SUCCESS) {
-		std::cerr << "[light_shadow_debug] simple renderer init failed: vk_result=" << static_cast<int>(result) << '\n';
-		renderer.cleanup();
+	vve::simple::RenderSystem renderSystem{};
+	renderSystem.loadScene(makeShadowTestScene());
+	if (const auto result = renderSystem.initialize(window); !result) {
+		std::cerr << "[light_shadow_debug] simple renderer init failed: error=" << static_cast<int>(result.error()) << '\n';
+		renderSystem.shutdown();
 		SDL_DestroyWindow(window);
 		SDL_QuitSubSystem(SDL_INIT_VIDEO);
 		return 3;
 	}
+	auto &renderer = renderSystem.backend(); // Transitional access for readback diagnostics.
 
 	const int maxFrames = frameLimit(argc, argv);
 	const auto path = outputPath(argc, argv);
@@ -146,7 +147,7 @@ int main(int argc, char **argv) {
 	for (int frame{}; frame < maxFrames; ++frame) {
 		SDL_Event event{};
 		while (SDL_PollEvent(&event)) {}
-		renderer.drawFrame(frame == 0 && readbackCreateResult == VK_SUCCESS ? &readback : nullptr);
+		renderSystem.drawFrame(frame == 0 && readbackCreateResult == VK_SUCCESS ? &readback : nullptr);
 
 		// Capture the first frame after submitted work has reached idle, matching the forward demo path.
 		if (frame == 0) {
@@ -212,7 +213,7 @@ int main(int argc, char **argv) {
 
 	(void)vkDeviceWaitIdle(renderer.device.device);
 	readback.cleanup();
-	renderer.cleanup();
+	renderSystem.shutdown();
 	SDL_DestroyWindow(window);
 	SDL_QuitSubSystem(SDL_INIT_VIDEO);
 
