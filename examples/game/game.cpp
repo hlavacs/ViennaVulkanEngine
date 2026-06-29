@@ -146,10 +146,10 @@ int main(int argc, char **argv) {
 			cameraYaw += turnStep;
 		}
 		if (keys[SDL_SCANCODE_UP]) {
-			cameraPitch += turnStep;
+			cameraPitch -= turnStep;
 		}
 		if (keys[SDL_SCANCODE_DOWN]) {
-			cameraPitch -= turnStep;
+			cameraPitch += turnStep;
 		}
 		cameraPitch = vve::simple::clamp(cameraPitch, -maxPitch, maxPitch);
 
