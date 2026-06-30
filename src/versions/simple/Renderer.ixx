@@ -4,21 +4,107 @@ module;
 
 export module VEEngine.Simple.Renderer;
 import std;
+import VEEngine.Types;
+import VEEngine.Simple.RenderPassContract;
 import VEEngine.Simple.Math;
+import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vulkan;
+
+namespace vve::simple::detail {
+
+	static constexpr std::string_view forward_renderer_pass{"forward.color_pass"};											///< Forward color pass node.
+	static constexpr std::array forward_renderer_pass_deps{RenderMilestone::frame_begin()};					///< Forward color pass dependency.
+	static constexpr std::array forward_renderer_scene_done_deps{forward_renderer_pass};						///< Scene-color milestone input.
+	static constexpr std::array forward_renderer_finished_deps{RenderMilestone::scene_color()};			///< Frame-finished input.
+	static constexpr std::array forward_renderer_pass_contracts{															///< Minimal renderer pass contract list.
+		RenderPassContract{.name = RenderMilestone::frame_begin(), .outputs = "frame inputs", .milestone = true},
+		RenderPassContract{.name = forward_renderer_pass,
+									.depends_on = forward_renderer_pass_deps,
+									.inputs = "registered render resources",
+									.outputs = "forward scene color"},
+		RenderPassContract{.name = RenderMilestone::scene_color(),
+									.depends_on = forward_renderer_scene_done_deps,
+									.outputs = "forward scene color is ready",
+									.milestone = true},
+		RenderPassContract{.name = RenderMilestone::frame_finished(),
+									.depends_on = forward_renderer_finished_deps,
+									.outputs = "frame can be presented",
+									.milestone = true}};
+
+} // namespace vve::simple::detail
 
 /**
 	* @file
 	* @brief Vulkan renderer skeleton for the simple forward renderer.
 	*
 	* Functional objects:
-	* - Renderer owns the current CPU scene, swapchain image stack, depth attachment, unbound shadow map and shadow pipeline, optional object texture, default object texture, forward render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, frame command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes needed before rendering.
+	* - ForwardRenderer owns the current CPU scene, swapchain image stack, depth attachment, unbound shadow map and shadow pipeline, optional object texture, default object texture, forward render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, frame command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes needed before rendering.
+	* - StubRenderer exposes the same common renderer lifetime and scene surface without owning Vulkan state.
+	* - SelectedRenderer names the explicit renderer alternatives available to the simple render coordinator.
 	*/
 export namespace vve::simple {
 
+	/// @brief Empty debug-sample type kept so the current facade can still compile against simple.
+	struct RenderDebugSample {
+		std::uint32_t vertex_id{};														///< Source vertex id.
+		Vec3 world{zeroVec3()};															///< Stub world-space position.
+		Vec4 clip{};																		///< Stub clip-space position.
+		Vec4 light_clip{};																///< Stub directional-light clip position.
+		Vec4 spot_light_clip{};															///< Stub spot-light clip position.
+		Vec4 point_light_clip{};														///< Stub point-light clip position.
+		Vec3 ndc{zeroVec3()};															///< Stub normalized device coordinate.
+		Vec3 light_ndc{zeroVec3()};													///< Stub directional-light NDC.
+		Vec3 spot_light_ndc{zeroVec3()};												///< Stub spot-light NDC.
+		Vec3 point_light_ndc{zeroVec3()};											///< Stub point-light NDC.
+		Vec3 normal{zeroVec3()};														///< Stub normal.
+		Vec3 direction_to_light{zeroVec3()};										///< Stub light direction.
+		Vec3 ambient_lighting{zeroVec3()};											///< Stub ambient term.
+		Vec3 direct_lighting{zeroVec3()};											///< Stub direct-light term.
+		Vec3 point_lighting{zeroVec3()};												///< Stub point-light term.
+		Vec3 spot_lighting{zeroVec3()};												///< Stub spot-light term.
+		Vec3 final_lighting{zeroVec3()};												///< Stub final-light term.
+		float depth{};																		///< Stub depth value.
+		float light_depth{};																///< Stub directional-light depth.
+		float spot_light_depth{};														///< Stub spot-light depth.
+		float point_light_depth{};														///< Stub point-light depth.
+		float sampled_shadow_depth{};													///< Stub sampled shadow depth.
+		float shadow_depth_delta{};													///< Stub shadow delta.
+		float shadow_bias{};																///< Stub shadow bias.
+		float shadow_factor{};															///< Stub shadow factor.
+		float sampled_spot_shadow_depth{};											///< Stub sampled spot shadow depth.
+		float spot_shadow_depth_delta{};												///< Stub spot shadow delta.
+		float spot_shadow_bias{};														///< Stub spot shadow bias.
+		float spot_shadow_factor{};													///< Stub spot shadow factor.
+		float sampled_point_shadow_depth{};											///< Stub sampled point shadow depth.
+		float point_shadow_depth_delta{};											///< Stub point shadow delta.
+		float point_shadow_bias{};														///< Stub point shadow bias.
+		float point_shadow_factor{};													///< Stub point shadow factor.
+		std::uint32_t point_shadow_face{};											///< Stub point shadow face.
+		float n_dot_l{};																	///< Stub Lambert term.
+		bool inside_light{};																///< Stub directional-light inclusion.
+		bool inside_spot_light{};														///< Stub spot-light inclusion.
+		bool inside_point_light{};														///< Stub point-light inclusion.
+		bool valid{};																		///< Stub samples are never valid.
+	};
+
+	/// @brief Empty shadow proof type kept so the current facade can still compile against simple.
+	struct RenderShadowDepthSample {
+		std::uint32_t triangle_id{};													///< Source triangle id.
+		std::uint32_t face_index{};													///< Shadow face id.
+		Vec3 world{zeroVec3()};															///< World-space sample point.
+		Vec3 light_ndc{zeroVec3()};													///< Light-space sample point.
+		std::uint32_t pixel_x{};														///< Shadow-map x texel.
+		std::uint32_t pixel_y{};														///< Shadow-map y texel.
+		float expected_depth{};															///< CPU expected depth.
+		float gpu_depth{};																///< GPU depth, absent in simple stubs.
+		float error{};																		///< Absolute mismatch.
+		bool has_gpu{};																	///< False for simple stubs.
+		bool valid{};																		///< Stub samples are never valid.
+	};
+
 	/// @brief Minimal forward renderer owning Vulkan swapchain bring-up without draw state.
-	struct Renderer {
+	struct ForwardRenderer {
 		static constexpr std::uint32_t framesInFlight{2U}; ///< Number of independent frame command buffers to allocate.
 		VulkanInstance instance{};             ///< Owned Vulkan instance wrapper.
 		VulkanSurface surface{};               ///< Owned SDL-backed Vulkan surface wrapper.
@@ -53,7 +139,83 @@ export namespace vve::simple {
 		std::optional<std::uint32_t> lastRenderedImageIndex{}; ///< Swapchain image index from the last acquired, rendered, and presented frame.
 		std::optional<VkResult> lastReadbackCaptureResult{}; ///< Result from the optional in-frame readback capture.
 
-		~Renderer() { cleanup(); }
+		~ForwardRenderer() { cleanup(); }
+
+		/// @brief Returns the stable renderer-selection id for this concrete forward renderer.
+		[[nodiscard]] RendererId id() const { return RendererId{.value = "forward"}; }
+
+		/// @brief Declares this renderer's render passes and dependencies for graph merging.
+		[[nodiscard]] std::span<const RenderPassContract> passes() const { return detail::forward_renderer_pass_contracts; }
+
+		/// @brief Releases renderer-owned resources through the existing cleanup path.
+		void shutdown() { cleanup(); }
+
+		/// @brief Reports whether the renderer currently owns a live Vulkan device.
+		[[nodiscard]] bool initialized() const { return device.device != VK_NULL_HANDLE; }
+
+		/// @brief Reports presented-frame diagnostics for the forward renderer.
+		[[nodiscard]] std::uint64_t presentedFrameCount() const { return 0; }
+		/// @brief Reports triangle-draw diagnostics for the forward renderer.
+		[[nodiscard]] std::uint64_t triangleDrawCount() const { return 0; }
+		/// @brief Reports triangle-vertex diagnostics for the forward renderer.
+		[[nodiscard]] std::uint32_t triangleVertexCount() const { return 0; }
+		/// @brief Reports scene-upload diagnostics for the forward renderer.
+		[[nodiscard]] std::uint64_t sceneUploadCount() const { return 0; }
+		/// @brief Reports scene-mesh draw diagnostics for the forward renderer.
+		[[nodiscard]] std::uint64_t sceneMeshDrawCount() const { return 0; }
+		/// @brief Reports scene-instance draw diagnostics for the forward renderer.
+		[[nodiscard]] std::uint64_t sceneInstanceDrawCount() const { return 0; }
+		/// @brief Reports scene-draw vertex diagnostics for the forward renderer.
+		[[nodiscard]] std::uint32_t sceneDrawVertexCount() const { return 0; }
+		/// @brief Reports scene-draw index diagnostics for the forward renderer.
+		[[nodiscard]] std::uint32_t sceneDrawIndexCount() const { return 0; }
+		/// @brief Reports the number of retained debug samples for the forward renderer.
+		[[nodiscard]] std::size_t sceneDebugSampleCount() const { return 0; }
+		/// @brief Returns a CPU debug sample when the forward renderer has retained one.
+		[[nodiscard]] std::optional<RenderDebugSample> sceneCpuDebugSample(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns a GPU debug sample when the forward renderer has retained one.
+		[[nodiscard]] std::optional<RenderDebugSample> sceneGpuDebugSample(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns clip-space debug error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> sceneDebugClipError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns depth debug error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns directional light-space debug error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns spot light-space debug error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> sceneDebugSpotLightSpaceError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns point light-space debug error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> sceneDebugPointLightSpaceError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns lighting debug error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns directional shadow-sample debug error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> sceneDebugShadowSampleError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns spot shadow-sample debug error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> sceneDebugSpotShadowSampleError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns point shadow-sample debug error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> sceneDebugPointShadowSampleError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Reports the number of retained directional shadow-depth samples for the forward renderer.
+		[[nodiscard]] std::size_t sceneShadowDepthSampleCount() const { return 0; }
+		/// @brief Returns a directional shadow-depth sample when the forward renderer has retained one.
+		[[nodiscard]] std::optional<RenderShadowDepthSample> sceneShadowDepthSample(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns directional shadow-depth error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> sceneShadowDepthError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Reports the number of retained spot shadow-depth samples for the forward renderer.
+		[[nodiscard]] std::size_t sceneSpotShadowDepthSampleCount() const { return 0; }
+		/// @brief Returns a spot shadow-depth sample when the forward renderer has retained one.
+		[[nodiscard]] std::optional<RenderShadowDepthSample> sceneSpotShadowDepthSample(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns spot shadow-depth error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> sceneSpotShadowDepthError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Reports the number of retained point shadow-depth samples for the forward renderer.
+		[[nodiscard]] std::size_t scenePointShadowDepthSampleCount() const { return 0; }
+		/// @brief Returns a point shadow-depth sample when the forward renderer has retained one.
+		[[nodiscard]] std::optional<RenderShadowDepthSample> scenePointShadowDepthSample(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns point shadow-depth error diagnostics retained by the forward renderer.
+		[[nodiscard]] std::optional<float> scenePointShadowDepthError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Reports prepared GPU target diagnostics for the forward renderer.
+		[[nodiscard]] std::size_t preparedGpuTargetCount() const { return 0; }
+		std::array<float, 4> clearColor{0.0F, 0.0F, 0.0F, 1.0F}; ///< Last clear color used by the renderer.
+		/// @brief Reports the last clear color used by the forward renderer.
+		[[nodiscard]] std::array<float, 4> lastClearColor() const { return clearColor; }
 
 		/**
 			* @brief Initializes the Vulkan instance, device, swapchain, image views, depth attachment, shadow map, render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes.
@@ -207,8 +369,20 @@ export namespace vve::simple {
 			* @brief Replaces the current CPU scene before future renderer upload.
 			*
 			* @param nextScene Scene data prepared by the caller.
-			*/
+		*/
 		void loadScene(Scene nextScene) { scene = std::move(nextScene); }
+
+		/// @brief Appends one backend object to the renderer-owned CPU scene mirror.
+		void appendObject(Mesh backend_mesh, Mat4 model, std::optional<std::string> base_color_texture_source) {
+			const bool use_texture = base_color_texture_source.has_value();
+			if (use_texture) { scene.baseColorTexture = *std::move(base_color_texture_source); }
+			scene.objects.push_back(Object{.mesh = std::move(backend_mesh),
+													 .model = model,
+													 .useBaseColorTexture = use_texture ? 1U : 0U});
+		}
+
+		/// @brief Clears the renderer-owned CPU scene through the existing scene replacement path.
+		void clearScene() { loadScene(Scene{}); }
 
 		/**
 			* @brief Stores the camera eye and target used by future frame uniform updates.
@@ -326,6 +500,41 @@ export namespace vve::simple {
 
 			lastRenderedImageIndex = imageIndex;
 			currentFrame = static_cast<std::uint32_t>((currentFrame + 1U) % frameCount);
+		}
+
+		/// @brief Common frame-render entry forwarding to the concrete Vulkan draw path.
+		void renderFrame(VulkanReadback *readback = nullptr) { drawFrame(readback); }
+
+		/// @brief Copies the last presented swapchain image and writes it as a deterministic PNG.
+		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path) -> std::expected<void, Error> {
+			if (!lastRenderedImageIndex) { return std::unexpected(Error::missing_object); }
+			if (*lastRenderedImageIndex >= swapchain.images.size()) {
+				return std::unexpected(Error::internal_error);
+			}
+
+			if (const auto parent = output_path.parent_path(); !parent.empty()) {
+				auto error = std::error_code{};
+				std::filesystem::create_directories(parent, error);
+				if (error) { return std::unexpected(Error::io_error); }
+			}
+
+			auto readback = VulkanReadback{};
+			VkResult result = readback.create(physicalDevice.physicalDevice, device.device,
+														 device.graphicsQueue, commandPool.commandPool,
+														 swapchain.extent, swapchain.imageFormat);
+			if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+
+			result = vkDeviceWaitIdle(device.device);
+			if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+			const auto image = swapchain.images[*lastRenderedImageIndex];
+			result = readback.capture(image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+			if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+
+			const auto output = output_path.string();
+			if (!writeReadbackPng(readback.pixelBytes(), swapchain.extent, swapchain.imageFormat, output)) {
+				return std::unexpected(Error::io_error);
+			}
+			return {};
 		}
 
 		/**
@@ -537,5 +746,119 @@ export namespace vve::simple {
 			return VK_SUCCESS;
 		}
 	};
+
+	/// @brief No-op renderer used as an explicit placeholder for future renderer selection.
+	struct StubRenderer {
+		Scene scene{}; ///< CPU scene mirror kept so scene submission has the same storage shape.
+
+		/// @brief Returns the stable renderer-selection id for this placeholder renderer.
+		[[nodiscard]] RendererId id() const { return RendererId{.value = "stub"}; }
+
+		/// @brief Declares this renderer's render passes and dependencies for graph merging.
+		[[nodiscard]] std::span<const RenderPassContract> passes() const { return detail::forward_renderer_pass_contracts; }
+
+		/// @brief Accepts the normal renderer setup entry point without creating resources.
+		[[nodiscard]] VkResult init(SDL_Window *sdlWindow) { (void)sdlWindow; return VK_SUCCESS; }
+
+		/// @brief Releases no resources because the stub owns no renderer backend.
+		void shutdown() {}
+
+		/// @brief Reports that the placeholder renderer never owns a live backend.
+		[[nodiscard]] bool initialized() const { return false; }
+
+		/// @brief Reports presented-frame diagnostics for the stub renderer.
+		[[nodiscard]] std::uint64_t presentedFrameCount() const { return 0; }
+		/// @brief Reports triangle-draw diagnostics for the stub renderer.
+		[[nodiscard]] std::uint64_t triangleDrawCount() const { return 0; }
+		/// @brief Reports triangle-vertex diagnostics for the stub renderer.
+		[[nodiscard]] std::uint32_t triangleVertexCount() const { return 0; }
+		/// @brief Reports scene-upload diagnostics for the stub renderer.
+		[[nodiscard]] std::uint64_t sceneUploadCount() const { return 0; }
+		/// @brief Reports scene-mesh draw diagnostics for the stub renderer.
+		[[nodiscard]] std::uint64_t sceneMeshDrawCount() const { return 0; }
+		/// @brief Reports scene-instance draw diagnostics for the stub renderer.
+		[[nodiscard]] std::uint64_t sceneInstanceDrawCount() const { return 0; }
+		/// @brief Reports scene-draw vertex diagnostics for the stub renderer.
+		[[nodiscard]] std::uint32_t sceneDrawVertexCount() const { return 0; }
+		/// @brief Reports scene-draw index diagnostics for the stub renderer.
+		[[nodiscard]] std::uint32_t sceneDrawIndexCount() const { return 0; }
+		/// @brief Reports the number of retained debug samples for the stub renderer.
+		[[nodiscard]] std::size_t sceneDebugSampleCount() const { return 0; }
+		/// @brief Returns a CPU debug sample when the stub renderer has retained one.
+		[[nodiscard]] std::optional<RenderDebugSample> sceneCpuDebugSample(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns a GPU debug sample when the stub renderer has retained one.
+		[[nodiscard]] std::optional<RenderDebugSample> sceneGpuDebugSample(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns clip-space debug error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> sceneDebugClipError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns depth debug error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns directional light-space debug error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns spot light-space debug error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> sceneDebugSpotLightSpaceError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns point light-space debug error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> sceneDebugPointLightSpaceError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns lighting debug error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns directional shadow-sample debug error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> sceneDebugShadowSampleError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns spot shadow-sample debug error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> sceneDebugSpotShadowSampleError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns point shadow-sample debug error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> sceneDebugPointShadowSampleError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Reports the number of retained directional shadow-depth samples for the stub renderer.
+		[[nodiscard]] std::size_t sceneShadowDepthSampleCount() const { return 0; }
+		/// @brief Returns a directional shadow-depth sample when the stub renderer has retained one.
+		[[nodiscard]] std::optional<RenderShadowDepthSample> sceneShadowDepthSample(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns directional shadow-depth error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> sceneShadowDepthError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Reports the number of retained spot shadow-depth samples for the stub renderer.
+		[[nodiscard]] std::size_t sceneSpotShadowDepthSampleCount() const { return 0; }
+		/// @brief Returns a spot shadow-depth sample when the stub renderer has retained one.
+		[[nodiscard]] std::optional<RenderShadowDepthSample> sceneSpotShadowDepthSample(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns spot shadow-depth error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> sceneSpotShadowDepthError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Reports the number of retained point shadow-depth samples for the stub renderer.
+		[[nodiscard]] std::size_t scenePointShadowDepthSampleCount() const { return 0; }
+		/// @brief Returns a point shadow-depth sample when the stub renderer has retained one.
+		[[nodiscard]] std::optional<RenderShadowDepthSample> scenePointShadowDepthSample(std::size_t index) const { (void)index; return {}; }
+		/// @brief Returns point shadow-depth error diagnostics retained by the stub renderer.
+		[[nodiscard]] std::optional<float> scenePointShadowDepthError(std::size_t index) const { (void)index; return {}; }
+		/// @brief Reports prepared GPU target diagnostics for the stub renderer.
+		[[nodiscard]] std::size_t preparedGpuTargetCount() const { return 0; }
+		std::array<float, 4> clearColor{0.0F, 0.0F, 0.0F, 1.0F}; ///< Last clear color used by the renderer.
+		/// @brief Reports the last clear color used by the stub renderer.
+		[[nodiscard]] std::array<float, 4> lastClearColor() const { return clearColor; }
+
+		/// @brief Replaces the stored CPU scene for parity with concrete renderer submission.
+		void loadScene(Scene nextScene) { scene = std::move(nextScene); }
+
+		/// @brief Appends one backend object to the stored CPU scene mirror.
+		void appendObject(Mesh backend_mesh, Mat4 model, std::optional<std::string> base_color_texture_source) {
+			const bool use_texture = base_color_texture_source.has_value();
+			if (use_texture) { scene.baseColorTexture = *std::move(base_color_texture_source); }
+			scene.objects.push_back(Object{.mesh = std::move(backend_mesh),
+													 .model = model,
+													 .useBaseColorTexture = use_texture ? 1U : 0U});
+		}
+
+		/// @brief Clears the stored CPU scene through the common scene replacement path.
+		void clearScene() { loadScene(Scene{}); }
+
+		/// @brief Accepts a frame-render request without producing GPU work.
+		void renderFrame(VulkanReadback *readback = nullptr) { (void)readback; }
+
+		/// @brief Reports that the stub has no swapchain image to capture.
+		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path) -> std::expected<void, Error> {
+			(void)output_path;
+			return std::unexpected(Error::missing_object);
+		}
+	};
+
+	/// @brief Explicit renderer alternatives selectable by the simple render coordinator.
+	using SelectedRenderer = std::variant<ForwardRenderer, StubRenderer>;
+	static_assert(std::is_default_constructible_v<SelectedRenderer>);
+	static_assert(std::is_constructible_v<SelectedRenderer, std::in_place_type_t<ForwardRenderer>>);
+	static_assert(std::is_constructible_v<SelectedRenderer, std::in_place_type_t<StubRenderer>>);
 
 } // namespace vve::simple

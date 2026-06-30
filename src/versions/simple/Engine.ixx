@@ -244,8 +244,11 @@ export namespace vve::simple {
 		tasks_.addEdge(previous, *render);
 		tasks_.addEdge(*render, *finish);
 
-		const auto renderer = render_system_.createForwardRenderer();
-		const std::array pass_lists{renderer.passes, gui_.passes()};
+		const auto renderer_id = RendererId{.value = "forward"};
+		const auto renderer = render_system_.createRenderer(renderer_id);
+		if (!renderer) { return std::unexpected(renderer.error()); }
+
+		const std::array pass_lists{renderer->passes, gui_.passes()};
 		const auto graph = render_system_.buildRenderGraph(pass_lists);
 		if (!graph) { return std::unexpected(graph.error()); }
 		render_graph_ = *graph;

@@ -246,7 +246,6 @@ int main() {
        stateful_render_system.lastRenderedWindowCount() != 1) {
       return 56;
    }
-   if (stateful_render_system.preparedGpuTargetCount() != 0) { return 57; }
 
    return 0;
 }

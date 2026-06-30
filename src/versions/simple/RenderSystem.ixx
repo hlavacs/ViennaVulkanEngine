@@ -139,64 +139,6 @@ export namespace vve::simple {
 		Vector<RenderResourceHandle> writes{};										///< Resources written by this function.
 	};
 
-	/// @brief Empty debug-sample type kept so the current facade can still compile against simple.
-	struct RenderDebugSample {
-		std::uint32_t vertex_id{};														///< Source vertex id.
-		Vec3 world{zeroVec3()};															///< Stub world-space position.
-		Vec4 clip{};																		///< Stub clip-space position.
-		Vec4 light_clip{};																///< Stub directional-light clip position.
-		Vec4 spot_light_clip{};															///< Stub spot-light clip position.
-		Vec4 point_light_clip{};														///< Stub point-light clip position.
-		Vec3 ndc{zeroVec3()};															///< Stub normalized device coordinate.
-		Vec3 light_ndc{zeroVec3()};													///< Stub directional-light NDC.
-		Vec3 spot_light_ndc{zeroVec3()};												///< Stub spot-light NDC.
-		Vec3 point_light_ndc{zeroVec3()};											///< Stub point-light NDC.
-		Vec3 normal{zeroVec3()};														///< Stub normal.
-		Vec3 direction_to_light{zeroVec3()};										///< Stub light direction.
-		Vec3 ambient_lighting{zeroVec3()};											///< Stub ambient term.
-		Vec3 direct_lighting{zeroVec3()};											///< Stub direct-light term.
-		Vec3 point_lighting{zeroVec3()};												///< Stub point-light term.
-		Vec3 spot_lighting{zeroVec3()};												///< Stub spot-light term.
-		Vec3 final_lighting{zeroVec3()};												///< Stub final-light term.
-		float depth{};																		///< Stub depth value.
-		float light_depth{};																///< Stub directional-light depth.
-		float spot_light_depth{};														///< Stub spot-light depth.
-		float point_light_depth{};														///< Stub point-light depth.
-		float sampled_shadow_depth{};													///< Stub sampled shadow depth.
-		float shadow_depth_delta{};													///< Stub shadow delta.
-		float shadow_bias{};																///< Stub shadow bias.
-		float shadow_factor{};															///< Stub shadow factor.
-		float sampled_spot_shadow_depth{};											///< Stub sampled spot shadow depth.
-		float spot_shadow_depth_delta{};												///< Stub spot shadow delta.
-		float spot_shadow_bias{};														///< Stub spot shadow bias.
-		float spot_shadow_factor{};													///< Stub spot shadow factor.
-		float sampled_point_shadow_depth{};											///< Stub sampled point shadow depth.
-		float point_shadow_depth_delta{};											///< Stub point shadow delta.
-		float point_shadow_bias{};														///< Stub point shadow bias.
-		float point_shadow_factor{};													///< Stub point shadow factor.
-		std::uint32_t point_shadow_face{};											///< Stub point shadow face.
-		float n_dot_l{};																	///< Stub Lambert term.
-		bool inside_light{};																///< Stub directional-light inclusion.
-		bool inside_spot_light{};														///< Stub spot-light inclusion.
-		bool inside_point_light{};														///< Stub point-light inclusion.
-		bool valid{};																		///< Stub samples are never valid.
-	};
-
-	/// @brief Empty shadow proof type kept so the current facade can still compile against simple.
-	struct RenderShadowDepthSample {
-		std::uint32_t triangle_id{};													///< Source triangle id.
-		std::uint32_t face_index{};													///< Shadow face id.
-		Vec3 world{zeroVec3()};															///< World-space sample point.
-		Vec3 light_ndc{zeroVec3()};													///< Light-space sample point.
-		std::uint32_t pixel_x{};														///< Shadow-map x texel.
-		std::uint32_t pixel_y{};														///< Shadow-map y texel.
-		float expected_depth{};															///< CPU expected depth.
-		float gpu_depth{};																///< GPU depth, absent in simple stubs.
-		float error{};																		///< Absolute mismatch.
-		bool has_gpu{};																	///< False for simple stubs.
-		bool valid{};																		///< Stub samples are never valid.
-	};
-
 	/// @brief Minimal CPU scene that stores render resources but does not draw them.
 	class RenderScene {
 	public:
@@ -253,7 +195,6 @@ export namespace vve::simple {
 	class RenderSystem {
 	public:
 		[[nodiscard]] auto createRenderer(RendererId id) const																-> std::expected<RendererDescriptor, Error>;
-		[[nodiscard]] auto createForwardRenderer() const																		-> RendererDescriptor;
 		[[nodiscard]] auto buildRenderGraph(const RendererDescriptor &renderer) const									-> std::expected<RenderGraph, Error>;
 		[[nodiscard]] auto buildRenderGraph(std::span<const RenderPassContract> passes) const						-> std::expected<RenderGraph, Error>;
 		[[nodiscard]] std::expected<RenderGraph, Error>
@@ -286,14 +227,10 @@ export namespace vve::simple {
 		void setSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient);
 		auto loadScene(Scene scene)																									-> void;
-		[[nodiscard]] auto initialize(SDL_Window *window)																			-> std::expected<void, Error>;
+		[[nodiscard]] auto initialize(SDL_Window *window, RendererId id = {})												-> std::expected<void, Error>;
+		[[nodiscard]] auto backend()																								-> SelectedRenderer &;
+		[[nodiscard]] auto backend() const																						-> const SelectedRenderer &;
 		auto shutdown()																													-> void;
-		auto setCamera(Vec3 eye, Vec3 target)																						-> void;
-		auto drawFrame(VulkanReadback *readback = nullptr)																		-> void;
-		[[nodiscard]] auto scene()																									-> Scene &;
-		[[nodiscard]] auto scene() const																							-> const Scene &;
-		[[nodiscard]] auto backend()																								-> Renderer &;
-		[[nodiscard]] auto backend() const																						-> const Renderer &;
 		[[nodiscard]] auto initialized() const																					-> bool;
 		[[nodiscard]] auto sceneMeshCount() const																					-> std::size_t;
 		[[nodiscard]] auto sceneMaterialCount() const																			-> std::size_t;
@@ -308,38 +245,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto renderFrame(const WindowFrameData &windows)														-> std::expected<void, Error>;
 		[[nodiscard]] auto renderFrame(WindowSystem &windows)																	-> std::expected<void, Error>;
 		[[nodiscard]] auto renderedFrameCount() const																			-> std::uint64_t;
-		[[nodiscard]] auto presentedFrameCount() const																			-> std::uint64_t;
-		[[nodiscard]] auto triangleDrawCount() const																				-> std::uint64_t;
-		[[nodiscard]] auto triangleVertexCount() const																			-> std::uint32_t;
-		[[nodiscard]] auto sceneUploadCount() const																				-> std::uint64_t;
-		[[nodiscard]] auto sceneMeshDrawCount() const																			-> std::uint64_t;
-		[[nodiscard]] auto sceneInstanceDrawCount() const																		-> std::uint64_t;
-		[[nodiscard]] auto sceneDrawVertexCount() const																			-> std::uint32_t;
-		[[nodiscard]] auto sceneDrawIndexCount() const																			-> std::uint32_t;
-		[[nodiscard]] auto sceneDebugSampleCount() const																		-> std::size_t;
-		[[nodiscard]] auto sceneCpuDebugSample(std::size_t index) const													-> std::optional<RenderDebugSample>;
-		[[nodiscard]] auto sceneGpuDebugSample(std::size_t index) const													-> std::optional<RenderDebugSample>;
-		[[nodiscard]] auto sceneDebugClipError(std::size_t index) const													-> std::optional<float>;
-		[[nodiscard]] auto sceneDebugDepthError(std::size_t index) const													-> std::optional<float>;
-		[[nodiscard]] auto sceneDebugLightSpaceError(std::size_t index) const											-> std::optional<float>;
-		[[nodiscard]] auto sceneDebugSpotLightSpaceError(std::size_t index) const										-> std::optional<float>;
-		[[nodiscard]] auto sceneDebugPointLightSpaceError(std::size_t index) const										-> std::optional<float>;
-		[[nodiscard]] auto sceneDebugLightingError(std::size_t index) const												-> std::optional<float>;
-		[[nodiscard]] auto sceneDebugShadowSampleError(std::size_t index) const											-> std::optional<float>;
-		[[nodiscard]] auto sceneDebugSpotShadowSampleError(std::size_t index) const									-> std::optional<float>;
-		[[nodiscard]] auto sceneDebugPointShadowSampleError(std::size_t index) const									-> std::optional<float>;
-		[[nodiscard]] auto sceneShadowDepthSampleCount() const																-> std::size_t;
-		[[nodiscard]] auto sceneShadowDepthSample(std::size_t index) const												-> std::optional<RenderShadowDepthSample>;
-		[[nodiscard]] auto sceneShadowDepthError(std::size_t index) const													-> std::optional<float>;
-		[[nodiscard]] auto sceneSpotShadowDepthSampleCount() const															-> std::size_t;
-		[[nodiscard]] auto sceneSpotShadowDepthSample(std::size_t index) const											-> std::optional<RenderShadowDepthSample>;
-		[[nodiscard]] auto sceneSpotShadowDepthError(std::size_t index) const											-> std::optional<float>;
-		[[nodiscard]] auto scenePointShadowDepthSampleCount() const															-> std::size_t;
-		[[nodiscard]] auto scenePointShadowDepthSample(std::size_t index) const											-> std::optional<RenderShadowDepthSample>;
-		[[nodiscard]] auto scenePointShadowDepthError(std::size_t index) const											-> std::optional<float>;
 		[[nodiscard]] auto lastRenderedWindowCount() const																		-> std::size_t;
-		[[nodiscard]] auto preparedGpuTargetCount() const																		-> std::size_t;
-		[[nodiscard]] auto lastClearColor() const																					-> std::array<float, 4>;
 
 	private:
 		[[nodiscard]] static std::expected<void, Error>
@@ -350,42 +256,19 @@ export namespace vve::simple {
 		[[nodiscard]] const RenderResource *find(RenderResourceHandle handle) const;
 		[[nodiscard]] const RenderFunction *find(RenderFunctionHandle handle) const;
 		[[nodiscard]] auto appendBackendObject(RenderInstanceHandle instance)										-> std::expected<void, Error>;
+		[[nodiscard]] auto forward()																					-> ForwardRenderer &;
+		[[nodiscard]] auto forward() const																				-> const ForwardRenderer &;
 
 		RenderScene scene_{};															///< Active CPU render scene.
-		Renderer renderer_{};															///< Concrete Vulkan forward renderer backend.
+		SelectedRenderer renderer_{};													///< Selected renderer backend.
 		Vector<RenderResource> resources_{};										///< Generic render resource registry.
 		Vector<RenderFunction> functions_{};										///< Generic render function registry.
 		std::uint64_t rendered_frames_{0};											///< Number of accepted frame calls.
 		std::size_t last_window_count_{0};											///< Last non-closed window count.
-		std::array<float, 4> last_clear_color_{0.0F, 0.0F, 0.0F, 1.0F};	///< Stub clear color.
 		bool initialized_{false};														///< True after the concrete renderer is initialized.
 	};
 
 } // namespace vve::simple
-
-namespace vve::simple::detail {
-
-	inline constexpr std::string_view stub_pass{"forward.color_pass"};											///< Single stub render pass.
-	inline constexpr std::array stub_pass_deps{RenderMilestone::frame_begin()};					///< Forward color pass dependency.
-	inline constexpr std::array scene_done_deps{stub_pass};												///< Scene-color milestone input.
-	inline constexpr std::array finished_deps{RenderMilestone::scene_color()};						///< Frame-finished input.
-
-	inline constexpr std::array stub_pass_contracts{														///< Minimal render graph for simple.
-		RenderPassContract{.name = RenderMilestone::frame_begin(), .outputs = "frame inputs", .milestone = true},
-		RenderPassContract{.name = stub_pass,
-									.depends_on = stub_pass_deps,
-									.inputs = "registered render resources",
-									.outputs = "forward scene color"},
-		RenderPassContract{.name = RenderMilestone::scene_color(),
-									.depends_on = scene_done_deps,
-									.outputs = "forward scene color is ready",
-									.milestone = true},
-		RenderPassContract{.name = RenderMilestone::frame_finished(),
-									.depends_on = finished_deps,
-									.outputs = "frame can be presented",
-									.milestone = true}};
-
-} // namespace vve::simple::detail
 
 namespace vve::simple {
 
@@ -533,17 +416,14 @@ namespace vve::simple {
 	inline const std::optional<RenderSpotLight> &RenderScene::spotLight() const { return spot_light_; }
 	inline const Vector<RenderInstance> &RenderScene::instances() const { return instances_; }
 
-	/// @brief Returns the only renderer descriptor kept by the simple stub.
-	inline auto RenderSystem::createForwardRenderer() const													-> RendererDescriptor{
-		return RendererDescriptor{.handle = makeCounterHandle<RendererHandle>(),
-											.id = RendererId{.value = "forward"},
-											.shadow_maps = false,
-											.passes = detail::stub_pass_contracts};
-	}
-
 	/// @brief Accepts the historical forward id and the new stub id.
 	inline auto RenderSystem::createRenderer(RendererId id) const											-> std::expected<RendererDescriptor, Error>{
-		if (id.value == "forward" || id.value == "stub" || id.value.empty()) { return createForwardRenderer(); }
+		if (id.value == "forward" || id.value == "stub" || id.value.empty()) {
+			return RendererDescriptor{.handle = makeCounterHandle<RendererHandle>(),
+												.id = std::visit([](const auto &renderer) { return renderer.id(); }, renderer_),
+												.shadow_maps = false,
+												.passes = std::visit([](const auto &renderer) { return renderer.passes(); }, renderer_)};
+		}
 		return std::unexpected(Error::invalid_argument);
 	}
 
@@ -643,6 +523,26 @@ namespace vve::simple {
 		return found == functions_.end() ? nullptr : std::addressof(*found);
 	}
 
+	/// @brief Returns the current forward renderer backend.
+	inline auto RenderSystem::forward()																			-> ForwardRenderer &{
+		return std::get<ForwardRenderer>(renderer_);
+	}
+
+	/// @brief Returns the current forward renderer backend.
+	inline auto RenderSystem::forward() const																	-> const ForwardRenderer &{
+		return std::get<ForwardRenderer>(renderer_);
+	}
+
+	/// @brief Renderer-selection seam used by renderer-specific tests.
+	inline auto RenderSystem::backend()																			-> SelectedRenderer &{
+		return renderer_;
+	}
+
+	/// @brief Renderer-selection seam used by renderer-specific tests.
+	inline auto RenderSystem::backend() const																	-> const SelectedRenderer &{
+		return renderer_;
+	}
+
 	inline auto RenderSystem::resourceName(RenderResourceHandle handle) const							-> std::expected<ObjectName, Error>{
 		const auto *resource = find(handle);
 		return resource == nullptr ? std::unexpected(Error::missing_object) : std::expected<ObjectName, Error>{resource->name};
@@ -682,10 +582,11 @@ namespace vve::simple {
 		auto model = translate(identityMat4(), instance->local_transform.translation.value);
 		model = scale(model, instance->local_transform.scale.value);
 		const auto use_texture = !material->base_color_texture_source.empty();
-		if (use_texture) { renderer_.scene.baseColorTexture = material->base_color_texture_source; }
-		renderer_.scene.objects.push_back(Object{.mesh = std::move(backend_mesh),
-															.model = model,
-															.useBaseColorTexture = use_texture ? 1U : 0U});
+		std::visit([&](auto &renderer) {
+			renderer.appendObject(std::move(backend_mesh), model,
+										 use_texture ? std::optional<std::string>{material->base_color_texture_source.string()} :
+														 std::nullopt);
+		}, renderer_);
 		return {};
 	}
 
@@ -727,18 +628,18 @@ namespace vve::simple {
 
 	inline void RenderSystem::clearScene() {
 		scene_.clear();
-		renderer_.scene.objects.clear();
-		renderer_.scene.baseColorTexture.reset();
+		forward().scene.objects.clear();
+		forward().scene.baseColorTexture.reset();
 	}
 	inline auto RenderSystem::setCamera(Camera camera, PixelExtent extent)								-> void{
 		const auto eye = camera.position.value;
 		const auto target = math::add(eye, camera.forward.value);
-		renderer_.setCamera(eye, target);
+		forward().setCamera(eye, target);
 		scene_.setCamera(RenderCamera{.camera = std::move(camera), .target_extent = extent});
 	}
 	inline void RenderSystem::setDirectionalLight(Direction direction_to_light, LinearColor color,
 																	LightIntensity intensity, LinearColor ambient) {
-		renderer_.scene.directionalLight = DirectionalLight{
+		forward().scene.directionalLight = DirectionalLight{
 			.direction = direction_to_light.value,
 			.color = color.value,
 			.intensity = intensity,
@@ -748,18 +649,18 @@ namespace vve::simple {
 	}
 	inline void RenderSystem::setPointLight(Position position, LinearColor color,
 															LightIntensity intensity, LightRange range) {
-		renderer_.scene.pointLight = PointLight{
+		forward().scene.pointLight = PointLight{
 			.position = position.value,
 			.color = color.value,
 			.intensity = intensity.value,
 			.range = range.value,
-			.ambient = renderer_.scene.pointLight.ambient};
+			.ambient = forward().scene.pointLight.ambient};
 		scene_.setPointLight(RenderPointLight{.position = position, .color = color,
 															.intensity = intensity, .range = range});
 	}
 	inline void RenderSystem::setPointLight(Position position, LinearColor color,
 															LightIntensity intensity, LightRange range, LinearColor ambient) {
-		renderer_.scene.pointLight = PointLight{.position = position.value,
+		forward().scene.pointLight = PointLight{.position = position.value,
 															 .color = color.value,
 															 .intensity = intensity.value,
 															 .range = range.value,
@@ -769,26 +670,26 @@ namespace vve::simple {
 	}
 	inline void RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
 														LightIntensity intensity, LightRange range, SpotConeAngle cone) {
-		renderer_.scene.spotLight = SpotLight{.position = position.value,
+		forward().scene.spotLight = SpotLight{.position = position.value,
 														  .direction = direction.value,
 														  .color = color.value,
 														  .intensity = intensity,
 														  .range = range,
-														  .innerConeAngle = renderer_.scene.spotLight.innerConeAngle,
+														  .innerConeAngle = forward().scene.spotLight.innerConeAngle,
 														  .outerConeAngle = cone,
-														  .ambient = renderer_.scene.spotLight.ambient};
+														  .ambient = forward().scene.spotLight.ambient};
 		scene_.setSpotLight(RenderSpotLight{.position = position, .direction = direction, .color = color,
 														.intensity = intensity, .range = range, .cone = cone});
 	}
 	inline void RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
 														LightIntensity intensity, LightRange range,
 														SpotConeAngle cone, LinearColor ambient) {
-		renderer_.scene.spotLight = SpotLight{.position = position.value,
+		forward().scene.spotLight = SpotLight{.position = position.value,
 														  .direction = direction.value,
 														  .color = color.value,
 														  .intensity = intensity,
 														  .range = range,
-														  .innerConeAngle = renderer_.scene.spotLight.innerConeAngle,
+														  .innerConeAngle = forward().scene.spotLight.innerConeAngle,
 														  .outerConeAngle = cone,
 														  .ambient = ambient.value.x};
 		scene_.setSpotLight(RenderSpotLight{.position = position, .direction = direction, .color = color,
@@ -796,13 +697,20 @@ namespace vve::simple {
 	}
 
 	inline auto RenderSystem::loadScene(Scene scene)																-> void{
-		renderer_.loadScene(std::move(scene));
+		forward().loadScene(std::move(scene));
 	}
 
-	inline auto RenderSystem::initialize(SDL_Window *window)														-> std::expected<void, Error>{
+	inline auto RenderSystem::initialize(SDL_Window *window, RendererId id)									-> std::expected<void, Error>{
 		if (initialized_) { return {}; }
 		if (window == nullptr) { return std::unexpected(Error::invalid_argument); }
-		const VkResult result = renderer_.init(window);
+		if (id.value == "forward" || id.value.empty()) {
+			if (!std::holds_alternative<ForwardRenderer>(renderer_)) { renderer_.emplace<ForwardRenderer>(); }
+		} else if (id.value == "stub") {
+			if (!std::holds_alternative<StubRenderer>(renderer_)) { renderer_.emplace<StubRenderer>(); }
+		} else {
+			return std::unexpected(Error::invalid_argument);
+		}
+		const VkResult result = std::visit([window](auto &renderer) { return renderer.init(window); }, renderer_);
 		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
 		initialized_ = true;
 		return {};
@@ -810,36 +718,14 @@ namespace vve::simple {
 
 	inline auto RenderSystem::shutdown()																				-> void{
 		if (initialized_) {
-			(void)vkDeviceWaitIdle(renderer_.device.device);
-			renderer_.cleanup();
+			std::visit([](auto &renderer) {
+				if constexpr (std::same_as<std::remove_cvref_t<decltype(renderer)>, ForwardRenderer>) {
+					(void)vkDeviceWaitIdle(renderer.device.device);
+				}
+				renderer.shutdown();
+			}, renderer_);
 			initialized_ = false;
 		}
-	}
-
-	inline auto RenderSystem::setCamera(Vec3 eye, Vec3 target)													-> void{
-		renderer_.setCamera(eye, target);
-	}
-
-	inline auto RenderSystem::drawFrame(VulkanReadback *readback)												-> void{
-		if (!initialized_) { return; }
-		renderer_.drawFrame(readback);
-		++rendered_frames_;
-	}
-
-	inline auto RenderSystem::scene()																					-> Scene &{
-		return renderer_.scene;
-	}
-
-	inline auto RenderSystem::scene() const																			-> const Scene &{
-		return renderer_.scene;
-	}
-
-	inline auto RenderSystem::backend()																				-> Renderer &{
-		return renderer_;
-	}
-
-	inline auto RenderSystem::backend() const																		-> const Renderer &{
-		return renderer_;
 	}
 
 	inline auto RenderSystem::initialized() const																	-> bool{
@@ -860,34 +746,7 @@ namespace vve::simple {
 	auto RenderSystem::captureFrameToPng(const std::filesystem::path &output_path)	-> std::expected<void, Error>{
 		if (!initialized_) { return std::unexpected(Error::not_initialized); }
 		if (output_path.empty()) { return std::unexpected(Error::invalid_argument); }
-		if (!renderer_.lastRenderedImageIndex) { return std::unexpected(Error::missing_object); }
-		if (*renderer_.lastRenderedImageIndex >= renderer_.swapchain.images.size()) {
-			return std::unexpected(Error::internal_error);
-		}
-
-		if (const auto parent = output_path.parent_path(); !parent.empty()) {
-			auto error = std::error_code{};
-			std::filesystem::create_directories(parent, error);
-			if (error) { return std::unexpected(Error::io_error); }
-		}
-
-		auto readback = VulkanReadback{};
-		VkResult result = readback.create(renderer_.physicalDevice.physicalDevice, renderer_.device.device,
-													 renderer_.device.graphicsQueue, renderer_.commandPool.commandPool,
-													 renderer_.swapchain.extent, renderer_.swapchain.imageFormat);
-		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
-
-		result = vkDeviceWaitIdle(renderer_.device.device);
-		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
-		const auto image = renderer_.swapchain.images[*renderer_.lastRenderedImageIndex];
-		result = readback.capture(image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
-
-		const auto output = output_path.string();
-		if (!writeReadbackPng(readback.pixelBytes(), renderer_.swapchain.extent, renderer_.swapchain.imageFormat, output)) {
-			return std::unexpected(Error::io_error);
-		}
-		return {};
+		return std::visit([&](auto &renderer) { return renderer.captureFrameToPng(output_path); }, renderer_);
 	}
 
 	/// @brief Records a frame without creating GPU objects.
@@ -896,7 +755,8 @@ namespace vve::simple {
 			return !window.should_close;
 		});
 		if (initialized_) {
-			drawFrame();
+			std::visit([](auto &renderer) { renderer.renderFrame(nullptr); }, renderer_);
+			++rendered_frames_;
 		} else {
 			++rendered_frames_;
 		}
@@ -909,37 +769,6 @@ namespace vve::simple {
 	}
 
 	inline std::uint64_t RenderSystem::renderedFrameCount() const { return rendered_frames_; }
-	inline std::uint64_t RenderSystem::presentedFrameCount() const { return 0; }
-	inline std::uint64_t RenderSystem::triangleDrawCount() const { return 0; }
-	inline std::uint32_t RenderSystem::triangleVertexCount() const { return 0; }
-	inline std::uint64_t RenderSystem::sceneUploadCount() const { return 0; }
-	inline std::uint64_t RenderSystem::sceneMeshDrawCount() const { return 0; }
-	inline std::uint64_t RenderSystem::sceneInstanceDrawCount() const { return 0; }
-	inline std::uint32_t RenderSystem::sceneDrawVertexCount() const { return 0; }
-	inline std::uint32_t RenderSystem::sceneDrawIndexCount() const { return 0; }
-	inline std::size_t RenderSystem::sceneDebugSampleCount() const { return 0; }
-	inline std::optional<RenderDebugSample> RenderSystem::sceneCpuDebugSample(std::size_t) const { return {}; }
-	inline std::optional<RenderDebugSample> RenderSystem::sceneGpuDebugSample(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::sceneDebugClipError(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::sceneDebugDepthError(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::sceneDebugLightSpaceError(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::sceneDebugSpotLightSpaceError(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::sceneDebugPointLightSpaceError(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::sceneDebugLightingError(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::sceneDebugShadowSampleError(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::sceneDebugSpotShadowSampleError(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::sceneDebugPointShadowSampleError(std::size_t) const { return {}; }
-	inline std::size_t RenderSystem::sceneShadowDepthSampleCount() const { return 0; }
-	inline std::optional<RenderShadowDepthSample> RenderSystem::sceneShadowDepthSample(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::sceneShadowDepthError(std::size_t) const { return {}; }
-	inline std::size_t RenderSystem::sceneSpotShadowDepthSampleCount() const { return 0; }
-	inline std::optional<RenderShadowDepthSample> RenderSystem::sceneSpotShadowDepthSample(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::sceneSpotShadowDepthError(std::size_t) const { return {}; }
-	inline std::size_t RenderSystem::scenePointShadowDepthSampleCount() const { return 0; }
-	inline std::optional<RenderShadowDepthSample> RenderSystem::scenePointShadowDepthSample(std::size_t) const { return {}; }
-	inline std::optional<float> RenderSystem::scenePointShadowDepthError(std::size_t) const { return {}; }
 	inline std::size_t RenderSystem::lastRenderedWindowCount() const { return last_window_count_; }
-	inline std::size_t RenderSystem::preparedGpuTargetCount() const { return 0; }
-	inline std::array<float, 4> RenderSystem::lastClearColor() const { return last_clear_color_; }
 
 } // namespace vve::simple

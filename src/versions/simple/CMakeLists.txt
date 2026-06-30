@@ -14,6 +14,7 @@ target_sources(ViennaVulkanEngine
          Assets.ixx
          Resources.ixx
          Shaders.ixx
+         RenderPassContract.ixx
          RenderPass.ixx
          RenderSystem.ixx
          Gui.ixx

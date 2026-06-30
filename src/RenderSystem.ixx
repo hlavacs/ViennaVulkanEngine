@@ -105,38 +105,7 @@ export namespace vve {
 		[[nodiscard]] auto hasSceneSpotLight() const																				-> bool;
 		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path)						-> std::expected<void, Error>;
 		[[nodiscard]] auto renderedFrameCount() const																			-> std::uint64_t;
-		[[nodiscard]] auto presentedFrameCount() const																			-> std::uint64_t;
-		[[nodiscard]] auto triangleDrawCount() const																				-> std::uint64_t;
-		[[nodiscard]] auto triangleVertexCount() const																			-> std::uint32_t;
-		[[nodiscard]] auto sceneUploadCount() const																				-> std::uint64_t;
-		[[nodiscard]] auto sceneMeshDrawCount() const																			-> std::uint64_t;
-		[[nodiscard]] auto sceneInstanceDrawCount() const																		-> std::uint64_t;
-		[[nodiscard]] auto sceneDrawVertexCount() const																			-> std::uint32_t;
-		[[nodiscard]] auto sceneDrawIndexCount() const																			-> std::uint32_t;
-		[[nodiscard]] auto sceneDebugSampleCount() const																		-> std::size_t;
-		[[nodiscard]] auto sceneCpuDebugSample(std::size_t index) const													-> std::optional<RenderDebugSample>;
-		[[nodiscard]] auto sceneGpuDebugSample(std::size_t index) const													-> std::optional<RenderDebugSample>;
-		[[nodiscard]] auto sceneDebugClipError(std::size_t index) const													-> std::optional<float>;
-		[[nodiscard]] auto sceneDebugDepthError(std::size_t index) const													-> std::optional<float>;
-	      [[nodiscard]] auto sceneDebugLightSpaceError(std::size_t index) const			-> std::optional<float>;
-	      [[nodiscard]] auto sceneDebugSpotLightSpaceError(std::size_t index) const		-> std::optional<float>;
-	      [[nodiscard]] auto sceneDebugPointLightSpaceError(std::size_t index) const		-> std::optional<float>;
-	      [[nodiscard]] auto sceneDebugLightingError(std::size_t index) const				-> std::optional<float>;
-	      [[nodiscard]] auto sceneDebugShadowSampleError(std::size_t index) const			-> std::optional<float>;
-	      [[nodiscard]] auto sceneDebugSpotShadowSampleError(std::size_t index) const	-> std::optional<float>;
-	      [[nodiscard]] auto sceneDebugPointShadowSampleError(std::size_t index) const	-> std::optional<float>;
-		[[nodiscard]] auto sceneShadowDepthSampleCount() const																-> std::size_t;
-		[[nodiscard]] auto sceneShadowDepthSample(std::size_t index) const												-> std::optional<RenderShadowDepthSample>;
-		[[nodiscard]] auto sceneShadowDepthError(std::size_t index) const													-> std::optional<float>;
-	      [[nodiscard]] auto sceneSpotShadowDepthSampleCount() const							-> std::size_t;
-	      [[nodiscard]] auto sceneSpotShadowDepthSample(std::size_t index) const			-> std::optional<RenderShadowDepthSample>;
-	      [[nodiscard]] auto sceneSpotShadowDepthError(std::size_t index) const			-> std::optional<float>;
-	      [[nodiscard]] auto scenePointShadowDepthSampleCount() const							-> std::size_t;
-	      [[nodiscard]] auto scenePointShadowDepthSample(std::size_t index) const			-> std::optional<RenderShadowDepthSample>;
-	      [[nodiscard]] auto scenePointShadowDepthError(std::size_t index) const			-> std::optional<float>;
 		[[nodiscard]] auto lastRenderedWindowCount() const																		-> std::size_t;
-		[[nodiscard]] auto preparedGpuTargetCount() const																		-> std::size_t;
-		[[nodiscard]] auto lastClearColor() const																					-> std::array<float, 4>;
 
 	private:
 		template <typename... TSystems> friend class Engine;

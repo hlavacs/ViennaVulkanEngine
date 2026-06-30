@@ -118,7 +118,7 @@ namespace vve {
 				for (auto window : window_system.windows()) {
 					auto *native = window.get().native();
 					if (native == nullptr) { continue; }
-					if (const auto result = render_system.initialize(native); !result) { return result; }
+					if (const auto result = render_system.initialize(native, window.get().rendererId()); !result) { return result; }
 					break;
 				}
 			}
