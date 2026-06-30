@@ -17,7 +17,9 @@ games then can opt to use them and still work without source code changes.
 
 The compiled outcome is a meta game engine, referred to as meta engine. It is a container for engine implementations, each being isoltaed from each other.
 
-The common interface is defined in the src folder and does not contain any implementation itself, just interface contracts defining a facade facing towards the user program. This is the facade layer. The facade layer lives in namespace vve. User programs should only call into the facade layer.
+The common interface is defined in the src folder and does not contain any implementation itself, just interface contracts defining a facade facing towards the user program. This is the facade layer. The facade layer lives in namespace vve. 
+
+User programs should only call into the facade layer. User programs are not allowed, under no circumstances, to use any detail of any concrete engine, directly. All interactions with the meta engine must be done via the official engine facade.
 
 The engine implementations are situated in the src/versions folder and are completely isolated from each other. This is the implementation layer. The meta engine can be compiled to contain all engine implementations or just one. Each game engine is isolated with its own namespace. For instance, v4 lives in the namespace vve::v4, source files are located in folder src/versions/v4.
 
