@@ -88,14 +88,15 @@ int main(int argc, char **argv) {
 	std::cerr << std::unitbuf;
 	std::cout << "[game] engine=" << vve::engineImplementationNamespaceName << '\n';
 
-	auto engine = vve::makeEngine(
-		vve::ApplicationName{"game"},
-		vve::WindowSetups{vve::WindowSetup{}
-								.id("main")
-								.title("VVE Simple Game")
-								.extent(vve::PixelExtent{.width = 960, .height = 540})
-								.renderer(vve::RendererId{.value = "forward"})
-								.resizable(true)});
+	auto engine = vve::EngineBuilder<>{}
+						 .applicationName("game")
+						 .addWindow(vve::WindowSetup{}
+										 .id("main")
+										 .title("VVE Simple Game")
+										 .extent(vve::PixelExtent{.width = 960, .height = 540})
+										 .renderer(vve::RendererId{.value = "forward"})
+										 .resizable(true))
+						 .build();
 
 	if (const auto result = engine.init(); !result) {
 		std::cerr << "[game] engine init failed: error=" << vve::errorName(result.error()) << '\n';
