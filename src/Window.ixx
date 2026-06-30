@@ -80,6 +80,8 @@ export namespace vve {
 		o = 111,						///< O key SDL keycode.
 		p = 112,						///< P key SDL keycode.
 		l = 108,						///< L key SDL keycode.
+		q = 113,						///< Q key SDL keycode.
+		e = 101,						///< E key SDL keycode.
 		w = 119,						///< W key SDL keycode.
 		a = 97,						///< A key SDL keycode.
 		s = 115,						///< S key SDL keycode.
@@ -124,6 +126,50 @@ export namespace vve {
 
 		void *impl_{};	///< Opaque non-owning implementation pointer.
 	};	///< Facade input snapshot.
+
+	/// @brief Reusable keyboard-driven camera controller for application cameras.
+	class DefaultCameraController {
+	public:
+		[[nodiscard]] auto update(const InputState &input) -> Camera;
+
+		Position eye{.value = Vec3{0.0F, 6.0F, 9.0F}};	///< Camera eye position.
+		Scalar yaw{};													///< Horizontal look angle around the up axis.
+		Scalar pitch{};												///< Vertical look angle from the ground plane.
+		Scalar move_step{static_cast<Scalar>(0.08)};			///< Per-frame movement distance.
+		Scalar turn_step{static_cast<Scalar>(0.025)};		///< Per-frame rotation angle.
+		Scalar max_pitch{static_cast<Scalar>(1.45)};			///< Absolute pitch clamp before the view singularity.
+	};
+
+	/**
+		* @brief Applies the default keyboard camera motion and returns the resulting facade camera.
+		* @param input Current facade input snapshot used for continuous movement and turning.
+		* @return Camera looking from the updated eye position along the updated forward vector.
+		*/
+	auto DefaultCameraController::update(const InputState &input) -> Camera {
+		const Vec3 worldUp{zero(), one(), zero()};	///< Stable up axis for view and flight.
+		auto forward = math::normalize(Vec3{std::cos(pitch) * std::sin(yaw), std::sin(pitch),
+													 -std::cos(pitch) * std::cos(yaw)});
+
+		// Update view angles before movement so the current frame moves in the new direction.
+		if (input.isKeyDown(Key::left)) { yaw -= turn_step; }
+		if (input.isKeyDown(Key::right)) { yaw += turn_step; }
+		if (input.isKeyDown(Key::up)) { pitch -= turn_step; }
+		if (input.isKeyDown(Key::down)) { pitch += turn_step; }
+		pitch = math::clamp(pitch, -max_pitch, max_pitch);
+
+		// Rebuild camera basis after clamping to preserve the original example feel.
+		forward = math::normalize(Vec3{std::cos(pitch) * std::sin(yaw), std::sin(pitch),
+												 -std::cos(pitch) * std::cos(yaw)});
+		const Vec3 right = math::normalize(math::cross(forward, worldUp));
+		if (input.isKeyDown(Key::w)) { eye.value = math::add(eye.value, math::scale(forward, move_step)); }
+		if (input.isKeyDown(Key::s)) { eye.value = math::subtract(eye.value, math::scale(forward, move_step)); }
+		if (input.isKeyDown(Key::a)) { eye.value = math::subtract(eye.value, math::scale(right, move_step)); }
+		if (input.isKeyDown(Key::d)) { eye.value = math::add(eye.value, math::scale(right, move_step)); }
+		if (input.isKeyDown(Key::q)) { eye.value = math::subtract(eye.value, math::scale(worldUp, move_step)); }
+		if (input.isKeyDown(Key::e)) { eye.value = math::add(eye.value, math::scale(worldUp, move_step)); }
+
+		return Camera::lookAt(eye, Position{.value = math::add(eye.value, forward)}, Direction{.value = worldUp});
+	}
 
 	class Window {
 	public:

@@ -148,33 +148,27 @@ int main(int argc, char **argv) {
 	const int maxFrames = frameLimit(argc, argv).value_or(0);
 	int frame{};
 	bool running = true;
-	vve::Vec3 cameraEye{0.0F, 6.0F, 9.0F};                                                         ///< Matches the previous renderer default eye.
-	const vve::Vec3 initialTarget{0.0F, 1.0F, 0.0F};                                                ///< Matches the previous renderer default target.
-	const vve::Vec3 worldUp{0.0F, 1.0F, 0.0F};                                                      ///< Stable up axis for view and strafing.
-	const vve::Vec3 initialForward = vve::math::normalize(vve::math::subtract(initialTarget, cameraEye)); ///< Default view direction.
-	float cameraYaw = std::atan2(initialForward.x, -initialForward.z);                              ///< Horizontal look angle around Y.
-	float cameraPitch = std::asin(initialForward.y);                                                ///< Vertical look angle from the XZ plane.
-	constexpr float moveStep = 0.08F;                                                               ///< Small fixed per-frame movement distance.
-	constexpr float turnStep = 0.025F;                                                              ///< Small fixed per-frame rotation angle.
-	constexpr float maxPitch = 1.45F;                                                               ///< Keeps the view away from the up-axis singularity.
+	vve::DefaultCameraController cameraController{};                                                ///< Facade camera motion shared by examples and applications.
+	cameraController.eye = vve::Position{.value = vve::Vec3{0.0F, 6.0F, 9.0F}};
+	const auto startupForward =
+		vve::math::normalize(vve::math::subtract(vve::Vec3{0.0F, 1.0F, 0.0F}, cameraController.eye.value));
+	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
+	cameraController.pitch = std::asin(startupForward.y);
 	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &spotLightEnabled, &pointLightEnabled,
-															 &directionalLightEnabled, &cameraEye] {
+															 &directionalLightEnabled, &cameraController] {
 		ImGui::Begin("Game");
 		ImGui::Text("Frame: %d", frame);
 		ImGui::Text("Renderer: %s", activeRenderer.value.c_str());
 		ImGui::Text("Spot light: %s", spotLightEnabled ? "on" : "off");
 		ImGui::Text("Point light: %s", pointLightEnabled ? "on" : "off");
 		ImGui::Text("Directional light: %s", directionalLightEnabled ? "on" : "off");
-		ImGui::Text("Camera: %.2f, %.2f, %.2f", cameraEye.x, cameraEye.y, cameraEye.z);
+		ImGui::Text("Camera: %.2f, %.2f, %.2f", cameraController.eye.value.x, cameraController.eye.value.y,
+						cameraController.eye.value.z);
 		ImGui::End();
 	});
 	while (running && (maxFrames == 0 || frame < maxFrames)) {
-		const vve::Vec3 forward = vve::math::normalize(vve::Vec3{
-			std::cos(cameraPitch) * std::sin(cameraYaw), std::sin(cameraPitch), -std::cos(cameraPitch) * std::cos(cameraYaw)});
-		render.setCamera(vve::Camera::lookAt(vve::Position{.value = cameraEye},
-														 vve::Position{.value = vve::math::add(cameraEye, forward)},
-														 vve::Direction{.value = worldUp}),
-							  vve::PixelExtent{.width = 960, .height = 540});
+		const auto frameInput = engine.world().get<vve::WindowSystem>().input();
+		render.setCamera(cameraController.update(frameInput), vve::PixelExtent{.width = 960, .height = 540});
 
 		const auto status = engine.step();
 		if (!status) {
@@ -201,19 +195,6 @@ int main(int argc, char **argv) {
 			applyLights();
 			std::cout << "[game] directional light " << (directionalLightEnabled ? "on" : "off") << '\n';
 		}
-		if (input.isKeyDown(vve::Key::left)) { cameraYaw -= turnStep; }
-		if (input.isKeyDown(vve::Key::right)) { cameraYaw += turnStep; }
-		if (input.isKeyDown(vve::Key::up)) { cameraPitch -= turnStep; }
-		if (input.isKeyDown(vve::Key::down)) { cameraPitch += turnStep; }
-		cameraPitch = vve::math::clamp(cameraPitch, -maxPitch, maxPitch);
-
-		const vve::Vec3 movedForward = vve::math::normalize(vve::Vec3{
-			std::cos(cameraPitch) * std::sin(cameraYaw), std::sin(cameraPitch), -std::cos(cameraPitch) * std::cos(cameraYaw)});
-		const vve::Vec3 right = vve::math::normalize(vve::math::cross(movedForward, worldUp));
-		if (input.isKeyDown(vve::Key::w)) { cameraEye = vve::math::add(cameraEye, vve::math::scale(movedForward, moveStep)); }
-		if (input.isKeyDown(vve::Key::s)) { cameraEye = vve::math::subtract(cameraEye, vve::math::scale(movedForward, moveStep)); }
-		if (input.isKeyDown(vve::Key::a)) { cameraEye = vve::math::subtract(cameraEye, vve::math::scale(right, moveStep)); }
-		if (input.isKeyDown(vve::Key::d)) { cameraEye = vve::math::add(cameraEye, vve::math::scale(right, moveStep)); }
 	}
 
 	std::cout << "[game] frames=" << frame << '\n';
