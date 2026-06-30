@@ -20,6 +20,10 @@ export namespace vve {
 
 		[[nodiscard]] auto addScene(ObjectName name)									-> std::expected<SceneHandle, Error>;
 		[[nodiscard]] auto loadScene(const std::filesystem::path &source)		-> std::expected<SceneHandle, Error>;
+		[[nodiscard]] inline std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &source,
+																													 const SceneLoadOptions &options) {
+			return loadScene(source);
+		}																										///< Accepts facade scene-load options; honored as loader support grows.
 		[[nodiscard]] bool containsScene(SceneHandle scene) const;
 		[[nodiscard]] auto sceneName(SceneHandle scene) const						-> std::expected<ObjectName, Error>;
 		[[nodiscard]] auto sceneNodeCount(SceneHandle scene) const				-> std::expected<std::size_t, Error>;

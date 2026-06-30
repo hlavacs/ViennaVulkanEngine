@@ -231,6 +231,47 @@ export namespace vve {
 
 	inline constexpr MakeEngine makeEngine{};	///< Facade engine factory.
 
+	template <typename... TSystems> class EngineBuilder {
+	public:
+		inline EngineBuilder() = default;
+		explicit inline EngineBuilder(UserSystems<TSystems...> systems) : user_systems_{std::move(systems)} {}
+
+		[[nodiscard]] inline EngineBuilder &applicationName(std::string value) {
+			application_name_ = ApplicationName{.value = std::move(value)};
+			return *this;
+		}
+		[[nodiscard]] inline EngineBuilder &maxFrames(MaxFrames value) {
+			max_frames_ = value;
+			return *this;
+		}
+		[[nodiscard]] inline EngineBuilder &windows(WindowSetups value) {
+			windows_ = std::move(value);
+			windows_configured_ = true;
+			return *this;
+		}
+		[[nodiscard]] inline EngineBuilder &addWindow(WindowSetup value) {
+			if (!windows_configured_) { windows_ = WindowSetups{std::move(value)}; }
+			else { windows_.add(std::move(value)); }
+			windows_configured_ = true;
+			return *this;
+		}
+		[[nodiscard]] inline EngineBuilder &userSystems(UserSystems<TSystems...> value) {
+			user_systems_ = std::move(value);
+			return *this;
+		}
+		[[nodiscard]] inline auto build() const {
+			if (windows_configured_) { return makeEngine(application_name_, max_frames_, windows_, user_systems_); }
+			return makeEngine(application_name_, max_frames_, user_systems_);
+		}
+
+	private:
+		ApplicationName application_name_{};			///< Human-readable application name option.
+		MaxFrames max_frames_{};						///< Optional frame cap option.
+		WindowSetups windows_{};						///< Startup window collection option.
+		UserSystems<TSystems...> user_systems_{};	///< User systems stored through the facade bundle.
+		bool windows_configured_{false};				///< True after startup windows are explicitly configured.
+	};														///< Chainable facade engine factory.
+
 	template <typename... TSystems> Engine<TSystems...>::Engine() : Engine{detail::EngineStartupOptions{}} {}
 
 	template <typename... TSystems>

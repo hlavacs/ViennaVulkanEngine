@@ -80,20 +80,38 @@ export namespace vve {
 		auto setCamera(Camera camera, PixelExtent extent)																		-> void;
 		void setDirectionalLight(Direction direction_to_light, LinearColor color,
 											LightIntensity intensity, LinearColor ambient);
+		inline void setDirectionalLight(const DirectionalLight &light) {
+			setDirectionalLight(light.direction, light.color, light.intensity, light.ambient);
+		}																																		///< Applies a directional light descriptor.
 		auto setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range)	-> void;
 		auto setPointLight(Position position, LinearColor color, LightIntensity intensity,
 								 LightRange range, LinearColor ambient)															-> void;
+		inline void setPointLight(const PointLight &light) {
+			setPointLight(light.position, light.color, light.intensity, light.range, light.ambient);
+		}																																		///< Applies a point light descriptor.
 		void setSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone);
 		void setSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient);
+		inline void setSpotLight(const SpotLight &light) {
+			setSpotLight(light.position, light.direction, light.color, light.intensity, light.range, light.cone, light.ambient);
+		}																																		///< Applies a spotlight descriptor.
 		[[nodiscard]] std::expected<void, Error> addPlane(Vec2 half_extent, LinearColor color,
 																			Transform transform = {});
+		[[nodiscard]] inline std::expected<void, Error> addPlane(const PlaneDescriptor &plane) {
+			return addPlane(plane.half_extent, plane.color, plane.transform);
+		}																																		///< Adds a plane descriptor.
 		[[nodiscard]] std::expected<void, Error> addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
 																			Transform transform = {});
+		[[nodiscard]] inline std::expected<void, Error> addCuboid(const CuboidDescriptor &cuboid) {
+			return addCuboid(cuboid.minimum, cuboid.maximum, cuboid.color, cuboid.transform);
+		}																																		///< Adds a cuboid descriptor.
 		[[nodiscard]] std::expected<void, Error> addTexturedCuboid(Vec3 minimum, Vec3 maximum,
 																					 std::filesystem::path base_color_texture,
 																					 Transform transform = {});
+		[[nodiscard]] inline std::expected<void, Error> addTexturedCuboid(const TexturedCuboidDescriptor &cuboid) {
+			return addTexturedCuboid(cuboid.minimum, cuboid.maximum, cuboid.base_color_texture, cuboid.transform);
+		}																																		///< Adds a textured cuboid descriptor.
 		[[nodiscard]] auto sceneMeshCount() const																					-> std::size_t;
 		[[nodiscard]] auto sceneMaterialCount() const																			-> std::size_t;
 		[[nodiscard]] auto sceneInstanceCount() const																			-> std::size_t;
