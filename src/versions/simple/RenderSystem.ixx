@@ -1,6 +1,11 @@
 module;
 #include <SDL3/SDL_video.h>
 #include <vulkan/vulkan_core.h>
+#if __has_include(<backends/imgui_impl_vulkan.h>)
+#include <backends/imgui_impl_vulkan.h>
+#else
+#include <imgui_impl_vulkan.h>
+#endif
 
 export module VEEngine.Simple:RenderSystem;
 import std;
@@ -227,7 +232,11 @@ export namespace vve::simple {
 		void setSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient);
 		auto loadScene(Scene scene)																									-> void;
+		/// @brief Stores the borrowed GUI system for later forwarding to renderer backends.
+		auto setGuiSystem(void *gui)																								-> void;
+		auto setGuiRecordSink(std::function<void(VkCommandBuffer)> sink)												-> void;
 		[[nodiscard]] auto initialize(SDL_Window *window, RendererId id = {})												-> std::expected<void, Error>;
+		[[nodiscard]] auto makeGuiInitInfo() const																			-> std::optional<ImGui_ImplVulkan_InitInfo>;
 		[[nodiscard]] auto backend()																								-> SelectedRenderer &;
 		[[nodiscard]] auto backend() const																						-> const SelectedRenderer &;
 		auto shutdown()																													-> void;
@@ -261,6 +270,7 @@ export namespace vve::simple {
 
 		RenderScene scene_{};															///< Active CPU render scene.
 		SelectedRenderer renderer_{};													///< Selected renderer backend.
+		void *guiSystem_{nullptr};													///< Non-owning, type-erased GUI system pointer for later renderer wiring.
 		Vector<RenderResource> resources_{};										///< Generic render resource registry.
 		Vector<RenderFunction> functions_{};										///< Generic render function registry.
 		std::uint64_t rendered_frames_{0};											///< Number of accepted frame calls.
@@ -700,11 +710,23 @@ namespace vve::simple {
 		forward().loadScene(std::move(scene));
 	}
 
+	inline auto RenderSystem::setGuiSystem(void *gui)																-> void{
+		guiSystem_ = gui;
+	}
+
+	/// @brief Forwards the GUI recorder into the active forward renderer.
+	inline auto RenderSystem::setGuiRecordSink(std::function<void(VkCommandBuffer)> sink)			-> void{
+		if (std::holds_alternative<ForwardRenderer>(renderer_)) {
+			std::get<ForwardRenderer>(renderer_).setGuiRecordSink(std::move(sink));
+		}
+	}
+
 	inline auto RenderSystem::initialize(SDL_Window *window, RendererId id)									-> std::expected<void, Error>{
 		if (initialized_) { return {}; }
 		if (window == nullptr) { return std::unexpected(Error::invalid_argument); }
 		if (id.value == "forward" || id.value.empty()) {
 			if (!std::holds_alternative<ForwardRenderer>(renderer_)) { renderer_.emplace<ForwardRenderer>(); }
+			std::get<ForwardRenderer>(renderer_).setGuiSystem(guiSystem_);
 		} else if (id.value == "stub") {
 			if (!std::holds_alternative<StubRenderer>(renderer_)) { renderer_.emplace<StubRenderer>(); }
 		} else {
@@ -714,6 +736,15 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
 		initialized_ = true;
 		return {};
+	}
+
+	inline auto RenderSystem::makeGuiInitInfo() const													-> std::optional<ImGui_ImplVulkan_InitInfo>{
+		if (!initialized_ || !std::holds_alternative<ForwardRenderer>(renderer_)) { return std::nullopt; }
+		auto info = std::get<ForwardRenderer>(renderer_).makeImguiInitInfo();
+		if (info.Device == VK_NULL_HANDLE || info.RenderPass == VK_NULL_HANDLE || info.DescriptorPool == VK_NULL_HANDLE) {
+			return std::nullopt;
+		}
+		return info;
 	}
 
 	inline auto RenderSystem::shutdown()																				-> void{

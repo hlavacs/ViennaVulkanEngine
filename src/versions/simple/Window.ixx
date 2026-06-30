@@ -155,12 +155,14 @@ export namespace vve::simple {
 		[[nodiscard]] VVE_SIMPLE_API std::expected<void, Error> setActiveCamera(Entity camera);								///< Assigns camera.
 		[[nodiscard]] VVE_SIMPLE_API std::optional<Entity> activeCamera() const;													///< Returns the first selected camera.
 		[[nodiscard]] VVE_SIMPLE_API bool anyShouldClose() const;																		///< Returns true when any window should close.
+		VVE_SIMPLE_API auto setGuiEventSink(std::function<void(const SDL_Event &)> sink)					-> void;		///< Sets optional GUI event forwarding.
 
 	private:
 		template <typename TKey, typename TFunction>
 		[[nodiscard]] auto editWindow(TKey key, TFunction function)								-> std::expected<void, Error>;
 		template <typename TKey> [[nodiscard]] std::optional<Entity> cameraFor(TKey key) const;
 
+		std::function<void(const SDL_Event &)> guiEventSink_{};																		///< Non-owning SDL event sink for GUI input.
 		struct Impl;																															///< SDL-owning implementation hidden from module importers.
 		std::unique_ptr<Impl> impl_;																										///< Pimpl keeps SDL headers out of the public simple module.
 	};
@@ -367,6 +369,10 @@ export namespace vve::simple {
 
 	VVE_SIMPLE_API const InputState &WindowSystem::input() const { return impl_->input; }
 
+	VVE_SIMPLE_API auto WindowSystem::setGuiEventSink(std::function<void(const SDL_Event &)> sink)	-> void{
+		guiEventSink_ = std::move(sink);
+	}
+
 	VVE_SIMPLE_API auto WindowSystem::init(const Windows &windows)									-> std::expected<void, Error>{
 		const auto needs_platform_windows = std::ranges::any_of(windows.value, [](const WindowDesc &desc) {
 			return desc.visible;
@@ -429,6 +435,7 @@ export namespace vve::simple {
 		if (!impl_->video_initialized) { return {}; }
 		SDL_Event event{};
 		while (SDL_PollEvent(&event)) {
+			if (guiEventSink_) { guiEventSink_(event); }
 			switch (event.type) {
 			case SDL_EVENT_QUIT:
 				impl_->closeAll();

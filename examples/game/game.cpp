@@ -1,3 +1,5 @@
+#include <imgui.h>
+
 import std;
 import VEEngine;
 
@@ -88,13 +90,14 @@ int main(int argc, char **argv) {
 	std::cerr << std::unitbuf;
 	std::cout << "[game] engine=" << vve::engineImplementationNamespaceName << '\n';
 
+	const auto activeRenderer = vve::RendererId{.value = "forward"}; ///< Renderer id selected through the facade.
 	auto engine = vve::EngineBuilder<>{}
 						 .applicationName("game")
 						 .addWindow(vve::WindowSetup{}
 										 .id("main")
 										 .title("VVE Simple Game")
 										 .extent(vve::PixelExtent{.width = 960, .height = 540})
-										 .renderer(vve::RendererId{.value = "forward"})
+										 .renderer(activeRenderer)
 										 .resizable(true))
 						 .build();
 
@@ -154,6 +157,17 @@ int main(int argc, char **argv) {
 	constexpr float moveStep = 0.08F;                                                               ///< Small fixed per-frame movement distance.
 	constexpr float turnStep = 0.025F;                                                              ///< Small fixed per-frame rotation angle.
 	constexpr float maxPitch = 1.45F;                                                               ///< Keeps the view away from the up-axis singularity.
+	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &spotLightEnabled, &pointLightEnabled,
+															 &directionalLightEnabled, &cameraEye] {
+		ImGui::Begin("Game");
+		ImGui::Text("Frame: %d", frame);
+		ImGui::Text("Renderer: %s", activeRenderer.value.c_str());
+		ImGui::Text("Spot light: %s", spotLightEnabled ? "on" : "off");
+		ImGui::Text("Point light: %s", pointLightEnabled ? "on" : "off");
+		ImGui::Text("Directional light: %s", directionalLightEnabled ? "on" : "off");
+		ImGui::Text("Camera: %.2f, %.2f, %.2f", cameraEye.x, cameraEye.y, cameraEye.z);
+		ImGui::End();
+	});
 	while (running && (maxFrames == 0 || frame < maxFrames)) {
 		const vve::Vec3 forward = vve::math::normalize(vve::Vec3{
 			std::cos(cameraPitch) * std::sin(cameraYaw), std::sin(cameraPitch), -std::cos(cameraPitch) * std::cos(cameraYaw)});

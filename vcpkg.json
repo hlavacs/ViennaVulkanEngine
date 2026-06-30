@@ -3,6 +3,13 @@
   "version-string": "3.0.0",
   "dependencies": [
     "assimp",
+    {
+      "name": "imgui",
+      "features": [
+        "sdl3-binding",
+        "vulkan-binding"
+      ]
+    },
     "stb",
     {
       "name": "sdl3",

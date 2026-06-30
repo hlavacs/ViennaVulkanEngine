@@ -1,5 +1,7 @@
 module;
 
+#include <vulkan/vulkan_core.h>
+
 #ifndef VVE_ENGINE_IMPLEMENTATION_NAMESPACE
 #define VVE_ENGINE_IMPLEMENTATION_NAMESPACE simple
 #endif
@@ -50,6 +52,7 @@ export namespace vve::simple {
 	class Engine {
 	public:
 		Engine();
+		~Engine();
 		Engine(const Engine &) = delete;
 		Engine(Engine &&) = delete;
 		Engine &operator=(const Engine &) = delete;
@@ -73,6 +76,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto init()													-> std::expected<void, Error>;
 		[[nodiscard]] auto run()													-> std::expected<void, Error>;
 		[[nodiscard]] auto step()													-> std::expected<FrameStatus, Error>;
+		[[nodiscard]] auto renderFrame()										-> std::expected<void, Error>;
 		[[nodiscard]] std::expected<void, Error>
 		writeDebugGraphs(const std::filesystem::path &directory = "graph_dumps") const;
 
@@ -98,11 +102,20 @@ export namespace vve::simple {
 		std::chrono::steady_clock::time_point last_frame_time_{};			///< Timestamp of the previous step().
 		std::uint64_t frame_{0};														///< Number of completed step() calls.
 		bool initialized_{false};														///< True after init() succeeds.
+		bool gui_sdl_initialized_{false};											///< True after the active SDL window is bound to ImGui.
 	};
 
 	/// @brief Creates an engine with default options.
 	inline Engine::Engine(){
 		applyDefaults();
+	}
+
+	/// @brief Releases runtime systems owned by the simple engine.
+	inline Engine::~Engine() {
+		gui_.shutdownVulkan();
+		render_system_.shutdown();
+		gui_.shutdownSDL();
+		gui_.shutdownContext();
 	}
 
 	/// @brief Creates an engine from the compact compatibility config.
@@ -193,6 +206,31 @@ export namespace vve::simple {
 		return FrameStatus::running;
 	}
 
+	/// @brief Lazily initializes the renderer and binds the GUI SDL backend to its window.
+	inline auto Engine::renderFrame()																	-> std::expected<void, Error>{
+		if (!render_system_.initialized()) {
+			for (auto window : window_system_.windows()) {
+				auto *native = window.get().native();
+				if (native == nullptr) { continue; }
+				if (const auto result = render_system_.initialize(native, window.get().rendererId()); !result) {
+					return result;
+				}
+				if (!gui_sdl_initialized_) {
+					gui_.initContext();
+					gui_.initSDL(native);
+					if (auto info = render_system_.makeGuiInitInfo()) {
+						gui_.initVulkan(&*info);
+						gui_.buildFonts();
+					}
+					render_system_.setGuiRecordSink([this](VkCommandBuffer cmd){ gui_.recordFrame(cmd); });
+					gui_sdl_initialized_ = true;
+				}
+				break;
+			}
+		}
+		return render_system_.renderFrame(window_system_);
+	}
+
 	/// @brief Applies typed engine options; unknown option types are ignored.
 	template <typename TOption>
 	auto Engine::applyOption(TOption &&option)														-> void{
@@ -214,6 +252,8 @@ export namespace vve::simple {
 
 	/// @brief Fills small defaults after options have been applied.
 	inline auto Engine::applyDefaults()																	-> void{
+		render_system_.setGuiSystem(&gui_);																///< Hands engine-owned GUI to renderer for later forward GUI integration.
+		window_system_.setGuiEventSink([this](const auto &event) { gui_.processEvent(event); });		///< Forwards SDL input to the engine-owned GUI system.
 		if (windows_.value.empty()) { windows_.value.push_back(WindowDesc{}); }
 		for (auto &window : windows_.value) {
 			if (window.title == WindowDesc{}.title && application_name_.value != ApplicationName{}.value) {

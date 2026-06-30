@@ -14,6 +14,8 @@ export namespace vve {
 		GuiSystem &operator=(const GuiSystem &) = delete;
 		GuiSystem &operator=(GuiSystem &&) noexcept = delete;
 
+		auto draw(std::function<void()> frame) -> void;
+
 	private:
 		template <typename... TSystems> friend class Engine;
 

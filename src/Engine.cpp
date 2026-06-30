@@ -112,17 +112,7 @@ namespace vve {
 
 		/// @brief Renders one frame through the selected implementation.
 		std::expected<void, Error> engineRenderFrame(EngineState &state) {
-			auto &render_system = state.impl.renderSystem();
-			auto &window_system = state.impl.windowSystem();
-			if (!render_system.initialized()) {
-				for (auto window : window_system.windows()) {
-					auto *native = window.get().native();
-					if (native == nullptr) { continue; }
-					if (const auto result = render_system.initialize(native, window.get().rendererId()); !result) { return result; }
-					break;
-				}
-			}
-			return render_system.renderFrame(window_system);
+			return state.impl.renderFrame();
 		}
 
 		/// @brief Writes selected implementation debug graphs.

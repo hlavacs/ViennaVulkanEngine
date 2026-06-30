@@ -1,6 +1,11 @@
 module;
 #include <SDL3/SDL_video.h>
 #include <vulkan/vulkan_core.h>
+#if __has_include(<backends/imgui_impl_vulkan.h>)
+#include <backends/imgui_impl_vulkan.h>
+#else
+#include <imgui_impl_vulkan.h>
+#endif
 
 export module VEEngine.Simple.Renderer;
 import std;
@@ -149,6 +154,12 @@ export namespace vve::simple {
 
 		/// @brief Releases renderer-owned resources through the existing cleanup path.
 		void shutdown() { cleanup(); }
+
+		/// @brief Stores the non-owning GUI system handle reserved for later GUI rendering integration.
+		void setGuiSystem(void *gui) { guiSystem_ = gui; }
+
+		/// @brief Stores the optional GUI command recorder used inside the forward color pass.
+		void setGuiRecordSink(std::function<void(VkCommandBuffer)> sink) { guiRecord_ = std::move(sink); }
 
 		/// @brief Reports whether the renderer currently owns a live Vulkan device.
 		[[nodiscard]] bool initialized() const { return device.device != VK_NULL_HANDLE; }
@@ -328,6 +339,8 @@ export namespace vve::simple {
 
 			result = descriptorPool.create(device.device, framesInFlight);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			createImguiDescriptorPool();
 
 			result = descriptorSets.create(device.device, descriptorPool.descriptorPool, descriptorSetLayout.descriptorSetLayout, framesInFlight);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
@@ -547,6 +560,10 @@ export namespace vve::simple {
 			objectTexture.cleanup();
 			defaultObjectTexture.cleanup();
 			descriptorSets.cleanup();
+			if (imguiDescriptorPool_ != VK_NULL_HANDLE) {
+				vkDestroyDescriptorPool(device.device, imguiDescriptorPool_, nullptr);
+				imguiDescriptorPool_ = VK_NULL_HANDLE;
+			}
 			descriptorPool.cleanup();
 			uniformBuffers.cleanup();
 			frameSync.cleanup();
@@ -576,6 +593,9 @@ export namespace vve::simple {
 
 	private:
 		std::uint32_t currentFrame{0U}; ///< Index of the frame synchronization set used by the next draw.
+		VkDescriptorPool imguiDescriptorPool_{VK_NULL_HANDLE}; ///< Owned Dear ImGui descriptor pool reserved for backend texture descriptors.
+		void *guiSystem_{nullptr}; ///< Non-owning, type-erased GUI system pointer reserved for later GUI integration.
+		std::function<void(VkCommandBuffer)> guiRecord_; ///< Optional GUI recorder invoked during the forward color pass.
 
 		[[nodiscard]] VkExtent2D currentWindowPixelExtent() const {
 			if (window == nullptr) { return {}; }
@@ -639,6 +659,47 @@ export namespace vve::simple {
 			return VK_SUCCESS;
 		}
 
+		/// @brief Creates the dedicated Dear ImGui descriptor pool when the Vulkan device is available.
+		void createImguiDescriptorPool() {
+			if (imguiDescriptorPool_ != VK_NULL_HANDLE || device.device == VK_NULL_HANDLE) { return; }
+
+			constexpr std::uint32_t maxSets{16U}; // Small immediate-mode UI pool kept separate from renderer descriptors.
+			const VkDescriptorPoolSize poolSize{
+				.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = maxSets,
+			};
+			const VkDescriptorPoolCreateInfo createInfo{
+				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+				.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+				.maxSets = maxSets,
+				.poolSizeCount = 1U,
+				.pPoolSizes = &poolSize,
+			};
+
+			if (vkCreateDescriptorPool(device.device, &createInfo, nullptr, &imguiDescriptorPool_) != VK_SUCCESS) {
+				imguiDescriptorPool_ = VK_NULL_HANDLE;
+			}
+		}
+
+	public:
+		/// @brief Builds dormant Dear ImGui Vulkan backend data from the renderer-owned Vulkan objects.
+		[[nodiscard]] ImGui_ImplVulkan_InitInfo makeImguiInitInfo() const {
+			ImGui_ImplVulkan_InitInfo info{};
+			info.ApiVersion = VK_API_VERSION_1_4;
+			info.Instance = instance.instance;
+			info.PhysicalDevice = physicalDevice.physicalDevice;
+			info.Device = device.device;
+			info.QueueFamily = physicalDevice.graphicsQueueFamily.value_or(0U);
+			info.Queue = device.graphicsQueue;
+			info.DescriptorPool = imguiDescriptorPool_;
+			info.RenderPass = renderPass.renderPass;
+			info.MinImageCount = static_cast<std::uint32_t>(swapchain.images.size());
+			info.ImageCount = static_cast<std::uint32_t>(swapchain.images.size());
+			info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+			return info;
+		}
+
+	private:
 		/**
 			* @brief Records one forward render pass for a swapchain image into a frame command buffer.
 			*
@@ -738,6 +799,7 @@ export namespace vve::simple {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
 			drawUploadedObjects(pipelineLayout.pipelineLayout);
+			if (guiRecord_) { guiRecord_(commandBuffer); }
 
 			vkCmdEndRenderPass(commandBuffer);
 			result = vkEndCommandBuffer(commandBuffer);
