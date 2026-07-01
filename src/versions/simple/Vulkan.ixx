@@ -430,6 +430,12 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan swapchain owner; no image views, render pass, commands, or sync are created here.
 	struct VulkanSwapchain {
+		/// @brief Presentation mode request used during swapchain creation.
+		enum class PresentModePreference {
+			mailbox, ///< Prefer low-latency mailbox presentation with FIFO fallback.
+			fifo,    ///< Request guaranteed FIFO presentation.
+		};
+
 		VkSwapchainKHR swapchain{VK_NULL_HANDLE};     ///< Owned Vulkan swapchain handle.
 		VkFormat imageFormat{VK_FORMAT_UNDEFINED};    ///< Chosen swapchain image format.
 		VkExtent2D extent{};                          ///< Chosen swapchain image extent.
@@ -459,7 +465,8 @@ export namespace vve::simple {
 			std::uint32_t graphicsQueueFamily,
 			std::uint32_t presentQueueFamily,
 			std::uint32_t width,
-			std::uint32_t height
+			std::uint32_t height,
+			PresentModePreference presentModePreference = PresentModePreference::mailbox
 		) {
 			cleanup();
 			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || surface == VK_NULL_HANDLE) {
@@ -488,7 +495,7 @@ export namespace vve::simple {
 			}
 
 			const VkSurfaceFormatKHR chosenFormat = chooseFormat(formats);
-			const VkPresentModeKHR presentMode = choosePresentMode(presentModes);
+			const VkPresentModeKHR presentMode = choosePresentMode(presentModes, presentModePreference);
 			const VkExtent2D chosenExtent = chooseExtent(capabilities, width, height);
 			const std::uint32_t imageCount = chooseImageCount(capabilities);
 			const auto queueFamilies = std::array<std::uint32_t, 2U>{graphicsQueueFamily, presentQueueFamily};
@@ -558,12 +565,17 @@ export namespace vve::simple {
 		}
 
 		/**
-			* @brief Selects mailbox presentation when available, otherwise FIFO.
+			* @brief Selects the requested presentation behavior with FIFO as the guaranteed fallback.
 			*
 			* @param presentModes Surface present modes reported by Vulkan.
-			* @return Preferred mailbox present mode or guaranteed FIFO fallback.
+			* @param preference User-requested present mode preference.
+			* @return Requested or preferred present mode, with guaranteed FIFO fallback.
 			*/
-		[[nodiscard]] static VkPresentModeKHR choosePresentMode(const std::vector<VkPresentModeKHR> &presentModes) {
+		[[nodiscard]] static VkPresentModeKHR choosePresentMode(
+			const std::vector<VkPresentModeKHR> &presentModes,
+			PresentModePreference preference
+		) {
+			if (preference == PresentModePreference::fifo) { return VK_PRESENT_MODE_FIFO_KHR; }
 			const bool hasMailbox = std::ranges::any_of(presentModes, [](VkPresentModeKHR mode) {
 				return mode == VK_PRESENT_MODE_MAILBOX_KHR;
 			});

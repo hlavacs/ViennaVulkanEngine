@@ -10,9 +10,9 @@
  * Fragment outputs: one opaque RGBA color attachment value for a shadowed forward render pass.
  */
 
-static const int kMaxShadowedSpotLights = 4; ///< Mirrors the simple engine fixed spot-shadow cap.
-static const int kMaxShadowedPointLights = 2; ///< Mirrors the simple engine fixed point-shadow cap.
-static const int kMaxDirectionalLights = 4;  ///< Mirrors the simple engine fixed directional-light cap.
+static const int kMaxShadowedSpotLights = 10; ///< Mirrors the simple engine fixed spot-shadow cap.
+static const int kMaxShadowedPointLights = 10; ///< Mirrors the simple engine fixed point-shadow cap.
+static const int kMaxDirectionalLights = 10;  ///< Mirrors the simple engine fixed directional-light cap.
 
 struct FrameUniforms
 {

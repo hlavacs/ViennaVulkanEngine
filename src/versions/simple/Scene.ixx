@@ -18,9 +18,9 @@ import VEEngine.Types;
 	*/
 export namespace vve::simple {
 
-	inline constexpr std::size_t kMaxShadowedSpotLights{4U}; ///< Small fixed cap for the first spot-shadow data model.
-	inline constexpr std::size_t kMaxShadowedPointLights{2U}; ///< Small fixed cap for point-shadow CPU metadata.
-	inline constexpr std::size_t kMaxDirectionalLights{4U};  ///< Small fixed cap for the first multi-directional-light data model.
+	inline constexpr std::size_t kMaxShadowedSpotLights{10U}; ///< Small fixed cap for the first spot-shadow data model.
+	inline constexpr std::size_t kMaxShadowedPointLights{10U}; ///< Small fixed cap for point-shadow CPU metadata.
+	inline constexpr std::size_t kMaxDirectionalLights{10U};  ///< Small fixed cap for the first multi-directional-light data model.
 
 	/// @brief Host-side drawable object with geometry and a local-to-world transform.
 	struct Object {
