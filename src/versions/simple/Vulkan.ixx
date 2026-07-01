@@ -26,6 +26,7 @@ export module VEEngine.Simple.Vulkan;
 import std;
 import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Math;
+import VEEngine.Simple.Scene;
 
 /**
 	* @file
@@ -39,7 +40,7 @@ import VEEngine.Simple.Math;
 	* - VulkanSwapchain owns only VkSwapchainKHR creation and swapchain image retrieval.
 	* - VulkanImageViews owns only VkImageView creation and teardown for borrowed swapchain images.
 	* - VulkanDepthImage owns one depth VkImage, its device memory, and its VkImageView.
-	* - ShadowMap owns one square sampled D32 depth image, view, sampler, backing memory, and unused shadow pipeline.
+	* - ShadowMap owns one square sampled D32 depth image, optional array views, sampler, backing memory, and unused shadow pipeline.
 	* - VulkanRenderPass owns only VkRenderPass creation and teardown for a single forward color subpass.
 	* - VulkanFramebuffers owns only VkFramebuffer creation and teardown for borrowed swapchain image views.
 	* - VulkanDescriptorSetLayout owns only VkDescriptorSetLayout creation and teardown for frame uniforms, shadow-map sampling, and object-texture sampling.
@@ -52,6 +53,7 @@ import VEEngine.Simple.Math;
 	* - VulkanFrameSync owns per-frame semaphores and fences for the simple forward renderer.
 	* - VulkanBuffer owns one VkBuffer and its backing VkDeviceMemory allocation.
 	* - VulkanReadback copies one finished color VkImage into a host-visible VulkanBuffer and exposes CPU pixel bytes.
+	* - VulkanDepthReadback copies one D32 shadow-array layer into a host-visible VulkanBuffer and exposes CPU depth values.
 	* - TextureImage owns one sampled RGBA8 texture image, view, sampler, and backing memory.
 	* - writeReadbackPng encodes VulkanReadback bytes as deterministic opaque RGBA8 PNG files.
 	* - VulkanDescriptorPool owns only VkDescriptorPool creation and teardown for uniform-buffer, shadow-map, and object-texture descriptor sets.
@@ -69,6 +71,7 @@ export namespace vve::simple {
 	struct ObjectPushConstants {
 		Mat4 model{};                          ///< Object-local model matrix selected before each draw call.
 		std::uint32_t useBaseColorTexture{0U}; ///< Non-zero when the object wants the optional base-color texture.
+		std::uint32_t spotLightIndex{0U};      ///< Shadow pass spot-light matrix index selected before each draw call.
 	};
 
 	/// @brief Minimal Vulkan root object; no device, surface, swapchain, commands, or sync are created here.
@@ -817,18 +820,21 @@ export namespace vve::simple {
 		}
 	};
 
-	/// @brief Minimal standalone shadow-map owner; it is not bound or rendered by the forward renderer yet.
+	/// @brief Minimal standalone shadow-map owner; array layers are reserved for later multi-light shadow targets.
 	struct ShadowMap {
 		static constexpr std::uint32_t resolution{1024U};          ///< Fixed square shadow-map side length in pixels.
 		VkDevice device{VK_NULL_HANDLE};                           ///< Borrowed Vulkan logical device used to destroy resources.
 		VkImage image{VK_NULL_HANDLE};                             ///< Owned D32 depth image handle.
 		VkDeviceMemory memory{VK_NULL_HANDLE};                     ///< Owned device-local memory backing the depth image.
-		VkImageView view{VK_NULL_HANDLE};                          ///< Owned depth image view for attachment and sampling use.
+		VkImageView view{VK_NULL_HANDLE};                          ///< Owned depth image view for single-layer or whole-array sampling use.
+		std::vector<VkImageView> layerViews{};                     ///< Owned per-layer 2D depth views for future array-layer framebuffers.
+		std::vector<VkFramebuffer> layerFramebuffers{};            ///< Owned per-layer depth framebuffers for future multi-light shadow passes.
 		VkSampler sampler{VK_NULL_HANDLE};                         ///< Owned clamp sampler for later shadow-map reads.
 		VkRenderPass renderPass{VK_NULL_HANDLE};                   ///< Owned depth-only render pass compatible with the shadow image.
 		VkFramebuffer framebuffer{VK_NULL_HANDLE};                 ///< Owned square framebuffer attaching the shadow depth view.
 		VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};           ///< Owned layout for frame uniforms and model push constants.
 		VkPipeline pipeline{VK_NULL_HANDLE};                       ///< Owned depth-only shadow graphics pipeline, currently unused.
+		std::uint32_t layerCount{1U};                              ///< Number of array layers allocated in the owned depth image.
 
 		ShadowMap() = default;
 		ShadowMap(const ShadowMap &) = delete;
@@ -839,13 +845,15 @@ export namespace vve::simple {
 			*
 			* @param physicalDevice Physical device used to query memory types.
 			* @param owningDevice Logical device that owns the image, memory, view, and sampler.
+			* @param requestedLayerCount Number of array layers to allocate, defaulting to one for existing callers.
 			* @return VK_SUCCESS when the shadow-map resources are ready, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, VkDevice owningDevice) {
+		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, VkDevice owningDevice, std::uint32_t requestedLayerCount = 1U) {
 			cleanup();
-			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || requestedLayerCount == 0U) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			device = owningDevice;
+			layerCount = requestedLayerCount;
 			/// @brief Depth image descriptor for a fixed-size sampled shadow attachment.
 			const VkImageCreateInfo imageInfo{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -853,10 +861,10 @@ export namespace vve::simple {
 				.format = VK_FORMAT_D32_SFLOAT,
 				.extent = {.width = resolution, .height = resolution, .depth = 1U},
 				.mipLevels = 1U,
-				.arrayLayers = 1U,
+				.arrayLayers = layerCount,
 				.samples = VK_SAMPLE_COUNT_1_BIT,
 				.tiling = VK_IMAGE_TILING_OPTIMAL,
-				.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+				.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			};
@@ -886,23 +894,47 @@ export namespace vve::simple {
 			result = vkBindImageMemory(device, image, memory, 0U);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
-			/// @brief Depth-only view descriptor for future depth attachment and sampling use.
+			/// @brief Depth-only view descriptor for single-layer attachment use or whole-array sampling use.
 			const VkImageViewCreateInfo viewInfo{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 				.image = image,
-				.viewType = VK_IMAGE_VIEW_TYPE_2D,
+				.viewType = layerCount == 1U ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY,
 				.format = VK_FORMAT_D32_SFLOAT,
 				.subresourceRange = {
 					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
 					.baseMipLevel = 0U,
 					.levelCount = 1U,
 					.baseArrayLayer = 0U,
-					.layerCount = 1U,
+					.layerCount = layerCount,
 				},
 			};
 
 			result = vkCreateImageView(device, &viewInfo, nullptr, &view);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			// Multi-layer shadow maps expose one 2D view per layer for later per-light framebuffers.
+			if (layerCount > 1U) {
+				layerViews.reserve(layerCount);
+				for (std::uint32_t layer{}; layer < layerCount; ++layer) {
+					const VkImageViewCreateInfo layerViewInfo{
+						.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+						.image = image,
+						.viewType = VK_IMAGE_VIEW_TYPE_2D,
+						.format = VK_FORMAT_D32_SFLOAT,
+						.subresourceRange = {
+							.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+							.baseMipLevel = 0U,
+							.levelCount = 1U,
+							.baseArrayLayer = layer,
+							.layerCount = 1U,
+						},
+					};
+					VkImageView layerView{VK_NULL_HANDLE}; ///< Per-layer 2D view owned by layerViews after creation.
+					result = vkCreateImageView(device, &layerViewInfo, nullptr, &layerView);
+					if (result != VK_SUCCESS) { cleanup(); return result; }
+					layerViews.push_back(layerView);
+				}
+			}
 
 			/// @brief Clamp sampler descriptor for future depth sampling without comparison state.
 			const VkSamplerCreateInfo samplerInfo{
@@ -969,6 +1001,27 @@ export namespace vve::simple {
 			result = vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
+			// Multi-layer maps get one framebuffer per 2D layer view; the pipeline remains single-layer only for now.
+			if (layerCount > 1U) {
+				layerFramebuffers.reserve(layerViews.size());
+				for (VkImageView layerView : layerViews) {
+					const VkFramebufferCreateInfo layerFramebufferInfo{
+						.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+						.renderPass = renderPass,
+						.attachmentCount = 1U,
+						.pAttachments = &layerView,
+						.width = resolution,
+						.height = resolution,
+						.layers = 1U,
+					};
+					VkFramebuffer layerFramebuffer{VK_NULL_HANDLE}; ///< Per-layer framebuffer owned by layerFramebuffers after creation.
+					result = vkCreateFramebuffer(device, &layerFramebufferInfo, nullptr, &layerFramebuffer);
+					if (result != VK_SUCCESS) { cleanup(); return result; }
+					layerFramebuffers.push_back(layerFramebuffer);
+				}
+				return VK_SUCCESS;
+			}
+
 			const VkFramebufferCreateInfo framebufferInfo{
 				.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
 				.renderPass = renderPass,
@@ -1011,18 +1064,23 @@ export namespace vve::simple {
 		void cleanup() {
 			cleanupPipeline();
 			if (framebuffer != VK_NULL_HANDLE) { vkDestroyFramebuffer(device, framebuffer, nullptr); }
+			for (VkFramebuffer layerFramebuffer : layerFramebuffers) { vkDestroyFramebuffer(device, layerFramebuffer, nullptr); }
 			if (renderPass != VK_NULL_HANDLE) { vkDestroyRenderPass(device, renderPass, nullptr); }
 			if (sampler != VK_NULL_HANDLE) { vkDestroySampler(device, sampler, nullptr); }
+			for (VkImageView layerView : layerViews) { vkDestroyImageView(device, layerView, nullptr); }
 			if (view != VK_NULL_HANDLE) { vkDestroyImageView(device, view, nullptr); }
 			if (image != VK_NULL_HANDLE) { vkDestroyImage(device, image, nullptr); }
 			if (memory != VK_NULL_HANDLE) { vkFreeMemory(device, memory, nullptr); }
 			framebuffer = VK_NULL_HANDLE;
+			layerFramebuffers.clear();
 			renderPass = VK_NULL_HANDLE;
 			sampler = VK_NULL_HANDLE;
+			layerViews.clear();
 			view = VK_NULL_HANDLE;
 			image = VK_NULL_HANDLE;
 			memory = VK_NULL_HANDLE;
 			device = VK_NULL_HANDLE;
+			layerCount = 1U;
 		}
 
 		/**
@@ -1211,7 +1269,7 @@ export namespace vve::simple {
 		VulkanDescriptorSetLayout &operator=(const VulkanDescriptorSetLayout &) = delete;
 
 		/**
-			* @brief Creates set 0 with binding 0 as FrameUniforms, bindings 1, 3, and 4 as shadow maps, and binding 2 as one object texture.
+			* @brief Creates set 0 with binding 0 as FrameUniforms, bindings 1, 3, 4, and 5 as shadow maps, and binding 2 as one object texture.
 			*
 			* @param owningDevice Logical device that owns the created descriptor-set layout.
 			* @return VK_SUCCESS when the descriptor-set layout is available, otherwise a Vulkan error code.
@@ -1255,7 +1313,14 @@ export namespace vve::simple {
 				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 				.pImmutableSamplers = nullptr,
 			}; ///< Binding 4 exposes the sampled spot shadow map to the fragment shader.
-			const std::array bindings{frameUniformBinding, shadowMapBinding, objectTextureBinding, dirShadowMapBinding, spotShadowMapBinding};
+			const VkDescriptorSetLayoutBinding spotShadowArrayBinding{
+				.binding = 5U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = 1U,
+				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+				.pImmutableSamplers = nullptr,
+			}; ///< Binding 5 exposes the sampled spot shadow-map array to the fragment shader.
+			const std::array bindings{frameUniformBinding, shadowMapBinding, objectTextureBinding, dirShadowMapBinding, spotShadowMapBinding, spotShadowArrayBinding};
 			const VkDescriptorSetLayoutCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 				.bindingCount = static_cast<std::uint32_t>(bindings.size()),
@@ -2344,6 +2409,247 @@ export namespace vve::simple {
 		}
 	};
 
+	/// @brief Minimal Vulkan D32 depth-array readback owner for one captured shadow-map layer.
+	struct VulkanDepthReadback {
+		VkDevice device{VK_NULL_HANDLE};              ///< Borrowed Vulkan logical device used for commands, fences, and mapping.
+		VkQueue graphicsQueue{VK_NULL_HANDLE};        ///< Borrowed graphics queue used to submit the one-time copy command buffer.
+		VkCommandPool commandPool{VK_NULL_HANDLE};    ///< Borrowed command pool used to allocate the temporary command buffer.
+		VkExtent2D extent{};                          ///< Captured depth layer size in texels.
+		std::uint32_t capturedLayer{};                ///< Last array layer copied into the readback buffer.
+		VulkanBuffer buffer{};                        ///< Owned host-visible transfer destination storing tight float depths.
+		bool valid{false};                            ///< True after a successful layer capture has populated the buffer.
+
+		VulkanDepthReadback() = default;
+		VulkanDepthReadback(const VulkanDepthReadback &) = delete;
+		VulkanDepthReadback &operator=(const VulkanDepthReadback &) = delete;
+
+		/**
+			* @brief Creates a host-visible transfer destination buffer sized for one D32 depth layer.
+			*
+			* @param physicalDevice Physical device used to query memory types.
+			* @param owningDevice Logical device that owns the readback buffer and temporary synchronization objects.
+			* @param queue Graphics queue used later for the one-time copy submission.
+			* @param pool Command pool used later for one temporary primary command buffer.
+			* @param layerExtent Width and height of the source D32 shadow-map layer.
+			* @return VK_SUCCESS when the readback buffer is ready, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult create(
+			VkPhysicalDevice physicalDevice,
+			VkDevice owningDevice,
+			VkQueue queue,
+			VkCommandPool pool,
+			VkExtent2D layerExtent
+		) {
+			cleanup();
+			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || queue == VK_NULL_HANDLE || pool == VK_NULL_HANDLE || layerExtent.width == 0U || layerExtent.height == 0U) {
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+
+			const VkDeviceSize byteCount = static_cast<VkDeviceSize>(layerExtent.width) * layerExtent.height * sizeof(float);
+			VkResult result = buffer.create(
+				physicalDevice,
+				owningDevice,
+				byteCount,
+				VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+				VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+			);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			device = owningDevice;
+			graphicsQueue = queue;
+			commandPool = pool;
+			extent = layerExtent;
+			return VK_SUCCESS;
+		}
+
+		/**
+			* @brief Copies one shader-readable D32 image-array layer into the host-visible depth buffer.
+			*
+			* @param sourceImage Borrowed VK_FORMAT_D32_SFLOAT image array to copy from.
+			* @param layer Array layer selected with baseArrayLayer for the depth copy.
+			* @return VK_SUCCESS when the requested layer is available through depthAt, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult capture(VkImage sourceImage, std::uint32_t layer) {
+			valid = false;
+			if (sourceImage == VK_NULL_HANDLE || buffer.buffer == VK_NULL_HANDLE || buffer.memory == VK_NULL_HANDLE) {
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+
+			VkCommandBuffer commandBuffer{VK_NULL_HANDLE};
+			const VkCommandBufferAllocateInfo allocateInfo{
+				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+				.commandPool = commandPool,
+				.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+				.commandBufferCount = 1U,
+			};
+			VkResult result = vkAllocateCommandBuffers(device, &allocateInfo, &commandBuffer);
+			if (result != VK_SUCCESS) { return result; }
+
+			VkFence fence{VK_NULL_HANDLE};
+			const VkFenceCreateInfo fenceInfo{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
+			result = vkCreateFence(device, &fenceInfo, nullptr, &fence);
+			if (result != VK_SUCCESS) { vkFreeCommandBuffers(device, commandPool, 1U, &commandBuffer); return result; }
+
+			result = recordCopy(commandBuffer, sourceImage, layer);
+			if (result == VK_SUCCESS) {
+				const VkSubmitInfo submitInfo{
+					.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+					.commandBufferCount = 1U,
+					.pCommandBuffers = &commandBuffer,
+				};
+				result = vkQueueSubmit(graphicsQueue, 1U, &submitInfo, fence);
+			}
+			if (result == VK_SUCCESS) { result = vkWaitForFences(device, 1U, &fence, VK_TRUE, UINT64_MAX); }
+
+			vkDestroyFence(device, fence, nullptr);
+			vkFreeCommandBuffers(device, commandPool, 1U, &commandBuffer);
+			if (result == VK_SUCCESS) { capturedLayer = layer; valid = true; }
+			return result;
+		}
+
+		/**
+			* @brief Reports whether a previous capture populated the readback buffer.
+			*
+			* @return True when depthAt may read texels from the last captured layer.
+			*/
+		[[nodiscard]] bool hasData() const { return valid; }
+
+		/**
+			* @brief Reads one float depth texel from the last captured D32 layer.
+			*
+			* @param x Horizontal texel coordinate inside the captured layer.
+			* @param y Vertical texel coordinate inside the captured layer.
+			* @return The captured depth value, or std::nullopt when no valid texel is available.
+			*/
+		[[nodiscard]] std::optional<float> depthAt(std::uint32_t x, std::uint32_t y) const {
+			if (!valid || x >= extent.width || y >= extent.height || buffer.memory == VK_NULL_HANDLE) { return std::nullopt; }
+
+			void *mapped{};
+			const VkDeviceSize byteOffset = (static_cast<VkDeviceSize>(y) * extent.width + x) * sizeof(float);
+			const VkResult result = vkMapMemory(device, buffer.memory, 0U, buffer.size, 0U, &mapped);
+			if (result != VK_SUCCESS) { return std::nullopt; }
+
+			float depth{};
+			std::memcpy(&depth, static_cast<const std::byte *>(mapped) + byteOffset, sizeof(float));
+			vkUnmapMemory(device, buffer.memory);
+			return depth;
+		}
+
+		/**
+			* @brief Releases the owned readback buffer and clears borrowed handles.
+			*/
+		void cleanup() {
+			buffer.cleanup();
+			extent = {};
+			capturedLayer = 0U;
+			valid = false;
+			graphicsQueue = VK_NULL_HANDLE;
+			commandPool = VK_NULL_HANDLE;
+			device = VK_NULL_HANDLE;
+		}
+
+		/**
+			* @brief Destroys the owned readback buffer on scope exit.
+			*/
+		~VulkanDepthReadback() { cleanup(); }
+
+	private:
+		/**
+			* @brief Records the depth-image layout transitions and single-layer image-to-buffer copy.
+			*
+			* @param commandBuffer Temporary primary command buffer to record.
+			* @param sourceImage Borrowed D32 image array copied into the readback buffer.
+			* @param layer Array layer copied with VK_IMAGE_ASPECT_DEPTH_BIT.
+			* @return VK_SUCCESS when recording completed, otherwise a Vulkan error code.
+			*/
+		[[nodiscard]] VkResult recordCopy(VkCommandBuffer commandBuffer, VkImage sourceImage, std::uint32_t layer) {
+			const VkCommandBufferBeginInfo beginInfo{
+				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+				.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+			};
+			VkResult result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
+			if (result != VK_SUCCESS) { return result; }
+
+			transitionDepthLayer(commandBuffer, sourceImage, layer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+			const VkBufferImageCopy copyRegion{
+				.bufferOffset = 0U,
+				.bufferRowLength = 0U,
+				.bufferImageHeight = 0U,
+				.imageSubresource = {
+					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+					.mipLevel = 0U,
+					.baseArrayLayer = layer,
+					.layerCount = 1U,
+				},
+				.imageOffset = {.x = 0, .y = 0, .z = 0},
+				.imageExtent = {.width = extent.width, .height = extent.height, .depth = 1U},
+			};
+			vkCmdCopyImageToBuffer(commandBuffer, sourceImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, buffer.buffer, 1U, &copyRegion);
+			transitionDepthLayer(commandBuffer, sourceImage, layer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			return vkEndCommandBuffer(commandBuffer);
+		}
+
+		/**
+			* @brief Records a depth-image layout transition for one mip level and one array layer.
+			*
+			* @param commandBuffer Command buffer receiving the barrier.
+			* @param image Depth image being transitioned.
+			* @param layer Array layer affected by the barrier.
+			* @param oldLayout Layout before the barrier.
+			* @param newLayout Layout after the barrier.
+			*/
+		static void transitionDepthLayer(
+			VkCommandBuffer commandBuffer,
+			VkImage image,
+			std::uint32_t layer,
+			VkImageLayout oldLayout,
+			VkImageLayout newLayout
+		) {
+			const VkImageMemoryBarrier barrier{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask = accessMask(oldLayout),
+				.dstAccessMask = accessMask(newLayout),
+				.oldLayout = oldLayout,
+				.newLayout = newLayout,
+				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.image = image,
+				.subresourceRange = {
+					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
+					.baseMipLevel = 0U,
+					.levelCount = 1U,
+					.baseArrayLayer = layer,
+					.layerCount = 1U,
+				},
+			};
+			vkCmdPipelineBarrier(commandBuffer, stageMask(oldLayout), stageMask(newLayout), 0U, 0U, nullptr, 0U, nullptr, 1U, &barrier);
+		}
+
+		/**
+			* @brief Selects the pipeline stage used for supported depth readback layouts.
+			*
+			* @param layout Vulkan image layout being synchronized.
+			* @return Pipeline stage compatible with shader reads and transfer-source copies.
+			*/
+		[[nodiscard]] static VkPipelineStageFlags stageMask(VkImageLayout layout) {
+			if (layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) { return VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT; }
+			if (layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) { return VK_PIPELINE_STAGE_TRANSFER_BIT; }
+			return VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+		}
+
+		/**
+			* @brief Selects the memory access mask used for supported depth readback layouts.
+			*
+			* @param layout Vulkan image layout being synchronized.
+			* @return Access mask compatible with shader reads and transfer-source copies.
+			*/
+		[[nodiscard]] static VkAccessFlags accessMask(VkImageLayout layout) {
+			if (layout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) { return VK_ACCESS_SHADER_READ_BIT; }
+			if (layout == VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL) { return VK_ACCESS_TRANSFER_READ_BIT; }
+			return 0U;
+		}
+	};
+
 	/// @brief Internal owner for one sampled 8-bit RGBA texture image uploaded with a staging buffer.
 	struct TextureImage {
 		VkDevice device{VK_NULL_HANDLE};              ///< Borrowed Vulkan logical device used to destroy texture resources.
@@ -2688,7 +2994,7 @@ export namespace vve::simple {
 
 			const std::array poolSizes{
 				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = maxSets},
-				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = maxSets * 4U},
+				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = maxSets * 5U},
 			};
 			const VkDescriptorPoolCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -2887,6 +3193,36 @@ export namespace vve::simple {
 		}
 
 		/**
+			* @brief Writes one frame descriptor set with its binding-5 sampled spot shadow-map array.
+			*
+			* @param frameIndex Frame set index to update.
+			* @param imageView Spot shadow-map array image view bound to descriptor binding 5.
+			* @param sampler Spot shadow-map array sampler bound to descriptor binding 5.
+			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
+			*/
+		[[nodiscard]] VkResult writeSpotShadowArray(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
+			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			const VkDescriptorImageInfo imageInfo{
+				.sampler = sampler,
+				.imageView = imageView,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+			const VkWriteDescriptorSet write{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSets[frameIndex],
+				.dstBinding = 5U,
+				.dstArrayElement = 0U,
+				.descriptorCount = 1U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &imageInfo,
+			};
+
+			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
+			return VK_SUCCESS;
+		}
+
+		/**
 			* @brief Writes one frame descriptor set with its reserved binding-2 sampled object texture.
 			*
 			* @param frameIndex Frame set index to update.
@@ -3029,7 +3365,7 @@ export namespace vve::simple {
 		Mat4 projection{};  ///< shared camera projection matrix
 		Mat4 lightViewProj{}; ///< light view-projection for the upcoming shadow pass
 		Mat4 dirLightViewProj{}; ///< directional-light view-projection for future shadow data
-		Mat4 spotLightViewProj{}; ///< spot-light view-projection for future shadow data
+		std::array<Mat4, kMaxShadowedSpotLights> spotLightViewProjs{}; ///< spot-light view-projections for future shadow data
 		Vec4 lightPositionRange{};    ///< xyz world-space point-light position, w range
 		Vec4 lightColorIntensity{};   ///< rgb direct-light color, w direct-light intensity
 		Vec4 lightShadowAmbient{};    ///< xyz shadow-map direction approximation, w ambient term
@@ -3039,7 +3375,11 @@ export namespace vve::simple {
 		Vec4 spotLightPositionRange{}; ///< xyz world-space spot-light position, w range
 		Vec4 spotLightColorIntensity{}; ///< rgb spot-light color, w spot-light intensity
 		Vec4 spotLightDirection{};    ///< xyz spot-light light-to-scene direction, w unused
-		Vec4 spotLightConeAmbient{};  ///< x inner cone cosine, y outer cone cosine, z unused, w ambient term
+		Vec4 spotLightConeAmbient{};  ///< x inner cone cosine, y outer cone cosine, z active spot count, w ambient term
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightPositionRanges{}; ///< per-spot xyz position with range in w
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightColorIntensities{}; ///< per-spot rgb color with intensity in w
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightDirections{}; ///< per-spot xyz light-to-scene direction with unused w
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightConeAmbients{}; ///< per-spot inner cone, outer cone, active count, and ambient
 	};
 
 	/// @brief Minimal per-frame uniform-buffer owner for shared view and projection data.

@@ -159,6 +159,7 @@ export namespace vve::simple {
 		auto setDirectionalLight(RenderDirectionalLight light)																-> void;
 		auto setPointLight(RenderPointLight light)																				-> void;
 		auto setSpotLight(RenderSpotLight light)																					-> void;
+		auto addSpotLight(RenderSpotLight light)																					-> void;
 		auto clear()																														-> void;
 		[[nodiscard]] const RenderMesh *findMesh(RenderMeshHandle handle) const;
 		[[nodiscard]] const RenderMaterial *findMaterial(RenderMaterialHandle handle) const;
@@ -171,7 +172,8 @@ export namespace vve::simple {
 		[[nodiscard]] const std::optional<RenderCamera> &camera() const;
 		[[nodiscard]] const std::optional<RenderDirectionalLight> &directionalLight() const;
 		[[nodiscard]] const std::optional<RenderPointLight> &pointLight() const;
-		[[nodiscard]] const std::optional<RenderSpotLight> &spotLight() const;
+		[[nodiscard]] std::optional<RenderSpotLight> spotLight() const;
+		[[nodiscard]] const std::vector<RenderSpotLight> &spotLights() const;
 		[[nodiscard]] const Vector<RenderInstance> &instances() const;
 
 	private:
@@ -184,7 +186,7 @@ export namespace vve::simple {
 		std::optional<RenderCamera> camera_{};										///< Optional active camera.
 		std::optional<RenderDirectionalLight> light_{};							///< Optional active directional light.
 		std::optional<RenderPointLight> point_light_{};							///< Optional active point light.
-		std::optional<RenderSpotLight> spot_light_{};							///< Optional active spot light.
+		std::vector<RenderSpotLight> spot_lights_{};							///< Capped active spot lights.
 	};
 
 	/// @brief Renderer descriptor used only for graph construction in the simple stub.
@@ -231,6 +233,10 @@ export namespace vve::simple {
 								LightIntensity intensity, LightRange range, SpotConeAngle cone);
 		void setSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient);
+		void addSpotLight(Position position, Direction direction, LinearColor color,
+								LightIntensity intensity, LightRange range, SpotConeAngle cone);
+		void addSpotLight(Position position, Direction direction, LinearColor color,
+								LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient);
 		auto loadScene(Scene scene)																									-> void;
 		/// @brief Stores the borrowed GUI system for later forwarding to renderer backends.
 		auto setGuiSystem(void *gui)																								-> void;
@@ -246,6 +252,13 @@ export namespace vve::simple {
 		[[nodiscard]] auto sceneInstanceCount() const																			-> std::size_t;
 		[[nodiscard]] auto sceneVertexCount() const																				-> std::size_t;
 		[[nodiscard]] auto sceneIndexCount() const																				-> std::size_t;
+		[[nodiscard]] auto sceneShadowDepthSampleCount() const														-> std::size_t;
+		[[nodiscard]] auto sceneShadowDepthSample(std::size_t index) const									-> std::optional<RenderShadowDepthSample>;
+		[[nodiscard]] auto sceneSpotShadowDepthSampleCount() const													-> std::size_t;
+		[[nodiscard]] auto sceneSpotShadowDepthSample(std::size_t index) const								-> std::optional<RenderShadowDepthSample>;
+		[[nodiscard]] auto sceneSpotShadowDepthGpuDepth(std::size_t index) const						-> std::optional<float>;
+		[[nodiscard]] auto sceneSpotShadowDepthHasGpu(std::size_t index) const							-> std::optional<bool>;
+		[[nodiscard]] auto sceneSpotShadowDepthError(std::size_t index) const							-> std::optional<float>;
 		[[nodiscard]] auto hasSceneCamera() const																					-> bool;
 		[[nodiscard]] auto hasSceneDirectionalLight() const																	-> bool;
 		[[nodiscard]] auto hasScenePointLight() const																			-> bool;
@@ -370,8 +383,16 @@ namespace vve::simple {
 	/// @brief Stores the active point light resource.
 	inline void RenderScene::setPointLight(RenderPointLight light) { point_light_ = std::move(light); }
 
-	/// @brief Stores the active spot light resource.
-	inline void RenderScene::setSpotLight(RenderSpotLight light) { spot_light_ = std::move(light); }
+	/// @brief Replaces the active spot-light list with one first-light entry.
+	inline void RenderScene::setSpotLight(RenderSpotLight light) {
+		spot_lights_.clear();
+		spot_lights_.push_back(std::move(light));
+	}
+
+	/// @brief Adds one spot light until the fixed simple-engine cap is reached.
+	inline void RenderScene::addSpotLight(RenderSpotLight light) {
+		if (spot_lights_.size() < kMaxShadowedSpotLights) { spot_lights_.push_back(std::move(light)); }
+	}
 
 	/// @brief Removes all scene resources.
 	inline auto RenderScene::clear()																					-> void{
@@ -381,7 +402,7 @@ namespace vve::simple {
 		camera_.reset();
 		light_.reset();
 		point_light_.reset();
-		spot_light_.reset();
+		spot_lights_.clear();
 	}
 
 	/// @brief Finds a mesh by handle.
@@ -423,7 +444,10 @@ namespace vve::simple {
 	inline const std::optional<RenderCamera> &RenderScene::camera() const { return camera_; }
 	inline const std::optional<RenderDirectionalLight> &RenderScene::directionalLight() const { return light_; }
 	inline const std::optional<RenderPointLight> &RenderScene::pointLight() const { return point_light_; }
-	inline const std::optional<RenderSpotLight> &RenderScene::spotLight() const { return spot_light_; }
+	inline std::optional<RenderSpotLight> RenderScene::spotLight() const {
+		return spot_lights_.empty() ? std::nullopt : std::optional<RenderSpotLight>{spot_lights_.front()};
+	}
+	inline const std::vector<RenderSpotLight> &RenderScene::spotLights() const { return spot_lights_; }
 	inline const Vector<RenderInstance> &RenderScene::instances() const { return instances_; }
 
 	/// @brief Accepts the historical forward id and the new stub id.
@@ -680,33 +704,78 @@ namespace vve::simple {
 	}
 	inline void RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
 														LightIntensity intensity, LightRange range, SpotConeAngle cone) {
-		forward().scene.spotLight = SpotLight{.position = position.value,
-														  .direction = direction.value,
-														  .color = color.value,
-														  .intensity = intensity,
-														  .range = range,
-														  .innerConeAngle = forward().scene.spotLight.innerConeAngle,
-														  .outerConeAngle = cone,
-														  .ambient = forward().scene.spotLight.ambient};
+		const SpotLight light{.position = position.value,
+									 .direction = direction.value,
+									 .color = color.value,
+									 .intensity = intensity,
+									 .range = range,
+									 .innerConeAngle = forward().scene.spotLight.innerConeAngle,
+									 .outerConeAngle = cone,
+									 .ambient = forward().scene.spotLight.ambient};
+		forward().scene.spotLights.clear();																// Setter preserves the legacy single-light mode.
+		forward().scene.spotLights.push_back(light);
+		forward().scene.spotLight = light;
 		scene_.setSpotLight(RenderSpotLight{.position = position, .direction = direction, .color = color,
 														.intensity = intensity, .range = range, .cone = cone});
 	}
 	inline void RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
 														LightIntensity intensity, LightRange range,
 														SpotConeAngle cone, LinearColor ambient) {
-		forward().scene.spotLight = SpotLight{.position = position.value,
-														  .direction = direction.value,
-														  .color = color.value,
-														  .intensity = intensity,
-														  .range = range,
-														  .innerConeAngle = forward().scene.spotLight.innerConeAngle,
-														  .outerConeAngle = cone,
-														  .ambient = ambient.value.x};
+		const SpotLight light{.position = position.value,
+									 .direction = direction.value,
+									 .color = color.value,
+									 .intensity = intensity,
+									 .range = range,
+									 .innerConeAngle = forward().scene.spotLight.innerConeAngle,
+									 .outerConeAngle = cone,
+									 .ambient = ambient.value.x};
+		forward().scene.spotLights.clear();																// Setter replaces all CPU-side spot lights.
+		forward().scene.spotLights.push_back(light);
+		forward().scene.spotLight = light;
 		scene_.setSpotLight(RenderSpotLight{.position = position, .direction = direction, .color = color,
 														.intensity = intensity, .range = range, .ambient = ambient, .cone = cone});
 	}
 
+	inline void RenderSystem::addSpotLight(Position position, Direction direction, LinearColor color,
+													 LightIntensity intensity, LightRange range, SpotConeAngle cone) {
+		const SpotLight light{.position = position.value,
+									 .direction = direction.value,
+									 .color = color.value,
+									 .intensity = intensity,
+									 .range = range,
+									 .innerConeAngle = SpotLight{}.innerConeAngle,
+									 .outerConeAngle = cone,
+									 .ambient = SpotLight{}.ambient};
+		if (forward().scene.spotLights.size() < kMaxShadowedSpotLights) {								// Extra lights are stored only for later CPU shadow work.
+			forward().scene.spotLights.push_back(light);
+			if (forward().scene.spotLights.size() == 1U) { forward().scene.spotLight = light; }
+		}
+		scene_.addSpotLight(RenderSpotLight{.position = position, .direction = direction, .color = color,
+													 .intensity = intensity, .range = range, .cone = cone});
+	}
+
+	inline void RenderSystem::addSpotLight(Position position, Direction direction, LinearColor color,
+													 LightIntensity intensity, LightRange range,
+													 SpotConeAngle cone, LinearColor ambient) {
+		const SpotLight light{.position = position.value,
+									 .direction = direction.value,
+									 .color = color.value,
+									 .intensity = intensity,
+									 .range = range,
+									 .innerConeAngle = SpotLight{}.innerConeAngle,
+									 .outerConeAngle = cone,
+									 .ambient = ambient.value.x};
+		if (forward().scene.spotLights.size() < kMaxShadowedSpotLights) {								// First entry remains the shader-visible spot light.
+			forward().scene.spotLights.push_back(light);
+			if (forward().scene.spotLights.size() == 1U) { forward().scene.spotLight = light; }
+		}
+		scene_.addSpotLight(RenderSpotLight{.position = position, .direction = direction, .color = color,
+													 .intensity = intensity, .range = range, .ambient = ambient, .cone = cone});
+	}
+
 	inline auto RenderSystem::loadScene(Scene scene)																-> void{
+		if (scene.spotLights.size() > kMaxShadowedSpotLights) { scene.spotLights.resize(kMaxShadowedSpotLights); }
+		if (!scene.spotLights.empty()) { scene.spotLight = scene.spotLights.front(); }				// Forward renderer still consumes the first spot light only.
 		forward().loadScene(std::move(scene));
 	}
 
@@ -768,6 +837,32 @@ namespace vve::simple {
 	inline std::size_t RenderSystem::sceneInstanceCount() const { return scene_.instanceCount(); }
 	inline std::size_t RenderSystem::sceneVertexCount() const { return scene_.vertexCount(); }
 	inline std::size_t RenderSystem::sceneIndexCount() const { return scene_.indexCount(); }
+	/// @brief Returns the retained directional shadow-depth debug sample count.
+	inline std::size_t RenderSystem::sceneShadowDepthSampleCount() const { return forward().sceneShadowDepthSampleCount(); }
+	/// @brief Returns one retained directional shadow-depth debug sample.
+	inline std::optional<RenderShadowDepthSample> RenderSystem::sceneShadowDepthSample(std::size_t index) const { return forward().sceneShadowDepthSample(index); }
+	/// @brief Returns the retained spot shadow-depth debug sample count.
+	inline std::size_t RenderSystem::sceneSpotShadowDepthSampleCount() const { return forward().sceneSpotShadowDepthSampleCount(); }
+	/// @brief Returns one retained spot shadow-depth debug sample.
+	inline std::optional<RenderShadowDepthSample> RenderSystem::sceneSpotShadowDepthSample(std::size_t index) const { return forward().sceneSpotShadowDepthSample(index); }
+	/// @brief Returns downloaded GPU depth for one retained spot shadow-depth sample.
+	inline std::optional<float> RenderSystem::sceneSpotShadowDepthGpuDepth(std::size_t index) const {
+		const auto sample = forward().sceneSpotShadowDepthSample(index);
+		if (!sample || !sample->has_gpu) { return std::nullopt; }
+		return sample->gpu_depth;
+	}
+	/// @brief Reports whether one retained spot shadow-depth sample has GPU data.
+	inline std::optional<bool> RenderSystem::sceneSpotShadowDepthHasGpu(std::size_t index) const {
+		const auto sample = forward().sceneSpotShadowDepthSample(index);
+		if (!sample || !sample->has_gpu) { return std::nullopt; }
+		return sample->has_gpu;
+	}
+	/// @brief Returns absolute CPU/GPU depth error for one retained spot shadow-depth sample.
+	inline std::optional<float> RenderSystem::sceneSpotShadowDepthError(std::size_t index) const {
+		const auto sample = forward().sceneSpotShadowDepthSample(index);
+		if (!sample || !sample->has_gpu) { return std::nullopt; }
+		return sample->error;
+	}
 	inline bool RenderSystem::hasSceneCamera() const { return scene_.camera().has_value(); }
 	inline bool RenderSystem::hasSceneDirectionalLight() const { return scene_.directionalLight().has_value(); }
 	inline bool RenderSystem::hasScenePointLight() const { return scene_.pointLight().has_value(); }

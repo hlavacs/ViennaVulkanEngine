@@ -62,6 +62,25 @@ export namespace vve {
 		std::uint32_t pixel_x{};					///< Shadow-map texel x coordinate.
 		std::uint32_t pixel_y{};					///< Shadow-map texel y coordinate.
 		float expected_depth{};						///< CPU-computed light-space depth.
+		float bias{};									///< Bias used by the shadow comparison.
+		float shadow_factor{};						///< Final directional shadow factor.
+		float gpu_depth{};							///< Downloaded shadow-map depth.
+		float error{};									///< Absolute CPU/GPU depth mismatch.
+		bool has_gpu{};								///< Whether the depth image was downloaded.
+		bool valid{};									///< Whether this slot contains a sample.
+	};
+
+	/// @brief Public CPU/GPU comparison point for spot-light shadow-depth data.
+	struct SpotShadowDepthSample {
+		std::uint32_t triangle_id{};			///< Source triangle used for the sample.
+		std::uint32_t face_index{};			///< Spot shadow slot index.
+		Vec3 world{zeroVec3()};					///< World-space sample position.
+		Vec3 light_ndc{zeroVec3()};				///< Spot-light normalized device coordinate.
+		std::uint32_t pixel_x{};					///< Shadow-map texel x coordinate.
+		std::uint32_t pixel_y{};					///< Shadow-map texel y coordinate.
+		float expected_depth{};					///< CPU-computed light-space depth.
+		float bias{};									///< Bias used by the shadow comparison.
+		float shadow_factor{};					///< Final spot shadow factor.
 		float gpu_depth{};							///< Downloaded shadow-map depth.
 		float error{};									///< Absolute CPU/GPU depth mismatch.
 		bool has_gpu{};								///< Whether the depth image was downloaded.
@@ -96,6 +115,10 @@ export namespace vve {
 		inline void setSpotLight(const SpotLight &light) {
 			setSpotLight(light.position, light.direction, light.color, light.intensity, light.range, light.cone, light.ambient);
 		}																																		///< Applies a spotlight descriptor.
+		void addSpotLight(Position position, Direction direction, LinearColor color,
+								LightIntensity intensity, LightRange range, SpotConeAngle cone);
+		void addSpotLight(Position position, Direction direction, LinearColor color,
+								LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient);
 		[[nodiscard]] std::expected<void, Error> addPlane(Vec2 half_extent, LinearColor color,
 																			Transform transform = {});
 		[[nodiscard]] inline std::expected<void, Error> addPlane(const PlaneDescriptor &plane) {
@@ -117,6 +140,17 @@ export namespace vve {
 		[[nodiscard]] auto sceneInstanceCount() const																			-> std::size_t;
 		[[nodiscard]] auto sceneVertexCount() const																				-> std::size_t;
 		[[nodiscard]] auto sceneIndexCount() const																				-> std::size_t;
+		[[nodiscard]] auto sceneShadowDepthSampleCount() const														-> std::size_t;
+		[[nodiscard]] auto sceneShadowDepthSample(std::size_t index) const									-> std::optional<RenderShadowDepthSample>;
+		[[nodiscard]] auto sceneSpotShadowDepthSampleCount() const													-> std::size_t;
+		[[nodiscard]] auto sceneSpotShadowDepthSample(std::size_t index) const								-> std::optional<SpotShadowDepthSample>;
+		[[nodiscard]] auto sceneSpotShadowDepthSampleSlot(std::size_t index) const						-> std::optional<std::uint32_t>;
+		[[nodiscard]] auto sceneSpotShadowDepthSampleExpectedDepth(std::size_t index) const		-> std::optional<float>;
+		[[nodiscard]] auto sceneSpotShadowDepthSampleBias(std::size_t index) const						-> std::optional<float>;
+		[[nodiscard]] auto sceneSpotShadowDepthSampleFactor(std::size_t index) const					-> std::optional<float>;
+		[[nodiscard]] auto sceneSpotShadowDepthGpuDepth(std::size_t index) const						-> std::optional<float>;
+		[[nodiscard]] auto sceneSpotShadowDepthHasGpu(std::size_t index) const							-> std::optional<bool>;
+		[[nodiscard]] auto sceneSpotShadowDepthError(std::size_t index) const							-> std::optional<float>;
 		[[nodiscard]] auto hasSceneCamera() const																					-> bool;
 		[[nodiscard]] auto hasSceneDirectionalLight() const																	-> bool;
 		[[nodiscard]] auto hasScenePointLight() const																			-> bool;

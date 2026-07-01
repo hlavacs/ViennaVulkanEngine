@@ -1,0 +1,14 @@
+engine=simple
+frames=1
+renderer=facade-forward
+scene_instances=3
+scene_meshes=3
+directional_light=1
+point_light=1
+spot_light=1
+spot_shadow_sample_count=2
+spot_shadow_sample index=0 slot=0 light_ndc=(-0.162324,1.01019,0.994075) expected_depth=0.994075 bias=0.001000 shadow_factor=1.000000 gpu_depth=0.985462 has_gpu=1 error=0.008613
+spot_shadow_sample index=1 slot=1 light_ndc=(-0.00239924,0.205517,0.996478) expected_depth=0.996478 bias=0.001000 shadow_factor=1.000000 gpu_depth=0.996474 has_gpu=1 error=0.000004
+spot_shadow_slots_distinct=1
+directional_shadow_sample index=0 slot=0 light_ndc=(-2.98023e-08,-2.98023e-08,0.245283) expected_depth=0.245283 bias=0.001 shadow_factor=1 gpu_depth=0.245086 has_gpu=1 error=0.000197
+png_written=1

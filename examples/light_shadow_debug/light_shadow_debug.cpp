@@ -80,6 +80,12 @@ namespace {
 										vve::LightIntensity{.value = 2.2F}, vve::LightRange{.value = 5.8F},
 										vve::SpotConeAngle{.radians = 0.58F},
 										vve::LinearColor{.value = vve::Vec3{0.02F, 0.02F, 0.02F}});
+	renderSystem.addSpotLight(vve::Position{.value = vve::Vec3{-1.55F, 4.6F, 1.25F}}, // Second cone starts on the opposite side.
+										vve::Direction{.value = vve::Vec3{0.40F, -0.85F, -0.32F}}, // Aims across the plane for a separate shadow.
+										vve::LinearColor{.value = vve::Vec3{0.38F, 0.62F, 1.0F}}, // Cool tint distinguishes the added light.
+										vve::LightIntensity{.value = 2.0F}, vve::LightRange{.value = 6.0F},
+										vve::SpotConeAngle{.radians = 0.58F},
+										vve::LinearColor{.value = vve::Vec3{0.015F, 0.015F, 0.02F}});
 	return {};
 }
 
@@ -148,6 +154,53 @@ int main(int argc, char **argv) {
 	output << "directional_light=" << renderSystem.hasSceneDirectionalLight() << '\n';
 	output << "point_light=" << renderSystem.hasScenePointLight() << '\n';
 	output << "spot_light=" << renderSystem.hasSceneSpotLight() << '\n';
+	const auto spotShadowSampleCount = renderSystem.sceneSpotShadowDepthSampleCount(); // Facade-reported spot debug rows.
+	output << "spot_shadow_sample_count=" << spotShadowSampleCount << '\n';
+	std::vector<std::size_t> spotShadowSlots; // Present facade slots are checked after preserving per-sample rows.
+	for (std::size_t spotIndex{}; spotIndex < spotShadowSampleCount; ++spotIndex) { // One row per shadowed spot light.
+		const auto sample = renderSystem.sceneSpotShadowDepthSample(spotIndex); // Optional aggregate supplies light-space NDC only.
+		const auto slot = renderSystem.sceneSpotShadowDepthSampleSlot(spotIndex); // Scalar getter proves the selected shadow slot.
+		const auto expectedDepth = renderSystem.sceneSpotShadowDepthSampleExpectedDepth(spotIndex); // Scalar getter reports compared depth.
+		const auto bias = renderSystem.sceneSpotShadowDepthSampleBias(spotIndex); // Scalar getter reports compare bias.
+		const auto shadowFactor = renderSystem.sceneSpotShadowDepthSampleFactor(spotIndex); // Scalar getter reports final visibility.
+		const auto gpuDepth = renderSystem.sceneSpotShadowDepthGpuDepth(spotIndex); // GPU readback depth, if available.
+		const auto hasGpu = renderSystem.sceneSpotShadowDepthHasGpu(spotIndex); // Explicit GPU-readback availability flag.
+		const auto depthError = renderSystem.sceneSpotShadowDepthError(spotIndex); // Difference between CPU and GPU depths.
+		const bool hasGpuDepth = hasGpu.value_or(false); // Missing readback stays deterministic for headless runs.
+		if (slot) { spotShadowSlots.push_back(*slot); } // Only reachable samples can prove slot ownership.
+		output << "spot_shadow_sample index=" << spotIndex << " slot=" << (slot ? std::to_string(*slot) : "null");
+		if (sample) {
+			output << " light_ndc=(" << sample->light_ndc.x << ',' << sample->light_ndc.y << ',' << sample->light_ndc.z << ')';
+		} else {
+			output << " light_ndc=null";
+		}
+		output << " expected_depth=" << (expectedDepth ? std::to_string(*expectedDepth) : "null")
+				 << " bias=" << (bias ? std::to_string(*bias) : "null")
+				 << " shadow_factor=" << (shadowFactor ? std::to_string(*shadowFactor) : "null")
+				 << " gpu_depth=" << (hasGpuDepth && gpuDepth ? std::to_string(*gpuDepth) : "none")
+				 << " has_gpu=" << (hasGpuDepth ? '1' : '0')
+				 << " error=" << (hasGpuDepth && depthError ? std::to_string(*depthError) : "none") << '\n';
+	}
+	std::ranges::sort(spotShadowSlots); // Stable aggregate verdict for automated parsing.
+	const bool enoughSpotSlots = spotShadowSlots.size() >= 2;
+	const bool distinctSpotSlots = enoughSpotSlots && std::ranges::adjacent_find(spotShadowSlots) == spotShadowSlots.end();
+	output << "spot_shadow_slots_distinct=" << (enoughSpotSlots ? (distinctSpotSlots ? "1" : "0") : "none") << '\n';
+	const auto directionalShadowSampleCount = renderSystem.sceneShadowDepthSampleCount(); // Facade-reported directional debug rows.
+	const auto directionalSample = directionalShadowSampleCount > 0U ? renderSystem.sceneShadowDepthSample(0U) : std::nullopt;
+	if (directionalSample) { // Present directional debug data mirrors the spot row format for parsers.
+		const bool hasGpuDepth = directionalSample->has_gpu; // Missing readback stays deterministic for headless runs.
+		output << "directional_shadow_sample index=0 slot=" << directionalSample->face_index
+				 << " light_ndc=(" << directionalSample->light_ndc.x << ',' << directionalSample->light_ndc.y << ','
+				 << directionalSample->light_ndc.z << ')'
+				 << " expected_depth=" << directionalSample->expected_depth << " bias=" << directionalSample->bias
+				 << " shadow_factor=" << directionalSample->shadow_factor
+				 << " gpu_depth=" << (hasGpuDepth ? std::to_string(directionalSample->gpu_depth) : "none")
+				 << " has_gpu=" << (hasGpuDepth ? '1' : '0')
+				 << " error=" << (hasGpuDepth ? std::to_string(directionalSample->error) : "none") << '\n';
+	} else { // Stable absent row keeps directional samples machine-parseable when no data exists.
+		output << "directional_shadow_sample index=0 slot=null light_ndc=null expected_depth=null"
+				 << " bias=null shadow_factor=null gpu_depth=none has_gpu=0 error=none\n";
+	}
 	output << "png_written=" << pngWritten << '\n';
 	std::cout << "[light_shadow_debug] frames=" << maxFrames << '\n';
 	return 0;

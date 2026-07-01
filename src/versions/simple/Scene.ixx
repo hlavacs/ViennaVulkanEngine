@@ -10,11 +10,14 @@ import VEEngine.Types;
 	*
 	* Functional objects:
 	* - Object pairs one CPU mesh with its model transform before any renderer upload exists.
+	* - kMaxShadowedSpotLights bounds the first multi-spot-light CPU storage step.
 	* - Scene stores the CPU drawable list for simple multi-object renderer tests.
 	* - makePlane creates a minimal XZ floor mesh for renderer and shadow debug scenes.
 	* - makeSampleScene creates a few translated cubes without touching Vulkan state.
 	*/
 export namespace vve::simple {
+
+	inline constexpr std::size_t kMaxShadowedSpotLights{4U}; ///< Small fixed cap for the first spot-shadow data model.
 
 	/// @brief Host-side drawable object with geometry and a local-to-world transform.
 	struct Object {
@@ -58,7 +61,8 @@ export namespace vve::simple {
 		std::optional<std::filesystem::path> baseColorTexture{};      ///< Optional scene base-color image path for future texture uploads.
 		PointLight pointLight{};                                      ///< Active point light driving shading.
 		DirectionalLight directionalLight{};                          ///< Active directional light driving future shading.
-		SpotLight spotLight{};                                        ///< Active spot light driving future shading.
+		std::vector<SpotLight> spotLights{};                          ///< Capped spot lights for upcoming multi-shadow support.
+		SpotLight spotLight{};                                        ///< First spot light mirror for the unchanged renderer path.
 	};
 
 	/**
@@ -84,8 +88,18 @@ export namespace vve::simple {
 		* @brief Creates a small CPU-only cube scene for early renderer integration.
 		*
 		* @return Scene containing several cube objects with distinct world transforms.
-		*/
+	*/
 	Scene makeSampleScene() {
+		const SpotLight sampleSpot{                                    ///< One source keeps vector and mirror spot data identical.
+			.position = Vec3{1.45F, 4.8F, -1.45F},                     ///< Warm cone starts above the right side of the scene.
+			.direction = Vec3{0.10F, -0.98F, -0.16F},                  ///< Cone aims down across the center cube cluster.
+			.color = Vec3{1.0F, 0.58F, 0.38F},                        ///< Orange tint makes spot contribution distinct.
+			.intensity = {.value = 2.2F},                             ///< Focused strength makes spot highlights visible.
+			.range = {.value = 5.8F},                                 ///< Range covers the cube group without lighting everything.
+			.innerConeAngle = {.radians = 0.28F},                     ///< Tight inner cone creates a clear bright core.
+			.outerConeAngle = {.radians = 0.58F},                     ///< Wider outer cone gives a visible falloff band.
+			.ambient = 0.02F,                                         ///< Small ambient contribution preserves shadow contrast.
+		};
 		return Scene{.objects{
 			Object{.mesh = makeCube(), .model = identityMat4()},                                      ///< Center cube.
 			Object{.mesh = makeCube(), .model = translate(identityMat4(), Vec3{-1.5F, 0.0F, 0.0F})}, ///< Left cube.
@@ -95,16 +109,7 @@ export namespace vve::simple {
 			.color = Vec3{0.65F, 0.82F, 1.0F},             ///< Blue daylight tint separates it from the point light.
 			.intensity = {.value = 0.75F},                 ///< Moderate strength makes directional shading visible.
 			.ambient = 0.025F,                             ///< Low ambient keeps directional shadows readable.
-		}, .spotLight = SpotLight{
-			.position = Vec3{1.45F, 4.8F, -1.45F},          ///< Warm cone starts above the right side of the scene.
-			.direction = Vec3{0.10F, -0.98F, -0.16F},       ///< Cone aims down across the center cube cluster.
-			.color = Vec3{1.0F, 0.58F, 0.38F},             ///< Orange tint makes spot contribution distinct.
-			.intensity = {.value = 2.2F},                  ///< Focused strength makes spot highlights visible.
-			.range = {.value = 5.8F},                      ///< Range covers the cube group without lighting everything.
-			.innerConeAngle = {.radians = 0.28F},          ///< Tight inner cone creates a clear bright core.
-			.outerConeAngle = {.radians = 0.58F},          ///< Wider outer cone gives a visible falloff band.
-			.ambient = 0.02F,                              ///< Small ambient contribution preserves shadow contrast.
-		}};
+		}, .spotLights{sampleSpot}, .spotLight = sampleSpot};
 	}
 
 } // namespace vve::simple
