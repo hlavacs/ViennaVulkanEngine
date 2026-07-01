@@ -11,6 +11,7 @@ namespace {
 
 constexpr auto crateTextureRelativePath = "assets/game/crate0/diffuse.png";
 constexpr std::size_t maxGameDirectionalLights{4U}; ///< Mirrors the simple engine directional-light cap through the facade.
+constexpr std::size_t maxGamePointLights{2U}; ///< Mirrors the simple engine shadowed point-light cap through the facade.
 constexpr std::size_t maxGameSpotLights{4U}; ///< Mirrors the simple engine spot-light cap exposed through the facade.
 
 /// @brief Finds the repository-style asset root from either the cwd or executable location.
@@ -114,11 +115,26 @@ int main(int argc, char **argv) {
 		return 2;
 	}
 
-	const auto pointPosition = vve::Position{.value = vve::Vec3{2.0F, 3.5F, -2.0F}};                    ///< Startup point light position.
-	const auto pointColor = vve::LinearColor{.value = vve::Vec3{1.0F, 0.96F, 0.82F}};                  ///< Startup point light tint.
-	const auto pointIntensity = vve::LightIntensity{.value = 3.0F};                                    ///< Startup point light strength.
-	const auto pointRange = vve::LightRange{.value = 7.0F};                                            ///< Startup point light reach.
-	const auto pointAmbient = vve::LinearColor{.value = vve::Vec3{0.18F, 0.18F, 0.18F}};               ///< Startup point ambient term.
+	const auto pointPositions = std::array{
+		vve::Position{.value = vve::Vec3{2.0F, 3.5F, -2.0F}},
+		vve::Position{.value = vve::Vec3{-2.0F, 3.0F, 2.0F}},
+	};																													///< Two facade point positions matching the shadowed point-light cap.
+	const auto pointColors = std::array{
+		vve::LinearColor{.value = vve::Vec3{1.0F, 0.96F, 0.82F}},
+		vve::LinearColor{.value = vve::Vec3{0.55F, 0.78F, 1.0F}},
+	};																													///< Distinct colors make active point slots visible.
+	const auto pointIntensities = std::array{
+		vve::LightIntensity{.value = 3.0F},
+		vve::LightIntensity{.value = 2.4F},
+	};																													///< Point strengths keep the combined scene readable.
+	const auto pointRanges = std::array{
+		vve::LightRange{.value = 7.0F},
+		vve::LightRange{.value = 6.0F},
+	};																													///< Point ranges bound each local light volume.
+	const auto pointAmbients = std::array{
+		vve::LinearColor{.value = vve::Vec3{0.18F, 0.18F, 0.18F}},
+		vve::LinearColor{.value = vve::Vec3{0.06F, 0.08F, 0.1F}},
+	};																													///< Per-light ambient terms mirror the other light controls.
 	const auto directionalDirections = std::array{
 		vve::Direction{.value = vve::Vec3{-0.45F, -0.8F, 0.35F}},
 		vve::Direction{.value = vve::Vec3{0.55F, -0.72F, 0.12F}},
@@ -169,8 +185,8 @@ int main(int argc, char **argv) {
 	constexpr auto offIntensity = vve::LightIntensity{.value = 0.0F};                                  ///< Muted direct light strength.
 	constexpr auto offRange = vve::LightRange{.value = 0.0F};                                          ///< Muted local light reach.
 	auto directionalLightsEnabled = std::array<bool, maxGameDirectionalLights>{true, true, true, true}; ///< Tracks each capped directional light.
+	auto pointLightsEnabled = std::array<bool, maxGamePointLights>{true, true};                        ///< Tracks each capped point light.
 	auto spotLightsEnabled = std::array<bool, maxGameSpotLights>{true, true, true, true};              ///< Tracks each capped spot light.
-	bool pointLightEnabled = true;                                                                     ///< Tracks whether the point light contributes.
 	auto applyLights = [&] {
 		const auto applyDirectional = [&](std::size_t index, bool first) {
 			const auto intensity = directionalLightsEnabled[index] ? directionalIntensities[index] : offIntensity;
@@ -195,8 +211,21 @@ int main(int argc, char **argv) {
 		};																												// First spot resets the set; the rest fill the capped slots.
 		applySpot(0U, true);
 		for (std::size_t index{1U}; index < spotLightsEnabled.size(); ++index) { applySpot(index, false); }
-		render.setPointLight(pointPosition, pointColor, pointLightEnabled ? pointIntensity : offIntensity,
-									pointLightEnabled ? pointRange : offRange, pointLightEnabled ? pointAmbient : offAmbient);
+		bool anyPointLightEnabled{};																				// Disabled fallback keeps the legacy point slot valid.
+		for (std::size_t index{}; index < pointLightsEnabled.size(); ++index) {
+			if (!pointLightsEnabled[index]) { continue; }
+			if (!anyPointLightEnabled) {
+				render.setPointLight(pointPositions[index], pointColors[index], pointIntensities[index], pointRanges[index],
+										 pointAmbients[index]);
+			} else {
+				render.addPointLight(pointPositions[index], pointColors[index], pointIntensities[index], pointRanges[index],
+										 pointAmbients[index]);
+			}
+			anyPointLightEnabled = true;
+		}
+		if (!anyPointLightEnabled) {
+			render.setPointLight(pointPositions.front(), pointColors.front(), offIntensity, offRange, offAmbient);
+		}
 	};
 	applyLights();
 
@@ -210,8 +239,8 @@ int main(int argc, char **argv) {
 		vve::math::normalize(vve::math::subtract(vve::Vec3{0.0F, 1.0F, 0.0F}, cameraController.eye.value));
 	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
 	cameraController.pitch = std::asin(startupForward.y);
-	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &directionalLightsEnabled, &spotLightsEnabled,
-															 &pointLightEnabled, &cameraController, &lightsDirty] {
+	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &directionalLightsEnabled, &pointLightsEnabled,
+															 &spotLightsEnabled, &cameraController, &lightsDirty] {
 		ImGui::Begin("Game");
 		ImGui::Text("Frame: %d", frame);
 		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
@@ -226,7 +255,11 @@ int main(int argc, char **argv) {
 			const auto label = std::format("Spot {}", index + 1U);
 			if (ImGui::Checkbox(label.c_str(), &spotLightsEnabled[index])) { lightsDirty = true; }
 		}
-		if (ImGui::Checkbox("Point light", &pointLightEnabled)) { lightsDirty = true; }
+		ImGui::Text("Point lights: %zu", pointLightsEnabled.size());
+		for (std::size_t index{}; index < pointLightsEnabled.size(); ++index) {
+			const auto label = std::format("Point {}", index + 1U);
+			if (ImGui::Checkbox(label.c_str(), &pointLightsEnabled[index])) { lightsDirty = true; }
+		}
 		ImGui::Text("Camera: %.2f, %.2f, %.2f", cameraController.eye.value.x, cameraController.eye.value.y,
 						cameraController.eye.value.z);
 		ImGui::End();
@@ -252,9 +285,10 @@ int main(int argc, char **argv) {
 			std::cout << "[game] spot lights " << (enabled ? "on" : "off") << '\n';
 		}
 		if (input.wasKeyPressed(vve::Key::p)) {
-			pointLightEnabled = !pointLightEnabled;
+			const bool enabled = !std::ranges::any_of(pointLightsEnabled, std::identity{});
+			pointLightsEnabled.fill(enabled);
 			applyLights();
-			std::cout << "[game] point light " << (pointLightEnabled ? "on" : "off") << '\n';
+			std::cout << "[game] point lights " << (enabled ? "on" : "off") << '\n';
 		}
 		if (input.wasKeyPressed(vve::Key::l)) {
 			const bool enabled = !std::ranges::any_of(directionalLightsEnabled, std::identity{});

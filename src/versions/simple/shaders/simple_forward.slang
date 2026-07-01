@@ -166,9 +166,10 @@ FragmentOutput fragmentMain(FragmentInput input)
             const float3 pointLightDir = pointOffset / max(pointDistance, 0.001); ///< Point-light direction changes across the scene.
             const float pointRangeFalloff = saturate(1.0 - (pointDistance / pointRangeRaw)); ///< Fade direct light at the configured range.
             const float pointAttenuation = pointRangeFalloff * pointRangeFalloff; ///< Smooth enough quadratic falloff for the debug scene.
-            const float pointDiffuse = max(dot(normal, pointLightDir), 0.0); ///< Lambertian light response.
+            const float3 pointNormal = dot(rawNormal, pointLightDir) < 0.0 ? -rawNormal : rawNormal; ///< Two-sided normal faces the point light, not the camera.
+            const float pointDiffuse = max(dot(pointNormal, pointLightDir), 0.0); ///< Lambertian response now varies with point-light position.
             const float3 pointHalfVector = normalize(pointLightDir + viewDir); ///< Blinn-Phong halfway direction between light and eye.
-            const float pointSpecular = specularStrength * pow(max(dot(normal, pointHalfVector), 0.0), shininess); ///< Unshadowed highlight response.
+            const float pointSpecular = specularStrength * pow(max(dot(pointNormal, pointHalfVector), 0.0), shininess); ///< Point-light highlight response.
             const float3 pointLight = frame.pointLightColorIntensities[i].rgb * pointIntensity; ///< Point light color scaled by intensity.
             const float3 pointLightToFragment = input.worldPos - frame.pointLightPositionRanges[i].xyz; ///< Vector selects the cubemap-style shadow face.
             const float3 pointFaceAbs = abs(pointLightToFragment); ///< Dominant axis chooses the CPU face order.

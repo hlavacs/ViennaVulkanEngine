@@ -407,8 +407,12 @@ namespace vve::simple {
 		if (!directional_lights_.empty()) { light_ = directional_lights_.front(); }
 	}
 
-	/// @brief Stores the active point light resource.
-	inline void RenderScene::setPointLight(RenderPointLight light) { point_light_ = std::move(light); }
+	/// @brief Replaces the active point-light list with one first-light entry.
+	inline void RenderScene::setPointLight(RenderPointLight light) {
+		point_lights_.clear();
+		point_lights_.push_back(std::move(light));
+		point_light_ = point_lights_.front();
+	}
 
 	/// @brief Adds one point light until the fixed simple-engine cap is reached.
 	inline void RenderScene::addPointLight(RenderPointLight light) {
@@ -736,22 +740,27 @@ namespace vve::simple {
 	}
 	inline void RenderSystem::setPointLight(Position position, LinearColor color,
 															LightIntensity intensity, LightRange range) {
-		forward().scene.pointLight = PointLight{
-			.position = position.value,
-			.color = color.value,
-			.intensity = intensity.value,
-			.range = range.value,
-			.ambient = forward().scene.pointLight.ambient};
+		const PointLight light{.position = position.value,
+									  .color = color.value,
+									  .intensity = intensity.value,
+									  .range = range.value,
+									  .ambient = forward().scene.pointLight.ambient};
+		forward().scene.pointLights.clear();
+		forward().scene.pointLights.push_back(light);
+		forward().scene.pointLight = light;
 		scene_.setPointLight(RenderPointLight{.position = position, .color = color,
 															.intensity = intensity, .range = range});
 	}
 	inline void RenderSystem::setPointLight(Position position, LinearColor color,
 															LightIntensity intensity, LightRange range, LinearColor ambient) {
-		forward().scene.pointLight = PointLight{.position = position.value,
-															 .color = color.value,
-															 .intensity = intensity.value,
-															 .range = range.value,
-															 .ambient = ambient.value.x};
+		const PointLight light{.position = position.value,
+									  .color = color.value,
+									  .intensity = intensity.value,
+									  .range = range.value,
+									  .ambient = ambient.value.x};
+		forward().scene.pointLights.clear();
+		forward().scene.pointLights.push_back(light);
+		forward().scene.pointLight = light;
 		scene_.setPointLight(RenderPointLight{.position = position, .color = color,
 															.intensity = intensity, .range = range, .ambient = ambient});
 	}
