@@ -126,7 +126,7 @@ export namespace vve::simple {
 		VulkanImageViews imageViews{};         ///< Owned color image views for swapchain images.
 		VulkanDepthImage depthImage{};         ///< Owned swapchain-sized depth attachment image and view.
 		ShadowMap shadowMap{};                 ///< Owned unbound shadow-map image reserved for later shadow rendering.
-		ShadowMap dirShadowMap{};              ///< Owned directional shadow-map image reserved for later shadow rendering.
+		ShadowMap dirShadowArray{};            ///< Owned directional shadow-map texture array with one layer per active directional light.
 		ShadowMap spotShadowMap{};             ///< Owned spot shadow-map image reserved for later shadow rendering.
 		ShadowMap spotShadowArray{};           ///< Owned spot shadow-map texture array reserved for future multi-light shadows.
 		TextureImage objectTexture{};           ///< Owned optional base-color texture bound only when the loaded scene requests one.
@@ -304,13 +304,16 @@ export namespace vve::simple {
 			result = shadowMap.create(physicalDevice.physicalDevice, device.device);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
-			result = dirShadowMap.create(physicalDevice.physicalDevice, device.device);
+			result = dirShadowArray.create(physicalDevice.physicalDevice, device.device, kMaxDirectionalLights);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
 			result = spotShadowMap.create(physicalDevice.physicalDevice, device.device);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
 			result = spotShadowArray.create(physicalDevice.physicalDevice, device.device, kMaxShadowedSpotLights);
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+
+			result = dirShadowArray.createPipeline(descriptorSetLayout.descriptorSetLayout, dirShadowVertSpirvPath, "shadowVertexMainDir", vertexInput);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
 			result = spotShadowArray.createPipeline(descriptorSetLayout.descriptorSetLayout, spotShadowVertSpirvPath, "shadowVertexMainSpot", vertexInput);
@@ -326,9 +329,6 @@ export namespace vve::simple {
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
 			result = shadowMap.createPipeline(descriptorSetLayout.descriptorSetLayout, shadowVertSpirvPath, "shadowVertexMain", vertexInput);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
-
-			result = dirShadowMap.createPipeline(descriptorSetLayout.descriptorSetLayout, dirShadowVertSpirvPath, "shadowVertexMainDir", vertexInput);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
 			result = spotShadowMap.createPipeline(descriptorSetLayout.descriptorSetLayout, spotShadowVertSpirvPath, "shadowVertexMainSpot", vertexInput);
@@ -391,7 +391,7 @@ export namespace vve::simple {
 				if (result != VK_SUCCESS) { cleanup(); return result; }
 				result = descriptorSets.writeShadowMap(frame, shadowMap.view, shadowMap.sampler);
 				if (result != VK_SUCCESS) { cleanup(); return result; }
-				result = descriptorSets.writeDirShadowMap(frame, dirShadowMap.view, dirShadowMap.sampler);
+				result = descriptorSets.writeDirShadowArray(frame, dirShadowArray.view, dirShadowArray.sampler); // Bind directional shadow-array sampler.
 				if (result != VK_SUCCESS) { cleanup(); return result; }
 				result = descriptorSets.writeSpotShadowMap(frame, spotShadowMap.view, spotShadowMap.sampler);
 				if (result != VK_SUCCESS) { cleanup(); return result; }
@@ -485,7 +485,6 @@ export namespace vve::simple {
 			const Vec3 shadowSurfaceLightDir{normalize(subtract(light.position, lightCenter))}; ///< Point-light direction approximated by one shadow map.
 			const Vec3 lightEye{light.position}; ///< Place the shadow camera at the point light for the current simple approximation.
 			const Scalar lightExtent{static_cast<Scalar>(4.0)}; ///< Light-space half-size covers the 4x4 floor and tall cube.
-			const Vec3 dirLightEye{subtract(lightCenter, scale(dirLightDirection, lightExtent))}; ///< Directional shadow camera aimed at the scene origin.
 			const Scalar spotLightFov{std::clamp(spot.outerConeAngle.radians * static_cast<Scalar>(2), static_cast<Scalar>(0.001), static_cast<Scalar>(3.0))}; ///< Spot-light cone field of view.
 			const Scalar spotLightFar{std::isfinite(spot.range.value) && spot.range.value > zero() ? spot.range.value : static_cast<Scalar>(0.001)}; ///< Positive spot-light far plane.
 			spotLightViewProjCount = std::min(scene.spotLights.size(), spotLightViewProjs.size());
@@ -511,12 +510,16 @@ export namespace vve::simple {
 			}
 			const std::size_t directionalLightCount{std::min(scene.directionalLights.size(), kMaxDirectionalLights)}; ///< Clamped directional-light count fits the fixed uniform arrays.
 			const std::uint32_t activeDirectionalLightCount{static_cast<std::uint32_t>(directionalLightCount)}; ///< Clamped count packed into the frame uniform.
+			std::array<Mat4, kMaxDirectionalLights> dirLightViewProjArray{}; ///< Per-directional shadow matrices used by depth passes and sampling.
 			std::array<Vec4, kMaxDirectionalLights> directionalLightDirections{}; ///< Per-directional xyz directions with unused w.
 			std::array<Vec4, kMaxDirectionalLights> directionalLightColorIntensities{}; ///< Per-directional rgb colors with intensities in w.
 			std::array<Vec4, kMaxDirectionalLights> directionalLightAmbients{}; ///< Per-directional active count and ambient.
+			// Build one directional light-space matrix per active light.
 			for (std::size_t directionalIndex{}; directionalIndex < directionalLightCount; ++directionalIndex) {
 				const DirectionalLight &activeDirectional = scene.directionalLights[directionalIndex]; ///< Scene directional light copied into a fixed uniform slot.
 				const Vec3 activeDirectionalDirection{normalize(activeDirectional.direction)}; ///< Normalized direction mirrors the legacy single-light path.
+				const Vec3 activeDirectionalEye{subtract(lightCenter, scale(activeDirectionalDirection, lightExtent))}; ///< Directional shadow camera aimed at the scene origin.
+				dirLightViewProjArray[directionalIndex] = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(activeDirectionalEye, lightCenter, Vec3{zero(), one(), zero()}));
 				directionalLightDirections[directionalIndex] = Vec4{activeDirectionalDirection.x, activeDirectionalDirection.y, activeDirectionalDirection.z, zero()};
 				directionalLightColorIntensities[directionalIndex] = Vec4{activeDirectional.color.x, activeDirectional.color.y, activeDirectional.color.z, activeDirectional.intensity.value};
 				directionalLightAmbients[directionalIndex] = Vec4{zero(), zero(), static_cast<Scalar>(activeDirectionalLightCount), activeDirectional.ambient};
@@ -552,7 +555,7 @@ export namespace vve::simple {
 				.view = lookAt(cameraEye, cameraTarget, Vec3{zero(), one(), zero()}),
 				.projection = perspectiveVulkan(static_cast<Scalar>(0.7853981633974483), aspectRatio, static_cast<Scalar>(0.1), static_cast<Scalar>(100.0)),
 				.lightViewProj = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(lightEye, lightCenter, Vec3{zero(), one(), zero()})),
-				.dirLightViewProj = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(dirLightEye, lightCenter, Vec3{zero(), one(), zero()})),
+				.dirLightViewProjArray = dirLightViewProjArray, ///< Per-directional matrices used by depth passes and fragment sampling.
 				.spotLightViewProjs = spotLightViewProjs,
 				.lightPositionRange = Vec4{light.position.x, light.position.y, light.position.z, light.range},
 				.lightColorIntensity = Vec4{light.color.x, light.color.y, light.color.z, light.intensity},
@@ -576,7 +579,7 @@ export namespace vve::simple {
 			directionalShadowDepthSampleCountStorage() = 1U;
 			const Vec3 directionalShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point shared with spot shadow diagnostics.
 			constexpr float kDirectionalShadowCompareBias{0.001F}; ///< CPU mirror of the shader-side directional compare bias.
-			const Vec4 dirLightClip{multiply(frameUniforms.dirLightViewProj, Vec4{directionalShadowDebugPoint.x, directionalShadowDebugPoint.y, directionalShadowDebugPoint.z, one()})}; ///< Clip point before perspective divide.
+			const Vec4 dirLightClip{multiply(frameUniforms.dirLightViewProjArray[0], Vec4{directionalShadowDebugPoint.x, directionalShadowDebugPoint.y, directionalShadowDebugPoint.z, one()})}; ///< Clip point before perspective divide.
 			const Scalar dirInvW{dirLightClip.w != zero() ? one() / dirLightClip.w : zero()}; ///< Zero-w guard matches the spot debug path.
 			const Vec3 dirLightNdc{dirLightClip.x * dirInvW, dirLightClip.y * dirInvW, dirLightClip.z * dirInvW}; ///< Shader-comparable directional NDC point.
 			directionalShadowDepthSampleStorage()[0] = RenderShadowDepthSample{.face_index = 0U,
@@ -693,7 +696,6 @@ export namespace vve::simple {
 			fragShaderModule.cleanup();
 			vertShaderModule.cleanup();
 			spotShadowMap.cleanupPipeline();
-			dirShadowMap.cleanupPipeline();
 			shadowMap.cleanupPipeline();
 			pipelineLayout.cleanup();
 			descriptorSetLayout.cleanup();
@@ -701,7 +703,7 @@ export namespace vve::simple {
 			renderPass.cleanup();
 			spotShadowArray.cleanup();
 			spotShadowMap.cleanup();
-			dirShadowMap.cleanup();
+			dirShadowArray.cleanup();
 			shadowMap.cleanup();
 			depthImage.cleanup();
 			imageViews.cleanup();
@@ -766,13 +768,13 @@ export namespace vve::simple {
 			* @brief Reads the rendered directional shadow texel into the retained diagnostics.
 			*/
 		void fillDirectionalShadowGpuDepthSamples() {
-			if (device.device == VK_NULL_HANDLE || dirShadowMap.image == VK_NULL_HANDLE) { return; }
+			if (device.device == VK_NULL_HANDLE || dirShadowArray.image == VK_NULL_HANDLE) { return; }
 			if (dirShadowDepthReadback.extent.width == 0U || dirShadowDepthReadback.extent.height == 0U) { return; }
 			if (vkDeviceWaitIdle(device.device) != VK_SUCCESS) { return; }
 
 			RenderShadowDepthSample &sample = directionalShadowDepthSampleStorage()[0]; // Single directional light uses layer zero.
 			const auto texel = spotShadowDebugTexel(sample.light_ndc);
-			if (dirShadowDepthReadback.capture(dirShadowMap.image, 0U) != VK_SUCCESS) { return; }
+			if (dirShadowDepthReadback.capture(dirShadowArray.image, 0U) != VK_SUCCESS) { return; }
 
 			const std::optional<float> depth = dirShadowDepthReadback.depthAt(texel.first, texel.second);
 			if (!depth) { return; }
@@ -913,7 +915,6 @@ export namespace vve::simple {
 			if (frameIndex >= commandBuffers.commandBuffers.size() || frameIndex >= descriptorSets.descriptorSets.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
 			if (imageIndex >= framebuffers.framebuffers.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
 			if (shadowMap.renderPass == VK_NULL_HANDLE || shadowMap.framebuffer == VK_NULL_HANDLE || shadowMap.pipeline == VK_NULL_HANDLE || shadowMap.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
-			if (dirShadowMap.renderPass == VK_NULL_HANDLE || dirShadowMap.framebuffer == VK_NULL_HANDLE || dirShadowMap.pipeline == VK_NULL_HANDLE || dirShadowMap.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 			if (spotShadowMap.renderPass == VK_NULL_HANDLE || spotShadowMap.framebuffer == VK_NULL_HANDLE || spotShadowMap.pipeline == VK_NULL_HANDLE || spotShadowMap.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkCommandBuffer commandBuffer{commandBuffers.commandBuffers[frameIndex]};
@@ -924,7 +925,7 @@ export namespace vve::simple {
 			result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
 			if (result != VK_SUCCESS) { return result; }
 
-			const auto drawUploadedObjects = [&](VkPipelineLayout activePipelineLayout, std::uint32_t spotLightIndex = 0U) {
+			const auto drawUploadedObjects = [&](VkPipelineLayout activePipelineLayout, std::uint32_t spotLightIndex = 0U, std::uint32_t dirLightIndex = 0U) {
 				std::size_t objectIndex{}; // Meshes and scene objects share submission order.
 				for (const VulkanMesh &mesh : meshes) {
 					if (objectIndex >= scene.objects.size()) { break; }
@@ -932,7 +933,7 @@ export namespace vve::simple {
 					const VkBuffer vertexBuffers[]{mesh.vertexBuffer.buffer};
 					const VkDeviceSize offsets[]{0U};
 					const Object &object = scene.objects[objectIndex];
-					const ObjectPushConstants pushConstants{.model = object.model, .useBaseColorTexture = object.useBaseColorTexture, .spotLightIndex = spotLightIndex};
+					const ObjectPushConstants pushConstants{.model = object.model, .useBaseColorTexture = object.useBaseColorTexture, .spotLightIndex = spotLightIndex, .dirLightIndex = dirLightIndex};
 					vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, vertexBuffers, offsets);
 					vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0U, VK_INDEX_TYPE_UINT32);
 					vkCmdPushConstants(commandBuffer, activePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0U, sizeof(ObjectPushConstants), &pushConstants);
@@ -956,20 +957,24 @@ export namespace vve::simple {
 			drawUploadedObjects(shadowMap.pipelineLayout);
 			vkCmdEndRenderPass(commandBuffer);
 
-			const VkRenderPassBeginInfo dirShadowPassInfo{
-				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-				.renderPass = dirShadowMap.renderPass,
-				.framebuffer = dirShadowMap.framebuffer,
-				.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
-				.clearValueCount = 1U,
-				.pClearValues = &shadowClear,
-			};
+			const std::size_t directionalLightCount{std::min(scene.directionalLights.size(), kMaxDirectionalLights)}; // Clamped directional-light count mirrors frame uniform upload.
+			const std::size_t dirShadowArrayPassCount{std::min(directionalLightCount, dirShadowArray.layerFramebuffers.size())}; // Active directional array layers receive one depth pass each.
+			for (std::size_t dirLightIndex{}; dirLightIndex < dirShadowArrayPassCount; ++dirLightIndex) {
+				const VkRenderPassBeginInfo dirShadowArrayPassInfo{
+					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+					.renderPass = dirShadowArray.renderPass,
+					.framebuffer = dirShadowArray.layerFramebuffers[dirLightIndex],
+					.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
+					.clearValueCount = 1U,
+					.pClearValues = &shadowClear,
+				};
 
-			vkCmdBeginRenderPass(commandBuffer, &dirShadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dirShadowMap.pipeline);
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dirShadowMap.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-			drawUploadedObjects(dirShadowMap.pipelineLayout);
-			vkCmdEndRenderPass(commandBuffer);
+				vkCmdBeginRenderPass(commandBuffer, &dirShadowArrayPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dirShadowArray.pipeline);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dirShadowArray.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
+				drawUploadedObjects(dirShadowArray.pipelineLayout, 0U, static_cast<std::uint32_t>(dirLightIndex));
+				vkCmdEndRenderPass(commandBuffer);
+			}
 
 			const VkRenderPassBeginInfo spotShadowPassInfo{
 				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,

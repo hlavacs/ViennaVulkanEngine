@@ -18,7 +18,7 @@ struct FrameUniforms
     float4x4 view;       ///< Camera view matrix shared by all objects in the frame.
     float4x4 projection; ///< Camera projection matrix shared by all objects in the frame.
     float4x4 lightViewProj; ///< Light view-projection matrix for the upcoming shadow pass.
-    float4x4 dirLightViewProj; ///< Directional-light view-projection matrix for future shadow data.
+    float4x4 dirLightViewProjArray[kMaxDirectionalLights]; ///< Per-directional light-space matrices for shadow depth passes.
     float4x4 spotLightViewProjs[kMaxShadowedSpotLights]; ///< Spot-light view-projection matrices for future shadow data.
     float4 lightPositionRange;    ///< xyz world-space point-light position, w range.
     float4 lightColorIntensity;   ///< rgb direct-light color, w direct-light intensity.
@@ -46,6 +46,7 @@ struct ObjectPushConstants
     float4x4 model;              ///< Object-local model matrix selected before each draw call.
     uint useBaseColorTexture;    ///< Non-zero when the object wants the optional base-color texture.
     uint spotLightIndex;         ///< Shadow pass spot-light matrix index selected before each draw call.
+    uint dirLightIndex;          ///< Shadow pass directional-light matrix index selected before each draw call.
 };
 
 struct VertexInput
@@ -84,14 +85,14 @@ Sampler2D shadowMap; ///< Directional light depth map sampled by the forward fra
 [[vk::binding(2, 0)]]
 Sampler2D baseColorTexture; ///< Optional object base-color texture sampled only when the push constant enables it.
 
-[[vk::binding(3, 0)]]
-Sampler2D dirShadowMap; ///< Directional light depth map sampled by the forward fragment stage.
-
 [[vk::binding(4, 0)]]
 Sampler2D spotShadowMap; ///< Spot light depth map sampled by the forward fragment stage.
 
 [[vk::binding(5, 0)]]
 Sampler2DArray spotShadowArray; ///< Spot light depth array sampled by the forward fragment stage.
+
+[[vk::binding(6, 0)]]
+Sampler2DArray dirShadowArray; ///< Directional light depth array sampled per active light by the fragment stage.
 
 [[vk::push_constant]]
 ObjectPushConstants object; ///< Per-object transform constants.
@@ -118,7 +119,7 @@ float4 shadowVertexMain(VertexInput input) : SV_Position
 [shader("vertex")]
 float4 shadowVertexMainDir(VertexInput input) : SV_Position
 {
-    return mul(frame.dirLightViewProj, mul(object.model, float4(input.position, 1.0)));
+    return mul(frame.dirLightViewProjArray[object.dirLightIndex], mul(object.model, float4(input.position, 1.0))); ///< Select the directional light-space matrix for this pass.
 }
 
 [shader("vertex")]
@@ -153,13 +154,6 @@ FragmentOutput fragmentMain(FragmentInput input)
     const float diffuse = max(dot(normal, surfaceLightDir), 0.0);        ///< Lambertian light response.
     const float3 halfVector = normalize(surfaceLightDir + viewDir);      ///< Blinn-Phong halfway direction between light and eye.
     const float specular = specularStrength * pow(max(dot(normal, halfVector), 0.0), shininess); ///< Shadowed highlight response.
-    const float4 dirLightClip = mul(frame.dirLightViewProj, float4(input.worldPos, 1.0)); ///< Fragment position in directional light clip space.
-    const float3 dirLightNdc = dirLightClip.xyz / dirLightClip.w;        ///< Directional light depth remains in 0..1 after divide.
-    const float2 dirShadowUv = (dirLightNdc.xy * 0.5) + 0.5;             ///< Convert directional light NDC XY to shadow texture UVs.
-    const bool insideDirShadowMap = dirShadowUv.x >= 0.0 && dirShadowUv.x <= 1.0 &&
-        dirShadowUv.y >= 0.0 && dirShadowUv.y <= 1.0 && dirLightNdc.z >= 0.0 && dirLightNdc.z <= 1.0; ///< Reject fragments outside directional light coverage.
-    const float dirStoredDepth = dirShadowMap.Sample(dirShadowUv).r;     ///< Closest surface depth from the directional light pass.
-    const float dirShadowFactor = insideDirShadowMap && dirLightNdc.z - 0.001 > dirStoredDepth ? 0.35 : 1.0; ///< Small 0.001 compare bias complements shadow-pass slope-scaled rasterizer bias.
     const int activeDirectionalLightCount = min(max(int(frame.activeDirectionalLightCount), 0), kMaxDirectionalLights); ///< Clamp scene directional count to the fixed array.
     float3 directionalContribution = float3(0.0);                  ///< Accumulated directional-light response for all active directional lights.
     for (int i = 0; i < kMaxDirectionalLights; ++i) {              ///< Fixed trip count lets the compiler unroll the small directional loop.
@@ -170,8 +164,14 @@ FragmentOutput fragmentMain(FragmentInput input)
             const float dirSpecular = specularStrength * pow(max(dot(normal, dirHalfVector), 0.0), shininess); ///< Directional highlight response.
             const float3 dirLight = frame.directionalLightColorIntensities[i].rgb * frame.directionalLightColorIntensities[i].w; ///< Directional light color scaled by intensity.
             const float dirAmbient = frame.directionalLightAmbients[i].w; ///< Directional ambient contribution without shadowing.
-            const float activeDirShadowFactor = i == 0 ? dirShadowFactor : 1.0; ///< Slot zero keeps the existing directional shadow map.
-            directionalContribution += dirAmbient + dirLight * ((dirDiffuse + dirSpecular) * activeDirShadowFactor); ///< Add this directional result.
+            const float4 dirLightClip = mul(frame.dirLightViewProjArray[i], float4(input.worldPos, 1.0)); ///< Fragment position in directional light clip space.
+            const float3 dirLightNdc = dirLightClip.xyz / dirLightClip.w; ///< Directional light depth remains in 0..1 after divide.
+            const float2 dirShadowUv = (dirLightNdc.xy * 0.5) + 0.5; ///< Convert directional light NDC XY to shadow texture UVs.
+            const bool insideDirShadowMap = dirShadowUv.x >= 0.0 && dirShadowUv.x <= 1.0 &&
+                dirShadowUv.y >= 0.0 && dirShadowUv.y <= 1.0 && dirLightNdc.z >= 0.0 && dirLightNdc.z <= 1.0; ///< Reject fragments outside directional light coverage.
+            const float dirStoredDepth = dirShadowArray.Sample(float3(dirShadowUv, float(i))).r; ///< Closest surface depth from this directional layer.
+            const float dirShadowFactor = insideDirShadowMap && dirLightNdc.z - 0.001 > dirStoredDepth ? 0.35 : 1.0; ///< Small 0.001 compare bias complements shadow-pass slope-scaled rasterizer bias.
+            directionalContribution += dirAmbient + dirLight * ((dirDiffuse + dirSpecular) * dirShadowFactor); ///< Add this shadowed directional result.
         }
     }
     const int activeSpotLightCount = min(max(int(frame.spotLightConeAmbient.z), 0), kMaxShadowedSpotLights); ///< Clamp scene spot count to the fixed shadow array.

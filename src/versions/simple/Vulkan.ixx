@@ -72,6 +72,7 @@ export namespace vve::simple {
 		Mat4 model{};                          ///< Object-local model matrix selected before each draw call.
 		std::uint32_t useBaseColorTexture{0U}; ///< Non-zero when the object wants the optional base-color texture.
 		std::uint32_t spotLightIndex{0U};      ///< Shadow pass spot-light matrix index selected before each draw call.
+		std::uint32_t dirLightIndex{0U};       ///< Shadow pass directional-light matrix index selected before each draw call.
 	};
 
 	/// @brief Minimal Vulkan root object; no device, surface, swapchain, commands, or sync are created here.
@@ -1299,13 +1300,6 @@ export namespace vve::simple {
 				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 				.pImmutableSamplers = nullptr,
 			}; ///< Binding 2 reserves one sampled object base-color texture for later fragment shading.
-			const VkDescriptorSetLayoutBinding dirShadowMapBinding{
-				.binding = 3U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.descriptorCount = 1U,
-				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-				.pImmutableSamplers = nullptr,
-			}; ///< Binding 3 exposes the sampled directional shadow map to the fragment shader.
 			const VkDescriptorSetLayoutBinding spotShadowMapBinding{
 				.binding = 4U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -1320,7 +1314,14 @@ export namespace vve::simple {
 				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 				.pImmutableSamplers = nullptr,
 			}; ///< Binding 5 exposes the sampled spot shadow-map array to the fragment shader.
-			const std::array bindings{frameUniformBinding, shadowMapBinding, objectTextureBinding, dirShadowMapBinding, spotShadowMapBinding, spotShadowArrayBinding};
+			const VkDescriptorSetLayoutBinding dirShadowArrayBinding{
+				.binding = 6U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = 1U,
+				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+				.pImmutableSamplers = nullptr,
+			}; ///< Binding 6 exposes the sampled directional shadow-map array to the fragment shader.
+			const std::array bindings{frameUniformBinding, shadowMapBinding, objectTextureBinding, spotShadowMapBinding, spotShadowArrayBinding, dirShadowArrayBinding};
 			const VkDescriptorSetLayoutCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 				.bindingCount = static_cast<std::uint32_t>(bindings.size()),
@@ -3133,36 +3134,6 @@ export namespace vve::simple {
 		}
 
 		/**
-			* @brief Writes one frame descriptor set with its binding-3 sampled directional shadow map.
-			*
-			* @param frameIndex Frame set index to update.
-			* @param imageView Directional shadow-map image view bound to descriptor binding 3.
-			* @param sampler Directional shadow-map sampler bound to descriptor binding 3.
-			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
-			*/
-		[[nodiscard]] VkResult writeDirShadowMap(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
-			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
-
-			const VkDescriptorImageInfo imageInfo{
-				.sampler = sampler,
-				.imageView = imageView,
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
-			const VkWriteDescriptorSet write{
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = 3U,
-				.dstArrayElement = 0U,
-				.descriptorCount = 1U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = &imageInfo,
-			};
-
-			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
-			return VK_SUCCESS;
-		}
-
-		/**
 			* @brief Writes one frame descriptor set with its binding-4 sampled spot shadow map.
 			*
 			* @param frameIndex Frame set index to update.
@@ -3212,6 +3183,36 @@ export namespace vve::simple {
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
 				.dstBinding = 5U,
+				.dstArrayElement = 0U,
+				.descriptorCount = 1U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &imageInfo,
+			};
+
+			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
+			return VK_SUCCESS;
+		}
+
+		/**
+			* @brief Writes one frame descriptor set with its binding-6 sampled directional shadow-map array.
+			*
+			* @param frameIndex Frame set index to update.
+			* @param imageView Directional shadow-map array image view bound to descriptor binding 6.
+			* @param sampler Directional shadow-map array sampler bound to descriptor binding 6.
+			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
+			*/
+		[[nodiscard]] VkResult writeDirShadowArray(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
+			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			const VkDescriptorImageInfo imageInfo{
+				.sampler = sampler,
+				.imageView = imageView,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+			const VkWriteDescriptorSet write{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSets[frameIndex],
+				.dstBinding = 6U,
 				.dstArrayElement = 0U,
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -3364,7 +3365,7 @@ export namespace vve::simple {
 		Mat4 view{};        ///< shared camera view matrix
 		Mat4 projection{};  ///< shared camera projection matrix
 		Mat4 lightViewProj{}; ///< light view-projection for the upcoming shadow pass
-		Mat4 dirLightViewProj{}; ///< directional-light view-projection for future shadow data
+		std::array<Mat4, kMaxDirectionalLights> dirLightViewProjArray{}; ///< per-directional light-space matrices for depth passes and sampling
 		std::array<Mat4, kMaxShadowedSpotLights> spotLightViewProjs{}; ///< spot-light view-projections for future shadow data
 		Vec4 lightPositionRange{};    ///< xyz world-space point-light position, w range
 		Vec4 lightColorIntensity{};   ///< rgb direct-light color, w direct-light intensity
