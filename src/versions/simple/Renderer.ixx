@@ -543,7 +543,7 @@ export namespace vve::simple {
 			const Scalar spotLightFov{std::clamp(spot.outerConeAngle.radians * static_cast<Scalar>(2), static_cast<Scalar>(0.001), static_cast<Scalar>(3.0))}; ///< Spot-light cone field of view.
 			const Scalar spotLightFar{std::isfinite(spot.range.value) && spot.range.value > zero() ? spot.range.value : static_cast<Scalar>(0.001)}; ///< Positive spot-light far plane.
 			spotLightViewProjCount = std::min(scene.spotLights.size(), spotLightViewProjs.size());
-			const std::uint32_t activeSpotLightViewProjCount{static_cast<std::uint32_t>(spotLightViewProjCount)}; ///< Clamped count packed into the frame uniform.
+			std::uint32_t activeSpotLightViewProjCount{}; ///< Enabled spot-light count packed into the frame uniform.
 			constexpr Scalar kSpotShadowNearPlane{static_cast<Scalar>(0.1)}; ///< Shared spot shadow near plane.
 			constexpr float kSpotShadowCompareBias{0.001F}; ///< CPU mirror of the shader-side compare bias.
 			constexpr std::size_t kPointShadowFaceCount{6U}; ///< One square shadow view per cubemap direction.
@@ -553,23 +553,25 @@ export namespace vve::simple {
 			const Vec4 spotLightPositionRange{spot.position.x, spot.position.y, spot.position.z, spot.range.value}; ///< Spot xyz position with range in w.
 			const Vec4 spotLightColorIntensity{spot.color.x, spot.color.y, spot.color.z, spot.intensity.value}; ///< Spot rgb color with intensity in w.
 			const Vec4 spotLightDirection{spotDirection.x, spotDirection.y, spotDirection.z, zero()}; ///< Spot xyz direction with unused w.
-			const Vec4 spotLightConeAmbient{std::cos(spot.innerConeAngle.radians), std::cos(spot.outerConeAngle.radians), static_cast<Scalar>(activeSpotLightViewProjCount), spot.ambient}; ///< Spot x inner cosine, y outer cosine, z active count, w ambient.
+			Vec4 spotLightConeAmbient{std::cos(spot.innerConeAngle.radians), std::cos(spot.outerConeAngle.radians), zero(), spot.ambient}; ///< Spot x inner cosine, y outer cosine, z active count, w ambient.
 			std::array<Vec4, kMaxShadowedSpotLights> spotLightPositionRanges{}; ///< Per-spot xyz positions with ranges in w.
 			std::array<Vec4, kMaxShadowedSpotLights> spotLightColorIntensities{}; ///< Per-spot rgb colors with intensities in w.
 			std::array<Vec4, kMaxShadowedSpotLights> spotLightDirections{}; ///< Per-spot xyz directions with unused w.
 			std::array<Vec4, kMaxShadowedSpotLights> spotLightConeAmbients{}; ///< Per-spot cone cosines, active count, and ambient.
 			for (std::size_t spotIndex{}; spotIndex < spotLightViewProjCount; ++spotIndex) {
 				const SpotLight &activeSpot = scene.spotLights[spotIndex]; ///< Scene spot light copied into a future shadow slot.
+				if (!activeSpot.enabled) { continue; }
+				const std::size_t packedSpotIndex{activeSpotLightViewProjCount++}; ///< Dense shader slot for this enabled spot light.
 				const Vec3 activeSpotDirection{normalize(activeSpot.direction)}; ///< Normalized direction mirrors the legacy single-light path.
 				const Scalar activeSpotLightFov{std::clamp(activeSpot.outerConeAngle.radians * static_cast<Scalar>(2), static_cast<Scalar>(0.001), static_cast<Scalar>(3.0))}; ///< Spot-light cone field of view.
 				const Scalar activeSpotLightFar{std::isfinite(activeSpot.range.value) && activeSpot.range.value > zero() ? activeSpot.range.value : static_cast<Scalar>(0.001)}; ///< Positive spot-light far plane.
 				const Mat4 activeSpotView{lookAt(activeSpot.position, add(activeSpot.position, activeSpotDirection), Vec3{zero(), one(), zero()})}; ///< Light-space view for this spot slot.
 				const Mat4 activeSpotProjection{perspectiveVulkan(activeSpotLightFov, one(), kSpotShadowNearPlane, activeSpotLightFar)}; ///< Light-space projection for this spot slot.
-				spotLightViewProjs[spotIndex] = multiply(activeSpotProjection, activeSpotView);
-				shadowLightMeta.push_back(ShadowLightMeta{.light_index = static_cast<std::uint32_t>(spotIndex),
+				spotLightViewProjs[packedSpotIndex] = multiply(activeSpotProjection, activeSpotView);
+				shadowLightMeta.push_back(ShadowLightMeta{.light_index = static_cast<std::uint32_t>(packedSpotIndex),
 																		 .light_type = 1U,
-																		 .shadow_slot = static_cast<std::uint32_t>(spotIndex),
-																		 .first_layer = static_cast<std::uint32_t>(spotIndex),
+																		 .shadow_slot = static_cast<std::uint32_t>(packedSpotIndex),
+																		 .first_layer = static_cast<std::uint32_t>(packedSpotIndex),
 																		 .layer_count = 1U,
 																		 .view = activeSpotView,
 																		 .projection = activeSpotProjection,
@@ -577,11 +579,13 @@ export namespace vve::simple {
 																		 .far_plane = activeSpotLightFar,
 																		 .depth_bias = static_cast<Scalar>(kSpotShadowCompareBias),
 																		 .resolution = ShadowMap::resolution}); ///< One spot light maps to one array layer.
-				spotLightPositionRanges[spotIndex] = Vec4{activeSpot.position.x, activeSpot.position.y, activeSpot.position.z, activeSpot.range.value};
-				spotLightColorIntensities[spotIndex] = Vec4{activeSpot.color.x, activeSpot.color.y, activeSpot.color.z, activeSpot.intensity.value};
-				spotLightDirections[spotIndex] = Vec4{activeSpotDirection.x, activeSpotDirection.y, activeSpotDirection.z, zero()};
-				spotLightConeAmbients[spotIndex] = Vec4{std::cos(activeSpot.innerConeAngle.radians), std::cos(activeSpot.outerConeAngle.radians), static_cast<Scalar>(activeSpotLightViewProjCount), activeSpot.ambient};
+				spotLightPositionRanges[packedSpotIndex] = Vec4{activeSpot.position.x, activeSpot.position.y, activeSpot.position.z, activeSpot.range.value};
+				spotLightColorIntensities[packedSpotIndex] = Vec4{activeSpot.color.x, activeSpot.color.y, activeSpot.color.z, activeSpot.intensity.value};
+				spotLightDirections[packedSpotIndex] = Vec4{activeSpotDirection.x, activeSpotDirection.y, activeSpotDirection.z, zero()};
+				spotLightConeAmbients[packedSpotIndex] = Vec4{std::cos(activeSpot.innerConeAngle.radians), std::cos(activeSpot.outerConeAngle.radians), zero(), activeSpot.ambient};
 			}
+			spotLightConeAmbient.z = static_cast<Scalar>(activeSpotLightViewProjCount);
+			for (std::size_t spotIndex{}; spotIndex < activeSpotLightViewProjCount; ++spotIndex) { spotLightConeAmbients[spotIndex].z = static_cast<Scalar>(activeSpotLightViewProjCount); }
 			constexpr std::array<Vec3, kPointShadowFaceCount> pointShadowFaceDirections{Vec3{one(), zero(), zero()},
 																																									Vec3{-one(), zero(), zero()},
 																																									Vec3{zero(), one(), zero()},
@@ -596,18 +600,21 @@ export namespace vve::simple {
 																																		 Vec3{zero(), -one(), zero()}}; ///< Cubemap face up vectors.
 			const std::uint32_t firstPointShadowLayer{static_cast<std::uint32_t>(kMaxShadowedSpotLights)}; ///< Point layers start after all spot slots.
 			constexpr Scalar kPointShadowFov{static_cast<Scalar>(1.5707963267948966)}; ///< Square cubemap face field of view.
+			std::size_t activePointLightCount{}; ///< Enabled point-light count packed into shader-visible arrays.
 			// Append six independent light-space views for every shadowed point light.
 			for (std::size_t pointIndex{}; pointIndex < pointLightShadowCount; ++pointIndex) {
 				const PointLight &activePoint = scene.pointLights[pointIndex]; ///< Scene point light copied into six shadow faces.
+				if (!activePoint.enabled) { continue; }
+				const std::size_t packedPointIndex{activePointLightCount++}; ///< Dense shader slot for this enabled point light.
 				const Scalar activePointLightFar{std::isfinite(activePoint.range) && activePoint.range > zero() ? activePoint.range : static_cast<Scalar>(0.001)}; ///< Positive point-light far plane.
 				const Mat4 activePointProjection{perspectiveVulkan(kPointShadowFov, one(), kSpotShadowNearPlane, activePointLightFar)}; ///< Shared square projection for all faces.
 				for (std::size_t faceIndex{}; faceIndex < kPointShadowFaceCount; ++faceIndex) {
 					const Vec3 faceTarget{add(activePoint.position, pointShadowFaceDirections[faceIndex])}; ///< Face center in world space.
 					const Mat4 activePointView{lookAt(activePoint.position, faceTarget, pointShadowFaceUps[faceIndex])}; ///< Face-specific point-light view.
-					shadowLightMeta.push_back(ShadowLightMeta{.light_index = static_cast<std::uint32_t>(pointIndex),
+					shadowLightMeta.push_back(ShadowLightMeta{.light_index = static_cast<std::uint32_t>(packedPointIndex),
 																			 .light_type = 2U,
-																			 .shadow_slot = static_cast<std::uint32_t>(pointIndex),
-																			 .first_layer = firstPointShadowLayer + static_cast<std::uint32_t>(pointIndex * kPointShadowFaceCount + faceIndex),
+																			 .shadow_slot = static_cast<std::uint32_t>(packedPointIndex),
+																			 .first_layer = firstPointShadowLayer + static_cast<std::uint32_t>(packedPointIndex * kPointShadowFaceCount + faceIndex),
 																			 .layer_count = 1U,
 																			 .view = activePointView,
 																			 .projection = activePointProjection,
@@ -621,10 +628,13 @@ export namespace vve::simple {
 			std::array<Vec4, kMaxShadowedPointLights> pointLightPositionRanges{}; ///< Per-point xyz positions with ranges in w.
 			std::array<Vec4, kMaxShadowedPointLights> pointLightColorIntensities{}; ///< Per-point rgb colors with intensities in w.
 			// Copy clamped point-light properties into the fixed shader-visible arrays.
+			std::size_t pointUniformIndex{}; ///< Dense uniform slot for enabled point lights.
 			for (std::size_t pointIndex{}; pointIndex < pointLightShadowCount; ++pointIndex) {
 				const PointLight &activePoint = scene.pointLights[pointIndex]; ///< Scene point light copied into the frame uniform slot.
-				pointLightPositionRanges[pointIndex] = Vec4{activePoint.position.x, activePoint.position.y, activePoint.position.z, activePoint.range};
-				pointLightColorIntensities[pointIndex] = Vec4{activePoint.color.x, activePoint.color.y, activePoint.color.z, activePoint.intensity};
+				if (!activePoint.enabled) { continue; }
+				pointLightPositionRanges[pointUniformIndex] = Vec4{activePoint.position.x, activePoint.position.y, activePoint.position.z, activePoint.range};
+				pointLightColorIntensities[pointUniformIndex] = Vec4{activePoint.color.x, activePoint.color.y, activePoint.color.z, activePoint.intensity};
+				++pointUniformIndex;
 			}
 			// Mirror point-light metadata rows into the GPU uniform without rebuilding views or projections.
 			for (const ShadowLightMeta &shadowMeta : shadowLightMeta) {
@@ -633,7 +643,7 @@ export namespace vve::simple {
 				if (pointFaceIndex < pointLightFaceViewProjs.size()) { pointLightFaceViewProjs[pointFaceIndex] = multiply(shadowMeta.projection, shadowMeta.view); }
 			}
 			const std::size_t directionalLightCount{std::min(scene.directionalLights.size(), kMaxDirectionalLights)}; ///< Clamped directional-light count fits the fixed uniform arrays.
-			const std::uint32_t activeDirectionalLightCount{static_cast<std::uint32_t>(directionalLightCount)}; ///< Clamped count packed into the frame uniform.
+			std::uint32_t activeDirectionalLightCount{}; ///< Enabled directional-light count packed into the frame uniform.
 			std::array<Mat4, kMaxDirectionalLights> dirLightViewProjArray{}; ///< Per-directional shadow matrices used by depth passes and sampling.
 			std::array<Vec4, kMaxDirectionalLights> directionalLightDirections{}; ///< Per-directional xyz directions with unused w.
 			std::array<Vec4, kMaxDirectionalLights> directionalLightColorIntensities{}; ///< Per-directional rgb colors with intensities in w.
@@ -641,13 +651,16 @@ export namespace vve::simple {
 			// Build one directional light-space matrix per active light.
 			for (std::size_t directionalIndex{}; directionalIndex < directionalLightCount; ++directionalIndex) {
 				const DirectionalLight &activeDirectional = scene.directionalLights[directionalIndex]; ///< Scene directional light copied into a fixed uniform slot.
+				if (!activeDirectional.enabled) { continue; }
+				const std::size_t packedDirectionalIndex{activeDirectionalLightCount++}; ///< Dense shader slot for this enabled directional light.
 				const Vec3 activeDirectionalDirection{normalize(activeDirectional.direction)}; ///< Normalized direction mirrors the legacy single-light path.
 				const Vec3 activeDirectionalEye{subtract(lightCenter, scale(activeDirectionalDirection, lightExtent))}; ///< Directional shadow camera aimed at the scene origin.
-				dirLightViewProjArray[directionalIndex] = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(activeDirectionalEye, lightCenter, Vec3{zero(), one(), zero()}));
-				directionalLightDirections[directionalIndex] = Vec4{activeDirectionalDirection.x, activeDirectionalDirection.y, activeDirectionalDirection.z, zero()};
-				directionalLightColorIntensities[directionalIndex] = Vec4{activeDirectional.color.x, activeDirectional.color.y, activeDirectional.color.z, activeDirectional.intensity.value};
-				directionalLightAmbients[directionalIndex] = Vec4{zero(), zero(), static_cast<Scalar>(activeDirectionalLightCount), activeDirectional.ambient};
+				dirLightViewProjArray[packedDirectionalIndex] = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(activeDirectionalEye, lightCenter, Vec3{zero(), one(), zero()}));
+				directionalLightDirections[packedDirectionalIndex] = Vec4{activeDirectionalDirection.x, activeDirectionalDirection.y, activeDirectionalDirection.z, zero()};
+				directionalLightColorIntensities[packedDirectionalIndex] = Vec4{activeDirectional.color.x, activeDirectional.color.y, activeDirectional.color.z, activeDirectional.intensity.value};
+				directionalLightAmbients[packedDirectionalIndex] = Vec4{zero(), zero(), zero(), activeDirectional.ambient};
 			}
+			for (std::size_t directionalIndex{}; directionalIndex < activeDirectionalLightCount; ++directionalIndex) { directionalLightAmbients[directionalIndex].z = static_cast<Scalar>(activeDirectionalLightCount); }
 			spotShadowDepthSampleCountStorage() = spotLightViewProjCount;
 			const Vec3 spotShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point used for CPU-only shadow diagnostics.
 			constexpr float kCpuSpotShadowFactor{1.0F}; ///< Unshadowed placeholder because has_gpu is false here.
@@ -695,13 +708,8 @@ export namespace vve::simple {
 																								 .has_gpu = false,
 																								 .valid = true}; ///< Slot is face_index; GPU depth is unavailable here.
 			}
-			if (spotLightViewProjCount == 0U) {
+			if (activeSpotLightViewProjCount == 0U) {
 				spotLightViewProjs[0] = multiply(perspectiveVulkan(spotLightFov, one(), kSpotShadowNearPlane, spotLightFar), lookAt(spot.position, add(spot.position, spotDirection), Vec3{zero(), one(), zero()})); ///< Legacy empty-vector fallback.
-			} else {
-				spotLightPositionRanges[0] = spotLightPositionRange; ///< Slot zero mirrors the scalar shader-visible spot light.
-				spotLightColorIntensities[0] = spotLightColorIntensity; ///< Slot zero mirrors the scalar shader-visible spot light.
-				spotLightDirections[0] = spotLightDirection; ///< Slot zero mirrors the scalar shader-visible spot light.
-				spotLightConeAmbients[0] = spotLightConeAmbient; ///< Slot zero mirrors the scalar shader-visible spot light.
 			}
 			const FrameUniforms frameUniforms{ // Shared camera matrices keep the sample cubes inside Vulkan clip space.
 				.view = lookAt(cameraEye, cameraTarget, Vec3{zero(), one(), zero()}),
@@ -1150,12 +1158,15 @@ export namespace vve::simple {
 				.pClearValues = &shadowClear,
 			};
 
-			recordedPassOrder.push_back(RecordedPass::directional_shadow);
-			vkCmdBeginRenderPass(commandBuffer, &shadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline);
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-			drawUploadedObjects(shadowMap.pipelineLayout);
-			vkCmdEndRenderPass(commandBuffer);
+			const bool legacyDirectionalShadowEnabled{!scene.directionalLights.empty() ? scene.directionalLights.front().enabled : scene.directionalLight.enabled}; // Legacy single shadow map mirrors the first directional light.
+			if (legacyDirectionalShadowEnabled) {
+				recordedPassOrder.push_back(RecordedPass::directional_shadow);
+				vkCmdBeginRenderPass(commandBuffer, &shadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipeline);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowMap.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
+				drawUploadedObjects(shadowMap.pipelineLayout);
+				vkCmdEndRenderPass(commandBuffer);
+			}
 
 			const std::size_t directionalLightCount{std::min(scene.directionalLights.size(), kMaxDirectionalLights)}; // Clamped directional-light count mirrors frame uniform upload.
 			const std::size_t dirShadowArrayLayerCount{dirShadowArray.layerFramebuffers.size()}; // Every sampled directional layer must reach shader-read layout.
@@ -1174,7 +1185,9 @@ export namespace vve::simple {
 				vkCmdEndRenderPass(commandBuffer);
 			}
 
-			const std::size_t dirShadowArrayPassCount{std::min(directionalLightCount, dirShadowArrayLayerCount)}; // Active directional array layers receive one geometry depth pass each.
+			std::size_t activeDirectionalShadowPassCount{}; // Enabled directional lights are packed into dense shadow layers by drawFrame().
+			for (std::size_t dirLightIndex{}; dirLightIndex < directionalLightCount; ++dirLightIndex) { if (scene.directionalLights[dirLightIndex].enabled) { ++activeDirectionalShadowPassCount; } }
+			const std::size_t dirShadowArrayPassCount{std::min(activeDirectionalShadowPassCount, dirShadowArrayLayerCount)}; // Active directional array layers receive one geometry depth pass each.
 			// Render active directional lights after all sampled array layers have a defined layout.
 			for (std::size_t dirLightIndex{}; dirLightIndex < dirShadowArrayPassCount; ++dirLightIndex) {
 				const VkRenderPassBeginInfo dirShadowArrayPassInfo{
@@ -1203,12 +1216,15 @@ export namespace vve::simple {
 				.pClearValues = &shadowClear,
 			};
 
-			recordedPassOrder.push_back(RecordedPass::spot_shadow);
-			vkCmdBeginRenderPass(commandBuffer, &spotShadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, spotShadowMap.pipeline);
-			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, spotShadowMap.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-			drawUploadedObjects(spotShadowMap.pipelineLayout);
-			vkCmdEndRenderPass(commandBuffer);
+			const bool legacySpotShadowEnabled{!scene.spotLights.empty() ? scene.spotLights.front().enabled : scene.spotLight.enabled}; // Legacy single shadow map mirrors the first spot light.
+			if (legacySpotShadowEnabled) {
+				recordedPassOrder.push_back(RecordedPass::spot_shadow);
+				vkCmdBeginRenderPass(commandBuffer, &spotShadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, spotShadowMap.pipeline);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, spotShadowMap.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
+				drawUploadedObjects(spotShadowMap.pipelineLayout);
+				vkCmdEndRenderPass(commandBuffer);
+			}
 
 			const std::size_t spotShadowArrayLayerCount{spotShadowArray.layerFramebuffers.size()}; // Every sampled array layer must reach shader-read layout.
 			// Clear each allocated spot layer before any draw binds the descriptor set that exposes the whole array.
@@ -1226,7 +1242,9 @@ export namespace vve::simple {
 				vkCmdEndRenderPass(commandBuffer);
 			}
 
-			const std::size_t spotShadowArrayPassCount{std::min(spotLightViewProjCount, spotShadowArrayLayerCount)}; // Active array layers receive one geometry depth pass each.
+			std::size_t activeSpotShadowPassCount{}; // Enabled spot lights are packed into dense shadow layers by drawFrame().
+			for (std::size_t spotLightIndex{}; spotLightIndex < spotLightViewProjCount; ++spotLightIndex) { if (scene.spotLights[spotLightIndex].enabled) { ++activeSpotShadowPassCount; } }
+			const std::size_t spotShadowArrayPassCount{std::min(activeSpotShadowPassCount, spotShadowArrayLayerCount)}; // Active array layers receive one geometry depth pass each.
 			// Render active spot lights after all sampled array layers have a defined layout.
 			for (std::size_t spotLightIndex{}; spotLightIndex < spotShadowArrayPassCount; ++spotLightIndex) {
 				const VkRenderPassBeginInfo spotShadowArrayPassInfo{
@@ -1263,7 +1281,9 @@ export namespace vve::simple {
 			}
 
 			constexpr std::size_t pointShadowFaceCount{6U}; // One point light owns six cubemap-style shadow faces.
-			const std::size_t activePointShadowLightCount{std::min(scene.pointLights.size(), kMaxShadowedPointLights)}; // Fixed point-light cap keeps the array small.
+			const std::size_t pointShadowLightCount{std::min(scene.pointLights.size(), kMaxShadowedPointLights)}; // Fixed point-light cap keeps the array small.
+			std::size_t activePointShadowLightCount{}; // Enabled point lights are packed into dense cubemap-style layers by drawFrame().
+			for (std::size_t pointIndex{}; pointIndex < pointShadowLightCount; ++pointIndex) { if (scene.pointLights[pointIndex].enabled) { ++activePointShadowLightCount; } }
 			const std::size_t activePointFaceCount{activePointShadowLightCount * pointShadowFaceCount}; // Active faces use dense pointIndex * 6 + faceIndex layers.
 			// Render active point-light faces after every point layer has a defined shader-read transition path.
 			for (std::size_t faceGlobalIndex{}; faceGlobalIndex < activePointFaceCount; ++faceGlobalIndex) {

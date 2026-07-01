@@ -95,6 +95,26 @@ namespace {
           static_cast<std::size_t>(unique_first_layers.begin() - first_layers.begin()) == expected_spot_count;
 }
 
+/// @brief Verifies disabled spot lights are absent from dense shader-visible shadow metadata.
+[[nodiscard]] bool hasDisabledFirstSpotExcludedFromPackedMeta(const vve::simple::RenderSystem &render_system,
+                                                              float disabled_range, float first_enabled_range) {
+   if (render_system.sceneShadowLightMetaCount() == 0U) { return false; }
+   const auto first_meta = render_system.sceneShadowLightMeta(0); ///< First packed row must belong to an enabled light.
+   if (!first_meta || first_meta->light_type != 1U || first_meta->light_index != 0U ||
+       first_meta->shadow_slot != 0U || first_meta->first_layer != 0U ||
+       first_meta->far_plane != first_enabled_range) {
+      return false;
+   }
+
+   // Disabled source lights must not allocate spot metadata or consume dense shader slots.
+   for (std::size_t row{}; row < render_system.sceneShadowLightMetaCount(); ++row) {
+      const auto meta = render_system.sceneShadowLightMeta(row);
+      if (!meta || meta->light_type != 1U) { continue; }
+      if (meta->far_plane == disabled_range) { return false; }
+   }
+   return true;
+}
+
 /// @brief Verifies point-shadow metadata rows use six unique contiguous layers per point light.
 [[nodiscard]] bool hasPointShadowMetaInvariants(const vve::simple::RenderSystem &render_system,
                                                 std::size_t spot_row_count, std::size_t point_light_count) {
@@ -308,6 +328,17 @@ int main() {
                               .range = 7.0F,
                               .ambient = 0.04F}};
    point_shadow_scene.pointLight = point_shadow_scene.pointLights.front(); ///< Preserve legacy single-light mirror.
+   point_shadow_scene.spotLights = {
+      vve::simple::SpotLight{.position = vve::Vec3{-3.0F, 3.0F, 0.0F},
+                             .direction = vve::Vec3{1.0F, -1.0F, 0.0F},
+                             .color = vve::Vec3{1.0F, 0.0F, 0.0F},
+                             .intensity = vve::LightIntensity{.value = 9.0F},
+                             .range = vve::LightRange{.value = 3.0F},
+                             .innerConeAngle = vve::SpotConeAngle{.radians = 0.25F},
+                             .outerConeAngle = vve::SpotConeAngle{.radians = 0.45F},
+                             .ambient = 0.01F,
+                             .enabled = false}}; ///< Regression source: disabled lights must not be packed.
+   point_shadow_scene.spotLight = point_shadow_scene.spotLights.front(); ///< Preserve legacy single-light mirror.
    render_system.loadScene(std::move(point_shadow_scene));
    if (const auto result = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{}); !result) {
       return 2;
@@ -354,6 +385,7 @@ int main() {
                                      expected_shadowed_point_count)) {
       return 16;
    }
+   if (!hasDisabledFirstSpotExcludedFromPackedMeta(render_system, 3.0F, 6.0F)) { return 19; }
 
    // Verify frame and draw counters that belong to the current forward-renderer diagnostics.
    if (render_system.renderedFrameCount() != 1 || render_system.lastRenderedWindowCount() != 1) { return 5; }
@@ -395,8 +427,10 @@ int main() {
    if (!hasFullContributionForNonOccludedShadowSamples(forward_renderer)) { return 18; }
 
    // Verify each active spot light receives a unique shadow-array slot when samples are reachable.
-   const std::size_t active_spot_light_count{
-      std::min(forward_renderer.scene.spotLights.size(), vve::simple::kMaxShadowedSpotLights)}; ///< CPU scene cap.
+   const auto capped_spot_lights = std::views::take(forward_renderer.scene.spotLights,
+                                                    vve::simple::kMaxShadowedSpotLights); ///< CPU scene cap.
+   const std::size_t active_spot_light_count{static_cast<std::size_t>(
+      std::ranges::count_if(capped_spot_lights, &vve::simple::SpotLight::enabled))}; ///< Enabled shader slots only.
    if (active_spot_light_count != std::min<std::size_t>(3U, vve::simple::kMaxShadowedSpotLights)) { return 11; }
    const auto &first_spot = forward_renderer.scene.spotLights[0]; ///< First retained engine spot light.
    const auto &second_spot = forward_renderer.scene.spotLights[1]; ///< Second retained engine spot light.

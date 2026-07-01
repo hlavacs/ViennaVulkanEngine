@@ -36,6 +36,7 @@ export namespace vve::simple {
 		Scalar intensity{3.0F};           ///< Multiplier for diffuse and specular lighting.
 		Scalar range{7.0F};               ///< Distance where direct light fades to zero.
 		Scalar ambient{0.18F};            ///< Scene-wide ambient term for unlit surfaces.
+		bool enabled{true};               ///< True when this light participates in rendering.
 	};
 
 	/// @brief Directional light parameters used by future simple forward shading.
@@ -44,6 +45,7 @@ export namespace vve::simple {
 		Vec3 color{0.95F, 0.98F, 1.0F};              ///< RGB light tint applied to the direct component.
 		LightIntensity intensity{.value = 1.4F};     ///< Multiplier for directional diffuse and specular lighting.
 		Scalar ambient{0.06F};                       ///< Ambient term contributed by this light.
+		bool enabled{true};                          ///< True when this light participates in rendering.
 	};
 
 	/// @brief Spot light parameters used by future simple forward shading.
@@ -56,6 +58,7 @@ export namespace vve::simple {
 		SpotConeAngle innerConeAngle{.radians = 0.35F}; ///< Angle where the spot light remains fully bright.
 		SpotConeAngle outerConeAngle{.radians = 0.65F}; ///< Angle where the spot light fades to zero.
 		Scalar ambient{0.04F};                       ///< Ambient term contributed by this light.
+		bool enabled{true};                          ///< True when this light participates in rendering.
 	};
 
 	/// @brief Host-side scene container with drawable objects in submission order.
