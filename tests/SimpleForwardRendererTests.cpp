@@ -277,7 +277,7 @@ int main() {
       .intensity = vve::LightIntensity{.value = 1.0F},
       .ambient = vve::LinearColor{.value = vve::Vec3{0.01F, 0.02F, 0.03F}}};
    scene.addDirectionalLight(first_directional);
-   for (std::size_t index{1U}; index < 6U; ++index) {
+   for (std::size_t index{1U}; index <= vve::simple::kMaxDirectionalLights; ++index) {
       const auto value = static_cast<float>(index);
       scene.addDirectionalLight(vve::simple::RenderDirectionalLight{
          .direction_to_light = vve::Direction{.value = vve::Vec3{value, value + 0.25F, value + 0.50F}},
