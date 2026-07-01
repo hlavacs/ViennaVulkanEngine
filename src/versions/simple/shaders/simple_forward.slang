@@ -11,6 +11,7 @@
  */
 
 static const int kMaxShadowedSpotLights = 4; ///< Mirrors the simple engine fixed spot-shadow cap.
+static const int kMaxShadowedPointLights = 2; ///< Mirrors the simple engine fixed point-shadow cap.
 static const int kMaxDirectionalLights = 4;  ///< Mirrors the simple engine fixed directional-light cap.
 
 struct FrameUniforms
@@ -20,6 +21,9 @@ struct FrameUniforms
     float4x4 lightViewProj; ///< Light view-projection matrix for the upcoming shadow pass.
     float4x4 dirLightViewProjArray[kMaxDirectionalLights]; ///< Per-directional light-space matrices for shadow depth passes.
     float4x4 spotLightViewProjs[kMaxShadowedSpotLights]; ///< Spot-light view-projection matrices for future shadow data.
+    float4x4 pointLightFaceViewProjs[kMaxShadowedPointLights * 6]; ///< Point-light face view-projection matrices for future shadow data.
+    float4 pointLightPositionRanges[kMaxShadowedPointLights]; ///< Per-point xyz position with range in w.
+    float4 pointLightColorIntensities[kMaxShadowedPointLights]; ///< Per-point rgb color with intensity in w.
     float4 lightPositionRange;    ///< xyz world-space point-light position, w range.
     float4 lightColorIntensity;   ///< rgb direct-light color, w direct-light intensity.
     float4 lightShadowAmbient;    ///< xyz shadow-map direction approximation, w ambient contribution.
@@ -94,6 +98,9 @@ Sampler2DArray spotShadowArray; ///< Spot light depth array sampled by the forwa
 [[vk::binding(6, 0)]]
 Sampler2DArray dirShadowArray; ///< Directional light depth array sampled per active light by the fragment stage.
 
+[[vk::binding(7, 0)]]
+Sampler2DArray pointShadowArray; ///< Point light depth array exposed for later cubemap-style shadow sampling.
+
 [[vk::push_constant]]
 ObjectPushConstants object; ///< Per-object transform constants.
 
@@ -128,6 +135,12 @@ float4 shadowVertexMainSpot(VertexInput input) : SV_Position
     return mul(frame.spotLightViewProjs[object.spotLightIndex], mul(object.model, float4(input.position, 1.0)));
 }
 
+[shader("vertex")]
+float4 shadowVertexMainPoint(VertexInput input) : SV_Position
+{
+    return mul(frame.pointLightFaceViewProjs[object.spotLightIndex], mul(object.model, float4(input.position, 1.0))); ///< Select the point-light face matrix with the spot-pass draw selector.
+}
+
 [shader("fragment")]
 FragmentOutput fragmentMain(FragmentInput input)
 {
@@ -135,15 +148,7 @@ FragmentOutput fragmentMain(FragmentInput input)
     const float ambient = frame.lightShadowAmbient.w;                    ///< Base light keeps back faces visible.
     const float shininess = 32.0;                                        ///< Fixed Blinn-Phong highlight exponent.
     const float specularStrength = 0.3;                                  ///< Modest highlight strength for colored surfaces.
-    const float3 lightColor = frame.lightColorIntensity.rgb;             ///< Scene-selected direct-light color.
-    const float lightIntensity = frame.lightColorIntensity.w;            ///< Scene-selected direct-light strength.
     const float3 rawNormal = normalize(cross(ddx(input.worldPos), ddy(input.worldPos))); ///< Flat geometric face normal from screen derivatives.
-    const float3 lightOffset = frame.lightPositionRange.xyz - input.worldPos; ///< Vector from fragment to the point light.
-    const float distanceToLight = length(lightOffset);                  ///< Fragment-light distance for falloff.
-    const float3 surfaceLightDir = lightOffset / max(distanceToLight, 0.001); ///< Point-light direction changes across the scene.
-    const float lightRange = max(frame.lightPositionRange.w, 0.001);    ///< Avoid division by zero for malformed scene data.
-    const float rangeFalloff = saturate(1.0 - (distanceToLight / lightRange)); ///< Fade direct light at the configured range.
-    const float attenuation = rangeFalloff * rangeFalloff;              ///< Smooth enough quadratic falloff for the debug scene.
     const float3 viewOffset = float3(frame.view[0][3], frame.view[1][3], frame.view[2][3]); ///< View translation from the existing matrix.
     const float3 cameraPos = -float3(
         dot(float3(frame.view[0][0], frame.view[1][0], frame.view[2][0]), viewOffset),
@@ -151,9 +156,36 @@ FragmentOutput fragmentMain(FragmentInput input)
         dot(float3(frame.view[0][2], frame.view[1][2], frame.view[2][2]), viewOffset)); ///< World eye from inverse rigid view transform.
     const float3 viewDir = normalize(cameraPos - input.worldPos);        ///< Surface-to-eye vector for view-dependent highlights.
     const float3 normal = dot(rawNormal, viewDir) < 0.0 ? -rawNormal : rawNormal; ///< Keep visible debug faces lit even when winding flips derivative normals.
-    const float diffuse = max(dot(normal, surfaceLightDir), 0.0);        ///< Lambertian light response.
-    const float3 halfVector = normalize(surfaceLightDir + viewDir);      ///< Blinn-Phong halfway direction between light and eye.
-    const float specular = specularStrength * pow(max(dot(normal, halfVector), 0.0), shininess); ///< Shadowed highlight response.
+    float3 pointContribution = float3(0.0);                              ///< Accumulated point-light response for active point slots.
+    for (int i = 0; i < kMaxShadowedPointLights; ++i) {                  ///< Fixed trip count keeps point lights aligned with the uploaded arrays.
+        const float pointRangeRaw = frame.pointLightPositionRanges[i].w; ///< Zero range marks an inactive point-light slot.
+        const float pointIntensity = frame.pointLightColorIntensities[i].w; ///< Zero intensity marks an inactive point-light slot.
+        if (pointRangeRaw > 0.0 && pointIntensity > 0.0) {               ///< Skip inactive slots before any range division.
+            const float3 pointOffset = frame.pointLightPositionRanges[i].xyz - input.worldPos; ///< Vector from fragment to this point light.
+            const float pointDistance = length(pointOffset);             ///< Fragment-light distance for falloff.
+            const float3 pointLightDir = pointOffset / max(pointDistance, 0.001); ///< Point-light direction changes across the scene.
+            const float pointRangeFalloff = saturate(1.0 - (pointDistance / pointRangeRaw)); ///< Fade direct light at the configured range.
+            const float pointAttenuation = pointRangeFalloff * pointRangeFalloff; ///< Smooth enough quadratic falloff for the debug scene.
+            const float pointDiffuse = max(dot(normal, pointLightDir), 0.0); ///< Lambertian light response.
+            const float3 pointHalfVector = normalize(pointLightDir + viewDir); ///< Blinn-Phong halfway direction between light and eye.
+            const float pointSpecular = specularStrength * pow(max(dot(normal, pointHalfVector), 0.0), shininess); ///< Unshadowed highlight response.
+            const float3 pointLight = frame.pointLightColorIntensities[i].rgb * pointIntensity; ///< Point light color scaled by intensity.
+            const float3 pointLightToFragment = input.worldPos - frame.pointLightPositionRanges[i].xyz; ///< Vector selects the cubemap-style shadow face.
+            const float3 pointFaceAbs = abs(pointLightToFragment); ///< Dominant axis chooses the CPU face order.
+            int pointFace = pointFaceAbs.x >= pointFaceAbs.y && pointFaceAbs.x >= pointFaceAbs.z ? (pointLightToFragment.x >= 0.0 ? 0 : 1) :
+                (pointFaceAbs.y >= pointFaceAbs.z ? (pointLightToFragment.y >= 0.0 ? 2 : 3) : (pointLightToFragment.z >= 0.0 ? 4 : 5)); ///< Face order: +X, -X, +Y, -Y, +Z, -Z.
+            const int pointShadowLayer = i * 6 + pointFace; ///< Dense depth-array layer for this point-light face.
+            const float4 pointLightClip = mul(frame.pointLightFaceViewProjs[pointShadowLayer], float4(input.worldPos, 1.0)); ///< Fragment in selected point-face clip space.
+            const float pointClipW = abs(pointLightClip.w) > 0.001 ? pointLightClip.w : 0.001; ///< Avoid invalid perspective division at the light origin.
+            const float3 pointLightNdc = pointLightClip.xyz / pointClipW; ///< Point face depth remains in 0..1 after divide.
+            const float2 pointShadowUv = (pointLightNdc.xy * 0.5) + 0.5; ///< Convert point face NDC XY to shadow texture UVs.
+            const bool insidePointShadowMap = pointLightClip.w > 0.001 && pointShadowUv.x >= 0.0 && pointShadowUv.x <= 1.0 &&
+                pointShadowUv.y >= 0.0 && pointShadowUv.y <= 1.0 && pointLightNdc.z >= 0.0 && pointLightNdc.z <= 1.0; ///< Reject fragments outside the selected point face.
+            const float pointStoredDepth = pointShadowArray.Sample(float3(pointShadowUv, float(pointShadowLayer))).r; ///< Closest surface depth from this point face layer.
+            const float pointShadowFactor = insidePointShadowMap && pointLightNdc.z - 0.001 > pointStoredDepth ? 0.35 : 1.0; ///< Same compare bias as other shadowed lights.
+            pointContribution += pointLight * ((pointDiffuse + pointSpecular) * pointAttenuation * pointShadowFactor); ///< Add this point-light result with per-slot shadowing.
+        }
+    }
     const int activeDirectionalLightCount = min(max(int(frame.activeDirectionalLightCount), 0), kMaxDirectionalLights); ///< Clamp scene directional count to the fixed array.
     float3 directionalContribution = float3(0.0);                  ///< Accumulated directional-light response for all active directional lights.
     for (int i = 0; i < kMaxDirectionalLights; ++i) {              ///< Fixed trip count lets the compiler unroll the small directional loop.
@@ -202,17 +234,10 @@ FragmentOutput fragmentMain(FragmentInput input)
             spotContribution += spotAmbient + spotLight * ((spotDiffuse + spotSpecular) * spotAttenuation * spotConeFalloff * spotShadowFactor); ///< Add this cone-attenuated spot result.
         }
     }
-    const float4 lightClip = mul(frame.lightViewProj, float4(input.worldPos, 1.0)); ///< Fragment position in light clip space.
-    const float3 lightNdc = lightClip.xyz / lightClip.w;                ///< Vulkan light depth remains in 0..1 after divide.
-    const float2 shadowUv = (lightNdc.xy * 0.5) + 0.5;                  ///< Convert light NDC XY to shadow texture UVs.
-    const bool insideShadowMap = shadowUv.x >= 0.0 && shadowUv.x <= 1.0 &&
-        shadowUv.y >= 0.0 && shadowUv.y <= 1.0 && lightNdc.z >= 0.0 && lightNdc.z <= 1.0; ///< Reject fragments outside light coverage.
-    const float storedDepth = shadowMap.Sample(shadowUv).r;             ///< Closest surface depth from the light pass.
-    const float shadowFactor = insideShadowMap && lightNdc.z - 0.001 > storedDepth ? 0.35 : 1.0; ///< Small 0.001 compare bias complements shadow-pass slope-scaled rasterizer bias.
     float3 baseColor = input.color;                                      ///< Vertex color remains the default material color.
     if (object.useBaseColorTexture != 0) {
         baseColor *= baseColorTexture.Sample(input.texCoord).rgb;        ///< Optional texture modulates the material before lighting.
     }
-    output.color = float4(baseColor * (ambient + lightColor * ((diffuse + specular) * lightIntensity * attenuation * shadowFactor) + directionalContribution + spotContribution), 1.0); ///< Apply point, directional, and spot Blinn-Phong.
+    output.color = float4(baseColor * (ambient + pointContribution + directionalContribution + spotContribution), 1.0); ///< Apply point, directional, and spot Blinn-Phong.
     return output;
 }

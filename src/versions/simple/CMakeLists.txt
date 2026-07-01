@@ -35,6 +35,7 @@ set(VVE_SIMPLE_FORWARD_FRAGMENT_SPV "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/simple_forw
 set(VVE_SIMPLE_FORWARD_SHADOW_VERTEX_SPV "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/simple_forward.shadow.vert.spv")
 set(VVE_SIMPLE_FORWARD_DIR_SHADOW_VERTEX_SPV "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/simple_forward.dir_shadow.vert.spv")
 set(VVE_SIMPLE_FORWARD_SPOT_SHADOW_VERTEX_SPV "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/simple_forward.spot_shadow.vert.spv")
+set(VVE_SIMPLE_FORWARD_POINT_SHADOW_VERTEX_SPV "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/simple_forward.point_shadow.vert.spv")
 
 target_compile_definitions(ViennaVulkanEngine
    PRIVATE
@@ -119,6 +120,17 @@ add_custom_command(
    VERBATIM
 )
 
+add_custom_command(
+   OUTPUT "${VVE_SIMPLE_FORWARD_POINT_SHADOW_VERTEX_SPV}"
+   COMMAND "${CMAKE_COMMAND}" -E make_directory "${VVE_SIMPLE_SHADER_OUTPUT_DIR}"
+   COMMAND "${VVE_SIMPLE_SLANGC}" "${VVE_SIMPLE_FORWARD_SHADER}"
+      -target spirv -profile spirv_1_4 -stage vertex -entry shadowVertexMainPoint -fvk-use-entrypoint-name
+      -o "${VVE_SIMPLE_FORWARD_POINT_SHADOW_VERTEX_SPV}"
+   DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}"
+   COMMENT "Compiling simple forward point shadow vertex shader"
+   VERBATIM
+)
+
 add_custom_target(vve_simple_shaders
    DEPENDS
       "${VVE_SIMPLE_FORWARD_VERTEX_SPV}"
@@ -126,5 +138,6 @@ add_custom_target(vve_simple_shaders
       "${VVE_SIMPLE_FORWARD_SHADOW_VERTEX_SPV}"
       "${VVE_SIMPLE_FORWARD_DIR_SHADOW_VERTEX_SPV}"
       "${VVE_SIMPLE_FORWARD_SPOT_SHADOW_VERTEX_SPV}"
+      "${VVE_SIMPLE_FORWARD_POINT_SHADOW_VERTEX_SPV}"
 )
 add_dependencies(ViennaVulkanEngine vve_simple_shaders)

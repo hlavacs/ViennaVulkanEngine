@@ -113,6 +113,12 @@ export namespace vve {
 		inline void setPointLight(const PointLight &light) {
 			setPointLight(light.position, light.color, light.intensity, light.range, light.ambient);
 		}																																		///< Applies a point light descriptor.
+		void addPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range);
+		void addPointLight(Position position, LinearColor color, LightIntensity intensity,
+								 LightRange range, LinearColor ambient);
+		inline void addPointLight(const PointLight &light) {
+			addPointLight(light.position, light.color, light.intensity, light.range, light.ambient);
+		}																																		///< Adds a point light descriptor.
 		void setSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone);
 		void setSpotLight(Position position, Direction direction, LinearColor color,
@@ -156,6 +162,11 @@ export namespace vve {
 		[[nodiscard]] auto sceneSpotShadowDepthGpuDepth(std::size_t index) const						-> std::optional<float>;
 		[[nodiscard]] auto sceneSpotShadowDepthHasGpu(std::size_t index) const							-> std::optional<bool>;
 		[[nodiscard]] auto sceneSpotShadowDepthError(std::size_t index) const							-> std::optional<float>;
+		[[nodiscard]] auto scenePointShadowDepthSampleCount() const										-> std::size_t;
+		[[nodiscard]] auto scenePointShadowDepthSample(std::size_t index) const							-> std::optional<RenderShadowDepthSample>;
+		[[nodiscard]] auto scenePointShadowDepthGpuDepth(std::size_t index) const						-> std::optional<float>;
+		[[nodiscard]] auto scenePointShadowDepthHasGpu(std::size_t index) const							-> std::optional<bool>;
+		[[nodiscard]] auto scenePointShadowDepthError(std::size_t index) const							-> std::optional<float>;
 		[[nodiscard]] auto hasSceneCamera() const																					-> bool;
 		[[nodiscard]] auto hasSceneDirectionalLight() const																	-> bool;
 		[[nodiscard]] auto hasScenePointLight() const																			-> bool;

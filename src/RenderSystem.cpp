@@ -74,6 +74,17 @@ namespace vve {
 		renderSystemImpl(impl_).setPointLight(position, color, intensity, range, ambient);
 	}
 
+	/// @brief Adds a point light to the active CPU scene.
+	void RenderSystem::addPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range) {
+		renderSystemImpl(impl_).addPointLight(position, color, intensity, range);
+	}
+
+	/// @brief Adds a point light with ambient lighting to the active CPU scene.
+	void RenderSystem::addPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range,
+											 LinearColor ambient) {
+		renderSystemImpl(impl_).addPointLight(position, color, intensity, range, ambient);
+	}
+
 	/// @brief Sets the active spotlight.
 	void RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
 											  LightIntensity intensity, LightRange range, SpotConeAngle cone) {
@@ -216,6 +227,45 @@ namespace vve {
 	/// @brief Returns the absolute CPU/GPU spot shadow depth mismatch for one debug sample.
 	std::optional<float> RenderSystem::sceneSpotShadowDepthError(std::size_t index) const {
 		return renderSystemImpl(impl_).sceneSpotShadowDepthError(index);
+	}
+
+	/// @brief Returns point-light shadow-depth debug sample count in the active scene.
+	std::size_t RenderSystem::scenePointShadowDepthSampleCount() const {
+		return renderSystemImpl(impl_).scenePointShadowDepthSampleCount();
+	}
+
+	/// @brief Returns one point-light shadow-depth debug sample converted to facade data.
+	std::optional<RenderShadowDepthSample> RenderSystem::scenePointShadowDepthSample(std::size_t index) const {
+		const auto sample = renderSystemImpl(impl_).scenePointShadowDepthSample(index);
+		if (!sample) { return std::nullopt; }
+		return RenderShadowDepthSample{.triangle_id = sample->triangle_id,
+												 .face_index = sample->face_index,
+												 .world = sample->world,
+												 .light_ndc = sample->light_ndc,
+												 .pixel_x = sample->pixel_x,
+												 .pixel_y = sample->pixel_y,
+												 .expected_depth = sample->expected_depth,
+												 .bias = sample->bias,
+												 .shadow_factor = sample->shadow_factor,
+												 .gpu_depth = sample->gpu_depth,
+												 .error = sample->error,
+												 .has_gpu = sample->has_gpu,
+												 .valid = sample->valid};
+	}
+
+	/// @brief Returns the downloaded GPU point shadow depth for one debug sample.
+	std::optional<float> RenderSystem::scenePointShadowDepthGpuDepth(std::size_t index) const {
+		return renderSystemImpl(impl_).scenePointShadowDepthGpuDepth(index);
+	}
+
+	/// @brief Reports whether one point shadow debug sample has downloaded GPU depth.
+	std::optional<bool> RenderSystem::scenePointShadowDepthHasGpu(std::size_t index) const {
+		return renderSystemImpl(impl_).scenePointShadowDepthHasGpu(index);
+	}
+
+	/// @brief Returns the absolute CPU/GPU point shadow depth mismatch for one debug sample.
+	std::optional<float> RenderSystem::scenePointShadowDepthError(std::size_t index) const {
+		return renderSystemImpl(impl_).scenePointShadowDepthError(index);
 	}
 
 	/// @brief Reports whether the active CPU scene has a camera.

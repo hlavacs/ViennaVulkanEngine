@@ -32,6 +32,31 @@ namespace {
    return std::ranges::contains(color_pass->depends_on, vve::simple::RenderMilestone::shadow_depth());
 }
 
+/// @brief Verifies explicit command recording emits all shadow pass tags before forward color.
+[[nodiscard]] bool hasRecordedShadowsBeforeForwardColor(const vve::simple::ForwardRenderer &renderer) {
+   using RecordedPass = vve::simple::ForwardRenderer::RecordedPass; ///< Concrete backend diagnostic enum.
+   bool saw_directional_shadow{};                                   ///< Directional depth was recorded before color.
+   bool saw_spot_shadow{};                                          ///< Spot depth was recorded before color.
+   bool saw_point_shadow{};                                         ///< Point depth was recorded before color.
+   bool saw_forward_color{};                                        ///< Final forward pass has been reached.
+
+   // Shadow generation must be complete before the swapchain color pass starts.
+   for (const RecordedPass pass : renderer.lastRecordedPassOrder()) {
+      if (pass == RecordedPass::forward_color) {
+         saw_forward_color = true;
+      } else if (saw_forward_color) {
+         return false;
+      } else if (pass == RecordedPass::directional_shadow) {
+         saw_directional_shadow = true;
+      } else if (pass == RecordedPass::spot_shadow) {
+         saw_spot_shadow = true;
+      } else if (pass == RecordedPass::point_shadow) {
+         saw_point_shadow = true;
+      }
+   }
+   return saw_directional_shadow && saw_spot_shadow && saw_point_shadow && saw_forward_color;
+}
+
 /// @brief Compares authored directional-light fields used by the simple render scene.
 [[nodiscard]] bool sameDirectionalLight(const vve::simple::RenderDirectionalLight &left,
                                         const vve::simple::RenderDirectionalLight &right) {
@@ -42,6 +67,181 @@ namespace {
           left.color.value.z == right.color.value.z && left.intensity.value == right.intensity.value &&
           left.ambient.value.x == right.ambient.value.x && left.ambient.value.y == right.ambient.value.y &&
           left.ambient.value.z == right.ambient.value.z;
+}
+
+/// @brief Verifies each shadowed spot light owns one unique shadow metadata slot and layer.
+[[nodiscard]] bool hasUniqueSpotShadowMeta(const vve::simple::RenderSystem &render_system,
+                                           std::size_t expected_spot_count) {
+   if (render_system.sceneShadowLightMetaCount() < expected_spot_count) { return false; }
+
+   std::vector<std::uint32_t> shadow_slots{}; ///< Metadata shadow resource slots.
+   std::vector<std::uint32_t> first_layers{}; ///< Metadata depth-array first layers.
+   shadow_slots.reserve(expected_spot_count);
+   first_layers.reserve(expected_spot_count);
+
+   // Collect every prepared metadata row through the public renderer diagnostic surface.
+   for (std::size_t index{}; index < expected_spot_count; ++index) {
+      const auto meta = render_system.sceneShadowLightMeta(index);
+      if (!meta || meta->light_type != 1U || meta->layer_count != 1U) { return false; }
+      shadow_slots.push_back(meta->shadow_slot);
+      first_layers.push_back(meta->first_layer);
+   }
+
+   std::ranges::sort(shadow_slots);
+   std::ranges::sort(first_layers);
+   const auto unique_shadow_slots = std::ranges::unique(shadow_slots); ///< Pairwise shadow-slot proof.
+   const auto unique_first_layers = std::ranges::unique(first_layers); ///< Pairwise first-layer proof.
+   return static_cast<std::size_t>(unique_shadow_slots.begin() - shadow_slots.begin()) == expected_spot_count &&
+          static_cast<std::size_t>(unique_first_layers.begin() - first_layers.begin()) == expected_spot_count;
+}
+
+/// @brief Verifies point-shadow metadata rows use six unique contiguous layers per point light.
+[[nodiscard]] bool hasPointShadowMetaInvariants(const vve::simple::RenderSystem &render_system,
+                                                std::size_t spot_row_count, std::size_t point_light_count) {
+   constexpr std::size_t point_shadow_face_count{6U}; ///< Cubemap-style point shadows render six views.
+   if (point_light_count > vve::simple::kMaxShadowedPointLights) { return false; } ///< CPU metadata cap.
+   const std::size_t expected_point_rows{point_shadow_face_count * point_light_count}; ///< Six rows per point light.
+   if (render_system.sceneShadowLightMetaCount() != spot_row_count + expected_point_rows) { return false; }
+
+   std::uint32_t max_spot_first_layer{}; ///< Highest spot layer must remain below every point layer.
+   // Read the spot rows first so point rows can be checked for non-overlapping array layers.
+   for (std::size_t spot_index{}; spot_index < spot_row_count; ++spot_index) {
+      const auto meta = render_system.sceneShadowLightMeta(spot_index);
+      if (!meta || meta->light_type != 1U) { return false; }
+      max_spot_first_layer = std::max(max_spot_first_layer, meta->first_layer);
+   }
+
+   std::vector<std::vector<std::uint32_t>> layers_by_light(point_light_count); ///< Layers grouped by source light.
+   std::vector<std::uint32_t> all_point_layers{};                              ///< Global uniqueness proof.
+   all_point_layers.reserve(expected_point_rows);
+
+   // Walk every point metadata row and check the public CPU contract for cubemap-style faces.
+   for (std::size_t row{spot_row_count}; row < render_system.sceneShadowLightMetaCount(); ++row) {
+      const auto meta = render_system.sceneShadowLightMeta(row);
+      if (!meta || meta->light_type != 2U || meta->layer_count != 1U) { return false; }
+      if (meta->light_index >= point_light_count || meta->light_index >= vve::simple::kMaxShadowedPointLights) {
+         return false;
+      }
+      if (meta->first_layer <= max_spot_first_layer) { return false; }
+      layers_by_light[meta->light_index].push_back(meta->first_layer);
+      all_point_layers.push_back(meta->first_layer);
+   }
+
+   std::ranges::sort(all_point_layers);
+   const auto unique_point_layers = std::ranges::unique(all_point_layers); ///< No point layer is reused.
+   if (static_cast<std::size_t>(unique_point_layers.begin() - all_point_layers.begin()) != expected_point_rows) {
+      return false;
+   }
+
+   // Each point light must own exactly one contiguous six-layer range.
+   for (auto &layers : layers_by_light) {
+      if (layers.size() != point_shadow_face_count) { return false; }
+      std::ranges::sort(layers);
+      for (std::size_t face_index{1U}; face_index < layers.size(); ++face_index) {
+         if (layers[face_index] != layers.front() + static_cast<std::uint32_t>(face_index)) { return false; }
+      }
+   }
+   return true;
+}
+
+/// @brief Selects the same point-shadow face as the forward fragment shader for the origin debug sample.
+[[nodiscard]] std::uint32_t pointShadowDebugFace(const vve::simple::PointLight &light) {
+   const vve::Vec3 light_to_origin{-light.position.x, -light.position.y, -light.position.z}; ///< Fixed debug point is world origin.
+   const vve::Vec3 abs_light_to_origin{std::abs(light_to_origin.x), std::abs(light_to_origin.y),
+                                       std::abs(light_to_origin.z)}; ///< Dominant-axis selector inputs.
+   return abs_light_to_origin.x >= abs_light_to_origin.y && abs_light_to_origin.x >= abs_light_to_origin.z
+             ? (light_to_origin.x >= 0.0F ? 0U : 1U)
+             : (abs_light_to_origin.y >= abs_light_to_origin.z ? (light_to_origin.y >= 0.0F ? 2U : 3U)
+                                                               : (light_to_origin.z >= 0.0F ? 4U : 5U));
+}
+
+/// @brief Verifies retained point shadow-depth samples expose one CPU diagnostic row per point light.
+[[nodiscard]] bool hasPointShadowDepthSamples(const vve::simple::ForwardRenderer &renderer,
+                                              const vve::simple::RenderSystem &render_system,
+                                              std::size_t point_light_count) {
+   if (renderer.scenePointShadowDepthSampleCount() != point_light_count) { return false; }
+   if (render_system.scenePointShadowDepthSampleCount() != renderer.scenePointShadowDepthSampleCount()) { return false; }
+
+   std::vector<std::uint32_t> point_slots{}; ///< RenderShadowDepthSample::triangle_id carries the point slot.
+   std::vector<std::uint32_t> selected_layers{}; ///< RenderShadowDepthSample::pixel_x carries the dense array layer.
+   point_slots.reserve(point_light_count);
+   selected_layers.reserve(point_light_count);
+
+   // Each active point light contributes one origin sample using its selected cubemap face.
+   for (std::size_t point_index{}; point_index < point_light_count; ++point_index) {
+      const auto sample = renderer.scenePointShadowDepthSample(point_index);
+      const std::uint32_t expected_face{pointShadowDebugFace(renderer.scene.pointLights[point_index])};
+      const std::uint32_t expected_layer{static_cast<std::uint32_t>(
+         vve::simple::kMaxShadowedSpotLights + point_index * 6U + expected_face)};
+      const float expected_error{sample ? sample->expected_depth - sample->gpu_depth : 0.0F};
+      const float expected_shadow_factor{sample && sample->light_ndc.z - sample->bias > sample->gpu_depth ? 0.35F : 1.0F};
+      const auto retained_error = renderer.scenePointShadowDepthError(point_index);
+      const auto facade_sample = render_system.scenePointShadowDepthSample(point_index); ///< Facade-retained sample.
+      const auto facade_gpu_depth = render_system.scenePointShadowDepthGpuDepth(point_index);
+      const auto facade_has_gpu = render_system.scenePointShadowDepthHasGpu(point_index);
+      const auto facade_error = render_system.scenePointShadowDepthError(point_index);
+      if (!sample || !sample->valid || !sample->has_gpu || !std::isfinite(sample->gpu_depth) ||
+          !std::isfinite(sample->error) || !retained_error || sample->triangle_id != point_index ||
+          sample->face_index != expected_face || sample->face_index >= 6U || sample->pixel_x != expected_layer ||
+          sample->world.x != 0.0F || sample->world.y != 0.0F || sample->world.z != 0.0F ||
+          sample->expected_depth != sample->light_ndc.z || sample->bias != 0.001F ||
+          sample->error != expected_error || *retained_error != sample->error ||
+          sample->shadow_factor != expected_shadow_factor || !facade_sample ||
+          facade_sample->triangle_id != sample->triangle_id || facade_sample->face_index != sample->face_index ||
+          facade_sample->pixel_x != sample->pixel_x || facade_sample->expected_depth != sample->expected_depth ||
+          facade_sample->gpu_depth != sample->gpu_depth || facade_sample->error != sample->error ||
+          !facade_gpu_depth || *facade_gpu_depth != sample->gpu_depth || !facade_has_gpu || !*facade_has_gpu ||
+          !facade_error || *facade_error != sample->error) {
+         return false;
+      }
+      point_slots.push_back(sample->triangle_id);
+      selected_layers.push_back(sample->pixel_x);
+   }
+
+   std::ranges::sort(point_slots);
+   std::ranges::sort(selected_layers);
+   const auto unique_point_slots = std::ranges::unique(point_slots); ///< One sample per source point light.
+   const auto unique_selected_layers = std::ranges::unique(selected_layers); ///< No selected point layer is reused.
+   return static_cast<std::size_t>(unique_point_slots.begin() - point_slots.begin()) == point_light_count &&
+          static_cast<std::size_t>(unique_selected_layers.begin() - selected_layers.begin()) == point_light_count &&
+          !renderer.scenePointShadowDepthSample(point_light_count) && !renderer.scenePointShadowDepthError(point_light_count) &&
+          !render_system.scenePointShadowDepthSample(point_light_count) &&
+          !render_system.scenePointShadowDepthGpuDepth(point_light_count) &&
+          !render_system.scenePointShadowDepthHasGpu(point_light_count) &&
+          !render_system.scenePointShadowDepthError(point_light_count);
+}
+
+/// @brief Verifies non-occluded retained shadow samples keep full light contribution.
+[[nodiscard]] bool hasFullContributionForNonOccludedShadowSamples(const vve::simple::ForwardRenderer &renderer) {
+   constexpr float full_shadow_factor{1.0F}; ///< Renderer.ixx full-contribution shadow factor.
+   bool saw_non_occluded_sample{};           ///< At least one retained sample proves normal lighting is preserved.
+
+   const auto check_full_factor = [&](const std::optional<vve::simple::RenderShadowDepthSample> &sample) {
+      if (!sample || !sample->valid) { return false; }
+      const bool occluded{sample->has_gpu && sample->light_ndc.z - sample->bias > sample->gpu_depth}; ///< CPU compare.
+      if (!occluded) {
+         saw_non_occluded_sample = true;
+         return sample->shadow_factor == full_shadow_factor;
+      }
+      return true;
+   };
+
+   // Directional, spot, and point diagnostics all expose the same full-contribution value when unoccluded.
+   for (std::size_t index{}; index < renderer.sceneShadowDepthSampleCount(); ++index) {
+      if (!check_full_factor(renderer.sceneShadowDepthSample(index))) { return false; }
+   }
+   for (std::size_t index{}; index < renderer.sceneSpotShadowDepthSampleCount(); ++index) {
+      if (!check_full_factor(renderer.sceneSpotShadowDepthSample(index))) { return false; }
+   }
+   for (std::size_t index{}; index < renderer.scenePointShadowDepthSampleCount(); ++index) {
+      const auto sample = renderer.scenePointShadowDepthSample(index);
+      if (!check_full_factor(sample)) { return false; }
+      if (sample && sample->has_gpu && sample->light_ndc.z - sample->bias > sample->gpu_depth &&
+          sample->shadow_factor >= full_shadow_factor) {
+         return false;
+      }
+   }
+   return saw_non_occluded_sample;
 }
 
 } // namespace
@@ -95,6 +295,20 @@ int main() {
 
    auto &render_system = engine.renderSystem();
    render_system.clearScene();
+   vve::simple::Scene point_shadow_scene{}; ///< Public scene-loading path carries multiple point lights.
+   point_shadow_scene.pointLights = {
+      vve::simple::PointLight{.position = vve::Vec3{-2.0F, 2.75F, -1.25F},
+                              .color = vve::Vec3{1.0F, 0.74F, 0.46F},
+                              .intensity = 3.25F,
+                              .range = 6.0F,
+                              .ambient = 0.05F},
+      vve::simple::PointLight{.position = vve::Vec3{2.25F, 3.25F, 1.50F},
+                              .color = vve::Vec3{0.45F, 0.70F, 1.0F},
+                              .intensity = 2.75F,
+                              .range = 7.0F,
+                              .ambient = 0.04F}};
+   point_shadow_scene.pointLight = point_shadow_scene.pointLights.front(); ///< Preserve legacy single-light mirror.
+   render_system.loadScene(std::move(point_shadow_scene));
    if (const auto result = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{}); !result) {
       return 2;
    }
@@ -111,6 +325,11 @@ int main() {
                               vve::LinearColor{.value = vve::Vec3{0.55F, 0.75F, 1.0F}},
                               vve::LightIntensity{.value = 2.5F}, vve::LightRange{.value = 7.0F},
                               vve::SpotConeAngle{.radians = 0.65F}); ///< Second cone uses a distinct origin and aim.
+   render_system.addSpotLight(vve::Position{.value = vve::Vec3{0.25F, 5.0F, 1.75F}},
+                              vve::Direction{.value = vve::Vec3{-0.05F, -1.0F, -0.50F}},
+                              vve::LinearColor{.value = vve::Vec3{0.65F, 1.0F, 0.7F}},
+                              vve::LightIntensity{.value = 2.75F}, vve::LightRange{.value = 8.0F},
+                              vve::SpotConeAngle{.radians = 0.60F}); ///< Third cone proves metadata uniqueness beyond two slots.
 
    // Verify the submitted scene is visible through the public facade before frame submission.
    if (render_system.sceneMeshCount() != 1 || render_system.sceneMaterialCount() != 1 ||
@@ -120,9 +339,21 @@ int main() {
       return 3;
    }
 
-   if (const auto result = render_system.renderFrame(engine.windowSystem()); !result) { return 4; }
+   if (const auto result = engine.renderFrame(); !result) { return 4; }
    const auto status = engine.step();
    if (!status || *status != vve::FrameStatus::stopped) { return 4; }
+
+   // Verify per-frame assembly created one unique spot-shadow metadata row per shadowed spot light.
+   constexpr std::size_t expected_shadowed_spot_count{3U}; ///< Focused test scene light count.
+   constexpr std::size_t expected_shadowed_point_count{2U}; ///< Focused point-light metadata count.
+   if (expected_shadowed_spot_count > vve::simple::kMaxShadowedSpotLights ||
+       !hasUniqueSpotShadowMeta(render_system, expected_shadowed_spot_count)) {
+      return 15;
+   }
+   if (!hasPointShadowMetaInvariants(render_system, expected_shadowed_spot_count,
+                                     expected_shadowed_point_count)) {
+      return 16;
+   }
 
    // Verify frame and draw counters that belong to the current forward-renderer diagnostics.
    if (render_system.renderedFrameCount() != 1 || render_system.lastRenderedWindowCount() != 1) { return 5; }
@@ -133,6 +364,7 @@ int main() {
        forward_renderer.sceneDrawVertexCount() != 0 || forward_renderer.sceneDrawIndexCount() != 0) {
       return 6;
    }
+   if (!hasRecordedShadowsBeforeForwardColor(forward_renderer)) { return 17; }
 
    // Verify debug sample and comparison accessors expose the current no-readback state.
    if (forward_renderer.sceneDebugSampleCount() != 0 || forward_renderer.sceneCpuDebugSample(0) ||
@@ -144,18 +376,28 @@ int main() {
       return 7;
    }
 
-   // Verify directional and point shadow-depth diagnostic families are empty until GPU readback exists.
-   if (forward_renderer.sceneShadowDepthSampleCount() != 0 || forward_renderer.sceneShadowDepthSample(0) ||
-       forward_renderer.sceneShadowDepthError(0) || forward_renderer.scenePointShadowDepthSampleCount() != 0 ||
-       forward_renderer.scenePointShadowDepthSample(0) ||
-       forward_renderer.scenePointShadowDepthError(0)) {
+   // Directional shadow-depth diagnostics are CPU-populated by engine.renderFrame(); GPU error stays unavailable here.
+   const auto directional_shadow_sample = forward_renderer.sceneShadowDepthSample(0); ///< Single retained light-space sample.
+   if (forward_renderer.sceneShadowDepthSampleCount() != 1U || !directional_shadow_sample ||
+       !directional_shadow_sample->valid || directional_shadow_sample->face_index != 0U ||
+       directional_shadow_sample->world.x != 0.0F || directional_shadow_sample->world.y != 0.0F ||
+       directional_shadow_sample->world.z != 0.0F ||
+       directional_shadow_sample->expected_depth != directional_shadow_sample->light_ndc.z ||
+       directional_shadow_sample->bias != 0.001F || directional_shadow_sample->shadow_factor != 1.0F ||
+       forward_renderer.sceneShadowDepthSample(1) || forward_renderer.sceneShadowDepthError(0)) {
       return 8;
    }
+
+   // Verify point shadow-depth diagnostics retain one CPU-only sample per shadowed point light.
+   if (!hasPointShadowDepthSamples(forward_renderer, render_system, expected_shadowed_point_count)) {
+      return 8;
+   }
+   if (!hasFullContributionForNonOccludedShadowSamples(forward_renderer)) { return 18; }
 
    // Verify each active spot light receives a unique shadow-array slot when samples are reachable.
    const std::size_t active_spot_light_count{
       std::min(forward_renderer.scene.spotLights.size(), vve::simple::kMaxShadowedSpotLights)}; ///< CPU scene cap.
-   if (active_spot_light_count != std::min<std::size_t>(2U, vve::simple::kMaxShadowedSpotLights)) { return 11; }
+   if (active_spot_light_count != std::min<std::size_t>(3U, vve::simple::kMaxShadowedSpotLights)) { return 11; }
    const auto &first_spot = forward_renderer.scene.spotLights[0]; ///< First retained engine spot light.
    const auto &second_spot = forward_renderer.scene.spotLights[1]; ///< Second retained engine spot light.
    if ((first_spot.position.x == second_spot.position.x && first_spot.position.y == second_spot.position.y &&

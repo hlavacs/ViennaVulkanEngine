@@ -49,7 +49,8 @@ namespace {
 
 /// @brief Adds the debug floor, shadow caster, light marker, and lights through the facade.
 [[nodiscard]] std::expected<void, vve::Error> loadShadowTestScene(vve::RenderSystem renderSystem) {
-	const vve::Vec3 lightPosition{2.0F, 3.7F, -2.4F}; // Visible marker matches the active point light.
+	const vve::Vec3 warmPointLightPosition{2.0F, 3.7F, -2.4F}; // Warm point light casts from the back-right side.
+	const vve::Vec3 coolPointLightPosition{-2.25F, 2.9F, 1.65F}; // Cool point light casts from the front-left side.
 	renderSystem.clearScene();
 	if (auto result = renderSystem.addPlane(vve::Vec2{4.0F, 4.0F}, vve::LinearColor{.value = vve::Vec3{0.55F, 0.55F, 0.55F}});
 		 !result) {
@@ -63,13 +64,24 @@ namespace {
 	}
 	if (auto result = renderSystem.addCuboid(vve::Vec3{-0.125F, -0.125F, -0.125F}, vve::Vec3{0.125F, 0.125F, 0.125F},
 														  vve::LinearColor{.value = vve::Vec3{1.0F, 0.9F, 0.1F}},
-														  vve::Transform{.translation = vve::Position{.value = lightPosition}});
+														  vve::Transform{.translation = vve::Position{.value = warmPointLightPosition}});
 		 !result) {
 		return result;
 	}
-	renderSystem.setPointLight(vve::Position{.value = lightPosition}, vve::LinearColor{.value = vve::Vec3{1.0F, 0.92F, 0.55F}},
+	if (auto result = renderSystem.addCuboid(vve::Vec3{-0.125F, -0.125F, -0.125F}, vve::Vec3{0.125F, 0.125F, 0.125F},
+														  vve::LinearColor{.value = vve::Vec3{0.18F, 0.55F, 1.0F}},
+														  vve::Transform{.translation = vve::Position{.value = coolPointLightPosition}});
+		 !result) {
+		return result;
+	}
+	renderSystem.addPointLight(vve::Position{.value = warmPointLightPosition},
+										vve::LinearColor{.value = vve::Vec3{1.0F, 0.92F, 0.55F}},
 										vve::LightIntensity{.value = 4.5F}, vve::LightRange{.value = 7.5F},
 										vve::LinearColor{.value = vve::Vec3{0.08F, 0.08F, 0.08F}});
+	renderSystem.addPointLight(vve::Position{.value = coolPointLightPosition},
+										vve::LinearColor{.value = vve::Vec3{0.30F, 0.58F, 1.0F}},
+										vve::LightIntensity{.value = 3.8F}, vve::LightRange{.value = 6.5F},
+										vve::LinearColor{.value = vve::Vec3{0.025F, 0.035F, 0.055F}});
 	renderSystem.setDirectionalLight(vve::Direction{.value = vve::Vec3{-0.55F, -0.78F, 0.30F}},
 											  vve::LinearColor{.value = vve::Vec3{0.65F, 0.82F, 1.0F}},
 											  vve::LightIntensity{.value = 0.75F},
@@ -185,6 +197,31 @@ int main(int argc, char **argv) {
 	const bool enoughSpotSlots = spotShadowSlots.size() >= 2;
 	const bool distinctSpotSlots = enoughSpotSlots && std::ranges::adjacent_find(spotShadowSlots) == spotShadowSlots.end();
 	output << "spot_shadow_slots_distinct=" << (enoughSpotSlots ? (distinctSpotSlots ? "1" : "0") : "none") << '\n';
+	const auto pointShadowSampleCount = renderSystem.scenePointShadowDepthSampleCount(); // Facade-reported point debug rows.
+	output << "point_shadow_sample_count=" << pointShadowSampleCount << '\n';
+	for (std::size_t pointIndex{}; pointIndex < pointShadowSampleCount; ++pointIndex) { // One row per shadowed point light.
+		const auto sample = renderSystem.scenePointShadowDepthSample(pointIndex); // Aggregate supplies slot, face, world, and depth terms.
+		const auto gpuDepth = renderSystem.scenePointShadowDepthGpuDepth(pointIndex); // GPU readback depth, if available.
+		const auto hasGpu = renderSystem.scenePointShadowDepthHasGpu(pointIndex); // Explicit GPU-readback availability flag.
+		const auto depthError = renderSystem.scenePointShadowDepthError(pointIndex); // Difference between CPU and GPU depths.
+		const bool hasGpuDepth = hasGpu.value_or(false); // Missing readback stays deterministic for headless runs.
+		output << "point_shadow_sample index=" << pointIndex
+				 << " slot=" << (sample ? std::to_string(sample->triangle_id) : "null")
+				 << " face=" << (sample ? std::to_string(sample->face_index) : "null")
+				 << " layer=" << (sample ? std::to_string(sample->pixel_x) : "null");
+		if (sample) {
+			output << " world=(" << sample->world.x << ',' << sample->world.y << ',' << sample->world.z << ')'
+					 << " light_ndc=(" << sample->light_ndc.x << ',' << sample->light_ndc.y << ',' << sample->light_ndc.z << ')';
+		} else {
+			output << " world=null light_ndc=null";
+		}
+		output << " expected_depth=" << (sample ? std::to_string(sample->expected_depth) : "null")
+				 << " bias=" << (sample ? std::to_string(sample->bias) : "null")
+				 << " shadow_factor=" << (sample ? std::to_string(sample->shadow_factor) : "null")
+				 << " gpu_depth=" << (hasGpuDepth && gpuDepth ? std::to_string(*gpuDepth) : "none")
+				 << " has_gpu=" << (hasGpuDepth ? '1' : '0')
+				 << " error=" << (hasGpuDepth && depthError ? std::to_string(*depthError) : "none") << '\n';
+	}
 	const auto directionalShadowSampleCount = renderSystem.sceneShadowDepthSampleCount(); // Facade-reported directional debug rows.
 	const auto directionalSample = directionalShadowSampleCount > 0U ? renderSystem.sceneShadowDepthSample(0U) : std::nullopt;
 	if (directionalSample) { // Present directional debug data mirrors the spot row format for parsers.

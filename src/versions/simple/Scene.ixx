@@ -11,6 +11,7 @@ import VEEngine.Types;
 	* Functional objects:
 	* - Object pairs one CPU mesh with its model transform before any renderer upload exists.
 	* - kMaxShadowedSpotLights bounds the first multi-spot-light CPU storage step.
+	* - kMaxShadowedPointLights bounds the first point-light shadow metadata step.
 	* - Scene stores the CPU drawable list for simple multi-object renderer tests.
 	* - makePlane creates a minimal XZ floor mesh for renderer and shadow debug scenes.
 	* - makeSampleScene creates a few translated cubes without touching Vulkan state.
@@ -18,6 +19,7 @@ import VEEngine.Types;
 export namespace vve::simple {
 
 	inline constexpr std::size_t kMaxShadowedSpotLights{4U}; ///< Small fixed cap for the first spot-shadow data model.
+	inline constexpr std::size_t kMaxShadowedPointLights{2U}; ///< Small fixed cap for point-shadow CPU metadata.
 	inline constexpr std::size_t kMaxDirectionalLights{4U};  ///< Small fixed cap for the first multi-directional-light data model.
 
 	/// @brief Host-side drawable object with geometry and a local-to-world transform.
@@ -60,6 +62,7 @@ export namespace vve::simple {
 	struct Scene {
 		std::vector<Object> objects{};                                ///< Drawable objects owned by this CPU scene.
 		std::optional<std::filesystem::path> baseColorTexture{};      ///< Optional scene base-color image path for future texture uploads.
+		std::vector<PointLight> pointLights{};                        ///< Capped point lights for upcoming cube-shadow support.
 		PointLight pointLight{};                                      ///< Active point light driving shading.
 		std::vector<DirectionalLight> directionalLights{};            ///< Capped directional lights for upcoming multi-light support.
 		DirectionalLight directionalLight{};                          ///< Active directional light driving future shading.
@@ -108,11 +111,13 @@ export namespace vve::simple {
 			.outerConeAngle = {.radians = 0.58F},                     ///< Wider outer cone gives a visible falloff band.
 			.ambient = 0.02F,                                         ///< Small ambient contribution preserves shadow contrast.
 		};
+		const PointLight samplePoint{};                                 ///< One source keeps vector and mirror point data identical.
 		return Scene{.objects{
 			Object{.mesh = makeCube(), .model = identityMat4()},                                      ///< Center cube.
 			Object{.mesh = makeCube(), .model = translate(identityMat4(), Vec3{-1.5F, 0.0F, 0.0F})}, ///< Left cube.
 			Object{.mesh = makeCube(), .model = translate(identityMat4(), Vec3{1.5F, 0.0F, 0.0F})},  ///< Right cube.
-		}, .directionalLights{sampleDirectional}, .directionalLight = sampleDirectional,
+		}, .pointLights{samplePoint}, .pointLight = samplePoint,
+			.directionalLights{sampleDirectional}, .directionalLight = sampleDirectional,
 			.spotLights{sampleSpot}, .spotLight = sampleSpot};
 	}
 

@@ -1270,7 +1270,7 @@ export namespace vve::simple {
 		VulkanDescriptorSetLayout &operator=(const VulkanDescriptorSetLayout &) = delete;
 
 		/**
-			* @brief Creates set 0 with binding 0 as FrameUniforms, bindings 1, 3, 4, and 5 as shadow maps, and binding 2 as one object texture.
+			* @brief Creates set 0 with binding 0 as FrameUniforms, bindings 1, 4, 5, 6, and 7 as shadow maps, and binding 2 as one object texture.
 			*
 			* @param owningDevice Logical device that owns the created descriptor-set layout.
 			* @return VK_SUCCESS when the descriptor-set layout is available, otherwise a Vulkan error code.
@@ -1321,7 +1321,14 @@ export namespace vve::simple {
 				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
 				.pImmutableSamplers = nullptr,
 			}; ///< Binding 6 exposes the sampled directional shadow-map array to the fragment shader.
-			const std::array bindings{frameUniformBinding, shadowMapBinding, objectTextureBinding, spotShadowMapBinding, spotShadowArrayBinding, dirShadowArrayBinding};
+			const VkDescriptorSetLayoutBinding pointShadowArrayBinding{
+				.binding = 7U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = 1U,
+				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+				.pImmutableSamplers = nullptr,
+			}; ///< Binding 7 exposes the sampled point shadow-map array to the fragment shader.
+			const std::array bindings{frameUniformBinding, shadowMapBinding, objectTextureBinding, spotShadowMapBinding, spotShadowArrayBinding, dirShadowArrayBinding, pointShadowArrayBinding};
 			const VkDescriptorSetLayoutCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 				.bindingCount = static_cast<std::uint32_t>(bindings.size()),
@@ -2995,7 +3002,7 @@ export namespace vve::simple {
 
 			const std::array poolSizes{
 				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = maxSets},
-				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = maxSets * 5U},
+				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = maxSets * 6U},
 			};
 			const VkDescriptorPoolCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -3224,6 +3231,36 @@ export namespace vve::simple {
 		}
 
 		/**
+			* @brief Writes one frame descriptor set with its binding-7 sampled point shadow-map array.
+			*
+			* @param frameIndex Frame set index to update.
+			* @param imageView Point shadow-map array image view bound to descriptor binding 7.
+			* @param sampler Point shadow-map array sampler bound to descriptor binding 7.
+			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
+			*/
+		[[nodiscard]] VkResult writePointShadowArray(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
+			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			const VkDescriptorImageInfo imageInfo{
+				.sampler = sampler,
+				.imageView = imageView,
+				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+			};
+			const VkWriteDescriptorSet write{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSets[frameIndex],
+				.dstBinding = 7U,
+				.dstArrayElement = 0U,
+				.descriptorCount = 1U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.pImageInfo = &imageInfo,
+			};
+
+			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
+			return VK_SUCCESS;
+		}
+
+		/**
 			* @brief Writes one frame descriptor set with its reserved binding-2 sampled object texture.
 			*
 			* @param frameIndex Frame set index to update.
@@ -3367,6 +3404,9 @@ export namespace vve::simple {
 		Mat4 lightViewProj{}; ///< light view-projection for the upcoming shadow pass
 		std::array<Mat4, kMaxDirectionalLights> dirLightViewProjArray{}; ///< per-directional light-space matrices for depth passes and sampling
 		std::array<Mat4, kMaxShadowedSpotLights> spotLightViewProjs{}; ///< spot-light view-projections for future shadow data
+		std::array<Mat4, kMaxShadowedPointLights * 6U> pointLightFaceViewProjs{}; ///< per-point-face view-projections for future point shadows
+		std::array<Vec4, kMaxShadowedPointLights> pointLightPositionRanges{}; ///< per-point xyz position with range in w
+		std::array<Vec4, kMaxShadowedPointLights> pointLightColorIntensities{}; ///< per-point rgb color with intensity in w
 		Vec4 lightPositionRange{};    ///< xyz world-space point-light position, w range
 		Vec4 lightColorIntensity{};   ///< rgb direct-light color, w direct-light intensity
 		Vec4 lightShadowAmbient{};    ///< xyz shadow-map direction approximation, w ambient term
