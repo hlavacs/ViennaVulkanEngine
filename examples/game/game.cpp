@@ -214,6 +214,7 @@ int main(int argc, char **argv) {
 															 &pointLightEnabled, &cameraController, &lightsDirty] {
 		ImGui::Begin("Game");
 		ImGui::Text("Frame: %d", frame);
+		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
 		ImGui::Text("Renderer: %s", activeRenderer.value.c_str());
 		ImGui::Text("Directional lights: %zu", directionalLightsEnabled.size());
 		for (std::size_t index{}; index < directionalLightsEnabled.size(); ++index) {
