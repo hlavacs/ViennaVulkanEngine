@@ -10,6 +10,7 @@ import VEEngine;
 namespace {
 
 constexpr auto crateTextureRelativePath = "assets/game/crate0/diffuse.png";
+constexpr std::size_t maxGameDirectionalLights{4U}; ///< Mirrors the simple engine directional-light cap through the facade.
 constexpr std::size_t maxGameSpotLights{4U}; ///< Mirrors the simple engine spot-light cap exposed through the facade.
 
 /// @brief Finds the repository-style asset root from either the cwd or executable location.
@@ -118,10 +119,30 @@ int main(int argc, char **argv) {
 	const auto pointIntensity = vve::LightIntensity{.value = 3.0F};                                    ///< Startup point light strength.
 	const auto pointRange = vve::LightRange{.value = 7.0F};                                            ///< Startup point light reach.
 	const auto pointAmbient = vve::LinearColor{.value = vve::Vec3{0.18F, 0.18F, 0.18F}};               ///< Startup point ambient term.
-	const auto directionalDirection = vve::Direction{.value = vve::Vec3{-0.45F, -0.8F, 0.35F}};        ///< Startup directional light direction.
-	const auto directionalColor = vve::LinearColor{.value = vve::Vec3{0.95F, 0.98F, 1.0F}};            ///< Startup directional light tint.
-	const auto directionalIntensity = vve::LightIntensity{.value = 1.4F};                              ///< Startup directional light strength.
-	const auto directionalAmbient = vve::LinearColor{.value = vve::Vec3{0.06F, 0.06F, 0.06F}};         ///< Startup directional ambient term.
+	const auto directionalDirections = std::array{
+		vve::Direction{.value = vve::Vec3{-0.45F, -0.8F, 0.35F}},
+		vve::Direction{.value = vve::Vec3{0.55F, -0.72F, 0.12F}},
+		vve::Direction{.value = vve::Vec3{-0.12F, -0.9F, -0.42F}},
+		vve::Direction{.value = vve::Vec3{0.28F, -0.82F, -0.38F}},
+	};																													///< Four facade directional vectors exercising the engine cap.
+	const auto directionalColors = std::array{
+		vve::LinearColor{.value = vve::Vec3{0.95F, 0.98F, 1.0F}},
+		vve::LinearColor{.value = vve::Vec3{1.0F, 0.78F, 0.58F}},
+		vve::LinearColor{.value = vve::Vec3{0.58F, 0.86F, 1.0F}},
+		vve::LinearColor{.value = vve::Vec3{0.72F, 1.0F, 0.64F}},
+	};																													///< Distinct colors make active directional slots visible.
+	const auto directionalIntensities = std::array{
+		vve::LightIntensity{.value = 1.05F},
+		vve::LightIntensity{.value = 0.45F},
+		vve::LightIntensity{.value = 0.35F},
+		vve::LightIntensity{.value = 0.28F},
+	};																													///< Directional strengths keep the combined scene readable.
+	const auto directionalAmbients = std::array{
+		vve::LinearColor{.value = vve::Vec3{0.04F, 0.04F, 0.04F}},
+		vve::LinearColor{.value = vve::Vec3{0.015F, 0.012F, 0.01F}},
+		vve::LinearColor{.value = vve::Vec3{0.01F, 0.014F, 0.018F}},
+		vve::LinearColor{.value = vve::Vec3{0.01F, 0.016F, 0.01F}},
+	};																													///< Per-light ambient terms mirror the spot-light muting model.
 	const auto spotIntensity = vve::LightIntensity{.value = 4.0F};                                     ///< Startup spot light strength.
 	const auto spotRange = vve::LightRange{.value = 8.0F};                                             ///< Startup spot light reach.
 	const auto spotCone = vve::SpotConeAngle{.radians = 0.65F};                                        ///< Startup spot light outer cone.
@@ -147,10 +168,21 @@ int main(int argc, char **argv) {
 	const auto offAmbient = vve::LinearColor{.value = vve::Vec3{0.0F, 0.0F, 0.0F}};                    ///< Muted light ambient term.
 	constexpr auto offIntensity = vve::LightIntensity{.value = 0.0F};                                  ///< Muted direct light strength.
 	constexpr auto offRange = vve::LightRange{.value = 0.0F};                                          ///< Muted local light reach.
+	auto directionalLightsEnabled = std::array<bool, maxGameDirectionalLights>{true, true, true, true}; ///< Tracks each capped directional light.
 	auto spotLightsEnabled = std::array<bool, maxGameSpotLights>{true, true, true, true};              ///< Tracks each capped spot light.
 	bool pointLightEnabled = true;                                                                     ///< Tracks whether the point light contributes.
-	bool directionalLightEnabled = true;                                                               ///< Tracks whether the directional light contributes.
 	auto applyLights = [&] {
+		const auto applyDirectional = [&](std::size_t index, bool first) {
+			const auto intensity = directionalLightsEnabled[index] ? directionalIntensities[index] : offIntensity;
+			const auto ambient = directionalLightsEnabled[index] ? directionalAmbients[index] : offAmbient;
+			if (first) {
+				render.setDirectionalLight(directionalDirections[index], directionalColors[index], intensity, ambient);
+			} else {
+				render.addDirectionalLight(directionalDirections[index], directionalColors[index], intensity, ambient);
+			}
+		};																												// First directional resets the set; the rest fill the capped slots.
+		applyDirectional(0U, true);
+		for (std::size_t index{1U}; index < directionalLightsEnabled.size(); ++index) { applyDirectional(index, false); }
 		const auto applySpot = [&](std::size_t index, bool first) {
 			const auto intensity = spotLightsEnabled[index] ? spotIntensity : offIntensity;
 			const auto range = spotLightsEnabled[index] ? spotRange : offRange;
@@ -165,9 +197,6 @@ int main(int argc, char **argv) {
 		for (std::size_t index{1U}; index < spotLightsEnabled.size(); ++index) { applySpot(index, false); }
 		render.setPointLight(pointPosition, pointColor, pointLightEnabled ? pointIntensity : offIntensity,
 									pointLightEnabled ? pointRange : offRange, pointLightEnabled ? pointAmbient : offAmbient);
-		render.setDirectionalLight(directionalDirection, directionalColor,
-										 directionalLightEnabled ? directionalIntensity : offIntensity,
-										 directionalLightEnabled ? directionalAmbient : offAmbient);
 	};
 	applyLights();
 
@@ -181,18 +210,22 @@ int main(int argc, char **argv) {
 		vve::math::normalize(vve::math::subtract(vve::Vec3{0.0F, 1.0F, 0.0F}, cameraController.eye.value));
 	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
 	cameraController.pitch = std::asin(startupForward.y);
-	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &spotLightsEnabled, &pointLightEnabled,
-															 &directionalLightEnabled, &cameraController, &lightsDirty] {
+	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &directionalLightsEnabled, &spotLightsEnabled,
+															 &pointLightEnabled, &cameraController, &lightsDirty] {
 		ImGui::Begin("Game");
 		ImGui::Text("Frame: %d", frame);
 		ImGui::Text("Renderer: %s", activeRenderer.value.c_str());
+		ImGui::Text("Directional lights: %zu", directionalLightsEnabled.size());
+		for (std::size_t index{}; index < directionalLightsEnabled.size(); ++index) {
+			const auto label = std::format("Directional {}", index + 1U);
+			if (ImGui::Checkbox(label.c_str(), &directionalLightsEnabled[index])) { lightsDirty = true; }
+		}
 		ImGui::Text("Spot lights: %zu", spotLightsEnabled.size());
 		for (std::size_t index{}; index < spotLightsEnabled.size(); ++index) {
 			const auto label = std::format("Spot {}", index + 1U);
 			if (ImGui::Checkbox(label.c_str(), &spotLightsEnabled[index])) { lightsDirty = true; }
 		}
 		if (ImGui::Checkbox("Point light", &pointLightEnabled)) { lightsDirty = true; }
-		if (ImGui::Checkbox("Directional light", &directionalLightEnabled)) { lightsDirty = true; }
 		ImGui::Text("Camera: %.2f, %.2f, %.2f", cameraController.eye.value.x, cameraController.eye.value.y,
 						cameraController.eye.value.z);
 		ImGui::End();
@@ -223,9 +256,10 @@ int main(int argc, char **argv) {
 			std::cout << "[game] point light " << (pointLightEnabled ? "on" : "off") << '\n';
 		}
 		if (input.wasKeyPressed(vve::Key::l)) {
-			directionalLightEnabled = !directionalLightEnabled;
+			const bool enabled = !std::ranges::any_of(directionalLightsEnabled, std::identity{});
+			directionalLightsEnabled.fill(enabled);
 			applyLights();
-			std::cout << "[game] directional light " << (directionalLightEnabled ? "on" : "off") << '\n';
+			std::cout << "[game] directional lights " << (enabled ? "on" : "off") << '\n';
 		}
 		if (lightsDirty) {
 			applyLights();

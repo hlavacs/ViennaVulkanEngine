@@ -32,10 +32,55 @@ namespace {
    return std::ranges::contains(color_pass->depends_on, vve::simple::RenderMilestone::shadow_depth());
 }
 
+/// @brief Compares authored directional-light fields used by the simple render scene.
+[[nodiscard]] bool sameDirectionalLight(const vve::simple::RenderDirectionalLight &left,
+                                        const vve::simple::RenderDirectionalLight &right) {
+   return left.direction_to_light.value.x == right.direction_to_light.value.x &&
+          left.direction_to_light.value.y == right.direction_to_light.value.y &&
+          left.direction_to_light.value.z == right.direction_to_light.value.z &&
+          left.color.value.x == right.color.value.x && left.color.value.y == right.color.value.y &&
+          left.color.value.z == right.color.value.z && left.intensity.value == right.intensity.value &&
+          left.ambient.value.x == right.ambient.value.x && left.ambient.value.y == right.ambient.value.y &&
+          left.ambient.value.z == right.ambient.value.z;
+}
+
 } // namespace
 
 int main() {
    if (!hasForwardShadowBeforeColorContract()) { return 10; }
+
+   // Verify directional-light vector semantics before Vulkan renderer setup.
+   vve::simple::RenderScene scene{};
+   const auto first_directional = vve::simple::RenderDirectionalLight{
+      .direction_to_light = vve::Direction{.value = vve::Vec3{-0.25F, 0.90F, 0.10F}},
+      .color = vve::LinearColor{.value = vve::Vec3{1.0F, 0.2F, 0.3F}},
+      .intensity = vve::LightIntensity{.value = 1.0F},
+      .ambient = vve::LinearColor{.value = vve::Vec3{0.01F, 0.02F, 0.03F}}};
+   scene.addDirectionalLight(first_directional);
+   for (std::size_t index{1U}; index < 6U; ++index) {
+      const auto value = static_cast<float>(index);
+      scene.addDirectionalLight(vve::simple::RenderDirectionalLight{
+         .direction_to_light = vve::Direction{.value = vve::Vec3{value, value + 0.25F, value + 0.50F}},
+         .color = vve::LinearColor{.value = vve::Vec3{0.1F * value, 0.2F * value, 0.3F * value}},
+         .intensity = vve::LightIntensity{.value = value + 1.0F},
+         .ambient = vve::LinearColor{.value = vve::Vec3{0.01F * value, 0.02F * value, 0.03F * value}}});
+   }
+   if (scene.directionalLights().size() != vve::simple::kMaxDirectionalLights) { return 20; }
+   if (!sameDirectionalLight(scene.directionalLights().front(), first_directional) ||
+       !scene.directionalLight() || !sameDirectionalLight(*scene.directionalLight(), first_directional)) {
+      return 21;
+   }
+   const auto replacement_directional = vve::simple::RenderDirectionalLight{
+      .direction_to_light = vve::Direction{.value = vve::Vec3{0.75F, -0.50F, 0.25F}},
+      .color = vve::LinearColor{.value = vve::Vec3{0.4F, 0.8F, 1.0F}},
+      .intensity = vve::LightIntensity{.value = 4.0F},
+      .ambient = vve::LinearColor{.value = vve::Vec3{0.07F, 0.08F, 0.09F}}};
+   scene.setDirectionalLight(replacement_directional);
+   if (scene.directionalLights().size() != 1U ||
+       !sameDirectionalLight(scene.directionalLights().front(), replacement_directional) ||
+       !scene.directionalLight() || !sameDirectionalLight(*scene.directionalLight(), replacement_directional)) {
+      return 22;
+   }
 
    auto engine = vve::simple::makeEngine(
       vve::ApplicationName{"simple-forward-renderer-tests"},

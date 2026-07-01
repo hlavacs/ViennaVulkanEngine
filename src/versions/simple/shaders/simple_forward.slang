@@ -11,6 +11,7 @@
  */
 
 static const int kMaxShadowedSpotLights = 4; ///< Mirrors the simple engine fixed spot-shadow cap.
+static const int kMaxDirectionalLights = 4;  ///< Mirrors the simple engine fixed directional-light cap.
 
 struct FrameUniforms
 {
@@ -33,6 +34,11 @@ struct FrameUniforms
     float4 spotLightColorIntensities[kMaxShadowedSpotLights]; ///< Per-spot rgb color with intensity in w.
     float4 spotLightDirections[kMaxShadowedSpotLights]; ///< Per-spot xyz light-to-scene direction with unused w.
     float4 spotLightConeAmbients[kMaxShadowedSpotLights]; ///< Per-spot inner cone, outer cone, active count, and ambient.
+    float4 directionalLightDirections[kMaxDirectionalLights]; ///< Per-directional xyz light-to-scene direction with unused w.
+    float4 directionalLightColorIntensities[kMaxDirectionalLights]; ///< Per-directional rgb color with intensity in w.
+    float4 directionalLightAmbients[kMaxDirectionalLights]; ///< Per-directional ambient term packed in w.
+    uint activeDirectionalLightCount; ///< Active directional-light count clamped to the fixed cap.
+    uint3 directionalLightPadding;    ///< std140 padding after the scalar count.
 };
 
 struct ObjectPushConstants
@@ -147,12 +153,6 @@ FragmentOutput fragmentMain(FragmentInput input)
     const float diffuse = max(dot(normal, surfaceLightDir), 0.0);        ///< Lambertian light response.
     const float3 halfVector = normalize(surfaceLightDir + viewDir);      ///< Blinn-Phong halfway direction between light and eye.
     const float specular = specularStrength * pow(max(dot(normal, halfVector), 0.0), shininess); ///< Shadowed highlight response.
-    const float3 dirSurfaceLightDir = normalize(-frame.dirLightDirection.xyz); ///< Directional-light surface-to-light vector.
-    const float dirDiffuse = max(dot(normal, dirSurfaceLightDir), 0.0);  ///< Directional Lambertian light response.
-    const float3 dirHalfVector = normalize(dirSurfaceLightDir + viewDir); ///< Directional Blinn-Phong halfway direction.
-    const float dirSpecular = specularStrength * pow(max(dot(normal, dirHalfVector), 0.0), shininess); ///< Directional highlight response.
-    const float3 dirLight = frame.dirLightColorIntensity.rgb * frame.dirLightColorIntensity.w; ///< Directional light color scaled by intensity.
-    const float dirAmbient = frame.dirLightShadowAmbient.w;              ///< Directional ambient contribution without shadowing.
     const float4 dirLightClip = mul(frame.dirLightViewProj, float4(input.worldPos, 1.0)); ///< Fragment position in directional light clip space.
     const float3 dirLightNdc = dirLightClip.xyz / dirLightClip.w;        ///< Directional light depth remains in 0..1 after divide.
     const float2 dirShadowUv = (dirLightNdc.xy * 0.5) + 0.5;             ///< Convert directional light NDC XY to shadow texture UVs.
@@ -160,6 +160,20 @@ FragmentOutput fragmentMain(FragmentInput input)
         dirShadowUv.y >= 0.0 && dirShadowUv.y <= 1.0 && dirLightNdc.z >= 0.0 && dirLightNdc.z <= 1.0; ///< Reject fragments outside directional light coverage.
     const float dirStoredDepth = dirShadowMap.Sample(dirShadowUv).r;     ///< Closest surface depth from the directional light pass.
     const float dirShadowFactor = insideDirShadowMap && dirLightNdc.z - 0.001 > dirStoredDepth ? 0.35 : 1.0; ///< Small 0.001 compare bias complements shadow-pass slope-scaled rasterizer bias.
+    const int activeDirectionalLightCount = min(max(int(frame.activeDirectionalLightCount), 0), kMaxDirectionalLights); ///< Clamp scene directional count to the fixed array.
+    float3 directionalContribution = float3(0.0);                  ///< Accumulated directional-light response for all active directional lights.
+    for (int i = 0; i < kMaxDirectionalLights; ++i) {              ///< Fixed trip count lets the compiler unroll the small directional loop.
+        if (i < activeDirectionalLightCount) {                     ///< Ignore unused directional-light slots.
+            const float3 dirSurfaceLightDir = normalize(-frame.directionalLightDirections[i].xyz); ///< Directional surface-to-light vector.
+            const float dirDiffuse = max(dot(normal, dirSurfaceLightDir), 0.0); ///< Directional Lambertian light response.
+            const float3 dirHalfVector = normalize(dirSurfaceLightDir + viewDir); ///< Directional Blinn-Phong halfway direction.
+            const float dirSpecular = specularStrength * pow(max(dot(normal, dirHalfVector), 0.0), shininess); ///< Directional highlight response.
+            const float3 dirLight = frame.directionalLightColorIntensities[i].rgb * frame.directionalLightColorIntensities[i].w; ///< Directional light color scaled by intensity.
+            const float dirAmbient = frame.directionalLightAmbients[i].w; ///< Directional ambient contribution without shadowing.
+            const float activeDirShadowFactor = i == 0 ? dirShadowFactor : 1.0; ///< Slot zero keeps the existing directional shadow map.
+            directionalContribution += dirAmbient + dirLight * ((dirDiffuse + dirSpecular) * activeDirShadowFactor); ///< Add this directional result.
+        }
+    }
     const int activeSpotLightCount = min(max(int(frame.spotLightConeAmbient.z), 0), kMaxShadowedSpotLights); ///< Clamp scene spot count to the fixed shadow array.
     float3 spotContribution = float3(0.0);                           ///< Accumulated spot-light response for all active shadowed spots.
     for (int i = 0; i < kMaxShadowedSpotLights; ++i) {                ///< Fixed trip count lets the compiler unroll the small spot loop.
@@ -199,6 +213,6 @@ FragmentOutput fragmentMain(FragmentInput input)
     if (object.useBaseColorTexture != 0) {
         baseColor *= baseColorTexture.Sample(input.texCoord).rgb;        ///< Optional texture modulates the material before lighting.
     }
-    output.color = float4(baseColor * (ambient + lightColor * ((diffuse + specular) * lightIntensity * attenuation * shadowFactor) + dirAmbient + dirLight * ((dirDiffuse + dirSpecular) * dirShadowFactor) + spotContribution), 1.0); ///< Apply point, directional, and spot Blinn-Phong.
+    output.color = float4(baseColor * (ambient + lightColor * ((diffuse + specular) * lightIntensity * attenuation * shadowFactor) + directionalContribution + spotContribution), 1.0); ///< Apply point, directional, and spot Blinn-Phong.
     return output;
 }

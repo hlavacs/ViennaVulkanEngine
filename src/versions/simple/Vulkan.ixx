@@ -60,7 +60,7 @@ import VEEngine.Simple.Scene;
 	* - VulkanDescriptorSets allocates per-frame uniform-buffer, shadow-map, and object-texture descriptor sets from a borrowed pool and layout.
 	* - VulkanMesh owns the vertex and index buffers and index count for one uploaded CPU mesh.
 	* - ObjectPushConstants stores per-object draw data copied through Vulkan push constants.
-	* - FrameUniforms stores the shared view and projection matrices for set 0 binding 0.
+	* - FrameUniforms stores frame matrices plus GPU-packed point, directional, and spot light data for set 0 binding 0.
 	* - VulkanUniformBuffers owns one host-visible FrameUniforms buffer per frame.
 	*/
 export namespace vve::simple {
@@ -3380,6 +3380,11 @@ export namespace vve::simple {
 		std::array<Vec4, kMaxShadowedSpotLights> spotLightColorIntensities{}; ///< per-spot rgb color with intensity in w
 		std::array<Vec4, kMaxShadowedSpotLights> spotLightDirections{}; ///< per-spot xyz light-to-scene direction with unused w
 		std::array<Vec4, kMaxShadowedSpotLights> spotLightConeAmbients{}; ///< per-spot inner cone, outer cone, active count, and ambient
+		std::array<Vec4, kMaxDirectionalLights> directionalLightDirections{}; ///< per-directional xyz light-to-scene direction with unused w
+		std::array<Vec4, kMaxDirectionalLights> directionalLightColorIntensities{}; ///< per-directional rgb color with intensity in w
+		std::array<Vec4, kMaxDirectionalLights> directionalLightAmbients{}; ///< per-directional ambient term packed in w
+		std::uint32_t activeDirectionalLightCount{}; ///< active directional-light count clamped to the fixed cap
+		std::array<std::uint32_t, 3U> directionalLightPadding{}; ///< std140 padding after the scalar count
 	};
 
 	/// @brief Minimal per-frame uniform-buffer owner for shared view and projection data.

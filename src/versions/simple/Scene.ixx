@@ -18,6 +18,7 @@ import VEEngine.Types;
 export namespace vve::simple {
 
 	inline constexpr std::size_t kMaxShadowedSpotLights{4U}; ///< Small fixed cap for the first spot-shadow data model.
+	inline constexpr std::size_t kMaxDirectionalLights{4U};  ///< Small fixed cap for the first multi-directional-light data model.
 
 	/// @brief Host-side drawable object with geometry and a local-to-world transform.
 	struct Object {
@@ -60,6 +61,7 @@ export namespace vve::simple {
 		std::vector<Object> objects{};                                ///< Drawable objects owned by this CPU scene.
 		std::optional<std::filesystem::path> baseColorTexture{};      ///< Optional scene base-color image path for future texture uploads.
 		PointLight pointLight{};                                      ///< Active point light driving shading.
+		std::vector<DirectionalLight> directionalLights{};            ///< Capped directional lights for upcoming multi-light support.
 		DirectionalLight directionalLight{};                          ///< Active directional light driving future shading.
 		std::vector<SpotLight> spotLights{};                          ///< Capped spot lights for upcoming multi-shadow support.
 		SpotLight spotLight{};                                        ///< First spot light mirror for the unchanged renderer path.
@@ -90,6 +92,12 @@ export namespace vve::simple {
 		* @return Scene containing several cube objects with distinct world transforms.
 	*/
 	Scene makeSampleScene() {
+		const DirectionalLight sampleDirectional{                      ///< One source keeps vector and mirror directional data identical.
+			.direction = Vec3{-0.55F, -0.78F, 0.30F},                 ///< Cool grazing light crosses all three cubes.
+			.color = Vec3{0.65F, 0.82F, 1.0F},                       ///< Blue daylight tint separates it from the point light.
+			.intensity = {.value = 0.75F},                           ///< Moderate strength makes directional shading visible.
+			.ambient = 0.025F,                                       ///< Low ambient keeps directional shadows readable.
+		};
 		const SpotLight sampleSpot{                                    ///< One source keeps vector and mirror spot data identical.
 			.position = Vec3{1.45F, 4.8F, -1.45F},                     ///< Warm cone starts above the right side of the scene.
 			.direction = Vec3{0.10F, -0.98F, -0.16F},                  ///< Cone aims down across the center cube cluster.
@@ -104,12 +112,8 @@ export namespace vve::simple {
 			Object{.mesh = makeCube(), .model = identityMat4()},                                      ///< Center cube.
 			Object{.mesh = makeCube(), .model = translate(identityMat4(), Vec3{-1.5F, 0.0F, 0.0F})}, ///< Left cube.
 			Object{.mesh = makeCube(), .model = translate(identityMat4(), Vec3{1.5F, 0.0F, 0.0F})},  ///< Right cube.
-		}, .directionalLight = DirectionalLight{
-			.direction = Vec3{-0.55F, -0.78F, 0.30F},       ///< Cool grazing light crosses all three cubes.
-			.color = Vec3{0.65F, 0.82F, 1.0F},             ///< Blue daylight tint separates it from the point light.
-			.intensity = {.value = 0.75F},                 ///< Moderate strength makes directional shading visible.
-			.ambient = 0.025F,                             ///< Low ambient keeps directional shadows readable.
-		}, .spotLights{sampleSpot}, .spotLight = sampleSpot};
+		}, .directionalLights{sampleDirectional}, .directionalLight = sampleDirectional,
+			.spotLights{sampleSpot}, .spotLight = sampleSpot};
 	}
 
 } // namespace vve::simple

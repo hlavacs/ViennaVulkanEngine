@@ -509,6 +509,18 @@ export namespace vve::simple {
 				spotLightDirections[spotIndex] = Vec4{activeSpotDirection.x, activeSpotDirection.y, activeSpotDirection.z, zero()};
 				spotLightConeAmbients[spotIndex] = Vec4{std::cos(activeSpot.innerConeAngle.radians), std::cos(activeSpot.outerConeAngle.radians), static_cast<Scalar>(activeSpotLightViewProjCount), activeSpot.ambient};
 			}
+			const std::size_t directionalLightCount{std::min(scene.directionalLights.size(), kMaxDirectionalLights)}; ///< Clamped directional-light count fits the fixed uniform arrays.
+			const std::uint32_t activeDirectionalLightCount{static_cast<std::uint32_t>(directionalLightCount)}; ///< Clamped count packed into the frame uniform.
+			std::array<Vec4, kMaxDirectionalLights> directionalLightDirections{}; ///< Per-directional xyz directions with unused w.
+			std::array<Vec4, kMaxDirectionalLights> directionalLightColorIntensities{}; ///< Per-directional rgb colors with intensities in w.
+			std::array<Vec4, kMaxDirectionalLights> directionalLightAmbients{}; ///< Per-directional active count and ambient.
+			for (std::size_t directionalIndex{}; directionalIndex < directionalLightCount; ++directionalIndex) {
+				const DirectionalLight &activeDirectional = scene.directionalLights[directionalIndex]; ///< Scene directional light copied into a fixed uniform slot.
+				const Vec3 activeDirectionalDirection{normalize(activeDirectional.direction)}; ///< Normalized direction mirrors the legacy single-light path.
+				directionalLightDirections[directionalIndex] = Vec4{activeDirectionalDirection.x, activeDirectionalDirection.y, activeDirectionalDirection.z, zero()};
+				directionalLightColorIntensities[directionalIndex] = Vec4{activeDirectional.color.x, activeDirectional.color.y, activeDirectional.color.z, activeDirectional.intensity.value};
+				directionalLightAmbients[directionalIndex] = Vec4{zero(), zero(), static_cast<Scalar>(activeDirectionalLightCount), activeDirectional.ambient};
+			}
 			spotShadowDepthSampleCountStorage() = spotLightViewProjCount;
 			const Vec3 spotShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point used for CPU-only shadow diagnostics.
 			constexpr float kSpotShadowCompareBias{0.001F}; ///< CPU mirror of the shader-side compare bias.
@@ -556,6 +568,10 @@ export namespace vve::simple {
 				.spotLightColorIntensities = spotLightColorIntensities,
 				.spotLightDirections = spotLightDirections,
 				.spotLightConeAmbients = spotLightConeAmbients,
+				.directionalLightDirections = directionalLightDirections,
+				.directionalLightColorIntensities = directionalLightColorIntensities,
+				.directionalLightAmbients = directionalLightAmbients,
+				.activeDirectionalLightCount = activeDirectionalLightCount,
 			};
 			directionalShadowDepthSampleCountStorage() = 1U;
 			const Vec3 directionalShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point shared with spot shadow diagnostics.

@@ -57,6 +57,12 @@ namespace vve {
 		renderSystemImpl(impl_).setDirectionalLight(direction_to_light, color, intensity, ambient);
 	}
 
+	/// @brief Adds a directional light to the active CPU scene.
+	void RenderSystem::addDirectionalLight(Direction direction_to_light, LinearColor color,
+														LightIntensity intensity, LinearColor ambient) {
+		renderSystemImpl(impl_).addDirectionalLight(direction_to_light, color, intensity, ambient);
+	}
+
 	/// @brief Sets the active point light.
 	void RenderSystem::setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range) {
 		renderSystemImpl(impl_).setPointLight(position, color, intensity, range);

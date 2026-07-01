@@ -102,6 +102,11 @@ export namespace vve {
 		inline void setDirectionalLight(const DirectionalLight &light) {
 			setDirectionalLight(light.direction, light.color, light.intensity, light.ambient);
 		}																																		///< Applies a directional light descriptor.
+		void addDirectionalLight(Direction direction_to_light, LinearColor color,
+											LightIntensity intensity, LinearColor ambient);
+		inline void addDirectionalLight(const DirectionalLight &light) {
+			addDirectionalLight(light.direction, light.color, light.intensity, light.ambient);
+		}																																		///< Adds a directional light descriptor.
 		auto setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range)	-> void;
 		auto setPointLight(Position position, LinearColor color, LightIntensity intensity,
 								 LightRange range, LinearColor ambient)															-> void;

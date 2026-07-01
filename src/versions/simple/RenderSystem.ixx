@@ -157,6 +157,7 @@ export namespace vve::simple {
 						Mat4 world = identityMat4());
 		auto setCamera(RenderCamera camera)																							-> void;
 		auto setDirectionalLight(RenderDirectionalLight light)																-> void;
+		auto addDirectionalLight(RenderDirectionalLight light)																-> void;
 		auto setPointLight(RenderPointLight light)																				-> void;
 		auto setSpotLight(RenderSpotLight light)																					-> void;
 		auto addSpotLight(RenderSpotLight light)																					-> void;
@@ -171,6 +172,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto indexCount() const																						-> std::size_t;
 		[[nodiscard]] const std::optional<RenderCamera> &camera() const;
 		[[nodiscard]] const std::optional<RenderDirectionalLight> &directionalLight() const;
+		[[nodiscard]] const std::vector<RenderDirectionalLight> &directionalLights() const;
 		[[nodiscard]] const std::optional<RenderPointLight> &pointLight() const;
 		[[nodiscard]] std::optional<RenderSpotLight> spotLight() const;
 		[[nodiscard]] const std::vector<RenderSpotLight> &spotLights() const;
@@ -185,6 +187,7 @@ export namespace vve::simple {
 		Vector<RenderInstance> instances_{};										///< CPU draw items.
 		std::optional<RenderCamera> camera_{};										///< Optional active camera.
 		std::optional<RenderDirectionalLight> light_{};							///< Optional active directional light.
+		std::vector<RenderDirectionalLight> directional_lights_{};			///< Capped active directional lights.
 		std::optional<RenderPointLight> point_light_{};							///< Optional active point light.
 		std::vector<RenderSpotLight> spot_lights_{};							///< Capped active spot lights.
 	};
@@ -225,6 +228,8 @@ export namespace vve::simple {
 		auto clearScene()																													-> void;
 		auto setCamera(Camera camera, PixelExtent extent)																		-> void;
 		void setDirectionalLight(Direction direction_to_light, LinearColor color,
+											LightIntensity intensity, LinearColor ambient);
+		void addDirectionalLight(Direction direction_to_light, LinearColor color,
 											LightIntensity intensity, LinearColor ambient);
 		auto setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range)	-> void;
 		auto setPointLight(Position position, LinearColor color,
@@ -377,8 +382,18 @@ namespace vve::simple {
 	/// @brief Stores the active camera resource.
 	inline void RenderScene::setCamera(RenderCamera camera) { camera_ = std::move(camera); }
 
-	/// @brief Stores the active directional light resource.
-	inline void RenderScene::setDirectionalLight(RenderDirectionalLight light) { light_ = std::move(light); }
+	/// @brief Replaces the active directional-light list with one first-light entry.
+	inline void RenderScene::setDirectionalLight(RenderDirectionalLight light) {
+		directional_lights_.clear();
+		directional_lights_.push_back(std::move(light));
+		light_ = directional_lights_.front();
+	}
+
+	/// @brief Adds one directional light until the fixed simple-engine cap is reached.
+	inline void RenderScene::addDirectionalLight(RenderDirectionalLight light) {
+		if (directional_lights_.size() < kMaxDirectionalLights) { directional_lights_.push_back(std::move(light)); }
+		if (!directional_lights_.empty()) { light_ = directional_lights_.front(); }
+	}
 
 	/// @brief Stores the active point light resource.
 	inline void RenderScene::setPointLight(RenderPointLight light) { point_light_ = std::move(light); }
@@ -401,6 +416,7 @@ namespace vve::simple {
 		instances_.clear();
 		camera_.reset();
 		light_.reset();
+		directional_lights_.clear();
 		point_light_.reset();
 		spot_lights_.clear();
 	}
@@ -443,6 +459,7 @@ namespace vve::simple {
 
 	inline const std::optional<RenderCamera> &RenderScene::camera() const { return camera_; }
 	inline const std::optional<RenderDirectionalLight> &RenderScene::directionalLight() const { return light_; }
+	inline const std::vector<RenderDirectionalLight> &RenderScene::directionalLights() const { return directional_lights_; }
 	inline const std::optional<RenderPointLight> &RenderScene::pointLight() const { return point_light_; }
 	inline std::optional<RenderSpotLight> RenderScene::spotLight() const {
 		return spot_lights_.empty() ? std::nullopt : std::optional<RenderSpotLight>{spot_lights_.front()};
@@ -673,12 +690,29 @@ namespace vve::simple {
 	}
 	inline void RenderSystem::setDirectionalLight(Direction direction_to_light, LinearColor color,
 																	LightIntensity intensity, LinearColor ambient) {
-		forward().scene.directionalLight = DirectionalLight{
+		const DirectionalLight light{
 			.direction = direction_to_light.value,
 			.color = color.value,
 			.intensity = intensity,
 			.ambient = ambient.value.x};
+		forward().scene.directionalLights.clear();													// Setter preserves the legacy single-light mode.
+		forward().scene.directionalLights.push_back(light);
+		forward().scene.directionalLight = light;
 		scene_.setDirectionalLight(RenderDirectionalLight{.direction_to_light = direction_to_light,
+																			.color = color, .intensity = intensity, .ambient = ambient});
+	}
+	inline void RenderSystem::addDirectionalLight(Direction direction_to_light, LinearColor color,
+																	LightIntensity intensity, LinearColor ambient) {
+		const DirectionalLight light{
+			.direction = direction_to_light.value,
+			.color = color.value,
+			.intensity = intensity,
+			.ambient = ambient.value.x};
+		if (forward().scene.directionalLights.size() < kMaxDirectionalLights) {					// First entry remains the shader-visible directional light.
+			forward().scene.directionalLights.push_back(light);
+		}
+		if (!forward().scene.directionalLights.empty()) { forward().scene.directionalLight = forward().scene.directionalLights.front(); }
+		scene_.addDirectionalLight(RenderDirectionalLight{.direction_to_light = direction_to_light,
 																			.color = color, .intensity = intensity, .ambient = ambient});
 	}
 	inline void RenderSystem::setPointLight(Position position, LinearColor color,
@@ -774,6 +808,8 @@ namespace vve::simple {
 	}
 
 	inline auto RenderSystem::loadScene(Scene scene)																-> void{
+		if (scene.directionalLights.size() > kMaxDirectionalLights) { scene.directionalLights.resize(kMaxDirectionalLights); }
+		if (!scene.directionalLights.empty()) { scene.directionalLight = scene.directionalLights.front(); }	// Forward renderer still consumes the first directional light only.
 		if (scene.spotLights.size() > kMaxShadowedSpotLights) { scene.spotLights.resize(kMaxShadowedSpotLights); }
 		if (!scene.spotLights.empty()) { scene.spotLight = scene.spotLights.front(); }				// Forward renderer still consumes the first spot light only.
 		forward().loadScene(std::move(scene));
