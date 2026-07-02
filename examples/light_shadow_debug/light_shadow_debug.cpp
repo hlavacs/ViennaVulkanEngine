@@ -54,25 +54,25 @@ namespace {
 	renderSystem.clearScene();
 	if (auto result = renderSystem.addPlane(vve::Vec2{4.0F, 4.0F}, vve::LinearColor{.value = vve::Vec3{0.55F, 0.55F, 0.55F}});
 		 !result) {
-		return result;
+		return std::unexpected(result.error());
 	}
 	if (auto result = renderSystem.addCuboid(vve::Vec3{-0.4F, -1.0F, -0.4F}, vve::Vec3{0.4F, 1.0F, 0.4F},
 														  vve::LinearColor{.value = vve::Vec3{0.55F, 0.55F, 0.55F}},
 														  vve::Transform{.translation = vve::Position{.value = vve::Vec3{0.0F, 1.0F, -0.75F}}});
 		 !result) {
-		return result;
+		return std::unexpected(result.error());
 	}
 	if (auto result = renderSystem.addCuboid(vve::Vec3{-0.125F, -0.125F, -0.125F}, vve::Vec3{0.125F, 0.125F, 0.125F},
 														  vve::LinearColor{.value = vve::Vec3{1.0F, 0.9F, 0.1F}},
 														  vve::Transform{.translation = vve::Position{.value = warmPointLightPosition}});
 		 !result) {
-		return result;
+		return std::unexpected(result.error());
 	}
 	if (auto result = renderSystem.addCuboid(vve::Vec3{-0.125F, -0.125F, -0.125F}, vve::Vec3{0.125F, 0.125F, 0.125F},
 														  vve::LinearColor{.value = vve::Vec3{0.18F, 0.55F, 1.0F}},
 														  vve::Transform{.translation = vve::Position{.value = coolPointLightPosition}});
 		 !result) {
-		return result;
+		return std::unexpected(result.error());
 	}
 	renderSystem.addPointLight(vve::Position{.value = warmPointLightPosition},
 										vve::LinearColor{.value = vve::Vec3{1.0F, 0.92F, 0.55F}},
@@ -98,6 +98,27 @@ namespace {
 										vve::LightIntensity{.value = 2.0F}, vve::LightRange{.value = 6.0F},
 										vve::SpotConeAngle{.radians = 0.58F},
 										vve::LinearColor{.value = vve::Vec3{0.015F, 0.015F, 0.02F}});
+	const auto lifetimeDemoObject = renderSystem.addCuboid(vve::Vec3{-0.05F, -0.05F, -0.05F}, vve::Vec3{0.05F, 0.05F, 0.05F},
+																			 vve::LinearColor{.value = vve::Vec3{0.9F, 0.9F, 0.9F}},
+																			 vve::Transform{.translation = vve::Position{.value = vve::Vec3{0.0F, 0.2F, 0.0F}}});
+	if (!lifetimeDemoObject) {
+		return std::unexpected(lifetimeDemoObject.error());
+	}
+	const auto lifetimeDemoHandle = *lifetimeDemoObject; // Temporary object demonstrates facade lifetime control.
+	if (auto result = renderSystem.setObjectVisible(lifetimeDemoHandle, false); !result) {
+		return std::unexpected(result.error());
+	}
+	if (auto result = renderSystem.setObjectVisible(lifetimeDemoHandle, true); !result) {
+		return std::unexpected(result.error());
+	}
+	if (auto result = renderSystem.setObjectTransform(lifetimeDemoHandle,
+																	  vve::Transform{.translation = vve::Position{.value = vve::Vec3{0.1F, 0.2F, 0.0F}}});
+		 !result) {
+		return std::unexpected(result.error());
+	}
+	if (auto result = renderSystem.removeObject(lifetimeDemoHandle); !result) {
+		return std::unexpected(result.error());
+	}
 	return {};
 }
 

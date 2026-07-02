@@ -21,6 +21,7 @@ export namespace vve {
 	struct MeshHandleTag {};											///< Mesh descriptor handle tag.
 	struct MaterialHandleTag {};										///< Material descriptor handle tag.
 	struct TextureHandleTag {};										///< Texture descriptor handle tag.
+	struct RenderObjectHandleTag {};								///< Render object handle tag.
 	struct LightHandleTag {};											///< Light descriptor handle tag.
 	struct CameraHandleTag {};											///< Camera descriptor handle tag.
 
@@ -30,6 +31,7 @@ export namespace vve {
 	using MeshHandle	= TypedHandle<MeshHandleTag>;			///< Mesh descriptor handle.
 	using MaterialHandle = TypedHandle<MaterialHandleTag>;	///< Material descriptor handle.
 	using TextureHandle	= TypedHandle<TextureHandleTag>;		///< Texture descriptor handle.
+	using RenderObjectHandle = TypedHandle<RenderObjectHandleTag>;	///< Render object handle.
 	using LightHandle	= TypedHandle<LightHandleTag>;		///< Light descriptor handle.
 	using CameraHandle	= TypedHandle<CameraHandleTag>;		///< Camera descriptor handle.
 

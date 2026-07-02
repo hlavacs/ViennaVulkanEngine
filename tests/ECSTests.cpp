@@ -18,6 +18,25 @@ struct Name {
    std::string value{};
 };
 
+/// @brief Proves that erasing one entity removes every component attached to it.
+bool erasesEntityAndAllComponents(vve::ECS &ecs) {
+   const auto entity = ecs.create();
+   if (!entity.valid() || !ecs.exists(entity)) { return false; }
+   if (!ecs.add(entity, Position{.x = 10, .y = 20})) { return false; }
+   if (!ecs.add(entity, Velocity{.dx = 30, .dy = 40})) { return false; }
+   if (!ecs.add(entity, Name{.value = "temporary"})) { return false; }
+
+   const auto position = ecs.get<Position>(entity);
+   const auto velocity = ecs.get<Velocity>(entity);
+   const auto name = ecs.get<Name>(entity);
+   if (!position || !velocity || !name || name->value != "temporary") { return false; }
+   if (const auto view = ecs.view<Position, Velocity, Name>(); view.size() != 1 || view.front() != entity) { return false; }
+
+   if (!ecs.erase(entity) || ecs.exists(entity)) { return false; }
+   if (ecs.get<Position>(entity) || ecs.tryGet<Velocity>(entity) || ecs.has<Name>(entity)) { return false; }
+   return ecs.view<Position, Velocity, Name>().empty();
+}
+
 } // namespace
 
 int main() {
@@ -45,6 +64,7 @@ int main() {
    const auto removed = ecs.tryGet<Velocity>(entity);
    if (!removed || removed->has_value()) { return 11; }
    if (!ecs.erase(entity) || ecs.exists(entity)) { return 12; }
+   if (!erasesEntityAndAllComponents(ecs)) { return 13; }
 
    return 0;
 }

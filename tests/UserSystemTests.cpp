@@ -25,7 +25,7 @@ struct CountingSystem {
       auto &render_system = world.template get<vve::RenderSystem>();
       render_system.clearScene();
       if (const auto result = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{}); !result) {
-         return result;
+         return std::unexpected(result.error());
       }
       render_system.setCamera(vve::Camera{}, vve::PixelExtent{.width = 64, .height = 64});
       render_system.setDirectionalLight(vve::Direction{}, vve::LinearColor{}, vve::LightIntensity{},

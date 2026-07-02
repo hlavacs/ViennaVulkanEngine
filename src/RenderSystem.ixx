@@ -130,22 +130,29 @@ export namespace vve {
 								LightIntensity intensity, LightRange range, SpotConeAngle cone);
 		void addSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient);
-		[[nodiscard]] std::expected<void, Error> addPlane(Vec2 half_extent, LinearColor color,
-																			Transform transform = {});
-		[[nodiscard]] inline std::expected<void, Error> addPlane(const PlaneDescriptor &plane) {
+		[[nodiscard]] std::expected<RenderObjectHandle, Error> addPlane(Vec2 half_extent, LinearColor color,
+																						 Transform transform = {});
+		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addPlane(const PlaneDescriptor &plane) {
 			return addPlane(plane.half_extent, plane.color, plane.transform);
 		}																																		///< Adds a plane descriptor.
-		[[nodiscard]] std::expected<void, Error> addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
-																			Transform transform = {});
-		[[nodiscard]] inline std::expected<void, Error> addCuboid(const CuboidDescriptor &cuboid) {
+		[[nodiscard]] std::expected<RenderObjectHandle, Error> addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
+																						 Transform transform = {});
+		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addCuboid(const CuboidDescriptor &cuboid) {
 			return addCuboid(cuboid.minimum, cuboid.maximum, cuboid.color, cuboid.transform);
 		}																																		///< Adds a cuboid descriptor.
-		[[nodiscard]] std::expected<void, Error> addTexturedCuboid(Vec3 minimum, Vec3 maximum,
-																					 std::filesystem::path base_color_texture,
-																					 Transform transform = {});
-		[[nodiscard]] inline std::expected<void, Error> addTexturedCuboid(const TexturedCuboidDescriptor &cuboid) {
+		[[nodiscard]] std::expected<RenderObjectHandle, Error> addTexturedCuboid(Vec3 minimum, Vec3 maximum,
+																									  std::filesystem::path base_color_texture,
+																									  Transform transform = {});
+		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addTexturedCuboid(const TexturedCuboidDescriptor &cuboid) {
 			return addTexturedCuboid(cuboid.minimum, cuboid.maximum, cuboid.base_color_texture, cuboid.transform);
 		}																																		///< Adds a textured cuboid descriptor.
+		[[nodiscard]] auto removeObject(RenderObjectHandle handle)															-> std::expected<void, Error>;
+		[[nodiscard]] auto setObjectVisible(RenderObjectHandle handle, bool visible)							-> std::expected<void, Error>;
+		[[nodiscard]] auto objectVisible(RenderObjectHandle handle) const										-> std::expected<bool, Error>;
+		[[nodiscard]] auto setObjectTransform(RenderObjectHandle handle, Transform transform)			-> std::expected<void, Error>;
+		[[nodiscard]] auto objectTransform(RenderObjectHandle handle) const									-> std::expected<Transform, Error>;
+		[[nodiscard]] auto removeScene(SceneHandle handle)															-> std::expected<void, Error>;
+		[[nodiscard]] auto purgeUnusedAssets()																				-> std::size_t;
 		[[nodiscard]] auto sceneMeshCount() const																					-> std::size_t;
 		[[nodiscard]] auto sceneMaterialCount() const																			-> std::size_t;
 		[[nodiscard]] auto sceneInstanceCount() const																			-> std::size_t;

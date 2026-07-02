@@ -69,7 +69,7 @@ constexpr std::size_t maxGameSpotLights{10U};        ///< Current simple forward
 	render.clearScene();
 	if (auto result = render.addPlane(vve::Vec2{6.0F, 4.0F}, vve::LinearColor{.value = vve::Vec3{0.1F, 0.6F, 0.2F}});
 		 !result) {
-		return result;
+		return std::unexpected(result.error());
 	}
 	for (const vve::Vec3 center : std::array{vve::Vec3{-1.5F, cubeCenterY, -0.5F},
 														  vve::Vec3{0.0F, cubeCenterY, 0.75F},
@@ -77,7 +77,7 @@ constexpr std::size_t maxGameSpotLights{10U};        ///< Current simple forward
 		if (auto result = render.addTexturedCuboid(cubeMinimum, cubeMaximum, crateTexture,
 																 vve::Transform{.translation = vve::Position{.value = center}});
 			 !result) {
-			return result;
+			return std::unexpected(result.error());
 		}
 	}
 	return {};

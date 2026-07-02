@@ -264,6 +264,213 @@ namespace {
    return saw_non_occluded_sample;
 }
 
+/// @brief Checks only the public render-object lifetime facade on a live render system.
+[[nodiscard]] bool hasPublicRenderObjectLifetime() {
+   auto engine = vve::makeEngine(vve::ApplicationName{"simple-forward-renderer-lifetime-tests"},
+                                 vve::MaxFrames{.value = vve::FrameCount{.value = 1}},
+                                 vve::WindowSetups{vve::WindowSetup{}
+                                                       .id("main")
+                                                       .title("simple-forward-renderer-lifetime-tests")
+                                                       .extent(vve::PixelExtent{.width = 64, .height = 64})
+                                                       .renderer(vve::RendererId{.value = "forward"})
+                                                       .visible(false)});
+   if (!engine.init()) { return false; }
+
+   auto world = engine.world();
+   auto &render_system = world.get<vve::RenderSystem>();
+   render_system.clearScene();
+   const auto plane = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{});
+   const auto cuboid = render_system.addCuboid(vve::Vec3{-0.5F, -0.5F, -0.5F},
+                                               vve::Vec3{0.5F, 0.5F, 0.5F}, vve::LinearColor{});
+   if (!plane || !cuboid || !plane->valid() || !cuboid->valid() || *plane == *cuboid) { return false; }
+   const std::size_t instance_count_before_remove{render_system.sceneInstanceCount()}; ///< CPU instances mirror public objects.
+
+   if (const auto hidden = render_system.setObjectVisible(*plane, false); !hidden) { return false; }
+   const auto hidden_state = render_system.objectVisible(*plane);
+   if (!hidden_state || *hidden_state) { return false; }
+   if (const auto shown = render_system.setObjectVisible(*plane, true); !shown) { return false; }
+   const auto shown_state = render_system.objectVisible(*plane);
+   if (!shown_state || !*shown_state) { return false; }
+
+   const auto transform = vve::Transform{.translation = vve::Position{.value = vve::Vec3{1.25F, 2.5F, -3.75F}},
+                                         .scale = vve::Scale{.value = vve::Vec3{2.0F, 0.5F, 1.5F}}};
+   if (const auto moved = render_system.setObjectTransform(*plane, transform); !moved) { return false; }
+   const auto moved_transform = render_system.objectTransform(*plane);
+   if (!moved_transform ||
+       moved_transform->translation.value.x != transform.translation.value.x ||
+       moved_transform->translation.value.y != transform.translation.value.y ||
+       moved_transform->translation.value.z != transform.translation.value.z ||
+       moved_transform->scale.value.x != transform.scale.value.x ||
+       moved_transform->scale.value.y != transform.scale.value.y ||
+       moved_transform->scale.value.z != transform.scale.value.z) {
+      return false;
+   }
+
+   if (const auto removed = render_system.removeObject(*plane); !removed) { return false; }
+   if (instance_count_before_remove != 2U ||
+       render_system.sceneInstanceCount() != instance_count_before_remove - 1U) {
+      return false;
+   }
+   const auto removed_visible = render_system.objectVisible(*plane);
+   const auto removed_transform = render_system.objectTransform(*plane);
+   const auto removed_again = render_system.removeObject(*plane);
+   const auto surviving_visible = render_system.objectVisible(*cuboid);
+   if (removed_visible || removed_visible.error() != vve::Error::missing_object ||
+       removed_transform || removed_transform.error() != vve::Error::missing_object ||
+       removed_again || removed_again.error() != vve::Error::missing_object ||
+       !surviving_visible || !*surviving_visible) {
+      return false;
+   }
+
+   const auto missing = vve::makeHandleForTest<vve::RenderObjectHandle>(9'999U);
+   const auto default_visible = render_system.objectVisible(vve::RenderObjectHandle{});
+   const auto default_transform = render_system.objectTransform(vve::RenderObjectHandle{});
+   const auto missing_visible = render_system.objectVisible(missing);
+   const auto missing_transform = render_system.objectTransform(missing);
+   const auto missing_hide = render_system.setObjectVisible(missing, false);
+   const auto missing_move = render_system.setObjectTransform(missing, transform);
+   const auto missing_remove = render_system.removeObject(missing);
+   if (default_visible || default_visible.error() != vve::Error::missing_object ||
+       default_transform || default_transform.error() != vve::Error::missing_object ||
+       missing_visible || missing_visible.error() != vve::Error::missing_object ||
+       missing_transform || missing_transform.error() != vve::Error::missing_object ||
+       missing_hide || missing_hide.error() != vve::Error::missing_object ||
+       missing_move || missing_move.error() != vve::Error::missing_object ||
+       missing_remove || missing_remove.error() != vve::Error::missing_object) {
+      return false;
+   }
+
+   render_system.clearScene();
+   const auto cleared_visible = render_system.objectVisible(*cuboid);
+   return !cleared_visible && cleared_visible.error() == vve::Error::missing_object;
+}
+
+/// @brief Verifies object visibility updates the renderer-owned backend draw flag.
+[[nodiscard]] bool hasBackendObjectVisibilityUpdate() {
+   auto render_system = vve::simple::RenderSystem{};
+   const auto plane = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{});
+   if (!plane) { return false; }
+
+   auto &forward = std::get<vve::simple::ForwardRenderer>(render_system.backend()); ///< Backend scene mirror.
+   if (forward.scene.objects.empty() || !forward.scene.objects.front().visible) { return false; }
+   if (const auto hidden = render_system.setObjectVisible(*plane, false); !hidden) { return false; }
+   const auto hidden_state = render_system.objectVisible(*plane);
+   if (!hidden_state || *hidden_state || forward.scene.objects.front().visible) { return false; }
+   if (const auto shown = render_system.setObjectVisible(*plane, true); !shown) { return false; }
+   const auto shown_state = render_system.objectVisible(*plane);
+
+   const auto missing = vve::makeHandleForTest<vve::RenderObjectHandle>(9'999U);
+   const auto missing_hide = render_system.setObjectVisible(missing, false);
+   const auto missing_visible = render_system.objectVisible(missing);
+   return shown_state && *shown_state && forward.scene.objects.front().visible &&
+          !missing_hide && missing_hide.error() == vve::Error::missing_object &&
+          !missing_visible && missing_visible.error() == vve::Error::missing_object;
+}
+
+/// @brief Verifies object movement updates the renderer-owned backend model matrix.
+[[nodiscard]] bool hasBackendObjectTransformUpdate() {
+   auto render_system = vve::simple::RenderSystem{};
+   const auto plane = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{});
+   if (!plane) { return false; }
+
+   const auto transform = vve::Transform{.translation = vve::Position{.value = vve::Vec3{1.25F, 2.5F, -3.75F}},
+                                         .scale = vve::Scale{.value = vve::Vec3{2.0F, 0.5F, 1.5F}}};
+   if (const auto moved = render_system.setObjectTransform(*plane, transform); !moved) { return false; }
+
+   auto &forward = std::get<vve::simple::ForwardRenderer>(render_system.backend()); ///< Backend scene mirror.
+   const auto missing = vve::makeHandleForTest<vve::RenderObjectHandle>(9'999U);
+   const auto missing_move = render_system.setObjectTransform(missing, transform);
+   return !forward.scene.objects.empty() &&
+          forward.scene.objects.front().model[3].x == transform.translation.value.x &&
+          forward.scene.objects.front().model[3].y == transform.translation.value.y &&
+          forward.scene.objects.front().model[3].z == transform.translation.value.z &&
+          !missing_move && missing_move.error() == vve::Error::missing_object;
+}
+
+/// @brief Verifies public object removal skips backend objects loaded without public handles.
+[[nodiscard]] bool hasBackendObjectCorrespondenceWithoutPublicHandle() {
+   auto render_system = vve::simple::RenderSystem{};
+   auto loaded_scene = vve::simple::makeSampleScene();
+   const std::size_t loaded_object_count{loaded_scene.objects.size()}; ///< Objects without public RenderObjectHandle.
+   render_system.loadScene(std::move(loaded_scene));
+   const auto plane = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{});
+   const auto cuboid = render_system.addCuboid(vve::Vec3{-0.5F, -0.5F, -0.5F},
+                                               vve::Vec3{0.5F, 0.5F, 0.5F}, vve::LinearColor{});
+   if (!plane || !cuboid) { return false; }
+
+   auto &forward = std::get<vve::simple::ForwardRenderer>(render_system.backend());
+   if (forward.scene.objects.size() != loaded_object_count + 2U || render_system.sceneInstanceCount() != 2U) {
+      return false;
+   }
+   if (const auto removed = render_system.removeObject(*plane); !removed) { return false; }
+   const auto cuboid_visible = render_system.objectVisible(*cuboid);
+   return forward.scene.objects.size() == loaded_object_count + 1U &&
+          forward.scene.objects.front().model[3][0] == 0.0F &&
+          render_system.sceneInstanceCount() == 1U && cuboid_visible && *cuboid_visible;
+}
+
+/// @brief Verifies asset purging only removes mesh and material data after public objects stop referencing it.
+[[nodiscard]] bool hasPurgeUnusedAssetsLifetime() {
+   auto render_system = vve::simple::RenderSystem{};
+   const auto plane = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{});
+   const auto cuboid = render_system.addCuboid(vve::Vec3{-0.5F, -0.5F, -0.5F},
+                                               vve::Vec3{0.5F, 0.5F, 0.5F}, vve::LinearColor{});
+   if (!plane || !cuboid || !plane->valid() || !cuboid->valid()) { return false; }
+
+   constexpr std::size_t object_count{2U};                  ///< Plane and cuboid each mint one instance.
+   constexpr std::size_t assets_per_removed_object{2U};     ///< One mesh plus one material becomes unused.
+   const std::size_t live_mesh_count{render_system.sceneMeshCount()};           ///< Meshes before no-op purge.
+   const std::size_t live_material_count{render_system.sceneMaterialCount()};   ///< Materials before no-op purge.
+   const std::size_t live_instance_count{render_system.sceneInstanceCount()};   ///< Instances before no-op purge.
+   if (live_mesh_count != object_count || live_material_count != object_count ||
+       live_instance_count != object_count || render_system.purgeUnusedAssets() != 0U ||
+       render_system.sceneMeshCount() != live_mesh_count ||
+       render_system.sceneMaterialCount() != live_material_count ||
+       render_system.sceneInstanceCount() != live_instance_count) {
+      return false;
+   }
+
+   if (const auto removed = render_system.removeObject(*plane); !removed) { return false; }
+   const std::size_t mesh_count_before_purge{render_system.sceneMeshCount()};           ///< Removed object assets still exist.
+   const std::size_t material_count_before_purge{render_system.sceneMaterialCount()};   ///< Removed object assets still exist.
+   const std::size_t instance_count_before_purge{render_system.sceneInstanceCount()};   ///< Purge must not remove instances.
+   if (mesh_count_before_purge != live_mesh_count ||
+       material_count_before_purge != live_material_count ||
+       instance_count_before_purge != live_instance_count - 1U) {
+      return false;
+   }
+
+   if (render_system.purgeUnusedAssets() != assets_per_removed_object ||
+       render_system.sceneMeshCount() != mesh_count_before_purge - 1U ||
+       render_system.sceneMaterialCount() != material_count_before_purge - 1U ||
+       render_system.sceneInstanceCount() != instance_count_before_purge) {
+      return false;
+   }
+   const auto cuboid_visible = render_system.objectVisible(*cuboid); ///< Surviving object still references live assets.
+   return cuboid_visible && *cuboid_visible && render_system.sceneMeshCount() == 1U &&
+          render_system.sceneMaterialCount() == 1U;
+}
+
+/// @brief Verifies scene asset removal keeps loaded scenes alive while public render objects reference them.
+[[nodiscard]] bool hasSceneRemovalLifetime() {
+   auto render_system = vve::simple::RenderSystem{};
+   const auto missing_scene = render_system.removeScene(vve::SceneHandle{});
+   if (missing_scene || missing_scene.error() != vve::Error::missing_object) { return false; }
+
+   const auto scene = render_system.loadScene(vve::simple::makeSampleScene());
+   const auto plane = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{});
+   if (!scene.valid() || !plane || !plane->valid()) { return false; }
+
+   const auto referenced_scene = render_system.removeScene(scene);
+   if (referenced_scene || referenced_scene.error() != vve::Error::invalid_argument) { return false; }
+
+   // The failed scene removal must not erase the loaded scene while public objects still exist.
+   if (const auto removed_object = render_system.removeObject(*plane); !removed_object) { return false; }
+   if (const auto removed_scene = render_system.removeScene(scene); !removed_scene) { return false; }
+   const auto removed_again = render_system.removeScene(scene);
+   return !removed_again && removed_again.error() == vve::Error::missing_object;
+}
+
 } // namespace
 
 int main() {
@@ -315,6 +522,13 @@ int main() {
 
    auto &render_system = engine.renderSystem();
    render_system.clearScene();
+   if (!hasPublicRenderObjectLifetime() || !hasBackendObjectVisibilityUpdate() ||
+       !hasBackendObjectTransformUpdate()) {
+      return 23;
+   }
+   if (!hasBackendObjectCorrespondenceWithoutPublicHandle()) { return 24; }
+   if (!hasSceneRemovalLifetime()) { return 25; }
+   if (!hasPurgeUnusedAssetsLifetime()) { return 26; }
    vve::simple::Scene point_shadow_scene{}; ///< Public scene-loading path carries multiple point lights.
    point_shadow_scene.pointLights = {
       vve::simple::PointLight{.position = vve::Vec3{-2.0F, 2.75F, -1.25F},

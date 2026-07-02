@@ -24,16 +24,16 @@ namespace vve {
 		const auto minimum = Vec3{-0.5F, -0.5F, -0.5F};
 		const auto maximum = Vec3{0.5F, 0.5F, 0.5F};
 		const auto cube_color = LinearColor{.value = Vec3{0.55F, 0.55F, 0.55F}};
-		if (auto result = addCuboid(minimum, maximum, cube_color); !result) { return result; }
+		if (auto result = addCuboid(minimum, maximum, cube_color); !result) { return std::unexpected(result.error()); }
 		if (auto result = addCuboid(minimum, maximum, cube_color,
 												Transform{.translation = Position{.value = Vec3{-1.5F, 0.0F, 0.0F}}});
 			 !result) {
-			return result;
+			return std::unexpected(result.error());
 		}
 		if (auto result = addCuboid(minimum, maximum, cube_color,
 												Transform{.translation = Position{.value = Vec3{1.5F, 0.0F, 0.0F}}});
 			 !result) {
-			return result;
+			return std::unexpected(result.error());
 		}
 		setPointLight(Position{.value = Vec3{2.0F, 3.5F, -2.0F}},
 							LinearColor{.value = Vec3{1.0F, 0.96F, 0.82F}},
@@ -109,23 +109,56 @@ namespace vve {
 		renderSystemImpl(impl_).addSpotLight(position, direction, color, intensity, range, cone, ambient);
 	}
 
-	/// @brief Adds a colored plane to the active CPU scene.
-	std::expected<void, Error> RenderSystem::addPlane(Vec2 half_extent, LinearColor color, Transform transform) {
+	/// @brief Adds a colored plane and returns its public render-object handle.
+	std::expected<RenderObjectHandle, Error> RenderSystem::addPlane(Vec2 half_extent, LinearColor color, Transform transform) {
 		return renderSystemImpl(impl_).addPlane(half_extent, color, transform);
 	}
 
-	/// @brief Adds a colored cuboid to the active CPU scene.
-	std::expected<void, Error> RenderSystem::addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
-																		Transform transform) {
+	/// @brief Adds a colored cuboid and returns its public render-object handle.
+	std::expected<RenderObjectHandle, Error> RenderSystem::addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
+																						  Transform transform) {
 		return renderSystemImpl(impl_).addCuboid(minimum, maximum, color, transform);
 	}
 
-	/// @brief Adds a cuboid using a base-color texture supplied by the application.
-	std::expected<void, Error> RenderSystem::addTexturedCuboid(Vec3 minimum, Vec3 maximum,
-																				std::filesystem::path base_color_texture,
-																				Transform transform) {
+	/// @brief Adds a textured cuboid and returns its public render-object handle.
+	std::expected<RenderObjectHandle, Error> RenderSystem::addTexturedCuboid(Vec3 minimum, Vec3 maximum,
+																								  std::filesystem::path base_color_texture,
+																								  Transform transform) {
 		return renderSystemImpl(impl_).addTexturedCuboid(minimum, maximum, std::move(base_color_texture), transform);
 	}
+
+	/// @brief Removes one previously added render object.
+	std::expected<void, Error> RenderSystem::removeObject(RenderObjectHandle handle) {
+		return renderSystemImpl(impl_).removeObject(handle);
+	}
+
+	/// @brief Sets whether one render object is visible.
+	std::expected<void, Error> RenderSystem::setObjectVisible(RenderObjectHandle handle, bool visible) {
+		return renderSystemImpl(impl_).setObjectVisible(handle, visible);
+	}
+
+	/// @brief Returns whether one render object is visible.
+	std::expected<bool, Error> RenderSystem::objectVisible(RenderObjectHandle handle) const {
+		return renderSystemImpl(impl_).objectVisible(handle);
+	}
+
+	/// @brief Sets one render object's source transform.
+	std::expected<void, Error> RenderSystem::setObjectTransform(RenderObjectHandle handle, Transform transform) {
+		return renderSystemImpl(impl_).setObjectTransform(handle, transform);
+	}
+
+	/// @brief Returns one render object's source transform.
+	std::expected<Transform, Error> RenderSystem::objectTransform(RenderObjectHandle handle) const {
+		return renderSystemImpl(impl_).objectTransform(handle);
+	}
+
+	/// @brief Removes one loaded scene when no live render object depends on it.
+	std::expected<void, Error> RenderSystem::removeScene(SceneHandle handle) {
+		return renderSystemImpl(impl_).removeScene(handle);
+	}
+
+	/// @brief Removes CPU render assets no live render object references.
+	std::size_t RenderSystem::purgeUnusedAssets() { return renderSystemImpl(impl_).purgeUnusedAssets(); }
 
 	/// @brief Returns mesh count in the active CPU scene.
 	std::size_t RenderSystem::sceneMeshCount() const { return renderSystemImpl(impl_).sceneMeshCount(); }

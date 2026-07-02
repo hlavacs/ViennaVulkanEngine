@@ -1140,6 +1140,7 @@ export namespace vve::simple {
 					const VkBuffer vertexBuffers[]{mesh.vertexBuffer.buffer};
 					const VkDeviceSize offsets[]{0U};
 					const Object &object = scene.objects[objectIndex];
+					if (!object.visible) { ++objectIndex; continue; }
 					const ObjectPushConstants pushConstants{.model = object.model, .useBaseColorTexture = object.useBaseColorTexture, .spotLightIndex = spotLightIndex, .dirLightIndex = dirLightIndex};
 					vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, vertexBuffers, offsets);
 					vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0U, VK_INDEX_TYPE_UINT32);

@@ -27,6 +27,7 @@ export namespace vve::simple {
 		Mesh mesh{};                              ///< CPU geometry used by one drawable object.
 		Mat4 model{};                             ///< Model matrix placing the mesh in world space.
 		std::uint32_t useBaseColorTexture{0U};    ///< Non-zero when the object wants the optional base-color texture.
+		bool visible{true};                       ///< True when command recording should draw this object.
 	};
 
 	/// @brief Point light parameters used by the simple forward pass.

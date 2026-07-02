@@ -79,8 +79,6 @@ Examples for internal data structures are
 
 Descriptors that might be exposed to the user must be composed by facade defined data types only. However, as a general principle, user intercation should be via functions, not data structures.
 
-
-
 ## Strong Types
 
 - Prefer strong types over raw primitives where semantics matter.
@@ -91,12 +89,11 @@ Descriptors that might be exposed to the user must be composed by facade defined
 - Distinguish public semantic types from internal storage-efficient representations where needed.
 - The name of a strong type should reflect its semantic meaning.
 
-
 ## External Depenencies
 
-The engine mainly links to the official Vulkan SDK and uses the libraries contained there. Additonally it may use libraries like Assimp ot STB. These external libraries are downloaded using vcpkg.
+The engine mainly links to the official Vulkan SDK and uses the libraries contained there. Additonally it may use libraries like SDL3, Assimp, STB, ImGUI. These external libraries are downloaded using vcpkg.
 
-On Mac you should KosmicKrisp, not MoltenVk.
+IMPORTANT: On Mac you should use KosmicKrisp, not MoltenVk.
 
 ### Code Documentation
 
@@ -121,7 +118,6 @@ On Mac you should KosmicKrisp, not MoltenVk.
 - Use templates deliberately, not decoratively.
 - Prefer range-based for-loops over counted for-loops.
 
-
 ## Expectations for code generation
 
 - Keep the number of lines as low as possible and feasible. 
@@ -143,29 +139,30 @@ for all engines.
 
 ## Expectations for debugging
 
-If tracking runtime errors try outputting internal data into a textfile, then 
-fread the file to understand what was wring.
+Always create testable executable that produce deterministic output. This output can be text, numbers, names, flags, or images e.g. PNG.
+The controller should always let the worker create these tests, then compile them. Here the controller should already examine whether compilation succeeded.
+If not, the controller should issue a tasl to the worker to resolve the compilation issues.
+Once all compilations have succeeded, the controller should execute them with the appropriate parameters and observe the output. 
+If the output is not what was exepcted, the controller shouls issue a repair task to the worker to analyse and fix the propblem.
 Do not rely on Python for anything in any engine. Testng should rely on C++ tests.
-Always include a lighweight data layer for carrying small sets of debugging information that can be
-checked automatically by an LLM later. 
-
+Always include a lighweight data layer for carrying small sets of debugging information that can be checked automatically by an LLM later. 
 
 ## Expectations for tests
 
 All classes and functions should have unit tests.
 All example programs should have extensive test paths.
 Tests should produce debugging data that lets a calling LLM detect errors, locate errors and fix errors.
-
-
+Executables targeted towards a certain overal goal like rendering a test scene should be callable with various parameters and produce deterministic output.
+For example when testing rendering with various lighst, the test program could be run several times, each time using a different light. The output could be either text detailing internals, and an image rendered with the light.
 
 # Concrete Engines
 
 Concrete engines are defined in the respective subfolder of src/versions. Each subfolder contains its own engine and AGENTS.md.
-Ignore the AGENTS.md files of other engines, only read and analyse the AGENTS.md of the respective folder
-that contains the engine under consideration.
-Engines must be completely isolated from each other. It must never refer to another engine, or use something from another engine.
+Ignore the AGENTS.md files of other engines, only read and analyse the AGENTS.md of the respective folder that contains the engine under consideration.
+Engines must be completely isolated from each other. One engine must never refer to another engine, or use something from another engine.
 If instructions say: use this from another engine, then do not make an alias etc ro anything of this engien. Instead create new functionality for the concrete engine but make it similar to the functionality of the referred engine.
 
+A compile time, a compile switch should select one of the engines available. This should be a variable set either in the environment, or as a cmake parameter, or in cmake configuration. 
 
 ## src/versions/v3
 

@@ -36,6 +36,24 @@ namespace vve::simple::detail {
 
 	using RenderPassHandleMap = std::map<std::string_view, RenderPassHandle, StringViewLess>;	///< Pass-name map.
 
+	/// @brief Builds the backend model matrix from the public transform contract.
+	[[nodiscard]] inline auto modelMatrix(Transform transform) -> Mat4 {
+		const auto q = transform.rotation.value;
+		auto rotation = identityMat4();
+		rotation[0][0] = one() - static_cast<Scalar>(2) * (q.y * q.y + q.z * q.z);
+		rotation[0][1] = static_cast<Scalar>(2) * (q.x * q.y + q.w * q.z);
+		rotation[0][2] = static_cast<Scalar>(2) * (q.x * q.z - q.w * q.y);
+		rotation[1][0] = static_cast<Scalar>(2) * (q.x * q.y - q.w * q.z);
+		rotation[1][1] = one() - static_cast<Scalar>(2) * (q.x * q.x + q.z * q.z);
+		rotation[1][2] = static_cast<Scalar>(2) * (q.y * q.z + q.w * q.x);
+		rotation[2][0] = static_cast<Scalar>(2) * (q.x * q.z + q.w * q.y);
+		rotation[2][1] = static_cast<Scalar>(2) * (q.y * q.z - q.w * q.x);
+		rotation[2][2] = one() - static_cast<Scalar>(2) * (q.x * q.x + q.y * q.y);
+		auto model = translate(identityMat4(), transform.translation.value);
+		model = multiply(model, rotation);
+		return scale(model, transform.scale.value);
+	}
+
 } // namespace vve::simple::detail
 
 export namespace vve::simple {
@@ -92,6 +110,7 @@ export namespace vve::simple {
 		RenderMaterialHandle material{};												///< Material used by this instance.
 		Transform local_transform{};													///< Source scene local transform.
 		Mat4 world_transform{identityMat4()};										///< World transform used by later renderers.
+		bool visible{true};																///< True when this instance should be rendered.
 	};
 
 	/// @brief Directional light resource data.
@@ -163,8 +182,11 @@ export namespace vve::simple {
 		auto setSpotLight(RenderSpotLight light)																					-> void;
 		auto addSpotLight(RenderSpotLight light)																					-> void;
 		auto clear()																														-> void;
+		[[nodiscard]] auto eraseInstance(RenderInstanceHandle handle)													-> bool;
+		[[nodiscard]] auto purgeUnusedAssets()																				-> std::size_t;
 		[[nodiscard]] const RenderMesh *findMesh(RenderMeshHandle handle) const;
 		[[nodiscard]] const RenderMaterial *findMaterial(RenderMaterialHandle handle) const;
+		[[nodiscard]] RenderInstance *findInstance(RenderInstanceHandle handle);
 		[[nodiscard]] const RenderInstance *findInstance(RenderInstanceHandle handle) const;
 		[[nodiscard]] auto meshCount() const																						-> std::size_t;
 		[[nodiscard]] auto materialCount() const																					-> std::size_t;
@@ -220,13 +242,20 @@ export namespace vve::simple {
 		[[nodiscard]] auto resourceName(RenderResourceHandle handle) const												-> std::expected<ObjectName, Error>;
 		[[nodiscard]] auto resourceKind(RenderResourceHandle handle) const												-> std::expected<RenderResourceKind, Error>;
 		[[nodiscard]] auto functionName(RenderFunctionHandle handle) const												-> std::expected<ObjectName, Error>;
-		[[nodiscard]] std::expected<void, Error> addPlane(Vec2 half_extent, LinearColor color,
-																			Transform transform = {});
-		[[nodiscard]] std::expected<void, Error> addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
-																			Transform transform = {});
-		[[nodiscard]] std::expected<void, Error> addTexturedCuboid(Vec3 minimum, Vec3 maximum,
-																					 std::filesystem::path base_color_texture,
-																					 Transform transform = {});
+		[[nodiscard]] std::expected<RenderObjectHandle, Error> addPlane(Vec2 half_extent, LinearColor color,
+																						 Transform transform = {});
+		[[nodiscard]] std::expected<RenderObjectHandle, Error> addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
+																						 Transform transform = {});
+		[[nodiscard]] std::expected<RenderObjectHandle, Error> addTexturedCuboid(Vec3 minimum, Vec3 maximum,
+																									  std::filesystem::path base_color_texture,
+																									  Transform transform = {});
+		[[nodiscard]] auto removeObject(RenderObjectHandle handle)														-> std::expected<void, Error>;
+		[[nodiscard]] auto setObjectVisible(RenderObjectHandle handle, bool visible)							-> std::expected<void, Error>;
+		[[nodiscard]] auto objectVisible(RenderObjectHandle handle) const											-> std::expected<bool, Error>;
+		[[nodiscard]] auto setObjectTransform(RenderObjectHandle handle, Transform transform)				-> std::expected<void, Error>;
+		[[nodiscard]] auto objectTransform(RenderObjectHandle handle) const										-> std::expected<Transform, Error>;
+		[[nodiscard]] auto removeScene(SceneHandle handle)														-> std::expected<void, Error>;
+		[[nodiscard]] auto purgeUnusedAssets()																				-> std::size_t;
 		auto clearScene()																													-> void;
 		auto setCamera(Camera camera, PixelExtent extent)																		-> void;
 		void setDirectionalLight(Direction direction_to_light, LinearColor color,
@@ -247,7 +276,7 @@ export namespace vve::simple {
 								LightIntensity intensity, LightRange range, SpotConeAngle cone);
 		void addSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient);
-		auto loadScene(Scene scene)																									-> void;
+		auto loadScene(Scene scene)																									-> SceneHandle;
 		/// @brief Stores the borrowed GUI system for later forwarding to renderer backends.
 		auto setGuiSystem(void *gui)																								-> void;
 		auto setGuiRecordSink(std::function<void(VkCommandBuffer)> sink)												-> void;
@@ -294,7 +323,11 @@ export namespace vve::simple {
 								std::span<const RenderPassContract> passes);
 		[[nodiscard]] const RenderResource *find(RenderResourceHandle handle) const;
 		[[nodiscard]] const RenderFunction *find(RenderFunctionHandle handle) const;
-		[[nodiscard]] auto appendBackendObject(RenderInstanceHandle instance)										-> std::expected<void, Error>;
+		[[nodiscard]] auto registerRenderObject(RenderInstanceHandle instance, std::size_t backend_index)	-> RenderObjectHandle;
+		[[nodiscard]] auto findRenderObject(RenderObjectHandle handle) const
+			-> std::optional<std::pair<RenderInstanceHandle, std::size_t>>;
+		auto eraseRenderObject(RenderObjectHandle handle)														-> void;
+		[[nodiscard]] auto appendBackendObject(RenderInstanceHandle instance)										-> std::expected<std::size_t, Error>;
 		[[nodiscard]] auto forward()																					-> ForwardRenderer &;
 		[[nodiscard]] auto forward() const																				-> const ForwardRenderer &;
 
@@ -303,6 +336,11 @@ export namespace vve::simple {
 		void *guiSystem_{nullptr};													///< Non-owning, type-erased GUI system pointer for later renderer wiring.
 		Vector<RenderResource> resources_{};										///< Generic render resource registry.
 		Vector<RenderFunction> functions_{};										///< Generic render function registry.
+		std::unordered_map<RenderObjectHandle, std::pair<RenderInstanceHandle, std::size_t>, HandleHash<RenderObjectHandle>>
+			render_objects_{};														///< Public render-object to internal instance map.
+		std::map<SceneHandle, Scene> scenes_{};									///< Loaded backend scenes by public scene handle.
+		std::optional<SceneHandle> active_scene_{};								///< Scene currently mirrored into the backend.
+		std::uint64_t next_render_object_id_{1};								///< Next public render-object id.
 		std::uint64_t rendered_frames_{0};											///< Number of accepted frame calls.
 		std::size_t last_window_count_{0};											///< Last non-closed window count.
 		bool initialized_{false};														///< True after the concrete renderer is initialized.
@@ -444,6 +482,34 @@ namespace vve::simple {
 		spot_lights_.clear();
 	}
 
+	/// @brief Removes one CPU draw item by stable handle.
+	inline auto RenderScene::eraseInstance(RenderInstanceHandle handle)										-> bool{
+		const auto found = std::ranges::find(instances_, handle, &RenderInstance::handle);
+		if (found == instances_.end()) { return false; }
+		instances_.erase(found);
+		return true;
+	}
+
+	/// @brief Removes mesh and material resources no live instance references.
+	inline auto RenderScene::purgeUnusedAssets()																-> std::size_t{
+		const auto mesh_referenced = [this](RenderMeshHandle handle) {
+			return std::ranges::any_of(instances_, [handle](const RenderInstance &instance) { return instance.mesh == handle; });
+		};
+		const auto material_referenced = [this](RenderMaterialHandle handle) {
+			return std::ranges::any_of(instances_, [handle](const RenderInstance &instance) { return instance.material == handle; });
+		};
+
+		const auto mesh_count = meshes_.size();
+		const auto material_count = materials_.size();
+		auto unused_meshes = std::ranges::remove_if(meshes_, [&](const RenderMesh &mesh) { return !mesh_referenced(mesh.handle); });
+		for (auto current = unused_meshes.begin(); current != meshes_.end();) { current = meshes_.erase(current); }
+		auto unused_materials = std::ranges::remove_if(materials_, [&](const RenderMaterial &material) {
+			return !material_referenced(material.handle);
+		});
+		for (auto current = unused_materials.begin(); current != materials_.end();) { current = materials_.erase(current); }
+		return (mesh_count - meshes_.size()) + (material_count - materials_.size());
+	}
+
 	/// @brief Finds a mesh by handle.
 	inline const RenderMesh *RenderScene::findMesh(RenderMeshHandle handle) const {
 		const auto found = std::ranges::find(meshes_, handle, &RenderMesh::handle);
@@ -454,6 +520,12 @@ namespace vve::simple {
 	inline const RenderMaterial *RenderScene::findMaterial(RenderMaterialHandle handle) const {
 		const auto found = std::ranges::find(materials_, handle, &RenderMaterial::handle);
 		return found == materials_.end() ? nullptr : std::addressof(*found);
+	}
+
+	/// @brief Finds an instance by handle.
+	inline RenderInstance *RenderScene::findInstance(RenderInstanceHandle handle) {
+		const auto found = std::ranges::find(instances_, handle, &RenderInstance::handle);
+		return found == instances_.end() ? nullptr : std::addressof(*found);
 	}
 
 	/// @brief Finds an instance by handle.
@@ -633,8 +705,110 @@ namespace vve::simple {
 		return function == nullptr ? std::unexpected(Error::missing_object) : std::expected<ObjectName, Error>{function->name};
 	}
 
+	/// @brief Mints a public render-object handle for one internal scene instance.
+	inline auto RenderSystem::registerRenderObject(RenderInstanceHandle instance, std::size_t backend_index)
+		-> RenderObjectHandle{
+		const auto handle = RenderObjectHandle{RenderObjectHandle::counter_bit |
+														  (next_render_object_id_++ & RenderObjectHandle::id_mask)};
+		render_objects_.emplace(handle, std::pair{instance, backend_index});
+		return handle;
+	}
+
+	/// @brief Looks up the internal instance behind a public render-object handle.
+	inline auto RenderSystem::findRenderObject(RenderObjectHandle handle) const
+		-> std::optional<std::pair<RenderInstanceHandle, std::size_t>>{
+		const auto found = render_objects_.find(handle);
+		return found == render_objects_.end() ? std::nullopt :
+														 std::optional<std::pair<RenderInstanceHandle, std::size_t>>{found->second};
+	}
+
+	/// @brief Removes one public render-object mapping.
+	inline auto RenderSystem::eraseRenderObject(RenderObjectHandle handle)								-> void{
+		render_objects_.erase(handle);
+	}
+
+	/// @brief Removes one live render object from the backend scene.
+	inline auto RenderSystem::removeObject(RenderObjectHandle handle)										-> std::expected<void, Error>{
+		const auto object = findRenderObject(handle);
+		if (!object || scene_.findInstance(object->first) == nullptr ||
+			 object->second >= forward().scene.objects.size()) {
+			return std::unexpected(Error::missing_object);
+		}
+
+		forward().scene.objects.erase(forward().scene.objects.begin() + static_cast<std::ptrdiff_t>(object->second));
+		if (!scene_.eraseInstance(object->first)) { return std::unexpected(Error::missing_object); }
+		eraseRenderObject(handle);
+		for (auto &entry : render_objects_) {
+			if (entry.second.second > object->second) { --entry.second.second; }
+		}
+		return {};
+	}
+
+	/// @brief Sets whether one live render object participates in future backend uploads.
+	inline auto RenderSystem::setObjectVisible(RenderObjectHandle handle, bool visible)						-> std::expected<void, Error>{
+		const auto instance = findRenderObject(handle);
+		if (!instance) { return std::unexpected(Error::missing_object); }
+		auto *scene_instance = scene_.findInstance(instance->first);
+		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
+		if (instance->second >= forward().scene.objects.size()) { return std::unexpected(Error::missing_object); }
+		// Keep the CPU scene and renderer-visible backend scene in the same visibility state.
+		scene_instance->visible = visible;
+		forward().scene.objects[instance->second].visible = visible;
+		return {};
+	}
+
+	/// @brief Returns whether one live render object is marked visible.
+	inline auto RenderSystem::objectVisible(RenderObjectHandle handle) const								-> std::expected<bool, Error>{
+		const auto instance = findRenderObject(handle);
+		if (!instance) { return std::unexpected(Error::missing_object); }
+		const auto *scene_instance = scene_.findInstance(instance->first);
+		return scene_instance == nullptr ? std::unexpected(Error::missing_object) :
+													 std::expected<bool, Error>{scene_instance->visible};
+	}
+
+	/// @brief Sets the source transform for one live render object.
+	inline auto RenderSystem::setObjectTransform(RenderObjectHandle handle, Transform transform)			-> std::expected<void, Error>{
+		const auto instance = findRenderObject(handle);
+		if (!instance) { return std::unexpected(Error::missing_object); }
+		auto *scene_instance = scene_.findInstance(instance->first);
+		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
+		if (instance->second >= forward().scene.objects.size()) { return std::unexpected(Error::missing_object); }
+		// Keep the CPU scene and renderer-visible backend scene in the same world transform.
+		scene_instance->local_transform = transform;
+		scene_instance->world_transform = detail::modelMatrix(transform);
+		forward().scene.objects[instance->second].model = scene_instance->world_transform;
+		return {};
+	}
+
+	/// @brief Returns the source transform for one live render object.
+	inline auto RenderSystem::objectTransform(RenderObjectHandle handle) const							-> std::expected<Transform, Error>{
+		const auto instance = findRenderObject(handle);
+		if (!instance) { return std::unexpected(Error::missing_object); }
+		const auto *scene_instance = scene_.findInstance(instance->first);
+		return scene_instance == nullptr ? std::unexpected(Error::missing_object) :
+													 std::expected<Transform, Error>{scene_instance->local_transform};
+	}
+
+	/// @brief Removes a loaded backend scene only when no public render objects are still live.
+	inline auto RenderSystem::removeScene(SceneHandle handle)											-> std::expected<void, Error>{
+		const auto found = scenes_.find(handle);
+		if (!handle.valid() || found == scenes_.end()) { return std::unexpected(Error::missing_object); }
+		if (!render_objects_.empty()) { return std::unexpected(Error::invalid_argument); }	// Live objects keep scene ownership explicit.
+		scenes_.erase(found);
+		if (active_scene_ == handle) {
+			active_scene_.reset();
+			forward().clearScene();
+		}
+		return {};
+	}
+
+	/// @brief Removes CPU render assets that are not referenced by live instances.
+	inline auto RenderSystem::purgeUnusedAssets()																-> std::size_t{
+		return scene_.purgeUnusedAssets();
+	}
+
 	/// @brief Mirrors one facade scene instance into the backend scene that the renderer uploads.
-	inline auto RenderSystem::appendBackendObject(RenderInstanceHandle instance_handle)					-> std::expected<void, Error>{
+	inline auto RenderSystem::appendBackendObject(RenderInstanceHandle instance_handle)					-> std::expected<std::size_t, Error>{
 		const auto *instance = scene_.findInstance(instance_handle);
 		if (instance == nullptr) { return std::unexpected(Error::missing_object); }
 		const auto *mesh = scene_.findMesh(instance->mesh);
@@ -653,38 +827,43 @@ namespace vve::simple {
 		}
 		for (const auto index : mesh->indices) { backend_mesh.indices.push_back(index); }
 
-		auto model = translate(identityMat4(), instance->local_transform.translation.value);
-		model = scale(model, instance->local_transform.scale.value);
+		auto model = detail::modelMatrix(instance->local_transform);
 		const auto use_texture = !material->base_color_texture_source.empty();
 		std::visit([&](auto &renderer) {
 			renderer.appendObject(std::move(backend_mesh), model,
 										 use_texture ? std::optional<std::string>{material->base_color_texture_source.string()} :
 														 std::nullopt);
 		}, renderer_);
-		return {};
+		if (forward().scene.objects.empty()) { return std::unexpected(Error::missing_object); }
+		return forward().scene.objects.size() - 1U;
 	}
 
-	/// @brief Adds a plane mesh, material, and instance to the CPU scene.
-	inline auto RenderSystem::addPlane(Vec2 half_extent, LinearColor color, Transform transform)	-> std::expected<void, Error>{
+	/// @brief Adds a plane mesh, material, and public object handle to the CPU scene.
+	inline auto RenderSystem::addPlane(Vec2 half_extent, LinearColor color, Transform transform)
+		-> std::expected<RenderObjectHandle, Error>{
 		const auto material = scene_.addMaterial(RenderMaterial{.base_color = color});
 		const auto mesh = scene_.addPlaneMesh(half_extent);
 		auto instance = scene_.addInstance(mesh, material, transform);
 		if (!instance) { return std::unexpected(instance.error()); }
-		return appendBackendObject(*instance);
+		const auto backend_index = appendBackendObject(*instance);
+		if (!backend_index) { return std::unexpected(backend_index.error()); }
+		return registerRenderObject(*instance, *backend_index);
 	}
 
-	/// @brief Adds a cuboid mesh, material, and instance to the CPU scene.
-	inline std::expected<void, Error>
-	RenderSystem::addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color, Transform transform) {
+	/// @brief Adds a cuboid mesh, material, and public object handle to the CPU scene.
+	inline auto RenderSystem::addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color, Transform transform)
+		-> std::expected<RenderObjectHandle, Error>{
 		const auto material = scene_.addMaterial(RenderMaterial{.base_color = color});
 		const auto mesh = scene_.addCuboidMesh(minimum, maximum);
 		auto instance = scene_.addInstance(mesh, material, transform);
 		if (!instance) { return std::unexpected(instance.error()); }
-		return appendBackendObject(*instance);
+		const auto backend_index = appendBackendObject(*instance);
+		if (!backend_index) { return std::unexpected(backend_index.error()); }
+		return registerRenderObject(*instance, *backend_index);
 	}
 
-	/// @brief Adds a cuboid that requests the backend scene base-color texture.
-	inline std::expected<void, Error>
+	/// @brief Adds a textured cuboid and returns its public render-object handle.
+	inline std::expected<RenderObjectHandle, Error>
 	RenderSystem::addTexturedCuboid(Vec3 minimum, Vec3 maximum, std::filesystem::path base_color_texture,
 											  Transform transform) {
 		if (base_color_texture.empty()) { return std::unexpected(Error::io_error); }
@@ -697,11 +876,14 @@ namespace vve::simple {
 		const auto mesh = scene_.addCuboidMesh(minimum, maximum);
 		auto instance = scene_.addInstance(mesh, material, transform);
 		if (!instance) { return std::unexpected(instance.error()); }
-		return appendBackendObject(*instance);
+		const auto backend_index = appendBackendObject(*instance);
+		if (!backend_index) { return std::unexpected(backend_index.error()); }
+		return registerRenderObject(*instance, *backend_index);
 	}
 
 	inline void RenderSystem::clearScene() {
 		scene_.clear();
+		render_objects_.clear();
 		forward().scene.objects.clear();
 		forward().scene.baseColorTexture.reset();
 	}
@@ -866,12 +1048,16 @@ namespace vve::simple {
 													 .intensity = intensity, .range = range, .ambient = ambient, .cone = cone});
 	}
 
-	inline auto RenderSystem::loadScene(Scene scene)																-> void{
+	inline auto RenderSystem::loadScene(Scene scene)																-> SceneHandle{
 		if (scene.directionalLights.size() > kMaxDirectionalLights) { scene.directionalLights.resize(kMaxDirectionalLights); }
 		if (!scene.directionalLights.empty()) { scene.directionalLight = scene.directionalLights.front(); }	// Forward renderer still consumes the first directional light only.
 		if (scene.spotLights.size() > kMaxShadowedSpotLights) { scene.spotLights.resize(kMaxShadowedSpotLights); }
 		if (!scene.spotLights.empty()) { scene.spotLight = scene.spotLights.front(); }				// Forward renderer still consumes the first spot light only.
+		const auto handle = makeCounterHandle<SceneHandle>();
+		scenes_[handle] = scene;
+		active_scene_ = handle;
 		forward().loadScene(std::move(scene));
+		return handle;
 	}
 
 	inline auto RenderSystem::setGuiSystem(void *gui)																-> void{
