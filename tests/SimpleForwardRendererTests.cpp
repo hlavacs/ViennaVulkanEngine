@@ -266,14 +266,16 @@ namespace {
 
 /// @brief Checks only the public render-object lifetime facade on a live render system.
 [[nodiscard]] bool hasPublicRenderObjectLifetime() {
-   auto engine = vve::makeEngine(vve::ApplicationName{"simple-forward-renderer-lifetime-tests"},
-                                 vve::MaxFrames{.value = vve::FrameCount{.value = 1}},
-                                 vve::WindowSetups{vve::WindowSetup{}
-                                                       .id("main")
-                                                       .title("simple-forward-renderer-lifetime-tests")
-                                                       .extent(vve::PixelExtent{.width = 64, .height = 64})
-                                                       .renderer(vve::RendererId{.value = "forward"})
-                                                       .visible(false)});
+   auto engine = vve::EngineBuilder<>{}
+                    .applicationName("simple-forward-renderer-lifetime-tests")
+                    .maxFrames(vve::MaxFrames{.value = vve::FrameCount{.value = 1}})
+                    .addWindow(vve::WindowSetup{}
+                                  .id("main")
+                                  .title("simple-forward-renderer-lifetime-tests")
+                                  .extent(vve::PixelExtent{.width = 64, .height = 64})
+                                  .renderer(vve::RendererId{.value = "forward"})
+                                  .visible(false))
+                    .build();
    if (!engine.init()) { return false; }
 
    auto world = engine.world();
@@ -509,7 +511,7 @@ int main() {
       return 22;
    }
 
-   auto engine = vve::simple::makeEngine(
+   auto engine = vve::simple::Engine{
       vve::ApplicationName{"simple-forward-renderer-tests"},
       vve::MaxFrames{.value = vve::FrameCount{.value = 1}},
       vve::WindowSetups{vve::WindowSetup{}
@@ -517,7 +519,7 @@ int main() {
                            .title("simple-forward-renderer-tests")
                            .extent(vve::PixelExtent{.width = 64, .height = 64})
                            .renderer(vve::RendererId{.value = "forward"})
-                           .visible(false)});
+                           .visible(false)}};
    if (!engine.init()) { return 1; }
 
    auto &render_system = engine.renderSystem();

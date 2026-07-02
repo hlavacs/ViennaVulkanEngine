@@ -40,7 +40,7 @@ bool erasesEntityAndAllComponents(vve::ECS &ecs) {
 } // namespace
 
 int main() {
-   auto engine = vve::makeEngine(vve::ApplicationName{"ecs-tests"});
+   auto engine = vve::EngineBuilder<>{}.applicationName("ecs-tests").build();
    auto &ecs = engine.world().get<vve::ECS>();
 
    const auto entity = ecs.create();

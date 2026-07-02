@@ -33,13 +33,14 @@ int main(int argc, char **argv) {
 	std::cerr << std::unitbuf;
 	std::cout << "[sponza] engine=" << vve::engineImplementationNamespaceName << '\n';
 
-	auto engine = vve::makeEngine(
-		vve::ApplicationName{"sponza"},
-		vve::WindowSetups{vve::WindowSetup{}
-								.id("main")
-								.title("VVE Sponza")
-								.extent(vve::PixelExtent{.width = 1280, .height = 720})
-								.renderer(vve::RendererId{.value = "forward"})});
+	auto engine = vve::EngineBuilder<>{}
+						 .applicationName("sponza")
+						 .addWindow(vve::WindowSetup{}
+										 .id("main")
+										 .title("VVE Sponza")
+										 .extent(vve::PixelExtent{.width = 1280, .height = 720})
+										 .renderer(vve::RendererId{.value = "forward"}))
+						 .build();
 
 	if (const auto result = engine.init(); !result) {
 		std::cerr << "[sponza] engine init failed: error=" << vve::errorName(result.error()) << '\n';

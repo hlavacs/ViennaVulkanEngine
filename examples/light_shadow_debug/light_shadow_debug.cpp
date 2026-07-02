@@ -129,13 +129,14 @@ int main(int argc, char **argv) {
 	std::cerr << std::unitbuf;
 	std::cout << "[light_shadow_debug] engine=" << vve::engineImplementationNamespaceName << '\n';
 
-	auto engine = vve::makeEngine(
-		vve::ApplicationName{"light_shadow_debug"},
-		vve::WindowSetups{vve::WindowSetup{}
-								.id("main")
-								.title("VVE Simple Light Shadow Debug")
-								.extent(vve::PixelExtent{.width = 960, .height = 540})
-								.renderer(vve::RendererId{.value = "forward"})});
+	auto engine = vve::EngineBuilder<>{}
+						 .applicationName("light_shadow_debug")
+						 .addWindow(vve::WindowSetup{}
+										 .id("main")
+										 .title("VVE Simple Light Shadow Debug")
+										 .extent(vve::PixelExtent{.width = 960, .height = 540})
+										 .renderer(vve::RendererId{.value = "forward"}))
+						 .build();
 
 	if (const auto result = engine.init(); !result) {
 		std::cerr << "[light_shadow_debug] engine init failed: error=" << vve::errorName(result.error()) << '\n';

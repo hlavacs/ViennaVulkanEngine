@@ -1,14 +1,15 @@
 import VEEngine;
 
 int main() {
-   auto engine = vve::makeEngine(
-      vve::ApplicationName{"window-input-tests"},
-      vve::MaxFrames{.value = vve::FrameCount{.value = 1}},
-      vve::WindowSetups{vve::WindowSetup{}
-                           .id("main")
-                           .title("window-input-tests")
-                           .extent(vve::PixelExtent{.width = 64, .height = 64})
-                           .visible(false)});
+   auto engine = vve::EngineBuilder<>{}
+                    .applicationName("window-input-tests")
+                    .maxFrames(vve::MaxFrames{.value = vve::FrameCount{.value = 1}})
+                    .addWindow(vve::WindowSetup{}
+                                  .id("main")
+                                  .title("window-input-tests")
+                                  .extent(vve::PixelExtent{.width = 64, .height = 64})
+                                  .visible(false))
+                    .build();
    auto input = engine.world().get<vve::WindowSystem>().input();
    const auto window = vve::makeHandleForTest<vve::WindowHandle>(77);
 

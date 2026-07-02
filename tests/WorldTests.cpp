@@ -30,20 +30,21 @@ static_assert(!std::constructible_from<vve::World<std::reference_wrapper<Tag *>>
 } // namespace
 
 int main() {
-   auto engine = vve::makeEngine(
-      vve::ApplicationName{"world-tests"},
-      vve::MaxFrames{.value = vve::FrameCount{.value = 1}},
-      vve::WindowSetups{vve::WindowSetup{}
-                           .id("main")
-                           .title("world-tests")
-                           .extent(vve::PixelExtent{.width = 64, .height = 64})
-                           .renderer(vve::RendererId{.value = "forward"})
-                           .visible(false),
-                         vve::WindowSetup{}
-                            .id("tools")
-                            .title("world-tools")
-                            .extent(vve::PixelExtent{.width = 64, .height = 64})
-                            .visible(false)});
+   auto engine = vve::EngineBuilder<>{}
+                    .applicationName("world-tests")
+                    .maxFrames(vve::MaxFrames{.value = vve::FrameCount{.value = 1}})
+                    .windows(vve::WindowSetups{vve::WindowSetup{}
+                                                  .id("main")
+                                                  .title("world-tests")
+                                                  .extent(vve::PixelExtent{.width = 64, .height = 64})
+                                                  .renderer(vve::RendererId{.value = "forward"})
+                                                  .visible(false),
+                                               vve::WindowSetup{}
+                                                  .id("tools")
+                                                  .title("world-tools")
+                                                  .extent(vve::PixelExtent{.width = 64, .height = 64})
+                                                  .visible(false)})
+                    .build();
    if (!engine.init()) { return 1; }
 
    const auto dump_dir = std::filesystem::temp_directory_path() / "vve_world_debug_graphs";

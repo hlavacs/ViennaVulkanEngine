@@ -97,14 +97,15 @@ auto updateWithKey(vve::DefaultCameraController &controller, vve::InputState inp
  * @brief Runs facade camera controller tests with synthetic facade input.
  */
 int main() {
-   auto engine = vve::makeEngine(
-      vve::ApplicationName{"default-camera-controller-tests"},
-      vve::MaxFrames{.value = vve::FrameCount{.value = 1}},
-      vve::WindowSetups{vve::WindowSetup{}
-                           .id("main")
-                           .title("default-camera-controller-tests")
-                           .extent(vve::PixelExtent{.width = 64, .height = 64})
-                           .visible(false)});
+   auto engine = vve::EngineBuilder<>{}
+                    .applicationName("default-camera-controller-tests")
+                    .maxFrames(vve::MaxFrames{.value = vve::FrameCount{.value = 1}})
+                    .addWindow(vve::WindowSetup{}
+                                  .id("main")
+                                  .title("default-camera-controller-tests")
+                                  .extent(vve::PixelExtent{.width = 64, .height = 64})
+                                  .visible(false))
+                    .build();
    auto input = engine.world().get<vve::WindowSystem>().input();
 
    if (const auto result = testMovement(input); result != 0) { return result; }

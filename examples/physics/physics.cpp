@@ -33,13 +33,14 @@ int main(int argc, char **argv) {
 	std::cerr << std::unitbuf;
 	std::cout << "[physics] engine=" << vve::engineImplementationNamespaceName << '\n';
 
-	auto engine = vve::makeEngine(
-		vve::ApplicationName{"physics"},
-		vve::WindowSetups{vve::WindowSetup{}
-								.id("main")
-								.title("VVE Physics")
-								.extent(vve::PixelExtent{.width = 800, .height = 450})
-								.renderer(vve::RendererId{.value = "forward"})});
+	auto engine = vve::EngineBuilder<>{}
+						 .applicationName("physics")
+						 .addWindow(vve::WindowSetup{}
+										 .id("main")
+										 .title("VVE Physics")
+										 .extent(vve::PixelExtent{.width = 800, .height = 450})
+										 .renderer(vve::RendererId{.value = "forward"}))
+						 .build();
 
 	if (const auto result = engine.init(); !result) {
 		std::cerr << "[physics] engine init failed: error=" << vve::errorName(result.error()) << '\n';

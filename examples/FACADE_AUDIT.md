@@ -6,7 +6,7 @@ The official application-facing API is the facade module `VEEngine`, exported fr
 
 Facade source files:
 
-- `src/Engine.ixx`: exports module `VEEngine`; defines `vve::Engine<TSystems...>`, `vve::MakeEngine`, and `vve::makeEngine`.
+- `src/Engine.ixx`: exports module `VEEngine`; defines `vve::Engine<TSystems...>` and `vve::EngineBuilder<TSystems...>`.
 - `src/World.ixx`: exports partition `VEEngine:World`; defines `vve::World<TObjects...>`, `vve::UserSystems<TSystems...>`, and `vve::makeUserSystems`.
 - `src/ECS.ixx`: exports partition `VEEngine:ECS`; defines `vve::BasicECS<TTraits>` and `vve::ECS`.
 - `src/Window.ixx`: exports partition `VEEngine:Window`; defines `vve::WindowSetup`, `vve::WindowSetups`, `vve::InputState`, `vve::Window`, and `vve::WindowSystem`.

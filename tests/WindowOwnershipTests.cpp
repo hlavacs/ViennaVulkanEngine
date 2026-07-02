@@ -36,23 +36,24 @@ int main() {
    std::optional<vve::Entity> frame_main_camera{};
    std::optional<vve::Entity> frame_tools_camera{};
 
-   auto engine = vve::makeEngine(
-      vve::ApplicationName{"window-ownership-tests"},
-      vve::MaxFrames{.value = vve::FrameCount{.value = 1}},
-      vve::WindowSetups{vve::WindowSetup{}
-                           .id("main")
-                           .title("window-ownership-main")
-                           .extent(vve::PixelExtent{.width = 64, .height = 64})
-                           .visible(false),
-                        vve::WindowSetup{}
-                           .id("tools")
-                           .title("window-ownership-tools")
-                           .extent(vve::PixelExtent{.width = 64, .height = 64})
-                           .visible(false)},
-      vve::makeUserSystems(WindowCameraProbe{.updates = &updates,
-                                             .window_count = &window_count,
-                                             .main_camera = &frame_main_camera,
-                                             .tools_camera = &frame_tools_camera}));
+   auto engine = vve::EngineBuilder<WindowCameraProbe>{}
+                    .applicationName("window-ownership-tests")
+                    .maxFrames(vve::MaxFrames{.value = vve::FrameCount{.value = 1}})
+                    .windows(vve::WindowSetups{vve::WindowSetup{}
+                                                  .id("main")
+                                                  .title("window-ownership-main")
+                                                  .extent(vve::PixelExtent{.width = 64, .height = 64})
+                                                  .visible(false),
+                                               vve::WindowSetup{}
+                                                  .id("tools")
+                                                  .title("window-ownership-tools")
+                                                  .extent(vve::PixelExtent{.width = 64, .height = 64})
+                                                  .visible(false)})
+                    .userSystems(vve::makeUserSystems(WindowCameraProbe{.updates = &updates,
+                                                                        .window_count = &window_count,
+                                                                        .main_camera = &frame_main_camera,
+                                                                        .tools_camera = &frame_tools_camera}))
+                    .build();
 
    if (!engine.init()) { return 1; }
 

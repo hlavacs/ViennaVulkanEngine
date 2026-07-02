@@ -219,18 +219,6 @@ export namespace vve {
 
 	} // namespace detail
 
-	struct MakeEngine {
-		template <typename... TOptions> [[nodiscard]] auto operator()(TOptions &&...options) const;
-	};														///< Callable facade engine factory.
-
-	template <typename... TOptions> auto MakeEngine::operator()(TOptions &&...options) const {
-		using TUserSystems = typename detail::FindUserSystemsOption<UserSystems<>, TOptions...>::type;
-		using TEngine = typename detail::EngineTypeFromUserSystems<TUserSystems>::type;
-		return TEngine(std::forward<TOptions>(options)...);
-	}
-
-	inline constexpr MakeEngine makeEngine{};	///< Facade engine factory.
-
 	template <typename... TSystems> class EngineBuilder {
 	public:
 		inline EngineBuilder() = default;
@@ -260,8 +248,8 @@ export namespace vve {
 			return *this;
 		}
 		[[nodiscard]] inline auto build() const {
-			if (windows_configured_) { return makeEngine(application_name_, max_frames_, windows_, user_systems_); }
-			return makeEngine(application_name_, max_frames_, user_systems_);
+			if (windows_configured_) { return Engine<TSystems...>{application_name_, max_frames_, windows_, user_systems_}; }
+			return Engine<TSystems...>{application_name_, max_frames_, user_systems_};
 		}
 
 	private:

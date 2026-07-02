@@ -61,20 +61,21 @@ int main() {
    std::size_t last_window_count = 0;
    int shared_value = 0;
 
-   auto engine = vve::makeEngine(
-      vve::ApplicationName{"user-system-tests"},
-      vve::MaxFrames{.value = vve::FrameCount{.value = 2}},
-      vve::WindowSetups{vve::WindowSetup{}
-                           .id("main")
-                           .title("user-system-tests")
-                           .extent(vve::PixelExtent{.width = 64, .height = 64})
-                           .visible(false)},
-      vve::makeUserSystems(SharedSystem{.value = 42},
-                            CountingSystem{.init_count = &init_count,
-                                           .update_count = &update_count,
-                                           .last_frame = &last_frame,
-                                           .last_window_count = &last_window_count,
-                                           .shared_value = &shared_value}));
+   auto engine = vve::EngineBuilder<SharedSystem, CountingSystem>{}
+                    .applicationName("user-system-tests")
+                    .maxFrames(vve::MaxFrames{.value = vve::FrameCount{.value = 2}})
+                    .addWindow(vve::WindowSetup{}
+                                  .id("main")
+                                  .title("user-system-tests")
+                                  .extent(vve::PixelExtent{.width = 64, .height = 64})
+                                  .visible(false))
+                    .userSystems(vve::makeUserSystems(SharedSystem{.value = 42},
+                                                       CountingSystem{.init_count = &init_count,
+                                                                      .update_count = &update_count,
+                                                                      .last_frame = &last_frame,
+                                                                      .last_window_count = &last_window_count,
+                                                                      .shared_value = &shared_value}))
+                    .build();
 
    if (!engine.init()) { return 1; }
    auto world = engine.world();

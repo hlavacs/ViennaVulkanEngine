@@ -252,11 +252,6 @@ export namespace vve::v4 {
       return {};
    }
 
-   /// @brief Builds a v4 engine from typed options in any order.
-   template <typename... TOptions> [[nodiscard]] auto makeEngine(TOptions &&...options) {
-      return Engine{std::forward<TOptions>(options)...};
-   }
-
    /// @brief Converts a window id into a compact filesystem-safe graph dump stem.
    inline std::string Engine::graphFileStem(std::string_view text) {
       std::string result{};

@@ -45,13 +45,14 @@ int main(int argc, char **argv) {
 	std::cerr << std::unitbuf;
 	std::println("simple_forward_demo engine={}", vve::engineImplementationNamespaceName);
 
-	auto engine = vve::makeEngine(
-		vve::ApplicationName{"simple_forward_demo"},
-		vve::WindowSetups{vve::WindowSetup{}
-								.id("main")
-								.title("VVE Simple Forward Demo")
-								.extent(vve::PixelExtent{.width = 800, .height = 600})
-								.renderer(vve::RendererId{.value = "forward"})});
+	auto engine = vve::EngineBuilder<>{}
+						 .applicationName("simple_forward_demo")
+						 .addWindow(vve::WindowSetup{}
+										 .id("main")
+										 .title("VVE Simple Forward Demo")
+										 .extent(vve::PixelExtent{.width = 800, .height = 600})
+										 .renderer(vve::RendererId{.value = "forward"}))
+						 .build();
 
 	if (const auto result = engine.init(); !result) {
 		std::cerr << "simple_forward_demo failed: stage=engine init, error=" << vve::errorName(result.error()) << '\n';

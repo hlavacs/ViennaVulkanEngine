@@ -257,7 +257,7 @@ struct CountingSystem {
 [[nodiscard]] int testECS() {
    using namespace vve;
 
-   auto engine = makeEngine(ApplicationName{"ecs-test"});
+   auto engine = EngineBuilder<>{}.applicationName("ecs-test").build();
    auto &ecs = engine.world().get<vve::ECS>();
    const auto entity = ecs.create();
    if (!entity.valid() || !entity.isCounter() || !ecs.exists(entity)) {
@@ -297,7 +297,7 @@ struct CountingSystem {
    using namespace vve;
 
    const auto window = makeHandleForTest<WindowHandle>(200);
-   auto input_engine = makeEngine(ApplicationName{"input-test"});
+   auto input_engine = EngineBuilder<>{}.applicationName("input-test").build();
    auto input = input_engine.world().get<vve::WindowSystem>().input();
    input.pressKey('W');
    if (!input.isKeyDown('W') || !input.wasKeyPressed('W')) {
@@ -330,7 +330,7 @@ struct CountingSystem {
       return 63;
    }
 
-   auto engine = makeEngine(ApplicationName{"world-test"});
+   auto engine = EngineBuilder<>{}.applicationName("world-test").build();
    auto world = engine.world();
    auto &ecs = world.get<vve::ECS>();
    const auto ecs_entity = ecs.create();
@@ -366,7 +366,7 @@ struct CountingSystem {
            << "f 1 2 3\n";
    }
 
-   auto engine = makeEngine(ApplicationName{"asset-import"});
+   auto engine = EngineBuilder<>{}.applicationName("asset-import").build();
    auto assets = engine.world().get<vve::AssetSystem>();
    const auto scene_handle = assets.loadScene(path);
    std::error_code remove_error{};
@@ -485,23 +485,25 @@ struct CountingSystem {
    int init_count = 0;
    int update_count = 0;
    std::uint64_t last_frame = 99;
-   auto engine = makeEngine(ApplicationName{"test"},
-                            MaxFrames{.value = FrameCount{.value = 2}},
-                            WindowSetups{WindowSetup{}
-                                            .id("main")
-                                            .title("hidden")
-                                            .extent(PixelExtent{.width = 64, .height = 64})
-                                            .position(20, 20)
-                                            .visible(false),
-                                         WindowSetup{}
-                                            .id("tools")
-                                            .title("hidden-tools")
-                                            .extent(PixelExtent{.width = 64, .height = 64})
-                                            .position(100, 20)
-                                            .visible(false)},
-                            makeUserSystems(CountingSystem{.init_count = &init_count,
-                                                           .update_count = &update_count,
-                                                           .last_frame = &last_frame}));
+   auto engine = EngineBuilder<CountingSystem>{}
+                    .applicationName("test")
+                    .maxFrames(MaxFrames{.value = FrameCount{.value = 2}})
+                    .windows(WindowSetups{WindowSetup{}
+                                             .id("main")
+                                             .title("hidden")
+                                             .extent(PixelExtent{.width = 64, .height = 64})
+                                             .position(20, 20)
+                                             .visible(false),
+                                          WindowSetup{}
+                                             .id("tools")
+                                             .title("hidden-tools")
+                                             .extent(PixelExtent{.width = 64, .height = 64})
+                                             .position(100, 20)
+                                             .visible(false)})
+                    .userSystems(makeUserSystems(CountingSystem{.init_count = &init_count,
+                                                                .update_count = &update_count,
+                                                                .last_frame = &last_frame}))
+                    .build();
    if (engine.versionMajor() != expectedEngineMajor() || engine.versionName() != engineImplementationNamespaceName) {
       return 40;
    }
@@ -545,7 +547,7 @@ struct CountingSystem {
       return 80;
    }
 
-   auto engine = makeEngine(ApplicationName{"facade-test"}, MaxFrames{});
+   auto engine = EngineBuilder<>{}.applicationName("facade-test").maxFrames(MaxFrames{}).build();
    if (engine.versionMajor() != expectedEngineMajor()) {
       return 81;
    }
