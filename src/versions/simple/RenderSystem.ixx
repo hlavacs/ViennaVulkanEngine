@@ -54,6 +54,18 @@ namespace vve::simple::detail {
 		return scale(model, transform.scale.value);
 	}
 
+	/// @brief Composes a child TRS transform below a parent TRS transform.
+	[[nodiscard]] inline auto composeTransform(Transform parent, Transform child) -> Transform {
+		const auto child_origin = multiply(modelMatrix(parent), Vec4{child.translation.value.x,
+																					 child.translation.value.y,
+																					 child.translation.value.z, one()});
+		return Transform{.translation = Position{.value = Vec3{child_origin.x, child_origin.y, child_origin.z}},
+							  .rotation = Rotation{.value = multiply(parent.rotation.value, child.rotation.value)},
+							  .scale = Scale{.value = Vec3{parent.scale.value.x * child.scale.value.x,
+																	 parent.scale.value.y * child.scale.value.y,
+																	 parent.scale.value.z * child.scale.value.z}}};
+	}
+
 } // namespace vve::simple::detail
 
 export namespace vve::simple {
@@ -69,6 +81,25 @@ export namespace vve::simple {
 	using RenderInstanceHandle = TypedHandle<RenderInstanceHandleTag>;								///< simple render instance handle.
 	using RenderResourceHandle = TypedHandle<RenderResourceHandleTag>;								///< simple render resource handle.
 	using RenderFunctionHandle = TypedHandle<RenderFunctionHandleTag>;								///< simple render function handle.
+
+	/// @brief Non-owning read callbacks for imported asset scenes owned by the engine.
+	struct ImportedAssetReadAccess {
+		std::function<std::expected<Vector<NodeHandle>, Error>(SceneHandle)> scene_nodes{};						///< Lists scene nodes.
+		std::function<std::expected<NodeHandle, Error>(SceneHandle)> scene_root_node{};							///< Returns the root node.
+		std::function<std::expected<Vector<NodeHandle>, Error>(SceneHandle, NodeHandle)> scene_node_children{};	///< Lists child nodes.
+		std::function<std::expected<Transform, Error>(NodeHandle)> node_transform{};								///< Returns local transform.
+		std::function<std::expected<Vector<MeshHandle>, Error>(NodeHandle)> node_meshes{};						///< Lists meshes attached to a node.
+		std::function<std::expected<MaterialHandle, Error>(MeshHandle)> mesh_material{};							///< Returns the mesh material.
+		std::function<std::expected<Vector<TextureHandle>, Error>(MaterialHandle)> material_textures{};		///< Lists material textures.
+		std::function<std::expected<Vector<LightHandle>, Error>(SceneHandle)> scene_lights{};					///< Lists scene lights.
+		std::function<std::expected<LightDescriptor, Error>(LightHandle)> light_data{};							///< Returns imported light data.
+		std::function<std::expected<Vector<CameraHandle>, Error>(SceneHandle)> scene_cameras{};				///< Lists scene cameras.
+		std::function<std::expected<CameraDescriptor, Error>(CameraHandle)> camera_data{};						///< Returns imported camera data.
+		std::function<std::expected<Vector<Vec3>, Error>(MeshHandle)> mesh_positions{};							///< Returns mesh positions.
+		std::function<std::expected<Vector<Vec3>, Error>(MeshHandle)> mesh_normals{};								///< Returns mesh normals.
+		std::function<std::expected<Vector<Vec2>, Error>(MeshHandle)> mesh_texcoords{};							///< Returns mesh texture coordinates.
+		std::function<std::expected<Vector<std::uint32_t>, Error>(MeshHandle)> mesh_indices{};					///< Returns mesh indices.
+	};
 
 	/// @brief Coarse render resource categories used by the stub renderer registry.
 	enum class RenderResourceKind : std::uint8_t {
@@ -175,6 +206,7 @@ export namespace vve::simple {
 		addInstance(RenderMeshHandle mesh, RenderMaterialHandle material, Transform local = {},
 						Mat4 world = identityMat4());
 		auto setCamera(RenderCamera camera)																							-> void;
+		auto addImportedCamera(CameraDescriptor camera)																		-> void;
 		auto setDirectionalLight(RenderDirectionalLight light)																-> void;
 		auto addDirectionalLight(RenderDirectionalLight light)																-> void;
 		auto setPointLight(RenderPointLight light)																				-> void;
@@ -197,8 +229,10 @@ export namespace vve::simple {
 		[[nodiscard]] const std::optional<RenderDirectionalLight> &directionalLight() const;
 		[[nodiscard]] const std::vector<RenderDirectionalLight> &directionalLights() const;
 		[[nodiscard]] const std::optional<RenderPointLight> &pointLight() const;
+		[[nodiscard]] const std::vector<RenderPointLight> &pointLights() const;
 		[[nodiscard]] std::optional<RenderSpotLight> spotLight() const;
 		[[nodiscard]] const std::vector<RenderSpotLight> &spotLights() const;
+		[[nodiscard]] const std::vector<RenderCamera> &importedCameras() const;
 		[[nodiscard]] const Vector<RenderInstance> &instances() const;
 
 	private:
@@ -214,6 +248,7 @@ export namespace vve::simple {
 		std::optional<RenderPointLight> point_light_{};							///< Optional active point light.
 		std::vector<RenderPointLight> point_lights_{};						///< Capped active point lights.
 		std::vector<RenderSpotLight> spot_lights_{};							///< Capped active spot lights.
+		std::vector<RenderCamera> imported_cameras_{};						///< Cameras imported for render-scene inspection.
 	};
 
 	/// @brief Renderer descriptor used only for graph construction in the simple stub.
@@ -228,6 +263,8 @@ export namespace vve::simple {
 	/// @brief simple render facade storing resources and frame counters without GPU work.
 	class RenderSystem {
 	public:
+		RenderSystem() = default;
+		explicit RenderSystem(ImportedAssetReadAccess imported_assets);
 		[[nodiscard]] auto createRenderer(RendererId id) const																-> std::expected<RendererDescriptor, Error>;
 		[[nodiscard]] auto buildRenderGraph(const RendererDescriptor &renderer) const									-> std::expected<RenderGraph, Error>;
 		[[nodiscard]] auto buildRenderGraph(std::span<const RenderPassContract> passes) const						-> std::expected<RenderGraph, Error>;
@@ -254,6 +291,11 @@ export namespace vve::simple {
 		[[nodiscard]] auto objectVisible(RenderObjectHandle handle) const											-> std::expected<bool, Error>;
 		[[nodiscard]] auto setObjectTransform(RenderObjectHandle handle, Transform transform)				-> std::expected<void, Error>;
 		[[nodiscard]] auto objectTransform(RenderObjectHandle handle) const										-> std::expected<Transform, Error>;
+		[[nodiscard]] auto sceneInstanceObjects(RenderSceneInstanceHandle instance) const			-> std::expected<Vector<RenderObjectHandle>, Error>;
+		[[nodiscard]] auto objectSourceScene(RenderObjectHandle handle) const							-> std::expected<RenderSceneInstanceHandle, Error>;
+		[[nodiscard]] auto objectSourceNode(RenderObjectHandle handle) const							-> std::expected<NodeHandle, Error>;
+		[[nodiscard]] auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {})	-> std::expected<RenderSceneInstanceHandle, Error>;
+		[[nodiscard]] auto removeSceneInstance(RenderSceneInstanceHandle instance)				-> std::expected<void, Error>;
 		[[nodiscard]] auto removeScene(SceneHandle handle)														-> std::expected<void, Error>;
 		[[nodiscard]] auto purgeUnusedAssets()																				-> std::size_t;
 		auto clearScene()																													-> void;
@@ -288,6 +330,10 @@ export namespace vve::simple {
 		[[nodiscard]] auto initialized() const																					-> bool;
 		[[nodiscard]] auto sceneMeshCount() const																					-> std::size_t;
 		[[nodiscard]] auto sceneMaterialCount() const																			-> std::size_t;
+		[[nodiscard]] auto sceneDirectionalLightCount() const																-> std::size_t;
+		[[nodiscard]] auto scenePointLightCount() const																		-> std::size_t;
+		[[nodiscard]] auto sceneSpotLightCount() const																			-> std::size_t;
+		[[nodiscard]] auto sceneCameraCount() const																				-> std::size_t;
 		[[nodiscard]] auto sceneInstanceCount() const																			-> std::size_t;
 		[[nodiscard]] auto sceneVertexCount() const																				-> std::size_t;
 		[[nodiscard]] auto sceneIndexCount() const																				-> std::size_t;
@@ -327,20 +373,38 @@ export namespace vve::simple {
 		[[nodiscard]] auto findRenderObject(RenderObjectHandle handle) const
 			-> std::optional<std::pair<RenderInstanceHandle, std::size_t>>;
 		auto eraseRenderObject(RenderObjectHandle handle)														-> void;
+		[[nodiscard]] auto importedSceneNodes(SceneHandle scene) const									-> Vector<NodeHandle>;
+		[[nodiscard]] auto importedSceneWorldTransforms(SceneHandle scene) const
+			-> Vector<std::tuple<NodeHandle, Transform, Mat4>>;
+		[[nodiscard]] auto importedSceneMeshInstances(SceneHandle scene) const
+			-> Vector<std::tuple<NodeHandle, MeshHandle, MaterialHandle, Transform, Mat4>>;
+		[[nodiscard]] auto importedMeshGeometry(MeshHandle mesh) const
+			-> std::optional<std::tuple<Vector<Vec3>, Vector<Vec3>, Vector<Vec2>, Vector<std::uint32_t>>>;
+		[[nodiscard]] auto acquireRenderMesh(MeshHandle imported_mesh)									-> std::optional<RenderMeshHandle>;
+		[[nodiscard]] auto acquireRenderMaterial(MaterialHandle imported_material)						-> RenderMaterialHandle;
+		[[nodiscard]] auto importedMaterialTextures(MaterialHandle material) const					-> std::optional<Vector<TextureHandle>>;
 		[[nodiscard]] auto appendBackendObject(RenderInstanceHandle instance)										-> std::expected<std::size_t, Error>;
 		[[nodiscard]] auto forward()																					-> ForwardRenderer &;
 		[[nodiscard]] auto forward() const																				-> const ForwardRenderer &;
 
 		RenderScene scene_{};															///< Active CPU render scene.
 		SelectedRenderer renderer_{};													///< Selected renderer backend.
+		ImportedAssetReadAccess imported_assets_{};								///< Borrowed asset-scene queries.
 		void *guiSystem_{nullptr};													///< Non-owning, type-erased GUI system pointer for later renderer wiring.
 		Vector<RenderResource> resources_{};										///< Generic render resource registry.
 		Vector<RenderFunction> functions_{};										///< Generic render function registry.
+		std::unordered_map<MeshHandle, RenderMeshHandle, HandleHash<MeshHandle>> imported_render_meshes_{};	///< Imported mesh cache.
+		std::unordered_map<MaterialHandle, RenderMaterialHandle, HandleHash<MaterialHandle>> imported_render_materials_{};	///< Imported material cache.
 		std::unordered_map<RenderObjectHandle, std::pair<RenderInstanceHandle, std::size_t>, HandleHash<RenderObjectHandle>>
 			render_objects_{};														///< Public render-object to internal instance map.
+		std::unordered_map<RenderObjectHandle, std::pair<RenderSceneInstanceHandle, NodeHandle>, HandleHash<RenderObjectHandle>>
+			object_sources_{};														///< Public render-object source scene and node map.
 		std::map<SceneHandle, Scene> scenes_{};									///< Loaded backend scenes by public scene handle.
+		std::map<RenderSceneInstanceHandle, Vector<RenderObjectHandle>> scene_instances_{};	///< Render objects created per scene instance.
+		std::map<RenderSceneInstanceHandle, SceneHandle> scene_instance_sources_{};	///< Asset scene used to create each scene instance.
 		std::optional<SceneHandle> active_scene_{};								///< Scene currently mirrored into the backend.
 		std::uint64_t next_render_object_id_{1};								///< Next public render-object id.
+		std::uint64_t next_scene_instance_id_{1};								///< Next public scene-instance id.
 		std::uint64_t rendered_frames_{0};											///< Number of accepted frame calls.
 		std::size_t last_window_count_{0};											///< Last non-closed window count.
 		bool initialized_{false};														///< True after the concrete renderer is initialized.
@@ -349,6 +413,10 @@ export namespace vve::simple {
 } // namespace vve::simple
 
 namespace vve::simple {
+
+	/// @brief Stores read access to imported asset-scene descriptors owned by the engine.
+	inline RenderSystem::RenderSystem(ImportedAssetReadAccess imported_assets)
+		: imported_assets_{std::move(imported_assets)} {}
 
 	/// @brief Adds one quad face to a CPU mesh.
 	inline void RenderScene::appendFace(Vector<RenderVertex> &vertices, Vector<std::uint32_t> &indices,
@@ -432,6 +500,17 @@ namespace vve::simple {
 	/// @brief Stores the active camera resource.
 	inline void RenderScene::setCamera(RenderCamera camera) { camera_ = std::move(camera); }
 
+	/// @brief Appends one imported camera for render-scene inspection.
+	inline void RenderScene::addImportedCamera(CameraDescriptor camera) {
+		const auto target = math::add(camera.position.value, camera.direction.value);
+		imported_cameras_.push_back(RenderCamera{.camera = Camera{.position = camera.position,
+																				 .forward = camera.direction,
+																				 .view_transform = math::lookAt(camera.position.value, target, camera.up.value),
+																				 .fov_y = camera.fov,
+																				 .clip = ClipPlanes{.near_plane = camera.near_clip, .far_plane = camera.far_clip}},
+															 .target_extent = PixelExtent{.width = 1, .height = 1}});
+	}
+
 	/// @brief Replaces the active directional-light list with one first-light entry.
 	inline void RenderScene::setDirectionalLight(RenderDirectionalLight light) {
 		directional_lights_.clear();
@@ -480,6 +559,7 @@ namespace vve::simple {
 		point_light_.reset();
 		point_lights_.clear();
 		spot_lights_.clear();
+		imported_cameras_.clear();
 	}
 
 	/// @brief Removes one CPU draw item by stable handle.
@@ -556,10 +636,12 @@ namespace vve::simple {
 	inline const std::optional<RenderDirectionalLight> &RenderScene::directionalLight() const { return light_; }
 	inline const std::vector<RenderDirectionalLight> &RenderScene::directionalLights() const { return directional_lights_; }
 	inline const std::optional<RenderPointLight> &RenderScene::pointLight() const { return point_light_; }
+	inline const std::vector<RenderPointLight> &RenderScene::pointLights() const { return point_lights_; }
 	inline std::optional<RenderSpotLight> RenderScene::spotLight() const {
 		return spot_lights_.empty() ? std::nullopt : std::optional<RenderSpotLight>{spot_lights_.front()};
 	}
 	inline const std::vector<RenderSpotLight> &RenderScene::spotLights() const { return spot_lights_; }
+	inline const std::vector<RenderCamera> &RenderScene::importedCameras() const { return imported_cameras_; }
 	inline const Vector<RenderInstance> &RenderScene::instances() const { return instances_; }
 
 	/// @brief Accepts the historical forward id and the new stub id.
@@ -727,6 +809,152 @@ namespace vve::simple {
 		render_objects_.erase(handle);
 	}
 
+	/// @brief Returns imported node handles for a loaded asset scene without exposing catalog internals.
+	inline auto RenderSystem::importedSceneNodes(SceneHandle scene) const								-> Vector<NodeHandle>{
+		if (!imported_assets_.scene_nodes) { return {}; }
+		const auto nodes = imported_assets_.scene_nodes(scene);
+		return nodes ? *nodes : Vector<NodeHandle>{};
+	}
+
+	/// @brief Composes imported scene node transforms from root to leaves.
+	inline auto RenderSystem::importedSceneWorldTransforms(SceneHandle scene) const
+		-> Vector<std::tuple<NodeHandle, Transform, Mat4>>{
+		if (!scene.valid() || !imported_assets_.scene_nodes || !imported_assets_.scene_root_node ||
+			 !imported_assets_.scene_node_children || !imported_assets_.node_transform) {
+			return {};
+		}
+
+		const auto nodes = imported_assets_.scene_nodes(scene);
+		const auto root = imported_assets_.scene_root_node(scene);
+		if (!nodes || nodes->empty() || !root) { return {}; }
+
+		auto result = Vector<std::tuple<NodeHandle, Transform, Mat4>>{};
+		auto pending = Vector<std::pair<NodeHandle, Transform>>{};
+		result.reserve(nodes->size());
+
+		const auto root_transform = imported_assets_.node_transform(*root);
+		if (!root_transform) { return {}; }
+		pending.push_back({*root, *root_transform});
+
+		// Walk the asset hierarchy and compose each child below its parent world transform.
+		while (!pending.empty()) {
+			const auto [node, world_transform] = pending.back();
+			pending.pop_back();
+			if (std::ranges::find(*nodes, node) == nodes->end() ||
+				 std::ranges::find(result, node, [](const auto &entry) { return std::get<0>(entry); }) != result.end()) {
+				return {};
+			}
+			result.push_back({node, world_transform, detail::modelMatrix(world_transform)});
+
+			const auto children = imported_assets_.scene_node_children(scene, node);
+			if (!children) { return {}; }
+			for (const auto child : *children) {
+				const auto child_transform = imported_assets_.node_transform(child);
+				if (!child_transform) { return {}; }
+				pending.push_back({child, detail::composeTransform(world_transform, *child_transform)});
+			}
+		}
+		return result.size() == nodes->size() ? result : Vector<std::tuple<NodeHandle, Transform, Mat4>>{};
+	}
+
+	/// @brief Lists imported mesh/material pairs with their node world transforms.
+	inline auto RenderSystem::importedSceneMeshInstances(SceneHandle scene) const
+		-> Vector<std::tuple<NodeHandle, MeshHandle, MaterialHandle, Transform, Mat4>>{
+		if (!scene.valid() || !imported_assets_.node_meshes || !imported_assets_.mesh_material) { return {}; }
+		const auto world_transforms = importedSceneWorldTransforms(scene);
+		if (world_transforms.empty()) { return {}; }
+
+		auto result = Vector<std::tuple<NodeHandle, MeshHandle, MaterialHandle, Transform, Mat4>>{};
+		for (const auto &[node, world_transform, world] : world_transforms) {
+			const auto meshes = imported_assets_.node_meshes(node);
+			if (!meshes) { return {}; }
+			for (const auto mesh : *meshes) {
+				const auto material = imported_assets_.mesh_material(mesh);
+				if (!material) { return {}; }
+				result.emplace_back(node, mesh, *material, world_transform, world);
+			}
+		}
+		return result;
+	}
+
+	/// @brief Reads imported mesh geometry through the public asset query callbacks.
+	inline auto RenderSystem::importedMeshGeometry(MeshHandle mesh) const
+		-> std::optional<std::tuple<Vector<Vec3>, Vector<Vec3>, Vector<Vec2>, Vector<std::uint32_t>>>{
+		if (!mesh.valid() || !imported_assets_.mesh_positions || !imported_assets_.mesh_normals ||
+			 !imported_assets_.mesh_texcoords || !imported_assets_.mesh_indices) {
+			return std::nullopt;
+		}
+
+		const auto positions = imported_assets_.mesh_positions(mesh);
+		const auto normals = imported_assets_.mesh_normals(mesh);
+		const auto texcoords = imported_assets_.mesh_texcoords(mesh);
+		const auto indices = imported_assets_.mesh_indices(mesh);
+		if (!positions || positions->empty() || !normals || !texcoords || !indices) { return std::nullopt; }
+		return std::tuple{*positions, *normals, *texcoords, *indices};
+	}
+
+	/// @brief Creates or reuses one render mesh for imported asset geometry.
+	inline auto RenderSystem::acquireRenderMesh(MeshHandle imported_mesh)									-> std::optional<RenderMeshHandle>{
+		const auto cached = imported_render_meshes_.find(imported_mesh);
+		if (cached != imported_render_meshes_.end() && scene_.findMesh(cached->second) != nullptr) { return cached->second; }
+		if (cached != imported_render_meshes_.end()) { imported_render_meshes_.erase(cached); }
+
+		const auto geometry = importedMeshGeometry(imported_mesh);
+		if (!geometry) { return std::nullopt; }
+
+		const auto &[positions, normals, texcoords, indices] = *geometry;
+		auto vertices = Vector<RenderVertex>{};
+		vertices.reserve(positions.size());
+		auto bounds = Bounds{.minimum = Position{.value = positions.front()},
+									.maximum = Position{.value = positions.front()},
+									.valid = true};
+
+		// Convert asset vertex arrays into the same CPU render-vertex payload used by primitive meshes.
+		for (std::size_t index{}; index < positions.size(); ++index) {
+			const auto position = positions[index];
+			bounds.minimum.value = Vec3{std::min(bounds.minimum.value.x, position.x),
+												 std::min(bounds.minimum.value.y, position.y),
+												 std::min(bounds.minimum.value.z, position.z)};
+			bounds.maximum.value = Vec3{std::max(bounds.maximum.value.x, position.x),
+												 std::max(bounds.maximum.value.y, position.y),
+												 std::max(bounds.maximum.value.z, position.z)};
+			vertices.push_back(RenderVertex{.position = position,
+													 .normal = index < normals.size() ? normals[index] : RenderVertex{}.normal,
+													 .uv = index < texcoords.size() ? texcoords[index] : RenderVertex{}.uv});
+		}
+
+		auto copied_indices = Vector<std::uint32_t>{};
+		copied_indices.reserve(indices.size());
+		for (const auto index : indices) { copied_indices.push_back(index); }
+		const auto render_mesh = scene_.addMesh(std::move(vertices), std::move(copied_indices), bounds);
+		imported_render_meshes_.emplace(imported_mesh, render_mesh);
+		return render_mesh;
+	}
+
+	/// @brief Creates or reuses one render material for an imported asset material.
+	inline auto RenderSystem::acquireRenderMaterial(MaterialHandle imported_material)					-> RenderMaterialHandle{
+		const auto default_color = LinearColor{.value = oneVec3()};
+		if (!imported_material.valid()) { return scene_.addMaterial(RenderMaterial{.base_color = default_color}); }
+
+		const auto cached = imported_render_materials_.find(imported_material);
+		if (cached != imported_render_materials_.end() && scene_.findMaterial(cached->second) != nullptr) {
+			return cached->second;
+		}
+		if (cached != imported_render_materials_.end()) { imported_render_materials_.erase(cached); }
+
+		const auto render_material = scene_.addMaterial(RenderMaterial{.base_color = default_color});
+		imported_render_materials_.emplace(imported_material, render_material);
+		return render_material;
+	}
+
+	/// @brief Reads imported material texture handles through the public asset query callback.
+	inline auto RenderSystem::importedMaterialTextures(MaterialHandle material) const					-> std::optional<Vector<TextureHandle>>{
+		if (!material.valid() || !imported_assets_.material_textures) { return std::nullopt; }
+		const auto textures = imported_assets_.material_textures(material);
+		if (!textures) { return std::nullopt; }
+		return *textures;
+	}
+
 	/// @brief Removes one live render object from the backend scene.
 	inline auto RenderSystem::removeObject(RenderObjectHandle handle)										-> std::expected<void, Error>{
 		const auto object = findRenderObject(handle);
@@ -789,8 +1017,103 @@ namespace vve::simple {
 													 std::expected<Transform, Error>{scene_instance->local_transform};
 	}
 
+	/// @brief Returns public render objects registered for one scene instance.
+	inline auto RenderSystem::sceneInstanceObjects(RenderSceneInstanceHandle instance) const	-> std::expected<Vector<RenderObjectHandle>, Error>{
+		const auto found = scene_instances_.find(instance);
+		return found == scene_instances_.end() ? std::unexpected(Error::missing_object) :
+															 std::expected<Vector<RenderObjectHandle>, Error>{found->second};
+	}
+
+	/// @brief Returns the public scene instance that created one render object.
+	inline auto RenderSystem::objectSourceScene(RenderObjectHandle handle) const		-> std::expected<RenderSceneInstanceHandle, Error>{
+		const auto found = object_sources_.find(handle);
+		return found == object_sources_.end() ? std::unexpected(Error::missing_object) :
+															std::expected<RenderSceneInstanceHandle, Error>{found->second.first};
+	}
+
+	/// @brief Returns the source asset-scene node that created one render object.
+	inline auto RenderSystem::objectSourceNode(RenderObjectHandle handle) const			-> std::expected<NodeHandle, Error>{
+		const auto found = object_sources_.find(handle);
+		return found == object_sources_.end() ? std::unexpected(Error::missing_object) :
+															std::expected<NodeHandle, Error>{found->second.second};
+	}
+
+	/// @brief Creates an empty public scene-instance entry for a loaded scene.
+	inline auto RenderSystem::instantiateScene(SceneHandle scene, SceneInstantiationOptions options)
+		-> std::expected<RenderSceneInstanceHandle, Error>{
+		if (!scene.valid() || importedSceneNodes(scene).empty()) { return std::unexpected(Error::missing_object); }
+		const auto instance = RenderSceneInstanceHandle{RenderSceneInstanceHandle::counter_bit |
+																	 (next_scene_instance_id_++ & RenderSceneInstanceHandle::id_mask)};
+		auto &[_, objects] = *scene_instances_.emplace(instance, Vector<RenderObjectHandle>{}).first;
+		scene_instance_sources_.emplace(instance, scene);
+
+		// Geometry remains the default instantiation path.
+		if (options.instantiate_geometry) {
+			for (const auto &[node, mesh, material, world_transform, world] : importedSceneMeshInstances(scene)) {
+				const auto render_mesh = acquireRenderMesh(mesh);
+				if (!render_mesh) { continue; }
+				const auto render_material = acquireRenderMaterial(material);
+				auto render_instance = scene_.addInstance(*render_mesh, render_material, world_transform, world);
+				if (!render_instance) { return std::unexpected(render_instance.error()); }
+				const auto backend_index = appendBackendObject(*render_instance);
+				if (!backend_index) { return std::unexpected(backend_index.error()); }
+				forward().scene.objects[*backend_index].model = world;
+				const auto object = registerRenderObject(*render_instance, *backend_index);
+				objects.push_back(object);
+				object_sources_.emplace(object, std::pair{instance, node});
+			}
+		}
+
+		// Imported lights are opt-in and require the asset bridge callbacks.
+		if (options.apply_lights && imported_assets_.scene_lights && imported_assets_.light_data) {
+			const auto lights = imported_assets_.scene_lights(scene);
+			if (!lights) { return std::unexpected(lights.error()); }
+			for (const auto light : *lights) {
+				const auto data = imported_assets_.light_data(light);
+				if (!data) { return std::unexpected(data.error()); }
+				switch (data->kind) {
+				case LightKind::directional: addDirectionalLight(data->direction, data->color, data->intensity, {}); break;
+				case LightKind::point: addPointLight(data->position, data->color, data->intensity, data->range); break;
+				case LightKind::spot: addSpotLight(data->position, data->direction, data->color, data->intensity,
+															 data->range, data->cone); break;
+				}
+			}
+		}
+
+		// Imported cameras are opt-in and require the asset bridge callbacks.
+		if (options.apply_cameras && imported_assets_.scene_cameras && imported_assets_.camera_data) {
+			const auto cameras = imported_assets_.scene_cameras(scene);
+			if (!cameras) { return std::unexpected(cameras.error()); }
+			for (const auto camera : *cameras) {
+				const auto data = imported_assets_.camera_data(camera);
+				if (!data) { return std::unexpected(data.error()); }
+				scene_.addImportedCamera(*data);
+			}
+		}
+		return instance;
+	}
+
+	/// @brief Removes a public scene instance and all render objects it created.
+	inline auto RenderSystem::removeSceneInstance(RenderSceneInstanceHandle instance)			-> std::expected<void, Error>{
+		const auto found = scene_instances_.find(instance);
+		if (found == scene_instances_.end()) { return std::unexpected(Error::missing_object); }
+		const auto objects = found->second;
+
+		// Reuse the single-object teardown so backend indices and CPU instances stay consistent.
+		for (const auto object : objects) {
+			if (auto removed = removeObject(object); !removed) { return std::unexpected(removed.error()); }
+			object_sources_.erase(object);
+		}
+		scene_instance_sources_.erase(instance);
+		scene_instances_.erase(instance);
+		return {};
+	}
+
 	/// @brief Removes a loaded backend scene only when no public render objects are still live.
 	inline auto RenderSystem::removeScene(SceneHandle handle)											-> std::expected<void, Error>{
+		if (std::ranges::any_of(scene_instance_sources_, [handle](const auto &source) { return source.second == handle; })) {
+			return std::unexpected(Error::invalid_argument);
+		}
 		const auto found = scenes_.find(handle);
 		if (!handle.valid() || found == scenes_.end()) { return std::unexpected(Error::missing_object); }
 		if (!render_objects_.empty()) { return std::unexpected(Error::invalid_argument); }	// Live objects keep scene ownership explicit.
@@ -1115,6 +1438,14 @@ namespace vve::simple {
 
 	inline std::size_t RenderSystem::sceneMeshCount() const { return scene_.meshCount(); }
 	inline std::size_t RenderSystem::sceneMaterialCount() const { return scene_.materialCount(); }
+	/// @brief Returns the number of active directional lights.
+	inline std::size_t RenderSystem::sceneDirectionalLightCount() const { return scene_.directionalLights().size(); }
+	/// @brief Returns the number of active point lights.
+	inline std::size_t RenderSystem::scenePointLightCount() const { return scene_.pointLights().size(); }
+	/// @brief Returns the number of active spot lights.
+	inline std::size_t RenderSystem::sceneSpotLightCount() const { return scene_.spotLights().size(); }
+	/// @brief Returns the number of imported cameras applied to the render scene.
+	inline std::size_t RenderSystem::sceneCameraCount() const { return scene_.importedCameras().size(); }
 	inline std::size_t RenderSystem::sceneInstanceCount() const { return scene_.instanceCount(); }
 	inline std::size_t RenderSystem::sceneVertexCount() const { return scene_.vertexCount(); }
 	inline std::size_t RenderSystem::sceneIndexCount() const { return scene_.indexCount(); }

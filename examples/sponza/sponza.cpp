@@ -7,6 +7,34 @@ import VEEngine;
  */
 namespace {
 
+constexpr auto sponzaSceneRelativePath = "assets/sea_keep_lonely_watcher/scene.gltf";
+
+/// @brief Finds the repository-style asset root from either the cwd or executable location.
+[[nodiscard]] std::filesystem::path assetRoot(char *argv0) {
+	auto containsSponzaScene = [](const std::filesystem::path &candidate) {
+		return std::filesystem::exists(candidate / sponzaSceneRelativePath);
+	};
+	if (const auto cwd = std::filesystem::current_path(); containsSponzaScene(cwd)) {
+		return cwd;
+	}
+	if (argv0 == nullptr) {
+		return {};
+	}
+	auto executable = std::filesystem::absolute(std::filesystem::path{argv0});
+	if (std::filesystem::exists(executable)) {
+		executable = std::filesystem::weakly_canonical(executable);
+	}
+	for (auto candidate = executable.parent_path(); !candidate.empty(); candidate = candidate.parent_path()) {
+		if (containsSponzaScene(candidate)) {
+			return candidate;
+		}
+		if (candidate == candidate.root_path()) {
+			break;
+		}
+	}
+	return {};
+}
+
 /// @brief Reads the optional frame count used by automated example runs.
 [[nodiscard]] int frameLimit(int argc, char **argv) {
 	for (int index = 1; index + 1 < argc; ++index) {
@@ -47,18 +75,30 @@ int main(int argc, char **argv) {
 		return 1;
 	}
 
+	auto assets = engine.world().get<vve::AssetSystem>();
 	auto render_system = engine.world().get<vve::RenderSystem>();
-	if (const auto result = render_system.loadSampleScene(); !result) {
-		std::cerr << "[sponza] sample scene load failed: error=" << vve::errorName(result.error()) << '\n';
+
+	const auto scene_path = assetRoot(argc > 0 ? argv[0] : nullptr) / sponzaSceneRelativePath;
+	const std::expected<vve::SceneHandle, vve::Error> scene = assets.loadScene(scene_path);
+	if (!scene) {
+		std::cerr << "[sponza] scene load failed: path=" << scene_path << " error=" << vve::errorName(scene.error()) << '\n';
 		return 2;
 	}
+
+	const vve::SceneInstantiationOptions options{}; ///< Default bridge options instantiate imported geometry.
+	const std::expected<vve::RenderSceneInstanceHandle, vve::Error> instance = render_system.instantiateScene(*scene, options);
+	if (!instance) {
+		std::cerr << "[sponza] scene instantiation failed: error=" << vve::errorName(instance.error()) << '\n';
+		return 3;
+	}
+	std::cout << "[sponza] scene=" << scene->value << " instance=" << instance->value << '\n';
 
 	const int max_frames = frameLimit(argc, argv);
 	for (int frame{}; frame < max_frames; ++frame) {
 		const auto status = engine.step();
 		if (!status) {
 			std::cerr << "[sponza] frame failed: error=" << vve::errorName(status.error()) << '\n';
-			return 3;
+			return 4;
 		}
 		if (*status == vve::FrameStatus::stopped) { break; }
 	}

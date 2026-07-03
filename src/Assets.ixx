@@ -39,6 +39,8 @@ export namespace vve {
 		[[nodiscard]] auto sceneTextures(SceneHandle scene) const				-> std::expected<Vector<TextureHandle>, Error>;
 		[[nodiscard]] auto sceneLights(SceneHandle scene) const					-> std::expected<Vector<LightHandle>, Error>;
 		[[nodiscard]] auto sceneCameras(SceneHandle scene) const					-> std::expected<Vector<CameraHandle>, Error>;
+		[[nodiscard]] auto lightData(LightHandle light) const					-> std::expected<LightDescriptor, Error>;
+		[[nodiscard]] auto cameraData(CameraHandle camera) const				-> std::expected<CameraDescriptor, Error>;
 		[[nodiscard]] std::expected<Vector<NodeHandle>, Error> sceneNodeChildren(SceneHandle scene,
 																											NodeHandle node) const;
 		[[nodiscard]] std::expected<std::optional<NodeHandle>, Error> sceneNodeParent(SceneHandle scene,

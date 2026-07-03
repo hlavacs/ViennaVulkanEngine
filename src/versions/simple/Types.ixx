@@ -26,6 +26,7 @@ export namespace vve::simple {
 	using MeshHandle	= vve::MeshHandle;															///< simple mesh descriptor handle contract.
 	using MaterialHandle = vve::MaterialHandle;														///< simple material descriptor handle contract.
 	using TextureHandle	= vve::TextureHandle;														///< simple texture descriptor handle contract.
+	using RenderSceneInstanceHandle = vve::RenderSceneInstanceHandle;							///< simple render-scene-instance handle contract.
 	using LightHandle	= vve::LightHandle;															///< simple light descriptor handle contract.
 	using CameraHandle	= vve::CameraHandle;															///< simple imported-camera descriptor handle contract.
 
@@ -47,13 +48,16 @@ export namespace vve::simple {
 
 	using vve::Bounds;																						///< Public axis-aligned bounds contract.
 	using vve::Camera;																						///< Public camera contract.
+	using vve::CameraDescriptor;																			///< Public imported-camera descriptor contract.
 	using vve::ClipPlanes;																					///< Public clip-plane contract.
 	using vve::DeltaTime;																					///< Public frame delta contract.
 	using vve::Direction;																					///< Public direction contract.
 	using vve::FovY;																							///< Public vertical field-of-view contract.
 	using vve::FrameCount;																					///< Public frame-count contract.
 	using vve::IndexCount;																					///< Public index-count contract.
+	using vve::LightDescriptor;																				///< Public imported-light descriptor contract.
 	using vve::LightIntensity;																				///< Public light-intensity contract.
+	using vve::LightKind;																						///< Public imported-light kind contract.
 	using vve::LightRange;																					///< Public light-range contract.
 	using vve::LinearColor;																					///< Public linear-color contract.
 	using vve::ObjectName;																					///< Public object-name contract.
@@ -62,6 +66,7 @@ export namespace vve::simple {
 	using vve::RendererId;																					///< Public renderer-id contract.
 	using vve::Rotation;																						///< Public rotation contract.
 	using vve::Scale;																							///< Public scale contract.
+	using SceneInstantiationOptions = vve::SceneInstantiationOptions;								///< simple scene-instantiation option contract.
 	using vve::SpotConeAngle;																				///< Public spotlight-cone contract.
 	using vve::TextureChannelCount;																		///< Public texture-channel-count contract.
 	using vve::Transform;																					///< Public transform contract.

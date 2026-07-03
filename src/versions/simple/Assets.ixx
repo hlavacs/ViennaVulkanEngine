@@ -4,6 +4,7 @@ module;
 #include <assimp/material.h>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+#include <cmath>
 #include <cstdlib>
 
 #if defined(_WIN32) && defined(VVE_ENGINE_BUILD)
@@ -67,6 +68,20 @@ namespace vve::simple {
 		Vector<TextureHandle> textures{};																	///< Texture handles referenced by this material.
 	};
 
+	/// @brief Imported light descriptor keyed by its public handle.
+	struct Light {
+		using Handle = LightHandle;																			///< Handle category.
+		LightHandle handle{};																					///< Stable light handle.
+		LightDescriptor data{};																				///< Facade-safe imported light data.
+	};
+
+	/// @brief Imported camera descriptor keyed by its public handle.
+	struct CameraAsset {
+		using Handle = CameraHandle;																			///< Handle category.
+		CameraHandle handle{};																				///< Stable camera handle.
+		CameraDescriptor data{};																				///< Facade-safe imported camera data.
+	};
+
 	/// @brief Scene descriptor stores handle lists; details live in the catalog tables.
 	struct Scene {
 		using Handle = SceneHandle;																			///< Handle category.
@@ -87,6 +102,8 @@ namespace vve::simple {
 		Table<Node> nodes{};																						///< Nodes by handle.
 		Table<Mesh> meshes{};																					///< Meshes by handle.
 		Table<Material> materials{};																			///< Materials by handle.
+		Table<Light> lights{};																					///< Lights by handle.
+		Table<CameraAsset> cameras{};																		///< Cameras by handle.
 	};
 
 } // namespace vve::simple
@@ -137,6 +154,8 @@ export namespace vve::simple {
 		[[nodiscard]] VVE_SIMPLE_API auto sceneTextures(SceneHandle scene) const											-> std::expected<Vector<TextureHandle>, Error>;
 		[[nodiscard]] VVE_SIMPLE_API auto sceneLights(SceneHandle scene) const												-> std::expected<Vector<LightHandle>, Error>;
 		[[nodiscard]] VVE_SIMPLE_API auto sceneCameras(SceneHandle scene) const												-> std::expected<Vector<CameraHandle>, Error>;
+		[[nodiscard]] VVE_SIMPLE_API auto lightData(LightHandle light) const												-> std::expected<LightDescriptor, Error>;
+		[[nodiscard]] VVE_SIMPLE_API auto cameraData(CameraHandle camera) const											-> std::expected<CameraDescriptor, Error>;
 		[[nodiscard]] VVE_SIMPLE_API std::expected<Vector<NodeHandle>, Error> sceneNodeChildren(SceneHandle scene,
 																											NodeHandle node) const;
 		[[nodiscard]] VVE_SIMPLE_API std::expected<std::optional<NodeHandle>, Error> sceneNodeParent(SceneHandle scene,
@@ -176,6 +195,12 @@ export namespace vve::simple {
 		[[nodiscard]] static auto vec3(const aiVector3D &v)													-> Vec3;
 		[[nodiscard]] static auto quat(const aiQuaternion &q)													-> Quat;
 		[[nodiscard]] static auto transform(const aiMatrix4x4 &matrix)										-> Transform;
+		[[nodiscard]] static auto color(const aiColor3D &value)												-> LinearColor;
+		[[nodiscard]] static auto lightRange(const aiLight &source)											-> LightRange;
+		[[nodiscard]] static auto lightDescriptor(const aiLight &source)									-> std::optional<LightDescriptor>;
+		[[nodiscard]] static auto cameraAspect(const aiCamera &source)										-> Scalar;
+		[[nodiscard]] static auto cameraFovY(const aiCamera &source)										-> FovY;
+		[[nodiscard]] static auto cameraDescriptor(const aiCamera &source)								-> CameraDescriptor;
 		[[nodiscard]] static auto name(const aiString &text, std::string fallback)						-> std::string;
 		[[nodiscard]] static std::filesystem::path texturePath(const aiString &path,
 																					const std::filesystem::path &scene_dir);
@@ -209,8 +234,8 @@ export namespace vve::simple {
 																						const aiNode &source,
 																						const Vector<MeshHandle> &mesh_handles,
 																						Scene &scene, NodeHandle parent = {});
-		[[nodiscard]] static auto lights(const aiScene &scene)												-> Vector<LightHandle>;
-		[[nodiscard]] static auto cameras(const aiScene &scene)												-> Vector<CameraHandle>;
+		[[nodiscard]] static auto lights(Catalog &catalog, const aiScene &scene)						-> std::expected<Vector<LightHandle>, Error>;
+		[[nodiscard]] static auto cameras(Catalog &catalog, const aiScene &scene)						-> std::expected<Vector<CameraHandle>, Error>;
 		[[nodiscard]] static std::expected<SceneHandle, Error> import(Catalog &catalog, const aiScene &source,
 																							const std::filesystem::path &path);
 
@@ -243,6 +268,58 @@ namespace vve::simple {
 			return Transform{.translation = Position{.value = vec3(translation)},
 									.rotation = Rotation{.value = quat(rotation)},
 									.scale = Scale{.value = vec3(scale)}};
+		}
+
+		LinearColor AssetSystem::color(const aiColor3D &value) {									///< Converts Assimp RGB colors.
+			return LinearColor{.value = Vec3(value.r, value.g, value.b)};
+		}
+
+		LightRange AssetSystem::lightRange(const aiLight &source) {								///< Derives a finite range from attenuation when present.
+			if (source.mAttenuationLinear > 0.0F) {
+				return LightRange{.value = static_cast<Scalar>(1.0F / source.mAttenuationLinear)};
+			}
+			if (source.mAttenuationQuadratic > 0.0F) {
+				return LightRange{.value = static_cast<Scalar>(1.0F / std::sqrt(source.mAttenuationQuadratic))};
+			}
+			return {};
+		}
+
+		std::optional<LightDescriptor> AssetSystem::lightDescriptor(const aiLight &source) {	///< Converts supported Assimp lights.
+			LightDescriptor data{.color = color(source.mColorDiffuse),
+										.intensity = LightIntensity{.value = one()},
+										.direction = Direction{.value = vec3(source.mDirection)},
+										.position = Position{.value = vec3(source.mPosition)},
+										.range = lightRange(source),
+										.cone = SpotConeAngle{.radians = static_cast<Scalar>(source.mAngleOuterCone)}};
+			switch (source.mType) {
+			case aiLightSource_DIRECTIONAL: data.kind = LightKind::directional; return data;
+			case aiLightSource_POINT: data.kind = LightKind::point; return data;
+			case aiLightSource_SPOT: data.kind = LightKind::spot; return data;
+			default: return std::nullopt;
+			}
+		}
+
+		Scalar AssetSystem::cameraAspect(const aiCamera &source) {								///< Returns a finite projection aspect ratio.
+			return source.mAspect > 0.0F && std::isfinite(source.mAspect) ? static_cast<Scalar>(source.mAspect) : one();
+		}
+
+		FovY AssetSystem::cameraFovY(const aiCamera &source) {									///< Converts Assimp horizontal FOV to facade vertical FOV.
+			const auto horizontal = source.mHorizontalFOV > 0.0F && std::isfinite(source.mHorizontalFOV)
+												 ? static_cast<Scalar>(source.mHorizontalFOV)
+												 : FovY{}.radians;
+			const auto aspect = cameraAspect(source);
+			const auto half = horizontal / static_cast<Scalar>(2);
+			return FovY{.radians = static_cast<Scalar>(2) * static_cast<Scalar>(std::atan(std::tan(half) / aspect))};
+		}
+
+		CameraDescriptor AssetSystem::cameraDescriptor(const aiCamera &source) {				///< Converts Assimp camera data.
+			return CameraDescriptor{.position = Position{.value = vec3(source.mPosition)},
+											.direction = Direction{.value = vec3(source.mLookAt)},
+											.up = Direction{.value = vec3(source.mUp)},
+											.fov = cameraFovY(source),
+											.aspect = cameraAspect(source),
+											.near_clip = static_cast<Scalar>(source.mClipPlaneNear),
+											.far_clip = static_cast<Scalar>(source.mClipPlaneFar)};
 		}
 
 		std::string AssetSystem::name(const aiString &text, std::string fallback) {			///< Name or generated fallback.
@@ -420,20 +497,32 @@ namespace vve::simple {
 			return handle;
 		}
 
-		auto AssetSystem::lights(const aiScene &scene)															-> Vector<LightHandle>{
+		auto AssetSystem::lights(Catalog &catalog, const aiScene &scene)								-> std::expected<Vector<LightHandle>, Error>{
 			Vector<LightHandle> result{};
 			result.reserve(scene.mNumLights);
 			for (unsigned i = 0; i < scene.mNumLights; ++i) {
-				if (scene.mLights[i] != nullptr) { result.push_back(makeCounterHandle<LightHandle>()); }
+				const auto *source = scene.mLights[i];
+				if (source == nullptr) { continue; }
+				auto data = lightDescriptor(*source);
+				if (!data) { continue; }
+				auto item = Light{.handle = makeCounterHandle<LightHandle>(), .data = *data};
+				const auto handle = item.handle;
+				if (auto added = catalog.lights.add(std::move(item)); !added) { return std::unexpected(added.error()); }
+				result.push_back(handle);
 			}
 			return result;
 		}
 
-		auto AssetSystem::cameras(const aiScene &scene)															-> Vector<CameraHandle>{
+		auto AssetSystem::cameras(Catalog &catalog, const aiScene &scene)								-> std::expected<Vector<CameraHandle>, Error>{
 			Vector<CameraHandle> result{};
 			result.reserve(scene.mNumCameras);
 			for (unsigned i = 0; i < scene.mNumCameras; ++i) {
-				if (scene.mCameras[i] != nullptr) { result.push_back(makeCounterHandle<CameraHandle>()); }
+				const auto *source = scene.mCameras[i];
+				if (source == nullptr) { continue; }
+				auto item = CameraAsset{.handle = makeCounterHandle<CameraHandle>(), .data = cameraDescriptor(*source)};
+				const auto handle = item.handle;
+				if (auto added = catalog.cameras.add(std::move(item)); !added) { return std::unexpected(added.error()); }
+				result.push_back(handle);
 			}
 			return result;
 		}
@@ -444,16 +533,18 @@ namespace vve::simple {
 			if (!imported_materials) { return std::unexpected(imported_materials.error()); }
 			const auto imported_meshes = meshes(catalog, source, imported_materials->materials);
 			if (!imported_meshes) { return std::unexpected(imported_meshes.error()); }
-			const auto imported_lights = lights(source);
-			const auto imported_cameras = cameras(source);
+			const auto imported_lights = lights(catalog, source);
+			if (!imported_lights) { return std::unexpected(imported_lights.error()); }
+			const auto imported_cameras = cameras(catalog, source);
+			if (!imported_cameras) { return std::unexpected(imported_cameras.error()); }
 
 			auto scene = Scene{.handle = makeCounterHandle<SceneHandle>(),
 										.name = ObjectName{.value = path.filename().string()},
 										.meshes = *imported_meshes,
 										.materials = imported_materials->materials,
 										.textures = imported_materials->textures,
-										.lights = imported_lights,
-										.cameras = imported_cameras};
+										.lights = *imported_lights,
+										.cameras = *imported_cameras};
 			if (source.mRootNode != nullptr) {
 				if (auto root = node(catalog, source, *source.mRootNode, *imported_meshes, scene); !root) {
 					return std::unexpected(root.error());
@@ -532,6 +623,14 @@ namespace vve::simple {
 
 	VVE_SIMPLE_API auto AssetSystem::sceneCameras(SceneHandle scene) const								-> VectorExpected<CameraHandle>{
 		return sceneField(catalog_, scene, &Scene::cameras);
+	}
+
+	VVE_SIMPLE_API auto AssetSystem::lightData(LightHandle light) const									-> Expected<LightDescriptor>{
+		return field(catalog_.lights, light, &Light::data);
+	}
+
+	VVE_SIMPLE_API auto AssetSystem::cameraData(CameraHandle camera) const								-> Expected<CameraDescriptor>{
+		return field(catalog_.cameras, camera, &CameraAsset::data);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::sceneNodeChildren(SceneHandle scene, NodeHandle node) const	-> std::expected<Vector<NodeHandle>, Error>{

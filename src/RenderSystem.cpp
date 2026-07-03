@@ -152,6 +152,33 @@ namespace vve {
 		return renderSystemImpl(impl_).objectTransform(handle);
 	}
 
+	/// @brief Returns render objects registered for one scene instance.
+	std::expected<Vector<RenderObjectHandle>, Error>
+	RenderSystem::sceneInstanceObjects(RenderSceneInstanceHandle instance) const {
+		return renderSystemImpl(impl_).sceneInstanceObjects(instance);
+	}
+
+	/// @brief Returns the scene instance that created one render object.
+	std::expected<RenderSceneInstanceHandle, Error> RenderSystem::objectSourceScene(RenderObjectHandle handle) const {
+		return renderSystemImpl(impl_).objectSourceScene(handle);
+	}
+
+	/// @brief Returns the source asset-scene node that created one render object.
+	std::expected<NodeHandle, Error> RenderSystem::objectSourceNode(RenderObjectHandle handle) const {
+		return renderSystemImpl(impl_).objectSourceNode(handle);
+	}
+
+	/// @brief Creates a render-scene instance for a loaded scene.
+	std::expected<RenderSceneInstanceHandle, Error> RenderSystem::instantiateScene(SceneHandle scene,
+																									 SceneInstantiationOptions options) {
+		return renderSystemImpl(impl_).instantiateScene(scene, options);
+	}
+
+	/// @brief Removes one render-scene instance and the objects it created.
+	std::expected<void, Error> RenderSystem::removeSceneInstance(RenderSceneInstanceHandle instance) {
+		return renderSystemImpl(impl_).removeSceneInstance(instance);
+	}
+
 	/// @brief Removes one loaded scene when no live render object depends on it.
 	std::expected<void, Error> RenderSystem::removeScene(SceneHandle handle) {
 		return renderSystemImpl(impl_).removeScene(handle);
@@ -165,6 +192,20 @@ namespace vve {
 
 	/// @brief Returns material count in the active CPU scene.
 	std::size_t RenderSystem::sceneMaterialCount() const { return renderSystemImpl(impl_).sceneMaterialCount(); }
+
+	/// @brief Returns directional-light count in the active CPU scene.
+	std::size_t RenderSystem::sceneDirectionalLightCount() const {
+		return renderSystemImpl(impl_).sceneDirectionalLightCount();
+	}
+
+	/// @brief Returns point-light count in the active CPU scene.
+	std::size_t RenderSystem::scenePointLightCount() const { return renderSystemImpl(impl_).scenePointLightCount(); }
+
+	/// @brief Returns spot-light count in the active CPU scene.
+	std::size_t RenderSystem::sceneSpotLightCount() const { return renderSystemImpl(impl_).sceneSpotLightCount(); }
+
+	/// @brief Returns imported-camera count in the active CPU scene.
+	std::size_t RenderSystem::sceneCameraCount() const { return renderSystemImpl(impl_).sceneCameraCount(); }
 
 	/// @brief Returns instance count in the active CPU scene.
 	std::size_t RenderSystem::sceneInstanceCount() const { return renderSystemImpl(impl_).sceneInstanceCount(); }

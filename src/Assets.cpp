@@ -105,6 +105,16 @@ namespace vve {
 		return facadeVector<CameraHandle>(assetSystemImpl(impl_).sceneCameras(scene));
 	}
 
+	/// @brief Returns public descriptor data for an imported light.
+	auto AssetSystem::lightData(LightHandle light) const -> std::expected<LightDescriptor, Error> {
+		return assetSystemImpl(impl_).lightData(light);
+	}
+
+	/// @brief Returns public descriptor data for an imported camera.
+	auto AssetSystem::cameraData(CameraHandle camera) const -> std::expected<CameraDescriptor, Error> {
+		return assetSystemImpl(impl_).cameraData(camera);
+	}
+
 	/// @brief Returns the children of a node in a scene hierarchy.
 	std::expected<Vector<NodeHandle>, Error> AssetSystem::sceneNodeChildren(SceneHandle scene,
 																								  NodeHandle node) const {

@@ -22,6 +22,7 @@ export namespace vve {
 	struct MaterialHandleTag {};										///< Material descriptor handle tag.
 	struct TextureHandleTag {};										///< Texture descriptor handle tag.
 	struct RenderObjectHandleTag {};								///< Render object handle tag.
+	struct RenderSceneInstanceHandleTag {};						///< Render scene instance handle tag.
 	struct LightHandleTag {};											///< Light descriptor handle tag.
 	struct CameraHandleTag {};											///< Camera descriptor handle tag.
 
@@ -32,6 +33,7 @@ export namespace vve {
 	using MaterialHandle = TypedHandle<MaterialHandleTag>;	///< Material descriptor handle.
 	using TextureHandle	= TypedHandle<TextureHandleTag>;		///< Texture descriptor handle.
 	using RenderObjectHandle = TypedHandle<RenderObjectHandleTag>;	///< Render object handle.
+	using RenderSceneInstanceHandle = TypedHandle<RenderSceneInstanceHandleTag>;	///< Render scene instance handle.
 	using LightHandle	= TypedHandle<LightHandleTag>;		///< Light descriptor handle.
 	using CameraHandle	= TypedHandle<CameraHandleTag>;		///< Camera descriptor handle.
 
@@ -73,6 +75,24 @@ export namespace vve {
 	/// @brief Strong wrapper for spotlight outer cone angle.
 	struct SpotConeAngle {
 		Scalar radians{static_cast<Scalar>(0.75)};						///< Wrapped outer cone angle in radians.
+	};
+
+	/// @brief Public imported-light category understood by the asset facade.
+	enum class LightKind {
+		directional,																///< Infinite light with direction only.
+		point,																		///< Positional light radiating in all directions.
+		spot																			///< Positional light constrained by a cone.
+	};
+
+	/// @brief Facade descriptor for imported light data stored by the asset system.
+	struct LightDescriptor {
+		LightKind kind{LightKind::point};									///< Imported light category.
+		LinearColor color{};													///< Linear RGB light color.
+		LightIntensity intensity{};											///< Imported or derived intensity scale.
+		Direction direction{};													///< Local light direction when available.
+		Position position{};													///< Local light position when available.
+		LightRange range{};														///< Finite influence range for point and spot lights.
+		SpotConeAngle cone{};													///< Outer cone angle for spot lights.
 	};
 
 	/// @brief Facade descriptor for directional light setup.
@@ -227,6 +247,17 @@ export namespace vve {
 	/// @brief Strong wrapper for vertical field-of-view angles.
 	struct FovY {
 		Scalar radians{static_cast<Scalar>(1.0471975511965976)};		///< Wrapped vertical FOV in radians.
+	};
+
+	/// @brief Facade descriptor for imported camera data stored by the asset system.
+	struct CameraDescriptor {
+		Position position{};													///< Local camera position when available.
+		Direction direction{};													///< Local camera look direction.
+		Direction up{.value = Vec3(zero(), one(), zero())};			///< Local camera up direction.
+		FovY fov{};																///< Vertical field-of-view angle.
+		Scalar aspect{one()};													///< Projection aspect ratio.
+		Scalar near_clip{static_cast<Scalar>(0.1)};					///< Near clipping distance.
+		Scalar far_clip{static_cast<Scalar>(10000.0)};				///< Far clipping distance.
 	};
 
 	/// @brief Strong wrapper for near and far clipping planes.
@@ -436,6 +467,13 @@ export namespace vve {
 		bool load_cameras{false};											///< Imports cameras from the scene file.
 		bool load_lights{false};											///< Imports lights from the scene file.
 		bool use_cache{true};												///< Enables cached loader results.
+	};
+
+	/// @brief Public scene instantiation options for imported scene visibility.
+	struct SceneInstantiationOptions {
+		bool instantiate_geometry{true};									///< Creates render objects from imported geometry.
+		bool apply_cameras{false};											///< Applies imported cameras to the render scene.
+		bool apply_lights{false};											///< Applies imported lights to the render scene.
 	};
 
 	/// @brief Chainable facade builder for scene loading options.

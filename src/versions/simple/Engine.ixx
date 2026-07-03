@@ -92,7 +92,22 @@ export namespace vve::simple {
 		ECS ecs_{};																			///< Runtime entity/component storage owned by the engine.
 		WindowSystem window_system_{};												///< SDL platform window owner.
 		AssetSystem assets_{};															///< Asset and object catalog facade.
-		RenderSystem render_system_{};												///< Renderer selection and active CPU render scene.
+		RenderSystem render_system_{ImportedAssetReadAccess{
+			.scene_nodes = [this](SceneHandle scene) { return assets_.sceneNodes(scene); },
+			.scene_root_node = [this](SceneHandle scene) { return assets_.sceneRootNode(scene); },
+			.scene_node_children = [this](SceneHandle scene, NodeHandle node) { return assets_.sceneNodeChildren(scene, node); },
+			.node_transform = [this](NodeHandle node) { return assets_.nodeTransform(node); },
+			.node_meshes = [this](NodeHandle node) { return assets_.nodeMeshes(node); },
+			.mesh_material = [this](MeshHandle mesh) { return assets_.meshMaterial(mesh); },
+			.material_textures = [this](MaterialHandle material) { return assets_.materialTextures(material); },
+			.scene_lights = [this](SceneHandle scene) { return assets_.sceneLights(scene); },
+			.light_data = [this](LightHandle light) { return assets_.lightData(light); },
+			.scene_cameras = [this](SceneHandle scene) { return assets_.sceneCameras(scene); },
+			.camera_data = [this](CameraHandle camera) { return assets_.cameraData(camera); },
+			.mesh_positions = [this](MeshHandle mesh) { return assets_.meshPositions(mesh); },
+			.mesh_normals = [this](MeshHandle mesh) { return assets_.meshNormals(mesh); },
+			.mesh_texcoords = [this](MeshHandle mesh) { return assets_.meshTexcoords(mesh); },
+			.mesh_indices = [this](MeshHandle mesh) { return assets_.meshIndices(mesh); }}};	///< Renderer selection and active CPU render scene.
 		ResourceSystem resources_{};													///< Resource descriptor facade.
 		TaskGraph tasks_{};																///< CPU task graph facade.
 		RenderGraph render_graph_{};													///< Render pass graph facade.
