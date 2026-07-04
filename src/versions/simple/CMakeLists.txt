@@ -20,7 +20,14 @@ target_sources(ViennaVulkanEngine
          Gui.ixx
          Engine.ixx
          Mesh.ixx
-         Vulkan.ixx
+         Vulkan/Device.ixx
+         Vulkan/Commands.ixx
+         Vulkan/Presentation.ixx
+         Vulkan/Pipeline.ixx
+         Vulkan/Shadow.ixx
+         Vulkan/Readback.ixx
+         Vulkan/Resources.ixx
+         Vulkan/Vulkan.ixx
          Scene.ixx
          Renderer.ixx
          SceneGraph.ixx
