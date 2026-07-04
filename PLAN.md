@@ -6,7 +6,7 @@ Read AGENTS.md and src/versions/simple/AGENTS.md
 
 **Goal:** `VEEngine.Simple.Vulkan` stays one module with an unchanged exported surface — `Renderer.ixx` and `RenderSystem.ixx` keep `import VEEngine.Simple.Vulkan;` untouched. The monolith becomes a thin primary interface `src/versions/simple/Vulkan/Vulkan.ixx` that re-exports partitions, each ≤ ~700 lines. No rendering behavior changes.
 
-**Rules:** Smallest possible increments — move one partition per step. After every step: build + `ctest --output-on-failure`; never proceed on red; revert failed steps. One commit per step, prefixed `vulkan-split:`. Pure code motion — no renames, no signature changes, no new types unless listed below. Each new file starts with the AGENTS.md-mandated overview comment listing its functional objects. Don't touch v3/v4/v5 or the facade layer.
+**Rules:** Smallest possible increments — move one partition per step. After every step: build + `ctest --output-on-failure`; never proceed on red; revert failed steps. One commit per step, prefixed `vulkan-split:`. Pure code motion — no renames, no signature changes, no new types unless listed below. Each new file starts with the AGENTS.md-mandated overview comment listing its functional objects. Don't touch the facade layer.
 
 **Target layout (`src/versions/simple/Vulkan/`):**
 
