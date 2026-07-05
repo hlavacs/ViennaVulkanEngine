@@ -149,6 +149,7 @@ Always include a lighweight data layer for carrying small sets of debugging info
 
 ## Expectations for tests
 
+All tests and example programs must compile without error. If compile errors are detected, solve them. If test programs report that they failed then analyse the output and solce the error. 
 All classes and functions should have unit tests.
 All example programs should have extensive test paths.
 Tests should produce debugging data that lets a calling LLM detect errors, locate errors and fix errors.

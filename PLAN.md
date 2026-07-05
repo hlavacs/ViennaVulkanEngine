@@ -1,5 +1,5 @@
 Read AGENTS.md and src/versions/simple/AGENTS.md
 
-The render related code is too complex. Move it to a folder src/versions/simple/Render and break it into smaller chunks. Isolate debugging related code into its own source file. Do this for the whole simple engine.
-
+The goal is to reduce the LOC count of the simple engine without sacrificing functionality.
+Refactor the Vulkan layer of the simple engine to reduce LOC and complexity while preserving behavior: switch Vulkan ownership to `vk::raii` C++ bindings, remove manual `cleanup()`/destructor/null-handle lifetime boilerplate where RAII can own resources safely, keep a small stateless Vulkan helper layer for reusable pure functions, replace legacy render-pass/framebuffer setup with dynamic rendering where possible, keep timeline/counting semaphore based synchronization, consolidate repeated buffer/image/view/sampler/descriptor creation into compact helpers/templates, and ensure descriptor layouts/pools/sets are prepared for Slang-reflection-driven creation rather than hard-coded arbitrary bindings. Keep the public facade API stable, keep the implementation educational and small, avoid new classes unless they remove more complexity than they add, and verify with a full Debug and Release build plus all tests from VS Code-compatible CMake presets.
 
