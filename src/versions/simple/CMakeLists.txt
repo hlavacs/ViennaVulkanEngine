@@ -16,7 +16,6 @@ target_sources(ViennaVulkanEngine
          Shaders.ixx
          RenderPassContract.ixx
          RenderPass.ixx
-         RenderSystem.ixx
          Gui.ixx
          Engine.ixx
          Mesh.ixx
@@ -29,7 +28,17 @@ target_sources(ViennaVulkanEngine
          Vulkan/Resources.ixx
          Vulkan/Vulkan.ixx
          Scene.ixx
+         Render/RendererDebug.ixx
+         Render/RendererShadowPrep.ixx
+         Render/RendererResources.ixx
+         Render/RendererDraw.ixx
+         Render/RenderSystemDebug.ixx
+         Render/RenderSceneImport.ixx
+         Render/RenderSystemScene.ixx
+         Render/RenderSystemObjects.ixx
+         Render/RenderResources.ixx
          Renderer.ixx
+         RenderSystem.ixx
          SceneGraph.ixx
          WindowSystem.ixx
          World.ixx
