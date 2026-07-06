@@ -362,6 +362,9 @@ namespace vve {
 	/// @brief Returns the number of frames accepted by the render system.
 	std::uint64_t RenderSystem::renderedFrameCount() const { return renderSystemImpl(impl_).renderedFrameCount(); }
 
+	/// @brief Returns measured render-frame throughput, not the display refresh estimate.
+	double RenderSystem::renderingFramesPerSecond() const { return renderSystemImpl(impl_).renderingFramesPerSecond(); }
+
 	/// @brief Returns how many visible windows were considered by the last frame.
 	std::size_t RenderSystem::lastRenderedWindowCount() const { return renderSystemImpl(impl_).lastRenderedWindowCount(); }
 

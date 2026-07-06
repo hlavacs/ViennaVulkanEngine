@@ -5,6 +5,7 @@ export import VEEngine.Simple.Error;
 export import VEEngine.Simple.Math;
 export import VEEngine.Types;
 export import VEEngine.Simple.Handle;
+export import VEEngine.Simple.Shaders;
 
 /// @file
 /// @brief simple implementation types.
@@ -37,12 +38,10 @@ export namespace vve::simple {
 	using MaxFrames	= vve::MaxFrames;															///< simple frame-cap option contract.
 
 	struct ResourceHandleTag {};																			///< simple-internal resource handle tag.
-	struct ShaderHandleTag {};																				///< simple-internal shader descriptor handle tag.
 	struct RendererHandleTag {};																			///< simple-internal renderer descriptor handle tag.
 	struct GuiWidgetHandleTag {};																			///< simple-internal GUI widget handle tag.
 
 	using ResourceHandle	= TypedHandle<ResourceHandleTag>;										///< simple-internal resource handle.
-	using ShaderHandle	= TypedHandle<ShaderHandleTag>;											///< simple-internal shader descriptor handle.
 	using RendererHandle	= TypedHandle<RendererHandleTag>;										///< simple-internal renderer descriptor handle.
 	using GuiWidgetHandle = TypedHandle<GuiWidgetHandleTag>;										///< simple-internal GUI widget handle.
 

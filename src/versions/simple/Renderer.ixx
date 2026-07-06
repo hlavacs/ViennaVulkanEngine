@@ -1,4 +1,5 @@
 module;
+#include <new>
 #include <SDL3/SDL_video.h>
 #include <vulkan/vulkan_core.h>
 
@@ -94,8 +95,6 @@ export namespace vve::simple {
 		ShadowMap pointShadowArray{};          ///< Owned point shadow-map texture array with six layers per shadowed point light.
 		TextureImage objectTexture{};           ///< Owned optional base-color texture bound only when the loaded scene requests one.
 		TextureImage defaultObjectTexture{};    ///< Owned opaque-white texture bound when the scene has no base-color texture.
-		VulkanRenderPass renderPass{};         ///< Owned forward render pass for swapchain color output.
-		VulkanFramebuffers framebuffers{};     ///< Owned swapchain framebuffers for render-pass attachments.
 		VulkanDescriptorSetLayout descriptorSetLayout{}; ///< Owned frame-uniform and shadow-map descriptor-set layout.
 		VulkanPipelineLayout pipelineLayout{}; ///< Owned graphics pipeline layout using the frame descriptor set.
 		VulkanShaderModule vertShaderModule{}; ///< Owned forward vertex shader module.
@@ -138,6 +137,12 @@ export namespace vve::simple {
 		/// @brief Stores the optional GUI command recorder used inside the forward color pass.
 		void setGuiRecordSink(std::function<void(VkCommandBuffer)> sink) { guiRecord_ = std::move(sink); }
 
+		/// @brief Enables expensive GPU-to-CPU shadow diagnostics for explicit verification runs.
+		void setGpuDebugReadback(bool enabled) { gpuDebugReadback_ = enabled; }
+
+		/// @brief Reports whether per-frame GPU debug readback is enabled.
+		[[nodiscard]] bool gpuDebugReadbackEnabled() const { return gpuDebugReadback_; }
+
 		/// @brief Reports whether the renderer currently owns a live Vulkan device.
 		[[nodiscard]] bool initialized() const { return device.device != VK_NULL_HANDLE; }
 
@@ -169,6 +174,15 @@ export namespace vve::simple {
 		std::array<float, 4> clearColor{0.0F, 0.0F, 0.0F, 1.0F}; ///< Last clear color used by the renderer.
 		/// @brief Reports the last clear color used by the forward renderer.
 		[[nodiscard]] std::array<float, 4> lastClearColor() const { return clearColor; }
+
+		/// @brief Chooses FIFO in Debug builds and mailbox in optimized builds.
+		[[nodiscard]] static constexpr VulkanSwapchain::PresentModePreference defaultPresentMode() {
+#ifdef VVE_SIMPLE_RELEASE_PRESENT_MAILBOX
+			return VulkanSwapchain::PresentModePreference::mailbox;
+#else
+			return VulkanSwapchain::PresentModePreference::fifo;
+#endif
+		}
 
 		/**
 			* @brief Replaces the current CPU scene before future renderer upload.
@@ -213,6 +227,7 @@ export namespace vve::simple {
 		VkDescriptorPool imguiDescriptorPool_{VK_NULL_HANDLE}; ///< Owned Dear ImGui descriptor pool reserved for backend texture descriptors.
 		void *guiSystem_{nullptr}; ///< Non-owning, type-erased GUI system pointer reserved for later GUI integration.
 		std::function<void(VkCommandBuffer)> guiRecord_; ///< Optional GUI recorder invoked during the forward color pass.
+		bool gpuDebugReadback_{false}; ///< False during normal rendering to avoid per-frame GPU stalls.
 	};
 
 	/// @brief No-op renderer used as an explicit placeholder for future renderer selection.

@@ -215,7 +215,7 @@ export namespace vve::simple {
 			if (spotShadowDepthReadback.extent.width == 0U || spotShadowDepthReadback.extent.height == 0U) { return; }
 			if (vkDeviceWaitIdle(renderer.device.device) != VK_SUCCESS) { return; }
 
-			const std::size_t sampleCount{std::min({renderer.spotLightViewProjCount, spotShadowDepthSampleCountStorage(), renderer.spotShadowArray.layerFramebuffers.size()})}; // Only rendered spot slots are read back.
+			const std::size_t sampleCount{std::min({renderer.spotLightViewProjCount, spotShadowDepthSampleCountStorage(), renderer.spotShadowArray.ownedLayerViews.size()})}; // Only rendered spot slots are read back.
 			for (std::size_t spotIndex{}; spotIndex < sampleCount; ++spotIndex) {
 				RenderShadowDepthSample &sample = spotShadowDepthSampleStorage()[spotIndex]; // Existing CPU sample owns NDC and expected depth.
 				const auto texel = spotShadowDebugTexel(sample.light_ndc);
@@ -263,12 +263,12 @@ export namespace vve::simple {
 			if (vkDeviceWaitIdle(renderer.device.device) != VK_SUCCESS) { return; }
 
 			constexpr std::uint32_t firstPointShadowLayer{static_cast<std::uint32_t>(kMaxShadowedSpotLights)}; // CPU samples store the combined spot-plus-point layer.
-			const std::size_t sampleCount{std::min(pointShadowDepthSampleCountStorage(), renderer.pointShadowArray.layerFramebuffers.size())}; // Only retained point-light samples are read.
+			const std::size_t sampleCount{std::min(pointShadowDepthSampleCountStorage(), renderer.pointShadowArray.ownedLayerViews.size())}; // Only retained point-light samples are read.
 			for (std::size_t pointIndex{}; pointIndex < sampleCount; ++pointIndex) {
 				RenderShadowDepthSample &sample = pointShadowDepthSampleStorage()[pointIndex]; // Existing CPU sample owns selected face, layer, and NDC.
 				if (sample.pixel_x < firstPointShadowLayer) { continue; }
 				const std::uint32_t pointArrayLayer{sample.pixel_x - firstPointShadowLayer}; // Point texture array stores only point faces.
-				if (pointArrayLayer >= renderer.pointShadowArray.layerFramebuffers.size()) { continue; }
+				if (pointArrayLayer >= renderer.pointShadowArray.ownedLayerViews.size()) { continue; }
 
 				const auto texel = spotShadowDebugTexel(sample.light_ndc);
 				if (pointShadowDepthReadback.capture(renderer.pointShadowArray.image, pointArrayLayer) != VK_SUCCESS) { continue; }

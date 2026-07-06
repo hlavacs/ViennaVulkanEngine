@@ -6,6 +6,7 @@ module;
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
 #include <vulkan/vulkan.h>
+#include <vulkan/vulkan_raii.hpp>
 #include <SDL3/SDL_vulkan.h>
 #ifdef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
 #undef SDL_MAIN_HANDLED
@@ -14,6 +15,7 @@ module;
 
 export module VEEngine.Simple.Vulkan:Shadow;
 import :Device;
+import :OwnedHandle;
 import :Pipeline;
 import std;
 
@@ -29,15 +31,13 @@ export namespace vve::simple {
 	/// @brief Minimal standalone shadow-map owner; array layers are reserved for later multi-light shadow targets.
 	struct ShadowMap {
 		static constexpr std::uint32_t resolution{1024U};          ///< Fixed square shadow-map side length in pixels.
+		const VulkanOwnedHandle<vk::raii::Device, VkDevice> *ownedDevice{}; ///< Borrowed RAII device for owned child resources.
 		VkDevice device{VK_NULL_HANDLE};                           ///< Borrowed Vulkan logical device used to destroy resources.
-		VkImage image{VK_NULL_HANDLE};                             ///< Owned D32 depth image handle.
-		VkDeviceMemory memory{VK_NULL_HANDLE};                     ///< Owned device-local memory backing the depth image.
-		VkImageView view{VK_NULL_HANDLE};                          ///< Owned depth image view for single-layer or whole-array sampling use.
-		std::vector<VkImageView> layerViews{};                     ///< Owned per-layer 2D depth views for future array-layer framebuffers.
-		std::vector<VkFramebuffer> layerFramebuffers{};            ///< Owned per-layer depth framebuffers for future multi-light shadow passes.
-		VkSampler sampler{VK_NULL_HANDLE};                         ///< Owned clamp sampler for later shadow-map reads.
-		VkRenderPass renderPass{VK_NULL_HANDLE};                   ///< Owned depth-only render pass compatible with the shadow image.
-		VkFramebuffer framebuffer{VK_NULL_HANDLE};                 ///< Owned square framebuffer attaching the shadow depth view.
+		VulkanOwnedHandle<vk::raii::Image, VkImage> image{};       ///< Owned D32 depth image handle.
+		VulkanOwnedHandle<vk::raii::DeviceMemory, VkDeviceMemory> memory{}; ///< Owned device-local memory backing the depth image.
+		VulkanOwnedHandle<vk::raii::ImageView, VkImageView> imageView{}; ///< Owned depth image view for single-layer or whole-array sampling use.
+		std::vector<VulkanOwnedHandle<vk::raii::ImageView, VkImageView>> ownedLayerViews{}; ///< Owned per-layer 2D depth views.
+		VulkanOwnedHandle<vk::raii::Sampler, VkSampler> shadowSampler{}; ///< Owned clamp sampler for later shadow-map reads.
 		VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};           ///< Owned layout for frame uniforms and model push constants.
 		VkPipeline pipeline{VK_NULL_HANDLE};                       ///< Owned depth-only shadow graphics pipeline, currently unused.
 		std::uint32_t layerCount{1U};                              ///< Number of array layers allocated in the owned depth image.
@@ -54,10 +54,11 @@ export namespace vve::simple {
 			* @param requestedLayerCount Number of array layers to allocate, defaulting to one for existing callers.
 			* @return VK_SUCCESS when the shadow-map resources are ready, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, VkDevice owningDevice, std::uint32_t requestedLayerCount = 1U) {
+		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::uint32_t requestedLayerCount = 1U) {
 			cleanup();
 			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || requestedLayerCount == 0U) { return VK_ERROR_INITIALIZATION_FAILED; }
 
+			ownedDevice = &owningDevice;
 			device = owningDevice;
 			layerCount = requestedLayerCount;
 			/// @brief Depth image descriptor for a fixed-size sampled shadow attachment.
@@ -75,8 +76,10 @@ export namespace vve::simple {
 				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			};
 
-			VkResult result = vkCreateImage(device, &imageInfo, nullptr, &image);
+			VkImage rawImage{VK_NULL_HANDLE};
+			VkResult result = vkCreateImage(device, &imageInfo, nullptr, &rawImage);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
+			image.handle = vk::raii::Image{(*ownedDevice).handle, rawImage};
 
 			VkMemoryRequirements requirements{};
 			vkGetImageMemoryRequirements(device, image, &requirements);
@@ -94,8 +97,10 @@ export namespace vve::simple {
 				.memoryTypeIndex = *memoryType,
 			};
 
-			result = vkAllocateMemory(device, &allocateInfo, nullptr, &memory);
+			VkDeviceMemory rawMemory{VK_NULL_HANDLE};
+			result = vkAllocateMemory(device, &allocateInfo, nullptr, &rawMemory);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
+			memory.handle = vk::raii::DeviceMemory{(*ownedDevice).handle, rawMemory};
 
 			result = vkBindImageMemory(device, image, memory, 0U);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
@@ -115,12 +120,14 @@ export namespace vve::simple {
 				},
 			};
 
-			result = vkCreateImageView(device, &viewInfo, nullptr, &view);
+			VkImageView rawView{VK_NULL_HANDLE};
+			result = vkCreateImageView(device, &viewInfo, nullptr, &rawView);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
+			imageView.handle = vk::raii::ImageView{(*ownedDevice).handle, rawView};
 
 			// Multi-layer shadow maps expose one 2D view per layer for later per-light framebuffers.
 			if (layerCount > 1U) {
-				layerViews.reserve(layerCount);
+				ownedLayerViews.reserve(layerCount);
 				for (std::uint32_t layer{}; layer < layerCount; ++layer) {
 					const VkImageViewCreateInfo layerViewInfo{
 						.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -135,10 +142,10 @@ export namespace vve::simple {
 							.layerCount = 1U,
 						},
 					};
-					VkImageView layerView{VK_NULL_HANDLE}; ///< Per-layer 2D view owned by layerViews after creation.
-					result = vkCreateImageView(device, &layerViewInfo, nullptr, &layerView);
+					VkImageView rawLayerView{VK_NULL_HANDLE}; ///< Per-layer 2D view owned by ownedLayerViews after creation.
+					result = vkCreateImageView(device, &layerViewInfo, nullptr, &rawLayerView);
 					if (result != VK_SUCCESS) { cleanup(); return result; }
-					layerViews.push_back(layerView);
+					ownedLayerViews.emplace_back().handle = vk::raii::ImageView{(*ownedDevice).handle, rawLayerView};
 				}
 			}
 
@@ -155,91 +162,14 @@ export namespace vve::simple {
 				.maxLod = 1.0F,
 			};
 
-			result = vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
+			VkSampler rawSampler{VK_NULL_HANDLE};
+			result = vkCreateSampler(device, &samplerInfo, nullptr, &rawSampler);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
+			shadowSampler.handle = vk::raii::Sampler{(*ownedDevice).handle, rawSampler};
 
-			const VkAttachmentDescription attachment{
-				.format = VK_FORMAT_D32_SFLOAT,
-				.samples = VK_SAMPLE_COUNT_1_BIT,
-				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-				.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
-				.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-				.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
-			const VkAttachmentReference depthReference{
-				.attachment = 0U,
-				.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
-			};
-			const VkSubpassDescription subpass{
-				.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
-				.pDepthStencilAttachment = &depthReference,
-			};
-			/// @brief Shadow depth writes must be visible before the forward pass samples them.
-			const std::array<VkSubpassDependency, 2U> dependencies{{
-				{
-					.srcSubpass = VK_SUBPASS_EXTERNAL,
-					.dstSubpass = 0U,
-					.srcStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					.dstStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-				},
-				{
-					.srcSubpass = 0U,
-					.dstSubpass = VK_SUBPASS_EXTERNAL,
-					.srcStageMask = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-					.dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
-					.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
-				},
-			}};
-			const VkRenderPassCreateInfo renderPassInfo{
-				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-				.attachmentCount = 1U,
-				.pAttachments = &attachment,
-				.subpassCount = 1U,
-				.pSubpasses = &subpass,
-				.dependencyCount = static_cast<std::uint32_t>(dependencies.size()),
-				.pDependencies = dependencies.data(),
-			};
-
-			result = vkCreateRenderPass(device, &renderPassInfo, nullptr, &renderPass);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
-
-			// Multi-layer maps get one framebuffer per 2D layer view; the pipeline remains single-layer only for now.
 			if (layerCount > 1U) {
-				layerFramebuffers.reserve(layerViews.size());
-				for (VkImageView layerView : layerViews) {
-					const VkFramebufferCreateInfo layerFramebufferInfo{
-						.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-						.renderPass = renderPass,
-						.attachmentCount = 1U,
-						.pAttachments = &layerView,
-						.width = resolution,
-						.height = resolution,
-						.layers = 1U,
-					};
-					VkFramebuffer layerFramebuffer{VK_NULL_HANDLE}; ///< Per-layer framebuffer owned by layerFramebuffers after creation.
-					result = vkCreateFramebuffer(device, &layerFramebufferInfo, nullptr, &layerFramebuffer);
-					if (result != VK_SUCCESS) { cleanup(); return result; }
-					layerFramebuffers.push_back(layerFramebuffer);
-				}
 				return VK_SUCCESS;
 			}
-
-			const VkFramebufferCreateInfo framebufferInfo{
-				.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-				.renderPass = renderPass,
-				.attachmentCount = 1U,
-				.pAttachments = &view,
-				.width = resolution,
-				.height = resolution,
-				.layers = 1U,
-			};
-
-			result = vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffer);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
 			return VK_SUCCESS;
 		}
 
@@ -265,26 +195,17 @@ export namespace vve::simple {
 		}
 
 		/**
-			* @brief Destroys the owned shadow framebuffer, render pass, sampler, depth image view, image, and memory.
+			* @brief Destroys the owned shadow sampler, depth image view, image, and memory.
 			*/
 		void cleanup() {
 			cleanupPipeline();
-			if (framebuffer != VK_NULL_HANDLE) { vkDestroyFramebuffer(device, framebuffer, nullptr); }
-			for (VkFramebuffer layerFramebuffer : layerFramebuffers) { vkDestroyFramebuffer(device, layerFramebuffer, nullptr); }
-			if (renderPass != VK_NULL_HANDLE) { vkDestroyRenderPass(device, renderPass, nullptr); }
-			if (sampler != VK_NULL_HANDLE) { vkDestroySampler(device, sampler, nullptr); }
-			for (VkImageView layerView : layerViews) { vkDestroyImageView(device, layerView, nullptr); }
-			if (view != VK_NULL_HANDLE) { vkDestroyImageView(device, view, nullptr); }
-			if (image != VK_NULL_HANDLE) { vkDestroyImage(device, image, nullptr); }
-			if (memory != VK_NULL_HANDLE) { vkFreeMemory(device, memory, nullptr); }
-			framebuffer = VK_NULL_HANDLE;
-			layerFramebuffers.clear();
-			renderPass = VK_NULL_HANDLE;
-			sampler = VK_NULL_HANDLE;
-			layerViews.clear();
-			view = VK_NULL_HANDLE;
-			image = VK_NULL_HANDLE;
-			memory = VK_NULL_HANDLE;
+			shadowSampler.reset();
+			for (auto &layerView : ownedLayerViews) { layerView.reset(); }
+			ownedLayerViews.clear();
+			imageView.reset();
+			image.reset();
+			memory.reset();
+			ownedDevice = nullptr;
 			device = VK_NULL_HANDLE;
 			layerCount = 1U;
 		}
@@ -305,10 +226,10 @@ export namespace vve::simple {
 		*/
 	[[nodiscard]] VkResult ShadowMap::createPipeline(VkDescriptorSetLayout setLayout, std::string_view shadowVertexSpirvPath, std::string_view vertexEntry, const VulkanVertexInputDescription &vertexInput) {
 		cleanupPipeline();
-		if (device == VK_NULL_HANDLE || renderPass == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE || vertexEntry.empty()) { return VK_ERROR_INITIALIZATION_FAILED; }
+		if (ownedDevice == nullptr || device == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE || vertexEntry.empty()) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 		VulkanShaderModule shadowVertexModule{}; // Temporary module is only needed while creating the pipeline.
-		VkResult result = shadowVertexModule.create(device, shadowVertexSpirvPath);
+		VkResult result = shadowVertexModule.create(*ownedDevice, shadowVertexSpirvPath);
 		if (result != VK_SUCCESS) { return result; }
 
 		const VkPushConstantRange modelPushConstants{
@@ -396,8 +317,15 @@ export namespace vve::simple {
 			.depthBoundsTestEnable = VK_FALSE,
 			.stencilTestEnable = VK_FALSE,
 		};
+		const VkPipelineRenderingCreateInfo renderingInfo{ ///< Depth-only dynamic-rendering attachment format.
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+			.colorAttachmentCount = 0U,
+			.pColorAttachmentFormats = nullptr,
+			.depthAttachmentFormat = VK_FORMAT_D32_SFLOAT,
+		};
 		const VkGraphicsPipelineCreateInfo createInfo{
 			.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+			.pNext = &renderingInfo,
 			.stageCount = 1U,
 			.pStages = &shaderStage,
 			.pVertexInputState = &vertexInputState,
@@ -409,7 +337,7 @@ export namespace vve::simple {
 			.pColorBlendState = &colorBlending,
 			.pDynamicState = nullptr,
 			.layout = pipelineLayout,
-			.renderPass = renderPass,
+			.renderPass = VK_NULL_HANDLE,
 			.subpass = 0U,
 			.basePipelineHandle = VK_NULL_HANDLE,
 		};

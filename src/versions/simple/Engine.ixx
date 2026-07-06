@@ -18,7 +18,7 @@ export import :Window;
 export import :Assets;
 export import :RenderSystem;
 export import :Resources;
-export import :Shaders;
+export import VEEngine.Simple.Shaders;
 export import VEEngine.Simple.Handle;
 export import :Gui;
 

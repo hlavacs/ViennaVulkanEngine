@@ -5,7 +5,7 @@ module;
 #endif
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_raii.hpp>
 #include <SDL3/SDL_vulkan.h>
 #include <stb_image.h>
 #ifdef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
@@ -17,10 +17,12 @@ export module VEEngine.Simple.Vulkan:Resources;
 import :Device;
 import :Commands;
 import :Readback;
+import :OwnedHandle;
 import std;
 import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Math;
 import VEEngine.Simple.Scene;
+import VEEngine.Vector;
 
 /**
 	* @file
@@ -38,12 +40,12 @@ export namespace vve::simple {
 
 	/// @brief Internal owner for one sampled 8-bit RGBA texture image uploaded with a staging buffer.
 	struct TextureImage {
-		VkDevice device{VK_NULL_HANDLE};              ///< Borrowed Vulkan logical device used to destroy texture resources.
-		VkImage image{VK_NULL_HANDLE};                ///< Owned device-local sampled color image.
-		VkDeviceMemory memory{VK_NULL_HANDLE};        ///< Owned device-local memory backing the texture image.
-		VkImageView view{VK_NULL_HANDLE};             ///< Owned RGBA image view for shader sampling.
-		VkSampler sampler{VK_NULL_HANDLE};            ///< Owned linear repeat sampler for texture reads.
-		VkExtent2D extent{};                          ///< Loaded texture width and height in pixels.
+		VkDevice device{VK_NULL_HANDLE};                                      ///< Borrowed Vulkan logical device used for upload commands.
+		VulkanOwnedHandle<vk::raii::Image, VkImage> image{};                  ///< Owned device-local sampled color image.
+		VulkanOwnedHandle<vk::raii::DeviceMemory, VkDeviceMemory> memory{};   ///< Owned device-local memory backing the texture image.
+		VulkanOwnedHandle<vk::raii::ImageView, VkImageView> imageView{};      ///< Owned RGBA image view for shader sampling.
+		VulkanOwnedHandle<vk::raii::Sampler, VkSampler> textureSampler{};     ///< Owned linear repeat sampler for texture reads.
+		VkExtent2D extent{};                                                  ///< Loaded texture width and height in pixels.
 
 		TextureImage() = default;
 		TextureImage(const TextureImage &) = delete;
@@ -61,7 +63,7 @@ export namespace vve::simple {
 			*/
 		[[nodiscard]] VkResult create(
 			VkPhysicalDevice physicalDevice,
-			VkDevice owningDevice,
+			const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice,
 			VkQueue graphicsQueue,
 			VkCommandPool commandPool,
 			const std::filesystem::path &imagePath
@@ -99,7 +101,7 @@ export namespace vve::simple {
 			*/
 		[[nodiscard]] VkResult create(
 			VkPhysicalDevice physicalDevice,
-			VkDevice owningDevice,
+			const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice,
 			VkQueue graphicsQueue,
 			VkCommandPool commandPool,
 			std::span<const std::byte> rgbaPixels,
@@ -126,13 +128,13 @@ export namespace vve::simple {
 
 			device = owningDevice;
 			extent = textureExtent;
-			result = createImage(physicalDevice);
+			result = createImage(physicalDevice, owningDevice);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
 			result = uploadFrom(stagingBuffer.buffer, graphicsQueue, commandPool);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
-			result = createViewAndSampler();
+			result = createViewAndSampler(owningDevice);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 			return VK_SUCCESS;
 		}
@@ -141,22 +143,13 @@ export namespace vve::simple {
 			* @brief Destroys the owned sampler, view, image, memory, and clears the borrowed device handle.
 			*/
 		void cleanup() {
-			if (sampler != VK_NULL_HANDLE) { vkDestroySampler(device, sampler, nullptr); }
-			if (view != VK_NULL_HANDLE) { vkDestroyImageView(device, view, nullptr); }
-			if (image != VK_NULL_HANDLE) { vkDestroyImage(device, image, nullptr); }
-			if (memory != VK_NULL_HANDLE) { vkFreeMemory(device, memory, nullptr); }
-			sampler = VK_NULL_HANDLE;
-			view = VK_NULL_HANDLE;
-			image = VK_NULL_HANDLE;
-			memory = VK_NULL_HANDLE;
+			textureSampler.reset();
+			imageView.reset();
+			image.reset();
+			memory.reset();
 			extent = {};
 			device = VK_NULL_HANDLE;
 		}
-
-		/**
-			* @brief Destroys the owned texture image resources on scope exit.
-			*/
-		~TextureImage() { cleanup(); }
 
 	private:
 		/**
@@ -165,7 +158,7 @@ export namespace vve::simple {
 			* @param physicalDevice Physical device used to query image memory requirements.
 			* @return VK_SUCCESS when the image and memory binding are ready, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult createImage(VkPhysicalDevice physicalDevice) {
+		[[nodiscard]] VkResult createImage(VkPhysicalDevice physicalDevice, const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice) {
 			const VkImageCreateInfo imageInfo{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 				.imageType = VK_IMAGE_TYPE_2D,
@@ -180,8 +173,10 @@ export namespace vve::simple {
 				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			};
 
-			VkResult result = vkCreateImage(device, &imageInfo, nullptr, &image);
+			VkImage rawImage{VK_NULL_HANDLE};
+			VkResult result = vkCreateImage(device, &imageInfo, nullptr, &rawImage);
 			if (result != VK_SUCCESS) { return result; }
+			image.handle = vk::raii::Image{owningDevice.handle, rawImage};
 
 			VkMemoryRequirements requirements{};
 			vkGetImageMemoryRequirements(device, image, &requirements);
@@ -198,8 +193,10 @@ export namespace vve::simple {
 				.memoryTypeIndex = *memoryType,
 			};
 
-			result = vkAllocateMemory(device, &allocateInfo, nullptr, &memory);
+			VkDeviceMemory rawMemory{VK_NULL_HANDLE};
+			result = vkAllocateMemory(device, &allocateInfo, nullptr, &rawMemory);
 			if (result != VK_SUCCESS) { return result; }
+			memory.handle = vk::raii::DeviceMemory{owningDevice.handle, rawMemory};
 			return vkBindImageMemory(device, image, memory, 0U);
 		}
 
@@ -282,7 +279,7 @@ export namespace vve::simple {
 			*
 			* @return VK_SUCCESS when both sampling handles are ready, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult createViewAndSampler() {
+		[[nodiscard]] VkResult createViewAndSampler(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice) {
 			const VkImageViewCreateInfo viewInfo{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 				.image = image,
@@ -297,8 +294,10 @@ export namespace vve::simple {
 				},
 			};
 
-			VkResult result = vkCreateImageView(device, &viewInfo, nullptr, &view);
+			VkImageView rawView{VK_NULL_HANDLE};
+			VkResult result = vkCreateImageView(device, &viewInfo, nullptr, &rawView);
 			if (result != VK_SUCCESS) { return result; }
+			imageView.handle = vk::raii::ImageView{owningDevice.handle, rawView};
 
 			const VkSamplerCreateInfo samplerInfo{
 				.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -312,15 +311,18 @@ export namespace vve::simple {
 				.maxLod = 1.0F,
 			};
 
-			return vkCreateSampler(device, &samplerInfo, nullptr, &sampler);
+			VkSampler rawSampler{VK_NULL_HANDLE};
+			result = vkCreateSampler(device, &samplerInfo, nullptr, &rawSampler);
+			if (result != VK_SUCCESS) { return result; }
+			textureSampler.handle = vk::raii::Sampler{owningDevice.handle, rawSampler};
+			return VK_SUCCESS;
 		}
 	};
 
 
 	/// @brief Minimal Vulkan descriptor-pool owner for uniform-buffer, shadow-map, and object-texture descriptor sets.
 	struct VulkanDescriptorPool {
-		VkDevice device{VK_NULL_HANDLE};                       ///< Borrowed device used to destroy the pool.
-		VkDescriptorPool descriptorPool{VK_NULL_HANDLE};        ///< Owned descriptor pool.
+		VulkanOwnedHandle<vk::raii::DescriptorPool, VkDescriptorPool> descriptorPool{}; ///< Owned descriptor pool.
 
 		VulkanDescriptorPool() = default;
 		VulkanDescriptorPool(const VulkanDescriptorPool &) = delete;
@@ -330,17 +332,25 @@ export namespace vve::simple {
 			* @brief Creates a descriptor pool for per-frame uniform-buffer, shadow-map, and object-texture descriptor sets.
 			*
 			* @param owningDevice Logical device that owns the descriptor pool.
-			* @param maxSets Maximum descriptor-set count and descriptor count per binding.
+			* @param maxSets Maximum descriptor-set count.
+			* @param descriptorBindings Slang-reflected set bindings used to size the pool.
 			* @return VK_SUCCESS when the descriptor pool is available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkDevice owningDevice, std::uint32_t maxSets) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::uint32_t maxSets, const Vector<VkDescriptorSetLayoutBinding> &descriptorBindings) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-			const std::array poolSizes{
-				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = maxSets},
-				VkDescriptorPoolSize{.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = maxSets * 6U},
-			};
+			std::vector<VkDescriptorPoolSize> poolSizes{}; // One pool entry per reflected descriptor type.
+			for (const VkDescriptorSetLayoutBinding &binding : descriptorBindings) {
+				auto poolSize = std::ranges::find(poolSizes, binding.descriptorType, &VkDescriptorPoolSize::type);
+				if (poolSize == poolSizes.end()) { poolSize = poolSizes.insert(poolSize, VkDescriptorPoolSize{.type = binding.descriptorType}); }
+				poolSize->descriptorCount += maxSets;
+			}
+			if (poolSizes.size() != 2U) { return VK_ERROR_INITIALIZATION_FAILED; }
+			const auto uniformPoolSize = std::ranges::find(poolSizes, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &VkDescriptorPoolSize::type);
+			const auto samplerPoolSize = std::ranges::find(poolSizes, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &VkDescriptorPoolSize::type);
+			if (uniformPoolSize == poolSizes.end() || samplerPoolSize == poolSizes.end() || uniformPoolSize->descriptorCount != maxSets || samplerPoolSize->descriptorCount != maxSets * 6U) { return VK_ERROR_INITIALIZATION_FAILED; }
+
 			const VkDescriptorPoolCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
 				.maxSets = maxSets,
@@ -348,34 +358,24 @@ export namespace vve::simple {
 				.pPoolSizes = poolSizes.data(),
 			};
 
-			device = owningDevice;
-			const VkResult result = vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool);
-			if (result != VK_SUCCESS) {
-				descriptorPool = VK_NULL_HANDLE;
-				device = VK_NULL_HANDLE;
-			}
-			return result;
+			VkDescriptorPool rawDescriptorPool{VK_NULL_HANDLE};
+			const VkResult result = vkCreateDescriptorPool(owningDevice, &createInfo, nullptr, &rawDescriptorPool);
+			return descriptorPool.assign(owningDevice.handle, result, rawDescriptorPool);
 		}
 
 		/**
-			* @brief Destroys the owned descriptor pool and clears the borrowed device handle.
+			* @brief Releases the owned descriptor pool through its RAII wrapper.
 			*/
-		void cleanup() {
-			if (descriptorPool != VK_NULL_HANDLE) { vkDestroyDescriptorPool(device, descriptorPool, nullptr); }
-			descriptorPool = VK_NULL_HANDLE;
-			device = VK_NULL_HANDLE;
-		}
-
-		/**
-			* @brief Destroys the owned descriptor pool on scope exit.
-			*/
-		~VulkanDescriptorPool() { cleanup(); }
+		void cleanup() { descriptorPool.reset(); }
 	};
 
 	/// @brief Minimal Vulkan descriptor-set owner for per-frame uniform-buffer, shadow-map, and object-texture bindings.
 	struct VulkanDescriptorSets {
 		VkDevice device{VK_NULL_HANDLE};                         ///< Borrowed device used for allocation and updates.
 		VkDescriptorPool descriptorPool{VK_NULL_HANDLE};          ///< Borrowed pool that owns the allocations; sets are freed implicitly with the pool.
+		Vector<VkDescriptorSetLayoutBinding> descriptorBindings{}; ///< Slang-reflected set-0 bindings used when writing descriptors.
+		std::optional<std::uint32_t> objectTextureBinding{};      ///< Reflected set-0 binding for the object base-color texture.
+		std::array<std::optional<std::uint32_t>, 5U> shadowSamplerBindings{}; ///< Reflected set-0 bindings for all shadow samplers.
 		std::vector<VkDescriptorSet> descriptorSets{};            ///< Owned descriptor sets allocated one per frame.
 
 		VulkanDescriptorSets() = default;
@@ -388,17 +388,30 @@ export namespace vve::simple {
 			* @param owningDevice Logical device that owns the descriptor pool.
 			* @param pool Descriptor pool used for descriptor-set allocation.
 			* @param setLayout Descriptor-set layout repeated for every frame set.
+			* @param reflectedBindings Slang-reflected set-0 binding contract used by descriptor writes.
+			* @param reflectedObjectTextureBinding Slang-reflected binding for the named object base-color texture.
+			* @param reflectedShadowSamplerBindings Slang-reflected bindings for the named shadow-map sampler parameters.
 			* @param count Number of per-frame descriptor sets to allocate.
 			* @return VK_SUCCESS when all descriptor sets are allocated, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkDevice owningDevice, VkDescriptorPool pool, VkDescriptorSetLayout setLayout, std::uint32_t count) {
+		[[nodiscard]] VkResult create(VkDevice owningDevice, VkDescriptorPool pool, VkDescriptorSetLayout setLayout, const Vector<VkDescriptorSetLayoutBinding> &reflectedBindings, std::uint32_t reflectedObjectTextureBinding, std::array<std::uint32_t, 5U> reflectedShadowSamplerBindings, std::uint32_t count) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE || pool == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE) {
 				return VK_ERROR_INITIALIZATION_FAILED;
 			}
+			const auto uniformBinding = std::ranges::find(reflectedBindings, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &VkDescriptorSetLayoutBinding::descriptorType);
+			if (uniformBinding == reflectedBindings.end()) { return VK_ERROR_INITIALIZATION_FAILED; }
+			const auto hasSamplerBinding = [&reflectedBindings](std::uint32_t binding) {
+				const auto layoutBinding = std::ranges::find(reflectedBindings, binding, &VkDescriptorSetLayoutBinding::binding);
+				return layoutBinding != reflectedBindings.end() && layoutBinding->descriptorType == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+			};
+			if (!hasSamplerBinding(reflectedObjectTextureBinding) || !std::ranges::all_of(reflectedShadowSamplerBindings, hasSamplerBinding)) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			device = owningDevice;
 			descriptorPool = pool;
+			descriptorBindings = reflectedBindings;
+			objectTextureBinding = reflectedObjectTextureBinding;
+			std::ranges::transform(reflectedShadowSamplerBindings, shadowSamplerBindings.begin(), [](std::uint32_t binding) { return std::optional{binding}; });
 			auto layouts = std::vector<VkDescriptorSetLayout>(count, setLayout);
 			const VkDescriptorSetAllocateInfo allocateInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -411,6 +424,9 @@ export namespace vve::simple {
 			const VkResult result = vkAllocateDescriptorSets(device, &allocateInfo, descriptorSets.data());
 			if (result != VK_SUCCESS) {
 				descriptorSets.clear();
+				descriptorBindings.clear();
+				objectTextureBinding.reset();
+				std::ranges::fill(shadowSamplerBindings, std::nullopt);
 				device = VK_NULL_HANDLE;
 				descriptorPool = VK_NULL_HANDLE;
 			}
@@ -427,6 +443,8 @@ export namespace vve::simple {
 			*/
 		[[nodiscard]] VkResult writeUniformBuffer(std::uint32_t frameIndex, VkBuffer uniformBuffer, VkDeviceSize range) {
 			if (frameIndex >= descriptorSets.size() || uniformBuffer == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			const auto uniformBinding = std::ranges::find(descriptorBindings, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &VkDescriptorSetLayoutBinding::descriptorType);
+			if (uniformBinding == descriptorBindings.end()) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkDescriptorBufferInfo bufferInfo{
 				.buffer = uniformBuffer,
@@ -436,7 +454,7 @@ export namespace vve::simple {
 			const VkWriteDescriptorSet write{
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = 0U,
+				.dstBinding = uniformBinding->binding,
 				.dstArrayElement = 0U,
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -456,7 +474,7 @@ export namespace vve::simple {
 			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
 			*/
 		[[nodiscard]] VkResult writeShadowMap(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
-			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (frameIndex >= descriptorSets.size() || !shadowSamplerBindings[0U] || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkDescriptorImageInfo imageInfo{
 				.sampler = sampler,
@@ -466,7 +484,7 @@ export namespace vve::simple {
 			const VkWriteDescriptorSet write{
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = 1U,
+				.dstBinding = *shadowSamplerBindings[0U],
 				.dstArrayElement = 0U,
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -486,7 +504,7 @@ export namespace vve::simple {
 			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
 			*/
 		[[nodiscard]] VkResult writeSpotShadowMap(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
-			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (frameIndex >= descriptorSets.size() || !shadowSamplerBindings[1U] || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkDescriptorImageInfo imageInfo{
 				.sampler = sampler,
@@ -496,7 +514,7 @@ export namespace vve::simple {
 			const VkWriteDescriptorSet write{
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = 4U,
+				.dstBinding = *shadowSamplerBindings[1U],
 				.dstArrayElement = 0U,
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -516,7 +534,7 @@ export namespace vve::simple {
 			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
 			*/
 		[[nodiscard]] VkResult writeSpotShadowArray(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
-			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (frameIndex >= descriptorSets.size() || !shadowSamplerBindings[2U] || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkDescriptorImageInfo imageInfo{
 				.sampler = sampler,
@@ -526,7 +544,7 @@ export namespace vve::simple {
 			const VkWriteDescriptorSet write{
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = 5U,
+				.dstBinding = *shadowSamplerBindings[2U],
 				.dstArrayElement = 0U,
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -546,7 +564,7 @@ export namespace vve::simple {
 			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
 			*/
 		[[nodiscard]] VkResult writeDirShadowArray(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
-			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (frameIndex >= descriptorSets.size() || !shadowSamplerBindings[3U] || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkDescriptorImageInfo imageInfo{
 				.sampler = sampler,
@@ -556,7 +574,7 @@ export namespace vve::simple {
 			const VkWriteDescriptorSet write{
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = 6U,
+				.dstBinding = *shadowSamplerBindings[3U],
 				.dstArrayElement = 0U,
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -576,7 +594,7 @@ export namespace vve::simple {
 			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
 			*/
 		[[nodiscard]] VkResult writePointShadowArray(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
-			if (frameIndex >= descriptorSets.size() || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (frameIndex >= descriptorSets.size() || !shadowSamplerBindings[4U] || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkDescriptorImageInfo imageInfo{
 				.sampler = sampler,
@@ -586,7 +604,7 @@ export namespace vve::simple {
 			const VkWriteDescriptorSet write{
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = 7U,
+				.dstBinding = *shadowSamplerBindings[4U],
 				.dstArrayElement = 0U,
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -601,21 +619,21 @@ export namespace vve::simple {
 			* @brief Writes one frame descriptor set with its reserved binding-2 sampled object texture.
 			*
 			* @param frameIndex Frame set index to update.
-			* @param texture Object base-color texture bound to descriptor binding 2.
+			* @param texture Object base-color texture bound to the reflected Slang parameter binding.
 			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
 		*/
 		[[nodiscard]] VkResult writeObjectTexture(std::uint32_t frameIndex, const TextureImage &texture) {
-			if (frameIndex >= descriptorSets.size() || texture.view == VK_NULL_HANDLE || texture.sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (frameIndex >= descriptorSets.size() || !objectTextureBinding || texture.imageView == VK_NULL_HANDLE || texture.textureSampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkDescriptorImageInfo imageInfo{
-				.sampler = texture.sampler,
-				.imageView = texture.view,
+				.sampler = texture.textureSampler,
+				.imageView = texture.imageView,
 				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 			};
 			const VkWriteDescriptorSet write{
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = 2U,
+				.dstBinding = *objectTextureBinding,
 				.dstArrayElement = 0U,
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -631,6 +649,9 @@ export namespace vve::simple {
 			*/
 		void cleanup() {
 			descriptorSets.clear();
+			descriptorBindings.clear();
+			objectTextureBinding.reset();
+			std::ranges::fill(shadowSamplerBindings, std::nullopt);
 			device = VK_NULL_HANDLE;
 			descriptorPool = VK_NULL_HANDLE;
 		}
@@ -682,7 +703,7 @@ export namespace vve::simple {
 			* @param mesh CPU mesh whose vertices and indices are uploaded.
 			* @return VK_SUCCESS when both buffers are uploaded, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, VkDevice device, const vve::simple::Mesh &mesh) {
+		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, const VulkanOwnedHandle<vk::raii::Device, VkDevice> &device, const vve::simple::Mesh &mesh) {
 			cleanup();
 			if (physicalDevice == VK_NULL_HANDLE || device == VK_NULL_HANDLE || mesh.vertices.empty() || mesh.indices.empty()) {
 				return VK_ERROR_INITIALIZATION_FAILED;
@@ -781,7 +802,7 @@ export namespace vve::simple {
 			* @param framesInFlight Number of per-frame uniform buffers to create.
 			* @return VK_SUCCESS when all buffers are created, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, VkDevice device, std::uint32_t framesInFlight) {
+		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, const VulkanOwnedHandle<vk::raii::Device, VkDevice> &device, std::uint32_t framesInFlight) {
 			cleanup();
 			if (physicalDevice == VK_NULL_HANDLE || device == VK_NULL_HANDLE || framesInFlight == 0U) {
 				return VK_ERROR_INITIALIZATION_FAILED;

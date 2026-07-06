@@ -5,7 +5,7 @@ module;
 #endif
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_raii.hpp>
 #include <SDL3/SDL_vulkan.h>
 #ifdef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
 #undef SDL_MAIN_HANDLED
@@ -14,6 +14,7 @@ module;
 
 export module VEEngine.Simple.Vulkan:Commands;
 import :Device;
+import :OwnedHandle;
 import std;
 
 /**
@@ -21,16 +22,15 @@ import std;
 	* @brief Vulkan command and buffer ownership objects for the simple forward renderer.
 	*
 	* Functional objects:
-	* - VulkanCommandPool owns only VkCommandPool creation for the graphics queue family and teardown.
-	* - VulkanCommandBuffers owns primary command-buffer allocation from a borrowed command pool and teardown.
+	* - VulkanCommandPool owns only command-pool creation for the graphics queue family and RAII teardown.
+	* - VulkanCommandBuffers owns primary command-buffer allocation through RAII and exposes raw handles for recording.
 	* - VulkanFrameSync owns per-frame semaphores and fences for the simple forward renderer.
-	* - VulkanBuffer owns one VkBuffer and its backing VkDeviceMemory allocation.
+	* - VulkanBuffer owns one VkBuffer and its backing VkDeviceMemory allocation through RAII.
 	*/
 export namespace vve::simple {
 	/// @brief Minimal Vulkan command-pool owner for resettable graphics command buffers.
 	struct VulkanCommandPool {
-		VkDevice device{VK_NULL_HANDLE};              ///< Borrowed Vulkan logical device used to destroy the command pool.
-		VkCommandPool commandPool{VK_NULL_HANDLE};    ///< Owned command pool for the graphics queue family.
+		VulkanOwnedHandle<vk::raii::CommandPool, VkCommandPool> commandPool{}; ///< Owned command pool for the graphics queue family.
 
 		VulkanCommandPool() = default;
 		VulkanCommandPool(const VulkanCommandPool &) = delete;
@@ -43,7 +43,7 @@ export namespace vve::simple {
 			* @param graphicsQueueFamily Queue family index used for graphics commands.
 			* @return VK_SUCCESS when the command pool is available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkDevice owningDevice, std::uint32_t graphicsQueueFamily) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::uint32_t graphicsQueueFamily) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
@@ -53,35 +53,22 @@ export namespace vve::simple {
 				.queueFamilyIndex = graphicsQueueFamily,
 			};
 
-			device = owningDevice;
-			const VkResult result = vkCreateCommandPool(device, &createInfo, nullptr, &commandPool);
-			if (result != VK_SUCCESS) {
-				commandPool = VK_NULL_HANDLE;
-				device = VK_NULL_HANDLE;
-			}
+			VkCommandPool rawCommandPool{};
+			const VkResult result = vkCreateCommandPool(owningDevice, &createInfo, nullptr, &rawCommandPool);
+			if (result == VK_SUCCESS) { commandPool.handle = vk::raii::CommandPool{owningDevice.handle, rawCommandPool}; }
 			return result;
 		}
 
 		/**
-			* @brief Destroys the owned command pool and clears the borrowed device handle.
+			* @brief Releases the owned command pool through its RAII wrapper.
 			*/
-		void cleanup() {
-			if (commandPool != VK_NULL_HANDLE) { vkDestroyCommandPool(device, commandPool, nullptr); }
-			commandPool = VK_NULL_HANDLE;
-			device = VK_NULL_HANDLE;
-		}
-
-		/**
-			* @brief Destroys the owned command pool on scope exit.
-			*/
-		~VulkanCommandPool() { cleanup(); }
+		void cleanup() { commandPool.reset(); }
 	};
 
-	/// @brief Minimal Vulkan command-buffer owner for primary command buffers allocated from a borrowed pool.
+	/// @brief Minimal Vulkan command-buffer owner for primary command buffers allocated from the command pool.
 	struct VulkanCommandBuffers {
-		VkDevice device{VK_NULL_HANDLE};                       ///< Borrowed Vulkan logical device used to free command buffers.
-		VkCommandPool commandPool{VK_NULL_HANDLE};             ///< Borrowed command pool that owns the command-buffer allocations.
-		std::vector<VkCommandBuffer> commandBuffers{};         ///< Owned primary command buffers freed back to the borrowed pool.
+		std::vector<VulkanOwnedHandle<vk::raii::CommandBuffer, VkCommandBuffer>> ownedCommandBuffers{}; ///< RAII owners for primary command buffers.
+		std::vector<VkCommandBuffer> commandBuffers{}; ///< Raw command-buffer view kept for existing recording code.
 
 		VulkanCommandBuffers() = default;
 		VulkanCommandBuffers(const VulkanCommandBuffers &) = delete;
@@ -95,12 +82,10 @@ export namespace vve::simple {
 			* @param count Number of primary command buffers requested.
 			* @return VK_SUCCESS when all command buffers are allocated, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkDevice owningDevice, VkCommandPool owningPool, std::uint32_t count) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, const VulkanOwnedHandle<vk::raii::CommandPool, VkCommandPool> &owningPool, std::uint32_t count) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE || owningPool == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-			device = owningDevice;
-			commandPool = owningPool;
 			commandBuffers.resize(count);
 			const VkCommandBufferAllocateInfo allocateInfo{
 				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -109,25 +94,26 @@ export namespace vve::simple {
 				.commandBufferCount = count,
 			};
 
-			const VkResult result = vkAllocateCommandBuffers(device, &allocateInfo, commandBuffers.data());
+			const VkResult result = vkAllocateCommandBuffers(owningDevice, &allocateInfo, commandBuffers.data());
 			if (result != VK_SUCCESS) {
 				commandBuffers.clear();
-				device = VK_NULL_HANDLE;
-				commandPool = VK_NULL_HANDLE;
+				return result;
+			}
+
+			ownedCommandBuffers.reserve(commandBuffers.size());
+			for (VkCommandBuffer commandBuffer : commandBuffers) {
+				ownedCommandBuffers.emplace_back().handle = vk::raii::CommandBuffer{owningDevice.handle, commandBuffer, owningPool};
 			}
 			return result;
 		}
 
 		/**
-			* @brief Frees the owned command buffers and clears borrowed handles.
+			* @brief Releases the owned command buffers through their RAII wrappers.
 			*/
 		void cleanup() {
-			if (commandPool != VK_NULL_HANDLE && !commandBuffers.empty()) {
-				vkFreeCommandBuffers(device, commandPool, static_cast<std::uint32_t>(commandBuffers.size()), commandBuffers.data());
-			}
+			for (auto &commandBuffer : ownedCommandBuffers) { commandBuffer.reset(); }
+			ownedCommandBuffers.clear();
 			commandBuffers.clear();
-			device = VK_NULL_HANDLE;
-			commandPool = VK_NULL_HANDLE;
 		}
 
 		/**
@@ -138,10 +124,9 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan frame-synchronization owner for per-frame rendering primitives.
 	struct VulkanFrameSync {
-		VkDevice device{VK_NULL_HANDLE};                              ///< Borrowed Vulkan logical device used to destroy sync objects.
-		std::vector<VkSemaphore> imageAvailableSemaphores{};          ///< Owned semaphores signaled when swapchain images are ready.
-		std::vector<VkSemaphore> renderFinishedSemaphores{};          ///< Owned semaphores signaled when rendering has finished.
-		std::vector<VkFence> inFlightFences{};                        ///< Owned fences tracking submitted work for each frame slot.
+		std::vector<VulkanOwnedHandle<vk::raii::Semaphore, VkSemaphore>> imageAvailableSemaphores{}; ///< Owned semaphores signaled when swapchain images are ready.
+		std::vector<VulkanOwnedHandle<vk::raii::Semaphore, VkSemaphore>> renderFinishedSemaphores{}; ///< Owned semaphores signaled when rendering has finished.
+		std::vector<VulkanOwnedHandle<vk::raii::Fence, VkFence>> inFlightFences{};                   ///< Owned fences tracking submitted work for each frame slot.
 
 		VulkanFrameSync() = default;
 		VulkanFrameSync(const VulkanFrameSync &) = delete;
@@ -155,11 +140,10 @@ export namespace vve::simple {
 			* @param swapchainImageCount Number of swapchain images requiring independent present-wait semaphores.
 			* @return VK_SUCCESS when all synchronization primitives are available, otherwise the first Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkDevice owningDevice, std::uint32_t framesInFlight, std::uint32_t swapchainImageCount) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::uint32_t framesInFlight, std::uint32_t swapchainImageCount) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE || framesInFlight == 0U || swapchainImageCount == 0U) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-			device = owningDevice;
 			imageAvailableSemaphores.reserve(framesInFlight);
 			renderFinishedSemaphores.reserve(swapchainImageCount);
 			inFlightFences.reserve(framesInFlight);
@@ -176,45 +160,38 @@ export namespace vve::simple {
 				};
 
 				VkSemaphore imageAvailable{VK_NULL_HANDLE};
-				VkResult result = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &imageAvailable);
+				VkResult result = vkCreateSemaphore(owningDevice, &semaphoreInfo, nullptr, &imageAvailable);
 				if (result != VK_SUCCESS) { cleanup(); return result; }
-				imageAvailableSemaphores.push_back(imageAvailable);
+				imageAvailableSemaphores.emplace_back().handle = vk::raii::Semaphore{owningDevice.handle, imageAvailable};
 
 				VkFence inFlight{VK_NULL_HANDLE};
-				result = vkCreateFence(device, &fenceInfo, nullptr, &inFlight);
+				result = vkCreateFence(owningDevice, &fenceInfo, nullptr, &inFlight);
 				if (result != VK_SUCCESS) { cleanup(); return result; }
-				inFlightFences.push_back(inFlight);
+				inFlightFences.emplace_back().handle = vk::raii::Fence{owningDevice.handle, inFlight};
 			}
 
 			// Present waits can outlive a frame slot, so each swapchain image owns its signal semaphore.
 			for (std::uint32_t image{}; image < swapchainImageCount; ++image) {
 				const VkSemaphoreCreateInfo semaphoreInfo{.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
 				VkSemaphore renderFinished{VK_NULL_HANDLE};
-				const VkResult result = vkCreateSemaphore(device, &semaphoreInfo, nullptr, &renderFinished);
+				const VkResult result = vkCreateSemaphore(owningDevice, &semaphoreInfo, nullptr, &renderFinished);
 				if (result != VK_SUCCESS) { cleanup(); return result; }
-				renderFinishedSemaphores.push_back(renderFinished);
+				renderFinishedSemaphores.emplace_back().handle = vk::raii::Semaphore{owningDevice.handle, renderFinished};
 			}
 
 			return VK_SUCCESS;
 		}
 
 		/**
-			* @brief Destroys the owned frame synchronization primitives and clears the borrowed device handle.
+			* @brief Releases the owned frame synchronization primitives through their RAII wrappers.
 			*/
 		void cleanup() {
-			for (const VkSemaphore semaphore : imageAvailableSemaphores) {
-				if (semaphore != VK_NULL_HANDLE) { vkDestroySemaphore(device, semaphore, nullptr); }
-			}
-			for (const VkSemaphore semaphore : renderFinishedSemaphores) {
-				if (semaphore != VK_NULL_HANDLE) { vkDestroySemaphore(device, semaphore, nullptr); }
-			}
-			for (const VkFence fence : inFlightFences) {
-				if (fence != VK_NULL_HANDLE) { vkDestroyFence(device, fence, nullptr); }
-			}
+			for (auto &semaphore : imageAvailableSemaphores) { semaphore.reset(); }
+			for (auto &semaphore : renderFinishedSemaphores) { semaphore.reset(); }
+			for (auto &fence : inFlightFences) { fence.reset(); }
 			imageAvailableSemaphores.clear();
 			renderFinishedSemaphores.clear();
 			inFlightFences.clear();
-			device = VK_NULL_HANDLE;
 		}
 
 		/**
@@ -225,10 +202,9 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan buffer owner for one buffer and its device-memory allocation.
 	struct VulkanBuffer {
-		VkDevice device{VK_NULL_HANDLE};              ///< Borrowed Vulkan logical device used to destroy the buffer and free memory.
-		VkBuffer buffer{VK_NULL_HANDLE};              ///< Owned Vulkan buffer handle.
-		VkDeviceMemory memory{VK_NULL_HANDLE};        ///< Owned Vulkan device-memory allocation backing the buffer.
-		VkDeviceSize size{0};                         ///< Requested buffer size in bytes.
+		VulkanOwnedHandle<vk::raii::DeviceMemory, VkDeviceMemory> memory{}; ///< Owned Vulkan device-memory allocation backing the buffer.
+		VulkanOwnedHandle<vk::raii::Buffer, VkBuffer> buffer{};             ///< Owned Vulkan buffer handle.
+		VkDeviceSize size{0};                                               ///< Requested buffer size in bytes.
 
 		VulkanBuffer() = default;
 		VulkanBuffer(const VulkanBuffer &) = delete;
@@ -238,9 +214,8 @@ export namespace vve::simple {
 			* @brief Transfers one owned buffer allocation and leaves the source empty.
 			*/
 		VulkanBuffer(VulkanBuffer &&other) noexcept
-			: device{std::exchange(other.device, VK_NULL_HANDLE)},
-				buffer{std::exchange(other.buffer, VK_NULL_HANDLE)},
-				memory{std::exchange(other.memory, VK_NULL_HANDLE)},
+			: memory{std::move(other.memory)},
+				buffer{std::move(other.buffer)},
 				size{std::exchange(other.size, 0U)} {}
 
 		/**
@@ -251,9 +226,8 @@ export namespace vve::simple {
 		VulkanBuffer &operator=(VulkanBuffer &&other) noexcept {
 			if (this != &other) {
 				cleanup();
-				device = std::exchange(other.device, VK_NULL_HANDLE);
-				buffer = std::exchange(other.buffer, VK_NULL_HANDLE);
-				memory = std::exchange(other.memory, VK_NULL_HANDLE);
+				memory = std::move(other.memory);
+				buffer = std::move(other.buffer);
 				size = std::exchange(other.size, 0U);
 			}
 			return *this;
@@ -271,7 +245,7 @@ export namespace vve::simple {
 			*/
 		[[nodiscard]] VkResult create(
 			VkPhysicalDevice physicalDevice,
-			VkDevice owningDevice,
+			const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice,
 			VkDeviceSize bufferSize,
 			VkBufferUsageFlags usage,
 			VkMemoryPropertyFlags memoryProperties
@@ -281,7 +255,6 @@ export namespace vve::simple {
 				return VK_ERROR_INITIALIZATION_FAILED;
 			}
 
-			device = owningDevice;
 			size = bufferSize;
 			/// @brief Buffer creation descriptor for an exclusive-queue buffer.
 			const VkBufferCreateInfo createInfo{
@@ -291,11 +264,13 @@ export namespace vve::simple {
 				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
 			};
 
-			VkResult result = vkCreateBuffer(device, &createInfo, nullptr, &buffer);
+			VkBuffer rawBuffer{VK_NULL_HANDLE};
+			VkResult result = vkCreateBuffer(owningDevice, &createInfo, nullptr, &rawBuffer);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
+			buffer.handle = vk::raii::Buffer{owningDevice.handle, rawBuffer};
 
 			VkMemoryRequirements requirements{};
-			vkGetBufferMemoryRequirements(device, buffer, &requirements);
+			vkGetBufferMemoryRequirements(owningDevice, buffer, &requirements);
 			const std::optional<std::uint32_t> memoryType = findMemoryType(physicalDevice, requirements.memoryTypeBits, memoryProperties);
 			if (!memoryType.has_value()) { cleanup(); return VK_ERROR_FEATURE_NOT_PRESENT; }
 
@@ -306,10 +281,12 @@ export namespace vve::simple {
 				.memoryTypeIndex = *memoryType,
 			};
 
-			result = vkAllocateMemory(device, &allocateInfo, nullptr, &memory);
+			VkDeviceMemory rawMemory{VK_NULL_HANDLE};
+			result = vkAllocateMemory(owningDevice, &allocateInfo, nullptr, &rawMemory);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
+			memory.handle = vk::raii::DeviceMemory{owningDevice.handle, rawMemory};
 
-			result = vkBindBufferMemory(device, buffer, memory, 0U);
+			result = vkBindBufferMemory(owningDevice, buffer, memory, 0U);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 			return VK_SUCCESS;
 		}
@@ -326,25 +303,21 @@ export namespace vve::simple {
 			if (byteCount == 0U) { return VK_SUCCESS; }
 			if (byteCount > size) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-			void *mapped{};
-			const VkResult result = vkMapMemory(device, memory, 0U, byteCount, 0U, &mapped);
-			if (result != VK_SUCCESS) { return result; }
+			auto mapped = memory.handle.mapMemory(0U, byteCount, {});
+			if (mapped.result != vk::Result::eSuccess) { return static_cast<VkResult>(mapped.result); }
 
-			std::memcpy(mapped, data, byteCount);
-			vkUnmapMemory(device, memory);
+			std::memcpy(mapped.value, data, byteCount);
+			memory.handle.unmapMemory();
 			return VK_SUCCESS;
 		}
 
 		/**
-			* @brief Destroys the owned buffer, frees its memory, and clears the borrowed device handle.
+			* @brief Releases the owned buffer and memory through their RAII wrappers.
 			*/
 		void cleanup() {
-			if (buffer != VK_NULL_HANDLE) { vkDestroyBuffer(device, buffer, nullptr); }
-			if (memory != VK_NULL_HANDLE) { vkFreeMemory(device, memory, nullptr); }
-			buffer = VK_NULL_HANDLE;
-			memory = VK_NULL_HANDLE;
+			buffer.reset();
+			memory.reset();
 			size = 0U;
-			device = VK_NULL_HANDLE;
 		}
 
 		/**

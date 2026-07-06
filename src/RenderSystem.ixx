@@ -189,6 +189,7 @@ export namespace vve {
 		[[nodiscard]] auto hasSceneSpotLight() const																				-> bool;
 		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path)						-> std::expected<void, Error>;
 		[[nodiscard]] auto renderedFrameCount() const																			-> std::uint64_t;
+		[[nodiscard]] auto renderingFramesPerSecond() const																-> double;
 		[[nodiscard]] auto lastRenderedWindowCount() const																		-> std::size_t;
 
 	private:

@@ -586,6 +586,7 @@ int main() {
       return 3;
    }
 
+   std::get<vve::simple::ForwardRenderer>(render_system.backend()).setGpuDebugReadback(true);
    if (const auto result = engine.renderFrame(); !result) { return 4; }
    const auto status = engine.step();
    if (!status || *status != vve::FrameStatus::stopped) { return 4; }

@@ -3,9 +3,40 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-BUILD_DIR="build"
 TOOLCHAIN_FILE="cmake/toolchains/macos-arm64-homebrew-llvm.cmake"
 JOBS="${CMAKE_BUILD_PARALLEL_LEVEL:-$(sysctl -n hw.ncpu 2>/dev/null || printf '8')}"
+VARIANT="Debug"
+CLEAN=0
+
+usage() {
+  printf 'Usage: %s [debug|release] [--clean]\n' "$0"
+  printf '       %s --clean [debug|release]\n' "$0"
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    debug|Debug|DEBUG)
+      VARIANT="Debug"
+      ;;
+    release|Release|RELEASE)
+      VARIANT="Release"
+      ;;
+    --clean)
+      CLEAN=1
+      ;;
+    -h|--help)
+      usage
+      exit 0
+      ;;
+    *)
+      usage >&2
+      exit 1
+      ;;
+  esac
+done
+
+VARIANT_LOWER="$(printf '%s' "$VARIANT" | tr '[:upper:]' '[:lower:]')"
+BUILD_DIR="build/macos-${VARIANT_LOWER}"
 
 if ! command -v cmake >/dev/null 2>&1; then
   printf 'cmake not found. Install it with: brew install cmake\n' >&2
@@ -22,7 +53,7 @@ if [ ! -x /opt/homebrew/opt/llvm/bin/clang++ ]; then
   exit 1
 fi
 
-if [ "${1:-}" = "--clean" ]; then
+if [ "$CLEAN" -eq 1 ]; then
   rm -rf "$BUILD_DIR"
 elif [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
   if ! grep -q '^CMAKE_CXX_COMPILER:FILEPATH=/opt/homebrew/opt/llvm/bin/clang++$' "$BUILD_DIR/CMakeCache.txt"; then
@@ -32,7 +63,7 @@ elif [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
 fi
 
 cmake -S . -B "$BUILD_DIR" -G Ninja \
-  -DCMAKE_BUILD_TYPE=Debug \
+  -DCMAKE_BUILD_TYPE="$VARIANT" \
   -DCMAKE_TOOLCHAIN_FILE="$TOOLCHAIN_FILE" \
   -DVVE_DEFAULT_VULKAN_ICD=kosmickrisp \
   -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple \
@@ -41,5 +72,5 @@ cmake -S . -B "$BUILD_DIR" -G Ninja \
 cmake --build "$BUILD_DIR" --parallel "$JOBS"
 ctest --test-dir "$BUILD_DIR" --output-on-failure
 
-printf '\nBuild complete. Executables: bin/debug/exe\n'
-printf 'Verification output: bin/debug/verify\n'
+printf '\n%s build complete. Executables: bin/%s/exe\n' "$VARIANT" "$VARIANT_LOWER"
+printf 'Verification output: bin/%s/verify\n' "$VARIANT_LOWER"

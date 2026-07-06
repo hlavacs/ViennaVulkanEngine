@@ -51,7 +51,7 @@ constexpr auto sponzaSceneRelativePath = "assets/sea_keep_lonely_watcher/scene.g
 			return value;
 		}
 	}
-	return 1;
+	return 0;
 }
 
 } // namespace
@@ -94,15 +94,30 @@ int main(int argc, char **argv) {
 	std::cout << "[sponza] scene=" << scene->value << " instance=" << instance->value << '\n';
 
 	const int max_frames = frameLimit(argc, argv);
-	for (int frame{}; frame < max_frames; ++frame) {
+	int frame{};
+	bool running = true;
+	vve::DefaultCameraController cameraController{};
+	cameraController.eye = vve::Position{.value = vve::Vec3{0.0F, 6.0F, 9.0F}};
+	const auto startupForward =
+		vve::math::normalize(vve::math::subtract(vve::Vec3{0.0F, 1.0F, 0.0F}, cameraController.eye.value));
+	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
+	cameraController.pitch = std::asin(startupForward.y);
+	while (running && (max_frames == 0 || frame < max_frames)) {
+		const auto frameInput = engine.world().get<vve::WindowSystem>().input();
+		render_system.setCamera(cameraController.update(frameInput), vve::PixelExtent{.width = 1280, .height = 720});
+
 		const auto status = engine.step();
 		if (!status) {
 			std::cerr << "[sponza] frame failed: error=" << vve::errorName(status.error()) << '\n';
 			return 4;
 		}
+		++frame;
 		if (*status == vve::FrameStatus::stopped) { break; }
+
+		const auto input = engine.world().get<vve::WindowSystem>().input();
+		if (input.wasKeyPressed(vve::Key::escape)) { running = false; }
 	}
 
-	std::cout << "[sponza] frames=" << max_frames << '\n';
+	std::cout << "[sponza] frames=" << frame << '\n';
 	return 0;
 }

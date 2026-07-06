@@ -13,6 +13,7 @@ module;
 #endif
 
 export module VEEngine.Simple.Vulkan;
+export import :OwnedHandle;
 export import :Device;
 export import :Commands;
 export import :Presentation;
@@ -27,6 +28,7 @@ import std;
 	* @brief Primary module interface for VEEngine.Simple.Vulkan; this file only re-exports the Vulkan partitions.
 	*
 	* Functional objects:
+	* - Handle.ixx owns the transitional vk::raii-to-raw Vulkan handle adapter shared by partitions.
 	* - Device.ixx owns Vulkan instance, surface, physical-device selection, logical-device creation, and memory-type selection helpers.
 	* - Commands.ixx owns Vulkan command pools, command buffers, frame synchronization, and generic buffer allocation.
 	* - Presentation.ixx owns swapchain presentation images, image views, depth attachments, render pass, and framebuffers.

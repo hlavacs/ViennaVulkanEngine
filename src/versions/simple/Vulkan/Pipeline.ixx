@@ -5,7 +5,7 @@ module;
 #endif
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_raii.hpp>
 #include <SDL3/SDL_vulkan.h>
 #ifdef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
 #undef SDL_MAIN_HANDLED
@@ -14,7 +14,9 @@ module;
 
 export module VEEngine.Simple.Vulkan:Pipeline;
 import :Device;
+import :OwnedHandle;
 import VEEngine.Simple.Mesh;
+import VEEngine.Simple.Vector;
 import std;
 import VEEngine.Simple.Math;
 
@@ -41,101 +43,40 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms, shadow maps, and one object texture; no pipeline layout is created here.
 	struct VulkanDescriptorSetLayout {
-		VkDevice device{VK_NULL_HANDLE};                                  ///< Borrowed Vulkan logical device used to destroy the layout.
-		VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};         ///< Owned descriptor-set layout for set 0 frame uniforms, shadow maps, and object texture.
+		VulkanOwnedHandle<vk::raii::DescriptorSetLayout, VkDescriptorSetLayout> descriptorSetLayout{}; ///< Owned descriptor-set layout for set 0 frame uniforms, shadow maps, and object texture.
 
 		VulkanDescriptorSetLayout() = default;
 		VulkanDescriptorSetLayout(const VulkanDescriptorSetLayout &) = delete;
 		VulkanDescriptorSetLayout &operator=(const VulkanDescriptorSetLayout &) = delete;
 
 		/**
-			* @brief Creates set 0 with binding 0 as FrameUniforms, bindings 1, 4, 5, 6, and 7 as shadow maps, and binding 2 as one object texture.
+			* @brief Creates set 0 from reflected shader bindings for frame uniforms, shadow maps, and one object texture.
 			*
 			* @param owningDevice Logical device that owns the created descriptor-set layout.
+			* @param bindings Descriptor-set layout bindings reflected from the Slang shader contract.
 			* @return VK_SUCCESS when the descriptor-set layout is available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkDevice owningDevice) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, const Vector<VkDescriptorSetLayoutBinding> &bindings) {
 			cleanup();
-			if (owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
-
-			const VkDescriptorSetLayoutBinding frameUniformBinding{
-				.binding = 0U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-				.descriptorCount = 1U,
-				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-				.pImmutableSamplers = nullptr,
-			};
-			const VkDescriptorSetLayoutBinding shadowMapBinding{
-				.binding = 1U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.descriptorCount = 1U,
-				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-				.pImmutableSamplers = nullptr,
-			}; ///< Binding 1 exposes the sampled shadow map to the fragment shader.
-			const VkDescriptorSetLayoutBinding objectTextureBinding{
-				.binding = 2U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.descriptorCount = 1U,
-				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-				.pImmutableSamplers = nullptr,
-			}; ///< Binding 2 reserves one sampled object base-color texture for later fragment shading.
-			const VkDescriptorSetLayoutBinding spotShadowMapBinding{
-				.binding = 4U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.descriptorCount = 1U,
-				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-				.pImmutableSamplers = nullptr,
-			}; ///< Binding 4 exposes the sampled spot shadow map to the fragment shader.
-			const VkDescriptorSetLayoutBinding spotShadowArrayBinding{
-				.binding = 5U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.descriptorCount = 1U,
-				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-				.pImmutableSamplers = nullptr,
-			}; ///< Binding 5 exposes the sampled spot shadow-map array to the fragment shader.
-			const VkDescriptorSetLayoutBinding dirShadowArrayBinding{
-				.binding = 6U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.descriptorCount = 1U,
-				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-				.pImmutableSamplers = nullptr,
-			}; ///< Binding 6 exposes the sampled directional shadow-map array to the fragment shader.
-			const VkDescriptorSetLayoutBinding pointShadowArrayBinding{
-				.binding = 7U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.descriptorCount = 1U,
-				.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-				.pImmutableSamplers = nullptr,
-			}; ///< Binding 7 exposes the sampled point shadow-map array to the fragment shader.
-			const std::array bindings{frameUniformBinding, shadowMapBinding, objectTextureBinding, spotShadowMapBinding, spotShadowArrayBinding, dirShadowArrayBinding, pointShadowArrayBinding};
+			if (owningDevice == VK_NULL_HANDLE || bindings.empty()) { return VK_ERROR_INITIALIZATION_FAILED; }
+			std::vector<VkDescriptorSetLayoutBinding> contiguousBindings{};
+			contiguousBindings.reserve(bindings.size());
+			for (const auto &binding : bindings) { contiguousBindings.push_back(binding); } // Vulkan consumes one contiguous binding array.
 			const VkDescriptorSetLayoutCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-				.bindingCount = static_cast<std::uint32_t>(bindings.size()),
-				.pBindings = bindings.data(),
+				.bindingCount = static_cast<std::uint32_t>(contiguousBindings.size()),
+				.pBindings = contiguousBindings.data(),
 			};
 
-			device = owningDevice;
-			const VkResult result = vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &descriptorSetLayout);
-			if (result != VK_SUCCESS) {
-				descriptorSetLayout = VK_NULL_HANDLE;
-				device = VK_NULL_HANDLE;
-			}
-			return result;
+			VkDescriptorSetLayout rawLayout{VK_NULL_HANDLE};
+			const VkResult result = vkCreateDescriptorSetLayout(owningDevice, &createInfo, nullptr, &rawLayout);
+			return descriptorSetLayout.assign(owningDevice.handle, result, rawLayout);
 		}
 
 		/**
-			* @brief Destroys the owned descriptor-set layout and clears the borrowed device handle.
+			* @brief Releases the owned descriptor-set layout through its RAII wrapper.
 			*/
-		void cleanup() {
-			if (descriptorSetLayout != VK_NULL_HANDLE) { vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr); }
-			descriptorSetLayout = VK_NULL_HANDLE;
-			device = VK_NULL_HANDLE;
-		}
-
-		/**
-			* @brief Destroys the owned descriptor-set layout on scope exit.
-			*/
-		~VulkanDescriptorSetLayout() { cleanup(); }
+		void cleanup() { descriptorSetLayout.reset(); }
 	};
 
 	/// @brief Plain vertex input layout value matching the simple forward renderer Vertex attributes.
@@ -154,8 +95,7 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan pipeline-layout owner; no graphics pipeline, commands, or sync are created here.
 	struct VulkanPipelineLayout {
-		VkDevice device{VK_NULL_HANDLE};                  ///< Borrowed Vulkan logical device used to destroy the pipeline layout.
-		VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};   ///< Owned pipeline layout for set 0 and model push constants.
+		VulkanOwnedHandle<vk::raii::PipelineLayout, VkPipelineLayout> pipelineLayout{}; ///< Owned pipeline layout for set 0 and model push constants.
 
 		VulkanPipelineLayout() = default;
 		VulkanPipelineLayout(const VulkanPipelineLayout &) = delete;
@@ -168,7 +108,7 @@ export namespace vve::simple {
 			* @param setLayout Descriptor-set layout used as set 0 by the graphics pipeline.
 			* @return VK_SUCCESS when the pipeline layout is available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkDevice owningDevice, VkDescriptorSetLayout setLayout) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkDescriptorSetLayout setLayout) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
@@ -185,34 +125,20 @@ export namespace vve::simple {
 				.pPushConstantRanges = &modelPushConstants,
 			};
 
-			device = owningDevice;
-			const VkResult result = vkCreatePipelineLayout(device, &createInfo, nullptr, &pipelineLayout);
-			if (result != VK_SUCCESS) {
-				pipelineLayout = VK_NULL_HANDLE;
-				device = VK_NULL_HANDLE;
-			}
-			return result;
+			VkPipelineLayout rawLayout{VK_NULL_HANDLE};
+			const VkResult result = vkCreatePipelineLayout(owningDevice, &createInfo, nullptr, &rawLayout);
+			return pipelineLayout.assign(owningDevice.handle, result, rawLayout);
 		}
 
 		/**
-			* @brief Destroys the owned pipeline layout and clears the borrowed device handle.
+			* @brief Releases the owned pipeline layout through its RAII wrapper.
 			*/
-		void cleanup() {
-			if (pipelineLayout != VK_NULL_HANDLE) { vkDestroyPipelineLayout(device, pipelineLayout, nullptr); }
-			pipelineLayout = VK_NULL_HANDLE;
-			device = VK_NULL_HANDLE;
-		}
-
-		/**
-			* @brief Destroys the owned pipeline layout on scope exit.
-			*/
-		~VulkanPipelineLayout() { cleanup(); }
+		void cleanup() { pipelineLayout.reset(); }
 	};
 
 	/// @brief Minimal Vulkan shader-module owner; no layouts, pipelines, commands, or sync are created here.
 	struct VulkanShaderModule {
-		VkDevice device{VK_NULL_HANDLE};              ///< Borrowed Vulkan logical device used to destroy the shader module.
-		VkShaderModule shaderModule{VK_NULL_HANDLE};  ///< Owned shader module created from a SPIR-V binary.
+		VulkanOwnedHandle<vk::raii::ShaderModule, VkShaderModule> shaderModule{}; ///< Owned shader module created from a SPIR-V binary.
 
 		VulkanShaderModule() = default;
 		VulkanShaderModule(const VulkanShaderModule &) = delete;
@@ -225,7 +151,7 @@ export namespace vve::simple {
 			* @param spirvPath Path to a binary SPIR-V file whose size is a multiple of 32-bit words.
 			* @return VK_SUCCESS when the shader module is available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkDevice owningDevice, std::string_view spirvPath) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::string_view spirvPath) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
@@ -248,23 +174,15 @@ export namespace vve::simple {
 				.pCode = code.data(),
 			};
 
-			device = owningDevice;
-			const VkResult result = vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule);
-			if (result != VK_SUCCESS) {
-				shaderModule = VK_NULL_HANDLE;
-				device = VK_NULL_HANDLE;
-			}
-			return result;
+			VkShaderModule rawShaderModule{};
+			const VkResult result = vkCreateShaderModule(owningDevice, &createInfo, nullptr, &rawShaderModule);
+			return shaderModule.assign(owningDevice.handle, result, rawShaderModule);
 		}
 
 		/**
-			* @brief Destroys the owned shader module and clears the borrowed device handle.
+			* @brief Releases the owned shader module through its RAII wrapper.
 			*/
-		void cleanup() {
-			if (shaderModule != VK_NULL_HANDLE) { vkDestroyShaderModule(device, shaderModule, nullptr); }
-			shaderModule = VK_NULL_HANDLE;
-			device = VK_NULL_HANDLE;
-		}
+		void cleanup() { shaderModule.reset(); }
 
 		/**
 			* @brief Destroys the owned shader module on scope exit.
@@ -274,8 +192,7 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan graphics-pipeline owner for the simple forward color pass.
 	struct VulkanGraphicsPipeline {
-		VkDevice device{VK_NULL_HANDLE};      ///< Borrowed Vulkan logical device used to destroy the pipeline.
-		VkPipeline pipeline{VK_NULL_HANDLE};  ///< Owned graphics pipeline for the simple forward pass.
+		VulkanOwnedHandle<vk::raii::Pipeline, VkPipeline> pipeline{}; ///< Owned graphics pipeline for the simple forward pass.
 
 		VulkanGraphicsPipeline() = default;
 		VulkanGraphicsPipeline(const VulkanGraphicsPipeline &) = delete;
@@ -291,25 +208,31 @@ export namespace vve::simple {
 			* @param fragmentModule Borrowed fragment shader module with entry point fragmentMain.
 			* @param vertexInput Borrowed vertex binding and attribute description used by the pipeline.
 			* @param extent Swapchain extent used for the static viewport and scissor.
+			* @param colorAttachmentFormat Swapchain color format used only when dynamic rendering replaces a render pass.
+			* @param depthAttachmentFormat Depth format used only when dynamic rendering replaces a render pass.
 			* @return VK_SUCCESS when the graphics pipeline is available, otherwise a Vulkan error code.
 			*/
 		[[nodiscard]] VkResult create(
-			VkDevice owningDevice,
+			const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice,
 			VkRenderPass renderPass,
 			VkPipelineLayout pipelineLayout,
 			VkShaderModule vertexModule,
 			VkShaderModule fragmentModule,
 			const VulkanVertexInputDescription &vertexInput,
-			VkExtent2D extent
+			VkExtent2D extent,
+			VkFormat colorAttachmentFormat = VK_FORMAT_UNDEFINED,
+			VkFormat depthAttachmentFormat = VK_FORMAT_UNDEFINED
 		) {
 			cleanup();
 			if (
 				owningDevice == VK_NULL_HANDLE ||
-				renderPass == VK_NULL_HANDLE ||
 				pipelineLayout == VK_NULL_HANDLE ||
 				vertexModule == VK_NULL_HANDLE ||
 				fragmentModule == VK_NULL_HANDLE
 			) {
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+			if (renderPass == VK_NULL_HANDLE && (colorAttachmentFormat == VK_FORMAT_UNDEFINED || depthAttachmentFormat == VK_FORMAT_UNDEFINED)) {
 				return VK_ERROR_INITIALIZATION_FAILED;
 			}
 
@@ -396,46 +319,46 @@ export namespace vve::simple {
 				.depthBoundsTestEnable = VK_FALSE,
 				.stencilTestEnable = VK_FALSE,
 			};
-			const VkGraphicsPipelineCreateInfo createInfo{
-				.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-				.stageCount = static_cast<std::uint32_t>(shaderStages.size()),
-				.pStages = shaderStages.data(),
-				.pVertexInputState = &vertexInputState,
-				.pInputAssemblyState = &inputAssembly,
-				.pViewportState = &viewportState,
-				.pRasterizationState = &rasterizer,
-				.pMultisampleState = &multisampling,
-				.pDepthStencilState = &depthStencil,
-				.pColorBlendState = &colorBlending,
-				.pDynamicState = nullptr,
-				.layout = pipelineLayout,
-				.renderPass = renderPass,
-				.subpass = 0U,
-				.basePipelineHandle = VK_NULL_HANDLE,
+			const auto createPipeline = [&](const void *nextInfo, VkRenderPass compatibleRenderPass) {
+				const VkGraphicsPipelineCreateInfo createInfo{
+					.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+					.pNext = nextInfo,
+					.stageCount = static_cast<std::uint32_t>(shaderStages.size()),
+					.pStages = shaderStages.data(),
+					.pVertexInputState = &vertexInputState,
+					.pInputAssemblyState = &inputAssembly,
+					.pViewportState = &viewportState,
+					.pRasterizationState = &rasterizer,
+					.pMultisampleState = &multisampling,
+					.pDepthStencilState = &depthStencil,
+					.pColorBlendState = &colorBlending,
+					.pDynamicState = nullptr,
+					.layout = pipelineLayout,
+					.renderPass = compatibleRenderPass,
+					.subpass = 0U,
+					.basePipelineHandle = VK_NULL_HANDLE,
+				};
+
+				VkPipeline rawPipeline{VK_NULL_HANDLE};
+				const VkResult result = vkCreateGraphicsPipelines(owningDevice, VK_NULL_HANDLE, 1U, &createInfo, nullptr, &rawPipeline);
+				return pipeline.assign(owningDevice.handle, result, rawPipeline);
 			};
 
-			device = owningDevice;
-			const VkResult result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1U, &createInfo, nullptr, &pipeline);
-			if (result != VK_SUCCESS) {
-				pipeline = VK_NULL_HANDLE;
-				device = VK_NULL_HANDLE;
-			}
-			return result;
+			if (renderPass != VK_NULL_HANDLE) { return createPipeline(nullptr, renderPass); }
+
+			const VkPipelineRenderingCreateInfo renderingInfo{ ///< Dynamic rendering attachment formats replace render-pass compatibility.
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+				.colorAttachmentCount = 1U,
+				.pColorAttachmentFormats = &colorAttachmentFormat,
+				.depthAttachmentFormat = depthAttachmentFormat,
+			};
+			return createPipeline(&renderingInfo, VK_NULL_HANDLE);
 		}
 
 		/**
-			* @brief Destroys the owned graphics pipeline and clears the borrowed device handle.
+			* @brief Releases the owned graphics pipeline through its RAII wrapper.
 			*/
-		void cleanup() {
-			if (pipeline != VK_NULL_HANDLE) { vkDestroyPipeline(device, pipeline, nullptr); }
-			pipeline = VK_NULL_HANDLE;
-			device = VK_NULL_HANDLE;
-		}
-
-		/**
-			* @brief Destroys the owned graphics pipeline on scope exit.
-			*/
-		~VulkanGraphicsPipeline() { cleanup(); }
+		void cleanup() { pipeline.reset(); }
 	};
 
 

@@ -5,7 +5,7 @@ module;
 #endif
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_raii.hpp>
 #include <SDL3/SDL_vulkan.h>
 #ifdef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
 #undef SDL_MAIN_HANDLED
@@ -13,6 +13,7 @@ module;
 #endif
 
 export module VEEngine.Simple.Vulkan:Device;
+import :OwnedHandle;
 import std;
 
 /**
@@ -59,7 +60,8 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan root object; no device, surface, swapchain, commands, or sync are created here.
 	struct VulkanInstance {
-		VkInstance instance{VK_NULL_HANDLE};         ///< Owned Vulkan instance handle.
+		vk::raii::Context context{};                 ///< Vulkan-Hpp context that owns the global dispatch loader.
+		VulkanOwnedHandle<vk::raii::Instance, VkInstance> instance{}; ///< Owned Vulkan instance handle.
 		std::vector<char const *> extensions{};      ///< SDL-required instance extensions used for creation.
 		std::vector<char const *> layers{};          ///< Optional validation layers enabled when available.
 		bool validationEnabled{false};               ///< True when VK_LAYER_KHRONOS_validation was enabled.
@@ -110,25 +112,14 @@ export namespace vve::simple {
 				.ppEnabledExtensionNames = extensions.empty() ? nullptr : extensions.data(),
 			};
 
-			const VkResult result = vkCreateInstance(&createInfo, nullptr, &instance);
-			if (result != VK_SUCCESS) { instance = VK_NULL_HANDLE; }
+			VkInstance rawInstance{};
+			const VkResult result = vkCreateInstance(&createInfo, nullptr, &rawInstance);
+			if (result == VK_SUCCESS) { instance.handle = vk::raii::Instance{context, rawInstance}; }
 			return result;
 		}
 
-		/**
-			* @brief Destroys the owned Vulkan instance if one exists.
-			*/
-		void cleanup() {
-			if (instance != VK_NULL_HANDLE) {
-				vkDestroyInstance(instance, nullptr);
-				instance = VK_NULL_HANDLE;
-			}
-		}
-
-		/**
-			* @brief Destroys the owned Vulkan instance on scope exit.
-			*/
-		~VulkanInstance() { cleanup(); }
+		/// @brief Releases the owned Vulkan instance through its RAII wrapper.
+		void cleanup() { instance.reset(); }
 
 	private:
 		static constexpr char const *validationLayerName{"VK_LAYER_KHRONOS_validation"}; ///< Standard Vulkan validation layer.
@@ -155,8 +146,7 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan window surface object; no device, swapchain, commands, or sync are created here.
 	struct VulkanSurface {
-		VkSurfaceKHR surface{VK_NULL_HANDLE};        ///< Owned Vulkan surface handle.
-		VkInstance instance{VK_NULL_HANDLE};         ///< Borrowed Vulkan instance used to destroy the surface.
+		VulkanOwnedHandle<vk::raii::SurfaceKHR, VkSurfaceKHR> surface{}; ///< Owned Vulkan surface handle.
 
 		VulkanSurface() = default;
 		VulkanSurface(const VulkanSurface &) = delete;
@@ -168,39 +158,24 @@ export namespace vve::simple {
 			* @param owningInstance Vulkan instance that owns the platform surface connection.
 			* @param window SDL window that provides the native platform surface.
 			* @return VK_SUCCESS when SDL created the surface, otherwise VK_ERROR_INITIALIZATION_FAILED.
-			*/
-		[[nodiscard]] VkResult create(VkInstance owningInstance, SDL_Window *window) {
+		*/
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Instance, VkInstance> &owningInstance, SDL_Window *window) {
 			cleanup();
-			instance = owningInstance;
-			if (instance == VK_NULL_HANDLE || window == nullptr) { return VK_ERROR_INITIALIZATION_FAILED; }
-			if (!SDL_Vulkan_CreateSurface(window, instance, nullptr, &surface)) {
-				surface = VK_NULL_HANDLE;
-				instance = VK_NULL_HANDLE;
-				return VK_ERROR_INITIALIZATION_FAILED;
-			}
+			if (owningInstance == VK_NULL_HANDLE || window == nullptr) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			VkSurfaceKHR rawSurface{};
+			if (!SDL_Vulkan_CreateSurface(window, owningInstance, nullptr, &rawSurface)) { return VK_ERROR_INITIALIZATION_FAILED; }
+			surface.handle = vk::raii::SurfaceKHR{owningInstance.handle, rawSurface};
 			return VK_SUCCESS;
 		}
 
-		/**
-			* @brief Destroys the owned Vulkan surface if one exists.
-			*/
-		void cleanup() {
-			if (surface != VK_NULL_HANDLE) {
-				SDL_Vulkan_DestroySurface(instance, surface, nullptr);
-				surface = VK_NULL_HANDLE;
-				instance = VK_NULL_HANDLE;
-			}
-		}
-
-		/**
-			* @brief Destroys the owned Vulkan surface on scope exit.
-			*/
-		~VulkanSurface() { cleanup(); }
+		/// @brief Releases the owned Vulkan surface through its RAII wrapper.
+		void cleanup() { surface.reset(); }
 	};
 
 	/// @brief Non-owning Vulkan physical-device selector for graphics and presentation support.
 	struct VulkanPhysicalDevice {
-		VkPhysicalDevice physicalDevice{VK_NULL_HANDLE};             ///< Borrowed physical device selected from the instance.
+		VulkanOwnedHandle<vk::raii::PhysicalDevice, VkPhysicalDevice> physicalDevice{}; ///< Selected physical device handle.
 		std::optional<std::uint32_t> graphicsQueueFamily{};          ///< Queue family index supporting graphics commands.
 		std::optional<std::uint32_t> presentQueueFamily{};           ///< Queue family index supporting presentation to the surface.
 
@@ -211,7 +186,7 @@ export namespace vve::simple {
 			* @param surface Vulkan surface used to test presentation support.
 			* @return VK_SUCCESS when a device was selected, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult select(VkInstance instance, VkSurfaceKHR surface) {
+		[[nodiscard]] VkResult select(const VulkanOwnedHandle<vk::raii::Instance, VkInstance> &instance, VkSurfaceKHR surface) {
 			reset();
 			if (instance == VK_NULL_HANDLE || surface == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
@@ -225,7 +200,7 @@ export namespace vve::simple {
 			if (result != VK_SUCCESS) { return result; }
 
 			for (const VkPhysicalDevice candidate : devices) {
-				result = selectIfSuitable(candidate, surface);
+				result = selectIfSuitable(instance, candidate, surface);
 				if (result == VK_SUCCESS && selected()) { return VK_SUCCESS; }
 				if (result != VK_SUCCESS && result != VK_ERROR_FEATURE_NOT_PRESENT) { reset(); return result; }
 			}
@@ -240,7 +215,7 @@ export namespace vve::simple {
 			* @return True after successful selection.
 			*/
 		[[nodiscard]] bool selected() const {
-			return physicalDevice != VK_NULL_HANDLE && graphicsQueueFamily.has_value() && presentQueueFamily.has_value();
+			return physicalDevice.valid() && graphicsQueueFamily.has_value() && presentQueueFamily.has_value();
 		}
 
 	private:
@@ -250,7 +225,7 @@ export namespace vve::simple {
 			* @brief Clears the borrowed physical-device handle and discovered queue family indices.
 			*/
 		void reset() {
-			physicalDevice = VK_NULL_HANDLE;
+			physicalDevice.reset();
 			graphicsQueueFamily.reset();
 			presentQueueFamily.reset();
 		}
@@ -262,7 +237,7 @@ export namespace vve::simple {
 			* @param surface Surface used for presentation support checks.
 			* @return VK_SUCCESS for selected devices, VK_ERROR_FEATURE_NOT_PRESENT for unsuitable devices, or a query error.
 			*/
-		[[nodiscard]] VkResult selectIfSuitable(VkPhysicalDevice candidate, VkSurfaceKHR surface) {
+		[[nodiscard]] VkResult selectIfSuitable(const VulkanOwnedHandle<vk::raii::Instance, VkInstance> &instance, VkPhysicalDevice candidate, VkSurfaceKHR surface) {
 			std::optional<std::uint32_t> graphicsFamily{};
 			std::optional<std::uint32_t> presentationFamily{};
 
@@ -288,7 +263,7 @@ export namespace vve::simple {
 			if (result != VK_SUCCESS) { return result; }
 			if (!graphicsFamily.has_value() || !presentationFamily.has_value()) { return VK_ERROR_FEATURE_NOT_PRESENT; }
 
-			physicalDevice = candidate;
+			physicalDevice.handle = vk::raii::PhysicalDevice{instance.handle, candidate};
 			graphicsQueueFamily = graphicsFamily;
 			presentQueueFamily = presentationFamily;
 			return VK_SUCCESS;
@@ -320,7 +295,7 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan logical-device owner; no swapchain, render pass, commands, or sync are created here.
 	struct VulkanDevice {
-		VkDevice device{VK_NULL_HANDLE};              ///< Owned Vulkan logical device handle.
+		VulkanOwnedHandle<vk::raii::Device, VkDevice> device{}; ///< Owned Vulkan logical device handle.
 		VkQueue graphicsQueue{VK_NULL_HANDLE};        ///< Borrowed graphics queue retrieved from the device.
 		VkQueue presentQueue{VK_NULL_HANDLE};         ///< Borrowed presentation queue retrieved from the device.
 
@@ -333,7 +308,7 @@ export namespace vve::simple {
 			*
 			* @param selectedDevice Physical-device selection containing both required queue family indices.
 			* @return Vulkan result from validation or vkCreateDevice.
-		*/
+			*/
 		[[nodiscard]] VkResult create(const VulkanPhysicalDevice &selectedDevice) {
 			cleanup();
 			if (!selectedDevice.graphicsQueueFamily.has_value() || !selectedDevice.presentQueueFamily.has_value()) {
@@ -350,7 +325,7 @@ export namespace vve::simple {
 			* @param presentQueueFamily Queue family index for surface presentation.
 			* @return VK_SUCCESS when the logical device and queues are available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, std::uint32_t graphicsQueueFamily, std::uint32_t presentQueueFamily) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::PhysicalDevice, VkPhysicalDevice> &physicalDevice, std::uint32_t graphicsQueueFamily, std::uint32_t presentQueueFamily) {
 			cleanup();
 			if (physicalDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
@@ -372,42 +347,40 @@ export namespace vve::simple {
 				});
 			}
 
+			const VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{
+				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
+				.dynamicRendering = VK_TRUE,
+			};
 			const auto extensions = std::array<char const *, 1U>{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 			const VkDeviceCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+				.pNext = &dynamicRenderingFeatures,
 				.queueCreateInfoCount = static_cast<std::uint32_t>(queueInfos.size()),
 				.pQueueCreateInfos = queueInfos.data(),
 				.enabledExtensionCount = static_cast<std::uint32_t>(extensions.size()),
 				.ppEnabledExtensionNames = extensions.data(),
 			};
 
-			const VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device);
+			VkDevice rawDevice{};
+			const VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &rawDevice);
 			if (result != VK_SUCCESS) {
-				device = VK_NULL_HANDLE;
 				graphicsQueue = VK_NULL_HANDLE;
 				presentQueue = VK_NULL_HANDLE;
 				return result;
 			}
 
+			device.handle = vk::raii::Device{physicalDevice.handle, rawDevice};
 			vkGetDeviceQueue(device, graphicsQueueFamily, 0U, &graphicsQueue);
 			vkGetDeviceQueue(device, presentQueueFamily, 0U, &presentQueue);
 			return VK_SUCCESS;
 		}
 
-		/**
-			* @brief Destroys the owned logical device if one exists and clears borrowed queue handles.
-			*/
+		/// @brief Releases the owned logical device through its RAII wrapper and clears borrowed queues.
 		void cleanup() {
-			if (device != VK_NULL_HANDLE) { vkDestroyDevice(device, nullptr); }
-			device = VK_NULL_HANDLE;
+			device.reset();
 			graphicsQueue = VK_NULL_HANDLE;
 			presentQueue = VK_NULL_HANDLE;
 		}
-
-		/**
-			* @brief Destroys the owned logical device on scope exit.
-			*/
-		~VulkanDevice() { cleanup(); }
 	};
 
 } // namespace vve::simple

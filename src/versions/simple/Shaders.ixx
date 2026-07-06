@@ -2,6 +2,7 @@ module;
 
 #include <slang/slang-com-ptr.h>
 #include <slang/slang.h>
+#include <vulkan/vulkan_core.h>
 
 #if defined(_WIN32) && defined(VVE_ENGINE_BUILD)
 #define VVE_SIMPLE_API __declspec(dllexport)
@@ -9,14 +10,19 @@ module;
 #define VVE_SIMPLE_API
 #endif
 
-export module VEEngine.Simple:Shaders;
+export module VEEngine.Simple.Shaders;
 import std;
-export import :Types;
+export import VEEngine.Simple.Vector;
+export import VEEngine.Simple.Error;
+export import VEEngine.Simple.Handle;
+export import VEEngine.Types;
 
 /// @file
 /// @brief Slang-backed shader compilation and compact reflection records for simple experiments.
 
 export namespace vve::simple {
+	struct ShaderHandleTag {};											///< simple-internal shader descriptor handle tag.
+	using ShaderHandle = TypedHandle<ShaderHandleTag>;		///< simple-internal shader descriptor handle.
 
 	/// @brief Shader stage categories used by reflection descriptors.
 	enum class ShaderStage {
@@ -94,6 +100,8 @@ export namespace vve::simple {
 																									std::string_view name) const;
 		[[nodiscard]] VVE_SIMPLE_API std::expected<Vector<ShaderBindingReflection>, Error>
 		reflectedBindings(ShaderHandle handle) const;
+		[[nodiscard]] VVE_SIMPLE_API std::expected<Vector<VkDescriptorSetLayoutBinding>, Error>
+		descriptorSetLayoutBindings(ShaderHandle handle, std::uint32_t set) const;
 		[[nodiscard]] VVE_SIMPLE_API std::expected<Vector<ShaderEntryPointReflection>, Error>
 		reflectedEntryPoints(ShaderHandle handle) const;
 
@@ -427,6 +435,40 @@ export namespace vve::simple {
 		const auto *shader = find(handle);
 		if (shader == nullptr) { return std::unexpected(Error::missing_object); }
 		return shader->reflection.bindings;
+	}
+
+	/// @brief Converts reflected set bindings into the Vulkan layout contract used by the forward renderer.
+	VVE_SIMPLE_API auto ShaderSystem::descriptorSetLayoutBindings(ShaderHandle handle, std::uint32_t set) const			-> std::expected<Vector<VkDescriptorSetLayoutBinding>, Error>{
+		const auto *shader = find(handle);
+		if (shader == nullptr) { return std::unexpected(Error::missing_object); }
+		const auto reflectedBindingIndex = [&shader](const ShaderBindingReflection &range) -> std::optional<std::uint32_t> {
+			const auto parameter = std::ranges::find_if(shader->reflection.bindings, [&range](const auto &candidate) {
+				return candidate.category != "binding_range" && candidate.name == range.name && candidate.set == range.set;
+			});
+			return parameter == shader->reflection.bindings.end() ? std::nullopt : std::optional{parameter->binding};
+		};
+		Vector<VkDescriptorSetLayoutBinding> bindings{};
+		for (const auto &binding : shader->reflection.bindings) {
+			if (binding.category != "binding_range" || binding.set != set) { continue; } // Only descriptor ranges become set-layout entries.
+			if (binding.type != "constant_buffer" && binding.type != "combined_texture_sampler") { continue; }
+			const auto descriptorBinding = reflectedBindingIndex(binding);
+			if (!descriptorBinding) { return std::unexpected(Error::invalid_argument); }
+			const VkShaderStageFlags stages = *descriptorBinding == 0U
+															? VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT
+															: VK_SHADER_STAGE_FRAGMENT_BIT;
+			bindings.push_back(VkDescriptorSetLayoutBinding{
+				.binding = *descriptorBinding,
+				.descriptorType = binding.type == "constant_buffer" ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+				.descriptorCount = 1U,
+				.stageFlags = stages,
+				.pImmutableSamplers = nullptr});
+		}
+		constexpr std::array expectedBindings{0U, 1U, 2U, 4U, 5U, 6U, 7U}; // Current shader layout order is part of the renderer contract.
+		if (bindings.size() != expectedBindings.size()) { return std::unexpected(Error::invalid_argument); }
+		for (std::size_t index{}; index < expectedBindings.size(); ++index) {
+			if (bindings[index].binding != expectedBindings[index]) { return std::unexpected(Error::invalid_argument); }
+		}
+		return bindings;
 	}
 
 	VVE_SIMPLE_API auto ShaderSystem::reflectedEntryPoints(ShaderHandle handle) const													-> std::expected<Vector<ShaderEntryPointReflection>, Error>{

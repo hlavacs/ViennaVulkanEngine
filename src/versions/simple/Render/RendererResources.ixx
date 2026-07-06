@@ -11,6 +11,7 @@ export module VEEngine.Simple.Renderer:RendererResources;
 import std;
 import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
+import VEEngine.Simple.Shaders;
 import VEEngine.Simple.Vulkan;
 
 /**
@@ -68,7 +69,8 @@ export namespace vve::simple {
 				*renderer.physicalDevice.graphicsQueueFamily,
 				*renderer.physicalDevice.presentQueueFamily,
 				static_cast<std::uint32_t>(width),
-				static_cast<std::uint32_t>(height));
+				static_cast<std::uint32_t>(height),
+				Renderer::defaultPresentMode());
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.imageViews.create(renderer.device.device, renderer.swapchain.images, renderer.swapchain.imageFormat);
@@ -77,7 +79,32 @@ export namespace vve::simple {
 			result = renderer.depthImage.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.swapchain.extent);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.descriptorSetLayout.create(renderer.device.device);
+			ShaderSystem shaderReflection{}; // Local reflection pass supplies the descriptor layout contract.
+			Vector<std::string> forwardEntries{};
+			forwardEntries.push_back("vertexMain");
+			forwardEntries.push_back("fragmentMain");
+			const auto shaderHandle = shaderReflection.compileAndReflect(std::filesystem::path{VVE_SIMPLE_SHADER_SOURCE}, std::move(forwardEntries));
+			if (!shaderHandle) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
+			const auto descriptorBindings = shaderReflection.descriptorSetLayoutBindings(*shaderHandle, 0U);
+			if (!descriptorBindings) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
+			const auto reflectedBindings = shaderReflection.reflectedBindings(*shaderHandle);
+			if (!reflectedBindings) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
+			constexpr std::string_view objectTextureParameterName{"baseColorTexture"}; // Slang parameter for optional object base color.
+			const auto objectTextureBinding = std::ranges::find_if(*reflectedBindings, [objectTextureParameterName](const ShaderBindingReflection &binding) {
+				return binding.set == 0U && binding.name == objectTextureParameterName && binding.category != "binding_range";
+			});
+			if (objectTextureBinding == reflectedBindings->end()) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
+			constexpr std::array shadowSamplerParameterNames{"shadowMap", "spotShadowMap", "spotShadowArray", "dirShadowArray", "pointShadowArray"}; // Slang shadow sampler parameters.
+			std::array<std::uint32_t, shadowSamplerParameterNames.size()> shadowSamplerBindings{};
+			for (std::size_t index{}; index < shadowSamplerParameterNames.size(); ++index) {
+				const auto shadowSamplerBinding = std::ranges::find_if(*reflectedBindings, [name = std::string_view{shadowSamplerParameterNames[index]}](const ShaderBindingReflection &binding) {
+					return binding.set == 0U && binding.name == name && binding.category != "binding_range";
+				});
+				if (shadowSamplerBinding == reflectedBindings->end()) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
+				shadowSamplerBindings[index] = shadowSamplerBinding->binding;
+			}
+
+			result = renderer.descriptorSetLayout.create(renderer.device.device, *descriptorBindings);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			VulkanVertexInputDescription vertexInput{}; // Fixed mesh vertex layout shared by forward and shadow pipelines.
@@ -107,12 +134,6 @@ export namespace vve::simple {
 			result = renderer.spotShadowArray.createPipeline(renderer.descriptorSetLayout.descriptorSetLayout, spotShadowVertSpirvPath, "shadowVertexMainSpot", vertexInput);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.renderPass.create(renderer.device.device, renderer.swapchain.imageFormat);
-			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-
-			result = renderer.framebuffers.create(renderer.device.device, renderer.renderPass.renderPass, renderer.imageViews.views, renderer.swapchain.extent, renderer.depthImage.view);
-			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-
 			result = renderer.pipelineLayout.create(renderer.device.device, renderer.descriptorSetLayout.descriptorSetLayout);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
@@ -130,12 +151,14 @@ export namespace vve::simple {
 
 			result = renderer.graphicsPipeline.create(
 				renderer.device.device,
-				renderer.renderPass.renderPass,
+				VK_NULL_HANDLE,
 				renderer.pipelineLayout.pipelineLayout,
 				renderer.vertShaderModule.shaderModule,
 				renderer.fragShaderModule.shaderModule,
 				vertexInput,
-				renderer.swapchain.extent);
+				renderer.swapchain.extent,
+				renderer.swapchain.imageFormat,
+				VK_FORMAT_D32_SFLOAT);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.commandPool.create(renderer.device.device, *renderer.physicalDevice.graphicsQueueFamily);
@@ -159,12 +182,12 @@ export namespace vve::simple {
 			result = renderer.uniformBuffers.create(renderer.physicalDevice.physicalDevice, renderer.device.device, Renderer::framesInFlight);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.descriptorPool.create(renderer.device.device, Renderer::framesInFlight);
+			result = renderer.descriptorPool.create(renderer.device.device, Renderer::framesInFlight, *descriptorBindings);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			renderer.createImguiDescriptorPool();
 
-			result = renderer.descriptorSets.create(renderer.device.device, renderer.descriptorPool.descriptorPool, renderer.descriptorSetLayout.descriptorSetLayout, Renderer::framesInFlight);
+			result = renderer.descriptorSets.create(renderer.device.device, renderer.descriptorPool.descriptorPool, renderer.descriptorSetLayout.descriptorSetLayout, *descriptorBindings, objectTextureBinding->binding, shadowSamplerBindings, Renderer::framesInFlight);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			// Upload the optional scene base-color texture once descriptor sets and upload commands exist.
@@ -180,15 +203,15 @@ export namespace vve::simple {
 			for (std::uint32_t frame{}; frame < Renderer::framesInFlight; ++frame) {
 				result = renderer.descriptorSets.writeUniformBuffer(frame, renderer.uniformBuffers.buffers[frame].buffer, sizeof(FrameUniforms));
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeShadowMap(frame, renderer.shadowMap.view, renderer.shadowMap.sampler);
+				result = renderer.descriptorSets.writeShadowMap(frame, renderer.shadowMap.imageView, renderer.shadowMap.shadowSampler);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeDirShadowArray(frame, renderer.dirShadowArray.view, renderer.dirShadowArray.sampler); // Bind directional shadow-array sampler.
+				result = renderer.descriptorSets.writeDirShadowArray(frame, renderer.dirShadowArray.imageView, renderer.dirShadowArray.shadowSampler); // Bind directional shadow-array sampler.
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeSpotShadowMap(frame, renderer.spotShadowMap.view, renderer.spotShadowMap.sampler);
+				result = renderer.descriptorSets.writeSpotShadowMap(frame, renderer.spotShadowMap.imageView, renderer.spotShadowMap.shadowSampler);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeSpotShadowArray(frame, renderer.spotShadowArray.view, renderer.spotShadowArray.sampler);
+				result = renderer.descriptorSets.writeSpotShadowArray(frame, renderer.spotShadowArray.imageView, renderer.spotShadowArray.shadowSampler);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writePointShadowArray(frame, renderer.pointShadowArray.view, renderer.pointShadowArray.sampler);
+				result = renderer.descriptorSets.writePointShadowArray(frame, renderer.pointShadowArray.imageView, renderer.pointShadowArray.shadowSampler);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 				result = renderer.descriptorSets.writeObjectTexture(frame, descriptorTexture);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
@@ -235,8 +258,6 @@ export namespace vve::simple {
 			renderer.shadowMap.cleanupPipeline();
 			renderer.pipelineLayout.cleanup();
 			renderer.descriptorSetLayout.cleanup();
-			renderer.framebuffers.cleanup();
-			renderer.renderPass.cleanup();
 			renderer.pointShadowArray.cleanup();
 			renderer.spotShadowArray.cleanup();
 			renderer.spotShadowMap.cleanup();
@@ -277,8 +298,6 @@ export namespace vve::simple {
 			if (result != VK_SUCCESS) { return result; }
 
 			renderer.graphicsPipeline.cleanup();
-			renderer.framebuffers.cleanup();
-			renderer.renderPass.cleanup();
 			renderer.depthImage.cleanup();
 			renderer.imageViews.cleanup();
 			renderer.frameSync.cleanup();
@@ -286,7 +305,7 @@ export namespace vve::simple {
 
 			result = renderer.swapchain.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.surface.surface,
 											  *renderer.physicalDevice.graphicsQueueFamily, *renderer.physicalDevice.presentQueueFamily,
-											  requestedExtent.width, requestedExtent.height);
+											  requestedExtent.width, requestedExtent.height, Renderer::defaultPresentMode());
 			if (result != VK_SUCCESS) { return result; }
 
 			result = renderer.imageViews.create(renderer.device.device, renderer.swapchain.images, renderer.swapchain.imageFormat);
@@ -295,16 +314,10 @@ export namespace vve::simple {
 			result = renderer.depthImage.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.swapchain.extent);
 			if (result != VK_SUCCESS) { return result; }
 
-			result = renderer.renderPass.create(renderer.device.device, renderer.swapchain.imageFormat);
-			if (result != VK_SUCCESS) { return result; }
-
-			result = renderer.framebuffers.create(renderer.device.device, renderer.renderPass.renderPass, renderer.imageViews.views, renderer.swapchain.extent, renderer.depthImage.view);
-			if (result != VK_SUCCESS) { return result; }
-
 			VulkanVertexInputDescription vertexInput{};
-			result = renderer.graphicsPipeline.create(renderer.device.device, renderer.renderPass.renderPass, renderer.pipelineLayout.pipelineLayout,
+			result = renderer.graphicsPipeline.create(renderer.device.device, VK_NULL_HANDLE, renderer.pipelineLayout.pipelineLayout,
 													 renderer.vertShaderModule.shaderModule, renderer.fragShaderModule.shaderModule, vertexInput,
-													 renderer.swapchain.extent);
+													 renderer.swapchain.extent, renderer.swapchain.imageFormat, VK_FORMAT_D32_SFLOAT);
 			if (result != VK_SUCCESS) { return result; }
 
 			result = renderer.frameSync.create(renderer.device.device, Renderer::framesInFlight, static_cast<std::uint32_t>(renderer.swapchain.images.size()));
@@ -349,7 +362,13 @@ export namespace vve::simple {
 			info.QueueFamily = renderer.physicalDevice.graphicsQueueFamily.value_or(0U);
 			info.Queue = renderer.device.graphicsQueue;
 			info.DescriptorPool = renderer.imguiDescriptorPool_;
-			info.RenderPass = renderer.renderPass.renderPass;
+			info.RenderPass = VK_NULL_HANDLE;
+			info.UseDynamicRendering = true;
+			info.PipelineRenderingCreateInfo = VkPipelineRenderingCreateInfo{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+				.colorAttachmentCount = 1U,
+				.pColorAttachmentFormats = &renderer.swapchain.imageFormat,
+			};
 			info.MinImageCount = static_cast<std::uint32_t>(renderer.swapchain.images.size());
 			info.ImageCount = static_cast<std::uint32_t>(renderer.swapchain.images.size());
 			info.MSAASamples = VK_SAMPLE_COUNT_1_BIT;

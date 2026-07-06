@@ -20,7 +20,8 @@ target_compile_definitions(SimpleForwardRendererTests PRIVATE
    VVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple
    VVE_ENGINE_IMPLEMENTATION_IS_SIMPLE
    VVE_ENGINE_HAS_SIMPLE
-   "VVE_SIMPLE_SHADER_DIR=\"${CMAKE_BINARY_DIR}/src/versions/simple/shaders\"")
+   "VVE_SIMPLE_SHADER_DIR=\"${CMAKE_BINARY_DIR}/src/versions/simple/shaders\""
+   "VVE_SIMPLE_SHADER_SOURCE=\"${CMAKE_SOURCE_DIR}/src/versions/simple/shaders/simple_forward.slang\"")
 find_package(Stb REQUIRED)
 target_include_directories(SimpleForwardRendererTests PRIVATE ${Stb_INCLUDE_DIR})
 target_sources(SimpleForwardRendererTests
@@ -57,6 +58,7 @@ target_sources(SimpleForwardRendererTests
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Scene.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/RenderPassContract.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/RenderPass.ixx"
+         "${CMAKE_SOURCE_DIR}/src/versions/simple/Vulkan/Handle.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Vulkan/Device.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Vulkan/Commands.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Vulkan/Presentation.ixx"
@@ -83,6 +85,33 @@ add_dependencies(SimpleForwardRendererTests ViennaVulkanEngine)
 target_link_libraries(SimpleForwardRendererTests PRIVATE "$<TARGET_FILE:ViennaVulkanEngine>" SDL3::SDL3 Vulkan::Vulkan slang::slang)
 add_test(NAME SimpleForwardRendererTests COMMAND SimpleForwardRendererTests)
 vve_set_output_dirs(SimpleForwardRendererTests)
+add_executable(ShaderReflectionBindingsTests ShaderReflectionBindingsTests.cpp)
+target_compile_features(ShaderReflectionBindingsTests PRIVATE cxx_std_23)
+target_compile_definitions(ShaderReflectionBindingsTests PRIVATE
+   VULKAN_HPP_NO_EXCEPTIONS
+   VVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple
+   VVE_ENGINE_IMPLEMENTATION_IS_SIMPLE
+   VVE_ENGINE_HAS_SIMPLE
+   "VVE_SIMPLE_SHADER_SOURCE=\"${CMAKE_SOURCE_DIR}/src/versions/simple/shaders/simple_forward.slang\"")
+target_sources(ShaderReflectionBindingsTests
+   PRIVATE
+      FILE_SET shader_reflection_bindings_test_modules TYPE CXX_MODULES
+      BASE_DIRS "${CMAKE_SOURCE_DIR}"
+      FILES
+         "${CMAKE_SOURCE_DIR}/src/Math.ixx"
+         "${CMAKE_SOURCE_DIR}/src/Error.ixx"
+         "${CMAKE_SOURCE_DIR}/src/Handle.ixx"
+         "${CMAKE_SOURCE_DIR}/src/Entity.ixx"
+         "${CMAKE_SOURCE_DIR}/src/Vector.ixx"
+         "${CMAKE_SOURCE_DIR}/src/Types.ixx"
+         "${CMAKE_SOURCE_DIR}/src/versions/simple/Error.ixx"
+         "${CMAKE_SOURCE_DIR}/src/versions/simple/Handle.ixx"
+         "${CMAKE_SOURCE_DIR}/src/versions/simple/Vector.ixx"
+         "${CMAKE_SOURCE_DIR}/src/versions/simple/Shaders.ixx"
+)
+target_link_libraries(ShaderReflectionBindingsTests PRIVATE Vulkan::Vulkan slang::slang)
+add_test(NAME ShaderReflectionBindingsTests COMMAND ShaderReflectionBindingsTests)
+vve_set_output_dirs(ShaderReflectionBindingsTests)
 find_package(imgui CONFIG REQUIRED)
 add_executable(GuiSystemTests GuiSystemTests.cpp)
 target_compile_features(GuiSystemTests PRIVATE cxx_std_23)
@@ -91,7 +120,8 @@ target_compile_definitions(GuiSystemTests PRIVATE
    VVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple
    VVE_ENGINE_IMPLEMENTATION_IS_SIMPLE
    VVE_ENGINE_HAS_SIMPLE
-   "VVE_SIMPLE_SHADER_DIR=\"${CMAKE_BINARY_DIR}/src/versions/simple/shaders\"")
+   "VVE_SIMPLE_SHADER_DIR=\"${CMAKE_BINARY_DIR}/src/versions/simple/shaders\""
+   "VVE_SIMPLE_SHADER_SOURCE=\"${CMAKE_SOURCE_DIR}/src/versions/simple/shaders/simple_forward.slang\"")
 target_sources(GuiSystemTests
    PRIVATE
       FILE_SET gui_system_test_modules TYPE CXX_MODULES
@@ -126,6 +156,7 @@ target_sources(GuiSystemTests
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Scene.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/RenderPassContract.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/RenderPass.ixx"
+         "${CMAKE_SOURCE_DIR}/src/versions/simple/Vulkan/Handle.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Vulkan/Device.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Vulkan/Commands.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Vulkan/Presentation.ixx"

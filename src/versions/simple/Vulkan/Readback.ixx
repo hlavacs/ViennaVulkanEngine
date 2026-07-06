@@ -5,7 +5,7 @@ module;
 #endif
 #include <SDL3/SDL.h>
 #include <SDL3/SDL_main.h>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_raii.hpp>
 #include <SDL3/SDL_vulkan.h>
 #include <stb_image_write.h>
 #ifdef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
@@ -31,6 +31,7 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan color-image readback owner for one host-visible transfer destination buffer.
 	struct VulkanReadback {
+		const VulkanOwnedHandle<vk::raii::Device, VkDevice> *ownedDevice{}; ///< Borrowed RAII device for scoped transfer helpers.
 		VkDevice device{VK_NULL_HANDLE};              ///< Borrowed Vulkan logical device used for commands, fences, and mapping.
 		VkQueue graphicsQueue{VK_NULL_HANDLE};        ///< Borrowed graphics queue used to submit the one-time copy command buffer.
 		VkCommandPool commandPool{VK_NULL_HANDLE};    ///< Borrowed command pool used to allocate the temporary command buffer.
@@ -56,7 +57,7 @@ export namespace vve::simple {
 			*/
 		[[nodiscard]] VkResult create(
 			VkPhysicalDevice physicalDevice,
-			VkDevice owningDevice,
+			const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice,
 			VkQueue queue,
 			VkCommandPool pool,
 			VkExtent2D imageExtent,
@@ -87,6 +88,7 @@ export namespace vve::simple {
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
 			device = owningDevice;
+			ownedDevice = &owningDevice;
 			graphicsQueue = queue;
 			commandPool = pool;
 			extent = imageExtent;
@@ -121,11 +123,15 @@ export namespace vve::simple {
 			};
 			VkResult result = vkAllocateCommandBuffers(device, &allocateInfo, &commandBuffer);
 			if (result != VK_SUCCESS) { return result; }
+			vk::raii::CommandBuffer ownedCommandBuffer{(*ownedDevice).handle, commandBuffer, commandPool};
+			commandBuffer = static_cast<VkCommandBuffer>(*ownedCommandBuffer);
 
 			VkFence fence{VK_NULL_HANDLE};
 			const VkFenceCreateInfo fenceInfo{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
 			result = vkCreateFence(device, &fenceInfo, nullptr, &fence);
-			if (result != VK_SUCCESS) { vkFreeCommandBuffers(device, commandPool, 1U, &commandBuffer); return result; }
+			if (result != VK_SUCCESS) { return result; }
+			vk::raii::Fence ownedFence{(*ownedDevice).handle, fence};
+			fence = static_cast<VkFence>(*ownedFence);
 
 			result = recordCopy(commandBuffer, sourceImage, sourceLayout, finalLayout);
 			if (result == VK_SUCCESS) {
@@ -139,8 +145,6 @@ export namespace vve::simple {
 			if (result == VK_SUCCESS) { result = vkWaitForFences(device, 1U, &fence, VK_TRUE, UINT64_MAX); }
 			if (result == VK_SUCCESS) { result = readMappedPixels(); }
 
-			vkDestroyFence(device, fence, nullptr);
-			vkFreeCommandBuffers(device, commandPool, 1U, &commandBuffer);
 			return result;
 		}
 
@@ -161,6 +165,7 @@ export namespace vve::simple {
 			format = VK_FORMAT_UNDEFINED;
 			graphicsQueue = VK_NULL_HANDLE;
 			commandPool = VK_NULL_HANDLE;
+			ownedDevice = nullptr;
 			device = VK_NULL_HANDLE;
 		}
 
@@ -312,6 +317,7 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan D32 depth-array readback owner for one captured shadow-map layer.
 	struct VulkanDepthReadback {
+		const VulkanOwnedHandle<vk::raii::Device, VkDevice> *ownedDevice{}; ///< Borrowed RAII device for scoped transfer helpers.
 		VkDevice device{VK_NULL_HANDLE};              ///< Borrowed Vulkan logical device used for commands, fences, and mapping.
 		VkQueue graphicsQueue{VK_NULL_HANDLE};        ///< Borrowed graphics queue used to submit the one-time copy command buffer.
 		VkCommandPool commandPool{VK_NULL_HANDLE};    ///< Borrowed command pool used to allocate the temporary command buffer.
@@ -336,7 +342,7 @@ export namespace vve::simple {
 			*/
 		[[nodiscard]] VkResult create(
 			VkPhysicalDevice physicalDevice,
-			VkDevice owningDevice,
+			const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice,
 			VkQueue queue,
 			VkCommandPool pool,
 			VkExtent2D layerExtent
@@ -357,6 +363,7 @@ export namespace vve::simple {
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 
 			device = owningDevice;
+			ownedDevice = &owningDevice;
 			graphicsQueue = queue;
 			commandPool = pool;
 			extent = layerExtent;
@@ -385,11 +392,15 @@ export namespace vve::simple {
 			};
 			VkResult result = vkAllocateCommandBuffers(device, &allocateInfo, &commandBuffer);
 			if (result != VK_SUCCESS) { return result; }
+			vk::raii::CommandBuffer ownedCommandBuffer{(*ownedDevice).handle, commandBuffer, commandPool};
+			commandBuffer = static_cast<VkCommandBuffer>(*ownedCommandBuffer);
 
 			VkFence fence{VK_NULL_HANDLE};
 			const VkFenceCreateInfo fenceInfo{.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO};
 			result = vkCreateFence(device, &fenceInfo, nullptr, &fence);
-			if (result != VK_SUCCESS) { vkFreeCommandBuffers(device, commandPool, 1U, &commandBuffer); return result; }
+			if (result != VK_SUCCESS) { return result; }
+			vk::raii::Fence ownedFence{(*ownedDevice).handle, fence};
+			fence = static_cast<VkFence>(*ownedFence);
 
 			result = recordCopy(commandBuffer, sourceImage, layer);
 			if (result == VK_SUCCESS) {
@@ -402,8 +413,6 @@ export namespace vve::simple {
 			}
 			if (result == VK_SUCCESS) { result = vkWaitForFences(device, 1U, &fence, VK_TRUE, UINT64_MAX); }
 
-			vkDestroyFence(device, fence, nullptr);
-			vkFreeCommandBuffers(device, commandPool, 1U, &commandBuffer);
 			if (result == VK_SUCCESS) { capturedLayer = layer; valid = true; }
 			return result;
 		}
@@ -446,6 +455,7 @@ export namespace vve::simple {
 			valid = false;
 			graphicsQueue = VK_NULL_HANDLE;
 			commandPool = VK_NULL_HANDLE;
+			ownedDevice = nullptr;
 			device = VK_NULL_HANDLE;
 		}
 

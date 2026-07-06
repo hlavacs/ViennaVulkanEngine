@@ -321,6 +321,7 @@ int main(int argc, char **argv) {
 	int frame{};
 	bool running = true;
 	bool lightsDirty = false;                                                                        ///< GUI changes are applied after the frame callback returns.
+	double renderFps{};                                                                              ///< Render-system FPS, not the ImGui/display estimate.
 	vve::DefaultCameraController cameraController{};                                                ///< Facade camera motion shared by examples and applications.
 	cameraController.eye = vve::Position{.value = vve::Vec3{0.0F, 6.0F, 9.0F}};
 	const auto startupForward =
@@ -328,10 +329,10 @@ int main(int argc, char **argv) {
 	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
 	cameraController.pitch = std::asin(startupForward.y);
 	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &directionalLightsEnabled, &pointLightsEnabled,
-															 &spotLightsEnabled, &cameraController, &lightsDirty] {
+															 &spotLightsEnabled, &cameraController, &lightsDirty, &renderFps] {
 		ImGui::Begin("Game");
 		ImGui::Text("Frame: %d", frame);
-		ImGui::Text("FPS: %.1f", ImGui::GetIO().Framerate);
+		ImGui::Text("Render FPS: %.1f", renderFps);
 		ImGui::Text("Renderer: %s", activeRenderer.value.c_str());
 		ImGui::Text("Directional lights: %zu", directionalLightsEnabled.size());
 		for (std::size_t index{}; index < directionalLightsEnabled.size(); ++index) {
@@ -355,6 +356,7 @@ int main(int argc, char **argv) {
 	while (running && (maxFrames == 0 || frame < maxFrames)) {
 		const auto frameInput = engine.world().get<vve::WindowSystem>().input();
 		render.setCamera(cameraController.update(frameInput), vve::PixelExtent{.width = 960, .height = 540});
+		renderFps = render.renderingFramesPerSecond();
 
 		const auto status = engine.step();
 		if (!status) {

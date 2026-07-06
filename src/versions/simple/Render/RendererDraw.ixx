@@ -182,19 +182,22 @@ export namespace vve::simple {
 			};
 			result = vkQueueSubmit(renderer.device.graphicsQueue, 1U, &submitInfo, inFlightFence);
 			if (result != VK_SUCCESS) { return; }
-			if (renderer.spotLightViewProjCount != 0U) { renderer.fillSpotShadowGpuDepthSamples(); }
-			if (renderer.directionalShadowDepthSampleCountStorage() != 0U) { renderer.fillDirectionalShadowGpuDepthSamples(); }
-			if (renderer.pointShadowDepthSampleCountStorage() != 0U) { renderer.fillPointShadowGpuDepthSamples(); }
+			if (renderer.gpuDebugReadbackEnabled()) {
+				if (renderer.spotLightViewProjCount != 0U) { renderer.fillSpotShadowGpuDepthSamples(); }
+				if (renderer.directionalShadowDepthSampleCountStorage() != 0U) { renderer.fillDirectionalShadowGpuDepthSamples(); }
+				if (renderer.pointShadowDepthSampleCountStorage() != 0U) { renderer.fillPointShadowGpuDepthSamples(); }
+			}
 			if (readback != nullptr && imageIndex < renderer.swapchain.images.size()) {
 				renderer.lastReadbackCaptureResult = readback->capture(renderer.swapchain.images[imageIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 			}
 
+			VkSwapchainKHR presentSwapchain = renderer.swapchain.swapchain;
 			const VkPresentInfoKHR presentInfo{
 				.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 				.waitSemaphoreCount = 1U,
 				.pWaitSemaphores = &renderFinishedSemaphore,
 				.swapchainCount = 1U,
-				.pSwapchains = &renderer.swapchain.swapchain,
+				.pSwapchains = &presentSwapchain,
 				.pImageIndices = &imageIndex,
 			};
 			result = vkQueuePresentKHR(renderer.device.presentQueue, &presentInfo);
@@ -220,9 +223,9 @@ export namespace vve::simple {
 			auto &renderer = static_cast<Renderer &>(*this);
 			renderer.recordedPassOrder.clear();
 			if (frameIndex >= renderer.commandBuffers.commandBuffers.size() || frameIndex >= renderer.descriptorSets.descriptorSets.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
-			if (imageIndex >= renderer.framebuffers.framebuffers.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
-			if (renderer.shadowMap.renderPass == VK_NULL_HANDLE || renderer.shadowMap.framebuffer == VK_NULL_HANDLE || renderer.shadowMap.pipeline == VK_NULL_HANDLE || renderer.shadowMap.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
-			if (renderer.spotShadowMap.renderPass == VK_NULL_HANDLE || renderer.spotShadowMap.framebuffer == VK_NULL_HANDLE || renderer.spotShadowMap.pipeline == VK_NULL_HANDLE || renderer.spotShadowMap.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (imageIndex >= renderer.swapchain.images.size() || imageIndex >= renderer.imageViews.ownedViews.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (renderer.shadowMap.imageView == VK_NULL_HANDLE || renderer.shadowMap.pipeline == VK_NULL_HANDLE || renderer.shadowMap.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (renderer.spotShadowMap.imageView == VK_NULL_HANDLE || renderer.spotShadowMap.pipeline == VK_NULL_HANDLE || renderer.spotShadowMap.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkCommandBuffer commandBuffer{renderer.commandBuffers.commandBuffers[frameIndex]};
 			VkResult result = vkResetCommandBuffer(commandBuffer, 0U);
@@ -250,40 +253,123 @@ export namespace vve::simple {
 				}
 			};
 			const VkClearValue shadowClear{.depthStencil = {.depth = 1.0F, .stencil = 0U}}; // Shadow depth starts at the far plane.
-			const VkRenderPassBeginInfo shadowPassInfo{
-				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-				.renderPass = renderer.shadowMap.renderPass,
-				.framebuffer = renderer.shadowMap.framebuffer,
-				.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
-				.clearValueCount = 1U,
-				.pClearValues = &shadowClear,
+			const VkExtent2D shadowExtent{.width = ShadowMap::resolution, .height = ShadowMap::resolution}; // Legacy single-map pass extent.
+			const VkImageSubresourceRange shadowRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole single-layer shadow image.
+			const VkRenderingAttachmentInfo shadowDepthAttachment{ // Dynamic shadow pass keeps old clear/store behavior.
+				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+				.imageView = renderer.shadowMap.imageView,
+				.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+				.clearValue = shadowClear,
+			};
+			const VkRenderingInfo shadowRenderingInfo{
+				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+				.renderArea = {.offset = {0, 0}, .extent = shadowExtent},
+				.layerCount = 1U,
+				.colorAttachmentCount = 0U,
+				.pDepthAttachment = &shadowDepthAttachment,
+			};
+			const VkRenderingAttachmentInfo spotShadowDepthAttachment{ // Dynamic spot shadow pass keeps old clear/store behavior.
+				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+				.imageView = renderer.spotShadowMap.imageView,
+				.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+				.clearValue = shadowClear,
+			};
+			const VkRenderingInfo spotShadowRenderingInfo{
+				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+				.renderArea = {.offset = {0, 0}, .extent = shadowExtent},
+				.layerCount = 1U,
+				.colorAttachmentCount = 0U,
+				.pDepthAttachment = &spotShadowDepthAttachment,
 			};
 
 			const bool legacyDirectionalShadowEnabled{!renderer.scene.directionalLights.empty() ? renderer.scene.directionalLights.front().enabled : renderer.scene.directionalLight.enabled}; // Legacy single shadow map mirrors the first directional light.
 			if (legacyDirectionalShadowEnabled) {
+				const VkImageMemoryBarrier shadowBeginBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.shadowMap.image,
+					.subresourceRange = shadowRange,
+				};
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+											VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											0U, 0U, nullptr, 0U, nullptr, 1U, &shadowBeginBarrier);
 				renderer.recordedPassOrder.push_back(Renderer::RecordedPass::directional_shadow);
-				vkCmdBeginRenderPass(commandBuffer, &shadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBeginRendering(commandBuffer, &shadowRenderingInfo);
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.shadowMap.pipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.shadowMap.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
 				drawUploadedObjects(renderer.shadowMap.pipelineLayout);
-				vkCmdEndRenderPass(commandBuffer);
+				vkCmdEndRendering(commandBuffer);
+				const VkImageMemoryBarrier shadowReadBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.shadowMap.image,
+					.subresourceRange = shadowRange,
+				};
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &shadowReadBarrier);
 			}
 
 			const std::size_t directionalLightCount{std::min(renderer.scene.directionalLights.size(), kMaxDirectionalLights)}; // Clamped directional-light count mirrors frame uniform upload.
-			const std::size_t dirShadowArrayLayerCount{renderer.dirShadowArray.layerFramebuffers.size()}; // Every sampled directional layer must reach shader-read layout.
+			const std::size_t dirShadowArrayLayerCount{renderer.dirShadowArray.ownedLayerViews.size()}; // Every sampled directional layer must reach shader-read layout.
 			// Clear each allocated directional layer before any draw binds the descriptor set that exposes the whole array.
 			for (std::size_t dirLightIndex{}; dirLightIndex < dirShadowArrayLayerCount; ++dirLightIndex) {
-				const VkRenderPassBeginInfo dirShadowArrayClearInfo{
-					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = renderer.dirShadowArray.renderPass,
-					.framebuffer = renderer.dirShadowArray.layerFramebuffers[dirLightIndex],
-					.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
-					.clearValueCount = 1U,
-					.pClearValues = &shadowClear,
+				const VkImageSubresourceRange dirShadowArrayLayerRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = static_cast<std::uint32_t>(dirLightIndex), .layerCount = 1U}; // One 2D view owns one array layer.
+				const VkImageMemoryBarrier dirShadowArrayBeginBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.dirShadowArray.image,
+					.subresourceRange = dirShadowArrayLayerRange,
 				};
-
-				vkCmdBeginRenderPass(commandBuffer, &dirShadowArrayClearInfo, VK_SUBPASS_CONTENTS_INLINE);
-				vkCmdEndRenderPass(commandBuffer);
+				const VkRenderingAttachmentInfo dirShadowArrayDepthAttachment{ // Dynamic clear pass defines the sampled array layer.
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+					.imageView = renderer.dirShadowArray.ownedLayerViews[dirLightIndex],
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+					.clearValue = shadowClear,
+				};
+				const VkRenderingInfo dirShadowArrayRenderingInfo{
+					.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+					.renderArea = {.offset = {0, 0}, .extent = shadowExtent},
+					.layerCount = 1U,
+					.colorAttachmentCount = 0U,
+					.pDepthAttachment = &dirShadowArrayDepthAttachment,
+				};
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+											VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											0U, 0U, nullptr, 0U, nullptr, 1U, &dirShadowArrayBeginBarrier);
+				vkCmdBeginRendering(commandBuffer, &dirShadowArrayRenderingInfo);
+				vkCmdEndRendering(commandBuffer);
+				const VkImageMemoryBarrier dirShadowArrayReadBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.dirShadowArray.image,
+					.subresourceRange = dirShadowArrayLayerRange,
+				};
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &dirShadowArrayReadBarrier);
 			}
 
 			std::size_t activeDirectionalShadowPassCount{}; // Enabled directional lights are packed into dense shadow layers by drawFrame().
@@ -291,56 +377,141 @@ export namespace vve::simple {
 			const std::size_t dirShadowArrayPassCount{std::min(activeDirectionalShadowPassCount, dirShadowArrayLayerCount)}; // Active directional array layers receive one geometry depth pass each.
 			// Render active directional lights after all sampled array layers have a defined layout.
 			for (std::size_t dirLightIndex{}; dirLightIndex < dirShadowArrayPassCount; ++dirLightIndex) {
-				const VkRenderPassBeginInfo dirShadowArrayPassInfo{
-					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = renderer.dirShadowArray.renderPass,
-					.framebuffer = renderer.dirShadowArray.layerFramebuffers[dirLightIndex],
-					.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
-					.clearValueCount = 1U,
-					.pClearValues = &shadowClear,
+				const VkImageSubresourceRange dirShadowArrayLayerRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = static_cast<std::uint32_t>(dirLightIndex), .layerCount = 1U}; // Active layer index matches the packed shadow data.
+				const VkImageMemoryBarrier dirShadowArrayBeginBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.dirShadowArray.image,
+					.subresourceRange = dirShadowArrayLayerRange,
+				};
+				const VkRenderingAttachmentInfo dirShadowArrayDepthAttachment{ // Dynamic draw pass keeps the legacy clear-before-draw behavior.
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+					.imageView = renderer.dirShadowArray.ownedLayerViews[dirLightIndex],
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+					.clearValue = shadowClear,
+				};
+				const VkRenderingInfo dirShadowArrayRenderingInfo{
+					.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+					.renderArea = {.offset = {0, 0}, .extent = shadowExtent},
+					.layerCount = 1U,
+					.colorAttachmentCount = 0U,
+					.pDepthAttachment = &dirShadowArrayDepthAttachment,
 				};
 
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+											VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											0U, 0U, nullptr, 0U, nullptr, 1U, &dirShadowArrayBeginBarrier);
 				renderer.recordedPassOrder.push_back(Renderer::RecordedPass::directional_shadow);
-				vkCmdBeginRenderPass(commandBuffer, &dirShadowArrayPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBeginRendering(commandBuffer, &dirShadowArrayRenderingInfo);
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.dirShadowArray.pipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.dirShadowArray.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
 				drawUploadedObjects(renderer.dirShadowArray.pipelineLayout, 0U, static_cast<std::uint32_t>(dirLightIndex));
-				vkCmdEndRenderPass(commandBuffer);
+				vkCmdEndRendering(commandBuffer);
+				const VkImageMemoryBarrier dirShadowArrayReadBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.dirShadowArray.image,
+					.subresourceRange = dirShadowArrayLayerRange,
+				};
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &dirShadowArrayReadBarrier);
 			}
-
-			const VkRenderPassBeginInfo spotShadowPassInfo{
-				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-				.renderPass = renderer.spotShadowMap.renderPass,
-				.framebuffer = renderer.spotShadowMap.framebuffer,
-				.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
-				.clearValueCount = 1U,
-				.pClearValues = &shadowClear,
-			};
 
 			const bool legacySpotShadowEnabled{!renderer.scene.spotLights.empty() ? renderer.scene.spotLights.front().enabled : renderer.scene.spotLight.enabled}; // Legacy single shadow map mirrors the first spot light.
 			if (legacySpotShadowEnabled) {
+				const VkImageMemoryBarrier spotShadowBeginBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.spotShadowMap.image,
+					.subresourceRange = shadowRange,
+				};
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+											VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											0U, 0U, nullptr, 0U, nullptr, 1U, &spotShadowBeginBarrier);
 				renderer.recordedPassOrder.push_back(Renderer::RecordedPass::spot_shadow);
-				vkCmdBeginRenderPass(commandBuffer, &spotShadowPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBeginRendering(commandBuffer, &spotShadowRenderingInfo);
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.spotShadowMap.pipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.spotShadowMap.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
 				drawUploadedObjects(renderer.spotShadowMap.pipelineLayout);
-				vkCmdEndRenderPass(commandBuffer);
+				vkCmdEndRendering(commandBuffer);
+				const VkImageMemoryBarrier spotShadowReadBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.spotShadowMap.image,
+					.subresourceRange = shadowRange,
+				};
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &spotShadowReadBarrier);
 			}
 
-			const std::size_t spotShadowArrayLayerCount{renderer.spotShadowArray.layerFramebuffers.size()}; // Every sampled array layer must reach shader-read layout.
+			const std::size_t spotShadowArrayLayerCount{renderer.spotShadowArray.ownedLayerViews.size()}; // Every sampled array layer must reach shader-read layout.
 			// Clear each allocated spot layer before any draw binds the descriptor set that exposes the whole array.
 			for (std::size_t spotLightIndex{}; spotLightIndex < spotShadowArrayLayerCount; ++spotLightIndex) {
-				const VkRenderPassBeginInfo spotShadowArrayClearInfo{
-					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = renderer.spotShadowArray.renderPass,
-					.framebuffer = renderer.spotShadowArray.layerFramebuffers[spotLightIndex],
-					.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
-					.clearValueCount = 1U,
-					.pClearValues = &shadowClear,
+				const VkImageSubresourceRange spotShadowArrayLayerRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = static_cast<std::uint32_t>(spotLightIndex), .layerCount = 1U}; // One 2D view owns one array layer.
+				const VkImageMemoryBarrier spotShadowArrayBeginBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.spotShadowArray.image,
+					.subresourceRange = spotShadowArrayLayerRange,
+				};
+				const VkRenderingAttachmentInfo spotShadowArrayDepthAttachment{ // Dynamic clear pass defines the sampled array layer.
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+					.imageView = renderer.spotShadowArray.ownedLayerViews[spotLightIndex],
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+					.clearValue = shadowClear,
+				};
+				const VkRenderingInfo spotShadowArrayRenderingInfo{
+					.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+					.renderArea = {.offset = {0, 0}, .extent = shadowExtent},
+					.layerCount = 1U,
+					.colorAttachmentCount = 0U,
+					.pDepthAttachment = &spotShadowArrayDepthAttachment,
 				};
 
-				vkCmdBeginRenderPass(commandBuffer, &spotShadowArrayClearInfo, VK_SUBPASS_CONTENTS_INLINE);
-				vkCmdEndRenderPass(commandBuffer);
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+											VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											0U, 0U, nullptr, 0U, nullptr, 1U, &spotShadowArrayBeginBarrier);
+				vkCmdBeginRendering(commandBuffer, &spotShadowArrayRenderingInfo);
+				vkCmdEndRendering(commandBuffer);
+				const VkImageMemoryBarrier spotShadowArrayReadBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.spotShadowArray.image,
+					.subresourceRange = spotShadowArrayLayerRange,
+				};
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &spotShadowArrayReadBarrier);
 			}
 
 			std::size_t activeSpotShadowPassCount{}; // Enabled spot lights are packed into dense shadow layers by drawFrame().
@@ -348,37 +519,105 @@ export namespace vve::simple {
 			const std::size_t spotShadowArrayPassCount{std::min(activeSpotShadowPassCount, spotShadowArrayLayerCount)}; // Active array layers receive one geometry depth pass each.
 			// Render active spot lights after all sampled array layers have a defined layout.
 			for (std::size_t spotLightIndex{}; spotLightIndex < spotShadowArrayPassCount; ++spotLightIndex) {
-				const VkRenderPassBeginInfo spotShadowArrayPassInfo{
-					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = renderer.spotShadowArray.renderPass,
-					.framebuffer = renderer.spotShadowArray.layerFramebuffers[spotLightIndex],
-					.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
-					.clearValueCount = 1U,
-					.pClearValues = &shadowClear,
+				const VkImageSubresourceRange spotShadowArrayLayerRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = static_cast<std::uint32_t>(spotLightIndex), .layerCount = 1U}; // Active layer index matches the packed shadow data.
+				const VkImageMemoryBarrier spotShadowArrayBeginBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.spotShadowArray.image,
+					.subresourceRange = spotShadowArrayLayerRange,
+				};
+				const VkRenderingAttachmentInfo spotShadowArrayDepthAttachment{ // Dynamic draw pass keeps the legacy clear-before-draw behavior.
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+					.imageView = renderer.spotShadowArray.ownedLayerViews[spotLightIndex],
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+					.clearValue = shadowClear,
+				};
+				const VkRenderingInfo spotShadowArrayRenderingInfo{
+					.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+					.renderArea = {.offset = {0, 0}, .extent = shadowExtent},
+					.layerCount = 1U,
+					.colorAttachmentCount = 0U,
+					.pDepthAttachment = &spotShadowArrayDepthAttachment,
 				};
 
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+											VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											0U, 0U, nullptr, 0U, nullptr, 1U, &spotShadowArrayBeginBarrier);
 				renderer.recordedPassOrder.push_back(Renderer::RecordedPass::spot_shadow);
-				vkCmdBeginRenderPass(commandBuffer, &spotShadowArrayPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBeginRendering(commandBuffer, &spotShadowArrayRenderingInfo);
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.spotShadowArray.pipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.spotShadowArray.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
 				drawUploadedObjects(renderer.spotShadowArray.pipelineLayout, static_cast<std::uint32_t>(spotLightIndex));
-				vkCmdEndRenderPass(commandBuffer);
+				vkCmdEndRendering(commandBuffer);
+				const VkImageMemoryBarrier spotShadowArrayReadBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.spotShadowArray.image,
+					.subresourceRange = spotShadowArrayLayerRange,
+				};
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &spotShadowArrayReadBarrier);
 			}
 
-			const std::size_t pointShadowArrayLayerCount{renderer.pointShadowArray.layerFramebuffers.size()}; // Six point-shadow faces per light must reach shader-read layout.
+			const std::size_t pointShadowArrayLayerCount{renderer.pointShadowArray.ownedLayerViews.size()}; // Six point-shadow faces per light must reach shader-read layout.
 			// Clear each allocated point-shadow face layer before the color pass starts.
 			for (std::size_t pointShadowLayerIndex{}; pointShadowLayerIndex < pointShadowArrayLayerCount; ++pointShadowLayerIndex) {
-				const VkRenderPassBeginInfo pointShadowArrayClearInfo{
-					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = renderer.pointShadowArray.renderPass,
-					.framebuffer = renderer.pointShadowArray.layerFramebuffers[pointShadowLayerIndex],
-					.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
-					.clearValueCount = 1U,
-					.pClearValues = &shadowClear,
+				const VkImageSubresourceRange pointShadowArrayLayerRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = static_cast<std::uint32_t>(pointShadowLayerIndex), .layerCount = 1U}; // One 2D view owns one cube-face layer.
+				const VkImageMemoryBarrier pointShadowArrayBeginBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.pointShadowArray.image,
+					.subresourceRange = pointShadowArrayLayerRange,
+				};
+				const VkRenderingAttachmentInfo pointShadowArrayDepthAttachment{ // Dynamic clear pass defines the sampled cube-face layer.
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+					.imageView = renderer.pointShadowArray.ownedLayerViews[pointShadowLayerIndex],
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+					.clearValue = shadowClear,
+				};
+				const VkRenderingInfo pointShadowArrayRenderingInfo{
+					.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+					.renderArea = {.offset = {0, 0}, .extent = shadowExtent},
+					.layerCount = 1U,
+					.colorAttachmentCount = 0U,
+					.pDepthAttachment = &pointShadowArrayDepthAttachment,
 				};
 
-				vkCmdBeginRenderPass(commandBuffer, &pointShadowArrayClearInfo, VK_SUBPASS_CONTENTS_INLINE);
-				vkCmdEndRenderPass(commandBuffer);
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+											VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											0U, 0U, nullptr, 0U, nullptr, 1U, &pointShadowArrayBeginBarrier);
+				vkCmdBeginRendering(commandBuffer, &pointShadowArrayRenderingInfo);
+				vkCmdEndRendering(commandBuffer);
+				const VkImageMemoryBarrier pointShadowArrayReadBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.pointShadowArray.image,
+					.subresourceRange = pointShadowArrayLayerRange,
+				};
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &pointShadowArrayReadBarrier);
 			}
 
 			constexpr std::size_t pointShadowFaceCount{6U}; // One point light owns six cubemap-style shadow faces.
@@ -390,43 +629,131 @@ export namespace vve::simple {
 			for (std::size_t faceGlobalIndex{}; faceGlobalIndex < activePointFaceCount; ++faceGlobalIndex) {
 				const std::size_t pointIndex{faceGlobalIndex / pointShadowFaceCount}; // Source point light for this face.
 				const std::size_t faceIndex{faceGlobalIndex % pointShadowFaceCount}; // Local cubemap-style face index.
-				const std::size_t pointFaceLayerIndex{pointIndex * pointShadowFaceCount + faceIndex}; // Matches pointLightFaceViewProjs and layerFramebuffers.
-				const VkRenderPassBeginInfo pointShadowArrayPassInfo{
-					.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-					.renderPass = renderer.pointShadowArray.renderPass,
-					.framebuffer = renderer.pointShadowArray.layerFramebuffers[pointFaceLayerIndex],
-					.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
-					.clearValueCount = 1U,
-					.pClearValues = &shadowClear,
+				const std::size_t pointFaceLayerIndex{pointIndex * pointShadowFaceCount + faceIndex}; // Matches point-light face views.
+				const VkImageSubresourceRange pointShadowArrayLayerRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = static_cast<std::uint32_t>(pointFaceLayerIndex), .layerCount = 1U}; // Active face index matches the packed shadow data.
+				const VkImageMemoryBarrier pointShadowArrayBeginBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.pointShadowArray.image,
+					.subresourceRange = pointShadowArrayLayerRange,
+				};
+				const VkRenderingAttachmentInfo pointShadowArrayDepthAttachment{ // Dynamic draw pass keeps the legacy clear-before-draw behavior.
+					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+					.imageView = renderer.pointShadowArray.ownedLayerViews[pointFaceLayerIndex],
+					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+					.clearValue = shadowClear,
+				};
+				const VkRenderingInfo pointShadowArrayRenderingInfo{
+					.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+					.renderArea = {.offset = {0, 0}, .extent = shadowExtent},
+					.layerCount = 1U,
+					.colorAttachmentCount = 0U,
+					.pDepthAttachment = &pointShadowArrayDepthAttachment,
 				};
 
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+											VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											0U, 0U, nullptr, 0U, nullptr, 1U, &pointShadowArrayBeginBarrier);
 				renderer.recordedPassOrder.push_back(Renderer::RecordedPass::point_shadow);
-				vkCmdBeginRenderPass(commandBuffer, &pointShadowArrayPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+				vkCmdBeginRendering(commandBuffer, &pointShadowArrayRenderingInfo);
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.pointShadowArray.pipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.pointShadowArray.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
 				drawUploadedObjects(renderer.pointShadowArray.pipelineLayout, static_cast<std::uint32_t>(pointFaceLayerIndex));
-				vkCmdEndRenderPass(commandBuffer);
+				vkCmdEndRendering(commandBuffer);
+				const VkImageMemoryBarrier pointShadowArrayReadBarrier{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.pointShadowArray.image,
+					.subresourceRange = pointShadowArrayLayerRange,
+				};
+				vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+											VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &pointShadowArrayReadBarrier);
 			}
 
 			constexpr std::array<float, 4U> skyBackgroundColor{0.45F, 0.70F, 1.00F, 1.00F}; // Sky background for the forward color pass.
-			const std::array<VkClearValue, 2U> clearValues{{{.color = {.float32 = {skyBackgroundColor[0], skyBackgroundColor[1], skyBackgroundColor[2], skyBackgroundColor[3]}}}, {.depthStencil = {.depth = 1.0F, .stencil = 0U}}}}; // Index 1 clears depth to the far plane.
-			const VkRenderPassBeginInfo renderPassInfo{
-				.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
-				.renderPass = renderer.renderPass.renderPass,
-				.framebuffer = renderer.framebuffers.framebuffers[imageIndex],
+			const VkImageSubresourceRange colorRange{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole swapchain image.
+			const VkImageSubresourceRange depthRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole depth image.
+			const std::array<VkImageMemoryBarrier, 2U> beginBarriers{{
+				{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.swapchain.images[imageIndex],
+					.subresourceRange = colorRange,
+				},
+				{
+					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+					.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = renderer.depthImage.image,
+					.subresourceRange = depthRange,
+				},
+			}};
+			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+										VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+										0U, 0U, nullptr, 0U, nullptr, static_cast<std::uint32_t>(beginBarriers.size()), beginBarriers.data());
+			const VkRenderingAttachmentInfo colorAttachment{ // Dynamic rendering mirrors the old render-pass color clear/store ops.
+				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+				.imageView = renderer.imageViews.ownedViews[imageIndex],
+				.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+				.clearValue = {.color = {.float32 = {skyBackgroundColor[0], skyBackgroundColor[1], skyBackgroundColor[2], skyBackgroundColor[3]}}},
+			};
+			const VkRenderingAttachmentInfo depthAttachment{ // Forward depth is cleared to the far plane and kept attachment-local.
+				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+				.imageView = renderer.depthImage.imageView,
+				.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+				.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+				.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+				.clearValue = {.depthStencil = {.depth = 1.0F, .stencil = 0U}},
+			};
+			const VkRenderingInfo renderingInfo{
+				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
 				.renderArea = {.offset = {0, 0}, .extent = renderer.swapchain.extent},
-				.clearValueCount = static_cast<std::uint32_t>(clearValues.size()),
-				.pClearValues = clearValues.data(),
+				.layerCount = 1U,
+				.colorAttachmentCount = 1U,
+				.pColorAttachments = &colorAttachment,
+				.pDepthAttachment = &depthAttachment,
 			};
 
 			renderer.recordedPassOrder.push_back(Renderer::RecordedPass::forward_color);
-			vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+			vkCmdBeginRendering(commandBuffer, &renderingInfo);
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.graphicsPipeline.pipeline);
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.pipelineLayout.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
 			drawUploadedObjects(renderer.pipelineLayout.pipelineLayout);
 			if (renderer.guiRecord_) { renderer.guiRecord_(commandBuffer); }
 
-			vkCmdEndRenderPass(commandBuffer);
+			vkCmdEndRendering(commandBuffer);
+			const VkImageMemoryBarrier presentBarrier{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
+				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.image = renderer.swapchain.images[imageIndex],
+				.subresourceRange = colorRange,
+			};
+			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+										VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &presentBarrier);
 			result = vkEndCommandBuffer(commandBuffer);
 			if (result != VK_SUCCESS) { return result; }
 

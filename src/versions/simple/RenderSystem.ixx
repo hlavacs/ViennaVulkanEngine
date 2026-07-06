@@ -135,6 +135,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto renderFrame(const WindowFrameData &windows)														-> std::expected<void, Error>;
 		[[nodiscard]] auto renderFrame(WindowSystem &windows)																	-> std::expected<void, Error>;
 		[[nodiscard]] auto renderedFrameCount() const																			-> std::uint64_t;
+		[[nodiscard]] auto renderingFramesPerSecond() const																-> double;
 		[[nodiscard]] auto lastRenderedWindowCount() const																		-> std::size_t;
 
 	private:
@@ -188,6 +189,9 @@ export namespace vve::simple {
 		std::uint64_t next_render_object_id_{1};								///< Next public render-object id.
 		std::uint64_t next_scene_instance_id_{1};								///< Next public scene-instance id.
 		std::uint64_t rendered_frames_{0};											///< Number of accepted frame calls.
+		std::uint64_t render_fps_frames_{0};										///< Frames accumulated for the render-FPS sample.
+		std::chrono::steady_clock::time_point render_fps_start_{};		///< Start of the current render-FPS sample window.
+		double render_fps_{};															///< Last measured render-frame throughput.
 		std::size_t last_window_count_{0};											///< Last non-closed window count.
 		bool initialized_{false};														///< True after the concrete renderer is initialized.
 	};
@@ -395,8 +399,17 @@ namespace vve::simple {
 
 	inline auto RenderSystem::makeGuiInitInfo() const													-> std::optional<ImGui_ImplVulkan_InitInfo>{
 		if (!initialized_ || !std::holds_alternative<ForwardRenderer>(renderer_)) { return std::nullopt; }
-		auto info = std::get<ForwardRenderer>(renderer_).makeImguiInitInfo();
-		if (info.Device == VK_NULL_HANDLE || info.RenderPass == VK_NULL_HANDLE || info.DescriptorPool == VK_NULL_HANDLE) {
+		const auto &forward = std::get<ForwardRenderer>(renderer_);
+		auto info = forward.makeImguiInitInfo();
+		info.RenderPass = VK_NULL_HANDLE;
+		info.UseDynamicRendering = true;
+		info.PipelineRenderingCreateInfo = VkPipelineRenderingCreateInfo{
+			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+			.colorAttachmentCount = 1U,
+			.pColorAttachmentFormats = &forward.swapchain.imageFormat,
+			.depthAttachmentFormat = VK_FORMAT_UNDEFINED,
+		};
+		if (info.Device == VK_NULL_HANDLE || info.DescriptorPool == VK_NULL_HANDLE) {
 			return std::nullopt;
 		}
 		return info;
@@ -451,6 +464,15 @@ namespace vve::simple {
 		} else {
 			++rendered_frames_;
 		}
+		const auto now = std::chrono::steady_clock::now();
+		if (render_fps_start_ == std::chrono::steady_clock::time_point{}) { render_fps_start_ = now; }
+		++render_fps_frames_;
+		const std::chrono::duration<double> elapsed = now - render_fps_start_;
+		if (elapsed.count() >= 0.25) {
+			render_fps_ = static_cast<double>(render_fps_frames_) / elapsed.count();
+			render_fps_frames_ = 0;
+			render_fps_start_ = now;
+		}
 		return {};
 	}
 
@@ -460,6 +482,7 @@ namespace vve::simple {
 	}
 
 	inline std::uint64_t RenderSystem::renderedFrameCount() const { return rendered_frames_; }
+	inline double RenderSystem::renderingFramesPerSecond() const { return render_fps_; }
 	inline std::size_t RenderSystem::lastRenderedWindowCount() const { return last_window_count_; }
 
 } // namespace vve::simple

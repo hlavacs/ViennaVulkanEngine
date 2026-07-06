@@ -19,6 +19,7 @@ target_sources(ViennaVulkanEngine
          Gui.ixx
          Engine.ixx
          Mesh.ixx
+         Vulkan/Handle.ixx
          Vulkan/Device.ixx
          Vulkan/Commands.ixx
          Vulkan/Presentation.ixx
@@ -56,6 +57,8 @@ set(VVE_SIMPLE_FORWARD_POINT_SHADOW_VERTEX_SPV "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/
 target_compile_definitions(ViennaVulkanEngine
    PRIVATE
       "VVE_SIMPLE_SHADER_DIR=\"${VVE_SIMPLE_SHADER_OUTPUT_DIR}\""
+      "VVE_SIMPLE_SHADER_SOURCE=\"${VVE_SIMPLE_FORWARD_SHADER}\""
+      "$<$<NOT:$<CONFIG:Debug>>:VVE_SIMPLE_RELEASE_PRESENT_MAILBOX>"
 )
 
 if(DEFINED SLANGC_EXECUTABLE AND NOT SLANGC_EXECUTABLE STREQUAL "")
