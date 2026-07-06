@@ -86,6 +86,7 @@ int main() {
    }
    if (!render_system.hasSceneCamera() || !render_system.hasSceneDirectionalLight()) { return 9; }
 
+#ifndef NDEBUG
    const auto dump_dir = std::filesystem::temp_directory_path() / "vve_user_system_debug_graphs";
    std::filesystem::remove_all(dump_dir);
    if (const auto dumped = engine.writeDebugGraphs(dump_dir); !dumped) { return 2; }
@@ -94,6 +95,7 @@ int main() {
       return 3;
    }
    std::filesystem::remove_all(dump_dir);
+#endif
 
    const auto first = engine.step();
    const auto second = engine.step();

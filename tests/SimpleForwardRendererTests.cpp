@@ -586,7 +586,9 @@ int main() {
       return 3;
    }
 
+#ifndef NDEBUG
    std::get<vve::simple::ForwardRenderer>(render_system.backend()).setGpuDebugReadback(true);
+#endif
    if (const auto result = engine.renderFrame(); !result) { return 4; }
    const auto status = engine.step();
    if (!status || *status != vve::FrameStatus::stopped) { return 4; }
@@ -613,7 +615,9 @@ int main() {
        forward_renderer.sceneDrawVertexCount() != 0 || forward_renderer.sceneDrawIndexCount() != 0) {
       return 6;
    }
+#ifndef NDEBUG
    if (!hasRecordedShadowsBeforeForwardColor(forward_renderer)) { return 17; }
+#endif
 
    // Verify debug sample and comparison accessors expose the current no-readback state.
    if (forward_renderer.sceneDebugSampleCount() != 0 || forward_renderer.sceneCpuDebugSample(0) ||
@@ -625,6 +629,7 @@ int main() {
       return 7;
    }
 
+#ifndef NDEBUG
    // Directional shadow-depth diagnostics are CPU-populated by engine.renderFrame(); GPU error stays unavailable here.
    const auto directional_shadow_sample = forward_renderer.sceneShadowDepthSample(0); ///< Single retained light-space sample.
    if (forward_renderer.sceneShadowDepthSampleCount() != 1U || !directional_shadow_sample ||
@@ -642,6 +647,7 @@ int main() {
       return 8;
    }
    if (!hasFullContributionForNonOccludedShadowSamples(forward_renderer)) { return 18; }
+#endif
 
    // Verify each active spot light receives a unique shadow-array slot when samples are reachable.
    const auto capped_spot_lights = std::views::take(forward_renderer.scene.spotLights,

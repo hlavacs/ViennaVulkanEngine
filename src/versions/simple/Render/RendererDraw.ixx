@@ -72,6 +72,7 @@ export namespace vve::simple {
 			const Vec3 lightEye{light.position}; ///< Place the shadow camera at the point light for the current simple approximation.
 			const Scalar lightExtent{static_cast<Scalar>(4.0)}; ///< Light-space half-size covers the 4x4 floor and tall cube.
 			const ForwardRendererShadowFrame shadowFrame = renderer.prepareShadowFrame(lightCenter, lightExtent, spot, spotDirection);
+#ifndef NDEBUG
 			renderer.spotShadowDepthSampleCountStorage() = renderer.spotLightViewProjCount;
 			const Vec3 spotShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point used for CPU-only shadow diagnostics.
 			constexpr float kCpuSpotShadowFactor{1.0F}; ///< Unshadowed placeholder because has_gpu is false here.
@@ -119,6 +120,7 @@ export namespace vve::simple {
 																								 .has_gpu = false,
 																								 .valid = true}; ///< Slot is face_index; GPU depth is unavailable here.
 			}
+#endif
 			const FrameUniforms frameUniforms{ // Shared camera matrices keep the sample cubes inside Vulkan clip space.
 				.view = lookAt(renderer.cameraEye, renderer.cameraTarget, Vec3{zero(), one(), zero()}),
 				.projection = perspectiveVulkan(static_cast<Scalar>(0.7853981633974483), aspectRatio, static_cast<Scalar>(0.1), static_cast<Scalar>(100.0)),
@@ -147,6 +149,7 @@ export namespace vve::simple {
 				.directionalLightAmbients = shadowFrame.directionalLightAmbients,
 				.activeDirectionalLightCount = shadowFrame.activeDirectionalLightCount,
 			};
+#ifndef NDEBUG
 			renderer.directionalShadowDepthSampleCountStorage() = 1U;
 			const Vec3 directionalShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point shared with spot shadow diagnostics.
 			constexpr float kDirectionalShadowCompareBias{0.001F}; ///< CPU mirror of the shader-side directional compare bias.
@@ -163,6 +166,7 @@ export namespace vve::simple {
 																									 .error = -1.0F,
 																									 .has_gpu = false,
 																									 .valid = true}; ///< Directional sample is CPU-only until readback is added.
+#endif
 			result = renderer.uniformBuffers.update(renderer.currentFrame, frameUniforms);
 			if (result != VK_SUCCESS) { return; }
 

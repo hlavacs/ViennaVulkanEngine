@@ -90,8 +90,12 @@ export namespace vve::simple {
 			}
 
 			layers.clear();
+#ifndef NDEBUG
 			validationEnabled = validationLayerAvailable();
 			if (validationEnabled) { layers.push_back(validationLayerName); }
+#else
+			validationEnabled = false;
+#endif
 
 			const auto appName = std::string{applicationName};
 			const VkApplicationInfo appInfo{
@@ -122,6 +126,7 @@ export namespace vve::simple {
 		void cleanup() { instance.reset(); }
 
 	private:
+#ifndef NDEBUG
 		static constexpr char const *validationLayerName{"VK_LAYER_KHRONOS_validation"}; ///< Standard Vulkan validation layer.
 
 		/**
@@ -142,6 +147,7 @@ export namespace vve::simple {
 				return std::string_view{layer.layerName} == validationLayerName;
 			});
 		}
+#endif
 	};
 
 	/// @brief Minimal Vulkan window surface object; no device, swapchain, commands, or sync are created here.

@@ -1,0 +1,30 @@
+# Simple engine discovery
+
+- `src/CMakeLists.txt:1` - Main engine target is shared library `ViennaVulkanEngine`; `src/CMakeLists.txt:96` adds `src/versions/simple`.
+- `src/versions/simple/CMakeLists.txt:1` - Simple engine sources are added to `ViennaVulkanEngine`; `src/versions/simple/CMakeLists.txt:3` adds `stb_image_write_impl.cpp`; `src/versions/simple/CMakeLists.txt:5` starts the `simple_modules` module file set; `src/versions/simple/CMakeLists.txt:6`-`45` list the simple engine `.ixx` sources.
+- `src/versions/simple/CMakeLists.txt:153` - Shader build target is `vve_simple_shaders`; `src/versions/simple/CMakeLists.txt:162` makes `ViennaVulkanEngine` depend on it.
+- `examples/simple_forward_demo/CMakeLists.txt:1` - Simple forward example/app target is `simple_forward_demo`; `examples/simple_forward_demo/CMakeLists.txt:2` names main source `simple_forward_demo.cpp`.
+- `examples/light_shadow_debug/CMakeLists.txt:1` - Debug example target is `light_shadow_debug`; `examples/light_shadow_debug/CMakeLists.txt:2` names main source `light_shadow_debug.cpp`.
+- `src/versions/simple/Vulkan/Device.ixx:92` - Vulkan validation layer list is cleared then rebuilt; `src/versions/simple/Vulkan/Device.ixx:93`-`94` enables `VK_LAYER_KHRONOS_validation` whenever available; not gated by `NDEBUG` or build type.
+- `src/versions/simple/Vulkan/Device.ixx:125` - Validation layer name is hard-coded; `src/versions/simple/Vulkan/Device.ixx:132`-`143` enumerates instance layers; no release gate.
+- `src/versions/simple/Vulkan/Device.ixx:1`-`386` - No `VK_EXT_debug_utils`, debug messenger, or callback setup found in the simple Vulkan device bootstrap.
+- `src/versions/simple/Render/RendererDebug.ixx:86`-`89` - Renderer owns debug readback objects and last readback result; always compiled, no `NDEBUG`/build-type gate.
+- `src/versions/simple/Renderer.ixx:140`-`144` - `setGpuDebugReadback()` enables expensive GPU-to-CPU shadow diagnostics at runtime; default flag is false at `src/versions/simple/Renderer.ixx:230`; not compiled out in release.
+- `src/versions/simple/Render/RendererDraw.ixx:75`-`120` and `src/versions/simple/Render/RendererDraw.ixx:150`-`165` - CPU shadow debug samples are populated every frame; not gated by `NDEBUG`/build type.
+- `src/versions/simple/Render/RendererDraw.ixx:185`-`189` - GPU shadow-depth readback only runs when runtime flag `gpuDebugReadbackEnabled()` is true; code remains compiled in release.
+- `src/versions/simple/Render/RendererDebug.ixx:147`-`176` - `captureFrameToPng()` performs swapchain image readback and PNG write on demand; no release gate.
+- `src/versions/simple/Render/RenderSystemDebug.ixx:89`-`93` - Public render-system PNG capture forwards to renderer; no release gate.
+- `examples/simple_forward_demo/simple_forward_demo.cpp:84`-`94` - Example captures first rendered frame to PNG via facade; example logging at `examples/simple_forward_demo/simple_forward_demo.cpp:44`-`100`; not gated by release.
+- `examples/light_shadow_debug/light_shadow_debug.cpp:191`-`263` - Debug example writes shadow diagnostic rows, including optional GPU readback fields; not part of engine target and not build-type gated.
+- `src/versions/simple/Engine.ixx:47` - F9 debug graph hotkey constant; `src/versions/simple/Engine.ixx:210`-`211` writes debug graphs when pressed; not gated by release.
+- `src/versions/simple/Engine.ixx:326`-`345` - `writeDebugGraphs()` writes task/render graph JSON files; no `NDEBUG`/build-type gate.
+- `src/Types.ixx:527` and `src/Types.ixx:543`-`549` - Facade `RendererConfig::enable_debug_output` exists in public config builder; no simple-engine usage found by search.
+- `src/versions/simple/CMakeLists.txt:61` and `src/versions/simple/Renderer.ixx:178`-`184` - Only build-type gate found: non-Debug defines `VVE_SIMPLE_RELEASE_PRESENT_MAILBOX` to choose mailbox present mode, not to remove diagnostics.
+- `src/versions/simple/RenderSystem.ixx:191`-`194` - Existing frame/FPS state: rendered frame count, FPS sample counter, sample start time, and last FPS value.
+- `src/versions/simple/RenderSystem.ixx:457`-`476` - `renderFrame()` increments `rendered_frames_`, samples FPS every 0.25s, and stores `render_fps_`.
+- `src/versions/simple/RenderSystem.ixx:484`-`485` - Simple implementation exposes `renderedFrameCount()` and `renderingFramesPerSecond()`.
+- `src/RenderSystem.ixx:190`-`192` and `src/RenderSystem.cpp:357`-`366` - Facade exposes PNG capture, rendered-frame count, and render FPS.
+- `examples/game/game.cpp:324` and `examples/game/game.cpp:359` - Game example reads `render.renderingFramesPerSecond()`; `examples/game/game.cpp:335` displays "Render FPS".
+- `examples/simple_forward_demo/simple_forward_demo.cpp:75`-`99` - Simple forward demo prints configured `frames`, not FPS.
+- `cmake/CMakePresets.base.json:112`-`123` - Release macOS arm64 configure preset is `release-macos-arm64-llvm`.
+- `cmake/CMakePresets.base.json:178`-`181` - Release macOS arm64 build preset is `build-release-macos-arm64-llvm`.

@@ -44,7 +44,9 @@ export namespace vve::simple {
 
 	namespace detail {
 
+#ifndef NDEBUG
 		inline constexpr std::int32_t debugDumpGraphHotkey{0x40000042};	///< SDL keycode for F9.
+#endif
 
 	} // namespace detail
 
@@ -207,9 +209,11 @@ export namespace vve::simple {
 	inline auto Engine::step()																				-> std::expected<FrameStatus, Error>{
 		if (!initialized_) { return std::unexpected(Error::missing_object); }
 		if (const auto result = window_system_.poll(); !result) { return std::unexpected(result.error()); }
+#ifndef NDEBUG
 		if (window_system_.input().wasKeyPressed(detail::debugDumpGraphHotkey)) {
 			if (const auto result = writeDebugGraphs(); !result) { return std::unexpected(result.error()); }
 		}
+#endif
 
 		const auto now = std::chrono::steady_clock::now();
 		last_frame_time_ = now;
@@ -324,6 +328,7 @@ export namespace vve::simple {
 
 	/// @brief Writes task and render graph JSON dumps into a debug directory.
 	inline auto Engine::writeDebugGraphs(const std::filesystem::path &directory) const	-> std::expected<void, Error>{
+#ifndef NDEBUG
 		const auto task_path = directory / "task_graph.json";
 		const auto render_path = directory / "render_graph.json";
 		if (const auto result = tasks_.writeJson(task_path, "task_graph", "simple task graph"); !result) { return result; }
@@ -346,6 +351,10 @@ export namespace vve::simple {
 		}
 
 		return {};
+#else
+		(void)directory;
+		return {};
+#endif
 	}
 
 } // namespace vve::simple

@@ -47,6 +47,7 @@ int main() {
                     .build();
    if (!engine.init()) { return 1; }
 
+#ifndef NDEBUG
    const auto dump_dir = std::filesystem::temp_directory_path() / "vve_world_debug_graphs";
    std::filesystem::remove_all(dump_dir);
    if (const auto dumped = engine.writeDebugGraphs(dump_dir); !dumped) { return 2; }
@@ -63,6 +64,7 @@ int main() {
    if (!fileContains(main_graph, "window=main renderer=forward")) { return 5; }
    if (!fileContains(tools_graph, "window=tools renderer=forward")) { return 5; }
    std::filesystem::remove_all(dump_dir);
+#endif
 
    auto world = engine.world();
    auto &ecs = world.get<vve::ECS>();

@@ -72,6 +72,7 @@ int main(int argc, char **argv) {
 	const std::string capture_path_text = capture_path.string();
 	bool captured{};
 
+	const auto render_start_time = std::chrono::steady_clock::now();
 	for (int frame{}; frame < max_frames; ++frame) {
 		const auto status = engine.step();
 		if (!status) {
@@ -95,8 +96,14 @@ int main(int argc, char **argv) {
 
 		if (*status == vve::FrameStatus::stopped) { break; }
 	}
+	const auto render_end_time = std::chrono::steady_clock::now();
+	const auto rendered_frames = render_system.renderedFrameCount();
+	const double elapsed_seconds = std::chrono::duration<double>{render_end_time - render_start_time}.count();
+	const double average_fps = elapsed_seconds > 0.0 ? static_cast<double>(rendered_frames) / elapsed_seconds : 0.0;
 
 	std::println("simple_forward_demo frames={}", max_frames);
+	std::println("Rendered {} frames, Render FPS: {:.1f}, Whole-run average FPS: {:.1f}", rendered_frames,
+					 render_system.renderingFramesPerSecond(), average_fps);
 	std::println("simple_forward_demo cleanup done");
 	return 0;
 }
