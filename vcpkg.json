@@ -3,6 +3,7 @@
   "version-string": "3.0.0",
   "dependencies": [
     "assimp",
+    "glm",
     {
       "name": "imgui",
       "features": [

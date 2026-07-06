@@ -14,6 +14,7 @@ module;
 #endif
 
 export module VEEngine.Simple.Vulkan:Readback;
+import :OwnedHandle;
 import :Device;
 import :Commands;
 import std;

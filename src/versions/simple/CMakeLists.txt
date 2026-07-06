@@ -16,7 +16,7 @@ target_sources(ViennaVulkanEngine
          Shaders.ixx
          RenderPassContract.ixx
          RenderPass.ixx
-         Gui.ixx
+         GUI.ixx
          Engine.ixx
          Mesh.ixx
          Vulkan/Handle.ixx

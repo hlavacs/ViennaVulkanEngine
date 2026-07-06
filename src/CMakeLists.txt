@@ -41,6 +41,7 @@ target_compile_definitions(ViennaVulkanEngine
 )
 
 find_package(assimp CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
 if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "" AND EXISTS "${VVE_VULKAN_SDK_ROOT}/include/glm/glm.hpp")
@@ -98,6 +99,7 @@ add_subdirectory("versions/simple")
 target_link_libraries(ViennaVulkanEngine
     PUBLIC
         assimp::assimp
+        glm::glm
         slang::slang
     PRIVATE
         imgui::imgui

@@ -382,7 +382,10 @@ export namespace vve::simple {
 #ifdef VVE_SDL_VULKAN_LIBRARY
 			SDL_SetHint(SDL_HINT_VULKAN_LIBRARY, VVE_SDL_VULKAN_LIBRARY);
 #endif
-			if (SDL_InitSubSystem(SDL_INIT_VIDEO) == false) { return std::unexpected(Error::platform_error); }
+			if (SDL_InitSubSystem(SDL_INIT_VIDEO) == false) {
+				std::cerr << "[vve::simple] SDL video init failed: " << SDL_GetError() << '\n';
+				return std::unexpected(Error::platform_error);
+			}
 			impl_->video_initialized = true;
 		}
 
@@ -405,7 +408,10 @@ export namespace vve::simple {
 
 			SDL_Window *const window = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.extent.width),
 																		static_cast<int>(desc.extent.height), flags);
-			if (window == nullptr) { return std::unexpected(Error::platform_error); }
+			if (window == nullptr) {
+				std::cerr << "[vve::simple] SDL window creation failed: " << SDL_GetError() << '\n';
+				return std::unexpected(Error::platform_error);
+			}
 
 			if (desc.x.has_value() || desc.y.has_value()) {
 				int x = 0;

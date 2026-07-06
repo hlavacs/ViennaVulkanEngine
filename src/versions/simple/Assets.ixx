@@ -46,7 +46,7 @@ namespace vve::simple {
 	};
 
 	/// @brief Mesh descriptor with just enough information for examples and future upload.
-	struct Mesh {
+	struct AssetMesh {
 		using Handle = MeshHandle;																				///< Handle category.
 		MeshHandle handle{};																						///< Stable mesh handle.
 		ObjectName name{};																						///< Imported mesh name.
@@ -83,7 +83,7 @@ namespace vve::simple {
 	};
 
 	/// @brief Scene descriptor stores handle lists; details live in the catalog tables.
-	struct Scene {
+	struct AssetScene {
 		using Handle = SceneHandle;																			///< Handle category.
 		SceneHandle handle{};																					///< Stable scene handle.
 		ObjectName name{};																						///< Source file name.
@@ -98,9 +98,9 @@ namespace vve::simple {
 
 	/// @brief All imported descriptors, keyed by stable typed handles.
 	struct Catalog {
-		Table<Scene> scenes{};																					///< Scenes by handle.
+		Table<AssetScene> scenes{};																					///< Scenes by handle.
 		Table<Node> nodes{};																						///< Nodes by handle.
-		Table<Mesh> meshes{};																					///< Meshes by handle.
+		Table<AssetMesh> meshes{};																					///< Meshes by handle.
 		Table<Material> materials{};																			///< Materials by handle.
 		Table<Light> lights{};																					///< Lights by handle.
 		Table<CameraAsset> cameras{};																		///< Cameras by handle.
@@ -210,7 +210,7 @@ export namespace vve::simple {
 		template <typename T> [[nodiscard]] static bool contains(const Vector<T> &values, T value);
 		template <typename T>
 		[[nodiscard]] static std::expected<T, Error> sceneField(const Catalog &catalog, SceneHandle handle,
-																					T Scene::*field);
+																					T AssetScene::*field);
 		template <typename Descriptor, typename T>
 		[[nodiscard]] static std::expected<T, Error> field(const Table<Descriptor> &table,
 																			typename Descriptor::Handle handle,
@@ -218,7 +218,7 @@ export namespace vve::simple {
 		template <typename T>
 		[[nodiscard]] static std::expected<std::size_t, Error>
 		sizeOf(std::expected<Vector<T>, Error> value);
-		[[nodiscard]] static std::expected<const Scene *, Error> sceneWithNode(const Catalog &catalog,
+		[[nodiscard]] static std::expected<const AssetScene *, Error> sceneWithNode(const Catalog &catalog,
 																										SceneHandle scene,
 																										NodeHandle node);
 		[[nodiscard]] static TextureHandle texture(const std::filesystem::path &source,
@@ -233,7 +233,7 @@ export namespace vve::simple {
 		[[nodiscard]] static std::expected<NodeHandle, Error> node(Catalog &catalog, const aiScene &source_scene,
 																						const aiNode &source,
 																						const Vector<MeshHandle> &mesh_handles,
-																						Scene &scene, NodeHandle parent = {});
+																						AssetScene &scene, NodeHandle parent = {});
 		[[nodiscard]] static auto lights(Catalog &catalog, const aiScene &scene)						-> std::expected<Vector<LightHandle>, Error>;
 		[[nodiscard]] static auto cameras(Catalog &catalog, const aiScene &scene)						-> std::expected<Vector<CameraHandle>, Error>;
 		[[nodiscard]] static std::expected<SceneHandle, Error> import(Catalog &catalog, const aiScene &source,
@@ -345,7 +345,7 @@ namespace vve::simple {
 		}
 
 		template <typename T>
-		auto AssetSystem::sceneField(const Catalog &catalog, SceneHandle handle, T Scene::*field)	-> std::expected<T, Error>{
+		auto AssetSystem::sceneField(const Catalog &catalog, SceneHandle handle, T AssetScene::*field)	-> std::expected<T, Error>{
 			const auto scene = require(catalog.scenes, handle);
 			if (!scene) { return std::unexpected(scene.error()); }
 			return (*scene)->*field;
@@ -365,7 +365,7 @@ namespace vve::simple {
 			return value->size();
 		}
 
-		std::expected<const Scene *, Error> AssetSystem::sceneWithNode(const Catalog &catalog, SceneHandle scene,
+		std::expected<const AssetScene *, Error> AssetSystem::sceneWithNode(const Catalog &catalog, SceneHandle scene,
 																							NodeHandle node) {
 			const auto value = require(catalog.scenes, scene);
 			if (!value) { return std::unexpected(value.error()); }
@@ -438,7 +438,7 @@ namespace vve::simple {
 				const auto material = source->mMaterialIndex < material_handles.size()
 													? material_handles[source->mMaterialIndex]
 													: MaterialHandle{};
-				auto item = Mesh{.handle = makeCounterHandle<MeshHandle>(),
+				auto item = AssetMesh{.handle = makeCounterHandle<MeshHandle>(),
 										.name = ObjectName{.value = name(source->mName, "Mesh_" + std::to_string(i))},
 										.material = material,
 										.bounds = boundsOf(*source)};
@@ -468,7 +468,7 @@ namespace vve::simple {
 
 		std::expected<NodeHandle, Error>
 		AssetSystem::node(Catalog &catalog, const aiScene &source_scene, const aiNode &source,
-								const Vector<MeshHandle> &mesh_handles, Scene &scene, NodeHandle parent) {
+								const Vector<MeshHandle> &mesh_handles, AssetScene &scene, NodeHandle parent) {
 			auto item = Node{.handle = makeCounterHandle<NodeHandle>(),
 									.name = ObjectName{.value = name(source.mName, "Node_" + std::to_string(scene.nodes.size()))},
 									.transform = transform(source.mTransformation)};
@@ -538,7 +538,7 @@ namespace vve::simple {
 			const auto imported_cameras = cameras(catalog, source);
 			if (!imported_cameras) { return std::unexpected(imported_cameras.error()); }
 
-			auto scene = Scene{.handle = makeCounterHandle<SceneHandle>(),
+			auto scene = AssetScene{.handle = makeCounterHandle<SceneHandle>(),
 										.name = ObjectName{.value = path.filename().string()},
 										.meshes = *imported_meshes,
 										.materials = imported_materials->materials,
@@ -556,7 +556,7 @@ namespace vve::simple {
 		}
 
 	VVE_SIMPLE_API auto AssetSystem::addScene(ObjectName name)												-> std::expected<SceneHandle, Error>{
-		auto scene = Scene{.handle = makeCounterHandle<SceneHandle>(), .name = std::move(name)};
+		auto scene = AssetScene{.handle = makeCounterHandle<SceneHandle>(), .name = std::move(name)};
 		const auto handle = scene.handle;
 		if (auto added = catalog_.scenes.add(std::move(scene)); !added) { return std::unexpected(added.error()); }
 		return handle;
@@ -576,7 +576,7 @@ namespace vve::simple {
 
 	VVE_SIMPLE_API bool AssetSystem::containsScene(SceneHandle scene) const { return catalog_.scenes.contains(scene); }
 
-	VVE_SIMPLE_API NameExpected AssetSystem::sceneName(SceneHandle scene) const { return sceneField(catalog_, scene, &Scene::name); }
+	VVE_SIMPLE_API NameExpected AssetSystem::sceneName(SceneHandle scene) const { return sceneField(catalog_, scene, &AssetScene::name); }
 
 	VVE_SIMPLE_API CountExpected AssetSystem::sceneNodeCount(SceneHandle scene) const { return sizeOf(sceneNodes(scene)); }
 
@@ -595,34 +595,34 @@ namespace vve::simple {
 	VVE_SIMPLE_API CountExpected AssetSystem::sceneCameraCount(SceneHandle scene) const { return sizeOf(sceneCameras(scene)); }
 
 	VVE_SIMPLE_API auto AssetSystem::sceneRootNode(SceneHandle scene) const								-> std::expected<NodeHandle, Error>{
-		const auto root = sceneField(catalog_, scene, &Scene::tree);
+		const auto root = sceneField(catalog_, scene, &AssetScene::tree);
 		if (!root) { return std::unexpected(root.error()); }
 		if (!root->root.valid()) { return std::unexpected(Error::missing_object); }
 		return root->root;
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::sceneNodes(SceneHandle scene) const									-> VectorExpected<NodeHandle>{
-		return sceneField(catalog_, scene, &Scene::nodes);
+		return sceneField(catalog_, scene, &AssetScene::nodes);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::sceneMeshes(SceneHandle scene) const								-> VectorExpected<MeshHandle>{
-		return sceneField(catalog_, scene, &Scene::meshes);
+		return sceneField(catalog_, scene, &AssetScene::meshes);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::sceneMaterials(SceneHandle scene) const							-> VectorExpected<MaterialHandle>{
-		return sceneField(catalog_, scene, &Scene::materials);
+		return sceneField(catalog_, scene, &AssetScene::materials);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::sceneTextures(SceneHandle scene) const								-> VectorExpected<TextureHandle>{
-		return sceneField(catalog_, scene, &Scene::textures);
+		return sceneField(catalog_, scene, &AssetScene::textures);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::sceneLights(SceneHandle scene) const								-> VectorExpected<LightHandle>{
-		return sceneField(catalog_, scene, &Scene::lights);
+		return sceneField(catalog_, scene, &AssetScene::lights);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::sceneCameras(SceneHandle scene) const								-> VectorExpected<CameraHandle>{
-		return sceneField(catalog_, scene, &Scene::cameras);
+		return sceneField(catalog_, scene, &AssetScene::cameras);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::lightData(LightHandle light) const									-> Expected<LightDescriptor>{
@@ -660,38 +660,38 @@ namespace vve::simple {
 		return field(catalog_.nodes, node, &Node::materials);
 	}
 
-	VVE_SIMPLE_API NameExpected AssetSystem::meshName(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &Mesh::name); }
+	VVE_SIMPLE_API NameExpected AssetSystem::meshName(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::name); }
 
 	VVE_SIMPLE_API auto AssetSystem::meshVertexCount(MeshHandle mesh) const								-> Expected<VertexCount>{
-		return field(catalog_.meshes, mesh, &Mesh::vertex_count);
+		return field(catalog_.meshes, mesh, &AssetMesh::vertex_count);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::meshIndexCount(MeshHandle mesh) const								-> Expected<IndexCount>{
-		return field(catalog_.meshes, mesh, &Mesh::index_count);
+		return field(catalog_.meshes, mesh, &AssetMesh::index_count);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::meshMaterial(MeshHandle mesh) const									-> Expected<MaterialHandle>{
-		return field(catalog_.meshes, mesh, &Mesh::material);
+		return field(catalog_.meshes, mesh, &AssetMesh::material);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::meshBounds(MeshHandle mesh) const									-> Expected<Bounds>{
-		return field(catalog_.meshes, mesh, &Mesh::bounds);
+		return field(catalog_.meshes, mesh, &AssetMesh::bounds);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::meshPositions(MeshHandle mesh) const								-> VectorExpected<Vec3>{
-		return field(catalog_.meshes, mesh, &Mesh::positions);
+		return field(catalog_.meshes, mesh, &AssetMesh::positions);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::meshNormals(MeshHandle mesh) const									-> VectorExpected<Vec3>{
-		return field(catalog_.meshes, mesh, &Mesh::normals);
+		return field(catalog_.meshes, mesh, &AssetMesh::normals);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::meshTexcoords(MeshHandle mesh) const								-> VectorExpected<Vec2>{
-		return field(catalog_.meshes, mesh, &Mesh::texcoords);
+		return field(catalog_.meshes, mesh, &AssetMesh::texcoords);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::meshIndices(MeshHandle mesh) const									-> VectorExpected<std::uint32_t>{
-		return field(catalog_.meshes, mesh, &Mesh::indices);
+		return field(catalog_.meshes, mesh, &AssetMesh::indices);
 	}
 
 	VVE_SIMPLE_API auto AssetSystem::materialName(MaterialHandle material) const						-> NameExpected{
