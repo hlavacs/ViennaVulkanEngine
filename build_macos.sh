@@ -53,6 +53,13 @@ if [ ! -x /opt/homebrew/opt/llvm/bin/clang++ ]; then
   exit 1
 fi
 
+if ! command -v vcpkg >/dev/null 2>&1; then
+  printf 'vcpkg not found. Install vcpkg or add it to PATH before building.\n' >&2
+  exit 1
+fi
+
+vcpkg install --triplet arm64-osx
+
 if [ "$CLEAN" -eq 1 ]; then
   rm -rf "$BUILD_DIR"
 elif [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
