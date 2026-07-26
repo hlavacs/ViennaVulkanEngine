@@ -187,6 +187,9 @@ class MyGame : public vve::System {
                     case 4:
                         m_renderSettings().methode = vvh::RenderMethode::RESTIRLVCCOMBINED;
                         break;
+                    case 5:
+                        m_renderSettings().methode = vvh::RenderMethode::RESTIRIR;
+                        break;
                     }
 
 
@@ -245,7 +248,8 @@ class MyGame : public vve::System {
             "Forward",
             "RestirGI",
             "RestirLVC",
-            "RestirLVC Combined"
+            "RestirLVC Combined",
+            "Restir IR"
         };
 
         std::vector<std::string> illuminationDomainOptions = {

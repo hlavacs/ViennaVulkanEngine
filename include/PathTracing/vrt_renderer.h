@@ -80,6 +80,8 @@ namespace vve {
 
 		void createRenderTargetSampler();
 
+
+
 		/**
 		 * Update per-frame uniform buffer data.
 		 * @param currentImage Frame image index.
@@ -222,8 +224,23 @@ namespace vve {
 		DescriptorManager* restirLVC_temporal_descriptors_combined;
 		DescriptorManager* restirLVC_spatial_descriptors_combined;
 
+
+		VkExtent2D vplCacheSize;
+		RenderTargetBuffer<VPL>* vplCache;
+		DescriptorManager* vplGenerationDescriptors;
+		DescriptorManager* instantRadiosityDescriptors;
+		std::vector<HostBuffer<InstantRadiosityUniforms>*> instantRadiosityUniformsBuffer;
+		void createVPLGenerationDescriptors();
+		void createInstantRadiosityDescriptors();
+		PerFrameDescriptorPlacment* getInstantRadiosityUniformBufferDescriptorInput(int binding, VkShaderStageFlags stageFlags);
+
+		PiplineRaytraced* vplGenerationRandomReplacment;
+		PiplineRaytraced* restir_IR_temporal;
+		PiplineRaytraced* restir_IR_spatial;
+
 		std::vector<RenderTarget*> allTargets;
 		std::vector<RenderTarget*> rayTracingTargets;
+
 
 		VkSampler targetSampler{};
 

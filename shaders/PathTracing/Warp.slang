@@ -14,6 +14,31 @@ public float2 squareToUniformDisk(in float2 sample) {
     return float2(x,y);
 }
 
+public float2 uniformDiskToSquare(in float2 diskPoint) {
+    // Input: uniform point on a unit disk. Output: 2D uniform sample in [0, 1]^2.
+
+    // 1. Recover sample.x (r^2)
+    float sampleX = diskPoint.x * diskPoint.x + diskPoint.y * diskPoint.y;
+
+    // 2. Recover the angle phi in [-M_PI, M_PI]
+    float phi = atan2(diskPoint.y, diskPoint.x);
+
+    // 3. Map phi from [-M_PI, M_PI] to [0, 2*M_PI]
+    if (phi < 0.0f) {
+        phi += 2.0f * M_PI;
+    }
+
+    // 4. Recover sample.y
+    float sampleY = phi / (2.0f * M_PI);
+
+    // Clamp to [0, 1] to prevent tiny floating-point precision overflows
+    return float2(saturate(sampleX), saturate(sampleY));
+}
+
+public float2 cosineHemisphereToSquare(in float3 direction) {
+    return uniformDiskToSquare(direction.xy);
+}
+
 
 
 public float squareToUniformDiskPdf(in float2 p) {

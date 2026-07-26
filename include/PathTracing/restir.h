@@ -38,20 +38,19 @@ namespace vve {
     };
     */
 
-    //64 bytes
     struct ReservoirGI {
-        glm::vec4 position;
-        glm::vec4 normal;
-        glm::vec4 radiance;
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec3 radiance;
         float W_sum;
         uint32_t M;
         uint32_t age;
         float pad;
 
         ReservoirGI() {
-            position = glm::vec4(0.0);
-            normal = glm::vec4(0.0);
-            radiance = glm::vec4(0.0);
+            position = glm::vec3(0.0);
+            normal = glm::vec3(0.0);
+            radiance = glm::vec3(0.0);
             W_sum = 0.0;
             M = 0;
             age = 0;
@@ -91,7 +90,27 @@ namespace vve {
         }
     };
 
+    //112 bytes
+    struct VPL {
+        glm::vec3 position;
+        glm::vec3 normal;
+        glm::vec3 radiance;
+        uint32_t age;
+
+        VPL() {
+            position = glm::vec3(0.0);
+            normal = glm::vec3(0.0);
+            radiance = glm::vec3(0.0);
+            uint32_t age = 0;
+        }
+    };
+
+    struct InstantRadiosityUniforms {
+        uint32_t LVCSize;
+    };
+
     //16 bytes
+    // also used for restir IR
     struct ReservoirLVC {
         uint32_t lightSelected;
         float lightWeight;

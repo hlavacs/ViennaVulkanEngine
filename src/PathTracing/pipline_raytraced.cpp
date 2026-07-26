@@ -199,8 +199,8 @@ namespace vve {
             //target->getImage(currentFrame)->memoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_ACCESS_SHADER_READ_BIT, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, currentFrame);
         }
 
-        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, graphicsPipeline);
 
+        vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, graphicsPipeline);
         std::array<VkDescriptorSet, 3> descriptorSets = { commonDescriptors->getDescriptorSets()[currentFrame], rtDescriptors->getDescriptorSets()[currentFrame], targetsDescriptors->getDescriptorSets()[currentFrame] };
 
         vkCmdBindDescriptorSets(

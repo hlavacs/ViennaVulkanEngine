@@ -265,7 +265,8 @@ namespace vvh {
 		FORWARD,
 		RESTIRGI,
 		RESTIRLVC,
-		RESTIRLVCCOMBINED
+		RESTIRLVCCOMBINED,
+		RESTIRIR
 	};
 
 	enum  IlluminationDomain {

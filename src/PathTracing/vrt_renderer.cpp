@@ -30,6 +30,7 @@ namespace vve {
         delete reprojectionPassDescriptors;
         delete rtDescriptors;
         delete BidirectionalDescriptors;
+        delete instantRadiosityDescriptors;
         delete rtTargetsDescriptors;
         delete combinePassDescriptors;
 
@@ -39,6 +40,7 @@ namespace vve {
         raytracer->freeResources();
         lightVertexGenerationFull->freeResources();
         lightVertexGenerationRandomReplacment->freeResources();
+        vplGenerationRandomReplacment->freeResources();
         bidirectionalPathTracing->freeResources();
         combinePass->freeResources();
         reprojectionPass->freeResources();
@@ -46,6 +48,12 @@ namespace vve {
         restir_spatial->freeResources();
         restirGI_temporal->freeResources();
         restirGI_spatial->freeResources();
+        restirLVC_temporal->freeResources();
+        restirLVC_spatial->freeResources();
+        restirLVC_temporal_combined->freeResources();
+        restirLVC_spatial_combined->freeResources();
+        restir_IR_temporal->freeResources();
+        restir_IR_spatial->freeResources();
 
         vkDestroySampler(device, targetSampler, nullptr);
 
@@ -64,6 +72,10 @@ namespace vve {
             delete buffer;
         }
 
+        for (HostBuffer<InstantRadiosityUniforms>* buffer : instantRadiosityUniformsBuffer) {
+            delete buffer;
+        }
+
         //render targets
         for (RenderTarget* target : allTargets) {
             delete target;
@@ -79,6 +91,8 @@ namespace vve {
         delete reservoirLVC_B;
 
         delete lightVertexCache;
+
+        delete vplCache;
 
         delete swapchain;
         vkDestroyDevice(device, nullptr);
@@ -105,6 +119,15 @@ namespace vve {
     PerFrameDescriptorPlacment* RendererRayTraced::getBidirectionalUniformBufferDescriptorInput(int binding, VkShaderStageFlags stageFlags) {
         std::vector<DescriptorInput*> uniformBufferDescriptorInputs{};
         for (GenericBuffer* buffer : bidirectionalUniformsBuffer) {
+            DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stageFlags);
+            uniformBufferDescriptorInputs.push_back(descriptorInput);
+        }
+        return new PerFrameDescriptorPlacment(uniformBufferDescriptorInputs, binding);
+    }
+
+    PerFrameDescriptorPlacment* RendererRayTraced::getInstantRadiosityUniformBufferDescriptorInput(int binding, VkShaderStageFlags stageFlags) {
+        std::vector<DescriptorInput*> uniformBufferDescriptorInputs{};
+        for (GenericBuffer* buffer : instantRadiosityUniformsBuffer) {
             DescriptorBufferInput* descriptorInput = new DescriptorBufferInput(buffer, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, stageFlags);
             uniformBufferDescriptorInputs.push_back(descriptorInput);
         }
@@ -151,6 +174,25 @@ namespace vve {
         BidirectionalDescriptors->finalize();
     }
 
+    void RendererRayTraced::createInstantRadiosityDescriptors() {
+        instantRadiosityDescriptors = new DescriptorManager(device);
+
+        instantRadiosityDescriptors->addDescriptorInput(objectManager->getTlasDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR));
+        instantRadiosityDescriptors->addDescriptorInput(objectManager->getVertexDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR));
+        instantRadiosityDescriptors->addDescriptorInput(objectManager->getIndexDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR));
+        instantRadiosityDescriptors->addDescriptorInput(objectManager->getInstanceDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR));
+        instantRadiosityDescriptors->addDescriptorInput(lightManager->getLightDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR));
+
+        std::cout << "vplCache \n";
+        instantRadiosityDescriptors->addDescriptorInput(vplCache->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        std::cout << "ubo \n";
+        PerFrameDescriptorPlacment* uniformBidirectionalBufferDescriptors = getInstantRadiosityUniformBufferDescriptorInput(6, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+        instantRadiosityDescriptors->addDescriptorInput(uniformBidirectionalBufferDescriptors);
+
+        instantRadiosityDescriptors->finalize();
+    }
+
     void RendererRayTraced::createRtTargetsDescriptors() {
         rtTargetsDescriptors = new DescriptorManager(device);
 
@@ -188,6 +230,16 @@ namespace vve {
 
         lightVertexGenerationDescriptors->finalize();
         lightVertexGenerationDescriptors->update();
+    }
+
+    void RendererRayTraced::createVPLGenerationDescriptors() {
+        vplGenerationDescriptors = new DescriptorManager(device);
+
+        vplGenerationDescriptors->addDescriptorInput(normalTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        vplGenerationDescriptors->addDescriptorInput(positionTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        vplGenerationDescriptors->finalize();
+        vplGenerationDescriptors->update();
     }
 
     void RendererRayTraced::createReductionDescriptors() {
@@ -467,6 +519,7 @@ namespace vve {
         swapchain = new SwapChain(physicalDevice, device, surface, presentQueue, commandManager, m_windowSDLState().m_sdlWindow);
 
         lightVertexCacheSize = VkExtent2D(50000, 1);
+        vplCacheSize = VkExtent2D(50000, 1);
 
         //textureManager = new TextureManager(device, physicalDevice, commandManager);
 
@@ -498,6 +551,11 @@ namespace vve {
         bidirectionalUniformsBuffer.resize(MAX_FRAMES_IN_FLIGHT);
         for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
             bidirectionalUniformsBuffer[i] = new HostBuffer<BidirectionalUniforms>(1, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 0, device, physicalDevice);
+        }
+
+        instantRadiosityUniformsBuffer.resize(MAX_FRAMES_IN_FLIGHT);
+        for (int i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
+            instantRadiosityUniformsBuffer[i] = new HostBuffer<InstantRadiosityUniforms>(1, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, 0, device, physicalDevice);
         }
 
 
@@ -839,7 +897,47 @@ namespace vve {
 
         combinePass->initComputePipeline();
 
+        vplCache = new RenderTargetBuffer(vplCacheSize.width, 1, VPL(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+        createVPLGenerationDescriptors();
+        createInstantRadiosityDescriptors();
 
+        vplGenerationRandomReplacment = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, instantRadiosityDescriptors, vplGenerationDescriptors, vplCacheSize, "shaders/PathTracing/raygen_vpl_generation_random_replacment.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+        restirGI_spatial->bindRenderTarget(normalTarget);
+        restirGI_spatial->bindRenderTarget(positionTarget);
+        
+        vplGenerationRandomReplacment->initRayTracingPipeline();
+
+        // use descriptor set and targets from restirLVC
+        restir_IR_temporal = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, instantRadiosityDescriptors, restirLVC_temporal_descriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_restir_IR_temporal.rgen.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+
+        restir_IR_temporal->bindRenderTarget(albedoTarget);
+        restir_IR_temporal->bindRenderTarget(normalTarget);
+        restir_IR_temporal->bindRenderTarget(specTarget);
+        restir_IR_temporal->bindRenderTarget(positionTarget);
+        restir_IR_temporal->bindRenderTarget(shadingNormalTarget);
+
+        restir_IR_temporal->bindRenderTarget(reprojectionErrorTarget);
+
+        restir_IR_temporal->bindRenderTarget(positionReprojectedTarget);
+
+
+        restir_IR_temporal->initRayTracingPipeline();
+
+        std::cout << "vpl restir temporal created \n";
+
+        restir_IR_spatial = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, instantRadiosityDescriptors, restirLVC_spatial_descriptors, swapchain->getExtent(), "shaders/PathTracing/raygen_restir_IR_spatial.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+        restir_IR_spatial->bindRenderTarget(albedoTarget);
+        restir_IR_spatial->bindRenderTarget(normalTarget);
+        restir_IR_spatial->bindRenderTarget(specTarget);
+        restir_IR_spatial->bindRenderTarget(positionTarget);
+        restir_IR_spatial->bindRenderTarget(shadingNormalTarget);
+
+        restir_IR_spatial->bindRenderTarget(RtTarget);
+
+        restir_IR_spatial->initRayTracingPipeline();
+
+        std::cout << "vpl restir spatial created \n";
         //get render Settings
 
 
@@ -1006,7 +1104,8 @@ namespace vve {
             resizeWindow();
         }
         else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) {
-            throw std::runtime_error("failed to acquire swap chain image!");
+            std::cout << std::to_string(result);
+            throw std::runtime_error("failed to acquire swap chain image! VkResult: " + std::to_string(result));
         }
 
         commandManager->beginCommand(currentFrame);
@@ -1074,25 +1173,16 @@ namespace vve {
 
             restirLVC_temporal_combined->recordCommandBuffer(currentFrame);
             restirLVC_spatial_combined->recordCommandBuffer(currentFrame);
-
-            std::cout << "this pipline runs \n";
+            break;
+        }
+        case  vvh::RenderMethode::RESTIRIR:
+        {
+            vplGenerationRandomReplacment->recordCommandBuffer(currentFrame);
+            restir_IR_temporal->recordCommandBuffer(currentFrame);
+            restir_IR_spatial->recordCommandBuffer(currentFrame);
             break;
         }
         }
-
-
-
-        //raytracer->recordCommandBuffer(currentFrame);
-
-        //restir_temporal->recordCommandBuffer(currentFrame);
-        //restir_spatial->recordCommandBuffer(currentFrame);
-
-        //restirGI_temporal->recordCommandBuffer(currentFrame);
-        //restirGI_spatial->recordCommandBuffer(currentFrame);
-
-        //lightVertexGenerationFull->recordCommandBuffer(currentFrame);
-
-        
 
         combinePass->recordCommandBuffer(currentFrame);
         //copy images to previous image buffers
@@ -1108,6 +1198,8 @@ namespace vve {
         reservoirLVC_A->getBuffer(nextFrame)->recordCopyFromBuffer(reservoirLVC_B->getBuffer(currentFrame), currentFrame);
 
         lightVertexCache->getBuffer(nextFrame)->recordCopyFromBuffer(lightVertexCache->getBuffer(currentFrame), currentFrame);
+
+        vplCache->getBuffer(nextFrame)->recordCopyFromBuffer(vplCache->getBuffer(currentFrame), currentFrame);
 
         swapchain->recordImageTransfer(currentFrame, combinedTarget);
         //swapchain->recordImageTransfer(currentFrame, albedoTarget);
@@ -1177,10 +1269,14 @@ namespace vve {
 
 
         BidirectionalUniforms uboBDPT{};
+        InstantRadiosityUniforms uboIR{};
 
         uboBDPT.LVCSize = lightVertexCacheSize.width;
 
+        uboIR.LVCSize = vplCacheSize.width;
+
         bidirectionalUniformsBuffer[currentImage]->updateBuffer(&uboBDPT, 1);
+        instantRadiosityUniformsBuffer[currentImage]->updateBuffer(&uboIR, 1);
 
     }
 
@@ -1194,6 +1290,7 @@ namespace vve {
         if (objectManager->meshesChanged() || objectManager->instancesChanged() || lightManager->lightsChanged()) {
             rtDescriptors->destroyDescriptorSets();
             BidirectionalDescriptors->destroyDescriptorSets();
+            instantRadiosityDescriptors->destroyDescriptorSets();
         }
 
         lightManager->prepareNextFrame();
@@ -1206,6 +1303,7 @@ namespace vve {
         if (objectManager->meshesChanged() || objectManager->instancesChanged() || lightManager->lightsChanged()) {
             rtDescriptors->update();
             BidirectionalDescriptors->update();
+            instantRadiosityDescriptors->update();
         }
 
         return false;
@@ -1307,42 +1405,43 @@ namespace vve {
         };
         rtPipelineFeatures.rayTracingPipeline = VK_TRUE;
 
-        VkPhysicalDeviceBufferDeviceAddressFeatures bdaFeatures{
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES
-        };
-        bdaFeatures.bufferDeviceAddress = VK_TRUE;
-
-        //requires vulkan 1.2
-        VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures{};
-        indexingFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES;
-        indexingFeatures.descriptorBindingPartiallyBound = VK_TRUE;
-        indexingFeatures.descriptorBindingVariableDescriptorCount = VK_TRUE;
-        indexingFeatures.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
-        indexingFeatures.runtimeDescriptorArray = VK_TRUE;
-        indexingFeatures.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
-        indexingFeatures.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
-
         VkPhysicalDeviceShaderAtomicFloatFeaturesEXT atomicFloatFeatures{};
         atomicFloatFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT;
-
         atomicFloatFeatures.shaderBufferFloat32AtomicAdd = VK_TRUE;
         atomicFloatFeatures.shaderBufferFloat32Atomics = VK_TRUE;
 
+        // Everything promoted in 1.2 goes into this single struct
+        VkPhysicalDeviceVulkan12Features features12 = {};
+        features12.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;
+
+        // Scalar Layout
+        features12.scalarBlockLayout = VK_TRUE;
+
+        // Buffer Device Address (moved from bdaFeatures)
+        features12.bufferDeviceAddress = VK_TRUE;
+
+        // Descriptor Indexing (moved from indexingFeatures)
+        features12.descriptorIndexing = VK_TRUE; // Master toggle required by spec
+        features12.descriptorBindingPartiallyBound = VK_TRUE;
+        features12.descriptorBindingVariableDescriptorCount = VK_TRUE;
+        features12.descriptorBindingSampledImageUpdateAfterBind = VK_TRUE;
+        features12.runtimeDescriptorArray = VK_TRUE;
+        features12.shaderSampledImageArrayNonUniformIndexing = VK_TRUE;
+        features12.shaderStorageBufferArrayNonUniformIndexing = VK_TRUE;
 
         // Build the selector with your requirements
         auto phys_device_ret = selector
             .set_surface(surface)
             .require_present()                          // we want presentation support
-            .set_minimum_version(1, 2)                  // require Vulkan 1.0 or higher
+            .set_minimum_version(1, 2)                  // require Vulkan 1.2 or higher
             .require_dedicated_transfer_queue()         // optional: ensure transfer queue
             .add_required_extensions(deviceExtensions)  // enable the extensions you want
             .prefer_gpu_device_type(vkb::PreferredDeviceType::discrete)
             .set_required_features(requiredFeatures)
-            .add_required_extension_features(indexingFeatures)
             .add_required_extension_features(accelFeatures)
             .add_required_extension_features(rtPipelineFeatures)
-            .add_required_extension_features(bdaFeatures)
             .add_required_extension_features(atomicFloatFeatures)
+            .add_required_extension_features(features12) // Added 1.2 struct only
             .select();
 
         // Handle errors
