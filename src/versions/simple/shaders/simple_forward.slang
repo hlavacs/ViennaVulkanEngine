@@ -183,7 +183,15 @@ FragmentOutput fragmentMain(FragmentInput input)
             const bool insidePointShadowMap = pointLightClip.w > 0.001 && pointShadowUv.x >= 0.0 && pointShadowUv.x <= 1.0 &&
                 pointShadowUv.y >= 0.0 && pointShadowUv.y <= 1.0 && pointLightNdc.z >= 0.0 && pointLightNdc.z <= 1.0; ///< Reject fragments outside the selected point face.
             const float pointStoredDepth = pointShadowArray.Sample(float3(pointShadowUv, float(pointShadowLayer))).r; ///< Closest surface depth from this point face layer.
-            const float pointShadowFactor = insidePointShadowMap && pointLightNdc.z - 0.001 > pointStoredDepth ? 0.35 : 1.0; ///< Same compare bias as other shadowed lights.
+            const float pointShadowNear = 0.1; ///< Mirrors the CPU point-shadow projection near plane.
+            const float pointShadowWorldBias = 0.02; ///< Keep point-shadow detachment bounded to two centimetres in world space.
+            const float pointAxialDepth = max(pointLightClip.w, pointShadowNear + pointShadowWorldBias); ///< Perspective depth is based on face-axis distance, not radial distance.
+            const float pointDepthScale = (pointRangeRaw * pointShadowNear) / max(pointRangeRaw - pointShadowNear, 0.001); ///< Coefficient of the Vulkan perspective-depth reciprocal term.
+            const float pointShadowBias = max(
+                pointDepthScale * pointShadowWorldBias /
+                    (pointAxialDepth * max(pointAxialDepth - pointShadowWorldBias, 0.001)),
+                0.000002); ///< Convert the world-space offset to nonlinear depth instead of applying a range-dependent fixed offset.
+            const float pointShadowFactor = insidePointShadowMap && pointLightNdc.z - pointShadowBias > pointStoredDepth ? 0.35 : 1.0; ///< Stable point-shadow comparison across the full light range.
             pointContribution += pointLight * ((pointDiffuse + pointSpecular) * pointAttenuation * pointShadowFactor); ///< Add this point-light result with per-slot shadowing.
         }
     }
