@@ -157,8 +157,9 @@ export namespace vve::simple {
 				if (!activeDirectional.enabled) { continue; }
 				const std::size_t packedDirectionalIndex{frame.activeDirectionalLightCount++}; ///< Dense shader slot for this enabled directional light.
 				const Vec3 activeDirectionalDirection{normalize(activeDirectional.direction)}; ///< Normalized direction mirrors the legacy single-light path.
-				const Vec3 activeDirectionalEye{subtract(lightCenter, scale(activeDirectionalDirection, lightExtent))}; ///< Directional shadow camera aimed at the scene origin.
-				frame.dirLightViewProjArray[packedDirectionalIndex] = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(activeDirectionalEye, lightCenter, Vec3{zero(), one(), zero()}));
+				const Vec3 activeDirectionalEye{subtract(lightCenter, scale(activeDirectionalDirection, lightExtent))}; ///< Directional shadow camera aimed at the fitted scene center.
+				const Scalar activeDirectionalFar{max(static_cast<Scalar>(16.0), static_cast<Scalar>(2.0) * lightExtent)}; ///< Depth coverage grows with the fitted caster volume.
+				frame.dirLightViewProjArray[packedDirectionalIndex] = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), activeDirectionalFar), lookAt(activeDirectionalEye, lightCenter, Vec3{zero(), one(), zero()}));
 				frame.directionalLightDirections[packedDirectionalIndex] = Vec4{activeDirectionalDirection.x, activeDirectionalDirection.y, activeDirectionalDirection.z, zero()};
 				frame.directionalLightColorIntensities[packedDirectionalIndex] = Vec4{activeDirectional.color.x, activeDirectional.color.y, activeDirectional.color.z, activeDirectional.intensity.value};
 				frame.directionalLightAmbients[packedDirectionalIndex] = Vec4{zero(), zero(), zero(), activeDirectional.ambient};

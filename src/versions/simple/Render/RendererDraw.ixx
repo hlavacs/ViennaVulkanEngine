@@ -68,11 +68,34 @@ export namespace vve::simple {
 			const SpotLight spot{renderer.scene.spotLight}; ///< Spot light data uploaded for future shader use.
 			const Vec3 dirLightDirection{normalize(dirLight.direction)}; ///< Normalized world-space direction keeps uniform packing stable.
 			const Vec3 spotDirection{normalize(spot.direction)}; ///< Normalized world-space direction keeps uniform packing stable.
-			const Vec3 lightCenter{zeroVec3()}; ///< Origin-centered debug scene framing.
+			const Vec3 lightCenter{zeroVec3()}; ///< Origin-centered legacy point-shadow framing.
 			const Vec3 shadowSurfaceLightDir{normalize(subtract(light.position, lightCenter))}; ///< Point-light direction approximated by one shadow map.
 			const Vec3 lightEye{light.position}; ///< Place the shadow camera at the point light for the current simple approximation.
 			const Scalar lightExtent{static_cast<Scalar>(4.0)}; ///< Light-space half-size covers the 4x4 floor and tall cube.
-			const ForwardRendererShadowFrame shadowFrame = renderer.prepareShadowFrame(lightCenter, lightExtent, spot, spotDirection);
+			Vec3 directionalShadowMinimum{}; ///< Minimum visible object origin used to frame directional casters.
+			Vec3 directionalShadowMaximum{}; ///< Maximum visible object origin used to frame directional casters.
+			bool hasDirectionalShadowCaster{}; ///< True after the first visible object contributes an origin.
+			for (const Object &object : renderer.scene.objects) {
+				if (!object.visible) { continue; }
+				const Vec4 origin = multiply(object.model, Vec4{zero(), zero(), zero(), one()}); ///< Flat receiver size must not dilute caster resolution.
+				const Vec3 position{origin.x, origin.y, origin.z};
+				directionalShadowMinimum = hasDirectionalShadowCaster ? min(directionalShadowMinimum, position) : position;
+				directionalShadowMaximum = hasDirectionalShadowCaster ? max(directionalShadowMaximum, position) : position;
+				hasDirectionalShadowCaster = true;
+			}
+			const Vec3 directionalShadowCenter = hasDirectionalShadowCaster
+				? scale(add(directionalShadowMinimum, directionalShadowMaximum), static_cast<Scalar>(0.5))
+				: zeroVec3(); ///< Center follows transformed objects instead of the debug-scene origin.
+			Scalar directionalShadowExtent{lightExtent}; ///< Preserve the established minimum resolution for small scenes.
+			for (const Object &object : renderer.scene.objects) {
+				if (!object.visible) { continue; }
+				const Vec4 origin = multiply(object.model, Vec4{zero(), zero(), zero(), one()});
+				directionalShadowExtent = max(directionalShadowExtent,
+					length(subtract(Vec3{origin.x, origin.y, origin.z}, directionalShadowCenter)) +
+						static_cast<Scalar>(2.0)); ///< Padding covers ordinary mesh extents and contact shadows.
+			}
+			const ForwardRendererShadowFrame shadowFrame =
+				renderer.prepareShadowFrame(directionalShadowCenter, directionalShadowExtent, spot, spotDirection);
 #ifndef NDEBUG
 			renderer.spotShadowDepthSampleCountStorage() = renderer.spotLightViewProjCount;
 			const Vec3 spotShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point used for CPU-only shadow diagnostics.
