@@ -34,6 +34,7 @@ export namespace vve::simple {
 			renderer.lastReadbackCaptureResult.reset();
 			const auto windowExtent = renderer.currentWindowPixelExtent();
 			if (windowExtent.width == 0U || windowExtent.height == 0U) { return; }
+			if (renderer.syncSceneResources() != VK_SUCCESS) { return; }
 			if (windowExtent.width != renderer.swapchain.extent.width || windowExtent.height != renderer.swapchain.extent.height) {
 				if (renderer.recreateSwapchain(windowExtent) != VK_SUCCESS) { return; }
 			}

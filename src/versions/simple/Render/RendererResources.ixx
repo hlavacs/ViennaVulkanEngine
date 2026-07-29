@@ -223,7 +223,75 @@ export namespace vve::simple {
 				result = mesh.create(renderer.physicalDevice.physicalDevice, renderer.device.device, object.mesh);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 			}
+			renderer.uploadedBaseColorTexture_ = hasObjectTexture ? renderer.scene.baseColorTexture : std::nullopt;
+			renderer.sceneResourcesDirty_ = false;
+			renderer.sceneRequiresFullUpload_ = false;
 
+			return VK_SUCCESS;
+		}
+
+		/**
+		 * @brief Synchronizes runtime CPU-scene topology and texture changes with Vulkan resources.
+		 *
+		 * @return VK_SUCCESS when GPU meshes and the shared object texture match the CPU scene.
+		 */
+		[[nodiscard]] VkResult syncSceneResources() {
+			auto &renderer = static_cast<Renderer &>(*this);
+			if (!renderer.sceneResourcesDirty_) { return VK_SUCCESS; }
+			if (renderer.device.device == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+
+			const bool missingTextureResource = renderer.scene.baseColorTexture
+				? renderer.objectTexture.imageView == VK_NULL_HANDLE
+				: renderer.defaultObjectTexture.imageView == VK_NULL_HANDLE;
+			const bool textureChanged = renderer.scene.baseColorTexture != renderer.uploadedBaseColorTexture_ ||
+				missingTextureResource;
+			if (renderer.sceneRequiresFullUpload_ || textureChanged) {
+				const VkResult idle = vkDeviceWaitIdle(renderer.device.device);
+				if (idle != VK_SUCCESS) { return idle; }
+			}
+
+			// Descriptor images can be replaced only after in-flight frames stop referencing them.
+			if (textureChanged) {
+				renderer.objectTexture.cleanup();
+				renderer.defaultObjectTexture.cleanup();
+				VkResult result{VK_SUCCESS};
+				if (renderer.scene.baseColorTexture) {
+					result = renderer.objectTexture.create(renderer.physicalDevice.physicalDevice,
+						renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool,
+						*renderer.scene.baseColorTexture);
+				} else {
+					constexpr std::array opaqueWhitePixel{
+						std::byte{255U}, std::byte{255U}, std::byte{255U}, std::byte{255U}};
+					result = renderer.defaultObjectTexture.create(renderer.physicalDevice.physicalDevice,
+						renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool,
+						std::span{opaqueWhitePixel}, VkExtent2D{.width = 1U, .height = 1U});
+				}
+				if (result != VK_SUCCESS) { return result; }
+				const TextureImage &texture = renderer.scene.baseColorTexture
+					? renderer.objectTexture : renderer.defaultObjectTexture;
+				for (std::uint32_t frame{}; frame < Renderer::framesInFlight; ++frame) {
+					result = renderer.descriptorSets.writeObjectTexture(frame, texture);
+					if (result != VK_SUCCESS) { return result; }
+				}
+				renderer.uploadedBaseColorTexture_ = renderer.scene.baseColorTexture;
+			}
+
+			// Additions upload only the new suffix; removals and scene replacement rebuild index alignment.
+			if (renderer.sceneRequiresFullUpload_ || renderer.meshes.size() > renderer.scene.objects.size()) {
+				renderer.meshes.clear();
+			}
+			while (renderer.meshes.size() < renderer.scene.objects.size()) {
+				const Object &object = renderer.scene.objects[renderer.meshes.size()];
+				VulkanMesh &mesh = renderer.meshes.emplace_back();
+				const VkResult result = mesh.create(renderer.physicalDevice.physicalDevice,
+					renderer.device.device, object.mesh);
+				if (result != VK_SUCCESS) {
+					renderer.meshes.pop_back();
+					return result;
+				}
+			}
+			renderer.sceneResourcesDirty_ = false;
+			renderer.sceneRequiresFullUpload_ = false;
 			return VK_SUCCESS;
 		}
 
@@ -244,6 +312,9 @@ export namespace vve::simple {
 				renderer.imguiDescriptorPool_ = VK_NULL_HANDLE;
 			}
 			renderer.descriptorPool.cleanup();
+			renderer.uploadedBaseColorTexture_.reset();
+			renderer.sceneResourcesDirty_ = true;
+			renderer.sceneRequiresFullUpload_ = true;
 			renderer.uniformBuffers.cleanup();
 			renderer.frameSync.cleanup();
 			renderer.commandBuffers.cleanup();

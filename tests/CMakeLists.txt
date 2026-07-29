@@ -21,7 +21,8 @@ target_compile_definitions(SimpleForwardRendererTests PRIVATE
    VVE_ENGINE_IMPLEMENTATION_IS_SIMPLE
    VVE_ENGINE_HAS_SIMPLE
    "VVE_SIMPLE_SHADER_DIR=\"${CMAKE_BINARY_DIR}/src/versions/simple/shaders\""
-   "VVE_SIMPLE_SHADER_SOURCE=\"${CMAKE_SOURCE_DIR}/src/versions/simple/shaders/simple_forward.slang\"")
+   "VVE_SIMPLE_SHADER_SOURCE=\"${CMAKE_SOURCE_DIR}/src/versions/simple/shaders/simple_forward.slang\""
+   "VVE_TEST_CRATE_TEXTURE=\"${CMAKE_SOURCE_DIR}/assets/game/crate0/diffuse.png\"")
 find_package(glm CONFIG REQUIRED)
 find_package(Stb REQUIRED)
 target_include_directories(SimpleForwardRendererTests PRIVATE ${Stb_INCLUDE_DIR})

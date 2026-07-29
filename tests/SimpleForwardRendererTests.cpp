@@ -411,6 +411,41 @@ namespace {
           render_system.sceneInstanceCount() == 1U && cuboid_visible && *cuboid_visible;
 }
 
+/// @brief Verifies objects and textures added after renderer initialization reach live GPU resources.
+[[nodiscard]] bool hasRuntimeGpuObjectSynchronization() {
+   auto engine = vve::simple::Engine{
+      vve::ApplicationName{"simple-forward-runtime-object-tests"},
+      vve::WindowSetups{vve::WindowSetup{}
+                           .id("main")
+                           .title("simple-forward-runtime-object-tests")
+                           .extent(vve::PixelExtent{.width = 64, .height = 64})
+                           .renderer(vve::RendererId{.value = "forward"})
+                           .visible(false)}};
+   if (!engine.init()) { return false; }
+
+   auto &render_system = engine.renderSystem();
+   render_system.clearScene();
+   const auto plane = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{});
+   if (!plane || !engine.renderFrame()) { return false; }
+   auto &renderer = std::get<vve::simple::ForwardRenderer>(render_system.backend());
+   if (renderer.meshes.size() != 1U || renderer.scene.objects.size() != 1U) { return false; }
+
+   const auto cuboid = render_system.addTexturedCuboid(
+      vve::Vec3{-0.5F, -0.5F, -0.5F}, vve::Vec3{0.5F, 0.5F, 0.5F},
+      std::filesystem::path{VVE_TEST_CRATE_TEXTURE});
+   if (!cuboid || !engine.renderFrame() || renderer.meshes.size() != 2U ||
+       renderer.scene.objects.size() != 2U || renderer.objectTexture.extent.width == 0U) {
+      return false;
+   }
+
+   if (const auto removed = render_system.removeObject(*plane); !removed) { return false; }
+   if (!engine.renderFrame() || renderer.meshes.size() != 1U || renderer.scene.objects.size() != 1U) {
+      return false;
+   }
+   render_system.clearScene();
+   return engine.renderFrame() && renderer.meshes.empty() && renderer.scene.objects.empty();
+}
+
 /// @brief Verifies asset purging only removes mesh and material data after public objects stop referencing it.
 [[nodiscard]] bool hasPurgeUnusedAssetsLifetime() {
    auto render_system = vve::simple::RenderSystem{};
@@ -532,6 +567,7 @@ int main() {
    if (!hasSceneRemovalLifetime()) { return 25; }
    if (!hasPurgeUnusedAssetsLifetime()) { return 26; }
    vve::simple::Scene point_shadow_scene{}; ///< Public scene-loading path carries multiple point lights.
+   if (!hasRuntimeGpuObjectSynchronization()) { return 27; }
    point_shadow_scene.pointLights = {
       vve::simple::PointLight{.position = vve::Vec3{-2.0F, 2.75F, -1.25F},
                               .color = vve::Vec3{1.0F, 0.74F, 0.46F},

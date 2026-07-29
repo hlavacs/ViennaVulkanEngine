@@ -27,7 +27,7 @@ export namespace vve::simple {
 				return std::unexpected(Error::missing_object);
 			}
 
-			system().forward().scene.objects.erase(system().forward().scene.objects.begin() + static_cast<std::ptrdiff_t>(object->second));
+			if (!system().forward().removeObject(object->second)) { return std::unexpected(Error::missing_object); }
 			if (!system().scene_.eraseInstance(object->first)) { return std::unexpected(Error::missing_object); }
 			system().eraseRenderObject(handle);
 			for (auto &entry : system().render_objects_) {
@@ -144,8 +144,7 @@ export namespace vve::simple {
 		auto clearScene() -> void {
 			system().scene_.clear();
 			system().render_objects_.clear();
-			system().forward().scene.objects.clear();
-			system().forward().scene.baseColorTexture.reset();
+			system().forward().clearScene();
 		}
 
 		/// @brief Stores a backend scene and mirrors it into the selected renderer.
