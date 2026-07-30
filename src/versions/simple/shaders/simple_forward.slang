@@ -104,6 +104,18 @@ Sampler2DArray pointShadowArray; ///< Point light depth array exposed for later 
 [[vk::push_constant]]
 ObjectPushConstants object; ///< Per-object transform constants.
 
+/**
+ * @brief Converts a fixed world-space shadow offset to nonlinear Vulkan perspective depth.
+ */
+float perspectiveShadowBias(float farPlane, float axialDepth)
+{
+    const float nearPlane = 0.1; ///< Mirrors the CPU perspective-shadow projection near plane.
+    const float worldBias = 0.02; ///< Keep perspective-shadow detachment bounded to two centimetres.
+    const float biasedDepth = max(axialDepth, nearPlane + worldBias); ///< Guard the reciprocal near the light origin.
+    const float depthScale = (farPlane * nearPlane) / max(farPlane - nearPlane, 0.001); ///< Projection reciprocal coefficient.
+    return max(depthScale * worldBias / (biasedDepth * max(biasedDepth - worldBias, 0.001)), 0.000002);
+}
+
 [shader("vertex")]
 VertexOutput vertexMain(VertexInput input)
 {
@@ -183,14 +195,7 @@ FragmentOutput fragmentMain(FragmentInput input)
             const bool insidePointShadowMap = pointLightClip.w > 0.001 && pointShadowUv.x >= 0.0 && pointShadowUv.x <= 1.0 &&
                 pointShadowUv.y >= 0.0 && pointShadowUv.y <= 1.0 && pointLightNdc.z >= 0.0 && pointLightNdc.z <= 1.0; ///< Reject fragments outside the selected point face.
             const float pointStoredDepth = pointShadowArray.Sample(float3(pointShadowUv, float(pointShadowLayer))).r; ///< Closest surface depth from this point face layer.
-            const float pointShadowNear = 0.1; ///< Mirrors the CPU point-shadow projection near plane.
-            const float pointShadowWorldBias = 0.02; ///< Keep point-shadow detachment bounded to two centimetres in world space.
-            const float pointAxialDepth = max(pointLightClip.w, pointShadowNear + pointShadowWorldBias); ///< Perspective depth is based on face-axis distance, not radial distance.
-            const float pointDepthScale = (pointRangeRaw * pointShadowNear) / max(pointRangeRaw - pointShadowNear, 0.001); ///< Coefficient of the Vulkan perspective-depth reciprocal term.
-            const float pointShadowBias = max(
-                pointDepthScale * pointShadowWorldBias /
-                    (pointAxialDepth * max(pointAxialDepth - pointShadowWorldBias, 0.001)),
-                0.000002); ///< Convert the world-space offset to nonlinear depth instead of applying a range-dependent fixed offset.
+            const float pointShadowBias = perspectiveShadowBias(pointRangeRaw, pointLightClip.w); ///< Convert the world offset at this face-axis distance.
             const float pointShadowFactor = insidePointShadowMap && pointLightNdc.z - pointShadowBias > pointStoredDepth ? 0.35 : 1.0; ///< Stable point-shadow comparison across the full light range.
             pointContribution += pointLight * ((pointDiffuse + pointSpecular) * pointAttenuation * pointShadowFactor); ///< Add this point-light result with per-slot shadowing.
         }
@@ -239,7 +244,8 @@ FragmentOutput fragmentMain(FragmentInput input)
             const bool insideSpotShadowMap = spotShadowUv.x >= 0.0 && spotShadowUv.x <= 1.0 &&
                 spotShadowUv.y >= 0.0 && spotShadowUv.y <= 1.0 && spotLightNdc.z >= 0.0 && spotLightNdc.z <= 1.0; ///< Reject fragments outside spot light coverage.
             const float spotStoredDepth = spotShadowArray.Sample(float3(spotShadowUv, float(i))).r; ///< Closest surface depth from this spot layer.
-            const float spotShadowFactor = insideSpotShadowMap && spotLightNdc.z - 0.001 > spotStoredDepth ? 0.35 : 1.0; ///< Small 0.001 compare bias complements shadow-pass slope-scaled rasterizer bias.
+            const float spotShadowBias = perspectiveShadowBias(spotRange, spotLightClip.w); ///< Convert the world offset at this spot-axis distance.
+            const float spotShadowFactor = insideSpotShadowMap && spotLightNdc.z - spotShadowBias > spotStoredDepth ? 0.35 : 1.0; ///< Stable spotlight shadows remain attached as light distance changes.
             spotContribution += spotAmbient + spotLight * ((spotDiffuse + spotSpecular) * spotAttenuation * spotConeFalloff * spotShadowFactor); ///< Add this cone-attenuated spot result.
         }
     }
