@@ -36,6 +36,9 @@ float3 getUnoccludedContributionFromVPL(in IntersectionRecord itsCamera, in Mate
     // I can then flip: (radiance / areaPDF) * (cos(tetha) / distance^2) getting the correct result :D
 
     //cosCam is the solid angle term that I would usually put into the shader
+
+    distance = max(distance, 0.01);
+
     float geometryTerm = (cosCam * cosVPL) / (distance * distance);
 
     return vpl.weightedRadiance.xyz * bsdf * geometryTerm;

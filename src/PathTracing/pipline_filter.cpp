@@ -24,7 +24,12 @@ namespace vve {
     PipelineFilter::PipelineFilter(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager,
         DescriptorManager* targetsDescriptors, VkExtent2D extent, VkExtent2D workgroupSize, std::string shaderFile, VkPipelineStageFlagBits barrierStage)
         : device(device), physicalDevice(physicalDevice), commandManager(commandManager),
-        targetsDescriptors(targetsDescriptors), extent(extent), workgroupSize(workgroupSize), shaderFile(shaderFile), barrierStage(barrierStage){}
+        targetsDescriptors(targetsDescriptors), extent(extent), workgroupSize(workgroupSize), shaderFile(shaderFile), barrierStage(barrierStage), pushConstantSize(0){}
+
+    PipelineFilter::PipelineFilter(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager,
+        DescriptorManager* targetsDescriptors, VkExtent2D extent, VkExtent2D workgroupSize, std::string shaderFile, VkPipelineStageFlagBits barrierStage, uint32_t pushConstantSize)
+        : device(device), physicalDevice(physicalDevice), commandManager(commandManager),
+        targetsDescriptors(targetsDescriptors), extent(extent), workgroupSize(workgroupSize), shaderFile(shaderFile), barrierStage(barrierStage), pushConstantSize(pushConstantSize){}
 
     void PipelineFilter::setExtent(VkExtent2D extent) {
         this->extent = extent;
@@ -54,6 +59,25 @@ namespace vve {
         pipelineLayoutInfo.setLayoutCount = 1;
         pipelineLayoutInfo.pSetLayouts = &layout;
 
+
+        //push constants
+        VkPushConstantRange pushConstantRange{};
+        pushConstantRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+        pushConstantRange.offset = 0;
+        pushConstantRange.size = pushConstantSize;
+
+        // Add Push Constants to the layout
+        if (pushConstantSize > 0) {
+            pipelineLayoutInfo.pushConstantRangeCount = 1;
+            pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
+        }
+        else {
+            pipelineLayoutInfo.pushConstantRangeCount = 0;
+            pipelineLayoutInfo.pPushConstantRanges = nullptr;
+        }
+
+
+
         if (vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout) != VK_SUCCESS) {
             throw std::runtime_error("failed to create compute pipeline layout!");
         }
@@ -77,7 +101,7 @@ namespace vve {
         // SBT buffer deletion removed
     }
 
-    void PipelineFilter::recordCommandBuffer(int currentFrame)
+    void PipelineFilter::recordCommandBuffer(int currentFrame, void* pushConstants)
     {
         VkCommandBuffer cmd = commandManager->getCommandBuffer(currentFrame);
 
@@ -109,6 +133,18 @@ namespace vve {
         uint32_t groupCountX = (extent.width + (workgroupSize.width - 1)) / workgroupSize.width;
         uint32_t groupCountY = (extent.height + (workgroupSize.height -1)) / workgroupSize.height;
 
+        if (pushConstantSize > 0 && pushConstants != nullptr) {
+            vkCmdPushConstants(
+                cmd,
+                pipelineLayout,
+                VK_SHADER_STAGE_COMPUTE_BIT,
+                0,                  // Offset
+                pushConstantSize,   // Size of data
+                pushConstants    // Pointer to data
+            );
+        }
+
+
         // Dispatch compute workload
         vkCmdDispatch(cmd, groupCountX, groupCountY, 1);
 
@@ -129,4 +165,11 @@ namespace vve {
             0, nullptr
         );
     }
+
+
+    void PipelineFilter::recordCommandBuffer(int currentFrame)
+    {
+        recordCommandBuffer(currentFrame, nullptr);
+    }
+
 }

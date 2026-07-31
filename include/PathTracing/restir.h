@@ -90,7 +90,6 @@ namespace vve {
         }
     };
 
-    //112 bytes
     struct VPL {
         glm::vec3 position;
         glm::vec3 normal;
@@ -105,8 +104,20 @@ namespace vve {
         }
     };
 
+    struct VPLShading {
+        glm::vec3 albedo;
+        glm::vec3 radiance;
+
+        VPLShading() {
+            albedo = glm::vec3(0.0);
+            radiance = glm::vec3(0.0);
+        }
+    };
+
     struct InstantRadiosityUniforms {
         uint32_t LVCSize;
+        glm::vec3 min;
+        glm::vec3 max;
     };
 
     //16 bytes
@@ -127,6 +138,13 @@ namespace vve {
 
     struct BidirectionalUniforms {
         uint32_t LVCSize;
+    };
+
+    struct PushConstantsSort {
+        uint32_t g_num_elements; // == NUM_ELEMENTS
+        uint32_t g_shift; // (*)
+        uint32_t g_num_workgroups; // == NUMBER_OF_WORKGROUPS as defined in the section above
+        uint32_t g_num_blocks_per_workgroup; // == NUM_BLOCKS_PER_WORKGROUP
     };
 
 }

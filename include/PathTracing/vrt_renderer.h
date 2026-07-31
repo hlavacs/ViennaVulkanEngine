@@ -227,6 +227,7 @@ namespace vve {
 
 		VkExtent2D vplCacheSize;
 		RenderTargetBuffer<VPL>* vplCache;
+		RenderTargetBuffer<VPLShading>* vplCacheShading;
 		DescriptorManager* vplGenerationDescriptors;
 		DescriptorManager* instantRadiosityDescriptors;
 		std::vector<HostBuffer<InstantRadiosityUniforms>*> instantRadiosityUniformsBuffer;
@@ -237,6 +238,59 @@ namespace vve {
 		PiplineRaytraced* vplGenerationRandomReplacment;
 		PiplineRaytraced* restir_IR_temporal;
 		PiplineRaytraced* restir_IR_spatial;
+
+		PiplineRaytraced* InstantRadiosityTesting;
+
+		PiplineRaytraced* InstantRadiosityNaiveSampling;
+
+
+		//pdf Estimation
+		RenderTargetBuffer<uint32_t>* sort_elements_A;
+		RenderTargetBuffer<uint32_t>* sort_elements_B;
+
+		RenderTargetBuffer<uint32_t>* sort_indices_A;
+		RenderTargetBuffer<uint32_t>* sort_indices_B;
+
+		RenderTargetBuffer<uint32_t>* sort_histogram;
+
+		DescriptorManager* mortonCodeDescriptors;
+
+		DescriptorManager* sortDescriptorsAB;
+		DescriptorManager* sortDescriptorsBA;
+
+		DescriptorManager* histogramDescriptorsAB;
+		DescriptorManager* histogramDescriptorsBA;
+
+		DescriptorManager* pdfEstimationDescriptors;
+
+		void createMortonCodeDescriptors();
+
+		void createSortDescriptorsAB();
+		void createSortDescriptorsBA();
+
+		void createHistogramDescriptorsAB();
+		void createHistogramDescriptorsBA();
+
+		void createPdfEstimationDescriptors();
+
+		PipelineFilter* mortonCode;
+
+		PipelineFilter* sortPiplineAB;
+		PipelineFilter* sortPiplineBA;
+
+		PipelineFilter* histogramPiplineAB;
+		PipelineFilter* histogramPiplineBA;
+
+		PipelineFilter* pdfEstimation;
+
+		const uint32_t NUM_BLOCKS_PER_WORKGROUP = 32;
+
+		PushConstantsSort pushConstants1;
+		PushConstantsSort pushConstants2;
+		PushConstantsSort pushConstants3;
+		PushConstantsSort pushConstants4;
+
+
 
 		std::vector<RenderTarget*> allTargets;
 		std::vector<RenderTarget*> rayTracingTargets;

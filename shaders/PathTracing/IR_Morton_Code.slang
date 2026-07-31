@@ -23,15 +23,18 @@ uint calculateMortonCode3D(float3 normalizedPos) {
 [[vk::binding(0, 0)]]
 StructuredBuffer<VPLReconnectionInfo> vplCache;
 
-[[vk::binding(0, 1)]]
+[[vk::binding(1, 0)]]
 RWStructuredBuffer<uint> mortonCodes;
 
-// You will need to pass your scene bounds to normalize the world positions.
-// Adjust the binding/register to match your application.
-[[vk::binding(0, 2)]]
-cbuffer SceneBounds {
-    float3 sceneMin;
-    float3 sceneMax;
+[[vk::binding(2, 0)]]
+RWStructuredBuffer<uint> indices;
+
+[[vk::binding(3, 0)]]
+cbuffer UniformBufferBidirectional
+{
+    uint vplCacheSize;
+    float3 AABBMin;
+    float3 AABBMax;
 };
 
 [shader("compute")]
@@ -47,12 +50,13 @@ void main(uint3 threadId: SV_DispatchThreadID) {
     VPLReconnectionInfo vpl = vplCache[launchID.x];
 
     // 1. Normalize the world position to a [0, 1] range using scene bounding box
-    float3 extent = sceneMax - sceneMin;
-    float3 normalizedPos = (vpl.position.xyz - sceneMin) / max(extent, 0.0001f);
+    float3 extent = AABBMax - AABBMin;
+    float3 normalizedPos = (vpl.position.xyz - AABBMin) / max(extent, 0.0001f);
     
     // 2. Calculate the Morton code
     uint mCode = calculateMortonCode3D(normalizedPos);
     
     // 3. Write out to the buffer
     mortonCodes[launchID.x] = mCode;
+    indices[launchID.x] = launchID.x;
 }

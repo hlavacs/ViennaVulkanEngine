@@ -32,6 +32,7 @@ ConstantBuffer<PushConstants> PushArgs;
 // Group Shared Memory
 groupshared uint histogram[RADIX_SORT_BINS];
 
+[shader("compute")]
 [numthreads(WORKGROUP_SIZE, 1, 1)]
 void main(
     uint3 local_id_vec : SV_GroupThreadID,

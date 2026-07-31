@@ -10,17 +10,11 @@ import Lightsource;
 import Defines;
 import IR_Common;
 
-[[vk::binding(0, 2)]]
-RWTexture2D<float4> inNormal;
-
-[[vk::binding(1, 2)]]
-RWTexture2D<float4> inPosition;
-
-void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout IntersectionRecord its) {
+void getInitialSurfaceData(in int2 launchID, in int2 launchSize, in float3 position, in float3 normal, inout IntersectionRecord its) {
     RayDesc cameraRay = getInitialRay(launchID, launchSize);
 
-    its.position = inPosition[int2(launchID)].xyz;
-    its.normal = inNormal[int2(launchID)].xyz;  
+    its.position = position;
+    its.normal = normal;
     its.direction = cameraRay.Direction;
 
     if (dot(its.normal, its.direction) > 0.0) {
@@ -70,24 +64,46 @@ RayDesc mutateVPLRay(in IntersectionRecord its, in VPLReconnectionInfo vpl, inou
     return createRay(its, woMutatedWorld);
 }
 
-void createVPL(in IntersectionRecord its, in RayDesc ray, out VPLReconnectionInfo vpl, out VPLShading shadingInfo) {
+bool createVPL(in IntersectionRecord its, in RayDesc ray, out VPLReconnectionInfo vpl, out VPLShading shadingInfo) {
     HitPayload payload;
     const uint rayFlags = 0;
     TraceRay(topLevelAS, rayFlags, 0xff, 0, 0, 0, ray, payload);
 
+    vpl.age = 0;
+    vpl.normal = float3(0.0);
+    vpl.position = float3(0.0);
+    vpl.weightedRadiance = float3(0.0);
+    shadingInfo.albedo = float3(0.0);
+    shadingInfo.radiance = float3(0.0);
+
     if (!payload.hit) {
         shadingInfo.radiance = float3(0.0);
         vpl.weightedRadiance = float3(0.0);
-        return; 
+        vpl.position = float3(-INFINITE);
+        return false; 
     }
 
     IntersectionRecord itsSecundary = getIntersectionInfo(payload, ray);
+
     Material material = materials[itsSecundary.materialIdx];
     MaterialRecord materialRecordSecundary = getMaterialProperties(material, textures, itsSecundary.uv, itsSecundary.frame);
+    shadingInfo.albedo = materialRecordSecundary.albedo;
 
+    // This line is broken for absolutly no reason:
+    // shadingInfo.albedo  = (textures[material.albedoTextureIndex]).SampleLevel(itsSecundary.uv, 0.0).xyz;
+
+    /*
+    if (material.albedoTextureIndex == -1) {
+        shadingInfo.albedo = material.albedo.xyz;
+    } else {
+        shadingInfo.albedo = (textures[material.albedoTextureIndex]).SampleLevel(itsSecundary.uv, 0.0).xyz;
+    }
+    */
+    
     vpl.position = itsSecundary.position;
     vpl.normal = itsSecundary.normal;
-    shadingInfo.albedo = materialRecordSecundary.albedo;
+    
+    return true;
 }
 
 float3 getUnoccludedLightContributionDiffuse(in VPLReconnectionInfo vpl, in VPLShading shadingInfo, in EmitterRecord emitterRecord) {
@@ -154,9 +170,6 @@ void setWeightedRadiance(inout VPLReconnectionInfo vpl, in VPLShading shadingInf
     //I divide by the pdf so it will be like multiplying by r^2/cos
     float areaPDF = solidAnglePDF * (cosineSecondary / (distance * distance));
 
-    //vpl.weightedRadiance = shadingInfo.radiance / areaPDF;
-
-    vpl.weightedRadiance = shadingInfo.radiance * float3(100.0);
-
-    //vpl.weightedRadiance = float3(100.0);
+    vpl.weightedRadiance = shadingInfo.radiance / areaPDF;
 }
+

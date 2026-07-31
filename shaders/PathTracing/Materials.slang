@@ -22,6 +22,9 @@ export public struct Material
     public float  metalness;
     public float  ior;
     public float  alpha;
+
+    public float pad1;
+    public float pad2;
 };
 
 public struct MaterialRecord {

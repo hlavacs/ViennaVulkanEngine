@@ -7,4 +7,6 @@ RWStructuredBuffer<VPLReconnectionInfo> vplCache;
 cbuffer UniformBufferBidirectional
 {
     uint vplCacheSize;
+    float3 AABBMin;
+    float3 AABBMax;
 };

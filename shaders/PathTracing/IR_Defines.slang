@@ -1,3 +1,5 @@
+
+//using this struct is highly inefficient for pdf estimation. Have a seperate buffer for the position!
 struct VPLReconnectionInfo {
     float3 position;
     float3 normal;

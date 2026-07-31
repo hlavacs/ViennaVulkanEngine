@@ -14,6 +14,17 @@ slangc LVC_keep_sum.slang -entry main -target spirv -o keepProbReduction.spv
 
 slangc LVC_reset.slang -entry main -target spirv -o sumReset.spv
 
+
+slangc IR_Morton_Code.slang -entry main -target spirv -o IR_Morton_Code.spv -fvk-use-scalar-layout
+
+slangc IR_Radix.slang -entry main -target spirv -o IR_Radix.spv -fvk-use-scalar-layout
+
+slangc IR_Radix_Histogram.slang -entry main -target spirv -o IR_Radix_Histogram.spv -fvk-use-scalar-layout
+
+slangc IR_PDF_Estimation.slang -entry main -target spirv -o IR_PDF_Estimation.spv -fvk-use-scalar-layout
+
+slangc IR_PDF_Estimation_Range_Search.slang -entry main -target spirv -o IR_PDF_Estimation_Range_Search.spv -fvk-use-scalar-layout
+
 rem --- Raygen shader ---
 slangc rtbasic.slang -entry rgenMain -target spirv -o raygen.rgen.spv -DRAY_TRACING
 
@@ -61,6 +72,12 @@ slangc IR_Restir_Temporal.slang -entry rgenMain -target spirv -o raygen_restir_I
 
 rem --- Raygen shader ---
 slangc IR_Restir_Spatial.slang -entry rgenMain -target spirv -o raygen_restir_IR_spatial.rgen.spv -DRAY_TRACING -fvk-use-scalar-layout
+
+rem --- Raygen shader ---
+slangc IR_VPL_test.slang -entry rgenMain -target spirv -o raygen_IR_VPL_Test.rgen.spv -DRAY_TRACING -fvk-use-scalar-layout
+
+rem --- Raygen shader ---
+slangc IR_naive_sampling.slang -entry rgenMain -target spirv -o raygen_IR_naive_sampling.rgen.spv -DRAY_TRACING -fvk-use-scalar-layout
 
 rem --- Miss shader ---
 slangc rtbasic.slang -entry rmissMain -target spirv -o miss.rmiss.spv -DRAY_TRACING

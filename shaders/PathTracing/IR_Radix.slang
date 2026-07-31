@@ -31,20 +31,21 @@ struct PushConstants {
 ConstantBuffer<PushConstants> PushArgs;
 
 // --- KEYS (Morton Codes) ---
-[[vk::binding(0, 1)]] StructuredBuffer<uint> g_elements_in;
-[[vk::binding(1, 1)]] RWStructuredBuffer<uint> g_elements_out;
+[[vk::binding(0, 0)]] StructuredBuffer<uint> g_elements_in;
+[[vk::binding(1, 0)]] RWStructuredBuffer<uint> g_elements_out;
 
 // --- HISTOGRAMS ---
-[[vk::binding(2, 1)]] StructuredBuffer<uint> g_histograms;
+[[vk::binding(2, 0)]] StructuredBuffer<uint> g_histograms;
 
 // --- VALUES (Original Indices) - NEW ---
-[[vk::binding(3, 1)]] StructuredBuffer<uint> g_indices_in;
-[[vk::binding(4, 1)]] RWStructuredBuffer<uint> g_indices_out;
+[[vk::binding(3, 0)]] StructuredBuffer<uint> g_indices_in;
+[[vk::binding(4, 0)]] RWStructuredBuffer<uint> g_indices_out;
 
 groupshared uint sums[RADIX_SORT_BINS / SUBGROUP_SIZE];
 groupshared uint global_offsets[RADIX_SORT_BINS];
 groupshared uint bin_flags[RADIX_SORT_BINS][WORKGROUP_SIZE / 32];
 
+[shader("compute")]
 [numthreads(WORKGROUP_SIZE, 1, 1)]
 void main(
     uint3 local_id_vec: SV_GroupThreadID,

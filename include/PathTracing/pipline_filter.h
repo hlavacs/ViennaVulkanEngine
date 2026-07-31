@@ -21,6 +21,8 @@ namespace vve {
 
         std::string shaderFile;
 
+        uint32_t pushConstantSize;
+
         static std::vector<char> readFile(const std::string& filename) {
             std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
@@ -57,6 +59,9 @@ namespace vve {
         PipelineFilter(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager,
             DescriptorManager* targetsDescriptors, VkExtent2D extent, VkExtent2D workgroupSize, std::string shaderFile, VkPipelineStageFlagBits barrierStage);
 
+        PipelineFilter(VkDevice device, VkPhysicalDevice physicalDevice, CommandManager* commandManager,
+            DescriptorManager* targetsDescriptors, VkExtent2D extent, VkExtent2D workgroupSize, std::string shaderFile, VkPipelineStageFlagBits barrierStage, uint32_t pushConstantSize);
+
         /**
          * Update the render extent.
          * @param extent New render extent.
@@ -81,6 +86,8 @@ namespace vve {
          * @param currentFrame Frame index.
          */
         void recordCommandBuffer(int currentFrame);
+
+        void recordCommandBuffer(int currentFrame, void* pushConstants);
 
     };
 }

@@ -75,6 +75,9 @@ class MyGame : public vve::System {
 
             //m_engine.PlaySound(vve::Filename{ "assets/sounds/dance.mp3" }, -1, 50);
             m_engine.SetVolume(m_volume);
+
+
+            //The bounding box for the morton code generation is curreently hardcoded, changing the scene requires changing the morton code! 
             m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{ test_scene_gltf }, aiProcess_FlipWindingOrder, vve::Position{ {0.0,0.0,0.0} }, vve::Rotation{ mat3_t{1.0f} }, vve::Scale{ vec3_t{1.0f} });
             //m_engine.CreateScene(vve::Name{}, vve::ParentHandle{}, vve::Filename{ test_scene_penetrationTest_gltf }, aiProcess_FlipWindingOrder, vve::Position{ {0.0,0.0,0.0} }, vve::Rotation{ mat3_t{1.0f} }, vve::Scale{ vec3_t{1.0f} });
 
@@ -190,7 +193,17 @@ class MyGame : public vve::System {
                     case 5:
                         m_renderSettings().methode = vvh::RenderMethode::RESTIRIR;
                         break;
+                    case 6:
+                        m_renderSettings().methode = vvh::RenderMethode::IRTESTING;
+                        break;
+                    case 7:
+                        m_renderSettings().methode = vvh::RenderMethode::IR;
+                        break;
+                    case 8:
+                        m_renderSettings().methode = vvh::RenderMethode::RESTIRIRNOREPLACMENT;
+                        break;
                     }
+
 
 
                     if (selected)
@@ -249,7 +262,10 @@ class MyGame : public vve::System {
             "RestirGI",
             "RestirLVC",
             "RestirLVC Combined",
-            "Restir IR"
+            "Restir IR",
+            "IR Testing",
+            "IR",
+            "Restir IR No Replacment"
         };
 
         std::vector<std::string> illuminationDomainOptions = {

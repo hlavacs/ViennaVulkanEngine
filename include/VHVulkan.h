@@ -266,7 +266,10 @@ namespace vvh {
 		RESTIRGI,
 		RESTIRLVC,
 		RESTIRLVCCOMBINED,
-		RESTIRIR
+		RESTIRIR,
+		IRTESTING,
+		IR,
+		RESTIRIRNOREPLACMENT
 	};
 
 	enum  IlluminationDomain {
