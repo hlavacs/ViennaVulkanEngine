@@ -79,7 +79,7 @@ namespace vvh {
 
 	template<typename T = ComCreateCommandBuffersInfo>
 	inline void ComCreateCommandBuffers(T&& info) {
-		if (info.m_commandBuffers.size() == 0) info.m_commandBuffers.resize(2);
+		if (info.m_commandBuffers.size() == 0) info.m_commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
 		VkCommandBufferAllocateInfo allocInfo{};
 		allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;

@@ -80,7 +80,7 @@ namespace vvh {
      * @param commandBuffers Vector to store allocated command buffers (resized to 2 if empty)
      */
     void ComCreateCommandBuffers(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers) {
-        if(commandBuffers.size() == 0) commandBuffers.resize(2);
+        if(commandBuffers.size() == 0) commandBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
         VkCommandBufferAllocateInfo allocInfo{};
         allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
