@@ -116,8 +116,16 @@ namespace vve {
 
 	/// @brief Adds a colored cuboid and returns its public render-object handle.
 	std::expected<RenderObjectHandle, Error> RenderSystem::addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color,
-																						  Transform transform) {
+																				  Transform transform) {
 		return renderSystemImpl(impl_).addCuboid(minimum, maximum, color, transform);
+	}
+
+	/// @brief Adds a colored indexed triangle mesh and returns its public render-object handle.
+	std::expected<RenderObjectHandle, Error> RenderSystem::addTriangleMesh(
+		Vector<Vec3> positions, Vector<std::uint32_t> indices, LinearColor color,
+		Transform transform) {
+		return renderSystemImpl(impl_).addTriangleMesh(
+			std::move(positions), std::move(indices), color, transform);
 	}
 
 	/// @brief Adds a textured cuboid and returns its public render-object handle.
@@ -150,6 +158,12 @@ namespace vve {
 	/// @brief Returns one render object's source transform.
 	std::expected<Transform, Error> RenderSystem::objectTransform(RenderObjectHandle handle) const {
 		return renderSystemImpl(impl_).objectTransform(handle);
+	}
+
+	/// @brief Updates vertex positions for a fixed-topology triangle mesh.
+	std::expected<void, Error> RenderSystem::setObjectMeshPositions(
+		RenderObjectHandle handle, Vector<Vec3> positions) {
+		return renderSystemImpl(impl_).setObjectMeshPositions(handle, std::move(positions));
 	}
 
 	/// @brief Returns render objects registered for one scene instance.

@@ -741,6 +741,17 @@ export namespace vve::simple {
 		}
 
 		/**
+		 * @brief Uploads replacement vertices when a mesh keeps the same allocation size and topology.
+		 */
+		[[nodiscard]] VkResult updateVertices(const vve::simple::Mesh &mesh) {
+			const VkDeviceSize vertexSize = sizeof(vve::simple::Vertex) * mesh.vertices.size();
+			if (mesh.vertices.empty() || vertexSize != vertexBuffer.size) {
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+			return vertexBuffer.upload(mesh.vertices.data(), vertexSize);
+		}
+
+		/**
 			* @brief Destroys the owned buffers and clears the draw count.
 			*/
 		void cleanup() {

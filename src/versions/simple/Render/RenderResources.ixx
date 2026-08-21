@@ -115,7 +115,9 @@ export namespace vve::simple {
 	public:
 		[[nodiscard]] RenderMaterialHandle addMaterial(RenderMaterial material = {});
 		[[nodiscard]] RenderMeshHandle addMesh(Vector<RenderVertex> vertices, Vector<std::uint32_t> indices,
-															Bounds bounds = {});
+														Bounds bounds = {});
+		[[nodiscard]] RenderMeshHandle addTriangleMesh(Vector<Vec3> positions,
+			Vector<std::uint32_t> indices, Bounds bounds = {});
 		[[nodiscard]] auto addPlaneMesh(Vec2 half_extent)																		-> RenderMeshHandle;
 		[[nodiscard]] auto addCuboidMesh(Vec3 minimum, Vec3 maximum)														-> RenderMeshHandle;
 		[[nodiscard]] std::expected<RenderInstanceHandle, Error>
@@ -132,6 +134,7 @@ export namespace vve::simple {
 		auto clear()																														-> void;
 		[[nodiscard]] auto eraseInstance(RenderInstanceHandle handle)													-> bool;
 		[[nodiscard]] auto purgeUnusedAssets()																				-> std::size_t;
+		[[nodiscard]] RenderMesh *findMesh(RenderMeshHandle handle);
 		[[nodiscard]] const RenderMesh *findMesh(RenderMeshHandle handle) const;
 		[[nodiscard]] const RenderMaterial *findMaterial(RenderMaterialHandle handle) const;
 		[[nodiscard]] RenderInstance *findInstance(RenderInstanceHandle handle);
@@ -197,6 +200,17 @@ namespace vve::simple {
 										.bounds = bounds};
 		meshes_.push_back(std::move(mesh));
 		return meshes_.back().handle;
+	}
+
+	/// @brief Converts public positions into one CPU-side indexed triangle mesh.
+	inline RenderMeshHandle RenderScene::addTriangleMesh(
+		Vector<Vec3> positions, Vector<std::uint32_t> indices, Bounds bounds) {
+		auto vertices = Vector<RenderVertex>{};
+		vertices.reserve(positions.size());
+		for (const Vec3 &position : positions) {
+			vertices.push_back(RenderVertex{.position = position});
+		}
+		return addMesh(std::move(vertices), std::move(indices), bounds);
 	}
 
 	/// @brief Creates a two-triangle plane mesh.
@@ -340,6 +354,12 @@ namespace vve::simple {
 		});
 		for (auto current = unused_materials.begin(); current != materials_.end();) { current = materials_.erase(current); }
 		return (mesh_count - meshes_.size()) + (material_count - materials_.size());
+	}
+
+	/// @brief Finds a mesh by handle.
+	inline RenderMesh *RenderScene::findMesh(RenderMeshHandle handle) {
+		const auto found = std::ranges::find(meshes_, handle, &RenderMesh::handle);
+		return found == meshes_.end() ? nullptr : std::addressof(*found);
 	}
 
 	/// @brief Finds a mesh by handle.

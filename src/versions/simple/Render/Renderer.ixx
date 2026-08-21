@@ -192,6 +192,7 @@ export namespace vve::simple {
 		void loadScene(Scene nextScene) {
 			scene = std::move(nextScene);								// Scene upload invalidates per-frame shadow metadata.
 			shadowLightMeta.clear();									// Metadata is rebuilt during the next frame assembly.
+			sceneGeometryDirty_.clear();
 			sceneResourcesDirty_ = true;
 			sceneRequiresFullUpload_ = true;
 		}
@@ -203,13 +204,29 @@ export namespace vve::simple {
 			scene.objects.push_back(Object{.mesh = std::move(backend_mesh),
 													 .model = model,
 													 .useBaseColorTexture = use_texture ? 1U : 0U});
+			 sceneResourcesDirty_ = true;
+		}
+
+		/// @brief Replaces positions for one fixed-topology backend mesh.
+		[[nodiscard]] bool updateObjectMeshPositions(std::size_t index, const Vector<Vec3> &positions) {
+			if (index >= scene.objects.size() ||
+				scene.objects[index].mesh.vertices.size() != positions.size()) {
+				return false;
+			}
+			for (std::size_t vertex{}; vertex < positions.size(); ++vertex) {
+				scene.objects[index].mesh.vertices[vertex].position = {
+					positions[vertex].x, positions[vertex].y, positions[vertex].z};
+			}
+			sceneGeometryDirty_.insert(index);
 			sceneResourcesDirty_ = true;
+			return true;
 		}
 
 		/// @brief Removes one backend object and schedules a compact GPU mesh rebuild.
 		[[nodiscard]] bool removeObject(std::size_t index) {
 			if (index >= scene.objects.size()) { return false; }
 			scene.objects.erase(scene.objects.begin() + static_cast<std::ptrdiff_t>(index));
+			sceneGeometryDirty_.clear();
 			sceneResourcesDirty_ = true;
 			sceneRequiresFullUpload_ = true;
 			return true;
@@ -243,6 +260,7 @@ export namespace vve::simple {
 		std::optional<std::filesystem::path> uploadedBaseColorTexture_{}; ///< Texture currently bound to every textured object descriptor.
 		bool sceneResourcesDirty_{true}; ///< CPU scene topology or texture changed after the last GPU synchronization.
 		bool sceneRequiresFullUpload_{true}; ///< Removal or replacement requires rebuilding index-aligned GPU meshes.
+		std::set<std::size_t> sceneGeometryDirty_{}; ///< Existing GPU meshes requiring a vertex-buffer refresh.
 	};
 
 	/// @brief No-op renderer used as an explicit placeholder for future renderer selection.
@@ -300,6 +318,19 @@ export namespace vve::simple {
 			scene.objects.push_back(Object{.mesh = std::move(backend_mesh),
 													 .model = model,
 													 .useBaseColorTexture = use_texture ? 1U : 0U});
+		}
+
+		/// @brief Replaces positions for one fixed-topology CPU mesh.
+		[[nodiscard]] bool updateObjectMeshPositions(std::size_t index, const Vector<Vec3> &positions) {
+			if (index >= scene.objects.size() ||
+				scene.objects[index].mesh.vertices.size() != positions.size()) {
+				return false;
+			}
+			for (std::size_t vertex{}; vertex < positions.size(); ++vertex) {
+				scene.objects[index].mesh.vertices[vertex].position = {
+					positions[vertex].x, positions[vertex].y, positions[vertex].z};
+			}
+			return true;
 		}
 
 

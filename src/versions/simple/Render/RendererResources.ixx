@@ -224,6 +224,7 @@ export namespace vve::simple {
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 			}
 			renderer.uploadedBaseColorTexture_ = hasObjectTexture ? renderer.scene.baseColorTexture : std::nullopt;
+			renderer.sceneGeometryDirty_.clear();
 			renderer.sceneResourcesDirty_ = false;
 			renderer.sceneRequiresFullUpload_ = false;
 
@@ -245,7 +246,8 @@ export namespace vve::simple {
 				: renderer.defaultObjectTexture.imageView == VK_NULL_HANDLE;
 			const bool textureChanged = renderer.scene.baseColorTexture != renderer.uploadedBaseColorTexture_ ||
 				missingTextureResource;
-			if (renderer.sceneRequiresFullUpload_ || textureChanged) {
+			const bool geometryChanged = !renderer.sceneGeometryDirty_.empty();
+			if (renderer.sceneRequiresFullUpload_ || textureChanged || geometryChanged) {
 				const VkResult idle = vkDeviceWaitIdle(renderer.device.device);
 				if (idle != VK_SUCCESS) { return idle; }
 			}
@@ -277,7 +279,9 @@ export namespace vve::simple {
 			}
 
 			// Additions upload only the new suffix; removals and scene replacement rebuild index alignment.
-			if (renderer.sceneRequiresFullUpload_ || renderer.meshes.size() > renderer.scene.objects.size()) {
+			const bool rebuildMeshes = renderer.sceneRequiresFullUpload_ ||
+				renderer.meshes.size() > renderer.scene.objects.size();
+			if (rebuildMeshes) {
 				renderer.meshes.clear();
 			}
 			while (renderer.meshes.size() < renderer.scene.objects.size()) {
@@ -290,6 +294,17 @@ export namespace vve::simple {
 					return result;
 				}
 			}
+			if (!rebuildMeshes) {
+				for (const std::size_t index : renderer.sceneGeometryDirty_) {
+					if (index >= renderer.meshes.size() || index >= renderer.scene.objects.size()) {
+						return VK_ERROR_INITIALIZATION_FAILED;
+					}
+					const VkResult result = renderer.meshes[index].updateVertices(
+						renderer.scene.objects[index].mesh);
+					if (result != VK_SUCCESS) { return result; }
+				}
+			}
+			renderer.sceneGeometryDirty_.clear();
 			renderer.sceneResourcesDirty_ = false;
 			renderer.sceneRequiresFullUpload_ = false;
 			return VK_SUCCESS;
@@ -313,6 +328,7 @@ export namespace vve::simple {
 			}
 			renderer.descriptorPool.cleanup();
 			renderer.uploadedBaseColorTexture_.reset();
+			renderer.sceneGeometryDirty_.clear();
 			renderer.sceneResourcesDirty_ = true;
 			renderer.sceneRequiresFullUpload_ = true;
 			renderer.uniformBuffers.cleanup();

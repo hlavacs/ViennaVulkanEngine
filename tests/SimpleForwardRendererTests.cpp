@@ -282,10 +282,27 @@ namespace {
    auto &render_system = world.get<vve::RenderSystem>();
    render_system.clearScene();
    const auto plane = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{});
-   const auto cuboid = render_system.addCuboid(vve::Vec3{-0.5F, -0.5F, -0.5F},
-                                               vve::Vec3{0.5F, 0.5F, 0.5F}, vve::LinearColor{});
-   if (!plane || !cuboid || !plane->valid() || !cuboid->valid() || *plane == *cuboid) { return false; }
-   const std::size_t instance_count_before_remove{render_system.sceneInstanceCount()}; ///< CPU instances mirror public objects.
+	const auto cuboid = render_system.addCuboid(vve::Vec3{-0.5F, -0.5F, -0.5F},
+																											 vve::Vec3{0.5F, 0.5F, 0.5F}, vve::LinearColor{});
+	const auto triangle = render_system.addTriangleMesh(
+		{vve::Vec3{-1.0F, 0.0F, 0.0F}, vve::Vec3{1.0F, 0.0F, 0.0F},
+		 vve::Vec3{0.0F, 1.0F, 0.0F}}, {0U, 1U, 2U}, vve::LinearColor{});
+	if (!plane || !cuboid || !triangle || !plane->valid() || !cuboid->valid() ||
+		!triangle->valid() || *plane == *cuboid || *plane == *triangle) { return false; }
+	if (const auto updated = render_system.setObjectMeshPositions(*triangle,
+		{vve::Vec3{-1.0F, 0.0F, 0.0F}, vve::Vec3{1.0F, 0.0F, 0.0F},
+		 vve::Vec3{0.0F, 1.5F, 0.0F}}); !updated) {
+		return false;
+	}
+	const auto wrong_vertex_count = render_system.setObjectMeshPositions(
+		*triangle, {vve::Vec3{}, vve::Vec3{}});
+	const auto invalid_triangle = render_system.addTriangleMesh(
+		{vve::Vec3{}, vve::Vec3{}, vve::Vec3{}}, {0U, 1U, 3U}, vve::LinearColor{});
+	if (wrong_vertex_count || wrong_vertex_count.error() != vve::Error::invalid_argument ||
+		invalid_triangle || invalid_triangle.error() != vve::Error::invalid_argument) {
+		return false;
+	}
+	const std::size_t instance_count_before_remove{render_system.sceneInstanceCount()}; ///< CPU instances mirror public objects.
 
    if (const auto hidden = render_system.setObjectVisible(*plane, false); !hidden) { return false; }
    const auto hidden_state = render_system.objectVisible(*plane);
@@ -309,7 +326,7 @@ namespace {
    }
 
    if (const auto removed = render_system.removeObject(*plane); !removed) { return false; }
-   if (instance_count_before_remove != 2U ||
+	if (instance_count_before_remove != 3U ||
        render_system.sceneInstanceCount() != instance_count_before_remove - 1U) {
       return false;
    }
@@ -342,9 +359,12 @@ namespace {
       return false;
    }
 
-   render_system.clearScene();
-   const auto cleared_visible = render_system.objectVisible(*cuboid);
-   return !cleared_visible && cleared_visible.error() == vve::Error::missing_object;
+	render_system.clearScene();
+	const auto cleared_visible = render_system.objectVisible(*cuboid);
+	const auto cleared_triangle = render_system.setObjectMeshPositions(
+		*triangle, {vve::Vec3{}, vve::Vec3{}, vve::Vec3{}});
+	return !cleared_visible && cleared_visible.error() == vve::Error::missing_object &&
+		!cleared_triangle && cleared_triangle.error() == vve::Error::missing_object;
 }
 
 /// @brief Verifies object visibility updates the renderer-owned backend draw flag.

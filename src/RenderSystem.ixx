@@ -140,6 +140,9 @@ export namespace vve {
 		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addCuboid(const CuboidDescriptor &cuboid) {
 			return addCuboid(cuboid.minimum, cuboid.maximum, cuboid.color, cuboid.transform);
 		}																																		///< Adds a cuboid descriptor.
+		[[nodiscard]] std::expected<RenderObjectHandle, Error> addTriangleMesh(
+			Vector<Vec3> positions, Vector<std::uint32_t> indices, LinearColor color,
+			Transform transform = {});
 		[[nodiscard]] std::expected<RenderObjectHandle, Error> addTexturedCuboid(Vec3 minimum, Vec3 maximum,
 																									  std::filesystem::path base_color_texture,
 																									  Transform transform = {});
@@ -151,6 +154,8 @@ export namespace vve {
 		[[nodiscard]] auto objectVisible(RenderObjectHandle handle) const										-> std::expected<bool, Error>;
 		[[nodiscard]] auto setObjectTransform(RenderObjectHandle handle, Transform transform)			-> std::expected<void, Error>;
 		[[nodiscard]] auto objectTransform(RenderObjectHandle handle) const									-> std::expected<Transform, Error>;
+		[[nodiscard]] auto setObjectMeshPositions(RenderObjectHandle handle, Vector<Vec3> positions)
+			-> std::expected<void, Error>;
 		[[nodiscard]] auto sceneInstanceObjects(RenderSceneInstanceHandle instance) const		-> std::expected<Vector<RenderObjectHandle>, Error>;
 		[[nodiscard]] auto objectSourceScene(RenderObjectHandle handle) const							-> std::expected<RenderSceneInstanceHandle, Error>;
 		[[nodiscard]] auto objectSourceNode(RenderObjectHandle handle) const							-> std::expected<NodeHandle, Error>;

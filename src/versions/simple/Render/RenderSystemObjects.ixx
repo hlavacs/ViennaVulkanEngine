@@ -122,6 +122,79 @@ export namespace vve::simple {
 			return system().registerRenderObject(*instance, *backend_index);
 		}
 
+		/// @brief Adds one colored indexed triangle mesh to the CPU and backend scenes.
+		[[nodiscard]] auto addTriangleMesh(Vector<Vec3> positions, Vector<std::uint32_t> indices,
+			LinearColor color, Transform transform = {}) -> std::expected<RenderObjectHandle, Error> {
+			if (positions.size() < 3U || indices.empty() || indices.size() % 3U != 0U ||
+				std::ranges::any_of(positions, [](const Vec3 &position) {
+					return !std::isfinite(position.x) || !std::isfinite(position.y) ||
+						!std::isfinite(position.z);
+				}) || std::ranges::any_of(indices, [&positions](std::uint32_t index) {
+					return index >= positions.size();
+				})) {
+				return std::unexpected(Error::invalid_argument);
+			}
+
+			Vec3 minimum = positions.front();
+			Vec3 maximum = minimum;
+			for (const Vec3 &position : positions) {
+				minimum.x = std::min(minimum.x, position.x);
+				minimum.y = std::min(minimum.y, position.y);
+				minimum.z = std::min(minimum.z, position.z);
+				maximum.x = std::max(maximum.x, position.x);
+				maximum.y = std::max(maximum.y, position.y);
+				maximum.z = std::max(maximum.z, position.z);
+			}
+
+			const auto material = system().scene_.addMaterial({.base_color = color});
+			const auto mesh = system().scene_.addTriangleMesh(std::move(positions), std::move(indices),
+				Bounds{.minimum = Position{.value = minimum}, .maximum = Position{.value = maximum},
+					.valid = true});
+			auto instance = system().scene_.addInstance(mesh, material, transform);
+			if (!instance) { return std::unexpected(instance.error()); }
+			const auto backend_index = system().appendBackendObject(*instance);
+			if (!backend_index) { return std::unexpected(backend_index.error()); }
+			return system().registerRenderObject(*instance, *backend_index);
+		}
+
+		/// @brief Updates positions while preserving one triangle mesh's topology and allocation size.
+		[[nodiscard]] auto setObjectMeshPositions(RenderObjectHandle handle, Vector<Vec3> positions)
+			-> std::expected<void, Error> {
+			const auto object = system().findRenderObject(handle);
+			if (!object) { return std::unexpected(Error::missing_object); }
+			auto *instance = system().scene_.findInstance(object->first);
+			if (instance == nullptr) { return std::unexpected(Error::missing_object); }
+			auto *mesh = system().scene_.findMesh(instance->mesh);
+			if (mesh == nullptr || mesh->vertices.size() != positions.size() ||
+				std::ranges::any_of(positions, [](const Vec3 &position) {
+					return !std::isfinite(position.x) || !std::isfinite(position.y) ||
+						!std::isfinite(position.z);
+				})) {
+				return std::unexpected(Error::invalid_argument);
+			}
+
+			Vec3 minimum = positions.front();
+			Vec3 maximum = minimum;
+			for (std::size_t index{}; index < positions.size(); ++index) {
+				const Vec3 &position = positions[index];
+				mesh->vertices[index].position = position;
+				minimum.x = std::min(minimum.x, position.x);
+				minimum.y = std::min(minimum.y, position.y);
+				minimum.z = std::min(minimum.z, position.z);
+				maximum.x = std::max(maximum.x, position.x);
+				maximum.y = std::max(maximum.y, position.y);
+				maximum.z = std::max(maximum.z, position.z);
+			}
+			mesh->bounds = Bounds{.minimum = Position{.value = minimum},
+				.maximum = Position{.value = maximum}, .valid = true};
+
+			const bool updated = std::visit([&](auto &renderer) {
+				return renderer.updateObjectMeshPositions(object->second, positions);
+			}, system().renderer_);
+			return updated ? std::expected<void, Error>{} :
+				std::unexpected(Error::invalid_argument);
+		}
+
 		/// @brief Adds a textured cuboid and returns its public render-object handle.
 		[[nodiscard]] auto addTexturedCuboid(Vec3 minimum, Vec3 maximum, std::filesystem::path base_color_texture,
 														 Transform transform = {}) -> std::expected<RenderObjectHandle, Error> {
