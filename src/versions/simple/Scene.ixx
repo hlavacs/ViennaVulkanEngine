@@ -12,6 +12,7 @@ import VEEngine.Types;
 	* - Object pairs one CPU mesh with its model transform before any renderer upload exists.
 	* - kMaxShadowedSpotLights bounds the first multi-spot-light CPU storage step.
 	* - kMaxShadowedPointLights bounds the first point-light shadow metadata step.
+	* - Directional shadow constants define the fixed cascaded shadow-map layout and coverage.
 	* - Scene stores the CPU drawable list for simple multi-object renderer tests.
 	* - makePlane creates a minimal XZ floor mesh for renderer and shadow debug scenes.
 	* - makeSampleScene creates a few translated cubes without touching Vulkan state.
@@ -20,7 +21,10 @@ export namespace vve::simple {
 
 	inline constexpr std::size_t kMaxShadowedSpotLights{10U}; ///< Small fixed cap for the first spot-shadow data model.
 	inline constexpr std::size_t kMaxShadowedPointLights{10U}; ///< Small fixed cap for point-shadow CPU metadata.
-	inline constexpr std::size_t kMaxDirectionalLights{10U};  ///< Small fixed cap for the first multi-directional-light data model.
+	inline constexpr std::size_t kMaxDirectionalLights{4U};   ///< Fixed cap keeping four cascades per directional light within sixteen layers.
+	inline constexpr std::size_t kNumShadowCascades{4U};      ///< Directional shadow cascades assigned to every packed light.
+	inline constexpr Scalar shadowDistance{60.0F};            ///< Maximum camera distance covered by directional shadows.
+	inline constexpr Scalar zBackoff{40.0F};                  ///< Extra light-space depth behind each camera frustum slice.
 
 	/// @brief Host-side drawable object with geometry and a local-to-world transform.
 	struct Object {

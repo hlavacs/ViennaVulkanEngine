@@ -108,6 +108,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto resourceKind(RenderResourceHandle handle) const												-> std::expected<RenderResourceKind, Error>;
 		[[nodiscard]] auto functionName(RenderFunctionHandle handle) const												-> std::expected<ObjectName, Error>;
 		[[nodiscard]] auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {})	-> std::expected<RenderSceneInstanceHandle, Error>;
+		auto waitIdle() -> void;
 		/// @brief Stores the borrowed GUI system for later forwarding to renderer backends.
 		auto setGuiSystem(void *gui)																								-> void;
 		auto setGuiRecordSink(std::function<void(VkCommandBuffer)> sink)												-> void;
@@ -415,14 +416,20 @@ namespace vve::simple {
 		return info;
 	}
 
+	/// @brief Waits for renderer-owned Vulkan work before dependent resources are destroyed.
+	inline auto RenderSystem::waitIdle() -> void {
+		if (!initialized_) { return; }
+		std::visit([](auto &renderer) {
+			if constexpr (std::same_as<std::remove_cvref_t<decltype(renderer)>, ForwardRenderer>) {
+				if (renderer.device.device != VK_NULL_HANDLE) { (void)vkDeviceWaitIdle(renderer.device.device); }
+			}
+		}, renderer_);
+	}
+
 	inline auto RenderSystem::shutdown()																				-> void{
 		if (initialized_) {
-			std::visit([](auto &renderer) {
-				if constexpr (std::same_as<std::remove_cvref_t<decltype(renderer)>, ForwardRenderer>) {
-					(void)vkDeviceWaitIdle(renderer.device.device);
-				}
-				renderer.shutdown();
-			}, renderer_);
+			waitIdle();
+			std::visit([](auto &renderer) { renderer.shutdown(); }, renderer_);
 			initialized_ = false;
 		}
 	}

@@ -771,7 +771,8 @@ export namespace vve::simple {
 		Mat4 view{};        ///< shared camera view matrix
 		Mat4 projection{};  ///< shared camera projection matrix
 		Mat4 lightViewProj{}; ///< light view-projection for the upcoming shadow pass
-		std::array<Mat4, kMaxDirectionalLights> dirLightViewProjArray{}; ///< per-directional light-space matrices for depth passes and sampling
+		std::array<Mat4, kMaxDirectionalLights * kNumShadowCascades> dirLightViewProjArray{}; ///< flattened per-directional cascade matrices for depth passes and sampling
+		Vec4 cascadeSplits{}; ///< view-space far distance of each directional shadow cascade
 		std::array<Mat4, kMaxShadowedSpotLights> spotLightViewProjs{}; ///< spot-light view-projections for future shadow data
 		std::array<Mat4, kMaxShadowedPointLights * 6U> pointLightFaceViewProjs{}; ///< per-point-face view-projections for future point shadows
 		std::array<Vec4, kMaxShadowedPointLights> pointLightPositionRanges{}; ///< per-point xyz position with range in w

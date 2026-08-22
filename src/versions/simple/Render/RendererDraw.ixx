@@ -72,30 +72,12 @@ export namespace vve::simple {
 			const Vec3 shadowSurfaceLightDir{normalize(subtract(light.position, lightCenter))}; ///< Point-light direction approximated by one shadow map.
 			const Vec3 lightEye{light.position}; ///< Place the shadow camera at the point light for the current simple approximation.
 			const Scalar lightExtent{static_cast<Scalar>(4.0)}; ///< Light-space half-size covers the 4x4 floor and tall cube.
-			Vec3 directionalShadowMinimum{}; ///< Minimum visible object origin used to frame directional casters.
-			Vec3 directionalShadowMaximum{}; ///< Maximum visible object origin used to frame directional casters.
-			bool hasDirectionalShadowCaster{}; ///< True after the first visible object contributes an origin.
-			for (const Object &object : renderer.scene.objects) {
-				if (!object.visible) { continue; }
-				const Vec4 origin = multiply(object.model, Vec4{zero(), zero(), zero(), one()}); ///< Flat receiver size must not dilute caster resolution.
-				const Vec3 position{origin.x, origin.y, origin.z};
-				directionalShadowMinimum = hasDirectionalShadowCaster ? min(directionalShadowMinimum, position) : position;
-				directionalShadowMaximum = hasDirectionalShadowCaster ? max(directionalShadowMaximum, position) : position;
-				hasDirectionalShadowCaster = true;
-			}
-			const Vec3 directionalShadowCenter = hasDirectionalShadowCaster
-				? scale(add(directionalShadowMinimum, directionalShadowMaximum), static_cast<Scalar>(0.5))
-				: zeroVec3(); ///< Center follows transformed objects instead of the debug-scene origin.
-			Scalar directionalShadowExtent{lightExtent}; ///< Preserve the established minimum resolution for small scenes.
-			for (const Object &object : renderer.scene.objects) {
-				if (!object.visible) { continue; }
-				const Vec4 origin = multiply(object.model, Vec4{zero(), zero(), zero(), one()});
-				directionalShadowExtent = max(directionalShadowExtent,
-					length(subtract(Vec3{origin.x, origin.y, origin.z}, directionalShadowCenter)) +
-						static_cast<Scalar>(2.0)); ///< Padding covers ordinary mesh extents and contact shadows.
-			}
+			constexpr Scalar cameraVerticalFov{static_cast<Scalar>(0.7853981633974483)}; ///< Fixed 45-degree camera field of view.
+			constexpr Scalar cameraNear{static_cast<Scalar>(0.1)}; ///< Camera near plane shared by projection and cascade splitting.
+			constexpr Scalar cameraFar{static_cast<Scalar>(100.0)}; ///< Camera far plane bounds directional cascade coverage.
+			const Mat4 cameraView{lookAt(renderer.cameraEye, renderer.cameraTarget, Vec3{zero(), one(), zero()})}; ///< Current camera transform shared by uniforms and cascade fitting.
 			const ForwardRendererShadowFrame shadowFrame =
-				renderer.prepareShadowFrame(directionalShadowCenter, directionalShadowExtent, spot, spotDirection);
+				renderer.prepareShadowFrame(cameraView, cameraVerticalFov, aspectRatio, cameraNear, cameraFar, spot, spotDirection);
 #ifndef NDEBUG
 			renderer.spotShadowDepthSampleCountStorage() = renderer.spotLightViewProjCount;
 			const Vec3 spotShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point used for CPU-only shadow diagnostics.
@@ -146,10 +128,11 @@ export namespace vve::simple {
 			}
 #endif
 			const FrameUniforms frameUniforms{ // Shared camera matrices keep the sample cubes inside Vulkan clip space.
-				.view = lookAt(renderer.cameraEye, renderer.cameraTarget, Vec3{zero(), one(), zero()}),
-				.projection = perspectiveVulkan(static_cast<Scalar>(0.7853981633974483), aspectRatio, static_cast<Scalar>(0.1), static_cast<Scalar>(100.0)),
+				.view = cameraView,
+				.projection = perspectiveVulkan(cameraVerticalFov, aspectRatio, cameraNear, cameraFar),
 				.lightViewProj = multiply(orthoVulkan(-lightExtent, lightExtent, -lightExtent, lightExtent, static_cast<Scalar>(0.1), static_cast<Scalar>(16.0)), lookAt(lightEye, lightCenter, Vec3{zero(), one(), zero()})),
-				.dirLightViewProjArray = shadowFrame.dirLightViewProjArray, ///< Per-directional matrices used by depth passes and fragment sampling.
+				.dirLightViewProjArray = shadowFrame.dirLightViewProjArray, ///< Flattened directional cascade matrices used by depth passes.
+				.cascadeSplits = shadowFrame.cascadeSplitsFar, ///< View-space cascade far distances mirror the Slang float4.
 				.spotLightViewProjs = renderer.spotLightViewProjs,
 				.pointLightFaceViewProjs = shadowFrame.pointLightFaceViewProjs, ///< Point-face matrices are sourced from shadow metadata rows.
 				.pointLightPositionRanges = shadowFrame.pointLightPositionRanges,
@@ -174,22 +157,28 @@ export namespace vve::simple {
 				.activeDirectionalLightCount = shadowFrame.activeDirectionalLightCount,
 			};
 #ifndef NDEBUG
-			renderer.directionalShadowDepthSampleCountStorage() = 1U;
+			constexpr std::size_t kDirectionalDebugLightIndex{0U}; ///< Directional diagnostics stay pinned to the first packed light.
+			constexpr std::size_t kDirectionalDebugCascadeIndex{0U}; ///< Directional diagnostics sample the nearest cascade only.
+			constexpr std::size_t kDirectionalDebugLayer{kDirectionalDebugLightIndex * kNumShadowCascades + kDirectionalDebugCascadeIndex}; ///< Flattened light-zero cascade-zero layer.
+			const auto directionalDebugMeta = std::ranges::find_if(renderer.shadowLightMeta, [](const auto &meta) {
+				return meta.light_type == 3U && meta.light_index == kDirectionalDebugLightIndex && meta.first_layer == kDirectionalDebugLayer;
+			}); ///< Metadata order also contains spot and point rows, so select by directional identity.
+			renderer.directionalShadowDepthSampleCountStorage() = directionalDebugMeta != renderer.shadowLightMeta.end() ? 1U : 0U;
 			const Vec3 directionalShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point shared with spot shadow diagnostics.
-			constexpr float kDirectionalShadowCompareBias{0.001F}; ///< CPU mirror of the shader-side directional compare bias.
-			const Vec4 dirLightClip{multiply(frameUniforms.dirLightViewProjArray[0], Vec4{directionalShadowDebugPoint.x, directionalShadowDebugPoint.y, directionalShadowDebugPoint.z, one()})}; ///< Clip point before perspective divide.
+			constexpr float kDirectionalShadowCompareBias{0.0005F * static_cast<float>(kDirectionalDebugCascadeIndex + 1U)}; ///< CPU mirror of the selected cascade's shader-side compare bias.
+			const Vec4 dirLightClip{multiply(frameUniforms.dirLightViewProjArray[kDirectionalDebugLayer], Vec4{directionalShadowDebugPoint.x, directionalShadowDebugPoint.y, directionalShadowDebugPoint.z, one()})}; ///< Clip point in light-zero cascade zero before perspective divide.
 			const Scalar dirInvW{dirLightClip.w != zero() ? one() / dirLightClip.w : zero()}; ///< Zero-w guard matches the spot debug path.
 			const Vec3 dirLightNdc{dirLightClip.x * dirInvW, dirLightClip.y * dirInvW, dirLightClip.z * dirInvW}; ///< Shader-comparable directional NDC point.
-			renderer.directionalShadowDepthSampleStorage()[0] = RenderShadowDepthSample{.face_index = 0U,
+			renderer.directionalShadowDepthSampleStorage()[0] = RenderShadowDepthSample{.face_index = static_cast<std::uint32_t>(kDirectionalDebugLayer),
 																									 .world = directionalShadowDebugPoint,
 																									 .light_ndc = dirLightNdc,
 																									 .expected_depth = dirLightNdc.z,
 																									 .bias = kDirectionalShadowCompareBias,
 																									 .shadow_factor = 1.0F,
-																									 .gpu_depth = -1.0F,
-																									 .error = -1.0F,
-																									 .has_gpu = false,
-																									 .valid = true}; ///< Directional sample is CPU-only until readback is added.
+																		 .gpu_depth = -1.0F,
+																		 .error = -1.0F,
+																		 .has_gpu = false,
+																		 .valid = directionalDebugMeta != renderer.shadowLightMeta.end()}; ///< Sample mirrors light-zero cascade-zero metadata and depth data.
 #endif
 			result = renderer.uniformBuffers.update(renderer.currentFrame, frameUniforms);
 			if (result != VK_SUCCESS) { return; }
@@ -197,7 +186,7 @@ export namespace vve::simple {
 			result = recordCommandBuffer(renderer.currentFrame, imageIndex);
 			if (result != VK_SUCCESS) { return; }
 
-			const VkPipelineStageFlags waitStage{VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+			const VkPipelineStageFlags waitStage{VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT}; ///< Acquire completes before the swapchain layout transition executes.
 			const VkSubmitInfo submitInfo{
 				.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 				.waitSemaphoreCount = 1U,
@@ -402,10 +391,13 @@ export namespace vve::simple {
 
 			std::size_t activeDirectionalShadowPassCount{}; // Enabled directional lights are packed into dense shadow layers by drawFrame().
 			for (std::size_t dirLightIndex{}; dirLightIndex < directionalLightCount; ++dirLightIndex) { if (renderer.scene.directionalLights[dirLightIndex].enabled) { ++activeDirectionalShadowPassCount; } }
-			const std::size_t dirShadowArrayPassCount{std::min(activeDirectionalShadowPassCount, dirShadowArrayLayerCount)}; // Active directional array layers receive one geometry depth pass each.
-			// Render active directional lights after all sampled array layers have a defined layout.
-			for (std::size_t dirLightIndex{}; dirLightIndex < dirShadowArrayPassCount; ++dirLightIndex) {
-				const VkImageSubresourceRange dirShadowArrayLayerRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = static_cast<std::uint32_t>(dirLightIndex), .layerCount = 1U}; // Active layer index matches the packed shadow data.
+			const std::size_t dirShadowArrayPassCount{std::min(activeDirectionalShadowPassCount * kNumShadowCascades, dirShadowArrayLayerCount)}; // Every active directional light renders all four cascades.
+			// Render flattened light-cascade layers after the clear loop has defined the whole sampled array.
+			for (std::size_t passIndex{}; passIndex < dirShadowArrayPassCount; ++passIndex) {
+				const std::size_t packedDirectionalIndex{passIndex / kNumShadowCascades}; ///< Dense enabled-light index shared with CPU preparation.
+				const std::size_t cascadeIndex{passIndex % kNumShadowCascades}; ///< Local cascade index inside the packed light.
+				const std::size_t dirShadowLayer{packedDirectionalIndex * kNumShadowCascades + cascadeIndex}; ///< Flattened matrix and image-array layer index.
+				const VkImageSubresourceRange dirShadowArrayLayerRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = static_cast<std::uint32_t>(dirShadowLayer), .layerCount = 1U}; // Active layer index matches the packed cascade data.
 				const VkImageMemoryBarrier dirShadowArrayBeginBarrier{
 					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 					.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
@@ -418,7 +410,7 @@ export namespace vve::simple {
 				};
 				const VkRenderingAttachmentInfo dirShadowArrayDepthAttachment{ // Dynamic draw pass keeps the legacy clear-before-draw behavior.
 					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-					.imageView = renderer.dirShadowArray.ownedLayerViews[dirLightIndex],
+					.imageView = renderer.dirShadowArray.ownedLayerViews[dirShadowLayer],
 					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -439,7 +431,7 @@ export namespace vve::simple {
 				vkCmdBeginRendering(commandBuffer, &dirShadowArrayRenderingInfo);
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.dirShadowArray.pipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.dirShadowArray.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-				drawUploadedObjects(renderer.dirShadowArray.pipelineLayout, 0U, static_cast<std::uint32_t>(dirLightIndex));
+				drawUploadedObjects(renderer.dirShadowArray.pipelineLayout, 0U, static_cast<std::uint32_t>(dirShadowLayer));
 				vkCmdEndRendering(commandBuffer);
 				const VkImageMemoryBarrier dirShadowArrayReadBarrier{
 					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,

@@ -163,11 +163,13 @@ export namespace vve::simple {
 														 renderer.swapchain.extent, renderer.swapchain.imageFormat);
 			if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
 
+			// Capture a newly acquired frame before presentation releases the swapchain image.
 			result = vkDeviceWaitIdle(renderer.device.device);
 			if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
-			const auto image = renderer.swapchain.images[*renderer.lastRenderedImageIndex];
-			result = readback.capture(image, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
-			if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+			renderer.renderFrame(&readback);
+			if (!renderer.lastReadbackCaptureResult || *renderer.lastReadbackCaptureResult != VK_SUCCESS) {
+				return std::unexpected(Error::platform_error);
+			}
 
 			const auto output = output_path.string();
 			if (!writeReadbackPng(readback.pixelBytes(), renderer.swapchain.extent, renderer.swapchain.imageFormat, output)) {
@@ -177,7 +179,7 @@ export namespace vve::simple {
 		}
 
 		[[nodiscard]] static std::array<RenderShadowDepthSample, 1U> &directionalShadowDepthSampleStorage() {
-			static std::array<RenderShadowDepthSample, 1U> samples{}; ///< CPU-only directional shadow sample.
+			static std::array<RenderShadowDepthSample, 1U> samples{}; ///< Light-zero cascade-zero directional shadow sample.
 			return samples;
 		}
 
@@ -240,9 +242,18 @@ export namespace vve::simple {
 			if (dirShadowDepthReadback.extent.width == 0U || dirShadowDepthReadback.extent.height == 0U) { return; }
 			if (vkDeviceWaitIdle(renderer.device.device) != VK_SUCCESS) { return; }
 
-			RenderShadowDepthSample &sample = directionalShadowDepthSampleStorage()[0]; // Single directional light uses layer zero.
+			constexpr std::uint32_t kDirectionalDebugLightIndex{0U}; ///< Readback stays pinned to the first packed directional light.
+			constexpr std::uint32_t kDirectionalDebugCascadeIndex{0U}; ///< Readback stays pinned to the nearest cascade.
+			constexpr std::uint32_t kDirectionalDebugLayer{kDirectionalDebugLightIndex * static_cast<std::uint32_t>(kNumShadowCascades) + kDirectionalDebugCascadeIndex}; ///< Flattened light-zero cascade-zero layer.
+			if (directionalShadowDepthSampleCountStorage() == 0U || kDirectionalDebugLayer >= renderer.dirShadowArray.ownedLayerViews.size()) { return; }
+			const auto directionalDebugMeta = std::ranges::find_if(renderer.shadowLightMeta, [](const auto &meta) {
+				return meta.light_type == 3U && meta.light_index == kDirectionalDebugLightIndex && meta.first_layer == kDirectionalDebugLayer;
+			});
+			if (directionalDebugMeta == renderer.shadowLightMeta.end() || directionalDebugMeta->layer_count != 1U) { return; }
+
+			RenderShadowDepthSample &sample = directionalShadowDepthSampleStorage()[0]; // Existing CPU sample uses the same flattened cascade layer.
 			const auto texel = spotShadowDebugTexel(sample.light_ndc);
-			if (dirShadowDepthReadback.capture(renderer.dirShadowArray.image, 0U) != VK_SUCCESS) { return; }
+			if (dirShadowDepthReadback.capture(renderer.dirShadowArray.image, kDirectionalDebugLayer) != VK_SUCCESS) { return; }
 
 			const std::optional<float> depth = dirShadowDepthReadback.depthAt(texel.first, texel.second);
 			if (!depth) { return; }

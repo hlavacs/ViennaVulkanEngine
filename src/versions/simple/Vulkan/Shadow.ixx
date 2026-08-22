@@ -149,17 +149,20 @@ export namespace vve::simple {
 				}
 			}
 
-			/// @brief Clamp sampler descriptor for future depth sampling without comparison state.
+			/// @brief Border-clamped comparison sampler for filtered shadow-depth tests.
 			const VkSamplerCreateInfo samplerInfo{
 				.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
 				.magFilter = VK_FILTER_LINEAR,
 				.minFilter = VK_FILTER_LINEAR,
 				.mipmapMode = VK_SAMPLER_MIPMAP_MODE_NEAREST,
-				.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-				.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-				.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+				.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+				.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+				.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER,
+				.compareEnable = VK_TRUE,
+				.compareOp = VK_COMPARE_OP_LESS_OR_EQUAL,
 				.minLod = 0.0F,
 				.maxLod = 1.0F,
+				.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
 			};
 
 			VkSampler rawSampler{VK_NULL_HANDLE};
@@ -294,8 +297,8 @@ export namespace vve::simple {
 			.cullMode = VK_CULL_MODE_NONE,			///< Shadow pass renders all faces because orthoVulkan Y-flip inverts winding.
 			.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
 			.depthBiasEnable = VK_TRUE,
-			.depthBiasConstantFactor = 0.0F,			///< Constant depth bias is removed for visible contact shadows.
-			.depthBiasSlopeFactor = 0.0F,			///< Slope depth bias is removed for visible contact shadows.
+			.depthBiasConstantFactor = 1.25F,		///< Constant raster bias suppresses depth quantization acne.
+			.depthBiasSlopeFactor = 1.75F,			///< Slope raster bias protects surfaces viewed obliquely by the light.
 			.lineWidth = 1.0F,
 		};
 		const VkPipelineMultisampleStateCreateInfo multisampling{

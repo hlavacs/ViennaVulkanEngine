@@ -14,4 +14,3 @@ set(CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS "/opt/homebrew/opt/llvm/bin/clang-scan-de
 
 set(CMAKE_CXX_MODULE_STD ON CACHE BOOL "Enable C++ standard library module support" FORCE)
 set(CMAKE_CXX_STDLIB_MODULES_JSON "/opt/homebrew/opt/llvm/lib/c++/libc++.modules.json" CACHE FILEPATH "libc++ standard library module metadata" FORCE)
-set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "451f2fe2-a8a2-47c3-bc32-94786d8fc91b" CACHE STRING "CMake experimental import std gate" FORCE)

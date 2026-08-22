@@ -112,7 +112,8 @@ export namespace vve::simple {
 			result = renderer.shadowMap.create(renderer.physicalDevice.physicalDevice, renderer.device.device);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.dirShadowArray.create(renderer.physicalDevice.physicalDevice, renderer.device.device, kMaxDirectionalLights);
+			constexpr std::uint32_t directionalShadowLayerCount{static_cast<std::uint32_t>(kMaxDirectionalLights * kNumShadowCascades)}; // Four cascades for every directional-light slot.
+			result = renderer.dirShadowArray.create(renderer.physicalDevice.physicalDevice, renderer.device.device, directionalShadowLayerCount);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.spotShadowMap.create(renderer.physicalDevice.physicalDevice, renderer.device.device);

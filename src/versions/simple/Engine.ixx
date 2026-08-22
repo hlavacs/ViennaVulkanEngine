@@ -129,6 +129,7 @@ export namespace vve::simple {
 
 	/// @brief Releases runtime systems owned by the simple engine.
 	inline Engine::~Engine() {
+		render_system_.waitIdle();																					///< ImGui pipelines may still be referenced by the last submitted frame.
 		gui_.shutdownVulkan();
 		render_system_.shutdown();
 		gui_.shutdownSDL();

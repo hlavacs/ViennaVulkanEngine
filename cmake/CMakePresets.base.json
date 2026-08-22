@@ -27,6 +27,19 @@
       }
     },
     {
+      "name": "linux-base",
+      "hidden": true,
+      "cacheVariables": {
+        "CMAKE_C_COMPILER": "/usr/bin/clang-18",
+        "CMAKE_CXX_COMPILER": "/usr/bin/clang++-18",
+        "CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS": "/usr/bin/clang-scan-deps-18",
+        "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+        "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_SHARED_LINKER_FLAGS": "-stdlib=libc++",
+        "CMAKE_CXX_STDLIB_MODULES_JSON": "/usr/lib/llvm-18/lib/libc++.modules.json"
+      }
+    },
+    {
       "name": "debug-windows",
       "displayName": "Debug (Windows)",
       "inherits": [
@@ -53,7 +66,10 @@
     {
       "name": "debug-linux",
       "displayName": "Debug (Linux)",
-      "inherits": "debug-base",
+      "inherits": [
+        "debug-base",
+        "linux-base"
+      ],
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
@@ -63,7 +79,10 @@
     {
       "name": "release-linux",
       "displayName": "Release (Linux)",
-      "inherits": "release-base",
+      "inherits": [
+        "release-base",
+        "linux-base"
+      ],
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",

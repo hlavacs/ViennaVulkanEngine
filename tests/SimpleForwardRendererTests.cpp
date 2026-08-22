@@ -117,11 +117,14 @@ namespace {
 
 /// @brief Verifies point-shadow metadata rows use six unique contiguous layers per point light.
 [[nodiscard]] bool hasPointShadowMetaInvariants(const vve::simple::RenderSystem &render_system,
-                                                std::size_t spot_row_count, std::size_t point_light_count) {
+                                                std::size_t spot_row_count, std::size_t point_light_count,
+                                                std::size_t directional_light_count) {
    constexpr std::size_t point_shadow_face_count{6U}; ///< Cubemap-style point shadows render six views.
    if (point_light_count > vve::simple::kMaxShadowedPointLights) { return false; } ///< CPU metadata cap.
    const std::size_t expected_point_rows{point_shadow_face_count * point_light_count}; ///< Six rows per point light.
-   if (render_system.sceneShadowLightMetaCount() != spot_row_count + expected_point_rows) { return false; }
+   const std::size_t first_directional_row{spot_row_count + expected_point_rows}; ///< Directional cascades follow spot and point rows.
+   const std::size_t expected_directional_rows{directional_light_count * vve::simple::kNumShadowCascades}; ///< Four rows per directional light.
+   if (render_system.sceneShadowLightMetaCount() != first_directional_row + expected_directional_rows) { return false; }
 
    std::uint32_t max_spot_first_layer{}; ///< Highest spot layer must remain below every point layer.
    // Read the spot rows first so point rows can be checked for non-overlapping array layers.
@@ -136,7 +139,7 @@ namespace {
    all_point_layers.reserve(expected_point_rows);
 
    // Walk every point metadata row and check the public CPU contract for cubemap-style faces.
-   for (std::size_t row{spot_row_count}; row < render_system.sceneShadowLightMetaCount(); ++row) {
+   for (std::size_t row{spot_row_count}; row < first_directional_row; ++row) {
       const auto meta = render_system.sceneShadowLightMeta(row);
       if (!meta || meta->light_type != 2U || meta->layer_count != 1U) { return false; }
       if (meta->light_index >= point_light_count || meta->light_index >= vve::simple::kMaxShadowedPointLights) {
@@ -159,6 +162,19 @@ namespace {
       std::ranges::sort(layers);
       for (std::size_t face_index{1U}; face_index < layers.size(); ++face_index) {
          if (layers[face_index] != layers.front() + static_cast<std::uint32_t>(face_index)) { return false; }
+      }
+   }
+
+   // Trailing directional metadata must preserve the flattened light-cascade layer layout.
+   for (std::size_t row{first_directional_row}; row < render_system.sceneShadowLightMetaCount(); ++row) {
+      const auto meta = render_system.sceneShadowLightMeta(row);
+      const std::size_t directional_row{row - first_directional_row}; ///< Dense row among directional cascades.
+      const std::uint32_t light_index{static_cast<std::uint32_t>(directional_row / vve::simple::kNumShadowCascades)};
+      const std::uint32_t cascade_index{static_cast<std::uint32_t>(directional_row % vve::simple::kNumShadowCascades)};
+      const std::uint32_t expected_layer{light_index * static_cast<std::uint32_t>(vve::simple::kNumShadowCascades) + cascade_index};
+      if (!meta || meta->light_type != 3U || meta->light_index != light_index || meta->shadow_slot != light_index ||
+          meta->first_layer != expected_layer || meta->layer_count != 1U) {
+         return false;
       }
    }
    return true;
@@ -262,6 +278,74 @@ namespace {
       }
    }
    return saw_non_occluded_sample;
+}
+
+/// @brief Verifies the light-zero cascade-zero CPU projection agrees with its rendered depth texel.
+[[nodiscard]] bool hasDirectionalShadowDepthAgreement(const vve::simple::ForwardRenderer &renderer) {
+   constexpr float depth_tolerance{0.002F}; ///< Raster bias and texel quantization may move stored depth slightly.
+   const auto sample = renderer.sceneShadowDepthSample(0U);
+   if (!sample || !sample->valid || !sample->has_gpu || sample->face_index != 0U ||
+       !std::isfinite(sample->expected_depth) || !std::isfinite(sample->gpu_depth) ||
+       !std::isfinite(sample->error)) {
+      return false;
+   }
+   const float expected_error{std::abs(sample->expected_depth - sample->gpu_depth)};
+   return sample->error == expected_error && sample->error <= depth_tolerance;
+}
+
+/// @brief Renders empty and full directional-light lists and checks flattened cascade ownership.
+[[nodiscard]] bool hasDirectionalRuntimeToggleCoverage(vve::simple::Engine &engine,
+                                                       vve::simple::RenderSystem &render_system) {
+   using RecordedPass = vve::simple::ForwardRenderer::RecordedPass; ///< Concrete pass tags expose draw counts.
+   auto &renderer = std::get<vve::simple::ForwardRenderer>(render_system.backend());
+   const auto directional_pass_count = [&renderer] {
+      return static_cast<std::size_t>(std::ranges::count(renderer.lastRecordedPassOrder(),
+                                                        RecordedPass::directional_shadow));
+   };
+
+   // An empty vector leaves only the protected legacy single-shadow pass and no CSM metadata or sample.
+   render_system.clearScene();
+   if (!render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{}) || !engine.renderFrame()) {
+      return false;
+   }
+   const bool has_directional_meta = std::ranges::any_of(renderer.shadowLightMeta, [](const auto &meta) {
+      return meta.light_type == 3U;
+   });
+   if (!renderer.scene.directionalLights.empty() || has_directional_meta ||
+       renderer.sceneShadowDepthSampleCount() != 0U || directional_pass_count() != 1U) {
+      return false;
+   }
+
+   // Fill every packed light slot and require all sixteen matrices, layers, metadata rows, and passes.
+   for (std::size_t light_index{}; light_index < vve::simple::kMaxDirectionalLights; ++light_index) {
+      const float component{static_cast<float>(light_index + 1U)};
+      render_system.addDirectionalLight(
+         vve::Direction{.value = vve::Vec3{-component, -1.0F, 0.25F * component}},
+         vve::LinearColor{.value = vve::Vec3{1.0F, 0.8F, 0.6F}},
+         vve::LightIntensity{.value = 1.0F}, vve::LinearColor{});
+   }
+   if (!engine.renderFrame() || renderer.scene.directionalLights.size() != vve::simple::kMaxDirectionalLights ||
+       renderer.dirShadowArray.ownedLayerViews.size() !=
+          vve::simple::kMaxDirectionalLights * vve::simple::kNumShadowCascades) {
+      return false;
+   }
+
+   std::size_t directional_row{}; ///< Dense directional row index across unrelated metadata entries.
+   for (const auto &meta : renderer.shadowLightMeta) {
+      if (meta.light_type != 3U) { continue; }
+      const std::uint32_t expected_light{static_cast<std::uint32_t>(directional_row / vve::simple::kNumShadowCascades)};
+      const std::uint32_t expected_layer{static_cast<std::uint32_t>(directional_row)};
+      if (meta.light_index != expected_light || meta.shadow_slot != expected_light ||
+          meta.first_layer != expected_layer || meta.layer_count != 1U) {
+         return false;
+      }
+      ++directional_row;
+   }
+   const std::size_t expected_cascade_passes{
+      vve::simple::kMaxDirectionalLights * vve::simple::kNumShadowCascades};
+   return directional_row == expected_cascade_passes &&
+          directional_pass_count() == expected_cascade_passes + 1U &&
+          hasDirectionalShadowDepthAgreement(renderer);
 }
 
 /// @brief Checks only the public render-object lifetime facade on a live render system.
@@ -652,12 +736,13 @@ int main() {
    // Verify per-frame assembly created one unique spot-shadow metadata row per shadowed spot light.
    constexpr std::size_t expected_shadowed_spot_count{3U}; ///< Focused test scene light count.
    constexpr std::size_t expected_shadowed_point_count{2U}; ///< Focused point-light metadata count.
+   constexpr std::size_t expected_shadowed_directional_count{1U}; ///< Focused directional-light cascade count.
    if (expected_shadowed_spot_count > vve::simple::kMaxShadowedSpotLights ||
        !hasUniqueSpotShadowMeta(render_system, expected_shadowed_spot_count)) {
       return 15;
    }
    if (!hasPointShadowMetaInvariants(render_system, expected_shadowed_spot_count,
-                                     expected_shadowed_point_count)) {
+                                     expected_shadowed_point_count, expected_shadowed_directional_count)) {
       return 16;
    }
    if (!hasDisabledFirstSpotExcludedFromPackedMeta(render_system, 3.0F, 6.0F)) { return 19; }
@@ -693,7 +778,7 @@ int main() {
        directional_shadow_sample->world.x != 0.0F || directional_shadow_sample->world.y != 0.0F ||
        directional_shadow_sample->world.z != 0.0F ||
        directional_shadow_sample->expected_depth != directional_shadow_sample->light_ndc.z ||
-       directional_shadow_sample->bias != 0.001F || directional_shadow_sample->shadow_factor != 1.0F ||
+       directional_shadow_sample->bias != 0.0005F || directional_shadow_sample->shadow_factor != 1.0F ||
        forward_renderer.sceneShadowDepthSample(1) || forward_renderer.sceneShadowDepthError(0)) {
       return 8;
    }
@@ -703,6 +788,7 @@ int main() {
       return 8;
    }
    if (!hasFullContributionForNonOccludedShadowSamples(forward_renderer)) { return 18; }
+   if (!hasDirectionalShadowDepthAgreement(forward_renderer)) { return 28; }
 #endif
 
    // Verify each active spot light receives a unique shadow-array slot when samples are reachable.
@@ -741,6 +827,10 @@ int main() {
    if (forward_renderer.preparedGpuTargetCount() != 0 || !hasDefaultClearColor(forward_renderer.lastClearColor())) {
       return 9;
    }
+
+#ifndef NDEBUG
+   if (!hasDirectionalRuntimeToggleCoverage(engine, render_system)) { return 29; }
+#endif
 
    return 0;
 }

@@ -1,4 +1,20 @@
-﻿cmake_minimum_required(VERSION 3.28)
+﻿cmake_minimum_required(VERSION 3.31.8)
+
+# CMake discovers the compiler-provided `import std` target while enabling CXX.
+if(CMAKE_VERSION VERSION_LESS "4.0")
+   set(VVE_CMAKE_IMPORT_STD_UUID "d0edc3af-4c50-42ea-a356-e2862fe7a444")
+elseif(CMAKE_VERSION VERSION_LESS "4.0.3")
+   set(VVE_CMAKE_IMPORT_STD_UUID "a9e1cf81-9932-4810-974b-6eccaf14e457")
+elseif(CMAKE_VERSION VERSION_LESS "4.3")
+   set(VVE_CMAKE_IMPORT_STD_UUID "d0edc3af-4c50-42ea-a356-e2862fe7a444")
+elseif(CMAKE_VERSION VERSION_LESS "4.4")
+   set(VVE_CMAKE_IMPORT_STD_UUID "451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
+else()
+   set(VVE_CMAKE_IMPORT_STD_UUID "f35a9ac6-8463-4d38-8eec-5d6008153e7d")
+endif()
+set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "${VVE_CMAKE_IMPORT_STD_UUID}" CACHE STRING "CMake experimental import std gate" FORCE)
+set(CMAKE_CXX_MODULE_STD ON CACHE BOOL "Enable C++ standard library module support" FORCE)
+set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(NOT DEFINED VVE_VCPKG_TRIPLET OR VVE_VCPKG_TRIPLET STREQUAL "")
    if(CMAKE_HOST_SYSTEM_NAME STREQUAL "Windows")
@@ -37,8 +53,6 @@ project(ViennaVulkanEngine VERSION 4.0.0 LANGUAGES CXX)
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
    include(CTest)
 endif()
-
-set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_compile_options(
    "$<$<CXX_COMPILER_ID:MSVC>:/MP>"
