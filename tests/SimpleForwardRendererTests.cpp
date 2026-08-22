@@ -142,6 +142,7 @@ namespace {
    for (std::size_t row{spot_row_count}; row < first_directional_row; ++row) {
       const auto meta = render_system.sceneShadowLightMeta(row);
       if (!meta || meta->light_type != 2U || meta->layer_count != 1U) { return false; }
+      if (std::abs(meta->projection[0][0]) >= 0.999F) { return false; } ///< Point faces overlap beyond ninety degrees.
       if (meta->light_index >= point_light_count || meta->light_index >= vve::simple::kMaxShadowedPointLights) {
          return false;
       }
@@ -779,7 +780,7 @@ int main() {
        directional_shadow_sample->world.x != 0.0F || directional_shadow_sample->world.y != 0.0F ||
        directional_shadow_sample->world.z != 0.0F ||
        directional_shadow_sample->expected_depth != directional_shadow_sample->light_ndc.z ||
-       directional_shadow_sample->bias != 0.0005F || directional_shadow_sample->shadow_factor != 1.0F ||
+       directional_shadow_sample->bias != 0.00005F || directional_shadow_sample->shadow_factor != 1.0F ||
        forward_renderer.sceneShadowDepthSample(1) || forward_renderer.sceneShadowDepthError(0)) {
       return 8;
    }

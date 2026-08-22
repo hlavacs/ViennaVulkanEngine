@@ -113,7 +113,7 @@ export namespace vve::simple {
 			constexpr std::array<Vec3, pointShadowFaceCount> pointShadowFaceUps{Vec3{zero(), -one(), zero()}, Vec3{zero(), -one(), zero()},
 																										 Vec3{zero(), zero(), one()}, Vec3{zero(), zero(), -one()},
 																										 Vec3{zero(), -one(), zero()}, Vec3{zero(), -one(), zero()}}; ///< Cubemap face up vectors.
-			constexpr Scalar kPointShadowFov{static_cast<Scalar>(1.5707963267948966)}; ///< Square cubemap face field of view.
+			constexpr Scalar kPointShadowFov{static_cast<Scalar>(1.6057029118347832)}; ///< Two-degree face overlap keeps PCF away from cube seams.
 			std::size_t activePointLightCount{}; ///< Enabled point-light count packed into shader-visible arrays.
 
 			// Append six independent light-space views for every shadowed point light.
@@ -225,7 +225,7 @@ export namespace vve::simple {
 													 .projection = lightProjection,
 													 .near_plane = static_cast<Scalar>(0.1),
 													 .far_plane = lightFar,
-													 .depth_bias = static_cast<Scalar>(0.0005),
+													 .depth_bias = static_cast<Scalar>(0.00005),
 													 .resolution = ShadowMap::resolution}); ///< One metadata row identifies each cascade layer.
 					splitNear = splitFar;
 				}

@@ -243,7 +243,7 @@ FragmentOutput fragmentMain(FragmentInput input)
                 const float3 dirLightNdc = dirLightClip.xyz / dirLightClip.w; ///< Directional light depth remains in 0..1 after divide.
                 const float2 dirShadowUv = (dirLightNdc.xy * 0.5) + 0.5; ///< Convert directional light NDC XY to shadow texture UVs.
                 const bool insideDirShadowMap = dirLightNdc.z >= 0.0 && dirLightNdc.z <= 1.0; ///< Reject fragments outside directional light depth coverage.
-                const float dirShadowBias = 0.0005 * float(dirCascade + 1); ///< Approximate the increasing world texel size of farther cascades.
+                const float dirShadowBias = 0.00005 * float(dirCascade + 1); ///< Small receiver offset avoids detaching contact shadows while raster bias prevents acne.
                 dirShadowPcf = insideDirShadowMap ? pcfShadow(dirShadowArray, dirShadowUv, dirShadowLayer, dirLightNdc.z - dirShadowBias) : 1.0; ///< Filter the selected flattened cascade layer.
                 debugCascadeIndex = dirCascade;
             }

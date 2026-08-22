@@ -165,7 +165,7 @@ export namespace vve::simple {
 			}); ///< Metadata order also contains spot and point rows, so select by directional identity.
 			renderer.directionalShadowDepthSampleCountStorage() = directionalDebugMeta != renderer.shadowLightMeta.end() ? 1U : 0U;
 			const Vec3 directionalShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point shared with spot shadow diagnostics.
-			constexpr float kDirectionalShadowCompareBias{0.0005F * static_cast<float>(kDirectionalDebugCascadeIndex + 1U)}; ///< CPU mirror of the selected cascade's shader-side compare bias.
+			constexpr float kDirectionalShadowCompareBias{0.00005F * static_cast<float>(kDirectionalDebugCascadeIndex + 1U)}; ///< CPU mirror of the selected cascade's shader-side compare bias.
 			const Vec4 dirLightClip{multiply(frameUniforms.dirLightViewProjArray[kDirectionalDebugLayer], Vec4{directionalShadowDebugPoint.x, directionalShadowDebugPoint.y, directionalShadowDebugPoint.z, one()})}; ///< Clip point in light-zero cascade zero before perspective divide.
 			const Scalar dirInvW{dirLightClip.w != zero() ? one() / dirLightClip.w : zero()}; ///< Zero-w guard matches the spot debug path.
 			const Vec3 dirLightNdc{dirLightClip.x * dirInvW, dirLightClip.y * dirInvW, dirLightClip.z * dirInvW}; ///< Shader-comparable directional NDC point.
