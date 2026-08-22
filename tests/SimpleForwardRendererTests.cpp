@@ -700,7 +700,8 @@ int main() {
       return 2;
    }
    render_system.setCamera(vve::Camera{}, vve::PixelExtent{.width = 64, .height = 64});
-   render_system.setDirectionalLight(vve::Direction{}, vve::LinearColor{}, vve::LightIntensity{},
+   render_system.setDirectionalLight(vve::Direction{.value = vve::Vec3{0.25F, -1.0F, 0.35F}},
+                                     vve::LinearColor{}, vve::LightIntensity{},
                                      vve::LinearColor{});
    render_system.addSpotLight(vve::Position{.value = vve::Vec3{-1.5F, 3.5F, 1.0F}},
                               vve::Direction{.value = vve::Vec3{0.35F, -1.0F, -0.25F}},
