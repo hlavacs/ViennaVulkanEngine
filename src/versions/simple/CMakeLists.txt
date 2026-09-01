@@ -7,7 +7,6 @@ target_sources(ViennaVulkanEngine
          Math.ixx
          Handle.ixx
          Vector.ixx
-         ECS.ixx
          Types.ixx
          Graph.ixx
          Window.ixx

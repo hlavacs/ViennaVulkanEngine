@@ -67,6 +67,7 @@ export namespace vve {
 		[[nodiscard]] auto engineVersionMajor(const EngineState &state)								-> std::uint32_t;
 		[[nodiscard]] auto engineGetVersionMajor(const EngineState &state) noexcept				-> std::expected<int, Error>;
 		[[nodiscard]] auto engineVersionName(const EngineState &state)								-> std::string_view;
+		[[nodiscard]] auto engineEcs(EngineState &state)												-> ECS &;
 		[[nodiscard]] auto engineAssets(EngineState &state)											-> void *;
 		[[nodiscard]] auto engineGui(EngineState &state)												-> void *;
 		[[nodiscard]] auto engineWindowSystem(EngineState &state)									-> void *;
@@ -134,7 +135,7 @@ export namespace vve {
 		static void appendUserSystemTasks(detail::EngineStartupOptions &options, const std::tuple<TUserSystems...> &systems);
 
 		detail::EngineStateHandle state_;								///< Opaque owning engine implementation state.
-		ECS ecs_{};																///< Public ECS container referenced by world views.
+		ECS &ecs_;																///< ECS owned by the implementation, referenced by world views.
 		AssetSystem assets_;												///< Public asset-system wrapper referenced by world views.
 		GuiSystem gui_;														///< Public GUI wrapper referenced by world views.
 		WindowSystem window_system_;										///< Public window wrapper referenced by world views.
@@ -264,7 +265,7 @@ export namespace vve {
 
 	template <typename... TSystems>
 	Engine<TSystems...>::Engine(detail::EngineStartupOptions options)
-		: state_{detail::makeEngineState(std::move(options))}, ecs_{},
+		: state_{detail::makeEngineState(std::move(options))}, ecs_{detail::engineEcs(*state_)},
 		  assets_{detail::engineAssets(*state_)}, gui_{detail::engineGui(*state_)},
 		  window_system_{detail::engineWindowSystem(*state_)}, render_system_{detail::engineRenderSystem(*state_)} {}
 

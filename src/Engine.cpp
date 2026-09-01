@@ -86,6 +86,9 @@ namespace vve {
 		/// @brief Returns the selected implementation version name.
 		std::string_view engineVersionName(const EngineState &state) { return state.impl.versionName(); }
 
+		/// @brief Returns the entity/component storage owned by the selected implementation.
+		ECS &engineEcs(EngineState &state) { return state.impl.ecs(); }
+
 		/// @brief Returns an erased pointer to the selected asset system.
 		void *engineAssets(EngineState &state) { return std::addressof(state.impl.assets()); }
 

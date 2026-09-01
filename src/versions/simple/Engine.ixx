@@ -13,7 +13,6 @@ export module VEEngine.Simple;
 import std;
 export import VEEngine.Simple.Math;
 export import :Graph;
-export import :ECS;
 export import :Window;
 export import :Assets;
 export import :RenderSystem;
@@ -91,7 +90,7 @@ export namespace vve::simple {
 		ApplicationName application_name_{};										///< Name used for default window titles.
 		MaxFrames max_frames_{};														///< Optional frame cap.
 		Windows windows_{};																///< Startup window descriptors.
-		ECS ecs_{};																			///< Runtime entity/component storage owned by the engine.
+		ECS ecs_{};																			///< Entity/component storage owned by the implementation and shared with the facade.
 		WindowSystem window_system_{};												///< SDL platform window owner.
 		AssetSystem assets_{};															///< Asset and object catalog facade.
 		RenderSystem render_system_{ImportedAssetReadAccess{
@@ -173,7 +172,7 @@ export namespace vve::simple {
 	/// @brief Returns the GUI system.
 	inline GuiSystem &Engine::gui() { return gui_; }
 
-	/// @brief Returns the runtime ECS.
+	/// @brief Returns the entity/component storage shared with the facade.
 	inline ECS &Engine::ecs() { return ecs_; }
 
 	/// @brief Returns the implementation window system.

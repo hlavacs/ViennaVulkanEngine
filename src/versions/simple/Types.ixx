@@ -4,6 +4,7 @@ export import VEEngine.Simple.Vector;
 export import VEEngine.Simple.Error;
 export import VEEngine.Simple.Math;
 export import VEEngine.Types;
+export import VEEngine.ECSContainer;
 export import VEEngine.Simple.Handle;
 export import VEEngine.Simple.Shaders;
 
@@ -21,6 +22,7 @@ export namespace vve::simple {
 
 
 	using Entity	= vve::Entity;																	///< simple ECS entity handle contract.
+	using ECS		= vve::ECS;																		///< Shared facade ECS container, owned by the simple engine.
 	using SceneHandle	= vve::SceneHandle;															///< simple scene descriptor handle contract.
 	using WindowHandle	= vve::WindowHandle;															///< simple runtime window handle contract.
 	using NodeHandle	= vve::NodeHandle;															///< simple scene-node descriptor handle contract.
