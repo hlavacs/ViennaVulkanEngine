@@ -32,7 +32,9 @@ if(NOT DEFINED VVE_VCPKG_TRIPLET OR VVE_VCPKG_TRIPLET STREQUAL "")
       CACHE STRING "Vcpkg triplet used for local manifest installs")
 endif()
 
-set(VVE_VCPKG_INSTALLED_DIR "${CMAKE_SOURCE_DIR}/vcpkg_installed/${VVE_VCPKG_TRIPLET}")
+# CMAKE_CURRENT_SOURCE_DIR (not CMAKE_SOURCE_DIR): VVE may be built as a
+# subdirectory of another project (e.g. ViennaPhysicsEngine).
+set(VVE_VCPKG_INSTALLED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg_installed/${VVE_VCPKG_TRIPLET}")
 if(EXISTS "${VVE_VCPKG_INSTALLED_DIR}")
    list(PREPEND CMAKE_PREFIX_PATH "${VVE_VCPKG_INSTALLED_DIR}")
    if(EXISTS "${VVE_VCPKG_INSTALLED_DIR}/share/stb/FindStb.cmake")
@@ -294,11 +296,30 @@ set(VVE_ARCHIVE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/${VVE_OUTPUT_CONFIG_DIR}/lib
 set(VVE_LIBRARY_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/${VVE_OUTPUT_CONFIG_DIR}/lib")
 set(VVE_MODULE_OUTPUT_DIR "${CMAKE_BINARY_DIR}/bin/${VVE_OUTPUT_CONFIG_DIR}/dll")
 set(VVE_PROJECT_CONFIG_DIR "${VVE_OUTPUT_CONFIG_DIR}")
-set(VVE_PROJECT_ARCHIVE_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/lib")
-set(VVE_PROJECT_LIBRARY_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/lib")
-set(VVE_PROJECT_RUNTIME_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/exe")
-set(VVE_PROJECT_MODULE_OUTPUT_DIR "${CMAKE_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/dll")
+set(VVE_PROJECT_ARCHIVE_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/lib")
+set(VVE_PROJECT_LIBRARY_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/lib")
+set(VVE_PROJECT_RUNTIME_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/exe")
+set(VVE_PROJECT_MODULE_OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/bin/${VVE_PROJECT_CONFIG_DIR}/dll")
 set(VVE_RUNTIME_OUTPUT_DIR "${VVE_PROJECT_RUNTIME_OUTPUT_DIR}")
+
+if(NOT PROJECT_IS_TOP_LEVEL)
+   # When VVE is built as a subdirectory of another project, let that project
+   # call vve_set_output_dirs() on its own targets: the function reads these
+   # directory-scoped variables from the caller's scope.
+   foreach(vve_output_var
+         VVE_OUTPUT_CONFIG_DIR
+         VVE_ARCHIVE_OUTPUT_DIR
+         VVE_LIBRARY_OUTPUT_DIR
+         VVE_MODULE_OUTPUT_DIR
+         VVE_PROJECT_CONFIG_DIR
+         VVE_PROJECT_ARCHIVE_OUTPUT_DIR
+         VVE_PROJECT_LIBRARY_OUTPUT_DIR
+         VVE_PROJECT_RUNTIME_OUTPUT_DIR
+         VVE_PROJECT_MODULE_OUTPUT_DIR
+         VVE_RUNTIME_OUTPUT_DIR)
+      set(${vve_output_var} "${${vve_output_var}}" PARENT_SCOPE)
+   endforeach()
+endif()
 
 if(WIN32 AND VVE_WINDOWS_RUNTIME_DLLS)
    add_custom_target(vve_copy_runtime_dlls
@@ -398,13 +419,16 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/src/CMakeLists.txt")
    add_subdirectory(src)
 endif()
 
-if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/CMakeLists.txt")
+option(VVE_BUILD_EXAMPLES "Build the VVE example programs" ON)
+if(VVE_BUILD_EXAMPLES AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples/CMakeLists.txt")
    add_subdirectory(examples)
 endif()
 
 if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
    add_subdirectory(tests)
-   file(WRITE "${CMAKE_BINARY_DIR}/CTestTestfile.cmake" "subdirs(\"tests\")\n")
+   if(PROJECT_IS_TOP_LEVEL)
+      file(WRITE "${CMAKE_BINARY_DIR}/CTestTestfile.cmake" "subdirs(\"tests\")\n")
+   endif()
 endif()
 
 if(DOXYGEN_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in")
