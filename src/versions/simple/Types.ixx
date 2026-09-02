@@ -39,11 +39,9 @@ export namespace vve::simple {
 	using FrameStatus	= vve::FrameStatus;															///< simple frame status contract.
 	using MaxFrames	= vve::MaxFrames;															///< simple frame-cap option contract.
 
-	struct ResourceHandleTag {};																			///< simple-internal resource handle tag.
 	struct RendererHandleTag {};																			///< simple-internal renderer descriptor handle tag.
 	struct GuiWidgetHandleTag {};																			///< simple-internal GUI widget handle tag.
 
-	using ResourceHandle	= TypedHandle<ResourceHandleTag>;										///< simple-internal resource handle.
 	using RendererHandle	= TypedHandle<RendererHandleTag>;										///< simple-internal renderer descriptor handle.
 	using GuiWidgetHandle = TypedHandle<GuiWidgetHandleTag>;										///< simple-internal GUI widget handle.
 

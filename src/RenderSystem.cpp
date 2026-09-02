@@ -145,6 +145,16 @@ namespace vve {
 		return renderSystemImpl(impl_).setObjectVisible(handle, visible);
 	}
 
+	/// @brief Sets whether one render object casts shadows.
+	std::expected<void, Error> RenderSystem::setObjectCastsShadow(RenderObjectHandle handle, bool casts_shadow) {
+		return renderSystemImpl(impl_).setObjectCastsShadow(handle, casts_shadow);
+	}
+
+	/// @brief Sets whether one render object is drawn in its flat base color without lighting.
+	std::expected<void, Error> RenderSystem::setObjectUnlit(RenderObjectHandle handle, bool unlit) {
+		return renderSystemImpl(impl_).setObjectUnlit(handle, unlit);
+	}
+
 	/// @brief Returns whether one render object is visible.
 	std::expected<bool, Error> RenderSystem::objectVisible(RenderObjectHandle handle) const {
 		return renderSystemImpl(impl_).objectVisible(handle);

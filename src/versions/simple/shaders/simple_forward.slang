@@ -12,7 +12,7 @@
 
 static const int kMaxShadowedSpotLights = 10; ///< Mirrors the simple engine fixed spot-shadow cap.
 static const int kMaxShadowedPointLights = 10; ///< Mirrors the simple engine fixed point-shadow cap.
-static const int kMaxDirectionalLights = 4;   ///< Mirrors the simple engine fixed directional-light cap.
+static const int kMaxDirectionalLights = 10;  ///< Mirrors the simple engine directional-light cap (must match Scene.ixx).
 static const int kNumShadowCascades = 4;      ///< Mirrors the fixed cascade count used by directional shadow resources.
 static const int kShadowMapResolution = 1024; ///< Mirrors ShadowMap::resolution for software PCF offsets.
 static const bool kDebugCascadeTint = false;  ///< Enables a visible red/green/blue/yellow directional-cascade overlay.
@@ -55,6 +55,7 @@ struct ObjectPushConstants
     uint useBaseColorTexture;    ///< Non-zero when the object wants the optional base-color texture.
     uint spotLightIndex;         ///< Shadow pass spot-light matrix index selected before each draw call.
     uint dirLightIndex;          ///< Shadow pass directional-light matrix index selected before each draw call.
+    uint unlit;                  ///< Non-zero renders the object in its flat base color without any lighting.
 };
 
 struct VertexInput
@@ -282,6 +283,10 @@ FragmentOutput fragmentMain(FragmentInput input)
     float3 baseColor = input.color;                                      ///< Vertex color remains the default material color.
     if (object.useBaseColorTexture != 0) {
         baseColor *= baseColorTexture.Sample(input.texCoord).rgb;        ///< Optional texture modulates the material before lighting.
+    }
+    if (object.unlit != 0) {
+        output.color = float4(baseColor, 1.0);                           ///< Emissive-style objects such as the sun keep a constant color.
+        return output;
     }
     float3 litColor = baseColor * (ambient + pointContribution + directionalContribution + spotContribution); ///< Apply point, directional, and spot Blinn-Phong.
     if (kDebugCascadeTint && debugCascadeIndex >= 0) {

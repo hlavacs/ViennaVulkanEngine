@@ -25,6 +25,7 @@ target_compile_definitions(SimpleForwardRendererTests PRIVATE
    "VVE_TEST_CRATE_TEXTURE=\"${CMAKE_SOURCE_DIR}/assets/game/crate0/diffuse.png\"")
 find_package(glm CONFIG REQUIRED)
 find_package(Stb REQUIRED)
+find_package(assimp CONFIG REQUIRED)
 target_include_directories(SimpleForwardRendererTests PRIVATE ${Stb_INCLUDE_DIR})
 target_sources(SimpleForwardRendererTests
    PRIVATE
@@ -53,7 +54,6 @@ target_sources(SimpleForwardRendererTests
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Graph.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Window.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Assets.ixx"
-         "${CMAKE_SOURCE_DIR}/src/versions/simple/Resources.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Shaders.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Mesh.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Scene.ixx"
@@ -83,7 +83,17 @@ target_sources(SimpleForwardRendererTests
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Engine.ixx"
 )
 add_dependencies(SimpleForwardRendererTests ViennaVulkanEngine)
-target_link_libraries(SimpleForwardRendererTests PRIVATE "$<TARGET_FILE:ViennaVulkanEngine>" glm::glm SDL3::SDL3 Vulkan::Vulkan slang::slang)
+target_sources(SimpleForwardRendererTests
+   PRIVATE
+      "${CMAKE_SOURCE_DIR}/src/Engine.cpp"
+      "${CMAKE_SOURCE_DIR}/src/RenderSystem.cpp"
+      "${CMAKE_SOURCE_DIR}/src/Assets.cpp"
+      "${CMAKE_SOURCE_DIR}/src/Window.cpp"
+      "${CMAKE_SOURCE_DIR}/src/Gui.cpp"
+)
+target_sources(SimpleForwardRendererTests PRIVATE "${CMAKE_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp")
+target_include_directories(SimpleForwardRendererTests PRIVATE ${Stb_INCLUDE_DIR})
+target_link_libraries(SimpleForwardRendererTests PRIVATE assimp::assimp imgui::imgui glm::glm SDL3::SDL3 Vulkan::Vulkan slang::slang)
 add_test(NAME SimpleForwardRendererTests COMMAND SimpleForwardRendererTests)
 vve_set_output_dirs(SimpleForwardRendererTests)
 add_executable(ShaderReflectionBindingsTests ShaderReflectionBindingsTests.cpp)
@@ -150,7 +160,6 @@ target_sources(GuiSystemTests
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Graph.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Window.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Assets.ixx"
-         "${CMAKE_SOURCE_DIR}/src/versions/simple/Resources.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Shaders.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Mesh.ixx"
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Scene.ixx"
@@ -180,7 +189,17 @@ target_sources(GuiSystemTests
          "${CMAKE_SOURCE_DIR}/src/versions/simple/Engine.ixx"
 )
 add_dependencies(GuiSystemTests ViennaVulkanEngine)
-target_link_libraries(GuiSystemTests PRIVATE "$<TARGET_FILE:ViennaVulkanEngine>" glm::glm imgui::imgui SDL3::SDL3 Vulkan::Vulkan slang::slang)
+target_sources(GuiSystemTests
+   PRIVATE
+      "${CMAKE_SOURCE_DIR}/src/Engine.cpp"
+      "${CMAKE_SOURCE_DIR}/src/RenderSystem.cpp"
+      "${CMAKE_SOURCE_DIR}/src/Assets.cpp"
+      "${CMAKE_SOURCE_DIR}/src/Window.cpp"
+      "${CMAKE_SOURCE_DIR}/src/Gui.cpp"
+)
+target_sources(GuiSystemTests PRIVATE "${CMAKE_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp")
+target_include_directories(GuiSystemTests PRIVATE ${Stb_INCLUDE_DIR})
+target_link_libraries(GuiSystemTests PRIVATE assimp::assimp glm::glm imgui::imgui SDL3::SDL3 Vulkan::Vulkan slang::slang)
 add_test(NAME GuiSystemTests COMMAND GuiSystemTests)
 vve_set_output_dirs(GuiSystemTests)
 vve_add_engine_test(SceneSystemTests)

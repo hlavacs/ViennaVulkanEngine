@@ -7,16 +7,14 @@ export import :Types;
 
 export namespace vve::simple {
 
-	/// @brief Small named DAG with reverse edges for cheap removal and JSON inspection.
+	/// @brief Small named DAG with reverse edges for parent lookup and JSON inspection.
 	template <typename THandle> class Graph {
 	public:
 		[[nodiscard]] std::expected<THandle, Error> addNode(ObjectName name = {});
 		[[nodiscard]] std::expected<void, Error> addNode(THandle handle, ObjectName name = {});
 		auto addEdge(THandle from, THandle to)														-> void;
-		[[nodiscard]] auto remove(THandle handle)													-> std::expected<void, Error>;
 		[[nodiscard]] auto contains(THandle handle) const										-> bool;
 		[[nodiscard]] auto nodeName(THandle handle) const										-> std::expected<ObjectName, Error>;
-		[[nodiscard]] auto nodeHandle(std::string_view name) const							-> std::expected<THandle, Error>;
 		[[nodiscard]] auto children(THandle handle) const										-> Vector<THandle>;
 		[[nodiscard]] auto parents(THandle handle) const										-> Vector<THandle>;
 		[[nodiscard]] auto topologicalOrder() const												-> std::expected<Vector<THandle>, Error>;
@@ -28,8 +26,6 @@ export namespace vve::simple {
 	private:
 		using EdgeMap = std::unordered_multimap<THandle, THandle, HandleHash<THandle>>;
 
-		auto removeForwardEdge(THandle from, THandle to)										-> void;
-		auto removeReverseEdge(THandle to, THandle from)										-> void;
 
 		std::map<THandle, ObjectName> nodes_{};	///< Node labels by handle.
 		EdgeMap outgoing_{};								///< Forward dependency edges.
@@ -46,7 +42,6 @@ export namespace vve::simple {
 		[[nodiscard]] std::expected<void, Error> addChild(THandle parent, THandle child, ObjectName name = {});
 		[[nodiscard]] auto children(THandle handle) const										-> std::expected<Vector<THandle>, Error>;
 		[[nodiscard]] auto parent(THandle handle) const											-> std::expected<std::optional<THandle>, Error>;
-		[[nodiscard]] auto remove(THandle handle)													-> std::expected<void, Error>;
 
 		THandle root{};									///< Root node handle; invalid means empty tree.
 	};
@@ -85,20 +80,6 @@ namespace vve::simple {
 		incoming_.emplace(to, from);
 	}
 
-	/// @brief Removes one node and all forward and reverse edges touching it.
-	template <typename THandle> std::expected<void, Error> Graph<THandle>::remove(THandle handle) {
-		if (!handle.valid()) { return std::unexpected(Error::invalid_handle); }
-		if (nodes_.erase(handle) == 0) { return std::unexpected(Error::missing_object); }
-
-		const auto [first_child, last_child] = outgoing_.equal_range(handle);
-		for (auto it = first_child; it != last_child; ++it) { removeReverseEdge(it->second, handle); }
-		outgoing_.erase(handle);
-
-		const auto [first_parent, last_parent] = incoming_.equal_range(handle);
-		for (auto it = first_parent; it != last_parent; ++it) { removeForwardEdge(it->second, handle); }
-		incoming_.erase(handle);
-		return {};
-	}
 
 	/// @brief Returns whether a node handle is registered.
 	template <typename THandle> bool Graph<THandle>::contains(THandle handle) const { return nodes_.contains(handle); }
@@ -108,14 +89,6 @@ namespace vve::simple {
 		const auto node = nodes_.find(handle);
 		if (node == nodes_.end()) { return std::unexpected(Error::missing_object); }
 		return node->second;
-	}
-
-	/// @brief Finds the first node handle with the requested name.
-	template <typename THandle> std::expected<THandle, Error> Graph<THandle>::nodeHandle(std::string_view name) const {
-		for (const auto &[handle, node_name] : nodes_) {
-			if (node_name.value == name) { return handle; }
-		}
-		return std::unexpected(Error::missing_object);
 	}
 
 	/// @brief Returns direct outgoing neighbors.
@@ -173,17 +146,7 @@ namespace vve::simple {
 	/// @brief Returns the number of registered nodes.
 	template <typename THandle> std::size_t Graph<THandle>::nodeCount() const { return nodes_.size(); }
 
-	/// @brief Removes one forward edge.
-	template <typename THandle> void Graph<THandle>::removeForwardEdge(THandle from, THandle to) {
-		auto [first, last] = outgoing_.equal_range(from);
-		for (auto it = first; it != last;) { it = it->second == to ? outgoing_.erase(it) : std::next(it); }
-	}
 
-	/// @brief Removes one reverse edge.
-	template <typename THandle> void Graph<THandle>::removeReverseEdge(THandle to, THandle from) {
-		auto [first, last] = incoming_.equal_range(to);
-		for (auto it = first; it != last;) { it = it->second == from ? incoming_.erase(it) : std::next(it); }
-	}
 
 	/// @brief Sets or replaces the root handle.
 	template <typename THandle> std::expected<void, Error> Tree<THandle>::setRoot(THandle handle, ObjectName name) {
@@ -221,12 +184,6 @@ namespace vve::simple {
 		return values.empty() ? std::optional<THandle>{} : std::optional<THandle>{values.front()};
 	}
 
-	/// @brief Removes one node and clears the root when the removed node was the root.
-	template <typename THandle> std::expected<void, Error> Tree<THandle>::remove(THandle handle) {
-		const auto removed = Base::remove(handle);
-		if (removed && handle == root) { root = {}; }
-		return removed;
-	}
 
 } // namespace vve::simple
 

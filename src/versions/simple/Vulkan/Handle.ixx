@@ -1,4 +1,5 @@
 module;
+#include <compare>
 #include <vulkan/vulkan_raii.hpp>
 
 export module VEEngine.Simple.Vulkan:OwnedHandle;

@@ -127,9 +127,9 @@ export namespace vve::simple {
 	class WindowSystem {
 	public:
 		VVE_SIMPLE_API WindowSystem();																											///< Creates an empty window system.
-		~WindowSystem();																														///< Destroys owned SDL windows and shuts down the video subsystem.
-		WindowSystem(WindowSystem &&) noexcept;																						///< Moves the window system and owned implementation.
-		WindowSystem &operator=(WindowSystem &&) noexcept;																			///< Moves the window system and owned implementation.
+		VVE_SIMPLE_API ~WindowSystem();																														///< Destroys owned SDL windows and shuts down the video subsystem.
+		VVE_SIMPLE_API WindowSystem(WindowSystem &&) noexcept;																						///< Moves the window system and owned implementation.
+		VVE_SIMPLE_API WindowSystem &operator=(WindowSystem &&) noexcept;																			///< Moves the window system and owned implementation.
 		WindowSystem(const WindowSystem &) = delete;																					///< SDL windows cannot be copied safely.
 		WindowSystem &operator=(const WindowSystem &) = delete;																	///< SDL windows cannot be copied safely.
 
@@ -357,11 +357,16 @@ export namespace vve::simple {
 
 	VVE_SIMPLE_API WindowSystem::WindowSystem() : impl_{std::make_unique<Impl>()} {}
 
-	WindowSystem::~WindowSystem() = default;
+	VVE_SIMPLE_API WindowSystem::~WindowSystem() {}
 
-	WindowSystem::WindowSystem(WindowSystem &&) noexcept = default;
+	VVE_SIMPLE_API WindowSystem::WindowSystem(WindowSystem &&other) noexcept
+		: guiEventSink_{std::move(other.guiEventSink_)}, impl_{std::move(other.impl_)} {}
 
-	WindowSystem &WindowSystem::operator=(WindowSystem &&) noexcept = default;
+	VVE_SIMPLE_API WindowSystem &WindowSystem::operator=(WindowSystem &&other) noexcept {
+		guiEventSink_ = std::move(other.guiEventSink_);
+		impl_ = std::move(other.impl_);
+		return *this;
+	}
 
 	VVE_SIMPLE_API std::string_view WindowSystem::name() const noexcept { return "SDL3WindowSystem"; }
 

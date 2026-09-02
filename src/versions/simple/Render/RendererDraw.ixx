@@ -252,7 +252,7 @@ export namespace vve::simple {
 			result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
 			if (result != VK_SUCCESS) { return result; }
 
-			const auto drawUploadedObjects = [&](VkPipelineLayout activePipelineLayout, std::uint32_t spotLightIndex = 0U, std::uint32_t dirLightIndex = 0U) {
+			const auto drawUploadedObjects = [&](VkPipelineLayout activePipelineLayout, std::uint32_t spotLightIndex = 0U, std::uint32_t dirLightIndex = 0U, bool shadowPass = false) {
 				std::size_t objectIndex{}; // Meshes and scene objects share submission order.
 				for (const VulkanMesh &mesh : renderer.meshes) {
 					if (objectIndex >= renderer.scene.objects.size()) { break; }
@@ -260,8 +260,8 @@ export namespace vve::simple {
 					const VkBuffer vertexBuffers[]{mesh.vertexBuffer.buffer};
 					const VkDeviceSize offsets[]{0U};
 					const Object &object = renderer.scene.objects[objectIndex];
-					if (!object.visible) { ++objectIndex; continue; }
-					const ObjectPushConstants pushConstants{.model = object.model, .useBaseColorTexture = object.useBaseColorTexture, .spotLightIndex = spotLightIndex, .dirLightIndex = dirLightIndex};
+					if (!object.visible || (shadowPass && !object.castsShadow)) { ++objectIndex; continue; } // Shadow passes skip non-casting objects such as the sun.
+					const ObjectPushConstants pushConstants{.model = object.model, .useBaseColorTexture = object.useBaseColorTexture, .spotLightIndex = spotLightIndex, .dirLightIndex = dirLightIndex, .unlit = object.unlit ? 1U : 0U};
 					vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, vertexBuffers, offsets);
 					vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0U, VK_INDEX_TYPE_UINT32);
 					vkCmdPushConstants(commandBuffer, activePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0U, sizeof(ObjectPushConstants), &pushConstants);
@@ -322,7 +322,7 @@ export namespace vve::simple {
 				vkCmdBeginRendering(commandBuffer, &shadowRenderingInfo);
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.shadowMap.pipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.shadowMap.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-				drawUploadedObjects(renderer.shadowMap.pipelineLayout);
+				drawUploadedObjects(renderer.shadowMap.pipelineLayout, 0U, 0U, true);
 				vkCmdEndRendering(commandBuffer);
 				const VkImageMemoryBarrier shadowReadBarrier{
 					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -431,7 +431,7 @@ export namespace vve::simple {
 				vkCmdBeginRendering(commandBuffer, &dirShadowArrayRenderingInfo);
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.dirShadowArray.pipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.dirShadowArray.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-				drawUploadedObjects(renderer.dirShadowArray.pipelineLayout, 0U, static_cast<std::uint32_t>(dirShadowLayer));
+				drawUploadedObjects(renderer.dirShadowArray.pipelineLayout, 0U, static_cast<std::uint32_t>(dirShadowLayer), true);
 				vkCmdEndRendering(commandBuffer);
 				const VkImageMemoryBarrier dirShadowArrayReadBarrier{
 					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -467,7 +467,7 @@ export namespace vve::simple {
 				vkCmdBeginRendering(commandBuffer, &spotShadowRenderingInfo);
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.spotShadowMap.pipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.spotShadowMap.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-				drawUploadedObjects(renderer.spotShadowMap.pipelineLayout);
+				drawUploadedObjects(renderer.spotShadowMap.pipelineLayout, 0U, 0U, true);
 				vkCmdEndRendering(commandBuffer);
 				const VkImageMemoryBarrier spotShadowReadBarrier{
 					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -573,7 +573,7 @@ export namespace vve::simple {
 				vkCmdBeginRendering(commandBuffer, &spotShadowArrayRenderingInfo);
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.spotShadowArray.pipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.spotShadowArray.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-				drawUploadedObjects(renderer.spotShadowArray.pipelineLayout, static_cast<std::uint32_t>(spotLightIndex));
+				drawUploadedObjects(renderer.spotShadowArray.pipelineLayout, static_cast<std::uint32_t>(spotLightIndex), 0U, true);
 				vkCmdEndRendering(commandBuffer);
 				const VkImageMemoryBarrier spotShadowArrayReadBarrier{
 					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -684,7 +684,7 @@ export namespace vve::simple {
 				vkCmdBeginRendering(commandBuffer, &pointShadowArrayRenderingInfo);
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.pointShadowArray.pipeline);
 				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, renderer.pointShadowArray.pipelineLayout, 0U, 1U, &renderer.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-				drawUploadedObjects(renderer.pointShadowArray.pipelineLayout, static_cast<std::uint32_t>(pointFaceLayerIndex));
+				drawUploadedObjects(renderer.pointShadowArray.pipelineLayout, static_cast<std::uint32_t>(pointFaceLayerIndex), 0U, true);
 				vkCmdEndRendering(commandBuffer);
 				const VkImageMemoryBarrier pointShadowArrayReadBarrier{
 					.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,

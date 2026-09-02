@@ -43,6 +43,24 @@ export namespace vve::simple {
 	/// @brief CRTP mixin that applies facade scene data to the selected renderer CPU scene.
 	template<typename System>
 	struct RenderSystemScene {
+		/// @brief Sets whether one live render object is drawn in its flat base color without lighting.
+		[[nodiscard]] auto setObjectUnlit(RenderObjectHandle handle, bool unlit) -> std::expected<void, Error> {
+			const auto instance = system().findRenderObject(handle);
+			if (!instance) { return std::unexpected(Error::missing_object); }
+			if (instance->second >= system().forward().scene.objects.size()) { return std::unexpected(Error::missing_object); }
+			system().forward().scene.objects[instance->second].unlit = unlit;
+			return {};
+		}
+
+		/// @brief Sets whether one live render object is drawn into shadow depth passes.
+		[[nodiscard]] auto setObjectCastsShadow(RenderObjectHandle handle, bool casts_shadow) -> std::expected<void, Error> {
+			const auto instance = system().findRenderObject(handle);
+			if (!instance) { return std::unexpected(Error::missing_object); }
+			if (instance->second >= system().forward().scene.objects.size()) { return std::unexpected(Error::missing_object); }
+			system().forward().scene.objects[instance->second].castsShadow = casts_shadow;
+			return {};
+		}
+
 		/// @brief Sets whether one live render object participates in future backend uploads.
 		[[nodiscard]] auto setObjectVisible(RenderObjectHandle handle, bool visible) -> std::expected<void, Error> {
 			const auto instance = system().findRenderObject(handle);

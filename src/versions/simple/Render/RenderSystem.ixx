@@ -21,7 +21,7 @@ import :RenderSystemObjects;
 export import :RenderResources;
 
 /// @file
-/// @brief Compact simple render-resource model with no concrete renderer backend.
+/// @brief Simple render coordinator: renderer selection, render-graph construction, and scene mirroring.
 
 namespace vve::simple::detail {
 
@@ -63,20 +63,6 @@ export namespace vve::simple {
 		std::function<std::expected<Vector<std::uint32_t>, Error>(MeshHandle)> mesh_indices{};					///< Returns mesh indices.
 	};
 
-	/// @brief Generic render resource descriptor for simple design experiments.
-	struct RenderResource {
-		RenderResourceHandle handle{};												///< Stable resource handle.
-		RenderResourceKind kind{};														///< Coarse resource category.
-		ObjectName name{};																///< Human-readable resource name.
-	};
-
-	/// @brief Generic render function descriptor with explicit resource dependencies.
-	struct RenderFunction {
-		RenderFunctionHandle handle{};												///< Stable function handle.
-		ObjectName name{};																///< Human-readable function name.
-		Vector<RenderResourceHandle> reads{};										///< Resources read by this function.
-		Vector<RenderResourceHandle> writes{};										///< Resources written by this function.
-	};
 
 	/// @brief Renderer descriptor used only for graph construction in the simple stub.
 	struct RendererDescriptor {
@@ -87,26 +73,15 @@ export namespace vve::simple {
 		std::span<const RenderPassContract> passes{};							///< Stub graph nodes.
 	};
 
-	/// @brief simple render facade storing resources and frame counters without GPU work.
+	/// @brief simple render facade coordinating the renderer backend and CPU render scene.
 	class RenderSystem : public RenderSystemScene<RenderSystem>, public RenderSystemDebug<RenderSystem>,
 							 public RenderSystemObjects<RenderSystem> {
 	public:
 		RenderSystem() = default;
 		explicit RenderSystem(ImportedAssetReadAccess imported_assets);
 		[[nodiscard]] auto createRenderer(RendererId id) const																-> std::expected<RendererDescriptor, Error>;
-		[[nodiscard]] auto buildRenderGraph(const RendererDescriptor &renderer) const									-> std::expected<RenderGraph, Error>;
-		[[nodiscard]] auto buildRenderGraph(std::span<const RenderPassContract> passes) const						-> std::expected<RenderGraph, Error>;
 		[[nodiscard]] std::expected<RenderGraph, Error>
 		buildRenderGraph(std::span<const std::span<const RenderPassContract>> pass_lists) const;
-		[[nodiscard]] std::expected<RenderResourceHandle, Error>
-		createResource(RenderResourceKind kind, ObjectName name = {});
-		[[nodiscard]] std::expected<RenderFunctionHandle, Error>
-		createFunction(ObjectName name, Vector<RenderResourceHandle> reads = {}, Vector<RenderResourceHandle> writes = {});
-		[[nodiscard]] auto resourceCount() const																					-> std::size_t;
-		[[nodiscard]] auto functionCount() const																					-> std::size_t;
-		[[nodiscard]] auto resourceName(RenderResourceHandle handle) const												-> std::expected<ObjectName, Error>;
-		[[nodiscard]] auto resourceKind(RenderResourceHandle handle) const												-> std::expected<RenderResourceKind, Error>;
-		[[nodiscard]] auto functionName(RenderFunctionHandle handle) const												-> std::expected<ObjectName, Error>;
 		[[nodiscard]] auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {})	-> std::expected<RenderSceneInstanceHandle, Error>;
 		auto waitIdle() -> void;
 		/// @brief Stores the borrowed GUI system for later forwarding to renderer backends.
@@ -152,8 +127,6 @@ export namespace vve::simple {
 		[[nodiscard]] static std::expected<void, Error>
 		addDependencies(RenderGraph &graph, const detail::RenderPassHandleMap &handles,
 								std::span<const RenderPassContract> passes);
-		[[nodiscard]] const RenderResource *find(RenderResourceHandle handle) const;
-		[[nodiscard]] const RenderFunction *find(RenderFunctionHandle handle) const;
 		[[nodiscard]] auto registerRenderObject(RenderInstanceHandle instance, std::size_t backend_index)	-> RenderObjectHandle;
 		[[nodiscard]] auto findRenderObject(RenderObjectHandle handle) const
 			-> std::optional<std::pair<RenderInstanceHandle, std::size_t>>;
@@ -175,8 +148,6 @@ export namespace vve::simple {
 		SelectedRenderer renderer_{};													///< Selected renderer backend.
 		ImportedAssetReadAccess imported_assets_{};								///< Borrowed asset-scene queries.
 		void *guiSystem_{nullptr};													///< Non-owning, type-erased GUI system pointer for later renderer wiring.
-		Vector<RenderResource> resources_{};										///< Generic render resource registry.
-		Vector<RenderFunction> functions_{};										///< Generic render function registry.
 		std::unordered_map<MeshHandle, RenderMeshHandle, HandleHash<MeshHandle>> imported_render_meshes_{};	///< Imported mesh cache.
 		std::unordered_map<MaterialHandle, RenderMaterialHandle, HandleHash<MaterialHandle>> imported_render_materials_{};	///< Imported material cache.
 		std::unordered_map<RenderObjectHandle, std::pair<RenderInstanceHandle, std::size_t>, HandleHash<RenderObjectHandle>>
@@ -216,16 +187,6 @@ namespace vve::simple {
 		return std::unexpected(Error::invalid_argument);
 	}
 
-	/// @brief Builds a render graph from a renderer descriptor.
-	inline auto RenderSystem::buildRenderGraph(const RendererDescriptor &renderer) const			-> std::expected<RenderGraph, Error>{
-		return buildRenderGraph(renderer.passes);
-	}
-
-	/// @brief Builds a render graph from one pass list.
-	inline auto RenderSystem::buildRenderGraph(std::span<const RenderPassContract> passes) const	-> std::expected<RenderGraph, Error>{
-		const std::array lists{passes};
-		return buildRenderGraph(lists);
-	}
 
 	/// @brief Builds a render graph from several pass lists.
 	inline std::expected<RenderGraph, Error>
@@ -270,47 +231,6 @@ namespace vve::simple {
 		return {};
 	}
 
-	/// @brief Creates a generic render resource descriptor.
-	inline std::expected<RenderResourceHandle, Error>
-	RenderSystem::createResource(RenderResourceKind kind, ObjectName name) {
-		if (name.value.empty()) { name.value = "resource_" + std::to_string(resources_.size()); }
-		auto resource = RenderResource{.handle = makeCounterHandle<RenderResourceHandle>(),
-													.kind = kind, .name = std::move(name)};
-		resources_.push_back(std::move(resource));
-		return resources_.back().handle;
-	}
-
-	/// @brief Creates a generic render function descriptor.
-	inline std::expected<RenderFunctionHandle, Error>
-	RenderSystem::createFunction(ObjectName name, Vector<RenderResourceHandle> reads,
-											Vector<RenderResourceHandle> writes) {
-		if (name.value.empty()) { return std::unexpected(Error::invalid_argument); }
-		auto valid = [&](RenderResourceHandle handle) { return find(handle) != nullptr; };
-		if (!std::ranges::all_of(reads, valid) || !std::ranges::all_of(writes, valid)) {
-			return std::unexpected(Error::missing_object);
-		}
-		auto function = RenderFunction{.handle = makeCounterHandle<RenderFunctionHandle>(),
-													.name = std::move(name),
-													.reads = std::move(reads),
-													.writes = std::move(writes)};
-		functions_.push_back(std::move(function));
-		return functions_.back().handle;
-	}
-
-	inline std::size_t RenderSystem::resourceCount() const { return resources_.size(); }
-	inline std::size_t RenderSystem::functionCount() const { return functions_.size(); }
-
-	/// @brief Finds a generic render resource by handle.
-	inline const RenderResource *RenderSystem::find(RenderResourceHandle handle) const {
-		const auto found = std::ranges::find(resources_, handle, &RenderResource::handle);
-		return found == resources_.end() ? nullptr : std::addressof(*found);
-	}
-
-	/// @brief Finds a generic render function by handle.
-	inline const RenderFunction *RenderSystem::find(RenderFunctionHandle handle) const {
-		const auto found = std::ranges::find(functions_, handle, &RenderFunction::handle);
-		return found == functions_.end() ? nullptr : std::addressof(*found);
-	}
 
 	/// @brief Returns the current forward renderer backend.
 	inline auto RenderSystem::forward()																			-> ForwardRenderer &{
@@ -332,21 +252,6 @@ namespace vve::simple {
 		return renderer_;
 	}
 
-	inline auto RenderSystem::resourceName(RenderResourceHandle handle) const							-> std::expected<ObjectName, Error>{
-		const auto *resource = find(handle);
-		return resource == nullptr ? std::unexpected(Error::missing_object) : std::expected<ObjectName, Error>{resource->name};
-	}
-
-	inline auto RenderSystem::resourceKind(RenderResourceHandle handle) const							-> std::expected<RenderResourceKind, Error>{
-		const auto *resource = find(handle);
-		return resource == nullptr ? std::unexpected(Error::missing_object) :
-												std::expected<RenderResourceKind, Error>{resource->kind};
-	}
-
-	inline auto RenderSystem::functionName(RenderFunctionHandle handle) const							-> std::expected<ObjectName, Error>{
-		const auto *function = find(handle);
-		return function == nullptr ? std::unexpected(Error::missing_object) : std::expected<ObjectName, Error>{function->name};
-	}
 
 	/// @brief Mints a public render-object handle for one internal scene instance.
 	inline auto RenderSystem::registerRenderObject(RenderInstanceHandle instance, std::size_t backend_index)

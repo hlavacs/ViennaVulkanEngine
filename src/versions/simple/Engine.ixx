@@ -16,7 +16,6 @@ export import :Graph;
 export import :Window;
 export import :Assets;
 export import :RenderSystem;
-export import :Resources;
 export import VEEngine.Simple.Shaders;
 export import VEEngine.Simple.Handle;
 export import :Gui;
@@ -65,7 +64,6 @@ export namespace vve::simple {
 		explicit Engine(TOptions &&...options);
 
 		[[nodiscard]] auto versionMajor() const								-> std::uint32_t;
-		[[nodiscard]] auto getVersionMajor() const noexcept				-> std::expected<int, Error>;
 		[[nodiscard]] auto versionName() const									-> std::string_view;
 		[[nodiscard]] AssetSystem &assets();
 		[[nodiscard]] RenderSystem &renderSystem();
@@ -83,6 +81,7 @@ export namespace vve::simple {
 
 	private:
 		template <typename TOption> void applyOption(TOption &&);
+		[[nodiscard]] auto makeImportedAssetReadAccess()					-> ImportedAssetReadAccess;
 		auto applyDefaults()															-> void;
 		[[nodiscard]] auto buildDefaultGraphs()								-> std::expected<void, Error>;
 		[[nodiscard]] static auto graphFileStem(std::string_view text)	-> std::string;
@@ -93,23 +92,7 @@ export namespace vve::simple {
 		ECS ecs_{};																			///< Entity/component storage owned by the implementation and shared with the facade.
 		WindowSystem window_system_{};												///< SDL platform window owner.
 		AssetSystem assets_{};															///< Asset and object catalog facade.
-		RenderSystem render_system_{ImportedAssetReadAccess{
-			.scene_nodes = [this](SceneHandle scene) { return assets_.sceneNodes(scene); },
-			.scene_root_node = [this](SceneHandle scene) { return assets_.sceneRootNode(scene); },
-			.scene_node_children = [this](SceneHandle scene, NodeHandle node) { return assets_.sceneNodeChildren(scene, node); },
-			.node_transform = [this](NodeHandle node) { return assets_.nodeTransform(node); },
-			.node_meshes = [this](NodeHandle node) { return assets_.nodeMeshes(node); },
-			.mesh_material = [this](MeshHandle mesh) { return assets_.meshMaterial(mesh); },
-			.material_textures = [this](MaterialHandle material) { return assets_.materialTextures(material); },
-			.scene_lights = [this](SceneHandle scene) { return assets_.sceneLights(scene); },
-			.light_data = [this](LightHandle light) { return assets_.lightData(light); },
-			.scene_cameras = [this](SceneHandle scene) { return assets_.sceneCameras(scene); },
-			.camera_data = [this](CameraHandle camera) { return assets_.cameraData(camera); },
-			.mesh_positions = [this](MeshHandle mesh) { return assets_.meshPositions(mesh); },
-			.mesh_normals = [this](MeshHandle mesh) { return assets_.meshNormals(mesh); },
-			.mesh_texcoords = [this](MeshHandle mesh) { return assets_.meshTexcoords(mesh); },
-			.mesh_indices = [this](MeshHandle mesh) { return assets_.meshIndices(mesh); }}};	///< Renderer selection and active CPU render scene.
-		ResourceSystem resources_{};													///< Resource descriptor facade.
+		RenderSystem render_system_{makeImportedAssetReadAccess()};					///< Renderer selection and active CPU render scene.
 		TaskGraph tasks_{};																///< CPU task graph facade.
 		RenderGraph render_graph_{};													///< Render pass graph facade.
 		ShaderSystem shaders_{};														///< Shader descriptor facade.
@@ -152,10 +135,6 @@ export namespace vve::simple {
 	/// @brief Returns the major engine version.
 	inline std::uint32_t Engine::versionMajor() const { return 1; }
 
-	/// @brief Returns the major engine version through a compatibility accessor.
-	inline auto Engine::getVersionMajor() const noexcept											-> std::expected<int, Error>{
-		return 1;
-	}
 
 	/// @brief Returns the printable engine version name.
 	inline std::string_view Engine::versionName() const { return "simple"; }
@@ -267,6 +246,26 @@ export namespace vve::simple {
 		} else if constexpr (std::same_as<Option, UserSystemTasks>) {
 			user_system_tasks_ = std::forward<TOption>(option).value;
 		}
+	}
+
+	/// @brief Builds the borrowed asset-read callbacks handed to the render system.
+	inline auto Engine::makeImportedAssetReadAccess()						-> ImportedAssetReadAccess{
+		return ImportedAssetReadAccess{
+			.scene_nodes = [this](SceneHandle scene) { return assets_.sceneNodes(scene); },
+			.scene_root_node = [this](SceneHandle scene) { return assets_.sceneRootNode(scene); },
+			.scene_node_children = [this](SceneHandle scene, NodeHandle node) { return assets_.sceneNodeChildren(scene, node); },
+			.node_transform = [this](NodeHandle node) { return assets_.nodeTransform(node); },
+			.node_meshes = [this](NodeHandle node) { return assets_.nodeMeshes(node); },
+			.mesh_material = [this](MeshHandle mesh) { return assets_.meshMaterial(mesh); },
+			.material_textures = [this](MaterialHandle material) { return assets_.materialTextures(material); },
+			.scene_lights = [this](SceneHandle scene) { return assets_.sceneLights(scene); },
+			.light_data = [this](LightHandle light) { return assets_.lightData(light); },
+			.scene_cameras = [this](SceneHandle scene) { return assets_.sceneCameras(scene); },
+			.camera_data = [this](CameraHandle camera) { return assets_.cameraData(camera); },
+			.mesh_positions = [this](MeshHandle mesh) { return assets_.meshPositions(mesh); },
+			.mesh_normals = [this](MeshHandle mesh) { return assets_.meshNormals(mesh); },
+			.mesh_texcoords = [this](MeshHandle mesh) { return assets_.meshTexcoords(mesh); },
+			.mesh_indices = [this](MeshHandle mesh) { return assets_.meshIndices(mesh); }};
 	}
 
 	/// @brief Fills small defaults after options have been applied.

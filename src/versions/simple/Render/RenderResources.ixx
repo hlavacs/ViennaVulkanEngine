@@ -11,7 +11,6 @@ import VEEngine.Simple.Renderer;
 	*
 	* Functional objects:
 	* - Render*Handle aliases identify CPU render resources and registry entries.
-	* - RenderResourceKind names the coarse resource categories used by render registries.
 	* - RenderVertex stores CPU-side mesh vertex attributes.
 	* - RenderMesh, RenderMaterial, and RenderInstance store CPU scene geometry, material, and draw-item data.
 	* - RenderDirectionalLight, RenderPointLight, RenderSpotLight, and RenderCamera store CPU light and camera resources.
@@ -23,24 +22,11 @@ export namespace vve::simple {
 	struct RenderMeshHandleTag {};																				///< simple render mesh handle tag.
 	struct RenderMaterialHandleTag {};																			///< simple render material handle tag.
 	struct RenderInstanceHandleTag {};																			///< simple render instance handle tag.
-	struct RenderResourceHandleTag {};																			///< simple render resource handle tag.
-	struct RenderFunctionHandleTag {};																			///< simple render function handle tag.
 
 	using RenderMeshHandle	= TypedHandle<RenderMeshHandleTag>;										///< simple render mesh handle.
 	using RenderMaterialHandle = TypedHandle<RenderMaterialHandleTag>;								///< simple render material handle.
 	using RenderInstanceHandle = TypedHandle<RenderInstanceHandleTag>;								///< simple render instance handle.
-	using RenderResourceHandle = TypedHandle<RenderResourceHandleTag>;								///< simple render resource handle.
-	using RenderFunctionHandle = TypedHandle<RenderFunctionHandleTag>;								///< simple render function handle.
 
-	/// @brief Coarse render resource categories used by the stub renderer registry.
-	enum class RenderResourceKind : std::uint8_t {
-		mesh,																					///< Geometry source.
-		material,																			///< Surface state.
-		texture,																				///< Sampled image data.
-		camera,																				///< View/projection source.
-		light,																				///< Light source data.
-		target																				///< Render output target.
-	};
 
 	/// @brief Vertex payload stored by the CPU-side scene registry.
 	struct RenderVertex {

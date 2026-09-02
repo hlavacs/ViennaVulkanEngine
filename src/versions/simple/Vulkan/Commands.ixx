@@ -1,4 +1,5 @@
 module;
+#include <compare>
 #ifndef SDL_MAIN_HANDLED
 #define SDL_MAIN_HANDLED
 #define VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED

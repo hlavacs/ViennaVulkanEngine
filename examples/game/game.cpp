@@ -5,21 +5,46 @@ import VEEngine;
 
 /**
  * @file
- * @brief Interactive example that drives the renderer through the public facade.
+ * @brief Crate-collector mini game built entirely on the public VVE facade.
+ *
+ * The player steers the standard camera controller across a grassy plane while
+ * crates rain from the sky. Driving the camera onto a crate collects it for a
+ * point. The score is shown in an ImGui overlay in the top-left corner.
  */
 namespace {
 
-constexpr auto crateTextureRelativePath = "assets/game/crate0/diffuse.png";
-constexpr std::size_t maxGameDirectionalLights{10U}; ///< Current simple forward renderer directional-light demo cap.
-constexpr std::size_t maxGamePointLights{10U};       ///< Current simple forward renderer point-light demo cap.
-constexpr std::size_t maxGameSpotLights{10U};        ///< Current simple forward renderer spot-light demo cap.
+constexpr auto grassTextureRelativePath = "assets/game/plane/grass.jpg"; ///< Tiled ground texture and asset-root sentinel.
+
+constexpr float groundHalfExtent = 20.0F;      ///< Half side length of the square play field in metres.
+constexpr float groundTileSize = 4.0F;         ///< Side length of one tiled grass quad in metres.
+constexpr float eyeHeight = 1.0F;              ///< Fixed camera height above the plane in metres.
+constexpr float collectRadius = 1.2F;          ///< Horizontal distance at which the camera collects a crate.
+constexpr float crateHalfSize = 0.5F;          ///< Half side length of a falling crate cube.
+constexpr float crateRestY = 0.5F;             ///< Crate centre height once landed; the bottom rests on y=0.
+constexpr float crateSpawnY = 24.0F;           ///< Height crates spawn at before falling.
+constexpr float gravity = 12.0F;               ///< Downward acceleration applied to falling crates (m/s^2).
+constexpr float spawnInterval = 1.3F;          ///< Seconds between crate spawns while below the cap.
+constexpr std::size_t maxActiveCrates = 12U;   ///< Maximum simultaneously present crates.
+constexpr std::uint32_t windowWidth = 960U;    ///< Window and camera target width in pixels.
+constexpr std::uint32_t windowHeight = 540U;   ///< Window and camera target height in pixels.
+constexpr vve::Vec3 sunLightDirection{0.35F, -1.0F, 0.26F}; ///< Light-to-scene direction of the sun's light (normalised at use).
+constexpr float sunDistance = 80.0F;           ///< Camera-relative distance to the sun; must stay inside the renderer's 100 m far plane.
+constexpr float sunRadius = 1.6F;              ///< Sun sphere radius; with sunDistance this spans roughly 2.3 degrees.
+
+/// @brief One falling or landed crate tracked by the game loop.
+struct Crate {
+	vve::RenderObjectHandle handle{}; ///< Live render-object handle used to move or remove the crate.
+	vve::Vec3 position{};             ///< Current world position of the crate centre.
+	float velocityY{};                ///< Vertical velocity while falling.
+	bool landed{};                    ///< True once the crate has reached the ground.
+};
 
 /// @brief Finds the repository-style asset root from either the cwd or executable location.
 [[nodiscard]] std::filesystem::path assetRoot(char *argv0) {
-	auto containsGameAssets = [](const std::filesystem::path &candidate) {
-		return std::filesystem::exists(candidate / crateTextureRelativePath);
+	auto containsAssets = [](const std::filesystem::path &candidate) {
+		return std::filesystem::exists(candidate / grassTextureRelativePath);
 	};
-	if (const auto cwd = std::filesystem::current_path(); containsGameAssets(cwd)) {
+	if (const auto cwd = std::filesystem::current_path(); containsAssets(cwd)) {
 		return cwd;
 	}
 	if (argv0 == nullptr) {
@@ -30,7 +55,7 @@ constexpr std::size_t maxGameSpotLights{10U};        ///< Current simple forward
 		executable = std::filesystem::weakly_canonical(executable);
 	}
 	for (auto candidate = executable.parent_path(); !candidate.empty(); candidate = candidate.parent_path()) {
-		if (containsGameAssets(candidate)) {
+		if (containsAssets(candidate)) {
 			return candidate;
 		}
 		if (candidate == candidate.root_path()) {
@@ -59,47 +84,95 @@ constexpr std::size_t maxGameSpotLights{10U};        ///< Current simple forward
 	return std::nullopt;
 }
 
-/// @brief Adds the game floor and three crate cubes through facade scene authoring calls.
-[[nodiscard]] std::expected<void, vve::Error> loadGameScene(vve::RenderSystem render, const std::filesystem::path &root) {
-	constexpr vve::Vec3 cubeMinimum{-0.5F, -0.5F, -0.5F}; ///< Unit cube lower corner.
-	constexpr vve::Vec3 cubeMaximum{0.5F, 0.5F, 0.5F};    ///< Unit cube upper corner.
-	constexpr float cubeCenterY = 0.5F;                   ///< Unit cube bottom sits on the y=0 ground plane.
-	const auto crateTexture = root / crateTextureRelativePath; ///< Crate diffuse texture.
-
-	render.clearScene();
-	if (auto result = render.addPlane(vve::Vec2{6.0F, 4.0F}, vve::LinearColor{.value = vve::Vec3{0.1F, 0.6F, 0.2F}});
-		 !result) {
-		return std::unexpected(result.error());
-	}
-	for (const vve::Vec3 center : std::array{vve::Vec3{-1.5F, cubeCenterY, -0.5F},
-														  vve::Vec3{0.0F, cubeCenterY, 0.75F},
-														  vve::Vec3{1.5F, cubeCenterY, -0.5F}}) {
-		if (auto result = render.addTexturedCuboid(cubeMinimum, cubeMaximum, crateTexture,
-																 vve::Transform{.translation = vve::Position{.value = center}});
-			 !result) {
-			return std::unexpected(result.error());
+/// @brief Builds a UV-sphere triangle mesh in object space for the sun.
+void makeSphere(float radius, std::uint32_t stacks, std::uint32_t slices,
+					 vve::Vector<vve::Vec3> &positions, vve::Vector<std::uint32_t> &indices) {
+	constexpr float pi = std::numbers::pi_v<float>;
+	// Generate one ring of vertices per stack from the north to the south pole.
+	for (std::uint32_t stack = 0; stack <= stacks; ++stack) {
+		const float phi = pi * static_cast<float>(stack) / static_cast<float>(stacks);
+		for (std::uint32_t slice = 0; slice <= slices; ++slice) {
+			const float theta = 2.0F * pi * static_cast<float>(slice) / static_cast<float>(slices);
+			positions.push_back(vve::Vec3{radius * std::sin(phi) * std::cos(theta), radius * std::cos(phi),
+													radius * std::sin(phi) * std::sin(theta)});
 		}
 	}
-	return {};
+	// Connect adjacent rings into two triangles per quad cell.
+	const std::uint32_t ringStride = slices + 1U;
+	for (std::uint32_t stack = 0; stack < stacks; ++stack) {
+		for (std::uint32_t slice = 0; slice < slices; ++slice) {
+			const std::uint32_t topLeft = stack * ringStride + slice;
+			const std::uint32_t bottomLeft = topLeft + ringStride;
+			for (const std::uint32_t index : std::array{topLeft, bottomLeft, topLeft + 1U, topLeft + 1U, bottomLeft, bottomLeft + 1U}) {
+				indices.push_back(index);
+			}
+		}
+	}
+}
+
+/// @brief Builds the grassy ground, the sun, and the sun's directional light plus ambient.
+/// @return The sun's render-object handle so the frame loop can keep it anchored to the camera.
+[[nodiscard]] std::expected<vve::RenderObjectHandle, vve::Error> loadScene(vve::RenderSystem render,
+																											const std::filesystem::path &root) {
+	render.clearScene();
+
+	// Tile the field with grass quads so the single scene texture repeats across the plane.
+	const auto grassTexture = root / grassTextureRelativePath;
+	const auto tilesPerSide = static_cast<int>(std::lround((groundHalfExtent * 2.0F) / groundTileSize));
+	const float halfTile = groundTileSize * 0.5F;
+	for (int ix = 0; ix < tilesPerSide; ++ix) {
+		for (int iz = 0; iz < tilesPerSide; ++iz) {
+			const float centerX = -groundHalfExtent + halfTile + static_cast<float>(ix) * groundTileSize;
+			const float centerZ = -groundHalfExtent + halfTile + static_cast<float>(iz) * groundTileSize;
+			const vve::Vec3 minimum{centerX - halfTile, -0.1F, centerZ - halfTile};
+			const vve::Vec3 maximum{centerX + halfTile, 0.0F, centerZ + halfTile};
+			if (auto result = render.addTexturedCuboid(minimum, maximum, grassTexture); !result) {
+				return std::unexpected(result.error());
+			}
+		}
+	}
+
+	// The sun is a bright sphere drawn in a constant color; the frame loop pins it far away relative to the camera.
+	vve::Vector<vve::Vec3> sunPositions{};
+	vve::Vector<std::uint32_t> sunIndices{};
+	makeSphere(sunRadius, 24U, 32U, sunPositions, sunIndices);
+	const auto sun = render.addTriangleMesh(std::move(sunPositions), std::move(sunIndices),
+															vve::LinearColor{.value = vve::Vec3{1.0F, 0.92F, 0.35F}});
+	if (!sun) {
+		return std::unexpected(sun.error());
+	}
+	// The sun is the light source itself: flat emissive shading and no shadow thrown onto the field.
+	if (auto result = render.setObjectUnlit(*sun, true); !result) {
+		return std::unexpected(result.error());
+	}
+	if (auto result = render.setObjectCastsShadow(*sun, false); !result) {
+		return std::unexpected(result.error());
+	}
+
+	// The sun casts a warm directional light straight down onto the field, with a touch of sky ambient.
+	render.setDirectionalLight(vve::Direction{.value = sunLightDirection},
+										vve::LinearColor{.value = vve::Vec3{1.0F, 0.96F, 0.85F}}, vve::LightIntensity{.value = 1.35F},
+										vve::LinearColor{.value = vve::Vec3{0.32F, 0.34F, 0.40F}});
+	return *sun;
 }
 
 } // namespace
 
 /**
- * @brief Runs a small interactive scene using only the public VVE facade.
+ * @brief Runs the crate-collector game using only the public VVE facade.
  */
 int main(int argc, char **argv) {
 	std::cout << std::unitbuf;
 	std::cerr << std::unitbuf;
 	std::cout << "[game] engine=" << vve::engineImplementationNamespaceName << '\n';
 
-	const auto activeRenderer = vve::RendererId{.value = "forward"}; ///< Renderer id selected through the facade.
+	const auto activeRenderer = vve::RendererId{.value = "forward"};
 	auto engine = vve::EngineBuilder<>{}
 						 .applicationName("game")
 						 .addWindow(vve::WindowSetup{}
 										 .id("main")
-										 .title("VVE Simple Game")
-										 .extent(vve::PixelExtent{.width = 960, .height = 540})
+										 .title("VVE Crate Collector")
+										 .extent(vve::PixelExtent{.width = windowWidth, .height = windowHeight})
 										 .renderer(activeRenderer)
 										 .resizable(true))
 						 .build();
@@ -110,253 +183,93 @@ int main(int argc, char **argv) {
 	}
 
 	auto render = engine.world().get<vve::RenderSystem>();
-	if (const auto result = loadGameScene(render, assetRoot(argc > 0 ? argv[0] : nullptr)); !result) {
-		std::cerr << "[game] scene load failed: error=" << vve::errorName(result.error()) << '\n';
+	const auto sunHandle = loadScene(render, assetRoot(argc > 0 ? argv[0] : nullptr));
+	if (!sunHandle) {
+		std::cerr << "[game] scene load failed: error=" << vve::errorName(sunHandle.error()) << '\n';
 		return 2;
 	}
+	// Direction from any viewpoint toward the sun: opposite to the light it sends down.
+	const auto toSun = vve::math::normalize(vve::math::scale(sunLightDirection, -1.0F));
 
-	const auto pointPositions = std::array{
-		vve::Position{.value = vve::Vec3{2.0F, 3.5F, -2.0F}},
-		vve::Position{.value = vve::Vec3{-2.0F, 3.0F, 2.0F}},
-		vve::Position{.value = vve::Vec3{0.0F, 2.8F, -3.0F}},
-		vve::Position{.value = vve::Vec3{0.0F, 2.6F, 3.0F}},
-		vve::Position{.value = vve::Vec3{-3.2F, 2.9F, -0.5F}},
-		vve::Position{.value = vve::Vec3{3.2F, 2.9F, -0.5F}},
-		vve::Position{.value = vve::Vec3{-2.4F, 2.4F, -2.7F}},
-		vve::Position{.value = vve::Vec3{2.4F, 2.4F, -2.7F}},
-		vve::Position{.value = vve::Vec3{-2.6F, 2.5F, 2.4F}},
-		vve::Position{.value = vve::Vec3{2.6F, 2.5F, 2.4F}},
-	};																													///< Ten facade point positions exercise every demo slot.
-	const auto pointColors = std::array{
-		vve::LinearColor{.value = vve::Vec3{1.0F, 0.96F, 0.82F}},
-		vve::LinearColor{.value = vve::Vec3{0.55F, 0.78F, 1.0F}},
-		vve::LinearColor{.value = vve::Vec3{1.0F, 0.55F, 0.42F}},
-		vve::LinearColor{.value = vve::Vec3{0.62F, 1.0F, 0.54F}},
-		vve::LinearColor{.value = vve::Vec3{0.86F, 0.62F, 1.0F}},
-		vve::LinearColor{.value = vve::Vec3{1.0F, 0.78F, 0.48F}},
-		vve::LinearColor{.value = vve::Vec3{0.48F, 0.94F, 1.0F}},
-		vve::LinearColor{.value = vve::Vec3{1.0F, 0.48F, 0.78F}},
-		vve::LinearColor{.value = vve::Vec3{0.74F, 1.0F, 0.66F}},
-		vve::LinearColor{.value = vve::Vec3{0.68F, 0.72F, 1.0F}},
-	};																													///< Distinct colors make active point slots visible.
-	const auto pointIntensities = std::array{
-		vve::LightIntensity{.value = 3.0F},
-		vve::LightIntensity{.value = 2.4F},
-		vve::LightIntensity{.value = 1.5F},
-		vve::LightIntensity{.value = 1.4F},
-		vve::LightIntensity{.value = 1.2F},
-		vve::LightIntensity{.value = 1.2F},
-		vve::LightIntensity{.value = 1.0F},
-		vve::LightIntensity{.value = 1.0F},
-		vve::LightIntensity{.value = 0.9F},
-		vve::LightIntensity{.value = 0.9F},
-	};																													///< Point strengths keep the combined scene readable.
-	const auto pointRanges = std::array{
-		vve::LightRange{.value = 7.0F},
-		vve::LightRange{.value = 6.0F},
-		vve::LightRange{.value = 4.8F},
-		vve::LightRange{.value = 4.8F},
-		vve::LightRange{.value = 4.5F},
-		vve::LightRange{.value = 4.5F},
-		vve::LightRange{.value = 4.0F},
-		vve::LightRange{.value = 4.0F},
-		vve::LightRange{.value = 3.8F},
-		vve::LightRange{.value = 3.8F},
-	};																													///< Point ranges bound each local light volume.
-	const auto pointAmbients = std::array{
-		vve::LinearColor{.value = vve::Vec3{0.18F, 0.18F, 0.18F}},
-		vve::LinearColor{.value = vve::Vec3{0.06F, 0.08F, 0.1F}},
-		vve::LinearColor{.value = vve::Vec3{0.025F, 0.015F, 0.012F}},
-		vve::LinearColor{.value = vve::Vec3{0.014F, 0.025F, 0.012F}},
-		vve::LinearColor{.value = vve::Vec3{0.018F, 0.012F, 0.026F}},
-		vve::LinearColor{.value = vve::Vec3{0.024F, 0.018F, 0.010F}},
-		vve::LinearColor{.value = vve::Vec3{0.010F, 0.022F, 0.026F}},
-		vve::LinearColor{.value = vve::Vec3{0.026F, 0.010F, 0.020F}},
-		vve::LinearColor{.value = vve::Vec3{0.016F, 0.024F, 0.014F}},
-		vve::LinearColor{.value = vve::Vec3{0.014F, 0.016F, 0.025F}},
-	};																													///< Per-light ambient terms mirror the other light controls.
-	const auto directionalDirections = std::array{
-		vve::Direction{.value = vve::Vec3{-0.45F, -0.8F, 0.35F}},
-		vve::Direction{.value = vve::Vec3{0.55F, -0.72F, 0.12F}},
-		vve::Direction{.value = vve::Vec3{-0.12F, -0.9F, -0.42F}},
-		vve::Direction{.value = vve::Vec3{0.28F, -0.82F, -0.38F}},
-		vve::Direction{.value = vve::Vec3{-0.72F, -0.58F, -0.20F}},
-		vve::Direction{.value = vve::Vec3{0.74F, -0.55F, -0.22F}},
-		vve::Direction{.value = vve::Vec3{-0.34F, -0.62F, 0.70F}},
-		vve::Direction{.value = vve::Vec3{0.36F, -0.64F, 0.68F}},
-		vve::Direction{.value = vve::Vec3{-0.08F, -0.98F, 0.18F}},
-		vve::Direction{.value = vve::Vec3{0.12F, -0.96F, -0.25F}},
-	};																													///< Ten facade directional vectors exercise every demo slot.
-	const auto directionalColors = std::array{
-		vve::LinearColor{.value = vve::Vec3{0.95F, 0.98F, 1.0F}},
-		vve::LinearColor{.value = vve::Vec3{1.0F, 0.78F, 0.58F}},
-		vve::LinearColor{.value = vve::Vec3{0.58F, 0.86F, 1.0F}},
-		vve::LinearColor{.value = vve::Vec3{0.72F, 1.0F, 0.64F}},
-		vve::LinearColor{.value = vve::Vec3{1.0F, 0.62F, 0.70F}},
-		vve::LinearColor{.value = vve::Vec3{0.62F, 1.0F, 0.88F}},
-		vve::LinearColor{.value = vve::Vec3{0.82F, 0.70F, 1.0F}},
-		vve::LinearColor{.value = vve::Vec3{1.0F, 0.92F, 0.55F}},
-		vve::LinearColor{.value = vve::Vec3{0.68F, 0.78F, 1.0F}},
-		vve::LinearColor{.value = vve::Vec3{0.86F, 1.0F, 0.72F}},
-	};																													///< Distinct colors make active directional slots visible.
-	const auto directionalIntensities = std::array{
-		vve::LightIntensity{.value = 1.05F},
-		vve::LightIntensity{.value = 0.45F},
-		vve::LightIntensity{.value = 0.35F},
-		vve::LightIntensity{.value = 0.28F},
-		vve::LightIntensity{.value = 0.22F},
-		vve::LightIntensity{.value = 0.22F},
-		vve::LightIntensity{.value = 0.18F},
-		vve::LightIntensity{.value = 0.18F},
-		vve::LightIntensity{.value = 0.14F},
-		vve::LightIntensity{.value = 0.14F},
-	};																													///< Directional strengths keep the combined scene readable.
-	const auto directionalAmbients = std::array{
-		vve::LinearColor{.value = vve::Vec3{0.04F, 0.04F, 0.04F}},
-		vve::LinearColor{.value = vve::Vec3{0.015F, 0.012F, 0.01F}},
-		vve::LinearColor{.value = vve::Vec3{0.01F, 0.014F, 0.018F}},
-		vve::LinearColor{.value = vve::Vec3{0.01F, 0.016F, 0.01F}},
-		vve::LinearColor{.value = vve::Vec3{0.012F, 0.008F, 0.010F}},
-		vve::LinearColor{.value = vve::Vec3{0.008F, 0.012F, 0.010F}},
-		vve::LinearColor{.value = vve::Vec3{0.010F, 0.008F, 0.012F}},
-		vve::LinearColor{.value = vve::Vec3{0.012F, 0.011F, 0.007F}},
-		vve::LinearColor{.value = vve::Vec3{0.007F, 0.009F, 0.012F}},
-		vve::LinearColor{.value = vve::Vec3{0.009F, 0.012F, 0.007F}},
-	};																													///< Per-light ambient terms mirror the spot-light muting model.
-	const auto spotIntensity = vve::LightIntensity{.value = 4.0F};                                     ///< Startup spot light strength.
-	const auto spotRange = vve::LightRange{.value = 8.0F};                                             ///< Startup spot light reach.
-	const auto spotCone = vve::SpotConeAngle{.radians = 0.65F};                                        ///< Startup spot light outer cone.
-	const auto spotAmbient = vve::LinearColor{.value = vve::Vec3{0.04F, 0.04F, 0.04F}};                ///< Startup spot ambient term.
-	const auto spotPositions = std::array{
-		vve::Position{.value = vve::Vec3{0.0F, 4.0F, 3.0F}},
-		vve::Position{.value = vve::Vec3{-2.4F, 3.8F, -1.2F}},
-		vve::Position{.value = vve::Vec3{2.4F, 3.8F, -1.2F}},
-		vve::Position{.value = vve::Vec3{0.0F, 4.3F, -3.0F}},
-		vve::Position{.value = vve::Vec3{-3.1F, 3.5F, 1.6F}},
-		vve::Position{.value = vve::Vec3{3.1F, 3.5F, 1.6F}},
-		vve::Position{.value = vve::Vec3{-3.0F, 3.3F, -3.0F}},
-		vve::Position{.value = vve::Vec3{3.0F, 3.3F, -3.0F}},
-		vve::Position{.value = vve::Vec3{-1.0F, 5.0F, 0.0F}},
-		vve::Position{.value = vve::Vec3{1.0F, 5.0F, 0.0F}},
-	};																													///< Ten facade spot positions exercise every demo slot.
-	const auto spotDirections = std::array{
-		vve::Direction{.value = vve::Vec3{0.0F, -0.85F, -0.45F}},
-		vve::Direction{.value = vve::Vec3{0.35F, -0.85F, 0.2F}},
-		vve::Direction{.value = vve::Vec3{-0.35F, -0.85F, 0.2F}},
-		vve::Direction{.value = vve::Vec3{0.0F, -0.9F, 0.35F}},
-		vve::Direction{.value = vve::Vec3{0.72F, -0.76F, -0.30F}},
-		vve::Direction{.value = vve::Vec3{-0.72F, -0.76F, -0.30F}},
-		vve::Direction{.value = vve::Vec3{0.55F, -0.72F, 0.55F}},
-		vve::Direction{.value = vve::Vec3{-0.55F, -0.72F, 0.55F}},
-		vve::Direction{.value = vve::Vec3{0.18F, -0.98F, 0.04F}},
-		vve::Direction{.value = vve::Vec3{-0.18F, -0.98F, 0.04F}},
-	};																													///< Each spot aims at the crate group from a different side.
-	const auto spotColors = std::array{
-		vve::LinearColor{.value = vve::Vec3{1.0F, 0.9F, 0.72F}},
-		vve::LinearColor{.value = vve::Vec3{0.6F, 0.85F, 1.0F}},
-		vve::LinearColor{.value = vve::Vec3{1.0F, 0.55F, 0.45F}},
-		vve::LinearColor{.value = vve::Vec3{0.65F, 1.0F, 0.58F}},
-		vve::LinearColor{.value = vve::Vec3{1.0F, 0.72F, 0.95F}},
-		vve::LinearColor{.value = vve::Vec3{0.72F, 1.0F, 0.95F}},
-		vve::LinearColor{.value = vve::Vec3{0.92F, 0.78F, 1.0F}},
-		vve::LinearColor{.value = vve::Vec3{1.0F, 0.92F, 0.62F}},
-		vve::LinearColor{.value = vve::Vec3{0.72F, 0.78F, 1.0F}},
-		vve::LinearColor{.value = vve::Vec3{0.82F, 1.0F, 0.72F}},
-	};																													///< Distinct colors make active spot slots visible.
-	const auto offAmbient = vve::LinearColor{.value = vve::Vec3{0.0F, 0.0F, 0.0F}};                    ///< Muted light ambient term.
-	constexpr auto offIntensity = vve::LightIntensity{.value = 0.0F};                                  ///< Muted direct light strength.
-	constexpr auto minimumShadowPointIntensity = vve::LightIntensity{.value = 2.0F};                  ///< Minimum enabled point brightness for visible shadows.
-	constexpr auto offRange = vve::LightRange{.value = 0.0F};                                          ///< Muted local light reach.
-	auto directionalLightsEnabled = std::array<bool, maxGameDirectionalLights>{};                    ///< Tracks each capped directional light.
-	auto pointLightsEnabled = std::array<bool, maxGamePointLights>{};                                ///< Tracks each capped point light.
-	auto spotLightsEnabled = std::array<bool, maxGameSpotLights>{};                                  ///< Tracks each capped spot light.
-	directionalLightsEnabled.fill(true);                                                            ///< Start with every directional slot active.
-	pointLightsEnabled.fill(true);                                                                  ///< Start with every point slot active.
-	spotLightsEnabled.fill(true);                                                                   ///< Start with every spot slot active.
-	auto applyLights = [&] {
-		const auto applyDirectional = [&](std::size_t index, bool first) {
-			const auto intensity = directionalLightsEnabled[index] ? directionalIntensities[index] : offIntensity;
-			const auto ambient = directionalLightsEnabled[index] ? directionalAmbients[index] : offAmbient;
-			if (first) {
-				render.setDirectionalLight(directionalDirections[index], directionalColors[index], intensity, ambient);
-			} else {
-				render.addDirectionalLight(directionalDirections[index], directionalColors[index], intensity, ambient);
-			}
-		};																												// First directional resets the set; the rest fill the capped slots.
-		applyDirectional(0U, true);
-		for (std::size_t index{1U}; index < directionalLightsEnabled.size(); ++index) { applyDirectional(index, false); }
-		const auto applySpot = [&](std::size_t index, bool first) {
-			const auto intensity = spotLightsEnabled[index] ? spotIntensity : offIntensity;
-			const auto range = spotLightsEnabled[index] ? spotRange : offRange;
-			const auto ambient = spotLightsEnabled[index] ? spotAmbient : offAmbient;
-			if (first) {
-				render.setSpotLight(spotPositions[index], spotDirections[index], spotColors[index], intensity, range, spotCone, ambient);
-			} else {
-				render.addSpotLight(spotPositions[index], spotDirections[index], spotColors[index], intensity, range, spotCone, ambient);
-			}
-		};																												// First spot resets the set; the rest fill the capped slots.
-		applySpot(0U, true);
-		for (std::size_t index{1U}; index < spotLightsEnabled.size(); ++index) { applySpot(index, false); }
-		bool anyPointLightEnabled{};																				// Disabled fallback keeps the legacy point slot valid.
-		for (std::size_t index{}; index < pointLightsEnabled.size(); ++index) {
-			if (!pointLightsEnabled[index]) { continue; }
-			const auto pointIntensity = vve::LightIntensity{
-				.value = std::max(pointIntensities[index].value, minimumShadowPointIntensity.value)}; // Every enabled point light can cast a readable shadow.
-			if (!anyPointLightEnabled) {
-				render.setPointLight(pointPositions[index], pointColors[index], pointIntensity, pointRanges[index],
-										 pointAmbients[index]);
-			} else {
-				render.addPointLight(pointPositions[index], pointColors[index], pointIntensity, pointRanges[index],
-										 pointAmbients[index]);
-			}
-			anyPointLightEnabled = true;
-		}
-		if (!anyPointLightEnabled) {
-			render.setPointLight(pointPositions.front(), pointColors.front(), offIntensity, offRange, offAmbient);
-		}
-	};
-	applyLights();
+	// Start the camera on the plane, at eye height, looking toward the centre of the field.
+	vve::DefaultCameraController cameraController{};
+	cameraController.eye = vve::Position{.value = vve::Vec3{0.0F, eyeHeight, 14.0F}};
+	const auto startupForward =
+		vve::math::normalize(vve::math::subtract(vve::Vec3{0.0F, eyeHeight, 0.0F}, cameraController.eye.value));
+	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
+	cameraController.pitch = std::asin(startupForward.y);
+
+	std::vector<Crate> crates{};                       ///< Active crates currently in the world.
+	int score{};                                       ///< Crates collected so far.
+	float spawnTimer{spawnInterval};                   ///< Time accumulator that spawns the first crate immediately.
+	std::mt19937 rng{std::random_device{}()};          ///< Random source for crate spawn positions.
+	std::uniform_real_distribution<float> place{-groundHalfExtent + 2.0F, groundHalfExtent - 2.0F};
+
+	// The score overlay is drawn every frame in the top-left corner.
+	engine.world().get<vve::GuiSystem>().draw([&score, &crates] {
+		ImGui::SetNextWindowPos(ImVec2(12.0F, 12.0F), ImGuiCond_Always);
+		ImGui::Begin("Score", nullptr,
+						 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
+		ImGui::Text("Score: %d", score);
+		ImGui::Text("Crates on field: %zu", crates.size());
+		ImGui::Separator();
+		ImGui::TextUnformatted("WASD move  -  Arrows look  -  Esc quit");
+		ImGui::TextUnformatted("Drive into a crate to collect it!");
+		ImGui::End();
+	});
 
 	const int maxFrames = frameLimit(argc, argv).value_or(0);
 	int frame{};
 	bool running = true;
-	bool lightsDirty = false;                                                                        ///< GUI changes are applied after the frame callback returns.
-	double renderFps{};                                                                              ///< Render-system FPS, not the ImGui/display estimate.
-	vve::DefaultCameraController cameraController{};                                                ///< Facade camera motion shared by examples and applications.
-	cameraController.eye = vve::Position{.value = vve::Vec3{0.0F, 6.0F, 9.0F}};
-	const auto startupForward =
-		vve::math::normalize(vve::math::subtract(vve::Vec3{0.0F, 1.0F, 0.0F}, cameraController.eye.value));
-	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
-	cameraController.pitch = std::asin(startupForward.y);
-	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &directionalLightsEnabled, &pointLightsEnabled,
-															 &spotLightsEnabled, &cameraController, &lightsDirty, &renderFps] {
-		ImGui::Begin("Game");
-		ImGui::Text("Frame: %d", frame);
-		ImGui::Text("Render FPS: %.1f", renderFps);
-		ImGui::Text("Renderer: %s", activeRenderer.value.c_str());
-		ImGui::Text("Directional lights: %zu", directionalLightsEnabled.size());
-		for (std::size_t index{}; index < directionalLightsEnabled.size(); ++index) {
-			const auto label = std::format("Directional {}", index + 1U);
-			if (ImGui::Checkbox(label.c_str(), &directionalLightsEnabled[index])) { lightsDirty = true; }
-		}
-		ImGui::Text("Spot lights: %zu", spotLightsEnabled.size());
-		for (std::size_t index{}; index < spotLightsEnabled.size(); ++index) {
-			const auto label = std::format("Spot {}", index + 1U);
-			if (ImGui::Checkbox(label.c_str(), &spotLightsEnabled[index])) { lightsDirty = true; }
-		}
-		ImGui::Text("Point lights: %zu", pointLightsEnabled.size());
-		for (std::size_t index{}; index < pointLightsEnabled.size(); ++index) {
-			const auto label = std::format("Point {}", index + 1U);
-			if (ImGui::Checkbox(label.c_str(), &pointLightsEnabled[index])) { lightsDirty = true; }
-		}
-		ImGui::Text("Camera: %.2f, %.2f, %.2f", cameraController.eye.value.x, cameraController.eye.value.y,
-						cameraController.eye.value.z);
-		ImGui::End();
-	});
+	auto lastTime = std::chrono::steady_clock::now();
+
 	while (running && (maxFrames == 0 || frame < maxFrames)) {
-		const auto frameInput = engine.world().get<vve::WindowSystem>().input();
-		render.setCamera(cameraController.update(frameInput), vve::PixelExtent{.width = 960, .height = 540});
-		renderFps = render.renderingFramesPerSecond();
+		const auto now = std::chrono::steady_clock::now();
+		const float dt = std::clamp(std::chrono::duration<float>(now - lastTime).count(), 0.0F, 0.1F);
+		lastTime = now;
+
+		// Steer with the standard controller but pin the eye to a fixed height so it stays on the plane.
+		const auto input = engine.world().get<vve::WindowSystem>().input();
+		cameraController.eye.value.y = eyeHeight;
+		const auto steered = cameraController.update(input);
+		cameraController.eye.value.y = eyeHeight;
+		const auto eyePosition = cameraController.eye;
+		const auto camera = vve::Camera::lookAt(
+			eyePosition, vve::Position{.value = vve::math::add(eyePosition.value, steered.forward.value)});
+		render.setCamera(camera, vve::PixelExtent{.width = windowWidth, .height = windowHeight});
+		// Keep the sun at a fixed far offset from the eye so it shows no parallax as the camera moves.
+		(void)render.setObjectTransform(*sunHandle, vve::Transform{.translation = vve::Position{
+			.value = vve::math::add(eyePosition.value, vve::math::scale(toSun, sunDistance))}});
+
+		// Spawn a fresh crate high above a random spot while the field is not full.
+		spawnTimer += dt;
+		if (crates.size() < maxActiveCrates && spawnTimer >= spawnInterval) {
+			spawnTimer = 0.0F;
+			const vve::Vec3 spawnPosition{place(rng), crateSpawnY, place(rng)};
+			const vve::Vec3 minimum{-crateHalfSize, -crateHalfSize, -crateHalfSize};
+			const vve::Vec3 maximum{crateHalfSize, crateHalfSize, crateHalfSize};
+			if (auto added = render.addCuboid(minimum, maximum, vve::LinearColor{.value = vve::Vec3{0.58F, 0.36F, 0.18F}},
+														 vve::Transform{.translation = vve::Position{.value = spawnPosition}});
+				 added) {
+				crates.push_back(Crate{.handle = *added, .position = spawnPosition, .velocityY = 0.0F, .landed = false});
+			}
+		}
+
+		// Integrate gravity for airborne crates and rest them on the ground when they land.
+		for (auto &crate : crates) {
+			if (crate.landed) {
+				continue;
+			}
+			crate.velocityY -= gravity * dt;
+			crate.position.y += crate.velocityY * dt;
+			if (crate.position.y <= crateRestY) {
+				crate.position.y = crateRestY;
+				crate.velocityY = 0.0F;
+				crate.landed = true;
+			}
+			(void)render.setObjectTransform(crate.handle,
+													  vve::Transform{.translation = vve::Position{.value = crate.position}});
+		}
 
 		const auto status = engine.step();
 		if (!status) {
@@ -364,34 +277,32 @@ int main(int argc, char **argv) {
 			return 3;
 		}
 		++frame;
-		if (*status == vve::FrameStatus::stopped) { break; }
+		if (*status == vve::FrameStatus::stopped) {
+			break;
+		}
+		if (input.wasKeyPressed(vve::Key::escape)) {
+			running = false;
+		}
 
-		auto input = engine.world().get<vve::WindowSystem>().input();
-		if (input.wasKeyPressed(vve::Key::escape)) { running = false; }
-		if (input.wasKeyPressed(vve::Key::o)) {
-			const bool enabled = !std::ranges::any_of(spotLightsEnabled, std::identity{});
-			spotLightsEnabled.fill(enabled);
-			applyLights();
-			std::cout << "[game] spot lights " << (enabled ? "on" : "off") << '\n';
-		}
-		if (input.wasKeyPressed(vve::Key::p)) {
-			const bool enabled = !std::ranges::any_of(pointLightsEnabled, std::identity{});
-			pointLightsEnabled.fill(enabled);
-			applyLights();
-			std::cout << "[game] point lights " << (enabled ? "on" : "off") << '\n';
-		}
-		if (input.wasKeyPressed(vve::Key::l)) {
-			const bool enabled = !std::ranges::any_of(directionalLightsEnabled, std::identity{});
-			directionalLightsEnabled.fill(enabled);
-			applyLights();
-			std::cout << "[game] directional lights " << (enabled ? "on" : "off") << '\n';
-		}
-		if (lightsDirty) {
-			applyLights();
-			lightsDirty = false;
-		}
+		// Collect any landed crate the camera has reached, removing it and scoring a point.
+		const auto eye = cameraController.eye.value;
+		std::erase_if(crates, [&](const Crate &crate) {
+			if (!crate.landed) {
+				return false;
+			}
+			const float dx = eye.x - crate.position.x;
+			const float dz = eye.z - crate.position.z;
+			if ((dx * dx + dz * dz) > (collectRadius * collectRadius)) {
+				return false;
+			}
+			if (render.removeObject(crate.handle)) {
+				++score;
+				return true;
+			}
+			return false;
+		});
 	}
 
-	std::cout << "[game] frames=" << frame << '\n';
+	std::cout << "[game] frames=" << frame << " score=" << score << '\n';
 	return 0;
 }

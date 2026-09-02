@@ -1,4 +1,5 @@
 module;
+#include <compare>
 #ifndef SDL_MAIN_HANDLED
 #define SDL_MAIN_HANDLED
 #define VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
@@ -39,6 +40,7 @@ export namespace vve::simple {
 		std::uint32_t useBaseColorTexture{0U}; ///< Non-zero when the object wants the optional base-color texture.
 		std::uint32_t spotLightIndex{0U};      ///< Shadow pass spot-light matrix index selected before each draw call.
 		std::uint32_t dirLightIndex{0U};       ///< Shadow pass directional-light matrix index selected before each draw call.
+		std::uint32_t unlit{0U};               ///< Non-zero renders the object in its flat base color without any lighting.
 	};
 
 	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms, shadow maps, and one object texture; no pipeline layout is created here.

@@ -1,0 +1,104 @@
+-- Doxygen found: C:/Program Files/doxygen/bin/doxygen.exe
+-- Using Slang from Vulkan SDK fallback: C:/VulkanSDK/1.4.341.1
+-- Added CMake target: docs
+-- Configuring done (0.4s)
+CMake Warning (dev) in src/CMakeLists.txt:
+  CMake's support for `import std;` in C++23 and newer is experimental.  It
+  is meant only for experimentation and feedback to CMake developers.
+This warning is for project developers.  Use -Wno-dev to suppress it.
+
+-- Generating done (0.2s)
+-- Build files have been written to: C:/data/GitHub/ViennaVulkanEngine/build/release-windows
+[0/2] Re-checking globbed directories...
+[1/294] Generating CXX dyndep file src\CMakeFiles\__cmake_cxx_std_23.dir\CXX.dd
+[2/291] Generating CXX dyndep file src\CMakeFiles\ViennaVulkanEngine.dir\CXX.dd
+[3/235] CMakeFiles\vve_copy_runtime_dlls-b3b77c3.bat f26ddb72b5382f08
+[4/235] Generating CXX dyndep file examples\game\CMakeFiles\game.dir\CXX.dd
+[5/232] Generating CXX dyndep file examples\physics\CMakeFiles\physics.dir\CXX.dd
+[6/229] Generating CXX dyndep file examples\sponza\CMakeFiles\sponza.dir\CXX.dd
+[7/226] Generating CXX dyndep file examples\light_shadow_debug\CMakeFiles\light_shadow_debug.dir\CXX.dd
+[8/223] Generating CXX dyndep file examples\simple_forward_demo\CMakeFiles\simple_forward_demo.dir\CXX.dd
+[9/220] Generating CXX dyndep file tests\CMakeFiles\HandleTests.dir\CXX.dd
+[10/217] Generating CXX dyndep file tests\CMakeFiles\SegmentedVectorTests.dir\CXX.dd
+[11/214] Generating CXX dyndep file tests\CMakeFiles\ECSTests.dir\CXX.dd
+[12/211] Generating CXX dyndep file tests\CMakeFiles\WindowInputTests.dir\CXX.dd
+[13/208] Generating CXX dyndep file tests\CMakeFiles\DefaultCameraControllerTests.dir\CXX.dd
+[14/205] Generating CXX dyndep file tests\CMakeFiles\WindowOwnershipTests.dir\CXX.dd
+[15/202] Generating CXX dyndep file tests\CMakeFiles\WorldTests.dir\CXX.dd
+[16/199] Generating CXX dyndep file tests\CMakeFiles\UserSystemTests.dir\CXX.dd
+[17/196] Generating CXX dyndep file tests\CMakeFiles\ShaderReflectionBindingsTests.dir\CXX.dd
+[18/184] Generating CXX dyndep file tests\CMakeFiles\SceneSystemTests.dir\CXX.dd
+[19/181] Generating CXX dyndep file tests\CMakeFiles\SceneInstantiationTests.dir\CXX.dd
+[20/178] Generating CXX dyndep file tests\CMakeFiles\SceneRemovalTests.dir\CXX.dd
+[21/175] Generating CXX dyndep file tests\CMakeFiles\SceneAssetRemovalBlockedTests.dir\CXX.dd
+[22/172] Generating CXX dyndep file tests\CMakeFiles\ScenePurgeUnusedAssetsTests.dir\CXX.dd
+[23/169] Generating CXX dyndep file tests\CMakeFiles\SceneTransformCompositionTests.dir\CXX.dd
+[24/166] Generating CXX dyndep file tests\CMakeFiles\AssetLightDataTests.dir\CXX.dd
+[25/163] Generating CXX dyndep file tests\CMakeFiles\AssetCameraDataTests.dir\CXX.dd
+[26/160] Generating CXX dyndep file tests\CMakeFiles\RenderLightCountTests.dir\CXX.dd
+[27/157] Generating CXX dyndep file tests\CMakeFiles\RenderCameraCountTests.dir\CXX.dd
+[28/154] Generating CXX dyndep file tests\CMakeFiles\RenderSceneLightApplyTests.dir\CXX.dd
+[29/151] Generating CXX dyndep file tests\CMakeFiles\RenderSceneCameraApplyTests.dir\CXX.dd
+[30/148] Scanning C:\data\GitHub\ViennaVulkanEngine\src\versions\simple\stb_image_write_impl.cpp for CXX dependencies
+[31/148] Scanning C:\data\GitHub\ViennaVulkanEngine\src\versions\simple\stb_image_write_impl.cpp for CXX dependencies
+[32/148] Generating CXX dyndep file tests\CMakeFiles\SimpleForwardRendererTests.dir\CXX.dd
+[33/93] Generating CXX dyndep file tests\CMakeFiles\GuiSystemTests.dir\CXX.dd
+[34/38] Building CXX object tests\CMakeFiles\SimpleForwardRendererTests.dir\__\src\versions\simple\stb_image_write_impl.cpp.obj
+[35/38] Building CXX object tests\CMakeFiles\GuiSystemTests.dir\__\src\versions\simple\stb_image_write_impl.cpp.obj
+[36/38] Linking CXX executable C:\data\GitHub\ViennaVulkanEngine\bin\release\exe\GuiSystemTests.exe
+[37/38] Linking CXX executable C:\data\GitHub\ViennaVulkanEngine\bin\release\exe\SimpleForwardRendererTests.exe
+Test project C:/data/GitHub/ViennaVulkanEngine/build/release-windows
+      Start  1: LightShadowDebugExample
+ 1/24 Test  #1: LightShadowDebugExample ..........   Passed    0.73 sec
+      Start  2: HandleTests
+ 2/24 Test  #2: HandleTests ......................   Passed    0.01 sec
+      Start  3: SegmentedVectorTests
+ 3/24 Test  #3: SegmentedVectorTests .............   Passed    0.01 sec
+      Start  4: ECSTests
+ 4/24 Test  #4: ECSTests .........................   Passed    0.01 sec
+      Start  5: WindowInputTests
+ 5/24 Test  #5: WindowInputTests .................   Passed    0.01 sec
+      Start  6: DefaultCameraControllerTests
+ 6/24 Test  #6: DefaultCameraControllerTests .....   Passed    0.01 sec
+      Start  7: WindowOwnershipTests
+ 7/24 Test  #7: WindowOwnershipTests .............   Passed    0.01 sec
+      Start  8: WorldTests
+ 8/24 Test  #8: WorldTests .......................   Passed    0.01 sec
+      Start  9: UserSystemTests
+ 9/24 Test  #9: UserSystemTests ..................   Passed    0.01 sec
+      Start 10: SimpleForwardRendererTests
+10/24 Test #10: SimpleForwardRendererTests .......   Passed    1.23 sec
+      Start 11: ShaderReflectionBindingsTests
+11/24 Test #11: ShaderReflectionBindingsTests ....   Passed    0.23 sec
+      Start 12: GuiSystemTests
+12/24 Test #12: GuiSystemTests ...................   Passed    0.03 sec
+      Start 13: SceneSystemTests
+13/24 Test #13: SceneSystemTests .................   Passed    0.05 sec
+      Start 14: SceneInstantiationTests
+14/24 Test #14: SceneInstantiationTests ..........   Passed    0.02 sec
+      Start 15: SceneRemovalTests
+15/24 Test #15: SceneRemovalTests ................   Passed    0.02 sec
+      Start 16: SceneAssetRemovalBlockedTests
+16/24 Test #16: SceneAssetRemovalBlockedTests ....   Passed    0.02 sec
+      Start 17: ScenePurgeUnusedAssetsTests
+17/24 Test #17: ScenePurgeUnusedAssetsTests ......   Passed    0.02 sec
+      Start 18: SceneTransformCompositionTests
+18/24 Test #18: SceneTransformCompositionTests ...   Passed    0.02 sec
+      Start 19: AssetLightDataTests
+19/24 Test #19: AssetLightDataTests ..............   Passed    0.01 sec
+      Start 20: AssetCameraDataTests
+20/24 Test #20: AssetCameraDataTests .............   Passed    0.13 sec
+      Start 21: RenderLightCountTests
+21/24 Test #21: RenderLightCountTests ............   Passed    0.01 sec
+      Start 22: RenderCameraCountTests
+22/24 Test #22: RenderCameraCountTests ...........   Passed    0.01 sec
+      Start 23: RenderSceneLightApplyTests
+23/24 Test #23: RenderSceneLightApplyTests .......   Passed    0.02 sec
+      Start 24: RenderSceneCameraApplyTests
+24/24 Test #24: RenderSceneCameraApplyTests ......   Passed    0.02 sec
+
+100% tests passed, 0 tests failed out of 24
+
+Total Test time (real) =   2.70 sec
+
+Release build complete. Executables: bin\release\exe

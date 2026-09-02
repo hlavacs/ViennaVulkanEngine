@@ -65,7 +65,6 @@ export namespace vve {
 
 		[[nodiscard]] EngineStateHandle makeEngineState(EngineStartupOptions options);
 		[[nodiscard]] auto engineVersionMajor(const EngineState &state)								-> std::uint32_t;
-		[[nodiscard]] auto engineGetVersionMajor(const EngineState &state) noexcept				-> std::expected<int, Error>;
 		[[nodiscard]] auto engineVersionName(const EngineState &state)								-> std::string_view;
 		[[nodiscard]] auto engineEcs(EngineState &state)												-> ECS &;
 		[[nodiscard]] auto engineAssets(EngineState &state)											-> void *;
@@ -97,7 +96,6 @@ export namespace vve {
 		explicit Engine(TOptions &&...options);
 
 		[[nodiscard]] auto versionMajor() const												-> std::uint32_t;
-		[[nodiscard]] auto getVersionMajor() const noexcept								-> std::expected<int, Error>;
 		[[nodiscard]] auto versionName() const													-> std::string_view;
 		[[nodiscard]] auto world();
 		[[nodiscard]] auto world() const;
@@ -283,9 +281,6 @@ export namespace vve {
 		return detail::engineVersionMajor(*state_);
 	}
 
-	template <typename... TSystems> std::expected<int, Error> Engine<TSystems...>::getVersionMajor() const noexcept {
-		return detail::engineGetVersionMajor(*state_);
-	}
 
 	template <typename... TSystems> std::string_view Engine<TSystems...>::versionName() const {
 		return detail::engineVersionName(*state_);

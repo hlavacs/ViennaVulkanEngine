@@ -21,7 +21,7 @@ export namespace vve::simple {
 
 	inline constexpr std::size_t kMaxShadowedSpotLights{10U}; ///< Small fixed cap for the first spot-shadow data model.
 	inline constexpr std::size_t kMaxShadowedPointLights{10U}; ///< Small fixed cap for point-shadow CPU metadata.
-	inline constexpr std::size_t kMaxDirectionalLights{4U};   ///< Fixed cap keeping four cascades per directional light within sixteen layers.
+	inline constexpr std::size_t kMaxDirectionalLights{10U};  ///< Directional-light cap; four cascades each occupy forty shadow-map layers.
 	inline constexpr std::size_t kNumShadowCascades{4U};      ///< Directional shadow cascades assigned to every packed light.
 	inline constexpr Scalar shadowDistance{60.0F};            ///< Maximum camera distance covered by directional shadows.
 	inline constexpr Scalar zBackoff{40.0F};                  ///< Extra light-space depth behind each camera frustum slice.
@@ -32,6 +32,8 @@ export namespace vve::simple {
 		Mat4 model{};                             ///< Model matrix placing the mesh in world space.
 		std::uint32_t useBaseColorTexture{0U};    ///< Non-zero when the object wants the optional base-color texture.
 		bool visible{true};                       ///< True when command recording should draw this object.
+		bool castsShadow{true};                   ///< False excludes the object from every shadow depth pass.
+		bool unlit{false};                        ///< True renders the object in its flat base color without lighting.
 	};
 
 	/// @brief Point light parameters used by the simple forward pass.

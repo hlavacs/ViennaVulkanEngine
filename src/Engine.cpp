@@ -78,10 +78,6 @@ namespace vve {
 		/// @brief Returns the selected implementation major version.
 		std::uint32_t engineVersionMajor(const EngineState &state) { return state.impl.versionMajor(); }
 
-		/// @brief Returns the selected implementation major version through the compatibility API.
-		std::expected<int, Error> engineGetVersionMajor(const EngineState &state) noexcept {
-			return state.impl.getVersionMajor();
-		}
 
 		/// @brief Returns the selected implementation version name.
 		std::string_view engineVersionName(const EngineState &state) { return state.impl.versionName(); }

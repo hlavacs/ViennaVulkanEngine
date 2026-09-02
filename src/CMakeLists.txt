@@ -1,13 +1,14 @@
-add_library(ViennaVulkanEngine SHARED)
-add_library(ViennaVulkanEngine::ViennaVulkanEngine ALIAS ViennaVulkanEngine)
-
+# Windows: STATIC avoids C++20-module symbol export issues with the MSVC toolchain.
+# Linux/macOS: SHARED, whose default-visibility exports need no dllexport annotations.
 if(WIN32)
-    set_target_properties(ViennaVulkanEngine PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
+    add_library(ViennaVulkanEngine STATIC)
+else()
+    add_library(ViennaVulkanEngine SHARED)
 endif()
+add_library(ViennaVulkanEngine::ViennaVulkanEngine ALIAS ViennaVulkanEngine)
 
 target_compile_features(ViennaVulkanEngine PUBLIC cxx_std_23)
 target_compile_definitions(ViennaVulkanEngine PUBLIC VULKAN_HPP_NO_EXCEPTIONS)
-target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_ENGINE_BUILD)
 
 option(VVE_MATH_USE_DOUBLE "Build the engine math layer with double precision" OFF)
 if(VVE_MATH_USE_DOUBLE)
