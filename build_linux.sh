@@ -38,6 +38,7 @@ done
 
 VARIANT_LOWER="$(printf '%s' "$VARIANT" | tr '[:upper:]' '[:lower:]')"
 BUILD_DIR="build/${VARIANT_LOWER}-linux"
+VCPKG_TRIPLET="x64-linux-llvm"
 VULKAN_CMAKE_ARGS=()
 COMPILER_CMAKE_ARGS=()
 
@@ -80,6 +81,12 @@ if [ -x /usr/bin/clang++-18 ] && [ -x /usr/bin/clang-scan-deps-18 ]; then
   COMPILER_CMAKE_ARGS+=("-DCMAKE_CXX_MODULE_STD=ON")
   COMPILER_CMAKE_ARGS+=("-DCMAKE_EXPERIMENTAL_CXX_IMPORT_STD=451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
 fi
+# A triplet change invalidates package paths retained by CMake.
+if [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
+  if ! grep -q "^VVE_VCPKG_TRIPLET:.*=$VCPKG_TRIPLET$" "$BUILD_DIR/CMakeCache.txt"; then
+    CLEAN=1
+  fi
+fi
 
 if [ "$CLEAN" -eq 1 ]; then
   rm -rf "$BUILD_DIR"
@@ -95,7 +102,7 @@ fi
   -DCMAKE_BUILD_TYPE="$VARIANT" \
   -DVVE_DEFAULT_VULKAN_ICD=system \
   -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple \
-  -DVVE_VCPKG_TRIPLET=x64-linux \
+  -DVVE_VCPKG_TRIPLET="$VCPKG_TRIPLET" \
   "${COMPILER_CMAKE_ARGS[@]}" \
   "${VULKAN_CMAKE_ARGS[@]}"
 

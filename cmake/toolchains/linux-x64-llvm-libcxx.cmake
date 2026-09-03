@@ -1,0 +1,10 @@
+# This toolchain builds Linux dependencies with the same Clang and libc++ ABI as the engine.
+set(CMAKE_C_COMPILER "/usr/bin/clang-18" CACHE FILEPATH "LLVM C compiler")
+set(CMAKE_CXX_COMPILER "/usr/bin/clang++-18" CACHE FILEPATH "LLVM C++ compiler")
+set(CMAKE_SYSTEM_PROCESSOR "x86_64")
+set(CMAKE_CROSSCOMPILING OFF CACHE BOOL "Native Linux build")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_CXX_FLAGS_INIT "-stdlib=libc++")
+set(CMAKE_EXE_LINKER_FLAGS_INIT "-stdlib=libc++")
+set(CMAKE_SHARED_LINKER_FLAGS_INIT "-stdlib=libc++")
+set(CMAKE_MODULE_LINKER_FLAGS_INIT "-stdlib=libc++")

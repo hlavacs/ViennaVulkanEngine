@@ -73,7 +73,7 @@
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Debug",
-        "VVE_VCPKG_TRIPLET": "x64-linux"
+        "VVE_VCPKG_TRIPLET": "x64-linux-llvm"
       }
     },
     {
@@ -86,7 +86,7 @@
       "generator": "Ninja",
       "cacheVariables": {
         "CMAKE_BUILD_TYPE": "Release",
-        "VVE_VCPKG_TRIPLET": "x64-linux"
+        "VVE_VCPKG_TRIPLET": "x64-linux-llvm"
       }
     },
     {

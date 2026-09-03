@@ -60,7 +60,7 @@ All example targets now follow that single engine namespace selection automatica
 
 The default setup is host-aware:
 - Windows uses the `x64-windows` vcpkg triplet
-- Linux uses the `x64-linux` vcpkg triplet
+- Linux uses the repository's `x64-linux-llvm` overlay triplet so dependencies share the engine's Clang/libc++ ABI
 - macOS uses the `arm64-osx` vcpkg triplet
 
 `vcpkg install` is an explicit bootstrap step. Configure and build consume the already-installed packages from `vcpkg_installed/<triplet>`.
@@ -68,12 +68,13 @@ The default setup is host-aware:
 Before the first build, run:
 
 ```powershell
-vcpkg install
+vcpkg install  # Windows
 cmake --preset debug-windows   # Windows
 cmake --build --preset build-debug-windows
 
 # or
 
+vcpkg install --triplet x64-linux-llvm --overlay-triplets=triplets
 cmake --preset debug-linux     # Linux
 cmake --build --preset build-debug-linux
 
