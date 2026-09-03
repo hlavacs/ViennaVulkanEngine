@@ -91,6 +91,22 @@ auto updateWithKey(vve::DefaultCameraController &controller, vve::InputState inp
    return 0;
 }
 
+/// @brief Verifies that either Shift key doubles movement without changing the configured base step.
+[[nodiscard]] auto testShiftMovement(vve::InputState input) -> int {
+   auto leftShift = makeController();
+   input.holdKey(static_cast<std::int32_t>(vve::Key::left_shift));
+   updateWithKey(leftShift, input, vve::Key::w);
+   input.releaseKey(static_cast<std::int32_t>(vve::Key::left_shift));
+   if (!near(leftShift.eye.value, vve::Vec3{0.0F, 0.0F, -4.0F}) || !near(leftShift.move_step, 2.0F)) { return 9; }
+
+   auto rightShift = makeController();
+   input.holdKey(static_cast<std::int32_t>(vve::Key::right_shift));
+   updateWithKey(rightShift, input, vve::Key::e);
+   input.releaseKey(static_cast<std::int32_t>(vve::Key::right_shift));
+   if (!near(rightShift.eye.value, vve::Vec3{0.0F, 4.0F, 0.0F}) || !near(rightShift.move_step, 2.0F)) { return 10; }
+   return 0;
+}
+
 } // namespace
 
 /**
@@ -110,5 +126,6 @@ int main() {
 
    if (const auto result = testMovement(input); result != 0) { return result; }
    if (const auto result = testAngles(input); result != 0) { return result; }
+   if (const auto result = testShiftMovement(input); result != 0) { return result; }
    return 0;
 }

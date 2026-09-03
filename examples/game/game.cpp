@@ -241,17 +241,21 @@ int main(int argc, char **argv) {
 		(void)render.setObjectTransform(*sunHandle, vve::Transform{.translation = vve::Position{
 			.value = vve::math::add(eyePosition.value, vve::math::scale(toSun, sunDistance))}});
 
-		// Spawn a fresh crate high above a random spot while the field is not full.
-		spawnTimer += dt;
-		if (crates.size() < maxActiveCrates && spawnTimer >= spawnInterval) {
-			spawnTimer = 0.0F;
-			const vve::Vec3 spawnPosition{place(rng), crateSpawnY, place(rng)};
-			const vve::Vec3 minimum{-crateHalfSize, -crateHalfSize, -crateHalfSize};
-			const vve::Vec3 maximum{crateHalfSize, crateHalfSize, crateHalfSize};
-			if (auto added = render.addCuboid(minimum, maximum, vve::LinearColor{.value = vve::Vec3{0.58F, 0.36F, 0.18F}},
+		// Pause the timer at capacity so a collected crate waits for the normal respawn interval.
+		if (crates.size() < maxActiveCrates) {
+			spawnTimer += dt;
+			if (spawnTimer >= spawnInterval) {
+				spawnTimer = 0.0F;
+				const vve::Vec3 spawnPosition{place(rng), crateSpawnY, place(rng)};
+				const vve::Vec3 minimum{-crateHalfSize, -crateHalfSize, -crateHalfSize};
+				const vve::Vec3 maximum{crateHalfSize, crateHalfSize, crateHalfSize};
+				if (auto added = render.addCuboid(minimum, maximum,
+														 vve::LinearColor{.value = vve::Vec3{0.58F, 0.36F, 0.18F}},
 														 vve::Transform{.translation = vve::Position{.value = spawnPosition}});
-				 added) {
-				crates.push_back(Crate{.handle = *added, .position = spawnPosition, .velocityY = 0.0F, .landed = false});
+						 added) {
+					crates.push_back(
+						Crate{.handle = *added, .position = spawnPosition, .velocityY = 0.0F, .landed = false});
+				}
 			}
 		}
 

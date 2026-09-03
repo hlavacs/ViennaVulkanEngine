@@ -90,6 +90,8 @@ export namespace vve {
 		right = 1073741903,		///< Right arrow SDL keycode.
 		up = 1073741906,			///< Up arrow SDL keycode.
 		down = 1073741905,		///< Down arrow SDL keycode.
+		left_shift = 1073742049,	///< Left Shift SDL keycode.
+		right_shift = 1073742053,	///< Right Shift SDL keycode.
 	};	///< SDL-free facade key names used by application input queries.
 
 	class WindowSystem;
@@ -159,14 +161,16 @@ export namespace vve {
 
 		// Rebuild camera basis after clamping to preserve the original example feel.
 		forward = math::normalize(Vec3{std::cos(pitch) * std::sin(yaw), std::sin(pitch),
-												 -std::cos(pitch) * std::cos(yaw)});
+										 -std::cos(pitch) * std::cos(yaw)});
 		const Vec3 right = math::normalize(math::cross(forward, worldUp));
-		if (input.isKeyDown(Key::w)) { eye.value = math::add(eye.value, math::scale(forward, move_step)); }
-		if (input.isKeyDown(Key::s)) { eye.value = math::subtract(eye.value, math::scale(forward, move_step)); }
-		if (input.isKeyDown(Key::a)) { eye.value = math::subtract(eye.value, math::scale(right, move_step)); }
-		if (input.isKeyDown(Key::d)) { eye.value = math::add(eye.value, math::scale(right, move_step)); }
-		if (input.isKeyDown(Key::q)) { eye.value = math::subtract(eye.value, math::scale(worldUp, move_step)); }
-		if (input.isKeyDown(Key::e)) { eye.value = math::add(eye.value, math::scale(worldUp, move_step)); }
+		const Scalar movementStep = move_step *
+			(input.isKeyDown(Key::left_shift) || input.isKeyDown(Key::right_shift) ? static_cast<Scalar>(2) : one());
+		if (input.isKeyDown(Key::w)) { eye.value = math::add(eye.value, math::scale(forward, movementStep)); }
+		if (input.isKeyDown(Key::s)) { eye.value = math::subtract(eye.value, math::scale(forward, movementStep)); }
+		if (input.isKeyDown(Key::a)) { eye.value = math::subtract(eye.value, math::scale(right, movementStep)); }
+		if (input.isKeyDown(Key::d)) { eye.value = math::add(eye.value, math::scale(right, movementStep)); }
+		if (input.isKeyDown(Key::q)) { eye.value = math::subtract(eye.value, math::scale(worldUp, movementStep)); }
+		if (input.isKeyDown(Key::e)) { eye.value = math::add(eye.value, math::scale(worldUp, movementStep)); }
 
 		return Camera::lookAt(eye, Position{.value = math::add(eye.value, forward)}, Direction{.value = worldUp});
 	}
