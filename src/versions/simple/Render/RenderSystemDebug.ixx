@@ -89,7 +89,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path) -> std::expected<void, Error> {
 			if (!system().initialized_) { return std::unexpected(Error::not_initialized); }
 			if (output_path.empty()) { return std::unexpected(Error::invalid_argument); }
-			return std::visit([&](auto &renderer) { return renderer.captureFrameToPng(output_path); }, system().renderer_);
+			return system().forward().captureFrameToPng(output_path);
 		}
 
 	private:

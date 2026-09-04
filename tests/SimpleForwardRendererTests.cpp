@@ -287,7 +287,7 @@ namespace {
 [[nodiscard]] bool hasDirectionalRuntimeToggleCoverage(vve::simple::Engine &engine,
                                                        vve::simple::RenderSystem &render_system) {
    using RecordedPass = vve::simple::ForwardRenderer::RecordedPass; ///< Concrete pass tags expose draw counts.
-   auto &renderer = std::get<vve::simple::ForwardRenderer>(render_system.backend());
+   auto &renderer = render_system.forward();
    const auto directional_pass_count = [&renderer] {
       return static_cast<std::size_t>(std::ranges::count(renderer.lastRecordedPassOrder(),
                                                         RecordedPass::directional_shadow));
@@ -447,7 +447,7 @@ namespace {
    const auto plane = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{});
    if (!plane) { return false; }
 
-   auto &forward = std::get<vve::simple::ForwardRenderer>(render_system.backend()); ///< Backend scene mirror.
+   auto &forward = render_system.forward(); ///< Backend scene mirror.
    if (forward.scene.objects.empty() || !forward.scene.objects.front().visible) { return false; }
    if (const auto hidden = render_system.setObjectVisible(*plane, false); !hidden) { return false; }
    const auto hidden_state = render_system.objectVisible(*plane);
@@ -473,7 +473,7 @@ namespace {
                                          .scale = vve::Scale{.value = vve::Vec3{2.0F, 0.5F, 1.5F}}};
    if (const auto moved = render_system.setObjectTransform(*plane, transform); !moved) { return false; }
 
-   auto &forward = std::get<vve::simple::ForwardRenderer>(render_system.backend()); ///< Backend scene mirror.
+   auto &forward = render_system.forward(); ///< Backend scene mirror.
    const auto missing = vve::makeHandleForTest<vve::RenderObjectHandle>(9'999U);
    const auto missing_move = render_system.setObjectTransform(missing, transform);
    return !forward.scene.objects.empty() &&
@@ -494,7 +494,7 @@ namespace {
                                                vve::Vec3{0.5F, 0.5F, 0.5F}, vve::LinearColor{});
    if (!plane || !cuboid) { return false; }
 
-   auto &forward = std::get<vve::simple::ForwardRenderer>(render_system.backend());
+   auto &forward = render_system.forward();
    if (forward.scene.objects.size() != loaded_object_count + 2U || render_system.sceneInstanceCount() != 2U) {
       return false;
    }
@@ -521,7 +521,7 @@ namespace {
    render_system.clearScene();
    const auto plane = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{});
    if (!plane || !engine.renderFrame()) { return false; }
-   auto &renderer = std::get<vve::simple::ForwardRenderer>(render_system.backend());
+   auto &renderer = render_system.forward();
    if (renderer.meshes.size() != 1U || renderer.scene.objects.size() != 1U) { return false; }
 
    const auto cuboid = render_system.addTexturedCuboid(
@@ -716,7 +716,7 @@ int main() {
    }
 
 #ifndef NDEBUG
-   std::get<vve::simple::ForwardRenderer>(render_system.backend()).setGpuDebugReadback(true);
+   render_system.forward().setGpuDebugReadback(true);
 #endif
    if (const auto result = engine.renderFrame(); !result) { return 4; }
    const auto status = engine.step();
@@ -738,7 +738,7 @@ int main() {
 
    // Verify frame and draw counters that belong to the current forward-renderer diagnostics.
    if (render_system.renderedFrameCount() != 1 || render_system.lastRenderedWindowCount() != 1) { return 5; }
-   const auto &forward_renderer = std::get<vve::simple::ForwardRenderer>(render_system.backend());
+   const auto &forward_renderer = render_system.forward();
    if (forward_renderer.presentedFrameCount() != 0 || forward_renderer.triangleDrawCount() != 0 ||
        forward_renderer.triangleVertexCount() != 0 || forward_renderer.sceneUploadCount() != 0 ||
        forward_renderer.sceneMeshDrawCount() != 0 || forward_renderer.sceneInstanceDrawCount() != 0 ||

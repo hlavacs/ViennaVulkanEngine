@@ -16,7 +16,6 @@ import VEEngine.Simple.Vulkan;
 	* - RenderDebugSample carries CPU/GPU per-vertex diagnostics for public debug access.
 	* - RenderShadowDepthSample carries CPU and optional GPU shadow-depth diagnostics.
 	* - ForwardRendererDebug owns shadow readback state, retained shadow samples, PNG capture, and diagnostic accessors.
-	* - StubRendererDebug exposes empty diagnostic accessors for the non-Vulkan renderer.
 	*/
 export namespace vve::simple {
 
@@ -308,58 +307,6 @@ export namespace vve::simple {
 				return static_cast<std::uint32_t>(std::min<std::uint64_t>(static_cast<std::uint64_t>(scaled), ShadowMap::resolution - 1U));
 			};
 			return {toTexel(lightNdc.x), toTexel(lightNdc.y)};
-		}
-	};
-
-	/// @brief Empty debug/readback surface mixed into the stub renderer.
-	struct StubRendererDebug {
-		/// @brief Reports the number of retained debug samples for the stub renderer.
-		[[nodiscard]] std::size_t sceneDebugSampleCount() const { return 0; }
-		/// @brief Returns a CPU debug sample when the stub renderer has retained one.
-		[[nodiscard]] std::optional<RenderDebugSample> sceneCpuDebugSample(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns a GPU debug sample when the stub renderer has retained one.
-		[[nodiscard]] std::optional<RenderDebugSample> sceneGpuDebugSample(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns clip-space debug error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> sceneDebugClipError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns depth debug error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns directional light-space debug error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns spot light-space debug error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> sceneDebugSpotLightSpaceError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns point light-space debug error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> sceneDebugPointLightSpaceError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns lighting debug error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns directional shadow-sample debug error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> sceneDebugShadowSampleError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns spot shadow-sample debug error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> sceneDebugSpotShadowSampleError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns point shadow-sample debug error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> sceneDebugPointShadowSampleError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Reports the number of retained directional shadow-depth samples for the stub renderer.
-		[[nodiscard]] std::size_t sceneShadowDepthSampleCount() const { return 0; }
-		/// @brief Returns a directional shadow-depth sample when the stub renderer has retained one.
-		[[nodiscard]] std::optional<RenderShadowDepthSample> sceneShadowDepthSample(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns directional shadow-depth error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> sceneShadowDepthError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Reports the number of retained spot shadow-depth samples for the stub renderer.
-		[[nodiscard]] std::size_t sceneSpotShadowDepthSampleCount() const { return 0; }
-		/// @brief Returns a spot shadow-depth sample when the stub renderer has retained one.
-		[[nodiscard]] std::optional<RenderShadowDepthSample> sceneSpotShadowDepthSample(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns spot shadow-depth error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> sceneSpotShadowDepthError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Reports the number of retained point shadow-depth samples for the stub renderer.
-		[[nodiscard]] std::size_t scenePointShadowDepthSampleCount() const { return 0; }
-		/// @brief Returns a point shadow-depth sample when the stub renderer has retained one.
-		[[nodiscard]] std::optional<RenderShadowDepthSample> scenePointShadowDepthSample(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns point shadow-depth error diagnostics retained by the stub renderer.
-		[[nodiscard]] std::optional<float> scenePointShadowDepthError(std::size_t index) const { (void)index; return {}; }
-
-		/// @brief Reports that the stub has no swapchain image to capture.
-		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path) -> std::expected<void, Error> {
-			(void)output_path;
-			return std::unexpected(Error::missing_object);
 		}
 	};
 

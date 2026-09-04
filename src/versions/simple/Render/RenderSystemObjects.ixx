@@ -188,9 +188,7 @@ export namespace vve::simple {
 			mesh->bounds = Bounds{.minimum = Position{.value = minimum},
 				.maximum = Position{.value = maximum}, .valid = true};
 
-			const bool updated = std::visit([&](auto &renderer) {
-				return renderer.updateObjectMeshPositions(object->second, positions);
-			}, system().renderer_);
+			const bool updated = system().forward().updateObjectMeshPositions(object->second, positions);
 			return updated ? std::expected<void, Error>{} :
 				std::unexpected(Error::invalid_argument);
 		}

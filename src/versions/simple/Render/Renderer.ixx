@@ -26,8 +26,6 @@ export import :RendererDraw;
 	* - ForwardRendererResources supplies GPU resource creation, swapchain recreation, and teardown through the renderer resources partition.
 	* - ForwardRendererDraw records per-frame shadow and color commands and submits the completed frame through the renderer draw partition.
 	* - ForwardRenderer owns the current CPU scene, swapchain image stack, depth attachment, unbound shadow maps and shadow pipeline, optional object texture, default object texture, forward render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, frame command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes needed before rendering.
-	* - StubRenderer exposes the same common renderer lifetime and scene surface without owning Vulkan state.
-	* - SelectedRenderer names the explicit renderer alternatives available to the simple render coordinator.
 	*/
 export namespace vve::simple {
 
@@ -89,9 +87,6 @@ export namespace vve::simple {
 		std::optional<std::uint32_t> lastRenderedImageIndex{}; ///< Swapchain image index from the last acquired, rendered, and presented frame.
 
 		~ForwardRenderer() { cleanup(); }
-
-		/// @brief Returns the stable renderer-selection id for this concrete forward renderer.
-		[[nodiscard]] RendererId id() const { return RendererId{.value = "forward"}; }
 
 		/// @brief Returns command-recorded pass tags from the most recent frame.
 		[[nodiscard]] std::span<const RecordedPass> lastRecordedPassOrder() const { return recordedPassOrder; }
@@ -230,93 +225,5 @@ export namespace vve::simple {
 		bool sceneRequiresFullUpload_{true}; ///< Removal or replacement requires rebuilding index-aligned GPU meshes.
 		std::set<std::size_t> sceneGeometryDirty_{}; ///< Existing GPU meshes requiring a vertex-buffer refresh.
 	};
-
-	/// @brief No-op renderer used as an explicit placeholder for future renderer selection.
-	struct StubRenderer : StubRendererDebug {
-		Scene scene{}; ///< CPU scene mirror kept so scene submission has the same storage shape.
-
-		/// @brief Returns the stable renderer-selection id for this placeholder renderer.
-		[[nodiscard]] RendererId id() const { return RendererId{.value = "stub"}; }
-
-		/// @brief Accepts the normal renderer setup entry point without creating resources.
-		[[nodiscard]] VkResult init(SDL_Window *sdlWindow) { (void)sdlWindow; return VK_SUCCESS; }
-
-		/// @brief Releases no resources because the stub owns no renderer backend.
-		void shutdown() {}
-
-		/// @brief Reports that the placeholder renderer never owns a live backend.
-		[[nodiscard]] bool initialized() const { return false; }
-
-		/// @brief Reports presented-frame diagnostics for the stub renderer.
-		[[nodiscard]] std::uint64_t presentedFrameCount() const { return 0; }
-		/// @brief Reports triangle-draw diagnostics for the stub renderer.
-		[[nodiscard]] std::uint64_t triangleDrawCount() const { return 0; }
-		/// @brief Reports triangle-vertex diagnostics for the stub renderer.
-		[[nodiscard]] std::uint32_t triangleVertexCount() const { return 0; }
-		/// @brief Reports scene-upload diagnostics for the stub renderer.
-		[[nodiscard]] std::uint64_t sceneUploadCount() const { return 0; }
-		/// @brief Reports scene-mesh draw diagnostics for the stub renderer.
-		[[nodiscard]] std::uint64_t sceneMeshDrawCount() const { return 0; }
-		/// @brief Reports scene-instance draw diagnostics for the stub renderer.
-		[[nodiscard]] std::uint64_t sceneInstanceDrawCount() const { return 0; }
-		/// @brief Reports scene-draw vertex diagnostics for the stub renderer.
-		[[nodiscard]] std::uint32_t sceneDrawVertexCount() const { return 0; }
-		/// @brief Reports scene-draw index diagnostics for the stub renderer.
-		[[nodiscard]] std::uint32_t sceneDrawIndexCount() const { return 0; }
-		/// @brief Reports the number of prepared shadow metadata rows for the stub renderer.
-		[[nodiscard]] std::size_t sceneShadowLightMetaCount() const { return 0; }
-		/// @brief Returns a prepared shadow metadata row when the stub renderer has one.
-		[[nodiscard]] std::optional<ShadowLightMeta> sceneShadowLightMeta(std::size_t index) const { (void)index; return {}; }
-		/// @brief Reports prepared GPU target diagnostics for the stub renderer.
-		[[nodiscard]] std::size_t preparedGpuTargetCount() const { return 0; }
-		std::array<float, 4> clearColor{0.0F, 0.0F, 0.0F, 1.0F}; ///< Last clear color used by the renderer.
-		/// @brief Reports the last clear color used by the stub renderer.
-		[[nodiscard]] std::array<float, 4> lastClearColor() const { return clearColor; }
-
-		/// @brief Replaces the stored CPU scene for parity with concrete renderer submission.
-		void loadScene(Scene nextScene) { scene = std::move(nextScene); }
-
-		/// @brief Appends one backend object to the stored CPU scene mirror.
-		void appendObject(Mesh backend_mesh, Mat4 model, std::optional<std::string> base_color_texture_source) {
-			const bool use_texture = base_color_texture_source.has_value();
-			if (use_texture) { scene.baseColorTexture = *std::move(base_color_texture_source); }
-			scene.objects.push_back(Object{.mesh = std::move(backend_mesh),
-													 .model = model,
-													 .useBaseColorTexture = use_texture ? 1U : 0U});
-		}
-
-		/// @brief Replaces positions for one fixed-topology CPU mesh.
-		[[nodiscard]] bool updateObjectMeshPositions(std::size_t index, const Vector<Vec3> &positions) {
-			if (index >= scene.objects.size() ||
-				scene.objects[index].mesh.vertices.size() != positions.size()) {
-				return false;
-			}
-			for (std::size_t vertex{}; vertex < positions.size(); ++vertex) {
-				scene.objects[index].mesh.vertices[vertex].position = {
-					positions[vertex].x, positions[vertex].y, positions[vertex].z};
-			}
-			return true;
-		}
-
-
-		/// @brief Removes one stored backend object by submission index.
-		[[nodiscard]] bool removeObject(std::size_t index) {
-			if (index >= scene.objects.size()) { return false; }
-			scene.objects.erase(scene.objects.begin() + static_cast<std::ptrdiff_t>(index));
-			return true;
-		}
-		/// @brief Clears the stored CPU scene through the common scene replacement path.
-		void clearScene() { loadScene(Scene{}); }
-
-		/// @brief Accepts a frame-render request without producing GPU work.
-		void renderFrame(VulkanReadback *readback = nullptr) { (void)readback; }
-
-	};
-
-	/// @brief Explicit renderer alternatives selectable by the simple render coordinator.
-	using SelectedRenderer = std::variant<ForwardRenderer, StubRenderer>;
-	static_assert(std::is_default_constructible_v<SelectedRenderer>);
-	static_assert(std::is_constructible_v<SelectedRenderer, std::in_place_type_t<ForwardRenderer>>);
-	static_assert(std::is_constructible_v<SelectedRenderer, std::in_place_type_t<StubRenderer>>);
 
 } // namespace vve::simple

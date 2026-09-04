@@ -304,11 +304,9 @@ export namespace vve::simple {
 
 			auto model = detail::modelMatrix(instance->local_transform);
 			const auto use_texture = !material->base_color_texture_source.empty();
-			std::visit([&](auto &renderer) {
-				renderer.appendObject(std::move(backend_mesh), model,
-											 use_texture ? std::optional<std::string>{material->base_color_texture_source.string()} :
-															 std::nullopt);
-			}, system().renderer_);
+			system().forward().appendObject(std::move(backend_mesh), model,
+													  use_texture ? std::optional<std::string>{material->base_color_texture_source.string()} :
+																	  std::nullopt);
 			if (system().forward().scene.objects.empty()) { return std::unexpected(Error::missing_object); }
 			return system().forward().scene.objects.size() - 1U;
 		}

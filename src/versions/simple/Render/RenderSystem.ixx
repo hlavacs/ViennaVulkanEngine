@@ -58,8 +58,8 @@ export namespace vve::simple {
 		auto setGuiRecordSink(std::function<void(VkCommandBuffer)> sink)												-> void;
 		[[nodiscard]] auto initialize(SDL_Window *window, RendererId id = {})												-> std::expected<void, Error>;
 		[[nodiscard]] auto makeGuiInitInfo() const																			-> std::optional<ImGui_ImplVulkan_InitInfo>;
-		[[nodiscard]] auto backend()																								-> SelectedRenderer &;
-		[[nodiscard]] auto backend() const																						-> const SelectedRenderer &;
+		[[nodiscard]] auto forward()																								-> ForwardRenderer &;
+		[[nodiscard]] auto forward() const																						-> const ForwardRenderer &;
 		auto shutdown()																													-> void;
 		[[nodiscard]] auto initialized() const																					-> bool;
 		[[nodiscard]] auto sceneMeshCount() const																					-> std::size_t;
@@ -105,11 +105,9 @@ export namespace vve::simple {
 		[[nodiscard]] auto acquireRenderMesh(MeshHandle imported_mesh)									-> std::optional<RenderMeshHandle>;
 		[[nodiscard]] auto acquireRenderMaterial(MaterialHandle imported_material)						-> RenderMaterialHandle;
 		[[nodiscard]] auto importedMaterialTextures(MaterialHandle material) const					-> std::optional<Vector<TextureHandle>>;
-		[[nodiscard]] auto forward()																					-> ForwardRenderer &;
-		[[nodiscard]] auto forward() const																				-> const ForwardRenderer &;
 
 		RenderScene scene_{};															///< Active CPU render scene.
-		SelectedRenderer renderer_{};													///< Selected renderer backend.
+		ForwardRenderer renderer_{};													///< Forward renderer backend.
 		ImportedAssetReadAccess imported_assets_{};								///< Borrowed asset-scene queries.
 		void *guiSystem_{nullptr};													///< Non-owning, type-erased GUI system pointer for later renderer wiring.
 		std::unordered_map<MeshHandle, RenderMeshHandle, HandleHash<MeshHandle>> imported_render_meshes_{};	///< Imported mesh cache.
@@ -140,26 +138,11 @@ namespace vve::simple {
 	inline RenderSystem::RenderSystem(ImportedAssetReadAccess imported_assets)
 		: imported_assets_{std::move(imported_assets)} {}
 
-	/// @brief Returns the current forward renderer backend.
-	inline auto RenderSystem::forward()																			-> ForwardRenderer &{
-		return std::get<ForwardRenderer>(renderer_);
-	}
+	/// @brief Returns the forward renderer backend.
+	inline auto RenderSystem::forward()																			-> ForwardRenderer &{ return renderer_; }
 
-	/// @brief Returns the current forward renderer backend.
-	inline auto RenderSystem::forward() const																	-> const ForwardRenderer &{
-		return std::get<ForwardRenderer>(renderer_);
-	}
-
-	/// @brief Renderer-selection seam used by renderer-specific tests.
-	inline auto RenderSystem::backend()																			-> SelectedRenderer &{
-		return renderer_;
-	}
-
-	/// @brief Renderer-selection seam used by renderer-specific tests.
-	inline auto RenderSystem::backend() const																	-> const SelectedRenderer &{
-		return renderer_;
-	}
-
+	/// @brief Returns the forward renderer backend.
+	inline auto RenderSystem::forward() const																	-> const ForwardRenderer &{ return renderer_; }
 
 	/// @brief Mints a public render-object handle for one internal scene instance.
 	inline auto RenderSystem::registerRenderObject(RenderInstanceHandle instance, std::size_t backend_index)
@@ -189,38 +172,29 @@ namespace vve::simple {
 
 	/// @brief Forwards the GUI recorder into the active forward renderer.
 	inline auto RenderSystem::setGuiRecordSink(std::function<void(VkCommandBuffer)> sink)			-> void{
-		if (std::holds_alternative<ForwardRenderer>(renderer_)) {
-			std::get<ForwardRenderer>(renderer_).setGuiRecordSink(std::move(sink));
-		}
+		renderer_.setGuiRecordSink(std::move(sink));
 	}
 
 	inline auto RenderSystem::initialize(SDL_Window *window, RendererId id)									-> std::expected<void, Error>{
 		if (initialized_) { return {}; }
 		if (window == nullptr) { return std::unexpected(Error::invalid_argument); }
-		if (id.value == "forward" || id.value.empty()) {
-			if (!std::holds_alternative<ForwardRenderer>(renderer_)) { renderer_.emplace<ForwardRenderer>(); }
-			std::get<ForwardRenderer>(renderer_).setGuiSystem(guiSystem_);
-		} else if (id.value == "stub") {
-			if (!std::holds_alternative<StubRenderer>(renderer_)) { renderer_.emplace<StubRenderer>(); }
-		} else {
-			return std::unexpected(Error::invalid_argument);
-		}
-		const VkResult result = std::visit([window](auto &renderer) { return renderer.init(window); }, renderer_);
+		if (id.value != "forward" && !id.value.empty()) { return std::unexpected(Error::invalid_argument); }
+		renderer_.setGuiSystem(guiSystem_);
+		const VkResult result = renderer_.init(window);
 		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
 		initialized_ = true;
 		return {};
 	}
 
 	inline auto RenderSystem::makeGuiInitInfo() const													-> std::optional<ImGui_ImplVulkan_InitInfo>{
-		if (!initialized_ || !std::holds_alternative<ForwardRenderer>(renderer_)) { return std::nullopt; }
-		const auto &forward = std::get<ForwardRenderer>(renderer_);
-		auto info = forward.makeImguiInitInfo();
+		if (!initialized_) { return std::nullopt; }
+		auto info = renderer_.makeImguiInitInfo();
 		info.RenderPass = VK_NULL_HANDLE;
 		info.UseDynamicRendering = true;
 		info.PipelineRenderingCreateInfo = VkPipelineRenderingCreateInfo{
 			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
 			.colorAttachmentCount = 1U,
-			.pColorAttachmentFormats = &forward.swapchain.imageFormat,
+			.pColorAttachmentFormats = &renderer_.swapchain.imageFormat,
 			.depthAttachmentFormat = VulkanDepthImage::format,	///< GUI records inside the forward color pass, which binds the depth image.
 		};
 		if (info.Device == VK_NULL_HANDLE || info.DescriptorPool == VK_NULL_HANDLE) {
@@ -232,17 +206,13 @@ namespace vve::simple {
 	/// @brief Waits for renderer-owned Vulkan work before dependent resources are destroyed.
 	inline auto RenderSystem::waitIdle() -> void {
 		if (!initialized_) { return; }
-		std::visit([](auto &renderer) {
-			if constexpr (std::same_as<std::remove_cvref_t<decltype(renderer)>, ForwardRenderer>) {
-				if (renderer.device.device != VK_NULL_HANDLE) { (void)vkDeviceWaitIdle(renderer.device.device); }
-			}
-		}, renderer_);
+		if (renderer_.device.device != VK_NULL_HANDLE) { (void)vkDeviceWaitIdle(renderer_.device.device); }
 	}
 
 	inline auto RenderSystem::shutdown()																				-> void{
 		if (initialized_) {
 			waitIdle();
-			std::visit([](auto &renderer) { renderer.shutdown(); }, renderer_);
+			renderer_.shutdown();
 			initialized_ = false;
 		}
 	}
@@ -279,7 +249,7 @@ namespace vve::simple {
 			return !window.should_close;
 		});
 		if (initialized_) {
-			std::visit([](auto &renderer) { renderer.renderFrame(nullptr); }, renderer_);
+			renderer_.renderFrame(nullptr);
 			++rendered_frames_;
 		} else {
 			++rendered_frames_;
