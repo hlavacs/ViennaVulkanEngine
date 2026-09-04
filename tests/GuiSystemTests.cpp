@@ -25,19 +25,5 @@ int main() {
    gui_system.recordFrame(VK_NULL_HANDLE);
    if (frame_callback_called) { return 3; }
 
-   constexpr std::string_view gui_overlay_pass{"gui.overlay_pass"};
-   const auto passes = vve::simple::GuiSystem::passes();
-   if (passes.size() != 3) { return 4; }
-   if (passes[0].name != gui_overlay_pass || passes[0].milestone) { return 5; }
-   if (passes[0].depends_on.size() != 1 || passes[0].depends_on[0] != vve::simple::RenderMilestone::scene_color()) {
-      return 6;
-   }
-   if (passes[1].name != vve::simple::RenderMilestone::gui() || !passes[1].milestone) { return 7; }
-   if (passes[1].depends_on.size() != 1 || passes[1].depends_on[0] != gui_overlay_pass) { return 8; }
-   if (passes[2].name != vve::simple::RenderMilestone::frame_finished() || !passes[2].milestone) { return 9; }
-   if (passes[2].depends_on.size() != 1 || passes[2].depends_on[0] != vve::simple::RenderMilestone::gui()) {
-      return 10;
-   }
-
    return 0;
 }

@@ -21,17 +21,6 @@ namespace {
    return color[0] == 0.0F && color[1] == 0.0F && color[2] == 0.0F && color[3] == 1.0F;
 }
 
-/// @brief Verifies the forward renderer declares shadow depth before color shading.
-[[nodiscard]] bool hasForwardShadowBeforeColorContract() {
-   const auto passes = vve::simple::ForwardRenderer{}.passes();                    ///< Static pass vocabulary.
-   const auto shadow_pass = std::ranges::find(passes, vve::simple::RenderMilestone::shadow_depth(),
-                                              &vve::simple::RenderPassContract::name);
-   const auto color_pass = std::ranges::find(passes, std::string_view{"forward.color_pass"},
-                                             &vve::simple::RenderPassContract::name);
-   if (shadow_pass == passes.end() || color_pass == passes.end()) { return false; } ///< Required nodes must exist.
-   return std::ranges::contains(color_pass->depends_on, vve::simple::RenderMilestone::shadow_depth());
-}
-
 /// @brief Verifies explicit command recording emits all shadow pass tags before forward color.
 [[nodiscard]] bool hasRecordedShadowsBeforeForwardColor(const vve::simple::ForwardRenderer &renderer) {
    using RecordedPass = vve::simple::ForwardRenderer::RecordedPass; ///< Concrete backend diagnostic enum.
@@ -616,8 +605,6 @@ namespace {
 } // namespace
 
 int main() {
-   if (!hasForwardShadowBeforeColorContract()) { return 10; }
-
    // Verify directional-light vector semantics before Vulkan renderer setup.
    vve::simple::RenderScene scene{};
    const auto first_directional = vve::simple::RenderDirectionalLight{

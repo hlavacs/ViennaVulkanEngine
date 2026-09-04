@@ -46,12 +46,6 @@ struct CountingSystem {
    }
 };
 
-[[nodiscard]] bool fileContains(const std::filesystem::path &path, std::string_view text) {
-   std::ifstream input(path, std::ios::binary);
-   const std::string content{std::istreambuf_iterator<char>{input}, std::istreambuf_iterator<char>{}};
-   return content.contains(text);
-}
-
 } // namespace
 
 int main() {
@@ -85,17 +79,6 @@ int main() {
       return 8;
    }
    if (!render_system.hasSceneCamera() || !render_system.hasSceneDirectionalLight()) { return 9; }
-
-#ifndef NDEBUG
-   const auto dump_dir = std::filesystem::temp_directory_path() / "vve_user_system_debug_graphs";
-   std::filesystem::remove_all(dump_dir);
-   if (const auto dumped = engine.writeDebugGraphs(dump_dir); !dumped) { return 2; }
-   const auto task_graph = dump_dir / "task_graph.json";
-   if (!fileContains(task_graph, "task.update_system.") || !fileContains(task_graph, "CountingSystem")) {
-      return 3;
-   }
-   std::filesystem::remove_all(dump_dir);
-#endif
 
    const auto first = engine.step();
    const auto second = engine.step();

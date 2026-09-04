@@ -34,14 +34,6 @@ namespace vve {
 			return result;
 		}
 
-		/// @brief Converts facade user-system task names into selected implementation descriptors.
-		[[nodiscard]] auto implementationUserSystemTasks(const Vector<ObjectName> &tasks)
-			-> VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks {
-			auto result = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::UserSystemTasks{};
-			for (const auto &task : tasks) { result.value.push_back(task); }
-			return result;
-		}
-
 		/// @brief Converts selected implementation window snapshots into facade frame data.
 		[[nodiscard]] auto facadeWindowFrame(const VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData &frame)
 			-> WindowFrameData {
@@ -66,13 +58,12 @@ namespace vve {
 
 		/// @brief Creates the selected engine implementation from facade-owned startup options.
 		EngineStateHandle makeEngineState(EngineStartupOptions options) {
-			const auto tasks = implementationUserSystemTasks(options.user_system_tasks);
 			if (options.windows.has_value()) {
 				return EngineStateHandle{
-					new EngineState{std::move(options.config), implementationWindows(*options.windows), tasks},
+					new EngineState{std::move(options.config), implementationWindows(*options.windows)},
 					EngineStateDeleter{}};
 			}
-			return EngineStateHandle{new EngineState{std::move(options.config), tasks}, EngineStateDeleter{}};
+			return EngineStateHandle{new EngineState{std::move(options.config)}, EngineStateDeleter{}};
 		}
 
 		/// @brief Returns the selected implementation major version.
@@ -112,12 +103,6 @@ namespace vve {
 		/// @brief Renders one frame through the selected implementation.
 		std::expected<void, Error> engineRenderFrame(EngineState &state) {
 			return state.impl.renderFrame();
-		}
-
-		/// @brief Writes selected implementation debug graphs.
-		std::expected<void, Error>
-		engineWriteDebugGraphs(const EngineState &state, const std::filesystem::path &directory) {
-			return state.impl.writeDebugGraphs(directory);
 		}
 
 	} // namespace detail

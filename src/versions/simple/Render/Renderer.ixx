@@ -6,7 +6,6 @@ module;
 export module VEEngine.Simple.Renderer;
 import std;
 import VEEngine.Types;
-import VEEngine.Simple.RenderPassContract;
 import VEEngine.Simple.Math;
 import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
@@ -15,34 +14,6 @@ export import :RendererDebug;
 export import :RendererShadowPrep;
 export import :RendererResources;
 export import :RendererDraw;
-
-namespace vve::simple::detail {
-
-	static constexpr std::string_view forward_renderer_pass{"forward.color_pass"};											///< Forward color pass node.
-	static constexpr std::array forward_renderer_shadow_deps{RenderMilestone::frame_begin()};				///< Spot shadow depth dependency.
-	static constexpr std::array forward_renderer_pass_deps{RenderMilestone::shadow_depth()};				///< Forward color pass dependency.
-	static constexpr std::array forward_renderer_scene_done_deps{forward_renderer_pass};						///< Scene-color milestone input.
-	static constexpr std::array forward_renderer_finished_deps{RenderMilestone::scene_color()};			///< Frame-finished input.
-	static constexpr std::array forward_renderer_pass_contracts{															///< Minimal renderer pass contract list.
-		RenderPassContract{.name = RenderMilestone::frame_begin(), .outputs = "frame inputs", .milestone = true},
-		RenderPassContract{.name = RenderMilestone::shadow_depth(),
-									.depends_on = forward_renderer_shadow_deps,
-									.inputs = "registered render resources",
-									.outputs = "spot shadow depth array"},
-		RenderPassContract{.name = forward_renderer_pass,
-									.depends_on = forward_renderer_pass_deps,
-									.inputs = "registered render resources",
-									.outputs = "forward scene color"},
-		RenderPassContract{.name = RenderMilestone::scene_color(),
-									.depends_on = forward_renderer_scene_done_deps,
-									.outputs = "forward scene color is ready",
-									.milestone = true},
-		RenderPassContract{.name = RenderMilestone::frame_finished(),
-									.depends_on = forward_renderer_finished_deps,
-									.outputs = "frame can be presented",
-									.milestone = true}};
-
-} // namespace vve::simple::detail
 
 /**
 	* @file
@@ -121,9 +92,6 @@ export namespace vve::simple {
 
 		/// @brief Returns the stable renderer-selection id for this concrete forward renderer.
 		[[nodiscard]] RendererId id() const { return RendererId{.value = "forward"}; }
-
-		/// @brief Declares this renderer's render passes and dependencies for graph merging.
-		[[nodiscard]] std::span<const RenderPassContract> passes() const { return detail::forward_renderer_pass_contracts; }
 
 		/// @brief Returns command-recorded pass tags from the most recent frame.
 		[[nodiscard]] std::span<const RecordedPass> lastRecordedPassOrder() const { return recordedPassOrder; }
@@ -269,9 +237,6 @@ export namespace vve::simple {
 
 		/// @brief Returns the stable renderer-selection id for this placeholder renderer.
 		[[nodiscard]] RendererId id() const { return RendererId{.value = "stub"}; }
-
-		/// @brief Declares this renderer's render passes and dependencies for graph merging.
-		[[nodiscard]] std::span<const RenderPassContract> passes() const { return detail::forward_renderer_pass_contracts; }
 
 		/// @brief Accepts the normal renderer setup entry point without creating resources.
 		[[nodiscard]] VkResult init(SDL_Window *sdlWindow) { (void)sdlWindow; return VK_SUCCESS; }

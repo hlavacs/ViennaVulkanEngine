@@ -21,32 +21,9 @@ export import VEEngine.Simple.Handle;
 export import :Gui;
 
 /// @file
-/// @brief Small simple runtime facade: SDL windows, input, graphs, and stub subsystems.
+/// @brief Small simple runtime facade: SDL windows, input, assets, rendering, and GUI.
 
 export namespace vve::simple {
-
-	struct TaskHandleTag {};								///< simple CPU task graph node handle tag.
-
-	using TaskHandle = TypedHandle<TaskHandleTag>;	///< simple CPU task graph node handle.
-
-	/// @brief User-system task names supplied by the facade for graph dumps.
-	struct UserSystemTasks {
-		Vector<ObjectName> value{};													///< Task names already formatted for the task graph.
-	};
-
-} // namespace vve::simple
-
-export namespace vve::simple {
-
-	using TaskGraph = Graph<TaskHandle>;				///< Generic DAG for CPU frame-task dependencies.
-
-	namespace detail {
-
-#ifndef NDEBUG
-		inline constexpr std::int32_t debugDumpGraphHotkey{0x40000042};	///< SDL keycode for F9.
-#endif
-
-	} // namespace detail
 
 	/// @brief Educational simple engine shell with SDL windows and lightweight subsystems.
 	class Engine {
@@ -76,15 +53,11 @@ export namespace vve::simple {
 		[[nodiscard]] auto run()													-> std::expected<void, Error>;
 		[[nodiscard]] auto step()													-> std::expected<FrameStatus, Error>;
 		[[nodiscard]] auto renderFrame()										-> std::expected<void, Error>;
-		[[nodiscard]] std::expected<void, Error>
-		writeDebugGraphs(const std::filesystem::path &directory = "graph_dumps") const;
 
 	private:
 		template <typename TOption> void applyOption(TOption &&);
 		[[nodiscard]] auto makeImportedAssetReadAccess()					-> ImportedAssetReadAccess;
 		auto applyDefaults()															-> void;
-		[[nodiscard]] auto buildDefaultGraphs()								-> std::expected<void, Error>;
-		[[nodiscard]] static auto graphFileStem(std::string_view text)	-> std::string;
 
 		ApplicationName application_name_{};										///< Name used for default window titles.
 		MaxFrames max_frames_{};														///< Optional frame cap.
@@ -93,11 +66,8 @@ export namespace vve::simple {
 		WindowSystem window_system_{};												///< SDL platform window owner.
 		AssetSystem assets_{};															///< Asset and object catalog facade.
 		RenderSystem render_system_{makeImportedAssetReadAccess()};					///< Renderer selection and active CPU render scene.
-		TaskGraph tasks_{};																///< CPU task graph facade.
-		RenderGraph render_graph_{};													///< Render pass graph facade.
 		ShaderSystem shaders_{};														///< Shader descriptor facade.
 		GuiSystem gui_{};																	///< GUI descriptor facade.
-		Vector<ObjectName> user_system_tasks_{};									///< User-system task names supplied by the facade.
 		std::chrono::steady_clock::time_point last_frame_time_{};			///< Timestamp of the previous step().
 		std::uint64_t frame_{0};														///< Number of completed step() calls.
 		bool initialized_{false};														///< True after init() succeeds.
@@ -124,7 +94,7 @@ export namespace vve::simple {
 		applyDefaults();
 	}
 
-	/// @brief Creates an engine from typed options such as ApplicationName, Windows, and UserSystemTasks.
+	/// @brief Creates an engine from typed options such as ApplicationName, MaxFrames, and Windows.
 	template <typename... TOptions>
 		requires(sizeof...(TOptions) > 0)
 	Engine::Engine(TOptions &&...options) {
@@ -162,11 +132,10 @@ export namespace vve::simple {
 		return window_system_;
 	}
 
-	/// @brief Creates SDL windows and default graphs.
+	/// @brief Creates SDL windows.
 	inline auto Engine::init()																				-> std::expected<void, Error>{
 		if (initialized_) { return {}; }
 		if (const auto result = window_system_.init(windows_); !result) { return result; }
-		if (const auto result = buildDefaultGraphs(); !result) { return result; }
 		last_frame_time_ = std::chrono::steady_clock::now();
 		initialized_ = true;
 		return {};
@@ -188,11 +157,6 @@ export namespace vve::simple {
 	inline auto Engine::step()																				-> std::expected<FrameStatus, Error>{
 		if (!initialized_) { return std::unexpected(Error::missing_object); }
 		if (const auto result = window_system_.poll(); !result) { return std::unexpected(result.error()); }
-#ifndef NDEBUG
-		if (window_system_.input().wasKeyPressed(detail::debugDumpGraphHotkey)) {
-			if (const auto result = writeDebugGraphs(); !result) { return std::unexpected(result.error()); }
-		}
-#endif
 
 		const auto now = std::chrono::steady_clock::now();
 		last_frame_time_ = now;
@@ -243,8 +207,6 @@ export namespace vve::simple {
 			max_frames_ = std::forward<TOption>(option);
 		} else if constexpr (std::same_as<Option, Windows>) {
 			windows_ = std::forward<TOption>(option);
-		} else if constexpr (std::same_as<Option, UserSystemTasks>) {
-			user_system_tasks_ = std::forward<TOption>(option).value;
 		}
 	}
 
@@ -278,82 +240,6 @@ export namespace vve::simple {
 				window.title = application_name_.value;
 			}
 		}
-	}
-
-	/// @brief Builds simple inspectable default graphs for debug dumps and teaching.
-	inline auto Engine::buildDefaultGraphs()															-> std::expected<void, Error>{
-		tasks_ = {};
-		render_graph_ = {};
-
-		const auto begin = tasks_.addNode(ObjectName{.value = "task.frame_begin"});
-		const auto poll = tasks_.addNode(ObjectName{.value = "task.poll_window_events"});
-		const auto render = tasks_.addNode(ObjectName{.value = "task.render_graph"});
-		const auto finish = tasks_.addNode(ObjectName{.value = "task.frame_finished"});
-		if (!begin || !poll || !render || !finish) { return std::unexpected(Error::internal_error); }
-
-		tasks_.addEdge(*begin, *poll);
-		auto previous = *poll;
-		for (const auto &task_name : user_system_tasks_) {
-			const auto task = tasks_.addNode(task_name);
-			if (!task) { return std::unexpected(task.error()); }
-			tasks_.addEdge(previous, *task);
-			previous = *task;
-		}
-		tasks_.addEdge(previous, *render);
-		tasks_.addEdge(*render, *finish);
-
-		const auto renderer_id = RendererId{.value = "forward"};
-		const auto renderer = render_system_.createRenderer(renderer_id);
-		if (!renderer) { return std::unexpected(renderer.error()); }
-
-		const std::array pass_lists{renderer->passes, gui_.passes()};
-		const auto graph = render_system_.buildRenderGraph(pass_lists);
-		if (!graph) { return std::unexpected(graph.error()); }
-		render_graph_ = *graph;
-		return {};
-	}
-
-	/// @brief Converts a window id into a compact filesystem-safe graph dump stem.
-	inline auto Engine::graphFileStem(std::string_view text)										-> std::string{
-		std::string result{};
-		result.reserve(text.size());
-		for (const char ch : text) {
-			const bool safe = (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z') ||
-									(ch >= '0' && ch <= '9') || ch == '-' || ch == '_';
-			result.push_back(safe ? ch : '_');
-		}
-		return result.empty() ? "window" : result;
-	}
-
-	/// @brief Writes task and render graph JSON dumps into a debug directory.
-	inline auto Engine::writeDebugGraphs(const std::filesystem::path &directory) const	-> std::expected<void, Error>{
-#ifndef NDEBUG
-		const auto task_path = directory / "task_graph.json";
-		const auto render_path = directory / "render_graph.json";
-		if (const auto result = tasks_.writeJson(task_path, "task_graph", "simple task graph"); !result) { return result; }
-		if (const auto result = render_graph_.writeJson(render_path, "render_graph", "simple render graph"); !result) {
-			return result;
-		}
-
-		for (const auto &window : window_system_.snapshot()) {
-			auto renderer_id = window.renderer_id.value.empty() ? RendererId{.value = "forward"} : window.renderer_id;
-			const auto renderer = render_system_.createRenderer(renderer_id);
-			if (!renderer) { return std::unexpected(renderer.error()); }
-
-			const std::array pass_lists{renderer->passes, gui_.passes()};
-			const auto graph = render_system_.buildRenderGraph(pass_lists);
-			if (!graph) { return std::unexpected(graph.error()); }
-
-			const auto file = directory / ("render_graph_" + graphFileStem(window.id) + ".json");
-			const auto name = "simple render graph window=" + window.id + " renderer=" + renderer->id.value;
-			if (const auto result = graph->writeJson(file, "render_graph", name); !result) { return result; }
-		}
-
-		return {};
-#else
-		(void)directory;
-		return {};
-#endif
 	}
 
 } // namespace vve::simple

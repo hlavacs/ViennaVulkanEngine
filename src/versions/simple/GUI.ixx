@@ -15,7 +15,6 @@ module;
 
 export module VEEngine.Simple:Gui;
 import std;
-export import :RenderPass;
 export import :Types;
 
 /// @file
@@ -51,7 +50,6 @@ export namespace vve::simple {
 		[[nodiscard]] auto containsWidget(GuiWidgetHandle handle) const	-> bool;
 		[[nodiscard]] auto widgetLabel(GuiWidgetHandle handle) const		-> std::expected<std::string, Error>;
 		[[nodiscard]] auto widgetCount() const										-> std::size_t;
-		[[nodiscard]] static constexpr auto passes() noexcept					-> std::span<const RenderPassContract>;
 
 	private:
 		std::map<GuiWidgetHandle, GuiWidgetRecord> widgets_{};	///< Widgets by handle.
@@ -63,31 +61,6 @@ export namespace vve::simple {
 	};
 
 } // namespace vve::simple
-
-namespace vve::simple::detail {
-
-	inline constexpr std::string_view gui_overlay_pass{"gui.overlay_pass"};					///< Real GUI overlay pass.
-	inline constexpr std::array gui_pass_dependencies{RenderMilestone::scene_color()};	///< GUI needs scene color.
-	inline constexpr std::array gui_done_dependencies{gui_overlay_pass};						///< GUI milestone input.
-	inline constexpr std::array gui_frame_dependencies{RenderMilestone::gui()};			///< Final frame input.
-	inline constexpr std::array gui_pass_contracts{													///< GUI graph wiring.
-			RenderPassContract{.name = gui_overlay_pass,
-									.depends_on = gui_pass_dependencies,
-									.shader_file = "Gui.slang",
-									.vertex_entry = "vveGuiVertexMain",
-									.fragment_entry = "vveGuiFragmentMain",
-									.inputs = "scene color target, GUI draw data",
-									.outputs = "color target with GUI overlay"},
-			RenderPassContract{.name = RenderMilestone::gui(),
-									.depends_on = gui_done_dependencies,
-									.outputs = "GUI overlay is ready",
-									.milestone = true},
-			RenderPassContract{.name = RenderMilestone::frame_finished(),
-									.depends_on = gui_frame_dependencies,
-									.outputs = "frame can be presented",
-									.milestone = true}};
-
-} // namespace vve::simple::detail
 
 export namespace vve::simple {
 
@@ -185,8 +158,5 @@ export namespace vve::simple {
 
 	/// @brief Returns widget count.
 	inline std::size_t GuiSystem::widgetCount() const { return widgets_.size(); }
-
-	/// @brief Returns the GUI system render pass list.
-	constexpr std::span<const RenderPassContract> GuiSystem::passes() noexcept { return detail::gui_pass_contracts; }
 
 } // namespace vve::simple

@@ -3,11 +3,11 @@ import std;
 export import :Types;
 
 /// @file
-/// @brief Generic named DAG and tree helpers shared by simple task, render, and scene structures.
+/// @brief Generic named DAG and tree helpers used by the simple asset scene tree.
 
 export namespace vve::simple {
 
-	/// @brief Small named DAG with reverse edges for parent lookup and JSON inspection.
+	/// @brief Small named DAG with reverse edges for parent lookup.
 	template <typename THandle> class Graph {
 	public:
 		[[nodiscard]] std::expected<THandle, Error> addNode(ObjectName name = {});
@@ -19,9 +19,6 @@ export namespace vve::simple {
 		[[nodiscard]] auto parents(THandle handle) const										-> Vector<THandle>;
 		[[nodiscard]] auto topologicalOrder() const												-> std::expected<Vector<THandle>, Error>;
 		[[nodiscard]] auto nodeCount() const														-> std::size_t;
-		[[nodiscard]] auto toJson(std::string_view kind, std::string_view name) const	-> std::string;
-		[[nodiscard]] std::expected<void, Error> writeJson(const std::filesystem::path &path,
-																			std::string_view kind, std::string_view name) const;
 
 	private:
 		using EdgeMap = std::unordered_multimap<THandle, THandle, HandleHash<THandle>>;
@@ -47,14 +44,6 @@ export namespace vve::simple {
 	};
 
 } // namespace vve::simple
-
-namespace vve::simple::detail {
-
-	auto appendJsonString(std::string &output, std::string_view text)										-> void;
-	template <typename THandle> [[nodiscard]] std::string jsonHandleId(THandle handle);
-	[[nodiscard]] auto writeJsonFile(const std::filesystem::path &path, std::string_view json)	-> std::expected<void, Error>;
-
-} // namespace vve::simple::detail
 
 namespace vve::simple {
 
@@ -182,106 +171,6 @@ namespace vve::simple {
 		if (!Base::contains(handle)) { return std::unexpected(Error::missing_object); }
 		const auto values = Base::parents(handle);
 		return values.empty() ? std::optional<THandle>{} : std::optional<THandle>{values.front()};
-	}
-
-
-} // namespace vve::simple
-
-namespace vve::simple::detail {
-
-	/// @brief Appends one JSON string literal with minimal escaping.
-	inline auto appendJsonString(std::string &output, std::string_view text)							-> void{
-		output.push_back('"');
-		for (const char ch : text) {
-			switch (ch) {
-			case '"': output += "\\\""; break;
-			case '\\': output += "\\\\"; break;
-			case '\b': output += "\\b"; break;
-			case '\f': output += "\\f"; break;
-			case '\n': output += "\\n"; break;
-			case '\r': output += "\\r"; break;
-			case '\t': output += "\\t"; break;
-			default: output.push_back(static_cast<unsigned char>(ch) < 0x20U ? ' ' : ch); break;
-			}
-		}
-		output.push_back('"');
-	}
-
-	/// @brief Returns a stable JSON id for a typed handle.
-	template <typename THandle> inline std::string jsonHandleId(THandle handle) {
-		return std::to_string(handle.value);
-	}
-
-	/// @brief Writes a UTF-8 JSON string to disk, creating the parent directory when needed.
-	inline auto writeJsonFile(const std::filesystem::path &path, std::string_view json)				-> std::expected<void, Error>{
-		std::error_code error{};
-		if (!path.parent_path().empty()) { std::filesystem::create_directories(path.parent_path(), error); }
-		if (error) { return std::unexpected(Error::internal_error); }
-
-		std::ofstream output(path, std::ios::binary | std::ios::trunc);
-		if (!output.is_open()) { return std::unexpected(Error::internal_error); }
-		output << json;
-		return {};
-	}
-
-} // namespace vve::simple::detail
-
-namespace vve::simple {
-
-	/// @brief Returns a simple node-and-edge JSON dump for graph visualization tools.
-	template <typename THandle>
-	std::string Graph<THandle>::toJson(std::string_view kind, std::string_view name) const {
-		std::string json{};
-		json += "{\n  \"kind\": ";
-		detail::appendJsonString(json, kind);
-		json += ",\n  \"name\": ";
-		detail::appendJsonString(json, name);
-		json += ",\n  \"nodes\": [";
-
-		bool first_node{true};
-		for (const auto &[handle, node_name] : nodes_) {
-			json += first_node ? "\n" : ",\n";
-			first_node = false;
-			json += "    {\"id\": ";
-			detail::appendJsonString(json, detail::jsonHandleId(handle));
-			json += ", \"name\": ";
-			detail::appendJsonString(json, node_name.value);
-			json += "}";
-		}
-
-		json += "\n  ],\n  \"edges\": [";
-		std::vector<std::pair<THandle, THandle>> edges{};
-		edges.reserve(outgoing_.size());
-		for (const auto &[from, to] : outgoing_) { edges.emplace_back(from, to); }
-		std::ranges::sort(edges, [](const auto &lhs, const auto &rhs) {
-			if (lhs.first == rhs.first) { return lhs.second < rhs.second; }
-			return lhs.first < rhs.first;
-		});
-
-		bool first_edge{true};
-		for (const auto [from, to] : edges) {
-			json += first_edge ? "\n" : ",\n";
-			first_edge = false;
-			json += "    {\"from\": ";
-			detail::appendJsonString(json, detail::jsonHandleId(from));
-			json += ", \"to\": ";
-			detail::appendJsonString(json, detail::jsonHandleId(to));
-			json += ", \"from_name\": ";
-			detail::appendJsonString(json, nodes_.contains(from) ? nodes_.at(from).value : "");
-			json += ", \"to_name\": ";
-			detail::appendJsonString(json, nodes_.contains(to) ? nodes_.at(to).value : "");
-			json += "}";
-		}
-
-		json += "\n  ]\n}\n";
-		return json;
-	}
-
-	/// @brief Writes the graph JSON dump to disk.
-	template <typename THandle>
-	std::expected<void, Error> Graph<THandle>::writeJson(const std::filesystem::path &path,
-																			std::string_view kind, std::string_view name) const {
-		return detail::writeJsonFile(path, toJson(kind, name));
 	}
 
 } // namespace vve::simple
