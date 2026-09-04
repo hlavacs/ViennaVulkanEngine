@@ -15,12 +15,32 @@ import VEEngine.Simple.Vulkan;
 import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Renderer;
-import :RenderSystemScene;
-import :RenderSystemObjects;
 export import :RenderResources;
 
 /// @file
 /// @brief Simple render coordinator: renderer backend ownership and scene mirroring.
+
+namespace vve::simple::detail {
+
+	/// @brief Builds the backend model matrix from the public transform contract.
+	[[nodiscard]] inline auto modelMatrix(Transform transform) -> Mat4 {
+		const auto q = transform.rotation.value;
+		auto rotation = identityMat4();
+		rotation[0][0] = one() - static_cast<Scalar>(2) * (q.y * q.y + q.z * q.z);
+		rotation[0][1] = static_cast<Scalar>(2) * (q.x * q.y + q.w * q.z);
+		rotation[0][2] = static_cast<Scalar>(2) * (q.x * q.z - q.w * q.y);
+		rotation[1][0] = static_cast<Scalar>(2) * (q.x * q.y - q.w * q.z);
+		rotation[1][1] = one() - static_cast<Scalar>(2) * (q.x * q.x + q.z * q.z);
+		rotation[1][2] = static_cast<Scalar>(2) * (q.y * q.z + q.w * q.x);
+		rotation[2][0] = static_cast<Scalar>(2) * (q.x * q.z + q.w * q.y);
+		rotation[2][1] = static_cast<Scalar>(2) * (q.y * q.z - q.w * q.x);
+		rotation[2][2] = one() - static_cast<Scalar>(2) * (q.x * q.x + q.y * q.y);
+		auto model = translate(identityMat4(), transform.translation.value);
+		model = multiply(model, rotation);
+		return scale(model, transform.scale.value);
+	}
+
+} // namespace vve::simple::detail
 
 export namespace vve::simple {
 
@@ -45,11 +65,47 @@ export namespace vve::simple {
 
 
 	/// @brief simple render facade coordinating the renderer backend and CPU render scene.
-	class RenderSystem : public RenderSystemScene<RenderSystem>, public RenderSystemObjects<RenderSystem> {
+	class RenderSystem {
 	public:
 		RenderSystem() = default;
 		explicit RenderSystem(ImportedAssetReadAccess imported_assets);
 		[[nodiscard]] auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {})	-> std::expected<RenderSceneInstanceHandle, Error>;
+
+		// Object state, cameras, and lights mirrored into the renderer CPU scene (RenderSystemScene.ixx).
+		[[nodiscard]] auto setObjectUnlit(RenderObjectHandle handle, bool unlit)										-> std::expected<void, Error>;
+		[[nodiscard]] auto setObjectCastsShadow(RenderObjectHandle handle, bool casts_shadow)					-> std::expected<void, Error>;
+		[[nodiscard]] auto setObjectVisible(RenderObjectHandle handle, bool visible)									-> std::expected<void, Error>;
+		[[nodiscard]] auto objectVisible(RenderObjectHandle handle) const												-> std::expected<bool, Error>;
+		[[nodiscard]] auto setObjectTransform(RenderObjectHandle handle, Transform transform)					-> std::expected<void, Error>;
+		[[nodiscard]] auto objectTransform(RenderObjectHandle handle) const											-> std::expected<Transform, Error>;
+		auto setCamera(Camera camera, PixelExtent extent)																	-> void;
+		auto setDirectionalLight(Direction direction_to_light, LinearColor color, LightIntensity intensity, LinearColor ambient) -> void;
+		auto addDirectionalLight(Direction direction_to_light, LinearColor color, LightIntensity intensity, LinearColor ambient) -> void;
+		auto setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range)	-> void;
+		auto setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range, LinearColor ambient) -> void;
+		auto addPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range)	-> void;
+		auto addPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range, LinearColor ambient) -> void;
+		auto setSpotLight(Position position, Direction direction, LinearColor color, LightIntensity intensity, LightRange range, SpotConeAngle cone) -> void;
+		auto setSpotLight(Position position, Direction direction, LinearColor color, LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient) -> void;
+		auto addSpotLight(Position position, Direction direction, LinearColor color, LightIntensity intensity, LightRange range, SpotConeAngle cone) -> void;
+		auto addSpotLight(Position position, Direction direction, LinearColor color, LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient) -> void;
+
+		// Primitive objects, object removal, and loaded-scene lifecycle (RenderSystemObjects.ixx).
+		[[nodiscard]] auto removeObject(RenderObjectHandle handle)																-> std::expected<void, Error>;
+		[[nodiscard]] auto sceneInstanceObjects(RenderSceneInstanceHandle instance) const						-> std::expected<Vector<RenderObjectHandle>, Error>;
+		[[nodiscard]] auto objectSourceScene(RenderObjectHandle handle) const										-> std::expected<RenderSceneInstanceHandle, Error>;
+		[[nodiscard]] auto objectSourceNode(RenderObjectHandle handle) const											-> std::expected<NodeHandle, Error>;
+		[[nodiscard]] auto removeSceneInstance(RenderSceneInstanceHandle instance)									-> std::expected<void, Error>;
+		[[nodiscard]] auto removeScene(SceneHandle handle)																	-> std::expected<void, Error>;
+		[[nodiscard]] auto purgeUnusedAssets()																						-> std::size_t;
+		[[nodiscard]] auto addPlane(Vec2 half_extent, LinearColor color, Transform transform = {})			-> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto addTriangleMesh(Vector<Vec3> positions, Vector<std::uint32_t> indices, LinearColor color, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto setObjectMeshPositions(RenderObjectHandle handle, Vector<Vec3> positions)			-> std::expected<void, Error>;
+		[[nodiscard]] auto addTexturedCuboid(Vec3 minimum, Vec3 maximum, std::filesystem::path base_color_texture, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
+		auto clearScene()																												-> void;
+		auto loadScene(Scene scene)																									-> SceneHandle;
+
 		auto waitIdle() -> void;
 		/// @brief Stores the borrowed GUI system for later forwarding to renderer backends.
 		auto setGuiSystem(void *gui)																								-> void;
@@ -85,11 +141,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto lastRenderedWindowCount() const																		-> std::size_t;
 
 	private:
-		template<typename>
-		friend struct RenderSystemScene;
-		template<typename>
-		friend struct RenderSystemObjects;
-
+		[[nodiscard]] auto appendBackendObject(RenderInstanceHandle instance_handle)							-> std::expected<std::size_t, Error>;
 		[[nodiscard]] auto registerRenderObject(RenderInstanceHandle instance, std::size_t backend_index)	-> RenderObjectHandle;
 		[[nodiscard]] auto findRenderObject(RenderObjectHandle handle) const
 			-> std::optional<std::pair<RenderInstanceHandle, std::size_t>>;
