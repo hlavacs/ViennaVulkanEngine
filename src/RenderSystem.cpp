@@ -232,132 +232,6 @@ namespace vve {
 	/// @brief Returns source index count in the active CPU scene.
 	std::size_t RenderSystem::sceneIndexCount() const { return impl_.sceneIndexCount(); }
 
-	/// @brief Returns directional shadow-depth debug sample count in the active scene.
-	std::size_t RenderSystem::sceneShadowDepthSampleCount() const {
-		return impl_.sceneShadowDepthSampleCount();
-	}
-
-	/// @brief Returns one directional shadow-depth debug sample converted to facade data.
-	std::optional<RenderShadowDepthSample> RenderSystem::sceneShadowDepthSample(std::size_t index) const {
-		const auto sample = impl_.sceneShadowDepthSample(index);
-		if (!sample) { return std::nullopt; }
-		return RenderShadowDepthSample{.triangle_id = sample->triangle_id,
-												 .face_index = sample->face_index,
-												 .world = sample->world,
-												 .light_ndc = sample->light_ndc,
-												 .pixel_x = sample->pixel_x,
-												 .pixel_y = sample->pixel_y,
-												 .expected_depth = sample->expected_depth,
-												 .bias = sample->bias,
-												 .shadow_factor = sample->shadow_factor,
-												 .gpu_depth = sample->gpu_depth,
-												 .error = sample->error,
-												 .has_gpu = sample->has_gpu,
-												 .valid = sample->valid};
-	}
-
-	/// @brief Returns spot-light shadow-depth debug sample count in the active scene.
-	std::size_t RenderSystem::sceneSpotShadowDepthSampleCount() const {
-		return impl_.sceneSpotShadowDepthSampleCount();
-	}
-
-	/// @brief Returns one spot-light shadow-depth debug sample converted to facade data.
-	std::optional<SpotShadowDepthSample> RenderSystem::sceneSpotShadowDepthSample(std::size_t index) const {
-		const auto sample = impl_.sceneSpotShadowDepthSample(index);
-		if (!sample) { return std::nullopt; }
-		return SpotShadowDepthSample{.triangle_id = sample->triangle_id,
-											  .face_index = sample->face_index,
-											  .world = sample->world,
-											  .light_ndc = sample->light_ndc,
-											  .pixel_x = sample->pixel_x,
-											  .pixel_y = sample->pixel_y,
-											  .expected_depth = sample->expected_depth,
-											  .bias = sample->bias,
-											  .shadow_factor = sample->shadow_factor,
-											  .gpu_depth = sample->gpu_depth,
-											  .error = sample->error,
-											  .has_gpu = sample->has_gpu,
-											  .valid = sample->valid};
-	}
-
-	/// @brief Returns the selected spot shadow slot for one debug sample.
-	std::optional<std::uint32_t> RenderSystem::sceneSpotShadowDepthSampleSlot(std::size_t index) const {
-		const auto sample = impl_.sceneSpotShadowDepthSample(index);
-		return sample ? std::optional<std::uint32_t>{sample->face_index} : std::nullopt;
-	}
-
-	/// @brief Returns the CPU-computed spot light-space depth for one debug sample.
-	std::optional<float> RenderSystem::sceneSpotShadowDepthSampleExpectedDepth(std::size_t index) const {
-		const auto sample = impl_.sceneSpotShadowDepthSample(index);
-		return sample ? std::optional<float>{sample->expected_depth} : std::nullopt;
-	}
-
-	/// @brief Returns the compare bias used by one spot shadow debug sample.
-	std::optional<float> RenderSystem::sceneSpotShadowDepthSampleBias(std::size_t index) const {
-		const auto sample = impl_.sceneSpotShadowDepthSample(index);
-		return sample ? std::optional<float>{sample->bias} : std::nullopt;
-	}
-
-	/// @brief Returns the final shadow factor for one spot shadow debug sample.
-	std::optional<float> RenderSystem::sceneSpotShadowDepthSampleFactor(std::size_t index) const {
-		const auto sample = impl_.sceneSpotShadowDepthSample(index);
-		return sample ? std::optional<float>{sample->shadow_factor} : std::nullopt;
-	}
-
-	/// @brief Returns the downloaded GPU spot shadow depth for one debug sample.
-	std::optional<float> RenderSystem::sceneSpotShadowDepthGpuDepth(std::size_t index) const {
-		return impl_.sceneSpotShadowDepthGpuDepth(index);
-	}
-
-	/// @brief Reports whether one spot shadow debug sample has downloaded GPU depth.
-	std::optional<bool> RenderSystem::sceneSpotShadowDepthHasGpu(std::size_t index) const {
-		return impl_.sceneSpotShadowDepthHasGpu(index);
-	}
-
-	/// @brief Returns the absolute CPU/GPU spot shadow depth mismatch for one debug sample.
-	std::optional<float> RenderSystem::sceneSpotShadowDepthError(std::size_t index) const {
-		return impl_.sceneSpotShadowDepthError(index);
-	}
-
-	/// @brief Returns point-light shadow-depth debug sample count in the active scene.
-	std::size_t RenderSystem::scenePointShadowDepthSampleCount() const {
-		return impl_.scenePointShadowDepthSampleCount();
-	}
-
-	/// @brief Returns one point-light shadow-depth debug sample converted to facade data.
-	std::optional<RenderShadowDepthSample> RenderSystem::scenePointShadowDepthSample(std::size_t index) const {
-		const auto sample = impl_.scenePointShadowDepthSample(index);
-		if (!sample) { return std::nullopt; }
-		return RenderShadowDepthSample{.triangle_id = sample->triangle_id,
-												 .face_index = sample->face_index,
-												 .world = sample->world,
-												 .light_ndc = sample->light_ndc,
-												 .pixel_x = sample->pixel_x,
-												 .pixel_y = sample->pixel_y,
-												 .expected_depth = sample->expected_depth,
-												 .bias = sample->bias,
-												 .shadow_factor = sample->shadow_factor,
-												 .gpu_depth = sample->gpu_depth,
-												 .error = sample->error,
-												 .has_gpu = sample->has_gpu,
-												 .valid = sample->valid};
-	}
-
-	/// @brief Returns the downloaded GPU point shadow depth for one debug sample.
-	std::optional<float> RenderSystem::scenePointShadowDepthGpuDepth(std::size_t index) const {
-		return impl_.scenePointShadowDepthGpuDepth(index);
-	}
-
-	/// @brief Reports whether one point shadow debug sample has downloaded GPU depth.
-	std::optional<bool> RenderSystem::scenePointShadowDepthHasGpu(std::size_t index) const {
-		return impl_.scenePointShadowDepthHasGpu(index);
-	}
-
-	/// @brief Returns the absolute CPU/GPU point shadow depth mismatch for one debug sample.
-	std::optional<float> RenderSystem::scenePointShadowDepthError(std::size_t index) const {
-		return impl_.scenePointShadowDepthError(index);
-	}
-
 	/// @brief Reports whether the active CPU scene has a camera.
 	bool RenderSystem::hasSceneCamera() const { return impl_.hasSceneCamera(); }
 
@@ -369,6 +243,31 @@ namespace vve {
 
 	/// @brief Reports whether the active CPU scene has a spotlight.
 	bool RenderSystem::hasSceneSpotLight() const { return impl_.hasSceneSpotLight(); }
+
+	/// @brief Copies the shadow-depth samples recorded by the last rendered frame into facade data.
+	Vector<RenderShadowDepthSample> RenderSystem::shadowDepthSamples() const {
+		Vector<RenderShadowDepthSample> result{};
+		for (const auto &sample : impl_.shadowDepthSamples()) {
+			result.push_back(RenderShadowDepthSample{.light_type = sample.light_type,
+																 .light_index = sample.light_index,
+																 .face_index = sample.face_index,
+																 .layer = sample.layer,
+																 .world = sample.world,
+																 .light_ndc = sample.light_ndc,
+																 .pixel_x = sample.pixel_x,
+																 .pixel_y = sample.pixel_y,
+																 .expected_depth = sample.expected_depth,
+																 .bias = sample.bias,
+																 .shadow_factor = sample.shadow_factor,
+																 .gpu_depth = sample.gpu_depth,
+																 .error = sample.error,
+																 .has_gpu = sample.has_gpu});
+		}
+		return result;
+	}
+
+	/// @brief Enables reading the rendered shadow-map texel back for every sample; costs a GPU stall per frame.
+	void RenderSystem::setShadowDepthReadback(bool enabled) { impl_.setGpuDebugReadback(enabled); }
 
 	/// @brief Captures a rendered frame to a PNG file using the selected renderer implementation.
 	std::expected<void, Error> RenderSystem::captureFrameToPng(const std::filesystem::path &output_path) {

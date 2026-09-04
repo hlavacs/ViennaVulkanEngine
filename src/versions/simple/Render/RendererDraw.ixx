@@ -77,55 +77,6 @@ export namespace vve::simple {
 			const Mat4 cameraView{lookAt(renderer.cameraEye, renderer.cameraTarget, Vec3{zero(), one(), zero()})}; ///< Current camera transform shared by uniforms and cascade fitting.
 			const ForwardRendererShadowFrame shadowFrame =
 				renderer.prepareShadowFrame(cameraView, cameraVerticalFov, aspectRatio, cameraNear, cameraFar, spot, spotDirection);
-#ifndef NDEBUG
-			renderer.spotShadowDepthSampleCountStorage() = renderer.spotLightViewProjCount;
-			const Vec3 spotShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point used for CPU-only shadow diagnostics.
-			constexpr float kCpuSpotShadowFactor{1.0F}; ///< Unshadowed placeholder because has_gpu is false here.
-			renderer.pointShadowDepthSampleCountStorage() = shadowFrame.pointLightShadowCount;
-			constexpr float kCpuPointShadowFactor{1.0F}; ///< Unshadowed placeholder because has_gpu is false here.
-			// Keep one CPU-only point sample per active point light using the shader's dominant-axis face order.
-			for (std::size_t pointIndex{}; pointIndex < shadowFrame.pointLightShadowCount; ++pointIndex) {
-				const PointLight &activePoint = renderer.scene.pointLights[pointIndex]; ///< Source point light for this diagnostic slot.
-				const Vec3 lightToPoint{subtract(spotShadowDebugPoint, activePoint.position)}; ///< Shader-matching vector from light to sample.
-				const Vec3 absLightToPoint{std::abs(lightToPoint.x), std::abs(lightToPoint.y), std::abs(lightToPoint.z)}; ///< Dominant-axis selector inputs.
-				const std::uint32_t faceIndex{absLightToPoint.x >= absLightToPoint.y && absLightToPoint.x >= absLightToPoint.z
-																	? (lightToPoint.x >= zero() ? 0U : 1U)
-																	: (absLightToPoint.y >= absLightToPoint.z ? (lightToPoint.y >= zero() ? 2U : 3U)
-																													  : (lightToPoint.z >= zero() ? 4U : 5U))}; ///< Face order: +X, -X, +Y, -Y, +Z, -Z.
-				const std::uint32_t pointFaceLayer{static_cast<std::uint32_t>(pointIndex * ForwardRendererShadowPrep<Renderer>::pointShadowFaceCount + faceIndex)}; ///< Dense point-face uniform index.
-				const std::uint32_t selectedLayer{shadowFrame.firstPointShadowLayer + pointFaceLayer}; ///< Dense depth-array layer after spot slots.
-				const Vec4 lightClip{multiply(shadowFrame.pointLightFaceViewProjs[pointFaceLayer], Vec4{spotShadowDebugPoint.x, spotShadowDebugPoint.y, spotShadowDebugPoint.z, one()})}; ///< Clip point before perspective divide.
-				const Scalar invW{std::abs(lightClip.w) > static_cast<Scalar>(0.001) ? one() / lightClip.w : static_cast<Scalar>(1000.0)}; ///< Shader-equivalent small-w guard.
-				const Vec3 lightNdc{lightClip.x * invW, lightClip.y * invW, lightClip.z * invW}; ///< Point-face NDC point used for CPU comparison.
-				renderer.pointShadowDepthSampleStorage()[pointIndex] = RenderShadowDepthSample{.triangle_id = static_cast<std::uint32_t>(pointIndex),
-																									  .face_index = faceIndex,
-																									  .world = spotShadowDebugPoint,
-																									  .light_ndc = lightNdc,
-																									  .pixel_x = selectedLayer,
-																									  .expected_depth = lightNdc.z,
-																									  .bias = shadowFrame.shadowCompareBias,
-																									  .shadow_factor = kCpuPointShadowFactor,
-																									  .gpu_depth = -1.0F,
-																									  .error = -1.0F,
-																									  .has_gpu = false,
-																									  .valid = true}; ///< Slot is triangle_id; layer is pixel_x until point readback exists.
-			}
-			for (std::size_t spotIndex{}; spotIndex < renderer.spotLightViewProjCount; ++spotIndex) {
-				const Vec4 lightClip{multiply(renderer.spotLightViewProjs[spotIndex], Vec4{spotShadowDebugPoint.x, spotShadowDebugPoint.y, spotShadowDebugPoint.z, one()})}; ///< Clip point before perspective divide.
-				const Scalar invW{lightClip.w != zero() ? one() / lightClip.w : zero()}; ///< Zero-w guard keeps invalid clips explicit.
-				const Vec3 lightNdc{lightClip.x * invW, lightClip.y * invW, lightClip.z * invW}; ///< Shader-comparable NDC point.
-				renderer.spotShadowDepthSampleStorage()[spotIndex] = RenderShadowDepthSample{.face_index = static_cast<std::uint32_t>(spotIndex),
-																								 .world = spotShadowDebugPoint,
-																								 .light_ndc = lightNdc,
-																								 .expected_depth = lightNdc.z,
-																								 .bias = shadowFrame.shadowCompareBias,
-																								 .shadow_factor = kCpuSpotShadowFactor,
-																								 .gpu_depth = -1.0F,
-																								 .error = -1.0F,
-																								 .has_gpu = false,
-																								 .valid = true}; ///< Slot is face_index; GPU depth is unavailable here.
-			}
-#endif
 			const FrameUniforms frameUniforms{ // Shared camera matrices keep the sample cubes inside Vulkan clip space.
 				.view = cameraView,
 				.projection = perspectiveVulkan(cameraVerticalFov, aspectRatio, cameraNear, cameraFar),
@@ -155,30 +106,7 @@ export namespace vve::simple {
 				.directionalLightAmbients = shadowFrame.directionalLightAmbients,
 				.activeDirectionalLightCount = shadowFrame.activeDirectionalLightCount,
 			};
-#ifndef NDEBUG
-			constexpr std::size_t kDirectionalDebugLightIndex{0U}; ///< Directional diagnostics stay pinned to the first packed light.
-			constexpr std::size_t kDirectionalDebugCascadeIndex{0U}; ///< Directional diagnostics sample the nearest cascade only.
-			constexpr std::size_t kDirectionalDebugLayer{kDirectionalDebugLightIndex * kNumShadowCascades + kDirectionalDebugCascadeIndex}; ///< Flattened light-zero cascade-zero layer.
-			const auto directionalDebugMeta = std::ranges::find_if(renderer.shadowLightMeta, [](const auto &meta) {
-				return meta.light_type == 3U && meta.light_index == kDirectionalDebugLightIndex && meta.first_layer == kDirectionalDebugLayer;
-			}); ///< Metadata order also contains spot and point rows, so select by directional identity.
-			renderer.directionalShadowDepthSampleCountStorage() = directionalDebugMeta != renderer.shadowLightMeta.end() ? 1U : 0U;
-			const Vec3 directionalShadowDebugPoint{zero(), zero(), zero()}; ///< Fixed world point shared with spot shadow diagnostics.
-			constexpr float kDirectionalShadowCompareBias{0.00005F * static_cast<float>(kDirectionalDebugCascadeIndex + 1U)}; ///< CPU mirror of the selected cascade's shader-side compare bias.
-			const Vec4 dirLightClip{multiply(frameUniforms.dirLightViewProjArray[kDirectionalDebugLayer], Vec4{directionalShadowDebugPoint.x, directionalShadowDebugPoint.y, directionalShadowDebugPoint.z, one()})}; ///< Clip point in light-zero cascade zero before perspective divide.
-			const Scalar dirInvW{dirLightClip.w != zero() ? one() / dirLightClip.w : zero()}; ///< Zero-w guard matches the spot debug path.
-			const Vec3 dirLightNdc{dirLightClip.x * dirInvW, dirLightClip.y * dirInvW, dirLightClip.z * dirInvW}; ///< Shader-comparable directional NDC point.
-			renderer.directionalShadowDepthSampleStorage()[0] = RenderShadowDepthSample{.face_index = static_cast<std::uint32_t>(kDirectionalDebugLayer),
-																									 .world = directionalShadowDebugPoint,
-																									 .light_ndc = dirLightNdc,
-																									 .expected_depth = dirLightNdc.z,
-																									 .bias = kDirectionalShadowCompareBias,
-																									 .shadow_factor = 1.0F,
-																		 .gpu_depth = -1.0F,
-																		 .error = -1.0F,
-																		 .has_gpu = false,
-																		 .valid = directionalDebugMeta != renderer.shadowLightMeta.end()}; ///< Sample mirrors light-zero cascade-zero metadata and depth data.
-#endif
+			renderer.recordShadowDepthSamples(shadowFrame);
 			result = renderer.uniformBuffers.update(renderer.currentFrame, frameUniforms);
 			if (result != VK_SUCCESS) { reportFrameFailure("uniform update", result); return; }
 
@@ -202,11 +130,7 @@ export namespace vve::simple {
 			};
 			result = vkQueueSubmit(renderer.device.graphicsQueue, 1U, &submitInfo, inFlightFence);
 			if (result != VK_SUCCESS) { reportFrameFailure("queue submit", result); return; }
-			if (renderer.gpuDebugReadbackEnabled()) {
-				if (renderer.spotLightViewProjCount != 0U) { renderer.fillSpotShadowGpuDepthSamples(); }
-				if (renderer.directionalShadowDepthSampleCountStorage() != 0U) { renderer.fillDirectionalShadowGpuDepthSamples(); }
-				if (renderer.pointShadowDepthSampleCountStorage() != 0U) { renderer.fillPointShadowGpuDepthSamples(); }
-			}
+			renderer.fillShadowDepthSamplesFromGpu();
 			if (readback != nullptr && imageIndex < renderer.swapchain.images.size()) {
 				renderer.lastReadbackCaptureResult = readback->capture(renderer.swapchain.images[imageIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 			}

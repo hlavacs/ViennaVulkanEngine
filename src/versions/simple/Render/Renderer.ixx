@@ -21,7 +21,7 @@ export import :RendererDraw;
 	*
 	* Functional objects:
 	* - ShadowLightMeta records CPU-side light-to-shadow-layer bindings before shader data grows.
-	* - ForwardRendererDebug supplies retained shadow diagnostics and readback helpers through the renderer debug partition.
+	* - ForwardRendererDebug supplies per-light shadow-depth samples and PNG capture through the renderer debug partition.
 	* - ForwardRendererShadowPrep supplies CPU shadow matrix and metadata preparation through the renderer shadow-prep partition.
 	* - ForwardRendererResources supplies GPU resource creation, swapchain recreation, and teardown through the renderer resources partition.
 	* - ForwardRendererDraw records per-frame shadow and color commands and submits the completed frame through the renderer draw partition.
@@ -78,7 +78,7 @@ export namespace vve::simple {
 		std::vector<VulkanMesh> meshes{};      ///< Owned GPU meshes uploaded from the current scene objects.
 		SDL_Window *window{nullptr};           ///< Borrowed SDL window used to create the Vulkan surface.
 		Scene scene{}; ///< CPU scene data kept in STL containers until renderer upload exists.
-		std::vector<ShadowLightMeta> shadowLightMeta{}; ///< Per-light spot shadow metadata prepared for debug access.
+		std::vector<ShadowLightMeta> shadowLightMeta{}; ///< Per-light shadow slot/layer metadata prepared every frame.
 		std::vector<RecordedPass> recordedPassOrder{}; ///< Last frame's command-recording pass order diagnostic.
 		Vec3 cameraEye{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}; ///< World-space camera position used for the frame view matrix.
 		Vec3 cameraTarget{zero(), one(), zero()}; ///< World-space point looked at by the frame view matrix.
@@ -100,31 +100,9 @@ export namespace vve::simple {
 		/// @brief Stores the optional GUI command recorder used inside the forward color pass.
 		void setGuiRecordSink(std::function<void(VkCommandBuffer)> sink) { guiRecord_ = std::move(sink); }
 
-		/// @brief Enables expensive GPU-to-CPU shadow diagnostics for explicit verification runs.
-		void setGpuDebugReadback(bool enabled) { gpuDebugReadback_ = enabled; }
-
-		/// @brief Reports whether per-frame GPU debug readback is enabled.
-		[[nodiscard]] bool gpuDebugReadbackEnabled() const { return gpuDebugReadback_; }
-
 		/// @brief Reports whether the renderer currently owns a live Vulkan device.
 		[[nodiscard]] bool initialized() const { return device.device != VK_NULL_HANDLE; }
 
-		/// @brief Reports presented-frame diagnostics for the forward renderer.
-		[[nodiscard]] std::uint64_t presentedFrameCount() const { return 0; }
-		/// @brief Reports triangle-draw diagnostics for the forward renderer.
-		[[nodiscard]] std::uint64_t triangleDrawCount() const { return 0; }
-		/// @brief Reports triangle-vertex diagnostics for the forward renderer.
-		[[nodiscard]] std::uint32_t triangleVertexCount() const { return 0; }
-		/// @brief Reports scene-upload diagnostics for the forward renderer.
-		[[nodiscard]] std::uint64_t sceneUploadCount() const { return 0; }
-		/// @brief Reports scene-mesh draw diagnostics for the forward renderer.
-		[[nodiscard]] std::uint64_t sceneMeshDrawCount() const { return 0; }
-		/// @brief Reports scene-instance draw diagnostics for the forward renderer.
-		[[nodiscard]] std::uint64_t sceneInstanceDrawCount() const { return 0; }
-		/// @brief Reports scene-draw vertex diagnostics for the forward renderer.
-		[[nodiscard]] std::uint32_t sceneDrawVertexCount() const { return 0; }
-		/// @brief Reports scene-draw index diagnostics for the forward renderer.
-		[[nodiscard]] std::uint32_t sceneDrawIndexCount() const { return 0; }
 		/// @brief Reports the number of prepared spot shadow metadata rows.
 		[[nodiscard]] std::size_t sceneShadowLightMetaCount() const { return shadowLightMeta.size(); }
 		/// @brief Returns one prepared spot shadow metadata row by retained index.
@@ -132,11 +110,6 @@ export namespace vve::simple {
 			if (index >= shadowLightMeta.size()) { return {}; }
 			return shadowLightMeta[index];
 		}
-		/// @brief Reports prepared GPU target diagnostics for the forward renderer.
-		[[nodiscard]] std::size_t preparedGpuTargetCount() const { return 0; }
-		std::array<float, 4> clearColor{0.0F, 0.0F, 0.0F, 1.0F}; ///< Last clear color used by the renderer.
-		/// @brief Reports the last clear color used by the forward renderer.
-		[[nodiscard]] std::array<float, 4> lastClearColor() const { return clearColor; }
 
 		/// @brief Chooses FIFO in Debug builds and mailbox in optimized builds.
 		[[nodiscard]] static constexpr VulkanSwapchain::PresentModePreference defaultPresentMode() {
@@ -226,7 +199,6 @@ export namespace vve::simple {
 		VkDescriptorPool imguiDescriptorPool_{VK_NULL_HANDLE}; ///< Owned Dear ImGui descriptor pool reserved for backend texture descriptors.
 		void *guiSystem_{nullptr}; ///< Non-owning, type-erased GUI system pointer reserved for later GUI integration.
 		std::function<void(VkCommandBuffer)> guiRecord_; ///< Optional GUI recorder invoked during the forward color pass.
-		bool gpuDebugReadback_{false}; ///< False during normal rendering to avoid per-frame GPU stalls.
 		std::vector<std::filesystem::path> uploadedTextures_{}; ///< Scene::textures as of the last GPU texture upload.
 		bool sceneResourcesDirty_{true}; ///< CPU scene topology or texture changed after the last GPU synchronization.
 		bool sceneRequiresFullUpload_{true}; ///< Removal or replacement requires rebuilding index-aligned GPU meshes.

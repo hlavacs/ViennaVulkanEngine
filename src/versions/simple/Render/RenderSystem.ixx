@@ -16,7 +16,6 @@ import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Renderer;
 import :RenderSystemScene;
-import :RenderSystemDebug;
 import :RenderSystemObjects;
 export import :RenderResources;
 
@@ -46,8 +45,7 @@ export namespace vve::simple {
 
 
 	/// @brief simple render facade coordinating the renderer backend and CPU render scene.
-	class RenderSystem : public RenderSystemScene<RenderSystem>, public RenderSystemDebug<RenderSystem>,
-							 public RenderSystemObjects<RenderSystem> {
+	class RenderSystem : public RenderSystemScene<RenderSystem>, public RenderSystemObjects<RenderSystem> {
 	public:
 		RenderSystem() = default;
 		explicit RenderSystem(ImportedAssetReadAccess imported_assets);
@@ -73,6 +71,9 @@ export namespace vve::simple {
 		[[nodiscard]] auto sceneIndexCount() const																				-> std::size_t;
 		[[nodiscard]] auto sceneShadowLightMetaCount() const														-> std::size_t;
 		[[nodiscard]] auto sceneShadowLightMeta(std::size_t index) const										-> std::optional<ShadowLightMeta>;
+		[[nodiscard]] auto shadowDepthSamples() const																	-> std::span<const RenderShadowDepthSample>;
+		auto setGpuDebugReadback(bool enabled)																			-> void;
+		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path)								-> std::expected<void, Error>;
 		[[nodiscard]] auto hasSceneCamera() const																					-> bool;
 		[[nodiscard]] auto hasSceneDirectionalLight() const																	-> bool;
 		[[nodiscard]] auto hasScenePointLight() const																			-> bool;
@@ -86,8 +87,6 @@ export namespace vve::simple {
 	private:
 		template<typename>
 		friend struct RenderSystemScene;
-		template<typename>
-		friend struct RenderSystemDebug;
 		template<typename>
 		friend struct RenderSystemObjects;
 
@@ -238,6 +237,16 @@ namespace vve::simple {
 	inline std::size_t RenderSystem::sceneShadowLightMetaCount() const { return forward().sceneShadowLightMetaCount(); }
 	/// @brief Returns one prepared shadow metadata row.
 	inline std::optional<ShadowLightMeta> RenderSystem::sceneShadowLightMeta(std::size_t index) const { return forward().sceneShadowLightMeta(index); }
+	/// @brief Returns the shadow-depth samples recorded by the last rendered frame.
+	inline auto RenderSystem::shadowDepthSamples() const -> std::span<const RenderShadowDepthSample> { return renderer_.shadowDepthSamples; }
+	/// @brief Enables the per-frame GPU shadow-depth readback for verification runs.
+	inline auto RenderSystem::setGpuDebugReadback(bool enabled) -> void { renderer_.setGpuDebugReadback(enabled); }
+	/// @brief Copies the last rendered swapchain image and writes it as a PNG.
+	inline auto RenderSystem::captureFrameToPng(const std::filesystem::path &output_path) -> std::expected<void, Error> {
+		if (!initialized_) { return std::unexpected(Error::not_initialized); }
+		if (output_path.empty()) { return std::unexpected(Error::invalid_argument); }
+		return renderer_.captureFrameToPng(output_path);
+	}
 	inline bool RenderSystem::hasSceneCamera() const { return scene_.camera().has_value(); }
 	inline bool RenderSystem::hasSceneDirectionalLight() const { return scene_.directionalLight().has_value(); }
 	inline bool RenderSystem::hasScenePointLight() const { return scene_.pointLight().has_value(); }

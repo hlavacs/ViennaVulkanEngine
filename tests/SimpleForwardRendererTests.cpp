@@ -16,11 +16,6 @@ import VEEngine.Simple.Scene;
 
 namespace {
 
-/// @brief Checks the current default clear color reported by the forward renderer.
-[[nodiscard]] bool hasDefaultClearColor(const std::array<float, 4> &color) {
-   return color[0] == 0.0F && color[1] == 0.0F && color[2] == 0.0F && color[3] == 1.0F;
-}
-
 /// @brief Verifies explicit command recording emits all shadow pass tags before forward color.
 [[nodiscard]] bool hasRecordedShadowsBeforeForwardColor(const vve::simple::ForwardRenderer &renderer) {
    using RecordedPass = vve::simple::ForwardRenderer::RecordedPass; ///< Concrete backend diagnostic enum.
@@ -181,91 +176,54 @@ namespace {
                                                                : (light_to_origin.z >= 0.0F ? 4U : 5U));
 }
 
-/// @brief Verifies retained point shadow-depth samples expose one CPU diagnostic row per point light.
+/// @brief Returns the recorded shadow-depth samples of one light type (1 spot, 2 point, 3 directional).
+[[nodiscard]] std::vector<vve::simple::RenderShadowDepthSample> samplesOfType(const vve::simple::ForwardRenderer &renderer,
+                                                                            std::uint32_t light_type) {
+   std::vector<vve::simple::RenderShadowDepthSample> result{};
+   for (const auto &sample : renderer.shadowDepthSamples) {
+      if (sample.light_type == light_type) { result.push_back(sample); }
+   }
+   return result;
+}
+
+/// @brief Verifies one sample was read back from the GPU and its derived fields are consistent.
+[[nodiscard]] bool hasConsistentGpuSample(const vve::simple::RenderShadowDepthSample &sample) {
+   constexpr float occluded_factor{0.35F}; ///< Shader partial-shadow floor mirrored by the renderer.
+   if (!sample.has_gpu || !std::isfinite(sample.gpu_depth) || !std::isfinite(sample.error)) { return false; }
+   if (sample.world.x != 0.0F || sample.world.y != 0.0F || sample.world.z != 0.0F) { return false; }
+   if (sample.expected_depth != sample.light_ndc.z || sample.error != std::abs(sample.expected_depth - sample.gpu_depth)) { return false; }
+   const bool occluded{sample.light_ndc.z - sample.bias > sample.gpu_depth}; ///< CPU compare.
+   return sample.shadow_factor == (occluded ? occluded_factor : 1.0F);
+}
+
+/// @brief Verifies one point sample per point light, each on the shader-selected face and its own array layer.
 [[nodiscard]] bool hasPointShadowDepthSamples(const vve::simple::ForwardRenderer &renderer,
                                               const vve::simple::RenderSystem &render_system,
                                               std::size_t point_light_count) {
-   if (renderer.scenePointShadowDepthSampleCount() != point_light_count) { return false; }
-   if (render_system.scenePointShadowDepthSampleCount() != renderer.scenePointShadowDepthSampleCount()) { return false; }
-
-   std::vector<std::uint32_t> point_slots{}; ///< RenderShadowDepthSample::triangle_id carries the point slot.
-   std::vector<std::uint32_t> selected_layers{}; ///< RenderShadowDepthSample::pixel_x carries the dense array layer.
-   point_slots.reserve(point_light_count);
-   selected_layers.reserve(point_light_count);
-
-   // Each active point light contributes one origin sample using its selected cubemap face.
+   const auto samples = samplesOfType(renderer, 2U);
+   if (samples.size() != point_light_count || render_system.shadowDepthSamples().size() != renderer.shadowDepthSamples.size()) {
+      return false;
+   }
+   std::vector<std::uint32_t> layers{}; ///< No selected point layer may be reused.
    for (std::size_t point_index{}; point_index < point_light_count; ++point_index) {
-      const auto sample = renderer.scenePointShadowDepthSample(point_index);
+      const auto &sample = samples[point_index];
       const std::uint32_t expected_face{pointShadowDebugFace(renderer.scene.pointLights[point_index])};
-      const std::uint32_t expected_layer{static_cast<std::uint32_t>(
-         vve::simple::kMaxShadowedSpotLights + point_index * 6U + expected_face)};
-      const float expected_error{sample ? sample->expected_depth - sample->gpu_depth : 0.0F};
-      const float expected_shadow_factor{sample && sample->light_ndc.z - sample->bias > sample->gpu_depth ? 0.35F : 1.0F};
-      const auto retained_error = renderer.scenePointShadowDepthError(point_index);
-      const auto facade_sample = render_system.scenePointShadowDepthSample(point_index); ///< Facade-retained sample.
-      const auto facade_gpu_depth = render_system.scenePointShadowDepthGpuDepth(point_index);
-      const auto facade_has_gpu = render_system.scenePointShadowDepthHasGpu(point_index);
-      const auto facade_error = render_system.scenePointShadowDepthError(point_index);
-      if (!sample || !sample->valid || !sample->has_gpu || !std::isfinite(sample->gpu_depth) ||
-          !std::isfinite(sample->error) || !retained_error || sample->triangle_id != point_index ||
-          sample->face_index != expected_face || sample->face_index >= 6U || sample->pixel_x != expected_layer ||
-          sample->world.x != 0.0F || sample->world.y != 0.0F || sample->world.z != 0.0F ||
-          sample->expected_depth != sample->light_ndc.z || sample->bias != 0.001F ||
-          sample->error != expected_error || *retained_error != sample->error ||
-          sample->shadow_factor != expected_shadow_factor || !facade_sample ||
-          facade_sample->triangle_id != sample->triangle_id || facade_sample->face_index != sample->face_index ||
-          facade_sample->pixel_x != sample->pixel_x || facade_sample->expected_depth != sample->expected_depth ||
-          facade_sample->gpu_depth != sample->gpu_depth || facade_sample->error != sample->error ||
-          !facade_gpu_depth || *facade_gpu_depth != sample->gpu_depth || !facade_has_gpu || !*facade_has_gpu ||
-          !facade_error || *facade_error != sample->error) {
+      if (!hasConsistentGpuSample(sample) || sample.light_index != point_index || sample.face_index != expected_face ||
+          sample.layer != point_index * 6U + expected_face || sample.bias != 0.001F) {
          return false;
       }
-      point_slots.push_back(sample->triangle_id);
-      selected_layers.push_back(sample->pixel_x);
+      layers.push_back(sample.layer);
    }
-
-   std::ranges::sort(point_slots);
-   std::ranges::sort(selected_layers);
-   const auto unique_point_slots = std::ranges::unique(point_slots); ///< One sample per source point light.
-   const auto unique_selected_layers = std::ranges::unique(selected_layers); ///< No selected point layer is reused.
-   return static_cast<std::size_t>(unique_point_slots.begin() - point_slots.begin()) == point_light_count &&
-          static_cast<std::size_t>(unique_selected_layers.begin() - selected_layers.begin()) == point_light_count &&
-          !renderer.scenePointShadowDepthSample(point_light_count) && !renderer.scenePointShadowDepthError(point_light_count) &&
-          !render_system.scenePointShadowDepthSample(point_light_count) &&
-          !render_system.scenePointShadowDepthGpuDepth(point_light_count) &&
-          !render_system.scenePointShadowDepthHasGpu(point_light_count) &&
-          !render_system.scenePointShadowDepthError(point_light_count);
+   std::ranges::sort(layers);
+   return std::ranges::adjacent_find(layers) == layers.end();
 }
 
-/// @brief Verifies non-occluded retained shadow samples keep full light contribution.
+/// @brief Verifies every non-occluded sample keeps full light contribution and at least one such sample exists.
 [[nodiscard]] bool hasFullContributionForNonOccludedShadowSamples(const vve::simple::ForwardRenderer &renderer) {
-   constexpr float full_shadow_factor{1.0F}; ///< Renderer.ixx full-contribution shadow factor.
-   bool saw_non_occluded_sample{};           ///< At least one retained sample proves normal lighting is preserved.
-
-   const auto check_full_factor = [&](const std::optional<vve::simple::RenderShadowDepthSample> &sample) {
-      if (!sample || !sample->valid) { return false; }
-      const bool occluded{sample->has_gpu && sample->light_ndc.z - sample->bias > sample->gpu_depth}; ///< CPU compare.
-      if (!occluded) {
-         saw_non_occluded_sample = true;
-         return sample->shadow_factor == full_shadow_factor;
-      }
-      return true;
-   };
-
-   // Directional, spot, and point diagnostics all expose the same full-contribution value when unoccluded.
-   for (std::size_t index{}; index < renderer.sceneShadowDepthSampleCount(); ++index) {
-      if (!check_full_factor(renderer.sceneShadowDepthSample(index))) { return false; }
-   }
-   for (std::size_t index{}; index < renderer.sceneSpotShadowDepthSampleCount(); ++index) {
-      if (!check_full_factor(renderer.sceneSpotShadowDepthSample(index))) { return false; }
-   }
-   for (std::size_t index{}; index < renderer.scenePointShadowDepthSampleCount(); ++index) {
-      const auto sample = renderer.scenePointShadowDepthSample(index);
-      if (!check_full_factor(sample)) { return false; }
-      if (sample && sample->has_gpu && sample->light_ndc.z - sample->bias > sample->gpu_depth &&
-          sample->shadow_factor >= full_shadow_factor) {
-         return false;
-      }
+   bool saw_non_occluded_sample{}; ///< At least one retained sample proves normal lighting is preserved.
+   for (const auto &sample : renderer.shadowDepthSamples) {
+      if (!hasConsistentGpuSample(sample)) { return false; }
+      saw_non_occluded_sample = saw_non_occluded_sample || sample.shadow_factor == 1.0F;
    }
    return saw_non_occluded_sample;
 }
@@ -273,14 +231,9 @@ namespace {
 /// @brief Verifies the light-zero cascade-zero CPU projection agrees with its rendered depth texel.
 [[nodiscard]] bool hasDirectionalShadowDepthAgreement(const vve::simple::ForwardRenderer &renderer) {
    constexpr float depth_tolerance{0.002F}; ///< Raster bias and texel quantization may move stored depth slightly.
-   const auto sample = renderer.sceneShadowDepthSample(0U);
-   if (!sample || !sample->valid || !sample->has_gpu || sample->face_index != 0U ||
-       !std::isfinite(sample->expected_depth) || !std::isfinite(sample->gpu_depth) ||
-       !std::isfinite(sample->error)) {
-      return false;
-   }
-   const float expected_error{std::abs(sample->expected_depth - sample->gpu_depth)};
-   return sample->error == expected_error && sample->error <= depth_tolerance;
+   const auto samples = samplesOfType(renderer, 3U);
+   if (samples.size() != 1U || samples.front().layer != 0U || !hasConsistentGpuSample(samples.front())) { return false; }
+   return samples.front().error <= depth_tolerance;
 }
 
 /// @brief Renders empty and full directional-light lists and checks flattened cascade ownership.
@@ -302,7 +255,7 @@ namespace {
       return meta.light_type == 3U;
    });
    if (!renderer.scene.directionalLights.empty() || has_directional_meta ||
-       renderer.sceneShadowDepthSampleCount() != 0U || directional_pass_count() != 1U) {
+       !samplesOfType(renderer, 3U).empty() || directional_pass_count() != 1U) {
       return false;
    }
 
@@ -736,39 +689,17 @@ int main() {
    }
    if (!hasDisabledFirstSpotExcludedFromPackedMeta(render_system, 3.0F, 6.0F)) { return 19; }
 
-   // Verify frame and draw counters that belong to the current forward-renderer diagnostics.
    if (render_system.renderedFrameCount() != 1 || render_system.lastRenderedWindowCount() != 1) { return 5; }
    const auto &forward_renderer = render_system.forward();
-   if (forward_renderer.presentedFrameCount() != 0 || forward_renderer.triangleDrawCount() != 0 ||
-       forward_renderer.triangleVertexCount() != 0 || forward_renderer.sceneUploadCount() != 0 ||
-       forward_renderer.sceneMeshDrawCount() != 0 || forward_renderer.sceneInstanceDrawCount() != 0 ||
-       forward_renderer.sceneDrawVertexCount() != 0 || forward_renderer.sceneDrawIndexCount() != 0) {
-      return 6;
-   }
 #ifndef NDEBUG
    if (!hasRecordedShadowsBeforeForwardColor(forward_renderer)) { return 17; }
 #endif
 
-   // Verify debug sample and comparison accessors expose the current no-readback state.
-   if (forward_renderer.sceneDebugSampleCount() != 0 || forward_renderer.sceneCpuDebugSample(0) ||
-       forward_renderer.sceneGpuDebugSample(0) || forward_renderer.sceneDebugClipError(0) ||
-       forward_renderer.sceneDebugDepthError(0) || forward_renderer.sceneDebugLightSpaceError(0) ||
-       forward_renderer.sceneDebugSpotLightSpaceError(0) || forward_renderer.sceneDebugPointLightSpaceError(0) ||
-       forward_renderer.sceneDebugLightingError(0) || forward_renderer.sceneDebugShadowSampleError(0) ||
-       forward_renderer.sceneDebugSpotShadowSampleError(0) || forward_renderer.sceneDebugPointShadowSampleError(0)) {
-      return 7;
-   }
-
 #ifndef NDEBUG
-   // Directional shadow-depth diagnostics are CPU-populated by engine.renderFrame(); GPU error stays unavailable here.
-   const auto directional_shadow_sample = forward_renderer.sceneShadowDepthSample(0); ///< Single retained light-space sample.
-   if (forward_renderer.sceneShadowDepthSampleCount() != 1U || !directional_shadow_sample ||
-       !directional_shadow_sample->valid || directional_shadow_sample->face_index != 0U ||
-       directional_shadow_sample->world.x != 0.0F || directional_shadow_sample->world.y != 0.0F ||
-       directional_shadow_sample->world.z != 0.0F ||
-       directional_shadow_sample->expected_depth != directional_shadow_sample->light_ndc.z ||
-       directional_shadow_sample->bias != 0.00005F || directional_shadow_sample->shadow_factor != 1.0F ||
-       forward_renderer.sceneShadowDepthSample(1) || forward_renderer.sceneShadowDepthError(0)) {
+   // Directional shadow-depth diagnostics are recorded by engine.renderFrame() for light zero, cascade zero.
+   const auto directional_samples = samplesOfType(forward_renderer, 3U); ///< Single retained light-space sample.
+   if (directional_samples.size() != 1U || directional_samples.front().light_index != 0U ||
+       directional_samples.front().layer != 0U || directional_samples.front().bias != 0.00005F) {
       return 8;
    }
 
@@ -794,27 +725,12 @@ int main() {
         first_spot.direction.z == second_spot.direction.z)) {
       return 12;
    }
-   if (forward_renderer.sceneSpotShadowDepthSampleCount() == active_spot_light_count) {
-      std::vector<std::uint32_t> spot_shadow_slots{}; ///< Engine-produced RenderShadowDepthSample::face_index slots.
-      for (std::size_t spot_index{}; spot_index < active_spot_light_count; ++spot_index) {
-         const auto sample = forward_renderer.sceneSpotShadowDepthSample(spot_index); ///< Existing observable slot path.
-         if (!sample || !sample->valid) { return 13; }
-         spot_shadow_slots.push_back(sample->face_index);
-      }
-      std::ranges::sort(spot_shadow_slots);
-      const auto unique_spot_shadow_slots = std::ranges::unique(spot_shadow_slots); ///< Pairwise uniqueness proof.
-      if (static_cast<std::size_t>(unique_spot_shadow_slots.begin() - spot_shadow_slots.begin()) !=
-          active_spot_light_count) {
-         return 13;
-      }
-   } else {
-      /** @brief Headless stopped-frame state exposes retained lights but no per-light slot samples or array layers. */
-   }
-   if (forward_renderer.sceneSpotShadowDepthError(0)) { return 14; }
-
-   // Verify remaining forward diagnostics that describe prepared targets and clear state.
-   if (forward_renderer.preparedGpuTargetCount() != 0 || !hasDefaultClearColor(forward_renderer.lastClearColor())) {
-      return 9;
+   const auto spot_samples = samplesOfType(forward_renderer, 1U); ///< One sample per packed spot light after a rendered frame.
+   if (spot_samples.size() == active_spot_light_count) {
+      std::vector<std::uint32_t> spot_shadow_layers{}; ///< Each active spot light owns its own shadow-array layer.
+      for (const auto &sample : spot_samples) { spot_shadow_layers.push_back(sample.layer); }
+      std::ranges::sort(spot_shadow_layers);
+      if (std::ranges::adjacent_find(spot_shadow_layers) != spot_shadow_layers.end()) { return 13; }
    }
 
 #ifndef NDEBUG

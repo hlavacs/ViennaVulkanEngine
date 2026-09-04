@@ -165,13 +165,7 @@ export namespace vve::simple {
 			result = renderer.commandPool.create(renderer.device.device, *renderer.physicalDevice.graphicsQueueFamily);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.spotShadowDepthReadback.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, VkExtent2D{.width = ShadowMap::resolution, .height = ShadowMap::resolution});
-			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-
-			result = renderer.dirShadowDepthReadback.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, VkExtent2D{.width = ShadowMap::resolution, .height = ShadowMap::resolution});
-			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-
-			result = renderer.pointShadowDepthReadback.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, VkExtent2D{.width = ShadowMap::resolution, .height = ShadowMap::resolution});
+			result = renderer.shadowDepthReadback.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, VkExtent2D{.width = ShadowMap::resolution, .height = ShadowMap::resolution});
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.commandBuffers.create(renderer.device.device, renderer.commandPool.commandPool, Renderer::framesInFlight);
@@ -336,9 +330,8 @@ export namespace vve::simple {
 			renderer.uniformBuffers.cleanup();
 			renderer.frameSync.cleanup();
 			renderer.commandBuffers.cleanup();
-			renderer.pointShadowDepthReadback.cleanup();
-			renderer.dirShadowDepthReadback.cleanup();
-			renderer.spotShadowDepthReadback.cleanup();
+			renderer.shadowDepthReadback.cleanup();
+			renderer.shadowDepthSamples.clear();
 			renderer.commandPool.cleanup();
 			renderer.graphicsPipeline.cleanup();
 			renderer.fragShaderModule.cleanup();

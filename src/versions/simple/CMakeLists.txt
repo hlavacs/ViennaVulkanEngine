@@ -29,7 +29,6 @@ target_sources(ViennaVulkanEngine
          Render/RendererShadowPrep.ixx
          Render/RendererResources.ixx
          Render/RendererDraw.ixx
-         Render/RenderSystemDebug.ixx
          Render/RenderSceneImport.ixx
          Render/RenderSystemScene.ixx
          Render/RenderSystemObjects.ixx

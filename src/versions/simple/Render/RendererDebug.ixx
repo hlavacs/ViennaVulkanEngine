@@ -7,139 +7,101 @@ import VEEngine.Types;
 import VEEngine.Simple.Math;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vulkan;
+import :RendererShadowPrep;
 
 /**
 	* @file
-	* @brief Retained renderer diagnostics and readback helpers for the simple forward renderer.
+	* @brief Shadow-depth diagnostics and PNG capture for the simple forward renderer.
 	*
 	* Functional objects:
-	* - RenderDebugSample carries CPU/GPU per-vertex diagnostics for public debug access.
-	* - RenderShadowDepthSample carries CPU and optional GPU shadow-depth diagnostics.
-	* - ForwardRendererDebug owns shadow readback state, retained shadow samples, PNG capture, and diagnostic accessors.
+	* - RenderShadowDepthSample compares one CPU-projected world point against the rendered shadow-map depth.
+	* - ForwardRendererDebug records one sample per shadow-casting light each frame, optionally reads the matching
+	*   GPU texel back, and captures the presented frame as a PNG.
 	*/
 export namespace vve::simple {
 
-	/// @brief Empty debug-sample type kept so the current facade can still compile against simple.
-	struct RenderDebugSample {
-		std::uint32_t vertex_id{};														///< Source vertex id.
-		Vec3 world{zeroVec3()};															///< Stub world-space position.
-		Vec4 clip{};																		///< Stub clip-space position.
-		Vec4 light_clip{};																///< Stub directional-light clip position.
-		Vec4 spot_light_clip{};															///< Stub spot-light clip position.
-		Vec4 point_light_clip{};														///< Stub point-light clip position.
-		Vec3 ndc{zeroVec3()};															///< Stub normalized device coordinate.
-		Vec3 light_ndc{zeroVec3()};													///< Stub directional-light NDC.
-		Vec3 spot_light_ndc{zeroVec3()};												///< Stub spot-light NDC.
-		Vec3 point_light_ndc{zeroVec3()};											///< Stub point-light NDC.
-		Vec3 normal{zeroVec3()};														///< Stub normal.
-		Vec3 direction_to_light{zeroVec3()};										///< Stub light direction.
-		Vec3 ambient_lighting{zeroVec3()};											///< Stub ambient term.
-		Vec3 direct_lighting{zeroVec3()};											///< Stub direct-light term.
-		Vec3 point_lighting{zeroVec3()};												///< Stub point-light term.
-		Vec3 spot_lighting{zeroVec3()};												///< Stub spot-light term.
-		Vec3 final_lighting{zeroVec3()};												///< Stub final-light term.
-		float depth{};																		///< Stub depth value.
-		float light_depth{};																///< Stub directional-light depth.
-		float spot_light_depth{};														///< Stub spot-light depth.
-		float point_light_depth{};														///< Stub point-light depth.
-		float sampled_shadow_depth{};													///< Stub sampled shadow depth.
-		float shadow_depth_delta{};													///< Stub shadow delta.
-		float shadow_bias{};																///< Stub shadow bias.
-		float shadow_factor{};															///< Stub shadow factor.
-		float sampled_spot_shadow_depth{};											///< Stub sampled spot shadow depth.
-		float spot_shadow_depth_delta{};												///< Stub spot shadow delta.
-		float spot_shadow_bias{};														///< Stub spot shadow bias.
-		float spot_shadow_factor{};													///< Stub spot shadow factor.
-		float sampled_point_shadow_depth{};											///< Stub sampled point shadow depth.
-		float point_shadow_depth_delta{};											///< Stub point shadow delta.
-		float point_shadow_bias{};														///< Stub point shadow bias.
-		float point_shadow_factor{};													///< Stub point shadow factor.
-		std::uint32_t point_shadow_face{};											///< Stub point shadow face.
-		float n_dot_l{};																	///< Stub Lambert term.
-		bool inside_light{};																///< Stub directional-light inclusion.
-		bool inside_spot_light{};														///< Stub spot-light inclusion.
-		bool inside_point_light{};														///< Stub point-light inclusion.
-		bool valid{};																		///< Stub samples are never valid.
-	};
-
-	/// @brief Empty shadow proof type kept so the current facade can still compile against simple.
+	/// @brief One CPU/GPU shadow-depth comparison point; the world point is the origin for every light.
 	struct RenderShadowDepthSample {
-		std::uint32_t triangle_id{};													///< Source triangle id.
-		std::uint32_t face_index{};													///< Shadow face id.
-		Vec3 world{zeroVec3()};															///< World-space sample point.
-		Vec3 light_ndc{zeroVec3()};													///< Light-space sample point.
-		std::uint32_t pixel_x{};														///< Shadow-map x texel.
-		std::uint32_t pixel_y{};														///< Shadow-map y texel.
-		float expected_depth{};															///< CPU expected depth.
-		float bias{};																		///< CPU compare bias.
-		float shadow_factor{};															///< CPU shadow factor.
-		float gpu_depth{};																///< GPU depth, absent in simple stubs.
-		float error{};																		///< Absolute mismatch.
-		bool has_gpu{};																	///< False for simple stubs.
-		bool valid{};																		///< Stub samples are never valid.
+		std::uint32_t light_type{};				///< ShadowLightMeta light type: 1 spot, 2 point, 3 directional.
+		std::uint32_t light_index{};				///< Dense index of the light inside its packed shadow slots.
+		std::uint32_t face_index{};				///< Point-light cube face (+X,-X,+Y,-Y,+Z,-Z), 0 for other lights.
+		std::uint32_t layer{};						///< Layer of the light type's shadow array that this sample reads.
+		Vec3 world{zeroVec3()};						///< World-space sample point.
+		Vec3 light_ndc{zeroVec3()};					///< Sample point in light normalized device coordinates.
+		std::uint32_t pixel_x{};					///< Shadow-map texel x, valid when has_gpu is true.
+		std::uint32_t pixel_y{};					///< Shadow-map texel y, valid when has_gpu is true.
+		float expected_depth{};						///< CPU light-space depth (light_ndc.z).
+		float bias{};									///< Shader-side compare bias mirrored on the CPU.
+		float shadow_factor{1.0F};					///< 0.35 when the GPU texel occludes the point, otherwise 1.
+		float gpu_depth{-1.0F};						///< Depth read back from the shadow map, valid when has_gpu is true.
+		float error{-1.0F};							///< Absolute difference between expected_depth and gpu_depth.
+		bool has_gpu{};								///< True once the GPU texel was read back.
 	};
 
-	/// @brief Shared debug/readback surface mixed into the concrete forward renderer.
+	/// @brief Diagnostics mixed into the forward renderer: per-light shadow samples and frame capture.
 	template<typename Renderer>
 	struct ForwardRendererDebug {
-		VulkanDepthReadback spotShadowDepthReadback{}; ///< Owned one-layer spot shadow depth readback for debug samples.
-		VulkanDepthReadback dirShadowDepthReadback{}; ///< Owned one-layer directional shadow depth readback for debug samples.
-		VulkanDepthReadback pointShadowDepthReadback{}; ///< Owned one-layer point shadow depth readback for debug samples.
-		std::optional<VkResult> lastReadbackCaptureResult{}; ///< Result from the optional in-frame readback capture.
+		static constexpr float occludedShadowFactor{0.35F};			///< Shader partial-shadow floor.
+		static constexpr float directionalCompareBias{0.00005F};	///< Shader-side bias of the nearest directional cascade.
 
-		/// @brief Reports the number of retained debug samples for the forward renderer.
-		[[nodiscard]] std::size_t sceneDebugSampleCount() const { return 0; }
-		/// @brief Returns a CPU debug sample when the forward renderer has retained one.
-		[[nodiscard]] std::optional<RenderDebugSample> sceneCpuDebugSample(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns a GPU debug sample when the forward renderer has retained one.
-		[[nodiscard]] std::optional<RenderDebugSample> sceneGpuDebugSample(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns clip-space debug error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> sceneDebugClipError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns depth debug error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> sceneDebugDepthError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns directional light-space debug error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> sceneDebugLightSpaceError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns spot light-space debug error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> sceneDebugSpotLightSpaceError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns point light-space debug error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> sceneDebugPointLightSpaceError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns lighting debug error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> sceneDebugLightingError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns directional shadow-sample debug error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> sceneDebugShadowSampleError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns spot shadow-sample debug error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> sceneDebugSpotShadowSampleError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Returns point shadow-sample debug error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> sceneDebugPointShadowSampleError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Reports the number of retained directional shadow-depth samples for the forward renderer.
-		[[nodiscard]] std::size_t sceneShadowDepthSampleCount() const { return directionalShadowDepthSampleCountStorage(); }
-		/// @brief Returns a directional shadow-depth sample when the forward renderer has retained one.
-		[[nodiscard]] std::optional<RenderShadowDepthSample> sceneShadowDepthSample(std::size_t index) const {
-			if (index >= directionalShadowDepthSampleCountStorage()) { return {}; }
-			return directionalShadowDepthSampleStorage()[index];
+		std::vector<RenderShadowDepthSample> shadowDepthSamples{};	///< One sample per shadow-casting light, rebuilt every frame.
+		VulkanDepthReadback shadowDepthReadback{};						///< Single shadow-map layer readback shared by all light types.
+		std::optional<VkResult> lastReadbackCaptureResult{};			///< Result from the optional in-frame color readback.
+		bool gpuDebugReadback_{false};										///< False during normal rendering to avoid per-frame GPU stalls.
+
+		/// @brief Enables the per-frame GPU shadow-depth readback for verification runs.
+		void setGpuDebugReadback(bool enabled) { gpuDebugReadback_ = enabled; }
+
+		/// @brief Projects the world origin through every active shadow matrix and stores the CPU expectations.
+		void recordShadowDepthSamples(const ForwardRendererShadowFrame &shadowFrame) {
+			auto &renderer = static_cast<Renderer &>(*this);
+			shadowDepthSamples.clear();
+			const Vec3 origin{zeroVec3()};
+			const auto project = [&origin](const Mat4 &viewProj) {
+				const Vec4 clip{multiply(viewProj, Vec4{origin.x, origin.y, origin.z, one()})};
+				const Scalar invW{clip.w != zero() ? one() / clip.w : zero()};
+				return Vec3{clip.x * invW, clip.y * invW, clip.z * invW};
+			};
+			const auto add = [&](std::uint32_t type, std::uint32_t index, std::uint32_t face, std::uint32_t layer, Vec3 ndc, float bias) {
+				shadowDepthSamples.push_back(RenderShadowDepthSample{.light_type = type, .light_index = index, .face_index = face, .layer = layer,
+																					  .world = origin, .light_ndc = ndc, .expected_depth = ndc.z, .bias = bias});
+			};
+			for (std::size_t spot{}; spot < renderer.spotLightViewProjCount; ++spot) {
+				add(1U, static_cast<std::uint32_t>(spot), 0U, static_cast<std::uint32_t>(spot), project(renderer.spotLightViewProjs[spot]), shadowFrame.shadowCompareBias);
+			}
+			for (std::size_t point{}; point < shadowFrame.pointLightShadowCount; ++point) {
+				const Vec3 toOrigin{subtract(origin, renderer.scene.pointLights[point].position)};
+				const Vec3 magnitude{std::abs(toOrigin.x), std::abs(toOrigin.y), std::abs(toOrigin.z)};
+				const std::uint32_t face{magnitude.x >= magnitude.y && magnitude.x >= magnitude.z ? (toOrigin.x >= zero() ? 0U : 1U)
+													: magnitude.y >= magnitude.z ? (toOrigin.y >= zero() ? 2U : 3U)
+																						 : (toOrigin.z >= zero() ? 4U : 5U)}; ///< Shader dominant-axis face order.
+				const auto layer = static_cast<std::uint32_t>(point * ForwardRendererShadowPrep<Renderer>::pointShadowFaceCount + face);
+				add(2U, static_cast<std::uint32_t>(point), face, layer, project(shadowFrame.pointLightFaceViewProjs[layer]), shadowFrame.shadowCompareBias);
+			}
+			if (shadowFrame.activeDirectionalLightCount != 0U) {
+				add(3U, 0U, 0U, 0U, project(shadowFrame.dirLightViewProjArray[0]), directionalCompareBias); ///< Light zero, nearest cascade.
+			}
 		}
-		/// @brief Returns directional shadow-depth error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> sceneShadowDepthError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Reports the number of retained spot shadow-depth samples for the forward renderer.
-		[[nodiscard]] std::size_t sceneSpotShadowDepthSampleCount() const { return spotShadowDepthSampleCountStorage(); }
-		/// @brief Returns a spot shadow-depth sample when the forward renderer has retained one.
-		[[nodiscard]] std::optional<RenderShadowDepthSample> sceneSpotShadowDepthSample(std::size_t index) const {
-			if (index >= spotShadowDepthSampleCountStorage()) { return {}; }
-			return spotShadowDepthSampleStorage()[index];
-		}
-		/// @brief Returns spot shadow-depth error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> sceneSpotShadowDepthError(std::size_t index) const { (void)index; return {}; }
-		/// @brief Reports the number of retained point shadow-depth samples for the forward renderer.
-		[[nodiscard]] std::size_t scenePointShadowDepthSampleCount() const { return pointShadowDepthSampleCountStorage(); }
-		/// @brief Returns a point shadow-depth sample when the forward renderer has retained one.
-		[[nodiscard]] std::optional<RenderShadowDepthSample> scenePointShadowDepthSample(std::size_t index) const {
-			if (index >= pointShadowDepthSampleCountStorage()) { return {}; }
-			return pointShadowDepthSampleStorage()[index];
-		}
-		/// @brief Returns point shadow-depth error diagnostics retained by the forward renderer.
-		[[nodiscard]] std::optional<float> scenePointShadowDepthError(std::size_t index) const {
-			if (index >= pointShadowDepthSampleCountStorage()) { return {}; }
-			return pointShadowDepthSampleStorage()[index].error;
+
+		/// @brief Reads the rendered shadow-map texel of every recorded sample when GPU readback is enabled.
+		void fillShadowDepthSamplesFromGpu() {
+			auto &renderer = static_cast<Renderer &>(*this);
+			if (!gpuDebugReadback_ || shadowDepthSamples.empty() || renderer.device.device == VK_NULL_HANDLE) { return; }
+			if (shadowDepthReadback.extent.width == 0U || vkDeviceWaitIdle(renderer.device.device) != VK_SUCCESS) { return; }
+			for (RenderShadowDepthSample &sample : shadowDepthSamples) {
+				const ShadowMap &map = sample.light_type == 1U ? renderer.spotShadowArray : sample.light_type == 2U ? renderer.pointShadowArray : renderer.dirShadowArray;
+				if (map.image == VK_NULL_HANDLE || sample.layer >= map.ownedLayerViews.size()) { continue; }
+				if (shadowDepthReadback.capture(map.image, sample.layer) != VK_SUCCESS) { continue; }
+				const auto [x, y] = shadowTexel(sample.light_ndc);
+				const std::optional<float> depth = shadowDepthReadback.depthAt(x, y);
+				if (!depth) { continue; }
+				sample.pixel_x = x;
+				sample.pixel_y = y;
+				sample.gpu_depth = *depth;
+				sample.has_gpu = true;
+				sample.error = std::abs(sample.expected_depth - sample.gpu_depth);
+				sample.shadow_factor = sample.light_ndc.z - sample.bias > sample.gpu_depth ? occludedShadowFactor : 1.0F;
+			}
 		}
 
 		/// @brief Copies the last presented swapchain image and writes it as a deterministic PNG.
@@ -177,134 +139,13 @@ export namespace vve::simple {
 			return {};
 		}
 
-		[[nodiscard]] static std::array<RenderShadowDepthSample, 1U> &directionalShadowDepthSampleStorage() {
-			static std::array<RenderShadowDepthSample, 1U> samples{}; ///< Light-zero cascade-zero directional shadow sample.
-			return samples;
-		}
-
-		[[nodiscard]] static std::size_t &directionalShadowDepthSampleCountStorage() {
-			static std::size_t count{}; ///< Number of valid CPU-only directional shadow samples.
-			return count;
-		}
-
-		[[nodiscard]] static std::array<RenderShadowDepthSample, kMaxShadowedSpotLights> &spotShadowDepthSampleStorage() {
-			static std::array<RenderShadowDepthSample, kMaxShadowedSpotLights> samples{}; ///< CPU-only spot shadow samples.
-			return samples;
-		}
-
-		[[nodiscard]] static std::size_t &spotShadowDepthSampleCountStorage() {
-			static std::size_t count{}; ///< Number of valid CPU-only spot shadow samples.
-			return count;
-		}
-
-		[[nodiscard]] static std::array<RenderShadowDepthSample, kMaxShadowedPointLights> &pointShadowDepthSampleStorage() {
-			static std::array<RenderShadowDepthSample, kMaxShadowedPointLights> samples{}; ///< CPU-only point shadow samples.
-			return samples;
-		}
-
-		[[nodiscard]] static std::size_t &pointShadowDepthSampleCountStorage() {
-			static std::size_t count{}; ///< Number of valid CPU-only point shadow samples.
-			return count;
-		}
-
-		/**
-			* @brief Reads one rendered spot shadow texel per active debug sample into the retained diagnostics.
-			*/
-		void fillSpotShadowGpuDepthSamples() {
-			auto &renderer = static_cast<Renderer &>(*this);
-			if (renderer.device.device == VK_NULL_HANDLE || renderer.spotShadowArray.image == VK_NULL_HANDLE) { return; }
-			if (spotShadowDepthReadback.extent.width == 0U || spotShadowDepthReadback.extent.height == 0U) { return; }
-			if (vkDeviceWaitIdle(renderer.device.device) != VK_SUCCESS) { return; }
-
-			const std::size_t sampleCount{std::min({renderer.spotLightViewProjCount, spotShadowDepthSampleCountStorage(), renderer.spotShadowArray.ownedLayerViews.size()})}; // Only rendered spot slots are read back.
-			for (std::size_t spotIndex{}; spotIndex < sampleCount; ++spotIndex) {
-				RenderShadowDepthSample &sample = spotShadowDepthSampleStorage()[spotIndex]; // Existing CPU sample owns NDC and expected depth.
-				const auto texel = spotShadowDebugTexel(sample.light_ndc);
-				if (spotShadowDepthReadback.capture(renderer.spotShadowArray.image, static_cast<std::uint32_t>(spotIndex)) != VK_SUCCESS) { continue; }
-
-				const std::optional<float> depth = spotShadowDepthReadback.depthAt(texel.first, texel.second);
-				if (!depth) { continue; }
-				sample.pixel_x = texel.first;
-				sample.pixel_y = texel.second;
-				sample.gpu_depth = *depth;
-				sample.has_gpu = true;
-				sample.error = std::abs(sample.gpu_depth - sample.expected_depth);
-			}
-		}
-
-		/**
-			* @brief Reads the rendered directional shadow texel into the retained diagnostics.
-			*/
-		void fillDirectionalShadowGpuDepthSamples() {
-			auto &renderer = static_cast<Renderer &>(*this);
-			if (renderer.device.device == VK_NULL_HANDLE || renderer.dirShadowArray.image == VK_NULL_HANDLE) { return; }
-			if (dirShadowDepthReadback.extent.width == 0U || dirShadowDepthReadback.extent.height == 0U) { return; }
-			if (vkDeviceWaitIdle(renderer.device.device) != VK_SUCCESS) { return; }
-
-			constexpr std::uint32_t kDirectionalDebugLightIndex{0U}; ///< Readback stays pinned to the first packed directional light.
-			constexpr std::uint32_t kDirectionalDebugCascadeIndex{0U}; ///< Readback stays pinned to the nearest cascade.
-			constexpr std::uint32_t kDirectionalDebugLayer{kDirectionalDebugLightIndex * static_cast<std::uint32_t>(kNumShadowCascades) + kDirectionalDebugCascadeIndex}; ///< Flattened light-zero cascade-zero layer.
-			if (directionalShadowDepthSampleCountStorage() == 0U || kDirectionalDebugLayer >= renderer.dirShadowArray.ownedLayerViews.size()) { return; }
-			const auto directionalDebugMeta = std::ranges::find_if(renderer.shadowLightMeta, [](const auto &meta) {
-				return meta.light_type == 3U && meta.light_index == kDirectionalDebugLightIndex && meta.first_layer == kDirectionalDebugLayer;
-			});
-			if (directionalDebugMeta == renderer.shadowLightMeta.end() || directionalDebugMeta->layer_count != 1U) { return; }
-
-			RenderShadowDepthSample &sample = directionalShadowDepthSampleStorage()[0]; // Existing CPU sample uses the same flattened cascade layer.
-			const auto texel = spotShadowDebugTexel(sample.light_ndc);
-			if (dirShadowDepthReadback.capture(renderer.dirShadowArray.image, kDirectionalDebugLayer) != VK_SUCCESS) { return; }
-
-			const std::optional<float> depth = dirShadowDepthReadback.depthAt(texel.first, texel.second);
-			if (!depth) { return; }
-			sample.pixel_x = texel.first;
-			sample.pixel_y = texel.second;
-			sample.gpu_depth = *depth;
-			sample.has_gpu = true;
-			sample.error = std::abs(sample.gpu_depth - sample.expected_depth);
-		}
-
-		/**
-			* @brief Reads one rendered point shadow texel per active debug sample into the retained diagnostics.
-			*/
-		void fillPointShadowGpuDepthSamples() {
-			auto &renderer = static_cast<Renderer &>(*this);
-			if (renderer.device.device == VK_NULL_HANDLE || renderer.pointShadowArray.image == VK_NULL_HANDLE) { return; }
-			if (pointShadowDepthReadback.extent.width == 0U || pointShadowDepthReadback.extent.height == 0U) { return; }
-			if (vkDeviceWaitIdle(renderer.device.device) != VK_SUCCESS) { return; }
-
-			constexpr std::uint32_t firstPointShadowLayer{static_cast<std::uint32_t>(kMaxShadowedSpotLights)}; // CPU samples store the combined spot-plus-point layer.
-			const std::size_t sampleCount{std::min(pointShadowDepthSampleCountStorage(), renderer.pointShadowArray.ownedLayerViews.size())}; // Only retained point-light samples are read.
-			for (std::size_t pointIndex{}; pointIndex < sampleCount; ++pointIndex) {
-				RenderShadowDepthSample &sample = pointShadowDepthSampleStorage()[pointIndex]; // Existing CPU sample owns selected face, layer, and NDC.
-				if (sample.pixel_x < firstPointShadowLayer) { continue; }
-				const std::uint32_t pointArrayLayer{sample.pixel_x - firstPointShadowLayer}; // Point texture array stores only point faces.
-				if (pointArrayLayer >= renderer.pointShadowArray.ownedLayerViews.size()) { continue; }
-
-				const auto texel = spotShadowDebugTexel(sample.light_ndc);
-				if (pointShadowDepthReadback.capture(renderer.pointShadowArray.image, pointArrayLayer) != VK_SUCCESS) { continue; }
-
-				const std::optional<float> depth = pointShadowDepthReadback.depthAt(texel.first, texel.second);
-				if (!depth) { continue; }
-				sample.pixel_y = texel.second;
-				sample.gpu_depth = *depth;
-				sample.error = sample.expected_depth - sample.gpu_depth;
-				sample.has_gpu = true;
-				sample.shadow_factor = sample.light_ndc.z - sample.bias > sample.gpu_depth ? 0.35F : 1.0F;
-			}
-		}
-
-		/**
-			* @brief Converts shader shadow-map NDC coordinates to one clamped integer texel.
-			*
-			* @param lightNdc Existing debug point in light normalized device coordinates.
-			* @return X and Y texel coordinates inside the fixed shadow-map resolution.
-			*/
-		[[nodiscard]] static std::pair<std::uint32_t, std::uint32_t> spotShadowDebugTexel(Vec3 lightNdc) {
+	private:
+		/// @brief Converts light NDC x/y to one clamped shadow-map texel.
+		[[nodiscard]] static std::pair<std::uint32_t, std::uint32_t> shadowTexel(Vec3 lightNdc) {
 			const auto toTexel = [](Scalar ndc) {
 				if (!std::isfinite(ndc)) { return 0U; }
 				const Scalar uv = std::clamp(ndc * static_cast<Scalar>(0.5) + static_cast<Scalar>(0.5), zero(), one());
-				const Scalar scaled = uv * static_cast<Scalar>(ShadowMap::resolution);
-				return static_cast<std::uint32_t>(std::min<std::uint64_t>(static_cast<std::uint64_t>(scaled), ShadowMap::resolution - 1U));
+				return static_cast<std::uint32_t>(std::min<std::uint64_t>(static_cast<std::uint64_t>(uv * static_cast<Scalar>(ShadowMap::resolution)), ShadowMap::resolution - 1U));
 			};
 			return {toTexel(lightNdc.x), toTexel(lightNdc.y)};
 		}

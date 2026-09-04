@@ -153,6 +153,7 @@ int main(int argc, char **argv) {
 	const auto path = outputPath(argc, argv);
 	const auto pngPath = pngOutputPath(path);
 	bool pngWritten{};
+	renderSystem.setShadowDepthReadback(true); // Compare CPU shadow depths against the rendered shadow maps in the report.
 	for (int frame{}; frame < maxFrames; ++frame) {
 		const auto status = engine.step();
 		if (!status) {
@@ -188,78 +189,29 @@ int main(int argc, char **argv) {
 	output << "directional_light=" << renderSystem.hasSceneDirectionalLight() << '\n';
 	output << "point_light=" << renderSystem.hasScenePointLight() << '\n';
 	output << "spot_light=" << renderSystem.hasSceneSpotLight() << '\n';
-	const auto spotShadowSampleCount = renderSystem.sceneSpotShadowDepthSampleCount(); // Facade-reported spot debug rows.
-	output << "spot_shadow_sample_count=" << spotShadowSampleCount << '\n';
-	std::vector<std::size_t> spotShadowSlots; // Present facade slots are checked after preserving per-sample rows.
-	for (std::size_t spotIndex{}; spotIndex < spotShadowSampleCount; ++spotIndex) { // One row per shadowed spot light.
-		const auto sample = renderSystem.sceneSpotShadowDepthSample(spotIndex); // Optional aggregate supplies light-space NDC only.
-		const auto slot = renderSystem.sceneSpotShadowDepthSampleSlot(spotIndex); // Scalar getter proves the selected shadow slot.
-		const auto expectedDepth = renderSystem.sceneSpotShadowDepthSampleExpectedDepth(spotIndex); // Scalar getter reports compared depth.
-		const auto bias = renderSystem.sceneSpotShadowDepthSampleBias(spotIndex); // Scalar getter reports compare bias.
-		const auto shadowFactor = renderSystem.sceneSpotShadowDepthSampleFactor(spotIndex); // Scalar getter reports final visibility.
-		const auto gpuDepth = renderSystem.sceneSpotShadowDepthGpuDepth(spotIndex); // GPU readback depth, if available.
-		const auto hasGpu = renderSystem.sceneSpotShadowDepthHasGpu(spotIndex); // Explicit GPU-readback availability flag.
-		const auto depthError = renderSystem.sceneSpotShadowDepthError(spotIndex); // Difference between CPU and GPU depths.
-		const bool hasGpuDepth = hasGpu.value_or(false); // Missing readback stays deterministic for headless runs.
-		if (slot) { spotShadowSlots.push_back(*slot); } // Only reachable samples can prove slot ownership.
-		output << "spot_shadow_sample index=" << spotIndex << " slot=" << (slot ? std::to_string(*slot) : "null");
-		if (sample) {
-			output << " light_ndc=(" << sample->light_ndc.x << ',' << sample->light_ndc.y << ',' << sample->light_ndc.z << ')';
-		} else {
-			output << " light_ndc=null";
+	// One row per shadow-casting light: CPU-projected origin depth versus the rendered shadow-map texel.
+	const auto samples = renderSystem.shadowDepthSamples();
+	const auto printSamples = [&output, &samples](std::string_view prefix, std::uint32_t lightType) {
+		std::size_t index{};
+		std::vector<std::uint32_t> layers{};
+		for (const auto &sample : samples) {
+			if (sample.light_type != lightType) { continue; }
+			output << prefix << "_shadow_sample index=" << index++ << " slot=" << sample.light_index << " face=" << sample.face_index
+					 << " layer=" << sample.layer << " world=(" << sample.world.x << ',' << sample.world.y << ',' << sample.world.z << ')'
+					 << " light_ndc=(" << sample.light_ndc.x << ',' << sample.light_ndc.y << ',' << sample.light_ndc.z << ')'
+					 << " expected_depth=" << sample.expected_depth << " bias=" << sample.bias << " shadow_factor=" << sample.shadow_factor
+					 << " gpu_depth=" << (sample.has_gpu ? std::to_string(sample.gpu_depth) : "none") << " has_gpu=" << (sample.has_gpu ? '1' : '0')
+					 << " error=" << (sample.has_gpu ? std::to_string(sample.error) : "none") << '\n';
+			layers.push_back(sample.layer);
 		}
-		output << " expected_depth=" << (expectedDepth ? std::to_string(*expectedDepth) : "null")
-				 << " bias=" << (bias ? std::to_string(*bias) : "null")
-				 << " shadow_factor=" << (shadowFactor ? std::to_string(*shadowFactor) : "null")
-				 << " gpu_depth=" << (hasGpuDepth && gpuDepth ? std::to_string(*gpuDepth) : "none")
-				 << " has_gpu=" << (hasGpuDepth ? '1' : '0')
-				 << " error=" << (hasGpuDepth && depthError ? std::to_string(*depthError) : "none") << '\n';
-	}
-	std::ranges::sort(spotShadowSlots); // Stable aggregate verdict for automated parsing.
-	const bool enoughSpotSlots = spotShadowSlots.size() >= 2;
-	const bool distinctSpotSlots = enoughSpotSlots && std::ranges::adjacent_find(spotShadowSlots) == spotShadowSlots.end();
-	output << "spot_shadow_slots_distinct=" << (enoughSpotSlots ? (distinctSpotSlots ? "1" : "0") : "none") << '\n';
-	const auto pointShadowSampleCount = renderSystem.scenePointShadowDepthSampleCount(); // Facade-reported point debug rows.
-	output << "point_shadow_sample_count=" << pointShadowSampleCount << '\n';
-	for (std::size_t pointIndex{}; pointIndex < pointShadowSampleCount; ++pointIndex) { // One row per shadowed point light.
-		const auto sample = renderSystem.scenePointShadowDepthSample(pointIndex); // Aggregate supplies slot, face, world, and depth terms.
-		const auto gpuDepth = renderSystem.scenePointShadowDepthGpuDepth(pointIndex); // GPU readback depth, if available.
-		const auto hasGpu = renderSystem.scenePointShadowDepthHasGpu(pointIndex); // Explicit GPU-readback availability flag.
-		const auto depthError = renderSystem.scenePointShadowDepthError(pointIndex); // Difference between CPU and GPU depths.
-		const bool hasGpuDepth = hasGpu.value_or(false); // Missing readback stays deterministic for headless runs.
-		output << "point_shadow_sample index=" << pointIndex
-				 << " slot=" << (sample ? std::to_string(sample->triangle_id) : "null")
-				 << " face=" << (sample ? std::to_string(sample->face_index) : "null")
-				 << " layer=" << (sample ? std::to_string(sample->pixel_x) : "null");
-		if (sample) {
-			output << " world=(" << sample->world.x << ',' << sample->world.y << ',' << sample->world.z << ')'
-					 << " light_ndc=(" << sample->light_ndc.x << ',' << sample->light_ndc.y << ',' << sample->light_ndc.z << ')';
-		} else {
-			output << " world=null light_ndc=null";
-		}
-		output << " expected_depth=" << (sample ? std::to_string(sample->expected_depth) : "null")
-				 << " bias=" << (sample ? std::to_string(sample->bias) : "null")
-				 << " shadow_factor=" << (sample ? std::to_string(sample->shadow_factor) : "null")
-				 << " gpu_depth=" << (hasGpuDepth && gpuDepth ? std::to_string(*gpuDepth) : "none")
-				 << " has_gpu=" << (hasGpuDepth ? '1' : '0')
-				 << " error=" << (hasGpuDepth && depthError ? std::to_string(*depthError) : "none") << '\n';
-	}
-	const auto directionalShadowSampleCount = renderSystem.sceneShadowDepthSampleCount(); // Facade-reported directional debug rows.
-	const auto directionalSample = directionalShadowSampleCount > 0U ? renderSystem.sceneShadowDepthSample(0U) : std::nullopt;
-	if (directionalSample) { // Present directional debug data mirrors the spot row format for parsers.
-		const bool hasGpuDepth = directionalSample->has_gpu; // Missing readback stays deterministic for headless runs.
-		output << "directional_shadow_sample index=0 slot=" << directionalSample->face_index
-				 << " light_ndc=(" << directionalSample->light_ndc.x << ',' << directionalSample->light_ndc.y << ','
-				 << directionalSample->light_ndc.z << ')'
-				 << " expected_depth=" << directionalSample->expected_depth << " bias=" << directionalSample->bias
-				 << " shadow_factor=" << directionalSample->shadow_factor
-				 << " gpu_depth=" << (hasGpuDepth ? std::to_string(directionalSample->gpu_depth) : "none")
-				 << " has_gpu=" << (hasGpuDepth ? '1' : '0')
-				 << " error=" << (hasGpuDepth ? std::to_string(directionalSample->error) : "none") << '\n';
-	} else { // Stable absent row keeps directional samples machine-parseable when no data exists.
-		output << "directional_shadow_sample index=0 slot=null light_ndc=null expected_depth=null"
-				 << " bias=null shadow_factor=null gpu_depth=none has_gpu=0 error=none\n";
-	}
+		std::ranges::sort(layers);
+		const bool distinct = layers.size() >= 2 && std::ranges::adjacent_find(layers) == layers.end(); // Stable aggregate verdict for automated parsing.
+		output << prefix << "_shadow_sample_count=" << index << '\n';
+		output << prefix << "_shadow_layers_distinct=" << (layers.size() >= 2 ? (distinct ? "1" : "0") : "none") << '\n';
+	};
+	printSamples("spot", 1U);
+	printSamples("point", 2U);
+	printSamples("directional", 3U);
 	output << "png_written=" << pngWritten << '\n';
 	std::cout << "[light_shadow_debug] frames=" << maxFrames << '\n';
 	return 0;

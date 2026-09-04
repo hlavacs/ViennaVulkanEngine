@@ -13,7 +13,7 @@ Facade source files:
 - `src/ECS.ixx`: exports partition `VEEngine:ECS`; defines `vve::BasicECS<TTraits>` and `vve::ECS`.
 - `src/Window.ixx`: exports partition `VEEngine:Window`; defines `vve::WindowSetup`, `vve::WindowSetups`, `vve::InputState`, `vve::Key`, `vve::DefaultCameraController`, `vve::Window`, and `vve::WindowSystem`.
 - `src/Assets.ixx`: exports partition `VEEngine:Assets`; defines `vve::AssetSystem`.
-- `src/RenderSystem.ixx`: exports partition `VEEngine:RenderSystem`; defines `vve::RenderSystem`, `vve::RenderDebugSample`, `vve::RenderShadowDepthSample`, and `vve::SpotShadowDepthSample`.
+- `src/RenderSystem.ixx`: exports partition `VEEngine:RenderSystem`; defines `vve::RenderSystem` and `vve::RenderShadowDepthSample`.
 - `src/Gui.ixx`: exports partition `VEEngine:Gui`; defines `vve::GuiSystem`.
 - `src/Types.ixx`: exports module `VEEngine.Types`; defines facade handles, strong types, descriptors and builders, `vve::EngineConfig`, `vve::FrameStatus`, `vve::Transform`, `vve::Bounds`, and `vve::Camera`.
 - `src/Math.ixx`: exports module `VEEngine.Math`; defines facade math aliases and functions in `vve::math` plus selected aliases in `vve`.
