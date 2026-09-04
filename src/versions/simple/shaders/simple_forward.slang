@@ -7,6 +7,7 @@
  * Shadow output: depth-only clip position from the shadow matrix selected by the push constant.
  * Fragment inputs: interpolated vertex color and world-space position from the vertex stage.
  * Fragment resources: base-color textures in binding 1 and the spot, directional, and point shadow arrays in bindings 2-4.
+ * Set-0 bindings are fixed and mirrored by kDescriptorSetBindings in Vulkan/Pipeline.ixx; FrameUniforms and ObjectPushConstants mirror the C++ structs.
  * Fragment outputs: one opaque RGBA color attachment value for a shadowed forward render pass.
  */
 

@@ -21,7 +21,6 @@ target_compile_definitions(SimpleForwardRendererTests PRIVATE
    VVE_ENGINE_IMPLEMENTATION_IS_SIMPLE
    VVE_ENGINE_HAS_SIMPLE
    "VVE_SIMPLE_SHADER_DIR=\"${PROJECT_BINARY_DIR}/src/versions/simple/shaders\""
-   "VVE_SIMPLE_SHADER_SOURCE=\"${PROJECT_SOURCE_DIR}/src/versions/simple/shaders/simple_forward.slang\""
    "VVE_TEST_CRATE_TEXTURE=\"${PROJECT_SOURCE_DIR}/assets/game/crate0/diffuse.png\"")
 find_package(glm CONFIG REQUIRED)
 find_package(Stb REQUIRED)
@@ -55,7 +54,6 @@ target_sources(SimpleForwardRendererTests
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Graph.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Window.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Assets.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Shaders.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Mesh.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Scene.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Handle.ixx"
@@ -92,36 +90,9 @@ target_sources(SimpleForwardRendererTests
 )
 target_sources(SimpleForwardRendererTests PRIVATE "${PROJECT_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp" "${PROJECT_SOURCE_DIR}/src/versions/simple/vma_impl.cpp")
 target_include_directories(SimpleForwardRendererTests PRIVATE ${Stb_INCLUDE_DIR})
-target_link_libraries(SimpleForwardRendererTests PRIVATE assimp::assimp imgui::imgui glm::glm SDL3::SDL3 Vulkan::Vulkan slang::slang GPUOpen::VulkanMemoryAllocator)
+target_link_libraries(SimpleForwardRendererTests PRIVATE assimp::assimp imgui::imgui glm::glm SDL3::SDL3 Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
 add_test(NAME SimpleForwardRendererTests COMMAND SimpleForwardRendererTests)
 vve_set_output_dirs(SimpleForwardRendererTests)
-add_executable(ShaderReflectionBindingsTests ShaderReflectionBindingsTests.cpp)
-target_compile_features(ShaderReflectionBindingsTests PRIVATE cxx_std_23)
-target_compile_definitions(ShaderReflectionBindingsTests PRIVATE
-   VULKAN_HPP_NO_EXCEPTIONS
-   VVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple
-   VVE_ENGINE_IMPLEMENTATION_IS_SIMPLE
-   VVE_ENGINE_HAS_SIMPLE
-   "VVE_SIMPLE_SHADER_SOURCE=\"${PROJECT_SOURCE_DIR}/src/versions/simple/shaders/simple_forward.slang\"")
-target_sources(ShaderReflectionBindingsTests
-   PRIVATE
-      FILE_SET shader_reflection_bindings_test_modules TYPE CXX_MODULES
-      BASE_DIRS "${PROJECT_SOURCE_DIR}"
-      FILES
-         "${PROJECT_SOURCE_DIR}/src/Math.ixx"
-         "${PROJECT_SOURCE_DIR}/src/Error.ixx"
-         "${PROJECT_SOURCE_DIR}/src/Handle.ixx"
-         "${PROJECT_SOURCE_DIR}/src/Entity.ixx"
-         "${PROJECT_SOURCE_DIR}/src/Vector.ixx"
-         "${PROJECT_SOURCE_DIR}/src/Types.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Error.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Handle.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Vector.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Shaders.ixx"
-)
-target_link_libraries(ShaderReflectionBindingsTests PRIVATE glm::glm Vulkan::Vulkan slang::slang)
-add_test(NAME ShaderReflectionBindingsTests COMMAND ShaderReflectionBindingsTests)
-vve_set_output_dirs(ShaderReflectionBindingsTests)
 find_package(imgui CONFIG REQUIRED)
 add_executable(GuiSystemTests GuiSystemTests.cpp)
 target_compile_features(GuiSystemTests PRIVATE cxx_std_23)
@@ -130,8 +101,7 @@ target_compile_definitions(GuiSystemTests PRIVATE
    VVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple
    VVE_ENGINE_IMPLEMENTATION_IS_SIMPLE
    VVE_ENGINE_HAS_SIMPLE
-   "VVE_SIMPLE_SHADER_DIR=\"${PROJECT_BINARY_DIR}/src/versions/simple/shaders\""
-   "VVE_SIMPLE_SHADER_SOURCE=\"${PROJECT_SOURCE_DIR}/src/versions/simple/shaders/simple_forward.slang\"")
+   "VVE_SIMPLE_SHADER_DIR=\"${PROJECT_BINARY_DIR}/src/versions/simple/shaders\"")
 target_sources(GuiSystemTests
    PRIVATE
       FILE_SET gui_system_test_modules TYPE CXX_MODULES
@@ -159,7 +129,6 @@ target_sources(GuiSystemTests
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Graph.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Window.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Assets.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Shaders.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Mesh.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Scene.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Handle.ixx"
@@ -196,7 +165,7 @@ target_sources(GuiSystemTests
 )
 target_sources(GuiSystemTests PRIVATE "${PROJECT_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp" "${PROJECT_SOURCE_DIR}/src/versions/simple/vma_impl.cpp")
 target_include_directories(GuiSystemTests PRIVATE ${Stb_INCLUDE_DIR})
-target_link_libraries(GuiSystemTests PRIVATE assimp::assimp glm::glm imgui::imgui SDL3::SDL3 Vulkan::Vulkan slang::slang GPUOpen::VulkanMemoryAllocator)
+target_link_libraries(GuiSystemTests PRIVATE assimp::assimp glm::glm imgui::imgui SDL3::SDL3 Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
 add_test(NAME GuiSystemTests COMMAND GuiSystemTests)
 vve_set_output_dirs(GuiSystemTests)
 vve_add_engine_test(SceneSystemTests)

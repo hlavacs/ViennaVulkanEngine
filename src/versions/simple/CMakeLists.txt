@@ -12,7 +12,6 @@ target_sources(ViennaVulkanEngine
          Graph.ixx
          Window.ixx
          Assets.ixx
-         Shaders.ixx
          GUI.ixx
          Engine.ixx
          Mesh.ixx
@@ -48,7 +47,6 @@ set(VVE_SIMPLE_FORWARD_SHADOW_VERTEX_SPV "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/simple
 target_compile_definitions(ViennaVulkanEngine
    PRIVATE
       "VVE_SIMPLE_SHADER_DIR=\"${VVE_SIMPLE_SHADER_OUTPUT_DIR}\""
-      "VVE_SIMPLE_SHADER_SOURCE=\"${VVE_SIMPLE_FORWARD_SHADER}\""
       "$<$<NOT:$<CONFIG:Debug>>:VVE_SIMPLE_RELEASE_PRESENT_MAILBOX>"
 )
 

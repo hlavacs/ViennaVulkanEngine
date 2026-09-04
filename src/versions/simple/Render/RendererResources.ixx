@@ -11,7 +11,6 @@ export module VEEngine.Simple.Renderer:RendererResources;
 import std;
 import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
-import VEEngine.Simple.Shaders;
 import VEEngine.Simple.Vulkan;
 
 /**
@@ -82,32 +81,7 @@ export namespace vve::simple {
 			result = renderer.depthImage.create(renderer.allocator, renderer.device.device, renderer.swapchain.extent, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			ShaderSystem shaderReflection{}; // Local reflection pass supplies the descriptor layout contract.
-			Vector<std::string> forwardEntries{};
-			forwardEntries.push_back("vertexMain");
-			forwardEntries.push_back("fragmentMain");
-			const auto shaderHandle = shaderReflection.compileAndReflect(std::filesystem::path{VVE_SIMPLE_SHADER_SOURCE}, std::move(forwardEntries));
-			if (!shaderHandle) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
-			const auto descriptorBindings = shaderReflection.descriptorSetLayoutBindings(*shaderHandle, 0U);
-			if (!descriptorBindings) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
-			const auto reflectedBindings = shaderReflection.reflectedBindings(*shaderHandle);
-			if (!reflectedBindings) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
-			constexpr std::string_view objectTextureParameterName{"baseColorTextures"}; // Slang parameter for the object base-color texture array.
-			const auto objectTextureBinding = std::ranges::find_if(*reflectedBindings, [objectTextureParameterName](const ShaderBindingReflection &binding) {
-				return binding.set == 0U && binding.name == objectTextureParameterName && binding.category != "binding_range";
-			});
-			if (objectTextureBinding == reflectedBindings->end()) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
-			constexpr std::array shadowSamplerParameterNames{"spotShadowArray", "dirShadowArray", "pointShadowArray"}; // Slang shadow sampler parameters, in writeShadowArray slot order.
-			std::array<std::uint32_t, shadowSamplerParameterNames.size()> shadowSamplerBindings{};
-			for (std::size_t index{}; index < shadowSamplerParameterNames.size(); ++index) {
-				const auto shadowSamplerBinding = std::ranges::find_if(*reflectedBindings, [name = std::string_view{shadowSamplerParameterNames[index]}](const ShaderBindingReflection &binding) {
-					return binding.set == 0U && binding.name == name && binding.category != "binding_range";
-				});
-				if (shadowSamplerBinding == reflectedBindings->end()) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
-				shadowSamplerBindings[index] = shadowSamplerBinding->binding;
-			}
-
-			result = renderer.descriptorSetLayout.create(renderer.device.device, *descriptorBindings);
+			result = renderer.descriptorSetLayout.create(renderer.device.device);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			VulkanVertexInputDescription vertexInput{}; // Fixed mesh vertex layout shared by forward and shadow pipelines.
@@ -158,23 +132,23 @@ export namespace vve::simple {
 			result = renderer.uniformBuffers.create(renderer.allocator, Renderer::framesInFlight);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.descriptorPool.create(renderer.device.device, Renderer::framesInFlight, *descriptorBindings);
+			result = renderer.descriptorPool.create(renderer.device.device, Renderer::framesInFlight);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			renderer.createImguiDescriptorPool();
 
-			result = renderer.descriptorSets.create(renderer.device.device, renderer.descriptorPool.descriptorPool, renderer.descriptorSetLayout.descriptorSetLayout, *descriptorBindings, objectTextureBinding->binding, shadowSamplerBindings, Renderer::framesInFlight);
+			result = renderer.descriptorSets.create(renderer.device.device, renderer.descriptorPool.descriptorPool, renderer.descriptorSetLayout.descriptorSetLayout, Renderer::framesInFlight);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			// Bind each frame descriptor set to its matching uniform buffer and shadow maps; textures follow below.
 			for (std::uint32_t frame{}; frame < Renderer::framesInFlight; ++frame) {
 				result = renderer.descriptorSets.writeUniformBuffer(frame, renderer.uniformBuffers.buffers[frame].buffer, sizeof(FrameUniforms));
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeShadowArray(frame, 0U, renderer.spotShadowArray.imageView, renderer.spotShadowArray.shadowSampler);
+				result = renderer.descriptorSets.writeShadowArray(frame, shaderBinding::spotShadowArray, renderer.spotShadowArray.imageView, renderer.spotShadowArray.shadowSampler);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeShadowArray(frame, 1U, renderer.dirShadowArray.imageView, renderer.dirShadowArray.shadowSampler);
+				result = renderer.descriptorSets.writeShadowArray(frame, shaderBinding::dirShadowArray, renderer.dirShadowArray.imageView, renderer.dirShadowArray.shadowSampler);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeShadowArray(frame, 2U, renderer.pointShadowArray.imageView, renderer.pointShadowArray.shadowSampler);
+				result = renderer.descriptorSets.writeShadowArray(frame, shaderBinding::pointShadowArray, renderer.pointShadowArray.imageView, renderer.pointShadowArray.shadowSampler);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 			}
 

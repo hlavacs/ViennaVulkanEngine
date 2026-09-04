@@ -16,7 +16,6 @@ export import :Graph;
 export import :Window;
 export import :Assets;
 export import :RenderSystem;
-export import VEEngine.Simple.Shaders;
 export import VEEngine.Simple.Handle;
 export import :Gui;
 
@@ -66,7 +65,6 @@ export namespace vve::simple {
 		WindowSystem window_system_{};												///< SDL platform window owner.
 		AssetSystem assets_{};															///< Asset and object catalog facade.
 		RenderSystem render_system_{makeImportedAssetReadAccess()};					///< Renderer selection and active CPU render scene.
-		ShaderSystem shaders_{};														///< Shader descriptor facade.
 		GuiSystem gui_{};																	///< GUI descriptor facade.
 		std::chrono::steady_clock::time_point last_frame_time_{};			///< Timestamp of the previous step().
 		std::uint64_t frame_{0};														///< Number of completed step() calls.

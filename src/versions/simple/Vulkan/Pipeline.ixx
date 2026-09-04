@@ -17,6 +17,7 @@ export module VEEngine.Simple.Vulkan:Pipeline;
 import :Device;
 import :OwnedHandle;
 import VEEngine.Simple.Mesh;
+import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vector;
 import std;
 import VEEngine.Simple.Math;
@@ -27,11 +28,12 @@ import VEEngine.Simple.Math;
 	*
 	* Functional objects:
 	* - ObjectPushConstants stores per-object draw data copied through Vulkan push constants.
-	* - VulkanDescriptorSetLayout owns only VkDescriptorSetLayout creation and teardown for frame uniforms, shadow-map sampling, and object-texture sampling.
+	* - shaderBinding / kDescriptorSetBindings define the set-0 layout that simple_forward.slang must match.
+	* - VulkanDescriptorSetLayout owns only VkDescriptorSetLayout creation and teardown for set 0.
 	* - VulkanVertexInputDescription stores the fixed Vertex binding and attribute layout for the forward pipeline.
 	* - VulkanPipelineLayout owns only VkPipelineLayout creation and teardown for one descriptor set and model push constants.
 	* - VulkanShaderModule owns only VkShaderModule creation from SPIR-V bytes and teardown.
-	* - VulkanGraphicsPipeline owns only VkPipeline creation for the simple forward pass and teardown.
+	* - VulkanGraphicsPipeline owns one dynamic-rendering VkPipeline: forward color+depth or depth-only shadow.
 	*/
 export namespace vve::simple {
 	/// @brief Plain per-object push-constant data matching the Slang ObjectPushConstants block layout.
@@ -43,6 +45,24 @@ export namespace vve::simple {
 		std::uint32_t padding{0U};             ///< Keeps the push-constant block a multiple of 16 bytes.
 	};
 
+	/// @brief Set-0 descriptor bindings of simple_forward.slang; every [[vk::binding(n, 0)]] in the shader must match this table.
+	namespace shaderBinding {
+		inline constexpr std::uint32_t frameUniforms{0U};      ///< ConstantBuffer<FrameUniforms> frame.
+		inline constexpr std::uint32_t baseColorTextures{1U};  ///< Sampler2D baseColorTextures[kMaxSceneTextures].
+		inline constexpr std::uint32_t spotShadowArray{2U};    ///< Sampler2DArrayShadow spotShadowArray.
+		inline constexpr std::uint32_t dirShadowArray{3U};     ///< Sampler2DArrayShadow dirShadowArray.
+		inline constexpr std::uint32_t pointShadowArray{4U};   ///< Sampler2DArrayShadow pointShadowArray.
+	} // namespace shaderBinding
+
+	/// @brief Descriptor-set layout of set 0, shared by the forward and shadow pipelines.
+	inline constexpr std::array<VkDescriptorSetLayoutBinding, 5U> kDescriptorSetBindings{{
+		{.binding = shaderBinding::frameUniforms, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::baseColorTextures, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = static_cast<std::uint32_t>(kMaxSceneTextures), .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::spotShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::dirShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::pointShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+	}};
+
 	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms, shadow maps, and one object texture; no pipeline layout is created here.
 	struct VulkanDescriptorSetLayout {
 		VulkanOwnedHandle<vk::raii::DescriptorSetLayout, VkDescriptorSetLayout> descriptorSetLayout{}; ///< Owned descriptor-set layout for set 0 frame uniforms, shadow maps, and object texture.
@@ -52,22 +72,18 @@ export namespace vve::simple {
 		VulkanDescriptorSetLayout &operator=(const VulkanDescriptorSetLayout &) = delete;
 
 		/**
-			* @brief Creates set 0 from reflected shader bindings for frame uniforms, shadow maps, and one object texture.
+			* @brief Creates set 0 from kDescriptorSetBindings.
 			*
 			* @param owningDevice Logical device that owns the created descriptor-set layout.
-			* @param bindings Descriptor-set layout bindings reflected from the Slang shader contract.
 			* @return VK_SUCCESS when the descriptor-set layout is available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, const Vector<VkDescriptorSetLayoutBinding> &bindings) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice) {
 			cleanup();
-			if (owningDevice == VK_NULL_HANDLE || bindings.empty()) { return VK_ERROR_INITIALIZATION_FAILED; }
-			std::vector<VkDescriptorSetLayoutBinding> contiguousBindings{};
-			contiguousBindings.reserve(bindings.size());
-			for (const auto &binding : bindings) { contiguousBindings.push_back(binding); } // Vulkan consumes one contiguous binding array.
+			if (owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 			const VkDescriptorSetLayoutCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-				.bindingCount = static_cast<std::uint32_t>(contiguousBindings.size()),
-				.pBindings = contiguousBindings.data(),
+				.bindingCount = static_cast<std::uint32_t>(kDescriptorSetBindings.size()),
+				.pBindings = kDescriptorSetBindings.data(),
 			};
 
 			VkDescriptorSetLayout rawLayout{VK_NULL_HANDLE};

@@ -6,7 +6,6 @@ export import VEEngine.Simple.Math;
 export import VEEngine.Types;
 export import VEEngine.ECSContainer;
 export import VEEngine.Simple.Handle;
-export import VEEngine.Simple.Shaders;
 
 /// @file
 /// @brief simple implementation types.
