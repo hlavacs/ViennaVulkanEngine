@@ -2,6 +2,7 @@ module;
 
 export module VEEngine;
 import std;
+import VEEngine.Simple;
 export import VEEngine.Error;
 export import VEEngine.Math;
 export import VEEngine.Handle;
@@ -67,10 +68,10 @@ export namespace vve {
 		[[nodiscard]] auto engineVersionMajor(const EngineState &state)								-> std::uint32_t;
 		[[nodiscard]] auto engineVersionName(const EngineState &state)								-> std::string_view;
 		[[nodiscard]] auto engineEcs(EngineState &state)												-> ECS &;
-		[[nodiscard]] auto engineAssets(EngineState &state)											-> void *;
-		[[nodiscard]] auto engineGui(EngineState &state)												-> void *;
-		[[nodiscard]] auto engineWindowSystem(EngineState &state)									-> void *;
-		[[nodiscard]] auto engineRenderSystem(EngineState &state)									-> void *;
+		[[nodiscard]] auto engineAssets(EngineState &state)											-> VVE_ENGINE_IMPLEMENTATION_NAMESPACE::AssetSystem &;
+		[[nodiscard]] auto engineGui(EngineState &state)												-> VVE_ENGINE_IMPLEMENTATION_NAMESPACE::GuiSystem &;
+		[[nodiscard]] auto engineWindowSystem(EngineState &state)									-> VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowSystem &;
+		[[nodiscard]] auto engineRenderSystem(EngineState &state)									-> VVE_ENGINE_IMPLEMENTATION_NAMESPACE::RenderSystem &;
 		[[nodiscard]] auto engineInit(EngineState &state)											-> std::expected<void, Error>;
 		[[nodiscard]] auto engineStep(EngineState &state)											-> std::expected<FrameStatus, Error>;
 		[[nodiscard]] auto engineWindowFrame(EngineState &state)										-> WindowFrameData;

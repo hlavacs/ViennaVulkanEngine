@@ -85,17 +85,17 @@ namespace vve {
 		/// @brief Returns the entity/component storage owned by the selected implementation.
 		ECS &engineEcs(EngineState &state) { return state.impl.ecs(); }
 
-		/// @brief Returns an erased pointer to the selected asset system.
-		void *engineAssets(EngineState &state) { return std::addressof(state.impl.assets()); }
+		/// @brief Returns the selected asset system.
+		VVE_ENGINE_IMPLEMENTATION_NAMESPACE::AssetSystem &engineAssets(EngineState &state) { return state.impl.assets(); }
 
-		/// @brief Returns an erased pointer to the selected GUI system.
-		void *engineGui(EngineState &state) { return std::addressof(state.impl.gui()); }
+		/// @brief Returns the selected GUI system.
+		VVE_ENGINE_IMPLEMENTATION_NAMESPACE::GuiSystem &engineGui(EngineState &state) { return state.impl.gui(); }
 
-		/// @brief Returns an erased pointer to the selected window system.
-		void *engineWindowSystem(EngineState &state) { return std::addressof(state.impl.windowSystem()); }
+		/// @brief Returns the selected window system.
+		VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowSystem &engineWindowSystem(EngineState &state) { return state.impl.windowSystem(); }
 
-		/// @brief Returns an erased pointer to the selected render system.
-		void *engineRenderSystem(EngineState &state) { return std::addressof(state.impl.renderSystem()); }
+		/// @brief Returns the selected render system.
+		VVE_ENGINE_IMPLEMENTATION_NAMESPACE::RenderSystem &engineRenderSystem(EngineState &state) { return state.impl.renderSystem(); }
 
 		/// @brief Initializes the selected engine implementation.
 		std::expected<void, Error> engineInit(EngineState &state) { return state.impl.init(); }

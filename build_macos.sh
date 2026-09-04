@@ -5,11 +5,11 @@ cd "$(dirname "$0")"
 
 TOOLCHAIN_FILE="cmake/toolchains/macos-arm64-homebrew-llvm.cmake"
 JOBS="${CMAKE_BUILD_PARALLEL_LEVEL:-$(sysctl -n hw.ncpu 2>/dev/null || printf '8')}"
-VARIANT="Debug"
+VARIANT="Release"
 CLEAN=0
 
 usage() {
-  printf 'Usage: %s [debug|release] [--clean]\n' "$0"
+  printf 'Usage: %s [debug|release] [--clean]   (default: release)\n' "$0"
   printf '       %s --clean [debug|release]\n' "$0"
 }
 

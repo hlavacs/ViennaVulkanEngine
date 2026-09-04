@@ -12,7 +12,7 @@ rem           first run only.
 
 pushd "%~dp0"
 
-set "VARIANT=debug"
+set "VARIANT=release"
 set "CLEAN=0"
 set "RUN_TESTS=1"
 
@@ -80,7 +80,7 @@ popd
 exit /b 0
 
 :usage
-echo Usage: %~nx0 [debug^|release] [--clean] [--no-tests]
+echo Usage: %~nx0 [debug^|release] [--clean] [--no-tests]   (default: release)
 popd
 exit /b 1
 

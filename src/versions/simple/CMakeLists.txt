@@ -1,7 +1,7 @@
 target_sources(ViennaVulkanEngine
    PRIVATE
       "${CMAKE_CURRENT_LIST_DIR}/stb_image_write_impl.cpp"
-   PRIVATE
+   PUBLIC
       FILE_SET simple_modules TYPE CXX_MODULES FILES
          Error.ixx
          Math.ixx

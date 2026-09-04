@@ -34,9 +34,10 @@ export namespace vve::simple {
 			renderer.lastReadbackCaptureResult.reset();
 			const auto windowExtent = renderer.currentWindowPixelExtent();
 			if (windowExtent.width == 0U || windowExtent.height == 0U) { return; }
-			if (renderer.syncSceneResources() != VK_SUCCESS) { return; }
-			if (windowExtent.width != renderer.swapchain.extent.width || windowExtent.height != renderer.swapchain.extent.height) {
-				if (renderer.recreateSwapchain(windowExtent) != VK_SUCCESS) { return; }
+			if (const VkResult result = renderer.syncSceneResources(); result != VK_SUCCESS) { reportFrameFailure("scene sync", result); return; }
+			// Compare against the extent the swapchain was requested for, not the surface-chosen one, so a driver that clamps or reports a different currentExtent does not force a recreate every frame.
+			if (windowExtent.width != renderer.swapchain.requestedExtent.width || windowExtent.height != renderer.swapchain.requestedExtent.height) {
+				if (const VkResult result = renderer.recreateSwapchain(windowExtent); result != VK_SUCCESS) { reportFrameFailure("swapchain recreate", result); return; }
 			}
 
 			const std::size_t frameCount{renderer.frameSync.inFlightFences.size()}; // Existing sync count defines frames in flight.
@@ -49,18 +50,16 @@ export namespace vve::simple {
 			if (inFlightFence == VK_NULL_HANDLE || imageAvailableSemaphore == VK_NULL_HANDLE) { return; }
 
 			VkResult result = vkWaitForFences(renderer.device.device, 1U, &inFlightFence, VK_TRUE, UINT64_MAX);
-			if (result != VK_SUCCESS) { return; }
+			if (result != VK_SUCCESS) { reportFrameFailure("fence wait", result); return; }
 
 			std::uint32_t imageIndex{};
 			result = vkAcquireNextImageKHR(renderer.device.device, renderer.swapchain.swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 			if (result == VK_ERROR_OUT_OF_DATE_KHR) { (void)renderer.recreateSwapchain(renderer.currentWindowPixelExtent()); return; }
-			if (result != VK_SUCCESS) { return; }
+			// VK_SUBOPTIMAL_KHR still acquired an image: it must be rendered and presented, otherwise the swapchain runs out of images and the next acquire blocks forever.
+			if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) { reportFrameFailure("image acquire", result); return; }
 			if (imageIndex >= renderer.frameSync.renderFinishedSemaphores.size()) { return; }
 			const VkSemaphore renderFinishedSemaphore{renderer.frameSync.renderFinishedSemaphores[imageIndex]}; // Present-wait semaphore follows the acquired swapchain image.
 			if (renderFinishedSemaphore == VK_NULL_HANDLE) { return; }
-
-			result = vkResetFences(renderer.device.device, 1U, &inFlightFence);
-			if (result != VK_SUCCESS) { return; }
 
 			const Scalar aspectRatio{renderer.swapchain.extent.height == 0U ? one() : static_cast<Scalar>(renderer.swapchain.extent.width) / static_cast<Scalar>(renderer.swapchain.extent.height)}; ///< Live swapchain aspect with a zero-height guard.
 			const PointLight light{renderer.scene.pointLight};
@@ -181,10 +180,14 @@ export namespace vve::simple {
 																		 .valid = directionalDebugMeta != renderer.shadowLightMeta.end()}; ///< Sample mirrors light-zero cascade-zero metadata and depth data.
 #endif
 			result = renderer.uniformBuffers.update(renderer.currentFrame, frameUniforms);
-			if (result != VK_SUCCESS) { return; }
+			if (result != VK_SUCCESS) { reportFrameFailure("uniform update", result); return; }
 
 			result = recordCommandBuffer(renderer.currentFrame, imageIndex);
-			if (result != VK_SUCCESS) { return; }
+			if (result != VK_SUCCESS) { reportFrameFailure("command recording", result); return; }
+
+			// Reset the fence only once the submit is certain; an unsignaled fence without a submit would block the next frame forever.
+			result = vkResetFences(renderer.device.device, 1U, &inFlightFence);
+			if (result != VK_SUCCESS) { reportFrameFailure("fence reset", result); return; }
 
 			const VkPipelineStageFlags waitStage{VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT}; ///< Acquire completes before the swapchain layout transition executes.
 			const VkSubmitInfo submitInfo{
@@ -198,7 +201,7 @@ export namespace vve::simple {
 				.pSignalSemaphores = &renderFinishedSemaphore,
 			};
 			result = vkQueueSubmit(renderer.device.graphicsQueue, 1U, &submitInfo, inFlightFence);
-			if (result != VK_SUCCESS) { return; }
+			if (result != VK_SUCCESS) { reportFrameFailure("queue submit", result); return; }
 			if (renderer.gpuDebugReadbackEnabled()) {
 				if (renderer.spotLightViewProjCount != 0U) { renderer.fillSpotShadowGpuDepthSamples(); }
 				if (renderer.directionalShadowDepthSampleCountStorage() != 0U) { renderer.fillDirectionalShadowGpuDepthSamples(); }
@@ -222,13 +225,22 @@ export namespace vve::simple {
 				(void)renderer.recreateSwapchain(renderer.currentWindowPixelExtent());
 				return;
 			}
-			if (result != VK_SUCCESS) { return; }
+			if (result != VK_SUCCESS) { reportFrameFailure("present", result); return; }
 
 			renderer.lastRenderedImageIndex = imageIndex;
 			renderer.currentFrame = static_cast<std::uint32_t>((renderer.currentFrame + 1U) % frameCount);
 		}
 
 	private:
+		/// @brief Logs a skipped frame with its Vulkan result; capped so a persistent failure does not flood the console.
+		static void reportFrameFailure(const char *stage, VkResult result) {
+			static std::uint32_t reported{0U};
+			constexpr std::uint32_t maxReports{16U};
+			if (reported >= maxReports) { return; }
+			++reported;
+			std::cerr << "[vve::simple] frame skipped: " << stage << " failed with VkResult " << static_cast<std::int32_t>(result) << '\n';
+		}
+
 		/**
 			* @brief Records the shadow passes and forward color pass for one acquired swapchain image.
 			*

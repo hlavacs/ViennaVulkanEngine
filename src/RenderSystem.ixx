@@ -1,5 +1,6 @@
 export module VEEngine:RenderSystem;
 import std;
+import VEEngine.Simple;
 import VEEngine.Error;
 import VEEngine.Types;
 
@@ -202,9 +203,10 @@ export namespace vve {
 	private:
 		template <typename... TSystems> friend class Engine;
 
-		explicit RenderSystem(void *implementation) noexcept;
+		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::RenderSystem;	///< Wrapped implementation class.
+		explicit RenderSystem(Impl &implementation) noexcept;
 
-		void *impl_{};									///< Opaque non-owning implementation pointer.
+		Impl &impl_;	///< Non-owning reference to the wrapped implementation.
 	};	///< Public render-system wrapper.
 
 } // namespace vve

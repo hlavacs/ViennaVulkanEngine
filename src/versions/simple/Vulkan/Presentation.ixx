@@ -39,6 +39,7 @@ export namespace vve::simple {
 		VulkanOwnedHandle<vk::raii::SwapchainKHR, VkSwapchainKHR> swapchain{}; ///< Owned Vulkan swapchain handle.
 		VkFormat imageFormat{VK_FORMAT_UNDEFINED};    ///< Chosen swapchain image format.
 		VkExtent2D extent{};                          ///< Chosen swapchain image extent.
+		VkExtent2D requestedExtent{};                 ///< Window pixel extent the swapchain was created for; may differ from the surface-chosen extent.
 		std::vector<VkImage> images{};                ///< Borrowed images owned by the swapchain implementation.
 		VkDevice device{VK_NULL_HANDLE};              ///< Borrowed Vulkan logical device used to destroy the swapchain.
 
@@ -128,6 +129,7 @@ export namespace vve::simple {
 
 			imageFormat = chosenFormat.format;
 			extent = chosenExtent;
+			requestedExtent = VkExtent2D{.width = width, .height = height};
 			result = retrieveImages();
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 			return VK_SUCCESS;
@@ -140,6 +142,7 @@ export namespace vve::simple {
 			swapchain.reset();
 			imageFormat = VK_FORMAT_UNDEFINED;
 			extent = {};
+			requestedExtent = {};
 			images.clear();
 			device = VK_NULL_HANDLE;
 		}
@@ -291,6 +294,7 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan depth-attachment owner; no render pass, framebuffers, commands, or sync are created here.
 	struct VulkanDepthImage {
+		static constexpr VkFormat format = VK_FORMAT_D32_SFLOAT;                     ///< Depth format shared by the image, its view, and every pipeline rendering into it.
 		VulkanOwnedHandle<vk::raii::Image, VkImage> image{};                         ///< Owned depth image handle.
 		VulkanOwnedHandle<vk::raii::DeviceMemory, VkDeviceMemory> memory{};          ///< Owned device-local memory backing the depth image.
 		VulkanOwnedHandle<vk::raii::ImageView, VkImageView> imageView{};             ///< Owned depth image view used as a framebuffer attachment.
@@ -317,7 +321,7 @@ export namespace vve::simple {
 			const VkImageCreateInfo imageInfo{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
 				.imageType = VK_IMAGE_TYPE_2D,
-				.format = VK_FORMAT_D32_SFLOAT,
+				.format = format,
 				.extent = {.width = extent.width, .height = extent.height, .depth = 1U},
 				.mipLevels = 1U,
 				.arrayLayers = 1U,
@@ -362,7 +366,7 @@ export namespace vve::simple {
 				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 				.image = image,
 				.viewType = VK_IMAGE_VIEW_TYPE_2D,
-				.format = VK_FORMAT_D32_SFLOAT,
+				.format = format,
 				.subresourceRange = {
 					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
 					.baseMipLevel = 0U,

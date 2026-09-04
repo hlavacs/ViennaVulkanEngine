@@ -1,5 +1,6 @@
 export module VEEngine:Assets;
 import std;
+import VEEngine.Simple;
 import VEEngine.Error;
 import VEEngine.Types;
 
@@ -67,9 +68,10 @@ export namespace vve {
 	private:
 		template <typename... TSystems> friend class Engine;
 
-		explicit AssetSystem(void *implementation) noexcept;
+		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::AssetSystem;	///< Wrapped implementation class.
+		explicit AssetSystem(Impl &implementation) noexcept;
 
-		void *impl_{};	///< Opaque non-owning implementation pointer.
+		Impl &impl_;	///< Non-owning reference to the wrapped implementation.
 	};	///< Public asset-system wrapper.
 
 } // namespace vve

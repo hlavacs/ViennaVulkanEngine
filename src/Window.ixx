@@ -1,5 +1,6 @@
 export module VEEngine:Window;
 import std;
+import VEEngine.Simple;
 import VEEngine.Types;
 import VEEngine.Vector;
 
@@ -124,9 +125,10 @@ export namespace vve {
 	private:
 		friend class WindowSystem;
 
-		explicit InputState(void *implementation) noexcept;
+		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::InputState;	///< Wrapped implementation class.
+		explicit InputState(Impl &implementation) noexcept;
 
-		void *impl_{};	///< Opaque non-owning implementation pointer.
+		Impl &impl_;	///< Non-owning reference to the wrapped implementation.
 	};	///< Facade input snapshot.
 
 	/// @brief Reusable keyboard-driven camera controller for application cameras.
@@ -152,19 +154,22 @@ export namespace vve {
 		auto forward = math::normalize(Vec3{std::cos(pitch) * std::sin(yaw), std::sin(pitch),
 													 -std::cos(pitch) * std::cos(yaw)});
 
+		// Shift doubles both turning and movement for the current frame.
+		const Scalar boost = input.isKeyDown(Key::left_shift) || input.isKeyDown(Key::right_shift) ? static_cast<Scalar>(2) : one();
+		const Scalar turnStep = turn_step * boost;
+		const Scalar movementStep = move_step * boost;
+
 		// Update view angles before movement so the current frame moves in the new direction.
-		if (input.isKeyDown(Key::left)) { yaw -= turn_step; }
-		if (input.isKeyDown(Key::right)) { yaw += turn_step; }
-		if (input.isKeyDown(Key::up)) { pitch -= turn_step; }
-		if (input.isKeyDown(Key::down)) { pitch += turn_step; }
+		if (input.isKeyDown(Key::left)) { yaw -= turnStep; }
+		if (input.isKeyDown(Key::right)) { yaw += turnStep; }
+		if (input.isKeyDown(Key::up)) { pitch -= turnStep; }
+		if (input.isKeyDown(Key::down)) { pitch += turnStep; }
 		pitch = math::clamp(pitch, -max_pitch, max_pitch);
 
 		// Rebuild camera basis after clamping to preserve the original example feel.
 		forward = math::normalize(Vec3{std::cos(pitch) * std::sin(yaw), std::sin(pitch),
 										 -std::cos(pitch) * std::cos(yaw)});
 		const Vec3 right = math::normalize(math::cross(forward, worldUp));
-		const Scalar movementStep = move_step *
-			(input.isKeyDown(Key::left_shift) || input.isKeyDown(Key::right_shift) ? static_cast<Scalar>(2) : one());
 		if (input.isKeyDown(Key::w)) { eye.value = math::add(eye.value, math::scale(forward, movementStep)); }
 		if (input.isKeyDown(Key::s)) { eye.value = math::subtract(eye.value, math::scale(forward, movementStep)); }
 		if (input.isKeyDown(Key::a)) { eye.value = math::subtract(eye.value, math::scale(right, movementStep)); }
@@ -195,9 +200,10 @@ export namespace vve {
 	private:
 		friend class WindowSystem;
 
-		explicit Window(void *implementation) noexcept;
+		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Window;	///< Wrapped implementation class.
+		explicit Window(const Impl &implementation) noexcept;
 
-		void *impl_{};	///< Opaque non-owning implementation pointer.
+		const Impl &impl_;	///< Non-owning reference to the wrapped implementation.
 	};	///< Read-only facade window view.
 
 	class WindowSystem {
@@ -226,9 +232,10 @@ export namespace vve {
 	private:
 		template <typename... TSystems> friend class Engine;
 
-		explicit WindowSystem(void *implementation) noexcept;
+		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowSystem;	///< Wrapped implementation class.
+		explicit WindowSystem(Impl &implementation) noexcept;
 
-		void *impl_{};	///< Opaque non-owning implementation pointer.
+		Impl &impl_;	///< Non-owning reference to the wrapped implementation.
 	};	///< Public window-system wrapper.
 
 } // namespace vve

@@ -159,7 +159,7 @@ export namespace vve::simple {
 				vertexInput,
 				renderer.swapchain.extent,
 				renderer.swapchain.imageFormat,
-				VK_FORMAT_D32_SFLOAT);
+				VulkanDepthImage::format);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.commandPool.create(renderer.device.device, *renderer.physicalDevice.graphicsQueueFamily);
@@ -405,7 +405,7 @@ export namespace vve::simple {
 			VulkanVertexInputDescription vertexInput{};
 			result = renderer.graphicsPipeline.create(renderer.device.device, VK_NULL_HANDLE, renderer.pipelineLayout.pipelineLayout,
 													 renderer.vertShaderModule.shaderModule, renderer.fragShaderModule.shaderModule, vertexInput,
-													 renderer.swapchain.extent, renderer.swapchain.imageFormat, VK_FORMAT_D32_SFLOAT);
+													 renderer.swapchain.extent, renderer.swapchain.imageFormat, VulkanDepthImage::format);
 			if (result != VK_SUCCESS) { return result; }
 
 			result = renderer.frameSync.create(renderer.device.device, Renderer::framesInFlight, static_cast<std::uint32_t>(renderer.swapchain.images.size()));

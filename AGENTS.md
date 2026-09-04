@@ -1,5 +1,7 @@
 # AGENTS.md
 
+If available, read CLAUDE.md.
+
 ## Purpose
 
 This repository is building a reusable, ECS-first game meta engine in modern C++23.
@@ -130,6 +132,7 @@ IMPORTANT: On Mac you should use KosmicKrisp, not MoltenVk.
 - If in doubt, ask. 
 - Avoid if sequences if there are many choices. Prefer constexpr data structures that selectors 
 can be used to index into.
+- Do not duplicate code. Instead create abstractions or templates that can be reused.
 
 ## Expectations for Examples
 
@@ -167,4 +170,4 @@ A compile time, a compile switch should select one of the engines available. Thi
 
 ## src/versions/simple
 
-The simple engine should be the bare engine minimum. 
+The simple engine should be the bare engine minimum. Keep the number of lines at a minimum. Always analyse this engine and find ways to make smarter code with less lines of code, templates, code reusing, etc. Make the code simple and easy to understand for human beings. Keep functions and classes simple with single focus and intent.
