@@ -2,6 +2,11 @@ module;
 #include <new>
 #include <SDL3/SDL_video.h>
 #include <vulkan/vulkan_core.h>
+#if __has_include(<backends/imgui_impl_vulkan.h>)
+#include <backends/imgui_impl_vulkan.h>
+#else
+#include <imgui_impl_vulkan.h>
+#endif
 
 export module VEEngine.Simple.Renderer;
 import std;
@@ -10,22 +15,16 @@ import VEEngine.Simple.Math;
 import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vulkan;
-export import :RendererDebug;
-export import :RendererShadowPrep;
-export import :RendererResources;
-export import :RendererDraw;
 
 /**
 	* @file
-	* @brief Vulkan renderer skeleton for the simple forward renderer.
+	* @brief Forward renderer of the simple engine: one CPU Scene, its Vulkan resources, and one frame loop.
 	*
-	* Functional objects:
-	* - ShadowLightMeta records CPU-side light-to-shadow-layer bindings before shader data grows.
-	* - ForwardRendererDebug supplies per-light shadow-depth samples and PNG capture through the renderer debug partition.
-	* - ForwardRendererShadowPrep supplies CPU shadow matrix and metadata preparation through the renderer shadow-prep partition.
-	* - ForwardRendererResources supplies GPU resource creation, swapchain recreation, and teardown through the renderer resources partition.
-	* - ForwardRendererDraw records per-frame shadow and color commands and submits the completed frame through the renderer draw partition.
-	* - ForwardRenderer owns the current CPU scene, swapchain image stack, depth attachment, unbound shadow maps and shadow pipeline, optional object texture, default object texture, forward render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, frame command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes needed before rendering.
+	* The class is declared here; its larger member functions live in module implementation units:
+	* - RendererResources.cpp: init, uploadSceneTextures, syncSceneResources, recreateSwapchain, cleanup, ImGui wiring.
+	* - RendererShadowPrep.cpp: prepareShadowFrame packs enabled lights and builds every shadow matrix.
+	* - RendererDraw.cpp: drawFrame and recordCommandBuffer record shadow passes plus the forward color pass and present.
+	* - RendererDebug.cpp: shadow-depth samples, optional GPU readback, and PNG capture.
 	*/
 export namespace vve::simple {
 
@@ -44,12 +43,54 @@ export namespace vve::simple {
 		std::uint32_t resolution{};							///< Square shadow-map side length in pixels.
 	};
 
-	/// @brief Minimal forward renderer owning Vulkan swapchain bring-up without draw state.
-	struct ForwardRenderer : ForwardRendererDebug<ForwardRenderer>, ForwardRendererShadowPrep<ForwardRenderer>, ForwardRendererResources<ForwardRenderer>, ForwardRendererDraw<ForwardRenderer> {
+	/// @brief One CPU/GPU shadow-depth comparison point; the world point is the origin for every light.
+	struct RenderShadowDepthSample {
+		std::uint32_t light_type{};				///< ShadowLightMeta light type: 1 spot, 2 point, 3 directional.
+		std::uint32_t light_index{};				///< Dense index of the light inside its packed shadow slots.
+		std::uint32_t face_index{};				///< Point-light cube face (+X,-X,+Y,-Y,+Z,-Z), 0 for other lights.
+		std::uint32_t layer{};						///< Layer of the light type's shadow array that this sample reads.
+		Vec3 world{zeroVec3()};						///< World-space sample point.
+		Vec3 light_ndc{zeroVec3()};					///< Sample point in light normalized device coordinates.
+		std::uint32_t pixel_x{};					///< Shadow-map texel x, valid when has_gpu is true.
+		std::uint32_t pixel_y{};					///< Shadow-map texel y, valid when has_gpu is true.
+		float expected_depth{};						///< CPU light-space depth (light_ndc.z).
+		float bias{};									///< Shader-side compare bias mirrored on the CPU.
+		float shadow_factor{1.0F};					///< 0.35 when the GPU texel occludes the point, otherwise 1.
+		float gpu_depth{-1.0F};						///< Depth read back from the shadow map, valid when has_gpu is true.
+		float error{-1.0F};							///< Absolute difference between expected_depth and gpu_depth.
+		bool has_gpu{};								///< True once the GPU texel was read back.
+	};
+
+	/// @brief Prepared CPU light and shadow data copied into the frame uniform buffer; lights are packed densely by type.
+	struct ForwardRendererShadowFrame {
+		std::array<Mat4, kShadowMatrixCount> shadowViewProjs{}; ///< Spot [0..), point faces [kShadowMatrixPointBase..), directional cascades [kShadowMatrixDirBase..).
+		Vec4 cascadeSplitsFar{}; ///< View-space far distance of each directional shadow cascade.
+		std::array<Vec4, kMaxShadowedPointLights> pointLightPositionRanges{}; ///< Point xyz positions with ranges in w.
+		std::array<Vec4, kMaxShadowedPointLights> pointLightColorIntensities{}; ///< Point rgb colors with intensities in w.
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightPositionRanges{}; ///< Spot xyz positions with ranges in w.
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightColorIntensities{}; ///< Spot rgb colors with intensities in w.
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightDirections{}; ///< Spot xyz directions with unused w.
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightConeAmbients{}; ///< Spot inner cone cosine, outer cone cosine, unused, ambient.
+		std::array<Vec4, kMaxDirectionalLights> directionalLightDirections{}; ///< Directional xyz directions with unused w.
+		std::array<Vec4, kMaxDirectionalLights> directionalLightColorIntensities{}; ///< Directional rgb colors with intensities in w.
+		std::array<Vec4, kMaxDirectionalLights> directionalLightAmbients{}; ///< Directional ambient term in w.
+		std::uint32_t activeDirectionalLightCount{}; ///< Enabled directional lights packed into the arrays.
+		std::uint32_t activeSpotLightCount{}; ///< Enabled spot lights packed into the arrays.
+		std::uint32_t activePointLightCount{}; ///< Enabled point lights packed into the arrays.
+		float shadowCompareBias{0.001F}; ///< CPU mirror of the shader-side spot/point compare bias.
+	};
+
+	/// @brief Forward renderer owning the CPU scene mirror, every Vulkan resource, and the per-frame draw loop.
+	struct ForwardRenderer {
 		/// @brief Lightweight command-recording pass tag used by tests without introducing a render graph.
 		enum class RecordedPass : std::uint8_t { directional_shadow, spot_shadow, point_shadow, forward_color };
 
 		static constexpr std::uint32_t framesInFlight{2U}; ///< Number of independent frame command buffers to allocate.
+		static constexpr std::size_t pointShadowFaceCount{6U}; ///< One square face per cubemap direction.
+		static constexpr Scalar shadowNearPlane{static_cast<Scalar>(0.1)}; ///< Shared near plane for spot and point shadow views.
+		static constexpr float occludedShadowFactor{0.35F}; ///< Shader partial-shadow floor.
+		static constexpr float directionalCompareBias{0.00005F}; ///< Shader-side bias of the nearest directional cascade.
+
 		VulkanInstance instance{};             ///< Owned Vulkan instance wrapper.
 		VulkanSurface surface{};               ///< Owned SDL-backed Vulkan surface wrapper.
 		VulkanPhysicalDevice physicalDevice{}; ///< Selected borrowed Vulkan physical device wrapper.
@@ -77,15 +118,40 @@ export namespace vve::simple {
 		VulkanDescriptorPool descriptorPool{}; ///< Owned descriptor pool for per-frame uniform and shadow-map descriptor sets.
 		VulkanDescriptorSets descriptorSets{}; ///< Owned per-frame descriptor sets binding frame uniform buffers and the shadow map.
 		std::vector<VulkanMesh> meshes{};      ///< Owned GPU meshes uploaded from the current scene objects.
+		VulkanReadback shadowDepthReadback{};  ///< Single shadow-map layer readback shared by all light types.
 		SDL_Window *window{nullptr};           ///< Borrowed SDL window used to create the Vulkan surface.
 		Scene scene{}; ///< CPU scene data kept in STL containers until renderer upload exists.
 		std::vector<ShadowLightMeta> shadowLightMeta{}; ///< Per-light shadow slot/layer metadata prepared every frame.
+		std::vector<RenderShadowDepthSample> shadowDepthSamples{}; ///< One sample per shadow-casting light, rebuilt every frame.
 		std::vector<RecordedPass> recordedPassOrder{}; ///< Last frame's command-recording pass order diagnostic.
 		Vec3 cameraEye{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}; ///< World-space camera position used for the frame view matrix.
 		Vec3 cameraTarget{zero(), one(), zero()}; ///< World-space point looked at by the frame view matrix.
 		std::optional<std::uint32_t> lastRenderedImageIndex{}; ///< Swapchain image index from the last acquired, rendered, and presented frame.
+		std::optional<VkResult> lastReadbackCaptureResult{}; ///< Result from the optional in-frame color readback.
 
 		~ForwardRenderer() { cleanup(); }
+
+		// Vulkan resource lifetime (RendererResources.cpp).
+		[[nodiscard]] VkResult init(SDL_Window *sdlWindow);					///< Creates every Vulkan object and uploads the current scene; returns the first failing result.
+		[[nodiscard]] VkResult uploadSceneTextures();								///< Uploads Scene::textures into the texture slots and rebinds all frame descriptor sets.
+		[[nodiscard]] VkResult syncSceneResources();								///< Brings GPU meshes and textures in line with CPU scene changes.
+		[[nodiscard]] VkResult recreateSwapchain(VkExtent2D requestedExtent);	///< Rebuilds swapchain-sized resources after a resize.
+		[[nodiscard]] VkExtent2D currentWindowPixelExtent() const;
+		void cleanup();																	///< Releases Vulkan device resources in reverse creation order.
+		void createImguiDescriptorPool();
+		[[nodiscard]] ImGui_ImplVulkan_InitInfo makeImguiInitInfo() const;	///< Builds dormant Dear ImGui Vulkan backend data from the renderer-owned objects.
+
+		// CPU shadow preparation (RendererShadowPrep.cpp).
+		[[nodiscard]] ForwardRendererShadowFrame prepareShadowFrame(const Mat4 &cameraView, Scalar cameraVerticalFov, Scalar cameraAspect, Scalar cameraNear, Scalar cameraFar);
+
+		// Frame recording and presentation (RendererDraw.cpp).
+		void drawFrame(VulkanReadback *readback = nullptr);						///< Draws one swapchain frame; the optional readback captures it for deterministic debug output.
+
+		// Diagnostics (RendererDebug.cpp).
+		void setGpuDebugReadback(bool enabled) { gpuDebugReadback_ = enabled; }	///< Enables the per-frame GPU shadow-depth readback for verification runs.
+		void recordShadowDepthSamples(const ForwardRendererShadowFrame &shadowFrame);	///< Projects the world origin through every active shadow matrix.
+		void fillShadowDepthSamplesFromGpu();												///< Reads the rendered shadow-map texel of every recorded sample.
+		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path) -> std::expected<void, Error>;
 
 		/// @brief Returns command-recorded pass tags from the most recent frame.
 		[[nodiscard]] std::span<const RecordedPass> lastRecordedPassOrder() const { return recordedPassOrder; }
@@ -119,11 +185,7 @@ export namespace vve::simple {
 #endif
 		}
 
-		/**
-			* @brief Replaces the current CPU scene before future renderer upload.
-			*
-			* @param nextScene Scene data prepared by the caller.
-		*/
+		/// @brief Replaces the current CPU scene before future renderer upload.
 		void loadScene(Scene nextScene) {
 			scene = std::move(nextScene);								// Scene upload invalidates per-frame shadow metadata.
 			shadowLightMeta.clear();									// Metadata is rebuilt during the next frame assembly.
@@ -177,12 +239,7 @@ export namespace vve::simple {
 		/// @brief Clears the renderer-owned CPU scene through the existing scene replacement path.
 		void clearScene() { loadScene(Scene{}); }
 
-		/**
-			* @brief Stores the camera eye and target used by future frame uniform updates.
-			*
-			* @param eye World-space camera position.
-			* @param target World-space point the camera looks at.
-			*/
+		/// @brief Stores the camera eye and target used by future frame uniform updates.
 		void setCamera(Vec3 eye, Vec3 target) {
 			cameraEye = eye;
 			cameraTarget = target;
@@ -192,8 +249,10 @@ export namespace vve::simple {
 		void renderFrame(VulkanReadback *readback = nullptr) { drawFrame(readback); }
 
 	private:
-		friend struct ForwardRendererResources<ForwardRenderer>;
-		friend struct ForwardRendererDraw<ForwardRenderer>;
+		static void reportFrameFailure(const char *stage, VkResult result);	///< Logs a skipped frame with its Vulkan result, capped to avoid flooding the console.
+		[[nodiscard]] VkResult recordCommandBuffer(std::uint32_t frameIndex, std::uint32_t imageIndex, const ForwardRendererShadowFrame &shadowFrame);
+		[[nodiscard]] static std::pair<std::uint32_t, std::uint32_t> shadowTexel(Vec3 lightNdc);	///< Converts light NDC x/y to one clamped shadow-map texel.
+
 		std::uint32_t currentFrame{0U}; ///< Index of the frame synchronization set used by the next draw.
 		VkDescriptorPool imguiDescriptorPool_{VK_NULL_HANDLE}; ///< Owned Dear ImGui descriptor pool reserved for backend texture descriptors.
 		void *guiSystem_{nullptr}; ///< Non-owning, type-erased GUI system pointer reserved for later GUI integration.
@@ -201,6 +260,7 @@ export namespace vve::simple {
 		std::vector<std::filesystem::path> uploadedTextures_{}; ///< Scene::textures as of the last GPU texture upload.
 		bool sceneResourcesDirty_{true}; ///< CPU scene topology or texture changed after the last GPU synchronization.
 		bool sceneRequiresFullUpload_{true}; ///< Removal or replacement requires rebuilding index-aligned GPU meshes.
+		bool gpuDebugReadback_{false}; ///< False during normal rendering to avoid per-frame GPU stalls.
 		std::set<std::size_t> sceneGeometryDirty_{}; ///< Existing GPU meshes requiring a vertex-buffer refresh.
 	};
 

@@ -66,10 +66,6 @@ target_sources(SimpleForwardRendererTests
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Readback.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Resources.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Vulkan.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererDebug.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererShadowPrep.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererResources.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererDraw.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RenderResources.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RenderSceneImport.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RenderSystemScene.ixx"
@@ -88,7 +84,15 @@ target_sources(SimpleForwardRendererTests
       "${PROJECT_SOURCE_DIR}/src/Window.cpp"
       "${PROJECT_SOURCE_DIR}/src/Gui.cpp"
 )
-target_sources(SimpleForwardRendererTests PRIVATE "${PROJECT_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp" "${PROJECT_SOURCE_DIR}/src/versions/simple/vma_impl.cpp")
+target_sources(SimpleForwardRendererTests
+   PRIVATE
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp"
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/vma_impl.cpp"
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererResources.cpp"
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererShadowPrep.cpp"
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererDraw.cpp"
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererDebug.cpp"
+)
 target_include_directories(SimpleForwardRendererTests PRIVATE ${Stb_INCLUDE_DIR})
 target_link_libraries(SimpleForwardRendererTests PRIVATE assimp::assimp imgui::imgui glm::glm SDL3::SDL3 Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
 add_test(NAME SimpleForwardRendererTests COMMAND SimpleForwardRendererTests)
@@ -141,10 +145,6 @@ target_sources(GuiSystemTests
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Readback.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Resources.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Vulkan.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererDebug.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererShadowPrep.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererResources.ixx"
-         "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererDraw.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RenderResources.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RenderSceneImport.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RenderSystemScene.ixx"
@@ -163,7 +163,15 @@ target_sources(GuiSystemTests
       "${PROJECT_SOURCE_DIR}/src/Window.cpp"
       "${PROJECT_SOURCE_DIR}/src/Gui.cpp"
 )
-target_sources(GuiSystemTests PRIVATE "${PROJECT_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp" "${PROJECT_SOURCE_DIR}/src/versions/simple/vma_impl.cpp")
+target_sources(GuiSystemTests
+   PRIVATE
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp"
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/vma_impl.cpp"
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererResources.cpp"
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererShadowPrep.cpp"
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererDraw.cpp"
+      "${PROJECT_SOURCE_DIR}/src/versions/simple/Render/RendererDebug.cpp"
+)
 target_include_directories(GuiSystemTests PRIVATE ${Stb_INCLUDE_DIR})
 target_link_libraries(GuiSystemTests PRIVATE assimp::assimp glm::glm imgui::imgui SDL3::SDL3 Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
 add_test(NAME GuiSystemTests COMMAND GuiSystemTests)
