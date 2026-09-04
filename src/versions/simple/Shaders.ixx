@@ -301,7 +301,9 @@ export namespace vve::simple {
 			collectFields(reflection, name, variable->getTypeLayout());
 			collectElementFields(reflection, name, variable->getTypeLayout());
 			collectBindingRanges(reflection, name, variable->getTypeLayout());
-			if (auto *element = variable->getTypeLayout()->getElementTypeLayout(); element != nullptr) {
+			// An array type layout already reports its element's binding range with the array count; descending would duplicate it.
+			if (auto *element = variable->getTypeLayout()->getElementTypeLayout();
+				 element != nullptr && variable->getTypeLayout()->getKind() != slang::TypeReflection::Kind::Array) {
 				collectBindingRanges(reflection, name, element);
 			}
 		}
