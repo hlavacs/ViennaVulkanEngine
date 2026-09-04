@@ -268,7 +268,7 @@ namespace {
          vve::LightIntensity{.value = 1.0F}, vve::LinearColor{});
    }
    if (!engine.renderFrame() || renderer.scene.directionalLights.size() != vve::simple::kMaxDirectionalLights ||
-       renderer.dirShadowArray.ownedLayerViews.size() !=
+       renderer.dirShadowArray.layerViews.size() !=
           vve::simple::kMaxDirectionalLights * vve::simple::kNumShadowCascades) {
       return false;
    }

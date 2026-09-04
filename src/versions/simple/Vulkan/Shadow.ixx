@@ -1,21 +1,11 @@
 module;
 #include <compare>
-#ifndef SDL_MAIN_HANDLED
-#define SDL_MAIN_HANDLED
-#define VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
-#endif
-#include <SDL3/SDL.h>
-#include <SDL3/SDL_main.h>
 #include <vulkan/vulkan.h>
 #include <vulkan/vulkan_raii.hpp>
-#include <SDL3/SDL_vulkan.h>
-#ifdef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
-#undef SDL_MAIN_HANDLED
-#undef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
-#endif
+#include <vk_mem_alloc.h>
 
 export module VEEngine.Simple.Vulkan:Shadow;
-import :Device;
+import :Memory;
 import :OwnedHandle;
 import :Pipeline;
 import std;
@@ -25,130 +15,28 @@ import std;
 	* @brief Vulkan shadow-map ownership for the simple forward renderer.
 	*
 	* Functional objects:
-	* - ShadowMap owns one square sampled D32 depth image, optional array views, sampler, backing memory, and unused shadow pipeline.
+	* - ShadowMap is a square D32 depth array with per-layer views, a comparison sampler, and its depth-only pipeline.
 	*/
 export namespace vve::simple {
 
-	/// @brief Minimal standalone shadow-map owner; array layers are reserved for later multi-light shadow targets.
-	struct ShadowMap {
+	/// @brief Square D32 shadow-map array: the VulkanImage base owns image, whole-array view, and one view per layer.
+	struct ShadowMap : VulkanImage {
 		static constexpr std::uint32_t resolution{1024U};          ///< Fixed square shadow-map side length in pixels.
-		const VulkanOwnedHandle<vk::raii::Device, VkDevice> *ownedDevice{}; ///< Borrowed RAII device for owned child resources.
-		VkDevice device{VK_NULL_HANDLE};                           ///< Borrowed Vulkan logical device used to destroy resources.
-		VulkanOwnedHandle<vk::raii::Image, VkImage> image{};       ///< Owned D32 depth image handle.
-		VulkanOwnedHandle<vk::raii::DeviceMemory, VkDeviceMemory> memory{}; ///< Owned device-local memory backing the depth image.
-		VulkanOwnedHandle<vk::raii::ImageView, VkImageView> imageView{}; ///< Owned depth image view for single-layer or whole-array sampling use.
-		std::vector<VulkanOwnedHandle<vk::raii::ImageView, VkImageView>> ownedLayerViews{}; ///< Owned per-layer 2D depth views.
-		VulkanOwnedHandle<vk::raii::Sampler, VkSampler> shadowSampler{}; ///< Owned clamp sampler for later shadow-map reads.
+		const VulkanOwnedHandle<vk::raii::Device, VkDevice> *ownedDevice{}; ///< Borrowed RAII device for the pipeline's shader module.
+		VkSampler shadowSampler{VK_NULL_HANDLE};                   ///< Owned border-clamped comparison sampler.
 		VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};           ///< Owned layout for frame uniforms and model push constants.
-		VkPipeline pipeline{VK_NULL_HANDLE};                       ///< Owned depth-only shadow graphics pipeline, currently unused.
-		std::uint32_t layerCount{1U};                              ///< Number of array layers allocated in the owned depth image.
-
-		ShadowMap() = default;
-		ShadowMap(const ShadowMap &) = delete;
-		ShadowMap &operator=(const ShadowMap &) = delete;
+		VkPipeline pipeline{VK_NULL_HANDLE};                       ///< Owned depth-only shadow graphics pipeline.
 
 		/**
-			* @brief Creates a square D32 depth image usable as a depth attachment and sampled image.
-			*
-			* @param physicalDevice Physical device used to query memory types.
-			* @param owningDevice Logical device that owns the image, memory, view, and sampler.
-			* @param requestedLayerCount Number of array layers to allocate, defaulting to one for existing callers.
-			* @return VK_SUCCESS when the shadow-map resources are ready, otherwise a Vulkan error code.
+			* @brief Creates the depth array (one layer by default), its views, and the comparison sampler.
 			*/
-		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::uint32_t requestedLayerCount = 1U) {
+		[[nodiscard]] VkResult create(VmaAllocator allocator, const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::uint32_t requestedLayerCount = 1U) {
 			cleanup();
-			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || requestedLayerCount == 0U) { return VK_ERROR_INITIALIZATION_FAILED; }
-
+			VkResult result = VulkanImage::create(allocator, owningDevice, VkExtent2D{.width = resolution, .height = resolution}, VK_FORMAT_D32_SFLOAT,
+																VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+																VK_IMAGE_ASPECT_DEPTH_BIT, requestedLayerCount, true);
+			if (result != VK_SUCCESS) { return result; }
 			ownedDevice = &owningDevice;
-			device = owningDevice;
-			layerCount = requestedLayerCount;
-			/// @brief Depth image descriptor for a fixed-size sampled shadow attachment.
-			const VkImageCreateInfo imageInfo{
-				.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-				.imageType = VK_IMAGE_TYPE_2D,
-				.format = VK_FORMAT_D32_SFLOAT,
-				.extent = {.width = resolution, .height = resolution, .depth = 1U},
-				.mipLevels = 1U,
-				.arrayLayers = layerCount,
-				.samples = VK_SAMPLE_COUNT_1_BIT,
-				.tiling = VK_IMAGE_TILING_OPTIMAL,
-				.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			};
-
-			VkImage rawImage{VK_NULL_HANDLE};
-			VkResult result = vkCreateImage(device, &imageInfo, nullptr, &rawImage);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
-			image.handle = vk::raii::Image{(*ownedDevice).handle, rawImage};
-
-			VkMemoryRequirements requirements{};
-			vkGetImageMemoryRequirements(device, image, &requirements);
-			const std::optional<std::uint32_t> memoryType = findMemoryType(
-				physicalDevice,
-				requirements.memoryTypeBits,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-			);
-			if (!memoryType.has_value()) { cleanup(); return VK_ERROR_FEATURE_NOT_PRESENT; }
-
-			/// @brief Device-local allocation descriptor for the shadow-map image.
-			const VkMemoryAllocateInfo allocateInfo{
-				.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-				.allocationSize = requirements.size,
-				.memoryTypeIndex = *memoryType,
-			};
-
-			VkDeviceMemory rawMemory{VK_NULL_HANDLE};
-			result = vkAllocateMemory(device, &allocateInfo, nullptr, &rawMemory);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
-			memory.handle = vk::raii::DeviceMemory{(*ownedDevice).handle, rawMemory};
-
-			result = vkBindImageMemory(device, image, memory, 0U);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
-
-			/// @brief Depth-only view descriptor for single-layer attachment use or whole-array sampling use.
-			const VkImageViewCreateInfo viewInfo{
-				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-				.image = image,
-				.viewType = layerCount == 1U ? VK_IMAGE_VIEW_TYPE_2D : VK_IMAGE_VIEW_TYPE_2D_ARRAY,
-				.format = VK_FORMAT_D32_SFLOAT,
-				.subresourceRange = {
-					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
-					.baseMipLevel = 0U,
-					.levelCount = 1U,
-					.baseArrayLayer = 0U,
-					.layerCount = layerCount,
-				},
-			};
-
-			VkImageView rawView{VK_NULL_HANDLE};
-			result = vkCreateImageView(device, &viewInfo, nullptr, &rawView);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
-			imageView.handle = vk::raii::ImageView{(*ownedDevice).handle, rawView};
-
-			// Multi-layer shadow maps expose one 2D view per layer for later per-light framebuffers.
-			if (layerCount > 1U) {
-				ownedLayerViews.reserve(layerCount);
-				for (std::uint32_t layer{}; layer < layerCount; ++layer) {
-					const VkImageViewCreateInfo layerViewInfo{
-						.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-						.image = image,
-						.viewType = VK_IMAGE_VIEW_TYPE_2D,
-						.format = VK_FORMAT_D32_SFLOAT,
-						.subresourceRange = {
-							.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
-							.baseMipLevel = 0U,
-							.levelCount = 1U,
-							.baseArrayLayer = layer,
-							.layerCount = 1U,
-						},
-					};
-					VkImageView rawLayerView{VK_NULL_HANDLE}; ///< Per-layer 2D view owned by ownedLayerViews after creation.
-					result = vkCreateImageView(device, &layerViewInfo, nullptr, &rawLayerView);
-					if (result != VK_SUCCESS) { cleanup(); return result; }
-					ownedLayerViews.emplace_back().handle = vk::raii::ImageView{(*ownedDevice).handle, rawLayerView};
-				}
-			}
 
 			/// @brief Border-clamped comparison sampler for filtered shadow-depth tests.
 			const VkSamplerCreateInfo samplerInfo{
@@ -165,20 +53,13 @@ export namespace vve::simple {
 				.maxLod = 1.0F,
 				.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE,
 			};
-
-			VkSampler rawSampler{VK_NULL_HANDLE};
-			result = vkCreateSampler(device, &samplerInfo, nullptr, &rawSampler);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
-			shadowSampler.handle = vk::raii::Sampler{(*ownedDevice).handle, rawSampler};
-
-			if (layerCount > 1U) {
-				return VK_SUCCESS;
-			}
-			return VK_SUCCESS;
+			result = vkCreateSampler(device, &samplerInfo, nullptr, &shadowSampler);
+			if (result != VK_SUCCESS) { cleanup(); }
+			return result;
 		}
 
 		/**
-			* @brief Creates the unused depth-only graphics pipeline for future shadow rendering.
+			* @brief Creates the depth-only graphics pipeline that renders one shadow layer.
 			*
 			* @param setLayout Existing frame-uniform descriptor-set layout used as set 0.
 			* @param shadowVertexSpirvPath Path to the shadow vertex SPIR-V file.
@@ -188,9 +69,7 @@ export namespace vve::simple {
 			*/
 		[[nodiscard]] VkResult createPipeline(VkDescriptorSetLayout setLayout, std::string_view shadowVertexSpirvPath, std::string_view vertexEntry, const VulkanVertexInputDescription &vertexInput);
 
-		/**
-			* @brief Destroys the shadow graphics pipeline and pipeline layout before render-pass teardown.
-			*/
+		/// @brief Destroys the shadow graphics pipeline and pipeline layout.
 		void cleanupPipeline() {
 			if (pipeline != VK_NULL_HANDLE) { vkDestroyPipeline(device, pipeline, nullptr); }
 			if (pipelineLayout != VK_NULL_HANDLE) { vkDestroyPipelineLayout(device, pipelineLayout, nullptr); }
@@ -198,27 +77,18 @@ export namespace vve::simple {
 			pipelineLayout = VK_NULL_HANDLE;
 		}
 
-		/**
-			* @brief Destroys the owned shadow sampler, depth image view, image, and memory.
-			*/
+		/// @brief Destroys the pipeline, sampler, views, and image.
 		void cleanup() {
 			cleanupPipeline();
-			shadowSampler.reset();
-			for (auto &layerView : ownedLayerViews) { layerView.reset(); }
-			ownedLayerViews.clear();
-			imageView.reset();
-			image.reset();
-			memory.reset();
+			if (shadowSampler != VK_NULL_HANDLE) { vkDestroySampler(device, shadowSampler, nullptr); }
+			shadowSampler = VK_NULL_HANDLE;
 			ownedDevice = nullptr;
-			device = VK_NULL_HANDLE;
-			layerCount = 1U;
+			VulkanImage::cleanup();
 		}
 
-		/**
-			* @brief Destroys the owned shadow-map resources on scope exit.
-			*/
 		~ShadowMap() { cleanup(); }
 	};
+
 
 	/**
 		* @brief Creates the fixed-function shadow graphics pipeline for the depth-only shadow render pass.

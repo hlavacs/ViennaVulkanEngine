@@ -58,6 +58,12 @@ export namespace vve::simple {
 			result = renderer.device.create(renderer.physicalDevice);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
+			VkPhysicalDeviceProperties deviceProperties{};
+			vkGetPhysicalDeviceProperties(renderer.physicalDevice.physicalDevice, &deviceProperties);
+			result = renderer.allocator.create(renderer.instance.instance, renderer.physicalDevice.physicalDevice, renderer.device.device,
+														  std::min<std::uint32_t>(deviceProperties.apiVersion, VK_API_VERSION_1_3)); ///< VMA needs a version both instance and device support.
+			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
+
 			int width{};
 			int height{};
 			SDL_GetWindowSizeInPixels(renderer.window, &width, &height);
@@ -76,7 +82,7 @@ export namespace vve::simple {
 			result = renderer.imageViews.create(renderer.device.device, renderer.swapchain.images, renderer.swapchain.imageFormat);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.depthImage.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.swapchain.extent);
+			result = renderer.depthImage.create(renderer.allocator, renderer.device.device, renderer.swapchain.extent, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			ShaderSystem shaderReflection{}; // Local reflection pass supplies the descriptor layout contract.
@@ -109,21 +115,21 @@ export namespace vve::simple {
 
 			VulkanVertexInputDescription vertexInput{}; // Fixed mesh vertex layout shared by forward and shadow pipelines.
 
-			result = renderer.shadowMap.create(renderer.physicalDevice.physicalDevice, renderer.device.device);
+			result = renderer.shadowMap.create(renderer.allocator, renderer.device.device);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			constexpr std::uint32_t directionalShadowLayerCount{static_cast<std::uint32_t>(kMaxDirectionalLights * kNumShadowCascades)}; // Four cascades for every directional-light slot.
-			result = renderer.dirShadowArray.create(renderer.physicalDevice.physicalDevice, renderer.device.device, directionalShadowLayerCount);
+			result = renderer.dirShadowArray.create(renderer.allocator, renderer.device.device, directionalShadowLayerCount);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.spotShadowMap.create(renderer.physicalDevice.physicalDevice, renderer.device.device);
+			result = renderer.spotShadowMap.create(renderer.allocator, renderer.device.device);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.spotShadowArray.create(renderer.physicalDevice.physicalDevice, renderer.device.device, kMaxShadowedSpotLights);
+			result = renderer.spotShadowArray.create(renderer.allocator, renderer.device.device, kMaxShadowedSpotLights);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			constexpr std::uint32_t pointShadowArrayLayerCount{static_cast<std::uint32_t>(kMaxShadowedPointLights * 6U)}; // Six cubemap-style faces per shadowed point light.
-			result = renderer.pointShadowArray.create(renderer.physicalDevice.physicalDevice, renderer.device.device, pointShadowArrayLayerCount);
+			result = renderer.pointShadowArray.create(renderer.allocator, renderer.device.device, pointShadowArrayLayerCount);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.pointShadowArray.createPipeline(renderer.descriptorSetLayout.descriptorSetLayout, pointShadowVertSpirvPath, "shadowVertexMainPoint", vertexInput);
@@ -159,13 +165,13 @@ export namespace vve::simple {
 				vertexInput,
 				renderer.swapchain.extent,
 				renderer.swapchain.imageFormat,
-				VulkanDepthImage::format);
+				depthFormat);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.commandPool.create(renderer.device.device, *renderer.physicalDevice.graphicsQueueFamily);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.shadowDepthReadback.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, VkExtent2D{.width = ShadowMap::resolution, .height = ShadowMap::resolution});
+			result = renderer.shadowDepthReadback.create(renderer.allocator, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, VkExtent2D{.width = ShadowMap::resolution, .height = ShadowMap::resolution}, depthFormat);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.commandBuffers.create(renderer.device.device, renderer.commandPool.commandPool, Renderer::framesInFlight);
@@ -174,7 +180,7 @@ export namespace vve::simple {
 			result = renderer.frameSync.create(renderer.device.device, Renderer::framesInFlight, static_cast<std::uint32_t>(renderer.swapchain.images.size()));
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.uniformBuffers.create(renderer.physicalDevice.physicalDevice, renderer.device.device, Renderer::framesInFlight);
+			result = renderer.uniformBuffers.create(renderer.allocator, Renderer::framesInFlight);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.descriptorPool.create(renderer.device.device, Renderer::framesInFlight, *descriptorBindings);
@@ -207,7 +213,7 @@ export namespace vve::simple {
 			// Upload one GPU mesh for each object in the current CPU scene.
 			for (const Object &object : renderer.scene.objects) {
 				VulkanMesh &mesh = renderer.meshes.emplace_back();
-				result = mesh.create(renderer.physicalDevice.physicalDevice, renderer.device.device, object.mesh);
+				result = mesh.create(renderer.allocator, object.mesh);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 			}
 			renderer.sceneGeometryDirty_.clear();
@@ -230,11 +236,11 @@ export namespace vve::simple {
 			renderer.uploadedTextures_.clear();
 
 			constexpr std::array opaqueWhitePixel{std::byte{255U}, std::byte{255U}, std::byte{255U}, std::byte{255U}};
-			VkResult result = renderer.defaultObjectTexture.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, std::span{opaqueWhitePixel}, VkExtent2D{.width = 1U, .height = 1U});
+			VkResult result = renderer.defaultObjectTexture.create(renderer.allocator, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, std::span{opaqueWhitePixel}, VkExtent2D{.width = 1U, .height = 1U});
 			if (result != VK_SUCCESS) { return result; }
 			const std::size_t textureCount{std::min(renderer.scene.textures.size(), kMaxSceneTextures)};
 			for (std::size_t index{}; index < textureCount; ++index) {
-				result = renderer.objectTextures[index].create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, renderer.scene.textures[index]);
+				result = renderer.objectTextures[index].create(renderer.allocator, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, renderer.scene.textures[index]);
 				if (result != VK_SUCCESS) { return result; }
 			}
 
@@ -283,8 +289,7 @@ export namespace vve::simple {
 			while (renderer.meshes.size() < renderer.scene.objects.size()) {
 				const Object &object = renderer.scene.objects[renderer.meshes.size()];
 				VulkanMesh &mesh = renderer.meshes.emplace_back();
-				const VkResult result = mesh.create(renderer.physicalDevice.physicalDevice,
-					renderer.device.device, object.mesh);
+				const VkResult result = mesh.create(renderer.allocator, object.mesh);
 				if (result != VK_SUCCESS) {
 					renderer.meshes.pop_back();
 					return result;
@@ -348,6 +353,7 @@ export namespace vve::simple {
 			renderer.depthImage.cleanup();
 			renderer.imageViews.cleanup();
 			renderer.swapchain.cleanup();
+			renderer.allocator.cleanup();
 			renderer.device.cleanup();
 			renderer.surface.cleanup();
 			renderer.instance.cleanup();
@@ -393,13 +399,13 @@ export namespace vve::simple {
 			result = renderer.imageViews.create(renderer.device.device, renderer.swapchain.images, renderer.swapchain.imageFormat);
 			if (result != VK_SUCCESS) { return result; }
 
-			result = renderer.depthImage.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.swapchain.extent);
+			result = renderer.depthImage.create(renderer.allocator, renderer.device.device, renderer.swapchain.extent, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
 			if (result != VK_SUCCESS) { return result; }
 
 			VulkanVertexInputDescription vertexInput{};
 			result = renderer.graphicsPipeline.create(renderer.device.device, VK_NULL_HANDLE, renderer.pipelineLayout.pipelineLayout,
 													 renderer.vertShaderModule.shaderModule, renderer.fragShaderModule.shaderModule, vertexInput,
-													 renderer.swapchain.extent, renderer.swapchain.imageFormat, VulkanDepthImage::format);
+													 renderer.swapchain.extent, renderer.swapchain.imageFormat, depthFormat);
 			if (result != VK_SUCCESS) { return result; }
 
 			result = renderer.frameSync.create(renderer.device.device, Renderer::framesInFlight, static_cast<std::uint32_t>(renderer.swapchain.images.size()));

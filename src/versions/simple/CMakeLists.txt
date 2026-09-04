@@ -1,6 +1,7 @@
 target_sources(ViennaVulkanEngine
    PRIVATE
       "${CMAKE_CURRENT_LIST_DIR}/stb_image_write_impl.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/vma_impl.cpp"
    PUBLIC
       FILE_SET simple_modules TYPE CXX_MODULES FILES
          Error.ixx
@@ -16,6 +17,7 @@ target_sources(ViennaVulkanEngine
          Engine.ixx
          Mesh.ixx
          Vulkan/Handle.ixx
+         Vulkan/Memory.ixx
          Vulkan/Device.ixx
          Vulkan/Commands.ixx
          Vulkan/Presentation.ixx

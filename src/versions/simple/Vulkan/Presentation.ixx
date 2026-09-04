@@ -25,7 +25,6 @@ import std;
 	* Functional objects:
 	* - VulkanSwapchain owns only VkSwapchainKHR creation and swapchain image retrieval.
 	* - VulkanImageViews owns only VkImageView creation and teardown for borrowed swapchain images.
-	* - VulkanDepthImage owns one depth VkImage, its device memory, and its VkImageView.
 	*/
 export namespace vve::simple {
 	/// @brief Minimal Vulkan swapchain owner; no image views, render pass, commands, or sync are created here.
@@ -292,110 +291,7 @@ export namespace vve::simple {
 		~VulkanImageViews() { cleanup(); }
 	};
 
-	/// @brief Minimal Vulkan depth-attachment owner; no render pass, framebuffers, commands, or sync are created here.
-	struct VulkanDepthImage {
-		static constexpr VkFormat format = VK_FORMAT_D32_SFLOAT;                     ///< Depth format shared by the image, its view, and every pipeline rendering into it.
-		VulkanOwnedHandle<vk::raii::Image, VkImage> image{};                         ///< Owned depth image handle.
-		VulkanOwnedHandle<vk::raii::DeviceMemory, VkDeviceMemory> memory{};          ///< Owned device-local memory backing the depth image.
-		VulkanOwnedHandle<vk::raii::ImageView, VkImageView> imageView{};             ///< Owned depth image view used as a framebuffer attachment.
-
-		VulkanDepthImage() = default;
-		VulkanDepthImage(const VulkanDepthImage &) = delete;
-		VulkanDepthImage &operator=(const VulkanDepthImage &) = delete;
-
-		/**
-			* @brief Creates a device-local D32 depth image and a matching depth image view.
-			*
-			* @param physicalDevice Physical device used to query memory types.
-			* @param owningDevice Logical device that owns the image, memory, and view.
-			* @param extent Swapchain-sized image extent for the depth attachment.
-			* @return VK_SUCCESS when the depth resources are ready, otherwise a Vulkan error code.
-			*/
-		[[nodiscard]] VkResult create(VkPhysicalDevice physicalDevice, const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkExtent2D extent) {
-			cleanup();
-			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || extent.width == 0U || extent.height == 0U) {
-				return VK_ERROR_INITIALIZATION_FAILED;
-			}
-
-			/// @brief Depth image descriptor for a single-sample 2D attachment.
-			const VkImageCreateInfo imageInfo{
-				.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-				.imageType = VK_IMAGE_TYPE_2D,
-				.format = format,
-				.extent = {.width = extent.width, .height = extent.height, .depth = 1U},
-				.mipLevels = 1U,
-				.arrayLayers = 1U,
-				.samples = VK_SAMPLE_COUNT_1_BIT,
-				.tiling = VK_IMAGE_TILING_OPTIMAL,
-				.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
-				.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-			};
-
-			VkImage rawImage{VK_NULL_HANDLE};
-			VkResult result = vkCreateImage(owningDevice, &imageInfo, nullptr, &rawImage);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
-			image.handle = vk::raii::Image{owningDevice.handle, rawImage};
-
-			VkMemoryRequirements requirements{};
-			vkGetImageMemoryRequirements(owningDevice, image, &requirements);
-			const std::optional<std::uint32_t> memoryType = findMemoryType(
-				physicalDevice,
-				requirements.memoryTypeBits,
-				VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-			);
-			if (!memoryType.has_value()) { cleanup(); return VK_ERROR_FEATURE_NOT_PRESENT; }
-
-			/// @brief Device-local allocation descriptor for the depth attachment image.
-			const VkMemoryAllocateInfo allocateInfo{
-				.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-				.allocationSize = requirements.size,
-				.memoryTypeIndex = *memoryType,
-			};
-
-			VkDeviceMemory rawMemory{VK_NULL_HANDLE};
-			result = vkAllocateMemory(owningDevice, &allocateInfo, nullptr, &rawMemory);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
-			memory.handle = vk::raii::DeviceMemory{owningDevice.handle, rawMemory};
-
-			result = vkBindImageMemory(owningDevice, image, memory, 0U);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
-
-			/// @brief Depth-only view descriptor for framebuffer attachment use.
-			const VkImageViewCreateInfo viewInfo{
-				.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-				.image = image,
-				.viewType = VK_IMAGE_VIEW_TYPE_2D,
-				.format = format,
-				.subresourceRange = {
-					.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT,
-					.baseMipLevel = 0U,
-					.levelCount = 1U,
-					.baseArrayLayer = 0U,
-					.layerCount = 1U,
-				},
-			};
-
-			VkImageView rawView{VK_NULL_HANDLE};
-			result = vkCreateImageView(owningDevice, &viewInfo, nullptr, &rawView);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
-			imageView.handle = vk::raii::ImageView{owningDevice.handle, rawView};
-			return VK_SUCCESS;
-		}
-
-		/**
-			* @brief Destroys the owned depth image view, image, and memory allocation.
-			*/
-		void cleanup() {
-			imageView.reset();
-			image.reset();
-			memory.reset();
-		}
-
-		/**
-			* @brief Destroys the owned depth resources on scope exit.
-		*/
-		~VulkanDepthImage() { cleanup(); }
-	};
+	/// @brief Depth format shared by the swapchain depth image, the shadow maps, and every pipeline rendering into them.
+	inline constexpr VkFormat depthFormat{VK_FORMAT_D32_SFLOAT};
 
 } // namespace vve::simple

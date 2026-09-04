@@ -1,4 +1,5 @@
 module;
+#include <new>
 #include <vulkan/vulkan_core.h>
 
 export module VEEngine.Simple.Renderer:RendererDebug;
@@ -45,7 +46,7 @@ export namespace vve::simple {
 		static constexpr float directionalCompareBias{0.00005F};	///< Shader-side bias of the nearest directional cascade.
 
 		std::vector<RenderShadowDepthSample> shadowDepthSamples{};	///< One sample per shadow-casting light, rebuilt every frame.
-		VulkanDepthReadback shadowDepthReadback{};						///< Single shadow-map layer readback shared by all light types.
+		VulkanReadback shadowDepthReadback{};						///< Single shadow-map layer readback shared by all light types.
 		std::optional<VkResult> lastReadbackCaptureResult{};			///< Result from the optional in-frame color readback.
 		bool gpuDebugReadback_{false};										///< False during normal rendering to avoid per-frame GPU stalls.
 
@@ -90,8 +91,8 @@ export namespace vve::simple {
 			if (shadowDepthReadback.extent.width == 0U || vkDeviceWaitIdle(renderer.device.device) != VK_SUCCESS) { return; }
 			for (RenderShadowDepthSample &sample : shadowDepthSamples) {
 				const ShadowMap &map = sample.light_type == 1U ? renderer.spotShadowArray : sample.light_type == 2U ? renderer.pointShadowArray : renderer.dirShadowArray;
-				if (map.image == VK_NULL_HANDLE || sample.layer >= map.ownedLayerViews.size()) { continue; }
-				if (shadowDepthReadback.capture(map.image, sample.layer) != VK_SUCCESS) { continue; }
+				if (map.image == VK_NULL_HANDLE || sample.layer >= map.layerViews.size()) { continue; }
+				if (shadowDepthReadback.capture(map.image, sample.layer, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) != VK_SUCCESS) { continue; }
 				const auto [x, y] = shadowTexel(sample.light_ndc);
 				const std::optional<float> depth = shadowDepthReadback.depthAt(x, y);
 				if (!depth) { continue; }
@@ -119,8 +120,7 @@ export namespace vve::simple {
 			}
 
 			auto readback = VulkanReadback{};
-			VkResult result = readback.create(renderer.physicalDevice.physicalDevice, renderer.device.device,
-														 renderer.device.graphicsQueue, renderer.commandPool.commandPool,
+			VkResult result = readback.create(renderer.allocator, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool,
 														 renderer.swapchain.extent, renderer.swapchain.imageFormat);
 			if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
 

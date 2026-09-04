@@ -22,41 +22,11 @@ import std;
 	* @brief Vulkan device bootstrap objects for the simple forward renderer.
 	*
 	* Functional objects:
-	* - findMemoryType selects a compatible physical-device memory type for Vulkan resources.
 	* - VulkanInstance owns only VkInstance creation and teardown.
 	* - VulkanSurface owns only VkSurfaceKHR creation and teardown.
 	* - VulkanPhysicalDevice selects a physical device and queue family indices.
 	* - VulkanDevice owns only VkDevice creation and queue retrieval.
 	*/
-namespace vve::simple {
-
-	/**
-		* @brief Finds the first physical-device memory type satisfying a type mask and required properties.
-		*
-		* @param physicalDevice Physical device whose memory properties are queried.
-		* @param typeFilter Bit mask of memory types compatible with the resource.
-		* @param requiredProperties Required Vulkan memory-property flags.
-		* @return The first compatible memory type index, or std::nullopt when none match.
-		*/
-	[[nodiscard]] std::optional<std::uint32_t> findMemoryType(
-		VkPhysicalDevice physicalDevice,
-		std::uint32_t typeFilter,
-		VkMemoryPropertyFlags requiredProperties
-	) {
-		VkPhysicalDeviceMemoryProperties memoryProperties{};
-		vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
-
-		for (std::uint32_t index{}; index < memoryProperties.memoryTypeCount; ++index) {
-			const VkMemoryType &memoryType = memoryProperties.memoryTypes[index];
-			const bool typeMatches = (typeFilter & (1U << index)) != 0U;
-			const bool propertiesMatch = (memoryType.propertyFlags & requiredProperties) == requiredProperties;
-			if (typeMatches && propertiesMatch) { return index; }
-		}
-
-		return std::nullopt;
-	}
-
-} // namespace vve::simple
 export namespace vve::simple {
 
 	/// @brief Minimal Vulkan root object; no device, surface, swapchain, commands, or sync are created here.

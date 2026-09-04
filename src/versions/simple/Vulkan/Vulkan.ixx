@@ -15,6 +15,7 @@ module;
 
 export module VEEngine.Simple.Vulkan;
 export import :OwnedHandle;
+export import :Memory;
 export import :Device;
 export import :Commands;
 export import :Presentation;
@@ -30,11 +31,12 @@ import std;
 	*
 	* Functional objects:
 	* - Handle.ixx owns the transitional vk::raii-to-raw Vulkan handle adapter shared by partitions.
-	* - Device.ixx owns Vulkan instance, surface, physical-device selection, logical-device creation, and memory-type selection helpers.
-	* - Commands.ixx owns Vulkan command pools, command buffers, frame synchronization, and generic buffer allocation.
-	* - Presentation.ixx owns swapchain presentation images, image views, depth attachments, render pass, and framebuffers.
+	* - Device.ixx owns Vulkan instance, surface, physical-device selection, and logical-device creation.
+	* - Memory.ixx owns the VMA allocator, buffers, images, one-time submits, and layout transitions.
+	* - Commands.ixx owns Vulkan command pools, command buffers, and frame synchronization.
+	* - Presentation.ixx owns the swapchain, its image views, and the shared depth format.
 	* - Pipeline.ixx owns descriptor-set layout, vertex input description, pipeline layout, shader modules, graphics pipeline, and push constants.
-	* - Shadow.ixx owns shadow-map depth images, array views, samplers, framebuffers, and the reserved shadow pipeline state.
-	* - Readback.ixx owns color/depth image readback buffers and deterministic PNG encoding for captured frames.
+	* - Shadow.ixx owns shadow-map depth arrays, samplers, and shadow pipelines.
+	* - Readback.ixx owns the color/depth image readback and deterministic PNG encoding for captured frames.
 	* - Resources.ixx owns texture images, uploaded meshes, frame uniforms, uniform buffers, descriptor pool, and descriptor sets.
 	*/

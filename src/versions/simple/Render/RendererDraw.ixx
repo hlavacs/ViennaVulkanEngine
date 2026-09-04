@@ -132,7 +132,7 @@ export namespace vve::simple {
 			if (result != VK_SUCCESS) { reportFrameFailure("queue submit", result); return; }
 			renderer.fillShadowDepthSamplesFromGpu();
 			if (readback != nullptr && imageIndex < renderer.swapchain.images.size()) {
-				renderer.lastReadbackCaptureResult = readback->capture(renderer.swapchain.images[imageIndex], VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+				renderer.lastReadbackCaptureResult = readback->capture(renderer.swapchain.images[imageIndex], 0U, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 			}
 
 			VkSwapchainKHR presentSwapchain = renderer.swapchain.swapchain;
@@ -276,7 +276,7 @@ export namespace vve::simple {
 			}
 
 			const std::size_t directionalLightCount{std::min(renderer.scene.directionalLights.size(), kMaxDirectionalLights)}; // Clamped directional-light count mirrors frame uniform upload.
-			const std::size_t dirShadowArrayLayerCount{renderer.dirShadowArray.ownedLayerViews.size()}; // Every sampled directional layer must reach shader-read layout.
+			const std::size_t dirShadowArrayLayerCount{renderer.dirShadowArray.layerViews.size()}; // Every sampled directional layer must reach shader-read layout.
 			// Clear each allocated directional layer before any draw binds the descriptor set that exposes the whole array.
 			for (std::size_t dirLightIndex{}; dirLightIndex < dirShadowArrayLayerCount; ++dirLightIndex) {
 				const VkImageSubresourceRange dirShadowArrayLayerRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = static_cast<std::uint32_t>(dirLightIndex), .layerCount = 1U}; // One 2D view owns one array layer.
@@ -292,7 +292,7 @@ export namespace vve::simple {
 				};
 				const VkRenderingAttachmentInfo dirShadowArrayDepthAttachment{ // Dynamic clear pass defines the sampled array layer.
 					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-					.imageView = renderer.dirShadowArray.ownedLayerViews[dirLightIndex],
+					.imageView = renderer.dirShadowArray.layerViews[dirLightIndex],
 					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -346,7 +346,7 @@ export namespace vve::simple {
 				};
 				const VkRenderingAttachmentInfo dirShadowArrayDepthAttachment{ // Dynamic draw pass keeps the legacy clear-before-draw behavior.
 					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-					.imageView = renderer.dirShadowArray.ownedLayerViews[dirShadowLayer],
+					.imageView = renderer.dirShadowArray.layerViews[dirShadowLayer],
 					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -420,7 +420,7 @@ export namespace vve::simple {
 											VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &spotShadowReadBarrier);
 			}
 
-			const std::size_t spotShadowArrayLayerCount{renderer.spotShadowArray.ownedLayerViews.size()}; // Every sampled array layer must reach shader-read layout.
+			const std::size_t spotShadowArrayLayerCount{renderer.spotShadowArray.layerViews.size()}; // Every sampled array layer must reach shader-read layout.
 			// Clear each allocated spot layer before any draw binds the descriptor set that exposes the whole array.
 			for (std::size_t spotLightIndex{}; spotLightIndex < spotShadowArrayLayerCount; ++spotLightIndex) {
 				const VkImageSubresourceRange spotShadowArrayLayerRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = static_cast<std::uint32_t>(spotLightIndex), .layerCount = 1U}; // One 2D view owns one array layer.
@@ -436,7 +436,7 @@ export namespace vve::simple {
 				};
 				const VkRenderingAttachmentInfo spotShadowArrayDepthAttachment{ // Dynamic clear pass defines the sampled array layer.
 					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-					.imageView = renderer.spotShadowArray.ownedLayerViews[spotLightIndex],
+					.imageView = renderer.spotShadowArray.layerViews[spotLightIndex],
 					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -488,7 +488,7 @@ export namespace vve::simple {
 				};
 				const VkRenderingAttachmentInfo spotShadowArrayDepthAttachment{ // Dynamic draw pass keeps the legacy clear-before-draw behavior.
 					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-					.imageView = renderer.spotShadowArray.ownedLayerViews[spotLightIndex],
+					.imageView = renderer.spotShadowArray.layerViews[spotLightIndex],
 					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -526,7 +526,7 @@ export namespace vve::simple {
 											VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &spotShadowArrayReadBarrier);
 			}
 
-			const std::size_t pointShadowArrayLayerCount{renderer.pointShadowArray.ownedLayerViews.size()}; // Six point-shadow faces per light must reach shader-read layout.
+			const std::size_t pointShadowArrayLayerCount{renderer.pointShadowArray.layerViews.size()}; // Six point-shadow faces per light must reach shader-read layout.
 			// Clear each allocated point-shadow face layer before the color pass starts.
 			for (std::size_t pointShadowLayerIndex{}; pointShadowLayerIndex < pointShadowArrayLayerCount; ++pointShadowLayerIndex) {
 				const VkImageSubresourceRange pointShadowArrayLayerRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = static_cast<std::uint32_t>(pointShadowLayerIndex), .layerCount = 1U}; // One 2D view owns one cube-face layer.
@@ -542,7 +542,7 @@ export namespace vve::simple {
 				};
 				const VkRenderingAttachmentInfo pointShadowArrayDepthAttachment{ // Dynamic clear pass defines the sampled cube-face layer.
 					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-					.imageView = renderer.pointShadowArray.ownedLayerViews[pointShadowLayerIndex],
+					.imageView = renderer.pointShadowArray.layerViews[pointShadowLayerIndex],
 					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -599,7 +599,7 @@ export namespace vve::simple {
 				};
 				const VkRenderingAttachmentInfo pointShadowArrayDepthAttachment{ // Dynamic draw pass keeps the legacy clear-before-draw behavior.
 					.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-					.imageView = renderer.pointShadowArray.ownedLayerViews[pointFaceLayerIndex],
+					.imageView = renderer.pointShadowArray.layerViews[pointFaceLayerIndex],
 					.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 					.storeOp = VK_ATTACHMENT_STORE_OP_STORE,

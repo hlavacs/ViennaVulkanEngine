@@ -54,9 +54,10 @@ export namespace vve::simple {
 		VulkanSurface surface{};               ///< Owned SDL-backed Vulkan surface wrapper.
 		VulkanPhysicalDevice physicalDevice{}; ///< Selected borrowed Vulkan physical device wrapper.
 		VulkanDevice device{};                 ///< Owned Vulkan logical device wrapper.
+		VulkanAllocator allocator{};           ///< Owned VMA allocator for every buffer and image below.
 		VulkanSwapchain swapchain{};           ///< Owned swapchain wrapper for presentation images.
 		VulkanImageViews imageViews{};         ///< Owned color image views for swapchain images.
-		VulkanDepthImage depthImage{};         ///< Owned swapchain-sized depth attachment image and view.
+		VulkanImage depthImage{};              ///< Owned swapchain-sized depth attachment image and view.
 		ShadowMap shadowMap{};                 ///< Owned unbound shadow-map image reserved for later shadow rendering.
 		ShadowMap dirShadowArray{};            ///< Owned directional shadow-map texture array with one layer per active directional light.
 		ShadowMap spotShadowMap{};             ///< Owned spot shadow-map image reserved for later shadow rendering.

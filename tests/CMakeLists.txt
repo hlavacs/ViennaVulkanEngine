@@ -25,6 +25,7 @@ target_compile_definitions(SimpleForwardRendererTests PRIVATE
    "VVE_TEST_CRATE_TEXTURE=\"${PROJECT_SOURCE_DIR}/assets/game/crate0/diffuse.png\"")
 find_package(glm CONFIG REQUIRED)
 find_package(Stb REQUIRED)
+find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 find_package(assimp CONFIG REQUIRED)
 target_include_directories(SimpleForwardRendererTests PRIVATE ${Stb_INCLUDE_DIR})
 target_sources(SimpleForwardRendererTests
@@ -58,6 +59,7 @@ target_sources(SimpleForwardRendererTests
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Mesh.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Scene.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Handle.ixx"
+         "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Memory.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Device.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Commands.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Presentation.ixx"
@@ -88,9 +90,9 @@ target_sources(SimpleForwardRendererTests
       "${PROJECT_SOURCE_DIR}/src/Window.cpp"
       "${PROJECT_SOURCE_DIR}/src/Gui.cpp"
 )
-target_sources(SimpleForwardRendererTests PRIVATE "${PROJECT_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp")
+target_sources(SimpleForwardRendererTests PRIVATE "${PROJECT_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp" "${PROJECT_SOURCE_DIR}/src/versions/simple/vma_impl.cpp")
 target_include_directories(SimpleForwardRendererTests PRIVATE ${Stb_INCLUDE_DIR})
-target_link_libraries(SimpleForwardRendererTests PRIVATE assimp::assimp imgui::imgui glm::glm SDL3::SDL3 Vulkan::Vulkan slang::slang)
+target_link_libraries(SimpleForwardRendererTests PRIVATE assimp::assimp imgui::imgui glm::glm SDL3::SDL3 Vulkan::Vulkan slang::slang GPUOpen::VulkanMemoryAllocator)
 add_test(NAME SimpleForwardRendererTests COMMAND SimpleForwardRendererTests)
 vve_set_output_dirs(SimpleForwardRendererTests)
 add_executable(ShaderReflectionBindingsTests ShaderReflectionBindingsTests.cpp)
@@ -161,6 +163,7 @@ target_sources(GuiSystemTests
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Mesh.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Scene.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Handle.ixx"
+         "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Memory.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Device.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Commands.ixx"
          "${PROJECT_SOURCE_DIR}/src/versions/simple/Vulkan/Presentation.ixx"
@@ -191,9 +194,9 @@ target_sources(GuiSystemTests
       "${PROJECT_SOURCE_DIR}/src/Window.cpp"
       "${PROJECT_SOURCE_DIR}/src/Gui.cpp"
 )
-target_sources(GuiSystemTests PRIVATE "${PROJECT_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp")
+target_sources(GuiSystemTests PRIVATE "${PROJECT_SOURCE_DIR}/src/versions/simple/stb_image_write_impl.cpp" "${PROJECT_SOURCE_DIR}/src/versions/simple/vma_impl.cpp")
 target_include_directories(GuiSystemTests PRIVATE ${Stb_INCLUDE_DIR})
-target_link_libraries(GuiSystemTests PRIVATE assimp::assimp glm::glm imgui::imgui SDL3::SDL3 Vulkan::Vulkan slang::slang)
+target_link_libraries(GuiSystemTests PRIVATE assimp::assimp glm::glm imgui::imgui SDL3::SDL3 Vulkan::Vulkan slang::slang GPUOpen::VulkanMemoryAllocator)
 add_test(NAME GuiSystemTests COMMAND GuiSystemTests)
 vve_set_output_dirs(GuiSystemTests)
 vve_add_engine_test(SceneSystemTests)
