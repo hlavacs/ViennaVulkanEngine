@@ -67,20 +67,21 @@ export namespace vve::simple {
 				shadowDepthSamples.push_back(RenderShadowDepthSample{.light_type = type, .light_index = index, .face_index = face, .layer = layer,
 																					  .world = origin, .light_ndc = ndc, .expected_depth = ndc.z, .bias = bias});
 			};
-			for (std::size_t spot{}; spot < renderer.spotLightViewProjCount; ++spot) {
-				add(1U, static_cast<std::uint32_t>(spot), 0U, static_cast<std::uint32_t>(spot), project(renderer.spotLightViewProjs[spot]), shadowFrame.shadowCompareBias);
+			for (std::size_t spot{}; spot < shadowFrame.activeSpotLightCount; ++spot) {
+				add(1U, static_cast<std::uint32_t>(spot), 0U, static_cast<std::uint32_t>(spot), project(shadowFrame.shadowViewProjs[kShadowMatrixSpotBase + spot]), shadowFrame.shadowCompareBias);
 			}
-			for (std::size_t point{}; point < shadowFrame.pointLightShadowCount; ++point) {
-				const Vec3 toOrigin{subtract(origin, renderer.scene.pointLights[point].position)};
+			for (std::size_t point{}; point < shadowFrame.activePointLightCount; ++point) {
+				const Vec4 &position = shadowFrame.pointLightPositionRanges[point];
+				const Vec3 toOrigin{subtract(origin, Vec3{position.x, position.y, position.z})};
 				const Vec3 magnitude{std::abs(toOrigin.x), std::abs(toOrigin.y), std::abs(toOrigin.z)};
 				const std::uint32_t face{magnitude.x >= magnitude.y && magnitude.x >= magnitude.z ? (toOrigin.x >= zero() ? 0U : 1U)
 													: magnitude.y >= magnitude.z ? (toOrigin.y >= zero() ? 2U : 3U)
 																						 : (toOrigin.z >= zero() ? 4U : 5U)}; ///< Shader dominant-axis face order.
 				const auto layer = static_cast<std::uint32_t>(point * ForwardRendererShadowPrep<Renderer>::pointShadowFaceCount + face);
-				add(2U, static_cast<std::uint32_t>(point), face, layer, project(shadowFrame.pointLightFaceViewProjs[layer]), shadowFrame.shadowCompareBias);
+				add(2U, static_cast<std::uint32_t>(point), face, layer, project(shadowFrame.shadowViewProjs[kShadowMatrixPointBase + layer]), shadowFrame.shadowCompareBias);
 			}
 			if (shadowFrame.activeDirectionalLightCount != 0U) {
-				add(3U, 0U, 0U, 0U, project(shadowFrame.dirLightViewProjArray[0]), directionalCompareBias); ///< Light zero, nearest cascade.
+				add(3U, 0U, 0U, 0U, project(shadowFrame.shadowViewProjs[kShadowMatrixDirBase]), directionalCompareBias); ///< Light zero, nearest cascade.
 			}
 		}
 

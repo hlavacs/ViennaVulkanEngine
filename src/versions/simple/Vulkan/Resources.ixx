@@ -165,7 +165,7 @@ export namespace vve::simple {
 		VkDescriptorPool descriptorPool{VK_NULL_HANDLE};          ///< Borrowed pool that owns the allocations; sets are freed implicitly with the pool.
 		Vector<VkDescriptorSetLayoutBinding> descriptorBindings{}; ///< Slang-reflected set-0 bindings used when writing descriptors.
 		std::optional<std::uint32_t> objectTextureBinding{};      ///< Reflected set-0 binding for the object base-color texture array.
-		std::array<std::optional<std::uint32_t>, 5U> shadowSamplerBindings{}; ///< Reflected set-0 bindings for all shadow samplers.
+		std::array<std::optional<std::uint32_t>, 3U> shadowSamplerBindings{}; ///< Reflected set-0 bindings for the spot, directional, and point shadow arrays.
 		std::vector<VkDescriptorSet> descriptorSets{};            ///< Owned descriptor sets allocated one per frame.
 
 		VulkanDescriptorSets() = default;
@@ -184,7 +184,7 @@ export namespace vve::simple {
 			* @param count Number of per-frame descriptor sets to allocate.
 			* @return VK_SUCCESS when all descriptor sets are allocated, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkDevice owningDevice, VkDescriptorPool pool, VkDescriptorSetLayout setLayout, const Vector<VkDescriptorSetLayoutBinding> &reflectedBindings, std::uint32_t reflectedObjectTextureBinding, std::array<std::uint32_t, 5U> reflectedShadowSamplerBindings, std::uint32_t count) {
+		[[nodiscard]] VkResult create(VkDevice owningDevice, VkDescriptorPool pool, VkDescriptorSetLayout setLayout, const Vector<VkDescriptorSetLayoutBinding> &reflectedBindings, std::uint32_t reflectedObjectTextureBinding, std::array<std::uint32_t, 3U> reflectedShadowSamplerBindings, std::uint32_t count) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE || pool == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE) {
 				return VK_ERROR_INITIALIZATION_FAILED;
@@ -256,151 +256,28 @@ export namespace vve::simple {
 		}
 
 		/**
-			* @brief Writes one frame descriptor set with its binding-1 sampled shadow map.
+			* @brief Writes one shadow-array sampler of one frame descriptor set.
 			*
 			* @param frameIndex Frame set index to update.
-			* @param imageView Shadow-map image view bound to descriptor binding 1.
-			* @param sampler Shadow-map sampler bound to descriptor binding 1.
+			* @param slot Index into shadowSamplerBindings: 0 spot array, 1 directional array, 2 point array.
+			* @param imageView Whole-array depth view.
+			* @param sampler Comparison sampler.
 			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
 			*/
-		[[nodiscard]] VkResult writeShadowMap(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
-			if (frameIndex >= descriptorSets.size() || !shadowSamplerBindings[0U] || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
-
-			const VkDescriptorImageInfo imageInfo{
-				.sampler = sampler,
-				.imageView = imageView,
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
+		[[nodiscard]] VkResult writeShadowArray(std::uint32_t frameIndex, std::size_t slot, VkImageView imageView, VkSampler sampler) {
+			if (frameIndex >= descriptorSets.size() || slot >= shadowSamplerBindings.size() || !shadowSamplerBindings[slot] || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) {
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+			const VkDescriptorImageInfo imageInfo{.sampler = sampler, .imageView = imageView, .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
 			const VkWriteDescriptorSet write{
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = *shadowSamplerBindings[0U],
+				.dstBinding = *shadowSamplerBindings[slot],
 				.dstArrayElement = 0U,
 				.descriptorCount = 1U,
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
 				.pImageInfo = &imageInfo,
 			};
-
-			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
-			return VK_SUCCESS;
-		}
-
-		/**
-			* @brief Writes one frame descriptor set with its binding-4 sampled spot shadow map.
-			*
-			* @param frameIndex Frame set index to update.
-			* @param imageView Spot shadow-map image view bound to descriptor binding 4.
-			* @param sampler Spot shadow-map sampler bound to descriptor binding 4.
-			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
-			*/
-		[[nodiscard]] VkResult writeSpotShadowMap(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
-			if (frameIndex >= descriptorSets.size() || !shadowSamplerBindings[1U] || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
-
-			const VkDescriptorImageInfo imageInfo{
-				.sampler = sampler,
-				.imageView = imageView,
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
-			const VkWriteDescriptorSet write{
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = *shadowSamplerBindings[1U],
-				.dstArrayElement = 0U,
-				.descriptorCount = 1U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = &imageInfo,
-			};
-
-			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
-			return VK_SUCCESS;
-		}
-
-		/**
-			* @brief Writes one frame descriptor set with its binding-5 sampled spot shadow-map array.
-			*
-			* @param frameIndex Frame set index to update.
-			* @param imageView Spot shadow-map array image view bound to descriptor binding 5.
-			* @param sampler Spot shadow-map array sampler bound to descriptor binding 5.
-			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
-			*/
-		[[nodiscard]] VkResult writeSpotShadowArray(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
-			if (frameIndex >= descriptorSets.size() || !shadowSamplerBindings[2U] || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
-
-			const VkDescriptorImageInfo imageInfo{
-				.sampler = sampler,
-				.imageView = imageView,
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
-			const VkWriteDescriptorSet write{
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = *shadowSamplerBindings[2U],
-				.dstArrayElement = 0U,
-				.descriptorCount = 1U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = &imageInfo,
-			};
-
-			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
-			return VK_SUCCESS;
-		}
-
-		/**
-			* @brief Writes one frame descriptor set with its binding-6 sampled directional shadow-map array.
-			*
-			* @param frameIndex Frame set index to update.
-			* @param imageView Directional shadow-map array image view bound to descriptor binding 6.
-			* @param sampler Directional shadow-map array sampler bound to descriptor binding 6.
-			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
-			*/
-		[[nodiscard]] VkResult writeDirShadowArray(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
-			if (frameIndex >= descriptorSets.size() || !shadowSamplerBindings[3U] || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
-
-			const VkDescriptorImageInfo imageInfo{
-				.sampler = sampler,
-				.imageView = imageView,
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
-			const VkWriteDescriptorSet write{
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = *shadowSamplerBindings[3U],
-				.dstArrayElement = 0U,
-				.descriptorCount = 1U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = &imageInfo,
-			};
-
-			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
-			return VK_SUCCESS;
-		}
-
-		/**
-			* @brief Writes one frame descriptor set with its binding-7 sampled point shadow-map array.
-			*
-			* @param frameIndex Frame set index to update.
-			* @param imageView Point shadow-map array image view bound to descriptor binding 7.
-			* @param sampler Point shadow-map array sampler bound to descriptor binding 7.
-			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
-			*/
-		[[nodiscard]] VkResult writePointShadowArray(std::uint32_t frameIndex, VkImageView imageView, VkSampler sampler) {
-			if (frameIndex >= descriptorSets.size() || !shadowSamplerBindings[4U] || imageView == VK_NULL_HANDLE || sampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
-
-			const VkDescriptorImageInfo imageInfo{
-				.sampler = sampler,
-				.imageView = imageView,
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
-			const VkWriteDescriptorSet write{
-				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-				.dstSet = descriptorSets[frameIndex],
-				.dstBinding = *shadowSamplerBindings[4U],
-				.dstArrayElement = 0U,
-				.descriptorCount = 1U,
-				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = &imageInfo,
-			};
-
 			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
 			return VK_SUCCESS;
 		}
@@ -489,36 +366,25 @@ export namespace vve::simple {
 		}
 	};
 
-	/// @brief Plain per-frame uniform data matching the Slang set 0 binding 0 block layout.
+	/// @brief Frame constants for set 0 binding 0; the member order and types mirror FrameUniforms in simple_forward.slang (std140).
 	struct FrameUniforms {
-		Mat4 view{};        ///< shared camera view matrix
-		Mat4 projection{};  ///< shared camera projection matrix
-		Mat4 lightViewProj{}; ///< light view-projection for the upcoming shadow pass
-		std::array<Mat4, kMaxDirectionalLights * kNumShadowCascades> dirLightViewProjArray{}; ///< flattened per-directional cascade matrices for depth passes and sampling
-		Vec4 cascadeSplits{}; ///< view-space far distance of each directional shadow cascade
-		std::array<Mat4, kMaxShadowedSpotLights> spotLightViewProjs{}; ///< spot-light view-projections for future shadow data
-		std::array<Mat4, kMaxShadowedPointLights * 6U> pointLightFaceViewProjs{}; ///< per-point-face view-projections for future point shadows
-		std::array<Vec4, kMaxShadowedPointLights> pointLightPositionRanges{}; ///< per-point xyz position with range in w
-		std::array<Vec4, kMaxShadowedPointLights> pointLightColorIntensities{}; ///< per-point rgb color with intensity in w
-		Vec4 lightPositionRange{};    ///< xyz world-space point-light position, w range
-		Vec4 lightColorIntensity{};   ///< rgb direct-light color, w direct-light intensity
-		Vec4 lightShadowAmbient{};    ///< xyz shadow-map direction approximation, w ambient term
-		Vec4 dirLightDirection{};     ///< xyz world-space directional-light direction, w unused
-		Vec4 dirLightColorIntensity{}; ///< rgb directional-light color, w directional-light intensity
-		Vec4 dirLightShadowAmbient{}; ///< xyz directional shadow-map direction, w directional ambient term
-		Vec4 spotLightPositionRange{}; ///< xyz world-space spot-light position, w range
-		Vec4 spotLightColorIntensity{}; ///< rgb spot-light color, w spot-light intensity
-		Vec4 spotLightDirection{};    ///< xyz spot-light light-to-scene direction, w unused
-		Vec4 spotLightConeAmbient{};  ///< x inner cone cosine, y outer cone cosine, z active spot count, w ambient term
-		std::array<Vec4, kMaxShadowedSpotLights> spotLightPositionRanges{}; ///< per-spot xyz position with range in w
-		std::array<Vec4, kMaxShadowedSpotLights> spotLightColorIntensities{}; ///< per-spot rgb color with intensity in w
-		std::array<Vec4, kMaxShadowedSpotLights> spotLightDirections{}; ///< per-spot xyz light-to-scene direction with unused w
-		std::array<Vec4, kMaxShadowedSpotLights> spotLightConeAmbients{}; ///< per-spot inner cone, outer cone, active count, and ambient
-		std::array<Vec4, kMaxDirectionalLights> directionalLightDirections{}; ///< per-directional xyz light-to-scene direction with unused w
-		std::array<Vec4, kMaxDirectionalLights> directionalLightColorIntensities{}; ///< per-directional rgb color with intensity in w
-		std::array<Vec4, kMaxDirectionalLights> directionalLightAmbients{}; ///< per-directional ambient term packed in w
-		std::uint32_t activeDirectionalLightCount{}; ///< active directional-light count clamped to the fixed cap
-		std::array<std::uint32_t, 3U> directionalLightPadding{}; ///< std140 padding after the scalar count
+		Mat4 view{};                                                                    ///< Camera view matrix.
+		Mat4 projection{};                                                              ///< Camera projection matrix.
+		std::array<Mat4, kShadowMatrixCount> shadowViewProjs{};                         ///< Spot, point-face, and directional-cascade light matrices (see kShadowMatrix*Base).
+		Vec4 cascadeSplits{};                                                           ///< View-space far distance of each directional cascade.
+		std::array<Vec4, kMaxShadowedPointLights> pointLightPositionRanges{};           ///< Point xyz position with range in w.
+		std::array<Vec4, kMaxShadowedPointLights> pointLightColorIntensities{};         ///< Point rgb color with intensity in w.
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightPositionRanges{};             ///< Spot xyz position with range in w.
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightColorIntensities{};           ///< Spot rgb color with intensity in w.
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightDirections{};                 ///< Spot xyz direction with unused w.
+		std::array<Vec4, kMaxShadowedSpotLights> spotLightConeAmbients{};               ///< Spot inner cone cosine, outer cone cosine, unused, ambient.
+		std::array<Vec4, kMaxDirectionalLights> directionalLightDirections{};           ///< Directional xyz direction with unused w.
+		std::array<Vec4, kMaxDirectionalLights> directionalLightColorIntensities{};     ///< Directional rgb color with intensity in w.
+		std::array<Vec4, kMaxDirectionalLights> directionalLightAmbients{};             ///< Directional ambient term in w.
+		std::uint32_t activeDirectionalLightCount{};                                    ///< Packed directional-light count.
+		std::uint32_t activeSpotLightCount{};                                           ///< Packed spot-light count.
+		float ambient{};                                                                ///< Scene-wide ambient term.
+		std::uint32_t padding{};                                                        ///< std140 padding to 16 bytes.
 	};
 
 	/// @brief One mapped FrameUniforms buffer per frame in flight.

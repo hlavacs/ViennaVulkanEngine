@@ -58,10 +58,8 @@ export namespace vve::simple {
 		VulkanSwapchain swapchain{};           ///< Owned swapchain wrapper for presentation images.
 		VulkanImageViews imageViews{};         ///< Owned color image views for swapchain images.
 		VulkanImage depthImage{};              ///< Owned swapchain-sized depth attachment image and view.
-		ShadowMap shadowMap{};                 ///< Owned unbound shadow-map image reserved for later shadow rendering.
 		ShadowMap dirShadowArray{};            ///< Owned directional shadow-map texture array with one layer per active directional light.
-		ShadowMap spotShadowMap{};             ///< Owned spot shadow-map image reserved for later shadow rendering.
-		ShadowMap spotShadowArray{};           ///< Owned spot shadow-map texture array reserved for future multi-light shadows.
+		ShadowMap spotShadowArray{};           ///< Owned spot shadow-map texture array with one layer per active spot light.
 		ShadowMap pointShadowArray{};          ///< Owned point shadow-map texture array with six layers per shadowed point light.
 		std::array<TextureImage, kMaxSceneTextures> objectTextures{}; ///< Owned base-color textures, one per Scene::textures entry.
 		TextureImage defaultObjectTexture{};    ///< Owned opaque-white texture filling unused texture slots.
@@ -69,7 +67,9 @@ export namespace vve::simple {
 		VulkanPipelineLayout pipelineLayout{}; ///< Owned graphics pipeline layout using the frame descriptor set.
 		VulkanShaderModule vertShaderModule{}; ///< Owned forward vertex shader module.
 		VulkanShaderModule fragShaderModule{}; ///< Owned forward fragment shader module.
+		VulkanShaderModule shadowShaderModule{}; ///< Owned depth-only shadow vertex shader module.
 		VulkanGraphicsPipeline graphicsPipeline{}; ///< Owned forward graphics pipeline for swapchain rendering.
+		VulkanGraphicsPipeline shadowPipeline{};   ///< Owned depth-only pipeline shared by every shadow layer.
 		VulkanCommandPool commandPool{};       ///< Owned resettable command pool for the graphics queue family.
 		VulkanCommandBuffers commandBuffers{}; ///< Owned primary command buffers, one for each frame in flight.
 		VulkanFrameSync frameSync{};           ///< Owned per-frame semaphores and fences for rendering.
@@ -83,8 +83,6 @@ export namespace vve::simple {
 		std::vector<RecordedPass> recordedPassOrder{}; ///< Last frame's command-recording pass order diagnostic.
 		Vec3 cameraEye{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}; ///< World-space camera position used for the frame view matrix.
 		Vec3 cameraTarget{zero(), one(), zero()}; ///< World-space point looked at by the frame view matrix.
-		std::array<Mat4, kMaxShadowedSpotLights> spotLightViewProjs{}; ///< CPU spot-light matrices prepared for later multi-shadow rendering.
-		std::size_t spotLightViewProjCount{}; ///< Number of active spot-light matrices copied from the current scene.
 		std::optional<std::uint32_t> lastRenderedImageIndex{}; ///< Swapchain image index from the last acquired, rendered, and presented frame.
 
 		~ForwardRenderer() { cleanup(); }

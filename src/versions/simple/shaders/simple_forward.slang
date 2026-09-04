@@ -3,10 +3,10 @@
  * @brief Vertex and fragment stages for the simple forward renderer.
  *
  * Vertex inputs: per-vertex position, color, and texture coordinate attributes.
- * Vertex constants: shared view/projection matrices in set 0 binding 0, plus one per-object model matrix as push constants.
- * Shadow output: depth-only clip position from the light view-projection matrix.
+ * Vertex constants: shared camera and shadow matrices in set 0 binding 0, plus per-object push constants.
+ * Shadow output: depth-only clip position from the shadow matrix selected by the push constant.
  * Fragment inputs: interpolated vertex color and world-space position from the vertex stage.
- * Fragment resources: directional light shadow map in set 0 binding 1 for hard shadowing.
+ * Fragment resources: base-color textures in binding 1 and the spot, directional, and point shadow arrays in bindings 2-4.
  * Fragment outputs: one opaque RGBA color attachment value for a shadowed forward render pass.
  */
 
@@ -15,47 +15,40 @@ static const int kMaxShadowedPointLights = 10; ///< Mirrors the simple engine fi
 static const int kMaxDirectionalLights = 10;  ///< Mirrors the simple engine directional-light cap (must match Scene.ixx).
 static const int kNumShadowCascades = 4;      ///< Mirrors the fixed cascade count used by directional shadow resources.
 static const int kShadowMapResolution = 1024; ///< Mirrors ShadowMap::resolution for software PCF offsets.
+static const int kSpotShadowBase = 0;                                          ///< First spot matrix in shadowViewProjs (mirrors kShadowMatrixSpotBase).
+static const int kPointShadowBase = kMaxShadowedSpotLights;                    ///< First point-face matrix (mirrors kShadowMatrixPointBase).
+static const int kDirShadowBase = kPointShadowBase + kMaxShadowedPointLights * 6; ///< First directional cascade matrix (mirrors kShadowMatrixDirBase).
+static const int kShadowMatrixCount = kDirShadowBase + kMaxDirectionalLights * kNumShadowCascades; ///< Mirrors kShadowMatrixCount.
 static const bool kDebugCascadeTint = false;  ///< Enables a visible red/green/blue/yellow directional-cascade overlay.
 
 struct FrameUniforms
 {
     float4x4 view;       ///< Camera view matrix shared by all objects in the frame.
     float4x4 projection; ///< Camera projection matrix shared by all objects in the frame.
-    float4x4 lightViewProj; ///< Light view-projection matrix for the upcoming shadow pass.
-    float4x4 dirLightViewProjArray[kMaxDirectionalLights * kNumShadowCascades]; ///< Flattened per-light cascade matrices for shadow depth passes.
+    float4x4 shadowViewProjs[kShadowMatrixCount]; ///< Spot, point-face, and directional-cascade light matrices (see k*ShadowBase).
     float4 cascadeSplits; ///< View-space far distance of each directional shadow cascade.
-    float4x4 spotLightViewProjs[kMaxShadowedSpotLights]; ///< Spot-light view-projection matrices for future shadow data.
-    float4x4 pointLightFaceViewProjs[kMaxShadowedPointLights * 6]; ///< Point-light face view-projection matrices for future shadow data.
     float4 pointLightPositionRanges[kMaxShadowedPointLights]; ///< Per-point xyz position with range in w.
     float4 pointLightColorIntensities[kMaxShadowedPointLights]; ///< Per-point rgb color with intensity in w.
-    float4 lightPositionRange;    ///< xyz world-space point-light position, w range.
-    float4 lightColorIntensity;   ///< rgb direct-light color, w direct-light intensity.
-    float4 lightShadowAmbient;    ///< xyz shadow-map direction approximation, w ambient contribution.
-    float4 dirLightDirection;     ///< xyz world-space directional-light direction, w unused.
-    float4 dirLightColorIntensity; ///< rgb directional-light color, w directional-light intensity.
-    float4 dirLightShadowAmbient; ///< xyz directional shadow-map direction, w directional ambient contribution.
-    float4 spotLightPositionRange; ///< xyz world-space spot-light position, w range.
-    float4 spotLightColorIntensity; ///< rgb spot-light color, w spot-light intensity.
-    float4 spotLightDirection;    ///< xyz spot-light light-to-scene direction, w unused.
-    float4 spotLightConeAmbient;  ///< x inner cone cosine, y outer cone cosine, z active spot count, w ambient contribution.
     float4 spotLightPositionRanges[kMaxShadowedSpotLights]; ///< Per-spot xyz position with range in w.
     float4 spotLightColorIntensities[kMaxShadowedSpotLights]; ///< Per-spot rgb color with intensity in w.
     float4 spotLightDirections[kMaxShadowedSpotLights]; ///< Per-spot xyz light-to-scene direction with unused w.
-    float4 spotLightConeAmbients[kMaxShadowedSpotLights]; ///< Per-spot inner cone, outer cone, active count, and ambient.
+    float4 spotLightConeAmbients[kMaxShadowedSpotLights]; ///< Per-spot inner cone cosine, outer cone cosine, unused, ambient.
     float4 directionalLightDirections[kMaxDirectionalLights]; ///< Per-directional xyz light-to-scene direction with unused w.
     float4 directionalLightColorIntensities[kMaxDirectionalLights]; ///< Per-directional rgb color with intensity in w.
     float4 directionalLightAmbients[kMaxDirectionalLights]; ///< Per-directional ambient term packed in w.
-    uint activeDirectionalLightCount; ///< Active directional-light count clamped to the fixed cap.
-    uint3 directionalLightPadding;    ///< std140 padding after the scalar count.
+    uint activeDirectionalLightCount; ///< Packed directional-light count.
+    uint activeSpotLightCount;        ///< Packed spot-light count.
+    float ambient;                    ///< Scene-wide ambient term.
+    uint padding;                     ///< std140 padding after the scalars.
 };
 
 struct ObjectPushConstants
 {
     float4x4 model;              ///< Object-local model matrix selected before each draw call.
     uint baseColorTextureIndex;  ///< Slot in baseColorTextures, or kNoTexture for a plain vertex-colored object.
-    uint spotLightIndex;         ///< Shadow pass spot-light matrix index selected before each draw call.
-    uint dirLightIndex;          ///< Shadow pass directional-light matrix index selected before each draw call.
+    uint shadowMatrixIndex;      ///< Index into frame.shadowViewProjs used by the shadow vertex stage.
     uint unlit;                  ///< Non-zero renders the object in its flat base color without any lighting.
+    uint padding;                ///< Keeps the push-constant block a multiple of 16 bytes.
 };
 
 struct VertexInput
@@ -88,26 +81,20 @@ struct FragmentOutput
 [[vk::binding(0, 0)]]
 ConstantBuffer<FrameUniforms> frame; ///< Frame-wide camera constants.
 
-[[vk::binding(1, 0)]]
-Sampler2D shadowMap; ///< Directional light depth map sampled by the forward fragment stage.
-
 static const uint kMaxSceneTextures = 8;       ///< Base-color texture slots; mirrors vve::simple::kMaxSceneTextures.
 static const uint kNoTexture = 0xFFFFFFFFu;    ///< Push-constant index of an untextured object.
 
-[[vk::binding(2, 0)]]
+[[vk::binding(1, 0)]]
 Sampler2D baseColorTextures[kMaxSceneTextures]; ///< Object base-color textures selected per draw by push constant.
 
+[[vk::binding(2, 0)]]
+Sampler2DArrayShadow spotShadowArray; ///< Spot light comparison-depth array, one layer per packed spot light.
+
+[[vk::binding(3, 0)]]
+Sampler2DArrayShadow dirShadowArray; ///< Directional light comparison-depth array, kNumShadowCascades layers per packed light.
+
 [[vk::binding(4, 0)]]
-Sampler2D spotShadowMap; ///< Spot light depth map sampled by the forward fragment stage.
-
-[[vk::binding(5, 0)]]
-Sampler2DArrayShadow spotShadowArray; ///< Spot light comparison-depth array sampled by the forward fragment stage.
-
-[[vk::binding(6, 0)]]
-Sampler2DArrayShadow dirShadowArray; ///< Directional light comparison-depth array sampled per active light by the fragment stage.
-
-[[vk::binding(7, 0)]]
-Sampler2DArrayShadow pointShadowArray; ///< Point light comparison-depth array sampled per cubemap-style face.
+Sampler2DArrayShadow pointShadowArray; ///< Point light comparison-depth array, six face layers per packed point light.
 
 [[vk::push_constant]]
 ObjectPushConstants object; ///< Per-object transform constants.
@@ -156,32 +143,14 @@ VertexOutput vertexMain(VertexInput input)
 [shader("vertex")]
 float4 shadowVertexMain(VertexInput input) : SV_Position
 {
-    return mul(frame.lightViewProj, mul(object.model, float4(input.position, 1.0)));
-}
-
-[shader("vertex")]
-float4 shadowVertexMainDir(VertexInput input) : SV_Position
-{
-    return mul(frame.dirLightViewProjArray[object.dirLightIndex], mul(object.model, float4(input.position, 1.0))); ///< Select the directional light-space matrix for this pass.
-}
-
-[shader("vertex")]
-float4 shadowVertexMainSpot(VertexInput input) : SV_Position
-{
-    return mul(frame.spotLightViewProjs[object.spotLightIndex], mul(object.model, float4(input.position, 1.0)));
-}
-
-[shader("vertex")]
-float4 shadowVertexMainPoint(VertexInput input) : SV_Position
-{
-    return mul(frame.pointLightFaceViewProjs[object.spotLightIndex], mul(object.model, float4(input.position, 1.0))); ///< Select the point-light face matrix with the spot-pass draw selector.
+    return mul(frame.shadowViewProjs[object.shadowMatrixIndex], mul(object.model, float4(input.position, 1.0))); ///< One depth-only entry serves spot, point, and directional layers.
 }
 
 [shader("fragment")]
 FragmentOutput fragmentMain(FragmentInput input)
 {
     FragmentOutput output;
-    const float ambient = frame.lightShadowAmbient.w;                    ///< Base light keeps back faces visible.
+    const float ambient = frame.ambient;                                 ///< Scene-wide ambient keeps back faces visible.
     const float shininess = 32.0;                                        ///< Fixed Blinn-Phong highlight exponent.
     const float specularStrength = 0.3;                                  ///< Modest highlight strength for colored surfaces.
     const float3 rawNormal = normalize(cross(ddx(input.worldPos), ddy(input.worldPos))); ///< Flat geometric face normal from screen derivatives.
@@ -212,7 +181,7 @@ FragmentOutput fragmentMain(FragmentInput input)
             int pointFace = pointFaceAbs.x >= pointFaceAbs.y && pointFaceAbs.x >= pointFaceAbs.z ? (pointLightToFragment.x >= 0.0 ? 0 : 1) :
                 (pointFaceAbs.y >= pointFaceAbs.z ? (pointLightToFragment.y >= 0.0 ? 2 : 3) : (pointLightToFragment.z >= 0.0 ? 4 : 5)); ///< Face order: +X, -X, +Y, -Y, +Z, -Z.
             const int pointShadowLayer = i * 6 + pointFace; ///< Dense depth-array layer for this point-light face.
-            const float4 pointLightClip = mul(frame.pointLightFaceViewProjs[pointShadowLayer], float4(input.worldPos, 1.0)); ///< Fragment in selected point-face clip space.
+            const float4 pointLightClip = mul(frame.shadowViewProjs[kPointShadowBase + pointShadowLayer], float4(input.worldPos, 1.0)); ///< Fragment in selected point-face clip space.
             const float pointClipW = abs(pointLightClip.w) > 0.001 ? pointLightClip.w : 0.001; ///< Avoid invalid perspective division at the light origin.
             const float3 pointLightNdc = pointLightClip.xyz / pointClipW; ///< Point face depth remains in 0..1 after divide.
             const float2 pointShadowUv = (pointLightNdc.xy * 0.5) + 0.5; ///< Convert point face NDC XY to shadow texture UVs.
@@ -243,7 +212,7 @@ FragmentOutput fragmentMain(FragmentInput input)
             float dirShadowPcf = 1.0;                              ///< Fragments beyond the last split remain fully lit.
             if (dirCascade >= 0) {
                 const int dirShadowLayer = i * kNumShadowCascades + dirCascade; ///< Flattened light-cascade matrix and image layer.
-                const float4 dirLightClip = mul(frame.dirLightViewProjArray[dirShadowLayer], float4(input.worldPos, 1.0)); ///< Fragment position in the selected cascade.
+                const float4 dirLightClip = mul(frame.shadowViewProjs[kDirShadowBase + dirShadowLayer], float4(input.worldPos, 1.0)); ///< Fragment position in the selected cascade.
                 const float3 dirLightNdc = dirLightClip.xyz / dirLightClip.w; ///< Directional light depth remains in 0..1 after divide.
                 const float2 dirShadowUv = (dirLightNdc.xy * 0.5) + 0.5; ///< Convert directional light NDC XY to shadow texture UVs.
                 const bool insideDirShadowMap = dirLightNdc.z >= 0.0 && dirLightNdc.z <= 1.0; ///< Reject fragments outside directional light depth coverage.
@@ -255,7 +224,7 @@ FragmentOutput fragmentMain(FragmentInput input)
             directionalContribution += dirAmbient + dirLight * ((dirDiffuse + dirSpecular) * dirShadowFactor); ///< Add this shadowed directional result.
         }
     }
-    const int activeSpotLightCount = min(max(int(frame.spotLightConeAmbient.z), 0), kMaxShadowedSpotLights); ///< Clamp scene spot count to the fixed shadow array.
+    const int activeSpotLightCount = min(max(int(frame.activeSpotLightCount), 0), kMaxShadowedSpotLights); ///< Clamp scene spot count to the fixed shadow array.
     float3 spotContribution = float3(0.0);                           ///< Accumulated spot-light response for all active shadowed spots.
     for (int i = 0; i < kMaxShadowedSpotLights; ++i) {                ///< Fixed trip count lets the compiler unroll the small spot loop.
         if (i < activeSpotLightCount) {                               ///< Ignore unused shadow-array layers.
@@ -273,7 +242,7 @@ FragmentOutput fragmentMain(FragmentInput input)
             const float spotConeFalloff = smoothstep(frame.spotLightConeAmbients[i].y, frame.spotLightConeAmbients[i].x, spotCos); ///< Spot cone angular falloff.
             const float3 spotLight = frame.spotLightColorIntensities[i].rgb * frame.spotLightColorIntensities[i].w; ///< Spot light color scaled by intensity.
             const float spotAmbient = frame.spotLightConeAmbients[i].w; ///< Spot ambient contribution without shadowing.
-            const float4 spotLightClip = mul(frame.spotLightViewProjs[i], float4(input.worldPos, 1.0)); ///< Fragment position in spot light clip space.
+            const float4 spotLightClip = mul(frame.shadowViewProjs[kSpotShadowBase + i], float4(input.worldPos, 1.0)); ///< Fragment position in spot light clip space.
             const float3 spotLightNdc = spotLightClip.xyz / spotLightClip.w; ///< Spot light depth remains in 0..1 after divide.
             const float2 spotShadowUv = (spotLightNdc.xy * 0.5) + 0.5; ///< Convert spot light NDC XY to shadow texture UVs.
             const bool insideSpotShadowMap = spotLightNdc.z >= 0.0 && spotLightNdc.z <= 1.0; ///< Reject fragments outside spot light depth coverage.

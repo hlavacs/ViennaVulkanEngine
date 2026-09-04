@@ -246,7 +246,7 @@ namespace {
                                                         RecordedPass::directional_shadow));
    };
 
-   // An empty vector leaves only the protected legacy single-shadow pass and no CSM metadata or sample.
+   // An empty vector leaves no directional shadow pass, metadata, or sample.
    render_system.clearScene();
    if (!render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{}) || !engine.renderFrame()) {
       return false;
@@ -255,7 +255,7 @@ namespace {
       return meta.light_type == 3U;
    });
    if (!renderer.scene.directionalLights.empty() || has_directional_meta ||
-       !samplesOfType(renderer, 3U).empty() || directional_pass_count() != 1U) {
+       !samplesOfType(renderer, 3U).empty() || directional_pass_count() != 0U) {
       return false;
    }
 
@@ -287,7 +287,7 @@ namespace {
    const std::size_t expected_cascade_passes{
       vve::simple::kMaxDirectionalLights * vve::simple::kNumShadowCascades};
    return directional_row == expected_cascade_passes &&
-          directional_pass_count() == expected_cascade_passes + 1U &&
+          directional_pass_count() == expected_cascade_passes &&
           hasDirectionalShadowDepthAgreement(renderer);
 }
 
@@ -624,7 +624,6 @@ int main() {
                               .intensity = 2.75F,
                               .range = 7.0F,
                               .ambient = 0.04F}};
-   point_shadow_scene.pointLight = point_shadow_scene.pointLights.front(); ///< Preserve legacy single-light mirror.
    point_shadow_scene.spotLights = {
       vve::simple::SpotLight{.position = vve::Vec3{-3.0F, 3.0F, 0.0F},
                              .direction = vve::Vec3{1.0F, -1.0F, 0.0F},
@@ -635,7 +634,6 @@ int main() {
                              .outerConeAngle = vve::SpotConeAngle{.radians = 0.45F},
                              .ambient = 0.01F,
                              .enabled = false}}; ///< Regression source: disabled lights must not be packed.
-   point_shadow_scene.spotLight = point_shadow_scene.spotLights.front(); ///< Preserve legacy single-light mirror.
    render_system.loadScene(std::move(point_shadow_scene));
    if (const auto result = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{}); !result) {
       return 2;

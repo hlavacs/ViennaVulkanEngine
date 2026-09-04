@@ -221,9 +221,7 @@ export namespace vve::simple {
 		/// @brief Stores a backend scene and mirrors it into the selected renderer.
 		auto loadScene(Scene scene) -> SceneHandle {
 			if (scene.directionalLights.size() > kMaxDirectionalLights) { scene.directionalLights.resize(kMaxDirectionalLights); }
-			if (!scene.directionalLights.empty()) { scene.directionalLight = scene.directionalLights.front(); }	// Forward renderer still consumes the first directional light only.
 			if (scene.spotLights.size() > kMaxShadowedSpotLights) { scene.spotLights.resize(kMaxShadowedSpotLights); }
-			if (!scene.spotLights.empty()) { scene.spotLight = scene.spotLights.front(); }				// Forward renderer still consumes the first spot light only.
 			const auto handle = makeCounterHandle<SceneHandle>();
 			system().scenes_[handle] = scene;
 			system().active_scene_ = handle;

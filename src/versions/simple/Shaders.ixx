@@ -467,7 +467,7 @@ export namespace vve::simple {
 				.stageFlags = stages,
 				.pImmutableSamplers = nullptr});
 		}
-		constexpr std::array expectedBindings{0U, 1U, 2U, 4U, 5U, 6U, 7U}; // Current shader layout order is part of the renderer contract.
+		constexpr std::array expectedBindings{0U, 1U, 2U, 3U, 4U}; // frame, baseColorTextures, spotShadowArray, dirShadowArray, pointShadowArray.
 		if (bindings.size() != expectedBindings.size()) { return std::unexpected(Error::invalid_argument); }
 		for (std::size_t index{}; index < expectedBindings.size(); ++index) {
 			if (bindings[index].binding != expectedBindings[index]) { return std::unexpected(Error::invalid_argument); }

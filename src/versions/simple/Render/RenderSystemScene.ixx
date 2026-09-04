@@ -122,9 +122,8 @@ export namespace vve::simple {
 				.color = color.value,
 				.intensity = intensity,
 				.ambient = ambient.value.x};
-			system().forward().scene.directionalLights.clear();													// Setter preserves the legacy single-light mode.
+			system().forward().scene.directionalLights.clear();
 			system().forward().scene.directionalLights.push_back(light);
-			system().forward().scene.directionalLight = light;
 			system().scene_.setDirectionalLight({.direction_to_light = direction_to_light,
 														  .color = color, .intensity = intensity, .ambient = ambient});
 		}
@@ -137,11 +136,8 @@ export namespace vve::simple {
 				.color = color.value,
 				.intensity = intensity,
 				.ambient = ambient.value.x};
-			if (system().forward().scene.directionalLights.size() < kMaxDirectionalLights) {				// First entry remains the shader-visible directional light.
+			if (system().forward().scene.directionalLights.size() < kMaxDirectionalLights) {
 				system().forward().scene.directionalLights.push_back(light);
-			}
-			if (!system().forward().scene.directionalLights.empty()) {
-				system().forward().scene.directionalLight = system().forward().scene.directionalLights.front();
 			}
 			system().scene_.addDirectionalLight({.direction_to_light = direction_to_light,
 														  .color = color, .intensity = intensity, .ambient = ambient});
@@ -153,10 +149,10 @@ export namespace vve::simple {
 										  .color = color.value,
 										  .intensity = intensity.value,
 										  .range = range.value,
-										  .ambient = system().forward().scene.pointLight.ambient};
+										  .ambient = system().forward().scene.ambient};
 			system().forward().scene.pointLights.clear();
 			system().forward().scene.pointLights.push_back(light);
-			system().forward().scene.pointLight = light;
+			system().forward().scene.ambient = light.ambient;
 			system().scene_.setPointLight({.position = position, .color = color,
 													 .intensity = intensity, .range = range});
 		}
@@ -171,7 +167,7 @@ export namespace vve::simple {
 										  .ambient = ambient.value.x};
 			system().forward().scene.pointLights.clear();
 			system().forward().scene.pointLights.push_back(light);
-			system().forward().scene.pointLight = light;
+			system().forward().scene.ambient = light.ambient;
 			system().scene_.setPointLight({.position = position, .color = color,
 													 .intensity = intensity, .range = range, .ambient = ambient});
 		}
@@ -183,9 +179,9 @@ export namespace vve::simple {
 										  .intensity = intensity.value,
 										  .range = range.value,
 										  .ambient = PointLight{}.ambient};
-			if (system().forward().scene.pointLights.size() < kMaxShadowedPointLights) {					// Fixed cap mirrors the point-shadow layer budget.
+			if (system().forward().scene.pointLights.size() < kMaxShadowedPointLights) {
 				system().forward().scene.pointLights.push_back(light);
-				if (system().forward().scene.pointLights.size() == 1U) { system().forward().scene.pointLight = light; }
+				if (system().forward().scene.pointLights.size() == 1U) { system().forward().scene.ambient = light.ambient; }
 			}
 			system().scene_.addPointLight({.position = position, .color = color,
 													 .intensity = intensity, .range = range});
@@ -199,9 +195,9 @@ export namespace vve::simple {
 										  .intensity = intensity.value,
 										  .range = range.value,
 										  .ambient = ambient.value.x};
-			if (system().forward().scene.pointLights.size() < kMaxShadowedPointLights) {					// First entry remains the shader-visible point light.
+			if (system().forward().scene.pointLights.size() < kMaxShadowedPointLights) {
 				system().forward().scene.pointLights.push_back(light);
-				if (system().forward().scene.pointLights.size() == 1U) { system().forward().scene.pointLight = light; }
+				if (system().forward().scene.pointLights.size() == 1U) { system().forward().scene.ambient = light.ambient; }
 			}
 			system().scene_.addPointLight({.position = position, .color = color,
 													 .intensity = intensity, .range = range, .ambient = ambient});
@@ -210,17 +206,17 @@ export namespace vve::simple {
 		/// @brief Replaces the active spot-light list using the current inner cone and ambient fallback.
 		void setSpotLight(Position position, Direction direction, LinearColor color,
 								LightIntensity intensity, LightRange range, SpotConeAngle cone) {
+			const SpotLight previous = system().forward().scene.spotLights.empty() ? SpotLight{} : system().forward().scene.spotLights.front(); ///< Keeps the inner cone and ambient of the replaced light.
 			const SpotLight light{.position = position.value,
 										 .direction = direction.value,
 										 .color = color.value,
 										 .intensity = intensity,
 										 .range = range,
-										 .innerConeAngle = system().forward().scene.spotLight.innerConeAngle,
+										 .innerConeAngle = previous.innerConeAngle,
 										 .outerConeAngle = cone,
-										 .ambient = system().forward().scene.spotLight.ambient};
-			system().forward().scene.spotLights.clear();													// Setter preserves the legacy single-light mode.
+										 .ambient = previous.ambient};
+			system().forward().scene.spotLights.clear();
 			system().forward().scene.spotLights.push_back(light);
-			system().forward().scene.spotLight = light;
 			system().scene_.setSpotLight({.position = position, .direction = direction, .color = color,
 													 .intensity = intensity, .range = range, .cone = cone});
 		}
@@ -233,12 +229,11 @@ export namespace vve::simple {
 										 .color = color.value,
 										 .intensity = intensity,
 										 .range = range,
-										 .innerConeAngle = system().forward().scene.spotLight.innerConeAngle,
+										 .innerConeAngle = system().forward().scene.spotLights.empty() ? SpotLight{}.innerConeAngle : system().forward().scene.spotLights.front().innerConeAngle,
 										 .outerConeAngle = cone,
 										 .ambient = ambient.value.x};
-			system().forward().scene.spotLights.clear();													// Setter replaces all CPU-side spot lights.
+			system().forward().scene.spotLights.clear();
 			system().forward().scene.spotLights.push_back(light);
-			system().forward().scene.spotLight = light;
 			system().scene_.setSpotLight({.position = position, .direction = direction, .color = color,
 													 .intensity = intensity, .range = range, .ambient = ambient, .cone = cone});
 		}
@@ -254,9 +249,8 @@ export namespace vve::simple {
 										 .innerConeAngle = SpotLight{}.innerConeAngle,
 										 .outerConeAngle = cone,
 										 .ambient = SpotLight{}.ambient};
-			if (system().forward().scene.spotLights.size() < kMaxShadowedSpotLights) {					// Extra lights are stored only for later CPU shadow work.
+			if (system().forward().scene.spotLights.size() < kMaxShadowedSpotLights) {
 				system().forward().scene.spotLights.push_back(light);
-				if (system().forward().scene.spotLights.size() == 1U) { system().forward().scene.spotLight = light; }
 			}
 			system().scene_.addSpotLight({.position = position, .direction = direction, .color = color,
 												 .intensity = intensity, .range = range, .cone = cone});
@@ -273,9 +267,8 @@ export namespace vve::simple {
 										 .innerConeAngle = SpotLight{}.innerConeAngle,
 										 .outerConeAngle = cone,
 										 .ambient = ambient.value.x};
-			if (system().forward().scene.spotLights.size() < kMaxShadowedSpotLights) {					// First entry remains the shader-visible spot light.
+			if (system().forward().scene.spotLights.size() < kMaxShadowedSpotLights) {
 				system().forward().scene.spotLights.push_back(light);
-				if (system().forward().scene.spotLights.size() == 1U) { system().forward().scene.spotLight = light; }
 			}
 			system().scene_.addSpotLight({.position = position, .direction = direction, .color = color,
 												 .intensity = intensity, .range = range, .ambient = ambient, .cone = cone});

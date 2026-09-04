@@ -39,9 +39,6 @@ export namespace vve::simple {
 			const std::string vertSpirvPath{shaderDir + "/simple_forward.vert.spv"};
 			const std::string fragSpirvPath{shaderDir + "/simple_forward.frag.spv"};
 			const std::string shadowVertSpirvPath{shaderDir + "/simple_forward.shadow.vert.spv"};
-			const std::string dirShadowVertSpirvPath{shaderDir + "/simple_forward.dir_shadow.vert.spv"}; ///< Directional shadow vertex shader.
-			const std::string spotShadowVertSpirvPath{shaderDir + "/simple_forward.spot_shadow.vert.spv"}; ///< Spot shadow vertex shader.
-			const std::string pointShadowVertSpirvPath{shaderDir + "/simple_forward.point_shadow.vert.spv"}; ///< Point shadow vertex shader.
 
 			renderer.window = sdlWindow;
 			if (renderer.window == nullptr) { return VK_ERROR_INITIALIZATION_FAILED; }
@@ -100,7 +97,7 @@ export namespace vve::simple {
 				return binding.set == 0U && binding.name == objectTextureParameterName && binding.category != "binding_range";
 			});
 			if (objectTextureBinding == reflectedBindings->end()) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
-			constexpr std::array shadowSamplerParameterNames{"shadowMap", "spotShadowMap", "spotShadowArray", "dirShadowArray", "pointShadowArray"}; // Slang shadow sampler parameters.
+			constexpr std::array shadowSamplerParameterNames{"spotShadowArray", "dirShadowArray", "pointShadowArray"}; // Slang shadow sampler parameters, in writeShadowArray slot order.
 			std::array<std::uint32_t, shadowSamplerParameterNames.size()> shadowSamplerBindings{};
 			for (std::size_t index{}; index < shadowSamplerParameterNames.size(); ++index) {
 				const auto shadowSamplerBinding = std::ranges::find_if(*reflectedBindings, [name = std::string_view{shadowSamplerParameterNames[index]}](const ShaderBindingReflection &binding) {
@@ -115,14 +112,8 @@ export namespace vve::simple {
 
 			VulkanVertexInputDescription vertexInput{}; // Fixed mesh vertex layout shared by forward and shadow pipelines.
 
-			result = renderer.shadowMap.create(renderer.allocator, renderer.device.device);
-			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-
 			constexpr std::uint32_t directionalShadowLayerCount{static_cast<std::uint32_t>(kMaxDirectionalLights * kNumShadowCascades)}; // Four cascades for every directional-light slot.
 			result = renderer.dirShadowArray.create(renderer.allocator, renderer.device.device, directionalShadowLayerCount);
-			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-
-			result = renderer.spotShadowMap.create(renderer.allocator, renderer.device.device);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.spotShadowArray.create(renderer.allocator, renderer.device.device, kMaxShadowedSpotLights);
@@ -132,22 +123,7 @@ export namespace vve::simple {
 			result = renderer.pointShadowArray.create(renderer.allocator, renderer.device.device, pointShadowArrayLayerCount);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.pointShadowArray.createPipeline(renderer.descriptorSetLayout.descriptorSetLayout, pointShadowVertSpirvPath, "shadowVertexMainPoint", vertexInput);
-			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-
-			result = renderer.dirShadowArray.createPipeline(renderer.descriptorSetLayout.descriptorSetLayout, dirShadowVertSpirvPath, "shadowVertexMainDir", vertexInput);
-			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-
-			result = renderer.spotShadowArray.createPipeline(renderer.descriptorSetLayout.descriptorSetLayout, spotShadowVertSpirvPath, "shadowVertexMainSpot", vertexInput);
-			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-
 			result = renderer.pipelineLayout.create(renderer.device.device, renderer.descriptorSetLayout.descriptorSetLayout);
-			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-
-			result = renderer.shadowMap.createPipeline(renderer.descriptorSetLayout.descriptorSetLayout, shadowVertSpirvPath, "shadowVertexMain", vertexInput);
-			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-
-			result = renderer.spotShadowMap.createPipeline(renderer.descriptorSetLayout.descriptorSetLayout, spotShadowVertSpirvPath, "shadowVertexMainSpot", vertexInput);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.vertShaderModule.create(renderer.device.device, vertSpirvPath);
@@ -156,16 +132,15 @@ export namespace vve::simple {
 			result = renderer.fragShaderModule.create(renderer.device.device, fragSpirvPath);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			result = renderer.graphicsPipeline.create(
-				renderer.device.device,
-				VK_NULL_HANDLE,
-				renderer.pipelineLayout.pipelineLayout,
-				renderer.vertShaderModule.shaderModule,
-				renderer.fragShaderModule.shaderModule,
-				vertexInput,
-				renderer.swapchain.extent,
-				renderer.swapchain.imageFormat,
-				depthFormat);
+			result = renderer.shadowShaderModule.create(renderer.device.device, shadowVertSpirvPath);
+			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
+
+			result = renderer.graphicsPipeline.create(renderer.device.device, renderer.pipelineLayout.pipelineLayout, renderer.vertShaderModule.shaderModule, "vertexMain",
+																  renderer.fragShaderModule.shaderModule, vertexInput, renderer.swapchain.extent, renderer.swapchain.imageFormat, depthFormat);
+			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
+
+			result = renderer.shadowPipeline.create(renderer.device.device, renderer.pipelineLayout.pipelineLayout, renderer.shadowShaderModule.shaderModule, "shadowVertexMain",
+																VK_NULL_HANDLE, vertexInput, VkExtent2D{.width = ShadowMap::resolution, .height = ShadowMap::resolution}, VK_FORMAT_UNDEFINED, depthFormat);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			result = renderer.commandPool.create(renderer.device.device, *renderer.physicalDevice.graphicsQueueFamily);
@@ -195,15 +170,11 @@ export namespace vve::simple {
 			for (std::uint32_t frame{}; frame < Renderer::framesInFlight; ++frame) {
 				result = renderer.descriptorSets.writeUniformBuffer(frame, renderer.uniformBuffers.buffers[frame].buffer, sizeof(FrameUniforms));
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeShadowMap(frame, renderer.shadowMap.imageView, renderer.shadowMap.shadowSampler);
+				result = renderer.descriptorSets.writeShadowArray(frame, 0U, renderer.spotShadowArray.imageView, renderer.spotShadowArray.shadowSampler);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeDirShadowArray(frame, renderer.dirShadowArray.imageView, renderer.dirShadowArray.shadowSampler); // Bind directional shadow-array sampler.
+				result = renderer.descriptorSets.writeShadowArray(frame, 1U, renderer.dirShadowArray.imageView, renderer.dirShadowArray.shadowSampler);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeSpotShadowMap(frame, renderer.spotShadowMap.imageView, renderer.spotShadowMap.shadowSampler);
-				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeSpotShadowArray(frame, renderer.spotShadowArray.imageView, renderer.spotShadowArray.shadowSampler);
-				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writePointShadowArray(frame, renderer.pointShadowArray.imageView, renderer.pointShadowArray.shadowSampler);
+				result = renderer.descriptorSets.writeShadowArray(frame, 2U, renderer.pointShadowArray.imageView, renderer.pointShadowArray.shadowSampler);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 			}
 
@@ -339,17 +310,15 @@ export namespace vve::simple {
 			renderer.shadowDepthSamples.clear();
 			renderer.commandPool.cleanup();
 			renderer.graphicsPipeline.cleanup();
+			renderer.shadowPipeline.cleanup();
+			renderer.shadowShaderModule.cleanup();
 			renderer.fragShaderModule.cleanup();
 			renderer.vertShaderModule.cleanup();
-			renderer.spotShadowMap.cleanupPipeline();
-			renderer.shadowMap.cleanupPipeline();
 			renderer.pipelineLayout.cleanup();
 			renderer.descriptorSetLayout.cleanup();
 			renderer.pointShadowArray.cleanup();
 			renderer.spotShadowArray.cleanup();
-			renderer.spotShadowMap.cleanup();
 			renderer.dirShadowArray.cleanup();
-			renderer.shadowMap.cleanup();
 			renderer.depthImage.cleanup();
 			renderer.imageViews.cleanup();
 			renderer.swapchain.cleanup();
@@ -403,9 +372,8 @@ export namespace vve::simple {
 			if (result != VK_SUCCESS) { return result; }
 
 			VulkanVertexInputDescription vertexInput{};
-			result = renderer.graphicsPipeline.create(renderer.device.device, VK_NULL_HANDLE, renderer.pipelineLayout.pipelineLayout,
-													 renderer.vertShaderModule.shaderModule, renderer.fragShaderModule.shaderModule, vertexInput,
-													 renderer.swapchain.extent, renderer.swapchain.imageFormat, depthFormat);
+			result = renderer.graphicsPipeline.create(renderer.device.device, renderer.pipelineLayout.pipelineLayout, renderer.vertShaderModule.shaderModule, "vertexMain",
+														  renderer.fragShaderModule.shaderModule, vertexInput, renderer.swapchain.extent, renderer.swapchain.imageFormat, depthFormat);
 			if (result != VK_SUCCESS) { return result; }
 
 			result = renderer.frameSync.create(renderer.device.device, Renderer::framesInFlight, static_cast<std::uint32_t>(renderer.swapchain.images.size()));
