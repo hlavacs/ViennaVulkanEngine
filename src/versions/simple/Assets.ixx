@@ -7,15 +7,9 @@ module;
 #include <cmath>
 #include <cstdlib>
 
-#if defined(_WIN32) && defined(VVE_ENGINE_BUILD)
-#define VVE_SIMPLE_API __declspec(dllexport)
-#else
-#define VVE_SIMPLE_API
-#endif
-
 export module VEEngine.Simple:Assets;
 import std;
-export import :Types;
+export import VEEngine.Simple.Types;
 import :Graph;
 
 /// @file
@@ -137,45 +131,57 @@ export namespace vve::simple {
 	/// @brief Asset facade that owns imported scene descriptors.
 	class AssetSystem {
 	public:
-		[[nodiscard]] VVE_SIMPLE_API auto addScene(ObjectName name)																-> std::expected<SceneHandle, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto loadScene(const std::filesystem::path &source)									-> std::expected<SceneHandle, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto containsScene(SceneHandle scene) const											-> bool;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneName(SceneHandle scene) const													-> std::expected<ObjectName, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneNodeCount(SceneHandle scene) const											-> std::expected<std::size_t, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneMeshCount(SceneHandle scene) const											-> std::expected<std::size_t, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneMaterialCount(SceneHandle scene) const										-> std::expected<std::size_t, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneTextureCount(SceneHandle scene) const										-> std::expected<std::size_t, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneLightCount(SceneHandle scene) const											-> std::expected<std::size_t, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneCameraCount(SceneHandle scene) const										-> std::expected<std::size_t, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneRootNode(SceneHandle scene) const											-> std::expected<NodeHandle, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneNodes(SceneHandle scene) const												-> std::expected<Vector<NodeHandle>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneMeshes(SceneHandle scene) const												-> std::expected<Vector<MeshHandle>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneMaterials(SceneHandle scene) const											-> std::expected<Vector<MaterialHandle>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneTextures(SceneHandle scene) const											-> std::expected<Vector<TextureHandle>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneLights(SceneHandle scene) const												-> std::expected<Vector<LightHandle>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto sceneCameras(SceneHandle scene) const												-> std::expected<Vector<CameraHandle>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto lightData(LightHandle light) const												-> std::expected<LightDescriptor, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto cameraData(CameraHandle camera) const											-> std::expected<CameraDescriptor, Error>;
-		[[nodiscard]] VVE_SIMPLE_API std::expected<Vector<NodeHandle>, Error> sceneNodeChildren(SceneHandle scene,
-																											NodeHandle node) const;
-		[[nodiscard]] VVE_SIMPLE_API std::expected<std::optional<NodeHandle>, Error> sceneNodeParent(SceneHandle scene,
-																												NodeHandle node) const;
+		[[nodiscard]] auto addScene(ObjectName name)											-> std::expected<SceneHandle, Error>;
+		[[nodiscard]] auto loadScene(const std::filesystem::path &source)				-> std::expected<SceneHandle, Error>;
 
-		[[nodiscard]] VVE_SIMPLE_API auto nodeName(NodeHandle node) const														-> std::expected<ObjectName, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto nodeTransform(NodeHandle node) const												-> std::expected<Transform, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto nodeMeshes(NodeHandle node) const													-> std::expected<Vector<MeshHandle>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto nodeMaterials(NodeHandle node) const												-> std::expected<Vector<MaterialHandle>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto meshName(MeshHandle mesh) const														-> std::expected<ObjectName, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto meshVertexCount(MeshHandle mesh) const											-> std::expected<VertexCount, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto meshIndexCount(MeshHandle mesh) const												-> std::expected<IndexCount, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto meshMaterial(MeshHandle mesh) const												-> std::expected<MaterialHandle, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto meshBounds(MeshHandle mesh) const													-> std::expected<Bounds, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto meshPositions(MeshHandle mesh) const												-> std::expected<Vector<Vec3>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto meshNormals(MeshHandle mesh) const													-> std::expected<Vector<Vec3>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto meshTexcoords(MeshHandle mesh) const												-> std::expected<Vector<Vec2>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto meshIndices(MeshHandle mesh) const													-> std::expected<Vector<std::uint32_t>, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto materialName(MaterialHandle material) const										-> std::expected<ObjectName, Error>;
-		[[nodiscard]] VVE_SIMPLE_API auto materialTextures(MaterialHandle material) const								-> std::expected<Vector<TextureHandle>, Error>;
+		// Every query below is one catalog lookup; an unknown handle yields Error::missing_object.
+		[[nodiscard]] bool containsScene(SceneHandle scene) const { return catalog_.scenes.contains(scene); }
+		[[nodiscard]] auto sceneName(SceneHandle scene) const { return sceneField(catalog_, scene, &AssetScene::name); }
+		[[nodiscard]] auto sceneNodes(SceneHandle scene) const { return sceneField(catalog_, scene, &AssetScene::nodes); }
+		[[nodiscard]] auto sceneMeshes(SceneHandle scene) const { return sceneField(catalog_, scene, &AssetScene::meshes); }
+		[[nodiscard]] auto sceneMaterials(SceneHandle scene) const { return sceneField(catalog_, scene, &AssetScene::materials); }
+		[[nodiscard]] auto sceneTextures(SceneHandle scene) const { return sceneField(catalog_, scene, &AssetScene::textures); }
+		[[nodiscard]] auto sceneLights(SceneHandle scene) const { return sceneField(catalog_, scene, &AssetScene::lights); }
+		[[nodiscard]] auto sceneCameras(SceneHandle scene) const { return sceneField(catalog_, scene, &AssetScene::cameras); }
+		[[nodiscard]] auto sceneNodeCount(SceneHandle scene) const { return sizeOf(sceneNodes(scene)); }
+		[[nodiscard]] auto sceneMeshCount(SceneHandle scene) const { return sizeOf(sceneMeshes(scene)); }
+		[[nodiscard]] auto sceneMaterialCount(SceneHandle scene) const { return sizeOf(sceneMaterials(scene)); }
+		[[nodiscard]] auto sceneTextureCount(SceneHandle scene) const { return sizeOf(sceneTextures(scene)); }
+		[[nodiscard]] auto sceneLightCount(SceneHandle scene) const { return sizeOf(sceneLights(scene)); }
+		[[nodiscard]] auto sceneCameraCount(SceneHandle scene) const { return sizeOf(sceneCameras(scene)); }
+		[[nodiscard]] auto sceneRootNode(SceneHandle scene) const -> std::expected<NodeHandle, Error> {
+			const auto tree = sceneField(catalog_, scene, &AssetScene::tree);
+			if (!tree) { return std::unexpected(tree.error()); }
+			if (!tree->root.valid()) { return std::unexpected(Error::missing_object); }
+			return tree->root;
+		}
+		[[nodiscard]] auto sceneNodeChildren(SceneHandle scene, NodeHandle node) const -> std::expected<Vector<NodeHandle>, Error> {
+			const auto source = sceneWithNode(catalog_, scene, node);
+			if (!source) { return std::unexpected(source.error()); }
+			return (*source)->tree.children(node);
+		}
+		[[nodiscard]] auto sceneNodeParent(SceneHandle scene, NodeHandle node) const -> std::expected<std::optional<NodeHandle>, Error> {
+			const auto source = sceneWithNode(catalog_, scene, node);
+			if (!source) { return std::unexpected(source.error()); }
+			return (*source)->tree.parent(node);
+		}
+		[[nodiscard]] auto lightData(LightHandle light) const { return field(catalog_.lights, light, &Light::data); }
+		[[nodiscard]] auto cameraData(CameraHandle camera) const { return field(catalog_.cameras, camera, &CameraAsset::data); }
+		[[nodiscard]] auto nodeName(NodeHandle node) const { return field(catalog_.nodes, node, &Node::name); }
+		[[nodiscard]] auto nodeTransform(NodeHandle node) const { return field(catalog_.nodes, node, &Node::transform); }
+		[[nodiscard]] auto nodeMeshes(NodeHandle node) const { return field(catalog_.nodes, node, &Node::meshes); }
+		[[nodiscard]] auto nodeMaterials(NodeHandle node) const { return field(catalog_.nodes, node, &Node::materials); }
+		[[nodiscard]] auto meshName(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::name); }
+		[[nodiscard]] auto meshVertexCount(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::vertex_count); }
+		[[nodiscard]] auto meshIndexCount(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::index_count); }
+		[[nodiscard]] auto meshMaterial(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::material); }
+		[[nodiscard]] auto meshBounds(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::bounds); }
+		[[nodiscard]] auto meshPositions(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::positions); }
+		[[nodiscard]] auto meshNormals(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::normals); }
+		[[nodiscard]] auto meshTexcoords(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::texcoords); }
+		[[nodiscard]] auto meshIndices(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::indices); }
+		[[nodiscard]] auto materialName(MaterialHandle material) const { return field(catalog_.materials, material, &Material::name); }
+		[[nodiscard]] auto materialTextures(MaterialHandle material) const { return field(catalog_.materials, material, &Material::textures); }
 
 	private:
 		/// @brief Result of importing all materials.
@@ -245,11 +251,6 @@ export namespace vve::simple {
 } // namespace vve::simple
 
 namespace vve::simple {
-
-	template <typename T> using Expected = std::expected<T, Error>;	///< Local expected shorthand.
-	template <typename T> using VectorExpected = Expected<Vector<T>>;	///< Local vector-result shorthand.
-	using CountExpected = Expected<std::size_t>;								///< Local count-result shorthand.
-	using NameExpected = Expected<ObjectName>;								///< Local name-result shorthand.
 
 		std::filesystem::path AssetSystem::normalized(std::filesystem::path path) {			///< Canonical path if possible.
 			std::error_code error{};
@@ -555,14 +556,14 @@ namespace vve::simple {
 			return handle;
 		}
 
-	VVE_SIMPLE_API auto AssetSystem::addScene(ObjectName name)												-> std::expected<SceneHandle, Error>{
+	auto AssetSystem::addScene(ObjectName name)												-> std::expected<SceneHandle, Error>{
 		auto scene = AssetScene{.handle = makeCounterHandle<SceneHandle>(), .name = std::move(name)};
 		const auto handle = scene.handle;
 		if (auto added = catalog_.scenes.add(std::move(scene)); !added) { return std::unexpected(added.error()); }
 		return handle;
 	}
 
-	VVE_SIMPLE_API auto AssetSystem::loadScene(const std::filesystem::path &source)					-> std::expected<SceneHandle, Error>{
+	auto AssetSystem::loadScene(const std::filesystem::path &source)					-> std::expected<SceneHandle, Error>{
 		if (source.empty()) { return std::unexpected(Error::invalid_argument); }
 		Assimp::Importer importer{};
 		constexpr auto flags = aiProcess_Triangulate | aiProcess_JoinIdenticalVertices |
@@ -572,134 +573,6 @@ namespace vve::simple {
 		const aiScene *scene = importer.ReadFile(path.string(), flags);
 		if (scene == nullptr || scene->mRootNode == nullptr) { return std::unexpected(Error::asset_import_failed); }
 		return import(catalog_, *scene, path);
-	}
-
-	VVE_SIMPLE_API bool AssetSystem::containsScene(SceneHandle scene) const { return catalog_.scenes.contains(scene); }
-
-	VVE_SIMPLE_API NameExpected AssetSystem::sceneName(SceneHandle scene) const { return sceneField(catalog_, scene, &AssetScene::name); }
-
-	VVE_SIMPLE_API CountExpected AssetSystem::sceneNodeCount(SceneHandle scene) const { return sizeOf(sceneNodes(scene)); }
-
-	VVE_SIMPLE_API CountExpected AssetSystem::sceneMeshCount(SceneHandle scene) const { return sizeOf(sceneMeshes(scene)); }
-
-	VVE_SIMPLE_API auto AssetSystem::sceneMaterialCount(SceneHandle scene) const						-> CountExpected{
-		return sizeOf(sceneMaterials(scene));
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::sceneTextureCount(SceneHandle scene) const						-> CountExpected{
-		return sizeOf(sceneTextures(scene));
-	}
-
-	VVE_SIMPLE_API CountExpected AssetSystem::sceneLightCount(SceneHandle scene) const { return sizeOf(sceneLights(scene)); }
-
-	VVE_SIMPLE_API CountExpected AssetSystem::sceneCameraCount(SceneHandle scene) const { return sizeOf(sceneCameras(scene)); }
-
-	VVE_SIMPLE_API auto AssetSystem::sceneRootNode(SceneHandle scene) const								-> std::expected<NodeHandle, Error>{
-		const auto root = sceneField(catalog_, scene, &AssetScene::tree);
-		if (!root) { return std::unexpected(root.error()); }
-		if (!root->root.valid()) { return std::unexpected(Error::missing_object); }
-		return root->root;
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::sceneNodes(SceneHandle scene) const									-> VectorExpected<NodeHandle>{
-		return sceneField(catalog_, scene, &AssetScene::nodes);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::sceneMeshes(SceneHandle scene) const								-> VectorExpected<MeshHandle>{
-		return sceneField(catalog_, scene, &AssetScene::meshes);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::sceneMaterials(SceneHandle scene) const							-> VectorExpected<MaterialHandle>{
-		return sceneField(catalog_, scene, &AssetScene::materials);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::sceneTextures(SceneHandle scene) const								-> VectorExpected<TextureHandle>{
-		return sceneField(catalog_, scene, &AssetScene::textures);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::sceneLights(SceneHandle scene) const								-> VectorExpected<LightHandle>{
-		return sceneField(catalog_, scene, &AssetScene::lights);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::sceneCameras(SceneHandle scene) const								-> VectorExpected<CameraHandle>{
-		return sceneField(catalog_, scene, &AssetScene::cameras);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::lightData(LightHandle light) const									-> Expected<LightDescriptor>{
-		return field(catalog_.lights, light, &Light::data);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::cameraData(CameraHandle camera) const								-> Expected<CameraDescriptor>{
-		return field(catalog_.cameras, camera, &CameraAsset::data);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::sceneNodeChildren(SceneHandle scene, NodeHandle node) const	-> std::expected<Vector<NodeHandle>, Error>{
-		const auto source = sceneWithNode(catalog_, scene, node);
-		if (!source) { return std::unexpected(source.error()); }
-		return (*source)->tree.children(node);
-	}
-
-	VVE_SIMPLE_API std::expected<std::optional<NodeHandle>, Error> AssetSystem::sceneNodeParent(SceneHandle scene,
-																											NodeHandle node) const {
-		const auto source = sceneWithNode(catalog_, scene, node);
-		if (!source) { return std::unexpected(source.error()); }
-		return (*source)->tree.parent(node);
-	}
-
-	VVE_SIMPLE_API NameExpected AssetSystem::nodeName(NodeHandle node) const { return field(catalog_.nodes, node, &Node::name); }
-
-	VVE_SIMPLE_API auto AssetSystem::nodeTransform(NodeHandle node) const								-> Expected<Transform>{
-		return field(catalog_.nodes, node, &Node::transform);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::nodeMeshes(NodeHandle node) const									-> VectorExpected<MeshHandle>{
-		return field(catalog_.nodes, node, &Node::meshes);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::nodeMaterials(NodeHandle node) const								-> VectorExpected<MaterialHandle>{
-		return field(catalog_.nodes, node, &Node::materials);
-	}
-
-	VVE_SIMPLE_API NameExpected AssetSystem::meshName(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::name); }
-
-	VVE_SIMPLE_API auto AssetSystem::meshVertexCount(MeshHandle mesh) const								-> Expected<VertexCount>{
-		return field(catalog_.meshes, mesh, &AssetMesh::vertex_count);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::meshIndexCount(MeshHandle mesh) const								-> Expected<IndexCount>{
-		return field(catalog_.meshes, mesh, &AssetMesh::index_count);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::meshMaterial(MeshHandle mesh) const									-> Expected<MaterialHandle>{
-		return field(catalog_.meshes, mesh, &AssetMesh::material);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::meshBounds(MeshHandle mesh) const									-> Expected<Bounds>{
-		return field(catalog_.meshes, mesh, &AssetMesh::bounds);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::meshPositions(MeshHandle mesh) const								-> VectorExpected<Vec3>{
-		return field(catalog_.meshes, mesh, &AssetMesh::positions);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::meshNormals(MeshHandle mesh) const									-> VectorExpected<Vec3>{
-		return field(catalog_.meshes, mesh, &AssetMesh::normals);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::meshTexcoords(MeshHandle mesh) const								-> VectorExpected<Vec2>{
-		return field(catalog_.meshes, mesh, &AssetMesh::texcoords);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::meshIndices(MeshHandle mesh) const									-> VectorExpected<std::uint32_t>{
-		return field(catalog_.meshes, mesh, &AssetMesh::indices);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::materialName(MaterialHandle material) const						-> NameExpected{
-		return field(catalog_.materials, material, &Material::name);
-	}
-
-	VVE_SIMPLE_API auto AssetSystem::materialTextures(MaterialHandle material) const					-> VectorExpected<TextureHandle>{
-		return field(catalog_.materials, material, &Material::textures);
 	}
 
 } // namespace vve::simple

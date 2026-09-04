@@ -1,8 +1,7 @@
 export module VEEngine.Simple.Scene;
 import std;
-import VEEngine.Simple.Math;
+import VEEngine.Simple.Types;
 import VEEngine.Simple.Mesh;
-import VEEngine.Types;
 
 /**
 	* @file

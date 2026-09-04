@@ -9,7 +9,7 @@ module;
 
 export module VEEngine.Simple:RenderSystem;
 import std;
-export import :Types;
+export import VEEngine.Simple.Types;
 import :Window;
 import VEEngine.Simple.Vulkan;
 import VEEngine.Simple.Mesh;
@@ -71,7 +71,7 @@ export namespace vve::simple {
 		explicit RenderSystem(ImportedAssetReadAccess imported_assets);
 		[[nodiscard]] auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {})	-> std::expected<RenderSceneInstanceHandle, Error>;
 
-		// Object state, cameras, and lights mirrored into the renderer CPU scene (RenderSystemScene.ixx).
+		// Object state, cameras, and lights mirrored into the renderer CPU scene (RenderSystemScene.cpp).
 		[[nodiscard]] auto setObjectUnlit(RenderObjectHandle handle, bool unlit)										-> std::expected<void, Error>;
 		[[nodiscard]] auto setObjectCastsShadow(RenderObjectHandle handle, bool casts_shadow)					-> std::expected<void, Error>;
 		[[nodiscard]] auto setObjectVisible(RenderObjectHandle handle, bool visible)									-> std::expected<void, Error>;
@@ -90,7 +90,7 @@ export namespace vve::simple {
 		auto addSpotLight(Position position, Direction direction, LinearColor color, LightIntensity intensity, LightRange range, SpotConeAngle cone) -> void;
 		auto addSpotLight(Position position, Direction direction, LinearColor color, LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient) -> void;
 
-		// Primitive objects, object removal, and loaded-scene lifecycle (RenderSystemObjects.ixx).
+		// Primitive objects, object removal, and loaded-scene lifecycle (RenderSystemObjects.cpp).
 		[[nodiscard]] auto removeObject(RenderObjectHandle handle)																-> std::expected<void, Error>;
 		[[nodiscard]] auto sceneInstanceObjects(RenderSceneInstanceHandle instance) const						-> std::expected<Vector<RenderObjectHandle>, Error>;
 		[[nodiscard]] auto objectSourceScene(RenderObjectHandle handle) const										-> std::expected<RenderSceneInstanceHandle, Error>;

@@ -1,9 +1,8 @@
-export module VEEngine.Simple:RenderSystemScene;
+module VEEngine.Simple;
 import std;
 import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Renderer;
-import :RenderSystem;
 
 /// @file
 /// @brief RenderSystem definitions that mirror object state, cameras, and lights into the forward renderer CPU Scene.

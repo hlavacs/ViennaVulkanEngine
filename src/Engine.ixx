@@ -1,5 +1,3 @@
-module;
-
 export module VEEngine;
 import std;
 import VEEngine.Simple;

@@ -1,6 +1,5 @@
-export module VEEngine.Simple:RenderSceneImport;
+module VEEngine.Simple;
 import std;
-import :RenderSystem;
 
 /**
 	* @file

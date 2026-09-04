@@ -11,12 +11,11 @@ module;
 
 export module VEEngine.Simple;
 import std;
-export import VEEngine.Simple.Math;
+export import VEEngine.Simple.Types;
 export import :Graph;
 export import :Window;
 export import :Assets;
 export import :RenderSystem;
-export import VEEngine.Simple.Handle;
 export import :Gui;
 
 /// @file

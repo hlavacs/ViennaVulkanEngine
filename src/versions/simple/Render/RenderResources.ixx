@@ -1,6 +1,6 @@
 export module VEEngine.Simple:RenderResources;
 import std;
-import :Types;
+import VEEngine.Simple.Types;
 import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Renderer;

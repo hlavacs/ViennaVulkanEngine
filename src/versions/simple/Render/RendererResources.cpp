@@ -1,5 +1,4 @@
 module;
-#include <new>
 #include <SDL3/SDL_video.h>
 #include <vulkan/vulkan_core.h>
 #if __has_include(<backends/imgui_impl_vulkan.h>)
@@ -10,8 +9,7 @@ module;
 
 module VEEngine.Simple.Renderer;
 import std;
-import VEEngine.Types;
-import VEEngine.Simple.Math;
+import VEEngine.Simple.Types;
 import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vulkan;

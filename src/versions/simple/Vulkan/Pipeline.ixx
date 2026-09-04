@@ -18,9 +18,8 @@ import :Device;
 import :OwnedHandle;
 import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
-import VEEngine.Simple.Vector;
+import VEEngine.Simple.Types;
 import std;
-import VEEngine.Simple.Math;
 
 /**
 	* @file

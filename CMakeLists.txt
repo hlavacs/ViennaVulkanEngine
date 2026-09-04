@@ -62,6 +62,11 @@ add_compile_options(
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
    add_compile_options(-Wno-reserved-module-identifier)
+   # clang 22 + libc++ `import std`: the implicitly declared aligned operator new(size_t, align_val_t) does not
+   # always merge with the one the std module exports, so std::vector growth becomes "ambiguous" (or crashes
+   # codegen) in units that also see <new> through an imported module's global module fragment. Nothing here is
+   # over-aligned, so aligned allocation is switched off for the whole project, std module included.
+   string(APPEND CMAKE_CXX_FLAGS " -fno-aligned-allocation")
 endif()
 
 find_package(Doxygen QUIET)

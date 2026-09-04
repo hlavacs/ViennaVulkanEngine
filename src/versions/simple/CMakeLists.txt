@@ -6,12 +6,11 @@ target_sources(ViennaVulkanEngine
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererShadowPrep.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererDraw.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererDebug.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/Render/RenderSceneImport.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/Render/RenderSystemScene.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/Render/RenderSystemObjects.cpp"
    PUBLIC
       FILE_SET simple_modules TYPE CXX_MODULES FILES
-         Error.ixx
-         Math.ixx
-         Handle.ixx
-         Vector.ixx
          Types.ixx
          Graph.ixx
          Window.ixx
@@ -30,9 +29,6 @@ target_sources(ViennaVulkanEngine
          Vulkan/Resources.ixx
          Vulkan/Vulkan.ixx
          Scene.ixx
-         Render/RenderSceneImport.ixx
-         Render/RenderSystemScene.ixx
-         Render/RenderSystemObjects.ixx
          Render/RenderResources.ixx
          Render/Renderer.ixx
          Render/RenderSystem.ixx

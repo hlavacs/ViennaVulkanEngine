@@ -23,9 +23,8 @@ import :Pipeline;
 import :OwnedHandle;
 import std;
 import VEEngine.Simple.Mesh;
-import VEEngine.Simple.Math;
+import VEEngine.Simple.Types;
 import VEEngine.Simple.Scene;
-import VEEngine.Vector;
 
 /**
 	* @file

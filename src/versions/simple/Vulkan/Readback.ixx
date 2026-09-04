@@ -1,6 +1,5 @@
 module;
 #include <compare>
-#include <new>
 #include <vulkan/vulkan.h>
 #include <stb_image_write.h>
 #include <vk_mem_alloc.h>
