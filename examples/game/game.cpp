@@ -14,6 +14,7 @@ import VEEngine;
 namespace {
 
 constexpr auto grassTextureRelativePath = "assets/game/plane/grass.jpg"; ///< Tiled ground texture and asset-root sentinel.
+constexpr std::array crateTextureRelativePaths{"assets/game/crate0/diffuse.png", "assets/game/crate1/diffuse.png"}; ///< Wood crate textures, alternated per spawn.
 
 constexpr float groundHalfExtent = 20.0F;      ///< Half side length of the square play field in metres.
 constexpr float groundTileSize = 4.0F;         ///< Side length of one tiled grass quad in metres.
@@ -183,7 +184,8 @@ int main(int argc, char **argv) {
 	}
 
 	auto render = engine.world().get<vve::RenderSystem>();
-	const auto sunHandle = loadScene(render, assetRoot(argc > 0 ? argv[0] : nullptr));
+	const auto root = assetRoot(argc > 0 ? argv[0] : nullptr);
+	const auto sunHandle = loadScene(render, root);
 	if (!sunHandle) {
 		std::cerr << "[game] scene load failed: error=" << vve::errorName(sunHandle.error()) << '\n';
 		return 2;
@@ -201,6 +203,7 @@ int main(int argc, char **argv) {
 
 	std::vector<Crate> crates{};                       ///< Active crates currently in the world.
 	int score{};                                       ///< Crates collected so far.
+	std::size_t spawnedCrates{};                       ///< Crates spawned so far; selects the crate texture.
 	float spawnTimer{spawnInterval};                   ///< Time accumulator that spawns the first crate immediately.
 	std::mt19937 rng{std::random_device{}()};          ///< Random source for crate spawn positions.
 	std::uniform_real_distribution<float> place{-groundHalfExtent + 2.0F, groundHalfExtent - 2.0F};
@@ -249,9 +252,9 @@ int main(int argc, char **argv) {
 				const vve::Vec3 spawnPosition{place(rng), crateSpawnY, place(rng)};
 				const vve::Vec3 minimum{-crateHalfSize, -crateHalfSize, -crateHalfSize};
 				const vve::Vec3 maximum{crateHalfSize, crateHalfSize, crateHalfSize};
-				if (auto added = render.addCuboid(minimum, maximum,
-														 vve::LinearColor{.value = vve::Vec3{0.58F, 0.36F, 0.18F}},
-														 vve::Transform{.translation = vve::Position{.value = spawnPosition}});
+				const auto crateTexture = root / crateTextureRelativePaths[spawnedCrates++ % crateTextureRelativePaths.size()];
+				if (auto added = render.addTexturedCuboid(minimum, maximum, crateTexture,
+																	 vve::Transform{.translation = vve::Position{.value = spawnPosition}});
 						 added) {
 					crates.push_back(
 						Crate{.handle = *added, .position = spawnPosition, .velocityY = 0.0F, .landed = false});

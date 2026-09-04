@@ -89,7 +89,7 @@ export namespace vve::simple {
 			if (!descriptorBindings) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
 			const auto reflectedBindings = shaderReflection.reflectedBindings(*shaderHandle);
 			if (!reflectedBindings) { renderer.cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
-			constexpr std::string_view objectTextureParameterName{"baseColorTexture"}; // Slang parameter for optional object base color.
+			constexpr std::string_view objectTextureParameterName{"baseColorTextures"}; // Slang parameter for the object base-color texture array.
 			const auto objectTextureBinding = std::ranges::find_if(*reflectedBindings, [objectTextureParameterName](const ShaderBindingReflection &binding) {
 				return binding.set == 0U && binding.name == objectTextureParameterName && binding.category != "binding_range";
 			});
@@ -191,16 +191,7 @@ export namespace vve::simple {
 			result = renderer.descriptorSets.create(renderer.device.device, renderer.descriptorPool.descriptorPool, renderer.descriptorSetLayout.descriptorSetLayout, *descriptorBindings, objectTextureBinding->binding, shadowSamplerBindings, Renderer::framesInFlight);
 			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
-			// Upload the optional scene base-color texture once descriptor sets and upload commands exist.
-			const bool hasObjectTexture{renderer.scene.baseColorTexture.has_value() && renderer.objectTexture.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, *renderer.scene.baseColorTexture) == VK_SUCCESS};
-			if (!hasObjectTexture) {
-				constexpr std::array opaqueWhitePixel{std::byte{255U}, std::byte{255U}, std::byte{255U}, std::byte{255U}}; // Valid fallback for unused texture descriptors.
-				result = renderer.defaultObjectTexture.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, std::span{opaqueWhitePixel}, VkExtent2D{.width = 1U, .height = 1U});
-				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-			}
-			const TextureImage &descriptorTexture{hasObjectTexture ? renderer.objectTexture : renderer.defaultObjectTexture};
-
-			// Bind each frame descriptor set to its matching uniform buffer, shadow maps, and object texture slot.
+			// Bind each frame descriptor set to its matching uniform buffer and shadow maps; textures follow below.
 			for (std::uint32_t frame{}; frame < Renderer::framesInFlight; ++frame) {
 				result = renderer.descriptorSets.writeUniformBuffer(frame, renderer.uniformBuffers.buffers[frame].buffer, sizeof(FrameUniforms));
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
@@ -214,9 +205,10 @@ export namespace vve::simple {
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 				result = renderer.descriptorSets.writePointShadowArray(frame, renderer.pointShadowArray.imageView, renderer.pointShadowArray.shadowSampler);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
-				result = renderer.descriptorSets.writeObjectTexture(frame, descriptorTexture);
-				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 			}
+
+			result = uploadSceneTextures();
+			if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 
 			// Upload one GPU mesh for each object in the current CPU scene.
 			for (const Object &object : renderer.scene.objects) {
@@ -224,11 +216,44 @@ export namespace vve::simple {
 				result = mesh.create(renderer.physicalDevice.physicalDevice, renderer.device.device, object.mesh);
 				if (result != VK_SUCCESS) { renderer.cleanup(); return result; }
 			}
-			renderer.uploadedBaseColorTexture_ = hasObjectTexture ? renderer.scene.baseColorTexture : std::nullopt;
 			renderer.sceneGeometryDirty_.clear();
 			renderer.sceneResourcesDirty_ = false;
 			renderer.sceneRequiresFullUpload_ = false;
 
+			return VK_SUCCESS;
+		}
+
+		/**
+		 * @brief Uploads every Scene::textures entry into its texture slot and binds all slots in every frame descriptor set.
+		 *
+		 * Unused slots point at the opaque-white default texture so the whole shader array stays valid.
+		 * @return VK_SUCCESS when all textures are resident and bound, otherwise the first Vulkan error.
+		 */
+		[[nodiscard]] VkResult uploadSceneTextures() {
+			auto &renderer = static_cast<Renderer &>(*this);
+			for (TextureImage &texture : renderer.objectTextures) { texture.cleanup(); }
+			renderer.defaultObjectTexture.cleanup();
+			renderer.uploadedTextures_.clear();
+
+			constexpr std::array opaqueWhitePixel{std::byte{255U}, std::byte{255U}, std::byte{255U}, std::byte{255U}};
+			VkResult result = renderer.defaultObjectTexture.create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, std::span{opaqueWhitePixel}, VkExtent2D{.width = 1U, .height = 1U});
+			if (result != VK_SUCCESS) { return result; }
+			const std::size_t textureCount{std::min(renderer.scene.textures.size(), kMaxSceneTextures)};
+			for (std::size_t index{}; index < textureCount; ++index) {
+				result = renderer.objectTextures[index].create(renderer.physicalDevice.physicalDevice, renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool, renderer.scene.textures[index]);
+				if (result != VK_SUCCESS) { return result; }
+			}
+
+			std::array<VkDescriptorImageInfo, kMaxSceneTextures> images{};
+			for (std::size_t index{}; index < kMaxSceneTextures; ++index) {
+				const TextureImage &texture = index < textureCount ? renderer.objectTextures[index] : renderer.defaultObjectTexture;
+				images[index] = VkDescriptorImageInfo{.sampler = texture.textureSampler, .imageView = texture.imageView, .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+			}
+			for (std::uint32_t frame{}; frame < Renderer::framesInFlight; ++frame) {
+				result = renderer.descriptorSets.writeObjectTextures(frame, images);
+				if (result != VK_SUCCESS) { return result; }
+			}
+			renderer.uploadedTextures_.assign(renderer.scene.textures.begin(), renderer.scene.textures.begin() + static_cast<std::ptrdiff_t>(textureCount));
 			return VK_SUCCESS;
 		}
 
@@ -242,11 +267,8 @@ export namespace vve::simple {
 			if (!renderer.sceneResourcesDirty_) { return VK_SUCCESS; }
 			if (renderer.device.device == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-			const bool missingTextureResource = renderer.scene.baseColorTexture
-				? renderer.objectTexture.imageView == VK_NULL_HANDLE
-				: renderer.defaultObjectTexture.imageView == VK_NULL_HANDLE;
-			const bool textureChanged = renderer.scene.baseColorTexture != renderer.uploadedBaseColorTexture_ ||
-				missingTextureResource;
+			const bool textureChanged = renderer.defaultObjectTexture.imageView == VK_NULL_HANDLE ||
+				!std::ranges::equal(renderer.scene.textures | std::views::take(kMaxSceneTextures), renderer.uploadedTextures_);
 			const bool geometryChanged = !renderer.sceneGeometryDirty_.empty();
 			if (renderer.sceneRequiresFullUpload_ || textureChanged || geometryChanged) {
 				const VkResult idle = vkDeviceWaitIdle(renderer.device.device);
@@ -255,28 +277,7 @@ export namespace vve::simple {
 
 			// Descriptor images can be replaced only after in-flight frames stop referencing them.
 			if (textureChanged) {
-				renderer.objectTexture.cleanup();
-				renderer.defaultObjectTexture.cleanup();
-				VkResult result{VK_SUCCESS};
-				if (renderer.scene.baseColorTexture) {
-					result = renderer.objectTexture.create(renderer.physicalDevice.physicalDevice,
-						renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool,
-						*renderer.scene.baseColorTexture);
-				} else {
-					constexpr std::array opaqueWhitePixel{
-						std::byte{255U}, std::byte{255U}, std::byte{255U}, std::byte{255U}};
-					result = renderer.defaultObjectTexture.create(renderer.physicalDevice.physicalDevice,
-						renderer.device.device, renderer.device.graphicsQueue, renderer.commandPool.commandPool,
-						std::span{opaqueWhitePixel}, VkExtent2D{.width = 1U, .height = 1U});
-				}
-				if (result != VK_SUCCESS) { return result; }
-				const TextureImage &texture = renderer.scene.baseColorTexture
-					? renderer.objectTexture : renderer.defaultObjectTexture;
-				for (std::uint32_t frame{}; frame < Renderer::framesInFlight; ++frame) {
-					result = renderer.descriptorSets.writeObjectTexture(frame, texture);
-					if (result != VK_SUCCESS) { return result; }
-				}
-				renderer.uploadedBaseColorTexture_ = renderer.scene.baseColorTexture;
+				if (const VkResult result = uploadSceneTextures(); result != VK_SUCCESS) { return result; }
 			}
 
 			// Additions upload only the new suffix; removals and scene replacement rebuild index alignment.
@@ -320,7 +321,7 @@ export namespace vve::simple {
 			renderer.recordedPassOrder.clear();
 			for (auto mesh = renderer.meshes.rbegin(); mesh != renderer.meshes.rend(); ++mesh) { mesh->cleanup(); }
 			renderer.meshes.clear();
-			renderer.objectTexture.cleanup();
+			for (TextureImage &texture : renderer.objectTextures) { texture.cleanup(); }
 			renderer.defaultObjectTexture.cleanup();
 			renderer.descriptorSets.cleanup();
 			if (renderer.imguiDescriptorPool_ != VK_NULL_HANDLE) {
@@ -328,7 +329,7 @@ export namespace vve::simple {
 				renderer.imguiDescriptorPool_ = VK_NULL_HANDLE;
 			}
 			renderer.descriptorPool.cleanup();
-			renderer.uploadedBaseColorTexture_.reset();
+			renderer.uploadedTextures_.clear();
 			renderer.sceneGeometryDirty_.clear();
 			renderer.sceneResourcesDirty_ = true;
 			renderer.sceneRequiresFullUpload_ = true;

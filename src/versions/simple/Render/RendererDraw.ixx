@@ -273,7 +273,7 @@ export namespace vve::simple {
 					const VkDeviceSize offsets[]{0U};
 					const Object &object = renderer.scene.objects[objectIndex];
 					if (!object.visible || (shadowPass && !object.castsShadow)) { ++objectIndex; continue; } // Shadow passes skip non-casting objects such as the sun.
-					const ObjectPushConstants pushConstants{.model = object.model, .useBaseColorTexture = object.useBaseColorTexture, .spotLightIndex = spotLightIndex, .dirLightIndex = dirLightIndex, .unlit = object.unlit ? 1U : 0U};
+					const ObjectPushConstants pushConstants{.model = object.model, .baseColorTextureIndex = object.baseColorTextureIndex, .spotLightIndex = spotLightIndex, .dirLightIndex = dirLightIndex, .unlit = object.unlit ? 1U : 0U};
 					vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, vertexBuffers, offsets);
 					vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0U, VK_INDEX_TYPE_UINT32);
 					vkCmdPushConstants(commandBuffer, activePipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0U, sizeof(ObjectPushConstants), &pushConstants);

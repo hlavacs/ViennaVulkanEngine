@@ -37,7 +37,7 @@ export namespace vve::simple {
 	/// @brief Plain per-object push-constant data matching the Slang ObjectPushConstants block layout.
 	struct ObjectPushConstants {
 		Mat4 model{};                          ///< Object-local model matrix selected before each draw call.
-		std::uint32_t useBaseColorTexture{0U}; ///< Non-zero when the object wants the optional base-color texture.
+		std::uint32_t baseColorTextureIndex{0xFFFFFFFFU}; ///< Slot in the base-color texture array, or 0xFFFFFFFF for an untextured object.
 		std::uint32_t spotLightIndex{0U};      ///< Shadow pass spot-light matrix index selected before each draw call.
 		std::uint32_t dirLightIndex{0U};       ///< Shadow pass directional-light matrix index selected before each draw call.
 		std::uint32_t unlit{0U};               ///< Non-zero renders the object in its flat base color without any lighting.

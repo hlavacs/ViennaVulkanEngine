@@ -19,6 +19,8 @@ import VEEngine.Types;
 	*/
 export namespace vve::simple {
 
+	inline constexpr std::size_t kMaxSceneTextures{8U};       ///< Base-color texture slots bound to the forward pass; mirrors the shader array size.
+	inline constexpr std::uint32_t kNoTexture{0xFFFFFFFFU};    ///< Object texture index meaning "untextured".
 	inline constexpr std::size_t kMaxShadowedSpotLights{10U}; ///< Small fixed cap for the first spot-shadow data model.
 	inline constexpr std::size_t kMaxShadowedPointLights{10U}; ///< Small fixed cap for point-shadow CPU metadata.
 	inline constexpr std::size_t kMaxDirectionalLights{10U};  ///< Directional-light cap; four cascades each occupy forty shadow-map layers.
@@ -30,7 +32,7 @@ export namespace vve::simple {
 	struct Object {
 		Mesh mesh{};                              ///< CPU geometry used by one drawable object.
 		Mat4 model{};                             ///< Model matrix placing the mesh in world space.
-		std::uint32_t useBaseColorTexture{0U};    ///< Non-zero when the object wants the optional base-color texture.
+		std::uint32_t baseColorTextureIndex{kNoTexture}; ///< Index into Scene::textures, or kNoTexture for a plain vertex-colored object.
 		bool visible{true};                       ///< True when command recording should draw this object.
 		bool castsShadow{true};                   ///< False excludes the object from every shadow depth pass.
 		bool unlit{false};                        ///< True renders the object in its flat base color without lighting.
@@ -71,7 +73,7 @@ export namespace vve::simple {
 	/// @brief Host-side scene container with drawable objects in submission order.
 	struct Scene {
 		std::vector<Object> objects{};                                ///< Drawable objects owned by this CPU scene.
-		std::optional<std::filesystem::path> baseColorTexture{};      ///< Optional scene base-color image path for future texture uploads.
+		std::vector<std::filesystem::path> textures{};                ///< Unique base-color image paths indexed by Object::baseColorTextureIndex (at most kMaxSceneTextures).
 		std::vector<PointLight> pointLights{};                        ///< Capped point lights for upcoming cube-shadow support.
 		PointLight pointLight{};                                      ///< Active point light driving shading.
 		std::vector<DirectionalLight> directionalLights{};            ///< Capped directional lights for upcoming multi-light support.

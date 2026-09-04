@@ -345,12 +345,12 @@ export namespace vve::simple {
 			for (const VkDescriptorSetLayoutBinding &binding : descriptorBindings) {
 				auto poolSize = std::ranges::find(poolSizes, binding.descriptorType, &VkDescriptorPoolSize::type);
 				if (poolSize == poolSizes.end()) { poolSize = poolSizes.insert(poolSize, VkDescriptorPoolSize{.type = binding.descriptorType}); }
-				poolSize->descriptorCount += maxSets;
+				poolSize->descriptorCount += maxSets * binding.descriptorCount; // Array bindings need one descriptor per element.
 			}
 			if (poolSizes.size() != 2U) { return VK_ERROR_INITIALIZATION_FAILED; }
 			const auto uniformPoolSize = std::ranges::find(poolSizes, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &VkDescriptorPoolSize::type);
 			const auto samplerPoolSize = std::ranges::find(poolSizes, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &VkDescriptorPoolSize::type);
-			if (uniformPoolSize == poolSizes.end() || samplerPoolSize == poolSizes.end() || uniformPoolSize->descriptorCount != maxSets || samplerPoolSize->descriptorCount != maxSets * 6U) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (uniformPoolSize == poolSizes.end() || samplerPoolSize == poolSizes.end() || uniformPoolSize->descriptorCount != maxSets) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkDescriptorPoolCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
@@ -375,7 +375,7 @@ export namespace vve::simple {
 		VkDevice device{VK_NULL_HANDLE};                         ///< Borrowed device used for allocation and updates.
 		VkDescriptorPool descriptorPool{VK_NULL_HANDLE};          ///< Borrowed pool that owns the allocations; sets are freed implicitly with the pool.
 		Vector<VkDescriptorSetLayoutBinding> descriptorBindings{}; ///< Slang-reflected set-0 bindings used when writing descriptors.
-		std::optional<std::uint32_t> objectTextureBinding{};      ///< Reflected set-0 binding for the object base-color texture.
+		std::optional<std::uint32_t> objectTextureBinding{};      ///< Reflected set-0 binding for the object base-color texture array.
 		std::array<std::optional<std::uint32_t>, 5U> shadowSamplerBindings{}; ///< Reflected set-0 bindings for all shadow samplers.
 		std::vector<VkDescriptorSet> descriptorSets{};            ///< Owned descriptor sets allocated one per frame.
 
@@ -617,28 +617,24 @@ export namespace vve::simple {
 		}
 
 		/**
-			* @brief Writes one frame descriptor set with its reserved binding-2 sampled object texture.
+			* @brief Writes the whole object base-color texture array of one frame descriptor set.
 			*
 			* @param frameIndex Frame set index to update.
-			* @param texture Object base-color texture bound to the reflected Slang parameter binding.
+			* @param images One valid sampler/view pair per array element, in slot order.
 			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
 		*/
-		[[nodiscard]] VkResult writeObjectTexture(std::uint32_t frameIndex, const TextureImage &texture) {
-			if (frameIndex >= descriptorSets.size() || !objectTextureBinding || texture.imageView == VK_NULL_HANDLE || texture.textureSampler == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+		[[nodiscard]] VkResult writeObjectTextures(std::uint32_t frameIndex, std::span<const VkDescriptorImageInfo> images) {
+			if (frameIndex >= descriptorSets.size() || !objectTextureBinding || images.empty()) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (std::ranges::any_of(images, [](const VkDescriptorImageInfo &image) { return image.imageView == VK_NULL_HANDLE || image.sampler == VK_NULL_HANDLE; })) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-			const VkDescriptorImageInfo imageInfo{
-				.sampler = texture.textureSampler,
-				.imageView = texture.imageView,
-				.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-			};
 			const VkWriteDescriptorSet write{
 				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
 				.dstSet = descriptorSets[frameIndex],
 				.dstBinding = *objectTextureBinding,
 				.dstArrayElement = 0U,
-				.descriptorCount = 1U,
+				.descriptorCount = static_cast<std::uint32_t>(images.size()),
 				.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.pImageInfo = &imageInfo,
+				.pImageInfo = images.data(),
 			};
 
 			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);

@@ -358,6 +358,11 @@ export namespace vve::simple {
 				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
 				.dynamicRendering = VK_TRUE,
 			};
+			VkPhysicalDeviceFeatures supportedFeatures{};
+			vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
+			const VkPhysicalDeviceFeatures enabledFeatures{
+				.shaderSampledImageArrayDynamicIndexing = supportedFeatures.shaderSampledImageArrayDynamicIndexing, ///< Fragment shader indexes the base-color texture array by push constant.
+			};
 			const auto extensions = std::array<char const *, 1U>{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 			const VkDeviceCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -366,6 +371,7 @@ export namespace vve::simple {
 				.pQueueCreateInfos = queueInfos.data(),
 				.enabledExtensionCount = static_cast<std::uint32_t>(extensions.size()),
 				.ppEnabledExtensionNames = extensions.data(),
+				.pEnabledFeatures = &enabledFeatures,
 			};
 
 			VkDevice rawDevice{};

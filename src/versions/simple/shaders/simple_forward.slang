@@ -52,7 +52,7 @@ struct FrameUniforms
 struct ObjectPushConstants
 {
     float4x4 model;              ///< Object-local model matrix selected before each draw call.
-    uint useBaseColorTexture;    ///< Non-zero when the object wants the optional base-color texture.
+    uint baseColorTextureIndex;  ///< Slot in baseColorTextures, or kNoTexture for a plain vertex-colored object.
     uint spotLightIndex;         ///< Shadow pass spot-light matrix index selected before each draw call.
     uint dirLightIndex;          ///< Shadow pass directional-light matrix index selected before each draw call.
     uint unlit;                  ///< Non-zero renders the object in its flat base color without any lighting.
@@ -91,8 +91,11 @@ ConstantBuffer<FrameUniforms> frame; ///< Frame-wide camera constants.
 [[vk::binding(1, 0)]]
 Sampler2D shadowMap; ///< Directional light depth map sampled by the forward fragment stage.
 
+static const uint kMaxSceneTextures = 8;       ///< Base-color texture slots; mirrors vve::simple::kMaxSceneTextures.
+static const uint kNoTexture = 0xFFFFFFFFu;    ///< Push-constant index of an untextured object.
+
 [[vk::binding(2, 0)]]
-Sampler2D baseColorTexture; ///< Optional object base-color texture sampled only when the push constant enables it.
+Sampler2D baseColorTextures[kMaxSceneTextures]; ///< Object base-color textures selected per draw by push constant.
 
 [[vk::binding(4, 0)]]
 Sampler2D spotShadowMap; ///< Spot light depth map sampled by the forward fragment stage.
@@ -281,8 +284,8 @@ FragmentOutput fragmentMain(FragmentInput input)
         }
     }
     float3 baseColor = input.color;                                      ///< Vertex color remains the default material color.
-    if (object.useBaseColorTexture != 0) {
-        baseColor *= baseColorTexture.Sample(input.texCoord).rgb;        ///< Optional texture modulates the material before lighting.
+    if (object.baseColorTextureIndex != kNoTexture) {
+        baseColor *= baseColorTextures[object.baseColorTextureIndex].Sample(input.texCoord).rgb; ///< The object's texture modulates the material before lighting.
     }
     if (object.unlit != 0) {
         output.color = float4(baseColor, 1.0);                           ///< Emissive-style objects such as the sun keep a constant color.

@@ -528,7 +528,7 @@ namespace {
       vve::Vec3{-0.5F, -0.5F, -0.5F}, vve::Vec3{0.5F, 0.5F, 0.5F},
       std::filesystem::path{VVE_TEST_CRATE_TEXTURE});
    if (!cuboid || !engine.renderFrame() || renderer.meshes.size() != 2U ||
-       renderer.scene.objects.size() != 2U || renderer.objectTexture.extent.width == 0U) {
+       renderer.scene.objects.size() != 2U || renderer.objectTextures[0].extent.width == 0U) {
       return false;
    }
 

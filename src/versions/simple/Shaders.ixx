@@ -45,6 +45,7 @@ export namespace vve::simple {
 		std::string type{};													///< Slang binding type when available.
 		std::uint32_t set{0};												///< Reflected Vulkan descriptor set/register space.
 		std::uint32_t binding{0};											///< Reflected Vulkan descriptor binding/register index.
+		std::uint32_t count{1};												///< Descriptor array element count of a binding range.
 	};
 
 	/// @brief Shader entry-point reflection summary.
@@ -257,7 +258,8 @@ export namespace vve::simple {
 				.category = "binding_range",
 				.type = bindingTypeName(type_layout->getBindingRangeType(range)),
 				.set = static_cast<std::uint32_t>(type_layout->getBindingRangeDescriptorSetIndex(range)),
-				.binding = static_cast<std::uint32_t>(type_layout->getBindingRangeFirstDescriptorRangeIndex(range))});
+				.binding = static_cast<std::uint32_t>(type_layout->getBindingRangeFirstDescriptorRangeIndex(range)),
+				.count = static_cast<std::uint32_t>(std::max<SlangInt>(type_layout->getBindingRangeBindingCount(range), 1))});
 		}
 	}
 
@@ -459,7 +461,7 @@ export namespace vve::simple {
 			bindings.push_back(VkDescriptorSetLayoutBinding{
 				.binding = *descriptorBinding,
 				.descriptorType = binding.type == "constant_buffer" ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-				.descriptorCount = 1U,
+				.descriptorCount = binding.count,
 				.stageFlags = stages,
 				.pImmutableSamplers = nullptr});
 		}

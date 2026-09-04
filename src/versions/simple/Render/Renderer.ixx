@@ -62,8 +62,8 @@ export namespace vve::simple {
 		ShadowMap spotShadowMap{};             ///< Owned spot shadow-map image reserved for later shadow rendering.
 		ShadowMap spotShadowArray{};           ///< Owned spot shadow-map texture array reserved for future multi-light shadows.
 		ShadowMap pointShadowArray{};          ///< Owned point shadow-map texture array with six layers per shadowed point light.
-		TextureImage objectTexture{};           ///< Owned optional base-color texture bound only when the loaded scene requests one.
-		TextureImage defaultObjectTexture{};    ///< Owned opaque-white texture bound when the scene has no base-color texture.
+		std::array<TextureImage, kMaxSceneTextures> objectTextures{}; ///< Owned base-color textures, one per Scene::textures entry.
+		TextureImage defaultObjectTexture{};    ///< Owned opaque-white texture filling unused texture slots.
 		VulkanDescriptorSetLayout descriptorSetLayout{}; ///< Owned frame-uniform and shadow-map descriptor-set layout.
 		VulkanPipelineLayout pipelineLayout{}; ///< Owned graphics pipeline layout using the frame descriptor set.
 		VulkanShaderModule vertShaderModule{}; ///< Owned forward vertex shader module.
@@ -160,14 +160,21 @@ export namespace vve::simple {
 			sceneRequiresFullUpload_ = true;
 		}
 
-		/// @brief Appends one backend object to the renderer-owned CPU scene mirror.
+		/// @brief Appends one backend object to the renderer-owned CPU scene mirror; the texture path is deduplicated into Scene::textures.
 		void appendObject(Mesh backend_mesh, Mat4 model, std::optional<std::string> base_color_texture_source) {
-			const bool use_texture = base_color_texture_source.has_value();
-			if (use_texture) { scene.baseColorTexture = *std::move(base_color_texture_source); }
-			scene.objects.push_back(Object{.mesh = std::move(backend_mesh),
-													 .model = model,
-													 .useBaseColorTexture = use_texture ? 1U : 0U});
-			 sceneResourcesDirty_ = true;
+			std::uint32_t textureIndex{kNoTexture};
+			if (base_color_texture_source) {
+				const std::filesystem::path path{*base_color_texture_source};
+				const auto found = std::ranges::find(scene.textures, path);
+				if (found != scene.textures.end()) {
+					textureIndex = static_cast<std::uint32_t>(found - scene.textures.begin());
+				} else if (scene.textures.size() < kMaxSceneTextures) {
+					textureIndex = static_cast<std::uint32_t>(scene.textures.size());
+					scene.textures.push_back(path);
+				}
+			}
+			scene.objects.push_back(Object{.mesh = std::move(backend_mesh), .model = model, .baseColorTextureIndex = textureIndex});
+			sceneResourcesDirty_ = true;
 		}
 
 		/// @brief Replaces positions for one fixed-topology backend mesh.
@@ -220,7 +227,7 @@ export namespace vve::simple {
 		void *guiSystem_{nullptr}; ///< Non-owning, type-erased GUI system pointer reserved for later GUI integration.
 		std::function<void(VkCommandBuffer)> guiRecord_; ///< Optional GUI recorder invoked during the forward color pass.
 		bool gpuDebugReadback_{false}; ///< False during normal rendering to avoid per-frame GPU stalls.
-		std::optional<std::filesystem::path> uploadedBaseColorTexture_{}; ///< Texture currently bound to every textured object descriptor.
+		std::vector<std::filesystem::path> uploadedTextures_{}; ///< Scene::textures as of the last GPU texture upload.
 		bool sceneResourcesDirty_{true}; ///< CPU scene topology or texture changed after the last GPU synchronization.
 		bool sceneRequiresFullUpload_{true}; ///< Removal or replacement requires rebuilding index-aligned GPU meshes.
 		std::set<std::size_t> sceneGeometryDirty_{}; ///< Existing GPU meshes requiring a vertex-buffer refresh.
