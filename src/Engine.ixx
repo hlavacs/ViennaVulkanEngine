@@ -1,6 +1,6 @@
 export module VEEngine;
 import std;
-import VEEngine.Simple;
+export import :Implementation;
 export import VEEngine.Error;
 export import VEEngine.Math;
 export import VEEngine.Handle;
@@ -18,7 +18,6 @@ export import :Gui;
 
 export namespace vve {
 
-	inline constexpr std::string_view engineImplementationNamespaceName{"simple"};	///< Active implementation namespace name.
 
 	struct WindowFrameInfo {
 		WindowHandle handle{};								///< Runtime window handle.
@@ -65,10 +64,10 @@ export namespace vve {
 		[[nodiscard]] auto engineVersionMajor(const EngineState &state)								-> std::uint32_t;
 		[[nodiscard]] auto engineVersionName(const EngineState &state)								-> std::string_view;
 		[[nodiscard]] auto engineEcs(EngineState &state)												-> ECS &;
-		[[nodiscard]] auto engineAssets(EngineState &state)											-> VVE_ENGINE_IMPLEMENTATION_NAMESPACE::AssetSystem &;
-		[[nodiscard]] auto engineGui(EngineState &state)												-> VVE_ENGINE_IMPLEMENTATION_NAMESPACE::GuiSystem &;
-		[[nodiscard]] auto engineWindowSystem(EngineState &state)									-> VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowSystem &;
-		[[nodiscard]] auto engineRenderSystem(EngineState &state)									-> VVE_ENGINE_IMPLEMENTATION_NAMESPACE::RenderSystem &;
+		[[nodiscard]] auto engineAssets(EngineState &state)											-> detail::AssetSystemImpl &;
+		[[nodiscard]] auto engineGui(EngineState &state)												-> detail::GuiSystemImpl &;
+		[[nodiscard]] auto engineWindowSystem(EngineState &state)									-> detail::WindowSystemImpl &;
+		[[nodiscard]] auto engineRenderSystem(EngineState &state)									-> detail::RenderSystemImpl &;
 		[[nodiscard]] auto engineInit(EngineState &state)											-> std::expected<void, Error>;
 		[[nodiscard]] auto engineStep(EngineState &state)											-> std::expected<FrameStatus, Error>;
 		[[nodiscard]] auto engineWindowFrame(EngineState &state)										-> WindowFrameData;

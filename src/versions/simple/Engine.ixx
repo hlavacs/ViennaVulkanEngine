@@ -2,13 +2,6 @@ module;
 
 #include <vulkan/vulkan_core.h>
 
-#ifndef VVE_ENGINE_IMPLEMENTATION_NAMESPACE
-#define VVE_ENGINE_IMPLEMENTATION_NAMESPACE simple
-#endif
-
-#define VVE_DETAIL_STRINGIFY_IMPL(value) #value
-#define VVE_DETAIL_STRINGIFY(value) VVE_DETAIL_STRINGIFY_IMPL(value)
-
 export module VEEngine.Simple;
 import std;
 export import VEEngine.Simple.Types;

@@ -1,6 +1,5 @@
 module VEEngine;
 import :Window;
-import VEEngine.Simple;
 
 namespace vve {
 

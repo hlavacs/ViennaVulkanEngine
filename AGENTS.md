@@ -25,15 +25,14 @@ User programs should only call into the facade layer. User programs are not allo
 
 The engine implementations are situated in the src/versions folder and are completely isolated from each other. This is the implementation layer. The meta engine can be compiled to contain all engine implementations or just one. Each game engine is isolated with its own namespace. For instance, the simple engine lives in the namespace vve::simple, source files are located in folder src/versions/simple.
 
-When compiling their game, game apps are compiled and linked against the meta engine. Which engine implementation is then used is defined by the define VVE_ENGINE_IMPLEMENTATION_NAMESPACE. This define can be done as compiler parameter or as compiler präprocessor directive #define.
-For instance, defining VVE_ENGINE_IMPLEMENTATION_NAMESPACE to be simple results in using the engine implementation living in namespace vve::simple. Currently only the simple engine exists; earlier implementations (v3, v4, v5) were removed as dead code.
+When compiling their game, game apps are compiled and linked against the meta engine. Which engine implementation is used is selected at configure time by the CMake variable VVE_ENGINE_IMPLEMENTATION_NAMESPACE. It names one file src/implementations/<name>.ixx (the module partition VEEngine:Implementation) and one directory src/versions/<name>/. The partition is the only facade file that imports the implementation module; it exports type aliases vve::detail::EngineImpl, AssetSystemImpl, RenderSystemImpl, WindowSystemImpl, WindowImpl, InputStateImpl, GuiSystemImpl, WindowsImpl, WindowDescImpl and WindowFrameDataImpl plus vve::engineImplementationNamespaceName. No other facade file may name a concrete implementation namespace. Currently only the simple engine exists; earlier implementations (v3, v4, v5) were removed as dead code.
 
 Facades are defined in a facade pattern through wrapper classes and functions. Every class that is seen by the user lives in the facade layer as a wrapper. Wrappers have exactly one private member variable impl_ which is of type 
 ```cpp
-  using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::<WRAPPED_CLASS>;
-  Impl &impl_{};
+  using Impl = detail::<WRAPPED_CLASS>Impl;
+  Impl &impl_;
 ```
-where wrapped class is a specific class of the implementation layer.
+where the alias is provided by the selected src/implementations/<name>.ixx and refers to a specific class of the implementation layer.
 Wrappers mimic each method of the implementation, receive the same parameters and then forward them to the implementation. This way the contract is enforced and restricted to the allowed interface.
 
 A facade wrapper class should be one class declaration and function definitions at the same time.

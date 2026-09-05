@@ -29,17 +29,15 @@ if(NOT VVE_GENERATED_KOSMICKRISP_ICD_MANIFEST STREQUAL "")
       PRIVATE VVE_KOSMICKRISP_ICD_MANIFEST="${VVE_KOSMICKRISP_ICD_MANIFEST_COMPILE_PATH}")
 endif()
 
-set(VVE_ENGINE_IMPLEMENTATION_NAMESPACE "simple" CACHE STRING "Engine implementation namespace exposed by the facade" FORCE)
+# The facade binds to one implementation through src/implementations/<name>.ixx (module partition
+# VEEngine:Implementation) plus the module set in src/versions/<name>/. Nothing else in src/ names it.
+set(VVE_ENGINE_IMPLEMENTATION_NAMESPACE "simple" CACHE STRING "Engine implementation compiled into the facade")
 set_property(CACHE VVE_ENGINE_IMPLEMENTATION_NAMESPACE PROPERTY STRINGS "simple")
-if(NOT VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
-    message(FATAL_ERROR "Only the simple engine implementation is supported; v3, v4, and v5 are retired.")
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/implementations/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}.ixx"
+   OR NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/versions/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}/CMakeLists.txt")
+    message(FATAL_ERROR "Unknown engine implementation '${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}': "
+        "expected src/implementations/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}.ixx and src/versions/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}/.")
 endif()
-target_compile_definitions(ViennaVulkanEngine
-    PUBLIC
-        VVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple
-        VVE_ENGINE_IMPLEMENTATION_IS_SIMPLE
-        VVE_ENGINE_HAS_SIMPLE
-)
 
 find_package(assimp CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
@@ -78,6 +76,7 @@ target_sources(ViennaVulkanEngine
             RenderSystem.ixx
             Gui.ixx
             Engine.ixx
+            implementations/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}.ixx
     PRIVATE
         Assets.cpp
         Engine.cpp
@@ -96,7 +95,7 @@ extern "C" int _Avx2WmemEnabled = 0;
     target_sources(ViennaVulkanEngine INTERFACE "${VVE_MSVC_STD_MODULE_COMPAT_SOURCE}")
 endif()
 
-add_subdirectory("versions/simple")
+add_subdirectory("versions/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}")
 
 target_link_libraries(ViennaVulkanEngine
     PUBLIC

@@ -1,6 +1,6 @@
 export module VEEngine:Window;
 import std;
-import VEEngine.Simple;
+import :Implementation;
 import VEEngine.Types;
 import VEEngine.Vector;
 
@@ -125,7 +125,7 @@ export namespace vve {
 	private:
 		friend class WindowSystem;
 
-		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::InputState;	///< Wrapped implementation class.
+		using Impl = detail::InputStateImpl;	///< Wrapped implementation class.
 		explicit InputState(Impl &implementation) noexcept;
 
 		Impl &impl_;	///< Non-owning reference to the wrapped implementation.
@@ -200,7 +200,7 @@ export namespace vve {
 	private:
 		friend class WindowSystem;
 
-		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Window;	///< Wrapped implementation class.
+		using Impl = detail::WindowImpl;	///< Wrapped implementation class.
 		explicit Window(const Impl &implementation) noexcept;
 
 		const Impl &impl_;	///< Non-owning reference to the wrapped implementation.
@@ -232,7 +232,7 @@ export namespace vve {
 	private:
 		template <typename... TSystems> friend class Engine;
 
-		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowSystem;	///< Wrapped implementation class.
+		using Impl = detail::WindowSystemImpl;	///< Wrapped implementation class.
 		explicit WindowSystem(Impl &implementation) noexcept;
 
 		Impl &impl_;	///< Non-owning reference to the wrapped implementation.

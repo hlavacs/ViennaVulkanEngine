@@ -1,6 +1,6 @@
 export module VEEngine:RenderSystem;
 import std;
-import VEEngine.Simple;
+import :Implementation;
 import VEEngine.Error;
 import VEEngine.Types;
 
@@ -131,7 +131,7 @@ export namespace vve {
 	private:
 		template <typename... TSystems> friend class Engine;
 
-		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::RenderSystem;	///< Wrapped implementation class.
+		using Impl = detail::RenderSystemImpl;	///< Wrapped implementation class.
 		explicit RenderSystem(Impl &implementation) noexcept;
 
 		Impl &impl_;	///< Non-owning reference to the wrapped implementation.

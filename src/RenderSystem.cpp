@@ -1,6 +1,5 @@
 module VEEngine;
 import :RenderSystem;
-import VEEngine.Simple;
 
 namespace vve {
 

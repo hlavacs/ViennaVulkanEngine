@@ -27,10 +27,16 @@ VEEngine.Simple.Scene . VEEngine.Simple.Mesh . VEEngine.Simple.Types        plai
 
 The import graph is acyclic and strictly downward. The standalone modules (Types, Mesh, Scene,
 Vulkan, Renderer) cannot see `VEEngine.Simple` at all, which lets `SimpleForwardRendererTests`
-drive the renderer directly, and it is what the facade's `VVE_ENGINE_IMPLEMENTATION_NAMESPACE`
-switch relies on: the facade only ever names `Impl &`, and `EngineState` (a `unique_ptr` with an
-out-of-line deleter) keeps the implementation type out of the exported interface. Only one
-implementation exists, so today the switch is a design intent, not a feature.
+drive the renderer directly.
+
+The facade binds to an implementation in exactly one place: `src/implementations/<name>.ixx`, the
+module partition `VEEngine:Implementation`, selected by the CMake variable
+`VVE_ENGINE_IMPLEMENTATION_NAMESPACE` together with `src/versions/<name>/`. That partition imports
+the implementation module and exports the aliases `vve::detail::RenderSystemImpl` etc.; every
+wrapper holds `Impl &impl_` with `using Impl = detail::<Class>Impl`, and `EngineState` (a
+`unique_ptr` with an out-of-line deleter) keeps the engine type out of the exported interface. No
+other facade file names an implementation namespace, so a second engine is a new adapter file plus
+a new `src/versions/` directory. Only `simple` exists today.
 
 Module unit styles in use:
 
@@ -41,6 +47,8 @@ Module unit styles in use:
   `RenderSystemObjects.cpp`, `RendererResources.cpp`, `RendererShadowPrep.cpp`, `RendererDraw.cpp`,
   `RendererDebug.cpp`) carry the large member-function definitions and are listed as plain PRIVATE
   sources in CMake.
+- `src/implementations/simple.ixx` (`VEEngine:Implementation`) is the facade's only link to the
+  implementation module (see above).
 - `VEEngine.Simple.Types` is the single vocabulary module of the implementation. `vve::simple` is
   nested in `vve`, so the facade names (Error, Vector, TypedHandle, Transform, ...) are found by
   ordinary lookup; only the math vocabulary (`Vec3`, `add`, `lookAt`, ...) is aliased there.

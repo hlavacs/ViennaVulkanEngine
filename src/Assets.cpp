@@ -1,6 +1,5 @@
 module VEEngine;
 import :Assets;
-import VEEngine.Simple;
 
 namespace vve {
 

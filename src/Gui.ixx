@@ -1,6 +1,6 @@
 export module VEEngine:Gui;
 import std;
-import VEEngine.Simple;
+import :Implementation;
 
 /**
 	* @file
@@ -20,7 +20,7 @@ export namespace vve {
 	private:
 		template <typename... TSystems> friend class Engine;
 
-		using Impl = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::GuiSystem;	///< Wrapped implementation class.
+		using Impl = detail::GuiSystemImpl;	///< Wrapped implementation class.
 		explicit GuiSystem(Impl &implementation) noexcept;
 
 		Impl &impl_;	///< Non-owning reference to the wrapped implementation.

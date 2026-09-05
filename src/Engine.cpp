@@ -1,6 +1,5 @@
 module VEEngine;
 import std;
-import VEEngine.Simple;
 
 namespace vve {
 
@@ -10,17 +9,17 @@ namespace vve {
 			template <typename... TOptions>
 			explicit EngineState(TOptions &&...options) : impl{std::forward<TOptions>(options)...} {}
 
-			VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Engine impl{};	///< Selected engine implementation owned by the facade.
+			EngineImpl impl{};	///< Selected engine implementation owned by the facade.
 		};																///< Concrete state hidden from the exported interface.
 
 		/// @brief Converts facade startup windows into selected implementation descriptors.
 		[[nodiscard]] auto implementationWindows(const std::vector<EngineWindowSetup> &windows)
-			-> VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Windows {
-			auto result = VVE_ENGINE_IMPLEMENTATION_NAMESPACE::Windows{};
+			-> detail::WindowsImpl {
+			auto result = detail::WindowsImpl{};
 			result.value.clear();
 			result.value.reserve(windows.size());
 			for (const auto &window : windows) {
-				result.value.push_back(VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowDesc{
+				result.value.push_back(detail::WindowDescImpl{
 					.id = window.id,
 					.title = window.title,
 					.extent = window.extent,
@@ -35,7 +34,7 @@ namespace vve {
 		}
 
 		/// @brief Converts selected implementation window snapshots into facade frame data.
-		[[nodiscard]] auto facadeWindowFrame(const VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData &frame)
+		[[nodiscard]] auto facadeWindowFrame(const detail::WindowFrameDataImpl &frame)
 			-> WindowFrameData {
 			auto result = WindowFrameData{};
 			result.windows.reserve(frame.windows.size());
@@ -77,16 +76,16 @@ namespace vve {
 		ECS &engineEcs(EngineState &state) { return state.impl.ecs(); }
 
 		/// @brief Returns the selected asset system.
-		VVE_ENGINE_IMPLEMENTATION_NAMESPACE::AssetSystem &engineAssets(EngineState &state) { return state.impl.assets(); }
+		detail::AssetSystemImpl &engineAssets(EngineState &state) { return state.impl.assets(); }
 
 		/// @brief Returns the selected GUI system.
-		VVE_ENGINE_IMPLEMENTATION_NAMESPACE::GuiSystem &engineGui(EngineState &state) { return state.impl.gui(); }
+		detail::GuiSystemImpl &engineGui(EngineState &state) { return state.impl.gui(); }
 
 		/// @brief Returns the selected window system.
-		VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowSystem &engineWindowSystem(EngineState &state) { return state.impl.windowSystem(); }
+		detail::WindowSystemImpl &engineWindowSystem(EngineState &state) { return state.impl.windowSystem(); }
 
 		/// @brief Returns the selected render system.
-		VVE_ENGINE_IMPLEMENTATION_NAMESPACE::RenderSystem &engineRenderSystem(EngineState &state) { return state.impl.renderSystem(); }
+		detail::RenderSystemImpl &engineRenderSystem(EngineState &state) { return state.impl.renderSystem(); }
 
 		/// @brief Initializes the selected engine implementation.
 		std::expected<void, Error> engineInit(EngineState &state) { return state.impl.init(); }
@@ -96,7 +95,7 @@ namespace vve {
 
 		/// @brief Captures facade window frame data from the selected implementation.
 		WindowFrameData engineWindowFrame(EngineState &state) {
-			return facadeWindowFrame(VVE_ENGINE_IMPLEMENTATION_NAMESPACE::WindowFrameData{
+			return facadeWindowFrame(detail::WindowFrameDataImpl{
 				.windows = state.impl.windowSystem().snapshot()});
 		}
 
