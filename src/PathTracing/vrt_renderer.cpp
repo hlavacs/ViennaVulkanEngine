@@ -33,6 +33,8 @@ namespace vve {
         delete instantRadiosityDescriptors;
         delete mortonCodeDescriptors;
         delete pdfEstimationDescriptors;
+        delete scoringDescriptors;
+        delete limitDescriptors;
         delete sortDescriptorsAB;
         delete sortDescriptorsBA;
         delete histogramDescriptorsAB;
@@ -102,6 +104,7 @@ namespace vve {
 
         delete vplCache;
         delete vplCacheShading;
+        delete pixelUsage;
 
         delete swapchain;
         vkDestroyDevice(device, nullptr);
@@ -247,6 +250,13 @@ namespace vve {
         vplGenerationDescriptors->addDescriptorInput(normalTarget->getDescriptorInput(0, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         vplGenerationDescriptors->addDescriptorInput(positionTarget->getDescriptorInput(1, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
         vplGenerationDescriptors->addDescriptorInput(vplCacheShading->getDescriptorInput(2, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        vplGenerationDescriptors->addDescriptorInput(vplLimits->getDescriptorInput(3, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        vplGenerationDescriptors->addDescriptorInput(sort_indices_A->getDescriptorInput(4, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        vplGenerationDescriptors->addDescriptorInput(mutationPixelInedx->getDescriptorInput(5, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        vplGenerationDescriptors->addDescriptorInput(RtTarget->getDescriptorInput(6, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
         
         vplGenerationDescriptors->finalize();
@@ -435,6 +445,11 @@ namespace vve {
 
         restirLVC_spatial_descriptors->addDescriptorInput(reservoirLVC_B->getDescriptorInput(9, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
 
+        restirLVC_spatial_descriptors->addDescriptorInput(pixelUsage->getDescriptorInput(10, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+
+        restirLVC_spatial_descriptors->addDescriptorInput(mutationPixelInedx->getDescriptorInput(11, VK_SHADER_STAGE_RAYGEN_BIT_KHR));
+        
+
         restirLVC_spatial_descriptors->finalize();
         restirLVC_spatial_descriptors->update();
     }
@@ -532,7 +547,43 @@ namespace vve {
 
         pdfEstimationDescriptors->addDescriptorInput(sort_elements_A->getDescriptorInput(4, VK_SHADER_STAGE_COMPUTE_BIT));
 
+        pdfEstimationDescriptors->addDescriptorInput(pdfNearest->getDescriptorInput(5, VK_SHADER_STAGE_COMPUTE_BIT));
+        
+
         pdfEstimationDescriptors->finalize();
+    }
+
+
+    void RendererRayTraced::createScoringDescriptors() {
+        scoringDescriptors = new DescriptorManager(device);
+
+        scoringDescriptors->addDescriptorInput(sort_elements_A->getDescriptorInput(0, VK_SHADER_STAGE_COMPUTE_BIT));
+        scoringDescriptors->addDescriptorInput(sort_indices_A->getDescriptorInput(1, VK_SHADER_STAGE_COMPUTE_BIT));
+
+        PerFrameDescriptorPlacment* uniformIRBufferDescriptors = getInstantRadiosityUniformBufferDescriptorInput(2, VK_SHADER_STAGE_COMPUTE_BIT);
+        scoringDescriptors->addDescriptorInput(uniformIRBufferDescriptors);
+
+        scoringDescriptors->addDescriptorInput(vplLimits->getDescriptorInput(3, VK_SHADER_STAGE_COMPUTE_BIT));
+
+        scoringDescriptors->addDescriptorInput(pixelUsage->getDescriptorInput(4, VK_SHADER_STAGE_COMPUTE_BIT));
+
+        scoringDescriptors->addDescriptorInput(vplCacheShading->getDescriptorInput(5, VK_SHADER_STAGE_COMPUTE_BIT));
+
+        scoringDescriptors->addDescriptorInput(pdfNearest->getDescriptorInput(6, VK_SHADER_STAGE_COMPUTE_BIT));
+
+        scoringDescriptors->finalize();
+    }
+
+    void RendererRayTraced::createLimitDescriptors() {
+        limitDescriptors = new DescriptorManager(device);
+
+        limitDescriptors->addDescriptorInput(sort_elements_A->getDescriptorInput(0, VK_SHADER_STAGE_COMPUTE_BIT));
+        limitDescriptors->addDescriptorInput(vplLimits->getDescriptorInput(1, VK_SHADER_STAGE_COMPUTE_BIT));
+
+        PerFrameDescriptorPlacment* uniformIRBufferDescriptors = getInstantRadiosityUniformBufferDescriptorInput(2, VK_SHADER_STAGE_COMPUTE_BIT);
+        limitDescriptors->addDescriptorInput(uniformIRBufferDescriptors);
+
+        limitDescriptors->finalize();
     }
 
     void RendererRayTraced::createSortDescriptorsAB() {
@@ -678,6 +729,24 @@ namespace vve {
         reservoirLVC_B = new RenderTargetBuffer(swapchain->getExtent().width, swapchain->getExtent().height, ReservoirLVC(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
 
         lightVertexCache = new RenderTargetBuffer(lightVertexCacheSize.width, 1, LightVertex(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+
+        vplCache = new RenderTargetBuffer(vplCacheSize.width, 1, VPL(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+        vplCacheShading = new RenderTargetBuffer(vplCacheSize.width, 1, VPLShading(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+        pixelUsage = new RenderTargetBuffer(vplCacheSize.width, 1, uint32_t(0), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+
+        vplLimits = new RenderTargetBuffer(1, 1, VplLimits(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+
+        mutationPixelInedx = new RenderTargetBuffer(vplCacheSize.width, 1, PixelIndex(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+
+        pdfNearest = new RenderTargetBuffer(vplCacheSize.width, 1, float(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+
+        sort_elements_A = new RenderTargetBuffer(vplCacheSize.width, 1, uint32_t(0), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+        sort_elements_B = new RenderTargetBuffer(vplCacheSize.width, 1, uint32_t(0), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+
+        sort_indices_A = new RenderTargetBuffer(vplCacheSize.width, 1, uint32_t(0), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+        sort_indices_B = new RenderTargetBuffer(vplCacheSize.width, 1, uint32_t(0), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
+
+        sort_histogram = new RenderTargetBuffer(vplCacheSize.width, 1, uint32_t(0), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
 
         //raytracing
         RtTarget = new RenderTarget(swapchain->getExtent().width, swapchain->getExtent().height, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_ASPECT_COLOR_BIT, commandManager, device, physicalDevice);
@@ -984,9 +1053,6 @@ namespace vve {
 
         combinePass->initComputePipeline();
 
-        vplCache = new RenderTargetBuffer(vplCacheSize.width, 1, VPL(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
-        vplCacheShading = new RenderTargetBuffer(vplCacheSize.width, 1, VPLShading(), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
-
         std::cout << "size of VPL Shading: " << sizeof(VPLShading) << "\n";
         std::cout << "size of VPL: " << sizeof(VPL) << "\n";
 
@@ -1058,19 +1124,7 @@ namespace vve {
 
         InstantRadiosityNaiveSampling->initRayTracingPipeline();
 
-        //pdf estimation
-
-        
-
-        sort_elements_A = new RenderTargetBuffer(vplCacheSize.width, 1, uint32_t(0), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
-        sort_elements_B = new RenderTargetBuffer(vplCacheSize.width, 1, uint32_t(0), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
-
-        sort_indices_A = new RenderTargetBuffer(vplCacheSize.width, 1, uint32_t(0), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
-        sort_indices_B = new RenderTargetBuffer(vplCacheSize.width, 1, uint32_t(0), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
-
-        sort_histogram = new RenderTargetBuffer(vplCacheSize.width, 1, uint32_t(0), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT, commandManager, device, physicalDevice);
-
-        
+        //pdf estimation    
         createMortonCodeDescriptors();
         
         createSortDescriptorsAB();
@@ -1125,7 +1179,25 @@ namespace vve {
         pdfEstimation = new PipelineFilter(device, physicalDevice, commandManager, pdfEstimationDescriptors, vplCacheSize, VkExtent2D(16, 16), "shaders/PathTracing/IR_PDF_Estimation.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
         pdfEstimation->initComputePipeline();
 
-        std::cout << "succesfully created piplines for sort \n";
+
+        createScoringDescriptors();
+
+        scoringPixelUsage = new PipelineFilter(device, physicalDevice, commandManager, scoringDescriptors, vplCacheSize, VkExtent2D(16, 16), "shaders/PathTracing/IR_Scoring_Intensity.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        scoringPixelUsage->initComputePipeline();
+
+        createLimitDescriptors();
+
+        limitCalculation = new PipelineFilter(device, physicalDevice, commandManager, limitDescriptors, vplCacheSize, VkExtent2D(16, 16), "shaders/PathTracing/IR_Set_Replacment_Limits.spv", VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR);
+        limitCalculation->initComputePipeline();
+
+        std::cout << "got to vplGenerationEvolutionaryReplacment \n";
+        vplGenerationEvolutionaryReplacment = new PiplineRaytraced(device, physicalDevice, commandManager, m_rtProperties, commonDescriptors, instantRadiosityDescriptors, vplGenerationDescriptors, vplCacheSize, "shaders/PathTracing/IR_VPL_Generation_Evolutionary.rgen.spv", VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+        vplGenerationEvolutionaryReplacment->bindRenderTarget(normalTarget);
+        vplGenerationEvolutionaryReplacment->bindRenderTarget(positionTarget);
+
+        vplGenerationEvolutionaryReplacment->initRayTracingPipeline();
+
+        std::cout << "got after vplGenerationEvolutionaryReplacment \n";
         
         //get render Settings
 
@@ -1371,7 +1443,9 @@ namespace vve {
         }
         case  vvh::RenderMethode::RESTIRIR:
         {
-            vplGenerationRandomReplacment->recordCommandBuffer(currentFrame);
+            
+            //this has to be moved after the restir step, meaning first frame is just black
+            //vplGenerationRandomReplacment->recordCommandBuffer(currentFrame);
 
             mortonCode->recordCommandBuffer(currentFrame);
 
@@ -1391,6 +1465,25 @@ namespace vve {
 
             restir_IR_temporal->recordCommandBuffer(currentFrame);
             restir_IR_spatial->recordCommandBuffer(currentFrame);
+
+            scoringPixelUsage->recordCommandBuffer(currentFrame);
+
+            histogramPiplineAB->recordCommandBuffer(currentFrame, &pushConstants1);
+            sortPiplineAB->recordCommandBuffer(currentFrame, &pushConstants1);
+
+            histogramPiplineBA->recordCommandBuffer(currentFrame, &pushConstants2);
+            sortPiplineBA->recordCommandBuffer(currentFrame, &pushConstants2);
+
+            histogramPiplineAB->recordCommandBuffer(currentFrame, &pushConstants3);
+            sortPiplineAB->recordCommandBuffer(currentFrame, &pushConstants3);
+
+            histogramPiplineBA->recordCommandBuffer(currentFrame, &pushConstants4);
+            sortPiplineBA->recordCommandBuffer(currentFrame, &pushConstants4);
+
+            limitCalculation->recordCommandBuffer(currentFrame);
+
+            vplGenerationEvolutionaryReplacment->recordCommandBuffer(currentFrame);
+
             break;
         }
         case vvh::RenderMethode::IRTESTING: 
@@ -1578,6 +1671,8 @@ namespace vve {
             instantRadiosityDescriptors->destroyDescriptorSets();
             mortonCodeDescriptors->destroyDescriptorSets();
             pdfEstimationDescriptors->destroyDescriptorSets();
+            scoringDescriptors->destroyDescriptorSets();
+            limitDescriptors->destroyDescriptorSets();
         }
 
         lightManager->prepareNextFrame();
@@ -1593,6 +1688,8 @@ namespace vve {
             instantRadiosityDescriptors->update();
             mortonCodeDescriptors->update();
             pdfEstimationDescriptors->update();
+            scoringDescriptors->update();
+            limitDescriptors->update();
         }
 
         return false;

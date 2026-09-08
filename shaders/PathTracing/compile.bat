@@ -25,6 +25,13 @@ slangc IR_PDF_Estimation.slang -entry main -target spirv -o IR_PDF_Estimation.sp
 
 slangc IR_PDF_Estimation_Range_Search.slang -entry main -target spirv -o IR_PDF_Estimation_Range_Search.spv -fvk-use-scalar-layout
 
+slangc IR_Scoring.slang -entry main -target spirv -o IR_Scoring_PixelUsage.spv -fvk-use-scalar-layout
+
+slangc IR_Scoring_Intensity.slang -entry main -target spirv -o IR_Scoring_Intensity.spv -fvk-use-scalar-layout
+
+slangc IR_Set_Replacment_Limits.slang -entry main -target spirv -o IR_Set_Replacment_Limits.spv -fvk-use-scalar-layout
+
+
 rem --- Raygen shader ---
 slangc rtbasic.slang -entry rgenMain -target spirv -o raygen.rgen.spv -DRAY_TRACING
 
@@ -66,6 +73,9 @@ slangc RestirLVC_Combined_Spatial.slang -entry rgenMain -target spirv -o raygen_
 
 rem --- Raygen shader ---
 slangc IR_VPL_Generation_Random_Replacment.slang -entry rgenMain -target spirv -o raygen_vpl_generation_random_replacment.rgen.spv -DRAY_TRACING -fvk-use-scalar-layout
+
+rem --- Raygen shader ---
+slangc IR_VPL_Generation_Evolutionary.slang -entry rgenMain -target spirv -o IR_VPL_Generation_Evolutionary.rgen.spv -DRAY_TRACING -fvk-use-scalar-layout
 
 rem --- Raygen shader ---
 slangc IR_Restir_Temporal.slang -entry rgenMain -target spirv -o raygen_restir_IR_temporal.rgen.spv -DRAY_TRACING -fvk-use-scalar-layout

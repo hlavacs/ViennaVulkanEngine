@@ -120,6 +120,16 @@ namespace vve {
         glm::vec3 max;
     };
 
+    struct VplLimits {
+        uint32_t replacmentLimit;
+        uint32_t reproductionLimit;
+    };
+
+    struct PixelIndex {
+        uint32_t replacmentLimit;
+        uint32_t reproductionLimit;
+    };
+
     //16 bytes
     // also used for restir IR
     struct ReservoirLVC {

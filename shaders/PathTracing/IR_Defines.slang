@@ -11,3 +11,8 @@ struct VPLShading {
     float3 radiance;
     float3 albedo;
 }
+
+struct VPLLimits {
+    uint replacmentLimit;
+    uint reproductionLimit;
+}

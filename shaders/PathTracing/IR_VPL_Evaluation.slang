@@ -37,7 +37,7 @@ float3 getUnoccludedContributionFromVPL(in IntersectionRecord itsCamera, in Mate
 
     //cosCam is the solid angle term that I would usually put into the shader
 
-    distance = max(distance, 0.01);
+    distance = max(distance, 0.05);
 
     float geometryTerm = (cosCam * cosVPL) / (distance * distance);
 

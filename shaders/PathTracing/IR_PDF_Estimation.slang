@@ -17,6 +17,11 @@ cbuffer UniformBufferBidirectional
     float3 AABBMax;
 };
 
+// unused
+[[vk::binding(4, 0)]] StructuredBuffer<uint> sortedMortonCodes;
+
+[[vk::binding(5, 0)]] RWStructuredBuffer<float> nearestPDFs;
+
 // --- kNN Constants ---
 // Maximum K allowed so we can allocate a fixed-size array in registers.
 // Dynamic array sizes in HLSL spill to slow local memory.
@@ -107,7 +112,14 @@ void main(uint3 threadId: SV_DispatchThreadID) {
 
     float pdf = (float)k / ((float)vplCacheSize * M_PI * avgDistSq);
 
+    // pdf only using nearest
+    float r0_sq = minDistSq[k - 1];
+    r0_sq = max(r0_sq, 1e-8f);
+    float pdfNearest = 1.0 / ((float)vplCacheSize * M_PI * r0_sq);
+
     vplCache[vplIndex].weightedRadiance = vplRadiance.radiance / pdf;
+
+    nearestPDFs[vplIndex] = pdfNearest;
 
     //vplCache[vplIndex].weightedRadiance = vplRadiance.radiance * 1000.0;
 }

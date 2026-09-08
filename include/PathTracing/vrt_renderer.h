@@ -290,6 +290,23 @@ namespace vve {
 		PushConstantsSort pushConstants3;
 		PushConstantsSort pushConstants4;
 
+		RenderTargetBuffer<uint32_t>* pixelUsage;
+		RenderTargetBuffer<VplLimits>* vplLimits;
+
+		DescriptorManager* scoringDescriptors;
+		void createScoringDescriptors();
+		PipelineFilter* scoringPixelUsage;
+
+		DescriptorManager* limitDescriptors;
+		void createLimitDescriptors();
+		PipelineFilter* limitCalculation;
+
+		PiplineRaytraced* vplGenerationEvolutionaryReplacment;
+
+		RenderTargetBuffer<float>* pdfNearest;
+
+		RenderTargetBuffer<PixelIndex>* mutationPixelInedx;
+
 
 
 		std::vector<RenderTarget*> allTargets;

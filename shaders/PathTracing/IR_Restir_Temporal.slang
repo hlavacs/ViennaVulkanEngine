@@ -90,7 +90,7 @@ void rgenMain()
     const uint CANDIDATE_COUNT = 32;
     const uint MAX_TEMPORAL_INFLUENCE = 20;
 
-    const uint CANDIDATE_COUNT_GI = 16;
+    const uint CANDIDATE_COUNT_GI = 32;
     const uint MAX_TEMPORAL_INFLUENCE_GI = 20;
 
     if (isSkyPixel(position)) {

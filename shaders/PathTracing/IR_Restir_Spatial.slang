@@ -45,6 +45,12 @@ RWStructuredBuffer<ReservoirVPL> inReservoirVPL;
 [[vk::binding(9, 2)]]
 RWStructuredBuffer<ReservoirVPL> outReservoirVPL;
 
+[[vk::binding(10, 2)]]
+RWStructuredBuffer<uint> outPixelUsage;
+
+[[vk::binding(11, 2)]]
+RWStructuredBuffer<uint2> mutationPixelIndices;
+
 void getInitialSurfaceData(in int2 launchID, in int2 launchSize, inout IntersectionRecord its, inout MaterialRecord material) {
     RayDesc cameraRay = getInitialRay(launchID, launchSize);
 
@@ -91,7 +97,7 @@ void rgenMain()
     const uint SAMPLE_RADIUS = 12;
 
     const uint MAX_SPATIAL_INFLUENCE_GI = 10;
-    const uint SPATIAL_SAMPLES_GI = 24;
+    const uint SPATIAL_SAMPLES_GI = 12;
     const uint SAMPLE_RADIUS_GI = 12;
 
     if (isSkyPixel(position)) {
@@ -191,6 +197,15 @@ void rgenMain()
         if (IsReservoirValidVPL(reservoirVPL))
         {
             float3 radiance = getOccludedContributionFromVPL(its, material, vpl);
+
+            //
+            if (length(radiance) > 0.001) {
+                if (outPixelUsage[reservoirVPL.vplIndex] != 5) {
+                    outPixelUsage[reservoirVPL.vplIndex] = 5;         
+                }
+                // this needs to be solved better in the future
+                mutationPixelIndices[reservoirVPL.vplIndex] = uint2(launchID);       
+            }
 
             output += (radiance * reservoirVPL.lightWeight);
         } else {
