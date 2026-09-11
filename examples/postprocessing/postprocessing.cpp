@@ -114,15 +114,19 @@ int main(int argc, char **argv) {
 	vvppl::GreyscaleSettings *greyscale{nullptr};
 	vvppl::VignetteSettings *vignette{nullptr};
 	vvppl::FilmGrainSettings *grain{nullptr};
+	vvppl::ColorGradeSettings *grade{nullptr};
+	vvppl::DitherSettings *dither{nullptr};
 
 	// Configure the effects when the renderer creates the chain.
 	render.setPostProcessSetup(
-    	[&tonemap, &chromatic, &greyscale, &vignette, &grain](vvppl::PostProcessing &pp) {
+    	[&tonemap, &chromatic, &greyscale, &vignette, &grain, &grade, &dither](vvppl::PostProcessing &pp) {
 			tonemap = &pp.addTonemap();
 			chromatic = &pp.addChromatic();
 			greyscale = &pp.addGreyscale();
 			vignette = &pp.addVignette();
 			grain = &pp.addFilmGrain();
+			grade = &pp.addColorGrade();
+			dither = &pp.addDither();
 
 			tonemap->exposure = 0.6F;
 			chromatic->intensity = 0.02F;
@@ -157,8 +161,8 @@ int main(int argc, char **argv) {
 	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
 	cameraController.pitch = std::asin(startupForward.y);
 	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &cameraController, &renderFps,
-															 &tonemap, &chromatic, &greyscale, &vignette, &grain] {
-		ImGui::SetNextWindowSize(ImVec2(340.0F, 280.0F), ImGuiCond_Always);
+															 &tonemap, &chromatic, &greyscale, &vignette, &grain, &grade, &dither] {
+		ImGui::SetNextWindowSize(ImVec2(320.0F, 320.0F), ImGuiCond_Always);
 		ImGui::Begin("Post Processing");
 		ImGui::PushItemWidth(160.0F);
 		// Adjust the effect settings directly.
@@ -172,15 +176,26 @@ int main(int argc, char **argv) {
 		if (greyscale) {
 			ImGui::SliderFloat("Greyscale", &greyscale->strength, 0.0F, 1.0F);
 		}
-		if (vignette) {
-			ImGui::SliderFloat("Vignette", &vignette->intensity, 0.0F, 1.0F);
-			ImGui::SliderFloat("Vignette radius", &vignette->radius, 0.0F, 1.0F);
-			ImGui::SliderFloat("Vignette smoothness",
-							&vignette->smoothness, 0.01F, 1.0F);
-		}
 		if (grain) {
 			ImGui::SliderFloat("Film grain", &grain->intensity, 0.0F, 0.3F);
 		}
+		if (dither) {
+			ImGui::SliderFloat("Dithering", &dither->strength, 0.0F, 8.0F);
+		}
+		if (vignette && ImGui::CollapsingHeader("Vignette")) {
+			ImGui::SliderFloat("Intensity", &vignette->intensity, 0.0F, 1.0F);
+			ImGui::SliderFloat("Radius", &vignette->radius, 0.0F, 1.0F);
+			ImGui::SliderFloat("Smoothness",
+							&vignette->smoothness, 0.01F, 1.0F);
+		}
+		if (grade && ImGui::CollapsingHeader("Color grading")) {
+			ImGui::SliderFloat("Saturation", &grade->saturation, 0.0F, 2.0F);
+			ImGui::SliderFloat("Contrast", &grade->contrast, 0.5F, 1.5F);
+			ImGui::SliderFloat3("Lift", grade->lift, -0.2F, 0.2F);
+			ImGui::SliderFloat3("Gamma", grade->gamma, 0.2F, 3.0F);
+			ImGui::SliderFloat3("Gain", grade->gain, 0.0F, 2.0F);
+		}
+
 		ImGui::Separator();
 
 		ImGui::Text("Frame: %d", frame);

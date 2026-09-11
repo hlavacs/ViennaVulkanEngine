@@ -161,7 +161,7 @@ find_package(Vulkan REQUIRED)
 include(FetchContent)
 FetchContent_Declare(viennavulkanpostprocessinglibrary
                      GIT_REPOSITORY https://github.com/orcunilker/ViennaVulkanPostProcessingLibrary.git
-                     GIT_TAG v0.1)
+                     GIT_TAG v0.2)
 FetchContent_MakeAvailable(viennavulkanpostprocessinglibrary)
 set_target_properties(vvppl PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
