@@ -116,16 +116,31 @@ int main(int argc, char **argv) {
 	vvppl::FilmGrainSettings *grain{nullptr};
 	vvppl::ColorGradeSettings *grade{nullptr};
 	vvppl::DitherSettings *dither{nullptr};
+	vvppl::SolarizeSettings *solarize{nullptr};
+	vvppl::SabattierSettings *sabattier{nullptr};
+	vvppl::EmbossSettings *emboss{nullptr};
+	vvppl::SobelSettings *sobel{nullptr};
+	vvppl::SpeedLinesSettings *speedLines{nullptr};
+	vvppl::HighlightSettings *highlight{nullptr};
+	vvppl::SegmentationSettings *segmentation{nullptr};
 
 	// Configure the effects when the renderer creates the chain.
 	render.setPostProcessSetup(
-    	[&tonemap, &chromatic, &greyscale, &vignette, &grain, &grade, &dither](vvppl::PostProcessing &pp) {
+    	[&tonemap, &chromatic, &greyscale, &vignette, &grain, &grade, &dither,
+		 &solarize, &sabattier, &emboss, &sobel, &speedLines, &highlight, &segmentation](vvppl::PostProcessing &pp) {
 			tonemap = &pp.addTonemap();
 			chromatic = &pp.addChromatic();
 			greyscale = &pp.addGreyscale();
 			vignette = &pp.addVignette();
 			grain = &pp.addFilmGrain();
 			grade = &pp.addColorGrade();
+			solarize = &pp.addSolarize();
+			sabattier = &pp.addSabattier();
+			emboss = &pp.addEmboss();
+			sobel = &pp.addSobel();
+			speedLines = &pp.addSpeedLines();
+			highlight = &pp.addHighlight();
+			segmentation = &pp.addSegmentation();
 			dither = &pp.addDither();
 
 			tonemap->exposure = 0.6F;
@@ -135,6 +150,15 @@ int main(int argc, char **argv) {
 			vignette->radius = 0.4F;
 			vignette->smoothness = 0.6F;
 			grain->intensity = 0.05F;
+
+			// Start the new effects switched off, the panel turns them on.
+			solarize->threshold = 1.0F;
+			sabattier->strength = 0.0F;
+			emboss->strength = 0.0F;
+			sobel->strength = 0.0F;
+			speedLines->intensity = 0.0F;
+			highlight->strength = 0.0F;
+			segmentation->strength = 0.0F;
     });
 
 	if (const auto result = loadGameScene(render, assetRoot(argc > 0 ? argv[0] : nullptr)); !result) {
@@ -161,8 +185,9 @@ int main(int argc, char **argv) {
 	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
 	cameraController.pitch = std::asin(startupForward.y);
 	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &cameraController, &renderFps,
-															 &tonemap, &chromatic, &greyscale, &vignette, &grain, &grade, &dither] {
-		ImGui::SetNextWindowSize(ImVec2(320.0F, 320.0F), ImGuiCond_Always);
+															 &tonemap, &chromatic, &greyscale, &vignette, &grain, &grade, &dither,
+															 &solarize, &sabattier, &emboss, &sobel, &speedLines, &highlight, &segmentation] {
+		ImGui::SetNextWindowSize(ImVec2(320.0F, 480.0F), ImGuiCond_Always);
 		ImGui::Begin("Post Processing");
 		ImGui::PushItemWidth(160.0F);
 		// Adjust the effect settings directly.
@@ -182,6 +207,15 @@ int main(int argc, char **argv) {
 		if (dither) {
 			ImGui::SliderFloat("Dithering", &dither->strength, 0.0F, 8.0F);
 		}
+		if (solarize) {
+			ImGui::SliderFloat("Solarize threshold", &solarize->threshold, 0.0F, 1.0F);
+		}
+		if (emboss) {
+			ImGui::SliderFloat("Emboss", &emboss->strength, 0.0F, 1.0F);
+		}
+		if (sobel) {
+			ImGui::SliderFloat("Sobel", &sobel->strength, 0.0F, 1.0F);
+		}
 		if (vignette && ImGui::CollapsingHeader("Vignette")) {
 			ImGui::SliderFloat("Intensity", &vignette->intensity, 0.0F, 1.0F);
 			ImGui::SliderFloat("Radius", &vignette->radius, 0.0F, 1.0F);
@@ -194,6 +228,25 @@ int main(int argc, char **argv) {
 			ImGui::SliderFloat3("Lift", grade->lift, -0.2F, 0.2F);
 			ImGui::SliderFloat3("Gamma", grade->gamma, 0.2F, 3.0F);
 			ImGui::SliderFloat3("Gain", grade->gain, 0.0F, 2.0F);
+		}
+		if (sabattier && ImGui::CollapsingHeader("Sabattier")) {
+			ImGui::SliderFloat("Threshold##sabattier", &sabattier->threshold, 0.0F, 1.0F);
+			ImGui::SliderFloat("Strength##sabattier", &sabattier->strength, 0.0F, 1.0F);
+		}
+		if (speedLines && ImGui::CollapsingHeader("Speed lines")) {
+			ImGui::SliderFloat("Intensity##speedlines", &speedLines->intensity, 0.0F, 1.0F);
+			ImGui::SliderFloat("Line count", &speedLines->lineCount, 8.0F, 200.0F, "%.0f");
+			ImGui::SliderFloat("Radius##speedlines", &speedLines->radius, 0.0F, 1.0F);
+		}
+		if (highlight && ImGui::CollapsingHeader("Highlight")) {
+			ImGui::ColorEdit3("Key color", highlight->key);
+			ImGui::SliderFloat("Tolerance", &highlight->tolerance, 0.01F, 0.5F);
+			ImGui::SliderFloat("Strength##highlight", &highlight->strength, 0.0F, 1.0F);
+		}
+		if (segmentation && ImGui::CollapsingHeader("Segmentation")) {
+			ImGui::SliderFloat("Segments", &segmentation->segments, 1.0F, 12.0F, "%.0f");
+			ImGui::SliderFloat("Min chroma", &segmentation->minChroma, 0.0F, 0.2F);
+			ImGui::SliderFloat("Strength##segmentation", &segmentation->strength, 0.0F, 1.0F);
 		}
 
 		ImGui::Separator();
@@ -208,7 +261,7 @@ int main(int argc, char **argv) {
 		ImGui::End();
 	});
 	
-	const auto startTime = std::chrono::steady_clock::now(); // Clock for Film Grain shader
+	const auto startTime = std::chrono::steady_clock::now(); // Clock for the Film Grain and Speed Lines shaders
 
 	while (running && (maxFrames == 0 || frame < maxFrames)) {
 		const auto frameInput = engine.world().get<vve::WindowSystem>().input();
@@ -218,6 +271,10 @@ int main(int argc, char **argv) {
 		// New seed with every frame for the shader - time
 		if (grain) {
 			grain->time = std::chrono::duration<float>(
+				std::chrono::steady_clock::now() - startTime).count();
+		}
+		if (speedLines) {
+			speedLines->time = std::chrono::duration<float>(
 				std::chrono::steady_clock::now() - startTime).count();
 		}
 
