@@ -163,6 +163,9 @@ FetchContent_Declare(viennavulkanpostprocessinglibrary
                      GIT_REPOSITORY https://github.com/orcunilker/ViennaVulkanPostProcessingLibrary.git
                      GIT_TAG v0.3)
 FetchContent_MakeAvailable(viennavulkanpostprocessinglibrary)
+if(APPLE)
+   include(cmake/PatchVvpplShaders.cmake)
+endif()
 set_target_properties(vvppl PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 find_package(slang CONFIG QUIET)

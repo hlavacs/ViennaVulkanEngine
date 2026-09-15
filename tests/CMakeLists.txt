@@ -31,3 +31,20 @@ vve_add_engine_test(RenderLightCountTests)
 vve_add_engine_test(RenderCameraCountTests)
 vve_add_engine_test(RenderSceneLightApplyTests)
 vve_add_engine_test(RenderSceneCameraApplyTests)
+
+# Run the complete effect chain through the C++ example: the first frame creates every shader pipeline.
+if(TARGET postprocessing)
+   add_test(NAME PostProcessingSmokeTests COMMAND postprocessing --frames 3)
+   set_tests_properties(PostProcessingSmokeTests PROPERTIES
+      WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}"
+      LABELS "render;postprocessing"
+      RUN_SERIAL TRUE
+      TIMEOUT 60
+      PASS_REGULAR_EXPRESSION "\\[postprocessing\\] frames=3[\r\n]"
+      FAIL_REGULAR_EXPRESSION "\\[postprocessing\\].*failed;Failed to create MTLLibrary")
+   # Exercise the Metal shader translation path that previously failed on macOS.
+   if(APPLE AND VVE_GENERATED_KOSMICKRISP_ICD_MANIFEST)
+      set_tests_properties(PostProcessingSmokeTests PROPERTIES
+         ENVIRONMENT "VK_DRIVER_FILES=${VVE_GENERATED_KOSMICKRISP_ICD_MANIFEST}")
+   endif()
+endif()
