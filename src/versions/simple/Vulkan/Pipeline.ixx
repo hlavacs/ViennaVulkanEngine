@@ -258,7 +258,7 @@ export namespace vve::simple {
 			const VkPipelineRasterizationStateCreateInfo rasterizer{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 				.polygonMode = VK_POLYGON_MODE_FILL,
-				.cullMode = depthOnly ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT,	///< Shadow pass renders all faces because orthoVulkan Y-flip inverts winding.
+				.cullMode = static_cast<VkCullModeFlags>(depthOnly ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT),	///< Shadow pass renders all faces because orthoVulkan Y-flip inverts winding.
 				.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
 				.depthBiasEnable = depthOnly ? VK_TRUE : VK_FALSE,
 				.depthBiasConstantFactor = 1.25F,		///< Constant raster bias suppresses shadow depth quantization acne.
