@@ -2,9 +2,23 @@
 
 ## Setup
 
-This project uses `vcpkg` manifest dependencies for third-party libraries that are not already provided by the Vulkan SDK. `assimp` and `sdl3` are declared in [vcpkg.json](vcpkg.json) and installed into the repo-local `vcpkg_installed` directory. SDL3 is built with its Vulkan feature enabled so the examples can create Vulkan-capable windows.
+This project uses `vcpkg` manifest dependencies for third-party libraries: Assimp, GLM, ImGui, SDL3, stb, and Vulkan Memory Allocator are declared in [vcpkg.json](vcpkg.json) and installed into the repo-local `vcpkg_installed` directory. SDL3 is built with its Vulkan feature enabled so the examples can create Vulkan-capable windows.
 
-The project expects Vulkan, Slang, GLM, and optional macOS Vulkan ICDs such as KosmicKrisp to come from the Vulkan SDK. On Windows, CMake resolves the SDK from `$ENV{VULKAN_SDK}`. On macOS, CMake also auto-detects SDK installs below `$HOME/VulkanSDK/*/macOS`.
+The project expects Vulkan, Slang, and optional macOS Vulkan ICDs such as KosmicKrisp to come from the Vulkan SDK. On Windows, CMake resolves the SDK from `$ENV{VULKAN_SDK}`. On macOS, CMake also auto-detects SDK installs below `$HOME/VulkanSDK/*/macOS`.
+
+### Windows build and launch
+
+From an ordinary PowerShell window in the repository, run:
+
+```powershell
+.\build_windows.cmd debug
+```
+
+Install Visual Studio with the C++ workload and C++ CMake tools, the Vulkan SDK, and vcpkg first. The script discovers the Visual Studio tools, finds vcpkg through `VCPKG_ROOT`, `PATH`, or `C:\vcpkg`, and runs `vcpkg install --triplet x64-windows` on every build so changed manifests are applied. It then configures, compiles, and runs the tests. Repeat the same command to rebuild and retest; no separate CTest path setup is needed. PowerShell requires the leading `.\` for scripts in the current directory.
+
+The script also checks Vulkan device discovery with the SDK diagnostic tool. If discovery fails normally but succeeds with `VK_LAYER_AMD_switchable_graphics` disabled, it enables `VVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS` for this build. The resulting engine disables that layer only inside its own process, including when `bin\debug\exe\game.exe` is launched from Explorer. Existing layer filters are preserved. This needs no persistent Windows environment setting or sign-out. Logs are saved as `build\debug-windows\vulkan-probe*.log` (or under `release-windows` for release builds).
+
+Use `release` instead of `debug` for a release build, `--no-tests` to omit tests, or `--clean` to recreate that variant's build directory. Prerequisite, dependency, configure, compile, and test failures are identified separately.
 
 All engine math should go through the exported `vve::math` abstraction layer instead of using raw `glm` types directly. The precision can be selected at compile time:
 
@@ -63,14 +77,12 @@ The default setup is host-aware:
 - Linux uses the repository's `x64-linux-llvm` overlay triplet so dependencies share the engine's Clang/libc++ ABI
 - macOS uses the `arm64-osx` vcpkg triplet
 
-`vcpkg install` is an explicit bootstrap step. Configure and build consume the already-installed packages from `vcpkg_installed/<triplet>`.
+The Windows build script runs `vcpkg install` automatically. On Linux and macOS it is an explicit bootstrap step. CMake consumes the installed packages from `vcpkg_installed/<triplet>`.
 
 Before the first build, run:
 
 ```powershell
-vcpkg install  # Windows
-cmake --preset debug-windows   # Windows
-cmake --build --preset build-debug-windows
+.\build_windows.cmd debug  # Windows: install dependencies, configure, build, test
 
 # or
 
