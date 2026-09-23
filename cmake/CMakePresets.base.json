@@ -64,6 +64,19 @@
       }
     },
     {
+      "name": "debug-clang",
+      "displayName": "Debug (Windows Clang, ICODA analysis)",
+      "inherits": ["debug-base", "windows-base"],
+      "generator": "Ninja",
+      "condition": {"type": "equals", "lhs": "${hostSystemName}", "rhs": "Windows"},
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "clang++",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+        "VVE_VCPKG_TRIPLET": "x64-windows"
+      }
+    },
+    {
       "name": "debug-linux",
       "displayName": "Debug (Linux)",
       "inherits": [
@@ -143,6 +156,12 @@
     }
   ],
   "buildPresets": [
+    {
+      "name": "build-debug-clang",
+      "displayName": "Build Debug (Windows Clang)",
+      "configurePreset": "debug-clang",
+      "jobs": 8
+    },
     {
       "name": "build-debug-windows",
       "displayName": "Build Debug (Windows)",

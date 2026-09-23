@@ -20,6 +20,18 @@ The script also checks Vulkan device discovery with the SDK diagnostic tool. If 
 
 Use `release` instead of `debug` for a release build, `--no-tests` to omit tests, or `--clean` to recreate that variant's build directory. Prerequisite, dependency, configure, compile, and test failures are identified separately.
 
+For ICODA analysis, build a separate Clang version after installing the dependencies above:
+
+```powershell
+.\build_windows_clang.cmd
+```
+
+This requires Visual Studio's LLVM and CMake components. It configures the `debug-clang` Ninja preset,
+builds the engine, examples and Microsoft's standard-library modules with Clang, and runs CTest.
+The compilation database is `build/debug-clang/compile_commands.json`; reload VVE in ICODA after the build.
+Use the libclang shipped with that same LLVM installation. Extra CMake options can be passed to the script,
+for example `-DVVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS=ON` when that workaround is needed.
+
 All engine math should go through the exported `vve::math` abstraction layer instead of using raw `glm` types directly. The precision can be selected at compile time:
 
 ```powershell

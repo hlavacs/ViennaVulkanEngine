@@ -52,6 +52,10 @@ endif()
 
 project(ViennaVulkanEngine VERSION 4.0.0 LANGUAGES CXX)
 
+if(WIN32 AND CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+   include(cmake/WindowsClangStd.cmake)
+endif()
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
    include(CTest)
 endif()

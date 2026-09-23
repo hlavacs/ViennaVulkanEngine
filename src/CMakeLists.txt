@@ -8,6 +8,9 @@ endif()
 add_library(ViennaVulkanEngine::ViennaVulkanEngine ALIAS ViennaVulkanEngine)
 
 target_compile_features(ViennaVulkanEngine PUBLIC cxx_std_23)
+if(TARGET vve_windows_std)
+    target_link_libraries(ViennaVulkanEngine PUBLIC vve_windows_std)
+endif()
 target_compile_definitions(ViennaVulkanEngine PUBLIC VULKAN_HPP_NO_EXCEPTIONS)
 
 # The Windows build script enables this only after a failing/successful Vulkan probe pair.
