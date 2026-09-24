@@ -29,8 +29,8 @@ vve_add_engine_test(RenderLightingCaptureTests Vulkan::Vulkan)
 target_compile_definitions(RenderLightingCaptureTests PRIVATE
    "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\""
    "VVE_TEST_FLAT_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import_flat.obj\"")
+# Use the platform SDL driver; offscreen requires optional Vulkan headless-surface support.
 vve_add_engine_test(RenderSponzaCaptureTests Vulkan::Vulkan)
-set_tests_properties(RenderSponzaCaptureTests PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
 vve_add_engine_test(RenderMeshDedupTests Vulkan::Vulkan)
 target_compile_definitions(RenderMeshDedupTests PRIVATE
    "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\"")
