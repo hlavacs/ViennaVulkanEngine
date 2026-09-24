@@ -130,7 +130,9 @@ export namespace vve::simple {
 
 			std::vector<VkDescriptorPoolSize> poolSizes{}; // One pool entry per descriptor type in kDescriptorSetBindings.
 			for (const VkDescriptorSetLayoutBinding &binding : kDescriptorSetBindings) {
-				auto poolSize = std::ranges::find(poolSizes, binding.descriptorType, &VkDescriptorPoolSize::type);
+				// Use an iterator search to avoid a Clang 20 crash with ranges projections across modules.
+				auto poolSize = poolSizes.begin();
+				while (poolSize != poolSizes.end() && poolSize->type != binding.descriptorType) { ++poolSize; }
 				if (poolSize == poolSizes.end()) { poolSize = poolSizes.insert(poolSize, VkDescriptorPoolSize{.type = binding.descriptorType}); }
 				poolSize->descriptorCount += maxSets * binding.descriptorCount; // Array bindings need one descriptor per element.
 			}
