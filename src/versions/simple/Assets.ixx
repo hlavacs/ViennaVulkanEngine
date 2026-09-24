@@ -51,14 +51,17 @@ namespace vve::simple {
 		Vector<Vec3> positions{};																				///< Imported vertex positions.
 		Vector<Vec3> normals{};																					///< Imported vertex normals.
 		Vector<Vec2> texcoords{};																				///< Imported first UV set.
+		Vector<Vec4> tangents{};																///< Imported tangents with handedness in w.
 		Vector<std::uint32_t> indices{};																		///< Imported triangle indices.
 	};
 
-	/// @brief Material descriptor containing only texture handles.
+	/// @brief Material descriptor containing imported factors and texture references.
 	struct Material {
 		using Handle = MaterialHandle;																		///< Handle category.
 		MaterialHandle handle{};																				///< Stable material handle.
 		ObjectName name{};																						///< Imported material name.
+		LinearColor base_color{.value = oneVec3()};										///< Imported base-color factor.
+		Vector<MaterialTextureSource> texture_sources{};									///< Typed canonical texture sources used by rendering.
 		Vector<TextureHandle> textures{};																	///< Texture handles referenced by this material.
 	};
 
@@ -179,9 +182,12 @@ export namespace vve::simple {
 		[[nodiscard]] auto meshPositions(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::positions); }
 		[[nodiscard]] auto meshNormals(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::normals); }
 		[[nodiscard]] auto meshTexcoords(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::texcoords); }
+		[[nodiscard]] auto meshTangents(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::tangents); }
 		[[nodiscard]] auto meshIndices(MeshHandle mesh) const { return field(catalog_.meshes, mesh, &AssetMesh::indices); }
 		[[nodiscard]] auto materialName(MaterialHandle material) const { return field(catalog_.materials, material, &Material::name); }
+		[[nodiscard]] auto materialBaseColor(MaterialHandle material) const { return field(catalog_.materials, material, &Material::base_color); }
 		[[nodiscard]] auto materialTextures(MaterialHandle material) const { return field(catalog_.materials, material, &Material::textures); }
+		[[nodiscard]] auto materialTextureSources(MaterialHandle material) const { return field(catalog_.materials, material, &Material::texture_sources); }
 
 	private:
 		/// @brief Result of importing all materials.
@@ -202,6 +208,8 @@ export namespace vve::simple {
 		[[nodiscard]] static auto quat(const aiQuaternion &q)													-> Quat;
 		[[nodiscard]] static auto transform(const aiMatrix4x4 &matrix)										-> Transform;
 		[[nodiscard]] static auto color(const aiColor3D &value)												-> LinearColor;
+		[[nodiscard]] static auto color(const aiColor4D &value)												-> LinearColor;
+		[[nodiscard]] static auto textureSemantic(aiTextureType type)									-> MaterialTextureSemantic;
 		[[nodiscard]] static auto lightRange(const aiLight &source)											-> LightRange;
 		[[nodiscard]] static auto lightDescriptor(const aiLight &source)									-> std::optional<LightDescriptor>;
 		[[nodiscard]] static auto cameraAspect(const aiCamera &source)										-> Scalar;
@@ -274,6 +282,22 @@ namespace vve::simple {
 		LinearColor AssetSystem::color(const aiColor3D &value) {									///< Converts Assimp RGB colors.
 			return LinearColor{.value = Vec3(value.r, value.g, value.b)};
 		}
+		LinearColor AssetSystem::color(const aiColor4D &value) {									///< Converts Assimp RGBA colors.
+			return LinearColor{.value = Vec3(value.r, value.g, value.b)};
+		}
+
+		MaterialTextureSemantic AssetSystem::textureSemantic(aiTextureType type) {		///< Maps Assimp slots without exposing Assimp to rendering.
+			switch (type) {
+			case aiTextureType_NORMALS:
+			case aiTextureType_HEIGHT: return MaterialTextureSemantic::normal;
+			case aiTextureType_METALNESS: return MaterialTextureSemantic::metalness;
+			case aiTextureType_DIFFUSE_ROUGHNESS: return MaterialTextureSemantic::roughness;
+			case aiTextureType_EMISSIVE: return MaterialTextureSemantic::emissive;
+			case aiTextureType_AMBIENT_OCCLUSION:
+			case aiTextureType_LIGHTMAP: return MaterialTextureSemantic::ambient_occlusion;
+			default: return MaterialTextureSemantic::base_color;
+			}
+		}
 
 		LightRange AssetSystem::lightRange(const aiLight &source) {								///< Derives a finite range from attenuation when present.
 			if (source.mAttenuationLinear > 0.0F) {
@@ -328,10 +352,10 @@ namespace vve::simple {
 		}
 
 		std::filesystem::path AssetSystem::texturePath(const aiString &path,
-																		const std::filesystem::path &scene_dir) {
+															const std::filesystem::path &scene_dir) {
 			auto result = std::filesystem::path(path.C_Str());
-			if (result.empty() || result.is_absolute() || result.string().starts_with('*')) { return result; }
-			return normalized(scene_dir / result);
+			if (result.empty() || result.string().starts_with('*')) { return result; }
+			return normalized(result.is_absolute() ? result : scene_dir / result);
 		}
 
 		template <typename T>
@@ -395,13 +419,26 @@ namespace vve::simple {
 				if (source != nullptr) { source->Get(AI_MATKEY_NAME, material_name); }
 
 				auto item = Material{.handle = makeCounterHandle<MaterialHandle>(),
-											.name = ObjectName{.value = name(material_name, "Material_" + std::to_string(i))}};
+										.name = ObjectName{.value = name(material_name, "Material_" + std::to_string(i))}};
 				if (source != nullptr) {
+					aiColor4D base_color{};
+					if (source->Get(AI_MATKEY_BASE_COLOR, base_color) == AI_SUCCESS ||
+							source->Get(AI_MATKEY_COLOR_DIFFUSE, base_color) == AI_SUCCESS) {
+						item.base_color = color(base_color);
+					}
 					for (const auto type : texture_types) {
+						const bool skip_fallback_source =
+							(type == aiTextureType_HEIGHT && source->GetTextureCount(aiTextureType_NORMALS) > 0U) ||
+							(type == aiTextureType_LIGHTMAP && source->GetTextureCount(aiTextureType_AMBIENT_OCCLUSION) > 0U);
 						for (unsigned slot = 0; slot < source->GetTextureCount(type); ++slot) {
 							aiString path{};
 							if (source->GetTexture(type, slot, &path) != AI_SUCCESS) { continue; }
-							item.textures.push_back(texture(texturePath(path, scene_dir), known_textures, result.textures));
+							const auto source_path = texturePath(path, scene_dir);
+							item.textures.push_back(texture(source_path, known_textures, result.textures));
+							if (!skip_fallback_source && source_path.is_absolute()) {
+								item.texture_sources.push_back(MaterialTextureSource{
+									.semantic = textureSemantic(type), .path = source_path});
+							}
 						}
 					}
 				}
@@ -446,11 +483,19 @@ namespace vve::simple {
 				item.positions.reserve(source->mNumVertices);
 				item.normals.reserve(source->mNumVertices);
 				item.texcoords.reserve(source->mNumVertices);
+				if (source->HasTangentsAndBitangents()) { item.tangents.reserve(source->mNumVertices); }
 				for (unsigned vertex = 0; vertex < source->mNumVertices; ++vertex) {
 					item.positions.push_back(source->mVertices != nullptr ? vec3(source->mVertices[vertex]) : zeroVec3());
 					item.normals.push_back(source->HasNormals() ? vec3(source->mNormals[vertex]) : zeroVec3());
 					const auto uv = source->HasTextureCoords(0) ? source->mTextureCoords[0][vertex] : aiVector3D{};
 					item.texcoords.push_back(Vec2{uv.x, uv.y});
+					if (source->HasTangentsAndBitangents()) {
+						const auto normal = vec3(source->mNormals[vertex]);
+						const auto tangent = vec3(source->mTangents[vertex]);
+						const auto bitangent = vec3(source->mBitangents[vertex]);
+						item.tangents.push_back(Vec4{tangent.x, tangent.y, tangent.z,
+							dot(cross(normal, tangent), bitangent) < zero() ? -one() : one()});
+					}
 				}
 				item.indices.reserve(static_cast<std::size_t>(indexCount(*source)));
 				for (unsigned face = 0; face < source->mNumFaces; ++face) {

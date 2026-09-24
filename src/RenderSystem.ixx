@@ -112,6 +112,12 @@ export namespace vve {
 		[[nodiscard]] auto removeSceneInstance(RenderSceneInstanceHandle instance)					-> std::expected<void, Error>;
 		[[nodiscard]] auto removeScene(SceneHandle handle)															-> std::expected<void, Error>;
 		[[nodiscard]] auto purgeUnusedAssets()																				-> std::size_t;
+		[[nodiscard]] auto sceneTextureCount() const																-> std::size_t;
+		[[nodiscard]] auto gpuTextureCount() const																	-> std::size_t;
+		[[nodiscard]] auto gpuMeshCount() const																		-> std::size_t;
+		[[nodiscard]] auto gpuMaterialCount() const																-> std::size_t;
+		[[nodiscard]] auto gpuMeshUploadCount() const																-> std::size_t;
+		[[nodiscard]] auto gpuMaterialUploadCount() const														-> std::size_t;
 		[[nodiscard]] auto sceneMeshCount() const																					-> std::size_t;
 		[[nodiscard]] auto sceneMaterialCount() const																			-> std::size_t;
 		[[nodiscard]] auto sceneDirectionalLightCount() const																-> std::size_t;
@@ -131,6 +137,8 @@ export namespace vve {
 		[[nodiscard]] auto renderedFrameCount() const																			-> std::uint64_t;
 		[[nodiscard]] auto renderingFramesPerSecond() const																-> double;
 		[[nodiscard]] auto lastRenderedWindowCount() const																		-> std::size_t;
+
+		[[nodiscard]] auto sceneTextureIsLinear(std::size_t index) const -> std::expected<bool, Error>;
 
 	private:
 		template <typename... TSystems> friend class Engine;

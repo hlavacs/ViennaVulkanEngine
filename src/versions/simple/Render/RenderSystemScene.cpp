@@ -1,6 +1,5 @@
 module VEEngine.Simple;
 import std;
-import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Renderer;
 
@@ -8,13 +7,22 @@ import VEEngine.Simple.Renderer;
 /// @brief RenderSystem definitions that mirror object state, cameras, and lights into the forward renderer CPU Scene.
 
 namespace vve::simple {
+	/// @brief Repopulates the capped backend texture view in CPU texture-table order.
+	auto RenderSystem::appendBackendTextures() -> void {
+		const auto count = std::min(scene_.textureCount(), kMaxSceneTextures);
+		for (std::size_t index{}; index < count; ++index) {
+			const auto *texture = scene_.findTexture(static_cast<RenderTextureIndex>(index));
+			if (texture != nullptr) { renderer_.appendTexture(*texture); }
+		}
+	}
 
 	/// @brief Sets whether one live render object is drawn in its flat base color without lighting.
 	auto RenderSystem::setObjectUnlit(RenderObjectHandle handle, bool unlit) -> std::expected<void, Error> {
 		const auto instance = findRenderObject(handle);
 		if (!instance) { return std::unexpected(Error::missing_object); }
-		if (instance->second >= renderer_.scene.objects.size()) { return std::unexpected(Error::missing_object); }
-		renderer_.scene.objects[instance->second].unlit = unlit;
+		auto *scene_instance = scene_.findInstance(*instance);
+		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
+		scene_instance->unlit = unlit;
 		return {};
 	}
 
@@ -22,8 +30,9 @@ namespace vve::simple {
 	auto RenderSystem::setObjectCastsShadow(RenderObjectHandle handle, bool casts_shadow) -> std::expected<void, Error> {
 		const auto instance = findRenderObject(handle);
 		if (!instance) { return std::unexpected(Error::missing_object); }
-		if (instance->second >= renderer_.scene.objects.size()) { return std::unexpected(Error::missing_object); }
-		renderer_.scene.objects[instance->second].castsShadow = casts_shadow;
+		auto *scene_instance = scene_.findInstance(*instance);
+		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
+		scene_instance->casts_shadow = casts_shadow;
 		return {};
 	}
 
@@ -31,12 +40,9 @@ namespace vve::simple {
 	auto RenderSystem::setObjectVisible(RenderObjectHandle handle, bool visible) -> std::expected<void, Error> {
 		const auto instance = findRenderObject(handle);
 		if (!instance) { return std::unexpected(Error::missing_object); }
-		auto *scene_instance = scene_.findInstance(instance->first);
+		auto *scene_instance = scene_.findInstance(*instance);
 		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
-		if (instance->second >= renderer_.scene.objects.size()) { return std::unexpected(Error::missing_object); }
-		// Keep the CPU scene and renderer-visible backend scene in the same visibility state.
 		scene_instance->visible = visible;
-		renderer_.scene.objects[instance->second].visible = visible;
 		return {};
 	}
 
@@ -44,7 +50,7 @@ namespace vve::simple {
 	auto RenderSystem::objectVisible(RenderObjectHandle handle) const -> std::expected<bool, Error> {
 		const auto instance = findRenderObject(handle);
 		if (!instance) { return std::unexpected(Error::missing_object); }
-		const auto *scene_instance = scene_.findInstance(instance->first);
+		const auto *scene_instance = scene_.findInstance(*instance);
 		return scene_instance == nullptr ? std::unexpected(Error::missing_object) :
 													 std::expected<bool, Error>{scene_instance->visible};
 	}
@@ -53,13 +59,10 @@ namespace vve::simple {
 	auto RenderSystem::setObjectTransform(RenderObjectHandle handle, Transform transform) -> std::expected<void, Error> {
 		const auto instance = findRenderObject(handle);
 		if (!instance) { return std::unexpected(Error::missing_object); }
-		auto *scene_instance = scene_.findInstance(instance->first);
+		auto *scene_instance = scene_.findInstance(*instance);
 		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
-		if (instance->second >= renderer_.scene.objects.size()) { return std::unexpected(Error::missing_object); }
-		// Keep the CPU scene and renderer-visible backend scene in the same world transform.
 		scene_instance->local_transform = transform;
 		scene_instance->world_transform = detail::modelMatrix(transform);
-		renderer_.scene.objects[instance->second].model = scene_instance->world_transform;
 		return {};
 	}
 
@@ -67,7 +70,7 @@ namespace vve::simple {
 	auto RenderSystem::objectTransform(RenderObjectHandle handle) const -> std::expected<Transform, Error> {
 		const auto instance = findRenderObject(handle);
 		if (!instance) { return std::unexpected(Error::missing_object); }
-		const auto *scene_instance = scene_.findInstance(instance->first);
+		const auto *scene_instance = scene_.findInstance(*instance);
 		return scene_instance == nullptr ? std::unexpected(Error::missing_object) :
 													 std::expected<Transform, Error>{scene_instance->local_transform};
 	}
@@ -76,7 +79,7 @@ namespace vve::simple {
 	auto RenderSystem::setCamera(Camera camera, PixelExtent extent) -> void {
 		const auto eye = camera.position.value;
 		const auto target = math::add(eye, camera.forward.value);
-		renderer_.setCamera(eye, target);
+		renderer_.setCamera(eye, target, camera.fov_y.radians);
 		scene_.setCamera({.camera = std::move(camera), .target_extent = extent});
 	}
 
@@ -238,35 +241,6 @@ namespace vve::simple {
 		}
 		scene_.addSpotLight({.position = position, .direction = direction, .color = color,
 								   .intensity = intensity, .range = range, .ambient = ambient, .cone = cone});
-	}
-
-	/// @brief Mirrors one facade scene instance into the backend scene that the renderer uploads.
-	auto RenderSystem::appendBackendObject(RenderInstanceHandle instance_handle) -> std::expected<std::size_t, Error> {
-		const auto *instance = scene_.findInstance(instance_handle);
-		if (instance == nullptr) { return std::unexpected(Error::missing_object); }
-		const auto *mesh = scene_.findMesh(instance->mesh);
-		const auto *material = scene_.findMaterial(instance->material);
-		if (mesh == nullptr || material == nullptr) { return std::unexpected(Error::missing_object); }
-
-		auto backend_mesh = Mesh{};
-		backend_mesh.vertices.reserve(mesh->vertices.size());
-		backend_mesh.indices.reserve(mesh->indices.size());
-		const auto color = std::array{material->base_color.value.x, material->base_color.value.y,
-											 material->base_color.value.z};
-		for (const auto &vertex : mesh->vertices) {
-			backend_mesh.vertices.push_back(Vertex{.position = {vertex.position.x, vertex.position.y, vertex.position.z},
-																.color = color,
-																.texCoord = {vertex.uv.x, vertex.uv.y}});
-		}
-		for (const auto index : mesh->indices) { backend_mesh.indices.push_back(index); }
-
-		auto model = detail::modelMatrix(instance->local_transform);
-		const auto use_texture = !material->base_color_texture_source.empty();
-		renderer_.appendObject(std::move(backend_mesh), model,
-									  use_texture ? std::optional<std::string>{material->base_color_texture_source.string()} :
-														 std::nullopt);
-		if (renderer_.scene.objects.empty()) { return std::unexpected(Error::missing_object); }
-		return renderer_.scene.objects.size() - 1U;
 	}
 
 } // namespace vve::simple

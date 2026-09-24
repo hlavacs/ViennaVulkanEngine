@@ -2,6 +2,7 @@ module;
 #include <compare>
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
+#include "../shaders/simple_shared.h"
 
 export module VEEngine.Simple.Vulkan:Shadow;
 import :Memory;
@@ -18,7 +19,7 @@ export namespace vve::simple {
 
 	/// @brief Square D32 shadow-map array: the VulkanImage base owns image, whole-array view, and one view per layer.
 	struct ShadowMap : VulkanImage {
-		static constexpr std::uint32_t resolution{1024U}; ///< Fixed square shadow-map side length in pixels.
+		static constexpr std::uint32_t resolution{VVE_SHADOW_MAP_RESOLUTION}; ///< Fixed square shadow-map side length in pixels.
 		VkSampler shadowSampler{VK_NULL_HANDLE};          ///< Owned border-clamped comparison sampler.
 
 		/// @brief Creates the depth array, its views, and the comparison sampler.

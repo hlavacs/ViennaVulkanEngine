@@ -96,18 +96,19 @@ namespace vve::simple {
 
 	/// @brief Reads imported mesh geometry through the public asset query callbacks.
 	auto RenderSystem::importedMeshGeometry(MeshHandle mesh) const
-		-> std::optional<std::tuple<Vector<Vec3>, Vector<Vec3>, Vector<Vec2>, Vector<std::uint32_t>>>{
+		-> std::optional<std::tuple<Vector<Vec3>, Vector<Vec3>, Vector<Vec2>, Vector<Vec4>, Vector<std::uint32_t>>>{
 		if (!mesh.valid() || !imported_assets_.mesh_positions || !imported_assets_.mesh_normals ||
-			 !imported_assets_.mesh_texcoords || !imported_assets_.mesh_indices) {
+			 !imported_assets_.mesh_texcoords || !imported_assets_.mesh_tangents || !imported_assets_.mesh_indices) {
 			return std::nullopt;
 		}
 
 		const auto positions = imported_assets_.mesh_positions(mesh);
 		const auto normals = imported_assets_.mesh_normals(mesh);
 		const auto texcoords = imported_assets_.mesh_texcoords(mesh);
+		const auto tangents = imported_assets_.mesh_tangents(mesh);
 		const auto indices = imported_assets_.mesh_indices(mesh);
-		if (!positions || positions->empty() || !normals || !texcoords || !indices) { return std::nullopt; }
-		return std::tuple{*positions, *normals, *texcoords, *indices};
+		if (!positions || positions->empty() || !normals || !texcoords || !tangents || !indices) { return std::nullopt; }
+		return std::tuple{*positions, *normals, *texcoords, *tangents, *indices};
 	}
 
 	/// @brief Creates or reuses one render mesh for imported asset geometry.
@@ -119,7 +120,7 @@ namespace vve::simple {
 		const auto geometry = importedMeshGeometry(imported_mesh);
 		if (!geometry) { return std::nullopt; }
 
-		const auto &[positions, normals, texcoords, indices] = *geometry;
+		const auto &[positions, normals, texcoords, tangents, indices] = *geometry;
 		auto vertices = Vector<RenderVertex>{};
 		vertices.reserve(positions.size());
 		auto bounds = Bounds{.minimum = Position{.value = positions.front()},
@@ -136,8 +137,9 @@ namespace vve::simple {
 												 std::max(bounds.maximum.value.y, position.y),
 												 std::max(bounds.maximum.value.z, position.z)};
 			vertices.push_back(RenderVertex{.position = position,
-													 .normal = index < normals.size() ? normals[index] : RenderVertex{}.normal,
-													 .uv = index < texcoords.size() ? texcoords[index] : RenderVertex{}.uv});
+											 .normal = index < normals.size() ? normals[index] : RenderVertex{}.normal,
+											 .uv = index < texcoords.size() ? texcoords[index] : RenderVertex{}.uv,
+											 .tangent = index < tangents.size() ? tangents[index] : RenderVertex{}.tangent});
 		}
 
 		auto copied_indices = Vector<std::uint32_t>{};
@@ -151,7 +153,11 @@ namespace vve::simple {
 	/// @brief Creates or reuses one render material for an imported asset material.
 	auto RenderSystem::acquireRenderMaterial(MaterialHandle imported_material)							-> RenderMaterialHandle{
 		const auto default_color = LinearColor{.value = oneVec3()};
-		if (!imported_material.valid()) { return scene_.addMaterial(RenderMaterial{.base_color = default_color}); }
+		if (!imported_material.valid()) {
+			const auto material = scene_.addMaterial(RenderMaterial{.base_color = default_color});
+			renderer_.markMaterialsDirty();
+			return material;
+		}
 
 		const auto cached = imported_render_materials_.find(imported_material);
 		if (cached != imported_render_materials_.end() && scene_.findMaterial(cached->second) != nullptr) {
@@ -159,17 +165,41 @@ namespace vve::simple {
 		}
 		if (cached != imported_render_materials_.end()) { imported_render_materials_.erase(cached); }
 
-		const auto render_material = scene_.addMaterial(RenderMaterial{.base_color = default_color});
+		auto material = RenderMaterial{.base_color = default_color};
+		if (imported_assets_.material_base_color) {
+			if (const auto color = imported_assets_.material_base_color(imported_material); color) {
+				material.base_color = *color;
+			}
+		}
+		if (imported_assets_.material_texture_sources) {
+			if (const auto sources = imported_assets_.material_texture_sources(imported_material); sources) {
+				for (const auto &[semantic, source] : *sources) {
+					const auto texture_index = scene_.acquireTexture(source, semantic);
+					if (!texture_index) { continue; }
+					switch (semantic) {
+					case MaterialTextureSemantic::base_color:
+						material.base_color_texture_index = *texture_index;
+						material.base_color_texture = makeCounterHandle<TextureHandle>();
+						if (const auto *texture = scene_.findTexture(*texture_index); texture != nullptr) {
+							material.base_color_texture_source = texture->canonical_path;
+						}
+						break;
+					case MaterialTextureSemantic::normal: material.normal_texture_index = *texture_index; break;
+					case MaterialTextureSemantic::metalness: material.metalness_texture_index = *texture_index; break;
+					case MaterialTextureSemantic::roughness: material.roughness_texture_index = *texture_index; break;
+					case MaterialTextureSemantic::emissive: material.emissive_texture_index = *texture_index; break;
+					case MaterialTextureSemantic::ambient_occlusion:
+						material.ambient_occlusion_texture_index = *texture_index;
+						break;
+					}
+				}
+			}
+		}
+
+		const auto render_material = scene_.addMaterial(std::move(material));
+		renderer_.markMaterialsDirty();
 		imported_render_materials_.emplace(imported_material, render_material);
 		return render_material;
-	}
-
-	/// @brief Reads imported material texture handles through the public asset query callback.
-	auto RenderSystem::importedMaterialTextures(MaterialHandle material) const							-> std::optional<Vector<TextureHandle>>{
-		if (!material.valid() || !imported_assets_.material_textures) { return std::nullopt; }
-		const auto textures = imported_assets_.material_textures(material);
-		if (!textures) { return std::nullopt; }
-		return *textures;
 	}
 
 	/// @brief Creates an empty public scene-instance entry for a loaded scene.
@@ -189,10 +219,7 @@ namespace vve::simple {
 				const auto render_material = acquireRenderMaterial(material);
 				auto render_instance = scene_.addInstance(*render_mesh, render_material, world_transform, world);
 				if (!render_instance) { return std::unexpected(render_instance.error()); }
-				const auto backend_index = appendBackendObject(*render_instance);
-				if (!backend_index) { return std::unexpected(backend_index.error()); }
-				forward().scene.objects[*backend_index].model = world;
-				const auto object = registerRenderObject(*render_instance, *backend_index);
+				const auto object = registerRenderObject(*render_instance);
 				objects.push_back(object);
 				object_sources_.emplace(object, std::pair{instance, node});
 			}

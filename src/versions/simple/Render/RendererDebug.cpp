@@ -4,7 +4,6 @@ module;
 module VEEngine.Simple.Renderer;
 import std;
 import VEEngine.Simple.Types;
-import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vulkan;
 
@@ -90,8 +89,23 @@ namespace vve::simple {
 			return std::unexpected(Error::platform_error);
 		}
 
+		auto png_pixels = std::vector<std::byte>{};
+		auto pixels = readback.pixelBytes();
+		if (swapchain.imageFormat == VK_FORMAT_R8G8B8A8_UNORM || swapchain.imageFormat == VK_FORMAT_B8G8R8A8_UNORM) {
+			// Encode linear UNORM swapchain bytes with the transfer curve expected by PNG viewers.
+			png_pixels.assign(pixels.begin(), pixels.end());
+			for (std::size_t offset{}; offset < png_pixels.size(); offset += 4U) {
+				for (std::size_t channel{}; channel < 3U; ++channel) {
+					const auto linear = static_cast<double>(std::to_integer<unsigned char>(png_pixels[offset + channel])) / 255.0;
+					const auto srgb = linear <= 0.0031308 ? 12.92 * linear : 1.055 * std::pow(linear, 1.0 / 2.4) - 0.055;
+					png_pixels[offset + channel] = static_cast<std::byte>(std::lround(std::clamp(srgb, 0.0, 1.0) * 255.0));
+				}
+			}
+			pixels = std::span<const std::byte>{png_pixels};
+		}
+
 		const auto output = output_path.string();
-		if (!writeReadbackPng(readback.pixelBytes(), swapchain.extent, swapchain.imageFormat, output)) {
+		if (!writeReadbackPng(pixels, swapchain.extent, swapchain.imageFormat, output)) {
 			return std::unexpected(Error::io_error);
 		}
 		return {};

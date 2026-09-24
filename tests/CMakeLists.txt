@@ -18,6 +18,22 @@ vve_add_engine_test(UserSystemTests)
 vve_add_engine_test(SimpleForwardRendererTests Vulkan::Vulkan)
 target_compile_definitions(SimpleForwardRendererTests PRIVATE
    "VVE_TEST_CRATE_TEXTURE=\"${PROJECT_SOURCE_DIR}/assets/game/crate0/diffuse.png\"")
+vve_add_engine_test(RenderTextureDedupTests Vulkan::Vulkan)
+target_compile_definitions(RenderTextureDedupTests PRIVATE
+   "VVE_TEST_TEXTURE_A=\"${PROJECT_SOURCE_DIR}/assets/game/crate0/diffuse.png\""
+   "VVE_TEST_TEXTURE_B=\"${PROJECT_SOURCE_DIR}/assets/game/crate1/diffuse.png\"")
+vve_add_engine_test(RenderMaterialImportTests Vulkan::Vulkan)
+target_compile_definitions(RenderMaterialImportTests PRIVATE
+   "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\"")
+vve_add_engine_test(RenderLightingCaptureTests Vulkan::Vulkan)
+target_compile_definitions(RenderLightingCaptureTests PRIVATE
+   "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\""
+   "VVE_TEST_FLAT_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import_flat.obj\"")
+vve_add_engine_test(RenderSponzaCaptureTests Vulkan::Vulkan)
+set_tests_properties(RenderSponzaCaptureTests PROPERTIES ENVIRONMENT "SDL_VIDEODRIVER=offscreen")
+vve_add_engine_test(RenderMeshDedupTests Vulkan::Vulkan)
+target_compile_definitions(RenderMeshDedupTests PRIVATE
+   "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\"")
 vve_add_engine_test(GuiSystemTests Vulkan::Vulkan)
 vve_add_engine_test(SceneSystemTests)
 vve_add_engine_test(SceneInstantiationTests)

@@ -93,6 +93,14 @@ if(VVE_VULKAN_SDK_ROOT STREQUAL "")
          set(VVE_VULKAN_SDK_ROOT "${VVE_VULKAN_SDK_DETECTED_ROOT}"
             CACHE PATH "Root directory of the Vulkan SDK used for Vulkan and Slang packages" FORCE)
       endif()
+   elseif(CMAKE_HOST_SYSTEM_NAME STREQUAL "Linux" AND DEFINED ENV{HOME})
+      file(GLOB VVE_VULKAN_SDK_CANDIDATES LIST_DIRECTORIES true "$ENV{HOME}/vulkansdk/*/x86_64")
+      if(VVE_VULKAN_SDK_CANDIDATES)
+         list(SORT VVE_VULKAN_SDK_CANDIDATES COMPARE NATURAL ORDER DESCENDING)
+         list(GET VVE_VULKAN_SDK_CANDIDATES 0 VVE_VULKAN_SDK_DETECTED_ROOT)
+         set(VVE_VULKAN_SDK_ROOT "${VVE_VULKAN_SDK_DETECTED_ROOT}"
+            CACHE PATH "Root directory of the Vulkan SDK used for Vulkan and Slang packages" FORCE)
+      endif()
    endif()
 endif()
 

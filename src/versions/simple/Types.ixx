@@ -18,6 +18,30 @@ export namespace vve::simple {
 	using Quat = math::Quat;		///< Quaternion.
 	using Mat4 = math::Mat4;		///< 4x4 matrix.
 
+	/// @brief Vertex payload shared by CPU render meshes and Vulkan vertex-input descriptions.
+	struct RenderVertex {
+		Vec3 position{math::zeroVec3()};											///< Object-space position.
+		Vec3 normal{Vec3(math::zero(), math::one(), math::zero())};		///< Object-space normal.
+		Vec2 uv{math::zero(), math::zero()};									///< First texture coordinate.
+		Vec4 tangent{math::zero(), math::zero(), math::zero(), math::zero()}; ///< Object-space tangent with handedness in w, or zero when absent.
+	};
+
+	/// @brief Texture roles shared by imported asset materials and CPU render materials.
+	enum class MaterialTextureSemantic : std::uint8_t {
+		base_color,			///< Surface base-color map.
+		normal,				///< Tangent-space normal map.
+		metalness,			///< Metallic response map.
+		roughness,			///< Surface roughness map.
+		emissive,			///< Self-illumination map.
+		ambient_occlusion	///< Ambient-occlusion map.
+	};
+
+	/// @brief One imported material texture with its renderer-facing semantic and canonical source path.
+	struct MaterialTextureSource {
+		MaterialTextureSemantic semantic{};	///< Renderer-facing texture role.
+		std::filesystem::path path{};			///< Canonical absolute image path.
+	};
+
 	using math::add;
 	using math::clamp;
 	using math::cross;

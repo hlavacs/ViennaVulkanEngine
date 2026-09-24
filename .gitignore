@@ -49,6 +49,8 @@
 *.a
 *.so
 *.dylib
+!/tests/assets/
+!/tests/assets/**
 /graph_dumps/
 /screenshots/
 

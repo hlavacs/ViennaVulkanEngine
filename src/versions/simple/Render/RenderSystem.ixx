@@ -13,10 +13,9 @@ import std;
 export import VEEngine.Simple.Types;
 import :Window;
 import VEEngine.Simple.Vulkan;
-import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Renderer;
-export import :RenderResources;
+export import VEEngine.Simple.RenderResources;
 
 /// @file
 /// @brief Simple render coordinator: renderer backend ownership and scene mirroring.
@@ -53,7 +52,8 @@ export namespace vve::simple {
 		std::function<std::expected<Transform, Error>(NodeHandle)> node_transform{};								///< Returns local transform.
 		std::function<std::expected<Vector<MeshHandle>, Error>(NodeHandle)> node_meshes{};						///< Lists meshes attached to a node.
 		std::function<std::expected<MaterialHandle, Error>(MeshHandle)> mesh_material{};							///< Returns the mesh material.
-		std::function<std::expected<Vector<TextureHandle>, Error>(MaterialHandle)> material_textures{};		///< Lists material textures.
+		std::function<std::expected<LinearColor, Error>(MaterialHandle)> material_base_color{};				///< Returns the material base-color factor.
+		std::function<std::expected<Vector<MaterialTextureSource>, Error>(MaterialHandle)> material_texture_sources{}; ///< Lists typed canonical material textures.
 		std::function<std::expected<Vector<LightHandle>, Error>(SceneHandle)> scene_lights{};					///< Lists scene lights.
 		std::function<std::expected<LightDescriptor, Error>(LightHandle)> light_data{};							///< Returns imported light data.
 		std::function<std::expected<Vector<CameraHandle>, Error>(SceneHandle)> scene_cameras{};				///< Lists scene cameras.
@@ -61,6 +61,7 @@ export namespace vve::simple {
 		std::function<std::expected<Vector<Vec3>, Error>(MeshHandle)> mesh_positions{};							///< Returns mesh positions.
 		std::function<std::expected<Vector<Vec3>, Error>(MeshHandle)> mesh_normals{};								///< Returns mesh normals.
 		std::function<std::expected<Vector<Vec2>, Error>(MeshHandle)> mesh_texcoords{};							///< Returns mesh texture coordinates.
+		std::function<std::expected<Vector<Vec4>, Error>(MeshHandle)> mesh_tangents{};							///< Returns mesh tangents with handedness.
 		std::function<std::expected<Vector<std::uint32_t>, Error>(MeshHandle)> mesh_indices{};					///< Returns mesh indices.
 	};
 
@@ -68,7 +69,7 @@ export namespace vve::simple {
 	/// @brief simple render facade coordinating the renderer backend and CPU render scene.
 	class RenderSystem {
 	public:
-		RenderSystem() = default;
+		RenderSystem();
 		explicit RenderSystem(ImportedAssetReadAccess imported_assets);
 		[[nodiscard]] auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {})	-> std::expected<RenderSceneInstanceHandle, Error>;
 
@@ -107,6 +108,15 @@ export namespace vve::simple {
 		auto clearScene()																												-> void;
 		auto loadScene(Scene scene)																									-> SceneHandle;
 
+		[[nodiscard]] auto sceneTextureCount() const -> std::size_t;
+		[[nodiscard]] auto sceneTextureIsLinear(std::size_t index) const -> std::expected<bool, Error>;
+		[[nodiscard]] auto gpuTextureCount() const -> std::size_t;
+		[[nodiscard]] auto gpuMeshCount() const -> std::size_t;
+		[[nodiscard]] auto gpuMaterialCount() const -> std::size_t;
+		[[nodiscard]] auto gpuMeshUploadCount() const -> std::size_t;
+		[[nodiscard]] auto gpuMaterialUploadCount() const -> std::size_t;
+		[[nodiscard]] auto renderMaterials() const -> const Vector<RenderMaterial> &;
+
 		auto waitIdle() -> void;
 		/// @brief Stores the borrowed GUI system for later forwarding to renderer backends.
 		auto setGuiSystem(void *gui)																								-> void;
@@ -143,10 +153,10 @@ export namespace vve::simple {
 		[[nodiscard]] auto lastRenderedWindowCount() const																		-> std::size_t;
 
 	private:
-		[[nodiscard]] auto appendBackendObject(RenderInstanceHandle instance_handle)							-> std::expected<std::size_t, Error>;
-		[[nodiscard]] auto registerRenderObject(RenderInstanceHandle instance, std::size_t backend_index)	-> RenderObjectHandle;
+		auto appendBackendTextures() -> void;
+		[[nodiscard]] auto registerRenderObject(RenderInstanceHandle instance)								-> RenderObjectHandle;
 		[[nodiscard]] auto findRenderObject(RenderObjectHandle handle) const
-			-> std::optional<std::pair<RenderInstanceHandle, std::size_t>>;
+			-> std::optional<RenderInstanceHandle>;
 		auto eraseRenderObject(RenderObjectHandle handle)														-> void;
 		[[nodiscard]] auto importedSceneNodes(SceneHandle scene) const									-> Vector<NodeHandle>;
 		[[nodiscard]] auto importedSceneWorldTransforms(SceneHandle scene) const
@@ -154,10 +164,9 @@ export namespace vve::simple {
 		[[nodiscard]] auto importedSceneMeshInstances(SceneHandle scene) const
 			-> Vector<std::tuple<NodeHandle, MeshHandle, MaterialHandle, Transform, Mat4>>;
 		[[nodiscard]] auto importedMeshGeometry(MeshHandle mesh) const
-			-> std::optional<std::tuple<Vector<Vec3>, Vector<Vec3>, Vector<Vec2>, Vector<std::uint32_t>>>;
+			-> std::optional<std::tuple<Vector<Vec3>, Vector<Vec3>, Vector<Vec2>, Vector<Vec4>, Vector<std::uint32_t>>>;
 		[[nodiscard]] auto acquireRenderMesh(MeshHandle imported_mesh)									-> std::optional<RenderMeshHandle>;
 		[[nodiscard]] auto acquireRenderMaterial(MaterialHandle imported_material)						-> RenderMaterialHandle;
-		[[nodiscard]] auto importedMaterialTextures(MaterialHandle material) const					-> std::optional<Vector<TextureHandle>>;
 
 		RenderScene scene_{};															///< Active CPU render scene.
 		ForwardRenderer renderer_{};													///< Forward renderer backend.
@@ -165,7 +174,7 @@ export namespace vve::simple {
 		void *guiSystem_{nullptr};													///< Non-owning, type-erased GUI system pointer for later renderer wiring.
 		std::unordered_map<MeshHandle, RenderMeshHandle, HandleHash<MeshHandle>> imported_render_meshes_{};	///< Imported mesh cache.
 		std::unordered_map<MaterialHandle, RenderMaterialHandle, HandleHash<MaterialHandle>> imported_render_materials_{};	///< Imported material cache.
-		std::unordered_map<RenderObjectHandle, std::pair<RenderInstanceHandle, std::size_t>, HandleHash<RenderObjectHandle>>
+		std::unordered_map<RenderObjectHandle, RenderInstanceHandle, HandleHash<RenderObjectHandle>>
 			render_objects_{};														///< Public render-object to internal instance map.
 		std::unordered_map<RenderObjectHandle, std::pair<RenderSceneInstanceHandle, NodeHandle>, HandleHash<RenderObjectHandle>>
 			object_sources_{};														///< Public render-object source scene and node map.
@@ -188,8 +197,15 @@ export namespace vve::simple {
 namespace vve::simple {
 
 	/// @brief Stores read access to imported asset-scene descriptors owned by the engine.
+	inline RenderSystem::RenderSystem() {
+		renderer_.bindRenderScene(scene_.meshes(), scene_.materials(), scene_.instances());
+	}
+
+	/// @brief Stores read access to imported asset-scene descriptors owned by the engine.
 	inline RenderSystem::RenderSystem(ImportedAssetReadAccess imported_assets)
-		: imported_assets_{std::move(imported_assets)} {}
+		: imported_assets_{std::move(imported_assets)} {
+		renderer_.bindRenderScene(scene_.meshes(), scene_.materials(), scene_.instances());
+	}
 
 	/// @brief Returns the forward renderer backend.
 	inline auto RenderSystem::forward()																			-> ForwardRenderer &{ return renderer_; }
@@ -198,20 +214,22 @@ namespace vve::simple {
 	inline auto RenderSystem::forward() const																	-> const ForwardRenderer &{ return renderer_; }
 
 	/// @brief Mints a public render-object handle for one internal scene instance.
-	inline auto RenderSystem::registerRenderObject(RenderInstanceHandle instance, std::size_t backend_index)
+	inline auto RenderSystem::registerRenderObject(RenderInstanceHandle instance)
 		-> RenderObjectHandle{
 		const auto handle = RenderObjectHandle{RenderObjectHandle::counter_bit |
 														  (next_render_object_id_++ & RenderObjectHandle::id_mask)};
-		render_objects_.emplace(handle, std::pair{instance, backend_index});
+		render_objects_.emplace(handle, instance);
+		appendBackendTextures();
+		renderer_.markSceneResourcesDirty();
 		return handle;
 	}
 
 	/// @brief Looks up the internal instance behind a public render-object handle.
 	inline auto RenderSystem::findRenderObject(RenderObjectHandle handle) const
-		-> std::optional<std::pair<RenderInstanceHandle, std::size_t>>{
+		-> std::optional<RenderInstanceHandle>{
 		const auto found = render_objects_.find(handle);
 		return found == render_objects_.end() ? std::nullopt :
-														 std::optional<std::pair<RenderInstanceHandle, std::size_t>>{found->second};
+														 std::optional<RenderInstanceHandle>{found->second};
 	}
 
 	/// @brief Removes one public render-object mapping.
@@ -280,6 +298,17 @@ namespace vve::simple {
 		return initialized_;
 	}
 
+	inline std::size_t RenderSystem::sceneTextureCount() const { return scene_.textureCount(); }
+	inline auto RenderSystem::sceneTextureIsLinear(std::size_t index) const -> std::expected<bool, Error> {
+		const auto *texture = scene_.findTexture(static_cast<RenderTextureIndex>(index));
+		return texture == nullptr ? std::unexpected(Error::missing_object) : std::expected<bool, Error>{texture->linear};
+	}
+	inline std::size_t RenderSystem::gpuTextureCount() const { return renderer_.gpuTextureCount(); }
+	inline std::size_t RenderSystem::gpuMeshCount() const { return renderer_.gpuMeshCount(); }
+	inline std::size_t RenderSystem::gpuMaterialCount() const { return renderer_.gpuMaterialCount(); }
+	inline std::size_t RenderSystem::gpuMeshUploadCount() const { return renderer_.gpuMeshUploadCount(); }
+	inline std::size_t RenderSystem::gpuMaterialUploadCount() const { return renderer_.gpuMaterialUploadCount(); }
+	inline auto RenderSystem::renderMaterials() const -> const Vector<RenderMaterial> & { return scene_.materials(); }
 	inline std::size_t RenderSystem::sceneMeshCount() const { return scene_.meshCount(); }
 	inline std::size_t RenderSystem::sceneMaterialCount() const { return scene_.materialCount(); }
 	/// @brief Returns the number of active directional lights.

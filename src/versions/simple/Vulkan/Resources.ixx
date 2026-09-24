@@ -22,7 +22,6 @@ import :Memory;
 import :Pipeline;
 import :OwnedHandle;
 import std;
-import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Types;
 import VEEngine.Simple.Scene;
 
@@ -59,8 +58,8 @@ export namespace vve::simple {
 			return create(allocator, owningDevice, graphicsQueue, commandPool, std::span{reinterpret_cast<const std::byte *>(pixels.get()), byteCount}, textureExtent);
 		}
 
-		/// @brief Uploads tight RGBA8 bytes through a staging buffer into a sampled SRGB image.
-		[[nodiscard]] VkResult create(VmaAllocator allocator, VkDevice owningDevice, VkQueue graphicsQueue, VkCommandPool commandPool, std::span<const std::byte> rgbaPixels, VkExtent2D textureExtent) {
+		/// @brief Uploads tight RGBA8 bytes through a staging buffer into a sampled image.
+		[[nodiscard]] VkResult create(VmaAllocator allocator, VkDevice owningDevice, VkQueue graphicsQueue, VkCommandPool commandPool, std::span<const std::byte> rgbaPixels, VkExtent2D textureExtent, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
 			cleanup();
 			const VkDeviceSize byteCount = static_cast<VkDeviceSize>(textureExtent.width) * textureExtent.height * 4U;
 			if (rgbaPixels.size() != byteCount || byteCount == 0U) { return VK_ERROR_INITIALIZATION_FAILED; }
@@ -71,7 +70,7 @@ export namespace vve::simple {
 			result = staging.upload(rgbaPixels.data(), byteCount);
 			if (result != VK_SUCCESS) { return result; }
 
-			result = VulkanImage::create(allocator, owningDevice, textureExtent, VK_FORMAT_R8G8B8A8_SRGB, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+			result = VulkanImage::create(allocator, owningDevice, textureExtent, format, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
 			if (result != VK_SUCCESS) { return result; }
 
 			result = submitOnce(owningDevice, graphicsQueue, commandPool, [&](VkCommandBuffer commandBuffer) {
@@ -223,6 +222,33 @@ export namespace vve::simple {
 		}
 
 		/**
+			* @brief Writes one frame descriptor set with the shared material storage buffer.
+			*
+			* @param frameIndex Frame set index to update.
+			* @param materialBuffer Storage buffer containing dense GpuMaterial entries.
+			* @param range Byte range exposed through the storage-buffer descriptor.
+			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
+			*/
+		[[nodiscard]] VkResult writeMaterialBuffer(std::uint32_t frameIndex, VkBuffer materialBuffer, VkDeviceSize range) {
+			if (frameIndex >= descriptorSets.size() || materialBuffer == VK_NULL_HANDLE || range == 0U) {
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+
+			const VkDescriptorBufferInfo bufferInfo{.buffer = materialBuffer, .offset = 0U, .range = range};
+			const VkWriteDescriptorSet write{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSets[frameIndex],
+				.dstBinding = shaderBinding::materials,
+				.dstArrayElement = 0U,
+				.descriptorCount = 1U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+				.pBufferInfo = &bufferInfo,
+			};
+			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
+			return VK_SUCCESS;
+		}
+
+		/**
 			* @brief Writes one shadow-array sampler of one frame descriptor set.
 			*
 			* @param frameIndex Frame set index to update.
@@ -300,31 +326,49 @@ export namespace vve::simple {
 		VulkanMesh &operator=(VulkanMesh &&) noexcept = default;
 
 		/// @brief Creates both buffers and copies the mesh into them.
-		[[nodiscard]] VkResult create(VmaAllocator allocator, const vve::simple::Mesh &mesh) {
+		template <typename TMesh>
+		[[nodiscard]] VkResult create(VmaAllocator allocator, const TMesh &mesh) {
 			cleanup();
 			if (mesh.vertices.empty() || mesh.indices.empty()) { return VK_ERROR_INITIALIZATION_FAILED; }
-			const VkDeviceSize vertexSize = sizeof(vve::simple::Vertex) * mesh.vertices.size();
+			const VkDeviceSize vertexSize = sizeof(mesh.vertices.front()) * mesh.vertices.size();
 			const VkDeviceSize indexSize = sizeof(std::uint32_t) * mesh.indices.size();
 			VkResult result = vertexBuffer.create(allocator, vertexSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, true);
-			if (result == VK_SUCCESS) { result = vertexBuffer.upload(mesh.vertices.data(), vertexSize); }
+			if (result == VK_SUCCESS) { result = uploadValues(vertexBuffer, mesh.vertices); }
 			if (result == VK_SUCCESS) { result = indexBuffer.create(allocator, indexSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT, true); }
-			if (result == VK_SUCCESS) { result = indexBuffer.upload(mesh.indices.data(), indexSize); }
+			if (result == VK_SUCCESS) { result = uploadValues(indexBuffer, mesh.indices); }
 			if (result != VK_SUCCESS) { cleanup(); return result; }
 			indexCount = static_cast<std::uint32_t>(mesh.indices.size());
 			return VK_SUCCESS;
 		}
 
 		/// @brief Uploads replacement vertices when a mesh keeps the same allocation size and topology.
-		[[nodiscard]] VkResult updateVertices(const vve::simple::Mesh &mesh) {
-			const VkDeviceSize vertexSize = sizeof(vve::simple::Vertex) * mesh.vertices.size();
-			if (mesh.vertices.empty() || vertexSize != vertexBuffer.size) { return VK_ERROR_INITIALIZATION_FAILED; }
-			return vertexBuffer.upload(mesh.vertices.data(), vertexSize);
+		template <typename TMesh>
+		[[nodiscard]] VkResult updateVertices(const TMesh &mesh) {
+			if (mesh.vertices.empty()) { return VK_ERROR_INITIALIZATION_FAILED; }
+			const VkDeviceSize vertexSize = sizeof(mesh.vertices.front()) * mesh.vertices.size();
+			if (vertexSize != vertexBuffer.size) { return VK_ERROR_INITIALIZATION_FAILED; }
+			return uploadValues(vertexBuffer, mesh.vertices);
 		}
 
 		void cleanup() {
 			vertexBuffer.cleanup();
 			indexBuffer.cleanup();
 			indexCount = 0U;
+		}
+
+	private:
+		/// @brief Copies a possibly segmented value container directly into a mapped GPU buffer.
+		template <typename TValues>
+		[[nodiscard]] static VkResult uploadValues(VulkanBuffer &buffer, const TValues &values) {
+			using Value = std::remove_cvref_t<decltype(values.front())>;
+			const auto byteCount = sizeof(Value) * values.size();
+			if (buffer.mapped == nullptr || byteCount > buffer.size) { return VK_ERROR_INITIALIZATION_FAILED; }
+			auto *destination = static_cast<std::byte *>(buffer.mapped);
+			for (const auto &value : values) {
+				std::memcpy(destination, &value, sizeof(Value));
+				destination += sizeof(Value);
+			}
+			return VK_SUCCESS;
 		}
 	};
 

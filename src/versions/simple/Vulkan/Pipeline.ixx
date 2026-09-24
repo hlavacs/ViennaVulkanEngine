@@ -8,6 +8,7 @@ module;
 #include <SDL3/SDL_main.h>
 #include <vulkan/vulkan_raii.hpp>
 #include <SDL3/SDL_vulkan.h>
+#include "../shaders/simple_shared.h"
 #ifdef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
 #undef SDL_MAIN_HANDLED
 #undef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
@@ -16,7 +17,6 @@ module;
 export module VEEngine.Simple.Vulkan:Pipeline;
 import :Device;
 import :OwnedHandle;
-import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Types;
 import std;
@@ -29,20 +29,35 @@ import std;
 	* - ObjectPushConstants stores per-object draw data copied through Vulkan push constants.
 	* - shaderBinding / kDescriptorSetBindings define the set-0 layout that simple_forward.slang must match.
 	* - VulkanDescriptorSetLayout owns only VkDescriptorSetLayout creation and teardown for set 0.
-	* - VulkanVertexInputDescription stores the fixed Vertex binding and attribute layout for the forward pipeline.
+	* - VulkanVertexInputDescription stores the fixed RenderVertex binding and attribute layout for the forward pipeline.
 	* - VulkanPipelineLayout owns only VkPipelineLayout creation and teardown for one descriptor set and model push constants.
 	* - VulkanShaderModule owns only VkShaderModule creation from SPIR-V bytes and teardown.
 	* - VulkanGraphicsPipeline owns one dynamic-rendering VkPipeline: forward color+depth or depth-only shadow.
 	*/
 export namespace vve::simple {
+	/// @brief Plain GPU material data matching the Slang GpuMaterial storage-buffer layout.
+	struct GpuMaterial {
+		Vec4 baseColorFactor{one(), one(), one(), one()}; ///< Imported base-color factor.
+		std::uint32_t baseColorTexture{kNoTexture};       ///< Base-color texture-table index.
+		std::uint32_t normalTexture{kNoTexture};          ///< Normal texture-table index.
+		std::uint32_t metalnessTexture{kNoTexture};       ///< Metalness texture-table index.
+		std::uint32_t roughnessTexture{kNoTexture};       ///< Roughness texture-table index.
+		std::uint32_t emissiveTexture{kNoTexture};        ///< Emissive texture-table index.
+		std::uint32_t ambientOcclusionTexture{kNoTexture}; ///< Ambient-occlusion texture-table index.
+		std::uint32_t padding0{};                         ///< Storage-buffer alignment padding.
+		std::uint32_t padding1{};                         ///< Storage-buffer alignment padding.
+	};
+	static_assert(sizeof(GpuMaterial) == 48U); ///< Keeps the C++ and Slang storage-buffer strides identical.
+
 	/// @brief Plain per-object push-constant data matching the Slang ObjectPushConstants block layout.
 	struct ObjectPushConstants {
-		Mat4 model{};                          ///< Object-local model matrix selected before each draw call.
-		std::uint32_t baseColorTextureIndex{0xFFFFFFFFU}; ///< Slot in the base-color texture array, or 0xFFFFFFFF for an untextured object.
-		std::uint32_t shadowMatrixIndex{0U};   ///< Index into FrameUniforms::shadowViewProjs used by the shadow vertex stage.
-		std::uint32_t unlit{0U};               ///< Non-zero renders the object in its flat base color without any lighting.
-		std::uint32_t padding{0U};             ///< Keeps the push-constant block a multiple of 16 bytes.
+		Mat4 model{};                        ///< Object-local model matrix selected before each draw call.
+		std::uint32_t materialIndex{};       ///< Dense slot in the GPU material storage buffer.
+		std::uint32_t shadowMatrixIndex{};   ///< Index into FrameUniforms::shadowViewProjs used by the shadow vertex stage.
+		std::uint32_t unlit{};               ///< Non-zero renders the object in its flat base color without any lighting.
+		std::uint32_t padding{};             ///< Keeps the push-constant block a multiple of 16 bytes.
 	};
+	static_assert(sizeof(ObjectPushConstants) == 80U); ///< Keeps the C++ and Slang push-constant blocks identical.
 
 	/// @brief Set-0 descriptor bindings of simple_forward.slang; every [[vk::binding(n, 0)]] in the shader must match this table.
 	namespace shaderBinding {
@@ -51,15 +66,17 @@ export namespace vve::simple {
 		inline constexpr std::uint32_t spotShadowArray{2U};    ///< Sampler2DArrayShadow spotShadowArray.
 		inline constexpr std::uint32_t dirShadowArray{3U};     ///< Sampler2DArrayShadow dirShadowArray.
 		inline constexpr std::uint32_t pointShadowArray{4U};   ///< Sampler2DArrayShadow pointShadowArray.
+		inline constexpr std::uint32_t materials{VVE_MATERIAL_BINDING}; ///< StructuredBuffer<GpuMaterial> materials.
 	} // namespace shaderBinding
 
 	/// @brief Descriptor-set layout of set 0, shared by the forward and shadow pipelines.
-	inline constexpr std::array<VkDescriptorSetLayoutBinding, 5U> kDescriptorSetBindings{{
+	inline constexpr std::array<VkDescriptorSetLayoutBinding, 6U> kDescriptorSetBindings{{
 		{.binding = shaderBinding::frameUniforms, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::baseColorTextures, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = static_cast<std::uint32_t>(kMaxSceneTextures), .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::spotShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::dirShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::pointShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::materials, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT},
 	}};
 
 	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms, shadow maps, and one object texture; no pipeline layout is created here.
@@ -96,18 +113,19 @@ export namespace vve::simple {
 		void cleanup() { descriptorSetLayout.reset(); }
 	};
 
-	/// @brief Plain vertex input layout value matching the simple forward renderer Vertex attributes.
+	/// @brief Plain vertex input layout declared once for the RenderVertex position, normal, UV, and tangent members.
 	struct VulkanVertexInputDescription {
 		VkVertexInputBindingDescription binding{
 			.binding = 0U,
-			.stride = sizeof(vve::simple::Vertex),
+			.stride = sizeof(RenderVertex),
 			.inputRate = VK_VERTEX_INPUT_RATE_VERTEX,
-		}; ///< Binding 0 consumes one complete Vertex per input vertex.
-		std::array<VkVertexInputAttributeDescription, 3> attributes{{
-			{.location = 0U, .binding = 0U, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(vve::simple::Vertex, position)},
-			{.location = 1U, .binding = 0U, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(vve::simple::Vertex, color)},
-			{.location = 2U, .binding = 0U, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(vve::simple::Vertex, texCoord)},
-		}}; ///< Position, color, and texture-coordinate attributes consumed by the vertex shader.
+		}; ///< Binding 0 consumes one complete RenderVertex per input vertex.
+		std::array<VkVertexInputAttributeDescription, 4> attributes{{
+			{.location = 0U, .binding = 0U, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(RenderVertex, position)},
+			{.location = 1U, .binding = 0U, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = offsetof(RenderVertex, normal)},
+			{.location = 2U, .binding = 0U, .format = VK_FORMAT_R32G32_SFLOAT, .offset = offsetof(RenderVertex, uv)},
+			{.location = 3U, .binding = 0U, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(RenderVertex, tangent)},
+		}}; ///< Position, normal, texture-coordinate, and tangent attributes consumed by the vertex shader.
 	};
 
 	/// @brief Minimal Vulkan pipeline-layout owner; no graphics pipeline, commands, or sync are created here.
