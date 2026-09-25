@@ -161,7 +161,7 @@ find_package(Vulkan REQUIRED)
 include(FetchContent)
 FetchContent_Declare(viennavulkanpostprocessinglibrary
                      GIT_REPOSITORY https://github.com/orcunilker/ViennaVulkanPostProcessingLibrary.git
-                     GIT_TAG v0.4)
+                     GIT_TAG v1.0)
 FetchContent_MakeAvailable(viennavulkanpostprocessinglibrary)
 if(APPLE)
    include(cmake/PatchVvpplShaders.cmake)
