@@ -2,6 +2,16 @@
 
 Scope: `src/versions/simple` only. This design uses `docs/refactor/render_system_inventory.md` as input and does not apply to `src/versions/v3`, `src/versions/v4`, or `src/versions/v5`.
 
+> **Status (current code):** This is a historical plan. Carried out: the concrete renderer is `ForwardRenderer`
+> (`src/versions/simple/Render/Renderer.ixx`), which owns all Vulkan state and the frame loop; the backend object
+> mirror (`appendBackendObject`) is gone because the renderer reads the `RenderScene` directly; PNG capture lives
+> in `ForwardRenderer::captureFrameToPng` (`RendererDebug.cpp`). Implemented and later removed in the renderer
+> simplification: the `std::variant` selection with `StubRenderer` (`RenderSystem` again holds one concrete
+> `ForwardRenderer renderer_`) and the renderer-declared pass contracts with `RenderGraph`. The resource/function
+> registries were removed rather than moved. Never added: `RendererDiagnostics`. All file paths and line numbers
+> below refer to the old layout (`src/versions/simple/RenderSystem.ixx`, `Renderer.ixx`, `RenderPass.ixx`, now
+> under `Render/` or removed); `src/versions/v3`, `v4` and `v5` no longer exist.
+
 ## Goal
 
 `RenderSystem` should become a renderer-agnostic coordinator. It should own renderer selection, renderer lifetime, scene submission, frame orchestration, frame capture intent, and global pass merging. Concrete drawing, Vulkan resources, lighting implementations, shadows, debug sampling, and renderer-local GPU state belong in renderer implementations such as `ForwardRenderer`, `DeferredRenderer`, or a future ray-tracing renderer.
@@ -9,6 +19,10 @@ Scope: `src/versions/simple` only. This design uses `docs/refactor/render_system
 The current inventory shows that `RenderSystem` owns both coordinator state and a concrete Vulkan `Renderer`: `src/versions/simple/RenderSystem.ixx` lines 252-362 declare `RenderSystem`, and lines 354-361 show `scene_`, concrete `Renderer renderer_`, resource/function registries, counters, clear color, and initialization state. The concrete Vulkan forward renderer is described in `src/versions/simple/Renderer.ixx` lines 20-56, where it owns Vulkan instance/device/swapchain/render pass/framebuffers/pipelines/command buffers/uniforms/descriptors/meshes and a CPU `Scene`. Those renderer-specific members should move behind the small renderer interface below.
 
 ## C++ Mechanism
+
+> **Status (current code):** `SelectedRenderer` and `StubRenderer` were implemented and later removed; there is no
+> `RendererImplementation` concept. `RenderSystem` owns `ForwardRenderer renderer_` directly and exposes it through
+> `forward()`.
 
 Use a non-virtual, explicit C++23 mechanism:
 
@@ -30,6 +44,13 @@ Keep new types minimal:
 ## Common Renderer Members
 
 The common renderer surface is a compile-time shape implemented by each concrete renderer type.
+
+> **Status (current code):** `ForwardRenderer` has `init(SDL_Window *)` (returns `VkResult`), `shutdown()`,
+> `loadScene(Scene)` and `clearScene()` (both for lights only), `setCamera(Vec3 eye, Vec3 target, Scalar verticalFov)`,
+> `renderFrame(VulkanReadback *)` / `drawFrame` and `captureFrameToPng`. There is no `uploadScene`: `bindRenderScene`
+> gives it read access to the `RenderScene` and `syncSceneResources` uploads what changed each frame. `id()`,
+> `initialized()`, `presentedFrameCount()`, `passes()`, `diagnostics()` and per-light setters do not exist;
+> `RenderSystem` writes lights into `renderer_.scene`.
 
 ### Setup And Lifetime
 
@@ -92,6 +113,10 @@ This keeps shadow/debug/sample APIs out of the renderer-agnostic facade. The cur
 
 ### Render Pass And Dependency Declaration
 
+> **Status (current code):** dropped. Pass contracts, `RenderGraph`, `Engine::buildDefaultGraphs` and
+> `Engine::writeDebugGraphs` were removed, so none of the locations listed below exist. The frame is one linear
+> sequence in `ForwardRenderer::drawFrame` / `recordCommandBuffer` (`Render/RendererDraw.cpp`).
+
 ```cpp
 std::span<const RenderPassContract> passes() const;
 ```
@@ -110,6 +135,10 @@ Current pass locations to preserve while moving ownership:
 
 ## How RenderSystem Owns And Drives A Renderer
 
+> **Status (current code):** steps 2, 4 and 5 match the code, called on the concrete `renderer_` (its
+> `renderFrame` takes only the optional readback); steps 1 and 6 no longer apply (no selection, no graph); step 3
+> became `bindRenderScene` plus per-frame `syncSceneResources`; step 7 has no diagnostics view.
+
 1. `RenderSystem::createRenderer(RendererId)` selects a concrete renderer by assigning `SelectedRenderer{ForwardRenderer{}}` or `SelectedRenderer{StubRenderer{}}`.
 2. `RenderSystem::initialize(SDL_Window *)` visits the selected renderer and calls `init(window)`.
 3. Scene-intent methods update `RenderSystem::scene_`, then call `uploadScene(scene_)` or the narrower renderer upload member when a smaller update is enough.
@@ -119,6 +148,9 @@ Current pass locations to preserve while moving ownership:
 7. Renderer-specific tests may obtain optional diagnostics; generic `RenderSystem` tests should assert only coordinator behavior.
 
 ## Public Method Mapping
+
+> **Status (current code):** the status note in `docs/refactor/render_system_inventory.md` lists which of these
+> methods still exist on `RenderSystem`.
 
 | Current public method | Inventory lines | Destination | Reason |
 |---|---:|---|---|
@@ -199,6 +231,11 @@ Current pass locations to preserve while moving ownership:
 | `lastClearColor()` | decl 342, def 943 | optional diagnostics interface | Renderer clear-color diagnostic stub belongs to renderer diagnostics. |
 
 ## Follow-Up Code Tasklets
+
+> **Status (current code):** 1, 5 and 6 are done (`ForwardRenderer` in `Render/Renderer.ixx`, the renderer reads
+> the `RenderScene`, capture in `RendererDebug.cpp`); 2 is done except pass declaration and diagnostics; 3 was
+> done and later reverted to a concrete member; 4 and 7 are obsolete because the graph code was removed;
+> renderer-specific assertions (task 8) live in `SimpleForwardRendererTests` and the `Render*Tests`.
 
 1. In `src/versions/simple/Renderer.ixx`, rename or split the concrete Vulkan `Renderer` into `ForwardRenderer`, preserving concrete Vulkan ownership and behavior in that file.
 2. In `src/versions/simple/Renderer.ixx`, add the common non-virtual member set: lifetime, scene upload, frame render, pass declaration, and optional diagnostics access.

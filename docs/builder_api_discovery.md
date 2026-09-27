@@ -1,5 +1,7 @@
 # Builder API Discovery
 
+> **Status (current code):** This is the pre-implementation record. Of the builder APIs it prepared for, only `vve::EngineBuilder<TSystems...>` (`src/Engine.ixx:190`) and the `WindowSetup` chaining described below remain. The light, descriptor, scene-load, renderer-config and camera builders added afterwards (`DirectionalLightBuilder`, `PointLightBuilder`, `SpotLightBuilder`, `PlaneDescriptorBuilder`, `CuboidDescriptorBuilder`, `TexturedCuboidDescriptorBuilder`, `SceneLoadOptions` and its builder, `RendererConfig` and its builder, `CameraBuilder`) were removed as dead code. Their role is covered by the plain descriptors in `src/Types.ixx` (`vve::DirectionalLight`, `PointLight`, `SpotLight`, `PlaneDescriptor`, `CuboidDescriptor`, `TexturedCuboidDescriptor`), which `vve::RenderSystem` accepts through overloads, and by `Camera::lookAt`. Line references below point to the current files; snippets that no longer match are marked.
+
 Discovery-only notes for adding builder-pattern APIs at the public `vve` facade level.
 
 ## Project Instructions Read
@@ -29,9 +31,13 @@ The public facade surface relevant to this job is declared in:
 
 The public wrappers hold erased implementation pointers such as `void *impl_{}` and the implementation-specific recovery is kept in `.cpp` files. This keeps selected-engine details out of user code; future builder APIs should remain in namespace `vve` and use only facade-defined types.
 
+> **Status (current code):** the wrappers now hold a non-owning `Impl &impl_` typed by the `vve::detail::*Impl` aliases of partition `VEEngine:Implementation` (`src/implementations/simple.ixx`); `vve::Engine` owns an opaque `detail::EngineState` defined in `src/Engine.cpp`.
+
 ## Engine Factory
 
-Path: `src/Engine.ixx:222`
+> **Status (current code):** `MakeEngine`/`vve::makeEngine`, `detail::FindUserSystemsOption` and `detail::EngineTypeFromUserSystems` no longer exist. Engines are created with `vve::EngineBuilder<TSystems...>` (chained setters, then `build()`) or by constructing `vve::Engine<TSystems...>` directly; an unknown option type is a compile error, and user systems are default-constructed when no `UserSystems` option is given.
+
+Path (at discovery time, since removed): `src/Engine.ixx:222`
 
 Current `vve::makeEngine` is an inline callable facade object, with the user-facing call signature provided by `MakeEngine::operator()`.
 
@@ -51,15 +57,15 @@ inline constexpr MakeEngine makeEngine{};	///< Facade engine factory.
 
 Related engine option handling:
 
-- `src/Engine.ixx:92`: `explicit Engine(EngineConfig config);`
-- `src/Engine.ixx:94`: `template <typename... TOptions>`
-- `src/Engine.ixx:96`: `explicit Engine(TOptions &&...options);`
-- `src/Engine.ixx:284`: `EngineConfig`
-- `src/Engine.ixx:286`: `ApplicationName`
-- `src/Engine.ixx:288`: `MaxFrames`
-- `src/Engine.ixx:297`: `WindowSetups`
-- `src/Engine.ixx:314`: `const UserSystems<TUserSystems...> &systems`
-- `src/Engine.ixx:321`: `UserSystems<TUserSystems...> &systems`
+- `src/Engine.ixx:87`: `explicit Engine(EngineConfig config);`
+- `src/Engine.ixx:89`: `template <typename... TOptions>`
+- `src/Engine.ixx:91`: `explicit Engine(TOptions &&...options);`
+- `src/Engine.ixx:293`: `EngineConfig`
+- `src/Engine.ixx:295`: `ApplicationName`
+- `src/Engine.ixx:297`: `MaxFrames`
+- `src/Engine.ixx:307`: `WindowSetups`
+- `src/Engine.ixx:347`: `const UserSystems<TUserSystems...> &systems`
+- `src/Engine.ixx:353`: `UserSystems<TUserSystems...> &systems`
 
 ## User Systems Bundle
 
@@ -82,7 +88,7 @@ inline constexpr MakeUserSystems makeUserSystems{};	///< Facade user-system bund
 
 ## WindowSetup Chaining Model
 
-Path: `src/Window.ixx:14`
+Path: `src/Window.ixx:15`
 
 Full current `WindowSetup` definition:
 
@@ -139,7 +145,7 @@ Chaining style: each mutator stores one option in the private facade descriptor,
 
 Window collection option:
 
-Path: `src/Window.ixx:61`
+Path: `src/Window.ixx:62`
 
 ```cpp
 class WindowSetups {
@@ -164,7 +170,7 @@ Renderer selection currently appears here through `WindowSetup::renderer(Rendere
 
 ## Camera Configuration
 
-Path: `src/Types.ixx:172`
+Path: `src/Types.ixx:260`
 
 Current camera descriptor and helper:
 
@@ -194,7 +200,7 @@ struct Camera {
 
 Render-system camera submission:
 
-Path: `src/RenderSystem.ixx:80`
+Path: `src/RenderSystem.ixx:46`
 
 ```cpp
 auto setCamera(Camera camera, PixelExtent extent)																		-> void;
@@ -202,15 +208,17 @@ auto setCamera(Camera camera, PixelExtent extent)																		-> void;
 
 Camera-related strong types:
 
-- `src/Types.ixx:36`: `struct Position`
-- `src/Types.ixx:41`: `struct Direction`
-- `src/Types.ixx:76`: `struct FovY`
-- `src/Types.ixx:81`: `struct ClipPlanes`
-- `src/Types.ixx:92`: `struct PixelExtent`
+- `src/Types.ixx:41`: `struct Position`
+- `src/Types.ixx:46`: `struct Direction`
+- `src/Types.ixx:131`: `struct FovY`
+- `src/Types.ixx:147`: `struct ClipPlanes`
+- `src/Types.ixx:158`: `struct PixelExtent`
 
 ## Light Setup Calls
 
-Path: `src/RenderSystem.ixx:81`
+Path: `src/RenderSystem.ixx:47`
+
+> **Status (current code):** the first parameter of `setDirectionalLight` is now named `direction`: the direction the light travels (light toward scene). `addDirectionalLight`/`addPointLight`/`addSpotLight` and overloads taking `DirectionalLight`/`PointLight`/`SpotLight` descriptors now sit alongside these declarations (`src/RenderSystem.ixx:47`-`79`).
 
 Current facade declarations:
 
@@ -228,14 +236,16 @@ void setSpotLight(Position position, Direction direction, LinearColor color,
 
 Light-related strong types:
 
-- `src/Types.ixx:56`: `struct LinearColor`
-- `src/Types.ixx:61`: `struct LightIntensity`
-- `src/Types.ixx:66`: `struct LightRange`
-- `src/Types.ixx:71`: `struct SpotConeAngle`
+- `src/Types.ixx:61`: `struct LinearColor`
+- `src/Types.ixx:66`: `struct LightIntensity`
+- `src/Types.ixx:71`: `struct LightRange`
+- `src/Types.ixx:76`: `struct SpotConeAngle`
 
 ## Simple Scene Object Creation Calls
 
-Path: `src/RenderSystem.ixx:90`
+Path: `src/RenderSystem.ixx:80`
+
+> **Status (current code):** these now return `std::expected<RenderObjectHandle, Error>`, have overloads taking `PlaneDescriptor`/`CuboidDescriptor`/`TexturedCuboidDescriptor`, and are joined by `addTriangleMesh`.
 
 Current facade declarations:
 
@@ -251,7 +261,7 @@ Current facade declarations:
 
 Transform descriptor:
 
-Path: `src/Types.ixx:158`
+Path: `src/Types.ixx:216`
 
 ```cpp
 /// @brief Standard transform component shared by all active engine layers.
@@ -264,7 +274,7 @@ struct Transform {
 
 ## Scene Loading
 
-Path: `src/Assets.ixx:22`
+Path: `src/Assets.ixx:23`
 
 Current facade scene-loading declaration:
 
@@ -272,7 +282,9 @@ Current facade scene-loading declaration:
 [[nodiscard]] auto loadScene(const std::filesystem::path &source)		-> std::expected<SceneHandle, Error>;
 ```
 
-Path: `src/Assets.cpp:31`
+Path: `src/Assets.cpp:25`
+
+> **Status (current code):** the body is now `return impl_.loadScene(source);`.
 
 Current facade forwarding definition:
 
@@ -288,7 +300,7 @@ There is no public facade `RenderSystem::loadScene(path)` declaration in `src/Re
 
 No standalone public renderer configuration descriptor or builder was found in the facade headers read for this task. Current user-facing renderer selection is limited to `RendererId` and startup window configuration:
 
-Path: `src/Types.ixx:103`
+Path: `src/Types.ixx:168`
 
 ```cpp
 /// @brief Strong wrapper for renderer selection identifiers.
@@ -297,7 +309,7 @@ struct RendererId {
 };
 ```
 
-Path: `src/Window.ixx:35`
+Path: `src/Window.ixx:36`
 
 ```cpp
 [[nodiscard]] inline WindowSetup &renderer(RendererId value) {

@@ -2,6 +2,18 @@
 
 Discovery scope: `src/versions/simple` only. Guidance re-read before inventory: `AGENTS.md` and `src/versions/simple/AGENTS.md`. The simple-engine guidance says the simple engine should stay explicit and minimal, with no virtual layer and no render/task graphs; this file records what exists today without proposing a replacement.
 
+> **Status (current code):** This inventory is a historical record; its file paths, line numbers and most of its
+> methods no longer exist. The renderer simplification removed the pass/graph layer (`RenderPass.ixx` with
+> `RenderPassContract`, `RenderGraph` and the milestones, now parked in `_to_delete/graphs_2026-09-04/`),
+> `RendererDescriptor`, `createRenderer` / `createForwardRenderer` / `buildRenderGraph`, the generic
+> resource/function registry, `Engine::buildDefaultGraphs` / `writeDebugGraphs` and the draw/debug/shadow
+> diagnostic stubs. Today `src/versions/simple/Render/RenderSystem.ixx` declares `RenderSystem`, which owns a
+> `RenderScene` (`Render/RenderResources.ixx`) and a concrete `ForwardRenderer` (`Render/Renderer.ixx`, reached
+> through `forward()`); `initialize(SDL_Window *, RendererId)` accepts only `"forward"` or an empty id. Member
+> definitions live in `RenderSystemObjects.cpp`, `RenderSystemScene.cpp`, `RenderSceneImport.cpp` and, for the
+> renderer, `RendererResources.cpp`, `RendererShadowPrep.cpp`, `RendererDraw.cpp`, `RendererDebug.cpp`. See
+> `docs/notes/architecture.md` for the current structure.
+
 ## RenderSystem Files
 
 - `src/versions/simple/RenderSystem.ixx` lines 5-12: exports `VEEngine.Simple:RenderSystem` and imports `RenderPass`, `Window`, `Vulkan`, `Mesh`, `Scene`, and `Renderer`.
@@ -13,6 +25,14 @@ Discovery scope: `src/versions/simple` only. Guidance re-read before inventory: 
 - `src/versions/simple/GUI.ixx` lines 28 and 36-57: declares GUI pass contracts that are merged with renderer pass contracts.
 
 ## Public RenderSystem Method Categories
+
+> **Status (current code):** Still present: `addPlane`, `addCuboid`, `addTexturedCuboid`, `clearScene`,
+> `setCamera(Camera, PixelExtent)`, the light setters, `loadScene(Scene)` (now replaces only the lights),
+> `shutdown`, `initialized`, the `scene*Count` and `hasScene*` queries, `captureFrameToPng` (the readback and PNG
+> work now lives in `ForwardRenderer::captureFrameToPng`, `RendererDebug.cpp`), both `renderFrame` overloads,
+> `renderedFrameCount` and `lastRenderedWindowCount`. `initialize` gained a `RendererId` parameter and `backend()`
+> became `forward()`. Every other row is gone; the remaining shadow diagnostics are `sceneShadowLightMeta`,
+> `shadowDepthSamples` and `setGpuDebugReadback`.
 
 | Method | Lines | Category | Notes |
 |---|---:|---|---|
@@ -94,6 +114,11 @@ Discovery scope: `src/versions/simple` only. Guidance re-read before inventory: 
 
 ## Render Pass and Dependency Locations
 
+> **Status (current code):** None of this exists any more; there is no render or pass graph. The frame is one
+> linear sequence in `ForwardRenderer::drawFrame` / `recordCommandBuffer`
+> (`src/versions/simple/Render/RendererDraw.cpp`) using dynamic rendering instead of `VkRenderPass` objects;
+> `ForwardRenderer::lastRecordedPassOrder()` reports the recorded passes to tests.
+
 - Milestone names are declared in `src/versions/simple/RenderPass.ixx` lines 15-37. The list includes `frame_begin`, `depth_prepass`, `shadow_depth`, `raytraced_shadow`, `gbuffer`, `deferred_lighting`, `raytraced_scene`, `scene_color`, `gui`, and `frame_finished`.
 - Pass contract fields are declared in `src/versions/simple/RenderPass.ixx` lines 39-49: `name`, `depends_on`, shader entries, human-readable `inputs`/`outputs`, and `milestone`.
 - The simple renderer/stub pass list is declared in `src/versions/simple/RenderSystem.ixx` lines 368-386. It contains `frame_begin`, `forward.color_pass`, `scene_color`, and `frame_finished`; dependencies are declared at lines 369-371.
@@ -106,6 +131,11 @@ Discovery scope: `src/versions/simple` only. Guidance re-read before inventory: 
 - Concrete Vulkan render-pass objects and command-buffer pass execution are not declared through `RenderPassContract`; they live in `src/versions/simple/Renderer.ixx`: forward render pass ownership at lines 35 and 117-120, shadow pipeline/pass creation at lines 108-137, and command-buffer shadow/forward pass execution at lines 440-538.
 
 ## Existing RenderSystem-Related Tests
+
+> **Status (current code):** `tests/RenderSystemTests.cpp` was deleted with the retired v3/v4/v5 engines, and
+> `WorldTests.cpp` / `UserSystemTests.cpp` no longer check graph dumps. The render-specific tests registered in
+> `tests/CMakeLists.txt` are now `SimpleForwardRendererTests` and the `Render*Tests`; scene instantiation and
+> removal are covered by the `Scene*Tests`.
 
 - `tests/RenderSystemTests.cpp` is a RenderSystem-focused test file, but it is not currently listed in `tests/CMakeLists.txt` lines 8-15. Its imports select `VEEngine.V5` when `VVE_ENGINE_IMPLEMENTATION_IS_V5` is defined and otherwise `VEEngine.V4` at lines 3-9, so it is related by subject but not a simple-engine test as written. It covers renderer descriptor/pass graph behavior at lines 11-172 and `RenderScene`/stateful `RenderSystem` behavior at lines 174-250.
 - `tests/WorldTests.cpp` is included by `tests/CMakeLists.txt` line 13 and exercises simple/facade render graph dumps: it selects renderer id `forward` at lines 33-46 and checks dump output for `forward.color_pass`, `gui.overlay_pass`, and per-window renderer names at lines 49-64.

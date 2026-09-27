@@ -1,5 +1,7 @@
 # Release gate review
 
+> **Status (current code):** Record of the release-gate work (commit 5197460). Of the three `#ifndef NDEBUG` gates reviewed here, only the `Vulkan/Device.ixx` one still exists. When the renderer was later simplified, the `RendererDraw` gates were dropped (the CPU shadow diagnostics now run in every build type) and the `Engine.ixx` debug-graph code was removed together with its gate (see the notes under the file headings below). The remaining `#ifndef NDEBUG` blocks outside `Device.ixx` are in `tests/SimpleForwardRendererTests.cpp`.
+
 Reviewed after re-reading `AI_NOTES/discovery.md`.
 
 ## Scope
@@ -19,6 +21,8 @@ Reviewed after re-reading `AI_NOTES/discovery.md`.
 
 ### `src/versions/simple/Render/RendererDraw.ixx`
 
+> **Status (current code):** The file is now `src/versions/simple/Render/RendererDraw.cpp` and has no `NDEBUG` gates. `drawFrame()` calls `recordShadowDepthSamples()` (in `Render/RendererDebug.cpp`) every frame in all build types; the GPU shadow-depth readback (`fillShadowDepthSamplesFromGpu()`) runs only when the runtime flag set by `ForwardRenderer::setGpuDebugReadback()` (facade: `vve::RenderSystem::setShadowDepthReadback()`) is on.
+
 - CPU shadow diagnostic temporaries and writes are contained inside two `#ifndef NDEBUG` regions.
 - Ungated frame uniform creation still uses only symbols declared outside the gates.
 - Ungated GPU/readback calls reference renderer members/helpers that are not declared by these gates.
@@ -26,6 +30,8 @@ Reviewed after re-reading `AI_NOTES/discovery.md`.
 - Release-only compile hazards found: none found.
 
 ### `src/versions/simple/Engine.ixx`
+
+> **Status (current code):** `detail::debugDumpGraphHotkey` (F9), `writeDebugGraphs()` and `graphFileStem()` have been removed from the simple engine, so this gate no longer exists.
 
 - `detail::debugDumpGraphHotkey` is declared only in debug builds and referenced only from the matching debug-only hotkey block.
 - `writeDebugGraphs()` remains declared and defined for release; its release branch consumes `directory` with `(void)directory` and returns success.

@@ -2,6 +2,13 @@
 
 Discovery date: 2026-07-02. Guidance re-read first: `AGENTS.md` and `src/versions/simple/AGENTS.md`.
 
+> **Status (current code):** This is the discovery record written before scene instantiation existed. It
+> has since been built: the facade `vve::RenderSystem` has `instantiateScene`, `removeSceneInstance`,
+> `sceneInstanceObjects`, `objectSourceScene` and `objectSourceNode`, and `RenderSceneInstanceHandle` is
+> declared in `src/Types.ixx`. The simple render code now lives in `src/versions/simple/Render/`
+> (`RenderSystem.ixx`, `RenderResources.ixx`, `RenderSceneImport.cpp`, `RenderSystemObjects.cpp`,
+> `RenderSystemScene.cpp`). The notes below mark the other passages that no longer match the code.
+
 ## Public Facade Surface
 
 `src/Assets.ixx` declares `vve::AssetSystem`. Current public asset methods are:
@@ -46,6 +53,9 @@ Discovery date: 2026-07-02. Guidance re-read first: `AGENTS.md` and `src/version
 [[nodiscard]] auto materialName(MaterialHandle material) const			-> std::expected<ObjectName, Error>;
 [[nodiscard]] auto materialTextures(MaterialHandle material) const	-> std::expected<Vector<TextureHandle>, Error>;
 ```
+
+> **Status (current code):** the `loadScene(path, const SceneLoadOptions &)` overload and `SceneLoadOptions`
+> were removed; `lightData(LightHandle)` and `cameraData(CameraHandle)` were added.
 
 `src/RenderSystem.ixx` declares `vve::RenderSystem`. Current public render methods relevant to assets/render objects are:
 
@@ -94,6 +104,11 @@ void addSpotLight(Position position, Direction direction, LinearColor color,
 
 There is no public `RenderSystem::instantiateScene`, `addScene`, `sceneInstanceObjects`, `objectSourceScene`, or `objectSourceNode` facade operation yet.
 
+> **Status (current code):** all of these except `addScene` now exist on `vve::RenderSystem`, together with
+> `removeSceneInstance`, `addTriangleMesh`, `setObjectMeshPositions`, `setObjectCastsShadow`, `setObjectUnlit`
+> and per-kind light and camera counts. The first parameter of `setDirectionalLight` / `addDirectionalLight`
+> is now named `direction`: the direction the light travels (light toward the scene).
+
 ## Public Handles
 
 `src/Types.ixx` declares the public handle tags and aliases:
@@ -120,6 +135,10 @@ using CameraHandle	= TypedHandle<CameraHandleTag>;
 
 `src/versions/simple/Types.ixx` aliases these into `vve::simple`. No `RenderSceneInstanceHandle` or equivalent public facade handle currently exists.
 
+> **Status (current code):** `src/Types.ixx` now also declares `RenderSceneInstanceHandle` (and `WindowHandle`).
+> `src/versions/simple/Types.ixx` no longer aliases the handles: `vve::simple` is nested in `vve`, so they are
+> found by ordinary lookup.
+
 ## Asset Implementation State
 
 `src/versions/simple/Assets.ixx` owns imported descriptors in `vve::simple::AssetSystem::catalog_`. Internal types are:
@@ -132,6 +151,12 @@ using CameraHandle	= TypedHandle<CameraHandleTag>;
 - `Catalog`: tables for scenes, nodes, meshes, materials only.
 
 There are no texture, light, or camera descriptor tables. Textures are deduplicated by path during material import, but only `TextureHandle`s are retained; the normalized texture path is not stored after import. Lights and cameras are imported only as generated `LightHandle`/`CameraHandle` lists.
+
+> **Status (current code):** the descriptors are now `AssetScene`, `AssetMesh` (with tangents), `Material`
+> (base-color factor, `MaterialFactors`, and one `MaterialTextureSource` per semantic holding the canonical
+> path or the embedded image data) and the new `Light` / `CameraAsset` tables with world-space
+> `LightDescriptor` / `CameraDescriptor` data. There is still no texture table. The Assimp flags and the
+> `import()` sequence below are unchanged.
 
 `AssetSystem::loadScene(const std::filesystem::path &source)` normalizes the path, calls Assimp with `aiProcess_Triangulate | aiProcess_JoinIdenticalVertices | aiProcess_GenSmoothNormals | aiProcess_CalcTangentSpace | aiProcess_ImproveCacheLocality`, rejects empty paths or missing root nodes, then calls `import(catalog_, *scene, path)`.
 
@@ -152,6 +177,16 @@ Renderable public objects are currently created only by `addPlane`, `addCuboid`,
 
 `removeObject()` erases one public object mapping and its corresponding `RenderScene` instance/backend object. `removeScene(SceneHandle)` removes a backend-loaded simple `Scene` only when `render_objects_` is empty. `purgeUnusedAssets()` removes `RenderScene` mesh/material resources no remaining live instance references.
 
+> **Status (current code):** the render types are in `src/versions/simple/Render/RenderResources.ixx` (module
+> `VEEngine.Simple.RenderResources`) and `RenderSystem` is in `Render/RenderSystem.ixx`; `RenderResource`,
+> `RenderFunction` and their handles are gone. `RenderScene` also owns the texture table
+> (`std::deque<RenderTexture>`). `render_objects_` maps to a `RenderInstanceHandle` only: there is no backend
+> object list and no `appendBackendObject`, because the renderer reads the `RenderScene` directly.
+> Public objects also come from `addTriangleMesh` and `instantiateScene`. `scenes_` is a `std::set<SceneHandle>`:
+> `loadScene(Scene)` replaces only the lights, and `removeScene` on such a handle removes exactly those lights;
+> for an asset scene it fails with `invalid_argument` while an instance of it exists, otherwise it drops the
+> scene's cached render meshes/materials and purges. `purgeUnusedAssets()` also releases unreferenced textures.
+
 ## Existing Tests And Build
 
 Tests are enabled from the root `CMakeLists.txt` with `include(CTest)`, added by `tests/CMakeLists.txt`, and built by the normal presets. The simple engine is forced in `src/CMakeLists.txt` via `VVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple`. `src/versions/simple/CMakeLists.txt` adds the simple modules and compiles Slang shaders through the `vve_simple_shaders` custom target.
@@ -162,6 +197,12 @@ Relevant current tests:
 - `tests/ImplementationTests.cpp`: `testAssimpSceneImport()` covers the same facade asset import path more broadly, including empty texture/light/camera lists for the generated OBJ.
 - `tests/SimpleForwardRendererTests.cpp`: covers facade render object lifetime, backend visibility/transform mirroring, purge of unused render mesh/material resources, and implementation-only `RenderSystem::loadScene(vve::simple::Scene)` removal behavior.
 - `tests/RenderSystemTests.cpp`: primarily targets v4/v5-style implementation APIs and render scene primitives; it is not the main simple facade asset-to-render bridge test.
+
+> **Status (current code):** `tests/ImplementationTests.cpp` (never registered in CMake) was deleted, and
+> `tests/RenderSystemTests.cpp` was removed with the retired v3/v4/v5 engines. Scene instantiation is covered by
+> `SceneInstantiationTests`, `SceneRemovalTests`, `SceneAssetRemovalBlockedTests`, `ScenePurgeUnusedAssetsTests`,
+> `SceneTransformCompositionTests`, `RenderSceneLightApplyTests` and `RenderSceneCameraApplyTests`; imported
+> light and camera data by `AssetLightDataTests` and `AssetCameraDataTests`.
 
 Configured build/test command required by the task:
 
