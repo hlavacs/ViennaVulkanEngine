@@ -11,12 +11,18 @@ export import VEEngine.ECSContainer;
 /// vve::math and is pulled into vve::simple here.
 export namespace vve::simple {
 
-	using Scalar = math::Scalar;	///< Configured math scalar type.
-	using Vec2 = math::Vec2;		///< 2D vector.
-	using Vec3 = math::Vec3;		///< 3D vector.
-	using Vec4 = math::Vec4;		///< 4D vector.
-	using Quat = math::Quat;		///< Quaternion.
-	using Mat4 = math::Mat4;		///< 4x4 matrix.
+	/// @brief Configured math scalar type used by the simple engine.
+	using Scalar = math::Scalar;
+	/// @brief Two-dimensional vector from the shared math vocabulary.
+	using Vec2 = math::Vec2;
+	/// @brief Three-dimensional vector from the shared math vocabulary.
+	using Vec3 = math::Vec3;
+	/// @brief Four-dimensional vector from the shared math vocabulary.
+	using Vec4 = math::Vec4;
+	/// @brief Quaternion from the shared math vocabulary.
+	using Quat = math::Quat;
+	/// @brief Four-by-four matrix from the shared math vocabulary.
+	using Mat4 = math::Mat4;
 
 	using math::add;
 	using math::clamp;

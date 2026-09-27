@@ -21,6 +21,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto nodeCount() const														-> std::size_t;
 
 	private:
+		/// @brief Adjacency storage allowing several neighbors per node handle.
 		using EdgeMap = std::unordered_multimap<THandle, THandle, HandleHash<THandle>>;
 
 
@@ -32,7 +33,8 @@ export namespace vve::simple {
 	/// @brief Tree view over the generic graph, keeping only one root handle as tree-specific state.
 	template <typename THandle> class Tree : public Graph<THandle> {
 	private:
-		using Base = Graph<THandle>;					///< Reused graph storage and traversal implementation.
+		/// @brief Reused graph storage and traversal implementation.
+		using Base = Graph<THandle>;
 
 	public:
 		[[nodiscard]] std::expected<void, Error> setRoot(THandle handle, ObjectName name = {});
