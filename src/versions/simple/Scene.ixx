@@ -12,7 +12,7 @@ import VEEngine.Simple.Types;
 	* Functional objects:
 	* - RenderTexture stores one canonical decoded RGBA8 image shared by CPU materials and GPU uploads.
 	* - PointLight, DirectionalLight, and SpotLight store forward-lighting parameters.
-	* - Scene stores lights and a non-owning view of the RenderScene texture table; geometry stays in RenderScene.
+	* - Scene stores lights; geometry, materials, and textures stay in RenderScene.
 	*/
 export namespace vve::simple {
 
@@ -35,6 +35,7 @@ export namespace vve::simple {
 		std::vector<std::byte> rgba8{};         ///< Tight four-channel 8-bit pixels decoded once with stb_image.
 		PixelExtent extent{};                    ///< Decoded image dimensions in pixels.
 		bool linear{false};                       ///< True for data maps uploaded without sRGB conversion.
+		std::uint64_t generation{0};              ///< Unique identity of the decoded image; 0 marks a free texture-table slot.
 	};
 
 	/// @brief Point light parameters used by the simple forward pass.
@@ -45,6 +46,7 @@ export namespace vve::simple {
 		Scalar range{7.0F};               ///< Distance where direct light fades to zero.
 		Scalar ambient{0.18F};            ///< Scene-wide ambient term for unlit surfaces.
 		bool enabled{true};               ///< True when this light participates in rendering.
+		std::uint64_t owner{0};           ///< Scene instance that imported this light; 0 for lights set through the API.
 	};
 
 	/// @brief Directional light parameters used by the simple forward pass.
@@ -54,6 +56,7 @@ export namespace vve::simple {
 		LightIntensity intensity{.value = 1.4F}; ///< Multiplier for directional diffuse and specular lighting.
 		Scalar ambient{0.06F};                   ///< Ambient term contributed by this light.
 		bool enabled{true};                      ///< True when this light participates in rendering.
+		std::uint64_t owner{0};           ///< Scene instance that imported this light; 0 for lights set through the API.
 	};
 
 	/// @brief Spot light parameters used by the simple forward pass.
@@ -67,11 +70,11 @@ export namespace vve::simple {
 		SpotConeAngle outerConeAngle{.radians = 0.65F};  ///< Angle where the spot light fades to zero.
 		Scalar ambient{0.04F};                           ///< Ambient term contributed by this light.
 		bool enabled{true};                              ///< True when this light participates in rendering.
+		std::uint64_t owner{0};           ///< Scene instance that imported this light; 0 for lights set through the API.
 	};
 
-	/// @brief Renderer-side lights and the capped non-owning texture upload view.
+	/// @brief Renderer-side lights; geometry, materials and textures stay in RenderScene.
 	struct Scene {
-		std::vector<const RenderTexture *> textures{};      ///< RenderScene texture entries in shader-table order.
 		std::vector<PointLight> pointLights{};              ///< Point lights; at most kMaxShadowedPointLights are rendered.
 		std::vector<DirectionalLight> directionalLights{};  ///< Directional lights; at most kMaxDirectionalLights are rendered.
 		std::vector<SpotLight> spotLights{};                ///< Spot lights; at most kMaxShadowedSpotLights are rendered.

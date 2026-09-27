@@ -19,12 +19,11 @@ import VEEngine.Simple.Scene;
 int main() {
 	auto engine = vve::simple::Engine{
 		vve::ApplicationName{"render-texture-dedup-tests"},
-		vve::WindowSetups{vve::WindowSetup{}
-			.id("main")
-			.title("render-texture-dedup-tests")
-			.extent(vve::PixelExtent{.width = 64, .height = 64})
-			.renderer(vve::RendererId{.value = "forward"})
-			.visible(false)}};
+		vve::simple::Windows{.value = {vve::simple::WindowDesc{.id = "main",
+			.title = "render-texture-dedup-tests",
+			.extent = vve::PixelExtent{.width = 64, .height = 64},
+			.renderer_id = vve::RendererId{.value = "forward"},
+			.visible = false}}}};
 	if (!engine.init()) { return 1; }
 
 	auto &render = engine.renderSystem();
@@ -100,6 +99,9 @@ int main() {
 	const auto cap_directory = std::filesystem::temp_directory_path() /
 		("vve-render-texture-cap-" + unique_suffix);
 	if (!std::filesystem::create_directories(cap_directory, error) || error) { return 12; }
+	// Every texture slot can be filled; one more texture is reported as an error instead of rendering untextured.
+	auto cap_objects = std::vector<vve::RenderObjectHandle>{};
+	auto cap_paths = std::vector<std::filesystem::path>{};
 	for (std::size_t index{}; index < vve::simple::kMaxSceneTextures + 1U; ++index) {
 		const auto path = cap_directory / ("texture-" + std::to_string(index) + ".ppm");
 		auto output = std::ofstream{path, std::ios::binary};
@@ -111,18 +113,38 @@ int main() {
 		output << "P6\n2 2\n255\n";
 		output.write(pixels.data(), static_cast<std::streamsize>(pixels.size()));
 		output.close();
-		if (!output || !render.addTexturedCuboid(minimum, maximum, path)) {
+		cap_paths.push_back(path);
+		const auto object = render.addTexturedCuboid(minimum, maximum, path);
+		const bool expected = index < vve::simple::kMaxSceneTextures ? object.has_value() :
+			(!object && object.error() == vve::Error::capacity_exceeded);
+		if (!output || !expected) {
 			std::filesystem::remove_all(cap_directory, error);
 			return 13;
 		}
+		if (object) { cap_objects.push_back(*object); }
 	}
-	if (render.sceneTextureCount() != vve::simple::kMaxSceneTextures + 1U ||
-		render.renderMaterials().back().base_color_texture_index < vve::simple::kMaxSceneTextures ||
+	if (render.sceneTextureCount() != vve::simple::kMaxSceneTextures ||
 		!engine.renderFrame() || render.gpuTextureCount() != vve::simple::kMaxSceneTextures) {
 		std::filesystem::remove_all(cap_directory, error);
 		return 14;
 	}
 	std::cout << "cap sceneTextureCount=" << render.sceneTextureCount()
+				 << " gpuTextureCount=" << render.gpuTextureCount() << '\n';
+
+	// Removing an object and purging frees its texture slot, which the next texture reuses.
+	if (!render.removeObject(cap_objects.front())) {
+		std::filesystem::remove_all(cap_directory, error);
+		return 16;
+	}
+	(void)render.purgeUnusedAssets();
+	const auto reused = render.addTexturedCuboid(minimum, maximum, cap_paths.back());
+	if (!reused || render.sceneTextureCount() != vve::simple::kMaxSceneTextures ||
+		render.renderMaterials().back().base_color_texture_index != 0U ||
+		!engine.renderFrame() || render.gpuTextureCount() != vve::simple::kMaxSceneTextures) {
+		std::filesystem::remove_all(cap_directory, error);
+		return 17;
+	}
+	std::cout << "reuse sceneTextureCount=" << render.sceneTextureCount()
 				 << " gpuTextureCount=" << render.gpuTextureCount() << '\n';
 	std::filesystem::remove_all(cap_directory, error);
 	if (error) { return 15; }

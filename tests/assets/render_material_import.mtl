@@ -1,5 +1,5 @@
-# Material fixture using an OBJ height map as the normal-map fallback.
+# Material fixture with a base-color map and a tangent-space normal map.
 newmtl ImportedMaterial
 Kd 0.25 0.50 0.75
 map_Kd ../../assets/game/crate0/diffuse.png
-map_bump ../../assets/game/crate0/bump.png
+map_Kn ../../assets/game/crate0/normal.png

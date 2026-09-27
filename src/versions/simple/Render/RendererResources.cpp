@@ -23,7 +23,7 @@ namespace vve::simple {
 	constexpr VkFormat hdrFormat{VK_FORMAT_R16G16B16A16_SFLOAT};
 
 	/**
-		* @brief Initializes the Vulkan instance, device, swapchain, image views, depth attachment, shadow map, render pass, framebuffers, descriptor-set layout, pipeline layout, shader modules, graphics pipeline, command pool, command buffers, frame synchronization, per-frame uniform buffers, descriptor pool, per-frame descriptor sets, and uploaded per-object meshes.
+		* @brief Initializes the Vulkan instance, device, swapchain, image views, depth and HDR targets, shadow-map arrays, descriptor-set layout, pipeline layout, shader modules, forward and shadow pipelines (dynamic rendering), command pool and buffers, frame synchronization, per-frame uniform buffers, descriptor pool and sets, textures, materials, meshes, and the optional post-processing chain.
 		*
 		* @param sdlWindow Borrowed SDL window that owns the native platform surface.
 		* @return VK_SUCCESS after graphics-pipeline bring-up, otherwise the first failing Vulkan result.
@@ -208,19 +208,22 @@ namespace vve::simple {
 			materials.reserve(renderMaterials_->size());
 			for (const RenderMaterial &material : *renderMaterials_) {
 				const auto textureIndex = [this](RenderTextureIndex index) {
-					return index < kMaxSceneTextures && index < scene.textures.size() ? index : kNoTexture;
+					return index < kMaxSceneTextures && uploadedTextureGenerations_[index] != 0U ? index : kNoTexture;
 				};
 				const auto slot = static_cast<std::uint32_t>(materials.size());
 				materialSlots_.emplace(material.handle, slot);
 				materials.push_back(GpuMaterial{
 					.baseColorFactor = Vec4{material.base_color.value.x, material.base_color.value.y,
 						material.base_color.value.z, one()},
+					.emissiveFactor = Vec4{material.emissive.value.x, material.emissive.value.y, material.emissive.value.z, zero()},
 					.baseColorTexture = textureIndex(material.base_color_texture_index),
 					.normalTexture = textureIndex(material.normal_texture_index),
 					.metalnessTexture = textureIndex(material.metalness_texture_index),
 					.roughnessTexture = textureIndex(material.roughness_texture_index),
 					.emissiveTexture = textureIndex(material.emissive_texture_index),
-					.ambientOcclusionTexture = textureIndex(material.ambient_occlusion_texture_index)});
+					.ambientOcclusionTexture = textureIndex(material.ambient_occlusion_texture_index),
+					.roughnessFactor = material.roughness,
+					.metalnessFactor = material.metalness});
 			}
 		}
 
@@ -252,17 +255,14 @@ namespace vve::simple {
 	}
 
 	/**
-	 * @brief Uploads new RenderScene texture-table entries and binds all slots in every frame descriptor set.
+	 * @brief Brings every texture slot in line with the RenderScene texture table and binds all slots in every frame descriptor set.
 	 *
-	 * Unused slots point at the opaque-white default texture so the whole shader array stays valid.
+	 * A slot is re-uploaded only when its texture generation changed (new, reused, or released slot). Empty slots point at
+	 * the opaque-white default texture so the whole shader array stays valid. The caller makes sure no frame still uses a
+	 * replaced image.
 	 * @return VK_SUCCESS when all textures are resident and bound, otherwise the first Vulkan error.
 	 */
 	VkResult ForwardRenderer::uploadSceneTextures() {
-		if (sceneRequiresFullUpload_) {
-			for (TextureImage &texture : objectTextures) { texture.cleanup(); }
-			uploadedTextureCount_ = 0U;
-		}
-
 		constexpr std::array opaqueWhitePixel{std::byte{255U}, std::byte{255U}, std::byte{255U}, std::byte{255U}};
 		VkResult result{VK_SUCCESS};
 		if (defaultObjectTexture.imageView == VK_NULL_HANDLE) {
@@ -270,26 +270,31 @@ namespace vve::simple {
 				std::span{opaqueWhitePixel}, VkExtent2D{.width = 1U, .height = 1U});
 			if (result != VK_SUCCESS) { return result; }
 		}
-		const std::size_t textureCount{std::min(scene.textures.size(), kMaxSceneTextures)};
-		for (std::size_t index{uploadedTextureCount_}; index < textureCount; ++index) {
-			const RenderTexture *texture = scene.textures[index];
-			if (texture == nullptr) { return VK_ERROR_INITIALIZATION_FAILED; }
+		for (std::size_t index{}; index < kMaxSceneTextures; ++index) {
+			const std::uint64_t generation = textureGeneration(index);
+			if (uploadedTextureGenerations_[index] == generation) { continue; }
+			objectTextures[index].cleanup();
+			uploadedTextureGenerations_[index] = 0U;
+			if (generation == 0U) { continue; }
+			const RenderTexture &texture = (*renderTextures_)[index];
 			result = objectTextures[index].create(allocator, device.device, device.graphicsQueue, commandPool.commandPool,
-				texture->rgba8, VkExtent2D{.width = texture->extent.width, .height = texture->extent.height},
-				texture->linear ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R8G8B8A8_SRGB);
+				texture.rgba8, VkExtent2D{.width = texture.extent.width, .height = texture.extent.height},
+				texture.linear ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R8G8B8A8_SRGB);
 			if (result != VK_SUCCESS) { return result; }
+			uploadedTextureGenerations_[index] = generation;
 		}
 
 		std::array<VkDescriptorImageInfo, kMaxSceneTextures> images{};
 		for (std::size_t index{}; index < kMaxSceneTextures; ++index) {
-			const TextureImage &texture = index < textureCount ? objectTextures[index] : defaultObjectTexture;
+			const TextureImage &texture = uploadedTextureGenerations_[index] != 0U ? objectTextures[index] : defaultObjectTexture;
 			images[index] = VkDescriptorImageInfo{.sampler = texture.textureSampler, .imageView = texture.imageView, .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
 		}
 		for (std::uint32_t frame{}; frame < framesInFlight; ++frame) {
 			result = descriptorSets.writeObjectTextures(frame, images);
 			if (result != VK_SUCCESS) { return result; }
 		}
-		uploadedTextureCount_ = textureCount;
+		uploadedTextureCount_ = static_cast<std::size_t>(std::ranges::count_if(uploadedTextureGenerations_,
+			[](std::uint64_t generation) { return generation != 0U; }));
 		return VK_SUCCESS;
 	}
 
@@ -299,11 +304,10 @@ namespace vve::simple {
 	 * @return VK_SUCCESS when GPU meshes and the shared object texture match the CPU scene.
 	 */
 	VkResult ForwardRenderer::syncSceneResources() {
-		if (!sceneResourcesDirty_ && !sceneMaterialsDirty_) { return VK_SUCCESS; }
+		const bool textureChanged = defaultObjectTexture.imageView == VK_NULL_HANDLE || texturesOutOfDate();
+		if (!sceneResourcesDirty_ && !sceneMaterialsDirty_ && !textureChanged) { return VK_SUCCESS; }
 		if (device.device == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-		const bool textureChanged = sceneRequiresFullUpload_ || defaultObjectTexture.imageView == VK_NULL_HANDLE ||
-			std::min(scene.textures.size(), kMaxSceneTextures) != uploadedTextureCount_;
 		auto liveMeshes = std::set<RenderMeshHandle>{};
 		if (renderInstances_ != nullptr) {
 			for (const RenderInstance &instance : *renderInstances_) { liveMeshes.insert(instance.mesh); }
@@ -317,8 +321,10 @@ namespace vve::simple {
 		}
 
 		// Descriptor images can be replaced only after in-flight frames stop referencing them.
+		// Materials store texture slots, so they are rebuilt whenever a slot changes.
 		if (textureChanged) {
 			if (const VkResult result = uploadSceneTextures(); result != VK_SUCCESS) { return result; }
+			sceneMaterialsDirty_ = true;
 		}
 		if (sceneMaterialsDirty_) {
 			if (const VkResult result = uploadSceneMaterials(); result != VK_SUCCESS) { return result; }
@@ -366,6 +372,7 @@ namespace vve::simple {
 		for (auto &[_, mesh] : meshes) { mesh.cleanup(); }
 		meshes.clear();
 		for (TextureImage &texture : objectTextures) { texture.cleanup(); }
+		uploadedTextureGenerations_.fill(0U);
 		defaultObjectTexture.cleanup();
 		materialBuffer.cleanup();
 		materialSlots_.clear();
@@ -433,6 +440,12 @@ namespace vve::simple {
 		VkResult result = vkDeviceWaitIdle(device.device);
 		if (result != VK_SUCCESS) { return result; }
 
+		// A failed rebuild keeps the device alive and clears the requested extent, so the next frame tries again.
+		const auto retryNextFrame = [this](VkResult failed) {
+			swapchain.requestedExtent = {};
+			return failed;
+		};
+
 		graphicsPipeline.cleanup();
 		depthImage.cleanup();
 		hdrImage.cleanup();
@@ -446,24 +459,29 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return result; }
 
 		result = imageViews.create(device.device, swapchain.images, swapchain.imageFormat);
-		if (result != VK_SUCCESS) { return result; }
+		if (result != VK_SUCCESS) { return retryNextFrame(result); }
 
 		result = depthImage.create(allocator, device.device, swapchain.extent, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
-		if (result != VK_SUCCESS) { return result; }
+		if (result != VK_SUCCESS) { return retryNextFrame(result); }
 
 		result = hdrImage.create(allocator, device.device, swapchain.extent, hdrFormat,
 										 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-		if (result != VK_SUCCESS) { cleanup(); return result; }
+		if (result != VK_SUCCESS) { return retryNextFrame(result); }
 
-		if (postProcess) { postProcess->resize(swapchain.extent.width, swapchain.extent.height); }
+		if (postProcess) {
+			// The VVPPL throws, whereas the Engine works with std::expected and VKResult
+			try {
+				postProcess->resize(swapchain.extent.width, swapchain.extent.height);
+			} catch (const std::exception &) { return retryNextFrame(VK_ERROR_OUT_OF_DEVICE_MEMORY); }
+		}
 
 		VulkanVertexInputDescription vertexInput{};
 		result = graphicsPipeline.create(device.device, pipelineLayout.pipelineLayout, vertShaderModule.shaderModule, "vertexMain",
 													  fragShaderModule.shaderModule, vertexInput, swapchain.extent, hdrFormat, depthFormat);
-		if (result != VK_SUCCESS) { return result; }
+		if (result != VK_SUCCESS) { return retryNextFrame(result); }
 
 		result = frameSync.create(device.device, framesInFlight, static_cast<std::uint32_t>(swapchain.images.size()));
-		if (result != VK_SUCCESS) { return result; }
+		if (result != VK_SUCCESS) { return retryNextFrame(result); }
 
 		currentFrame = 0U;
 		lastRenderedImageIndex.reset();

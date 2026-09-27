@@ -4,7 +4,7 @@
  *
  * Functional objects:
  * - main: loads a deterministic OBJ, instantiates it through RenderSystem, and verifies that the
- *   source asset scene cannot be removed while the render scene instance is live.
+ *   source asset scene cannot be removed while the render scene instance is live, but can afterwards.
  */
 
 #include <filesystem>
@@ -54,5 +54,8 @@ int main() {
    const auto removed = render.removeScene(*scene);
    if (removed) { return 3; }
 
+   // Once the instance is gone, the scene's render data can be released through the facade.
+   if (!render.removeSceneInstance(*instance)) { return 4; }
+   if (!render.removeScene(*scene)) { return 5; }
    return 0;
 }

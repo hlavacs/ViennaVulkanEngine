@@ -183,7 +183,7 @@ export namespace vve::simple {
 		return render_system_.renderFrame(window_system_);
 	}
 
-	/// @brief Applies typed engine options; unknown option types are ignored.
+	/// @brief Applies typed engine options; an unknown option type is a compile error, not silently dropped.
 	template <typename TOption>
 	auto Engine::applyOption(TOption &&option)														-> void{
 		using Option = std::remove_cvref_t<TOption>;
@@ -197,6 +197,8 @@ export namespace vve::simple {
 			max_frames_ = std::forward<TOption>(option);
 		} else if constexpr (std::same_as<Option, Windows>) {
 			windows_ = std::forward<TOption>(option);
+		} else {
+			static_assert(!std::same_as<Option, Option>, "simple::Engine: unknown option type (use vve::simple::Windows, not vve::WindowSetups)");
 		}
 	}
 
@@ -211,6 +213,7 @@ export namespace vve::simple {
 			.mesh_material = [this](MeshHandle mesh) { return assets_.meshMaterial(mesh); },
 			.material_base_color = [this](MaterialHandle material) { return assets_.materialBaseColor(material); },
 			.material_texture_sources = [this](MaterialHandle material) { return assets_.materialTextureSources(material); },
+			.material_factors = [this](MaterialHandle material) { return assets_.materialFactors(material); },
 			.scene_lights = [this](SceneHandle scene) { return assets_.sceneLights(scene); },
 			.light_data = [this](LightHandle light) { return assets_.lightData(light); },
 			.scene_cameras = [this](SceneHandle scene) { return assets_.sceneCameras(scene); },
@@ -225,7 +228,7 @@ export namespace vve::simple {
 	/// @brief Fills small defaults after options have been applied.
 	inline auto Engine::applyDefaults()																	-> void{
 		render_system_.setGuiSystem(&gui_);																///< Hands engine-owned GUI to renderer for later forward GUI integration.
-		window_system_.setGuiEventSink([this](const auto &event) { gui_.processEvent(event); });		///< Forwards SDL input to the engine-owned GUI system.
+		window_system_.setGuiEventSink([this](const auto &event) { return gui_.processEvent(event); });	///< Forwards SDL input to the GUI; claimed events skip the game input.
 		if (windows_.value.empty()) { windows_.value.push_back(WindowDesc{}); }
 		for (auto &window : windows_.value) {
 			if (window.title == WindowDesc{}.title && application_name_.value != ApplicationName{}.value) {

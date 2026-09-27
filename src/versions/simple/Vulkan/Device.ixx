@@ -157,7 +157,7 @@ export namespace vve::simple {
 		std::optional<std::uint32_t> presentQueueFamily{};           ///< Queue family index supporting presentation to the surface.
 
 		/**
-			* @brief Selects the first physical device that supports graphics, presentation, and swapchains.
+			* @brief Selects the first physical device that supports graphics with compute, presentation, swapchains, and the required features.
 			*
 			* @param instance Vulkan instance that owns the physical-device list.
 			* @param surface Vulkan surface used to test presentation support.
@@ -225,20 +225,28 @@ export namespace vve::simple {
 				vkGetPhysicalDeviceQueueFamilyProperties(candidate, &queueFamilyCount, queueFamilies.data());
 			}
 
+			// The graphics queue also runs the post-processing compute shaders, so it needs both capabilities.
+			// A family that can also present is preferred, which avoids concurrent swapchain sharing.
+			constexpr VkQueueFlags graphicsAndCompute{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT};
 			for (std::uint32_t index{}; index < queueFamilyCount; ++index) {
-				if ((queueFamilies[index].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0U) { graphicsFamily = index; }
-
 				VkBool32 presentSupported{VK_FALSE};
 				const VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(candidate, index, surface, &presentSupported);
 				if (result != VK_SUCCESS) { return result; }
-				if (presentSupported == VK_TRUE) { presentationFamily = index; }
+				const bool graphics = (queueFamilies[index].queueFlags & graphicsAndCompute) == graphicsAndCompute;
 
-				if (graphicsFamily.has_value() && presentationFamily.has_value()) { break; }
+				if (graphics && presentSupported == VK_TRUE) {
+					graphicsFamily = index;
+					presentationFamily = index;
+					break;
+				}
+				if (graphics && !graphicsFamily.has_value()) { graphicsFamily = index; }
+				if (presentSupported == VK_TRUE && !presentationFamily.has_value()) { presentationFamily = index; }
 			}
 
 			const VkResult result = supportsSwapchain(candidate);
 			if (result != VK_SUCCESS) { return result; }
 			if (!graphicsFamily.has_value() || !presentationFamily.has_value()) { return VK_ERROR_FEATURE_NOT_PRESENT; }
+			if (!supportsRequiredFeatures(candidate)) { return VK_ERROR_FEATURE_NOT_PRESENT; }
 
 			physicalDevice.handle = vk::raii::PhysicalDevice{instance.handle, candidate};
 			graphicsQueueFamily = graphicsFamily;
@@ -268,9 +276,30 @@ export namespace vve::simple {
 			});
 			return found ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT;
 		}
+
+		/**
+			* @brief Checks the device features that VulkanDevice::create enables unconditionally.
+			*
+			* The renderer records dynamic rendering passes, and the fragment shader indexes the texture array
+			* with a per-draw material index, which needs shaderSampledImageArrayDynamicIndexing.
+			* @param candidate Physical device whose features are queried.
+			* @return True when every required feature is supported.
+			*/
+		[[nodiscard]] static bool supportsRequiredFeatures(VkPhysicalDevice candidate) {
+			VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering{
+				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
+			};
+			VkPhysicalDeviceFeatures2 features{
+				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+				.pNext = &dynamicRendering,
+			};
+			vkGetPhysicalDeviceFeatures2(candidate, &features);
+			return dynamicRendering.dynamicRendering == VK_TRUE &&
+				features.features.shaderSampledImageArrayDynamicIndexing == VK_TRUE;
+		}
 	};
 
-	/// @brief Minimal Vulkan logical-device owner; no swapchain, render pass, commands, or sync are created here.
+	/// @brief Minimal Vulkan logical-device owner; no swapchain, commands, or sync are created here.
 	struct VulkanDevice {
 		VulkanOwnedHandle<vk::raii::Device, VkDevice> device{}; ///< Owned Vulkan logical device handle.
 		VkQueue graphicsQueue{VK_NULL_HANDLE};        ///< Borrowed graphics queue retrieved from the device.
@@ -328,10 +357,8 @@ export namespace vve::simple {
 				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
 				.dynamicRendering = VK_TRUE,
 			};
-			VkPhysicalDeviceFeatures supportedFeatures{};
-			vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 			const VkPhysicalDeviceFeatures enabledFeatures{
-				.shaderSampledImageArrayDynamicIndexing = supportedFeatures.shaderSampledImageArrayDynamicIndexing, ///< Fragment shader indexes the base-color texture array by push constant.
+				.shaderSampledImageArrayDynamicIndexing = VK_TRUE, ///< Fragment shader indexes the texture array by material; checked in device selection.
 			};
 			const auto extensions = std::array<char const *, 1U>{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 			const VkDeviceCreateInfo createInfo{

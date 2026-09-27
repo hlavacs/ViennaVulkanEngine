@@ -28,7 +28,7 @@ export namespace vve::simple {
 		auto draw(std::function<void()> frame)											-> void;
 		auto initContext()																			-> void;
 		auto initSDL(SDL_Window *window)													-> void;
-		auto processEvent(const SDL_Event &event)								-> void;
+		auto processEvent(const SDL_Event &event)								-> bool;
 		auto shutdownSDL()																		-> void;
 		auto initVulkan(ImGui_ImplVulkan_InitInfo *info)					-> void;
 		auto shutdownVulkan()																-> void;
@@ -65,10 +65,22 @@ export namespace vve::simple {
 		sdlBackendReady_ = true;
 	}
 
-	/// @brief Forwards one SDL event to Dear ImGui after SDL backend setup.
-	inline auto GuiSystem::processEvent(const SDL_Event &event) -> void {
-		if (!sdlBackendReady_) { return; }
+	/// @brief Forwards one SDL event to Dear ImGui and reports whether the GUI claims it.
+	///
+	/// Keyboard events are claimed while an ImGui widget wants the keyboard (a focused text field), mouse events
+	/// while the pointer is over a GUI window. The flags come from the previous ImGui frame, as ImGui intends.
+	inline auto GuiSystem::processEvent(const SDL_Event &event) -> bool {
+		if (!sdlBackendReady_) { return false; }
 		ImGui_ImplSDL3_ProcessEvent(&event);
+		const ImGuiIO &io = ImGui::GetIO();
+		switch (event.type) {
+		case SDL_EVENT_KEY_DOWN:
+		case SDL_EVENT_TEXT_INPUT: return io.WantCaptureKeyboard;
+		case SDL_EVENT_MOUSE_MOTION:
+		case SDL_EVENT_MOUSE_BUTTON_DOWN:
+		case SDL_EVENT_MOUSE_WHEEL: return io.WantCaptureMouse;
+		default: return false;
+		}
 	}
 
 	/// @brief Shuts down the Dear ImGui SDL3 backend when it was initialized.

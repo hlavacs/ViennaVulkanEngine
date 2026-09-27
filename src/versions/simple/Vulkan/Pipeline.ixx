@@ -37,17 +37,18 @@ import std;
 export namespace vve::simple {
 	/// @brief Plain GPU material data matching the Slang GpuMaterial storage-buffer layout.
 	struct GpuMaterial {
-		Vec4 baseColorFactor{one(), one(), one(), one()}; ///< Imported base-color factor.
+		Vec4 baseColorFactor{one(), one(), one(), one()}; ///< Base-color factor; a base-color texture multiplies it.
+		Vec4 emissiveFactor{zero(), zero(), zero(), zero()}; ///< Emissive rgb factor with unused w; an emissive texture multiplies it.
 		std::uint32_t baseColorTexture{kNoTexture};       ///< Base-color texture-table index.
 		std::uint32_t normalTexture{kNoTexture};          ///< Normal texture-table index.
-		std::uint32_t metalnessTexture{kNoTexture};       ///< Metalness texture-table index.
-		std::uint32_t roughnessTexture{kNoTexture};       ///< Roughness texture-table index.
+		std::uint32_t metalnessTexture{kNoTexture};       ///< Metalness texture-table index (blue channel).
+		std::uint32_t roughnessTexture{kNoTexture};       ///< Roughness texture-table index (green channel).
 		std::uint32_t emissiveTexture{kNoTexture};        ///< Emissive texture-table index.
-		std::uint32_t ambientOcclusionTexture{kNoTexture}; ///< Ambient-occlusion texture-table index.
-		std::uint32_t padding0{};                         ///< Storage-buffer alignment padding.
-		std::uint32_t padding1{};                         ///< Storage-buffer alignment padding.
+		std::uint32_t ambientOcclusionTexture{kNoTexture}; ///< Ambient-occlusion texture-table index (red channel).
+		Scalar roughnessFactor{static_cast<Scalar>(0.5)}; ///< Roughness factor; a roughness texture multiplies it.
+		Scalar metalnessFactor{zero()};                   ///< Metalness factor; a metalness texture multiplies it.
 	};
-	static_assert(sizeof(GpuMaterial) == 48U); ///< Keeps the C++ and Slang storage-buffer strides identical.
+	static_assert(sizeof(GpuMaterial) == 64U); ///< Keeps the C++ and Slang storage-buffer strides identical.
 
 	/// @brief Plain per-object push-constant data matching the Slang ObjectPushConstants block layout.
 	struct ObjectPushConstants {
@@ -127,6 +128,7 @@ export namespace vve::simple {
 			{.location = 3U, .binding = 0U, .format = VK_FORMAT_R32G32B32A32_SFLOAT, .offset = offsetof(RenderVertex, tangent)},
 		}}; ///< Position, normal, texture-coordinate, and tangent attributes consumed by the vertex shader.
 	};
+	static_assert(sizeof(RenderVertex) == 48U); ///< The R32 attribute formats above require float members (fails with VVE_MATH_USE_DOUBLE).
 
 	/// @brief Minimal Vulkan pipeline-layout owner; no graphics pipeline, commands, or sync are created here.
 	struct VulkanPipelineLayout {

@@ -8,7 +8,6 @@ module;
 #include <SDL3/SDL_main.h>
 #include <vulkan/vulkan_raii.hpp>
 #include <SDL3/SDL_vulkan.h>
-#include <stb_image.h>
 #include <vk_mem_alloc.h>
 #ifdef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
 #undef SDL_MAIN_HANDLED
@@ -44,19 +43,6 @@ export namespace vve::simple {
 		VkSampler textureSampler{VK_NULL_HANDLE}; ///< Owned linear repeat sampler for texture reads.
 
 		~TextureImage() { cleanup(); }
-
-		/// @brief Loads an 8-bit RGBA file with stb_image and uploads it.
-		[[nodiscard]] VkResult create(VmaAllocator allocator, VkDevice owningDevice, VkQueue graphicsQueue, VkCommandPool commandPool, const std::filesystem::path &imagePath) {
-			int width{};
-			int height{};
-			int channels{};
-			const auto pathString = imagePath.string(); // stb_image requires a null-terminated filesystem path.
-			auto pixels = std::unique_ptr<stbi_uc, decltype(&stbi_image_free)>{stbi_load(pathString.c_str(), &width, &height, &channels, STBI_rgb_alpha), stbi_image_free};
-			if (!pixels || width <= 0 || height <= 0) { return VK_ERROR_INITIALIZATION_FAILED; }
-			const auto textureExtent = VkExtent2D{.width = static_cast<std::uint32_t>(width), .height = static_cast<std::uint32_t>(height)};
-			const auto byteCount = static_cast<std::size_t>(textureExtent.width) * textureExtent.height * 4U;
-			return create(allocator, owningDevice, graphicsQueue, commandPool, std::span{reinterpret_cast<const std::byte *>(pixels.get()), byteCount}, textureExtent);
-		}
 
 		/// @brief Uploads tight RGBA8 bytes through a staging buffer into a sampled image.
 		[[nodiscard]] VkResult create(VmaAllocator allocator, VkDevice owningDevice, VkQueue graphicsQueue, VkCommandPool commandPool, std::span<const std::byte> rgbaPixels, VkExtent2D textureExtent, VkFormat format = VK_FORMAT_R8G8B8A8_SRGB) {
@@ -324,8 +310,6 @@ export namespace vve::simple {
 		VulkanMesh() = default;
 		VulkanMesh(const VulkanMesh &) = delete;
 		VulkanMesh &operator=(const VulkanMesh &) = delete;
-		VulkanMesh(VulkanMesh &&) noexcept = default;
-		VulkanMesh &operator=(VulkanMesh &&) noexcept = default;
 
 		/// @brief Creates both buffers and copies the mesh into them.
 		template <typename TMesh>
@@ -394,6 +378,9 @@ export namespace vve::simple {
 		float ambient{};                                                                ///< Scene-wide ambient term.
 		std::uint32_t padding{};                                                        ///< std140 padding to 16 bytes.
 	};
+	/// Matrices are 64 bytes and vectors 16 bytes in the shader; a double Scalar (VVE_MATH_USE_DOUBLE) would break the std140 mirror.
+	static_assert(sizeof(FrameUniforms) == (2U + kShadowMatrixCount) * 64U +
+		(1U + 2U * kMaxShadowedPointLights + 4U * kMaxShadowedSpotLights + 3U * kMaxDirectionalLights + 1U) * 16U);
 
 	/// @brief One mapped FrameUniforms buffer per frame in flight.
 	struct VulkanUniformBuffers {

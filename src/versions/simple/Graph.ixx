@@ -10,15 +10,11 @@ export namespace vve::simple {
 	/// @brief Small named DAG with reverse edges for parent lookup.
 	template <typename THandle> class Graph {
 	public:
-		[[nodiscard]] std::expected<THandle, Error> addNode(ObjectName name = {});
 		[[nodiscard]] std::expected<void, Error> addNode(THandle handle, ObjectName name = {});
 		auto addEdge(THandle from, THandle to)														-> void;
 		[[nodiscard]] auto contains(THandle handle) const										-> bool;
-		[[nodiscard]] auto nodeName(THandle handle) const										-> std::expected<ObjectName, Error>;
 		[[nodiscard]] auto children(THandle handle) const										-> Vector<THandle>;
 		[[nodiscard]] auto parents(THandle handle) const										-> Vector<THandle>;
-		[[nodiscard]] auto topologicalOrder() const												-> std::expected<Vector<THandle>, Error>;
-		[[nodiscard]] auto nodeCount() const														-> std::size_t;
 
 	private:
 		/// @brief Adjacency storage allowing several neighbors per node handle.
@@ -49,13 +45,6 @@ export namespace vve::simple {
 
 namespace vve::simple {
 
-	/// @brief Adds a generated counter node and stores its optional display name.
-	template <typename THandle> std::expected<THandle, Error> Graph<THandle>::addNode(ObjectName name) {
-		const auto handle = makeCounterHandle<THandle>();
-		if (auto added = addNode(handle, std::move(name)); !added) { return std::unexpected(added.error()); }
-		return handle;
-	}
-
 	/// @brief Adds an existing handle as a graph node.
 	template <typename THandle> std::expected<void, Error> Graph<THandle>::addNode(THandle handle, ObjectName name) {
 		if (!handle.valid()) { return std::unexpected(Error::invalid_handle); }
@@ -75,13 +64,6 @@ namespace vve::simple {
 	/// @brief Returns whether a node handle is registered.
 	template <typename THandle> bool Graph<THandle>::contains(THandle handle) const { return nodes_.contains(handle); }
 
-	/// @brief Returns the stored node name.
-	template <typename THandle> std::expected<ObjectName, Error> Graph<THandle>::nodeName(THandle handle) const {
-		const auto node = nodes_.find(handle);
-		if (node == nodes_.end()) { return std::unexpected(Error::missing_object); }
-		return node->second;
-	}
-
 	/// @brief Returns direct outgoing neighbors.
 	template <typename THandle> Vector<THandle> Graph<THandle>::children(THandle handle) const {
 		Vector<THandle> result{};
@@ -97,47 +79,6 @@ namespace vve::simple {
 		for (auto it = first; it != last; ++it) { result.push_back(it->second); }
 		return result;
 	}
-
-	/// @brief Returns nodes in dependency order and rejects invalid edges or cycles.
-	template <typename THandle> std::expected<Vector<THandle>, Error> Graph<THandle>::topologicalOrder() const {
-		std::map<THandle, std::uint32_t> incoming_counts{};
-		std::map<THandle, Vector<THandle>> ordered_children{};
-		for (const auto &[handle, _] : nodes_) { incoming_counts.try_emplace(handle, 0); }
-
-		for (const auto &[from, to] : outgoing_) {
-			if (!from.valid() || !to.valid()) { return std::unexpected(Error::invalid_handle); }
-			if (!incoming_counts.contains(from) || !incoming_counts.contains(to)) {
-				return std::unexpected(Error::missing_object);
-			}
-			ordered_children[from].push_back(to);
-			++incoming_counts[to];
-		}
-
-		std::set<THandle> ready{};
-		Vector<THandle> ordered{};
-		ordered.reserve(incoming_counts.size());
-		for (const auto &[node, count] : incoming_counts) {
-			if (count == 0) { ready.insert(node); }
-		}
-
-		while (!ready.empty()) {
-			const auto node = *ready.begin();
-			ready.erase(ready.begin());
-			ordered.push_back(node);
-			for (const auto child : ordered_children[node]) {
-				auto &count = incoming_counts[child];
-				if (--count == 0) { ready.insert(child); }
-			}
-		}
-
-		if (ordered.size() != incoming_counts.size()) { return std::unexpected(Error::cycle_detected); }
-		return ordered;
-	}
-
-	/// @brief Returns the number of registered nodes.
-	template <typename THandle> std::size_t Graph<THandle>::nodeCount() const { return nodes_.size(); }
-
-
 
 	/// @brief Sets or replaces the root handle.
 	template <typename THandle> std::expected<void, Error> Tree<THandle>::setRoot(THandle handle, ObjectName name) {

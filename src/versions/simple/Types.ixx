@@ -27,7 +27,7 @@ export namespace vve::simple {
 	/// @brief Vertex payload shared by CPU render meshes and Vulkan vertex-input descriptions.
 	struct RenderVertex {
 		Vec3 position{math::zeroVec3()};											///< Object-space position.
-		Vec3 normal{Vec3(math::zero(), math::one(), math::zero())};		///< Object-space normal.
+		Vec3 normal{math::zeroVec3()};												///< Object-space normal, or zero so the shader uses the face normal.
 		Vec2 uv{math::zero(), math::zero()};									///< First texture coordinate.
 		Vec4 tangent{math::zero(), math::zero(), math::zero(), math::zero()}; ///< Object-space tangent with handedness in w, or zero when absent.
 	};
@@ -39,13 +39,28 @@ export namespace vve::simple {
 		metalness,			///< Metallic response map.
 		roughness,			///< Surface roughness map.
 		emissive,			///< Self-illumination map.
-		ambient_occlusion	///< Ambient-occlusion map.
+		ambient_occlusion,	///< Ambient-occlusion map.
+		height				///< Bump (height) map; only a colored image here is used, as a mislabeled normal map.
+	};
+
+	/// @brief Image data stored inside a model file (glTF binary, FBX) instead of a separate file.
+	struct EmbeddedImage {
+		std::vector<std::byte> bytes{};	///< Compressed image file bytes when extent is zero, otherwise tight RGBA8 pixels, top row first.
+		PixelExtent extent{};				///< Pixel size of raw RGBA8 data; zero for compressed bytes.
 	};
 
 	/// @brief One imported material texture with its renderer-facing semantic and canonical source path.
 	struct MaterialTextureSource {
 		MaterialTextureSemantic semantic{};	///< Renderer-facing texture role.
-		std::filesystem::path path{};			///< Canonical absolute image path.
+		std::filesystem::path path{};			///< Canonical absolute image path, or a unique synthetic key for embedded images.
+		std::shared_ptr<const EmbeddedImage> embedded{};	///< Image data when the texture is embedded in the model file.
+	};
+
+	/// @brief Scalar material factors a model file may specify; absent values let the renderer pick defaults.
+	struct MaterialFactors {
+		std::optional<Scalar> roughness{};		///< Roughness factor.
+		std::optional<Scalar> metalness{};		///< Metalness factor.
+		std::optional<LinearColor> emissive{};	///< Emissive color factor.
 	};
 
 	using math::add;

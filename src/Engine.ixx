@@ -93,7 +93,6 @@ export namespace vve {
 		[[nodiscard]] auto versionMajor() const												-> std::uint32_t;
 		[[nodiscard]] auto versionName() const													-> std::string_view;
 		[[nodiscard]] auto world();
-		[[nodiscard]] auto world() const;
 
 		[[nodiscard]] auto init()																	-> std::expected<void, Error>;
 		[[nodiscard]] auto run()																	-> std::expected<void, Error>;
@@ -106,6 +105,7 @@ export namespace vve {
 		template <typename TOption> static void appendStartupOption(detail::EngineStartupOptions &options, TOption &&option);
 		static void appendStartupOption(detail::EngineStartupOptions &options, WindowSetups option);
 		[[nodiscard]] auto makeWorld();
+		void defaultSystems();
 		template <typename TOption> void applyOption(TOption &&option);
 		template <typename... TUserSystems> void applyOption(const UserSystems<TUserSystems...> &systems);
 		template <typename... TUserSystems> void applyOption(UserSystems<TUserSystems...> &systems);
@@ -123,7 +123,7 @@ export namespace vve {
 		GuiSystem gui_;														///< Public GUI wrapper referenced by world views.
 		WindowSystem window_system_;										///< Public window wrapper referenced by world views.
 		RenderSystem render_system_;										///< Public render wrapper referenced by world views.
-		std::optional<std::tuple<TSystems...>> systems_{};				///< User systems supplied by the application.
+		std::optional<std::tuple<TSystems...>> systems_{};				///< User systems; always engaged after construction.
 		std::chrono::steady_clock::time_point last_frame_time_{};	///< Timestamp of the previous facade step().
 		std::uint64_t frame_{0};												///< Number of completed facade step() calls.
 		bool systems_initialized_{false};									///< True after user-system init hooks succeed.
@@ -133,22 +133,6 @@ export namespace vve {
 
 		template <typename T> struct IsUserSystemsOption : std::false_type {};
 		template <typename... TSystems> struct IsUserSystemsOption<UserSystems<TSystems...>> : std::true_type {};
-
-		template <typename TDefault, typename... TOptions> struct FindUserSystemsOption {
-			using type = TDefault;
-		};
-
-		template <typename TDefault, typename TFirst, typename... TRest>
-		struct FindUserSystemsOption<TDefault, TFirst, TRest...> {
-			using TNormalized = std::remove_cvref_t<TFirst>;
-			using type = std::conditional_t<IsUserSystemsOption<TNormalized>::value, TNormalized,
-														typename FindUserSystemsOption<TDefault, TRest...>::type>;
-		};
-
-		template <typename TUserSystems> struct EngineTypeFromUserSystems;
-		template <typename... TSystems> struct EngineTypeFromUserSystems<UserSystems<TSystems...>> {
-			using type = Engine<TSystems...>;
-		};
 
 		template <std::size_t TPriority> struct Priority : Priority<TPriority - 1> {};
 		template <> struct Priority<0> {};
@@ -244,7 +228,11 @@ export namespace vve {
 		bool windows_configured_{false};				///< True after startup windows are explicitly configured.
 	};														///< Chainable facade engine factory.
 
-	template <typename... TSystems> Engine<TSystems...>::Engine() : Engine{detail::EngineStartupOptions{}} {}
+	template <typename... TSystems> Engine<TSystems...>::Engine() : Engine{detail::EngineStartupOptions{}} {
+		static_assert((std::default_initializable<TSystems> && ...),
+			"Engine<TSystems...>: pass UserSystems{...} when a system has no default constructor");
+		defaultSystems();
+	}
 
 	template <typename... TSystems>
 	Engine<TSystems...>::Engine(detail::EngineStartupOptions options)
@@ -253,13 +241,28 @@ export namespace vve {
 		  window_system_{detail::engineWindowSystem(*state_)}, render_system_{detail::engineRenderSystem(*state_)} {}
 
 	template <typename... TSystems>
-	Engine<TSystems...>::Engine(EngineConfig config) : Engine{startupOptions(std::move(config))} {}
+	Engine<TSystems...>::Engine(EngineConfig config) : Engine{startupOptions(std::move(config))} {
+		static_assert((std::default_initializable<TSystems> && ...),
+			"Engine<TSystems...>: pass UserSystems{...} when a system has no default constructor");
+		defaultSystems();
+	}
 
 	template <typename... TSystems>
 	template <typename... TOptions>
 		requires(sizeof...(TOptions) > 0)
 	Engine<TSystems...>::Engine(TOptions &&...options) : Engine{startupOptions(options...)} {
+		static_assert((std::default_initializable<TSystems> && ...) ||
+			(detail::IsUserSystemsOption<std::remove_cvref_t<TOptions>>::value || ...),
+			"Engine<TSystems...>: pass UserSystems{...} when a system has no default constructor");
 		(applyOption(std::forward<TOptions>(options)), ...);
+		defaultSystems();
+	}
+
+	/// @brief Default-constructs the user systems when no UserSystems option supplied them, so world() can always reference them.
+	template <typename... TSystems> void Engine<TSystems...>::defaultSystems() {
+		if constexpr ((std::default_initializable<TSystems> && ...)) {
+			if (!systems_.has_value()) { systems_.emplace(); }
+		}
 	}
 
 	template <typename... TSystems> std::uint32_t Engine<TSystems...>::versionMajor() const {
@@ -273,10 +276,6 @@ export namespace vve {
 
 	template <typename... TSystems> auto Engine<TSystems...>::world() {
 		return makeWorld();
-	}
-
-	template <typename... TSystems> auto Engine<TSystems...>::world() const {
-		return const_cast<Engine *>(this)->world();
 	}
 
 	template <typename... TSystems>
@@ -297,9 +296,10 @@ export namespace vve {
 			options.config.application_name = std::forward<TOption>(option).value;
 		} else if constexpr (std::same_as<Option, MaxFrames>) {
 			options.config.max_frames = std::forward<TOption>(option).value;
+		} else if constexpr (detail::IsUserSystemsOption<Option>::value) {
+			(void)options;	// User systems are applied after construction by applyOption.
 		} else {
-			(void)options;
-			(void)option;
+			static_assert(!std::same_as<Option, Option>, "Engine: unknown startup option type");
 		}
 	}
 
@@ -335,19 +335,11 @@ export namespace vve {
 		}
 	}
 
+	/// @brief Startup options were already consumed by startupOptions; only UserSystems (the overloads below) apply here.
 	template <typename... TSystems>
 	template <typename TOption>
 	void Engine<TSystems...>::applyOption(TOption &&option) {
-		if constexpr (requires { std::forward<TOption>(option).value; }) {
-			using Value = std::remove_cvref_t<decltype(std::forward<TOption>(option).value)>;
-			if constexpr (std::same_as<Value, std::tuple<TSystems...>>) {
-				systems_.emplace(std::forward<TOption>(option).value);
-			} else {
-				(void)option;
-			}
-		} else {
-			(void)option;
-		}
+		(void)option;
 	}
 
 	template <typename... TSystems>

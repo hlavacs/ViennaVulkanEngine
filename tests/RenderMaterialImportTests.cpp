@@ -18,12 +18,11 @@ import VEEngine.Simple.Scene;
 int main(int argc, char **argv) {
 	auto engine = vve::simple::Engine{
 		vve::ApplicationName{"render-material-import-tests"},
-		vve::WindowSetups{vve::WindowSetup{}
-			.id("main")
-			.title("render-material-import-tests")
-			.extent(vve::PixelExtent{.width = 64, .height = 64})
-			.renderer(vve::RendererId{.value = "forward"})
-			.visible(false)}};
+		vve::simple::Windows{.value = {vve::simple::WindowDesc{.id = "main",
+			.title = "render-material-import-tests",
+			.extent = vve::PixelExtent{.width = 64, .height = 64},
+			.renderer_id = vve::RendererId{.value = "forward"},
+			.visible = false}}}};
 	if (!engine.init()) { return 1; }
 
 	auto &assets = engine.assets();
@@ -51,11 +50,11 @@ int main(int argc, char **argv) {
 		}
 		bool has_base{};
 		bool has_normal{};
-		for (const auto &[semantic, path] : *sources) {
-			if (!path.is_absolute()) { return 5; }
-			unique_paths.insert(path);
-			has_base = has_base || semantic == vve::simple::MaterialTextureSemantic::base_color;
-			has_normal = has_normal || semantic == vve::simple::MaterialTextureSemantic::normal;
+		for (const auto &source : *sources) {
+			if (!source.path.is_absolute()) { return 5; }
+			unique_paths.insert(source.path);
+			has_base = has_base || source.semantic == vve::simple::MaterialTextureSemantic::base_color;
+			has_normal = has_normal || source.semantic == vve::simple::MaterialTextureSemantic::normal;
 		}
 		asset_has_base_and_normal = asset_has_base_and_normal || (has_base && has_normal);
 	}
@@ -90,8 +89,8 @@ int main(int argc, char **argv) {
 	if (fixture_model) {
 		if (!render_has_base_and_normal) { return 8; }
 		const auto diffuse_linear = render.sceneTextureIsLinear(base_normal_material->base_color_texture_index);
-		const auto bump_linear = render.sceneTextureIsLinear(base_normal_material->normal_texture_index);
-		if (!diffuse_linear || !bump_linear || *diffuse_linear || !*bump_linear || linear_texture_count != 1U) { return 8; }
+		const auto normal_linear = render.sceneTextureIsLinear(base_normal_material->normal_texture_index);
+		if (!diffuse_linear || !normal_linear || *diffuse_linear || !*normal_linear || linear_texture_count != 1U) { return 8; }
 	}
 	if (imported_render_material == render.renderMaterials().end() ||
 			(fixture_model && !render_has_base_and_normal) || first_texture_count == 0U ||

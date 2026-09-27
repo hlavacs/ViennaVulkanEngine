@@ -44,12 +44,12 @@ export namespace vve {
 		[[nodiscard]] auto loadSampleScene()																						-> std::expected<void, Error>;
 		auto setPostProcessSetup(std::function<void(vvppl::PostProcessing &)> setup)											-> void;
 		auto setCamera(Camera camera, PixelExtent extent)																		-> void;
-		void setDirectionalLight(Direction direction_to_light, LinearColor color,
+		void setDirectionalLight(Direction direction, LinearColor color,
 											LightIntensity intensity, LinearColor ambient);
 		inline void setDirectionalLight(const DirectionalLight &light) {
 			setDirectionalLight(light.direction, light.color, light.intensity, light.ambient);
 		}																																		///< Applies a directional light descriptor.
-		void addDirectionalLight(Direction direction_to_light, LinearColor color,
+		void addDirectionalLight(Direction direction, LinearColor color,
 											LightIntensity intensity, LinearColor ambient);
 		inline void addDirectionalLight(const DirectionalLight &light) {
 			addDirectionalLight(light.direction, light.color, light.intensity, light.ambient);
@@ -112,12 +112,6 @@ export namespace vve {
 		[[nodiscard]] auto removeSceneInstance(RenderSceneInstanceHandle instance)					-> std::expected<void, Error>;
 		[[nodiscard]] auto removeScene(SceneHandle handle)															-> std::expected<void, Error>;
 		[[nodiscard]] auto purgeUnusedAssets()																				-> std::size_t;
-		[[nodiscard]] auto sceneTextureCount() const																-> std::size_t;
-		[[nodiscard]] auto gpuTextureCount() const																	-> std::size_t;
-		[[nodiscard]] auto gpuMeshCount() const																		-> std::size_t;
-		[[nodiscard]] auto gpuMaterialCount() const																-> std::size_t;
-		[[nodiscard]] auto gpuMeshUploadCount() const																-> std::size_t;
-		[[nodiscard]] auto gpuMaterialUploadCount() const														-> std::size_t;
 		[[nodiscard]] auto sceneMeshCount() const																					-> std::size_t;
 		[[nodiscard]] auto sceneMaterialCount() const																			-> std::size_t;
 		[[nodiscard]] auto sceneDirectionalLightCount() const																-> std::size_t;
@@ -137,8 +131,6 @@ export namespace vve {
 		[[nodiscard]] auto renderedFrameCount() const																			-> std::uint64_t;
 		[[nodiscard]] auto renderingFramesPerSecond() const																-> double;
 		[[nodiscard]] auto lastRenderedWindowCount() const																		-> std::size_t;
-
-		[[nodiscard]] auto sceneTextureIsLinear(std::size_t index) const -> std::expected<bool, Error>;
 
 	private:
 		template <typename... TSystems> friend class Engine;

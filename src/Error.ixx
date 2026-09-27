@@ -18,7 +18,6 @@ export namespace vve {
 	} // namespace detail
 
 	enum class Error {
-		ok,																///< Operation completed without error.
 		not_initialized,												///< Required subsystem was not initialized.
 		already_initialized,											///< Subsystem was initialized more than once.
 		invalid_argument,												///< Caller supplied invalid input.
@@ -33,12 +32,12 @@ export namespace vve {
 		missing_component,												///< Component was required but not found.
 		platform_error,													///< Platform API returned an error.
 		asset_import_failed,											///< Asset import pipeline failed.
-		cycle_detected													///< Graph or hierarchy contains a cycle.
+		cycle_detected,													///< Graph or hierarchy contains a cycle.
+		capacity_exceeded												///< A fixed-size engine table is full.
 	};
 
 	[[nodiscard]] inline auto errorName(Error error)	-> std::string_view{
 		static const std::map<Error, std::string_view> names{
-				{Error::ok, "ok"},
 				{Error::not_initialized, "not_initialized"},
 				{Error::already_initialized, "already_initialized"},
 				{Error::invalid_argument, "invalid_argument"},
@@ -54,6 +53,7 @@ export namespace vve {
 				{Error::platform_error, "platform_error"},
 				{Error::asset_import_failed, "asset_import_failed"},
 				{Error::cycle_detected, "cycle_detected"},
+				{Error::capacity_exceeded, "capacity_exceeded"},
 		};
 		return detail::mapValueOr(names, error, std::string_view{"unknown_error"});
 	}

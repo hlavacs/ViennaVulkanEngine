@@ -17,12 +17,11 @@ import VEEngine.Simple;
 int main() {
 	auto engine = vve::simple::Engine{
 		vve::ApplicationName{"render-mesh-dedup-tests"},
-		vve::WindowSetups{vve::WindowSetup{}
-			.id("main")
-			.title("render-mesh-dedup-tests")
-			.extent(vve::PixelExtent{.width = 64, .height = 64})
-			.renderer(vve::RendererId{.value = "forward"})
-			.visible(false)}};
+		vve::simple::Windows{.value = {vve::simple::WindowDesc{.id = "main",
+			.title = "render-mesh-dedup-tests",
+			.extent = vve::PixelExtent{.width = 64, .height = 64},
+			.renderer_id = vve::RendererId{.value = "forward"},
+			.visible = false}}}};
 	if (!engine.init()) { return 1; }
 
 	auto &render = engine.renderSystem();

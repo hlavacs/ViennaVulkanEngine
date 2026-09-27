@@ -22,6 +22,11 @@ export import VEEngine.Simple.RenderResources;
 
 namespace vve::simple::detail {
 
+	/// @brief Inner (full-intensity) spot cone used when the caller only gives the outer cone.
+	[[nodiscard]] inline auto defaultInnerCone(SpotConeAngle outer) -> SpotConeAngle {
+		return SpotConeAngle{.radians = std::min(SpotLight{}.innerConeAngle.radians, outer.radians * static_cast<Scalar>(0.5))};
+	}
+
 	/// @brief Builds the backend model matrix from the public transform contract.
 	[[nodiscard]] inline auto modelMatrix(Transform transform) -> Mat4 {
 		const auto q = transform.rotation.value;
@@ -54,6 +59,7 @@ export namespace vve::simple {
 		std::function<std::expected<MaterialHandle, Error>(MeshHandle)> mesh_material{};							///< Returns the mesh material.
 		std::function<std::expected<LinearColor, Error>(MaterialHandle)> material_base_color{};				///< Returns the material base-color factor.
 		std::function<std::expected<Vector<MaterialTextureSource>, Error>(MaterialHandle)> material_texture_sources{}; ///< Lists typed canonical material textures.
+		std::function<std::expected<MaterialFactors, Error>(MaterialHandle)> material_factors{};				///< Returns imported roughness, metalness, and emissive factors.
 		std::function<std::expected<Vector<LightHandle>, Error>(SceneHandle)> scene_lights{};					///< Lists scene lights.
 		std::function<std::expected<LightDescriptor, Error>(LightHandle)> light_data{};							///< Returns imported light data.
 		std::function<std::expected<Vector<CameraHandle>, Error>(SceneHandle)> scene_cameras{};				///< Lists scene cameras.
@@ -71,6 +77,11 @@ export namespace vve::simple {
 	public:
 		RenderSystem();
 		explicit RenderSystem(ImportedAssetReadAccess imported_assets);
+		// renderer_ keeps pointers into scene_, so a copied or moved RenderSystem would render the old object's scene.
+		RenderSystem(const RenderSystem &) = delete;
+		RenderSystem(RenderSystem &&) = delete;
+		RenderSystem &operator=(const RenderSystem &) = delete;
+		RenderSystem &operator=(RenderSystem &&) = delete;
 		[[nodiscard]] auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {})	-> std::expected<RenderSceneInstanceHandle, Error>;
 
 		// Object state, cameras, and lights mirrored into the renderer CPU scene (RenderSystemScene.cpp).
@@ -81,8 +92,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto setObjectTransform(RenderObjectHandle handle, Transform transform)					-> std::expected<void, Error>;
 		[[nodiscard]] auto objectTransform(RenderObjectHandle handle) const											-> std::expected<Transform, Error>;
 		auto setCamera(Camera camera, PixelExtent extent)																	-> void;
-		auto setDirectionalLight(Direction direction_to_light, LinearColor color, LightIntensity intensity, LinearColor ambient) -> void;
-		auto addDirectionalLight(Direction direction_to_light, LinearColor color, LightIntensity intensity, LinearColor ambient) -> void;
+		auto setDirectionalLight(Direction direction, LinearColor color, LightIntensity intensity, LinearColor ambient) -> void;
+		auto addDirectionalLight(Direction direction, LinearColor color, LightIntensity intensity, LinearColor ambient) -> void;
 		auto setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range)	-> void;
 		auto setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range, LinearColor ambient) -> void;
 		auto addPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range)	-> void;
@@ -153,8 +164,10 @@ export namespace vve::simple {
 		[[nodiscard]] auto lastRenderedWindowCount() const																		-> std::size_t;
 
 	private:
-		auto appendBackendTextures() -> void;
 		[[nodiscard]] auto registerRenderObject(RenderInstanceHandle instance)								-> RenderObjectHandle;
+		auto addImportedLight(const LightDescriptor &light, std::uint64_t owner)								-> void;
+		auto removeImportedLights(std::uint64_t owner)																-> void;
+		auto rollbackSceneInstance(RenderSceneInstanceHandle instance)												-> void;
 		[[nodiscard]] auto findRenderObject(RenderObjectHandle handle) const
 			-> std::optional<RenderInstanceHandle>;
 		auto eraseRenderObject(RenderObjectHandle handle)														-> void;
@@ -178,7 +191,7 @@ export namespace vve::simple {
 			render_objects_{};														///< Public render-object to internal instance map.
 		std::unordered_map<RenderObjectHandle, std::pair<RenderSceneInstanceHandle, NodeHandle>, HandleHash<RenderObjectHandle>>
 			object_sources_{};														///< Public render-object source scene and node map.
-		std::map<SceneHandle, Scene> scenes_{};									///< Loaded backend scenes by public scene handle.
+		std::set<SceneHandle> scenes_{};											///< Backend light scenes loaded with loadScene(Scene).
 		std::map<RenderSceneInstanceHandle, Vector<RenderObjectHandle>> scene_instances_{};	///< Render objects created per scene instance.
 		std::map<RenderSceneInstanceHandle, SceneHandle> scene_instance_sources_{};	///< Asset scene used to create each scene instance.
 		std::optional<SceneHandle> active_scene_{};								///< Scene currently mirrored into the backend.
@@ -198,13 +211,13 @@ namespace vve::simple {
 
 	/// @brief Stores read access to imported asset-scene descriptors owned by the engine.
 	inline RenderSystem::RenderSystem() {
-		renderer_.bindRenderScene(scene_.meshes(), scene_.materials(), scene_.instances());
+		renderer_.bindRenderScene(scene_.meshes(), scene_.materials(), scene_.instances(), scene_.textures());
 	}
 
 	/// @brief Stores read access to imported asset-scene descriptors owned by the engine.
 	inline RenderSystem::RenderSystem(ImportedAssetReadAccess imported_assets)
 		: imported_assets_{std::move(imported_assets)} {
-		renderer_.bindRenderScene(scene_.meshes(), scene_.materials(), scene_.instances());
+		renderer_.bindRenderScene(scene_.meshes(), scene_.materials(), scene_.instances(), scene_.textures());
 	}
 
 	/// @brief Returns the forward renderer backend.
@@ -219,7 +232,6 @@ namespace vve::simple {
 		const auto handle = RenderObjectHandle{RenderObjectHandle::counter_bit |
 														  (next_render_object_id_++ & RenderObjectHandle::id_mask)};
 		render_objects_.emplace(handle, instance);
-		appendBackendTextures();
 		renderer_.markSceneResourcesDirty();
 		return handle;
 	}

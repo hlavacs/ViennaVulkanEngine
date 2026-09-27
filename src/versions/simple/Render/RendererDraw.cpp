@@ -41,19 +41,11 @@ namespace vve::simple {
 		VkResult result = vkWaitForFences(device.device, 1U, &inFlightFence, VK_TRUE, UINT64_MAX);
 		if (result != VK_SUCCESS) { reportFrameFailure("fence wait", result); return; }
 
-		std::uint32_t imageIndex{};
-		result = vkAcquireNextImageKHR(device.device, swapchain.swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) { (void)recreateSwapchain(currentWindowPixelExtent()); return; }
-		// VK_SUBOPTIMAL_KHR still acquired an image: it must be rendered and presented, otherwise the swapchain runs out of images and the next acquire blocks forever.
-		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) { reportFrameFailure("image acquire", result); return; }
-		if (imageIndex >= frameSync.renderFinishedSemaphores.size()) { return; }
-		const VkSemaphore renderFinishedSemaphore{frameSync.renderFinishedSemaphores[imageIndex]}; // Present-wait semaphore follows the acquired swapchain image.
-		if (renderFinishedSemaphore == VK_NULL_HANDLE) { return; }
-
+		// Frame data only needs the frame slot, which the fence wait freed; preparing it before the acquire keeps failures away from acquired images.
 		const Scalar aspectRatio{swapchain.extent.height == 0U ? one() : static_cast<Scalar>(swapchain.extent.width) / static_cast<Scalar>(swapchain.extent.height)}; ///< Live swapchain aspect with a zero-height guard.
 		constexpr Scalar cameraNear{static_cast<Scalar>(0.1)}; ///< Camera near plane shared by projection and cascade splitting.
 		constexpr Scalar cameraFar{static_cast<Scalar>(100.0)}; ///< Camera far plane bounds directional cascade coverage.
-		const Mat4 cameraView{lookAt(cameraEye, cameraTarget, Vec3{zero(), one(), zero()})}; ///< Current camera transform shared by uniforms and cascade fitting.
+		const Mat4 cameraView{lookAt(cameraEye, cameraTarget, detail::stableUp(subtract(cameraTarget, cameraEye)))}; ///< Current camera transform shared by uniforms and cascade fitting.
 		const ForwardRendererShadowFrame shadowFrame = prepareShadowFrame(cameraView, cameraVerticalFov, aspectRatio, cameraNear, cameraFar);
 		const FrameUniforms frameUniforms{
 			.view = cameraView,
@@ -77,12 +69,38 @@ namespace vve::simple {
 		result = uniformBuffers.update(currentFrame, frameUniforms);
 		if (result != VK_SUCCESS) { reportFrameFailure("uniform update", result); return; }
 
+		std::uint32_t imageIndex{};
+		result = vkAcquireNextImageKHR(device.device, swapchain.swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+		if (result == VK_ERROR_OUT_OF_DATE_KHR) { (void)recreateSwapchain(currentWindowPixelExtent()); return; }
+		// VK_SUBOPTIMAL_KHR still acquired an image: it must be rendered and presented, otherwise the swapchain runs out of images and the next acquire blocks forever.
+		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) { reportFrameFailure("image acquire", result); return; }
+
+		// Once an image is acquired, every early exit must consume its semaphore; the rebuilt swapchain then releases the image.
+		// signalFence re-signals the in-flight fence when it was already reset, so the next wait on it does not block forever.
+		const auto abandonAcquiredImage = [&](const char *stage, VkResult failed, VkFence signalFence = VK_NULL_HANDLE) {
+			reportFrameFailure(stage, failed);
+			const VkPipelineStageFlags consumeStage{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT};
+			const VkSubmitInfo consume{
+				.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				.waitSemaphoreCount = 1U,
+				.pWaitSemaphores = &imageAvailableSemaphore,
+				.pWaitDstStageMask = &consumeStage,
+			};
+			(void)vkQueueSubmit(device.graphicsQueue, 1U, &consume, signalFence);
+			swapchain.requestedExtent = {};
+		};
+		if (imageIndex >= frameSync.renderFinishedSemaphores.size() || frameSync.renderFinishedSemaphores[imageIndex] == VK_NULL_HANDLE) {
+			abandonAcquiredImage("present semaphore lookup", VK_ERROR_INITIALIZATION_FAILED);
+			return;
+		}
+		const VkSemaphore renderFinishedSemaphore{frameSync.renderFinishedSemaphores[imageIndex]}; // Present-wait semaphore follows the acquired swapchain image.
+
 		result = recordCommandBuffer(currentFrame, imageIndex, shadowFrame);
-		if (result != VK_SUCCESS) { reportFrameFailure("command recording", result); return; }
+		if (result != VK_SUCCESS) { abandonAcquiredImage("command recording", result); return; }
 
 		// Reset the fence only once the submit is certain; an unsignaled fence without a submit would block the next frame forever.
 		result = vkResetFences(device.device, 1U, &inFlightFence);
-		if (result != VK_SUCCESS) { reportFrameFailure("fence reset", result); return; }
+		if (result != VK_SUCCESS) { abandonAcquiredImage("fence reset", result); return; }
 
 		const VkPipelineStageFlags waitStage{VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT}; ///< Acquire completes before the swapchain layout transition executes.
 		const VkSubmitInfo submitInfo{
@@ -96,7 +114,7 @@ namespace vve::simple {
 			.pSignalSemaphores = &renderFinishedSemaphore,
 		};
 		result = vkQueueSubmit(device.graphicsQueue, 1U, &submitInfo, inFlightFence);
-		if (result != VK_SUCCESS) { reportFrameFailure("queue submit", result); return; }
+		if (result != VK_SUCCESS) { abandonAcquiredImage("queue submit", result, inFlightFence); return; }
 		fillShadowDepthSamplesFromGpu();
 		if (readback != nullptr && imageIndex < swapchain.images.size()) {
 			lastReadbackCaptureResult = readback->capture(swapchain.images[imageIndex], 0U, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -135,7 +153,7 @@ namespace vve::simple {
 		* @brief Records the shadow passes and forward color pass for one acquired swapchain image.
 		*
 		* @param frameIndex Index selecting the per-frame command buffer and descriptor set.
-		* @param imageIndex Index selecting the swapchain framebuffer.
+		* @param imageIndex Index of the acquired swapchain image.
 		* @return VK_SUCCESS when command recording succeeds, otherwise the first failing Vulkan result.
 		*/
 	VkResult ForwardRenderer::recordCommandBuffer(std::uint32_t frameIndex, std::uint32_t imageIndex, const ForwardRendererShadowFrame &shadowFrame) {
@@ -187,7 +205,8 @@ namespace vve::simple {
 				.image = map.image,
 				.subresourceRange = range,
 			};
-			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+			// The arrays are shared by both frames in flight: wait until the previous frame has finished sampling this layer.
+			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 										0U, 0U, nullptr, 0U, nullptr, 1U, &beginBarrier);
 			const VkRenderingAttachmentInfo depthAttachment{
 				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -254,8 +273,10 @@ namespace vve::simple {
 		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 							0U, 0U, nullptr, 0U, nullptr, 1U, &hdrBeginBarrier);
 
+		// The depth image is shared by both frames in flight: wait for the previous frame's depth writes.
 		const VkImageMemoryBarrier depthBeginBarriers{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 			.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
@@ -264,7 +285,7 @@ namespace vve::simple {
 			.image = depthImage.image,
 			.subresourceRange = depthRange,
 		};
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 									VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 									0U, 0U, nullptr, 0U, nullptr, 1U, &depthBeginBarriers);
 									

@@ -61,7 +61,8 @@ namespace vve::simple {
 		MaterialHandle handle{};																				///< Stable material handle.
 		ObjectName name{};																						///< Imported material name.
 		LinearColor base_color{.value = oneVec3()};										///< Imported base-color factor.
-		Vector<MaterialTextureSource> texture_sources{};									///< Typed canonical texture sources used by rendering.
+		MaterialFactors factors{};																///< Imported roughness, metalness, and emissive factors.
+		Vector<MaterialTextureSource> texture_sources{};									///< Typed texture sources used by rendering, at most one per semantic.
 		Vector<TextureHandle> textures{};																	///< Texture handles referenced by this material.
 	};
 
@@ -188,6 +189,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto materialBaseColor(MaterialHandle material) const { return field(catalog_.materials, material, &Material::base_color); }
 		[[nodiscard]] auto materialTextures(MaterialHandle material) const { return field(catalog_.materials, material, &Material::textures); }
 		[[nodiscard]] auto materialTextureSources(MaterialHandle material) const { return field(catalog_.materials, material, &Material::texture_sources); }
+		[[nodiscard]] auto materialFactors(MaterialHandle material) const { return field(catalog_.materials, material, &Material::factors); }
 
 	private:
 		/// @brief Result of importing all materials.
@@ -196,8 +198,8 @@ export namespace vve::simple {
 			Vector<TextureHandle> textures{};	///< Unique texture handles referenced by the scene.
 		};
 
-		/// @brief Common texture slots students expect when inspecting imported materials.
-		inline static constexpr std::array texture_types{aiTextureType_DIFFUSE, aiTextureType_BASE_COLOR,
+		/// @brief Texture slots read from imported materials; for two slots with the same semantic the earlier one wins.
+		inline static constexpr std::array texture_types{aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE,
 																			aiTextureType_NORMALS, aiTextureType_HEIGHT,
 																			aiTextureType_DIFFUSE_ROUGHNESS, aiTextureType_METALNESS,
 																			aiTextureType_EMISSIVE, aiTextureType_AMBIENT_OCCLUSION,
@@ -210,11 +212,14 @@ export namespace vve::simple {
 		[[nodiscard]] static auto color(const aiColor3D &value)												-> LinearColor;
 		[[nodiscard]] static auto color(const aiColor4D &value)												-> LinearColor;
 		[[nodiscard]] static auto textureSemantic(aiTextureType type)									-> MaterialTextureSemantic;
-		[[nodiscard]] static auto lightRange(const aiLight &source)											-> LightRange;
-		[[nodiscard]] static auto lightDescriptor(const aiLight &source)									-> std::optional<LightDescriptor>;
+		[[nodiscard]] static auto globalTransform(const aiScene &scene, const aiString &node_name)	-> aiMatrix4x4;
+		[[nodiscard]] static auto lightRange(const aiLight &source, const aiNode *node)					-> LightRange;
+		[[nodiscard]] static auto lightDescriptor(const aiScene &scene, const aiLight &source)			-> std::optional<LightDescriptor>;
 		[[nodiscard]] static auto cameraAspect(const aiCamera &source)										-> Scalar;
 		[[nodiscard]] static auto cameraFovY(const aiCamera &source)										-> FovY;
-		[[nodiscard]] static auto cameraDescriptor(const aiCamera &source)								-> CameraDescriptor;
+		[[nodiscard]] static auto cameraDescriptor(const aiScene &scene, const aiCamera &source)		-> CameraDescriptor;
+		[[nodiscard]] static auto textureSource(const aiScene &scene, const aiString &path, MaterialTextureSemantic semantic,
+															 const std::filesystem::path &model_path)				-> std::optional<MaterialTextureSource>;
 		[[nodiscard]] static auto name(const aiString &text, std::string fallback)						-> std::string;
 		[[nodiscard]] static std::filesystem::path texturePath(const aiString &path,
 																					const std::filesystem::path &scene_dir);
@@ -239,7 +244,7 @@ export namespace vve::simple {
 																	std::map<std::string, TextureHandle> &known,
 																	Vector<TextureHandle> &scene_textures);
 		[[nodiscard]] static std::expected<MaterialImport, Error> materials(Catalog &catalog, const aiScene &scene,
-																									const std::filesystem::path &scene_dir);
+																									const std::filesystem::path &model_path);
 		[[nodiscard]] static auto boundsOf(const aiMesh &source)												-> Bounds;
 		[[nodiscard]] static auto indexCount(const aiMesh &source)											-> std::uint64_t;
 		[[nodiscard]] static std::expected<Vector<MeshHandle>, Error>
@@ -288,8 +293,8 @@ namespace vve::simple {
 
 		MaterialTextureSemantic AssetSystem::textureSemantic(aiTextureType type) {		///< Maps Assimp slots without exposing Assimp to rendering.
 			switch (type) {
-			case aiTextureType_NORMALS:
-			case aiTextureType_HEIGHT: return MaterialTextureSemantic::normal;
+			case aiTextureType_NORMALS: return MaterialTextureSemantic::normal;
+			case aiTextureType_HEIGHT: return MaterialTextureSemantic::height;
 			case aiTextureType_METALNESS: return MaterialTextureSemantic::metalness;
 			case aiTextureType_DIFFUSE_ROUGHNESS: return MaterialTextureSemantic::roughness;
 			case aiTextureType_EMISSIVE: return MaterialTextureSemantic::emissive;
@@ -299,23 +304,55 @@ namespace vve::simple {
 			}
 		}
 
-		LightRange AssetSystem::lightRange(const aiLight &source) {								///< Derives a finite range from attenuation when present.
-			if (source.mAttenuationLinear > 0.0F) {
-				return LightRange{.value = static_cast<Scalar>(1.0F / source.mAttenuationLinear)};
+		/// @brief Returns the world matrix of the node with this name; lights and cameras are defined relative to it.
+		aiMatrix4x4 AssetSystem::globalTransform(const aiScene &scene, const aiString &node_name) {
+			const aiNode *node = scene.mRootNode != nullptr ? scene.mRootNode->FindNode(node_name) : nullptr;
+			aiMatrix4x4 world{};
+			for (; node != nullptr; node = node->mParent) { world = node->mTransformation * world; }
+			return world;
+		}
+
+		/// @brief Derives the range after which the renderer fades a point or spot light out.
+		///
+		/// glTF stores an explicit range in the node metadata. Otherwise the attenuation c + l*d + q*d^2 is used,
+		/// with the range where the light has dropped to 1%. Assimp's default (l = 1) and glTF's plain inverse square
+		/// (q = 1) carry no range, so they get the engine default.
+		LightRange AssetSystem::lightRange(const aiLight &source, const aiNode *node) {
+			if (float range{}; node != nullptr && node->mMetaData != nullptr && node->mMetaData->Get("PBR_LightRange", range) &&
+					std::isfinite(range) && range > 0.0F) {
+				return LightRange{.value = static_cast<Scalar>(range)};
 			}
-			if (source.mAttenuationQuadratic > 0.0F) {
-				return LightRange{.value = static_cast<Scalar>(1.0F / std::sqrt(source.mAttenuationQuadratic))};
+			const double constant{source.mAttenuationConstant};
+			const double linear{source.mAttenuationLinear};
+			const double quadratic{source.mAttenuationQuadratic};
+			const bool assimp_default = constant == 0.0 && linear == 1.0 && quadratic == 0.0;
+			const bool inverse_square = constant == 0.0 && linear == 0.0 && quadratic == 1.0;
+			if (!assimp_default && !inverse_square) {
+				constexpr double one_percent{100.0}; // Denominator at which the light is down to 1%.
+				double range{};
+				if (quadratic > 0.0) {
+					range = (-linear + std::sqrt(linear * linear + 4.0 * quadratic * (one_percent - constant))) / (2.0 * quadratic);
+				} else if (linear > 0.0) {
+					range = (one_percent - constant) / linear;
+				}
+				if (std::isfinite(range) && range > 0.0) { return LightRange{.value = static_cast<Scalar>(range)}; }
 			}
 			return {};
 		}
 
-		std::optional<LightDescriptor> AssetSystem::lightDescriptor(const aiLight &source) {	///< Converts supported Assimp lights.
+		std::optional<LightDescriptor> AssetSystem::lightDescriptor(const aiScene &scene, const aiLight &source) {	///< Converts supported Assimp lights to world space.
+			const aiNode *node = scene.mRootNode != nullptr ? scene.mRootNode->FindNode(source.mName) : nullptr;
+			const aiMatrix4x4 world = globalTransform(scene, source.mName);
+			const aiVector3D position = world * source.mPosition;
+			aiVector3D direction = aiMatrix3x3{world} * source.mDirection;
+			if (direction.SquareLength() > 0.0F) { direction.Normalize(); }
 			LightDescriptor data{.color = color(source.mColorDiffuse),
 										.intensity = LightIntensity{.value = one()},
-										.direction = Direction{.value = vec3(source.mDirection)},
-										.position = Position{.value = vec3(source.mPosition)},
-										.range = lightRange(source),
-										.cone = SpotConeAngle{.radians = static_cast<Scalar>(source.mAngleOuterCone)}};
+										.direction = Direction{.value = vec3(direction)},
+										.position = Position{.value = vec3(position)},
+										.range = lightRange(source, node),
+										.cone = SpotConeAngle{.radians = static_cast<Scalar>(source.mAngleOuterCone)},
+										.inner_cone = SpotConeAngle{.radians = static_cast<Scalar>(source.mAngleInnerCone)}};
 			switch (source.mType) {
 			case aiLightSource_DIRECTIONAL: data.kind = LightKind::directional; return data;
 			case aiLightSource_POINT: data.kind = LightKind::point; return data;
@@ -337,10 +374,16 @@ namespace vve::simple {
 			return FovY{.radians = static_cast<Scalar>(2) * static_cast<Scalar>(std::atan(std::tan(half) / aspect))};
 		}
 
-		CameraDescriptor AssetSystem::cameraDescriptor(const aiCamera &source) {				///< Converts Assimp camera data.
-			return CameraDescriptor{.position = Position{.value = vec3(source.mPosition)},
-											.direction = Direction{.value = vec3(source.mLookAt)},
-											.up = Direction{.value = vec3(source.mUp)},
+		CameraDescriptor AssetSystem::cameraDescriptor(const aiScene &scene, const aiCamera &source) {	///< Converts Assimp camera data to world space.
+			const aiMatrix4x4 world = globalTransform(scene, source.mName);
+			const aiMatrix3x3 rotation{world};
+			aiVector3D look_at = rotation * source.mLookAt;
+			aiVector3D up = rotation * source.mUp;
+			if (look_at.SquareLength() > 0.0F) { look_at.Normalize(); }
+			if (up.SquareLength() > 0.0F) { up.Normalize(); }
+			return CameraDescriptor{.position = Position{.value = vec3(world * source.mPosition)},
+											.direction = Direction{.value = vec3(look_at)},
+											.up = Direction{.value = vec3(up)},
 											.fov = cameraFovY(source),
 											.aspect = cameraAspect(source),
 											.near_clip = static_cast<Scalar>(source.mClipPlaneNear),
@@ -356,6 +399,32 @@ namespace vve::simple {
 			auto result = std::filesystem::path(path.C_Str());
 			if (result.empty() || result.string().starts_with('*')) { return result; }
 			return normalized(result.is_absolute() ? result : scene_dir / result);
+		}
+
+		/// @brief Resolves one material texture to a file path or to image data embedded in the model file.
+		std::optional<MaterialTextureSource> AssetSystem::textureSource(const aiScene &scene, const aiString &path,
+			MaterialTextureSemantic semantic, const std::filesystem::path &model_path) {
+			if (const aiTexture *embedded = scene.GetEmbeddedTexture(path.C_Str()); embedded != nullptr) {
+				auto image = std::make_shared<EmbeddedImage>();
+				if (embedded->mHeight == 0U) {
+					// Compressed file (PNG, JPEG, ...): mWidth is the byte count.
+					const auto *begin = reinterpret_cast<const std::byte *>(embedded->pcData);
+					image->bytes.assign(begin, begin + embedded->mWidth);
+				} else {
+					image->extent = PixelExtent{.width = embedded->mWidth, .height = embedded->mHeight};
+					image->bytes.reserve(static_cast<std::size_t>(embedded->mWidth) * embedded->mHeight * 4U);
+					for (std::size_t texel{}; texel < static_cast<std::size_t>(embedded->mWidth) * embedded->mHeight; ++texel) {
+						const aiTexel &value = embedded->pcData[texel]; // Stored as BGRA.
+						image->bytes.insert(image->bytes.end(), {std::byte{value.r}, std::byte{value.g}, std::byte{value.b}, std::byte{value.a}});
+					}
+				}
+				// Embedded images have no file; the model path plus the texture reference is a unique key.
+				return MaterialTextureSource{.semantic = semantic,
+					.path = std::filesystem::path{model_path.string() + "#" + path.C_Str()}, .embedded = std::move(image)};
+			}
+			const auto source_path = texturePath(path, model_path.parent_path());
+			if (!source_path.is_absolute()) { return std::nullopt; } // A '*' reference without embedded data.
+			return MaterialTextureSource{.semantic = semantic, .path = source_path};
 		}
 
 		template <typename T>
@@ -410,7 +479,7 @@ namespace vve::simple {
 		}
 
 		std::expected<AssetSystem::MaterialImport, Error>
-		AssetSystem::materials(Catalog &catalog, const aiScene &scene, const std::filesystem::path &scene_dir) {
+		AssetSystem::materials(Catalog &catalog, const aiScene &scene, const std::filesystem::path &model_path) {
 			MaterialImport result{.materials = Vector<MaterialHandle>(scene.mNumMaterials)};
 			std::map<std::string, TextureHandle> known_textures{};
 			for (unsigned i = 0; i < scene.mNumMaterials; ++i) {
@@ -426,20 +495,28 @@ namespace vve::simple {
 							source->Get(AI_MATKEY_COLOR_DIFFUSE, base_color) == AI_SUCCESS) {
 						item.base_color = color(base_color);
 					}
+					if (float roughness{}; source->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS) {
+						item.factors.roughness = static_cast<Scalar>(roughness);
+					}
+					if (float metalness{}; source->Get(AI_MATKEY_METALLIC_FACTOR, metalness) == AI_SUCCESS) {
+						item.factors.metalness = static_cast<Scalar>(metalness);
+					}
+					if (aiColor3D emissive{}; source->Get(AI_MATKEY_COLOR_EMISSIVE, emissive) == AI_SUCCESS) {
+						item.factors.emissive = color(emissive);
+					}
+					// Only the first texture of a slot is rendered, and each semantic is used once: glTF lists its
+					// base color as DIFFUSE and BASE_COLOR, and its metallic-roughness map as METALNESS and DIFFUSE_ROUGHNESS.
 					for (const auto type : texture_types) {
-						const bool skip_fallback_source =
-							(type == aiTextureType_HEIGHT && source->GetTextureCount(aiTextureType_NORMALS) > 0U) ||
-							(type == aiTextureType_LIGHTMAP && source->GetTextureCount(aiTextureType_AMBIENT_OCCLUSION) > 0U);
-						for (unsigned slot = 0; slot < source->GetTextureCount(type); ++slot) {
-							aiString path{};
-							if (source->GetTexture(type, slot, &path) != AI_SUCCESS) { continue; }
-							const auto source_path = texturePath(path, scene_dir);
-							item.textures.push_back(texture(source_path, known_textures, result.textures));
-							if (!skip_fallback_source && source_path.is_absolute()) {
-								item.texture_sources.push_back(MaterialTextureSource{
-									.semantic = textureSemantic(type), .path = source_path});
-							}
-						}
+						aiString path{};
+						if (source->GetTextureCount(type) == 0U || source->GetTexture(type, 0U, &path) != AI_SUCCESS) { continue; }
+						if (type == aiTextureType_HEIGHT && source->GetTextureCount(aiTextureType_NORMALS) > 0U) { continue; }
+						const auto semantic = textureSemantic(type);
+						if (std::ranges::any_of(item.texture_sources, [semantic](const MaterialTextureSource &existing) {
+								return existing.semantic == semantic; })) { continue; }
+						auto texture_source = textureSource(scene, path, semantic, model_path);
+						if (!texture_source) { continue; }
+						item.textures.push_back(texture(texture_source->path, known_textures, result.textures));
+						item.texture_sources.push_back(std::move(*texture_source));
 					}
 				}
 				if (auto added = catalog.materials.add(item); !added) { return std::unexpected(added.error()); }
@@ -500,6 +577,7 @@ namespace vve::simple {
 				item.indices.reserve(static_cast<std::size_t>(indexCount(*source)));
 				for (unsigned face = 0; face < source->mNumFaces; ++face) {
 					const auto &source_face = source->mFaces[face];
+					if (source_face.mNumIndices != 3U) { continue; } // Points and lines left by triangulation would break the triangle list.
 					for (unsigned index = 0; index < source_face.mNumIndices; ++index) {
 						item.indices.push_back(source_face.mIndices[index]);
 					}
@@ -549,7 +627,7 @@ namespace vve::simple {
 			for (unsigned i = 0; i < scene.mNumLights; ++i) {
 				const auto *source = scene.mLights[i];
 				if (source == nullptr) { continue; }
-				auto data = lightDescriptor(*source);
+				auto data = lightDescriptor(scene, *source);
 				if (!data) { continue; }
 				auto item = Light{.handle = makeCounterHandle<LightHandle>(), .data = *data};
 				const auto handle = item.handle;
@@ -565,7 +643,7 @@ namespace vve::simple {
 			for (unsigned i = 0; i < scene.mNumCameras; ++i) {
 				const auto *source = scene.mCameras[i];
 				if (source == nullptr) { continue; }
-				auto item = CameraAsset{.handle = makeCounterHandle<CameraHandle>(), .data = cameraDescriptor(*source)};
+				auto item = CameraAsset{.handle = makeCounterHandle<CameraHandle>(), .data = cameraDescriptor(scene, *source)};
 				const auto handle = item.handle;
 				if (auto added = catalog.cameras.add(std::move(item)); !added) { return std::unexpected(added.error()); }
 				result.push_back(handle);
@@ -575,7 +653,7 @@ namespace vve::simple {
 
 		std::expected<SceneHandle, Error>
 		AssetSystem::import(Catalog &catalog, const aiScene &source, const std::filesystem::path &path) {
-			const auto imported_materials = materials(catalog, source, path.parent_path());
+			const auto imported_materials = materials(catalog, source, path);
 			if (!imported_materials) { return std::unexpected(imported_materials.error()); }
 			const auto imported_meshes = meshes(catalog, source, imported_materials->materials);
 			if (!imported_meshes) { return std::unexpected(imported_meshes.error()); }

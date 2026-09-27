@@ -194,17 +194,6 @@ export namespace vve {
 			resize(count, value);
 		}
 
-		/**
-			* @brief Creates a segmented vector by appending elements from a range.
-			* @tparam TRange Source range type.
-			* @param range Source range consumed by the constructor.
-			*/
-		template <std::ranges::input_range TRange>
-			requires(std::constructible_from<T, std::ranges::range_reference_t<TRange>>)
-		explicit Vector(std::from_range_t, TRange &&range) {
-			appendRange(std::forward<TRange>(range));
-		}
-
 		/// @brief Creates a deep copy of another segmented vector.
 		Vector(const Vector &other) {
 			reserve(other.size());
@@ -251,15 +240,6 @@ export namespace vve {
 		~Vector() {
 			clear();
 			releaseSegments();
-		}
-
-		/// @brief Returns the element at `index` with bounds checking.
-		[[nodiscard]] auto at(size_type index)													-> reference{
-			if (index >= size_) {
-				throw std::out_of_range("Vector index out of range");
-			}
-
-			return (*this)[index];
 		}
 
 		/// @brief Returns the element at `index` with bounds checking.
@@ -366,8 +346,6 @@ export namespace vve {
 			return begin() + static_cast<difference_type>(index);
 		}
 
-		/// @brief Inserts a copy of `value` before `position`.
-		iterator insert(const_iterator position, const T &value) { return emplace(position, value); }
 		/// @brief Inserts `value` by move before `position`.
 		iterator insert(const_iterator position, T &&value) { return emplace(position, std::move(value)); }
 
@@ -415,21 +393,6 @@ export namespace vve {
 			}
 		}
 
-		/// @brief Resizes the container, value-initializing new elements when it grows.
-		auto resize(size_type new_size)															-> void{
-			if (new_size < size_) {
-				while (size_ > new_size) {
-					pop_back();
-				}
-				return;
-			}
-
-			reserve(new_size);
-			while (size_ < new_size) {
-				static_cast<void>(emplace_back());
-			}
-		}
-
 		/// @brief Resizes the container, copying `value` into new elements when it grows.
 		auto resize(size_type new_size, const T &value)										-> void{
 			if (new_size < size_) {
@@ -466,8 +429,6 @@ export namespace vve {
 		[[nodiscard]] iterator end() noexcept { return iterator(this, size_); }
 		/// @brief Returns an iterator one past the last element.
 		[[nodiscard]] const_iterator end() const noexcept { return const_iterator(this, size_); }
-		/// @brief Returns a const iterator one past the last element.
-		[[nodiscard]] const_iterator cend() const noexcept { return const_iterator(this, size_); }
 
 		/// @brief Exchanges all storage state with `other`.
 		auto swap(Vector &other) noexcept														-> void{
@@ -475,15 +436,6 @@ export namespace vve {
 			segments_.swap(other.segments_);
 			std::swap(size_, other.size_);
 		}
-
-		/// @brief Returns the facade-owned compatibility value.
-		[[nodiscard]] implementation_type &implementation() noexcept { return *this; }
-		/// @brief Returns the facade-owned compatibility value.
-		[[nodiscard]] const implementation_type &implementation() const noexcept { return *this; }
-		/// @brief Converts to the facade-owned compatibility value.
-		[[nodiscard]] operator implementation_type &() noexcept { return *this; }
-		/// @brief Converts to the facade-owned compatibility value.
-		[[nodiscard]] operator const implementation_type &() const noexcept { return *this; }
 
 	private:
 		/// @brief Returns how many segments are required to store `count` elements.
@@ -533,18 +485,5 @@ export namespace vve {
 		std::vector<Segment> segments_{};					///< Owned segment descriptors in allocation order.
 		size_type size_{0};										///< Number of constructed elements currently stored.
 	};
-
-	/// @brief Read-only range alias spanning the full logical contents of a segmented vector.
-	template <typename T> using VectorConstRange = std::ranges::subrange<typename Vector<T>::const_iterator>;
-
-	/**
-		* @brief Returns a const range covering the full contents of `values`.
-		* @tparam T Element type.
-		* @param values Segmented vector to expose as a range.
-		* @return Subrange spanning `[cbegin(), cend())`.
-		*/
-	template <typename T> [[nodiscard]] VectorConstRange<T> makeRange(const Vector<T> &values) {
-		return VectorConstRange<T>(values.cbegin(), values.cend());
-	}
 
 } // namespace vve

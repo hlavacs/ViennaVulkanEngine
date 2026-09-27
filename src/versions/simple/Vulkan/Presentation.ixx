@@ -27,7 +27,7 @@ import std;
 	* - VulkanImageViews owns only VkImageView creation and teardown for borrowed swapchain images.
 	*/
 export namespace vve::simple {
-	/// @brief Minimal Vulkan swapchain owner; no image views, render pass, commands, or sync are created here.
+	/// @brief Minimal Vulkan swapchain owner; no image views, commands, or sync are created here.
 	struct VulkanSwapchain {
 		/// @brief Presentation mode request used during swapchain creation.
 		enum class PresentModePreference {
@@ -94,7 +94,15 @@ export namespace vve::simple {
 				if (result != VK_SUCCESS) { return result; }
 			}
 
-			const VkSurfaceFormatKHR chosenFormat = chooseFormat(formats);
+			// The HDR image is blitted into the swapchain image and captures copy out of it.
+			constexpr VkImageUsageFlags requiredUsage{VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT};
+			if ((capabilities.supportedUsageFlags & requiredUsage) != requiredUsage) { return VK_ERROR_FEATURE_NOT_PRESENT; }
+
+			const VkSurfaceFormatKHR chosenFormat = chooseFormat(physicalDevice, formats);
+			static bool warnedNoSrgb{false}; ///< Swapchains are rebuilt on every resize; warn once.
+			if (!isSrgbFormat(chosenFormat.format) && !std::exchange(warnedNoSrgb, true)) {
+				std::cerr << "[vve::simple] no sRGB swapchain format available; colors will look too dark\n";
+			}
 			const VkPresentModeKHR presentMode = choosePresentMode(presentModes, presentModePreference);
 			const VkExtent2D chosenExtent = chooseExtent(capabilities, width, height);
 			const std::uint32_t imageCount = chooseImageCount(capabilities);
@@ -109,12 +117,12 @@ export namespace vve::simple {
 				.imageColorSpace = chosenFormat.colorSpace,
 				.imageExtent = chosenExtent,
 				.imageArrayLayers = 1U,
-				.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT,	///< Swapchain image is rendered to, read back from, and copied into from the offscreen color target.
+				.imageUsage = requiredUsage,	///< Swapchain image is rendered to, read back from, and copied into from the offscreen color target.
 				.imageSharingMode = concurrentSharing ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE,
 				.queueFamilyIndexCount = concurrentSharing ? static_cast<std::uint32_t>(queueFamilies.size()) : 0U,
 				.pQueueFamilyIndices = concurrentSharing ? queueFamilies.data() : nullptr,
 				.preTransform = capabilities.currentTransform,
-				.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+				.compositeAlpha = chooseCompositeAlpha(capabilities),
 				.presentMode = presentMode,
 				.clipped = VK_TRUE,
 				.oldSwapchain = VK_NULL_HANDLE,
@@ -149,17 +157,48 @@ export namespace vve::simple {
 	private:
 		static constexpr std::uint32_t variableExtent{0xFFFFFFFFU}; ///< Vulkan marker for application-selected surface extent.
 
+		/// @brief Reports whether this is one of the sRGB formats the renderer and the PNG capture both handle.
+		[[nodiscard]] static constexpr bool isSrgbFormat(VkFormat format) {
+			return format == VK_FORMAT_B8G8R8A8_SRGB || format == VK_FORMAT_R8G8B8A8_SRGB;
+		}
+
 		/**
-			* @brief Selects the preferred SRGB surface format or the first reported format.
+			* @brief Selects an sRGB surface format that can receive blits, preferring B8G8R8A8_SRGB.
 			*
+			* The renderer writes linear HDR values with a blit, so only an sRGB format shows them with correct brightness.
+			* @param physicalDevice Physical device whose format features are queried.
 			* @param formats Surface formats reported by Vulkan.
-			* @return Preferred format when available, otherwise the first reported format.
+			* @return The best sRGB format, otherwise the first blit-capable format, otherwise the first reported format.
 			*/
-		[[nodiscard]] static VkSurfaceFormatKHR chooseFormat(const std::vector<VkSurfaceFormatKHR> &formats) {
-			const auto preferred = std::ranges::find_if(formats, [](const VkSurfaceFormatKHR &format) {
-				return format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-			});
-			return preferred != formats.end() ? *preferred : formats.front();
+		[[nodiscard]] static VkSurfaceFormatKHR chooseFormat(VkPhysicalDevice physicalDevice, const std::vector<VkSurfaceFormatKHR> &formats) {
+			const auto blitTarget = [physicalDevice](const VkSurfaceFormatKHR &format) {
+				VkFormatProperties properties{};
+				vkGetPhysicalDeviceFormatProperties(physicalDevice, format.format, &properties);
+				return (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_BLIT_DST_BIT) != 0U;
+			};
+			const auto srgb = [&](const VkSurfaceFormatKHR &format) {
+				return isSrgbFormat(format.format) && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR && blitTarget(format);
+			};
+			if (const auto preferred = std::ranges::find_if(formats, [&](const VkSurfaceFormatKHR &format) {
+					return format.format == VK_FORMAT_B8G8R8A8_SRGB && srgb(format);
+				}); preferred != formats.end()) { return *preferred; }
+			if (const auto anySrgb = std::ranges::find_if(formats, srgb); anySrgb != formats.end()) { return *anySrgb; }
+			const auto blittable = std::ranges::find_if(formats, blitTarget);
+			return blittable != formats.end() ? *blittable : formats.front();
+		}
+
+		/**
+			* @brief Selects opaque composition when the surface supports it, otherwise the first supported mode.
+			*
+			* @param capabilities Surface capabilities reported by Vulkan.
+			* @return Composite-alpha mode used for swapchain creation.
+			*/
+		[[nodiscard]] static VkCompositeAlphaFlagBitsKHR chooseCompositeAlpha(const VkSurfaceCapabilitiesKHR &capabilities) {
+			for (const VkCompositeAlphaFlagBitsKHR mode : {VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR, VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR,
+					VK_COMPOSITE_ALPHA_PRE_MULTIPLIED_BIT_KHR, VK_COMPOSITE_ALPHA_POST_MULTIPLIED_BIT_KHR}) {
+				if ((capabilities.supportedCompositeAlpha & mode) != 0U) { return mode; }
+			}
+			return VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
 		}
 
 		/**
@@ -226,7 +265,7 @@ export namespace vve::simple {
 		}
 	};
 
-	/// @brief Minimal Vulkan image-view owner; no render pass, framebuffers, commands, or sync are created here.
+	/// @brief Minimal Vulkan image-view owner; no commands or sync are created here.
 	struct VulkanImageViews {
 		std::vector<VulkanOwnedHandle<vk::raii::ImageView, VkImageView>> ownedViews{}; ///< Owned image views created for borrowed swapchain images.
 

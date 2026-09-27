@@ -76,12 +76,11 @@ int main(int argc, char **argv) {
 
 	auto engine = vve::simple::Engine{
 		vve::ApplicationName{"render-lighting-capture-tests"},
-		vve::WindowSetups{vve::WindowSetup{}
-			.id("main")
-			.title("render-lighting-capture-tests")
-			.extent(vve::PixelExtent{.width = 128, .height = 128})
-			.renderer(vve::RendererId{.value = "forward"})
-			.visible(false)}};
+		vve::simple::Windows{.value = {vve::simple::WindowDesc{.id = "main",
+			.title = "render-lighting-capture-tests",
+			.extent = vve::PixelExtent{.width = 128, .height = 128},
+			.renderer_id = vve::RendererId{.value = "forward"},
+			.visible = false}}}};
 	if (!engine.init()) { return finish(2); }
 
 	auto &assets = engine.assets();

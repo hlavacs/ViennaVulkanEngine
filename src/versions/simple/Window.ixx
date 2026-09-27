@@ -25,12 +25,12 @@ export namespace vve::simple {
 	struct WindowDesc {
 		std::string id{"main"};																												///< Stable application-local window id.
 		std::string title{"VVE simple"};																										///< Platform window title.
-		PixelExtent extent{.width = 960, .height = 540};																			///< Initial pixel dimensions.
+		PixelExtent extent{.width = 960, .height = 540};																			///< Initial size in screen coordinates; HiDPI screens give more pixels.
 		std::optional<int> x{};																												///< Optional initial screen x coordinate.
 		std::optional<int> y{};																												///< Optional initial screen y coordinate.
 		RendererId renderer_id{};																											///< Renderer id selected for this window.
 		bool resizable{true};																												///< Enables platform resizing.
-		bool visible{true};																													///< Shows the window after creation.
+		bool visible{true};																													///< Shows the window; a hidden window still renders (tests, captures).
 	};
 
 	/// @brief Collection wrapper for all windows created during engine init().
@@ -43,7 +43,7 @@ export namespace vve::simple {
 		WindowHandle handle{};																												///< 64-bit runtime window handle.
 		std::string id{};																														///< Stable id copied from WindowDesc.
 		std::string title{};																													///< Current platform title.
-		PixelExtent extent{};																												///< Current pixel dimensions.
+		PixelExtent extent{};																												///< Current drawable size in pixels (the swapchain size).
 		RendererId renderer_id{};																											///< Renderer id selected for this window.
 		std::optional<Entity> camera{};																									///< Camera entity rendered through this window, when selected.
 		bool focused{false};																													///< True while the window has keyboard focus.
@@ -96,18 +96,9 @@ export namespace vve::simple {
 		Window &operator=(const Window &) = delete;
 
 		[[nodiscard]] SDL_Window *native() const noexcept;
-		[[nodiscard]] auto sdlId() const noexcept										-> SDL_WindowID;
 		[[nodiscard]] WindowInfo &info() noexcept;
 		[[nodiscard]] const WindowInfo &info() const noexcept;
-		[[nodiscard]] auto handle() const noexcept										-> WindowHandle;
-		[[nodiscard]] auto id() const noexcept											-> std::string_view;
-		[[nodiscard]] auto title() const noexcept										-> std::string_view;
-		[[nodiscard]] auto extent() const noexcept										-> PixelExtent;
 		[[nodiscard]] auto rendererId() const											-> RendererId;
-		[[nodiscard]] auto camera() const													-> std::optional<Entity>;
-		[[nodiscard]] auto focused() const noexcept									-> bool;
-		[[nodiscard]] auto minimized() const noexcept									-> bool;
-		[[nodiscard]] auto shouldClose() const noexcept								-> bool;
 
 	private:
 		auto reset() noexcept																	-> void;
@@ -122,8 +113,6 @@ export namespace vve::simple {
 	public:
 		WindowSystem();																											///< Creates an empty window system.
 		~WindowSystem();																														///< Destroys owned SDL windows and shuts down the video subsystem.
-		WindowSystem(WindowSystem &&) noexcept;																						///< Moves the window system and owned implementation.
-		WindowSystem &operator=(WindowSystem &&) noexcept;																			///< Moves the window system and owned implementation.
 		WindowSystem(const WindowSystem &) = delete;																					///< SDL windows cannot be copied safely.
 		WindowSystem &operator=(const WindowSystem &) = delete;																	///< SDL windows cannot be copied safely.
 
@@ -149,14 +138,14 @@ export namespace vve::simple {
 		[[nodiscard]] std::expected<void, Error> setActiveCamera(Entity camera);								///< Assigns camera.
 		[[nodiscard]] std::optional<Entity> activeCamera() const;													///< Returns the first selected camera.
 		[[nodiscard]] bool anyShouldClose() const;																		///< Returns true when any window should close.
-		auto setGuiEventSink(std::function<void(const SDL_Event &)> sink)					-> void;		///< Sets optional GUI event forwarding.
+		auto setGuiEventSink(std::function<bool(const SDL_Event &)> sink)					-> void;		///< Sets GUI event forwarding; the sink returns true for events the GUI claims.
 
 	private:
 		template <typename TKey, typename TFunction>
 		[[nodiscard]] auto editWindow(TKey key, TFunction function)								-> std::expected<void, Error>;
 		template <typename TKey> [[nodiscard]] std::optional<Entity> cameraFor(TKey key) const;
 
-		std::function<void(const SDL_Event &)> guiEventSink_{};																		///< Non-owning SDL event sink for GUI input.
+		std::function<bool(const SDL_Event &)> guiEventSink_{};																		///< SDL event sink for GUI input; true = claimed by the GUI.
 		struct Impl;																															///< SDL-owning implementation hidden from module importers.
 		std::unique_ptr<Impl> impl_;																										///< Pimpl keeps SDL headers out of the public simple module.
 	};
@@ -180,11 +169,10 @@ export namespace vve::simple {
 		keys_down_.insert(key);
 	}
 
+	/// @brief Marks a held key as released; a key pressed and released within one poll still reports wasKeyPressed().
 	auto InputState::releaseKey(std::int32_t keycode)								-> void{
 		const auto key = normalizeKey(keycode);
-		keys_down_.erase(key);
-		keys_pressed_.erase(key);
-		keys_released_.insert(key);
+		if (keys_down_.erase(key) > 0U) { keys_released_.insert(key); } // Keys the GUI swallowed were never down.
 	}
 
 	void InputState::setMousePosition(WindowHandle window, Vec2 position) { mouse_position_[window] = position; }
@@ -253,29 +241,11 @@ export namespace vve::simple {
 
 	SDL_Window *Window::native() const noexcept { return window_; }
 
-	SDL_WindowID Window::sdlId() const noexcept { return sdl_id_; }
-
 	WindowInfo &Window::info() noexcept { return info_; }
 
 	const WindowInfo &Window::info() const noexcept { return info_; }
 
-	WindowHandle Window::handle() const noexcept { return info_.handle; }
-
-	std::string_view Window::id() const noexcept { return info_.id; }
-
-	std::string_view Window::title() const noexcept { return info_.title; }
-
-	PixelExtent Window::extent() const noexcept { return info_.extent; }
-
 	RendererId Window::rendererId() const { return info_.renderer_id; }
-
-	std::optional<Entity> Window::camera() const { return info_.camera; }
-
-	bool Window::focused() const noexcept { return info_.focused; }
-
-	bool Window::minimized() const noexcept { return info_.minimized; }
-
-	bool Window::shouldClose() const noexcept { return info_.should_close; }
 
 	auto Window::reset() noexcept															-> void{
 		if (window_ != nullptr) {
@@ -353,30 +323,18 @@ export namespace vve::simple {
 
 	WindowSystem::~WindowSystem() {}
 
-	WindowSystem::WindowSystem(WindowSystem &&other) noexcept
-		: guiEventSink_{std::move(other.guiEventSink_)}, impl_{std::move(other.impl_)} {}
-
-	WindowSystem &WindowSystem::operator=(WindowSystem &&other) noexcept {
-		guiEventSink_ = std::move(other.guiEventSink_);
-		impl_ = std::move(other.impl_);
-		return *this;
-	}
-
 	std::string_view WindowSystem::name() const noexcept { return "SDL3WindowSystem"; }
 
 	InputState &WindowSystem::input() { return impl_->input; }
 
 	const InputState &WindowSystem::input() const { return impl_->input; }
 
-	auto WindowSystem::setGuiEventSink(std::function<void(const SDL_Event &)> sink)	-> void{
+	auto WindowSystem::setGuiEventSink(std::function<bool(const SDL_Event &)> sink)	-> void{
 		guiEventSink_ = std::move(sink);
 	}
 
 	auto WindowSystem::init(const Windows &windows)									-> std::expected<void, Error>{
-		const auto needs_platform_windows = std::ranges::any_of(windows.value, [](const WindowDesc &desc) {
-			return desc.visible;
-		});
-		if (needs_platform_windows) {
+		if (!windows.value.empty()) {
 #if defined(_WIN32) && defined(VVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS)
 			// The Windows build enables this only after detecting a broken implicit AMD layer.
 			const char *const current_filters = SDL_getenv_unsafe("VK_LOADER_LAYERS_DISABLE");
@@ -411,13 +369,9 @@ export namespace vve::simple {
 											.focused = false,
 											.minimized = false,
 											.should_close = false};
-			if (!desc.visible) {
-				impl_->windows.emplace_back(nullptr, 0, std::move(info));
-				continue;
-			}
-
 			SDL_WindowFlags flags = SDL_WINDOW_VULKAN;
 			if (desc.resizable) { flags |= SDL_WINDOW_RESIZABLE; }
+			if (!desc.visible) { flags |= SDL_WINDOW_HIDDEN; }
 
 			SDL_Window *const window = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.extent.width),
 																		static_cast<int>(desc.extent.height), flags);
@@ -433,9 +387,10 @@ export namespace vve::simple {
 				SDL_SetWindowPosition(window, desc.x.value_or(x), desc.y.value_or(y));
 			}
 
+			// SDL sizes windows in screen coordinates; the renderer and WindowInfo use pixels (2x on most HiDPI screens).
 			int width = 0;
 			int height = 0;
-			SDL_GetWindowSize(window, &width, &height);
+			SDL_GetWindowSizeInPixels(window, &width, &height);
 
 			info.extent = PixelExtent{.width = static_cast<std::uint32_t>(std::max(width, 0)),
 												.height = static_cast<std::uint32_t>(std::max(height, 0))};
@@ -454,7 +409,8 @@ export namespace vve::simple {
 		if (!impl_->video_initialized) { return {}; }
 		SDL_Event event{};
 		while (SDL_PollEvent(&event)) {
-			if (guiEventSink_) { guiEventSink_(event); }
+			// Events the GUI claims (typing into a text field, dragging a slider) do not also move the camera.
+			const bool gui_claimed = guiEventSink_ && guiEventSink_(event);
 			switch (event.type) {
 			case SDL_EVENT_QUIT:
 				impl_->closeAll();
@@ -462,7 +418,7 @@ export namespace vve::simple {
 			case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
 				if (auto *window = impl_->find(event.window.windowID)) { window->info().should_close = true; }
 				break;
-			case SDL_EVENT_WINDOW_RESIZED:
+			case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: // Carries pixels; SDL_EVENT_WINDOW_RESIZED carries screen coordinates.
 				if (auto *window = impl_->find(event.window.windowID)) {
 					window->info().extent = PixelExtent{
 						.width = static_cast<std::uint32_t>(std::max(event.window.data1, 0)),
@@ -482,18 +438,20 @@ export namespace vve::simple {
 				if (auto *window = impl_->find(event.window.windowID)) { window->info().minimized = false; }
 				break;
 			case SDL_EVENT_KEY_DOWN:
-				if (!event.key.repeat) { input.pressKey(static_cast<std::int32_t>(event.key.key)); }
+				if (!event.key.repeat && !gui_claimed) { input.pressKey(static_cast<std::int32_t>(event.key.key)); }
 				break;
-			case SDL_EVENT_KEY_UP:
+			case SDL_EVENT_KEY_UP: // Always delivered, so a key held before the GUI took focus cannot get stuck.
 				input.releaseKey(static_cast<std::int32_t>(event.key.key));
 				break;
 			case SDL_EVENT_MOUSE_MOTION:
+				if (gui_claimed) { break; }
 				if (const auto *window = impl_->find(event.motion.windowID)) {
 					input.setMousePosition(window->info().handle, Vec2{event.motion.x, event.motion.y});
 					input.addMouseDelta(window->info().handle, Vec2{event.motion.xrel, event.motion.yrel});
 				}
 				break;
 			case SDL_EVENT_MOUSE_WHEEL:
+				if (gui_claimed) { break; }
 				if (const auto *window = impl_->find(event.wheel.windowID)) {
 					input.addMouseWheelDelta(window->info().handle, Vec2{event.wheel.x, event.wheel.y});
 				}

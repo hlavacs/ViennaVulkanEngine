@@ -36,14 +36,17 @@ namespace vve::simple {
 			const Vec3 direction{normalize(spot.direction)};
 			const Scalar fov{std::clamp(spot.outerConeAngle.radians * static_cast<Scalar>(2), static_cast<Scalar>(0.001), static_cast<Scalar>(3.0))};
 			const Scalar farPlane{positiveRange(spot.range.value)};
-			const Mat4 view{lookAt(spot.position, add(spot.position, direction), Vec3{zero(), one(), zero()})};
+			const Mat4 view{lookAt(spot.position, add(spot.position, direction), detail::stableUp(direction))};
 			const Mat4 projection{perspectiveVulkan(fov, one(), shadowNearPlane, farPlane)};
 			frame.shadowViewProjs[kShadowMatrixSpotBase + packed] = multiply(projection, view);
 			addMeta(1U, packed, static_cast<std::uint32_t>(packed), view, projection, shadowNearPlane, farPlane, static_cast<Scalar>(frame.shadowCompareBias));
 			frame.spotLightPositionRanges[packed] = Vec4{spot.position.x, spot.position.y, spot.position.z, spot.range.value};
 			frame.spotLightColorIntensities[packed] = Vec4{spot.color.x, spot.color.y, spot.color.z, spot.intensity.value};
 			frame.spotLightDirections[packed] = Vec4{direction.x, direction.y, direction.z, zero()};
-			frame.spotLightConeAmbients[packed] = Vec4{std::cos(spot.innerConeAngle.radians), std::cos(spot.outerConeAngle.radians), zero(), spot.ambient};
+			// The shader's smoothstep(cos outer, cos inner) needs cos inner > cos outer, i.e. an inner cone narrower than the outer one.
+			const Scalar cosOuter{std::cos(spot.outerConeAngle.radians)};
+			const Scalar cosInner{std::max(std::cos(spot.innerConeAngle.radians), cosOuter + static_cast<Scalar>(0.0001))};
+			frame.spotLightConeAmbients[packed] = Vec4{cosInner, cosOuter, zero(), spot.ambient};
 		}
 
 		// Six independent light-space views per enabled point light.
@@ -115,7 +118,7 @@ namespace vve::simple {
 				cascadeRadius = max(static_cast<Scalar>(0.0625), std::ceil(cascadeRadius * static_cast<Scalar>(16.0)) / static_cast<Scalar>(16.0)); ///< Quantized radius prevents projection-scale shimmer.
 
 				const Vec3 lightEye{subtract(sphereCenter, scale(activeDirectionalDirection, cascadeRadius + zBackoff))}; ///< Backoff includes casters behind the visible slice.
-				const Mat4 lightView{lookAt(lightEye, sphereCenter, Vec3{zero(), one(), zero()})}; ///< Directional camera uses the established world-up convention.
+				const Mat4 lightView{lookAt(lightEye, sphereCenter, detail::stableUp(activeDirectionalDirection))}; ///< World up, or +Z for a vertical light.
 				const Scalar lightFar{static_cast<Scalar>(2.0) * (cascadeRadius + zBackoff)}; ///< Symmetric depth coverage encloses the sphere and backoff volume.
 				Mat4 lightProjection{orthoVulkan(-cascadeRadius, cascadeRadius, -cascadeRadius, cascadeRadius, static_cast<Scalar>(0.1), lightFar)}; ///< Existing helper applies Vulkan clip-space Y orientation.
 				const Vec4 shadowOrigin{scale(multiply(multiply(lightProjection, lightView), Vec4{zero(), zero(), zero(), one()}), static_cast<Scalar>(ShadowMap::resolution) * static_cast<Scalar>(0.5))}; ///< World origin measured in shadow texels.

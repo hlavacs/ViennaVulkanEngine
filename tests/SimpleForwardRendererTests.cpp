@@ -455,12 +455,11 @@ namespace {
 [[nodiscard]] bool hasRuntimeGpuObjectSynchronization() {
    auto engine = vve::simple::Engine{
       vve::ApplicationName{"simple-forward-runtime-object-tests"},
-      vve::WindowSetups{vve::WindowSetup{}
-                           .id("main")
-                           .title("simple-forward-runtime-object-tests")
-                           .extent(vve::PixelExtent{.width = 64, .height = 64})
-                           .renderer(vve::RendererId{.value = "forward"})
-                           .visible(false)}};
+      vve::simple::Windows{.value = {vve::simple::WindowDesc{.id = "main",
+         .title = "simple-forward-runtime-object-tests",
+         .extent = vve::PixelExtent{.width = 64, .height = 64},
+         .renderer_id = vve::RendererId{.value = "forward"},
+         .visible = false}}}};
    if (!engine.init()) { return false; }
 
    auto &render_system = engine.renderSystem();
@@ -528,22 +527,21 @@ namespace {
           render_system.sceneMaterialCount() == 1U;
 }
 
-/// @brief Verifies scene asset removal keeps loaded scenes alive while public render objects reference them.
+/// @brief Verifies a loaded light scene can be removed independently of unrelated objects, exactly once.
 [[nodiscard]] bool hasSceneRemovalLifetime() {
    auto render_system = vve::simple::RenderSystem{};
    const auto missing_scene = render_system.removeScene(vve::SceneHandle{});
    if (missing_scene || missing_scene.error() != vve::Error::missing_object) { return false; }
 
-   const auto scene = render_system.loadScene(vve::simple::Scene{});
+   auto lights = vve::simple::Scene{};
+   lights.pointLights.push_back(vve::simple::PointLight{});
+   const auto scene = render_system.loadScene(std::move(lights));
    const auto plane = render_system.addPlane(vve::Vec2{1.0F, 1.0F}, vve::LinearColor{});
-   if (!scene.valid() || !plane || !plane->valid()) { return false; }
+   if (!scene.valid() || !plane || !plane->valid() || render_system.scenePointLightCount() != 1U) { return false; }
 
-   const auto referenced_scene = render_system.removeScene(scene);
-   if (referenced_scene || referenced_scene.error() != vve::Error::invalid_argument) { return false; }
-
-   // The failed scene removal must not erase the loaded scene while public objects still exist.
-   if (const auto removed_object = render_system.removeObject(*plane); !removed_object) { return false; }
+   // Objects do not belong to a loaded light scene, so they do not block its removal; its lights go with it.
    if (const auto removed_scene = render_system.removeScene(scene); !removed_scene) { return false; }
+   if (render_system.scenePointLightCount() != 0U || render_system.sceneInstanceCount() != 1U) { return false; }
    const auto removed_again = render_system.removeScene(scene);
    return !removed_again && removed_again.error() == vve::Error::missing_object;
 }
@@ -587,12 +585,11 @@ int main() {
    auto engine = vve::simple::Engine{
       vve::ApplicationName{"simple-forward-renderer-tests"},
       vve::MaxFrames{.value = vve::FrameCount{.value = 1}},
-      vve::WindowSetups{vve::WindowSetup{}
-                           .id("main")
-                           .title("simple-forward-renderer-tests")
-                           .extent(vve::PixelExtent{.width = 64, .height = 64})
-                           .renderer(vve::RendererId{.value = "forward"})
-                           .visible(false)}};
+      vve::simple::Windows{.value = {vve::simple::WindowDesc{.id = "main",
+         .title = "simple-forward-renderer-tests",
+         .extent = vve::PixelExtent{.width = 64, .height = 64},
+         .renderer_id = vve::RendererId{.value = "forward"},
+         .visible = false}}}};
    if (!engine.init()) { return 1; }
 
    auto &render_system = engine.renderSystem();

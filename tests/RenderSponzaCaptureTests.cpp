@@ -90,12 +90,11 @@ int main(int argc, char **argv) {
 
 	auto engine = vve::simple::Engine{
 		vve::ApplicationName{"render-sponza-capture-tests"},
-		vve::WindowSetups{vve::WindowSetup{}
-			.id("main")
-			.title("render-sponza-capture-tests")
-			.extent(vve::PixelExtent{.width = 256, .height = 256})
-			.renderer(vve::RendererId{.value = "forward"})
-			.visible(false)}};
+		vve::simple::Windows{.value = {vve::simple::WindowDesc{.id = "main",
+			.title = "render-sponza-capture-tests",
+			.extent = vve::PixelExtent{.width = 256, .height = 256},
+			.renderer_id = vve::RendererId{.value = "forward"},
+			.visible = false}}}};
 	if (!engine.init()) { return finish(2); }
 
 	auto &assets = engine.assets();

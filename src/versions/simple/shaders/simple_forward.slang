@@ -7,10 +7,11 @@
  * Vertex inputs: per-vertex position, normal, texture coordinate, and tangent attributes.
  * Vertex constants: shared camera and shadow matrices in set 0 binding 0, plus per-object push constants.
  * Shadow output: depth-only clip position from the shadow matrix selected by the push constant.
- * Fragment inputs: interpolated material color and world-space position from the vertex stage.
- * Fragment resources: base-color textures in binding 1 and the spot, directional, and point shadow arrays in bindings 2-4.
+ * Fragment inputs: interpolated world-space position, texture coordinate, normal, and tangent from the vertex stage.
+ * Fragment resources: the material texture table in binding 1, the spot, directional, and point shadow arrays in bindings 2-4,
+ * and the dense material buffer in binding VVE_MATERIAL_BINDING.
  * Set-0 bindings are fixed and mirrored by kDescriptorSetBindings in Vulkan/Pipeline.ixx; FrameUniforms and ObjectPushConstants mirror the C++ structs.
- * Fragment outputs: one opaque RGBA color attachment value for a shadowed forward render pass.
+ * Fragment outputs: one opaque linear HDR color for the dynamic-rendering forward pass.
  */
 
 static const int kMaxShadowedSpotLights = VVE_MAX_SHADOWED_SPOT_LIGHTS; ///< Shared fixed spot-shadow cap.
@@ -56,23 +57,24 @@ struct ObjectPushConstants
 
 struct GpuMaterial
 {
-    float4 baseColorFactor;         ///< Imported base-color factor.
+    float4 baseColorFactor;         ///< Base-color factor; a base-color texture multiplies it.
+    float4 emissiveFactor;          ///< Emissive rgb factor with unused w; an emissive texture multiplies it.
     uint baseColorTexture;          ///< Base-color texture-table index.
     uint normalTexture;             ///< Normal texture-table index.
-    uint metalnessTexture;          ///< Metalness texture-table index.
-    uint roughnessTexture;          ///< Roughness texture-table index.
+    uint metalnessTexture;          ///< Metalness texture-table index, sampled from blue (glTF packing; greyscale works too).
+    uint roughnessTexture;          ///< Roughness texture-table index, sampled from green (glTF packing; greyscale works too).
     uint emissiveTexture;           ///< Emissive texture-table index.
-    uint ambientOcclusionTexture;   ///< Ambient-occlusion texture-table index.
-    uint padding0;                  ///< Storage-buffer alignment padding.
-    uint padding1;                  ///< Storage-buffer alignment padding.
+    uint ambientOcclusionTexture;   ///< Ambient-occlusion texture-table index, sampled from red.
+    float roughnessFactor;          ///< Roughness factor; a roughness texture multiplies it.
+    float metalnessFactor;          ///< Metalness factor; a metalness texture multiplies it.
 };
 
 struct VertexInput
 {
     [[vk::location(0)]] float3 position : POSITION;  ///< Object-local vertex position.
-    [[vk::location(1)]] float3 normal   : NORMAL0;   ///< Object-local normal reserved for phase-four lighting.
-    [[vk::location(2)]] float2 texCoord : TEXCOORD0; ///< First texture coordinate.
-    [[vk::location(3)]] float4 tangent  : TANGENT0;  ///< Object-local tangent and handedness reserved for normal mapping.
+    [[vk::location(1)]] float3 normal   : NORMAL0;   ///< Object-local normal; zero means "use the face normal".
+    [[vk::location(2)]] float2 texCoord : TEXCOORD0; ///< First texture coordinate, v pointing up in the image.
+    [[vk::location(3)]] float4 tangent  : TANGENT0;  ///< Object-local tangent and handedness; zero when the mesh has none.
 };
 
 struct VertexOutput
@@ -80,7 +82,7 @@ struct VertexOutput
     float4 position : SV_Position;                       ///< Clip-space position consumed by Vulkan.
     [[vk::location(0)]] float3 color    : COLOR0;         ///< Interpolated material base-color factor.
     [[vk::location(1)]] float3 worldPos : TEXCOORD0;      ///< Interpolated world-space position for flat lighting.
-    [[vk::location(2)]] float2 texCoord : TEXCOORD1;      ///< Interpolated texture coordinate for later material sampling.
+    [[vk::location(2)]] float2 texCoord : TEXCOORD1;      ///< Interpolated texture coordinate for material sampling.
     [[vk::location(3)]] float3 normal   : NORMAL0;        ///< Interpolated world-space vertex normal.
     [[vk::location(4)]] float4 tangent  : TANGENT0;       ///< Interpolated world-space tangent and handedness.
 };
@@ -89,14 +91,14 @@ struct FragmentInput
 {
     [[vk::location(0)]] float3 color    : COLOR0;    ///< Interpolated vertex color.
     [[vk::location(1)]] float3 worldPos : TEXCOORD0; ///< Interpolated world-space position.
-    [[vk::location(2)]] float2 texCoord : TEXCOORD1; ///< Interpolated texture coordinate for later material sampling.
+    [[vk::location(2)]] float2 texCoord : TEXCOORD1; ///< Interpolated texture coordinate for material sampling.
     [[vk::location(3)]] float3 normal   : NORMAL0;   ///< Interpolated world-space vertex normal.
     [[vk::location(4)]] float4 tangent  : TANGENT0;  ///< Interpolated world-space tangent and handedness.
 };
 
 struct FragmentOutput
 {
-    [[vk::location(0)]] float4 color : SV_Target0; ///< Opaque color written to the framebuffer.
+    [[vk::location(0)]] float4 color : SV_Target0; ///< Opaque color written to the HDR target.
 };
 
 [[vk::binding(0, 0)]]
@@ -151,6 +153,40 @@ float pcfShadow(Sampler2DArrayShadow shadowArray, float2 uv, int layer, float re
     return visibility / 9.0;
 }
 
+/**
+ * @brief Normalizes a vector, but returns zero for a zero vector instead of NaN.
+ */
+float3 normalizeOrZero(float3 v)
+{
+    const float lengthSquared = dot(v, v);
+    return lengthSquared > 1.0e-12 ? v * rsqrt(lengthSquared) : float3(0.0);
+}
+
+/**
+ * @brief Normalizes a transformed mesh direction; zero when the mesh supplies none.
+ *
+ * The test uses the untransformed vector, so tiny object scales (millimetre models) do not drop valid normals.
+ */
+float3 normalizeTransformed(float3 source, float3 transformed)
+{
+    const float lengthSquared = dot(transformed, transformed);
+    return dot(source, source) > 0.0 && lengthSquared > 0.0 ? transformed * rsqrt(lengthSquared) : float3(0.0);
+}
+
+/**
+ * @brief Returns the matrix that transforms normals: the cofactor of the model's upper 3x3.
+ *
+ * The cofactor is the inverse transpose scaled by the determinant, so normals stay perpendicular to the
+ * surface under non-uniform scale. Its sign is corrected so that mirroring transforms keep outward normals.
+ */
+float3x3 normalMatrix(float4x4 model)
+{
+    const float3x3 m = float3x3(model);
+    const float3x3 cofactor = float3x3(cross(m[1], m[2]), cross(m[2], m[0]), cross(m[0], m[1]));
+    const float determinant = dot(m[0], cofactor[0]);
+    return determinant < 0.0 ? -cofactor : cofactor;
+}
+
 [shader("vertex")]
 VertexOutput vertexMain(VertexInput input)
 {
@@ -161,8 +197,8 @@ VertexOutput vertexMain(VertexInput input)
     output.color = materials[object.materialIndex].baseColorFactor.rgb;
     output.worldPos = worldPosition.xyz;
     output.texCoord = input.texCoord; ///< Preserve vertex UVs for the fragment interface.
-    output.normal = normalize(mul(float3x3(object.model), input.normal));
-    output.tangent = float4(normalize(mul(float3x3(object.model), input.tangent.xyz)), input.tangent.w);
+    output.normal = normalizeTransformed(input.normal, mul(normalMatrix(object.model), input.normal)); ///< Stays zero for meshes without normals.
+    output.tangent = float4(normalizeTransformed(input.tangent.xyz, mul(float3x3(object.model), input.tangent.xyz)), input.tangent.w); ///< Tangents follow the surface, so the model matrix applies.
     return output;
 }
 
@@ -181,12 +217,20 @@ FragmentOutput fragmentMain(FragmentInput input)
     if (material.baseColorTexture != kNoTexture && material.baseColorTexture < kMaxSceneTextures) {
         baseColor *= baseColorTextures[material.baseColorTexture].Sample(input.texCoord).rgb; ///< The material texture modulates its factor before lighting.
     }
-    const float roughness = material.roughnessTexture < kMaxSceneTextures ?
-        baseColorTextures[material.roughnessTexture].Sample(input.texCoord).r : 1.0;
-    const float metalness = material.metalnessTexture < kMaxSceneTextures ?
-        baseColorTextures[material.metalnessTexture].Sample(input.texCoord).r : 0.0;
-    const float3 emissive = material.emissiveTexture < kMaxSceneTextures ?
-        baseColorTextures[material.emissiveTexture].Sample(input.texCoord).rgb : float3(0.0);
+    float roughness = material.roughnessFactor;                          ///< Factors apply alone or scale their texture, as in glTF.
+    if (material.roughnessTexture < kMaxSceneTextures) {
+        roughness *= baseColorTextures[material.roughnessTexture].Sample(input.texCoord).g; ///< glTF packs roughness in green.
+    }
+    roughness = saturate(roughness);
+    float metalness = material.metalnessFactor;
+    if (material.metalnessTexture < kMaxSceneTextures) {
+        metalness *= baseColorTextures[material.metalnessTexture].Sample(input.texCoord).b; ///< glTF packs metalness in blue.
+    }
+    metalness = saturate(metalness);
+    float3 emissive = material.emissiveFactor.rgb;
+    if (material.emissiveTexture < kMaxSceneTextures) {
+        emissive *= baseColorTextures[material.emissiveTexture].Sample(input.texCoord).rgb;
+    }
     const float ambientOcclusion = material.ambientOcclusionTexture < kMaxSceneTextures ?
         baseColorTextures[material.ambientOcclusionTexture].Sample(input.texCoord).r : 1.0;
     const float ambient = frame.ambient * ambientOcclusion;              ///< Ambient occlusion attenuates indirect scene light.
@@ -201,12 +245,17 @@ FragmentOutput fragmentMain(FragmentInput input)
         dot(float3(frame.view[0][1], frame.view[1][1], frame.view[2][1]), viewOffset),
         dot(float3(frame.view[0][2], frame.view[1][2], frame.view[2][2]), viewOffset)); ///< World eye from inverse rigid view transform.
     const float3 viewDir = normalize(cameraPos - input.worldPos);        ///< Surface-to-eye vector for view-dependent highlights.
-    float3 normal = length(input.normal) > 0.5 ? normalize(input.normal) : rawNormal; ///< Prefer imported smooth normals when present.
+    float3 normal = length(input.normal) > 0.5 ? normalize(input.normal) : rawNormal; ///< Prefer vertex normals when the mesh has them.
     if (material.normalTexture < kMaxSceneTextures) {
-        const float3 tangent = normalize(input.tangent.xyz - normal * dot(normal, input.tangent.xyz)); ///< Gram-Schmidt tangent orthogonalization.
-        const float3 bitangent = cross(normal, tangent) * input.tangent.w; ///< Imported handedness preserves mirrored UV orientation.
-        const float3 mappedNormal = baseColorTextures[material.normalTexture].Sample(input.texCoord).rgb * 2.0 - 1.0;
-        normal = normalize(tangent * mappedNormal.x + bitangent * mappedNormal.y + normal * mappedNormal.z);
+        const float3 tangentRaw = input.tangent.xyz - normal * dot(normal, input.tangent.xyz); ///< Gram-Schmidt tangent orthogonalization.
+        const float tangentLengthSquared = dot(tangentRaw, tangentRaw);
+        if (tangentLengthSquared > 1.0e-8) {                             ///< Without a usable tangent the geometric normal is kept.
+            const float3 tangent = tangentRaw * rsqrt(tangentLengthSquared);
+            const float3 bitangent = cross(normal, tangent) * (input.tangent.w < 0.0 ? -1.0 : 1.0); ///< Handedness preserves mirrored UV orientation.
+            const float3 mappedNormal = baseColorTextures[material.normalTexture].Sample(input.texCoord).rgb * 2.0 - 1.0;
+            const float3 perturbed = normalizeOrZero(tangent * mappedNormal.x + bitangent * mappedNormal.y + normal * mappedNormal.z);
+            normal = dot(perturbed, perturbed) > 0.0 ? perturbed : normal;
+        }
     }
     normal = dot(normal, viewDir) < 0.0 ? -normal : normal; ///< Keep visible debug faces lit even when winding flips normals.
     float3 pointContribution = float3(0.0);                              ///< Accumulated point-light response for active point slots.
