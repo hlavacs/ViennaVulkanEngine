@@ -1,0 +1,4 @@
+# Material fixture matching render_material_import.mtl except for map_bump.
+newmtl ImportedMaterial
+Kd 0.25 0.50 0.75
+map_Kd ../../assets/game/crate0/diffuse.png

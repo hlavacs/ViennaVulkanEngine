@@ -1,21 +1,23 @@
+#include "simple_shared.h"
+
 /**
  * @file simple_forward.slang
  * @brief Vertex and fragment stages for the simple forward renderer.
  *
- * Vertex inputs: per-vertex position, color, and texture coordinate attributes.
+ * Vertex inputs: per-vertex position, normal, texture coordinate, and tangent attributes.
  * Vertex constants: shared camera and shadow matrices in set 0 binding 0, plus per-object push constants.
  * Shadow output: depth-only clip position from the shadow matrix selected by the push constant.
- * Fragment inputs: interpolated vertex color and world-space position from the vertex stage.
+ * Fragment inputs: interpolated material color and world-space position from the vertex stage.
  * Fragment resources: base-color textures in binding 1 and the spot, directional, and point shadow arrays in bindings 2-4.
  * Set-0 bindings are fixed and mirrored by kDescriptorSetBindings in Vulkan/Pipeline.ixx; FrameUniforms and ObjectPushConstants mirror the C++ structs.
  * Fragment outputs: one opaque RGBA color attachment value for a shadowed forward render pass.
  */
 
-static const int kMaxShadowedSpotLights = 10; ///< Mirrors the simple engine fixed spot-shadow cap.
-static const int kMaxShadowedPointLights = 10; ///< Mirrors the simple engine fixed point-shadow cap.
-static const int kMaxDirectionalLights = 10;  ///< Mirrors the simple engine directional-light cap (must match Scene.ixx).
-static const int kNumShadowCascades = 4;      ///< Mirrors the fixed cascade count used by directional shadow resources.
-static const int kShadowMapResolution = 1024; ///< Mirrors ShadowMap::resolution for software PCF offsets.
+static const int kMaxShadowedSpotLights = VVE_MAX_SHADOWED_SPOT_LIGHTS; ///< Shared fixed spot-shadow cap.
+static const int kMaxShadowedPointLights = VVE_MAX_SHADOWED_POINT_LIGHTS; ///< Shared fixed point-shadow cap.
+static const int kMaxDirectionalLights = VVE_MAX_DIRECTIONAL_LIGHTS;  ///< Shared directional-light cap.
+static const int kNumShadowCascades = VVE_NUM_SHADOW_CASCADES;        ///< Shared directional shadow cascade count.
+static const int kShadowMapResolution = VVE_SHADOW_MAP_RESOLUTION;    ///< Shared shadow-map side length for software PCF offsets.
 static const int kSpotShadowBase = 0;                                          ///< First spot matrix in shadowViewProjs (mirrors kShadowMatrixSpotBase).
 static const int kPointShadowBase = kMaxShadowedSpotLights;                    ///< First point-face matrix (mirrors kShadowMatrixPointBase).
 static const int kDirShadowBase = kPointShadowBase + kMaxShadowedPointLights * 6; ///< First directional cascade matrix (mirrors kShadowMatrixDirBase).
@@ -45,26 +47,42 @@ struct FrameUniforms
 
 struct ObjectPushConstants
 {
-    float4x4 model;              ///< Object-local model matrix selected before each draw call.
-    uint baseColorTextureIndex;  ///< Slot in baseColorTextures, or kNoTexture for a plain vertex-colored object.
-    uint shadowMatrixIndex;      ///< Index into frame.shadowViewProjs used by the shadow vertex stage.
-    uint unlit;                  ///< Non-zero renders the object in its flat base color without any lighting.
-    uint padding;                ///< Keeps the push-constant block a multiple of 16 bytes.
+    float4x4 model;         ///< Object-local model matrix selected before each draw call.
+    uint materialIndex;    ///< Dense slot in the material storage buffer.
+    uint shadowMatrixIndex; ///< Index into frame.shadowViewProjs used by the shadow vertex stage.
+    uint unlit;             ///< Non-zero renders the object in its flat base color without any lighting.
+    uint padding;           ///< Keeps the push-constant block a multiple of 16 bytes.
+};
+
+struct GpuMaterial
+{
+    float4 baseColorFactor;         ///< Imported base-color factor.
+    uint baseColorTexture;          ///< Base-color texture-table index.
+    uint normalTexture;             ///< Normal texture-table index.
+    uint metalnessTexture;          ///< Metalness texture-table index.
+    uint roughnessTexture;          ///< Roughness texture-table index.
+    uint emissiveTexture;           ///< Emissive texture-table index.
+    uint ambientOcclusionTexture;   ///< Ambient-occlusion texture-table index.
+    uint padding0;                  ///< Storage-buffer alignment padding.
+    uint padding1;                  ///< Storage-buffer alignment padding.
 };
 
 struct VertexInput
 {
     [[vk::location(0)]] float3 position : POSITION;  ///< Object-local vertex position.
-    [[vk::location(1)]] float3 color    : COLOR0;    ///< Vertex color passed through to the fragment stage.
-    [[vk::location(2)]] float2 texCoord : TEXCOORD0; ///< Texture coordinate kept for tutorial-compatible vertex layouts.
+    [[vk::location(1)]] float3 normal   : NORMAL0;   ///< Object-local normal reserved for phase-four lighting.
+    [[vk::location(2)]] float2 texCoord : TEXCOORD0; ///< First texture coordinate.
+    [[vk::location(3)]] float4 tangent  : TANGENT0;  ///< Object-local tangent and handedness reserved for normal mapping.
 };
 
 struct VertexOutput
 {
     float4 position : SV_Position;                       ///< Clip-space position consumed by Vulkan.
-    [[vk::location(0)]] float3 color    : COLOR0;         ///< Interpolated vertex color for simple forward output.
+    [[vk::location(0)]] float3 color    : COLOR0;         ///< Interpolated material base-color factor.
     [[vk::location(1)]] float3 worldPos : TEXCOORD0;      ///< Interpolated world-space position for flat lighting.
     [[vk::location(2)]] float2 texCoord : TEXCOORD1;      ///< Interpolated texture coordinate for later material sampling.
+    [[vk::location(3)]] float3 normal   : NORMAL0;        ///< Interpolated world-space vertex normal.
+    [[vk::location(4)]] float4 tangent  : TANGENT0;       ///< Interpolated world-space tangent and handedness.
 };
 
 struct FragmentInput
@@ -72,6 +90,8 @@ struct FragmentInput
     [[vk::location(0)]] float3 color    : COLOR0;    ///< Interpolated vertex color.
     [[vk::location(1)]] float3 worldPos : TEXCOORD0; ///< Interpolated world-space position.
     [[vk::location(2)]] float2 texCoord : TEXCOORD1; ///< Interpolated texture coordinate for later material sampling.
+    [[vk::location(3)]] float3 normal   : NORMAL0;   ///< Interpolated world-space vertex normal.
+    [[vk::location(4)]] float4 tangent  : TANGENT0;  ///< Interpolated world-space tangent and handedness.
 };
 
 struct FragmentOutput
@@ -82,8 +102,8 @@ struct FragmentOutput
 [[vk::binding(0, 0)]]
 ConstantBuffer<FrameUniforms> frame; ///< Frame-wide camera constants.
 
-static const uint kMaxSceneTextures = 8;       ///< Base-color texture slots; mirrors vve::simple::kMaxSceneTextures.
-static const uint kNoTexture = 0xFFFFFFFFu;    ///< Push-constant index of an untextured object.
+static const uint kMaxSceneTextures = VVE_MAX_SCENE_TEXTURES; ///< Texture slots defined for C++ and Slang in simple_shared.h.
+static const uint kNoTexture = VVE_NO_TEXTURE; ///< Absent material texture index defined in simple_shared.h.
 
 [[vk::binding(1, 0)]]
 Sampler2D baseColorTextures[kMaxSceneTextures]; ///< Object base-color textures selected per draw by push constant.
@@ -96,6 +116,9 @@ Sampler2DArrayShadow dirShadowArray; ///< Directional light comparison-depth arr
 
 [[vk::binding(4, 0)]]
 Sampler2DArrayShadow pointShadowArray; ///< Point light comparison-depth array, six face layers per packed point light.
+
+[[vk::binding(VVE_MATERIAL_BINDING, 0)]]
+StructuredBuffer<GpuMaterial> materials; ///< Dense materials selected by each object's material index.
 
 [[vk::push_constant]]
 ObjectPushConstants object; ///< Per-object transform constants.
@@ -135,9 +158,11 @@ VertexOutput vertexMain(VertexInput input)
     const float4 worldPosition = mul(object.model, float4(input.position, 1.0));
     const float4 viewPosition = mul(frame.view, worldPosition);
     output.position = mul(frame.projection, viewPosition);
-    output.color = input.color;
+    output.color = materials[object.materialIndex].baseColorFactor.rgb;
     output.worldPos = worldPosition.xyz;
     output.texCoord = input.texCoord; ///< Preserve vertex UVs for the fragment interface.
+    output.normal = normalize(mul(float3x3(object.model), input.normal));
+    output.tangent = float4(normalize(mul(float3x3(object.model), input.tangent.xyz)), input.tangent.w);
     return output;
 }
 
@@ -151,9 +176,24 @@ float4 shadowVertexMain(VertexInput input) : SV_Position
 FragmentOutput fragmentMain(FragmentInput input)
 {
     FragmentOutput output;
-    const float ambient = frame.ambient;                                 ///< Scene-wide ambient keeps back faces visible.
-    const float shininess = 32.0;                                        ///< Fixed Blinn-Phong highlight exponent.
-    const float specularStrength = 0.3;                                  ///< Modest highlight strength for colored surfaces.
+    const GpuMaterial material = materials[object.materialIndex];
+    float3 baseColor = material.baseColorFactor.rgb;                      ///< Material factor remains the default base color.
+    if (material.baseColorTexture != kNoTexture && material.baseColorTexture < kMaxSceneTextures) {
+        baseColor *= baseColorTextures[material.baseColorTexture].Sample(input.texCoord).rgb; ///< The material texture modulates its factor before lighting.
+    }
+    const float roughness = material.roughnessTexture < kMaxSceneTextures ?
+        baseColorTextures[material.roughnessTexture].Sample(input.texCoord).r : 1.0;
+    const float metalness = material.metalnessTexture < kMaxSceneTextures ?
+        baseColorTextures[material.metalnessTexture].Sample(input.texCoord).r : 0.0;
+    const float3 emissive = material.emissiveTexture < kMaxSceneTextures ?
+        baseColorTextures[material.emissiveTexture].Sample(input.texCoord).rgb : float3(0.0);
+    const float ambientOcclusion = material.ambientOcclusionTexture < kMaxSceneTextures ?
+        baseColorTextures[material.ambientOcclusionTexture].Sample(input.texCoord).r : 1.0;
+    const float ambient = frame.ambient * ambientOcclusion;              ///< Ambient occlusion attenuates indirect scene light.
+    const float shininess = lerp(4.0, 128.0, (1.0 - roughness) * (1.0 - roughness)); ///< Rough surfaces broaden Blinn-Phong highlights.
+    const float specularStrength = lerp(0.3, 1.0, metalness);            ///< Metals strengthen their tinted reflection.
+    const float3 diffuseColor = baseColor * (1.0 - metalness);           ///< Metals have no diffuse response.
+    const float3 specularColor = lerp(float3(specularStrength), baseColor * specularStrength, metalness); ///< Metallic highlights use base color.
     const float3 rawNormal = normalize(cross(ddx(input.worldPos), ddy(input.worldPos))); ///< Flat geometric face normal from screen derivatives.
     const float3 viewOffset = float3(frame.view[0][3], frame.view[1][3], frame.view[2][3]); ///< View translation from the existing matrix.
     const float3 cameraPos = -float3(
@@ -161,7 +201,14 @@ FragmentOutput fragmentMain(FragmentInput input)
         dot(float3(frame.view[0][1], frame.view[1][1], frame.view[2][1]), viewOffset),
         dot(float3(frame.view[0][2], frame.view[1][2], frame.view[2][2]), viewOffset)); ///< World eye from inverse rigid view transform.
     const float3 viewDir = normalize(cameraPos - input.worldPos);        ///< Surface-to-eye vector for view-dependent highlights.
-    const float3 normal = dot(rawNormal, viewDir) < 0.0 ? -rawNormal : rawNormal; ///< Keep visible debug faces lit even when winding flips derivative normals.
+    float3 normal = length(input.normal) > 0.5 ? normalize(input.normal) : rawNormal; ///< Prefer imported smooth normals when present.
+    if (material.normalTexture < kMaxSceneTextures) {
+        const float3 tangent = normalize(input.tangent.xyz - normal * dot(normal, input.tangent.xyz)); ///< Gram-Schmidt tangent orthogonalization.
+        const float3 bitangent = cross(normal, tangent) * input.tangent.w; ///< Imported handedness preserves mirrored UV orientation.
+        const float3 mappedNormal = baseColorTextures[material.normalTexture].Sample(input.texCoord).rgb * 2.0 - 1.0;
+        normal = normalize(tangent * mappedNormal.x + bitangent * mappedNormal.y + normal * mappedNormal.z);
+    }
+    normal = dot(normal, viewDir) < 0.0 ? -normal : normal; ///< Keep visible debug faces lit even when winding flips normals.
     float3 pointContribution = float3(0.0);                              ///< Accumulated point-light response for active point slots.
     for (int i = 0; i < kMaxShadowedPointLights; ++i) {                  ///< Fixed trip count keeps point lights aligned with the uploaded arrays.
         const float pointRangeRaw = frame.pointLightPositionRanges[i].w; ///< Zero range marks an inactive point-light slot.
@@ -172,10 +219,9 @@ FragmentOutput fragmentMain(FragmentInput input)
             const float3 pointLightDir = pointOffset / max(pointDistance, 0.001); ///< Point-light direction changes across the scene.
             const float pointRangeFalloff = saturate(1.0 - (pointDistance / pointRangeRaw)); ///< Fade direct light at the configured range.
             const float pointAttenuation = pointRangeFalloff * pointRangeFalloff; ///< Smooth enough quadratic falloff for the debug scene.
-            const float3 pointNormal = dot(rawNormal, pointLightDir) < 0.0 ? -rawNormal : rawNormal; ///< Two-sided normal faces the point light, not the camera.
-            const float pointDiffuse = max(dot(pointNormal, pointLightDir), 0.0); ///< Lambertian response now varies with point-light position.
+            const float pointDiffuse = max(dot(normal, pointLightDir), 0.0); ///< Lambertian response now varies with point-light position.
             const float3 pointHalfVector = normalize(pointLightDir + viewDir); ///< Blinn-Phong halfway direction between light and eye.
-            const float pointSpecular = specularStrength * pow(max(dot(pointNormal, pointHalfVector), 0.0), shininess); ///< Point-light highlight response.
+            const float pointSpecular = pow(max(dot(normal, pointHalfVector), 0.0), shininess); ///< Point-light highlight response.
             const float3 pointLight = frame.pointLightColorIntensities[i].rgb * pointIntensity; ///< Point light color scaled by intensity.
             const float3 pointLightToFragment = input.worldPos - frame.pointLightPositionRanges[i].xyz; ///< Vector selects the cubemap-style shadow face.
             const float3 pointFaceAbs = abs(pointLightToFragment); ///< Dominant axis chooses the CPU face order.
@@ -191,7 +237,7 @@ FragmentOutput fragmentMain(FragmentInput input)
             const float pointShadowBias = perspectiveShadowBias(pointRangeRaw, pointLightClip.w); ///< Convert the world offset at this face-axis distance.
             const float pointShadowPcf = insidePointShadowMap ? pcfShadow(pointShadowArray, pointShadowUv, pointShadowLayer, pointLightNdc.z - pointShadowBias) : 1.0; ///< Filter the selected point-face depth comparisons.
             const float pointShadowFactor = lerp(0.35, 1.0, pointShadowPcf); ///< Preserve the existing partial-shadow floor while smoothing its edge.
-            pointContribution += pointLight * ((pointDiffuse + pointSpecular) * pointAttenuation * pointShadowFactor); ///< Add this point-light result with per-slot shadowing.
+            pointContribution += pointLight * ((diffuseColor * pointDiffuse + specularColor * pointSpecular) * pointAttenuation * pointShadowFactor); ///< Add this point-light result with per-slot shadowing.
         }
     }
     const int activeDirectionalLightCount = min(max(int(frame.activeDirectionalLightCount), 0), kMaxDirectionalLights); ///< Clamp scene directional count to the fixed array.
@@ -203,9 +249,9 @@ FragmentOutput fragmentMain(FragmentInput input)
             const float3 dirSurfaceLightDir = normalize(-frame.directionalLightDirections[i].xyz); ///< Directional surface-to-light vector.
             const float dirDiffuse = max(dot(normal, dirSurfaceLightDir), 0.0); ///< Directional Lambertian light response.
             const float3 dirHalfVector = normalize(dirSurfaceLightDir + viewDir); ///< Directional Blinn-Phong halfway direction.
-            const float dirSpecular = specularStrength * pow(max(dot(normal, dirHalfVector), 0.0), shininess); ///< Directional highlight response.
+            const float dirSpecular = pow(max(dot(normal, dirHalfVector), 0.0), shininess); ///< Directional highlight response.
             const float3 dirLight = frame.directionalLightColorIntensities[i].rgb * frame.directionalLightColorIntensities[i].w; ///< Directional light color scaled by intensity.
-            const float dirAmbient = frame.directionalLightAmbients[i].w; ///< Directional ambient contribution without shadowing.
+            const float dirAmbient = frame.directionalLightAmbients[i].w * ambientOcclusion; ///< Directional ambient contribution without shadowing.
             int dirCascade = -1;                                  ///< Negative means the fragment is beyond directional shadow coverage.
             for (int cascade = 0; cascade < kNumShadowCascades; ++cascade) {
                 if (viewDepth <= frame.cascadeSplits[cascade]) { dirCascade = cascade; break; } ///< Select the nearest cascade whose far split contains the fragment.
@@ -222,7 +268,7 @@ FragmentOutput fragmentMain(FragmentInput input)
                 debugCascadeIndex = dirCascade;
             }
             const float dirShadowFactor = lerp(0.35, 1.0, dirShadowPcf); ///< Preserve the existing partial-shadow floor while smoothing its edge.
-            directionalContribution += dirAmbient + dirLight * ((dirDiffuse + dirSpecular) * dirShadowFactor); ///< Add this shadowed directional result.
+            directionalContribution += baseColor * dirAmbient + dirLight * ((diffuseColor * dirDiffuse + specularColor * dirSpecular) * dirShadowFactor); ///< Add this shadowed directional result.
         }
     }
     const int activeSpotLightCount = min(max(int(frame.activeSpotLightCount), 0), kMaxShadowedSpotLights); ///< Clamp scene spot count to the fixed shadow array.
@@ -238,11 +284,11 @@ FragmentOutput fragmentMain(FragmentInput input)
             const float spotAttenuation = spotRangeFalloff * spotRangeFalloff; ///< Spot quadratic distance falloff.
             const float spotDiffuse = max(dot(normal, spotLightDir), 0.0); ///< Spot Lambertian light response.
             const float3 spotHalfVector = normalize(spotLightDir + viewDir); ///< Spot Blinn-Phong halfway direction.
-            const float spotSpecular = specularStrength * pow(max(dot(normal, spotHalfVector), 0.0), shininess); ///< Spot highlight response.
+            const float spotSpecular = pow(max(dot(normal, spotHalfVector), 0.0), shininess); ///< Spot highlight response.
             const float spotCos = dot(normalize(-spotLightDir), normalize(frame.spotLightDirections[i].xyz)); ///< Spot angle cosine for cone falloff.
             const float spotConeFalloff = smoothstep(frame.spotLightConeAmbients[i].y, frame.spotLightConeAmbients[i].x, spotCos); ///< Spot cone angular falloff.
             const float3 spotLight = frame.spotLightColorIntensities[i].rgb * frame.spotLightColorIntensities[i].w; ///< Spot light color scaled by intensity.
-            const float spotAmbient = frame.spotLightConeAmbients[i].w; ///< Spot ambient contribution without shadowing.
+            const float spotAmbient = frame.spotLightConeAmbients[i].w * ambientOcclusion; ///< Spot ambient contribution without shadowing.
             const float4 spotLightClip = mul(frame.shadowViewProjs[kSpotShadowBase + i], float4(input.worldPos, 1.0)); ///< Fragment position in spot light clip space.
             const float3 spotLightNdc = spotLightClip.xyz / spotLightClip.w; ///< Spot light depth remains in 0..1 after divide.
             const float2 spotShadowUv = (spotLightNdc.xy * 0.5) + 0.5; ///< Convert spot light NDC XY to shadow texture UVs.
@@ -250,18 +296,14 @@ FragmentOutput fragmentMain(FragmentInput input)
             const float spotShadowBias = perspectiveShadowBias(spotRange, spotLightClip.w); ///< Convert the world offset at this spot-axis distance.
             const float spotShadowPcf = insideSpotShadowMap ? pcfShadow(spotShadowArray, spotShadowUv, i, spotLightNdc.z - spotShadowBias) : 1.0; ///< Filter spotlight comparisons across neighboring texels.
             const float spotShadowFactor = lerp(0.35, 1.0, spotShadowPcf); ///< Preserve the existing partial-shadow floor while smoothing its edge.
-            spotContribution += spotAmbient + spotLight * ((spotDiffuse + spotSpecular) * spotAttenuation * spotConeFalloff * spotShadowFactor); ///< Add this cone-attenuated spot result.
+            spotContribution += baseColor * spotAmbient + spotLight * ((diffuseColor * spotDiffuse + specularColor * spotSpecular) * spotAttenuation * spotConeFalloff * spotShadowFactor); ///< Add this cone-attenuated spot result.
         }
-    }
-    float3 baseColor = input.color;                                      ///< Vertex color remains the default material color.
-    if (object.baseColorTextureIndex != kNoTexture) {
-        baseColor *= baseColorTextures[object.baseColorTextureIndex].Sample(input.texCoord).rgb; ///< The object's texture modulates the material before lighting.
     }
     if (object.unlit != 0) {
         output.color = float4(baseColor, 1.0);                           ///< Emissive-style objects such as the sun keep a constant color.
         return output;
     }
-    float3 litColor = baseColor * (ambient + pointContribution + directionalContribution + spotContribution); ///< Apply point, directional, and spot Blinn-Phong.
+    float3 litColor = baseColor * ambient + pointContribution + directionalContribution + spotContribution + emissive; ///< Emissive remains visible independently of shadows.
     if (kDebugCascadeTint && debugCascadeIndex >= 0) {
         const float3 cascadeTint = debugCascadeIndex == 0 ? float3(1.0, 0.25, 0.25) :
             (debugCascadeIndex == 1 ? float3(0.25, 1.0, 0.25) :

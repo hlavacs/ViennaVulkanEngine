@@ -2,6 +2,18 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Windows Debug (choose executable)",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/bin/debug/exe/${input:windowsExecutable}.exe",
+            "args": [],
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "console": "integratedTerminal",
+            "preLaunchTask": "Build Windows debug"
+        },
+        {
             "name": "game",
             "type": "cppdbg",
             "request": "launch",
@@ -209,6 +221,22 @@
         }
     ],
     "inputs": [
+        {
+            "id": "windowsExecutable",
+            "type": "pickString",
+            "description": "Choose the executable to debug on Windows",
+            "options": [
+                "game",
+                "testscene",
+                "physics",
+                "sponza",
+                "postprocessing",
+                "simple_forward_demo",
+                "light_shadow_debug",
+                "WorldTests"
+            ],
+            "default": "game"
+        },
         {
             "id": "platform",
             "type": "pickString",

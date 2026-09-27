@@ -186,15 +186,14 @@
         },
         {
             "label": "Build Windows debug",
-            "type": "shell",
-            "command": "cmake",
-            "dependsOn": [
-                "Configure Windows debug"
-            ],
+            "type": "process",
+            "command": "${env:ComSpec}",
             "args": [
-                "--build",
-                "--preset",
-                "build-debug-windows"
+                "/d",
+                "/c",
+                "build_windows.cmd",
+                "debug",
+                "--no-tests"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

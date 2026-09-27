@@ -1,6 +1,5 @@
 module VEEngine.Simple;
 import std;
-import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Renderer;
 
@@ -12,17 +11,10 @@ namespace vve::simple {
 	/// @brief Removes one live render object from the backend scene.
 	auto RenderSystem::removeObject(RenderObjectHandle handle) -> std::expected<void, Error> {
 		const auto object = findRenderObject(handle);
-		if (!object || scene_.findInstance(object->first) == nullptr ||
-			 object->second >= renderer_.scene.objects.size()) {
-			return std::unexpected(Error::missing_object);
-		}
-
-		if (!renderer_.removeObject(object->second)) { return std::unexpected(Error::missing_object); }
-		if (!scene_.eraseInstance(object->first)) { return std::unexpected(Error::missing_object); }
+		if (!object || scene_.findInstance(*object) == nullptr) { return std::unexpected(Error::missing_object); }
+		if (!scene_.eraseInstance(*object)) { return std::unexpected(Error::missing_object); }
 		eraseRenderObject(handle);
-		for (auto &entry : render_objects_) {
-			if (entry.second.second > object->second) { --entry.second.second; }
-		}
+		renderer_.markSceneResourcesDirty();
 		return {};
 	}
 
@@ -85,31 +77,33 @@ namespace vve::simple {
 
 	/// @brief Removes CPU render assets that are not referenced by live instances.
 	auto RenderSystem::purgeUnusedAssets() -> std::size_t {
-		return scene_.purgeUnusedAssets();
+		const auto material_count = scene_.materialCount();
+		const auto removed = scene_.purgeUnusedAssets();
+		if (removed > 0U) { renderer_.markSceneResourcesDirty(); }
+		if (scene_.materialCount() != material_count) { renderer_.markMaterialsDirty(); }
+		return removed;
 	}
 
 	/// @brief Adds a plane mesh, material, and public object handle to the CPU scene.
 	auto RenderSystem::addPlane(Vec2 half_extent, LinearColor color, Transform transform)
 		-> std::expected<RenderObjectHandle, Error> {
 		const auto material = scene_.addMaterial({.base_color = color});
+		renderer_.markMaterialsDirty();
 		const auto mesh = scene_.addPlaneMesh(half_extent);
-		auto instance = scene_.addInstance(mesh, material, transform);
+		auto instance = scene_.addInstance(mesh, material, transform, detail::modelMatrix(transform));
 		if (!instance) { return std::unexpected(instance.error()); }
-		const auto backend_index = appendBackendObject(*instance);
-		if (!backend_index) { return std::unexpected(backend_index.error()); }
-		return registerRenderObject(*instance, *backend_index);
+		return registerRenderObject(*instance);
 	}
 
 	/// @brief Adds a cuboid mesh, material, and public object handle to the CPU scene.
 	auto RenderSystem::addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color, Transform transform)
 		-> std::expected<RenderObjectHandle, Error> {
 		const auto material = scene_.addMaterial({.base_color = color});
+		renderer_.markMaterialsDirty();
 		const auto mesh = scene_.addCuboidMesh(minimum, maximum);
-		auto instance = scene_.addInstance(mesh, material, transform);
+		auto instance = scene_.addInstance(mesh, material, transform, detail::modelMatrix(transform));
 		if (!instance) { return std::unexpected(instance.error()); }
-		const auto backend_index = appendBackendObject(*instance);
-		if (!backend_index) { return std::unexpected(backend_index.error()); }
-		return registerRenderObject(*instance, *backend_index);
+		return registerRenderObject(*instance);
 	}
 
 	/// @brief Adds one colored indexed triangle mesh to the CPU and backend scenes.
@@ -137,14 +131,13 @@ namespace vve::simple {
 		}
 
 		const auto material = scene_.addMaterial({.base_color = color});
+		renderer_.markMaterialsDirty();
 		const auto mesh = scene_.addTriangleMesh(std::move(positions), std::move(indices),
 			Bounds{.minimum = Position{.value = minimum}, .maximum = Position{.value = maximum},
 				.valid = true});
-		auto instance = scene_.addInstance(mesh, material, transform);
+		auto instance = scene_.addInstance(mesh, material, transform, detail::modelMatrix(transform));
 		if (!instance) { return std::unexpected(instance.error()); }
-		const auto backend_index = appendBackendObject(*instance);
-		if (!backend_index) { return std::unexpected(backend_index.error()); }
-		return registerRenderObject(*instance, *backend_index);
+		return registerRenderObject(*instance);
 	}
 
 	/// @brief Updates positions while preserving one triangle mesh's topology and allocation size.
@@ -152,7 +145,7 @@ namespace vve::simple {
 		-> std::expected<void, Error> {
 		const auto object = findRenderObject(handle);
 		if (!object) { return std::unexpected(Error::missing_object); }
-		auto *instance = scene_.findInstance(object->first);
+		auto *instance = scene_.findInstance(*object);
 		if (instance == nullptr) { return std::unexpected(Error::missing_object); }
 		auto *mesh = scene_.findMesh(instance->mesh);
 		if (mesh == nullptr || mesh->vertices.size() != positions.size() ||
@@ -178,34 +171,34 @@ namespace vve::simple {
 		mesh->bounds = Bounds{.minimum = Position{.value = minimum},
 			.maximum = Position{.value = maximum}, .valid = true};
 
-		const bool updated = renderer_.updateObjectMeshPositions(object->second, positions);
-		return updated ? std::expected<void, Error>{} :
-			std::unexpected(Error::invalid_argument);
+		renderer_.markMeshDirty(instance->mesh);
+		return {};
 	}
 
 	/// @brief Adds a textured cuboid and returns its public render-object handle.
 	auto RenderSystem::addTexturedCuboid(Vec3 minimum, Vec3 maximum, std::filesystem::path base_color_texture,
-													 Transform transform) -> std::expected<RenderObjectHandle, Error> {
-		if (base_color_texture.empty()) { return std::unexpected(Error::io_error); }
-		auto texture_file = std::ifstream{base_color_texture, std::ios::binary};
-		if (!texture_file) { return std::unexpected(Error::io_error); }
+												 Transform transform) -> std::expected<RenderObjectHandle, Error> {
+		const auto texture_index = scene_.acquireTexture(base_color_texture);
+		if (!texture_index) { return std::unexpected(texture_index.error()); }
+		const auto *texture = scene_.findTexture(*texture_index);
+		if (texture == nullptr) { return std::unexpected(Error::internal_error); }
 
 		const auto material = scene_.addMaterial({.base_color = LinearColor{.value = oneVec3()},
 																.base_color_texture = makeCounterHandle<TextureHandle>(),
-																.base_color_texture_source = base_color_texture});
+																.base_color_texture_source = texture->canonical_path,
+																.base_color_texture_index = *texture_index});
+		renderer_.markMaterialsDirty();
 		const auto mesh = scene_.addCuboidMesh(minimum, maximum);
-		auto instance = scene_.addInstance(mesh, material, transform);
+		auto instance = scene_.addInstance(mesh, material, transform, detail::modelMatrix(transform));
 		if (!instance) { return std::unexpected(instance.error()); }
-		const auto backend_index = appendBackendObject(*instance);
-		if (!backend_index) { return std::unexpected(backend_index.error()); }
-		return registerRenderObject(*instance, *backend_index);
+		return registerRenderObject(*instance);
 	}
 
 	/// @brief Removes all CPU-scene instances and backend object payloads.
 	auto RenderSystem::clearScene() -> void {
-		scene_.clear();
-		render_objects_.clear();
 		renderer_.clearScene();
+		render_objects_.clear();
+		scene_.clear();
 	}
 
 	/// @brief Stores a backend scene and mirrors it into the selected renderer.

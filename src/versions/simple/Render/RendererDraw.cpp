@@ -5,7 +5,7 @@ module;
 module VEEngine.Simple.Renderer;
 import std;
 import VEEngine.Simple.Types;
-import VEEngine.Simple.Mesh;
+import VEEngine.Simple.RenderResources;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vulkan;
 
@@ -51,7 +51,6 @@ namespace vve::simple {
 		if (renderFinishedSemaphore == VK_NULL_HANDLE) { return; }
 
 		const Scalar aspectRatio{swapchain.extent.height == 0U ? one() : static_cast<Scalar>(swapchain.extent.width) / static_cast<Scalar>(swapchain.extent.height)}; ///< Live swapchain aspect with a zero-height guard.
-		constexpr Scalar cameraVerticalFov{static_cast<Scalar>(0.7853981633974483)}; ///< Fixed 45-degree camera field of view.
 		constexpr Scalar cameraNear{static_cast<Scalar>(0.1)}; ///< Camera near plane shared by projection and cascade splitting.
 		constexpr Scalar cameraFar{static_cast<Scalar>(100.0)}; ///< Camera far plane bounds directional cascade coverage.
 		const Mat4 cameraView{lookAt(cameraEye, cameraTarget, Vec3{zero(), one(), zero()})}; ///< Current camera transform shared by uniforms and cascade fitting.
@@ -154,20 +153,24 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return result; }
 
 		const auto drawUploadedObjects = [&](std::uint32_t shadowMatrixIndex, bool shadowPass) {
-			std::size_t objectIndex{}; // Meshes and scene objects share submission order.
-			for (const VulkanMesh &mesh : meshes) {
-				if (objectIndex >= scene.objects.size()) { break; }
-
+			if (renderInstances_ == nullptr) { return; }
+			for (const RenderInstance &instance : *renderInstances_) {
+				if (!instance.visible || (shadowPass && !instance.casts_shadow)) { continue; }
+				const auto uploaded = meshes.find(instance.mesh);
+				const auto material = materialSlots_.find(instance.material);
+				if (uploaded == meshes.end() || material == materialSlots_.end()) { continue; }
+				const VulkanMesh &mesh = uploaded->second;
 				const VkBuffer vertexBuffers[]{mesh.vertexBuffer.buffer};
 				const VkDeviceSize offsets[]{0U};
-				const Object &object = scene.objects[objectIndex];
-				if (!object.visible || (shadowPass && !object.castsShadow)) { ++objectIndex; continue; } // Shadow passes skip non-casting objects such as the sun.
-				const ObjectPushConstants pushConstants{.model = object.model, .baseColorTextureIndex = object.baseColorTextureIndex, .shadowMatrixIndex = shadowMatrixIndex, .unlit = object.unlit ? 1U : 0U};
+				const ObjectPushConstants pushConstants{
+					.model = instance.world_transform,
+					.materialIndex = material->second,
+					.shadowMatrixIndex = shadowMatrixIndex,
+					.unlit = instance.unlit ? 1U : 0U};
 				vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, vertexBuffers, offsets);
 				vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0U, VK_INDEX_TYPE_UINT32);
 				vkCmdPushConstants(commandBuffer, pipelineLayout.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0U, sizeof(ObjectPushConstants), &pushConstants);
 				vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1U, 0U, 0, 0U);
-				++objectIndex;
 			}
 		};
 		// Every shadow layer is cleared each frame; active layers also receive the caster geometry. All layers end in shader-read layout.

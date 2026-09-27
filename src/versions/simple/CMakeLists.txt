@@ -17,7 +17,6 @@ target_sources(ViennaVulkanEngine
          Assets.ixx
          GUI.ixx
          Engine.ixx
-         Mesh.ixx
          Vulkan/Handle.ixx
          Vulkan/Memory.ixx
          Vulkan/Device.ixx
@@ -35,6 +34,7 @@ target_sources(ViennaVulkanEngine
 )
 
 set(VVE_SIMPLE_FORWARD_SHADER "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_forward.slang")
+set(VVE_SIMPLE_SHARED_SHADER_HEADER "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_shared.h")
 set(VVE_SIMPLE_SHADER_OUTPUT_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
 set(VVE_SIMPLE_FORWARD_VERTEX_SPV "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/simple_forward.vert.spv")
 set(VVE_SIMPLE_FORWARD_FRAGMENT_SPV "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/simple_forward.frag.spv")
@@ -75,7 +75,7 @@ add_custom_command(
    COMMAND "${VVE_SIMPLE_SLANGC}" "${VVE_SIMPLE_FORWARD_SHADER}"
       -target spirv -profile spirv_1_4 -stage vertex -entry vertexMain -fvk-use-entrypoint-name
       -o "${VVE_SIMPLE_FORWARD_VERTEX_SPV}"
-   DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}"
+   DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}" "${VVE_SIMPLE_SHARED_SHADER_HEADER}"
    COMMENT "Compiling simple forward vertex shader"
    VERBATIM
 )
@@ -86,7 +86,7 @@ add_custom_command(
    COMMAND "${VVE_SIMPLE_SLANGC}" "${VVE_SIMPLE_FORWARD_SHADER}"
       -target spirv -profile spirv_1_4 -stage fragment -entry fragmentMain -fvk-use-entrypoint-name
       -o "${VVE_SIMPLE_FORWARD_FRAGMENT_SPV}"
-   DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}"
+   DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}" "${VVE_SIMPLE_SHARED_SHADER_HEADER}"
    COMMENT "Compiling simple forward fragment shader"
    VERBATIM
 )
@@ -97,7 +97,7 @@ add_custom_command(
    COMMAND "${VVE_SIMPLE_SLANGC}" "${VVE_SIMPLE_FORWARD_SHADER}"
       -target spirv -profile spirv_1_4 -stage vertex -entry shadowVertexMain -fvk-use-entrypoint-name
       -o "${VVE_SIMPLE_FORWARD_SHADOW_VERTEX_SPV}"
-   DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}"
+   DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}" "${VVE_SIMPLE_SHARED_SHADER_HEADER}"
    COMMENT "Compiling simple forward shadow vertex shader"
    VERBATIM
 )

@@ -208,6 +208,29 @@ namespace vve {
 	/// @brief Removes CPU render assets no live render object references.
 	std::size_t RenderSystem::purgeUnusedAssets() { return impl_.purgeUnusedAssets(); }
 
+	/// @brief Returns unique decoded texture count in the active CPU scene.
+	std::size_t RenderSystem::sceneTextureCount() const { return impl_.sceneTextureCount(); }
+
+	/// @brief Returns whether one decoded scene texture contains linear data.
+	std::expected<bool, Error> RenderSystem::sceneTextureIsLinear(std::size_t index) const {
+		return impl_.sceneTextureIsLinear(index);
+	}
+
+	/// @brief Returns resident GPU texture count, excluding the fallback texture.
+	std::size_t RenderSystem::gpuTextureCount() const { return impl_.gpuTextureCount(); }
+
+	/// @brief Returns the number of unique resident GPU meshes.
+	std::size_t RenderSystem::gpuMeshCount() const { return impl_.gpuMeshCount(); }
+
+	/// @brief Returns the number of entries in the resident GPU material table.
+	std::size_t RenderSystem::gpuMaterialCount() const { return impl_.gpuMaterialCount(); }
+
+	/// @brief Returns the monotonic count of GPU mesh uploads.
+	std::size_t RenderSystem::gpuMeshUploadCount() const { return impl_.gpuMeshUploadCount(); }
+
+	/// @brief Returns the monotonic count of GPU material-buffer uploads.
+	std::size_t RenderSystem::gpuMaterialUploadCount() const { return impl_.gpuMaterialUploadCount(); }
+
 	/// @brief Returns mesh count in the active CPU scene.
 	std::size_t RenderSystem::sceneMeshCount() const { return impl_.sceneMeshCount(); }
 

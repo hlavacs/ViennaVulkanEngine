@@ -11,7 +11,7 @@ module;
 module VEEngine.Simple.Renderer;
 import std;
 import VEEngine.Simple.Types;
-import VEEngine.Simple.Mesh;
+import VEEngine.Simple.RenderResources;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vulkan;
 
@@ -47,11 +47,20 @@ namespace vve::simple {
 		result = physicalDevice.select(instance.instance, surface.surface);
 		if (result != VK_SUCCESS) { cleanup(); return result; }
 
+		VkPhysicalDeviceProperties deviceProperties{};
+		vkGetPhysicalDeviceProperties(physicalDevice.physicalDevice, &deviceProperties);
+		constexpr auto shadowSamplerCount = 3U; ///< Spot, directional, and point shadow arrays share the fragment stage.
+		const auto requiredSamplerCount = static_cast<std::uint32_t>(kMaxSceneTextures) + shadowSamplerCount;
+		if (deviceProperties.limits.maxPerStageDescriptorSamplers < requiredSamplerCount) {
+			std::cerr << "[vve::simple] renderer init failed: maxPerStageDescriptorSamplers="
+				<< deviceProperties.limits.maxPerStageDescriptorSamplers << " requires " << requiredSamplerCount << '\n';
+			cleanup();
+			return VK_ERROR_FEATURE_NOT_PRESENT;
+		}
+
 		result = device.create(physicalDevice);
 		if (result != VK_SUCCESS) { cleanup(); return result; }
 
-		VkPhysicalDeviceProperties deviceProperties{};
-		vkGetPhysicalDeviceProperties(physicalDevice.physicalDevice, &deviceProperties);
 		result = allocator.create(instance.instance, physicalDevice.physicalDevice, device.device,
 													  std::min<std::uint32_t>(deviceProperties.apiVersion, VK_API_VERSION_1_3)); ///< VMA needs a version both instance and device support.
 		if (result != VK_SUCCESS) { cleanup(); return result; }
@@ -154,16 +163,25 @@ namespace vve::simple {
 
 		result = uploadSceneTextures();
 		if (result != VK_SUCCESS) { cleanup(); return result; }
+		result = uploadSceneMaterials();
+		if (result != VK_SUCCESS) { cleanup(); return result; }
 
-		// Upload one GPU mesh for each object in the current CPU scene.
-		for (const Object &object : scene.objects) {
-			VulkanMesh &mesh = meshes.emplace_back();
-			result = mesh.create(allocator, object.mesh);
-			if (result != VK_SUCCESS) { cleanup(); return result; }
+		// Upload each referenced CPU mesh once, regardless of how many instances draw it.
+		if (renderInstances_ != nullptr) {
+			for (const RenderInstance &renderInstance : *renderInstances_) {
+				if (meshes.contains(renderInstance.mesh)) { continue; }
+				const auto *renderMesh = findRenderMesh(renderInstance.mesh);
+				if (renderMesh == nullptr) { cleanup(); return VK_ERROR_INITIALIZATION_FAILED; }
+				auto [uploaded, _] = meshes.try_emplace(renderInstance.mesh);
+				result = uploaded->second.create(allocator, *renderMesh);
+				if (result != VK_SUCCESS) { meshes.erase(uploaded); cleanup(); return result; }
+				++meshUploadCount_;
+			}
 		}
 		sceneGeometryDirty_.clear();
 		sceneResourcesDirty_ = false;
 		sceneRequiresFullUpload_ = false;
+		sceneMaterialsDirty_ = false;
 
 		if (postProcessSetup_) {
 			// The VVPPL throws, whereas the Engine works with std::expected and VKResult
@@ -178,22 +196,87 @@ namespace vve::simple {
 	}
 
 	/**
-	 * @brief Uploads every Scene::textures entry into its texture slot and binds all slots in every frame descriptor set.
+	 * @brief Rebuilds the dense material table and uploads it to one shared storage buffer.
+	 *
+	 * Texture indices outside the bound descriptor array become the shared no-texture sentinel.
+	 * @return VK_SUCCESS when the current material table is uploaded and bound, otherwise a Vulkan error.
+	 */
+	VkResult ForwardRenderer::uploadSceneMaterials() {
+		auto materials = std::vector<GpuMaterial>{};
+		materialSlots_.clear();
+		if (renderMaterials_ != nullptr) {
+			materials.reserve(renderMaterials_->size());
+			for (const RenderMaterial &material : *renderMaterials_) {
+				const auto textureIndex = [this](RenderTextureIndex index) {
+					return index < kMaxSceneTextures && index < scene.textures.size() ? index : kNoTexture;
+				};
+				const auto slot = static_cast<std::uint32_t>(materials.size());
+				materialSlots_.emplace(material.handle, slot);
+				materials.push_back(GpuMaterial{
+					.baseColorFactor = Vec4{material.base_color.value.x, material.base_color.value.y,
+						material.base_color.value.z, one()},
+					.baseColorTexture = textureIndex(material.base_color_texture_index),
+					.normalTexture = textureIndex(material.normal_texture_index),
+					.metalnessTexture = textureIndex(material.metalness_texture_index),
+					.roughnessTexture = textureIndex(material.roughness_texture_index),
+					.emissiveTexture = textureIndex(material.emissive_texture_index),
+					.ambientOcclusionTexture = textureIndex(material.ambient_occlusion_texture_index)});
+			}
+		}
+
+		const std::size_t requiredCapacity = std::max<std::size_t>(materials.size(), 1U);
+		const bool resized = materialBuffer.buffer == VK_NULL_HANDLE || materialBufferCapacity_ < requiredCapacity;
+		if (resized) {
+			materialBuffer.cleanup();
+			const VkResult result = materialBuffer.create(allocator, requiredCapacity * sizeof(GpuMaterial),
+				VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, true);
+			if (result != VK_SUCCESS) { materialBufferCapacity_ = 0U; return result; }
+			materialBufferCapacity_ = requiredCapacity;
+		}
+
+		const GpuMaterial fallback{};
+		const VkResult upload = materials.empty()
+			? materialBuffer.upload(std::addressof(fallback), sizeof(fallback))
+			: materialBuffer.upload(materials.data(), materials.size() * sizeof(GpuMaterial));
+		if (upload != VK_SUCCESS) { return upload; }
+		if (resized) {
+			for (std::uint32_t frame{}; frame < framesInFlight; ++frame) {
+				const VkResult result = descriptorSets.writeMaterialBuffer(frame, materialBuffer.buffer,
+					materialBufferCapacity_ * sizeof(GpuMaterial));
+				if (result != VK_SUCCESS) { return result; }
+			}
+		}
+		uploadedMaterialCount_ = materials.size();
+		++materialUploadCount_;
+		return VK_SUCCESS;
+	}
+
+	/**
+	 * @brief Uploads new RenderScene texture-table entries and binds all slots in every frame descriptor set.
 	 *
 	 * Unused slots point at the opaque-white default texture so the whole shader array stays valid.
 	 * @return VK_SUCCESS when all textures are resident and bound, otherwise the first Vulkan error.
 	 */
 	VkResult ForwardRenderer::uploadSceneTextures() {
-		for (TextureImage &texture : objectTextures) { texture.cleanup(); }
-		defaultObjectTexture.cleanup();
-		uploadedTextures_.clear();
+		if (sceneRequiresFullUpload_) {
+			for (TextureImage &texture : objectTextures) { texture.cleanup(); }
+			uploadedTextureCount_ = 0U;
+		}
 
 		constexpr std::array opaqueWhitePixel{std::byte{255U}, std::byte{255U}, std::byte{255U}, std::byte{255U}};
-		VkResult result = defaultObjectTexture.create(allocator, device.device, device.graphicsQueue, commandPool.commandPool, std::span{opaqueWhitePixel}, VkExtent2D{.width = 1U, .height = 1U});
-		if (result != VK_SUCCESS) { return result; }
+		VkResult result{VK_SUCCESS};
+		if (defaultObjectTexture.imageView == VK_NULL_HANDLE) {
+			result = defaultObjectTexture.create(allocator, device.device, device.graphicsQueue, commandPool.commandPool,
+				std::span{opaqueWhitePixel}, VkExtent2D{.width = 1U, .height = 1U});
+			if (result != VK_SUCCESS) { return result; }
+		}
 		const std::size_t textureCount{std::min(scene.textures.size(), kMaxSceneTextures)};
-		for (std::size_t index{}; index < textureCount; ++index) {
-			result = objectTextures[index].create(allocator, device.device, device.graphicsQueue, commandPool.commandPool, scene.textures[index]);
+		for (std::size_t index{uploadedTextureCount_}; index < textureCount; ++index) {
+			const RenderTexture *texture = scene.textures[index];
+			if (texture == nullptr) { return VK_ERROR_INITIALIZATION_FAILED; }
+			result = objectTextures[index].create(allocator, device.device, device.graphicsQueue, commandPool.commandPool,
+				texture->rgba8, VkExtent2D{.width = texture->extent.width, .height = texture->extent.height},
+				texture->linear ? VK_FORMAT_R8G8B8A8_UNORM : VK_FORMAT_R8G8B8A8_SRGB);
 			if (result != VK_SUCCESS) { return result; }
 		}
 
@@ -206,7 +289,7 @@ namespace vve::simple {
 			result = descriptorSets.writeObjectTextures(frame, images);
 			if (result != VK_SUCCESS) { return result; }
 		}
-		uploadedTextures_.assign(scene.textures.begin(), scene.textures.begin() + static_cast<std::ptrdiff_t>(textureCount));
+		uploadedTextureCount_ = textureCount;
 		return VK_SUCCESS;
 	}
 
@@ -216,13 +299,19 @@ namespace vve::simple {
 	 * @return VK_SUCCESS when GPU meshes and the shared object texture match the CPU scene.
 	 */
 	VkResult ForwardRenderer::syncSceneResources() {
-		if (!sceneResourcesDirty_) { return VK_SUCCESS; }
+		if (!sceneResourcesDirty_ && !sceneMaterialsDirty_) { return VK_SUCCESS; }
 		if (device.device == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-		const bool textureChanged = defaultObjectTexture.imageView == VK_NULL_HANDLE ||
-			!std::ranges::equal(scene.textures | std::views::take(kMaxSceneTextures), uploadedTextures_);
+		const bool textureChanged = sceneRequiresFullUpload_ || defaultObjectTexture.imageView == VK_NULL_HANDLE ||
+			std::min(scene.textures.size(), kMaxSceneTextures) != uploadedTextureCount_;
+		auto liveMeshes = std::set<RenderMeshHandle>{};
+		if (renderInstances_ != nullptr) {
+			for (const RenderInstance &instance : *renderInstances_) { liveMeshes.insert(instance.mesh); }
+		}
+		const bool topologyChanged = meshes.size() != liveMeshes.size() ||
+			std::ranges::any_of(liveMeshes, [this](RenderMeshHandle handle) { return !meshes.contains(handle); });
 		const bool geometryChanged = !sceneGeometryDirty_.empty();
-		if (sceneRequiresFullUpload_ || textureChanged || geometryChanged) {
+		if (sceneRequiresFullUpload_ || textureChanged || topologyChanged || geometryChanged || sceneMaterialsDirty_) {
 			const VkResult idle = vkDeviceWaitIdle(device.device);
 			if (idle != VK_SUCCESS) { return idle; }
 		}
@@ -231,35 +320,40 @@ namespace vve::simple {
 		if (textureChanged) {
 			if (const VkResult result = uploadSceneTextures(); result != VK_SUCCESS) { return result; }
 		}
+		if (sceneMaterialsDirty_) {
+			if (const VkResult result = uploadSceneMaterials(); result != VK_SUCCESS) { return result; }
+		}
 
-		// Additions upload only the new suffix; removals and scene replacement rebuild index alignment.
-		const bool rebuildMeshes = sceneRequiresFullUpload_ ||
-			meshes.size() > scene.objects.size();
-		if (rebuildMeshes) {
-			meshes.clear();
+		// Release only meshes with no live instance; stable handles keep every surviving buffer untouched.
+		if (sceneRequiresFullUpload_) { meshes.clear(); }
+		for (auto uploaded = meshes.begin(); uploaded != meshes.end();) {
+			if (liveMeshes.contains(uploaded->first)) { ++uploaded; continue; }
+			uploaded->second.cleanup();
+			uploaded = meshes.erase(uploaded);
 		}
-		while (meshes.size() < scene.objects.size()) {
-			const Object &object = scene.objects[meshes.size()];
-			VulkanMesh &mesh = meshes.emplace_back();
-			const VkResult result = mesh.create(allocator, object.mesh);
-			if (result != VK_SUCCESS) {
-				meshes.pop_back();
-				return result;
-			}
+		auto newlyUploaded = std::set<RenderMeshHandle>{};
+		for (const RenderMeshHandle handle : liveMeshes) {
+			if (meshes.contains(handle)) { continue; }
+			const auto *renderMesh = findRenderMesh(handle);
+			if (renderMesh == nullptr) { return VK_ERROR_INITIALIZATION_FAILED; }
+			auto [uploaded, _] = meshes.try_emplace(handle);
+			const VkResult result = uploaded->second.create(allocator, *renderMesh);
+			if (result != VK_SUCCESS) { meshes.erase(uploaded); return result; }
+			newlyUploaded.insert(handle);
+			++meshUploadCount_;
 		}
-		if (!rebuildMeshes) {
-			for (const std::size_t index : sceneGeometryDirty_) {
-				if (index >= meshes.size() || index >= scene.objects.size()) {
-					return VK_ERROR_INITIALIZATION_FAILED;
-				}
-				const VkResult result = meshes[index].updateVertices(
-					scene.objects[index].mesh);
-				if (result != VK_SUCCESS) { return result; }
-			}
+		for (const RenderMeshHandle handle : sceneGeometryDirty_) {
+			if (!liveMeshes.contains(handle) || newlyUploaded.contains(handle)) { continue; }
+			const auto *renderMesh = findRenderMesh(handle);
+			const auto uploaded = meshes.find(handle);
+			if (renderMesh == nullptr || uploaded == meshes.end()) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (const VkResult result = uploaded->second.updateVertices(*renderMesh); result != VK_SUCCESS) { return result; }
+			++meshUploadCount_;
 		}
 		sceneGeometryDirty_.clear();
 		sceneResourcesDirty_ = false;
 		sceneRequiresFullUpload_ = false;
+		sceneMaterialsDirty_ = false;
 		return VK_SUCCESS;
 	}
 
@@ -269,10 +363,12 @@ namespace vve::simple {
 	void ForwardRenderer::cleanup() {
 		if (device.device != VK_NULL_HANDLE) { (void)vkDeviceWaitIdle(device.device); }
 		recordedPassOrder.clear();
-		for (auto mesh = meshes.rbegin(); mesh != meshes.rend(); ++mesh) { mesh->cleanup(); }
+		for (auto &[_, mesh] : meshes) { mesh.cleanup(); }
 		meshes.clear();
 		for (TextureImage &texture : objectTextures) { texture.cleanup(); }
 		defaultObjectTexture.cleanup();
+		materialBuffer.cleanup();
+		materialSlots_.clear();
 		descriptorSets.cleanup();
 		if (imguiDescriptorPool_ != VK_NULL_HANDLE) {
 			vkDestroyDescriptorPool(device.device, imguiDescriptorPool_, nullptr);
@@ -280,10 +376,13 @@ namespace vve::simple {
 		}
 		postProcess.reset();
 		descriptorPool.cleanup();
-		uploadedTextures_.clear();
+		uploadedTextureCount_ = 0U;
+		uploadedMaterialCount_ = 0U;
+		materialBufferCapacity_ = 0U;
 		sceneGeometryDirty_.clear();
 		sceneResourcesDirty_ = true;
 		sceneRequiresFullUpload_ = true;
+		sceneMaterialsDirty_ = true;
 		uniformBuffers.cleanup();
 		frameSync.cleanup();
 		commandBuffers.cleanup();

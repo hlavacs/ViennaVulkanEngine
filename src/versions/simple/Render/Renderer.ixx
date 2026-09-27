@@ -11,7 +11,7 @@ module;
 export module VEEngine.Simple.Renderer;
 import std;
 import VEEngine.Simple.Types;
-import VEEngine.Simple.Mesh;
+import VEEngine.Simple.RenderResources;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vulkan;
 
@@ -102,7 +102,7 @@ export namespace vve::simple {
 		ShadowMap dirShadowArray{};            ///< Owned directional shadow-map texture array with one layer per active directional light.
 		ShadowMap spotShadowArray{};           ///< Owned spot shadow-map texture array with one layer per active spot light.
 		ShadowMap pointShadowArray{};          ///< Owned point shadow-map texture array with six layers per shadowed point light.
-		std::array<TextureImage, kMaxSceneTextures> objectTextures{}; ///< Owned base-color textures, one per Scene::textures entry.
+		std::array<TextureImage, kMaxSceneTextures> objectTextures{}; ///< Owned base-color textures keyed by RenderScene texture-table index.
 		TextureImage defaultObjectTexture{};    ///< Owned opaque-white texture filling unused texture slots.
 		VulkanDescriptorSetLayout descriptorSetLayout{}; ///< Owned frame-uniform and shadow-map descriptor-set layout.
 		VulkanPipelineLayout pipelineLayout{}; ///< Owned graphics pipeline layout using the frame descriptor set.
@@ -115,9 +115,11 @@ export namespace vve::simple {
 		VulkanCommandBuffers commandBuffers{}; ///< Owned primary command buffers, one for each frame in flight.
 		VulkanFrameSync frameSync{};           ///< Owned per-frame semaphores and fences for rendering.
 		VulkanUniformBuffers uniformBuffers{}; ///< Owned per-frame uniform buffers for camera and object data.
+		VulkanBuffer materialBuffer{};        ///< Owned host-visible dense GpuMaterial storage buffer.
 		VulkanDescriptorPool descriptorPool{}; ///< Owned descriptor pool for per-frame uniform and shadow-map descriptor sets.
 		VulkanDescriptorSets descriptorSets{}; ///< Owned per-frame descriptor sets binding frame uniform buffers and the shadow map.
-		std::vector<VulkanMesh> meshes{};      ///< Owned GPU meshes uploaded from the current scene objects.
+		std::map<RenderMeshHandle, VulkanMesh> meshes{}; ///< One owned GPU mesh per referenced RenderMesh handle.
+		std::map<RenderMaterialHandle, std::uint32_t> materialSlots_{}; ///< Stable material handle to dense GPU buffer slot.
 		VulkanReadback shadowDepthReadback{};  ///< Single shadow-map layer readback shared by all light types.
 		SDL_Window *window{nullptr};           ///< Borrowed SDL window used to create the Vulkan surface.
 		Scene scene{}; ///< CPU scene data kept in STL containers until renderer upload exists.
@@ -126,6 +128,7 @@ export namespace vve::simple {
 		std::vector<RecordedPass> recordedPassOrder{}; ///< Last frame's command-recording pass order diagnostic.
 		Vec3 cameraEye{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}; ///< World-space camera position used for the frame view matrix.
 		Vec3 cameraTarget{zero(), one(), zero()}; ///< World-space point looked at by the frame view matrix.
+		Scalar cameraVerticalFov{FovY{}.radians}; ///< Vertical field of view supplied by the facade camera.
 		std::optional<std::uint32_t> lastRenderedImageIndex{}; ///< Swapchain image index from the last acquired, rendered, and presented frame.
 		std::optional<VkResult> lastReadbackCaptureResult{}; ///< Result from the optional in-frame color readback.
 		std::unique_ptr<vvppl::PostProcessing> postProcess{}; ///< Owned post-processing chain applied to the finished color image.
@@ -135,6 +138,7 @@ export namespace vve::simple {
 		// Vulkan resource lifetime (RendererResources.cpp).
 		[[nodiscard]] VkResult init(SDL_Window *sdlWindow);					///< Creates every Vulkan object and uploads the current scene; returns the first failing result.
 		[[nodiscard]] VkResult uploadSceneTextures();								///< Uploads Scene::textures into the texture slots and rebinds all frame descriptor sets.
+		[[nodiscard]] VkResult uploadSceneMaterials();							///< Rebuilds the dense GPU material buffer and handle lookup.
 		[[nodiscard]] VkResult syncSceneResources();								///< Brings GPU meshes and textures in line with CPU scene changes.
 		[[nodiscard]] VkResult recreateSwapchain(VkExtent2D requestedExtent);	///< Rebuilds swapchain-sized resources after a resize.
 		[[nodiscard]] VkExtent2D currentWindowPixelExtent() const;
@@ -172,6 +176,17 @@ export namespace vve::simple {
 		/// @brief Reports whether the renderer currently owns a live Vulkan device.
 		[[nodiscard]] bool initialized() const { return device.device != VK_NULL_HANDLE; }
 
+		/// @brief Reports the number of resident GPU textures, excluding the fallback texture.
+		[[nodiscard]] std::size_t gpuTextureCount() const { return uploadedTextureCount_; }
+		/// @brief Reports the number of unique resident GPU meshes.
+		[[nodiscard]] std::size_t gpuMeshCount() const { return meshes.size(); }
+		/// @brief Reports the number of entries in the dense GPU material table.
+		[[nodiscard]] std::size_t gpuMaterialCount() const { return uploadedMaterialCount_; }
+		/// @brief Reports the monotonic number of mesh create or vertex-refresh uploads.
+		[[nodiscard]] std::size_t gpuMeshUploadCount() const { return meshUploadCount_; }
+		/// @brief Reports the monotonic number of material-buffer uploads.
+		[[nodiscard]] std::size_t gpuMaterialUploadCount() const { return materialUploadCount_; }
+
 		/// @brief Reports the number of prepared spot shadow metadata rows.
 		[[nodiscard]] std::size_t sceneShadowLightMetaCount() const { return shadowLightMeta.size(); }
 		/// @brief Returns one prepared spot shadow metadata row by retained index.
@@ -193,60 +208,49 @@ export namespace vve::simple {
 		void loadScene(Scene nextScene) {
 			scene = std::move(nextScene);								// Scene upload invalidates per-frame shadow metadata.
 			shadowLightMeta.clear();									// Metadata is rebuilt during the next frame assembly.
-			sceneGeometryDirty_.clear();
+			 sceneGeometryDirty_.clear();
 			sceneResourcesDirty_ = true;
 			sceneRequiresFullUpload_ = true;
+			sceneMaterialsDirty_ = true;
 		}
 
-		/// @brief Appends one backend object to the renderer-owned CPU scene mirror; the texture path is deduplicated into Scene::textures.
-		void appendObject(Mesh backend_mesh, Mat4 model, std::optional<std::string> base_color_texture_source) {
-			std::uint32_t textureIndex{kNoTexture};
-			if (base_color_texture_source) {
-				const std::filesystem::path path{*base_color_texture_source};
-				const auto found = std::ranges::find(scene.textures, path);
-				if (found != scene.textures.end()) {
-					textureIndex = static_cast<std::uint32_t>(found - scene.textures.begin());
-				} else if (scene.textures.size() < kMaxSceneTextures) {
-					textureIndex = static_cast<std::uint32_t>(scene.textures.size());
-					scene.textures.push_back(path);
-				}
-			}
-			scene.objects.push_back(Object{.mesh = std::move(backend_mesh), .model = model, .baseColorTextureIndex = textureIndex});
+		/// @brief Binds the unique CPU render-resource vectors owned by RenderSystem.
+		void bindRenderScene(const Vector<RenderMesh> &renderMeshes, const Vector<RenderMaterial> &renderMaterials,
+							 const Vector<RenderInstance> &renderInstances) {
+			renderMeshes_ = std::addressof(renderMeshes);
+			renderMaterials_ = std::addressof(renderMaterials);
+			renderInstances_ = std::addressof(renderInstances);
+		}
+
+		/// @brief Appends one stable RenderScene texture-table entry to the backend upload view.
+		void appendTexture(const RenderTexture &texture) {
+			const auto found = std::ranges::find(scene.textures, texture.canonical_path,
+				[](const RenderTexture *entry) -> const std::filesystem::path & { return entry->canonical_path; });
+			if (found != scene.textures.end() || scene.textures.size() >= kMaxSceneTextures) { return; }
+			scene.textures.push_back(std::addressof(texture));
 			sceneResourcesDirty_ = true;
 		}
 
-		/// @brief Replaces positions for one fixed-topology backend mesh.
-		[[nodiscard]] bool updateObjectMeshPositions(std::size_t index, const Vector<Vec3> &positions) {
-			if (index >= scene.objects.size() ||
-				scene.objects[index].mesh.vertices.size() != positions.size()) {
-				return false;
-			}
-			for (std::size_t vertex{}; vertex < positions.size(); ++vertex) {
-				scene.objects[index].mesh.vertices[vertex].position = {
-					positions[vertex].x, positions[vertex].y, positions[vertex].z};
-			}
-			sceneGeometryDirty_.insert(index);
-			sceneResourcesDirty_ = true;
-			return true;
-		}
+		/// @brief Marks instance topology as changed without invalidating unrelated mesh buffers.
+		void markSceneResourcesDirty() { sceneResourcesDirty_ = true; }
 
-		/// @brief Removes one backend object and schedules a compact GPU mesh rebuild.
-		[[nodiscard]] bool removeObject(std::size_t index) {
-			if (index >= scene.objects.size()) { return false; }
-			scene.objects.erase(scene.objects.begin() + static_cast<std::ptrdiff_t>(index));
-			sceneGeometryDirty_.clear();
+		/// @brief Marks the dense material buffer for one rebuild.
+		void markMaterialsDirty() { sceneMaterialsDirty_ = true; }
+
+		/// @brief Marks one existing CPU mesh for a vertex-buffer refresh.
+		void markMeshDirty(RenderMeshHandle mesh) {
+			sceneGeometryDirty_.insert(mesh);
 			sceneResourcesDirty_ = true;
-			sceneRequiresFullUpload_ = true;
-			return true;
 		}
 
 		/// @brief Clears the renderer-owned CPU scene through the existing scene replacement path.
 		void clearScene() { loadScene(Scene{}); }
 
 		/// @brief Stores the camera eye and target used by future frame uniform updates.
-		void setCamera(Vec3 eye, Vec3 target) {
+		void setCamera(Vec3 eye, Vec3 target, Scalar verticalFov) {
 			cameraEye = eye;
 			cameraTarget = target;
+			cameraVerticalFov = verticalFov;
 		}
 
 		/// @brief Common frame-render entry forwarding to the concrete Vulkan draw path.
@@ -256,17 +260,29 @@ export namespace vve::simple {
 		static void reportFrameFailure(const char *stage, VkResult result);	///< Logs a skipped frame with its Vulkan result, capped to avoid flooding the console.
 		[[nodiscard]] VkResult recordCommandBuffer(std::uint32_t frameIndex, std::uint32_t imageIndex, const ForwardRendererShadowFrame &shadowFrame);
 		[[nodiscard]] static std::pair<std::uint32_t, std::uint32_t> shadowTexel(Vec3 lightNdc);	///< Converts light NDC x/y to one clamped shadow-map texel.
-
+		[[nodiscard]] const RenderMesh *findRenderMesh(RenderMeshHandle handle) const {
+			if (renderMeshes_ == nullptr) { return nullptr; }
+			const auto found = std::ranges::find(*renderMeshes_, handle, &RenderMesh::handle);
+			return found == renderMeshes_->end() ? nullptr : std::addressof(*found);
+		}
 		std::uint32_t currentFrame{0U}; ///< Index of the frame synchronization set used by the next draw.
 		VkDescriptorPool imguiDescriptorPool_{VK_NULL_HANDLE}; ///< Owned Dear ImGui descriptor pool reserved for backend texture descriptors.
 		void *guiSystem_{nullptr}; ///< Non-owning, type-erased GUI system pointer reserved for later GUI integration.
 		std::function<void(VkCommandBuffer)> guiRecord_; ///< Optional GUI recorder invoked during the forward color pass.
 		std::function<void(vvppl::PostProcessing &)> postProcessSetup_; ///< Optional Post Processing setup
-		std::vector<std::filesystem::path> uploadedTextures_{}; ///< Scene::textures as of the last GPU texture upload.
+		const Vector<RenderMesh> *renderMeshes_{nullptr}; ///< Borrowed unique CPU meshes owned by RenderSystem.
+		const Vector<RenderMaterial> *renderMaterials_{nullptr}; ///< Borrowed CPU materials owned by RenderSystem.
+		const Vector<RenderInstance> *renderInstances_{nullptr}; ///< Borrowed draw instances owned by RenderSystem.
+		std::size_t uploadedTextureCount_{}; ///< Resident objectTextures prefix keyed by RenderScene texture-table index.
+		std::size_t uploadedMaterialCount_{}; ///< Number of current entries in materialBuffer.
+		std::size_t materialBufferCapacity_{}; ///< Allocated GpuMaterial capacity retained across scene shrinkage.
+		std::size_t meshUploadCount_{}; ///< Monotonic number of unique-mesh create and refresh uploads.
+		std::size_t materialUploadCount_{}; ///< Monotonic number of dense material-buffer uploads.
 		bool sceneResourcesDirty_{true}; ///< CPU scene topology or texture changed after the last GPU synchronization.
-		bool sceneRequiresFullUpload_{true}; ///< Removal or replacement requires rebuilding index-aligned GPU meshes.
+		bool sceneRequiresFullUpload_{true}; ///< Scene replacement invalidates the renderer-owned resource views.
+		bool sceneMaterialsDirty_{true}; ///< CPU material additions or removals require a dense-buffer rebuild.
 		bool gpuDebugReadback_{false}; ///< False during normal rendering to avoid per-frame GPU stalls.
-		std::set<std::size_t> sceneGeometryDirty_{}; ///< Existing GPU meshes requiring a vertex-buffer refresh.
+		std::set<RenderMeshHandle> sceneGeometryDirty_{}; ///< Existing GPU meshes requiring a vertex-buffer refresh.
 	};
 
 } // namespace vve::simple

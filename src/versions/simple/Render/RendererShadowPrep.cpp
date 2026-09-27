@@ -1,7 +1,6 @@
 module VEEngine.Simple.Renderer;
 import std;
 import VEEngine.Simple.Types;
-import VEEngine.Simple.Mesh;
 import VEEngine.Simple.Scene;
 import VEEngine.Simple.Vulkan;
 

@@ -377,6 +377,20 @@ export namespace vve::simple {
 			return desc.visible;
 		});
 		if (needs_platform_windows) {
+#if defined(_WIN32) && defined(VVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS)
+			// The Windows build enables this only after detecting a broken implicit AMD layer.
+			const char *const current_filters = SDL_getenv_unsafe("VK_LOADER_LAYERS_DISABLE");
+			auto disabled_layers = std::string{current_filters != nullptr ? current_filters : ""};
+			if (disabled_layers.find("VK_LAYER_AMD_switchable_graphics") == std::string::npos) {
+				if (!disabled_layers.empty()) { disabled_layers += ','; }
+				disabled_layers += "VK_LAYER_AMD_switchable_graphics";
+				if (SDL_setenv_unsafe("VK_LOADER_LAYERS_DISABLE", disabled_layers.c_str(), 1) != 0) {
+					std::cerr << "[vve::simple] Could not apply Vulkan layer compatibility mode: " << SDL_GetError() << '\n';
+					return std::unexpected(Error::platform_error);
+				}
+				std::cerr << "[vve::simple] Vulkan compatibility mode: AMD switchable-graphics layer disabled for this process.\n";
+			}
+#endif
 			SDL_SetMainReady();
 #ifdef VVE_SDL_VULKAN_LIBRARY
 			SDL_SetHint(SDL_HINT_VULKAN_LIBRARY, VVE_SDL_VULKAN_LIBRARY);

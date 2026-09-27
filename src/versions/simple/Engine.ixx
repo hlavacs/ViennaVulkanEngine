@@ -209,7 +209,8 @@ export namespace vve::simple {
 			.node_transform = [this](NodeHandle node) { return assets_.nodeTransform(node); },
 			.node_meshes = [this](NodeHandle node) { return assets_.nodeMeshes(node); },
 			.mesh_material = [this](MeshHandle mesh) { return assets_.meshMaterial(mesh); },
-			.material_textures = [this](MaterialHandle material) { return assets_.materialTextures(material); },
+			.material_base_color = [this](MaterialHandle material) { return assets_.materialBaseColor(material); },
+			.material_texture_sources = [this](MaterialHandle material) { return assets_.materialTextureSources(material); },
 			.scene_lights = [this](SceneHandle scene) { return assets_.sceneLights(scene); },
 			.light_data = [this](LightHandle light) { return assets_.lightData(light); },
 			.scene_cameras = [this](SceneHandle scene) { return assets_.sceneCameras(scene); },
@@ -217,6 +218,7 @@ export namespace vve::simple {
 			.mesh_positions = [this](MeshHandle mesh) { return assets_.meshPositions(mesh); },
 			.mesh_normals = [this](MeshHandle mesh) { return assets_.meshNormals(mesh); },
 			.mesh_texcoords = [this](MeshHandle mesh) { return assets_.meshTexcoords(mesh); },
+			.mesh_tangents = [this](MeshHandle mesh) { return assets_.meshTangents(mesh); },
 			.mesh_indices = [this](MeshHandle mesh) { return assets_.meshIndices(mesh); }};
 	}
 
