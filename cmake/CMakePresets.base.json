@@ -41,25 +41,47 @@
     },
     {
       "name": "debug-windows",
-      "displayName": "Debug (Windows)",
+      "displayName": "Debug (Windows, MSVC)",
+      "description": "Ninja with MSVC; CMake supports `import std` only with Ninja generators. Run from a Developer PowerShell for Visual Studio (Visual Studio itself sets that environment up).",
       "inherits": [
         "debug-base",
         "windows-base"
       ],
-      "generator": "Visual Studio 18 2026",
+      "generator": "Ninja",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "toolset": {
+        "value": "host=x64",
+        "strategy": "external"
+      },
       "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_CXX_COMPILER": "cl",
         "VVE_VCPKG_TRIPLET": "x64-windows"
       }
     },
     {
       "name": "release-windows",
-      "displayName": "Release (Windows)",
+      "displayName": "Release (Windows, MSVC)",
+      "description": "Ninja with MSVC; CMake supports `import std` only with Ninja generators. Run from a Developer PowerShell for Visual Studio (Visual Studio itself sets that environment up).",
       "inherits": [
         "release-base",
         "windows-base"
       ],
-      "generator": "Visual Studio 18 2026",
+      "generator": "Ninja",
+      "architecture": {
+        "value": "x64",
+        "strategy": "external"
+      },
+      "toolset": {
+        "value": "host=x64",
+        "strategy": "external"
+      },
       "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "CMAKE_CXX_COMPILER": "cl",
         "VVE_VCPKG_TRIPLET": "x64-windows"
       }
     },

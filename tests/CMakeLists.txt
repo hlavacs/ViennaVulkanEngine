@@ -15,6 +15,8 @@ vve_add_engine_test(WorldTests)
 vve_add_engine_test(UserSystemTests)
 # White-box tests import the simple implementation modules straight from the engine library; the inline
 # code they instantiate (e.g. simple::Engine's destructor) calls Vulkan directly, so they link it as well.
+# Tests that create windows open hidden SDL windows and use the platform video driver. SDL's offscreen driver only works
+# with Vulkan drivers that support VK_EXT_headless_surface, so build_linux.sh selects it only without a display.
 vve_add_engine_test(SimpleForwardRendererTests Vulkan::Vulkan)
 target_compile_definitions(SimpleForwardRendererTests PRIVATE
    "VVE_TEST_CRATE_TEXTURE=\"${PROJECT_SOURCE_DIR}/assets/game/crate0/diffuse.png\"")
@@ -29,7 +31,6 @@ vve_add_engine_test(RenderLightingCaptureTests Vulkan::Vulkan)
 target_compile_definitions(RenderLightingCaptureTests PRIVATE
    "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\""
    "VVE_TEST_FLAT_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import_flat.obj\"")
-# Use the platform SDL driver; offscreen requires optional Vulkan headless-surface support.
 vve_add_engine_test(RenderSponzaCaptureTests Vulkan::Vulkan)
 vve_add_engine_test(RenderMeshDedupTests Vulkan::Vulkan)
 target_compile_definitions(RenderMeshDedupTests PRIVATE

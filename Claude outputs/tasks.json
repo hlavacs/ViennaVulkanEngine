@@ -1,0 +1,223 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Vcpkg Install Host",
+            "type": "shell",
+            "command": "vcpkg",
+            "args": [
+                "install",
+                "--triplet",
+                "x64-linux-llvm",
+                "--overlay-triplets=triplets"
+            ],
+            "osx": {
+                "args": [
+                    "install",
+                    "--triplet",
+                    "arm64-osx"
+                ]
+            },
+            "windows": {
+                "command": "C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe",
+                "args": [
+                    "-NoProfile",
+                    "-ExecutionPolicy",
+                    "Bypass",
+                    "-Command",
+                    "$vcpkg = if ($env:VCPKG_ROOT -and (Test-Path (Join-Path $env:VCPKG_ROOT 'vcpkg.exe'))) { Join-Path $env:VCPKG_ROOT 'vcpkg.exe' } elseif (Test-Path 'C:\\vcpkg\\vcpkg.exe') { 'C:\\vcpkg\\vcpkg.exe' } else { 'vcpkg' }; & $vcpkg install --triplet x64-windows; exit $LASTEXITCODE"
+                ]
+            },
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": []
+        },
+        {
+            "label": "Configure Mac debug",
+            "type": "shell",
+            "command": "cmake",
+            "dependsOn": [
+                "Vcpkg Install Host"
+            ],
+            "args": [
+                "-S",
+                "${workspaceFolder}",
+                "-B",
+                "${workspaceFolder}/build/vscode-debug",
+                "-G",
+                "Ninja",
+                "-DCMAKE_BUILD_TYPE=Debug",
+                "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
+                "-DVVE_DEFAULT_VULKAN_ICD=kosmickrisp",
+                "-DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple",
+                "-DVVE_VCPKG_TRIPLET=arm64-osx",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Configure Mac release",
+            "type": "shell",
+            "command": "cmake",
+            "dependsOn": [
+                "Vcpkg Install Host"
+            ],
+            "args": [
+                "-S",
+                "${workspaceFolder}",
+                "-B",
+                "${workspaceFolder}/build/vscode-release",
+                "-G",
+                "Ninja",
+                "-DCMAKE_BUILD_TYPE=Release",
+                "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
+                "-DVVE_DEFAULT_VULKAN_ICD=kosmickrisp",
+                "-DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple",
+                "-DVVE_VCPKG_TRIPLET=arm64-osx",
+                "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Configure Linux debug",
+            "type": "shell",
+            "command": "cmake",
+            "dependsOn": [
+                "Vcpkg Install Host"
+            ],
+            "args": [
+                "--preset",
+                "debug-linux"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Configure Linux release",
+            "type": "shell",
+            "command": "cmake",
+            "dependsOn": [
+                "Vcpkg Install Host"
+            ],
+            "args": [
+                "--preset",
+                "release-linux"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Mac debug",
+            "type": "shell",
+            "command": "cmake",
+            "dependsOn": [
+                "Configure Mac debug"
+            ],
+            "args": [
+                "--build",
+                "${workspaceFolder}/build/vscode-debug"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "Build Mac release",
+            "type": "shell",
+            "command": "cmake",
+            "dependsOn": [
+                "Configure Mac release"
+            ],
+            "args": [
+                "--build",
+                "${workspaceFolder}/build/vscode-release"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Windows debug",
+            "type": "process",
+            "command": "${env:ComSpec}",
+            "args": [
+                "/d",
+                "/c",
+                "build_windows.cmd",
+                "debug",
+                "--no-tests"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Windows release",
+            "type": "process",
+            "command": "${env:ComSpec}",
+            "args": [
+                "/d",
+                "/c",
+                "build_windows.cmd",
+                "release",
+                "--no-tests"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Linux debug",
+            "type": "shell",
+            "command": "cmake",
+            "dependsOn": [
+                "Configure Linux debug"
+            ],
+            "args": [
+                "--build",
+                "--preset",
+                "build-debug-linux"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "Build Linux release",
+            "type": "shell",
+            "command": "cmake",
+            "dependsOn": [
+                "Configure Linux release"
+            ],
+            "args": [
+                "--build",
+                "--preset",
+                "build-release-linux"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

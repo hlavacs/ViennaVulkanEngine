@@ -160,7 +160,7 @@ For example when testing rendering with various lighst, the test program could b
 
 ## Build and test
 
-- `./build_linux.sh [debug|release] [--clean]`, `./build_macos.sh [debug|release] [--clean]` and `.\build_windows.cmd [debug|release] [--clean] [--no-tests]` configure, build and run CTest (default variant: release). Build directories: `build/<variant>-linux`, `build/macos-<variant>`, `build\<variant>-windows`; the CMake presets use `build/<preset name>`. See README.md for prerequisites.
+- `./build_linux.sh [debug|release] [--clean]`, `./build_macos.sh [debug|release] [--clean]` and `.\build_windows.cmd [debug|release] [--clean] [--no-tests] [--docs]` configure, build and run CTest (default variant: release). Build directories: `build/<variant>-linux`, `build/macos-<variant>`, `build\<variant>-windows`; the CMake presets use `build/<preset name>`. All builds use Ninja, because CMake supports `import std` only with Ninja generators; the Windows presets need a Developer PowerShell for Visual Studio. See README.md for prerequisites.
 - Executables are written to `bin/<variant>/exe`. The light_shadow_debug example writes `bin/<variant>/verify/light_shadow_debug.txt` and `.png`.
 - Tests are C++ executables in the tests folder, one file each, that return 0 on success. Each must be registered in tests/CMakeLists.txt with `vve_add_engine_test(<Name> [extra libraries])`; an unregistered file is never built or run. CTest also runs the examples as `LightShadowDebugExample` and `PostProcessingSmokeTests`.
 - Rerun tests with `ctest --test-dir <build directory> --output-on-failure [-R <name>]`.

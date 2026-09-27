@@ -107,10 +107,11 @@ fi
   "${VULKAN_CMAKE_ARGS[@]}"
 
 "$CMAKE_BIN" --build "$BUILD_DIR" --parallel "$JOBS"
-if [ -z "${SDL_VIDEODRIVER:-}" ]; then
-  SDL_VIDEODRIVER=offscreen
+# Tests that create windows open hidden SDL windows. Use the desktop's video driver when there is a display. On a machine
+# without one, fall back to SDL's offscreen driver, which needs a Vulkan driver with VK_EXT_headless_surface.
+if [ -z "${SDL_VIDEODRIVER:-}" ] && [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+  export SDL_VIDEODRIVER=offscreen
 fi
-export SDL_VIDEODRIVER
 "$CTEST_BIN" --test-dir "$BUILD_DIR" --output-on-failure
 
 printf '\n%s build complete. Executables: bin/%s/exe\n' "$VARIANT" "$VARIANT_LOWER"

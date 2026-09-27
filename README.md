@@ -18,7 +18,9 @@ Install Visual Studio with the C++ workload and C++ CMake tools, the Vulkan SDK,
 
 The script also checks Vulkan device discovery with the SDK diagnostic tool. If discovery fails normally but succeeds with `VK_LAYER_AMD_switchable_graphics` disabled, it enables `VVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS` for this build. The resulting engine disables that layer only inside its own process, including when `bin\debug\exe\game.exe` is launched from Explorer. Existing layer filters are preserved. This needs no persistent Windows environment setting or sign-out. Logs are saved as `build\debug-windows\vulkan-probe*.log` (or under `release-windows` for release builds).
 
-Use `release` instead of `debug` for a release build (`release` is also the default without an argument), `--no-tests` to omit tests, or `--clean` to recreate that variant's build directory. The script uses the Ninja generator and the build directory `build\<variant>-windows`. Prerequisite, dependency, configure, compile, and test failures are identified separately.
+Use `release` instead of `debug` for a release build (`release` is also the default without an argument), `--no-tests` to omit tests, `--docs` to also generate the Doxygen documentation, or `--clean` to recreate that variant's build directory. The script uses the Ninja generator with MSVC and the build directory `build\<variant>-windows`. Prerequisite, dependency, configure, compile, and test failures are identified separately.
+
+CMake supports `import std` only with Ninja generators, not with the Visual Studio generators. The `debug-windows` and `release-windows` presets therefore also use Ninja with MSVC and the same build directories as the script. They need the compiler environment of Visual Studio: run them from a Developer PowerShell for Visual Studio (or open the folder in Visual Studio, which sets that environment up), not from an ordinary PowerShell window.
 
 For ICODA analysis, build a separate Clang version after installing the dependencies above:
 
@@ -56,6 +58,7 @@ The active educational implementation is `simple`, and it is the only one;
 `v3`, `v4`, and `v5` are retired and are not built:
 
 ```powershell
+# in a Developer PowerShell for Visual Studio
 cmake --preset debug-windows -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple
 cmake --build --preset build-debug-windows
 ```
@@ -97,7 +100,7 @@ cmake --build --preset build-release-macos-arm64-llvm
 
 Executables are written to the project root `bin` directory, below a path that uses only the build variant, for example `bin/debug/exe/testscene` or `bin/release/exe/testscene`. Shared libraries (Linux, macOS) are built below the selected build directory and mirrored to `bin/<variant>/lib`. Platform names such as `Mac`, `Windows`, or `Linux` are not used below `bin`. The `light_shadow_debug` example writes its verification text and PNG to `bin/<variant>/verify`.
 
-VS Code is configured to use CMake Tools variants instead of presets so the `CMake: Select Variant` command offers `Debug` and `Release`. The VS Code variant builds use `build/vscode-debug` and `build/vscode-release`.
+VS Code is configured to use CMake Tools variants instead of presets so the `CMake: Select Variant` command offers `Debug` and `Release`. The VS Code variant builds use `build/vscode-debug` and `build/vscode-release` and always the Ninja generator (needed for `import std`). The vcpkg triplet comes from the selected kit, or else from the host default in CMakeLists.txt (`x64-windows`, `x64-linux-llvm`, `arm64-osx`). Select these kits: `Homebrew LLVM arm64` on Apple Silicon macOS, `LLVM 18 libc++ (Linux)` on Linux (both defined in `.vscode/cmake-kits.json`), and a Visual Studio `amd64` kit on Windows.
 
 The VS Code Run and Debug list contains `Windows Debug (choose executable)`, `game`, `testscene`, `postprocessing`, `physics`, `sponza`, `world tests`, and `all tests`. Except for the first one, each launch asks for `Platform` (`Mac`, `Windows`, `Linux`) and `Variant` (`debug`, `release`) and then runs the matching build task before launch. The Windows-only first entry builds the Windows debug variant and asks which executable to debug. Select the platform that matches the machine running VS Code; these launch options are shared across operating systems, not cross-compilers. On macOS the launch entries set `VK_ICD_FILENAMES` to the KosmicKrisp manifest in `build/vscode-<variant>`.
 
@@ -163,28 +166,28 @@ The launch entries run these task labels internally: `Build Mac debug`, `Build M
 The build scripts run all tests after a successful build (`build_windows.cmd` skips them with `--no-tests`). To build and run all unit tests from the project root:
 
 ```powershell
-cmake -S . -B build/debug-windows
-cmake --build build/debug-windows --config Debug
-ctest --test-dir build/debug-windows -C Debug --output-on-failure
+.\build_windows.cmd debug
 ```
 
-To list the registered tests without running them:
+To rerun the tests of an existing build, or to list the registered tests without running them:
 
 ```powershell
-ctest --test-dir build/debug-windows -C Debug -N
+ctest --test-dir build/debug-windows --output-on-failure
+ctest --test-dir build/debug-windows -N
 ```
 
 For other build directories (`build/debug-linux`, `build/macos-debug`, ...) replace the `--test-dir` argument; add `-R <name>` to run selected tests.
 
-Every test is a C++ executable built from one file in `tests/` and registered in [tests/CMakeLists.txt](tests/CMakeLists.txt) with `vve_add_engine_test`. CTest additionally runs `LightShadowDebugExample` (the `light_shadow_debug` example, which writes `bin/<variant>/verify/light_shadow_debug.txt` and `.png`) and `PostProcessingSmokeTests` (the `postprocessing` example for three frames). The rendering tests `SimpleForwardRendererTests`, `RenderTextureDedupTests`, `RenderMaterialImportTests`, `RenderLightingCaptureTests`, `RenderSponzaCaptureTests`, and `RenderMeshDedupTests` open hidden SDL windows (64 to 256 pixels) and need a Vulkan device that can present to them.
+Every test is a C++ executable built from one file in `tests/` and registered in [tests/CMakeLists.txt](tests/CMakeLists.txt) with `vve_add_engine_test`. CTest additionally runs `LightShadowDebugExample` (the `light_shadow_debug` example, which writes `bin/<variant>/verify/light_shadow_debug.txt` and `.png`) and `PostProcessingSmokeTests` (the `postprocessing` example for three frames). The rendering tests `SimpleForwardRendererTests`, `RenderTextureDedupTests`, `RenderMaterialImportTests`, `RenderLightingCaptureTests`, `RenderSponzaCaptureTests`, and `RenderMeshDedupTests` open hidden SDL windows (64 to 256 pixels) and need a Vulkan device that can present to them. Tests that pass `visible(false)` window setups also open hidden windows. They use the platform video driver; on a Linux machine without a display (`DISPLAY` and `WAYLAND_DISPLAY` unset), `build_linux.sh` switches to SDL's offscreen driver, which needs a Vulkan driver with `VK_EXT_headless_surface`.
 
 ## Doxygen
 
-If Doxygen is installed, CMake adds a `docs` target. Generate the documentation from the project root with the following commands (`build_docs.cmd` runs the same two commands):
+If Doxygen is installed, CMake adds a `docs` target. On Windows, generate the documentation from the project root with `build_docs.cmd`, which runs:
 
 ```powershell
-cmake -S . -B build/debug-windows
-cmake --build build/debug-windows --config Debug --target docs
+.\build_windows.cmd debug --no-tests --docs
 ```
+
+On Linux and macOS, build the target in an existing build directory, for example `cmake --build build/debug-linux --target docs`.
 
 The generated output is written to [docs/build](docs/build). The HTML entry page is usually [docs/build/html/index.html](docs/build/html/index.html).
