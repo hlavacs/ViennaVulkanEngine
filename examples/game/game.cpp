@@ -202,7 +202,7 @@ int main(int argc, char **argv) {
 				const vve::Vec3 maximum{crateHalfSize, crateHalfSize, crateHalfSize};
 				const auto crateTexture = root / crateTextureRelativePaths[spawnedCrates++ % crateTextureRelativePaths.size()];
 				if (auto added = render.addTexturedCuboid(minimum, maximum, crateTexture,
-																	 vve::Transform{.translation = vve::Position{.value = spawnPosition}});
+															vve::Transform{.translation = vve::Position{.value = spawnPosition}});
 						 added) {
 					crates.push_back(
 						Crate{.handle = *added, .position = spawnPosition, .velocityY = 0.0F, .landed = false});

@@ -1,5 +1,6 @@
 /** @file @brief Shared hidden engines, text fixtures and RGBA capture measurements for tests. */
 module;
+#include <ranges> // Keep range concepts visible when Clang merges engine imports with Microsoft's std module.
 #include <stb_image.h>
 
 export module VVE.TestSupport;

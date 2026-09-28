@@ -1,3 +1,4 @@
+#include <ranges> // Keep range concepts visible when Clang merges engine imports with Microsoft's std module.
 #include <vulkan/vulkan_core.h>
 
 /**
