@@ -87,6 +87,13 @@ export namespace vve {
 		template <std::size_t TPriority> struct Priority : Priority<TPriority - 1> {};
 		template <> struct Priority<0> {};
 
+		/// @brief Checks the three-argument hook per system before folding results for window-frame preparation.
+		template <typename TSystem, typename TWorld>
+		concept HasWindowFrameUpdate = requires(TSystem &system, TWorld &world,
+			const FrameContext &frame, const WindowFrameData &window_frame) {
+			system.update(world, frame, window_frame);
+		};
+
 		template <typename TCallable> [[nodiscard]] std::expected<void, Error> callSystemHook(TCallable &&callable) {
 			using TResult = std::invoke_result_t<TCallable>;
 			if constexpr (std::same_as<TResult, std::expected<void, Error>>) {
@@ -346,10 +353,7 @@ export namespace vve {
 		if (!systems_.has_value()) { return {}; }
 		auto result = std::expected<void, Error>{};
 		// Match the call expression and reference types used by the Priority<3> overload.
-		constexpr bool needs_window_frame = (requires(TSystems &system, decltype(world()) &world,
-			const FrameContext &frame, const WindowFrameData &window_frame) {
-			system.update(world, frame, window_frame);
-		} || ...);
+		constexpr bool needs_window_frame = (detail::HasWindowFrameUpdate<TSystems, decltype(world())> || ...);
 		const auto update = [&](const auto &window_frame, auto priority) {
 			// Preserve hook order, a fresh world view per system and the first failure.
 			std::apply([&](auto &...system) {

@@ -524,7 +524,7 @@ namespace vve::simple {
 
 		const VkImageMemoryBarrier presentBarrier{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.srcAccessMask = drawGui ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_TRANSFER_WRITE_BIT,
+			.srcAccessMask = static_cast<VkAccessFlags>(drawGui ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_TRANSFER_WRITE_BIT),
 			.oldLayout = drawGui ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
 			.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
