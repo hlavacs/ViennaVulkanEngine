@@ -126,14 +126,14 @@ int main(int argc, char **argv) {
 
 	const auto activeRenderer = vve::RendererId{.value = "forward"};
 	auto engine = vve::EngineBuilder<>{}
-						 .applicationName("game")
-						 .addWindow(vve::WindowSetup{}
-										 .id("main")
-										 .title("VVE Crate Collector")
-										 .extent(vve::PixelExtent{.width = windowWidth, .height = windowHeight})
-										 .renderer(activeRenderer)
-										 .resizable(true))
-						 .build();
+						.applicationName("game")
+						.addWindow(vve::WindowSetup{}
+						.id("main")
+						.title("VVE Crate Collector")
+						.extent(vve::PixelExtent{.width = windowWidth, .height = windowHeight})
+						.renderer(activeRenderer)
+						.resizable(true))
+						.build();
 
 	if (const auto result = engine.init(); !result) {
 		std::cerr << "[game] engine init failed: error=" << vve::errorName(result.error()) << '\n';
