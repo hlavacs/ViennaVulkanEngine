@@ -74,7 +74,7 @@ export namespace vve::simple {
 		[[nodiscard]] RenderMeshHandle addMesh(std::shared_ptr<const std::vector<RenderVertex>> vertices, Vector<std::uint32_t> indices);
 		[[nodiscard]] RenderMeshHandle addTriangleMesh(Vector<Vec3> positions,
 			Vector<std::uint32_t> indices);
-		[[nodiscard]] auto addPlaneMesh(Vec2 half_extent)																		-> RenderMeshHandle;
+		[[nodiscard]] auto addPlaneMesh(Vec2 half_extent, Vec2 uv_scale = {1.0F, 1.0F}) -> RenderMeshHandle;
 		[[nodiscard]] auto addCuboidMesh(Vec3 minimum, Vec3 maximum)														-> RenderMeshHandle;
 		[[nodiscard]] std::expected<RenderInstanceHandle, Error>
 		addInstance(RenderMeshHandle mesh, RenderMaterialHandle material, Transform local = {},
@@ -326,13 +326,17 @@ namespace vve::simple {
 		return addMesh(std::make_shared<std::vector<RenderVertex>>(std::move(vertices)), std::move(indices));
 	}
 
-	/// @brief Creates a two-triangle plane mesh.
-	inline auto RenderScene::addPlaneMesh(Vec2 half_extent)													-> RenderMeshHandle{
+	/// @brief Creates a two-triangle plane mesh with UVs spanning zero to uv_scale.
+	inline auto RenderScene::addPlaneMesh(Vec2 half_extent, Vec2 uv_scale) -> RenderMeshHandle {
 		auto vertices = Vector<RenderVertex>{};
 		auto indices = Vector<std::uint32_t>{};
 		appendFace(vertices, indices, Vec3{0.0F, 1.0F, 0.0F},
 						{Vec3{-half_extent.x, 0.0F, -half_extent.y}, Vec3{-half_extent.x, 0.0F, half_extent.y},
 						Vec3{half_extent.x, 0.0F, half_extent.y}, Vec3{half_extent.x, 0.0F, -half_extent.y}});
+		for (auto &vertex : vertices) {
+			vertex.uv.x *= uv_scale.x;
+			vertex.uv.y *= uv_scale.y;
+		}
 		return addMesh(std::make_shared<std::vector<RenderVertex>>(std::move(vertices)), std::move(indices));
 	}
 

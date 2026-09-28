@@ -53,6 +53,7 @@ vve_add_engine_test(MultiWindowRenderTests GPU Vulkan::Vulkan SDL3::SDL3 imgui::
 vve_add_engine_test(RenderShadowOcclusionTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderTextureDedupTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderTextureOrientationTests GPU Vulkan::Vulkan SDL3::SDL3 vve_test_support)
+vve_add_engine_test(RenderTexturedPlaneTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderHeightMapTests Vulkan::Vulkan)
 vve_add_engine_test(VulkanTextureTests GPU Vulkan::Vulkan vve_test_support)
 target_compile_definitions(RenderTextureDedupTests PRIVATE

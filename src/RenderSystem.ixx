@@ -77,6 +77,8 @@ export namespace vve {
 		[[nodiscard]] std::expected<RenderObjectHandle, Error> addTriangleMesh(
 			Vector<Vec3> positions, Vector<std::uint32_t> indices, LinearColor color,
 			Transform transform = {});
+		[[nodiscard]] std::expected<RenderObjectHandle, Error> addTexturedPlane(Vec2 half_extent,
+			std::filesystem::path base_color_texture, Vec2 uv_scale = {1.0F, 1.0F}, Transform transform = {});
 		[[nodiscard]] std::expected<RenderObjectHandle, Error> addTexturedCuboid(Vec3 minimum, Vec3 maximum,
 																									  std::filesystem::path base_color_texture,
 																									  Transform transform = {});

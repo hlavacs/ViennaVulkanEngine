@@ -26,6 +26,56 @@ import VEEngine.Simple;
 	};
 }
 
+/// @brief Checks plane UVs, cache identity and facade resource lifetime without a GPU.
+[[nodiscard]] bool hasTexturedPlaneCoverage(vve::RenderSystem &render, const std::filesystem::path &texture) {
+	using namespace vve;
+	auto scene = simple::RenderScene{};
+	// Default and repeated planes retain four corners and the same two triangles.
+	for (const auto uv_scale : {Vec2{1, 1}, Vec2{10, 10}}) {
+		const auto handle = uv_scale.x == 1 ? scene.addPlaneMesh(Vec2{20, 20}) : scene.addPlaneMesh(Vec2{20, 20}, uv_scale);
+		const auto *mesh = scene.findMesh(handle);
+		if (!mesh || !mesh->vertices || mesh->vertices->size() != 4U || mesh->indices.size() != 6U) { return false; }
+		const auto expected = std::array{Vec2{0, 0}, Vec2{uv_scale.x, 0}, uv_scale, Vec2{0, uv_scale.y}};
+		for (std::size_t index{}; index < expected.size(); ++index) {
+			const auto &vertex = (*mesh->vertices)[index];
+			if (vertex.uv.x != expected[index].x || vertex.uv.y != expected[index].y ||
+				std::abs(vertex.position.x) != 20 || vertex.position.y != 0 || std::abs(vertex.position.z) != 20 ||
+				vertex.normal.x != 0 || vertex.normal.y != 1 || vertex.normal.z != 0) { return false; }
+		}
+		if (std::ranges::any_of(mesh->indices, [](auto index) { return index >= 4U; })) { return false; }
+		std::println("textured_plane vertices=4 indices=6 uv={}x{}", uv_scale.x, uv_scale.y);
+	}
+	const auto transform = Transform{.translation = Position{.value = Vec3{1, 2, 3}}};
+	const auto repeated = render.addTexturedPlane(Vec2{20, 20}, texture, Vec2{10, 10}, transform);
+	const auto repeated_copy = render.addTexturedPlane(Vec2{20, 20}, texture, Vec2{10, 10});
+	const auto different_u = render.addTexturedPlane(Vec2{20, 20}, texture, Vec2{9, 10});
+	const auto different_v = render.addTexturedPlane(Vec2{20, 20}, texture, Vec2{10, 9});
+	const auto unit = render.addTexturedPlane(Vec2{20, 20}, texture);
+	const auto plain = render.addPlane(Vec2{20, 20}, LinearColor{.value = Vec3{1, 1, 1}});
+	if (!repeated || !repeated_copy || !different_u || !different_v || !unit || !plain ||
+		render.sceneMeshCount() != 4U || render.sceneMaterialCount() != 2U || render.sceneTextureCount() != 1U) { return false; }
+	const auto stored = render.objectTransform(*repeated);
+	if (!stored || stored->translation.value.x != 1 || stored->translation.value.y != 2 ||
+		stored->translation.value.z != 3 || !render.removeObject(*plain)) { return false; }
+	// Shared geometry survives its first removal; the final object releases texture and material.
+	std::size_t index{};
+	constexpr std::array<std::size_t, 5> meshes_after_removal{4, 3, 2, 1, 0};
+	for (const auto object : {*repeated, *repeated_copy, *different_u, *different_v, *unit}) {
+		const auto remaining = index + 1U == meshes_after_removal.size() ? 0U : 1U;
+		if (!render.removeObject(object) || render.sceneMeshCount() != meshes_after_removal[index++] ||
+			render.sceneMaterialCount() != remaining || render.sceneTextureCount() != remaining) { return false; }
+	}
+	// Nonfinite UVs must fail before acquiring textures or allocating scene resources.
+	for (const auto uv_scale : {Vec2{std::numeric_limits<Scalar>::quiet_NaN(), 1},
+		Vec2{1, std::numeric_limits<Scalar>::infinity()}}) {
+		const auto invalid = render.addTexturedPlane(Vec2{20, 20}, texture, uv_scale);
+		if (invalid || invalid.error() != Error::invalid_argument || render.sceneMeshCount() != 0U ||
+			render.sceneMaterialCount() != 0U || render.sceneTextureCount() != 0U) { return false; }
+	}
+	std::println("textured_plane sharing=ok uv_axes=distinct removal=ok nonfinite=rejected");
+	return true;
+}
+
 /// @brief Checks sharing and reclamation without initializing windows or the renderer.
 int main() {
 	using namespace vve;
@@ -40,6 +90,7 @@ int main() {
 	auto engine = Engine<>{};
 	auto world = engine.world();
 	auto &render = world.get<RenderSystem>();
+	if (!hasTexturedPlaneCoverage(render, texture)) { return 20; }
 	const Vec3 minimum{-0.5F, -0.5F, -0.5F}, maximum{0.5F, 0.5F, 0.5F};
 	auto objects = Vector<RenderObjectHandle>{};
 	// Placement belongs to instances; identical local geometry and materials are shared.

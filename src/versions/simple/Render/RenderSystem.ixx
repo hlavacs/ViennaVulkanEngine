@@ -116,6 +116,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto addTriangleMesh(Vector<Vec3> positions, Vector<std::uint32_t> indices, LinearColor color, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto setObjectMeshPositions(RenderObjectHandle handle, Vector<Vec3> positions)			-> std::expected<void, Error>;
+		[[nodiscard]] auto addTexturedPlane(Vec2 half_extent, std::filesystem::path base_color_texture,
+			Vec2 uv_scale = {1.0F, 1.0F}, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto addTexturedCuboid(Vec3 minimum, Vec3 maximum, std::filesystem::path base_color_texture, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		auto clearScene()																												-> void;
 		auto loadScene(Scene scene)																									-> SceneHandle;
@@ -173,7 +175,8 @@ export namespace vve::simple {
 			cuboid ///< Six textured faces.
 		};
 		[[nodiscard]] auto acquirePrimitiveMaterial(LinearColor color, RenderTextureIndex texture = kNoTexture) -> RenderMaterialHandle;
-		[[nodiscard]] auto acquirePrimitiveMesh(PrimitiveShape shape, Vec3 minimum, Vec3 maximum) -> RenderMeshHandle;
+		[[nodiscard]] auto acquirePrimitiveMesh(PrimitiveShape shape, Vec3 minimum, Vec3 maximum,
+			Vec2 uv_scale = {1.0F, 1.0F}) -> RenderMeshHandle;
 		[[nodiscard]] auto updateCamera(WindowHandle window, std::optional<Camera> camera) -> std::expected<void, Error>;
 		[[nodiscard]] auto registerRenderObject(RenderInstanceHandle instance)								-> RenderObjectHandle;
 		auto addImportedLight(const LightDescriptor &light, std::uint64_t owner)								-> void;
@@ -198,7 +201,7 @@ export namespace vve::simple {
 		std::unordered_map<MeshHandle, RenderMeshHandle, HandleHash<MeshHandle>> imported_render_meshes_{};	///< Imported mesh cache.
 		std::unordered_map<MaterialHandle, RenderMaterialHandle, HandleHash<MaterialHandle>> imported_render_materials_{};	///< Imported material cache.
 		std::map<std::pair<std::array<Scalar, 3>, RenderTextureIndex>, RenderMaterialHandle> primitive_materials_{}; ///< Materials keyed by colour and texture slot.
-		std::map<std::pair<PrimitiveShape, std::array<Scalar, 6>>, RenderMeshHandle> primitive_meshes_{}; ///< Meshes keyed by shape and local min/max extents.
+		std::map<std::pair<PrimitiveShape, std::array<Scalar, 8>>, RenderMeshHandle> primitive_meshes_{}; ///< Meshes keyed by shape, local min/max extents and UV scale.
 		RenderMaterialHandle default_material_{}; ///< Shared fallback for imported meshes without a material.
 		std::unordered_map<RenderObjectHandle, RenderInstanceHandle, HandleHash<RenderObjectHandle>>
 			render_objects_{};														///< Public render-object to internal instance map.

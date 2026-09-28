@@ -141,6 +141,12 @@ namespace vve {
 			std::move(positions), std::move(indices), color, transform);
 	}
 
+	/// @brief Adds an XZ plane with UVs from zero to uv_scale; values above one repeat the texture.
+	std::expected<RenderObjectHandle, Error> RenderSystem::addTexturedPlane(Vec2 half_extent,
+		std::filesystem::path base_color_texture, Vec2 uv_scale, Transform transform) {
+		return impl_.addTexturedPlane(half_extent, std::move(base_color_texture), uv_scale, transform);
+	}
+
 	/// @brief Adds a textured cuboid and returns its public render-object handle.
 	std::expected<RenderObjectHandle, Error> RenderSystem::addTexturedCuboid(Vec3 minimum, Vec3 maximum,
 																								  std::filesystem::path base_color_texture,

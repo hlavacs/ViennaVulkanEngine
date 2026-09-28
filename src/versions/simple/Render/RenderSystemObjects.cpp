@@ -138,11 +138,13 @@ namespace vve::simple {
 	}
 
 	/// @brief Reuses local primitive geometry; placement and object flags belong to each instance.
-	auto RenderSystem::acquirePrimitiveMesh(PrimitiveShape shape, Vec3 minimum, Vec3 maximum) -> RenderMeshHandle {
-		const auto key = std::pair{shape, std::array{minimum.x, minimum.y, minimum.z, maximum.x, maximum.y, maximum.z}};
+	auto RenderSystem::acquirePrimitiveMesh(PrimitiveShape shape, Vec3 minimum, Vec3 maximum,
+		Vec2 uv_scale) -> RenderMeshHandle {
+		const auto key = std::pair{shape, std::array{minimum.x, minimum.y, minimum.z,
+			maximum.x, maximum.y, maximum.z, uv_scale.x, uv_scale.y}};
 		auto &mesh = primitive_meshes_[key];
 		if (scene_.findMesh(mesh) == nullptr) {
-			mesh = shape == PrimitiveShape::plane ? scene_.addPlaneMesh(Vec2{maximum.x, maximum.z})
+			mesh = shape == PrimitiveShape::plane ? scene_.addPlaneMesh(Vec2{maximum.x, maximum.z}, uv_scale)
 				: scene_.addCuboidMesh(minimum, maximum);
 		}
 		return mesh;
@@ -230,6 +232,23 @@ namespace vve::simple {
 
 		renderer_.markMeshDirty(instance->mesh);
 		return {};
+	}
+
+	/// @brief Adds one textured XZ quad with shared geometry keyed by extents and UV scale.
+	auto RenderSystem::addTexturedPlane(Vec2 half_extent, std::filesystem::path base_color_texture,
+		Vec2 uv_scale, Transform transform) -> std::expected<RenderObjectHandle, Error> {
+		if (!std::isfinite(uv_scale.x) || !std::isfinite(uv_scale.y)) {
+			return std::unexpected(Error::invalid_argument);
+		}
+		const auto texture_index = scene_.acquireTexture(base_color_texture);
+		if (!texture_index) { return std::unexpected(texture_index.error()); }
+
+		const auto material = acquirePrimitiveMaterial(LinearColor{.value = oneVec3()}, *texture_index);
+		const auto mesh = acquirePrimitiveMesh(PrimitiveShape::plane,
+			Vec3{-half_extent.x, 0, -half_extent.y}, Vec3{half_extent.x, 0, half_extent.y}, uv_scale);
+		auto instance = scene_.addInstance(mesh, material, transform, detail::modelMatrix(transform));
+		if (!instance) { return std::unexpected(instance.error()); }
+		return registerRenderObject(*instance);
 	}
 
 	/// @brief Adds a textured cuboid and returns its public render-object handle.

@@ -18,7 +18,7 @@ constexpr auto grassTextureRelativePath = "assets/game/plane/grass.jpg"; ///< Ti
 constexpr std::array crateTextureRelativePaths{"assets/game/crate0/diffuse.png", "assets/game/crate1/diffuse.png"}; ///< Wood crate textures, alternated per spawn.
 
 constexpr float groundHalfExtent = 20.0F;      ///< Half side length of the square play field in metres.
-constexpr float groundTileSize = 4.0F;         ///< Side length of one tiled grass quad in metres.
+constexpr float groundTileSize = 4.0F;         ///< Metres covered by one repeat of the grass texture.
 constexpr float eyeHeight = 1.0F;              ///< Fixed camera height above the plane in metres.
 constexpr float collectRadius = 1.2F;          ///< Horizontal distance at which the camera collects a crate.
 constexpr float crateHalfSize = 0.5F;          ///< Half side length of a falling crate cube.
@@ -73,21 +73,12 @@ void makeSphere(float radius, std::uint32_t stacks, std::uint32_t slices,
 																											const std::filesystem::path &root) {
 	render.clearScene();
 
-	// Tile the field with grass quads so the single scene texture repeats across the plane.
+	// One quad covers the field; UVs span 0..10 and the material sampler repeats the grass.
 	const auto grassTexture = root / grassTextureRelativePath;
-	const auto tilesPerSide = static_cast<int>(std::lround((groundHalfExtent * 2.0F) / groundTileSize));
-	const float halfTile = groundTileSize * 0.5F;
-	const vve::Vec3 minimum{-halfTile, -0.1F, -halfTile}; // One shared tile mesh in local coordinates.
-	const vve::Vec3 maximum{halfTile, 0.0F, halfTile};
-	for (int ix = 0; ix < tilesPerSide; ++ix) {
-		for (int iz = 0; iz < tilesPerSide; ++iz) {
-			const float centerX = -groundHalfExtent + halfTile + static_cast<float>(ix) * groundTileSize;
-			const float centerZ = -groundHalfExtent + halfTile + static_cast<float>(iz) * groundTileSize;
-			const auto transform = vve::Transform{.translation = vve::Position{.value = vve::Vec3{centerX, 0, centerZ}}};
-			if (auto result = render.addTexturedCuboid(minimum, maximum, grassTexture, transform); !result) {
-				return std::unexpected(result.error());
-			}
-		}
+	constexpr float textureRepeats = (groundHalfExtent * 2.0F) / groundTileSize;
+	if (auto result = render.addTexturedPlane(vve::Vec2{groundHalfExtent, groundHalfExtent},
+		grassTexture, vve::Vec2{textureRepeats, textureRepeats}); !result) {
+		return std::unexpected(result.error());
 	}
 
 	// The sun is a bright sphere drawn in a constant color; the frame loop pins it far away relative to the camera.
