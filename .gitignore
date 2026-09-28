@@ -34,6 +34,9 @@
 *.tmp
 
 # Logs and runtime outputs
+/verify/
+imgui.ini
+/build_log*.txt
 *.log
 *.tlog
 *.obj

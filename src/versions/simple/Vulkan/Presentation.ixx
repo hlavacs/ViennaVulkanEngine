@@ -37,6 +37,7 @@ export namespace vve::simple {
 
 		VulkanOwnedHandle<vk::raii::SwapchainKHR, VkSwapchainKHR> swapchain{}; ///< Owned Vulkan swapchain handle.
 		VkFormat imageFormat{VK_FORMAT_UNDEFINED};    ///< Chosen swapchain image format.
+		VkFormat guiFormat{VK_FORMAT_UNDEFINED};      ///< GUI-only UNORM view format, or the original format without mutable views.
 		VkExtent2D extent{};                          ///< Chosen swapchain image extent.
 		VkExtent2D requestedExtent{};                 ///< Window pixel extent the swapchain was created for; may differ from the surface-chosen extent.
 		std::vector<VkImage> images{};                ///< Borrowed images owned by the swapchain implementation.
@@ -56,6 +57,8 @@ export namespace vve::simple {
 			* @param presentQueueFamily Queue family index used for presentation.
 			* @param width Requested fallback width when the surface extent is not fixed.
 			* @param height Requested fallback height when the surface extent is not fixed.
+			* @param mutableFormat Whether VK_KHR_swapchain_mutable_format was enabled on the logical device.
+			* @param oldSwapchain Previous owned swapchain, with its image views already released; null on first creation.
 			* @return VK_SUCCESS when the swapchain and image list are available, otherwise a Vulkan error code.
 			*/
 		[[nodiscard]] VkResult create(
@@ -66,9 +69,10 @@ export namespace vve::simple {
 			std::uint32_t presentQueueFamily,
 			std::uint32_t width,
 			std::uint32_t height,
-			PresentModePreference presentModePreference = PresentModePreference::mailbox
+			PresentModePreference presentModePreference = PresentModePreference::mailbox,
+			bool mutableFormat = false,
+			VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE
 		) {
-			cleanup();
 			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || surface == VK_NULL_HANDLE) {
 				return VK_ERROR_INITIALIZATION_FAILED;
 			}
@@ -108,9 +112,27 @@ export namespace vve::simple {
 			const std::uint32_t imageCount = chooseImageCount(capabilities);
 			const auto queueFamilies = std::array<std::uint32_t, 2U>{graphicsQueueFamily, presentQueueFamily};
 			const bool concurrentSharing = graphicsQueueFamily != presentQueueFamily;
+			// Keep scene blits sRGB; only Dear ImGui writes its already encoded colours through UNORM.
+			VkFormat chosenGuiFormat = chosenFormat.format;
+			if (mutableFormat) {
+				switch (chosenFormat.format) {
+				case VK_FORMAT_B8G8R8A8_SRGB: chosenGuiFormat = VK_FORMAT_B8G8R8A8_UNORM; break;
+				case VK_FORMAT_R8G8B8A8_SRGB: chosenGuiFormat = VK_FORMAT_R8G8B8A8_UNORM; break;
+				default: break;
+				}
+			}
+			const bool mutableViews = chosenGuiFormat != chosenFormat.format;
+			const std::array viewFormats{chosenFormat.format, chosenGuiFormat};
+			const VkImageFormatListCreateInfo formatList{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_FORMAT_LIST_CREATE_INFO,
+				.viewFormatCount = static_cast<std::uint32_t>(viewFormats.size()),
+				.pViewFormats = viewFormats.data(),
+			};
 
 			const VkSwapchainCreateInfoKHR createInfo{
 				.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+				.pNext = mutableViews ? &formatList : nullptr,
+				.flags = mutableViews ? VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR : VkSwapchainCreateFlagsKHR{},
 				.surface = surface,
 				.minImageCount = imageCount,
 				.imageFormat = chosenFormat.format,
@@ -124,17 +146,19 @@ export namespace vve::simple {
 				.preTransform = capabilities.currentTransform,
 				.compositeAlpha = chooseCompositeAlpha(capabilities),
 				.presentMode = presentMode,
-				.clipped = VK_TRUE,
-				.oldSwapchain = VK_NULL_HANDLE,
+				.clipped = VK_FALSE,	///< Keep hidden/obscured pixels defined for captureFrameToPng (Render/RendererDebug.cpp) and in-frame readback (Render/RendererDraw.cpp).
+				.oldSwapchain = oldSwapchain,
 			};
 
-			device = owningDevice;
 			VkSwapchainKHR rawSwapchain{VK_NULL_HANDLE};
-			result = vkCreateSwapchainKHR(device, &createInfo, nullptr, &rawSwapchain);
+			result = vkCreateSwapchainKHR(owningDevice, &createInfo, nullptr, &rawSwapchain);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
+			// RAII assignment destroys the old swapchain only after its replacement exists.
 			swapchain.handle = vk::raii::SwapchainKHR{owningDevice.handle, rawSwapchain};
 
+			device = owningDevice;
 			imageFormat = chosenFormat.format;
+			guiFormat = chosenGuiFormat;
 			extent = chosenExtent;
 			requestedExtent = VkExtent2D{.width = width, .height = height};
 			result = retrieveImages();
@@ -148,6 +172,7 @@ export namespace vve::simple {
 		void cleanup() {
 			swapchain.reset();
 			imageFormat = VK_FORMAT_UNDEFINED;
+			guiFormat = VK_FORMAT_UNDEFINED;
 			extent = {};
 			requestedExtent = {};
 			images.clear();
@@ -268,6 +293,7 @@ export namespace vve::simple {
 	/// @brief Minimal Vulkan image-view owner; no commands or sync are created here.
 	struct VulkanImageViews {
 		std::vector<VulkanOwnedHandle<vk::raii::ImageView, VkImageView>> ownedViews{}; ///< Owned image views created for borrowed swapchain images.
+		std::vector<VulkanOwnedHandle<vk::raii::ImageView, VkImageView>> ownedGuiViews{}; ///< Optional UNORM views of the same images, used only by Dear ImGui.
 
 		VulkanImageViews() = default;
 		VulkanImageViews(const VulkanImageViews &) = delete;
@@ -279,15 +305,18 @@ export namespace vve::simple {
 			* @param owningDevice Logical device that owns the image-view handles.
 			* @param images Borrowed swapchain image handles; they are not destroyed by this object.
 			* @param imageFormat Swapchain image format used by each created image view.
+			* @param guiFormat GUI format; a differing format creates an additional view per image.
 			* @return VK_SUCCESS when all image views were created, otherwise the first Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, const std::vector<VkImage> &images, VkFormat imageFormat) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, const std::vector<VkImage> &images, VkFormat imageFormat, VkFormat guiFormat) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			ownedViews.reserve(images.size());
+			if (guiFormat != imageFormat) { ownedGuiViews.reserve(images.size()); }
+			// Both view sets borrow the same images and are released together before the swapchain.
 			for (const VkImage image : images) {
-				const VkImageViewCreateInfo createInfo{
+				VkImageViewCreateInfo createInfo{
 					.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
 					.image = image,
 					.viewType = VK_IMAGE_VIEW_TYPE_2D,
@@ -308,9 +337,15 @@ export namespace vve::simple {
 				};
 
 				VkImageView view{VK_NULL_HANDLE};
-				const VkResult result = vkCreateImageView(owningDevice, &createInfo, nullptr, &view);
+				VkResult result = vkCreateImageView(owningDevice, &createInfo, nullptr, &view);
 				if (result != VK_SUCCESS) { cleanup(); return result; }
 				ownedViews.emplace_back().handle = vk::raii::ImageView{owningDevice.handle, view};
+				if (guiFormat != imageFormat) {
+					createInfo.format = guiFormat;
+					result = vkCreateImageView(owningDevice, &createInfo, nullptr, &view);
+					if (result != VK_SUCCESS) { cleanup(); return result; }
+					ownedGuiViews.emplace_back().handle = vk::raii::ImageView{owningDevice.handle, view};
+				}
 			}
 
 			return VK_SUCCESS;
@@ -320,6 +355,7 @@ export namespace vve::simple {
 			* @brief Destroys the owned image views and clears the borrowed device handle.
 			*/
 		void cleanup() {
+			ownedGuiViews.clear();
 			for (auto &view : ownedViews) { view.reset(); }
 			ownedViews.clear();
 		}

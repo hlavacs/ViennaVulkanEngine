@@ -9,6 +9,6 @@ add_library(vve_windows_std STATIC)
 target_compile_features(vve_windows_std PUBLIC cxx_std_23)
 target_sources(vve_windows_std PUBLIC FILE_SET CXX_MODULES
    BASE_DIRS "${VVE_MSVC_MODULE_DIR}"
-   FILES "${VVE_MSVC_MODULE_DIR}/std.ixx" "${VVE_MSVC_MODULE_DIR}/std.compat.ixx")
+   FILES "${VVE_MSVC_MODULE_DIR}/std.ixx")
 target_compile_options(vve_windows_std PRIVATE
    -Wno-reserved-module-identifier -Wno-include-angled-in-module-purview)

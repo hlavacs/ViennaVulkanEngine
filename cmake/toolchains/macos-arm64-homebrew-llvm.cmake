@@ -12,5 +12,4 @@ set(CMAKE_C_COMPILER "/opt/homebrew/opt/llvm/bin/clang" CACHE FILEPATH "Homebrew
 set(CMAKE_CXX_COMPILER "/opt/homebrew/opt/llvm/bin/clang++" CACHE FILEPATH "Homebrew LLVM C++ compiler" FORCE)
 set(CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS "/opt/homebrew/opt/llvm/bin/clang-scan-deps" CACHE FILEPATH "Homebrew LLVM clang-scan-deps" FORCE)
 
-set(CMAKE_CXX_MODULE_STD ON CACHE BOOL "Enable C++ standard library module support" FORCE)
 set(CMAKE_CXX_STDLIB_MODULES_JSON "/opt/homebrew/opt/llvm/lib/c++/libc++.modules.json" CACHE FILEPATH "libc++ standard library module metadata" FORCE)

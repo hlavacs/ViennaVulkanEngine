@@ -8,7 +8,8 @@
             "args": [
                 "install",
                 "--triplet",
-                "x64-linux"
+                "x64-linux-llvm",
+                "--overlay-triplets=triplets"
             ],
             "osx": {
                 "args": [
@@ -48,8 +49,8 @@
                 "Ninja",
                 "-DCMAKE_BUILD_TYPE=Debug",
                 "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
-                "-DVVE_DEFAULT_VULKAN_ICD=moltenvk",
-                "-DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=v5",
+                "-DVVE_DEFAULT_VULKAN_ICD=kosmickrisp",
+                "-DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple",
                 "-DVVE_VCPKG_TRIPLET=arm64-osx",
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
             ],
@@ -74,42 +75,10 @@
                 "Ninja",
                 "-DCMAKE_BUILD_TYPE=Release",
                 "-DCMAKE_TOOLCHAIN_FILE=${workspaceFolder}/cmake/toolchains/macos-arm64-homebrew-llvm.cmake",
-                "-DVVE_DEFAULT_VULKAN_ICD=moltenvk",
-                "-DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=v5",
+                "-DVVE_DEFAULT_VULKAN_ICD=kosmickrisp",
+                "-DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple",
                 "-DVVE_VCPKG_TRIPLET=arm64-osx",
                 "-DCMAKE_EXPORT_COMPILE_COMMANDS=ON"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "Configure Windows debug",
-            "type": "shell",
-            "command": "cmake",
-            "dependsOn": [
-                "Vcpkg Install Host"
-            ],
-            "args": [
-                "--preset",
-                "debug-windows"
-            ],
-            "options": {
-                "cwd": "${workspaceFolder}"
-            },
-            "problemMatcher": "$msCompile"
-        },
-        {
-            "label": "Configure Windows release",
-            "type": "shell",
-            "command": "cmake",
-            "dependsOn": [
-                "Vcpkg Install Host"
-            ],
-            "args": [
-                "--preset",
-                "release-windows"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"
@@ -202,15 +171,14 @@
         },
         {
             "label": "Build Windows release",
-            "type": "shell",
-            "command": "cmake",
-            "dependsOn": [
-                "Configure Windows release"
-            ],
+            "type": "process",
+            "command": "${env:ComSpec}",
             "args": [
-                "--build",
-                "--preset",
-                "build-release-windows"
+                "/d",
+                "/c",
+                "build_windows.cmd",
+                "release",
+                "--no-tests"
             ],
             "options": {
                 "cwd": "${workspaceFolder}"

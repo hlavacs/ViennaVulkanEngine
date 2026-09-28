@@ -1,5 +1,6 @@
 module;
 #include <compare>
+#include <cstdio>
 #ifndef SDL_MAIN_HANDLED
 #define SDL_MAIN_HANDLED
 #define VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
@@ -22,12 +23,24 @@ import std;
 	* @brief Vulkan device bootstrap objects for the simple forward renderer.
 	*
 	* Functional objects:
-	* - VulkanInstance owns only VkInstance creation and teardown.
+	* - detail::appendLayerFilter preserves existing comma-separated loader filters without duplicate entries.
+	* - DeviceCapabilities and evaluateDeviceRequirements check the Vulkan 1.3 device contract without a GPU.
+	* - VulkanInstance owns VkInstance and Debug validation diagnostics, including synchronization checks.
 	* - VulkanSurface owns only VkSurfaceKHR creation and teardown.
 	* - VulkanPhysicalDevice selects a physical device and queue family indices.
 	* - VulkanDevice owns only VkDevice creation and queue retrieval.
 	*/
 export namespace vve::simple {
+
+	/// @brief Queried device capabilities needed by the forward renderer, independent of Vulkan object lifetime.
+	struct DeviceCapabilities {
+		std::uint32_t apiVersion{};					///< Physical device's supported Vulkan API version.
+		bool swapchainExtension{};					///< VK_KHR_swapchain is advertised by the device.
+		bool dynamicRendering{};						///< Dynamic rendering feature is supported.
+		bool shaderSampledImageArrayDynamicIndexing{};	///< Material texture arrays support dynamic indexing.
+	};
+
+	[[nodiscard]] inline VkResult evaluateDeviceRequirements(const DeviceCapabilities &capabilities);
 
 	/// @brief Minimal Vulkan root object; no device, surface, swapchain, commands, or sync are created here.
 	struct VulkanInstance {
@@ -35,11 +48,13 @@ export namespace vve::simple {
 		VulkanOwnedHandle<vk::raii::Instance, VkInstance> instance{}; ///< Owned Vulkan instance handle.
 		std::vector<char const *> extensions{};      ///< SDL-required instance extensions used for creation.
 		std::vector<char const *> layers{};          ///< Optional validation layers enabled when available.
-		bool validationEnabled{false};               ///< True when VK_LAYER_KHRONOS_validation was enabled.
 
 		VulkanInstance() = default;
+		~VulkanInstance();														///< Releases the validation messenger before the owned instance.
 		VulkanInstance(const VulkanInstance &) = delete;
 		VulkanInstance &operator=(const VulkanInstance &) = delete;
+		[[nodiscard]] bool validationActive() const;							///< Reports whether the Debug validation messenger is active.
+		[[nodiscard]] std::uint64_t validationErrorCount() const;				///< Returns ERROR callbacks since create(), retained through cleanup.
 
 		/**
 			* @brief Creates a Vulkan instance with SDL platform extensions and optional validation.
@@ -61,11 +76,51 @@ export namespace vve::simple {
 			}
 
 			layers.clear();
+			const void *instanceNext{};
 #ifndef NDEBUG
-			validationEnabled = validationLayerAvailable();
+			validationErrors_.store(0U, std::memory_order_relaxed);
+			const bool validationEnabled = validationLayerAvailable();
 			if (validationEnabled) { layers.push_back(validationLayerName); }
-#else
-			validationEnabled = false;
+			const bool debugUtils = validationEnabled && extensionAvailable(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+			const VkDebugUtilsMessengerCreateInfoEXT debugInfo{
+				.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+				.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+				.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+					VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+				.pfnUserCallback = validationCallback,
+				.pUserData = this,
+			};
+			// The instance callback covers creation and destruction; the persistent messenger covers its lifetime.
+			if (debugUtils) {
+				extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+				instanceNext = &debugInfo;
+			}
+#ifdef VK_EXT_layer_settings
+			const VkBool32 validateSync{VK_TRUE};
+			const VkLayerSettingEXT syncSetting{validationLayerName, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1U, &validateSync};
+			const VkLayerSettingsCreateInfoEXT settingsInfo{
+				.sType = VK_STRUCTURE_TYPE_LAYER_SETTINGS_CREATE_INFO_EXT, .pNext = instanceNext,
+				.settingCount = 1U, .pSettings = &syncSetting};
+#endif
+			const VkValidationFeatureEnableEXT syncFeature{VK_VALIDATION_FEATURE_ENABLE_SYNCHRONIZATION_VALIDATION_EXT};
+			const VkValidationFeaturesEXT featuresInfo{
+				.sType = VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT, .pNext = instanceNext,
+				.enabledValidationFeatureCount = 1U, .pEnabledValidationFeatures = &syncFeature};
+			// Older headers or layers use validation_features instead of layer_settings.
+			if (validationEnabled) {
+#ifdef VK_EXT_layer_settings
+				if (extensionAvailable(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME)) {
+					extensions.push_back(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
+					instanceNext = &settingsInfo;
+				} else
+#endif
+				if (extensionAvailable(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME)) {
+					extensions.push_back(VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME);
+					instanceNext = &featuresInfo;
+				} else {
+					std::fprintf(stderr, "[vve::simple] Sync validation unavailable: VK_EXT_layer_settings and VK_EXT_validation_features missing\n");
+				}
+			}
 #endif
 
 			const auto appName = std::string{applicationName};
@@ -80,6 +135,7 @@ export namespace vve::simple {
 
 			const VkInstanceCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+				.pNext = instanceNext,
 				.pApplicationInfo = &appInfo,
 				.enabledLayerCount = static_cast<std::uint32_t>(layers.size()),
 				.ppEnabledLayerNames = layers.empty() ? nullptr : layers.data(),
@@ -89,16 +145,33 @@ export namespace vve::simple {
 
 			VkInstance rawInstance{};
 			const VkResult result = vkCreateInstance(&createInfo, nullptr, &rawInstance);
-			if (result == VK_SUCCESS) { instance.handle = vk::raii::Instance{context, rawInstance}; }
-			return result;
+			if (result != VK_SUCCESS) { return result; }
+			instance.handle = vk::raii::Instance{context, rawInstance};
+#ifndef NDEBUG
+			if (debugUtils) {
+				const auto createMessenger = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+					vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
+				if (createMessenger == nullptr || vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT") == nullptr) {
+					cleanup();
+					return VK_ERROR_EXTENSION_NOT_PRESENT;
+				}
+				const VkResult messengerResult = createMessenger(instance, &debugInfo, nullptr, &debugMessenger_);
+				if (messengerResult != VK_SUCCESS) { cleanup(); return messengerResult; }
+			}
+#endif
+			return VK_SUCCESS;
 		}
 
-		/// @brief Releases the owned Vulkan instance through its RAII wrapper.
-		void cleanup() { instance.reset(); }
+		void cleanup();															///< Releases the validation messenger and instance, preserving error counts.
 
 	private:
 #ifndef NDEBUG
+		VkDebugUtilsMessengerEXT debugMessenger_{VK_NULL_HANDLE}; ///< Owned messenger, destroyed before the instance.
+		std::atomic<std::uint64_t> validationErrors_{};            ///< ERROR callbacks since create(), retained through cleanup.
 		static constexpr char const *validationLayerName{"VK_LAYER_KHRONOS_validation"}; ///< Standard Vulkan validation layer.
+		[[nodiscard]] static bool extensionAvailable(std::string_view name);	///< Checks loader and validation-layer extension availability.
+		static VKAPI_ATTR VkBool32 VKAPI_CALL validationCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+			VkDebugUtilsMessageTypeFlagsEXT types, const VkDebugUtilsMessengerCallbackDataEXT *message, void *userData);	///< Prints validation diagnostics and counts ERROR callbacks.
 
 		/**
 			* @brief Checks whether the optional standard validation layer is installed.
@@ -157,7 +230,7 @@ export namespace vve::simple {
 		std::optional<std::uint32_t> presentQueueFamily{};           ///< Queue family index supporting presentation to the surface.
 
 		/**
-			* @brief Selects the first physical device that supports graphics with compute, presentation, swapchains, and the required features.
+			* @brief Selects the first Vulkan 1.3 device supporting graphics with compute, presentation, swapchains, and required features.
 			*
 			* @param instance Vulkan instance that owns the physical-device list.
 			* @param surface Vulkan surface used to test presentation support.
@@ -176,12 +249,24 @@ export namespace vve::simple {
 			result = vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 			if (result != VK_SUCCESS) { return result; }
 
+			// Keep the first suitable device and report rejected devices only when none qualifies.
 			for (const VkPhysicalDevice candidate : devices) {
 				result = selectIfSuitable(instance, candidate, surface);
 				if (result == VK_SUCCESS && selected()) { return VK_SUCCESS; }
 				if (result != VK_SUCCESS && result != VK_ERROR_FEATURE_NOT_PRESENT) { reset(); return result; }
 			}
 
+			std::string rejectedDevices{};
+			// Include each device's actual version so older drivers have an actionable diagnostic.
+			for (const VkPhysicalDevice candidate : devices) {
+				VkPhysicalDeviceProperties properties{};
+				vkGetPhysicalDeviceProperties(candidate, &properties);
+				rejectedDevices += std::format("{}{} (Vulkan {}.{}.{})", rejectedDevices.empty() ? "" : ", ",
+					properties.deviceName, VK_API_VERSION_MAJOR(properties.apiVersion),
+					VK_API_VERSION_MINOR(properties.apiVersion), VK_API_VERSION_PATCH(properties.apiVersion));
+			}
+			std::fprintf(stderr, "[vve::simple] No suitable device: %s; requires Vulkan 1.3, VK_KHR_swapchain, "
+				"dynamicRendering, shaderSampledImageArrayDynamicIndexing and graphics/compute/present queues\n", rejectedDevices.c_str());
 			reset();
 			return VK_ERROR_FEATURE_NOT_PRESENT;
 		}
@@ -243,10 +328,11 @@ export namespace vve::simple {
 				if (presentSupported == VK_TRUE && !presentationFamily.has_value()) { presentationFamily = index; }
 			}
 
-			const VkResult result = supportsSwapchain(candidate);
+			const VkResult swapchainResult = supportsSwapchain(candidate);
+			if (swapchainResult != VK_SUCCESS && swapchainResult != VK_ERROR_FEATURE_NOT_PRESENT) { return swapchainResult; }
+			const VkResult result = supportsRequiredFeatures(candidate, swapchainResult == VK_SUCCESS);
 			if (result != VK_SUCCESS) { return result; }
 			if (!graphicsFamily.has_value() || !presentationFamily.has_value()) { return VK_ERROR_FEATURE_NOT_PRESENT; }
-			if (!supportsRequiredFeatures(candidate)) { return VK_ERROR_FEATURE_NOT_PRESENT; }
 
 			physicalDevice.handle = vk::raii::PhysicalDevice{instance.handle, candidate};
 			graphicsQueueFamily = graphicsFamily;
@@ -278,14 +364,17 @@ export namespace vve::simple {
 		}
 
 		/**
-			* @brief Checks the device features that VulkanDevice::create enables unconditionally.
+			* @brief Queries the Vulkan version and features and evaluates the renderer's device requirements.
 			*
 			* The renderer records dynamic rendering passes, and the fragment shader indexes the texture array
 			* with a per-draw material index, which needs shaderSampledImageArrayDynamicIndexing.
 			* @param candidate Physical device whose features are queried.
-			* @return True when every required feature is supported.
+			* @param swapchainSupported Whether the device advertises VK_KHR_swapchain.
+			* @return VK_SUCCESS when all requirements are met, otherwise VK_ERROR_FEATURE_NOT_PRESENT.
 			*/
-		[[nodiscard]] static bool supportsRequiredFeatures(VkPhysicalDevice candidate) {
+		[[nodiscard]] static VkResult supportsRequiredFeatures(VkPhysicalDevice candidate, bool swapchainSupported) {
+			VkPhysicalDeviceProperties properties{};
+			vkGetPhysicalDeviceProperties(candidate, &properties);
 			VkPhysicalDeviceDynamicRenderingFeatures dynamicRendering{
 				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
 			};
@@ -294,8 +383,12 @@ export namespace vve::simple {
 				.pNext = &dynamicRendering,
 			};
 			vkGetPhysicalDeviceFeatures2(candidate, &features);
-			return dynamicRendering.dynamicRendering == VK_TRUE &&
-				features.features.shaderSampledImageArrayDynamicIndexing == VK_TRUE;
+			return evaluateDeviceRequirements(DeviceCapabilities{
+				.apiVersion = properties.apiVersion,
+				.swapchainExtension = swapchainSupported,
+				.dynamicRendering = dynamicRendering.dynamicRendering == VK_TRUE,
+				.shaderSampledImageArrayDynamicIndexing = features.features.shaderSampledImageArrayDynamicIndexing == VK_TRUE,
+			});
 		}
 	};
 
@@ -304,6 +397,8 @@ export namespace vve::simple {
 		VulkanOwnedHandle<vk::raii::Device, VkDevice> device{}; ///< Owned Vulkan logical device handle.
 		VkQueue graphicsQueue{VK_NULL_HANDLE};        ///< Borrowed graphics queue retrieved from the device.
 		VkQueue presentQueue{VK_NULL_HANDLE};         ///< Borrowed presentation queue retrieved from the device.
+		bool swapchainMutableFormat{false};           ///< Whether the optional GUI UNORM swapchain views are enabled.
+		bool samplerAnisotropy{false};                ///< Whether the optional material sampler feature is enabled.
 
 		VulkanDevice() = default;
 		VulkanDevice(const VulkanDevice &) = delete;
@@ -357,10 +452,24 @@ export namespace vve::simple {
 				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
 				.dynamicRendering = VK_TRUE,
 			};
+			VkPhysicalDeviceFeatures supportedFeatures{};
+			vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 			const VkPhysicalDeviceFeatures enabledFeatures{
+				.samplerAnisotropy = supportedFeatures.samplerAnisotropy, ///< Enable anisotropic material sampling only when supported.
 				.shaderSampledImageArrayDynamicIndexing = VK_TRUE, ///< Fragment shader indexes the texture array by material; checked in device selection.
 			};
-			const auto extensions = std::array<char const *, 1U>{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+			// Image-format lists are core in Vulkan 1.2; only the swapchain extension remains optional.
+			std::uint32_t extensionCount{};
+			VkResult result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, nullptr);
+			if (result != VK_SUCCESS) { return result; }
+			auto availableExtensions = std::vector<VkExtensionProperties>(extensionCount);
+			result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionCount, availableExtensions.data());
+			if (result != VK_SUCCESS) { return result; }
+			const bool mutableFormat = std::ranges::any_of(availableExtensions, [](const VkExtensionProperties &extension) {
+				return std::string_view{extension.extensionName} == VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME;
+			});
+			auto extensions = std::vector<char const *>{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+			if (mutableFormat) { extensions.push_back(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME); }
 			const VkDeviceCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 				.pNext = &dynamicRenderingFeatures,
@@ -372,7 +481,7 @@ export namespace vve::simple {
 			};
 
 			VkDevice rawDevice{};
-			const VkResult result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &rawDevice);
+			result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &rawDevice);
 			if (result != VK_SUCCESS) {
 				graphicsQueue = VK_NULL_HANDLE;
 				presentQueue = VK_NULL_HANDLE;
@@ -380,6 +489,8 @@ export namespace vve::simple {
 			}
 
 			device.handle = vk::raii::Device{physicalDevice.handle, rawDevice};
+			swapchainMutableFormat = mutableFormat;
+			samplerAnisotropy = enabledFeatures.samplerAnisotropy == VK_TRUE;
 			vkGetDeviceQueue(device, graphicsQueueFamily, 0U, &graphicsQueue);
 			vkGetDeviceQueue(device, presentQueueFamily, 0U, &presentQueue);
 			return VK_SUCCESS;
@@ -388,9 +499,92 @@ export namespace vve::simple {
 		/// @brief Releases the owned logical device through its RAII wrapper and clears borrowed queues.
 		void cleanup() {
 			device.reset();
+			swapchainMutableFormat = false;
+			samplerAnisotropy = false;
 			graphicsQueue = VK_NULL_HANDLE;
 			presentQueue = VK_NULL_HANDLE;
 		}
 	};
+
+	namespace detail {
+		/// @brief Appends one exact layer name to a comma-separated loader filter; existing entries are preserved.
+		[[nodiscard]] inline std::string appendLayerFilter(std::string current, std::string_view layer) {
+			// Match complete entries so a longer layer name does not hide the requested filter.
+			for (const auto entry : std::views::split(current, ',')) {
+				if (std::ranges::equal(entry, layer)) { return current; }
+			}
+			if (!current.empty()) { current += ','; }
+			current += layer;
+			return current;
+		}
+	}
+
+	/// @brief Checks the renderer's core API and feature contract without calling Vulkan; missing requirements reject the device.
+	[[nodiscard]] inline VkResult evaluateDeviceRequirements(const DeviceCapabilities &capabilities) {
+		return capabilities.apiVersion >= VK_API_VERSION_1_3 && capabilities.swapchainExtension &&
+			capabilities.dynamicRendering && capabilities.shaderSampledImageArrayDynamicIndexing
+			? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT;
+	}
+
+	/// @brief Tears down the messenger while its callback state is still alive.
+	inline VulkanInstance::~VulkanInstance() { cleanup(); }
+
+	/// @brief Releases the Debug messenger before its instance; error counts remain available for inspection.
+	inline void VulkanInstance::cleanup() {
+#ifndef NDEBUG
+		if (debugMessenger_ != VK_NULL_HANDLE) {
+			const auto destroyMessenger = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+				vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
+			destroyMessenger(instance, debugMessenger_, nullptr);
+			debugMessenger_ = VK_NULL_HANDLE;
+		}
+#endif
+		instance.reset();
+	}
+
+	/// @brief Reports whether Debug validation errors can currently reach the counter.
+	inline bool VulkanInstance::validationActive() const {
+#ifndef NDEBUG
+		return debugMessenger_ != VK_NULL_HANDLE;
+#else
+		return false;
+#endif
+	}
+
+	/// @brief Returns all ERROR callbacks since the latest create(), or zero in Release.
+	inline std::uint64_t VulkanInstance::validationErrorCount() const {
+#ifndef NDEBUG
+		return validationErrors_.load(std::memory_order_relaxed);
+#else
+		return 0U;
+#endif
+	}
+
+#ifndef NDEBUG
+	/// @brief Checks loader and validation-layer extensions, including layer-only configuration extensions.
+	inline bool VulkanInstance::extensionAvailable(std::string_view name) {
+		// Explicit layer extensions are not included in the loader's global list.
+		for (const char *layer : {static_cast<const char *>(nullptr), validationLayerName}) {
+			std::uint32_t count{};
+			if (vkEnumerateInstanceExtensionProperties(layer, &count, nullptr) != VK_SUCCESS) { continue; }
+			auto available = std::vector<VkExtensionProperties>(count);
+			if (vkEnumerateInstanceExtensionProperties(layer, &count, available.data()) != VK_SUCCESS) { continue; }
+			if (std::ranges::any_of(available, [name](const auto &extension) { return name == extension.extensionName; })) { return true; }
+		}
+		return false;
+	}
+
+	/// @brief Prints validation diagnostics and counts ERROR severity, including synchronization hazards.
+	inline VKAPI_ATTR VkBool32 VKAPI_CALL VulkanInstance::validationCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
+		VkDebugUtilsMessageTypeFlagsEXT, const VkDebugUtilsMessengerCallbackDataEXT *message, void *userData) {
+		if ((severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0U) {
+			static_cast<VulkanInstance *>(userData)->validationErrors_.fetch_add(1U, std::memory_order_relaxed);
+		}
+		std::fprintf(stderr, "[vve::simple validation] %s: %s\n",
+			message->pMessageIdName != nullptr ? message->pMessageIdName : "unnamed",
+			message->pMessage != nullptr ? message->pMessage : "");
+		return VK_FALSE;
+	}
+#endif
 
 } // namespace vve::simple

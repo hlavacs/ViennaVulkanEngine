@@ -3,14 +3,15 @@ import std;
 export import VEEngine.Simple.Types;
 
 /// @file
-/// @brief Generic named DAG and tree helpers used by the simple asset scene tree.
+/// @brief Generic DAG and tree helpers with creation-order nodes for the simple asset scene tree.
 
 export namespace vve::simple {
 
-	/// @brief Small named DAG with reverse edges for parent lookup.
+	/// @brief Small DAG with reverse edges for parent lookup and nodes in creation order.
 	template <typename THandle> class Graph {
 	public:
-		[[nodiscard]] std::expected<void, Error> addNode(THandle handle, ObjectName name = {});
+		[[nodiscard]] std::expected<void, Error> addNode(THandle handle);
+		[[nodiscard]] auto nodes() const -> const Vector<THandle> &;
 		auto addEdge(THandle from, THandle to)														-> void;
 		[[nodiscard]] auto contains(THandle handle) const										-> bool;
 		[[nodiscard]] auto children(THandle handle) const										-> Vector<THandle>;
@@ -21,7 +22,8 @@ export namespace vve::simple {
 		using EdgeMap = std::unordered_multimap<THandle, THandle, HandleHash<THandle>>;
 
 
-		std::map<THandle, ObjectName> nodes_{};	///< Node labels by handle.
+		std::set<THandle> nodes_{};			///< Registered handles for membership queries.
+		Vector<THandle> node_order_{};		///< Creation order, independent of handle sorting.
 		EdgeMap outgoing_{};								///< Forward dependency edges.
 		EdgeMap incoming_{};								///< Reverse dependency edges.
 	};
@@ -33,8 +35,8 @@ export namespace vve::simple {
 		using Base = Graph<THandle>;
 
 	public:
-		[[nodiscard]] std::expected<void, Error> setRoot(THandle handle, ObjectName name = {});
-		[[nodiscard]] std::expected<void, Error> addChild(THandle parent, THandle child, ObjectName name = {});
+		[[nodiscard]] std::expected<void, Error> setRoot(THandle handle);
+		[[nodiscard]] std::expected<void, Error> addChild(THandle parent, THandle child);
 		[[nodiscard]] auto children(THandle handle) const										-> std::expected<Vector<THandle>, Error>;
 		[[nodiscard]] auto parent(THandle handle) const											-> std::expected<std::optional<THandle>, Error>;
 
@@ -46,13 +48,17 @@ export namespace vve::simple {
 namespace vve::simple {
 
 	/// @brief Adds an existing handle as a graph node.
-	template <typename THandle> std::expected<void, Error> Graph<THandle>::addNode(THandle handle, ObjectName name) {
+	template <typename THandle> std::expected<void, Error> Graph<THandle>::addNode(THandle handle) {
 		if (!handle.valid()) { return std::unexpected(Error::invalid_handle); }
-		if (const auto [_, inserted] = nodes_.emplace(handle, std::move(name)); !inserted) {
+		if (const auto [_, inserted] = nodes_.insert(handle); !inserted) {
 			return std::unexpected(Error::duplicate_object);
 		}
+		node_order_.push_back(handle);
 		return {};
 	}
+
+	/// @brief Returns handles in creation order; importing nodes recursively makes this pre-order.
+	template <typename THandle> auto Graph<THandle>::nodes() const -> const Vector<THandle> & { return node_order_; }
 
 	/// @brief Adds one directed edge without forcing graph validation at construction time.
 	template <typename THandle> void Graph<THandle>::addEdge(THandle from, THandle to) {
@@ -81,21 +87,21 @@ namespace vve::simple {
 	}
 
 	/// @brief Sets or replaces the root handle.
-	template <typename THandle> std::expected<void, Error> Tree<THandle>::setRoot(THandle handle, ObjectName name) {
+	template <typename THandle> std::expected<void, Error> Tree<THandle>::setRoot(THandle handle) {
 		if (!handle.valid()) { return std::unexpected(Error::invalid_handle); }
 		root = handle;
 		if (Base::contains(handle)) { return {}; }
-		return Base::addNode(handle, std::move(name));
+		return Base::addNode(handle);
 	}
 
 	/// @brief Adds a child node and connects it to an existing parent.
 	template <typename THandle>
-	std::expected<void, Error> Tree<THandle>::addChild(THandle parent_node, THandle child, ObjectName name) {
+	std::expected<void, Error> Tree<THandle>::addChild(THandle parent_node, THandle child) {
 		if (!Base::contains(parent_node)) { return std::unexpected(Error::missing_object); }
 		if (Base::contains(child)) {
 			const auto current_parent = parent(child);
 			if (current_parent && current_parent->has_value()) { return std::unexpected(Error::duplicate_object); }
-		} else if (auto added = Base::addNode(child, std::move(name)); !added) {
+		} else if (auto added = Base::addNode(child); !added) {
 			return added;
 		}
 		Base::addEdge(parent_node, child);

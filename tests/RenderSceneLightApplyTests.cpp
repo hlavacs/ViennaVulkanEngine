@@ -6,18 +6,14 @@
  * - main: loads a glTF punctual light, instantiates it with lights disabled and enabled, and checks render counts.
  */
 
-#include <filesystem>
-#include <fstream>
+import std;
 
 import VEEngine;
+import VVE.TestSupport;
 
-namespace {
-
-/// @brief Writes a minimal glTF scene with one KHR punctual point light.
-[[nodiscard]] std::filesystem::path writeFixture() {
-   const auto path = std::filesystem::temp_directory_path() / "vve_render_scene_light_apply_test.gltf";
-   std::ofstream file{path};
-   file << R"({
+/// @brief Verifies imported lights affect render counts only when requested.
+int main() {
+   const auto path = vve::test::writeFixture(VVE_TEST_TMP_DIR, "vve_render_scene_light_apply_test.gltf", R"({
   "asset": {"version": "2.0"},
   "extensionsUsed": ["KHR_lights_punctual"],
   "extensions": {"KHR_lights_punctual": {"lights": [
@@ -27,21 +23,7 @@ namespace {
   "scene": 0,
   "nodes": [{"name": "ImportedPointLight", "translation": [1.0, 2.0, 3.0],
              "extensions": {"KHR_lights_punctual": {"light": 0}}}]
-})";
-   return path;
-}
-
-/// @brief Removes the temporary source without affecting deterministic assertions.
-void removeFixture(const std::filesystem::path &path) {
-   std::error_code error{}; // Cleanup is not part of the test result.
-   std::filesystem::remove(path, error);
-}
-
-} // namespace
-
-/// @brief Verifies imported lights affect render counts only when requested.
-int main() {
-   const auto path = writeFixture();
+})");
 
    auto engine = vve::EngineBuilder<>{}.applicationName("render-scene-light-apply-tests").build();
    auto world = engine.world();
@@ -49,7 +31,6 @@ int main() {
    auto &render = world.get<vve::RenderSystem>();
 
    const auto scene = assets.loadScene(path);
-   removeFixture(path);
    if (!scene || !scene->valid()) { return 1; }
 
    const auto lights = assets.sceneLights(*scene);

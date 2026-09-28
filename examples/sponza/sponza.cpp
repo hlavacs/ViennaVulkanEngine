@@ -1,5 +1,6 @@
 import std;
 import VEEngine;
+import VVE.ExampleSupport;
 
 /**
  * @file
@@ -8,51 +9,6 @@ import VEEngine;
 namespace {
 
 constexpr auto sponzaSceneRelativePath = "assets/sea_keep_lonely_watcher/scene.gltf";
-
-/// @brief Finds the repository-style asset root from either the cwd or executable location.
-[[nodiscard]] std::filesystem::path assetRoot(char *argv0) {
-	auto containsSponzaScene = [](const std::filesystem::path &candidate) {
-		return std::filesystem::exists(candidate / sponzaSceneRelativePath);
-	};
-	if (const auto cwd = std::filesystem::current_path(); containsSponzaScene(cwd)) {
-		return cwd;
-	}
-	if (argv0 == nullptr) {
-		return {};
-	}
-	auto executable = std::filesystem::absolute(std::filesystem::path{argv0});
-	if (std::filesystem::exists(executable)) {
-		executable = std::filesystem::weakly_canonical(executable);
-	}
-	for (auto candidate = executable.parent_path(); !candidate.empty(); candidate = candidate.parent_path()) {
-		if (containsSponzaScene(candidate)) {
-			return candidate;
-		}
-		if (candidate == candidate.root_path()) {
-			break;
-		}
-	}
-	return {};
-}
-
-/// @brief Reads the optional frame count used by automated example runs.
-[[nodiscard]] int frameLimit(int argc, char **argv) {
-	for (int index = 1; index + 1 < argc; ++index) {
-		if (argv[index] == nullptr || argv[index + 1] == nullptr) {
-			continue;
-		}
-		if (std::string_view{argv[index]} != "--frames") {
-			continue;
-		}
-		int value{};
-		const std::string_view text{argv[index + 1]};
-		const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
-		if (result.ec == std::errc{} && value >= 0) {
-			return value;
-		}
-	}
-	return 0;
-}
 
 } // namespace
 
@@ -78,7 +34,7 @@ int main(int argc, char **argv) {
 	auto assets = engine.world().get<vve::AssetSystem>();
 	auto render_system = engine.world().get<vve::RenderSystem>();
 
-	const auto scene_path = assetRoot(argc > 0 ? argv[0] : nullptr) / sponzaSceneRelativePath;
+	const auto scene_path = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr) / sponzaSceneRelativePath;
 	const std::expected<vve::SceneHandle, vve::Error> scene = assets.loadScene(scene_path);
 	if (!scene) {
 		std::cerr << "[sponza] scene load failed: path=" << scene_path << " error=" << vve::errorName(scene.error()) << '\n';
@@ -93,7 +49,7 @@ int main(int argc, char **argv) {
 	}
 	std::cout << "[sponza] scene=" << scene->value << " instance=" << instance->value << '\n';
 
-	const int max_frames = frameLimit(argc, argv);
+	const int max_frames = vve::example::frameLimit(argc, argv);
 	int frame{};
 	bool running = true;
 	vve::DefaultCameraController cameraController{};
@@ -104,7 +60,7 @@ int main(int argc, char **argv) {
 	cameraController.pitch = std::asin(startupForward.y);
 	while (running && (max_frames == 0 || frame < max_frames)) {
 		const auto frameInput = engine.world().get<vve::WindowSystem>().input();
-		render_system.setCamera(cameraController.update(frameInput), vve::PixelExtent{.width = 1280, .height = 720});
+		render_system.setCamera(cameraController.update(frameInput, engine.frameContext().delta_time));
 
 		const auto status = engine.step();
 		if (!status) {

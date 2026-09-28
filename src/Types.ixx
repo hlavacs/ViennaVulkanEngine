@@ -4,7 +4,7 @@ export import VEEngine.Error;
 export import VEEngine.Handle;
 export import VEEngine.Math;
 export import VEEngine.Vector;
-import VEEngine.Entity;
+export import VEEngine.Entity;
 
 /**
 	* @file
@@ -12,15 +12,12 @@ import VEEngine.Entity;
 	*/
 export namespace vve {
 
-	using vve::EntityTag;												///< Facade ECS entity handle tag.
-	using vve::Entity;													///< Facade ECS entity.
 
 	struct SceneHandleTag {};											///< Scene descriptor handle tag.
 	struct WindowHandleTag {};											///< Runtime window handle tag.
 	struct NodeHandleTag {};											///< Node descriptor handle tag.
 	struct MeshHandleTag {};											///< Mesh descriptor handle tag.
 	struct MaterialHandleTag {};										///< Material descriptor handle tag.
-	struct TextureHandleTag {};										///< Texture descriptor handle tag.
 	struct RenderObjectHandleTag {};								///< Render object handle tag.
 	struct RenderSceneInstanceHandleTag {};						///< Render scene instance handle tag.
 	struct LightHandleTag {};											///< Light descriptor handle tag.
@@ -31,7 +28,6 @@ export namespace vve {
 	using NodeHandle	= TypedHandle<NodeHandleTag>;			///< Node descriptor handle.
 	using MeshHandle	= TypedHandle<MeshHandleTag>;			///< Mesh descriptor handle.
 	using MaterialHandle = TypedHandle<MaterialHandleTag>;	///< Material descriptor handle.
-	using TextureHandle	= TypedHandle<TextureHandleTag>;		///< Texture descriptor handle.
 	using RenderObjectHandle = TypedHandle<RenderObjectHandleTag>;	///< Render object handle.
 	using RenderSceneInstanceHandle = TypedHandle<RenderSceneInstanceHandleTag>;	///< Render scene instance handle.
 	using LightHandle	= TypedHandle<LightHandleTag>;		///< Light descriptor handle.
@@ -72,9 +68,10 @@ export namespace vve {
 		Scalar value{static_cast<Scalar>(10)};								///< Wrapped range in world units.
 	};
 
-	/// @brief Strong wrapper for spotlight outer cone angle.
+	/// @brief Spotlight cone half-angle in radians, measured from the spot axis to the cone edge.
+	/// Uses the glTF KHR_lights_punctual convention for both inner and outer cones.
 	struct SpotConeAngle {
-		Scalar radians{static_cast<Scalar>(0.75)};						///< Wrapped outer cone angle in radians.
+		Scalar radians{static_cast<Scalar>(0.75)};						///< Wrapped axis-to-edge half-angle in radians.
 	};
 
 	/// @brief Public imported-light category understood by the asset facade.
@@ -92,8 +89,8 @@ export namespace vve {
 		Direction direction{};													///< World-space light direction (light toward scene) when available.
 		Position position{};													///< World-space light position when available.
 		LightRange range{};														///< Finite influence range for point and spot lights.
-		SpotConeAngle cone{};													///< Outer cone angle for spot lights.
-		SpotConeAngle inner_cone{.radians = static_cast<Scalar>(0.35)};	///< Inner cone angle of full intensity for spot lights.
+		SpotConeAngle cone{};													///< Outer half-angle in radians, from spot axis to cone edge (glTF convention).
+		SpotConeAngle inner_cone{.radians = static_cast<Scalar>(0.35)};	///< Inner half-angle in radians, from spot axis to full-intensity edge (glTF convention).
 	};
 
 	/// @brief Facade descriptor for directional light setup.
@@ -122,7 +119,7 @@ export namespace vve {
 		LinearColor color{};													///< Linear RGB direct light color.
 		LightIntensity intensity{};											///< Direct light intensity scale.
 		LightRange range{};														///< Finite influence range.
-		SpotConeAngle cone{};													///< Outer cone angle.
+		SpotConeAngle cone{};													///< Outer half-angle in radians, from spot axis to cone edge (glTF convention).
 		LinearColor ambient{.value = Vec3(static_cast<Scalar>(0.04), static_cast<Scalar>(0.04),
 													 static_cast<Scalar>(0.04))};	///< Linear RGB ambient contribution.
 	};
@@ -146,7 +143,7 @@ export namespace vve {
 	/// @brief Strong wrapper for near and far clipping planes.
 	struct ClipPlanes {
 		Scalar near_plane{static_cast<Scalar>(0.1)};						///< Near clip distance.
-		Scalar far_plane{static_cast<Scalar>(10000.0)};					///< Far clip distance.
+		Scalar far_plane{static_cast<Scalar>(100.0)};					///< Far clip distance.
 	};
 
 	/// @brief Strong wrapper for frame delta time.
@@ -170,6 +167,53 @@ export namespace vve {
 		std::string value{};														///< Wrapped renderer identifier.
 	};
 
+	/// @brief Window creation descriptor shared by the facade and platform layer.
+	struct WindowDesc {
+		std::string id{"main"};									///< Stable application-local window id.
+		std::string title{"VVE simple"};							///< Platform window title.
+		PixelExtent extent{.width = 960, .height = 540};			///< Initial size in window coordinates.
+		std::optional<int> x{};									///< Optional initial screen x coordinate.
+		std::optional<int> y{};									///< Optional initial screen y coordinate.
+		RendererId renderer_id{};								///< Empty or "forward" renders; "none" opts out; any other id makes Engine::init return invalid_argument.
+		bool resizable{true};									///< Enables platform resizing.
+		bool visible{true};										///< Shows the window; a hidden window still renders (tests, captures).
+	};
+
+	/// @brief Runtime window state exposed through the facade window wrapper.
+	struct WindowInfo {
+		WindowHandle handle{};									///< 64-bit runtime window handle.
+		std::string id{};										///< Stable id copied from WindowDesc.
+		std::string title{};										///< Current platform title.
+		PixelExtent extent{};									///< Current drawable size in pixels (the swapchain size).
+		RendererId renderer_id{};								///< Renderer id selected for this window.
+		bool focused{false};										///< True while the window has keyboard focus.
+		bool minimized{false};									///< True while the platform reports a minimized window.
+		bool should_close{false};								///< True after a close request.
+	};
+
+	/// @brief Snapshot passed to user systems that want window data for the current frame.
+	struct WindowFrameData {
+		Vector<WindowInfo> windows{};							///< Window states after event polling.
+	};
+
+	/// @brief One CPU/GPU shadow-depth comparison point; the world point is the origin for every light.
+	struct RenderShadowDepthSample {
+		std::uint32_t light_type{};								///< Light type: 1 spot, 2 point, 3 directional.
+		std::uint32_t light_index{};								///< Dense index of the light inside its packed shadow slots.
+		std::uint32_t face_index{};								///< Point-light cube face (+X,-X,+Y,-Y,+Z,-Z), 0 for other lights.
+		std::uint32_t layer{};									///< Layer of the light type's shadow array that this sample reads.
+		Vec3 world{zeroVec3()};									///< World-space sample point.
+		Vec3 light_ndc{zeroVec3()};								///< Sample point in light normalized device coordinates.
+		std::uint32_t pixel_x{};									///< Shadow-map texel x, valid when has_gpu is true.
+		std::uint32_t pixel_y{};									///< Shadow-map texel y, valid when has_gpu is true.
+		float expected_depth{};									///< CPU light-space depth (light_ndc.z).
+		float bias{};											///< Shader-side compare bias mirrored on the CPU.
+		float shadow_factor{1.0F};								///< Occluded factor when the GPU texel occludes the point, otherwise 1.
+		float gpu_depth{-1.0F};									///< Depth read back from the shadow map, valid when has_gpu is true.
+		float error{-1.0F};										///< Absolute difference between expected_depth and gpu_depth.
+		bool has_gpu{};											///< True once the GPU texel was read back.
+	};
+
 	/// @brief Strong wrapper for frame counts and frame indices.
 	struct FrameCount {
 		std::uint64_t value{0};													///< Wrapped frame count.
@@ -189,12 +233,6 @@ export namespace vve {
 	struct FrameContext {
 		FrameCount frame_index{};												///< Zero-based frame index.
 		DeltaTime delta_time{};													///< Time elapsed since the previous frame.
-	};
-
-	/// @brief Compact engine configuration kept for simple setup paths.
-	struct EngineConfig {
-		std::string application_name{"simple"};									///< Human-readable application name.
-		FrameCount max_frames{};												///< Maximum frame count; zero means uncapped.
 	};
 
 	/// @brief Result of one engine frame.
@@ -261,18 +299,16 @@ export namespace vve {
 	struct Camera {
 		Position position{.value = Vec3(zero(), static_cast<Scalar>(1.5), static_cast<Scalar>(6.0))};
 		Direction forward{.value = Vec3(zero(), zero(), -one())};	///< View direction.
-		Mat4 view_transform{math::translate(identityMat4(),
-														Vec3(zero(), static_cast<Scalar>(-1.5), static_cast<Scalar>(-6.0)))};
 		FovY fov_y{};																///< Vertical field of view.
 		ClipPlanes clip{};														///< Near/far clip planes.
 
+		/// @brief Describes a view by position and direction; up is retained for call compatibility.
 		[[nodiscard]] static inline Camera lookAt(Position position, Position target,
-																Direction up = Direction{.value = Vec3(zero(), one(), zero())},
+																[[maybe_unused]] Direction up = Direction{.value = Vec3(zero(), one(), zero())},
 																FovY fov_y = {}, ClipPlanes clip = {}) {
 			Camera camera{};
 			camera.position = position;
 			camera.forward = Direction{.value = math::subtract(target.value, position.value)};
-			camera.view_transform = math::lookAt(position.value, target.value, up.value);
 			camera.fov_y = fov_y;
 			camera.clip = clip;
 			return camera;

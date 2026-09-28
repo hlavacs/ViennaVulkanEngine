@@ -1,5 +1,6 @@
 module VEEngine.Simple;
 import std;
+import VEEngine.Simple.Scene;
 
 /**
 	* @file
@@ -73,6 +74,9 @@ namespace vve::simple {
 		auto result = Vector<std::tuple<NodeHandle, Transform, Mat4>>{};
 		auto pending = Vector<std::pair<NodeHandle, Mat4>>{};
 		result.reserve(nodes->size());
+		const auto node_set = std::unordered_set<NodeHandle, HandleHash<NodeHandle>>{nodes->begin(), nodes->end()};
+		auto visited = std::unordered_set<NodeHandle, HandleHash<NodeHandle>>{};
+		visited.reserve(nodes->size());
 
 		const auto root_transform = imported_assets_.node_transform(*root);
 		if (!root_transform) { return {}; }
@@ -82,8 +86,7 @@ namespace vve::simple {
 		while (!pending.empty()) {
 			const auto [node, world] = pending.back();
 			pending.pop_back();
-			if (std::ranges::find(*nodes, node) == nodes->end() ||
-				 std::ranges::find(result, node, [](const auto &entry) { return std::get<0>(entry); }) != result.end()) {
+			if (!node_set.contains(node) || !visited.insert(node).second) {
 				return {};
 			}
 			result.push_back({node, detail::decomposeTransform(world), world});
@@ -119,59 +122,17 @@ namespace vve::simple {
 		return result;
 	}
 
-	/// @brief Reads imported mesh geometry through the public asset query callbacks.
-	auto RenderSystem::importedMeshGeometry(MeshHandle mesh) const
-		-> std::optional<std::tuple<Vector<Vec3>, Vector<Vec3>, Vector<Vec2>, Vector<Vec4>, Vector<std::uint32_t>>>{
-		if (!mesh.valid() || !imported_assets_.mesh_positions || !imported_assets_.mesh_normals ||
-			 !imported_assets_.mesh_texcoords || !imported_assets_.mesh_tangents || !imported_assets_.mesh_indices) {
-			return std::nullopt;
-		}
-
-		const auto positions = imported_assets_.mesh_positions(mesh);
-		const auto normals = imported_assets_.mesh_normals(mesh);
-		const auto texcoords = imported_assets_.mesh_texcoords(mesh);
-		const auto tangents = imported_assets_.mesh_tangents(mesh);
-		const auto indices = imported_assets_.mesh_indices(mesh);
-		// A mesh made only of points or lines has no triangle indices left and nothing to draw.
-		if (!positions || positions->empty() || !normals || !texcoords || !tangents || !indices || indices->empty()) { return std::nullopt; }
-		return std::tuple{*positions, *normals, *texcoords, *tangents, *indices};
-	}
-
-	/// @brief Creates or reuses one render mesh for imported asset geometry.
-	auto RenderSystem::acquireRenderMesh(MeshHandle imported_mesh)											-> std::optional<RenderMeshHandle>{
+	/// @brief Creates or reuses a render mesh sharing the catalog vertex buffer; indices are copied once.
+	auto RenderSystem::acquireRenderMesh(MeshHandle imported_mesh) -> std::optional<RenderMeshHandle> {
 		const auto cached = imported_render_meshes_.find(imported_mesh);
 		if (cached != imported_render_meshes_.end() && scene_.findMesh(cached->second) != nullptr) { return cached->second; }
 		if (cached != imported_render_meshes_.end()) { imported_render_meshes_.erase(cached); }
-
-		const auto geometry = importedMeshGeometry(imported_mesh);
-		if (!geometry) { return std::nullopt; }
-
-		const auto &[positions, normals, texcoords, tangents, indices] = *geometry;
-		auto vertices = Vector<RenderVertex>{};
-		vertices.reserve(positions.size());
-		auto bounds = Bounds{.minimum = Position{.value = positions.front()},
-									.maximum = Position{.value = positions.front()},
-									.valid = true};
-
-		// Convert asset vertex arrays into the same CPU render-vertex payload used by primitive meshes.
-		for (std::size_t index{}; index < positions.size(); ++index) {
-			const auto position = positions[index];
-			bounds.minimum.value = Vec3{std::min(bounds.minimum.value.x, position.x),
-												 std::min(bounds.minimum.value.y, position.y),
-												 std::min(bounds.minimum.value.z, position.z)};
-			bounds.maximum.value = Vec3{std::max(bounds.maximum.value.x, position.x),
-												 std::max(bounds.maximum.value.y, position.y),
-												 std::max(bounds.maximum.value.z, position.z)};
-			vertices.push_back(RenderVertex{.position = position,
-											 .normal = index < normals.size() ? normals[index] : RenderVertex{}.normal,
-											 .uv = index < texcoords.size() ? texcoords[index] : RenderVertex{}.uv,
-											 .tangent = index < tangents.size() ? tangents[index] : RenderVertex{}.tangent});
-		}
-
-		auto copied_indices = Vector<std::uint32_t>{};
-		copied_indices.reserve(indices.size());
-		for (const auto index : indices) { copied_indices.push_back(index); }
-		const auto render_mesh = scene_.addMesh(std::move(vertices), std::move(copied_indices), bounds);
+		if (!imported_mesh.valid() || !imported_assets_.mesh_geometry || !imported_assets_.mesh_indices) { return std::nullopt; }
+		auto vertices = imported_assets_.mesh_geometry(imported_mesh);
+		const auto indices = imported_assets_.mesh_indices(imported_mesh);
+		// A mesh made only of points or lines has no triangle indices left and nothing to draw.
+		if (!vertices || !*vertices || (*vertices)->empty() || !indices || indices->empty()) { return std::nullopt; }
+		const auto render_mesh = scene_.addMesh(std::move(*vertices), Vector<std::uint32_t>{indices->begin(), indices->end()});
 		imported_render_meshes_.emplace(imported_mesh, render_mesh);
 		return render_mesh;
 	}
@@ -183,9 +144,12 @@ namespace vve::simple {
 	auto RenderSystem::acquireRenderMaterial(MaterialHandle imported_material)							-> RenderMaterialHandle{
 		const auto default_color = LinearColor{.value = oneVec3()};
 		if (!imported_material.valid()) {
-			const auto material = scene_.addMaterial(RenderMaterial{.base_color = default_color});
-			renderer_.markMaterialsDirty();
-			return material;
+			// All materialless imported meshes share one fallback, recreated after an explicit purge.
+			if (scene_.findMaterial(default_material_) == nullptr) {
+				default_material_ = scene_.addMaterial(RenderMaterial{.base_color = default_color});
+				renderer_.markMaterialsDirty();
+			}
+			return default_material_;
 		}
 
 		const auto cached = imported_render_materials_.find(imported_material);
@@ -204,15 +168,11 @@ namespace vve::simple {
 		if (imported_assets_.material_texture_sources) {
 			if (const auto sources = imported_assets_.material_texture_sources(imported_material); sources) {
 				for (const MaterialTextureSource &source : *sources) {
-					const auto texture_index = scene_.acquireTexture(source.path, source.semantic, source.embedded.get());
+					const auto texture_index = scene_.acquireTexture(source.path, source.semantic, source.embedded);
 					if (!texture_index) { continue; }
 					switch (source.semantic) {
 					case MaterialTextureSemantic::base_color:
 						material.base_color_texture_index = *texture_index;
-						material.base_color_texture = makeCounterHandle<TextureHandle>();
-						if (const auto *texture = scene_.findTexture(*texture_index); texture != nullptr) {
-							material.base_color_texture_source = texture->canonical_path;
-						}
 						break;
 					case MaterialTextureSemantic::normal: material.normal_texture_index = *texture_index; break;
 					case MaterialTextureSemantic::metalness: material.metalness_texture_index = *texture_index; break;
@@ -226,15 +186,15 @@ namespace vve::simple {
 				}
 			}
 		}
-		if (material.normal_texture_index == kNoRenderTexture && height_texture) { material.normal_texture_index = *height_texture; }
+		if (material.normal_texture_index == kNoTexture && height_texture) { material.normal_texture_index = *height_texture; }
 
 		auto factors = MaterialFactors{};
 		if (imported_assets_.material_factors) {
 			if (auto imported = imported_assets_.material_factors(imported_material); imported) { factors = *imported; }
 		}
-		const bool roughness_texture = material.roughness_texture_index != kNoRenderTexture;
-		const bool metalness_texture = material.metalness_texture_index != kNoRenderTexture;
-		const bool emissive_texture = material.emissive_texture_index != kNoRenderTexture;
+		const bool roughness_texture = material.roughness_texture_index != kNoTexture;
+		const bool metalness_texture = material.metalness_texture_index != kNoTexture;
+		const bool emissive_texture = material.emissive_texture_index != kNoTexture;
 		material.roughness = factors.roughness.value_or(roughness_texture ? one() : RenderMaterial{}.roughness);
 		material.metalness = factors.metalness.value_or(metalness_texture ? one() : RenderMaterial{}.metalness);
 		material.emissive = factors.emissive.value_or(LinearColor{.value = emissive_texture ? oneVec3() : zeroVec3()});
@@ -254,8 +214,7 @@ namespace vve::simple {
 	auto RenderSystem::instantiateScene(SceneHandle scene, SceneInstantiationOptions options)
 		-> std::expected<RenderSceneInstanceHandle, Error>{
 		if (!scene.valid() || importedSceneNodes(scene).empty()) { return std::unexpected(Error::missing_object); }
-		const auto instance = RenderSceneInstanceHandle{RenderSceneInstanceHandle::counter_bit |
-																	 (next_scene_instance_id_++ & RenderSceneInstanceHandle::id_mask)};
+		const auto instance = makeCounterHandle<RenderSceneInstanceHandle>();
 		scene_instances_.emplace(instance, Vector<RenderObjectHandle>{});
 		scene_instance_sources_.emplace(instance, scene);
 		const auto fail = [this, instance](Error error) -> std::expected<RenderSceneInstanceHandle, Error> {
@@ -294,7 +253,7 @@ namespace vve::simple {
 			for (const auto camera : *cameras) {
 				const auto data = imported_assets_.camera_data(camera);
 				if (!data) { return fail(data.error()); }
-				scene_.addImportedCamera(*data, instance.value);
+				scene_.addImportedCamera(instance.value);
 			}
 		}
 		return instance;

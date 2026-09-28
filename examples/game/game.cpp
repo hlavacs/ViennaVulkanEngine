@@ -2,6 +2,7 @@
 
 import std;
 import VEEngine;
+import VVE.ExampleSupport;
 
 /**
  * @file
@@ -13,7 +14,7 @@ import VEEngine;
  */
 namespace {
 
-constexpr auto grassTextureRelativePath = "assets/game/plane/grass.jpg"; ///< Tiled ground texture and asset-root sentinel.
+constexpr auto grassTextureRelativePath = "assets/game/plane/grass.jpg"; ///< Tiled ground texture.
 constexpr std::array crateTextureRelativePaths{"assets/game/crate0/diffuse.png", "assets/game/crate1/diffuse.png"}; ///< Wood crate textures, alternated per spawn.
 
 constexpr float groundHalfExtent = 20.0F;      ///< Half side length of the square play field in metres.
@@ -39,51 +40,6 @@ struct Crate {
 	float velocityY{};                ///< Vertical velocity while falling.
 	bool landed{};                    ///< True once the crate has reached the ground.
 };
-
-/// @brief Finds the repository-style asset root from either the cwd or executable location.
-[[nodiscard]] std::filesystem::path assetRoot(char *argv0) {
-	auto containsAssets = [](const std::filesystem::path &candidate) {
-		return std::filesystem::exists(candidate / grassTextureRelativePath);
-	};
-	if (const auto cwd = std::filesystem::current_path(); containsAssets(cwd)) {
-		return cwd;
-	}
-	if (argv0 == nullptr) {
-		return {};
-	}
-	auto executable = std::filesystem::absolute(std::filesystem::path{argv0});
-	if (std::filesystem::exists(executable)) {
-		executable = std::filesystem::weakly_canonical(executable);
-	}
-	for (auto candidate = executable.parent_path(); !candidate.empty(); candidate = candidate.parent_path()) {
-		if (containsAssets(candidate)) {
-			return candidate;
-		}
-		if (candidate == candidate.root_path()) {
-			break;
-		}
-	}
-	return {};
-}
-
-/// @brief Reads the optional frame count used by automated example runs.
-[[nodiscard]] std::optional<int> frameLimit(int argc, char **argv) {
-	for (int index = 1; index + 1 < argc; ++index) {
-		if (argv[index] == nullptr || argv[index + 1] == nullptr) {
-			continue;
-		}
-		if (std::string_view{argv[index]} != "--frames") {
-			continue;
-		}
-		int value{};
-		const std::string_view text{argv[index + 1]};
-		const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
-		if (result.ec == std::errc{} && value >= 0) {
-			return value;
-		}
-	}
-	return std::nullopt;
-}
 
 /// @brief Builds a UV-sphere triangle mesh in object space for the sun.
 void makeSphere(float radius, std::uint32_t stacks, std::uint32_t slices,
@@ -121,13 +77,14 @@ void makeSphere(float radius, std::uint32_t stacks, std::uint32_t slices,
 	const auto grassTexture = root / grassTextureRelativePath;
 	const auto tilesPerSide = static_cast<int>(std::lround((groundHalfExtent * 2.0F) / groundTileSize));
 	const float halfTile = groundTileSize * 0.5F;
+	const vve::Vec3 minimum{-halfTile, -0.1F, -halfTile}; // One shared tile mesh in local coordinates.
+	const vve::Vec3 maximum{halfTile, 0.0F, halfTile};
 	for (int ix = 0; ix < tilesPerSide; ++ix) {
 		for (int iz = 0; iz < tilesPerSide; ++iz) {
 			const float centerX = -groundHalfExtent + halfTile + static_cast<float>(ix) * groundTileSize;
 			const float centerZ = -groundHalfExtent + halfTile + static_cast<float>(iz) * groundTileSize;
-			const vve::Vec3 minimum{centerX - halfTile, -0.1F, centerZ - halfTile};
-			const vve::Vec3 maximum{centerX + halfTile, 0.0F, centerZ + halfTile};
-			if (auto result = render.addTexturedCuboid(minimum, maximum, grassTexture); !result) {
+			const auto transform = vve::Transform{.translation = vve::Position{.value = vve::Vec3{centerX, 0, centerZ}}};
+			if (auto result = render.addTexturedCuboid(minimum, maximum, grassTexture, transform); !result) {
 				return std::unexpected(result.error());
 			}
 		}
@@ -184,7 +141,7 @@ int main(int argc, char **argv) {
 	}
 
 	auto render = engine.world().get<vve::RenderSystem>();
-	const auto root = assetRoot(argc > 0 ? argv[0] : nullptr);
+	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr);
 	const auto sunHandle = loadScene(render, root);
 	if (!sunHandle) {
 		std::cerr << "[game] scene load failed: error=" << vve::errorName(sunHandle.error()) << '\n';
@@ -221,7 +178,7 @@ int main(int argc, char **argv) {
 		ImGui::End();
 	});
 
-	const int maxFrames = frameLimit(argc, argv).value_or(0);
+	const int maxFrames = vve::example::frameLimit(argc, argv);
 	int frame{};
 	bool running = true;
 	auto lastTime = std::chrono::steady_clock::now();
@@ -234,12 +191,12 @@ int main(int argc, char **argv) {
 		// Steer with the standard controller but pin the eye to a fixed height so it stays on the plane.
 		const auto input = engine.world().get<vve::WindowSystem>().input();
 		cameraController.eye.value.y = eyeHeight;
-		const auto steered = cameraController.update(input);
+		const auto steered = cameraController.update(input, vve::DeltaTime{dt});
 		cameraController.eye.value.y = eyeHeight;
 		const auto eyePosition = cameraController.eye;
 		const auto camera = vve::Camera::lookAt(
 			eyePosition, vve::Position{.value = vve::math::add(eyePosition.value, steered.forward.value)});
-		render.setCamera(camera, vve::PixelExtent{.width = windowWidth, .height = windowHeight});
+		render.setCamera(camera);
 		// Keep the sun at a fixed far offset from the eye so it shows no parallax as the camera moves.
 		(void)render.setObjectTransform(*sunHandle, vve::Transform{.translation = vve::Position{
 			.value = vve::math::add(eyePosition.value, vve::math::scale(toSun, sunDistance))}});

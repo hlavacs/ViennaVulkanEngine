@@ -24,7 +24,7 @@ namespace vve::simple::detail {
 
 	/// @brief Inner (full-intensity) spot cone used when the caller only gives the outer cone.
 	[[nodiscard]] inline auto defaultInnerCone(SpotConeAngle outer) -> SpotConeAngle {
-		return SpotConeAngle{.radians = std::min(SpotLight{}.innerConeAngle.radians, outer.radians * static_cast<Scalar>(0.5))};
+		return SpotConeAngle{.radians = std::min(ForwardSpotLight{}.innerConeAngle.radians, outer.radians * static_cast<Scalar>(0.5))};
 	}
 
 	/// @brief Builds the backend model matrix from the public transform contract.
@@ -50,6 +50,7 @@ namespace vve::simple::detail {
 export namespace vve::simple {
 
 	/// @brief Non-owning read callbacks for imported asset scenes owned by the engine.
+	/// Geometry shares ownership; index spans borrow catalog storage until mutation or destruction. Callbacks must not mutate it.
 	struct ImportedAssetReadAccess {
 		std::function<std::expected<Vector<NodeHandle>, Error>(SceneHandle)> scene_nodes{};						///< Lists scene nodes.
 		std::function<std::expected<NodeHandle, Error>(SceneHandle)> scene_root_node{};							///< Returns the root node.
@@ -64,11 +65,8 @@ export namespace vve::simple {
 		std::function<std::expected<LightDescriptor, Error>(LightHandle)> light_data{};							///< Returns imported light data.
 		std::function<std::expected<Vector<CameraHandle>, Error>(SceneHandle)> scene_cameras{};				///< Lists scene cameras.
 		std::function<std::expected<CameraDescriptor, Error>(CameraHandle)> camera_data{};						///< Returns imported camera data.
-		std::function<std::expected<Vector<Vec3>, Error>(MeshHandle)> mesh_positions{};							///< Returns mesh positions.
-		std::function<std::expected<Vector<Vec3>, Error>(MeshHandle)> mesh_normals{};								///< Returns mesh normals.
-		std::function<std::expected<Vector<Vec2>, Error>(MeshHandle)> mesh_texcoords{};							///< Returns mesh texture coordinates.
-		std::function<std::expected<Vector<Vec4>, Error>(MeshHandle)> mesh_tangents{};							///< Returns mesh tangents with handedness.
-		std::function<std::expected<Vector<std::uint32_t>, Error>(MeshHandle)> mesh_indices{};					///< Returns mesh indices.
+		std::function<std::expected<std::shared_ptr<const std::vector<RenderVertex>>, Error>(MeshHandle)> mesh_geometry{}; ///< Shares immutable imported vertices.
+		std::function<std::expected<std::span<const std::uint32_t>, Error>(MeshHandle)> mesh_indices{};					///< Returns mesh indices.
 	};
 
 
@@ -76,7 +74,7 @@ export namespace vve::simple {
 	class RenderSystem {
 	public:
 		RenderSystem();
-		explicit RenderSystem(ImportedAssetReadAccess imported_assets);
+		explicit RenderSystem(ImportedAssetReadAccess imported_assets, const WindowSystem *windows = nullptr);
 		// renderer_ keeps pointers into scene_, so a copied or moved RenderSystem would render the old object's scene.
 		RenderSystem(const RenderSystem &) = delete;
 		RenderSystem(RenderSystem &&) = delete;
@@ -91,7 +89,10 @@ export namespace vve::simple {
 		[[nodiscard]] auto objectVisible(RenderObjectHandle handle) const												-> std::expected<bool, Error>;
 		[[nodiscard]] auto setObjectTransform(RenderObjectHandle handle, Transform transform)					-> std::expected<void, Error>;
 		[[nodiscard]] auto objectTransform(RenderObjectHandle handle) const											-> std::expected<Transform, Error>;
-		auto setCamera(Camera camera, PixelExtent extent)																	-> void;
+		auto setCamera(Camera camera) -> void;
+		[[nodiscard]] auto setCamera(WindowHandle window, Camera camera) -> std::expected<void, Error>;
+		[[nodiscard]] auto clearCamera(WindowHandle window) -> std::expected<void, Error>;
+		auto clearLights() -> void;
 		auto setDirectionalLight(Direction direction, LinearColor color, LightIntensity intensity, LinearColor ambient) -> void;
 		auto addDirectionalLight(Direction direction, LinearColor color, LightIntensity intensity, LinearColor ambient) -> void;
 		auto setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range)	-> void;
@@ -120,6 +121,8 @@ export namespace vve::simple {
 		auto loadScene(Scene scene)																									-> SceneHandle;
 
 		[[nodiscard]] auto sceneTextureCount() const -> std::size_t;
+		[[nodiscard]] auto textureDecodeCount() const -> std::size_t;
+		[[nodiscard]] auto sceneTexturePixelBytes() const -> std::size_t;
 		[[nodiscard]] auto sceneTextureIsLinear(std::size_t index) const -> std::expected<bool, Error>;
 		[[nodiscard]] auto gpuTextureCount() const -> std::size_t;
 		[[nodiscard]] auto gpuMeshCount() const -> std::size_t;
@@ -129,11 +132,11 @@ export namespace vve::simple {
 		[[nodiscard]] auto renderMaterials() const -> const Vector<RenderMaterial> &;
 
 		auto waitIdle() -> void;
-		/// @brief Stores the borrowed GUI system for later forwarding to renderer backends.
-		auto setGuiSystem(void *gui)																								-> void;
+		auto setGuiPrepareSink(std::function<bool()> sink)														-> void;
 		auto setGuiRecordSink(std::function<void(VkCommandBuffer)> sink)												-> void;
 		auto setPostProcessSetup(std::function<void(vvppl::PostProcessing &)> setup)											-> void;
-		[[nodiscard]] auto initialize(SDL_Window *window, RendererId id = {})												-> std::expected<void, Error>;
+		[[nodiscard]] static bool supportsRenderer(const RendererId &id);
+		[[nodiscard]] auto initialize(WindowSystem &windows)												-> std::expected<void, Error>;
 		[[nodiscard]] auto makeGuiInitInfo() const																			-> std::optional<ImGui_ImplVulkan_InitInfo>;
 		[[nodiscard]] auto forward()																								-> ForwardRenderer &;
 		[[nodiscard]] auto forward() const																						-> const ForwardRenderer &;
@@ -153,17 +156,25 @@ export namespace vve::simple {
 		[[nodiscard]] auto shadowDepthSamples() const																	-> std::span<const RenderShadowDepthSample>;
 		auto setGpuDebugReadback(bool enabled)																			-> void;
 		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path)								-> std::expected<void, Error>;
+		[[nodiscard]] auto captureFrameToPng(WindowHandle window, const std::filesystem::path &output_path) -> std::expected<void, Error>;
 		[[nodiscard]] auto hasSceneCamera() const																					-> bool;
 		[[nodiscard]] auto hasSceneDirectionalLight() const																	-> bool;
 		[[nodiscard]] auto hasScenePointLight() const																			-> bool;
 		[[nodiscard]] auto hasSceneSpotLight() const																				-> bool;
-		[[nodiscard]] auto renderFrame(const WindowFrameData &windows)														-> std::expected<void, Error>;
 		[[nodiscard]] auto renderFrame(WindowSystem &windows)																	-> std::expected<void, Error>;
 		[[nodiscard]] auto renderedFrameCount() const																			-> std::uint64_t;
 		[[nodiscard]] auto renderingFramesPerSecond() const																-> double;
 		[[nodiscard]] auto lastRenderedWindowCount() const																		-> std::size_t;
 
 	private:
+		/// @brief Primitive geometry families with independently cached local extents.
+		enum class PrimitiveShape {
+			plane, ///< Flat XZ quad.
+			cuboid ///< Six textured faces.
+		};
+		[[nodiscard]] auto acquirePrimitiveMaterial(LinearColor color, RenderTextureIndex texture = kNoTexture) -> RenderMaterialHandle;
+		[[nodiscard]] auto acquirePrimitiveMesh(PrimitiveShape shape, Vec3 minimum, Vec3 maximum) -> RenderMeshHandle;
+		[[nodiscard]] auto updateCamera(WindowHandle window, std::optional<Camera> camera) -> std::expected<void, Error>;
 		[[nodiscard]] auto registerRenderObject(RenderInstanceHandle instance)								-> RenderObjectHandle;
 		auto addImportedLight(const LightDescriptor &light, std::uint64_t owner)								-> void;
 		auto removeImportedLights(std::uint64_t owner)																-> void;
@@ -176,17 +187,19 @@ export namespace vve::simple {
 			-> Vector<std::tuple<NodeHandle, Transform, Mat4>>;
 		[[nodiscard]] auto importedSceneMeshInstances(SceneHandle scene) const
 			-> Vector<std::tuple<NodeHandle, MeshHandle, MaterialHandle, Transform, Mat4>>;
-		[[nodiscard]] auto importedMeshGeometry(MeshHandle mesh) const
-			-> std::optional<std::tuple<Vector<Vec3>, Vector<Vec3>, Vector<Vec2>, Vector<Vec4>, Vector<std::uint32_t>>>;
 		[[nodiscard]] auto acquireRenderMesh(MeshHandle imported_mesh)									-> std::optional<RenderMeshHandle>;
 		[[nodiscard]] auto acquireRenderMaterial(MaterialHandle imported_material)						-> RenderMaterialHandle;
 
 		RenderScene scene_{};															///< Active CPU render scene.
 		ForwardRenderer renderer_{};													///< Forward renderer backend.
 		ImportedAssetReadAccess imported_assets_{};								///< Borrowed asset-scene queries.
-		void *guiSystem_{nullptr};													///< Non-owning, type-erased GUI system pointer for later renderer wiring.
+		const WindowSystem *window_system_{nullptr};							///< Borrowed window owner for camera assignments before lazy renderer initialization.
+		std::map<WindowHandle, Camera> pending_cameras_{};					///< Camera overrides waiting to move into their window targets.
 		std::unordered_map<MeshHandle, RenderMeshHandle, HandleHash<MeshHandle>> imported_render_meshes_{};	///< Imported mesh cache.
 		std::unordered_map<MaterialHandle, RenderMaterialHandle, HandleHash<MaterialHandle>> imported_render_materials_{};	///< Imported material cache.
+		std::map<std::pair<std::array<Scalar, 3>, RenderTextureIndex>, RenderMaterialHandle> primitive_materials_{}; ///< Materials keyed by colour and texture slot.
+		std::map<std::pair<PrimitiveShape, std::array<Scalar, 6>>, RenderMeshHandle> primitive_meshes_{}; ///< Meshes keyed by shape and local min/max extents.
+		RenderMaterialHandle default_material_{}; ///< Shared fallback for imported meshes without a material.
 		std::unordered_map<RenderObjectHandle, RenderInstanceHandle, HandleHash<RenderObjectHandle>>
 			render_objects_{};														///< Public render-object to internal instance map.
 		std::unordered_map<RenderObjectHandle, std::pair<RenderSceneInstanceHandle, NodeHandle>, HandleHash<RenderObjectHandle>>
@@ -194,14 +207,11 @@ export namespace vve::simple {
 		std::set<SceneHandle> scenes_{};											///< Backend light scenes loaded with loadScene(Scene).
 		std::map<RenderSceneInstanceHandle, Vector<RenderObjectHandle>> scene_instances_{};	///< Render objects created per scene instance.
 		std::map<RenderSceneInstanceHandle, SceneHandle> scene_instance_sources_{};	///< Asset scene used to create each scene instance.
-		std::optional<SceneHandle> active_scene_{};								///< Scene currently mirrored into the backend.
-		std::uint64_t next_render_object_id_{1};								///< Next public render-object id.
-		std::uint64_t next_scene_instance_id_{1};								///< Next public scene-instance id.
-		std::uint64_t rendered_frames_{0};											///< Number of accepted frame calls.
-		std::uint64_t render_fps_frames_{0};										///< Frames accumulated for the render-FPS sample.
+		std::uint64_t rendered_frames_{0};											///< Number of presented frames.
+		std::uint64_t render_fps_frames_{0};										///< Presented frames accumulated for the render-FPS sample.
 		std::chrono::steady_clock::time_point render_fps_start_{};		///< Start of the current render-FPS sample window.
 		double render_fps_{};															///< Last measured render-frame throughput.
-		std::size_t last_window_count_{0};											///< Last non-closed window count.
+		std::size_t last_window_count_{0};											///< Number of windows presented in the last frame call.
 		bool initialized_{false};														///< True after the concrete renderer is initialized.
 	};
 
@@ -211,13 +221,13 @@ namespace vve::simple {
 
 	/// @brief Stores read access to imported asset-scene descriptors owned by the engine.
 	inline RenderSystem::RenderSystem() {
-		renderer_.bindRenderScene(scene_.meshes(), scene_.materials(), scene_.instances(), scene_.textures());
+		renderer_.bindRenderScene(scene_);
 	}
 
 	/// @brief Stores read access to imported asset-scene descriptors owned by the engine.
-	inline RenderSystem::RenderSystem(ImportedAssetReadAccess imported_assets)
-		: imported_assets_{std::move(imported_assets)} {
-		renderer_.bindRenderScene(scene_.meshes(), scene_.materials(), scene_.instances(), scene_.textures());
+	inline RenderSystem::RenderSystem(ImportedAssetReadAccess imported_assets, const WindowSystem *windows)
+		: imported_assets_{std::move(imported_assets)}, window_system_{windows} {
+		renderer_.bindRenderScene(scene_);
 	}
 
 	/// @brief Returns the forward renderer backend.
@@ -226,11 +236,10 @@ namespace vve::simple {
 	/// @brief Returns the forward renderer backend.
 	inline auto RenderSystem::forward() const																	-> const ForwardRenderer &{ return renderer_; }
 
-	/// @brief Mints a public render-object handle for one internal scene instance.
+	/// @brief Mints a process-wide unique public render-object handle for one internal scene instance.
 	inline auto RenderSystem::registerRenderObject(RenderInstanceHandle instance)
 		-> RenderObjectHandle{
-		const auto handle = RenderObjectHandle{RenderObjectHandle::counter_bit |
-														  (next_render_object_id_++ & RenderObjectHandle::id_mask)};
+		const auto handle = makeCounterHandle<RenderObjectHandle>();
 		render_objects_.emplace(handle, instance);
 		renderer_.markSceneResourcesDirty();
 		return handle;
@@ -249,8 +258,9 @@ namespace vve::simple {
 		render_objects_.erase(handle);
 	}
 
-	inline auto RenderSystem::setGuiSystem(void *gui)																-> void{
-		guiSystem_ = gui;
+	/// @brief Forwards GUI preparation so the renderer can skip empty GUI passes.
+	inline auto RenderSystem::setGuiPrepareSink(std::function<bool()> sink) -> void {
+		renderer_.setGuiPrepareSink(std::move(sink));
 	}
 
 	/// @brief Forwards the GUI recorder into the active forward renderer.
@@ -259,17 +269,42 @@ namespace vve::simple {
 	}
 
 	/// @brief Forwards the post processing setup into the active forward renderer.
+	/// @note The callback runs once per rendered window when its target is created. The PostProcessing and settings
+	/// references stay valid until that window closes or the engine shuts down, including across resizes, so they may be kept
+	/// and changed at any time.
 	inline auto RenderSystem::setPostProcessSetup(std::function<void(vvppl::PostProcessing &)> setup) -> void {
 		renderer_.setPostProcessSetup(std::move(setup));
 	}
 
-	inline auto RenderSystem::initialize(SDL_Window *window, RendererId id)									-> std::expected<void, Error>{
+	/// @brief Accepts forward rendering by default, or the explicit opt-out for a window.
+	inline bool RenderSystem::supportsRenderer(const RendererId &id) {
+		return id.value.empty() || id.value == "forward" || id.value == "none";
+	}
+
+	/// @brief Creates one target per forward window in window order; an empty target list is a valid opt-out.
+	inline auto RenderSystem::initialize(WindowSystem &windows) -> std::expected<void, Error> {
 		if (initialized_) { return {}; }
-		if (window == nullptr) { return std::unexpected(Error::invalid_argument); }
-		if (id.value != "forward" && !id.value.empty()) { return std::unexpected(Error::invalid_argument); }
-		renderer_.setGuiSystem(guiSystem_);
-		const VkResult result = renderer_.init(window);
-		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+		window_system_ = &windows;
+		const auto entries = windows.windows();
+		// Validate all renderer ids before creating any GPU resources.
+		for (const auto &entry : entries) {
+			if (!supportsRenderer(entry.get().rendererId())) { return std::unexpected(Error::invalid_argument); }
+		}
+		for (const auto &entry : entries) {
+			const auto &window = entry.get();
+			if (window.rendererId().value == "none" || window.info().should_close) { continue; }
+			const VkResult result = renderer_.initialized()
+				? renderer_.addTarget(window.native(), window.info().handle) : renderer_.init(window.native(), window.info().handle);
+			if (result != VK_SUCCESS) {
+				const auto error = renderer_.textureUploadError().value_or(Error::platform_error);
+				renderer_.shutdown();
+				return std::unexpected(error);
+			}
+			if (const auto camera = pending_cameras_.find(window.info().handle); camera != pending_cameras_.end()) {
+				renderer_.targets.back().camera = camera->second;
+			}
+		}
+		pending_cameras_.clear();
 		initialized_ = true;
 		return {};
 	}
@@ -277,15 +312,6 @@ namespace vve::simple {
 	inline auto RenderSystem::makeGuiInitInfo() const													-> std::optional<ImGui_ImplVulkan_InitInfo>{
 		if (!initialized_) { return std::nullopt; }
 		auto info = renderer_.makeImguiInitInfo();
-		info.RenderPass = VK_NULL_HANDLE;
-		info.UseDynamicRendering = true;
-		info.PipelineRenderingCreateInfo = VkPipelineRenderingCreateInfo{
-			.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-			.colorAttachmentCount = 1U,
-			.pColorAttachmentFormats = &renderer_.swapchain.imageFormat,
-			.depthAttachmentFormat = VK_FORMAT_UNDEFINED,
-			// the GUI is drawn in a own pass after post processing, which does not have any depthAttachment
-		};
 		if (info.Device == VK_NULL_HANDLE || info.DescriptorPool == VK_NULL_HANDLE) {
 			return std::nullopt;
 		}
@@ -295,7 +321,7 @@ namespace vve::simple {
 	/// @brief Waits for renderer-owned Vulkan work before dependent resources are destroyed.
 	inline auto RenderSystem::waitIdle() -> void {
 		if (!initialized_) { return; }
-		if (renderer_.device.device != VK_NULL_HANDLE) { (void)vkDeviceWaitIdle(renderer_.device.device); }
+		(void)renderer_.waitIdle();
 	}
 
 	inline auto RenderSystem::shutdown()																				-> void{
@@ -310,6 +336,15 @@ namespace vve::simple {
 		return initialized_;
 	}
 
+	/// @brief Returns lifetime decode attempts, including failures; clearScene() only resets the failure cache.
+	inline std::size_t RenderSystem::textureDecodeCount() const { return scene_.textureDecodeCount(); }
+	/// @brief Counts decoded CPU pixel bytes still retained by live texture slots.
+	inline std::size_t RenderSystem::sceneTexturePixelBytes() const {
+		std::size_t bytes{};
+		// Released and unused slots contribute no decoded storage.
+		for (const auto &texture : scene_.textures()) { bytes += texture.rgba8.size(); }
+		return bytes;
+	}
 	inline std::size_t RenderSystem::sceneTextureCount() const { return scene_.textureCount(); }
 	inline auto RenderSystem::sceneTextureIsLinear(std::size_t index) const -> std::expected<bool, Error> {
 		const auto *texture = scene_.findTexture(static_cast<RenderTextureIndex>(index));
@@ -324,13 +359,13 @@ namespace vve::simple {
 	inline std::size_t RenderSystem::sceneMeshCount() const { return scene_.meshCount(); }
 	inline std::size_t RenderSystem::sceneMaterialCount() const { return scene_.materialCount(); }
 	/// @brief Returns the number of active directional lights.
-	inline std::size_t RenderSystem::sceneDirectionalLightCount() const { return scene_.directionalLights().size(); }
+	inline std::size_t RenderSystem::sceneDirectionalLightCount() const { return renderer_.scene.directionalLights.size(); }
 	/// @brief Returns the number of active point lights.
-	inline std::size_t RenderSystem::scenePointLightCount() const { return scene_.pointLights().size(); }
+	inline std::size_t RenderSystem::scenePointLightCount() const { return renderer_.scene.pointLights.size(); }
 	/// @brief Returns the number of active spot lights.
-	inline std::size_t RenderSystem::sceneSpotLightCount() const { return scene_.spotLights().size(); }
+	inline std::size_t RenderSystem::sceneSpotLightCount() const { return renderer_.scene.spotLights.size(); }
 	/// @brief Returns the number of imported cameras applied to the render scene.
-	inline std::size_t RenderSystem::sceneCameraCount() const { return scene_.importedCameras().size(); }
+	inline std::size_t RenderSystem::sceneCameraCount() const { return scene_.importedCameraCount(); }
 	inline std::size_t RenderSystem::sceneInstanceCount() const { return scene_.instanceCount(); }
 	inline std::size_t RenderSystem::sceneVertexCount() const { return scene_.vertexCount(); }
 	inline std::size_t RenderSystem::sceneIndexCount() const { return scene_.indexCount(); }
@@ -346,24 +381,51 @@ namespace vve::simple {
 	inline auto RenderSystem::captureFrameToPng(const std::filesystem::path &output_path) -> std::expected<void, Error> {
 		if (!initialized_) { return std::unexpected(Error::not_initialized); }
 		if (output_path.empty()) { return std::unexpected(Error::invalid_argument); }
-		return renderer_.captureFrameToPng(output_path);
+		if (renderer_.targets.empty()) { return std::unexpected(Error::missing_object); }
+		return renderer_.captureFrameToPng(renderer_.targets.front(), output_path);
 	}
-	inline bool RenderSystem::hasSceneCamera() const { return scene_.camera().has_value(); }
-	inline bool RenderSystem::hasSceneDirectionalLight() const { return scene_.directionalLight().has_value(); }
-	inline bool RenderSystem::hasScenePointLight() const { return scene_.pointLight().has_value(); }
-	inline bool RenderSystem::hasSceneSpotLight() const { return scene_.spotLight().has_value(); }
+	/// @brief Captures a specific rendered window; unknown, opted-out and closed windows have no target.
+	inline auto RenderSystem::captureFrameToPng(WindowHandle window, const std::filesystem::path &output_path) -> std::expected<void, Error> {
+		if (!initialized_) { return std::unexpected(Error::not_initialized); }
+		if (output_path.empty()) { return std::unexpected(Error::invalid_argument); }
+		const auto target = std::ranges::find(renderer_.targets, window, &WindowTarget::handle);
+		if (target == renderer_.targets.end()) { return std::unexpected(Error::invalid_handle); }
+		return renderer_.captureFrameToPng(*target, output_path);
+	}
+	inline bool RenderSystem::hasSceneCamera() const { return scene_.hasCamera(); }
+	/// @brief Reports whether the renderer stores any directional light.
+	inline bool RenderSystem::hasSceneDirectionalLight() const { return !renderer_.scene.directionalLights.empty(); }
+	/// @brief Reports whether the renderer stores any point light.
+	inline bool RenderSystem::hasScenePointLight() const { return !renderer_.scene.pointLights.empty(); }
+	/// @brief Reports whether the renderer stores any spot light.
+	inline bool RenderSystem::hasSceneSpotLight() const { return !renderer_.scene.spotLights.empty(); }
 
-	/// @brief Records a frame without creating GPU objects.
-	inline auto RenderSystem::renderFrame(const WindowFrameData &windows)								-> std::expected<void, Error>{
-		last_window_count_ = std::ranges::count_if(windows.windows, [](const WindowInfo &window) {
-			return !window.should_close;
-		});
-		if (initialized_) {
-			renderer_.renderFrame(nullptr);
-			++rendered_frames_;
-		} else {
-			++rendered_frames_;
+	/// @brief Requires an initialized renderer and counts only presented frames; skipped frames remain successful.
+	inline auto RenderSystem::renderFrame(WindowSystem &windows)											-> std::expected<void, Error>{
+		last_window_count_ = 0U;
+		if (!initialized_) { return std::unexpected(Error::not_initialized); }
+		// Retire closed targets only after their submitted work and presentation have finished.
+		for (auto target = renderer_.targets.begin(); target != renderer_.targets.end();) {
+			const auto *window = windows.findWindow(target->handle);
+			if (!window || window->info().should_close) {
+				const VkResult result = renderer_.waitIdle();
+				if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+				target->cleanup();
+				target = renderer_.targets.erase(target);
+				continue;
+			}
+			// Each target uploads its camera uniforms and reuses the ordered shared shadow arrays.
+			// The renderer checks the live drawable extent and skips zero-size windows.
+			if (!window->info().minimized) {
+				const bool presented = renderer_.renderFrame(*target);
+				scene_.releaseUploadedPixels([this](std::size_t index) { return renderer_.uploadedTextureGeneration(index); });
+				if (const auto error = renderer_.textureUploadError()) { return std::unexpected(*error); }
+				if (presented) { ++last_window_count_; }
+			}
+			++target;
 		}
+		if (last_window_count_ == 0U) { return {}; }
+		++rendered_frames_;
 		const auto now = std::chrono::steady_clock::now();
 		if (render_fps_start_ == std::chrono::steady_clock::time_point{}) { render_fps_start_ = now; }
 		++render_fps_frames_;
@@ -374,11 +436,6 @@ namespace vve::simple {
 			render_fps_start_ = now;
 		}
 		return {};
-	}
-
-	/// @brief Records a frame using the current window snapshot.
-	inline auto RenderSystem::renderFrame(WindowSystem &windows)											-> std::expected<void, Error>{
-		return renderFrame(WindowFrameData{.windows = windows.snapshot()});
 	}
 
 	inline std::uint64_t RenderSystem::renderedFrameCount() const { return rendered_frames_; }

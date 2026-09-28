@@ -41,7 +41,7 @@ export namespace vve::simple {
 			if (!bytesPerPixel || owningDevice == VK_NULL_HANDLE || graphicsQueue == VK_NULL_HANDLE || pool == VK_NULL_HANDLE || layerExtent.width == 0U || layerExtent.height == 0U) {
 				return VK_ERROR_INITIALIZATION_FAILED;
 			}
-			const VkResult result = buffer.create(allocator, static_cast<VkDeviceSize>(layerExtent.width) * layerExtent.height * *bytesPerPixel, VK_BUFFER_USAGE_TRANSFER_DST_BIT, true);
+			const VkResult result = buffer.create(allocator, static_cast<VkDeviceSize>(layerExtent.width) * layerExtent.height * *bytesPerPixel, VK_BUFFER_USAGE_TRANSFER_DST_BIT, BufferMemory::readback);
 			if (result != VK_SUCCESS) { return result; }
 			device = owningDevice;
 			queue = graphicsQueue;

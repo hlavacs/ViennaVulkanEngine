@@ -31,7 +31,7 @@ import std;
 	* - VulkanDescriptorSetLayout owns only VkDescriptorSetLayout creation and teardown for set 0.
 	* - VulkanVertexInputDescription stores the fixed RenderVertex binding and attribute layout for the forward pipeline.
 	* - VulkanPipelineLayout owns only VkPipelineLayout creation and teardown for one descriptor set and model push constants.
-	* - VulkanShaderModule owns only VkShaderModule creation from SPIR-V bytes and teardown.
+	* - VulkanShaderModule owns only VkShaderModule creation from embedded SPIR-V words and teardown.
 	* - VulkanGraphicsPipeline owns one dynamic-rendering VkPipeline: forward color+depth or depth-only shadow.
 	*/
 export namespace vve::simple {
@@ -77,8 +77,9 @@ export namespace vve::simple {
 		{.binding = shaderBinding::spotShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::dirShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::pointShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
-		{.binding = shaderBinding::materials, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::materials, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 	}};
+	static_assert(kDescriptorSetBindings[shaderBinding::materials].stageFlags == VK_SHADER_STAGE_FRAGMENT_BIT); ///< Only fragments read the material buffer.
 
 	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms, shadow maps, and one object texture; no pipeline layout is created here.
 	struct VulkanDescriptorSetLayout {
@@ -175,39 +176,26 @@ export namespace vve::simple {
 
 	/// @brief Minimal Vulkan shader-module owner; no layouts, pipelines, commands, or sync are created here.
 	struct VulkanShaderModule {
-		VulkanOwnedHandle<vk::raii::ShaderModule, VkShaderModule> shaderModule{}; ///< Owned shader module created from a SPIR-V binary.
+		VulkanOwnedHandle<vk::raii::ShaderModule, VkShaderModule> shaderModule{}; ///< Owned shader module created from embedded SPIR-V words.
 
 		VulkanShaderModule() = default;
 		VulkanShaderModule(const VulkanShaderModule &) = delete;
 		VulkanShaderModule &operator=(const VulkanShaderModule &) = delete;
 
 		/**
-			* @brief Loads a SPIR-V binary and creates a Vulkan shader module.
+			* @brief Creates a Vulkan shader module from borrowed, aligned SPIR-V words.
 			*
 			* @param owningDevice Logical device that owns the created shader module.
-			* @param spirvPath Path to a binary SPIR-V file whose size is a multiple of 32-bit words.
+			* @param code SPIR-V words that remain valid for this call; Vulkan copies them during creation.
 			* @return VK_SUCCESS when the shader module is available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::string_view spirvPath) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::span<const std::uint32_t> code) {
 			cleanup();
-			if (owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
-
-			auto file = std::ifstream{std::string{spirvPath}, std::ios::binary | std::ios::ate};
-			if (!file.is_open()) { return VK_ERROR_INITIALIZATION_FAILED; }
-
-			const auto fileSize = static_cast<std::streamoff>(file.tellg());
-			if (fileSize <= 0) { return VK_ERROR_INITIALIZATION_FAILED; }
-
-			const auto byteCount = static_cast<std::size_t>(fileSize);
-			if (byteCount % sizeof(std::uint32_t) != 0U) { return VK_ERROR_INITIALIZATION_FAILED; }
-			auto code = std::vector<std::uint32_t>(byteCount / sizeof(std::uint32_t)); // Stores aligned 32-bit SPIR-V words.
-			file.seekg(0, std::ios::beg);
-			file.read(reinterpret_cast<char *>(code.data()), static_cast<std::streamsize>(byteCount));
-			if (!file) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (owningDevice == VK_NULL_HANDLE || code.empty()) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkShaderModuleCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-				.codeSize = byteCount,
+				.codeSize = code.size_bytes(),
 				.pCode = code.data(),
 			};
 
@@ -236,7 +224,7 @@ export namespace vve::simple {
 		VulkanGraphicsPipeline &operator=(const VulkanGraphicsPipeline &) = delete;
 
 		/**
-			* @brief Creates the fixed-function pipeline for the given attachments.
+			* @brief Creates the pipeline for the given attachments with dynamic viewport and scissor.
 			*
 			* @param owningDevice Logical device that owns the created pipeline.
 			* @param pipelineLayout Borrowed pipeline layout used by the shader stages.
@@ -244,13 +232,12 @@ export namespace vve::simple {
 			* @param vertexEntry Vertex entry point name.
 			* @param fragmentModule Borrowed fragment shader module (entry fragmentMain), or VK_NULL_HANDLE for a depth-only shadow pipeline.
 			* @param vertexInput Borrowed vertex binding and attribute description used by the pipeline.
-			* @param extent Attachment extent used for the static viewport and scissor.
 			* @param colorAttachmentFormat Color format, VK_FORMAT_UNDEFINED for depth-only pipelines.
 			* @param depthAttachmentFormat Depth format of the depth attachment.
 			* @return VK_SUCCESS when the graphics pipeline is available, otherwise a Vulkan error code.
 			*/
 		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkPipelineLayout pipelineLayout, VkShaderModule vertexModule, const char *vertexEntry,
-											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkExtent2D extent, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat) {
+											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat) {
 			cleanup();
 			const bool depthOnly{fragmentModule == VK_NULL_HANDLE};
 			if (owningDevice == VK_NULL_HANDLE || pipelineLayout == VK_NULL_HANDLE || vertexModule == VK_NULL_HANDLE || depthAttachmentFormat == VK_FORMAT_UNDEFINED ||
@@ -272,9 +259,14 @@ export namespace vve::simple {
 				.pVertexAttributeDescriptions = attributes.data(),
 			};
 			const VkPipelineInputAssemblyStateCreateInfo inputAssembly{.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
-			const VkViewport viewport{.x = 0.0F, .y = 0.0F, .width = static_cast<float>(extent.width), .height = static_cast<float>(extent.height), .minDepth = 0.0F, .maxDepth = 1.0F};
-			const VkRect2D scissor{.offset = {.x = 0, .y = 0}, .extent = extent};
-			const VkPipelineViewportStateCreateInfo viewportState{.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, .viewportCount = 1U, .pViewports = &viewport, .scissorCount = 1U, .pScissors = &scissor};
+			// Attachment sizes are recorded per pass, so resizing keeps both pipelines alive.
+			const VkPipelineViewportStateCreateInfo viewportState{.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, .viewportCount = 1U, .pViewports = nullptr, .scissorCount = 1U, .pScissors = nullptr};
+			constexpr std::array dynamicStates{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
+			const VkPipelineDynamicStateCreateInfo dynamicState{
+				.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+				.dynamicStateCount = static_cast<std::uint32_t>(dynamicStates.size()),
+				.pDynamicStates = dynamicStates.data(),
+			};
 			const VkPipelineRasterizationStateCreateInfo rasterizer{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 				.polygonMode = VK_POLYGON_MODE_FILL,
@@ -319,6 +311,7 @@ export namespace vve::simple {
 				.pMultisampleState = &multisampling,
 				.pDepthStencilState = &depthStencil,
 				.pColorBlendState = &colorBlending,
+				.pDynamicState = &dynamicState,
 				.layout = pipelineLayout,
 			};
 			VkPipeline rawPipeline{VK_NULL_HANDLE};

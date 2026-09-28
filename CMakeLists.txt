@@ -12,8 +12,8 @@ elseif(CMAKE_VERSION VERSION_LESS "4.4")
 else()
    set(VVE_CMAKE_IMPORT_STD_UUID "f35a9ac6-8463-4d38-8eec-5d6008153e7d")
 endif()
-set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "${VVE_CMAKE_IMPORT_STD_UUID}" CACHE STRING "CMake experimental import std gate" FORCE)
-set(CMAKE_CXX_MODULE_STD ON CACHE BOOL "Enable C++ standard library module support" FORCE)
+set(CMAKE_EXPERIMENTAL_CXX_IMPORT_STD "${VVE_CMAKE_IMPORT_STD_UUID}")
+set(CMAKE_CXX_MODULE_STD ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 if(NOT DEFINED VVE_VCPKG_TRIPLET OR VVE_VCPKG_TRIPLET STREQUAL "")
@@ -67,11 +67,14 @@ add_compile_options(
 
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
    add_compile_options(-Wno-reserved-module-identifier)
-   # clang 22 + libc++ `import std`: the implicitly declared aligned operator new(size_t, align_val_t) does not
-   # always merge with the one the std module exports, so std::vector growth becomes "ambiguous" (or crashes
-   # codegen) in units that also see <new> through an imported module's global module fragment. Nothing here is
-   # over-aligned, so aligned allocation is switched off for the whole project, std module included.
-   string(APPEND CMAKE_CXX_FLAGS " -fno-aligned-allocation")
+endif()
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang" AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 22
+   AND NOT CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
+   # Clang >= 22 with libc++ `import std` can fail to merge aligned operator new declarations.
+   # Keep the workaround in CMAKE_CXX_FLAGS so the synthesized std module also gets it,
+   # and reject over-aligned allocations that would otherwise receive insufficient alignment.
+   string(APPEND CMAKE_CXX_FLAGS " -fno-aligned-allocation -Werror=over-aligned")
 endif()
 
 find_package(Doxygen QUIET)
@@ -120,6 +123,9 @@ if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "")
       set(Vulkan_LIBRARY "${VVE_VULKAN_SDK_ROOT}/lib/libvulkan.dylib" CACHE FILEPATH "Vulkan SDK loader library" FORCE)
    elseif(UNIX AND EXISTS "${VVE_VULKAN_SDK_ROOT}/lib/libvulkan.so")
       set(Vulkan_LIBRARY "${VVE_VULKAN_SDK_ROOT}/lib/libvulkan.so" CACHE FILEPATH "Vulkan SDK loader library" FORCE)
+   elseif(UNIX AND EXISTS "${VVE_VULKAN_SDK_ROOT}/lib/VulkanLoader/lib/libvulkan.so")
+      # Some Linux SDK layouts keep the loader in its own package directory.
+      set(Vulkan_LIBRARY "${VVE_VULKAN_SDK_ROOT}/lib/VulkanLoader/lib/libvulkan.so" CACHE FILEPATH "Vulkan SDK loader library" FORCE)
    endif()
 endif()
 
@@ -173,12 +179,10 @@ find_package(Vulkan REQUIRED)
 # Vienna Vulkan Post Processing Library
 include(FetchContent)
 FetchContent_Declare(viennavulkanpostprocessinglibrary
-                     GIT_REPOSITORY https://github.com/orcunilker/ViennaVulkanPostProcessingLibrary.git
-                     GIT_TAG v1.0)
+                     URL https://github.com/orcunilker/ViennaVulkanPostProcessingLibrary/archive/e69f3e56beca935ceb257cce6005f6e39847bcb4.tar.gz
+                     URL_HASH SHA256=c50b17fdd502178dc1374a4f7763243545c72d14b443456751f6c4d3d750d44f
+                     DOWNLOAD_EXTRACT_TIMESTAMP TRUE)
 FetchContent_MakeAvailable(viennavulkanpostprocessinglibrary)
-if(APPLE)
-   include(cmake/PatchVvpplShaders.cmake)
-endif()
 set_target_properties(vvppl PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 find_package(slang CONFIG QUIET)
@@ -398,9 +402,21 @@ function(vve_set_output_dirs target_name)
             INSTALL_RPATH "${vve_executable_rpath}"
          )
       elseif(UNIX)
+         set(vve_executable_rpath "$ORIGIN/../lib")
+         if(Vulkan_LIBRARY)
+            get_filename_component(vve_vulkan_library_dir "${Vulkan_LIBRARY}" DIRECTORY)
+            set(vve_system_library_dirs
+               ${CMAKE_CXX_IMPLICIT_LINK_DIRECTORIES} ${CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES}
+               /usr/lib /usr/lib64 /lib /lib64 "/usr/lib/${CMAKE_LIBRARY_ARCHITECTURE}"
+            )
+            # Keep the selected SDK loader discoverable without adding system paths.
+            if(NOT vve_vulkan_library_dir IN_LIST vve_system_library_dirs)
+               list(APPEND vve_executable_rpath "${vve_vulkan_library_dir}")
+            endif()
+         endif()
          set_target_properties("${target_name}" PROPERTIES
             BUILD_WITH_INSTALL_RPATH TRUE
-            INSTALL_RPATH "$ORIGIN/../lib"
+            INSTALL_RPATH "${vve_executable_rpath}"
          )
       endif()
       vve_mirror_target_file("${target_name}" "${VVE_PROJECT_RUNTIME_OUTPUT_DIR}")
@@ -456,9 +472,6 @@ endif()
 
 if(BUILD_TESTING AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/tests/CMakeLists.txt")
    add_subdirectory(tests)
-   if(PROJECT_IS_TOP_LEVEL)
-      file(WRITE "${CMAKE_BINARY_DIR}/CTestTestfile.cmake" "subdirs(\"tests\")\n")
-   endif()
 endif()
 
 if(DOXYGEN_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/docs/Doxyfile.in")

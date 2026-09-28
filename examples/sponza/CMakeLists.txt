@@ -4,6 +4,7 @@ add_executable(sponza
 
 target_link_libraries(sponza PRIVATE
     ViennaVulkanEngine::ViennaVulkanEngine
+    vve_example_support
 )
 
 add_dependencies(sponza

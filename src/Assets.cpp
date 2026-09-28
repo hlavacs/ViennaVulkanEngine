@@ -3,16 +3,6 @@ import :Assets;
 
 namespace vve {
 
-	namespace {
-		/// @brief Converts implementation-owned vectors into facade vectors while preserving errors.
-		template <typename T>
-		[[nodiscard]] std::expected<Vector<T>, Error>
-		facadeVector(std::expected<typename Vector<T>::implementation_type, Error> values) {
-			if (!values) { return std::unexpected(values.error()); }
-			return Vector<T>{std::move(*values)};
-		}
-	} // namespace
-
 	/// @brief Binds the facade wrapper to the implementation object owned by the engine.
 	AssetSystem::AssetSystem(Impl &implementation) noexcept : impl_{implementation} {}
 
@@ -49,7 +39,7 @@ namespace vve {
 		return impl_.sceneMaterialCount(scene);
 	}
 
-	/// @brief Returns the number of textures stored in a scene.
+	/// @brief Returns the number of distinct texture source paths referenced by a scene's materials.
 	auto AssetSystem::sceneTextureCount(SceneHandle scene) const -> std::expected<std::size_t, Error> {
 		return impl_.sceneTextureCount(scene);
 	}
@@ -71,32 +61,27 @@ namespace vve {
 
 	/// @brief Returns all node handles stored in a scene.
 	auto AssetSystem::sceneNodes(SceneHandle scene) const -> std::expected<Vector<NodeHandle>, Error> {
-		return facadeVector<NodeHandle>(impl_.sceneNodes(scene));
+		return impl_.sceneNodes(scene);
 	}
 
 	/// @brief Returns all mesh handles stored in a scene.
 	auto AssetSystem::sceneMeshes(SceneHandle scene) const -> std::expected<Vector<MeshHandle>, Error> {
-		return facadeVector<MeshHandle>(impl_.sceneMeshes(scene));
+		return impl_.sceneMeshes(scene);
 	}
 
 	/// @brief Returns all material handles stored in a scene.
 	auto AssetSystem::sceneMaterials(SceneHandle scene) const -> std::expected<Vector<MaterialHandle>, Error> {
-		return facadeVector<MaterialHandle>(impl_.sceneMaterials(scene));
-	}
-
-	/// @brief Returns all texture handles stored in a scene.
-	auto AssetSystem::sceneTextures(SceneHandle scene) const -> std::expected<Vector<TextureHandle>, Error> {
-		return facadeVector<TextureHandle>(impl_.sceneTextures(scene));
+		return impl_.sceneMaterials(scene);
 	}
 
 	/// @brief Returns all light handles stored in a scene.
 	auto AssetSystem::sceneLights(SceneHandle scene) const -> std::expected<Vector<LightHandle>, Error> {
-		return facadeVector<LightHandle>(impl_.sceneLights(scene));
+		return impl_.sceneLights(scene);
 	}
 
 	/// @brief Returns all camera handles stored in a scene.
 	auto AssetSystem::sceneCameras(SceneHandle scene) const -> std::expected<Vector<CameraHandle>, Error> {
-		return facadeVector<CameraHandle>(impl_.sceneCameras(scene));
+		return impl_.sceneCameras(scene);
 	}
 
 	/// @brief Returns public descriptor data for an imported light.
@@ -112,7 +97,7 @@ namespace vve {
 	/// @brief Returns the children of a node in a scene hierarchy.
 	std::expected<Vector<NodeHandle>, Error> AssetSystem::sceneNodeChildren(SceneHandle scene,
 																								  NodeHandle node) const {
-		return facadeVector<NodeHandle>(impl_.sceneNodeChildren(scene, node));
+		return impl_.sceneNodeChildren(scene, node);
 	}
 
 	/// @brief Returns the parent of a node in a scene hierarchy when present.
@@ -133,12 +118,12 @@ namespace vve {
 
 	/// @brief Returns the meshes referenced by a node.
 	auto AssetSystem::nodeMeshes(NodeHandle node) const -> std::expected<Vector<MeshHandle>, Error> {
-		return facadeVector<MeshHandle>(impl_.nodeMeshes(node));
+		return impl_.nodeMeshes(node);
 	}
 
 	/// @brief Returns the materials referenced by a node.
 	auto AssetSystem::nodeMaterials(NodeHandle node) const -> std::expected<Vector<MaterialHandle>, Error> {
-		return facadeVector<MaterialHandle>(impl_.nodeMaterials(node));
+		return impl_.nodeMaterials(node);
 	}
 
 	/// @brief Returns the public name stored for a mesh.
@@ -168,32 +153,27 @@ namespace vve {
 
 	/// @brief Returns the vertex positions stored for a mesh.
 	auto AssetSystem::meshPositions(MeshHandle mesh) const -> std::expected<Vector<Vec3>, Error> {
-		return facadeVector<Vec3>(impl_.meshPositions(mesh));
+		return impl_.meshPositions(mesh);
 	}
 
 	/// @brief Returns the vertex normals stored for a mesh.
 	auto AssetSystem::meshNormals(MeshHandle mesh) const -> std::expected<Vector<Vec3>, Error> {
-		return facadeVector<Vec3>(impl_.meshNormals(mesh));
+		return impl_.meshNormals(mesh);
 	}
 
 	/// @brief Returns the texture coordinates stored for a mesh.
 	auto AssetSystem::meshTexcoords(MeshHandle mesh) const -> std::expected<Vector<Vec2>, Error> {
-		return facadeVector<Vec2>(impl_.meshTexcoords(mesh));
+		return impl_.meshTexcoords(mesh);
 	}
 
 	/// @brief Returns the indices stored for a mesh.
 	auto AssetSystem::meshIndices(MeshHandle mesh) const -> std::expected<Vector<std::uint32_t>, Error> {
-		return facadeVector<std::uint32_t>(impl_.meshIndices(mesh));
+		return impl_.meshIndices(mesh);
 	}
 
 	/// @brief Returns the public name stored for a material.
 	auto AssetSystem::materialName(MaterialHandle material) const -> std::expected<ObjectName, Error> {
 		return impl_.materialName(material);
-	}
-
-	/// @brief Returns the textures referenced by a material.
-	auto AssetSystem::materialTextures(MaterialHandle material) const -> std::expected<Vector<TextureHandle>, Error> {
-		return facadeVector<TextureHandle>(impl_.materialTextures(material));
 	}
 
 } // namespace vve

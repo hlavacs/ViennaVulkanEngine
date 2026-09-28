@@ -15,5 +15,25 @@
       "VVE_VCPKG_TRIPLET": "arm64-osx"
     },
     "isTrusted": true
+  },
+  {
+    "name": "LLVM 18 libc++ (Linux)",
+    "description": "Linux kit matching the debug-linux and release-linux presets: clang 18, libc++, and import std.",
+    "compilers": {
+      "C": "/usr/bin/clang-18",
+      "CXX": "/usr/bin/clang++-18"
+    },
+    "preferredGenerator": {
+      "name": "Ninja"
+    },
+    "cmakeSettings": {
+      "CMAKE_CXX_COMPILER_CLANG_SCAN_DEPS": "/usr/bin/clang-scan-deps-18",
+      "CMAKE_CXX_FLAGS": "-stdlib=libc++",
+      "CMAKE_EXE_LINKER_FLAGS": "-stdlib=libc++",
+      "CMAKE_SHARED_LINKER_FLAGS": "-stdlib=libc++",
+      "CMAKE_CXX_STDLIB_MODULES_JSON": "/usr/lib/llvm-18/lib/libc++.modules.json",
+      "VVE_VCPKG_TRIPLET": "x64-linux-llvm"
+    },
+    "isTrusted": true
   }
 ]

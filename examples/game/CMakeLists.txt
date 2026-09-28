@@ -6,6 +6,7 @@ add_executable(game
 
 target_link_libraries(game PRIVATE
     ViennaVulkanEngine::ViennaVulkanEngine
+    vve_example_support
     imgui::imgui
 )
 

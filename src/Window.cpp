@@ -60,6 +60,42 @@ namespace vve {
 	/// @brief Returns the accumulated mouse wheel delta for a window.
 	Vec2 InputState::mouseWheelDelta(WindowHandle window) const { return impl_.mouseWheelDelta(window); }
 
+	/**
+		* @brief Applies the default keyboard camera motion and returns the resulting facade camera.
+		* @param input Current facade input snapshot used for continuous movement and turning.
+		* @param dt Elapsed seconds, clamped to [0, 0.1] to bound motion after a stall.
+		* @return Camera looking from the updated eye position along the updated forward vector.
+		*/
+	auto DefaultCameraController::update(const InputState &input, DeltaTime dt) -> Camera {
+		const Vec3 worldUp{zero(), one(), zero()};	///< Stable up axis for view and flight.
+		const auto seconds = static_cast<Scalar>(std::clamp(dt.seconds, 0.0, 0.1));
+
+		// Shift doubles both turning and movement for the current frame.
+		const Scalar boost = input.isKeyDown(Key::left_shift) || input.isKeyDown(Key::right_shift) ? static_cast<Scalar>(2) : one();
+		const Scalar turnStep = turn_speed * seconds * boost;
+		const Scalar movementStep = move_speed * seconds * boost;
+
+		// Update view angles before movement so the current frame moves in the new direction.
+		if (input.isKeyDown(Key::left)) { yaw -= turnStep; }
+		if (input.isKeyDown(Key::right)) { yaw += turnStep; }
+		if (input.isKeyDown(Key::up)) { pitch -= turnStep; }
+		if (input.isKeyDown(Key::down)) { pitch += turnStep; }
+		pitch = math::clamp(pitch, -max_pitch, max_pitch);
+
+		// Rebuild camera basis after clamping to preserve the original example feel.
+		const auto forward = math::normalize(Vec3{std::cos(pitch) * std::sin(yaw), std::sin(pitch),
+										 -std::cos(pitch) * std::cos(yaw)});
+		const Vec3 right = math::normalize(math::cross(forward, worldUp));
+		if (input.isKeyDown(Key::w)) { eye.value = math::add(eye.value, math::scale(forward, movementStep)); }
+		if (input.isKeyDown(Key::s)) { eye.value = math::subtract(eye.value, math::scale(forward, movementStep)); }
+		if (input.isKeyDown(Key::a)) { eye.value = math::subtract(eye.value, math::scale(right, movementStep)); }
+		if (input.isKeyDown(Key::d)) { eye.value = math::add(eye.value, math::scale(right, movementStep)); }
+		if (input.isKeyDown(Key::q)) { eye.value = math::subtract(eye.value, math::scale(worldUp, movementStep)); }
+		if (input.isKeyDown(Key::e)) { eye.value = math::add(eye.value, math::scale(worldUp, movementStep)); }
+
+		return Camera::lookAt(eye, Position{.value = math::add(eye.value, forward)}, Direction{.value = worldUp});
+	}
+
 	/// @brief Binds the facade wrapper to the implementation object owned by the engine.
 	Window::Window(const Impl &implementation) noexcept : impl_{implementation} {}
 
@@ -77,9 +113,6 @@ namespace vve {
 
 	/// @brief Returns the renderer id associated with the selected implementation window.
 	RendererId Window::rendererId() const { return impl_.info().renderer_id; }
-
-	/// @brief Returns the camera assigned to the selected implementation window when one exists.
-	std::optional<Entity> Window::camera() const { return impl_.info().camera; }
 
 	/// @brief Reports whether the selected implementation window currently has focus.
 	bool Window::focused() const { return impl_.info().focused; }
@@ -129,43 +162,5 @@ namespace vve {
 		return window == nullptr ? std::optional<Window>{}
 										 : std::optional<Window>{Window{*window}};
 	}
-
-	/// @brief Assigns a camera entity to a window selected by runtime handle.
-	auto WindowSystem::setWindowCamera(WindowHandle window, Entity camera) -> std::expected<void, Error> {
-		return impl_.setWindowCamera(window, camera);
-	}
-
-	/// @brief Assigns a camera entity to a window selected by application-local id.
-	auto WindowSystem::setWindowCamera(std::string_view id, Entity camera) -> std::expected<void, Error> {
-		return impl_.setWindowCamera(id, camera);
-	}
-
-	/// @brief Clears the camera entity from a window selected by runtime handle.
-	auto WindowSystem::clearWindowCamera(WindowHandle window) -> std::expected<void, Error> {
-		return impl_.clearWindowCamera(window);
-	}
-
-	/// @brief Clears the camera entity from a window selected by application-local id.
-	auto WindowSystem::clearWindowCamera(std::string_view id) -> std::expected<void, Error> {
-		return impl_.clearWindowCamera(id);
-	}
-
-	/// @brief Returns the camera entity assigned to a window selected by runtime handle.
-	auto WindowSystem::windowCamera(WindowHandle window) const -> std::optional<Entity> {
-		return impl_.windowCamera(window);
-	}
-
-	/// @brief Returns the camera entity assigned to a window selected by application-local id.
-	auto WindowSystem::windowCamera(std::string_view id) const -> std::optional<Entity> {
-		return impl_.windowCamera(id);
-	}
-
-	/// @brief Sets the active camera entity used by default rendering paths.
-	auto WindowSystem::setActiveCamera(Entity camera) -> std::expected<void, Error> {
-		return impl_.setActiveCamera(camera);
-	}
-
-	/// @brief Returns the active camera entity when one is selected.
-	std::optional<Entity> WindowSystem::activeCamera() const { return impl_.activeCamera(); }
 
 } // namespace vve

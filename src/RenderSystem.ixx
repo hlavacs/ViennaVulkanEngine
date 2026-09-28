@@ -15,24 +15,6 @@ export namespace vve {
 
 	template <typename... TSystems> class Engine;
 
-	/// @brief One CPU/GPU shadow-depth comparison point recorded by the renderer for the world origin.
-	struct RenderShadowDepthSample {
-		std::uint32_t light_type{};		///< 1 spot, 2 point, 3 directional.
-		std::uint32_t light_index{};		///< Dense index of the light inside its packed shadow slots.
-		std::uint32_t face_index{};		///< Point-light cube face, 0 for other lights.
-		std::uint32_t layer{};				///< Shadow-array layer read for this sample.
-		Vec3 world{zeroVec3()};				///< World-space sample point.
-		Vec3 light_ndc{zeroVec3()};		///< Sample point in light normalized device coordinates.
-		std::uint32_t pixel_x{};			///< Shadow-map texel x, valid when has_gpu is true.
-		std::uint32_t pixel_y{};			///< Shadow-map texel y, valid when has_gpu is true.
-		float expected_depth{};				///< CPU light-space depth.
-		float bias{};							///< Shadow compare bias.
-		float shadow_factor{};				///< 0.35 when the GPU texel occludes the point, otherwise 1.
-		float gpu_depth{};					///< Depth read back from the shadow map, valid when has_gpu is true.
-		float error{};							///< Absolute CPU/GPU depth mismatch, valid when has_gpu is true.
-		bool has_gpu{};						///< True once the GPU texel was read back.
-	};
-
 	class RenderSystem {
 	public:
 		RenderSystem(const RenderSystem &) = default;
@@ -42,8 +24,13 @@ export namespace vve {
 
 		auto clearScene()																													-> void;
 		[[nodiscard]] auto loadSampleScene()																						-> std::expected<void, Error>;
-		auto setPostProcessSetup(std::function<void(vvppl::PostProcessing &)> setup)											-> void;
-		auto setCamera(Camera camera, PixelExtent extent)																		-> void;
+		auto setPostProcessSetup(std::function<void(vvppl::PostProcessing &)> setup)											-> void; /**< @note The callback runs once when the renderer starts.
+			The PostProcessing reference and the settings references it hands out stay valid until engine shutdown,
+			including across resizes, so they may be kept and changed at any time. */
+		auto setCamera(Camera camera) -> void; ///< Sets the default camera; every window without an override uses it with its own aspect ratio.
+		[[nodiscard]] auto setCamera(WindowHandle window, Camera camera) -> std::expected<void, Error>; ///< Overrides one window after engine init, even before its first frame; unknown, closed or opted-out windows return invalid_handle.
+		[[nodiscard]] auto clearCamera(WindowHandle window) -> std::expected<void, Error>; ///< Restores the current default camera; the same window validation as setCamera applies.
+		auto clearLights() -> void; ///< Removes all lights; objects, resources, cameras and scene instances stay.
 		void setDirectionalLight(Direction direction, LinearColor color,
 											LightIntensity intensity, LinearColor ambient);
 		inline void setDirectionalLight(const DirectionalLight &light) {
@@ -114,6 +101,7 @@ export namespace vve {
 		[[nodiscard]] auto purgeUnusedAssets()																				-> std::size_t;
 		[[nodiscard]] auto sceneMeshCount() const																					-> std::size_t;
 		[[nodiscard]] auto sceneMaterialCount() const																			-> std::size_t;
+		[[nodiscard]] auto sceneTextureCount() const -> std::size_t;
 		[[nodiscard]] auto sceneDirectionalLightCount() const																-> std::size_t;
 		[[nodiscard]] auto scenePointLightCount() const																		-> std::size_t;
 		[[nodiscard]] auto sceneSpotLightCount() const																			-> std::size_t;
@@ -125,8 +113,9 @@ export namespace vve {
 		[[nodiscard]] auto hasSceneDirectionalLight() const																	-> bool;
 		[[nodiscard]] auto hasScenePointLight() const																			-> bool;
 		[[nodiscard]] auto hasSceneSpotLight() const																				-> bool;
-		[[nodiscard]] auto shadowDepthSamples() const																	-> Vector<RenderShadowDepthSample>;
+		[[nodiscard]] auto shadowDepthSamples() const																	-> Vector<RenderShadowDepthSample>; ///< Empty unless setShadowDepthReadback(true) enabled samples for the rendered frame.
 		auto setShadowDepthReadback(bool enabled)																		-> void;
+		[[nodiscard]] auto captureFrameToPng(WindowHandle window, const std::filesystem::path &output_path) -> std::expected<void, Error>;
 		[[nodiscard]] auto captureFrameToPng(const std::filesystem::path &output_path)						-> std::expected<void, Error>;
 		[[nodiscard]] auto renderedFrameCount() const																			-> std::uint64_t;
 		[[nodiscard]] auto renderingFramesPerSecond() const																-> double;

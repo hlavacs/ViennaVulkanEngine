@@ -13,12 +13,6 @@ if(TARGET vve_windows_std)
 endif()
 target_compile_definitions(ViennaVulkanEngine PUBLIC VULKAN_HPP_NO_EXCEPTIONS)
 
-# The Windows build script enables this only after a failing/successful Vulkan probe pair.
-option(VVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS "Disable the incompatible AMD Vulkan layer inside engine processes" OFF)
-if(WIN32 AND VVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS)
-    target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS)
-endif()
-
 option(VVE_MATH_USE_DOUBLE "Build the engine math layer with double precision" OFF)
 if(VVE_MATH_USE_DOUBLE)
     target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_MATH_USE_DOUBLE)

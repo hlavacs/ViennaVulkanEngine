@@ -44,12 +44,12 @@ int main() {
    auto window_system = world.get<vve::WindowSystem>();
    const auto camera = ecs.create();
    if (const auto result = ecs.add(camera, vve::Camera{}); !result) { return 6; }
-   if (!window_system.setActiveCamera(camera)) { return 6; }
-   const auto active = window_system.activeCamera();
-   if (!active || *active != camera) { return 7; }
-   if (!window_system.setWindowCamera("main", camera)) { return 8; }
-   const auto window_camera = window_system.windowCamera("main");
-   if (!window_camera || *window_camera != camera) { return 9; }
+   const auto stored_camera = ecs.tryGet<vve::Camera>(camera);
+   if (!stored_camera || !stored_camera->has_value()) { return 7; }
+   auto &render = world.get<vve::RenderSystem>();
+   const auto main = window_system.findWindow("main");
+   if (!main || !render.setCamera(main->handle(), **stored_camera)) { return 8; }
+   if (!render.clearCamera(main->handle())) { return 9; }
 
    const auto transform = vve::Transform{
       .translation = vve::Position{.value = vve::Vec3{1.0F, 2.0F, 3.0F}},

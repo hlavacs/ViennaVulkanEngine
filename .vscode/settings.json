@@ -4,9 +4,8 @@
 	"cmake.configureOnOpen": false,
 	"cmake.showSystemKits": true,
 	"cmake.buildDirectory": "${workspaceFolder}/build/vscode-${variant:buildType}",
+	"cmake.generator": "Ninja",
 	"cmake.configureSettings": {
-		"VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "simple",
-		"VVE_VCPKG_TRIPLET": "x64-windows",
-		"VVE_DEFAULT_VULKAN_ICD": "system"
+		"VVE_ENGINE_IMPLEMENTATION_NAMESPACE": "simple"
 	}
 }

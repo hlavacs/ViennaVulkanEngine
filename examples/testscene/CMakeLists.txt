@@ -6,6 +6,7 @@ add_executable(testscene
 
 target_link_libraries(testscene PRIVATE
     ViennaVulkanEngine::ViennaVulkanEngine
+    vve_example_support
     imgui::imgui
 )
 

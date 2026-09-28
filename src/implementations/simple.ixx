@@ -20,8 +20,6 @@ export namespace vve {
 		using InputStateImpl = simple::InputState;				///< Input state wrapped by vve::InputState.
 		using GuiSystemImpl = simple::GuiSystem;					///< GUI system wrapped by vve::GuiSystem.
 		using WindowsImpl = simple::Windows;						///< Startup window list consumed by the engine.
-		using WindowDescImpl = simple::WindowDesc;				///< Startup window descriptor consumed by the engine.
-		using WindowFrameDataImpl = simple::WindowFrameData;	///< Per-frame window snapshot produced by the engine.
 	} // namespace detail
 
 } // namespace vve

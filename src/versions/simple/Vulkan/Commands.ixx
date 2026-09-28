@@ -68,7 +68,6 @@ export namespace vve::simple {
 	/// @brief Minimal Vulkan command-buffer owner for primary command buffers allocated from the command pool.
 	struct VulkanCommandBuffers {
 		std::vector<VulkanOwnedHandle<vk::raii::CommandBuffer, VkCommandBuffer>> ownedCommandBuffers{}; ///< RAII owners for primary command buffers.
-		std::vector<VkCommandBuffer> commandBuffers{}; ///< Raw command-buffer view kept for existing recording code.
 
 		VulkanCommandBuffers() = default;
 		VulkanCommandBuffers(const VulkanCommandBuffers &) = delete;
@@ -86,7 +85,8 @@ export namespace vve::simple {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE || owningPool == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-			commandBuffers.resize(count);
+			// Raw handles exist only during allocation; recording and submission use the owners.
+			auto commandBuffers = std::vector<VkCommandBuffer>(count);
 			const VkCommandBufferAllocateInfo allocateInfo{
 				.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
 				.commandPool = owningPool,
@@ -95,10 +95,7 @@ export namespace vve::simple {
 			};
 
 			const VkResult result = vkAllocateCommandBuffers(owningDevice, &allocateInfo, commandBuffers.data());
-			if (result != VK_SUCCESS) {
-				commandBuffers.clear();
-				return result;
-			}
+			if (result != VK_SUCCESS) { return result; }
 
 			ownedCommandBuffers.reserve(commandBuffers.size());
 			for (VkCommandBuffer commandBuffer : commandBuffers) {
@@ -113,7 +110,6 @@ export namespace vve::simple {
 		void cleanup() {
 			for (auto &commandBuffer : ownedCommandBuffers) { commandBuffer.reset(); }
 			ownedCommandBuffers.clear();
-			commandBuffers.clear();
 		}
 
 		/**
