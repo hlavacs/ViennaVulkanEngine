@@ -75,4 +75,4 @@ Facade symbols used: `vve::EngineBuilder`, `vve::WindowSetup`, `vve::RenderSyste
 
 ## Verification
 
-Checked with: `grep -rn "vve::simple\|vve::detail\|VVEngine\.Simple\|VVE_SDL_VULKAN_LIBRARY\|backend()\|VulkanReadback" examples/ --include=*.cpp` → zero matches. Every example imports `std`, `VVEngine` and `VVE.ExampleSupport`. Each example target links `ViennaVulkanEngine::ViennaVulkanEngine` and `vve_example_support` (plus `imgui::imgui` for `game`, `postprocessing` and `testscene`).
+Checked with: `grep -rn "vve::simple\|vve::detail\|VVEngine\.Simple\|VVE_SDL_VULKAN_LIBRARY\|backend()\|VulkanReadback" examples/ --include=*.cpp` → zero matches. Every example imports `std`, `VVEngine` and `VVE.ExampleSupport`. Each example target links `ViennaVulkanEngine::ViennaVulkanEngine` and `vve_example_support`. The engine supplies ImGui compile settings and runtime symbols for `game`, `postprocessing` and `testscene`, keeping one shared GUI context.

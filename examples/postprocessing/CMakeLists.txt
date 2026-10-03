@@ -1,5 +1,3 @@
-find_package(imgui CONFIG REQUIRED)
-
 add_executable(postprocessing
     postprocessing.cpp
 )
@@ -7,7 +5,6 @@ add_executable(postprocessing
 target_link_libraries(postprocessing PRIVATE
     ViennaVulkanEngine::ViennaVulkanEngine
     vve_example_support
-    imgui::imgui
 )
 
 add_dependencies(postprocessing

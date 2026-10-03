@@ -1,5 +1,3 @@
-find_package(imgui CONFIG REQUIRED)
-
 add_executable(game
     game.cpp
 )
@@ -7,7 +5,6 @@ add_executable(game
 target_link_libraries(game PRIVATE
     ViennaVulkanEngine::ViennaVulkanEngine
     vve_example_support
-    imgui::imgui
 )
 
 add_dependencies(game

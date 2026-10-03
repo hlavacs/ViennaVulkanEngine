@@ -3,6 +3,7 @@
  * @brief Checks hidden windows, procedural UVs and embedded glTF textures with four coloured quadrants.
  * writeFixtures builds a PNG and GLB; checkCapture inspects their unlit rendering in a 64x64 window.
  */
+#include <SDL3/SDL_error.h>
 #include <SDL3/SDL_video.h>
 #include <stb_image.h>
 #include <vulkan/vulkan_core.h>
@@ -103,6 +104,13 @@ int main() {
 		vve::WindowDesc{.id = "main", .extent = {64, 64}, .visible = false}}}};
 	if (!engine.init()) { return 2; }
 	const auto *window = engine.windowSystem().findWindow("main");
+	// Engine-created windows must also belong to the SDL registry used by this executable.
+	SDL_ClearError();
+	const auto id = window ? SDL_GetWindowID(window->native()) : SDL_WindowID{};
+	const bool registered = id != 0U && SDL_GetWindowFromID(id) == window->native();
+	std::println("[RenderTextureOrientationTests] window_found={} sdl_id={} registered={} sdl_error={}",
+		window != nullptr, id, registered, SDL_GetError());
+	if (!registered) { return 3; }
 	const bool hidden = window && (SDL_GetWindowFlags(window->native()) & SDL_WINDOW_HIDDEN) != 0U;
 	std::println("[RenderTextureOrientationTests] hidden={} expected=true", hidden);
 	if (!hidden) { return 3; }

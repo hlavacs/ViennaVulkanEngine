@@ -104,6 +104,10 @@ target_link_libraries(ViennaVulkanEngine
         assimp::assimp
         glm::glm
         vvppl
+        # Consumers use these headers but must share the engine's SDL and ImGui state.
+        # Static engine builds propagate the PRIVATE archives through CMake's link interface.
+        "$<COMPILE_ONLY:imgui::imgui>"
+        "$<COMPILE_ONLY:SDL3::SDL3>"
     PRIVATE
         imgui::imgui
         SDL3::SDL3

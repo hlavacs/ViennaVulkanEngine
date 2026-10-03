@@ -4,8 +4,7 @@ target_compile_features(vve_test_support PUBLIC cxx_std_23)
 target_sources(vve_test_support PUBLIC FILE_SET CXX_MODULES FILES support/TestSupport.ixx)
 target_link_libraries(vve_test_support PUBLIC ViennaVulkanEngine::ViennaVulkanEngine Vulkan::Vulkan)
 
-# GuiSystemTests inspects the Dear ImGui context directly.
-find_package(imgui CONFIG REQUIRED)
+# SDL/ImGui headers come from the engine; linking their static archives here duplicates runtime state.
 # Buffer policy and placement tests inspect VMA allocation flags directly.
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 
@@ -32,8 +31,8 @@ vve_add_engine_test(VulkanLayerFilterTests Vulkan::Vulkan)
 vve_add_engine_test(VulkanMemoryPolicyTests Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
 vve_add_engine_test(RenderAcquireActionTests Vulkan::Vulkan)
 vve_add_engine_test(WindowInputTests GPU)
-vve_add_engine_test(WindowSystemInitTests GPU SDL3::SDL3)
-vve_add_engine_test(WindowEventTests GPU SDL3::SDL3 imgui::imgui)
+vve_add_engine_test(WindowSystemInitTests GPU)
+vve_add_engine_test(WindowEventTests GPU)
 vve_add_engine_test(WindowSetupDefaultsTests Vulkan::Vulkan)
 vve_add_engine_test(DefaultCameraControllerTests)
 vve_add_engine_test(WindowOwnershipTests GPU)
@@ -43,16 +42,16 @@ vve_add_engine_test(UserSystemTests GPU)
 # code they instantiate (e.g. simple::Engine's destructor) calls Vulkan directly, so they link it as well.
 # Tests that create windows open hidden SDL windows and use the platform video driver. SDL's offscreen driver only works
 # with Vulkan drivers that support VK_EXT_headless_surface, so build_linux.sh selects it only without a display.
-vve_add_engine_test(SimpleForwardRendererTests GPU Vulkan::Vulkan imgui::imgui GPUOpen::VulkanMemoryAllocator vve_test_support)
+vve_add_engine_test(SimpleForwardRendererTests GPU Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator vve_test_support)
 target_compile_definitions(SimpleForwardRendererTests PRIVATE
    "VVE_TEST_CRATE_TEXTURE=\"${PROJECT_SOURCE_DIR}/assets/game/crate0/diffuse.png\"")
 vve_add_engine_test(RenderFrameCountTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderRuntimeUpdateTests GPU Vulkan::Vulkan)
-vve_add_engine_test(RenderResizeTests GPU Vulkan::Vulkan SDL3::SDL3 vve_test_support)
-vve_add_engine_test(MultiWindowRenderTests GPU Vulkan::Vulkan SDL3::SDL3 imgui::imgui vve_test_support)
+vve_add_engine_test(RenderResizeTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(MultiWindowRenderTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderShadowOcclusionTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderTextureDedupTests GPU Vulkan::Vulkan vve_test_support)
-vve_add_engine_test(RenderTextureOrientationTests GPU Vulkan::Vulkan SDL3::SDL3 vve_test_support)
+vve_add_engine_test(RenderTextureOrientationTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderTexturedPlaneTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderHeightMapTests Vulkan::Vulkan)
 vve_add_engine_test(VulkanTextureTests GPU Vulkan::Vulkan vve_test_support)
@@ -72,9 +71,9 @@ target_compile_definitions(RenderSponzaCaptureTests PRIVATE
 vve_add_engine_test(RenderMeshDedupTests GPU Vulkan::Vulkan vve_test_support)
 target_compile_definitions(RenderMeshDedupTests PRIVATE
    "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\"")
-vve_add_engine_test(GuiSystemTests Vulkan::Vulkan imgui::imgui)
-vve_add_engine_test(GuiCallbackErrorTests GPU Vulkan::Vulkan imgui::imgui vve_test_support)
-vve_add_engine_test(GuiColorCaptureTests GPU Vulkan::Vulkan imgui::imgui vve_test_support)
+vve_add_engine_test(GuiSystemTests Vulkan::Vulkan)
+vve_add_engine_test(GuiCallbackErrorTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(GuiColorCaptureTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(SceneSystemTests vve_test_support)
 vve_add_engine_test(SceneInstantiationTests vve_test_support)
 vve_add_engine_test(SceneInstanceLifetimeTests)

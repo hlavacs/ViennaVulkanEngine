@@ -19,6 +19,10 @@ int main() {
 	if (!engine.init()) { return 1; }
 	engine.renderSystem().setPostProcessSetup([](vvppl::PostProcessing &chain) { chain.addInvert(); });
 	if (!engine.renderFrame() || !engine.gui().ready()) { return 2; }
+	// The executable must see the same ImGui runtime initialized by the engine.
+	const bool context_visible = ImGui::GetCurrentContext() != nullptr;
+	std::println("[GuiCallbackErrorTests] engine_gui_ready=true imgui_context_visible={}", context_visible);
+	if (!context_visible) { return 12; }
 	const auto &renderer = engine.renderSystem().forward();
 	using RecordedPass = vve::simple::ForwardRenderer::RecordedPass; ///< Optional passes around GUI preparation.
 	// Post-processing without GUI draw data presents directly from the transfer layout.

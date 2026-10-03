@@ -1,5 +1,3 @@
-find_package(imgui CONFIG REQUIRED)
-
 add_executable(testscene
     testscene.cpp
 )
@@ -7,7 +5,6 @@ add_executable(testscene
 target_link_libraries(testscene PRIVATE
     ViennaVulkanEngine::ViennaVulkanEngine
     vve_example_support
-    imgui::imgui
 )
 
 add_dependencies(testscene

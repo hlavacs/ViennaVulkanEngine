@@ -2,6 +2,7 @@
  * @file
  * @brief Checks swapchain resizing and PNG extents without rebuilding the forward pipeline.
  */
+#include <SDL3/SDL_error.h>
 #include <SDL3/SDL_video.h>
 #include <stb_image.h>
 #include <vulkan/vulkan_core.h>
@@ -31,7 +32,11 @@ int main() {
 	if (renderer.forwardPipelineCreateCount() != 1U) { return 4; }
 
 	// SDL_SyncWindow waits for the platform's resize request before the next two frames.
-	if (!SDL_SetWindowSize(renderer.targets.front().window, 96, 80) || !SDL_SyncWindow(renderer.targets.front().window)) { return 5; }
+	SDL_ClearError();
+	const bool resized = SDL_SetWindowSize(renderer.targets.front().window, 96, 80);
+	const bool synced = resized && SDL_SyncWindow(renderer.targets.front().window);
+	std::println("[RenderResizeTests] resize_requested={} window_synced={} sdl_error={}", resized, synced, SDL_GetError());
+	if (!resized || !synced) { return 5; }
 	for (const auto frame : {1U, 2U}) {
 		if (!engine.renderFrame()) { return 6; }
 		std::println("[RenderResizeTests] resize_frame={} presented_windows={}", frame, render.lastRenderedWindowCount());

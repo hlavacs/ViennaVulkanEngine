@@ -98,6 +98,8 @@ cmake --build --preset build-debug-windows
 
 All example targets follow that single engine namespace selection automatically. The examples live in one folder each below `examples/`: `game`, `testscene`, `sponza`, `light_shadow_debug`, `simple_forward_demo`, and `postprocessing`.
 
+Link applications to `ViennaVulkanEngine::ViennaVulkanEngine`; it supplies the ImGui and SDL3 headers and compile settings. The engine owns their runtime linkage. Adding their static archives directly to an executable can create separate ImGui contexts and SDL window registries beside the shared engine. Windows static-engine builds propagate these dependencies through CMake automatically.
+
 All six examples import `VVE.ExampleSupport` from `examples/common/ExampleSupport.ixx` and link `vve_example_support`. Its `assetRoot(argv0)` searches the current working directory, then the executable's ancestors for an `assets` directory, falling back to the source root configured through `VVE_ASSET_ROOT`. Its `frameLimit(argc, argv)` reads `--frames`; the default is 0, meaning run until the window closes. CTest always passes an explicit frame limit.
 
 The presets and build scripts are host-aware:
