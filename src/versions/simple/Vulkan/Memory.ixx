@@ -3,7 +3,7 @@ module;
 #include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 
-export module VEEngine.Simple.Vulkan:Memory;
+export module VVEngine.Simple.Vulkan:Memory;
 import std;
 
 /**

@@ -8,7 +8,7 @@
 
 import std;
 import VVE.TestSupport;
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 /// @brief Requires an opaque sRGB grey to survive GUI rendering without a second encoding.
 int main() {

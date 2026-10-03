@@ -12,9 +12,9 @@ module;
 #undef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
 #endif
 
-export module VEEngine.Simple:Window;
+export module VVEngine.Simple:Window;
 import std;
-export import VEEngine.Simple.Types;
+export import VVEngine.Simple.Types;
 
 /// @file
 /// @brief Simple window collection, input state and platform windows using the shared facade descriptors.

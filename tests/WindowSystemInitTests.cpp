@@ -6,7 +6,7 @@
 
 import std;
 
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 /// @brief Rejects invalid startup descriptors, retries successfully, and preserves initialized windows.
 int main() {

@@ -8,7 +8,7 @@
 #include <vulkan/vulkan_core.h>
 
 import std;
-import VEEngine.Simple.Renderer;
+import VVEngine.Simple.Renderer;
 
 /// @brief Reports every acquisition decision; returns the failing case number, or zero on success.
 int main() {

@@ -9,7 +9,7 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
 
 /// @brief Proves unused imported render meshes and materials are reclaimed after their scene instance is removed.

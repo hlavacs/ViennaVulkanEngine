@@ -15,12 +15,12 @@ module;
 #include <imgui_impl_vulkan.h>
 #endif
 
-module VEEngine.Simple.Renderer;
+module VVEngine.Simple.Renderer;
 import std;
-import VEEngine.Simple.Types;
-import VEEngine.Simple.RenderResources;
-import VEEngine.Simple.Scene;
-import VEEngine.Simple.Vulkan;
+import VVEngine.Simple.Types;
+import VVEngine.Simple.RenderResources;
+import VVEngine.Simple.Scene;
+import VVEngine.Simple.Vulkan;
 
 /// @file
 /// @brief ForwardRenderer Vulkan resource lifetime: bring-up, scene upload, swapchain rebuild, teardown, and ImGui wiring.

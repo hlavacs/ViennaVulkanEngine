@@ -1,9 +1,9 @@
-export module VEEngine.ECSContainer;
+export module VVEngine.ECSContainer;
 import std;
-export import VEEngine.Entity;
-import VEEngine.Handle;
-import VEEngine.Error;
-import VEEngine.Vector;
+export import VVEngine.Entity;
+import VVEngine.Handle;
+import VVEngine.Error;
+import VVEngine.Vector;
 
 /// @file
 /// @brief Facade-owned generic ECS container shared by engine-facing public APIs.

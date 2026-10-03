@@ -1,5 +1,5 @@
-export module VEEngine.Entity;
-import VEEngine.Handle;
+export module VVEngine.Entity;
+import VVEngine.Handle;
 
 /// @file
 /// @brief Public ECS entity handle vocabulary shared by facade modules.

@@ -1,4 +1,4 @@
-module VEEngine;
+module VVEngine;
 import :Window;
 
 namespace vve {

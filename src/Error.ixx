@@ -1,4 +1,4 @@
-export module VEEngine.Error;
+export module VVEngine.Error;
 import std;
 
 /**

@@ -9,7 +9,7 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
 
 /// @brief Proves the public asset-to-render bridge creates visible objects for a loaded scene.

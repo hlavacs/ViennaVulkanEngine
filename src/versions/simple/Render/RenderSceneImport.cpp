@@ -1,6 +1,6 @@
-module VEEngine.Simple;
+module VVEngine.Simple;
 import std;
-import VEEngine.Simple.Scene;
+import VVEngine.Simple.Scene;
 
 /**
 	* @file

@@ -1,7 +1,7 @@
 module;
 #include <VVPPL.h>
 
-module VEEngine;
+module VVEngine;
 import :RenderSystem;
 
 /// @file

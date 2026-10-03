@@ -4,7 +4,7 @@
  * Fixtures contain two OBJ objects and a glTF point light/camera; no engine initialization or GPU is needed.
  */
 import std;
-import VEEngine;
+import VVEngine;
 
 namespace {
 

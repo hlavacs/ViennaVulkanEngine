@@ -33,7 +33,7 @@ if(NOT VVE_GENERATED_KOSMICKRISP_ICD_MANIFEST STREQUAL "")
 endif()
 
 # The facade binds to one implementation through src/implementations/<name>.ixx (module partition
-# VEEngine:Implementation) plus the module set in src/versions/<name>/. Nothing else in src/ names it.
+# VVEngine:Implementation) plus the module set in src/versions/<name>/. Nothing else in src/ names it.
 set(VVE_ENGINE_IMPLEMENTATION_NAMESPACE "simple" CACHE STRING "Engine implementation compiled into the facade")
 set_property(CACHE VVE_ENGINE_IMPLEMENTATION_NAMESPACE PROPERTY STRINGS "simple")
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/implementations/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}.ixx"

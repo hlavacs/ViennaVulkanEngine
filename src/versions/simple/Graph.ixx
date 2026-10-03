@@ -1,6 +1,6 @@
-export module VEEngine.Simple:Graph;
+export module VVEngine.Simple:Graph;
 import std;
-export import VEEngine.Simple.Types;
+export import VVEngine.Simple.Types;
 
 /// @file
 /// @brief Generic DAG and tree helpers with creation-order nodes for the simple asset scene tree.

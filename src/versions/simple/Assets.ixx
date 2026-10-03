@@ -7,9 +7,9 @@ module;
 #include <cmath>
 #include <cstdlib>
 
-export module VEEngine.Simple:Assets;
+export module VVEngine.Simple:Assets;
 import std;
-export import VEEngine.Simple.Types;
+export import VVEngine.Simple.Types;
 import :Graph;
 
 /// @file

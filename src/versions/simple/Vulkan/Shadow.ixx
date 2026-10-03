@@ -4,7 +4,7 @@ module;
 #include <vk_mem_alloc.h>
 #include "../shaders/simple_shared.h"
 
-export module VEEngine.Simple.Vulkan:Shadow;
+export module VVEngine.Simple.Vulkan:Shadow;
 import :Memory;
 import std;
 

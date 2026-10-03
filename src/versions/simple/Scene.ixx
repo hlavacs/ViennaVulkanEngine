@@ -1,9 +1,9 @@
 module;
 #include "shaders/simple_shared.h"
 
-export module VEEngine.Simple.Scene;
+export module VVEngine.Simple.Scene;
 import std;
-import VEEngine.Simple.Types;
+import VVEngine.Simple.Types;
 
 /**
 	* @file

@@ -10,9 +10,9 @@
 
 import std;
 import VVE.TestSupport;
-import VEEngine.Simple;
-import VEEngine.Simple.Renderer;
-import VEEngine.Simple.Vulkan;
+import VVEngine.Simple;
+import VVEngine.Simple.Renderer;
+import VVEngine.Simple.Vulkan;
 
 /// @brief Checks the final mip's pixels, so allocating levels without generating their contents cannot pass.
 [[nodiscard]] bool hasFilteredMip(vve::simple::ForwardRenderer &renderer, VkFormat format, int expected) {

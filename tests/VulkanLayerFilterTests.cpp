@@ -4,7 +4,7 @@
  * Functional objects: main exercises exact comma-separated entries without Vulkan or environment changes.
  */
 import std;
-import VEEngine.Simple.Vulkan;
+import VVEngine.Simple.Vulkan;
 
 /// @brief Reports each filter result and returns a distinct failure code for an incorrect append or duplicate.
 int main() {

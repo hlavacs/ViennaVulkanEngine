@@ -1,6 +1,6 @@
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
 
 int main() {

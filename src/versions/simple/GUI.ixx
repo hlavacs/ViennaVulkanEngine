@@ -15,9 +15,9 @@ module;
 #include <imgui_impl_vulkan.h>
 #endif
 
-export module VEEngine.Simple:Gui;
+export module VVEngine.Simple:Gui;
 import std;
-export import VEEngine.Simple.Types;
+export import VVEngine.Simple.Types;
 
 /// @file
 /// @brief Dear ImGui wrapper: one context, the SDL3 and Vulkan backends, and one user frame callback.

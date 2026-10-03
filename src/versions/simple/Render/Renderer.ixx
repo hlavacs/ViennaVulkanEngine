@@ -9,12 +9,12 @@ module;
 #include <VVPPL.h>
 #include "../shaders/simple_shared.h"
 
-export module VEEngine.Simple.Renderer;
+export module VVEngine.Simple.Renderer;
 import std;
-import VEEngine.Simple.Types;
-import VEEngine.Simple.RenderResources;
-import VEEngine.Simple.Scene;
-import VEEngine.Simple.Vulkan;
+import VVEngine.Simple.Types;
+import VVEngine.Simple.RenderResources;
+import VVEngine.Simple.Scene;
+import VVEngine.Simple.Vulkan;
 
 /**
 	* @file

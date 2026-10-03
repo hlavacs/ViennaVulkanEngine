@@ -2,10 +2,10 @@ module;
 
 #include <stb_image.h>
 
-export module VEEngine.Simple.RenderResources;
+export module VVEngine.Simple.RenderResources;
 import std;
-import VEEngine.Simple.Types;
-import VEEngine.Simple.Scene;
+import VVEngine.Simple.Types;
+import VVEngine.Simple.Scene;
 
 /**
 	* @file

@@ -13,7 +13,7 @@ module;
 #undef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
 #endif
 
-export module VEEngine.Simple.Vulkan:Presentation;
+export module VVEngine.Simple.Vulkan:Presentation;
 import :Device;
 import :OwnedHandle;
 import std;

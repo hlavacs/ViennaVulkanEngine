@@ -1,6 +1,6 @@
-export module VEEngine:Implementation;
+export module VVEngine:Implementation;
 import std;
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 /// @file
 /// @brief Binds the facade to the simple engine.

@@ -1,8 +1,8 @@
 /// @file
 /// @brief CPU regressions for shared primitive resources, object removal and imported default materials.
 import std;
-import VEEngine;
-import VEEngine.Simple;
+import VVEngine;
+import VVEngine.Simple;
 
 /// @brief Builds three imported meshes without materials, using deterministic asset callbacks only.
 [[nodiscard]] auto materiallessAssets() -> vve::simple::ImportedAssetReadAccess {

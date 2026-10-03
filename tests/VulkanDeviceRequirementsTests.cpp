@@ -8,7 +8,7 @@
 #include <vulkan/vulkan_core.h>
 
 import std;
-import VEEngine.Simple.Vulkan;
+import VVEngine.Simple.Vulkan;
 
 /// @brief Reports each required capability independently; returns a distinct failure code for each case.
 int main() {

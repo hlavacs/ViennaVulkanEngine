@@ -12,12 +12,12 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
-import VEEngine.Simple;
-import VEEngine.Simple.Renderer;
-import VEEngine.Simple.RenderResources;
-import VEEngine.Simple.Scene;
+import VVEngine.Simple;
+import VVEngine.Simple.Renderer;
+import VVEngine.Simple.RenderResources;
+import VVEngine.Simple.Scene;
 
 /// @brief Checks pixel capacity release, retained embedded sources and HEIGHT cache hits without a GPU.
 static int checkReleasedSources() {

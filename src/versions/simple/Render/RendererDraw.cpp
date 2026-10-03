@@ -2,12 +2,12 @@ module;
 #include <vulkan/vulkan_core.h>
 #include <VVPPL.h>
 
-module VEEngine.Simple.Renderer;
+module VVEngine.Simple.Renderer;
 import std;
-import VEEngine.Simple.Types;
-import VEEngine.Simple.RenderResources;
-import VEEngine.Simple.Scene;
-import VEEngine.Simple.Vulkan;
+import VVEngine.Simple.Types;
+import VVEngine.Simple.RenderResources;
+import VVEngine.Simple.Scene;
+import VVEngine.Simple.Vulkan;
 
 /// @file
 /// @brief Per-window recording: DrawItem resolves scene data once; box and frustum helpers conservatively cull each pass.

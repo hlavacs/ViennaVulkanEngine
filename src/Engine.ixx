@@ -1,11 +1,11 @@
-export module VEEngine;
+export module VVEngine;
 import std;
 export import :Implementation;
-export import VEEngine.Error;
-export import VEEngine.Math;
-export import VEEngine.Handle;
-export import VEEngine.Vector;
-export import VEEngine.Types;
+export import VVEngine.Error;
+export import VVEngine.Math;
+export import VVEngine.Handle;
+export import VVEngine.Vector;
+export import VVEngine.Types;
 export import :ECS;
 export import :Window;
 export import :World;

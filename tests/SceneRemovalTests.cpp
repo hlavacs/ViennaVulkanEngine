@@ -9,7 +9,7 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
 
 /// @brief Proves removing a scene instance invalidates the render objects it created.

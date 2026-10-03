@@ -4,7 +4,7 @@ module;
 #include <stb_image_write.h>
 #include <vk_mem_alloc.h>
 
-export module VEEngine.Simple.Vulkan:Readback;
+export module VVEngine.Simple.Vulkan:Readback;
 import :Memory;
 import std;
 

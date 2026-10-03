@@ -8,14 +8,14 @@ module;
 #endif
 #include <VVPPL.h>
 
-export module VEEngine.Simple:RenderSystem;
+export module VVEngine.Simple:RenderSystem;
 import std;
-export import VEEngine.Simple.Types;
+export import VVEngine.Simple.Types;
 import :Window;
-import VEEngine.Simple.Vulkan;
-import VEEngine.Simple.Scene;
-import VEEngine.Simple.Renderer;
-export import VEEngine.Simple.RenderResources;
+import VVEngine.Simple.Vulkan;
+import VVEngine.Simple.Scene;
+import VVEngine.Simple.Renderer;
+export import VVEngine.Simple.RenderResources;
 
 /// @file
 /// @brief Simple render coordinator: renderer backend ownership and scene mirroring.

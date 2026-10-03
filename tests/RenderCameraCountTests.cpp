@@ -6,7 +6,7 @@
  * - main: builds a facade engine and checks the fresh render-scene camera count.
  */
 
-import VEEngine;
+import VVEngine;
 
 /// @brief Verifies imported cameras are absent on a fresh facade render system.
 int main() {

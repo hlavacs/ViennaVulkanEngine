@@ -14,15 +14,15 @@ module;
 #undef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
 #endif
 
-export module VEEngine.Simple.Vulkan:Resources;
+export module VVEngine.Simple.Vulkan:Resources;
 import :Device;
 import :Commands;
 import :Memory;
 import :Pipeline;
 import :OwnedHandle;
 import std;
-import VEEngine.Simple.Types;
-import VEEngine.Simple.Scene;
+import VVEngine.Simple.Types;
+import VVEngine.Simple.Scene;
 
 /**
 	* @file

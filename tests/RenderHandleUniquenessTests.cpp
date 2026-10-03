@@ -8,7 +8,7 @@
  */
 
 import std;
-import VEEngine;
+import VVEngine;
 
 /// @brief Checks process-wide handle uniqueness and ownership without creating windows or a GPU device.
 int main() {

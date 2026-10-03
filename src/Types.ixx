@@ -1,10 +1,10 @@
-export module VEEngine.Types;
+export module VVEngine.Types;
 import std;
-export import VEEngine.Error;
-export import VEEngine.Handle;
-export import VEEngine.Math;
-export import VEEngine.Vector;
-export import VEEngine.Entity;
+export import VVEngine.Error;
+export import VVEngine.Handle;
+export import VVEngine.Math;
+export import VVEngine.Vector;
+export import VVEngine.Entity;
 
 /**
 	* @file

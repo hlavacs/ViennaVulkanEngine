@@ -1,8 +1,8 @@
-export module VEEngine:Assets;
+export module VVEngine:Assets;
 import std;
 import :Implementation;
-import VEEngine.Error;
-import VEEngine.Types;
+import VVEngine.Error;
+import VVEngine.Types;
 
 /**
 	* @file

@@ -9,7 +9,7 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
 
 /// @brief Proves a live render scene instance blocks removal of its source asset scene.

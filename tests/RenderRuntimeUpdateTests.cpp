@@ -3,11 +3,11 @@
 /// @file
 /// @brief Checks fenced scene updates and retirement across two independently advancing windows.
 import std;
-import VEEngine;
-import VEEngine.Simple;
-import VEEngine.Simple.Renderer;
-import VEEngine.Simple.Scene;
-import VEEngine.Simple.Vulkan;
+import VVEngine;
+import VVEngine.Simple;
+import VVEngine.Simple.Renderer;
+import VVEngine.Simple.Scene;
+import VVEngine.Simple.Vulkan;
 
 namespace {
 

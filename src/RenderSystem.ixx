@@ -1,11 +1,11 @@
 module;
 #include <VVPPL.h>
 
-export module VEEngine:RenderSystem;
+export module VVEngine:RenderSystem;
 import std;
 import :Implementation;
-import VEEngine.Error;
-import VEEngine.Types;
+import VVEngine.Error;
+import VVEngine.Types;
 
 /**
 	* @file

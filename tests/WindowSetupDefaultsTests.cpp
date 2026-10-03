@@ -4,8 +4,8 @@
  */
 import std;
 
-import VEEngine;
-import VEEngine.Simple;
+import VVEngine;
+import VVEngine.Simple;
 
 /// @brief Verifies empty startup collections and the facade builder path without rendering.
 int main() {

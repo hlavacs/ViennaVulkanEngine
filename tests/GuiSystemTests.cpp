@@ -12,7 +12,7 @@
 
 import std;
 
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 int main() {
    vve::simple::GuiSystem gui_system{};

@@ -5,9 +5,9 @@ module;
 #include <SDL3/SDL_video.h>
 #include <vulkan/vulkan_core.h>
 
-export module VEEngine.Simple;
+export module VVEngine.Simple;
 import std;
-export import VEEngine.Simple.Types;
+export import VVEngine.Simple.Types;
 export import :Graph;
 export import :Window;
 export import :Assets;

@@ -7,7 +7,7 @@
  */
 
 import std;
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
 
 /// @brief Verifies light counts, preserved scene data and owner-safe removal after repeated clearing.

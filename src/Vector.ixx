@@ -1,6 +1,6 @@
 /// @file
 /// @brief Shared contiguous sequence vocabulary for the facade and engine implementations.
-export module VEEngine.Vector;
+export module VVEngine.Vector;
 
 import std;
 

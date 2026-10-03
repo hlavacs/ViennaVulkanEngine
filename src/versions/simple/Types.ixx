@@ -1,12 +1,12 @@
-export module VEEngine.Simple.Types;
+export module VVEngine.Simple.Types;
 import std;
-export import VEEngine.Types;
-export import VEEngine.ECSContainer;
+export import VVEngine.Types;
+export import VVEngine.ECSContainer;
 
 /// @file
 /// @brief Vocabulary of the simple engine.
 ///
-/// vve::simple is nested in vve, so the facade names exported by VEEngine.Types (Error, Vector, TypedHandle,
+/// vve::simple is nested in vve, so the facade names exported by VVEngine.Types (Error, Vector, TypedHandle,
 /// SceneHandle, Transform, Camera, ...) are found by ordinary lookup. Only the math vocabulary lives in
 /// vve::math and is pulled into vve::simple here.
 export namespace vve::simple {

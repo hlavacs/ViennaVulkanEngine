@@ -13,11 +13,11 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
-import VEEngine.Simple;
-import VEEngine.Simple.Renderer;
-import VEEngine.Simple.Scene;
+import VVEngine.Simple;
+import VVEngine.Simple.Renderer;
+import VVEngine.Simple.Scene;
 
 namespace {
 

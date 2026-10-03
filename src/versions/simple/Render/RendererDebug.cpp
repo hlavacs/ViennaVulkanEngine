@@ -2,11 +2,11 @@ module;
 #include <vulkan/vulkan_core.h>
 #include "../shaders/simple_shared.h"
 
-module VEEngine.Simple.Renderer;
+module VVEngine.Simple.Renderer;
 import std;
-import VEEngine.Simple.Types;
-import VEEngine.Simple.Scene;
-import VEEngine.Simple.Vulkan;
+import VVEngine.Simple.Types;
+import VVEngine.Simple.Scene;
+import VVEngine.Simple.Vulkan;
 
 /// @file
 /// @brief ForwardRenderer diagnostics: shadow-depth samples, optional GPU readback, and PNG frame capture.

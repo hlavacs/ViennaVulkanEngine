@@ -1,6 +1,6 @@
 /** @file @brief Captures one textured plane and verifies all ten texture repeats on both UV axes. */
 import std;
-import VEEngine.Simple;
+import VVEngine.Simple;
 import VVE.TestSupport;
 
 /// @brief Samples every quadrant of every tile, distinguishing repeat addressing from edge clamping.

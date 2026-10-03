@@ -1,7 +1,7 @@
 /// @file
 /// @brief Checks contiguous facade sequences and the standard vector operations used by the engine.
 import std;
-import VEEngine;
+import VVEngine;
 
 /// @brief Verifies small allocations, contiguous handles, growth, insertion, erasure and range appending.
 int main() {

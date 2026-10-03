@@ -1,7 +1,7 @@
 /// @file
 /// @brief Verifies graph membership and creation order without relying on sorted handle values.
 import std;
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 /// @brief Checks duplicate/invalid insertions and root-first tree traversal with nonmonotonic handles.
 int main() {

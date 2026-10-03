@@ -12,10 +12,10 @@
 
 import std;
 import VVE.TestSupport;
-import VEEngine.Simple;
-import VEEngine.Simple.Renderer;
-import VEEngine.Simple.Scene;
-import VEEngine.Simple.Vulkan;
+import VVEngine.Simple;
+import VVEngine.Simple.Renderer;
+import VVEngine.Simple.Scene;
+import VVEngine.Simple.Vulkan;
 
 namespace {
 

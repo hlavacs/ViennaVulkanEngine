@@ -1,6 +1,6 @@
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
 
 /// @brief Checks imported light descriptors through the public asset facade only.

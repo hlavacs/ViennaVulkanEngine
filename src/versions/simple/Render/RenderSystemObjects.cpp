@@ -1,7 +1,7 @@
-module VEEngine.Simple;
+module VVEngine.Simple;
 import std;
-import VEEngine.Simple.Scene;
-import VEEngine.Simple.Renderer;
+import VVEngine.Simple.Scene;
+import VVEngine.Simple.Renderer;
 
 /// @file
 /// @brief RenderSystem definitions that create primitive render objects, remove live objects, and manage loaded backend scenes.

@@ -9,7 +9,7 @@
 
 import std;
 import VVE.TestSupport;
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 /// @brief Exercises a hidden-window resize, or explicit recreation when the driver ignores it.
 int main() {

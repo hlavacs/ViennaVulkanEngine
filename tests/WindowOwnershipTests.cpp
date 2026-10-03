@@ -1,7 +1,7 @@
 /// @file
 /// @brief Checks facade window ownership, frame snapshots and per-window camera assignments.
 import std;
-import VEEngine;
+import VVEngine;
 
 namespace {
 

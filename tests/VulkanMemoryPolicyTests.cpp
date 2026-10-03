@@ -9,7 +9,7 @@
 #include <vk_mem_alloc.h>
 
 import std;
-import VEEngine.Simple.Vulkan;
+import VVEngine.Simple.Vulkan;
 
 /// @brief Checks device-local storage, sequential uploads and cached readback with distinct failure codes.
 int main() {

@@ -10,8 +10,8 @@
 import std;
 import VVE.TestSupport;
 
-import VEEngine.Simple;
-import VEEngine.Simple.Renderer;
+import VVEngine.Simple;
+import VVEngine.Simple.Renderer;
 
 /// @brief Keeps rendering usable after a callback throws between ImGui::Begin and ImGui::End.
 int main() {

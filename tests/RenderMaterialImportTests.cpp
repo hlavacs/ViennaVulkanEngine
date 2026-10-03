@@ -11,10 +11,10 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
-import VEEngine.Simple;
-import VEEngine.Simple.Scene;
+import VVEngine.Simple;
+import VVEngine.Simple.Scene;
 
 /// @brief Checks derived texture counts for shared paths, empty scenes and unknown handles without rendering.
 bool hasDistinctAssetTextureCounts(vve::simple::AssetSystem &assets) {

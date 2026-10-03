@@ -8,9 +8,9 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 /// @brief Verifies Sponza remains detailed with and without directional lighting.
 int main() {

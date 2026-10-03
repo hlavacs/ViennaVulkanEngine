@@ -1,6 +1,6 @@
 #include <cstdint>
 
-import VEEngine;
+import VVEngine;
 
 int main() {
    using namespace vve;

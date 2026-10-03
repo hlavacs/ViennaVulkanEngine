@@ -1,8 +1,8 @@
-export module VEEngine:Window;
+export module VVEngine:Window;
 import std;
 import :Implementation;
-import VEEngine.Types;
-import VEEngine.Vector;
+import VVEngine.Types;
+import VVEngine.Vector;
 
 /**
 	* @file

@@ -11,9 +11,9 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 /// @brief Skips minimized windows without retiring targets, moving the GUI or losing camera and effect state.
 bool checkMinimizedWindows() {

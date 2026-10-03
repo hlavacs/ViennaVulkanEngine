@@ -79,7 +79,7 @@ The VS Code macOS launch entries and `tools/vscode/run-ctest.sh` set `VK_ICD_FIL
 
 `vve::Vector<T>` is an alias of `std::vector<T>`, with contiguous storage and `data()`. It follows standard vector invalidation rules: growth may invalidate element pointers, references and iterators. Reserve before borrowing elements, or look them up again after growth.
 
-The public facade is the C++ module `VEEngine` in namespace `vve` (sources in `src/`). It is bound to exactly one engine implementation, selected by the CMake cache variable:
+The public facade is the C++ module `VVEngine` in namespace `vve` (sources in `src/`). It is bound to exactly one engine implementation, selected by the CMake cache variable:
 
 ```text
 VVE_ENGINE_IMPLEMENTATION_NAMESPACE

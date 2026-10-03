@@ -1,4 +1,4 @@
-export module VEEngine:World;
+export module VVEngine:World;
 import std;
 import :ECS;
 import :Window;

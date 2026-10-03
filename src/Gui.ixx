@@ -1,4 +1,4 @@
-export module VEEngine:Gui;
+export module VVEngine:Gui;
 import std;
 import :Implementation;
 

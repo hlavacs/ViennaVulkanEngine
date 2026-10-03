@@ -607,7 +607,7 @@ Decided on 27 September 2026. Overall rule: **remove everything that is unnecess
 - **Decision DEC-5** (see the table above).
 - **Where:** `src/Vector.ixx:18-489`, `src/Assets.cpp:7-13`, `src/versions/simple/Vulkan/Resources.ixx:346-357`, `tests/SegmentedVectorTests.cpp`, `tests/CMakeLists.txt:8`
 - **Problem:** `vve::Vector` allocates whole 256-element segments, so every non-empty Vector costs at least 256·sizeof(T): 2 KB for one MeshHandle, about 35 KB for a one-window snapshot. It has no `data()`, so GPU uploads copy element by element (`uploadValues`) and nothing can be viewed as a span. Node lists, mesh geometry, per-frame window snapshots and every facade query result use it.
-- **Change:** Reduce VEEngine.Vector to `template <typename T> using Vector = std::vector<T>;`, which keeps `vve::Vector<T>` source-compatible for users and examples. Drop `implementation_type` and simplify `facadeVector`. Make `uploadValues` memcpy via `data()`. Audit code that relied on element addresses surviving `push_back`/`insert`, for example RenderScene `find*` pointers held across `add*` in `setObjectMeshPositions`.
+- **Change:** Reduce VVEngine.Vector to `template <typename T> using Vector = std::vector<T>;`, which keeps `vve::Vector<T>` source-compatible for users and examples. Drop `implementation_type` and simplify `facadeVector`. Make `uploadValues` memcpy via `data()`. Audit code that relied on element addresses surviving `push_back`/`insert`, for example RenderScene `find*` pointers held across `add*` in `setObjectMeshPositions`.
 - **Done when:** `tests/SegmentedVectorTests.cpp` is replaced by `tests/VectorTests.cpp` (registered in tests/CMakeLists.txt). It asserts that a `Vector<vve::MeshHandle>` holding one element has `capacity() < 256`, and that `v.data() + 1 == &v[1]` after two `push_back`s. Full ctest passes; on Linux, also run it once with `-fsanitize=address` to catch invalidated element pointers.
 - **Risk / notes:** Losing pointer stability is the only behavioural difference. D13 (spans) and D14 (range erase) build on this.
 
@@ -686,12 +686,12 @@ Decided on 27 September 2026. Overall rule: **remove everything that is unnecess
   - The eight window-creation fields exist three times (`WindowSetup`, `detail::EngineWindowSetup`, `simple::WindowDesc`) and are converted twice at startup.
   - `WindowFrameInfo` is identical to `simple::WindowInfo`. `engineWindowFrame` copies the snapshot, strings included, into it every frame, even for an `Engine<>` without systems.
   - `RenderShadowDepthSample` exists twice with different defaults (shadow_factor/gpu_depth/error 0/0/0 vs 1/-1/-1) and is copied field by field.
-  - `Entity` is re-declared with `using` in VEEngine.Types and VEEngine.ECSContainer.
+  - `Entity` is re-declared with `using` in VVEngine.Types and VVEngine.ECSContainer.
   - `EngineConfig` duplicates `ApplicationName`+`MaxFrames` and has no user in tests or examples.
 - **Change:**
-  - Define `WindowDesc`, `WindowInfo`/`WindowFrameData` and `RenderShadowDepthSample` (simple's defaults) once, as plain data in VEEngine.Types (namespace vve), and have simple use them.
+  - Define `WindowDesc`, `WindowInfo`/`WindowFrameData` and `RenderShadowDepthSample` (simple's defaults) once, as plain data in VVEngine.Types (namespace vve), and have simple use them.
   - `WindowSetup` wraps a `WindowDesc`. Delete `EngineWindowSetup`, `WindowFrameInfo`, `implementationWindows`, `facadeWindowFrame` and the field-by-field sample copy.
-  - Use `export import VEEngine.Entity;` in Types.ixx/ECSContainer.ixx instead of the using-declarations.
+  - Use `export import VVEngine.Entity;` in Types.ixx/ECSContainer.ixx instead of the using-declarations.
   - Delete `EngineConfig` and both `Engine(EngineConfig)` constructors.
   - Skip `engineWindowFrame` in `updateSystems` when `sizeof...(TSystems) == 0`.
   - Frame-counter duplication is out of scope here.

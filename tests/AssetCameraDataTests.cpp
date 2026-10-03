@@ -1,6 +1,6 @@
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
 
 /// @brief Tests imported camera descriptors through the public asset facade only.

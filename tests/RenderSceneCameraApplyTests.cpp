@@ -8,7 +8,7 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
 
 /// @brief Verifies imported cameras affect render counts only when requested.

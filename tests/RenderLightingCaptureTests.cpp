@@ -8,9 +8,9 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 /// @brief Verifies normal-mapped lighting and the sRGB output of an unlit material.
 int main(int argc, char **argv) {

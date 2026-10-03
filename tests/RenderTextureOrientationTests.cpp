@@ -9,7 +9,7 @@
 
 import std;
 import VVE.TestSupport;
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 namespace {
 

@@ -1,8 +1,8 @@
-module VEEngine.Simple.Renderer;
+module VVEngine.Simple.Renderer;
 import std;
-import VEEngine.Simple.Types;
-import VEEngine.Simple.Scene;
-import VEEngine.Simple.Vulkan;
+import VVEngine.Simple.Types;
+import VVEngine.Simple.Scene;
+import VVEngine.Simple.Vulkan;
 
 /// @file
 /// @brief ForwardRenderer CPU shadow preparation: packs contributing spot, point, and directional lights and builds matrices only for shadow casters.

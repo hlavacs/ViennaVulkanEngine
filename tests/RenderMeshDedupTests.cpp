@@ -11,9 +11,9 @@
 
 import std;
 
-import VEEngine;
+import VVEngine;
 import VVE.TestSupport;
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 /// @brief Verifies instances share mesh storage and mesh edits retain stable handle-keyed uploads.
 int main() {

@@ -5,7 +5,7 @@ module;
 
 export module VVE.TestSupport;
 import std;
-import VEEngine.Simple;
+import VVEngine.Simple;
 
 export namespace vve::test {
 

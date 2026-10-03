@@ -7,31 +7,31 @@ simplification took it from 10 409 to 6 781 lines at commit `7cce3e7a`).
 
 ```
 application (examples/*, tests/*)            uses only vve::*
-   |  import VEEngine;
+   |  import VVEngine;
    v
-VEEngine  (src/, namespace vve, ~3.1k lines)                        facade / public contract
+VVEngine  (src/, namespace vve, ~3.1k lines)                        facade / public contract
    Engine<TSystems...>, World<...>, wrappers AssetSystem . RenderSystem . WindowSystem . GuiSystem (each `Impl &impl_`)
-   vocabulary: VEEngine.Types . Math . Error . Handle . Vector . ECSContainer
-   |  import VEEngine.Simple;   (only in src/implementations/simple.ixx, the :Implementation partition)
+   vocabulary: VVEngine.Types . Math . Error . Handle . Vector . ECSContainer
+   |  import VVEngine.Simple;   (only in src/implementations/simple.ixx, the :Implementation partition)
    v
-VEEngine.Simple  (src/versions/simple, namespace vve::simple, 7.6k lines)   implementation
+VVEngine.Simple  (src/versions/simple, namespace vve::simple, 7.6k lines)   implementation
    Engine -> ECS . WindowSystem(SDL3) . AssetSystem(assimp) . RenderSystem . GuiSystem(ImGui)
    partitions :Graph :Window :Assets :Gui :RenderSystem + 3 .cpp implementation units
    |
    v
-VEEngine.Simple.Renderer  (ForwardRenderer, 1.5k)  ->  VEEngine.Simple.Vulkan  (RAII wrappers + VMA, 2.2k)
+VVEngine.Simple.Renderer  (ForwardRenderer, 1.5k)  ->  VVEngine.Simple.Vulkan  (RAII wrappers + VMA, 2.2k)
    |                                                      :OwnedHandle :Memory :Device :Commands :Presentation
    |                                                      :Pipeline :Shadow :Readback :Resources
    v
-VEEngine.Simple.RenderResources . VEEngine.Simple.Scene . VEEngine.Simple.Types     plain CPU data, no Vulkan
+VVEngine.Simple.RenderResources . VVEngine.Simple.Scene . VVEngine.Simple.Types     plain CPU data, no Vulkan
 ```
 
 The import graph is acyclic and strictly downward. The standalone modules (Types, Scene,
-RenderResources, Vulkan, Renderer) cannot see `VEEngine.Simple` at all, which lets
+RenderResources, Vulkan, Renderer) cannot see `VVEngine.Simple` at all, which lets
 `SimpleForwardRendererTests` drive the renderer directly.
 
 The facade binds to an implementation in exactly one place: `src/implementations/<name>.ixx`, the
-module partition `VEEngine:Implementation`, selected by the CMake variable
+module partition `VVEngine:Implementation`, selected by the CMake variable
 `VVE_ENGINE_IMPLEMENTATION_NAMESPACE` together with `src/versions/<name>/`. That partition imports
 the implementation module and exports the aliases `vve::detail::RenderSystemImpl` etc.; every
 subsystem wrapper holds `Impl &impl_` with `using Impl = detail::<Class>Impl`. The facade `Engine`
@@ -44,14 +44,14 @@ Module unit styles in use:
 
 - `export module X;` / `export module X:Part;` interface units and partitions carry declarations and
   small inline bodies.
-- `module VEEngine;`, `module VEEngine.Simple;`, `module VEEngine.Simple.Renderer;` implementation
+- `module VVEngine;`, `module VVEngine.Simple;`, `module VVEngine.Simple.Renderer;` implementation
   units (`src/*.cpp`, `Render/RenderSceneImport.cpp`, `RenderSystemScene.cpp`,
   `RenderSystemObjects.cpp`, `RendererResources.cpp`, `RendererShadowPrep.cpp`, `RendererDraw.cpp`,
   `RendererDebug.cpp`) carry the large member-function definitions and are listed as plain PRIVATE
   sources in CMake.
-- `src/implementations/simple.ixx` (`VEEngine:Implementation`) is the facade's only link to the
+- `src/implementations/simple.ixx` (`VVEngine:Implementation`) is the facade's only link to the
   implementation module (see above).
-- `VEEngine.Simple.Types` is the single vocabulary module of the implementation. `vve::simple` is
+- `VVEngine.Simple.Types` is the single vocabulary module of the implementation. `vve::simple` is
   nested in `vve`, so the facade names (Error, Vector, TypedHandle, Transform, ...) are found by
   ordinary lookup; only the math vocabulary (`Vec3`, `add`, `lookAt`, ...) is aliased there. It also
   declares the few types that assets and renderer share (`RenderVertex`, `MaterialTextureSource`,
