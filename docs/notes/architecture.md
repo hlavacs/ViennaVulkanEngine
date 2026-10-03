@@ -36,7 +36,7 @@ module partition `VEEngine:Implementation`, selected by the CMake variable
 the implementation module and exports the aliases `vve::detail::RenderSystemImpl` etc.; every
 subsystem wrapper holds `Impl &impl_` with `using Impl = detail::<Class>Impl`. The facade `Engine`
 owns `std::unique_ptr<detail::EngineImpl>` and calls the selected implementation directly; the
-non-template `detail::makeEngineImpl` factory in `src/Engine.cpp` converts startup options. No
+inline non-template `detail::makeEngineImpl` factory in `src/Engine.ixx` converts startup options. No
 other facade file names an implementation namespace, so a second engine is a new adapter file plus
 a new `src/versions/` directory. Only `simple` exists today.
 

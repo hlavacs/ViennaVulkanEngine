@@ -82,7 +82,6 @@ target_sources(ViennaVulkanEngine
             implementations/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}.ixx
     PRIVATE
         Assets.cpp
-        Engine.cpp
         Gui.cpp
         RenderSystem.cpp
         Window.cpp

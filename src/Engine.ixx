@@ -25,9 +25,16 @@ export namespace vve {
 			ApplicationName application_name{};	///< Application name passed to the selected engine.
 			MaxFrames max_frames{};	///< Optional frame limit passed to the selected engine.
 			std::optional<Vector<WindowDesc>> windows{};	///< Optional startup windows.
-		};													///< Facade-owned startup options consumed by the implementation unit.
+		};													///< Facade-owned startup options consumed by the engine factory.
 
-		[[nodiscard]] std::unique_ptr<EngineImpl> makeEngineImpl(EngineStartupOptions options);
+		/// @brief Converts startup window options and returns the implementation owned by the facade.
+		[[nodiscard]] inline std::unique_ptr<EngineImpl> makeEngineImpl(EngineStartupOptions options) {
+			if (options.windows.has_value()) {
+				return std::make_unique<EngineImpl>(std::move(options.application_name), options.max_frames,
+					WindowsImpl{.value = std::move(*options.windows)});
+			}
+			return std::make_unique<EngineImpl>(std::move(options.application_name), options.max_frames);
+		}
 
 	} // namespace detail
 
