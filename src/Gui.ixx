@@ -16,6 +16,7 @@ export namespace vve {
 		GuiSystem &operator=(GuiSystem &&) noexcept = delete;
 
 		auto draw(std::function<void()> frame) -> void;
+		[[nodiscard]] auto configureFonts(std::function<void()> setup) -> std::expected<void, Error>;
 
 	private:
 		template <typename... TSystems> friend class Engine;

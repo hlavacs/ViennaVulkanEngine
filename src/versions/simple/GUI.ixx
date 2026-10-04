@@ -28,6 +28,7 @@ export namespace vve::simple {
 	class GuiSystem {
 	public:
 		auto draw(std::function<void()> frame)											-> void;
+		[[nodiscard]] auto configureFonts(std::function<void()> setup) -> std::expected<void, Error>;
 		auto initContext(VkFormat colorFormat = VK_FORMAT_UNDEFINED)					-> void;
 		auto initSDL(SDL_Window *window)													-> std::expected<void, Error>;
 		auto processEvent(const SDL_Event &event)								-> bool;
@@ -44,6 +45,7 @@ export namespace vve::simple {
 
 	private:
 		std::function<void()> frameCallback_{};						///< User frame callback stored for the future GUI backend.
+		std::function<void()> fontSetup_{}; ///< User font atlas setup, invoked once per new context before upload.
 		ImGuiContext *context_{nullptr};									///< Owned Dear ImGui context for this GUI system.
 		bool sdlBackendReady_{false};										///< SDL backend lifecycle state.
 		bool vulkanBackendReady_{false};								///< Vulkan backend lifecycle state.
@@ -57,6 +59,13 @@ export namespace vve::simple {
 
 	/// @brief Stores the user callback that will build one immediate-mode GUI frame.
 	inline auto GuiSystem::draw(std::function<void()> frame) -> void { frameCallback_ = std::move(frame); }
+
+	/// @brief Stores optional font setup while no context exists; an initialized atlas cannot be changed safely.
+	inline auto GuiSystem::configureFonts(std::function<void()> setup) -> std::expected<void, Error> {
+		if (context_) { return std::unexpected(Error::already_initialized); }
+		fontSetup_ = std::move(setup);
+		return {};
+	}
 
 	/// @brief Creates the context once; an sRGB GUI target needs linear theme colours when mutable views are unavailable.
 	inline auto GuiSystem::initContext(VkFormat colorFormat) -> void {
@@ -72,6 +81,8 @@ export namespace vve::simple {
 					color.x = linear(color.x); color.y = linear(color.y); color.z = linear(color.z);
 				}
 			}
+			// The atlas exists, but neither NewFrame nor GPU font upload has run.
+			if (fontSetup_) { fontSetup_(); }
 		}
 	}
 
