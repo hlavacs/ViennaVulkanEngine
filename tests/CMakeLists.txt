@@ -68,6 +68,10 @@ target_compile_definitions(RenderLightingCaptureTests PRIVATE
 vve_add_engine_test(RenderSponzaCaptureTests GPU Vulkan::Vulkan vve_test_support)
 target_compile_definitions(RenderSponzaCaptureTests PRIVATE
    "VVE_TEST_SPONZA_SCENE=\"${PROJECT_SOURCE_DIR}/assets/sea_keep_lonely_watcher/scene.gltf\"")
+# The example camera must frame the castle and retain its long clipping range across updates.
+vve_add_engine_test(SponzaCameraTests)
+target_compile_definitions(SponzaCameraTests PRIVATE
+   "VVE_TEST_SPONZA_SCENE=\"${PROJECT_SOURCE_DIR}/assets/sea_keep_lonely_watcher/scene.gltf\"")
 vve_add_engine_test(RenderMeshDedupTests GPU Vulkan::Vulkan vve_test_support)
 target_compile_definitions(RenderMeshDedupTests PRIVATE
    "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\"")

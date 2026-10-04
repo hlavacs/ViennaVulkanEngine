@@ -2,6 +2,8 @@ import std;
 import VVEngine;
 import VVE.ExampleSupport;
 
+#include "SponzaCamera.hpp"
+
 /**
  * @file
  * @brief Sponza example shell running through the public engine facade.
@@ -53,14 +55,17 @@ int main(int argc, char **argv) {
 	int frame{};
 	bool running = true;
 	vve::DefaultCameraController cameraController{};
-	cameraController.eye = vve::Position{.value = vve::Vec3{0.0F, 6.0F, 9.0F}};
+	cameraController.eye = vve::example::sponza::eye;
+	cameraController.move_speed = vve::example::sponza::move_speed;
 	const auto startupForward =
-		vve::math::normalize(vve::math::subtract(vve::Vec3{0.0F, 1.0F, 0.0F}, cameraController.eye.value));
+		vve::math::normalize(vve::math::subtract(vve::example::sponza::target.value, cameraController.eye.value));
 	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
 	cameraController.pitch = std::asin(startupForward.y);
+	std::cout << "[sponza] camera near=" << vve::example::sponza::clip.near_plane
+		<< " far=" << vve::example::sponza::clip.far_plane << " moveSpeed=" << cameraController.move_speed << '\n';
 	while (running && (max_frames == 0 || frame < max_frames)) {
 		const auto frameInput = engine.world().get<vve::WindowSystem>().input();
-		render_system.setCamera(cameraController.update(frameInput, engine.frameContext().delta_time));
+		render_system.setCamera(vve::example::sponza::updateSponzaCamera(cameraController, frameInput, engine.frameContext().delta_time));
 
 		const auto status = engine.step();
 		if (!status) {
