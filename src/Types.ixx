@@ -12,6 +12,28 @@ export import VVEngine.Entity;
 	*/
 export namespace vve {
 
+	struct SoundHandleTag {}; ///< Loaded audio resource category.
+	struct AudioPlaybackHandleTag {}; ///< Independent playing voice category.
+	using SoundHandle = TypedHandle<SoundHandleTag>; ///< Audio owned until unloadSound or shutdown.
+	using AudioPlaybackHandle = TypedHandle<AudioPlaybackHandleTag>; ///< Voice owned until stopped or collected.
+
+	/// @brief Linear audio volume: zero is silent, one is full volume.
+	struct AudioVolume {
+		float value{1.0F}; ///< Finite gain in [0, 1]; independent of renderer math precision.
+	};
+
+	/// @brief Options for one independent playback of a loaded sound.
+	struct AudioPlaybackOptions {
+		bool loop{false}; ///< Repeat indefinitely until stopped.
+		AudioVolume volume{}; ///< Per-voice gain multiplied by the master gain.
+	};
+
+	/// @brief Choose upfront decoding for short effects or deferred decoding for longer audio.
+	enum class AudioLoadMode {
+		decoded, ///< Decode into PCM while loading; reuse for frequent sound effects.
+		on_demand ///< Retain encoded data and decode during playback; not disk streaming.
+	};
+
 
 	struct SceneHandleTag {};											///< Scene descriptor handle tag.
 	struct WindowHandleTag {};											///< Runtime window handle tag.

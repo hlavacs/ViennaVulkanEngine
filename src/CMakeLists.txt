@@ -46,6 +46,7 @@ find_package(assimp CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
+find_package(SDL3_mixer CONFIG REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "" AND EXISTS "${VVE_VULKAN_SDK_ROOT}/include/glm/glm.hpp")
    target_include_directories(ViennaVulkanEngine BEFORE PUBLIC "${VVE_VULKAN_SDK_ROOT}/include")
@@ -78,6 +79,7 @@ target_sources(ViennaVulkanEngine
             Assets.ixx
             RenderSystem.ixx
             Gui.ixx
+            Audio.ixx
             Engine.ixx
             implementations/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}.ixx
     PRIVATE
@@ -111,6 +113,7 @@ target_link_libraries(ViennaVulkanEngine
     PRIVATE
         imgui::imgui
         SDL3::SDL3
+        SDL3_mixer::SDL3_mixer
         Vulkan::Vulkan
         GPUOpen::VulkanMemoryAllocator
 )

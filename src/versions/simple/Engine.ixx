@@ -13,6 +13,7 @@ export import :Window;
 export import :Assets;
 export import :RenderSystem;
 export import :Gui;
+export import :Audio;
 
 /// @file
 /// @brief Small simple runtime facade: SDL windows, input, assets, rendering, and GUI.
@@ -39,6 +40,7 @@ export namespace vve::simple {
 		[[nodiscard]] RenderSystem &renderSystem();
 		[[nodiscard]] const RenderSystem &renderSystem() const;
 		[[nodiscard]] GuiSystem &gui();
+		[[nodiscard]] AudioSystem &audioSystem();
 		[[nodiscard]] ECS &ecs();
 		[[nodiscard]] WindowSystem &windowSystem();
 		[[nodiscard]] const WindowSystem &windowSystem() const;
@@ -61,6 +63,7 @@ export namespace vve::simple {
 		AssetSystem assets_{};															///< Asset and object catalog facade.
 		RenderSystem render_system_{makeImportedAssetReadAccess(), &window_system_};	///< Renderer selection and active CPU render scene.
 		GuiSystem gui_{};																	///< GUI descriptor facade.
+		AudioSystem audio_{}; ///< Owns the lazily opened device, sounds and voices.
 		std::chrono::steady_clock::time_point last_frame_time_{};			///< Timestamp of the previous step().
 		std::uint64_t frame_{0};														///< Number of completed step() calls.
 		FrameContext frame_context_{};											///< Index and delta of the latest polled frame, shared with the facade.
@@ -75,6 +78,7 @@ export namespace vve::simple {
 
 	/// @brief Releases runtime systems owned by the simple engine.
 	inline Engine::~Engine() {
+		audio_.shutdown(); // Close audio before the window system can release SDL.
 		render_system_.waitIdle();																					///< ImGui pipelines may still be referenced by the last submitted frame.
 		gui_.shutdownVulkan();
 		render_system_.shutdown();
@@ -108,6 +112,9 @@ export namespace vve::simple {
 
 	/// @brief Returns the GUI system.
 	inline GuiSystem &Engine::gui() { return gui_; }
+
+	/// @brief Returns audio without opening a device; games explicitly call audio.init().
+	inline AudioSystem &Engine::audioSystem() { return audio_; }
 
 	/// @brief Returns the entity/component storage shared with the facade.
 	inline ECS &Engine::ecs() { return ecs_; }
@@ -149,6 +156,7 @@ export namespace vve::simple {
 	/// @brief Reports a recovered GUI callback error once, otherwise polls input and advances the frame status.
 	inline auto Engine::step()																				-> std::expected<FrameStatus, Error>{
 		if (!initialized_) { return std::unexpected(Error::missing_object); }
+		audio_.collectFinished();
 		if (gui_.takeFrameCallbackError()) { return std::unexpected(Error::platform_error); }
 		if (const auto result = window_system_.poll(); !result) { return std::unexpected(result.error()); }
 

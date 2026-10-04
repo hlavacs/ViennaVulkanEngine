@@ -12,6 +12,7 @@
       ]
     },
     "stb",
+    "sdl3-mixer",
     "vulkan-memory-allocator",
     {
       "name": "sdl3",

@@ -1,5 +1,6 @@
 target_sources(ViennaVulkanEngine
    PRIVATE
+      "${CMAKE_CURRENT_LIST_DIR}/Audio.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/stb_image_write_impl.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/vma_impl.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererResources.cpp"
@@ -16,6 +17,7 @@ target_sources(ViennaVulkanEngine
          Window.ixx
          Assets.ixx
          GUI.ixx
+         Audio.ixx
          Engine.ixx
          Vulkan/Handle.ixx
          Vulkan/Memory.ixx

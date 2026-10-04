@@ -12,6 +12,7 @@ export namespace vve {
 	inline constexpr std::string_view engineImplementationNamespaceName{"simple"};	///< Active implementation namespace name.
 
 	namespace detail {
+		using AudioSystemImpl = simple::AudioSystem; ///< Audio system wrapped by vve::AudioSystem.
 		using EngineImpl = simple::Engine;							///< Engine wrapped by vve::Engine.
 		using AssetSystemImpl = simple::AssetSystem;				///< Asset system wrapped by vve::AssetSystem.
 		using RenderSystemImpl = simple::RenderSystem;			///< Render system wrapped by vve::RenderSystem.

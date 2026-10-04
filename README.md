@@ -2,7 +2,7 @@
 
 ## Setup
 
-This project uses `vcpkg` manifest dependencies for third-party libraries: Assimp, GLM, ImGui, SDL3, stb, and Vulkan Memory Allocator are declared in [vcpkg.json](vcpkg.json) and installed into the repo-local `vcpkg_installed` directory. SDL3 is built with its Vulkan feature enabled so the examples can create Vulkan-capable windows. The post-processing library vvppl ([ViennaVulkanPostProcessingLibrary](https://github.com/orcunilker/ViennaVulkanPostProcessingLibrary), commit `e69f3e56beca935ceb257cce6005f6e39847bcb4`) is not a vcpkg package: CMake downloads it with `FetchContent` as a pinned, SHA256 hash-verified archive during the first configure.
+This project uses `vcpkg` manifest dependencies for third-party libraries: Assimp, GLM, ImGui, SDL3, SDL3_mixer, stb, and Vulkan Memory Allocator are declared in [vcpkg.json](vcpkg.json) and installed into the repo-local `vcpkg_installed` directory. SDL3 is built with its Vulkan feature enabled so the examples can create Vulkan-capable windows. The post-processing library vvppl ([ViennaVulkanPostProcessingLibrary](https://github.com/orcunilker/ViennaVulkanPostProcessingLibrary), commit `e69f3e56beca935ceb257cce6005f6e39847bcb4`) is not a vcpkg package: CMake downloads it with `FetchContent` as a pinned, SHA256 hash-verified archive during the first configure.
 
 For offline builds, extract that archive beforehand and configure with `-DFETCHCONTENT_SOURCE_DIR_VIENNAVULKANPOSTPROCESSINGLIBRARY=<dir>`, where `<dir>` contains its top-level `CMakeLists.txt`. This uses the local source directory without downloading vvppl; the Vulkan SDK and vcpkg dependencies must also be installed beforehand.
 
@@ -229,6 +229,19 @@ The simple renderer bounds its in-flight fence wait to 1 second and image acquis
 With `BUILD_TESTING` and the simple engine, `vve_add_example_test(<target>)` in `examples/CMakeLists.txt` registers `game`, `testscene`, `sponza` and `simple_forward_demo` with `--frames 3` and a 60-second timeout. These tests run from the repository root. Run all example tests with `ctest --test-dir build/debug-linux -L example --output-on-failure`. The `simple_forward_demo` test passes `--output <build>/examples/simple_forward_demo/verify/simple_forward_demo_capture.png`; without `--output`, the example keeps its executable-relative capture path.
 
 Every test is a C++ executable built from one file in `tests/` and registered in [tests/CMakeLists.txt](tests/CMakeLists.txt) with `vve_add_engine_test`. CTest additionally runs `LightShadowDebugExample` (the `light_shadow_debug` example, which writes `bin/<variant>/verify/light_shadow_debug.txt` and `.png`) and `PostProcessingSmokeTests` (`postprocessing --frames 3 --all-effects`, which compiles and runs all 15 effects and fails on a non-zero exit code). Without `--all-effects`, `postprocessing` keeps its default chromatic, vignette, tonemap, greyscale and film grain chain. The rendering tests `SimpleForwardRendererTests`, `RenderTextureDedupTests`, `RenderMaterialImportTests`, `RenderLightingCaptureTests`, `RenderSponzaCaptureTests`, and `RenderMeshDedupTests` open hidden SDL windows (64 to 256 pixels) and need a Vulkan device that can present to them. Tests that pass `visible(false)` window setups also open hidden windows. They use the platform video driver; on a Linux machine without a display (`DISPLAY` and `WAYLAND_DISPLAY` unset), `build_linux.sh` switches to SDL's offscreen driver, which needs a Vulkan driver with `VK_EXT_headless_surface`.
+
+## Audio
+
+The engine's `vve::AudioSystem` facade uses SDL3_mixer, installed by the normal
+vcpkg manifest build. Obtain it with `world.get<vve::AudioSystem>()`, call
+`audio.init()` explicitly, then load a sound and play independent overlapping
+voices. Looping, pause/resume, voice and master volume, and resource cleanup are
+available without including SDL headers in your game.
+
+Run `bin/<variant>/exe/audio_demo` (`.exe` on Windows) for a complete example.
+Its original WAV is copied beside the executable; no launch script is required.
+See [the audio guide](docs/Audio.md) for the API, error handling and linking from
+your own project. Audio tests use a dummy device during CTest.
 
 ## Doxygen
 

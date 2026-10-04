@@ -23,6 +23,11 @@ function(vve_add_engine_test name)
 endfunction()
 
 vve_add_engine_test(HandleTests)
+vve_add_engine_test(AudioSystemTests)
+set_tests_properties(AudioSystemTests PROPERTIES ENVIRONMENT "SDL_AUDIO_DRIVER=dummy" LABELS audio TIMEOUT 15)
+add_test(NAME AudioInitFailureTests COMMAND AudioSystemTests --expect-init-failure)
+set_tests_properties(AudioInitFailureTests PROPERTIES
+    ENVIRONMENT "SDL_AUDIO_DRIVER=vve_missing_audio_driver" LABELS audio TIMEOUT 15)
 vve_add_engine_test(VectorTests)
 vve_add_engine_test(GraphTests)
 vve_add_engine_test(ECSTests)

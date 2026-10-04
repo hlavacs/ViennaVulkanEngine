@@ -12,6 +12,7 @@ export import :World;
 export import :Assets;
 export import :RenderSystem;
 export import :Gui;
+export import :Audio;
 
 /// @file
 /// @brief Public engine facade; users import this module and use only namespace vve.
@@ -80,6 +81,7 @@ export namespace vve {
 		ECS &ecs_;																///< ECS owned by the implementation, referenced by world views.
 		AssetSystem assets_;												///< Public asset-system wrapper referenced by world views.
 		GuiSystem gui_;														///< Public GUI wrapper referenced by world views.
+		AudioSystem audio_; ///< Public audio wrapper referenced by world views.
 		WindowSystem window_system_;										///< Public window wrapper referenced by world views.
 		RenderSystem render_system_;										///< Public render wrapper referenced by world views.
 		std::optional<std::tuple<TSystems...>> systems_{};				///< User systems; always engaged after construction.
@@ -196,7 +198,7 @@ export namespace vve {
 	template <typename... TSystems>
 	Engine<TSystems...>::Engine(detail::EngineStartupOptions options)
 		: impl_{detail::makeEngineImpl(std::move(options))}, ecs_{impl_->ecs()},
-		  assets_{impl_->assets()}, gui_{impl_->gui()},
+		  assets_{impl_->assets()}, gui_{impl_->gui()}, audio_{impl_->audioSystem()},
 		  window_system_{impl_->windowSystem()}, render_system_{impl_->renderSystem()} {}
 
 	template <typename... TSystems>
@@ -266,14 +268,14 @@ export namespace vve {
 	template <typename... TSystems> auto Engine<TSystems...>::makeWorld() {
 		auto make_base = [&] {
 			return World{std::ref(ecs_), std::ref(assets_), std::ref(gui_), std::ref(window_system_),
-								std::ref(render_system_)};
+								std::ref(render_system_), std::ref(audio_)};
 		};
 		if constexpr (sizeof...(TSystems) == 0) {
 			return make_base();
 		} else {
 			return std::apply([&](auto &...system) {
 				return World{std::ref(ecs_), std::ref(assets_), std::ref(gui_),
-									std::ref(window_system_), std::ref(render_system_), std::ref(system)...};
+									std::ref(window_system_), std::ref(render_system_), std::ref(audio_), std::ref(system)...};
 			}, *systems_);
 		}
 	}

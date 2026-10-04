@@ -7,6 +7,8 @@ if(TARGET vve_windows_std)
     target_link_libraries(vve_example_support PUBLIC vve_windows_std)
 endif()
 
+add_subdirectory(audio)
+
 # Register short facade-example runs with the same asset root as an interactive launch.
 function(vve_add_example_test target)
     if(BUILD_TESTING AND VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
