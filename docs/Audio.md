@@ -63,7 +63,8 @@ is harmless. Every fallible operation returns `std::expected<..., vve::Error>`;
 Default `AudioLoadMode::decoded` converts the file to PCM up front, useful for
 short effects. `AudioLoadMode::on_demand` retains encoded data and decodes while
 playing; it can reduce memory usage for longer compressed audio but is not disk
-streaming. WAV and OGG Vorbis work with the pinned default decoder build. Other
+streaming. WAV, OGG Vorbis and MP3 work with VVE's decoder build. The manifest
+enables SDL3_mixer's `mpg123` feature so V2's original MP3 soundtrack plays. Other
 formats depend on which SDL3_mixer decoder features are installed.
 
 Each `play(sound)` returns a different `AudioPlaybackHandle`, even for the same
@@ -117,6 +118,14 @@ This API provides ordinary output and volume controls, without positional audio.
 pause/resume, gain validation, bad files, handle ownership, cleanup and reinitialization.
 `AudioDemo` exercises the bundled runnable example. Both use SDL's dummy audio
 driver during CTest, so no speakers or audio hardware are required.
+
+VVE's Crate Collector and Relay Siege also reuse V2's original Dance, Ophelia and
+Never Get Out tracks. Both provide a music selector, a volume slider (zero mutes)
+and a music pause toggle. Crate Collector's files are staged in `audio/v2` beside
+`game`; Relay Siege's copies are in its executable's `assets/sounds` directory.
+The original `license.txt` and `V2_MUSIC.md` credits travel with the music.
+`LegacyMusicTests` decodes every original track in both load modes; each game's
+three music smoke tests initialize its real startup path with a dummy audio device.
 
 ```text
 ctest --test-dir build/debug-windows --output-on-failure -L audio

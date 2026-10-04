@@ -15,6 +15,7 @@ import VVE.ExampleSupport;
 namespace {
 
 constexpr auto grassTextureRelativePath = "assets/game/plane/grass.jpg"; ///< Tiled ground texture.
+constexpr std::array musicFiles{"dance.mp3", "ophelia.mp3", "getout.ogg"}; ///< Original V2 soundtrack.
 constexpr std::array crateTextureRelativePaths{"assets/game/crate0/diffuse.png", "assets/game/crate1/diffuse.png"}; ///< Wood crate textures, alternated per spawn.
 
 constexpr float groundHalfExtent = 20.0F;      ///< Half side length of the square play field in metres.
@@ -114,6 +115,21 @@ int main(int argc, char **argv) {
 	std::cout << std::unitbuf;
 	std::cerr << std::unitbuf;
 	std::cout << "[game] engine=" << vve::engineImplementationNamespaceName << '\n';
+	int selectedTrack{};
+	bool requireAudio{};
+	for (int argument = 1; argument < argc; ++argument) {
+		const std::string_view option{argv[argument]};
+		if (option == "--require-audio") { requireAudio = true; }
+		if (option == "--music-track") {
+			if (++argument >= argc) { std::cerr << "--music-track needs 0, 1 or 2.\n"; return 4; }
+			const std::string_view value{argv[argument]};
+			const auto parsed = std::from_chars(value.data(), value.data() + value.size(), selectedTrack);
+			if (parsed.ec != std::errc{} || parsed.ptr != value.data() + value.size() ||
+				selectedTrack < 0 || selectedTrack >= static_cast<int>(musicFiles.size())) {
+				std::cerr << "--music-track needs 0, 1 or 2.\n"; return 4;
+			}
+		}
+	}
 
 	const auto activeRenderer = vve::RendererId{.value = "forward"};
 	auto engine = vve::EngineBuilder<>{}
@@ -133,6 +149,37 @@ int main(int argc, char **argv) {
 
 	auto render = engine.world().get<vve::RenderSystem>();
 	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr);
+	// The public facade owns sounds; one looped voice plays the selected V2 track.
+	auto audio = engine.world().get<vve::AudioSystem>();
+	bool musicReady = audio.init().has_value();
+	float musicVolume{0.35F};
+	bool musicPaused{};
+	std::array<vve::SoundHandle, musicFiles.size()> songs{};
+	vve::AudioPlaybackHandle musicVoice{};
+	const auto musicDirectory = std::filesystem::absolute(argv[0]).parent_path() / "audio/v2";
+	if (musicReady) {
+		for (std::size_t index = 0; index < musicFiles.size(); ++index) {
+			const auto sound = audio.loadSound(musicDirectory / musicFiles[index], vve::AudioLoadMode::on_demand);
+			if (!sound) { std::cerr << "[game] music load failed: " << audio.lastError() << '\n'; return 4; }
+			songs[index] = *sound;
+		}
+		if (!audio.setMasterVolume(vve::AudioVolume{.value = musicVolume})) { return 4; }
+	} else {
+		std::cerr << "[game] audio unavailable: " << audio.lastError() << '\n';
+		if (requireAudio) { return 4; }
+	}
+	auto startMusic = [&]() -> std::expected<void, vve::Error> {
+		if (musicVoice.valid()) {
+			if (const auto result = audio.stop(musicVoice); !result) { return result; }
+			musicVoice = {};
+		}
+		const auto voice = audio.play(songs[selectedTrack], vve::AudioPlaybackOptions{.loop = true});
+		if (!voice) { return std::unexpected(voice.error()); }
+		musicVoice = *voice;
+		std::cout << "[game] music=" << musicFiles[selectedTrack] << " loop=1\n";
+		return musicPaused ? audio.pause(musicVoice) : std::expected<void, vve::Error>{};
+	};
+	if (musicReady && !startMusic()) { std::cerr << "[game] music failed: " << audio.lastError() << '\n'; return 4; }
 	const auto sunHandle = loadScene(render, root);
 	if (!sunHandle) {
 		std::cerr << "[game] scene load failed: error=" << vve::errorName(sunHandle.error()) << '\n';
@@ -157,7 +204,7 @@ int main(int argc, char **argv) {
 	std::uniform_real_distribution<float> place{-groundHalfExtent + 2.0F, groundHalfExtent - 2.0F};
 
 	// The score overlay is drawn every frame in the top-left corner.
-	engine.world().get<vve::GuiSystem>().draw([&score, &crates] {
+	engine.world().get<vve::GuiSystem>().draw([&] {
 		ImGui::SetNextWindowPos(ImVec2(12.0F, 12.0F), ImGuiCond_Always);
 		ImGui::Begin("Score", nullptr,
 						 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
@@ -166,6 +213,19 @@ int main(int argc, char **argv) {
 		ImGui::Separator();
 		ImGui::TextUnformatted("WASD move  -  Arrows look  -  Esc quit");
 		ImGui::TextUnformatted("Drive into a crate to collect it!");
+		ImGui::Separator();
+		ImGui::BeginDisabled(!musicReady);
+		if (ImGui::Combo("Music", &selectedTrack, "Dance\0Ophelia\0Never get out\0")) {
+			musicReady = startMusic().has_value();
+		}
+		if (ImGui::SliderFloat("Volume", &musicVolume, 0.0F, 1.0F, "%.2f")) {
+			musicReady = audio.setMasterVolume(vve::AudioVolume{.value = musicVolume}).has_value();
+		}
+		if (ImGui::Checkbox("Pause music", &musicPaused)) {
+			musicReady = (musicPaused ? audio.pause(musicVoice) : audio.resume(musicVoice)).has_value();
+		}
+		ImGui::EndDisabled();
+		if (!musicReady) { ImGui::TextUnformatted("Audio unavailable"); }
 		ImGui::End();
 	});
 
@@ -232,6 +292,7 @@ int main(int argc, char **argv) {
 			return 3;
 		}
 		++frame;
+		if (requireAudio && !musicReady) { std::cerr << audio.lastError() << '\n'; return 4; }
 		if (*status == vve::FrameStatus::stopped) {
 			break;
 		}

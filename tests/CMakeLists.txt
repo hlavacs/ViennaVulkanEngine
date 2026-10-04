@@ -24,6 +24,11 @@ endfunction()
 
 vve_add_engine_test(HandleTests)
 vve_add_engine_test(AudioSystemTests)
+vve_add_engine_test(LegacyMusicTests)
+target_compile_definitions(LegacyMusicTests PRIVATE
+    VVE_TEST_V2_MUSIC_DIR="${PROJECT_SOURCE_DIR}/assets/sounds")
+set_tests_properties(LegacyMusicTests PROPERTIES
+    ENVIRONMENT "SDL_AUDIO_DRIVER=dummy" LABELS audio TIMEOUT 30)
 set_tests_properties(AudioSystemTests PROPERTIES ENVIRONMENT "SDL_AUDIO_DRIVER=dummy" LABELS audio TIMEOUT 15)
 add_test(NAME AudioInitFailureTests COMMAND AudioSystemTests --expect-init-failure)
 set_tests_properties(AudioInitFailureTests PROPERTIES

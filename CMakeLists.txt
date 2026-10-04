@@ -317,11 +317,14 @@ list(APPEND VVE_VCPKG_RUNTIME_DLLS_DEBUG ${VVE_SLANG_RUNTIME_DLLS_DEBUG})
 
 set(VVE_WINDOWS_RUNTIME_DLLS)
 if(WIN32)
-   list(APPEND VVE_WINDOWS_RUNTIME_DLLS
-      ${VVE_VCPKG_RUNTIME_DLLS_RELEASE}
-      ${VVE_VCPKG_RUNTIME_DLLS_DEBUG}
-      ${VVE_SLANG_RUNTIME_DLLS}
-   )
+   # Decoder DLLs are private dependencies of SDL3_mixer and are not necessarily
+   # visible through TARGET_RUNTIME_DLLS. Stage the matching configuration only.
+   foreach(runtime_dll IN LISTS VVE_VCPKG_RUNTIME_DLLS_RELEASE)
+      list(APPEND VVE_WINDOWS_RUNTIME_DLLS "$<$<NOT:$<CONFIG:Debug>>:${runtime_dll}>")
+   endforeach()
+   foreach(runtime_dll IN LISTS VVE_VCPKG_RUNTIME_DLLS_DEBUG)
+      list(APPEND VVE_WINDOWS_RUNTIME_DLLS "$<$<CONFIG:Debug>:${runtime_dll}>")
+   endforeach()
    list(REMOVE_DUPLICATES VVE_WINDOWS_RUNTIME_DLLS)
 endif()
 

@@ -238,6 +238,11 @@ vcpkg manifest build. Obtain it with `world.get<vve::AudioSystem>()`, call
 voices. Looping, pause/resume, voice and master volume, and resource cleanup are
 available without including SDL headers in your game.
 
+The V3 Crate Collector also includes V2's original Dance, Ophelia and Never Get
+Out soundtrack. Music starts automatically; choose a track, adjust volume or
+pause music in the score overlay. Its music and original attribution are staged
+in `audio/v2` beside `game`. The vcpkg manifest enables the MP3 decoder.
+
 Run `bin/<variant>/exe/audio_demo` (`.exe` on Windows) for a complete example.
 Its original WAV is copied beside the executable; no launch script is required.
 See [the audio guide](docs/Audio.md) for the API, error handling and linking from
