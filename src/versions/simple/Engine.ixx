@@ -1,15 +1,19 @@
 module;
 
+#include <cstdio>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_video.h>
 #include <vulkan/vulkan_core.h>
 
-export module VEEngine.Simple;
+export module VVEngine.Simple;
 import std;
-export import VEEngine.Simple.Types;
+export import VVEngine.Simple.Types;
 export import :Graph;
 export import :Window;
 export import :Assets;
 export import :RenderSystem;
 export import :Gui;
+export import :Audio;
 
 /// @file
 /// @brief Small simple runtime facade: SDL windows, input, assets, rendering, and GUI.
@@ -25,7 +29,6 @@ export namespace vve::simple {
 		Engine(Engine &&) = delete;
 		Engine &operator=(const Engine &) = delete;
 		Engine &operator=(Engine &&) = delete;
-		explicit Engine(EngineConfig config);
 
 		template <typename... TOptions>
 			requires(sizeof...(TOptions) > 0)
@@ -37,12 +40,14 @@ export namespace vve::simple {
 		[[nodiscard]] RenderSystem &renderSystem();
 		[[nodiscard]] const RenderSystem &renderSystem() const;
 		[[nodiscard]] GuiSystem &gui();
+		[[nodiscard]] AudioSystem &audioSystem();
 		[[nodiscard]] ECS &ecs();
 		[[nodiscard]] WindowSystem &windowSystem();
 		[[nodiscard]] const WindowSystem &windowSystem() const;
 		[[nodiscard]] auto init()													-> std::expected<void, Error>;
 		[[nodiscard]] auto run()													-> std::expected<void, Error>;
 		[[nodiscard]] auto step()													-> std::expected<FrameStatus, Error>;
+		[[nodiscard]] FrameContext frameContext() const;
 		[[nodiscard]] auto renderFrame()										-> std::expected<void, Error>;
 
 	private:
@@ -56,12 +61,14 @@ export namespace vve::simple {
 		ECS ecs_{};																			///< Entity/component storage owned by the implementation and shared with the facade.
 		WindowSystem window_system_{};												///< SDL platform window owner.
 		AssetSystem assets_{};															///< Asset and object catalog facade.
-		RenderSystem render_system_{makeImportedAssetReadAccess()};					///< Renderer selection and active CPU render scene.
+		RenderSystem render_system_{makeImportedAssetReadAccess(), &window_system_};	///< Renderer selection and active CPU render scene.
 		GuiSystem gui_{};																	///< GUI descriptor facade.
+		AudioSystem audio_{}; ///< Owns the lazily opened device, sounds and voices.
 		std::chrono::steady_clock::time_point last_frame_time_{};			///< Timestamp of the previous step().
 		std::uint64_t frame_{0};														///< Number of completed step() calls.
+		FrameContext frame_context_{};											///< Index and delta of the latest polled frame, shared with the facade.
 		bool initialized_{false};														///< True after init() succeeds.
-		bool gui_sdl_initialized_{false};											///< True after the active SDL window is bound to ImGui.
+		bool gui_initialization_attempted_{false};							///< Prevents retrying or logging failed GUI initialization each frame.
 	};
 
 	/// @brief Creates an engine with default options.
@@ -71,17 +78,12 @@ export namespace vve::simple {
 
 	/// @brief Releases runtime systems owned by the simple engine.
 	inline Engine::~Engine() {
+		audio_.shutdown(); // Close audio before the window system can release SDL.
 		render_system_.waitIdle();																					///< ImGui pipelines may still be referenced by the last submitted frame.
 		gui_.shutdownVulkan();
 		render_system_.shutdown();
 		gui_.shutdownSDL();
 		gui_.shutdownContext();
-	}
-
-	/// @brief Creates an engine from the compact compatibility config.
-	inline Engine::Engine(EngineConfig config){
-		applyOption(std::move(config));
-		applyDefaults();
 	}
 
 	/// @brief Creates an engine from typed options such as ApplicationName, MaxFrames, and Windows.
@@ -111,6 +113,9 @@ export namespace vve::simple {
 	/// @brief Returns the GUI system.
 	inline GuiSystem &Engine::gui() { return gui_; }
 
+	/// @brief Returns audio without opening a device; games explicitly call audio.init().
+	inline AudioSystem &Engine::audioSystem() { return audio_; }
+
 	/// @brief Returns the entity/component storage shared with the facade.
 	inline ECS &Engine::ecs() { return ecs_; }
 
@@ -125,13 +130,16 @@ export namespace vve::simple {
 	/// @brief Creates SDL windows.
 	inline auto Engine::init()																				-> std::expected<void, Error>{
 		if (initialized_) { return {}; }
+		// Renderer selection errors are reported by init, before lazy GPU initialization.
+		for (const auto &window : windows_.value) {
+			if (!RenderSystem::supportsRenderer(window.renderer_id)) { return std::unexpected(Error::invalid_argument); }
+		}
 		if (const auto result = window_system_.init(windows_); !result) { return result; }
-		last_frame_time_ = std::chrono::steady_clock::now();
 		initialized_ = true;
 		return {};
 	}
 
-	/// @brief Runs the engine until a window closes, a system fails, or the frame cap is reached.
+	/// @brief Polls and renders until a window closes, a system fails, or the frame cap is reached.
 	inline auto Engine::run()																				-> std::expected<void, Error>{
 		if (!initialized_) {
 			if (const auto result = init(); !result) { return result; }
@@ -139,16 +147,24 @@ export namespace vve::simple {
 		while (true) {
 			const auto status = step();
 			if (!status) { return std::unexpected(status.error()); }
+			// Render the final polled frame before honoring its stop status.
+			if (const auto result = renderFrame(); !result) { return result; }
 			if (*status == FrameStatus::stopped) { return {}; }
 		}
 	}
 
-	/// @brief Polls input and advances the frame status.
+	/// @brief Reports a recovered GUI callback error once, otherwise polls input and advances the frame status.
 	inline auto Engine::step()																				-> std::expected<FrameStatus, Error>{
 		if (!initialized_) { return std::unexpected(Error::missing_object); }
+		audio_.collectFinished();
+		if (gui_.takeFrameCallbackError()) { return std::unexpected(Error::platform_error); }
 		if (const auto result = window_system_.poll(); !result) { return std::unexpected(result.error()); }
 
 		const auto now = std::chrono::steady_clock::now();
+		// Capture timing before advancing the frame cap, even if a later update or render fails.
+		frame_context_ = FrameContext{.frame_index = FrameCount{.value = frame_},
+			.delta_time = frame_ == 0 ? DeltaTime{} :
+				DeltaTime{.seconds = std::chrono::duration<double>{now - last_frame_time_}.count()}};
 		last_frame_time_ = now;
 
 		++frame_;
@@ -158,45 +174,67 @@ export namespace vve::simple {
 		return FrameStatus::running;
 	}
 
-	/// @brief Lazily initializes the renderer and binds the GUI SDL backend to its window.
-	inline auto Engine::renderFrame()																	-> std::expected<void, Error>{
-		if (!render_system_.initialized()) {
-			for (auto window : window_system_.windows()) {
-				auto *native = window.get().native();
-				if (native == nullptr) { continue; }
-				if (const auto result = render_system_.initialize(native, window.get().rendererId()); !result) {
-					return result;
+	/// @brief Returns the latest polled frame context; the first step uses DeltaTime{}.
+	inline FrameContext Engine::frameContext() const { return frame_context_; }
+
+	/// @brief Skips minimized or zero-size windows, waits when none can render, and initializes rendering lazily.
+	auto Engine::renderFrame()																	-> std::expected<void, Error>{
+		bool drawable = false;
+		// Borrow current state to check drawability without copying window descriptions.
+		for (const auto &window : window_system_.windows()) {
+			const auto &info = window.get().info();
+			if (info.should_close || info.renderer_id.value == "none" || info.minimized) { continue; }
+			int width{}, height{};
+			SDL_GetWindowSizeInPixels(window.get().native(), &width, &height);
+			drawable = drawable || (width > 0 && height > 0);
+		}
+		if (drawable && !render_system_.initialized()) {
+			if (const auto result = render_system_.initialize(window_system_); !result) { return result; }
+			if (!gui_initialization_attempted_ && !render_system_.forward().targets.empty()) {
+				const auto &target = render_system_.forward().targets.front();
+				gui_initialization_attempted_ = true;
+				gui_.initContext(target.swapchain.guiFormat);
+				// Stop at the first failed stage so no uninitialized backend is driven.
+				const auto failed_stage = [&]() -> std::string_view {
+					if (!gui_.initSDL(target.window)) { return "SDL"; }
+					auto info = render_system_.makeGuiInitInfo();
+					if (!info) { return "Vulkan init info"; }
+					if (!gui_.initVulkan(&*info)) { return "Vulkan"; }
+					if (!gui_.buildFonts()) { return "fonts"; }
+					return {};
+				}();
+				if (!failed_stage.empty()) {
+					std::println(stderr, "[vve::simple] GUI disabled: {}", failed_stage);
+					gui_.shutdownVulkan();
+					gui_.shutdownSDL();
+					gui_.shutdownContext();
+				} else {
+					render_system_.setGuiPrepareSink([this]{ return gui_.prepareFrame(); });
+					render_system_.setGuiRecordSink([this](VkCommandBuffer cmd){ gui_.record(cmd); });
 				}
-				if (!gui_sdl_initialized_) {
-					gui_.initContext();
-					gui_.initSDL(native);
-					if (auto info = render_system_.makeGuiInitInfo()) {
-						gui_.initVulkan(&*info);
-						gui_.buildFonts();
-					}
-					render_system_.setGuiRecordSink([this](VkCommandBuffer cmd){ gui_.recordFrame(cmd); });
-					gui_sdl_initialized_ = true;
-				}
-				break;
 			}
 		}
-		return render_system_.renderFrame(window_system_);
+		// Reset presentation counts and retire closed targets even when every live target is skipped.
+		if (render_system_.initialized()) {
+			if (const auto result = render_system_.renderFrame(window_system_); !result) { return result; }
+		}
+		// Leave the wake-up event queued for the next poll, including a restore event.
+		if (!drawable) { (void)SDL_WaitEventTimeout(nullptr, 100); }
+		return {};
 	}
 
-	/// @brief Applies typed engine options; unknown option types are ignored.
+	/// @brief Applies typed engine options; an unknown option type is a compile error, not silently dropped.
 	template <typename TOption>
 	auto Engine::applyOption(TOption &&option)														-> void{
 		using Option = std::remove_cvref_t<TOption>;
-		if constexpr (std::same_as<Option, EngineConfig>) {
-			auto config = std::forward<TOption>(option);
-			application_name_.value = std::move(config.application_name);
-			max_frames_.value = config.max_frames;
-		} else if constexpr (std::same_as<Option, ApplicationName>) {
+		if constexpr (std::same_as<Option, ApplicationName>) {
 			application_name_ = std::forward<TOption>(option);
 		} else if constexpr (std::same_as<Option, MaxFrames>) {
 			max_frames_ = std::forward<TOption>(option);
 		} else if constexpr (std::same_as<Option, Windows>) {
 			windows_ = std::forward<TOption>(option);
+		} else {
+			static_assert(!std::same_as<Option, Option>, "simple::Engine: unknown option type (use vve::simple::Windows, not vve::WindowSetups)");
 		}
 	}
 
@@ -211,21 +249,18 @@ export namespace vve::simple {
 			.mesh_material = [this](MeshHandle mesh) { return assets_.meshMaterial(mesh); },
 			.material_base_color = [this](MaterialHandle material) { return assets_.materialBaseColor(material); },
 			.material_texture_sources = [this](MaterialHandle material) { return assets_.materialTextureSources(material); },
+			.material_factors = [this](MaterialHandle material) { return assets_.materialFactors(material); },
 			.scene_lights = [this](SceneHandle scene) { return assets_.sceneLights(scene); },
 			.light_data = [this](LightHandle light) { return assets_.lightData(light); },
 			.scene_cameras = [this](SceneHandle scene) { return assets_.sceneCameras(scene); },
 			.camera_data = [this](CameraHandle camera) { return assets_.cameraData(camera); },
-			.mesh_positions = [this](MeshHandle mesh) { return assets_.meshPositions(mesh); },
-			.mesh_normals = [this](MeshHandle mesh) { return assets_.meshNormals(mesh); },
-			.mesh_texcoords = [this](MeshHandle mesh) { return assets_.meshTexcoords(mesh); },
-			.mesh_tangents = [this](MeshHandle mesh) { return assets_.meshTangents(mesh); },
-			.mesh_indices = [this](MeshHandle mesh) { return assets_.meshIndices(mesh); }};
+			.mesh_geometry = [this](MeshHandle mesh) { return assets_.meshGeometry(mesh); },
+			.mesh_indices = [this](MeshHandle mesh) { return assets_.meshIndicesView(mesh); }};
 	}
 
 	/// @brief Fills small defaults after options have been applied.
 	inline auto Engine::applyDefaults()																	-> void{
-		render_system_.setGuiSystem(&gui_);																///< Hands engine-owned GUI to renderer for later forward GUI integration.
-		window_system_.setGuiEventSink([this](const auto &event) { gui_.processEvent(event); });		///< Forwards SDL input to the engine-owned GUI system.
+		window_system_.setGuiEventSink([this](const auto &event) { return gui_.processEvent(event); });	///< Forwards SDL input to the GUI; claimed events skip the game input.
 		if (windows_.value.empty()) { windows_.value.push_back(WindowDesc{}); }
 		for (auto &window : windows_.value) {
 			if (window.title == WindowDesc{}.title && application_name_.value != ApplicationName{}.value) {

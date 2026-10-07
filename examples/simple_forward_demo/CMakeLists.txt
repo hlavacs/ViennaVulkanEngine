@@ -4,6 +4,7 @@ add_executable(simple_forward_demo
 
 target_link_libraries(simple_forward_demo PRIVATE
     ViennaVulkanEngine::ViennaVulkanEngine
+    vve_example_support
 )
 
 add_dependencies(simple_forward_demo

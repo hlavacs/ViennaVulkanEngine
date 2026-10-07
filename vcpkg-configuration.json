@@ -1,0 +1,10 @@
+{
+  "overlay-triplets": ["./triplets"],
+  "registries": [
+    {
+      "kind": "builtin",
+      "baseline": "216bb6975d5cccd35c27a14fb39acec3ae0e8285",
+      "packages": ["sdl3-mixer"]
+    }
+  ]
+}

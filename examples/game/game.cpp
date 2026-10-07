@@ -1,7 +1,8 @@
 #include <imgui.h>
 
 import std;
-import VEEngine;
+import VVEngine;
+import VVE.ExampleSupport;
 
 /**
  * @file
@@ -13,11 +14,12 @@ import VEEngine;
  */
 namespace {
 
-constexpr auto grassTextureRelativePath = "assets/game/plane/grass.jpg"; ///< Tiled ground texture and asset-root sentinel.
+constexpr auto grassTextureRelativePath = "assets/game/plane/grass.jpg"; ///< Tiled ground texture.
+constexpr std::array musicFiles{"dance.mp3", "ophelia.mp3", "getout.ogg"}; ///< Original V2 soundtrack.
 constexpr std::array crateTextureRelativePaths{"assets/game/crate0/diffuse.png", "assets/game/crate1/diffuse.png"}; ///< Wood crate textures, alternated per spawn.
 
 constexpr float groundHalfExtent = 20.0F;      ///< Half side length of the square play field in metres.
-constexpr float groundTileSize = 4.0F;         ///< Side length of one tiled grass quad in metres.
+constexpr float groundTileSize = 4.0F;         ///< Metres covered by one repeat of the grass texture.
 constexpr float eyeHeight = 1.0F;              ///< Fixed camera height above the plane in metres.
 constexpr float collectRadius = 1.2F;          ///< Horizontal distance at which the camera collects a crate.
 constexpr float crateHalfSize = 0.5F;          ///< Half side length of a falling crate cube.
@@ -39,51 +41,6 @@ struct Crate {
 	float velocityY{};                ///< Vertical velocity while falling.
 	bool landed{};                    ///< True once the crate has reached the ground.
 };
-
-/// @brief Finds the repository-style asset root from either the cwd or executable location.
-[[nodiscard]] std::filesystem::path assetRoot(char *argv0) {
-	auto containsAssets = [](const std::filesystem::path &candidate) {
-		return std::filesystem::exists(candidate / grassTextureRelativePath);
-	};
-	if (const auto cwd = std::filesystem::current_path(); containsAssets(cwd)) {
-		return cwd;
-	}
-	if (argv0 == nullptr) {
-		return {};
-	}
-	auto executable = std::filesystem::absolute(std::filesystem::path{argv0});
-	if (std::filesystem::exists(executable)) {
-		executable = std::filesystem::weakly_canonical(executable);
-	}
-	for (auto candidate = executable.parent_path(); !candidate.empty(); candidate = candidate.parent_path()) {
-		if (containsAssets(candidate)) {
-			return candidate;
-		}
-		if (candidate == candidate.root_path()) {
-			break;
-		}
-	}
-	return {};
-}
-
-/// @brief Reads the optional frame count used by automated example runs.
-[[nodiscard]] std::optional<int> frameLimit(int argc, char **argv) {
-	for (int index = 1; index + 1 < argc; ++index) {
-		if (argv[index] == nullptr || argv[index + 1] == nullptr) {
-			continue;
-		}
-		if (std::string_view{argv[index]} != "--frames") {
-			continue;
-		}
-		int value{};
-		const std::string_view text{argv[index + 1]};
-		const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
-		if (result.ec == std::errc{} && value >= 0) {
-			return value;
-		}
-	}
-	return std::nullopt;
-}
 
 /// @brief Builds a UV-sphere triangle mesh in object space for the sun.
 void makeSphere(float radius, std::uint32_t stacks, std::uint32_t slices,
@@ -117,20 +74,12 @@ void makeSphere(float radius, std::uint32_t stacks, std::uint32_t slices,
 																											const std::filesystem::path &root) {
 	render.clearScene();
 
-	// Tile the field with grass quads so the single scene texture repeats across the plane.
+	// One quad covers the field; UVs span 0..10 and the material sampler repeats the grass.
 	const auto grassTexture = root / grassTextureRelativePath;
-	const auto tilesPerSide = static_cast<int>(std::lround((groundHalfExtent * 2.0F) / groundTileSize));
-	const float halfTile = groundTileSize * 0.5F;
-	for (int ix = 0; ix < tilesPerSide; ++ix) {
-		for (int iz = 0; iz < tilesPerSide; ++iz) {
-			const float centerX = -groundHalfExtent + halfTile + static_cast<float>(ix) * groundTileSize;
-			const float centerZ = -groundHalfExtent + halfTile + static_cast<float>(iz) * groundTileSize;
-			const vve::Vec3 minimum{centerX - halfTile, -0.1F, centerZ - halfTile};
-			const vve::Vec3 maximum{centerX + halfTile, 0.0F, centerZ + halfTile};
-			if (auto result = render.addTexturedCuboid(minimum, maximum, grassTexture); !result) {
-				return std::unexpected(result.error());
-			}
-		}
+	constexpr float textureRepeats = (groundHalfExtent * 2.0F) / groundTileSize;
+	if (auto result = render.addTexturedPlane(vve::Vec2{groundHalfExtent, groundHalfExtent},
+		grassTexture, vve::Vec2{textureRepeats, textureRepeats}); !result) {
+		return std::unexpected(result.error());
 	}
 
 	// The sun is a bright sphere drawn in a constant color; the frame loop pins it far away relative to the camera.
@@ -166,17 +115,32 @@ int main(int argc, char **argv) {
 	std::cout << std::unitbuf;
 	std::cerr << std::unitbuf;
 	std::cout << "[game] engine=" << vve::engineImplementationNamespaceName << '\n';
+	int selectedTrack{};
+	bool requireAudio{};
+	for (int argument = 1; argument < argc; ++argument) {
+		const std::string_view option{argv[argument]};
+		if (option == "--require-audio") { requireAudio = true; }
+		if (option == "--music-track") {
+			if (++argument >= argc) { std::cerr << "--music-track needs 0, 1 or 2.\n"; return 4; }
+			const std::string_view value{argv[argument]};
+			const auto parsed = std::from_chars(value.data(), value.data() + value.size(), selectedTrack);
+			if (parsed.ec != std::errc{} || parsed.ptr != value.data() + value.size() ||
+				selectedTrack < 0 || selectedTrack >= static_cast<int>(musicFiles.size())) {
+				std::cerr << "--music-track needs 0, 1 or 2.\n"; return 4;
+			}
+		}
+	}
 
 	const auto activeRenderer = vve::RendererId{.value = "forward"};
 	auto engine = vve::EngineBuilder<>{}
-						 .applicationName("game")
-						 .addWindow(vve::WindowSetup{}
-										 .id("main")
-										 .title("VVE Crate Collector")
-										 .extent(vve::PixelExtent{.width = windowWidth, .height = windowHeight})
-										 .renderer(activeRenderer)
-										 .resizable(true))
-						 .build();
+						.applicationName("game")
+						.addWindow(vve::WindowSetup{}
+						.id("main")
+						.title("VVE Crate Collector")
+						.extent(vve::PixelExtent{.width = windowWidth, .height = windowHeight})
+						.renderer(activeRenderer)
+						.resizable(true))
+						.build();
 
 	if (const auto result = engine.init(); !result) {
 		std::cerr << "[game] engine init failed: error=" << vve::errorName(result.error()) << '\n';
@@ -184,7 +148,38 @@ int main(int argc, char **argv) {
 	}
 
 	auto render = engine.world().get<vve::RenderSystem>();
-	const auto root = assetRoot(argc > 0 ? argv[0] : nullptr);
+	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr);
+	// The public facade owns sounds; one looped voice plays the selected V2 track.
+	auto audio = engine.world().get<vve::AudioSystem>();
+	bool musicReady = audio.init().has_value();
+	float musicVolume{0.35F};
+	bool musicPaused{};
+	std::array<vve::SoundHandle, musicFiles.size()> songs{};
+	vve::AudioPlaybackHandle musicVoice{};
+	const auto musicDirectory = std::filesystem::absolute(argv[0]).parent_path() / "audio/v2";
+	if (musicReady) {
+		for (std::size_t index = 0; index < musicFiles.size(); ++index) {
+			const auto sound = audio.loadSound(musicDirectory / musicFiles[index], vve::AudioLoadMode::on_demand);
+			if (!sound) { std::cerr << "[game] music load failed: " << audio.lastError() << '\n'; return 4; }
+			songs[index] = *sound;
+		}
+		if (!audio.setMasterVolume(vve::AudioVolume{.value = musicVolume})) { return 4; }
+	} else {
+		std::cerr << "[game] audio unavailable: " << audio.lastError() << '\n';
+		if (requireAudio) { return 4; }
+	}
+	auto startMusic = [&]() -> std::expected<void, vve::Error> {
+		if (musicVoice.valid()) {
+			if (const auto result = audio.stop(musicVoice); !result) { return result; }
+			musicVoice = {};
+		}
+		const auto voice = audio.play(songs[selectedTrack], vve::AudioPlaybackOptions{.loop = true});
+		if (!voice) { return std::unexpected(voice.error()); }
+		musicVoice = *voice;
+		std::cout << "[game] music=" << musicFiles[selectedTrack] << " loop=1\n";
+		return musicPaused ? audio.pause(musicVoice) : std::expected<void, vve::Error>{};
+	};
+	if (musicReady && !startMusic()) { std::cerr << "[game] music failed: " << audio.lastError() << '\n'; return 4; }
 	const auto sunHandle = loadScene(render, root);
 	if (!sunHandle) {
 		std::cerr << "[game] scene load failed: error=" << vve::errorName(sunHandle.error()) << '\n';
@@ -209,7 +204,7 @@ int main(int argc, char **argv) {
 	std::uniform_real_distribution<float> place{-groundHalfExtent + 2.0F, groundHalfExtent - 2.0F};
 
 	// The score overlay is drawn every frame in the top-left corner.
-	engine.world().get<vve::GuiSystem>().draw([&score, &crates] {
+	engine.world().get<vve::GuiSystem>().draw([&] {
 		ImGui::SetNextWindowPos(ImVec2(12.0F, 12.0F), ImGuiCond_Always);
 		ImGui::Begin("Score", nullptr,
 						 ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_AlwaysAutoResize);
@@ -218,10 +213,23 @@ int main(int argc, char **argv) {
 		ImGui::Separator();
 		ImGui::TextUnformatted("WASD move  -  Arrows look  -  Esc quit");
 		ImGui::TextUnformatted("Drive into a crate to collect it!");
+		ImGui::Separator();
+		ImGui::BeginDisabled(!musicReady);
+		if (ImGui::Combo("Music", &selectedTrack, "Dance\0Ophelia\0Never get out\0")) {
+			musicReady = startMusic().has_value();
+		}
+		if (ImGui::SliderFloat("Volume", &musicVolume, 0.0F, 1.0F, "%.2f")) {
+			musicReady = audio.setMasterVolume(vve::AudioVolume{.value = musicVolume}).has_value();
+		}
+		if (ImGui::Checkbox("Pause music", &musicPaused)) {
+			musicReady = (musicPaused ? audio.pause(musicVoice) : audio.resume(musicVoice)).has_value();
+		}
+		ImGui::EndDisabled();
+		if (!musicReady) { ImGui::TextUnformatted("Audio unavailable"); }
 		ImGui::End();
 	});
 
-	const int maxFrames = frameLimit(argc, argv).value_or(0);
+	const int maxFrames = vve::example::frameLimit(argc, argv);
 	int frame{};
 	bool running = true;
 	auto lastTime = std::chrono::steady_clock::now();
@@ -234,12 +242,12 @@ int main(int argc, char **argv) {
 		// Steer with the standard controller but pin the eye to a fixed height so it stays on the plane.
 		const auto input = engine.world().get<vve::WindowSystem>().input();
 		cameraController.eye.value.y = eyeHeight;
-		const auto steered = cameraController.update(input);
+		const auto steered = cameraController.update(input, vve::DeltaTime{dt});
 		cameraController.eye.value.y = eyeHeight;
 		const auto eyePosition = cameraController.eye;
 		const auto camera = vve::Camera::lookAt(
 			eyePosition, vve::Position{.value = vve::math::add(eyePosition.value, steered.forward.value)});
-		render.setCamera(camera, vve::PixelExtent{.width = windowWidth, .height = windowHeight});
+		render.setCamera(camera);
 		// Keep the sun at a fixed far offset from the eye so it shows no parallax as the camera moves.
 		(void)render.setObjectTransform(*sunHandle, vve::Transform{.translation = vve::Position{
 			.value = vve::math::add(eyePosition.value, vve::math::scale(toSun, sunDistance))}});
@@ -254,7 +262,7 @@ int main(int argc, char **argv) {
 				const vve::Vec3 maximum{crateHalfSize, crateHalfSize, crateHalfSize};
 				const auto crateTexture = root / crateTextureRelativePaths[spawnedCrates++ % crateTextureRelativePaths.size()];
 				if (auto added = render.addTexturedCuboid(minimum, maximum, crateTexture,
-																	 vve::Transform{.translation = vve::Position{.value = spawnPosition}});
+															vve::Transform{.translation = vve::Position{.value = spawnPosition}});
 						 added) {
 					crates.push_back(
 						Crate{.handle = *added, .position = spawnPosition, .velocityY = 0.0F, .landed = false});
@@ -284,6 +292,7 @@ int main(int argc, char **argv) {
 			return 3;
 		}
 		++frame;
+		if (requireAudio && !musicReady) { std::cerr << audio.lastError() << '\n'; return 4; }
 		if (*status == vve::FrameStatus::stopped) {
 			break;
 		}

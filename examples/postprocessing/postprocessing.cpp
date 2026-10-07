@@ -2,7 +2,8 @@
 #include <VVPPL.h>
 
 import std;
-import VEEngine;
+import VVEngine;
+import VVE.ExampleSupport;
 
 /**
  * @file
@@ -10,51 +11,6 @@ import VEEngine;
  */
 namespace {
 constexpr auto crateTextureRelativePath = "assets/game/crate0/diffuse.png";	
-
-/// @brief Finds the repository-style asset root from either the cwd or executable location.
-[[nodiscard]] std::filesystem::path assetRoot(char *argv0) {
-	auto containsGameAssets = [](const std::filesystem::path &candidate) {
-		return std::filesystem::exists(candidate / crateTextureRelativePath);
-	};
-	if (const auto cwd = std::filesystem::current_path(); containsGameAssets(cwd)) {
-		return cwd;
-	}
-	if (argv0 == nullptr) {
-		return {};
-	}
-	auto executable = std::filesystem::absolute(std::filesystem::path{argv0});
-	if (std::filesystem::exists(executable)) {
-		executable = std::filesystem::weakly_canonical(executable);
-	}
-	for (auto candidate = executable.parent_path(); !candidate.empty(); candidate = candidate.parent_path()) {
-		if (containsGameAssets(candidate)) {
-			return candidate;
-		}
-		if (candidate == candidate.root_path()) {
-			break;
-		}
-	}
-	return {};
-}
-
-/// @brief Reads the optional frame count used by automated example runs.
-[[nodiscard]] std::optional<int> frameLimit(int argc, char **argv) {
-	for (int index = 1; index + 1 < argc; ++index) {
-		if (argv[index] == nullptr || argv[index + 1] == nullptr) {
-			continue;
-		}
-		if (std::string_view{argv[index]} != "--frames") {
-			continue;
-		}
-		int value{};
-		const std::string_view text{argv[index + 1]};
-		const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
-		if (result.ec == std::errc{} && value >= 0) {
-			return value;
-		}
-	}
-	return std::nullopt;
-}
 
 /// @brief Adds the game floor and three crate cubes through facade scene authoring calls.
 [[nodiscard]] std::expected<void, vve::Error> loadGameScene(vve::RenderSystem render, const std::filesystem::path &root) {
@@ -89,6 +45,11 @@ int main(int argc, char **argv) {
 	std::cout << std::unitbuf;
 	std::cerr << std::unitbuf;
 	std::cout << "[postprocessing] engine=" << vve::engineImplementationNamespaceName << '\n';
+
+	// Automated smoke runs compile and render every effect exposed by VVPPL.
+	const bool allEffects = std::ranges::any_of(std::span{argv, static_cast<std::size_t>(argc)}, [](const char *arg) {
+		return arg != nullptr && std::string_view{arg} == "--all-effects";
+	});
 
 	const auto activeRenderer = vve::RendererId{.value = "forward"}; ///< Renderer id selected through the facade.
 	auto engine = vve::EngineBuilder<>{}
@@ -125,33 +86,39 @@ int main(int argc, char **argv) {
 	vvppl::HighlightSettings *highlight{nullptr};
 	vvppl::SegmentationSettings *segmentation{nullptr};
 
-	// A null settings pointer means the effect is off; only active effects are recreated.
+	// Configure the chain once; its settings remain valid across window resizes.
 	render.setPostProcessSetup(
-		[&chain, &tonemap, &chromatic, &greyscale, &vignette, &grain, &grade, &dither,
+		[allEffects, &chain, &tonemap, &chromatic, &greyscale, &vignette, &grain, &grade, &dither,
 		 &solarize, &sabattier, &emboss, &sobel, &speedLines, &highlight, &segmentation](vvppl::PostProcessing &pp) {
-			if (chain == nullptr) {
-				// First start: enable the demo's default effects.
+			if (allEffects) {
+				// Match the public effect list, retaining settings for the existing GUI controls.
+				const auto effects = std::to_array<std::function<void()>>({
+					[&] { chromatic = &pp.addChromatic(); },
+					[&] { vignette = &pp.addVignette(); },
+					[&] { tonemap = &pp.addTonemap(); },
+					[&] { grade = &pp.addColorGrade(); },
+					[&] { segmentation = &pp.addSegmentation(); },
+					[&] { highlight = &pp.addHighlight(); },
+					[&] { greyscale = &pp.addGreyscale(); },
+					[&] { pp.addInvert(); },
+					[&] { solarize = &pp.addSolarize(); },
+					[&] { sabattier = &pp.addSabattier(); },
+					[&] { emboss = &pp.addEmboss(); },
+					[&] { sobel = &pp.addSobel(); },
+					[&] { speedLines = &pp.addSpeedLines(); },
+					[&] { grain = &pp.addFilmGrain(); },
+					[&] { dither = &pp.addDither(); }
+				});
+				// Report the chain size only after every pipeline has been added successfully.
+				for (const auto &addEffect : effects) { addEffect(); }
+				std::cout << "[postprocessing] effects=" << effects.size() << '\n';
+			} else {
+				// Enable the demo's default effects.
 				chromatic = &pp.addChromatic();
 				vignette = &pp.addVignette();
 				tonemap = &pp.addTonemap();
 				greyscale = &pp.addGreyscale();
 				grain = &pp.addFilmGrain();
-			} else {
-				// After a resize: recreate only selected effects and replace their old settings pointers.
-				if (chromatic) { chromatic = &pp.addChromatic(); }
-				if (vignette) { vignette = &pp.addVignette(); }
-				if (tonemap) { tonemap = &pp.addTonemap(); }
-				if (grade) { grade = &pp.addColorGrade(); }
-				if (segmentation) { segmentation = &pp.addSegmentation(); }
-				if (highlight) { highlight = &pp.addHighlight(); }
-				if (greyscale) { greyscale = &pp.addGreyscale(); }
-				if (solarize) { solarize = &pp.addSolarize(); }
-				if (sabattier) { sabattier = &pp.addSabattier(); }
-				if (emboss) { emboss = &pp.addEmboss(); }
-				if (sobel) { sobel = &pp.addSobel(); }
-				if (speedLines) { speedLines = &pp.addSpeedLines(); }
-				if (grain) { grain = &pp.addFilmGrain(); }
-				if (dither) { dither = &pp.addDither(); }
 			}
 			chain = &pp;
 
@@ -167,7 +134,7 @@ int main(int argc, char **argv) {
 			if (grain) { grain->intensity = 0.05F; }
 		});
 
-	if (const auto result = loadGameScene(render, assetRoot(argc > 0 ? argv[0] : nullptr)); !result) {
+	if (const auto result = loadGameScene(render, vve::example::assetRoot(argc > 0 ? argv[0] : nullptr)); !result) {
 		std::cerr << "[postprocessing] scene load failed: error=" << vve::errorName(result.error()) << '\n';
 		return 2;
 	}
@@ -180,7 +147,7 @@ int main(int argc, char **argv) {
 	render.setPointLight(vve::Position{.value = vve::Vec3{2.0F, 4.0F, 2.0F}}, white,
 						vve::LightIntensity{.value = 3.0F}, vve::LightRange{.value = 8.0F}, ambient);
 
-	const int maxFrames = frameLimit(argc, argv).value_or(0);
+	const int maxFrames = vve::example::frameLimit(argc, argv);
 	int frame{};
 	bool running = true;                                                                 ///< GUI changes are applied after the frame callback returns.
 	double renderFps{};                                                                              ///< Render-system FPS, not the ImGui/display estimate.
@@ -286,7 +253,7 @@ int main(int argc, char **argv) {
 
 	while (running && (maxFrames == 0 || frame < maxFrames)) {
 		const auto frameInput = engine.world().get<vve::WindowSystem>().input();
-		render.setCamera(cameraController.update(frameInput), vve::PixelExtent{.width = 960, .height = 540});
+		render.setCamera(cameraController.update(frameInput, engine.frameContext().delta_time));
 		renderFps = render.renderingFramesPerSecond();
 
 		// New seed with every frame for the shader - time

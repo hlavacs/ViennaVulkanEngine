@@ -2,10 +2,10 @@ module;
 
 #include <stb_image.h>
 
-export module VEEngine.Simple.RenderResources;
+export module VVEngine.Simple.RenderResources;
 import std;
-import VEEngine.Simple.Types;
-import VEEngine.Simple.Scene;
+import VVEngine.Simple.Types;
+import VVEngine.Simple.Scene;
 
 /**
 	* @file
@@ -14,7 +14,6 @@ import VEEngine.Simple.Scene;
 	* Functional objects:
 	* - Render*Handle aliases identify CPU render resources and registry entries.
 	* - RenderMesh, RenderMaterial, and RenderInstance store CPU scene geometry, material, and draw-item data.
-	* - RenderDirectionalLight, RenderPointLight, RenderSpotLight, and RenderCamera store CPU light and camera resources.
 	* - RenderScene owns the CPU render-resource storage and scene mutation helpers.
 	*/
 
@@ -29,29 +28,26 @@ export namespace vve::simple {
 	using RenderInstanceHandle = TypedHandle<RenderInstanceHandleTag>;								///< simple render instance handle.
 	using RenderTextureIndex = std::uint32_t;															///< Dense index into the render-scene texture table.
 
-
-	inline constexpr RenderTextureIndex kNoRenderTexture{std::numeric_limits<RenderTextureIndex>::max()}; ///< Sentinel for an absent material texture.
-
 	/// @brief CPU-side mesh resource.
 	struct RenderMesh {
 		RenderMeshHandle handle{};														///< Stable render mesh handle.
-		Vector<RenderVertex> vertices{};												///< Source vertices.
+		std::shared_ptr<const std::vector<RenderVertex>> vertices{};		///< Shared source vertices; edits detach before writing.
 		Vector<std::uint32_t> indices{};												///< Triangle indices.
-		Bounds bounds{};																	///< Object-space bounds.
 	};
 
 	/// @brief CPU-side material resource.
 	struct RenderMaterial {
 		RenderMaterialHandle handle{};												///< Stable render material handle.
 		LinearColor base_color{.value = oneVec3()};								///< Base color factor.
-		TextureHandle base_color_texture{};											///< Optional texture handle.
-		std::filesystem::path base_color_texture_source{};						///< Optional source path for diagnostics.
-		RenderTextureIndex base_color_texture_index{kNoRenderTexture};			///< Base-color texture-table index.
-		RenderTextureIndex normal_texture_index{kNoRenderTexture};				///< Normal texture-table index.
-		RenderTextureIndex metalness_texture_index{kNoRenderTexture};			///< Metalness texture-table index.
-		RenderTextureIndex roughness_texture_index{kNoRenderTexture};			///< Roughness texture-table index.
-		RenderTextureIndex emissive_texture_index{kNoRenderTexture};			///< Emissive texture-table index.
-		RenderTextureIndex ambient_occlusion_texture_index{kNoRenderTexture}; ///< Ambient-occlusion texture-table index.
+		Scalar roughness{static_cast<Scalar>(0.5)};								///< Roughness factor; a roughness texture multiplies it.
+		Scalar metalness{zero()};													///< Metalness factor; a metalness texture multiplies it.
+		LinearColor emissive{.value = zeroVec3()};								///< Emissive factor; an emissive texture multiplies it.
+		RenderTextureIndex base_color_texture_index{kNoTexture};			///< Base-color texture-table index.
+		RenderTextureIndex normal_texture_index{kNoTexture};				///< Normal texture-table index.
+		RenderTextureIndex metalness_texture_index{kNoTexture};			///< Metalness texture-table index.
+		RenderTextureIndex roughness_texture_index{kNoTexture};			///< Roughness texture-table index.
+		RenderTextureIndex emissive_texture_index{kNoTexture};			///< Emissive texture-table index.
+		RenderTextureIndex ambient_occlusion_texture_index{kNoTexture}; ///< Ambient-occlusion texture-table index.
 	};
 
 	/// @brief Scene draw item connecting mesh, material, and transforms.
@@ -66,73 +62,39 @@ export namespace vve::simple {
 		bool unlit{false};														///< True when this instance bypasses lighting.
 	};
 
-	/// @brief Directional light resource data.
-	struct RenderDirectionalLight {
-		Direction direction_to_light{.value = Vec3(-0.5F, 1.0F, 0.25F)};	///< Direction from surface to light.
-		LinearColor color{.value = oneVec3()};										///< Direct light color.
-		LightIntensity intensity{.value = one()};									///< Direct light intensity.
-		LinearColor ambient{.value = Vec3(0.04F, 0.04F, 0.04F)};				///< Small ambient term.
-		Mat4 light_view_projection{identityMat4()};								///< Optional light-space transform.
-	};
-
-	/// @brief Point light resource data.
-	struct RenderPointLight {
-		Position position{};																///< Light position in world space.
-		LinearColor color{.value = oneVec3()};										///< Direct light color.
-		LightIntensity intensity{.value = zero()};								///< Direct light intensity.
-		LightRange range{.value = static_cast<Scalar>(1)};						///< Influence radius.
-		LinearColor ambient{.value = Vec3(0.04F, 0.04F, 0.04F)};				///< Small ambient term.
-	};
-
-	/// @brief Spot light resource data.
-	struct RenderSpotLight {
-		Position position{};																///< Light position in world space.
-		Direction direction{.value = Vec3(zero(), -one(), zero())};			///< Direction from light to scene.
-		LinearColor color{.value = oneVec3()};										///< Direct light color.
-		LightIntensity intensity{.value = zero()};								///< Direct light intensity.
-		LightRange range{.value = static_cast<Scalar>(1)};						///< Influence radius.
-		LinearColor ambient{.value = Vec3(0.04F, 0.04F, 0.04F)};				///< Small ambient term.
-		SpotConeAngle cone{};															///< Outer cone angle.
-	};
-
-	/// @brief Camera resource data consumed by future render functions.
-	struct RenderCamera {
-		Camera camera{};																	///< Facade camera description.
-		PixelExtent target_extent{.width = 1, .height = 1};					///< Target size for projection choices.
-	};
-
 	/// @brief Minimal CPU scene that stores render resources but does not draw them.
 	class RenderScene {
 	public:
 		[[nodiscard]] auto acquireTexture(const std::filesystem::path &source,
-			MaterialTextureSemantic semantic = MaterialTextureSemantic::base_color)
+			MaterialTextureSemantic semantic = MaterialTextureSemantic::base_color, std::shared_ptr<const EmbeddedImage> embedded = {})
 			-> std::expected<RenderTextureIndex, Error>;
+		[[nodiscard]] auto textureForUpload(RenderTextureIndex index) -> std::expected<const RenderTexture *, Error>;
+		template <typename Generation> void releaseUploadedPixels(Generation &&uploadedGeneration);
 		[[nodiscard]] RenderMaterialHandle addMaterial(RenderMaterial material = {});
-		[[nodiscard]] RenderMeshHandle addMesh(Vector<RenderVertex> vertices, Vector<std::uint32_t> indices,
-														Bounds bounds = {});
+		[[nodiscard]] RenderMeshHandle addMesh(std::shared_ptr<const std::vector<RenderVertex>> vertices, Vector<std::uint32_t> indices);
 		[[nodiscard]] RenderMeshHandle addTriangleMesh(Vector<Vec3> positions,
-			Vector<std::uint32_t> indices, Bounds bounds = {});
-		[[nodiscard]] auto addPlaneMesh(Vec2 half_extent)																		-> RenderMeshHandle;
+			Vector<std::uint32_t> indices);
+		[[nodiscard]] auto addPlaneMesh(Vec2 half_extent, Vec2 uv_scale = {1.0F, 1.0F}) -> RenderMeshHandle;
 		[[nodiscard]] auto addCuboidMesh(Vec3 minimum, Vec3 maximum)														-> RenderMeshHandle;
 		[[nodiscard]] std::expected<RenderInstanceHandle, Error>
 		addInstance(RenderMeshHandle mesh, RenderMaterialHandle material, Transform local = {},
 						Mat4 world = identityMat4());
-		auto setCamera(RenderCamera camera)																							-> void;
-		auto addImportedCamera(CameraDescriptor camera)																		-> void;
-		auto setDirectionalLight(RenderDirectionalLight light)																-> void;
-		auto addDirectionalLight(RenderDirectionalLight light)																-> void;
-		auto setPointLight(RenderPointLight light)																				-> void;
-		auto addPointLight(RenderPointLight light)																				-> void;
-		auto setSpotLight(RenderSpotLight light)																					-> void;
-		auto addSpotLight(RenderSpotLight light)																					-> void;
+		auto setCamera()																							-> void;
+		auto addImportedCamera(std::uint64_t owner = 0)										-> void;
 		auto clear()																														-> void;
+		auto eraseImportedBy(std::uint64_t owner)																				-> void;
 		[[nodiscard]] auto eraseInstance(RenderInstanceHandle handle)													-> bool;
+		auto eraseMesh(RenderMeshHandle handle) -> void;
+		auto eraseMaterial(RenderMaterialHandle handle) -> void;
+		auto releaseUnusedTextures() -> std::size_t;
 		[[nodiscard]] auto purgeUnusedAssets()																				-> std::size_t;
 		[[nodiscard]] RenderMesh *findMesh(RenderMeshHandle handle);
 		[[nodiscard]] const RenderMesh *findMesh(RenderMeshHandle handle) const;
 		[[nodiscard]] const RenderMaterial *findMaterial(RenderMaterialHandle handle) const;
 		[[nodiscard]] const RenderTexture *findTexture(RenderTextureIndex index) const;
 		[[nodiscard]] auto textureCount() const -> std::size_t;
+		[[nodiscard]] auto textureDecodeCount() const -> std::size_t;
+		[[nodiscard]] const std::deque<RenderTexture> &textures() const;
 		[[nodiscard]] RenderInstance *findInstance(RenderInstanceHandle handle);
 		[[nodiscard]] const RenderInstance *findInstance(RenderInstanceHandle handle) const;
 		[[nodiscard]] auto meshCount() const																						-> std::size_t;
@@ -140,14 +102,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto instanceCount() const																					-> std::size_t;
 		[[nodiscard]] auto vertexCount() const																						-> std::size_t;
 		[[nodiscard]] auto indexCount() const																						-> std::size_t;
-		[[nodiscard]] const std::optional<RenderCamera> &camera() const;
-		[[nodiscard]] const std::optional<RenderDirectionalLight> &directionalLight() const;
-		[[nodiscard]] const std::vector<RenderDirectionalLight> &directionalLights() const;
-		[[nodiscard]] const std::optional<RenderPointLight> &pointLight() const;
-		[[nodiscard]] const std::vector<RenderPointLight> &pointLights() const;
-		[[nodiscard]] std::optional<RenderSpotLight> spotLight() const;
-		[[nodiscard]] const std::vector<RenderSpotLight> &spotLights() const;
-		[[nodiscard]] const std::vector<RenderCamera> &importedCameras() const;
+		[[nodiscard]] bool hasCamera() const;
+		[[nodiscard]] std::size_t importedCameraCount() const;
 		[[nodiscard]] const Vector<RenderMesh> &meshes() const;
 		[[nodiscard]] const Vector<RenderInstance> &instances() const;
 		[[nodiscard]] const Vector<RenderMaterial> &materials() const;
@@ -159,15 +115,16 @@ export namespace vve::simple {
 		Vector<RenderMesh> meshes_{};													///< CPU mesh resources.
 		Vector<RenderMaterial> materials_{};										///< CPU material resources.
 		Vector<RenderInstance> instances_{};										///< CPU draw items.
-		std::deque<RenderTexture> textures_{};									///< Stable decoded texture entries in shader-index order.
-		std::map<std::filesystem::path, RenderTextureIndex> texture_indices_{}; ///< Canonical source path to texture-table index.
-		std::optional<RenderCamera> camera_{};										///< Optional active camera.
-		std::optional<RenderDirectionalLight> light_{};							///< Optional active directional light.
-		std::vector<RenderDirectionalLight> directional_lights_{};			///< Capped active directional lights.
-		std::optional<RenderPointLight> point_light_{};							///< Optional active point light.
-		std::vector<RenderPointLight> point_lights_{};						///< Capped active point lights.
-		std::vector<RenderSpotLight> spot_lights_{};							///< Capped active spot lights.
-		std::vector<RenderCamera> imported_cameras_{};						///< Cameras imported for render-scene inspection.
+		std::unordered_map<RenderMeshHandle, std::size_t, HandleHash<RenderMeshHandle>> mesh_indices_{}; ///< Mesh handle to vector index.
+		std::unordered_map<RenderMaterialHandle, std::size_t, HandleHash<RenderMaterialHandle>> material_indices_{}; ///< Material handle to vector index.
+		std::unordered_map<RenderInstanceHandle, std::size_t, HandleHash<RenderInstanceHandle>> instance_indices_{}; ///< Instance handle to vector index.
+		std::map<std::pair<std::filesystem::path, bool>, Error> texture_failures_{}; ///< Decode errors retained until clear().
+		std::deque<RenderTexture> textures_{};									///< Texture table in shader-index order; released slots have generation 0 and are reused.
+		std::map<std::pair<std::filesystem::path, bool>, RenderTextureIndex> texture_indices_{}; ///< (canonical path, linear) to texture-table index.
+		std::size_t texture_decode_count_{}; ///< Decode attempts over this scene lifetime, including failures and across clear().
+		std::uint64_t texture_generation_{0};										///< Last generation handed to a decoded texture.
+		bool camera_{false};														///< Whether a default camera was explicitly set.
+		std::vector<std::uint64_t> imported_cameras_{};						///< Owner tag per imported camera for counting and removal.
 	};
 
 } // namespace vve::simple
@@ -187,35 +144,141 @@ namespace vve::simple {
 		return canonical;
 	}
 
-	/// @brief Finds or decodes one canonical texture-table entry.
-	inline auto RenderScene::acquireTexture(const std::filesystem::path &source, MaterialTextureSemantic semantic)
-		-> std::expected<RenderTextureIndex, Error> {
-		const auto canonical = canonicalTexturePath(source);
-		if (!canonical) { return std::unexpected(canonical.error()); }
-		if (const auto found = texture_indices_.find(*canonical); found != texture_indices_.end()) {
+	/// @brief Reports whether every pixel is (nearly) grey, i.e. the image is a height map rather than a normal map.
+	[[nodiscard]] inline auto isGreyscale(const std::vector<std::byte> &rgba8) -> bool {
+		constexpr int tolerance{8}; // Leaves room for JPEG chroma noise.
+		for (std::size_t offset{}; offset + 2U < rgba8.size(); offset += 4U) {
+			const int red = std::to_integer<int>(rgba8[offset]);
+			const int green = std::to_integer<int>(rgba8[offset + 1U]);
+			const int blue = std::to_integer<int>(rgba8[offset + 2U]);
+			if (std::abs(red - green) > tolerance || std::abs(green - blue) > tolerance) { return false; }
+		}
+		return true;
+	}
+
+	/// @brief Decodes one image into tight RGBA8 rows ordered bottom-up.
+	///
+	/// Assimp texture coordinates put v = 0 at the bottom of the image (OpenGL convention), while stb_image and
+	/// Vulkan put row 0 at the top. Storing the rows bottom-up makes v = 0 sample the bottom row, so imported
+	/// models and the procedural faces (v up) show their textures upright and tangent frames match normal maps.
+	[[nodiscard]] inline auto decodeTexture(const std::filesystem::path &path, const EmbeddedImage *embedded)
+		-> std::expected<RenderTexture, Error> {
+		auto texture = RenderTexture{};
+		if (embedded != nullptr && embedded->extent.width > 0U && embedded->extent.height > 0U) {
+			const auto byte_count = static_cast<std::size_t>(embedded->extent.width) * embedded->extent.height * 4U;
+			if (embedded->bytes.size() != byte_count) { return std::unexpected(Error::io_error); }
+			texture.rgba8 = embedded->bytes;
+			texture.extent = embedded->extent;
+		} else {
+			int width{};
+			int height{};
+			int channels{};
+			const auto path_text = path.string();
+			auto *decoded = embedded != nullptr
+				? stbi_load_from_memory(reinterpret_cast<const stbi_uc *>(embedded->bytes.data()),
+					static_cast<int>(embedded->bytes.size()), &width, &height, &channels, STBI_rgb_alpha)
+				: stbi_load(path_text.c_str(), &width, &height, &channels, STBI_rgb_alpha);
+			auto pixels = std::unique_ptr<stbi_uc, decltype(&stbi_image_free)>{decoded, stbi_image_free};
+			if (!pixels || width <= 0 || height <= 0) { return std::unexpected(Error::io_error); }
+			texture.extent = PixelExtent{.width = static_cast<std::uint32_t>(width), .height = static_cast<std::uint32_t>(height)};
+			const auto *begin = reinterpret_cast<const std::byte *>(pixels.get());
+			texture.rgba8.assign(begin, begin + static_cast<std::size_t>(texture.extent.width) * texture.extent.height * 4U);
+		}
+
+		const auto row_bytes = static_cast<std::size_t>(texture.extent.width) * 4U;
+		for (std::size_t top{}, bottom{texture.extent.height - 1U}; top < bottom; ++top, --bottom) {
+			std::swap_ranges(texture.rgba8.begin() + static_cast<std::ptrdiff_t>(top * row_bytes),
+				texture.rgba8.begin() + static_cast<std::ptrdiff_t>((top + 1U) * row_bytes),
+				texture.rgba8.begin() + static_cast<std::ptrdiff_t>(bottom * row_bytes));
+		}
+		texture.greyscale = isGreyscale(texture.rgba8);
+		return texture;
+	}
+
+	/// @brief Finds or decodes one texture-table entry keyed by source and color space.
+	///
+	/// Color maps (base color, emissive) are sRGB and data maps are linear, so the same image used in both roles
+	/// gets two entries. Released slots are reused; a full table is reported instead of silently dropping the texture.
+	inline auto RenderScene::acquireTexture(const std::filesystem::path &source, MaterialTextureSemantic semantic,
+		std::shared_ptr<const EmbeddedImage> embedded) -> std::expected<RenderTextureIndex, Error> {
+		const bool linear = semantic != MaterialTextureSemantic::base_color && semantic != MaterialTextureSemantic::emissive;
+		auto key = std::pair{source, linear};
+		auto found = texture_indices_.find(key);
+		auto failed = texture_failures_.find(key);
+		// Canonical imported paths hit directly; resolve alternate file spellings only on a cache miss.
+		if (found == texture_indices_.end() && failed == texture_failures_.end() && embedded == nullptr) {
+			const auto canonical = canonicalTexturePath(source);
+			if (!canonical) { return std::unexpected(canonical.error()); }
+			key.first = *canonical;
+			found = texture_indices_.find(key);
+			failed = texture_failures_.find(key);
+		}
+		if (failed != texture_failures_.end()) { return std::unexpected(failed->second); }
+		// A coloured HEIGHT image is a mislabeled normal map; cached hits need no pixel scan.
+		const auto rejected_height = [semantic](const RenderTexture &texture) {
+			return semantic == MaterialTextureSemantic::height && texture.greyscale;
+		};
+		if (found != texture_indices_.end()) {
+			if (rejected_height(textures_[found->second])) { return std::unexpected(Error::invalid_argument); }
 			return found->second;
 		}
 
-		int width{};
-		int height{};
-		int channels{};
-		const auto path = canonical->string();
-		auto pixels = std::unique_ptr<stbi_uc, decltype(&stbi_image_free)>{
-			stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha), stbi_image_free};
-		if (!pixels || width <= 0 || height <= 0) { return std::unexpected(Error::io_error); }
+		const auto free_slot = std::ranges::find(textures_, std::uint64_t{0}, &RenderTexture::generation);
+		if (free_slot == textures_.end() && textures_.size() >= kMaxSceneTextures) {
+			return std::unexpected(Error::capacity_exceeded);
+		}
+		++texture_decode_count_;
+		auto texture = decodeTexture(key.first, embedded.get());
+		if (!texture) {
+			texture_failures_.emplace(key, texture.error());
+			return std::unexpected(texture.error());
+		}
+		if (rejected_height(*texture)) { return std::unexpected(Error::invalid_argument); }
+		texture->canonical_path = key.first;
+		texture->embedded = std::move(embedded);
+		texture->linear = linear;
+		texture->generation = ++texture_generation_;
 
-		const auto extent = PixelExtent{.width = static_cast<std::uint32_t>(width),
-			.height = static_cast<std::uint32_t>(height)};
-		const auto byte_count = static_cast<std::size_t>(extent.width) * extent.height * 4U;
-		const auto *begin = reinterpret_cast<const std::byte *>(pixels.get());
-		const auto index = static_cast<RenderTextureIndex>(textures_.size());
-		const bool linear = semantic == MaterialTextureSemantic::normal ||
-			semantic == MaterialTextureSemantic::metalness || semantic == MaterialTextureSemantic::roughness ||
-			semantic == MaterialTextureSemantic::ambient_occlusion;
-		textures_.push_back(RenderTexture{.canonical_path = *canonical,
-			.rgba8 = std::vector<std::byte>{begin, begin + byte_count}, .extent = extent, .linear = linear});
-		texture_indices_.emplace(textures_.back().canonical_path, index);
+		const auto index = static_cast<RenderTextureIndex>(std::distance(textures_.begin(), free_slot));
+		if (free_slot != textures_.end()) { *free_slot = std::move(*texture); }
+		else { textures_.push_back(std::move(*texture)); }
+		texture_indices_.emplace(key, index);
 		return index;
+	}
+
+	/// @brief Restores released pixels from the retained file/embedded source; a missing file returns Error::io_error.
+	/// Renderer mutation is limited to this restoration and decode bookkeeping: extent, greyscale, attempt count and failure cache.
+	inline auto RenderScene::textureForUpload(RenderTextureIndex index) -> std::expected<const RenderTexture *, Error> {
+		if (findTexture(index) == nullptr) { return std::unexpected(Error::missing_object); }
+		auto &texture = textures_[index];
+		if (!texture.rgba8.empty()) { return &texture; }
+		const auto key = std::pair{texture.canonical_path, texture.linear};
+		if (const auto failed = texture_failures_.find(key); failed != texture_failures_.end()) {
+			return std::unexpected(failed->second);
+		}
+		++texture_decode_count_;
+		auto decoded = decodeTexture(texture.canonical_path, texture.embedded.get());
+		if (!decoded) {
+			texture_failures_.emplace(key, decoded.error());
+			return std::unexpected(decoded.error());
+		}
+		// Keep slot identity and ownership while refreshing dimensions, classification and upload bytes.
+		texture.rgba8 = std::move(decoded->rgba8);
+		texture.extent = decoded->extent;
+		texture.greyscale = decoded->greyscale;
+		return &texture;
+	}
+
+	/// @brief RenderSystem frees decoded storage only when the same nonzero generation is resident on the GPU.
+	/// The retained source lets textureForUpload() restore pixels; a missing file then returns Error::io_error.
+	template <typename Generation> inline void RenderScene::releaseUploadedPixels(Generation &&uploadedGeneration) {
+		// Slots pending upload or replacement must retain their pixels, even if an older generation is resident.
+		for (const auto index : std::views::iota(std::size_t{}, textures_.size())) {
+			auto &texture = textures_[index];
+			if (texture.generation != 0U && texture.generation == uploadedGeneration(index)) {
+				std::vector<std::byte>{}.swap(texture.rgba8);
+			}
+		}
 	}
 
 	/// @brief Adds one quad face to a CPU mesh.
@@ -238,42 +301,43 @@ namespace vve::simple {
 	inline auto RenderScene::addMaterial(RenderMaterial material)											-> RenderMaterialHandle{
 		material.handle = material.handle.valid() ? material.handle : makeCounterHandle<RenderMaterialHandle>();
 		materials_.push_back(std::move(material));
+		material_indices_.try_emplace(materials_.back().handle, materials_.size() - 1U);
 		return materials_.back().handle;
 	}
 
 	/// @brief Registers a mesh and returns its handle.
-	inline RenderMeshHandle RenderScene::addMesh(Vector<RenderVertex> vertices, Vector<std::uint32_t> indices,
-																Bounds bounds) {
+	inline RenderMeshHandle RenderScene::addMesh(std::shared_ptr<const std::vector<RenderVertex>> vertices, Vector<std::uint32_t> indices) {
 		auto mesh = RenderMesh{.handle = makeCounterHandle<RenderMeshHandle>(),
 										.vertices = std::move(vertices),
-										.indices = std::move(indices),
-										.bounds = bounds};
+										.indices = std::move(indices)};
 		meshes_.push_back(std::move(mesh));
+		mesh_indices_.try_emplace(meshes_.back().handle, meshes_.size() - 1U);
 		return meshes_.back().handle;
 	}
 
-	/// @brief Converts public positions into one CPU-side indexed triangle mesh.
+	/// @brief Converts public positions into one CPU-side indexed triangle mesh; zero normals make the shader use face normals.
 	inline RenderMeshHandle RenderScene::addTriangleMesh(
-		Vector<Vec3> positions, Vector<std::uint32_t> indices, Bounds bounds) {
+		Vector<Vec3> positions, Vector<std::uint32_t> indices) {
 		auto vertices = Vector<RenderVertex>{};
 		vertices.reserve(positions.size());
 		for (const Vec3 &position : positions) {
 			vertices.push_back(RenderVertex{.position = position});
 		}
-		return addMesh(std::move(vertices), std::move(indices), bounds);
+		return addMesh(std::make_shared<std::vector<RenderVertex>>(std::move(vertices)), std::move(indices));
 	}
 
-	/// @brief Creates a two-triangle plane mesh.
-	inline auto RenderScene::addPlaneMesh(Vec2 half_extent)													-> RenderMeshHandle{
+	/// @brief Creates a two-triangle plane mesh with UVs spanning zero to uv_scale.
+	inline auto RenderScene::addPlaneMesh(Vec2 half_extent, Vec2 uv_scale) -> RenderMeshHandle {
 		auto vertices = Vector<RenderVertex>{};
 		auto indices = Vector<std::uint32_t>{};
 		appendFace(vertices, indices, Vec3{0.0F, 1.0F, 0.0F},
 						{Vec3{-half_extent.x, 0.0F, -half_extent.y}, Vec3{-half_extent.x, 0.0F, half_extent.y},
 						Vec3{half_extent.x, 0.0F, half_extent.y}, Vec3{half_extent.x, 0.0F, -half_extent.y}});
-		const auto bounds = Bounds{.minimum = Position{.value = Vec3{-half_extent.x, 0.0F, -half_extent.y}},
-											.maximum = Position{.value = Vec3{half_extent.x, 0.0F, half_extent.y}},
-											.valid = true};
-		return addMesh(std::move(vertices), std::move(indices), bounds);
+		for (auto &vertex : vertices) {
+			vertex.uv.x *= uv_scale.x;
+			vertex.uv.y *= uv_scale.y;
+		}
+		return addMesh(std::make_shared<std::vector<RenderVertex>>(std::move(vertices)), std::move(indices));
 	}
 
 	/// @brief Creates a six-face cuboid mesh.
@@ -298,8 +362,7 @@ namespace vve::simple {
 		appendFace(vertices, indices, Vec3{0.0F, -1.0F, 0.0F},
 						{Vec3{minimum.x, minimum.y, minimum.z}, Vec3{maximum.x, minimum.y, minimum.z},
 						Vec3{maximum.x, minimum.y, maximum.z}, Vec3{minimum.x, minimum.y, maximum.z}});
-		return addMesh(std::move(vertices), std::move(indices),
-							Bounds{.minimum = Position{.value = minimum}, .maximum = Position{.value = maximum}, .valid = true});
+		return addMesh(std::make_shared<std::vector<RenderVertex>>(std::move(vertices)), std::move(indices));
 	}
 
 	/// @brief Registers an instance when its mesh and material exist.
@@ -310,148 +373,164 @@ namespace vve::simple {
 													.mesh = mesh, .material = material,
 													.local_transform = local, .world_transform = world};
 		instances_.push_back(std::move(instance));
+		instance_indices_.try_emplace(instances_.back().handle, instances_.size() - 1U);
 		return instances_.back().handle;
 	}
 
-	/// @brief Stores the active camera resource.
-	inline void RenderScene::setCamera(RenderCamera camera) { camera_ = std::move(camera); }
+	/// @brief Records that the renderer has an explicitly set default camera.
+	inline void RenderScene::setCamera() { camera_ = true; }
 
-	/// @brief Appends one imported camera for render-scene inspection.
-	inline void RenderScene::addImportedCamera(CameraDescriptor camera) {
-		const auto target = math::add(camera.position.value, camera.direction.value);
-		imported_cameras_.push_back(RenderCamera{.camera = Camera{.position = camera.position,
-																				 .forward = camera.direction,
-																				 .view_transform = math::lookAt(camera.position.value, target, camera.up.value),
-																				 .fov_y = camera.fov,
-																				 .clip = ClipPlanes{.near_plane = camera.near_clip, .far_plane = camera.far_clip}},
-															 .target_extent = PixelExtent{.width = 1, .height = 1}});
-	}
+	/// @brief Retains one imported camera owner for scene counts and per-instance removal.
+	inline void RenderScene::addImportedCamera(std::uint64_t owner) { imported_cameras_.push_back(owner); }
 
-	/// @brief Replaces the active directional-light list with one first-light entry.
-	inline void RenderScene::setDirectionalLight(RenderDirectionalLight light) {
-		directional_lights_.clear();
-		directional_lights_.push_back(std::move(light));
-		light_ = directional_lights_.front();
-	}
-
-	/// @brief Adds one directional light until the fixed simple-engine cap is reached.
-	inline void RenderScene::addDirectionalLight(RenderDirectionalLight light) {
-		if (directional_lights_.size() < kMaxDirectionalLights) { directional_lights_.push_back(std::move(light)); }
-		if (!directional_lights_.empty()) { light_ = directional_lights_.front(); }
-	}
-
-	/// @brief Replaces the active point-light list with one first-light entry.
-	inline void RenderScene::setPointLight(RenderPointLight light) {
-		point_lights_.clear();
-		point_lights_.push_back(std::move(light));
-		point_light_ = point_lights_.front();
-	}
-
-	/// @brief Adds one point light until the fixed simple-engine cap is reached.
-	inline void RenderScene::addPointLight(RenderPointLight light) {
-		if (point_lights_.size() < kMaxShadowedPointLights) { point_lights_.push_back(std::move(light)); }
-		if (!point_lights_.empty()) { point_light_ = point_lights_.front(); }
-	}
-
-	/// @brief Replaces the active spot-light list with one first-light entry.
-	inline void RenderScene::setSpotLight(RenderSpotLight light) {
-		spot_lights_.clear();
-		spot_lights_.push_back(std::move(light));
-	}
-
-	/// @brief Adds one spot light until the fixed simple-engine cap is reached.
-	inline void RenderScene::addSpotLight(RenderSpotLight light) {
-		if (spot_lights_.size() < kMaxShadowedSpotLights) { spot_lights_.push_back(std::move(light)); }
-	}
-
-	/// @brief Removes all scene resources.
+	/// @brief Removes all scene resources; texture generations keep counting so the renderer sees every slot change.
 	inline auto RenderScene::clear()																					-> void{
 		meshes_.clear();
 		materials_.clear();
 		instances_.clear();
 		textures_.clear();
 		texture_indices_.clear();
-		camera_.reset();
-		light_.reset();
-		directional_lights_.clear();
-		point_light_.reset();
-		point_lights_.clear();
-		spot_lights_.clear();
+		texture_failures_.clear();
+		mesh_indices_.clear();
+		material_indices_.clear();
+		instance_indices_.clear();
+		camera_ = false;
 		imported_cameras_.clear();
 	}
 
+	/// @brief Removes the cameras one scene instance imported.
+	inline auto RenderScene::eraseImportedBy(std::uint64_t owner)												-> void{
+		std::erase(imported_cameras_, owner);
+	}
+
+	namespace detail {
+		/// @brief Restores handle indices after stable vector compaction.
+		inline void rebuildResourceIndices(const auto &resources, auto &indices) {
+			indices.clear();
+			indices.reserve(resources.size());
+			std::size_t index{};
+			for (const auto &resource : resources) { indices.try_emplace(resource.handle, index++); }
+		}
+
+		/// @brief Removes matching resources without changing the order of surviving handles.
+		inline bool eraseResource(auto &resources, auto &indices, auto handle) {
+			if (!indices.contains(handle)) { return false; }
+			std::erase_if(resources, [handle](const auto &resource) { return resource.handle == handle; });
+			rebuildResourceIndices(resources, indices);
+			return true;
+		}
+	} // namespace detail
+
 	/// @brief Removes one CPU draw item by stable handle.
 	inline auto RenderScene::eraseInstance(RenderInstanceHandle handle)										-> bool{
-		const auto found = std::ranges::find(instances_, handle, &RenderInstance::handle);
-		if (found == instances_.end()) { return false; }
-		instances_.erase(found);
-		return true;
+		return detail::eraseResource(instances_, instance_indices_, handle);
+	}
+
+	/// @brief Removes one mesh after the coordinator has checked its ownership and references.
+	inline auto RenderScene::eraseMesh(RenderMeshHandle handle) -> void {
+		(void)detail::eraseResource(meshes_, mesh_indices_, handle);
+	}
+
+	/// @brief Removes one material after the coordinator has checked its ownership and references.
+	inline auto RenderScene::eraseMaterial(RenderMaterialHandle handle) -> void {
+		(void)detail::eraseResource(materials_, material_indices_, handle);
 	}
 
 	/// @brief Removes mesh and material resources no live instance references.
 	inline auto RenderScene::purgeUnusedAssets()																-> std::size_t{
-		const auto mesh_referenced = [this](RenderMeshHandle handle) {
-			return std::ranges::any_of(instances_, [handle](const RenderInstance &instance) { return instance.mesh == handle; });
-		};
-		const auto material_referenced = [this](RenderMaterialHandle handle) {
-			return std::ranges::any_of(instances_, [handle](const RenderInstance &instance) { return instance.material == handle; });
-		};
-
+		auto used_meshes = std::unordered_set<RenderMeshHandle, HandleHash<RenderMeshHandle>>{};
+		auto used_materials = std::unordered_set<RenderMaterialHandle, HandleHash<RenderMaterialHandle>>{};
+		used_meshes.reserve(meshes_.size());
+		used_materials.reserve(materials_.size());
+		// Collect both reference sets in one pass, then compact each resource vector once.
+		for (const auto &instance : instances_) {
+			used_meshes.insert(instance.mesh);
+			used_materials.insert(instance.material);
+		}
 		const auto mesh_count = meshes_.size();
 		const auto material_count = materials_.size();
-		auto unused_meshes = std::ranges::remove_if(meshes_, [&](const RenderMesh &mesh) { return !mesh_referenced(mesh.handle); });
-		for (auto current = unused_meshes.begin(); current != meshes_.end();) { current = meshes_.erase(current); }
-		auto unused_materials = std::ranges::remove_if(materials_, [&](const RenderMaterial &material) {
-			return !material_referenced(material.handle);
-		});
-		for (auto current = unused_materials.begin(); current != materials_.end();) { current = materials_.erase(current); }
+		meshes_.erase(std::remove_if(meshes_.begin(), meshes_.end(),
+			[&](const RenderMesh &mesh) { return !used_meshes.contains(mesh.handle); }), meshes_.end());
+		materials_.erase(std::remove_if(materials_.begin(), materials_.end(),
+			[&](const RenderMaterial &material) { return !used_materials.contains(material.handle); }), materials_.end());
+		detail::rebuildResourceIndices(meshes_, mesh_indices_);
+		detail::rebuildResourceIndices(materials_, material_indices_);
+		releaseUnusedTextures();
 		return (mesh_count - meshes_.size()) + (material_count - materials_.size());
+	}
+
+	/// @brief Frees texture slots no material references; later acquisitions reuse them.
+	inline auto RenderScene::releaseUnusedTextures()														-> std::size_t{
+		auto used = std::vector<bool>(textures_.size(), false);
+		for (const RenderMaterial &material : materials_) {
+			for (const RenderTextureIndex index : {material.base_color_texture_index, material.normal_texture_index,
+					material.metalness_texture_index, material.roughness_texture_index, material.emissive_texture_index,
+					material.ambient_occlusion_texture_index}) {
+				if (index < used.size()) { used[index] = true; }
+			}
+		}
+		std::size_t released{};
+		for (std::size_t index{}; index < textures_.size(); ++index) {
+			RenderTexture &texture = textures_[index];
+			if (texture.generation == 0U || used[index]) { continue; }
+			texture_indices_.erase(std::pair{texture.canonical_path, texture.linear});
+			texture = RenderTexture{};
+			++released;
+		}
+		while (!textures_.empty() && textures_.back().generation == 0U) { textures_.pop_back(); }
+		return released;
 	}
 
 	/// @brief Finds a mesh by handle.
 	inline RenderMesh *RenderScene::findMesh(RenderMeshHandle handle) {
-		const auto found = std::ranges::find(meshes_, handle, &RenderMesh::handle);
-		return found == meshes_.end() ? nullptr : std::addressof(*found);
+		const auto found = mesh_indices_.find(handle);
+		return found == mesh_indices_.end() ? nullptr : std::addressof(meshes_[found->second]);
 	}
 
 	/// @brief Finds a mesh by handle.
 	inline const RenderMesh *RenderScene::findMesh(RenderMeshHandle handle) const {
-		const auto found = std::ranges::find(meshes_, handle, &RenderMesh::handle);
-		return found == meshes_.end() ? nullptr : std::addressof(*found);
+		const auto found = mesh_indices_.find(handle);
+		return found == mesh_indices_.end() ? nullptr : std::addressof(meshes_[found->second]);
 	}
 
 	/// @brief Finds a material by handle.
 	inline const RenderMaterial *RenderScene::findMaterial(RenderMaterialHandle handle) const {
-		const auto found = std::ranges::find(materials_, handle, &RenderMaterial::handle);
-		return found == materials_.end() ? nullptr : std::addressof(*found);
+		const auto found = material_indices_.find(handle);
+		return found == material_indices_.end() ? nullptr : std::addressof(materials_[found->second]);
 	}
 
-	/// @brief Finds a decoded texture by its dense table index.
+	/// @brief Counts image decode attempts, including failures; clearing the scene keeps the diagnostic cumulative.
+	inline std::size_t RenderScene::textureDecodeCount() const { return texture_decode_count_; }
+
+	/// @brief Finds a decoded texture by its table index; released slots are reported as missing.
 	inline const RenderTexture *RenderScene::findTexture(RenderTextureIndex index) const {
-		return index < textures_.size() ? std::addressof(textures_[index]) : nullptr;
+		return index < textures_.size() && textures_[index].generation != 0U ? std::addressof(textures_[index]) : nullptr;
 	}
 
 	/// @brief Finds an instance by handle.
 	inline RenderInstance *RenderScene::findInstance(RenderInstanceHandle handle) {
-		const auto found = std::ranges::find(instances_, handle, &RenderInstance::handle);
-		return found == instances_.end() ? nullptr : std::addressof(*found);
+		const auto found = instance_indices_.find(handle);
+		return found == instance_indices_.end() ? nullptr : std::addressof(instances_[found->second]);
 	}
 
 	/// @brief Finds an instance by handle.
 	inline const RenderInstance *RenderScene::findInstance(RenderInstanceHandle handle) const {
-		const auto found = std::ranges::find(instances_, handle, &RenderInstance::handle);
-		return found == instances_.end() ? nullptr : std::addressof(*found);
+		const auto found = instance_indices_.find(handle);
+		return found == instance_indices_.end() ? nullptr : std::addressof(instances_[found->second]);
 	}
 
 	inline std::size_t RenderScene::meshCount() const { return meshes_.size(); }
 	inline std::size_t RenderScene::materialCount() const { return materials_.size(); }
-	inline std::size_t RenderScene::textureCount() const { return textures_.size(); }
+	inline std::size_t RenderScene::textureCount() const {
+		return static_cast<std::size_t>(std::ranges::count_if(textures_, [](const RenderTexture &texture) { return texture.generation != 0U; }));
+	}
+	inline const std::deque<RenderTexture> &RenderScene::textures() const { return textures_; }
 	inline std::size_t RenderScene::instanceCount() const { return instances_.size(); }
 
 	/// @brief Returns the total source vertex count.
 	inline auto RenderScene::vertexCount() const																	-> std::size_t{
 		return std::accumulate(meshes_.begin(), meshes_.end(), std::size_t{}, [](std::size_t total, const auto &mesh) {
-			return total + mesh.vertices.size();
+			return total + mesh.vertices->size();
 		});
 	}
 
@@ -462,16 +541,10 @@ namespace vve::simple {
 		});
 	}
 
-	inline const std::optional<RenderCamera> &RenderScene::camera() const { return camera_; }
-	inline const std::optional<RenderDirectionalLight> &RenderScene::directionalLight() const { return light_; }
-	inline const std::vector<RenderDirectionalLight> &RenderScene::directionalLights() const { return directional_lights_; }
-	inline const std::optional<RenderPointLight> &RenderScene::pointLight() const { return point_light_; }
-	inline const std::vector<RenderPointLight> &RenderScene::pointLights() const { return point_lights_; }
-	inline std::optional<RenderSpotLight> RenderScene::spotLight() const {
-		return spot_lights_.empty() ? std::nullopt : std::optional<RenderSpotLight>{spot_lights_.front()};
-	}
-	inline const std::vector<RenderSpotLight> &RenderScene::spotLights() const { return spot_lights_; }
-	inline const std::vector<RenderCamera> &RenderScene::importedCameras() const { return imported_cameras_; }
+	/// @brief Returns whether a default camera was explicitly set.
+	inline bool RenderScene::hasCamera() const { return camera_; }
+	/// @brief Counts imported cameras without retaining duplicate descriptors.
+	inline std::size_t RenderScene::importedCameraCount() const { return imported_cameras_.size(); }
 	inline const Vector<RenderMesh> &RenderScene::meshes() const { return meshes_; }
 	inline const Vector<RenderInstance> &RenderScene::instances() const { return instances_; }
 	inline const Vector<RenderMaterial> &RenderScene::materials() const { return materials_; }

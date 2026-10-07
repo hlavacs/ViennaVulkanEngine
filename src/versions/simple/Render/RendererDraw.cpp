@@ -2,107 +2,198 @@ module;
 #include <vulkan/vulkan_core.h>
 #include <VVPPL.h>
 
-module VEEngine.Simple.Renderer;
+module VVEngine.Simple.Renderer;
 import std;
-import VEEngine.Simple.Types;
-import VEEngine.Simple.RenderResources;
-import VEEngine.Simple.Scene;
-import VEEngine.Simple.Vulkan;
+import VVEngine.Simple.Types;
+import VVEngine.Simple.RenderResources;
+import VVEngine.Simple.Scene;
+import VVEngine.Simple.Vulkan;
 
 /// @file
-/// @brief ForwardRenderer per-frame recording and presentation: shadow passes, the forward color pass, submit, and present.
+/// @brief Per-window recording: DrawItem resolves scene data once; box and frustum helpers conservatively cull each pass.
 
 namespace vve::simple {
+
+	namespace {
+		/// @brief Resolved mesh, material and object state reused by every scene pass in one window frame.
+		struct DrawItem {
+			const VulkanMesh *mesh{};       ///< Stable GPU mesh owner shared by all its instances.
+			VkBuffer vertices{};            ///< Static vertices or this window's completed dynamic slot.
+			ObjectPushConstants object{};   ///< Model, material slot and unlit flag passed to the shader.
+			Bounds worldBounds{};           ///< World AABB enclosing all transformed object-space corners.
+			bool castsShadow{};             ///< Whether this visible instance participates in shadow passes.
+		};
+
+		/// @brief Encloses an affine-transformed mesh, including rotations and negative/nonuniform scales.
+		[[nodiscard]] Bounds worldBounds(const Bounds &box, const Mat4 &model) {
+			if (!box.valid) { return {}; }
+			Bounds result{};
+			// All eight corners are needed; transforming only minimum and maximum loses rotated extrema.
+			for (const auto corner : std::views::iota(0U, 8U)) {
+				const Vec4 local{corner & 1U ? box.maximum.value.x : box.minimum.value.x,
+					corner & 2U ? box.maximum.value.y : box.minimum.value.y,
+					corner & 4U ? box.maximum.value.z : box.minimum.value.z, one()};
+				const auto position = multiply(model, local);
+				const Vec3 point{position.x, position.y, position.z};
+				if (!std::isfinite(point.x) || !std::isfinite(point.y) || !std::isfinite(point.z)) { return {}; }
+				result.minimum.value = result.valid ? min(result.minimum.value, point) : point;
+				result.maximum.value = result.valid ? max(result.maximum.value, point) : point;
+				result.valid = true;
+			}
+			return result;
+		}
+
+		/// @brief Extracts inward planes from Vulkan clip inequalities: -w <= x,y <= w and 0 <= z <= w.
+		[[nodiscard]] std::array<Vec4, 6U> frustumPlanes(const Mat4 &matrix) {
+			std::array<Vec4, 4U> rows{};
+			// Math matrices use column-major indexing; planes are combinations of their rows.
+			for (const auto row : std::views::iota(0, 4)) { rows[row] = {matrix[0][row], matrix[1][row], matrix[2][row], matrix[3][row]}; }
+			return {add(rows[3], rows[0]), subtract(rows[3], rows[0]), add(rows[3], rows[1]),
+				subtract(rows[3], rows[1]), rows[2], subtract(rows[3], rows[2])};
+		}
+
+		/// @brief Rejects only boxes strictly outside a plane; touching, intersecting and unknown boxes stay drawable.
+		[[nodiscard]] bool intersectsFrustum(const Bounds &box, const std::array<Vec4, 6U> &planes) {
+			if (!box.valid) { return true; }
+			// The support corner maximizes signed distance; all other corners lie outside if it does.
+			for (const auto &plane : planes) {
+				const Scalar x = plane.x * (plane.x >= zero() ? box.maximum.value.x : box.minimum.value.x);
+				const Scalar y = plane.y * (plane.y >= zero() ? box.maximum.value.y : box.minimum.value.y);
+				const Scalar z = plane.z * (plane.z >= zero() ? box.maximum.value.z : box.minimum.value.z);
+				const Scalar tolerance = 32 * std::numeric_limits<Scalar>::epsilon() * (std::abs(x) + std::abs(y) + std::abs(z) + std::abs(plane.w) + one());
+				if (x + y + z + plane.w < -tolerance) { return false; }
+			}
+			return true;
+		}
+	} // namespace
+
+	constexpr std::uint64_t kFrameFenceTimeoutNs{1'000'000'000ULL}; ///< Wait at most one second for the in-flight frame slot.
+	constexpr std::uint64_t kAcquireTimeoutNs{100'000'000ULL}; ///< Wait at most 100 ms for presentation to release an image.
+
+	/// @brief Classifies acquisition results without touching Vulkan objects or frame state.
+	auto acquireAction(VkResult result) -> AcquireAction {
+		switch (result) {
+		case VK_SUCCESS: case VK_SUBOPTIMAL_KHR: return AcquireAction::render;
+		case VK_TIMEOUT: case VK_NOT_READY: return AcquireAction::skip;
+		case VK_ERROR_OUT_OF_DATE_KHR: return AcquireAction::recreate;
+		default: return AcquireAction::fail;
+		}
+	}
 
 	/**
 		* @brief Draws one swapchain frame through the per-frame synchronization objects.
 		*
+		* @param target Window resources and camera used for this frame.
 		* @param readback Optional swapchain-image readback sink used by deterministic debug captures.
+		* @return True only when presentation succeeds or reports a suboptimal swapchain.
 	*/
-	void ForwardRenderer::drawFrame(VulkanReadback *readback) {
-		lastReadbackCaptureResult.reset();
-		const auto windowExtent = currentWindowPixelExtent();
-		if (windowExtent.width == 0U || windowExtent.height == 0U) { return; }
-		if (const VkResult result = syncSceneResources(); result != VK_SUCCESS) { reportFrameFailure("scene sync", result); return; }
+	bool ForwardRenderer::drawFrame(WindowTarget &target, VulkanReadback *readback) {
+		textureUploadError_.reset();
+		const auto windowExtent = currentWindowPixelExtent(target);
+		if (windowExtent.width == 0U || windowExtent.height == 0U) { return false; }
 		// Compare against the extent the swapchain was requested for, not the surface-chosen one, so a driver that clamps or reports a different currentExtent does not force a recreate every frame.
-		if (windowExtent.width != swapchain.requestedExtent.width || windowExtent.height != swapchain.requestedExtent.height) {
-			if (const VkResult result = recreateSwapchain(windowExtent); result != VK_SUCCESS) { reportFrameFailure("swapchain recreate", result); return; }
+		if (windowExtent.width != target.swapchain.requestedExtent.width || windowExtent.height != target.swapchain.requestedExtent.height) {
+			if (const VkResult result = recreateSwapchain(target, windowExtent); result != VK_SUCCESS) { reportFrameFailure("swapchain recreate", result); return false; }
 		}
 
-		const std::size_t frameCount{frameSync.inFlightFences.size()}; // Existing sync count defines frames in flight.
-		if (frameCount == 0U || frameSync.imageAvailableSemaphores.size() < frameCount || frameSync.renderFinishedSemaphores.empty()) { return; }
-		if (commandBuffers.commandBuffers.size() < frameCount || device.device == VK_NULL_HANDLE || swapchain.swapchain == VK_NULL_HANDLE) { return; }
-		if (currentFrame >= frameCount) { currentFrame = 0U; }
+		const std::size_t frameCount{target.frameSync.inFlightFences.size()}; // Existing sync count defines frames in flight.
+		if (frameCount == 0U || target.frameSync.imageAvailableSemaphores.size() < frameCount || target.frameSync.renderFinishedSemaphores.empty()) { return false; }
+		if (target.commandBuffers.ownedCommandBuffers.size() < frameCount || device.device == VK_NULL_HANDLE || target.swapchain.swapchain == VK_NULL_HANDLE) { return false; }
+		const std::uint32_t frameIndex{target.currentFrame < frameCount ? target.currentFrame : 0U};
 
-		const VkFence inFlightFence{frameSync.inFlightFences[currentFrame]};
-		const VkSemaphore imageAvailableSemaphore{frameSync.imageAvailableSemaphores[currentFrame]};
-		if (inFlightFence == VK_NULL_HANDLE || imageAvailableSemaphore == VK_NULL_HANDLE) { return; }
+		const VkFence inFlightFence{target.frameSync.inFlightFences[frameIndex]};
+		const VkSemaphore imageAvailableSemaphore{target.frameSync.imageAvailableSemaphores[frameIndex]};
+		if (inFlightFence == VK_NULL_HANDLE || imageAvailableSemaphore == VK_NULL_HANDLE) { return false; }
 
-		VkResult result = vkWaitForFences(device.device, 1U, &inFlightFence, VK_TRUE, UINT64_MAX);
-		if (result != VK_SUCCESS) { reportFrameFailure("fence wait", result); return; }
+		VkResult result = vkWaitForFences(device.device, 1U, &inFlightFence, VK_TRUE, kFrameFenceTimeoutNs);
+		// A busy slot is retried unchanged; do not reset its fence or update its frame data.
+		if (result == VK_TIMEOUT) { ++skippedFrameCount_; return false; }
+		if (result != VK_SUCCESS) { reportFrameFailure("fence wait", result); return false; }
+		collectRetiredResources(target.submitSerials[frameIndex]);
+		if (const VkResult sync = syncSceneResources(); sync != VK_SUCCESS) { reportFrameFailure("scene sync", sync); return false; }
+		result = writeSceneDescriptors(target, frameIndex);
+		if (result != VK_SUCCESS) { reportFrameFailure("scene descriptors", result); return false; }
+		result = uploadDynamicVertices(target, frameIndex);
+		if (result != VK_SUCCESS) { reportFrameFailure("vertex update", result); return false; }
+		target.currentFrame = frameIndex;
+		target.lastReadbackCaptureResult.reset();
+
+		// Frame data only needs the frame slot, which the fence wait freed; preparing it before the acquire keeps failures away from acquired images.
+		const Scalar aspectRatio{target.swapchain.extent.height == 0U ? one() : static_cast<Scalar>(target.swapchain.extent.width) / static_cast<Scalar>(target.swapchain.extent.height)}; ///< Live swapchain aspect with a zero-height guard.
+		const Camera &camera = target.camera ? *target.camera : camera_;
+		const Scalar cameraNear{camera.clip.near_plane}; ///< Camera near plane shared by projection and cascade splitting.
+		const Scalar cameraFar{camera.clip.far_plane}; ///< Camera far plane limits directional cascade coverage.
+		const Mat4 cameraView{lookAt(camera.position.value, add(camera.position.value, camera.forward.value), detail::stableUp(camera.forward.value))}; // The same window view drives uniforms and cascade fitting.
+		prepareShadowFrame(cameraView, camera.fov_y.radians, aspectRatio, cameraNear, cameraFar);
+		result = ensureShadowCapacity();
+		if (result != VK_SUCCESS) { reportFrameFailure("shadow capacity", result); return false; }
+		result = writeShadowDescriptors(target, frameIndex);
+		if (result != VK_SUCCESS) { reportFrameFailure("shadow descriptors", result); return false; }
+		if (gpuDebugReadback_) { recordShadowDepthSamples(); }
+		else { shadowDepthSamples.clear(); }
+		result = target.uniformBuffers.update(target.currentFrame, frameUniforms_);
+		if (result != VK_SUCCESS) { reportFrameFailure("uniform update", result); return false; }
+		// Prepare only the GUI-owning window; no draw data means no GUI pass or attachment transition.
+		const bool drawGui = target.guiWindow && guiPrepare_ && guiRecord_ && guiPrepare_();
 
 		std::uint32_t imageIndex{};
-		result = vkAcquireNextImageKHR(device.device, swapchain.swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-		if (result == VK_ERROR_OUT_OF_DATE_KHR) { (void)recreateSwapchain(currentWindowPixelExtent()); return; }
+		result = vkAcquireNextImageKHR(device.device, target.swapchain.swapchain, kAcquireTimeoutNs, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
 		// VK_SUBOPTIMAL_KHR still acquired an image: it must be rendered and presented, otherwise the swapchain runs out of images and the next acquire blocks forever.
-		if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR) { reportFrameFailure("image acquire", result); return; }
-		if (imageIndex >= frameSync.renderFinishedSemaphores.size()) { return; }
-		const VkSemaphore renderFinishedSemaphore{frameSync.renderFinishedSemaphores[imageIndex]}; // Present-wait semaphore follows the acquired swapchain image.
-		if (renderFinishedSemaphore == VK_NULL_HANDLE) { return; }
+		switch (acquireAction(result)) {
+		case AcquireAction::render: break;
+		case AcquireAction::skip: ++skippedFrameCount_; return false; // No semaphore was signaled, so there is nothing to consume.
+		case AcquireAction::recreate: (void)recreateSwapchain(target, currentWindowPixelExtent(target)); return false;
+		case AcquireAction::fail: reportFrameFailure("image acquire", result); return false;
+		}
 
-		const Scalar aspectRatio{swapchain.extent.height == 0U ? one() : static_cast<Scalar>(swapchain.extent.width) / static_cast<Scalar>(swapchain.extent.height)}; ///< Live swapchain aspect with a zero-height guard.
-		constexpr Scalar cameraNear{static_cast<Scalar>(0.1)}; ///< Camera near plane shared by projection and cascade splitting.
-		constexpr Scalar cameraFar{static_cast<Scalar>(100.0)}; ///< Camera far plane bounds directional cascade coverage.
-		const Mat4 cameraView{lookAt(cameraEye, cameraTarget, Vec3{zero(), one(), zero()})}; ///< Current camera transform shared by uniforms and cascade fitting.
-		const ForwardRendererShadowFrame shadowFrame = prepareShadowFrame(cameraView, cameraVerticalFov, aspectRatio, cameraNear, cameraFar);
-		const FrameUniforms frameUniforms{
-			.view = cameraView,
-			.projection = perspectiveVulkan(cameraVerticalFov, aspectRatio, cameraNear, cameraFar),
-			.shadowViewProjs = shadowFrame.shadowViewProjs,
-			.cascadeSplits = shadowFrame.cascadeSplitsFar,
-			.pointLightPositionRanges = shadowFrame.pointLightPositionRanges,
-			.pointLightColorIntensities = shadowFrame.pointLightColorIntensities,
-			.spotLightPositionRanges = shadowFrame.spotLightPositionRanges,
-			.spotLightColorIntensities = shadowFrame.spotLightColorIntensities,
-			.spotLightDirections = shadowFrame.spotLightDirections,
-			.spotLightConeAmbients = shadowFrame.spotLightConeAmbients,
-			.directionalLightDirections = shadowFrame.directionalLightDirections,
-			.directionalLightColorIntensities = shadowFrame.directionalLightColorIntensities,
-			.directionalLightAmbients = shadowFrame.directionalLightAmbients,
-			.activeDirectionalLightCount = shadowFrame.activeDirectionalLightCount,
-			.activeSpotLightCount = shadowFrame.activeSpotLightCount,
-			.ambient = static_cast<float>(scene.ambient),
+		// Once an image is acquired, every early exit must consume its semaphore; the rebuilt swapchain then releases the image.
+		// signalFence re-signals the in-flight fence when it was already reset, so the next wait on it does not block forever.
+		const auto abandonAcquiredImage = [&](const char *stage, VkResult failed, VkFence signalFence = VK_NULL_HANDLE) {
+			reportFrameFailure(stage, failed);
+			const VkPipelineStageFlags consumeStage{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT};
+			const VkSubmitInfo consume{
+				.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+				.waitSemaphoreCount = 1U,
+				.pWaitSemaphores = &imageAvailableSemaphore,
+				.pWaitDstStageMask = &consumeStage,
+			};
+			(void)vkQueueSubmit(device.graphicsQueue, 1U, &consume, signalFence);
+			target.swapchain.requestedExtent = {};
 		};
-		recordShadowDepthSamples(shadowFrame);
-		result = uniformBuffers.update(currentFrame, frameUniforms);
-		if (result != VK_SUCCESS) { reportFrameFailure("uniform update", result); return; }
+		if (imageIndex >= target.frameSync.renderFinishedSemaphores.size() || target.frameSync.renderFinishedSemaphores[imageIndex] == VK_NULL_HANDLE) {
+			abandonAcquiredImage("present semaphore lookup", VK_ERROR_INITIALIZATION_FAILED);
+			return false;
+		}
+		const VkSemaphore renderFinishedSemaphore{target.frameSync.renderFinishedSemaphores[imageIndex]}; // Present-wait semaphore follows the acquired swapchain image.
 
-		result = recordCommandBuffer(currentFrame, imageIndex, shadowFrame);
-		if (result != VK_SUCCESS) { reportFrameFailure("command recording", result); return; }
+		result = recordCommandBuffer(target, target.currentFrame, imageIndex, multiply(frameUniforms_.projection, frameUniforms_.view), drawGui);
+		if (result != VK_SUCCESS) { abandonAcquiredImage("command recording", result); return false; }
 
 		// Reset the fence only once the submit is certain; an unsignaled fence without a submit would block the next frame forever.
 		result = vkResetFences(device.device, 1U, &inFlightFence);
-		if (result != VK_SUCCESS) { reportFrameFailure("fence reset", result); return; }
+		if (result != VK_SUCCESS) { abandonAcquiredImage("fence reset", result); return false; }
 
-		const VkPipelineStageFlags waitStage{VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT}; ///< Acquire completes before the swapchain layout transition executes.
+		const VkPipelineStageFlags waitStage{VK_PIPELINE_STAGE_TRANSFER_BIT}; ///< Only the swapchain transition and blit wait for acquire; shadow and HDR work can proceed.
+		const VkCommandBuffer commandBuffer{target.commandBuffers.ownedCommandBuffers[target.currentFrame]}; // Borrow from the frame slot owner for submission.
 		const VkSubmitInfo submitInfo{
 			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
 			.waitSemaphoreCount = 1U,
 			.pWaitSemaphores = &imageAvailableSemaphore,
 			.pWaitDstStageMask = &waitStage,
 			.commandBufferCount = 1U,
-			.pCommandBuffers = &commandBuffers.commandBuffers[currentFrame],
+			.pCommandBuffers = &commandBuffer,
 			.signalSemaphoreCount = 1U,
 			.pSignalSemaphores = &renderFinishedSemaphore,
 		};
 		result = vkQueueSubmit(device.graphicsQueue, 1U, &submitInfo, inFlightFence);
-		if (result != VK_SUCCESS) { reportFrameFailure("queue submit", result); return; }
+		if (result != VK_SUCCESS) { abandonAcquiredImage("queue submit", result, inFlightFence); return false; }
+		target.submitSerials[frameIndex] = ++submitSerial_;
 		fillShadowDepthSamplesFromGpu();
-		if (readback != nullptr && imageIndex < swapchain.images.size()) {
-			lastReadbackCaptureResult = readback->capture(swapchain.images[imageIndex], 0U, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
+		if (readback != nullptr && imageIndex < target.swapchain.images.size()) {
+			target.lastReadbackCaptureResult = readback->capture(target.swapchain.images[imageIndex], 0U, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 		}
 
-		VkSwapchainKHR presentSwapchain = swapchain.swapchain;
+		VkSwapchainKHR presentSwapchain = target.swapchain.swapchain;
 		const VkPresentInfoKHR presentInfo{
 			.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
 			.waitSemaphoreCount = 1U,
@@ -111,15 +202,16 @@ namespace vve::simple {
 			.pSwapchains = &presentSwapchain,
 			.pImageIndices = &imageIndex,
 		};
-		result = vkQueuePresentKHR(device.presentQueue, &presentInfo);
+		result = vkQueuePresentKHR(target.presentQueue, &presentInfo);
 		if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-			(void)recreateSwapchain(currentWindowPixelExtent());
-			return;
+			(void)recreateSwapchain(target, currentWindowPixelExtent(target));
+			return result == VK_SUBOPTIMAL_KHR;
 		}
-		if (result != VK_SUCCESS) { reportFrameFailure("present", result); return; }
+		if (result != VK_SUCCESS) { reportFrameFailure("present", result); return false; }
 
-		lastRenderedImageIndex = imageIndex;
-		currentFrame = static_cast<std::uint32_t>((currentFrame + 1U) % frameCount);
+		target.lastRenderedImageIndex = imageIndex;
+		target.currentFrame = static_cast<std::uint32_t>((target.currentFrame + 1U) % frameCount);
+		return true;
 	}
 
 	/// @brief Logs a skipped frame with its Vulkan result; capped so a persistent failure does not flood the console.
@@ -134,17 +226,22 @@ namespace vve::simple {
 	/**
 		* @brief Records the shadow passes and forward color pass for one acquired swapchain image.
 		*
+		* @param target Window attachments, commands and descriptors used for this frame.
 		* @param frameIndex Index selecting the per-frame command buffer and descriptor set.
-		* @param imageIndex Index selecting the swapchain framebuffer.
+		* @param imageIndex Index of the acquired swapchain image.
+		* @param viewProjection Camera clip transform already used by this frame's uniforms.
+		* @param drawGui Whether GUI preparation produced vertices for this window.
 		* @return VK_SUCCESS when command recording succeeds, otherwise the first failing Vulkan result.
 		*/
-	VkResult ForwardRenderer::recordCommandBuffer(std::uint32_t frameIndex, std::uint32_t imageIndex, const ForwardRendererShadowFrame &shadowFrame) {
+	VkResult ForwardRenderer::recordCommandBuffer(WindowTarget &target, std::uint32_t frameIndex, std::uint32_t imageIndex, const Mat4 &viewProjection, bool drawGui) {
 		recordedPassOrder.clear();
-		if (frameIndex >= commandBuffers.commandBuffers.size() || frameIndex >= descriptorSets.descriptorSets.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
-		if (imageIndex >= swapchain.images.size() || imageIndex >= imageViews.ownedViews.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
+		lastShadowLayerPassCount_ = 0U;
+		lastFrameDrawStats_ = {};
+		if (frameIndex >= target.commandBuffers.ownedCommandBuffers.size() || frameIndex >= target.descriptorSets.descriptorSets.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
+		if (imageIndex >= target.swapchain.images.size() || imageIndex >= target.imageViews.ownedViews.size()) { return VK_ERROR_INITIALIZATION_FAILED; }
 		if (shadowPipeline.pipeline == VK_NULL_HANDLE || pipelineLayout.pipelineLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-		const VkCommandBuffer commandBuffer{commandBuffers.commandBuffers[frameIndex]};
+		const VkCommandBuffer commandBuffer{target.commandBuffers.ownedCommandBuffers[frameIndex]};
 		VkResult result = vkResetCommandBuffer(commandBuffer, 0U);
 		if (result != VK_SUCCESS) { return result; }
 
@@ -152,42 +249,72 @@ namespace vve::simple {
 		result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
 		if (result != VK_SUCCESS) { return result; }
 
-		const auto drawUploadedObjects = [&](std::uint32_t shadowMatrixIndex, bool shadowPass) {
-			if (renderInstances_ == nullptr) { return; }
+		std::vector<DrawItem> items{};
+		// Resolve scene handles and world boxes once, before any pass traverses the sorted draw list.
+		if (renderInstances_ != nullptr) {
+			items.reserve(renderInstances_->size());
 			for (const RenderInstance &instance : *renderInstances_) {
-				if (!instance.visible || (shadowPass && !instance.casts_shadow)) { continue; }
+				if (!instance.visible) { continue; }
 				const auto uploaded = meshes.find(instance.mesh);
 				const auto material = materialSlots_.find(instance.material);
 				if (uploaded == meshes.end() || material == materialSlots_.end()) { continue; }
 				const VulkanMesh &mesh = uploaded->second;
-				const VkBuffer vertexBuffers[]{mesh.vertexBuffer.buffer};
-				const VkDeviceSize offsets[]{0U};
-				const ObjectPushConstants pushConstants{
-					.model = instance.world_transform,
-					.materialIndex = material->second,
-					.shadowMatrixIndex = shadowMatrixIndex,
-					.unlit = instance.unlit ? 1U : 0U};
-				vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, vertexBuffers, offsets);
-				vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0U, VK_INDEX_TYPE_UINT32);
+				const auto dynamic = target.dynamicVertices.find(instance.mesh);
+				items.push_back({.mesh = &mesh,
+					.vertices = dynamic == target.dynamicVertices.end() ? mesh.vertexBuffer.buffer : dynamic->second.first[frameIndex].buffer,
+					.object = {.model = instance.world_transform, .materialIndex = material->second, .unlit = instance.unlit ? 1U : 0U},
+					.worldBounds = worldBounds(mesh.localBox, instance.world_transform), .castsShadow = instance.casts_shadow});
+			}
+		}
+		std::ranges::sort(items, std::less<const VulkanMesh *>{}, &DrawItem::mesh);
+		const VulkanMesh *boundMesh{};
+		const auto drawUploadedObjects = [&](std::uint32_t shadowMatrixIndex, bool shadowPass, const Mat4 &clip) {
+			const auto planes = frustumPlanes(clip);
+			// Bound mesh state survives dynamic-rendering boundaries and pipeline changes.
+			for (const auto &item : items) {
+				if ((shadowPass && !item.castsShadow) || !intersectsFrustum(item.worldBounds, planes)) { continue; }
+				if (boundMesh != item.mesh) {
+					const VkDeviceSize offset{};
+					vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, &item.vertices, &offset);
+					vkCmdBindIndexBuffer(commandBuffer, item.mesh->indexBuffer.buffer, 0U, VK_INDEX_TYPE_UINT32);
+					boundMesh = item.mesh;
+					++lastFrameDrawStats_.vertexBufferBinds;
+				}
+				auto pushConstants = item.object;
+				pushConstants.shadowMatrixIndex = shadowMatrixIndex;
 				vkCmdPushConstants(commandBuffer, pipelineLayout.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0U, sizeof(ObjectPushConstants), &pushConstants);
-				vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1U, 0U, 0, 0U);
+				vkCmdDrawIndexed(commandBuffer, item.mesh->indexCount, 1U, 0U, 0, 0U);
+				++(shadowPass ? lastFrameDrawStats_.shadowDraws : lastFrameDrawStats_.forwardDraws);
 			}
 		};
-		// Every shadow layer is cleared each frame; active layers also receive the caster geometry. All layers end in shader-read layout.
+		// Only shadow-casting layers are cleared and drawn; inactive layers retain their shader-read layout.
 		const VkClearValue shadowClear{.depthStencil = {.depth = 1.0F, .stencil = 0U}};
-		const auto recordShadowLayer = [&](const ShadowMap &map, std::uint32_t layer, std::optional<std::uint32_t> matrixIndex, RecordedPass pass) {
+		bool shadowPipelineBound{}; // Bind state belongs to this command buffer, independently of frame diagnostics.
+		const auto recordShadowLayer = [&](const ShadowMap &map, std::uint32_t layer, std::uint32_t matrixIndex, RecordedPass pass) {
+			// One shadow pipeline/set and viewport serve every light type and layer.
+			if (!shadowPipelineBound) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline.pipeline);
+				++lastFrameDrawStats_.pipelineBinds;
+				const VkViewport viewport{.width = static_cast<float>(ShadowMap::resolution), .height = static_cast<float>(ShadowMap::resolution), .minDepth = 0.0F, .maxDepth = 1.0F};
+				const VkRect2D scissor{.extent = {ShadowMap::resolution, ShadowMap::resolution}};
+				vkCmdSetViewport(commandBuffer, 0U, 1U, &viewport);
+				vkCmdSetScissor(commandBuffer, 0U, 1U, &scissor);
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &target.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
+				shadowPipelineBound = true;
+			}
 			const VkImageSubresourceRange range{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = layer, .layerCount = 1U};
 			const VkImageMemoryBarrier beginBarrier{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 				.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-				.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+				.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
 				.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 				.image = map.image,
 				.subresourceRange = range,
 			};
-			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+			// The arrays are shared by all windows and frames: wait until the previous draw has finished sampling this layer.
+			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 										0U, 0U, nullptr, 0U, nullptr, 1U, &beginBarrier);
 			const VkRenderingAttachmentInfo depthAttachment{
 				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
@@ -205,12 +332,9 @@ namespace vve::simple {
 				.pDepthAttachment = &depthAttachment,
 			};
 			vkCmdBeginRendering(commandBuffer, &renderingInfo);
-			if (matrixIndex) {
-				recordedPassOrder.push_back(pass);
-				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline.pipeline);
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-				drawUploadedObjects(*matrixIndex, true);
-			}
+			++lastShadowLayerPassCount_;
+			recordedPassOrder.push_back(pass);
+			drawUploadedObjects(matrixIndex, true, frameUniforms_.shadowViewProjs[matrixIndex]);
 			vkCmdEndRendering(commandBuffer);
 			const VkImageMemoryBarrier readBarrier{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -226,14 +350,20 @@ namespace vve::simple {
 			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 										0U, 0U, nullptr, 0U, nullptr, 1U, &readBarrier);
 		};
-		const auto recordShadowMap = [&](const ShadowMap &map, std::size_t activeLayers, std::size_t matrixBase, RecordedPass pass) {
-			for (std::uint32_t layer{}; layer < map.layerViews.size(); ++layer) {
-				recordShadowLayer(map, layer, layer < activeLayers ? std::optional{static_cast<std::uint32_t>(matrixBase + layer)} : std::nullopt, pass);
+		const auto recordShadowMap = [&](const ShadowMap &map, std::uint32_t activeLights, std::uint32_t layersPerLight,
+			std::size_t matrixBase, RecordedPass pass, std::span<const Vec4> directions = {}) {
+			// Ambient-only lights retain a packed lighting slot but have no shadow passes.
+			for (std::uint32_t light{}; light < activeLights; ++light) {
+				if (!directions.empty() && directions[light].w != zero()) { continue; }
+				for (std::uint32_t face{}; face < layersPerLight; ++face) {
+					const std::uint32_t layer{light * layersPerLight + face};
+					recordShadowLayer(map, layer, static_cast<std::uint32_t>(matrixBase + layer), pass);
+				}
 			}
 		};
-		recordShadowMap(dirShadowArray, shadowFrame.activeDirectionalLightCount * kNumShadowCascades, kShadowMatrixDirBase, RecordedPass::directional_shadow);
-		recordShadowMap(spotShadowArray, shadowFrame.activeSpotLightCount, kShadowMatrixSpotBase, RecordedPass::spot_shadow);
-		recordShadowMap(pointShadowArray, shadowFrame.activePointLightCount * pointShadowFaceCount, kShadowMatrixPointBase, RecordedPass::point_shadow);
+		recordShadowMap(dirShadowArray, frameUniforms_.activeDirectionalLightCount, kNumShadowCascades, kShadowMatrixDirBase, RecordedPass::directional_shadow, frameUniforms_.directionalLightDirections);
+		recordShadowMap(spotShadowArray, frameUniforms_.activeSpotLightCount, 1U, kShadowMatrixSpotBase, RecordedPass::spot_shadow, frameUniforms_.spotLightDirections);
+		recordShadowMap(pointShadowArray, frameUniforms_.activePointLightCount, pointShadowFaceCount, kShadowMatrixPointBase, RecordedPass::point_shadow);
 
 		constexpr std::array<float, 4U> skyBackgroundColor{0.45F, 0.70F, 1.00F, 1.00F}; // Sky background for the forward color pass.
 		const VkImageSubresourceRange colorRange{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole swapchain image.
@@ -248,29 +378,31 @@ namespace vve::simple {
 			.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-			.image = hdrImage.image,
+			.image = target.hdrImage.image,
 			.subresourceRange = colorRange,
 		};
 		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 							0U, 0U, nullptr, 0U, nullptr, 1U, &hdrBeginBarrier);
 
+		// The depth image is shared by both frames in flight: wait for the previous frame's depth writes.
 		const VkImageMemoryBarrier depthBeginBarriers{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+			.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 			.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-			.image = depthImage.image,
+			.image = target.depthImage.image,
 			.subresourceRange = depthRange,
 		};
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 									VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 									0U, 0U, nullptr, 0U, nullptr, 1U, &depthBeginBarriers);
 									
 		const VkRenderingAttachmentInfo colorAttachment{ // Dynamic rendering mirrors the old render-pass color clear/store ops.
 			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-			.imageView = hdrImage.imageView,
+			.imageView = target.hdrImage.imageView,
 			.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
@@ -278,7 +410,7 @@ namespace vve::simple {
 		};
 		const VkRenderingAttachmentInfo depthAttachment{ // Forward depth is cleared to the far plane and kept attachment-local.
 			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-			.imageView = depthImage.imageView,
+			.imageView = target.depthImage.imageView,
 			.imageLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -286,7 +418,7 @@ namespace vve::simple {
 		};
 		const VkRenderingInfo renderingInfo{
 			.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-			.renderArea = {.offset = {0, 0}, .extent = swapchain.extent},
+			.renderArea = {.offset = {0, 0}, .extent = target.swapchain.extent},
 			.layerCount = 1U,
 			.colorAttachmentCount = 1U,
 			.pColorAttachments = &colorAttachment,
@@ -296,8 +428,14 @@ namespace vve::simple {
 		recordedPassOrder.push_back(RecordedPass::forward_color);
 		vkCmdBeginRendering(commandBuffer, &renderingInfo);
 		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
-		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-		drawUploadedObjects(0U, false);
+		++lastFrameDrawStats_.pipelineBinds;
+		// Match the current attachments; the projection still supplies the Vulkan Y flip.
+		const VkViewport viewport{.x = 0.0F, .y = 0.0F, .width = static_cast<float>(target.swapchain.extent.width), .height = static_cast<float>(target.swapchain.extent.height), .minDepth = 0.0F, .maxDepth = 1.0F};
+		const VkRect2D scissor{.offset = {0, 0}, .extent = target.swapchain.extent};
+		vkCmdSetViewport(commandBuffer, 0U, 1U, &viewport);
+		vkCmdSetScissor(commandBuffer, 0U, 1U, &scissor);
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &target.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
+		drawUploadedObjects(0U, false, viewProjection);
 
 		vkCmdEndRendering(commandBuffer);
 
@@ -311,7 +449,7 @@ namespace vve::simple {
 				.newLayout = VK_IMAGE_LAYOUT_GENERAL, // VVPPL Library needs General
 				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-				.image = hdrImage.image,
+				.image = target.hdrImage.image,
 				.subresourceRange = colorRange,
 			},
 			{
@@ -322,75 +460,79 @@ namespace vve::simple {
 				.newLayout = VK_IMAGE_LAYOUT_GENERAL, // VVPPL Library gives General
 				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-				.image = swapchain.images[imageIndex],
+				.image = target.swapchain.images[imageIndex],
 				.subresourceRange = colorRange,
 			}
 		}};
 
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		// TRANSFER chains the swapchain layout transition after the acquire semaphore wait.
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
 							VK_PIPELINE_STAGE_TRANSFER_BIT, 0U, 0U, nullptr, 0U, nullptr,
 							static_cast<std::uint32_t>(postBarriers.size()), postBarriers.data());
 
 		
-		if (postProcess) {
-			// Post Processing
-			postProcess->apply(commandBuffer, hdrImage.image, swapchain.images[imageIndex], frameIndex);
+		if (target.postProcess) {
+			recordedPassOrder.push_back(RecordedPass::post_process);
+			target.postProcess->apply(commandBuffer, target.hdrImage.image, target.swapchain.images[imageIndex], frameIndex);
 		} else {
 			// Same blit the library would do, without the library (rendered HDR image to Swapchain Image)
 			VkImageBlit blit{};
 			blit.srcSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .mipLevel = 0U, .baseArrayLayer = 0U, .layerCount = 1U};
-			blit.srcOffsets[1] = {static_cast<std::int32_t>(swapchain.extent.width),
-										 static_cast<std::int32_t>(swapchain.extent.height), 1};
+			blit.srcOffsets[1] = {static_cast<std::int32_t>(target.swapchain.extent.width),
+										 static_cast<std::int32_t>(target.swapchain.extent.height), 1};
 			blit.dstSubresource = blit.srcSubresource;
 			blit.dstOffsets[1] = blit.srcOffsets[1];
-			vkCmdBlitImage(commandBuffer, hdrImage.image, VK_IMAGE_LAYOUT_GENERAL,
-								swapchain.images[imageIndex], VK_IMAGE_LAYOUT_GENERAL, 1U, &blit, VK_FILTER_NEAREST);
+			vkCmdBlitImage(commandBuffer, target.hdrImage.image, VK_IMAGE_LAYOUT_GENERAL,
+								target.swapchain.images[imageIndex], VK_IMAGE_LAYOUT_GENERAL, 1U, &blit, VK_FILTER_NEAREST);
 		}
 
-		// Render GUI
-		const VkImageMemoryBarrier guiBarrier {
-			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
-			.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			.oldLayout = VK_IMAGE_LAYOUT_GENERAL,
-			.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-			.image = swapchain.images[imageIndex],
-			.subresourceRange = colorRange,
-		};
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 
-							0U, 0U, nullptr, 0U, nullptr, 1U, &guiBarrier);
+		// ImGui stays on its owning window and loads the attachment only when vertices need drawing.
+		if (drawGui) {
+			const VkImageMemoryBarrier guiBarrier {
+				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+				.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+				.oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+				.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.image = target.swapchain.images[imageIndex],
+				.subresourceRange = colorRange,
+			};
+			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+								0U, 0U, nullptr, 0U, nullptr, 1U, &guiBarrier);
 
-		const VkRenderingAttachmentInfo guiAttachment{
-			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-			.imageView = imageViews.ownedViews[imageIndex],
-			.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-			.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-		};
-		const VkRenderingInfo guiRenderingInfo{
-			.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-			.renderArea = {.offset = {0, 0}, .extent = swapchain.extent},
-			.layerCount = 1U,
-			.colorAttachmentCount = 1U,
-			.pColorAttachments = &guiAttachment,
-		};
-		vkCmdBeginRendering(commandBuffer, &guiRenderingInfo);
-		if (guiRecord_) { guiRecord_(commandBuffer); }
-		vkCmdEndRendering(commandBuffer);
+			const VkRenderingAttachmentInfo guiAttachment{
+				.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+				.imageView = target.imageViews.ownedGuiViews.empty() ? target.imageViews.ownedViews[imageIndex] : target.imageViews.ownedGuiViews[imageIndex], // Avoid encoding ImGui's sRGB colours twice.
+				.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+				.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
+				.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			};
+			const VkRenderingInfo guiRenderingInfo{
+				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
+				.renderArea = {.offset = {0, 0}, .extent = target.swapchain.extent},
+				.layerCount = 1U,
+				.colorAttachmentCount = 1U,
+				.pColorAttachments = &guiAttachment,
+			};
+			recordedPassOrder.push_back(RecordedPass::gui);
+			vkCmdBeginRendering(commandBuffer, &guiRenderingInfo);
+			guiRecord_(commandBuffer);
+			vkCmdEndRendering(commandBuffer);
+		}
 
 		const VkImageMemoryBarrier presentBarrier{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-			.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			.srcAccessMask = static_cast<VkAccessFlags>(drawGui ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_TRANSFER_WRITE_BIT),
+			.oldLayout = drawGui ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
 			.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
-			.image = swapchain.images[imageIndex],
+			.image = target.swapchain.images[imageIndex],
 			.subresourceRange = colorRange,
 		};
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		vkCmdPipelineBarrier(commandBuffer, drawGui ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT,
 									VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &presentBarrier);
 		result = vkEndCommandBuffer(commandBuffer);
 		if (result != VK_SUCCESS) { return result; }

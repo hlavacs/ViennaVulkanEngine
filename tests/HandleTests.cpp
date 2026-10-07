@@ -1,6 +1,6 @@
 #include <cstdint>
 
-import VEEngine;
+import VVEngine;
 
 int main() {
    using namespace vve;
@@ -20,11 +20,11 @@ int main() {
    static_assert(slot.slotIndex() == 9);
    static_assert(slot.generation() == 3);
 
-   const auto runtime_a = makeCounterHandle<TextureHandle>();
-   const auto runtime_b = makeCounterHandle<TextureHandle>();
+   const auto runtime_a = makeCounterHandle<MaterialHandle>();
+   const auto runtime_b = makeCounterHandle<MaterialHandle>();
    if (!runtime_a.valid() || !runtime_b.valid() || runtime_a == runtime_b) { return 1; }
    if (!runtime_a.isCounter() || !runtime_b.isCounter()) { return 2; }
-   if (TextureHandle{}.valid()) { return 3; }
+   if (MaterialHandle{}.valid()) { return 3; }
 
    return 0;
 }

@@ -98,34 +98,6 @@
             }
         },
         {
-            "name": "physics",
-            "type": "cppdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/bin/${input:variant}/exe/physics",
-            "args": [],
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "MIMode": "gdb",
-            "preLaunchTask": "Build ${input:platform} ${input:variant}",
-            "osx": {
-                "MIMode": "lldb",
-                "environment": [
-                    {
-                        "name": "VK_ICD_FILENAMES",
-                        "value": "${workspaceFolder}/build/vscode-${input:variant}/vulkan/icd.d/libkosmickrisp_icd.json"
-                    }
-                ]
-            },
-            "windows": {
-                "type": "cppvsdbg",
-                "program": "${workspaceFolder}\\bin\\${input:variant}\\exe\\physics.exe",
-                "environment": [],
-                "console": "integratedTerminal"
-            }
-        },
-        {
             "name": "sponza",
             "type": "cppdbg",
             "request": "launch",
@@ -228,7 +200,6 @@
             "options": [
                 "game",
                 "testscene",
-                "physics",
                 "sponza",
                 "postprocessing",
                 "simple_forward_demo",

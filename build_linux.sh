@@ -3,8 +3,7 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
-CMAKE_BIN="/home/hlavacs/vcpkg/downloads/tools/cmake-4.3.3-linux/cmake-4.3.3-linux-x86_64/bin/cmake"
-CTEST_BIN="/home/hlavacs/vcpkg/downloads/tools/cmake-4.3.3-linux/cmake-4.3.3-linux-x86_64/bin/ctest"
+CMAKE_BIN="${CMAKE:-$(command -v cmake || true)}"
 JOBS="${CMAKE_BUILD_PARALLEL_LEVEL:-$(nproc 2>/dev/null || printf '8')}"
 VARIANT="Release"
 CLEAN=0
@@ -42,14 +41,13 @@ VCPKG_TRIPLET="x64-linux-llvm"
 VULKAN_CMAKE_ARGS=()
 COMPILER_CMAKE_ARGS=()
 
-if [ ! -x "$CMAKE_BIN" ]; then
-  CMAKE_BIN="$(command -v cmake || true)"
-fi
+CMAKE_BIN="$(command -v "$CMAKE_BIN" || true)"
 if [ -z "$CMAKE_BIN" ]; then
-  printf 'cmake not found. Install it with your Linux package manager.\n' >&2
+  printf 'cmake not found. Set CMAKE or install it with your Linux package manager.\n' >&2
   exit 1
 fi
 
+CTEST_BIN="$(dirname "$CMAKE_BIN")/ctest"
 if [ ! -x "$CTEST_BIN" ]; then
   CTEST_BIN="$(command -v ctest || true)"
 fi
@@ -70,31 +68,59 @@ if [ -n "${VULKAN_SDK:-}" ]; then
   fi
 fi
 
-if [ -x /usr/bin/clang++-18 ] && [ -x /usr/bin/clang-scan-deps-18 ]; then
-  COMPILER_CMAKE_ARGS+=("-DCMAKE_C_COMPILER=/usr/bin/clang-18")
-  COMPILER_CMAKE_ARGS+=("-DCMAKE_CXX_COMPILER=/usr/bin/clang++-18")
-  COMPILER_CMAKE_ARGS+=("-DCMAKE_CXX_COMPILER_CLANG_SCAN_DEPS=/usr/bin/clang-scan-deps-18")
-  COMPILER_CMAKE_ARGS+=("-DCMAKE_CXX_FLAGS=-stdlib=libc++")
-  COMPILER_CMAKE_ARGS+=("-DCMAKE_EXE_LINKER_FLAGS=-stdlib=libc++")
-  COMPILER_CMAKE_ARGS+=("-DCMAKE_SHARED_LINKER_FLAGS=-stdlib=libc++")
-  COMPILER_CMAKE_ARGS+=("-DCMAKE_CXX_STDLIB_MODULES_JSON=/usr/lib/llvm-18/lib/libc++.modules.json")
-  COMPILER_CMAKE_ARGS+=("-DCMAKE_CXX_MODULE_STD=ON")
-  COMPILER_CMAKE_ARGS+=("-DCMAKE_EXPERIMENTAL_CXX_IMPORT_STD=451f2fe2-a8a2-47c3-bc32-94786d8fc91b")
+# A matching compiler, scanner and libc++ module are required for import std.
+llvm_available() {
+  [[ "$1" =~ ^[0-9]+$ ]] &&
+    command -v "clang-$1" >/dev/null 2>&1 &&
+    command -v "clang++-$1" >/dev/null 2>&1 &&
+    command -v "clang-scan-deps-$1" >/dev/null 2>&1 &&
+    [ -f "/usr/lib/llvm-$1/lib/libc++.modules.json" ]
+}
+
+if [ -z "${VVE_LLVM_VERSION:-}" ]; then
+  # Select the newest complete toolchain; incomplete installations are ignored.
+  for LLVM_MODULES_JSON in /usr/lib/llvm-*/lib/libc++.modules.json; do
+    LLVM_VERSION="${LLVM_MODULES_JSON#/usr/lib/llvm-}"
+    LLVM_VERSION="${LLVM_VERSION%%/*}"
+    if llvm_available "$LLVM_VERSION" && [ "$LLVM_VERSION" -gt "${VVE_LLVM_VERSION:-0}" ]; then
+      VVE_LLVM_VERSION="$LLVM_VERSION"
+    fi
+  done
 fi
-# A triplet change invalidates package paths retained by CMake.
-if [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
-  if ! grep -q "^VVE_VCPKG_TRIPLET:.*=$VCPKG_TRIPLET$" "$BUILD_DIR/CMakeCache.txt"; then
-    CLEAN=1
-  fi
+if ! llvm_available "${VVE_LLVM_VERSION:-}"; then
+  printf 'No suitable LLVM found (VVE_LLVM_VERSION=%s). Need matching clang-NN, clang++-NN, clang-scan-deps-NN and /usr/lib/llvm-NN/lib/libc++.modules.json.\n' "${VVE_LLVM_VERSION:-unset}" >&2
+  exit 1
+fi
+export VVE_LLVM_VERSION
+CXX_COMPILER="$(command -v "clang++-$VVE_LLVM_VERSION")"
+printf 'Using LLVM %s (%s).\n' "$VVE_LLVM_VERSION" "$CXX_COMPILER"
+COMPILER_CMAKE_ARGS+=("-DCMAKE_C_COMPILER=$(command -v "clang-$VVE_LLVM_VERSION")")
+COMPILER_CMAKE_ARGS+=("-DCMAKE_CXX_COMPILER=$CXX_COMPILER")
+COMPILER_CMAKE_ARGS+=("-DCMAKE_CXX_COMPILER_CLANG_SCAN_DEPS=$(command -v "clang-scan-deps-$VVE_LLVM_VERSION")")
+COMPILER_CMAKE_ARGS+=("-DCMAKE_CXX_FLAGS=-stdlib=libc++")
+COMPILER_CMAKE_ARGS+=("-DCMAKE_EXE_LINKER_FLAGS=-stdlib=libc++")
+COMPILER_CMAKE_ARGS+=("-DCMAKE_SHARED_LINKER_FLAGS=-stdlib=libc++")
+COMPILER_CMAKE_ARGS+=("-DCMAKE_CXX_STDLIB_MODULES_JSON=/usr/lib/llvm-$VVE_LLVM_VERSION/lib/libc++.modules.json")
+
+VCPKG_BIN="$(command -v vcpkg || true)"
+if [ -n "${VCPKG_ROOT:-}" ] && [ -x "$VCPKG_ROOT/vcpkg" ]; then
+  VCPKG_BIN="$VCPKG_ROOT/vcpkg"
+fi
+if [ -n "$VCPKG_BIN" ]; then
+  "$VCPKG_BIN" install --triplet "$VCPKG_TRIPLET"
+else
+  printf 'vcpkg not found in VCPKG_ROOT or PATH; skipping dependency install.\n'
 fi
 
+# Only a compiler change invalidates the build tree automatically.
+CACHED_CXX_COMPILER=""
+if [ -f "$BUILD_DIR/CMakeCache.txt" ]; then
+  CACHED_CXX_COMPILER="$(sed -n 's/^CMAKE_CXX_COMPILER:[^=]*=//p' "$BUILD_DIR/CMakeCache.txt")"
+fi
 if [ "$CLEAN" -eq 1 ]; then
   rm -rf "$BUILD_DIR"
-elif [ -f "$BUILD_DIR/CMakeCache.txt" ] && ! grep -q "^CMAKE_CXX_COMPILER:.*clang++-18$" "$BUILD_DIR/CMakeCache.txt"; then
-  printf 'Existing build cache does not use LLVM 18; recreating %s.\n' "$BUILD_DIR"
-  rm -rf "$BUILD_DIR"
-elif [ -f "$BUILD_DIR/CMakeCache.txt" ] && grep -q '^Vulkan_LIBRARY:FILEPATH=Vulkan_LIBRARY-NOTFOUND$' "$BUILD_DIR/CMakeCache.txt"; then
-  printf 'Existing build cache did not find the Vulkan loader; recreating %s.\n' "$BUILD_DIR"
+elif [ -n "$CACHED_CXX_COMPILER" ] && [ "$CACHED_CXX_COMPILER" != "$CXX_COMPILER" ]; then
+  printf 'Existing build cache uses %s instead of %s; recreating %s.\n' "$CACHED_CXX_COMPILER" "$CXX_COMPILER" "$BUILD_DIR"
   rm -rf "$BUILD_DIR"
 fi
 
@@ -107,10 +133,11 @@ fi
   "${VULKAN_CMAKE_ARGS[@]}"
 
 "$CMAKE_BIN" --build "$BUILD_DIR" --parallel "$JOBS"
-if [ -z "${SDL_VIDEODRIVER:-}" ]; then
-  SDL_VIDEODRIVER=offscreen
+# Tests that create windows open hidden SDL windows. Use the desktop's video driver when there is a display. On a machine
+# without one, fall back to SDL's offscreen driver, which needs a Vulkan driver with VK_EXT_headless_surface.
+if [ -z "${SDL_VIDEODRIVER:-}" ] && [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+  export SDL_VIDEODRIVER=offscreen
 fi
-export SDL_VIDEODRIVER
 "$CTEST_BIN" --test-dir "$BUILD_DIR" --output-on-failure
 
 printf '\n%s build complete. Executables: bin/%s/exe\n' "$VARIANT" "$VARIANT_LOWER"

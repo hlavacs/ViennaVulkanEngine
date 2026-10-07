@@ -13,7 +13,7 @@ module;
 #undef VVE_SIMPLE_DEFINED_SDL_MAIN_HANDLED
 #endif
 
-export module VEEngine.Simple.Vulkan;
+export module VVEngine.Simple.Vulkan;
 export import :OwnedHandle;
 export import :Memory;
 export import :Device;
@@ -27,7 +27,7 @@ import std;
 
 /**
 	* @file
-	* @brief Primary module interface for VEEngine.Simple.Vulkan; this file only re-exports the Vulkan partitions.
+	* @brief Primary module interface for VVEngine.Simple.Vulkan; this file only re-exports the Vulkan partitions.
 	*
 	* Functional objects:
 	* - Handle.ixx owns the transitional vk::raii-to-raw Vulkan handle adapter shared by partitions.

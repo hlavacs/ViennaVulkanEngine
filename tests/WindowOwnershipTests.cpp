@@ -1,96 +1,62 @@
+/// @file
+/// @brief Checks facade window ownership, frame snapshots and per-window camera assignments.
 import std;
-
-import VEEngine;
+import VVEngine;
 
 namespace {
 
-struct WindowCameraProbe {
-   int *updates{};
-   std::size_t *window_count{};
-   std::optional<vve::Entity> *main_camera{};
-   std::optional<vve::Entity> *tools_camera{};
+/// @brief Records the window snapshot received by a user system.
+struct WindowProbe {
+	int *updates{}; ///< Number of delivered update hooks.
+	vve::WindowFrameData *frame{}; ///< Last delivered window states.
 
-   template <typename TWorld, typename TWindowFrame>
-   std::expected<void, vve::Error> update(TWorld &, const vve::FrameContext &, const TWindowFrame &window_frame) {
-      if (updates != nullptr) { ++*updates; }
-      if (window_count != nullptr) { *window_count = window_frame.windows.size(); }
-
-      for (const auto &window : window_frame.windows) {
-         if (window.id == "main" && main_camera != nullptr) { *main_camera = window.camera; }
-         if (window.id == "tools" && tools_camera != nullptr) { *tools_camera = window.camera; }
-      }
-
-      return {};
-   }
+	/// @brief Copies the window states so the caller can check identity and drawable size.
+	template <typename TWorld>
+	std::expected<void, vve::Error> update(TWorld &, const vve::FrameContext &, const vve::WindowFrameData &windows) {
+		++*updates;
+		*frame = windows;
+		return {};
+	}
 };
-
-[[nodiscard]] bool sameCamera(std::optional<vve::Entity> camera, vve::Entity expected) {
-   return camera.has_value() && *camera == expected;
-}
 
 } // namespace
 
+/// @brief Assigns cameras through RenderSystem while WindowSystem and frame snapshots retain window identity.
 int main() {
-   int updates = 0;
-   std::size_t window_count = 0;
-   std::optional<vve::Entity> frame_main_camera{};
-   std::optional<vve::Entity> frame_tools_camera{};
-
-   auto engine = vve::EngineBuilder<WindowCameraProbe>{}
-                    .applicationName("window-ownership-tests")
-                    .maxFrames(vve::MaxFrames{.value = vve::FrameCount{.value = 1}})
-                    .windows(vve::WindowSetups{vve::WindowSetup{}
-                                                  .id("main")
-                                                  .title("window-ownership-main")
-                                                  .extent(vve::PixelExtent{.width = 64, .height = 64})
-                                                  .visible(false),
-                                               vve::WindowSetup{}
-                                                  .id("tools")
-                                                  .title("window-ownership-tools")
-                                                  .extent(vve::PixelExtent{.width = 64, .height = 64})
-                                                  .visible(false)})
-                    .userSystems(vve::makeUserSystems(WindowCameraProbe{.updates = &updates,
-                                                                        .window_count = &window_count,
-                                                                        .main_camera = &frame_main_camera,
-                                                                        .tools_camera = &frame_tools_camera}))
-                    .build();
-
-   if (!engine.init()) { return 1; }
-
-   auto world = engine.world();
-   auto &ecs = world.get<vve::ECS>();
-   auto window_system = world.get<vve::WindowSystem>();
-   const auto camera = ecs.create();
-   if (const auto result = ecs.add(camera, vve::Camera{}); !result) { return 2; }
-
-   if (!window_system.setWindowCamera("main", camera)) { return 3; }
-   const auto main_window_after_direct_set = window_system.findWindow("main");
-   const auto tools_window_after_direct_set = window_system.findWindow("tools");
-   if (!main_window_after_direct_set || !tools_window_after_direct_set) { return 4; }
-   if (!sameCamera(main_window_after_direct_set->camera(), camera)) { return 5; }
-   if (tools_window_after_direct_set->camera().has_value()) { return 6; }
-
-   if (!window_system.setActiveCamera(camera)) { return 7; }
-   const auto main_window_after_active_set = window_system.findWindow("main");
-   const auto tools_window_after_active_set = window_system.findWindow("tools");
-   if (!main_window_after_active_set || !tools_window_after_active_set) { return 8; }
-   if (!sameCamera(main_window_after_active_set->camera(), camera)) { return 9; }
-   if (!sameCamera(tools_window_after_active_set->camera(), camera)) { return 10; }
-   if (!sameCamera(window_system.windowCamera("main"), camera)) { return 19; }
-   if (!sameCamera(window_system.activeCamera(), camera)) { return 20; }
-
-   const auto status = engine.step();
-   if (!status || *status != vve::FrameStatus::stopped) { return 11; }
-   if (updates != 1 || window_count != 2) { return 12; }
-   if (!sameCamera(frame_main_camera, camera)) { return 13; }
-   if (!sameCamera(frame_tools_camera, camera)) { return 14; }
-
-   if (!window_system.clearWindowCamera("main")) { return 15; }
-   if (window_system.windowCamera("main").has_value()) { return 16; }
-
-   const auto tools_window = window_system.findWindow("tools");
-   if (!tools_window || !window_system.clearWindowCamera(tools_window->handle())) { return 17; }
-   if (window_system.activeCamera().has_value()) { return 18; }
-
-   return 0;
+	int updates{};
+	vve::WindowFrameData frame{};
+	auto engine = vve::EngineBuilder<WindowProbe>{}
+		.applicationName("window-ownership-tests")
+		.maxFrames(vve::MaxFrames{.value = vve::FrameCount{.value = 1}})
+		.windows(vve::WindowSetups{
+			vve::WindowSetup{}.id("main").title("window-ownership-main").extent({64, 64}).visible(false),
+			vve::WindowSetup{}.id("tools").title("window-ownership-tools").extent({64, 64}).visible(false)})
+		.userSystems(vve::makeUserSystems(WindowProbe{.updates = &updates, .frame = &frame})).build();
+	if (!engine.init()) { return 1; }
+	auto world = engine.world();
+	auto &windows = world.get<vve::WindowSystem>();
+	auto &render = world.get<vve::RenderSystem>();
+	const auto main = windows.findWindow("main");
+	const auto tools = windows.findWindow("tools");
+	if (!main || !tools || main->handle() == tools->handle()) { return 2; }
+	// Cameras may be assigned and cleared before lazy Vulkan initialization.
+	render.setCamera(vve::Camera{});
+	if (!render.setCamera(main->handle(), vve::Camera{}) || !render.clearCamera(main->handle()) ||
+		!render.setCamera(tools->handle(), vve::Camera{})) { return 3; }
+	const auto invalid = render.setCamera(vve::WindowHandle{}, vve::Camera{});
+	if (invalid || invalid.error() != vve::Error::invalid_handle) { return 4; }
+	const auto status = engine.step();
+	if (!status || *status != vve::FrameStatus::stopped || updates != 1 || frame.windows.size() != 2U) { return 5; }
+	// The snapshots still describe both owned windows without ECS camera bindings.
+	for (const auto &window : frame.windows) {
+		const auto original = windows.findWindow(window.handle);
+		if (!original || window.id != original->id() || window.title != original->title() ||
+			window.extent.width != 64U || window.extent.height != 64U) { return 6; }
+	}
+	std::println("[WindowOwnershipTests] presented_windows={} expected=2 snapshot_windows={}",
+		render.lastRenderedWindowCount(), frame.windows.size());
+	if (render.lastRenderedWindowCount() != 2U || render.renderedFrameCount() != 1U) { return 7; }
+	if (!render.clearCamera(tools->handle()) || !render.clearCamera(main->handle())) { return 8; }
+	const auto invalid_clear = render.clearCamera(vve::WindowHandle{});
+	return !invalid_clear && invalid_clear.error() == vve::Error::invalid_handle ? 0 : 9;
 }

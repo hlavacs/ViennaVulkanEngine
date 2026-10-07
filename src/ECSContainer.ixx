@@ -1,17 +1,15 @@
-export module VEEngine.ECSContainer;
+export module VVEngine.ECSContainer;
 import std;
-import VEEngine.Entity;
-import VEEngine.Handle;
-import VEEngine.Error;
-import VEEngine.Vector;
+export import VVEngine.Entity;
+import VVEngine.Handle;
+import VVEngine.Error;
+import VVEngine.Vector;
 
 /// @file
 /// @brief Facade-owned generic ECS container shared by engine-facing public APIs.
 
 export namespace vve {
 
-	using vve::EntityTag;												///< Facade ECS entity handle tag.
-	using vve::Entity;													///< Facade ECS entity.
 
 	/// @brief Default ECS trait reserved for future slot-map policy knobs.
 	struct DefaultECSTraits {

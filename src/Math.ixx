@@ -17,7 +17,7 @@ module;
 #include <glm/ext/vector_float4.hpp>
 #include <glm/geometric.hpp>
 
-export module VEEngine.Math;
+export module VVEngine.Math;
 import std;
 
 /**

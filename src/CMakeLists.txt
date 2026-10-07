@@ -13,12 +13,6 @@ if(TARGET vve_windows_std)
 endif()
 target_compile_definitions(ViennaVulkanEngine PUBLIC VULKAN_HPP_NO_EXCEPTIONS)
 
-# The Windows build script enables this only after a failing/successful Vulkan probe pair.
-option(VVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS "Disable the incompatible AMD Vulkan layer inside engine processes" OFF)
-if(WIN32 AND VVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS)
-    target_compile_definitions(ViennaVulkanEngine PRIVATE VVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS)
-endif()
-
 option(VVE_MATH_USE_DOUBLE "Build the engine math layer with double precision" OFF)
 if(VVE_MATH_USE_DOUBLE)
     target_compile_definitions(ViennaVulkanEngine PUBLIC VVE_MATH_USE_DOUBLE)
@@ -39,7 +33,7 @@ if(NOT VVE_GENERATED_KOSMICKRISP_ICD_MANIFEST STREQUAL "")
 endif()
 
 # The facade binds to one implementation through src/implementations/<name>.ixx (module partition
-# VEEngine:Implementation) plus the module set in src/versions/<name>/. Nothing else in src/ names it.
+# VVEngine:Implementation) plus the module set in src/versions/<name>/. Nothing else in src/ names it.
 set(VVE_ENGINE_IMPLEMENTATION_NAMESPACE "simple" CACHE STRING "Engine implementation compiled into the facade")
 set_property(CACHE VVE_ENGINE_IMPLEMENTATION_NAMESPACE PROPERTY STRINGS "simple")
 if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/implementations/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}.ixx"
@@ -52,6 +46,7 @@ find_package(assimp CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(imgui CONFIG REQUIRED)
 find_package(SDL3 CONFIG REQUIRED)
+find_package(SDL3_mixer CONFIG REQUIRED)
 find_package(VulkanMemoryAllocator CONFIG REQUIRED)
 if(NOT VVE_VULKAN_SDK_ROOT STREQUAL "" AND EXISTS "${VVE_VULKAN_SDK_ROOT}/include/glm/glm.hpp")
    target_include_directories(ViennaVulkanEngine BEFORE PUBLIC "${VVE_VULKAN_SDK_ROOT}/include")
@@ -84,11 +79,11 @@ target_sources(ViennaVulkanEngine
             Assets.ixx
             RenderSystem.ixx
             Gui.ixx
+            Audio.ixx
             Engine.ixx
             implementations/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}.ixx
     PRIVATE
         Assets.cpp
-        Engine.cpp
         Gui.cpp
         RenderSystem.cpp
         Window.cpp
@@ -111,9 +106,14 @@ target_link_libraries(ViennaVulkanEngine
         assimp::assimp
         glm::glm
         vvppl
+        # Consumers use these headers but must share the engine's SDL and ImGui state.
+        # Static engine builds propagate the PRIVATE archives through CMake's link interface.
+        "$<COMPILE_ONLY:imgui::imgui>"
+        "$<COMPILE_ONLY:SDL3::SDL3>"
     PRIVATE
         imgui::imgui
         SDL3::SDL3
+        SDL3_mixer::SDL3_mixer
         Vulkan::Vulkan
         GPUOpen::VulkanMemoryAllocator
 )

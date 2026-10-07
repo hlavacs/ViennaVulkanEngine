@@ -1,5 +1,6 @@
 import std;
-import VEEngine;
+import VVEngine;
+import VVE.ExampleSupport;
 
 /**
  * @file
@@ -7,27 +8,14 @@ import VEEngine;
  */
 namespace {
 
-/// @brief Reads the optional frame count used by automated example runs.
-[[nodiscard]] int frameLimit(int argc, char **argv) {
+/// @brief Reads an optional capture path, defaulting to the executable's verification directory.
+[[nodiscard]] std::filesystem::path capturePath(int argc, char **argv) {
+	// Keep automated captures in their build tree when an output path is supplied.
 	for (int index = 1; index + 1 < argc; ++index) {
-		if (argv[index] == nullptr || argv[index + 1] == nullptr) {
-			continue;
-		}
-		if (std::string_view{argv[index]} != "--frames") {
-			continue;
-		}
-		int value{};
-		const std::string_view text{argv[index + 1]};
-		const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
-		if (result.ec == std::errc{} && value >= 0) {
-			return value;
+		if (argv[index] != nullptr && argv[index + 1] != nullptr && std::string_view{argv[index]} == "--output") {
+			return std::filesystem::path{argv[index + 1]};
 		}
 	}
-	return 3;
-}
-
-/// @brief Returns the stable image path used by automatic render verification.
-[[nodiscard]] std::filesystem::path capturePath(int argc, char **argv) {
 	const auto executable_path = argc > 0 && argv[0] != nullptr ? std::filesystem::path{argv[0]} : std::filesystem::path{};
 	const auto executable_directory = executable_path.has_parent_path() ? executable_path.parent_path() : std::filesystem::current_path();
 	return executable_directory.parent_path() / "verify" / "simple_forward_demo_capture.png";
@@ -67,13 +55,13 @@ int main(int argc, char **argv) {
 	}
 	std::println("simple_forward_demo scene loaded before frame step");
 
-	const int max_frames = frameLimit(argc, argv);
+	const int max_frames = vve::example::frameLimit(argc, argv);
 	const std::filesystem::path capture_path = capturePath(argc, argv);
 	const std::string capture_path_text = capture_path.string();
 	bool captured{};
 
 	const auto render_start_time = std::chrono::steady_clock::now();
-	for (int frame{}; frame < max_frames; ++frame) {
+	for (int frame{}; max_frames == 0 || frame < max_frames; ++frame) {
 		const auto status = engine.step();
 		if (!status) {
 			std::cerr << "simple_forward_demo failed: stage=frame, frame=" << (frame + 1)

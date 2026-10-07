@@ -1,8 +1,11 @@
 module;
 #include <VVPPL.h>
 
-module VEEngine;
+module VVEngine;
 import :RenderSystem;
+
+/// @file
+/// @brief Facade forwarding for scene authoring, lights, cameras and renderer diagnostics.
 
 namespace vve {
 
@@ -31,33 +34,46 @@ namespace vve {
 		}
 		setPointLight(Position{.value = Vec3{2.0F, 3.5F, -2.0F}},
 							LinearColor{.value = Vec3{1.0F, 0.96F, 0.82F}},
-							LightIntensity{.value = 3.0F}, LightRange{.value = 7.0F});
+							LightIntensity{.value = 3.0F}, LightRange{.value = 7.0F},
+							LinearColor{.value = Vec3{0.18F, 0.18F, 0.18F}});
 		setDirectionalLight(Direction{.value = Vec3{-0.55F, -0.78F, 0.30F}},
 									LinearColor{.value = Vec3{0.65F, 0.82F, 1.0F}},
 									LightIntensity{.value = 0.75F}, LinearColor{.value = Vec3{0.025F, 0.025F, 0.025F}});
 		setSpotLight(Position{.value = Vec3{1.45F, 4.8F, -1.45F}},
 						  Direction{.value = Vec3{0.10F, -0.98F, -0.16F}},
 						  LinearColor{.value = Vec3{1.0F, 0.58F, 0.38F}},
-						  LightIntensity{.value = 2.2F}, LightRange{.value = 5.8F}, SpotConeAngle{.radians = 0.58F});
+						  LightIntensity{.value = 2.2F}, LightRange{.value = 5.8F}, SpotConeAngle{.radians = 0.58F},
+						  LinearColor{.value = Vec3{0.04F, 0.04F, 0.04F}});
 		return {};
 	}
 
 	/// @brief Sets the post processing setup
 	void RenderSystem::setPostProcessSetup(std::function<void(vvppl::PostProcessing &)> setup) { impl_.setPostProcessSetup(std::move(setup)); }
 
-	/// @brief Sets the active scene camera.
-	void RenderSystem::setCamera(Camera camera, PixelExtent extent) { impl_.setCamera(std::move(camera), extent); }
+	/// @brief Sets the default camera used by windows without an explicit camera.
+	void RenderSystem::setCamera(Camera camera) { impl_.setCamera(std::move(camera)); }
+
+	/// @brief Overrides the camera for one window, using its drawable extent for the aspect ratio.
+	auto RenderSystem::setCamera(WindowHandle window, Camera camera) -> std::expected<void, Error> {
+		return impl_.setCamera(window, std::move(camera));
+	}
+
+	/// @brief Clears one window's override so it follows the current default camera again.
+	auto RenderSystem::clearCamera(WindowHandle window) -> std::expected<void, Error> { return impl_.clearCamera(window); }
+
+	/// @brief Clears all authored and imported lights, preserving objects, resources, cameras and scene instances.
+	void RenderSystem::clearLights() { impl_.clearLights(); }
 
 	/// @brief Sets the active directional light.
-	void RenderSystem::setDirectionalLight(Direction direction_to_light, LinearColor color,
+	void RenderSystem::setDirectionalLight(Direction direction, LinearColor color,
 														LightIntensity intensity, LinearColor ambient) {
-		impl_.setDirectionalLight(direction_to_light, color, intensity, ambient);
+		impl_.setDirectionalLight(direction, color, intensity, ambient);
 	}
 
 	/// @brief Adds a directional light to the active CPU scene.
-	void RenderSystem::addDirectionalLight(Direction direction_to_light, LinearColor color,
+	void RenderSystem::addDirectionalLight(Direction direction, LinearColor color,
 														LightIntensity intensity, LinearColor ambient) {
-		impl_.addDirectionalLight(direction_to_light, color, intensity, ambient);
+		impl_.addDirectionalLight(direction, color, intensity, ambient);
 	}
 
 	/// @brief Sets the active point light.
@@ -123,6 +139,12 @@ namespace vve {
 		Transform transform) {
 		return impl_.addTriangleMesh(
 			std::move(positions), std::move(indices), color, transform);
+	}
+
+	/// @brief Adds an XZ plane with UVs from zero to uv_scale; values above one repeat the texture.
+	std::expected<RenderObjectHandle, Error> RenderSystem::addTexturedPlane(Vec2 half_extent,
+		std::filesystem::path base_color_texture, Vec2 uv_scale, Transform transform) {
+		return impl_.addTexturedPlane(half_extent, std::move(base_color_texture), uv_scale, transform);
 	}
 
 	/// @brief Adds a textured cuboid and returns its public render-object handle.
@@ -208,34 +230,14 @@ namespace vve {
 	/// @brief Removes CPU render assets no live render object references.
 	std::size_t RenderSystem::purgeUnusedAssets() { return impl_.purgeUnusedAssets(); }
 
-	/// @brief Returns unique decoded texture count in the active CPU scene.
-	std::size_t RenderSystem::sceneTextureCount() const { return impl_.sceneTextureCount(); }
-
-	/// @brief Returns whether one decoded scene texture contains linear data.
-	std::expected<bool, Error> RenderSystem::sceneTextureIsLinear(std::size_t index) const {
-		return impl_.sceneTextureIsLinear(index);
-	}
-
-	/// @brief Returns resident GPU texture count, excluding the fallback texture.
-	std::size_t RenderSystem::gpuTextureCount() const { return impl_.gpuTextureCount(); }
-
-	/// @brief Returns the number of unique resident GPU meshes.
-	std::size_t RenderSystem::gpuMeshCount() const { return impl_.gpuMeshCount(); }
-
-	/// @brief Returns the number of entries in the resident GPU material table.
-	std::size_t RenderSystem::gpuMaterialCount() const { return impl_.gpuMaterialCount(); }
-
-	/// @brief Returns the monotonic count of GPU mesh uploads.
-	std::size_t RenderSystem::gpuMeshUploadCount() const { return impl_.gpuMeshUploadCount(); }
-
-	/// @brief Returns the monotonic count of GPU material-buffer uploads.
-	std::size_t RenderSystem::gpuMaterialUploadCount() const { return impl_.gpuMaterialUploadCount(); }
-
 	/// @brief Returns mesh count in the active CPU scene.
 	std::size_t RenderSystem::sceneMeshCount() const { return impl_.sceneMeshCount(); }
 
 	/// @brief Returns material count in the active CPU scene.
 	std::size_t RenderSystem::sceneMaterialCount() const { return impl_.sceneMaterialCount(); }
+
+	/// @brief Counts distinct live render texture slots shared by object materials.
+	std::size_t RenderSystem::sceneTextureCount() const { return impl_.sceneTextureCount(); }
 
 	/// @brief Returns directional-light count in the active CPU scene.
 	std::size_t RenderSystem::sceneDirectionalLightCount() const {
@@ -272,26 +274,10 @@ namespace vve {
 	/// @brief Reports whether the active CPU scene has a spotlight.
 	bool RenderSystem::hasSceneSpotLight() const { return impl_.hasSceneSpotLight(); }
 
-	/// @brief Copies the shadow-depth samples recorded by the last rendered frame into facade data.
+	/// @brief Copies the last rendered frame's samples; empty unless setShadowDepthReadback(true) enabled readback.
 	Vector<RenderShadowDepthSample> RenderSystem::shadowDepthSamples() const {
-		Vector<RenderShadowDepthSample> result{};
-		for (const auto &sample : impl_.shadowDepthSamples()) {
-			result.push_back(RenderShadowDepthSample{.light_type = sample.light_type,
-																 .light_index = sample.light_index,
-																 .face_index = sample.face_index,
-																 .layer = sample.layer,
-																 .world = sample.world,
-																 .light_ndc = sample.light_ndc,
-																 .pixel_x = sample.pixel_x,
-																 .pixel_y = sample.pixel_y,
-																 .expected_depth = sample.expected_depth,
-																 .bias = sample.bias,
-																 .shadow_factor = sample.shadow_factor,
-																 .gpu_depth = sample.gpu_depth,
-																 .error = sample.error,
-																 .has_gpu = sample.has_gpu});
-		}
-		return result;
+		const auto samples = impl_.shadowDepthSamples();
+		return {samples.begin(), samples.end()};
 	}
 
 	/// @brief Enables reading the rendered shadow-map texel back for every sample; costs a GPU stall per frame.
@@ -300,6 +286,11 @@ namespace vve {
 	/// @brief Captures a rendered frame to a PNG file using the selected renderer implementation.
 	std::expected<void, Error> RenderSystem::captureFrameToPng(const std::filesystem::path &output_path) {
 		return impl_.captureFrameToPng(output_path);
+	}
+
+	/// @brief Captures the selected rendered window; unknown, opted-out or closed windows return invalid_handle.
+	std::expected<void, Error> RenderSystem::captureFrameToPng(WindowHandle window, const std::filesystem::path &output_path) {
+		return impl_.captureFrameToPng(window, output_path);
 	}
 
 	/// @brief Returns the number of frames accepted by the render system.

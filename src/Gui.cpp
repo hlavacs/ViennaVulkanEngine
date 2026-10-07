@@ -1,4 +1,4 @@
-module VEEngine;
+module VVEngine;
 import :Gui;
 
 namespace vve {
@@ -8,5 +8,10 @@ namespace vve {
 
 	/// @brief Stores the user callback that builds one GUI frame in the selected implementation.
 	auto GuiSystem::draw(std::function<void()> frame) -> void { impl_.draw(std::move(frame)); }
+
+	/// @brief Registers font atlas setup before the first rendered frame; rejects changes once its context exists.
+	auto GuiSystem::configureFonts(std::function<void()> setup) -> std::expected<void, Error> {
+		return impl_.configureFonts(std::move(setup));
+	}
 
 } // namespace vve

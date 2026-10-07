@@ -1,8 +1,8 @@
-export module VEEngine:Window;
+export module VVEngine:Window;
 import std;
 import :Implementation;
-import VEEngine.Types;
-import VEEngine.Vector;
+import VVEngine.Types;
+import VVEngine.Vector;
 
 /**
 	* @file
@@ -12,58 +12,53 @@ export namespace vve {
 
 	template <typename... TSystems> class Engine;
 
+	/// @brief Fluent startup option owning one shared window descriptor.
 	class WindowSetup {
 	public:
 		inline WindowSetup() = default;
 
 		[[nodiscard]] inline WindowSetup &id(std::string value) {
-			id_ = std::move(value);
+			value_.id = std::move(value);
 			return *this;
 		}
 		[[nodiscard]] inline WindowSetup &title(std::string value) {
-			title_ = std::move(value);
+			value_.title = std::move(value);
 			return *this;
 		}
+		/// @brief Sets the initial size in window coordinates.
 		[[nodiscard]] inline WindowSetup &extent(PixelExtent value) {
-			extent_ = value;
+			value_.extent = value;
 			return *this;
 		}
 		[[nodiscard]] inline WindowSetup &position(int x, int y) {
-			x_ = x;
-			y_ = y;
+			value_.x = x;
+			value_.y = y;
 			return *this;
 		}
+		/// @brief Selects forward rendering (empty or "forward"), or "none" to opt out; other ids make init return invalid_argument.
 		[[nodiscard]] inline WindowSetup &renderer(RendererId value) {
-			renderer_id_ = std::move(value);
+			value_.renderer_id = std::move(value);
 			return *this;
 		}
 		[[nodiscard]] inline WindowSetup &resizable(bool value) {
-			resizable_ = value;
+			value_.resizable = value;
 			return *this;
 		}
 		[[nodiscard]] inline WindowSetup &visible(bool value) {
-			visible_ = value;
+			value_.visible = value;
 			return *this;
 		}
 
 	private:
 		template <typename... TSystems> friend class Engine;
 
-		std::string id_{"main"};													///< Stable application-local window id.
-		std::string title_{"VVE simple"};										///< Platform window title.
-		PixelExtent extent_{.width = 960, .height = 540};				///< Initial pixel dimensions.
-		std::optional<int> x_{};													///< Optional initial screen x coordinate.
-		std::optional<int> y_{};													///< Optional initial screen y coordinate.
-		RendererId renderer_id_{};												///< Renderer id selected for this window.
-		bool resizable_{true};													///< Enables platform resizing.
-		bool visible_{true};														///< Shows the window after creation.
+		WindowDesc value_{};	///< Shared startup descriptor passed to the engine.
 	};	///< Facade startup window option.
 
 	class WindowSetups {
 	public:
 		inline WindowSetups() = default;
 		inline WindowSetups(std::initializer_list<WindowSetup> windows) {
-			value_.clear();
 			value_.reserve(windows.size());
 			for (const auto &window : windows) { value_.push_back(window); }
 		}
@@ -73,7 +68,7 @@ export namespace vve {
 	private:
 		template <typename... TSystems> friend class Engine;
 
-		std::vector<WindowSetup> value_{WindowSetup{}};	///< Startup windows; defaults to one main window.
+		std::vector<WindowSetup> value_{};	///< Explicit startup windows; the engine supplies a main window when empty.
 	};	///< Facade startup window collection option.
 
 	enum class Key : std::int32_t {
@@ -118,9 +113,10 @@ export namespace vve {
 		[[nodiscard]] bool wasKeyPressed(Key key) const;
 		[[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const;
 		[[nodiscard]] bool wasKeyReleased(Key key) const;
-		[[nodiscard]] auto mousePosition(WindowHandle window) const -> std::optional<Vec2>;
-		[[nodiscard]] Vec2 mouseDelta(WindowHandle window) const;
-		[[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const;
+		[[nodiscard]] auto mousePosition(WindowHandle window) const -> std::optional<Vec2>; ///< Normalised window coordinates: (0,0) top left, (1,1) bottom right, y down.
+		///< Values can leave 0..1 while a drag continues outside the window.
+		[[nodiscard]] Vec2 mouseDelta(WindowHandle window) const; ///< Uses the same normalised units; mouse-look code must scale x by the aspect ratio for equal angles per distance.
+		[[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const; ///< Wheel movement in scroll ticks.
 
 	private:
 		friend class WindowSystem;
@@ -134,51 +130,15 @@ export namespace vve {
 	/// @brief Reusable keyboard-driven camera controller for application cameras.
 	class DefaultCameraController {
 	public:
-		[[nodiscard]] auto update(const InputState &input) -> Camera;
+		[[nodiscard]] auto update(const InputState &input, DeltaTime dt) -> Camera;
 
 		Position eye{.value = Vec3{0.0F, 6.0F, 9.0F}};	///< Camera eye position.
 		Scalar yaw{};													///< Horizontal look angle around the up axis.
 		Scalar pitch{};												///< Vertical look angle from the ground plane.
-		Scalar move_step{static_cast<Scalar>(0.08)};			///< Per-frame movement distance.
-		Scalar turn_step{static_cast<Scalar>(0.025)};		///< Per-frame rotation angle.
+		Scalar move_speed{static_cast<Scalar>(4.8)};			///< Movement speed in world units per second.
+		Scalar turn_speed{static_cast<Scalar>(1.5)};		///< Turning speed in radians per second.
 		Scalar max_pitch{static_cast<Scalar>(1.45)};			///< Absolute pitch clamp before the view singularity.
 	};
-
-	/**
-		* @brief Applies the default keyboard camera motion and returns the resulting facade camera.
-		* @param input Current facade input snapshot used for continuous movement and turning.
-		* @return Camera looking from the updated eye position along the updated forward vector.
-		*/
-	auto DefaultCameraController::update(const InputState &input) -> Camera {
-		const Vec3 worldUp{zero(), one(), zero()};	///< Stable up axis for view and flight.
-		auto forward = math::normalize(Vec3{std::cos(pitch) * std::sin(yaw), std::sin(pitch),
-													 -std::cos(pitch) * std::cos(yaw)});
-
-		// Shift doubles both turning and movement for the current frame.
-		const Scalar boost = input.isKeyDown(Key::left_shift) || input.isKeyDown(Key::right_shift) ? static_cast<Scalar>(2) : one();
-		const Scalar turnStep = turn_step * boost;
-		const Scalar movementStep = move_step * boost;
-
-		// Update view angles before movement so the current frame moves in the new direction.
-		if (input.isKeyDown(Key::left)) { yaw -= turnStep; }
-		if (input.isKeyDown(Key::right)) { yaw += turnStep; }
-		if (input.isKeyDown(Key::up)) { pitch -= turnStep; }
-		if (input.isKeyDown(Key::down)) { pitch += turnStep; }
-		pitch = math::clamp(pitch, -max_pitch, max_pitch);
-
-		// Rebuild camera basis after clamping to preserve the original example feel.
-		forward = math::normalize(Vec3{std::cos(pitch) * std::sin(yaw), std::sin(pitch),
-										 -std::cos(pitch) * std::cos(yaw)});
-		const Vec3 right = math::normalize(math::cross(forward, worldUp));
-		if (input.isKeyDown(Key::w)) { eye.value = math::add(eye.value, math::scale(forward, movementStep)); }
-		if (input.isKeyDown(Key::s)) { eye.value = math::subtract(eye.value, math::scale(forward, movementStep)); }
-		if (input.isKeyDown(Key::a)) { eye.value = math::subtract(eye.value, math::scale(right, movementStep)); }
-		if (input.isKeyDown(Key::d)) { eye.value = math::add(eye.value, math::scale(right, movementStep)); }
-		if (input.isKeyDown(Key::q)) { eye.value = math::subtract(eye.value, math::scale(worldUp, movementStep)); }
-		if (input.isKeyDown(Key::e)) { eye.value = math::add(eye.value, math::scale(worldUp, movementStep)); }
-
-		return Camera::lookAt(eye, Position{.value = math::add(eye.value, forward)}, Direction{.value = worldUp});
-	}
 
 	class Window {
 	public:
@@ -190,9 +150,8 @@ export namespace vve {
 		[[nodiscard]] WindowHandle handle() const;
 		[[nodiscard]] std::string_view id() const;
 		[[nodiscard]] std::string_view title() const;
-		[[nodiscard]] PixelExtent extent() const;
+		[[nodiscard]] PixelExtent extent() const; ///< Drawable size in pixels.
 		[[nodiscard]] RendererId rendererId() const;
-		[[nodiscard]] std::optional<Entity> camera() const;
 		[[nodiscard]] bool focused() const;
 		[[nodiscard]] bool minimized() const;
 		[[nodiscard]] bool shouldClose() const;
@@ -220,14 +179,6 @@ export namespace vve {
 		[[nodiscard]] auto windows() const														-> Vector<Window>;
 		[[nodiscard]] auto findWindow(std::string_view id) const							-> std::optional<Window>;
 		[[nodiscard]] auto findWindow(WindowHandle handle) const							-> std::optional<Window>;
-		[[nodiscard]] auto setWindowCamera(WindowHandle window, Entity camera)			-> std::expected<void, Error>;
-		[[nodiscard]] auto setWindowCamera(std::string_view id, Entity camera)			-> std::expected<void, Error>;
-		[[nodiscard]] auto clearWindowCamera(WindowHandle window)							-> std::expected<void, Error>;
-		[[nodiscard]] auto clearWindowCamera(std::string_view id)							-> std::expected<void, Error>;
-		[[nodiscard]] auto windowCamera(WindowHandle window) const							-> std::optional<Entity>;
-		[[nodiscard]] auto windowCamera(std::string_view id) const							-> std::optional<Entity>;
-		[[nodiscard]] auto setActiveCamera(Entity camera)										-> std::expected<void, Error>;
-		[[nodiscard]] std::optional<Entity> activeCamera() const;
 
 	private:
 		template <typename... TSystems> friend class Engine;

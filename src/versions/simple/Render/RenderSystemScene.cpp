@@ -1,21 +1,12 @@
-module VEEngine.Simple;
+module VVEngine.Simple;
 import std;
-import VEEngine.Simple.Scene;
-import VEEngine.Simple.Renderer;
+import VVEngine.Simple.Scene;
+import VVEngine.Simple.Renderer;
 
 /// @file
-/// @brief RenderSystem definitions that mirror object state, cameras, and lights into the forward renderer CPU Scene.
+/// @brief RenderSystem definitions that update object state, cameras, and renderer-owned lights.
 
 namespace vve::simple {
-	/// @brief Repopulates the capped backend texture view in CPU texture-table order.
-	auto RenderSystem::appendBackendTextures() -> void {
-		const auto count = std::min(scene_.textureCount(), kMaxSceneTextures);
-		for (std::size_t index{}; index < count; ++index) {
-			const auto *texture = scene_.findTexture(static_cast<RenderTextureIndex>(index));
-			if (texture != nullptr) { renderer_.appendTexture(*texture); }
-		}
-	}
-
 	/// @brief Sets whether one live render object is drawn in its flat base color without lighting.
 	auto RenderSystem::setObjectUnlit(RenderObjectHandle handle, bool unlit) -> std::expected<void, Error> {
 		const auto instance = findRenderObject(handle);
@@ -36,7 +27,7 @@ namespace vve::simple {
 		return {};
 	}
 
-	/// @brief Sets whether one live render object participates in future backend uploads.
+	/// @brief Sets whether one live render object is drawn.
 	auto RenderSystem::setObjectVisible(RenderObjectHandle handle, bool visible) -> std::expected<void, Error> {
 		const auto instance = findRenderObject(handle);
 		if (!instance) { return std::unexpected(Error::missing_object); }
@@ -75,61 +66,81 @@ namespace vve::simple {
 													 std::expected<Transform, Error>{scene_instance->local_transform};
 	}
 
-	/// @brief Mirrors one camera into the renderer CPU scene and retained render-scene data.
-	auto RenderSystem::setCamera(Camera camera, PixelExtent extent) -> void {
-		const auto eye = camera.position.value;
-		const auto target = math::add(eye, camera.forward.value);
-		renderer_.setCamera(eye, target, camera.fov_y.radians);
-		scene_.setCamera({.camera = std::move(camera), .target_extent = extent});
+	/// @brief Sets the default camera for windows without an override; each target supplies its own aspect ratio.
+	auto RenderSystem::setCamera(Camera camera) -> void {
+		renderer_.setCamera(std::move(camera));
+		scene_.setCamera();
+	}
+
+	/// @brief Sets one rendered window's camera, including before the first frame creates its GPU target.
+	auto RenderSystem::setCamera(WindowHandle window, Camera camera) -> std::expected<void, Error> {
+		return updateCamera(window, std::move(camera));
+	}
+
+	/// @brief Restores a rendered window's use of the current default camera.
+	auto RenderSystem::clearCamera(WindowHandle window) -> std::expected<void, Error> {
+		return updateCamera(window, std::nullopt);
+	}
+
+	/// @brief Changes a target's override or retains it until lazy initialization; invalid windows leave cameras untouched.
+	auto RenderSystem::updateCamera(WindowHandle window, std::optional<Camera> camera) -> std::expected<void, Error> {
+		const auto *selected = window_system_ == nullptr ? nullptr : window_system_->findWindow(window);
+		if (selected == nullptr || selected->info().should_close || selected->rendererId().value == "none") {
+			return std::unexpected(Error::invalid_handle);
+		}
+		if (initialized_) {
+			const auto target = std::ranges::find(renderer_.targets, window, &WindowTarget::handle);
+			if (target == renderer_.targets.end()) { return std::unexpected(Error::invalid_handle); }
+			target->camera = std::move(camera);
+		} else if (camera) {
+			pending_cameras_.insert_or_assign(window, std::move(*camera));
+		} else {
+			pending_cameras_.erase(window);
+		}
+		return {};
+	}
+
+	/// @brief Clears lights and their embedded owner tags without changing objects, resources, cameras or scene instances.
+	auto RenderSystem::clearLights() -> void {
+		renderer_.scene.directionalLights.clear();
+		renderer_.scene.pointLights.clear();
+		renderer_.scene.spotLights.clear();
 	}
 
 	/// @brief Replaces the active directional-light list with one renderer light.
-	auto RenderSystem::setDirectionalLight(Direction direction_to_light, LinearColor color,
+	auto RenderSystem::setDirectionalLight(Direction direction, LinearColor color,
 													 LightIntensity intensity, LinearColor ambient) -> void {
-		const DirectionalLight light{
-			.direction = direction_to_light.value,
+		const ForwardDirectionalLight light{
+			.direction = direction.value,
 			.color = color.value,
 			.intensity = intensity,
 			.ambient = ambient.value.x};
 		renderer_.scene.directionalLights.clear();
 		renderer_.scene.directionalLights.push_back(light);
-		scene_.setDirectionalLight({.direction_to_light = direction_to_light,
-											 .color = color, .intensity = intensity, .ambient = ambient});
 	}
 
 	/// @brief Appends one directional light to the capped renderer light list.
-	auto RenderSystem::addDirectionalLight(Direction direction_to_light, LinearColor color,
+	auto RenderSystem::addDirectionalLight(Direction direction, LinearColor color,
 													 LightIntensity intensity, LinearColor ambient) -> void {
-		const DirectionalLight light{
-			.direction = direction_to_light.value,
+		const ForwardDirectionalLight light{
+			.direction = direction.value,
 			.color = color.value,
 			.intensity = intensity,
 			.ambient = ambient.value.x};
 		if (renderer_.scene.directionalLights.size() < kMaxDirectionalLights) {
 			renderer_.scene.directionalLights.push_back(light);
 		}
-		scene_.addDirectionalLight({.direction_to_light = direction_to_light,
-											 .color = color, .intensity = intensity, .ambient = ambient});
 	}
 
-	/// @brief Replaces the active point-light list using the current ambient fallback.
+	/// @brief Replaces the active point-light list using the facade descriptor's default ambient.
 	auto RenderSystem::setPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range) -> void {
-		const PointLight light{.position = position.value,
-									  .color = color.value,
-									  .intensity = intensity.value,
-									  .range = range.value,
-									  .ambient = renderer_.scene.ambient};
-		renderer_.scene.pointLights.clear();
-		renderer_.scene.pointLights.push_back(light);
-		renderer_.scene.ambient = light.ambient;
-		scene_.setPointLight({.position = position, .color = color,
-									.intensity = intensity, .range = range});
+		setPointLight(position, color, intensity, range, vve::PointLight{}.ambient);
 	}
 
 	/// @brief Replaces the active point-light list using an explicit ambient term.
 	auto RenderSystem::setPointLight(Position position, LinearColor color, LightIntensity intensity,
 											 LightRange range, LinearColor ambient) -> void {
-		const PointLight light{.position = position.value,
+		const ForwardPointLight light{.position = position.value,
 									  .color = color.value,
 									  .intensity = intensity.value,
 									  .range = range.value,
@@ -137,29 +148,17 @@ namespace vve::simple {
 		renderer_.scene.pointLights.clear();
 		renderer_.scene.pointLights.push_back(light);
 		renderer_.scene.ambient = light.ambient;
-		scene_.setPointLight({.position = position, .color = color,
-									.intensity = intensity, .range = range, .ambient = ambient});
 	}
 
 	/// @brief Appends one point light to the capped renderer light list using default ambient.
 	auto RenderSystem::addPointLight(Position position, LinearColor color, LightIntensity intensity, LightRange range) -> void {
-		const PointLight light{.position = position.value,
-									  .color = color.value,
-									  .intensity = intensity.value,
-									  .range = range.value,
-									  .ambient = PointLight{}.ambient};
-		if (renderer_.scene.pointLights.size() < kMaxShadowedPointLights) {
-			renderer_.scene.pointLights.push_back(light);
-			if (renderer_.scene.pointLights.size() == 1U) { renderer_.scene.ambient = light.ambient; }
-		}
-		scene_.addPointLight({.position = position, .color = color,
-									.intensity = intensity, .range = range});
+		addPointLight(position, color, intensity, range, vve::PointLight{}.ambient);
 	}
 
 	/// @brief Appends one point light to the capped renderer light list using explicit ambient.
 	auto RenderSystem::addPointLight(Position position, LinearColor color, LightIntensity intensity,
 											 LightRange range, LinearColor ambient) -> void {
-		const PointLight light{.position = position.value,
+		const ForwardPointLight light{.position = position.value,
 									  .color = color.value,
 									  .intensity = intensity.value,
 									  .range = range.value,
@@ -168,79 +167,88 @@ namespace vve::simple {
 			renderer_.scene.pointLights.push_back(light);
 			if (renderer_.scene.pointLights.size() == 1U) { renderer_.scene.ambient = light.ambient; }
 		}
-		scene_.addPointLight({.position = position, .color = color,
-									.intensity = intensity, .range = range, .ambient = ambient});
 	}
 
-	/// @brief Replaces the active spot-light list using the current inner cone and ambient fallback.
+	/// @brief Replaces the active spot-light list using the facade descriptor's default ambient.
 	auto RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
 											LightIntensity intensity, LightRange range, SpotConeAngle cone) -> void {
-		const SpotLight previous = renderer_.scene.spotLights.empty() ? SpotLight{} : renderer_.scene.spotLights.front(); ///< Keeps the inner cone and ambient of the replaced light.
-		const SpotLight light{.position = position.value,
-									 .direction = direction.value,
-									 .color = color.value,
-									 .intensity = intensity,
-									 .range = range,
-									 .innerConeAngle = previous.innerConeAngle,
-									 .outerConeAngle = cone,
-									 .ambient = previous.ambient};
-		renderer_.scene.spotLights.clear();
-		renderer_.scene.spotLights.push_back(light);
-		scene_.setSpotLight({.position = position, .direction = direction, .color = color,
-								   .intensity = intensity, .range = range, .cone = cone});
+		setSpotLight(position, direction, color, intensity, range, cone, vve::SpotLight{}.ambient);
 	}
 
 	/// @brief Replaces the active spot-light list using an explicit ambient term.
 	auto RenderSystem::setSpotLight(Position position, Direction direction, LinearColor color,
 											LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient) -> void {
-		const SpotLight light{.position = position.value,
+		const ForwardSpotLight light{.position = position.value,
 									 .direction = direction.value,
 									 .color = color.value,
 									 .intensity = intensity,
 									 .range = range,
-									 .innerConeAngle = renderer_.scene.spotLights.empty() ? SpotLight{}.innerConeAngle : renderer_.scene.spotLights.front().innerConeAngle,
+									 .innerConeAngle = detail::defaultInnerCone(cone),
 									 .outerConeAngle = cone,
 									 .ambient = ambient.value.x};
 		renderer_.scene.spotLights.clear();
 		renderer_.scene.spotLights.push_back(light);
-		scene_.setSpotLight({.position = position, .direction = direction, .color = color,
-								   .intensity = intensity, .range = range, .ambient = ambient, .cone = cone});
 	}
 
 	/// @brief Appends one spot light to the capped renderer light list using default ambient.
 	auto RenderSystem::addSpotLight(Position position, Direction direction, LinearColor color,
 											LightIntensity intensity, LightRange range, SpotConeAngle cone) -> void {
-		const SpotLight light{.position = position.value,
-									 .direction = direction.value,
-									 .color = color.value,
-									 .intensity = intensity,
-									 .range = range,
-									 .innerConeAngle = SpotLight{}.innerConeAngle,
-									 .outerConeAngle = cone,
-									 .ambient = SpotLight{}.ambient};
-		if (renderer_.scene.spotLights.size() < kMaxShadowedSpotLights) {
-			renderer_.scene.spotLights.push_back(light);
-		}
-		scene_.addSpotLight({.position = position, .direction = direction, .color = color,
-								   .intensity = intensity, .range = range, .cone = cone});
+		addSpotLight(position, direction, color, intensity, range, cone, vve::SpotLight{}.ambient);
 	}
 
 	/// @brief Appends one spot light to the capped renderer light list using explicit ambient.
 	auto RenderSystem::addSpotLight(Position position, Direction direction, LinearColor color,
 											LightIntensity intensity, LightRange range, SpotConeAngle cone, LinearColor ambient) -> void {
-		const SpotLight light{.position = position.value,
+		const ForwardSpotLight light{.position = position.value,
 									 .direction = direction.value,
 									 .color = color.value,
 									 .intensity = intensity,
 									 .range = range,
-									 .innerConeAngle = SpotLight{}.innerConeAngle,
+									 .innerConeAngle = detail::defaultInnerCone(cone),
 									 .outerConeAngle = cone,
 									 .ambient = ambient.value.x};
 		if (renderer_.scene.spotLights.size() < kMaxShadowedSpotLights) {
 			renderer_.scene.spotLights.push_back(light);
 		}
-		scene_.addSpotLight({.position = position, .direction = direction, .color = color,
-								   .intensity = intensity, .range = range, .ambient = ambient, .cone = cone});
+	}
+
+	/// @brief Adds one imported light to the renderer, tagged with its scene instance.
+	auto RenderSystem::addImportedLight(const LightDescriptor &light, std::uint64_t owner) -> void {
+		switch (light.kind) {
+		case LightKind::directional: {
+			const ForwardDirectionalLight backend{.direction = light.direction.value, .color = light.color.value,
+				.intensity = light.intensity, .ambient = ForwardDirectionalLight{}.ambient, .owner = owner};
+			if (renderer_.scene.directionalLights.size() < kMaxDirectionalLights) { renderer_.scene.directionalLights.push_back(backend); }
+			break;
+		}
+		case LightKind::point: {
+			const ForwardPointLight backend{.position = light.position.value, .color = light.color.value,
+				.intensity = light.intensity.value, .range = light.range.value, .ambient = ForwardPointLight{}.ambient, .owner = owner};
+			if (renderer_.scene.pointLights.size() < kMaxShadowedPointLights) {
+				renderer_.scene.pointLights.push_back(backend);
+				if (renderer_.scene.pointLights.size() == 1U) { renderer_.scene.ambient = backend.ambient; }
+			}
+			break;
+		}
+		case LightKind::spot: {
+			const ForwardSpotLight backend{.position = light.position.value, .direction = light.direction.value,
+				.color = light.color.value, .intensity = light.intensity, .range = light.range,
+				// Assimp reports 2*pi when a file has no inner cone; then the engine default applies.
+				.innerConeAngle = light.inner_cone.radians < light.cone.radians ? light.inner_cone : detail::defaultInnerCone(light.cone),
+				.outerConeAngle = light.cone, .ambient = ForwardSpotLight{}.ambient, .owner = owner};
+			if (renderer_.scene.spotLights.size() < kMaxShadowedSpotLights) { renderer_.scene.spotLights.push_back(backend); }
+			break;
+		}
+		}
+	}
+
+	/// @brief Removes the lights and cameras one scene instance imported.
+	auto RenderSystem::removeImportedLights(std::uint64_t owner) -> void {
+		const auto owned = [owner](const auto &light) { return light.owner == owner; };
+		std::erase_if(renderer_.scene.directionalLights, owned);
+		std::erase_if(renderer_.scene.pointLights, owned);
+		std::erase_if(renderer_.scene.spotLights, owned);
+		scene_.eraseImportedBy(owner);
 	}
 
 } // namespace vve::simple

@@ -1,7 +1,8 @@
 #include <imgui.h>
 
 import std;
-import VEEngine;
+import VVEngine;
+import VVE.ExampleSupport;
 
 /**
  * @file
@@ -13,51 +14,6 @@ constexpr auto crateTextureRelativePath = "assets/game/crate0/diffuse.png";
 constexpr std::size_t maxGameDirectionalLights{10U}; ///< Current simple forward renderer directional-light demo cap.
 constexpr std::size_t maxGamePointLights{10U};       ///< Current simple forward renderer point-light demo cap.
 constexpr std::size_t maxGameSpotLights{10U};        ///< Current simple forward renderer spot-light demo cap.
-
-/// @brief Finds the repository-style asset root from either the cwd or executable location.
-[[nodiscard]] std::filesystem::path assetRoot(char *argv0) {
-	auto containsGameAssets = [](const std::filesystem::path &candidate) {
-		return std::filesystem::exists(candidate / crateTextureRelativePath);
-	};
-	if (const auto cwd = std::filesystem::current_path(); containsGameAssets(cwd)) {
-		return cwd;
-	}
-	if (argv0 == nullptr) {
-		return {};
-	}
-	auto executable = std::filesystem::absolute(std::filesystem::path{argv0});
-	if (std::filesystem::exists(executable)) {
-		executable = std::filesystem::weakly_canonical(executable);
-	}
-	for (auto candidate = executable.parent_path(); !candidate.empty(); candidate = candidate.parent_path()) {
-		if (containsGameAssets(candidate)) {
-			return candidate;
-		}
-		if (candidate == candidate.root_path()) {
-			break;
-		}
-	}
-	return {};
-}
-
-/// @brief Reads the optional frame count used by automated example runs.
-[[nodiscard]] std::optional<int> frameLimit(int argc, char **argv) {
-	for (int index = 1; index + 1 < argc; ++index) {
-		if (argv[index] == nullptr || argv[index + 1] == nullptr) {
-			continue;
-		}
-		if (std::string_view{argv[index]} != "--frames") {
-			continue;
-		}
-		int value{};
-		const std::string_view text{argv[index + 1]};
-		const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
-		if (result.ec == std::errc{} && value >= 0) {
-			return value;
-		}
-	}
-	return std::nullopt;
-}
 
 /// @brief Adds the game floor and three crate cubes through facade scene authoring calls.
 [[nodiscard]] std::expected<void, vve::Error> loadGameScene(vve::RenderSystem render, const std::filesystem::path &root) {
@@ -110,7 +66,7 @@ int main(int argc, char **argv) {
 	}
 
 	auto render = engine.world().get<vve::RenderSystem>();
-	if (const auto result = loadGameScene(render, assetRoot(argc > 0 ? argv[0] : nullptr)); !result) {
+	if (const auto result = loadGameScene(render, vve::example::assetRoot(argc > 0 ? argv[0] : nullptr)); !result) {
 		std::cerr << "[game] scene load failed: error=" << vve::errorName(result.error()) << '\n';
 		return 2;
 	}
@@ -142,14 +98,14 @@ int main(int argc, char **argv) {
 	const auto pointIntensities = std::array{
 		vve::LightIntensity{.value = 3.0F},
 		vve::LightIntensity{.value = 2.4F},
-		vve::LightIntensity{.value = 1.5F},
-		vve::LightIntensity{.value = 1.4F},
-		vve::LightIntensity{.value = 1.2F},
-		vve::LightIntensity{.value = 1.2F},
-		vve::LightIntensity{.value = 1.0F},
-		vve::LightIntensity{.value = 1.0F},
-		vve::LightIntensity{.value = 0.9F},
-		vve::LightIntensity{.value = 0.9F},
+		vve::LightIntensity{.value = 2.0F},
+		vve::LightIntensity{.value = 2.0F},
+		vve::LightIntensity{.value = 2.0F},
+		vve::LightIntensity{.value = 2.0F},
+		vve::LightIntensity{.value = 2.0F},
+		vve::LightIntensity{.value = 2.0F},
+		vve::LightIntensity{.value = 2.0F},
+		vve::LightIntensity{.value = 2.0F},
 	};																													///< Point strengths keep the combined scene readable.
 	const auto pointRanges = std::array{
 		vve::LightRange{.value = 7.0F},
@@ -263,61 +219,37 @@ int main(int argc, char **argv) {
 		vve::LinearColor{.value = vve::Vec3{0.72F, 0.78F, 1.0F}},
 		vve::LinearColor{.value = vve::Vec3{0.82F, 1.0F, 0.72F}},
 	};																													///< Distinct colors make active spot slots visible.
-	const auto offAmbient = vve::LinearColor{.value = vve::Vec3{0.0F, 0.0F, 0.0F}};                    ///< Muted light ambient term.
-	constexpr auto offIntensity = vve::LightIntensity{.value = 0.0F};                                  ///< Muted direct light strength.
-	constexpr auto minimumShadowPointIntensity = vve::LightIntensity{.value = 2.0F};                  ///< Minimum enabled point brightness for visible shadows.
-	constexpr auto offRange = vve::LightRange{.value = 0.0F};                                          ///< Muted local light reach.
 	auto directionalLightsEnabled = std::array<bool, maxGameDirectionalLights>{};                    ///< Tracks each capped directional light.
 	auto pointLightsEnabled = std::array<bool, maxGamePointLights>{};                                ///< Tracks each capped point light.
 	auto spotLightsEnabled = std::array<bool, maxGameSpotLights>{};                                  ///< Tracks each capped spot light.
 	directionalLightsEnabled.fill(true);                                                            ///< Start with every directional slot active.
 	pointLightsEnabled.fill(true);                                                                  ///< Start with every point slot active.
 	spotLightsEnabled.fill(true);                                                                   ///< Start with every spot slot active.
+	/// @brief Replaces the light selection without changing scene objects.
 	auto applyLights = [&] {
-		const auto applyDirectional = [&](std::size_t index, bool first) {
-			const auto intensity = directionalLightsEnabled[index] ? directionalIntensities[index] : offIntensity;
-			const auto ambient = directionalLightsEnabled[index] ? directionalAmbients[index] : offAmbient;
-			if (first) {
-				render.setDirectionalLight(directionalDirections[index], directionalColors[index], intensity, ambient);
-			} else {
-				render.addDirectionalLight(directionalDirections[index], directionalColors[index], intensity, ambient);
-			}
-		};																												// First directional resets the set; the rest fill the capped slots.
-		applyDirectional(0U, true);
-		for (std::size_t index{1U}; index < directionalLightsEnabled.size(); ++index) { applyDirectional(index, false); }
-		const auto applySpot = [&](std::size_t index, bool first) {
-			const auto intensity = spotLightsEnabled[index] ? spotIntensity : offIntensity;
-			const auto range = spotLightsEnabled[index] ? spotRange : offRange;
-			const auto ambient = spotLightsEnabled[index] ? spotAmbient : offAmbient;
-			if (first) {
-				render.setSpotLight(spotPositions[index], spotDirections[index], spotColors[index], intensity, range, spotCone, ambient);
-			} else {
-				render.addSpotLight(spotPositions[index], spotDirections[index], spotColors[index], intensity, range, spotCone, ambient);
-			}
-		};																												// First spot resets the set; the rest fill the capped slots.
-		applySpot(0U, true);
-		for (std::size_t index{1U}; index < spotLightsEnabled.size(); ++index) { applySpot(index, false); }
-		bool anyPointLightEnabled{};																				// Disabled fallback keeps the legacy point slot valid.
-		for (std::size_t index{}; index < pointLightsEnabled.size(); ++index) {
-			if (!pointLightsEnabled[index]) { continue; }
-			const auto pointIntensity = vve::LightIntensity{
-				.value = std::max(pointIntensities[index].value, minimumShadowPointIntensity.value)}; // Every enabled point light can cast a readable shadow.
-			if (!anyPointLightEnabled) {
-				render.setPointLight(pointPositions[index], pointColors[index], pointIntensity, pointRanges[index],
-										 pointAmbients[index]);
-			} else {
-				render.addPointLight(pointPositions[index], pointColors[index], pointIntensity, pointRanges[index],
-										 pointAmbients[index]);
-			}
-			anyPointLightEnabled = true;
+		render.clearLights(); // Rebuild only the enabled lights without changing scene objects.
+		// Disabled directional lights occupy no renderer slots.
+		for (const auto index : std::views::iota(std::size_t{}, directionalLightsEnabled.size())) {
+			if (!directionalLightsEnabled[index]) { continue; }
+			render.addDirectionalLight(directionalDirections[index], directionalColors[index],
+				directionalIntensities[index], directionalAmbients[index]);
 		}
-		if (!anyPointLightEnabled) {
-			render.setPointLight(pointPositions.front(), pointColors.front(), offIntensity, offRange, offAmbient);
+		// Disabled spots produce neither lighting nor shadow passes.
+		for (const auto index : std::views::iota(std::size_t{}, spotLightsEnabled.size())) {
+			if (!spotLightsEnabled[index]) { continue; }
+			render.addSpotLight(spotPositions[index], spotDirections[index], spotColors[index],
+				spotIntensity, spotRange, spotCone, spotAmbient);
+		}
+		// An empty point selection stays empty instead of installing a fallback light.
+		for (const auto index : std::views::iota(std::size_t{}, pointLightsEnabled.size())) {
+			if (!pointLightsEnabled[index]) { continue; }
+			render.addPointLight(pointPositions[index], pointColors[index], pointIntensities[index], pointRanges[index],
+				pointAmbients[index]);
 		}
 	};
 	applyLights();
 
-	const int maxFrames = frameLimit(argc, argv).value_or(0);
+	const int maxFrames = vve::example::frameLimit(argc, argv);
 	int frame{};
 	bool running = true;
 	bool lightsDirty = false;                                                                        ///< GUI changes are applied after the frame callback returns.
@@ -355,7 +287,7 @@ int main(int argc, char **argv) {
 	});
 	while (running && (maxFrames == 0 || frame < maxFrames)) {
 		const auto frameInput = engine.world().get<vve::WindowSystem>().input();
-		render.setCamera(cameraController.update(frameInput), vve::PixelExtent{.width = 960, .height = 540});
+		render.setCamera(cameraController.update(frameInput, engine.frameContext().delta_time));
 		renderFps = render.renderingFramesPerSecond();
 
 		const auto status = engine.step();

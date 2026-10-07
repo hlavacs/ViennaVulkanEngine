@@ -1,5 +1,5 @@
-export module VEEngine:ECS;
-import VEEngine.ECSContainer;
+export module VVEngine:ECS;
+import VVEngine.ECSContainer;
 
 /**
 	* @file

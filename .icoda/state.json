@@ -33,8 +33,8 @@
   "c:@N@vve@S@SceneLoadOptionsBuilder@F@SceneLoadOptionsBuilder#",
   "c:@N@vve@S@SpotLightBuilder@F@SpotLightBuilder#",
   "c:@N@vve@S@TexturedCuboidDescriptorBuilder@F@TexturedCuboidDescriptorBuilder#",
-  "c:@N@vve@ST>2#T#Nk@Vector@F@Vector#",
-  "c:@N@vve@ST>2#T#Nk@Vector@ST>1#T@basic_iterator@F@basic_iterator#",
+  "c:@N@vve@ST>2#T#Nl@Vector@F@Vector#",
+  "c:@N@vve@ST>2#T#Nl@Vector@ST>1#T@basic_iterator@F@basic_iterator#",
   "c:@N@vve@S@Window@F@Window#&&$@N@vve@S@Window#",
   "c:@N@vve@S@Window@F@Window#&1$@N@vve@S@Window#",
   "c:@N@vve@S@Window@F@operator=#&&$@N@vve@S@Window#",
@@ -129,9 +129,9 @@
  "implementation_batch_size": 1,
  "mind_map": {
   "expanded": [
-   "cluster:build/debug-windows/_deps/viennavulkanpostprocessinglibrary-src/include",
-   "cluster:build/debug-windows/_deps/viennavulkanpostprocessinglibrary-src/src",
-   "cluster:src"
+   "cluster:build/debug-macos-arm64-llvm/_deps/viennavulkanpostprocessinglibrary-src/include",
+   "cluster:src/versions/simple",
+   "cluster:src/versions/simple/Render"
   ]
  },
  "implementation_scope": "queue_order",

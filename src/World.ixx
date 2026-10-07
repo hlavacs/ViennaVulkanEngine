@@ -1,10 +1,11 @@
-export module VEEngine:World;
+export module VVEngine:World;
 import std;
 import :ECS;
 import :Window;
 import :Assets;
 import :RenderSystem;
 import :Gui;
+import :Audio;
 
 /**
 	* @file

@@ -1,10 +1,10 @@
-export module VEEngine.Types;
+export module VVEngine.Types;
 import std;
-export import VEEngine.Error;
-export import VEEngine.Handle;
-export import VEEngine.Math;
-export import VEEngine.Vector;
-import VEEngine.Entity;
+export import VVEngine.Error;
+export import VVEngine.Handle;
+export import VVEngine.Math;
+export import VVEngine.Vector;
+export import VVEngine.Entity;
 
 /**
 	* @file
@@ -12,15 +12,34 @@ import VEEngine.Entity;
 	*/
 export namespace vve {
 
-	using vve::EntityTag;												///< Facade ECS entity handle tag.
-	using vve::Entity;													///< Facade ECS entity.
+	struct SoundHandleTag {}; ///< Loaded audio resource category.
+	struct AudioPlaybackHandleTag {}; ///< Independent playing voice category.
+	using SoundHandle = TypedHandle<SoundHandleTag>; ///< Audio owned until unloadSound or shutdown.
+	using AudioPlaybackHandle = TypedHandle<AudioPlaybackHandleTag>; ///< Voice owned until stopped or collected.
+
+	/// @brief Linear audio volume: zero is silent, one is full volume.
+	struct AudioVolume {
+		float value{1.0F}; ///< Finite gain in [0, 1]; independent of renderer math precision.
+	};
+
+	/// @brief Options for one independent playback of a loaded sound.
+	struct AudioPlaybackOptions {
+		bool loop{false}; ///< Repeat indefinitely until stopped.
+		AudioVolume volume{}; ///< Per-voice gain multiplied by the master gain.
+	};
+
+	/// @brief Choose upfront decoding for short effects or deferred decoding for longer audio.
+	enum class AudioLoadMode {
+		decoded, ///< Decode into PCM while loading; reuse for frequent sound effects.
+		on_demand ///< Retain encoded data and decode during playback; not disk streaming.
+	};
+
 
 	struct SceneHandleTag {};											///< Scene descriptor handle tag.
 	struct WindowHandleTag {};											///< Runtime window handle tag.
 	struct NodeHandleTag {};											///< Node descriptor handle tag.
 	struct MeshHandleTag {};											///< Mesh descriptor handle tag.
 	struct MaterialHandleTag {};										///< Material descriptor handle tag.
-	struct TextureHandleTag {};										///< Texture descriptor handle tag.
 	struct RenderObjectHandleTag {};								///< Render object handle tag.
 	struct RenderSceneInstanceHandleTag {};						///< Render scene instance handle tag.
 	struct LightHandleTag {};											///< Light descriptor handle tag.
@@ -31,7 +50,6 @@ export namespace vve {
 	using NodeHandle	= TypedHandle<NodeHandleTag>;			///< Node descriptor handle.
 	using MeshHandle	= TypedHandle<MeshHandleTag>;			///< Mesh descriptor handle.
 	using MaterialHandle = TypedHandle<MaterialHandleTag>;	///< Material descriptor handle.
-	using TextureHandle	= TypedHandle<TextureHandleTag>;		///< Texture descriptor handle.
 	using RenderObjectHandle = TypedHandle<RenderObjectHandleTag>;	///< Render object handle.
 	using RenderSceneInstanceHandle = TypedHandle<RenderSceneInstanceHandleTag>;	///< Render scene instance handle.
 	using LightHandle	= TypedHandle<LightHandleTag>;		///< Light descriptor handle.
@@ -72,9 +90,10 @@ export namespace vve {
 		Scalar value{static_cast<Scalar>(10)};								///< Wrapped range in world units.
 	};
 
-	/// @brief Strong wrapper for spotlight outer cone angle.
+	/// @brief Spotlight cone half-angle in radians, measured from the spot axis to the cone edge.
+	/// Uses the glTF KHR_lights_punctual convention for both inner and outer cones.
 	struct SpotConeAngle {
-		Scalar radians{static_cast<Scalar>(0.75)};						///< Wrapped outer cone angle in radians.
+		Scalar radians{static_cast<Scalar>(0.75)};						///< Wrapped axis-to-edge half-angle in radians.
 	};
 
 	/// @brief Public imported-light category understood by the asset facade.
@@ -89,15 +108,16 @@ export namespace vve {
 		LightKind kind{LightKind::point};									///< Imported light category.
 		LinearColor color{};													///< Linear RGB light color.
 		LightIntensity intensity{};											///< Imported or derived intensity scale.
-		Direction direction{};													///< Local light direction when available.
-		Position position{};													///< Local light position when available.
+		Direction direction{};													///< World-space light direction (light toward scene) when available.
+		Position position{};													///< World-space light position when available.
 		LightRange range{};														///< Finite influence range for point and spot lights.
-		SpotConeAngle cone{};													///< Outer cone angle for spot lights.
+		SpotConeAngle cone{};													///< Outer half-angle in radians, from spot axis to cone edge (glTF convention).
+		SpotConeAngle inner_cone{.radians = static_cast<Scalar>(0.35)};	///< Inner half-angle in radians, from spot axis to full-intensity edge (glTF convention).
 	};
 
 	/// @brief Facade descriptor for directional light setup.
 	struct DirectionalLight {
-		Direction direction{};													///< Direction from surfaces toward the light.
+		Direction direction{};													///< Direction in which the light travels (from the light toward the scene).
 		LinearColor color{};													///< Linear RGB direct light color.
 		LightIntensity intensity{};											///< Direct light intensity scale.
 		LinearColor ambient{.value = Vec3(static_cast<Scalar>(0.04), static_cast<Scalar>(0.04),
@@ -121,128 +141,10 @@ export namespace vve {
 		LinearColor color{};													///< Linear RGB direct light color.
 		LightIntensity intensity{};											///< Direct light intensity scale.
 		LightRange range{};														///< Finite influence range.
-		SpotConeAngle cone{};													///< Outer cone angle.
+		SpotConeAngle cone{};													///< Outer half-angle in radians, from spot axis to cone edge (glTF convention).
 		LinearColor ambient{.value = Vec3(static_cast<Scalar>(0.04), static_cast<Scalar>(0.04),
 													 static_cast<Scalar>(0.04))};	///< Linear RGB ambient contribution.
 	};
-
-	/// @brief Chainable facade builder for directional light setup.
-	class DirectionalLightBuilder {
-	public:
-		inline DirectionalLightBuilder() = default;
-
-		[[nodiscard]] inline DirectionalLightBuilder &direction(Direction value) {
-			direction_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline DirectionalLightBuilder &color(LinearColor value) {
-			color_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline DirectionalLightBuilder &intensity(LightIntensity value) {
-			intensity_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline DirectionalLightBuilder &ambient(LinearColor value) {
-			ambient_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline DirectionalLight build() const {
-			return DirectionalLight{.direction = direction_, .color = color_, .intensity = intensity_, .ambient = ambient_};
-		}
-
-	private:
-		Direction direction_{};													///< Direction from surfaces toward the light.
-		LinearColor color_{};													///< Linear RGB direct light color.
-		LightIntensity intensity_{};											///< Direct light intensity scale.
-		LinearColor ambient_{DirectionalLight{}.ambient};				///< Linear RGB ambient contribution.
-	};	///< Public directional light builder using facade-only light types.
-
-	/// @brief Chainable facade builder for point light setup.
-	class PointLightBuilder {
-	public:
-		inline PointLightBuilder() = default;
-
-		[[nodiscard]] inline PointLightBuilder &position(Position value) {
-			position_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline PointLightBuilder &color(LinearColor value) {
-			color_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline PointLightBuilder &intensity(LightIntensity value) {
-			intensity_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline PointLightBuilder &range(LightRange value) {
-			range_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline PointLightBuilder &ambient(LinearColor value) {
-			ambient_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline PointLight build() const {
-			return PointLight{.position = position_, .color = color_, .intensity = intensity_,
-									.range = range_, .ambient = ambient_};
-		}
-
-	private:
-		Position position_{};													///< World-space light position.
-		LinearColor color_{};													///< Linear RGB direct light color.
-		LightIntensity intensity_{};											///< Direct light intensity scale.
-		LightRange range_{};														///< Finite influence range.
-		LinearColor ambient_{PointLight{}.ambient};						///< Linear RGB ambient contribution.
-	};	///< Public point light builder using facade-only light types.
-
-	/// @brief Chainable facade builder for spotlight setup.
-	class SpotLightBuilder {
-	public:
-		inline SpotLightBuilder() = default;
-
-		[[nodiscard]] inline SpotLightBuilder &position(Position value) {
-			position_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SpotLightBuilder &direction(Direction value) {
-			direction_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SpotLightBuilder &color(LinearColor value) {
-			color_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SpotLightBuilder &intensity(LightIntensity value) {
-			intensity_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SpotLightBuilder &range(LightRange value) {
-			range_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SpotLightBuilder &cone(SpotConeAngle value) {
-			cone_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SpotLightBuilder &ambient(LinearColor value) {
-			ambient_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SpotLight build() const {
-			return SpotLight{.position = position_, .direction = direction_, .color = color_, .intensity = intensity_,
-								  .range = range_, .cone = cone_, .ambient = ambient_};
-		}
-
-	private:
-		Position position_{};													///< World-space light position.
-		Direction direction_{};													///< World-space spotlight direction.
-		LinearColor color_{};													///< Linear RGB direct light color.
-		LightIntensity intensity_{};											///< Direct light intensity scale.
-		LightRange range_{};														///< Finite influence range.
-		SpotConeAngle cone_{};													///< Outer cone angle.
-		LinearColor ambient_{SpotLight{}.ambient};						///< Linear RGB ambient contribution.
-	};	///< Public spotlight builder using facade-only light types.
 
 	/// @brief Strong wrapper for vertical field-of-view angles.
 	struct FovY {
@@ -251,9 +153,9 @@ export namespace vve {
 
 	/// @brief Facade descriptor for imported camera data stored by the asset system.
 	struct CameraDescriptor {
-		Position position{};													///< Local camera position when available.
-		Direction direction{};													///< Local camera look direction.
-		Direction up{.value = Vec3(zero(), one(), zero())};			///< Local camera up direction.
+		Position position{};													///< World-space camera position when available.
+		Direction direction{};													///< World-space camera look direction.
+		Direction up{.value = Vec3(zero(), one(), zero())};			///< World-space camera up direction.
 		FovY fov{};																///< Vertical field-of-view angle.
 		Scalar aspect{one()};													///< Projection aspect ratio.
 		Scalar near_clip{static_cast<Scalar>(0.1)};					///< Near clipping distance.
@@ -263,7 +165,7 @@ export namespace vve {
 	/// @brief Strong wrapper for near and far clipping planes.
 	struct ClipPlanes {
 		Scalar near_plane{static_cast<Scalar>(0.1)};						///< Near clip distance.
-		Scalar far_plane{static_cast<Scalar>(10000.0)};					///< Far clip distance.
+		Scalar far_plane{static_cast<Scalar>(100.0)};					///< Far clip distance.
 	};
 
 	/// @brief Strong wrapper for frame delta time.
@@ -287,6 +189,53 @@ export namespace vve {
 		std::string value{};														///< Wrapped renderer identifier.
 	};
 
+	/// @brief Window creation descriptor shared by the facade and platform layer.
+	struct WindowDesc {
+		std::string id{"main"};									///< Stable application-local window id.
+		std::string title{"VVE simple"};							///< Platform window title.
+		PixelExtent extent{.width = 960, .height = 540};			///< Initial size in window coordinates.
+		std::optional<int> x{};									///< Optional initial screen x coordinate.
+		std::optional<int> y{};									///< Optional initial screen y coordinate.
+		RendererId renderer_id{};								///< Empty or "forward" renders; "none" opts out; any other id makes Engine::init return invalid_argument.
+		bool resizable{true};									///< Enables platform resizing.
+		bool visible{true};										///< Shows the window; a hidden window still renders (tests, captures).
+	};
+
+	/// @brief Runtime window state exposed through the facade window wrapper.
+	struct WindowInfo {
+		WindowHandle handle{};									///< 64-bit runtime window handle.
+		std::string id{};										///< Stable id copied from WindowDesc.
+		std::string title{};										///< Current platform title.
+		PixelExtent extent{};									///< Current drawable size in pixels (the swapchain size).
+		RendererId renderer_id{};								///< Renderer id selected for this window.
+		bool focused{false};										///< True while the window has keyboard focus.
+		bool minimized{false};									///< True while the platform reports a minimized window.
+		bool should_close{false};								///< True after a close request.
+	};
+
+	/// @brief Snapshot passed to user systems that want window data for the current frame.
+	struct WindowFrameData {
+		Vector<WindowInfo> windows{};							///< Window states after event polling.
+	};
+
+	/// @brief One CPU/GPU shadow-depth comparison point; the world point is the origin for every light.
+	struct RenderShadowDepthSample {
+		std::uint32_t light_type{};								///< Light type: 1 spot, 2 point, 3 directional.
+		std::uint32_t light_index{};								///< Dense index of the light inside its packed shadow slots.
+		std::uint32_t face_index{};								///< Point-light cube face (+X,-X,+Y,-Y,+Z,-Z), 0 for other lights.
+		std::uint32_t layer{};									///< Layer of the light type's shadow array that this sample reads.
+		Vec3 world{zeroVec3()};									///< World-space sample point.
+		Vec3 light_ndc{zeroVec3()};								///< Sample point in light normalized device coordinates.
+		std::uint32_t pixel_x{};									///< Shadow-map texel x, valid when has_gpu is true.
+		std::uint32_t pixel_y{};									///< Shadow-map texel y, valid when has_gpu is true.
+		float expected_depth{};									///< CPU light-space depth (light_ndc.z).
+		float bias{};											///< Shader-side compare bias mirrored on the CPU.
+		float shadow_factor{1.0F};								///< Occluded factor when the GPU texel occludes the point, otherwise 1.
+		float gpu_depth{-1.0F};									///< Depth read back from the shadow map, valid when has_gpu is true.
+		float error{-1.0F};										///< Absolute difference between expected_depth and gpu_depth.
+		bool has_gpu{};											///< True once the GPU texel was read back.
+	};
+
 	/// @brief Strong wrapper for frame counts and frame indices.
 	struct FrameCount {
 		std::uint64_t value{0};													///< Wrapped frame count.
@@ -308,18 +257,10 @@ export namespace vve {
 		DeltaTime delta_time{};													///< Time elapsed since the previous frame.
 	};
 
-	/// @brief Compact engine configuration kept for simple setup paths.
-	struct EngineConfig {
-		std::string application_name{"simple"};									///< Human-readable application name.
-		FrameCount max_frames{};												///< Maximum frame count; zero means uncapped.
-	};
-
 	/// @brief Result of one engine frame.
 	enum class FrameStatus {
 		running,																		///< Engine can continue stepping.
 		stopped,																		///< Engine stopped because a close request or frame cap was reached.
-		continue_running = running,											///< Compatibility spelling for running.
-		should_close	= stopped												///< Compatibility spelling for stopped.
 	};
 
 	/// @brief Strong wrapper for source vertex counts.
@@ -330,11 +271,6 @@ export namespace vve {
 	/// @brief Strong wrapper for source index counts.
 	struct IndexCount {
 		std::uint64_t value{0};													///< Wrapped index count.
-	};
-
-	/// @brief Strong wrapper for texture channel counts.
-	struct TextureChannelCount {
-		std::uint32_t value{0};													///< Wrapped channel count.
 	};
 
 	/// @brief Standard transform component shared by all active engine layers.
@@ -367,193 +303,12 @@ export namespace vve {
 		Transform transform{};													///< Local or world-space placement.
 	};
 
-	/// @brief Chainable facade builder for plane scene-object setup.
-	class PlaneDescriptorBuilder {
-	public:
-		inline PlaneDescriptorBuilder() = default;
-
-		[[nodiscard]] inline PlaneDescriptorBuilder &halfExtent(Vec2 value) {
-			half_extent_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline PlaneDescriptorBuilder &color(LinearColor value) {
-			color_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline PlaneDescriptorBuilder &transform(Transform value) {
-			transform_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline PlaneDescriptor build() const {
-			return PlaneDescriptor{.half_extent = half_extent_, .color = color_, .transform = transform_};
-		}
-
-	private:
-		Vec2 half_extent_{};													///< Half-size along the local plane axes.
-		LinearColor color_{};													///< Linear RGB surface color.
-		Transform transform_{};												///< Local or world-space placement.
-	};	///< Public plane descriptor builder using facade-only scene-object types.
-
-	/// @brief Chainable facade builder for cuboid scene-object setup.
-	class CuboidDescriptorBuilder {
-	public:
-		inline CuboidDescriptorBuilder() = default;
-
-		[[nodiscard]] inline CuboidDescriptorBuilder &minimum(Vec3 value) {
-			minimum_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline CuboidDescriptorBuilder &maximum(Vec3 value) {
-			maximum_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline CuboidDescriptorBuilder &color(LinearColor value) {
-			color_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline CuboidDescriptorBuilder &transform(Transform value) {
-			transform_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline CuboidDescriptor build() const {
-			return CuboidDescriptor{.minimum = minimum_, .maximum = maximum_, .color = color_, .transform = transform_};
-		}
-
-	private:
-		Vec3 minimum_{};															///< Minimum local-space corner.
-		Vec3 maximum_{};															///< Maximum local-space corner.
-		LinearColor color_{};													///< Linear RGB surface color.
-		Transform transform_{};												///< Local or world-space placement.
-	};	///< Public cuboid descriptor builder using facade-only scene-object types.
-
-	/// @brief Chainable facade builder for textured cuboid scene-object setup.
-	class TexturedCuboidDescriptorBuilder {
-	public:
-		inline TexturedCuboidDescriptorBuilder() = default;
-
-		[[nodiscard]] inline TexturedCuboidDescriptorBuilder &minimum(Vec3 value) {
-			minimum_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline TexturedCuboidDescriptorBuilder &maximum(Vec3 value) {
-			maximum_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline TexturedCuboidDescriptorBuilder &baseColorTexture(std::filesystem::path value) {
-			base_color_texture_ = std::move(value);
-			return *this;
-		}
-		[[nodiscard]] inline TexturedCuboidDescriptorBuilder &transform(Transform value) {
-			transform_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline TexturedCuboidDescriptor build() const {
-			return TexturedCuboidDescriptor{.minimum = minimum_, .maximum = maximum_,
-													  .base_color_texture = base_color_texture_, .transform = transform_};
-		}
-
-	private:
-		Vec3 minimum_{};															///< Minimum local-space corner.
-		Vec3 maximum_{};															///< Maximum local-space corner.
-		std::filesystem::path base_color_texture_{};				///< Base-color texture source path.
-		Transform transform_{};												///< Local or world-space placement.
-	};	///< Public textured cuboid descriptor builder using facade-only scene-object types.
-
-	/// @brief Public scene loading options that keep default loadScene behavior.
-	struct SceneLoadOptions {
-		Scalar scale{one()};													///< Import scale factor.
-		bool convert_coordinate_system{false};						///< Enables Y-up or handedness conversion.
-		std::uint32_t max_texture_size{0};							///< Maximum texture dimension; zero means unlimited.
-		bool load_cameras{false};											///< Imports cameras from the scene file.
-		bool load_lights{false};											///< Imports lights from the scene file.
-		bool use_cache{true};												///< Enables cached loader results.
-	};
-
 	/// @brief Public scene instantiation options for imported scene visibility.
 	struct SceneInstantiationOptions {
 		bool instantiate_geometry{true};									///< Creates render objects from imported geometry.
 		bool apply_cameras{false};											///< Applies imported cameras to the render scene.
 		bool apply_lights{false};											///< Applies imported lights to the render scene.
 	};
-
-	/// @brief Chainable facade builder for scene loading options.
-	class SceneLoadOptionsBuilder {
-	public:
-		inline SceneLoadOptionsBuilder() = default;
-
-		[[nodiscard]] inline SceneLoadOptionsBuilder &scale(Scalar value) {
-			scale_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SceneLoadOptionsBuilder &convertCoordinateSystem(bool value) {
-			convert_coordinate_system_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SceneLoadOptionsBuilder &maxTextureSize(std::uint32_t value) {
-			max_texture_size_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SceneLoadOptionsBuilder &loadCameras(bool value) {
-			load_cameras_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SceneLoadOptionsBuilder &loadLights(bool value) {
-			load_lights_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SceneLoadOptionsBuilder &useCache(bool value) {
-			use_cache_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline SceneLoadOptions build() const {
-			return SceneLoadOptions{.scale = scale_, .convert_coordinate_system = convert_coordinate_system_,
-											.max_texture_size = max_texture_size_, .load_cameras = load_cameras_,
-											.load_lights = load_lights_, .use_cache = use_cache_};
-		}
-
-	private:
-		Scalar scale_{one()};												///< Import scale factor.
-		bool convert_coordinate_system_{false};					///< Enables Y-up or handedness conversion.
-		std::uint32_t max_texture_size_{0};						///< Maximum texture dimension; zero means unlimited.
-		bool load_cameras_{false};										///< Imports cameras from the scene file.
-		bool load_lights_{false};										///< Imports lights from the scene file.
-		bool use_cache_{true};											///< Enables cached loader results.
-	};	///< Public scene loading options builder using facade-only scene-load types.
-
-	/// @brief Public renderer configuration kept independent from concrete renderer details.
-	struct RendererConfig {
-		RendererId renderer{};											///< Renderer kind selected by facade id.
-		bool enable_shadows{true};										///< Enables renderer shadow support.
-		bool enable_debug_output{false};								///< Enables renderer diagnostics.
-	};
-
-	/// @brief Chainable facade builder for renderer configuration.
-	class RendererConfigBuilder {
-	public:
-		inline RendererConfigBuilder() = default;
-
-		[[nodiscard]] inline RendererConfigBuilder &renderer(RendererId value) {
-			renderer_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline RendererConfigBuilder &enableShadows(bool value) {
-			enable_shadows_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline RendererConfigBuilder &enableDebugOutput(bool value) {
-			enable_debug_output_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline RendererConfig build() const {
-			return RendererConfig{.renderer = renderer_, .enable_shadows = enable_shadows_,
-										 .enable_debug_output = enable_debug_output_};
-		}
-
-	private:
-		RendererId renderer_{};											///< Renderer kind selected by facade id.
-		bool enable_shadows_{true};									///< Enables renderer shadow support.
-		bool enable_debug_output_{false};							///< Enables renderer diagnostics.
-	};	///< Public renderer configuration builder using facade-only renderer types.
 
 	/// @brief Axis-aligned bounds described by minimum and maximum positions.
 	struct Bounds {
@@ -566,70 +321,20 @@ export namespace vve {
 	struct Camera {
 		Position position{.value = Vec3(zero(), static_cast<Scalar>(1.5), static_cast<Scalar>(6.0))};
 		Direction forward{.value = Vec3(zero(), zero(), -one())};	///< View direction.
-		Mat4 view_transform{math::translate(identityMat4(),
-														Vec3(zero(), static_cast<Scalar>(-1.5), static_cast<Scalar>(-6.0)))};
 		FovY fov_y{};																///< Vertical field of view.
 		ClipPlanes clip{};														///< Near/far clip planes.
 
+		/// @brief Describes a view by position and direction; up is retained for call compatibility.
 		[[nodiscard]] static inline Camera lookAt(Position position, Position target,
-																Direction up = Direction{.value = Vec3(zero(), one(), zero())},
+																[[maybe_unused]] Direction up = Direction{.value = Vec3(zero(), one(), zero())},
 																FovY fov_y = {}, ClipPlanes clip = {}) {
 			Camera camera{};
 			camera.position = position;
 			camera.forward = Direction{.value = math::subtract(target.value, position.value)};
-			camera.view_transform = math::lookAt(position.value, target.value, up.value);
 			camera.fov_y = fov_y;
 			camera.clip = clip;
 			return camera;
 		}
 	};
-
-	/// @brief Chainable facade builder for clear camera setup.
-	class CameraBuilder {
-	public:
-		inline CameraBuilder() = default;
-
-		[[nodiscard]] inline CameraBuilder &position(Position value) {
-			position_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline CameraBuilder &lookAt(Position target) {
-			target_ = target;
-			direction_.reset();
-			return *this;
-		}
-		[[nodiscard]] inline CameraBuilder &direction(Direction value) {
-			direction_ = value;
-			target_.reset();
-			return *this;
-		}
-		[[nodiscard]] inline CameraBuilder &fieldOfView(FovY value) {
-			fov_y_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline CameraBuilder &clipPlanes(ClipPlanes value) {
-			clip_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline CameraBuilder &targetExtent(PixelExtent value) {
-			target_extent_ = value;
-			return *this;
-		}
-		[[nodiscard]] inline Camera build() const {
-			if (target_) {
-				return Camera::lookAt(position_, *target_, Direction{.value = Vec3(zero(), one(), zero())}, fov_y_, clip_);
-			}
-			const auto target = Position{.value = math::add(position_.value, direction_.value().value)};
-			return Camera::lookAt(position_, target, Direction{.value = Vec3(zero(), one(), zero())}, fov_y_, clip_);
-		}
-
-	private:
-		Position position_{Camera{}.position};							///< Camera eye position.
-		std::optional<Position> target_{};								///< Optional world-space look-at point.
-		std::optional<Direction> direction_{Direction{}};			///< Optional forward direction used as target offset.
-		FovY fov_y_{};															///< Vertical field of view.
-		ClipPlanes clip_{};													///< Near/far clip planes.
-		PixelExtent target_extent_{};										///< Intended render extent for future aspect setup.
-	};	///< Public camera builder using facade-only camera types.
 
 } // namespace vve

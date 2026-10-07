@@ -4,7 +4,7 @@ module;
 #include <stb_image_write.h>
 #include <vk_mem_alloc.h>
 
-export module VEEngine.Simple.Vulkan:Readback;
+export module VVEngine.Simple.Vulkan:Readback;
 import :Memory;
 import std;
 
@@ -18,7 +18,7 @@ import std;
 	*/
 export namespace vve::simple {
 
-	/// @brief Host-visible copy of one image layer; works for 32-bit color formats and D32 depth.
+	/// @brief Host-visible copy of one image layer; works for the 8-bit RGBA/BGRA formats writeReadbackPng accepts and D32 depth.
 	struct VulkanReadback {
 		VkDevice device{VK_NULL_HANDLE};       ///< Borrowed device used for the one-time copy.
 		VkQueue queue{VK_NULL_HANDLE};         ///< Borrowed queue used for the one-time copy.
@@ -41,7 +41,7 @@ export namespace vve::simple {
 			if (!bytesPerPixel || owningDevice == VK_NULL_HANDLE || graphicsQueue == VK_NULL_HANDLE || pool == VK_NULL_HANDLE || layerExtent.width == 0U || layerExtent.height == 0U) {
 				return VK_ERROR_INITIALIZATION_FAILED;
 			}
-			const VkResult result = buffer.create(allocator, static_cast<VkDeviceSize>(layerExtent.width) * layerExtent.height * *bytesPerPixel, VK_BUFFER_USAGE_TRANSFER_DST_BIT, true);
+			const VkResult result = buffer.create(allocator, static_cast<VkDeviceSize>(layerExtent.width) * layerExtent.height * *bytesPerPixel, VK_BUFFER_USAGE_TRANSFER_DST_BIT, BufferMemory::readback);
 			if (result != VK_SUCCESS) { return result; }
 			device = owningDevice;
 			queue = graphicsQueue;
@@ -101,8 +101,6 @@ export namespace vve::simple {
 			case VK_FORMAT_R8G8B8A8_SRGB:
 			case VK_FORMAT_B8G8R8A8_UNORM:
 			case VK_FORMAT_B8G8R8A8_SRGB:
-			case VK_FORMAT_A2R10G10B10_UNORM_PACK32:
-			case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
 			case VK_FORMAT_D32_SFLOAT:
 				return 4U;
 			default:

@@ -4,7 +4,7 @@ module;
 #include <vk_mem_alloc.h>
 #include "../shaders/simple_shared.h"
 
-export module VEEngine.Simple.Vulkan:Shadow;
+export module VVEngine.Simple.Vulkan:Shadow;
 import :Memory;
 import std;
 
@@ -22,12 +22,25 @@ export namespace vve::simple {
 		static constexpr std::uint32_t resolution{VVE_SHADOW_MAP_RESOLUTION}; ///< Fixed square shadow-map side length in pixels.
 		VkSampler shadowSampler{VK_NULL_HANDLE};          ///< Owned border-clamped comparison sampler.
 
+		ShadowMap() = default;
+		/// @brief Transfers the depth image, views and sampler to a new owner.
+		ShadowMap(ShadowMap &&other) noexcept : VulkanImage(std::move(other)), shadowSampler(std::exchange(other.shadowSampler, VK_NULL_HANDLE)) {}
+		/// @brief Replaces this shadow array without releasing resources transferred to retirement.
+		ShadowMap &operator=(ShadowMap &&other) noexcept {
+			if (this != &other) {
+				cleanup();
+				VulkanImage::operator=(std::move(other));
+				shadowSampler = std::exchange(other.shadowSampler, VK_NULL_HANDLE);
+			}
+			return *this;
+		}
+
 		/// @brief Creates the depth array, its views, and the comparison sampler.
 		[[nodiscard]] VkResult create(VmaAllocator allocator, VkDevice owningDevice, std::uint32_t layers) {
 			cleanup();
 			VkResult result = VulkanImage::create(allocator, owningDevice, VkExtent2D{.width = resolution, .height = resolution}, VK_FORMAT_D32_SFLOAT,
 																VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
-																VK_IMAGE_ASPECT_DEPTH_BIT, layers, true);
+																VK_IMAGE_ASPECT_DEPTH_BIT, layers, true, true); // The shader always samples a 2D array, including the one-layer fallback.
 			if (result != VK_SUCCESS) { return result; }
 			const VkSamplerCreateInfo samplerInfo{
 				.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,

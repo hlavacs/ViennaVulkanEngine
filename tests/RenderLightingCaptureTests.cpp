@@ -1,88 +1,29 @@
-#include <stb_image.h>
-
 /**
  * @file
  * @brief Captured-image coverage for imported normal maps and lit/unlit material rendering.
  *
  * Functional objects:
- * - ImageStatistics retains decoded pixels and luminance statistics for one captured PNG.
- * - main renders lit, unlit, and flat-normal variants and compares their deterministic captures.
+ * - main compares lit, unlit, and flat-normal captures and checks an unlit plane's sRGB colour.
  */
 
 import std;
 
-import VEEngine;
-import VEEngine.Simple;
+import VVEngine;
+import VVE.TestSupport;
+import VVEngine.Simple;
 
-namespace {
-
-/// @brief Decoded image bytes and luminance distribution used by capture assertions.
-struct ImageStatistics {
-	std::vector<stbi_uc> rgba{}; ///< Tight RGBA8 pixels used for image comparisons.
-	double mean{};               ///< Mean Rec. 709 luminance in byte units.
-	double standard_deviation{}; ///< Population standard deviation of luminance.
-};
-
-/// @brief Decodes one PNG and computes its luminance mean and population deviation.
-[[nodiscard]] auto imageStatistics(const std::filesystem::path &path) -> std::optional<ImageStatistics> {
-	int width{};
-	int height{};
-	int channels{};
-	const auto source = path.string();
-	auto pixels = std::unique_ptr<stbi_uc, decltype(&stbi_image_free)>{
-		stbi_load(source.c_str(), &width, &height, &channels, STBI_rgb_alpha), stbi_image_free};
-	if (!pixels || width <= 0 || height <= 0) { return std::nullopt; }
-
-	const auto pixel_count = static_cast<std::size_t>(width) * static_cast<std::size_t>(height);
-	auto luminance = std::vector<double>{};
-	luminance.reserve(pixel_count);
-	for (std::size_t index{}; index < pixel_count; ++index) {
-		const auto offset = index * 4U;
-		luminance.push_back(0.2126 * pixels.get()[offset] + 0.7152 * pixels.get()[offset + 1U] +
-			0.0722 * pixels.get()[offset + 2U]);
-	}
-	const double mean = std::accumulate(luminance.begin(), luminance.end(), 0.0) /
-		static_cast<double>(pixel_count);
-	const double variance = std::accumulate(luminance.begin(), luminance.end(), 0.0,
-		[mean](double total, double value) { const double difference = value - mean; return total + difference * difference; }) /
-		static_cast<double>(pixel_count);
-	return ImageStatistics{
-		.rgba = std::vector<stbi_uc>{pixels.get(), pixels.get() + pixel_count * 4U},
-		.mean = mean, .standard_deviation = std::sqrt(variance)};
-}
-
-/// @brief Computes mean absolute byte difference for equally sized captures.
-[[nodiscard]] double meanAbsoluteDifference(const ImageStatistics &left, const ImageStatistics &right) {
-	if (left.rgba.size() != right.rgba.size() || left.rgba.empty()) { return 0.0; }
-	const double difference = std::transform_reduce(left.rgba.begin(), left.rgba.end(), right.rgba.begin(), 0.0,
-		std::plus<>{}, [](stbi_uc a, stbi_uc b) { return std::abs(static_cast<double>(a) - static_cast<double>(b)); });
-	return difference / static_cast<double>(left.rgba.size());
-}
-
-} // namespace
-
-/// @brief Verifies normal-mapped lighting differs from unlit and flat-normal rendering.
+/// @brief Verifies normal-mapped lighting and the sRGB output of an unlit material.
 int main(int argc, char **argv) {
-	const auto unique_suffix = std::to_string(std::chrono::steady_clock::now().time_since_epoch().count());
-	const auto output_directory = std::filesystem::temp_directory_path() /
-		("vve-render-lighting-capture-" + unique_suffix);
+	const auto output_directory = std::filesystem::path{VVE_TEST_TMP_DIR};
 	auto error = std::error_code{};
-	if (!std::filesystem::create_directories(output_directory, error) || error) { return 1; }
-	const auto finish = [&output_directory](int result) {
-		auto cleanup_error = std::error_code{};
-		std::filesystem::remove_all(output_directory, cleanup_error);
-		return cleanup_error ? 20 : result;
-	};
+	// Clear the previous run first, then retain this run's captures for inspection.
+	std::filesystem::remove_all(output_directory, error);
+	if (error) { return 20; }
+	std::filesystem::create_directories(VVE_TEST_TMP_DIR, error);
+	if (error) { return 1; }
 
-	auto engine = vve::simple::Engine{
-		vve::ApplicationName{"render-lighting-capture-tests"},
-		vve::WindowSetups{vve::WindowSetup{}
-			.id("main")
-			.title("render-lighting-capture-tests")
-			.extent(vve::PixelExtent{.width = 128, .height = 128})
-			.renderer(vve::RendererId{.value = "forward"})
-			.visible(false)}};
-	if (!engine.init()) { return finish(2); }
+	auto engine = vve::test::hiddenEngine("render-lighting-capture-tests", vve::PixelExtent{.width = 128, .height = 128});
+	if (!engine.init()) { return 2; }
 
 	auto &assets = engine.assets();
 	auto &render = engine.renderSystem();
@@ -91,14 +32,14 @@ int main(int argc, char **argv) {
 		std::filesystem::path{VVE_TEST_MATERIAL_MODEL};
 	const auto model_scene = assets.loadScene(model_path);
 	const auto flat_scene = assets.loadScene(std::filesystem::path{VVE_TEST_FLAT_MATERIAL_MODEL});
-	if (!model_scene || !flat_scene) { return finish(3); }
+	if (!model_scene || !flat_scene) { return 3; }
 
 	const auto apply_view = [&render, external_model] {
 		const auto eye = external_model ? vve::Position{.value = vve::Vec3{0.0F, 6.0F, 9.0F}} :
 			vve::Position{.value = vve::Vec3{0.0F, 0.25F, 2.0F}};
 		const auto target = external_model ? vve::Position{.value = vve::Vec3{0.0F, 1.0F, 0.0F}} :
 			vve::Position{.value = vve::Vec3{0.0F, 0.25F, 0.0F}};
-		render.setCamera(vve::Camera::lookAt(eye, target), vve::PixelExtent{.width = 128, .height = 128});
+		render.setCamera(vve::Camera::lookAt(eye, target));
 		render.addDirectionalLight(vve::Direction{.value = vve::Vec3{-0.35F, -0.25F, -1.0F}},
 			vve::LinearColor{.value = vve::Vec3{1.0F, 0.95F, 0.85F}},
 			vve::LightIntensity{.value = 1.5F}, vve::LinearColor{.value = vve::Vec3{0.04F, 0.04F, 0.04F}});
@@ -106,45 +47,91 @@ int main(int argc, char **argv) {
 
 	render.clearScene();
 	const auto model_instance = render.instantiateScene(*model_scene);
-	if (!model_instance) { return finish(4); }
+	if (!model_instance) { return 4; }
 	const auto model_objects = render.sceneInstanceObjects(*model_instance);
-	if (!model_objects || model_objects->empty()) { return finish(5); }
+	if (!model_objects || model_objects->empty()) { return 5; }
 	apply_view();
 	const auto lit_path = output_directory / "lit.png";
-	if (render.sceneDirectionalLightCount() != 1U) { return finish(13); }
-	if (!engine.renderFrame() || !render.captureFrameToPng(lit_path)) { return finish(6); }
+	if (render.sceneDirectionalLightCount() != 1U) { return 13; }
+	if (!engine.renderFrame() || !render.captureFrameToPng(lit_path)) { return 6; }
 
 	for (const auto object : *model_objects) {
-		if (!render.setObjectUnlit(object, true)) { return finish(7); }
+		if (!render.setObjectUnlit(object, true)) { return 7; }
 	}
 	const auto unlit_path = output_directory / "unlit.png";
-	if (render.sceneDirectionalLightCount() != 1U) { return finish(14); }
-	if (!engine.renderFrame() || !render.captureFrameToPng(unlit_path)) { return finish(8); }
+	if (render.sceneDirectionalLightCount() != 1U) { return 14; }
+	if (!engine.renderFrame() || !render.captureFrameToPng(unlit_path)) { return 8; }
 
 	render.clearScene();
-	if (!render.instantiateScene(*flat_scene)) { return finish(9); }
+	if (!render.instantiateScene(*flat_scene)) { return 9; }
 	apply_view();
 	const auto flat_path = output_directory / "flat.png";
-	if (render.sceneDirectionalLightCount() != 1U) { return finish(15); }
-	if (!engine.renderFrame() || !render.captureFrameToPng(flat_path)) { return finish(10); }
+	if (render.sceneDirectionalLightCount() != 1U) { return 15; }
+	if (!engine.renderFrame() || !render.captureFrameToPng(flat_path)) { return 10; }
 
-	const auto lit = imageStatistics(lit_path);
-	const auto unlit = imageStatistics(unlit_path);
-	const auto flat = imageStatistics(flat_path);
-	if (!lit || !unlit || !flat) { return finish(11); }
-	const double lit_unlit_difference = meanAbsoluteDifference(*lit, *unlit);
-	const double normal_flat_difference = meanAbsoluteDifference(*lit, *flat);
-	std::cout << "RenderLightingCaptureTests litMean=" << lit->mean
-		<< " litStdDev=" << lit->standard_deviation
-		<< " unlitMean=" << unlit->mean
-		<< " unlitStdDev=" << unlit->standard_deviation
-		<< " flatMean=" << flat->mean
-		<< " flatStdDev=" << flat->standard_deviation
-		<< " litUnlitMeanAbsDiff=" << lit_unlit_difference
-		<< " normalFlatMeanAbsDiff=" << normal_flat_difference << '\n';
-	if (lit->standard_deviation <= 1.0 || lit->mean >= 250.0 ||
-		lit_unlit_difference <= 0.01 || normal_flat_difference <= 0.01) {
-		return finish(12);
+	const auto lit_pixels = vve::test::imagePixels(lit_path);
+	const auto unlit_pixels = vve::test::imagePixels(unlit_path);
+	const auto flat_pixels = vve::test::imagePixels(flat_path);
+	if (!lit_pixels || !unlit_pixels || !flat_pixels || lit_pixels->size() != unlit_pixels->size() ||
+		lit_pixels->size() != flat_pixels->size()) { return 11; }
+	auto mask = std::vector<std::size_t>{};
+	// Pixel (0,0) is the clear colour; retain pixels differing by more than eight in any channel.
+	for (std::size_t offset{}; offset < unlit_pixels->size(); offset += 4U) {
+		if (std::ranges::any_of(std::views::iota(0U, 4U), [&](auto channel) {
+			return std::abs(static_cast<int>((*unlit_pixels)[offset + channel]) - (*unlit_pixels)[channel]) > 8;
+		})) { mask.push_back(offset); }
 	}
-	return finish(0);
+	std::cout << "RenderLightingCaptureTests maskedPixelCount=" << mask.size() << " minimumMaskedPixelCount=200\n";
+	if (mask.size() < 200U) { return 12; }
+	const auto lit = vve::test::imageStatistics(*lit_pixels, mask);
+	const auto unlit = vve::test::imageStatistics(*unlit_pixels, mask);
+	const auto flat = vve::test::imageStatistics(*flat_pixels, mask);
+	const double lit_unlit_difference = vve::test::meanAbsoluteDifference(*lit_pixels, *unlit_pixels, mask);
+	const double normal_flat_difference = vve::test::meanAbsoluteDifference(*lit_pixels, *flat_pixels, mask);
+	constexpr double minimum_lit_unlit_difference = 22.4555; // Half the measured Linux baseline of 44.911 RGBA byte units.
+	constexpr double minimum_normal_flat_difference = 5.6822; // Half the measured Linux baseline of 11.3644 RGBA byte units.
+	std::cout << "RenderLightingCaptureTests litMean=" << lit.mean
+		<< " litStdDev=" << lit.standard_deviation
+		<< " unlitMean=" << unlit.mean
+		<< " unlitStdDev=" << unlit.standard_deviation
+		<< " flatMean=" << flat.mean
+		<< " flatStdDev=" << flat.standard_deviation
+		<< " litUnlitMeanAbsDiff=" << lit_unlit_difference
+		<< " minimumLitUnlitMeanAbsDiff=" << minimum_lit_unlit_difference
+		<< " normalFlatMeanAbsDiff=" << normal_flat_difference
+		<< " minimumNormalFlatMeanAbsDiff=" << minimum_normal_flat_difference
+		<< " litUnlitMeanRatio=" << lit.mean / unlit.mean << " minimumLitUnlitMeanRatio=1.1\n";
+	if (lit.standard_deviation <= 1.0 || lit.mean >= 250.0 ||
+		lit_unlit_difference < minimum_lit_unlit_difference || normal_flat_difference < minimum_normal_flat_difference ||
+		lit.mean <= unlit.mean * 1.1) {
+		return 12;
+	}
+
+	// Cover the entire view with a known unlit colour, even while a directional light is active.
+	render.clearScene();
+	const auto plane = render.addPlane(vve::Vec2{4.0F, 4.0F},
+		vve::LinearColor{.value = vve::Vec3{0.5F, 0.25F, 1.0F}});
+	if (!plane || !render.setObjectUnlit(*plane, true)) { return 23; }
+	apply_view();
+	render.setCamera(vve::Camera::lookAt(vve::Position{.value = vve::Vec3{0.0F, 2.0F, 0.0F}}, vve::Position{}));
+	const auto unlit_plane_path = output_directory / "unlit_plane.png";
+	if (!engine.renderFrame() || !render.captureFrameToPng(unlit_plane_path)) { return 24; }
+	const auto unlit_plane_pixels = vve::test::imagePixels(unlit_plane_path);
+	if (!unlit_plane_pixels || unlit_plane_pixels->size() != 128U * 128U * 4U) { return 24; }
+	constexpr std::size_t centre = (64U * 128U + 64U) * 4U; ///< Centre pixel's RGBA byte offset in the 128x128 capture.
+	constexpr std::array<int, 3U> expected_colour{188, 137, 255}; ///< Linear (0.5, 0.25, 1.0) encoded as sRGB bytes.
+	std::println("RenderLightingCaptureTests unlitCentre=({},{},{}) expected=(188,137,255) tolerance=2",
+		(*unlit_plane_pixels)[centre], (*unlit_plane_pixels)[centre + 1U], (*unlit_plane_pixels)[centre + 2U]);
+	// Pin each colour channel independently so lighting or an extra transfer function cannot pass.
+	for (const auto channel : std::views::iota(0U, 3U)) {
+		if (std::abs(static_cast<int>((*unlit_plane_pixels)[centre + channel]) - expected_colour[channel]) > 2) { return 25; }
+	}
+#ifndef NDEBUG
+	// Validation includes every rendered and captured frame; unavailable layers leave the check inactive.
+	const auto &renderer = render.forward();
+	std::cout << "RenderLightingCaptureTests validationActive=" << renderer.validationActive()
+		<< " validationErrorCount=" << renderer.validationErrorCount() << '\n';
+	if (renderer.validationActive() && renderer.validationErrorCount() != 0U) { return 22; }
+#endif
+	return 0;
 }

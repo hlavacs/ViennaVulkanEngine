@@ -5,7 +5,7 @@ rem Builds the Vienna Vulkan Engine on Windows using the Ninja generator, which
 rem is required for C++23 `import std` (the Visual Studio generator does not
 rem support it). Mirrors build_linux.sh.
 rem
-rem Usage: build_windows.cmd [debug|release] [--clean] [--no-tests]
+rem Usage: build_windows.cmd [debug|release] [--clean] [--no-tests] [--docs]
 rem Requires: Vulkan SDK (VULKAN_SDK set), CMake, Visual Studio 2022+ with the
 rem           C++ workload (provides cl, CMake, CTest, and Ninja), and vcpkg.
 rem From PowerShell: .\build_windows.cmd debug
@@ -15,11 +15,12 @@ pushd "%~dp0" || exit /b 1
 set "VARIANT=release"
 set "CLEAN=0"
 set "RUN_TESTS=1"
+set "BUILD_DOCS=0"
 set "STAGE=Prerequisite checks"
 
 :parse
 if "%~1"=="" goto done_parse
-if /I "%~1"=="debug" (set "VARIANT=debug") else if /I "%~1"=="release" (set "VARIANT=release") else if /I "%~1"=="--clean" (set "CLEAN=1") else if /I "%~1"=="--no-tests" (set "RUN_TESTS=0") else if /I "%~1"=="-h" (goto usage) else if /I "%~1"=="--help" (goto usage) else (echo Unknown argument: %~1 & goto usage)
+if /I "%~1"=="debug" (set "VARIANT=debug") else if /I "%~1"=="release" (set "VARIANT=release") else if /I "%~1"=="--clean" (set "CLEAN=1") else if /I "%~1"=="--no-tests" (set "RUN_TESTS=0") else if /I "%~1"=="--docs" (set "BUILD_DOCS=1") else if /I "%~1"=="-h" (goto usage) else if /I "%~1"=="--help" (goto usage) else (echo Unknown argument: %~1 & goto usage)
 shift
 goto parse
 :done_parse
@@ -76,44 +77,24 @@ if "%CLEAN%"=="1" (
     if exist "%BUILD_DIR%" (echo Removing %BUILD_DIR% ... & rmdir /s /q "%BUILD_DIR%")
 )
 
-rem --- Diagnose the known AMD layer failure and embed only the proven workaround ---
-set "VVE_DISABLE_AMD_LAYER=OFF"
-set "VULKANINFO="
-if exist "%VULKAN_SDK%\Bin\vulkaninfo.exe" set "VULKANINFO=%VULKAN_SDK%\Bin\vulkaninfo.exe"
-if exist "%VULKAN_SDK%\Bin\vulkaninfoSDK.exe" set "VULKANINFO=%VULKAN_SDK%\Bin\vulkaninfoSDK.exe"
-if defined VULKANINFO (
-    if not exist "%BUILD_DIR%" mkdir "%BUILD_DIR%"
-    set "SAVED_VK_LAYERS_DISABLE=!VK_LOADER_LAYERS_DISABLE!"
-    set "VK_LOADER_LAYERS_DISABLE="
-    "!VULKANINFO!" --summary >"%BUILD_DIR%\vulkan-probe.log" 2>&1
-    if errorlevel 1 (
-        set "VK_LOADER_LAYERS_DISABLE=VK_LAYER_AMD_switchable_graphics"
-        "!VULKANINFO!" --summary >"%BUILD_DIR%\vulkan-probe-amd-disabled.log" 2>&1
-        if not errorlevel 1 (
-            set "VVE_DISABLE_AMD_LAYER=ON"
-            echo Detected incompatible AMD switchable-graphics layer. Built programs will disable it for their own process.
-        ) else (
-            echo Vulkan device discovery failed with and without the AMD layer. See %BUILD_DIR%\vulkan-probe*.log.
-        )
-    )
-    set "VK_LOADER_LAYERS_DISABLE=!SAVED_VK_LAYERS_DISABLE!"
-) else (
-    echo Vulkan SDK diagnostic tool not found; skipping the runtime compatibility check.
-)
-
 rem --- Configure with Ninja (single-config); import-std flags are set by CMakeLists.txt ---
 set "STAGE=CMake configuration"
 cmake -S . -B "%BUILD_DIR%" -G Ninja ^
     -DCMAKE_BUILD_TYPE=%CONFIG% ^
     -DVVE_DEFAULT_VULKAN_ICD=system ^
     -DVVE_ENGINE_IMPLEMENTATION_NAMESPACE=simple ^
-    -DVVE_VCPKG_TRIPLET=x64-windows ^
-    -DVVE_WINDOWS_DISABLE_AMD_SWITCHABLE_GRAPHICS=%VVE_DISABLE_AMD_LAYER%
+    -DVVE_VCPKG_TRIPLET=x64-windows
 if errorlevel 1 goto fail
 
 set "STAGE=Compilation and linking"
 cmake --build "%BUILD_DIR%"
 if errorlevel 1 goto fail
+
+if "%BUILD_DOCS%"=="1" (
+    set "STAGE=Doxygen documentation"
+    cmake --build "%BUILD_DIR%" --target docs
+    if errorlevel 1 goto fail
+)
 
 if "%RUN_TESTS%"=="1" (
     set "STAGE=Tests after successful compilation and linking"
@@ -127,7 +108,7 @@ popd
 exit /b 0
 
 :usage
-echo Usage: .\%~nx0 [debug^|release] [--clean] [--no-tests]   (default: release)
+echo Usage: .\%~nx0 [debug^|release] [--clean] [--no-tests] [--docs]   (default: release)
 popd
 exit /b 1
 

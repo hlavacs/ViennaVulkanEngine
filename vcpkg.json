@@ -12,6 +12,10 @@
       ]
     },
     "stb",
+    {
+      "name": "sdl3-mixer",
+      "features": ["mpg123"]
+    },
     "vulkan-memory-allocator",
     {
       "name": "sdl3",

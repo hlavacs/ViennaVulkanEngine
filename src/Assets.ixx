@@ -1,8 +1,8 @@
-export module VEEngine:Assets;
+export module VVEngine:Assets;
 import std;
 import :Implementation;
-import VEEngine.Error;
-import VEEngine.Types;
+import VVEngine.Error;
+import VVEngine.Types;
 
 /**
 	* @file
@@ -21,10 +21,6 @@ export namespace vve {
 
 		[[nodiscard]] auto addScene(ObjectName name)									-> std::expected<SceneHandle, Error>;
 		[[nodiscard]] auto loadScene(const std::filesystem::path &source)		-> std::expected<SceneHandle, Error>;
-		[[nodiscard]] inline std::expected<SceneHandle, Error> loadScene(const std::filesystem::path &source,
-																													 const SceneLoadOptions &options) {
-			return loadScene(source);
-		}																										///< Accepts facade scene-load options; honored as loader support grows.
 		[[nodiscard]] bool containsScene(SceneHandle scene) const;
 		[[nodiscard]] auto sceneName(SceneHandle scene) const						-> std::expected<ObjectName, Error>;
 		[[nodiscard]] auto sceneNodeCount(SceneHandle scene) const				-> std::expected<std::size_t, Error>;
@@ -37,7 +33,6 @@ export namespace vve {
 		[[nodiscard]] auto sceneNodes(SceneHandle scene) const					-> std::expected<Vector<NodeHandle>, Error>;
 		[[nodiscard]] auto sceneMeshes(SceneHandle scene) const					-> std::expected<Vector<MeshHandle>, Error>;
 		[[nodiscard]] auto sceneMaterials(SceneHandle scene) const				-> std::expected<Vector<MaterialHandle>, Error>;
-		[[nodiscard]] auto sceneTextures(SceneHandle scene) const				-> std::expected<Vector<TextureHandle>, Error>;
 		[[nodiscard]] auto sceneLights(SceneHandle scene) const					-> std::expected<Vector<LightHandle>, Error>;
 		[[nodiscard]] auto sceneCameras(SceneHandle scene) const					-> std::expected<Vector<CameraHandle>, Error>;
 		[[nodiscard]] auto lightData(LightHandle light) const					-> std::expected<LightDescriptor, Error>;
@@ -63,7 +58,6 @@ export namespace vve {
 		[[nodiscard]] auto meshIndices(MeshHandle mesh) const						-> std::expected<Vector<std::uint32_t>, Error>;
 
 		[[nodiscard]] auto materialName(MaterialHandle material) const			-> std::expected<ObjectName, Error>;
-		[[nodiscard]] auto materialTextures(MaterialHandle material) const	-> std::expected<Vector<TextureHandle>, Error>;
 
 	private:
 		template <typename... TSystems> friend class Engine;

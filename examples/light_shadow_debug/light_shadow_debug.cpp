@@ -1,30 +1,12 @@
 import std;
-import VEEngine;
+import VVEngine;
+import VVE.ExampleSupport;
 
 /**
  * @file
  * @brief Deterministic facade-renderer smoke scene for light/shadow example wiring.
  */
 namespace {
-
-/// @brief Reads the optional frame count used by automated example runs.
-[[nodiscard]] int frameLimit(int argc, char **argv) {
-	for (int index = 1; index + 1 < argc; ++index) {
-		if (argv[index] == nullptr || argv[index + 1] == nullptr) {
-			continue;
-		}
-		if (std::string_view{argv[index]} != "--frames") {
-			continue;
-		}
-		int value{};
-		const std::string_view text{argv[index + 1]};
-		const auto result = std::from_chars(text.data(), text.data() + text.size(), value);
-		if (result.ec == std::errc{} && value >= 0) {
-			return value;
-		}
-	}
-	return 1;
-}
 
 /// @brief Returns the stable text path used by automatic render verification.
 [[nodiscard]] std::filesystem::path outputPath(int argc, char **argv) {
@@ -124,6 +106,7 @@ namespace {
 
 } // namespace
 
+/// @brief Writes shadow diagnostics and fails when GPU samples, distinct layers, or the PNG are missing.
 int main(int argc, char **argv) {
 	std::cout << std::unitbuf;
 	std::cerr << std::unitbuf;
@@ -149,12 +132,12 @@ int main(int argc, char **argv) {
 		return 2;
 	}
 
-	const int maxFrames = frameLimit(argc, argv);
+	const int maxFrames = vve::example::frameLimit(argc, argv);
 	const auto path = outputPath(argc, argv);
 	const auto pngPath = pngOutputPath(path);
 	bool pngWritten{};
 	renderSystem.setShadowDepthReadback(true); // Compare CPU shadow depths against the rendered shadow maps in the report.
-	for (int frame{}; frame < maxFrames; ++frame) {
+	for (int frame{}; maxFrames == 0 || frame < maxFrames; ++frame) {
 		const auto status = engine.step();
 		if (!status) {
 			std::cerr << "[light_shadow_debug] frame failed: error=" << vve::errorName(status.error()) << '\n';
@@ -191,7 +174,8 @@ int main(int argc, char **argv) {
 	output << "spot_light=" << renderSystem.hasSceneSpotLight() << '\n';
 	// One row per shadow-casting light: CPU-projected origin depth versus the rendered shadow-map texel.
 	const auto samples = renderSystem.shadowDepthSamples();
-	const auto printSamples = [&output, &samples](std::string_view prefix, std::uint32_t lightType) {
+	bool samplesValid = std::ranges::all_of(samples, [](const auto &sample) { return sample.has_gpu; });
+	const auto printSamples = [&output, &samples, &samplesValid](std::string_view prefix, std::uint32_t lightType) {
 		std::size_t index{};
 		std::vector<std::uint32_t> layers{};
 		for (const auto &sample : samples) {
@@ -208,11 +192,18 @@ int main(int argc, char **argv) {
 		const bool distinct = layers.size() >= 2 && std::ranges::adjacent_find(layers) == layers.end(); // Stable aggregate verdict for automated parsing.
 		output << prefix << "_shadow_sample_count=" << index << '\n';
 		output << prefix << "_shadow_layers_distinct=" << (layers.size() >= 2 ? (distinct ? "1" : "0") : "none") << '\n';
+		samplesValid = samplesValid && (layers.size() < 2 || distinct);
 	};
 	printSamples("spot", 1U);
 	printSamples("point", 2U);
 	printSamples("directional", 3U);
 	output << "png_written=" << pngWritten << '\n';
+	output.close(); // Preserve the diagnostic report before returning a failed verification.
 	std::cout << "[light_shadow_debug] frames=" << maxFrames << '\n';
+	if (!samplesValid || !pngWritten) {
+		std::cerr << "[light_shadow_debug] verification failed: samples_valid=" << samplesValid
+			<< " png_written=" << pngWritten << '\n';
+		return 6;
+	}
 	return 0;
 }
