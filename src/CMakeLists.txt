@@ -82,11 +82,6 @@ target_sources(ViennaVulkanEngine
             Audio.ixx
             Engine.ixx
             implementations/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}.ixx
-    PRIVATE
-        Assets.cpp
-        Gui.cpp
-        RenderSystem.cpp
-        Window.cpp
 )
 
 if(MSVC)

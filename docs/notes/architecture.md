@@ -332,10 +332,10 @@ cameras). The ECS sits in the world but nothing in rendering reads it; cameras a
 through `RenderSystem` calls, not through entities. Whether the ECS drives rendering or leaves the world is a teaching
 decision, but one of the two should happen.
 
-**Facade duplication.** Every public method is mirrored 1:1 (`src/RenderSystem.cpp` 291 lines of
-one-line forwards, `Assets.cpp` 199, `Window.cpp` 171). The vocabulary in `src/Types.ixx` (about
-280 lines) is shared by both layers, not duplicated. The forwarding is the price of an
-implementation-independent ABI; it is fine as long as a second implementation is planned,
+**Facade duplication.** Public wrapper methods forward to the selected implementation from their
+class definitions in `src/RenderSystem.ixx`, `Assets.ixx`, `Gui.ixx` and `Window.ixx`; these facades
+need no separate `.cpp` implementation units. The vocabulary in `src/Types.ixx` is shared by both
+layers, not duplicated. The forwarding provides a common public API; it is fine as long as a second implementation is planned,
 otherwise it is the largest pure overhead left.
 
 **Shared containers.** `Vector.ixx` defines `vve::Vector<T>` as an alias of `std::vector<T>`;

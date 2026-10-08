@@ -99,30 +99,53 @@ export namespace vve {
 		InputState &operator=(const InputState &) = delete;
 		InputState &operator=(InputState &&) noexcept = delete;
 
-		void beginFrame();
-		void holdKey(std::int32_t keycode);
-		void pressKey(std::int32_t keycode);
-		void releaseKey(std::int32_t keycode);
-		void setMousePosition(WindowHandle window, Vec2 position);
-		void addMouseDelta(WindowHandle window, Vec2 delta);
-		void addMouseWheelDelta(WindowHandle window, Vec2 delta);
+		/// @brief Starts a new input frame in the selected implementation.
+		inline void beginFrame() { impl_.beginFrame(); }
+		/// @brief Marks a key as held in the selected implementation.
+		inline void holdKey(std::int32_t keycode) { impl_.holdKey(keycode); }
+		/// @brief Marks a key press transition in the selected implementation.
+		inline void pressKey(std::int32_t keycode) { impl_.pressKey(keycode); }
+		/// @brief Marks a key release transition in the selected implementation.
+		inline void releaseKey(std::int32_t keycode) { impl_.releaseKey(keycode); }
+		/// @brief Stores a per-window mouse position in the selected implementation.
+		inline void setMousePosition(WindowHandle window, Vec2 position) {
+			impl_.setMousePosition(window, position);
+		}
+		/// @brief Accumulates a per-window mouse movement delta in the selected implementation.
+		inline void addMouseDelta(WindowHandle window, Vec2 delta) { impl_.addMouseDelta(window, delta); }
+		/// @brief Accumulates a per-window mouse wheel delta in the selected implementation.
+		inline void addMouseWheelDelta(WindowHandle window, Vec2 delta) {
+			impl_.addMouseWheelDelta(window, delta);
+		}
 
-		[[nodiscard]] bool isKeyDown(std::int32_t keycode) const;
-		[[nodiscard]] bool isKeyDown(Key key) const;
-		[[nodiscard]] bool wasKeyPressed(std::int32_t keycode) const;
-		[[nodiscard]] bool wasKeyPressed(Key key) const;
-		[[nodiscard]] bool wasKeyReleased(std::int32_t keycode) const;
-		[[nodiscard]] bool wasKeyReleased(Key key) const;
-		[[nodiscard]] auto mousePosition(WindowHandle window) const -> std::optional<Vec2>; ///< Normalised window coordinates: (0,0) top left, (1,1) bottom right, y down.
+		/// @brief Reports whether a raw keycode is currently down.
+		[[nodiscard]] inline bool isKeyDown(std::int32_t keycode) const { return impl_.isKeyDown(keycode); }
+		/// @brief Reports whether a facade key is currently down.
+		[[nodiscard]] inline bool isKeyDown(Key key) const { return isKeyDown(static_cast<std::int32_t>(key)); }
+		/// @brief Reports whether a raw keycode was pressed during the current frame.
+		[[nodiscard]] inline bool wasKeyPressed(std::int32_t keycode) const { return impl_.wasKeyPressed(keycode); }
+		/// @brief Reports whether a facade key was pressed during the current frame.
+		[[nodiscard]] inline bool wasKeyPressed(Key key) const { return wasKeyPressed(static_cast<std::int32_t>(key)); }
+		/// @brief Reports whether a raw keycode was released during the current frame.
+		[[nodiscard]] inline bool wasKeyReleased(std::int32_t keycode) const { return impl_.wasKeyReleased(keycode); }
+		/// @brief Reports whether a facade key was released during the current frame.
+		[[nodiscard]] inline bool wasKeyReleased(Key key) const { return wasKeyReleased(static_cast<std::int32_t>(key)); }
+		/// @brief Returns the last known mouse position for a window when one is available.
+		[[nodiscard]] inline auto mousePosition(WindowHandle window) const -> std::optional<Vec2> {
+			return impl_.mousePosition(window);
+		} ///< Normalised window coordinates: (0,0) top left, (1,1) bottom right, y down.
 		///< Values can leave 0..1 while a drag continues outside the window.
-		[[nodiscard]] Vec2 mouseDelta(WindowHandle window) const; ///< Uses the same normalised units; mouse-look code must scale x by the aspect ratio for equal angles per distance.
-		[[nodiscard]] Vec2 mouseWheelDelta(WindowHandle window) const; ///< Wheel movement in scroll ticks.
+		/// @brief Returns the accumulated mouse movement delta for a window.
+		[[nodiscard]] inline Vec2 mouseDelta(WindowHandle window) const { return impl_.mouseDelta(window); } ///< Uses the same normalised units; mouse-look code must scale x by the aspect ratio for equal angles per distance.
+		/// @brief Returns the accumulated mouse wheel delta for a window.
+		[[nodiscard]] inline Vec2 mouseWheelDelta(WindowHandle window) const { return impl_.mouseWheelDelta(window); } ///< Wheel movement in scroll ticks.
 
 	private:
 		friend class WindowSystem;
 
 		using Impl = detail::InputStateImpl;	///< Wrapped implementation class.
-		explicit InputState(Impl &implementation) noexcept;
+		/// @brief Binds the facade wrapper to the implementation object owned by the engine.
+		inline explicit InputState(Impl &implementation) noexcept : impl_{implementation} {}
 
 		Impl &impl_;	///< Non-owning reference to the wrapped implementation.
 	};	///< Facade input snapshot.
@@ -130,7 +153,41 @@ export namespace vve {
 	/// @brief Reusable keyboard-driven camera controller for application cameras.
 	class DefaultCameraController {
 	public:
-		[[nodiscard]] auto update(const InputState &input, DeltaTime dt) -> Camera;
+		/**
+			* @brief Applies the default keyboard camera motion and returns the resulting facade camera.
+			* @param input Current facade input snapshot used for continuous movement and turning.
+			* @param dt Elapsed seconds, clamped to [0, 0.1] to bound motion after a stall.
+			* @return Camera looking from the updated eye position along the updated forward vector.
+			*/
+		[[nodiscard]] inline auto update(const InputState &input, DeltaTime dt) -> Camera {
+			const Vec3 worldUp{zero(), one(), zero()};	///< Stable up axis for view and flight.
+			const auto seconds = static_cast<Scalar>(std::clamp(dt.seconds, 0.0, 0.1));
+
+			// Shift doubles both turning and movement for the current frame.
+			const Scalar boost = input.isKeyDown(Key::left_shift) || input.isKeyDown(Key::right_shift) ? static_cast<Scalar>(2) : one();
+			const Scalar turnStep = turn_speed * seconds * boost;
+			const Scalar movementStep = move_speed * seconds * boost;
+
+			// Update view angles before movement so the current frame moves in the new direction.
+			if (input.isKeyDown(Key::left)) { yaw -= turnStep; }
+			if (input.isKeyDown(Key::right)) { yaw += turnStep; }
+			if (input.isKeyDown(Key::up)) { pitch -= turnStep; }
+			if (input.isKeyDown(Key::down)) { pitch += turnStep; }
+			pitch = math::clamp(pitch, -max_pitch, max_pitch);
+
+			// Rebuild camera basis after clamping to preserve the original example feel.
+			const auto forward = math::normalize(Vec3{std::cos(pitch) * std::sin(yaw), std::sin(pitch),
+											 -std::cos(pitch) * std::cos(yaw)});
+			const Vec3 right = math::normalize(math::cross(forward, worldUp));
+			if (input.isKeyDown(Key::w)) { eye.value = math::add(eye.value, math::scale(forward, movementStep)); }
+			if (input.isKeyDown(Key::s)) { eye.value = math::subtract(eye.value, math::scale(forward, movementStep)); }
+			if (input.isKeyDown(Key::a)) { eye.value = math::subtract(eye.value, math::scale(right, movementStep)); }
+			if (input.isKeyDown(Key::d)) { eye.value = math::add(eye.value, math::scale(right, movementStep)); }
+			if (input.isKeyDown(Key::q)) { eye.value = math::subtract(eye.value, math::scale(worldUp, movementStep)); }
+			if (input.isKeyDown(Key::e)) { eye.value = math::add(eye.value, math::scale(worldUp, movementStep)); }
+
+			return Camera::lookAt(eye, Position{.value = math::add(eye.value, forward)}, Direction{.value = worldUp});
+		}
 
 		Position eye{.value = Vec3{0.0F, 6.0F, 9.0F}};	///< Camera eye position.
 		Scalar yaw{};													///< Horizontal look angle around the up axis.
@@ -147,20 +204,29 @@ export namespace vve {
 		Window &operator=(const Window &) = delete;
 		Window &operator=(Window &&) noexcept = delete;
 
-		[[nodiscard]] WindowHandle handle() const;
-		[[nodiscard]] std::string_view id() const;
-		[[nodiscard]] std::string_view title() const;
-		[[nodiscard]] PixelExtent extent() const; ///< Drawable size in pixels.
-		[[nodiscard]] RendererId rendererId() const;
-		[[nodiscard]] bool focused() const;
-		[[nodiscard]] bool minimized() const;
-		[[nodiscard]] bool shouldClose() const;
+		/// @brief Returns the stable runtime handle of the selected implementation window.
+		[[nodiscard]] inline WindowHandle handle() const { return impl_.info().handle; }
+		/// @brief Returns the application-local id of the selected implementation window.
+		[[nodiscard]] inline std::string_view id() const { return impl_.info().id; }
+		/// @brief Returns the platform title of the selected implementation window.
+		[[nodiscard]] inline std::string_view title() const { return impl_.info().title; }
+		/// @brief Returns the current pixel extent of the selected implementation window.
+		[[nodiscard]] inline PixelExtent extent() const { return impl_.info().extent; } ///< Drawable size in pixels.
+		/// @brief Returns the renderer id associated with the selected implementation window.
+		[[nodiscard]] inline RendererId rendererId() const { return impl_.info().renderer_id; }
+		/// @brief Reports whether the selected implementation window currently has focus.
+		[[nodiscard]] inline bool focused() const { return impl_.info().focused; }
+		/// @brief Reports whether the selected implementation window is minimized.
+		[[nodiscard]] inline bool minimized() const { return impl_.info().minimized; }
+		/// @brief Reports whether the selected implementation window received a close request.
+		[[nodiscard]] inline bool shouldClose() const { return impl_.info().should_close; }
 
 	private:
 		friend class WindowSystem;
 
 		using Impl = detail::WindowImpl;	///< Wrapped implementation class.
-		explicit Window(const Impl &implementation) noexcept;
+		/// @brief Binds the facade wrapper to the implementation object owned by the engine.
+		inline explicit Window(const Impl &implementation) noexcept : impl_{implementation} {}
 
 		const Impl &impl_;	///< Non-owning reference to the wrapped implementation.
 	};	///< Read-only facade window view.
@@ -172,19 +238,43 @@ export namespace vve {
 		WindowSystem &operator=(const WindowSystem &) = delete;
 		WindowSystem &operator=(WindowSystem &&) noexcept = delete;
 
-		[[nodiscard]] std::string_view name() const noexcept;
-		[[nodiscard]] InputState input();
-		[[nodiscard]] InputState input() const;
-		[[nodiscard]] std::size_t windowCount() const;
-		[[nodiscard]] auto windows() const														-> Vector<Window>;
-		[[nodiscard]] auto findWindow(std::string_view id) const							-> std::optional<Window>;
-		[[nodiscard]] auto findWindow(WindowHandle handle) const							-> std::optional<Window>;
+		/// @brief Returns the diagnostic name of the selected window system implementation.
+		[[nodiscard]] inline std::string_view name() const noexcept { return impl_.name(); }
+		/// @brief Returns a facade input view for the window system's owned input state.
+		[[nodiscard]] inline InputState input() { return InputState{impl_.input()}; }
+		/// @brief Returns a facade input view for the window system's owned input state.
+		[[nodiscard]] inline InputState input() const { return InputState{impl_.input()}; }
+		/// @brief Returns the number of windows owned by the selected implementation.
+		[[nodiscard]] inline std::size_t windowCount() const { return impl_.windowCount(); }
+		/// @brief Returns facade views over the windows currently owned by the selected implementation.
+		[[nodiscard]] inline auto windows() const -> Vector<Window> {
+			Vector<Window> result{};
+			const auto implementation_windows = impl_.windows();
+			result.reserve(implementation_windows.size());
+			for (const auto window : implementation_windows) {
+				result.push_back(Window{window.get()});
+			}
+			return result;
+		}
+		/// @brief Finds a facade window view by application-local id.
+		[[nodiscard]] inline auto findWindow(std::string_view id) const -> std::optional<Window> {
+			auto *window = impl_.findWindow(id);
+			return window == nullptr ? std::optional<Window>{}
+											 : std::optional<Window>{Window{*window}};
+		}
+		/// @brief Finds a facade window view by runtime handle.
+		[[nodiscard]] inline auto findWindow(WindowHandle handle) const -> std::optional<Window> {
+			auto *window = impl_.findWindow(handle);
+			return window == nullptr ? std::optional<Window>{}
+											 : std::optional<Window>{Window{*window}};
+		}
 
 	private:
 		template <typename... TSystems> friend class Engine;
 
 		using Impl = detail::WindowSystemImpl;	///< Wrapped implementation class.
-		explicit WindowSystem(Impl &implementation) noexcept;
+		/// @brief Binds the facade wrapper to the implementation object owned by the engine.
+		inline explicit WindowSystem(Impl &implementation) noexcept : impl_{implementation} {}
 
 		Impl &impl_;	///< Non-owning reference to the wrapped implementation.
 	};	///< Public window-system wrapper.
