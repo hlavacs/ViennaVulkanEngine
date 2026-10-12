@@ -87,7 +87,7 @@ int main() {
 	// Resident generations need neither CPU pixels nor another decode during an unchanged frame.
 	const auto initial_decodes = render.textureDecodeCount();
 	const auto resident = render.forward().uploadedTextureGeneration(0U);
-	if (resident == 0U || render.forward().uploadedTextureGeneration(vve::simple::kMaxSceneTextures) != 0U ||
+	if (resident == 0U || render.forward().uploadedTextureGeneration(render.forward().textureCapacity()) != 0U ||
 		!engine.renderFrame() || render.textureDecodeCount() != initial_decodes || render.sceneTexturePixelBytes() != 0U ||
 		render.gpuTextureCount() != 1U || render.forward().uploadedTextureGeneration(0U) != resident) { return 41; }
 
@@ -221,10 +221,12 @@ int main() {
 		render.renderMaterials().back().normal_texture_index != height_slot || render.sceneTextureCount() != 1U ||
 		!render.sceneTextureIsLinear(height_slot).value_or(false)) { return 38; }
 	render.clearScene();
-	// Every texture slot can be filled; one more texture is reported as an error instead of rendering untextured.
+	// Bound GPU allocations on devices with large arrays; the CPU capacity test checks full-table errors separately.
+	const auto gpu_test_slots = std::min<std::size_t>(render.forward().textureCapacity(), 4U);
+	if (gpu_test_slots == 0U) { return 13; }
 	auto cap_objects = std::vector<vve::RenderObjectHandle>{};
 	auto cap_paths = std::vector<std::filesystem::path>{};
-	for (std::size_t index{}; index < vve::simple::kMaxSceneTextures + 1U; ++index) {
+	for (std::size_t index{}; index < gpu_test_slots + 1U; ++index) {
 		const auto path = cap_directory / ("texture-" + std::to_string(index) + ".ppm");
 		auto output = std::ofstream{path, std::ios::binary};
 		const auto pixels = std::array<char, 12U>{
@@ -236,19 +238,20 @@ int main() {
 		output.write(pixels.data(), static_cast<std::streamsize>(pixels.size()));
 		output.close();
 		cap_paths.push_back(path);
+		if (!output) { return 13; }
+		if (index == gpu_test_slots) { continue; } // The extra source replaces a released slot below.
 		const auto object = render.addTexturedCuboid(minimum, maximum, path);
-		const bool expected = index < vve::simple::kMaxSceneTextures ? object.has_value() :
-			(!object && object.error() == vve::Error::capacity_exceeded);
-		if (!output || !expected) {
+		if (!object) {
 			return 13;
 		}
-		if (object) { cap_objects.push_back(*object); }
+		cap_objects.push_back(*object);
 	}
-	if (render.sceneTextureCount() != vve::simple::kMaxSceneTextures ||
-		!engine.renderFrame() || render.gpuTextureCount() != vve::simple::kMaxSceneTextures) {
+	if (render.sceneTextureCount() != gpu_test_slots ||
+		!engine.renderFrame() || render.gpuTextureCount() != gpu_test_slots) {
 		return 14;
 	}
-	std::cout << "cap sceneTextureCount=" << render.sceneTextureCount()
+	std::cout << "capacity=" << render.forward().textureCapacity() << " testedSlots=" << gpu_test_slots
+				 << " sceneTextureCount=" << render.sceneTextureCount()
 				 << " gpuTextureCount=" << render.gpuTextureCount() << '\n';
 
 	// Removing an object and purging frees its texture slot, which the next texture reuses.
@@ -257,9 +260,9 @@ int main() {
 	}
 	(void)render.purgeUnusedAssets();
 	const auto reused = render.addTexturedCuboid(minimum, maximum, cap_paths.back());
-	if (!reused || render.sceneTextureCount() != vve::simple::kMaxSceneTextures ||
+	if (!reused || render.sceneTextureCount() != gpu_test_slots ||
 		render.renderMaterials().back().base_color_texture_index != 0U ||
-		!engine.renderFrame() || render.gpuTextureCount() != vve::simple::kMaxSceneTextures) {
+		!engine.renderFrame() || render.gpuTextureCount() != gpu_test_slots) {
 		return 17;
 	}
 	std::cout << "reuse sceneTextureCount=" << render.sceneTextureCount()

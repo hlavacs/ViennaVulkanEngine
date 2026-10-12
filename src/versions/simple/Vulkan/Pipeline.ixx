@@ -27,7 +27,7 @@ import std;
 	*
 	* Functional objects:
 	* - ObjectPushConstants stores per-object draw data copied through Vulkan push constants.
-	* - shaderBinding / kDescriptorSetBindings define the set-0 layout that simple_forward.slang must match.
+	* - materialTextureCapacity / descriptorSetBindings select the device-sized set-0 layout used by simple_forward.slang.
 	* - VulkanDescriptorSetLayout owns only VkDescriptorSetLayout creation and teardown for set 0.
 	* - VulkanVertexInputDescription stores the fixed RenderVertex binding and attribute layout for the forward pipeline.
 	* - VulkanPipelineLayout owns only VkPipelineLayout creation and teardown for one descriptor set and model push constants.
@@ -70,38 +70,50 @@ export namespace vve::simple {
 		inline constexpr std::uint32_t materials{VVE_MATERIAL_BINDING}; ///< StructuredBuffer<GpuMaterial> materials.
 	} // namespace shaderBinding
 
-	/// @brief Descriptor-set layout of set 0, shared by the forward and shadow pipelines.
-	inline constexpr std::array<VkDescriptorSetLayoutBinding, 6U> kDescriptorSetBindings{{
+	/// @brief Returns the material slots allowed by all descriptor limits, reserving three shadows, two buffers and one color attachment.
+	[[nodiscard]] inline std::uint32_t materialTextureCapacity(const VkPhysicalDeviceLimits &limits) {
+		const auto imageSamplerLimit = std::min({limits.maxPerStageDescriptorSamplers, limits.maxDescriptorSetSamplers,
+			limits.maxPerStageDescriptorSampledImages, limits.maxDescriptorSetSampledImages});
+		return std::min(imageSamplerLimit > 3U ? imageSamplerLimit - 3U : 0U,
+			limits.maxPerStageResources > 6U ? limits.maxPerStageResources - 6U : 0U);
+	}
+
+	/// @brief Descriptor-set layout of set 0; the material array uses the renderer's selected device capacity.
+	[[nodiscard]] inline auto descriptorSetBindings(std::uint32_t textureCapacity) {
+		return std::array<VkDescriptorSetLayoutBinding, 6U>{{
 		{.binding = shaderBinding::frameUniforms, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT},
-		{.binding = shaderBinding::baseColorTextures, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = static_cast<std::uint32_t>(kMaxSceneTextures), .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::baseColorTextures, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = textureCapacity, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::spotShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::dirShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::pointShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::materials, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
-	}};
-	static_assert(kDescriptorSetBindings[shaderBinding::materials].stageFlags == VK_SHADER_STAGE_FRAGMENT_BIT); ///< Only fragments read the material buffer.
+		}};
+	}
 
 	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms, shadow maps, and one object texture; no pipeline layout is created here.
 	struct VulkanDescriptorSetLayout {
 		VulkanOwnedHandle<vk::raii::DescriptorSetLayout, VkDescriptorSetLayout> descriptorSetLayout{}; ///< Owned descriptor-set layout for set 0 frame uniforms, shadow maps, and object texture.
+		std::array<VkDescriptorSetLayoutBinding, 6U> bindings{}; ///< Device-sized binding counts also used to allocate each window's descriptor pool.
 
 		VulkanDescriptorSetLayout() = default;
 		VulkanDescriptorSetLayout(const VulkanDescriptorSetLayout &) = delete;
 		VulkanDescriptorSetLayout &operator=(const VulkanDescriptorSetLayout &) = delete;
 
 		/**
-			* @brief Creates set 0 from kDescriptorSetBindings.
+			* @brief Creates set 0 with the device-selected material texture capacity.
 			*
 			* @param owningDevice Logical device that owns the created descriptor-set layout.
+			* @param textureCapacity Material texture slots available in the shader and descriptor sets.
 			* @return VK_SUCCESS when the descriptor-set layout is available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::uint32_t textureCapacity) {
 			cleanup();
-			if (owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (owningDevice == VK_NULL_HANDLE || textureCapacity == 0U) { return VK_ERROR_INITIALIZATION_FAILED; }
+			bindings = descriptorSetBindings(textureCapacity);
 			const VkDescriptorSetLayoutCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-				.bindingCount = static_cast<std::uint32_t>(kDescriptorSetBindings.size()),
-				.pBindings = kDescriptorSetBindings.data(),
+				.bindingCount = static_cast<std::uint32_t>(bindings.size()),
+				.pBindings = bindings.data(),
 			};
 
 			VkDescriptorSetLayout rawLayout{VK_NULL_HANDLE};
@@ -234,20 +246,24 @@ export namespace vve::simple {
 			* @param vertexInput Borrowed vertex binding and attribute description used by the pipeline.
 			* @param colorAttachmentFormat Color format, VK_FORMAT_UNDEFINED for depth-only pipelines.
 			* @param depthAttachmentFormat Depth format of the depth attachment.
+			* @param textureCapacity Device-selected fragment texture-array specialization; unused by depth-only pipelines.
 			* @return VK_SUCCESS when the graphics pipeline is available, otherwise a Vulkan error code.
 			*/
 		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkPipelineLayout pipelineLayout, VkShaderModule vertexModule, const char *vertexEntry,
-											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat) {
+											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat, std::uint32_t textureCapacity = 0U) {
 			cleanup();
 			const bool depthOnly{fragmentModule == VK_NULL_HANDLE};
 			if (owningDevice == VK_NULL_HANDLE || pipelineLayout == VK_NULL_HANDLE || vertexModule == VK_NULL_HANDLE || depthAttachmentFormat == VK_FORMAT_UNDEFINED ||
-				 (!depthOnly && colorAttachmentFormat == VK_FORMAT_UNDEFINED)) {
+				 (!depthOnly && (colorAttachmentFormat == VK_FORMAT_UNDEFINED || textureCapacity == 0U))) {
 				return VK_ERROR_INITIALIZATION_FAILED;
 			}
 
+			// Specialize the embedded shader at pipeline creation; no runtime compiler or descriptor-indexing extension is needed.
+			const VkSpecializationMapEntry textureCapacityEntry{VVE_TEXTURE_CAPACITY_CONSTANT_ID, 0U, sizeof(textureCapacity)};
+			const VkSpecializationInfo specialization{1U, &textureCapacityEntry, sizeof(textureCapacity), &textureCapacity};
 			const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{{
 				{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_VERTEX_BIT, .module = vertexModule, .pName = vertexEntry},
-				{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_FRAGMENT_BIT, .module = fragmentModule, .pName = "fragmentMain"},
+				{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_FRAGMENT_BIT, .module = fragmentModule, .pName = "fragmentMain", .pSpecializationInfo = &specialization},
 			}};
 			const VkVertexInputBindingDescription &binding = vertexInput.binding;
 			const auto &attributes = vertexInput.attributes;

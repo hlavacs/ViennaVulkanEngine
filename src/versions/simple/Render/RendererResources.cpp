@@ -114,14 +114,23 @@ namespace vve::simple {
 
 		VkPhysicalDeviceProperties deviceProperties{};
 		vkGetPhysicalDeviceProperties(physicalDevice.physicalDevice, &deviceProperties);
-		constexpr auto shadowSamplerCount = 3U; ///< Spot, directional, and point shadow arrays share the fragment stage.
-		const auto requiredSamplerCount = static_cast<std::uint32_t>(kMaxSceneTextures) + shadowSamplerCount;
-		if (deviceProperties.limits.maxPerStageDescriptorSamplers < requiredSamplerCount) {
-			std::cerr << "[vve::simple] renderer init failed: maxPerStageDescriptorSamplers="
-				<< deviceProperties.limits.maxPerStageDescriptorSamplers << " requires " << requiredSamplerCount << '\n';
+		const auto capacity = materialTextureCapacity(deviceProperties.limits);
+		if (capacity == 0U) {
+			std::cerr << "[vve::simple] renderer init failed: device descriptor limits leave no material texture slot.\n";
 			cleanup();
 			return VK_ERROR_FEATURE_NOT_PRESENT;
 		}
+		// Existing CPU scenes must fit the selected device; report overflow instead of dropping material textures.
+		if (renderScene_ != nullptr) {
+			const auto fit = renderScene_->setTextureCapacity(capacity);
+			if (!fit) {
+				textureUploadError_ = fit.error();
+				std::cerr << "[vve::simple] renderer init failed: scene exceeds device texture capacity=" << capacity << '\n';
+				cleanup();
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+		}
+		textureCapacity_ = capacity;
 
 		result = device.create(physicalDevice);
 		if (result != VK_SUCCESS) { cleanup(); return result; }
@@ -149,14 +158,6 @@ namespace vve::simple {
 													  std::min<std::uint32_t>(deviceProperties.apiVersion, VK_API_VERSION_1_3)); ///< VMA needs a version both instance and device support.
 		if (result != VK_SUCCESS) { cleanup(); return result; }
 
-		result = descriptorSetLayout.create(device.device);
-		if (result != VK_SUCCESS) { cleanup(); return result; }
-
-		VulkanVertexInputDescription vertexInput{}; // Fixed mesh vertex layout shared by forward and shadow pipelines.
-
-		result = pipelineLayout.create(device.device, descriptorSetLayout.descriptorSetLayout);
-		if (result != VK_SUCCESS) { cleanup(); return result; }
-
 		result = vertShaderModule.create(device.device, simple_forward_vert_spv);
 		if (result != VK_SUCCESS) { cleanup(); return result; }
 
@@ -166,13 +167,7 @@ namespace vve::simple {
 		result = shadowShaderModule.create(device.device, simple_forward_shadow_vert_spv);
 		if (result != VK_SUCCESS) { cleanup(); return result; }
 
-		result = graphicsPipeline.create(device.device, pipelineLayout.pipelineLayout, vertShaderModule.shaderModule, "vertexMain",
-															  fragShaderModule.shaderModule, vertexInput, hdrFormat, depthFormat);
-		if (result != VK_SUCCESS) { cleanup(); return result; }
-		++forwardPipelineCreateCount_;
-
-		result = shadowPipeline.create(device.device, pipelineLayout.pipelineLayout, shadowShaderModule.shaderModule, "shadowVertexMain",
-															VK_NULL_HANDLE, vertexInput, VK_FORMAT_UNDEFINED, depthFormat);
+		result = ensureTextureCapacity();
 		if (result != VK_SUCCESS) { cleanup(); return result; }
 
 		result = commandPool.create(device.device, *physicalDevice.graphicsQueueFamily);
@@ -258,24 +253,8 @@ namespace vve::simple {
 		result = target.uniformBuffers.create(allocator, framesInFlight);
 		if (result != VK_SUCCESS) { return result; }
 
-		result = target.descriptorPool.create(device.device, framesInFlight);
+		result = createSceneDescriptors(target);
 		if (result != VK_SUCCESS) { return result; }
-
-		result = target.descriptorSets.create(device.device, target.descriptorPool.descriptorPool, descriptorSetLayout.descriptorSetLayout, framesInFlight);
-		if (result != VK_SUCCESS) { return result; }
-
-		// Fresh sets have no GPU users; initialize every slot before the first submission.
-		target.materialsDirty.set();
-		target.shadowsDirty.set();
-		for (auto &dirty : target.texturesDirty) { dirty.set(); }
-		for (std::uint32_t frame{}; frame < framesInFlight; ++frame) {
-			result = target.descriptorSets.writeUniformBuffer(frame, target.uniformBuffers.buffers[frame].buffer, sizeof(FrameUniforms));
-			if (result != VK_SUCCESS) { return result; }
-			result = writeShadowDescriptors(target, frame);
-			if (result != VK_SUCCESS) { return result; }
-			result = writeSceneDescriptors(target, frame);
-			if (result != VK_SUCCESS) { return result; }
-		}
 
 		// An additional window starts with both vertex slots pending for meshes already made dynamic.
 		for (const auto &[handle, mesh] : meshes) {
@@ -291,6 +270,78 @@ namespace vve::simple {
 			} catch (const std::exception &) { return VK_ERROR_INITIALIZATION_FAILED; }
 		}
 
+		return VK_SUCCESS;
+	}
+
+	/// @brief Creates the shared forward/shadow pipelines with a matching specialized material descriptor array.
+	VkResult ForwardRenderer::createScenePipelines(std::uint32_t textureCount) {
+		graphicsPipeline.cleanup();
+		shadowPipeline.cleanup();
+		pipelineLayout.cleanup();
+		VkResult result = descriptorSetLayout.create(device.device, textureCount);
+		if (result != VK_SUCCESS) { return result; }
+		result = pipelineLayout.create(device.device, descriptorSetLayout.descriptorSetLayout);
+		if (result != VK_SUCCESS) { return result; }
+		const VulkanVertexInputDescription vertexInput{};
+		result = graphicsPipeline.create(device.device, pipelineLayout.pipelineLayout, vertShaderModule.shaderModule, "vertexMain",
+			fragShaderModule.shaderModule, vertexInput, hdrFormat, depthFormat, textureCount);
+		if (result != VK_SUCCESS) { return result; }
+		++forwardPipelineCreateCount_;
+		return shadowPipeline.create(device.device, pipelineLayout.pipelineLayout, shadowShaderModule.shaderModule, "shadowVertexMain",
+			VK_NULL_HANDLE, vertexInput, VK_FORMAT_UNDEFINED, depthFormat);
+	}
+
+	/// @brief Allocates and fills a window's two frame sets; called at startup or after an idle descriptor-array growth.
+	VkResult ForwardRenderer::createSceneDescriptors(WindowTarget &target) {
+		const auto count = static_cast<std::uint32_t>(objectTextures.size());
+		target.descriptorSets.cleanup();
+		VkResult result = target.descriptorPool.create(device.device, framesInFlight, descriptorSetLayout.bindings);
+		if (result != VK_SUCCESS) { return result; }
+		result = target.descriptorSets.create(device.device, target.descriptorPool.descriptorPool, descriptorSetLayout.descriptorSetLayout, framesInFlight, count);
+		if (result != VK_SUCCESS) { return result; }
+		// Fresh sets have no GPU users; initialize every slot before the first submission.
+		target.materialsDirty.set();
+		target.shadowsDirty.set();
+		for (auto &dirty : target.texturesDirty) { dirty.assign(count, true); }
+		for (std::uint32_t frame{}; frame < framesInFlight; ++frame) {
+			result = target.descriptorSets.writeUniformBuffer(frame, target.uniformBuffers.buffers[frame].buffer, sizeof(FrameUniforms));
+			if (result != VK_SUCCESS) { return result; }
+			result = writeShadowDescriptors(target, frame);
+			if (result != VK_SUCCESS) { return result; }
+			result = writeSceneDescriptors(target, frame);
+			if (result != VK_SUCCESS) { return result; }
+		}
+		return VK_SUCCESS;
+	}
+
+	/// @brief Grows texture owners and descriptors geometrically within device limits, synchronizing only a layout change.
+	VkResult ForwardRenderer::ensureTextureCapacity() {
+		const auto needed = std::max<std::size_t>(1U, renderScene_ != nullptr ? renderScene_->textures().size() : 0U);
+		if (needed <= objectTextures.size()) { return VK_SUCCESS; }
+		if (needed > textureCapacity_) {
+			textureUploadError_ = Error::capacity_exceeded;
+			return VK_ERROR_INITIALIZATION_FAILED;
+		}
+		const auto count = static_cast<std::uint32_t>(std::min<std::size_t>(textureCapacity_, std::bit_ceil(needed)));
+		// Old descriptor pools and pipelines may be used by any window; all must finish before the layout grows.
+		if (!objectTextures.empty()) {
+			const VkResult result = waitDeviceIdle();
+			if (result != VK_SUCCESS) { return result; }
+		}
+		for (auto &target : targets) {
+			target.descriptorSets.cleanup();
+			target.descriptorPool.cleanup();
+		}
+		objectTextures.resize(count);
+		uploadedTextureGenerations_.resize(count);
+		VkResult result = createScenePipelines(count);
+		if (result != VK_SUCCESS) { return result; }
+		// The initial target has no uniform buffers yet; already-rendering windows adopt the grown range together.
+		for (auto &target : targets) {
+			if (target.uniformBuffers.buffers.empty()) { continue; }
+			result = createSceneDescriptors(target);
+			if (result != VK_SUCCESS) { return result; }
+		}
 		return VK_SUCCESS;
 	}
 
@@ -336,13 +387,13 @@ namespace vve::simple {
 	/// @brief Updates only changed texture elements and the material copy of a completed frame slot.
 	VkResult ForwardRenderer::writeSceneDescriptors(WindowTarget &target, std::uint32_t frame) {
 		// Dirty elements include releases, which must restore the white fallback before this set is submitted again.
-		for (std::size_t index{}; index < kMaxSceneTextures; ++index) {
-			if (!target.texturesDirty[frame].test(index)) { continue; }
+		for (std::size_t index{}; index < objectTextures.size(); ++index) {
+			if (!target.texturesDirty[frame][index]) { continue; }
 			const TextureImage &texture = uploadedTextureGenerations_[index] != 0U ? objectTextures[index] : defaultObjectTexture;
 			const std::array images{VkDescriptorImageInfo{.sampler = materialSampler, .imageView = texture.imageView, .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}};
 			const VkResult result = target.descriptorSets.writeObjectTextures(frame, images, static_cast<std::uint32_t>(index));
 			if (result != VK_SUCCESS) { return result; }
-			target.texturesDirty[frame].reset(index);
+			target.texturesDirty[frame][index] = false;
 		}
 		if (!target.materialsDirty.test(frame)) { return VK_SUCCESS; }
 		auto &buffer = target.materialBuffers[frame];
@@ -377,7 +428,7 @@ namespace vve::simple {
 			materials_.reserve(renderMaterials_->size());
 			for (const RenderMaterial &material : *renderMaterials_) {
 				const auto textureIndex = [this](RenderTextureIndex index) {
-					return index < kMaxSceneTextures && uploadedTextureGenerations_[index] != 0U ? index : kNoTexture;
+					return index < objectTextures.size() && uploadedTextureGenerations_[index] != 0U ? index : kNoTexture;
 				};
 				const auto slot = static_cast<std::uint32_t>(materials_.size());
 				materialSlots_.emplace(material.handle, slot);
@@ -413,15 +464,15 @@ namespace vve::simple {
 	VkResult ForwardRenderer::uploadSceneTextures() {
 		textureUploadError_.reset();
 		constexpr std::array opaqueWhitePixel{std::byte{255U}, std::byte{255U}, std::byte{255U}, std::byte{255U}};
-		std::array<TextureImage, kMaxSceneTextures> replacements{};
+		std::vector<TextureImage> replacements(objectTextures.size());
 		TextureImage fallback{};
-		std::bitset<kMaxSceneTextures> changed{};
+		std::vector<bool> changed(objectTextures.size());
 		const bool createFallback = defaultObjectTexture.imageView == VK_NULL_HANDLE;
 		bool uploadNeeded = createFallback;
 		// Releases change descriptors without needing an upload submission.
-		for (std::size_t index{}; index < kMaxSceneTextures; ++index) {
+		for (std::size_t index{}; index < objectTextures.size(); ++index) {
 			if (uploadedTextureGenerations_[index] == textureGeneration(index)) { continue; }
-			changed.set(index);
+			changed[index] = true;
 			uploadNeeded |= textureGeneration(index) != 0U;
 		}
 		VulkanUploadBatch batch{}; // Destroy unsubmitted commands before pending images on a preparation failure.
@@ -435,8 +486,8 @@ namespace vve::simple {
 			if (result != VK_SUCCESS) { return result; }
 		}
 		// Record every changed image and its mip blits before the batch's only submit and fence wait.
-		for (std::size_t index{}; index < kMaxSceneTextures; ++index) {
-			if (!changed.test(index) || textureGeneration(index) == 0U) { continue; }
+		for (std::size_t index{}; index < objectTextures.size(); ++index) {
+			if (!changed[index] || textureGeneration(index) == 0U) { continue; }
 			const auto source = renderScene_->textureForUpload(static_cast<RenderTextureIndex>(index));
 			if (!source) {
 				textureUploadError_ = source.error(); // Preserve io_error across the VkResult boundary.
@@ -455,14 +506,14 @@ namespace vve::simple {
 		}
 		if (createFallback) { defaultObjectTexture = std::move(fallback); }
 		// Commit completed images while older submitted frames retain their original views through retirement.
-		for (std::size_t index{}; index < kMaxSceneTextures; ++index) {
-			if (!changed.test(index)) { continue; }
+		for (std::size_t index{}; index < objectTextures.size(); ++index) {
+			if (!changed[index]) { continue; }
 			if (objectTextures[index].image != VK_NULL_HANDLE) { retire(std::move(objectTextures[index])); }
 			objectTextures[index] = std::move(replacements[index]);
 			uploadedTextureGenerations_[index] = textureGeneration(index);
 			// A pending set keeps its old view until its own fence completes, even in a skipped window.
 			for (auto &target : targets) {
-				for (auto &dirty : target.texturesDirty) { dirty.set(index); }
+				for (auto &dirty : target.texturesDirty) { if (!dirty.empty()) { dirty[index] = true; } }
 			}
 			sceneMaterialsDirty_ = true;
 		}
@@ -486,6 +537,7 @@ namespace vve::simple {
 	 * @return VK_SUCCESS when GPU meshes and the shared object texture match the CPU scene.
 	 */
 	VkResult ForwardRenderer::syncSceneResources() {
+		if (const VkResult result = ensureTextureCapacity(); result != VK_SUCCESS) { return result; }
 		const bool textureChanged = defaultObjectTexture.imageView == VK_NULL_HANDLE || texturesOutOfDate();
 		if (!sceneResourcesDirty_ && !sceneMaterialsDirty_ && !textureChanged) { return VK_SUCCESS; }
 		if (device.device == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
@@ -595,7 +647,10 @@ namespace vve::simple {
 		for (auto &[_, mesh] : meshes) { mesh.cleanup(); }
 		meshes.clear();
 		for (TextureImage &texture : objectTextures) { texture.cleanup(); }
-		uploadedTextureGenerations_.fill(0U);
+		objectTextures.clear();
+		uploadedTextureGenerations_.clear();
+		textureCapacity_ = 0U;
+		if (renderScene_ != nullptr) { (void)renderScene_->setTextureCapacity(kNoTexture); }
 		defaultObjectTexture.cleanup();
 		retiredResources_.clear();
 		if (materialSampler != VK_NULL_HANDLE) { vkDestroySampler(device.device, materialSampler, nullptr); }

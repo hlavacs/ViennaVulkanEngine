@@ -67,6 +67,23 @@ int main() {
    auto engine = vve::test::hiddenEngine("vulkan-texture-tests", vve::PixelExtent{64U, 64U});
    if (!engine.init() || !engine.renderFrame()) { return 3; }
    auto &renderer = engine.renderSystem().forward();
+   VkPhysicalDeviceProperties properties{};
+   vkGetPhysicalDeviceProperties(renderer.physicalDevice.physicalDevice, &properties);
+   const auto capacity = renderer.textureCapacity();
+   const auto expected_capacity = vve::simple::materialTextureCapacity(properties.limits);
+   const auto material_binding = renderer.descriptorSetLayout.bindings[vve::simple::shaderBinding::baseColorTextures];
+   const auto allocated = renderer.objectTextures.size();
+   std::println("R6 device_texture_capacity={} expected={} allocated={} descriptor_count={}",
+      capacity, expected_capacity, allocated, material_binding.descriptorCount);
+   if (capacity == 0U || capacity != expected_capacity || allocated != 1U ||
+       material_binding.descriptorCount != allocated || material_binding.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) { return 8; }
+   // An empty scene allocates one fallback slot, even when its device supports a large descriptor array.
+   for (const auto &target : renderer.targets) {
+      if (target.descriptorSets.textureCapacity != allocated) { return 8; }
+      for (const auto &dirty : target.texturesDirty) {
+         if (dirty.size() != allocated) { return 8; }
+      }
+   }
    VkPhysicalDeviceFeatures supported{};
    vkGetPhysicalDeviceFeatures(renderer.physicalDevice.physicalDevice, &supported);
    const auto sampler = renderer.materialSampler;

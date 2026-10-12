@@ -46,7 +46,7 @@ namespace {
 
 } // namespace
 
-/// @brief Edits vertices, grows materials and replaces textures without any device-wide idle wait or validation error.
+/// @brief Checks fenced updates without idle waits, then checks one shared rebuild when texture capacity grows.
 int main() {
    auto engine = vve::simple::Engine{vve::simple::Windows{.value = {
       vve::WindowDesc{.id = "a", .extent = {64, 64}, .visible = false},
@@ -94,7 +94,8 @@ int main() {
       if (target.materialsDirty.test(written) || !target.materialsDirty.test(target.currentFrame) ||
           target.materialBuffers[written].size < 2U * sizeof(vve::simple::GpuMaterial) ||
           target.materialBuffers[target.currentFrame].size != sizeof(vve::simple::GpuMaterial) ||
-          target.texturesDirty[written].any() || target.texturesDirty[target.currentFrame].count() != 1U) { return 9; }
+          std::ranges::count(target.texturesDirty[written], true) != 0 ||
+          std::ranges::count(target.texturesDirty[target.currentFrame], true) != 1) { return 9; }
    }
    if (!render.removeObject(*triangle) || !engine.renderFrame() || render.lastRenderedWindowCount() != 2U ||
        renderer.gpuMeshCount() != 1U || renderer.gpuTextureCount() != 1U || renderer.deviceWaitIdleCount() != idle_before) { return 10; }
@@ -110,7 +111,8 @@ int main() {
    auto &b = renderer.targets.back();
    const auto old_image = renderer.objectTextures[0].image;
    if (!replacement || !renderer.drawFrame(a) || renderer.objectTextures[0].image == old_image ||
-       renderer.retiredResourceCount() == 0U || b.texturesDirty[0].count() != 1U || b.texturesDirty[1].count() != 1U) { return 12; }
+       renderer.retiredResourceCount() == 0U || std::ranges::count(b.texturesDirty[0], true) != 1 ||
+       std::ranges::count(b.texturesDirty[1], true) != 1) { return 12; }
    // Two further frames refresh every slot and collect resources after the fences that cover their last users.
    for (const auto frame : std::views::iota(0U, renderer.framesInFlight)) {
       (void)frame;
@@ -121,6 +123,33 @@ int main() {
    std::println("R3 runtime idle_before={} idle_after={} mesh_uploads={} textures={} pending={} validation_active={} validation_errors={}",
       idle_before, renderer.deviceWaitIdleCount(), renderer.gpuMeshUploadCount() - uploads_before, renderer.gpuTextureCount(),
       renderer.retiredResourceCount(), renderer.validationActive(), renderer.validationErrorCount());
+   // A second live texture grows the shared descriptor array once, including both windows' fenced sets.
+   if (renderer.objectTextures.size() != 1U || renderer.textureCapacity() < 2U) { return 16; }
+   const auto growth_idle_before = renderer.deviceWaitIdleCount();
+   const auto pipelines_before = renderer.forwardPipelineCreateCount();
+   const auto first_texture = renderer.objectTextures.front().image;
+   const auto second = render.addTexturedCuboid(vve::Vec3{-0.5F, -0.5F, -0.5F},
+      vve::Vec3{0.5F, 0.5F, 0.5F}, texture_path);
+   if (!second || !engine.renderFrame() || render.lastRenderedWindowCount() != 2U ||
+       renderer.objectTextures.size() != 2U || renderer.gpuTextureCount() != 2U ||
+       renderer.objectTextures.front().image != first_texture || renderer.uploadedTextureGeneration(1U) == 0U ||
+       renderer.deviceWaitIdleCount() != growth_idle_before + 1U ||
+       renderer.forwardPipelineCreateCount() != pipelines_before + 1U ||
+       renderer.descriptorSetLayout.bindings[vve::simple::shaderBinding::baseColorTextures].descriptorCount != 2U) { return 17; }
+   for (const auto &target : renderer.targets) {
+      if (target.descriptorSets.textureCapacity != 2U ||
+          std::ranges::any_of(target.texturesDirty, [](const auto &dirty) { return dirty.size() != 2U; })) { return 18; }
+   }
+   // Advancing every frame slot must preserve the grown layout without another idle wait or pipeline rebuild.
+   for (const auto frame : std::views::iota(0U, renderer.framesInFlight)) {
+      (void)frame;
+      if (!engine.renderFrame() || render.lastRenderedWindowCount() != 2U) { return 19; }
+   }
+   if (renderer.deviceWaitIdleCount() != growth_idle_before + 1U ||
+       renderer.forwardPipelineCreateCount() != pipelines_before + 1U || renderer.validationErrorCount() != 0U) { return 20; }
+   std::println("R3 texture_growth before=1 after={} windows={} idle_waits={} pipeline_rebuilds={} validation_errors={}",
+      renderer.objectTextures.size(), render.lastRenderedWindowCount(), renderer.deviceWaitIdleCount() - growth_idle_before,
+      renderer.forwardPipelineCreateCount() - pipelines_before, renderer.validationErrorCount());
    render.waitIdle();
    engine.gui().shutdownVulkan();
    render.shutdown();

@@ -107,14 +107,15 @@ export namespace vve::simple {
 			*
 			* @param owningDevice Logical device that owns the descriptor pool.
 			* @param maxSets Maximum descriptor-set count.
+			* @param bindings Device-sized layout bindings shared by all allocated sets.
 			* @return VK_SUCCESS when the descriptor pool is available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::uint32_t maxSets) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, std::uint32_t maxSets, std::span<const VkDescriptorSetLayoutBinding> bindings) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
-			std::vector<VkDescriptorPoolSize> poolSizes{}; // One pool entry per descriptor type in kDescriptorSetBindings.
-			for (const VkDescriptorSetLayoutBinding &binding : kDescriptorSetBindings) {
+			std::vector<VkDescriptorPoolSize> poolSizes{}; // One pool entry per descriptor type in the selected layout.
+			for (const VkDescriptorSetLayoutBinding &binding : bindings) {
 				// Use an iterator search to avoid a Clang 20 crash with ranges projections across modules.
 				auto poolSize = poolSizes.begin();
 				while (poolSize != poolSizes.end() && poolSize->type != binding.descriptorType) { ++poolSize; }
@@ -144,6 +145,7 @@ export namespace vve::simple {
 	struct VulkanDescriptorSets {
 		VkDevice device{VK_NULL_HANDLE};                         ///< Borrowed device used for allocation and updates.
 		std::vector<VkDescriptorSet> descriptorSets{};            ///< Owned descriptor sets allocated one per frame.
+		std::uint32_t textureCapacity{};                         ///< Material texture elements allocated in each set.
 
 		VulkanDescriptorSets() = default;
 		VulkanDescriptorSets(const VulkanDescriptorSets &) = delete;
@@ -156,12 +158,14 @@ export namespace vve::simple {
 			* @param pool Descriptor pool used for descriptor-set allocation.
 			* @param setLayout Descriptor-set layout repeated for every frame set.
 			* @param count Number of per-frame descriptor sets to allocate.
+			* @param materialTextureCount Device-selected number of material texture slots per set.
 			* @return VK_SUCCESS when all descriptor sets are allocated, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(VkDevice owningDevice, VkDescriptorPool pool, VkDescriptorSetLayout setLayout, std::uint32_t count) {
+		[[nodiscard]] VkResult create(VkDevice owningDevice, VkDescriptorPool pool, VkDescriptorSetLayout setLayout, std::uint32_t count, std::uint32_t materialTextureCount) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE || pool == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 			device = owningDevice;
+			textureCapacity = materialTextureCount;
 			auto layouts = std::vector<VkDescriptorSetLayout>(count, setLayout);
 			const VkDescriptorSetAllocateInfo allocateInfo{
 				.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
@@ -267,7 +271,7 @@ export namespace vve::simple {
 			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
 		*/
 		[[nodiscard]] VkResult writeObjectTextures(std::uint32_t frameIndex, std::span<const VkDescriptorImageInfo> images, std::uint32_t firstElement = 0U) {
-			if (frameIndex >= descriptorSets.size() || images.empty() || firstElement + images.size() > kMaxSceneTextures) { return VK_ERROR_INITIALIZATION_FAILED; }
+			if (frameIndex >= descriptorSets.size() || images.empty() || firstElement > textureCapacity || images.size() > textureCapacity - firstElement) { return VK_ERROR_INITIALIZATION_FAILED; }
 			if (std::ranges::any_of(images, [](const VkDescriptorImageInfo &image) { return image.imageView == VK_NULL_HANDLE || image.sampler == VK_NULL_HANDLE; })) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkWriteDescriptorSet write{
@@ -290,6 +294,7 @@ export namespace vve::simple {
 		void cleanup() {
 			descriptorSets.clear();
 			device = VK_NULL_HANDLE;
+			textureCapacity = 0U;
 		}
 
 		/**

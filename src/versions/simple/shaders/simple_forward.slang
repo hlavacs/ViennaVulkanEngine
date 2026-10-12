@@ -10,7 +10,7 @@
  * Fragment inputs: interpolated world-space position, texture coordinate, normal, and tangent from the vertex stage.
  * Fragment resources: the material texture table in binding 1, the spot, directional, and point shadow arrays in bindings 2-4,
  * and the dense material buffer in binding VVE_MATERIAL_BINDING.
- * Set-0 bindings are fixed and mirrored by kDescriptorSetBindings in Vulkan/Pipeline.ixx; FrameUniforms and ObjectPushConstants mirror the C++ structs.
+ * Set-0 bindings mirror descriptorSetBindings in Vulkan/Pipeline.ixx; the material array is specialized to the device capacity.
  * Fragment outputs: one opaque linear HDR color for the dynamic-rendering forward pass.
  */
 
@@ -104,11 +104,12 @@ struct FragmentOutput
 [[vk::binding(0, 0)]]
 ConstantBuffer<FrameUniforms> frame; ///< Frame-wide camera constants.
 
-static const uint kMaxSceneTextures = VVE_MAX_SCENE_TEXTURES; ///< Texture slots defined for C++ and Slang in simple_shared.h.
+[[vk::constant_id(VVE_TEXTURE_CAPACITY_CONSTANT_ID)]]
+const uint kMaxSceneTextures = 1; ///< Renderer specializes this array size to the selected device's descriptor capacity.
 static const uint kNoTexture = VVE_NO_TEXTURE; ///< Absent material texture index defined in simple_shared.h.
 
 [[vk::binding(1, 0)]]
-Sampler2D baseColorTextures[kMaxSceneTextures]; ///< Object base-color textures selected per draw by push constant.
+Sampler2D baseColorTextures[kMaxSceneTextures]; ///< Shared material texture table selected by each material's texture indices.
 
 [[vk::binding(2, 0)]]
 Sampler2DArrayShadow spotShadowArray; ///< Spot light comparison-depth array, one layer per packed spot light.

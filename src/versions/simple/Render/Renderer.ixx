@@ -79,7 +79,7 @@ export namespace vve::simple {
 		std::array<std::uint64_t, framesInFlight> submitSerials{}; ///< Last graphics submission using each frame slot, zero before first use.
 		std::array<VulkanBuffer, framesInFlight> materialBuffers{}; ///< Mapped materials written only after the matching fence completes.
 		std::bitset<framesInFlight> materialsDirty{}; ///< Slots awaiting the current dense material table.
-		std::array<std::bitset<kMaxSceneTextures>, framesInFlight> texturesDirty{}; ///< Texture elements awaiting descriptor updates in each slot.
+		std::array<std::vector<bool>, framesInFlight> texturesDirty{}; ///< Device-sized texture elements awaiting descriptor updates in each slot.
 		std::bitset<framesInFlight> shadowsDirty{}; ///< Slots awaiting replacement shadow views and samplers.
 		std::map<RenderMeshHandle, DynamicVertices> dynamicVertices{}; ///< Per-slot vertex storage allocated only for edited meshes.
 		std::optional<Camera> camera{};         ///< Explicit window camera; an empty value uses the renderer's current default.
@@ -116,7 +116,7 @@ export namespace vve::simple {
 		ShadowMap dirShadowArray{};            ///< Grow-only directional shadow array with four layers per packed light, minimum one.
 		ShadowMap spotShadowArray{};           ///< Grow-only spot shadow array with one layer per packed light, minimum one.
 		ShadowMap pointShadowArray{};          ///< Grow-only point shadow array with six layers per packed light, minimum one.
-		std::array<TextureImage, kMaxSceneTextures> objectTextures{}; ///< Owned material textures keyed by RenderScene texture-table index.
+		std::vector<TextureImage> objectTextures{}; ///< Grow-only material texture allocation within the device ceiling, keyed by scene texture index.
 		TextureImage defaultObjectTexture{};    ///< Owned opaque-white texture filling unused texture slots.
 		VkSampler materialSampler{VK_NULL_HANDLE}; ///< Shared trilinear repeat sampler, destroyed only after device idle.
 		VulkanDescriptorSetLayout descriptorSetLayout{}; ///< Owned frame-uniform and shadow-map descriptor-set layout.
@@ -137,6 +137,9 @@ export namespace vve::simple {
 		std::vector<RecordedPass> recordedPassOrder{}; ///< Last frame's command-recording pass order diagnostic.
 
 		~ForwardRenderer() { cleanup(); }
+
+		/// @brief Reports the material texture ceiling chosen from the physical device's descriptor limits; zero before initialization.
+		[[nodiscard]] std::uint32_t textureCapacity() const { return textureCapacity_; }
 
 		// Vulkan resource lifetime (RendererResources.cpp).
 		[[nodiscard]] VkResult init(SDL_Window *sdlWindow, WindowHandle handle = {}); ///< Creates the shared device and first window target.
@@ -238,7 +241,7 @@ export namespace vve::simple {
 			shadowLightMeta.clear();									// Metadata is rebuilt during the next frame assembly.
 		}
 
-		/// @brief Borrows CPU resources; renderer mutation is limited to texture pixel restoration and decode bookkeeping.
+		/// @brief Borrows CPU resources for device-capacity selection, texture pixel restoration and decode bookkeeping.
 		/// Restoration refreshes decoded extent/greyscale, counts attempts and caches failures through textureForUpload().
 		void bindRenderScene(RenderScene &renderScene) {
 			renderMeshes_ = std::addressof(renderScene.meshes());
@@ -275,6 +278,9 @@ export namespace vve::simple {
 			return found == renderMeshes_->end() ? nullptr : std::addressof(*found);
 		}
 	private:
+		[[nodiscard]] VkResult ensureTextureCapacity(); ///< Grows the bound texture range within the device ceiling when the scene needs more slots.
+		[[nodiscard]] VkResult createScenePipelines(std::uint32_t textureCount); ///< Creates the shared pipelines and matching device-sized descriptor layout.
+		[[nodiscard]] VkResult createSceneDescriptors(WindowTarget &target); ///< Initializes each frame's descriptors from the current texture range.
 		[[nodiscard]] VkResult waitDeviceIdle();
 		void collectRetiredResources(std::uint64_t completed);
 		/// @brief Keeps a replaced owner alive through the last submission that could have referenced it.
@@ -295,7 +301,8 @@ export namespace vve::simple {
 		}
 		/// @brief Reports whether any texture slot differs from the RenderScene texture table.
 		[[nodiscard]] bool texturesOutOfDate() const {
-			for (std::size_t index{}; index < kMaxSceneTextures; ++index) {
+			if (renderScene_ != nullptr && renderScene_->textures().size() > objectTextures.size()) { return true; }
+			for (std::size_t index{}; index < objectTextures.size(); ++index) {
 				if (uploadedTextureGenerations_[index] != textureGeneration(index)) { return true; }
 			}
 			return false;
@@ -311,9 +318,10 @@ export namespace vve::simple {
 		const Vector<RenderMesh> *renderMeshes_{nullptr}; ///< Borrowed unique CPU meshes owned by RenderSystem.
 		const Vector<RenderMaterial> *renderMaterials_{nullptr}; ///< Borrowed CPU materials owned by RenderSystem.
 		const Vector<RenderInstance> *renderInstances_{nullptr}; ///< Borrowed draw instances owned by RenderSystem.
-		RenderScene *renderScene_{nullptr}; ///< Borrowed owner; renderer may only restore texture pixels and update decode bookkeeping.
+		RenderScene *renderScene_{nullptr}; ///< Borrowed owner; renderer selects texture capacity, restores pixels and updates decode bookkeeping.
 		std::optional<Error> textureUploadError_{}; ///< Decode error retained through Vulkan cleanup for the expected-returning caller.
-		std::array<std::uint64_t, kMaxSceneTextures> uploadedTextureGenerations_{}; ///< Texture generation resident in each slot; 0 = empty.
+		std::vector<std::uint64_t> uploadedTextureGenerations_{}; ///< Resident generations matching the allocated texture slots; 0 = empty.
+		std::uint32_t textureCapacity_{}; ///< Hardware ceiling; GPU descriptors and texture owners grow only as the scene needs them.
 		std::size_t uploadedTextureCount_{}; ///< Number of resident objectTextures.
 		std::size_t textureUploadSubmitCount_{}; ///< Monotonic number of completed texture upload batches.
 		std::vector<GpuMaterial> materials_{}; ///< Dense CPU upload table shared by all windows' material buffers.

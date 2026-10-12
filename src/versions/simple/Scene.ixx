@@ -16,7 +16,6 @@ import VVEngine.Simple.Types;
 	*/
 export namespace vve::simple {
 
-	inline constexpr std::size_t kMaxSceneTextures{VVE_MAX_SCENE_TEXTURES}; ///< Texture slots bound to the forward pass; defined for C++ and Slang in simple_shared.h.
 	inline constexpr std::uint32_t kNoTexture{VVE_NO_TEXTURE}; ///< Material texture index meaning "untextured"; defined in simple_shared.h.
 	inline constexpr std::size_t kMaxShadowedSpotLights{VVE_MAX_SHADOWED_SPOT_LIGHTS}; ///< Small fixed cap for the first spot-shadow data model.
 	inline constexpr std::size_t kMaxShadowedPointLights{VVE_MAX_SHADOWED_POINT_LIGHTS}; ///< Small fixed cap for point-shadow CPU metadata.

@@ -65,6 +65,7 @@ export namespace vve::simple {
 	/// @brief Minimal CPU scene that stores render resources but does not draw them.
 	class RenderScene {
 	public:
+		[[nodiscard]] auto setTextureCapacity(std::size_t capacity) -> std::expected<void, Error>;
 		[[nodiscard]] auto acquireTexture(const std::filesystem::path &source,
 			MaterialTextureSemantic semantic = MaterialTextureSemantic::base_color, std::shared_ptr<const EmbeddedImage> embedded = {})
 			-> std::expected<RenderTextureIndex, Error>;
@@ -120,6 +121,7 @@ export namespace vve::simple {
 		std::unordered_map<RenderInstanceHandle, std::size_t, HandleHash<RenderInstanceHandle>> instance_indices_{}; ///< Instance handle to vector index.
 		std::map<std::pair<std::filesystem::path, bool>, Error> texture_failures_{}; ///< Decode errors retained until clear().
 		std::deque<RenderTexture> textures_{};									///< Texture table in shader-index order; released slots have generation 0 and are reused.
+		std::size_t texture_capacity_{kNoTexture}; ///< Device-selected slot count; before GPU initialization only the shader index range limits storage.
 		std::map<std::pair<std::filesystem::path, bool>, RenderTextureIndex> texture_indices_{}; ///< (canonical path, linear) to texture-table index.
 		std::size_t texture_decode_count_{}; ///< Decode attempts over this scene lifetime, including failures and across clear().
 		std::uint64_t texture_generation_{0};										///< Last generation handed to a decoded texture.
@@ -195,6 +197,16 @@ namespace vve::simple {
 		return texture;
 	}
 
+	/// @brief Adopts the renderer's device capacity without dropping live textures; rejected changes preserve the old limit.
+	inline auto RenderScene::setTextureCapacity(std::size_t capacity) -> std::expected<void, Error> {
+		if (std::ranges::any_of(textures_ | std::views::drop(capacity),
+			[](const RenderTexture &texture) { return texture.generation != 0U; })) { return std::unexpected(Error::capacity_exceeded); }
+		// Trailing released entries have no material references and need no slots on a smaller device.
+		if (textures_.size() > capacity) { textures_.resize(capacity); }
+		texture_capacity_ = capacity;
+		return {};
+	}
+
 	/// @brief Finds or decodes one texture-table entry keyed by source and color space.
 	///
 	/// Color maps (base color, emissive) are sRGB and data maps are linear, so the same image used in both roles
@@ -224,7 +236,7 @@ namespace vve::simple {
 		}
 
 		const auto free_slot = std::ranges::find(textures_, std::uint64_t{0}, &RenderTexture::generation);
-		if (free_slot == textures_.end() && textures_.size() >= kMaxSceneTextures) {
+		if (free_slot == textures_.end() && textures_.size() >= texture_capacity_) {
 			return std::unexpected(Error::capacity_exceeded);
 		}
 		++texture_decode_count_;

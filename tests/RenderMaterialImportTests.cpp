@@ -136,8 +136,7 @@ int main(int argc, char **argv) {
 		return 9;
 	}
 	if (!engine.renderFrame()) { return 10; }
-	const auto expected_gpu_textures = std::min(first_texture_count, vve::simple::kMaxSceneTextures);
-	if (render.gpuTextureCount() != expected_gpu_textures ||
+	if (first_texture_count > render.forward().textureCapacity() || render.gpuTextureCount() != first_texture_count ||
 		render.gpuMaterialCount() != render.sceneMaterialCount() ||
 		(!fixture_model && first_texture_count > 8U && render.gpuTextureCount() <= 8U)) {
 		return 11;

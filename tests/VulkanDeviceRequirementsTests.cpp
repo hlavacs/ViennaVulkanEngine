@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief CPU-only coverage of the simple renderer's Vulkan 1.3 device requirements.
+ * @brief CPU-only coverage of Vulkan 1.3 device requirements and material descriptor capacity.
  *
  * Functional objects:
  * - main: evaluates synthetic capabilities without creating a Vulkan instance, device or window.
@@ -9,6 +9,51 @@
 
 import std;
 import VVEngine.Simple.Vulkan;
+
+/// @brief Checks each device limit independently, including exhausted limits and capacities above the former fixed ceiling.
+[[nodiscard]] bool hasDeviceTextureCapacity() {
+   constexpr VkPhysicalDeviceLimits limits{
+      .maxPerStageDescriptorSamplers = 256U, .maxPerStageDescriptorSampledImages = 256U,
+      .maxPerStageResources = 512U, .maxDescriptorSetSamplers = 256U, .maxDescriptorSetSampledImages = 256U};
+   const auto capacity = vve::simple::materialTextureCapacity(limits);
+   std::println("[VulkanDeviceRequirementsTests] texture_capacity={} expected=253", capacity);
+   if (capacity != 253U) { return false; }
+   // Sampler and sampled-image limits apply at both stage and descriptor-set scope.
+   for (const auto member : {&VkPhysicalDeviceLimits::maxPerStageDescriptorSamplers,
+      &VkPhysicalDeviceLimits::maxDescriptorSetSamplers, &VkPhysicalDeviceLimits::maxPerStageDescriptorSampledImages,
+      &VkPhysicalDeviceLimits::maxDescriptorSetSampledImages}) {
+      for (const auto [value, expected] : std::array{std::pair{32U, 29U}, std::pair{4U, 1U},
+         std::pair{3U, 0U}, std::pair{2U, 0U}, std::pair{0U, 0U}}) {
+         auto reduced = limits;
+         reduced.*member = value;
+         if (vve::simple::materialTextureCapacity(reduced) != expected) { return false; }
+      }
+   }
+   // Stage resource accounting also reserves the two buffers and the forward color attachment.
+   for (const auto [value, expected] : std::array{std::pair{32U, 26U}, std::pair{7U, 1U},
+      std::pair{6U, 0U}, std::pair{5U, 0U}, std::pair{0U, 0U}}) {
+      auto reduced = limits;
+      reduced.maxPerStageResources = value;
+      if (vve::simple::materialTextureCapacity(reduced) != expected) { return false; }
+   }
+   // The selected material count changes without dropping shadow bindings or buffer visibility.
+   for (const auto selected : {1U, 29U, capacity}) {
+      const auto bindings = vve::simple::descriptorSetBindings(selected);
+      const auto &textures = bindings[vve::simple::shaderBinding::baseColorTextures];
+      if (textures.descriptorCount != selected || textures.descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER ||
+         textures.stageFlags != VK_SHADER_STAGE_FRAGMENT_BIT) { return false; }
+      for (const auto shadow : {vve::simple::shaderBinding::spotShadowArray,
+         vve::simple::shaderBinding::dirShadowArray, vve::simple::shaderBinding::pointShadowArray}) {
+         if (bindings[shadow].binding != shadow || bindings[shadow].descriptorCount != 1U ||
+            bindings[shadow].descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) { return false; }
+      }
+      if (bindings[vve::simple::shaderBinding::frameUniforms].stageFlags !=
+         (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) ||
+         bindings[vve::simple::shaderBinding::materials].stageFlags != VK_SHADER_STAGE_FRAGMENT_BIT) { return false; }
+   }
+   std::println("[VulkanDeviceRequirementsTests] descriptor_limits=4 resource_budget=true exhausted_limits=0");
+   return true;
+}
 
 /// @brief Reports each required capability independently; returns a distinct failure code for each case.
 int main() {
@@ -46,5 +91,6 @@ int main() {
    no_swapchain.swapchainExtension = false;
    const auto missing_swapchain = vve::simple::evaluateDeviceRequirements(no_swapchain);
    std::println("[VulkanDeviceRequirementsTests] case=missing_swapchain result={}", static_cast<int>(missing_swapchain));
-   return missing_swapchain == VK_ERROR_FEATURE_NOT_PRESENT ? 0 : 5;
+   if (missing_swapchain != VK_ERROR_FEATURE_NOT_PRESENT) { return 5; }
+   return hasDeviceTextureCapacity() ? 0 : 6;
 }

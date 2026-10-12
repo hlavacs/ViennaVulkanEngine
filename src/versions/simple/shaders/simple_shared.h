@@ -1,6 +1,6 @@
 /// @file
 /// @brief Constants shared by the simple renderer's C++ code and Slang shaders.
-#define VVE_MAX_SCENE_TEXTURES 64
+#define VVE_TEXTURE_CAPACITY_CONSTANT_ID 0 ///< Pipeline specialization selects the material texture-array size.
 #define VVE_MAX_SHADOWED_SPOT_LIGHTS 10
 #define VVE_MAX_SHADOWED_POINT_LIGHTS 10
 #define VVE_MAX_DIRECTIONAL_LIGHTS 10
