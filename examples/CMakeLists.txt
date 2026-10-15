@@ -50,6 +50,20 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/simple_forward_demo/CMakeLists.txt")
     vve_add_example_test(simple_forward_demo)
 endif()
 
+# The car example checks every frame that its parts follow their parent nodes and fails on a mismatch.
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/hierarchy_car/CMakeLists.txt")
+    add_subdirectory(hierarchy_car)
+    if(BUILD_TESTING AND VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
+        add_test(NAME HierarchyCarExample COMMAND hierarchy_car --frames 120
+            --output "${CMAKE_CURRENT_BINARY_DIR}/hierarchy_car/verify/hierarchy_car.png"
+            --verify "${CMAKE_CURRENT_BINARY_DIR}/hierarchy_car/verify/hierarchy_car.txt")
+        set_tests_properties(HierarchyCarExample PROPERTIES
+            WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}"
+            LABELS "gpu;example"
+            TIMEOUT 60)
+    endif()
+endif()
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/postprocessing/CMakeLists.txt")
     add_subdirectory(postprocessing)
 endif()

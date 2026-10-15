@@ -8,6 +8,7 @@ import VVEngine.Simple.Scene;
 	*
 	* Functional objects:
 	* - RenderSystem import helpers read asset callbacks, compose node transforms, cache render meshes/materials, and instantiate imported scene objects.
+	* - Hierarchy-keeping instances (keep_hierarchy) store their node tree and move a node's whole subtree when its local transform is set.
 	*/
 
 namespace vve::simple::detail {
@@ -222,6 +223,19 @@ namespace vve::simple {
 			return std::unexpected(error);
 		};
 
+		// Instances that keep their hierarchy record every node's parent, children and local transform.
+		auto *hierarchy = options.keep_hierarchy ? &scene_hierarchies_[instance] : nullptr;
+		if (hierarchy != nullptr) {
+			for (const auto node : importedSceneNodes(scene)) {
+				const auto transform = imported_assets_.node_transform(node);
+				const auto children = imported_assets_.scene_node_children(scene, node);
+				if (!transform || !children) { return fail(!transform ? transform.error() : children.error()); }
+				(*hierarchy)[node].local = *transform;
+				(*hierarchy)[node].children = *children;
+				for (const auto child : *children) { (*hierarchy)[child].parent = node; }
+			}
+		}
+
 		if (options.instantiate_geometry) {
 			for (const auto &[node, mesh, material, world_transform, world] : importedSceneMeshInstances(scene)) {
 				const auto render_mesh = acquireRenderMesh(mesh);
@@ -232,6 +246,7 @@ namespace vve::simple {
 				const auto object = registerRenderObject(*render_instance);
 				scene_instances_[instance].push_back(object);
 				object_sources_.emplace(object, std::pair{instance, node});
+				if (hierarchy != nullptr) { (*hierarchy)[node].objects.push_back(object); }
 			}
 		}
 
@@ -257,6 +272,50 @@ namespace vve::simple {
 			}
 		}
 		return instance;
+	}
+
+	/// @brief Sets one node's local transform in a hierarchy-keeping instance and moves the objects of its subtree.
+	auto RenderSystem::setSceneInstanceNodeTransform(RenderSceneInstanceHandle instance, NodeHandle node, Transform transform)
+		-> std::expected<void, Error> {
+		if (!scene_instances_.contains(instance)) { return std::unexpected(Error::missing_object); }
+		const auto found = scene_hierarchies_.find(instance);
+		if (found == scene_hierarchies_.end()) { return std::unexpected(Error::invalid_argument); }	// Created without keep_hierarchy.
+		auto &hierarchy = found->second;
+		const auto entry = hierarchy.find(node);
+		if (entry == hierarchy.end()) { return std::unexpected(Error::missing_object); }
+		entry->second.local = transform;
+
+		// Compose the unchanged ancestors once (root first), then update this node and everything below it.
+		auto parent_world = identityMat4();
+		for (auto parent = entry->second.parent; parent.valid(); parent = hierarchy.at(parent).parent) {
+			parent_world = multiply(detail::modelMatrix(hierarchy.at(parent).local), parent_world);
+		}
+		updateHierarchy(hierarchy, node, parent_world);
+		return {};
+	}
+
+	/// @brief Returns one node's current local transform in a hierarchy-keeping instance.
+	auto RenderSystem::sceneInstanceNodeTransform(RenderSceneInstanceHandle instance, NodeHandle node) const
+		-> std::expected<Transform, Error> {
+		if (!scene_instances_.contains(instance)) { return std::unexpected(Error::missing_object); }
+		const auto found = scene_hierarchies_.find(instance);
+		if (found == scene_hierarchies_.end()) { return std::unexpected(Error::invalid_argument); }	// Created without keep_hierarchy.
+		const auto entry = found->second.find(node);
+		return entry == found->second.end() ? std::unexpected(Error::missing_object) : std::expected<Transform, Error>{entry->second.local};
+	}
+
+	/// @brief Writes parent world * local into the objects of one node, then repeats this for all its children.
+	auto RenderSystem::updateHierarchy(Hierarchy &hierarchy, NodeHandle node, const Mat4 &parent_world) -> void {
+		const auto &entry = hierarchy.at(node);
+		const auto world = multiply(parent_world, detail::modelMatrix(entry.local));
+		for (const auto object : entry.objects) {
+			const auto handle = findRenderObject(object);
+			if (auto *render_instance = handle ? scene_.findInstance(*handle) : nullptr) {
+				render_instance->world_transform = world;									// Exact, also under non-uniformly scaled parents.
+				render_instance->local_transform = detail::decomposeTransform(world);	// What objectTransform reports.
+			}
+		}
+		for (const auto child : entry.children) { updateHierarchy(hierarchy, child, world); }
 	}
 
 } // namespace vve::simple

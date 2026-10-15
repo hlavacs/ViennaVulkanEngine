@@ -110,6 +110,10 @@ export namespace vve::simple {
 		[[nodiscard]] auto objectSourceScene(RenderObjectHandle handle) const										-> std::expected<RenderSceneInstanceHandle, Error>;
 		[[nodiscard]] auto objectSourceNode(RenderObjectHandle handle) const											-> std::expected<NodeHandle, Error>;
 		[[nodiscard]] auto removeSceneInstance(RenderSceneInstanceHandle instance)									-> std::expected<void, Error>;
+		[[nodiscard]] auto setSceneInstanceNodeTransform(RenderSceneInstanceHandle instance, NodeHandle node, Transform transform)
+			-> std::expected<void, Error>;
+		[[nodiscard]] auto sceneInstanceNodeTransform(RenderSceneInstanceHandle instance, NodeHandle node) const
+			-> std::expected<Transform, Error>;
 		[[nodiscard]] auto removeScene(SceneHandle handle)																	-> std::expected<void, Error>;
 		[[nodiscard]] auto purgeUnusedAssets()																						-> std::size_t;
 		[[nodiscard]] auto addPlane(Vec2 half_extent, LinearColor color, Transform transform = {})			-> std::expected<RenderObjectHandle, Error>;
@@ -174,6 +178,15 @@ export namespace vve::simple {
 			plane, ///< Flat XZ quad.
 			cuboid ///< Six textured faces.
 		};
+		/// @brief One node of a scene instance created with keep_hierarchy.
+		struct HierarchyNode {
+			NodeHandle parent{};														///< Parent node; invalid for the root.
+			Vector<NodeHandle> children{};											///< Child nodes.
+			Transform local{};														///< Current local transform.
+			Vector<RenderObjectHandle> objects{};								///< Render objects created from this node's meshes.
+		};
+		using Hierarchy = std::unordered_map<NodeHandle, HierarchyNode, HandleHash<NodeHandle>>; ///< All nodes of one instance.
+		auto updateHierarchy(Hierarchy &hierarchy, NodeHandle node, const Mat4 &parent_world)						-> void;
 		[[nodiscard]] auto acquirePrimitiveMaterial(LinearColor color, RenderTextureIndex texture = kNoTexture) -> RenderMaterialHandle;
 		[[nodiscard]] auto acquirePrimitiveMesh(PrimitiveShape shape, Vec3 minimum, Vec3 maximum,
 			Vec2 uv_scale = {1.0F, 1.0F}) -> RenderMeshHandle;
@@ -210,6 +223,7 @@ export namespace vve::simple {
 		std::set<SceneHandle> scenes_{};											///< Backend light scenes loaded with loadScene(Scene).
 		std::map<RenderSceneInstanceHandle, Vector<RenderObjectHandle>> scene_instances_{};	///< Render objects created per scene instance.
 		std::map<RenderSceneInstanceHandle, SceneHandle> scene_instance_sources_{};	///< Asset scene used to create each scene instance.
+		std::map<RenderSceneInstanceHandle, Hierarchy> scene_hierarchies_{};	///< Node trees of instances created with keep_hierarchy.
 		std::uint64_t rendered_frames_{0};											///< Number of presented frames.
 		std::uint64_t render_fps_frames_{0};										///< Presented frames accumulated for the render-FPS sample.
 		std::chrono::steady_clock::time_point render_fps_start_{};		///< Start of the current render-FPS sample window.

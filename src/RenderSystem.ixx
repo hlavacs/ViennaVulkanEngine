@@ -218,6 +218,17 @@ export namespace vve {
 		[[nodiscard]] inline auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {}) -> std::expected<RenderSceneInstanceHandle, Error> {
 			return impl_.instantiateScene(scene, options);
 		}
+		/// @brief Sets one node's local transform in an instance created with keep_hierarchy; every object below the node follows.
+		/// @note A world placement made with setObjectTransform holds until the object's node or one of its ancestors is set again.
+		[[nodiscard]] inline auto setSceneInstanceNodeTransform(RenderSceneInstanceHandle instance, NodeHandle node, Transform transform)
+			-> std::expected<void, Error> {
+			return impl_.setSceneInstanceNodeTransform(instance, node, transform);
+		}
+		/// @brief Returns one node's current local transform in an instance created with keep_hierarchy.
+		[[nodiscard]] inline auto sceneInstanceNodeTransform(RenderSceneInstanceHandle instance, NodeHandle node) const
+			-> std::expected<Transform, Error> {
+			return impl_.sceneInstanceNodeTransform(instance, node);
+		}
 		/// @brief Removes one render-scene instance and the objects it created.
 		[[nodiscard]] inline auto removeSceneInstance(RenderSceneInstanceHandle instance) -> std::expected<void, Error> {
 			return impl_.removeSceneInstance(instance);

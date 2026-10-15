@@ -308,6 +308,7 @@ export namespace vve {
 		bool instantiate_geometry{true};									///< Creates render objects from imported geometry.
 		bool apply_cameras{false};											///< Applies imported cameras to the render scene.
 		bool apply_lights{false};											///< Applies imported lights to the render scene.
+		bool keep_hierarchy{false};										///< Keeps the node tree: setSceneInstanceNodeTransform then moves all objects below a node.
 	};
 
 	/// @brief Axis-aligned bounds described by minimum and maximum positions.

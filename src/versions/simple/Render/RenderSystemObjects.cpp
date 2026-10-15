@@ -45,6 +45,12 @@ namespace vve::simple {
 				auto &objects = instance->second;
 				if (const auto entry = std::ranges::find(objects, handle); entry != objects.end()) { objects.erase(entry); }
 			}
+			// A hierarchy-keeping instance stops moving the removed object.
+			if (const auto hierarchy = scene_hierarchies_.find(source->second.first); hierarchy != scene_hierarchies_.end()) {
+				if (const auto node = hierarchy->second.find(source->second.second); node != hierarchy->second.end()) {
+					std::erase(node->second.objects, handle);
+				}
+			}
 			object_sources_.erase(source);
 		}
 		renderer_.markSceneResourcesDirty();
@@ -88,6 +94,7 @@ namespace vve::simple {
 			for (const auto object : objects) { (void)removeObject(object); }
 		}
 		removeImportedLights(instance.value);
+		scene_hierarchies_.erase(instance);
 		scene_instance_sources_.erase(instance);
 		scene_instances_.erase(instance);
 	}
@@ -272,6 +279,7 @@ namespace vve::simple {
 		object_sources_.clear();
 		scene_instances_.clear();
 		scene_instance_sources_.clear();
+		scene_hierarchies_.clear();
 		scenes_.clear();
 		imported_render_meshes_.clear();
 		imported_render_materials_.clear();
