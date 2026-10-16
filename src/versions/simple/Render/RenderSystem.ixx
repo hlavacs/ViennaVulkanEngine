@@ -137,6 +137,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto addTriangleMesh(Vector<Vec3> positions, Vector<std::uint32_t> indices, LinearColor color, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto setObjectMeshPositions(RenderObjectHandle handle, Vector<Vec3> positions)			-> std::expected<void, Error>;
+		[[nodiscard]] auto setObjectColor(RenderObjectHandle handle, LinearColor color)						-> std::expected<void, Error>;
+		[[nodiscard]] auto setObjectTexture(RenderObjectHandle handle, std::filesystem::path texture)		-> std::expected<void, Error>;
 		[[nodiscard]] auto addTexturedPlane(Vec2 half_extent, std::filesystem::path base_color_texture,
 			Vec2 uv_scale = {1.0F, 1.0F}, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto addTexturedCuboid(Vec3 minimum, Vec3 maximum, std::filesystem::path base_color_texture, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
@@ -213,6 +215,8 @@ export namespace vve::simple {
 		auto placeObject(RenderObjectHandle object, const Mat4 &world)												-> void;
 		auto detachObject(RenderObjectHandle object)																	-> void;
 		auto releaseUnused(RenderMeshHandle mesh, RenderMaterialHandle material)									-> void;
+		[[nodiscard]] auto setObjectLook(RenderObjectHandle handle, std::optional<LinearColor> color,
+			std::optional<RenderTextureIndex> texture)																	-> std::expected<void, Error>;
 		[[nodiscard]] auto acquirePrimitiveMaterial(LinearColor color, RenderTextureIndex texture = kNoTexture) -> RenderMaterialHandle;
 		[[nodiscard]] auto acquirePrimitiveMesh(PrimitiveShape shape, Vec3 minimum, Vec3 maximum,
 			Vec2 uv_scale = {1.0F, 1.0F}) -> RenderMeshHandle;

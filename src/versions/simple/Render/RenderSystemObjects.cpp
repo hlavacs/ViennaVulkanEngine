@@ -302,6 +302,34 @@ namespace vve::simple {
 		return {};
 	}
 
+	/// @brief Gives one object a new base colour; its base-colour texture stays.
+	auto RenderSystem::setObjectColor(RenderObjectHandle handle, LinearColor color) -> std::expected<void, Error> {
+		return setObjectLook(handle, color, std::nullopt);
+	}
+
+	/// @brief Gives one object a new base-colour texture; its base colour stays.
+	auto RenderSystem::setObjectTexture(RenderObjectHandle handle, std::filesystem::path texture) -> std::expected<void, Error> {
+		if (!findRenderObject(handle)) { return std::unexpected(Error::missing_object); }
+		const auto texture_index = scene_.acquireTexture(texture);
+		if (!texture_index) { return std::unexpected(texture_index.error()); }
+		return setObjectLook(handle, std::nullopt, *texture_index);
+	}
+
+	/// @brief Switches an object to the shared plain material for a colour and texture slot; missing values keep the current ones.
+	///
+	/// An imported object loses its other PBR values; the old material is released when nothing uses it anymore.
+	auto RenderSystem::setObjectLook(RenderObjectHandle handle, std::optional<LinearColor> color,
+		std::optional<RenderTextureIndex> texture) -> std::expected<void, Error> {
+		const auto object = findRenderObject(handle);
+		auto *instance = object ? scene_.findInstance(*object) : nullptr;
+		const auto *current = instance ? scene_.findMaterial(instance->material) : nullptr;
+		if (current == nullptr) { return std::unexpected(Error::missing_object); }
+		const auto old_material = instance->material;
+		instance->material = acquirePrimitiveMaterial(color.value_or(current->base_color), texture.value_or(current->base_color_texture_index));
+		if (instance->material != old_material) { releaseUnused(instance->mesh, old_material); }
+		return {};
+	}
+
 	/// @brief Adds one textured XZ quad with shared geometry keyed by extents and UV scale.
 	auto RenderSystem::addTexturedPlane(Vec2 half_extent, std::filesystem::path base_color_texture,
 		Vec2 uv_scale, Transform transform) -> std::expected<RenderObjectHandle, Error> {

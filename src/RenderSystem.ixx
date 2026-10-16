@@ -225,6 +225,14 @@ export namespace vve {
 			-> std::expected<void, Error> {
 			return impl_.setObjectMeshPositions(handle, std::move(positions));
 		}
+		/// @brief Changes one render object's base colour, keeping its texture; imported objects become plain coloured objects.
+		[[nodiscard]] inline auto setObjectColor(RenderObjectHandle handle, LinearColor color) -> std::expected<void, Error> {
+			return impl_.setObjectColor(handle, color);
+		}
+		/// @brief Changes one render object's base-colour texture, keeping its colour; a missing image returns io_error.
+		[[nodiscard]] inline auto setObjectTexture(RenderObjectHandle handle, std::filesystem::path texture) -> std::expected<void, Error> {
+			return impl_.setObjectTexture(handle, std::move(texture));
+		}
 		/// @brief Returns render objects registered for one scene instance.
 		[[nodiscard]] inline auto sceneInstanceObjects(RenderSceneInstanceHandle instance) const -> std::expected<Vector<RenderObjectHandle>, Error> {
 			return impl_.sceneInstanceObjects(instance);
