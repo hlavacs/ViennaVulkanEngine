@@ -255,6 +255,14 @@ references in one pass over instances and removes each unused range once; its re
 the number of removed meshes plus materials. Imported hierarchy traversal builds a node set once
 and tracks visited handles in another set; asset scene membership uses `tree.contains()`.
 
+RenderSystem keeps one world scene tree (`scene_nodes_`) with a fixed root node that survives
+`clearScene`. Each node stores its parent, ordered children, local transform and the render objects hung
+on it with their offsets. Instances created with `SceneInstantiationOptions::keep_hierarchy` copy their
+asset node tree below a new instance root (`instance_nodes_` maps asset nodes to tree nodes); others stay
+loose objects. Every change calls `updateNode`, which multiplies the node's ancestors once and walks down,
+writing node world * offset into each object (exact `world_transform`, decomposed `local_transform`).
+There are no dirty flags and no per-frame pass, so values read right after a change are current.
+
 Shared ownership covers imported vertex buffers and `MaterialTextureSource::embedded` / `RenderTexture::embedded`
 (`shared_ptr<const EmbeddedImage>`), so the bytes of a texture embedded in a model file are not
 copied when the asset catalog hands its texture sources out. `simple::Engine` owns the subsystems,
@@ -342,7 +350,7 @@ otherwise it is the largest pure overhead left.
 sequences are contiguous and GPU uploads copy through `data()`. Growth follows standard vector
 invalidation rules. Mesh editing copies the source before appending a clone, then looks up the
 new mesh again; its instance belongs to a separate container. `Graph.ixx` is a tree used only for
-the asset node hierarchy.
+the asset node hierarchy; the render-side world scene tree stores ordered child vectors per node.
 
 **Interface-heavy modules.** Most bodies still live inline in `.ixx` interface units (simple
 `Window.ixx` 550, `Assets.ixx` 700, `RenderResources.ixx` 590, all Vulkan wrappers), so editing

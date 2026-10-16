@@ -44,6 +44,7 @@ export namespace vve {
 	struct RenderSceneInstanceHandleTag {};						///< Render scene instance handle tag.
 	struct LightHandleTag {};											///< Light descriptor handle tag.
 	struct CameraHandleTag {};											///< Camera descriptor handle tag.
+	struct SceneNodeHandleTag {};										///< World scene tree node handle tag.
 
 	using SceneHandle	= TypedHandle<SceneHandleTag>;		///< Scene descriptor handle.
 	using WindowHandle	= TypedHandle<WindowHandleTag>;		///< Runtime window handle.
@@ -54,6 +55,7 @@ export namespace vve {
 	using RenderSceneInstanceHandle = TypedHandle<RenderSceneInstanceHandleTag>;	///< Render scene instance handle.
 	using LightHandle	= TypedHandle<LightHandleTag>;		///< Light descriptor handle.
 	using CameraHandle	= TypedHandle<CameraHandleTag>;		///< Camera descriptor handle.
+	using SceneNodeHandle = TypedHandle<SceneNodeHandleTag>;	///< World scene tree node handle.
 
 	/// @brief Strong wrapper for world or local position values.
 	struct Position {
@@ -308,7 +310,7 @@ export namespace vve {
 		bool instantiate_geometry{true};									///< Creates render objects from imported geometry.
 		bool apply_cameras{false};											///< Applies imported cameras to the render scene.
 		bool apply_lights{false};											///< Applies imported lights to the render scene.
-		bool keep_hierarchy{false};										///< Keeps the node tree: setSceneInstanceNodeTransform then moves all objects below a node.
+		bool keep_hierarchy{false};										///< Copies the node tree into the world scene tree; moving a node then moves all objects below it.
 	};
 
 	/// @brief Axis-aligned bounds described by minimum and maximum positions.

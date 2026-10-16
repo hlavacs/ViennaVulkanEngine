@@ -229,6 +229,47 @@ export namespace vve {
 			-> std::expected<Transform, Error> {
 			return impl_.sceneInstanceNodeTransform(instance, node);
 		}
+		/// @brief Returns the fixed world root node of the scene tree.
+		[[nodiscard]] inline auto sceneRoot() const -> SceneNodeHandle { return impl_.sceneRoot(); }
+		/// @brief Creates an empty node, such as a pivot or a group, below a parent node.
+		[[nodiscard]] inline auto createNode(SceneNodeHandle parent, Transform local = {}) -> std::expected<SceneNodeHandle, Error> {
+			return impl_.createNode(parent, local);
+		}
+		/// @brief Removes a node, everything below it, and the render objects hung there; the world root cannot be removed.
+		[[nodiscard]] inline auto removeNode(SceneNodeHandle node) -> std::expected<void, Error> { return impl_.removeNode(node); }
+		/// @brief Sets a node's transform relative to its parent and moves every object below it.
+		[[nodiscard]] inline auto setNodeTransform(SceneNodeHandle node, Transform local) -> std::expected<void, Error> {
+			return impl_.setNodeTransform(node, local);
+		}
+		/// @brief Returns a node's transform relative to its parent.
+		[[nodiscard]] inline auto nodeTransform(SceneNodeHandle node) const -> std::expected<Transform, Error> {
+			return impl_.nodeTransform(node);
+		}
+		/// @brief Moves a node with everything below it under another parent; its local transform is kept.
+		[[nodiscard]] inline auto setNodeParent(SceneNodeHandle node, SceneNodeHandle parent) -> std::expected<void, Error> {
+			return impl_.setNodeParent(node, parent);
+		}
+		/// @brief Returns a node's parent; the world root has an invalid parent.
+		[[nodiscard]] inline auto nodeParent(SceneNodeHandle node) const -> std::expected<SceneNodeHandle, Error> {
+			return impl_.nodeParent(node);
+		}
+		/// @brief Returns a node's children in creation order.
+		[[nodiscard]] inline auto nodeChildren(SceneNodeHandle node) const -> std::expected<Vector<SceneNodeHandle>, Error> {
+			return impl_.nodeChildren(node);
+		}
+		/// @brief Returns the node above a model instantiated with keep_hierarchy; move it to place the whole model.
+		[[nodiscard]] inline auto sceneInstanceRoot(RenderSceneInstanceHandle instance) const -> std::expected<SceneNodeHandle, Error> {
+			return impl_.sceneInstanceRoot(instance);
+		}
+		/// @brief Returns the tree node copied from one asset node of a model instantiated with keep_hierarchy.
+		[[nodiscard]] inline auto sceneInstanceNode(RenderSceneInstanceHandle instance, NodeHandle node) const
+			-> std::expected<SceneNodeHandle, Error> {
+			return impl_.sceneInstanceNode(instance, node);
+		}
+		/// @brief Hangs a render object on a node; its current transform becomes its offset. An invalid node takes it off the tree.
+		[[nodiscard]] inline auto setObjectParent(RenderObjectHandle object, SceneNodeHandle node) -> std::expected<void, Error> {
+			return impl_.setObjectParent(object, node);
+		}
 		/// @brief Removes one render-scene instance and the objects it created.
 		[[nodiscard]] inline auto removeSceneInstance(RenderSceneInstanceHandle instance) -> std::expected<void, Error> {
 			return impl_.removeSceneInstance(instance);

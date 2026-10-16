@@ -114,6 +114,19 @@ export namespace vve::simple {
 			-> std::expected<void, Error>;
 		[[nodiscard]] auto sceneInstanceNodeTransform(RenderSceneInstanceHandle instance, NodeHandle node) const
 			-> std::expected<Transform, Error>;
+
+		// World scene tree (RenderSceneImport.cpp): one fixed root; keep_hierarchy instances and hung objects live below it.
+		[[nodiscard]] auto sceneRoot() const																						-> SceneNodeHandle;
+		[[nodiscard]] auto createNode(SceneNodeHandle parent, Transform local = {})										-> std::expected<SceneNodeHandle, Error>;
+		[[nodiscard]] auto removeNode(SceneNodeHandle node)																	-> std::expected<void, Error>;
+		[[nodiscard]] auto setNodeTransform(SceneNodeHandle node, Transform local)										-> std::expected<void, Error>;
+		[[nodiscard]] auto nodeTransform(SceneNodeHandle node) const															-> std::expected<Transform, Error>;
+		[[nodiscard]] auto setNodeParent(SceneNodeHandle node, SceneNodeHandle parent)								-> std::expected<void, Error>;
+		[[nodiscard]] auto nodeParent(SceneNodeHandle node) const																-> std::expected<SceneNodeHandle, Error>;
+		[[nodiscard]] auto nodeChildren(SceneNodeHandle node) const															-> std::expected<Vector<SceneNodeHandle>, Error>;
+		[[nodiscard]] auto sceneInstanceRoot(RenderSceneInstanceHandle instance) const									-> std::expected<SceneNodeHandle, Error>;
+		[[nodiscard]] auto sceneInstanceNode(RenderSceneInstanceHandle instance, NodeHandle node) const				-> std::expected<SceneNodeHandle, Error>;
+		[[nodiscard]] auto setObjectParent(RenderObjectHandle object, SceneNodeHandle node)							-> std::expected<void, Error>;
 		[[nodiscard]] auto removeScene(SceneHandle handle)																	-> std::expected<void, Error>;
 		[[nodiscard]] auto purgeUnusedAssets()																						-> std::size_t;
 		[[nodiscard]] auto addPlane(Vec2 half_extent, LinearColor color, Transform transform = {})			-> std::expected<RenderObjectHandle, Error>;
@@ -178,15 +191,18 @@ export namespace vve::simple {
 			plane, ///< Flat XZ quad.
 			cuboid ///< Six textured faces.
 		};
-		/// @brief One node of a scene instance created with keep_hierarchy.
-		struct HierarchyNode {
-			NodeHandle parent{};														///< Parent node; invalid for the root.
-			Vector<NodeHandle> children{};											///< Child nodes.
-			Transform local{};														///< Current local transform.
-			Vector<RenderObjectHandle> objects{};								///< Render objects created from this node's meshes.
+		/// @brief One node of the world scene tree.
+		struct SceneNode {
+			SceneNodeHandle parent{};												///< Parent node; invalid only for the world root.
+			Vector<SceneNodeHandle> children{};									///< Child nodes in creation order.
+			Transform local{};														///< Transform relative to the parent.
+			Vector<std::pair<RenderObjectHandle, Transform>> objects{};		///< Render objects hung on this node, with their offsets.
 		};
-		using Hierarchy = std::unordered_map<NodeHandle, HierarchyNode, HandleHash<NodeHandle>>; ///< All nodes of one instance.
-		auto updateHierarchy(Hierarchy &hierarchy, NodeHandle node, const Mat4 &parent_world)						-> void;
+		[[nodiscard]] auto worldOf(SceneNodeHandle node) const												-> Mat4;
+		auto updateNode(SceneNodeHandle node)																			-> void;
+		auto updateDown(SceneNodeHandle node, const Mat4 &parent_world)											-> void;
+		auto placeObject(RenderObjectHandle object, const Mat4 &world)												-> void;
+		auto detachObject(RenderObjectHandle object)																	-> void;
 		[[nodiscard]] auto acquirePrimitiveMaterial(LinearColor color, RenderTextureIndex texture = kNoTexture) -> RenderMaterialHandle;
 		[[nodiscard]] auto acquirePrimitiveMesh(PrimitiveShape shape, Vec3 minimum, Vec3 maximum,
 			Vec2 uv_scale = {1.0F, 1.0F}) -> RenderMeshHandle;
@@ -223,7 +239,11 @@ export namespace vve::simple {
 		std::set<SceneHandle> scenes_{};											///< Backend light scenes loaded with loadScene(Scene).
 		std::map<RenderSceneInstanceHandle, Vector<RenderObjectHandle>> scene_instances_{};	///< Render objects created per scene instance.
 		std::map<RenderSceneInstanceHandle, SceneHandle> scene_instance_sources_{};	///< Asset scene used to create each scene instance.
-		std::map<RenderSceneInstanceHandle, Hierarchy> scene_hierarchies_{};	///< Node trees of instances created with keep_hierarchy.
+		SceneNodeHandle scene_root_{makeCounterHandle<SceneNodeHandle>()};		///< Fixed world root node of the scene tree.
+		std::unordered_map<SceneNodeHandle, SceneNode, HandleHash<SceneNodeHandle>> scene_nodes_{{scene_root_, SceneNode{}}}; ///< World scene tree.
+		std::map<RenderSceneInstanceHandle, std::unordered_map<NodeHandle, SceneNodeHandle, HandleHash<NodeHandle>>>
+			instance_nodes_{};														///< keep_hierarchy instances: asset node to tree node; key {} is the instance root.
+		std::unordered_map<RenderObjectHandle, SceneNodeHandle, HandleHash<RenderObjectHandle>> object_nodes_{}; ///< Node each hung object belongs to.
 		std::uint64_t rendered_frames_{0};											///< Number of presented frames.
 		std::uint64_t render_fps_frames_{0};										///< Presented frames accumulated for the render-FPS sample.
 		std::chrono::steady_clock::time_point render_fps_start_{};		///< Start of the current render-FPS sample window.
