@@ -228,6 +228,19 @@ export namespace vve {
 		[[nodiscard]] inline auto objectTransform(RenderObjectHandle handle) const -> std::expected<Transform, Error> {
 			return impl_.objectTransform(handle);
 		}
+		/// @brief Returns one render object's world-space box, computed from its mesh vertices and placement.
+		[[nodiscard]] inline auto objectBounds(RenderObjectHandle handle) const -> std::expected<Bounds, Error> {
+			return impl_.objectBounds(handle);
+		}
+		/// @brief Returns the nearest visible render object whose world box the ray enters within max_distance.
+		[[nodiscard]] inline auto raycast(Position origin, Direction direction, Scalar max_distance) const -> std::optional<RaycastHit> {
+			return impl_.raycast(origin, direction, max_distance);
+		} ///< Boxes, not triangles, are tested; the distance is zero when the origin lies inside a box.
+		/// @brief Returns the origin and direction of the ray through a window point, (0,0) top left to (1,1) bottom right.
+		[[nodiscard]] inline auto screenRay(WindowHandle window, Vec2 normalized_position) const
+			-> std::expected<std::pair<Position, Direction>, Error> {
+			return impl_.screenRay(window, normalized_position);
+		} ///< Uses that window's camera and aspect ratio; pass InputState::mousePosition to pick under the mouse.
 		/// @brief Updates vertex positions for a fixed-topology triangle mesh.
 		[[nodiscard]] inline auto setObjectMeshPositions(RenderObjectHandle handle, Vector<Vec3> positions)
 			-> std::expected<void, Error> {

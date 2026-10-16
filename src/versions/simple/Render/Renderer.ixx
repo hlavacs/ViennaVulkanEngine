@@ -269,6 +269,9 @@ export namespace vve::simple {
 		/// @brief Sets the default view and clip planes used by every target without an explicit camera.
 		void setCamera(Camera camera) { camera_ = std::move(camera); }
 
+		/// @brief Returns the default camera of windows without an explicit camera.
+		[[nodiscard]] const Camera &camera() const { return camera_; }
+
 		/// @brief Sets the colour every window clears to before drawing the scene.
 		void setBackgroundColor(LinearColor color) { backgroundColor_ = color; }
 		/// @brief Returns the colour every window clears to.
@@ -351,7 +354,7 @@ export namespace vve::simple {
 
 } // namespace vve::simple
 
-namespace vve::simple::detail {
+export namespace vve::simple::detail {
 
 	/// @brief Up vector for lookAt that stays valid when the view direction is parallel to world +Y or -Y.
 	[[nodiscard]] inline Vec3 stableUp(Vec3 direction) {

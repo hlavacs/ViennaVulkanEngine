@@ -84,6 +84,84 @@ namespace vve::simple {
 													 std::expected<Transform, Error>{scene_instance->local_transform};
 	}
 
+	/// @brief Returns one live object's world box from its mesh vertices and world matrix.
+	///
+	/// A sprite turns towards every camera, so its box is a cube around its origin that covers each orientation.
+	auto RenderSystem::objectBounds(RenderObjectHandle handle) const -> std::expected<Bounds, Error> {
+		const auto object = findRenderObject(handle);
+		const auto *instance = object ? scene_.findInstance(*object) : nullptr;
+		const auto *mesh = instance ? scene_.findMesh(instance->mesh) : nullptr;
+		if (mesh == nullptr) { return std::unexpected(Error::missing_object); }
+		const Mat4 &world = instance->world_transform;
+		auto box = Bounds{};
+		const auto include = [&box](Vec3 point) {
+			box.minimum.value = box.valid ? min(box.minimum.value, point) : point;
+			box.maximum.value = box.valid ? max(box.maximum.value, point) : point;
+			box.valid = true;
+		};
+		if (instance->sprite) {
+			Scalar radius{};
+			for (const auto &vertex : *mesh->vertices) { radius = std::max(radius, length(vertex.position)); }
+			radius *= std::max(length(Vec3{world[0]}), length(Vec3{world[1]}));
+			const Vec3 centre{world[3]};
+			include(subtract(centre, Vec3{radius, radius, radius}));
+			include(add(centre, Vec3{radius, radius, radius}));
+			return box;
+		}
+		for (const auto &vertex : *mesh->vertices) { include(Vec3{multiply(world, Vec4{vertex.position, one()})}); }
+		return box;
+	}
+
+	/// @brief Finds the visible object whose world box a ray enters first, within max_distance along the normalized direction.
+	auto RenderSystem::raycast(Position origin, Direction direction, Scalar max_distance) const -> std::optional<RaycastHit> {
+		if (!(lengthSquared(direction.value) > zero())) { return std::nullopt; }
+		const Vec3 step = normalize(direction.value);
+		auto nearest = std::optional<RaycastHit>{};
+		// Slab test per box: the ray is inside between its latest entry and its earliest exit over the three axes.
+		for (const auto &[object, instance] : render_objects_) {
+			const auto *item = scene_.findInstance(instance);
+			const auto box = item != nullptr && item->visible ? objectBounds(object) : std::unexpected(Error::missing_object);
+			if (!box || !box->valid) { continue; }
+			Scalar enter{zero()};
+			Scalar leave{max_distance};
+			for (const int axis : {0, 1, 2}) {
+				const Scalar start = origin.value[axis];
+				const Scalar low = box->minimum.value[axis];
+				const Scalar high = box->maximum.value[axis];
+				if (step[axis] == zero()) {
+					if (start < low || start > high) { leave = -one(); }
+					continue;
+				}
+				const Scalar first = (low - start) / step[axis];
+				const Scalar second = (high - start) / step[axis];
+				enter = std::max(enter, std::min(first, second));
+				leave = std::min(leave, std::max(first, second));
+			}
+			if (enter <= leave && (!nearest || enter < nearest->distance)) { nearest = RaycastHit{.object = object, .distance = enter}; }
+		}
+		return nearest;
+	}
+
+	/// @brief Returns the world ray through a point of a rendered window, (0,0) top left to (1,1) bottom right, from its camera.
+	auto RenderSystem::screenRay(WindowHandle window, Vec2 normalized_position) const -> std::expected<std::pair<Position, Direction>, Error> {
+		const auto *selected = renderedWindow(window);
+		if (selected == nullptr) { return std::unexpected(Error::invalid_handle); }
+		// The same camera the renderer uses: the window override, a pending one before initialization, or the default.
+		const Camera *camera = &renderer_.camera();
+		if (const auto target = std::ranges::find(renderer_.targets, window, &WindowTarget::handle);
+			target != renderer_.targets.end() && target->camera) { camera = &*target->camera; }
+		if (const auto pending = pending_cameras_.find(window); pending != pending_cameras_.end()) { camera = &pending->second; }
+		const auto extent = selected->info().extent;
+		const Scalar aspect = extent.height == 0U ? one() : static_cast<Scalar>(extent.width) / static_cast<Scalar>(extent.height);
+		const Vec3 forward = normalize(camera->forward.value);
+		const Vec3 right = normalize(cross(forward, detail::stableUp(forward)));
+		const Vec3 up = cross(right, forward);
+		const Scalar tan_half = std::tan(camera->fov_y.radians / 2);
+		const Scalar x = (2 * normalized_position.x - one()) * tan_half * aspect;
+		const Scalar y = (one() - 2 * normalized_position.y) * tan_half;
+		return std::pair{camera->position, Direction{.value = normalize(add(forward, add(scale(right, x), scale(up, y))))}};
+	}
+
 	/// @brief Sets the default camera for windows without an override; each target supplies its own aspect ratio.
 	auto RenderSystem::setCamera(Camera camera) -> void {
 		renderer_.setCamera(std::move(camera));
@@ -100,12 +178,15 @@ namespace vve::simple {
 		return updateCamera(window, std::nullopt);
 	}
 
+	/// @brief Returns an open window that renders, or null for unknown, closed and opted-out windows.
+	auto RenderSystem::renderedWindow(WindowHandle window) const -> const Window * {
+		const auto *selected = window_system_ == nullptr ? nullptr : window_system_->findWindow(window);
+		return selected == nullptr || selected->info().should_close || selected->rendererId().value == "none" ? nullptr : selected;
+	}
+
 	/// @brief Changes a target's override or retains it until lazy initialization; invalid windows leave cameras untouched.
 	auto RenderSystem::updateCamera(WindowHandle window, std::optional<Camera> camera) -> std::expected<void, Error> {
-		const auto *selected = window_system_ == nullptr ? nullptr : window_system_->findWindow(window);
-		if (selected == nullptr || selected->info().should_close || selected->rendererId().value == "none") {
-			return std::unexpected(Error::invalid_handle);
-		}
+		if (renderedWindow(window) == nullptr) { return std::unexpected(Error::invalid_handle); }
 		if (initialized_) {
 			const auto target = std::ranges::find(renderer_.targets, window, &WindowTarget::handle);
 			if (target == renderer_.targets.end()) { return std::unexpected(Error::invalid_handle); }

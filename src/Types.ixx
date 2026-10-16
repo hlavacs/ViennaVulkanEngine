@@ -316,6 +316,12 @@ export namespace vve {
 		Transform transform{};													///< Local or world-space placement.
 	};
 
+	/// @brief Nearest render object found by RenderSystem::raycast.
+	struct RaycastHit {
+		RenderObjectHandle object{};											///< Object whose world box the ray enters first.
+		Scalar distance{};														///< Distance from the ray origin to the box, zero when the origin is inside.
+	};
+
 	/// @brief Public scene instantiation options for imported scene visibility.
 	struct SceneInstantiationOptions {
 		bool instantiate_geometry{true};									///< Creates render objects from imported geometry.

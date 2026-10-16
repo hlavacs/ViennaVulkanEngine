@@ -91,6 +91,10 @@ export namespace vve::simple {
 		[[nodiscard]] auto objectOpacity(RenderObjectHandle handle) const												-> std::expected<Scalar, Error>;
 		[[nodiscard]] auto setObjectTransform(RenderObjectHandle handle, Transform transform)					-> std::expected<void, Error>;
 		[[nodiscard]] auto objectTransform(RenderObjectHandle handle) const											-> std::expected<Transform, Error>;
+		[[nodiscard]] auto objectBounds(RenderObjectHandle handle) const												-> std::expected<Bounds, Error>;
+		[[nodiscard]] auto raycast(Position origin, Direction direction, Scalar max_distance) const			-> std::optional<RaycastHit>;
+		[[nodiscard]] auto screenRay(WindowHandle window, Vec2 normalized_position) const
+			-> std::expected<std::pair<Position, Direction>, Error>;
 		auto setCamera(Camera camera) -> void;
 		auto setBackgroundColor(LinearColor color) -> void;
 		[[nodiscard]] auto backgroundColor() const -> LinearColor;
@@ -224,6 +228,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto acquirePrimitiveMesh(PrimitiveShape shape, Vec3 minimum, Vec3 maximum,
 			Vec2 uv_scale = {1.0F, 1.0F}) -> RenderMeshHandle;
 		[[nodiscard]] auto updateCamera(WindowHandle window, std::optional<Camera> camera) -> std::expected<void, Error>;
+		[[nodiscard]] auto renderedWindow(WindowHandle window) const												-> const Window *;
 		[[nodiscard]] auto registerRenderObject(RenderInstanceHandle instance)								-> RenderObjectHandle;
 		auto addImportedLight(const LightDescriptor &light, std::uint64_t owner)								-> void;
 		auto removeImportedLights(std::uint64_t owner)																-> void;
