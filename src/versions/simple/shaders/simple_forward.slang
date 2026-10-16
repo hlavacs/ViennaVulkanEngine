@@ -109,6 +109,7 @@ const uint kMaxSceneTextures = 1; ///< Renderer specializes this array size to t
 static const uint kNoTexture = VVE_NO_TEXTURE; ///< Absent material texture index defined in simple_shared.h.
 static const uint kUnlitFlag = 1;  ///< ObjectPushConstants::flags bit for flat, unlit objects.
 static const uint kSkyFlag = 2;    ///< ObjectPushConstants::flags bit for the skybox.
+static const uint kSpriteFlag = 4; ///< ObjectPushConstants::flags bit for camera-facing quads.
 static const float kPi = 3.14159265358979; ///< Converts sky angles to panorama coordinates.
 static const float kAlphaMask = 1.0;  ///< Cut-out alpha mode stored in emissiveFactor.w.
 static const float kAlphaBlend = 2.0; ///< Blended alpha mode stored in emissiveFactor.w.
@@ -193,6 +194,16 @@ float3x3 normalMatrix(float4x4 model)
     return determinant < 0.0 ? -cofactor : cofactor;
 }
 
+/**
+ * @brief Half a texel of one table texture; clamping by it keeps the repeat sampler from wrapping over image edges.
+ */
+float2 halfTexel(uint texture)
+{
+    uint width, height;
+    baseColorTextures[texture].GetDimensions(width, height);
+    return 0.5 / float2(width, height);
+}
+
 [shader("vertex")]
 VertexOutput vertexMain(VertexInput input)
 {
@@ -207,7 +218,19 @@ VertexOutput vertexMain(VertexInput input)
         output.tangent = float4(0.0);
         return output;
     }
-    const float4 worldPosition = mul(object.model, float4(input.position, 1.0));
+    float4 worldPosition = mul(object.model, float4(input.position, 1.0));
+    // Sprites keep their world origin and span the quad along the camera's right and up vectors (view rows 0 and 1).
+    if ((object.flags & kSpriteFlag) != 0) {
+        const float2 scale = float2(length(mul(object.model, float4(1.0, 0.0, 0.0, 0.0)).xyz), length(mul(object.model, float4(0.0, 1.0, 0.0, 0.0)).xyz));
+        worldPosition = mul(object.model, float4(0.0, 0.0, 0.0, 1.0));
+        worldPosition.xyz += frame.view[0].xyz * (input.position.x * scale.x) + frame.view[1].xyz * (input.position.y * scale.y);
+        output.position = mul(frame.projection, mul(frame.view, worldPosition));
+        output.worldPos = worldPosition.xyz;
+        output.texCoord = input.texCoord;
+        output.normal = frame.view[2].xyz;                               ///< Points towards the camera.
+        output.tangent = float4(0.0);
+        return output;
+    }
     const float4 viewPosition = mul(frame.view, worldPosition);
     output.position = mul(frame.projection, viewPosition);
     output.worldPos = worldPosition.xyz;
@@ -234,9 +257,8 @@ FragmentOutput fragmentMain(FragmentInput input)
         float2 uv = float2(atan2(d.x, -d.z) / (2.0 * kPi) + 0.5, 1.0 - acos(clamp(d.y, -1.0, 1.0)) / kPi);
         float3 sky = float3(1.0);
         if (material.baseColorTexture < kMaxSceneTextures) {
-            uint width, height;
-            baseColorTextures[material.baseColorTexture].GetDimensions(width, height);
-            uv.y = clamp(uv.y, 0.5 / float(height), 1.0 - 0.5 / float(height)); ///< The repeat sampler must not wrap over the poles.
+            const float edge = halfTexel(material.baseColorTexture).y;
+            uv.y = clamp(uv.y, edge, 1.0 - edge);                        ///< The repeat sampler must not wrap over the poles.
             sky = baseColorTextures[material.baseColorTexture].SampleLevel(uv, 0.0).rgb; ///< Level 0 avoids a seam where u wraps.
         }
         output.color = float4(sky * material.baseColorFactor.rgb, 1.0);
@@ -245,12 +267,18 @@ FragmentOutput fragmentMain(FragmentInput input)
     float3 baseColor = material.baseColorFactor.rgb;                      ///< Material factor remains the default base color.
     float coverage = material.baseColorFactor.a;                         ///< Material alpha; the texture alpha multiplies it.
     if (material.baseColorTexture != kNoTexture && material.baseColorTexture < kMaxSceneTextures) {
-        const float4 texel = baseColorTextures[material.baseColorTexture].Sample(input.texCoord);
+        float2 texCoord = input.texCoord;
+        if ((object.flags & kSpriteFlag) != 0) {                          ///< A sprite edge must not blend with the opposite edge.
+            const float2 edge = halfTexel(material.baseColorTexture);
+            texCoord = clamp(texCoord, edge, 1.0 - edge);
+        }
+        const float4 texel = baseColorTextures[material.baseColorTexture].Sample(texCoord);
         baseColor *= texel.rgb;                                          ///< The material texture modulates its factor before lighting.
         coverage *= texel.a;
     }
     if (material.emissiveFactor.w == kAlphaMask && coverage < 0.5) { discard; } ///< Cut-out leaves holes, the rest is opaque.
-    const float alpha = (material.emissiveFactor.w == kAlphaBlend ? coverage : 1.0) * object.opacity; ///< Opaque modes ignore material alpha.
+    const bool blended = material.emissiveFactor.w == kAlphaBlend || (object.flags & kSpriteFlag) != 0; ///< Sprites always use their texture alpha.
+    const float alpha = (blended ? coverage : 1.0) * object.opacity;    ///< Opaque modes ignore material alpha.
     // The push constant keeps this return uniform, before other texture samples and lighting.
     if ((object.flags & kUnlitFlag) != 0) {
         output.color = float4(baseColor, alpha);                         ///< Unlit objects keep their sampled base colour.

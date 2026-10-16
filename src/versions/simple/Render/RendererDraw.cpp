@@ -47,6 +47,15 @@ namespace vve::simple {
 			return result;
 		}
 
+		/// @brief Encloses a camera-facing sprite in every orientation: a cube around its origin, sized by its scaled quad.
+		[[nodiscard]] Bounds spriteBounds(const Bounds &box, const Mat4 &model) {
+			if (!box.valid) { return {}; }
+			const Scalar scale = std::max(length(Vec3{model[0][0], model[0][1], model[0][2]}), length(Vec3{model[1][0], model[1][1], model[1][2]}));
+			const Scalar radius = scale * std::max(length(box.minimum.value), length(box.maximum.value));
+			const Vec3 centre{model[3][0], model[3][1], model[3][2]};
+			return {.minimum = {subtract(centre, Vec3{radius, radius, radius})}, .maximum = {add(centre, Vec3{radius, radius, radius})}, .valid = true};
+		}
+
 		/// @brief Extracts inward planes from Vulkan clip inequalities: -w <= x,y <= w and 0 <= z <= w.
 		[[nodiscard]] std::array<Vec4, 6U> frustumPlanes(const Mat4 &matrix) {
 			std::array<Vec4, 4U> rows{};
@@ -273,7 +282,8 @@ namespace vve::simple {
 				items.push_back({.mesh = &mesh,
 					.vertices = dynamic == target.dynamicVertices.end() ? mesh.vertexBuffer.buffer : dynamic->second.first[frameIndex].buffer,
 					.object = {.model = instance.world_transform, .materialIndex = material->second, .flags = flags, .opacity = instance.opacity},
-					.worldBounds = instance.sky ? Bounds{} : worldBounds(mesh.localBox, instance.world_transform), // Invalid bounds are never culled.
+					.worldBounds = instance.sky ? Bounds{} : instance.sprite ? spriteBounds(mesh.localBox, instance.world_transform) // Invalid bounds are never culled.
+						: worldBounds(mesh.localBox, instance.world_transform),
 					.castsShadow = instance.casts_shadow && !transparent && !instance.sky, .sky = instance.sky, .transparent = transparent,
 					.distance = lengthSquared(subtract(position, eye))});
 			}

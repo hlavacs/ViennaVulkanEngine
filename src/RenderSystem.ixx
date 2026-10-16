@@ -179,6 +179,11 @@ export namespace vve {
 		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addTexturedCuboid(const TexturedCuboidDescriptor &cuboid) {
 			return addTexturedCuboid(cuboid.minimum, cuboid.maximum, cuboid.base_color_texture, cuboid.transform);
 		}																																		///< Adds a textured cuboid descriptor.
+		/// @brief Adds a camera-facing textured quad of the given size; the texture alpha makes it see-through.
+		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addSprite(Vec2 size, std::filesystem::path texture,
+			LinearColor color = {.value = Vec3{1.0F, 1.0F, 1.0F}}, Transform transform = {}) {
+			return impl_.addSprite(size, std::move(texture), color, transform);
+		} ///< Sprites are unlit and cast no shadows; only translation and x/y scale apply. Move many sprites for particles.
 		/// @brief Removes one previously added render object.
 		[[nodiscard]] inline auto removeObject(RenderObjectHandle handle) -> std::expected<void, Error> {
 			return impl_.removeObject(handle);

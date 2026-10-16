@@ -82,6 +82,7 @@ export namespace vve::simple {
 			Vector<std::uint32_t> indices);
 		[[nodiscard]] auto addPlaneMesh(Vec2 half_extent, Vec2 uv_scale = {1.0F, 1.0F}) -> RenderMeshHandle;
 		[[nodiscard]] auto addCuboidMesh(Vec3 minimum, Vec3 maximum)														-> RenderMeshHandle;
+		[[nodiscard]] auto addSpriteMesh(Vec2 half_extent)																	-> RenderMeshHandle;
 		[[nodiscard]] std::expected<RenderInstanceHandle, Error>
 		addInstance(RenderMeshHandle mesh, RenderMaterialHandle material, Transform local = {},
 						Mat4 world = identityMat4());
@@ -379,6 +380,16 @@ namespace vve::simple {
 		appendFace(vertices, indices, Vec3{0.0F, -1.0F, 0.0F},
 						{Vec3{minimum.x, minimum.y, minimum.z}, Vec3{maximum.x, minimum.y, minimum.z},
 						Vec3{maximum.x, minimum.y, maximum.z}, Vec3{minimum.x, minimum.y, maximum.z}});
+		return addMesh(std::make_shared<std::vector<RenderVertex>>(std::move(vertices)), std::move(indices));
+	}
+
+	/// @brief Creates one XY quad facing +Z; the shader turns sprite instances towards the camera.
+	inline auto RenderScene::addSpriteMesh(Vec2 half_extent) -> RenderMeshHandle {
+		auto vertices = Vector<RenderVertex>{};
+		auto indices = Vector<std::uint32_t>{};
+		appendFace(vertices, indices, Vec3{0.0F, 0.0F, 1.0F},
+						{Vec3{-half_extent.x, -half_extent.y, 0.0F}, Vec3{half_extent.x, -half_extent.y, 0.0F},
+						Vec3{half_extent.x, half_extent.y, 0.0F}, Vec3{-half_extent.x, half_extent.y, 0.0F}});
 		return addMesh(std::make_shared<std::vector<RenderVertex>>(std::move(vertices)), std::move(indices));
 	}
 

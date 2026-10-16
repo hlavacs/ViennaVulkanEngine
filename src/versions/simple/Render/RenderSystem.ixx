@@ -140,6 +140,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto addTexturedPlane(Vec2 half_extent, std::filesystem::path base_color_texture,
 			Vec2 uv_scale = {1.0F, 1.0F}, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto addTexturedCuboid(Vec3 minimum, Vec3 maximum, std::filesystem::path base_color_texture, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto addSprite(Vec2 size, std::filesystem::path texture, LinearColor color = {.value = oneVec3()},
+			Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto setSkybox(const std::filesystem::path &panorama)										-> std::expected<void, Error>;
 		auto clearSkybox()																												-> void;
 		auto clearScene()																												-> void;
@@ -194,8 +196,9 @@ export namespace vve::simple {
 	private:
 		/// @brief Primitive geometry families with independently cached local extents.
 		enum class PrimitiveShape {
-			plane, ///< Flat XZ quad.
-			cuboid ///< Six textured faces.
+			plane,  ///< Flat XZ quad.
+			cuboid, ///< Six textured faces.
+			sprite  ///< XY quad turned towards the camera.
 		};
 		/// @brief One node of the world scene tree.
 		struct SceneNode {

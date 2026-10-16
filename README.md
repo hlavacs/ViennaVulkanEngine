@@ -241,6 +241,7 @@ The `vve::RenderSystem` facade offers a few features a simple game needs:
 - Transparency: `setObjectOpacity(object, opacity)` (0 to 1, read back with `objectOpacity`) blends an object over what lies behind it. Imported glTF materials keep their alpha mode: `OPAQUE` ignores alpha, `MASK` cuts holes where the base-colour alpha is below 0.5, and `BLEND` is see-through; OBJ materials with a dissolve below 1 are blended. Transparent objects are drawn after solid ones, far to near, and cast no shadows; cut-out objects cast solid shadows.
 - Background: `setBackgroundColor(color)` sets the colour every window clears to (default light blue); `backgroundColor()` reads it.
 - Skybox: `setSkybox(panorama)` surrounds every camera with a 2:1 equirectangular image (top row straight up); `clearSkybox()` and `clearScene()` remove it. A missing image returns `Error::io_error`.
+- Sprites: `addSprite(size, texture, color, transform)` adds an unlit textured quad that always faces each window's camera; its texture alpha makes it see-through. Only translation and x/y scale apply, and sprites cast no shadows. Particles are many sprites moved by game code.
 
 ## Audio
 

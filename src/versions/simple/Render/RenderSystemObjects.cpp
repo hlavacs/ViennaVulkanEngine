@@ -39,6 +39,28 @@ namespace vve::simple {
 		return {};
 	}
 
+	/// @brief Adds an unlit, blended, textured quad of the given size that always faces the camera.
+	///
+	/// Only the translation and the x/y scale of the transform apply; a sprite casts no shadow.
+	auto RenderSystem::addSprite(Vec2 size, std::filesystem::path texture, LinearColor color, Transform transform)
+		-> std::expected<RenderObjectHandle, Error> {
+		if (!(size.x > zero() && size.y > zero() && std::isfinite(size.x) && std::isfinite(size.y))) {
+			return std::unexpected(Error::invalid_argument);
+		}
+		const auto texture_index = scene_.acquireTexture(texture);
+		if (!texture_index) { return std::unexpected(texture_index.error()); }
+		const auto material = acquirePrimitiveMaterial(color, *texture_index);
+		const auto half = Vec3{size.x / 2, size.y / 2, 0};
+		const auto mesh = acquirePrimitiveMesh(PrimitiveShape::sprite, Vec3{-half.x, -half.y, 0}, half);
+		auto instance = scene_.addInstance(mesh, material, transform, detail::modelMatrix(transform));
+		if (!instance) { return std::unexpected(instance.error()); }
+		auto *sprite = scene_.findInstance(*instance);
+		sprite->sprite = true;
+		sprite->unlit = true;
+		sprite->casts_shadow = false;
+		return registerRenderObject(*instance);
+	}
+
 	/// @brief Releases a mesh, a material and textures that no instance uses anymore.
 	///
 	/// Imported caches retain their resources; primitive and edited resources live until their last instance.
@@ -190,6 +212,7 @@ namespace vve::simple {
 		auto &mesh = primitive_meshes_[key];
 		if (scene_.findMesh(mesh) == nullptr) {
 			mesh = shape == PrimitiveShape::plane ? scene_.addPlaneMesh(Vec2{maximum.x, maximum.z}, uv_scale)
+				: shape == PrimitiveShape::sprite ? scene_.addSpriteMesh(Vec2{maximum.x, maximum.y})
 				: scene_.addCuboidMesh(minimum, maximum);
 		}
 		return mesh;
