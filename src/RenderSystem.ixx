@@ -67,6 +67,10 @@ export namespace vve {
 		} ///< Overrides one window after engine init, even before its first frame; unknown, closed or opted-out windows return invalid_handle.
 		/// @brief Clears one window's override so it follows the current default camera again.
 		[[nodiscard]] inline auto clearCamera(WindowHandle window) -> std::expected<void, Error> { return impl_.clearCamera(window); } ///< Restores the current default camera; the same window validation as setCamera applies.
+		/// @brief Sets the colour shown where no object or sky is drawn, in every window.
+		inline auto setBackgroundColor(LinearColor color) -> void { impl_.setBackgroundColor(color); }
+		/// @brief Returns the background colour; the default is a light blue.
+		[[nodiscard]] inline auto backgroundColor() const -> LinearColor { return impl_.backgroundColor(); }
 		/// @brief Clears all authored and imported lights, preserving objects, resources, cameras and scene instances.
 		inline auto clearLights() -> void { impl_.clearLights(); } ///< Removes all lights; objects, resources, cameras and scene instances stay.
 		/// @brief Sets the active directional light.

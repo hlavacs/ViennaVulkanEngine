@@ -239,6 +239,7 @@ Every test is a C++ executable built from one file in `tests/` and registered in
 The `vve::RenderSystem` facade offers a few features a simple game needs:
 
 - Transparency: `setObjectOpacity(object, opacity)` (0 to 1, read back with `objectOpacity`) blends an object over what lies behind it. Imported glTF materials keep their alpha mode: `OPAQUE` ignores alpha, `MASK` cuts holes where the base-colour alpha is below 0.5, and `BLEND` is see-through; OBJ materials with a dissolve below 1 are blended. Transparent objects are drawn after solid ones, far to near, and cast no shadows; cut-out objects cast solid shadows.
+- Background: `setBackgroundColor(color)` sets the colour every window clears to (default light blue); `backgroundColor()` reads it.
 
 ## Audio
 

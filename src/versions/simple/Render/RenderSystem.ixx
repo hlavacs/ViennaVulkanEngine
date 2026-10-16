@@ -92,6 +92,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto setObjectTransform(RenderObjectHandle handle, Transform transform)					-> std::expected<void, Error>;
 		[[nodiscard]] auto objectTransform(RenderObjectHandle handle) const											-> std::expected<Transform, Error>;
 		auto setCamera(Camera camera) -> void;
+		auto setBackgroundColor(LinearColor color) -> void;
+		[[nodiscard]] auto backgroundColor() const -> LinearColor;
 		[[nodiscard]] auto setCamera(WindowHandle window, Camera camera) -> std::expected<void, Error>;
 		[[nodiscard]] auto clearCamera(WindowHandle window) -> std::expected<void, Error>;
 		auto clearLights() -> void;
@@ -274,6 +276,12 @@ namespace vve::simple {
 
 	/// @brief Returns the forward renderer backend.
 	inline auto RenderSystem::forward() const																	-> const ForwardRenderer &{ return renderer_; }
+
+	/// @brief Sets the clear colour of every window.
+	inline auto RenderSystem::setBackgroundColor(LinearColor color) -> void { renderer_.setBackgroundColor(color); }
+
+	/// @brief Returns the clear colour of every window; the default is a light blue.
+	inline auto RenderSystem::backgroundColor() const -> LinearColor { return renderer_.backgroundColor(); }
 
 	/// @brief Mints a process-wide unique public render-object handle for one internal scene instance.
 	inline auto RenderSystem::registerRenderObject(RenderInstanceHandle instance)

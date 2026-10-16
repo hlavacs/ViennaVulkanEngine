@@ -269,6 +269,11 @@ export namespace vve::simple {
 		/// @brief Sets the default view and clip planes used by every target without an explicit camera.
 		void setCamera(Camera camera) { camera_ = std::move(camera); }
 
+		/// @brief Sets the colour every window clears to before drawing the scene.
+		void setBackgroundColor(LinearColor color) { backgroundColor_ = color; }
+		/// @brief Returns the colour every window clears to.
+		[[nodiscard]] LinearColor backgroundColor() const { return backgroundColor_; }
+
 		/// @brief Returns whether the concrete Vulkan draw path presented a frame.
 		[[nodiscard]] bool renderFrame(WindowTarget &target, VulkanReadback *readback = nullptr) { return drawFrame(target, readback); }
 
@@ -312,6 +317,7 @@ export namespace vve::simple {
 		FrameUniforms frameUniforms_{}; ///< Camera and packed light data assembled directly for the current window's uniform upload.
 		Camera camera_{.position = {Vec3{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}},
 			.forward = {Vec3{zero(), static_cast<Scalar>(-5.0), static_cast<Scalar>(-9.0)}}}; ///< Default view retained across target creation and renderer shutdown.
+		LinearColor backgroundColor_{.value = Vec3{static_cast<Scalar>(0.45), static_cast<Scalar>(0.70), one()}}; ///< Light-blue clear colour of the forward pass.
 		VkDescriptorPool imguiDescriptorPool_{VK_NULL_HANDLE}; ///< Owned Dear ImGui descriptor pool reserved for backend texture descriptors.
 		std::function<bool()> guiPrepare_; ///< Optional GUI preparation before command recording, only for its owning window.
 		std::function<void(VkCommandBuffer)> guiRecord_; ///< Optional GUI recorder invoked only when preparation produced vertices.
