@@ -83,6 +83,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto addPlaneMesh(Vec2 half_extent, Vec2 uv_scale = {1.0F, 1.0F}) -> RenderMeshHandle;
 		[[nodiscard]] auto addCuboidMesh(Vec3 minimum, Vec3 maximum)														-> RenderMeshHandle;
 		[[nodiscard]] auto addSpriteMesh(Vec2 half_extent)																	-> RenderMeshHandle;
+		[[nodiscard]] auto addSphereMesh(Scalar radius)																		-> RenderMeshHandle;
 		[[nodiscard]] std::expected<RenderInstanceHandle, Error>
 		addInstance(RenderMeshHandle mesh, RenderMaterialHandle material, Transform local = {},
 						Mat4 world = identityMat4());
@@ -390,6 +391,34 @@ namespace vve::simple {
 		appendFace(vertices, indices, Vec3{0.0F, 0.0F, 1.0F},
 						{Vec3{-half_extent.x, -half_extent.y, 0.0F}, Vec3{half_extent.x, -half_extent.y, 0.0F},
 						Vec3{half_extent.x, half_extent.y, 0.0F}, Vec3{-half_extent.x, half_extent.y, 0.0F}});
+		return addMesh(std::make_shared<std::vector<RenderVertex>>(std::move(vertices)), std::move(indices));
+	}
+
+	/// @brief Creates a UV sphere of 32 slices and 16 stacks; normals point outwards and v runs from the south to the north pole.
+	inline auto RenderScene::addSphereMesh(Scalar radius) -> RenderMeshHandle {
+		constexpr std::uint32_t slices{32U};
+		constexpr std::uint32_t stacks{16U};
+		auto vertices = Vector<RenderVertex>{};
+		auto indices = Vector<std::uint32_t>{};
+		vertices.reserve((stacks + 1U) * (slices + 1U));
+		// Rows run from the north pole down; the seam column is duplicated so u reaches one.
+		for (std::uint32_t stack{}; stack <= stacks; ++stack) {
+			const Scalar theta = std::numbers::pi_v<Scalar> * static_cast<Scalar>(stack) / stacks;
+			for (std::uint32_t slice{}; slice <= slices; ++slice) {
+				const Scalar phi = 2 * std::numbers::pi_v<Scalar> * static_cast<Scalar>(slice) / slices;
+				const Vec3 normal{std::sin(theta) * std::cos(phi), std::cos(theta), std::sin(theta) * std::sin(phi)};
+				vertices.push_back(RenderVertex{.position = Vec3{normal.x * radius, normal.y * radius, normal.z * radius}, .normal = normal,
+					.uv = Vec2{static_cast<Scalar>(slice) / slices, one() - static_cast<Scalar>(stack) / stacks}});
+			}
+		}
+		// Two outward-facing triangles per quad between neighbouring rows.
+		for (std::uint32_t stack{}; stack < stacks; ++stack) {
+			for (std::uint32_t slice{}; slice < slices; ++slice) {
+				const std::uint32_t top = stack * (slices + 1U) + slice;
+				const std::uint32_t bottom = top + slices + 1U;
+				for (const auto index : {top, top + 1U, bottom, top + 1U, bottom + 1U, bottom}) { indices.push_back(index); }
+			}
+		}
 		return addMesh(std::make_shared<std::vector<RenderVertex>>(std::move(vertices)), std::move(indices));
 	}
 

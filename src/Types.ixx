@@ -305,6 +305,17 @@ export namespace vve {
 		Transform transform{};													///< Local or world-space placement.
 	};
 
+	/// @brief Facade descriptor for a mesh built by game code; per-vertex arrays are either empty or as long as positions.
+	struct MeshDescriptor {
+		Vector<Vec3> positions{};												///< Object-space vertex positions.
+		Vector<std::uint32_t> indices{};										///< Triangle list into positions, counter-clockwise front faces.
+		Vector<Vec3> normals{};													///< Vertex normals; empty gives flat face normals.
+		Vector<Vec2> uvs{};														///< Texture coordinates, v pointing up; empty gives zero.
+		LinearColor color{.value = oneVec3()};								///< Linear RGB surface color.
+		std::filesystem::path base_color_texture{};					///< Optional base-color texture; empty means none.
+		Transform transform{};													///< Local or world-space placement.
+	};
+
 	/// @brief Public scene instantiation options for imported scene visibility.
 	struct SceneInstantiationOptions {
 		bool instantiate_geometry{true};									///< Creates render objects from imported geometry.

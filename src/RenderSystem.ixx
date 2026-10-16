@@ -165,6 +165,14 @@ export namespace vve {
 			return impl_.addTriangleMesh(
 				std::move(positions), std::move(indices), color, transform);
 		}
+		/// @brief Adds a coloured sphere around the origin; spheres of equal radius share their geometry.
+		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addSphere(Scalar radius, LinearColor color, Transform transform = {}) {
+			return impl_.addSphere(radius, color, transform);
+		} ///< A radius that is not positive and finite returns invalid_argument.
+		/// @brief Adds a mesh built by game code: positions and triangle indices, optional normals, UVs and texture.
+		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addMesh(MeshDescriptor mesh) {
+			return impl_.addMesh(std::move(mesh));
+		} ///< Empty normals give face normals, empty UVs zero; mismatched sizes or bad indices return invalid_argument.
 		/// @brief Adds an XZ plane with UVs from zero to uv_scale; values above one repeat the texture.
 		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addTexturedPlane(Vec2 half_extent,
 			std::filesystem::path base_color_texture, Vec2 uv_scale = {1.0F, 1.0F}, Transform transform = {}) {

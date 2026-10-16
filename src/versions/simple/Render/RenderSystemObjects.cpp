@@ -213,6 +213,7 @@ namespace vve::simple {
 		if (scene_.findMesh(mesh) == nullptr) {
 			mesh = shape == PrimitiveShape::plane ? scene_.addPlaneMesh(Vec2{maximum.x, maximum.z}, uv_scale)
 				: shape == PrimitiveShape::sprite ? scene_.addSpriteMesh(Vec2{maximum.x, maximum.y})
+				: shape == PrimitiveShape::sphere ? scene_.addSphereMesh(maximum.x)
 				: scene_.addCuboidMesh(minimum, maximum);
 		}
 		return mesh;
@@ -255,6 +256,44 @@ namespace vve::simple {
 		const auto material = acquirePrimitiveMaterial(color);
 		const auto mesh = scene_.addTriangleMesh(std::move(positions), std::move(indices));
 		auto instance = scene_.addInstance(mesh, material, transform, detail::modelMatrix(transform));
+		if (!instance) { return std::unexpected(instance.error()); }
+		return registerRenderObject(*instance);
+	}
+
+	/// @brief Adds a coloured sphere; spheres of equal radius share one mesh.
+	auto RenderSystem::addSphere(Scalar radius, LinearColor color, Transform transform) -> std::expected<RenderObjectHandle, Error> {
+		if (!(radius > zero() && std::isfinite(radius))) { return std::unexpected(Error::invalid_argument); }
+		const auto material = acquirePrimitiveMaterial(color);
+		const auto mesh = acquirePrimitiveMesh(PrimitiveShape::sphere, Vec3{-radius, -radius, -radius}, Vec3{radius, radius, radius});
+		auto instance = scene_.addInstance(mesh, material, transform, detail::modelMatrix(transform));
+		if (!instance) { return std::unexpected(instance.error()); }
+		return registerRenderObject(*instance);
+	}
+
+	/// @brief Adds a mesh built by game code; it gets its own geometry and a shared plain material.
+	auto RenderSystem::addMesh(MeshDescriptor mesh) -> std::expected<RenderObjectHandle, Error> {
+		const auto count = mesh.positions.size();
+		const auto finite = [](const Vec3 &value) { return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z); };
+		if (count < 3U || mesh.indices.empty() || mesh.indices.size() % 3U != 0U || !std::ranges::all_of(mesh.positions, finite) ||
+			std::ranges::any_of(mesh.indices, [count](std::uint32_t index) { return index >= count; }) ||
+			(!mesh.normals.empty() && mesh.normals.size() != count) || (!mesh.uvs.empty() && mesh.uvs.size() != count)) {
+			return std::unexpected(Error::invalid_argument);
+		}
+		auto texture = RenderTextureIndex{kNoTexture};
+		if (!mesh.base_color_texture.empty()) {
+			const auto acquired = scene_.acquireTexture(mesh.base_color_texture);
+			if (!acquired) { return std::unexpected(acquired.error()); }
+			texture = *acquired;
+		}
+		// Zero normals make the shader use face normals; missing UVs stay zero.
+		auto vertices = std::make_shared<std::vector<RenderVertex>>(count);
+		for (std::size_t index{}; index < count; ++index) {
+			(*vertices)[index] = RenderVertex{.position = mesh.positions[index],
+				.normal = mesh.normals.empty() ? zeroVec3() : mesh.normals[index], .uv = mesh.uvs.empty() ? Vec2{} : mesh.uvs[index]};
+		}
+		const auto material = acquirePrimitiveMaterial(mesh.color, texture);
+		const auto render_mesh = scene_.addMesh(std::move(vertices), std::move(mesh.indices));
+		auto instance = scene_.addInstance(render_mesh, material, mesh.transform, detail::modelMatrix(mesh.transform));
 		if (!instance) { return std::unexpected(instance.error()); }
 		return registerRenderObject(*instance);
 	}
