@@ -32,13 +32,13 @@ import std;
 	* - VulkanVertexInputDescription stores the fixed RenderVertex binding and attribute layout for the forward pipeline.
 	* - VulkanPipelineLayout owns only VkPipelineLayout creation and teardown for one descriptor set and model push constants.
 	* - VulkanShaderModule owns only VkShaderModule creation from embedded SPIR-V words and teardown.
-	* - VulkanGraphicsPipeline owns one dynamic-rendering VkPipeline: forward color+depth or depth-only shadow.
+	* - VulkanGraphicsPipeline owns one dynamic-rendering VkPipeline: forward color+depth, blended forward, or depth-only shadow.
 	*/
 export namespace vve::simple {
 	/// @brief Plain GPU material data matching the Slang GpuMaterial storage-buffer layout.
 	struct GpuMaterial {
-		Vec4 baseColorFactor{one(), one(), one(), one()}; ///< Base-color factor; a base-color texture multiplies it.
-		Vec4 emissiveFactor{zero(), zero(), zero(), zero()}; ///< Emissive rgb factor with unused w; an emissive texture multiplies it.
+		Vec4 baseColorFactor{one(), one(), one(), one()}; ///< Base-color factor with opacity in w; a base-color texture multiplies it.
+		Vec4 emissiveFactor{zero(), zero(), zero(), zero()}; ///< Emissive rgb factor with the AlphaMode in w; an emissive texture multiplies it.
 		std::uint32_t baseColorTexture{kNoTexture};       ///< Base-color texture-table index.
 		std::uint32_t normalTexture{kNoTexture};          ///< Normal texture-table index.
 		std::uint32_t metalnessTexture{kNoTexture};       ///< Metalness texture-table index (blue channel).
@@ -55,10 +55,17 @@ export namespace vve::simple {
 		Mat4 model{};                        ///< Object-local model matrix selected before each draw call.
 		std::uint32_t materialIndex{};       ///< Dense slot in the GPU material storage buffer.
 		std::uint32_t shadowMatrixIndex{};   ///< Index into FrameUniforms::shadowViewProjs used by the shadow vertex stage.
-		std::uint32_t unlit{};               ///< Non-zero renders the object in its flat base color without any lighting.
-		std::uint32_t padding{};             ///< Keeps the push-constant block a multiple of 16 bytes.
+		std::uint32_t flags{};               ///< Bit 0 unlit, bit 1 sky, bit 2 sprite (objectFlag values).
+		float opacity{1.0F};                 ///< Object alpha multiplied with the material alpha.
 	};
 	static_assert(sizeof(ObjectPushConstants) == 80U); ///< Keeps the C++ and Slang push-constant blocks identical.
+
+	/// @brief Bits of ObjectPushConstants::flags, mirrored by simple_forward.slang.
+	namespace objectFlag {
+		inline constexpr std::uint32_t unlit{1U};  ///< Flat base colour without lighting.
+		inline constexpr std::uint32_t sky{2U};    ///< Skybox drawn around the camera at the far plane.
+		inline constexpr std::uint32_t sprite{4U}; ///< Quad turned towards the camera.
+	} // namespace objectFlag
 
 	/// @brief Set-0 descriptor bindings of simple_forward.slang; every [[vk::binding(n, 0)]] in the shader must match this table.
 	namespace shaderBinding {
@@ -247,10 +254,11 @@ export namespace vve::simple {
 			* @param colorAttachmentFormat Color format, VK_FORMAT_UNDEFINED for depth-only pipelines.
 			* @param depthAttachmentFormat Depth format of the depth attachment.
 			* @param textureCapacity Device-selected fragment texture-array specialization; unused by depth-only pipelines.
+			* @param blended True blends colour by source alpha and keeps the depth buffer unchanged (transparent objects).
 			* @return VK_SUCCESS when the graphics pipeline is available, otherwise a Vulkan error code.
 			*/
 		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkPipelineLayout pipelineLayout, VkShaderModule vertexModule, const char *vertexEntry,
-											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat, std::uint32_t textureCapacity = 0U) {
+											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat, std::uint32_t textureCapacity = 0U, bool blended = false) {
 			cleanup();
 			const bool depthOnly{fragmentModule == VK_NULL_HANDLE};
 			if (owningDevice == VK_NULL_HANDLE || pipelineLayout == VK_NULL_HANDLE || vertexModule == VK_NULL_HANDLE || depthAttachmentFormat == VK_FORMAT_UNDEFINED ||
@@ -295,7 +303,13 @@ export namespace vve::simple {
 			};
 			const VkPipelineMultisampleStateCreateInfo multisampling{.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT};
 			const VkPipelineColorBlendAttachmentState colorBlendAttachment{
-				.blendEnable = VK_FALSE,
+				.blendEnable = blended ? VK_TRUE : VK_FALSE,
+				.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,				///< Colour = src * alpha + dst * (1 - alpha).
+				.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+				.colorBlendOp = VK_BLEND_OP_ADD,
+				.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE,						///< An opaque background stays opaque.
+				.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+				.alphaBlendOp = VK_BLEND_OP_ADD,
 				.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 			};
 			const VkPipelineColorBlendStateCreateInfo colorBlending{
@@ -306,7 +320,7 @@ export namespace vve::simple {
 			const VkPipelineDepthStencilStateCreateInfo depthStencil{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
 				.depthTestEnable = VK_TRUE,
-				.depthWriteEnable = VK_TRUE,
+				.depthWriteEnable = blended ? VK_FALSE : VK_TRUE,			///< Transparent surfaces do not hide what is drawn after them.
 				.depthCompareOp = VK_COMPARE_OP_LESS,
 			};
 			const VkPipelineRenderingCreateInfo renderingInfo{

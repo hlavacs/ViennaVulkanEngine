@@ -202,6 +202,9 @@ namespace vve::simple {
 		material.emissive = factors.emissive.value_or(LinearColor{.value = emissive_texture ? oneVec3() : zeroVec3()});
 		// OBJ files always report an emissive color (black unless Ke is set); a black factor would hide an emissive map.
 		if (emissive_texture && lengthSquared(material.emissive.value) == zero()) { material.emissive.value = oneVec3(); }
+		// Files without an alpha mode (OBJ) blend only when they are see-through.
+		material.opacity = std::clamp(factors.opacity.value_or(one()), zero(), one());
+		material.alpha_mode = factors.alpha_mode.value_or(material.opacity < one() ? AlphaMode::blend : AlphaMode::opaque);
 
 		const auto render_material = scene_.addMaterial(std::move(material));
 		renderer_.markMaterialsDirty();

@@ -48,6 +48,8 @@ export namespace vve::simple {
 		RenderTextureIndex roughness_texture_index{kNoTexture};			///< Roughness texture-table index.
 		RenderTextureIndex emissive_texture_index{kNoTexture};			///< Emissive texture-table index.
 		RenderTextureIndex ambient_occlusion_texture_index{kNoTexture}; ///< Ambient-occlusion texture-table index.
+		Scalar opacity{one()};														///< Material alpha; the base-colour texture alpha multiplies it.
+		AlphaMode alpha_mode{AlphaMode::opaque};								///< How the material alpha is used.
 	};
 
 	/// @brief Scene draw item connecting mesh, material, and transforms.
@@ -60,6 +62,9 @@ export namespace vve::simple {
 		bool visible{true};																///< True when this instance should be rendered.
 		bool casts_shadow{true};													///< True when this instance participates in shadow passes.
 		bool unlit{false};														///< True when this instance bypasses lighting.
+		bool sky{false};															///< True for the internal skybox, drawn around the camera.
+		bool sprite{false};														///< True for a camera-facing blended quad.
+		Scalar opacity{one()};													///< Object alpha multiplied with the material alpha.
 	};
 
 	/// @brief Minimal CPU scene that stores render resources but does not draw them.

@@ -46,6 +46,24 @@ namespace vve::simple {
 													 std::expected<bool, Error>{scene_instance->visible};
 	}
 
+	/// @brief Sets one live render object's alpha in [0, 1]; below one it is blended over what lies behind it.
+	auto RenderSystem::setObjectOpacity(RenderObjectHandle handle, Scalar opacity) -> std::expected<void, Error> {
+		if (!(opacity >= zero() && opacity <= one())) { return std::unexpected(Error::invalid_argument); } // Also rejects NaN.
+		const auto instance = findRenderObject(handle);
+		auto *scene_instance = instance ? scene_.findInstance(*instance) : nullptr;
+		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
+		scene_instance->opacity = opacity;
+		return {};
+	}
+
+	/// @brief Returns one live render object's alpha.
+	auto RenderSystem::objectOpacity(RenderObjectHandle handle) const -> std::expected<Scalar, Error> {
+		const auto instance = findRenderObject(handle);
+		const auto *scene_instance = instance ? scene_.findInstance(*instance) : nullptr;
+		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
+		return scene_instance->opacity;
+	}
+
 	/// @brief Sets the source transform for one live render object.
 	auto RenderSystem::setObjectTransform(RenderObjectHandle handle, Transform transform) -> std::expected<void, Error> {
 		const auto instance = findRenderObject(handle);

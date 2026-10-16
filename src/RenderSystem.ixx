@@ -189,6 +189,14 @@ export namespace vve {
 		[[nodiscard]] inline auto objectVisible(RenderObjectHandle handle) const -> std::expected<bool, Error> {
 			return impl_.objectVisible(handle);
 		}
+		/// @brief Sets one render object's opacity in [0, 1]; below one the object is blended over what lies behind it.
+		[[nodiscard]] inline auto setObjectOpacity(RenderObjectHandle handle, Scalar opacity) -> std::expected<void, Error> {
+			return impl_.setObjectOpacity(handle, opacity);
+		} ///< Values outside [0, 1] return invalid_argument; unknown objects return missing_object.
+		/// @brief Returns one render object's opacity.
+		[[nodiscard]] inline auto objectOpacity(RenderObjectHandle handle) const -> std::expected<Scalar, Error> {
+			return impl_.objectOpacity(handle);
+		}
 		/// @brief Sets one render object's source transform.
 		[[nodiscard]] inline auto setObjectTransform(RenderObjectHandle handle, Transform transform) -> std::expected<void, Error> {
 			return impl_.setObjectTransform(handle, transform);

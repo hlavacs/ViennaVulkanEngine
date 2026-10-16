@@ -87,6 +87,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto setObjectCastsShadow(RenderObjectHandle handle, bool casts_shadow)					-> std::expected<void, Error>;
 		[[nodiscard]] auto setObjectVisible(RenderObjectHandle handle, bool visible)									-> std::expected<void, Error>;
 		[[nodiscard]] auto objectVisible(RenderObjectHandle handle) const												-> std::expected<bool, Error>;
+		[[nodiscard]] auto setObjectOpacity(RenderObjectHandle handle, Scalar opacity)								-> std::expected<void, Error>;
+		[[nodiscard]] auto objectOpacity(RenderObjectHandle handle) const												-> std::expected<Scalar, Error>;
 		[[nodiscard]] auto setObjectTransform(RenderObjectHandle handle, Transform transform)					-> std::expected<void, Error>;
 		[[nodiscard]] auto objectTransform(RenderObjectHandle handle) const											-> std::expected<Transform, Error>;
 		auto setCamera(Camera camera) -> void;

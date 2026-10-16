@@ -11,6 +11,7 @@ import VVEngine.Simple.Vulkan;
 
 /// @file
 /// @brief Per-window recording: DrawItem resolves scene data once; box and frustum helpers conservatively cull each pass.
+/// Solid items draw first, sorted by mesh; transparent items follow with the blended pipeline, sorted far to near.
 
 namespace vve::simple {
 
@@ -19,9 +20,11 @@ namespace vve::simple {
 		struct DrawItem {
 			const VulkanMesh *mesh{};       ///< Stable GPU mesh owner shared by all its instances.
 			VkBuffer vertices{};            ///< Static vertices or this window's completed dynamic slot.
-			ObjectPushConstants object{};   ///< Model, material slot and unlit flag passed to the shader.
+			ObjectPushConstants object{};   ///< Model, material slot, flags and opacity passed to the shader.
 			Bounds worldBounds{};           ///< World AABB enclosing all transformed object-space corners.
 			bool castsShadow{};             ///< Whether this visible instance participates in shadow passes.
+			bool transparent{};             ///< Blended after all solid objects, without depth writes.
+			Scalar distance{};              ///< Squared camera distance; transparent items draw far to near.
 		};
 
 		/// @brief Encloses an affine-transformed mesh, including rotations and negative/nonuniform scales.
@@ -250,6 +253,7 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return result; }
 
 		std::vector<DrawItem> items{};
+		const Vec3 eye{(target.camera ? *target.camera : camera_).position.value}; // Sorts transparent items by distance.
 		// Resolve scene handles and world boxes once, before any pass traverses the sorted draw list.
 		if (renderInstances_ != nullptr) {
 			items.reserve(renderInstances_->size());
@@ -260,19 +264,34 @@ namespace vve::simple {
 				if (uploaded == meshes.end() || material == materialSlots_.end()) { continue; }
 				const VulkanMesh &mesh = uploaded->second;
 				const auto dynamic = target.dynamicVertices.find(instance.mesh);
+				const bool blendedMaterial{materials_[material->second].emissiveFactor.w == static_cast<Scalar>(AlphaMode::blend)};
+				const Vec3 position{instance.world_transform[3][0], instance.world_transform[3][1], instance.world_transform[3][2]};
+				const std::uint32_t flags{(instance.unlit ? objectFlag::unlit : 0U) | (instance.sky ? objectFlag::sky : 0U) |
+					(instance.sprite ? objectFlag::sprite : 0U)};
 				items.push_back({.mesh = &mesh,
 					.vertices = dynamic == target.dynamicVertices.end() ? mesh.vertexBuffer.buffer : dynamic->second.first[frameIndex].buffer,
-					.object = {.model = instance.world_transform, .materialIndex = material->second, .unlit = instance.unlit ? 1U : 0U},
-					.worldBounds = worldBounds(mesh.localBox, instance.world_transform), .castsShadow = instance.casts_shadow});
+					.object = {.model = instance.world_transform, .materialIndex = material->second, .flags = flags, .opacity = instance.opacity},
+					.worldBounds = worldBounds(mesh.localBox, instance.world_transform), .castsShadow = instance.casts_shadow,
+					.transparent = blendedMaterial || instance.opacity < one() || instance.sprite,
+					.distance = lengthSquared(subtract(position, eye))});
 			}
 		}
-		std::ranges::sort(items, std::less<const VulkanMesh *>{}, &DrawItem::mesh);
+		std::ranges::sort(items, [](const DrawItem &left, const DrawItem &right) {
+			if (left.transparent != right.transparent) { return right.transparent; }
+			return left.transparent ? left.distance > right.distance : std::less<const VulkanMesh *>{}(left.mesh, right.mesh);
+		});
 		const VulkanMesh *boundMesh{};
 		const auto drawUploadedObjects = [&](std::uint32_t shadowMatrixIndex, bool shadowPass, const Mat4 &clip) {
 			const auto planes = frustumPlanes(clip);
+			bool blending{}; // The colour pass switches to the blended pipeline at the first transparent item.
 			// Bound mesh state survives dynamic-rendering boundaries and pipeline changes.
 			for (const auto &item : items) {
-				if ((shadowPass && !item.castsShadow) || !intersectsFrustum(item.worldBounds, planes)) { continue; }
+				if ((shadowPass && (!item.castsShadow || item.transparent)) || !intersectsFrustum(item.worldBounds, planes)) { continue; }
+				if (!shadowPass && item.transparent && !blending) {
+					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentPipeline.pipeline);
+					++lastFrameDrawStats_.pipelineBinds;
+					blending = true;
+				}
 				if (boundMesh != item.mesh) {
 					const VkDeviceSize offset{};
 					vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, &item.vertices, &offset);

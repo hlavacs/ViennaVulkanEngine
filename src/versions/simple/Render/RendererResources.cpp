@@ -276,6 +276,7 @@ namespace vve::simple {
 	/// @brief Creates the shared forward/shadow pipelines with a matching specialized material descriptor array.
 	VkResult ForwardRenderer::createScenePipelines(std::uint32_t textureCount) {
 		graphicsPipeline.cleanup();
+		transparentPipeline.cleanup();
 		shadowPipeline.cleanup();
 		pipelineLayout.cleanup();
 		VkResult result = descriptorSetLayout.create(device.device, textureCount);
@@ -287,6 +288,10 @@ namespace vve::simple {
 			fragShaderModule.shaderModule, vertexInput, hdrFormat, depthFormat, textureCount);
 		if (result != VK_SUCCESS) { return result; }
 		++forwardPipelineCreateCount_;
+		// The blended variant is part of the same forward setup and is not counted separately.
+		result = transparentPipeline.create(device.device, pipelineLayout.pipelineLayout, vertShaderModule.shaderModule, "vertexMain",
+			fragShaderModule.shaderModule, vertexInput, hdrFormat, depthFormat, textureCount, true);
+		if (result != VK_SUCCESS) { return result; }
 		return shadowPipeline.create(device.device, pipelineLayout.pipelineLayout, shadowShaderModule.shaderModule, "shadowVertexMain",
 			VK_NULL_HANDLE, vertexInput, VK_FORMAT_UNDEFINED, depthFormat);
 	}
@@ -434,8 +439,9 @@ namespace vve::simple {
 				materialSlots_.emplace(material.handle, slot);
 				materials_.push_back(GpuMaterial{
 					.baseColorFactor = Vec4{material.base_color.value.x, material.base_color.value.y,
-						material.base_color.value.z, one()},
-					.emissiveFactor = Vec4{material.emissive.value.x, material.emissive.value.y, material.emissive.value.z, zero()},
+						material.base_color.value.z, material.opacity},
+					.emissiveFactor = Vec4{material.emissive.value.x, material.emissive.value.y, material.emissive.value.z,
+						static_cast<Scalar>(material.alpha_mode)},
 					.baseColorTexture = textureIndex(material.base_color_texture_index),
 					.normalTexture = textureIndex(material.normal_texture_index),
 					.metalnessTexture = textureIndex(material.metalness_texture_index),
@@ -671,6 +677,7 @@ namespace vve::simple {
 		shadowDepthSamples.clear();
 		commandPool.cleanup();
 		graphicsPipeline.cleanup();
+		transparentPipeline.cleanup();
 		shadowPipeline.cleanup();
 		shadowShaderModule.cleanup();
 		fragShaderModule.cleanup();
