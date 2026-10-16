@@ -140,6 +140,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto addTexturedPlane(Vec2 half_extent, std::filesystem::path base_color_texture,
 			Vec2 uv_scale = {1.0F, 1.0F}, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto addTexturedCuboid(Vec3 minimum, Vec3 maximum, std::filesystem::path base_color_texture, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto setSkybox(const std::filesystem::path &panorama)										-> std::expected<void, Error>;
+		auto clearSkybox()																												-> void;
 		auto clearScene()																												-> void;
 		auto loadScene(Scene scene)																									-> SceneHandle;
 
@@ -207,6 +209,7 @@ export namespace vve::simple {
 		auto updateDown(SceneNodeHandle node, const Mat4 &parent_world)											-> void;
 		auto placeObject(RenderObjectHandle object, const Mat4 &world)												-> void;
 		auto detachObject(RenderObjectHandle object)																	-> void;
+		auto releaseUnused(RenderMeshHandle mesh, RenderMaterialHandle material)									-> void;
 		[[nodiscard]] auto acquirePrimitiveMaterial(LinearColor color, RenderTextureIndex texture = kNoTexture) -> RenderMaterialHandle;
 		[[nodiscard]] auto acquirePrimitiveMesh(PrimitiveShape shape, Vec3 minimum, Vec3 maximum,
 			Vec2 uv_scale = {1.0F, 1.0F}) -> RenderMeshHandle;
@@ -236,6 +239,7 @@ export namespace vve::simple {
 		std::map<std::pair<std::array<Scalar, 3>, RenderTextureIndex>, RenderMaterialHandle> primitive_materials_{}; ///< Materials keyed by colour and texture slot.
 		std::map<std::pair<PrimitiveShape, std::array<Scalar, 8>>, RenderMeshHandle> primitive_meshes_{}; ///< Meshes keyed by shape, local min/max extents and UV scale.
 		RenderMaterialHandle default_material_{}; ///< Shared fallback for imported meshes without a material.
+		RenderInstanceHandle sky_{};				///< Internal skybox instance; invalid without a skybox.
 		std::unordered_map<RenderObjectHandle, RenderInstanceHandle, HandleHash<RenderObjectHandle>>
 			render_objects_{};														///< Public render-object to internal instance map.
 		std::unordered_map<RenderObjectHandle, std::pair<RenderSceneInstanceHandle, NodeHandle>, HandleHash<RenderObjectHandle>>

@@ -25,7 +25,24 @@ namespace vve::simple {
 		const auto mesh = instance->mesh;
 		const auto material = instance->material;
 		if (!scene_.eraseInstance(*object)) { return std::unexpected(Error::missing_object); }
-		// Imported caches retain their resources; primitive and edited resources live until their last instance.
+		releaseUnused(mesh, material);
+		eraseRenderObject(handle);
+		if (const auto source = object_sources_.find(handle); source != object_sources_.end()) {
+			if (const auto instance = scene_instances_.find(source->second.first); instance != scene_instances_.end()) {
+				auto &objects = instance->second;
+				if (const auto entry = std::ranges::find(objects, handle); entry != objects.end()) { objects.erase(entry); }
+			}
+			object_sources_.erase(source);
+		}
+		detachObject(handle);	// The scene tree stops placing the removed object.
+		renderer_.markSceneResourcesDirty();
+		return {};
+	}
+
+	/// @brief Releases a mesh, a material and textures that no instance uses anymore.
+	///
+	/// Imported caches retain their resources; primitive and edited resources live until their last instance.
+	auto RenderSystem::releaseUnused(RenderMeshHandle mesh, RenderMaterialHandle material) -> void {
 		if (std::ranges::none_of(scene_.instances(), [mesh](const auto &item) { return item.mesh == mesh; }) &&
 			std::ranges::none_of(imported_render_meshes_, [mesh](const auto &entry) { return entry.second == mesh; })) {
 			scene_.eraseMesh(mesh);
@@ -39,17 +56,40 @@ namespace vve::simple {
 			renderer_.markMaterialsDirty();
 		}
 		(void)scene_.releaseUnusedTextures();
-		eraseRenderObject(handle);
-		if (const auto source = object_sources_.find(handle); source != object_sources_.end()) {
-			if (const auto instance = scene_instances_.find(source->second.first); instance != scene_instances_.end()) {
-				auto &objects = instance->second;
-				if (const auto entry = std::ranges::find(objects, handle); entry != objects.end()) { objects.erase(entry); }
-			}
-			object_sources_.erase(source);
-		}
-		detachObject(handle);	// The scene tree stops placing the removed object.
+	}
+
+	/// @brief Shows a 2:1 equirectangular panorama around every camera; it replaces an earlier skybox.
+	///
+	/// The sky is one internal instance (an inward-facing cube with an unlit textured material), not a render object.
+	auto RenderSystem::setSkybox(const std::filesystem::path &panorama) -> std::expected<void, Error> {
+		const auto texture = scene_.acquireTexture(panorama);
+		if (!texture) { return std::unexpected(texture.error()); }
+		const auto mesh = scene_.addCuboidMesh(Vec3{-1, -1, -1}, Vec3{1, 1, 1});
+		// Reverse the winding so the faces point inwards, towards the camera at the centre.
+		auto &indices = scene_.findMesh(mesh)->indices;
+		for (std::size_t first{}; first + 2U < indices.size(); first += 3U) { std::swap(indices[first + 1U], indices[first + 2U]); }
+		const auto material = acquirePrimitiveMaterial(LinearColor{.value = oneVec3()}, *texture);
+		const auto sky = scene_.addInstance(mesh, material);
+		if (!sky) { return std::unexpected(sky.error()); }
+		auto *instance = scene_.findInstance(*sky);
+		instance->sky = true;
+		instance->casts_shadow = false;
+		clearSkybox();	// The new texture is already held, so a repeated panorama is not decoded again.
+		sky_ = *sky;
 		renderer_.markSceneResourcesDirty();
 		return {};
+	}
+
+	/// @brief Removes the skybox, if any, and releases its resources; the background colour shows again.
+	auto RenderSystem::clearSkybox() -> void {
+		const auto *instance = scene_.findInstance(sky_);
+		if (instance == nullptr) { return; }
+		const auto mesh = instance->mesh;
+		const auto material = instance->material;
+		(void)scene_.eraseInstance(sky_);
+		sky_ = {};
+		releaseUnused(mesh, material);
+		renderer_.markSceneResourcesDirty();
 	}
 
 	/// @brief Returns public render objects registered for one scene instance.
@@ -287,6 +327,7 @@ namespace vve::simple {
 		primitive_materials_.clear();
 		primitive_meshes_.clear();
 		default_material_ = {};
+		sky_ = {};
 		renderer_.markSceneResourcesDirty();
 		renderer_.markMaterialsDirty();
 	}

@@ -108,6 +108,8 @@ ConstantBuffer<FrameUniforms> frame; ///< Frame-wide camera constants.
 const uint kMaxSceneTextures = 1; ///< Renderer specializes this array size to the selected device's descriptor capacity.
 static const uint kNoTexture = VVE_NO_TEXTURE; ///< Absent material texture index defined in simple_shared.h.
 static const uint kUnlitFlag = 1;  ///< ObjectPushConstants::flags bit for flat, unlit objects.
+static const uint kSkyFlag = 2;    ///< ObjectPushConstants::flags bit for the skybox.
+static const float kPi = 3.14159265358979; ///< Converts sky angles to panorama coordinates.
 static const float kAlphaMask = 1.0;  ///< Cut-out alpha mode stored in emissiveFactor.w.
 static const float kAlphaBlend = 2.0; ///< Blended alpha mode stored in emissiveFactor.w.
 
@@ -195,6 +197,16 @@ float3x3 normalMatrix(float4x4 model)
 VertexOutput vertexMain(VertexInput input)
 {
     VertexOutput output;
+    // The sky follows the camera's rotation only and lies just inside the far plane; the fragment stage gets its direction.
+    if ((object.flags & kSkyFlag) != 0) {
+        output.position = mul(frame.projection, float4(mul(float3x3(frame.view), input.position), 1.0));
+        output.position.z = 0.999999 * output.position.w;
+        output.worldPos = input.position;                                ///< Object-space direction from the cube centre.
+        output.texCoord = float2(0.0);
+        output.normal = float3(0.0);
+        output.tangent = float4(0.0);
+        return output;
+    }
     const float4 worldPosition = mul(object.model, float4(input.position, 1.0));
     const float4 viewPosition = mul(frame.view, worldPosition);
     output.position = mul(frame.projection, viewPosition);
@@ -216,6 +228,20 @@ FragmentOutput fragmentMain(FragmentInput input)
 {
     FragmentOutput output;
     const GpuMaterial material = materials[object.materialIndex];
+    // Equirectangular lookup; textures are stored bottom-up, so v = 1 is the image's top row (straight up).
+    if ((object.flags & kSkyFlag) != 0) {
+        const float3 d = normalize(input.worldPos);
+        float2 uv = float2(atan2(d.x, -d.z) / (2.0 * kPi) + 0.5, 1.0 - acos(clamp(d.y, -1.0, 1.0)) / kPi);
+        float3 sky = float3(1.0);
+        if (material.baseColorTexture < kMaxSceneTextures) {
+            uint width, height;
+            baseColorTextures[material.baseColorTexture].GetDimensions(width, height);
+            uv.y = clamp(uv.y, 0.5 / float(height), 1.0 - 0.5 / float(height)); ///< The repeat sampler must not wrap over the poles.
+            sky = baseColorTextures[material.baseColorTexture].SampleLevel(uv, 0.0).rgb; ///< Level 0 avoids a seam where u wraps.
+        }
+        output.color = float4(sky * material.baseColorFactor.rgb, 1.0);
+        return output;
+    }
     float3 baseColor = material.baseColorFactor.rgb;                      ///< Material factor remains the default base color.
     float coverage = material.baseColorFactor.a;                         ///< Material alpha; the texture alpha multiplies it.
     if (material.baseColorTexture != kNoTexture && material.baseColorTexture < kMaxSceneTextures) {

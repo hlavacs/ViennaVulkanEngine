@@ -11,7 +11,7 @@ import VVEngine.Simple.Vulkan;
 
 /// @file
 /// @brief Per-window recording: DrawItem resolves scene data once; box and frustum helpers conservatively cull each pass.
-/// Solid items draw first, sorted by mesh; transparent items follow with the blended pipeline, sorted far to near.
+/// Solid items draw first, sorted by mesh, then the sky; transparent items follow with the blended pipeline, sorted far to near.
 
 namespace vve::simple {
 
@@ -23,6 +23,7 @@ namespace vve::simple {
 			ObjectPushConstants object{};   ///< Model, material slot, flags and opacity passed to the shader.
 			Bounds worldBounds{};           ///< World AABB enclosing all transformed object-space corners.
 			bool castsShadow{};             ///< Whether this visible instance participates in shadow passes.
+			bool sky{};                     ///< Drawn after solid objects and before transparent ones, never culled.
 			bool transparent{};             ///< Blended after all solid objects, without depth writes.
 			Scalar distance{};              ///< Squared camera distance; transparent items draw far to near.
 		};
@@ -268,16 +269,19 @@ namespace vve::simple {
 				const Vec3 position{instance.world_transform[3][0], instance.world_transform[3][1], instance.world_transform[3][2]};
 				const std::uint32_t flags{(instance.unlit ? objectFlag::unlit : 0U) | (instance.sky ? objectFlag::sky : 0U) |
 					(instance.sprite ? objectFlag::sprite : 0U)};
+				const bool transparent{blendedMaterial || instance.opacity < one() || instance.sprite};
 				items.push_back({.mesh = &mesh,
 					.vertices = dynamic == target.dynamicVertices.end() ? mesh.vertexBuffer.buffer : dynamic->second.first[frameIndex].buffer,
 					.object = {.model = instance.world_transform, .materialIndex = material->second, .flags = flags, .opacity = instance.opacity},
-					.worldBounds = worldBounds(mesh.localBox, instance.world_transform), .castsShadow = instance.casts_shadow,
-					.transparent = blendedMaterial || instance.opacity < one() || instance.sprite,
+					.worldBounds = instance.sky ? Bounds{} : worldBounds(mesh.localBox, instance.world_transform), // Invalid bounds are never culled.
+					.castsShadow = instance.casts_shadow && !transparent && !instance.sky, .sky = instance.sky, .transparent = transparent,
 					.distance = lengthSquared(subtract(position, eye))});
 			}
 		}
-		std::ranges::sort(items, [](const DrawItem &left, const DrawItem &right) {
-			if (left.transparent != right.transparent) { return right.transparent; }
+		// Order: solid (by mesh), sky, transparent (far to near).
+		const auto group = [](const DrawItem &item) { return item.transparent ? 2 : item.sky ? 1 : 0; };
+		std::ranges::sort(items, [&group](const DrawItem &left, const DrawItem &right) {
+			if (group(left) != group(right)) { return group(left) < group(right); }
 			return left.transparent ? left.distance > right.distance : std::less<const VulkanMesh *>{}(left.mesh, right.mesh);
 		});
 		const VulkanMesh *boundMesh{};
@@ -286,7 +290,7 @@ namespace vve::simple {
 			bool blending{}; // The colour pass switches to the blended pipeline at the first transparent item.
 			// Bound mesh state survives dynamic-rendering boundaries and pipeline changes.
 			for (const auto &item : items) {
-				if ((shadowPass && (!item.castsShadow || item.transparent)) || !intersectsFrustum(item.worldBounds, planes)) { continue; }
+				if ((shadowPass && !item.castsShadow) || !intersectsFrustum(item.worldBounds, planes)) { continue; }
 				if (!shadowPass && item.transparent && !blending) {
 					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentPipeline.pipeline);
 					++lastFrameDrawStats_.pipelineBinds;

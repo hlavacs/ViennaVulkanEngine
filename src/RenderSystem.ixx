@@ -71,6 +71,12 @@ export namespace vve {
 		inline auto setBackgroundColor(LinearColor color) -> void { impl_.setBackgroundColor(color); }
 		/// @brief Returns the background colour; the default is a light blue.
 		[[nodiscard]] inline auto backgroundColor() const -> LinearColor { return impl_.backgroundColor(); }
+		/// @brief Shows a 2:1 equirectangular panorama image around every window's camera, replacing an earlier skybox.
+		[[nodiscard]] inline auto setSkybox(const std::filesystem::path &panorama) -> std::expected<void, Error> {
+			return impl_.setSkybox(panorama);
+		} ///< A missing or unreadable image returns io_error; clearScene also removes the skybox.
+		/// @brief Removes the skybox; the background colour shows again.
+		inline auto clearSkybox() -> void { impl_.clearSkybox(); }
 		/// @brief Clears all authored and imported lights, preserving objects, resources, cameras and scene instances.
 		inline auto clearLights() -> void { impl_.clearLights(); } ///< Removes all lights; objects, resources, cameras and scene instances stay.
 		/// @brief Sets the active directional light.
