@@ -384,6 +384,16 @@ function(vve_mirror_target_file target_name destination_dir)
    endif()
 endfunction()
 
+# Copy the DLLs a target needs next to it after each build. A target without DLLs, such as racer_logic_tests,
+# gets no copy step, because copy_if_different fails when it is given no files.
+function(vve_copy_target_runtime_dlls target_name)
+   set(dlls "$<TARGET_RUNTIME_DLLS:${target_name}>")
+   add_custom_command(TARGET "${target_name}" POST_BUILD
+      COMMAND "$<$<BOOL:${dlls}>:${CMAKE_COMMAND};-E;copy_if_different;${dlls};$<TARGET_FILE_DIR:${target_name}>>"
+      COMMAND_EXPAND_LISTS
+   )
+endfunction()
+
 function(vve_set_output_dirs target_name)
    get_target_property(target_type "${target_name}" TYPE)
 
@@ -428,12 +438,7 @@ function(vve_set_output_dirs target_name)
          if(TARGET vve_copy_runtime_dlls)
             add_dependencies("${target_name}" vve_copy_runtime_dlls)
          endif()
-         add_custom_command(TARGET "${target_name}" POST_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-               $<TARGET_RUNTIME_DLLS:${target_name}>
-               $<TARGET_FILE_DIR:${target_name}>
-            COMMAND_EXPAND_LISTS
-         )
+         vve_copy_target_runtime_dlls("${target_name}")
       endif()
    elseif(target_type STREQUAL "SHARED_LIBRARY")
       if(WIN32)
@@ -444,12 +449,7 @@ function(vve_set_output_dirs target_name)
          if(TARGET vve_copy_runtime_dlls)
             add_dependencies("${target_name}" vve_copy_runtime_dlls)
          endif()
-         add_custom_command(TARGET "${target_name}" POST_BUILD
-            COMMAND "${CMAKE_COMMAND}" -E copy_if_different
-               $<TARGET_RUNTIME_DLLS:${target_name}>
-               $<TARGET_FILE_DIR:${target_name}>
-            COMMAND_EXPAND_LISTS
-         )
+         vve_copy_target_runtime_dlls("${target_name}")
       else()
          set_target_properties("${target_name}" PROPERTIES
             LIBRARY_OUTPUT_DIRECTORY "${VVE_LIBRARY_OUTPUT_DIR}"
