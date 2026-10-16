@@ -228,9 +228,9 @@ These are separate operations. A sprite is a world object; a GUI image is drawn 
 \subsection*{A GUI callback}
 Include \api{<imgui.h>} before the module imports. Register a callback once; it builds the interface each GUI frame:
 \begin{lstlisting}
-// Assumes score outlives the callback, for example as a Game member.
-auto &gui = world.get<vve::GuiSystem>();
-gui.draw([&score] {
+// Inside Game::init; Game has an int score member.
+auto &gui = world.template get<vve::GuiSystem>();
+gui.draw([this] {
     ImGui::Begin("Score");
     ImGui::Text("Collected: %d", score);
     ImGui::End();

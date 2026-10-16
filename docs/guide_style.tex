@@ -1,11 +1,11 @@
 % Shared typesetting for the two source-grounded VVE teaching guides.
 \usepackage[a4paper,margin=23mm,headheight=15pt]{geometry}
 \usepackage{fontspec}
-\setmainfont{Latin Modern Roman}
-\setsansfont{Latin Modern Sans}
-\setmonofont{Latin Modern Mono}
-\usepackage{xcolor,graphicx,booktabs,tabularx,longtable,array,enumitem}
-\usepackage{listings,fancyhdr,hyperref,tikz}
+\setmainfont{Liberation Serif}
+\setsansfont{Liberation Sans}
+\setmonofont{Liberation Mono}
+\usepackage{xcolor,graphicx,booktabs,tabularx,longtable,array}
+\usepackage{listings,hyperref,tikz}
 \usetikzlibrary{arrows.meta,positioning}
 \definecolor{vveblue}{HTML}{174A70}
 \definecolor{vvelight}{HTML}{F1F5F8}
@@ -15,15 +15,16 @@
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt plus 1pt}
 \setlength{\emergencystretch}{3em}
+\sloppy
 \renewcommand{\arraystretch}{1.18}
-\setlist{nosep,leftmargin=1.5em,topsep=4pt}
-\pagestyle{fancy}
-\fancyhf{}
-\fancyhead[L]{\small\sffamily Vienna Vulkan Engine}
-\fancyhead[R]{\small\sffamily\guideshort}
-\fancyfoot[L]{\small\sffamily Teaching edition / 16 October 2026}
-\fancyfoot[R]{\small\sffamily\thepage}
-\renewcommand{\headrulewidth}{0.3pt}
+\makeatletter
+\def\ps@vve{%
+  \def\@oddhead{\small\sffamily Vienna Vulkan Engine\hfil\guideshort}%
+  \let\@evenhead\@oddhead
+  \def\@oddfoot{\small\sffamily Teaching edition / 16 October 2026\hfil\thepage}%
+  \let\@evenfoot\@oddfoot}
+\makeatother
+\pagestyle{vve}
 \lstdefinestyle{vvecpp}{language=C++,basicstyle=\ttfamily\small,
   keywordstyle=\color{vveblue}\bfseries,commentstyle=\color{vvegreen},
   stringstyle=\color{vvegreen},backgroundcolor=\color{vvelight},
@@ -33,8 +34,8 @@
   xleftmargin=6pt,xrightmargin=6pt,aboveskip=8pt,belowskip=8pt,
   morekeywords={import,requires,concept,constexpr,consteval,nodiscard}}
 \lstset{style=vvecpp}
-\newcommand{\api}[1]{\texttt{\detokenize{#1}}}
-\newcommand{\source}[1]{\par\smallskip{\footnotesize\sffamily\color{vveblue}Source: \api{#1}.}\par}
+\newcommand{\api}[1]{{\ttfamily\small\detokenize{#1}}}
+\newcommand{\source}[1]{\par\smallskip{\raggedright\footnotesize\sffamily\color{vveblue}Source: \nolinkurl{#1}.\par}}
 \newcommand{\lesson}[1]{\clearpage\section{#1}}
 \newenvironment{remember}{\begin{quote}\small\textbf{Remember. }}{\end{quote}}
 \newenvironment{tryit}{\begin{quote}\small\textbf{Try it. }}{\end{quote}}
