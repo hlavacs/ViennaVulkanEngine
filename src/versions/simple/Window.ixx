@@ -98,6 +98,7 @@ export namespace vve::simple {
 		[[nodiscard]] Window *findWindow(WindowHandle handle);														///< Finds a window by runtime handle.
 		[[nodiscard]] const Window *findWindow(WindowHandle handle) const;										///< Finds a const window.
 		[[nodiscard]] bool anyShouldClose() const;																		///< Returns true when any window should close.
+		[[nodiscard]] auto setMouseCaptured(WindowHandle window, bool captured)				-> std::expected<void, Error>; ///< Hides the pointer and reports relative motion.
 		auto setGuiEventSink(std::function<bool(const SDL_Event &)> sink)					-> void;		///< Sets GUI event forwarding; the sink returns true for events the GUI claims.
 
 	private:
@@ -416,6 +417,12 @@ export namespace vve::simple {
 					input.addMouseDelta(window->info().handle, Vec2{event.motion.xrel / width, event.motion.yrel / height});
 				}
 				break;
+			case SDL_EVENT_MOUSE_BUTTON_DOWN: // Buttons use the reserved negative codes -1 left, -2 middle, -3 right.
+				if (!gui_claimed) { input.pressKey(-static_cast<std::int32_t>(event.button.button)); }
+				break;
+			case SDL_EVENT_MOUSE_BUTTON_UP: // Always delivered, like key releases.
+				input.releaseKey(-static_cast<std::int32_t>(event.button.button));
+				break;
 			case SDL_EVENT_MOUSE_WHEEL:
 				if (gui_claimed) { break; }
 				if (const auto *window = impl_->find(event.wheel.windowID)) {
@@ -453,6 +460,17 @@ export namespace vve::simple {
 	Window *WindowSystem::findWindow(WindowHandle handle) { return impl_->find(handle); }
 
 	const Window *WindowSystem::findWindow(WindowHandle handle) const { return impl_->find(handle); }
+
+	/// @brief Switches SDL relative mouse mode, which hides the pointer and keeps mouse motion coming at the window border.
+	auto WindowSystem::setMouseCaptured(WindowHandle window, bool captured) -> std::expected<void, Error> {
+		const auto *found = impl_->find(window);
+		if (found == nullptr) { return std::unexpected(Error::invalid_handle); }
+		if (!SDL_SetWindowRelativeMouseMode(found->native(), captured)) {
+			std::cerr << "[vve::simple] mouse capture failed: " << SDL_GetError() << '\n';
+			return std::unexpected(Error::platform_error);
+		}
+		return {};
+	}
 
 	auto WindowSystem::anyShouldClose() const											-> bool{
 		return std::ranges::any_of(impl_->windows, [](const Window &window) {
