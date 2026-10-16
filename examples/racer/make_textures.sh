@@ -4,7 +4,6 @@
 #   logo.tga  - 96x32 checkered flag for the menu.
 #   variation.tga - 256x256 tileable value noise in greens and dry yellows, laid thinly over the grass so that its
 #                   repetition does not show.
-#   asphalt.tga - 256x256 tileable asphalt: mottled grey with fine grain, light stones and dark pits (3 m per tile).
 #   plowed.tga, wheat.tga, crops.tga - 128x128 tileable fields: brown furrows, ripe wheat, green rows on soil.
 set -euo pipefail
 out="${1:-$(dirname "$0")/../../assets/racer}"
@@ -44,11 +43,6 @@ tga 256 256 '
 		n += weight * ((a * (1 - tx) + b * tx) * (1 - ty) + (c * (1 - tx) + d * tx) * ty); weight *= 0.5
 	}
 	n = n / 0.9375; r = int(40 + 110 * n); g = int(75 + 70 * n); b = int(20 + 35 * n); a = 255' "$out/variation.tga"
-# Asphalt: large mottling and fine grain, then per pixel either a light stone, a dark pit or plain noise.
-tga 256 256 '
-	v = 100 + 34 * (fbm(x, y, 4, 16) - 0.5) + 30 * (fbm(x, y, 64, 128) - 0.5); s = rand()
-	if (s > 0.975) { v += 30 + 50 * rand() } else if (s < 0.03) { v -= 35 } else { v += 16 * (rand() - 0.5) }
-	r = byte(v); g = byte(v); b = byte(v + 4); a = 255' "$out/asphalt.tga" 11
 # Fields: rows run along the texture height; each row wanders a little sideways.
 tga 128 128 '
 	t = x / w * 8 + 0.4 * (fbm(x, y, 2, 4) - 0.5); furrow = 0.5 + 0.5 * cos(6.2832 * t)

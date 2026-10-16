@@ -4,13 +4,16 @@
  * bales and tyre stacks around the circuit.
  *
  * Kenney models (assets/racer/kenney, CC0, added by hand; see the README) are placed where their files exist; a missing
- * file only leaves that piece out. Everything else is built from boxes, gabled roofs and cylinders, which MeshBatch
- * merges into one mesh per colour, so the whole countryside costs a few dozen draw calls.
+ * file only leaves that piece out. The crowd are Kenney Mini Characters (assets/racer/crowd), posed joint by joint and
+ * merged into one mesh. Everything else is built from boxes, gabled roofs and cylinders, which MeshBatch
+ * merges into one mesh per look (colour and Poly Haven texture from assets/racer/textures, mapped in metres), so the whole
+ * countryside costs a few dozen draw calls.
  *
  * Functional objects:
  * - Countryside / buildCountryside: builds everything and returns the areas random scenery must keep clear of.
  * - grandstandCentre: where the crowd sits, for the crowd sound.
- * - Frame, MeshBatch, Kit: placement beside the track, merged procedural meshes and the kit model cache.
+ * - Frame, Look, MeshBatch, Kit: placement beside the track, colour and texture, merged procedural meshes, kit model cache.
+ * - Figure, loadFigure, Stance, stanceFor, addFigure: crowd models, their poses, and posed copies in a merged mesh.
  * - polygon, box, roof, cylinder, cone, patch, fence, building, hayBale: the procedural shapes.
  */
 export module Racer.World;
@@ -27,6 +30,8 @@ export namespace racer {
 		bool startArch{};				///< The Kenney finish arch stands over the start line instead of the yellow gate.
 		std::size_t pieces{};			///< Kit models and merged meshes placed.
 		std::size_t missing{};			///< Kit files that could not be loaded.
+		std::size_t spectators{};		///< People on the grandstand.
+		bool figures{};				///< The crowd is made of Kenney Mini Characters, not of boxes.
 	};
 
 	[[nodiscard]] Vec2f grandstandCentre(const Track &track);
@@ -75,9 +80,13 @@ namespace racer {
 		const bool flip = vm::dot(normal, outward) < 0.0F;
 		normal = vm::normalize(flip ? vm::scale(normal, -1.0F) : normal);
 		const auto base = static_cast<std::uint32_t>(mesh.positions.size());
+		// Texture coordinates in metres: a planar projection, from above for flat faces and from the side for steep ones.
+		const bool flat = std::abs(normal.y) > 0.7F;
+		const auto across = flat ? vve::Vec3{1, 0, 0} : vm::normalize(vve::Vec3{-normal.z, 0, normal.x});
 		for (const auto &corner : corners) {
 			mesh.positions.push_back(corner);
 			mesh.normals.push_back(normal);
+			mesh.uvs.push_back(flat ? vve::Vec2{corner.x, corner.z} : vve::Vec2{vm::dot(corner, across), corner.y});
 		}
 		for (std::uint32_t k{1U}; k + 1U < corners.size(); ++k) {
 			mesh.indices.push_back(base);
@@ -137,13 +146,16 @@ namespace racer {
 			bottom.push_back(vm::add(from, vm::scale(direction, radius)));
 			top.push_back(vm::add(to, vm::scale(direction, radius)));
 		}
+		const float around = 2.0F * std::numbers::pi_v<float> * radius / static_cast<float>(sides), along = vm::length(vm::subtract(to, from));
 		for (std::size_t k{}; k < directions.size(); ++k) {
 			const std::size_t j = (k + 1U) % directions.size();
 			const auto base = static_cast<std::uint32_t>(mesh.positions.size());
-			for (const auto &[point, normal] : {std::pair{bottom[k], directions[k]}, std::pair{bottom[j], directions[j]},
-					 std::pair{top[j], directions[j]}, std::pair{top[k], directions[k]}}) {
+			const float u = around * static_cast<float>(k);
+			for (const auto &[point, normal, uv] : {std::tuple{bottom[k], directions[k], vve::Vec2{u, 0}}, std::tuple{bottom[j], directions[j], vve::Vec2{u + around, 0}},
+					 std::tuple{top[j], directions[j], vve::Vec2{u + around, along}}, std::tuple{top[k], directions[k], vve::Vec2{u, along}}}) {
 				mesh.positions.push_back(point);
 				mesh.normals.push_back(normal);
+				mesh.uvs.push_back(uv);
 			}
 			for (const std::uint32_t index : {0U, 1U, 2U, 0U, 2U, 3U}) { mesh.indices.push_back(base + index); }
 		}
@@ -177,32 +189,57 @@ namespace racer {
 		}
 	}
 
-	/// @brief Procedural parts collected per colour; each colour becomes one render object.
+	/// @brief Colour and optional texture of procedural parts; the texture (a file in assets/racer/textures) repeats every
+	/// `tile` metres and is tinted by the colour.
+	struct Look {
+		vve::Vec3 color{1, 1, 1};	///< Linear colour, multiplied with the texture.
+		const char *texture{};		///< Texture file, or none.
+		float tile{1.0F};			///< Metres per texture repeat.
+	};
+
+	/// @brief Procedural parts collected per look; each look becomes one render object.
 	class MeshBatch {
 	public:
-		/// @brief The mesh for a colour, created on first use; flat things pass shadows = false.
-		vve::MeshDescriptor &of(vve::Vec3 color, bool shadows = true) {
-			for (auto &[mesh, casts] : meshes_) {
-				if (mesh.color.value.x == color.x && mesh.color.value.y == color.y && mesh.color.value.z == color.z && casts == shadows) { return mesh; }
-			}
-			return meshes_.emplace_back(vve::MeshDescriptor{.color = {.value = color}}, shadows).first;
-		}
+		explicit MeshBatch(std::filesystem::path textures) : textures_{std::move(textures)} {}
 
-		/// @brief Adds every non-empty mesh to the scene and counts it.
+		/// @brief The mesh for a look, created on first use; flat things pass shadows = false.
+		vve::MeshDescriptor &of(const Look &look, bool shadows = true) {
+			for (auto &part : parts_) {
+				const auto &c = part.look.color;
+				if (c.x == look.color.x && c.y == look.color.y && c.z == look.color.z && part.look.texture == look.texture && part.shadows == shadows) {
+					return part.mesh;
+				}
+			}
+			auto &part = parts_.emplace_back(Part{.mesh = {.color = {.value = look.color}}, .look = look, .shadows = shadows});
+			if (look.texture != nullptr) { part.mesh.base_color_texture = textures_ / look.texture; }
+			return part.mesh;
+		}
+		/// @brief The mesh for a plain colour.
+		vve::MeshDescriptor &of(vve::Vec3 color, bool shadows = true) { return of(Look{.color = color}, shadows); }
+
+		/// @brief Adds every non-empty mesh to the scene and counts it; texture coordinates go from metres to repeats.
 		auto addTo(vve::RenderSystem &render, std::size_t &pieces) -> std::expected<void, vve::Error> {
-			for (auto &[mesh, casts] : meshes_) {
-				if (mesh.indices.empty()) { continue; }
-				const auto object = render.addMesh(std::move(mesh));
+			for (auto &part : parts_) {
+				if (part.mesh.indices.empty()) { continue; }
+				for (auto &uv : part.mesh.uvs) { uv = vve::Vec2{uv.x / part.look.tile, uv.y / part.look.tile}; }
+				const auto object = render.addMesh(std::move(part.mesh));
 				if (!object) { return std::unexpected(object.error()); }
-				if (!casts) { (void)render.setObjectCastsShadow(*object, false); }
+				if (!part.shadows) { (void)render.setObjectCastsShadow(*object, false); }
 				++pieces;
 			}
-			meshes_.clear();
+			parts_.clear();
 			return {};
 		}
 
 	private:
-		std::deque<std::pair<vve::MeshDescriptor, bool>> meshes_{};	///< Mesh and whether it casts shadows; a deque keeps references valid.
+		/// @brief One merged mesh and how it looks.
+		struct Part {
+			vve::MeshDescriptor mesh{};	///< Collected geometry.
+			Look look{};				///< Colour and texture.
+			bool shadows{true};		///< Whether it casts shadows.
+		};
+		std::filesystem::path textures_{};	///< assets/racer/textures.
+		std::deque<Part> parts_{};			///< Merged meshes; a deque keeps earlier references valid.
 	};
 
 	/// @brief Kenney models, each loaded once on first use; files that do not load are counted and skipped.
@@ -234,9 +271,152 @@ namespace racer {
 		}
 	};
 
+	/// @brief A vector turned by a unit quaternion.
+	[[nodiscard]] vve::Vec3 rotate(vve::Quat q, vve::Vec3 v) {
+		const vve::Vec3 axis{q.x, q.y, q.z};
+		const auto twice = vm::scale(vm::cross(axis, v), 2.0F);
+		return vm::add(vm::add(v, vm::scale(twice, q.w)), vm::cross(axis, twice));
+	}
+
+	/// @brief A turn followed by a move.
+	struct Rigid {
+		vve::Quat rotation{1, 0, 0, 0};	///< Turn.
+		vve::Vec3 offset{};				///< Move after the turn.
+
+		[[nodiscard]] vve::Vec3 point(vve::Vec3 p) const { return vm::add(rotate(rotation, p), offset); }
+		/// @brief The placement `local` inside this one: first local, then this.
+		[[nodiscard]] Rigid operator*(const Rigid &local) const { return {.rotation = combine(rotation, local.rotation), .offset = point(local.offset)}; }
+	};
+
+	/// @brief A Kenney Mini Character or wheelchair as written by split_characters.py: one rigid part per node, each in its
+	/// node's own space, so a pose is a turn per joint.
+	struct Figure {
+		/// @brief One node and the triangles that move with it.
+		struct Part {
+			std::string joint{};						///< Node name: root, leg-left, leg-right, torso, arm-left, arm-right, head, ...
+			std::optional<std::size_t> parent{};	///< Parent part.
+			vve::Vec3 rest{};						///< Position in the parent part.
+			vve::MeshDescriptor mesh{};				///< Positions, normals, texture coordinates and indices.
+		};
+		std::vector<Part> parts{};	///< All nodes of the model.
+	};
+
+	/// @brief Loads a figure; nothing if the file is missing or holds no triangles.
+	[[nodiscard]] std::optional<Figure> loadFigure(vve::AssetSystem &assets, const std::filesystem::path &file) {
+		if (!std::filesystem::exists(file)) { return std::nullopt; }
+		const auto scene = assets.loadScene(file);
+		if (!scene) { return std::nullopt; }
+		const auto nodes = assets.sceneNodes(*scene);
+		if (!nodes) { return std::nullopt; }
+		Figure figure{};
+		std::size_t triangles{};
+		for (const auto node : *nodes) {
+			auto &part = figure.parts.emplace_back();
+			part.joint = assets.nodeName(node).value_or(vve::ObjectName{}).value;
+			if (const auto transform = assets.nodeTransform(node)) { part.rest = transform->translation.value; }
+			for (const auto mesh : assets.nodeMeshes(node).value_or(vve::Vector<vve::MeshHandle>{})) {
+				const auto positions = assets.meshPositions(mesh);
+				const auto normals = assets.meshNormals(mesh);
+				const auto uvs = assets.meshTexcoords(mesh);
+				const auto indices = assets.meshIndices(mesh);
+				if (!positions || !normals || !uvs || !indices || normals->size() != positions->size() || uvs->size() != positions->size()) { continue; }
+				const auto base = static_cast<std::uint32_t>(part.mesh.positions.size());
+				part.mesh.positions.insert(part.mesh.positions.end(), positions->begin(), positions->end());
+				part.mesh.normals.insert(part.mesh.normals.end(), normals->begin(), normals->end());
+				part.mesh.uvs.insert(part.mesh.uvs.end(), uvs->begin(), uvs->end());
+				for (const auto index : *indices) { part.mesh.indices.push_back(base + index); }
+				triangles += indices->size() / 3U;
+			}
+		}
+		for (std::size_t i{}; i < nodes->size(); ++i) {
+			const auto parent = assets.sceneNodeParent(*scene, (*nodes)[i]);
+			if (!parent || !*parent) { continue; }
+			if (const auto found = std::ranges::find(*nodes, **parent); found != nodes->end()) {
+				figure.parts[i].parent = static_cast<std::size_t>(found - nodes->begin());
+			}
+		}
+		if (triangles == 0U) { return std::nullopt; }
+		return figure;
+	}
+
+	/// @brief A pose: joint turns and joint positions that replace the rest positions (model units).
+	struct Stance {
+		std::vector<std::pair<std::string_view, vve::Quat>> turns{};	///< Joint and its turn.
+		std::vector<std::pair<std::string_view, vve::Vec3>> moves{};	///< Joint and its new position in its parent.
+	};
+
+	/// @brief Where a posed part lies in the figure: its own turn and position inside those of its parents.
+	[[nodiscard]] Rigid posePart(const Figure &figure, const Stance &stance, std::size_t index) {
+		const auto &part = figure.parts[index];
+		Rigid local{.offset = part.rest};
+		for (const auto &[joint, turn] : stance.turns) { if (joint == part.joint) { local.rotation = turn; } }
+		for (const auto &[joint, position] : stance.moves) { if (joint == part.joint) { local.offset = position; } }
+		return part.parent ? posePart(figure, stance, *part.parent) * local : local;
+	}
+
+	/// @brief Appends a posed figure, scaled and placed, to a merged mesh.
+	void addFigure(vve::MeshDescriptor &crowd, const Figure &figure, const Stance &stance, const Rigid &place, float scale) {
+		for (std::size_t index{}; index < figure.parts.size(); ++index) {
+			const auto &mesh = figure.parts[index].mesh;
+			if (mesh.indices.empty()) { continue; }
+			const Rigid pose = posePart(figure, stance, index);
+			const auto base = static_cast<std::uint32_t>(crowd.positions.size());
+			for (std::size_t v{}; v < mesh.positions.size(); ++v) {
+				crowd.positions.push_back(place.point(vm::scale(pose.point(mesh.positions[v]), scale)));
+				crowd.normals.push_back(rotate(place.rotation, rotate(pose.rotation, mesh.normals[v])));
+				crowd.uvs.push_back(mesh.uvs[v]);
+			}
+			for (const auto corner : mesh.indices) { crowd.indices.push_back(base + corner); }
+		}
+	}
+
+	/// @brief What a spectator is doing.
+	enum class Act { sit, cheer, wave, stand, standCheer, wheelchair };
+
+	/// @brief The pose for an act, with a little randomness in head, body and arms. Angles follow the poses of Kenney's
+	/// animations (sit, wheelchair-sit): the model faces +Z, its arms stretch along +X and -X in the rest pose, and a
+	/// leg turned by -75 degrees about X points forwards.
+	[[nodiscard]] Stance stanceFor(Act act, std::mt19937 &random) {
+		std::uniform_real_distribution<float> jitter{-1.0F, 1.0F};
+		const float degree = std::numbers::pi_v<float> / 180.0F;
+		Stance stance{};
+		stance.turns.emplace_back("head", combine(aboutY(25.0F * degree * jitter(random)), aboutX(8.0F * degree * jitter(random))));
+		stance.turns.emplace_back("torso", aboutY(6.0F * degree * jitter(random)));
+		const bool seated = act != Act::stand && act != Act::standCheer;
+		if (seated) { stance.moves.emplace_back("root", vve::Vec3{0.0F, -0.15F, 0.0F}); }
+		if (act == Act::wheelchair) {
+			stance.moves.emplace_back("leg-left", vve::Vec3{0.0836F, 0.137F, 0.06F});
+			stance.moves.emplace_back("leg-right", vve::Vec3{-0.0836F, 0.137F, 0.06F});
+			stance.turns.emplace_back("leg-left", vve::Quat{0.7011F, -0.7011F, 0.0923F, -0.0923F});
+			stance.turns.emplace_back("leg-right", vve::Quat{0.7011F, -0.7011F, -0.0923F, 0.0923F});
+		} else if (seated) {
+			const float knees = (-75.0F + 5.0F * jitter(random)) * degree;
+			stance.turns.emplace_back("leg-left", aboutX(knees));
+			stance.turns.emplace_back("leg-right", aboutX(knees));
+		}
+		// Arms: down beside the body, resting on the lap, or raised (slightly forwards) to cheer.
+		const auto raised = [&](float side) { return combine(aboutX(15.0F * degree), aboutZ(side * (80.0F + 10.0F * jitter(random)) * degree)); };
+		const float rest = act == Act::wheelchair ? 30.0F : seated ? 45.0F : 72.0F;
+		const auto lowered = [&](float side) { return aboutZ(-side * (rest + 6.0F * jitter(random)) * degree); };
+		const bool both = act == Act::cheer || act == Act::standCheer;
+		stance.turns.emplace_back("arm-left", both ? raised(1.0F) : lowered(1.0F));
+		stance.turns.emplace_back("arm-right", both || act == Act::wave ? raised(-1.0F) : lowered(-1.0F));
+		return stance;
+	}
+
+	/// @brief The textured looks of the countryside (Poly Haven textures, tinted).
+	const Look planks{.color = {0.78F, 0.62F, 0.45F}, .texture = "weathered_planks.jpg", .tile = 2.0F};
+	const Look darkPlanks{.color = {0.50F, 0.36F, 0.25F}, .texture = "weathered_planks.jpg", .tile = 2.0F};
+	const Look redPlanks{.color = {0.80F, 0.16F, 0.10F}, .texture = "weathered_planks.jpg", .tile = 2.0F};
+	const Look plaster{.color = {1.0F, 0.97F, 0.92F}, .texture = "white_plaster.jpg", .tile = 3.0F};
+	const Look clayTiles{.color = {1.0F, 1.0F, 1.0F}, .texture = "clay_roof_tiles.jpg", .tile = 2.5F};
+	const Look ironRoof{.color = {0.58F, 0.58F, 0.62F}, .texture = "corrugated_iron.jpg", .tile = 1.12F};
+	const Look ironSilo{.color = {0.88F, 0.92F, 0.95F}, .texture = "corrugated_iron.jpg", .tile = 1.12F};
+	const Look concrete{.color = {0.92F, 0.92F, 0.90F}, .texture = "concrete_floor.jpg", .tile = 2.0F};
+
 	/// @brief Wooden post-and-rail fence from a to b, posts every 2.5 m; a gap of `gap` metres is left in its middle.
 	void fence(MeshBatch &batch, Vec2f a, Vec2f b, float gap = 0.0F) {
-		const vve::Vec3 wood{0.32F, 0.22F, 0.13F};
+		const Look &wood = planks;
 		const float span = length(b - a);
 		const Vec2f direction = normalize(b - a);
 		const float yaw = std::atan2(-direction.y, direction.x);
@@ -272,12 +452,12 @@ namespace racer {
 	}
 
 	/// @brief A house or barn: walls, gabled roof, a door and a row of windows on its +Z side (no windows: a barn door).
-	void building(MeshBatch &batch, vve::Vec3 base, float yaw, float halfX, float halfZ, float height, float rise, vve::Vec3 wall,
-		vve::Vec3 roofColor, int windows) {
-		const vve::Vec3 doorColor{0.22F, 0.13F, 0.07F}, glass{0.10F, 0.13F, 0.17F};
+	void building(MeshBatch &batch, vve::Vec3 base, float yaw, float halfX, float halfZ, float height, float rise, const Look &wall,
+		const Look &roofLook, int windows) {
+		const vve::Vec3 glass{0.10F, 0.13F, 0.17F};
 		box(batch.of(wall), base, yaw, halfX, halfZ, height);
-		roof(batch.of(roofColor), batch.of(wall), turn(base, yaw, {0, height, 0}), yaw, halfX + 0.5F, halfZ + 0.6F, rise);
-		box(batch.of(doorColor), turn(base, yaw, {0, 0, halfZ}), yaw, windows == 0 ? 0.3F * halfX : 0.6F, 0.05F, windows == 0 ? 0.75F * height : 2.1F);
+		roof(batch.of(roofLook), batch.of(wall), turn(base, yaw, {0, height, 0}), yaw, halfX + 0.5F, halfZ + 0.6F, rise);
+		box(batch.of(darkPlanks), turn(base, yaw, {0, 0, halfZ}), yaw, windows == 0 ? 0.3F * halfX : 0.6F, 0.05F, windows == 0 ? 0.75F * height : 2.1F);
 		for (int k{}; k < windows; ++k) {
 			const float x = halfX * (-0.75F + 1.5F * (static_cast<float>(k) + 0.5F) / static_cast<float>(windows));
 			if (std::abs(x) < 1.0F) { continue; }	// Leave room for the door.
@@ -291,7 +471,7 @@ namespace racer {
 	auto buildCountryside(vve::RenderSystem &render, vve::AssetSystem &assets, const Track &track, const std::filesystem::path &root)
 		-> std::expected<Countryside, vve::Error> {
 		Countryside result{};
-		MeshBatch batch{};
+		MeshBatch batch{root / "assets/racer/textures"};
 		Kit kit{.render = render, .assets = assets, .folder = root / "assets/racer/kenney"};
 		std::mt19937 random{2026U};
 		std::uniform_real_distribution<float> unit{0.0F, 1.0F};
@@ -309,30 +489,80 @@ namespace racer {
 		// Grandstand outside the start straight: six concrete steps, benches, a crowd, a back wall and a roof on columns.
 		const auto stand = frameAt(track, -6.0F);
 		constexpr int rows{6};
-		constexpr float front{-14.0F}, depth{1.5F}, rise{0.75F}, standHalf{22.0F};
+		constexpr float front{-14.0F}, depth{1.5F}, rise{0.75F}, standHalf{22.0F}, bench{0.4F};
+		// The crowd: Kenney Mini Characters (assets/racer/crowd, written by split_characters.py), each posed on its own and
+		// all merged into one mesh with their shared colormap. Most sit, some cheer or wave, a few stand in the top row, and
+		// wheelchair users have places at the front. Without those files, simple box people fill the seats.
+		const auto crowdFolder = root / "assets/racer/crowd";
+		std::vector<Figure> people{}, wheelchairs{};
+		for (const char *kind : {"female", "male"}) {
+			for (const char letter : std::string_view{"abcdef"}) {
+				if (auto figure = loadFigure(assets, crowdFolder / std::format("character-{}-{}.glb", kind, letter))) { people.push_back(std::move(*figure)); }
+			}
+		}
+		for (const char *name : {"wheelchair", "wheelchair-deluxe", "wheelchair-power", "wheelchair-power-deluxe"}) {
+			if (auto figure = loadFigure(assets, crowdFolder / std::format("{}.glb", name))) { wheelchairs.push_back(std::move(*figure)); }
+		}
+		result.figures = !people.empty();
+		vve::MeshDescriptor crowd{.base_color_texture = crowdFolder / "colormap.png"};
+		constexpr float figureScale{1.85F};		// Model units to metres: a standing figure is 1.45 m tall, its head 0.84 m wide.
+		const float spacing = people.empty() ? 0.62F : 0.95F;
+		const auto spectator = [&](float along, float lateral, float height, Act act) {
+			const Rigid place{.rotation = aboutY(stand.yaw() + 0.15F * (unit(random) - 0.5F)), .offset = world(stand.point(along, lateral), height)};
+			const auto stance = stanceFor(act, random);
+			addFigure(crowd, people[static_cast<std::size_t>(unit(random) * static_cast<float>(people.size())) % people.size()], stance, place, figureScale);
+			if (act == Act::wheelchair) { addFigure(crowd, wheelchairs[result.spectators % wheelchairs.size()], {}, place, figureScale); }
+			++result.spectators;
+		};
 		const std::array<vve::Vec3, 7> shirts{{{0.75F, 0.08F, 0.06F}, {0.10F, 0.25F, 0.70F}, {0.85F, 0.85F, 0.82F}, {0.95F, 0.70F, 0.08F},
 			{0.12F, 0.45F, 0.15F}, {0.08F, 0.08F, 0.09F}, {0.55F, 0.20F, 0.55F}}};
 		const std::array<vve::Vec3, 3> skins{{{0.80F, 0.60F, 0.45F}, {0.55F, 0.38F, 0.25F}, {0.30F, 0.20F, 0.14F}}};
 		for (int k{}; k < rows; ++k) {
 			const float back = front - depth * static_cast<float>(k + 1), top = 0.5F + rise * static_cast<float>(k);
-			box(batch.of({0.58F, 0.58F, 0.56F}), world(stand.point(0.0F, back + 0.5F * depth), ground), stand.yaw(), standHalf, 0.5F * depth, top - ground);
+			box(batch.of(concrete), world(stand.point(0.0F, back + 0.5F * depth), ground), stand.yaw(), standHalf, 0.5F * depth, top - ground);
+			// Four bench sections per row; in the front row they leave room for wheelchairs between them.
+			const bool wheelchairRow = k == 0 && !people.empty() && !wheelchairs.empty();
+			constexpr std::array wheelchairPlaces{-11.0F, 0.0F, 11.0F};
 			for (int section{}; section < 4; ++section) {
 				const vve::Vec3 seat = section % 2 == 0 ? vve::Vec3{0.12F, 0.30F, 0.75F} : vve::Vec3{0.80F, 0.12F, 0.10F};
-				box(batch.of(seat), world(stand.point(-16.5F + 11.0F * static_cast<float>(section), back + 0.45F), top), stand.yaw(), 5.4F, 0.25F, 0.4F);
+				float from = -21.9F + 11.0F * static_cast<float>(section), to = from + 10.8F;
+				if (wheelchairRow) { from += section > 0 ? 1.1F : 0.0F; to -= section < 3 ? 1.1F : 0.0F; }
+				box(batch.of(seat), world(stand.point(0.5F * (from + to), back + 0.45F), top), stand.yaw(), 0.5F * (to - from), 0.25F, bench);
 			}
-			for (float along = -21.4F; along <= 21.4F; along += 0.62F) {
+			if (wheelchairRow) {
+				for (const float along : wheelchairPlaces) { spectator(along, back + 0.55F, top, Act::wheelchair); }
+			}
+			for (float along = -21.4F; along <= 21.4F; along += spacing) {
 				if (unit(random) > 0.72F) { continue; }
-				const auto seated = world(stand.point(along, back + 0.5F), top + 0.4F);
-				box(batch.of(shirts[static_cast<std::size_t>(unit(random) * 6.999F)]), seated, stand.yaw(), 0.2F, 0.14F, 0.55F);
-				box(batch.of(skins[static_cast<std::size_t>(unit(random) * 2.999F)]), vm::add(seated, vve::Vec3{0, 0.55F, 0}), stand.yaw(), 0.11F, 0.11F, 0.24F);
+				if (wheelchairRow && std::ranges::any_of(wheelchairPlaces, [&](float place) { return std::abs(along - place) < 1.3F; })) { continue; }
+				if (people.empty()) {
+					const auto seated = world(stand.point(along, back + 0.5F), top + bench);
+					box(batch.of(shirts[static_cast<std::size_t>(unit(random) * 6.999F)]), seated, stand.yaw(), 0.2F, 0.14F, 0.55F);
+					box(batch.of(skins[static_cast<std::size_t>(unit(random) * 2.999F)]), vm::add(seated, vve::Vec3{0, 0.55F, 0}), stand.yaw(), 0.11F, 0.11F, 0.24F);
+					++result.spectators;
+					continue;
+				}
+				const float roll = unit(random);
+				if (k == rows - 1 && roll < 0.3F) {
+					spectator(along, back + 1.05F, top, roll < 0.2F ? Act::standCheer : Act::stand);	// Standing in front of the top bench.
+				} else {
+					spectator(along, back + 0.45F, top + bench + 0.02F, roll < 0.7F ? Act::sit : roll < 0.9F ? Act::cheer : Act::wave);
+				}
 			}
 		}
+		if (!crowd.indices.empty()) {
+			const auto object = render.addMesh(std::move(crowd));
+			if (!object) { return std::unexpected(object.error()); }
+			++result.pieces;
+		}
 		const float standBack = front - depth * rows, roofHeight = 0.5F + rise * rows + 3.4F;
-		box(batch.of({0.50F, 0.50F, 0.49F}), world(stand.point(0.0F, standBack - 0.2F), ground), stand.yaw(), standHalf, 0.2F, roofHeight - ground);
+		box(batch.of(Look{.color = {0.80F, 0.80F, 0.78F}, .texture = concrete.texture, .tile = 2.0F}), world(stand.point(0.0F, standBack - 0.2F), ground),
+			stand.yaw(), standHalf, 0.2F, roofHeight - ground);
 		for (float along = -standHalf; along <= standHalf + 0.1F; along += 11.0F) {
 			box(batch.of({0.42F, 0.43F, 0.46F}), world(stand.point(along, front + 0.3F), ground), stand.yaw(), 0.15F, 0.15F, roofHeight - ground);
 		}
-		box(batch.of({0.88F, 0.88F, 0.86F}), world(stand.point(0.0F, 0.5F * (front + standBack)), roofHeight), stand.yaw(), standHalf + 1.0F,
+		box(batch.of(Look{.color = {0.95F, 0.95F, 0.95F}, .texture = ironRoof.texture, .tile = ironRoof.tile}),
+			world(stand.point(0.0F, 0.5F * (front + standBack)), roofHeight), stand.yaw(), standHalf + 1.0F,
 			0.5F * (front - standBack) + 1.2F, 0.25F);
 		box(batch.of({0.80F, 0.12F, 0.10F}), world(stand.point(0.0F, front + 0.15F), ground), stand.yaw(), standHalf, 0.05F, 1.1F);	// Advertising board.
 		result.reserved.push_back({.centre = grandstandCentre(track), .axis = stand.along, .halfLength = standHalf + 2.0F, .halfWidth = 7.0F});
@@ -372,16 +602,15 @@ namespace racer {
 		result.reserved.push_back(area({180.0F, -22.0F}, 16.0F, 44.0F));
 
 		// Farm west of the circuit: barn, farmhouse, silo, an open shed with straw, a fenced yard, a pasture and a hay meadow.
-		const vve::Vec3 barnRed{0.45F, 0.08F, 0.05F}, slate{0.20F, 0.20F, 0.23F}, white{0.85F, 0.82F, 0.75F}, tiles{0.50F, 0.16F, 0.10F},
-			straw{0.66F, 0.54F, 0.27F}, timber{0.22F, 0.13F, 0.07F};
-		building(batch, {-188.0F, ground, 12.0F}, 0.0F, 7.5F, 5.0F, 5.5F, 4.0F, barnRed, slate, 0);
-		building(batch, {-168.0F, ground, 30.0F}, 0.0F, 5.0F, 4.0F, 5.0F, 3.2F, white, tiles, 4);
-		cylinder(batch.of({0.55F, 0.60F, 0.62F}), {-198.0F, ground, 30.0F}, {-198.0F, ground + 11.0F, 30.0F}, 2.6F, 18);
-		cone(batch.of({0.40F, 0.42F, 0.45F}), {-198.0F, ground + 11.0F, 30.0F}, 2.8F, 2.2F, 18);
+		const vve::Vec3 straw{0.66F, 0.54F, 0.27F};
+		building(batch, {-188.0F, ground, 12.0F}, 0.0F, 7.5F, 5.0F, 5.5F, 4.0F, redPlanks, ironRoof, 0);
+		building(batch, {-168.0F, ground, 30.0F}, 0.0F, 5.0F, 4.0F, 5.0F, 3.2F, plaster, clayTiles, 4);
+		cylinder(batch.of(ironSilo), {-198.0F, ground, 30.0F}, {-198.0F, ground + 11.0F, 30.0F}, 2.6F, 18);
+		cone(batch.of(ironRoof), {-198.0F, ground + 11.0F, 30.0F}, 2.8F, 2.2F, 18);
 		for (const float x : {-176.0F, -168.0F}) {
-			for (const float z : {1.5F, 6.5F}) { box(batch.of(timber), {x, ground, z}, 0.0F, 0.12F, 0.12F, 3.6F); }
+			for (const float z : {1.5F, 6.5F}) { box(batch.of(darkPlanks), {x, ground, z}, 0.0F, 0.12F, 0.12F, 3.6F); }
 		}
-		box(batch.of(slate), {-172.0F, ground + 3.6F, 4.0F}, 0.0F, 4.8F, 3.2F, 0.2F);
+		box(batch.of(ironRoof), {-172.0F, ground + 3.6F, 4.0F}, 0.0F, 4.8F, 3.2F, 0.2F);
 		for (int k{}; k < 18; ++k) {
 			box(batch.of(straw), {-175.0F + 1.2F * static_cast<float>(k % 6), ground + 0.45F * static_cast<float>(k / 6), 3.5F}, 0.0F, 0.55F, 0.9F, 0.45F);
 		}

@@ -28,10 +28,14 @@ add_custom_target(game_audio_assets ALL
 add_dependencies(game game_audio_assets)
 
 if(BUILD_TESTING)
+    add_test(NAME GameExample COMMAND game --frames 3 --require-audio)
+    set_tests_properties(GameExample PROPERTIES
+        ENVIRONMENT "SDL_AUDIO_DRIVER=dummy" LABELS "gpu;audio;example" TIMEOUT 60
+        WORKING_DIRECTORY "$<TARGET_FILE_DIR:game>")
     foreach(track RANGE 0 2)
-        add_test(NAME GameMusic${track} COMMAND game --frames 3 --music-track ${track} --require-audio)
+        add_test(NAME GameMusic${track} COMMAND game --verify-music --music-track ${track})
         set_tests_properties(GameMusic${track} PROPERTIES
-            ENVIRONMENT "SDL_AUDIO_DRIVER=dummy" LABELS "gpu;audio;example" TIMEOUT 60
+            ENVIRONMENT "SDL_AUDIO_DRIVER=dummy" LABELS "audio;example" TIMEOUT 3
             WORKING_DIRECTORY "$<TARGET_FILE_DIR:game>")
     endforeach()
 endif()

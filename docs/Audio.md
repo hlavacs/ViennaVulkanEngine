@@ -130,8 +130,11 @@ Never Get Out tracks. Both provide a music selector, a volume slider (zero mutes
 and a music pause toggle. Crate Collector's files are staged in `audio/v2` beside
 `game`; Relay Siege's copies are in its executable's `assets/sounds` directory.
 The original `license.txt` and `V2_MUSIC.md` credits travel with the music.
-`LegacyMusicTests` decodes every original track in both load modes; each game's
-three music smoke tests initialize its real startup path with a dummy audio device.
+`LegacyMusicTests` decodes every original track in both load modes. Crate Collector's
+`GameMusic0` through `GameMusic2` use `game --verify-music --music-track <0|1|2>`
+to check playback and stopping through its real audio setup without opening a window.
+Each has a three-second timeout; `GameExample` separately checks three rendered frames.
+Relay Siege's music smoke tests initialize its full startup path. All use a dummy audio device.
 
 ```text
 ctest --test-dir build/debug-windows --output-on-failure -L audio

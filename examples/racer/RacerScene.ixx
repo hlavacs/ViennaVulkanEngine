@@ -4,13 +4,13 @@
  *
  * Functional objects:
  * - world, aboutY, aboutZ, at: conversions from the ground-plane logic to facade transforms.
- * - buildCircuit: normal-mapped grass with a large-scale colour variation layer, textured asphalt, edge lines, kerbs,
- *   centre line, start line, barrier walls and transparent checkpoint gates.
+ * - buildCircuit: normal-mapped grass with a large-scale colour variation layer, photo asphalt, edge lines, concrete kerbs,
+ *   centre line, start line, concrete barrier walls and transparent checkpoint gates.
  * - addScenery: trees, bushes, grass tufts, flowers and rocks from the Kenney Nature Kit, scattered beside the track and
  *   kept out of the areas the countryside uses.
  * - CarModel / loadCarModel: a Kenney car (body and four wheel nodes), scaled to the physics wheel base, with its box size.
  * - CarRig / addCar: one instantiated car with brake lights hung on its instance root.
- * - placeCar, setBrakeLights, setCarOpacity: per-frame car updates through the scene tree.
+ * - placeCar, setBrakeLights, setCarOpacity: per-frame car updates through the scene tree; the body leans and dips.
  * - SmokePool: reused sprites that rise, grow and fade behind sliding cars.
  */
 export module Racer.Scene;
@@ -26,6 +26,8 @@ export namespace racer {
 	[[nodiscard]] inline vve::Quat aboutY(float angle) { return vve::Quat{std::cos(angle / 2.0F), 0.0F, std::sin(angle / 2.0F), 0.0F}; }
 	/// @brief Rotation by an angle about +X, the wheel axle of the Kenney cars.
 	[[nodiscard]] inline vve::Quat aboutX(float angle) { return vve::Quat{std::cos(angle / 2.0F), std::sin(angle / 2.0F), 0.0F, 0.0F}; }
+	/// @brief Rotation by an angle about +Z, the driving direction of the Kenney cars.
+	[[nodiscard]] inline vve::Quat aboutZ(float angle) { return vve::Quat{std::cos(angle / 2.0F), 0.0F, 0.0F, std::sin(angle / 2.0F)}; }
 	/// @brief Product of two rotations: first b, then a.
 	[[nodiscard]] inline vve::Quat combine(vve::Quat a, vve::Quat b) {
 		return {a.w * b.w - a.x * b.x - a.y * b.y - a.z * b.z, a.w * b.x + a.x * b.w + a.y * b.z - a.z * b.y,
@@ -48,6 +50,8 @@ export namespace racer {
 		vve::SceneHandle scene{};								///< Asset scene of one Kenney car.
 		std::array<vve::NodeHandle, 4> wheels{};			///< Front left, front right, back left, back right.
 		std::array<vve::Vec3, 4> wheelOffsets{};			///< Their imported positions (model units).
+		vve::NodeHandle body{};								///< Body node, which leans; invalid when the model has none.
+		vve::Vec3 bodyOffset{};								///< Its imported position (model units).
 		float scale{1.0F};										///< Model units to metres.
 		vve::Bounds box{};										///< Model box in model units (+Z forward).
 
@@ -63,12 +67,17 @@ export namespace racer {
 		std::vector<vve::RenderObjectHandle> parts{};		///< Every object of the car, for picking and opacity.
 		std::array<vve::RenderObjectHandle, 2> brakeLights{};	///< Unlit cuboids hung on the instance root.
 		bool braking{};												///< Current brake-light state.
+		float roll{};												///< Body lean out of a bend (radians about the driving direction).
+		float pitch{};												///< Body dip under braking, rise under acceleration (radians).
+		float lastSpeed{};											///< Forward speed of the previous frame, for the acceleration.
 	};
 
 	[[nodiscard]] auto loadCarModel(vve::AssetSystem &assets, const std::filesystem::path &path, float wheelBase)
 		-> std::expected<CarModel, vve::Error>;
 	[[nodiscard]] auto addCar(vve::RenderSystem &render, const CarModel &model) -> std::expected<CarRig, vve::Error>;
-	void placeCar(vve::RenderSystem &render, const CarModel &model, const CarRig &rig, const GhostFrame &pose);
+	void placeCar(vve::RenderSystem &render, const CarModel &model, const CarRig &rig, const GhostFrame &pose, float roll = 0.0F,
+		float pitch = 0.0F);
+	void leanBody(CarRig &rig, float speed, float steer, float wheelBase, float dt);
 	void setBrakeLights(vve::RenderSystem &render, CarRig &rig, bool on);
 	void setCarOpacity(vve::RenderSystem &render, const CarRig &rig, float opacity);
 
@@ -98,9 +107,16 @@ export namespace racer {
 
 namespace racer {
 
+	/// @brief Texture coordinates of a strip: u grows along the track by uStep per sample, v is fixed per row.
+	struct StripUv {
+		float uStep{};	///< Texture repeats per sample step; zero writes no texture coordinates.
+		float vA{};		///< v of row a.
+		float vB{};		///< v of row b.
+	};
+
 	/// @brief Appends quads between two point rows, quad i joining rows i and i+1 (closed), each oriented towards facing(i).
 	void appendStrip(vve::MeshDescriptor &mesh, const std::vector<vve::Vec3> &a, const std::vector<vve::Vec3> &b,
-		const std::function<vve::Vec3(std::size_t)> &facing, const std::function<bool(std::size_t)> &keep) {
+		const std::function<vve::Vec3(std::size_t)> &facing, const std::function<bool(std::size_t)> &keep, StripUv uv = {}) {
 		const auto sub = [](vve::Vec3 l, vve::Vec3 r) { return vve::math::subtract(l, r); };
 		for (std::size_t i{}; i < a.size(); ++i) {
 			if (!keep(i)) { continue; }
@@ -112,9 +128,12 @@ namespace racer {
 			const auto &second = flip ? a : b;
 			normal = vve::math::normalize(flip ? vve::math::scale(normal, -1.0F) : normal);
 			const auto base = static_cast<std::uint32_t>(mesh.positions.size());
-			for (const auto &point : {first[i], second[i], first[j], second[j]}) {
+			const float u = static_cast<float>(i) * uv.uStep, vFirst = flip ? uv.vB : uv.vA, vSecond = flip ? uv.vA : uv.vB;
+			for (const auto &[point, coords] : {std::pair{first[i], vve::Vec2{u, vFirst}}, std::pair{second[i], vve::Vec2{u, vSecond}},
+					 std::pair{first[j], vve::Vec2{u + uv.uStep, vFirst}}, std::pair{second[j], vve::Vec2{u + uv.uStep, vSecond}}}) {
 				mesh.positions.push_back(point);
 				mesh.normals.push_back(normal);
+				if (uv.uStep > 0.0F) { mesh.uvs.push_back(coords); }
 			}
 			for (const std::uint32_t index : {0U, 1U, 2U, 2U, 1U, 3U}) { mesh.indices.push_back(base + index); }
 		}
@@ -127,36 +146,14 @@ namespace racer {
 		return points;
 	}
 
-	/// @brief Adds one flat band between two lateral offsets as a single mesh.
+	/// @brief Adds one flat band between two lateral offsets as a single mesh; a texture repeats every `tile` metres.
 	auto addBand(vve::RenderSystem &render, const Track &track, float from, float to, float height, vve::Vec3 color,
-		const std::function<bool(std::size_t)> &keep) -> std::expected<vve::RenderObjectHandle, vve::Error> {
-		vve::MeshDescriptor mesh{.color = {.value = color}};
-		appendStrip(mesh, row(track, from, height), row(track, to, height), [](std::size_t) { return vve::Vec3{0, 1, 0}; }, keep);
-		return render.addMesh(std::move(mesh));
-	}
-
-	/// @brief The asphalt as one mesh; its texture repeats every 3 m across and along the road.
-	auto addRoad(vve::RenderSystem &render, const Track &track, const std::filesystem::path &texture) -> std::expected<vve::RenderObjectHandle, vve::Error> {
-		constexpr float tile{3.0F}, hw{Track::halfWidth};
-		const auto left = row(track, -hw, 0.0F), right = row(track, hw, 0.0F);
-		const float step = track.length() / static_cast<float>(track.samples().size());
-		vve::MeshDescriptor mesh{.base_color_texture = texture};
-		for (std::size_t i{}; i < left.size(); ++i) {
-			const std::size_t j = (i + 1U) % left.size();
-			const float v = static_cast<float>(i) * step / tile, next = v + step / tile;
-			const auto base = static_cast<std::uint32_t>(mesh.positions.size());
-			for (const auto &[point, uv] : {std::pair{left[i], vve::Vec2{-hw / tile, v}}, std::pair{right[i], vve::Vec2{hw / tile, v}},
-					 std::pair{left[j], vve::Vec2{-hw / tile, next}}, std::pair{right[j], vve::Vec2{hw / tile, next}}}) {
-				mesh.positions.push_back(point);
-				mesh.normals.push_back(vve::Vec3{0, 1, 0});
-				mesh.uvs.push_back(uv);
-			}
-			// Counter-clockwise seen from above, whichever way the road turns.
-			const auto normal = vve::math::cross(vve::math::subtract(right[i], left[i]), vve::math::subtract(left[j], left[i]));
-			for (const std::uint32_t index : normal.y > 0.0F ? std::array{0U, 1U, 2U, 2U, 1U, 3U} : std::array{0U, 2U, 1U, 2U, 3U, 1U}) {
-				mesh.indices.push_back(base + index);
-			}
-		}
+		const std::function<bool(std::size_t)> &keep, const std::filesystem::path &texture = {}, float tile = 1.0F)
+		-> std::expected<vve::RenderObjectHandle, vve::Error> {
+		vve::MeshDescriptor mesh{.color = {.value = color}, .base_color_texture = texture};
+		const float step = texture.empty() ? 0.0F : track.length() / static_cast<float>(track.samples().size()) / tile;
+		appendStrip(mesh, row(track, from, height), row(track, to, height), [](std::size_t) { return vve::Vec3{0, 1, 0}; }, keep,
+			{.uStep = step, .vA = from / tile, .vB = to / tile});
 		return render.addMesh(std::move(mesh));
 	}
 
@@ -166,7 +163,7 @@ namespace racer {
 		-> std::expected<void, vve::Error> {
 		const auto all = [](std::size_t) { return true; };
 		const auto fail = [](const auto &result) { return !result.has_value(); };
-		// The ground (assets/racer/ground.obj) is normal-mapped grass 15 cm below the road, tiled every 6 m.
+		// The ground (assets/racer/ground.obj) is normal-mapped grass 15 cm below the road, tiled every 4 m (Poly Haven leafy_grass).
 		const auto ground = assets.loadScene(root / "assets/racer/ground.obj");
 		if (!ground) { return std::unexpected(ground.error()); }
 		if (const auto placed = render.instantiateScene(*ground); fail(placed)) { return std::unexpected(placed.error()); }
@@ -181,9 +178,10 @@ namespace racer {
 		if (fail(variation)) { return std::unexpected(variation.error()); }
 		if (const auto result = render.setObjectOpacity(*variation, 0.4F); !result) { return result; }
 		constexpr float hw = Track::halfWidth, kerb = Track::kerbWidth;
-		const vve::Vec3 red{0.75F, 0.08F, 0.06F}, white{0.9F, 0.9F, 0.9F};
+		const vve::Vec3 red{0.85F, 0.09F, 0.07F}, white{0.9F, 0.9F, 0.9F};
+		const auto textures = root / "assets/racer/textures";
 		const std::array bands{
-			addRoad(render, track, root / "assets/racer/asphalt.tga"),
+			addBand(render, track, -hw, hw, 0.0F, vve::Vec3{1, 1, 1}, all, textures / "asphalt_track.jpg", 2.0F),
 			addBand(render, track, -hw + 0.25F, -hw + 0.45F, 0.02F, white, all),
 			addBand(render, track, hw - 0.45F, hw - 0.25F, 0.02F, white, all),
 			addBand(render, track, -0.15F, 0.15F, 0.02F, white, [](std::size_t i) { return i % 4U < 2U; }),
@@ -193,21 +191,24 @@ namespace racer {
 		// Kerbs alternate red and white every two samples on both sides.
 		for (const float side : {-1.0F, 1.0F}) {
 			for (const bool even : {true, false}) {
-				const auto kerbBand = addBand(render, track, side * hw, side * (hw + kerb), 0.015F, even ? red : white,
-					[even](std::size_t i) { return (i / 2U % 2U == 0U) == even; });
+				const auto kerbBand = addBand(render, track, side * hw, side * (hw + kerb), 0.015F, even ? red : vve::Vec3{1, 1, 1},
+					[even](std::size_t i) { return (i / 2U % 2U == 0U) == even; }, textures / "concrete_kerb.jpg", 2.0F);
 				if (fail(kerbBand)) { return std::unexpected(kerbBand.error()); }
 			}
 		}
-		// Each wall is one mesh: an inner face, an outer face and a top.
+		// Each wall is one concrete mesh: an inner face, an outer face and a top; the texture repeats every 2.71 m.
 		for (const float side : {-1.0F, 1.0F}) {
-			const float inner = side * Track::wallOffset, outer = side * (Track::wallOffset + 0.4F);
-			vve::MeshDescriptor wall{.color = {.value = vve::Vec3{0.55F, 0.6F, 0.68F}}};
+			const float inner = side * Track::wallOffset, outer = side * (Track::wallOffset + 0.4F), tile{2.71F};
+			vve::MeshDescriptor wall{.color = {.value = vve::Vec3{0.95F, 0.95F, 0.95F}}, .base_color_texture = textures / "concrete_wall.jpg"};
+			const float step = track.length() / static_cast<float>(track.samples().size()) / tile;
 			// The inner face looks at the road, the outer face away from it.
 			const auto roadward = [&track, side](std::size_t i) { return world(rightOf(track.samples()[i].tangent) * -side); };
 			const auto away = [&roadward](std::size_t i) { return vve::math::scale(roadward(i), -1.0F); };
-			appendStrip(wall, row(track, inner, -0.15F), row(track, inner, 0.9F), roadward, all);
-			appendStrip(wall, row(track, outer, -0.15F), row(track, outer, 0.9F), away, all);
-			appendStrip(wall, row(track, inner, 0.9F), row(track, outer, 0.9F), [](std::size_t) { return vve::Vec3{0, 1, 0}; }, all);
+			const StripUv face{.uStep = step, .vA = -0.15F / tile, .vB = 0.9F / tile};
+			appendStrip(wall, row(track, inner, -0.15F), row(track, inner, 0.9F), roadward, all, face);
+			appendStrip(wall, row(track, outer, -0.15F), row(track, outer, 0.9F), away, all, face);
+			appendStrip(wall, row(track, inner, 0.9F), row(track, outer, 0.9F), [](std::size_t) { return vve::Vec3{0, 1, 0}; }, all,
+				{.uStep = step, .vA = 0.0F, .vB = 0.4F / tile});
 			if (const auto added = render.addMesh(std::move(wall)); fail(added)) { return std::unexpected(added.error()); }
 		}
 		// Checkpoint gates: the track's two post colliders drawn as tall cuboids, joined by a bar; see-through, the start gate yellow.
@@ -337,6 +338,7 @@ namespace racer {
 		for (const auto node : assets.sceneNodes(*scene).value_or(vve::Vector<vve::NodeHandle>{})) {
 			const auto offset = assets.nodeTransform(node).value_or(vve::Transform{}).translation.value;
 			if (const auto name = assets.nodeName(node)) {
+				if (name->value == "body") { model.body = node; model.bodyOffset = offset; }
 				if (const auto wheel = std::ranges::find(names, name->value); wheel != names.end()) {
 					model.wheels[static_cast<std::size_t>(wheel - names.begin())] = node;
 					model.wheelOffsets[static_cast<std::size_t>(wheel - names.begin())] = offset;
@@ -386,8 +388,12 @@ namespace racer {
 		return rig;
 	}
 
-	/// @brief Moves and scales the whole car through its instance root, steers the front wheels and spins all four.
-	void placeCar(vve::RenderSystem &render, const CarModel &model, const CarRig &rig, const GhostFrame &pose) {
+	/// @brief Moves and scales the whole car through its instance root, steers the front wheels, spins all four and leans
+	/// the body: roll about the driving direction (positive lifts the left side), pitch about the axle (positive dips the nose).
+	void placeCar(vve::RenderSystem &render, const CarModel &model, const CarRig &rig, const GhostFrame &pose, float roll, float pitch) {
+		if (model.body.valid()) {
+			(void)render.setSceneInstanceNodeTransform(rig.instance, model.body, at(model.bodyOffset, combine(aboutZ(roll), aboutX(pitch))));
+		}
 		(void)render.setNodeTransform(rig.root, at(world(pose.position), aboutY(yawOf(pose.heading)), model.scale));
 		// Positive steering turns right, which is towards -X of the model; rolling forwards turns about +X.
 		const auto spin = aboutX(pose.wheelAngle);
@@ -395,6 +401,18 @@ namespace racer {
 		for (std::size_t i{}; i < model.wheels.size(); ++i) {
 			(void)render.setSceneInstanceNodeTransform(rig.instance, model.wheels[i], at(model.wheelOffsets[i], i < 2U ? steer : spin));
 		}
+	}
+
+	/// @brief Smooths the body lean towards what the accelerations ask for: the body rolls out of a bend (sideways
+	/// acceleration speed^2 tan(steer) / wheel base, positive to the right) and dips its nose when the car slows down.
+	void leanBody(CarRig &rig, float speed, float steer, float wheelBase, float dt) {
+		if (dt <= 0.0F) { return; }
+		const float sideways = speed * speed * std::tan(steer) / wheelBase;
+		const float forwards = (speed - rig.lastSpeed) / dt;
+		const float blend = 1.0F - std::exp(-8.0F * dt);
+		rig.roll += (std::clamp(-0.012F * sideways, -0.09F, 0.09F) - rig.roll) * blend;
+		rig.pitch += (std::clamp(-0.006F * forwards, -0.05F, 0.05F) - rig.pitch) * blend;
+		rig.lastSpeed = speed;
 	}
 
 	/// @brief Switches both brake lights between bright and dark red, only when the state changes.

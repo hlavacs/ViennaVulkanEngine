@@ -28,9 +28,10 @@ struct ViewSystem {
 	int builtGeneration{-1};					///< Race generation the rigs belong to.
 	View view{View::chase};					///< Current camera view.
 	bool night{};								///< Night mode with headlights.
-	bool skyShown{};							///< Whether the day skybox is set.
+	std::string sky{};							///< Panorama currently shown: the day photo or the night sky made from it.
 	std::size_t sceneryCount{};				///< Trees, bushes, plants and rocks placed beside the track.
 	std::size_t countryPieces{};				///< Kit models and merged meshes of the countryside.
+	std::size_t spectators{};					///< People on the grandstand.
 	bool fullscreen{};							///< Window state.
 	bool photo{};								///< Photo mode: free orbit camera, simulation paused.
 	float orbitYaw{}, orbitPitch{0.4F}, orbitDistance{9.0F};	///< Photo camera around the player car.
@@ -56,6 +57,10 @@ struct ViewSystem {
 		const auto countryside = racer::buildCountryside(render, assets, race.track, root);
 		if (!countryside) { return std::unexpected(countryside.error()); }
 		countryPieces = countryside->pieces;
+		spectators = countryside->spectators;
+		if (!countryside->figures) {
+			std::cerr << "[racer] assets/racer/crowd is missing; box people fill the grandstand (see examples/racer/README.md)\n";
+		}
 		if (countryside->missing > 0U) {
 			std::cerr << "[racer] " << countryside->missing << " Kenney kit models are missing in assets/racer/kenney (see examples/racer/README.md)\n";
 		}
@@ -116,7 +121,9 @@ struct ViewSystem {
 		std::size_t index{};
 		for (auto &[entity, rig] : rigs) {
 			const auto &car = cars[index++].vehicle;
-			racer::placeCar(render, modelOf(index - 1U), rig, {.position = car.position, .heading = car.heading, .steer = car.steer, .wheelAngle = car.wheelAngle});
+			racer::leanBody(rig, car.forwardSpeed(), car.steer, race.params.wheelBase, race.paused ? 0.0F : dt);
+			racer::placeCar(render, modelOf(index - 1U), rig, {.position = car.position, .heading = car.heading, .steer = car.steer, .wheelAngle = car.wheelAngle},
+				rig.roll, rig.pitch);
 			racer::setBrakeLights(render, rig, car.braking);
 			const bool sliding = car.slip > 2.5F || (car.braking && car.forwardSpeed() > 15.0F) || (car.offTrack && car.forwardSpeed() > 5.0F);
 			if (sliding && !race.paused && (frame.frame_index.value + index) % 3U == 0U) {
@@ -141,12 +148,12 @@ struct ViewSystem {
 	/// @brief The car model of a car slot.
 	[[nodiscard]] const racer::CarModel &modelOf(std::size_t slot) const { return models[slot % models.size()]; }
 
-	/// @brief Day: the sky photo and its sun with shadows. Night: no sky, a dim moon, and two headlights on every car.
+	/// @brief Day: the sky photo and its sun with shadows. Night: the night sky with dark clouds and the moon where the sun
+	/// was (make_night_sky.py), a dim moonlight, and two headlights on every car.
 	std::expected<void, vve::Error> updateLights(vve::RenderSystem &render) {
-		if (skyShown == night) {
-			if (night) { render.clearSkybox(); }
-			else if (const auto result = render.setSkybox(root / "assets/racer/sky.jpg"); !result) { return result; }
-			skyShown = !night;
+		if (const std::string wanted = night ? "assets/racer/night_sky.jpg" : "assets/racer/sky.jpg"; sky != wanted) {
+			if (const auto result = render.setSkybox(root / wanted); !result) { return result; }
+			sky = wanted;
 		}
 		render.clearLights();
 		render.setBackgroundColor(vve::LinearColor{.value = night ? vve::Vec3{0.01F, 0.015F, 0.04F} : vve::Vec3{0.45F, 0.68F, 0.95F}});

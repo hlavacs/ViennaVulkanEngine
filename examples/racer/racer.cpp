@@ -132,10 +132,11 @@ int main(int argc, char **argv) {
 	// A time trial must have recorded its first lap as the ghost.
 	const bool ghostReady = !options.timeTrial || (!race.ghost.empty() && view.ghostRig.instance.valid());
 	const bool pass = insideWalls && drove && pickedPlayer && ghostReady && (options.menu || steerError < 0.01F) && view.sceneryCount > 300U &&
-		view.countryPieces > 20U;
-	verify << std::format("cars,{}\nmoving_cars,{}\nmin_wall_clearance,{:.3f}\nmax_car_overlap,{:.3f}\npicked_player,{}\nsmoke_active,{}\nghost_frames,{}\nbest_lap,{:.3f}\nsteer,{:.4f}\nfront_wheel_error,{:.5f}\nscenery,{}\ncountryside,{}\nresult,{}\n",
+		view.countryPieces > 20U && view.spectators > 150U;
+	verify << std::format("cars,{}\nmoving_cars,{}\nmin_wall_clearance,{:.3f}\nmax_car_overlap,{:.3f}\npicked_player,{}\nsmoke_active,{}\nghost_frames,{}\nbest_lap,{:.3f}\nsteer,{:.4f}\nfront_wheel_error,{:.5f}\nscenery,{}\ncountryside,{}\nspectators,{}\nresult,{}\n",
 		view.cars.size(), moving, race.minClearance, race.maxOverlap, pickedPlayer, view.smoke.active(), race.ghost.frames.size(),
-		view.cars.empty() ? 0.0F : view.cars.front().progress.bestLap, steerAngle, steerError, view.sceneryCount, view.countryPieces, pass ? "PASS" : "FAIL");
+		view.cars.empty() ? 0.0F : view.cars.front().progress.bestLap, steerAngle, steerError, view.sceneryCount, view.countryPieces, view.spectators,
+		pass ? "PASS" : "FAIL");
 	std::println("[racer] frames={} cars={} moving={} min_wall_clearance={:.3f} max_car_overlap={:.3f} picked_player={} {}", options.frames,
 		view.cars.size(), moving, race.minClearance, race.maxOverlap, pickedPlayer, pass ? "PASS" : "FAIL");
 	return pass ? 0 : 10;

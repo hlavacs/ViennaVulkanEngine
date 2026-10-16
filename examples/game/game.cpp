@@ -117,9 +117,11 @@ int main(int argc, char **argv) {
 	std::cout << "[game] engine=" << vve::engineImplementationNamespaceName << '\n';
 	int selectedTrack{};
 	bool requireAudio{};
+	bool verifyMusic{};
 	for (int argument = 1; argument < argc; ++argument) {
 		const std::string_view option{argv[argument]};
 		if (option == "--require-audio") { requireAudio = true; }
+		if (option == "--verify-music") { verifyMusic = true; requireAudio = true; }
 		if (option == "--music-track") {
 			if (++argument >= argc) { std::cerr << "--music-track needs 0, 1 or 2.\n"; return 4; }
 			const std::string_view value{argv[argument]};
@@ -132,23 +134,23 @@ int main(int argc, char **argv) {
 	}
 
 	const auto activeRenderer = vve::RendererId{.value = "forward"};
-	auto engine = vve::EngineBuilder<>{}
-						.applicationName("game")
-						.addWindow(vve::WindowSetup{}
+	auto builder = vve::EngineBuilder<>{}.applicationName("game");
+	// Music verification uses the game's audio setup without opening a video device.
+	if (!verifyMusic) {
+		(void)builder.addWindow(vve::WindowSetup{}
 						.id("main")
 						.title("VVE Crate Collector")
 						.extent(vve::PixelExtent{.width = windowWidth, .height = windowHeight})
 						.renderer(activeRenderer)
-						.resizable(true))
-						.build();
+						.resizable(true));
+	}
+	auto engine = builder.build();
 
 	if (const auto result = engine.init(); !result) {
 		std::cerr << "[game] engine init failed: error=" << vve::errorName(result.error()) << '\n';
 		return 1;
 	}
 
-	auto render = engine.world().get<vve::RenderSystem>();
-	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr);
 	// The public facade owns sounds; one looped voice plays the selected V2 track.
 	auto audio = engine.world().get<vve::AudioSystem>();
 	bool musicReady = audio.init().has_value();
@@ -180,6 +182,17 @@ int main(int argc, char **argv) {
 		return musicPaused ? audio.pause(musicVoice) : std::expected<void, vve::Error>{};
 	};
 	if (musicReady && !startMusic()) { std::cerr << "[game] music failed: " << audio.lastError() << '\n'; return 4; }
+	if (verifyMusic) {
+		// Give the dummy device several callbacks, then verify playback and deterministic cleanup.
+		std::this_thread::sleep_for(std::chrono::milliseconds{50});
+		if (!audio.isPlaying(musicVoice) || !audio.stop(musicVoice) || audio.isPlaying(musicVoice)) {
+			std::cerr << "[game] music verification failed: " << audio.lastError() << '\n'; return 4;
+		}
+		std::cout << "[game] music_verified=" << musicFiles[selectedTrack] << '\n';
+		return 0;
+	}
+	auto render = engine.world().get<vve::RenderSystem>();
+	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr);
 	const auto sunHandle = loadScene(render, root);
 	if (!sunHandle) {
 		std::cerr << "[game] scene load failed: error=" << vve::errorName(sunHandle.error()) << '\n';
