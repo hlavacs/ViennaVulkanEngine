@@ -250,6 +250,8 @@ Input (`vve::InputState`, `vve::WindowSystem`): `vve::Key` names letters, arrows
 
 Fullscreen: `WindowSetup{}.fullscreen(true)` starts a window in fullscreen at the desktop resolution, and `WindowSystem::setFullscreen(window, on)` switches it later; the renderer follows the new size.
 
+HUD images: `GuiSystem::loadImage(path)` loads an image for the GUI and returns a `GuiImageHandle`; inside a `draw` callback, `imageId(handle)` gives the `ImTextureID` for `ImGui::Image` (0 until the GUI runs and the image is on the GPU, so skip drawing then). Images stay loaded for the engine's lifetime, also across `clearScene`; their bytes are shown unchanged, like ImGui colours. The ImGui descriptor pool holds 16 textures, one of them the font.
+
 ## Audio
 
 The engine's `vve::AudioSystem` facade uses SDL3_mixer, installed by the normal

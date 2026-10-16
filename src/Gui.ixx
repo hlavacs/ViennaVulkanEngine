@@ -2,6 +2,7 @@ export module VVEngine:Gui;
 import std;
 import :Implementation;
 import VVEngine.Error;
+import VVEngine.Types;
 
 /**
 	* @file
@@ -22,6 +23,12 @@ export namespace vve {
 		[[nodiscard]] inline auto configureFonts(std::function<void()> setup) -> std::expected<void, Error> {
 			return impl_.configureFonts(std::move(setup));
 		}
+		/// @brief Loads an image file for the HUD; it stays loaded for the engine's lifetime.
+		[[nodiscard]] inline auto loadImage(std::filesystem::path path) -> std::expected<GuiImageHandle, Error> {
+			return impl_.loadImage(std::move(path));
+		} ///< A missing or unreadable file returns io_error.
+		/// @brief Returns the ImTextureID to pass to ImGui::Image; 0 until the GUI is running and the image is on the GPU.
+		[[nodiscard]] inline auto imageId(GuiImageHandle image) const -> std::uint64_t { return impl_.imageId(image); }
 
 	private:
 		template <typename... TSystems> friend class Engine;

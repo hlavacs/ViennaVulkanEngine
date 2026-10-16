@@ -156,6 +156,8 @@ export namespace vve::simple {
 		auto loadScene(Scene scene)																									-> SceneHandle;
 
 		[[nodiscard]] auto sceneTextureCount() const -> std::size_t;
+		[[nodiscard]] auto acquireGuiImage(const std::filesystem::path &path)										-> std::expected<RenderTextureIndex, Error>;
+		[[nodiscard]] auto guiImageView(RenderTextureIndex index) const												-> std::optional<std::pair<VkSampler, VkImageView>>;
 		[[nodiscard]] auto textureDecodeCount() const -> std::size_t;
 		[[nodiscard]] auto sceneTexturePixelBytes() const -> std::size_t;
 		[[nodiscard]] auto sceneTextureIsLinear(std::size_t index) const -> std::expected<bool, Error>;
@@ -412,6 +414,20 @@ namespace vve::simple {
 		return bytes;
 	}
 	inline std::size_t RenderSystem::sceneTextureCount() const { return scene_.textureCount(); }
+
+	/// @brief Loads a HUD image into a pinned texture slot; it is read as raw (UNORM) colours like ImGui's own colours.
+	inline auto RenderSystem::acquireGuiImage(const std::filesystem::path &path) -> std::expected<RenderTextureIndex, Error> {
+		// Any data semantic selects a linear image, whose bytes reach the GUI pass unchanged.
+		const auto index = scene_.acquireTexture(path, MaterialTextureSemantic::ambient_occlusion);
+		if (index) { scene_.pinTexture(*index); }
+		return index;
+	}
+
+	/// @brief Returns the shared sampler and the view of an uploaded HUD image, or nothing before upload.
+	inline auto RenderSystem::guiImageView(RenderTextureIndex index) const -> std::optional<std::pair<VkSampler, VkImageView>> {
+		const VkImageView view = initialized_ ? renderer_.textureView(index) : VK_NULL_HANDLE;
+		return view == VK_NULL_HANDLE ? std::nullopt : std::optional{std::pair{renderer_.materialSampler, view}};
+	}
 	inline auto RenderSystem::sceneTextureIsLinear(std::size_t index) const -> std::expected<bool, Error> {
 		const auto *texture = scene_.findTexture(static_cast<RenderTextureIndex>(index));
 		return texture == nullptr ? std::unexpected(Error::missing_object) : std::expected<bool, Error>{texture->linear};

@@ -95,6 +95,7 @@ export namespace vve::simple {
 		auto eraseMesh(RenderMeshHandle handle) -> void;
 		auto eraseMaterial(RenderMaterialHandle handle) -> void;
 		auto releaseUnusedTextures() -> std::size_t;
+		auto pinTexture(RenderTextureIndex index) -> void;
 		[[nodiscard]] auto purgeUnusedAssets()																				-> std::size_t;
 		[[nodiscard]] RenderMesh *findMesh(RenderMeshHandle handle);
 		[[nodiscard]] const RenderMesh *findMesh(RenderMeshHandle handle) const;
@@ -134,6 +135,7 @@ export namespace vve::simple {
 		std::uint64_t texture_generation_{0};										///< Last generation handed to a decoded texture.
 		bool camera_{false};														///< Whether a default camera was explicitly set.
 		std::vector<std::uint64_t> imported_cameras_{};						///< Owner tag per imported camera for counting and removal.
+		std::set<RenderTextureIndex> pinned_textures_{};						///< Slots kept without a material (HUD images), also across clear().
 	};
 
 } // namespace vve::simple
@@ -440,13 +442,12 @@ namespace vve::simple {
 	/// @brief Retains one imported camera owner for scene counts and per-instance removal.
 	inline void RenderScene::addImportedCamera(std::uint64_t owner) { imported_cameras_.push_back(owner); }
 
-	/// @brief Removes all scene resources; texture generations keep counting so the renderer sees every slot change.
+	/// @brief Removes all scene resources except pinned textures; texture generations keep counting so the renderer sees every slot change.
 	inline auto RenderScene::clear()																					-> void{
 		meshes_.clear();
 		materials_.clear();
 		instances_.clear();
-		textures_.clear();
-		texture_indices_.clear();
+		releaseUnusedTextures();	// Without materials only pinned slots are in use.
 		texture_failures_.clear();
 		mesh_indices_.clear();
 		material_indices_.clear();
@@ -516,9 +517,13 @@ namespace vve::simple {
 		return (mesh_count - meshes_.size()) + (material_count - materials_.size());
 	}
 
-	/// @brief Frees texture slots no material references; later acquisitions reuse them.
+	/// @brief Keeps one texture slot alive without a material reference until the scene is destroyed.
+	inline auto RenderScene::pinTexture(RenderTextureIndex index) -> void { pinned_textures_.insert(index); }
+
+	/// @brief Frees texture slots no material references and nothing pinned; later acquisitions reuse them.
 	inline auto RenderScene::releaseUnusedTextures()														-> std::size_t{
 		auto used = std::vector<bool>(textures_.size(), false);
+		for (const RenderTextureIndex index : pinned_textures_) { if (index < used.size()) { used[index] = true; } }
 		for (const RenderMaterial &material : materials_) {
 			for (const RenderTextureIndex index : {material.base_color_texture_index, material.normal_texture_index,
 					material.metalness_texture_index, material.roughness_texture_index, material.emissive_texture_index,

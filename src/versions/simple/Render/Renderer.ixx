@@ -190,6 +190,13 @@ export namespace vve::simple {
 		/// @brief Reports whether the renderer currently owns a live Vulkan device.
 		[[nodiscard]] bool initialized() const { return device.device != VK_NULL_HANDLE; }
 
+		/// @brief Returns the view of a texture slot once its current pixels are on the GPU, else null.
+		[[nodiscard]] VkImageView textureView(std::size_t index) const {
+			const bool current = index < objectTextures.size() && uploadedTextureGenerations_[index] != 0U &&
+				uploadedTextureGenerations_[index] == textureGeneration(index);
+			return current ? objectTextures[index].imageView : VK_NULL_HANDLE;
+		}
+
 		/// @brief Reports the number of resident GPU textures, excluding the fallback texture.
 		[[nodiscard]] std::size_t gpuTextureCount() const { return uploadedTextureCount_; }
 		[[nodiscard]] std::uint64_t uploadedTextureGeneration(std::size_t index) const;

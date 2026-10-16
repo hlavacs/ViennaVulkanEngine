@@ -91,6 +91,8 @@ target_compile_definitions(RenderMeshDedupTests PRIVATE
 vve_add_engine_test(GuiSystemTests Vulkan::Vulkan)
 vve_add_engine_test(GuiCallbackErrorTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(GuiColorCaptureTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(GuiImageCaptureTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(GuiImageTests)
 vve_add_engine_test(SceneSystemTests vve_test_support)
 vve_add_engine_test(SceneInstantiationTests vve_test_support)
 vve_add_engine_test(SceneInstanceLifetimeTests)

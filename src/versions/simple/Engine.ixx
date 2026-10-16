@@ -261,6 +261,8 @@ export namespace vve::simple {
 	/// @brief Fills small defaults after options have been applied.
 	inline auto Engine::applyDefaults()																	-> void{
 		window_system_.setGuiEventSink([this](const auto &event) { return gui_.processEvent(event); });	///< Forwards SDL input to the GUI; claimed events skip the game input.
+		gui_.setImageSource([this](const std::filesystem::path &path) { return render_system_.acquireGuiImage(path); },
+			[this](std::uint32_t slot) { return render_system_.guiImageView(slot); });	///< HUD images live in the render texture table.
 		if (windows_.value.empty()) { windows_.value.push_back(WindowDesc{}); }
 		for (auto &window : windows_.value) {
 			if (window.title == WindowDesc{}.title && application_name_.value != ApplicationName{}.value) {

@@ -20,7 +20,7 @@ import std;
 export import VVEngine.Simple.Types;
 
 /// @file
-/// @brief Dear ImGui wrapper: one context, the SDL3 and Vulkan backends, and one user frame callback.
+/// @brief Dear ImGui wrapper: one context, the SDL3 and Vulkan backends, one user frame callback and HUD images.
 
 export namespace vve::simple {
 
@@ -42,8 +42,19 @@ export namespace vve::simple {
 		[[nodiscard]] auto hasFrameCallback() const									-> bool;
 		[[nodiscard]] bool ready() const;
 		[[nodiscard]] bool takeFrameCallbackError();
+		/// @brief Engine-supplied image access: load into a texture slot, and the slot's sampler and view once uploaded.
+		using ImageLoader = std::function<std::expected<std::uint32_t, Error>(const std::filesystem::path &)>;
+		using ImageView = std::function<std::optional<std::pair<VkSampler, VkImageView>>(std::uint32_t)>;
+		auto setImageSource(ImageLoader load, ImageView view)						-> void;
+		[[nodiscard]] auto loadImage(const std::filesystem::path &path)		-> std::expected<GuiImageHandle, Error>;
+		[[nodiscard]] auto imageId(GuiImageHandle image) const					-> std::uint64_t;
 
 	private:
+		auto registerImages()																-> void;
+
+		ImageLoader loadImage_{};											///< Loads a HUD image into a renderer texture slot.
+		ImageView imageView_{};												///< Looks up an uploaded slot's sampler and view.
+		std::map<GuiImageHandle, std::pair<std::uint32_t, VkDescriptorSet>> images_{}; ///< Texture slot and ImGui descriptor, null until registered.
 		std::function<void()> frameCallback_{};						///< User frame callback stored for the future GUI backend.
 		std::function<void()> fontSetup_{}; ///< User font atlas setup, invoked once per new context before upload.
 		ImGuiContext *context_{nullptr};									///< Owned Dear ImGui context for this GUI system.
@@ -134,6 +145,7 @@ export namespace vve::simple {
 	/// @brief Shuts down the Dear ImGui Vulkan backend when it was initialized.
 	inline auto GuiSystem::shutdownVulkan() -> void {
 		if (!vulkanBackendReady_) { return; }
+		for (auto &image : images_) { image.second.second = VK_NULL_HANDLE; } // Descriptors die with the backend's pool.
 		ImGui_ImplVulkan_Shutdown();
 		vulkanBackendReady_ = false;
 		fontsReady_ = false;
@@ -151,6 +163,7 @@ export namespace vve::simple {
 	/// @brief Builds GUI draw data, recovering callback exceptions; reports whether any vertices need recording.
 	inline auto GuiSystem::prepareFrame() -> bool {
 		if (!ready()) { return false; }
+		registerImages();
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
@@ -196,5 +209,37 @@ export namespace vve::simple {
 
 	/// @brief Consumes a recovered callback error so the engine reports it exactly once.
 	inline bool GuiSystem::takeFrameCallbackError() { return std::exchange(frameCallbackFailed_, false); }
+
+	/// @brief Stores how HUD images reach the renderer's texture table; the engine sets it once.
+	inline auto GuiSystem::setImageSource(ImageLoader load, ImageView view) -> void {
+		loadImage_ = std::move(load);
+		imageView_ = std::move(view);
+	}
+
+	/// @brief Loads one HUD image; without an engine image source it reports not_initialized.
+	inline auto GuiSystem::loadImage(const std::filesystem::path &path) -> std::expected<GuiImageHandle, Error> {
+		if (!loadImage_) { return std::unexpected(Error::not_initialized); }
+		const auto slot = loadImage_(path);
+		if (!slot) { return std::unexpected(slot.error()); }
+		const auto handle = makeCounterHandle<GuiImageHandle>();
+		images_.emplace(handle, std::pair{*slot, VkDescriptorSet{VK_NULL_HANDLE}});
+		return handle;
+	}
+
+	/// @brief Returns the registered ImGui descriptor as ImTextureID, or 0 while it is not registered.
+	inline auto GuiSystem::imageId(GuiImageHandle image) const -> std::uint64_t {
+		const auto found = images_.find(image);
+		return found == images_.end() ? 0U : reinterpret_cast<std::uint64_t>(found->second.second);
+	}
+
+	/// @brief Registers every uploaded, not yet registered image with the Vulkan backend before the frame callback runs.
+	inline auto GuiSystem::registerImages() -> void {
+		for (auto &[handle, image] : images_) {
+			if (image.second != VK_NULL_HANDLE || !imageView_) { continue; }
+			if (const auto view = imageView_(image.first)) {
+				image.second = ImGui_ImplVulkan_AddTexture(view->first, view->second, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+			}
+		}
+	}
 
 } // namespace vve::simple

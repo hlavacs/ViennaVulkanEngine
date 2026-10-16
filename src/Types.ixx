@@ -45,6 +45,7 @@ export namespace vve {
 	struct LightHandleTag {};											///< Light descriptor handle tag.
 	struct CameraHandleTag {};											///< Camera descriptor handle tag.
 	struct SceneNodeHandleTag {};										///< World scene tree node handle tag.
+	struct GuiImageHandleTag {};										///< HUD image handle tag.
 
 	using SceneHandle	= TypedHandle<SceneHandleTag>;		///< Scene descriptor handle.
 	using WindowHandle	= TypedHandle<WindowHandleTag>;		///< Runtime window handle.
@@ -56,6 +57,7 @@ export namespace vve {
 	using LightHandle	= TypedHandle<LightHandleTag>;		///< Light descriptor handle.
 	using CameraHandle	= TypedHandle<CameraHandleTag>;		///< Camera descriptor handle.
 	using SceneNodeHandle = TypedHandle<SceneNodeHandleTag>;	///< World scene tree node handle.
+	using GuiImageHandle = TypedHandle<GuiImageHandleTag>;		///< HUD image loaded with GuiSystem::loadImage.
 
 	/// @brief Strong wrapper for world or local position values.
 	struct Position {
