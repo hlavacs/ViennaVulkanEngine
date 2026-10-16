@@ -1,7 +1,8 @@
 # Ring Racer
 
 A lap-racing game on the VVE facade: race three computer cars for three laps, or drive a time trial against the
-see-through ghost of your best lap. Day races run under a photographed sky; at night every car drives with headlights.
+see-through ghost of your best lap. Day races run under a photographed sky through a countryside of trees, bushes and flowers; at night every car drives with
+headlights.
 
 ## Controls
 
@@ -32,7 +33,10 @@ steering angle, or (time trial) no ghost lap was recorded.
 - `RacerLogic.ixx` (`Racer.Logic`): the circuit (a closed Catmull-Rom curve), arcade bicycle-model physics and box
   colliders. `RacerRules.ixx` (`Racer.Rules`): laps and checkpoints, the AI driver, the ghost, the grid and one race step.
   Neither renders anything; `racer_logic_tests.cpp` checks both without a GPU (CTest `RacerLogicTests`).
-- `RacerScene.ixx` (`Racer.Scene`): road, kerbs, walls and gates as `addMesh` meshes and cuboids; Kenney cars
+- `RacerScene.ixx` (`Racer.Scene`): the ground (`assets/racer/ground.obj`, normal-mapped grass tiled every 6 m, under a
+  see-through layer of large noise patches that hides the repetition), road, kerbs, walls and gates as `addMesh` meshes
+  and cuboids; 371 trees, bushes, grass tufts, flowers and rocks scattered beside the track with a fixed seed and
+  recoloured from the Nature Kit's mint palette to natural colours; Kenney cars
   instantiated with `keep_hierarchy`, moved and scaled through their instance root, front wheels steered and all wheels
   spun through their nodes; brake lights hung on the instance root with `setObjectParent`; smoke sprites.
 - `RacerRace.ixx` (`Racer.Race`): the shared game types and `RaceSystem`, the user system that keeps one `racer::RaceCar`
@@ -52,6 +56,7 @@ CTest runs `RacerLogicTests` plus four bounded game runs: `RacerExample` (race),
 
 ## Assets
 
-`assets/racer`, all CC0 (see `assets/racer/license.txt`): four cars from Kenney's Car Kit, the Poly Haven sky
-"Kloofendal 48d Partly Cloudy (Pure Sky)" scaled to 4096 x 2048, and `smoke.tga` and `logo.tga`, written by
-`make_textures.sh`. The music is the V2 soundtrack from `assets/sounds`.
+`assets/racer`, all CC0 (see `assets/racer/license.txt`): four cars from Kenney's Car Kit, fifteen plants and rocks from
+Kenney's Nature Kit, the ground material using `assets/game/plane/Grass_005`, the Poly Haven sky
+"Kloofendal 48d Partly Cloudy (Pure Sky)" scaled to 4096 x 2048, and `smoke.tga`, `logo.tga` and `variation.tga`,
+written by `make_textures.sh`. The music is the V2 soundtrack from `assets/sounds`.

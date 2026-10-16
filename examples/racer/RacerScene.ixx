@@ -4,7 +4,9 @@
  *
  * Functional objects:
  * - world, aboutY, aboutZ, at: conversions from the ground-plane logic to facade transforms.
- * - buildCircuit: grass, road, kerbs, centre line, start line, barrier walls and transparent checkpoint gates.
+ * - buildCircuit: normal-mapped grass with a large-scale colour variation layer, road, kerbs, centre line, start line,
+ *   barrier walls and transparent checkpoint gates.
+ * - addScenery: trees, bushes, grass tufts, flowers and rocks from the Kenney Nature Kit, scattered beside the track.
  * - CarModel / loadCarModel: a Kenney car (body and four wheel nodes), scaled to the physics wheel base, with its box size.
  * - CarRig / addCar: one instantiated car with brake lights hung on its instance root.
  * - placeCar, setBrakeLights, setCarOpacity: per-frame car updates through the scene tree.
@@ -35,8 +37,10 @@ export namespace racer {
 	/// @brief World yaw of a Kenney car (+Z forward) for a ground-plane heading.
 	[[nodiscard]] inline float yawOf(float heading) { return std::numbers::pi_v<float> / 2.0F - heading; }
 
-	[[nodiscard]] auto buildCircuit(vve::RenderSystem &render, const Track &track, const std::filesystem::path &root)
+	[[nodiscard]] auto buildCircuit(vve::RenderSystem &render, vve::AssetSystem &assets, const Track &track, const std::filesystem::path &root)
 		-> std::expected<void, vve::Error>;
+	[[nodiscard]] auto addScenery(vve::RenderSystem &render, vve::AssetSystem &assets, const Track &track, const std::filesystem::path &root,
+		std::uint32_t seed) -> std::expected<std::size_t, vve::Error>;
 
 	/// @brief A loaded car model: its wheel nodes and the scale that gives it the physics wheel base.
 	struct CarModel {
@@ -131,14 +135,24 @@ namespace racer {
 	}
 
 	/// @brief Builds the static circuit; every part is one mesh, so the whole track costs a dozen draw calls.
-	auto buildCircuit(vve::RenderSystem &render, const Track &track, const std::filesystem::path &root) -> std::expected<void, vve::Error> {
+	auto buildCircuit(vve::RenderSystem &render, vve::AssetSystem &assets, const Track &track, const std::filesystem::path &root)
+		-> std::expected<void, vve::Error> {
 		const auto all = [](std::size_t) { return true; };
 		const auto fail = [](const auto &result) { return !result.has_value(); };
-		// The grass lies 10 cm below the road, enough depth separation for cameras far away.
-		if (const auto grass = render.addTexturedPlane(vve::Vec2{400, 400}, root / "assets/game/plane/grass.jpg", vve::Vec2{100, 100},
-				at(vve::Vec3{0, -0.1F, 0})); fail(grass)) {
-			return std::unexpected(grass.error());
-		}
+		// The ground (assets/racer/ground.obj) is normal-mapped grass 15 cm below the road, tiled every 6 m.
+		const auto ground = assets.loadScene(root / "assets/racer/ground.obj");
+		if (!ground) { return std::unexpected(ground.error()); }
+		if (const auto placed = render.instantiateScene(*ground); fail(placed)) { return std::unexpected(placed.error()); }
+		// A thin see-through layer of large noise patches hides the repetition of the grass tiles. The renderer sorts
+		// see-through objects by origin, so the origin lies 500 m below: the layer is always blended first, under gates and smoke.
+		constexpr float edge{1200.0F}, lift{500.0F - 0.08F}, repeat{9.0F};
+		vve::MeshDescriptor layer{.positions = {vve::Vec3{-edge, lift, -edge}, vve::Vec3{-edge, lift, edge}, vve::Vec3{edge, lift, edge}, vve::Vec3{edge, lift, -edge}},
+			.indices = {0, 1, 2, 0, 2, 3}, .normals = vve::Vector<vve::Vec3>(4, vve::Vec3{0, 1, 0}),
+			.uvs = {vve::Vec2{0, 0}, vve::Vec2{0, repeat}, vve::Vec2{repeat, repeat}, vve::Vec2{repeat, 0}},
+			.base_color_texture = root / "assets/racer/variation.tga", .transform = at(vve::Vec3{0, -500.0F, 0})};
+		const auto variation = render.addMesh(std::move(layer));
+		if (fail(variation)) { return std::unexpected(variation.error()); }
+		if (const auto result = render.setObjectOpacity(*variation, 0.4F); !result) { return result; }
 		constexpr float hw = Track::halfWidth, kerb = Track::kerbWidth;
 		const vve::Vec3 asphalt{0.16F, 0.16F, 0.17F}, red{0.75F, 0.08F, 0.06F}, white{0.9F, 0.9F, 0.9F};
 		const std::array bands{
@@ -162,8 +176,8 @@ namespace racer {
 			// The inner face looks at the road, the outer face away from it.
 			const auto roadward = [&track, side](std::size_t i) { return world(rightOf(track.samples()[i].tangent) * -side); };
 			const auto away = [&roadward](std::size_t i) { return vve::math::scale(roadward(i), -1.0F); };
-			appendStrip(wall, row(track, inner, -0.1F), row(track, inner, 0.9F), roadward, all);
-			appendStrip(wall, row(track, outer, -0.1F), row(track, outer, 0.9F), away, all);
+			appendStrip(wall, row(track, inner, -0.15F), row(track, inner, 0.9F), roadward, all);
+			appendStrip(wall, row(track, outer, -0.15F), row(track, outer, 0.9F), away, all);
 			appendStrip(wall, row(track, inner, 0.9F), row(track, outer, 0.9F), [](std::size_t) { return vve::Vec3{0, 1, 0}; }, all);
 			if (const auto added = render.addMesh(std::move(wall)); fail(added)) { return std::unexpected(added.error()); }
 		}
@@ -187,6 +201,92 @@ namespace racer {
 			}
 		}
 		return {};
+	}
+
+	/// @brief One kind of scenery: a Nature Kit model, how many, how large, and how far from the centre line.
+	struct SceneryKind {
+		const char *file;			///< File in assets/racer/nature.
+		int count;					///< Number of copies.
+		float minScale, maxScale;	///< Random uniform scale range (the models are about 1/7 of real size).
+		float nearest, farthest;	///< Distance range from the nearest track centre line.
+		bool shadows;				///< Small plants cast no shadow, which keeps the shadow passes cheap.
+	};
+
+	/// @brief Natural colour for a Nature Kit material; the kit's own colours are bright, metallic and mint green.
+	[[nodiscard]] vve::Vec3 natureColor(std::string_view material) {
+		constexpr std::array<std::pair<std::string_view, vve::Vec3>, 10> palette{{
+			{"grass", {0.10F, 0.26F, 0.05F}}, {"leafsGreen", {0.08F, 0.22F, 0.04F}}, {"leafsDark", {0.04F, 0.13F, 0.03F}},
+			{"woodBark", {0.20F, 0.11F, 0.05F}}, {"woodBarkDark", {0.12F, 0.07F, 0.04F}}, {"dirt", {0.18F, 0.12F, 0.07F}},
+			{"colorRed", {0.70F, 0.05F, 0.04F}}, {"colorYellow", {0.85F, 0.65F, 0.05F}}, {"colorPurple", {0.35F, 0.08F, 0.60F}},
+			{"_defaultMat", {0.30F, 0.29F, 0.27F}},
+		}};
+		const auto found = std::ranges::find(palette, material, &std::pair<std::string_view, vve::Vec3>::first);
+		return found == palette.end() ? vve::Vec3{0.3F, 0.3F, 0.3F} : found->second;
+	}
+
+	/// @brief Scatters trees, bushes, grass, flowers and rocks behind the walls; every copy keeps its node tree so one root
+	/// transform places, turns and scales it. Placement uses a fixed seed, so the scenery is the same every run.
+	auto addScenery(vve::RenderSystem &render, vve::AssetSystem &assets, const Track &track, const std::filesystem::path &root,
+		std::uint32_t seed) -> std::expected<std::size_t, vve::Error> {
+		constexpr std::array kinds{
+			SceneryKind{"tree_oak.glb", 14, 6.0F, 9.0F, 16.0F, 90.0F, true}, SceneryKind{"tree_default.glb", 14, 6.0F, 9.0F, 16.0F, 90.0F, true},
+			SceneryKind{"tree_detailed.glb", 12, 6.0F, 9.0F, 16.0F, 90.0F, true}, SceneryKind{"tree_fat.glb", 10, 6.0F, 8.0F, 16.0F, 90.0F, true},
+			SceneryKind{"tree_pineTallA.glb", 14, 6.0F, 9.0F, 16.0F, 90.0F, true}, SceneryKind{"tree_pineRoundA.glb", 12, 6.0F, 8.0F, 16.0F, 90.0F, true},
+			SceneryKind{"plant_bushLarge.glb", 20, 4.0F, 6.0F, 13.0F, 40.0F, true}, SceneryKind{"plant_bushDetailed.glb", 20, 4.0F, 6.0F, 13.0F, 40.0F, true},
+			SceneryKind{"grass_large.glb", 90, 3.0F, 4.5F, 11.3F, 28.0F, false}, SceneryKind{"grass_leafsLarge.glb", 70, 3.0F, 4.5F, 11.3F, 28.0F, false},
+			SceneryKind{"flower_redA.glb", 25, 2.5F, 3.5F, 11.3F, 24.0F, false}, SceneryKind{"flower_yellowA.glb", 25, 2.5F, 3.5F, 11.3F, 24.0F, false},
+			SceneryKind{"flower_purpleA.glb", 25, 2.5F, 3.5F, 11.3F, 24.0F, false},
+			SceneryKind{"rock_largeA.glb", 10, 3.0F, 5.0F, 13.0F, 50.0F, true}, SceneryKind{"rock_largeB.glb", 10, 3.0F, 5.0F, 13.0F, 50.0F, true},
+		};
+		std::mt19937 random{seed};
+		std::uniform_real_distribution<float> unit{0.0F, 1.0F};
+		std::size_t placed{};
+		for (const auto &kind : kinds) {
+			const auto scene = assets.loadScene(root / "assets/racer/nature" / kind.file);
+			if (!scene) { return std::unexpected(scene.error()); }
+			// Colour of every mesh, per node in mesh order; instance objects keep that order per source node.
+			std::map<vve::NodeHandle, std::vector<vve::Vec3>> colors{};
+			for (const auto node : assets.sceneNodes(*scene).value_or(vve::Vector<vve::NodeHandle>{})) {
+				for (const auto mesh : assets.nodeMeshes(node).value_or(vve::Vector<vve::MeshHandle>{})) {
+					const auto material = assets.meshMaterial(mesh);
+					const auto name = material ? assets.materialName(*material) : std::unexpected(vve::Error::missing_object);
+					colors[node].push_back(natureColor(name ? name->value : std::string{}));
+				}
+			}
+			for (int copy{}; copy < kind.count; ++copy) {
+				// Pick a spot beside a random point of the track; reject spots that come too close to another part of it.
+				Vec2f spot{};
+				bool found{};
+				for (int attempt{}; attempt < 20 && !found; ++attempt) {
+					const auto sample = track.at(unit(random) * track.length());
+					const float lateral = kind.nearest + (kind.farthest - kind.nearest) * unit(random) * unit(random);	// Denser near the track.
+					spot = sample.position + rightOf(sample.tangent) * (unit(random) < 0.5F ? -lateral : lateral);
+					found = std::abs(track.locate(spot).lateral) >= kind.nearest && length(spot) < 380.0F;
+				}
+				if (!found) { continue; }
+				const auto instance = render.instantiateScene(*scene, vve::SceneInstantiationOptions{.keep_hierarchy = true});
+				if (!instance) { return std::unexpected(instance.error()); }
+				const auto node = render.sceneInstanceRoot(*instance);
+				if (!node) { return std::unexpected(node.error()); }
+				const float scale = kind.minScale + (kind.maxScale - kind.minScale) * unit(random);
+				if (const auto result = render.setNodeTransform(*node, at(world(spot, -0.15F), aboutY(6.2832F * unit(random)), scale)); !result) {
+					return std::unexpected(result.error());
+				}
+				// Natural colours with one of five brightness steps per copy; the steps keep the number of materials small.
+				const float tint = 0.8F + 0.1F * static_cast<float>(static_cast<int>(unit(random) * 4.999F));
+				std::map<vve::NodeHandle, std::size_t> next{};
+				for (const auto part : render.sceneInstanceObjects(*instance).value_or(vve::Vector<vve::RenderObjectHandle>{})) {
+					const auto node = render.objectSourceNode(part).value_or(vve::NodeHandle{});
+					const auto &list = colors[node];
+					if (const std::size_t index = next[node]++; index < list.size()) {
+						(void)render.setObjectColor(part, vve::LinearColor{.value = vve::math::scale(list[index], tint)});
+					}
+					if (!kind.shadows) { (void)render.setObjectCastsShadow(part, false); }
+				}
+				++placed;
+			}
+		}
+		return placed;
 	}
 
 	/// @brief Loads one car, finds its wheels by name, and measures its box from the mesh bounds of all nodes.

@@ -26,6 +26,7 @@ struct ViewSystem {
 	View view{View::chase};					///< Current camera view.
 	bool night{};								///< Night mode with headlights.
 	bool skyShown{};							///< Whether the day skybox is set.
+	std::size_t sceneryCount{};				///< Trees, bushes, plants and rocks placed beside the track.
 	bool fullscreen{};							///< Window state.
 	bool photo{};								///< Photo mode: free orbit camera, simulation paused.
 	float orbitYaw{}, orbitPitch{0.4F}, orbitDistance{9.0F};	///< Photo camera around the player car.
@@ -51,7 +52,10 @@ struct ViewSystem {
 		gui = &world.template get<vve::GuiSystem>();
 		windows = &world.template get<vve::WindowSystem>();
 		window = windows->findWindow("main").value().handle();
-		if (const auto result = racer::buildCircuit(render, race.track, root); !result) { return result; }
+		if (const auto result = racer::buildCircuit(render, assets, race.track, root); !result) { return result; }
+		const auto scenery = racer::addScenery(render, assets, race.track, root, 11U);
+		if (!scenery) { return std::unexpected(scenery.error()); }
+		sceneryCount = *scenery;
 		for (const auto *file : carFiles) {
 			const auto loaded = racer::loadCarModel(assets, root / "assets/racer/cars" / file, race.params.wheelBase);
 			if (!loaded) { return std::unexpected(loaded.error()); }
@@ -176,7 +180,7 @@ struct ViewSystem {
 	void updateCamera(vve::RenderSystem &render, const vve::InputState &input, float dt) {
 		if (cars.empty()) {
 			render.setCamera(vve::Camera::lookAt(vve::Position{.value = vve::Vec3{0, 70, 150}}, vve::Position{}, {}, {},
-				vve::ClipPlanes{.near_plane = 1.0F, .far_plane = 500.0F}));
+				vve::ClipPlanes{.near_plane = 1.0F, .far_plane = 1500.0F}));
 			return;
 		}
 		const auto &car = cars.front().vehicle;
