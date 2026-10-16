@@ -1,5 +1,6 @@
 module;
 
+#include <assimp/GltfMaterial.h>
 #include <assimp/Importer.hpp>
 #include <assimp/material.h>
 #include <assimp/postprocess.h>
@@ -498,6 +499,14 @@ namespace vve::simple {
 					if (source->Get(AI_MATKEY_BASE_COLOR, base_color) == AI_SUCCESS ||
 							source->Get(AI_MATKEY_COLOR_DIFFUSE, base_color) == AI_SUCCESS) {
 						item.base_color = color(base_color);
+						item.factors.opacity = static_cast<Scalar>(base_color.a);
+					}
+					if (float opacity{}; source->Get(AI_MATKEY_OPACITY, opacity) == AI_SUCCESS) {	// OBJ dissolve "d".
+						item.factors.opacity = static_cast<Scalar>(opacity);
+					}
+					if (aiString mode{}; source->Get(AI_MATKEY_GLTF_ALPHAMODE, mode) == AI_SUCCESS) {
+						const auto text = std::string_view{mode.C_Str()};
+						item.factors.alpha_mode = text == "MASK" ? AlphaMode::mask : text == "BLEND" ? AlphaMode::blend : AlphaMode::opaque;
 					}
 					if (float roughness{}; source->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS) {
 						item.factors.roughness = static_cast<Scalar>(roughness);

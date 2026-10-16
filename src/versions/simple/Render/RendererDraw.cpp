@@ -11,6 +11,7 @@ import VVEngine.Simple.Vulkan;
 
 /// @file
 /// @brief Per-window recording: DrawItem resolves scene data once; box and frustum helpers conservatively cull each pass.
+/// Solid items draw first, sorted by mesh, then the sky; transparent items follow with the blended pipeline, sorted far to near.
 
 namespace vve::simple {
 
@@ -19,9 +20,12 @@ namespace vve::simple {
 		struct DrawItem {
 			const VulkanMesh *mesh{};       ///< Stable GPU mesh owner shared by all its instances.
 			VkBuffer vertices{};            ///< Static vertices or this window's completed dynamic slot.
-			ObjectPushConstants object{};   ///< Model, material slot and unlit flag passed to the shader.
+			ObjectPushConstants object{};   ///< Model, material slot, flags and opacity passed to the shader.
 			Bounds worldBounds{};           ///< World AABB enclosing all transformed object-space corners.
 			bool castsShadow{};             ///< Whether this visible instance participates in shadow passes.
+			bool sky{};                     ///< Drawn after solid objects and before transparent ones, never culled.
+			bool transparent{};             ///< Blended after all solid objects, without depth writes.
+			Scalar distance{};              ///< Squared camera distance; transparent items draw far to near.
 		};
 
 		/// @brief Encloses an affine-transformed mesh, including rotations and negative/nonuniform scales.
@@ -41,6 +45,15 @@ namespace vve::simple {
 				result.valid = true;
 			}
 			return result;
+		}
+
+		/// @brief Encloses a camera-facing sprite in every orientation: a cube around its origin, sized by its scaled quad.
+		[[nodiscard]] Bounds spriteBounds(const Bounds &box, const Mat4 &model) {
+			if (!box.valid) { return {}; }
+			const Scalar scale = std::max(length(Vec3{model[0][0], model[0][1], model[0][2]}), length(Vec3{model[1][0], model[1][1], model[1][2]}));
+			const Scalar radius = scale * std::max(length(box.minimum.value), length(box.maximum.value));
+			const Vec3 centre{model[3][0], model[3][1], model[3][2]};
+			return {.minimum = {subtract(centre, Vec3{radius, radius, radius})}, .maximum = {add(centre, Vec3{radius, radius, radius})}, .valid = true};
 		}
 
 		/// @brief Extracts inward planes from Vulkan clip inequalities: -w <= x,y <= w and 0 <= z <= w.
@@ -250,6 +263,7 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return result; }
 
 		std::vector<DrawItem> items{};
+		const Vec3 eye{(target.camera ? *target.camera : camera_).position.value}; // Sorts transparent items by distance.
 		// Resolve scene handles and world boxes once, before any pass traverses the sorted draw list.
 		if (renderInstances_ != nullptr) {
 			items.reserve(renderInstances_->size());
@@ -260,19 +274,38 @@ namespace vve::simple {
 				if (uploaded == meshes.end() || material == materialSlots_.end()) { continue; }
 				const VulkanMesh &mesh = uploaded->second;
 				const auto dynamic = target.dynamicVertices.find(instance.mesh);
+				const bool blendedMaterial{materials_[material->second].emissiveFactor.w == static_cast<Scalar>(AlphaMode::blend)};
+				const Vec3 position{instance.world_transform[3][0], instance.world_transform[3][1], instance.world_transform[3][2]};
+				const std::uint32_t flags{(instance.unlit ? objectFlag::unlit : 0U) | (instance.sky ? objectFlag::sky : 0U) |
+					(instance.sprite ? objectFlag::sprite : 0U)};
+				const bool transparent{blendedMaterial || instance.opacity < one() || instance.sprite};
 				items.push_back({.mesh = &mesh,
 					.vertices = dynamic == target.dynamicVertices.end() ? mesh.vertexBuffer.buffer : dynamic->second.first[frameIndex].buffer,
-					.object = {.model = instance.world_transform, .materialIndex = material->second, .unlit = instance.unlit ? 1U : 0U},
-					.worldBounds = worldBounds(mesh.localBox, instance.world_transform), .castsShadow = instance.casts_shadow});
+					.object = {.model = instance.world_transform, .materialIndex = material->second, .flags = flags, .opacity = instance.opacity},
+					.worldBounds = instance.sky ? Bounds{} : instance.sprite ? spriteBounds(mesh.localBox, instance.world_transform) // Invalid bounds are never culled.
+						: worldBounds(mesh.localBox, instance.world_transform),
+					.castsShadow = instance.casts_shadow && !transparent && !instance.sky, .sky = instance.sky, .transparent = transparent,
+					.distance = lengthSquared(subtract(position, eye))});
 			}
 		}
-		std::ranges::sort(items, std::less<const VulkanMesh *>{}, &DrawItem::mesh);
+		// Order: solid (by mesh), sky, transparent (far to near).
+		const auto group = [](const DrawItem &item) { return item.transparent ? 2 : item.sky ? 1 : 0; };
+		std::ranges::sort(items, [&group](const DrawItem &left, const DrawItem &right) {
+			if (group(left) != group(right)) { return group(left) < group(right); }
+			return left.transparent ? left.distance > right.distance : std::less<const VulkanMesh *>{}(left.mesh, right.mesh);
+		});
 		const VulkanMesh *boundMesh{};
 		const auto drawUploadedObjects = [&](std::uint32_t shadowMatrixIndex, bool shadowPass, const Mat4 &clip) {
 			const auto planes = frustumPlanes(clip);
+			bool blending{}; // The colour pass switches to the blended pipeline at the first transparent item.
 			// Bound mesh state survives dynamic-rendering boundaries and pipeline changes.
 			for (const auto &item : items) {
 				if ((shadowPass && !item.castsShadow) || !intersectsFrustum(item.worldBounds, planes)) { continue; }
+				if (!shadowPass && item.transparent && !blending) {
+					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentPipeline.pipeline);
+					++lastFrameDrawStats_.pipelineBinds;
+					blending = true;
+				}
 				if (boundMesh != item.mesh) {
 					const VkDeviceSize offset{};
 					vkCmdBindVertexBuffers(commandBuffer, 0U, 1U, &item.vertices, &offset);
@@ -365,7 +398,6 @@ namespace vve::simple {
 		recordShadowMap(spotShadowArray, frameUniforms_.activeSpotLightCount, 1U, kShadowMatrixSpotBase, RecordedPass::spot_shadow, frameUniforms_.spotLightDirections);
 		recordShadowMap(pointShadowArray, frameUniforms_.activePointLightCount, pointShadowFaceCount, kShadowMatrixPointBase, RecordedPass::point_shadow);
 
-		constexpr std::array<float, 4U> skyBackgroundColor{0.45F, 0.70F, 1.00F, 1.00F}; // Sky background for the forward color pass.
 		const VkImageSubresourceRange colorRange{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole swapchain image.
 		const VkImageSubresourceRange depthRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole depth image.
 		
@@ -406,7 +438,8 @@ namespace vve::simple {
 			.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
 			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
-			.clearValue = {.color = {.float32 = {skyBackgroundColor[0], skyBackgroundColor[1], skyBackgroundColor[2], skyBackgroundColor[3]}}},
+			.clearValue = {.color = {.float32 = {static_cast<float>(backgroundColor_.value.x), static_cast<float>(backgroundColor_.value.y),
+				static_cast<float>(backgroundColor_.value.z), 1.0F}}}, // Background behind the scene and the sky.
 		};
 		const VkRenderingAttachmentInfo depthAttachment{ // Forward depth is cleared to the far plane and kept attachment-local.
 			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,

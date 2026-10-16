@@ -87,9 +87,17 @@ export namespace vve::simple {
 		[[nodiscard]] auto setObjectCastsShadow(RenderObjectHandle handle, bool casts_shadow)					-> std::expected<void, Error>;
 		[[nodiscard]] auto setObjectVisible(RenderObjectHandle handle, bool visible)									-> std::expected<void, Error>;
 		[[nodiscard]] auto objectVisible(RenderObjectHandle handle) const												-> std::expected<bool, Error>;
+		[[nodiscard]] auto setObjectOpacity(RenderObjectHandle handle, Scalar opacity)								-> std::expected<void, Error>;
+		[[nodiscard]] auto objectOpacity(RenderObjectHandle handle) const												-> std::expected<Scalar, Error>;
 		[[nodiscard]] auto setObjectTransform(RenderObjectHandle handle, Transform transform)					-> std::expected<void, Error>;
 		[[nodiscard]] auto objectTransform(RenderObjectHandle handle) const											-> std::expected<Transform, Error>;
+		[[nodiscard]] auto objectBounds(RenderObjectHandle handle) const												-> std::expected<Bounds, Error>;
+		[[nodiscard]] auto raycast(Position origin, Direction direction, Scalar max_distance) const			-> std::optional<RaycastHit>;
+		[[nodiscard]] auto screenRay(WindowHandle window, Vec2 normalized_position) const
+			-> std::expected<std::pair<Position, Direction>, Error>;
 		auto setCamera(Camera camera) -> void;
+		auto setBackgroundColor(LinearColor color) -> void;
+		[[nodiscard]] auto backgroundColor() const -> LinearColor;
 		[[nodiscard]] auto setCamera(WindowHandle window, Camera camera) -> std::expected<void, Error>;
 		[[nodiscard]] auto clearCamera(WindowHandle window) -> std::expected<void, Error>;
 		auto clearLights() -> void;
@@ -133,13 +141,23 @@ export namespace vve::simple {
 		[[nodiscard]] auto addCuboid(Vec3 minimum, Vec3 maximum, LinearColor color, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto addTriangleMesh(Vector<Vec3> positions, Vector<std::uint32_t> indices, LinearColor color, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto setObjectMeshPositions(RenderObjectHandle handle, Vector<Vec3> positions)			-> std::expected<void, Error>;
+		[[nodiscard]] auto setObjectColor(RenderObjectHandle handle, LinearColor color)						-> std::expected<void, Error>;
+		[[nodiscard]] auto setObjectTexture(RenderObjectHandle handle, std::filesystem::path texture)		-> std::expected<void, Error>;
 		[[nodiscard]] auto addTexturedPlane(Vec2 half_extent, std::filesystem::path base_color_texture,
 			Vec2 uv_scale = {1.0F, 1.0F}, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
 		[[nodiscard]] auto addTexturedCuboid(Vec3 minimum, Vec3 maximum, std::filesystem::path base_color_texture, Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto addSphere(Scalar radius, LinearColor color, Transform transform = {})				-> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto addMesh(MeshDescriptor mesh)																	-> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto addSprite(Vec2 size, std::filesystem::path texture, LinearColor color = {.value = oneVec3()},
+			Transform transform = {}) -> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto setSkybox(const std::filesystem::path &panorama)										-> std::expected<void, Error>;
+		auto clearSkybox()																												-> void;
 		auto clearScene()																												-> void;
 		auto loadScene(Scene scene)																									-> SceneHandle;
 
 		[[nodiscard]] auto sceneTextureCount() const -> std::size_t;
+		[[nodiscard]] auto acquireGuiImage(const std::filesystem::path &path)										-> std::expected<RenderTextureIndex, Error>;
+		[[nodiscard]] auto guiImageView(RenderTextureIndex index) const												-> std::optional<std::pair<VkSampler, VkImageView>>;
 		[[nodiscard]] auto textureDecodeCount() const -> std::size_t;
 		[[nodiscard]] auto sceneTexturePixelBytes() const -> std::size_t;
 		[[nodiscard]] auto sceneTextureIsLinear(std::size_t index) const -> std::expected<bool, Error>;
@@ -188,8 +206,10 @@ export namespace vve::simple {
 	private:
 		/// @brief Primitive geometry families with independently cached local extents.
 		enum class PrimitiveShape {
-			plane, ///< Flat XZ quad.
-			cuboid ///< Six textured faces.
+			plane,  ///< Flat XZ quad.
+			cuboid, ///< Six textured faces.
+			sprite, ///< XY quad turned towards the camera.
+			sphere  ///< UV sphere around the origin.
 		};
 		/// @brief One node of the world scene tree.
 		struct SceneNode {
@@ -203,10 +223,14 @@ export namespace vve::simple {
 		auto updateDown(SceneNodeHandle node, const Mat4 &parent_world)											-> void;
 		auto placeObject(RenderObjectHandle object, const Mat4 &world)												-> void;
 		auto detachObject(RenderObjectHandle object)																	-> void;
+		auto releaseUnused(RenderMeshHandle mesh, RenderMaterialHandle material)									-> void;
+		[[nodiscard]] auto setObjectLook(RenderObjectHandle handle, std::optional<LinearColor> color,
+			std::optional<RenderTextureIndex> texture)																	-> std::expected<void, Error>;
 		[[nodiscard]] auto acquirePrimitiveMaterial(LinearColor color, RenderTextureIndex texture = kNoTexture) -> RenderMaterialHandle;
 		[[nodiscard]] auto acquirePrimitiveMesh(PrimitiveShape shape, Vec3 minimum, Vec3 maximum,
 			Vec2 uv_scale = {1.0F, 1.0F}) -> RenderMeshHandle;
 		[[nodiscard]] auto updateCamera(WindowHandle window, std::optional<Camera> camera) -> std::expected<void, Error>;
+		[[nodiscard]] auto renderedWindow(WindowHandle window) const												-> const Window *;
 		[[nodiscard]] auto registerRenderObject(RenderInstanceHandle instance)								-> RenderObjectHandle;
 		auto addImportedLight(const LightDescriptor &light, std::uint64_t owner)								-> void;
 		auto removeImportedLights(std::uint64_t owner)																-> void;
@@ -232,6 +256,7 @@ export namespace vve::simple {
 		std::map<std::pair<std::array<Scalar, 3>, RenderTextureIndex>, RenderMaterialHandle> primitive_materials_{}; ///< Materials keyed by colour and texture slot.
 		std::map<std::pair<PrimitiveShape, std::array<Scalar, 8>>, RenderMeshHandle> primitive_meshes_{}; ///< Meshes keyed by shape, local min/max extents and UV scale.
 		RenderMaterialHandle default_material_{}; ///< Shared fallback for imported meshes without a material.
+		RenderInstanceHandle sky_{};				///< Internal skybox instance; invalid without a skybox.
 		std::unordered_map<RenderObjectHandle, RenderInstanceHandle, HandleHash<RenderObjectHandle>>
 			render_objects_{};														///< Public render-object to internal instance map.
 		std::unordered_map<RenderObjectHandle, std::pair<RenderSceneInstanceHandle, NodeHandle>, HandleHash<RenderObjectHandle>>
@@ -272,6 +297,12 @@ namespace vve::simple {
 
 	/// @brief Returns the forward renderer backend.
 	inline auto RenderSystem::forward() const																	-> const ForwardRenderer &{ return renderer_; }
+
+	/// @brief Sets the clear colour of every window.
+	inline auto RenderSystem::setBackgroundColor(LinearColor color) -> void { renderer_.setBackgroundColor(color); }
+
+	/// @brief Returns the clear colour of every window; the default is a light blue.
+	inline auto RenderSystem::backgroundColor() const -> LinearColor { return renderer_.backgroundColor(); }
 
 	/// @brief Mints a process-wide unique public render-object handle for one internal scene instance.
 	inline auto RenderSystem::registerRenderObject(RenderInstanceHandle instance)
@@ -383,6 +414,20 @@ namespace vve::simple {
 		return bytes;
 	}
 	inline std::size_t RenderSystem::sceneTextureCount() const { return scene_.textureCount(); }
+
+	/// @brief Loads a HUD image into a pinned texture slot; it is read as raw (UNORM) colours like ImGui's own colours.
+	inline auto RenderSystem::acquireGuiImage(const std::filesystem::path &path) -> std::expected<RenderTextureIndex, Error> {
+		// Any data semantic selects a linear image, whose bytes reach the GUI pass unchanged.
+		const auto index = scene_.acquireTexture(path, MaterialTextureSemantic::ambient_occlusion);
+		if (index) { scene_.pinTexture(*index); }
+		return index;
+	}
+
+	/// @brief Returns the shared sampler and the view of an uploaded HUD image, or nothing before upload.
+	inline auto RenderSystem::guiImageView(RenderTextureIndex index) const -> std::optional<std::pair<VkSampler, VkImageView>> {
+		const VkImageView view = initialized_ ? renderer_.textureView(index) : VK_NULL_HANDLE;
+		return view == VK_NULL_HANDLE ? std::nullopt : std::optional{std::pair{renderer_.materialSampler, view}};
+	}
 	inline auto RenderSystem::sceneTextureIsLinear(std::size_t index) const -> std::expected<bool, Error> {
 		const auto *texture = scene_.findTexture(static_cast<RenderTextureIndex>(index));
 		return texture == nullptr ? std::unexpected(Error::missing_object) : std::expected<bool, Error>{texture->linear};

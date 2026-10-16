@@ -56,11 +56,20 @@ export namespace vve::simple {
 		std::shared_ptr<const EmbeddedImage> embedded{};	///< Image data when the texture is embedded in the model file.
 	};
 
+	/// @brief How a material uses its alpha, as in glTF; the values are written to the GPU material.
+	enum class AlphaMode : std::uint8_t {
+		opaque,	///< Alpha is ignored.
+		mask,	///< Fragments with alpha below 0.5 are discarded, the rest are opaque.
+		blend	///< Alpha blends the surface over what lies behind it.
+	};
+
 	/// @brief Scalar material factors a model file may specify; absent values let the renderer pick defaults.
 	struct MaterialFactors {
 		std::optional<Scalar> roughness{};		///< Roughness factor.
 		std::optional<Scalar> metalness{};		///< Metalness factor.
 		std::optional<LinearColor> emissive{};	///< Emissive color factor.
+		std::optional<Scalar> opacity{};		///< Base-colour alpha or OBJ dissolve.
+		std::optional<AlphaMode> alpha_mode{};	///< glTF alpha mode.
 	};
 
 	using math::add;

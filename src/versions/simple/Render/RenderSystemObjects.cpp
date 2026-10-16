@@ -25,7 +25,46 @@ namespace vve::simple {
 		const auto mesh = instance->mesh;
 		const auto material = instance->material;
 		if (!scene_.eraseInstance(*object)) { return std::unexpected(Error::missing_object); }
-		// Imported caches retain their resources; primitive and edited resources live until their last instance.
+		releaseUnused(mesh, material);
+		eraseRenderObject(handle);
+		if (const auto source = object_sources_.find(handle); source != object_sources_.end()) {
+			if (const auto instance = scene_instances_.find(source->second.first); instance != scene_instances_.end()) {
+				auto &objects = instance->second;
+				if (const auto entry = std::ranges::find(objects, handle); entry != objects.end()) { objects.erase(entry); }
+			}
+			object_sources_.erase(source);
+		}
+		detachObject(handle);	// The scene tree stops placing the removed object.
+		renderer_.markSceneResourcesDirty();
+		return {};
+	}
+
+	/// @brief Adds an unlit, blended, textured quad of the given size that always faces the camera.
+	///
+	/// Only the translation and the x/y scale of the transform apply; a sprite casts no shadow.
+	auto RenderSystem::addSprite(Vec2 size, std::filesystem::path texture, LinearColor color, Transform transform)
+		-> std::expected<RenderObjectHandle, Error> {
+		if (!(size.x > zero() && size.y > zero() && std::isfinite(size.x) && std::isfinite(size.y))) {
+			return std::unexpected(Error::invalid_argument);
+		}
+		const auto texture_index = scene_.acquireTexture(texture);
+		if (!texture_index) { return std::unexpected(texture_index.error()); }
+		const auto material = acquirePrimitiveMaterial(color, *texture_index);
+		const auto half = Vec3{size.x / 2, size.y / 2, 0};
+		const auto mesh = acquirePrimitiveMesh(PrimitiveShape::sprite, Vec3{-half.x, -half.y, 0}, half);
+		auto instance = scene_.addInstance(mesh, material, transform, detail::modelMatrix(transform));
+		if (!instance) { return std::unexpected(instance.error()); }
+		auto *sprite = scene_.findInstance(*instance);
+		sprite->sprite = true;
+		sprite->unlit = true;
+		sprite->casts_shadow = false;
+		return registerRenderObject(*instance);
+	}
+
+	/// @brief Releases a mesh, a material and textures that no instance uses anymore.
+	///
+	/// Imported caches retain their resources; primitive and edited resources live until their last instance.
+	auto RenderSystem::releaseUnused(RenderMeshHandle mesh, RenderMaterialHandle material) -> void {
 		if (std::ranges::none_of(scene_.instances(), [mesh](const auto &item) { return item.mesh == mesh; }) &&
 			std::ranges::none_of(imported_render_meshes_, [mesh](const auto &entry) { return entry.second == mesh; })) {
 			scene_.eraseMesh(mesh);
@@ -39,17 +78,40 @@ namespace vve::simple {
 			renderer_.markMaterialsDirty();
 		}
 		(void)scene_.releaseUnusedTextures();
-		eraseRenderObject(handle);
-		if (const auto source = object_sources_.find(handle); source != object_sources_.end()) {
-			if (const auto instance = scene_instances_.find(source->second.first); instance != scene_instances_.end()) {
-				auto &objects = instance->second;
-				if (const auto entry = std::ranges::find(objects, handle); entry != objects.end()) { objects.erase(entry); }
-			}
-			object_sources_.erase(source);
-		}
-		detachObject(handle);	// The scene tree stops placing the removed object.
+	}
+
+	/// @brief Shows a 2:1 equirectangular panorama around every camera; it replaces an earlier skybox.
+	///
+	/// The sky is one internal instance (an inward-facing cube with an unlit textured material), not a render object.
+	auto RenderSystem::setSkybox(const std::filesystem::path &panorama) -> std::expected<void, Error> {
+		const auto texture = scene_.acquireTexture(panorama);
+		if (!texture) { return std::unexpected(texture.error()); }
+		const auto mesh = scene_.addCuboidMesh(Vec3{-1, -1, -1}, Vec3{1, 1, 1});
+		// Reverse the winding so the faces point inwards, towards the camera at the centre.
+		auto &indices = scene_.findMesh(mesh)->indices;
+		for (std::size_t first{}; first + 2U < indices.size(); first += 3U) { std::swap(indices[first + 1U], indices[first + 2U]); }
+		const auto material = acquirePrimitiveMaterial(LinearColor{.value = oneVec3()}, *texture);
+		const auto sky = scene_.addInstance(mesh, material);
+		if (!sky) { return std::unexpected(sky.error()); }
+		auto *instance = scene_.findInstance(*sky);
+		instance->sky = true;
+		instance->casts_shadow = false;
+		clearSkybox();	// The new texture is already held, so a repeated panorama is not decoded again.
+		sky_ = *sky;
 		renderer_.markSceneResourcesDirty();
 		return {};
+	}
+
+	/// @brief Removes the skybox, if any, and releases its resources; the background colour shows again.
+	auto RenderSystem::clearSkybox() -> void {
+		const auto *instance = scene_.findInstance(sky_);
+		if (instance == nullptr) { return; }
+		const auto mesh = instance->mesh;
+		const auto material = instance->material;
+		(void)scene_.eraseInstance(sky_);
+		sky_ = {};
+		releaseUnused(mesh, material);
+		renderer_.markSceneResourcesDirty();
 	}
 
 	/// @brief Returns public render objects registered for one scene instance.
@@ -150,6 +212,8 @@ namespace vve::simple {
 		auto &mesh = primitive_meshes_[key];
 		if (scene_.findMesh(mesh) == nullptr) {
 			mesh = shape == PrimitiveShape::plane ? scene_.addPlaneMesh(Vec2{maximum.x, maximum.z}, uv_scale)
+				: shape == PrimitiveShape::sprite ? scene_.addSpriteMesh(Vec2{maximum.x, maximum.y})
+				: shape == PrimitiveShape::sphere ? scene_.addSphereMesh(maximum.x)
 				: scene_.addCuboidMesh(minimum, maximum);
 		}
 		return mesh;
@@ -196,6 +260,44 @@ namespace vve::simple {
 		return registerRenderObject(*instance);
 	}
 
+	/// @brief Adds a coloured sphere; spheres of equal radius share one mesh.
+	auto RenderSystem::addSphere(Scalar radius, LinearColor color, Transform transform) -> std::expected<RenderObjectHandle, Error> {
+		if (!(radius > zero() && std::isfinite(radius))) { return std::unexpected(Error::invalid_argument); }
+		const auto material = acquirePrimitiveMaterial(color);
+		const auto mesh = acquirePrimitiveMesh(PrimitiveShape::sphere, Vec3{-radius, -radius, -radius}, Vec3{radius, radius, radius});
+		auto instance = scene_.addInstance(mesh, material, transform, detail::modelMatrix(transform));
+		if (!instance) { return std::unexpected(instance.error()); }
+		return registerRenderObject(*instance);
+	}
+
+	/// @brief Adds a mesh built by game code; it gets its own geometry and a shared plain material.
+	auto RenderSystem::addMesh(MeshDescriptor mesh) -> std::expected<RenderObjectHandle, Error> {
+		const auto count = mesh.positions.size();
+		const auto finite = [](const Vec3 &value) { return std::isfinite(value.x) && std::isfinite(value.y) && std::isfinite(value.z); };
+		if (count < 3U || mesh.indices.empty() || mesh.indices.size() % 3U != 0U || !std::ranges::all_of(mesh.positions, finite) ||
+			std::ranges::any_of(mesh.indices, [count](std::uint32_t index) { return index >= count; }) ||
+			(!mesh.normals.empty() && mesh.normals.size() != count) || (!mesh.uvs.empty() && mesh.uvs.size() != count)) {
+			return std::unexpected(Error::invalid_argument);
+		}
+		auto texture = RenderTextureIndex{kNoTexture};
+		if (!mesh.base_color_texture.empty()) {
+			const auto acquired = scene_.acquireTexture(mesh.base_color_texture);
+			if (!acquired) { return std::unexpected(acquired.error()); }
+			texture = *acquired;
+		}
+		// Zero normals make the shader use face normals; missing UVs stay zero.
+		auto vertices = std::make_shared<std::vector<RenderVertex>>(count);
+		for (std::size_t index{}; index < count; ++index) {
+			(*vertices)[index] = RenderVertex{.position = mesh.positions[index],
+				.normal = mesh.normals.empty() ? zeroVec3() : mesh.normals[index], .uv = mesh.uvs.empty() ? Vec2{} : mesh.uvs[index]};
+		}
+		const auto material = acquirePrimitiveMaterial(mesh.color, texture);
+		const auto render_mesh = scene_.addMesh(std::move(vertices), std::move(mesh.indices));
+		auto instance = scene_.addInstance(render_mesh, material, mesh.transform, detail::modelMatrix(mesh.transform));
+		if (!instance) { return std::unexpected(instance.error()); }
+		return registerRenderObject(*instance);
+	}
+
 	/// @brief Updates positions while preserving one triangle mesh's topology and allocation size.
 	auto RenderSystem::setObjectMeshPositions(RenderObjectHandle handle, Vector<Vec3> positions)
 		-> std::expected<void, Error> {
@@ -236,6 +338,34 @@ namespace vve::simple {
 		}
 
 		renderer_.markMeshDirty(instance->mesh);
+		return {};
+	}
+
+	/// @brief Gives one object a new base colour; its base-colour texture stays.
+	auto RenderSystem::setObjectColor(RenderObjectHandle handle, LinearColor color) -> std::expected<void, Error> {
+		return setObjectLook(handle, color, std::nullopt);
+	}
+
+	/// @brief Gives one object a new base-colour texture; its base colour stays.
+	auto RenderSystem::setObjectTexture(RenderObjectHandle handle, std::filesystem::path texture) -> std::expected<void, Error> {
+		if (!findRenderObject(handle)) { return std::unexpected(Error::missing_object); }
+		const auto texture_index = scene_.acquireTexture(texture);
+		if (!texture_index) { return std::unexpected(texture_index.error()); }
+		return setObjectLook(handle, std::nullopt, *texture_index);
+	}
+
+	/// @brief Switches an object to the shared plain material for a colour and texture slot; missing values keep the current ones.
+	///
+	/// An imported object loses its other PBR values; the old material is released when nothing uses it anymore.
+	auto RenderSystem::setObjectLook(RenderObjectHandle handle, std::optional<LinearColor> color,
+		std::optional<RenderTextureIndex> texture) -> std::expected<void, Error> {
+		const auto object = findRenderObject(handle);
+		auto *instance = object ? scene_.findInstance(*object) : nullptr;
+		const auto *current = instance ? scene_.findMaterial(instance->material) : nullptr;
+		if (current == nullptr) { return std::unexpected(Error::missing_object); }
+		const auto old_material = instance->material;
+		instance->material = acquirePrimitiveMaterial(color.value_or(current->base_color), texture.value_or(current->base_color_texture_index));
+		if (instance->material != old_material) { releaseUnused(instance->mesh, old_material); }
 		return {};
 	}
 
@@ -287,6 +417,7 @@ namespace vve::simple {
 		primitive_materials_.clear();
 		primitive_meshes_.clear();
 		default_material_ = {};
+		sky_ = {};
 		renderer_.markSceneResourcesDirty();
 		renderer_.markMaterialsDirty();
 	}

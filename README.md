@@ -234,6 +234,28 @@ With `BUILD_TESTING` and the simple engine, `vve_add_example_test(<target>)` in 
 
 Every test is a C++ executable built from one file in `tests/` and registered in [tests/CMakeLists.txt](tests/CMakeLists.txt) with `vve_add_engine_test`. CTest additionally runs `LightShadowDebugExample` (the `light_shadow_debug` example, which writes `bin/<variant>/verify/light_shadow_debug.txt` and `.png`) and `PostProcessingSmokeTests` (`postprocessing --frames 3 --all-effects`, which compiles and runs all 15 effects and fails on a non-zero exit code). Without `--all-effects`, `postprocessing` keeps its default chromatic, vignette, tonemap, greyscale and film grain chain. The rendering tests `SimpleForwardRendererTests`, `RenderTextureDedupTests`, `RenderMaterialImportTests`, `RenderLightingCaptureTests`, `RenderSponzaCaptureTests`, and `RenderMeshDedupTests` open hidden SDL windows (64 to 256 pixels) and need a Vulkan device that can present to them. Tests that pass `visible(false)` window setups also open hidden windows. They use the platform video driver; on a Linux machine without a display (`DISPLAY` and `WAYLAND_DISPLAY` unset), `build_linux.sh` switches to SDL's offscreen driver, which needs a Vulkan driver with `VK_EXT_headless_surface`.
 
+## Ring Racer
+
+`examples/racer` is an intermediate game on the facade: lap racing against three computer cars, a time trial against your ghost, night mode with headlights and a photographed sky. It shows user systems, the ECS, box colliders in game code and most render features. See [examples/racer/README.md](examples/racer/README.md).
+
+## Rendering features
+
+The `vve::RenderSystem` facade offers a few features a simple game needs:
+
+- Transparency: `setObjectOpacity(object, opacity)` (0 to 1, read back with `objectOpacity`) blends an object over what lies behind it. Imported glTF materials keep their alpha mode: `OPAQUE` ignores alpha, `MASK` cuts holes where the base-colour alpha is below 0.5, and `BLEND` is see-through; OBJ materials with a dissolve below 1 are blended. Transparent objects are drawn after solid ones, far to near, and cast no shadows; cut-out objects cast solid shadows.
+- Background: `setBackgroundColor(color)` sets the colour every window clears to (default light blue); `backgroundColor()` reads it.
+- Skybox: `setSkybox(panorama)` surrounds every camera with a 2:1 equirectangular image (top row straight up); `clearSkybox()` and `clearScene()` remove it. A missing image returns `Error::io_error`.
+- Sprites: `addSprite(size, texture, color, transform)` adds an unlit textured quad that always faces each window's camera; its texture alpha makes it see-through. Only translation and x/y scale apply, and sprites cast no shadows. Particles are many sprites moved by game code.
+- Changing looks: `setObjectColor(object, color)` keeps the object's texture and `setObjectTexture(object, path)` keeps its colour. An imported object becomes a plain coloured object; its other PBR values are not kept.
+- Shapes and meshes: `addSphere(radius, color, transform)` adds a sphere (equal radii share one mesh). `addMesh(MeshDescriptor)` adds geometry built by game code: positions and triangle indices, optional normals (empty gives flat face normals), UVs (empty gives zero), colour, base-colour texture and transform; mismatched sizes return `Error::invalid_argument`.
+- Picking: `objectBounds(object)` returns an object's world box. `raycast(origin, direction, max_distance)` returns the nearest visible object whose box the ray enters, as `RaycastHit{object, distance}`; it tests boxes, not triangles. `screenRay(window, point)` returns the origin and direction of the ray through a window point ((0,0) top left, (1,1) bottom right, like `mousePosition`) from that window's camera.
+
+Input (`vve::InputState`, `vve::WindowSystem`): `vve::Key` names letters, arrows, Shift, Ctrl, Alt, Space, Enter, Tab, Backspace, Delete, Insert, Home, End, Page Up/Down and F1 to F12; `vve::key('w')` names any letter (either case), digit or punctuation key. The mouse buttons `Key::mouse_left`, `mouse_middle` and `mouse_right` work with `isKeyDown`, `wasKeyPressed` and `wasKeyReleased` like keys. `setMouseCaptured(window, true)` hides the pointer and keeps `mouseDelta` coming at the window border, for mouse look.
+
+Fullscreen: `WindowSetup{}.fullscreen(true)` starts a window in fullscreen at the desktop resolution, and `WindowSystem::setFullscreen(window, on)` switches it later; the renderer follows the new size.
+
+HUD images: `GuiSystem::loadImage(path)` loads an image for the GUI and returns a `GuiImageHandle`; inside a `draw` callback, `imageId(handle)` gives the `ImTextureID` for `ImGui::Image` (0 until the GUI runs and the image is on the GPU, so skip drawing then). Images stay loaded for the engine's lifetime, also across `clearScene`; their bytes are shown unchanged, like ImGui colours. The ImGui descriptor pool holds 16 textures, one of them the font.
+
 ## Audio
 
 The engine's `vve::AudioSystem` facade uses SDL3_mixer, installed by the normal

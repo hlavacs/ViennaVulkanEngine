@@ -45,6 +45,7 @@ export namespace vve {
 	struct LightHandleTag {};											///< Light descriptor handle tag.
 	struct CameraHandleTag {};											///< Camera descriptor handle tag.
 	struct SceneNodeHandleTag {};										///< World scene tree node handle tag.
+	struct GuiImageHandleTag {};										///< HUD image handle tag.
 
 	using SceneHandle	= TypedHandle<SceneHandleTag>;		///< Scene descriptor handle.
 	using WindowHandle	= TypedHandle<WindowHandleTag>;		///< Runtime window handle.
@@ -56,6 +57,7 @@ export namespace vve {
 	using LightHandle	= TypedHandle<LightHandleTag>;		///< Light descriptor handle.
 	using CameraHandle	= TypedHandle<CameraHandleTag>;		///< Camera descriptor handle.
 	using SceneNodeHandle = TypedHandle<SceneNodeHandleTag>;	///< World scene tree node handle.
+	using GuiImageHandle = TypedHandle<GuiImageHandleTag>;		///< HUD image loaded with GuiSystem::loadImage.
 
 	/// @brief Strong wrapper for world or local position values.
 	struct Position {
@@ -201,6 +203,7 @@ export namespace vve {
 		RendererId renderer_id{};								///< Empty or "forward" renders; "none" opts out; any other id makes Engine::init return invalid_argument.
 		bool resizable{true};									///< Enables platform resizing.
 		bool visible{true};										///< Shows the window; a hidden window still renders (tests, captures).
+		bool fullscreen{false};									///< Starts in fullscreen at the desktop resolution.
 	};
 
 	/// @brief Runtime window state exposed through the facade window wrapper.
@@ -303,6 +306,23 @@ export namespace vve {
 		Vec3 maximum{};															///< Maximum local-space corner.
 		std::filesystem::path base_color_texture{};					///< Base-color texture source path.
 		Transform transform{};													///< Local or world-space placement.
+	};
+
+	/// @brief Facade descriptor for a mesh built by game code; per-vertex arrays are either empty or as long as positions.
+	struct MeshDescriptor {
+		Vector<Vec3> positions{};												///< Object-space vertex positions.
+		Vector<std::uint32_t> indices{};										///< Triangle list into positions, counter-clockwise front faces.
+		Vector<Vec3> normals{};													///< Vertex normals; empty gives flat face normals.
+		Vector<Vec2> uvs{};														///< Texture coordinates, v pointing up; empty gives zero.
+		LinearColor color{.value = oneVec3()};								///< Linear RGB surface color.
+		std::filesystem::path base_color_texture{};					///< Optional base-color texture; empty means none.
+		Transform transform{};													///< Local or world-space placement.
+	};
+
+	/// @brief Nearest render object found by RenderSystem::raycast.
+	struct RaycastHit {
+		RenderObjectHandle object{};											///< Object whose world box the ray enters first.
+		Scalar distance{};														///< Distance from the ray origin to the box, zero when the origin is inside.
 	};
 
 	/// @brief Public scene instantiation options for imported scene visibility.

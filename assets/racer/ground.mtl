@@ -1,0 +1,6 @@
+# Ring Racer ground: Grass_005 with its normal map, tiled by the UVs of ground.obj.
+newmtl ground
+Kd 0.62 0.66 0.55
+Ks 0.0 0.0 0.0
+map_Kd ../game/plane/Grass_005_BaseColor.jpg
+map_Kn ../game/plane/Grass_005_Normal.jpg

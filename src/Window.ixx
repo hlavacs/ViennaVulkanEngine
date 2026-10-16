@@ -1,6 +1,7 @@
 export module VVEngine:Window;
 import std;
 import :Implementation;
+import VVEngine.Error;
 import VVEngine.Types;
 import VVEngine.Vector;
 
@@ -48,6 +49,11 @@ export namespace vve {
 			value_.visible = value;
 			return *this;
 		}
+		/// @brief Starts the window in fullscreen at the desktop resolution.
+		[[nodiscard]] inline WindowSetup &fullscreen(bool value) {
+			value_.fullscreen = value;
+			return *this;
+		}
 
 	private:
 		template <typename... TSystems> friend class Engine;
@@ -88,7 +94,41 @@ export namespace vve {
 		down = 1073741905,		///< Down arrow SDL keycode.
 		left_shift = 1073742049,	///< Left Shift SDL keycode.
 		right_shift = 1073742053,	///< Right Shift SDL keycode.
+		space = 32,					///< Space bar SDL keycode.
+		enter = 13,					///< Return key SDL keycode.
+		tab = 9,						///< Tab key SDL keycode.
+		backspace = 8,				///< Backspace SDL keycode.
+		delete_key = 127,			///< Delete SDL keycode.
+		left_ctrl = 1073742048,	///< Left Control SDL keycode.
+		right_ctrl = 1073742052,	///< Right Control SDL keycode.
+		left_alt = 1073742050,	///< Left Alt SDL keycode.
+		right_alt = 1073742054,	///< Right Alt SDL keycode.
+		f1 = 1073741882,			///< F1 SDL keycode.
+		f2 = 1073741883,			///< F2 SDL keycode.
+		f3 = 1073741884,			///< F3 SDL keycode.
+		f4 = 1073741885,			///< F4 SDL keycode.
+		f5 = 1073741886,			///< F5 SDL keycode.
+		f6 = 1073741887,			///< F6 SDL keycode.
+		f7 = 1073741888,			///< F7 SDL keycode.
+		f8 = 1073741889,			///< F8 SDL keycode.
+		f9 = 1073741890,			///< F9 SDL keycode.
+		f10 = 1073741891,			///< F10 SDL keycode.
+		f11 = 1073741892,			///< F11 SDL keycode.
+		f12 = 1073741893,			///< F12 SDL keycode.
+		insert = 1073741897,		///< Insert SDL keycode.
+		home = 1073741898,			///< Home SDL keycode.
+		page_up = 1073741899,		///< Page Up SDL keycode.
+		end = 1073741901,			///< End SDL keycode.
+		page_down = 1073741902,	///< Page Down SDL keycode.
+		mouse_left = -1,			///< Left mouse button (negative codes are reserved for buttons).
+		mouse_middle = -2,			///< Middle mouse button.
+		mouse_right = -3,			///< Right mouse button.
 	};	///< SDL-free facade key names used by application input queries.
+
+	/// @brief Names the key of a letter (either case), digit or ASCII punctuation character, e.g. key('w') or key('1').
+	[[nodiscard]] constexpr Key key(char c) {
+		return static_cast<Key>(c >= 'A' && c <= 'Z' ? c - 'A' + 'a' : c);
+	}
 
 	class WindowSystem;
 
@@ -256,6 +296,14 @@ export namespace vve {
 			}
 			return result;
 		}
+		/// @brief Captures or releases the mouse for one window: hidden pointer and unbounded relative mouseDelta, for mouse look.
+		[[nodiscard]] inline auto setMouseCaptured(WindowHandle window, bool captured) -> std::expected<void, Error> {
+			return impl_.setMouseCaptured(window, captured);
+		} ///< Unknown windows return invalid_handle; a platform refusal returns platform_error.
+		/// @brief Switches one window between fullscreen at the desktop resolution and a normal window.
+		[[nodiscard]] inline auto setFullscreen(WindowHandle window, bool fullscreen) -> std::expected<void, Error> {
+			return impl_.setFullscreen(window, fullscreen);
+		} ///< Unknown windows return invalid_handle; the renderer follows the new drawable size.
 		/// @brief Finds a facade window view by application-local id.
 		[[nodiscard]] inline auto findWindow(std::string_view id) const -> std::optional<Window> {
 			auto *window = impl_.findWindow(id);

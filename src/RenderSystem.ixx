@@ -67,6 +67,16 @@ export namespace vve {
 		} ///< Overrides one window after engine init, even before its first frame; unknown, closed or opted-out windows return invalid_handle.
 		/// @brief Clears one window's override so it follows the current default camera again.
 		[[nodiscard]] inline auto clearCamera(WindowHandle window) -> std::expected<void, Error> { return impl_.clearCamera(window); } ///< Restores the current default camera; the same window validation as setCamera applies.
+		/// @brief Sets the colour shown where no object or sky is drawn, in every window.
+		inline auto setBackgroundColor(LinearColor color) -> void { impl_.setBackgroundColor(color); }
+		/// @brief Returns the background colour; the default is a light blue.
+		[[nodiscard]] inline auto backgroundColor() const -> LinearColor { return impl_.backgroundColor(); }
+		/// @brief Shows a 2:1 equirectangular panorama image around every window's camera, replacing an earlier skybox.
+		[[nodiscard]] inline auto setSkybox(const std::filesystem::path &panorama) -> std::expected<void, Error> {
+			return impl_.setSkybox(panorama);
+		} ///< A missing or unreadable image returns io_error; clearScene also removes the skybox.
+		/// @brief Removes the skybox; the background colour shows again.
+		inline auto clearSkybox() -> void { impl_.clearSkybox(); }
 		/// @brief Clears all authored and imported lights, preserving objects, resources, cameras and scene instances.
 		inline auto clearLights() -> void { impl_.clearLights(); } ///< Removes all lights; objects, resources, cameras and scene instances stay.
 		/// @brief Sets the active directional light.
@@ -155,6 +165,14 @@ export namespace vve {
 			return impl_.addTriangleMesh(
 				std::move(positions), std::move(indices), color, transform);
 		}
+		/// @brief Adds a coloured sphere around the origin; spheres of equal radius share their geometry.
+		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addSphere(Scalar radius, LinearColor color, Transform transform = {}) {
+			return impl_.addSphere(radius, color, transform);
+		} ///< A radius that is not positive and finite returns invalid_argument.
+		/// @brief Adds a mesh built by game code: positions and triangle indices, optional normals, UVs and texture.
+		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addMesh(MeshDescriptor mesh) {
+			return impl_.addMesh(std::move(mesh));
+		} ///< Empty normals give face normals, empty UVs zero; mismatched sizes or bad indices return invalid_argument.
 		/// @brief Adds an XZ plane with UVs from zero to uv_scale; values above one repeat the texture.
 		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addTexturedPlane(Vec2 half_extent,
 			std::filesystem::path base_color_texture, Vec2 uv_scale = {1.0F, 1.0F}, Transform transform = {}) {
@@ -169,6 +187,11 @@ export namespace vve {
 		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addTexturedCuboid(const TexturedCuboidDescriptor &cuboid) {
 			return addTexturedCuboid(cuboid.minimum, cuboid.maximum, cuboid.base_color_texture, cuboid.transform);
 		}																																		///< Adds a textured cuboid descriptor.
+		/// @brief Adds a camera-facing textured quad of the given size; the texture alpha makes it see-through.
+		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addSprite(Vec2 size, std::filesystem::path texture,
+			LinearColor color = {.value = Vec3{1.0F, 1.0F, 1.0F}}, Transform transform = {}) {
+			return impl_.addSprite(size, std::move(texture), color, transform);
+		} ///< Sprites are unlit and cast no shadows; only translation and x/y scale apply. Move many sprites for particles.
 		/// @brief Removes one previously added render object.
 		[[nodiscard]] inline auto removeObject(RenderObjectHandle handle) -> std::expected<void, Error> {
 			return impl_.removeObject(handle);
@@ -189,6 +212,14 @@ export namespace vve {
 		[[nodiscard]] inline auto objectVisible(RenderObjectHandle handle) const -> std::expected<bool, Error> {
 			return impl_.objectVisible(handle);
 		}
+		/// @brief Sets one render object's opacity in [0, 1]; below one the object is blended over what lies behind it.
+		[[nodiscard]] inline auto setObjectOpacity(RenderObjectHandle handle, Scalar opacity) -> std::expected<void, Error> {
+			return impl_.setObjectOpacity(handle, opacity);
+		} ///< Values outside [0, 1] return invalid_argument; unknown objects return missing_object.
+		/// @brief Returns one render object's opacity.
+		[[nodiscard]] inline auto objectOpacity(RenderObjectHandle handle) const -> std::expected<Scalar, Error> {
+			return impl_.objectOpacity(handle);
+		}
 		/// @brief Sets one render object's source transform.
 		[[nodiscard]] inline auto setObjectTransform(RenderObjectHandle handle, Transform transform) -> std::expected<void, Error> {
 			return impl_.setObjectTransform(handle, transform);
@@ -197,10 +228,31 @@ export namespace vve {
 		[[nodiscard]] inline auto objectTransform(RenderObjectHandle handle) const -> std::expected<Transform, Error> {
 			return impl_.objectTransform(handle);
 		}
+		/// @brief Returns one render object's world-space box, computed from its mesh vertices and placement.
+		[[nodiscard]] inline auto objectBounds(RenderObjectHandle handle) const -> std::expected<Bounds, Error> {
+			return impl_.objectBounds(handle);
+		}
+		/// @brief Returns the nearest visible render object whose world box the ray enters within max_distance.
+		[[nodiscard]] inline auto raycast(Position origin, Direction direction, Scalar max_distance) const -> std::optional<RaycastHit> {
+			return impl_.raycast(origin, direction, max_distance);
+		} ///< Boxes, not triangles, are tested; the distance is zero when the origin lies inside a box.
+		/// @brief Returns the origin and direction of the ray through a window point, (0,0) top left to (1,1) bottom right.
+		[[nodiscard]] inline auto screenRay(WindowHandle window, Vec2 normalized_position) const
+			-> std::expected<std::pair<Position, Direction>, Error> {
+			return impl_.screenRay(window, normalized_position);
+		} ///< Uses that window's camera and aspect ratio; pass InputState::mousePosition to pick under the mouse.
 		/// @brief Updates vertex positions for a fixed-topology triangle mesh.
 		[[nodiscard]] inline auto setObjectMeshPositions(RenderObjectHandle handle, Vector<Vec3> positions)
 			-> std::expected<void, Error> {
 			return impl_.setObjectMeshPositions(handle, std::move(positions));
+		}
+		/// @brief Changes one render object's base colour, keeping its texture; imported objects become plain coloured objects.
+		[[nodiscard]] inline auto setObjectColor(RenderObjectHandle handle, LinearColor color) -> std::expected<void, Error> {
+			return impl_.setObjectColor(handle, color);
+		}
+		/// @brief Changes one render object's base-colour texture, keeping its colour; a missing image returns io_error.
+		[[nodiscard]] inline auto setObjectTexture(RenderObjectHandle handle, std::filesystem::path texture) -> std::expected<void, Error> {
+			return impl_.setObjectTexture(handle, std::move(texture));
 		}
 		/// @brief Returns render objects registered for one scene instance.
 		[[nodiscard]] inline auto sceneInstanceObjects(RenderSceneInstanceHandle instance) const -> std::expected<Vector<RenderObjectHandle>, Error> {

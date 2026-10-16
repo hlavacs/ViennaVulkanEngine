@@ -11,7 +11,7 @@
  * Fragment resources: the material texture table in binding 1, the spot, directional, and point shadow arrays in bindings 2-4,
  * and the dense material buffer in binding VVE_MATERIAL_BINDING.
  * Set-0 bindings mirror descriptorSetBindings in Vulkan/Pipeline.ixx; the material array is specialized to the device capacity.
- * Fragment outputs: one opaque linear HDR color for the dynamic-rendering forward pass.
+ * Fragment outputs: one linear HDR color with alpha; the blended pipeline uses it for transparent objects.
  */
 
 static const int kMaxShadowedSpotLights = VVE_MAX_SHADOWED_SPOT_LIGHTS; ///< Shared fixed spot-shadow cap.
@@ -53,14 +53,14 @@ struct ObjectPushConstants
     float4x4 model;         ///< Object-local model matrix selected before each draw call.
     uint materialIndex;    ///< Dense slot in the material storage buffer.
     uint shadowMatrixIndex; ///< Index into frame.shadowViewProjs used by the shadow vertex stage.
-    uint unlit;             ///< Non-zero renders the object in its flat base color without any lighting.
-    uint padding;           ///< Keeps the push-constant block a multiple of 16 bytes.
+    uint flags;             ///< Bit 0 unlit, bit 1 sky, bit 2 sprite (mirrors objectFlag in Vulkan/Pipeline.ixx).
+    float opacity;          ///< Object alpha multiplied with the material alpha.
 };
 
 struct GpuMaterial
 {
-    float4 baseColorFactor;         ///< Base-color factor; a base-color texture multiplies it.
-    float4 emissiveFactor;          ///< Emissive rgb factor with unused w; an emissive texture multiplies it.
+    float4 baseColorFactor;         ///< Base-color factor with opacity in w; a base-color texture multiplies it.
+    float4 emissiveFactor;          ///< Emissive rgb factor with the alpha mode in w (0 opaque, 1 cut-out, 2 blended).
     uint baseColorTexture;          ///< Base-color texture-table index.
     uint normalTexture;             ///< Normal texture-table index.
     uint metalnessTexture;          ///< Metalness texture-table index, sampled from blue (glTF packing; greyscale works too).
@@ -98,7 +98,7 @@ struct FragmentInput
 
 struct FragmentOutput
 {
-    [[vk::location(0)]] float4 color : SV_Target0; ///< Opaque color written to the HDR target.
+    [[vk::location(0)]] float4 color : SV_Target0; ///< Color and alpha written to the HDR target.
 };
 
 [[vk::binding(0, 0)]]
@@ -107,6 +107,12 @@ ConstantBuffer<FrameUniforms> frame; ///< Frame-wide camera constants.
 [[vk::constant_id(VVE_TEXTURE_CAPACITY_CONSTANT_ID)]]
 const uint kMaxSceneTextures = 1; ///< Renderer specializes this array size to the selected device's descriptor capacity.
 static const uint kNoTexture = VVE_NO_TEXTURE; ///< Absent material texture index defined in simple_shared.h.
+static const uint kUnlitFlag = 1;  ///< ObjectPushConstants::flags bit for flat, unlit objects.
+static const uint kSkyFlag = 2;    ///< ObjectPushConstants::flags bit for the skybox.
+static const uint kSpriteFlag = 4; ///< ObjectPushConstants::flags bit for camera-facing quads.
+static const float kPi = 3.14159265358979; ///< Converts sky angles to panorama coordinates.
+static const float kAlphaMask = 1.0;  ///< Cut-out alpha mode stored in emissiveFactor.w.
+static const float kAlphaBlend = 2.0; ///< Blended alpha mode stored in emissiveFactor.w.
 
 [[vk::binding(1, 0)]]
 Sampler2D baseColorTextures[kMaxSceneTextures]; ///< Shared material texture table selected by each material's texture indices.
@@ -188,11 +194,43 @@ float3x3 normalMatrix(float4x4 model)
     return determinant < 0.0 ? -cofactor : cofactor;
 }
 
+/**
+ * @brief Half a texel of one table texture; clamping by it keeps the repeat sampler from wrapping over image edges.
+ */
+float2 halfTexel(uint texture)
+{
+    uint width, height;
+    baseColorTextures[texture].GetDimensions(width, height);
+    return 0.5 / float2(width, height);
+}
+
 [shader("vertex")]
 VertexOutput vertexMain(VertexInput input)
 {
     VertexOutput output;
-    const float4 worldPosition = mul(object.model, float4(input.position, 1.0));
+    // The sky follows the camera's rotation only and lies just inside the far plane; the fragment stage gets its direction.
+    if ((object.flags & kSkyFlag) != 0) {
+        output.position = mul(frame.projection, float4(mul(float3x3(frame.view), input.position), 1.0));
+        output.position.z = 0.999999 * output.position.w;
+        output.worldPos = input.position;                                ///< Object-space direction from the cube centre.
+        output.texCoord = float2(0.0);
+        output.normal = float3(0.0);
+        output.tangent = float4(0.0);
+        return output;
+    }
+    float4 worldPosition = mul(object.model, float4(input.position, 1.0));
+    // Sprites keep their world origin and span the quad along the camera's right and up vectors (view rows 0 and 1).
+    if ((object.flags & kSpriteFlag) != 0) {
+        const float2 scale = float2(length(mul(object.model, float4(1.0, 0.0, 0.0, 0.0)).xyz), length(mul(object.model, float4(0.0, 1.0, 0.0, 0.0)).xyz));
+        worldPosition = mul(object.model, float4(0.0, 0.0, 0.0, 1.0));
+        worldPosition.xyz += frame.view[0].xyz * (input.position.x * scale.x) + frame.view[1].xyz * (input.position.y * scale.y);
+        output.position = mul(frame.projection, mul(frame.view, worldPosition));
+        output.worldPos = worldPosition.xyz;
+        output.texCoord = input.texCoord;
+        output.normal = frame.view[2].xyz;                               ///< Points towards the camera.
+        output.tangent = float4(0.0);
+        return output;
+    }
     const float4 viewPosition = mul(frame.view, worldPosition);
     output.position = mul(frame.projection, viewPosition);
     output.worldPos = worldPosition.xyz;
@@ -213,13 +251,37 @@ FragmentOutput fragmentMain(FragmentInput input)
 {
     FragmentOutput output;
     const GpuMaterial material = materials[object.materialIndex];
-    float3 baseColor = material.baseColorFactor.rgb;                      ///< Material factor remains the default base color.
-    if (material.baseColorTexture != kNoTexture && material.baseColorTexture < kMaxSceneTextures) {
-        baseColor *= baseColorTextures[material.baseColorTexture].Sample(input.texCoord).rgb; ///< The material texture modulates its factor before lighting.
+    // Equirectangular lookup; textures are stored bottom-up, so v = 1 is the image's top row (straight up).
+    if ((object.flags & kSkyFlag) != 0) {
+        const float3 d = normalize(input.worldPos);
+        float2 uv = float2(atan2(d.x, -d.z) / (2.0 * kPi) + 0.5, 1.0 - acos(clamp(d.y, -1.0, 1.0)) / kPi);
+        float3 sky = float3(1.0);
+        if (material.baseColorTexture < kMaxSceneTextures) {
+            const float edge = halfTexel(material.baseColorTexture).y;
+            uv.y = clamp(uv.y, edge, 1.0 - edge);                        ///< The repeat sampler must not wrap over the poles.
+            sky = baseColorTextures[material.baseColorTexture].SampleLevel(uv, 0.0).rgb; ///< Level 0 avoids a seam where u wraps.
+        }
+        output.color = float4(sky * material.baseColorFactor.rgb, 1.0);
+        return output;
     }
+    float3 baseColor = material.baseColorFactor.rgb;                      ///< Material factor remains the default base color.
+    float coverage = material.baseColorFactor.a;                         ///< Material alpha; the texture alpha multiplies it.
+    if (material.baseColorTexture != kNoTexture && material.baseColorTexture < kMaxSceneTextures) {
+        float2 texCoord = input.texCoord;
+        if ((object.flags & kSpriteFlag) != 0) {                          ///< A sprite edge must not blend with the opposite edge.
+            const float2 edge = halfTexel(material.baseColorTexture);
+            texCoord = clamp(texCoord, edge, 1.0 - edge);
+        }
+        const float4 texel = baseColorTextures[material.baseColorTexture].Sample(texCoord);
+        baseColor *= texel.rgb;                                          ///< The material texture modulates its factor before lighting.
+        coverage *= texel.a;
+    }
+    if (material.emissiveFactor.w == kAlphaMask && coverage < 0.5) { discard; } ///< Cut-out leaves holes, the rest is opaque.
+    const bool blended = material.emissiveFactor.w == kAlphaBlend || (object.flags & kSpriteFlag) != 0; ///< Sprites always use their texture alpha.
+    const float alpha = (blended ? coverage : 1.0) * object.opacity;    ///< Opaque modes ignore material alpha.
     // The push constant keeps this return uniform, before other texture samples and lighting.
-    if (object.unlit != 0) {
-        output.color = float4(baseColor, 1.0);                           ///< Unlit objects keep their sampled base colour.
+    if ((object.flags & kUnlitFlag) != 0) {
+        output.color = float4(baseColor, alpha);                         ///< Unlit objects keep their sampled base colour.
         return output;
     }
     float roughness = material.roughnessFactor;                          ///< Factors apply alone or scale their texture, as in glTF.
@@ -369,6 +431,6 @@ FragmentOutput fragmentMain(FragmentInput input)
             (debugCascadeIndex == 2 ? float3(0.25, 0.25, 1.0) : float3(1.0, 1.0, 0.25))); ///< Red, green, blue, and yellow identify the four cascade regions.
         litColor = lerp(litColor, litColor * cascadeTint, 0.65); ///< Retain scene detail while making cascade boundaries obvious.
     }
-    output.color = float4(litColor, 1.0);
+    output.color = float4(litColor, alpha);
     return output;
 }

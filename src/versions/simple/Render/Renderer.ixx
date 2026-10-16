@@ -125,6 +125,7 @@ export namespace vve::simple {
 		VulkanShaderModule fragShaderModule{}; ///< Owned forward fragment shader module.
 		VulkanShaderModule shadowShaderModule{}; ///< Owned depth-only shadow vertex shader module.
 		VulkanGraphicsPipeline graphicsPipeline{}; ///< Owned forward graphics pipeline for swapchain rendering.
+		VulkanGraphicsPipeline transparentPipeline{}; ///< Owned blended forward pipeline without depth writes, for transparent objects.
 		VulkanGraphicsPipeline shadowPipeline{};   ///< Owned depth-only pipeline shared by every shadow layer.
 		VulkanCommandPool commandPool{};       ///< Owned resettable command pool for the graphics queue family.
 		std::map<RenderMeshHandle, VulkanMesh> meshes{}; ///< One owned GPU mesh per referenced RenderMesh handle.
@@ -188,6 +189,13 @@ export namespace vve::simple {
 
 		/// @brief Reports whether the renderer currently owns a live Vulkan device.
 		[[nodiscard]] bool initialized() const { return device.device != VK_NULL_HANDLE; }
+
+		/// @brief Returns the view of a texture slot once its current pixels are on the GPU, else null.
+		[[nodiscard]] VkImageView textureView(std::size_t index) const {
+			const bool current = index < objectTextures.size() && uploadedTextureGenerations_[index] != 0U &&
+				uploadedTextureGenerations_[index] == textureGeneration(index);
+			return current ? objectTextures[index].imageView : VK_NULL_HANDLE;
+		}
 
 		/// @brief Reports the number of resident GPU textures, excluding the fallback texture.
 		[[nodiscard]] std::size_t gpuTextureCount() const { return uploadedTextureCount_; }
@@ -268,6 +276,14 @@ export namespace vve::simple {
 		/// @brief Sets the default view and clip planes used by every target without an explicit camera.
 		void setCamera(Camera camera) { camera_ = std::move(camera); }
 
+		/// @brief Returns the default camera of windows without an explicit camera.
+		[[nodiscard]] const Camera &camera() const { return camera_; }
+
+		/// @brief Sets the colour every window clears to before drawing the scene.
+		void setBackgroundColor(LinearColor color) { backgroundColor_ = color; }
+		/// @brief Returns the colour every window clears to.
+		[[nodiscard]] LinearColor backgroundColor() const { return backgroundColor_; }
+
 		/// @brief Returns whether the concrete Vulkan draw path presented a frame.
 		[[nodiscard]] bool renderFrame(WindowTarget &target, VulkanReadback *readback = nullptr) { return drawFrame(target, readback); }
 
@@ -311,6 +327,7 @@ export namespace vve::simple {
 		FrameUniforms frameUniforms_{}; ///< Camera and packed light data assembled directly for the current window's uniform upload.
 		Camera camera_{.position = {Vec3{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}},
 			.forward = {Vec3{zero(), static_cast<Scalar>(-5.0), static_cast<Scalar>(-9.0)}}}; ///< Default view retained across target creation and renderer shutdown.
+		LinearColor backgroundColor_{.value = Vec3{static_cast<Scalar>(0.45), static_cast<Scalar>(0.70), one()}}; ///< Light-blue clear colour of the forward pass.
 		VkDescriptorPool imguiDescriptorPool_{VK_NULL_HANDLE}; ///< Owned Dear ImGui descriptor pool reserved for backend texture descriptors.
 		std::function<bool()> guiPrepare_; ///< Optional GUI preparation before command recording, only for its owning window.
 		std::function<void(VkCommandBuffer)> guiRecord_; ///< Optional GUI recorder invoked only when preparation produced vertices.
@@ -344,7 +361,7 @@ export namespace vve::simple {
 
 } // namespace vve::simple
 
-namespace vve::simple::detail {
+export namespace vve::simple::detail {
 
 	/// @brief Up vector for lookAt that stays valid when the view direction is parallel to world +Y or -Y.
 	[[nodiscard]] inline Vec3 stableUp(Vec3 direction) {
