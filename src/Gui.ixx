@@ -1,6 +1,7 @@
 export module VVEngine:Gui;
 import std;
 import :Implementation;
+import VVEngine.Error;
 
 /**
 	* @file
