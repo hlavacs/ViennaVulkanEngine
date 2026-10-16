@@ -64,6 +64,9 @@ if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/hierarchy_car/CMakeLists.txt")
     endif()
 endif()
 
+# Ring Racer: a lap-racing game; its logic has a CPU test and the game a bounded autopilot run.
+add_subdirectory(racer)
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/postprocessing/CMakeLists.txt")
     add_subdirectory(postprocessing)
 endif()

@@ -234,6 +234,10 @@ With `BUILD_TESTING` and the simple engine, `vve_add_example_test(<target>)` in 
 
 Every test is a C++ executable built from one file in `tests/` and registered in [tests/CMakeLists.txt](tests/CMakeLists.txt) with `vve_add_engine_test`. CTest additionally runs `LightShadowDebugExample` (the `light_shadow_debug` example, which writes `bin/<variant>/verify/light_shadow_debug.txt` and `.png`) and `PostProcessingSmokeTests` (`postprocessing --frames 3 --all-effects`, which compiles and runs all 15 effects and fails on a non-zero exit code). Without `--all-effects`, `postprocessing` keeps its default chromatic, vignette, tonemap, greyscale and film grain chain. The rendering tests `SimpleForwardRendererTests`, `RenderTextureDedupTests`, `RenderMaterialImportTests`, `RenderLightingCaptureTests`, `RenderSponzaCaptureTests`, and `RenderMeshDedupTests` open hidden SDL windows (64 to 256 pixels) and need a Vulkan device that can present to them. Tests that pass `visible(false)` window setups also open hidden windows. They use the platform video driver; on a Linux machine without a display (`DISPLAY` and `WAYLAND_DISPLAY` unset), `build_linux.sh` switches to SDL's offscreen driver, which needs a Vulkan driver with `VK_EXT_headless_surface`.
 
+## Ring Racer
+
+`examples/racer` is an intermediate game on the facade: lap racing against three computer cars, a time trial against your ghost, night mode with headlights and a photographed sky. It shows user systems, the ECS, box colliders in game code and most render features. See [examples/racer/README.md](examples/racer/README.md).
+
 ## Rendering features
 
 The `vve::RenderSystem` facade offers a few features a simple game needs:
