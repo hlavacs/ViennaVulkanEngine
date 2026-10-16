@@ -45,6 +45,14 @@ export namespace vve {
 		[[nodiscard]] auto volume(AudioPlaybackHandle voice) const -> std::expected<AudioVolume, Error> {
 			return impl_.volume(voice);
 		}
+		/// @brief Sets the playback speed of one voice in [0.01, 100]; above one it plays faster and higher.
+		[[nodiscard]] auto setPitch(AudioPlaybackHandle voice, AudioPitch pitch) -> std::expected<void, Error> {
+			return impl_.setPitch(voice, pitch);
+		}
+		/// @brief Returns the playback speed of one voice or invalid_handle if the voice was released.
+		[[nodiscard]] auto pitch(AudioPlaybackHandle voice) const -> std::expected<AudioPitch, Error> {
+			return impl_.pitch(voice);
+		}
 		/// @brief Sets the master volume in [0, 1], multiplying all voice volumes.
 		[[nodiscard]] auto setMasterVolume(AudioVolume volume) -> std::expected<void, Error> {
 			return impl_.setMasterVolume(volume);

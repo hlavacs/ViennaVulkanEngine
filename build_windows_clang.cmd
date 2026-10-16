@@ -25,5 +25,6 @@ if defined VVE_LOCAL_DEP (
 if errorlevel 1 exit /b 1
 cmake --build --preset build-debug-clang
 if errorlevel 1 exit /b 1
-ctest --test-dir build\debug-clang --output-on-failure
+rem The Ring Racer game runs carry the label racer and take minutes; run them with ctest -L racer.
+ctest --test-dir build\debug-clang --output-on-failure -LE racer
 exit /b %errorlevel%

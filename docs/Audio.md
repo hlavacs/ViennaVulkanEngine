@@ -88,6 +88,12 @@ negative values and values above one return `Error::invalid_argument`.
 Overlapping loud sources can still clip; leave headroom with the master volume.
 `volume(voice)` reads an individual gain; `masterVolume()` reads the master gain.
 
+`setPitch(voice, vve::AudioPitch{.value = 1.5F})` plays one voice faster and
+higher: one is the recorded speed, two is an octave up at twice the speed. The
+ratio must be finite and in `[0.01, 100]`; other values return
+`Error::invalid_argument`. `pitch(voice)` reads it back. A looping engine sample
+whose pitch follows the car speed is the typical use (see `examples/racer`).
+
 `pause(voice)` preserves the playback cursor. `resume(voice)` continues from it.
 `isPlaying(voice)` is false while paused; `isPaused(voice)` distinguishes that
 state. Both queries return false for unknown or expired handles.

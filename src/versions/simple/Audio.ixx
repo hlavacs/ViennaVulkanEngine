@@ -30,6 +30,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto resume(AudioPlaybackHandle voice) -> std::expected<void, Error>;
 		[[nodiscard]] auto setVolume(AudioPlaybackHandle voice, AudioVolume volume) -> std::expected<void, Error>;
 		[[nodiscard]] auto volume(AudioPlaybackHandle voice) const -> std::expected<AudioVolume, Error>;
+		[[nodiscard]] auto setPitch(AudioPlaybackHandle voice, AudioPitch pitch) -> std::expected<void, Error>;
+		[[nodiscard]] auto pitch(AudioPlaybackHandle voice) const -> std::expected<AudioPitch, Error>;
 		[[nodiscard]] auto setMasterVolume(AudioVolume volume) -> std::expected<void, Error>;
 		[[nodiscard]] AudioVolume masterVolume() const;
 		void stopAll();

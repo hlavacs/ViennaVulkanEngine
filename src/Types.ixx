@@ -22,6 +22,11 @@ export namespace vve {
 		float value{1.0F}; ///< Finite gain in [0, 1]; independent of renderer math precision.
 	};
 
+	/// @brief Playback speed of one voice: one is unchanged, two plays an octave higher and twice as fast.
+	struct AudioPitch {
+		float value{1.0F}; ///< Finite speed ratio in [0.01, 100].
+	};
+
 	/// @brief Options for one independent playback of a loaded sound.
 	struct AudioPlaybackOptions {
 		bool loop{false}; ///< Repeat indefinitely until stopped.

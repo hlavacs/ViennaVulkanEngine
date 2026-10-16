@@ -18,11 +18,13 @@ endif()
 
 # The game: two user systems over the facade, the logic module and the scene module.
 add_executable(racer racer.cpp)
-target_sources(racer PRIVATE FILE_SET CXX_MODULES FILES RacerScene.ixx RacerRace.ixx RacerView.ixx)
+target_sources(racer PRIVATE FILE_SET CXX_MODULES FILES RacerScene.ixx RacerWorld.ixx RacerRace.ixx RacerSound.ixx RacerView.ixx)
 target_link_libraries(racer PRIVATE ViennaVulkanEngine::ViennaVulkanEngine vve_example_support racer_logic)
 add_dependencies(racer ViennaVulkanEngine vve_simple_shaders)
 vve_set_output_dirs(racer)
 
+# The four game runs take a while, so they carry the label "racer" and the build scripts skip them (ctest -LE racer).
+# Run them with: ctest --test-dir <build directory> -L racer --output-on-failure
 if(BUILD_TESTING AND VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
     # Bounded autopilot run: 15 s of racing, a capture and a verification file; fails on a wall breach or a bad pick.
     add_test(NAME RacerExample COMMAND racer --frames 900 --autopilot
@@ -35,5 +37,5 @@ if(BUILD_TESTING AND VVE_ENGINE_IMPLEMENTATION_NAMESPACE STREQUAL "simple")
     add_test(NAME RacerGhostExample COMMAND racer --frames 2400 --autopilot --time-trial
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/racer_ghost.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/racer_ghost.txt")
     set_tests_properties(RacerExample RacerNightExample RacerMenuExample RacerGhostExample PROPERTIES
-        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" LABELS "gpu;example" ENVIRONMENT "SDL_AUDIO_DRIVER=dummy" TIMEOUT 120)
+        WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" LABELS "gpu;example;racer" ENVIRONMENT "SDL_AUDIO_DRIVER=dummy" TIMEOUT 120)
 endif()

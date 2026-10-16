@@ -3,17 +3,20 @@ module;
 
 /**
  * @file
- * @brief Ring Racer ViewSystem: car rigs, ghost, cameras, lights and sky, smoke, HUD with minimap and logo, and music.
+ * @brief Ring Racer ViewSystem: circuit and countryside, car rigs, ghost, cameras, lights and sky, smoke, and the HUD with
+ * minimap and logo. Sound lives in Racer.Sound; the view tells it where the camera is.
  */
 export module Racer.View;
 import std;
 import VVEngine;
 import Racer.Race;
 import Racer.Scene;
+import Racer.World;
+import Racer.Sound;
 
 export namespace racer {
 
-/// @brief Everything seen and heard: car rigs, ghost, camera, lights, smoke, HUD and music.
+/// @brief Everything seen: circuit, countryside, car rigs, ghost, camera, lights, smoke and HUD.
 struct ViewSystem {
 	std::filesystem::path root{};				///< Asset root.
 	std::vector<racer::CarModel> models{};	///< One loaded car model per car slot; the ghost uses the player's.
@@ -27,22 +30,19 @@ struct ViewSystem {
 	bool night{};								///< Night mode with headlights.
 	bool skyShown{};							///< Whether the day skybox is set.
 	std::size_t sceneryCount{};				///< Trees, bushes, plants and rocks placed beside the track.
+	std::size_t countryPieces{};				///< Kit models and merged meshes of the countryside.
 	bool fullscreen{};							///< Window state.
 	bool photo{};								///< Photo mode: free orbit camera, simulation paused.
 	float orbitYaw{}, orbitPitch{0.4F}, orbitDistance{9.0F};	///< Photo camera around the player car.
 	std::string picked{};						///< Description of the car clicked in photo mode.
 	vve::Vec3 eye{0, 20, 40};					///< Smoothed camera position.
 	std::vector<racer::RaceCar> cars{};		///< Copy of the simulation state for this frame.
-	vve::AudioSystem *audio{};				///< Music player, null without an audio device.
+	racer::SoundSystem *sound{};				///< Music and effects, for the menu options and clicks.
 	vve::GuiSystem *gui{};					///< Engine-owned GUI, for the logo id.
 	vve::WindowSystem *windows{};			///< Engine-owned windows, for mouse capture and fullscreen.
 	bool mouseCaptured{};						///< Current capture state.
-	std::array<vve::SoundHandle, musicFiles.size()> songs{};	///< Loaded tracks.
-	vve::AudioPlaybackHandle music{};		///< Playing track.
-	int track{};									///< Selected track.
-	float volume{0.35F};						///< Master volume.
 
-	/// @brief Builds the circuit, loads the car, smoke, logo and music, and installs the HUD.
+	/// @brief Builds the countryside, circuit and scenery, loads the cars, smoke and logo, and installs the HUD.
 	template <typename TWorld> std::expected<void, vve::Error> init(TWorld &world) {
 		auto &race = world.template get<RaceSystem>();
 		auto &render = world.template get<vve::RenderSystem>();
@@ -52,8 +52,15 @@ struct ViewSystem {
 		gui = &world.template get<vve::GuiSystem>();
 		windows = &world.template get<vve::WindowSystem>();
 		window = windows->findWindow("main").value().handle();
-		if (const auto result = racer::buildCircuit(render, assets, race.track, root); !result) { return result; }
-		const auto scenery = racer::addScenery(render, assets, race.track, root, 11U);
+		sound = &world.template get<racer::SoundSystem>();
+		const auto countryside = racer::buildCountryside(render, assets, race.track, root);
+		if (!countryside) { return std::unexpected(countryside.error()); }
+		countryPieces = countryside->pieces;
+		if (countryside->missing > 0U) {
+			std::cerr << "[racer] " << countryside->missing << " Kenney kit models are missing in assets/racer/kenney (see examples/racer/README.md)\n";
+		}
+		if (const auto result = racer::buildCircuit(render, assets, race.track, root, countryside->startArch); !result) { return result; }
+		const auto scenery = racer::addScenery(render, assets, race.track, root, 11U, countryside->reserved);
 		if (!scenery) { return std::unexpected(scenery.error()); }
 		sceneryCount = *scenery;
 		for (const auto *file : carFiles) {
@@ -66,24 +73,8 @@ struct ViewSystem {
 		const auto image = gui->loadImage(root / "assets/racer/logo.tga");
 		if (!image) { return std::unexpected(image.error()); }
 		logo = *image;
-		auto &sound = world.template get<vve::AudioSystem>();
-		if (sound.init()) {
-			audio = &sound;
-			for (std::size_t i{}; i < musicFiles.size(); ++i) {
-				if (const auto song = sound.loadSound(root / "assets/sounds" / musicFiles[i], vve::AudioLoadMode::on_demand)) { songs[i] = *song; }
-			}
-			(void)sound.setMasterVolume(vve::AudioVolume{.value = volume});
-			playMusic();
-		}
 		gui->draw([this, &race] { drawHud(race); });
 		return {};
-	}
-
-	/// @brief Starts the selected track in a loop.
-	void playMusic() {
-		if (audio == nullptr || !songs[track].valid()) { return; }
-		if (music.valid()) { (void)audio->stop(music); }
-		music = audio->play(songs[track], vve::AudioPlaybackOptions{.loop = true}).value_or(vve::AudioPlaybackHandle{});
 	}
 
 	/// @brief Mirrors the simulation into the scene and handles the view keys.
@@ -142,6 +133,8 @@ struct ViewSystem {
 		}
 		if (const auto lit = updateLights(render); !lit) { return lit; }
 		updateCamera(render, input, dt);
+		sound->listener = eye;
+		sound->night = night;
 		return {};
 	}
 
@@ -244,6 +237,13 @@ struct ViewSystem {
 		return "scenery";
 	}
 
+	/// @brief An ImGui button that clicks when pressed.
+	bool button(const char *label, ImVec2 size) {
+		const bool pressed = ImGui::Button(label, size);
+		if (pressed) { sound->click(); }
+		return pressed;
+	}
+
 	/// @brief Main menu, pause menu, race HUD, minimap and results.
 	void drawHud(RaceSystem &race) {
 		const auto *viewport = ImGui::GetMainViewport();
@@ -256,23 +256,23 @@ struct ViewSystem {
 		if (race.phase == Phase::menu) {
 			if (menuWindow("Ring Racer")) {
 				if (const auto id = gui->imageId(logo); id != 0U) { ImGui::Image(static_cast<ImTextureID>(id), ImVec2{192, 64}); }
-				if (ImGui::Button("Race", ImVec2{192, 0})) { race.start(Mode::race); }
-				if (ImGui::Button("Time trial", ImVec2{192, 0})) { race.start(Mode::timeTrial); }
+				if (button("Race", ImVec2{192, 0})) { race.start(Mode::race); }
+				if (button("Time trial", ImVec2{192, 0})) { race.start(Mode::timeTrial); }
 				ImGui::SliderInt("Laps", &race.laps, 1, 9);
 				ImGui::SliderInt("Opponents", &race.opponents, 0, 3);
 				drawOptions();
-				if (ImGui::Button("Quit", ImVec2{192, 0})) { race.quit = true; }
+				if (button("Quit", ImVec2{192, 0})) { race.quit = true; }
 			}
 			ImGui::End();
 			return;
 		}
 		if (race.paused && !photo) {
 			if (menuWindow("Paused")) {
-				if (ImGui::Button("Resume", ImVec2{160, 0})) { race.paused = false; }
-				if (ImGui::Button("Restart", ImVec2{160, 0})) { race.start(race.mode); }
-				if (ImGui::Button("Main menu", ImVec2{160, 0})) { race.phase = Phase::menu; race.paused = false; }
+				if (button("Resume", ImVec2{160, 0})) { race.paused = false; }
+				if (button("Restart", ImVec2{160, 0})) { race.start(race.mode); }
+				if (button("Main menu", ImVec2{160, 0})) { race.phase = Phase::menu; race.paused = false; }
 				drawOptions();
-				if (ImGui::Button("Quit", ImVec2{160, 0})) { race.quit = true; }
+				if (button("Quit", ImVec2{160, 0})) { race.quit = true; }
 			}
 			ImGui::End();
 		}
@@ -308,8 +308,8 @@ struct ViewSystem {
 					ImGui::Text("%zu. %-7s %s  best %s", place + 1, carNames[order[place] % carNames.size()],
 						progress.finished ? lapText(progress.finishTime).c_str() : "racing", lapText(progress.bestLap).c_str());
 				}
-				if (ImGui::Button("Race again", ImVec2{160, 0})) { race.start(race.mode); }
-				if (ImGui::Button("Main menu", ImVec2{160, 0})) { race.phase = Phase::menu; }
+				if (button("Race again", ImVec2{160, 0})) { race.start(race.mode); }
+				if (button("Main menu", ImVec2{160, 0})) { race.phase = Phase::menu; }
 			}
 			ImGui::End();
 		}
@@ -318,9 +318,9 @@ struct ViewSystem {
 	/// @brief Night, music and fullscreen settings shared by both menus.
 	void drawOptions() {
 		ImGui::Checkbox("Night", &night);
-		if (audio != nullptr) {
-			if (ImGui::Combo("Music", &track, "Dance\0Ophelia\0Never get out\0")) { playMusic(); }
-			if (ImGui::SliderFloat("Volume", &volume, 0.0F, 1.0F, "%.2f")) { (void)audio->setMasterVolume(vve::AudioVolume{.value = volume}); }
+		if (sound->audio != nullptr) {
+			if (ImGui::Combo("Music", &sound->track, "Dance\0Ophelia\0Never get out\0")) { sound->playMusic(); }
+			if (ImGui::SliderFloat("Volume", &sound->volume, 0.0F, 1.0F, "%.2f")) { sound->applyVolume(); }
 		}
 	}
 

@@ -60,6 +60,8 @@ void writeWave(const std::filesystem::path &path) {
 
 /** @brief Allow insignificant conversion differences in public gains. */
 bool near(vve::AudioVolume actual, float expected) { return std::abs(actual.value - expected) < 0.0001F; }
+/** @brief Allow insignificant conversion differences in public pitch ratios. */
+bool near(vve::AudioPitch actual, float expected) { return std::abs(actual.value - expected) < 0.0001F; }
 
 /** @brief Bound device-driven playback completion without requiring physical speakers. */
 void waitUntilFinished(vve::AudioSystem &audio, vve::AudioPlaybackHandle voice) {
@@ -143,6 +145,15 @@ void testAudio(const std::filesystem::path &decodedPath, const std::filesystem::
       expectError(audio.play(decoded, AudioPlaybackOptions{.volume = AudioVolume{.value = invalid}}),
                   Error::invalid_argument, "play rejects invalid gain");
    }
+   check(near(value(audio.pitch(first), "initial pitch"), 1.0F), "voices start at normal pitch");
+   check(audio.setPitch(first, AudioPitch{.value = 1.5F}).has_value(), "set voice pitch");
+   check(near(value(audio.pitch(first), "changed pitch"), 1.5F), "voice pitch retained");
+   check(near(value(audio.pitch(second), "other pitch"), 1.0F), "voice pitches are independent");
+   for (const float invalid : {0.0F, -1.0F, 101.0F, std::numeric_limits<float>::quiet_NaN()}) {
+      expectError(audio.setPitch(first, AudioPitch{.value = invalid}), Error::invalid_argument, "reject invalid pitch");
+   }
+   check(near(value(audio.pitch(first), "pitch after invalid input"), 1.5F), "invalid input preserves pitch");
+   expectError(audio.pitch(AudioPlaybackHandle{}), Error::invalid_handle, "empty voice has no pitch");
    check(near(value(audio.volume(first), "gain after invalid input"), 1.0F), "invalid input preserves voice gain");
    check(near(audio.masterVolume(), 1.0F), "invalid input preserves master gain");
    check(audio.stop(first).has_value(), "stop first voice");

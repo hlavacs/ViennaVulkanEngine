@@ -98,7 +98,8 @@ if "%BUILD_DOCS%"=="1" (
 
 if "%RUN_TESTS%"=="1" (
     set "STAGE=Tests after successful compilation and linking"
-    ctest --test-dir "%BUILD_DIR%" --output-on-failure
+    rem The Ring Racer game runs carry the label racer and take minutes; run them with ctest -L racer.
+    ctest --test-dir "%BUILD_DIR%" --output-on-failure -LE racer
     if errorlevel 1 goto fail
 )
 

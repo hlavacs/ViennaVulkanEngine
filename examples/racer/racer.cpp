@@ -4,14 +4,16 @@ import VVE.ExampleSupport;
 import Racer.Race;
 import Racer.View;
 import Racer.Scene;
+import Racer.Sound;
 
 /**
  * @file
  * @brief Ring Racer: race three computer cars for three laps, or chase the ghost of your best lap.
  *
- * The game runs as two user systems on the facade engine. RaceSystem owns the rules and the fixed-step simulation and
+ * The game runs as three user systems on the facade engine. RaceSystem owns the rules and the fixed-step simulation and
  * keeps one racer::RaceCar component per car in the ECS. ViewSystem reads those components and drives everything the
- * player sees and hears: car rigs, camera, lights, smoke, HUD and music.
+ * player sees: circuit and countryside, car rigs, camera, lights, smoke and HUD. SoundSystem plays the music and the
+ * engines, tyres, crashes, race signals, birds and crowd.
  *
  * Controls: W/S or Up/Down throttle and brake, A/D or Left/Right steer, Space handbrake, C camera, R back to the
  * track, N night, P photo mode (hold the right mouse button to orbit, click a car), F11 fullscreen, Esc pause.
@@ -49,7 +51,8 @@ int main(int argc, char **argv) {
 	options.verify = option(argc, argv, "--verify", verifyDir / "racer.txt");
 	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr);
 
-	auto engine = vve::EngineBuilder<racer::RaceSystem, racer::ViewSystem>{vve::makeUserSystems(racer::RaceSystem{.options = options}, racer::ViewSystem{.root = root})}
+	auto engine = vve::EngineBuilder<racer::RaceSystem, racer::ViewSystem, racer::SoundSystem>{
+		vve::makeUserSystems(racer::RaceSystem{.options = options}, racer::ViewSystem{.root = root}, racer::SoundSystem{.root = root})}
 		.applicationName("racer")
 		.addWindow(vve::WindowSetup{}.id("main").title("VVE Ring Racer").extent(vve::PixelExtent{.width = 1280, .height = 720}))
 		.build();
@@ -128,10 +131,11 @@ int main(int argc, char **argv) {
 	const bool drove = options.menu || moving == view.cars.size();
 	// A time trial must have recorded its first lap as the ghost.
 	const bool ghostReady = !options.timeTrial || (!race.ghost.empty() && view.ghostRig.instance.valid());
-	const bool pass = insideWalls && drove && pickedPlayer && ghostReady && (options.menu || steerError < 0.01F) && view.sceneryCount > 300U;
-	verify << std::format("cars,{}\nmoving_cars,{}\nmin_wall_clearance,{:.3f}\nmax_car_overlap,{:.3f}\npicked_player,{}\nsmoke_active,{}\nghost_frames,{}\nbest_lap,{:.3f}\nsteer,{:.4f}\nfront_wheel_error,{:.5f}\nscenery,{}\nresult,{}\n",
+	const bool pass = insideWalls && drove && pickedPlayer && ghostReady && (options.menu || steerError < 0.01F) && view.sceneryCount > 300U &&
+		view.countryPieces > 20U;
+	verify << std::format("cars,{}\nmoving_cars,{}\nmin_wall_clearance,{:.3f}\nmax_car_overlap,{:.3f}\npicked_player,{}\nsmoke_active,{}\nghost_frames,{}\nbest_lap,{:.3f}\nsteer,{:.4f}\nfront_wheel_error,{:.5f}\nscenery,{}\ncountryside,{}\nresult,{}\n",
 		view.cars.size(), moving, race.minClearance, race.maxOverlap, pickedPlayer, view.smoke.active(), race.ghost.frames.size(),
-		view.cars.empty() ? 0.0F : view.cars.front().progress.bestLap, steerAngle, steerError, view.sceneryCount, pass ? "PASS" : "FAIL");
+		view.cars.empty() ? 0.0F : view.cars.front().progress.bestLap, steerAngle, steerError, view.sceneryCount, view.countryPieces, pass ? "PASS" : "FAIL");
 	std::println("[racer] frames={} cars={} moving={} min_wall_clearance={:.3f} max_car_overlap={:.3f} picked_player={} {}", options.frames,
 		view.cars.size(), moving, race.minClearance, race.maxOverlap, pickedPlayer, pass ? "PASS" : "FAIL");
 	return pass ? 0 : 10;

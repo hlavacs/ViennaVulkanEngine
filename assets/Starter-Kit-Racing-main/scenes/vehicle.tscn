@@ -1,0 +1,120 @@
+[gd_scene format=3 uid="uid://badoy1c127yhf"]
+
+[ext_resource type="Script" uid="uid://bqite16pastgo" path="res://scripts/vehicle.gd" id="1_e2g1l"]
+[ext_resource type="PackedScene" uid="uid://bynb5jk1d478y" path="res://models/vehicle-truck-yellow.glb" id="2_vuxys"]
+[ext_resource type="Texture2D" uid="uid://c026qrhqxgw3n" path="res://sprites/smoke.png" id="3_p2hth"]
+[ext_resource type="AudioStream" uid="uid://2in1jtv5bh0y" path="res://audio/skid.ogg" id="4_mcce1"]
+[ext_resource type="AudioStream" uid="uid://j6x2is8pyt8y" path="res://audio/engine.ogg" id="5_kcati"]
+[ext_resource type="AudioStream" uid="uid://io4pmr3lo1dy" path="res://audio/impact.ogg" id="6_v3p7b"]
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_tfk12"]
+transparency = 1
+depth_draw_mode = 2
+shading_mode = 0
+vertex_color_use_as_albedo = true
+albedo_texture = ExtResource("3_p2hth")
+disable_receive_shadows = true
+billboard_mode = 3
+billboard_keep_scale = true
+particles_anim_h_frames = 1
+particles_anim_v_frames = 1
+particles_anim_loop = false
+grow_amount = 0.5
+proximity_fade_enabled = true
+proximity_fade_distance = 0.25
+
+[sub_resource type="Curve" id="Curve_t02a3"]
+_data = [Vector2(0, 0), 0.0, 0.0, 0, 0, Vector2(0.503968, 1), 0.0, 0.0, 0, 0, Vector2(1, 0), 0.0, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_mya1o"]
+curve = SubResource("Curve_t02a3")
+
+[sub_resource type="Curve" id="Curve_bncg7"]
+_data = [Vector2(0, 0.5), 0.0, 0.0, 0, 0, Vector2(0.5, 1), 0.0, 0.0, 0, 0, Vector2(1, 0.2), 0.5, 0.0, 0, 0]
+point_count = 3
+
+[sub_resource type="CurveTexture" id="CurveTexture_5pp1o"]
+curve = SubResource("Curve_bncg7")
+
+[sub_resource type="ParticleProcessMaterial" id="ParticleProcessMaterial_xgt35"]
+angle_min = -90.0
+angle_max = 90.0
+gravity = Vector3(0, 0, 0)
+damping_min = 1.0
+damping_max = 1.0
+scale_min = 0.25
+scale_max = 0.5
+scale_curve = SubResource("CurveTexture_5pp1o")
+color = Color(0.3696, 0.3738, 0.42, 1)
+alpha_curve = SubResource("CurveTexture_mya1o")
+
+[sub_resource type="QuadMesh" id="QuadMesh_68fxn"]
+
+[sub_resource type="PhysicsMaterial" id="PhysicsMaterial_eyo0u"]
+friction = 5.0
+rough = true
+
+[sub_resource type="SphereShape3D" id="SphereShape3D_hhncp"]
+
+[node name="Vehicle" type="Node3D" unique_id=1867641805]
+script = ExtResource("1_e2g1l")
+
+[node name="Ground" type="RayCast3D" parent="." unique_id=496963048]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+target_position = Vector3(0, -0.7, 0)
+hit_back_faces = false
+debug_shape_custom_color = Color(0.898039, 0, 0, 1)
+
+[node name="Container" type="Node3D" parent="." unique_id=546976745]
+
+[node name="Model" parent="Container" unique_id=2133669704 instance=ExtResource("2_vuxys")]
+
+[node name="TrailLeft" type="GPUParticles3D" parent="Container" unique_id=1350774766]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.25, 0.05, -0.35)
+material_override = SubResource("StandardMaterial3D_tfk12")
+cast_shadow = 0
+amount = 32
+lifetime = 0.5
+fixed_fps = 60
+process_material = SubResource("ParticleProcessMaterial_xgt35")
+draw_pass_1 = SubResource("QuadMesh_68fxn")
+
+[node name="TrailRight" type="GPUParticles3D" parent="Container" unique_id=1271178057]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.25, 0.05, -0.35)
+material_override = SubResource("StandardMaterial3D_tfk12")
+cast_shadow = 0
+amount = 32
+lifetime = 0.5
+fixed_fps = 60
+process_material = SubResource("ParticleProcessMaterial_xgt35")
+draw_pass_1 = SubResource("QuadMesh_68fxn")
+
+[node name="ScreechSound" type="AudioStreamPlayer3D" parent="Container" unique_id=1640227385]
+stream = ExtResource("4_mcce1")
+autoplay = true
+
+[node name="EngineSound" type="AudioStreamPlayer3D" parent="Container" unique_id=397905471]
+stream = ExtResource("5_kcati")
+autoplay = true
+
+[node name="ImpactSound" type="AudioStreamPlayer3D" parent="Container" unique_id=1542612165]
+stream = ExtResource("6_v3p7b")
+
+[node name="Sphere" type="RigidBody3D" parent="." unique_id=1368519146]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.5, 0)
+collision_layer = 8
+mass = 1000.0
+physics_material_override = SubResource("PhysicsMaterial_eyo0u")
+gravity_scale = 1.5
+continuous_cd = true
+contact_monitor = true
+max_contacts_reported = 2
+linear_damp = 0.1
+angular_damp_mode = 1
+angular_damp = 4.0
+
+[node name="CollisionShape" type="CollisionShape3D" parent="Sphere" unique_id=503279956]
+shape = SubResource("SphereShape3D_hhncp")
+
+[connection signal="body_entered" from="Sphere" to="." method="_on_sphere_body_entered"]

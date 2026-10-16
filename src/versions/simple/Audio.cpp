@@ -170,6 +170,24 @@ namespace vve::simple {
 		return AudioVolume{.value = MIX_GetTrackGain(*found)};
 	}
 
+	/// @brief Changes the playback speed, and with it the pitch, of a single voice.
+	auto AudioSystem::setPitch(AudioPlaybackHandle voice, AudioPitch pitch) -> std::expected<void, Error> {
+		const auto found = track(voice);
+		if (!found) { return std::unexpected(found.error()); }
+		if (!std::isfinite(pitch.value) || pitch.value < 0.01F || pitch.value > 100.0F) {
+			return fail(Error::invalid_argument, "Pitch must be finite and in [0.01, 100].");
+		}
+		if (!MIX_SetTrackFrequencyRatio(*found, pitch.value)) { return fail(Error::platform_error, SDL_GetError()); }
+		return {};
+	}
+
+	/// @brief Reads the playback speed ratio of a single voice.
+	auto AudioSystem::pitch(AudioPlaybackHandle voice) const -> std::expected<AudioPitch, Error> {
+		const auto found = track(voice);
+		if (!found) { return std::unexpected(found.error()); }
+		return AudioPitch{.value = MIX_GetTrackFrequencyRatio(*found)};
+	}
+
 	/// @brief Applies validated linear gain to the entire mixer.
 	auto AudioSystem::setMasterVolume(AudioVolume volume) -> std::expected<void, Error> {
 		if (!mixer_) { return fail(Error::not_initialized, "Audio is not initialized."); }

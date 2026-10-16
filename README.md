@@ -222,7 +222,7 @@ ctest --test-dir build/debug-windows -N
 
 For other build directories (`build/debug-linux`, `build/macos-debug`, ...) replace the `--test-dir` argument; add `-R <name>` to run selected tests.
 
-Tests that need a window or Vulkan device carry the `gpu` label. Use `ctest --test-dir build/debug-linux -LE gpu -N` to list the CPU subset, and omit `-N` to run it without a display or Vulkan device. Register window/GPU tests with `vve_add_engine_test(<Name> GPU [extra libraries])`. All six example tests also carry the `example` label, selectable with `-L example`.
+Tests that need a window or Vulkan device carry the `gpu` label. Use `ctest --test-dir build/debug-linux -LE gpu -N` to list the CPU subset, and omit `-N` to run it without a display or Vulkan device. Register window/GPU tests with `vve_add_engine_test(<Name> GPU [extra libraries])`. All six example tests also carry the `example` label, selectable with `-L example`. The four Ring Racer game runs take minutes and carry the `racer` label; the build scripts skip them with `-LE racer`, and `ctest --test-dir <build> -L racer` runs them.
 
 `VulkanDeviceRequirementsTests` checks the Vulkan 1.3 version and feature requirements using synthetic capabilities. It belongs to the CPU subset and creates no Vulkan instance, device or window.
 
@@ -236,7 +236,7 @@ Every test is a C++ executable built from one file in `tests/` and registered in
 
 ## Ring Racer
 
-`examples/racer` is an intermediate game on the facade: lap racing against three computer cars, a time trial against your ghost, night mode with headlights and a photographed sky. It shows user systems, the ECS, box colliders in game code and most render features. See [examples/racer/README.md](examples/racer/README.md).
+`examples/racer` is an intermediate game on the facade: lap racing against three computer cars, a time trial against your ghost, night mode with headlights and a photographed sky, a countryside with grandstand, paddock, town, farm and fields, and engine, tyre, crash and crowd sounds. It shows user systems, the ECS, box colliders in game code, procedural meshes, pitched audio and most render features. Its Kenney kit models and sounds are copied by hand into `assets/racer/kenney`; the README lists them. See [examples/racer/README.md](examples/racer/README.md).
 
 ## Rendering features
 

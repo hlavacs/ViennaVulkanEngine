@@ -71,6 +71,7 @@ struct RaceSystem {
 	float maxOverlap{};							///< Deepest overlap of two cars seen after a step in this run.
 	bool startPending{};						///< Bounded runs start on the first update, once the view knows the car sizes.
 	std::vector<std::pair<float, float>> carSizes{};	///< Collider half length and width per car slot, from the car models.
+	std::vector<float> impacts{};					///< Strongest wall, post or car impact per car in the last frame (m/s), for the crash sound.
 	vve::ECS *ecs{};								///< Engine-owned component store holding one RaceCar per car.
 
 	/// @brief Keeps the ECS; bounded runs go straight into a race, others start in the menu.
@@ -108,6 +109,7 @@ struct RaceSystem {
 	/// @brief Advances the race by the frame time in fixed physics steps.
 	template <typename TWorld> std::expected<void, vve::Error> update(TWorld &world, const vve::FrameContext &frame) {
 		const auto input = world.template get<vve::WindowSystem>().input();
+		std::ranges::fill(impacts, 0.0F);
 		if (startPending) { start(options.timeTrial ? Mode::timeTrial : Mode::race); startPending = false; }
 		if (phase == Phase::menu || phase == Phase::finished) { return {}; }
 		if (input.wasKeyPressed(vve::Key::escape)) { paused = !paused; }
@@ -118,6 +120,7 @@ struct RaceSystem {
 		std::vector<racer::RaceCar> cars{};
 		for (const auto entity : entities) { cars.push_back(ecs.template get<racer::RaceCar>(entity).value()); }
 		if (cars.empty()) { return {}; }
+		impacts.resize(cars.size(), 0.0F);
 		// R puts the player back onto the centre line, facing forwards.
 		if (input.wasKeyPressed(vve::key('r')) && !options.autopilot) {
 			auto &player = cars.front().vehicle;
@@ -141,6 +144,7 @@ struct RaceSystem {
 			const int lapsBefore = cars.front().progress.completedLaps;
 			const float bestBefore = cars.front().progress.bestLap;
 			racer::stepRace(cars, controls, track, params, raceTime, laps, physicsStep);
+			for (std::size_t i{}; i < cars.size(); ++i) { impacts[i] = std::max(impacts[i], cars[i].vehicle.impact); }
 			raceTime += physicsStep;
 			// The player's lap recording becomes the ghost when it was the best lap.
 			const auto &player = cars.front();

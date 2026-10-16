@@ -4,9 +4,10 @@
  *
  * Functional objects:
  * - world, aboutY, aboutZ, at: conversions from the ground-plane logic to facade transforms.
- * - buildCircuit: normal-mapped grass with a large-scale colour variation layer, road, kerbs, centre line, start line,
- *   barrier walls and transparent checkpoint gates.
- * - addScenery: trees, bushes, grass tufts, flowers and rocks from the Kenney Nature Kit, scattered beside the track.
+ * - buildCircuit: normal-mapped grass with a large-scale colour variation layer, textured asphalt, edge lines, kerbs,
+ *   centre line, start line, barrier walls and transparent checkpoint gates.
+ * - addScenery: trees, bushes, grass tufts, flowers and rocks from the Kenney Nature Kit, scattered beside the track and
+ *   kept out of the areas the countryside uses.
  * - CarModel / loadCarModel: a Kenney car (body and four wheel nodes), scaled to the physics wheel base, with its box size.
  * - CarRig / addCar: one instantiated car with brake lights hung on its instance root.
  * - placeCar, setBrakeLights, setCarOpacity: per-frame car updates through the scene tree.
@@ -37,10 +38,10 @@ export namespace racer {
 	/// @brief World yaw of a Kenney car (+Z forward) for a ground-plane heading.
 	[[nodiscard]] inline float yawOf(float heading) { return std::numbers::pi_v<float> / 2.0F - heading; }
 
-	[[nodiscard]] auto buildCircuit(vve::RenderSystem &render, vve::AssetSystem &assets, const Track &track, const std::filesystem::path &root)
-		-> std::expected<void, vve::Error>;
+	[[nodiscard]] auto buildCircuit(vve::RenderSystem &render, vve::AssetSystem &assets, const Track &track, const std::filesystem::path &root,
+		bool startArch) -> std::expected<void, vve::Error>;
 	[[nodiscard]] auto addScenery(vve::RenderSystem &render, vve::AssetSystem &assets, const Track &track, const std::filesystem::path &root,
-		std::uint32_t seed) -> std::expected<std::size_t, vve::Error>;
+		std::uint32_t seed, std::span<const Box2> reserved) -> std::expected<std::size_t, vve::Error>;
 
 	/// @brief A loaded car model: its wheel nodes and the scale that gives it the physics wheel base.
 	struct CarModel {
@@ -134,8 +135,34 @@ namespace racer {
 		return render.addMesh(std::move(mesh));
 	}
 
-	/// @brief Builds the static circuit; every part is one mesh, so the whole track costs a dozen draw calls.
-	auto buildCircuit(vve::RenderSystem &render, vve::AssetSystem &assets, const Track &track, const std::filesystem::path &root)
+	/// @brief The asphalt as one mesh; its texture repeats every 3 m across and along the road.
+	auto addRoad(vve::RenderSystem &render, const Track &track, const std::filesystem::path &texture) -> std::expected<vve::RenderObjectHandle, vve::Error> {
+		constexpr float tile{3.0F}, hw{Track::halfWidth};
+		const auto left = row(track, -hw, 0.0F), right = row(track, hw, 0.0F);
+		const float step = track.length() / static_cast<float>(track.samples().size());
+		vve::MeshDescriptor mesh{.base_color_texture = texture};
+		for (std::size_t i{}; i < left.size(); ++i) {
+			const std::size_t j = (i + 1U) % left.size();
+			const float v = static_cast<float>(i) * step / tile, next = v + step / tile;
+			const auto base = static_cast<std::uint32_t>(mesh.positions.size());
+			for (const auto &[point, uv] : {std::pair{left[i], vve::Vec2{-hw / tile, v}}, std::pair{right[i], vve::Vec2{hw / tile, v}},
+					 std::pair{left[j], vve::Vec2{-hw / tile, next}}, std::pair{right[j], vve::Vec2{hw / tile, next}}}) {
+				mesh.positions.push_back(point);
+				mesh.normals.push_back(vve::Vec3{0, 1, 0});
+				mesh.uvs.push_back(uv);
+			}
+			// Counter-clockwise seen from above, whichever way the road turns.
+			const auto normal = vve::math::cross(vve::math::subtract(right[i], left[i]), vve::math::subtract(left[j], left[i]));
+			for (const std::uint32_t index : normal.y > 0.0F ? std::array{0U, 1U, 2U, 2U, 1U, 3U} : std::array{0U, 2U, 1U, 2U, 3U, 1U}) {
+				mesh.indices.push_back(base + index);
+			}
+		}
+		return render.addMesh(std::move(mesh));
+	}
+
+	/// @brief Builds the static circuit; every part is one mesh, so the whole track costs a dozen draw calls. With the
+	/// Kenney finish arch standing over the start line, the yellow start gate is left out (its posts still collide).
+	auto buildCircuit(vve::RenderSystem &render, vve::AssetSystem &assets, const Track &track, const std::filesystem::path &root, bool startArch)
 		-> std::expected<void, vve::Error> {
 		const auto all = [](std::size_t) { return true; };
 		const auto fail = [](const auto &result) { return !result.has_value(); };
@@ -154,9 +181,11 @@ namespace racer {
 		if (fail(variation)) { return std::unexpected(variation.error()); }
 		if (const auto result = render.setObjectOpacity(*variation, 0.4F); !result) { return result; }
 		constexpr float hw = Track::halfWidth, kerb = Track::kerbWidth;
-		const vve::Vec3 asphalt{0.16F, 0.16F, 0.17F}, red{0.75F, 0.08F, 0.06F}, white{0.9F, 0.9F, 0.9F};
+		const vve::Vec3 red{0.75F, 0.08F, 0.06F}, white{0.9F, 0.9F, 0.9F};
 		const std::array bands{
-			addBand(render, track, -hw, hw, 0.0F, asphalt, all),
+			addRoad(render, track, root / "assets/racer/asphalt.tga"),
+			addBand(render, track, -hw + 0.25F, -hw + 0.45F, 0.02F, white, all),
+			addBand(render, track, hw - 0.45F, hw - 0.25F, 0.02F, white, all),
 			addBand(render, track, -0.15F, 0.15F, 0.02F, white, [](std::size_t i) { return i % 4U < 2U; }),
 			addBand(render, track, -hw, hw, 0.025F, white, [](std::size_t i) { return i == 0U; }),
 		};
@@ -182,7 +211,7 @@ namespace racer {
 			if (const auto added = render.addMesh(std::move(wall)); fail(added)) { return std::unexpected(added.error()); }
 		}
 		// Checkpoint gates: the track's two post colliders drawn as tall cuboids, joined by a bar; see-through, the start gate yellow.
-		for (int checkpoint{}; checkpoint < RaceProgress::checkpoints; ++checkpoint) {
+		for (int checkpoint{startArch ? 1 : 0}; checkpoint < RaceProgress::checkpoints; ++checkpoint) {
 			const auto &left = track.posts()[2U * static_cast<std::size_t>(checkpoint)];
 			const auto &right = track.posts()[2U * static_cast<std::size_t>(checkpoint) + 1U];
 			const Vec2f across = rightOf(left.axis);
@@ -224,19 +253,29 @@ namespace racer {
 		return found == palette.end() ? vve::Vec3{0.3F, 0.3F, 0.3F} : found->second;
 	}
 
-	/// @brief Scatters trees, bushes, grass, flowers and rocks behind the walls; every copy keeps its node tree so one root
-	/// transform places, turns and scales it. Placement uses a fixed seed, so the scenery is the same every run.
+	/// @brief Scatters trees, bushes, grass, flowers and rocks behind the walls, near the track and in a sparser belt
+	/// further out, never inside a reserved area; every copy keeps its node tree so one root transform places, turns and
+	/// scales it. Placement uses a fixed seed, so the scenery is the same every run.
 	auto addScenery(vve::RenderSystem &render, vve::AssetSystem &assets, const Track &track, const std::filesystem::path &root,
-		std::uint32_t seed) -> std::expected<std::size_t, vve::Error> {
+		std::uint32_t seed, std::span<const Box2> reserved) -> std::expected<std::size_t, vve::Error> {
 		constexpr std::array kinds{
-			SceneryKind{"tree_oak.glb", 14, 6.0F, 9.0F, 16.0F, 90.0F, true}, SceneryKind{"tree_default.glb", 14, 6.0F, 9.0F, 16.0F, 90.0F, true},
-			SceneryKind{"tree_detailed.glb", 12, 6.0F, 9.0F, 16.0F, 90.0F, true}, SceneryKind{"tree_fat.glb", 10, 6.0F, 8.0F, 16.0F, 90.0F, true},
-			SceneryKind{"tree_pineTallA.glb", 14, 6.0F, 9.0F, 16.0F, 90.0F, true}, SceneryKind{"tree_pineRoundA.glb", 12, 6.0F, 8.0F, 16.0F, 90.0F, true},
-			SceneryKind{"plant_bushLarge.glb", 20, 4.0F, 6.0F, 13.0F, 40.0F, true}, SceneryKind{"plant_bushDetailed.glb", 20, 4.0F, 6.0F, 13.0F, 40.0F, true},
-			SceneryKind{"grass_large.glb", 90, 3.0F, 4.5F, 11.3F, 28.0F, false}, SceneryKind{"grass_leafsLarge.glb", 70, 3.0F, 4.5F, 11.3F, 28.0F, false},
-			SceneryKind{"flower_redA.glb", 25, 2.5F, 3.5F, 11.3F, 24.0F, false}, SceneryKind{"flower_yellowA.glb", 25, 2.5F, 3.5F, 11.3F, 24.0F, false},
-			SceneryKind{"flower_purpleA.glb", 25, 2.5F, 3.5F, 11.3F, 24.0F, false},
-			SceneryKind{"rock_largeA.glb", 10, 3.0F, 5.0F, 13.0F, 50.0F, true}, SceneryKind{"rock_largeB.glb", 10, 3.0F, 5.0F, 13.0F, 50.0F, true},
+			SceneryKind{"tree_oak.glb", 20, 6.0F, 9.0F, 16.0F, 90.0F, true}, SceneryKind{"tree_default.glb", 20, 6.0F, 9.0F, 16.0F, 90.0F, true},
+			SceneryKind{"tree_detailed.glb", 16, 6.0F, 9.0F, 16.0F, 90.0F, true}, SceneryKind{"tree_fat.glb", 14, 6.0F, 8.0F, 16.0F, 90.0F, true},
+			SceneryKind{"tree_pineTallA.glb", 20, 6.0F, 9.0F, 16.0F, 90.0F, true}, SceneryKind{"tree_pineRoundA.glb", 16, 6.0F, 8.0F, 16.0F, 90.0F, true},
+			SceneryKind{"tree_oak.glb", 30, 7.0F, 10.0F, 90.0F, 230.0F, true}, SceneryKind{"tree_pineTallA.glb", 30, 7.0F, 10.0F, 90.0F, 230.0F, true},
+			SceneryKind{"tree_default.glb", 25, 7.0F, 10.0F, 90.0F, 230.0F, true},
+			SceneryKind{"plant_bushLarge.glb", 30, 4.0F, 6.0F, 13.0F, 60.0F, true}, SceneryKind{"plant_bushDetailed.glb", 30, 4.0F, 6.0F, 13.0F, 60.0F, true},
+			SceneryKind{"grass_large.glb", 120, 3.0F, 4.5F, 11.3F, 40.0F, false}, SceneryKind{"grass_leafsLarge.glb", 90, 3.0F, 4.5F, 11.3F, 40.0F, false},
+			SceneryKind{"flower_redA.glb", 35, 2.5F, 3.5F, 11.3F, 30.0F, false}, SceneryKind{"flower_yellowA.glb", 35, 2.5F, 3.5F, 11.3F, 30.0F, false},
+			SceneryKind{"flower_purpleA.glb", 35, 2.5F, 3.5F, 11.3F, 30.0F, false},
+			SceneryKind{"rock_largeA.glb", 15, 3.0F, 5.0F, 13.0F, 70.0F, true}, SceneryKind{"rock_largeB.glb", 15, 3.0F, 5.0F, 13.0F, 70.0F, true},
+		};
+		// Trees keep a few metres from a reserved area so that their crowns do not reach into it.
+		const auto blocked = [reserved](Vec2f spot, float margin) {
+			return std::ranges::any_of(reserved, [&](const Box2 &box) {
+				const Vec2f offset = spot - box.centre;
+				return std::abs(dot(offset, box.axis)) < box.halfLength + margin && std::abs(dot(offset, rightOf(box.axis))) < box.halfWidth + margin;
+			});
 		};
 		std::mt19937 random{seed};
 		std::uniform_real_distribution<float> unit{0.0F, 1.0F};
@@ -261,7 +300,7 @@ namespace racer {
 					const auto sample = track.at(unit(random) * track.length());
 					const float lateral = kind.nearest + (kind.farthest - kind.nearest) * unit(random) * unit(random);	// Denser near the track.
 					spot = sample.position + rightOf(sample.tangent) * (unit(random) < 0.5F ? -lateral : lateral);
-					found = std::abs(track.locate(spot).lateral) >= kind.nearest && length(spot) < 380.0F;
+					found = std::abs(track.locate(spot).lateral) >= kind.nearest && length(spot) < 380.0F && !blocked(spot, kind.shadows ? 3.0F : 0.5F);
 				}
 				if (!found) { continue; }
 				const auto instance = render.instantiateScene(*scene, vve::SceneInstantiationOptions{.keep_hierarchy = true});

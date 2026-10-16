@@ -138,7 +138,8 @@ fi
 if [ -z "${SDL_VIDEODRIVER:-}" ] && [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
   export SDL_VIDEODRIVER=offscreen
 fi
-"$CTEST_BIN" --test-dir "$BUILD_DIR" --output-on-failure
+# The Ring Racer game runs carry the label racer and take minutes; run them with ctest -L racer.
+"$CTEST_BIN" --test-dir "$BUILD_DIR" --output-on-failure -LE racer
 
 printf '\n%s build complete. Executables: bin/%s/exe\n' "$VARIANT" "$VARIANT_LOWER"
 printf 'Verification output: bin/%s/verify\n' "$VARIANT_LOWER"
