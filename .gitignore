@@ -54,6 +54,8 @@ imgui.ini
 *.dylib
 !/tests/assets/
 !/tests/assets/**
+# Models under assets/ are data, not compiler output.
+!/assets/**/*.obj
 /graph_dumps/
 /screenshots/
 
