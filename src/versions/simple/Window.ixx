@@ -99,6 +99,7 @@ export namespace vve::simple {
 		[[nodiscard]] const Window *findWindow(WindowHandle handle) const;										///< Finds a const window.
 		[[nodiscard]] bool anyShouldClose() const;																		///< Returns true when any window should close.
 		[[nodiscard]] auto setMouseCaptured(WindowHandle window, bool captured)				-> std::expected<void, Error>; ///< Hides the pointer and reports relative motion.
+		[[nodiscard]] auto setFullscreen(WindowHandle window, bool fullscreen)				-> std::expected<void, Error>; ///< Toggles desktop fullscreen.
 		auto setGuiEventSink(std::function<bool(const SDL_Event &)> sink)					-> void;		///< Sets GUI event forwarding; the sink returns true for events the GUI claims.
 
 	private:
@@ -106,6 +107,23 @@ export namespace vve::simple {
 		struct Impl;																															///< SDL-owning implementation hidden from module importers.
 		std::unique_ptr<Impl> impl_;																										///< Pimpl keeps SDL headers out of the public simple module.
 	};
+
+} // namespace vve::simple
+
+namespace vve::simple {
+
+	namespace {
+		/// @brief Applies one SDL on/off window setting; unknown windows give invalid_handle, an SDL refusal platform_error.
+		[[nodiscard]] auto switchWindow(const Window *window, bool (*apply)(SDL_Window *, bool), bool on, std::string_view what)
+			-> std::expected<void, Error> {
+			if (window == nullptr) { return std::unexpected(Error::invalid_handle); }
+			if (!apply(window->native(), on)) {
+				std::cerr << "[vve::simple] " << what << " failed: " << SDL_GetError() << '\n';
+				return std::unexpected(Error::platform_error);
+			}
+			return {};
+		}
+	} // namespace
 
 } // namespace vve::simple
 
@@ -329,6 +347,7 @@ export namespace vve::simple {
 			SDL_WindowFlags flags = SDL_WINDOW_VULKAN;
 			if (desc.resizable) { flags |= SDL_WINDOW_RESIZABLE; }
 			if (!desc.visible) { flags |= SDL_WINDOW_HIDDEN; }
+			if (desc.fullscreen) { flags |= SDL_WINDOW_FULLSCREEN; }
 
 			SDL_Window *const window = SDL_CreateWindow(desc.title.c_str(), static_cast<int>(desc.extent.width),
 																		static_cast<int>(desc.extent.height), flags);
@@ -463,13 +482,12 @@ export namespace vve::simple {
 
 	/// @brief Switches SDL relative mouse mode, which hides the pointer and keeps mouse motion coming at the window border.
 	auto WindowSystem::setMouseCaptured(WindowHandle window, bool captured) -> std::expected<void, Error> {
-		const auto *found = impl_->find(window);
-		if (found == nullptr) { return std::unexpected(Error::invalid_handle); }
-		if (!SDL_SetWindowRelativeMouseMode(found->native(), captured)) {
-			std::cerr << "[vve::simple] mouse capture failed: " << SDL_GetError() << '\n';
-			return std::unexpected(Error::platform_error);
-		}
-		return {};
+		return switchWindow(impl_->find(window), SDL_SetWindowRelativeMouseMode, captured, "mouse capture");
+	}
+
+	/// @brief Switches desktop fullscreen; the pixel-size event updates the extent and the renderer recreates the swapchain.
+	auto WindowSystem::setFullscreen(WindowHandle window, bool fullscreen) -> std::expected<void, Error> {
+		return switchWindow(impl_->find(window), SDL_SetWindowFullscreen, fullscreen, "fullscreen switch");
 	}
 
 	auto WindowSystem::anyShouldClose() const											-> bool{

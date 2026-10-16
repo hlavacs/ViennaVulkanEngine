@@ -49,6 +49,11 @@ export namespace vve {
 			value_.visible = value;
 			return *this;
 		}
+		/// @brief Starts the window in fullscreen at the desktop resolution.
+		[[nodiscard]] inline WindowSetup &fullscreen(bool value) {
+			value_.fullscreen = value;
+			return *this;
+		}
 
 	private:
 		template <typename... TSystems> friend class Engine;
@@ -295,6 +300,10 @@ export namespace vve {
 		[[nodiscard]] inline auto setMouseCaptured(WindowHandle window, bool captured) -> std::expected<void, Error> {
 			return impl_.setMouseCaptured(window, captured);
 		} ///< Unknown windows return invalid_handle; a platform refusal returns platform_error.
+		/// @brief Switches one window between fullscreen at the desktop resolution and a normal window.
+		[[nodiscard]] inline auto setFullscreen(WindowHandle window, bool fullscreen) -> std::expected<void, Error> {
+			return impl_.setFullscreen(window, fullscreen);
+		} ///< Unknown windows return invalid_handle; the renderer follows the new drawable size.
 		/// @brief Finds a facade window view by application-local id.
 		[[nodiscard]] inline auto findWindow(std::string_view id) const -> std::optional<Window> {
 			auto *window = impl_.findWindow(id);

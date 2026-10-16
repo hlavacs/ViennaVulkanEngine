@@ -248,6 +248,8 @@ The `vve::RenderSystem` facade offers a few features a simple game needs:
 
 Input (`vve::InputState`, `vve::WindowSystem`): `vve::Key` names letters, arrows, Shift, Ctrl, Alt, Space, Enter, Tab, Backspace, Delete, Insert, Home, End, Page Up/Down and F1 to F12; `vve::key('w')` names any letter (either case), digit or punctuation key. The mouse buttons `Key::mouse_left`, `mouse_middle` and `mouse_right` work with `isKeyDown`, `wasKeyPressed` and `wasKeyReleased` like keys. `setMouseCaptured(window, true)` hides the pointer and keeps `mouseDelta` coming at the window border, for mouse look.
 
+Fullscreen: `WindowSetup{}.fullscreen(true)` starts a window in fullscreen at the desktop resolution, and `WindowSystem::setFullscreen(window, on)` switches it later; the renderer follows the new size.
+
 ## Audio
 
 The engine's `vve::AudioSystem` facade uses SDL3_mixer, installed by the normal

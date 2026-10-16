@@ -201,6 +201,7 @@ export namespace vve {
 		RendererId renderer_id{};								///< Empty or "forward" renders; "none" opts out; any other id makes Engine::init return invalid_argument.
 		bool resizable{true};									///< Enables platform resizing.
 		bool visible{true};										///< Shows the window; a hidden window still renders (tests, captures).
+		bool fullscreen{false};									///< Starts in fullscreen at the desktop resolution.
 	};
 
 	/// @brief Runtime window state exposed through the facade window wrapper.
