@@ -39,16 +39,14 @@ void environment(vve::RenderSystem &render, vve::AssetSystem &assets, const std:
 	check(render.materialLighting()==vve::MaterialLighting::physically_based,"physically_based_lighting");
 	check(render.atmosphere().density>0 && render.atmosphere().height_falloff>0,"height_dependent_coastal_haze");
 	check(render.sceneDirectionalLightCount()==1 && render.scenePointLightCount()==0,"one_sun_without_fake_point_lights");
-	check(render.sceneMeshCount()>=60 && render.sceneMeshCount()<=72,"bounded_fine_water_tiles_and_scenery_batches");
-	check(render.sceneTextureCount()>=7 && render.sceneTextureCount()<=9,"downloaded_photo_materials_present");
-	check(render.sceneVertexCount()>50000 && render.sceneIndexCount()>100000,"terrain_and_feather_palms_have_geometry");
-	check(render.sceneInstanceCount()>=60 && render.sceneInstanceCount()<=75 && render.renderedFrameCount()==0,"environment_needs_no_gpu_frames");
+	check(render.sceneMeshCount()==2 && render.sceneInstanceCount()==2,"static_setup_defers_island_geometry");
+	check(render.sceneTextureCount()==1 && render.renderedFrameCount()==0,"static_panorama_needs_no_gpu_frames");
 	std::println("[IslandDeliverySceneTests] meshes={} materials={} textures={} vertices={} indices={} haze={}",
 		render.sceneMeshCount(),render.sceneMaterialCount(),render.sceneTextureCount(),render.sceneVertexCount(),
 		render.sceneIndexCount(),render.atmosphere().density);
 }
 /** @brief Verifies the real imported aircraft, including wheel contact, forward direction and deterministic propeller poses. */
-void aircraft(vve::RenderSystem &render, vve::AssetSystem &assets, const std::filesystem::path &root) {
+std::pair<vve::SceneNodeHandle,vve::RenderObjectHandle> aircraft(vve::RenderSystem &render, vve::AssetSystem &assets, const std::filesystem::path &root) {
 	// Isolate the aircraft so ray picking cannot select the large ground batches' bounding boxes.
 	render.clearScene();
 	const auto parent=render.createNode(render.sceneRoot()); check(parent.has_value(),"aircraft_parent_created");
@@ -90,6 +88,62 @@ void aircraft(vve::RenderSystem &render, vve::AssetSystem &assets, const std::fi
 	check(render.renderedFrameCount()==0,"aircraft_checks_are_entirely_cpu_only");
 	std::println("[IslandDeliverySceneTests] tyre_height={} wingspan={} propeller_x={} checks={}",
 		bounds->minimum.value.y,bounds->maximum.value.x-bounds->minimum.value.x,b.x,checks);
+	return {*parent,hit->object};
+}
+/** @brief Travels between distant grid sites while proving scenery ownership, residency bounds and stable wave geometry. */
+void streaming(vve::RenderSystem &render,vve::AssetSystem &assets,const std::filesystem::path &root,
+	vve::SceneNodeHandle parent,vve::RenderObjectHandle aircraftBody) {
+	check(island::buildEnvironment(render,assets,root).has_value(),"static_sky_survives_aircraft_scene");
+	std::map<std::size_t,vve::Vector<vve::RenderObjectHandle>> resident{};
+	vve::Vector<vve::RenderObjectHandle> water{},originalWater{};
+	std::optional<vve::Bounds> originBounds{}; // Re-entering an unloaded island must reproduce its original terrain.
+	const auto aircraftBefore=render.objectBounds(aircraftBody); check(aircraftBefore.has_value(),"streaming_aircraft_source_bounds");
+	const auto pivots=propellers(render,parent); const auto propBefore=render.nodeTransform(pivots.front());
+	check(propBefore.has_value(),"streaming_preserves_original_propeller");
+	std::size_t peakMeshes{},peakVertices{},released{};
+	// Six distant representative islands exercise both grid axes; the final midpoint exercises four nearby high-detail sites.
+	std::array<vve::Vec3,7> sites{}; constexpr std::array<std::size_t,6> ids{0,1,17,128,240,255};
+	for (const auto index : std::views::iota(std::size_t{},ids.size())) { sites[index]=island::islandCenter(ids[index]); }
+	sites.back()=vve::math::add(island::islandCenter(136),{1200,80,-1200});
+	for (const auto eye : sites) {
+		const auto old=resident;
+		check(island::updateEnvironment(render,root,eye,resident,water).has_value(),"streamed_site_builds");
+		check(!resident.empty() && resident.size()<=9 && water.size()==45,"bounded_islands_and_wave_tiles");
+		check(resident.contains(island::nearestIsland(eye.x,eye.z)),"nearest_island_is_resident");
+		if (originalWater.empty()) { originalWater=water; originBounds=render.objectBounds(resident.at(0).front()).value(); }
+		check(water==originalWater,"travel_reuses_original_water_geometry");
+		// Superseded detail and departed islands must release their actual meshes, rather than leave detached objects alive.
+		for (const auto &[id,objects] : old) {
+			if (resident.contains(id) && resident.at(id)==objects) { continue; }
+			for (const auto object : objects) { check(!render.objectBounds(object),"departed_object_released"); ++released; }
+		}
+		peakMeshes=std::max(peakMeshes,render.sceneMeshCount()); peakVertices=std::max(peakVertices,render.sceneVertexCount());
+		check(render.sceneMeshCount()<=170 && render.sceneMaterialCount()<=190 && render.sceneTextureCount()<=12,"bounded_streaming_resources");
+		check(render.sceneVertexCount()<2500000,"bounded_active_geometry");
+		const auto stable=resident; const auto waves=water; const auto meshCount=render.sceneMeshCount();
+		check(island::updateEnvironment(render,root,eye,resident,water).has_value(),"repeat_stationary_streaming_update");
+		check(resident==stable && water==waves && render.sceneMeshCount()==meshCount,"stationary_frames_keep_handles_and_geometry");
+		const auto position=render.objectTransform(water.front()); check(position.has_value(),"streaming_water_transform");
+		check(close(position->translation.value,{std::round(eye.x/512)*512-1024,-0.16F,std::round(eye.z/512)*512-2048}),"wave_grid_tracks_current_location");
+		const auto left=render.objectBounds(water[0]),right=render.objectBounds(water[1]);
+		check(left && right && std::abs(left->maximum.value.x-right->minimum.value.x)<0.01F,"adjacent_wave_tiles_share_world_edge");
+		const auto aircraftAfter=render.objectBounds(aircraftBody);
+		check(aircraftAfter && close(aircraftBefore->minimum.value,aircraftAfter->minimum.value),"streaming_does_not_move_or_remove_aircraft");
+	}
+	const auto waveHandles=water;
+	check(island::updateEnvironment(render,root,{-12000,80,12000},resident,water).has_value(),"distant_open_ocean");
+	check(resident.empty() && water==waveHandles && render.sceneMeshCount()<=52,"all_departed_islands_release_resources");
+	check(render.sceneTextureCount()<=3 && render.sceneDirectionalLightCount()==1,"unused_land_textures_released_sky_and_sun_preserved");
+	check(island::updateEnvironment(render,root,{0,0,0},resident,water).has_value(),"return_to_unloaded_origin");
+	const auto restored=render.objectBounds(resident.at(0).front());
+	check(restored && originBounds && close(restored->minimum.value,originBounds->minimum.value)
+		&& close(restored->maximum.value,originBounds->maximum.value),"reloaded_island_geometry_is_deterministic");
+	const auto propAfter=render.nodeTransform(pivots.front());
+	check(propAfter && propAfter->rotation.value.x==propBefore->rotation.value.x && propAfter->rotation.value.w==propBefore->rotation.value.w,
+		"streaming_preserves_deterministic_animation_pose");
+	check(render.renderedFrameCount()==0,"streaming_verification_uses_no_gpu_frames");
+	std::println("[IslandDeliverySceneTests] islands={} sites={} peak_meshes={} peak_vertices={} released={} water_tiles={}",
+		island::islandCount,sites.size(),peakMeshes,peakVertices,released,water.size());
 }
 } // namespace
 
@@ -99,7 +153,8 @@ int main() {
 		vve::Engine<> engine; auto world=engine.world();
 		auto &render=world.get<vve::RenderSystem>(); auto &assets=world.get<vve::AssetSystem>();
 		const std::filesystem::path root{VVE_ISLAND_ASSET_DIR};
-		environment(render,assets,root); aircraft(render,assets,root);
+		environment(render,assets,root); const auto [parent,body]=aircraft(render,assets,root);
+		streaming(render,assets,root,parent,body);
 		std::println("[IslandDeliverySceneTests] passed=true checks={}",checks); return 0;
 	} catch (const std::exception &error) {
 		std::cerr<<"[IslandDeliverySceneTests] passed=false checks="<<checks<<" error="<<error.what()<<'\n'; return 1;

@@ -9,6 +9,7 @@ import VVEngine;
 export import Island.Logic;
 import Island.Scene;
 import Island.Sound;
+import Island.Map;
 
 export namespace island {
 
@@ -17,11 +18,17 @@ struct GameSystem {
 	std::filesystem::path assetRoot{}; ///< CMake's downloaded asset directory.
 	int frameLimit{}; ///< Zero selects interactive, real-time play.
 	int stepsPerFrame{2}; ///< Bounded runs advance this many 120 Hz physics steps per rendered frame.
+	unsigned deliveryGoal{1}; ///< Number of completed jobs required by a bounded demonstration.
 	bool automatic{}; ///< Fly through the same physics using the built-in pilot.
 	bool muted{}; ///< Skip opening an audio device when explicitly requested.
 	bool antialias{true}; ///< Four-sample coverage at the default Full HD resolution.
 	int cameraMode{}; ///< Chase, cockpit or aircraft showcase.
 	bool paused{}, quit{}, fullscreen{}; ///< Interactive session state.
+	bool mapOpen{}, openMapOnStart{}; ///< Route map pauses flight while the player reviews airport cargo jobs.
+	std::size_t selectedTarget{1}; ///< Airport selected on the map before accepting its cargo assignment.
+	std::optional<std::size_t> pendingCargo{}; ///< GUI requests are applied to the authoritative ECS component next frame.
+	float mapZoom{1.0F}; ///< Retained map magnification.
+	vve::Vec2 mapPan{}; ///< Retained map displacement in world metres.
 	float commandedThrottle{}, accumulator{}; ///< Persistent engine lever and unsimulated real time.
 	vve::Entity aircraft{}; ///< The ECS entity carrying the authoritative Flight component.
 	vve::SceneNodeHandle aircraftNode{}; ///< Scene root of the aircraft's exterior parts.
@@ -33,8 +40,11 @@ struct GameSystem {
 	Flight displayed{}; ///< Current component copy shared with the GUI callback.
 	vve::Camera camera{}; ///< Render camera, also used as the sound listener.
 	vve::Vec3 eye{0, 10, 265}; ///< Smoothed chase-camera position.
+	std::map<std::size_t, vve::Vector<vve::RenderObjectHandle>> residentIslands{}; ///< Only nearby islands own render resources.
+	vve::Vector<vve::RenderObjectHandle> water{}; ///< Fixed pool of ocean tiles following the aircraft.
+	std::size_t peakResidentIslands{}; ///< High-water mark for automated streaming verification.
 
-	/** @brief Builds the two islands and aircraft, creates its ECS component and starts the downloaded recordings. */
+	/** @brief Builds nearby scenery and the aircraft, creates its ECS component and starts the downloaded recordings. */
 	template <typename TWorld> std::expected<void, vve::Error> init(TWorld &world) {
 		ecs = &world.template get<vve::ECS>();
 		windows = &world.template get<vve::WindowSystem>();
@@ -48,6 +58,12 @@ struct GameSystem {
 		if (auto result = buildEnvironment(*render, world.template get<vve::AssetSystem>(), assetRoot); !result) {
 			std::cerr << "[island] scenery initialization failed\n"; return result;
 		}
+		displayed.position = vve::math::add(islandCenter(displayed.originIsland), vve::Vec3{0, aircraftGroundHeight, 240});
+		eye = vve::math::add(displayed.position, vve::Vec3{0, 5, 25});
+		selectedTarget = displayed.targetIsland;
+		mapOpen = openMapOnStart || (frameLimit == 0 && !automatic);
+		if (auto result = updateEnvironment(*render, assetRoot, displayed.position, residentIslands, water); !result) { return result; }
+		peakResidentIslands = residentIslands.size();
 		const auto node = render->createNode(render->sceneRoot());
 		if (!node) { return std::unexpected(node.error()); }
 		aircraftNode = *node;
@@ -55,7 +71,7 @@ struct GameSystem {
 			std::cerr << "[island] aircraft import failed\n"; return result;
 		}
 		aircraft = ecs->create();
-		if (auto result = ecs->add(aircraft, Flight{}); !result) { return result; }
+		if (auto result = ecs->add(aircraft, displayed); !result) { return result; }
 		if (auto result = sound.init(world.template get<vve::AudioSystem>(), assetRoot, muted); !result) { return result; }
 		if (sound.deviceUnavailable) { std::cerr << "[island] audio output unavailable: " << world.template get<vve::AudioSystem>().lastError() << '\n'; }
 		// A restrained exposure curve preserves photographed surface detail and highlights.
@@ -82,9 +98,10 @@ struct GameSystem {
 	/** @brief Advances the ECS aircraft at 120 Hz, then updates its scene hierarchy, camera and audio listener. */
 	template <typename TWorld> std::expected<void, vve::Error> update(TWorld &, const vve::FrameContext &frame) {
 		const auto input = windows->input();
-		if (input.wasKeyPressed(vve::Key::escape)) { paused = !paused; }
+		if (input.wasKeyPressed(vve::Key::escape)) { if (mapOpen) { mapOpen = false; } else { paused = !paused; } }
+		if (input.wasKeyPressed(vve::key('m'))) { mapOpen = !mapOpen; }
 		if (input.wasKeyPressed(vve::key('c'))) { cameraMode = (cameraMode + 1) % 3; }
-		if (input.wasKeyPressed(vve::key('p'))) { automatic = !automatic; }
+		if (input.wasKeyPressed(vve::key('p')) && !mapOpen) { automatic = !automatic; commandedThrottle = displayed.throttle; }
 		if (input.wasKeyPressed(vve::Key::f11)) {
 			if (auto result = windows->setFullscreen(window, !fullscreen); !result) { return result; }
 			fullscreen = !fullscreen;
@@ -92,16 +109,30 @@ struct GameSystem {
 		auto component = ecs->get<Flight>(aircraft);
 		if (!component) { return std::unexpected(component.error()); }
 		if (input.wasKeyPressed(vve::key('r'))) {
+			const auto origin = component->originIsland, target = component->targetIsland;
+			const auto completed = component->deliveries;
 			*component = Flight{};
+			component->originIsland = origin; component->targetIsland = target; component->deliveries = completed;
+			component->position = vve::math::add(islandCenter(origin), vve::Vec3{0, aircraftGroundHeight, 240});
 			commandedThrottle = accumulator = 0.0F;
-			paused = false;
+			paused = mapOpen = false;
 			eye = vve::math::add(component->position, vve::Vec3{0, 5, 25});
+		}
+		// A new cargo assignment keeps the same aircraft at the airport where the previous job finished.
+		if (pendingCargo) {
+			if (acceptCargo(*component, *pendingCargo)) { commandedThrottle = 0.0F; accumulator = 0.0F; }
+			pendingCargo.reset();
+		}
+		if (automatic && !mapOpen && !paused && component->phase == Phase::delivered
+			&& (frameLimit == 0 || component->deliveries < deliveryGoal)) {
+			(void)acceptCargo(*component, suggestedTarget(*component));
+			selectedTarget = component->targetIsland;
 		}
 		const float dt = frameLimit > 0 ? static_cast<float>(stepsPerFrame) / 120.0F
 			: std::clamp(static_cast<float>(frame.delta_time.seconds), 0.0F, 0.1F);
-		const auto controls = keyboard(input, paused ? 0.0F : dt);
+		const auto controls = keyboard(input, paused || mapOpen ? 0.0F : dt);
 		// Rendering frequency never changes the integrator's fixed simulation step.
-		if (!paused) {
+		if (!paused && !mapOpen) {
 			accumulator += dt;
 			while (accumulator + 0.000001F >= 1.0F / 120.0F) {
 				step(*component, automatic ? autopilot(*component) : controls, 1.0F / 120.0F);
@@ -109,7 +140,13 @@ struct GameSystem {
 			}
 		}
 		if (auto result = ecs->put(aircraft, *component); !result) { return result; }
+		if (!automatic && component->deliveries > displayed.deliveries) {
+			selectedTarget = suggestedTarget(*component);
+			mapOpen = true;
+		}
 		displayed = *component;
+		if (auto result = updateEnvironment(*render, assetRoot, displayed.position, residentIslands, water); !result) { return result; }
+		peakResidentIslands = std::max(peakResidentIslands, residentIslands.size());
 		if (auto result = updateAircraft(*render, aircraftNode, displayed); !result) { return result; }
 		setCamera(dt);
 		return sound.update(displayed, camera, cameraMode == 1, paused);
@@ -151,13 +188,14 @@ struct GameSystem {
 		ImGui::Begin("Island Air", nullptr, flags);
 		ImGui::SetWindowFontScale(uiScale);
 		ImGui::TextColored(ImVec4{0.95F, 0.73F, 0.32F, 1}, "I S L A N D   A I R");
-		ImGui::TextUnformatted("CARGO SERVICE  /  NORTH HAVEN -> PORT AZURE");
+		ImGui::Text("%s -> %s", islandName(displayed.originIsland).c_str(), islandName(displayed.targetIsland).c_str());
 		ImGui::Separator();
 		const float speed = vve::math::length(displayed.velocity);
 		ImGui::Text("AIRSPEED %3.0f kt    ALTITUDE %4.0f ft", speed * 1.94384F, std::max(0.0F, displayed.position.y) * 3.28084F);
 		ImGui::Text("THROTTLE %3.0f %%    DESTINATION %.2f km", displayed.throttle * 100.0F, remainingDistance(displayed) / 1000.0F);
 		ImGui::Text("VERTICAL %+.0f ft/min   %s", displayed.velocity.y * 196.8504F, automatic ? "AUTOPILOT" : "MANUAL");
-		ImGui::Text("CARGO: medical supplies   |   %s", phaseName(displayed.phase).data());
+		ImGui::Text("CARGO: %s   |   %s", cargoName(displayed).data(), phaseName(displayed.phase).data());
+		ImGui::Text("DELIVERIES %u   |   M: route map   |   %zu islands", displayed.deliveries, islandCount);
 		ImGui::End();
 		// The destination marker identifies a real apron; flying through it never awards a delivery.
 		ImGui::SetNextWindowPos(ImVec2{20 * uiScale, screen.y - 100 * uiScale});
@@ -165,11 +203,11 @@ struct GameSystem {
 		ImGui::Begin("Flight controls", nullptr, flags);
 		ImGui::SetWindowFontScale(uiScale);
 		ImGui::TextUnformatted("W/S throttle   |   Up/Down pitch   |   Left/Right bank   |   A/D rudder   |   Space brakes");
-		ImGui::TextUnformatted("C camera   |   P autopilot   |   R restart delivery   |   Esc pause   |   F11 fullscreen");
-		ImGui::TextUnformatted(displayed.phase == Phase::delivered ? "DELIVERY COMPLETE - medical supplies unloaded. Press R for another flight."
+		ImGui::TextUnformatted("M route map   |   C camera   |   P autopilot   |   R retry job   |   Esc pause   |   F11 fullscreen");
+		ImGui::TextUnformatted(displayed.phase == Phase::delivered ? "DELIVERY COMPLETE - open M to collect new cargo and choose your next destination."
 			: displayed.phase == Phase::crashed ? "AIRCRAFT LOST - press R to restart."
 			: displayed.grounded && displayed.takeoffs > 0 ? "Taxi into the marked unloading area and hold still for two seconds."
-			: "Land at Port Azure, taxi to the yellow unloading area and stop to deliver.");
+			: "Follow the route on M. Land at your assigned island, taxi to the yellow unloading area and stop.");
 		ImGui::End();
 		if (cameraMode == 1) {
 			ImGui::SetNextWindowPos(ImVec2{screen.x * 0.5F, screen.y - 132 * uiScale}, ImGuiCond_Always, ImVec2{0.5F, 1});
@@ -195,6 +233,10 @@ struct GameSystem {
 		}
 		ImGui::PopStyleVar();
 		ImGui::PopStyleColor();
+		if (!mapOpen) { drawNavigation(displayed); }
+		if (mapOpen) {
+			if (auto target = drawMap(displayed, selectedTarget, mapOpen, mapZoom, mapPan)) { pendingCargo = *target; }
+		}
 	}
 };
 

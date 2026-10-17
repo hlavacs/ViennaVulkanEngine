@@ -93,8 +93,8 @@ auto Soundscape::update(const Flight &flight, vve::Camera camera, bool cockpit, 
       const auto nose = vve::math::add(flight.position, vve::math::scale(forward(flight), 2.2F));
       const vve::AudioSource aircraft{.position = {.value = nose}, .velocity = flight.velocity,
                                       .reference_distance = 18.0F};
-      const float nearestIsland = static_cast<float>(flight.position.z) < destinationZ * 0.5F ? destinationZ : 0.0F;
-      const vve::AudioSource shoreline{.position = {.value = {580.0F, 0.0F, nearestIsland}},
+      const auto coastCentre = islandCenter(nearestIsland(flight.position.x, flight.position.z));
+      const vve::AudioSource shoreline{.position = {.value = vve::math::add(coastCentre, vve::Vec3{580.0F, 0.0F, 0.0F})},
                                        .reference_distance = 500.0F};
       for (const auto index : std::views::iota(std::size_t{}, loops.size())) {
          if (const auto result = audio->setVolume(loops[index], {.value = gains[index]}); !result) { return result; }

@@ -25,10 +25,9 @@ void advance(island::Flight &flight, island::Controls controls, int frames) {
 }
 
 /** @brief Runs the entire takeoff, channel crossing, landing, taxi and stationary unloading sequence. */
-island::Flight mission() {
-   island::Flight flight;
+island::Flight mission(island::Flight flight = {}, int seconds = 300) {
    // The demonstration uses exactly the same controls and physics as player input.
-   for (int frame = 0; frame < 120 * 60 && flight.phase != island::Phase::delivered && flight.phase != island::Phase::crashed; ++frame) {
+   for (int frame = 0; frame < seconds * 60 && flight.phase != island::Phase::delivered && flight.phase != island::Phase::crashed; ++frame) {
       const auto oldPosition = flight.position;
       const auto controls = island::autopilot(flight);
       island::step(flight, controls, dt);
@@ -37,7 +36,88 @@ island::Flight mission() {
          break;
       }
    }
+   std::cout << "route_origin=" << flight.originIsland << " route_target=" << flight.targetIsland << " phase=\"" << island::phaseName(flight.phase)
+             << "\" elapsed=" << flight.elapsed << " x=" << flight.position.x << " y=" << flight.position.y << " z=" << flight.position.z
+             << " nav=" << flight.navigationStage << " deliveries=" << flight.deliveries << '\n';
    return flight;
+}
+
+/** @brief Verifies every named island, nonoverlapping coastline footprint and shared local airfield geometry. */
+void archipelago() {
+   std::set<std::string> names;
+   bool centres = true, flat = true, separated = true;
+   // Check every site, including distant columns and rows that cannot share the original world coordinates.
+   for (std::size_t id = 0; id < island::islandCount; ++id) {
+      const auto centre = island::islandCenter(id);
+      centres = centres && island::nearestIsland(centre.x, centre.z) == id;
+      flat = flat && island::terrainHeight(centre.x, centre.z) == island::runwayHeight
+                  && island::terrainHeight(centre.x + 60.0F, centre.z - 200.0F) == island::runwayHeight;
+      names.insert(island::islandName(id));
+      // Coastline radii are below 1000 metres, so a 2000 metre separation keeps every pair disjoint.
+      for (std::size_t other = 0; other < id; ++other) {
+         const auto previous = island::islandCenter(other);
+         separated = separated && std::hypot(static_cast<float>(centre.x - previous.x), static_cast<float>(centre.z - previous.z)) >= 2000.0F;
+      }
+   }
+   check(island::islandCount == 256 && centres, "all_256_island_centres_resolve");
+   check(names.size() == island::islandCount && island::islandName(0) == "North Haven" && island::islandName(1) == "Port Azure",
+         "every_island_has_a_unique_stable_name");
+   check(flat && separated, "all_airfields_flat_and_islands_separated");
+   island::Flight far;
+   const auto centre = island::islandCenter(island::islandCount - 1);
+   far.position = {centre.x + 60.0F, island::aircraftGroundHeight, centre.z - 200.0F};
+   island::step(far, {}, dt);
+   check(far.grounded && far.phase != island::Phase::crashed, "far_island_local_apron_is_safe");
+   check(island::terrainHeight(centre.x + 280.0F, centre.z) > 30.0F
+         && island::terrainHeight(centre.x, centre.z + 1200.0F) == 0.0F, "far_island_has_hills_and_separated_water");
+}
+
+/** @brief Keeps active cargo immutable and requires valid stationary airport pickup for new jobs. */
+void cargoSelection() {
+   island::Flight flight;
+   check(island::suggestedTarget(flight) == 1 && !island::cargoName(flight).empty(), "initial_job_has_destination_and_manifest");
+   const auto initial = flight.position;
+   check(!island::acceptCargo(flight, 0) && !island::acceptCargo(flight, island::islandCount), "cargo_rejects_current_and_invalid_islands");
+   check(island::acceptCargo(flight, 17) && flight.targetIsland == 17 && same(initial, flight.position), "map_job_selection_never_moves_aircraft");
+   flight.velocity.z = -2.0F;
+   check(!island::acceptCargo(flight, 18), "moving_aircraft_cannot_load_cargo");
+   flight.velocity = {};
+   flight.grounded = false;
+   flight.phase = island::Phase::flying;
+   check(!island::acceptCargo(flight, 18), "airborne_aircraft_cannot_retarget");
+   flight.grounded = true;
+   flight.phase = island::Phase::landed;
+   check(!island::acceptCargo(flight, 18) && flight.targetIsland == 17, "wrong_airport_landing_cannot_abandon_active_cargo");
+}
+
+/** @brief Continues two jobs in one aircraft and verifies lateral and reverse aligned-runway approaches. */
+void continuingRoutes(island::Flight first) {
+   const auto stopped = first.position;
+   const float elapsed = first.elapsed, heading = first.heading;
+   check(first.deliveries == 1 && island::suggestedTarget(first) == 2, "completed_job_offers_next_island");
+   advance(first, {.brake = 1.0F}, 180);
+   check(first.deliveries == 1, "completed_delivery_is_counted_once");
+   check(island::acceptCargo(first, 2) && first.originIsland == 1 && same(first.position, stopped)
+         && first.elapsed == elapsed && first.heading == heading && first.takeoffs == 1 && first.landings == 1,
+         "next_pickup_preserves_aircraft_position_heading_and_history");
+   auto unflown = first;
+   unflown.position.z = island::islandCenter(2).z - 200.0F;
+   unflown.phase = island::Phase::landed;
+   advance(unflown, {.brake = 1.0F}, 180);
+   check(unflown.phase != island::Phase::delivered && unflown.deliveries == 1, "new_cargo_requires_new_takeoff_and_landing");
+   first = mission(first);
+   check(first.phase == island::Phase::delivered && first.deliveries == 2 && first.takeoffs == 2 && first.landings == 2,
+         "two_deliveries_fly_same_aircraft_without_reset");
+   check(island::acceptCargo(first, 1), "reverse_route_cargo_accepted_at_current_airport");
+   const auto reverse = mission(first, 360);
+   check(reverse.phase == island::Phase::delivered && reverse.deliveries == 3 && reverse.takeoffs == 3 && reverse.landings == 3,
+         "reverse_route_flies_northern_fix_and_aligned_landing");
+   island::Flight lateral;
+   check(island::acceptCargo(lateral, 17), "noncollinear_route_selected");
+   lateral = mission(lateral, 360);
+   const auto target = island::islandCenter(17);
+   check(lateral.phase == island::Phase::delivered && lateral.deliveries == 1 && std::abs(lateral.position.x - target.x) < 25.0F,
+         "noncollinear_route_delivers_at_selected_island");
 }
 
 /** @brief Verifies runway topology, facade direction math and basic stopped-state behavior. */
@@ -182,6 +262,41 @@ void taxiPavement() {
    check(unloadingPad.grounded && unloadingPad.phase != island::Phase::crashed, "destination_unloading_pad_accepts_ground_contact");
 }
 
+/** @brief Turns through 180 degrees using actual nose-wheel physics while staying on the 36-metre airstrip. */
+void runwayTurnaround() {
+   island::Flight flight;
+   flight.position.z = -160.0F;
+   flight.velocity.z = -3.5F;
+   flight.throttle = 0.12F;
+   bool onStrip = true;
+   // Mild power maintains walking-speed taxiing; the pilot stops steering when the nose points back up the strip.
+   for (int frame = 0; frame < 600 && std::abs(flight.heading) < 3.11F; ++frame) {
+      island::step(flight, {.throttle = 0.12F, .yaw = 1.0F}, dt);
+      onStrip = onStrip && flight.grounded && std::abs(flight.position.x) <= island::runwayHalfWidth
+                         && std::abs(flight.position.z) <= island::runwayHalfLength;
+   }
+   check(onStrip && flight.phase != island::Phase::crashed && std::abs(flight.heading) > 3.11F
+         && island::forward(flight).z > 0.99F && flight.velocity.z > 3.0F, "walking_speed_runway_uturn_stays_on_strip");
+   advance(flight, {.brake = 1.0F}, 120);
+   check(flight.grounded && vve::math::length(flight.velocity) < 0.01F && std::abs(flight.position.x) < island::runwayHalfWidth,
+         "reversed_aircraft_brakes_to_stop_on_strip");
+   const auto before = flight.position;
+   const float reversedHeading = flight.heading;
+   check(island::acceptCargo(flight, 1) && same(flight.position, before) && flight.heading == reversedHeading,
+         "cargo_acceptance_preserves_pilot_runway_turnaround");
+   bool aligned = false, safe = true, limitedPower = true;
+   // The departure pilot must steer toward the centre and align before applying takeoff power.
+   for (int frame = 0; frame < 1200 && flight.grounded; ++frame) {
+      const auto controls = island::autopilot(flight);
+      if (std::abs(flight.heading) > 0.15F) { limitedPower = limitedPower && controls.throttle <= 0.7F && controls.pitch == 0.0F; }
+      island::step(flight, controls, dt);
+      aligned = aligned || std::abs(flight.heading) < 0.1F;
+      safe = safe && flight.phase != island::Phase::crashed && std::abs(flight.position.x) <= island::runwayHalfWidth;
+   }
+   check(limitedPower && aligned && safe && !flight.grounded && flight.takeoffs == 1 && flight.deliveries == 0,
+         "autopilot_aligns_reversed_aircraft_before_safe_departure");
+}
+
 /** @brief Verifies that identical input streams, including randomized controls, produce identical state. */
 void repeatability() {
    island::Flight first, second;
@@ -202,11 +317,14 @@ void repeatability() {
 
 /** @brief Emits compact telemetry and returns failure if any flight or mission contract is broken. */
 int main() {
+   archipelago();
+   cargoSelection();
    geometryAndStartup();
    aircraftControls();
    deliveryRules();
    landingSafety();
    taxiPavement();
+   runwayTurnaround();
    repeatability();
    const auto flight = mission();
    check(flight.phase == island::Phase::delivered && flight.takeoffs == 1 && flight.landings == 1, "complete_delivery_through_real_controls");
@@ -215,6 +333,7 @@ int main() {
          "completed_delivery_stopped_inside_unloading_zone");
    const auto repeat = mission();
    check(same(flight.position, repeat.position) && flight.elapsed == repeat.elapsed, "autonomous_delivery_repeats_exactly");
+   continuingRoutes(flight);
    std::cout << "mission_phase=\"" << island::phaseName(flight.phase) << "\" elapsed=" << flight.elapsed
              << " x=" << flight.position.x << " y=" << flight.position.y << " z=" << flight.position.z
              << " max_altitude=" << flight.maxAltitude << " touchdown_sink=" << flight.touchdownSpeed

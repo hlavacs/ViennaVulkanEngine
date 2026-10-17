@@ -1,17 +1,24 @@
 # Island Air
 
-A C++23 VVE game: take medical cargo from North Haven to Port Azure, land on its
-island airstrip, taxi into the yellow unloading area and remain stopped for two
-seconds. Flying over the destination never completes a delivery. The default
+A C++23 VVE game with **256 named islands**: collect cargo and an assigned
+destination at an airport, follow the route on the map, land, taxi into the
+yellow unloading area and remain stopped for two seconds. Then collect the
+next cargo and continue from that island with the same aircraft. Flying over
+the destination never completes a delivery. The default
 window is **1920 × 1080**, with four-sample antialiasing, physically based
-materials, a photographed sky, atmospheric haze, animated ocean, two working
+materials, a photographed sky, atmospheric haze, animated ocean, island
 airfields and a downloaded textured twin-prop aircraft.
 
 The game uses only `import VVEngine` and its public facade. VVE supplies Vulkan
 rendering and audio; there are no direct Vulkan, SDL or implementation imports.
 The aircraft's authoritative `Flight` component lives in VVE's ECS. The
 fixed 120 Hz flight model is deliberately approachable, with rotation speed,
-stall descent, bank/rudder turning, wheel brakes and hard-landing failures.
+stall descent, bank/rudder turning, tight nose-wheel steering, wheel brakes and
+hard-landing failures. The procedural archipelago spans approximately 36 km
+in each direction. Only the nearest nine islands within four kilometres own
+scenery resources; distant islands use simpler geometry, nearby airfields get
+full detail, and departed scenery is released. The same downloaded asset set
+serves the whole archipelago; 45 ocean tiles follow the aircraft.
 
 ## Build and run
 
@@ -61,16 +68,33 @@ and [AUDIO_LICENSE.txt](AUDIO_LICENSE.txt); both accompany packaged assets.
 | Left / Right | Bank left / right |
 | A / D | Rudder; steer the nose wheel while taxiing |
 | Space | Wheel brakes |
+| M | Open/close the top-down archipelago map and cargo board; flight pauses while it is open |
 | C | Chase, pilot-eye instruments, aircraft showcase camera |
 | P | Toggle autopilot through the same physics as manual flight |
-| R | Restart with loaded cargo at North Haven |
+| R | Retry the current job from its departure island |
 | Escape | Pause and sound volume menu |
 | F11 | Toggle desktop fullscreen |
 
+The route planner opens at startup. Hover islands to see their names, click an
+island to choose its cargo offer, then select **Load cargo & depart**. The route
+and manifest remain assigned until delivery; an intermediate landing cannot
+change them. After unloading, the map offers the next job automatically, with
+a suggested destination that you can change. Completed deliveries accumulate.
+
+The regional navigation inset stays visible during flight. It shows the actual
+aircraft heading, a gold direction arrow and bearing to the destination, nearby
+islands and their runway outlines. It zooms in near the destination so the
+700 m strip, **18/36** runway ends and unloading bay are visible before landing.
+M opens the larger archipelago chart; use the mouse wheel to zoom and drag with
+the right mouse button to pan. Both maps are north-up, with north along -Z.
+
 Take off above 27 m/s (about 53 knots). Keep touchdown below 47 m/s, sink rate
 below 4 m/s, wings near level and heading aligned with the strip. Water and
-off-runway touchdowns end the flight. The autopilot demonstrates the full
-departure, channel crossing, landing, ground roll and stationary delivery.
+off-runway touchdowns end the flight. At taxi speed, A/D gives a turn radius
+of about 5.6 m, allowing a full turnaround within the strip; keep the throttle
+low and use Space to brake. The autopilot aligns on the ground before adding
+departure power, then demonstrates departure, navigation, an aligned approach,
+landing, ground roll and stationary delivery.
 
 Audio crossfades recorded propeller layers with throttle, changes playback
 pitch with power, blends a separate cabin recording in pilot-eye view, and
@@ -88,6 +112,12 @@ crash, incomplete run, failed capture or required delivery that did not finish:
 bin/release/exe/island_delivery --autopilot --frames 60 \
   --steps-per-frame 240 --require-delivery \
   --output build/delivery.png --verify build/delivery.csv
+# Two completed jobs, with new cargo collected without resetting the aircraft:
+bin/release/exe/island_delivery --autopilot --deliveries 2 --require-delivery \
+  --frames 24 --steps-per-frame 1200 --output build/two_jobs.png --verify build/two_jobs.csv
+# The same gameplay at the opposite end of the archipelago:
+bin/release/exe/island_delivery --start-island 254 --destination 255 --autopilot \
+  --frames 12 --steps-per-frame 1200 --require-delivery
 ctest --test-dir build/release-linux --output-on-failure -R IslandDelivery
 ```
 
@@ -97,12 +127,17 @@ preserving every physics step, making a complete mission practical in tests.
 The autopilot never teleports or bypasses landing checks. `--width`, `--height`,
 `--hidden`, `--no-msaa` and `--camera chase|cockpit|showcase` support repeatable
 captures. `--help` opens no window. `IslandDeliveryLogicTests` checks flight,
-safe/unsafe landings, unloading gates and repeatability without a GPU.
+all 256 island sites, safe/unsafe landings, unloading gates, cargo assignment,
+runway turnarounds, reverse/lateral routes and repeated deliveries without a GPU.
+`IslandDeliveryMapTests` checks map geometry, cargo selection through mouse input,
+assigned destinations, bearing arrows and runway guidance at Full HD and 640 × 360.
 `IslandDeliverySoundTests` checks mixing telemetry and decodes/plays every
 download through VVE with SDL's dummy audio device. GPU tests capture the
-departure, pilot-eye view and a complete delivery.
+departure, pilot-eye view, the map, repeated deliveries and a remote airport.
 `IslandDeliverySceneTests` checks the imported aircraft's wheel contact, nose
-alignment, propeller animation and scene resources without opening a window.
+alignment, propeller animation, bounded scenery residency and resource release
+across distant islands without opening a window. CSV verification includes
+departure/target IDs, completed deliveries and resident-island counts.
 
 ## Presentation scope
 

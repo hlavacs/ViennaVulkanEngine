@@ -11,6 +11,9 @@ export import Island.Logic;
 export namespace island {
 	[[nodiscard]] auto buildEnvironment(vve::RenderSystem &, vve::AssetSystem &, const std::filesystem::path &)
 		-> std::expected<void, vve::Error>;
+	[[nodiscard]] auto updateEnvironment(vve::RenderSystem &, const std::filesystem::path &, vve::Vec3,
+		std::map<std::size_t,vve::Vector<vve::RenderObjectHandle>> &, vve::Vector<vve::RenderObjectHandle> &)
+		-> std::expected<void, vve::Error>;
 	[[nodiscard]] auto buildAircraft(vve::RenderSystem &, vve::AssetSystem &, vve::SceneNodeHandle, const std::filesystem::path &)
 		-> std::expected<void, vve::Error>;
 	[[nodiscard]] auto updateAircraft(vve::RenderSystem &, vve::SceneNodeHandle, const Flight &)
@@ -28,6 +31,7 @@ namespace island::scenery {
 	/// @brief Appends a textured convex face, correcting winding to face the supplied outward direction.
 	void face(vve::MeshDescriptor &mesh, std::span<const vve::Vec3> points, vve::Vec3 outward, float tile = 1.0F) {
 		auto normal = vm::cross(vm::subtract(points[1], points[0]), vm::subtract(points[2], points[0])); // Geometric face direction.
+		if (vm::lengthSquared(normal)<1.0e-10F) { return; } // A contour touching one corner contributes no visible face.
 		const bool flip = vm::dot(normal, outward) < 0.0F; // Preserve visible fronts on either side of a shape.
 		normal = vm::normalize(flip ? vm::scale(normal, -1.0F) : normal); // Unit normal for PBR illumination.
 		const auto base = static_cast<std::uint32_t>(mesh.positions.size()); // Local indices remain valid as the batch grows.
@@ -117,22 +121,22 @@ namespace island::scenery {
 		}
 	}
 	/// @brief Appends smooth terrain and shoreline to material batches, using the physics height function.
-	void terrain(std::array<vve::MeshDescriptor, 18> &meshes, float centre) {
-		constexpr float step{10.0F}; // Enough terrain samples for low approaches without excessive geometry.
-		const auto normal = [](float x, float z) { return vm::normalize(vve::Vec3{
-			terrainHeight(x - 1.0F, z) - terrainHeight(x + 1.0F, z), 2.0F,
-			terrainHeight(x, z - 1.0F) - terrainHeight(x, z + 1.0F)}); };
+	void terrain(std::array<vve::MeshDescriptor, 18> &meshes, vve::Vec3 centre, int cells) {
+		const float step{2000.0F/static_cast<float>(cells)}; // Cover the largest island variants without clipping their coastlines.
+		const auto height=[centre](float x,float z) { return terrainHeight(x+centre.x,z+centre.z); };
+		const auto normal = [&height](float x, float z) { return vm::normalize(vve::Vec3{
+			height(x - 1.0F, z) - height(x + 1.0F, z), 2.0F,height(x, z - 1.0F) - height(x, z + 1.0F)}); };
 		// A shared height field guarantees that visible shores and wheels agree with collision handling.
-		for (const auto row : std::views::iota(-80, 80)) {
+		for (const auto row : std::views::iota(-cells/2, cells/2)) {
 			// Ground cells outside the finite island footprint are omitted, exposing the ocean.
-			for (const auto column : std::views::iota(-80, 80)) {
-				const float x = static_cast<float>(column) * step, z = centre + static_cast<float>(row) * step;
-				const auto point = [centre](float px, float pz) {
-					float height=terrainHeight(px,pz); const float dz=pz-centre; // Heights share the flight collision surface.
+			for (const auto column : std::views::iota(-cells/2, cells/2)) {
+				const float x = static_cast<float>(column) * step, z = static_cast<float>(row) * step;
+				const auto point = [&height](float px, float pz) {
+					float elevation=height(px,pz); const float dz=pz; // Heights share the flight collision surface.
 					// Recess the earth beneath pavement to keep coplanar grass out of the runway surface.
 					if ((std::abs(px)<18.1F && std::abs(dz)<350.1F) || (px>17 && px<78 && dz>-265 && dz<-135)
-						|| (centre==destinationZ && std::abs(px)<=25.1F && dz>=-300.1F && dz<=-129.9F)) { height-=0.06F; }
-					return vve::Vec3{px,height,pz};
+						|| (std::abs(px)<=25.1F && dz>=-300.1F && dz<=-129.9F)) { elevation-=0.06F; }
+					return vve::Vec3{px,elevation,pz};
 				};
 				const std::array points{point(x,z),point(x,z+step),point(x+step,z+step),point(x+step,z)};
 				const float height = (points[0].y + points[1].y + points[2].y + points[3].y) * 0.25F; // Cell material elevation.
@@ -157,8 +161,10 @@ namespace island::scenery {
 				}
 				// The surf strip extends toward the sea from the contour rather than across the beach.
 				if (shore.size() == 2U) {
-					auto across = normal((shore[0].x+shore[1].x)*0.5F,(shore[0].z+shore[1].z)*0.5F);
-					across.y = 0; across = vm::scale(vm::normalize(across), 2.3F); // Horizontal strip width in metres.
+					// A coarse cell's interpolated shore may lie outside the analytic coast; use that cell's own slope.
+					auto across=vve::Vec3{points[0].y+points[1].y-points[2].y-points[3].y,0,points[0].y+points[3].y-points[1].y-points[2].y};
+					if (vm::lengthSquared(across)<1.0e-10F) { continue; }
+					across = vm::scale(vm::normalize(across), 2.3F); // Horizontal strip width in metres.
 					face(meshes[14], std::array{shore[0],shore[1],vm::add(shore[1],across),vm::add(shore[0],across)}, {0,1,0});
 				}
 			}
@@ -178,9 +184,14 @@ namespace island::scenery {
 		}
 	}
 	/// @brief Builds a conventional paved airstrip, its apron, open hangar, terminal, windsock and cargo.
-	void airfield(std::array<vve::MeshDescriptor,18> &m, float z) {
+	void airfield(std::array<vve::MeshDescriptor,18> &m, float z, bool detailed) {
 		const float y{runwayHeight}; // Asphalt and wheel collision use the same reference elevation.
 		box(m[4],{-18,y-0.15F,z-350},{18,y,z+350},4.0F);
+		// A distant airstrip retains its paved silhouette and edge lines while approach details are unloaded.
+		if (!detailed) {
+			for (const float side : {-1.0F,1.0F}) { box(m[8],{side*17-0.18F,y+0.02F,z-345},{side*17+0.18F,y+0.04F,z+345}); }
+			return;
+		}
 		box(m[5],{25,y-0.1F,z-265},{77,y+0.006F,z-135},4.0F);
 		box(m[4],{17,y-0.1F,z-240},{47,y+0.01F,z-213},4.0F);
 		// Centre dashes, edge lines and threshold bars are one white mesh for both islands.
@@ -205,8 +216,8 @@ namespace island::scenery {
 		}
 		numeral(m[8],-2.4F,z+306,3,1); numeral(m[8],2.4F,z+306,6,1);
 		numeral(m[8],2.4F,z-306,1,-1); numeral(m[8],-2.4F,z-306,8,-1);
-		// The destination's yellow boundary matches the exact unloading region checked by mission logic.
-		if (z==destinationZ) {
+		// Every island's yellow boundary matches its local cargo unloading region.
+		{
 			box(m[4],{-25,y-0.1F,z-300},{25,y+0.012F,z-130},4.0F);
 			for (const float side : {-1.0F,1.0F}) { box(m[9],{side*25.0F-0.12F,y+0.05F,z-300},{side*25.0F+0.12F,y+0.065F,z-130}); }
 			for (const float dz : {-300.0F,-130.0F}) { box(m[9],{-25,y+0.05F,z+dz-0.12F},{25,y+0.065F,z+dz+0.12F}); }
@@ -242,9 +253,11 @@ namespace island::scenery {
 		}
 	}
 	/// @brief Submits one batch and applies its PBR surface, preserving fallible facade results.
-	auto submit(vve::RenderSystem &render, vve::MeshDescriptor mesh, unsigned material) -> std::expected<void,vve::Error> {
+	auto submit(vve::RenderSystem &render, vve::MeshDescriptor mesh, unsigned material,
+		vve::Vector<vve::RenderObjectHandle> &objects) -> std::expected<void,vve::Error> {
 		if (mesh.indices.empty()) { return {}; } // Unused looks do not allocate renderer resources.
 		const auto object = render.addMesh(std::move(mesh)); if (!object) { return std::unexpected(object.error()); }
+		objects.push_back(*object); // The caller owns every new handle, including cleanup after a later failure.
 		if (const auto result = render.setObjectSurface(*object,{.roughness=material==6U?0.48F:0.9F,.metalness=material==6U?0.7F:0.0F}); !result) { return result; }
 		if (material >= 15U) { if (const auto result = render.setObjectUnlit(*object,true); !result) { return result; } }
 		// Foam is translucent and cannot cast opaque shadows onto the water.
@@ -254,10 +267,53 @@ namespace island::scenery {
 		}
 		return {};
 	}
+	/// @brief Builds one island in local coordinates and returns the exact render objects its resident entry owns.
+	auto buildIsland(vve::RenderSystem &render,const std::filesystem::path &root,std::size_t id,bool detailed)
+		-> std::expected<vve::Vector<vve::RenderObjectHandle>,vve::Error> {
+		const auto centre=islandCenter(id); std::array<vve::MeshDescriptor,18> meshes{};
+		const std::array<vve::Vec3,18> colors{vve::Vec3{0.22F,0.38F,0.12F},{0.32F,0.44F,0.16F},{0.98F,0.94F,0.80F},
+			{0.62F,0.65F,0.63F},{0.74F,0.76F,0.78F},{0.95F,0.94F,0.91F},{0.68F,0.74F,0.76F},{0.75F,0.64F,0.45F},
+			{0.90F,0.91F,0.85F},{0.92F,0.60F,0.10F},{0.23F,0.34F,0.095F},{0.55F,0.40F,0.24F},{0.025F,0.045F,0.052F},
+			{0.80F,0.19F,0.035F},{0.54F,0.67F,0.62F},{1.0F,0.68F,0.22F},{0.08F,0.3F,0.9F},{0.1F,0.7F,0.15F}};
+		const std::array<std::string_view,18> textures{"grass.jpg","grass.jpg","sand.jpg","rock.jpg","asphalt.jpg","concrete.jpg","metal.jpg","planks.jpg","","","grass.jpg","planks.jpg","","","","","",""};
+		// All batches share the island origin, so even the distant grid sites retain well-conditioned mesh coordinates.
+		for (const auto index : std::views::iota(0U,18U)) {
+			meshes[index].color.value=colors[index]; meshes[index].transform=at(centre);
+			if (!textures[index].empty()) { meshes[index].base_color_texture=root/textures[index]; }
+		}
+		terrain(meshes,centre,detailed?200:50); airfield(meshes,0,detailed);
+		// Full shoreline vegetation is only resident within approach distance; stable island seeds retain its layout.
+		if (detailed) {
+			for (const auto rock : std::views::iota(0U,105U)) {
+				const unsigned seed=rock+static_cast<unsigned>(id)*541U;
+				const float angle=static_cast<float>(rock)*2.39996F,radius=0.82F+noise(seed*13U+1U)*0.19F;
+				const float x=std::cos(angle)*650*radius,z=std::sin(angle)*750*radius,y=terrainHeight(x+centre.x,z+centre.z);
+				if (std::abs(x)<85 || y<0.25F || y>14.0F) { continue; }
+				boulder(meshes[3],{x,y,z},1.1F+noise(seed*47U)*4.0F,seed*17U);
+			}
+			for (const auto tree : std::views::iota(0U,180U)) {
+				const unsigned seed=tree+static_cast<unsigned>(id)*127U;
+				const float angle=static_cast<float>(tree)*2.39996F,radius=0.48F+noise(seed*71U+9U)*0.38F;
+				const float x=std::cos(angle)*650*radius,z=std::sin(angle)*750*radius,y=terrainHeight(x+centre.x,z+centre.z);
+				if (std::abs(x)<95 || y<3.0F || y>47.0F) { continue; }
+				palm(meshes[11],meshes[10],{x,y-0.05F,z},7.0F+noise(seed*27U+1U)*7.0F,angle);
+			}
+		}
+		vve::Vector<vve::RenderObjectHandle> objects{}; objects.reserve(18);
+		// Failed loads release every object already created for this island, without touching aircraft or neighbours.
+		for (const auto index : std::views::iota(0U,18U)) {
+			if (const auto result=submit(render,std::move(meshes[index]),index,objects); !result) {
+				std::cerr<<"[island_delivery] scenery_failed island="<<id<<" material="<<index<<" detailed="<<detailed<<" error="<<vve::errorName(result.error())<<'\n';
+				for (const auto object : objects) { (void)render.removeObject(object); }
+				return std::unexpected(result.error());
+			}
+		}
+		return objects;
+	}
 }
 
 namespace island {
-	/// @brief Builds two photo-textured islands with paved airstrips, vegetation, cargo facilities and animated ocean.
+	/// @brief Sets shared sky, sunlight, haze and the calm horizon; nearby islands and waves stream separately.
 	auto buildEnvironment(vve::RenderSystem &render, vve::AssetSystem &assets, const std::filesystem::path &root)
 		-> std::expected<void,vve::Error> {
 		using namespace scenery; (void)assets; // Scenery meshes use the facade's direct authoring API.
@@ -265,49 +321,53 @@ namespace island {
 		if (const auto result = render.setMaterialLighting(vve::MaterialLighting::physically_based); !result) { return result; }
 		if (const auto result = render.setAtmosphere({.color={.value={0.55F,0.67F,0.72F}},.density=0.00017F,.height_falloff=0.006F,.base_height=0}); !result) { return result; }
 		render.setDirectionalLight({.value={-0.45F,-0.74F,0.28F}},{.value={1.0F,0.95F,0.85F}},{.value=1.4F},{.value={0.07F,0.10F,0.13F}});
-		const auto ocean = render.addOcean({.half_extent={14000,14000},.color={.value={0.018F,0.16F,0.19F}},
-			.wave_height=0,.wavelength=48,.speed=0.8F,.position={.value={0,-0.52F,-1200}}});
+		const auto ocean = render.addOcean({.half_extent={60000,60000},.color={.value={0.018F,0.16F,0.19F}},
+			.wave_height=0,.wavelength=48,.speed=0.8F,.position={.value={18000,-0.52F,-18000}}});
 		if (!ocean) { return std::unexpected(ocean.error()); }
-		// Fine eight-metre cells support the visible waves; a calm lower patch supplies the distant horizon.
-		for (const auto row : std::views::iota(-4,5)) {
-			// The public ocean uses world-space phases, so adjacent patches remain seamless at every animation time.
-			for (const auto column : std::views::iota(-2,3)) {
-				const auto tile=render.addOcean({.half_extent={256,256},.color={.value={0.018F,0.16F,0.19F}},
-					.wave_height=0.18F,.wavelength=48,.speed=0.8F,.position={.value={static_cast<float>(column)*512,-0.16F,-1200+static_cast<float>(row)*512}}});
-				if (!tile) { return std::unexpected(tile.error()); }
-				if (const auto result=render.setObjectSurface(*tile,{.roughness=0.14F}); !result) { return result; }
-			}
+		return {};
+	}
+	/// @brief Keeps the nearest nine islands within four kilometres resident, with full airfield detail on approach.
+	auto updateEnvironment(vve::RenderSystem &render,const std::filesystem::path &root,vve::Vec3 eye,
+		std::map<std::size_t,vve::Vector<vve::RenderObjectHandle>> &resident,vve::Vector<vve::RenderObjectHandle> &water)
+		-> std::expected<void,vve::Error> {
+		using namespace scenery;
+		std::array<std::pair<float,std::size_t>,islandCount> nearest{};
+		// A fixed stack array avoids frame allocations while choosing a deterministic bounded working set.
+		for (const auto id : std::views::iota(std::size_t{},islandCount)) {
+			const auto centre=islandCenter(id); nearest[id]={std::hypot(eye.x-centre.x,eye.z-centre.z),id};
 		}
-		std::array<vve::MeshDescriptor,18> meshes{}; // Shared geometry batches indexed by surface appearance.
-		const std::array<vve::Vec3,18> colors{vve::Vec3{0.22F,0.38F,0.12F},{0.32F,0.44F,0.16F},{0.98F,0.94F,0.80F},
-			{0.62F,0.65F,0.63F},{0.74F,0.76F,0.78F},{0.95F,0.94F,0.91F},{0.68F,0.74F,0.76F},{0.75F,0.64F,0.45F},
-			{0.90F,0.91F,0.85F},{0.92F,0.60F,0.10F},{0.23F,0.34F,0.095F},{0.55F,0.40F,0.24F},{0.025F,0.045F,0.052F},
-			{0.80F,0.19F,0.035F},{0.54F,0.67F,0.62F},{1.0F,0.68F,0.22F},{0.08F,0.3F,0.9F},{0.1F,0.7F,0.15F}};
-		const std::array<std::string_view,18> textures{"grass.jpg","grass.jpg","sand.jpg","rock.jpg","asphalt.jpg","concrete.jpg","metal.jpg","planks.jpg","","","grass.jpg","planks.jpg","","","","","",""};
-		// Only eighteen shared batches are needed, even with many trees and airfield details.
-		for (const auto index : std::views::iota(0U,18U)) {
-			meshes[index].color.value = colors[index]; if (!textures[index].empty()) { meshes[index].base_color_texture=root/textures[index]; }
+		std::ranges::sort(nearest); const auto wanted=std::span{nearest}.first(9);
+		// Remove departed or superseded detail batches explicitly; removing a node alone would retain their resources.
+		for (auto entry=resident.begin(); entry!=resident.end();) {
+			const auto found=std::ranges::find(wanted,entry->first,[](const auto &item) { return item.second; });
+			const bool detailed=entry->second.size()>8U; // Distant islands have at most eight terrain/runway batches.
+			const bool keep=found!=wanted.end() && found->first<=4000 && (detailed?found->first<=2200:found->first>=1800);
+			if (keep) { ++entry; continue; }
+			for (const auto object : entry->second) { if (const auto result=render.removeObject(object); !result) { return result; } }
+			entry=resident.erase(entry);
 		}
-		// Both airfields share construction rules while their coast remains defined by the shared terrain function.
-		for (const float centre : {0.0F,destinationZ}) {
-			terrain(meshes,centre); airfield(meshes,centre);
-			// Weathered rock clusters break up the sand edge without adding separate draw calls.
-			for (const auto rock : std::views::iota(0U,105U)) {
-				const float angle=static_cast<float>(rock)*2.39996F, radius=0.82F+noise(rock*13U+1U)*0.19F;
-				const float x=std::cos(angle)*650*radius,z=centre+std::sin(angle)*750*radius,y=terrainHeight(x,z);
-				if (std::abs(x)<85 || y<0.25F || y>14.0F) { continue; } // Keep rocks beside the coast and clear of approaches.
-				boulder(meshes[3],{x,y,z},1.1F+noise(rock*47U)*4.0F,rock*17U);
-			}
-			// Coastal palms leave the runway and its approaches completely clear.
-			for (const auto tree : std::views::iota(0U,180U)) {
-				const float angle = static_cast<float>(tree)*2.39996F, radius = 0.48F + noise(tree*71U+9U)*0.38F;
-				const float x = std::cos(angle)*650*radius, z = centre+std::sin(angle)*750*radius, y=terrainHeight(x,z);
-				if (std::abs(x)<95 || y<3.0F || y>47.0F) { continue; } // Protect the runway corridor and bare upper slopes.
-				palm(meshes[11],meshes[10],{x,y-0.05F,z},7.0F+noise(tree*27U+1U)*7.0F,angle);
-			}
+		// Unchanged entries retain their handles and decoded textures, including during ordinary frame updates.
+		for (const auto [distance,id] : wanted) {
+			if (distance>4000 || resident.contains(id)) { continue; }
+			auto objects=buildIsland(render,root,id,distance<=2000); if (!objects) { return std::unexpected(objects.error()); }
+			resident.emplace(id,std::move(*objects));
 		}
-		// Upload each combined material once; environmental detail adds vertices rather than draw calls.
-		for (const auto index : std::views::iota(0U,18U)) { if (const auto result=submit(render,std::move(meshes[index]),index); !result) { return result; } }
+		const vve::Vec3 origin{std::round(eye.x/512)*512,-0.16F,std::round(eye.z/512)*512};
+		// Waves are fixed eight-metre grids; their handles and geometry survive travel across the entire archipelago.
+		water.reserve(45);
+		for (std::size_t index=water.size(); index<45U; ++index) {
+			const auto tile=render.addOcean({.half_extent={256,256},.color={.value={0.018F,0.16F,0.19F}},
+				.wave_height=0.18F,.wavelength=48,.speed=0.8F});
+			if (!tile) { return std::unexpected(tile.error()); } water.push_back(*tile);
+			if (const auto result=render.setObjectSurface(*tile,{.roughness=0.14F}); !result) { return result; }
+		}
+		const auto first=render.objectTransform(water.front()); if (!first) { return std::unexpected(first.error()); }
+		if (first->translation.value.x==origin.x-1024 && first->translation.value.y==origin.y && first->translation.value.z==origin.z-2048) { return {}; }
+		// World-space wave phases match on shared edges, even after repositioning the patch grid at a cell boundary.
+		for (const auto index : std::views::iota(std::size_t{},water.size())) {
+			const auto offset=vve::Vec3{static_cast<float>(index%5U)*512-1024,0,static_cast<float>(index/5U)*512-2048};
+			if (const auto result=render.setObjectTransform(water[index],at(vm::add(origin,offset))); !result) { return result; }
+		}
 		return {};
 	}
 	/// @brief Instantiates the textured Cesium twin-prop aircraft, keeping its animated propeller hierarchy.
