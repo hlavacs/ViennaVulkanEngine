@@ -35,9 +35,11 @@ struct GameSystem {
 	vve::WindowSystem *windows{}; ///< Public keyboard and fullscreen controls.
 	vve::RenderSystem *render{}; ///< Public Vulkan-backed renderer.
 	Soundscape sound{}; ///< Layered recordings and per-voice mixing state.
-	Flight displayed{}; ///< Current component copy shared with the GUI callback.
+	Flight displayed{}; ///< Interpolated render pose with the current authoritative mission state.
+	Flight previousTick{}; ///< Previous physics pose for smooth rendering between fixed simulation steps.
 	vve::Camera camera{}; ///< Render camera, also used as the sound listener.
-	vve::Vec3 eye{0, 10, 265}; ///< Smoothed chase-camera position.
+	vve::Vec3 eye{0, 10, 265}; ///< Camera position following the rendered aircraft and its smoothed view offset.
+	vve::Vec3 cameraOffset{0, 7, 24}; ///< Smoothed view offset; aircraft translation is followed without delay.
 	std::map<std::size_t, vve::Vector<vve::RenderObjectHandle>> residentIslands{}; ///< Only nearby islands own render resources.
 	vve::Vector<vve::RenderObjectHandle> water{}; ///< Fixed pool of ocean tiles following the aircraft.
 	std::size_t peakResidentIslands{}; ///< High-water mark for automated streaming verification.
@@ -57,6 +59,7 @@ struct GameSystem {
 			std::cerr << "[island] scenery initialization failed\n"; return result;
 		}
 		displayed.position = vve::math::add(islandCenter(displayed.originIsland), vve::Vec3{0, aircraftGroundHeight, 240});
+		previousTick = displayed;
 		eye = vve::math::add(displayed.position, vve::Vec3{0, 5, 25});
 		mapOpen = openMapOnStart;
 		if (auto result = updateEnvironment(*render, assetRoot, displayed.position, residentIslands, water); !result) { return result; }
@@ -89,8 +92,39 @@ struct GameSystem {
 		if (flight.phase != Phase::delivered || (frameLimit > 0 && flight.deliveries >= deliveryGoal)) { return false; }
 		if (!acceptCargo(flight, suggestedTarget(flight))) { return false; }
 		commandedThrottle = accumulator = 0.0F;
+		previousTick = flight;
 		std::println("[island] assignment origin={} target={} cargo=\"{}\"", flight.originIsland, flight.targetIsland, cargoName(flight));
 		return true;
+	}
+
+	/** @brief Advances authoritative physics at 120 Hz and presents a smooth pose shared by aircraft, camera, map and sound. */
+	void advanceFlight(Flight &flight, Controls controls, float dt) {
+		constexpr float tick = 1.0F / 120.0F;
+		if (!std::isfinite(dt) || dt < 0.0F) { dt = 0.0F; }
+		// Keep the two adjacent physics poses; frames without a tick still advance continuously between them.
+		if (!paused && !mapOpen) {
+			accumulator += dt;
+			while (accumulator + 0.000001F >= tick) {
+				previousTick = flight;
+				step(flight, automatic ? autopilot(flight) : controls, tick);
+				accumulator -= tick;
+			}
+		}
+		displayed = flight;
+		if (flight.phase == Phase::crashed || flight.phase == Phase::delivered) { return; }
+		const float alpha = std::clamp(accumulator / tick, 0.0F, 1.0F);
+		const auto interpolate = [alpha](vve::Vec3 before, vve::Vec3 after) {
+			return vve::math::add(before, vve::math::scale(vve::math::subtract(after, before), alpha));
+		};
+		displayed.position = interpolate(previousTick.position, flight.position);
+		displayed.velocity = interpolate(previousTick.velocity, flight.velocity);
+		// Heading follows the shorter arc when the simulation wraps across +/-pi.
+		const float turn = 2.0F * std::numbers::pi_v<float>;
+		displayed.heading = std::remainder(previousTick.heading + std::remainder(flight.heading - previousTick.heading, turn) * alpha, turn);
+		displayed.pitch = std::lerp(previousTick.pitch, flight.pitch, alpha);
+		displayed.bank = std::lerp(previousTick.bank, flight.bank, alpha);
+		displayed.throttle = std::lerp(previousTick.throttle, flight.throttle, alpha);
+		displayed.elapsed = std::lerp(previousTick.elapsed, flight.elapsed, alpha);
 	}
 
 	/** @brief Reads held controls; the throttle lever remains at its setting after the key is released. */
@@ -122,24 +156,18 @@ struct GameSystem {
 			component->originIsland = origin; component->targetIsland = target; component->deliveries = completed;
 			component->position = vve::math::add(islandCenter(origin), vve::Vec3{0, aircraftGroundHeight, 240});
 			commandedThrottle = accumulator = 0.0F;
+			previousTick = displayed = *component;
 			paused = mapOpen = false;
 			eye = vve::math::add(component->position, vve::Vec3{0, 5, 25});
+			setCamera(0.0F);
 		}
 		// The destination airport supplies the next cargo automatically in both manual and demonstration flights.
 		if (!mapOpen && !paused) { (void)collectNextCargo(*component); }
 		const float dt = frameLimit > 0 ? static_cast<float>(stepsPerFrame) / 120.0F
 			: std::clamp(static_cast<float>(frame.delta_time.seconds), 0.0F, 0.1F);
 		const auto controls = keyboard(input, paused || mapOpen ? 0.0F : dt);
-		// Rendering frequency never changes the integrator's fixed simulation step.
-		if (!paused && !mapOpen) {
-			accumulator += dt;
-			while (accumulator + 0.000001F >= 1.0F / 120.0F) {
-				step(*component, automatic ? autopilot(*component) : controls, 1.0F / 120.0F);
-				accumulator -= 1.0F / 120.0F;
-			}
-		}
+		advanceFlight(*component, controls, dt);
 		if (auto result = ecs->put(aircraft, *component); !result) { return result; }
-		displayed = *component;
 		if (auto result = updateEnvironment(*render, assetRoot, displayed.position, residentIslands, water); !result) { return result; }
 		peakResidentIslands = std::max(peakResidentIslands, residentIslands.size());
 		if (auto result = updateAircraft(*render, aircraftNode, displayed); !result) { return result; }
@@ -158,10 +186,13 @@ struct GameSystem {
 		} else {
 			const auto offset = cameraMode == 2 ? vve::math::add(vve::math::scale(right, 20.0F), vve::math::scale(ahead, -12.0F))
 				: vve::math::scale(ahead, -24.0F);
-			auto desired = vve::math::add(vve::math::add(displayed.position, offset), vve::Vec3{0, 7, 0});
-			desired.y = std::max(desired.y, terrainHeight(desired.x, desired.z) + 3.0F);
+			auto desired = vve::math::add(offset, vve::Vec3{0, 7, 0});
+			desired.y = std::max(desired.y, terrainHeight(displayed.position.x + desired.x, displayed.position.z + desired.z)
+				+ 3.0F - displayed.position.y);
 			const float blend = dt <= 0 ? 1.0F : 1.0F - std::exp(-6.0F * dt);
-			eye = vve::math::add(eye, vve::math::scale(vve::math::subtract(desired, eye), blend));
+			// Damp changes in the viewing offset, never the aircraft's translation relative to its own camera.
+			cameraOffset = vve::math::add(cameraOffset, vve::math::scale(vve::math::subtract(desired, cameraOffset), blend));
+			eye = vve::math::add(displayed.position, cameraOffset);
 			if (cameraMode == 2) { target = displayed.position; }
 		}
 		camera = vve::Camera::lookAt(vve::Position{eye}, vve::Position{target}, {}, vve::FovY{0.93F},

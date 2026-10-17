@@ -15,7 +15,10 @@ rendering and audio; there are no direct Vulkan, SDL or implementation imports.
 The aircraft's authoritative `Flight` component lives in VVE's ECS. The
 fixed 120 Hz flight model is deliberately approachable, with rotation speed,
 stall descent, bank/rudder turning, tight nose-wheel steering, wheel brakes and
-hard-landing failures. The procedural archipelago spans approximately 44 km
+hard-landing failures. Aircraft, camera and navigation interpolate the same
+physics poses between ticks; the chase camera smooths its viewing offset while
+following aircraft translation directly, keeping steady flight stable at uneven
+frame rates. The procedural archipelago spans approximately 44 km
 in each direction. A fixed random seed keeps navigation and tests reproducible;
 island sites are sampled across the region with at least 2.2 km separation.
 Only the nearest nine islands within four kilometres own
@@ -138,6 +141,8 @@ all 256 island sites, safe/unsafe landings, unloading gates, cargo assignment,
 runway turnarounds, reverse/lateral routes and repeated deliveries without a GPU.
 `IslandDeliveryMapTests` checks the assigned route, all island coastlines,
 heading-up rotation, compass arrow directions and runway guidance at Full HD and 640 × 360.
+`IslandDeliveryMotionTests` measures camera-relative motion and Full HD pixel
+stability at 30, 60, 144 Hz and irregular frame intervals without a GPU.
 `IslandDeliverySoundTests` checks mixing telemetry and decodes/plays every
 download through VVE with SDL's dummy audio device. GPU tests capture the
 departure, pilot-eye view, the map, repeated deliveries and a remote airport.
