@@ -52,6 +52,7 @@ export namespace vve::simple {
 
 	private:
 		template <typename TOption> void applyOption(TOption &&);
+		[[nodiscard]] auto makeRenderSceneRelease() -> std::function<std::expected<void, Error>(SceneHandle)>;
 		[[nodiscard]] auto makeImportedAssetReadAccess()					-> ImportedAssetReadAccess;
 		auto applyDefaults()															-> void;
 
@@ -60,7 +61,7 @@ export namespace vve::simple {
 		Windows windows_{};																///< Startup window descriptors.
 		ECS ecs_{};																			///< Entity/component storage owned by the implementation and shared with the facade.
 		WindowSystem window_system_{};												///< SDL platform window owner.
-		AssetSystem assets_{[this](SceneHandle scene) { return render_system_.removeScene(scene); }};															///< Asset and object catalog facade.
+		AssetSystem assets_{makeRenderSceneRelease()}; ///< Asset catalog; its callback runs on explicit unload after construction.
 		RenderSystem render_system_{makeImportedAssetReadAccess(), &window_system_};	///< Renderer selection and active CPU render scene.
 		GuiSystem gui_{};																	///< GUI descriptor facade.
 		AudioSystem audio_{}; ///< Owns the lazily opened device, sounds and voices.
@@ -236,6 +237,11 @@ export namespace vve::simple {
 		} else {
 			static_assert(!std::same_as<Option, Option>, "simple::Engine: unknown option type (use vve::simple::Windows, not vve::WindowSetups)");
 		}
+	}
+
+	/// @brief Builds the unload callback outside member initializers so MSVC can import the templated constructors.
+	inline auto Engine::makeRenderSceneRelease() -> std::function<std::expected<void, Error>(SceneHandle)> {
+		return [this](SceneHandle scene) { return render_system_.removeScene(scene); };
 	}
 
 	/// @brief Builds the borrowed asset-read callbacks handed to the render system.

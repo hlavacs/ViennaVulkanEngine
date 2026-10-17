@@ -122,6 +122,27 @@ bool facadeUnload(const std::filesystem::path &path) {
 	return true;
 }
 
+/// @brief Both constructor paths retain a working unload callback when instantiated from imported modules.
+bool constructorCallbacks(const std::filesystem::path &path) {
+	const auto verifies_callback = [&](vve::simple::Engine &engine) {
+		auto &assets = engine.assets();
+		auto &render = engine.renderSystem();
+		const auto scene = assets.loadScene(path);
+		if (!scene) { return false; }
+		const auto instance = render.instantiateScene(*scene, importOptions);
+		if (!instance || !failsWith(assets.unloadScene(*scene), vve::Error::invalid_argument) ||
+			!assets.containsScene(*scene) || !render.sceneInstanceObjects(*instance)) { return false; }
+		return render.removeSceneInstance(*instance) && assets.unloadScene(*scene) &&
+			!assets.containsScene(*scene) && assets.catalogEntryCount() == 0;
+	};
+	vve::simple::Engine default_engine{};
+	auto hidden_engine = vve::test::hiddenEngine("asset-unload-constructor-tests", vve::PixelExtent{640, 480});
+	const bool default_ok = verifies_callback(default_engine);
+	const bool variadic_ok = verifies_callback(hidden_engine);
+	std::println("[asset_unload_constructors] default={} imported_variadic={}", default_ok, variadic_ok);
+	return default_ok && variadic_ok;
+}
+
 /// @brief Repeated level changes return all six catalog tables and render caches to their surviving-scene baseline.
 bool repeatedCycles(const std::filesystem::path &path) {
 	vve::simple::Engine engine{};
@@ -174,6 +195,7 @@ bool repeatedCycles(const std::filesystem::path &path) {
 /// @brief Runs the facade lifetime contract and internal catalog-growth regression with deterministic fixtures.
 int main() {
 	const auto path = vve::test::writeFixture(VVE_TEST_TMP_DIR, "scene.gltf", sceneFixture);
+	if (!constructorCallbacks(path)) { std::println("[asset_unload] failed=constructors"); return 3; }
 	if (!facadeUnload(path)) { std::println("[asset_unload] failed=facade"); return 1; }
 	if (!repeatedCycles(path)) { std::println("[asset_unload] failed=cycles"); return 2; }
 	return 0;
