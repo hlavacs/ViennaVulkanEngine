@@ -1,4 +1,5 @@
 {
+  "overlay-ports": ["./ports"],
   "overlay-triplets": ["./triplets"],
   "registries": [
     {
