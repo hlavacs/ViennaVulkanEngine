@@ -25,12 +25,13 @@ inline constexpr std::string_view triangleObj = "o Triangle\nv 0 0 0\nv 1 0 0\nv
 			.renderer_id = RendererId{.value = "forward"}, .visible = false}}}};
 }
 
-/// @brief Writes a text fixture in its build-tree directory and returns its path for import checks.
+/// @brief Writes a fixture byte for byte in its build-tree directory and returns its path for import checks.
 [[nodiscard]] std::filesystem::path writeFixture(const std::filesystem::path &directory,
 	const std::filesystem::path &name, std::string_view text) {
 	std::filesystem::create_directories(directory); // Retain fixtures for inspection after failures.
 	const auto path = directory / name;
-	std::ofstream file{path};
+	// Binary mode: on Windows a text stream would turn every \n into \r\n and shift the pixels of binary images (PPM).
+	std::ofstream file{path, std::ios::binary};
 	file << text;
 	return path;
 }
