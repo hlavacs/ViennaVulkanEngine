@@ -8,6 +8,8 @@ namespace {
 int checks{}; ///< Successful named checks, retained in failure output for automated diagnosis.
 constexpr ImU32 coast=IM_COL32(104,151,111,255),gold=IM_COL32(244,193,98,255); ///< Semantic chart geometry colours.
 constexpr ImU32 runway=IM_COL32(236,235,216,255),runwayLabels=IM_COL32(235,240,223,255); ///< Physical runway and 18/36 labels.
+constexpr ImU32 cyan=IM_COL32(88,231,240,255),north=IM_COL32(219,230,228,255),bay=IM_COL32(244,193,98,210); ///< Aircraft, north and unloading.
+constexpr ImU32 pavement=IM_COL32(50,58,63,255); ///< Physical runway rectangle, independently of its white centreline.
 
 /** @brief Fails with a stable contract name while allowing main to destroy the CPU context. */
 void check(bool condition,std::string_view name) {
@@ -19,44 +21,53 @@ auto state(const island::Flight &f) {
 		f.throttle,f.elapsed,f.stoppedSeconds,f.maxAltitude,f.phase,f.grounded,f.takeoffs,f.landings,f.touchdownSpeed,
 		f.originIsland,f.targetIsland,f.deliveries,f.cargoTakeoffs,f.navigationStage,island::cargoName(f)};
 }
-/** @brief Measures actual draw geometry by semantic colour, independently of font metrics or hard-coded screen coordinates. */
-std::array<float,5> geometry(ImU32 colour) {
-	std::array<float,5> result{std::numeric_limits<float>::max(),std::numeric_limits<float>::max(),
-		std::numeric_limits<float>::lowest(),std::numeric_limits<float>::lowest(),0};
-	// Draw lists are public CPU data; clipping is validated separately from their uncut vertex positions.
+/** @brief Reads public solid-colour vertices; an optional limit isolates the first airport from its neighbours. */
+std::vector<vve::Vec2> vertices(ImU32 colour,std::size_t limit=std::numeric_limits<std::size_t>::max()) {
+	std::vector<vve::Vec2> result;
+	// Semantic colours distinguish navigation geometry without depending on internal widget IDs.
 	for (const auto *list : ImGui::GetDrawData()->CmdLists) {
 		for (const auto &vertex : list->VtxBuffer) {
 			if (vertex.col!=colour) { continue; }
-			result[0]=std::min(result[0],vertex.pos.x); result[1]=std::min(result[1],vertex.pos.y);
-			result[2]=std::max(result[2],vertex.pos.x); result[3]=std::max(result[3],vertex.pos.y); ++result[4];
+			result.push_back({vertex.pos.x,vertex.pos.y}); if (result.size()==limit) { return result; }
 		}
 	}
 	return result;
 }
-/** @brief Finds the directional mass of solid arrow vertices relative to their enclosing rectangle. */
-vve::Vec2 arrowDirection() {
-	const auto box=geometry(gold); vve::Vec2 sum{}; float count{};
-	// The arrowhead contributes more geometry toward its tip; opposite compass bearings reverse this offset.
-	for (const auto *list : ImGui::GetDrawData()->CmdLists) {
-		for (const auto &vertex : list->VtxBuffer) {
-			if (vertex.col==gold) { sum.x+=vertex.pos.x; sum.y+=vertex.pos.y; ++count; }
-		}
+/** @brief Measures draw bounds independently of fonts; clipping is validated separately from uncut vertices. */
+std::array<float,5> bounds(std::span<const vve::Vec2> points) {
+	std::array<float,5> result{std::numeric_limits<float>::max(),std::numeric_limits<float>::max(),
+		std::numeric_limits<float>::lowest(),std::numeric_limits<float>::lowest(),static_cast<float>(points.size())};
+	// Bounds support both an entire semantic layer and a single airport's physical geometry.
+	for (const auto p : points) {
+		result[0]=std::min(result[0],p.x); result[1]=std::min(result[1],p.y);
+		result[2]=std::max(result[2],p.x); result[3]=std::max(result[3],p.y);
 	}
-	return {sum.x/count-(box[0]+box[2])*0.5F,sum.y/count-(box[1]+box[3])*0.5F};
+	return result;
 }
-/** @brief Checks individual north/south runway strokes without merging neighbouring airports into one bounding box. */
-bool verticalRunway() {
-	std::map<int,std::array<float,4>> strips; ///< Screen-X buckets separate parallel physical runway strokes.
-	// Several neighbouring airports may share a clipped draw list, so check each runway's orientation locally.
-	for (const auto *list : ImGui::GetDrawData()->CmdLists) {
-		for (const auto &vertex : list->VtxBuffer) {
-			if (vertex.col!=runway) { continue; }
-			const auto p=vertex.pos; const int key=static_cast<int>(std::round(p.x/4.0F));
-			auto [it,inserted]=strips.try_emplace(key,std::array{p.x,p.y,p.x,p.y}); auto &box=it->second;
-			box[0]=std::min(box[0],p.x); box[1]=std::min(box[1],p.y); box[2]=std::max(box[2],p.x); box[3]=std::max(box[3],p.y);
-		}
+/** @brief Measures an entire semantic chart layer. */
+std::array<float,5> geometry(ImU32 colour) { return bounds(vertices(colour)); }
+/** @brief Finds the arrowhead's directional mass relative to its rectangle. */
+vve::Vec2 arrowDirection() {
+	const auto points=vertices(gold); const auto box=bounds(points); vve::Vec2 sum{};
+	for (const auto p : points) { sum.x+=p.x; sum.y+=p.y; } // Extra head geometry biases the centre toward the tip.
+	return {sum.x/static_cast<float>(points.size())-(box[0]+box[2])*0.5F,
+		sum.y/static_cast<float>(points.size())-(box[1]+box[3])*0.5F};
+}
+/** @brief Checks that geometry rotates rigidly, independently of its screen-space centre. */
+bool rotated(std::span<const vve::Vec2> original,std::span<const vve::Vec2> actual,float heading) {
+	if (original.size()!=actual.size() || original.empty()) { return false; }
+	const float cosine=std::cos(heading),sine=std::sin(heading);
+	// Relative vertices remove the viewport's translation, leaving only the expected heading rotation.
+	for (const auto i : std::views::iota(std::size_t{},original.size())) {
+		const float x=original[i].x-original[0].x,y=original[i].y-original[0].y;
+		if (std::abs(actual[i].x-actual[0].x-(x*cosine+y*sine))>1.1F
+			|| std::abs(actual[i].y-actual[0].y-(-x*sine+y*cosine))>1.1F) { return false; }
 	}
-	return std::ranges::any_of(strips,[](const auto &entry) { const auto &b=entry.second; return b[3]-b[1]>20 && b[3]-b[1]>2*(b[2]-b[0]); });
+	return true;
+}
+/** @brief Compares actual positions with a pixel of tolerance for antialiasing and readable text placement. */
+bool samePoints(std::span<const vve::Vec2> a,std::span<const vve::Vec2> b) {
+	return std::ranges::equal(a,b,[](const auto x,const auto y) { return std::abs(x.x-y.x)<1.1F && std::abs(x.y-y.y)<1.1F; });
 }
 /** @brief Runs one deterministic ImGui frame and checks finite geometry and valid viewport scissor rectangles. */
 int frame(ImVec2 size,const std::function<void()> &draw,ImVec2 mouse={-1000,-1000},bool pressed=false) {
@@ -85,8 +96,8 @@ void chart(ImVec2 size) {
 	bool open=false; float zoom=1; vve::Vec2 pan{}; ///< Only chart viewing state is mutable.
 	const auto draw=[&] { island::drawMap(flight,open,zoom,pan); };
 	check(frame(size,draw)==0,"closed_chart_emits_nothing");
-	open=true; const int vertices=frame(size,draw);
-	check(vertices>25000,"overview_has_complete_archipelago_geometry");
+	open=true; const int overviewVertices=frame(size,draw);
+	check(overviewVertices>25000,"overview_has_complete_archipelago_geometry");
 	check(geometry(coast)[4]>=32*island::islandCount,"overview_draws_all_256_coastlines");
 	check(geometry(IM_COL32(35,65,79,180))[4]==0,"overview_has_no_matrix_grid_lines");
 	check(state(flight)==original,"overview_preserves_cargo_and_flight");
@@ -105,7 +116,14 @@ void chart(ImVec2 size) {
 	zoom=-5;
 	frame(size,draw); check(zoom==1,"small_zoom_clamps");
 	zoom=99; frame(size,draw); check(zoom==12,"large_zoom_clamps"); zoom=1;
-	std::println("[IslandDeliveryMapTests] display={}x{} overview_vertices={} coast_vertices={}",size.x,size.y,vertices,32*island::islandCount);
+	flight.heading=0; frame(size,draw); const auto northUp=vertices(coast,32);
+	flight.heading=std::numbers::pi_v<float>/2; const auto assigned=state(flight); frame(size,draw);
+	const auto marker=vertices(cyan); check(marker.size()>=3,"large_chart_has_aircraft_marker");
+	const auto plane=std::span{marker}.last(3); ///< The plane follows the departure-ring vertices in this semantic layer.
+	check(samePoints(northUp,vertices(coast,32)),"large_chart_stays_north_up_when_plane_turns");
+	check(plane[0].x>plane[1].x && plane[0].x>plane[2].x,"large_chart_aircraft_marker_shows_eastward_heading");
+	check(state(flight)==assigned,"large_chart_heading_display_preserves_flight");
+	std::println("[IslandDeliveryMapTests] display={}x{} overview_vertices={} coast_vertices={}",size.x,size.y,overviewVertices,32*island::islandCount);
 }
 /** @brief Confirms a single short compass arrow rotates with bearing and approaches retain physical runway geometry. */
 void navigation(ImVec2 size) {
@@ -133,12 +151,55 @@ void navigation(ImVec2 size) {
 	flight.targetIsland=255; frame(size,draw); const auto second=arrowDirection();
 	check(first.y<0 && std::hypot(first.x-second.x,first.y-second.y)>0.1F,"new_assigned_target_updates_compass_direction");
 	flight.position=vve::math::add(island::islandCenter(flight.targetIsland),{0,80,260});
-	const int approach=frame(size,draw);
-	check(verticalRunway(),"approach_runway_direction_is_north_south");
+	const int approach=frame(size,draw); const auto strip=bounds(vertices(runway,4));
+	check(strip[3]-strip[1]>20 && strip[3]-strip[1]>2*(strip[2]-strip[0]),"approach_runway_direction_is_north_south_at_heading_zero");
 	check(geometry(runwayLabels)[4]>0,"approach_shows_runway_18_36_threshold_labels");
 	check(geometry(IM_COL32(244,193,98,210))[4]>=4,"approach_marks_actual_unloading_bay");
 	check(geometry(IM_COL32(88,231,240,255))[4]>=3,"navigation_draws_aircraft_heading_marker");
 	std::println("[IslandDeliveryMapTests] display={}x{} regional_vertices={} approach_vertices={}",size.x,size.y,regional,approach);
+}
+/** @brief Verifies that the regional chart rotates with the aircraft while its nose remains fixed upward. */
+void headingUpNavigation(ImVec2 size) {
+	island::Flight flight; flight.targetIsland=0; flight.position={0,80,0}; flight.grounded=false; flight.phase=island::Phase::flying;
+	const auto draw=[&] { island::drawNavigation(flight); }; frame(size,draw);
+	const auto shore=vertices(coast,32),asphalt=vertices(pavement,4),centreline=vertices(runway,4);
+	const auto labels=vertices(runwayLabels,16),unloading=vertices(bay,4),aircraft=vertices(cyan);
+	const auto arrowCount=vertices(gold).size(); const auto needle=vertices(north,arrowCount);
+	check(shore.size()==32 && asphalt.size()==4 && centreline.size()==4 && labels.size()==16 && unloading.size()==4,"approach_geometry_layers_exist");
+	check(aircraft.size()==3 && aircraft[0].y<aircraft[1].y && aircraft[0].y<aircraft[2].y,"regional_aircraft_nose_points_up");
+	const float pi=std::numbers::pi_v<float>; std::vector<vve::Vec2> plusPiCoast,plusPiNorth;
+	// One physical airport supplies stable geometry at every angle, including the diagonal approach and signed wrap boundary.
+	for (const float heading : {pi/4,pi/2,pi,-pi/2,-pi,2*pi,-2*pi}) {
+		flight.heading=heading; const auto original=state(flight); frame(size,draw);
+		check(rotated(shore,vertices(coast,32),heading),"regional_coast_rotates_with_aircraft");
+		check(rotated(asphalt,vertices(pavement,4),heading),"regional_runway_rectangle_rotates_with_aircraft");
+		check(rotated(centreline,vertices(runway,4),heading),"regional_runway_centreline_rotates_with_aircraft");
+		check(rotated(labels,vertices(runwayLabels,16),heading),"regional_runway_18_36_labels_rotate_with_aircraft");
+		check(rotated(unloading,vertices(bay,4),heading),"regional_unloading_area_rotates_with_aircraft");
+		check(samePoints(aircraft,vertices(cyan)),"regional_aircraft_stays_fixed_up_while_map_turns");
+		check(rotated(needle,vertices(north,arrowCount),heading),"north_compass_needle_rotates_against_aircraft_heading");
+		const auto strip=bounds(vertices(runway,4)); const float width=strip[2]-strip[0],height=strip[3]-strip[1];
+		if (heading==pi/4) { check(std::abs(width-height)<2,"regional_runway_is_diagonal_at_45_degrees"); }
+		if (heading==pi/2) { check(width>20 && width>2*height,"regional_runway_is_horizontal_at_90_degrees"); }
+		if (heading==pi) { plusPiCoast=vertices(coast,32); plusPiNorth=vertices(north); }
+		if (heading==-pi) { check(samePoints(plusPiCoast,vertices(coast,32)) && samePoints(plusPiNorth,vertices(north)),"regional_signed_pi_wrap_is_repeatable"); }
+		check(state(flight)==original,"heading_up_navigation_never_mutates_flight");
+	}
+	// A target due world north appears up, left, down or right as the aircraft points north, east, south or west.
+	flight.position={0,80,5000}; flight.heading=0; frame(size,draw); const auto baseline=bounds(vertices(gold));
+	const auto northLabel=vertices(north); std::vector<vve::Vec2> plusPiArrow;
+	for (const float heading : {0.0F,pi/2,pi,-pi/2,-pi}) {
+		flight.heading=heading; const auto original=state(flight); frame(size,draw);
+		const auto direction=arrowDirection(); const auto shape=geometry(gold);
+		const float expectedX=-std::sin(heading),expectedY=-std::cos(heading);
+		check(direction.x*expectedX+direction.y*expectedY>0.5F,"destination_arrow_is_relative_to_aircraft_nose");
+		check(shape[4]==baseline[4] && shape[2]-shape[0]<34 && shape[3]-shape[1]<34,"heading_up_arrow_remains_short_without_target_ring");
+		if (heading==pi) { plusPiArrow=vertices(gold); }
+		if (heading==-pi) { check(samePoints(plusPiArrow,vertices(gold)),"destination_arrow_signed_pi_wrap_is_repeatable"); }
+		if (heading==pi/2) { check(!samePoints(northLabel,vertices(north)),"north_marker_moves_as_aircraft_turns"); }
+		check(state(flight)==original,"relative_bearing_render_preserves_flight");
+	}
+	std::println("[IslandDeliveryMapTests] display={}x{} heading_up=true rotations=7 cardinal_bearings=5",size.x,size.y);
 }
 } // namespace
 
@@ -149,7 +210,7 @@ int main() {
 		io.DisplaySize={1920,1080}; io.DisplayFramebufferScale={1,1}; io.DeltaTime=1.0F/60.0F; io.FontGlobalScale=1;
 		unsigned char *pixels{}; int width{},height{}; io.Fonts->GetTexDataAsRGBA32(&pixels,&width,&height);
 		check(pixels && width>0 && height>0,"cpu_font_atlas_built");
-		for (const auto size : {ImVec2{1920,1080},ImVec2{640,360}}) { chart(size); navigation(size); }
+		for (const auto size : {ImVec2{1920,1080},ImVec2{640,360}}) { chart(size); navigation(size); headingUpNavigation(size); }
 		ImGui::DestroyContext(); std::println("[IslandDeliveryMapTests] passed=true checks={}",checks); return 0;
 	} catch (const std::exception &error) {
 		if (ImGui::GetCurrentContext()) { ImGui::DestroyContext(); }

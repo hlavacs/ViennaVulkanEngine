@@ -85,13 +85,14 @@ stopped, ready to turn around and depart again. Completed deliveries accumulate.
 The route and manifest remain assigned until delivery; an intermediate landing
 cannot change them. M opens the large chart when you want to inspect the region.
 
-The regional navigation inset stays visible during flight. It shows the actual
-aircraft heading, a short gold direction arrow and bearing to the destination, nearby
+The regional navigation inset stays visible during flight. The aircraft always
+points up; islands, runway outlines, the north indicator and the short gold
+destination arrow rotate with your heading. It shows the bearing to the destination, nearby
 islands and their runway outlines. It zooms in near the destination so the
 700 m strip, **18/36** runway ends and unloading bay are visible before landing.
 The direction arrow acts as a compass cue, without drawing a route across the
 small map. On the large chart, use the mouse wheel to zoom and drag with the
-right mouse button to pan; hover islands for their names. Both maps are
+right mouse button to pan; hover islands for their names. The large chart stays
 north-up, with north along -Z.
 
 Take off above 27 m/s (about 53 knots). Keep touchdown below 47 m/s, sink rate
@@ -136,7 +137,7 @@ captures. `--help` opens no window. `IslandDeliveryLogicTests` checks flight,
 all 256 island sites, safe/unsafe landings, unloading gates, cargo assignment,
 runway turnarounds, reverse/lateral routes and repeated deliveries without a GPU.
 `IslandDeliveryMapTests` checks the assigned route, all island coastlines,
-compass arrow directions and runway guidance at Full HD and 640 × 360.
+heading-up rotation, compass arrow directions and runway guidance at Full HD and 640 × 360.
 `IslandDeliverySoundTests` checks mixing telemetry and decodes/plays every
 download through VVE with SDL's dummy audio device. GPU tests capture the
 departure, pilot-eye view, the map, repeated deliveries and a remote airport.

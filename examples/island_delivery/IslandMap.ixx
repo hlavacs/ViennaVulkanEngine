@@ -8,8 +8,9 @@ import Island.Logic;
 
 namespace island {
 
-/** @brief Draws one island's world-scaled coast, north/south runway and the target's actual unloading rectangle. */
-void drawChartAirport(ImDrawList *draw, std::size_t index, ImVec2 at, float scale, bool target) {
+/** @brief Draws an island's coast, runway and unloading bay in the chart's viewing orientation. */
+void drawChartAirport(ImDrawList *draw, std::size_t index, ImVec2 at, float scale, bool target, float heading = 0.0F) {
+   const int firstVertex = draw->VtxBuffer.Size; ///< This airport's geometry rotates together, including its threshold labels.
    const float variation = index < 2 ? 1.0F : 0.85F + static_cast<float>((index * 37) % 31) * 0.01F; ///< Match physical terrain.
    const float minimum = std::max(1.0F, 2.5F / (650.0F * scale)); ///< Keep distant coastlines visible.
    std::array<ImVec2, 32> coast{}; ///< Enough samples for the terrain's five- and nine-wave coastline.
@@ -34,6 +35,15 @@ void drawChartAirport(ImDrawList *draw, std::size_t index, ImVec2 at, float scal
    if (target && halfLength > 12.0F) {
       draw->AddRectFilled(ImVec2{at.x - 25.0F * scale, at.y - 300.0F * scale},
                           ImVec2{at.x + 25.0F * scale, at.y - 130.0F * scale}, IM_COL32(244, 193, 98, 210));
+   }
+   // Rotate the whole airport around its projected centre so coastlines, pavement and labels stay aligned.
+   if (heading != 0.0F) {
+      const float sine = std::sin(heading), cosine = std::cos(heading);
+      for (const auto index : std::views::iota(firstVertex, draw->VtxBuffer.Size)) {
+         auto &position = draw->VtxBuffer[index].pos;
+         const float x = position.x - at.x, y = position.y - at.y;
+         position = ImVec2{at.x + x * cosine + y * sine, at.y - x * sine + y * cosine};
+      }
    }
 }
 
@@ -60,7 +70,7 @@ void drawChartAircraft(ImDrawList *draw, ImVec2 at, float heading, float size) {
 
 export namespace island {
 
-/** @brief Shows nearby islands, target bearing and a runway-scale approach chart during normal flight. */
+/** @brief Shows a heading-up regional chart: the aircraft points up as islands and destination guidance rotate around it. */
 void drawNavigation(const Flight &flight) {
    const auto &io = ImGui::GetIO(); ///< Inset follows the display, without touching engine camera state.
    const float uiScale = std::clamp(std::min(io.DisplaySize.x / 1920.0F, io.DisplaySize.y / 1080.0F), 0.58F, 1.0F);
@@ -86,8 +96,12 @@ void drawNavigation(const Flight &flight) {
    const float scale = std::min(canvas.x, canvas.y) / range; ///< Isotropic projection preserves runway direction.
    const float focus = 0.35F * std::clamp((2200.0F - distance) / 1600.0F, 0.0F, 1.0F); ///< Include the nearby target's full strip.
    const float centreX = flight.position.x + dx * focus, centreZ = flight.position.z + dz * focus;
-   /** @brief Projects world metres onto a north-up regional chart. */
-   const auto point = [&](float x, float z) { return ImVec2{middle.x + (x - centreX) * scale, middle.y + (z - centreZ) * scale}; };
+   const float sine = std::sin(flight.heading), cosine = std::cos(flight.heading); ///< Map axes follow the aircraft's nose.
+   /** @brief Projects world metres into aircraft-relative right and forward directions. */
+   const auto point = [&](float x, float z) {
+      x -= centreX; z -= centreZ;
+      return ImVec2{middle.x + (x * cosine + z * sine) * scale, middle.y + (-x * sine + z * cosine) * scale};
+   };
    auto *draw = ImGui::GetWindowDrawList(); ///< The same public ImGui geometry path as the large map.
    constexpr auto gold = IM_COL32(244, 193, 98, 255); ///< Standalone direction cue.
    draw->AddRectFilled(top, bottom, IM_COL32(10, 34, 51, 255), 4.0F);
@@ -98,18 +112,26 @@ void drawNavigation(const Flight &flight) {
       const ImVec2 at = point(location.x, location.z);
       const float coast = 1000.0F * scale; ///< Conservative bound for the largest physical island footprint.
       if (at.x < top.x - coast || at.x > bottom.x + coast || at.y < top.y - coast || at.y > bottom.y + coast) { continue; }
-      drawChartAirport(draw, index, at, scale, index == flight.targetIsland);
+      drawChartAirport(draw, index, at, scale, index == flight.targetIsland, flight.heading);
    }
    const ImVec2 player = point(flight.position.x, flight.position.z); ///< Aircraft position is independent of the compass cue.
-   drawChartAircraft(draw, player, flight.heading, 6.5F * std::max(uiScale, 0.8F));
+   drawChartAircraft(draw, player, 0.0F, 6.5F * std::max(uiScale, 0.8F));
    const float compass = std::max(uiScale, 0.8F), halfArrow = 14.0F * compass; ///< Fixed length, independent of target distance.
    const ImVec2 arrow{bottom.x - 25.0F * compass, top.y + 25.0F * compass}; ///< Clear corner placement.
-   const float x = distance > 1.0F ? dx / distance : 0.0F, y = distance > 1.0F ? dz / distance : -1.0F;
-   // A compact compass arrow indicates bearing without joining the player, departure airport or target.
+   const float x = distance > 1.0F ? (dx * cosine + dz * sine) / distance : 0.0F;
+   const float y = distance > 1.0F ? (-dx * sine + dz * cosine) / distance : -1.0F;
+   // The short destination arrow uses the same heading-up orientation as the terrain and runways.
    draw->AddCircleFilled(arrow, 22.0F * compass, IM_COL32(8, 23, 35, 230), 24);
    drawChartArrow(draw, ImVec2{arrow.x - x * halfArrow, arrow.y - y * halfArrow},
                   ImVec2{arrow.x + x * halfArrow, arrow.y + y * halfArrow}, gold, 7.0F * compass);
-   draw->AddText(ImVec2{top.x + 5.0F, top.y + 4.0F}, IM_COL32(219, 230, 228, 255), "N ^");
+   const ImVec2 north{top.x + 25.0F * compass, top.y + 25.0F * compass}; ///< North rotates independently of the fixed-up plane.
+   constexpr auto northColour = IM_COL32(219, 230, 228, 255);
+   draw->AddCircleFilled(north, 22.0F * compass, IM_COL32(8, 23, 35, 230), 24);
+   drawChartArrow(draw, ImVec2{north.x + sine * 8.0F * compass, north.y + cosine * 8.0F * compass},
+                  ImVec2{north.x - sine * 8.0F * compass, north.y - cosine * 8.0F * compass}, northColour, 4.0F * compass);
+   const auto label = ImGui::CalcTextSize("N"); ///< Keep the cardinal label readable as its compass position rotates.
+   draw->AddText(ImVec2{north.x - sine * 16.0F * compass - label.x * 0.5F,
+                       north.y - cosine * 16.0F * compass - label.y * 0.5F}, northColour, "N");
    draw->PopClipRect();
    draw->AddRect(top, bottom, IM_COL32(66, 104, 117, 255), 4.0F);
    ImGui::Dummy(canvas);
