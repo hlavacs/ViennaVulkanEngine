@@ -108,8 +108,9 @@ namespace vve::simple {
 		// Capture a newly acquired frame before presentation releases the swapchain image.
 		result = waitDeviceIdle();
 		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
-		(void)drawFrame(target, &readback); // Capture success depends on the readback, which completes before presentation.
-		if (const auto error = textureUploadError()) { return std::unexpected(*error); }
+		const auto outcome = drawFrame(target, &readback);
+		if (!outcome) { return std::unexpected(outcome.error()); }
+		if (*outcome != FrameOutcome::presented) { return std::unexpected(Error::platform_error); }
 		if (!target.lastReadbackCaptureResult || *target.lastReadbackCaptureResult != VK_SUCCESS) {
 			return std::unexpected(Error::platform_error);
 		}

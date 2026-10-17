@@ -144,7 +144,7 @@ namespace vve::simple {
 		return {};
 	}
 
-	/// @brief Removes everything one scene instance created; also undoes a partly built instance.
+	/// @brief Removes everything one scene instance created, irrespective of reparenting; also undoes a partly built instance.
 	auto RenderSystem::rollbackSceneInstance(RenderSceneInstanceHandle instance) -> void {
 		if (const auto found = scene_instances_.find(instance); found != scene_instances_.end()) {
 			const auto objects = found->second; // removeObject edits the stored list.
@@ -152,7 +152,25 @@ namespace vve::simple {
 		}
 		removeImportedLights(instance.value);
 		if (const auto nodes = instance_nodes_.find(instance); nodes != instance_nodes_.end()) {
-			if (const auto root = nodes->second.find(NodeHandle{}); root != nodes->second.end()) { (void)removeNode(root->second); }
+			auto owned = std::unordered_set<SceneNodeHandle, HandleHash<SceneNodeHandle>>{};
+			for (const auto &[asset_node, node] : nodes->second) { owned.insert(node); }
+			// Parenthood does not transfer ownership: preserve foreign subtrees and objects before removing our nodes.
+			for (const auto node : owned) {
+				const auto found = scene_nodes_.find(node);
+				if (found == scene_nodes_.end()) { continue; } // Explicit removeNode may already have removed this part.
+				const auto objects = found->second.objects;
+				for (const auto &[object, offset] : objects) { detachObject(object); } // Keep unrelated objects in world space.
+			}
+			for (const auto node : owned) {
+				const auto found = scene_nodes_.find(node);
+				if (found == scene_nodes_.end()) { continue; }
+				const auto children = found->second.children;
+				for (const auto child : children) {
+					if (!owned.contains(child)) { (void)setNodeParent(child, scene_root_); } // Keep its local transform.
+				}
+			}
+			// The ownership map also contains interior subtrees moved outside the synthetic instance root.
+			for (const auto node : owned) { (void)removeNode(node); }
 			instance_nodes_.erase(nodes);
 		}
 		scene_instance_sources_.erase(instance);
@@ -169,7 +187,7 @@ namespace vve::simple {
 			removeImportedLights(detail::lightSceneOwner(handle)); // Lights added after the load stay.
 			return {};
 		}
-		if (importedSceneNodes(handle).empty()) { return std::unexpected(Error::missing_object); }
+		if (!imported_assets_.scene_nodes || !imported_assets_.scene_nodes(handle)) { return std::unexpected(Error::missing_object); }
 
 		// Forget the cached render meshes and materials of this scene, then free whatever no object uses anymore.
 		for (const auto &[node, mesh, material, world_transform, world] : importedSceneMeshInstances(handle)) {

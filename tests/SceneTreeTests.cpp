@@ -67,6 +67,51 @@ template <typename T> [[nodiscard]] bool failsWith(const std::expected<T, vve::E
 	return !result && result.error() == error;
 }
 
+/// @brief Instance ownership survives mixed parenting without deleting a nested instance or independently created resources.
+[[nodiscard]] bool checkOwnershipCleanup(const Rig &rig) {
+	auto render = rig.render;
+	const auto world_root = render.sceneRoot();
+	const auto owner = render.instantiateScene(rig.scene, vve::SceneInstantiationOptions{.keep_hierarchy = true});
+	const auto nested = render.instantiateScene(rig.scene, vve::SceneInstantiationOptions{.keep_hierarchy = true});
+	if (!owner || !nested) { return false; }
+	const auto owner_root = render.sceneInstanceRoot(*owner);
+	const auto nested_root = render.sceneInstanceRoot(*nested);
+	const auto mount = render.sceneInstanceNode(*owner, assetNode(rig, "Mount"));
+	const auto wheel = render.sceneInstanceNode(*owner, assetNode(rig, "Wheel"));
+	const auto body = render.sceneInstanceNode(*owner, assetNode(rig, "Body"));
+	if (!owner_root || !nested_root || !mount || !wheel || !body) { return false; }
+	// Move an owned interior subtree outside its root, then nest a foreign instance and an independent branch below it.
+	if (!render.setNodeParent(*mount, world_root) || !render.setNodeParent(*nested_root, *mount)) { return false; }
+	const auto branch = render.createNode(*mount, at({0.0F, 3.0F, 0.0F}));
+	if (!branch) { return false; }
+	const auto child = render.createNode(*branch, at({0.0F, 0.0F, 4.0F}));
+	if (!child || !render.setNodeParent(*body, *child)) { return false; } // Ownership also crosses back into an independent branch.
+	const auto cube = render.addCuboid(vve::Vec3{-0.1F, -0.1F, -0.1F}, vve::Vec3{0.1F, 0.1F, 0.1F},
+		vve::LinearColor{.value = vve::oneVec3()}, at({0.0F, 1.0F, 0.0F}));
+	if (!cube || !render.setObjectParent(*cube, *body)) { return false; }
+	const auto cube_before = render.objectTransform(*cube);
+	const auto nested_wheel = object(rig, *nested, "Wheel");
+	// A cycle through mixed ownership is still rejected before any links change.
+	if (!failsWith(render.setNodeParent(*mount, *child), vve::Error::invalid_argument) ||
+		!render.removeSceneInstance(*owner)) { return false; }
+	for (const auto removed : {*owner_root, *mount, *wheel, *body}) {
+		if (!failsWith(render.nodeParent(removed), vve::Error::missing_object) ||
+			!failsWith(render.removeNode(removed), vve::Error::missing_object)) { return false; }
+	}
+	// Foreign boundaries return to the world root; their own local transforms and internal links stay intact.
+	if (render.nodeParent(*nested_root) != world_root || render.nodeParent(*branch) != world_root ||
+		render.nodeParent(*child) != *branch || render.nodeChildren(*child) != vve::Vector<vve::SceneNodeHandle>{} ||
+		!expectAt(render, nested_wheel, "nested instance preserved", {2.0F, 0.0F, 1.0F}) ||
+		!cube_before || !expectAt(render, *cube, "unrelated attached object preserved", cube_before->translation.value)) { return false; }
+	if (!failsWith(render.removeSceneInstance(*owner), vve::Error::missing_object) ||
+		!failsWith(render.removeSceneInstance(vve::RenderSceneInstanceHandle{}), vve::Error::missing_object)) { return false; }
+	// Removing the surviving instance later leaves the independent branch and object alive as well.
+	if (!render.removeSceneInstance(*nested) || !render.nodeTransform(*branch) || !render.nodeTransform(*child) ||
+		!render.objectTransform(*cube) || !render.removeNode(*branch) || !render.removeObject(*cube)) { return false; }
+	std::println("[SceneTreeTests] ownership_cleanup=1 moved_nodes=3 nested_instance_preserved=1 unrelated_resources_preserved=1");
+	return true;
+}
+
 } // namespace
 
 /// @brief Proves the world tree: fixed root, model copies below it, reparenting, hung objects and removal.
@@ -173,6 +218,10 @@ int main() {
 	if (!failsWith(render.nodeParent(*root_a), vve::Error::missing_object) || render.nodeChildren(*trailer) != vve::Vector<vve::SceneNodeHandle>{}) {
 		return 28;
 	}
+	// Existing copies, unrelated nodes and detached objects also survive another instance's ownership cleanup.
+	const auto children_before = render.nodeChildren(root);
+	if (!checkOwnershipCleanup(rig) || render.nodeChildren(root) != children_before || !render.nodeTransform(*mount_b) ||
+		!render.nodeTransform(*trailer) || !render.objectTransform(*cube)) { return 30; }
 
 	// clearScene empties the tree but keeps the same world root.
 	render.clearScene();

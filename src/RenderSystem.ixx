@@ -298,6 +298,7 @@ export namespace vve {
 			return impl_.nodeTransform(node);
 		}
 		/// @brief Moves a node with everything below it under another parent; its local transform is kept.
+		/// @note Reparenting never transfers instance ownership; cycles are rejected with invalid_argument.
 		[[nodiscard]] inline auto setNodeParent(SceneNodeHandle node, SceneNodeHandle parent) -> std::expected<void, Error> {
 			return impl_.setNodeParent(node, parent);
 		}
@@ -323,6 +324,8 @@ export namespace vve {
 			return impl_.setObjectParent(object, node);
 		}
 		/// @brief Removes one render-scene instance and the objects it created.
+		/// @note All copied nodes are removed, even after reparenting. Foreign or independently created child subtrees move
+		/// to sceneRoot with their local transforms unchanged; unrelated objects on removed nodes detach in world space.
 		[[nodiscard]] inline auto removeSceneInstance(RenderSceneInstanceHandle instance) -> std::expected<void, Error> {
 			return impl_.removeSceneInstance(instance);
 		}

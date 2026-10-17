@@ -27,6 +27,12 @@ export namespace vve {
 		[[nodiscard]] inline auto loadScene(const std::filesystem::path &source) -> std::expected<SceneHandle, Error> {
 			return impl_.loadScene(source);
 		}
+		/// @brief Releases render caches and source descriptors; live scene instances return Error::invalid_argument.
+		/// Remove instances first. Unlike RenderSystem::removeScene(), success invalidates the scene and its exclusive asset handles.
+		/// Unknown/already unloaded scenes return Error::missing_object; submitted GPU resources retire after completion.
+		[[nodiscard]] inline auto unloadScene(SceneHandle scene) -> std::expected<void, Error> {
+			return impl_.unloadScene(scene);
+		}
 		/// @brief Reports whether the selected implementation contains a scene handle.
 		[[nodiscard]] inline bool containsScene(SceneHandle scene) const { return impl_.containsScene(scene); }
 		/// @brief Returns the public name stored for a scene.

@@ -167,10 +167,21 @@ int main() {
 	if (!render.setSceneInstanceNodeTransform(*rigged, car, local({1.0F, 0.0F, 0.0F}))) { return 22; }
 	if (!expectWorld(rig, *rigged, "Body", "after part removal", {1.0F, 1.0F, 0.0F})) { return 23; }
 
-	// Removing the instance removes its hierarchy.
-	if (!render.removeSceneInstance(*rigged)) { return 24; }
+	// An interior subtree moved outside its instance root remains owned by that instance.
+	const auto mount_copy = render.sceneInstanceNode(*rigged, mount);
+	const auto wheel_copy = render.sceneInstanceNode(*rigged, node(rig, "Wheel"));
+	const auto instance_root = render.sceneInstanceRoot(*rigged);
+	if (!mount_copy || !wheel_copy || !instance_root || !render.setNodeParent(*mount_copy, render.sceneRoot())) { return 24; }
+	if (render.nodeParent(*wheel_copy) != *mount_copy) { return 25; }
+	// Removing the instance removes both the original root and the moved interior subtree.
+	if (!render.removeSceneInstance(*rigged)) { return 26; }
 	if (const auto result = render.setSceneInstanceNodeTransform(*rigged, car, local({}));
-		result || result.error() != vve::Error::missing_object) { return 25; }
+		result || result.error() != vve::Error::missing_object) { return 27; }
+	for (const auto removed : {*instance_root, *mount_copy, *wheel_copy}) {
+		const auto result = render.nodeTransform(removed);
+		if (result || result.error() != vve::Error::missing_object) { return 28; }
+	}
+	std::println("[SceneHierarchyTests] moved_subtree_removed=1 owned_nodes_checked=3");
 
 	std::println("[SceneHierarchyTests] PASS");
 	return 0;

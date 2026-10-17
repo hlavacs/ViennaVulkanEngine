@@ -60,7 +60,7 @@ export namespace vve::simple {
 		Windows windows_{};																///< Startup window descriptors.
 		ECS ecs_{};																			///< Entity/component storage owned by the implementation and shared with the facade.
 		WindowSystem window_system_{};												///< SDL platform window owner.
-		AssetSystem assets_{};															///< Asset and object catalog facade.
+		AssetSystem assets_{[this](SceneHandle scene) { return render_system_.removeScene(scene); }};															///< Asset and object catalog facade.
 		RenderSystem render_system_{makeImportedAssetReadAccess(), &window_system_};	///< Renderer selection and active CPU render scene.
 		GuiSystem gui_{};																	///< GUI descriptor facade.
 		AudioSystem audio_{}; ///< Owns the lazily opened device, sounds and voices.

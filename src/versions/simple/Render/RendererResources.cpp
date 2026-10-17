@@ -644,6 +644,7 @@ namespace vve::simple {
 		*/
 	void ForwardRenderer::cleanup() {
 		(void)waitDeviceIdle();
+		frameError_.reset();
 		// Release every target before the device-wide resources its descriptors and commands reference.
 		for (auto &target : targets) { target.cleanup(); }
 		targets.clear();

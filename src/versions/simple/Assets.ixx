@@ -127,8 +127,11 @@ export namespace vve::simple {
 	/// @brief Asset facade that owns imported scene descriptors.
 	class AssetSystem {
 	public:
+		explicit AssetSystem(std::function<std::expected<void, Error>(SceneHandle)> release_render_scene = {});
 		[[nodiscard]] auto addScene(ObjectName name)											-> std::expected<SceneHandle, Error>;
 		[[nodiscard]] auto loadScene(const std::filesystem::path &source)				-> std::expected<SceneHandle, Error>;
+		[[nodiscard]] auto unloadScene(SceneHandle scene) -> std::expected<void, Error>;
+		[[nodiscard]] auto catalogEntryCount() const -> std::size_t;
 
 		// Catalog queries return Error::missing_object for unknown handles.
 		[[nodiscard]] bool containsScene(SceneHandle scene) const { return catalog_.scenes.contains(scene); }
@@ -212,6 +215,7 @@ export namespace vve::simple {
 		[[nodiscard]] auto meshIndicesView(MeshHandle mesh) const -> std::expected<std::span<const std::uint32_t>, Error>;
 
 	private:
+		std::function<std::expected<void, Error>(SceneHandle)> release_render_scene_{}; ///< Rejects live instances and releases render caches before source removal.
 		/// @brief Texture slots read from imported materials; for two slots with the same semantic the earlier one wins.
 		inline static constexpr std::array texture_types{aiTextureType_BASE_COLOR, aiTextureType_DIFFUSE,
 																			aiTextureType_NORMALS, aiTextureType_HEIGHT,
@@ -812,6 +816,42 @@ namespace vve::simple {
 		const aiScene *scene = importer.ReadFile(path.string(), flags);
 		if (scene == nullptr || scene->mRootNode == nullptr) { return std::unexpected(Error::asset_import_failed); }
 		return import(catalog_, *scene, path);
+	}
+
+	/// @brief Connects source unloading to the engine's render-cache release; standalone catalogs need no callback.
+	inline AssetSystem::AssetSystem(std::function<std::expected<void, Error>(SceneHandle)> release_render_scene)
+		: release_render_scene_{std::move(release_render_scene)} {}
+
+	/// @brief Releases a scene after render instances stop using it; shared descriptors stay with their remaining scenes.
+	inline auto AssetSystem::unloadScene(SceneHandle scene) -> std::expected<void, Error> {
+		const auto found = catalog_.scenes.data.find(scene);
+		if (found == catalog_.scenes.data.end()) { return std::unexpected(Error::missing_object); }
+		// Keep the complete catalog available while the renderer checks dependencies and releases its caches.
+		if (release_render_scene_) {
+			if (const auto released = release_render_scene_(scene); !released) { return released; }
+		}
+		auto removed = std::move(found->second);
+		catalog_.scenes.data.erase(found);
+		// Current imports allocate distinct handles; membership checks also preserve any shared descriptors.
+		const auto release = [this](auto &table, const auto &handles, auto members) {
+			for (const auto handle : handles) {
+				if (!std::ranges::any_of(catalog_.scenes.data, [&](const auto &entry) {
+					return std::ranges::contains(members(entry.second), handle);
+				})) { table.data.erase(handle); }
+			}
+		};
+		release(catalog_.nodes, removed.tree.nodes(), [](const AssetScene &value) -> const auto & { return value.tree.nodes(); });
+		release(catalog_.meshes, removed.meshes, [](const AssetScene &value) -> const auto & { return value.meshes; });
+		release(catalog_.materials, removed.materials, [](const AssetScene &value) -> const auto & { return value.materials; });
+		release(catalog_.lights, removed.lights, [](const AssetScene &value) -> const auto & { return value.lights; });
+		release(catalog_.cameras, removed.cameras, [](const AssetScene &value) -> const auto & { return value.cameras; });
+		return {};
+	}
+
+	/// @brief Small internal diagnostic for checking that repeated level changes release every catalog table.
+	inline auto AssetSystem::catalogEntryCount() const -> std::size_t {
+		return catalog_.scenes.data.size() + catalog_.nodes.data.size() + catalog_.meshes.data.size() +
+			catalog_.materials.data.size() + catalog_.lights.data.size() + catalog_.cameras.data.size();
 	}
 
 } // namespace vve::simple

@@ -158,28 +158,58 @@ export namespace vve {
 		inline EngineBuilder() = default;
 		explicit inline EngineBuilder(UserSystems<TSystems...> systems) : user_systems_{std::move(systems)} {}
 
-		[[nodiscard]] inline EngineBuilder &applicationName(std::string value) {
+		/// @brief Sets the application name while preserving the builder's value category for chaining.
+		[[nodiscard]] inline EngineBuilder &applicationName(std::string value) & {
 			application_name_ = ApplicationName{.value = std::move(value)};
 			return *this;
 		}
-		[[nodiscard]] inline EngineBuilder &maxFrames(MaxFrames value) {
+		/// @brief Continues an application-name chain on a temporary builder.
+		[[nodiscard]] inline EngineBuilder &&applicationName(std::string value) && {
+			return std::move(applicationName(std::move(value)));
+		}
+		/// @brief Sets the frame cap while preserving the builder's value category for chaining.
+		[[nodiscard]] inline EngineBuilder &maxFrames(MaxFrames value) & {
 			max_frames_ = value;
 			return *this;
 		}
-		[[nodiscard]] inline EngineBuilder &windows(WindowSetups value) {
+		/// @brief Continues a frame-cap chain on a temporary builder.
+		[[nodiscard]] inline EngineBuilder &&maxFrames(MaxFrames value) && {
+			return std::move(maxFrames(value));
+		}
+		/// @brief Replaces startup windows while preserving the builder's value category for chaining.
+		[[nodiscard]] inline EngineBuilder &windows(WindowSetups value) & {
 			windows_ = std::move(value);
 			return *this;
 		}
-		[[nodiscard]] inline EngineBuilder &addWindow(WindowSetup value) {
+		/// @brief Continues a startup-window chain on a temporary builder.
+		[[nodiscard]] inline EngineBuilder &&windows(WindowSetups value) && {
+			return std::move(windows(std::move(value)));
+		}
+		/// @brief Appends a startup window while preserving the builder's value category for chaining.
+		[[nodiscard]] inline EngineBuilder &addWindow(WindowSetup value) & {
 			windows_.add(std::move(value));
 			return *this;
 		}
-		[[nodiscard]] inline EngineBuilder &userSystems(UserSystems<TSystems...> value) {
+		/// @brief Continues a window-append chain on a temporary builder.
+		[[nodiscard]] inline EngineBuilder &&addWindow(WindowSetup value) && {
+			return std::move(addWindow(std::move(value)));
+		}
+		/// @brief Replaces user systems while preserving the builder's value category for chaining.
+		[[nodiscard]] inline EngineBuilder &userSystems(UserSystems<TSystems...> value) & {
 			user_systems_ = std::move(value);
 			return *this;
 		}
-		[[nodiscard]] inline auto build() const {
+		/// @brief Continues a user-system chain on a temporary builder.
+		[[nodiscard]] inline EngineBuilder &&userSystems(UserSystems<TSystems...> value) && {
+			return std::move(userSystems(std::move(value)));
+		}
+		/// @brief Copies a reusable builder; all user systems must support copying.
+		[[nodiscard]] inline auto build() const & requires((std::copy_constructible<TSystems> && ...)) {
 			return Engine<TSystems...>{application_name_, max_frames_, windows_, user_systems_};
+		}
+		/// @brief Consumes a temporary or std::move(builder); its user systems are moved-from after this call.
+		[[nodiscard]] inline auto build() && {
+			return Engine<TSystems...>{std::move(application_name_), max_frames_, std::move(windows_), std::move(user_systems_)};
 		}
 
 	private:

@@ -50,6 +50,7 @@ vve_add_engine_test(DefaultCameraControllerTests)
 vve_add_engine_test(WindowOwnershipTests GPU)
 vve_add_engine_test(WorldTests GPU)
 vve_add_engine_test(UserSystemTests GPU)
+vve_add_engine_test(EngineBuilderTests)
 # White-box tests import the simple implementation modules straight from the engine library; the inline
 # code they instantiate (e.g. simple::Engine's destructor) calls Vulkan directly, so they link it as well.
 # Tests that create windows open hidden SDL windows and use the platform video driver. SDL's offscreen driver only works
@@ -109,6 +110,7 @@ vve_add_engine_test(RenderSkyboxTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderSpriteTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(SceneRemovalTests vve_test_support)
 vve_add_engine_test(SceneAssetRemovalBlockedTests vve_test_support)
+vve_add_engine_test(AssetSceneUnloadTests Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(ScenePurgeUnusedAssetsTests vve_test_support)
 vve_add_engine_test(SceneTransformCompositionTests vve_test_support)
 vve_add_engine_test(SceneHierarchyTests vve_test_support)

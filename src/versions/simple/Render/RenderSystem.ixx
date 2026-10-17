@@ -267,7 +267,7 @@ export namespace vve::simple {
 		SceneNodeHandle scene_root_{makeCounterHandle<SceneNodeHandle>()};		///< Fixed world root node of the scene tree.
 		std::unordered_map<SceneNodeHandle, SceneNode, HandleHash<SceneNodeHandle>> scene_nodes_{{scene_root_, SceneNode{}}}; ///< World scene tree.
 		std::map<RenderSceneInstanceHandle, std::unordered_map<NodeHandle, SceneNodeHandle, HandleHash<NodeHandle>>>
-			instance_nodes_{};														///< keep_hierarchy instances: asset node to tree node; key {} is the instance root.
+			instance_nodes_{};														///< Owned copied nodes, independent of parentage; key {} is the instance root.
 		std::unordered_map<RenderObjectHandle, SceneNodeHandle, HandleHash<RenderObjectHandle>> object_nodes_{}; ///< Node each hung object belongs to.
 		std::uint64_t rendered_frames_{0};											///< Number of presented frames.
 		std::uint64_t render_fps_frames_{0};										///< Presented frames accumulated for the render-FPS sample.
@@ -482,16 +482,17 @@ namespace vve::simple {
 	/// @brief Reports whether the renderer stores any spot light.
 	inline bool RenderSystem::hasSceneSpotLight() const { return !renderer_.scene.spotLights.empty(); }
 
-	/// @brief Requires an initialized renderer and counts only presented frames; skipped frames remain successful.
+	/// @brief Counts actual presentations, including windows presented before a later failure; temporary skips stay successful.
 	inline auto RenderSystem::renderFrame(WindowSystem &windows)											-> std::expected<void, Error>{
 		last_window_count_ = 0U;
 		if (!initialized_) { return std::unexpected(Error::not_initialized); }
+		auto frameResult = std::expected<void, Error>{};
 		// Retire closed targets only after their submitted work and presentation have finished.
 		for (auto target = renderer_.targets.begin(); target != renderer_.targets.end();) {
 			const auto *window = windows.findWindow(target->handle);
 			if (!window || window->info().should_close) {
 				const VkResult result = renderer_.waitIdle();
-				if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+				if (result != VK_SUCCESS) { frameResult = std::unexpected(Error::platform_error); break; }
 				target->cleanup();
 				target = renderer_.targets.erase(target);
 				continue;
@@ -499,14 +500,14 @@ namespace vve::simple {
 			// Each target uploads its camera uniforms and reuses the ordered shared shadow arrays.
 			// The renderer checks the live drawable extent and skips zero-size windows.
 			if (!window->info().minimized) {
-				const bool presented = renderer_.renderFrame(*target);
+				const auto outcome = renderer_.renderFrame(*target);
 				scene_.releaseUploadedPixels([this](std::size_t index) { return renderer_.uploadedTextureGeneration(index); });
-				if (const auto error = renderer_.textureUploadError()) { return std::unexpected(*error); }
-				if (presented) { ++last_window_count_; }
+				if (!outcome) { frameResult = std::unexpected(outcome.error()); break; }
+				if (*outcome == FrameOutcome::presented) { ++last_window_count_; }
 			}
 			++target;
 		}
-		if (last_window_count_ == 0U) { return {}; }
+		if (last_window_count_ == 0U) { return frameResult; }
 		++rendered_frames_;
 		const auto now = std::chrono::steady_clock::now();
 		if (render_fps_start_ == std::chrono::steady_clock::time_point{}) { render_fps_start_ = now; }
@@ -517,7 +518,7 @@ namespace vve::simple {
 			render_fps_frames_ = 0;
 			render_fps_start_ = now;
 		}
-		return {};
+		return frameResult;
 	}
 
 	inline std::uint64_t RenderSystem::renderedFrameCount() const { return rendered_frames_; }

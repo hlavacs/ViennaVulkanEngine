@@ -14,6 +14,129 @@ import std;
 import VVEngine;
 import VVE.TestSupport;
 import VVEngine.Simple;
+import VVEngine.Simple.RenderResources;
+
+/// @brief Keeps a pre-acquire source decode failure retryable after clearing its cache, without renderer reinitialization.
+bool checkFrameDecodeRecovery() {
+	const auto path = std::filesystem::path{VVE_TEST_TMP_DIR} / "decode-retry.ppm";
+	std::filesystem::create_directories(path.parent_path());
+	const auto writeSource = [&] {
+		std::ofstream image{path, std::ios::binary};
+		image << "P6\n1 1\n255\n" << "\x80\x40\xff";
+		return image.good();
+	};
+	if (!writeSource()) { return false; }
+	vve::simple::RenderScene scene; // Declared first so the renderer's borrowed scene survives engine destruction.
+	auto engine = vve::test::hiddenEngine("render-decode-retry", vve::PixelExtent{64, 64});
+	if (!engine.init() || !engine.renderFrame()) { return false; }
+	auto &render = engine.renderSystem();
+	auto &renderer = render.forward();
+	const auto slot = scene.acquireTexture(path);
+	if (!slot) { return false; }
+	const auto generation = scene.findTexture(*slot)->generation;
+	// Simulate released upload pixels, then lose their source before the renderer needs to restore them.
+	scene.releaseUploadedPixels([&](std::size_t) { return generation; });
+	if (!scene.findTexture(*slot)->rgba8.empty() || !std::filesystem::remove(path)) { return false; }
+	renderer.bindRenderScene(scene);
+	renderer.markSceneResourcesDirty();
+	auto &target = renderer.targets.front();
+	const auto frame = target.currentFrame;
+	const auto serials = target.submitSerials;
+	const auto uploads = renderer.textureUploadSubmitCount();
+	const auto decodes = scene.textureDecodeCount();
+	const auto skipped = renderer.skippedFrameCount();
+	std::ostringstream diagnostic;
+	auto *previous = std::cerr.rdbuf(diagnostic.rdbuf());
+	const auto failed = engine.renderFrame();
+	std::cerr.rdbuf(previous);
+	if (failed || failed.error() != vve::Error::io_error || scene.textureDecodeCount() != decodes + 1U ||
+		diagnostic.str().find("scene sync") == std::string::npos || diagnostic.str().find("VkResult -3") == std::string::npos) { return false; }
+	if (!writeSource()) { return false; }
+	const auto cached = engine.renderFrame();
+	std::println("decode failure={} cached={} decodes={} frame={} uploads={} diagnostic={}",
+		failed ? "none" : vve::errorName(failed.error()), cached ? "none" : vve::errorName(cached.error()),
+		scene.textureDecodeCount() - decodes, target.currentFrame, renderer.textureUploadSubmitCount() - uploads, diagnostic.str());
+	if (cached || cached.error() != vve::Error::io_error || scene.textureDecodeCount() != decodes + 1U ||
+		target.currentFrame != frame || target.submitSerials != serials || renderer.textureUploadSubmitCount() != uploads ||
+		renderer.skippedFrameCount() != skipped || render.renderedFrameCount() != 1U || render.lastRenderedWindowCount() != 0U ||
+		vkGetFenceStatus(renderer.device.device, target.frameSync.inFlightFences[frame]) != VK_SUCCESS) { return false; }
+	// Clear the bound test scene's decode cache and the render system's empty scene; neither shuts down the GPU.
+	scene.clear();
+	render.clearScene();
+	if (!scene.acquireTexture(path) || !engine.renderFrame() || render.renderedFrameCount() != 2U ||
+		render.lastRenderedWindowCount() != 1U || renderer.gpuTextureCount() != 1U) { return false; }
+	render.waitIdle();
+	engine.gui().shutdownVulkan();
+	render.shutdown();
+	std::println("decode recovered=true cleanup_validation_errors={}", renderer.validationErrorCount());
+	return renderer.validationErrorCount() == 0U;
+}
+
+/// @brief Propagates deterministic rendering setup failures through the public step and run facade.
+bool checkFacadeFrameFailure() {
+	auto engine = vve::Engine<>{vve::MaxFrames{1}, vve::WindowSetups{vve::WindowSetup{}
+		.id("main").extent(vve::PixelExtent{64, 64}).visible(false)}};
+	if (!engine.init()) { return false; }
+	auto world = engine.world();
+	auto &render = world.get<vve::RenderSystem>();
+	std::size_t setup_calls{};
+	// Target creation catches this exception and returns platform_error before any frame is acquired or submitted.
+	render.setPostProcessSetup([&](vvppl::PostProcessing &) {
+		++setup_calls;
+		throw std::runtime_error{"injected setup failure"};
+	});
+	const auto step = engine.step();
+	const auto run = engine.run();
+	std::println("facade failure step={} run={} setup_calls={} frames={} windows={}",
+		step ? "none" : vve::errorName(step.error()), run ? "none" : vve::errorName(run.error()),
+		setup_calls, render.renderedFrameCount(), render.lastRenderedWindowCount());
+	return !step && step.error() == vve::Error::platform_error && !run && run.error() == vve::Error::platform_error &&
+		setup_calls == 2U && render.renderedFrameCount() == 0U && render.lastRenderedWindowCount() == 0U;
+}
+
+/// @brief Rejects missing frame resources before acquisition, preserving prior window counts and retaining the fatal error.
+bool checkFatalFramePropagation() {
+	auto engine = vve::simple::Engine{vve::simple::Windows{.value = {
+		vve::WindowDesc{.id = "a", .extent = {64, 64}, .visible = false},
+		vve::WindowDesc{.id = "b", .extent = {64, 64}, .visible = false}}}};
+	if (!engine.init() || !engine.renderFrame()) { return false; }
+	auto &render = engine.renderSystem();
+	auto &renderer = render.forward();
+	auto &target = renderer.targets.back();
+	const auto frame = target.currentFrame;
+	const auto serials = target.submitSerials;
+	const auto skipped = renderer.skippedFrameCount();
+	// Keep every RAII owner alive while triggering the production frame-resource guard; no invalid Vulkan call is made.
+	auto commands = std::move(target.commandBuffers.ownedCommandBuffers);
+	std::ostringstream diagnostic;
+	auto *previous = std::cerr.rdbuf(diagnostic.rdbuf());
+	const auto failed = engine.renderFrame();
+	std::cerr.rdbuf(previous);
+	target.commandBuffers.ownedCommandBuffers = std::move(commands);
+	std::println("fatal error={} frames={} windows={} diagnostic={}", failed ? "none" : vve::errorName(failed.error()),
+		render.renderedFrameCount(), render.lastRenderedWindowCount(), diagnostic.str());
+	if (failed || failed.error() != vve::Error::platform_error || render.renderedFrameCount() != 2U ||
+		render.lastRenderedWindowCount() != 1U || target.currentFrame != frame || target.submitSerials != serials ||
+		renderer.skippedFrameCount() != skipped || diagnostic.str().find("frame resources") == std::string::npos ||
+		diagnostic.str().find("VkResult -3") == std::string::npos) { return false; }
+	// Restoring resources cannot turn a fatal error into a successful skip; run must return it too.
+	const auto repeated = engine.renderFrame();
+	const auto run = engine.run();
+	std::println("fatal repeated={} run={} frames={} windows={}", repeated ? "none" : vve::errorName(repeated.error()),
+		run ? "none" : vve::errorName(run.error()), render.renderedFrameCount(), render.lastRenderedWindowCount());
+	if (repeated || repeated.error() != vve::Error::platform_error || run || run.error() != vve::Error::platform_error ||
+		render.renderedFrameCount() != 2U || render.lastRenderedWindowCount() != 0U) { return false; }
+	// Cleanup is the explicit recovery boundary; no acquired image or unsignaled fence was left by the injected failure.
+	render.waitIdle();
+	engine.gui().shutdownVulkan();
+	render.shutdown();
+	if (renderer.validationErrorCount() != 0U || !render.initialize(engine.windowSystem()) ||
+		!render.renderFrame(engine.windowSystem()) || render.lastRenderedWindowCount() != 2U ||
+		render.renderedFrameCount() != 3U) { return false; }
+	render.shutdown();
+	std::println("fatal recovered=true cleanup_validation_errors={}", renderer.validationErrorCount());
+	return renderer.validationErrorCount() == 0U;
+}
 
 /// @brief Skips minimized windows without retiring targets, moving the GUI or losing camera and effect state.
 bool checkMinimizedWindows() {
@@ -91,6 +214,9 @@ int main() {
 		render.renderedFrameCount() != 0U || render.lastRenderedWindowCount() != 0U ||
 		render.renderingFramesPerSecond() != 0.0) { return 1; }
 	if (!checkMinimizedWindows()) { return 10; }
+	if (!checkFatalFramePropagation()) { return 11; }
+	if (!checkFacadeFrameFailure()) { return 12; }
+	if (!checkFrameDecodeRecovery()) { return 13; }
 
 	// A capped run must present both frames, including the step that reports stopped.
 	{

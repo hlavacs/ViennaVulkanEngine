@@ -38,6 +38,13 @@ export namespace vve::simple {
 	};
 	[[nodiscard]] auto acquireAction(VkResult result) -> AcquireAction;
 
+	/// @brief Successful frame outcomes; fatal failures use std::unexpected<Error> instead.
+	enum class FrameOutcome : std::uint8_t {
+		presented, ///< Presentation accepted an image, including a suboptimal swapchain.
+		skipped, ///< A temporary condition prevented presentation; retry on the next frame.
+	};
+	[[nodiscard]] auto frameOutcome(VkResult result, FrameOutcome completed) -> std::expected<FrameOutcome, Error>;
+
 	/// @brief Scene draw and bind counts for the most recently recorded window, excluding GUI and post-processing.
 	struct FrameDrawStats {
 		std::size_t forwardDraws{};      ///< Indexed draws in the colour pass.
@@ -162,7 +169,7 @@ export namespace vve::simple {
 		[[nodiscard]] const FrameUniforms &frameUniforms() const { return frameUniforms_; }
 
 		// Frame recording and presentation (RendererDraw.cpp).
-		[[nodiscard]] bool drawFrame(WindowTarget &target, VulkanReadback *readback = nullptr);		///< Reports whether one swapchain frame was presented; the optional readback captures it for deterministic debug output.
+		[[nodiscard]] auto drawFrame(WindowTarget &target, VulkanReadback *readback = nullptr) -> std::expected<FrameOutcome, Error>;
 
 		// Diagnostics (RendererDebug.cpp).
 		[[nodiscard]] bool validationActive() const;							///< Reports whether the instance's Debug validation messenger is active.
@@ -284,8 +291,8 @@ export namespace vve::simple {
 		/// @brief Returns the colour every window clears to.
 		[[nodiscard]] LinearColor backgroundColor() const { return backgroundColor_; }
 
-		/// @brief Returns whether the concrete Vulkan draw path presented a frame.
-		[[nodiscard]] bool renderFrame(WindowTarget &target, VulkanReadback *readback = nullptr) { return drawFrame(target, readback); }
+		/// @brief Distinguishes presentation, a temporary skip and a fatal rendering failure.
+		[[nodiscard]] auto renderFrame(WindowTarget &target, VulkanReadback *readback = nullptr) -> std::expected<FrameOutcome, Error> { return drawFrame(target, readback); }
 
 		/// @brief Borrows CPU mesh data for diagnostics; invalidated by scene mutation or destruction.
 		[[nodiscard]] const RenderMesh *findRenderMesh(RenderMeshHandle handle) const {
@@ -308,7 +315,7 @@ export namespace vve::simple {
 		[[nodiscard]] VkResult createTargetResources(WindowTarget &target); ///< Creates one target's attachments, frame resources and post-processing chain.
 		[[nodiscard]] VkResult writeSceneDescriptors(WindowTarget &target, std::uint32_t frame); ///< Updates only a completed slot's materials and changed texture elements.
 		[[nodiscard]] VkResult uploadDynamicVertices(WindowTarget &target, std::uint32_t frame);
-		static void reportFrameFailure(const char *stage, VkResult result);	///< Logs a skipped frame with its Vulkan result, capped to avoid flooding the console.
+		[[nodiscard]] auto reportFrameFailure(const char *stage, VkResult result) -> std::unexpected<Error>;
 		[[nodiscard]] VkResult recordCommandBuffer(WindowTarget &target, std::uint32_t frameIndex, std::uint32_t imageIndex, const Mat4 &viewProjection, bool drawGui);
 		[[nodiscard]] static std::pair<std::uint32_t, std::uint32_t> shadowTexel(Vec3 lightNdc);	///< Converts light NDC x/y to one clamped shadow-map texel.
 		/// @brief Generation the RenderScene texture table holds in one slot; 0 for a free or missing slot.
@@ -337,6 +344,7 @@ export namespace vve::simple {
 		const Vector<RenderInstance> *renderInstances_{nullptr}; ///< Borrowed draw instances owned by RenderSystem.
 		RenderScene *renderScene_{nullptr}; ///< Borrowed owner; renderer selects texture capacity, restores pixels and updates decode bookkeeping.
 		std::optional<Error> textureUploadError_{}; ///< Decode error retained through Vulkan cleanup for the expected-returning caller.
+		std::optional<Error> frameError_{}; ///< Fatal draw failure retained until cleanup; damaged synchronization must never become a successful skip.
 		std::vector<std::uint64_t> uploadedTextureGenerations_{}; ///< Resident generations matching the allocated texture slots; 0 = empty.
 		std::uint32_t textureCapacity_{}; ///< Hardware ceiling; GPU descriptors and texture owners grow only as the scene needs them.
 		std::size_t uploadedTextureCount_{}; ///< Number of resident objectTextures.
