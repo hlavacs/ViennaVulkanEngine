@@ -2739,6 +2739,36 @@ Move its gameplay into a registered GameSystem update hook for fresh input befor
 The bright unlit sphere is a visual marker. Its directional light illuminates the scene. Placing the sphere at a fixed offset from the camera makes it appear distant, but this game-specific trick is not a sky system built into the engine.
 \source{examples/game/game.cpp}
 
+\lesson{Ring Racer: Kenney models and sounds}
+The larger \api{racer} example shows how a game combines reusable assets with its own rules. It uses models and sounds downloaded from two Kenney starter-kit repositories:
+
+\begin{itemize}
+\item \href{https://github.com/KenneyNL/Starter-Kit-Racing}{Kenney: Starter Kit Racing}. Ring Racer uses its finish arch, tents and coloured trucks, together with engine, skid and impact sounds. These files live under \path{assets/racer/kenney/racing}.
+\item \href{https://github.com/KenneyNL/Starter-Kit-City-Builder}{Kenney: Starter Kit City Builder}. Ring Racer uses its small buildings, garages, street pieces, pavement and fountain, plus ambience and placement-click sounds. These files live under \path{assets/racer/kenney/city}.
+\end{itemize}
+
+The upstream READMEs identify the included models and sounds as CC0 assets. The starter-kit software has a separate MIT license. Keep the upstream license and credit information with your source downloads; \path{assets/racer/license.txt} records the assets used by this game, including the skid sound's credit to Landeplage.
+
+\subsection*{Download and keep the paths intact}
+Download each repository as a ZIP through GitHub's \emph{Code / Download ZIP}, or clone it. The racer README lists the exact files copied from each kit. Copy the required files into the racing and city folders above while preserving their relative directories. In particular, each kit's models need its own \path{models/Textures/colormap.png}; keep the matching texture with the matching kit.
+
+\begin{lstlisting}[language={}]
+assets/racer/kenney/
+    racing/models/Textures/colormap.png
+    racing/models/track-finish.glb
+    racing/audio/engine.ogg
+    city/models/Textures/colormap.png
+    city/models/building-garage.glb
+    city/sounds/ambience.ogg
+\end{lstlisting}
+This listing shows the directory pattern, not the full inventory. Missing optional kit models are reported and omitted; missing kit sounds are reported by the sound system. Use the README's full inventory to reproduce the intended scene.
+
+\subsection*{Follow the files through VVE}
+\path{RacerWorld.ixx} loads and places the kit models through AssetSystem and RenderSystem. \path{RacerSound.ixx} loads the OGG files through AudioSystem; for example, it adjusts engine pitch as the cars accelerate. Race rules and car movement remain in the racer's C++ systems.
+
+These two starter kits are part of a larger asset collection. The game also uses Kenney's Car Kit, Nature Kit and Mini Characters, Poly Haven textures and sky imagery, generated assets, and the bundled V2 music. See the racer README and asset license file for their individual sources.
+\source{examples/racer/README.md; examples/racer/RacerWorld.ixx; examples/racer/RacerSound.ixx; assets/racer/license.txt}
+
 \lesson{Public API task reference}\label{core-75}
 Use this page to locate the public entry point for a programming task.
 

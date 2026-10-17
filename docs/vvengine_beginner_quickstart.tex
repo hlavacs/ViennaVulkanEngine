@@ -282,7 +282,9 @@ Run tests again with \api{ctest --test-dir <build-directory> --output-on-failure
 \subsection*{Where to go next}
 Read the longer guide for a complete moving-cube project, ECS-to-render synchronization, local versus world transforms, multiple windows, lighting, GUI images, resource lifetimes, and the CPU-to-GPU path. Use \path{README.md} for platform prerequisites and \path{tests/CMakeLists.txt} for the tests actually registered in your checkout.
 
-\subsection*{About this edition}
-Updated for the local V3 checkout on 17 October 2026, including source unloading, move-only builder systems, hierarchy ownership, and propagated rendering errors. The preceding Windows Release build succeeded; 85 of 88 tests passed. One test was blocked by sandbox path access and two examples fast-failed. These are recorded limitations of that validation, not a claim that every platform or example passes. The companion guide gives the detailed lifecycle and error contracts.
+\subsection*{Ring Racer's downloaded assets}
+The larger \api{racer} example uses models and sounds from Kenney's \href{https://github.com/KenneyNL/Starter-Kit-Racing}{Starter Kit Racing} and \href{https://github.com/KenneyNL/Starter-Kit-City-Builder}{Starter Kit City Builder}. Their upstream READMEs identify these assets as CC0. The copied files belong in \path{assets/racer/kenney/racing} and \path{assets/racer/kenney/city}. Preserve each kit's directories, especially \path{models/Textures/colormap.png}, so imported models can find their textures. The exact file inventory and other asset sources are in \path{examples/racer/README.md} and \path{assets/racer/license.txt}.
+
+\textbf{Edition.} Checked against the local V3 checkout on 17 October 2026. See the companion guide for the detailed validation results.
 \source{README.md; src/Engine.ixx; src/Types.ixx; tests/CMakeLists.txt}
 \end{document}
