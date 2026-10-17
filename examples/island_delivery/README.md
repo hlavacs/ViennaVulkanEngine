@@ -8,7 +8,13 @@ next cargo and continue from that island with the same aircraft. Flying over
 the destination never completes a delivery. The default
 window is **1920 × 1080**, with four-sample antialiasing, physically based
 materials, a photographed sky, atmospheric haze, animated ocean, island
-airfields and a downloaded textured twin-prop aircraft.
+airfields and a downloaded textured twin-prop aircraft. A crisp 24-pixel GUI font
+makes the flight panel, instruments and charts easier to read at Full HD.
+Nearby islands have palm groves, branching broadleaf trees and tropical ground
+plants. Each detailed airport has twelve walking Kenney passengers and workers,
+plus three moving service vehicles with turning wheels. People pause along
+their routes; the activity pauses with the flight and stays clear of the runway
+and unloading bay.
 
 The game uses only `import VVEngine` and its public facade. VVE supplies Vulkan
 rendering and audio; there are no direct Vulkan, SDL or implementation imports.
@@ -44,12 +50,14 @@ can be launched from another working directory.
 
 ## Configure-time assets
 
-Enabling examples downloads the aircraft, original Poly Haven photographs and
-eight recorded sounds during CMake configuration. Every file has a pinned
+Enabling examples downloads the aircraft, Kenney service vehicles, original Poly Haven photographs and
+eight recorded sounds during CMake configuration. Every downloaded file has a pinned
 SHA256; the model and its license also have a pinned upstream commit.
 External assets stay in `<build>/_assets/island_delivery`, and the game build
 copies them to `bin/<variant>/exe/assets/island_delivery`. **No external asset
-binaries are added to this repository.** The manifest is
+binaries are added to this repository.** Four existing Kenney Mini Characters
+and their palette are copied from `assets/racer/crowd` into the same cache;
+their rigid limbs animate through the public scene-node API. The manifest is
 [cmake/IslandDeliveryAssets.cmake](../../cmake/IslandDeliveryAssets.cmake).
 
 An intact cache is reused without downloads. Share a cache or configure offline:
@@ -135,7 +143,7 @@ Each bounded frame advances two fixed 120 Hz physics steps by default.
 `--steps-per-frame 240` samples two simulated seconds per rendered frame while
 preserving every physics step, making a complete mission practical in tests.
 The autopilot never teleports or bypasses landing checks. `--width`, `--height`,
-`--hidden`, `--no-msaa` and `--camera chase|cockpit|showcase` support repeatable
+`--hidden`, `--no-msaa` and `--camera chase|cockpit|showcase|airport` support repeatable
 captures. `--help` opens no window. `IslandDeliveryLogicTests` checks flight,
 all 256 island sites, safe/unsafe landings, unloading gates, cargo assignment,
 runway turnarounds, reverse/lateral routes and repeated deliveries without a GPU.
@@ -144,7 +152,10 @@ heading-up rotation, compass arrow directions and runway guidance at Full HD and
 `IslandDeliveryMotionTests` measures camera-relative motion and Full HD pixel
 stability at 30, 60, 144 Hz and irregular frame intervals without a GPU.
 `IslandDeliverySoundTests` checks mixing telemetry and decodes/plays every
-download through VVE with SDL's dummy audio device. GPU tests capture the
+download through VVE with SDL's dummy audio device. The scene test also samples
+airport routes over ten minutes, checks animated limbs and moving vehicles,
+and verifies that leaving an airport releases its actor instances. `--camera airport`
+provides a close view of the departure airport's apron for inspection. GPU tests capture the
 departure, pilot-eye view, the map, repeated deliveries and a remote airport.
 `IslandDeliverySceneTests` checks the imported aircraft's wheel contact, nose
 alignment, propeller animation, automatic airport assignments, bounded scenery residency and resource release

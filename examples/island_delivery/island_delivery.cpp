@@ -20,7 +20,7 @@ void usage() {
 		"  --autopilot --map --mute --hidden --no-msaa --require-delivery\n"
 		"  --frames N --steps-per-frame N --width N --height N\n"
 		"  --start-island 0..255 --destination 0..255 --deliveries N\n"
-		"  --camera chase|cockpit|showcase --output image.png --verify flight.csv\n"
+		"  --camera chase|cockpit|showcase|airport --output image.png --verify flight.csv\n"
 		"  --asset-dir DIRECTORY (otherwise configure-time downloads beside the executable)");
 }
 
@@ -63,7 +63,7 @@ int main(int argc, char **argv) {
 		if (argument == "--verify") { verification = value; continue; }
 		if (argument == "--asset-dir") { game.assetRoot = value; continue; }
 		if (argument == "--camera") {
-			constexpr std::array names{"chase", "cockpit", "showcase"};
+			constexpr std::array names{"chase", "cockpit", "showcase", "airport"};
 			const auto found = std::ranges::find(names, value);
 			if (found == names.end()) { std::cerr << "[island] invalid camera\n"; return 1; }
 			game.cameraMode = static_cast<int>(found - names.begin());
@@ -133,11 +133,12 @@ int main(int argc, char **argv) {
 	const bool passed = flight.phase != island::Phase::crashed && rendered == session.frameLimit
 		&& session.peakResidentIslands <= 9 && (!requireDelivery || (flight.phase == island::Phase::delivered
 			&& flight.deliveries >= session.deliveryGoal && flight.takeoffs > 0 && flight.landings > 0));
-	const auto summary = std::format("passed={} delivered={} deliveries={} origin={} target={} islands={} resident_islands={} peak_resident={} map_open={} takeoffs={} landings={} max_altitude={:.3f} loaded_sounds={} audio_unavailable={} width={} height={} objects={} meshes={} textures={}\n",
+	const auto summary = std::format("passed={} delivered={} deliveries={} origin={} target={} islands={} resident_islands={} peak_resident={} map_open={} takeoffs={} landings={} max_altitude={:.3f} loaded_sounds={} audio_unavailable={} width={} height={} objects={} meshes={} textures={} busy_airports={} airport_people={} airport_vehicles={}\n",
 		passed, flight.phase == island::Phase::delivered, flight.deliveries, flight.originIsland, flight.targetIsland,
 		island::islandCount, session.residentIslands.size(), session.peakResidentIslands, session.mapOpen,
 		flight.takeoffs, flight.landings, flight.maxAltitude,
-		session.sound.loadedSounds, session.sound.deviceUnavailable, width, height, render.sceneInstanceCount(), render.sceneMeshCount(), render.sceneTextureCount());
+		session.sound.loadedSounds, session.sound.deviceUnavailable, width, height, render.sceneInstanceCount(), render.sceneMeshCount(), render.sceneTextureCount(),
+		session.airportTraffic.size(),session.airportTraffic.size()*12U,session.airportTraffic.size()*3U);
 	if (report) { report << summary; }
 	std::cout << "[island] " << summary << "[island] capture=" << output << " verification=" << verification << '\n';
 	return passed ? 0 : 6;

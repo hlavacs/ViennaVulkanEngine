@@ -77,6 +77,25 @@ vve_island_asset(Cesium-LICENSE.md
     "https://raw.githubusercontent.com/CesiumGS/cesium/85500087b890479ffa3bf0b4cf0db55887c2d89a/LICENSE.md"
     721844bc0cdaa9b1a9a145dbca1f981e2de15a7e200a5d1fd9f5f1eed8e5d030)
 
+# Kenney's CC0 service vehicles: pin both the models and their relative palette texture.
+set(island_kenney_racing "https://raw.githubusercontent.com/KenneyNL/Starter-Kit-Racing/2f2e5f2646dda89cb21d4e8539bab60c6e955dc8/models")
+vve_island_asset(vehicles/vehicle-truck-yellow.glb
+    "${island_kenney_racing}/vehicle-truck-yellow.glb"
+    1ebd83174eab6d2fdf69eb5d8e32bd06a23a86d9edc4fe915a4160430a7c36a5)
+vve_island_asset(vehicles/vehicle-truck-green.glb
+    "${island_kenney_racing}/vehicle-truck-green.glb"
+    df362d027a09b19395be0e96abd7cc2dc54608dfb920b592e64357b589f9fcd6)
+vve_island_asset(vehicles/Textures/colormap.png
+    "${island_kenney_racing}/Textures/colormap.png"
+    02bb3fb87365927d16e265d27caae405aeef5819b6bde5a989ff5e435318de4d)
+
+# Reuse the repository's existing rigid Kenney Mini Characters, already prepared for node animation.
+# This adds no binary models to Git and needs neither Python nor a model conversion step to build.
+foreach(character character-male-a.glb character-male-b.glb character-female-a.glb character-female-b.glb colormap.png)
+    configure_file("${PROJECT_SOURCE_DIR}/assets/racer/crowd/${character}"
+        "${VVE_ISLAND_ASSET_DIR}/people/${character}" COPYONLY)
+endforeach()
+
 # Recorded aircraft and location sound; authors and selected licenses travel with the executable.
 vve_island_asset(sounds/propeller.ogg
     "https://opengameart.org/sites/default/files/airplane_prop_0.ogg"

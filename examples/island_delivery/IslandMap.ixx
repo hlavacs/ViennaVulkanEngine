@@ -79,18 +79,18 @@ void drawNavigation(const Flight &flight) {
    const float distance = std::hypot(dx, dz); ///< Distance to the centre of the target airstrip.
    const float bearing = std::fmod(std::atan2(dx, -dz) * 180.0F / std::numbers::pi_v<float> + 360.0F, 360.0F);
    ImGui::SetNextWindowPos(ImVec2{io.DisplaySize.x - 12.0F, 12.0F}, ImGuiCond_Always, ImVec2{1, 0});
-   ImGui::SetNextWindowSize(ImVec2{360.0F * uiScale, 318.0F * uiScale});
+   ImGui::SetNextWindowSize(ImVec2{std::min(440.0F * std::max(0.8F,uiScale),io.DisplaySize.x*0.45F), 360.0F * uiScale});
    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4{0.025F, 0.055F, 0.09F, 0.96F});
    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{10.0F * uiScale, 8.0F * uiScale});
    constexpr auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
       | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoInputs;
    ImGui::Begin("Regional navigation", nullptr, flags);
-   ImGui::SetWindowFontScale(std::max(0.8F, uiScale));
+   ImGui::SetWindowFontScale(std::max(0.75F, uiScale));
    const auto name = islandName(flight.targetIsland); ///< Stable airport name shown above the map.
    ImGui::TextColored(ImVec4{0.95F, 0.76F, 0.39F, 1}, "TO %s", name.c_str());
    ImGui::Text("%.1f km  |  Bearing %03.0f deg", distance / 1000.0F, bearing);
    const ImVec2 top = ImGui::GetCursorScreenPos(), space = ImGui::GetContentRegionAvail();
-   const ImVec2 canvas{space.x, std::max(60.0F, space.y - 20.0F)}; ///< Reserve a short map legend.
+   const ImVec2 canvas{space.x, std::max(60.0F, space.y - ImGui::GetTextLineHeightWithSpacing())}; ///< Reserve a readable map legend.
    const ImVec2 bottom{top.x + canvas.x, top.y + canvas.y}, middle{top.x + canvas.x * 0.5F, top.y + canvas.y * 0.5F};
    const float range = std::clamp(distance * 2.4F, 2200.0F, 12000.0F); ///< Runway detail within a kilometre; regional context en route.
    const float scale = std::min(canvas.x, canvas.y) / range; ///< Isotropic projection preserves runway direction.
@@ -135,7 +135,7 @@ void drawNavigation(const Flight &flight) {
    draw->PopClipRect();
    draw->AddRect(top, bottom, IM_COL32(66, 104, 117, 255), 4.0F);
    ImGui::Dummy(canvas);
-   ImGui::TextUnformatted("Gold: fly  |  Cyan: you  |  M: map");
+   ImGui::TextUnformatted("Gold: target | Cyan: plane");
    ImGui::End(); ImGui::PopStyleVar(); ImGui::PopStyleColor();
 }
 
@@ -155,13 +155,13 @@ void drawMap(const Flight &flight, bool &open, float &zoom, vve::Vec2 &pan) {
    constexpr auto flags = ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoResize
                         | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoSavedSettings;
    ImGui::Begin("Archipelago chart", nullptr, flags);
-   ImGui::SetWindowFontScale(uiScale);
+   ImGui::SetWindowFontScale(std::clamp(uiScale,0.75F,1.0F));
    ImGui::TextColored(ImVec4{0.95F, 0.76F, 0.39F, 1}, "I S L A N D   A I R  /  ASSIGNED DELIVERY");
    ImGui::Text("%zu islands  |  %zu deliveries completed", islandCount, static_cast<std::size_t>(flight.deliveries));
    ImGui::Separator();
    const ImVec2 top = ImGui::GetCursorScreenPos(); ///< Ocean chart's upper-left corner.
    const ImVec2 available = ImGui::GetContentRegionAvail(); ///< Space after the heading.
-   const ImVec2 canvas{available.x, std::max(80.0F, available.y - 84.0F * uiScale)}; ///< Leave room for assigned cargo details.
+   const ImVec2 canvas{available.x, std::max(80.0F, available.y - 4.0F*ImGui::GetFrameHeightWithSpacing())}; ///< Leave room for larger cargo text and buttons.
    const ImVec2 bottom{top.x + canvas.x, top.y + canvas.y}; ///< Chart clip boundary.
    const ImVec2 centre{top.x + canvas.x * 0.5F, top.y + canvas.y * 0.5F}; ///< Chart's screen-space origin.
    vve::Vec2 low{std::numeric_limits<float>::max(), std::numeric_limits<float>::max()}, high{-low.x, -low.y}; ///< Actual site bounds.
@@ -223,7 +223,7 @@ void drawMap(const Flight &flight, bool &open, float &zoom, vve::Vec2 &pan) {
    // The same aircraft marker preserves its meaning across regional and archipelago views.
    drawChartAircraft(draw, player, flight.heading, 8.0F * uiScale);
    draw->AddText(ImVec2{top.x + 12.0F, top.y + 10.0F}, IM_COL32(182, 208, 215, 255), "N ^  /  CYAN: AIRCRAFT  /  GOLD: ROUTE");
-   draw->AddText(ImVec2{top.x + 12.0F, bottom.y - 22.0F}, IM_COL32(151, 180, 190, 255), "Wheel: zoom  |  Right drag: pan  |  Cargo and destination assigned automatically");
+   draw->AddText(ImVec2{top.x + 12.0F, bottom.y - ImGui::GetTextLineHeight()-6.0F}, IM_COL32(151, 180, 190, 255), "Wheel: zoom | Right drag: pan | Cargo assigned automatically");
    draw->PopClipRect();
    draw->AddRect(top, bottom, IM_COL32(66, 104, 117, 255), 5.0F);
    // Names appear on demand instead of obscuring the ocean with hundreds of labels.

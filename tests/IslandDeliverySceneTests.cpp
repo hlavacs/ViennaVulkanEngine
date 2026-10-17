@@ -2,6 +2,7 @@
 import std;
 import VVEngine;
 import Island.Scene;
+import Island.Airport;
 import Island.Game;
 
 namespace {
@@ -133,7 +134,7 @@ void streaming(vve::RenderSystem &render,vve::AssetSystem &assets,const std::fil
 		peakMeshes=std::max(peakMeshes,render.sceneMeshCount()); peakVertices=std::max(peakVertices,render.sceneVertexCount());
 		const auto batchLimit=resident.size()*18U+water.size()+5U;
 		check(render.sceneMeshCount()<=batchLimit && render.sceneMaterialCount()<=batchLimit && render.sceneTextureCount()<=12,"bounded_streaming_resources");
-		check(render.sceneVertexCount()<resident.size()*500000U+water.size()*5000U+20000U,"bounded_geometry_per_resident_island");
+		check(render.sceneVertexCount()<resident.size()*950000U+water.size()*5000U+20000U,"bounded_geometry_per_resident_island");
 		const auto stable=resident; const auto waves=water; const auto meshCount=render.sceneMeshCount();
 		check(island::updateEnvironment(render,root,eye,resident,water).has_value(),"repeat_stationary_streaming_update");
 		check(resident==stable && water==waves && render.sceneMeshCount()==meshCount,"stationary_frames_keep_handles_and_geometry");
@@ -187,6 +188,117 @@ void cargoContinuation() {
 	check(game.collectNextCargo(flight) && game.mapOpen && game.openMapOnStart,"cargo_collection_does_not_change_explicit_map_flags");
 	std::println("[IslandDeliverySceneTests] automatic_collection_origin={} target={} completed={} map_default=false",flight.originIsland,flight.targetIsland,flight.deliveries);
 }
+/** @brief Samples service routes independently of imported art, including turns and several complete circuits. */
+void airportRoutes() {
+	float greatestStep{}; ///< A route may turn, but its placement must never teleport between frames.
+	for (const auto id : {std::size_t{0},std::size_t{17},island::islandCount-1}) {
+		const auto centre=island::islandCenter(id);
+		for (unsigned actor{}; actor<island::airportActorCount; ++actor) {
+			// Quarter-second samples span multiple circuits; short adjacent samples also catch wrap discontinuities.
+			for (unsigned tick{}; tick<2400; ++tick) {
+				const double seconds=static_cast<double>(tick)*0.25;
+				const auto pose=island::airportPose(id,actor,seconds),next=island::airportPose(id,actor,seconds+0.01);
+				const auto point=vve::math::subtract(pose.translation.value,centre); const auto q=pose.rotation.value;
+				check(std::isfinite(point.x) && std::isfinite(point.y) && std::isfinite(point.z)
+					&& std::isfinite(q.x) && std::isfinite(q.y) && std::isfinite(q.z) && std::isfinite(q.w),"airport_route_pose_is_finite");
+				check(std::abs(q.x*q.x+q.y*q.y+q.z*q.z+q.w*q.w-1)<0.002F,"airport_route_orientation_is_unit_quaternion");
+				check(point.x>=27.99F && point.x<=67.01F && point.z>=-252 && point.z<=-127,"airport_routes_stay_on_service_apron");
+				check(std::abs(point.y-island::runwayHeight-0.04F)<0.003F,"airport_routes_follow_apron_height");
+				if (actor>=island::airportPeopleCount) {
+					check(point.x>=29.99F && point.x<=40.01F && point.z<=-181.99F,"airport_vehicles_keep_to_service_lane");
+				}
+				const float step=vve::math::length(vve::math::subtract(next.translation.value,pose.translation.value));
+				greatestStep=std::max(greatestStep,step); check(step<0.2F,"airport_routes_wrap_without_position_teleports");
+				const auto forwardStep=vve::math::subtract(island::airportPose(id,actor,seconds+0.1).translation.value,pose.translation.value);
+				const float forwardDistance=vve::math::length(forwardStep);
+				if (forwardDistance>0.05F) { // A tenth of a second avoids world-coordinate quantization at remote islands.
+					const auto direction=vve::math::scale(forwardStep,1.0F/forwardDistance);
+					check(vve::math::dot(rotated(q,{0,0,1}),direction)>0.95F,"airport_actors_face_their_direction_of_travel");
+				}
+				const auto repeated=island::airportPose(id,actor,seconds);
+				check(close(repeated.translation.value,pose.translation.value) && repeated.rotation.value.w==q.w
+					&& repeated.rotation.value.y==q.y,"airport_pose_repeats_at_same_clock");
+			}
+		}
+	}
+	std::println("[IslandDeliverySceneTests] airport_route_islands=3 actors={} sampled_seconds=600 greatest_step_10ms={}",
+		island::airportActorCount,greatestStep);
+}
+/** @brief Checks real animated Kenney instances, bounded model reuse and cleanup when scenery streams away. */
+void airportTraffic(vve::RenderSystem &render,vve::AssetSystem &assets,const std::filesystem::path &root) {
+	render.clearScene();
+	std::map<std::size_t,vve::Vector<vve::RenderObjectHandle>> resident;
+	std::map<std::size_t,vve::Vector<vve::RenderSceneInstanceHandle>> traffic;
+	std::map<std::string,vve::SceneHandle> models;
+	resident[0].resize(9); resident[17].resize(8); ///< Residency alone decides detail; terrain geometry is unnecessary here.
+	check(island::updateAirportActivity(render,assets,root,resident,traffic,models,0).has_value(),"airport_imported_traffic_builds");
+	check(traffic.size()==1 && traffic.contains(0) && traffic.at(0).size()==island::airportActorCount,"only_detailed_airports_have_activity");
+	check(!models.empty() && models.size()<=6 && render.sceneTextureCount()>0,"airport_models_and_palette_are_loaded_once");
+	const auto original=traffic; const auto cached=models; const auto meshCount=render.sceneMeshCount();
+	std::vector<vve::SceneNodeHandle> roots;
+	std::vector<vve::Transform> placements;
+	// Query visible imported meshes rather than trusting the game's ownership map alone.
+	for (const auto instance : traffic.at(0)) {
+		const auto node=render.sceneInstanceRoot(instance); const auto objects=render.sceneInstanceObjects(instance);
+		check(node.has_value() && objects && !objects->empty(),"airport_actor_has_real_scene_hierarchy_and_meshes");
+		roots.push_back(*node);
+		const auto placement=render.nodeTransform(*node); check(placement.has_value(),"airport_actor_root_placement_exists");
+		placements.push_back(*placement);
+		for (const auto object : *objects) {
+			const auto bounds=render.objectBounds(object);
+			check(bounds && bounds->valid && bounds->minimum.value.x>25,"airport_actor_geometry_clears_runway_and_unloading_bay");
+		}
+	}
+	std::vector<std::pair<vve::SceneNodeHandle,vve::Transform>> limbs;
+	auto pending=render.nodeChildren(roots.front()); check(pending.has_value(),"airport_person_has_poseable_children");
+	// Preserve local joint poses separately from the actor's moving world placement.
+	for (std::size_t next{}; next<pending->size(); ++next) {
+		const auto node=(*pending)[next]; const auto pose=render.nodeTransform(node); const auto children=render.nodeChildren(node);
+		check(pose.has_value() && children.has_value(),"airport_person_child_is_publicly_queryable");
+		limbs.emplace_back(node,*pose); pending->insert(pending->end(),children->begin(),children->end());
+	}
+	check(!limbs.empty(),"airport_person_contains_rigid_body_parts");
+	const auto initial=render.nodeTransform(roots.front()); check(initial.has_value(),"airport_initial_root_pose");
+	check(island::updateAirportActivity(render,assets,root,resident,traffic,models,0.35).has_value(),"airport_advances_activity_clock");
+	const auto moving=render.nodeTransform(roots.front());
+	check(moving && !close(moving->translation.value,initial->translation.value,0.01F),"airport_person_walks_between_frames");
+	for (unsigned actor=island::airportPeopleCount; actor<island::airportActorCount; ++actor) {
+		const auto pose=render.nodeTransform(roots[actor]);
+		check(pose && !close(pose->translation.value,placements[actor].translation.value,0.1F),"airport_service_vehicles_drive_between_frames");
+	}
+	bool walks=false;
+	for (const auto &[node,before] : limbs) {
+		const auto after=render.nodeTransform(node); check(after.has_value(),"airport_animated_part_survives_update");
+		const auto a=before.rotation.value,b=after->rotation.value;
+		walks=walks || std::abs(a.w*b.w+a.x*b.x+a.y*b.y+a.z*b.z)<0.9999F;
+	}
+	check(walks,"airport_people_swing_rigid_limbs_while_walking");
+	check(traffic==original && models==cached && render.sceneMeshCount()==meshCount,"airport_motion_reuses_instances_and_models");
+	std::vector<vve::Transform> movingLimbs;
+	for (const auto &[node,before] : limbs) { movingLimbs.push_back(render.nodeTransform(node).value()); }
+	check(island::updateAirportActivity(render,assets,root,resident,traffic,models,0.35).has_value(),"airport_pause_repeats_current_clock");
+	const auto paused=render.nodeTransform(roots.front());
+	check(paused && close(paused->translation.value,moving->translation.value) && paused->rotation.value.w==moving->rotation.value.w,
+		"airport_pause_keeps_actor_placement");
+	for (std::size_t i{}; i<limbs.size(); ++i) {
+		const auto pose=render.nodeTransform(limbs[i].first); const auto q=movingLimbs[i].rotation.value;
+		check(pose && pose->rotation.value.x==q.x && pose->rotation.value.y==q.y && pose->rotation.value.z==q.z
+			&& pose->rotation.value.w==q.w,"airport_pause_keeps_all_limb_poses");
+	}
+	resident[0].resize(8); resident[17].resize(9);
+	check(island::updateAirportActivity(render,assets,root,resident,traffic,models,12).has_value(),"airport_activity_moves_with_detailed_residency");
+	check(traffic.size()==1 && traffic.contains(17) && traffic.at(17).size()==island::airportActorCount,"airport_downgrade_releases_old_activity");
+	for (const auto instance : original.at(0)) { check(!render.sceneInstanceObjects(instance),"departed_airport_instances_are_invalid"); }
+	for (const auto node : roots) { check(!render.nodeTransform(node),"departed_airport_hierarchies_are_removed"); }
+	check(models==cached && render.sceneMeshCount()==meshCount,"remote_airport_reuses_cached_asset_geometry");
+	const auto remote=traffic; resident.clear();
+	check(island::updateAirportActivity(render,assets,root,resident,traffic,models,20).has_value(),"airport_activity_unloads_over_ocean");
+	check(traffic.empty() && render.sceneInstanceCount()==0,"ocean_has_no_remaining_airport_objects");
+	for (const auto instance : remote.at(17)) { check(!render.sceneInstanceRoot(instance),"last_airport_instance_root_is_released"); }
+	check(render.renderedFrameCount()==0,"airport_activity_checks_need_no_gpu_frames");
+	std::println("[IslandDeliverySceneTests] airport_people={} airport_vehicles={} cached_models={} meshes={} unloaded=true",
+		island::airportPeopleCount,island::airportActorCount-island::airportPeopleCount,models.size(),meshCount);
+}
 } // namespace
 
 /** @brief Runs native C++ scene checks through the facade and emits a reproducible failure name. */
@@ -198,6 +310,7 @@ int main() {
 		const std::filesystem::path root{VVE_ISLAND_ASSET_DIR};
 		environment(render,assets,root); const auto [parent,body]=aircraft(render,assets,root);
 		streaming(render,assets,root,parent,body);
+		airportRoutes(); airportTraffic(render,assets,root);
 		std::println("[IslandDeliverySceneTests] passed=true checks={}",checks); return 0;
 	} catch (const std::exception &error) {
 		std::cerr<<"[IslandDeliverySceneTests] passed=false checks="<<checks<<" error="<<error.what()<<'\n'; return 1;

@@ -203,13 +203,15 @@ void headingUpNavigation(ImVec2 size) {
 }
 } // namespace
 
-/** @brief Builds only an ImGui font atlas, then exercises both supported display sizes without SDL or Vulkan. */
+/** @brief Uses the game's readable 24-pixel atlas at full and compact display sizes without SDL or Vulkan. */
 int main() {
 	try {
 		ImGui::CreateContext(); auto &io=ImGui::GetIO(); io.IniFilename=nullptr; io.ConfigInputTrickleEventQueue=false;
 		io.DisplaySize={1920,1080}; io.DisplayFramebufferScale={1,1}; io.DeltaTime=1.0F/60.0F; io.FontGlobalScale=1;
+		ImFontConfig font; font.SizePixels=24; ///< Catch chart clipping with the real readable font, rather than ImGui's tiny default.
+		io.FontDefault=io.Fonts->AddFontDefault(&font);
 		unsigned char *pixels{}; int width{},height{}; io.Fonts->GetTexDataAsRGBA32(&pixels,&width,&height);
-		check(pixels && width>0 && height>0,"cpu_font_atlas_built");
+		check(pixels && width>0 && height>0 && io.FontDefault && io.FontDefault->FontSize==24,"readable_cpu_font_atlas_built");
 		for (const auto size : {ImVec2{1920,1080},ImVec2{640,360}}) { chart(size); navigation(size); headingUpNavigation(size); }
 		ImGui::DestroyContext(); std::println("[IslandDeliveryMapTests] passed=true checks={}",checks); return 0;
 	} catch (const std::exception &error) {

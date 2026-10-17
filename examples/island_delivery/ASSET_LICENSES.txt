@@ -1,7 +1,7 @@
 ISLAND AIR VISUAL ASSETS
 =======================
 Assets are downloaded and SHA256-checked by cmake/IslandDeliveryAssets.cmake.
-No external photographs, models or recordings are stored in this source tree.
+Downloads stay in the build cache. Existing Kenney character models are reused from assets/racer/crowd.
 Keep this file, AUDIO_LICENSE.txt and Cesium-LICENSE.md with redistributed builds.
 
 aircraft.glb: Cesium Air, Copyright 2011-2026 CesiumJS Contributors.
@@ -24,3 +24,11 @@ planks.jpg: Weathered Planks. https://polyhaven.com/a/weathered_planks
 metal.jpg: Corrugated Iron. https://polyhaven.com/a/corrugated_iron
 These original images are downloaded unmodified and renamed by the manifest.
 Terrain, airport structures, palms and markings are generated in C++ game code.
+
+Airport vehicles: Kenney Racing Kit, CC0 1.0 Universal.
+https://github.com/KenneyNL/Starter-Kit-Racing/tree/2f2e5f2646dda89cb21d4e8539bab60c6e955dc8/models
+Two original truck models and their palette are downloaded unchanged.
+Airport people: Kenney Mini Characters, CC0 1.0 Universal.
+https://kenney.nl/assets/mini-characters
+The existing rigid, joint-separated versions in assets/racer/crowd are copied
+into the build cache. The game animates their arms and legs through scene nodes.

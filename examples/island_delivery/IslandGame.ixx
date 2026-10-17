@@ -10,6 +10,7 @@ export import Island.Logic;
 import Island.Scene;
 import Island.Sound;
 import Island.Map;
+import Island.Airport;
 
 export namespace island {
 
@@ -22,7 +23,7 @@ struct GameSystem {
 	bool automatic{}; ///< Fly through the same physics using the built-in pilot.
 	bool muted{}; ///< Skip opening an audio device when explicitly requested.
 	bool antialias{true}; ///< Four-sample coverage at the default Full HD resolution.
-	int cameraMode{}; ///< Chase, cockpit or aircraft showcase.
+	int cameraMode{}; ///< Chase, cockpit, aircraft showcase or the optional airport inspection view.
 	bool paused{}, quit{}, fullscreen{}; ///< Interactive session state.
 	bool mapOpen{}, openMapOnStart{}; ///< Optional chart opens only on M or an explicit capture request.
 	float mapZoom{1.0F}; ///< Retained map magnification.
@@ -34,6 +35,7 @@ struct GameSystem {
 	vve::ECS *ecs{}; ///< Engine-owned component container.
 	vve::WindowSystem *windows{}; ///< Public keyboard and fullscreen controls.
 	vve::RenderSystem *render{}; ///< Public Vulkan-backed renderer.
+	vve::AssetSystem *assets{}; ///< Imported aircraft, airport people and service vehicles.
 	Soundscape sound{}; ///< Layered recordings and per-voice mixing state.
 	Flight displayed{}; ///< Interpolated render pose with the current authoritative mission state.
 	Flight previousTick{}; ///< Previous physics pose for smooth rendering between fixed simulation steps.
@@ -42,6 +44,8 @@ struct GameSystem {
 	vve::Vec3 cameraOffset{0, 7, 24}; ///< Smoothed view offset; aircraft translation is followed without delay.
 	std::map<std::size_t, vve::Vector<vve::RenderObjectHandle>> residentIslands{}; ///< Only nearby islands own render resources.
 	vve::Vector<vve::RenderObjectHandle> water{}; ///< Fixed pool of ocean tiles following the aircraft.
+	std::map<std::size_t,vve::Vector<vve::RenderSceneInstanceHandle>> airportTraffic{}; ///< Actors owned by detailed resident airports.
+	std::map<std::string,vve::SceneHandle> airportModels{}; ///< Six shared Kenney models; instances never reload their geometry.
 	std::size_t peakResidentIslands{}; ///< High-water mark for automated streaming verification.
 
 	/** @brief Builds nearby scenery and the aircraft, creates its ECS component and starts the downloaded recordings. */
@@ -49,6 +53,7 @@ struct GameSystem {
 		ecs = &world.template get<vve::ECS>();
 		windows = &world.template get<vve::WindowSystem>();
 		render = &world.template get<vve::RenderSystem>();
+		assets = &world.template get<vve::AssetSystem>();
 		const auto found = windows->findWindow("main");
 		if (!found) { return std::unexpected(vve::Error::invalid_handle); }
 		window = found->handle();
@@ -63,6 +68,7 @@ struct GameSystem {
 		eye = vve::math::add(displayed.position, vve::Vec3{0, 5, 25});
 		mapOpen = openMapOnStart;
 		if (auto result = updateEnvironment(*render, assetRoot, displayed.position, residentIslands, water); !result) { return result; }
+		if (auto result = updateAirportActivity(*render,*assets,assetRoot,residentIslands,airportTraffic,airportModels,displayed.elapsed); !result) { return result; }
 		peakResidentIslands = residentIslands.size();
 		const auto node = render->createNode(render->sceneRoot());
 		if (!node) { return std::unexpected(node.error()); }
@@ -81,7 +87,13 @@ struct GameSystem {
 			vignette.intensity = 0.16F;
 			vignette.radius = 0.8F;
 		});
-		world.template get<vve::GuiSystem>().draw([this] { drawHud(); });
+		auto &gui=world.template get<vve::GuiSystem>();
+		// Rasterize a larger atlas instead of magnifying the tiny default bitmap font.
+		if (auto result=gui.configureFonts([] {
+			ImFontConfig config{}; config.SizePixels=24.0F;
+			ImGui::GetIO().Fonts->AddFontDefault(&config);
+		}); !result) { return result; }
+		gui.draw([this] { drawHud(); });
 		std::println("[island] assignment origin={} target={} cargo=\"{}\"", displayed.originIsland, displayed.targetIsland, cargoName(displayed));
 		setCamera(0.0F);
 		return updateAircraft(*render, aircraftNode, displayed);
@@ -170,6 +182,7 @@ struct GameSystem {
 		if (auto result = ecs->put(aircraft, *component); !result) { return result; }
 		if (auto result = updateEnvironment(*render, assetRoot, displayed.position, residentIslands, water); !result) { return result; }
 		peakResidentIslands = std::max(peakResidentIslands, residentIslands.size());
+		if (auto result = updateAirportActivity(*render,*assets,assetRoot,residentIslands,airportTraffic,airportModels,displayed.elapsed); !result) { return result; }
 		if (auto result = updateAircraft(*render, aircraftNode, displayed); !result) { return result; }
 		setCamera(dt);
 		return sound.update(displayed, camera, cameraMode == 1, paused);
@@ -195,7 +208,13 @@ struct GameSystem {
 			eye = vve::math::add(displayed.position, cameraOffset);
 			if (cameraMode == 2) { target = displayed.position; }
 		}
-		camera = vve::Camera::lookAt(vve::Position{eye}, vve::Position{target}, {}, vve::FovY{0.93F},
+		// A bounded airport inspection view also makes service activity easy to capture in automated runs.
+		if (cameraMode == 3) {
+			const auto centre=islandCenter(displayed.originIsland);
+			eye=vve::math::add(centre,{-8,runwayHeight+20,-190});
+			target=vve::math::add(centre,{48,runwayHeight+1,-190});
+		}
+		camera = vve::Camera::lookAt(vve::Position{eye}, vve::Position{target}, {}, vve::FovY{cameraMode==3?1.05F:0.93F},
 			vve::ClipPlanes{.near_plane = 0.1F, .far_plane = 10000.0F});
 		render->setCamera(camera);
 	}
@@ -204,40 +223,45 @@ struct GameSystem {
 	void drawHud() {
 		const auto &io = ImGui::GetIO();
 		const ImVec2 screen = io.DisplaySize;
-		const float uiScale = std::clamp(screen.y / 900.0F, 0.65F, 1.3F);
+		const float uiScale = std::clamp(screen.y / 1080.0F, 0.75F, 1.5F);
+		const bool compact = screen.x < 1100.0F; ///< Keep the navigation inset beside the main panel on smaller displays.
 		const auto flags = ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_AlwaysAutoResize
 			| ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing;
 		ImGui::SetNextWindowPos(ImVec2{20 * uiScale, 20 * uiScale});
 		ImGui::SetNextWindowBgAlpha(0.85F);
+		ImGui::SetNextWindowSize(ImVec2{compact ? screen.x*0.53F-24.0F : 680.0F*uiScale,0});
 		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4{0.025F, 0.055F, 0.075F, 1});
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2{16 * uiScale, 12 * uiScale});
 		ImGui::Begin("Island Air", nullptr, flags);
 		ImGui::SetWindowFontScale(uiScale);
 		ImGui::TextColored(ImVec4{0.95F, 0.73F, 0.32F, 1}, "I S L A N D   A I R");
-		ImGui::Text("%s -> %s", islandName(displayed.originIsland).c_str(), islandName(displayed.targetIsland).c_str());
+		ImGui::TextWrapped("%s -> %s", islandName(displayed.originIsland).c_str(), islandName(displayed.targetIsland).c_str());
 		ImGui::Separator();
 		const float speed = vve::math::length(displayed.velocity);
-		ImGui::Text("AIRSPEED %3.0f kt    ALTITUDE %4.0f ft", speed * 1.94384F, std::max(0.0F, displayed.position.y) * 3.28084F);
-		ImGui::Text("THROTTLE %3.0f %%    DESTINATION %.2f km", displayed.throttle * 100.0F, remainingDistance(displayed) / 1000.0F);
-		ImGui::Text("VERTICAL %+.0f ft/min   %s", displayed.velocity.y * 196.8504F, automatic ? "AUTOPILOT" : "MANUAL");
-		ImGui::Text("CARGO: %s   |   %s", cargoName(displayed).data(), phaseName(displayed.phase).data());
-		ImGui::Text("DELIVERIES %u   |   M: route map   |   %zu islands", displayed.deliveries, islandCount);
+		ImGui::TextWrapped("AIRSPEED %3.0f kt    ALTITUDE %4.0f ft", speed * 1.94384F, std::max(0.0F, displayed.position.y) * 3.28084F);
+		if (!compact) {
+			ImGui::Text("THROTTLE %3.0f %%    DESTINATION %.2f km", displayed.throttle * 100.0F, remainingDistance(displayed) / 1000.0F);
+			ImGui::Text("VERTICAL %+.0f ft/min   %s", displayed.velocity.y * 196.8504F, automatic ? "AUTOPILOT" : "MANUAL");
+			ImGui::Text("CARGO: %s   |   %s", cargoName(displayed).data(), phaseName(displayed.phase).data());
+			ImGui::Text("DELIVERIES %u   |   M: route map   |   %zu islands", displayed.deliveries, islandCount);
+		} else { ImGui::TextWrapped("%s | %s | M: map", automatic ? "AUTOPILOT" : "MANUAL", phaseName(displayed.phase).data()); }
 		ImGui::End();
 		// The destination marker identifies a real apron; flying through it never awards a delivery.
-		ImGui::SetNextWindowPos(ImVec2{20 * uiScale, screen.y - 100 * uiScale});
+		ImGui::SetNextWindowPos(ImVec2{20 * uiScale, screen.y - 16 * uiScale},ImGuiCond_Always,ImVec2{0,1});
+		ImGui::SetNextWindowSize(ImVec2{std::min(screen.x-40*uiScale,1280*uiScale),0});
 		ImGui::SetNextWindowBgAlpha(0.8F);
 		ImGui::Begin("Flight controls", nullptr, flags);
 		ImGui::SetWindowFontScale(uiScale);
-		ImGui::TextUnformatted("W/S throttle   |   Up/Down pitch   |   Left/Right bank   |   A/D rudder   |   Space brakes");
-		ImGui::TextUnformatted("M route map   |   C camera   |   P autopilot   |   R retry job   |   Esc pause   |   F11 fullscreen");
-		ImGui::TextUnformatted(displayed.phase == Phase::delivered ? "DELIVERY COMPLETE - the airport will supply your next assignment."
+		ImGui::TextWrapped("W/S throttle | Arrows pitch / bank | A/D rudder | Space brakes");
+		ImGui::TextWrapped("M map | C camera | P autopilot | R retry | Esc pause | F11 fullscreen");
+		ImGui::TextWrapped("%s",displayed.phase == Phase::delivered ? "DELIVERY COMPLETE - the airport will supply your next assignment."
 			: displayed.phase == Phase::crashed ? "AIRCRAFT LOST - press R to restart."
 			: displayed.phase == Phase::ready ? "CARGO ABOARD - follow the gold direction arrow to your assigned island."
 			: displayed.grounded ? "Taxi into the marked unloading area and hold still for two seconds."
 			: "Follow the gold arrow. Land at your assigned island, taxi to the yellow unloading area and stop.");
 		ImGui::End();
 		if (cameraMode == 1) {
-			ImGui::SetNextWindowPos(ImVec2{screen.x * 0.5F, screen.y - 132 * uiScale}, ImGuiCond_Always, ImVec2{0.5F, 1});
+			ImGui::SetNextWindowPos(ImVec2{screen.x * 0.5F, screen.y - (compact?190.0F:170.0F) * uiScale}, ImGuiCond_Always, ImVec2{0.5F, 1});
 			ImGui::SetNextWindowBgAlpha(0.95F);
 			ImGui::Begin("Cockpit instruments", nullptr, flags);
 			ImGui::SetWindowFontScale(uiScale);

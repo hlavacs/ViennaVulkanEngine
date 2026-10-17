@@ -120,6 +120,29 @@ namespace island::scenery {
 			}
 		}
 	}
+	/// @brief Adds a branching coastal tree or low shrub to the same bark and foliage batches as the palms.
+	void broadleaf(vve::MeshDescriptor &bark, vve::MeshDescriptor &leaves, vve::Vec3 base, float height, unsigned seed) {
+		const auto crown=vm::add(base,vve::Vec3{0,height*0.66F,0});
+		tube(bark,base,crown,height*0.045F,height*0.022F,6U);
+		// Overlapping irregular crowns form a leafy silhouette rather than a single geometric cone.
+		for (unsigned branch{}; branch<3U; ++branch) {
+			const float angle=static_cast<float>(branch)*2.39996F+noise(seed)*6.28F;
+			const auto tip=vm::add(crown,vve::Vec3{std::cos(angle)*height*0.23F,height*0.12F,std::sin(angle)*height*0.23F});
+			tube(bark,vm::add(base,vve::Vec3{0,height*0.4F,0}),tip,height*0.018F,height*0.007F,5U);
+			boulder(leaves,tip,height*0.36F,seed+branch*17U);
+		}
+	}
+	/// @brief Adds a tuft of broad tropical leaves, with two visible sides and no extra render objects.
+	void plant(vve::MeshDescriptor &leaves, vve::Vec3 base, float size, float angle) {
+		for (unsigned leaf{}; leaf<7U; ++leaf) {
+			const float a=angle+static_cast<float>(leaf)*2.39996F;
+			const vve::Vec3 along{std::cos(a),0,std::sin(a)}, across{-std::sin(a)*size*0.16F,0,std::cos(a)*size*0.16F};
+			const auto middle=vm::add(base,vm::add(vm::scale(along,size*0.52F),vve::Vec3{0,size*0.75F,0}));
+			const auto tip=vm::add(base,vm::add(vm::scale(along,size),vve::Vec3{0,size*0.5F,0}));
+			const std::array points{base,vm::subtract(middle,across),tip,vm::add(middle,across)};
+			face(leaves,points,{0,1,0},1.5F); face(leaves,points,{0,-1,0},1.5F);
+		}
+	}
 	/// @brief Appends smooth terrain and shoreline to material batches, using the physics height function.
 	void terrain(std::array<vve::MeshDescriptor, 18> &meshes, vve::Vec3 centre, int cells) {
 		const float step{2000.0F/static_cast<float>(cells)}; // Cover the largest island variants without clipping their coastlines.
@@ -136,6 +159,7 @@ namespace island::scenery {
 					float elevation=height(px,pz); const float dz=pz; // Heights share the flight collision surface.
 					// Recess the earth beneath pavement to keep coplanar grass out of the runway surface.
 					if ((std::abs(px)<18.1F && std::abs(dz)<350.1F) || (px>17 && px<78 && dz>-265 && dz<-135)
+						|| (px>=42 && px<=72 && dz>=-154 && dz<=-130)
 						|| (std::abs(px)<=25.1F && dz>=-300.1F && dz<=-129.9F)) { elevation-=0.06F; }
 					return vve::Vec3{px,elevation,pz};
 				};
@@ -194,6 +218,7 @@ namespace island::scenery {
 			return;
 		}
 		box(m[5],{25,y-0.1F,z-265},{77,y+0.006F,z-135},4.0F);
+		box(m[5],{42,y-0.1F,z-154},{72,y+0.006F,z-130},4.0F); // Terminal forecourt joins the passenger walking paths.
 		box(m[4],{17,y-0.1F,z-240},{47,y+0.01F,z-213},4.0F);
 		// Centre dashes, edge lines and threshold bars are one white mesh for both islands.
 		for (const float side : {-1.0F,1.0F}) {
@@ -292,12 +317,25 @@ namespace island::scenery {
 				if (std::abs(x)<85 || y<0.25F || y>14.0F) { continue; }
 				boulder(meshes[3],{x,y,z},1.1F+noise(seed*47U)*4.0F,seed*17U);
 			}
-			for (const auto tree : std::views::iota(0U,180U)) {
+			for (const auto tree : std::views::iota(0U,340U)) {
 				const unsigned seed=tree+static_cast<unsigned>(id)*127U;
 				const float angle=static_cast<float>(tree)*2.39996F,radius=0.48F+noise(seed*71U+9U)*0.38F;
 				const float x=std::cos(angle)*650*radius,z=std::sin(angle)*750*radius,y=terrainHeight(x+centre.x,z+centre.z);
 				if (std::abs(x)<95 || y<3.0F || y>47.0F) { continue; }
 				palm(meshes[11],meshes[10],{x,y-0.05F,z},7.0F+noise(seed*27U+1U)*7.0F,angle);
+			}
+			// Fill the interior with broadleaf groves and lower plants, leaving a generous runway/approach corridor.
+			for (unsigned item{}; item<1900U; ++item) {
+				const unsigned seed=item+static_cast<unsigned>(id)*1879U;
+				const float angle=static_cast<float>(item)*2.39996F, radius=std::sqrt(noise(seed*37U+3U))*0.86F;
+				const float x=std::cos(angle)*650*radius,z=std::sin(angle)*750*radius,y=terrainHeight(x+centre.x,z+centre.z);
+				if (std::abs(x)<100 || y<3.0F || y>65.0F) { continue; }
+				if (item<420U) { broadleaf(meshes[11],meshes[10],{x,y-0.1F,z},4+noise(seed*23U)*8,seed); }
+				else { plant(meshes[item%3U==0U?1:10],{x,y-0.08F,z},0.7F+noise(seed*19U)*1.5F,angle); }
+			}
+			// A few planted palms frame the terminal while staying beyond the service lanes and wing clearance.
+			for (const auto z : {-265.0F,-232.0F,-170.0F,-138.0F,-106.0F}) {
+				palm(meshes[11],meshes[10],{87,terrainHeight(centre.x+87,centre.z+z)-0.1F,z},9.5F,z);
 			}
 		}
 		vve::Vector<vve::RenderObjectHandle> objects{}; objects.reserve(18);
