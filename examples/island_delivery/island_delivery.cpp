@@ -15,7 +15,8 @@ bool number(std::string_view value, int &output, int minimum = 1) {
 void usage() {
 	std::println("Island Air - VVE island cargo delivery\n"
 		"  W/S throttle; arrows pitch/bank; A/D rudder; Space brakes\n"
-		"  M map/cargo; C camera; P autopilot; R retry job; Esc pause; F11 fullscreen\n"
+		"  Start on an island with cargo assigned; the next job arrives after unloading.\n"
+		"  M optional chart; C camera; P autopilot; R retry job; Esc pause; F11 fullscreen\n"
 		"  --autopilot --map --mute --hidden --no-msaa --require-delivery\n"
 		"  --frames N --steps-per-frame N --width N --height N\n"
 		"  --start-island 0..255 --destination 0..255 --deliveries N\n"
@@ -70,14 +71,15 @@ int main(int argc, char **argv) {
 		}
 		std::cerr << "[island] unknown option: " << argument << '\n'; return 1;
 	}
-	if (!destinationSpecified) { destination = static_cast<int>((static_cast<std::size_t>(origin) + 1) % island::islandCount); }
 	if (game.stepsPerFrame > 1200 || width > 7680 || height > 4320 || (hidden && game.frameLimit == 0)
 		|| (requireDelivery && game.frameLimit == 0) || origin >= static_cast<int>(island::islandCount)
-		|| destination >= static_cast<int>(island::islandCount) || origin == destination) {
+		|| destination >= static_cast<int>(island::islandCount) || (destinationSpecified && origin == destination)) {
 		std::cerr << "[island] invalid bounds: airports must differ and be 0..255; hidden/verification runs need --frames; maximum 1200 steps/frame and 7680x4320\n";
 		return 1;
 	}
 	game.displayed.originIsland = static_cast<std::size_t>(origin);
+	game.displayed.position = vve::math::add(island::islandCenter(game.displayed.originIsland), vve::Vec3{0, island::aircraftGroundHeight, 240});
+	if (!destinationSpecified) { destination = static_cast<int>(island::suggestedTarget(game.displayed)); }
 	game.displayed.targetIsland = static_cast<std::size_t>(destination);
 	game.deliveryGoal = static_cast<unsigned>(deliveryGoal);
 	if (game.frameLimit > 0) {
@@ -85,8 +87,8 @@ int main(int argc, char **argv) {
 		if (output.empty()) { output = directory / "island_delivery.png"; }
 		if (verification.empty()) { verification = directory / "island_delivery.csv"; }
 	}
-	std::println("[island] resolution={}x{} islands={} route={}->{} assets={} autopilot={}",
-		width, height, island::islandCount, origin, destination, game.assetRoot.string(), game.automatic);
+	std::println("[island] resolution={}x{} islands={} layout_seed={} route={}->{} assets={} autopilot={}",
+		width, height, island::islandCount, island::archipelagoSeed, origin, destination, game.assetRoot.string(), game.automatic);
 	auto engine = vve::EngineBuilder<island::GameSystem>{vve::makeUserSystems(std::move(game))}
 		.applicationName("Island Air")
 		.addWindow(vve::WindowSetup{}.id("main").title("Island Air - VVE Cargo Delivery")

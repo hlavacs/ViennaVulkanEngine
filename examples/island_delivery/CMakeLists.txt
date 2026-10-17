@@ -41,13 +41,16 @@ if(BUILD_TESTING)
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/cockpit.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/cockpit.csv")
     add_test(NAME IslandDeliveryMap COMMAND island_delivery --frames 3 --map --destination 255 --hidden --width 960 --height 640
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/map.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/map.csv")
-    add_test(NAME IslandDeliveryCargoLoop COMMAND island_delivery --frames 24 --steps-per-frame 1200 --autopilot
+    add_test(NAME IslandDeliveryCargoLoop COMMAND island_delivery --frames 60 --steps-per-frame 1200 --autopilot
         --deliveries 2 --require-delivery --hidden --width 640 --height 360
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/cargo_loop.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/cargo_loop.csv")
-    add_test(NAME IslandDeliveryRemoteAirport COMMAND island_delivery --frames 12 --steps-per-frame 1200 --autopilot
-        --start-island 254 --destination 255 --require-delivery --hidden --width 640 --height 360
+    add_test(NAME IslandDeliveryRemoteAirport COMMAND island_delivery --frames 60 --steps-per-frame 1200 --autopilot
+        --start-island 254 --require-delivery --hidden --width 640 --height 360
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/remote.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/remote.csv")
     set_tests_properties(IslandDeliverySmoke IslandDeliveryAutopilot IslandDeliveryCockpit
         IslandDeliveryMap IslandDeliveryCargoLoop IslandDeliveryRemoteAirport PROPERTIES
         LABELS "gpu;example;island_delivery" ENVIRONMENT "SDL_AUDIO_DRIVER=dummy" TIMEOUT 180)
+    set_tests_properties(IslandDeliverySmoke PROPERTIES
+        PASS_REGULAR_EXPRESSION "passed=true delivered=false deliveries=0 origin=0 target=1.*map_open=false takeoffs=0 landings=0")
+    set_tests_properties(IslandDeliveryMap PROPERTIES PASS_REGULAR_EXPRESSION "passed=true.*map_open=true")
 endif()

@@ -1,7 +1,7 @@
 module;
 #include <imgui.h>
 
-/** @file @brief Interactive archipelago chart and airport cargo offers, drawn through the public GUI callback. */
+/** @file @brief Read-only cargo charts and regional flight guidance through the public GUI callback. */
 export module Island.Map;
 import std;
 import Island.Logic;
@@ -89,7 +89,7 @@ void drawNavigation(const Flight &flight) {
    /** @brief Projects world metres onto a north-up regional chart. */
    const auto point = [&](float x, float z) { return ImVec2{middle.x + (x - centreX) * scale, middle.y + (z - centreZ) * scale}; };
    auto *draw = ImGui::GetWindowDrawList(); ///< The same public ImGui geometry path as the large map.
-   constexpr auto gold = IM_COL32(244, 193, 98, 255); ///< Bearing, destination and unloading highlight.
+   constexpr auto gold = IM_COL32(244, 193, 98, 255); ///< Standalone direction cue.
    draw->AddRectFilled(top, bottom, IM_COL32(10, 34, 51, 255), 4.0F);
    draw->PushClipRect(top, bottom, true);
    // The region contains only actual neighbouring island sites; off-map coastlines are clipped.
@@ -99,27 +99,16 @@ void drawNavigation(const Flight &flight) {
       const float coast = 1000.0F * scale; ///< Conservative bound for the largest physical island footprint.
       if (at.x < top.x - coast || at.x > bottom.x + coast || at.y < top.y - coast || at.y > bottom.y + coast) { continue; }
       drawChartAirport(draw, index, at, scale, index == flight.targetIsland);
-      if (index == flight.targetIsland) { draw->AddCircle(at, 11.0F, gold, 20, 1.5F); }
    }
-   const ImVec2 player = point(flight.position.x, flight.position.z), target = point(destination.x, destination.z);
-   // Clamp the bearing arrow at the inset boundary when the assigned island is outside the regional view.
-   if (distance > 20.0F) {
-      const float x = dx / distance, y = dz / distance; ///< North-up unit bearing toward the target.
-      /** @brief Returns ray travel to the nearest chart edge along one coordinate. */
-      const auto edge = [](float direction, float at, float low, float high) {
-         return std::abs(direction) < 0.00001F ? std::numeric_limits<float>::max()
-              : (direction > 0 ? high - at : at - low) / std::abs(direction);
-      };
-      const float reach = std::min({distance * scale, edge(x, player.x, top.x + 12, bottom.x - 12), edge(y, player.y, top.y + 12, bottom.y - 12)});
-      drawChartArrow(draw, player, ImVec2{player.x + x * reach, player.y + y * reach}, gold, 7.0F);
-   }
-   // Runway 36 is the northbound approach; the 18 label marks its opposite threshold.
-   if (distance < 1800.0F) {
-      drawChartArrow(draw, point(destination.x - 130.0F, destination.z + 260.0F),
-                     point(destination.x - 130.0F, destination.z - 260.0F), IM_COL32(245, 245, 221, 255), 5.0F);
-      draw->AddText(ImVec2{target.x - 45.0F, target.y + 420.0F * scale}, IM_COL32(233, 238, 218, 255), "LAND NORTH");
-   }
+   const ImVec2 player = point(flight.position.x, flight.position.z); ///< Aircraft position is independent of the compass cue.
    drawChartAircraft(draw, player, flight.heading, 6.5F * std::max(uiScale, 0.8F));
+   const float compass = std::max(uiScale, 0.8F), halfArrow = 14.0F * compass; ///< Fixed length, independent of target distance.
+   const ImVec2 arrow{bottom.x - 25.0F * compass, top.y + 25.0F * compass}; ///< Clear corner placement.
+   const float x = distance > 1.0F ? dx / distance : 0.0F, y = distance > 1.0F ? dz / distance : -1.0F;
+   // A compact compass arrow indicates bearing without joining the player, departure airport or target.
+   draw->AddCircleFilled(arrow, 22.0F * compass, IM_COL32(8, 23, 35, 230), 24);
+   drawChartArrow(draw, ImVec2{arrow.x - x * halfArrow, arrow.y - y * halfArrow},
+                  ImVec2{arrow.x + x * halfArrow, arrow.y + y * halfArrow}, gold, 7.0F * compass);
    draw->AddText(ImVec2{top.x + 5.0F, top.y + 4.0F}, IM_COL32(219, 230, 228, 255), "N ^");
    draw->PopClipRect();
    draw->AddRect(top, bottom, IM_COL32(66, 104, 117, 255), 4.0F);
@@ -128,19 +117,12 @@ void drawNavigation(const Flight &flight) {
    ImGui::End(); ImGui::PopStyleVar(); ImGui::PopStyleColor();
 }
 
-/** @brief Draws the chart; returns a requested cargo destination for the caller to validate and apply to ECS state. */
-std::optional<std::size_t> drawMap(const Flight &flight, std::size_t &selectedTarget, bool &open,
-                                 float &zoom, vve::Vec2 &pan) {
-   if (!open) { return std::nullopt; }
+/** @brief Shows the already assigned cargo route; chart interaction changes only viewing state. */
+void drawMap(const Flight &flight, bool &open, float &zoom, vve::Vec2 &pan) {
+   if (!open) { return; }
    const auto &io = ImGui::GetIO(); ///< Current display and pointing-device snapshot.
    const float uiScale = std::clamp(std::min(io.DisplaySize.x / 1280.0F, io.DisplaySize.y / 720.0F), 0.85F, 1.3F); ///< Legible at small sizes.
-   const float speed = std::hypot(static_cast<float>(flight.velocity.x), static_cast<float>(flight.velocity.z)); ///< Ground roll in metres per second.
-   const auto currentIsland = nearestIsland(flight.position.x, flight.position.z); ///< Airport offering the next job.
-   const bool canLoad = flight.grounded && speed < 0.8F
-                     && (flight.phase == Phase::ready || flight.phase == Phase::delivered);
-   const auto origin = canLoad ? currentIsland : flight.originIsland; ///< Cargo collection point.
-   // A committed delivery remains assigned throughout flight and any intermediate landing.
-   selectedTarget = canLoad ? std::min(selectedTarget, islandCount - 1) : flight.targetIsland;
+   const auto origin = flight.originIsland, target = flight.targetIsland; ///< Authoritative assigned job, never changed by map input.
    const ImVec2 size{std::min(io.DisplaySize.x - 24.0F, 1560.0F), std::min(io.DisplaySize.y - 24.0F, 960.0F)}; ///< Chart panel extent.
    ImGui::SetNextWindowPos(ImVec2{io.DisplaySize.x * 0.5F, io.DisplaySize.y * 0.5F}, ImGuiCond_Always, ImVec2{0.5F, 0.5F});
    ImGui::SetNextWindowSize(size);
@@ -152,17 +134,23 @@ std::optional<std::size_t> drawMap(const Flight &flight, std::size_t &selectedTa
                         | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoSavedSettings;
    ImGui::Begin("Archipelago chart", nullptr, flags);
    ImGui::SetWindowFontScale(uiScale);
-   ImGui::TextColored(ImVec4{0.95F, 0.76F, 0.39F, 1}, "I S L A N D   A I R  /  ROUTE PLANNER");
-   ImGui::Text("%zu islands  |  %zu deliveries completed  |  %s", islandCount,
-               static_cast<std::size_t>(flight.deliveries), canLoad ? "Choose a cargo destination" : "Assigned delivery");
+   ImGui::TextColored(ImVec4{0.95F, 0.76F, 0.39F, 1}, "I S L A N D   A I R  /  ASSIGNED DELIVERY");
+   ImGui::Text("%zu islands  |  %zu deliveries completed", islandCount, static_cast<std::size_t>(flight.deliveries));
    ImGui::Separator();
    const ImVec2 top = ImGui::GetCursorScreenPos(); ///< Ocean chart's upper-left corner.
    const ImVec2 available = ImGui::GetContentRegionAvail(); ///< Space after the heading.
-   const ImVec2 canvas{available.x, std::max(80.0F, available.y - 84.0F * uiScale)}; ///< Leave room for cargo actions.
+   const ImVec2 canvas{available.x, std::max(80.0F, available.y - 84.0F * uiScale)}; ///< Leave room for assigned cargo details.
    const ImVec2 bottom{top.x + canvas.x, top.y + canvas.y}; ///< Chart clip boundary.
    const ImVec2 centre{top.x + canvas.x * 0.5F, top.y + canvas.y * 0.5F}; ///< Chart's screen-space origin.
-   const float worldSpan = static_cast<float>(gridSide - 1) * islandSpacing; ///< Centre-to-centre archipelago width.
-   const float baseScale = std::max(1.0F, std::min(canvas.x, canvas.y) - 28.0F) / (worldSpan + 1800.0F); ///< Fit every coastline.
+   vve::Vec2 low{std::numeric_limits<float>::max(), std::numeric_limits<float>::max()}, high{-low.x, -low.y}; ///< Actual site bounds.
+   // Fit the generated archipelago itself, including its coastlines, without assuming rows or columns.
+   for (const auto index : std::views::iota(std::size_t{}, islandCount)) {
+      const auto location = islandCenter(index);
+      low.x = std::min(low.x, location.x); low.y = std::min(low.y, location.z);
+      high.x = std::max(high.x, location.x); high.y = std::max(high.y, location.z);
+   }
+   const float baseScale = std::min(std::max(1.0F, canvas.x - 28.0F) / (high.x - low.x + 2100.0F),
+                                    std::max(1.0F, canvas.y - 28.0F) / (high.y - low.y + 2100.0F)); ///< Fit every coastline.
    zoom = std::clamp(zoom, 1.0F, 12.0F);
    ImGui::InvisibleButton("Navigable island chart", canvas, ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight);
    const bool hovered = ImGui::IsItemHovered(); ///< Chart interaction excludes surrounding buttons.
@@ -179,31 +167,23 @@ std::optional<std::size_t> drawMap(const Flight &flight, std::size_t &selectedTa
    }
    /** @brief Projects world X/Z onto a north-up chart without depending on implementation math types. */
    const auto point = [&](float x, float z) {
-      return ImVec2{centre.x + (x - worldSpan * 0.5F + pan.x) * scale,
-                    centre.y + (z + worldSpan * 0.5F + pan.y) * scale};
+      return ImVec2{centre.x + (x - (low.x + high.x) * 0.5F + pan.x) * scale,
+                    centre.y + (z - (low.y + high.y) * 0.5F + pan.y) * scale};
    };
    auto *draw = ImGui::GetWindowDrawList(); ///< ImGui geometry uses the public GUI renderer.
    constexpr auto gold = IM_COL32(244, 193, 98, 255), cyan = IM_COL32(88, 231, 240, 255); ///< Route and aircraft colours.
    draw->AddRectFilled(top, bottom, IM_COL32(10, 34, 51, 255), 5.0F);
    draw->PushClipRect(top, bottom, true);
-   // Subtle chart grid conveys the archipelago's scale while keeping destination markers legible.
-   for (const auto index : std::views::iota(std::size_t{}, gridSide)) {
-      const float offset = static_cast<float>(index) * islandSpacing;
-      const ImVec2 a = point(offset, 0), b = point(offset, -worldSpan);
-      const ImVec2 c = point(0, -offset), d = point(worldSpan, -offset);
-      draw->AddLine(a, b, IM_COL32(35, 65, 79, 180)); draw->AddLine(c, d, IM_COL32(35, 65, 79, 180));
-   }
    std::optional<std::size_t> hoveredIsland; ///< At most one island owns a pointer interaction.
    float nearestPixels = std::max(7.0F, 680.0F * scale); ///< Readable hit area even when zoomed out.
-   // Find the nearest marker before drawing so a click updates both route and highlight immediately.
+   // Hovering reveals airport names while the assigned destination remains untouched.
    for (const auto index : std::views::iota(std::size_t{}, islandCount)) {
       const auto location = islandCenter(index);
       const ImVec2 at = point(location.x, location.z);
       const float distance = std::hypot(at.x - io.MousePos.x, at.y - io.MousePos.y);
       if (hovered && distance < nearestPixels) { nearestPixels = distance; hoveredIsland = index; }
    }
-   if (canLoad && hoveredIsland && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) { selectedTarget = *hoveredIsland; }
-   const auto departure = islandCenter(origin), destination = islandCenter(selectedTarget); ///< Selected airport coordinates.
+   const auto departure = islandCenter(origin), destination = islandCenter(target); ///< Assigned airport coordinates.
    const ImVec2 start = point(departure.x, departure.z), finish = point(destination.x, destination.z);
    // Bounded island silhouettes and tiny runway strokes keep all 256 airports visible at the overview scale.
    for (const auto index : std::views::iota(std::size_t{}, islandCount)) {
@@ -211,48 +191,37 @@ std::optional<std::size_t> drawMap(const Flight &flight, std::size_t &selectedTa
       const ImVec2 at = point(location.x, location.z);
       const float radius = std::max(2.8F, 1000.0F * scale); ///< Bound the world-scaled coastline and highlight.
       if (at.x < top.x - radius || at.x > bottom.x + radius || at.y < top.y - radius || at.y > bottom.y + radius) { continue; }
-      drawChartAirport(draw, index, at, scale, index == selectedTarget);
-      if (index == selectedTarget || index == origin) { draw->AddCircle(at, radius + 4.0F, index == selectedTarget ? gold : cyan, 16, 1.8F); }
+      drawChartAirport(draw, index, at, scale, index == target);
+      if (index == target || index == origin) { draw->AddCircle(at, radius + 4.0F, index == target ? gold : cyan, 16, 1.8F); }
       if (hoveredIsland == index) { draw->AddCircle(at, radius + 7.0F, IM_COL32(240, 244, 237, 220), 16); }
    }
-   // Keep the route arrow above the coastlines so its head stays visible at the selected destination.
+   // The optional large chart shows the complete assigned route above the coastlines.
    drawChartArrow(draw, start, finish, gold, 9.0F * uiScale);
    const ImVec2 player = point(flight.position.x, flight.position.z); ///< Actual aircraft chart position.
    // The same aircraft marker preserves its meaning across regional and archipelago views.
    drawChartAircraft(draw, player, flight.heading, 8.0F * uiScale);
    draw->AddText(ImVec2{top.x + 12.0F, top.y + 10.0F}, IM_COL32(182, 208, 215, 255), "N ^  /  CYAN: AIRCRAFT  /  GOLD: ROUTE");
-   draw->AddText(ImVec2{top.x + 12.0F, bottom.y - 22.0F}, IM_COL32(151, 180, 190, 255),
-      canLoad ? "Wheel: zoom  |  Right drag: pan  |  Click island: select cargo job" : "Wheel: zoom  |  Right drag: pan  |  Destination assigned until delivery");
+   draw->AddText(ImVec2{top.x + 12.0F, bottom.y - 22.0F}, IM_COL32(151, 180, 190, 255), "Wheel: zoom  |  Right drag: pan  |  Cargo and destination assigned automatically");
    draw->PopClipRect();
    draw->AddRect(top, bottom, IM_COL32(66, 104, 117, 255), 5.0F);
    // Names appear on demand instead of obscuring the ocean with hundreds of labels.
    if (hoveredIsland) {
       const auto name = islandName(*hoveredIsland);
       ImGui::BeginTooltip(); ImGui::TextUnformatted(name.c_str());
-      ImGui::TextUnformatted(*hoveredIsland == currentIsland ? "Current airport" : canLoad ? "Click to choose this cargo destination" : "Delivery already assigned");
+      ImGui::TextUnformatted(*hoveredIsland == target ? "Assigned destination" : *hoveredIsland == origin ? "Cargo origin" : "Island airstrip");
       ImGui::EndTooltip();
    }
    ImGui::Separator();
-   const auto fromName = islandName(origin), toName = islandName(selectedTarget);
+   const auto fromName = islandName(origin), toName = islandName(target);
    const float distance = std::hypot(destination.x - departure.x, destination.z - departure.z); ///< Direct route length in metres.
-   Flight offered = flight; ///< Preview the manifest without changing the ECS flight component.
-   offered.originIsland = origin; offered.targetIsland = selectedTarget;
    ImGui::Text("%s  ->  %s  |  %.1f km", fromName.c_str(), toName.c_str(), distance / 1000.0F);
-   ImGui::Text("Cargo: %s  |  %s", cargoName(offered).data(), canLoad ? "Land, stop in unloading zone, then collect the next cargo" : phaseName(flight.phase).data());
-   std::optional<std::size_t> requested; ///< Destination request consumed by the next game update.
-   // Only the owning game system commits cargo changes; a chart cannot change an active delivery.
-   if (canLoad) {
-      ImGui::BeginDisabled(selectedTarget == currentIsland);
-      if (ImGui::Button("Load cargo & depart")) { requested = selectedTarget; open = false; }
-      ImGui::EndDisabled();
-   } else if (ImGui::Button("Fly assigned route")) { open = false; }
-   ImGui::SameLine();
+   ImGui::Text("Cargo: %s  |  %s", cargoName(flight).data(), phaseName(flight.phase).data());
+   // Map controls affect only chart viewing; the delivery loop assigns every cargo job.
    if (ImGui::Button("Fit archipelago")) { zoom = 1.0F; pan = {}; }
    ImGui::SameLine();
    if (ImGui::Button("Return to game [M]")) { open = false; }
    ImGui::End();
    ImGui::PopStyleVar(); ImGui::PopStyleColor(3);
-   return requested;
 }
 
 } // namespace island

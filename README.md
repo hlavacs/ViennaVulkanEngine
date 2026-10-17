@@ -246,9 +246,9 @@ Every test is a C++ executable built from one file in `tests/` and registered in
 
 ## Island Air
 
-`examples/island_delivery` is a Full HD cargo-flight game across 256 islands using the VVE facade and ECS.
-Choose cargo destinations on a map, fly a textured twin-prop aircraft, land and stop to unload, then collect the next job.
-Regional navigation shows the direction to fly and runway orientation; nose-wheel steering allows runway turnarounds.
+`examples/island_delivery` is a Full HD cargo-flight game across 256 randomly scattered islands using the VVE facade and ECS.
+Start on an island with cargo assigned, fly a textured twin-prop aircraft, land and stop to unload, then receive the next job.
+A small map shows a direction arrow and runway orientation; nose-wheel steering allows runway turnarounds. M opens an optional regional chart.
 It includes bounded scenery streaming, chase/pilot-eye cameras, PBR scenery, animated water and recorded positional aircraft audio.
 CMake downloads hash-pinned external assets into the build directory; the repository contains no game asset binaries.
 See [examples/island_delivery/README.md](examples/island_delivery/README.md) for controls, build options and deterministic tests.

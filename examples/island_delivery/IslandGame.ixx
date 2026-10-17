@@ -24,9 +24,7 @@ struct GameSystem {
 	bool antialias{true}; ///< Four-sample coverage at the default Full HD resolution.
 	int cameraMode{}; ///< Chase, cockpit or aircraft showcase.
 	bool paused{}, quit{}, fullscreen{}; ///< Interactive session state.
-	bool mapOpen{}, openMapOnStart{}; ///< Route map pauses flight while the player reviews airport cargo jobs.
-	std::size_t selectedTarget{1}; ///< Airport selected on the map before accepting its cargo assignment.
-	std::optional<std::size_t> pendingCargo{}; ///< GUI requests are applied to the authoritative ECS component next frame.
+	bool mapOpen{}, openMapOnStart{}; ///< Optional chart opens only on M or an explicit capture request.
 	float mapZoom{1.0F}; ///< Retained map magnification.
 	vve::Vec2 mapPan{}; ///< Retained map displacement in world metres.
 	float commandedThrottle{}, accumulator{}; ///< Persistent engine lever and unsimulated real time.
@@ -60,8 +58,7 @@ struct GameSystem {
 		}
 		displayed.position = vve::math::add(islandCenter(displayed.originIsland), vve::Vec3{0, aircraftGroundHeight, 240});
 		eye = vve::math::add(displayed.position, vve::Vec3{0, 5, 25});
-		selectedTarget = displayed.targetIsland;
-		mapOpen = openMapOnStart || (frameLimit == 0 && !automatic);
+		mapOpen = openMapOnStart;
 		if (auto result = updateEnvironment(*render, assetRoot, displayed.position, residentIslands, water); !result) { return result; }
 		peakResidentIslands = residentIslands.size();
 		const auto node = render->createNode(render->sceneRoot());
@@ -82,8 +79,18 @@ struct GameSystem {
 			vignette.radius = 0.8F;
 		});
 		world.template get<vve::GuiSystem>().draw([this] { drawHud(); });
+		std::println("[island] assignment origin={} target={} cargo=\"{}\"", displayed.originIsland, displayed.targetIsland, cargoName(displayed));
 		setCamera(0.0F);
 		return updateAircraft(*render, aircraftNode, displayed);
+	}
+
+	/** @brief Collects the next airport assignment after unloading, preserving aircraft position, heading and flight history. */
+	bool collectNextCargo(Flight &flight) {
+		if (flight.phase != Phase::delivered || (frameLimit > 0 && flight.deliveries >= deliveryGoal)) { return false; }
+		if (!acceptCargo(flight, suggestedTarget(flight))) { return false; }
+		commandedThrottle = accumulator = 0.0F;
+		std::println("[island] assignment origin={} target={} cargo=\"{}\"", flight.originIsland, flight.targetIsland, cargoName(flight));
+		return true;
 	}
 
 	/** @brief Reads held controls; the throttle lever remains at its setting after the key is released. */
@@ -118,16 +125,8 @@ struct GameSystem {
 			paused = mapOpen = false;
 			eye = vve::math::add(component->position, vve::Vec3{0, 5, 25});
 		}
-		// A new cargo assignment keeps the same aircraft at the airport where the previous job finished.
-		if (pendingCargo) {
-			if (acceptCargo(*component, *pendingCargo)) { commandedThrottle = 0.0F; accumulator = 0.0F; }
-			pendingCargo.reset();
-		}
-		if (automatic && !mapOpen && !paused && component->phase == Phase::delivered
-			&& (frameLimit == 0 || component->deliveries < deliveryGoal)) {
-			(void)acceptCargo(*component, suggestedTarget(*component));
-			selectedTarget = component->targetIsland;
-		}
+		// The destination airport supplies the next cargo automatically in both manual and demonstration flights.
+		if (!mapOpen && !paused) { (void)collectNextCargo(*component); }
 		const float dt = frameLimit > 0 ? static_cast<float>(stepsPerFrame) / 120.0F
 			: std::clamp(static_cast<float>(frame.delta_time.seconds), 0.0F, 0.1F);
 		const auto controls = keyboard(input, paused || mapOpen ? 0.0F : dt);
@@ -140,10 +139,6 @@ struct GameSystem {
 			}
 		}
 		if (auto result = ecs->put(aircraft, *component); !result) { return result; }
-		if (!automatic && component->deliveries > displayed.deliveries) {
-			selectedTarget = suggestedTarget(*component);
-			mapOpen = true;
-		}
 		displayed = *component;
 		if (auto result = updateEnvironment(*render, assetRoot, displayed.position, residentIslands, water); !result) { return result; }
 		peakResidentIslands = std::max(peakResidentIslands, residentIslands.size());
@@ -204,10 +199,11 @@ struct GameSystem {
 		ImGui::SetWindowFontScale(uiScale);
 		ImGui::TextUnformatted("W/S throttle   |   Up/Down pitch   |   Left/Right bank   |   A/D rudder   |   Space brakes");
 		ImGui::TextUnformatted("M route map   |   C camera   |   P autopilot   |   R retry job   |   Esc pause   |   F11 fullscreen");
-		ImGui::TextUnformatted(displayed.phase == Phase::delivered ? "DELIVERY COMPLETE - open M to collect new cargo and choose your next destination."
+		ImGui::TextUnformatted(displayed.phase == Phase::delivered ? "DELIVERY COMPLETE - the airport will supply your next assignment."
 			: displayed.phase == Phase::crashed ? "AIRCRAFT LOST - press R to restart."
-			: displayed.grounded && displayed.takeoffs > 0 ? "Taxi into the marked unloading area and hold still for two seconds."
-			: "Follow the route on M. Land at your assigned island, taxi to the yellow unloading area and stop.");
+			: displayed.phase == Phase::ready ? "CARGO ABOARD - follow the gold direction arrow to your assigned island."
+			: displayed.grounded ? "Taxi into the marked unloading area and hold still for two seconds."
+			: "Follow the gold arrow. Land at your assigned island, taxi to the yellow unloading area and stop.");
 		ImGui::End();
 		if (cameraMode == 1) {
 			ImGui::SetNextWindowPos(ImVec2{screen.x * 0.5F, screen.y - 132 * uiScale}, ImGuiCond_Always, ImVec2{0.5F, 1});
@@ -234,9 +230,7 @@ struct GameSystem {
 		ImGui::PopStyleVar();
 		ImGui::PopStyleColor();
 		if (!mapOpen) { drawNavigation(displayed); }
-		if (mapOpen) {
-			if (auto target = drawMap(displayed, selectedTarget, mapOpen, mapZoom, mapPan)) { pendingCargo = *target; }
-		}
+		if (mapOpen) { drawMap(displayed, mapOpen, mapZoom, mapPan); }
 	}
 };
 

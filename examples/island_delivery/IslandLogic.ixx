@@ -11,12 +11,32 @@ inline constexpr float destinationZ = -2400.0F;  ///< Centre of the destination 
 inline constexpr float runwayHalfLength = 350.0F; ///< Paved half-length of each airstrip.
 inline constexpr float runwayHalfWidth = 18.0F;   ///< Paved half-width of each airstrip.
 inline constexpr std::size_t islandCount = 256;  ///< Independently named delivery destinations in the archipelago.
-inline constexpr std::size_t gridSide = 16;      ///< Island sites per grid column and row.
-inline constexpr float islandSpacing = 2400.0F;  ///< Centre spacing, keeping coastlines separated by navigable water.
+inline constexpr float archipelagoMinimum = -2000.0F; ///< Minimum sampled X and negated-Z centre coordinate.
+inline constexpr float archipelagoSpan = 44000.0F; ///< Width of the independently scattered island region.
+inline constexpr float islandMinimumSeparation = 2200.0F; ///< Minimum coastline-safe distance between site centres.
+inline constexpr std::uint32_t archipelagoSeed = 20261017U; ///< Fixed world seed, independent of frame timing and platform distributions.
 
 /** @brief Returns a stable island centre; IDs zero and one retain the original north-to-south delivery route. */
 [[nodiscard]] vve::Vec3 islandCenter(std::size_t id) {
-   return {static_cast<float>(id / gridSide) * islandSpacing, 0.0F, -static_cast<float>(id % gridSide) * islandSpacing};
+   static const auto centres = [] {
+      std::array<vve::Vec3, islandCount> result{};
+      result[1] = {0.0F, 0.0F, destinationZ};
+      std::mt19937 random{archipelagoSeed};
+      const auto coordinate = [&] { return archipelagoMinimum + archipelagoSpan * static_cast<float>(random() >> 8) / 16777216.0F; };
+      std::size_t accepted = 2;
+      // Rejection sampling enforces coast separation without introducing rows, columns or jittered cells.
+      while (accepted < result.size()) {
+         const vve::Vec3 candidate{coordinate(), 0.0F, -coordinate()};
+         bool separated = true;
+         for (const auto &other : std::span{result}.first(accepted)) {
+            const float x = candidate.x - other.x, z = candidate.z - other.z;
+            if (x * x + z * z < islandMinimumSeparation * islandMinimumSeparation) { separated = false; break; }
+         }
+         if (separated) { result[accepted++] = candidate; }
+      }
+      return result;
+   }();
+   return centres[id];
 }
 
 /** @brief Names every destination uniquely while preserving the two original airfields. */
@@ -27,14 +47,20 @@ inline constexpr float islandSpacing = 2400.0F;  ///< Centre spacing, keeping co
                               "Emerald", "Golden", "Ruby", "Opal", "Ivory", "Violet", "Crimson", "Sapphire"};
    constexpr std::array second{"Key", "Bay", "Cove", "Harbor", "Point", "Reach", "Landing", "Atoll",
                                "Cape", "Shoal", "Haven", "Lagoon", "Sound", "Reef", "Sands", "Isle"};
-   return std::string{first[(id / gridSide) % gridSide]} + " " + second[id % gridSide];
+   return std::string{first[(id / first.size()) % first.size()]} + " " + second[id % second.size()];
 }
 
-/** @brief Locates the closest grid site in constant time, including positions outside the archipelago. */
+/** @brief Locates the closest scattered airport using squared distances, including queries beyond the world boundary. */
 [[nodiscard]] std::size_t nearestIsland(float x, float z) {
-   const auto column = static_cast<std::size_t>(std::lround(std::clamp(x / islandSpacing, 0.0F, static_cast<float>(gridSide - 1))));
-   const auto row = static_cast<std::size_t>(std::lround(std::clamp(-z / islandSpacing, 0.0F, static_cast<float>(gridSide - 1))));
-   return column * gridSide + row;
+   std::size_t nearest{};
+   float best = std::numeric_limits<float>::max();
+   // This occasional navigation/map query stays outside the terrain-mesh vertex hot path.
+   for (std::size_t id = 0; id < islandCount; ++id) {
+      const auto centre = islandCenter(id);
+      const float dx = x - centre.x, dz = z - centre.z;
+      if (const float distance = dx * dx + dz * dz; distance < best) { best = distance; nearest = id; }
+   }
+   return nearest;
 }
 
 /** @brief Delivery progress; a stopped landing at the destination is required to unload. */
@@ -80,7 +106,36 @@ struct Controls {
 
 /** @brief Returns the smooth island surface, with a flat central runway and adjoining apron. */
 [[nodiscard]] float terrainHeight(float x, float z) {
-      const auto id = nearestIsland(x, z);
+      constexpr int bucketSide = 20;
+      constexpr float bucketSize = archipelagoSpan / static_cast<float>(bucketSide);
+      static const auto buckets = [] {
+         std::array<std::vector<std::size_t>, bucketSide * bucketSide> result{};
+         // Index each immutable site once; bucket geometry is an acceleration structure, never island placement.
+         for (std::size_t id = 0; id < islandCount; ++id) {
+            const auto centre = islandCenter(id);
+            const auto column = static_cast<std::size_t>((centre.x - archipelagoMinimum) / bucketSize);
+            const auto row = static_cast<std::size_t>((-centre.z - archipelagoMinimum) / bucketSize);
+            result[row * bucketSide + column].push_back(id);
+         }
+         return result;
+      }();
+      if (x < archipelagoMinimum - 1000.0F || x > archipelagoMinimum + archipelagoSpan + 1000.0F
+          || -z < archipelagoMinimum - 1000.0F || -z > archipelagoMinimum + archipelagoSpan + 1000.0F) { return 0.0F; }
+      const int column = static_cast<int>(std::floor((x - archipelagoMinimum) / bucketSize));
+      const int row = static_cast<int>(std::floor((-z - archipelagoMinimum) / bucketSize));
+      std::size_t id = islandCount;
+      float closest = 1000.0F * 1000.0F;
+      // Only nearby buckets can contain land; empty water returns before coastline trigonometry and hill evaluation.
+      for (int r = std::max(0, row - 1); r <= std::min(bucketSide - 1, row + 1); ++r) {
+         for (int c = std::max(0, column - 1); c <= std::min(bucketSide - 1, column + 1); ++c) {
+            for (const auto candidate : buckets[static_cast<std::size_t>(r * bucketSide + c)]) {
+               const auto centre = islandCenter(candidate);
+               const float dx = x - centre.x, dz = z - centre.z;
+               if (const float distance = dx * dx + dz * dz; distance < closest) { closest = distance; id = candidate; }
+            }
+         }
+      }
+      if (id == islandCount) { return 0.0F; }
       const auto centre = islandCenter(id);
       x -= centre.x;
       const float dz = z - centre.z;
@@ -115,9 +170,22 @@ struct Controls {
    return names[(flight.originIsland * 7 + flight.targetIsland + flight.deliveries) % names.size()];
 }
 
-/** @brief Suggests the following island while leaving destination selection to the player. */
+/** @brief Offers one of the closest airports while avoiding immediate return to the previous delivery origin. */
 [[nodiscard]] std::size_t suggestedTarget(const Flight &flight) {
-   return (nearestIsland(flight.position.x, flight.position.z) + 1) % islandCount;
+   const auto current = nearestIsland(flight.position.x, flight.position.z);
+   if (current == 0 && flight.deliveries == 0) { return 1; }
+   const auto centre = islandCenter(current);
+   std::array<std::pair<float, std::size_t>, 3> nearest{};
+   nearest.fill({std::numeric_limits<float>::max(), current});
+   // A small sorted shortlist gives repeatable nearby offers without sending players across the full map by ID.
+   for (std::size_t id = 0; id < islandCount; ++id) {
+      if (id == current || (flight.deliveries > 0 && id == flight.originIsland)) { continue; }
+      const auto other = islandCenter(id);
+      const float x = other.x - centre.x, z = other.z - centre.z;
+      std::pair candidate{x * x + z * z, id};
+      for (auto &slot : nearest) { if (candidate < slot) { std::swap(candidate, slot); } }
+   }
+   return nearest[(flight.deliveries == 0 ? 0 : flight.deliveries - 1) % nearest.size()].second;
 }
 
 /** @brief Loads a chosen island's cargo only while safely stopped, preserving the aircraft and cumulative mission state. */

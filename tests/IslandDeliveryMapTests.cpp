@@ -1,4 +1,4 @@
-/** @file @brief CPU ImGui verification of the complete archipelago chart, cargo actions and regional approach guidance. */
+/** @file @brief CPU ImGui verification of assigned cargo charts and compact regional bearing guidance. */
 #include <imgui.h>
 import std;
 import Island.Map;
@@ -7,7 +7,7 @@ import Island.Logic;
 namespace {
 int checks{}; ///< Successful named checks, retained in failure output for automated diagnosis.
 constexpr ImU32 coast=IM_COL32(104,151,111,255),gold=IM_COL32(244,193,98,255); ///< Semantic chart geometry colours.
-constexpr ImU32 runway=IM_COL32(245,245,221,255),cargoButton=IM_COL32(33,66,82,255); ///< Landing arrow and cargo controls.
+constexpr ImU32 runway=IM_COL32(236,235,216,255),runwayLabels=IM_COL32(235,240,223,255); ///< Physical runway and 18/36 labels.
 
 /** @brief Fails with a stable contract name while allowing main to destroy the CPU context. */
 void check(bool condition,std::string_view name) {
@@ -33,6 +33,31 @@ std::array<float,5> geometry(ImU32 colour) {
 	}
 	return result;
 }
+/** @brief Finds the directional mass of solid arrow vertices relative to their enclosing rectangle. */
+vve::Vec2 arrowDirection() {
+	const auto box=geometry(gold); vve::Vec2 sum{}; float count{};
+	// The arrowhead contributes more geometry toward its tip; opposite compass bearings reverse this offset.
+	for (const auto *list : ImGui::GetDrawData()->CmdLists) {
+		for (const auto &vertex : list->VtxBuffer) {
+			if (vertex.col==gold) { sum.x+=vertex.pos.x; sum.y+=vertex.pos.y; ++count; }
+		}
+	}
+	return {sum.x/count-(box[0]+box[2])*0.5F,sum.y/count-(box[1]+box[3])*0.5F};
+}
+/** @brief Checks individual north/south runway strokes without merging neighbouring airports into one bounding box. */
+bool verticalRunway() {
+	std::map<int,std::array<float,4>> strips; ///< Screen-X buckets separate parallel physical runway strokes.
+	// Several neighbouring airports may share a clipped draw list, so check each runway's orientation locally.
+	for (const auto *list : ImGui::GetDrawData()->CmdLists) {
+		for (const auto &vertex : list->VtxBuffer) {
+			if (vertex.col!=runway) { continue; }
+			const auto p=vertex.pos; const int key=static_cast<int>(std::round(p.x/4.0F));
+			auto [it,inserted]=strips.try_emplace(key,std::array{p.x,p.y,p.x,p.y}); auto &box=it->second;
+			box[0]=std::min(box[0],p.x); box[1]=std::min(box[1],p.y); box[2]=std::max(box[2],p.x); box[3]=std::max(box[3],p.y);
+		}
+	}
+	return std::ranges::any_of(strips,[](const auto &entry) { const auto &b=entry.second; return b[3]-b[1]>20 && b[3]-b[1]>2*(b[2]-b[0]); });
+}
 /** @brief Runs one deterministic ImGui frame and checks finite geometry and valid viewport scissor rectangles. */
 int frame(ImVec2 size,const std::function<void()> &draw,ImVec2 mouse={-1000,-1000},bool pressed=false) {
 	auto &io=ImGui::GetIO(); io.DisplaySize=size; io.DeltaTime=1.0F/60.0F;
@@ -54,48 +79,63 @@ int frame(ImVec2 size,const std::function<void()> &draw,ImVec2 mouse={-1000,-100
 	}
 	check(finite,"finite_chart_vertices"); check(clipped,"chart_scissors_inside_viewport"); return data->TotalVtxCount;
 }
-/** @brief Verifies selection, all 256 physical coastlines, disabled retargeting and the real load-cargo button. */
+/** @brief Verifies all scattered coastlines and proves that viewing and clicking never change assigned cargo. */
 void chart(ImVec2 size) {
 	island::Flight flight; flight.deliveries=3; const auto original=state(flight);
-	std::size_t selected=255; bool open=false; float zoom=1; vve::Vec2 pan{}; std::optional<std::size_t> request{};
-	const auto draw=[&] { request=island::drawMap(flight,selected,open,zoom,pan); };
-	check(frame(size,draw)==0 && !request,"closed_chart_emits_nothing");
+	bool open=false; float zoom=1; vve::Vec2 pan{}; ///< Only chart viewing state is mutable.
+	const auto draw=[&] { island::drawMap(flight,open,zoom,pan); };
+	check(frame(size,draw)==0,"closed_chart_emits_nothing");
 	open=true; const int vertices=frame(size,draw);
-	check(!request && selected==255 && vertices>25000,"overview_preserves_last_island_selection");
+	check(vertices>25000,"overview_has_complete_archipelago_geometry");
 	check(geometry(coast)[4]>=32*island::islandCount,"overview_draws_all_256_coastlines");
+	check(geometry(IM_COL32(35,65,79,180))[4]==0,"overview_has_no_matrix_grid_lines");
 	check(state(flight)==original,"overview_preserves_cargo_and_flight");
-	const auto button=geometry(cargoButton); check(button[4]>0,"cargo_button_has_real_draw_geometry");
-	const ImVec2 click{button[0]+10,(button[1]+button[3])*0.5F};
-	// Derive the leftmost cargo button from its actual pixels, then deliver ordinary public mouse events.
-	frame(size,draw,click); frame(size,draw,click,true); frame(size,draw,click,false);
-	check(request && *request==255 && !open,"cargo_button_requests_selected_destination");
-	check(state(flight)==original,"cargo_button_leaves_commit_to_game_system");
-	open=true; selected=std::numeric_limits<std::size_t>::max(); zoom=-5;
-	frame(size,draw); check(selected==255 && zoom==1 && !request,"invalid_selection_and_small_zoom_clamp");
-	zoom=99; frame(size,draw); check(zoom==12,"large_zoom_clamps"); zoom=1;
-	// Cargo remains assigned both in flight and after an intermediate landing.
-	flight.originIsland=17; flight.targetIsland=255; flight.deliveries=7; flight.takeoffs=4; flight.landings=3;
-	for (const bool grounded : {false,true}) {
-		flight.grounded=grounded; flight.phase=grounded?island::Phase::landed:island::Phase::flying;
-		flight.velocity=grounded?vve::Vec3{0,0,0}:vve::Vec3{12,0,-35}; const auto committed=state(flight); selected=0;
-		frame(size,draw); check(!request && open && selected==flight.targetIsland,"active_cargo_cannot_be_retargeted");
-		check(state(flight)==committed,"assigned_cargo_render_is_read_only");
+	std::set<float> xs,zs; ///< A matrix would have only sixteen distinct coordinates on each axis.
+	for (const auto index : std::views::iota(std::size_t{},island::islandCount)) {
+		const auto at=island::islandCenter(index); xs.insert(at.x); zs.insert(at.z);
 	}
-	flight.phase=island::Phase::delivered; selected=128; const auto delivered=state(flight);
-	frame(size,draw); check(selected==128 && !request && state(flight)==delivered,"delivered_pilot_can_preview_next_cargo");
+	check(xs.size()>240 && zs.size()>240,"overview_islands_are_scattered_not_a_matrix");
+	const auto land=geometry(coast); const ImVec2 click{(land[0]+land[2])*0.5F,(land[1]+land[3])*0.5F};
+	// Ordinary chart clicks remain read-only in every cargo phase, including before departure and after unloading.
+	for (const auto phase : {island::Phase::ready,island::Phase::flying,island::Phase::landed,island::Phase::delivered}) {
+		flight.phase=phase; flight.grounded=phase!=island::Phase::flying; const auto assigned=state(flight);
+		frame(size,draw,click); frame(size,draw,click,true); frame(size,draw,click,false);
+		check(open && state(flight)==assigned,"chart_click_cannot_reassign_cargo_in_any_phase");
+	}
+	zoom=-5;
+	frame(size,draw); check(zoom==1,"small_zoom_clamps");
+	zoom=99; frame(size,draw); check(zoom==12,"large_zoom_clamps"); zoom=1;
 	std::println("[IslandDeliveryMapTests] display={}x{} overview_vertices={} coast_vertices={}",size.x,size.y,vertices,32*island::islandCount);
 }
-/** @brief Confirms an off-map target has a bearing arrow and an approach shows the physical north/south runway and unloading bay. */
+/** @brief Confirms a single short compass arrow rotates with bearing and approaches retain physical runway geometry. */
 void navigation(ImVec2 size) {
 	island::Flight flight; flight.targetIsland=255; flight.grounded=false; flight.phase=island::Phase::flying;
 	const auto original=state(flight); const auto draw=[&] { island::drawNavigation(flight); };
 	const int regional=frame(size,draw); check(regional>100,"regional_navigation_has_geometry");
-	check(geometry(gold)[4]>0,"distant_target_has_bearing_arrow");
-	check(geometry(runway)[4]==0,"distant_target_has_no_false_landing_arrow");
+	const auto arrow=geometry(gold);
+	check(arrow[4]>0 && arrow[4]<32,"regional_has_one_arrow_without_target_ring");
+	check(arrow[2]-arrow[0]<34 && arrow[3]-arrow[1]<34,"regional_has_no_long_route_segment");
 	check(state(flight)==original,"navigation_preserves_gameplay_state");
+	const auto destination=island::islandCenter(flight.targetIsland);
+	// Moving around a fixed destination must rotate the compact cue while retaining exactly the same cardinal length.
+	float arrowLength{};
+	for (const auto offset : {vve::Vec2{0,5000},vve::Vec2{-5000,0},vve::Vec2{0,-5000},vve::Vec2{5000,0},vve::Vec2{0,10000}}) {
+		flight.position={destination.x+offset.x,80,destination.z+offset.y}; frame(size,draw);
+		const auto shape=geometry(gold); const auto direction=arrowDirection();
+		const float length=std::max(shape[2]-shape[0],shape[3]-shape[1]);
+		if (arrowLength==0) { arrowLength=length; }
+		check(std::abs(length-arrowLength)<1.1F,"compass_arrow_length_does_not_depend_on_range"); // Allow the antialiasing pixel when rotated.
+		check(direction.x*(-offset.x)+direction.y*(-offset.y)>1,"compass_arrow_points_toward_target");
+		check(shape[4]==arrow[4],"regional_never_adds_target_ring_or_route_geometry");
+	}
+	// A changed job also updates bearing without requiring any navigation UI state to reset.
+	flight.position={0,80,240}; flight.targetIsland=1; frame(size,draw); const auto first=arrowDirection();
+	flight.targetIsland=255; frame(size,draw); const auto second=arrowDirection();
+	check(first.y<0 && std::hypot(first.x-second.x,first.y-second.y)>0.1F,"new_assigned_target_updates_compass_direction");
 	flight.position=vve::math::add(island::islandCenter(flight.targetIsland),{0,80,260});
-	const int approach=frame(size,draw); const auto direction=geometry(runway);
-	check(direction[4]>0 && direction[3]-direction[1]>(direction[2]-direction[0])*2,"approach_runway_direction_is_north_south");
+	const int approach=frame(size,draw);
+	check(verticalRunway(),"approach_runway_direction_is_north_south");
+	check(geometry(runwayLabels)[4]>0,"approach_shows_runway_18_36_threshold_labels");
 	check(geometry(IM_COL32(244,193,98,210))[4]>=4,"approach_marks_actual_unloading_bay");
 	check(geometry(IM_COL32(88,231,240,255))[4]>=3,"navigation_draws_aircraft_heading_marker");
 	std::println("[IslandDeliveryMapTests] display={}x{} regional_vertices={} approach_vertices={}",size.x,size.y,regional,approach);

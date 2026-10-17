@@ -2,6 +2,7 @@
 import std;
 import VVEngine;
 import Island.Scene;
+import Island.Game;
 
 namespace {
 int checks{}; ///< Successful named assertions, printed for deterministic automated diagnosis.
@@ -90,7 +91,7 @@ std::pair<vve::SceneNodeHandle,vve::RenderObjectHandle> aircraft(vve::RenderSyst
 		bounds->minimum.value.y,bounds->maximum.value.x-bounds->minimum.value.x,b.x,checks);
 	return {*parent,hit->object};
 }
-/** @brief Travels between distant grid sites while proving scenery ownership, residency bounds and stable wave geometry. */
+/** @brief Travels between scattered sites while proving scenery ownership, residency bounds and stable wave geometry. */
 void streaming(vve::RenderSystem &render,vve::AssetSystem &assets,const std::filesystem::path &root,
 	vve::SceneNodeHandle parent,vve::RenderObjectHandle aircraftBody) {
 	check(island::buildEnvironment(render,assets,root).has_value(),"static_sky_survives_aircraft_scene");
@@ -101,15 +102,27 @@ void streaming(vve::RenderSystem &render,vve::AssetSystem &assets,const std::fil
 	const auto pivots=propellers(render,parent); const auto propBefore=render.nodeTransform(pivots.front());
 	check(propBefore.has_value(),"streaming_preserves_original_propeller");
 	std::size_t peakMeshes{},peakVertices{},released{};
-	// Six distant representative islands exercise both grid axes; the final midpoint exercises four nearby high-detail sites.
-	std::array<vve::Vec3,7> sites{}; constexpr std::array<std::size_t,6> ids{0,1,17,128,240,255};
+	// Include random remote sites selected from the actual layout, rather than interpreting IDs as grid coordinates.
+	std::array<vve::Vec3,7> sites{}; std::array<std::size_t,6> ids{0,1,17,128,240,255};
+	float east=std::numeric_limits<float>::lowest(),north=std::numeric_limits<float>::lowest(),south=std::numeric_limits<float>::max();
+	for (const auto id : std::views::iota(std::size_t{},island::islandCount)) {
+		const auto at=island::islandCenter(id);
+		if (at.x>east) { east=at.x; ids[4]=id; } if (at.z<south) { south=at.z; ids[5]=id; } north=std::max(north,at.z);
+	}
 	for (const auto index : std::views::iota(std::size_t{},ids.size())) { sites[index]=island::islandCenter(ids[index]); }
-	sites.back()=vve::math::add(island::islandCenter(136),{1200,80,-1200});
+	sites.back()=vve::math::add(island::islandCenter(0),{1200,80,0});
+	check(island::terrainHeight(sites.back().x,sites.back().z)==0,"nearby_channel_sample_is_ocean");
 	for (const auto eye : sites) {
 		const auto old=resident;
 		check(island::updateEnvironment(render,root,eye,resident,water).has_value(),"streamed_site_builds");
 		check(!resident.empty() && resident.size()<=9 && water.size()==45,"bounded_islands_and_wave_tiles");
 		check(resident.contains(island::nearestIsland(eye.x,eye.z)),"nearest_island_is_resident");
+		// Every resident batch must be placed at its own randomly scattered world site.
+		for (const auto &[id,objects] : resident) {
+			const auto at=island::islandCenter(id); const auto bounds=render.objectBounds(objects.front());
+			check(bounds && bounds->minimum.value.x>=at.x-1000.1F && bounds->maximum.value.x<=at.x+1000.1F
+				&& bounds->minimum.value.z>=at.z-1000.1F && bounds->maximum.value.z<=at.z+1000.1F,"resident_geometry_uses_scattered_centre");
+		}
 		if (originalWater.empty()) { originalWater=water; originBounds=render.objectBounds(resident.at(0).front()).value(); }
 		check(water==originalWater,"travel_reuses_original_water_geometry");
 		// Superseded detail and departed islands must release their actual meshes, rather than leave detached objects alive.
@@ -118,8 +131,9 @@ void streaming(vve::RenderSystem &render,vve::AssetSystem &assets,const std::fil
 			for (const auto object : objects) { check(!render.objectBounds(object),"departed_object_released"); ++released; }
 		}
 		peakMeshes=std::max(peakMeshes,render.sceneMeshCount()); peakVertices=std::max(peakVertices,render.sceneVertexCount());
-		check(render.sceneMeshCount()<=170 && render.sceneMaterialCount()<=190 && render.sceneTextureCount()<=12,"bounded_streaming_resources");
-		check(render.sceneVertexCount()<2500000,"bounded_active_geometry");
+		const auto batchLimit=resident.size()*18U+water.size()+5U;
+		check(render.sceneMeshCount()<=batchLimit && render.sceneMaterialCount()<=batchLimit && render.sceneTextureCount()<=12,"bounded_streaming_resources");
+		check(render.sceneVertexCount()<resident.size()*500000U+water.size()*5000U+20000U,"bounded_geometry_per_resident_island");
 		const auto stable=resident; const auto waves=water; const auto meshCount=render.sceneMeshCount();
 		check(island::updateEnvironment(render,root,eye,resident,water).has_value(),"repeat_stationary_streaming_update");
 		check(resident==stable && water==waves && render.sceneMeshCount()==meshCount,"stationary_frames_keep_handles_and_geometry");
@@ -129,9 +143,11 @@ void streaming(vve::RenderSystem &render,vve::AssetSystem &assets,const std::fil
 		check(left && right && std::abs(left->maximum.value.x-right->minimum.value.x)<0.01F,"adjacent_wave_tiles_share_world_edge");
 		const auto aircraftAfter=render.objectBounds(aircraftBody);
 		check(aircraftAfter && close(aircraftBefore->minimum.value,aircraftAfter->minimum.value),"streaming_does_not_move_or_remove_aircraft");
+		std::println("[IslandDeliverySceneTests] nearest={} x={} z={} resident={} meshes={}",
+			island::nearestIsland(eye.x,eye.z),eye.x,eye.z,resident.size(),render.sceneMeshCount());
 	}
 	const auto waveHandles=water;
-	check(island::updateEnvironment(render,root,{-12000,80,12000},resident,water).has_value(),"distant_open_ocean");
+	check(island::updateEnvironment(render,root,{east+8000,80,(north+south)*0.5F},resident,water).has_value(),"open_ocean_beyond_scattered_world");
 	check(resident.empty() && water==waveHandles && render.sceneMeshCount()<=52,"all_departed_islands_release_resources");
 	check(render.sceneTextureCount()<=3 && render.sceneDirectionalLightCount()==1,"unused_land_textures_released_sky_and_sun_preserved");
 	check(island::updateEnvironment(render,root,{0,0,0},resident,water).has_value(),"return_to_unloaded_origin");
@@ -145,11 +161,38 @@ void streaming(vve::RenderSystem &render,vve::AssetSystem &assets,const std::fil
 	std::println("[IslandDeliverySceneTests] islands={} sites={} peak_meshes={} peak_vertices={} released={} water_tiles={}",
 		island::islandCount,sites.size(),peakMeshes,peakVertices,released,water.size());
 }
+/** @brief Exercises default manual play and automatic cargo collection without initializing a window or an engine. */
+void cargoContinuation() {
+	island::GameSystem game;
+	check(!game.mapOpen && !game.openMapOnStart && !game.automatic,"default_manual_start_has_no_big_map");
+	check(game.displayed.targetIsland<island::islandCount && game.displayed.targetIsland!=game.displayed.originIsland,"default_assignment_is_valid");
+	island::Flight delivered; delivered.position=vve::math::add(island::islandCenter(17),{0,island::aircraftGroundHeight,-200});
+	delivered.targetIsland=17; delivered.phase=island::Phase::delivered; delivered.deliveries=4;
+	delivered.heading=0.37F; delivered.elapsed=137.25F; delivered.takeoffs=delivered.landings=4; delivered.stoppedSeconds=2;
+	const auto history=[](const island::Flight &f) { return std::tuple{f.position.x,f.position.y,f.position.z,f.velocity.x,f.velocity.y,f.velocity.z,
+		f.heading,f.pitch,f.bank,f.throttle,f.elapsed,f.maxAltitude,f.grounded,f.takeoffs,f.landings,f.touchdownSpeed,f.deliveries}; };
+	const auto before=history(delivered); const auto next=island::suggestedTarget(delivered); auto flight=delivered;
+	game.commandedThrottle=0.8F; game.accumulator=0.05F;
+	check(game.collectNextCargo(flight),"manual_delivery_automatically_collects_next_cargo");
+	check(!game.mapOpen && flight.phase==island::Phase::ready && flight.originIsland==17 && flight.targetIsland==next
+		&& next<island::islandCount && next!=17,"next_assignment_needs_no_map_selection");
+	check(history(flight)==before,"new_cargo_preserves_aircraft_pose_clock_and_delivery_history");
+	check(game.commandedThrottle==0 && game.accumulator==0 && flight.stoppedSeconds==0 && flight.cargoTakeoffs==4,"new_cargo_resets_only_leg_controls");
+	check(!game.collectNextCargo(flight) && flight.targetIsland==next && history(flight)==before,"new_assignment_is_not_repeated");
+	island::GameSystem bounded; bounded.frameLimit=2; bounded.deliveryGoal=4; flight=delivered;
+	check(!bounded.collectNextCargo(flight) && flight.phase==island::Phase::delivered && history(flight)==before,"bounded_run_stops_at_delivery_goal");
+	bounded.deliveryGoal=5;
+	check(bounded.collectNextCargo(flight) && flight.targetIsland==next && history(flight)==before,"bounded_run_collects_below_goal");
+	game.mapOpen=game.openMapOnStart=true; flight=delivered;
+	check(game.collectNextCargo(flight) && game.mapOpen && game.openMapOnStart,"cargo_collection_does_not_change_explicit_map_flags");
+	std::println("[IslandDeliverySceneTests] automatic_collection_origin={} target={} completed={} map_default=false",flight.originIsland,flight.targetIsland,flight.deliveries);
+}
 } // namespace
 
 /** @brief Runs native C++ scene checks through the facade and emits a reproducible failure name. */
 int main() {
 	try {
+		cargoContinuation();
 		vve::Engine<> engine; auto world=engine.world();
 		auto &render=world.get<vve::RenderSystem>(); auto &assets=world.get<vve::AssetSystem>();
 		const std::filesystem::path root{VVE_ISLAND_ASSET_DIR};

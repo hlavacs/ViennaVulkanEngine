@@ -123,7 +123,8 @@ namespace island::scenery {
 	/// @brief Appends smooth terrain and shoreline to material batches, using the physics height function.
 	void terrain(std::array<vve::MeshDescriptor, 18> &meshes, vve::Vec3 centre, int cells) {
 		const float step{2000.0F/static_cast<float>(cells)}; // Cover the largest island variants without clipping their coastlines.
-		const auto height=[centre](float x,float z) { return terrainHeight(x+centre.x,z+centre.z); };
+		// A scattered neighbour may touch this square's corners; restrict sampling to this island's enclosing disc.
+		const auto height=[centre](float x,float z) { return x*x+z*z>1000000.0F?0.0F:terrainHeight(x+centre.x,z+centre.z); };
 		const auto normal = [&height](float x, float z) { return vm::normalize(vve::Vec3{
 			height(x - 1.0F, z) - height(x + 1.0F, z), 2.0F,height(x, z - 1.0F) - height(x, z + 1.0F)}); };
 		// A shared height field guarantees that visible shores and wheels agree with collision handling.
