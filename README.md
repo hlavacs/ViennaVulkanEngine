@@ -244,6 +244,14 @@ Every test is a C++ executable built from one file in `tests/` and registered in
 
 `examples/racer` is an intermediate game on the facade: lap racing against three computer cars, a time trial against your ghost, night mode with headlights and a photographed sky, a countryside with grandstand, paddock, town, farm and fields, and engine, tyre, crash and crowd sounds. It shows user systems, the ECS, box colliders in game code, procedural meshes, pitched audio and most render features. When examples are enabled, CMake downloads Kenney's Racing and City Builder starter kits into the ignored `assets/racer/kenney` folders during configuration. See [examples/racer/README.md](examples/racer/README.md).
 
+## Island Air
+
+`examples/island_delivery` is a Full HD island cargo-flight game using the VVE facade and ECS.
+Fly a textured twin-prop aircraft between two island airstrips, land, taxi and stop to unload.
+It includes chase/pilot-eye cameras, PBR scenery, animated water and recorded positional aircraft audio.
+CMake downloads hash-pinned external assets into the build directory; the repository contains no game asset binaries.
+See [examples/island_delivery/README.md](examples/island_delivery/README.md) for controls, build options and deterministic tests.
+
 ## Rendering features
 
 The `vve::RenderSystem` facade offers a few features a simple game needs:

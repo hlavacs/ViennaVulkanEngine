@@ -134,7 +134,7 @@ int main(int argc, char **argv) {
 			if (grain) { grain->intensity = 0.05F; }
 		});
 
-	if (const auto result = loadGameScene(render, vve::example::assetRoot(argc > 0 ? argv[0] : nullptr)); !result) {
+	if (const auto result = loadGameScene(render, vve::example::assetRoot(argc > 0 ? argv[0] : nullptr, crateTextureRelativePath)); !result) {
 		std::cerr << "[postprocessing] scene load failed: error=" << vve::errorName(result.error()) << '\n';
 		return 2;
 	}

@@ -4,18 +4,18 @@ import std;
 
 export namespace vve::example {
 
-/// @brief Finds assets in the cwd, then executable ancestors, then the configured source root.
-[[nodiscard]] std::filesystem::path assetRoot(char *argv0) {
-	auto containsAssets = [](const std::filesystem::path &candidate) {
-		return std::filesystem::is_directory(candidate / "assets");
+/// @brief Finds a root containing the requested file, checking cwd, executable ancestors, then the configured source root.
+[[nodiscard]] std::filesystem::path assetRoot(char *argv0, const std::filesystem::path &requiredAsset) {
+	const auto containsAsset = [&requiredAsset](const std::filesystem::path &candidate) {
+		return std::filesystem::is_regular_file(candidate / requiredAsset);
 	};
-	if (const auto cwd = std::filesystem::current_path(); containsAssets(cwd)) { return cwd; }
+	if (const auto cwd = std::filesystem::current_path(); containsAsset(cwd)) { return cwd; }
 	if (argv0 != nullptr) {
 		auto executable = std::filesystem::absolute(std::filesystem::path{argv0});
 		if (std::filesystem::exists(executable)) { executable = std::filesystem::weakly_canonical(executable); }
-		// Support launches from the executable directory or any other working directory.
+		// Skip partial asset directories belonging to other examples when walking executable ancestors.
 		for (auto candidate = executable.parent_path(); !candidate.empty(); candidate = candidate.parent_path()) {
-			if (containsAssets(candidate)) { return candidate; }
+			if (containsAsset(candidate)) { return candidate; }
 			if (candidate == candidate.root_path()) { break; }
 		}
 	}

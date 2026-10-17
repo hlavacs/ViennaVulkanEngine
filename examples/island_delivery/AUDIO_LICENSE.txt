@@ -1,0 +1,66 @@
+ISLAND DELIVERY AUDIO CREDITS
+===========================
+Audio is downloaded into the build directory during CMake configuration.
+This repository contains no third-party audio binaries. Keep this file with
+redistributed game builds and audio assets. Files are used unmodified; the game
+adjusts their playback gain, speed and position at runtime.
+
+propeller.ogg -- Airplane Prop Loop
+Recording: jakobthiesen. Loop edit: AntumDeluge.
+Source: https://opengameart.org/content/airplane-prop-loop
+Original: Porter Prop plane Int.WAV, recorded on Sony PCM D50.
+https://freesound.org/people/jakobthiesen/sounds/188423/
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0).
+https://creativecommons.org/licenses/by/3.0/
+
+cockpit.mp3 -- Porter Prop plane Int.WAV
+Author: jakobthiesen.
+Source: https://freesound.org/people/jakobthiesen/sounds/188423/
+License: Creative Commons Attribution 3.0 Unported (CC BY 3.0).
+https://creativecommons.org/licenses/by/3.0/
+The author's public HQ MP3 preview is used, preserving the full cabin recording.
+
+wind.mp3 -- Strong Wind Blowing
+Author: Flixberry Entertainment.
+Source: https://opengameart.org/content/strong-wind-blowing
+License selected: Creative Commons Attribution 4.0 International (CC BY 4.0).
+https://creativecommons.org/licenses/by/4.0/
+
+coast.mp3 -- alkaibeach.aif
+Author: jasinski. Waves recorded at Alkai beach, Seattle WA.
+Source: https://freesound.org/people/jasinski/sounds/18363/
+License: CC0 1.0 Universal Public Domain Dedication.
+https://creativecommons.org/publicdomain/zero/1.0/
+The author's public HQ MP3 preview is used, preserving the full recording.
+
+rolling.mp3 -- Bumpy Wheel Roll
+Author: thisusernameis.
+Source: https://freesound.org/people/thisusernameis/sounds/653110/
+License: CC0 1.0 Universal Public Domain Dedication.
+https://creativecommons.org/publicdomain/zero/1.0/
+Recorded small wheels provide rolling foley; this is not an aircraft recording.
+
+touchdown.wav -- Jump Landing Sound (jumpland.wav)
+Author: MentalSanityOff. Submitted by qubodup.
+Source: https://opengameart.org/content/jump-landing-sound
+Original: https://freesound.org/people/MentalSanityOff/sounds/148796/
+License: CC0 1.0 Universal Public Domain Dedication.
+https://creativecommons.org/publicdomain/zero/1.0/
+Used as contact foley, with impact-dependent playback gain.
+
+crash.ogg -- Crash Collision (qubodup-crash.ogg)
+Author: Iwan 'qubodup' Gabovitch.
+Source: https://opengameart.org/content/crash-collision
+License: CC0 1.0 Universal Public Domain Dedication.
+https://creativecommons.org/publicdomain/zero/1.0/
+Layered recordings of a stapler, lock and click provide collision foley.
+
+unload.mp3 -- Wooden Crate dragging on Concrete.mp3
+Author: matth3wc04.
+Source: https://freesound.org/people/matth3wc04/sounds/690010/
+License: CC0 1.0 Universal Public Domain Dedication.
+https://creativecommons.org/publicdomain/zero/1.0/
+
+License/source pages were checked on 17 October 2026. Freesound recordings use
+the public CDN previews linked by their source pages, requiring no login or API
+key. CMake pins download hashes so upstream changes are reported explicitly.

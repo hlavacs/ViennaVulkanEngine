@@ -1,0 +1,26 @@
+ISLAND AIR VISUAL ASSETS
+=======================
+Assets are downloaded and SHA256-checked by cmake/IslandDeliveryAssets.cmake.
+No external photographs, models or recordings are stored in this source tree.
+Keep this file, AUDIO_LICENSE.txt and Cesium-LICENSE.md with redistributed builds.
+
+aircraft.glb: Cesium Air, Copyright 2011-2026 CesiumJS Contributors.
+Apache License 2.0; complete upstream license is downloaded as Cesium-LICENSE.md.
+https://github.com/CesiumGS/cesium/tree/85500087b890479ffa3bf0b4cf0db55887c2d89a/Apps/SampleData/models/CesiumAir
+The original GLB is unchanged. Runtime placement scales and rotates the model;
+the two original propeller nodes are animated by the game.
+
+Photographs and scanned materials from Poly Haven, CC0 1.0 Universal:
+https://polyhaven.com/license
+https://creativecommons.org/publicdomain/zero/1.0/
+sky.jpg: Kloofendal 48d Partly Cloudy (Pure Sky).
+https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
+grass.jpg: Leafy Grass. https://polyhaven.com/a/leafy_grass
+sand.jpg: Coast Sand 01. https://polyhaven.com/a/coast_sand_01
+rock.jpg: Rock Face. https://polyhaven.com/a/rock_face
+asphalt.jpg: Asphalt Track. https://polyhaven.com/a/asphalt_track
+concrete.jpg: Concrete Floor 02. https://polyhaven.com/a/concrete_floor_02
+planks.jpg: Weathered Planks. https://polyhaven.com/a/weathered_planks
+metal.jpg: Corrugated Iron. https://polyhaven.com/a/corrugated_iron
+These original images are downloaded unmodified and renamed by the manifest.
+Terrain, airport structures, palms and markings are generated in C++ game code.

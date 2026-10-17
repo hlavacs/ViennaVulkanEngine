@@ -192,7 +192,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 	auto render = engine.world().get<vve::RenderSystem>();
-	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr);
+	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr, grassTextureRelativePath);
 	const auto sunHandle = loadScene(render, root);
 	if (!sunHandle) {
 		std::cerr << "[game] scene load failed: error=" << vve::errorName(sunHandle.error()) << '\n';

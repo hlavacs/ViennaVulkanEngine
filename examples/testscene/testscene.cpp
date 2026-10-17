@@ -66,7 +66,7 @@ int main(int argc, char **argv) {
 	}
 
 	auto render = engine.world().get<vve::RenderSystem>();
-	if (const auto result = loadGameScene(render, vve::example::assetRoot(argc > 0 ? argv[0] : nullptr)); !result) {
+	if (const auto result = loadGameScene(render, vve::example::assetRoot(argc > 0 ? argv[0] : nullptr, crateTextureRelativePath)); !result) {
 		std::cerr << "[game] scene load failed: error=" << vve::errorName(result.error()) << '\n';
 		return 2;
 	}

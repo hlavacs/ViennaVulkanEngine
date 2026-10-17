@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
 	auto assets = engine.world().get<vve::AssetSystem>();
 	auto render_system = engine.world().get<vve::RenderSystem>();
 
-	const auto scene_path = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr) / sponzaSceneRelativePath;
+	const auto scene_path = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr, sponzaSceneRelativePath) / sponzaSceneRelativePath;
 	const std::expected<vve::SceneHandle, vve::Error> scene = assets.loadScene(scene_path);
 	if (!scene) {
 		std::cerr << "[sponza] scene load failed: path=" << scene_path << " error=" << vve::errorName(scene.error()) << '\n';

@@ -49,7 +49,7 @@ constexpr float tolerance = 1.0e-3F;		///< Allowed difference between engine and
 /// @brief Loads the car, drives it with local node transforms only, and verifies the composed wheel position.
 int main(int argc, char **argv) {
 	std::cout << std::unitbuf;
-	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr);
+	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr, "assets/hierarchy_car/car.gltf");
 	const int max_frames = vve::example::frameLimit(argc, argv);
 	const auto verify_dir = std::filesystem::path{argc > 0 ? argv[0] : "."}.parent_path().parent_path() / "verify";
 	const auto capture_path = option(argc, argv, "--output", verify_dir / "hierarchy_car.png");

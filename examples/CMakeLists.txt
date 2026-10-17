@@ -67,6 +67,9 @@ endif()
 # Ring Racer: a lap-racing game; its logic has a CPU test and the game a bounded autopilot run.
 add_subdirectory(racer)
 
+# Island Air: ECS flight, conventional island airstrips and landing-only cargo deliveries.
+add_subdirectory(island_delivery)
+
 if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/postprocessing/CMakeLists.txt")
     add_subdirectory(postprocessing)
 endif()

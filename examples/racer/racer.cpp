@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
 	const auto verifyDir = std::filesystem::path{argc > 0 ? argv[0] : "."}.parent_path().parent_path() / "verify";
 	options.output = option(argc, argv, "--output", verifyDir / "racer.png");
 	options.verify = option(argc, argv, "--verify", verifyDir / "racer.txt");
-	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr);
+	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr, "assets/racer/cars/race.glb");
 
 	auto engine = vve::EngineBuilder<racer::RaceSystem, racer::ViewSystem, racer::SoundSystem>{
 		vve::makeUserSystems(racer::RaceSystem{.options = options}, racer::ViewSystem{.root = root}, racer::SoundSystem{.root = root})}
