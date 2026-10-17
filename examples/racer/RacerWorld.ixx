@@ -3,7 +3,7 @@
  * @brief Ring Racer countryside: finish arch, grandstand with crowd, paddock, town, farm, fields, pond, fences, hay
  * bales and tyre stacks around the circuit.
  *
- * Kenney models (assets/racer/kenney, CC0, added by hand; see the README) are placed where their files exist; a missing
+ * Kenney models (assets/racer/kenney, CC0, downloaded by CMake; see the README) are placed where their files exist; a missing
  * file only leaves that piece out. The crowd are Kenney Mini Characters (assets/racer/crowd), posed joint by joint and
  * merged into one mesh. Everything else is built from boxes, gabled roofs and cylinders, which MeshBatch
  * merges into one mesh per look (colour and Poly Haven texture from assets/racer/textures, mapped in metres), so the whole

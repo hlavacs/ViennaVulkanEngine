@@ -6,6 +6,10 @@
 /docs/build/
 /vcpkg_installed/
 
+# Kenney starter kits downloaded by CMake for Ring Racer.
+/assets/racer/kenney/racing/
+/assets/racer/kenney/city/
+
 # CMake
 /CMakeFiles/
 /CMakeCache.txt

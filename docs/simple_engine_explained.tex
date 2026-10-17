@@ -2749,8 +2749,10 @@ The larger \api{racer} example shows how a game combines reusable assets with it
 
 The upstream READMEs identify the included models and sounds as CC0 assets. The starter-kit software has a separate MIT license. Keep the upstream license and credit information with your source downloads; \path{assets/racer/license.txt} records the assets used by this game, including the skid sound's credit to Landeplage.
 
-\subsection*{Download and keep the paths intact}
-Download each repository as a ZIP through GitHub's \emph{Code / Download ZIP}, or clone it. The racer README lists the exact files copied from each kit. Copy the required files into the racing and city folders above while preserving their relative directories. In particular, each kit's models need its own \path{models/Textures/colormap.png}; keep the matching texture with the matching kit.
+\subsection*{CMake downloads the kits}
+Configure VVE with examples enabled: \api{VVE_BUILD_EXAMPLES=ON} is the default. CMake downloads both complete kits at the fixed commits and SHA-256 hashes in \path{cmake/RacerAssets.cmake}, caches them in the build directory, and copies them into the racing and city folders below. These folders are ignored by Git. The first configure needs internet access; later configurations reuse the cache and restore deleted or incomplete asset copies. Disabling examples also skips these downloads. No manual copying is needed.
+
+The complete kits preserve their texture paths and license files. In particular, each kit's models need its own \path{models/Textures/colormap.png}; keep the matching texture with the matching kit.
 
 \begin{lstlisting}[language={}]
 assets/racer/kenney/
@@ -2761,13 +2763,13 @@ assets/racer/kenney/
     city/models/building-garage.glb
     city/sounds/ambience.ogg
 \end{lstlisting}
-This listing shows the directory pattern, not the full inventory. Missing optional kit models are reported and omitted; missing kit sounds are reported by the sound system. Use the README's full inventory to reproduce the intended scene.
+This listing shows the directory pattern, not the full inventory. The racer README lists the files the game uses. Keep the configured assets in place when running; a missing optional model is counted and omitted, and a missing sound stays silent. Reconfigure to restore the downloaded files.
 
 \subsection*{Follow the files through VVE}
 \path{RacerWorld.ixx} loads and places the kit models through AssetSystem and RenderSystem. \path{RacerSound.ixx} loads the OGG files through AudioSystem; for example, it adjusts engine pitch as the cars accelerate. Race rules and car movement remain in the racer's C++ systems.
 
 These two starter kits are part of a larger asset collection. The game also uses Kenney's Car Kit, Nature Kit and Mini Characters, Poly Haven textures and sky imagery, generated assets, and the bundled V2 music. See the racer README and asset license file for their individual sources.
-\source{examples/racer/README.md; examples/racer/RacerWorld.ixx; examples/racer/RacerSound.ixx; assets/racer/license.txt}
+\source{cmake/RacerAssets.cmake; examples/racer/README.md; examples/racer/RacerWorld.ixx; examples/racer/RacerSound.ixx; assets/racer/license.txt}
 
 \lesson{Public API task reference}\label{core-75}
 Use this page to locate the public entry point for a programming task.

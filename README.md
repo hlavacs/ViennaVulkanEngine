@@ -242,7 +242,7 @@ Every test is a C++ executable built from one file in `tests/` and registered in
 
 ## Ring Racer
 
-`examples/racer` is an intermediate game on the facade: lap racing against three computer cars, a time trial against your ghost, night mode with headlights and a photographed sky, a countryside with grandstand, paddock, town, farm and fields, and engine, tyre, crash and crowd sounds. It shows user systems, the ECS, box colliders in game code, procedural meshes, pitched audio and most render features. Its Kenney kit models and sounds are copied by hand into `assets/racer/kenney`; the README lists them. See [examples/racer/README.md](examples/racer/README.md).
+`examples/racer` is an intermediate game on the facade: lap racing against three computer cars, a time trial against your ghost, night mode with headlights and a photographed sky, a countryside with grandstand, paddock, town, farm and fields, and engine, tyre, crash and crowd sounds. It shows user systems, the ECS, box colliders in game code, procedural meshes, pitched audio and most render features. When examples are enabled, CMake downloads Kenney's Racing and City Builder starter kits into the ignored `assets/racer/kenney` folders during configuration. See [examples/racer/README.md](examples/racer/README.md).
 
 ## Rendering features
 

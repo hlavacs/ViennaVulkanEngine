@@ -1,3 +1,6 @@
+# Populate the ignored starter-kit folders before the game can be run.
+include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/RacerAssets.cmake")
+
 # Physics and race rules without rendering, shared by the game and its CPU test.
 add_library(racer_logic STATIC)
 target_compile_features(racer_logic PUBLIC cxx_std_23)

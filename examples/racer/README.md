@@ -112,8 +112,13 @@ from `https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/<asset>/<file>` in
 | `clay_roof_tiles.jpg` | [clay_roof_tiles_02](https://polyhaven.com/a/clay_roof_tiles_02) | `clay_roof_tiles_02_diff_1k.jpg` | farmhouse roof |
 | `corrugated_iron.jpg` | [corrugated_iron](https://polyhaven.com/a/corrugated_iron) | `corrugated_iron_diff_1k.jpg` | barn, shed and grandstand roofs, silo |
 
-`assets/racer/kenney` holds files from two of Kenney's starter kits on GitHub (models and sounds CC0), copied with their
-folder structure, because every model finds its `Textures/colormap.png` next to it:
+When examples are enabled (`VVE_BUILD_EXAMPLES=ON`, the default), CMake downloads complete copies of two Kenney starter
+kits from GitHub into `assets/racer/kenney/racing` and `assets/racer/kenney/city` during configuration. These folders
+are ignored by Git. The first configure needs internet access; later configurations reuse CMake's cached downloads.
+No manual copying or launch script is needed. `cmake/RacerAssets.cmake` pins the upstream commits and SHA-256 hashes.
+The complete kits preserve the models' `Textures/colormap.png` paths and the upstream license files.
+
+The racer uses these files from the kits (models and sounds CC0):
 
 | Folder | From | Files |
 | --- | --- | --- |

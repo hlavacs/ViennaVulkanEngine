@@ -3,7 +3,7 @@
  * @brief Ring Racer SoundSystem: music, engines that rise with speed, tyre squeal, crashes, race signals, menu clicks,
  * birdsong and the grandstand crowd.
  *
- * Kenney sounds (assets/racer/kenney, CC0, added by hand) and the generated signals and crowd (assets/racer/sounds,
+ * Kenney sounds (assets/racer/kenney, CC0, downloaded by CMake) and the generated signals and crowd (assets/racer/sounds,
  * written by make_sounds.sh) are optional: a sound that does not load stays silent. Every sound except the music fades
  * with the distance from the camera, which the ViewSystem reports each frame as `listener`.
  *
