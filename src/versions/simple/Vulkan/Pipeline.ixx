@@ -55,16 +55,18 @@ export namespace vve::simple {
 		Mat4 model{};                        ///< Object-local model matrix selected before each draw call.
 		std::uint32_t materialIndex{};       ///< Dense slot in the GPU material storage buffer.
 		std::uint32_t shadowMatrixIndex{};   ///< Index into FrameUniforms::shadowViewProjs used by the shadow vertex stage.
-		std::uint32_t flags{};               ///< Bit 0 unlit, bit 1 sky, bit 2 sprite (objectFlag values).
+		std::uint32_t flags{};               ///< Bit 0 unlit, bit 1 sky, bit 2 sprite, bit 3 water (objectFlag values).
 		float opacity{1.0F};                 ///< Object alpha multiplied with the material alpha.
+		Vec4 waves{};                        ///< Water height, wavelength, angular speed and enabled flag.
 	};
-	static_assert(sizeof(ObjectPushConstants) == 80U); ///< Keeps the C++ and Slang push-constant blocks identical.
+	static_assert(sizeof(ObjectPushConstants) == 96U); ///< Keeps the C++ and Slang push-constant blocks identical.
 
 	/// @brief Bits of ObjectPushConstants::flags, mirrored by simple_forward.slang.
 	namespace objectFlag {
 		inline constexpr std::uint32_t unlit{1U};  ///< Flat base colour without lighting.
 		inline constexpr std::uint32_t sky{2U};    ///< Skybox drawn around the camera at the far plane.
 		inline constexpr std::uint32_t sprite{4U}; ///< Quad turned towards the camera.
+		inline constexpr std::uint32_t water{8U}; ///< Analytic world-space waves and water normals.
 	} // namespace objectFlag
 
 	/// @brief Set-0 descriptor bindings of simple_forward.slang; every [[vk::binding(n, 0)]] in the shader must match this table.
@@ -255,10 +257,11 @@ export namespace vve::simple {
 			* @param depthAttachmentFormat Depth format of the depth attachment.
 			* @param textureCapacity Device-selected fragment texture-array specialization; unused by depth-only pipelines.
 			* @param blended True blends colour by source alpha and keeps the depth buffer unchanged (transparent objects).
+			* @param samples Coverage samples matching both forward attachments; shadow pipelines keep one.
 			* @return VK_SUCCESS when the graphics pipeline is available, otherwise a Vulkan error code.
 			*/
 		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkPipelineLayout pipelineLayout, VkShaderModule vertexModule, const char *vertexEntry,
-											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat, std::uint32_t textureCapacity = 0U, bool blended = false) {
+											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat, std::uint32_t textureCapacity = 0U, bool blended = false, VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT) {
 			cleanup();
 			const bool depthOnly{fragmentModule == VK_NULL_HANDLE};
 			if (owningDevice == VK_NULL_HANDLE || pipelineLayout == VK_NULL_HANDLE || vertexModule == VK_NULL_HANDLE || depthAttachmentFormat == VK_FORMAT_UNDEFINED ||
@@ -301,7 +304,7 @@ export namespace vve::simple {
 				.depthBiasSlopeFactor = 1.75F,			///< Slope raster bias protects surfaces viewed obliquely by the light.
 				.lineWidth = 1.0F,
 			};
-			const VkPipelineMultisampleStateCreateInfo multisampling{.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT};
+			const VkPipelineMultisampleStateCreateInfo multisampling{.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, .rasterizationSamples = samples};
 			const VkPipelineColorBlendAttachmentState colorBlendAttachment{
 				.blendEnable = blended ? VK_TRUE : VK_FALSE,
 				.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,				///< Colour = src * alpha + dst * (1 - alpha).

@@ -29,6 +29,14 @@ namespace vve::simple {
 	// Format of the hdr offscreen color target the scene is rendered into.
 	constexpr VkFormat hdrFormat{VK_FORMAT_R16G16B16A16_SFLOAT};
 
+	/// @brief Changes startup antialiasing without replacing resources referenced by submitted work.
+	auto ForwardRenderer::setAntialiasing(Antialiasing mode) -> std::expected<void, Error> {
+		if (mode != Antialiasing::none && mode != Antialiasing::msaa4) { return std::unexpected(Error::invalid_argument); }
+		if (initialized()) { return std::unexpected(Error::already_initialized); }
+		antialiasing_ = mode;
+		return {};
+	}
+
 	/// @brief Releases this window's resources while the renderer's device, allocator and command pool are alive.
 	void WindowTarget::cleanup() {
 		// The renderer waits for outstanding work before releasing any target resources.
@@ -42,6 +50,7 @@ namespace vve::simple {
 		frameSync.cleanup();
 		commandBuffers.cleanup();
 		depthImage.cleanup();
+		msaaImage.cleanup();
 		hdrImage.cleanup();
 		imageViews.cleanup();
 		swapchain.cleanup();
@@ -114,6 +123,22 @@ namespace vve::simple {
 
 		VkPhysicalDeviceProperties deviceProperties{};
 		vkGetPhysicalDeviceProperties(physicalDevice.physicalDevice, &deviceProperties);
+		if (sampleCount() != VK_SAMPLE_COUNT_1_BIT) {
+			// Both concrete formats and the framebuffer limits must support the requested coverage count.
+			VkImageFormatProperties colour{}, depth{};
+			const auto colourResult = vkGetPhysicalDeviceImageFormatProperties(physicalDevice.physicalDevice, hdrFormat,
+				VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0U, &colour);
+			const auto depthResult = vkGetPhysicalDeviceImageFormatProperties(physicalDevice.physicalDevice, depthFormat,
+				VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0U, &depth);
+			const auto supported = colour.sampleCounts & depth.sampleCounts & deviceProperties.limits.framebufferColorSampleCounts &
+				deviceProperties.limits.framebufferDepthSampleCounts;
+			if (colourResult != VK_SUCCESS || depthResult != VK_SUCCESS || (supported & sampleCount()) == 0U) {
+				std::cerr << "[vve::simple] renderer init failed: 4x MSAA unsupported for HDR/depth attachments; colour VkResult="
+					<< colourResult << " depth VkResult=" << depthResult << '\n';
+				cleanup();
+				return VK_ERROR_FEATURE_NOT_PRESENT;
+			}
+		}
 		const auto capacity = materialTextureCapacity(deviceProperties.limits);
 		if (capacity == 0U) {
 			std::cerr << "[vve::simple] renderer init failed: device descriptor limits leave no material texture slot.\n";
@@ -216,6 +241,18 @@ namespace vve::simple {
 		return result;
 	}
 
+	/// @brief Allocates matched forward attachments; the resolved HDR image remains usable by every post effect.
+	VkResult ForwardRenderer::createTargetAttachments(WindowTarget &target) {
+		auto result = target.depthImage.create(allocator, device.device, target.swapchain.extent, depthFormat,
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, 1U, false, false, 1U, sampleCount());
+		if (result != VK_SUCCESS) { return result; }
+		result = target.hdrImage.create(allocator, device.device, target.swapchain.extent, hdrFormat,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+		if (result != VK_SUCCESS || sampleCount() == VK_SAMPLE_COUNT_1_BIT) { return result; }
+		return target.msaaImage.create(allocator, device.device, target.swapchain.extent, hdrFormat,
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT, 1U, false, false, 1U, sampleCount());
+	}
+
 	/// @brief Builds one window's attachments, frame slots and post-processing chain from the shared device.
 	VkResult ForwardRenderer::createTargetResources(WindowTarget &target) {
 		VkResult result{VK_SUCCESS};
@@ -237,11 +274,7 @@ namespace vve::simple {
 		result = target.imageViews.create(device.device, target.swapchain.images, target.swapchain.imageFormat, target.swapchain.guiFormat);
 		if (result != VK_SUCCESS) { return result; }
 
-		result = target.depthImage.create(allocator, device.device, target.swapchain.extent, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
-		if (result != VK_SUCCESS) { return result; }
-
-		result = target.hdrImage.create(allocator, device.device, target.swapchain.extent, hdrFormat,
-										 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+		result = createTargetAttachments(target);
 		if (result != VK_SUCCESS) { return result; }
 
 		result = target.commandBuffers.create(device.device, commandPool.commandPool, framesInFlight);
@@ -285,12 +318,12 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return result; }
 		const VulkanVertexInputDescription vertexInput{};
 		result = graphicsPipeline.create(device.device, pipelineLayout.pipelineLayout, vertShaderModule.shaderModule, "vertexMain",
-			fragShaderModule.shaderModule, vertexInput, hdrFormat, depthFormat, textureCount);
+			fragShaderModule.shaderModule, vertexInput, hdrFormat, depthFormat, textureCount, false, sampleCount());
 		if (result != VK_SUCCESS) { return result; }
 		++forwardPipelineCreateCount_;
 		// The blended variant is part of the same forward setup and is not counted separately.
 		result = transparentPipeline.create(device.device, pipelineLayout.pipelineLayout, vertShaderModule.shaderModule, "vertexMain",
-			fragShaderModule.shaderModule, vertexInput, hdrFormat, depthFormat, textureCount, true);
+			fragShaderModule.shaderModule, vertexInput, hdrFormat, depthFormat, textureCount, true, sampleCount());
 		if (result != VK_SUCCESS) { return result; }
 		return shadowPipeline.create(device.device, pipelineLayout.pipelineLayout, shadowShaderModule.shaderModule, "shadowVertexMain",
 			VK_NULL_HANDLE, vertexInput, VK_FORMAT_UNDEFINED, depthFormat);
@@ -725,6 +758,7 @@ namespace vve::simple {
 
 		// Release views before their images, but keep the old swapchain for the presentation handoff.
 		target.depthImage.cleanup();
+		target.msaaImage.cleanup();
 		target.hdrImage.cleanup();
 		target.imageViews.cleanup();
 		target.frameSync.cleanup();
@@ -737,11 +771,7 @@ namespace vve::simple {
 		result = target.imageViews.create(device.device, target.swapchain.images, target.swapchain.imageFormat, target.swapchain.guiFormat);
 		if (result != VK_SUCCESS) { return retryNextFrame(result); }
 
-		result = target.depthImage.create(allocator, device.device, target.swapchain.extent, depthFormat, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
-		if (result != VK_SUCCESS) { return retryNextFrame(result); }
-
-		result = target.hdrImage.create(allocator, device.device, target.swapchain.extent, hdrFormat,
-										 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+		result = createTargetAttachments(target);
 		if (result != VK_SUCCESS) { return retryNextFrame(result); }
 
 		if (target.postProcess) {

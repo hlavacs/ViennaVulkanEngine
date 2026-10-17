@@ -251,10 +251,19 @@ The `vve::RenderSystem` facade offers a few features a simple game needs:
 - Transparency: `setObjectOpacity(object, opacity)` (0 to 1, read back with `objectOpacity`) blends an object over what lies behind it. Imported glTF materials keep their alpha mode: `OPAQUE` ignores alpha, `MASK` cuts holes where the base-colour alpha is below 0.5, and `BLEND` is see-through; OBJ materials with a dissolve below 1 are blended. Transparent objects are drawn after solid ones, far to near, and cast no shadows; cut-out objects cast solid shadows.
 - Background: `setBackgroundColor(color)` sets the colour every window clears to (default light blue); `backgroundColor()` reads it.
 - Skybox: `setSkybox(panorama)` surrounds every camera with a 2:1 equirectangular image (top row straight up); `clearSkybox()` and `clearScene()` remove it. A missing image returns `Error::io_error`.
+- Material lighting: `setMaterialLighting(MaterialLighting::physically_based)` enables GGX direct lighting and approximate illumination/reflections from the skybox. Classic lighting remains the default. `setObjectSurface(object, SurfaceMaterial{.roughness = 0.3F, .metalness = 0.0F})` changes one object's factors without changing shared materials; imported maps still apply. Set colour/texture before surface factors, since those look setters reset the other material properties. Panorama filtering uses eight fixed samples and ordinary mipmaps; it is an inexpensive approximation without local reflections or precomputed irradiance maps.
+- Haze: `setAtmosphere(AtmosphereSettings{.density = 0.002F, .height_falloff = 0.01F})` blends surfaces towards the chosen haze colour with distance and decreasing density above `base_height`. Zero density (the default) disables it. This is analytic height fog, with no volumetric clouds or light scattering; the skybox remains unchanged.
+- Water: `addOcean(OceanDescriptor{})` creates a finite 64×64-cell horizontal patch with two analytic waves and reflective lighting. It returns an ordinary object handle, so normal transform, visibility, opacity and removal calls apply; bounds conservatively include wave height. Drive it with `setAnimationTime(AnimationTime{elapsed_seconds})`; the default clock is paused at zero. The patch has no refraction, foam or shoreline simulation.
+- Antialiasing: call `setAntialiasing(Antialiasing::msaa4)` before the first rendered frame for four-sample geometry coverage. The default is `none`; changing the mode after renderer initialization returns `Error::already_initialized`. Unsupported devices report `Error::platform_error` when rendering initializes. Post-processing, frame capture and GUI consume the resolved single-sample image; shadow maps remain single-sample.
 - Sprites: `addSprite(size, texture, color, transform)` adds an unlit textured quad that always faces each window's camera; its texture alpha makes it see-through. Only translation and x/y scale apply, and sprites cast no shadows. Particles are many sprites moved by game code.
 - Changing looks: `setObjectColor(object, color)` keeps the object's texture and `setObjectTexture(object, path)` keeps its colour. An imported object becomes a plain coloured object; its other PBR values are not kept.
 - Shapes and meshes: `addSphere(radius, color, transform)` adds a sphere (equal radii share one mesh). `addMesh(MeshDescriptor)` adds geometry built by game code: positions and triangle indices, optional normals (empty gives flat face normals), UVs (empty gives zero), colour, base-colour texture and transform; mismatched sizes return `Error::invalid_argument`.
 - Picking: `objectBounds(object)` returns an object's world box. `raycast(origin, direction, max_distance)` returns the nearest visible object whose box the ray enters, as `RaycastHit{object, distance}`; it tests boxes, not triangles. `screenRay(window, point)` returns the origin and direction of the ray through a window point ((0,0) top left, (1,1) bottom right, like `mousePosition`) from that window's camera.
+
+`RenderMaterialLightingTests`, `RenderEnvironmentTests` and `RenderAntialiasingTests`
+check these extensions with deterministic pixel comparisons, saved PNGs and
+Vulkan validation. Captures are in `build/<variant>-linux/tests/tmp/<test-name>`
+on Linux (the corresponding build directory on other platforms).
 
 Input (`vve::InputState`, `vve::WindowSystem`): `vve::Key` names letters, arrows, Shift, Ctrl, Alt, Space, Enter, Tab, Backspace, Delete, Insert, Home, End, Page Up/Down and F1 to F12; `vve::key('w')` names any letter (either case), digit or punctuation key. The mouse buttons `Key::mouse_left`, `mouse_middle` and `mouse_right` work with `isKeyDown`, `wasKeyPressed` and `wasKeyReleased` like keys. `setMouseCaptured(window, true)` hides the pointer and keeps `mouseDelta` coming at the window border, for mouse look.
 
@@ -269,6 +278,10 @@ vcpkg manifest build. Obtain it with `world.get<vve::AudioSystem>()`, call
 `audio.init()` explicitly, then load a sound and play independent overlapping
 voices. Looping, pause/resume, voice and master volume, and resource cleanup are
 available without including SDL headers in your game.
+`setListener(AudioListener)` and `setSource(voice, AudioSource)` add directional
+speaker mixing, clamped inverse-distance attenuation and Doppler; positions use
+metres and velocities metres per second. `clearSource(voice)` restores ordinary
+2D playback. Listener and source updates are explicit and independent of windows.
 
 The V3 Crate Collector also includes V2's original Dance, Ophelia and Never Get
 Out soundtrack. Music starts automatically; choose a track, adjust volume or

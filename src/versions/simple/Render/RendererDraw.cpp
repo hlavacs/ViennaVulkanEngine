@@ -156,6 +156,9 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return reportFrameFailure("shadow descriptors", result); }
 		if (gpuDebugReadback_) { recordShadowDepthSamples(); }
 		else { shadowDepthSamples.clear(); }
+		const auto haze = atmosphere_.color.value;
+		frameUniforms_.fogColorDensity = {haze.x, haze.y, haze.z, atmosphere_.density};
+		frameUniforms_.fogHeightTime = {atmosphere_.base_height, atmosphere_.height_falloff, static_cast<float>(animation_time_.seconds), 0};
 		result = target.uniformBuffers.update(target.currentFrame, frameUniforms_);
 		if (result != VK_SUCCESS) { return reportFrameFailure("uniform update", result); }
 		// Prepare only the GUI-owning window; no draw data means no GUI pass or attachment transition.
@@ -291,15 +294,19 @@ namespace vve::simple {
 				const bool blendedMaterial{materials_[material->second].emissiveFactor.w == static_cast<Scalar>(AlphaMode::blend)};
 				const Vec3 position{instance.world_transform[3][0], instance.world_transform[3][1], instance.world_transform[3][2]};
 				const std::uint32_t flags{(instance.unlit ? objectFlag::unlit : 0U) | (instance.sky ? objectFlag::sky : 0U) |
-					(instance.sprite ? objectFlag::sprite : 0U)};
+					(instance.sprite ? objectFlag::sprite : 0U) | (instance.waves.w != zero() ? objectFlag::water : 0U)};
 				const bool transparent{blendedMaterial || instance.opacity < one() || instance.sprite};
 				items.push_back({.mesh = &mesh,
 					.vertices = dynamic == target.dynamicVertices.end() ? mesh.vertexBuffer.buffer : dynamic->second.first[frameIndex].buffer,
-					.object = {.model = instance.world_transform, .materialIndex = material->second, .flags = flags, .opacity = instance.opacity},
+					.object = {.model = instance.world_transform, .materialIndex = material->second, .flags = flags, .opacity = instance.opacity, .waves = instance.waves},
 					.worldBounds = instance.sky ? Bounds{} : instance.sprite ? spriteBounds(mesh.localBox, instance.world_transform) // Invalid bounds are never culled.
 						: worldBounds(mesh.localBox, instance.world_transform),
 					.castsShadow = instance.casts_shadow && !transparent && !instance.sky, .sky = instance.sky, .transparent = transparent,
 					.distance = lengthSquared(subtract(position, eye))});
+				if (instance.waves.w != zero() && items.back().worldBounds.valid) {
+					items.back().worldBounds.minimum.value.y -= instance.waves.x;
+					items.back().worldBounds.maximum.value.y += instance.waves.x;
+				}
 			}
 		}
 		// Order: solid (by mesh), sky, transparent (far to near).
@@ -415,7 +422,8 @@ namespace vve::simple {
 		const VkImageSubresourceRange colorRange{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole swapchain image.
 		const VkImageSubresourceRange depthRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole depth image.
 		
-		// HDR image was last read by the final blit of the previous frame
+		const bool multisampled = sampleCount() != VK_SAMPLE_COUNT_1_BIT;
+		// HDR was read by the previous blit; multisample colour was written by the previous forward pass.
 		const VkImageMemoryBarrier hdrBeginBarrier{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
@@ -427,8 +435,12 @@ namespace vve::simple {
 			.image = target.hdrImage.image,
 			.subresourceRange = colorRange,
 		};
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-							0U, 0U, nullptr, 0U, nullptr, 1U, &hdrBeginBarrier);
+		auto colourBeginBarriers = std::array{hdrBeginBarrier, hdrBeginBarrier};
+		colourBeginBarriers[1].image = target.msaaImage.image;
+		colourBeginBarriers[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0U, 0U, nullptr, 0U, nullptr,
+			multisampled ? 2U : 1U, colourBeginBarriers.data());
 
 		// The depth image is shared by both frames in flight: wait for the previous frame's depth writes.
 		const VkImageMemoryBarrier depthBeginBarriers{
@@ -448,10 +460,13 @@ namespace vve::simple {
 									
 		const VkRenderingAttachmentInfo colorAttachment{ // Dynamic rendering mirrors the old render-pass color clear/store ops.
 			.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
-			.imageView = target.hdrImage.imageView,
+			.imageView = multisampled ? target.msaaImage.imageView : target.hdrImage.imageView,
 			.imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+			.resolveMode = multisampled ? VK_RESOLVE_MODE_AVERAGE_BIT : VK_RESOLVE_MODE_NONE,
+			.resolveImageView = multisampled ? target.hdrImage.imageView : VK_NULL_HANDLE,
+			.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 			.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
-			.storeOp = VK_ATTACHMENT_STORE_OP_STORE,
+			.storeOp = multisampled ? VK_ATTACHMENT_STORE_OP_DONT_CARE : VK_ATTACHMENT_STORE_OP_STORE,
 			.clearValue = {.color = {.float32 = {static_cast<float>(backgroundColor_.value.x), static_cast<float>(backgroundColor_.value.y),
 				static_cast<float>(backgroundColor_.value.z), 1.0F}}}, // Background behind the scene and the sky.
 		};

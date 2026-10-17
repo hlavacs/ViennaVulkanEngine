@@ -24,6 +24,8 @@ endfunction()
 
 vve_add_engine_test(HandleTests)
 vve_add_engine_test(AudioSystemTests)
+vve_add_engine_test(SpatialAudioTests)
+set_tests_properties(SpatialAudioTests PROPERTIES LABELS audio TIMEOUT 15)
 vve_add_engine_test(LegacyMusicTests)
 target_compile_definitions(LegacyMusicTests PRIVATE
     VVE_TEST_V2_MUSIC_DIR="${PROJECT_SOURCE_DIR}/assets/sounds")
@@ -61,6 +63,8 @@ target_compile_definitions(SimpleForwardRendererTests PRIVATE
 vve_add_engine_test(RenderFrameCountTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderRuntimeUpdateTests GPU Vulkan::Vulkan)
 vve_add_engine_test(RenderResizeTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(RenderAntialiasingTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(RenderEnvironmentTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(MultiWindowRenderTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderShadowOcclusionTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderTextureDedupTests GPU Vulkan::Vulkan vve_test_support)
@@ -76,6 +80,7 @@ vve_add_engine_test(RenderMaterialImportTests GPU Vulkan::Vulkan vve_test_suppor
 target_compile_definitions(RenderMaterialImportTests PRIVATE
    "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\"")
 vve_add_engine_test(RenderLightingCaptureTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(RenderMaterialLightingTests GPU Vulkan::Vulkan vve_test_support)
 target_compile_definitions(RenderLightingCaptureTests PRIVATE
    "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\""
    "VVE_TEST_FLAT_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import_flat.obj\"")

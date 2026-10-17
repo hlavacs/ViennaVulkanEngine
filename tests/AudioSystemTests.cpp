@@ -92,6 +92,9 @@ void testAudio(const std::filesystem::path &decodedPath, const std::filesystem::
    expectError(audio.volume(AudioPlaybackHandle{}), Error::not_initialized, "volume query requires init");
    expectError(audio.setVolume(AudioPlaybackHandle{}, AudioVolume{}), Error::not_initialized, "voice gain requires init");
    expectError(audio.setMasterVolume(AudioVolume{}), Error::not_initialized, "master gain requires init");
+   expectError(audio.setListener(AudioListener{}), Error::not_initialized, "listener requires init");
+   expectError(audio.setSource(AudioPlaybackHandle{}, AudioSource{}), Error::not_initialized, "source requires init");
+   expectError(audio.clearSource(AudioPlaybackHandle{}), Error::not_initialized, "clear source requires init");
    audio.shutdown(); audio.stopAll();
    check(!audio.isPlaying(AudioPlaybackHandle{}) && !audio.isPaused(AudioPlaybackHandle{}), "empty voice is inactive");
    const auto initialized = audio.init();
@@ -153,6 +156,25 @@ void testAudio(const std::filesystem::path &decodedPath, const std::filesystem::
       expectError(audio.setPitch(first, AudioPitch{.value = invalid}), Error::invalid_argument, "reject invalid pitch");
    }
    check(near(value(audio.pitch(first), "pitch after invalid input"), 1.5F), "invalid input preserves pitch");
+   // Spatial changes preserve user controls, other voices and playback state.
+   AudioSource source{.position = Position{.value = Vec3(10, 0, 0)}, .velocity = Vec3(-40, 0, 0)};
+   check(audio.setSource(first, source).has_value(), "enable moving positional source");
+   check(near(value(audio.pitch(first), "configured spatial pitch"), 1.5F), "Doppler leaves configured pitch unchanged");
+   check(near(value(audio.volume(first), "configured spatial volume"), 1.0F), "attenuation leaves configured volume unchanged");
+   check(audio.setPitch(first, AudioPitch{.value = 1.25F}).has_value(), "pitch changes under Doppler");
+   check(near(value(audio.pitch(first), "updated spatial pitch"), 1.25F), "spatial pitch query retains user value");
+   check(audio.setListener(AudioListener{.position = Position{.value = Vec3(1, 0, 0)}}).has_value(), "move listener");
+   check(near(value(audio.pitch(second), "unplaced voice pitch"), 1.0F), "listener leaves 2D voice unchanged");
+   source.reference_distance = 0;
+   expectError(audio.setSource(first, source), Error::invalid_argument, "reject zero reference distance");
+   auto listener = AudioListener{};
+   listener.up = listener.forward;
+   expectError(audio.setListener(listener), Error::invalid_argument, "reject parallel listener directions");
+   expectError(audio.setSource(AudioPlaybackHandle{}, AudioSource{}), Error::invalid_handle, "reject unknown positional voice");
+   check(audio.pause(first).has_value() && audio.clearSource(first).has_value(), "restore 2D while paused");
+   check(audio.isPaused(first), "clearing source retains paused cursor");
+   check(near(value(audio.pitch(first), "restored 2D pitch"), 1.25F), "clearing source preserves configured pitch");
+   check(audio.resume(first).has_value(), "resume restored 2D voice");
    expectError(audio.pitch(AudioPlaybackHandle{}), Error::invalid_handle, "empty voice has no pitch");
    check(near(value(audio.volume(first), "gain after invalid input"), 1.0F), "invalid input preserves voice gain");
    check(near(audio.masterVolume(), 1.0F), "invalid input preserves master gain");

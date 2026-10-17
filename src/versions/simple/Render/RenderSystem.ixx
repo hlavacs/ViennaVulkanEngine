@@ -81,6 +81,10 @@ export namespace vve::simple {
 		RenderSystem &operator=(const RenderSystem &) = delete;
 		RenderSystem &operator=(RenderSystem &&) = delete;
 		[[nodiscard]] auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {})	-> std::expected<RenderSceneInstanceHandle, Error>;
+		[[nodiscard]] auto setAtmosphere(AtmosphereSettings settings) -> std::expected<void, Error>;
+		[[nodiscard]] auto atmosphere() const -> AtmosphereSettings;
+		[[nodiscard]] auto setAnimationTime(AnimationTime time) -> std::expected<void, Error>;
+		[[nodiscard]] auto addOcean(OceanDescriptor ocean = {}) -> std::expected<RenderObjectHandle, Error>;
 
 		// Object state, cameras, and lights mirrored into the renderer CPU scene (RenderSystemScene.cpp).
 		[[nodiscard]] auto setObjectUnlit(RenderObjectHandle handle, bool unlit)										-> std::expected<void, Error>;
@@ -98,6 +102,11 @@ export namespace vve::simple {
 		auto setCamera(Camera camera) -> void;
 		auto setBackgroundColor(LinearColor color) -> void;
 		[[nodiscard]] auto backgroundColor() const -> LinearColor;
+		[[nodiscard]] auto setMaterialLighting(MaterialLighting mode) -> std::expected<void, Error>;
+		[[nodiscard]] auto materialLighting() const -> MaterialLighting;
+		[[nodiscard]] auto setObjectSurface(RenderObjectHandle handle, SurfaceMaterial surface) -> std::expected<void, Error>;
+		[[nodiscard]] auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error>;
+		[[nodiscard]] auto antialiasing() const -> Antialiasing;
 		[[nodiscard]] auto setCamera(WindowHandle window, Camera camera) -> std::expected<void, Error>;
 		[[nodiscard]] auto clearCamera(WindowHandle window) -> std::expected<void, Error>;
 		auto clearLights() -> void;
@@ -303,6 +312,15 @@ namespace vve::simple {
 
 	/// @brief Returns the clear colour of every window; the default is a light blue.
 	inline auto RenderSystem::backgroundColor() const -> LinearColor { return renderer_.backgroundColor(); }
+	/// @brief Selects legacy or physically based lighting for every window.
+	inline auto RenderSystem::setMaterialLighting(MaterialLighting mode) -> std::expected<void, Error> { return renderer_.setMaterialLighting(mode); }
+	/// @brief Returns the active material-lighting mode.
+	inline auto RenderSystem::materialLighting() const -> MaterialLighting { return renderer_.materialLighting(); }
+
+	/// @brief Selects the forward sample count before Vulkan target creation.
+	inline auto RenderSystem::setAntialiasing(Antialiasing mode) -> std::expected<void, Error> { return renderer_.setAntialiasing(mode); }
+	/// @brief Returns the retained antialiasing setting.
+	inline auto RenderSystem::antialiasing() const -> Antialiasing { return renderer_.antialiasing(); }
 
 	/// @brief Mints a process-wide unique public render-object handle for one internal scene instance.
 	inline auto RenderSystem::registerRenderObject(RenderInstanceHandle instance)

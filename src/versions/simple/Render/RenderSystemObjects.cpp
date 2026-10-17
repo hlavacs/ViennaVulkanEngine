@@ -98,6 +98,7 @@ namespace vve::simple {
 		instance->casts_shadow = false;
 		clearSkybox();	// The new texture is already held, so a repeated panorama is not decoded again.
 		sky_ = *sky;
+		renderer_.setEnvironmentTexture(*texture);
 		renderer_.markSceneResourcesDirty();
 		return {};
 	}
@@ -110,6 +111,7 @@ namespace vve::simple {
 		const auto material = instance->material;
 		(void)scene_.eraseInstance(sky_);
 		sky_ = {};
+		renderer_.setEnvironmentTexture(kNoTexture);
 		releaseUnused(mesh, material);
 		renderer_.markSceneResourcesDirty();
 	}
@@ -209,6 +211,26 @@ namespace vve::simple {
 		std::erase_if(imported_render_meshes_, [this](const auto &entry) { return scene_.findMesh(entry.second) == nullptr; });
 		std::erase_if(imported_render_materials_, [this](const auto &entry) { return scene_.findMaterial(entry.second) == nullptr; });
 		return removed;
+	}
+
+	/// @brief Copies one object's material before changing surface factors; shared and imported materials remain unchanged.
+	auto RenderSystem::setObjectSurface(RenderObjectHandle handle, SurfaceMaterial surface) -> std::expected<void, Error> {
+		if (!std::isfinite(surface.roughness) || !std::isfinite(surface.metalness) || surface.roughness < 0 ||
+			surface.roughness > 1 || surface.metalness < 0 || surface.metalness > 1) { return std::unexpected(Error::invalid_argument); }
+		const auto object = findRenderObject(handle);
+		if (!object) { return std::unexpected(Error::missing_object); }
+		auto *instance = scene_.findInstance(*object);
+		if (instance == nullptr) { return std::unexpected(Error::missing_object); }
+		const auto previous = instance->material;
+		auto material = *scene_.findMaterial(previous);
+		if (material.roughness == surface.roughness && material.metalness == surface.metalness) { return {}; }
+		material.roughness = surface.roughness;
+		material.metalness = surface.metalness;
+		material.handle = {}; // A private material needs a distinct handle even when copied from an imported material.
+		instance->material = scene_.addMaterial(std::move(material));
+		releaseUnused(instance->mesh, previous);
+		renderer_.markMaterialsDirty();
+		return {};
 	}
 
 	/// @brief Reuses a primitive material while its colour/texture entry still belongs to the scene.
@@ -314,6 +336,44 @@ namespace vve::simple {
 		auto instance = scene_.addInstance(render_mesh, material, mesh.transform, detail::modelMatrix(mesh.transform));
 		if (!instance) { return std::unexpected(instance.error()); }
 		return registerRenderObject(*instance);
+	}
+
+	/// @brief Builds a fixed grid once; two shader waves animate it without CPU uploads or extra resource owners.
+	auto RenderSystem::addOcean(OceanDescriptor ocean) -> std::expected<RenderObjectHandle, Error> {
+		const auto c = ocean.color.value;
+		const auto p = ocean.position.value;
+		if (!std::isfinite(ocean.half_extent.x) || !std::isfinite(ocean.half_extent.y) || ocean.half_extent.x <= 0 || ocean.half_extent.y <= 0 ||
+			!std::isfinite(ocean.wave_height) || ocean.wave_height < 0 || !std::isfinite(ocean.wavelength) || ocean.wavelength <= 0 ||
+			!std::isfinite(ocean.speed) || !std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z) ||
+			!std::isfinite(c.x) || !std::isfinite(c.y) || !std::isfinite(c.z) || c.x < 0 || c.y < 0 || c.z < 0) {
+			return std::unexpected(Error::invalid_argument);
+		}
+		constexpr std::uint32_t cells = 64, stride = cells + 1;
+		MeshDescriptor mesh{.color = ocean.color, .transform = Transform{.translation = ocean.position}};
+		mesh.positions.reserve(stride * stride);
+		mesh.normals.reserve(stride * stride);
+		mesh.indices.reserve(cells * cells * 6);
+		// Geometry is static; the shader evaluates world-space wave heights and exact normal derivatives.
+		for (const auto z : std::views::iota(0U, stride)) {
+			for (const auto x : std::views::iota(0U, stride)) {
+				mesh.positions.push_back({(2.0F * x / cells - 1) * ocean.half_extent.x, 0, (2.0F * z / cells - 1) * ocean.half_extent.y});
+				mesh.normals.push_back({0, 1, 0});
+				if (x < cells && z < cells) {
+					const auto a = z * stride + x;
+					mesh.indices.insert(mesh.indices.end(), {a, a + stride, a + 1, a + 1, a + stride, a + stride + 1});
+				}
+			}
+		}
+		const auto object = addMesh(std::move(mesh));
+		if (!object) { return object; }
+		auto *instance = scene_.findInstance(*findRenderObject(*object));
+		const auto previous = instance->material;
+		instance->material = scene_.addMaterial({.base_color = ocean.color, .roughness = 0.08F});
+		instance->waves = {ocean.wave_height, ocean.wavelength, ocean.speed, 1};
+		instance->casts_shadow = false;
+		releaseUnused(instance->mesh, previous);
+		renderer_.markMaterialsDirty();
+		return object;
 	}
 
 	/// @brief Updates positions while preserving one triangle mesh's topology and allocation size.
@@ -436,6 +496,7 @@ namespace vve::simple {
 		primitive_meshes_.clear();
 		default_material_ = {};
 		sky_ = {};
+		renderer_.setEnvironmentTexture(kNoTexture);
 		renderer_.markSceneResourcesDirty();
 		renderer_.markMaterialsDirty();
 	}

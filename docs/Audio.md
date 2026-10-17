@@ -116,7 +116,45 @@ All facade calls belong on the game's main thread. SDL3_mixer's audio thread
 performs decoding and mixing independently; you do not push samples each frame.
 Keep the engine alive during playback. Engine destruction cleans up automatically;
 Worlds and facade copies are non-owning views and must not outlive the engine.
-This API provides ordinary output and volume controls, without positional audio.
+Positional playback is optional; ordinary sounds and music retain their original
+channel layout until `setSource` is called.
+
+## Positional sound
+
+`setListener(AudioListener)` sets one listener independently of render cameras.
+Update its position, forward/up directions and velocity when the camera moves.
+`setSource(voice, AudioSource)` places a voice in the world; update it when its
+emitter moves. Positions and distances use metres; velocities use metres per
+second. Setting velocity affects Doppler only and does not integrate positions.
+Nonfinite values, zero/parallel listener directions and invalid distance ranges
+return `Error::invalid_argument`.
+
+```cpp
+auto listener = vve::AudioListener{};
+listener.position = camera.position;
+listener.forward = camera.forward;
+auto moved = audio.setListener(listener);
+auto placed = audio.setSource(*voice, vve::AudioSource{
+    .position = aircraftPosition, .velocity = aircraftVelocity,
+    .reference_distance = 5.0F, .max_distance = 2000.0F});
+```
+
+SDL3_mixer provides native speaker panning and inverse-distance attenuation:
+gain is one within `reference_distance`, then `reference_distance / distance`.
+Distance clamps at `max_distance`; this is an attenuation limit, not a cutoff.
+Spatial sources are downmixed to mono before positioning. Mono output retains
+attenuation but cannot communicate direction. This provides speaker-based
+positioning rather than headphone HRTF processing.
+
+Doppler uses a speed of sound of 343 m/s and clamps its multiplier to `[0.5, 2]`
+for stable behaviour near extreme velocities. It multiplies `setPitch`, and the
+final SDL ratio clamps to `[0.01, 100]`. `pitch()` still returns the configured
+user pitch; `volume()` still returns the configured gain before attenuation.
+`clearSource(voice)` restores ordinary 2D mixing and user pitch, preserving the
+playback cursor and paused state. Shutdown resets the listener as well as voices.
+Cabin filtering, reverberation and sound propagation around obstacles are not
+implemented; use separate interior/exterior recordings and existing volume
+controls for cabin transitions.
 
 ## Verification
 
@@ -124,6 +162,11 @@ This API provides ordinary output and volume controls, without positional audio.
 pause/resume, gain validation, bad files, handle ownership, cleanup and reinitialization.
 `AudioDemo` exercises the bundled runnable example. Both use SDL's dummy audio
 driver during CTest, so no speakers or audio hardware are required.
+`SpatialAudioTests` validates listener transforms, distance limits and Doppler,
+then measures actual stereo PCM through SDL's synchronous offline mixer. It
+checks channel energy, distance attenuation and frequency changes without a
+device, speakers or timing-dependent audio capture. `AudioSystemTests` also
+checks public spatial controls, validation, pause retention and 2D compatibility.
 
 VVE's Crate Collector and Relay Siege also reuse V2's original Dance, Ophelia and
 Never Get Out tracks. Both provide a music selector, a volume slider (zero mutes)

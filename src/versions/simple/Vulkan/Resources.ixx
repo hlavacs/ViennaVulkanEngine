@@ -412,10 +412,13 @@ export namespace vve::simple {
 		std::uint32_t activeSpotLightCount{};                                           ///< Packed spot-light count.
 		float ambient{};                                                                ///< Scene-wide ambient term.
 		std::uint32_t activePointLightCount{};                                          ///< Packed point-light count.
+		Vec4 fogColorDensity{};                                                         ///< Linear haze RGB and extinction per world unit.
+		Vec4 fogHeightTime{};                                                           ///< Base height, density height falloff, animation seconds, unused.
+		Vec4 environmentLighting{-1, 1, 0, 0};                                          ///< Panorama texture slot (-1 absent), strength, GGX enabled, unused.
 	};
 	/// Matrices are 64 bytes and vectors 16 bytes in the shader; a double Scalar (VVE_MATH_USE_DOUBLE) would break the std140 mirror.
 	static_assert(sizeof(FrameUniforms) == (2U + kShadowMatrixCount) * 64U +
-		(1U + 2U * kMaxShadowedPointLights + 4U * kMaxShadowedSpotLights + 3U * kMaxDirectionalLights + 1U) * 16U);
+		(1U + 2U * kMaxShadowedPointLights + 4U * kMaxShadowedSpotLights + 3U * kMaxDirectionalLights + 4U) * 16U);
 
 	/// @brief One mapped FrameUniforms buffer per frame in flight.
 	struct VulkanUniformBuffers {

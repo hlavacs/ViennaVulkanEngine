@@ -53,6 +53,18 @@ export namespace vve {
 		[[nodiscard]] auto pitch(AudioPlaybackHandle voice) const -> std::expected<AudioPitch, Error> {
 			return impl_.pitch(voice);
 		}
+		/// @brief Sets the listener and updates all positional voices; positions use metres, velocities metres/second.
+		[[nodiscard]] auto setListener(AudioListener listener) -> std::expected<void, Error> {
+			return impl_.setListener(listener);
+		}
+		/// @brief Enables native directional mixing, clamped inverse-distance attenuation and Doppler for a voice.
+		[[nodiscard]] auto setSource(AudioPlaybackHandle voice, AudioSource source) -> std::expected<void, Error> {
+			return impl_.setSource(voice, source);
+		}
+		/// @brief Restores ordinary 2D playback and the configured pitch without resetting the playback cursor.
+		[[nodiscard]] auto clearSource(AudioPlaybackHandle voice) -> std::expected<void, Error> {
+			return impl_.clearSource(voice);
+		}
 		/// @brief Sets the master volume in [0, 1], multiplying all voice volumes.
 		[[nodiscard]] auto setMasterVolume(AudioVolume volume) -> std::expected<void, Error> {
 			return impl_.setMasterVolume(volume);

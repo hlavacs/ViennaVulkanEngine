@@ -148,6 +148,7 @@ export namespace vve::simple {
 		VkImageAspectFlags aspect{};             ///< Aspect used by the views and layout transitions.
 		std::uint32_t layerCount{0U};            ///< Number of array layers.
 		std::uint32_t mipLevels{0U};             ///< Number of mip levels covered by every view.
+		VkSampleCountFlagBits samples{VK_SAMPLE_COUNT_1_BIT}; ///< Coverage samples per pixel; resolved images and textures use one.
 
 		VulkanImage() = default;
 		VulkanImage(const VulkanImage &) = delete;
@@ -169,6 +170,7 @@ export namespace vve::simple {
 				aspect = std::exchange(other.aspect, 0U);
 				layerCount = std::exchange(other.layerCount, 0U);
 				mipLevels = std::exchange(other.mipLevels, 0U);
+				samples = std::exchange(other.samples, VK_SAMPLE_COUNT_1_BIT);
 			}
 			return *this;
 		}
@@ -179,7 +181,7 @@ export namespace vve::simple {
 			*/
 		[[nodiscard]] VkResult create(VmaAllocator owningAllocator, VkDevice owningDevice, VkExtent2D imageExtent, VkFormat imageFormat, VkImageUsageFlags usage,
 											VkImageAspectFlags imageAspect, std::uint32_t layers = 1U, bool perLayerViews = false, bool forceArrayView = false,
-											std::uint32_t imageMipLevels = 1U) {
+											std::uint32_t imageMipLevels = 1U, VkSampleCountFlagBits imageSamples = VK_SAMPLE_COUNT_1_BIT) {
 			cleanup();
 			if (owningAllocator == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || imageExtent.width == 0U || imageExtent.height == 0U || layers == 0U || imageMipLevels == 0U) {
 				return VK_ERROR_INITIALIZATION_FAILED;
@@ -191,7 +193,7 @@ export namespace vve::simple {
 				.extent = {.width = imageExtent.width, .height = imageExtent.height, .depth = 1U},
 				.mipLevels = imageMipLevels,
 				.arrayLayers = layers,
-				.samples = VK_SAMPLE_COUNT_1_BIT,
+				.samples = imageSamples,
 				.tiling = VK_IMAGE_TILING_OPTIMAL,
 				.usage = usage,
 				.sharingMode = VK_SHARING_MODE_EXCLUSIVE,
@@ -207,6 +209,7 @@ export namespace vve::simple {
 			aspect = imageAspect;
 			layerCount = layers;
 			mipLevels = imageMipLevels;
+			samples = imageSamples;
 
 			result = createView(0U, layers, imageView, forceArrayView);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
@@ -235,6 +238,7 @@ export namespace vve::simple {
 			aspect = 0U;
 			layerCount = 0U;
 			mipLevels = 0U;
+			samples = VK_SAMPLE_COUNT_1_BIT;
 		}
 
 	private:

@@ -7,6 +7,28 @@ import VVEngine.Simple.Renderer;
 /// @brief RenderSystem definitions that update object state, cameras, and renderer-owned lights.
 
 namespace vve::simple {
+
+	/// @brief Validates haze before committing it; zero density disables the effect without rebuilding resources.
+	auto RenderSystem::setAtmosphere(AtmosphereSettings settings) -> std::expected<void, Error> {
+		const auto c = settings.color.value;
+		if (!std::isfinite(c.x) || !std::isfinite(c.y) || !std::isfinite(c.z) || c.x < 0 || c.y < 0 || c.z < 0 ||
+			!std::isfinite(settings.density) || settings.density < 0 || !std::isfinite(settings.height_falloff) ||
+			settings.height_falloff < 0 || !std::isfinite(settings.base_height)) { return std::unexpected(Error::invalid_argument); }
+		renderer_.setAtmosphere(settings);
+		return {};
+	}
+
+	/// @brief Reads the configured haze; defaults preserve the original renderer's pixels.
+	auto RenderSystem::atmosphere() const -> AtmosphereSettings { return renderer_.atmosphere(); }
+
+	/// @brief Sets elapsed animation seconds; no wall-clock dependency is hidden in frame recording.
+	auto RenderSystem::setAnimationTime(AnimationTime time) -> std::expected<void, Error> {
+		if (!std::isfinite(time.seconds) || time.seconds < 0 || time.seconds > std::numeric_limits<float>::max()) {
+			return std::unexpected(Error::invalid_argument);
+		}
+		renderer_.setAnimationTime(time);
+		return {};
+	}
 	/// @brief Sets whether one live render object is drawn in its flat base color without lighting.
 	auto RenderSystem::setObjectUnlit(RenderObjectHandle handle, bool unlit) -> std::expected<void, Error> {
 		const auto instance = findRenderObject(handle);
@@ -109,6 +131,8 @@ namespace vve::simple {
 			return box;
 		}
 		for (const auto &vertex : *mesh->vertices) { include(Vec3{multiply(world, Vec4{vertex.position, one()})}); }
+		// Shader waves displace vertically in world space, independently of the patch's placement.
+		if (instance->waves.w != zero()) { box.minimum.value.y -= instance->waves.x; box.maximum.value.y += instance->waves.x; }
 		return box;
 	}
 

@@ -64,6 +64,7 @@ export namespace vve::simple {
 		bool unlit{false};														///< True when this instance bypasses lighting.
 		bool sky{false};															///< True for the internal skybox, drawn around the camera.
 		bool sprite{false};														///< True for a camera-facing blended quad.
+		Vec4 waves{}; ///< Water height, wavelength, angular speed and enabled flag.
 		Scalar opacity{one()};													///< Object alpha multiplied with the material alpha.
 	};
 

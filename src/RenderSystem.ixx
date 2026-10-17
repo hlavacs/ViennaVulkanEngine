@@ -71,6 +71,18 @@ export namespace vve {
 		inline auto setBackgroundColor(LinearColor color) -> void { impl_.setBackgroundColor(color); }
 		/// @brief Returns the background colour; the default is a light blue.
 		[[nodiscard]] inline auto backgroundColor() const -> LinearColor { return impl_.backgroundColor(); }
+		/// @brief Selects GGX direct lighting and approximate panorama lighting; classic remains the default.
+		[[nodiscard]] inline auto setMaterialLighting(MaterialLighting mode) -> std::expected<void, Error> { return impl_.setMaterialLighting(mode); }
+		/// @brief Returns the shared material response used by every window.
+		[[nodiscard]] inline auto materialLighting() const -> MaterialLighting { return impl_.materialLighting(); }
+		/// @brief Changes one object's surface factors without changing other objects; rejects nonfinite values or values outside [0,1].
+		[[nodiscard]] inline auto setObjectSurface(RenderObjectHandle handle, SurfaceMaterial surface) -> std::expected<void, Error> {
+			return impl_.setObjectSurface(handle, surface);
+		}
+		/// @brief Selects geometry antialiasing before the first rendered frame; later changes return already_initialized.
+		[[nodiscard]] inline auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error> { return impl_.setAntialiasing(mode); }
+		/// @brief Returns the configured mode, retained across renderer shutdown; GUI and shadow maps remain single-sample.
+		[[nodiscard]] inline auto antialiasing() const -> Antialiasing { return impl_.antialiasing(); }
 		/// @brief Shows a 2:1 equirectangular panorama image around every window's camera, replacing an earlier skybox.
 		[[nodiscard]] inline auto setSkybox(const std::filesystem::path &panorama) -> std::expected<void, Error> {
 			return impl_.setSkybox(panorama);
@@ -169,6 +181,14 @@ export namespace vve {
 		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addSphere(Scalar radius, LinearColor color, Transform transform = {}) {
 			return impl_.addSphere(radius, color, transform);
 		} ///< A radius that is not positive and finite returns invalid_argument.
+		/// @brief Sets height-dependent haze; invalid or negative density/falloff/colour returns invalid_argument.
+		[[nodiscard]] auto setAtmosphere(AtmosphereSettings settings) -> std::expected<void, Error> { return impl_.setAtmosphere(settings); }
+		/// @brief Reads the current haze settings; zero density disables the effect.
+		[[nodiscard]] auto atmosphere() const -> AtmosphereSettings { return impl_.atmosphere(); }
+		/// @brief Sets nonnegative elapsed animation seconds explicitly; defaults to zero for deterministic frames.
+		[[nodiscard]] auto setAnimationTime(AnimationTime time) -> std::expected<void, Error> { return impl_.setAnimationTime(time); }
+		/// @brief Creates a finite water patch with analytic waves; bounds include its maximum vertical displacement.
+		[[nodiscard]] auto addOcean(OceanDescriptor ocean = {}) -> std::expected<RenderObjectHandle, Error> { return impl_.addOcean(ocean); }
 		/// @brief Adds a mesh built by game code: positions and triangle indices, optional normals, UVs and texture.
 		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addMesh(MeshDescriptor mesh) {
 			return impl_.addMesh(std::move(mesh));

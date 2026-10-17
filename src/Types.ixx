@@ -74,6 +74,22 @@ export namespace vve {
 		Vec3 value{Vec3(zero(), zero(), -one())};							///< Wrapped direction.
 	};
 
+	/// @brief World-space listener; audio distances use metres and velocities use metres per second.
+	struct AudioListener {
+		Position position{}; ///< Listening position, normally the active camera.
+		Direction forward{}; ///< Nonzero viewing direction; normalized by the audio system.
+		Direction up{.value = Vec3(zero(), one(), zero())}; ///< Up direction, independent of forward.
+		Vec3 velocity{zeroVec3()}; ///< World-space velocity in metres per second for Doppler.
+	};
+
+	/// @brief Optional world-space voice placement; a voice remains ordinary 2D until setSource is called.
+	struct AudioSource {
+		Position position{}; ///< World-space source position in metres.
+		Vec3 velocity{zeroVec3()}; ///< World-space velocity in metres per second for Doppler.
+		float reference_distance{1.0F}; ///< Positive distance at which attenuation starts.
+		float max_distance{10000.0F}; ///< Distance beyond which attenuation stops increasing; at least reference_distance.
+	};
+
 	/// @brief Strong wrapper for non-uniform scale factors.
 	struct Scale {
 		Vec3 value{oneVec3()};													///< Wrapped scale vector.
@@ -191,6 +207,22 @@ export namespace vve {
 	/// @brief Strong wrapper for human-readable object names.
 	struct ObjectName {
 		std::string value{};														///< Wrapped display or diagnostic name.
+	};
+
+	/// @brief Forward geometry edge smoothing; selected before the renderer's first frame.
+	enum class Antialiasing {
+		none, ///< One sample per pixel; preserves the default rendering path.
+		msaa4 ///< Four coverage samples; initialization returns platform_error if unsupported.
+	};
+	/// @brief Material response; classic preserves existing scenes, physically_based uses GGX and the sky panorama.
+	enum class MaterialLighting {
+		classic, ///< Existing Blinn-Phong response.
+		physically_based ///< GGX direct response and approximate sky illumination.
+	};
+	/// @brief Untextured surface factors; imported roughness/metalness maps still multiply these values.
+	struct SurfaceMaterial {
+		Scalar roughness{0.5F}; ///< Perceptual roughness in [0,1]; zero gives the sharpest supported reflection.
+		Scalar metalness{}; ///< Metal fraction in [0,1]; metals reflect their base colour and have no diffuse term.
 	};
 
 	/// @brief Strong wrapper for renderer selection identifiers.
@@ -322,6 +354,29 @@ export namespace vve {
 		LinearColor color{.value = oneVec3()};								///< Linear RGB surface color.
 		std::filesystem::path base_color_texture{};					///< Optional base-color texture; empty means none.
 		Transform transform{};													///< Local or world-space placement.
+	};
+
+	/// @brief Height-dependent haze; zero density disables it. Distances use world units, colours are linear.
+	struct AtmosphereSettings {
+		LinearColor color{.value = Vec3{0.65F, 0.75F, 0.85F}}; ///< Colour approached by distant surfaces.
+		Scalar density{}; ///< Extinction per world unit; nonnegative.
+		Scalar height_falloff{}; ///< Density decreases exponentially with height; zero gives uniform haze.
+		Scalar base_height{}; ///< Height at which density is specified.
+	};
+
+	/// @brief Explicit animation clock; games supply elapsed seconds for repeatable rendering.
+	struct AnimationTime {
+		double seconds{}; ///< Nonnegative elapsed seconds; defaults to a paused scene.
+	};
+
+	/// @brief A horizontal water patch with two analytic waves; its handle supports ordinary object operations.
+	struct OceanDescriptor {
+		Vec2 half_extent{100.0F, 100.0F}; ///< Half-size of the finite patch along X and Z.
+		LinearColor color{.value = Vec3{0.015F, 0.12F, 0.18F}}; ///< Linear water tint.
+		Scalar wave_height{0.2F}; ///< Maximum vertical displacement in world units.
+		Scalar wavelength{12.0F}; ///< Positive reference wavelength in world units.
+		Scalar speed{1.5F}; ///< Angular wave speed in radians per second.
+		Position position{}; ///< Centre of the undisturbed surface.
 	};
 
 	/// @brief Nearest render object found by RenderSystem::raycast.

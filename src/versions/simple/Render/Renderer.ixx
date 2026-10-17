@@ -78,6 +78,7 @@ export namespace vve::simple {
 		VulkanImageViews imageViews{};         ///< Owned scene and GUI image views for swapchain images.
 		VulkanImage depthImage{};              ///< Owned swapchain-sized depth attachment image and view.
 		VulkanImage hdrImage{};                ///< Owned swapchain-sized RGBA16F color target the scene is rendered into.
+		VulkanImage msaaImage{};               ///< Optional multisample forward colour, resolved into single-sample HDR.
 		VulkanCommandBuffers commandBuffers{}; ///< Owned primary command buffers, one for each frame in flight.
 		VulkanFrameSync frameSync{};           ///< Owned per-frame semaphores and fences for rendering.
 		VulkanUniformBuffers uniformBuffers{}; ///< Owned per-frame uniform buffers for camera and object data.
@@ -282,6 +283,12 @@ export namespace vve::simple {
 
 		/// @brief Sets the default view and clip planes used by every target without an explicit camera.
 		void setCamera(Camera camera) { camera_ = std::move(camera); }
+		/// @brief Stores validated haze settings, shared by every window.
+		void setAtmosphere(AtmosphereSettings settings) { atmosphere_ = settings; }
+		/// @brief Reads the configured haze without touching Vulkan resources.
+		AtmosphereSettings atmosphere() const { return atmosphere_; }
+		/// @brief Stores an explicit animation clock; zero pauses animated surfaces.
+		void setAnimationTime(AnimationTime time) { animation_time_ = time; }
 
 		/// @brief Returns the default camera of windows without an explicit camera.
 		[[nodiscard]] const Camera &camera() const { return camera_; }
@@ -290,6 +297,21 @@ export namespace vve::simple {
 		void setBackgroundColor(LinearColor color) { backgroundColor_ = color; }
 		/// @brief Returns the colour every window clears to.
 		[[nodiscard]] LinearColor backgroundColor() const { return backgroundColor_; }
+		/// @brief Selects the material response without changing scene resources.
+		[[nodiscard]] auto setMaterialLighting(MaterialLighting mode) -> std::expected<void, Error> {
+			if (mode != MaterialLighting::classic && mode != MaterialLighting::physically_based) { return std::unexpected(Error::invalid_argument); }
+			materialLighting_ = mode;
+			return {};
+		}
+		/// @brief Returns the retained material response.
+		[[nodiscard]] MaterialLighting materialLighting() const { return materialLighting_; }
+		/// @brief Borrows the skybox texture slot; the sky instance owns its lifetime.
+		void setEnvironmentTexture(RenderTextureIndex texture) { environmentTexture_ = texture; }
+		[[nodiscard]] auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error>;
+		/// @brief Returns the retained forward antialiasing setting.
+		[[nodiscard]] Antialiasing antialiasing() const { return antialiasing_; }
+		/// @brief Forward colour and depth sample count; post-processing, GUI and shadows remain single-sample.
+		[[nodiscard]] VkSampleCountFlagBits sampleCount() const { return antialiasing_ == Antialiasing::msaa4 ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT; }
 
 		/// @brief Distinguishes presentation, a temporary skip and a fatal rendering failure.
 		[[nodiscard]] auto renderFrame(WindowTarget &target, VulkanReadback *readback = nullptr) -> std::expected<FrameOutcome, Error> { return drawFrame(target, readback); }
@@ -313,6 +335,7 @@ export namespace vve::simple {
 		[[nodiscard]] VkResult ensureShadowCapacity();
 		[[nodiscard]] VkResult writeShadowDescriptors(WindowTarget &target, std::uint32_t frame);
 		[[nodiscard]] VkResult createTargetResources(WindowTarget &target); ///< Creates one target's attachments, frame resources and post-processing chain.
+		[[nodiscard]] VkResult createTargetAttachments(WindowTarget &target); ///< Creates matching colour/depth plus a single-sample HDR resolve target.
 		[[nodiscard]] VkResult writeSceneDescriptors(WindowTarget &target, std::uint32_t frame); ///< Updates only a completed slot's materials and changed texture elements.
 		[[nodiscard]] VkResult uploadDynamicVertices(WindowTarget &target, std::uint32_t frame);
 		[[nodiscard]] auto reportFrameFailure(const char *stage, VkResult result) -> std::unexpected<Error>;
@@ -335,6 +358,9 @@ export namespace vve::simple {
 		Camera camera_{.position = {Vec3{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}},
 			.forward = {Vec3{zero(), static_cast<Scalar>(-5.0), static_cast<Scalar>(-9.0)}}}; ///< Default view retained across target creation and renderer shutdown.
 		LinearColor backgroundColor_{.value = Vec3{static_cast<Scalar>(0.45), static_cast<Scalar>(0.70), one()}}; ///< Light-blue clear colour of the forward pass.
+		MaterialLighting materialLighting_{MaterialLighting::classic}; ///< Opt-in GGX leaves existing scene lighting unchanged.
+		RenderTextureIndex environmentTexture_{kNoTexture}; ///< Panorama slot owned by the sky instance, never a separate resource.
+		Antialiasing antialiasing_{Antialiasing::none}; ///< Startup selection retained across shutdown; immutable while Vulkan is initialized.
 		VkDescriptorPool imguiDescriptorPool_{VK_NULL_HANDLE}; ///< Owned Dear ImGui descriptor pool reserved for backend texture descriptors.
 		std::function<bool()> guiPrepare_; ///< Optional GUI preparation before command recording, only for its owning window.
 		std::function<void(VkCommandBuffer)> guiRecord_; ///< Optional GUI recorder invoked only when preparation produced vertices.
@@ -344,6 +370,8 @@ export namespace vve::simple {
 		const Vector<RenderInstance> *renderInstances_{nullptr}; ///< Borrowed draw instances owned by RenderSystem.
 		RenderScene *renderScene_{nullptr}; ///< Borrowed owner; renderer selects texture capacity, restores pixels and updates decode bookkeeping.
 		std::optional<Error> textureUploadError_{}; ///< Decode error retained through Vulkan cleanup for the expected-returning caller.
+		AtmosphereSettings atmosphere_{}; ///< Height-dependent haze; density zero preserves existing output.
+		AnimationTime animation_time_{}; ///< Explicit animation seconds shared by all windows in a logical frame.
 		std::optional<Error> frameError_{}; ///< Fatal draw failure retained until cleanup; damaged synchronization must never become a successful skip.
 		std::vector<std::uint64_t> uploadedTextureGenerations_{}; ///< Resident generations matching the allocated texture slots; 0 = empty.
 		std::uint32_t textureCapacity_{}; ///< Hardware ceiling; GPU descriptors and texture owners grow only as the scene needs them.

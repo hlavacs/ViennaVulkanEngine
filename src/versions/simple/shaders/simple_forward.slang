@@ -46,6 +46,9 @@ struct FrameUniforms
     uint activeSpotLightCount;        ///< Packed spot-light count.
     float ambient;                    ///< Scene-wide ambient term.
     uint activePointLightCount;       ///< Packed point-light count.
+    float4 fogColorDensity;           ///< Linear haze RGB and extinction per world unit.
+    float4 fogHeightTime;             ///< Base height, density height falloff, animation seconds, unused.
+    float4 environmentLighting;       ///< Panorama texture slot (-1 absent), strength, GGX enabled, unused.
 };
 
 struct ObjectPushConstants
@@ -53,8 +56,9 @@ struct ObjectPushConstants
     float4x4 model;         ///< Object-local model matrix selected before each draw call.
     uint materialIndex;    ///< Dense slot in the material storage buffer.
     uint shadowMatrixIndex; ///< Index into frame.shadowViewProjs used by the shadow vertex stage.
-    uint flags;             ///< Bit 0 unlit, bit 1 sky, bit 2 sprite (mirrors objectFlag in Vulkan/Pipeline.ixx).
+    uint flags;             ///< Bit 0 unlit, bit 1 sky, bit 2 sprite, bit 3 water (mirrors objectFlag in Vulkan/Pipeline.ixx).
     float opacity;          ///< Object alpha multiplied with the material alpha.
+    float4 waves;           ///< Water height, wavelength, angular speed and enabled flag.
 };
 
 struct GpuMaterial
@@ -110,6 +114,7 @@ static const uint kNoTexture = VVE_NO_TEXTURE; ///< Absent material texture inde
 static const uint kUnlitFlag = 1;  ///< ObjectPushConstants::flags bit for flat, unlit objects.
 static const uint kSkyFlag = 2;    ///< ObjectPushConstants::flags bit for the skybox.
 static const uint kSpriteFlag = 4; ///< ObjectPushConstants::flags bit for camera-facing quads.
+static const uint kWaterFlag = 8; ///< Analytic waves with world-space height and normal derivatives.
 static const float kPi = 3.14159265358979; ///< Converts sky angles to panorama coordinates.
 static const float kAlphaMask = 1.0;  ///< Cut-out alpha mode stored in emissiveFactor.w.
 static const float kAlphaBlend = 2.0; ///< Blended alpha mode stored in emissiveFactor.w.
@@ -204,6 +209,37 @@ float2 halfTexel(uint texture)
     return 0.5 / float2(width, height);
 }
 
+/// @brief World eye from the inverse rigid view; reused by lighting and height-dependent haze.
+float3 worldEye()
+{
+    return -mul(transpose(float3x3(frame.view)), float3(frame.view[0][3], frame.view[1][3], frame.view[2][3]));
+}
+
+/// @brief Integrates exponential height density along the eye ray; zero density leaves old scenes unchanged.
+float3 applyAtmosphere(float3 color, float3 worldPos)
+{
+    if (frame.fogColorDensity.w == 0.0) return color;
+    const float3 eye = worldEye();
+    const float k = frame.fogHeightTime.y * (worldPos.y - eye.y);
+    const float meanDensity = abs(k) < 0.001 ? 1.0 : (1.0 - exp(clamp(-k, -80.0, 80.0))) / k;
+    const float density = exp(clamp(-frame.fogHeightTime.y * (eye.y - frame.fogHeightTime.x), -80.0, 80.0));
+    const float transmittance = exp(-frame.fogColorDensity.w * length(worldPos - eye) * density * meanDensity);
+    return lerp(frame.fogColorDensity.rgb, color, transmittance);
+}
+
+/// @brief Two directional sine waves return height and horizontal derivatives for matching surface normals.
+float3 oceanWave(float2 p)
+{
+    const float k = 2.0 * kPi / max(object.waves.y, 0.001);
+    const float t = object.waves.z * frame.fogHeightTime.z;
+    const float a = k * (p.x + 0.37 * p.y) - t;
+    const float b = 1.31 * k * (0.33 * p.x + p.y) - 0.73 * t;
+    return object.waves.x * float3(0.65 * sin(a) + 0.35 * sin(b),
+        k * (0.65 * cos(a) + 0.35 * 1.31 * 0.33 * cos(b)), k * (0.65 * 0.37 * cos(a) + 0.35 * 1.31 * cos(b)));
+}
+
+#include "simple_material.slang" // Shared direct BRDF and bounded-cost panorama filtering.
+
 [shader("vertex")]
 VertexOutput vertexMain(VertexInput input)
 {
@@ -219,6 +255,7 @@ VertexOutput vertexMain(VertexInput input)
         return output;
     }
     float4 worldPosition = mul(object.model, float4(input.position, 1.0));
+    if ((object.flags & kWaterFlag) != 0) worldPosition.y += oceanWave(worldPosition.xz).x;
     // Sprites keep their world origin and span the quad along the camera's right and up vectors (view rows 0 and 1).
     if ((object.flags & kSpriteFlag) != 0) {
         const float2 scale = float2(length(mul(object.model, float4(1.0, 0.0, 0.0, 0.0)).xyz), length(mul(object.model, float4(0.0, 1.0, 0.0, 0.0)).xyz));
@@ -243,7 +280,9 @@ VertexOutput vertexMain(VertexInput input)
 [shader("vertex")]
 float4 shadowVertexMain(VertexInput input) : SV_Position
 {
-    return mul(frame.shadowViewProjs[object.shadowMatrixIndex], mul(object.model, float4(input.position, 1.0))); ///< One depth-only entry serves spot, point, and directional layers.
+    float4 worldPosition = mul(object.model, float4(input.position, 1.0));
+    if ((object.flags & kWaterFlag) != 0) worldPosition.y += oceanWave(worldPosition.xz).x;
+    return mul(frame.shadowViewProjs[object.shadowMatrixIndex], worldPosition); ///< Shadows follow the same animated surface.
 }
 
 [shader("fragment")]
@@ -281,7 +320,7 @@ FragmentOutput fragmentMain(FragmentInput input)
     const float alpha = (blended ? coverage : 1.0) * object.opacity;    ///< Opaque modes ignore material alpha.
     // The push constant keeps this return uniform, before other texture samples and lighting.
     if ((object.flags & kUnlitFlag) != 0) {
-        output.color = float4(baseColor, alpha);                         ///< Unlit objects keep their sampled base colour.
+        output.color = float4(applyAtmosphere(baseColor, input.worldPos), alpha); ///< Haze also covers unlit world objects.
         return output;
     }
     float roughness = material.roughnessFactor;                          ///< Factors apply alone or scale their texture, as in glTF.
@@ -306,11 +345,7 @@ FragmentOutput fragmentMain(FragmentInput input)
     const float3 diffuseColor = baseColor * (1.0 - metalness);           ///< Metals have no diffuse response.
     const float3 specularColor = lerp(float3(specularStrength), baseColor * specularStrength, metalness); ///< Metallic highlights use base color.
     const float3 rawNormal = normalize(cross(ddx(input.worldPos), ddy(input.worldPos))); ///< Flat geometric face normal from screen derivatives.
-    const float3 viewOffset = float3(frame.view[0][3], frame.view[1][3], frame.view[2][3]); ///< View translation from the existing matrix.
-    const float3 cameraPos = -float3(
-        dot(float3(frame.view[0][0], frame.view[1][0], frame.view[2][0]), viewOffset),
-        dot(float3(frame.view[0][1], frame.view[1][1], frame.view[2][1]), viewOffset),
-        dot(float3(frame.view[0][2], frame.view[1][2], frame.view[2][2]), viewOffset)); ///< World eye from inverse rigid view transform.
+    const float3 cameraPos = worldEye(); ///< One inverse view calculation shared with the atmosphere.
     const float3 viewDir = normalize(cameraPos - input.worldPos);        ///< Surface-to-eye vector for view-dependent highlights.
     float3 normal = length(input.normal) > 0.5 ? normalize(input.normal) : rawNormal; ///< Prefer vertex normals when the mesh has them.
     if (material.normalTexture < kMaxSceneTextures) {
@@ -324,7 +359,12 @@ FragmentOutput fragmentMain(FragmentInput input)
             normal = dot(perturbed, perturbed) > 0.0 ? perturbed : normal;
         }
     }
+    if ((object.flags & kWaterFlag) != 0) {
+        const float3 wave = oceanWave(input.worldPos.xz);
+        normal = normalize(float3(normal.x - wave.y * normal.y, normal.y, normal.z - wave.z * normal.y)); ///< Transform the base normal by the wave displacement.
+    }
     normal = dot(normal, viewDir) < 0.0 ? -normal : normal; ///< Keep visible debug faces lit even when winding flips normals.
+    const bool physicallyBased = frame.environmentLighting.z != 0.0 || (object.flags & kWaterFlag) != 0;
     float3 pointContribution = float3(0.0);                              ///< Accumulated point-light response for active point slots.
     // The CPU packs contributing point lights densely and uploads their count.
     for (uint i = 0; i < frame.activePointLightCount; ++i) {
@@ -353,7 +393,8 @@ FragmentOutput fragmentMain(FragmentInput input)
         const float pointShadowBias = perspectiveShadowBias(pointRangeRaw, pointLightClip.w); ///< Convert the world offset at this face-axis distance.
         const float pointShadowPcf = insidePointShadowMap ? pcfShadow(pointShadowArray, pointShadowUv, pointShadowLayer, pointLightNdc.z - pointShadowBias) : 1.0; ///< Filter the selected point-face depth comparisons.
         const float pointShadowFactor = lerp(VVE_SHADOW_OCCLUDED_FACTOR, 1.0, pointShadowPcf); ///< Preserve the existing partial-shadow floor while smoothing its edge.
-        pointContribution += pointLight * ((diffuseColor * pointDiffuse + specularColor * pointSpecular) * pointAttenuation * pointShadowFactor); ///< Add this point-light result with per-slot shadowing.
+        const float3 pointResponse = physicallyBased ? microfacetLight(baseColor, metalness, roughness, normal, viewDir, pointLightDir) : diffuseColor * pointDiffuse + specularColor * pointSpecular;
+        pointContribution += pointLight * pointResponse * pointAttenuation * pointShadowFactor; ///< Visibility and existing range falloff apply to either material model.
     }
     const int activeDirectionalLightCount = min(max(int(frame.activeDirectionalLightCount), 0), kMaxDirectionalLights); ///< Clamp scene directional count to the fixed array.
     const float viewDepth = -mul(frame.view, float4(input.worldPos, 1.0)).z; ///< Camera looks down negative view-space Z, so visible depth is positive.
@@ -388,7 +429,8 @@ FragmentOutput fragmentMain(FragmentInput input)
                 debugCascadeIndex = dirCascade;
             }
             const float dirShadowFactor = lerp(VVE_SHADOW_OCCLUDED_FACTOR, 1.0, dirShadowPcf); ///< Preserve the existing partial-shadow floor while smoothing its edge.
-            directionalContribution += baseColor * dirAmbient + dirLight * ((diffuseColor * dirDiffuse + specularColor * dirSpecular) * dirShadowFactor); ///< Add this shadowed directional result.
+            const float3 dirResponse = physicallyBased ? microfacetLight(baseColor, metalness, roughness, normal, viewDir, dirSurfaceLightDir) : diffuseColor * dirDiffuse + specularColor * dirSpecular;
+            directionalContribution += baseColor * dirAmbient + dirLight * dirResponse * dirShadowFactor; ///< Ambient and shadows retain their established controls.
         }
     }
     const int activeSpotLightCount = min(max(int(frame.activeSpotLightCount), 0), kMaxShadowedSpotLights); ///< Clamp scene spot count to the fixed shadow array.
@@ -421,16 +463,22 @@ FragmentOutput fragmentMain(FragmentInput input)
             const float spotShadowBias = perspectiveShadowBias(spotRange, spotLightClip.w); ///< Convert the world offset at this spot-axis distance.
             const float spotShadowPcf = insideSpotShadowMap ? pcfShadow(spotShadowArray, spotShadowUv, i, spotLightNdc.z - spotShadowBias) : 1.0; ///< Filter spotlight comparisons across neighboring texels.
             const float spotShadowFactor = lerp(VVE_SHADOW_OCCLUDED_FACTOR, 1.0, spotShadowPcf); ///< Preserve the existing partial-shadow floor while smoothing its edge.
-            spotContribution += baseColor * spotAmbient + spotLight * ((diffuseColor * spotDiffuse + specularColor * spotSpecular) * spotAttenuation * spotConeFalloff * spotShadowFactor); ///< Add this cone-attenuated spot result.
+            const float3 spotResponse = physicallyBased ? microfacetLight(baseColor, metalness, roughness, normal, viewDir, spotLightDir) : diffuseColor * spotDiffuse + specularColor * spotSpecular;
+            spotContribution += baseColor * spotAmbient + spotLight * spotResponse * spotAttenuation * spotConeFalloff * spotShadowFactor;
         }
     }
     float3 litColor = baseColor * ambient + pointContribution + directionalContribution + spotContribution + emissive; ///< Emissive remains visible independently of shadows.
+    if (physicallyBased) {
+        const float3 fresnel = fresnelSchlick(saturate(dot(normal, viewDir)), lerp(float3((object.flags & kWaterFlag) != 0 ? 0.02 : 0.04), baseColor, metalness));
+        litColor += ambientOcclusion * ((1.0 - fresnel) * diffuseColor * sampleEnvironment(normal, 1.0) +
+            fresnel * sampleEnvironment(reflect(-viewDir, normal), roughness)); ///< Sky illumination is independent of authored ambient lights.
+    }
     if (kDebugCascadeTint && debugCascadeIndex >= 0) {
         const float3 cascadeTint = debugCascadeIndex == 0 ? float3(1.0, 0.25, 0.25) :
             (debugCascadeIndex == 1 ? float3(0.25, 1.0, 0.25) :
             (debugCascadeIndex == 2 ? float3(0.25, 0.25, 1.0) : float3(1.0, 1.0, 0.25))); ///< Red, green, blue, and yellow identify the four cascade regions.
         litColor = lerp(litColor, litColor * cascadeTint, 0.65); ///< Retain scene detail while making cascade boundaries obvious.
     }
-    output.color = float4(litColor, alpha);
+    output.color = float4(applyAtmosphere(litColor, input.worldPos), alpha);
     return output;
 }

@@ -82,7 +82,7 @@ foreach(NAME ENTRY STAGE IN ZIP_LISTS VVE_SIMPLE_SHADER_NAMES VVE_SIMPLE_SHADER_
          -source-embed-style u32 -source-embed-name ${NAME}_spv -o "${HEADER}"
       # Slang preserves unchanged outputs; still rebuild the embedding unit after a source touch.
       COMMAND "${CMAKE_COMMAND}" -E touch "${HEADER}"
-      DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}" "${VVE_SIMPLE_SHARED_SHADER_HEADER}"
+      DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}" "${VVE_SIMPLE_SHARED_SHADER_HEADER}" "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_material.slang"
       COMMENT "Embedding simple forward ${ENTRY} shader"
       VERBATIM
    )
