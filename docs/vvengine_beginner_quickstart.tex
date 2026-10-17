@@ -14,7 +14,7 @@ VVE means Vienna Vulkan Engine. Your program calls a public interface called the
 Work from the repository root: the folder containing \path{README.md}, \path{src}, and the build scripts. The first build installs dependencies and may take much longer than later builds. A dependency is another library the engine needs.
 
 \subsection*{Windows: PowerShell}
-Install Git, Visual Studio's \emph{Desktop development with C++} workload and CMake tools, a suitable CMake, and the Vulkan SDK. The repository documents CMake 3.31.8 or newer; its \api{import std} support must match the selected compiler and CMake version. Install vcpkg, run its bootstrap script, and set \api{VCPKG_ROOT} to its folder in the shell you use to build.
+Install Git, Visual Studio's \emph{Desktop development with C++} workload and CMake tools, and the Vulkan SDK. Use the README's matching compiler/CMake versions for \api{import std}. Bootstrap vcpkg and set \api{VCPKG_ROOT} in your build shell:
 \begin{lstlisting}[language={}]
 $env:VCPKG_ROOT = 'C:\tools\vcpkg'
 .\build_windows.cmd debug
@@ -23,14 +23,14 @@ $env:VCPKG_ROOT = 'C:\tools\vcpkg'
 The build script sets up the Visual Studio compiler. When using Windows CMake presets directly, use a Developer PowerShell for Visual Studio.
 
 \subsection*{Linux}
-Install Ninja and matching Clang, clang-scan-deps, and libc++ standard-library modules. The script selects a complete installed LLVM toolchain. Install the Vulkan SDK and the vcpkg dependencies described in the README.
+Install Ninja, matching Clang, clang-scan-deps, libc++ modules, the Vulkan SDK, and the README's vcpkg dependencies. The script selects a complete installed LLVM toolchain.
 \begin{lstlisting}[language={}]
 ./build_linux.sh debug
 ./bin/debug/exe/simple_forward_demo --frames 120
 \end{lstlisting}
 
 \subsection*{macOS}
-Use the documented LLVM and Ninja setup, the Vulkan SDK, and KosmicKrisp. Follow the README's loader-manifest setup for your build directory.
+Use the README's LLVM, Ninja, Vulkan SDK and KosmicKrisp setup, including its loader manifest.
 \begin{lstlisting}[language={}]
 ./build_macos.sh debug
 ./bin/debug/exe/simple_forward_demo --frames 120
@@ -38,7 +38,7 @@ Use the documented LLVM and Ninja setup, the Vulkan SDK, and KosmicKrisp. Follow
 \begin{remember}A compiler turns C++ into a program. CMake describes what to build. Ninja runs the build commands. vcpkg installs libraries. The Vulkan SDK supplies the Vulkan tools and Slang shader compiler.\end{remember}
 \source{README.md; build_linux.sh; build_macos.sh; build_windows.cmd}
 
-\lesson{Find the output and understand a failure}
+\section{Find the output and understand a failure}
 A successful example opens a window and renders a scene. The \api{--frames 120} option makes this supplied example stop after a bounded number of steps. This option is handled by example code; a new program does not automatically understand it.
 
 Debug executables are in \path{bin/debug/exe}; release executables are in \path{bin/release/exe}. Windows adds \api{.exe}. Run from the repository root while learning, so paths such as \path{assets/...} start in the expected folder. A relative filename is relative to the process's working directory, not necessarily the executable's directory.
@@ -104,7 +104,7 @@ int main() {
 \end{lstlisting}
 \textbf{Expected result:} a window containing the sample objects, lit by the sample lights. Close the window to leave \api{run()}.
 
-\api{EngineBuilder<>} collects settings; \api{build()} constructs the engine. The empty angle brackets mean that no game systems are registered yet. \api{init()} creates the platform windows. GPU rendering begins lazily when a drawable window reaches its first render.
+\api{EngineBuilder<>} collects settings; \api{build()} constructs the engine. The empty angle brackets mean that no game systems are registered yet. A temporary builder moves its systems into the engine; \api{std::move(builder).build()} also supports systems that cannot be copied. A named \api{builder.build()} requires copyable systems. \api{init()} creates the platform windows. GPU rendering begins lazily when a drawable window reaches its first render.
 
 \api{world.get<vve::RenderSystem>()} returns a reference to this engine's renderer. The \api{&} in \api{auto &render} means that the variable refers to the existing object. The engine must stay alive while you use that reference.
 
@@ -210,7 +210,9 @@ vve::Transform placement{};
 placement.translation.value.x = 3.0F;
 if (!render.setNodeTransform(*root, placement)) { return 4; }
 \end{lstlisting}
-With \api{keep_hierarchy}, the engine copies the model's tree into the world scene tree. Moving the instance root moves the entire model. A wheel node can then move relative to the car. Use \api{sceneInstanceNode} to find the runtime copy of a particular asset node. \api{NodeHandle} and \api{SceneNodeHandle} identify different kinds of node.
+With \api{keep_hierarchy}, the engine copies the model's tree into the world scene tree. Moving the instance root moves the entire model. A wheel node can then move relative to the car. Use \api{sceneInstanceNode} to find the runtime copy of a particular asset node. \api{NodeHandle} and \api{SceneNodeHandle} identify different kinds of node. Reparenting changes transform inheritance, not instance ownership: removing the instance still removes its copied nodes.
+
+To release a level, remove all its placements with \api{render.removeSceneInstance(handle)}, then call \api{assets.unloadScene(sceneHandle)} for each source no longer needed. Check both results. A source with any live placement returns \api{invalid_argument} and remains loaded. Rendering-only cleanup with \api{render.removeScene(source)} retains the imported source data.
 
 Imported lights and cameras are not applied by default. Set your own camera and light, or deliberately enable \api{apply_lights} and \api{apply_cameras} in the instantiation options. An imported model can also be very large or far from the origin; adjust the camera before assuming the import failed.
 
@@ -264,6 +266,7 @@ The engine must stay alive during playback. Finished voices are collected during
 \toprule Symptom & First useful check \\\midrule
 Compiler or module error & Use the documented compiler, Ninja, and matching standard-library modules. Rebuild through the normal script. \\
 Missing dependency & Check the Vulkan SDK and vcpkg installation, triplet, and environment. Read the configure error. \\
+Rendering error & Check the returned error from step/run and the failing-stage diagnostic. Recoverable skips do not imply a presented picture. \\
 No suitable GPU & Read the rejected-device diagnostic. The simple renderer checks Vulkan 1.3 device features and requests a Vulkan 1.4 instance. \\
 Window but no object & Confirm creation and instantiation succeeded. Check visibility, camera, clipping distances, object position, and lighting. \\
 File not found & Print the working directory and exact path. Relative paths start at the working directory. \\
@@ -280,6 +283,6 @@ Run tests again with \api{ctest --test-dir <build-directory> --output-on-failure
 Read the longer guide for a complete moving-cube project, ECS-to-render synchronization, local versus world transforms, multiple windows, lighting, GUI images, resource lifetimes, and the CPU-to-GPU path. Use \path{README.md} for platform prerequisites and \path{tests/CMakeLists.txt} for the tests actually registered in your checkout.
 
 \subsection*{About this edition}
-Updated for the facade and simple engine at source baseline \api{8f875a30}, including current procedural shapes, appearance controls, skyboxes, sprites, picking, and HUD images. The previous engine analysis built the Linux release targets and passed 80 registered tests. That is a dated result, not a promise about future checkouts. New guide examples are checked separately during this documentation update. Concurrent racer work is outside this edition.
+Updated for the local V3 checkout on 17 October 2026, including source unloading, move-only builder systems, hierarchy ownership, and propagated rendering errors. The preceding Windows Release build succeeded; 85 of 88 tests passed. One test was blocked by sandbox path access and two examples fast-failed. These are recorded limitations of that validation, not a claim that every platform or example passes. The companion guide gives the detailed lifecycle and error contracts.
 \source{README.md; src/Engine.ixx; src/Types.ixx; tests/CMakeLists.txt}
 \end{document}

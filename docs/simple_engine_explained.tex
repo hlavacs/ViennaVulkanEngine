@@ -22,7 +22,7 @@ You should know what a variable, function, \api{if} statement, loop, and simple 
 \subsection*{Code labels and scope}
 Listings called \emph{complete programs} include their imports and \api{main}. Listings called \emph{excerpts} belong inside the named function or assume the stated variables. File paths in excerpts must name files on your machine. The small built-in-scene and moving-cube programs require no external artwork.
 
-This edition describes the public \api{VVEngine} module and the \api{simple} implementation at source baseline \api{8f875a30}. It keeps the earlier facade, source walkthrough, and game-programming coverage, with new foundations and expanded recipes. Concurrent racer work is outside this edition. The local source remains the final authority when you change checkout.
+This V3 edition describes the public \api{VVEngine} module and the \api{simple} implementation in the local checkout on 17 October 2026, including the rendering-error, scene-cleanup, builder, and asset-unloading changes. V3 is the repository branch; \api{simple} is the selected implementation. The local source remains the final authority when you change checkout.
 \clearpage
 \tableofcontents
 
@@ -213,7 +213,7 @@ For an operation with no result value, use \api{std::expected<void, vve::Error>}
 
 During development, add context when reporting an error. \emph{Could not load level assets/room.gltf: asset\_import\_failed} tells you more than a lone number. Audio also supplies \api{lastError()} for a more detailed diagnostic.
 
-The renderer currently treats several Vulkan failures as skipped frames internally. Therefore public success alone does not prove that an image was presented. Use frame counts and debug captures when investigating rendering; the implementation chapters explain this limit rather than promising stronger failure reporting.
+A successful step can include a temporarily skipped drawing attempt, for example while a window is minimized or acquisition times out. Fatal rendering failures follow a different path: they propagate as errors through \api{RenderSystem} to \api{Engine::step()} and \api{run()}. Check those results; use rendered-frame counts and captures when you need evidence that a picture was presented.
 \source{src/Error.ixx; src/Engine.ixx; src/Audio.ixx; src/versions/simple/Render/RendererDraw.cpp}
 
 \lesson{Build tools and files: a practical mental model}
@@ -548,8 +548,22 @@ No matching hook & No call for that stage. \\
 
 Only the highest matching update overload is called for a system. Hooks run in tuple order on the engine-owned values, not on an original object that was copied into a bundle. Window snapshots are prepared only if at least one system accepts the three-argument update. A hook may return void or std::expected<void,Error>. Only that exact expected type propagates failure; other return values are discarded. A failing init is retried on the next init() while earlier successful hooks stay complete. A failing update stops later systems and rendering for that step.
 
+\clearpage
 \subsection*{Copies, moves and builders}
-Direct construction with a temporary bundle can move system values, including move-only state. EngineBuilder::build() is const and copies its stored bundle. A system without a default constructor needs an explicitly supplied bundle; use direct construction when builder default storage or copying does not suit the type.
+Direct construction with a temporary bundle can move system values, including move-only state. The builder supports two paths: \api{builder.build()} copies a named builder and requires copyable systems; \api{std::move(builder).build()} consumes it and moves its systems. A temporary fluent chain also uses the consuming path. A system without a default constructor needs an explicitly supplied \api{UserSystems} bundle, passed to the engine or builder constructor.
+
+\begin{lstlisting}
+// Excerpt: inside main, after importing std and VVEngine.
+struct GameState {
+    std::unique_ptr<int> score;
+    explicit GameState(std::unique_ptr<int> value)
+        : score{std::move(value)} {}
+};
+auto builder = vve::EngineBuilder<GameState>{
+    vve::makeUserSystems(GameState{std::make_unique<int>(0)})};
+auto engine = std::move(builder).build();
+\end{lstlisting}
+Here the engine owns the original score allocation. After consuming the builder, do not expect it to retain its previous systems or startup values. The Engine itself is still constructed directly in its destination; no Engine move constructor is needed.
 \source{src/Engine.ixx}
 
 \lesson{WindowSetup and WindowSetups}\label{core-11}
@@ -644,7 +658,7 @@ mouseWheelDelta(WindowHandle) & Scroll movement in ticks. \\
 \end{longtable}
 }
 
-InputState is a wrapper over live state. A saved wrapper sees future polls; it does not preserve an old frame. Keyboard state is shared, while mouse data is keyed by window. Drag coordinates can leave 0..1. For mouse look, scale normalized horizontal movement by the window aspect ratio. beginFrame(), holdKey(), pressKey(), releaseKey(), setMousePosition(), addMouseDelta() and addMouseWheelDelta() are also public. Normally the engine owns event polling and frame resets. Calling these manually during gameplay changes the same state your other systems read.
+InputState is a wrapper over live state. If you keep this wrapper, its queries read the input values written by the next event poll; it does not preserve an old frame. Polling means asking SDL for pending keyboard, mouse and window events. Keyboard state is shared, while mouse data is keyed by window. Drag coordinates can leave 0..1. For mouse look, scale normalized horizontal movement by the window aspect ratio. beginFrame(), holdKey(), pressKey(), releaseKey(), setMousePosition(), addMouseDelta() and addMouseWheelDelta() are also public. Normally the engine owns event polling and frame resets. Calling these manually during gameplay changes the same state your other systems read.
 
 A ready-made keyboard camera
 
@@ -675,7 +689,7 @@ auto root = assets.sceneRootNode(*source);
 {\small
 \begin{longtable}{@{}p{0.42\linewidth}p{0.54\linewidth}@{}}
 API family & Calls and purpose \\
-Create/import & loadScene(path) imports file data. addScene(ObjectName) creates an empty source scene. containsScene tests membership. \\
+Create/import/unload & loadScene(path) imports file data. addScene(ObjectName) creates an empty source scene. containsScene tests membership. \\
 Scene contents & sceneName, sceneRootNode, and the scene queries for node, mesh, material, texture, light, and camera counts. Listing queries include sceneNodes, sceneMeshes, sceneMaterials, sceneLights, and sceneCameras. \\
 \end{longtable}
 }
@@ -697,7 +711,7 @@ Other source records & materialName, lightData and cameraData. \\
 Returned vectors and descriptors are owning values. They remain independent of later catalog growth, but reading large mesh arrays repeatedly is expensive. Keep handles and query detailed geometry when loading or inspecting a level, rather than every frame. A node transform is relative to its parent. A mesh holds reusable geometry; a node can attach meshes and materials. sceneNodes follows imported tree creation order. sceneTextureCount counts distinct texture source paths used by source materials, not the number of live render texture slots.
 
 \subsection*{Source handles do not draw}
-Keep the SceneHandle and pass it to RenderSystem::instantiateScene(). addScene() alone does not build procedural geometry. There is no public AssetSystem scene-unload API; RenderSystem removal/purging manages rendering caches, while imported catalog data remains owned by the engine.
+Keep the SceneHandle and pass it to RenderSystem::instantiateScene(). addScene() alone does not build procedural geometry. When no placement uses the source, \api{assets.unloadScene(scene)} releases its render caches and removes its imported catalog records. A live scene instance blocks unloading with \api{Error::invalid_argument}; the source remains available. An unknown or already unloaded source returns \api{Error::missing_object}. Records still referenced by other source scenes are retained.
 \source{src/Assets.ixx}
 
 \lesson{RenderSystem: visible objects}\label{core-15}
@@ -737,12 +751,15 @@ addTexturedPlane(..., Vec2\{10,10\}, ...) stretches UV coordinates over ten repe
 \lesson{RenderSystem: imported scenes and lifetime}\label{core-16}
 Keep source identity, placement identity and object identity distinct.
 
-{\small
-\begin{longtable}{@{}p{0.42\linewidth}p{0.54\linewidth}@{}}
-SceneHandle & instantiateScene()                     Instance handle                Object handles \\
-Imported source & Create placement                        Placed model                 Drawable parts auto source = assets.loadScene(model\_path); if (!source) \{ return std::unexpected(source.error()); \} auto instance = render.instantiateScene(*source); if (!instance) \{ return std::unexpected(instance.error()); \} auto objects = render.sceneInstanceObjects(*instance); \\
-\end{longtable}
-}
+\begin{lstlisting}
+// Excerpt: assets, render and model_path already exist.
+auto source = assets.loadScene(model_path);
+if (!source) { return std::unexpected(source.error()); }
+auto instance = render.instantiateScene(*source);
+if (!instance) { return std::unexpected(instance.error()); }
+auto objects = render.sceneInstanceObjects(*instance);
+\end{lstlisting}
+The source handle identifies loaded model data. The instance handle identifies one placement made from it. The object handles identify its individual drawable parts.
 
 {\small
 \begin{longtable}{@{}p{0.42\linewidth}p{0.54\linewidth}@{}}
@@ -757,11 +774,12 @@ node, local) & object below the node follows. \\
 sceneInstanceNodeTransform(instance, node) & keep\_hierarchy only: the node's current local transform. \\
 removeSceneInstance(instance) & Removes its objects, node tree and owned lights/cameras. \\
 removeScene(source) & Removes render caches for a source; rejects removal while live instances still use it. \\
+AssetSystem::unloadScene(source) & Releases those caches and the imported source records after every placement is removed. \\
 purgeUnusedAssets() & Reclaims eligible unused rendering records; returns a count. \\
 \end{longtable}
 }
 
-One source can have several placements that share resources. Keep a placement handle for group removal and object handles for single parts. By default an instance is flat: each object receives its composed world transform once. With keep\_hierarchy the instance keeps the node tree, so setting a mesh-free node such as a car root or a wheel mount moves every part below it. A flat instance returns Error::invalid\_argument. clearScene() resets the rendering scene; loadSampleScene() supplies a built-in sample. Both are scene-wide operations. Removing render state does not erase the imported AssetSystem catalog.
+One source can have several placements that share resources. Keep a placement handle for group removal and object handles for single parts. By default an instance is flat: each object receives its composed world transform once. With keep\_hierarchy the instance keeps the node tree, so setting a mesh-free node such as a car root or wheel mount moves every part below it. Hierarchy-only queries on a flat instance return Error::invalid\_argument. clearScene() resets the rendering scene; loadSampleScene() supplies a built-in sample. Neither unloads imported source records: use \api{AssetSystem::unloadScene} when those records are no longer needed.
 
 \subsection*{A CPU removal is not instant GPU destruction}
 The simple implementation delays release of GPU resources while older submitted frames may still use them. Your game calls removal once and stops using the old handles; the renderer manages that completion-dependent cleanup.
@@ -940,7 +958,7 @@ if (!result) {
 Error is the shared enum; errorName() turns it into a readable name. An expected result has either the requested value/success or an Error. optional means something may be absent without implying a failure, such as findWindow() or the parent of a root node. Some queries combine both: a failed handle lookup and a valid missing parent are different cases.
 
 \subsection*{What goes in .ixx and .cpp}
-The .ixx files declare exported modules, classes, shared types and public signatures. Templates and small inline definitions live there because importing code needs their definitions. Engine, EngineBuilder, World and ECS therefore contain their template implementations in module interface files. Window.cpp, Assets.cpp, RenderSystem.cpp and Gui.cpp contain out-of-line facade method definitions. Most wrapper methods forward to impl\_. The selected simple engine has its own .ixx/.cpp files for actual storage, importing, platform work and Vulkan rendering. The suffix alone does not tell you whether code is public or internal; its module, namespace and exported contract do. makeEngineImpl() is already inline in Engine.ixx. There is no separate facade Engine.cpp needed for that factory. Moving one factory does not remove the need for other .cpp implementation files, whose non-template definitions still have work to do.
+The facade's .ixx files declare exported modules, classes and shared types, and define their small forwarding methods inline. Engine, EngineBuilder, World and ECS also keep their template definitions there because importing code needs them. The former facade Window.cpp, Assets.cpp, RenderSystem.cpp and Gui.cpp files are no longer needed; their wrapper definitions live in the corresponding .ixx files. Most wrapper methods simply call impl\_. The selected simple engine still uses its own .ixx and .cpp files for actual storage, asset importing, platform work and Vulkan rendering. The suffix alone does not tell you whether code is public or internal: check its module, namespace and exported contract. The non-template makeEngineImpl() factory is inline in Engine.ixx; it needs no separate facade Engine.cpp.
 
 {\small
 \begin{longtable}{@{}p{0.42\linewidth}p{0.54\linewidth}@{}}
@@ -1022,6 +1040,8 @@ A class describes what an object can contain and do. An object contains the curr
 
 \subsection*{Your game systems are separate objects}
 Engine<MovementSystem, GameSystem> stores your system instances in the facade. Their init and update hooks are called there. The simple engine supplies input, timing and drawing. The ECS does not automatically turn every component into a rendered object; game code connects its data to RenderSystem.
+\subsection*{How asset unloading reaches the renderer}
+The concrete Engine owns both AssetSystem and RenderSystem. During member construction, \api{makeRenderSceneRelease()} creates a callback capturing this Engine. Later, an explicit \api{assets.unloadScene(scene)} invokes it to call \api{render_system_.removeScene(scene)} before deleting source records. Building the callback does not call the renderer while it is still under construction. Keeping this capturing lambda inside a non-template helper also lets MSVC import both Engine constructor paths reliably.
 \source{src/versions/simple/Engine.ixx}
 
 \lesson{Choosing startup settings}\label{core-26}
@@ -1056,7 +1076,7 @@ WindowSetup offers id, title, extent, position, renderer, resizable and visible.
 The renderer IDs "" and "forward" draw; "none" opts a window out. A hidden window still renders. The builder can add several windows. Its windows() call replaces the list, while addWindow() appends.
 
 \subsection*{Supplying game systems}
-A system without a default constructor needs a supplied UserSystems bundle. The current builder copies systems during build(); direct Engine construction can move a temporary bundle and supports move-only systems.
+A system without a default constructor needs an explicitly supplied UserSystems bundle. Both direct Engine construction and a consuming builder can move it. A named builder's build() copies; std::move(builder).build() consumes it, supporting move-only systems. A temporary fluent builder chain also moves its stored systems.
 \source{src/Engine.ixx; src/versions/simple/Engine.ixx}
 
 \lesson{Creating windows and input}\label{core-27}
@@ -1213,9 +1233,13 @@ Several placed objects can refer to the same mesh and material. Import caches re
 Geometry is enabled by default; imported lights, imported cameras and keep\_hierarchy are opt-in. apply\_cameras records imported camera ownership/counts but does not select the active view: call setCamera(). Imported texture failures fall back to untextured material slots instead of failing the instance.
 
 \subsection*{Instances that keep their hierarchy}
-With keep\_hierarchy, instantiateScene() also copies the node tree into scene\_hierarchies\_. Each HierarchyNode stores its parent, children, current local transform and the objects made from its meshes.
+With keep\_hierarchy, instantiateScene() copies the asset tree into the shared world tree, \api{scene_nodes_}. Each runtime node stores parent and child links, its current local transform, and attached objects with their offsets. \api{instance_nodes_} maps the source NodeHandles to the runtime SceneNodeHandles and also tracks the synthetic instance root.
 
-setSceneInstanceNodeTransform() saves the new local transform, multiplies the unchanged ancestors once, then walks the subtree: every object below gets world = parent world * local as its exact world matrix. removeObject() unlinks an object; removing the instance drops its tree.
+setSceneInstanceNodeTransform() saves the new local transform, multiplies the unchanged ancestors once, then walks the affected subtree. Each object's exact world matrix becomes parent world multiplied by local transform and object offset. This work happens when the hierarchy changes; it does not require a complete tree traversal every frame. removeObject() unlinks an object from its node.
+
+\clearpage
+\subsection*{Parenthood and ownership are different}
+Reparenting a copied node changes which transforms it inherits. It does not transfer that node to a different scene instance. \api{removeSceneInstance} removes all nodes and objects created by that instance, including copied nodes moved outside its original root. An unrelated attached object survives and is detached with its current world placement. Foreign child subtrees, including another instance, survive under the world root with their local transforms preserved; their world placement can therefore change. Direct \api{removeNode} instead removes its current subtree, so choose deliberately between subtree removal and instance removal.
 \source{src/versions/simple/Render/RenderSceneImport.cpp}
 
 \lesson{Textures, pixels and repeating UVs}\label{core-32}
@@ -1411,7 +1435,9 @@ Scene and frame preparation deliberately happen before acquiring the image. If p
 
 The code waits up to one second for a busy frame fence and 100 ms for image acquisition. Timeout/not-ready results skip the attempt and retry later. An out-of-date swapchain is recreated. A suboptimal acquisition still yields an image that must be consumed.
 
-The current drawFrame() returns a boolean: true means presentation succeeded or was suboptimal. Many per-frame Vulkan failures are logged and skip that target rather than becoming an Engine error. Texture upload/decode errors have an explicit path back through RenderSystem.
+The current \api{drawFrame()} returns \api{std::expected<FrameOutcome, Error>}. A value distinguishes \api{presented} from \api{skipped}; an error describes a failed attempt. Fence/acquisition timeouts, not-ready results and out-of-date presentation are recoverable skips. Suboptimal acquisition still proceeds with the acquired image. Fatal failures in synchronization, recording, submission or presentation are logged with the failing stage and VkResult, retained until renderer cleanup, and returned as \api{Error::platform_error}. RenderSystem propagates them to the public Engine, so \api{step()} and \api{run()} stop reporting success. Texture failures retain their specific error path.
+
+If a failure occurs after acquisition, the engine also handles the acquired semaphore before leaving the attempt. It does not blindly reset a busy slot or keep rendering with known-broken synchronization. Game code should report a returned error and leave the loop; repeated calls do not automatically recover a renderer with a retained fatal error.
 \source{src/versions/simple/Render/RendererDraw.cpp}
 
 \lesson{Recording the drawing passes}\label{core-39}
@@ -1524,7 +1550,7 @@ purgeUnusedAssets() & Remove unused CPU render caches; later synchronization rem
 }
 
 \subsection*{Removing a source and removing its placement}
-A RenderSceneInstanceHandle groups a placed imported scene. Removing it removes its objects and owned imported light/camera records. The asset catalog is separate. Current RenderSystem::removeScene() manages render-side instances/cache entries for that source; the Catalog remains owned by AssetSystem.
+A RenderSceneInstanceHandle groups a placed imported scene. Removing it removes its owned objects, copied nodes and imported light/camera records. The asset catalog has a separate lifetime. \api{RenderSystem::removeScene()} releases render-side source caches and rejects a source that still has live placements. \api{AssetSystem::unloadScene()} first performs that render-side check/release, then removes the source's nodes, meshes, materials, lights and cameras that no other source scene uses. GPU allocations still follow deferred retirement.
 
 \subsection*{Why slots have dirty flags}
 One slot may be safe while another is still running. Materials, texture bindings, shadow bindings and dynamic vertices are changed only in the slot whose fence has completed.
@@ -1814,7 +1840,7 @@ First show one cube on a ground plane. Add a camera and a light. Move the cube u
 A crate needs position, falling speed and a collected flag. Its RenderObjectHandle only identifies the visible object. Rendering does not calculate gravity or decide when the crate has been collected. Keep those values in a game struct or ECS components, then send the resulting transform to RenderSystem.
 
 \subsection*{Scope of the current engine}
-This public facade has no general physics solver, audio API, animation player, networking API or save-game service. Build game rules around the exposed facilities or integrate separate game libraries. Loading a file is not a promise that every feature in that file is supported.
+This public facade supplies sound loading, playback and gain controls through AudioSystem. It has no general physics solver, skeletal-animation player, networking API or save-game service. Build those game features yourself or integrate separate libraries. Loading a model is not a promise that every feature stored in the file is supported.
 \source{examples/game/game.cpp}
 
 \lesson{Build and run your game}\label{core-53}
@@ -1974,7 +2000,7 @@ auto engine = vve::EngineBuilder<ScoreState, MovementSystem>{}.build();
 \end{lstlisting}
 
 \subsection*{Supplying state and sharing it}
-makeUserSystems(...) packages configured objects for a matching typed builder or Engine. Use world.get<YourType>() to change the stored object; editing an original copied into it does not change this instance. Avoid repeated types: get<T>() selects the first match. build() copies its systems. For move-only state, construct Engine directly with a temporary makeUserSystems(...) bundle. Inside an auto\& world hook, use world.template get<T>(); outside templates, use world.get<T>().
+makeUserSystems(...) packages configured objects for a matching typed builder or Engine. Use world.get<YourType>() to change the stored object; editing an original copied into it does not change this instance. Avoid repeated types: get<T>() selects the first match. A named builder's build() requires copying; a temporary chain or std::move(builder).build() moves its systems. Direct Engine construction with a temporary bundle also supports move-only state. Inside an auto\& world hook, use world.template get<T>(); outside templates, use world.get<T>().
 
 \subsection*{Initialization retries}
 If one init hook fails, earlier successful hooks are not repeated on the next init() attempt. The failed hook may run again, so it must clean up partial work or make repeated work safe. A failed update stops later updates and rendering for that step.
@@ -2561,6 +2587,7 @@ Operation                                           What is removed or retained
 removeObject(object) & One visible object. Game structs/ECS components still need your cleanup. \\
 removeSceneInstance(instance) & The placed group's objects and its owned imported light/camera records. \\
 removeScene(source) & Render-side source caches; rejects sources still used by live instances. AssetSystem catalog remains. \\
+AssetSystem::unloadScene(source) & Render caches and imported catalog data; rejects unloading while a placement still uses the source. \\
 purgeUnusedAssets() & Unused CPU render meshes/materials/textures, followed by GPU synchronization as required. \\
 clearLights() & All light lists, while leaving objects and scene instances. \\
 clearScene() & A broad render-scene reset. Drop your associated live render handles and rebuild intended scene state. \\
@@ -2568,10 +2595,23 @@ clearScene() & A broad render-scene reset. Drop your associated live render hand
 }
 
 \subsection*{A safe transition sequence}
-Stop old-level simulation/spawning. Remove placements and primitives, then their linked entities/handles. Release source caches once unused and optionally purge. Reset score, timers, game mode and views, then load the new level. Check removal results before dropping bookkeeping. Game removal invalidates the render handle immediately. GPU allocations may remain until submitted work finishes. The engine manages retirement; your game does not wait on Vulkan fences or device idle.
+Stop old-level simulation/spawning. Remove placements and primitives, then their linked entities and game handles. When every placement of a source is gone, call \api{assets.unloadScene(source)} if you no longer need its imported data. Use \api{render.removeScene(source)} instead when you want to discard only rendering caches and keep the source for later instantiation. Optionally purge other unused rendering resources. Reset score, timers, game mode and views, then load the new level. Check each removal result before dropping bookkeeping. GPU allocations may remain until submitted work finishes; the engine manages retirement.
 
+\clearpage
 \subsection*{Asset storage is a separate lifetime}
-The public AssetSystem has no unloadScene() API. Imported catalog records remain owned by it for the engine lifetime. removeScene() is a RenderSystem operation and does not erase those catalog records. For games that stream many unrelated large assets, account for this current limitation rather than assuming a render purge releases all imported memory.
+\api{unloadScene()} is the operation for releasing imported CPU data between levels. Removing only visible objects or purging render caches does not release that catalog. The engine connects AssetSystem to RenderSystem through a callback, so unloading checks for live instances before changing catalog state. If that check fails, retain the source handle and remove its remaining placements first.
+
+\begin{lstlisting}
+// Excerpt: an expected<void, vve::Error> level-cleanup function.
+// instance and source are valid handles retained during loading.
+if (auto result = render.removeSceneInstance(instance); !result) {
+    return std::unexpected(result.error());
+}
+if (auto result = assets.unloadScene(source); !result) {
+    return std::unexpected(result.error());
+}
+\end{lstlisting}
+For a source placed several times, remove every instance before unloading. Afterwards, its old source, node and resource handles must not be used for fresh lookups. Values previously returned by owning asset queries remain ordinary copies; they no longer name live catalog entries. Load the model again to obtain new handles.
 
 \subsection*{Restart without stale references}
 After clearScene() or removals, reassign your handles from new creation results. Do not replay old IDs from a save file as live render handles. Save stable asset identifiers and gameplay data, then recreate runtime objects when loading.
@@ -2653,7 +2693,7 @@ if (!captured) {
 }
 \end{lstlisting}
 
-Use the WindowHandle overload for a specific view. Ensure a drawable target has presented: successful step() can skip all targets. Create capture parent directories. Optional shadow readback adds waits. Check init() and every step. GPU startup can fail after window init. Some logged per-frame failures only skip a target, so inspect counters/messages as well as expected results.
+Use the WindowHandle overload for a specific view. Ensure a drawable target has presented: successful step() can skip all targets. Create capture parent directories. Optional shadow readback adds waits. Check init() and every step. GPU startup can fail after window init. Recoverable conditions can skip a target without an error; fatal rendering failures propagate. Inspect counts/messages as well as expected results.
 
 \subsection*{A useful debugging route}
 Start in game init/update and watch handles, positions and errors. Follow the source map into instantiation/drawing. CPU stepping shows recording/submission; GPU execution needs captures, validation or readback.
@@ -2720,9 +2760,10 @@ Illuminate the scene & set/add DirectionalLight, PointLight, SpotLight; clearLig
 Draw HUD or menus & GuiSystem::draw callback and Dear ImGui; keep captured state alive. \\
 Add image effects & setPostProcessSetup and vvppl::PostProcessing; retain per-chain settings safely. \\
 Use another window view & WindowSetup, findWindow, setCamera(WindowHandle,Camera), clearCamera. \\
-Unload a placed model & removeSceneInstance, then removeScene/purgeUnusedAssets when no placement remains. \\
+Unload a placed model & removeSceneInstance for every placement, then AssetSystem::unloadScene to release source records. \\
 Inspect results & Scene counts, rendering counters/FPS, captureFrameToPng and shadow-depth samples. \\
-Handle physics, audio or saves & Your game code/separate libraries; the current facade does not supply these services. \\
+Play sound & AudioSystem::init, loadSound, play; retain sound and playback handles. \\
+Handle physics or saves & Your game code or separate libraries; the current facade does not supply these services. \\
 \end{longtable}
 }
 
@@ -3271,7 +3312,7 @@ Paths are relative to the repository root. These files define what a game can ca
 \path{src/World.ixx} & Reference bundle, type-based get, and UserSystems \\
 \path{src/Types.ixx} & Transforms, cameras, descriptors, handles, frame values, audio options, and bounds \\
 \path{src/Window.ixx} & WindowSetup, read-only Window, WindowSystem, input, mouse capture, fullscreen, camera controller \\
-\path{src/Assets.ixx} & Model import entry point and source-data queries \\
+\path{src/Assets.ixx} & Model import, explicit source unloading and source-data queries \\
 \path{src/RenderSystem.ixx} & Procedural objects, scene instances and tree, appearance, cameras, lights, picking, sky, sprites, capture, and effects setup \\
 \path{src/Gui.ixx} & Draw callback, font setup, image loading, image IDs \\
 \path{src/Audio.ixx} & Sound and voice lifecycle, gain, playback controls, diagnostics \\
@@ -3292,7 +3333,7 @@ Begin with \api{Engine::step}, then follow one public creation or update request
 {\small
 \begin{longtable}{@{}p{0.43\linewidth}p{0.53\linewidth}@{}}
 \toprule Under \path{src/versions/simple/} & Responsibility \\\midrule
-\path{Engine.ixx} & Runtime owners, platform startup, lazy rendering, GUI wiring, cleanup \\
+\path{Engine.ixx} & Runtime owners, platform startup, lazy rendering, GUI wiring, unload callback, cleanup \\
 \path{Window.ixx} & SDL ownership, window validation, events, input state \\
 \path{Assets.ixx} & Assimp import, catalog, geometry, materials, source nodes \\
 \path{Graph.ixx} & Asset graph/tree storage and traversal helpers \\
@@ -3315,11 +3356,11 @@ Begin with \api{Engine::step}, then follow one public creation or update request
 Use \path{tests/CMakeLists.txt} to locate the registered executable nearest the behavior you are studying. Engine tests may inspect implementation details, while examples demonstrate facade-only application code. This distinction explains why imports in tests can differ from imports in your game.
 
 \lesson{Verification, limits, and rebuilding these guides}
-This edition was updated against the local engine source with baseline \api{8f875a30}. The earlier analysis in this session rebuilt the Linux release engine and passed its 80 registered tests, including 40 labelled GPU tests. That result applies to the tested checkout and available machine. It is not a cross-platform certification or a claim that the engine's fatal-error paths were exercised.
+This edition was checked against the local V3 source on 17 October 2026. The preceding Windows Release validation compiled and linked the complete engine, examples and tests after the MSVC constructor fix. CTest passed 85 of 88 tests, including the new constructor/unload regression. RenderTextureDedupTests stopped at filesystem path resolution denied by the execution sandbox; GameExample and PostProcessingSmokeTests terminated with fast-fail errors that were not diagnosed. This records a machine-specific result, not an all-tests-passing or cross-platform claim.
 
-During this guide update, the complete built-in-scene, user-system, moving-cube, HUD-image, and ECS-copy programs are checked as separate C++ programs. Interactive examples are run as bounded three-step copies for verification and captured where applicable. The printed listings retain normal interactive behavior. Focused excerpts are labelled and require their stated surrounding variables and files.
+The existing complete teaching programs retain their imports and main functions. New builder and unload listings are labelled excerpts, and their behavior is covered by EngineBuilderTests and AssetSceneUnloadTests. SceneTreeTests covers cleanup after reparenting; the rendering result path is implemented in RendererDraw.cpp and propagated through RenderSystem. Focused excerpts require their stated surrounding variables and files. This documentation update does not claim a fresh run of every interactive listing.
 
-The simple engine is intentionally modest. Its ECS uses map-backed storage and copying access. Picking uses bounding boxes. Transparent draws use object-origin sorting. Audio has ordinary playback and gain controls rather than positional spatial audio. Several Vulkan errors become skipped frames internally. Learning these concrete limits helps you use the existing API accurately.
+The simple engine is intentionally modest. Its ECS uses map-backed storage and copying access. Picking uses bounding boxes. Transparent draws use object-origin sorting. Audio has ordinary playback and gain controls rather than positional spatial audio. A successful step may skip presentation for a recoverable condition, while fatal rendering failures propagate as errors. Learning these concrete limits helps you use the existing API accurately.
 
 \subsection*{Editable sources}
 \path{simple_engine_explained.tex} and \path{vvengine_beginner_quickstart.tex} are the editable guide sources. \path{guide_style.tex} supplies their shared typography and diagrams. Rebuild from the repository root with:

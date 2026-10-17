@@ -21,7 +21,7 @@
 \def\ps@vve{%
   \def\@oddhead{\small\sffamily Vienna Vulkan Engine\hfil\guideshort}%
   \let\@evenhead\@oddhead
-  \def\@oddfoot{\small\sffamily Teaching edition / 16 October 2026\hfil\thepage}%
+  \def\@oddfoot{\small\sffamily Teaching edition / 17 October 2026\hfil\thepage}%
   \let\@evenfoot\@oddfoot}
 \makeatother
 \pagestyle{vve}
@@ -40,6 +40,7 @@
 \newenvironment{remember}{\begin{quote}\small\textbf{Remember. }}{\end{quote}}
 \newenvironment{tryit}{\begin{quote}\small\textbf{Try it. }}{\end{quote}}
 \newcommand{\guidecover}[3]{%
+  \hypersetup{pageanchor=false}% The cover must not duplicate the first numbered page's PDF destination.
   \begin{titlepage}\sffamily\color{vveblue}
   {\large VIENNA VULKAN ENGINE\par}\vspace{20mm}
   {\Huge\bfseries #1\par}\vspace{8mm}
@@ -55,7 +56,7 @@
     \draw[-{Stealth}] (facade)--(engine);
     \draw[-{Stealth}] (engine)--(gpu);
   \end{tikzpicture}\vfill
-  {\normalsize Updated 16 October 2026\par}
-  {\small Source baseline: 8f875a30; API checked against the local checkout.\par}
+  {\normalsize Updated 17 October 2026\par}
+  {\small V3 edition; API checked against the local checkout.\par}
   {\small Game code uses the facade. Implementation chapters are for source study.\par}
-  \end{titlepage}}
+  \end{titlepage}\hypersetup{pageanchor=true}}
