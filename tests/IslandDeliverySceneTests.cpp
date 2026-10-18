@@ -299,12 +299,127 @@ void airportTraffic(vve::RenderSystem &render,vve::AssetSystem &assets,const std
 	std::println("[IslandDeliverySceneTests] airport_people={} airport_vehicles={} cached_models={} meshes={} unloaded=true",
 		island::airportPeopleCount,island::airportActorCount-island::airportPeopleCount,models.size(),meshCount);
 }
+/** @brief Measures the actual XZ overlap of a generated triangle and a rectangle, including boundary-crossing terrain cells. */
+double groundOverlap(vve::Vec3 a,vve::Vec3 b,vve::Vec3 c,const std::array<float,4> &rectangle) {
+	using Point=std::pair<double,double>;
+	std::array<Point,8> polygon{{{a.x,a.z},{b.x,b.z},{c.x,c.z}}},clipped{}; std::size_t count{3};
+	// Clip against each axis-aligned half plane; shared edges have zero area rather than duplicate surface coverage.
+	for (unsigned edge{}; edge<4U && count; ++edge) {
+		const auto coordinate=[edge](Point p) { return edge<2U?p.first:p.second; };
+		const double boundary=rectangle[edge]; const bool lower=edge%2U==0;
+		const auto inside=[&](Point p) { return lower?coordinate(p)>=boundary:coordinate(p)<=boundary; };
+		std::size_t next{};
+		for (std::size_t i{}; i<count; ++i) {
+			const auto p=polygon[i],q=polygon[(i+1U)%count]; const bool pin=inside(p),qin=inside(q);
+			if (pin) { clipped[next++]=p; }
+			if (pin!=qin) { const double t=(boundary-coordinate(p))/(coordinate(q)-coordinate(p));
+				clipped[next++]={p.first+t*(q.first-p.first),p.second+t*(q.second-p.second)}; }
+		}
+		polygon=clipped; count=next;
+	}
+	double area{};
+	for (std::size_t i{}; i<count; ++i) { const auto p=polygon[i],q=polygon[(i+1U)%count]; area+=p.first*q.second-q.first*p.second; }
+	return std::abs(area)*0.5;
+}
+/** @brief Counts generated ground surfaces at a point; diagonal-edge weights keep a quad's shared edge from counting twice. */
+double groundCoverage(const vve::MeshDescriptor &mesh,float x,float z) {
+	double coverage{};
+	for (std::size_t i{}; i<mesh.indices.size(); i+=3U) {
+		const auto a=mesh.positions[mesh.indices[i]],b=mesh.positions[mesh.indices[i+1U]],c=mesh.positions[mesh.indices[i+2U]];
+		if (x<std::min({a.x,b.x,c.x}) || x>std::max({a.x,b.x,c.x}) || z<std::min({a.z,b.z,c.z}) || z>std::max({a.z,b.z,c.z})) { continue; }
+		const double cross=(double(b.x)-a.x)*(double(c.z)-a.z)-(double(b.z)-a.z)*(double(c.x)-a.x);
+		if (std::abs(cross)<1.0e-10) { continue; }
+		const double u=((double(x)-a.x)*(double(c.z)-a.z)-(double(z)-a.z)*(double(c.x)-a.x))/cross;
+		const double v=((double(b.x)-a.x)*(double(z)-a.z)-(double(b.z)-a.z)*(double(x)-a.x))/cross;
+		if (u>=-1.0e-7 && v>=-1.0e-7 && u+v<=1.0000001) { coverage+=(std::min({u,v,1-u-v})<1.0e-7?0.5:1.0); }
+	}
+	return coverage;
+}
+/** @brief Proves both terrain LODs have a single collision-aligned paved surface without grass triangles crossing underneath it. */
+void airportGround() {
+	// These are the airport's visible runway, unloading area, apron, taxi connection and terminal forecourt footprints.
+	constexpr std::array<std::array<float,4>,5> footprints{{{-18,18,-350,350},{-25,25,-300,-130},
+		{25,77,-265,-135},{17,47,-240,-213},{42,72,-154,-130}}};
+	for (const auto id : {std::size_t{0},std::size_t{17},island::islandCount-1}) {
+		for (const bool detailed : {false,true}) {
+			const auto centre=island::islandCenter(id); const auto meshes=island::groundMeshBatches(centre,detailed);
+			const auto active=std::span{footprints}.first(detailed?5U:1U);
+			const auto paved=[&](float x,float z) { return std::ranges::any_of(active,[&](const auto &r) {
+				return x>r[0] && x<r[1] && z>r[2] && z<r[3]; }); };
+			double pavedArea{}; std::size_t terrainTriangles{},samples{};
+			// A pavement vertex is at the collision elevation, with a consistent four-metre repeat, regardless of material.
+			for (const auto material : {4U,5U,8U,9U}) {
+				const auto &mesh=meshes[material]; check(mesh.positions.size()==mesh.uvs.size(),"ground_pavement_has_uv_per_vertex");
+				for (std::size_t i{}; i<mesh.positions.size(); ++i) {
+					const auto p=mesh.positions[i]; const auto uv=mesh.uvs[i];
+					check(std::abs(p.y-island::runwayHeight)<0.0001F,"ground_pavement_matches_collision_height");
+					check(std::abs(uv.x-p.x*0.25F)<0.0001F && std::abs(uv.y-p.z*0.25F)<0.0001F,"ground_pavement_keeps_four_metre_texture_repeat");
+				}
+				for (std::size_t i{}; i<mesh.indices.size(); i+=3U) {
+					const auto a=mesh.positions[mesh.indices[i]],b=mesh.positions[mesh.indices[i+1U]],c=mesh.positions[mesh.indices[i+2U]];
+					const double area=std::abs((double(b.x)-a.x)*(double(c.z)-a.z)-(double(b.z)-a.z)*(double(c.x)-a.x))*0.5;
+					check(area>0,"ground_pavement_has_no_degenerate_faces"); pavedArea+=area; double covered{};
+					// Inclusion-exclusion checks the footprint union independently of the production floor tessellation.
+					for (unsigned mask{1}; mask<(1U<<active.size()); ++mask) {
+						std::array<float,4> r{-1000,1000,-1000,1000}; unsigned count{};
+						for (unsigned j{}; j<active.size(); ++j) { if (mask&(1U<<j)) {
+							++count; r[0]=std::max(r[0],active[j][0]); r[1]=std::min(r[1],active[j][1]);
+							r[2]=std::max(r[2],active[j][2]); r[3]=std::min(r[3],active[j][3]); } }
+						if (r[0]<r[1] && r[2]<r[3]) { covered+=(count%2U?1:-1)*groundOverlap(a,b,c,r); }
+					}
+					check(std::abs(covered-area)<0.001,"ground_pavement_does_not_extend_outside_airport");
+				}
+			}
+			check(std::abs(pavedArea-(detailed?34490.0:25200.0))<0.001,"ground_paved_area_matches_airport_footprint");
+			check(!meshes[8].indices.empty(),"ground_runway_white_paint_exists_at_both_lods");
+			check(meshes[9].indices.empty()!=detailed,"ground_cargo_yellow_paint_matches_lod");
+			// Painted surfaces replace their substrate, including the distant edge lines and close approach markings.
+			std::vector<vve::Vec2> markings{{-17.031F,0.137F},{17.031F,0.137F}};
+			if (detailed) { markings.insert(markings.end(),{{0.031F,-280.137F},{-13.031F,327.137F}}); }
+			for (const auto p : markings) {
+				const double substrate=groundCoverage(meshes[4],p.x,p.y)+groundCoverage(meshes[5],p.x,p.y);
+				const double paint=groundCoverage(meshes[8],p.x,p.y)+groundCoverage(meshes[9],p.x,p.y);
+				check(std::abs(substrate)<0.001 && std::abs(paint-1.0)<0.001,"ground_markings_replace_rather_than_overlap_substrate");
+			}
+			// The old ten/forty-metre cells crossed pavement edges even when selected corner heights were recessed.
+			for (unsigned material{}; material<4U; ++material) { const auto &mesh=meshes[material];
+				for (std::size_t i{}; i<mesh.indices.size(); i+=3U) {
+					const auto a=mesh.positions[mesh.indices[i]],b=mesh.positions[mesh.indices[i+1U]],c=mesh.positions[mesh.indices[i+2U]];
+					++terrainTriangles;
+					for (const auto &r : active) {
+						if (std::max({a.x,b.x,c.x})<=r[0] || std::min({a.x,b.x,c.x})>=r[1]
+							|| std::max({a.z,b.z,c.z})<=r[2] || std::min({a.z,b.z,c.z})>=r[3]) { continue; }
+						check(groundOverlap(a,b,c,r)<0.0001,"ground_terrain_has_no_area_beneath_pavement");
+					}
+				}
+			}
+			// Offset samples avoid grid corners while covering former overlapping runway/unloading and apron/forecourt regions.
+			for (float x=-28.629F; x<81; x+=2.73F) { for (float z=-354.387F; z<354; z+=7.11F) {
+				const double count=groundCoverage(meshes[4],x,z)+groundCoverage(meshes[5],x,z)
+					+groundCoverage(meshes[8],x,z)+groundCoverage(meshes[9],x,z);
+				check(std::abs(count-(paved(x,z)?1.0:0.0))<0.001,"ground_samples_have_exactly_one_pavement_surface"); ++samples;
+			} }
+			// Immediately outside every exposed paved boundary, ground must remain present instead of leaving a cut-out gap.
+			for (const auto &r : active) { for (const float t : {0.113F,0.337F,0.619F,0.887F}) {
+				const float x=r[0]+(r[1]-r[0])*t,z=r[2]+(r[3]-r[2])*t;
+				for (const auto p : {vve::Vec2{r[0]-0.037F,z},{r[1]+0.037F,z},{x,r[2]-0.037F},{x,r[3]+0.037F}}) {
+					if (paved(p.x,p.y)) { continue; } double count{};
+					for (unsigned material{}; material<4U; ++material) { count+=groundCoverage(meshes[material],p.x,p.y); }
+					check(std::abs(count-1.0)<0.001,"ground_exposed_pavement_edges_have_continuous_terrain");
+				}
+			} }
+			std::println("[IslandDeliverySceneTests] ground_island={} detailed={} paved_area={} terrain_triangles={} coverage_samples={}",
+				id,detailed,pavedArea,terrainTriangles,samples);
+		}
+	}
+}
+
 } // namespace
 
 /** @brief Runs native C++ scene checks through the facade and emits a reproducible failure name. */
 int main() {
 	try {
-		cargoContinuation();
+		airportGround(); cargoContinuation();
 		vve::Engine<> engine; auto world=engine.world();
 		auto &render=world.get<vve::RenderSystem>(); auto &assets=world.get<vve::AssetSystem>();
 		const std::filesystem::path root{VVE_ISLAND_ASSET_DIR};

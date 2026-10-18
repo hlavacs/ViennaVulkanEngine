@@ -47,6 +47,13 @@ if(TARGET island_delivery_logic)
    vve_add_engine_test(IslandDeliverySceneTests island_delivery_game)
    vve_add_engine_test(IslandDeliveryMapTests island_delivery_game)
    vve_add_engine_test(IslandDeliveryMotionTests island_delivery_game)
+   vve_add_engine_test(IslandDeliveryMarkingTests GPU island_delivery_game vve_test_support)
+   add_test(NAME IslandDeliveryMarkingTestsDeferred COMMAND IslandDeliveryMarkingTests)
+   set_tests_properties(IslandDeliveryMarkingTests IslandDeliveryMarkingTestsDeferred PROPERTIES
+       LABELS "gpu;example;island_delivery" TIMEOUT 180 RUN_SERIAL TRUE)
+   set_tests_properties(IslandDeliveryMarkingTests PROPERTIES ENVIRONMENT "SDL_AUDIO_DRIVER=dummy")
+   set_tests_properties(IslandDeliveryMarkingTestsDeferred PROPERTIES
+       ENVIRONMENT "SDL_AUDIO_DRIVER=dummy;VVE_TEST_RENDERER=deferred")
    target_compile_definitions(IslandDeliverySoundTests PRIVATE VVE_ISLAND_ASSET_DIR="${VVE_ISLAND_ASSET_DIR}")
    target_compile_definitions(IslandDeliverySceneTests PRIVATE VVE_ISLAND_ASSET_DIR="${VVE_ISLAND_ASSET_DIR}")
    set_tests_properties(IslandDeliverySoundTests PROPERTIES ENVIRONMENT "SDL_AUDIO_DRIVER=dummy" LABELS audio TIMEOUT 30)

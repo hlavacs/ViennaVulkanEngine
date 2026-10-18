@@ -9,6 +9,7 @@ import VVEngine;
 export import Island.Logic;
 
 export namespace island {
+	[[nodiscard]] auto groundMeshBatches(vve::Vec3, bool) -> std::array<vve::MeshDescriptor,18>;
 	[[nodiscard]] auto buildEnvironment(vve::RenderSystem &, vve::AssetSystem &, const std::filesystem::path &)
 		-> std::expected<void, vve::Error>;
 	[[nodiscard]] auto updateEnvironment(vve::RenderSystem &, const std::filesystem::path &, vve::Vec3,
@@ -23,6 +24,26 @@ export namespace island {
 namespace island::scenery {
 	namespace vm = vve::math;
 	constexpr float pi{std::numbers::pi_v<float>}; ///< Circle constant for roofs, palms and aircraft rotations.
+	constexpr std::array<std::array<float,4>,5> pavedAreas{{{-18,18,-350,350},{25,77,-265,-135},
+		{42,72,-154,-130},{17,47,-240,-213},{-25,25,-300,-130}}}; ///< Local min/max X and Z for strip, apron, forecourt, taxiway and unloading.
+	/// @brief Selects the exposed paving material; intersecting areas never produce stacked surface polygons.
+	unsigned pavementMaterial(float x,float z,bool detailed) {
+		constexpr std::array materials{4U,5U,5U,4U,4U}; // Taxiways and unloading remain asphalt where they join concrete.
+		for (std::size_t i=detailed?pavedAreas.size():1U; i>0U; --i) {
+			const auto &area=pavedAreas[i-1U];
+			if (x>area[0] && x<area[1] && z>area[2] && z<area[3]) { return materials[i-1U]; }
+		}
+		return 0U;
+	}
+	/// @brief Splits an optional terrain grid at every paving edge, so terrain and paving share exact boundaries.
+	auto surfaceCoordinates(int cells,bool detailed,unsigned axis) -> std::vector<float> {
+		std::vector<float> values{};
+		if (cells>0) { for (int i=0; i<=cells; ++i) { values.push_back(-1000.0F+static_cast<float>(i)*2000.0F/static_cast<float>(cells)); } }
+		for (std::size_t i{}; i<(detailed?pavedAreas.size():1U); ++i) {
+			values.push_back(pavedAreas[i][axis]); values.push_back(pavedAreas[i][axis+1U]);
+		}
+		std::ranges::sort(values); values.erase(std::unique(values.begin(),values.end()),values.end()); return values;
+	}
 
 	/// @brief Places an object without introducing engine-specific placement data.
 	[[nodiscard]] vve::Transform at(vve::Vec3 position, float scale = 1.0F) {
@@ -144,29 +165,25 @@ namespace island::scenery {
 		}
 	}
 	/// @brief Appends smooth terrain and shoreline to material batches, using the physics height function.
-	void terrain(std::array<vve::MeshDescriptor, 18> &meshes, vve::Vec3 centre, int cells) {
-		const float step{2000.0F/static_cast<float>(cells)}; // Cover the largest island variants without clipping their coastlines.
+	void terrain(std::array<vve::MeshDescriptor, 18> &meshes, vve::Vec3 centre, int cells,bool detailed) {
+		const auto xs=surfaceCoordinates(cells,detailed,0), zs=surfaceCoordinates(cells,detailed,2); // Grid lines meet all pavement edges exactly.
 		// A scattered neighbour may touch this square's corners; restrict sampling to this island's enclosing disc.
 		const auto height=[centre](float x,float z) { return x*x+z*z>1000000.0F?0.0F:terrainHeight(x+centre.x,z+centre.z); };
 		const auto normal = [&height](float x, float z) { return vm::normalize(vve::Vec3{
 			height(x - 1.0F, z) - height(x + 1.0F, z), 2.0F,height(x, z - 1.0F) - height(x, z + 1.0F)}); };
 		// A shared height field guarantees that visible shores and wheels agree with collision handling.
-		for (const auto row : std::views::iota(-cells/2, cells/2)) {
+		for (std::size_t row{}; row+1U<zs.size(); ++row) {
 			// Ground cells outside the finite island footprint are omitted, exposing the ocean.
-			for (const auto column : std::views::iota(-cells/2, cells/2)) {
-				const float x = static_cast<float>(column) * step, z = static_cast<float>(row) * step;
+			for (std::size_t column{}; column+1U<xs.size(); ++column) {
+				const float x=xs[column], z=zs[row], nextX=xs[column+1U], nextZ=zs[row+1U];
+				if (pavementMaterial((x+nextX)*0.5F,(z+nextZ)*0.5F,detailed)!=0U) { continue; } // No hidden earth remains beneath paving.
 				const auto point = [&height](float px, float pz) {
-					float elevation=height(px,pz); const float dz=pz; // Heights share the flight collision surface.
-					// Recess the earth beneath pavement to keep coplanar grass out of the runway surface.
-					if ((std::abs(px)<18.1F && std::abs(dz)<350.1F) || (px>17 && px<78 && dz>-265 && dz<-135)
-						|| (px>=42 && px<=72 && dz>=-154 && dz<=-130)
-						|| (std::abs(px)<=25.1F && dz>=-300.1F && dz<=-129.9F)) { elevation-=0.06F; }
-					return vve::Vec3{px,elevation,pz};
+					return vve::Vec3{px,height(px,pz),pz}; // Unpaved ground retains the analytic collision height.
 				};
-				const std::array points{point(x,z),point(x,z+step),point(x+step,z+step),point(x+step,z)};
+				const std::array points{point(x,z),point(x,nextZ),point(nextX,nextZ),point(nextX,z)};
 				const float height = (points[0].y + points[1].y + points[2].y + points[3].y) * 0.25F; // Cell material elevation.
 				if (height < 0.02F) { continue; } // Zero-height water cells must not become sand-covered squares.
-				const auto n = normal(x + step * 0.5F, z + step * 0.5F); // Slope differentiates exposed rock from vegetation.
+				const auto n = normal((x+nextX)*0.5F,(z+nextZ)*0.5F); // Slope differentiates exposed rock from vegetation.
 				const unsigned material = height < 2.8F ? 2U : n.y < 0.86F ? 3U :
 					(std::sin(x * 0.021F) + std::cos(z * 0.018F) + std::sin((x + z) * 0.009F) > 0.0F ? 0U : 1U);
 				auto &mesh = meshes[material]; const auto base = static_cast<std::uint32_t>(mesh.positions.size()); // One material per cell.
@@ -195,58 +212,50 @@ namespace island::scenery {
 			}
 		}
 	}
-	/// @brief Appends seven-segment runway numerals, oriented for the approaching aircraft.
-	void numeral(vve::MeshDescriptor &mesh, float x, float z, unsigned digit, float facing) {
-		constexpr std::array masks{63U,6U,91U,79U,102U,109U,125U,7U,127U,111U}; // Illuminated segments for decimal digits.
-		constexpr std::array<vve::Vec2,7> centres{vve::Vec2{0,-3}, {1.5F,-1.5F}, {1.5F,1.5F}, {0,3}, {-1.5F,1.5F}, {-1.5F,-1.5F}, {0,0}};
-		// Airport numbers are real painted geometry and remain visible from either camera mode.
-		for (const auto segment : std::views::iota(0U,7U)) {
-			if (!(masks[digit] & (1U << segment))) { continue; }
-			const bool horizontal = segment == 0U || segment == 3U || segment == 6U; // Horizontal or upright painted stroke.
-			const auto c = centres[segment]; const float hx = horizontal ? 1.5F : 0.24F, hz = horizontal ? 0.24F : 1.5F;
-			const auto p = [&](float dx, float dz) { return vve::Vec3{x + facing * (c.x+dx), runwayHeight+0.045F, z + facing * (c.y+dz)}; };
-			face(mesh,std::array{p(-hx,-hz),p(-hx,hz),p(hx,hz),p(hx,-hz)},{0,1,0});
+	/// @brief Describes paint footprints for the shared paving tessellation; paint replaces asphalt instead of floating above it.
+	auto runwayPaint(bool detailed) -> std::vector<std::pair<std::array<float,4>,unsigned>> {
+		std::vector<std::pair<std::array<float,4>,unsigned>> paint{};
+		for (const float side : {-1.0F,1.0F}) {
+			paint.push_back({{side*17-0.18F,side*17+0.18F,-345,345},8U});
+			if (!detailed) { continue; }
+			for (unsigned bar{}; bar<8U; ++bar) {
+				const float x=-14+static_cast<float>(bar)*4;
+				paint.push_back({{x,x+1.6F,side*327-6,side*327+6},8U});
+			}
 		}
+		if (!detailed) { return paint; } // Distant strips retain only their edge lines.
+		for (unsigned dash{}; dash<23U; ++dash) {
+			const float z=-286+static_cast<float>(dash)*26; paint.push_back({{-0.3F,0.3F,z,z+12},8U});
+		}
+		// Each seven-segment numeral contributes rectangles; shared segment corners are also tessellated only once.
+		const auto numeral=[&](float x,float z,unsigned digit,float facing) {
+			constexpr std::array masks{63U,6U,91U,79U,102U,109U,125U,7U,127U,111U};
+			constexpr std::array<vve::Vec2,7> centres{vve::Vec2{0,-3},{1.5F,-1.5F},{1.5F,1.5F},{0,3},{-1.5F,1.5F},{-1.5F,-1.5F},{0,0}};
+			for (unsigned segment{}; segment<7U; ++segment) {
+				if (!(masks[digit] & (1U<<segment))) { continue; }
+				const bool horizontal=segment==0U || segment==3U || segment==6U;
+				const float cx=x+facing*centres[segment].x, cz=z+facing*centres[segment].y;
+				const float hx=horizontal?1.5F:0.24F, hz=horizontal?0.24F:1.5F;
+				paint.push_back({{cx-hx,cx+hx,cz-hz,cz+hz},8U});
+			}
+		};
+		numeral(-2.4F,306,3,1); numeral(2.4F,306,6,1); numeral(2.4F,-306,1,-1); numeral(-2.4F,-306,8,-1);
+		// Yellow paint stays inside the exact unloading footprint, including its corner intersections.
+		paint.push_back({{-25,-24.76F,-300,-130},9U}); paint.push_back({{24.76F,25,-300,-130},9U});
+		paint.push_back({{-25,25,-300,-299.76F},9U}); paint.push_back({{-25,25,-130.24F,-130},9U});
+		return paint;
 	}
 	/// @brief Builds a conventional paved airstrip, its apron, open hangar, terminal, windsock and cargo.
 	void airfield(std::array<vve::MeshDescriptor,18> &m, float z, bool detailed) {
 		const float y{runwayHeight}; // Asphalt and wheel collision use the same reference elevation.
-		box(m[4],{-18,y-0.15F,z-350},{18,y,z+350},4.0F);
-		// A distant airstrip retains its paved silhouette and edge lines while approach details are unloaded.
-		if (!detailed) {
-			for (const float side : {-1.0F,1.0F}) { box(m[8],{side*17-0.18F,y+0.02F,z-345},{side*17+0.18F,y+0.04F,z+345}); }
-			return;
-		}
-		box(m[5],{25,y-0.1F,z-265},{77,y+0.006F,z-135},4.0F);
-		box(m[5],{42,y-0.1F,z-154},{72,y+0.006F,z-130},4.0F); // Terminal forecourt joins the passenger walking paths.
-		box(m[4],{17,y-0.1F,z-240},{47,y+0.01F,z-213},4.0F);
-		// Centre dashes, edge lines and threshold bars are one white mesh for both islands.
+		if (!detailed) { return; } // Ground batches already contain the distant strip and its flush paint.
 		for (const float side : {-1.0F,1.0F}) {
-			box(m[8],{side*17.0F-0.18F,y+0.02F,z-345},{side*17.0F+0.18F,y+0.04F,z+345});
 			// Warm edge lights stand just outside the paved strip.
 			for (const auto index : std::views::iota(0U,29U)) {
 				const float pz = z-336.0F+static_cast<float>(index)*24.0F;
 				box(m[6],{side*20.0F-0.10F,y,pz-0.1F},{side*20.0F+0.10F,y+0.45F,pz+0.1F});
 				box(m[15],{side*20.0F-0.16F,y+0.45F,pz-0.16F},{side*20.0F+0.16F,y+0.57F,pz+0.16F});
 			}
-			// Threshold bars leave a clear visual landing target before the runway number.
-			for (const auto bar : std::views::iota(0U,8U)) {
-				const float px = -14.0F+static_cast<float>(bar)*4.0F;
-				box(m[8],{px,y+0.02F,z+side*327.0F-6},{px+1.6F,y+0.04F,z+side*327.0F+6});
-			}
-		}
-		// A dashed centre line gives useful height and speed cues during the flare.
-		for (const auto dash : std::views::iota(0U,23U)) {
-			const float pz = z-286.0F+static_cast<float>(dash)*26.0F;
-			box(m[8],{-0.3F,y+0.02F,pz},{0.3F,y+0.04F,pz+12});
-		}
-		numeral(m[8],-2.4F,z+306,3,1); numeral(m[8],2.4F,z+306,6,1);
-		numeral(m[8],2.4F,z-306,1,-1); numeral(m[8],-2.4F,z-306,8,-1);
-		// Every island's yellow boundary matches its local cargo unloading region.
-		{
-			box(m[4],{-25,y-0.1F,z-300},{25,y+0.012F,z-130},4.0F);
-			for (const float side : {-1.0F,1.0F}) { box(m[9],{side*25.0F-0.12F,y+0.05F,z-300},{side*25.0F+0.12F,y+0.065F,z-130}); }
-			for (const float dz : {-300.0F,-130.0F}) { box(m[9],{-25,y+0.05F,z+dz-0.12F},{25,y+0.065F,z+dz+0.12F}); }
 		}
 		// The curved corrugated roof and a dark interior make the hangar readable from the final approach.
 		const auto arch = [&](float x, float angle) { return vve::Vec3{x,y+std::sin(angle)*12.0F,z-202+std::cos(angle)*18.0F}; };
@@ -296,7 +305,7 @@ namespace island::scenery {
 	/// @brief Builds one island in local coordinates and returns the exact render objects its resident entry owns.
 	auto buildIsland(vve::RenderSystem &render,const std::filesystem::path &root,std::size_t id,bool detailed)
 		-> std::expected<vve::Vector<vve::RenderObjectHandle>,vve::Error> {
-		const auto centre=islandCenter(id); std::array<vve::MeshDescriptor,18> meshes{};
+		const auto centre=islandCenter(id); auto meshes=groundMeshBatches(centre,detailed);
 		const std::array<vve::Vec3,18> colors{vve::Vec3{0.22F,0.38F,0.12F},{0.32F,0.44F,0.16F},{0.98F,0.94F,0.80F},
 			{0.62F,0.65F,0.63F},{0.74F,0.76F,0.78F},{0.95F,0.94F,0.91F},{0.68F,0.74F,0.76F},{0.75F,0.64F,0.45F},
 			{0.90F,0.91F,0.85F},{0.92F,0.60F,0.10F},{0.23F,0.34F,0.095F},{0.55F,0.40F,0.24F},{0.025F,0.045F,0.052F},
@@ -307,7 +316,7 @@ namespace island::scenery {
 			meshes[index].color.value=colors[index]; meshes[index].transform=at(centre);
 			if (!textures[index].empty()) { meshes[index].base_color_texture=root/textures[index]; }
 		}
-		terrain(meshes,centre,detailed?200:50); airfield(meshes,0,detailed);
+		airfield(meshes,0,detailed);
 		// Full shoreline vegetation is only resident within approach distance; stable island seeds retain its layout.
 		if (detailed) {
 			for (const auto rock : std::views::iota(0U,105U)) {
@@ -352,6 +361,28 @@ namespace island::scenery {
 }
 
 namespace island {
+	/// @brief Authors disjoint ground surfaces at the collision height, shared by scenery and CPU geometry verification.
+	auto groundMeshBatches(vve::Vec3 centre,bool detailed) -> std::array<vve::MeshDescriptor,18> {
+		std::array<vve::MeshDescriptor,18> meshes{};
+		scenery::terrain(meshes,centre,detailed?200:50,detailed);
+		auto xs=scenery::surfaceCoordinates(0,detailed,0), zs=scenery::surfaceCoordinates(0,detailed,2);
+		const auto paint=scenery::runwayPaint(detailed);
+		for (const auto &[area,material] : paint) { xs.insert(xs.end(),{area[0],area[1]}); zs.insert(zs.end(),{area[2],area[3]}); }
+		for (auto *axis : {&xs,&zs}) { std::ranges::sort(*axis); axis->erase(std::unique(axis->begin(),axis->end()),axis->end()); }
+		// Paving and markings share one plane and one tessellation, with no substrate beneath the paint.
+		for (std::size_t row{}; row+1U<zs.size(); ++row) { for (std::size_t column{}; column+1U<xs.size(); ++column) {
+			const float x=xs[column], nextX=xs[column+1U], z=zs[row], nextZ=zs[row+1U];
+			const float cx=(x+nextX)*0.5F, cz=(z+nextZ)*0.5F;
+			auto material=scenery::pavementMaterial(cx,cz,detailed);
+			if (material==0U) { continue; }
+			for (const auto &[area,colour] : paint) {
+				if (cx>area[0] && cx<area[1] && cz>area[2] && cz<area[3]) { material=colour; }
+			}
+			scenery::face(meshes[material],std::array<vve::Vec3,4>{vve::Vec3{x,runwayHeight,z},{x,runwayHeight,nextZ},
+				{nextX,runwayHeight,nextZ},{nextX,runwayHeight,z}},{0,1,0},4.0F);
+		} }
+		for (auto &mesh : meshes) { mesh.transform=scenery::at(centre); } return meshes;
+	}
 	/// @brief Sets shared sky, sunlight, haze and the calm horizon; nearby islands and waves stream separately.
 	auto buildEnvironment(vve::RenderSystem &render, vve::AssetSystem &assets, const std::filesystem::path &root)
 		-> std::expected<void,vve::Error> {
