@@ -537,7 +537,7 @@ namespace vve::simple {
 			std::array<VkImageMemoryBarrier, 4U> reads{};
 			for (auto i : std::views::iota(0U, 4U)) {
 				reads[i] = {.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-					.srcAccessMask = i < 3U ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.srcAccessMask = static_cast<VkAccessFlags>(i < 3U ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT),
 					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
 					.oldLayout = i < 3U ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 					.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
