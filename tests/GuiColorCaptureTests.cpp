@@ -13,6 +13,7 @@ import VVEngine.Simple;
 /// @brief Requires an opaque sRGB grey to survive GUI rendering without a second encoding.
 int main() {
 	auto engine = vve::test::hiddenEngine("gui-color-capture-tests", vve::PixelExtent{.width = 64, .height = 64});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 1; }
 	engine.gui().draw([] {
 		const auto *viewport = ImGui::GetMainViewport();

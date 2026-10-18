@@ -41,6 +41,9 @@ namespace vve::simple {
 	void WindowTarget::cleanup() {
 		// The renderer waits for outstanding work before releasing any target resources.
 		postProcess.reset();
+		deferredPool.cleanup();
+		deferredSet = VK_NULL_HANDLE;
+		for (auto &image : gbufferImages) { image.cleanup(); }
 		descriptorSets.cleanup();
 		descriptorPool.cleanup();
 		uniformBuffers.cleanup();
@@ -139,7 +142,16 @@ namespace vve::simple {
 				return VK_ERROR_FEATURE_NOT_PRESENT;
 			}
 		}
-		const auto capacity = materialTextureCapacity(deviceProperties.limits);
+		if (backend_ == RendererBackend::deferred) {
+			const auto supported = deferredSupport(physicalDevice.physicalDevice, sampleCount());
+			if (supported != VK_SUCCESS) {
+				std::cerr << "[vve::simple] deferred unavailable: sampled G-buffer/depth or sample shading unsupported; VkResult=" << supported << '\n';
+				cleanup();
+				return supported;
+			}
+		}
+		const auto availableCapacity = materialTextureCapacity(deviceProperties.limits);
+		const auto capacity = backend_ == RendererBackend::deferred ? (availableCapacity > 4U ? availableCapacity - 4U : 0U) : availableCapacity;
 		if (capacity == 0U) {
 			std::cerr << "[vve::simple] renderer init failed: device descriptor limits leave no material texture slot.\n";
 			cleanup();
@@ -244,13 +256,26 @@ namespace vve::simple {
 	/// @brief Allocates matched forward attachments; the resolved HDR image remains usable by every post effect.
 	VkResult ForwardRenderer::createTargetAttachments(WindowTarget &target) {
 		auto result = target.depthImage.create(allocator, device.device, target.swapchain.extent, depthFormat,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_IMAGE_ASPECT_DEPTH_BIT, 1U, false, false, 1U, sampleCount());
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | (backend_ == RendererBackend::deferred ? VK_IMAGE_USAGE_SAMPLED_BIT : 0U), VK_IMAGE_ASPECT_DEPTH_BIT, 1U, false, false, 1U, sampleCount());
 		if (result != VK_SUCCESS) { return result; }
 		result = target.hdrImage.create(allocator, device.device, target.swapchain.extent, hdrFormat,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
-		if (result != VK_SUCCESS || sampleCount() == VK_SAMPLE_COUNT_1_BIT) { return result; }
-		return target.msaaImage.create(allocator, device.device, target.swapchain.extent, hdrFormat,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT, 1U, false, false, 1U, sampleCount());
+		if (result != VK_SUCCESS) { return result; }
+		if (sampleCount() != VK_SAMPLE_COUNT_1_BIT) {
+			result = target.msaaImage.create(allocator, device.device, target.swapchain.extent, hdrFormat,
+				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT, 1U, false, false, 1U, sampleCount());
+			if (result != VK_SUCCESS) { return result; }
+		}
+		if (backend_ == RendererBackend::deferred) {
+			// Keep every surface sample separate until lighting and transparent composition are complete.
+			for (auto i : std::views::iota(0U, 3U)) {
+				result = target.gbufferImages[i].create(allocator, device.device, target.swapchain.extent, gbufferFormats[i],
+					VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_IMAGE_ASPECT_COLOR_BIT, 1U, false, false, 1U, sampleCount());
+				if (result != VK_SUCCESS) { return result; }
+			}
+			return createDeferredDescriptors(target);
+		}
+		return VK_SUCCESS;
 	}
 
 	/// @brief Builds one window's attachments, frame slots and post-processing chain from the shared device.
@@ -308,6 +333,10 @@ namespace vve::simple {
 
 	/// @brief Creates the shared forward/shadow pipelines with a matching specialized material descriptor array.
 	VkResult ForwardRenderer::createScenePipelines(std::uint32_t textureCount) {
+		gbufferPipeline.cleanup();
+		lightingPipeline.cleanup();
+		deferredPipelineLayout.cleanup();
+		deferredLayout.reset();
 		graphicsPipeline.cleanup();
 		transparentPipeline.cleanup();
 		shadowPipeline.cleanup();
@@ -325,8 +354,10 @@ namespace vve::simple {
 		result = transparentPipeline.create(device.device, pipelineLayout.pipelineLayout, vertShaderModule.shaderModule, "vertexMain",
 			fragShaderModule.shaderModule, vertexInput, hdrFormat, depthFormat, textureCount, true, sampleCount());
 		if (result != VK_SUCCESS) { return result; }
-		return shadowPipeline.create(device.device, pipelineLayout.pipelineLayout, shadowShaderModule.shaderModule, "shadowVertexMain",
+		result = shadowPipeline.create(device.device, pipelineLayout.pipelineLayout, shadowShaderModule.shaderModule, "shadowVertexMain",
 			VK_NULL_HANDLE, vertexInput, VK_FORMAT_UNDEFINED, depthFormat);
+		if (result != VK_SUCCESS || backend_ == RendererBackend::forward) { return result; }
+		return createDeferredPipelines(textureCount);
 	}
 
 	/// @brief Allocates and fills a window's two frame sets; called at startup or after an idle descriptor-array growth.
@@ -377,6 +408,10 @@ namespace vve::simple {
 		// The initial target has no uniform buffers yet; already-rendering windows adopt the grown range together.
 		for (auto &target : targets) {
 			if (target.uniformBuffers.buffers.empty()) { continue; }
+			if (backend_ == RendererBackend::deferred) {
+				result = createDeferredDescriptors(target);
+				if (result != VK_SUCCESS) { return result; }
+			}
 			result = createSceneDescriptors(target);
 			if (result != VK_SUCCESS) { return result; }
 		}
@@ -710,6 +745,13 @@ namespace vve::simple {
 		shadowDepthReadback.cleanup();
 		shadowDepthSamples.clear();
 		commandPool.cleanup();
+		gbufferPipeline.cleanup();
+		lightingPipeline.cleanup();
+		deferredPipelineLayout.cleanup();
+		deferredLayout.reset();
+		gbufferShader.cleanup();
+		lightingShader.cleanup();
+		lightingVertexShader.cleanup();
 		graphicsPipeline.cleanup();
 		transparentPipeline.cleanup();
 		shadowPipeline.cleanup();
@@ -757,6 +799,9 @@ namespace vve::simple {
 		};
 
 		// Release views before their images, but keep the old swapchain for the presentation handoff.
+		target.deferredPool.cleanup();
+		target.deferredSet = VK_NULL_HANDLE;
+		for (auto &image : target.gbufferImages) { image.cleanup(); }
 		target.depthImage.cleanup();
 		target.msaaImage.cleanup();
 		target.hdrImage.cleanup();

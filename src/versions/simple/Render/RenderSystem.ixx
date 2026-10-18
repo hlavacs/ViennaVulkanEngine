@@ -106,6 +106,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto materialLighting() const -> MaterialLighting;
 		[[nodiscard]] auto setObjectSurface(RenderObjectHandle handle, SurfaceMaterial surface) -> std::expected<void, Error>;
 		[[nodiscard]] auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error>;
+		[[nodiscard]] auto setRendererBackend(RendererBackend backend) -> std::expected<void, Error>;
+		[[nodiscard]] auto rendererBackend() const -> RendererBackend;
 		[[nodiscard]] auto antialiasing() const -> Antialiasing;
 		[[nodiscard]] auto setCamera(WindowHandle window, Camera camera) -> std::expected<void, Error>;
 		[[nodiscard]] auto clearCamera(WindowHandle window) -> std::expected<void, Error>;
@@ -319,6 +321,23 @@ namespace vve::simple {
 
 	/// @brief Selects the forward sample count before Vulkan target creation.
 	inline auto RenderSystem::setAntialiasing(Antialiasing mode) -> std::expected<void, Error> { return renderer_.setAntialiasing(mode); }
+	/// @brief Selects shared scene passes before GPU startup; no process-wide state is used.
+	inline auto RenderSystem::setRendererBackend(RendererBackend backend) -> std::expected<void, Error> {
+		// After Engine::init the selected surface is available, so report hardware rejection at the API boundary.
+		if (backend == RendererBackend::deferred && backend != renderer_.rendererBackend() && !renderer_.initialized() && window_system_ != nullptr) {
+			for (const auto &entry : window_system_->windows()) {
+				if (entry.get().rendererId().value == "none") { continue; }
+				if (const auto result = renderer_.probeDeferred(entry.get().native()); result != VK_SUCCESS) {
+					std::cerr << "[vve::simple] deferred selection unsupported: VkResult=" << result << '\n';
+					return std::unexpected(Error::platform_error);
+				}
+				break; // The first rendered surface determines the shared device.
+			}
+		}
+		return renderer_.setRendererBackend(backend);
+	}
+	/// @brief Returns this render system's retained selection.
+	inline auto RenderSystem::rendererBackend() const -> RendererBackend { return renderer_.rendererBackend(); }
 	/// @brief Returns the retained antialiasing setting.
 	inline auto RenderSystem::antialiasing() const -> Antialiasing { return renderer_.antialiasing(); }
 

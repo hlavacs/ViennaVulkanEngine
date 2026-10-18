@@ -156,6 +156,8 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return reportFrameFailure("shadow descriptors", result); }
 		if (gpuDebugReadback_) { recordShadowDepthSamples(); }
 		else { shadowDepthSamples.clear(); }
+		frameUniforms_.inverseViewProjection = inverse(multiply(frameUniforms_.projection, frameUniforms_.view));
+		frameUniforms_.viewport = {static_cast<float>(target.swapchain.extent.width), static_cast<float>(target.swapchain.extent.height), 0, 0};
 		const auto haze = atmosphere_.color.value;
 		frameUniforms_.fogColorDensity = {haze.x, haze.y, haze.z, atmosphere_.density};
 		frameUniforms_.fogHeightTime = {atmosphere_.base_height, atmosphere_.height_falloff, static_cast<float>(animation_time_.seconds), 0};
@@ -218,6 +220,12 @@ namespace vve::simple {
 		result = vkQueueSubmit(device.graphicsQueue, 1U, &submitInfo, inFlightFence);
 		if (result != VK_SUCCESS) { return abandonAcquiredImage("queue submit", result, inFlightFence); }
 		target.submitSerials[frameIndex] = ++submitSerial_;
+		if (submitSerial_ == 1U) {
+			std::clog << "[vve::simple] renderer=" << (backend_ == RendererBackend::deferred ? "deferred" : "forward")
+				<< " gbuffer=" << std::ranges::count(recordedPassOrder, RecordedPass::gbuffer)
+				<< " deferred_lighting=" << std::ranges::count(recordedPassOrder, RecordedPass::deferred_lighting)
+				<< " samples=" << static_cast<unsigned>(sampleCount()) << '\n';
+		}
 		fillShadowDepthSamplesFromGpu();
 		if (readback != nullptr && imageIndex < target.swapchain.images.size()) {
 			target.lastReadbackCaptureResult = readback->capture(target.swapchain.images[imageIndex], 0U, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
@@ -316,11 +324,13 @@ namespace vve::simple {
 			return left.transparent ? left.distance > right.distance : std::less<const VulkanMesh *>{}(left.mesh, right.mesh);
 		});
 		const VulkanMesh *boundMesh{};
-		const auto drawUploadedObjects = [&](std::uint32_t shadowMatrixIndex, bool shadowPass, const Mat4 &clip) {
+		const auto drawUploadedObjects = [&](std::uint32_t shadowMatrixIndex, bool shadowPass, const Mat4 &clip, RecordedPass scenePass = RecordedPass::forward_color) {
 			const auto planes = frustumPlanes(clip);
 			bool blending{}; // The colour pass switches to the blended pipeline at the first transparent item.
 			// Bound mesh state survives dynamic-rendering boundaries and pipeline changes.
 			for (const auto &item : items) {
+				const bool opaque = !item.sky && !item.transparent;
+				if (!shadowPass && ((scenePass == RecordedPass::gbuffer && !opaque) || (scenePass == RecordedPass::forward_transparency && opaque))) { continue; }
 				if ((shadowPass && !item.castsShadow) || !intersectsFrustum(item.worldBounds, planes)) { continue; }
 				if (!shadowPass && item.transparent && !blending) {
 					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentPipeline.pipeline);
@@ -443,9 +453,10 @@ namespace vve::simple {
 			multisampled ? 2U : 1U, colourBeginBarriers.data());
 
 		// The depth image is shared by both frames in flight: wait for the previous frame's depth writes.
+		const bool deferred = backend_ == RendererBackend::deferred;
 		const VkImageMemoryBarrier depthBeginBarriers{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+			.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | (deferred ? VK_ACCESS_SHADER_READ_BIT : 0U),
 			.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
 			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
@@ -454,7 +465,7 @@ namespace vve::simple {
 			.image = target.depthImage.image,
 			.subresourceRange = depthRange,
 		};
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 									VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 									0U, 0U, nullptr, 0U, nullptr, 1U, &depthBeginBarriers);
 									
@@ -487,19 +498,108 @@ namespace vve::simple {
 			.pDepthAttachment = &depthAttachment,
 		};
 
-		recordedPassOrder.push_back(RecordedPass::forward_color);
-		vkCmdBeginRendering(commandBuffer, &renderingInfo);
-		vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
-		++lastFrameDrawStats_.pipelineBinds;
 		// Match the current attachments; the projection still supplies the Vulkan Y flip.
 		const VkViewport viewport{.x = 0.0F, .y = 0.0F, .width = static_cast<float>(target.swapchain.extent.width), .height = static_cast<float>(target.swapchain.extent.height), .minDepth = 0.0F, .maxDepth = 1.0F};
 		const VkRect2D scissor{.offset = {0, 0}, .extent = target.swapchain.extent};
 		vkCmdSetViewport(commandBuffer, 0U, 1U, &viewport);
 		vkCmdSetScissor(commandBuffer, 0U, 1U, &scissor);
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &target.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
-		drawUploadedObjects(0U, false, viewProjection);
+		if (deferred) {
+			// Reuse the shared sorted draw list, rendering only opaque geometry into the material attachments.
+			std::array<VkImageMemoryBarrier, 3U> begin{};
+			std::array<VkRenderingAttachmentInfo, 3U> attributes{};
+			for (auto i : std::views::iota(0U, 3U)) {
+				begin[i] = {.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.srcAccessMask = VK_ACCESS_SHADER_READ_BIT, .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+					.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED, .newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = target.gbufferImages[i].image, .subresourceRange = colorRange};
+				attributes[i] = {.sType = VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+					.imageView = target.gbufferImages[i].imageView, .imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+					.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR, .storeOp = VK_ATTACHMENT_STORE_OP_STORE};
+			}
+			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				0U, 0U, nullptr, 0U, nullptr, 3U, begin.data());
+			auto geometryDepth = depthAttachment;
+			geometryDepth.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			auto geometry = renderingInfo;
+			geometry.colorAttachmentCount = 3U;
+			geometry.pColorAttachments = attributes.data();
+			geometry.pDepthAttachment = &geometryDepth;
+			recordedPassOrder.push_back(RecordedPass::gbuffer);
+			vkCmdBeginRendering(commandBuffer, &geometry);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gbufferPipeline.pipeline);
+			++lastFrameDrawStats_.pipelineBinds;
+			drawUploadedObjects(0U, false, viewProjection, RecordedPass::gbuffer);
+			vkCmdEndRendering(commandBuffer);
 
-		vkCmdEndRendering(commandBuffer);
+			// Publish every stored sample and its corresponding depth before the fullscreen shader reads them.
+			std::array<VkImageMemoryBarrier, 4U> reads{};
+			for (auto i : std::views::iota(0U, 4U)) {
+				reads[i] = {.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+					.srcAccessMask = i < 3U ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+					.dstAccessMask = VK_ACCESS_SHADER_READ_BIT,
+					.oldLayout = i < 3U ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
+					.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+					.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED, .dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+					.image = i < 3U ? target.gbufferImages[i].image : target.depthImage.image,
+					.subresourceRange = i < 3U ? colorRange : depthRange};
+			}
+			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 4U, reads.data());
+			auto litColour = colorAttachment;
+			litColour.resolveMode = VK_RESOLVE_MODE_NONE;
+			litColour.resolveImageView = VK_NULL_HANDLE;
+			litColour.storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+			auto lighting = renderingInfo;
+			lighting.pColorAttachments = &litColour;
+			lighting.pDepthAttachment = nullptr;
+			recordedPassOrder.push_back(RecordedPass::deferred_lighting);
+			vkCmdBeginRendering(commandBuffer, &lighting);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, lightingPipeline.pipeline);
+			++lastFrameDrawStats_.pipelineBinds;
+			const std::array sets{target.descriptorSets.descriptorSets[frameIndex], target.deferredSet};
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deferredPipelineLayout.pipelineLayout, 0U, 2U, sets.data(), 0U, nullptr);
+			vkCmdDraw(commandBuffer, 3U, 1U, 0U, 0U);
+			vkCmdEndRendering(commandBuffer);
+
+			// Restore opaque depth for the sky and transparency; retain individual HDR samples until their final resolve.
+			auto depthRestore = reads[3];
+			depthRestore.srcAccessMask = VK_ACCESS_SHADER_READ_BIT;
+			depthRestore.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+			depthRestore.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+			depthRestore.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL;
+			auto colourLoad = hdrBeginBarrier;
+			colourLoad.image = multisampled ? target.msaaImage.image : target.hdrImage.image;
+			colourLoad.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			colourLoad.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+			colourLoad.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+			const std::array composeBarriers{depthRestore, colourLoad};
+			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+				0U, 0U, nullptr, 0U, nullptr, 2U, composeBarriers.data());
+			auto composeColour = colorAttachment;
+			composeColour.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+			auto composeDepth = depthAttachment;
+			composeDepth.loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+			auto compose = renderingInfo;
+			compose.pColorAttachments = &composeColour;
+			compose.pDepthAttachment = &composeDepth;
+			recordedPassOrder.push_back(RecordedPass::forward_transparency);
+			vkCmdBeginRendering(commandBuffer, &compose);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
+			++lastFrameDrawStats_.pipelineBinds;
+			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &target.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
+			drawUploadedObjects(0U, false, viewProjection, RecordedPass::forward_transparency);
+			vkCmdEndRendering(commandBuffer);
+		} else {
+			recordedPassOrder.push_back(RecordedPass::forward_color);
+			vkCmdBeginRendering(commandBuffer, &renderingInfo);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
+			++lastFrameDrawStats_.pipelineBinds;
+			drawUploadedObjects(0U, false, viewProjection);
+			vkCmdEndRendering(commandBuffer);
+		}
 
 		// Both images need Layout GENERAL because HDR image gets read and Swapchain image gets written
 		const std::array<VkImageMemoryBarrier, 2U> postBarriers{{

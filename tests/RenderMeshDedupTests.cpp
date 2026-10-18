@@ -18,6 +18,7 @@ import VVEngine.Simple;
 /// @brief Verifies instances share mesh storage and mesh edits retain stable handle-keyed uploads.
 int main() {
 	auto engine = vve::test::hiddenEngine("render-mesh-dedup-tests", vve::PixelExtent{.width = 64, .height = 64});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 1; }
 
 	auto &render = engine.renderSystem();
@@ -96,11 +97,12 @@ int main() {
 		return 6;
 	}
 	if (render.gpuMaterialUploadCount() != material_uploads_before_removal) { return 10; }
-	// With no lights, both shared instances draw in the forward pass with one vertex/index bind.
+	// Both shared instances reuse one mesh bind; deferred adds lighting and composition pipeline binds.
 	const auto stats = render.forward().lastFrameDrawStats();
 	std::println("R2 dedup lastFrameDrawStats={},{},{},{}", stats.forwardDraws, stats.shadowDraws,
 		stats.vertexBufferBinds, stats.pipelineBinds);
-	if (stats.forwardDraws != 2U || stats.shadowDraws != 0U || stats.vertexBufferBinds != 1U || stats.pipelineBinds != 1U) { return 13; }
+	const auto expected_binds = render.rendererBackend() == vve::RendererBackend::deferred ? 3U : 1U;
+	if (stats.forwardDraws != 2U || stats.shadowDraws != 0U || stats.vertexBufferBinds != 1U || stats.pipelineBinds != expected_binds) { return 13; }
 	std::cout << "remove sceneInstanceCount=" << render.sceneInstanceCount()
 		<< " gpuMeshCount=" << render.gpuMeshCount()
 		<< " gpuMeshUploadCount=" << render.gpuMeshUploadCount()

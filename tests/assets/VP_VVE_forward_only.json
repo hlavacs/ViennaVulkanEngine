@@ -1,0 +1,21 @@
+{
+    "$schema": "https://schema.khronos.org/vulkan/profiles-0.8.0-204.json#",
+    "capabilities": {
+        "insufficient_gbuffer_attachments": {
+            "properties": {
+                "VkPhysicalDeviceProperties": {
+                    "limits": { "maxColorAttachments": 2 }
+                }
+            }
+        }
+    },
+    "profiles": {
+        "VP_VVE_forward_only": {
+            "version": 1,
+            "api-version": "1.3.204",
+            "label": "VVE deferred capability rejection",
+            "description": "Simulate two colour attachments while retaining every unspecified device capability. Forward rendering needs one; the G-buffer needs three.",
+            "capabilities": [ "insufficient_gbuffer_attachments" ]
+        }
+    }
+}

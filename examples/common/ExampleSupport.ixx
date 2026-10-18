@@ -1,6 +1,7 @@
-/** @file @brief Shared asset discovery and frame limits for the facade examples. */
+/** @file @brief Shared asset discovery, runtime renderer selection and bounded captures for facade examples. */
 export module VVE.ExampleSupport;
 import std;
+import VVEngine;
 
 export namespace vve::example {
 
@@ -34,6 +35,46 @@ export namespace vve::example {
 		if (result.ec == std::errc{} && value >= 0) { return value; }
 	}
 	return 0;
+}
+
+/// @brief Selects a public renderer before the first frame; invalid names and unsupported devices fail the launch.
+[[nodiscard]] bool selectRenderer(RenderSystem &render, int argc, char **argv) {
+	auto backend = RendererBackend::forward; // Ordinary launches preserve the engine's default renderer.
+	// Parse the same option in every application, including those with independent game-specific options.
+	for (int index = 1; index < argc; ++index) {
+		if (argv[index] == nullptr || std::string_view{argv[index]} != "--renderer") { continue; }
+		if (++index >= argc || argv[index] == nullptr) {
+			std::cerr << "--renderer requires forward or deferred\n"; return false;
+		}
+		const std::string_view name{argv[index]};
+		if (name != "forward" && name != "deferred") {
+			std::cerr << "Unknown renderer: " << name << "; expected forward or deferred\n"; return false;
+		}
+		backend = name == "deferred" ? RendererBackend::deferred : RendererBackend::forward;
+	}
+	if (const auto result = render.setRendererBackend(backend); !result) {
+		std::cerr << "Renderer selection failed: " << errorName(result.error()) << '\n'; return false;
+	}
+	std::cout << "[renderer] backend=" << (render.rendererBackend() == RendererBackend::deferred ? "deferred" : "forward") << '\n';
+	return true;
+}
+
+/// @brief Saves a bounded run's last frame; --output overrides the executable-relative verification PNG.
+[[nodiscard]] bool captureBounded(RenderSystem &render, int argc, char **argv, std::string_view application) {
+	if (frameLimit(argc, argv) == 0) { return true; }
+	const auto executable = std::filesystem::absolute(argc > 0 && argv[0] != nullptr ? argv[0] : ".");
+	auto path = executable.parent_path().parent_path() / "verify" / (std::string{application} + ".png");
+	// A separate output per backend keeps comparison captures from replacing one another.
+	for (int index = 1; index + 1 < argc; ++index) {
+		if (argv[index] != nullptr && std::string_view{argv[index]} == "--output") { path = argv[index + 1]; }
+	}
+	if (const auto result = render.captureFrameToPng(path); !result) {
+		std::cerr << '[' << application << "] capture failed: " << errorName(result.error()) << '\n'; return false;
+	}
+	std::cout << '[' << application << "] capture=" << path << " rendered_frames=" << render.renderedFrameCount()
+		<< " objects=" << render.sceneInstanceCount() << " meshes=" << render.sceneMeshCount()
+		<< " textures=" << render.sceneTextureCount() << '\n';
+	return true;
 }
 
 } // namespace vve::example

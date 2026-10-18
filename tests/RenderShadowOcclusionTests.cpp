@@ -78,6 +78,7 @@ int main() {
 	if (error) { return 2; }
 	constexpr auto extent = vve::PixelExtent{.width = 128, .height = 128}; ///< Fixed capture size and camera aspect.
 	auto engine = vve::test::hiddenEngine("render-shadow-occlusion-tests", extent);
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 3; }
 	auto &render = engine.renderSystem();
 	auto &renderer = render.forward();

@@ -25,6 +25,7 @@ int main() {
 	}
 	constexpr int extent = 64;
 	auto engine = test::hiddenEngine("gui-image-capture-tests", PixelExtent{extent, extent});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 2; }
 	const auto hud = engine.gui().loadImage(image);
 	if (!hud) { return 3; }

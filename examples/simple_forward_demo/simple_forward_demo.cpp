@@ -49,6 +49,7 @@ int main(int argc, char **argv) {
 	std::println("simple_forward_demo engine init");
 
 	auto render_system = engine.world().get<vve::RenderSystem>();
+	if (!vve::example::selectRenderer(render_system, argc, argv)) { return 1; }
 	if (const auto result = render_system.loadSampleScene(); !result) {
 		std::cerr << "simple_forward_demo failed: stage=sample scene load, error=" << vve::errorName(result.error()) << '\n';
 		return 2;

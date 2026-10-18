@@ -134,6 +134,7 @@ int main() {
 		vve::WindowDesc{.id = "a", .extent = {64, 64}, .visible = false},
 		vve::WindowDesc{.id = "b", .extent = {96, 64}, .renderer_id = {"forward"}, .visible = false},
 		vve::WindowDesc{.id = "unused", .extent = {64, 64}, .renderer_id = {"none"}, .visible = false}}}};
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 2; }
 	auto &windows = engine.windowSystem();
 	auto *a = windows.findWindow("a");
@@ -178,7 +179,8 @@ int main() {
 		const auto stats = renderer.lastFrameDrawStats();
 		std::println("[MultiWindowRenderTests] lastFrameDrawStats={},{},{},{} shadow_layers={}", stats.forwardDraws,
 			stats.shadowDraws, stats.vertexBufferBinds, stats.pipelineBinds, renderer.lastShadowLayerPassCount());
-		if (stats.pipelineBinds != 2U || stats.shadowDraws == 0U ||
+		const auto expected_binds = render.rendererBackend() == vve::RendererBackend::deferred ? 4U : 2U;
+		if (stats.pipelineBinds != expected_binds || stats.shadowDraws == 0U ||
 			renderer.lastShadowLayerPassCount() != vve::simple::kNumShadowCascades) { return 32; }
 		// Complete both submissions before checking validation of each window's shadow bindings.
 		render.waitIdle();

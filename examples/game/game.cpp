@@ -118,10 +118,12 @@ int main(int argc, char **argv) {
 	int selectedTrack{};
 	bool requireAudio{};
 	bool verifyMusic{};
+	bool verifyCollection{}; ///< Bounded verification drops the first crate at the player to exercise live object removal.
 	for (int argument = 1; argument < argc; ++argument) {
 		const std::string_view option{argv[argument]};
 		if (option == "--require-audio") { requireAudio = true; }
 		if (option == "--verify-music") { verifyMusic = true; requireAudio = true; }
+		if (option == "--verify-collection") { verifyCollection = true; }
 		if (option == "--music-track") {
 			if (++argument >= argc) { std::cerr << "--music-track needs 0, 1 or 2.\n"; return 4; }
 			const std::string_view value{argv[argument]};
@@ -192,6 +194,7 @@ int main(int argc, char **argv) {
 		return 0;
 	}
 	auto render = engine.world().get<vve::RenderSystem>();
+	if (!vve::example::selectRenderer(render, argc, argv)) { return 1; }
 	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr, grassTextureRelativePath);
 	const auto sunHandle = loadScene(render, root);
 	if (!sunHandle) {
@@ -213,7 +216,7 @@ int main(int argc, char **argv) {
 	int score{};                                       ///< Crates collected so far.
 	std::size_t spawnedCrates{};                       ///< Crates spawned so far; selects the crate texture.
 	float spawnTimer{spawnInterval};                   ///< Time accumulator that spawns the first crate immediately.
-	std::mt19937 rng{std::random_device{}()};          ///< Random source for crate spawn positions.
+	std::mt19937 rng{vve::example::frameLimit(argc, argv) > 0 ? 1729U : std::random_device{}()}; ///< Repeatable bounded crate placement.
 	std::uniform_real_distribution<float> place{-groundHalfExtent + 2.0F, groundHalfExtent - 2.0F};
 
 	// The score overlay is drawn every frame in the top-left corner.
@@ -243,13 +246,14 @@ int main(int argc, char **argv) {
 	});
 
 	const int maxFrames = vve::example::frameLimit(argc, argv);
+	if (verifyCollection && maxFrames == 0) { std::cerr << "--verify-collection requires --frames\n"; return 6; }
 	int frame{};
 	bool running = true;
 	auto lastTime = std::chrono::steady_clock::now();
 
 	while (running && (maxFrames == 0 || frame < maxFrames)) {
 		const auto now = std::chrono::steady_clock::now();
-		const float dt = std::clamp(std::chrono::duration<float>(now - lastTime).count(), 0.0F, 0.1F);
+		const float dt = maxFrames > 0 ? 1.0F / 60.0F : std::clamp(std::chrono::duration<float>(now - lastTime).count(), 0.0F, 0.1F);
 		lastTime = now;
 
 		// Steer with the standard controller but pin the eye to a fixed height so it stays on the plane.
@@ -270,7 +274,9 @@ int main(int argc, char **argv) {
 			spawnTimer += dt;
 			if (spawnTimer >= spawnInterval) {
 				spawnTimer = 0.0F;
-				const vve::Vec3 spawnPosition{place(rng), crateSpawnY, place(rng)};
+				const vve::Vec3 spawnPosition = verifyCollection && spawnedCrates == 0
+					? vve::Vec3{eyePosition.value.x, crateSpawnY, eyePosition.value.z}
+					: vve::Vec3{place(rng), crateSpawnY, place(rng)};
 				const vve::Vec3 minimum{-crateHalfSize, -crateHalfSize, -crateHalfSize};
 				const vve::Vec3 maximum{crateHalfSize, crateHalfSize, crateHalfSize};
 				const auto crateTexture = root / crateTextureRelativePaths[spawnedCrates++ % crateTextureRelativePaths.size()];
@@ -333,5 +339,7 @@ int main(int argc, char **argv) {
 	}
 
 	std::cout << "[game] frames=" << frame << " score=" << score << '\n';
+	if (verifyCollection && score == 0) { std::cerr << "[game] collection verification failed\n"; return 6; }
+	if (!vve::example::captureBounded(render, argc, argv, "game")) { return 5; }
 	return 0;
 }

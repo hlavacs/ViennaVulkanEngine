@@ -13,15 +13,18 @@ import VVE.TestSupport;
 namespace {
 
 /// @brief Independently queries the actual HDR/depth format capabilities, including framebuffer limits.
-[[nodiscard]] bool supportsFourSamples(VkPhysicalDevice device) {
+[[nodiscard]] bool supportsFourSamples(VkPhysicalDevice device, bool deferred) {
 	VkPhysicalDeviceProperties properties{};
 	vkGetPhysicalDeviceProperties(device, &properties);
+	VkPhysicalDeviceFeatures features{};
+	vkGetPhysicalDeviceFeatures(device, &features);
 	VkImageFormatProperties colour{}, depth{};
+	const auto sampled = deferred ? VK_IMAGE_USAGE_SAMPLED_BIT : VkImageUsageFlagBits{};
 	const auto c = vkGetPhysicalDeviceImageFormatProperties(device, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_TYPE_2D,
-		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0U, &colour);
+		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | sampled, 0U, &colour);
 	const auto d = vkGetPhysicalDeviceImageFormatProperties(device, VK_FORMAT_D32_SFLOAT, VK_IMAGE_TYPE_2D,
-		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, 0U, &depth);
-	return c == VK_SUCCESS && d == VK_SUCCESS && (colour.sampleCounts & depth.sampleCounts &
+		VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | sampled, 0U, &depth);
+	return (!deferred || features.sampleRateShading) && c == VK_SUCCESS && d == VK_SUCCESS && (colour.sampleCounts & depth.sampleCounts &
 		properties.limits.framebufferColorSampleCounts & properties.limits.framebufferDepthSampleCounts & VK_SAMPLE_COUNT_4_BIT) != 0U;
 }
 
@@ -54,6 +57,7 @@ namespace {
 	auto engine = simple::Engine{simple::Windows{.value = {
 		WindowDesc{.id = "a", .extent = {128, 128}, .visible = false},
 		WindowDesc{.id = "b", .extent = {128, 128}, .visible = false}}}};
+	test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return {}; }
 	auto &render = engine.renderSystem();
 	if (!render.setAntialiasing(mode) || render.antialiasing() != mode) { return {}; }
@@ -67,11 +71,19 @@ namespace {
 	const auto first = engine.renderFrame();
 	if (mode == Antialiasing::msaa4 && !supports_msaa) {
 		std::println("[RenderAntialiasingTests] unsupported_msaa_error={}", first ? "none" : errorName(first.error()));
-		return !first && first.error() == Error::platform_error ? std::optional<std::size_t>{0U} : std::nullopt;
+		if (first || first.error() != Error::platform_error || render.antialiasing() != mode) { return {}; }
+		const auto backend = render.rendererBackend();
+		// Capability rejection leaves startup resources retryable; the caller can explicitly request supported coverage.
+		if (!render.setAntialiasing(Antialiasing::none) || !engine.renderFrame() || render.lastRenderedWindowCount() != 2U ||
+			render.rendererBackend() != backend) { return {}; }
+		std::println("[RenderAntialiasingTests] unsupported_recovery=none renderer_preserved=true");
+		return 0U;
 	}
 	if (!first || render.lastRenderedWindowCount() != 2U || !engine.gui().ready()) { return {}; }
 	auto &renderer = render.forward();
-	if (mode == Antialiasing::none) { supports_msaa = supportsFourSamples(renderer.physicalDevice.physicalDevice); }
+	if (mode == Antialiasing::none) {
+		supports_msaa = supportsFourSamples(renderer.physicalDevice.physicalDevice, render.rendererBackend() == RendererBackend::deferred);
+	}
 	const auto locked = render.setAntialiasing(Antialiasing::none);
 	if (locked || locked.error() != Error::already_initialized) { return {}; }
 	const auto directory = std::filesystem::path{VVE_TEST_TMP_DIR};
@@ -88,6 +100,13 @@ namespace {
 			if (window.depthImage.samples != sample || window.hdrImage.samples != VK_SAMPLE_COUNT_1_BIT ||
 				(window.msaaImage.image != VK_NULL_HANDLE) != (mode == Antialiasing::msaa4) ||
 				(mode == Antialiasing::msaa4 && window.msaaImage.samples != sample)) { return {}; }
+			// Deferred surface data stays multisampled; only the final lit HDR colour is resolved.
+			if (render.rendererBackend() == RendererBackend::deferred) {
+				for (const auto &image : window.gbufferImages) {
+					if (image.samples != sample || image.extent.width != window.swapchain.extent.width ||
+						image.extent.height != window.swapchain.extent.height) { return {}; }
+				}
+			}
 			const auto count = capture(render, window, directory / std::format("{}-{}-{}.png", static_cast<int>(mode), stage, window.handle.value));
 			if (!count || (mode == Antialiasing::none ? *count != 0U : *count < 20U)) { return {}; }
 			edges += *count;

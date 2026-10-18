@@ -209,7 +209,12 @@ export namespace vve {
 		std::string value{};														///< Wrapped display or diagnostic name.
 	};
 
-	/// @brief Forward geometry edge smoothing; selected before the renderer's first frame.
+	/// @brief Scene rendering passes selected independently for each engine, shared by its windows.
+	enum class RendererBackend {
+		forward, ///< Opaque and transparent objects use forward lighting (default).
+		deferred ///< Opaque G-buffer and deferred lighting, followed by forward transparency.
+	};
+	/// @brief Geometry edge smoothing; selected before the renderer's first frame.
 	enum class Antialiasing {
 		none, ///< One sample per pixel; preserves the default rendering path.
 		msaa4 ///< Four coverage samples; initialization returns platform_error if unsupported.

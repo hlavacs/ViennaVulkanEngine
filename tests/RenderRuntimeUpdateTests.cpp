@@ -8,6 +8,7 @@ import VVEngine.Simple;
 import VVEngine.Simple.Renderer;
 import VVEngine.Simple.Scene;
 import VVEngine.Simple.Vulkan;
+import VVE.TestSupport;
 
 namespace {
 
@@ -54,6 +55,7 @@ int main() {
    auto engine = vve::simple::Engine{vve::simple::Windows{.value = {
       vve::WindowDesc{.id = "a", .extent = {64, 64}, .visible = false},
       vve::WindowDesc{.id = "b", .extent = {64, 64}, .visible = false}}}};
+   vve::test::configureRenderer(engine.renderSystem());
    if (!engine.init()) { return 1; }
    auto &render = engine.renderSystem();
    auto &renderer = render.forward();

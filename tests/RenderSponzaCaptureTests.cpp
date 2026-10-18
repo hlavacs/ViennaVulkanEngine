@@ -30,6 +30,8 @@ int main() {
 	if (error) { return 1; }
 
 	auto engine = vve::test::hiddenEngine("render-sponza-capture-tests", vve::PixelExtent{.width = 256, .height = 256});
+
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 2; }
 
 	auto &assets = engine.assets();

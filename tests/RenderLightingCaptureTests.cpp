@@ -23,6 +23,8 @@ int main(int argc, char **argv) {
 	if (error) { return 1; }
 
 	auto engine = vve::test::hiddenEngine("render-lighting-capture-tests", vve::PixelExtent{.width = 128, .height = 128});
+
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 2; }
 
 	auto &assets = engine.assets();

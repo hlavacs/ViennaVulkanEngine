@@ -10,8 +10,8 @@ float3 fresnelSchlick(float cosine, float3 f0)
     return f0 + (1.0 - f0) * pow(1.0 - cosine, 5.0);
 }
 
-/// @brief GGX distribution with separable Smith visibility; returns BRDF times the incident cosine.
-float3 microfacetLight(float3 color, float metalness, float roughness, float3 n, float3 v, float3 l)
+/// @brief GGX distribution with separable Smith visibility; explicit material flags also serve reconstructed deferred samples.
+float3 microfacetLight(float3 color, float metalness, float roughness, float3 n, float3 v, float3 l, uint flags)
 {
     const float nv = max(dot(n, v), 0.0001), nl = saturate(dot(n, l));
     const float3 h = normalizeOrZero(v + l); // Opposite directions have no specular response.
@@ -21,7 +21,7 @@ float3 microfacetLight(float3 color, float metalness, float roughness, float3 n,
     const float distribution = a2 / max(kPi * denominator * denominator, 1.0e-12);
     const float visibilityV = 2.0 * nv / (nv + sqrt(a2 + (1.0 - a2) * nv * nv));
     const float visibilityL = 2.0 * nl / max(nl + sqrt(a2 + (1.0 - a2) * nl * nl), 0.0001);
-    const float3 fresnel = fresnelSchlick(vh, lerp(float3((object.flags & kWaterFlag) != 0 ? 0.02 : 0.04), color, metalness));
+    const float3 fresnel = fresnelSchlick(vh, lerp(float3((flags & kWaterFlag) != 0 ? 0.02 : 0.04), color, metalness));
     return ((1.0 - fresnel) * color * (1.0 - metalness) / kPi +
         distribution * visibilityV * visibilityL * fresnel / max(4.0 * nv * nl, 0.0001)) * nl;
 }

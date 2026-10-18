@@ -4,6 +4,7 @@ target_sources(ViennaVulkanEngine
       "${CMAKE_CURRENT_LIST_DIR}/stb_image_write_impl.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/vma_impl.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererResources.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/Render/RendererDeferred.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererShadowPrep.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererDraw.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererDebug.cpp"
@@ -68,21 +69,29 @@ if(NOT VVE_SIMPLE_SLANGC)
 endif()
 
 # Embed aligned SPIR-V words, as vvppl does; only RendererResources.cpp includes these headers.
-set(VVE_SIMPLE_SHADER_NAMES simple_forward_vert simple_forward_frag simple_forward_shadow_vert)
-set(VVE_SIMPLE_SHADER_ENTRIES vertexMain fragmentMain shadowVertexMain)
-set(VVE_SIMPLE_SHADER_STAGES vertex fragment vertex)
+set(VVE_SIMPLE_SHADER_NAMES simple_forward_vert simple_forward_frag simple_forward_shadow_vert simple_gbuffer_frag simple_gbuffer_msaa_frag simple_lighting_vert simple_lighting_frag simple_lighting_msaa_frag)
+set(VVE_SIMPLE_SHADER_ENTRIES vertexMain fragmentMain shadowVertexMain gbufferMain gbufferMsaaMain lightingVertexMain lightingMain lightingMain)
+set(VVE_SIMPLE_SHADER_STAGES vertex fragment vertex fragment fragment vertex fragment fragment)
 set(VVE_SIMPLE_SHADER_HEADERS "")
 foreach(NAME ENTRY STAGE IN ZIP_LISTS VVE_SIMPLE_SHADER_NAMES VVE_SIMPLE_SHADER_ENTRIES VVE_SIMPLE_SHADER_STAGES)
    set(HEADER "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/${NAME}_spv.h")
+   set(SHADER "${VVE_SIMPLE_FORWARD_SHADER}")
+   set(SHADER_DEFINES "")
+   if(NAME MATCHES "simple_lighting")
+      set(SHADER "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_deferred.slang")
+   endif()
+   if(NAME MATCHES "msaa")
+      set(SHADER_DEFINES -DVVE_DEFERRED_MSAA=1)
+   endif()
    add_custom_command(
       OUTPUT "${HEADER}"
       COMMAND "${CMAKE_COMMAND}" -E make_directory "${VVE_SIMPLE_SHADER_OUTPUT_DIR}"
-      COMMAND "${VVE_SIMPLE_SLANGC}" "${VVE_SIMPLE_FORWARD_SHADER}"
+      COMMAND "${VVE_SIMPLE_SLANGC}" "${SHADER}" ${SHADER_DEFINES}
          -target spirv -profile spirv_1_4 -stage ${STAGE} -entry ${ENTRY} -fvk-use-entrypoint-name
          -source-embed-style u32 -source-embed-name ${NAME}_spv -o "${HEADER}"
       # Slang preserves unchanged outputs; still rebuild the embedding unit after a source touch.
       COMMAND "${CMAKE_COMMAND}" -E touch "${HEADER}"
-      DEPENDS "${VVE_SIMPLE_FORWARD_SHADER}" "${VVE_SIMPLE_SHARED_SHADER_HEADER}" "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_material.slang"
+      DEPENDS "${SHADER}" "${VVE_SIMPLE_FORWARD_SHADER}" "${VVE_SIMPLE_SHARED_SHADER_HEADER}" "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_material.slang"
       COMMENT "Embedding simple forward ${ENTRY} shader"
       VERBATIM
    )

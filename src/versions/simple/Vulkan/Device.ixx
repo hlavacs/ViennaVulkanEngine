@@ -398,6 +398,7 @@ export namespace vve::simple {
 		VkQueue graphicsQueue{VK_NULL_HANDLE};        ///< Borrowed graphics queue retrieved from the device.
 		VkQueue presentQueue{VK_NULL_HANDLE};         ///< Borrowed presentation queue retrieved from the device.
 		bool swapchainMutableFormat{false};           ///< Whether the optional GUI UNORM swapchain views are enabled.
+		bool sampleRateShading{false};               ///< Optional per-sample lighting enabled before runtime backend selection.
 		bool samplerAnisotropy{false};                ///< Whether the optional material sampler feature is enabled.
 
 		VulkanDevice() = default;
@@ -455,6 +456,7 @@ export namespace vve::simple {
 			VkPhysicalDeviceFeatures supportedFeatures{};
 			vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 			const VkPhysicalDeviceFeatures enabledFeatures{
+				.sampleRateShading = supportedFeatures.sampleRateShading, ///< Enable optional deferred MSAA without recreating the device.
 				.samplerAnisotropy = supportedFeatures.samplerAnisotropy, ///< Enable anisotropic material sampling only when supported.
 				.shaderSampledImageArrayDynamicIndexing = VK_TRUE, ///< Fragment shader indexes the texture array by material; checked in device selection.
 			};
@@ -490,6 +492,7 @@ export namespace vve::simple {
 
 			device.handle = vk::raii::Device{physicalDevice.handle, rawDevice};
 			swapchainMutableFormat = mutableFormat;
+			sampleRateShading = enabledFeatures.sampleRateShading == VK_TRUE;
 			samplerAnisotropy = enabledFeatures.samplerAnisotropy == VK_TRUE;
 			vkGetDeviceQueue(device, graphicsQueueFamily, 0U, &graphicsQueue);
 			vkGetDeviceQueue(device, presentQueueFamily, 0U, &presentQueue);
@@ -500,6 +503,7 @@ export namespace vve::simple {
 		void cleanup() {
 			device.reset();
 			swapchainMutableFormat = false;
+			sampleRateShading = false;
 			samplerAnisotropy = false;
 			graphicsQueue = VK_NULL_HANDLE;
 			presentQueue = VK_NULL_HANDLE;

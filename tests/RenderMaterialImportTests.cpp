@@ -51,6 +51,7 @@ bool hasDistinctAssetTextureCounts(vve::simple::AssetSystem &assets) {
 /// @brief Verifies imported material textures are decoded once and cached across scene instances.
 int main(int argc, char **argv) {
 	auto engine = vve::test::hiddenEngine("render-material-import-tests", vve::PixelExtent{.width = 64, .height = 64});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 1; }
 
 	auto &assets = engine.assets();

@@ -1,6 +1,6 @@
 module;
 #include <SDL3/SDL_video.h>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan_raii.hpp>
 #if __has_include(<backends/imgui_impl_vulkan.h>)
 #include <backends/imgui_impl_vulkan.h>
 #else
@@ -76,6 +76,9 @@ export namespace vve::simple {
 		VulkanSurface surface{};               ///< Owned SDL-backed Vulkan surface wrapper.
 		VulkanSwapchain swapchain{};           ///< Owned presentation images, formats and requestedExtent.
 		VulkanImageViews imageViews{};         ///< Owned scene and GUI image views for swapchain images.
+		std::array<VulkanImage, 3U> gbufferImages{}; ///< Linear base/roughness, world normal/metalness, emissive/AO/flags; never attribute-resolved.
+		VulkanDescriptorPool deferredPool{};    ///< Pool owning the immutable window-sized sampled-image descriptor set.
+		VkDescriptorSet deferredSet{};         ///< Borrowed set owned by deferredPool; replaced after an idle resize.
 		VulkanImage depthImage{};              ///< Owned swapchain-sized depth attachment image and view.
 		VulkanImage hdrImage{};                ///< Owned swapchain-sized RGBA16F color target the scene is rendered into.
 		VulkanImage msaaImage{};               ///< Optional multisample forward colour, resolved into single-sample HDR.
@@ -107,10 +110,14 @@ export namespace vve::simple {
 			spot_shadow,        ///< Spotlight depth pass.
 			point_shadow,       ///< Point-light face depth pass.
 			forward_color,      ///< Scene colour rendered into HDR.
+			gbuffer,            ///< Opaque material attributes and preserved geometry depth.
+			deferred_lighting,  ///< Fullscreen lighting, independently per coverage sample.
+			forward_transparency, ///< Sky and back-to-front transparent composition over lit HDR.
 			post_process,       ///< Configured vvppl chain applied to HDR.
 			gui,                ///< Nonempty GUI draw data composited onto the swapchain.
 		};
 
+		static constexpr std::array gbufferFormats{VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT}; ///< HDR factors, signed normals, and HDR emission.
 		static constexpr std::uint32_t framesInFlight{WindowTarget::framesInFlight}; ///< Number of independent frame command buffers to allocate.
 		static constexpr std::size_t pointShadowFaceCount{VVE_POINT_SHADOW_FACES}; ///< One square face per cubemap direction.
 		static constexpr Scalar shadowNearPlane{VVE_SHADOW_NEAR_PLANE}; ///< Shared near plane for all shadow views.
@@ -132,6 +139,13 @@ export namespace vve::simple {
 		VulkanShaderModule vertShaderModule{}; ///< Owned forward vertex shader module.
 		VulkanShaderModule fragShaderModule{}; ///< Owned forward fragment shader module.
 		VulkanShaderModule shadowShaderModule{}; ///< Owned depth-only shadow vertex shader module.
+		VulkanPipelineLayout deferredPipelineLayout{}; ///< Lighting layout combines shared scene data with sampled G-buffer data.
+		VulkanOwnedHandle<vk::raii::DescriptorSetLayout, VkDescriptorSetLayout> deferredLayout{}; ///< Set 1 sampled attributes and depth.
+		VulkanShaderModule gbufferShader{};     ///< Shared material evaluation for opaque geometry.
+		VulkanShaderModule lightingVertexShader{}; ///< Vertex-buffer-free fullscreen lighting triangle.
+		VulkanShaderModule lightingShader{};    ///< Reconstructed-position lighting, single-sample or multisample.
+		VulkanGraphicsPipeline gbufferPipeline{}; ///< Opaque material attributes and geometry depth.
+		VulkanGraphicsPipeline lightingPipeline{}; ///< Fullscreen lighting into matching-sample HDR colour.
 		VulkanGraphicsPipeline graphicsPipeline{}; ///< Owned forward graphics pipeline for swapchain rendering.
 		VulkanGraphicsPipeline transparentPipeline{}; ///< Owned blended forward pipeline without depth writes, for transparent objects.
 		VulkanGraphicsPipeline shadowPipeline{};   ///< Owned depth-only pipeline shared by every shadow layer.
@@ -307,6 +321,11 @@ export namespace vve::simple {
 		[[nodiscard]] MaterialLighting materialLighting() const { return materialLighting_; }
 		/// @brief Borrows the skybox texture slot; the sky instance owns its lifetime.
 		void setEnvironmentTexture(RenderTextureIndex texture) { environmentTexture_ = texture; }
+		[[nodiscard]] auto setRendererBackend(RendererBackend backend) -> std::expected<void, Error>;
+		/// @brief Returns the independent startup selection; forward remains the default.
+		[[nodiscard]] RendererBackend rendererBackend() const { return backend_; }
+		[[nodiscard]] VkResult probeDeferred(SDL_Window *window) const;
+		[[nodiscard]] static VkResult deferredSupport(VkPhysicalDevice physical, VkSampleCountFlagBits samples);
 		[[nodiscard]] auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error>;
 		/// @brief Returns the retained forward antialiasing setting.
 		[[nodiscard]] Antialiasing antialiasing() const { return antialiasing_; }
@@ -334,6 +353,8 @@ export namespace vve::simple {
 		}
 		[[nodiscard]] VkResult ensureShadowCapacity();
 		[[nodiscard]] VkResult writeShadowDescriptors(WindowTarget &target, std::uint32_t frame);
+		[[nodiscard]] VkResult createDeferredPipelines(std::uint32_t textureCount); ///< Builds only the deferred-specific pass pipelines.
+		[[nodiscard]] VkResult createDeferredDescriptors(WindowTarget &target); ///< Binds this window's stable sampled attachments after creation/resize.
 		[[nodiscard]] VkResult createTargetResources(WindowTarget &target); ///< Creates one target's attachments, frame resources and post-processing chain.
 		[[nodiscard]] VkResult createTargetAttachments(WindowTarget &target); ///< Creates matching colour/depth plus a single-sample HDR resolve target.
 		[[nodiscard]] VkResult writeSceneDescriptors(WindowTarget &target, std::uint32_t frame); ///< Updates only a completed slot's materials and changed texture elements.
@@ -354,6 +375,7 @@ export namespace vve::simple {
 			return false;
 		}
 
+		RendererBackend backend_{RendererBackend::forward}; ///< Per-engine selection retained across shutdown.
 		FrameUniforms frameUniforms_{}; ///< Camera and packed light data assembled directly for the current window's uniform upload.
 		Camera camera_{.position = {Vec3{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}},
 			.forward = {Vec3{zero(), static_cast<Scalar>(-5.0), static_cast<Scalar>(-9.0)}}}; ///< Default view retained across target creation and renderer shutdown.

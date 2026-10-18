@@ -90,6 +90,7 @@ int main() {
 	std::filesystem::create_directories(directory);
 	constexpr int extent = 96;
 	auto engine = test::hiddenEngine("render-environment-tests", PixelExtent{extent, extent});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 2; }
 	auto &render = engine.renderSystem();
 	const auto sky = test::writeFixture(directory, "green.ppm", std::string{"P6\n1 1\n255\n"} + std::string{"\0\xff\0", 3});

@@ -45,6 +45,7 @@ int main() {
 	}
 	constexpr int extent = 64;
 	auto engine = test::hiddenEngine("render-skybox-tests", PixelExtent{extent, extent});
+	vve::test::configureRenderer(engine.renderSystem());
 	auto &render = engine.renderSystem();
 	// CPU: a missing file fails; set, clear and clearScene change the texture count.
 	const auto missing = render.setSkybox(directory / "missing.png");

@@ -10,6 +10,7 @@ int main() {
 	std::filesystem::create_directories(directory);
 	constexpr int extent = 64;
 	auto engine = test::hiddenEngine("render-background-color-tests", PixelExtent{extent, extent});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 1; }
 	auto &render = engine.renderSystem();
 	const auto initial = render.backgroundColor().value;

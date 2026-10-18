@@ -48,6 +48,8 @@ struct FrameUniforms
     uint activePointLightCount;       ///< Packed point-light count.
     float4 fogColorDensity;           ///< Linear haze RGB and extinction per world unit.
     float4 fogHeightTime;             ///< Base height, density height falloff, animation seconds, unused.
+    float4x4 inverseViewProjection; ///< Inverse projection-view for depth reconstruction.
+    float4 viewport; ///< Drawable dimensions.
     float4 environmentLighting;       ///< Panorama texture slot (-1 absent), strength, GGX enabled, unused.
 };
 
@@ -285,24 +287,17 @@ float4 shadowVertexMain(VertexInput input) : SV_Position
     return mul(frame.shadowViewProjs[object.shadowMatrixIndex], worldPosition); ///< Shadows follow the same animated surface.
 }
 
-[shader("fragment")]
-FragmentOutput fragmentMain(FragmentInput input)
+/// @brief Three material attachments, evaluated once by either geometry path in linear colour space.
+struct GBufferOutput {
+    [[vk::location(0)]] float4 baseRoughness : SV_Target0; ///< Linear HDR base colour and roughness.
+    [[vk::location(1)]] float4 normalMetalness : SV_Target1; ///< World-space unit normal and metalness.
+    [[vk::location(2)]] float4 emissiveFlags : SV_Target2; ///< HDR emission; AO + twice the unlit/water flags.
+};
+
+/// @brief Samples material maps and applies cut-out alpha, normal transforms and animated water for both backends.
+GBufferOutput evaluateSurface(FragmentInput input, out float alpha)
 {
-    FragmentOutput output;
     const GpuMaterial material = materials[object.materialIndex];
-    // Equirectangular lookup; textures are stored bottom-up, so v = 1 is the image's top row (straight up).
-    if ((object.flags & kSkyFlag) != 0) {
-        const float3 d = normalize(input.worldPos);
-        float2 uv = float2(atan2(d.x, -d.z) / (2.0 * kPi) + 0.5, 1.0 - acos(clamp(d.y, -1.0, 1.0)) / kPi);
-        float3 sky = float3(1.0);
-        if (material.baseColorTexture < kMaxSceneTextures) {
-            const float edge = halfTexel(material.baseColorTexture).y;
-            uv.y = clamp(uv.y, edge, 1.0 - edge);                        ///< The repeat sampler must not wrap over the poles.
-            sky = baseColorTextures[material.baseColorTexture].SampleLevel(uv, 0.0).rgb; ///< Level 0 avoids a seam where u wraps.
-        }
-        output.color = float4(sky * material.baseColorFactor.rgb, 1.0);
-        return output;
-    }
     float3 baseColor = material.baseColorFactor.rgb;                      ///< Material factor remains the default base color.
     float coverage = material.baseColorFactor.a;                         ///< Material alpha; the texture alpha multiplies it.
     if (material.baseColorTexture != kNoTexture && material.baseColorTexture < kMaxSceneTextures) {
@@ -317,12 +312,7 @@ FragmentOutput fragmentMain(FragmentInput input)
     }
     if (material.emissiveFactor.w == kAlphaMask && coverage < 0.5) { discard; } ///< Cut-out leaves holes, the rest is opaque.
     const bool blended = material.emissiveFactor.w == kAlphaBlend || (object.flags & kSpriteFlag) != 0; ///< Sprites always use their texture alpha.
-    const float alpha = (blended ? coverage : 1.0) * object.opacity;    ///< Opaque modes ignore material alpha.
-    // The push constant keeps this return uniform, before other texture samples and lighting.
-    if ((object.flags & kUnlitFlag) != 0) {
-        output.color = float4(applyAtmosphere(baseColor, input.worldPos), alpha); ///< Haze also covers unlit world objects.
-        return output;
-    }
+    alpha = (blended ? coverage : 1.0) * object.opacity;    ///< Opaque modes ignore material alpha.
     float roughness = material.roughnessFactor;                          ///< Factors apply alone or scale their texture, as in glTF.
     if (material.roughnessTexture < kMaxSceneTextures) {
         roughness *= baseColorTextures[material.roughnessTexture].Sample(input.texCoord).g; ///< glTF packs roughness in green.
@@ -339,11 +329,6 @@ FragmentOutput fragmentMain(FragmentInput input)
     }
     const float ambientOcclusion = material.ambientOcclusionTexture < kMaxSceneTextures ?
         baseColorTextures[material.ambientOcclusionTexture].Sample(input.texCoord).r : 1.0;
-    const float ambient = frame.ambient * ambientOcclusion;              ///< Ambient occlusion attenuates indirect scene light.
-    const float shininess = lerp(4.0, 128.0, (1.0 - roughness) * (1.0 - roughness)); ///< Rough surfaces broaden Blinn-Phong highlights.
-    const float specularStrength = lerp(0.3, 1.0, metalness);            ///< Metals strengthen their tinted reflection.
-    const float3 diffuseColor = baseColor * (1.0 - metalness);           ///< Metals have no diffuse response.
-    const float3 specularColor = lerp(float3(specularStrength), baseColor * specularStrength, metalness); ///< Metallic highlights use base color.
     const float3 rawNormal = normalize(cross(ddx(input.worldPos), ddy(input.worldPos))); ///< Flat geometric face normal from screen derivatives.
     const float3 cameraPos = worldEye(); ///< One inverse view calculation shared with the atmosphere.
     const float3 viewDir = normalize(cameraPos - input.worldPos);        ///< Surface-to-eye vector for view-dependent highlights.
@@ -364,13 +349,35 @@ FragmentOutput fragmentMain(FragmentInput input)
         normal = normalize(float3(normal.x - wave.y * normal.y, normal.y, normal.z - wave.z * normal.y)); ///< Transform the base normal by the wave displacement.
     }
     normal = dot(normal, viewDir) < 0.0 ? -normal : normal; ///< Keep visible debug faces lit even when winding flips normals.
-    const bool physicallyBased = frame.environmentLighting.z != 0.0 || (object.flags & kWaterFlag) != 0;
+    GBufferOutput result;
+    result.baseRoughness = float4(baseColor, roughness);
+    result.normalMetalness = float4(normal, metalness);
+    result.emissiveFlags = float4(emissive, ambientOcclusion + 2.0 * float(object.flags & (kUnlitFlag | kWaterFlag)));
+    return result;
+}
+/// @brief One lighting implementation shared by forward fragments and reconstructed deferred samples.
+float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags)
+{
+    const float3 baseColor = surface.baseRoughness.rgb;
+    if ((flags & kUnlitFlag) != 0) return applyAtmosphere(baseColor, worldPos);
+    const float roughness = surface.baseRoughness.a;
+    const float metalness = surface.normalMetalness.a;
+    const float3 normal = normalize(surface.normalMetalness.xyz);
+    const float3 emissive = surface.emissiveFlags.rgb;
+    const float ambientOcclusion = surface.emissiveFlags.a - 2.0 * float(flags);
+    const float3 viewDir = normalize(worldEye() - worldPos);
+    const float ambient = frame.ambient * ambientOcclusion;              ///< Ambient occlusion attenuates indirect scene light.
+    const float shininess = lerp(4.0, 128.0, (1.0 - roughness) * (1.0 - roughness)); ///< Rough surfaces broaden Blinn-Phong highlights.
+    const float specularStrength = lerp(0.3, 1.0, metalness);            ///< Metals strengthen their tinted reflection.
+    const float3 diffuseColor = baseColor * (1.0 - metalness);           ///< Metals have no diffuse response.
+    const float3 specularColor = lerp(float3(specularStrength), baseColor * specularStrength, metalness); ///< Metallic highlights use base color.
+    const bool physicallyBased = frame.environmentLighting.z != 0.0 || (flags & kWaterFlag) != 0;
     float3 pointContribution = float3(0.0);                              ///< Accumulated point-light response for active point slots.
     // The CPU packs contributing point lights densely and uploads their count.
     for (uint i = 0; i < frame.activePointLightCount; ++i) {
         const float pointRangeRaw = frame.pointLightPositionRanges[i].w; ///< Range of this packed point light.
         const float pointIntensity = frame.pointLightColorIntensities[i].w; ///< Positive intensity selected during CPU packing.
-        const float3 pointOffset = frame.pointLightPositionRanges[i].xyz - input.worldPos; ///< Vector from fragment to this point light.
+        const float3 pointOffset = frame.pointLightPositionRanges[i].xyz - worldPos; ///< Vector from fragment to this point light.
         const float pointDistance = length(pointOffset);             ///< Fragment-light distance for falloff.
         const float3 pointLightDir = pointOffset / max(pointDistance, 0.001); ///< Point-light direction changes across the scene.
         const float pointRangeFalloff = saturate(1.0 - (pointDistance / pointRangeRaw)); ///< Fade direct light at the configured range.
@@ -379,12 +386,12 @@ FragmentOutput fragmentMain(FragmentInput input)
         const float3 pointHalfVector = normalize(pointLightDir + viewDir); ///< Blinn-Phong halfway direction between light and eye.
         const float pointSpecular = pow(max(dot(normal, pointHalfVector), 0.0), shininess); ///< Point-light highlight response.
         const float3 pointLight = frame.pointLightColorIntensities[i].rgb * pointIntensity; ///< Point light color scaled by intensity.
-        const float3 pointLightToFragment = input.worldPos - frame.pointLightPositionRanges[i].xyz; ///< Vector selects the cubemap-style shadow face.
+        const float3 pointLightToFragment = worldPos - frame.pointLightPositionRanges[i].xyz; ///< Vector selects the cubemap-style shadow face.
         const float3 pointFaceAbs = abs(pointLightToFragment); ///< Dominant axis chooses the CPU face order.
         int pointFace = pointFaceAbs.x >= pointFaceAbs.y && pointFaceAbs.x >= pointFaceAbs.z ? (pointLightToFragment.x >= 0.0 ? 0 : 1) :
             (pointFaceAbs.y >= pointFaceAbs.z ? (pointLightToFragment.y >= 0.0 ? 2 : 3) : (pointLightToFragment.z >= 0.0 ? 4 : 5)); ///< Face order: +X, -X, +Y, -Y, +Z, -Z.
         const int pointShadowLayer = i * kPointShadowFaceCount + pointFace; ///< Dense depth-array layer for this point-light face.
-        const float4 pointLightClip = mul(frame.shadowViewProjs[kPointShadowBase + pointShadowLayer], float4(input.worldPos, 1.0)); ///< Fragment in selected point-face clip space.
+        const float4 pointLightClip = mul(frame.shadowViewProjs[kPointShadowBase + pointShadowLayer], float4(worldPos, 1.0)); ///< Fragment in selected point-face clip space.
         const float pointClipW = abs(pointLightClip.w) > 0.001 ? pointLightClip.w : 0.001; ///< Avoid invalid perspective division at the light origin.
         const float3 pointLightNdc = pointLightClip.xyz / pointClipW; ///< Point face depth remains in 0..1 after divide.
         const float2 pointShadowUv = (pointLightNdc.xy * 0.5) + 0.5; ///< Convert point face NDC XY to shadow texture UVs.
@@ -393,11 +400,11 @@ FragmentOutput fragmentMain(FragmentInput input)
         const float pointShadowBias = perspectiveShadowBias(pointRangeRaw, pointLightClip.w); ///< Convert the world offset at this face-axis distance.
         const float pointShadowPcf = insidePointShadowMap ? pcfShadow(pointShadowArray, pointShadowUv, pointShadowLayer, pointLightNdc.z - pointShadowBias) : 1.0; ///< Filter the selected point-face depth comparisons.
         const float pointShadowFactor = lerp(VVE_SHADOW_OCCLUDED_FACTOR, 1.0, pointShadowPcf); ///< Preserve the existing partial-shadow floor while smoothing its edge.
-        const float3 pointResponse = physicallyBased ? microfacetLight(baseColor, metalness, roughness, normal, viewDir, pointLightDir) : diffuseColor * pointDiffuse + specularColor * pointSpecular;
+        const float3 pointResponse = physicallyBased ? microfacetLight(baseColor, metalness, roughness, normal, viewDir, pointLightDir, flags) : diffuseColor * pointDiffuse + specularColor * pointSpecular;
         pointContribution += pointLight * pointResponse * pointAttenuation * pointShadowFactor; ///< Visibility and existing range falloff apply to either material model.
     }
     const int activeDirectionalLightCount = min(max(int(frame.activeDirectionalLightCount), 0), kMaxDirectionalLights); ///< Clamp scene directional count to the fixed array.
-    const float viewDepth = -mul(frame.view, float4(input.worldPos, 1.0)).z; ///< Camera looks down negative view-space Z, so visible depth is positive.
+    const float viewDepth = -mul(frame.view, float4(worldPos, 1.0)).z; ///< Camera looks down negative view-space Z, so visible depth is positive.
     int debugCascadeIndex = -1;                                      ///< Selected cascade retained only for the optional visualization.
     float3 directionalContribution = float3(0.0);                  ///< Accumulated directional-light response for all active directional lights.
     for (int i = 0; i < kMaxDirectionalLights; ++i) {              ///< Fixed trip count lets the compiler unroll the small directional loop.
@@ -420,7 +427,7 @@ FragmentOutput fragmentMain(FragmentInput input)
             float dirShadowPcf = 1.0;                              ///< Fragments beyond the last split remain fully lit.
             if (dirCascade >= 0) {
                 const int dirShadowLayer = i * kNumShadowCascades + dirCascade; ///< Flattened light-cascade matrix and image layer.
-                const float4 dirLightClip = mul(frame.shadowViewProjs[kDirShadowBase + dirShadowLayer], float4(input.worldPos, 1.0)); ///< Fragment position in the selected cascade.
+                const float4 dirLightClip = mul(frame.shadowViewProjs[kDirShadowBase + dirShadowLayer], float4(worldPos, 1.0)); ///< Fragment position in the selected cascade.
                 const float3 dirLightNdc = dirLightClip.xyz / dirLightClip.w; ///< Directional light depth remains in 0..1 after divide.
                 const float2 dirShadowUv = (dirLightNdc.xy * 0.5) + 0.5; ///< Convert directional light NDC XY to shadow texture UVs.
                 const bool insideDirShadowMap = dirLightNdc.z >= 0.0 && dirLightNdc.z <= 1.0; ///< Reject fragments outside directional light depth coverage.
@@ -429,7 +436,7 @@ FragmentOutput fragmentMain(FragmentInput input)
                 debugCascadeIndex = dirCascade;
             }
             const float dirShadowFactor = lerp(VVE_SHADOW_OCCLUDED_FACTOR, 1.0, dirShadowPcf); ///< Preserve the existing partial-shadow floor while smoothing its edge.
-            const float3 dirResponse = physicallyBased ? microfacetLight(baseColor, metalness, roughness, normal, viewDir, dirSurfaceLightDir) : diffuseColor * dirDiffuse + specularColor * dirSpecular;
+            const float3 dirResponse = physicallyBased ? microfacetLight(baseColor, metalness, roughness, normal, viewDir, dirSurfaceLightDir, flags) : diffuseColor * dirDiffuse + specularColor * dirSpecular;
             directionalContribution += baseColor * dirAmbient + dirLight * dirResponse * dirShadowFactor; ///< Ambient and shadows retain their established controls.
         }
     }
@@ -442,7 +449,7 @@ FragmentOutput fragmentMain(FragmentInput input)
                 spotContribution += baseColor * frame.spotLightConeAmbients[i].w * ambientOcclusion;
                 continue;
             }
-            const float3 spotToLight = frame.spotLightPositionRanges[i].xyz - input.worldPos; ///< Vector from fragment to the spot light.
+            const float3 spotToLight = frame.spotLightPositionRanges[i].xyz - worldPos; ///< Vector from fragment to the spot light.
             const float spotDistance = length(spotToLight);           ///< Fragment-spot distance for falloff.
             const float3 spotLightDir = spotToLight / max(spotDistance, 0.001); ///< Spot surface-to-light vector for direct response.
             const float spotRange = max(frame.spotLightPositionRanges[i].w, 0.001); ///< Positive spot range for stable attenuation.
@@ -456,20 +463,20 @@ FragmentOutput fragmentMain(FragmentInput input)
             const float spotConeFalloff = smoothstep(frame.spotLightConeAmbients[i].y, frame.spotLightConeAmbients[i].x, spotCos); ///< Spot cone angular falloff.
             const float3 spotLight = frame.spotLightColorIntensities[i].rgb * frame.spotLightColorIntensities[i].w; ///< Spot light color scaled by intensity.
             const float spotAmbient = frame.spotLightConeAmbients[i].w * ambientOcclusion; ///< Spot ambient contribution without shadowing.
-            const float4 spotLightClip = mul(frame.shadowViewProjs[kSpotShadowBase + i], float4(input.worldPos, 1.0)); ///< Fragment position in spot light clip space.
+            const float4 spotLightClip = mul(frame.shadowViewProjs[kSpotShadowBase + i], float4(worldPos, 1.0)); ///< Fragment position in spot light clip space.
             const float3 spotLightNdc = spotLightClip.xyz / spotLightClip.w; ///< Spot light depth remains in 0..1 after divide.
             const float2 spotShadowUv = (spotLightNdc.xy * 0.5) + 0.5; ///< Convert spot light NDC XY to shadow texture UVs.
             const bool insideSpotShadowMap = spotLightNdc.z >= 0.0 && spotLightNdc.z <= 1.0; ///< Reject fragments outside spot light depth coverage.
             const float spotShadowBias = perspectiveShadowBias(spotRange, spotLightClip.w); ///< Convert the world offset at this spot-axis distance.
             const float spotShadowPcf = insideSpotShadowMap ? pcfShadow(spotShadowArray, spotShadowUv, i, spotLightNdc.z - spotShadowBias) : 1.0; ///< Filter spotlight comparisons across neighboring texels.
             const float spotShadowFactor = lerp(VVE_SHADOW_OCCLUDED_FACTOR, 1.0, spotShadowPcf); ///< Preserve the existing partial-shadow floor while smoothing its edge.
-            const float3 spotResponse = physicallyBased ? microfacetLight(baseColor, metalness, roughness, normal, viewDir, spotLightDir) : diffuseColor * spotDiffuse + specularColor * spotSpecular;
+            const float3 spotResponse = physicallyBased ? microfacetLight(baseColor, metalness, roughness, normal, viewDir, spotLightDir, flags) : diffuseColor * spotDiffuse + specularColor * spotSpecular;
             spotContribution += baseColor * spotAmbient + spotLight * spotResponse * spotAttenuation * spotConeFalloff * spotShadowFactor;
         }
     }
     float3 litColor = baseColor * ambient + pointContribution + directionalContribution + spotContribution + emissive; ///< Emissive remains visible independently of shadows.
     if (physicallyBased) {
-        const float3 fresnel = fresnelSchlick(saturate(dot(normal, viewDir)), lerp(float3((object.flags & kWaterFlag) != 0 ? 0.02 : 0.04), baseColor, metalness));
+        const float3 fresnel = fresnelSchlick(saturate(dot(normal, viewDir)), lerp(float3((flags & kWaterFlag) != 0 ? 0.02 : 0.04), baseColor, metalness));
         litColor += ambientOcclusion * ((1.0 - fresnel) * diffuseColor * sampleEnvironment(normal, 1.0) +
             fresnel * sampleEnvironment(reflect(-viewDir, normal), roughness)); ///< Sky illumination is independent of authored ambient lights.
     }
@@ -479,6 +486,49 @@ FragmentOutput fragmentMain(FragmentInput input)
             (debugCascadeIndex == 2 ? float3(0.25, 0.25, 1.0) : float3(1.0, 1.0, 0.25))); ///< Red, green, blue, and yellow identify the four cascade regions.
         litColor = lerp(litColor, litColor * cascadeTint, 0.65); ///< Retain scene detail while making cascade boundaries obvious.
     }
-    output.color = float4(applyAtmosphere(litColor, input.worldPos), alpha);
+    return applyAtmosphere(litColor, worldPos);
+}
+
+[shader("fragment")]
+FragmentOutput fragmentMain(FragmentInput input)
+{
+    FragmentOutput output;
+    const GpuMaterial material = materials[object.materialIndex];
+    // Equirectangular lookup; textures are stored bottom-up, so v = 1 is the image's top row (straight up).
+    if ((object.flags & kSkyFlag) != 0) {
+        const float3 d = normalize(input.worldPos);
+        float2 uv = float2(atan2(d.x, -d.z) / (2.0 * kPi) + 0.5, 1.0 - acos(clamp(d.y, -1.0, 1.0)) / kPi);
+        float3 sky = float3(1.0);
+        if (material.baseColorTexture < kMaxSceneTextures) {
+            const float edge = halfTexel(material.baseColorTexture).y;
+            uv.y = clamp(uv.y, edge, 1.0 - edge);                        ///< The repeat sampler must not wrap over the poles.
+            sky = baseColorTextures[material.baseColorTexture].SampleLevel(uv, 0.0).rgb; ///< Level 0 avoids a seam where u wraps.
+        }
+        output.color = float4(sky * material.baseColorFactor.rgb, 1.0);
+        return output;
+    }
+    float alpha;
+    const GBufferOutput surface = evaluateSurface(input, alpha);
+    output.color = float4(shadeSurface(input.worldPos, surface, object.flags & (kUnlitFlag | kWaterFlag)), alpha);
     return output;
+}
+
+/// @brief Opaque geometry writes attributes without evaluating any lights; cut-out still uses the shared material function.
+[shader("fragment")]
+GBufferOutput gbufferMain(FragmentInput input)
+{
+    float alpha;
+    return evaluateSurface(input, alpha);
+}
+
+/// @brief Interpolates every material input at the same coverage sample whose depth will reconstruct its position.
+[shader("fragment")]
+GBufferOutput gbufferMsaaMain(FragmentInput input, uint sampleIndex : SV_SampleIndex)
+{
+    input.worldPos = EvaluateAttributeAtSample(input.worldPos, sampleIndex);
+    input.texCoord = EvaluateAttributeAtSample(input.texCoord, sampleIndex);
+    input.normal = EvaluateAttributeAtSample(input.normal, sampleIndex);
+    input.tangent = EvaluateAttributeAtSample(input.tangent, sampleIndex);
+    float alpha;
+    return evaluateSurface(input, alpha);
 }

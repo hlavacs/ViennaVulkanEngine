@@ -1,6 +1,7 @@
 /** @file @brief Island Air: a Full HD Vulkan-backed VVE example with deterministic flight and landing deliveries. */
 import std;
 import VVEngine;
+import VVE.ExampleSupport;
 import Island.Game;
 
 namespace {
@@ -21,6 +22,7 @@ void usage() {
 		"  --frames N --steps-per-frame N --width N --height N\n"
 		"  --start-island 0..255 --destination 0..255 --deliveries N\n"
 		"  --camera chase|cockpit|showcase|airport --output image.png --verify flight.csv\n"
+		"  --renderer forward|deferred (default forward)\n"
 		"  --asset-dir DIRECTORY (otherwise configure-time downloads beside the executable)");
 }
 
@@ -49,6 +51,7 @@ int main(int argc, char **argv) {
 		if (argument == "--require-delivery") { requireDelivery = true; continue; }
 		if (index + 1 >= argc) { std::cerr << "[island] missing value: " << argument << '\n'; return 1; }
 		const std::string_view value{argv[++index]};
+		if (argument == "--renderer") { continue; } // The common facade helper validates and applies this option before stepping.
 		const std::array integers{std::pair{"--frames", &game.frameLimit}, std::pair{"--steps-per-frame", &game.stepsPerFrame},
 			std::pair{"--width", &width}, std::pair{"--height", &height}, std::pair{"--start-island", &origin},
 			std::pair{"--destination", &destination}, std::pair{"--deliveries", &deliveryGoal}};
@@ -100,6 +103,7 @@ int main(int argc, char **argv) {
 	auto world = engine.world();
 	auto &session = world.get<island::GameSystem>();
 	auto &render = world.get<vve::RenderSystem>();
+	if (!vve::example::selectRenderer(render, argc, argv)) { return 2; }
 	std::ofstream report{};
 	if (!verification.empty()) {
 		if (!verification.parent_path().empty()) { std::filesystem::create_directories(verification.parent_path()); }

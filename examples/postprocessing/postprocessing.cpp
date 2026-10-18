@@ -68,6 +68,7 @@ int main(int argc, char **argv) {
 	}
 
 	auto render = engine.world().get<vve::RenderSystem>();
+	if (!vve::example::selectRenderer(render, argc, argv)) { return 1; }
 
 	// Keep access to the chain and to the library's effect settings.
 	vvppl::PostProcessing *chain{nullptr};
@@ -157,7 +158,7 @@ int main(int argc, char **argv) {
 		vve::math::normalize(vve::math::subtract(vve::Vec3{0.0F, 1.0F, 0.0F}, cameraController.eye.value));
 	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
 	cameraController.pitch = std::asin(startupForward.y);
-	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &cameraController, &renderFps, &chain,
+	engine.world().get<vve::GuiSystem>().draw([&frame, &render, &cameraController, &renderFps, &chain,
 															 &tonemap, &chromatic, &greyscale, &vignette, &grain, &grade, &dither,
 															 &solarize, &sabattier, &emboss, &sobel, &speedLines, &highlight, &segmentation] {
 		ImGui::SetNextWindowSize(ImVec2(280.0F, 420.0F), ImGuiCond_Always);
@@ -241,7 +242,7 @@ int main(int argc, char **argv) {
 
 		ImGui::Text("Frame: %d", frame);
 		ImGui::Text("Render FPS: %.1f", renderFps);
-		ImGui::Text("Renderer: %s", activeRenderer.value.c_str());
+		ImGui::Text("Renderer: %s", render.rendererBackend() == vve::RendererBackend::deferred ? "deferred" : "forward");
 		ImGui::Text("Camera: %.2f, %.2f, %.2f", cameraController.eye.value.x, cameraController.eye.value.y,
 						cameraController.eye.value.z);
 
@@ -258,11 +259,11 @@ int main(int argc, char **argv) {
 
 		// New seed with every frame for the shader - time
 		if (grain) {
-			grain->time = std::chrono::duration<float>(
+			grain->time = maxFrames > 0 ? static_cast<float>(frame) / 60.0F : std::chrono::duration<float>(
 				std::chrono::steady_clock::now() - startTime).count();
 		}
 		if (speedLines) {
-			speedLines->time = std::chrono::duration<float>(
+			speedLines->time = maxFrames > 0 ? static_cast<float>(frame) / 60.0F : std::chrono::duration<float>(
 				std::chrono::steady_clock::now() - startTime).count();
 		}
 
@@ -279,5 +280,6 @@ int main(int argc, char **argv) {
 	}
 
 	std::cout << "[postprocessing] frames=" << frame << '\n';
+	if (!vve::example::captureBounded(render, argc, argv, "postprocessing")) { return 5; }
 	return 0;
 }

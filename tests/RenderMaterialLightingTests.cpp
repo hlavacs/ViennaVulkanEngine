@@ -58,6 +58,7 @@ int main() {
 		if (!file) { return 2; }
 	}
 	auto engine = test::hiddenEngine("render-material-lighting-tests", PixelExtent{96, 96});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 3; }
 	auto &render = engine.renderSystem();
 	render.setCamera(Camera::lookAt(Position{.value = Vec3{0, 0, 3}}, Position{}));

@@ -18,6 +18,19 @@ struct ImageStatistics {
 /// @brief Single-triangle OBJ shared by facade scene-lifetime tests.
 inline constexpr std::string_view triangleObj = "o Triangle\nv 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n";
 
+/// @brief Selects the runtime backend requested by a regression's CTest environment; absent means unchanged default.
+template <typename TRender> void configureRenderer(TRender &render) {
+	const char *configured = std::getenv("VVE_TEST_RENDERER");
+	if (configured == nullptr) { return; }
+	const std::string_view name{configured};
+	if (name != "forward" && name != "deferred") { throw std::invalid_argument{"VVE_TEST_RENDERER must be forward or deferred"}; }
+	const auto backend = name == "deferred" ? RendererBackend::deferred : RendererBackend::forward;
+	if (const auto result = render.setRendererBackend(backend); !result) {
+		throw std::runtime_error{std::format("renderer selection {} failed: {}", name, errorName(result.error()))};
+	}
+	std::println("[VVE.TestSupport] renderer={}", name);
+}
+
 /// @brief Configures an uninitialized simple engine with one hidden forward window named main.
 [[nodiscard]] simple::Engine hiddenEngine(std::string name, PixelExtent extent, MaxFrames max_frames = {}) {
 	return simple::Engine{ApplicationName{name}, max_frames,

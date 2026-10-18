@@ -35,6 +35,7 @@ int main(int argc, char **argv) {
 
 	auto assets = engine.world().get<vve::AssetSystem>();
 	auto render_system = engine.world().get<vve::RenderSystem>();
+	if (!vve::example::selectRenderer(render_system, argc, argv)) { return 1; }
 
 	const auto scene_path = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr, sponzaSceneRelativePath) / sponzaSceneRelativePath;
 	const std::expected<vve::SceneHandle, vve::Error> scene = assets.loadScene(scene_path);
@@ -80,5 +81,6 @@ int main(int argc, char **argv) {
 	}
 
 	std::cout << "[sponza] frames=" << frame << '\n';
+	if (!vve::example::captureBounded(render_system, argc, argv, "sponza")) { return 5; }
 	return 0;
 }

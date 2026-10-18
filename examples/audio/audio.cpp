@@ -5,6 +5,7 @@
 #include <thread>
 
 import VVEngine;
+import VVE.ExampleSupport;
 
 /// @file
 /// @brief A facade-only audio example: no window, Vulkan device or startup script is needed.
@@ -12,13 +13,21 @@ import VVEngine;
 /// @brief Plays two overlapping voices, pauses one, resumes it and stops the loop.
 /// An optional WAV/OGG path replaces the bundled sound; --verify is the bounded CTest path.
 int main(int argc, char **argv) {
-    const bool verify = argc == 2 && std::string_view{argv[1]} == "--verify";
+    bool verify{};
     // argv[0] identifies the executable when launched directly from its folder or by absolute path.
     const auto directory = std::filesystem::absolute(argv[0]).parent_path();
-    const auto path = argc > 1 && !verify ? std::filesystem::path{argv[1]} : directory / "audio/demo.wav";
+    auto path = directory / "audio/demo.wav";
+    // Audio remains windowless; the shared option only exercises renderer selection and querying.
+    for (int index{1}; index < argc; ++index) {
+        const std::string_view argument{argv[index]};
+        if (argument == "--verify") { verify = true; }
+        else if (argument == "--renderer") { ++index; }
+        else { path = argv[index]; }
+    }
 
     vve::Engine engine;
     auto world = engine.world();
+    if (!vve::example::selectRenderer(world.get<vve::RenderSystem>(), argc, argv)) { return 1; }
     auto &audio = world.get<vve::AudioSystem>();
     auto failed = [&audio](std::string_view operation) {
         std::cerr << operation << ": " << audio.lastError() << '\n';

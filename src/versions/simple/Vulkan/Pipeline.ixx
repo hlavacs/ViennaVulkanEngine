@@ -165,9 +165,10 @@ export namespace vve::simple {
 			*
 			* @param owningDevice Logical device that owns the created pipeline layout.
 			* @param setLayout Descriptor-set layout used as set 0 by the graphics pipeline.
+			* @param extraLayout Optional sampled G-buffer layout in set 1 for deferred lighting.
 			* @return VK_SUCCESS when the pipeline layout is available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkDescriptorSetLayout setLayout) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkDescriptorSetLayout setLayout, VkDescriptorSetLayout extraLayout = VK_NULL_HANDLE) {
 			cleanup();
 			if (owningDevice == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
@@ -176,10 +177,11 @@ export namespace vve::simple {
 				.offset = 0U,
 				.size = sizeof(ObjectPushConstants),
 			};
+			const std::array layouts{setLayout, extraLayout}; // Deferred sampled attachments occupy set 1.
 			const VkPipelineLayoutCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-				.setLayoutCount = 1U,
-				.pSetLayouts = &setLayout,
+				.setLayoutCount = extraLayout == VK_NULL_HANDLE ? 1U : 2U,
+				.pSetLayouts = layouts.data(),
 				.pushConstantRangeCount = 1U,
 				.pPushConstantRanges = &modelPushConstants,
 			};
@@ -258,10 +260,15 @@ export namespace vve::simple {
 			* @param textureCapacity Device-selected fragment texture-array specialization; unused by depth-only pipelines.
 			* @param blended True blends colour by source alpha and keeps the depth buffer unchanged (transparent objects).
 			* @param samples Coverage samples matching both forward attachments; shadow pipelines keep one.
+			* @param colorFormats Optional multiple attachment formats for opaque deferred geometry.
+			* @param fragmentEntry Fragment entry matching the selected embedded shader module.
+			* @param fullscreen True omits vertex inputs and depth tests for the lighting triangle.
+			* @param sampleShading True evaluates each coverage sample, requiring sampleRateShading.
 			* @return VK_SUCCESS when the graphics pipeline is available, otherwise a Vulkan error code.
 			*/
 		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkPipelineLayout pipelineLayout, VkShaderModule vertexModule, const char *vertexEntry,
-											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat, std::uint32_t textureCapacity = 0U, bool blended = false, VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT) {
+											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat, std::uint32_t textureCapacity = 0U, bool blended = false, VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT,
+			std::span<const VkFormat> colorFormats = {}, const char *fragmentEntry = "fragmentMain", bool fullscreen = false, bool sampleShading = false) {
 			cleanup();
 			const bool depthOnly{fragmentModule == VK_NULL_HANDLE};
 			if (owningDevice == VK_NULL_HANDLE || pipelineLayout == VK_NULL_HANDLE || vertexModule == VK_NULL_HANDLE || depthAttachmentFormat == VK_FORMAT_UNDEFINED ||
@@ -274,15 +281,15 @@ export namespace vve::simple {
 			const VkSpecializationInfo specialization{1U, &textureCapacityEntry, sizeof(textureCapacity), &textureCapacity};
 			const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{{
 				{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_VERTEX_BIT, .module = vertexModule, .pName = vertexEntry},
-				{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_FRAGMENT_BIT, .module = fragmentModule, .pName = "fragmentMain", .pSpecializationInfo = &specialization},
+				{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_FRAGMENT_BIT, .module = fragmentModule, .pName = fragmentEntry, .pSpecializationInfo = &specialization},
 			}};
 			const VkVertexInputBindingDescription &binding = vertexInput.binding;
 			const auto &attributes = vertexInput.attributes;
 			const VkPipelineVertexInputStateCreateInfo vertexInputState{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-				.vertexBindingDescriptionCount = 1U,
+				.vertexBindingDescriptionCount = fullscreen ? 0U : 1U,
 				.pVertexBindingDescriptions = &binding,
-				.vertexAttributeDescriptionCount = static_cast<std::uint32_t>(attributes.size()),
+				.vertexAttributeDescriptionCount = fullscreen ? 0U : static_cast<std::uint32_t>(attributes.size()),
 				.pVertexAttributeDescriptions = attributes.data(),
 			};
 			const VkPipelineInputAssemblyStateCreateInfo inputAssembly{.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
@@ -297,14 +304,15 @@ export namespace vve::simple {
 			const VkPipelineRasterizationStateCreateInfo rasterizer{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 				.polygonMode = VK_POLYGON_MODE_FILL,
-				.cullMode = static_cast<VkCullModeFlags>(depthOnly ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT),	///< Shadow pass renders all faces because orthoVulkan Y-flip inverts winding.
+				.cullMode = static_cast<VkCullModeFlags>(depthOnly || fullscreen ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT),	///< Shadow pass renders all faces because orthoVulkan Y-flip inverts winding.
 				.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
 				.depthBiasEnable = depthOnly ? VK_TRUE : VK_FALSE,
 				.depthBiasConstantFactor = 1.25F,		///< Constant raster bias suppresses shadow depth quantization acne.
 				.depthBiasSlopeFactor = 1.75F,			///< Slope raster bias protects surfaces viewed obliquely by the light.
 				.lineWidth = 1.0F,
 			};
-			const VkPipelineMultisampleStateCreateInfo multisampling{.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, .rasterizationSamples = samples};
+			const VkPipelineMultisampleStateCreateInfo multisampling{.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, .rasterizationSamples = samples,
+				.sampleShadingEnable = sampleShading ? VK_TRUE : VK_FALSE, .minSampleShading = sampleShading ? 1.0F : 0.0F};
 			const VkPipelineColorBlendAttachmentState colorBlendAttachment{
 				.blendEnable = blended ? VK_TRUE : VK_FALSE,
 				.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA,				///< Colour = src * alpha + dst * (1 - alpha).
@@ -315,22 +323,24 @@ export namespace vve::simple {
 				.alphaBlendOp = VK_BLEND_OP_ADD,
 				.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT,
 			};
+			const std::array blendAttachments{colorBlendAttachment, colorBlendAttachment, colorBlendAttachment};
+			const auto attachmentCount = depthOnly ? 0U : colorFormats.empty() ? 1U : static_cast<std::uint32_t>(colorFormats.size());
 			const VkPipelineColorBlendStateCreateInfo colorBlending{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-				.attachmentCount = depthOnly ? 0U : 1U,
-				.pAttachments = &colorBlendAttachment,
+				.attachmentCount = attachmentCount,
+				.pAttachments = blendAttachments.data(),
 			};
 			const VkPipelineDepthStencilStateCreateInfo depthStencil{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-				.depthTestEnable = VK_TRUE,
-				.depthWriteEnable = blended ? VK_FALSE : VK_TRUE,			///< Transparent surfaces do not hide what is drawn after them.
+				.depthTestEnable = fullscreen ? VK_FALSE : VK_TRUE,
+				.depthWriteEnable = blended || fullscreen ? VK_FALSE : VK_TRUE,			///< Transparent surfaces do not hide what is drawn after them.
 				.depthCompareOp = VK_COMPARE_OP_LESS,
 			};
 			const VkPipelineRenderingCreateInfo renderingInfo{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
-				.colorAttachmentCount = depthOnly ? 0U : 1U,
-				.pColorAttachmentFormats = &colorAttachmentFormat,
-				.depthAttachmentFormat = depthAttachmentFormat,
+				.colorAttachmentCount = attachmentCount,
+				.pColorAttachmentFormats = colorFormats.empty() ? &colorAttachmentFormat : colorFormats.data(),
+				.depthAttachmentFormat = fullscreen ? VK_FORMAT_UNDEFINED : depthAttachmentFormat,
 			};
 			const VkGraphicsPipelineCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,

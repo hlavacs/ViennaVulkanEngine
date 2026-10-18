@@ -65,12 +65,16 @@ int main() {
       if (textureMipLevels({8U, 2U}, features & ~missing) != 1U) { return 2; }
    }
    auto engine = vve::test::hiddenEngine("vulkan-texture-tests", vve::PixelExtent{64U, 64U});
+   vve::test::configureRenderer(engine.renderSystem());
    if (!engine.init() || !engine.renderFrame()) { return 3; }
    auto &renderer = engine.renderSystem().forward();
    VkPhysicalDeviceProperties properties{};
    vkGetPhysicalDeviceProperties(renderer.physicalDevice.physicalDevice, &properties);
    const auto capacity = renderer.textureCapacity();
-   const auto expected_capacity = vve::simple::materialTextureCapacity(properties.limits);
+   const auto forward_capacity = vve::simple::materialTextureCapacity(properties.limits);
+   // Deferred lighting binds three surface images and depth in addition to the shared material/shadow set.
+   const auto expected_capacity = renderer.rendererBackend() == vve::RendererBackend::deferred ?
+      (forward_capacity > 4U ? forward_capacity - 4U : 0U) : forward_capacity;
    const auto material_binding = renderer.descriptorSetLayout.bindings[vve::simple::shaderBinding::baseColorTextures];
    const auto allocated = renderer.objectTextures.size();
    std::println("R6 device_texture_capacity={} expected={} allocated={} descriptor_count={}",

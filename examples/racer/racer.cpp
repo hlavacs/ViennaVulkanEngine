@@ -19,7 +19,7 @@ import Racer.Sound;
  * track, N night, P photo mode (hold the right mouse button to orbit, click a car), F11 fullscreen, Esc pause.
  * Options: --frames N (bounded run, fixed 60 Hz frames, capture and verify at the end), --autopilot (the computer
  * drives the player car), --night, --menu (stay in the main menu), --time-trial, --camera chase|hood|top, --output <png>,
- * --verify <txt>.
+ * --verify <txt>, --renderer forward|deferred, --width N, --height N (default 1280x720).
  */
 namespace {
 
@@ -50,11 +50,20 @@ int main(int argc, char **argv) {
 	options.output = option(argc, argv, "--output", verifyDir / "racer.png");
 	options.verify = option(argc, argv, "--verify", verifyDir / "racer.txt");
 	const auto root = vve::example::assetRoot(argc > 0 ? argv[0] : nullptr, "assets/racer/cars/race.glb");
+	vve::PixelExtent extent{1280, 720}; ///< Optional smaller bounded captures preserve the complete race simulation.
+	// Validate capture dimensions before opening a window or loading game assets.
+	for (const auto &[name, dimension] : std::array{std::pair{"--width", &extent.width}, std::pair{"--height", &extent.height}}) {
+		const auto text = option(argc, argv, name, std::to_string(*dimension)).string();
+		const auto parsed = std::from_chars(text.data(), text.data() + text.size(), *dimension);
+		if (parsed.ec != std::errc{} || parsed.ptr != text.data() + text.size() || *dimension == 0 || *dimension > 7680) {
+			std::cerr << "[racer] invalid dimension: " << name << '\n'; return 1;
+		}
+	}
 
 	auto engine = vve::EngineBuilder<racer::RaceSystem, racer::ViewSystem, racer::SoundSystem>{
 		vve::makeUserSystems(racer::RaceSystem{.options = options}, racer::ViewSystem{.root = root}, racer::SoundSystem{.root = root})}
 		.applicationName("racer")
-		.addWindow(vve::WindowSetup{}.id("main").title("VVE Ring Racer").extent(vve::PixelExtent{.width = 1280, .height = 720}))
+		.addWindow(vve::WindowSetup{}.id("main").title("VVE Ring Racer").extent(extent))
 		.build();
 	auto world = engine.world();
 	auto &view = world.get<racer::ViewSystem>();
@@ -64,6 +73,7 @@ int main(int argc, char **argv) {
 	}
 	auto &race = world.get<racer::RaceSystem>();
 	auto &render = world.get<vve::RenderSystem>();
+	if (!vve::example::selectRenderer(render, argc, argv)) { return 1; }
 	auto &ecs = world.get<vve::ECS>();
 
 	std::ofstream verify{};

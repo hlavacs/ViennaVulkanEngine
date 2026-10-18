@@ -54,6 +54,7 @@ static int checkReleasedSources() {
 /// @brief Verifies canonical paths share one decoded CPU entry and one stable GPU image.
 int main() {
 	auto engine = vve::test::hiddenEngine("render-texture-dedup-tests", vve::PixelExtent{.width = 64, .height = 64});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 1; }
 
 	auto &render = engine.renderSystem();

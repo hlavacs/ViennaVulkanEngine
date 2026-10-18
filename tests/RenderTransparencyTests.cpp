@@ -69,6 +69,7 @@ int main() {
   ]
 })");
 	auto engine = test::hiddenEngine("render-transparency-tests", PixelExtent{.width = 64, .height = 64});
+	vve::test::configureRenderer(engine.renderSystem());
 	auto &render = engine.renderSystem();
 	if (!hasOpacityRoundTrip(render)) { return 1; }
 	const auto scene = engine.assets().loadScene(path);

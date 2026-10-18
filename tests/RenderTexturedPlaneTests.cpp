@@ -24,6 +24,7 @@ int main() {
 	}
 	constexpr int extent = 256;
 	auto engine = test::hiddenEngine("textured-plane-tests", PixelExtent{extent, extent});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 2; }
 	auto &render = engine.renderSystem();
 	// Rotate the XZ plane toward the camera so every tile has the same projected size.

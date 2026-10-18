@@ -16,6 +16,7 @@ import VVEngine.Simple.Renderer;
 /// @brief Keeps rendering usable after a callback throws between ImGui::Begin and ImGui::End.
 int main() {
 	auto engine = vve::test::hiddenEngine("gui-callback-error-tests", vve::PixelExtent{.width = 64, .height = 64});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 1; }
 	engine.renderSystem().setPostProcessSetup([](vvppl::PostProcessing &chain) { chain.addInvert(); });
 	if (!engine.renderFrame() || !engine.gui().ready()) { return 2; }

@@ -15,7 +15,7 @@ target_compile_features(island_delivery_game PUBLIC cxx_std_23)
 target_sources(island_delivery_game PUBLIC FILE_SET CXX_MODULES FILES IslandScene.ixx IslandAirport.ixx IslandSound.ixx IslandMap.ixx IslandGame.ixx)
 target_link_libraries(island_delivery_game PUBLIC island_delivery_logic)
 add_executable(island_delivery island_delivery.cpp)
-target_link_libraries(island_delivery PRIVATE island_delivery_game)
+target_link_libraries(island_delivery PRIVATE island_delivery_game vve_example_support)
 target_compile_definitions(island_delivery PRIVATE VVE_ISLAND_ASSET_DIR="${VVE_ISLAND_ASSET_DIR}")
 add_dependencies(island_delivery ViennaVulkanEngine vve_simple_shaders)
 vve_set_output_dirs(island_delivery)
@@ -32,21 +32,21 @@ if(BUILD_TESTING)
     add_test(NAME IslandDeliveryInvalidOptions COMMAND island_delivery --frames invalid)
     set_tests_properties(IslandDeliveryInvalidOptions PROPERTIES WILL_FAIL TRUE)
     # Advance the full mission through actual simulation steps; only presentation is sampled sparsely.
-    add_test(NAME IslandDeliverySmoke COMMAND island_delivery --frames 3 --hidden --width 640 --height 360
+    vve_add_renderer_example_test(IslandDeliverySmoke island_delivery --frames 3 --hidden --width 640 --height 360
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/start.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/start.csv")
-    add_test(NAME IslandDeliveryAutopilot COMMAND island_delivery --frames 60 --steps-per-frame 240 --autopilot
+    vve_add_renderer_example_test(IslandDeliveryAutopilot island_delivery --frames 60 --steps-per-frame 240 --autopilot
         --require-delivery --hidden --width 640 --height 360
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/delivered.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/delivered.csv")
-    add_test(NAME IslandDeliveryCockpit COMMAND island_delivery --frames 3 --camera cockpit --hidden --width 640 --height 360
+    vve_add_renderer_example_test(IslandDeliveryCockpit island_delivery --frames 3 --camera cockpit --hidden --width 640 --height 360
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/cockpit.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/cockpit.csv")
-    add_test(NAME IslandDeliveryMap COMMAND island_delivery --frames 3 --map --destination 255 --hidden --width 960 --height 640
+    vve_add_renderer_example_test(IslandDeliveryMap island_delivery --frames 3 --map --destination 255 --hidden --width 960 --height 640
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/map.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/map.csv")
-    add_test(NAME IslandDeliveryAirport COMMAND island_delivery --frames 3 --steps-per-frame 120 --camera airport --hidden --width 1280 --height 720
+    vve_add_renderer_example_test(IslandDeliveryAirport island_delivery --frames 3 --steps-per-frame 120 --camera airport --hidden --width 1280 --height 720
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/airport.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/airport.csv")
-    add_test(NAME IslandDeliveryCargoLoop COMMAND island_delivery --frames 60 --steps-per-frame 1200 --autopilot
+    vve_add_renderer_example_test(IslandDeliveryCargoLoop island_delivery --frames 60 --steps-per-frame 1200 --autopilot
         --deliveries 2 --require-delivery --hidden --width 640 --height 360
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/cargo_loop.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/cargo_loop.csv")
-    add_test(NAME IslandDeliveryRemoteAirport COMMAND island_delivery --frames 60 --steps-per-frame 1200 --autopilot
+    vve_add_renderer_example_test(IslandDeliveryRemoteAirport island_delivery --frames 60 --steps-per-frame 1200 --autopilot
         --start-island 254 --require-delivery --hidden --width 640 --height 360
         --output "${CMAKE_CURRENT_BINARY_DIR}/verify/remote.png" --verify "${CMAKE_CURRENT_BINARY_DIR}/verify/remote.csv")
     set_tests_properties(IslandDeliverySmoke IslandDeliveryAutopilot IslandDeliveryCockpit

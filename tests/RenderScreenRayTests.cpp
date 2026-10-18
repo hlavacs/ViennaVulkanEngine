@@ -16,6 +16,7 @@ int main() {
 	constexpr int width = 128;
 	constexpr int height = 64;
 	auto engine = test::hiddenEngine("render-screen-ray-tests", PixelExtent{width, height});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 1; }
 	auto &render = engine.renderSystem();
 	const auto *window = engine.windowSystem().findWindow("main");

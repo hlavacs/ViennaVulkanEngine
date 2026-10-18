@@ -10,6 +10,7 @@ int main() {
 	std::filesystem::create_directories(directory);
 	constexpr int extent = 128;
 	auto engine = test::hiddenEngine("render-transparency-capture-tests", PixelExtent{extent, extent});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 1; }
 	auto &render = engine.renderSystem();
 	// The transparent plane is added first, so the renderer must sort it behind the solid one.

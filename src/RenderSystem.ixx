@@ -79,6 +79,11 @@ export namespace vve {
 		[[nodiscard]] inline auto setObjectSurface(RenderObjectHandle handle, SurfaceMaterial surface) -> std::expected<void, Error> {
 			return impl_.setObjectSurface(handle, surface);
 		}
+		/// @brief Selects all windows' passes before rendering starts; a different backend after startup returns already_initialized.
+		[[nodiscard]] inline auto setRendererBackend(RendererBackend backend) -> std::expected<void, Error> { return impl_.setRendererBackend(backend); } /**< Invalid values return invalid_argument;
+			unsupported devices return platform_error. Before window initialization, capabilities are checked at the first frame. Failed calls preserve the selection. */
+		/// @brief Returns this engine's selected backend; forward is the default.
+		[[nodiscard]] inline auto rendererBackend() const -> RendererBackend { return impl_.rendererBackend(); }
 		/// @brief Selects geometry antialiasing before the first rendered frame; later changes return already_initialized.
 		[[nodiscard]] inline auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error> { return impl_.setAntialiasing(mode); }
 		/// @brief Returns the configured mode, retained across renderer shutdown; GUI and shadow maps remain single-sample.

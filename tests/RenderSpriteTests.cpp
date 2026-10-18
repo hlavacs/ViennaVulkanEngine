@@ -53,6 +53,7 @@ int main() {
 	if (!writeHalfTransparentTga(texture)) { return 1; }
 	constexpr int extent = 128;
 	auto engine = test::hiddenEngine("render-sprite-tests", PixelExtent{extent, extent});
+	vve::test::configureRenderer(engine.renderSystem());
 	auto &render = engine.renderSystem();
 	// CPU: invalid sizes and missing textures fail; equal sizes share one quad, a new colour adds a material.
 	const auto flat = render.addSprite(Vec2{0, 1}, texture);

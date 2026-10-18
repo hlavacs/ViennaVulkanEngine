@@ -67,6 +67,7 @@ int main(int argc, char **argv) {
 	auto world = engine.world();
 	auto assets = world.get<vve::AssetSystem>();
 	auto render = world.get<vve::RenderSystem>();
+	if (!vve::example::selectRenderer(render, argc, argv)) { return 1; }
 
 	// Load the car once and keep its node tree in the render instance.
 	const auto scene = assets.loadScene(root / "assets/hierarchy_car/car.gltf");

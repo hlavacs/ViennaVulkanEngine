@@ -26,7 +26,7 @@ namespace {
 [[nodiscard]] std::filesystem::path pngOutputPath(const std::filesystem::path &textPath) {
 	const auto baseDirectory = textPath.has_parent_path() ? textPath.parent_path() : std::filesystem::current_path();
 	const auto verifyDirectory = baseDirectory.filename() == "verify" ? baseDirectory : baseDirectory / "verify";
-	return verifyDirectory / "light_shadow_debug.png";
+	return verifyDirectory / (textPath.stem().string() + ".png");
 }
 
 /// @brief Adds the debug floor, shadow caster, light marker, and lights through the facade.
@@ -127,6 +127,7 @@ int main(int argc, char **argv) {
 	}
 
 	auto renderSystem = engine.world().get<vve::RenderSystem>();
+	if (!vve::example::selectRenderer(renderSystem, argc, argv)) { return 1; }
 	if (const auto result = loadShadowTestScene(renderSystem); !result) {
 		std::cerr << "[light_shadow_debug] scene load failed: error=" << vve::errorName(result.error()) << '\n';
 		return 2;
@@ -166,7 +167,7 @@ int main(int argc, char **argv) {
 	}
 	output << "engine=" << vve::engineImplementationNamespaceName << '\n';
 	output << "frames=" << maxFrames << '\n';
-	output << "renderer=facade-forward\n";
+	output << "renderer=" << (renderSystem.rendererBackend() == vve::RendererBackend::deferred ? "deferred" : "forward") << '\n';
 	output << "scene_instances=" << renderSystem.sceneInstanceCount() << '\n';
 	output << "scene_meshes=" << renderSystem.sceneMeshCount() << '\n';
 	output << "directional_light=" << renderSystem.hasSceneDirectionalLight() << '\n';

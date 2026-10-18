@@ -15,6 +15,7 @@ import VVEngine.Simple;
 /// @brief Exercises a hidden-window resize, or explicit recreation when the driver ignores it.
 int main() {
 	auto engine = vve::test::hiddenEngine("render-resize-tests", vve::PixelExtent{.width = 64, .height = 64});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 1; }
 	auto &render = engine.renderSystem();
 	// Draw geometry in both pipelines so validation also checks their dynamic state.

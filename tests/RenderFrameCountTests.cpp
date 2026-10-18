@@ -28,6 +28,7 @@ bool checkFrameDecodeRecovery() {
 	if (!writeSource()) { return false; }
 	vve::simple::RenderScene scene; // Declared first so the renderer's borrowed scene survives engine destruction.
 	auto engine = vve::test::hiddenEngine("render-decode-retry", vve::PixelExtent{64, 64});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init() || !engine.renderFrame()) { return false; }
 	auto &render = engine.renderSystem();
 	auto &renderer = render.forward();
@@ -79,6 +80,7 @@ bool checkFacadeFrameFailure() {
 	if (!engine.init()) { return false; }
 	auto world = engine.world();
 	auto &render = world.get<vve::RenderSystem>();
+	vve::test::configureRenderer(render);
 	std::size_t setup_calls{};
 	// Target creation catches this exception and returns platform_error before any frame is acquired or submitted.
 	render.setPostProcessSetup([&](vvppl::PostProcessing &) {
@@ -99,6 +101,7 @@ bool checkFatalFramePropagation() {
 	auto engine = vve::simple::Engine{vve::simple::Windows{.value = {
 		vve::WindowDesc{.id = "a", .extent = {64, 64}, .visible = false},
 		vve::WindowDesc{.id = "b", .extent = {64, 64}, .visible = false}}}};
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init() || !engine.renderFrame()) { return false; }
 	auto &render = engine.renderSystem();
 	auto &renderer = render.forward();
@@ -143,6 +146,7 @@ bool checkMinimizedWindows() {
 	auto engine = vve::simple::Engine{vve::simple::Windows{.value = {
 		vve::WindowDesc{.id = "a", .extent = {64, 64}, .visible = false},
 		vve::WindowDesc{.id = "b", .extent = {64, 64}, .visible = false}}}};
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return false; }
 	auto *a = engine.windowSystem().findWindow("a");
 	auto *b = engine.windowSystem().findWindow("b");
@@ -221,6 +225,7 @@ int main() {
 	// A capped run must present both frames, including the step that reports stopped.
 	{
 		auto run_engine = vve::test::hiddenEngine("render-frame-count-run-tests", vve::PixelExtent{.width = 64, .height = 64}, vve::MaxFrames{2});
+		vve::test::configureRenderer(run_engine.renderSystem());
 		const auto result = run_engine.run();
 		const auto &run_render = run_engine.renderSystem();
 		std::cout << "run error=" << (result ? "none" : vve::errorName(result.error()))
@@ -234,6 +239,7 @@ int main() {
 
 	// Engine::renderFrame initializes the renderer lazily on the hidden SDL window.
 	auto engine = vve::test::hiddenEngine("render-frame-count-tests", vve::PixelExtent{.width = 64, .height = 64});
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 2; }
 	auto &active_render = engine.renderSystem();
 	// Every successful presentation contributes exactly one frame and one rendered window.

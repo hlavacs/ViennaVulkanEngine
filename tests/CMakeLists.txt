@@ -74,7 +74,7 @@ vve_add_engine_test(SimpleForwardRendererTests GPU Vulkan::Vulkan GPUOpen::Vulka
 target_compile_definitions(SimpleForwardRendererTests PRIVATE
    "VVE_TEST_CRATE_TEXTURE=\"${PROJECT_SOURCE_DIR}/assets/game/crate0/diffuse.png\"")
 vve_add_engine_test(RenderFrameCountTests GPU Vulkan::Vulkan vve_test_support)
-vve_add_engine_test(RenderRuntimeUpdateTests GPU Vulkan::Vulkan)
+vve_add_engine_test(RenderRuntimeUpdateTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderResizeTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderAntialiasingTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderEnvironmentTests GPU Vulkan::Vulkan vve_test_support)
@@ -139,6 +139,41 @@ vve_add_engine_test(RenderLightCountTests vve_test_support)
 vve_add_engine_test(RenderCameraCountTests)
 vve_add_engine_test(RenderSceneLightApplyTests vve_test_support)
 vve_add_engine_test(RenderSceneCameraApplyTests vve_test_support)
+
+# One build contains both backends; facade contracts and paired captures choose them at runtime.
+vve_add_engine_test(RendererBackendTests GPU)
+vve_add_engine_test(DeferredRendererTests GPU Vulkan::Vulkan vve_test_support)
+target_compile_definitions(DeferredRendererTests PRIVATE
+   "VVE_TEST_MATERIAL_MODEL=\"${PROJECT_SOURCE_DIR}/tests/assets/render_material_import.obj\"")
+add_test(NAME DeferredRendererMsaaTests COMMAND DeferredRendererTests --msaa4)
+set_tests_properties(RendererBackendTests DeferredRendererTests DeferredRendererMsaaTests PROPERTIES
+   LABELS "gpu;deferred" TIMEOUT 180 RUN_SERIAL TRUE)
+
+# Khronos Profiles overrides actual Vulkan queries, without an engine test hook. Missing SDK layers leave this check unregistered.
+# Schema: KhronosGroup/Vulkan-Profiles; settings: KhronosGroup/Vulkan-Utility-Libraries/docs/layer_configuration.md.
+find_path(VVE_TEST_PROFILES_LAYER_DIR VkLayer_khronos_profiles.json
+   PATHS "${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d" "${VVE_VULKAN_SDK_ROOT}/Bin" NO_DEFAULT_PATH)
+if(VVE_TEST_PROFILES_LAYER_DIR)
+   add_test(NAME RendererBackendUnsupportedTests COMMAND RendererBackendTests --expect-unsupported)
+   set_tests_properties(RendererBackendUnsupportedTests PROPERTIES
+      ENVIRONMENT "VK_LOADER_LAYERS_ENABLE=*validation,*profiles;VK_KHRONOS_PROFILES_PROFILE_DIRS=${CMAKE_CURRENT_SOURCE_DIR}/assets;VK_KHRONOS_PROFILES_PROFILE_NAME=VP_VVE_forward_only;VK_KHRONOS_PROFILES_SIMULATE_CAPABILITIES=SIMULATE_PROPERTIES_BIT;VK_KHRONOS_PROFILES_EMULATE_PORTABILITY=false"
+      ENVIRONMENT_MODIFICATION "VK_ADD_LAYER_PATH=path_list_prepend:${VVE_TEST_PROFILES_LAYER_DIR}"
+      LABELS "gpu;deferred;capabilities" RUN_SERIAL TRUE TIMEOUT 60
+      FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+endif()
+
+# Reuse the existing assertions and assets against deferred rendering, with serialized fixture ownership.
+foreach(renderer_regression IN ITEMS
+   RenderFrameCountTests RenderRuntimeUpdateTests RenderResizeTests RenderAntialiasingTests
+   RenderEnvironmentTests MultiWindowRenderTests RenderShadowOcclusionTests
+   RenderTextureDedupTests RenderTextureOrientationTests RenderTexturedPlaneTests VulkanTextureTests
+   RenderMaterialImportTests RenderLightingCaptureTests RenderMaterialLightingTests RenderSponzaCaptureTests
+   RenderMeshDedupTests GuiCallbackErrorTests GuiColorCaptureTests GuiImageCaptureTests
+   RenderScreenRayTests RenderTransparencyCaptureTests RenderBackgroundColorTests RenderSkyboxTests RenderSpriteTests)
+   add_test(NAME ${renderer_regression}Deferred COMMAND ${renderer_regression})
+   set_tests_properties(${renderer_regression}Deferred PROPERTIES
+      ENVIRONMENT "VVE_TEST_RENDERER=deferred" LABELS "gpu;deferred" RUN_SERIAL TRUE TIMEOUT 180)
+endforeach()
 
 # Run the complete effect chain through the C++ example: the first frame creates every shader pipeline.
 if(TARGET postprocessing)

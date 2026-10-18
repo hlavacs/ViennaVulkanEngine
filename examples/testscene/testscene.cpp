@@ -66,6 +66,7 @@ int main(int argc, char **argv) {
 	}
 
 	auto render = engine.world().get<vve::RenderSystem>();
+	if (!vve::example::selectRenderer(render, argc, argv)) { return 1; }
 	if (const auto result = loadGameScene(render, vve::example::assetRoot(argc > 0 ? argv[0] : nullptr, crateTextureRelativePath)); !result) {
 		std::cerr << "[game] scene load failed: error=" << vve::errorName(result.error()) << '\n';
 		return 2;
@@ -260,12 +261,12 @@ int main(int argc, char **argv) {
 		vve::math::normalize(vve::math::subtract(vve::Vec3{0.0F, 1.0F, 0.0F}, cameraController.eye.value));
 	cameraController.yaw = std::atan2(startupForward.x, -startupForward.z);
 	cameraController.pitch = std::asin(startupForward.y);
-	engine.world().get<vve::GuiSystem>().draw([&frame, &activeRenderer, &directionalLightsEnabled, &pointLightsEnabled,
+	engine.world().get<vve::GuiSystem>().draw([&frame, &render, &directionalLightsEnabled, &pointLightsEnabled,
 															 &spotLightsEnabled, &cameraController, &lightsDirty, &renderFps] {
 		ImGui::Begin("Game");
 		ImGui::Text("Frame: %d", frame);
 		ImGui::Text("Render FPS: %.1f", renderFps);
-		ImGui::Text("Renderer: %s", activeRenderer.value.c_str());
+		ImGui::Text("Renderer: %s", render.rendererBackend() == vve::RendererBackend::deferred ? "deferred" : "forward");
 		ImGui::Text("Directional lights: %zu", directionalLightsEnabled.size());
 		for (std::size_t index{}; index < directionalLightsEnabled.size(); ++index) {
 			const auto label = std::format("Directional {}", index + 1U);
@@ -325,5 +326,6 @@ int main(int argc, char **argv) {
 	}
 
 	std::cout << "[game] frames=" << frame << '\n';
+	if (!vve::example::captureBounded(render, argc, argv, "testscene")) { return 5; }
 	return 0;
 }

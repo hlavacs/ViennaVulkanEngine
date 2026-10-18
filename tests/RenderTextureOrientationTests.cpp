@@ -102,6 +102,7 @@ int main() {
 	if (!writeFixtures(directory)) { return 1; }
 	auto engine = vve::simple::Engine{vve::simple::Windows{.value = {
 		vve::WindowDesc{.id = "main", .extent = {64, 64}, .visible = false}}}};
+	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 2; }
 	const auto *window = engine.windowSystem().findWindow("main");
 	// Engine-created windows must also belong to the SDL registry used by this executable.
