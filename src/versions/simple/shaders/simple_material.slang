@@ -29,6 +29,12 @@ float3 microfacetLight(float3 color, float metalness, float roughness, float3 n,
 /// @brief Filters a panorama over a GGX reflection lobe; roughness one also approximates diffuse sky illumination.
 float3 sampleEnvironment(float3 direction, float roughness)
 {
+    if (physicalSky()) {
+        // Rough lobes approach the mean over their hemisphere, where the ground below the horizon reflects little.
+        const float3 eye = worldEye(), dir = normalize(direction), above = skyLight(eye, float3(0.0, 1.0, 0.0));
+        const float3 mean = lerp(0.15 * above, above, saturate(0.5 + 0.5 * dir.y));
+        return lerp(skyLight(eye, dir), mean, roughness) * frame.environmentLighting.y;
+    }
     if (frame.environmentLighting.x < 0.0) return float3(0.0);
     const uint texture = uint(frame.environmentLighting.x);
     if (texture >= kMaxSceneTextures) return float3(0.0);

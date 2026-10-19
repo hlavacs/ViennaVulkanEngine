@@ -7,7 +7,8 @@ yellow unloading area and remain stopped for two seconds. Then collect the
 next cargo and continue from that island with the same aircraft. Flying over
 the destination never completes a delivery. The default
 window is **1920 × 1080**, with four-sample antialiasing, physically based
-materials, a photographed sky, atmospheric haze, animated ocean, island
+materials, a physical sky with volumetric clouds and four weather presets
+(clear, hazy, overcast, sea fog: `--weather` or the V key), animated ocean, island
 airfields and a downloaded textured twin-prop aircraft. A crisp 24-pixel GUI font
 makes the flight panel, instruments and charts easier to read at Full HD.
 Nearby islands have palm groves, branching broadleaf trees and tropical ground
@@ -84,6 +85,7 @@ and [AUDIO_LICENSE.txt](AUDIO_LICENSE.txt); both accompany packaged assets.
 | Space | Wheel brakes |
 | M | Open/close the optional top-down archipelago chart; flight pauses while it is open |
 | C | Chase, pilot-eye instruments, aircraft showcase camera |
+| V | Next weather: clear, hazy, overcast, sea fog |
 | P | Toggle autopilot through the same physics as manual flight |
 | R | Retry the current job from its departure island |
 | Escape | Pause and sound volume menu |
@@ -143,7 +145,7 @@ Each bounded frame advances two fixed 120 Hz physics steps by default.
 `--steps-per-frame 240` samples two simulated seconds per rendered frame while
 preserving every physics step, making a complete mission practical in tests.
 The autopilot never teleports or bypasses landing checks. `--width`, `--height`,
-`--hidden`, `--no-msaa` and `--camera chase|cockpit|showcase|airport` support repeatable
+`--hidden`, `--no-msaa`, `--weather clear|hazy|overcast|fog` and `--camera chase|cockpit|showcase|airport` support repeatable
 captures. `--help` opens no window. `IslandDeliveryLogicTests` checks flight,
 all 256 island sites, safe/unsafe landings, unloading gates, cargo assignment,
 runway turnarounds, reverse/lateral routes and repeated deliveries without a GPU.

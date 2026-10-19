@@ -363,10 +363,27 @@ export namespace vve {
 
 	/// @brief Height-dependent haze; zero density disables it. Distances use world units, colours are linear.
 	struct AtmosphereSettings {
-		LinearColor color{.value = Vec3{0.65F, 0.75F, 0.85F}}; ///< Colour approached by distant surfaces.
+		LinearColor color{.value = Vec3{0.65F, 0.75F, 0.85F}}; ///< Colour approached by distant surfaces; the enabled SkySettings light the haze instead.
 		Scalar density{}; ///< Extinction per world unit; nonnegative.
 		Scalar height_falloff{}; ///< Density decreases exponentially with height; zero gives uniform haze.
 		Scalar base_height{}; ///< Height at which density is specified.
+	};
+
+	/// @brief Physically based sky with volumetric clouds; the first directional light is its sun.
+	///
+	/// Heights are world units (metres) above y = 0. When enabled it replaces a skybox panorama and the haze colour:
+	/// distant surfaces fade into the sky, physically based materials reflect it, clouds shade the sun, and
+	/// AtmosphereSettings adds weather haze or fog lit by sun and sky. Clouds drift with the animation time.
+	struct SkySettings {
+		bool enabled{false}; ///< False keeps the skybox panorama or the background colour.
+		Scalar intensity{1}; ///< Brightness of sky, clouds and sun disk; one suits a sun light of intensity about 1.5.
+		Scalar haze{1}; ///< Aerosols: 1 clear, 4 hazy, 12 milky; whitens the horizon and widens the glow around the sun.
+		Scalar sun_size{2}; ///< Sun disk radius in multiples of the real sun; zero hides it.
+		Scalar cloud_coverage{}; ///< 0 no clouds, 0.4 scattered, 0.7 broken, 1 overcast.
+		Scalar cloud_base{1200}; ///< Height of the cloud base.
+		Scalar cloud_thickness{1500}; ///< Vertical extent of the cloud layer.
+		Scalar cloud_density{1}; ///< Below one, clouds are thin and translucent.
+		Vec2 wind{10.0F, 3.0F}; ///< Cloud drift along x and z per animation second.
 	};
 
 	/// @brief Explicit animation clock; games supply elapsed seconds for repeatable rendering.

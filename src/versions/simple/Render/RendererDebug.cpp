@@ -1,4 +1,5 @@
 module;
+#include <SDL3/SDL_video.h>
 #include <vulkan/vulkan_core.h>
 #include "../shaders/simple_shared.h"
 
@@ -9,7 +10,8 @@ import VVEngine.Simple.Scene;
 import VVEngine.Simple.Vulkan;
 
 /// @file
-/// @brief ForwardRenderer diagnostics: shadow-depth samples, optional GPU readback, and PNG frame capture.
+/// @brief ForwardRenderer diagnostics: shadow-depth samples, optional GPU readback, PNG frame capture, and the Debug-build
+/// names of G-buffer images, shadow maps, attachments and pipelines that RenderDoc shows.
 
 namespace vve::simple {
 
@@ -145,6 +147,73 @@ namespace vve::simple {
 			return static_cast<std::uint32_t>(std::min<std::uint64_t>(static_cast<std::uint64_t>(uv * static_cast<Scalar>(ShadowMap::resolution)), ShadowMap::resolution - 1U));
 		};
 		return {toTexel(lightNdc.x), toTexel(lightNdc.y)};
+	}
+
+} // namespace vve::simple
+
+namespace vve::simple {
+
+	/// @brief Gives a window's attachments the names RenderDoc shows; the window title tells several windows apart.
+	void ForwardRenderer::nameTargetResources(WindowTarget &target) {
+		if constexpr (!VulkanDebugLabels::compiled) {
+			(void)target;
+		} else {
+			const char *title = target.window != nullptr ? SDL_GetWindowTitle(target.window) : nullptr;
+			const std::string window = title != nullptr && *title != '\0' ? title : std::format("window {}", target.handle.value);
+			static constexpr std::array gbufferContents{"base colour RGB + roughness A", "world normal RGB + metalness A",
+				"emission RGB + AO/flags A"};
+			for (std::size_t index{}; index < target.gbufferImages.size(); ++index) {
+				debugLabels.nameImage(target.gbufferImages[index], std::format("{}: G-buffer {} {}", window, index, gbufferContents[index]));
+			}
+			debugLabels.nameImage(target.depthImage, std::format("{}: depth D32", window));
+			debugLabels.nameImage(target.hdrImage, std::format("{}: HDR colour", window));
+			debugLabels.nameImage(target.msaaImage, std::format("{}: HDR colour 4x MSAA", window));
+			for (std::size_t index{}; index < target.swapchain.images.size(); ++index) {
+				debugLabels.name(VK_OBJECT_TYPE_IMAGE, target.swapchain.images[index], std::format("{}: swapchain image {}", window, index));
+			}
+			for (std::size_t index{}; index < target.commandBuffers.ownedCommandBuffers.size(); ++index) {
+				const VkCommandBuffer commands{target.commandBuffers.ownedCommandBuffers[index]};
+				debugLabels.name(VK_OBJECT_TYPE_COMMAND_BUFFER, commands, std::format("{}: frame slot {} commands", window, index));
+			}
+			debugLabels.name(VK_OBJECT_TYPE_DESCRIPTOR_SET, target.deferredSet, std::format("{}: G-buffer and depth inputs of lighting", window));
+		}
+	}
+
+	/// @brief Names a shadow array and each layer after the light and cascade or cube face it holds.
+	void ForwardRenderer::nameShadowMap(const ShadowMap &map) {
+		if constexpr (!VulkanDebugLabels::compiled) {
+			(void)map;
+		} else {
+			const bool directional = &map == &dirShadowArray, point = &map == &pointShadowArray;
+			const std::string kind = directional ? "directional" : point ? "point" : "spot";
+			const std::string whole = std::format("Shadow map {}: {} layer{}{}", kind, map.layerCount, map.layerCount == 1U ? "" : "s",
+				directional ? std::format(", {} cascades per light", kNumShadowCascades) : point ? ", 6 cube faces per light" : ", 1 per light");
+			debugLabels.name(VK_OBJECT_TYPE_IMAGE, map.image, whole);
+			debugLabels.name(VK_OBJECT_TYPE_IMAGE_VIEW, map.imageView, whole + " (array view)");
+			debugLabels.name(VK_OBJECT_TYPE_SAMPLER, map.shadowSampler, std::format("Shadow map {} comparison sampler", kind));
+			static constexpr std::array faces{"+X", "-X", "+Y", "-Y", "+Z", "-Z"};
+			for (std::size_t layer{}; layer < map.layerViews.size(); ++layer) {
+				const std::string what = directional ? std::format("light {} cascade {}", layer / kNumShadowCascades, layer % kNumShadowCascades)
+					: point ? std::format("light {} face {}", layer / pointShadowFaceCount, faces[layer % pointShadowFaceCount])
+					: std::format("light {}", layer);
+				debugLabels.name(VK_OBJECT_TYPE_IMAGE_VIEW, map.layerViews[layer], std::format("Shadow map {}: {}", kind, what));
+			}
+		}
+	}
+
+	/// @brief Names shader modules and pipelines, so RenderDoc's pipeline state view says which pass is bound.
+	void ForwardRenderer::namePipelines() {
+		if constexpr (VulkanDebugLabels::compiled) {
+			const std::array<std::pair<VkShaderModule, const char *>, 6U> modules{{{vertShaderModule.shaderModule, "Forward vertex shader"},
+				{fragShaderModule.shaderModule, "Forward fragment shader"}, {shadowShaderModule.shaderModule, "Shadow vertex shader"},
+				{gbufferShader.shaderModule, "G-buffer fragment shader"}, {lightingVertexShader.shaderModule, "Deferred lighting vertex shader"},
+				{lightingShader.shaderModule, "Deferred lighting fragment shader"}}};
+			for (const auto &[module, text] : modules) { debugLabels.name(VK_OBJECT_TYPE_SHADER_MODULE, module, text); }
+			const std::array<std::pair<VkPipeline, const char *>, 5U> pipelines{{{graphicsPipeline.pipeline, "Forward opaque pipeline"},
+				{transparentPipeline.pipeline, "Forward transparent pipeline"}, {shadowPipeline.pipeline, "Shadow depth pipeline"},
+				{gbufferPipeline.pipeline, "G-buffer pipeline"}, {lightingPipeline.pipeline, "Deferred lighting pipeline"}}};
+			for (const auto &[pipeline, text] : pipelines) { debugLabels.name(VK_OBJECT_TYPE_PIPELINE, pipeline, text); }
+		}
 	}
 
 } // namespace vve::simple

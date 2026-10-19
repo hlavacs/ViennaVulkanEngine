@@ -13,8 +13,6 @@ the two original propeller nodes are animated by the game.
 Photographs and scanned materials from Poly Haven, CC0 1.0 Universal:
 https://polyhaven.com/license
 https://creativecommons.org/publicdomain/zero/1.0/
-sky.jpg: Kloofendal 48d Partly Cloudy (Pure Sky).
-https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky
 grass.jpg: Leafy Grass. https://polyhaven.com/a/leafy_grass
 sand.jpg: Coast Sand 01. https://polyhaven.com/a/coast_sand_01
 rock.jpg: Rock Face. https://polyhaven.com/a/rock_face

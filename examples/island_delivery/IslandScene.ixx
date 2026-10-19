@@ -12,6 +12,8 @@ export namespace island {
 	[[nodiscard]] auto groundMeshBatches(vve::Vec3, bool) -> std::array<vve::MeshDescriptor,18>;
 	[[nodiscard]] auto buildEnvironment(vve::RenderSystem &, vve::AssetSystem &, const std::filesystem::path &)
 		-> std::expected<void, vve::Error>;
+	inline constexpr std::array<std::string_view, 4> weatherNames{"clear", "hazy", "overcast", "fog"}; ///< Presets of --weather and the V key.
+	[[nodiscard]] auto setWeather(vve::RenderSystem &, std::size_t) -> std::expected<void, vve::Error>;
 	[[nodiscard]] auto updateEnvironment(vve::RenderSystem &, const std::filesystem::path &, vve::Vec3,
 		std::map<std::size_t,vve::Vector<vve::RenderObjectHandle>> &, vve::Vector<vve::RenderObjectHandle> &)
 		-> std::expected<void, vve::Error>;
@@ -383,13 +385,22 @@ namespace island {
 		} }
 		for (auto &mesh : meshes) { mesh.transform=scenery::at(centre); } return meshes;
 	}
-	/// @brief Sets shared sky, sunlight, haze and the calm horizon; nearby islands and waves stream separately.
+	/// @brief Applies a weather preset: physical sky, clouds and haze. Clouds shade the sun, so the sun light stays the same.
+	auto setWeather(vve::RenderSystem &render, std::size_t preset) -> std::expected<void, vve::Error> {
+		const std::array<std::pair<vve::SkySettings, vve::AtmosphereSettings>, weatherNames.size()> presets{{
+			{{.enabled=true,.cloud_coverage=0.35F,.cloud_base=900,.cloud_thickness=1100}, {.density=0.00003F,.height_falloff=0.003F}},
+			{{.enabled=true,.haze=5,.cloud_coverage=0.2F,.cloud_base=2200,.cloud_thickness=500,.cloud_density=0.5F}, {.density=0.00015F,.height_falloff=0.002F}},
+			{{.enabled=true,.haze=3,.cloud_coverage=1,.cloud_base=450,.cloud_thickness=900,.cloud_density=1.3F}, {.density=0.00012F,.height_falloff=0.002F}},
+			{{.enabled=true,.haze=2,.cloud_coverage=0.45F,.cloud_base=1400,.cloud_thickness=900}, {.density=0.0025F,.height_falloff=0.015F}}}}; // Sea fog
+		const auto &[sky, haze] = presets[preset % presets.size()];
+		if (auto result = render.setSky(sky); !result) { return result; }
+		return render.setAtmosphere(haze);
+	}
+	/// @brief Sets sunlight, materials and the calm horizon; weather, nearby islands and waves are set separately.
 	auto buildEnvironment(vve::RenderSystem &render, vve::AssetSystem &assets, const std::filesystem::path &root)
 		-> std::expected<void,vve::Error> {
-		using namespace scenery; (void)assets; // Scenery meshes use the facade's direct authoring API.
-		if (const auto result = render.setSkybox(root/"sky.jpg"); !result) { return result; }
+		using namespace scenery; (void)assets; (void)root; // Scenery meshes use the facade's direct authoring API.
 		if (const auto result = render.setMaterialLighting(vve::MaterialLighting::physically_based); !result) { return result; }
-		if (const auto result = render.setAtmosphere({.color={.value={0.55F,0.67F,0.72F}},.density=0.00017F,.height_falloff=0.006F,.base_height=0}); !result) { return result; }
 		render.setDirectionalLight({.value={-0.45F,-0.74F,0.28F}},{.value={1.0F,0.95F,0.85F}},{.value=1.4F},{.value={0.07F,0.10F,0.13F}});
 		const auto ocean = render.addOcean({.half_extent={60000,60000},.color={.value={0.018F,0.16F,0.19F}},
 			.wave_height=0,.wavelength=48,.speed=0.8F,.position={.value={18000,-0.52F,-18000}}});

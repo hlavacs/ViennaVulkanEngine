@@ -21,6 +21,19 @@ namespace vve::simple {
 	/// @brief Reads the configured haze; defaults preserve the original renderer's pixels.
 	auto RenderSystem::atmosphere() const -> AtmosphereSettings { return renderer_.atmosphere(); }
 
+	/// @brief Validates the physical sky before committing it; it is renderer state, so clearScene keeps it.
+	auto RenderSystem::setSky(SkySettings settings) -> std::expected<void, Error> {
+		const auto &s = settings;
+		const std::array values{s.intensity, s.haze, s.sun_size, s.cloud_coverage, s.cloud_base, s.cloud_thickness, s.cloud_density, s.wind.x, s.wind.y};
+		if (!std::ranges::all_of(values, [](Scalar value) { return std::isfinite(value); }) || s.intensity < 0 || s.haze < 0 || s.sun_size < 0 ||
+			s.cloud_coverage < 0 || s.cloud_coverage > 1 || s.cloud_thickness <= 0 || s.cloud_density < 0) { return std::unexpected(Error::invalid_argument); }
+		renderer_.setSky(settings);
+		return {};
+	}
+
+	/// @brief Reads the physical sky settings.
+	auto RenderSystem::sky() const -> SkySettings { return renderer_.sky(); }
+
 	/// @brief Sets elapsed animation seconds; no wall-clock dependency is hidden in frame recording.
 	auto RenderSystem::setAnimationTime(AnimationTime time) -> std::expected<void, Error> {
 		if (!std::isfinite(time.seconds) || time.seconds < 0 || time.seconds > std::numeric_limits<float>::max()) {

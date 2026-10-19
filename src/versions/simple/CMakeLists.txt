@@ -23,6 +23,7 @@ target_sources(ViennaVulkanEngine
          Vulkan/Handle.ixx
          Vulkan/Memory.ixx
          Vulkan/Device.ixx
+         Vulkan/DebugLabels.ixx
          Vulkan/Commands.ixx
          Vulkan/Presentation.ixx
          Vulkan/Pipeline.ixx
@@ -92,6 +93,7 @@ foreach(NAME ENTRY STAGE IN ZIP_LISTS VVE_SIMPLE_SHADER_NAMES VVE_SIMPLE_SHADER_
       # Slang preserves unchanged outputs; still rebuild the embedding unit after a source touch.
       COMMAND "${CMAKE_COMMAND}" -E touch "${HEADER}"
       DEPENDS "${SHADER}" "${VVE_SIMPLE_FORWARD_SHADER}" "${VVE_SIMPLE_SHARED_SHADER_HEADER}" "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_material.slang"
+         "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_atmosphere.slang"
       COMMENT "Embedding simple forward ${ENTRY} shader"
       VERBATIM
    )

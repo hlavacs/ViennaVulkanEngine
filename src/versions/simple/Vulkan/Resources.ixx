@@ -417,10 +417,14 @@ export namespace vve::simple {
 		Mat4 inverseViewProjection{};                                                   ///< World reconstruction from Vulkan NDC depth 0..1.
 		Vec4 viewport{};                                                               ///< Drawable width/height, remaining components reserved.
 		Vec4 environmentLighting{-1, 1, 0, 0};                                          ///< Panorama texture slot (-1 absent), strength, GGX enabled, unused.
+		Vec4 skySun{};                                                                  ///< Direction towards the sun and its irradiance; w = 0 disables the physical sky.
+		Vec4 skyParams{0, 0, -1, 0};                                                    ///< Aerosol amount, sun disk radius in radians, sun's directional light index, unused.
+		Vec4 cloudLayer{};                                                              ///< Cloud base, thickness, coverage, extinction per metre at full density.
+		Vec4 cloudWind{};                                                               ///< Wind offset of the cloud pattern along x and z, unused, unused.
 	};
 	/// Matrices are 64 bytes and vectors 16 bytes in the shader; a double Scalar (VVE_MATH_USE_DOUBLE) would break the std140 mirror.
 	static_assert(sizeof(FrameUniforms) == (3U + kShadowMatrixCount) * 64U +
-		(1U + 2U * kMaxShadowedPointLights + 4U * kMaxShadowedSpotLights + 3U * kMaxDirectionalLights + 5U) * 16U);
+		(1U + 2U * kMaxShadowedPointLights + 4U * kMaxShadowedSpotLights + 3U * kMaxDirectionalLights + 9U) * 16U);
 
 	/// @brief One mapped FrameUniforms buffer per frame in flight.
 	struct VulkanUniformBuffers {

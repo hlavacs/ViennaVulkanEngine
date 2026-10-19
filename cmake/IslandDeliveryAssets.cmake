@@ -37,10 +37,6 @@ endfunction()
 
 # Photographs and surface scans: Poly Haven, CC0 (https://polyhaven.com/license).
 # The aircraft and upstream license are pinned to the same Cesium commit.
-vve_island_asset(sky.jpg
-    "https://dl.polyhaven.org/file/ph-assets/HDRIs/extra/Tonemapped%20JPG/kloofendal_48d_partly_cloudy_puresky.jpg"
-    2bdd7abe32f1d2f7a626e0a6e45bb808313f29bd41d758eacbdba91560e93f04)
-
 vve_island_asset(grass.jpg
     "https://dl.polyhaven.org/file/ph-assets/Textures/jpg/1k/leafy_grass/leafy_grass_diff_1k.jpg"
     cfa40bc9d9417d1852db8753a8d5917f110c40101179f63543c382e39bc05e4a)

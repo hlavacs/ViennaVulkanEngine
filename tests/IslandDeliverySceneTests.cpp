@@ -31,18 +31,16 @@ void check(bool condition, std::string_view name) {
 	check(nodes && nodes->size()==2U,"two_public_propeller_pivots");
 	return *nodes;
 }
-/** @brief Checks the environment's asset errors, lighting and bounded batch counts without initializing a renderer. */
+/** @brief Checks the environment's weather, lighting and bounded batch counts without initializing a renderer. */
 void environment(vve::RenderSystem &render, vve::AssetSystem &assets, const std::filesystem::path &root) {
-	const auto missing=island::buildEnvironment(render,assets,root/"nonexistent-scene-test-directory");
-	check(!missing && missing.error()==vve::Error::io_error,"missing_panorama_reports_io_error");
-	check(render.sceneMeshCount()==0 && render.renderedFrameCount()==0,"missing_sky_has_no_geometry_or_frames");
 	const auto result=island::buildEnvironment(render,assets,root);
-	check(result.has_value(),"downloaded_environment_builds");
+	check(result.has_value() && island::setWeather(render,2).has_value() && render.sky().cloud_coverage==1,"environment_and_overcast_weather");
+	check(island::setWeather(render,0).has_value() && render.sky().enabled && render.sky().cloud_coverage<1,"clear_weather_physical_sky");
 	check(render.materialLighting()==vve::MaterialLighting::physically_based,"physically_based_lighting");
 	check(render.atmosphere().density>0 && render.atmosphere().height_falloff>0,"height_dependent_coastal_haze");
 	check(render.sceneDirectionalLightCount()==1 && render.scenePointLightCount()==0,"one_sun_without_fake_point_lights");
-	check(render.sceneMeshCount()==2 && render.sceneInstanceCount()==2,"static_setup_defers_island_geometry");
-	check(render.sceneTextureCount()==1 && render.renderedFrameCount()==0,"static_panorama_needs_no_gpu_frames");
+	check(render.sceneMeshCount()==1 && render.sceneInstanceCount()==1,"static_setup_defers_island_geometry");
+	check(render.sceneTextureCount()==0 && render.renderedFrameCount()==0,"sky_needs_no_texture_or_gpu_frames");
 	std::println("[IslandDeliverySceneTests] meshes={} materials={} textures={} vertices={} indices={} haze={}",
 		render.sceneMeshCount(),render.sceneMaterialCount(),render.sceneTextureCount(),render.sceneVertexCount(),
 		render.sceneIndexCount(),render.atmosphere().density);

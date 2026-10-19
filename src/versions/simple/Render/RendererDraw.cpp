@@ -1,4 +1,5 @@
 module;
+#include <SDL3/SDL_video.h>
 #include <vulkan/vulkan_core.h>
 #include <VVPPL.h>
 
@@ -161,6 +162,18 @@ namespace vve::simple {
 		const auto haze = atmosphere_.color.value;
 		frameUniforms_.fogColorDensity = {haze.x, haze.y, haze.z, atmosphere_.density};
 		frameUniforms_.fogHeightTime = {atmosphere_.base_height, atmosphere_.height_falloff, static_cast<float>(animation_time_.seconds), 0};
+		if (sky_.enabled) {
+			// The first lit directional light is the sun; without one the sky is lit from straight above and shows no disk.
+			const auto lights = std::span{frameUniforms_.directionalLightDirections}.first(frameUniforms_.activeDirectionalLightCount);
+			const auto sun = std::ranges::find_if(lights, [](const Vec4 &light) { return light.w == zero(); });
+			const Vec3 towardsSun = sun == lights.end() ? Vec3{zero(), one(), zero()} : normalize(Vec3{-sun->x, -sun->y, -sun->z});
+			// Wind offsets wrap after 1500 km, far beyond the noise features, so long sessions keep float precision.
+			const auto drift = [this](Scalar wind) { return static_cast<float>(std::fmod(-wind * animation_time_.seconds, 1.5e6)); };
+			frameUniforms_.skySun = {towardsSun.x, towardsSun.y, towardsSun.z, sky_.intensity * 15.0F};
+			frameUniforms_.skyParams = {sky_.haze, sun == lights.end() ? zero() : sky_.sun_size * 0.00465F, static_cast<float>(sun - lights.begin()), 0};
+			frameUniforms_.cloudLayer = {sky_.cloud_base, sky_.cloud_thickness, sky_.cloud_coverage, sky_.cloud_density * 0.04F};
+			frameUniforms_.cloudWind = {drift(sky_.wind.x), drift(sky_.wind.y), 0, 0};
+		}
 		result = target.uniformBuffers.update(target.currentFrame, frameUniforms_);
 		if (result != VK_SUCCESS) { return reportFrameFailure("uniform update", result); }
 		// Prepare only the GUI-owning window; no draw data means no GUI pass or attachment transition.
@@ -286,6 +299,12 @@ namespace vve::simple {
 		const VkCommandBufferBeginInfo beginInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 		result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
 		if (result != VK_SUCCESS) { return result; }
+		// Debug builds wrap every pass in a labelled region, which RenderDoc's event browser shows as a tree.
+		debugLabels.startFrame();
+		if constexpr (VulkanDebugLabels::compiled) {
+			const char *title = target.window != nullptr ? SDL_GetWindowTitle(target.window) : nullptr;
+			debugLabels.begin(commandBuffer, std::format("Frame: {}", title != nullptr && *title != '\0' ? title : "window"), DebugLabelKind::forward);
+		}
 
 		std::vector<DrawItem> items{};
 		const Vec3 eye{(target.camera ? *target.camera : camera_).position.value}; // Sorts transparent items by distance.
@@ -293,7 +312,7 @@ namespace vve::simple {
 		if (renderInstances_ != nullptr) {
 			items.reserve(renderInstances_->size());
 			for (const RenderInstance &instance : *renderInstances_) {
-				if (!instance.visible) { continue; }
+				if (!instance.visible || (instance.sky && sky_.enabled)) { continue; } // The physical sky replaces a panorama.
 				const auto uploaded = meshes.find(instance.mesh);
 				const auto material = materialSlots_.find(instance.material);
 				if (uploaded == meshes.end() || material == materialSlots_.end()) { continue; }
@@ -316,6 +335,9 @@ namespace vve::simple {
 					items.back().worldBounds.maximum.value.y += instance.waves.x;
 				}
 			}
+		}
+		if (sky_.enabled) {
+			items.push_back({.mesh = &skyMesh, .vertices = skyMesh.vertexBuffer.buffer, .object = {.model = identityMat4(), .flags = objectFlag::sky}, .sky = true});
 		}
 		// Order: solid (by mesh), sky, transparent (far to near).
 		const auto group = [](const DrawItem &item) { return item.transparent ? 2 : item.sky ? 1 : 0; };
@@ -354,7 +376,8 @@ namespace vve::simple {
 		// Only shadow-casting layers are cleared and drawn; inactive layers retain their shader-read layout.
 		const VkClearValue shadowClear{.depthStencil = {.depth = 1.0F, .stencil = 0U}};
 		bool shadowPipelineBound{}; // Bind state belongs to this command buffer, independently of frame diagnostics.
-		const auto recordShadowLayer = [&](const ShadowMap &map, std::uint32_t layer, std::uint32_t matrixIndex, RecordedPass pass) {
+		const auto recordShadowLayer = [&](const ShadowMap &map, std::uint32_t layer, std::uint32_t matrixIndex, RecordedPass pass, std::string_view label) {
+			debugLabels.begin(commandBuffer, label, DebugLabelKind::shadow);
 			// One shadow pipeline/set and viewport serve every light type and layer.
 			if (!shadowPipelineBound) {
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline.pipeline);
@@ -413,6 +436,7 @@ namespace vve::simple {
 			};
 			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 										0U, 0U, nullptr, 0U, nullptr, 1U, &readBarrier);
+			debugLabels.end(commandBuffer);
 		};
 		const auto recordShadowMap = [&](const ShadowMap &map, std::uint32_t activeLights, std::uint32_t layersPerLight,
 			std::size_t matrixBase, RecordedPass pass, std::span<const Vec4> directions = {}) {
@@ -421,13 +445,21 @@ namespace vve::simple {
 				if (!directions.empty() && directions[light].w != zero()) { continue; }
 				for (std::uint32_t face{}; face < layersPerLight; ++face) {
 					const std::uint32_t layer{light * layersPerLight + face};
-					recordShadowLayer(map, layer, static_cast<std::uint32_t>(matrixBase + layer), pass);
+					std::string label{};
+					if constexpr (VulkanDebugLabels::compiled) {
+						label = pass == RecordedPass::directional_shadow ? std::format("Shadow: directional light {} cascade {}", light, face)
+							: pass == RecordedPass::point_shadow ? std::format("Shadow: point light {} face {}", light, std::array{"+X", "-X", "+Y", "-Y", "+Z", "-Z"}[face % 6U])
+							: std::format("Shadow: spot light {}", light);
+					}
+					recordShadowLayer(map, layer, static_cast<std::uint32_t>(matrixBase + layer), pass, label);
 				}
 			}
 		};
+		debugLabels.begin(commandBuffer, "Shadow maps", DebugLabelKind::shadow);
 		recordShadowMap(dirShadowArray, frameUniforms_.activeDirectionalLightCount, kNumShadowCascades, kShadowMatrixDirBase, RecordedPass::directional_shadow, frameUniforms_.directionalLightDirections);
 		recordShadowMap(spotShadowArray, frameUniforms_.activeSpotLightCount, 1U, kShadowMatrixSpotBase, RecordedPass::spot_shadow, frameUniforms_.spotLightDirections);
 		recordShadowMap(pointShadowArray, frameUniforms_.activePointLightCount, pointShadowFaceCount, kShadowMatrixPointBase, RecordedPass::point_shadow);
+		debugLabels.end(commandBuffer);
 
 		const VkImageSubresourceRange colorRange{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole swapchain image.
 		const VkImageSubresourceRange depthRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole depth image.
@@ -527,11 +559,13 @@ namespace vve::simple {
 			geometry.pColorAttachments = attributes.data();
 			geometry.pDepthAttachment = &geometryDepth;
 			recordedPassOrder.push_back(RecordedPass::gbuffer);
+			debugLabels.begin(commandBuffer, "G-buffer: base + roughness, normal + metalness, emission + AO, depth", DebugLabelKind::geometry);
 			vkCmdBeginRendering(commandBuffer, &geometry);
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gbufferPipeline.pipeline);
 			++lastFrameDrawStats_.pipelineBinds;
 			drawUploadedObjects(0U, false, viewProjection, RecordedPass::gbuffer);
 			vkCmdEndRendering(commandBuffer);
+			debugLabels.end(commandBuffer);
 
 			// Publish every stored sample and its corresponding depth before the fullscreen shader reads them.
 			std::array<VkImageMemoryBarrier, 4U> reads{};
@@ -555,6 +589,7 @@ namespace vve::simple {
 			lighting.pColorAttachments = &litColour;
 			lighting.pDepthAttachment = nullptr;
 			recordedPassOrder.push_back(RecordedPass::deferred_lighting);
+			debugLabels.begin(commandBuffer, "Deferred lighting", DebugLabelKind::lighting);
 			vkCmdBeginRendering(commandBuffer, &lighting);
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, lightingPipeline.pipeline);
 			++lastFrameDrawStats_.pipelineBinds;
@@ -562,6 +597,7 @@ namespace vve::simple {
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deferredPipelineLayout.pipelineLayout, 0U, 2U, sets.data(), 0U, nullptr);
 			vkCmdDraw(commandBuffer, 3U, 1U, 0U, 0U);
 			vkCmdEndRendering(commandBuffer);
+			debugLabels.end(commandBuffer);
 
 			// Restore opaque depth for the sky and transparency; retain individual HDR samples until their final resolve.
 			auto depthRestore = reads[3];
@@ -586,19 +622,23 @@ namespace vve::simple {
 			compose.pColorAttachments = &composeColour;
 			compose.pDepthAttachment = &composeDepth;
 			recordedPassOrder.push_back(RecordedPass::forward_transparency);
+			debugLabels.begin(commandBuffer, "Sky and transparency", DebugLabelKind::forward);
 			vkCmdBeginRendering(commandBuffer, &compose);
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
 			++lastFrameDrawStats_.pipelineBinds;
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &target.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
 			drawUploadedObjects(0U, false, viewProjection, RecordedPass::forward_transparency);
 			vkCmdEndRendering(commandBuffer);
+			debugLabels.end(commandBuffer);
 		} else {
 			recordedPassOrder.push_back(RecordedPass::forward_color);
+			debugLabels.begin(commandBuffer, "Forward colour", DebugLabelKind::forward);
 			vkCmdBeginRendering(commandBuffer, &renderingInfo);
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
 			++lastFrameDrawStats_.pipelineBinds;
 			drawUploadedObjects(0U, false, viewProjection);
 			vkCmdEndRendering(commandBuffer);
+			debugLabels.end(commandBuffer);
 		}
 
 		// Both images need Layout GENERAL because HDR image gets read and Swapchain image gets written
@@ -633,6 +673,7 @@ namespace vve::simple {
 							static_cast<std::uint32_t>(postBarriers.size()), postBarriers.data());
 
 		
+		debugLabels.begin(commandBuffer, target.postProcess ? "Post-processing" : "HDR to swapchain blit", DebugLabelKind::post);
 		if (target.postProcess) {
 			recordedPassOrder.push_back(RecordedPass::post_process);
 			target.postProcess->apply(commandBuffer, target.hdrImage.image, target.swapchain.images[imageIndex], frameIndex);
@@ -647,6 +688,7 @@ namespace vve::simple {
 			vkCmdBlitImage(commandBuffer, target.hdrImage.image, VK_IMAGE_LAYOUT_GENERAL,
 								target.swapchain.images[imageIndex], VK_IMAGE_LAYOUT_GENERAL, 1U, &blit, VK_FILTER_NEAREST);
 		}
+		debugLabels.end(commandBuffer);
 
 		// ImGui stays on its owning window and loads the attachment only when vertices need drawing.
 		if (drawGui) {
@@ -679,9 +721,11 @@ namespace vve::simple {
 				.pColorAttachments = &guiAttachment,
 			};
 			recordedPassOrder.push_back(RecordedPass::gui);
+			debugLabels.begin(commandBuffer, "GUI", DebugLabelKind::gui);
 			vkCmdBeginRendering(commandBuffer, &guiRenderingInfo);
 			guiRecord_(commandBuffer);
 			vkCmdEndRendering(commandBuffer);
+			debugLabels.end(commandBuffer);
 		}
 
 		const VkImageMemoryBarrier presentBarrier{
@@ -696,6 +740,7 @@ namespace vve::simple {
 		};
 		vkCmdPipelineBarrier(commandBuffer, drawGui ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT,
 									VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &presentBarrier);
+		if constexpr (VulkanDebugLabels::compiled) { debugLabels.end(commandBuffer); } // Frame
 		result = vkEndCommandBuffer(commandBuffer);
 		if (result != VK_SUCCESS) { return result; }
 

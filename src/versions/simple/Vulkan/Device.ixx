@@ -54,6 +54,7 @@ export namespace vve::simple {
 		VulkanInstance(const VulkanInstance &) = delete;
 		VulkanInstance &operator=(const VulkanInstance &) = delete;
 		[[nodiscard]] bool validationActive() const;							///< Reports whether the Debug validation messenger is active.
+		[[nodiscard]] bool debugUtilsEnabled() const;						///< Debug builds: VK_EXT_debug_utils is on, for object names and labels.
 		[[nodiscard]] std::uint64_t validationErrorCount() const;				///< Returns ERROR callbacks since create(), retained through cleanup.
 
 		/**
@@ -81,7 +82,10 @@ export namespace vve::simple {
 			validationErrors_.store(0U, std::memory_order_relaxed);
 			const bool validationEnabled = validationLayerAvailable();
 			if (validationEnabled) { layers.push_back(validationLayerName); }
-			const bool debugUtils = validationEnabled && extensionAvailable(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+			// Debug utils also carry object names and pass labels for frame debuggers (RenderDoc provides the extension when
+			// it captures), so they are enabled without validation too; only the messenger needs the validation layer.
+			debugUtils_ = extensionAvailable(VK_EXT_DEBUG_UTILS_EXTENSION_NAME, validationEnabled);
+			const bool debugUtils = validationEnabled && debugUtils_;
 			const VkDebugUtilsMessengerCreateInfoEXT debugInfo{
 				.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
 				.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
@@ -91,10 +95,8 @@ export namespace vve::simple {
 				.pUserData = this,
 			};
 			// The instance callback covers creation and destruction; the persistent messenger covers its lifetime.
-			if (debugUtils) {
-				extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-				instanceNext = &debugInfo;
-			}
+			if (debugUtils_) { extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME); }
+			if (debugUtils) { instanceNext = &debugInfo; }
 #ifdef VK_EXT_layer_settings
 			const VkBool32 validateSync{VK_TRUE};
 			const VkLayerSettingEXT syncSetting{validationLayerName, "validate_sync", VK_LAYER_SETTING_TYPE_BOOL32_EXT, 1U, &validateSync};
@@ -167,9 +169,10 @@ export namespace vve::simple {
 	private:
 #ifndef NDEBUG
 		VkDebugUtilsMessengerEXT debugMessenger_{VK_NULL_HANDLE}; ///< Owned messenger, destroyed before the instance.
+		bool debugUtils_{};                                        ///< VK_EXT_debug_utils enabled on the instance.
 		std::atomic<std::uint64_t> validationErrors_{};            ///< ERROR callbacks since create(), retained through cleanup.
 		static constexpr char const *validationLayerName{"VK_LAYER_KHRONOS_validation"}; ///< Standard Vulkan validation layer.
-		[[nodiscard]] static bool extensionAvailable(std::string_view name);	///< Checks loader and validation-layer extension availability.
+		[[nodiscard]] static bool extensionAvailable(std::string_view name, bool includeValidationLayer = true);	///< Checks loader and validation-layer extension availability.
 		static VKAPI_ATTR VkBool32 VKAPI_CALL validationCallback(VkDebugUtilsMessageSeverityFlagBitsEXT severity,
 			VkDebugUtilsMessageTypeFlagsEXT types, const VkDebugUtilsMessengerCallbackDataEXT *message, void *userData);	///< Prints validation diagnostics and counts ERROR callbacks.
 
@@ -542,6 +545,7 @@ export namespace vve::simple {
 			destroyMessenger(instance, debugMessenger_, nullptr);
 			debugMessenger_ = VK_NULL_HANDLE;
 		}
+		debugUtils_ = false;
 #endif
 		instance.reset();
 	}
@@ -550,6 +554,15 @@ export namespace vve::simple {
 	inline bool VulkanInstance::validationActive() const {
 #ifndef NDEBUG
 		return debugMessenger_ != VK_NULL_HANDLE;
+#else
+		return false;
+#endif
+	}
+
+	/// @brief Reports whether the instance enabled VK_EXT_debug_utils; always false in Release.
+	inline bool VulkanInstance::debugUtilsEnabled() const {
+#ifndef NDEBUG
+		return debugUtils_;
 #else
 		return false;
 #endif
@@ -565,10 +578,11 @@ export namespace vve::simple {
 	}
 
 #ifndef NDEBUG
-	/// @brief Checks loader and validation-layer extensions, including layer-only configuration extensions.
-	inline bool VulkanInstance::extensionAvailable(std::string_view name) {
+	/// @brief Checks loader and validation-layer extensions, including layer-only configuration extensions; without the
+	/// enabled validation layer only the loader's list (drivers and implicit layers such as RenderDoc's) counts.
+	inline bool VulkanInstance::extensionAvailable(std::string_view name, bool includeValidationLayer) {
 		// Explicit layer extensions are not included in the loader's global list.
-		for (const char *layer : {static_cast<const char *>(nullptr), validationLayerName}) {
+		for (const char *layer : {static_cast<const char *>(nullptr), includeValidationLayer ? validationLayerName : nullptr}) {
 			std::uint32_t count{};
 			if (vkEnumerateInstanceExtensionProperties(layer, &count, nullptr) != VK_SUCCESS) { continue; }
 			auto available = std::vector<VkExtensionProperties>(count);

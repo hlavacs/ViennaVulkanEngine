@@ -155,6 +155,11 @@ target_compile_definitions(DeferredRendererTests PRIVATE
 add_test(NAME DeferredRendererMsaaTests COMMAND DeferredRendererTests --msaa4)
 set_tests_properties(RendererBackendTests DeferredRendererTests DeferredRendererMsaaTests PROPERTIES
    LABELS "gpu;deferred" TIMEOUT 180 RUN_SERIAL TRUE)
+# Debug builds name G-buffer images, shadow maps and attachments and label every pass for RenderDoc; Release must not.
+vve_add_engine_test(RenderDebugLabelsTests GPU Vulkan::Vulkan vve_test_support)
+set_tests_properties(RenderDebugLabelsTests PROPERTIES LABELS "gpu;deferred" TIMEOUT 120)
+vve_add_engine_test(RenderSkyTests GPU Vulkan::Vulkan vve_test_support)
+set_tests_properties(RenderSkyTests PROPERTIES LABELS "gpu;deferred" TIMEOUT 600)
 
 # Khronos Profiles overrides actual Vulkan queries, without an engine test hook. Missing SDK layers leave this check unregistered.
 # Schema: KhronosGroup/Vulkan-Profiles; settings: KhronosGroup/Vulkan-Utility-Libraries/docs/layer_configuration.md.

@@ -24,6 +24,7 @@ struct GameSystem {
 	bool muted{}; ///< Skip opening an audio device when explicitly requested.
 	bool antialias{true}; ///< Four-sample coverage at the default Full HD resolution.
 	int cameraMode{}; ///< Chase, cockpit, aircraft showcase or the optional airport inspection view.
+	std::size_t weather{}; ///< Index into weatherNames.
 	bool paused{}, quit{}, fullscreen{}; ///< Interactive session state.
 	bool mapOpen{}, openMapOnStart{}; ///< Optional chart opens only on M or an explicit capture request.
 	float mapZoom{1.0F}; ///< Retained map magnification.
@@ -63,6 +64,7 @@ struct GameSystem {
 		if (auto result = buildEnvironment(*render, world.template get<vve::AssetSystem>(), assetRoot); !result) {
 			std::cerr << "[island] scenery initialization failed\n"; return result;
 		}
+		if (auto result = setWeather(*render, weather); !result) { return result; }
 		displayed.position = vve::math::add(islandCenter(displayed.originIsland), vve::Vec3{0, aircraftGroundHeight, 240});
 		previousTick = displayed;
 		eye = vve::math::add(displayed.position, vve::Vec3{0, 5, 25});
@@ -154,6 +156,10 @@ struct GameSystem {
 		if (input.wasKeyPressed(vve::Key::escape)) { if (mapOpen) { mapOpen = false; } else { paused = !paused; } }
 		if (input.wasKeyPressed(vve::key('m'))) { mapOpen = !mapOpen; }
 		if (input.wasKeyPressed(vve::key('c'))) { cameraMode = (cameraMode + 1) % 3; }
+		if (input.wasKeyPressed(vve::key('v'))) {
+			weather = (weather + 1) % weatherNames.size();
+			if (auto result = setWeather(*render, weather); !result) { return result; }
+		}
 		if (input.wasKeyPressed(vve::key('p')) && !mapOpen) { automatic = !automatic; commandedThrottle = displayed.throttle; }
 		if (input.wasKeyPressed(vve::Key::f11)) {
 			if (auto result = windows->setFullscreen(window, !fullscreen); !result) { return result; }
@@ -244,6 +250,7 @@ struct GameSystem {
 			ImGui::Text("VERTICAL %+.0f ft/min   %s", displayed.velocity.y * 196.8504F, automatic ? "AUTOPILOT" : "MANUAL");
 			ImGui::Text("CARGO: %s   |   %s", cargoName(displayed).data(), phaseName(displayed.phase).data());
 			ImGui::Text("DELIVERIES %u   |   M: route map   |   %zu islands", displayed.deliveries, islandCount);
+			ImGui::Text("WEATHER %s   |   V: change", weatherNames[weather].data());
 		} else { ImGui::TextWrapped("%s | %s | M: map", automatic ? "AUTOPILOT" : "MANUAL", phaseName(displayed.phase).data()); }
 		ImGui::End();
 		// The destination marker identifies a real apron; flying through it never awards a delivery.
@@ -253,7 +260,7 @@ struct GameSystem {
 		ImGui::Begin("Flight controls", nullptr, flags);
 		ImGui::SetWindowFontScale(uiScale);
 		ImGui::TextWrapped("W/S throttle | Arrows pitch / bank | A/D rudder | Space brakes");
-		ImGui::TextWrapped("M map | C camera | P autopilot | R retry | Esc pause | F11 fullscreen");
+		ImGui::TextWrapped("M map | C camera | V weather | P autopilot | R retry | Esc pause | F11 fullscreen");
 		ImGui::TextWrapped("%s",displayed.phase == Phase::delivered ? "DELIVERY COMPLETE - the airport will supply your next assignment."
 			: displayed.phase == Phase::crashed ? "AIRCRAFT LOST - press R to restart."
 			: displayed.phase == Phase::ready ? "CARGO ABOARD - follow the gold direction arrow to your assigned island."

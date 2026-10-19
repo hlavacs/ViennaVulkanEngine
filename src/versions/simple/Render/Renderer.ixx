@@ -149,6 +149,7 @@ export namespace vve::simple {
 		VulkanGraphicsPipeline graphicsPipeline{}; ///< Owned forward graphics pipeline for swapchain rendering.
 		VulkanGraphicsPipeline transparentPipeline{}; ///< Owned blended forward pipeline without depth writes, for transparent objects.
 		VulkanGraphicsPipeline shadowPipeline{};   ///< Owned depth-only pipeline shared by every shadow layer.
+		VulkanMesh skyMesh{};                      ///< Inward cube that carries the physical sky behind all geometry.
 		VulkanCommandPool commandPool{};       ///< Owned resettable command pool for the graphics queue family.
 		std::map<RenderMeshHandle, VulkanMesh> meshes{}; ///< One owned GPU mesh per referenced RenderMesh handle.
 		std::map<RenderMaterialHandle, std::uint32_t> materialSlots_{}; ///< Stable material handle to dense GPU buffer slot.
@@ -158,6 +159,7 @@ export namespace vve::simple {
 		std::vector<ShadowLightMeta> shadowLightMeta{}; ///< Per-light shadow matrices and per-type array layers prepared every frame.
 		std::vector<RenderShadowDepthSample> shadowDepthSamples{}; ///< Per-light samples rebuilt only with GPU readback enabled; empty otherwise.
 		std::vector<RecordedPass> recordedPassOrder{}; ///< Last frame's command-recording pass order diagnostic.
+		VulkanDebugLabels debugLabels{}; ///< Debug builds: names of G-buffer, shadow maps and attachments, and pass labels for RenderDoc.
 
 		~ForwardRenderer() { cleanup(); }
 
@@ -301,6 +303,10 @@ export namespace vve::simple {
 		void setAtmosphere(AtmosphereSettings settings) { atmosphere_ = settings; }
 		/// @brief Reads the configured haze without touching Vulkan resources.
 		AtmosphereSettings atmosphere() const { return atmosphere_; }
+		/// @brief Stores validated physical sky settings, shared by every window.
+		void setSky(SkySettings settings) { sky_ = settings; }
+		/// @brief Returns the physical sky settings.
+		[[nodiscard]] SkySettings sky() const { return sky_; }
 		/// @brief Stores an explicit animation clock; zero pauses animated surfaces.
 		void setAnimationTime(AnimationTime time) { animation_time_ = time; }
 
@@ -357,6 +363,9 @@ export namespace vve::simple {
 		[[nodiscard]] VkResult createDeferredDescriptors(WindowTarget &target); ///< Binds this window's stable sampled attachments after creation/resize.
 		[[nodiscard]] VkResult createTargetResources(WindowTarget &target); ///< Creates one target's attachments, frame resources and post-processing chain.
 		[[nodiscard]] VkResult createTargetAttachments(WindowTarget &target); ///< Creates matching colour/depth plus a single-sample HDR resolve target.
+		void nameTargetResources(WindowTarget &target); ///< Debug builds: names a window's G-buffer, depth, colour and swapchain images.
+		void nameShadowMap(const ShadowMap &map); ///< Debug builds: names a shadow array, its sampler and every layer by light and face.
+		void namePipelines(); ///< Debug builds: names the shader modules and pipelines of both backends.
 		[[nodiscard]] VkResult writeSceneDescriptors(WindowTarget &target, std::uint32_t frame); ///< Updates only a completed slot's materials and changed texture elements.
 		[[nodiscard]] VkResult uploadDynamicVertices(WindowTarget &target, std::uint32_t frame);
 		[[nodiscard]] auto reportFrameFailure(const char *stage, VkResult result) -> std::unexpected<Error>;
@@ -393,6 +402,7 @@ export namespace vve::simple {
 		RenderScene *renderScene_{nullptr}; ///< Borrowed owner; renderer selects texture capacity, restores pixels and updates decode bookkeeping.
 		std::optional<Error> textureUploadError_{}; ///< Decode error retained through Vulkan cleanup for the expected-returning caller.
 		AtmosphereSettings atmosphere_{}; ///< Height-dependent haze; density zero preserves existing output.
+		SkySettings sky_{}; ///< Physical sky; disabled by default, which preserves existing output.
 		AnimationTime animation_time_{}; ///< Explicit animation seconds shared by all windows in a logical frame.
 		std::optional<Error> frameError_{}; ///< Fatal draw failure retained until cleanup; damaged synchronization must never become a successful skip.
 		std::vector<std::uint64_t> uploadedTextureGenerations_{}; ///< Resident generations matching the allocated texture slots; 0 = empty.

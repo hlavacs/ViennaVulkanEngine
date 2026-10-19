@@ -17,6 +17,7 @@ export module VVEngine.Simple.Vulkan;
 export import :OwnedHandle;
 export import :Memory;
 export import :Device;
+export import :DebugLabels;
 export import :Commands;
 export import :Presentation;
 export import :Pipeline;
@@ -32,6 +33,7 @@ import std;
 	* Functional objects:
 	* - Handle.ixx owns the transitional vk::raii-to-raw Vulkan handle adapter shared by partitions.
 	* - Device.ixx owns Vulkan instance, surface, physical-device selection, and logical-device creation.
+	* - DebugLabels.ixx owns Debug-build object names and pass labels for frame debuggers such as RenderDoc.
 	* - Memory.ixx owns the VMA allocator, buffers, images, one-time submits, and layout transitions.
 	* - Commands.ixx owns Vulkan command pools, command buffers, and frame synchronization.
 	* - Presentation.ixx owns the swapchain, its image views, and the shared depth format.

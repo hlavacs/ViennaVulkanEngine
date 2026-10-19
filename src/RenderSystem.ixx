@@ -190,6 +190,10 @@ export namespace vve {
 		[[nodiscard]] auto setAtmosphere(AtmosphereSettings settings) -> std::expected<void, Error> { return impl_.setAtmosphere(settings); }
 		/// @brief Reads the current haze settings; zero density disables the effect.
 		[[nodiscard]] auto atmosphere() const -> AtmosphereSettings { return impl_.atmosphere(); }
+		/// @brief Sets the physical sky and its clouds; negative, non-finite or out-of-range values return invalid_argument.
+		[[nodiscard]] auto setSky(SkySettings settings) -> std::expected<void, Error> { return impl_.setSky(settings); }
+		/// @brief Reads the physical sky settings; disabled by default.
+		[[nodiscard]] auto sky() const -> SkySettings { return impl_.sky(); }
 		/// @brief Sets nonnegative elapsed animation seconds explicitly; defaults to zero for deterministic frames.
 		[[nodiscard]] auto setAnimationTime(AnimationTime time) -> std::expected<void, Error> { return impl_.setAnimationTime(time); }
 		/// @brief Creates a finite water patch with analytic waves; bounds include its maximum vertical displacement.

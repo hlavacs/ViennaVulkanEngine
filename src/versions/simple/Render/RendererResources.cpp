@@ -171,6 +171,7 @@ namespace vve::simple {
 
 		result = device.create(physicalDevice);
 		if (result != VK_SUCCESS) { cleanup(); return result; }
+		debugLabels.load(instance.instance, device.device, instance.debugUtilsEnabled());
 
 		// All material images, including the white fallback, use this sampler for the device's lifetime.
 		const VkSamplerCreateInfo samplerInfo{
@@ -208,6 +209,16 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { cleanup(); return result; }
 
 		result = commandPool.create(device.device, *physicalDevice.graphicsQueueFamily);
+		if (result != VK_SUCCESS) { cleanup(); return result; }
+
+		// The physical sky is drawn on an inward cube: corners by bits x = 1, y = 2, z = 4, faces wound towards the centre.
+		std::vector<RenderVertex> skyCorners(8U);
+		for (std::uint32_t corner{}; corner < 8U; ++corner) {
+			skyCorners[corner].position = Vec3{corner & 1U ? one() : -one(), corner & 2U ? one() : -one(), corner & 4U ? one() : -one()};
+		}
+		const struct { const std::vector<RenderVertex> *vertices; std::vector<std::uint32_t> indices; } skyCube{&skyCorners,
+			{1, 7, 3, 1, 5, 7, 0, 6, 4, 0, 2, 6, 2, 7, 6, 2, 3, 7, 0, 5, 1, 0, 4, 5, 4, 7, 5, 4, 6, 7, 0, 3, 2, 0, 1, 3}};
+		result = skyMesh.create(allocator, device.device, device.graphicsQueue, commandPool.commandPool, skyCube);
 		if (result != VK_SUCCESS) { cleanup(); return result; }
 
 		// Start with one shader-readable layer per array; the first draw grows to the packed light counts.
@@ -304,6 +315,7 @@ namespace vve::simple {
 
 		result = target.commandBuffers.create(device.device, commandPool.commandPool, framesInFlight);
 		if (result != VK_SUCCESS) { return result; }
+		nameTargetResources(target);
 
 		result = target.frameSync.create(device.device, framesInFlight, static_cast<std::uint32_t>(target.swapchain.images.size()));
 		if (result != VK_SUCCESS) { return result; }
@@ -356,8 +368,9 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return result; }
 		result = shadowPipeline.create(device.device, pipelineLayout.pipelineLayout, shadowShaderModule.shaderModule, "shadowVertexMain",
 			VK_NULL_HANDLE, vertexInput, VK_FORMAT_UNDEFINED, depthFormat);
-		if (result != VK_SUCCESS || backend_ == RendererBackend::forward) { return result; }
-		return createDeferredPipelines(textureCount);
+		if (result == VK_SUCCESS && backend_ == RendererBackend::deferred) { result = createDeferredPipelines(textureCount); }
+		if (result == VK_SUCCESS) { namePipelines(); }
+		return result;
 	}
 
 	/// @brief Allocates and fills a window's two frame sets; called at startup or after an idle descriptor-array growth.
@@ -438,6 +451,7 @@ namespace vve::simple {
 			if (result != VK_SUCCESS) { return result; }
 			if (map->image != VK_NULL_HANDLE) { retire(std::move(*map)); }
 			*map = std::move(replacement);
+			nameShadowMap(*map);
 			// Every target adopts the new arrays only after its own slot's fence has completed.
 			for (auto &target : targets) { target.shadowsDirty.set(); }
 		}
@@ -717,10 +731,12 @@ namespace vve::simple {
 		for (auto &target : targets) { target.cleanup(); }
 		targets.clear();
 		recordedPassOrder.clear();
+		debugLabels.reset();
 		lastShadowLayerPassCount_ = 0U;
 		lastFrameDrawStats_ = {};
 		for (auto &[_, mesh] : meshes) { mesh.cleanup(); }
 		meshes.clear();
+		skyMesh.cleanup();
 		for (TextureImage &texture : objectTextures) { texture.cleanup(); }
 		objectTextures.clear();
 		uploadedTextureGenerations_.clear();
@@ -818,6 +834,7 @@ namespace vve::simple {
 
 		result = createTargetAttachments(target);
 		if (result != VK_SUCCESS) { return retryNextFrame(result); }
+		nameTargetResources(target); // The resized images are new objects.
 
 		if (target.postProcess) {
 			// The VVPPL throws, whereas the Engine works with std::expected and VKResult

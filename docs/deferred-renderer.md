@@ -69,6 +69,9 @@ Each window owns these drawable-sized attachments with matching sample counts:
 | Emission/state | `R16G16B16A16_SFLOAT` | HDR emissive RGB, `AO + 2 * flags` |
 | Geometry depth | `D32_SFLOAT` | Vulkan nonlinear depth in [0,1] |
 
+In Debug builds these images carry their names in RenderDoc; see
+[Inspecting frames with RenderDoc](RenderDoc.md).
+
 The packed flags contain unlit (1) and analytic water (8). AO is [0,1]; gaps
 between flag values keep decoding unambiguous. Half-float precision quantizes
 material factors and AO slightly; it preserves HDR base/emission values and

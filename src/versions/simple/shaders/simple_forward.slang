@@ -51,6 +51,10 @@ struct FrameUniforms
     float4x4 inverseViewProjection; ///< Inverse projection-view for depth reconstruction.
     float4 viewport; ///< Drawable dimensions.
     float4 environmentLighting;       ///< Panorama texture slot (-1 absent), strength, GGX enabled, unused.
+    float4 skySun;                    ///< Unit direction towards the sun and its irradiance; w = 0 keeps the panorama and classic haze.
+    float4 skyParams;                 ///< Aerosol amount, sun disk radius in radians, index of the sun's directional light (-1 none), unused.
+    float4 cloudLayer;                ///< Cloud base height, thickness, coverage (0 none), extinction per metre at full density.
+    float4 cloudWind;                 ///< Wind offset of the cloud pattern along x and z, unused, unused.
 };
 
 struct ObjectPushConstants
@@ -96,6 +100,7 @@ struct VertexOutput
 
 struct FragmentInput
 {
+    float4 position : SV_Position;                  ///< Window position; dithers the cloud march of the sky.
     [[vk::location(0)]] float3 worldPos : TEXCOORD0; ///< Interpolated world-space position.
     [[vk::location(1)]] float2 texCoord : TEXCOORD1; ///< Interpolated texture coordinate for material sampling.
     [[vk::location(2)]] float3 normal   : NORMAL0;   ///< Interpolated world-space vertex normal.
@@ -217,18 +222,6 @@ float3 worldEye()
     return -mul(transpose(float3x3(frame.view)), float3(frame.view[0][3], frame.view[1][3], frame.view[2][3]));
 }
 
-/// @brief Integrates exponential height density along the eye ray; zero density leaves old scenes unchanged.
-float3 applyAtmosphere(float3 color, float3 worldPos)
-{
-    if (frame.fogColorDensity.w == 0.0) return color;
-    const float3 eye = worldEye();
-    const float k = frame.fogHeightTime.y * (worldPos.y - eye.y);
-    const float meanDensity = abs(k) < 0.001 ? 1.0 : (1.0 - exp(clamp(-k, -80.0, 80.0))) / k;
-    const float density = exp(clamp(-frame.fogHeightTime.y * (eye.y - frame.fogHeightTime.x), -80.0, 80.0));
-    const float transmittance = exp(-frame.fogColorDensity.w * length(worldPos - eye) * density * meanDensity);
-    return lerp(frame.fogColorDensity.rgb, color, transmittance);
-}
-
 /// @brief Two directional sine waves return height and horizontal derivatives for matching surface normals.
 float3 oceanWave(float2 p)
 {
@@ -240,7 +233,18 @@ float3 oceanWave(float2 p)
         k * (0.65 * cos(a) + 0.35 * 1.31 * 0.33 * cos(b)), k * (0.65 * 0.37 * cos(a) + 0.35 * 1.31 * cos(b)));
 }
 
+#include "simple_atmosphere.slang" // Physical sky, clouds and weather haze.
 #include "simple_material.slang" // Shared direct BRDF and bounded-cost panorama filtering.
+
+/// @brief Fades a surface by the physical sky, or by exponential height haze; zero density leaves old scenes unchanged.
+float3 applyAtmosphere(float3 color, float3 worldPos)
+{
+    if (physicalSky()) return applySkyAtmosphere(color, worldPos);
+    if (frame.fogColorDensity.w == 0.0) return color;
+    const float3 eye = worldEye();
+    const float d = length(worldPos - eye);
+    return d > 0.0 ? lerp(frame.fogColorDensity.rgb, color, exp(-hazeDepth(eye, (worldPos - eye) / d, d))) : color;
+}
 
 [shader("vertex")]
 VertexOutput vertexMain(VertexInput input)
@@ -435,7 +439,8 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags)
                 dirShadowPcf = insideDirShadowMap ? pcfShadow(dirShadowArray, dirShadowUv, dirShadowLayer, dirLightNdc.z - dirShadowBias) : 1.0; ///< Filter the selected flattened cascade layer.
                 debugCascadeIndex = dirCascade;
             }
-            const float dirShadowFactor = lerp(VVE_SHADOW_OCCLUDED_FACTOR, 1.0, dirShadowPcf); ///< Preserve the existing partial-shadow floor while smoothing its edge.
+            const float dirShadowFactor = lerp(VVE_SHADOW_OCCLUDED_FACTOR, 1.0, dirShadowPcf) *
+                (float(i) == frame.skyParams.z ? cloudShadow(worldPos) : 1.0); ///< Shadow floor and smooth edge; clouds shade the sun.
             const float3 dirResponse = physicallyBased ? microfacetLight(baseColor, metalness, roughness, normal, viewDir, dirSurfaceLightDir, flags) : diffuseColor * dirDiffuse + specularColor * dirSpecular;
             directionalContribution += baseColor * dirAmbient + dirLight * dirResponse * dirShadowFactor; ///< Ambient and shadows retain their established controls.
         }
@@ -497,6 +502,10 @@ FragmentOutput fragmentMain(FragmentInput input)
     // Equirectangular lookup; textures are stored bottom-up, so v = 1 is the image's top row (straight up).
     if ((object.flags & kSkyFlag) != 0) {
         const float3 d = normalize(input.worldPos);
+        if (physicalSky()) {
+            output.color = float4(skyColour(d, frac(52.9829189 * frac(dot(input.position.xy, float2(0.06711056, 0.00583715))))), 1.0);
+            return output;
+        }
         float2 uv = float2(atan2(d.x, -d.z) / (2.0 * kPi) + 0.5, 1.0 - acos(clamp(d.y, -1.0, 1.0)) / kPi);
         float3 sky = float3(1.0);
         if (material.baseColorTexture < kMaxSceneTextures) {

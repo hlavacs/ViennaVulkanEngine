@@ -83,6 +83,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {})	-> std::expected<RenderSceneInstanceHandle, Error>;
 		[[nodiscard]] auto setAtmosphere(AtmosphereSettings settings) -> std::expected<void, Error>;
 		[[nodiscard]] auto atmosphere() const -> AtmosphereSettings;
+		[[nodiscard]] auto setSky(SkySettings settings) -> std::expected<void, Error>;
+		[[nodiscard]] auto sky() const -> SkySettings;
 		[[nodiscard]] auto setAnimationTime(AnimationTime time) -> std::expected<void, Error>;
 		[[nodiscard]] auto addOcean(OceanDescriptor ocean = {}) -> std::expected<RenderObjectHandle, Error>;
 

@@ -3,6 +3,7 @@ import std;
 import VVEngine;
 import VVE.ExampleSupport;
 import Island.Game;
+import Island.Scene;
 
 namespace {
 
@@ -17,11 +18,12 @@ void usage() {
 	std::println("Island Air - VVE island cargo delivery\n"
 		"  W/S throttle; arrows pitch/bank; A/D rudder; Space brakes\n"
 		"  Start on an island with cargo assigned; the next job arrives after unloading.\n"
-		"  M optional chart; C camera; P autopilot; R retry job; Esc pause; F11 fullscreen\n"
+		"  M optional chart; C camera; V weather; P autopilot; R retry job; Esc pause; F11 fullscreen\n"
 		"  --autopilot --map --mute --hidden --no-msaa --require-delivery\n"
 		"  --frames N --steps-per-frame N --width N --height N\n"
 		"  --start-island 0..255 --destination 0..255 --deliveries N\n"
-		"  --camera chase|cockpit|showcase|airport --output image.png --verify flight.csv\n"
+		"  --camera chase|cockpit|showcase|airport --weather clear|hazy|overcast|fog\n"
+		"  --output image.png --verify flight.csv\n"
 		"  --renderer forward|deferred (default forward)\n"
 		"  --asset-dir DIRECTORY (otherwise configure-time downloads beside the executable)");
 }
@@ -70,6 +72,12 @@ int main(int argc, char **argv) {
 			const auto found = std::ranges::find(names, value);
 			if (found == names.end()) { std::cerr << "[island] invalid camera\n"; return 1; }
 			game.cameraMode = static_cast<int>(found - names.begin());
+			continue;
+		}
+		if (argument == "--weather") {
+			const auto found = std::ranges::find(island::weatherNames, value);
+			if (found == island::weatherNames.end()) { std::cerr << "[island] invalid weather\n"; return 1; }
+			game.weather = static_cast<std::size_t>(found - island::weatherNames.begin());
 			continue;
 		}
 		std::cerr << "[island] unknown option: " << argument << '\n'; return 1;
