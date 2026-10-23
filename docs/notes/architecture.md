@@ -376,6 +376,9 @@ empty; `"none"` opts out. Other ids make `Engine::init()` return `Error::invalid
   `shaderSampledImageArrayDynamicIndexing` and graphics/compute/presentation queues. Device selection
   evaluates the API version and feature contract through the pure `evaluateDeviceRequirements` helper;
   Vulkan 1.2 plus `VK_KHR_dynamic_rendering` is insufficient for its core rendering commands.
+  Candidates are tried discrete GPU first, then integrated, virtual and CPU devices (enumeration order
+  breaks ties); `VVE_GPU=<name part>` moves devices whose name contains it to the front. The selected
+  device and its largest device-local heap are logged once.
   If no device qualifies, one diagnostic names the rejected devices and versions. ImGui uses API
   version 1.3; the instance continues to request 1.4. The CPU-only `VulkanDeviceRequirementsTests`
   checks synthetic capabilities without creating Vulkan objects.

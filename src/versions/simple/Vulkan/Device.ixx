@@ -252,10 +252,41 @@ export namespace vve::simple {
 			result = vkEnumeratePhysicalDevices(instance, &deviceCount, devices.data());
 			if (result != VK_SUCCESS) { return result; }
 
-			// Keep the first suitable device and report rejected devices only when none qualifies.
-			for (const VkPhysicalDevice candidate : devices) {
+			// Try discrete GPUs first, then integrated, virtual and CPU devices; enumeration order breaks ties.
+			// VVE_GPU=<name part> (case-sensitive) moves matching devices to the front, e.g. VVE_GPU=NVIDIA.
+			const char *const wanted = SDL_getenv("VVE_GPU");
+			const auto rank = [wanted](VkPhysicalDevice device) {
+				VkPhysicalDeviceProperties properties{};
+				vkGetPhysicalDeviceProperties(device, &properties);
+				int type = 4;
+				switch (properties.deviceType) {
+				case VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU: type = 0; break;
+				case VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU: type = 1; break;
+				case VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU: type = 2; break;
+				case VK_PHYSICAL_DEVICE_TYPE_CPU: type = 3; break;
+				default: break;
+				}
+				const bool named = wanted != nullptr && *wanted != '\0' && std::string_view{properties.deviceName}.find(wanted) != std::string_view::npos;
+				return (named ? 0 : 8) + type;
+			};
+			auto ordered = devices;
+			std::ranges::stable_sort(ordered, {}, rank);
+			// Keep the first suitable device in that order and report rejected devices only when none qualifies.
+			for (const VkPhysicalDevice candidate : ordered) {
 				result = selectIfSuitable(instance, candidate, surface);
-				if (result == VK_SUCCESS && selected()) { return VK_SUCCESS; }
+				if (result == VK_SUCCESS && selected()) {
+					VkPhysicalDeviceProperties properties{};
+					vkGetPhysicalDeviceProperties(candidate, &properties);
+					VkPhysicalDeviceMemoryProperties memory{};
+					vkGetPhysicalDeviceMemoryProperties(candidate, &memory);
+					VkDeviceSize deviceLocal{};
+					for (std::uint32_t heap{}; heap < memory.memoryHeapCount; ++heap) {
+						if (memory.memoryHeaps[heap].flags & VK_MEMORY_HEAP_DEVICE_LOCAL_BIT) { deviceLocal = std::max(deviceLocal, memory.memoryHeaps[heap].size); }
+					}
+					std::fprintf(stderr, "[vve::simple] device: %s (type %d, %u devices, largest device-local heap %llu MiB)\n", properties.deviceName,
+						static_cast<int>(properties.deviceType), deviceCount, static_cast<unsigned long long>(deviceLocal >> 20U));
+					return VK_SUCCESS;
+				}
 				if (result != VK_SUCCESS && result != VK_ERROR_FEATURE_NOT_PRESENT) { reset(); return result; }
 			}
 

@@ -403,6 +403,7 @@ namespace vve::simple {
 			const VkResult result = renderer_.initialized()
 				? renderer_.addTarget(window.native(), window.info().handle) : renderer_.init(window.native(), window.info().handle);
 			if (result != VK_SUCCESS) {
+				std::cerr << "[vve::simple] renderer init failed: VkResult=" << static_cast<std::int32_t>(result) << '\n';
 				const auto error = renderer_.textureUploadError().value_or(Error::platform_error);
 				renderer_.shutdown();
 				return std::unexpected(error);
