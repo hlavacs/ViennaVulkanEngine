@@ -190,6 +190,11 @@ export namespace vve {
 		[[nodiscard]] auto setAtmosphere(AtmosphereSettings settings) -> std::expected<void, Error> { return impl_.setAtmosphere(settings); }
 		/// @brief Reads the current haze settings; zero density disables the effect.
 		[[nodiscard]] auto atmosphere() const -> AtmosphereSettings { return impl_.atmosphere(); }
+		/// @brief Sets how far from the camera directional (sun) shadows reach, in world units (default 60).
+		/// Large outdoor scenes need hundreds of metres; the four cascades then cover a wider range. Not positive or not finite returns invalid_argument.
+		[[nodiscard]] auto setShadowDistance(Scalar distance) -> std::expected<void, Error> { return impl_.setShadowDistance(distance); }
+		/// @brief Reads the current directional shadow distance.
+		[[nodiscard]] auto shadowDistance() const -> Scalar { return impl_.shadowDistance(); }
 		/// @brief Sets the physical sky and its clouds; negative, non-finite or out-of-range values return invalid_argument.
 		[[nodiscard]] auto setSky(SkySettings settings) -> std::expected<void, Error> { return impl_.setSky(settings); }
 		/// @brief Reads the physical sky settings; disabled by default.
@@ -198,6 +203,16 @@ export namespace vve {
 		[[nodiscard]] auto setAnimationTime(AnimationTime time) -> std::expected<void, Error> { return impl_.setAnimationTime(time); }
 		/// @brief Creates a finite water patch with analytic waves; bounds include its maximum vertical displacement.
 		[[nodiscard]] auto addOcean(OceanDescriptor ocean = {}) -> std::expected<RenderObjectHandle, Error> { return impl_.addOcean(ocean); }
+		/// @brief Creates water from game-built geometry (a river or lake surface with real heights, any outline), animated by the
+		/// same analytic waves as addOcean. Colour and waves come from `waves`; its extent, position and grid are ignored. The mesh
+		/// keeps its own transform; invalid geometry or waves return invalid_argument.
+		[[nodiscard]] auto addWater(MeshDescriptor surface, OceanDescriptor waves = {}) -> std::expected<RenderObjectHandle, Error> {
+			return impl_.addWater(std::move(surface), waves);
+		}
+		/// @brief Adds a height-grid terrain drawn with distance-based GPU tessellation; a malformed grid returns invalid_argument.
+		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addTerrain(TerrainDescriptor terrain) {
+			return impl_.addTerrain(std::move(terrain));
+		} ///< Needs the tessellationShader device feature; without it the terrain is skipped with one warning. It casts and receives shadows.
 		/// @brief Adds a mesh built by game code: positions and triangle indices, optional normals, UVs and texture.
 		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addMesh(MeshDescriptor mesh) {
 			return impl_.addMesh(std::move(mesh));

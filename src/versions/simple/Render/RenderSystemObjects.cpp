@@ -345,35 +345,110 @@ namespace vve::simple {
 		if (!std::isfinite(ocean.half_extent.x) || !std::isfinite(ocean.half_extent.y) || ocean.half_extent.x <= 0 || ocean.half_extent.y <= 0 ||
 			!std::isfinite(ocean.wave_height) || ocean.wave_height < 0 || !std::isfinite(ocean.wavelength) || ocean.wavelength <= 0 ||
 			!std::isfinite(ocean.speed) || !std::isfinite(p.x) || !std::isfinite(p.y) || !std::isfinite(p.z) ||
-			!std::isfinite(c.x) || !std::isfinite(c.y) || !std::isfinite(c.z) || c.x < 0 || c.y < 0 || c.z < 0) {
+			!std::isfinite(c.x) || !std::isfinite(c.y) || !std::isfinite(c.z) || c.x < 0 || c.y < 0 || c.z < 0 ||
+			ocean.columns == 0 || ocean.columns > 1024 || ocean.rows == 0 || ocean.rows > 1024) {
 			return std::unexpected(Error::invalid_argument);
 		}
-		constexpr std::uint32_t cells = 64, stride = cells + 1;
+		const std::uint32_t columns = ocean.columns, rows = ocean.rows, stride = columns + 1;
 		MeshDescriptor mesh{.color = ocean.color, .transform = Transform{.translation = ocean.position}};
-		mesh.positions.reserve(stride * stride);
-		mesh.normals.reserve(stride * stride);
-		mesh.indices.reserve(cells * cells * 6);
+		mesh.positions.reserve(std::size_t{stride} * (rows + 1));
+		mesh.normals.reserve(std::size_t{stride} * (rows + 1));
+		mesh.indices.reserve(std::size_t{columns} * rows * 6);
 		// Geometry is static; the shader evaluates world-space wave heights and exact normal derivatives.
-		for (const auto z : std::views::iota(0U, stride)) {
+		for (const auto z : std::views::iota(0U, rows + 1)) {
 			for (const auto x : std::views::iota(0U, stride)) {
-				mesh.positions.push_back({(2.0F * x / cells - 1) * ocean.half_extent.x, 0, (2.0F * z / cells - 1) * ocean.half_extent.y});
+				mesh.positions.push_back({(2.0F * x / columns - 1) * ocean.half_extent.x, 0, (2.0F * z / rows - 1) * ocean.half_extent.y});
 				mesh.normals.push_back({0, 1, 0});
-				if (x < cells && z < cells) {
+				if (x < columns && z < rows) {
 					const auto a = z * stride + x;
 					mesh.indices.insert(mesh.indices.end(), {a, a + stride, a + 1, a + 1, a + stride, a + stride + 1});
 				}
 			}
 		}
-		const auto object = addMesh(std::move(mesh));
+		return addWater(std::move(mesh), ocean);
+	}
+
+	/// @brief Turns validated game geometry into a water object: shader waves, smooth water material, no shadow casting.
+	auto RenderSystem::addWater(MeshDescriptor surface, OceanDescriptor waves) -> std::expected<RenderObjectHandle, Error> {
+		const auto c = waves.color.value;
+		if (!std::isfinite(waves.wave_height) || waves.wave_height < 0 || !std::isfinite(waves.wavelength) || waves.wavelength <= 0 ||
+			!std::isfinite(waves.speed) || !std::isfinite(c.x) || !std::isfinite(c.y) || !std::isfinite(c.z) || c.x < 0 || c.y < 0 || c.z < 0) {
+			return std::unexpected(Error::invalid_argument);
+		}
+		surface.color = waves.color;
+		const auto object = addMesh(std::move(surface));
 		if (!object) { return object; }
 		auto *instance = scene_.findInstance(*findRenderObject(*object));
 		const auto previous = instance->material;
-		instance->material = scene_.addMaterial({.base_color = ocean.color, .roughness = 0.08F});
-		instance->waves = {ocean.wave_height, ocean.wavelength, ocean.speed, 1};
+		instance->material = scene_.addMaterial({.base_color = waves.color, .roughness = 0.08F});
+		instance->waves = {waves.wave_height, waves.wavelength, waves.speed, 1};
 		instance->casts_shadow = false;
 		releaseUnused(instance->mesh, previous);
 		renderer_.markMaterialsDirty();
 		return object;
+	}
+
+	/**
+	 * @brief Builds a coarse grid of 4-corner patches; the tessellation stages add detail from the shared heights.
+	 *
+	 * Each patch spans up to 32 cells (VVE_TERRAIN_PATCH_CELLS), so its finest tessellation still has one height sample per
+	 * vertex. Corner vertices carry their real heights and two unreferenced vertices widen the culling box to the full
+	 * height range between corners.
+	 */
+	auto RenderSystem::addTerrain(TerrainDescriptor terrain) -> std::expected<RenderObjectHandle, Error> {
+		const auto columns = terrain.columns, rows = terrain.rows;
+		const auto c = terrain.color.value;
+		if (columns < 2U || rows < 2U || columns > 65535U || rows > 65535U ||
+			terrain.heights.size() != static_cast<std::size_t>(columns) * rows ||
+			!std::isfinite(terrain.cell_size) || terrain.cell_size <= 0 ||
+			!std::ranges::all_of(terrain.heights, [](float height) { return std::isfinite(height); }) ||
+			!std::isfinite(c.x) || !std::isfinite(c.y) || !std::isfinite(c.z) || c.x < 0 || c.y < 0 || c.z < 0) {
+			return std::unexpected(Error::invalid_argument);
+		}
+		auto texture = RenderTextureIndex{kNoTexture};
+		if (!terrain.base_color_texture.empty()) {
+			const auto acquired = scene_.acquireTexture(terrain.base_color_texture);
+			if (!acquired) { return std::unexpected(acquired.error()); }
+			texture = *acquired;
+		}
+		constexpr std::uint32_t patch_cells = 32U; // Mirrors VVE_TERRAIN_PATCH_CELLS in shaders/simple_shared.h.
+		const auto corners = [](std::uint32_t samples) {
+			Vector<std::uint32_t> result{};
+			for (std::uint32_t sample{}; sample + 1U < samples; sample += patch_cells) { result.push_back(sample); }
+			result.push_back(samples - 1U);
+			return result;
+		};
+		const auto xs = corners(columns), zs = corners(rows);
+		const auto height = [&](std::uint32_t x, std::uint32_t z) { return terrain.heights[static_cast<std::size_t>(z) * columns + x]; };
+		auto vertices = std::make_shared<std::vector<RenderVertex>>();
+		vertices->reserve(xs.size() * zs.size() + 2U);
+		for (const auto z : zs) {
+			for (const auto x : xs) {
+				vertices->push_back(RenderVertex{.position = Vec3{static_cast<Scalar>(x) * terrain.cell_size, height(x, z), static_cast<Scalar>(z) * terrain.cell_size},
+					.uv = Vec2{static_cast<Scalar>(x) / static_cast<Scalar>(columns - 1U), static_cast<Scalar>(z) / static_cast<Scalar>(rows - 1U)}});
+			}
+		}
+		const auto [low, high] = std::ranges::minmax(terrain.heights);
+		vertices->push_back(RenderVertex{.position = Vec3{zero(), low, zero()}});
+		vertices->push_back(RenderVertex{.position = Vec3{zero(), high, zero()}});
+		const auto stride = static_cast<std::uint32_t>(xs.size());
+		auto indices = Vector<std::uint32_t>{};
+		indices.reserve((xs.size() - 1U) * (zs.size() - 1U) * 4U);
+		for (std::uint32_t row{}; row + 1U < zs.size(); ++row) {
+			for (std::uint32_t column{}; column + 1U < xs.size(); ++column) {
+				const auto a = row * stride + column; // Patch corners (u0,v0), (u1,v0), (u1,v1), (u0,v1).
+				indices.insert(indices.end(), {a, a + 1U, a + stride + 1U, a + stride});
+			}
+		}
+		const auto material = acquirePrimitiveMaterial(terrain.color, texture);
+		const auto render_mesh = scene_.addMesh(std::move(vertices), std::move(indices));
+		auto instance = scene_.addInstance(render_mesh, material, terrain.transform, detail::modelMatrix(terrain.transform));
+		if (!instance) { return std::unexpected(instance.error()); }
+		auto *created = scene_.findInstance(*instance);
+		if (created == nullptr) { return std::unexpected(Error::internal_error); }
+		created->terrain = std::make_shared<const RenderTerrain>(RenderTerrain{.id = ++terrain_ids_, .heights = std::move(terrain.heights),
+			.columns = columns, .rows = rows, .cell_size = terrain.cell_size});
+		return registerRenderObject(*instance);
 	}
 
 	/// @brief Updates positions while preserving one triangle mesh's topology and allocation size.

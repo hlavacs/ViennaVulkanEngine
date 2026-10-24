@@ -55,9 +55,9 @@ export namespace vve::simple {
 		Mat4 model{};                        ///< Object-local model matrix selected before each draw call.
 		std::uint32_t materialIndex{};       ///< Dense slot in the GPU material storage buffer.
 		std::uint32_t shadowMatrixIndex{};   ///< Index into FrameUniforms::shadowViewProjs used by the shadow vertex stage.
-		std::uint32_t flags{};               ///< Bit 0 unlit, bit 1 sky, bit 2 sprite, bit 3 water (objectFlag values).
+		std::uint32_t flags{};               ///< Bit 0 unlit, bit 1 sky, bit 2 sprite, bit 3 water, bit 4 terrain (objectFlag values).
 		float opacity{1.0F};                 ///< Object alpha multiplied with the material alpha.
-		Vec4 waves{};                        ///< Water height, wavelength, angular speed and enabled flag.
+		Vec4 waves{};                        ///< Water height, wavelength, angular speed and enabled flag; for terrain: height offset, columns, rows, cell size.
 	};
 	static_assert(sizeof(ObjectPushConstants) == 96U); ///< Keeps the C++ and Slang push-constant blocks identical.
 
@@ -67,7 +67,12 @@ export namespace vve::simple {
 		inline constexpr std::uint32_t sky{2U};    ///< Skybox drawn around the camera at the far plane.
 		inline constexpr std::uint32_t sprite{4U}; ///< Quad turned towards the camera.
 		inline constexpr std::uint32_t water{8U}; ///< Analytic world-space waves and water normals.
+		inline constexpr std::uint32_t terrain{16U}; ///< Tessellated height grid; waves carries its height-buffer offset, size and spacing.
 	} // namespace objectFlag
+
+	/// @brief Shader stages that read ObjectPushConstants; every vkCmdPushConstants call must name exactly these.
+	inline constexpr VkShaderStageFlags objectPushConstantStages{VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT |
+		VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT};
 
 	/// @brief Set-0 descriptor bindings of simple_forward.slang; every [[vk::binding(n, 0)]] in the shader must match this table.
 	namespace shaderBinding {
@@ -77,6 +82,7 @@ export namespace vve::simple {
 		inline constexpr std::uint32_t dirShadowArray{3U};     ///< Sampler2DArrayShadow dirShadowArray.
 		inline constexpr std::uint32_t pointShadowArray{4U};   ///< Sampler2DArrayShadow pointShadowArray.
 		inline constexpr std::uint32_t materials{VVE_MATERIAL_BINDING}; ///< StructuredBuffer<GpuMaterial> materials.
+		inline constexpr std::uint32_t terrainHeights{VVE_TERRAIN_HEIGHT_BINDING}; ///< StructuredBuffer<float> terrainHeights.
 	} // namespace shaderBinding
 
 	/// @brief Returns the material slots allowed by all descriptor limits, reserving three shadows, two buffers and one color attachment.
@@ -89,20 +95,21 @@ export namespace vve::simple {
 
 	/// @brief Descriptor-set layout of set 0; the material array uses the renderer's selected device capacity.
 	[[nodiscard]] inline auto descriptorSetBindings(std::uint32_t textureCapacity) {
-		return std::array<VkDescriptorSetLayoutBinding, 6U>{{
-		{.binding = shaderBinding::frameUniforms, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT},
+		return std::array<VkDescriptorSetLayoutBinding, 7U>{{
+		{.binding = shaderBinding::frameUniforms, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 1U, .stageFlags = objectPushConstantStages},
 		{.binding = shaderBinding::baseColorTextures, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = textureCapacity, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::spotShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::dirShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::pointShadowArray, .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
 		{.binding = shaderBinding::materials, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT},
+		{.binding = shaderBinding::terrainHeights, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT},
 		}};
 	}
 
 	/// @brief Minimal Vulkan descriptor-set-layout owner for frame uniforms, shadow maps, and one object texture; no pipeline layout is created here.
 	struct VulkanDescriptorSetLayout {
 		VulkanOwnedHandle<vk::raii::DescriptorSetLayout, VkDescriptorSetLayout> descriptorSetLayout{}; ///< Owned descriptor-set layout for set 0 frame uniforms, shadow maps, and object texture.
-		std::array<VkDescriptorSetLayoutBinding, 6U> bindings{}; ///< Device-sized binding counts also used to allocate each window's descriptor pool.
+		std::array<VkDescriptorSetLayoutBinding, 7U> bindings{}; ///< Device-sized binding counts also used to allocate each window's descriptor pool.
 
 		VulkanDescriptorSetLayout() = default;
 		VulkanDescriptorSetLayout(const VulkanDescriptorSetLayout &) = delete;
@@ -173,7 +180,7 @@ export namespace vve::simple {
 			if (owningDevice == VK_NULL_HANDLE || setLayout == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
 			const VkPushConstantRange modelPushConstants{
-				.stageFlags = VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+				.stageFlags = objectPushConstantStages,
 				.offset = 0U,
 				.size = sizeof(ObjectPushConstants),
 			};
@@ -264,25 +271,37 @@ export namespace vve::simple {
 			* @param fragmentEntry Fragment entry matching the selected embedded shader module.
 			* @param fullscreen True omits vertex inputs and depth tests for the lighting triangle.
 			* @param sampleShading True evaluates each coverage sample, requiring sampleRateShading.
+			* @param tessControlModule Optional terrain hull module (entry terrainHullMain); with tessEvalModule it draws 4-point patches.
+			* @param tessEvalModule Optional terrain domain module, requiring the tessellationShader feature.
+			* @param tessEvalEntry Domain entry point, terrainDomainMain or terrainShadowDomainMain.
 			* @return VK_SUCCESS when the graphics pipeline is available, otherwise a Vulkan error code.
 			*/
 		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkPipelineLayout pipelineLayout, VkShaderModule vertexModule, const char *vertexEntry,
 											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat, std::uint32_t textureCapacity = 0U, bool blended = false, VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT,
-			std::span<const VkFormat> colorFormats = {}, const char *fragmentEntry = "fragmentMain", bool fullscreen = false, bool sampleShading = false) {
+			std::span<const VkFormat> colorFormats = {}, const char *fragmentEntry = "fragmentMain", bool fullscreen = false, bool sampleShading = false,
+			VkShaderModule tessControlModule = VK_NULL_HANDLE, VkShaderModule tessEvalModule = VK_NULL_HANDLE, const char *tessEvalEntry = "terrainDomainMain") {
 			cleanup();
 			const bool depthOnly{fragmentModule == VK_NULL_HANDLE};
+			const bool tessellated{tessControlModule != VK_NULL_HANDLE};
 			if (owningDevice == VK_NULL_HANDLE || pipelineLayout == VK_NULL_HANDLE || vertexModule == VK_NULL_HANDLE || depthAttachmentFormat == VK_FORMAT_UNDEFINED ||
-				 (!depthOnly && (colorAttachmentFormat == VK_FORMAT_UNDEFINED || textureCapacity == 0U))) {
+				 (!depthOnly && (colorAttachmentFormat == VK_FORMAT_UNDEFINED || textureCapacity == 0U)) || tessellated != (tessEvalModule != VK_NULL_HANDLE)) {
 				return VK_ERROR_INITIALIZATION_FAILED;
 			}
 
 			// Specialize the embedded shader at pipeline creation; no runtime compiler or descriptor-indexing extension is needed.
 			const VkSpecializationMapEntry textureCapacityEntry{VVE_TEXTURE_CAPACITY_CONSTANT_ID, 0U, sizeof(textureCapacity)};
 			const VkSpecializationInfo specialization{1U, &textureCapacityEntry, sizeof(textureCapacity), &textureCapacity};
-			const std::array<VkPipelineShaderStageCreateInfo, 2> shaderStages{{
-				{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_VERTEX_BIT, .module = vertexModule, .pName = vertexEntry},
-				{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_FRAGMENT_BIT, .module = fragmentModule, .pName = fragmentEntry, .pSpecializationInfo = &specialization},
-			}};
+			// Stage order is free in Vulkan; the optional fragment stage comes last so depth-only pipelines simply stop before it.
+			std::array<VkPipelineShaderStageCreateInfo, 4> shaderStages{};
+			std::uint32_t stageCount{};
+			shaderStages[stageCount++] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_VERTEX_BIT, .module = vertexModule, .pName = vertexEntry};
+			if (tessellated) {
+				shaderStages[stageCount++] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, .module = tessControlModule, .pName = "terrainHullMain"};
+				shaderStages[stageCount++] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, .module = tessEvalModule, .pName = tessEvalEntry};
+			}
+			if (!depthOnly) {
+				shaderStages[stageCount++] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_FRAGMENT_BIT, .module = fragmentModule, .pName = fragmentEntry, .pSpecializationInfo = &specialization};
+			}
 			const VkVertexInputBindingDescription &binding = vertexInput.binding;
 			const auto &attributes = vertexInput.attributes;
 			const VkPipelineVertexInputStateCreateInfo vertexInputState{
@@ -292,7 +311,10 @@ export namespace vve::simple {
 				.vertexAttributeDescriptionCount = fullscreen ? 0U : static_cast<std::uint32_t>(attributes.size()),
 				.pVertexAttributeDescriptions = attributes.data(),
 			};
-			const VkPipelineInputAssemblyStateCreateInfo inputAssembly{.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
+			const VkPipelineInputAssemblyStateCreateInfo inputAssembly{.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+				.topology = tessellated ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST};
+			// Terrain patches are quads: corners (u0,v0), (u1,v0), (u1,v1), (u0,v1).
+			const VkPipelineTessellationStateCreateInfo tessellationState{.sType = VK_STRUCTURE_TYPE_PIPELINE_TESSELLATION_STATE_CREATE_INFO, .patchControlPoints = 4U};
 			// Attachment sizes are recorded per pass, so resizing keeps both pipelines alive.
 			const VkPipelineViewportStateCreateInfo viewportState{.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, .viewportCount = 1U, .pViewports = nullptr, .scissorCount = 1U, .pScissors = nullptr};
 			constexpr std::array dynamicStates{VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR};
@@ -304,7 +326,7 @@ export namespace vve::simple {
 			const VkPipelineRasterizationStateCreateInfo rasterizer{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 				.polygonMode = VK_POLYGON_MODE_FILL,
-				.cullMode = static_cast<VkCullModeFlags>(depthOnly || fullscreen ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT),	///< Shadow pass renders all faces because orthoVulkan Y-flip inverts winding.
+				.cullMode = static_cast<VkCullModeFlags>(depthOnly || fullscreen || tessellated ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT),	///< Shadow pass renders all faces because orthoVulkan Y-flip inverts winding; terrain assumes no tessellator winding.
 				.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
 				.depthBiasEnable = depthOnly ? VK_TRUE : VK_FALSE,
 				.depthBiasConstantFactor = 1.25F,		///< Constant raster bias suppresses shadow depth quantization acne.
@@ -345,10 +367,11 @@ export namespace vve::simple {
 			const VkGraphicsPipelineCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
 				.pNext = &renderingInfo,
-				.stageCount = depthOnly ? 1U : 2U,
+				.stageCount = stageCount,
 				.pStages = shaderStages.data(),
 				.pVertexInputState = &vertexInputState,
 				.pInputAssemblyState = &inputAssembly,
+				.pTessellationState = tessellated ? &tessellationState : nullptr,
 				.pViewportState = &viewportState,
 				.pRasterizationState = &rasterizer,
 				.pMultisampleState = &multisampling,

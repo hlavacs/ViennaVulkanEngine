@@ -238,6 +238,33 @@ export namespace vve::simple {
 		}
 
 		/**
+			* @brief Writes one frame descriptor set with the packed terrain height buffer.
+			*
+			* @param frameIndex Frame set index to update.
+			* @param heightBuffer Storage buffer containing every terrain's heights back to back.
+			* @param range Byte range exposed through the storage-buffer descriptor.
+			* @return VK_SUCCESS after updating the descriptor set, otherwise VK_ERROR_INITIALIZATION_FAILED.
+			*/
+		[[nodiscard]] VkResult writeTerrainBuffer(std::uint32_t frameIndex, VkBuffer heightBuffer, VkDeviceSize range) {
+			if (frameIndex >= descriptorSets.size() || heightBuffer == VK_NULL_HANDLE || range == 0U) {
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+
+			const VkDescriptorBufferInfo bufferInfo{.buffer = heightBuffer, .offset = 0U, .range = range};
+			const VkWriteDescriptorSet write{
+				.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+				.dstSet = descriptorSets[frameIndex],
+				.dstBinding = shaderBinding::terrainHeights,
+				.dstArrayElement = 0U,
+				.descriptorCount = 1U,
+				.descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+				.pBufferInfo = &bufferInfo,
+			};
+			vkUpdateDescriptorSets(device, 1U, &write, 0U, nullptr);
+			return VK_SUCCESS;
+		}
+
+		/**
 			* @brief Writes one shadow-array sampler of one frame descriptor set.
 			*
 			* @param frameIndex Frame set index to update.

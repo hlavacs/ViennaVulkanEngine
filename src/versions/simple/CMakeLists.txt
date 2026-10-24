@@ -70,9 +70,12 @@ if(NOT VVE_SIMPLE_SLANGC)
 endif()
 
 # Embed aligned SPIR-V words, as vvppl does; only RendererResources.cpp includes these headers.
-set(VVE_SIMPLE_SHADER_NAMES simple_forward_vert simple_forward_frag simple_forward_shadow_vert simple_gbuffer_frag simple_gbuffer_msaa_frag simple_lighting_vert simple_lighting_frag simple_lighting_msaa_frag)
-set(VVE_SIMPLE_SHADER_ENTRIES vertexMain fragmentMain shadowVertexMain gbufferMain gbufferMsaaMain lightingVertexMain lightingMain lightingMain)
-set(VVE_SIMPLE_SHADER_STAGES vertex fragment vertex fragment fragment vertex fragment fragment)
+set(VVE_SIMPLE_SHADER_NAMES simple_forward_vert simple_forward_frag simple_forward_shadow_vert simple_gbuffer_frag simple_gbuffer_msaa_frag simple_lighting_vert simple_lighting_frag simple_lighting_msaa_frag
+   simple_terrain_vert simple_terrain_hull simple_terrain_domain simple_terrain_shadow_domain)
+set(VVE_SIMPLE_SHADER_ENTRIES vertexMain fragmentMain shadowVertexMain gbufferMain gbufferMsaaMain lightingVertexMain lightingMain lightingMain
+   terrainVertexMain terrainHullMain terrainDomainMain terrainShadowDomainMain)
+set(VVE_SIMPLE_SHADER_STAGES vertex fragment vertex fragment fragment vertex fragment fragment
+   vertex hull domain domain)
 set(VVE_SIMPLE_SHADER_HEADERS "")
 foreach(NAME ENTRY STAGE IN ZIP_LISTS VVE_SIMPLE_SHADER_NAMES VVE_SIMPLE_SHADER_ENTRIES VVE_SIMPLE_SHADER_STAGES)
    set(HEADER "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/${NAME}_spv.h")

@@ -21,6 +21,16 @@ namespace vve::simple {
 	/// @brief Reads the configured haze; defaults preserve the original renderer's pixels.
 	auto RenderSystem::atmosphere() const -> AtmosphereSettings { return renderer_.atmosphere(); }
 
+	/// @brief Validates the directional shadow reach before committing it; the default keeps the original 60 units.
+	auto RenderSystem::setShadowDistance(Scalar distance) -> std::expected<void, Error> {
+		if (!std::isfinite(distance) || distance <= 0) { return std::unexpected(Error::invalid_argument); }
+		renderer_.setDirectionalShadowDistance(distance);
+		return {};
+	}
+
+	/// @brief Reads the directional shadow reach.
+	auto RenderSystem::shadowDistance() const -> Scalar { return renderer_.directionalShadowDistance(); }
+
 	/// @brief Validates the physical sky before committing it; it is renderer state, so clearScene keeps it.
 	auto RenderSystem::setSky(SkySettings settings) -> std::expected<void, Error> {
 		const auto &s = settings;

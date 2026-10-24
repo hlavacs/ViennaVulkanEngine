@@ -9,6 +9,10 @@ module;
 #include "simple_forward_vert_spv.h"
 #include "simple_forward_frag_spv.h"
 #include "simple_forward_shadow_vert_spv.h"
+#include "simple_terrain_vert_spv.h"
+#include "simple_terrain_hull_spv.h"
+#include "simple_terrain_domain_spv.h"
+#include "simple_terrain_shadow_domain_spv.h"
 #if __has_include(<backends/imgui_impl_vulkan.h>)
 #include <backends/imgui_impl_vulkan.h>
 #else
@@ -48,6 +52,7 @@ namespace vve::simple {
 		descriptorPool.cleanup();
 		uniformBuffers.cleanup();
 		for (auto &buffer : materialBuffers) { buffer.cleanup(); }
+		for (auto &buffer : terrainBuffers) { buffer.cleanup(); }
 		dynamicVertices.clear();
 		submitSerials.fill(0U);
 		frameSync.cleanup();
@@ -205,6 +210,15 @@ namespace vve::simple {
 		result = shadowShaderModule.create(device.device, simple_forward_shadow_vert_spv);
 		if (result != VK_SUCCESS) { cleanup(); return result; }
 
+		// Terrain stages are created only where they can be used; without them terrain objects are skipped.
+		if (device.tessellationShader) {
+			result = terrainVertexShader.create(device.device, simple_terrain_vert_spv);
+			if (result == VK_SUCCESS) { result = terrainHullShader.create(device.device, simple_terrain_hull_spv); }
+			if (result == VK_SUCCESS) { result = terrainDomainShader.create(device.device, simple_terrain_domain_spv); }
+			if (result == VK_SUCCESS) { result = terrainShadowDomainShader.create(device.device, simple_terrain_shadow_domain_spv); }
+			if (result != VK_SUCCESS) { cleanup(); return result; }
+		}
+
 		result = ensureTextureCapacity();
 		if (result != VK_SUCCESS) { cleanup(); return result; }
 
@@ -345,6 +359,9 @@ namespace vve::simple {
 
 	/// @brief Creates the shared forward/shadow pipelines with a matching specialized material descriptor array.
 	VkResult ForwardRenderer::createScenePipelines(std::uint32_t textureCount) {
+		terrainGbufferPipeline.cleanup();
+		terrainShadowPipeline.cleanup();
+		terrainPipeline.cleanup();
 		gbufferPipeline.cleanup();
 		lightingPipeline.cleanup();
 		deferredPipelineLayout.cleanup();
@@ -368,6 +385,17 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return result; }
 		result = shadowPipeline.create(device.device, pipelineLayout.pipelineLayout, shadowShaderModule.shaderModule, "shadowVertexMain",
 			VK_NULL_HANDLE, vertexInput, VK_FORMAT_UNDEFINED, depthFormat);
+		if (result == VK_SUCCESS && device.tessellationShader) {
+			// Terrain reuses the forward fragment stage; the domain stage supplies the same interpolants as vertexMain.
+			result = terrainPipeline.create(device.device, pipelineLayout.pipelineLayout, terrainVertexShader.shaderModule, "terrainVertexMain",
+				fragShaderModule.shaderModule, vertexInput, hdrFormat, depthFormat, textureCount, false, sampleCount(), {}, "fragmentMain", false, false,
+				terrainHullShader.shaderModule, terrainDomainShader.shaderModule, "terrainDomainMain");
+			if (result == VK_SUCCESS) {
+				result = terrainShadowPipeline.create(device.device, pipelineLayout.pipelineLayout, terrainVertexShader.shaderModule, "terrainVertexMain",
+					VK_NULL_HANDLE, vertexInput, VK_FORMAT_UNDEFINED, depthFormat, 0U, false, VK_SAMPLE_COUNT_1_BIT, {}, "fragmentMain", false, false,
+					terrainHullShader.shaderModule, terrainShadowDomainShader.shaderModule, "terrainShadowDomainMain");
+			}
+		}
 		if (result == VK_SUCCESS && backend_ == RendererBackend::deferred) { result = createDeferredPipelines(textureCount); }
 		if (result == VK_SUCCESS) { namePipelines(); }
 		return result;
@@ -383,6 +411,7 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return result; }
 		// Fresh sets have no GPU users; initialize every slot before the first submission.
 		target.materialsDirty.set();
+		target.terrainDirty.set();
 		target.shadowsDirty.set();
 		for (auto &dirty : target.texturesDirty) { dirty.assign(count, true); }
 		for (std::uint32_t frame{}; frame < framesInFlight; ++frame) {
@@ -482,6 +511,22 @@ namespace vve::simple {
 			if (result != VK_SUCCESS) { return result; }
 			target.texturesDirty[frame][index] = false;
 		}
+		// Terrain heights change only when terrain objects are added or removed; an empty table keeps the unused binding unwritten.
+		if (target.terrainDirty.test(frame) && !terrainHeights_.empty()) {
+			auto &heights = target.terrainBuffers[frame];
+			const auto heightBytes = terrainHeights_.size() * sizeof(float);
+			if (heights.size < heightBytes) {
+				VulkanBuffer replacement{};
+				const VkResult created = replacement.create(allocator, heightBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, BufferMemory::upload);
+				if (created != VK_SUCCESS) { return created; }
+				if (heights.buffer != VK_NULL_HANDLE) { retire(std::move(heights)); }
+				heights = std::move(replacement);
+			}
+			VkResult written = heights.upload(terrainHeights_.data(), heightBytes);
+			if (written == VK_SUCCESS) { written = target.descriptorSets.writeTerrainBuffer(frame, heights.buffer, heights.size); }
+			if (written != VK_SUCCESS) { return written; }
+			target.terrainDirty.reset(frame);
+		}
 		if (!target.materialsDirty.test(frame)) { return VK_SUCCESS; }
 		auto &buffer = target.materialBuffers[frame];
 		const auto bytes = std::max<std::size_t>(materials_.size(), 1U) * sizeof(GpuMaterial);
@@ -501,6 +546,28 @@ namespace vve::simple {
 		target.materialsDirty.reset(frame);
 		++materialUploadCount_;
 		return VK_SUCCESS;
+	}
+
+	/// @brief Packs every terrain's heights once per set of terrain ids; each window slot uploads the table when it is free.
+	void ForwardRenderer::refreshTerrainHeights() {
+		std::vector<std::uint64_t> ids{};
+		if (renderInstances_ != nullptr) {
+			for (const RenderInstance &instance : *renderInstances_) {
+				if (instance.terrain != nullptr) { ids.push_back(instance.terrain->id); }
+			}
+		}
+		if (ids == terrainIds_) { return; }
+		terrainIds_ = std::move(ids);
+		terrainHeights_.clear();
+		terrainOffsets_.clear();
+		if (renderInstances_ != nullptr) {
+			for (const RenderInstance &instance : *renderInstances_) {
+				if (instance.terrain == nullptr || terrainOffsets_.contains(instance.terrain->id)) { continue; }
+				terrainOffsets_.emplace(instance.terrain->id, static_cast<std::uint32_t>(terrainHeights_.size()));
+				terrainHeights_.insert(terrainHeights_.end(), instance.terrain->heights.begin(), instance.terrain->heights.end());
+			}
+		}
+		for (auto &target : targets) { target.terrainDirty.set(); }
 	}
 
 	/**
@@ -761,6 +828,17 @@ namespace vve::simple {
 		shadowDepthReadback.cleanup();
 		shadowDepthSamples.clear();
 		commandPool.cleanup();
+		terrainGbufferPipeline.cleanup();
+		terrainShadowPipeline.cleanup();
+		terrainPipeline.cleanup();
+		terrainShadowDomainShader.cleanup();
+		terrainDomainShader.cleanup();
+		terrainHullShader.cleanup();
+		terrainVertexShader.cleanup();
+		terrainHeights_.clear();
+		terrainOffsets_.clear();
+		terrainIds_.clear();
+		terrainWarned_ = false;
 		gbufferPipeline.cleanup();
 		lightingPipeline.cleanup();
 		deferredPipelineLayout.cleanup();

@@ -391,6 +391,21 @@ export namespace vve {
 		double seconds{}; ///< Nonnegative elapsed seconds; defaults to a paused scene.
 	};
 
+	/// @brief A regular height grid drawn with GPU tessellation; detail follows the distance to the camera.
+	///
+	/// Only the heights and a coarse patch grid are stored on the GPU (about 4 bytes per sample instead of a full
+	/// triangle mesh), so square-kilometre terrains fit easily. Sample (x, z) lies at (x * cell_size, height, z * cell_size)
+	/// in object space; the texture is stretched over the whole grid with u along +X and v along +Z.
+	struct TerrainDescriptor {
+		std::uint32_t columns{};											///< Samples along +X, 2 to 65535.
+		std::uint32_t rows{};												///< Samples along +Z, 2 to 65535.
+		Scalar cell_size{1.0F};											///< Positive distance between neighbouring samples.
+		Vector<float> heights{};											///< columns * rows finite heights, row by row (row z, column x).
+		LinearColor color{.value = oneVec3()};						///< Linear base colour; multiplies the texture.
+		std::filesystem::path base_color_texture{};				///< Optional texture covering the whole grid.
+		Transform transform{};												///< Places sample (0, 0) at the local origin.
+	};
+
 	/// @brief A horizontal water patch with two analytic waves; its handle supports ordinary object operations.
 	struct OceanDescriptor {
 		Vec2 half_extent{100.0F, 100.0F}; ///< Half-size of the finite patch along X and Z.
@@ -399,6 +414,8 @@ export namespace vve {
 		Scalar wavelength{12.0F}; ///< Positive reference wavelength in world units.
 		Scalar speed{1.5F}; ///< Angular wave speed in radians per second.
 		Position position{}; ///< Centre of the undisturbed surface.
+		std::uint32_t columns{64}; ///< Grid cells along X, in [1, 1024]; a few per wavelength suffice for the vertex waves.
+		std::uint32_t rows{64}; ///< Grid cells along Z, in [1, 1024]; a thin strip needs only one.
 	};
 
 	/// @brief Nearest render object found by RenderSystem::raycast.

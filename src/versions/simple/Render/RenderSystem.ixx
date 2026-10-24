@@ -83,10 +83,14 @@ export namespace vve::simple {
 		[[nodiscard]] auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {})	-> std::expected<RenderSceneInstanceHandle, Error>;
 		[[nodiscard]] auto setAtmosphere(AtmosphereSettings settings) -> std::expected<void, Error>;
 		[[nodiscard]] auto atmosphere() const -> AtmosphereSettings;
+		[[nodiscard]] auto setShadowDistance(Scalar distance) -> std::expected<void, Error>;
+		[[nodiscard]] auto shadowDistance() const -> Scalar;
 		[[nodiscard]] auto setSky(SkySettings settings) -> std::expected<void, Error>;
 		[[nodiscard]] auto sky() const -> SkySettings;
 		[[nodiscard]] auto setAnimationTime(AnimationTime time) -> std::expected<void, Error>;
 		[[nodiscard]] auto addOcean(OceanDescriptor ocean = {}) -> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto addWater(MeshDescriptor surface, OceanDescriptor waves = {}) -> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto addTerrain(TerrainDescriptor terrain) -> std::expected<RenderObjectHandle, Error>;
 
 		// Object state, cameras, and lights mirrored into the renderer CPU scene (RenderSystemScene.cpp).
 		[[nodiscard]] auto setObjectUnlit(RenderObjectHandle handle, bool unlit)										-> std::expected<void, Error>;
@@ -288,6 +292,7 @@ export namespace vve::simple {
 		double render_fps_{};															///< Last measured render-frame throughput.
 		std::size_t last_window_count_{0};											///< Number of windows presented in the last frame call.
 		bool initialized_{false};														///< True after the concrete renderer is initialized.
+		std::uint64_t terrain_ids_{0};												///< Last RenderTerrain id handed out by addTerrain.
 	};
 
 } // namespace vve::simple

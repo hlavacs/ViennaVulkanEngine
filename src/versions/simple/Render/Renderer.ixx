@@ -90,6 +90,8 @@ export namespace vve::simple {
 		std::array<std::uint64_t, framesInFlight> submitSerials{}; ///< Last graphics submission using each frame slot, zero before first use.
 		std::array<VulkanBuffer, framesInFlight> materialBuffers{}; ///< Mapped materials written only after the matching fence completes.
 		std::bitset<framesInFlight> materialsDirty{}; ///< Slots awaiting the current dense material table.
+		std::array<VulkanBuffer, framesInFlight> terrainBuffers{}; ///< Mapped terrain heights written only after the matching fence completes.
+		std::bitset<framesInFlight> terrainDirty{}; ///< Slots awaiting the current packed terrain heights.
 		std::array<std::vector<bool>, framesInFlight> texturesDirty{}; ///< Device-sized texture elements awaiting descriptor updates in each slot.
 		std::bitset<framesInFlight> shadowsDirty{}; ///< Slots awaiting replacement shadow views and samplers.
 		std::map<RenderMeshHandle, DynamicVertices> dynamicVertices{}; ///< Per-slot vertex storage allocated only for edited meshes.
@@ -149,6 +151,13 @@ export namespace vve::simple {
 		VulkanGraphicsPipeline graphicsPipeline{}; ///< Owned forward graphics pipeline for swapchain rendering.
 		VulkanGraphicsPipeline transparentPipeline{}; ///< Owned blended forward pipeline without depth writes, for transparent objects.
 		VulkanGraphicsPipeline shadowPipeline{};   ///< Owned depth-only pipeline shared by every shadow layer.
+		VulkanShaderModule terrainVertexShader{};  ///< Terrain patch-corner pass-through vertex stage.
+		VulkanShaderModule terrainHullShader{};    ///< Distance-based edge tessellation levels per terrain patch.
+		VulkanShaderModule terrainDomainShader{};  ///< Samples the height grid for colour and G-buffer passes.
+		VulkanShaderModule terrainShadowDomainShader{}; ///< Samples the height grid into a shadow matrix.
+		VulkanGraphicsPipeline terrainPipeline{};       ///< Tessellated forward terrain; empty without the tessellationShader feature.
+		VulkanGraphicsPipeline terrainShadowPipeline{}; ///< Tessellated depth-only terrain for every shadow layer.
+		VulkanGraphicsPipeline terrainGbufferPipeline{}; ///< Tessellated opaque terrain attributes for the deferred backend.
 		VulkanMesh skyMesh{};                      ///< Inward cube that carries the physical sky behind all geometry.
 		VulkanCommandPool commandPool{};       ///< Owned resettable command pool for the graphics queue family.
 		std::map<RenderMeshHandle, VulkanMesh> meshes{}; ///< One owned GPU mesh per referenced RenderMesh handle.
@@ -303,6 +312,10 @@ export namespace vve::simple {
 		void setAtmosphere(AtmosphereSettings settings) { atmosphere_ = settings; }
 		/// @brief Reads the configured haze without touching Vulkan resources.
 		AtmosphereSettings atmosphere() const { return atmosphere_; }
+		/// @brief Stores the validated camera distance covered by directional shadow cascades.
+		void setDirectionalShadowDistance(Scalar distance) { directionalShadowDistance_ = distance; }
+		/// @brief Reads the directional shadow reach; defaults to Scene's shadowDistance.
+		Scalar directionalShadowDistance() const { return directionalShadowDistance_; }
 		/// @brief Stores validated physical sky settings, shared by every window.
 		void setSky(SkySettings settings) { sky_ = settings; }
 		/// @brief Returns the physical sky settings.
@@ -341,6 +354,11 @@ export namespace vve::simple {
 		/// @brief Distinguishes presentation, a temporary skip and a fatal rendering failure.
 		[[nodiscard]] auto renderFrame(WindowTarget &target, VulkanReadback *readback = nullptr) -> std::expected<FrameOutcome, Error> { return drawFrame(target, readback); }
 
+		/// @brief Reports whether addTerrain objects are drawn; they need the tessellationShader device feature.
+		[[nodiscard]] bool terrainSupported() const { return device.tessellationShader; }
+		/// @brief Packed heights of every terrain instance, in the order the shaders address them.
+		[[nodiscard]] const std::vector<float> &terrainHeights() const { return terrainHeights_; }
+
 		/// @brief Borrows CPU mesh data for diagnostics; invalidated by scene mutation or destruction.
 		[[nodiscard]] const RenderMesh *findRenderMesh(RenderMeshHandle handle) const {
 			if (renderMeshes_ == nullptr) { return nullptr; }
@@ -367,6 +385,7 @@ export namespace vve::simple {
 		void nameShadowMap(const ShadowMap &map); ///< Debug builds: names a shadow array, its sampler and every layer by light and face.
 		void namePipelines(); ///< Debug builds: names the shader modules and pipelines of both backends.
 		[[nodiscard]] VkResult writeSceneDescriptors(WindowTarget &target, std::uint32_t frame); ///< Updates only a completed slot's materials and changed texture elements.
+		void refreshTerrainHeights(); ///< Repacks terrain heights when terrain instances were added or removed.
 		[[nodiscard]] VkResult uploadDynamicVertices(WindowTarget &target, std::uint32_t frame);
 		[[nodiscard]] auto reportFrameFailure(const char *stage, VkResult result) -> std::unexpected<Error>;
 		[[nodiscard]] VkResult recordCommandBuffer(WindowTarget &target, std::uint32_t frameIndex, std::uint32_t imageIndex, const Mat4 &viewProjection, bool drawGui);
@@ -402,6 +421,7 @@ export namespace vve::simple {
 		RenderScene *renderScene_{nullptr}; ///< Borrowed owner; renderer selects texture capacity, restores pixels and updates decode bookkeeping.
 		std::optional<Error> textureUploadError_{}; ///< Decode error retained through Vulkan cleanup for the expected-returning caller.
 		AtmosphereSettings atmosphere_{}; ///< Height-dependent haze; density zero preserves existing output.
+		Scalar directionalShadowDistance_{shadowDistance}; ///< Camera distance covered by the cascades; the default preserves existing output.
 		SkySettings sky_{}; ///< Physical sky; disabled by default, which preserves existing output.
 		AnimationTime animation_time_{}; ///< Explicit animation seconds shared by all windows in a logical frame.
 		std::optional<Error> frameError_{}; ///< Fatal draw failure retained until cleanup; damaged synchronization must never become a successful skip.
@@ -425,6 +445,10 @@ export namespace vve::simple {
 		bool sceneMaterialsDirty_{true}; ///< CPU material additions or removals require a dense-buffer rebuild.
 		bool gpuDebugReadback_{false}; ///< False during normal rendering to avoid per-frame GPU stalls.
 		std::set<RenderMeshHandle> sceneGeometryDirty_{}; ///< Existing GPU meshes requiring a vertex-buffer refresh.
+		std::vector<float> terrainHeights_{}; ///< Every terrain's heights back to back, uploaded per window slot when it changes.
+		std::unordered_map<std::uint64_t, std::uint32_t> terrainOffsets_{}; ///< RenderTerrain id to its first sample in terrainHeights_.
+		std::vector<std::uint64_t> terrainIds_{}; ///< Terrain ids in instance order at the last repack.
+		bool terrainWarned_{false}; ///< One warning when terrain exists but the device cannot tessellate.
 	};
 
 } // namespace vve::simple

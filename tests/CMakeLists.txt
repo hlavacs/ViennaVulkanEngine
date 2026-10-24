@@ -85,6 +85,7 @@ vve_add_engine_test(RenderRuntimeUpdateTests GPU Vulkan::Vulkan vve_test_support
 vve_add_engine_test(RenderResizeTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderAntialiasingTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderEnvironmentTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(RenderTerrainTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(MultiWindowRenderTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderShadowOcclusionTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(RenderTextureDedupTests GPU Vulkan::Vulkan vve_test_support)
@@ -177,7 +178,7 @@ endif()
 # Reuse the existing assertions and assets against deferred rendering, with serialized fixture ownership.
 foreach(renderer_regression IN ITEMS
    RenderFrameCountTests RenderRuntimeUpdateTests RenderResizeTests RenderAntialiasingTests
-   RenderEnvironmentTests MultiWindowRenderTests RenderShadowOcclusionTests
+   RenderEnvironmentTests RenderTerrainTests MultiWindowRenderTests RenderShadowOcclusionTests
    RenderTextureDedupTests RenderTextureOrientationTests RenderTexturedPlaneTests VulkanTextureTests
    RenderMaterialImportTests RenderLightingCaptureTests RenderMaterialLightingTests RenderSponzaCaptureTests
    RenderMeshDedupTests GuiCallbackErrorTests GuiColorCaptureTests GuiImageCaptureTests

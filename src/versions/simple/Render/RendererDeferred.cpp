@@ -95,6 +95,12 @@ namespace vve::simple {
 		result = gbufferPipeline.create(device.device, pipelineLayout.pipelineLayout, vertShaderModule.shaderModule, "vertexMain",
 			gbufferShader.shaderModule, vertexInput, gbufferFormats[0], depthFormat, textureCount, false, sampleCount(), gbufferFormats, perSample ? "gbufferMsaaMain" : "gbufferMain", false, perSample);
 		if (result != VK_SUCCESS) { return result; }
+		if (device.tessellationShader) {
+			result = terrainGbufferPipeline.create(device.device, pipelineLayout.pipelineLayout, terrainVertexShader.shaderModule, "terrainVertexMain",
+				gbufferShader.shaderModule, vertexInput, gbufferFormats[0], depthFormat, textureCount, false, sampleCount(), gbufferFormats,
+				perSample ? "gbufferMsaaMain" : "gbufferMain", false, perSample, terrainHullShader.shaderModule, terrainDomainShader.shaderModule, "terrainDomainMain");
+			if (result != VK_SUCCESS) { return result; }
+		}
 		return lightingPipeline.create(device.device, deferredPipelineLayout.pipelineLayout, lightingVertexShader.shaderModule, "lightingVertexMain",
 			lightingShader.shaderModule, vertexInput, VK_FORMAT_R16G16B16A16_SFLOAT, depthFormat, textureCount, false, sampleCount(), {}, "lightingMain", true, perSample);
 	}

@@ -47,9 +47,15 @@ import VVEngine.Simple.Vulkan;
          if (bindings[shadow].binding != shadow || bindings[shadow].descriptorCount != 1U ||
             bindings[shadow].descriptorType != VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER) { return false; }
       }
+      // Frame uniforms are also read by the terrain tessellation stages, the height grid only by the domain stage.
       if (bindings[vve::simple::shaderBinding::frameUniforms].stageFlags !=
-         (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) ||
+         (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT |
+          VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT | VK_SHADER_STAGE_FRAGMENT_BIT) ||
          bindings[vve::simple::shaderBinding::materials].stageFlags != VK_SHADER_STAGE_FRAGMENT_BIT) { return false; }
+      const auto &heights = bindings[vve::simple::shaderBinding::terrainHeights];
+      if (heights.binding != vve::simple::shaderBinding::terrainHeights || heights.descriptorCount != 1U ||
+         heights.descriptorType != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+         heights.stageFlags != VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) { return false; }
    }
    std::println("[VulkanDeviceRequirementsTests] descriptor_limits=4 resource_budget=true exhausted_limits=0");
    return true;

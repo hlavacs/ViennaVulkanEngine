@@ -12,6 +12,8 @@
 #define VVE_SHADOW_MAP_RESOLUTION 1024
 #define VVE_NO_TEXTURE 0xFFFFFFFFu
 #define VVE_MATERIAL_BINDING 5
+#define VVE_TERRAIN_HEIGHT_BINDING 6 ///< StructuredBuffer<float> of all addTerrain height grids, read by the tessellation stages.
+#define VVE_TERRAIN_PATCH_CELLS 32 ///< Grid cells along one terrain patch edge; also its highest useful tessellation level.
 #define VVE_SHADOW_NEAR_PLANE 0.1f              ///< Near plane used by all shadow projections.
 #define VVE_SHADOW_OCCLUDED_FACTOR 0.35f       ///< Partial-light floor for occluded shadow samples.
 #define VVE_DIRECTIONAL_SHADOW_BIAS 0.00005f   ///< Receiver bias for the nearest directional cascade.

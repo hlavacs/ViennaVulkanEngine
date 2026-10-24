@@ -26,6 +26,7 @@ namespace vve::simple {
 			bool castsShadow{};             ///< Whether this visible instance participates in shadow passes.
 			bool sky{};                     ///< Drawn after solid objects and before transparent ones, never culled.
 			bool transparent{};             ///< Blended after all solid objects, without depth writes.
+			bool terrain{};                 ///< Tessellated height grid, drawn first with the terrain pipelines.
 			Scalar distance{};              ///< Squared camera distance; transparent items draw far to near.
 		};
 
@@ -137,6 +138,7 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return reportFrameFailure("fence wait", result); }
 		collectRetiredResources(target.submitSerials[frameIndex]);
 		if (const VkResult sync = syncSceneResources(); sync != VK_SUCCESS) { return reportFrameFailure("scene sync", sync); }
+		refreshTerrainHeights();
 		result = writeSceneDescriptors(target, frameIndex);
 		if (result != VK_SUCCESS) { return reportFrameFailure("scene descriptors", result); }
 		result = uploadDynamicVertices(target, frameIndex);
@@ -320,16 +322,25 @@ namespace vve::simple {
 				const auto dynamic = target.dynamicVertices.find(instance.mesh);
 				const bool blendedMaterial{materials_[material->second].emissiveFactor.w == static_cast<Scalar>(AlphaMode::blend)};
 				const Vec3 position{instance.world_transform[3][0], instance.world_transform[3][1], instance.world_transform[3][2]};
+				const bool terrain{instance.terrain != nullptr};
 				const std::uint32_t flags{(instance.unlit ? objectFlag::unlit : 0U) | (instance.sky ? objectFlag::sky : 0U) |
-					(instance.sprite ? objectFlag::sprite : 0U) | (instance.waves.w != zero() ? objectFlag::water : 0U)};
-				const bool transparent{blendedMaterial || instance.opacity < one() || instance.sprite};
+					(instance.sprite ? objectFlag::sprite : 0U) | (instance.waves.w != zero() ? objectFlag::water : 0U) | (terrain ? objectFlag::terrain : 0U)};
+				const bool transparent{!terrain && (blendedMaterial || instance.opacity < one() || instance.sprite)};
+				Vec4 waves{instance.waves};
+				if (terrain) {
+					// Offsets, columns and rows are exact float integers below 2^24; the shaders round them back.
+					const auto offset = terrainOffsets_.find(instance.terrain->id);
+					if (offset == terrainOffsets_.end() || offset->second >= (1U << 24U)) { continue; }
+					waves = Vec4{static_cast<Scalar>(offset->second), static_cast<Scalar>(instance.terrain->columns),
+						static_cast<Scalar>(instance.terrain->rows), instance.terrain->cell_size};
+				}
 				items.push_back({.mesh = &mesh,
 					.vertices = dynamic == target.dynamicVertices.end() ? mesh.vertexBuffer.buffer : dynamic->second.first[frameIndex].buffer,
-					.object = {.model = instance.world_transform, .materialIndex = material->second, .flags = flags, .opacity = instance.opacity, .waves = instance.waves},
+					.object = {.model = instance.world_transform, .materialIndex = material->second, .flags = flags, .opacity = instance.opacity, .waves = waves},
 					.worldBounds = instance.sky ? Bounds{} : instance.sprite ? spriteBounds(mesh.localBox, instance.world_transform) // Invalid bounds are never culled.
 						: worldBounds(mesh.localBox, instance.world_transform),
 					.castsShadow = instance.casts_shadow && !transparent && !instance.sky, .sky = instance.sky, .transparent = transparent,
-					.distance = lengthSquared(subtract(position, eye))});
+					.terrain = terrain, .distance = lengthSquared(subtract(position, eye))});
 				if (instance.waves.w != zero() && items.back().worldBounds.valid) {
 					items.back().worldBounds.minimum.value.y -= instance.waves.x;
 					items.back().worldBounds.maximum.value.y += instance.waves.x;
@@ -339,8 +350,8 @@ namespace vve::simple {
 		if (sky_.enabled) {
 			items.push_back({.mesh = &skyMesh, .vertices = skyMesh.vertexBuffer.buffer, .object = {.model = identityMat4(), .flags = objectFlag::sky}, .sky = true});
 		}
-		// Order: solid (by mesh), sky, transparent (far to near).
-		const auto group = [](const DrawItem &item) { return item.transparent ? 2 : item.sky ? 1 : 0; };
+		// Order: terrain, solid (by mesh), sky, transparent (far to near); terrain first needs one pipeline switch per pass.
+		const auto group = [](const DrawItem &item) { return item.transparent ? 3 : item.sky ? 2 : item.terrain ? 0 : 1; };
 		std::ranges::sort(items, [&group](const DrawItem &left, const DrawItem &right) {
 			if (group(left) != group(right)) { return group(left) < group(right); }
 			return left.transparent ? left.distance > right.distance : std::less<const VulkanMesh *>{}(left.mesh, right.mesh);
@@ -349,11 +360,28 @@ namespace vve::simple {
 		const auto drawUploadedObjects = [&](std::uint32_t shadowMatrixIndex, bool shadowPass, const Mat4 &clip, RecordedPass scenePass = RecordedPass::forward_color) {
 			const auto planes = frustumPlanes(clip);
 			bool blending{}; // The colour pass switches to the blended pipeline at the first transparent item.
+			// Callers bind the pass pipeline; terrain items switch to its tessellated twin and back.
+			const VkPipeline passPipeline = shadowPass ? shadowPipeline.pipeline : scenePass == RecordedPass::gbuffer ? gbufferPipeline.pipeline : graphicsPipeline.pipeline;
+			const VkPipeline terrainPassPipeline = shadowPass ? terrainShadowPipeline.pipeline
+				: scenePass == RecordedPass::gbuffer ? terrainGbufferPipeline.pipeline : terrainPipeline.pipeline;
+			bool terrainBound{};
 			// Bound mesh state survives dynamic-rendering boundaries and pipeline changes.
 			for (const auto &item : items) {
 				const bool opaque = !item.sky && !item.transparent;
 				if (!shadowPass && ((scenePass == RecordedPass::gbuffer && !opaque) || (scenePass == RecordedPass::forward_transparency && opaque))) { continue; }
 				if ((shadowPass && !item.castsShadow) || !intersectsFrustum(item.worldBounds, planes)) { continue; }
+				if (item.terrain && terrainPassPipeline == VK_NULL_HANDLE) {
+					if (!terrainWarned_) {
+						std::cerr << "[vve::simple] terrain skipped: the device does not support tessellation shaders\n";
+						terrainWarned_ = true;
+					}
+					continue;
+				}
+				if (item.terrain != terrainBound) {
+					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, item.terrain ? terrainPassPipeline : passPipeline);
+					++lastFrameDrawStats_.pipelineBinds;
+					terrainBound = item.terrain;
+				}
 				if (!shadowPass && item.transparent && !blending) {
 					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentPipeline.pipeline);
 					++lastFrameDrawStats_.pipelineBinds;
@@ -368,9 +396,14 @@ namespace vve::simple {
 				}
 				auto pushConstants = item.object;
 				pushConstants.shadowMatrixIndex = shadowMatrixIndex;
-				vkCmdPushConstants(commandBuffer, pipelineLayout.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT, 0U, sizeof(ObjectPushConstants), &pushConstants);
+				vkCmdPushConstants(commandBuffer, pipelineLayout.pipelineLayout, objectPushConstantStages, 0U, sizeof(ObjectPushConstants), &pushConstants);
 				vkCmdDrawIndexed(commandBuffer, item.mesh->indexCount, 1U, 0U, 0, 0U);
 				++(shadowPass ? lastFrameDrawStats_.shadowDraws : lastFrameDrawStats_.forwardDraws);
+			}
+			// The next pass or shadow layer expects its own pipeline, as bound before this call.
+			if (terrainBound) {
+				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, passPipeline);
+				++lastFrameDrawStats_.pipelineBinds;
 			}
 		};
 		// Only shadow-casting layers are cleared and drawn; inactive layers retain their shader-read layout.

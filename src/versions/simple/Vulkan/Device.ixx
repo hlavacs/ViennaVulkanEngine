@@ -434,6 +434,7 @@ export namespace vve::simple {
 		bool swapchainMutableFormat{false};           ///< Whether the optional GUI UNORM swapchain views are enabled.
 		bool sampleRateShading{false};               ///< Optional per-sample lighting enabled before runtime backend selection.
 		bool samplerAnisotropy{false};                ///< Whether the optional material sampler feature is enabled.
+		bool tessellationShader{false};               ///< Whether terrain tessellation (RenderSystem::addTerrain) can be drawn.
 
 		VulkanDevice() = default;
 		VulkanDevice(const VulkanDevice &) = delete;
@@ -490,6 +491,7 @@ export namespace vve::simple {
 			VkPhysicalDeviceFeatures supportedFeatures{};
 			vkGetPhysicalDeviceFeatures(physicalDevice, &supportedFeatures);
 			const VkPhysicalDeviceFeatures enabledFeatures{
+				.tessellationShader = supportedFeatures.tessellationShader, ///< Optional distance-based terrain tessellation.
 				.sampleRateShading = supportedFeatures.sampleRateShading, ///< Enable optional deferred MSAA without recreating the device.
 				.samplerAnisotropy = supportedFeatures.samplerAnisotropy, ///< Enable anisotropic material sampling only when supported.
 				.shaderSampledImageArrayDynamicIndexing = VK_TRUE, ///< Fragment shader indexes the texture array by material; checked in device selection.
@@ -528,6 +530,7 @@ export namespace vve::simple {
 			swapchainMutableFormat = mutableFormat;
 			sampleRateShading = enabledFeatures.sampleRateShading == VK_TRUE;
 			samplerAnisotropy = enabledFeatures.samplerAnisotropy == VK_TRUE;
+			tessellationShader = enabledFeatures.tessellationShader == VK_TRUE;
 			vkGetDeviceQueue(device, graphicsQueueFamily, 0U, &graphicsQueue);
 			vkGetDeviceQueue(device, presentQueueFamily, 0U, &presentQueue);
 			return VK_SUCCESS;
@@ -539,6 +542,7 @@ export namespace vve::simple {
 			swapchainMutableFormat = false;
 			sampleRateShading = false;
 			samplerAnisotropy = false;
+			tessellationShader = false;
 			graphicsQueue = VK_NULL_HANDLE;
 			presentQueue = VK_NULL_HANDLE;
 		}

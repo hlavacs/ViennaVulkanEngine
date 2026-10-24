@@ -62,7 +62,7 @@ struct ObjectPushConstants
     float4x4 model;         ///< Object-local model matrix selected before each draw call.
     uint materialIndex;    ///< Dense slot in the material storage buffer.
     uint shadowMatrixIndex; ///< Index into frame.shadowViewProjs used by the shadow vertex stage.
-    uint flags;             ///< Bit 0 unlit, bit 1 sky, bit 2 sprite, bit 3 water (mirrors objectFlag in Vulkan/Pipeline.ixx).
+    uint flags;             ///< Bit 0 unlit, bit 1 sky, bit 2 sprite, bit 3 water, bit 4 terrain (mirrors objectFlag in Vulkan/Pipeline.ixx).
     float opacity;          ///< Object alpha multiplied with the material alpha.
     float4 waves;           ///< Water height, wavelength, angular speed and enabled flag.
 };
@@ -140,6 +140,9 @@ Sampler2DArrayShadow pointShadowArray; ///< Point light comparison-depth array, 
 
 [[vk::binding(VVE_MATERIAL_BINDING, 0)]]
 StructuredBuffer<GpuMaterial> materials; ///< Dense materials selected by each object's material index.
+
+[[vk::binding(VVE_TERRAIN_HEIGHT_BINDING, 0)]]
+StructuredBuffer<float> terrainHeights; ///< Heights of every addTerrain grid back to back; read by the terrain domain stages.
 
 [[vk::push_constant]]
 ObjectPushConstants object; ///< Per-object transform constants.
@@ -289,6 +292,136 @@ float4 shadowVertexMain(VertexInput input) : SV_Position
     float4 worldPosition = mul(object.model, float4(input.position, 1.0));
     if ((object.flags & kWaterFlag) != 0) worldPosition.y += oceanWave(worldPosition.xz).x;
     return mul(frame.shadowViewProjs[object.shadowMatrixIndex], worldPosition); ///< Shadows follow the same animated surface.
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Terrain (RenderSystem::addTerrain): 4-corner patches, tessellated by camera distance, displaced from a height grid.
+// object.waves holds the grid: first sample in terrainHeights, columns, rows (exact float integers) and cell size.
+// ---------------------------------------------------------------------------------------------------------------
+
+static const float kTerrainEdgePixels = 6.0; ///< Target projected length of one tessellated terrain edge.
+
+/// @brief Patch corner in object space, passed unchanged to the hull stage.
+struct TerrainControlPoint
+{
+    [[vk::location(0)]] float3 position : POSITION;  ///< Object-space corner; y is the corner height.
+    [[vk::location(1)]] float2 texCoord : TEXCOORD0; ///< Grid texture coordinate of the corner.
+};
+
+/// @brief Edge and inside tessellation levels of one quad patch.
+struct TerrainPatch
+{
+    float edges[4] : SV_TessFactor;       ///< Edges u = 0, v = 0, u = 1, v = 1.
+    float inside[2] : SV_InsideTessFactor; ///< Along u and along v.
+};
+
+/// @brief World-space camera position from the view matrix: eye = -R^T t.
+float3 cameraPosition()
+{
+    const float3 t = float3(frame.view[0].w, frame.view[1].w, frame.view[2].w);
+    return -(frame.view[0].xyz * t.x + frame.view[1].xyz * t.y + frame.view[2].xyz * t.z);
+}
+
+/// @brief Tessellation level of one patch edge from its projected length; neighbours compute the same value.
+///
+/// The midpoint and length are rounded to centimetres, so a shared edge of two tiles whose model matrices differ by a
+/// rounding error still gets the identical level and the surfaces meet without cracks.
+float terrainEdgeLevel(float3 a, float3 b)
+{
+    const float3 worldA = mul(object.model, float4(a, 1.0)).xyz;
+    const float3 worldB = mul(object.model, float4(b, 1.0)).xyz;
+    const float3 middle = round((worldA + worldB) * 50.0) / 100.0;
+    const float edgeLength = round(distance(worldA, worldB) * 100.0) / 100.0;
+    const float cameraDistance = max(distance(middle, cameraPosition()), 0.01);
+    const float pixelsPerUnit = frame.viewport.y * 0.5 * abs(frame.projection[1][1]) / cameraDistance;
+    // More levels than samples along the edge add no detail; 64 is the guaranteed hardware limit.
+    const float samples = max(round(distance(a.xz, b.xz) / object.waves.w), 1.0);
+    return clamp(edgeLength * pixelsPerUnit / kTerrainEdgePixels, 1.0, min(min(samples, float(VVE_TERRAIN_PATCH_CELLS)), 64.0));
+}
+
+/// @brief Bilinear height at an object-space XZ position, clamped to the grid.
+float terrainHeight(float2 position)
+{
+    const uint offset = uint(object.waves.x + 0.5);
+    const uint columns = uint(object.waves.y + 0.5);
+    const uint rows = uint(object.waves.z + 0.5);
+    const float2 grid = clamp(position / object.waves.w, float2(0.0), float2(float(columns - 1), float(rows - 1)));
+    const uint2 base = min(uint2(grid), uint2(columns - 2, rows - 2));
+    const float2 f = grid - float2(base);
+    const uint index = offset + base.y * columns + base.x;
+    const float bottom = lerp(terrainHeights[index], terrainHeights[index + 1], f.x);
+    const float top = lerp(terrainHeights[index + columns], terrainHeights[index + columns + 1], f.x);
+    return lerp(bottom, top, f.y);
+}
+
+/// @brief Object-space surface point of the domain location (u along corners 0-1, v along corners 0-3).
+float3 terrainPoint(float2 uv, OutputPatch<TerrainControlPoint, 4> patch)
+{
+    const float3 flat = lerp(lerp(patch[0].position, patch[1].position, uv.x), lerp(patch[3].position, patch[2].position, uv.x), uv.y);
+    return float3(flat.x, terrainHeight(flat.xz), flat.z);
+}
+
+[shader("vertex")]
+TerrainControlPoint terrainVertexMain(VertexInput input)
+{
+    TerrainControlPoint output;
+    output.position = input.position;
+    output.texCoord = input.texCoord;
+    return output;
+}
+
+/// @brief Per-patch levels; inside levels follow the larger of the two opposite edges.
+TerrainPatch terrainPatchLevels(InputPatch<TerrainControlPoint, 4> patch)
+{
+    TerrainPatch output;
+    output.edges[0] = terrainEdgeLevel(patch[0].position, patch[3].position);
+    output.edges[1] = terrainEdgeLevel(patch[0].position, patch[1].position);
+    output.edges[2] = terrainEdgeLevel(patch[1].position, patch[2].position);
+    output.edges[3] = terrainEdgeLevel(patch[3].position, patch[2].position);
+    output.inside[0] = max(output.edges[1], output.edges[3]);
+    output.inside[1] = max(output.edges[0], output.edges[2]);
+    return output;
+}
+
+[shader("hull")]
+[domain("quad")]
+[partitioning("fractional_odd")]
+[outputtopology("triangle_ccw")]
+[outputcontrolpoints(4)]
+[patchconstantfunc("terrainPatchLevels")]
+TerrainControlPoint terrainHullMain(InputPatch<TerrainControlPoint, 4> patch, uint id : SV_OutputControlPointID)
+{
+    return patch[id];
+}
+
+[shader("domain")]
+[domain("quad")]
+[partitioning("fractional_odd")] // must match terrainHullMain: Slang otherwise emits SpacingEqual here
+VertexOutput terrainDomainMain(TerrainPatch levels, float2 uv : SV_DomainLocation, OutputPatch<TerrainControlPoint, 4> patch)
+{
+    const float cell = object.waves.w;
+    const float3 local = terrainPoint(uv, patch);
+    // Central differences of the height grid give the normal, independent of the tessellation level.
+    const float dx = terrainHeight(local.xz + float2(cell, 0.0)) - terrainHeight(local.xz - float2(cell, 0.0));
+    const float dz = terrainHeight(local.xz + float2(0.0, cell)) - terrainHeight(local.xz - float2(0.0, cell));
+    const float3 localNormal = normalize(float3(-dx, 2.0 * cell, -dz));
+    const float4 worldPosition = mul(object.model, float4(local, 1.0));
+    VertexOutput output;
+    output.position = mul(frame.projection, mul(frame.view, worldPosition));
+    output.worldPos = worldPosition.xyz;
+    output.texCoord = lerp(lerp(patch[0].texCoord, patch[1].texCoord, uv.x), lerp(patch[3].texCoord, patch[2].texCoord, uv.x), uv.y);
+    output.normal = normalizeTransformed(localNormal, mul(normalMatrix(object.model), localNormal));
+    output.tangent = float4(0.0);
+    return output;
+}
+
+[shader("domain")]
+[domain("quad")]
+[partitioning("fractional_odd")] // must match terrainHullMain: Slang otherwise emits SpacingEqual here
+float4 terrainShadowDomainMain(TerrainPatch levels, float2 uv : SV_DomainLocation, OutputPatch<TerrainControlPoint, 4> patch) : SV_Position
+{
+    const float4 worldPosition = mul(object.model, float4(terrainPoint(uv, patch), 1.0));
+    return mul(frame.shadowViewProjs[object.shadowMatrixIndex], worldPosition);
 }
 
 /// @brief Three material attachments, evaluated once by either geometry path in linear colour space.
