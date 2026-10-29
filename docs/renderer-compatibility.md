@@ -1,5 +1,11 @@
 # Renderer application compatibility
 
+Revision scope: V3 `24760ae1`, updated 29 October 2026. The pass/capture matrix below records earlier
+verification; it is not a claim of a fresh all-platform test run. Terrain now adds a 25th paired
+renderer regression, but its GPU checks skip without `tessellationShader`. macOS engine support
+does not imply that optional terrain tessellation is supported by the selected Vulkan implementation.
+See [the current guides](vvengine_beginner_quickstart.pdf) for startup selection and capability limits.
+
 Every current graphical VVE example and game accepts `--renderer forward|deferred`.
 Omitting this option preserves forward rendering. Selection uses
 `RenderSystem::setRendererBackend()` after initialization and before the first

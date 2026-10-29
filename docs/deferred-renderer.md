@@ -1,5 +1,15 @@
 # Runtime renderer selection
 
+Updated 29 October 2026 against V3 `24760ae1` (25 October). Recorded captures and pass results
+below are historical evidence, not fresh validation of this revision.
+
+The current paired regression set contains 25 tests, including `RenderTerrainTests`. Terrain needs
+optional `tessellationShader`: its rendering assertions skip on unsupported devices even if the
+overall test succeeds. The inspected Windows Debug tree registers 163 runs including Profiles
+(105 gpu-labelled, 31 deferred-labelled); without that optional layer these counts are 162/104/30.
+Labels overlap and registrations are not passing results. Run `ctest --test-dir <build> -N` to list
+your configuration. Windows compile-only: `build_windows.cmd debug --no-tests`.
+
 Both rendering paths are compiled into the simple engine. Forward rendering is
 always the default; no CMake renderer option or process-wide selection is used.
 The existing `VVE_ENGINE_IMPLEMENTATION_NAMESPACE` still selects the complete

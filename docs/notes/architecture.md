@@ -1,25 +1,48 @@
-# Engine architecture (after the 2026-09 simplification)
+# Engine architecture (V3 snapshot 24760ae1)
 
-Line counts are rounded and refer to the current tree (simple engine about 7.6k lines; the
-simplification took it from 10 409 to 6 781 lines at commit `7cce3e7a`).
+Updated 29 October 2026 against commit `24760ae1` (25 October). Physical source counts include
+comments, blank lines, headers and shaders: facade 2,575 lines, binding 26, simple implementation
+11,963 (core 2,585, Render 5,380, Vulkan 2,932, shaders/shared header 1,066).
+The historical simplification reduced simple from 10,409 to 6,781 lines at `7cce3e7a`.
+
+## Current rendering extensions
+
+Forward is the default; `setRendererBackend(RendererBackend::deferred)` chooses the shared engine's
+alternative opaque path before GPU startup. It does not replace the implementation selected by CMake.
+Deferred writes three G-buffer images plus depth, then fullscreen HDR lighting; sky, transparency
+and water use forward shaders. See [backend details](../deferred-renderer.md).
+
+`setSky` enables the physical sky/cloud path; `setAtmosphere` controls height fog.
+Games advance `setAnimationTime(AnimationTime{seconds})`; zero is the initial paused clock.
+`addTerrain` stores a regular height grid and uses distance-based tessellation. Its height storage
+buffer is binding 6 of the shared descriptor layout, visible to tessellation evaluation. Without
+`tessellationShader`, terrain is omitted with one warning; the corresponding GPU test can skip.
+`addWater` takes arbitrary mesh geometry and ocean wave/colour settings, ignoring the ocean grid,
+position and extent. `setShadowDistance` sets directional cascade reach (default 60 world units).
+
+Suitable discrete GPUs rank before integrated, virtual and CPU devices. Case-sensitive
+`VVE_GPU=<name part>` moves matching devices first, without bypassing suitability or prohibiting
+fallback. Debug RenderDoc labels and captures are documented in [RenderDoc.md](../RenderDoc.md).
+The forward-path walkthrough below describes the default path; use the backend guide for deferred
+attachments, barriers and MSAA rather than assuming the same scene-colour recording sequence.
 
 ## 1. Three layers, one direction
 
 ```
-application (examples/*, tests/*)            uses only vve::*
+application (examples and public-API tests) uses vve::*; white-box tests also import implementation modules
    |  import VVEngine;
    v
-VVEngine  (src/, namespace vve, ~3.1k lines)                        facade / public contract
+VVEngine  (src/, namespace vve, ~2.6k lines)                        facade / public contract
    Engine<TSystems...>, World<...>, wrappers AssetSystem . RenderSystem . WindowSystem . GuiSystem (each `Impl &impl_`)
    vocabulary: VVEngine.Types . Math . Error . Handle . Vector . ECSContainer
    |  import VVEngine.Simple;   (only in src/implementations/simple.ixx, the :Implementation partition)
    v
-VVEngine.Simple  (src/versions/simple, namespace vve::simple, 7.6k lines)   implementation
+VVEngine.Simple  (src/versions/simple, namespace vve::simple, ~12.0k lines) implementation
    Engine -> ECS . WindowSystem(SDL3) . AssetSystem(assimp) . RenderSystem . GuiSystem(ImGui)
-   partitions :Graph :Window :Assets :Gui :RenderSystem + 3 .cpp implementation units
+   module interfaces plus .cpp implementation units for assets, audio and rendering
    |
    v
-VVEngine.Simple.Renderer  (ForwardRenderer, 1.5k)  ->  VVEngine.Simple.Vulkan  (RAII wrappers + VMA, 2.2k)
+VVEngine.Simple.Renderer (shared forward/deferred host) -> VVEngine.Simple.Vulkan (RAII wrappers + VMA, ~2.9k)
    |                                                      :OwnedHandle :Memory :Device :Commands :Presentation
    |                                                      :Pipeline :Shadow :Readback :Resources
    v

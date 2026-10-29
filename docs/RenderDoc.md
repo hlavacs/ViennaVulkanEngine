@@ -1,5 +1,8 @@
 # Inspecting frames with RenderDoc
 
+Updated 29 October 2026 for V3 `24760ae1` (25 October). Screenshots/capture results described here
+retain their original provenance; this update does not create a new capture.
+
 [RenderDoc](https://renderdoc.org) captures one frame of a running program and
 shows every pass, draw call and image of it. In a **Debug** build the simple
 engine names its Vulkan objects and labels its passes through
@@ -8,7 +11,7 @@ Release builds do none of this and pay nothing for it.
 
 ## Capturing a frame
 
-1. Build Debug: `build_windows.cmd debug` (or `./build_linux.sh debug`).
+1. Build Debug: `build_windows.cmd debug --no-tests` to compile without running tests, or `./build_linux.sh debug` on Linux. In a configured tree, `cmake --build <build> --parallel` also builds without invoking CTest.
 2. In RenderDoc choose *File → Launch Application*, set the executable, for
    example `bin\debug\exe\light_shadow_debug.exe` with the arguments
    `--renderer deferred`, and press *Launch*.

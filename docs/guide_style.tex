@@ -5,7 +5,7 @@
 \setsansfont{Liberation Sans}
 \setmonofont{Liberation Mono}
 \usepackage{xcolor,graphicx,booktabs,tabularx,longtable,array}
-\usepackage{listings,hyperref,tikz}
+\usepackage{listings,hyperref,tikz,etoolbox}
 \usetikzlibrary{arrows.meta,positioning}
 \definecolor{vveblue}{HTML}{174A70}
 \definecolor{vvelight}{HTML}{F1F5F8}
@@ -18,10 +18,11 @@
 \sloppy
 \renewcommand{\arraystretch}{1.18}
 \makeatletter
+\patchcmd{\l@section}{1.5em}{3.2em}{}{}
 \def\ps@vve{%
   \def\@oddhead{\small\sffamily Vienna Vulkan Engine\hfil\guideshort}%
   \let\@evenhead\@oddhead
-  \def\@oddfoot{\small\sffamily Teaching edition / 17 October 2026\hfil\thepage}%
+  \def\@oddfoot{\small\sffamily Teaching edition / 29 October 2026\hfil\thepage}%
   \let\@evenfoot\@oddfoot}
 \makeatother
 \pagestyle{vve}
@@ -56,7 +57,7 @@
     \draw[-{Stealth}] (facade)--(engine);
     \draw[-{Stealth}] (engine)--(gpu);
   \end{tikzpicture}\vfill
-  {\normalsize Updated 17 October 2026\par}
-  {\small V3 edition; API checked against the local checkout.\par}
+  {\normalsize Updated 29 October 2026\par}
+  {\small V3 snapshot 24760ae1 (25 October 2026).\par}
   {\small Game code uses the facade. Implementation chapters are for source study.\par}
   \end{titlepage}\hypersetup{pageanchor=true}}

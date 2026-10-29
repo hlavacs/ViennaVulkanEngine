@@ -1,5 +1,10 @@
 # Audio in VVE
 
+API reviewed for V3 `24760ae1` on 29 October 2026. Both PDF guides now cover optional positional
+audio; the verification section records existing test coverage rather than a fresh execution.
+On Windows, `build_windows.cmd debug --no-tests` compiles audio and test executables without running
+them. To run the audio group separately: `ctest --test-dir build/debug-windows -L audio --output-on-failure`.
+
 VVE's `AudioSystem` facade uses SDL3_mixer. Import `VVEngine` and obtain audio from
 `engine.world()`, just like the renderer or asset system. Games do not include SDL
 headers or call SDL themselves.
