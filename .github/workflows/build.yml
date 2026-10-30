@@ -73,9 +73,15 @@ jobs:
             clang-18 clang-tools-18 libc++-18-dev libc++abi-18-dev libunwind-18-dev \
             build-essential pkg-config autoconf autoconf-archive automake libtool libltdl-dev nasm \
             libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev \
+            libxrender-dev libxtst-dev \
             libwayland-dev wayland-protocols libxkbcommon-dev \
             libegl1-mesa-dev libgl1-mesa-dev libasound2-dev libpulse-dev \
             libudev-dev libdbus-1-dev libibus-1.0-dev
+          # Check the enabled SDL backends before spending time building dependencies.
+          pkg-config --print-errors --exists \
+            x11 xext xcursor xi xfixes xrandr xrender xtst \
+            wayland-client wayland-egl wayland-cursor egl xkbcommon ibus-1.0
+          wayland-scanner --version
           echo 'VVE_LLVM_VERSION=18' >> "$GITHUB_ENV"
 
       - name: Install macOS compiler and build tools
