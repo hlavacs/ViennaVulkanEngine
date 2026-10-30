@@ -71,7 +71,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             clang-18 clang-tools-18 libc++-18-dev libc++abi-18-dev libunwind-18-dev \
-            build-essential pkg-config autoconf automake libtool nasm \
+            build-essential pkg-config autoconf autoconf-archive automake libtool nasm \
             libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev \
             libwayland-dev wayland-protocols libxkbcommon-dev \
             libegl1-mesa-dev libgl1-mesa-dev libasound2-dev libpulse-dev \
@@ -82,7 +82,7 @@ jobs:
         if: runner.os == 'macOS'
         run: |
           test "$(uname -m)" = arm64
-          brew install llvm pkgconf autoconf automake libtool
+          brew install llvm pkgconf autoconf autoconf-archive automake libtool
           /opt/homebrew/opt/llvm/bin/clang++ --version
           test -f /opt/homebrew/opt/llvm/lib/c++/libc++.modules.json
 
