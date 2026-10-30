@@ -7,10 +7,11 @@ CMAKE_BIN="${CMAKE:-$(command -v cmake || true)}"
 JOBS="${CMAKE_BUILD_PARALLEL_LEVEL:-$(nproc 2>/dev/null || printf '8')}"
 VARIANT="Release"
 CLEAN=0
+RUN_TESTS=1
 
 usage() {
-  printf 'Usage: %s [debug|release] [--clean]   (default: release)\n' "$0"
-  printf '       %s --clean [debug|release]\n' "$0"
+  printf 'Usage: %s [debug|release] [--clean] [--no-tests]   (default: release)\n' "$0"
+  printf '       %s --clean [debug|release] [--no-tests]\n' "$0"
 }
 
 for arg in "$@"; do
@@ -23,6 +24,9 @@ for arg in "$@"; do
       ;;
     --clean)
       CLEAN=1
+      ;;
+    --no-tests)
+      RUN_TESTS=0
       ;;
     -h|--help)
       usage
@@ -133,13 +137,15 @@ fi
   "${VULKAN_CMAKE_ARGS[@]}"
 
 "$CMAKE_BIN" --build "$BUILD_DIR" --parallel "$JOBS"
-# Tests that create windows open hidden SDL windows. Use the desktop's video driver when there is a display. On a machine
-# without one, fall back to SDL's offscreen driver, which needs a Vulkan driver with VK_EXT_headless_surface.
-if [ -z "${SDL_VIDEODRIVER:-}" ] && [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
-  export SDL_VIDEODRIVER=offscreen
+if [ "$RUN_TESTS" -eq 1 ]; then
+  # Tests that create windows open hidden SDL windows. Use the desktop's video driver when there is a display. On a machine
+  # without one, fall back to SDL's offscreen driver, which needs a Vulkan driver with VK_EXT_headless_surface.
+  if [ -z "${SDL_VIDEODRIVER:-}" ] && [ -z "${DISPLAY:-}" ] && [ -z "${WAYLAND_DISPLAY:-}" ]; then
+    export SDL_VIDEODRIVER=offscreen
+  fi
+  # The Ring Racer game runs carry the label racer and take minutes; run them with ctest -L racer.
+  "$CTEST_BIN" --test-dir "$BUILD_DIR" --output-on-failure -LE racer
 fi
-# The Ring Racer game runs carry the label racer and take minutes; run them with ctest -L racer.
-"$CTEST_BIN" --test-dir "$BUILD_DIR" --output-on-failure -LE racer
 
 printf '\n%s build complete. Executables: bin/%s/exe\n' "$VARIANT" "$VARIANT_LOWER"
 printf 'Verification output: bin/%s/verify\n' "$VARIANT_LOWER"

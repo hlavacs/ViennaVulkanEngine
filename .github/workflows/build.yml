@@ -1,0 +1,153 @@
+name: Build
+
+# Compile on every branch and pull request. GPU runtime tests stay separate.
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VULKAN_SDK_VERSION: '1.4.350.0'
+  VCPKG_ROOT: ${{ github.workspace }}/.ci/vcpkg
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.ci/vcpkg-binaries
+  VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/.ci/vcpkg-binaries,readwrite
+  CMAKE_BUILD_PARALLEL_LEVEL: '2'
+  VCPKG_MAX_CONCURRENCY: '2'
+
+jobs:
+  build:
+    name: ${{ matrix.platform }} / ${{ matrix.configuration }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [Windows, Linux, macOS]
+        configuration: [debug, release]
+        include:
+          - platform: Windows
+            runner: windows-2025-vs2026
+          - platform: Linux
+            runner: ubuntu-24.04
+          - platform: macOS
+            runner: macos-15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      # Pin vcpkg itself as well as the port versions in vcpkg.json.
+      - name: Check out vcpkg
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: microsoft/vcpkg
+          ref: d186940b2f0c4e8e5b4ff804af57d2a26fbfa091
+          path: .ci/vcpkg
+          persist-credentials: false
+
+      - name: Install Linux compiler and development libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang-18 clang-tools-18 libc++-18-dev libc++abi-18-dev libunwind-18-dev \
+            build-essential pkg-config autoconf automake libtool nasm \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev \
+            libwayland-dev wayland-protocols libxkbcommon-dev \
+            libegl1-mesa-dev libgl1-mesa-dev libasound2-dev libpulse-dev \
+            libudev-dev libdbus-1-dev libibus-1.0-dev
+          echo 'VVE_LLVM_VERSION=18' >> "$GITHUB_ENV"
+
+      - name: Install macOS compiler and build tools
+        if: runner.os == 'macOS'
+        run: |
+          test "$(uname -m)" = arm64
+          brew install llvm pkgconf autoconf automake libtool
+          /opt/homebrew/opt/llvm/bin/clang++ --version
+          test -f /opt/homebrew/opt/llvm/lib/c++/libc++.modules.json
+
+      # The Windows script selects Visual Studio's bundled CMake and Ninja.
+      - name: Install CMake and Ninja on Linux and macOS
+        if: runner.os != 'Windows'
+        run: |
+          python3 -m venv "$RUNNER_TEMP/cmake-tools"
+          "$RUNNER_TEMP/cmake-tools/bin/python" -m pip install --only-binary=:all: \
+            cmake==4.3.1 ninja==1.13.2
+          echo "$RUNNER_TEMP/cmake-tools/bin" >> "$GITHUB_PATH"
+
+      # This revision supports the current macOS SDK installer layout.
+      - name: Install Vulkan SDK including Slang
+        uses: humbletim/install-vulkan-sdk@e7d6e7b937bde4503c7ba5c9584c9dc68f44c4b8
+        with:
+          version: '1.4.350.0'
+          cache: true
+
+      - name: Verify SDK tools
+        run: |
+          cmake --version
+          "$VULKAN_SDK/bin/slangc" -version
+          test -f "$VULKAN_SDK/include/vulkan/vulkan.hpp"
+          test -f "$VULKAN_SDK/include/slang/slang.h"
+
+      - name: Restore vcpkg binary packages
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ matrix.runner }}-${{ runner.arch }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'triplets/**', 'cmake/toolchains/**', '.github/workflows/build.yml') }}
+
+      - name: Bootstrap vcpkg on Windows
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          if not exist "%VCPKG_DEFAULT_BINARY_CACHE%" mkdir "%VCPKG_DEFAULT_BINARY_CACHE%"
+          call "%VCPKG_ROOT%\bootstrap-vcpkg.bat" -disableMetrics
+
+      - name: Bootstrap vcpkg on Linux and macOS
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+          bash "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
+          echo "$VCPKG_ROOT" >> "$GITHUB_PATH"
+
+      - name: Compile Windows engine, examples and tests
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & .\build_windows.cmd '${{ matrix.configuration }}' --no-tests 2>&1 |
+            Tee-Object -FilePath build.log
+          exit $LASTEXITCODE
+
+      - name: Compile Linux engine, examples and tests
+        if: runner.os == 'Linux'
+        run: bash build_linux.sh '${{ matrix.configuration }}' --no-tests 2>&1 | tee build.log
+
+      - name: Compile macOS engine, examples and tests
+        if: runner.os == 'macOS'
+        run: bash build_macos.sh '${{ matrix.configuration }}' --no-tests 2>&1 | tee build.log
+
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: build-logs-${{ matrix.platform }}-${{ matrix.configuration }}
+          retention-days: 14
+          include-hidden-files: true
+          if-no-files-found: ignore
+          path: |
+            build.log
+            build/**/CMakeCache.txt
+            build/**/CMakeConfigureLog.yaml
+            build/**/*.log
+            .ci/vcpkg/buildtrees/**/*.log
+            .ci/vcpkg/buildtrees/**/CMakeCache.txt

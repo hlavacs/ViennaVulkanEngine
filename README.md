@@ -1,5 +1,49 @@
 # Vienna Vulkan Engine
 
+[![Build](https://github.com/hlavacs/ViennaVulkanEngine/actions/workflows/build.yml/badge.svg?branch=V3)](https://github.com/hlavacs/ViennaVulkanEngine/actions/workflows/build.yml)
+
+## Automated compilation checks
+
+The [Build workflow](.github/workflows/build.yml) compiles and links the engine, examples,
+games and test executables on every push and pull request. It runs six jobs:
+
+| Platform | Runner | Compiler | Configurations |
+| --- | --- | --- | --- |
+| Windows x64 | windows-2025-vs2026 | Visual Studio MSVC | Debug, Release |
+| Linux x64 | ubuntu-24.04 | Clang 18 with matching libc++ modules | Debug, Release |
+| macOS ARM64 | macos-15 | Homebrew LLVM with libc++ modules | Debug, Release |
+
+Each job installs Vulkan SDK 1.4.350.0, including Slang, and bootstraps a pinned vcpkg
+revision. The project manifests and overlays select the dependency versions. Linux and
+macOS use CMake 4.3.1 and Ninja 1.13.2; Windows uses the tools bundled with Visual Studio.
+Homebrew's current LLVM formula supplies the macOS compiler. The YAML pins the actions
+and vcpkg revision to commit IDs. Runner images and operating-system packages can still
+change, so the job output records the tool versions.
+
+CI calls the normal build scripts with `--no-tests`. This compiles the test executables
+but does not run CTest or require a working GPU. A green build establishes compilation
+and linking for the selected toolchains, not correct rendering or passing runtime tests.
+To compile locally without running CTest:
+
+~~~text
+build_windows.cmd debug --no-tests
+bash build_linux.sh debug --no-tests
+bash build_macos.sh debug --no-tests
+~~~
+
+Omitting `--no-tests` preserves the usual build followed by CTest.
+
+The workflow caches the Vulkan SDK download and vcpkg binary packages. Package cache keys
+include the runner, architecture, manifests, overlays, toolchains and workflow; vcpkg also
+checks package ABI hashes. Failed jobs upload build and dependency logs for 14 days.
+Independent jobs keep running if one platform fails, and a new push cancels the previous
+run for the same branch or pull request.
+
+After pushing the workflow, open the repository's Actions tab to inspect all six jobs.
+Manual runs are available through Run workflow once this file is on the default branch.
+No repository secrets are needed for these public dependency downloads. GPU runtime
+checks can be added separately with a suitable driver and presentation setup.
+
 ## Setup
 
 This project uses `vcpkg` manifest dependencies for third-party libraries: Assimp, GLM, ImGui, SDL3, SDL3_mixer, stb, and Vulkan Memory Allocator are declared in [vcpkg.json](vcpkg.json) and installed into the repo-local `vcpkg_installed` directory. SDL3 is built with its Vulkan feature enabled so the examples can create Vulkan-capable windows. The post-processing library vvppl ([ViennaVulkanPostProcessingLibrary](https://github.com/orcunilker/ViennaVulkanPostProcessingLibrary), commit `e69f3e56beca935ceb257cce6005f6e39847bcb4`) is not a vcpkg package: CMake downloads it with `FetchContent` as a pinned, SHA256 hash-verified archive during the first configure.
