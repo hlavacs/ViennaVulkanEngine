@@ -54,7 +54,16 @@ jobs:
           repository: microsoft/vcpkg
           ref: d186940b2f0c4e8e5b4ff804af57d2a26fbfa091
           path: .ci/vcpkg
+          # Port baselines and historical port trees need more than the tip commit.
+          fetch-depth: 0
           persist-credentials: false
+
+      - name: Verify vcpkg baselines
+        run: |
+          for baseline in $(jq -r '."builtin-baseline"' vcpkg.json) $(jq -r '.registries[]? | select(.kind == "builtin") | .baseline' vcpkg-configuration.json); do
+            echo "Checking vcpkg baseline $baseline"
+            git -C "$VCPKG_ROOT" cat-file -e "$baseline:versions/baseline.json"
+          done
 
       - name: Install Linux compiler and development libraries
         if: runner.os == 'Linux'
@@ -88,17 +97,66 @@ jobs:
 
       # This revision supports the current macOS SDK installer layout.
       - name: Install Vulkan SDK including Slang
+        if: runner.os != 'Windows'
         uses: humbletim/install-vulkan-sdk@e7d6e7b937bde4503c7ba5c9584c9dc68f44c4b8
         with:
           version: '1.4.350.0'
           cache: true
 
+      - name: Cache Windows Vulkan SDK installer
+        if: runner.os == 'Windows'
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ runner.temp }}/vulkan-sdk-installer.exe
+          key: vulkan-installer-Windows-${{ env.VULKAN_SDK_VERSION }}
+
+      # Use LunarG's installer: archive extraction can leave out SDK headers/libraries.
+      - name: Install Windows Vulkan SDK including Slang
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP 'vulkan-sdk-installer.exe'
+          $sdkRoot = Join-Path $env:GITHUB_WORKSPACE 'VULKAN_SDK'
+          if (!(Test-Path -LiteralPath $installer)) {
+            $url = "https://sdk.lunarg.com/sdk/download/$env:VULKAN_SDK_VERSION/windows/vulkan_sdk.exe?Human=true"
+            Invoke-WebRequest -Uri $url -OutFile $installer
+          }
+          $arguments = @('--root', ('"{0}"' -f $sdkRoot), '--accept-licenses',
+            '--default-answer', '--confirm-command', 'install', 'copy_only=1')
+          $options = @{
+            FilePath = $installer
+            ArgumentList = $arguments
+            Wait = $true
+            PassThru = $true
+            WindowStyle = 'Hidden'
+            RedirectStandardOutput = 'sdk-install.log'
+            RedirectStandardError = 'sdk-install-errors.log'
+          }
+          $install = Start-Process @options
+          Get-Content sdk-install.log
+          Get-Content sdk-install-errors.log
+          if ($install.ExitCode -ne 0) { throw "Vulkan SDK installation failed: $($install.ExitCode)" }
+          "VULKAN_SDK=$($sdkRoot.Replace('\', '/'))" >> $env:GITHUB_ENV
+          "$sdkRoot/Bin" >> $env:GITHUB_PATH
+
       - name: Verify SDK tools
         run: |
           cmake --version
-          "$VULKAN_SDK/bin/slangc" -version
-          test -f "$VULKAN_SDK/include/vulkan/vulkan.hpp"
-          test -f "$VULKAN_SDK/include/slang/slang.h"
+          echo "Checking Vulkan SDK at $VULKAN_SDK"
+          if [ "$RUNNER_OS" = Windows ]; then
+            required_files=(Include/vulkan/vulkan.hpp Include/slang/slang.h Lib/vulkan-1.lib Lib/slang.lib Bin/slangc.exe)
+            slangc="$VULKAN_SDK/Bin/slangc.exe"
+          else
+            required_files=(include/vulkan/vulkan.hpp include/slang/slang.h bin/slangc)
+            slangc="$VULKAN_SDK/bin/slangc"
+          fi
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$VULKAN_SDK/$file" ]; then
+              echo "::error::Missing Vulkan SDK file: $VULKAN_SDK/$file"
+              exit 1
+            fi
+          done
+          "$slangc" -version
 
       - name: Restore vcpkg binary packages
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
@@ -146,6 +204,7 @@ jobs:
           if-no-files-found: ignore
           path: |
             build.log
+            sdk-install*.log
             build/**/CMakeCache.txt
             build/**/CMakeConfigureLog.yaml
             build/**/*.log
