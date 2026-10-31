@@ -208,7 +208,7 @@ bool teleport(simple::Engine &engine) {
     std::println("teleport.near.valid={} teleport.coarse.valid={} teleport.fallback.delta={} teleport.fallback.limit=0",near ? near->first : count,coarse ? coarse->first : count,delta);
     return empty && delta==0 && target.probes.valid==count && target.coarseProbes.valid==count;
 }
-/// @brief Measures every allocation and actual scheduling frame, testing both presets against the exact payload formula and cap.
+/// @brief Checks both presets against driver storage requirements, the minimum payload, the memory cap and scheduling bound.
 bool memory(simple::Engine &engine, bool low) {
     auto &r=engine.renderSystem(); auto settings=r.giSettings(); settings.quality=low ? GiQuality::low : GiQuality::medium;
     if (!r.setGiSettings(settings)) return false;
@@ -229,10 +229,14 @@ bool memory(simple::Engine &engine, bool low) {
         simple::WindowTarget::framesInFlight*simple::IrradianceProbes::views*sizeof(simple::FrameUniforms);
     constexpr std::uint64_t shadow=VVE_PROBE_SHADOW_RESOLUTION*VVE_PROBE_SHADOW_RESOLUTION*4ULL, formula=VVE_PROBE_CASCADES*volume+shadow, cap=2*1024*1024;
     const auto bytes=t.probes.gpuBytes+t.coarseProbes.gpuBytes+t.probeShadowBytes;
+    const auto nearBytes=test::probeStorageBytes(renderer), coarseBytes=test::probeStorageBytes(renderer,1);
+    VkMemoryRequirements shadowRequirements{};
+    vkGetImageMemoryRequirements(renderer.device.device,t.probeShadow.image,&shadowRequirements);
     std::println("gi.quality={} gi.convergence.frames={} gi.convergence.bound={} gi.memory.formula={} gi.memory.cap={} gi.near.formula={} gi.frame_uniform_bytes={} gi.gpu_bytes={}",
         low ? "low" : "medium",frames,bound,formula,cap,volume,sizeof(simple::FrameUniforms),bytes);
-    return near && coarse && near->first==count && coarse->first==count && frames<=bound && t.probes.gpuBytes==319232 &&
-        t.probes.gpuBytes==volume && t.coarseProbes.gpuBytes==volume && t.probeShadowBytes==shadow && bytes==formula && bytes<=cap;
+    return near && coarse && near->first==count && coarse->first==count && frames<=bound &&
+        t.probes.gpuBytes==nearBytes && nearBytes>=volume && t.coarseProbes.gpuBytes==coarseBytes && coarseBytes>=volume &&
+        t.probeShadowBytes==shadowRequirements.size && t.probeShadowBytes>=shadow && bytes>=formula && bytes<=cap;
 }
 }
 /// @brief Every registered subcommand uses the named Vulkan device, validation through teardown, deterministic fixtures and explicit receipts.

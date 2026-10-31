@@ -445,7 +445,11 @@ uniforms, and reserved viewport lanes carry capture sun index / main cascade
 count. No frame uniform grows. On the tested Vulkan device, actual VMA
 allocations equal this formula: **319232 bytes near**, **319232 coarse**,
 **512*512*4 = 1048576 probe-shadow**, total **1687040 bytes/window (1.609 MiB)**,
-below the **2097152-byte (2 MiB)** cap. The internal probe receipt's `gi.gpu_bytes` is this fixed total;
+below the **2097152-byte (2 MiB)** cap. These byte counts depend on the device's memory requirements:
+the RTX 3080 Laptop GPU reports **320000 bytes per cascade** and **1688576 bytes total**.
+Tests compare allocation accounting with Vulkan's image/buffer memory requirements,
+use the payload formula as a lower bound, and retain the same 2 MiB cap.
+The internal probe receipt's `gi.gpu_bytes` is the measured fixed total;
 `gi.near.gpu_bytes`, `gi.coarse.gpu_bytes`, `gi.probe_shadow.gpu_bytes` give the
 measured breakdown. Per-cascade valid/inactive/updated counts come from GPU
 alpha/moment readback and actually recorded captures, not constant success
@@ -753,7 +757,7 @@ any PNG or subsequent frame. Images remain supplementary to linear receipts.
 | Continuity | 81 samples at **0.25 m** spacing cross near and coarse boundaries, on a uniform floor. Largest adjacent step is below **2 * abs(first-last) * 0.25 / 2 + 0.002**: twice the linear endpoint slope over the narrowest 2 m band, plus the existing 0.002 FP16/quadrature tolerance. Every sample stays at least `min(endpoints)-0.002`, finite and above 0.001 (no black holes). |
 | Coarse scrolling | One 8 m move retains **48** coarse rows with **byte-identical** SH/moments and ages. Near's 64 missing rows plus coarse's 16 exposed rows recapture within **ceil(80/B)** frames. |
 | Teleport | Both GPU validity/moment images are empty and updates zero on the first frame. Receiver HDR equals explicit disabled fallback with **exactly 0** error; both grids subsequently converge. |
-| Memory / low | Actual allocation sum matches the formula above, near stays **319232**, total stays **<=2097152**. Both 64-row grids have measured GPU validity and converge within **64 medium / 128 low** frames; every frame records at most the shared budget. |
+| Memory / low | Actual allocation sum matches Vulkan's image/buffer memory requirements, is at least the payload formula above, and stays **<=2097152**. Both 64-row grids have measured GPU validity and converge within **64 medium / 128 low** frames; every frame records at most the shared budget. |
 
 
 GI-05b Linux Debug verification on 30 October 2026 used Clang/libc++ 18,
@@ -929,7 +933,7 @@ The two images cost **4 bytes per drawable pixel** before allocation alignment
 (7.91 MiB at 1920x1080), allocated per hybrid window even while AO is disabled
 to make toggles descriptor-stable. `ao.gpu_bytes` reports their **actual VMA
 allocation sizes** per window; it excludes driver-owned pipelines/descriptors
-and the optional query pool. Near probe storage remains **319232 bytes per window**; the GI-05b combined
+and the optional query pool. Near probe storage remains fixed across resize, with its byte count depending on device allocation requirements; the GI-05b combined
 volume/probe-shadow budget is documented above.
 `ao.enabled` records whether passes actually ran. With `setGpuTimingReadback(true)`,
 `ao.gpu_ms` reports the latest fence-completed evaluation/filter timestamp interval,

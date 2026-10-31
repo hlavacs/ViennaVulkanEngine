@@ -44,6 +44,23 @@ template <typename TRenderer>
 	return math::scale(sum, math::one() / static_cast<Scalar>(width * height));
 }
 
+/// @brief Sums driver-required storage independently of the renderer's VMA accounting, including device-specific padding.
+template <typename TRenderer>
+std::uint64_t probeStorageBytes(TRenderer &renderer, unsigned cascade = 0) {
+    const auto &target = renderer.targets.front();
+    const auto &probes = cascade == 0 ? target.probes : target.coarseProbes;
+    std::uint64_t bytes{};
+    VkMemoryRequirements requirements{};
+    for (const auto *image : {&probes.radiance, &probes.depth, &probes.coefficients}) {
+        vkGetImageMemoryRequirements(renderer.device.device,image->image,&requirements); bytes += requirements.size;
+    }
+    for (const auto &buffer : probes.uniforms.buffers) {
+        vkGetBufferMemoryRequirements(renderer.device.device,buffer.buffer,&requirements); bytes += requirements.size;
+    }
+    std::println("gi.cascade={} gi.storage.required_bytes={} gi.storage.reported_bytes={}",cascade,bytes,probes.gpuBytes);
+    return bytes;
+}
+
 /// @brief Reads actual GPU validity and hit metadata only at a diagnostic checkpoint; verifies every stored float is finite.
 template <typename TRenderer>
 std::optional<std::pair<unsigned,unsigned>> probeValidity(TRenderer &renderer, unsigned cascade = 0) {

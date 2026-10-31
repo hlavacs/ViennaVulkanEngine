@@ -221,7 +221,7 @@ bool resize(simple::Engine &engine) {
     }
     std::println("resize.after.extent={}x{} resize.vma_bytes={} resize.payload_bytes={}",next.width,next.height,measured,4*next.width*next.height); receipt(renderer);
     return next.width == 128 && next.height == 128 && target.aoGpuBytes == measured && measured < bytes &&
-        measured >= 4*next.width*next.height && target.probes.gpuBytes == probes && probes == 319232 && target.aoEnabled;
+        measured >= 4*next.width*next.height && target.probes.gpuBytes == probes && probes == test::probeStorageBytes(renderer) && target.aoEnabled;
 }
 } // namespace
 

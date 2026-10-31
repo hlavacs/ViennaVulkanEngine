@@ -247,7 +247,7 @@ int main(int argc,char **argv) {
 #ifndef NDEBUG
     pass &= renderer.validationActive();
 #endif
-    pass &= renderer.targets.front().probes.gpuBytes==319232;
+    pass &= renderer.targets.front().probes.gpuBytes==test::probeStorageBytes(renderer);
     render.waitIdle(); engine.gui().shutdownVulkan(); render.shutdown();
     std::println("validation.errors={} test.pass={}",renderer.validationErrorCount(),pass);
     return pass && renderer.validationErrorCount()==0 ? 0 : 2;
