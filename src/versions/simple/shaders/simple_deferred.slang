@@ -15,6 +15,19 @@
 [[vk::binding(3, 1)]] Texture2D<float> gDepth;
 #endif
 
+/// @brief Fix the rounding order across lighting/AO variants; perspective division amplifies cancellation in homogeneous coordinates.
+float3 surfaceWorldPosition(float2 pixel, float depth)
+{
+    // Explicit FMA also works with older Slang SPIR-V compilers that ignore per-variable `precise`.
+    const float2 clip = fma(pixel / frame.viewport.xy, float2(2), float2(-1));
+    float4 homogeneous;
+    [unroll] for (uint row = 0; row < 4; ++row)
+        homogeneous[row] = fma(frame.inverseViewProjection[row][0], clip.x,
+            fma(frame.inverseViewProjection[row][1], clip.y,
+                fma(frame.inverseViewProjection[row][2], depth, frame.inverseViewProjection[row][3])));
+    return homogeneous.xyz / homogeneous.w;
+}
+
 #if defined(VVE_CONTACT_AO) || defined(VVE_AO)
 /// @brief AO never resolves different surfaces: depth and normal always come from coverage sample zero.
 float aoSourceDepth(int2 pixel)
@@ -37,8 +50,7 @@ float3 aoSourceNormal(int2 pixel)
 /// @brief Reconstructs view position in metres, avoiding nonlinear D32 comparisons.
 float3 aoViewPosition(float2 pixel, float depth)
 {
-    const float4 h = mul(frame.inverseViewProjection, float4(pixel / frame.viewport.xy * 2.0 - 1.0, depth, 1));
-    return mul(frame.view, float4(h.xyz / h.w, 1)).xyz;
+    return mul(frame.view, float4(surfaceWorldPosition(pixel, depth), 1)).xyz;
 }
 /// @brief Sample-zero rays use pixel centres; the 2 cm bias absorbs subpixel coverage-position differences.
 float3 aoSourcePosition(int2 pixel) { return aoViewPosition(float2(pixel) + 0.5, aoSourceDepth(pixel)); }
@@ -97,8 +109,7 @@ float4 lightingMain(float4 position : SV_Position
     surface.emissiveFlags = gEmissive.Load(int3(pixel, 0));
 #endif
     if (depth >= 1.0) discard; // Keep the HDR clear colour for empty samples and the later sky pass.
-    const float4 homogeneous = mul(frame.inverseViewProjection, float4(position.xy / frame.viewport.xy * 2.0 - 1.0, depth, 1.0));
-    const float3 worldPos = homogeneous.xyz / homogeneous.w;
+    const float3 worldPos = surfaceWorldPosition(position.xy, depth);
     const uint flags = uint(floor(surface.emissiveFlags.a / 2.0));
 #ifdef VVE_CONTACT_AO
     const float ao = sampleContactAo(pixel, mul(frame.view, float4(worldPos,1)).xyz, normalize(surface.normalMetalness.xyz));

@@ -750,7 +750,12 @@ FragmentOutput fragmentMain(FragmentInput input
     if ((object.flags & kSkyFlag) != 0) {
         const float3 d = normalize(input.worldPos);
         if (physicalSky()) {
-            output.color = float4(skyColour(d, frac(52.9829189 * frac(dot(input.position.xy, float2(0.06711056, 0.00583715))))), 1.0);
+            float2 pixel = input.position.xy;
+#ifdef VVE_PROBE_CAPTURE
+            // A probe can move between capture-atlas slots. Its cloud samples must stay unchanged.
+            pixel -= floor(pixel / VVE_PROBE_FACE_SIZE) * VVE_PROBE_FACE_SIZE;
+#endif
+            output.color = float4(skyColour(d, frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715))))), 1.0);
 #ifdef VVE_PROBE_CAPTURE
             output.color.a = VVE_PROBE_CAPTURE_FAR * frame.probeOrigin.w / VVE_PROBE_SPACING; // Capture spacing scales radial metres, including sky.
 #endif

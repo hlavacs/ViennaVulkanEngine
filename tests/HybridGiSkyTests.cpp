@@ -36,6 +36,93 @@ bool skyEnergy(vve::Vec3 off, vve::Vec3 on, std::string_view name) {
     // bounding SH truncation at 25% for this open fixture; small Fresnel/filter/FP16 differences fit inside it.
     return off.x > .01F && error < .25F && off.z > off.y && off.y > off.x && on.z > on.y && on.y > on.x;
 }
+/** @brief The same physical probe must capture identical cloudy sky in either temporary atlas slot.
+ * Control only scheduler ages, then use the actual renderer's capture shader and atlas. No CPU copy
+ * of sky/cloud math is involved. The regression originally failed because ray-march jitter hashed
+ * absolute atlas pixels, changing radiance whenever a probe moved between the two capture slots.
+ */
+bool skyCaptureSlots(vve::simple::Engine &engine, const std::filesystem::path &directory) {
+    using namespace vve;
+    using Probes=simple::IrradianceProbes;
+    static_assert(Probes::maxBudget==2);
+    auto &render=engine.renderSystem(); auto &renderer=render.forward();
+    auto settings=render.giSettings(); settings.enabled=true; settings.ao_enabled=false; settings.quality=GiQuality::medium;
+    if (!render.setGiSettings(settings) || !render.setSky(SkySettings{.enabled=true,.sun_size=0,.cloud_coverage=.35F})
+        || !warm(engine,2)) return false;
+    auto &target=renderer.targets.front();
+    simple::VulkanReadback readback;
+    if (readback.create(renderer.allocator,renderer.device.device,renderer.device.graphicsQueue,renderer.commandPool.commandPool,
+        target.probes.coefficients.extent,VK_FORMAT_R32G32B32A32_SFLOAT)!=VK_SUCCESS) return false;
+    bool good=true; float maximumCoefficient=0;
+    for (unsigned cascade=0;cascade<2;++cascade) {
+        auto &probes=cascade==0 ? target.probes : target.coarseProbes;
+        std::array<std::array<float,4>,4> reference{};
+        unsigned violations=0,comparisons=0;
+        float maximumError=0;
+        constexpr float tolerance=8*std::numeric_limits<float>::epsilon();
+        const auto selectSlot=[&](unsigned slot) {
+            for (auto *volume : {&target.probes,&target.coarseProbes}) {
+                volume->captured.fill(100); volume->generation.fill(std::numeric_limits<std::uint64_t>::max());
+            }
+            target.probes.clock=200;
+            probes.captured[0]=slot+1; probes.captured[1]=2-slot;
+        };
+        // Read the transfer-enabled coefficient image: four RGB SH terms and explicit validity.
+        // Probe zero's fixed toroidal row stays zero regardless of its temporary capture slot.
+        const auto compareCoefficients=[&](bool establishReference) {
+            if (readback.capture(probes.coefficients.image,0,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)!=VK_SUCCESS) return false;
+            std::array<std::array<float,4>,4> values{};
+            std::memcpy(values.data(),readback.pixelBytes().data(),sizeof(values));
+            for (unsigned coefficient=0;coefficient<4;++coefficient) {
+                good &= values[coefficient][3]==1;
+                for (unsigned channel=0;channel<3;++channel) {
+                    const float value=values[coefficient][channel];
+                    good &= std::isfinite(value);
+                    maximumCoefficient=std::max(maximumCoefficient,std::abs(value));
+                    if (!establishReference) {
+                        const float expected=reference[coefficient][channel];
+                        const float error=std::abs(value-expected)/std::max({1.0F,std::abs(value),std::abs(expected)});
+                        maximumError=std::max(maximumError,error); violations+=!(error<=tolerance); ++comparisons;
+                    }
+                }
+                if (!establishReference) good &= values[coefficient][3]==reference[coefficient][3];
+            }
+            if (establishReference) reference=values;
+            return true;
+        };
+        // A-B-A exercises relocation and return. Row zero denotes one unchanged world-space probe.
+        for (unsigned phase=0;phase<3;++phase) {
+            const unsigned slot=phase==1 ? 1U : 0U;
+            selectSlot(slot);
+            const auto name=std::format("sky-slot-{}-{}",cascade,phase);
+            // This explicit capture waits for a rendered frame; a skipped window step cannot pass.
+            if (!render.captureFrameToPng(directory/(name+".png")) || probes.updated!=2 || probes.selected[slot]!=0
+                || !compareCoefficients(phase==0)) return false;
+        }
+        std::println("sky.capture_slot_cascade={} comparisons={} normalized_float_error={} limit={} violations={}",
+            cascade,comparisons,maximumError,tolerance,violations);
+        good &= comparisons==24 && violations==0;
+        // Two consecutive batches end on opposite slots. No readback/idle is inserted between
+        // submissions: each frame's usual fence protects uniforms while prior GPU work may run.
+        for (unsigned batch=0;batch<2;++batch) {
+            for (unsigned frame=0;frame<8;++frame) {
+                const unsigned slot=(frame+batch)%2;
+                const auto before=render.renderedFrameCount();
+                for (unsigned attempt=0;attempt<8 && render.renderedFrameCount()==before;++attempt) {
+                    selectSlot(slot);
+                    if (!engine.renderFrame()) return false;
+                }
+                if (render.renderedFrameCount()==before || probes.updated!=2 || probes.selected[slot]!=0) return false;
+            }
+            if (!compareCoefficients(false)) return false;
+        }
+        std::println("sky.capture_pipeline_cascade={} comparisons={} normalized_float_error={} limit={} violations={}",
+            cascade,comparisons,maximumError,tolerance,violations);
+        good &= comparisons==48 && violations==0;
+    }
+    std::println("sky.capture_slot_max_coefficient={} minimum=0.01",maximumCoefficient);
+    return good && maximumCoefficient>.01F;
+}
 /// @brief Independent L1 cosine integral from six ordinary main-view sky renders, without copying sky shader math.
 std::optional<vve::Vec3> physicalSkyReference(vve::simple::Engine &engine) {
     using namespace vve;
@@ -187,6 +274,7 @@ int main(int argc, char **argv) {
             reference->x, reference->y, reference->z, irradiance.x, irradiance.y, irradiance.z, relative);
         // Identical 16-face L1 quadrature: 3% covers FP16, subpixel sky filtering and probe/main-view air/height differences.
         pass &= relative < .03F && irradiance.x > .01F && irradiance.z > irradiance.y && irradiance.y > irradiance.x;
+        pass &= skyCaptureSlots(engine,directory);
     }
     auto &renderer = render.forward();
     VkPhysicalDeviceProperties device{}; vkGetPhysicalDeviceProperties(renderer.physicalDevice.physicalDevice, &device);

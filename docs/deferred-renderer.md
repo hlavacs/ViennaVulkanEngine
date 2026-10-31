@@ -2,7 +2,9 @@
 
 Contracts updated 31 October 2026 for the implemented approximate diffuse GI renderer.
 GI-09 below records the current Linux regression and countryside evidence; dated phase
-results retain their original provenance. Windows/macOS and physical GPUs remain unverified.
+results retain their original provenance. The focused stability checks below also passed on
+Windows with an NVIDIA GeForce RTX 3080 Laptop GPU (1x and 4x MSAA bounce/cadence, off-camera
+transport and cloudy-sky capture slots). The full Windows/macOS application matrix remains unverified.
 Terrain needs optional `tessellationShader`; a skipped terrain rendering assertion does
 not establish graphics coverage. Run `ctest --test-dir <build> -N` for local registrations.
 
@@ -44,6 +46,20 @@ All VVE examples accept `--renderer forward`, `--renderer deferred` or
 `--renderer hybrid-gi`. The sibling physics game retains its existing forward/deferred options.
 See [the complete application matrix](renderer-compatibility.md)
 for bounded commands, scenarios, captures and verification status.
+
+Deferred lighting and contact AO share world-position reconstruction with explicit FMA order.
+The perspective divide can amplify small rounding differences in homogeneous coordinates into
+millimetres of surface-position error, changing probe visibility in an otherwise static scene.
+Source-level `precise` alone is insufficient with the Slang 2026.8 direct SPIR-V compiler;
+the reconstruction uses explicit fused operations without changing the shader build flags.
+Physical-sky probe captures also hash face-local pixels for cloud jitter, preserving the same
+sky radiance when a probe moves between temporary capture-atlas slots.
+
+`HybridGiBounceTests` checks static HDR across pipelined batches and consecutive captures,
+including sunlit shadows, AO toggles, and a fixture translated by (91, 6, 130) metres.
+`HybridGiSkyTests` checks identical SH coefficients when the same cloudy-sky probe moves between
+slots in both volumes. These checks retain a one-binary16-step HDR tolerance and do not add
+steady-state readbacks to the renderer.
 
 ## Native procedural geometry (GI-06a)
 

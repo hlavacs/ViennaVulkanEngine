@@ -5,6 +5,7 @@ import VVEngine;
 import VVEngine.Simple;
 import VVEngine.Simple.Renderer;
 import VVEngine.Simple.IrradianceProbes;
+import VVEngine.Simple.Vulkan;
 import VVE.TestSupport;
 
 namespace {
@@ -21,6 +22,82 @@ std::optional<vve::Vec3> measure(vve::simple::Engine &engine, std::string_view s
     if (value) std::println("state={} gi.probes.valid={} gi.probes.updated={} gi.near.gpu_bytes={} receiver.linear={:.7f},{:.7f},{:.7f}",
         state,p.valid,p.updated,p.gpuBytes,value->x,value->y,value->z);
     return value;
+}
+/// @brief Count presented frames, since a window acquisition retry does not refresh any probe.
+bool completedFrames(vve::simple::Engine &engine, unsigned count) {
+    const auto first=engine.renderSystem().renderedFrameCount();
+    for (unsigned attempts=0;attempts<count*8+32 && engine.renderSystem().renderedFrameCount()-first<count;++attempts)
+        if (!engine.renderFrame()) return false;
+    return engine.renderSystem().renderedFrameCount()-first>=count;
+}
+/** @brief Static main lighting must be independent of pipeline cadence and contact-AO toggling.
+ * Compare every linear HDR RGB channel in binary16 steps, before tonemapping and PNG encoding.
+ * Ordinary batches keep normal frames in flight; explicit PNG captures exercise serialized draws.
+ */
+bool lightingCadence(vve::simple::Engine &engine, const std::filesystem::path &directory) {
+    using namespace vve;
+    auto &render=engine.renderSystem(); auto &renderer=render.forward();
+    const auto original=render.giSettings();
+    auto settings=original; settings.enabled=true; settings.ao_enabled=false;
+    // Both volumes contain 64 probes and share a two-probe budget. Two complete sweeps
+    // give this static scene a settled reference without averaging or relaxing its pixel gate.
+    if (!render.setGiSettings(settings) || !completedFrames(engine,128)) return false;
+    std::filesystem::create_directories(directory);
+    simple::VulkanReadback readback;
+    const auto &hdr=renderer.targets.front().hdrImage;
+    if (readback.create(renderer.allocator,renderer.device.device,renderer.device.graphicsQueue,renderer.commandPool.commandPool,
+        hdr.extent,VK_FORMAT_R16G16B16A16_SFLOAT)!=VK_SUCCESS) return false;
+    using Pixels=std::vector<std::array<std::uint16_t,4>>;
+    const auto capture=[&](std::string_view name) -> std::optional<Pixels> {
+        if (readback.capture(hdr.image,0,VK_IMAGE_LAYOUT_GENERAL)!=VK_SUCCESS) return {};
+        Pixels pixels(std::size_t(hdr.extent.width)*hdr.extent.height);
+        if (readback.pixelBytes().size()!=pixels.size()*sizeof(pixels.front())) return {};
+        std::memcpy(pixels.data(),readback.pixelBytes().data(),readback.pixelBytes().size());
+        std::ofstream file{directory/(std::string{name}+".rgba16f"),std::ios::binary};
+        file.write(reinterpret_cast<const char*>(pixels.data()),std::streamsize(readback.pixelBytes().size()));
+        if (!file) return {};
+        return pixels;
+    };
+    if (!render.captureFrameToPng(directory/"reference.png")) return false;
+    const auto reference=capture("reference"); if (!reference) return false;
+    const auto compare=[&](const Pixels &pixels,std::string_view state,bool monotone) {
+        unsigned maximum=0,violations=0,invalid=0;
+        for (std::size_t pixel=0;pixel<pixels.size();++pixel) for (unsigned channel=0;channel<3;++channel) {
+            const auto a=(*reference)[pixel][channel],b=pixels[pixel][channel];
+            const auto finite=[](unsigned value) { return (value&0x7c00U)!=0x7c00U && (!(value&0x8000U) || !(value&0x7fffU)); };
+            if (!finite(a) || !finite(b)) { ++invalid; continue; }
+            // Nonnegative IEEE binary16 bit patterns are their ordered representable-value indices.
+            const int difference=int(b&0x7fffU)-int(a&0x7fffU);
+            const unsigned steps=unsigned(monotone ? std::max(difference,0) : std::abs(difference));
+            maximum=std::max(maximum,steps); violations+=steps>1;
+        }
+        std::println("lighting.cadence={} monotone={} half_step_max={} half_step_limit=1 violations={} invalid={}",
+            state,monotone,maximum,violations,invalid);
+        return violations==0 && invalid==0;
+    };
+    bool pass=true;
+    for (const unsigned count : {1U,2U,3U,8U}) {
+        if (!completedFrames(engine,count)) return false;
+        const auto name=std::format("batch-{}",count);
+        const auto pixels=capture(name);
+        if (!pixels) return false;
+        pass &= compare(*pixels,name,false);
+    }
+    for (unsigned frame=0;frame<4;++frame) {
+        const auto name=std::format("serialized-{}",frame);
+        if (!render.captureFrameToPng(directory/(name+".png"))) return false;
+        const auto pixels=capture(name); if (!pixels) return false;
+        pass &= compare(*pixels,name,false);
+    }
+    settings.ao_enabled=true;
+    if (!render.setGiSettings(settings) || !completedFrames(engine,2)) return false;
+    const auto ao=capture("ao-on"); if (!ao) return false;
+    pass &= compare(*ao,"ao-on",true);
+    settings.ao_enabled=false;
+    if (!render.setGiSettings(settings) || !completedFrames(engine,2)) return false;
+    const auto restored=capture("ao-restored"); if (!restored) return false;
+    pass &= compare(*restored,"ao-restored",false);
+    return render.setGiSettings(original).has_value() && completedFrames(engine,2) && pass;
 }
 }
 /// @brief The receiver's upward normal has zero cosine to the horizontal direct light illuminating the wall.
@@ -62,12 +139,26 @@ int main(int argc, char **argv) {
     std::filesystem::create_directories(redPath.parent_path());
     if (!render.captureFrameToPng(redPath) || !warm(engine,32)) return 1;
     const auto later = measure(engine,"red-later");
+    const bool cadence=lightingCadence(engine,redPath.parent_path()/(redPath.stem().string()+"-cadence"));
     if (!render.setObjectColor(*wall,LinearColor{.value = Vec3{.01F,1,.01F}}) || !warm(engine)) return 1;
     const auto green = measure(engine,"green");
     if (!render.captureFrameToPng(redPath.parent_path() / (offCamera ? "off-camera-green.png" : msaa ? "msaa-green.png" : "green.png"))) return 1;
     if (!render.removeObject(*wall) || !warm(engine)) return 1;
     const auto removed = measure(engine,"removed");
     if (!off || !red || !later || !green || !removed) return 1;
+    // The transport receiver above has zero direct cosine. Exercise a visible sunlit
+    // receiver and blocker too, so cadence changes in shared sun-shadow maps cannot hide.
+    render.setCamera(Camera::lookAt(Position{.value=Vec3{0,1.5F,3}},Position{}, {},FovY{1.1F}));
+    render.setDirectionalLight(Direction{.value=Vec3{-.7F,-1,-.3F}},LinearColor{},LightIntensity{3},LinearColor{.value=Vec3{0}});
+    const auto blocker=render.addCuboid(Vec3{-.25F,0,-.25F},Vec3{.25F,.65F,.25F},LinearColor{.value=Vec3{.5F}});
+    if (!blocker) return 1;
+    const bool shadowCadence=lightingCadence(engine,redPath.parent_path()/(redPath.stem().string()+"-sun-shadow-cadence"));
+    // Translating the same scene exposes cancellation in inverse-view-projection reconstruction.
+    // Its camera-relative geometry, light direction and all comparison tolerances stay identical.
+    const Transform translated{.translation=Position{.value=Vec3{91,6,130}}};
+    if (!render.setObjectTransform(*receiver,translated) || !render.setObjectTransform(*blocker,translated)) return 1;
+    render.setCamera(Camera::lookAt(Position{.value=Vec3{91,7.5F,133}},Position{.value=Vec3{91,6,130}}, {},FovY{1.1F}));
+    const bool translatedCadence=lightingCadence(engine,redPath.parent_path()/(redPath.stem().string()+"-translated-shadow-cadence"));
     auto &renderer = render.forward();
     VkPhysicalDeviceProperties device{}; vkGetPhysicalDeviceProperties(renderer.physicalDevice.physicalDevice,&device);
     const auto delta = [](Vec3 a, Vec3 b) { return std::max({std::abs(a.x-b.x),std::abs(a.y-b.y),std::abs(a.z-b.z)}); };
@@ -78,7 +169,7 @@ int main(int argc, char **argv) {
         std::string_view{device.deviceName},msaa ? 4 : 1,offCamera,redRatio,offRatio,greenRatio,drift,removal,redPath.string(),renderer.validationActive());
     // Saturation must change direction with the contributor; an ambient constant cannot satisfy this fixture.
     const bool pass = redRatio > offRatio + .5F && greenRatio > 1.5F && red->x > off->x + .005F &&
-        green->y > off->y + .005F && drift < .002F && removal < .003F && renderer.targets.front().probes.valid == 64;
+        green->y > off->y + .005F && drift < .002F && removal < .003F && renderer.targets.front().probes.valid == 64 && cadence && shadowCadence && translatedCadence;
     render.waitIdle(); engine.gui().shutdownVulkan(); render.shutdown();
     std::println("validation.errors={}",renderer.validationErrorCount());
     return pass && renderer.validationErrorCount() == 0 ? 0 : 2;
