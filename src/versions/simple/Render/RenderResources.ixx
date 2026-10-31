@@ -1,6 +1,7 @@
 module;
 
 #include <stb_image.h>
+#include "../shaders/simple_shared.h"
 
 export module VVEngine.Simple.RenderResources;
 import std;
@@ -59,6 +60,8 @@ export namespace vve::simple {
 		RenderTextureIndex ambient_occlusion_texture_index{kNoTexture}; ///< Ambient-occlusion texture-table index.
 		Scalar opacity{one()};														///< Material alpha; the base-colour texture alpha multiplies it.
 		AlphaMode alpha_mode{AlphaMode::opaque};								///< How the material alpha is used.
+		Scalar alpha_cutoff{VVE_ALPHA_CUTOFF}; ///< Hybrid main, shadow and capture use the same imported threshold.
+		std::optional<bool> double_sided{}; ///< Imported sidedness; absent preserves engine-authored capture policy.
 	};
 
 	/// @brief Scene draw item connecting mesh, material, and transforms.

@@ -99,7 +99,7 @@ namespace vve::simple {
 		clearSkybox();	// The new texture is already held, so a repeated panorama is not decoded again.
 		sky_ = *sky;
 		renderer_.setEnvironmentTexture(*texture);
-		renderer_.markSceneResourcesDirty();
+		renderer_.markSceneResourcesDirty(false); // Sky radiance changes, but no shadow-caster silhouette changes.
 		return {};
 	}
 
@@ -113,7 +113,7 @@ namespace vve::simple {
 		sky_ = {};
 		renderer_.setEnvironmentTexture(kNoTexture);
 		releaseUnused(mesh, material);
-		renderer_.markSceneResourcesDirty();
+		renderer_.markSceneResourcesDirty(false);
 	}
 
 	/// @brief Returns public render objects registered for one scene instance.
@@ -143,6 +143,7 @@ namespace vve::simple {
 	auto RenderSystem::removeSceneInstance(RenderSceneInstanceHandle instance) -> std::expected<void, Error> {
 		if (!scene_instances_.contains(instance)) { return std::unexpected(Error::missing_object); }
 		rollbackSceneInstance(instance);
+		renderer_.invalidateProbes(true);
 		return {};
 	}
 
@@ -187,6 +188,7 @@ namespace vve::simple {
 		}
 		if (scenes_.erase(handle) > 0U) {
 			removeImportedLights(detail::lightSceneOwner(handle)); // Lights added after the load stay.
+			renderer_.invalidateProbes(true);
 			return {};
 		}
 		if (!imported_assets_.scene_nodes || !imported_assets_.scene_nodes(handle)) { return std::unexpected(Error::missing_object); }
@@ -197,6 +199,7 @@ namespace vve::simple {
 			imported_render_materials_.erase(material);
 		}
 		(void)purgeUnusedAssets();
+		renderer_.invalidateProbes(true);
 		return {};
 	}
 
@@ -517,8 +520,9 @@ namespace vve::simple {
 		const auto *current = instance ? scene_.findMaterial(instance->material) : nullptr;
 		if (current == nullptr) { return std::unexpected(Error::missing_object); }
 		const auto old_material = instance->material;
+		const bool shadowChange = instance->casts_shadow && current->alpha_mode != AlphaMode::opaque; // Replacing mask/blend with a plain material changes shadow geometry.
 		instance->material = acquirePrimitiveMaterial(color.value_or(current->base_color), texture.value_or(current->base_color_texture_index));
-		if (instance->material != old_material) { releaseUnused(instance->mesh, old_material); }
+		if (instance->material != old_material) { releaseUnused(instance->mesh, old_material); renderer_.invalidateProbes(false, shadowChange); }
 		return {};
 	}
 

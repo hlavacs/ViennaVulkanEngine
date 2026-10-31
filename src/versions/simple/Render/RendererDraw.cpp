@@ -104,6 +104,65 @@ namespace vve::simple {
 		}
 	}
 
+	/// @brief Replaces the recorder without waiting: captured owners outlive their last submitted use.
+	auto ForwardRenderer::setNativeDraw(NativeDrawCallback callback) -> std::expected<void,Error> {
+		if (nativeDraw_) { retire(std::move(nativeDraw_)); }
+		nativeDraw_ = std::move(callback);
+		notifyNativeDrawChanged();
+		return {};
+	}
+	/// @brief Explicit external edits affect captures and caster depth, never per-frame engine uploads.
+	void ForwardRenderer::notifyNativeDrawChanged() { invalidateProbes(false,true); }
+
+	/// @brief Completes the public per-pass context; failures abort recording through the existing acquired-image cleanup.
+	VkResult ForwardRenderer::recordNative(WindowTarget &target, VkCommandBuffer command, NativeDrawContext context) {
+		if (!nativeDraw_) { return VK_SUCCESS; }
+		context.device = reinterpret_cast<std::uintptr_t>(static_cast<VkDevice>(device.device));
+		context.physicalDevice = reinterpret_cast<std::uintptr_t>(static_cast<VkPhysicalDevice>(physicalDevice.physicalDevice));
+		context.commandBuffer = reinterpret_cast<std::uintptr_t>(command);
+		context.window = target.handle; context.frameIndex = target.currentFrame;
+		context.viewProjection = multiply(context.projection,context.view);
+		context.frustum = frustumPlanes(context.viewProjection);
+		context.eye = Position{Vec3{inverse(context.view)[3]}};
+		context.depthFormat = depthFormat;
+		const bool single = context.pass == NativeDrawPass::shadow || context.pass == NativeDrawPass::probe_capture;
+		context.samples = single ? VK_SAMPLE_COUNT_1_BIT : sampleCount();
+		context.colorAttachmentCount = context.pass == NativeDrawPass::shadow ? 0U : context.pass == NativeDrawPass::gbuffer ? 3U : 1U;
+		for (auto i : std::views::iota(0U,context.colorAttachmentCount)) { context.colorFormats[i] = gbufferFormats[i]; }
+		context.samplerAnisotropy = device.samplerAnisotropy; context.tessellationShader = device.tessellationShader;
+		if (!context.width) { context.width = target.swapchain.extent.width; context.height = target.swapchain.extent.height; }
+		// The public sampler borrows only coefficient views, never G-buffer or depth attachments being written.
+		if (backend_ == RendererBackend::hybrid_gi &&
+			(context.prepare || context.pass == NativeDrawPass::forward_opaque || context.pass == NativeDrawPass::forward_transparent)) {
+			context.probeIrradianceViews = {reinterpret_cast<std::uint64_t>(target.probes.coefficients.imageView),reinterpret_cast<std::uint64_t>(target.coarseProbes.coefficients.imageView)};
+			context.probeOrigin = frameUniforms_.probeOrigin; context.probeControl = frameUniforms_.probeControl;
+			context.probeEye = (target.camera ? *target.camera : camera_).position;
+			context.probeCascades = static_cast<std::uint32_t>(frameUniforms_.viewport.w);
+		}
+		// Preparation may bind these immutable views after its slot fence; only later colour/capture scopes sample them.
+		context.mainView = frameUniforms_.view;
+		context.sunShadowView = reinterpret_cast<std::uint64_t>(dirShadowArray.imageView);
+		context.sunShadowTexels = Vec4{dirShadowArray.extent.width ? 1.F/dirShadowArray.extent.width : 0.F,dirShadowArray.extent.height ? 1.F/dirShadowArray.extent.height : 0.F,
+			target.probeShadow.extent.width ? 1.F/target.probeShadow.extent.width : 0.F,target.probeShadow.extent.height ? 1.F/target.probeShadow.extent.height : 0.F};
+		for (std::uint32_t sun = 0; sun < frameUniforms_.activeDirectionalLightCount; ++sun) {
+			if (frameUniforms_.directionalLightDirections[sun].w != zero()) { continue; }
+			context.sunShadowCount = 4; context.sunShadowFirstLayer = sun * kNumShadowCascades;
+			context.sunShadowSplits = frameUniforms_.cascadeSplits;
+			for (std::uint32_t i = 0; i < 4; ++i) { context.sunShadowMatrices[i] = frameUniforms_.shadowViewProjs[kShadowMatrixDirBase + context.sunShadowFirstLayer + i]; }
+			break;
+		}
+		context.captureSunShadowView = reinterpret_cast<std::uint64_t>(target.probeShadow.imageView);
+		context.captureSunShadowMatrix = target.probeShadowMatrix;
+		context.captureSunShadowEnabled = target.probeSun >= 0;
+		try {
+			if (const auto result = nativeDraw_(context); !result) {
+				std::cerr << "[vve::simple] native draw: " << errorName(result.error()) << '\n';
+				return VK_ERROR_INITIALIZATION_FAILED;
+			}
+		} catch (...) { return VK_ERROR_INITIALIZATION_FAILED; }
+		return VK_SUCCESS;
+	}
+
 	/**
 		* @brief Draws one swapchain frame through the per-frame synchronization objects.
 		*
@@ -137,6 +196,9 @@ namespace vve::simple {
 		if (result == VK_TIMEOUT) { ++skippedFrameCount_; return FrameOutcome::skipped; }
 		if (result != VK_SUCCESS) { return reportFrameFailure("fence wait", result); }
 		collectRetiredResources(target.submitSerials[frameIndex]);
+		collectGpuTiming(target, frameIndex);
+		result = prepareGpuTiming(target);
+		if (result != VK_SUCCESS) { return reportFrameFailure("GPU timing queries", result); }
 		if (const VkResult sync = syncSceneResources(); sync != VK_SUCCESS) { return reportFrameFailure("scene sync", sync); }
 		refreshTerrainHeights();
 		result = writeSceneDescriptors(target, frameIndex);
@@ -175,6 +237,10 @@ namespace vve::simple {
 			frameUniforms_.skyParams = {sky_.haze, sun == lights.end() ? zero() : sky_.sun_size * 0.00465F, static_cast<float>(sun - lights.begin()), 0};
 			frameUniforms_.cloudLayer = {sky_.cloud_base, sky_.cloud_thickness, sky_.cloud_coverage, sky_.cloud_density * 0.04F};
 			frameUniforms_.cloudWind = {drift(sky_.wind.x), drift(sky_.wind.y), 0, 0};
+		}
+		if (backend_ == RendererBackend::hybrid_gi) {
+			result = prepareProbes(target, frameIndex);
+			if (result != VK_SUCCESS) { return reportFrameFailure("probe preparation", result); }
 		}
 		result = target.uniformBuffers.update(target.currentFrame, frameUniforms_);
 		if (result != VK_SUCCESS) { return reportFrameFailure("uniform update", result); }
@@ -235,8 +301,9 @@ namespace vve::simple {
 		result = vkQueueSubmit(device.graphicsQueue, 1U, &submitInfo, inFlightFence);
 		if (result != VK_SUCCESS) { return abandonAcquiredImage("queue submit", result, inFlightFence); }
 		target.submitSerials[frameIndex] = ++submitSerial_;
+		if (gpuTimingEnabled && target.gpuQueries) target.timingWritten[frameIndex].set(WindowTarget::timingQueries - 1);
 		if (submitSerial_ == 1U) {
-			std::clog << "[vve::simple] renderer=" << (backend_ == RendererBackend::deferred ? "deferred" : "forward")
+			std::clog << "[vve::simple] renderer=" << std::array{"forward", "deferred", "hybrid-gi"}[std::to_underlying(backend_)]
 				<< " gbuffer=" << std::ranges::count(recordedPassOrder, RecordedPass::gbuffer)
 				<< " deferred_lighting=" << std::ranges::count(recordedPassOrder, RecordedPass::deferred_lighting)
 				<< " samples=" << static_cast<unsigned>(sampleCount()) << '\n';
@@ -301,6 +368,17 @@ namespace vve::simple {
 		const VkCommandBufferBeginInfo beginInfo{.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
 		result = vkBeginCommandBuffer(commandBuffer, &beginInfo);
 		if (result != VK_SUCCESS) { return result; }
+		if (gpuTimingEnabled && target.gpuQueries) {
+			target.timingWritten[frameIndex].reset();
+			vkCmdResetQueryPool(commandBuffer, target.gpuQueries, frameIndex * WindowTarget::timingQueries, WindowTarget::timingQueries);
+			writeGpuTimestamp(target, commandBuffer, 12);
+		}
+		const NativeDrawContext mainContext{.pass = usesDeferred() ? NativeDrawPass::gbuffer : NativeDrawPass::forward_opaque,
+			.view = frameUniforms_.view,.projection = frameUniforms_.projection};
+		if (nativeDraw_) {
+			auto prepare = mainContext; prepare.prepare = true;
+			if (const auto r = recordNative(target,commandBuffer,prepare); r != VK_SUCCESS) { return r; }
+		}
 		// Debug builds wrap every pass in a labelled region, which RenderDoc's event browser shows as a tree.
 		debugLabels.startFrame();
 		if constexpr (VulkanDebugLabels::compiled) {
@@ -357,18 +435,21 @@ namespace vve::simple {
 			return left.transparent ? left.distance > right.distance : std::less<const VulkanMesh *>{}(left.mesh, right.mesh);
 		});
 		const VulkanMesh *boundMesh{};
-		const auto drawUploadedObjects = [&](std::uint32_t shadowMatrixIndex, bool shadowPass, const Mat4 &clip, RecordedPass scenePass = RecordedPass::forward_color) {
+		const auto drawUploadedObjects = [&](std::uint32_t shadowMatrixIndex, bool shadowPass, const Mat4 &clip, RecordedPass scenePass = RecordedPass::forward_color, bool opaqueOnly = false) {
 			const auto planes = frustumPlanes(clip);
 			bool blending{}; // The colour pass switches to the blended pipeline at the first transparent item.
 			// Callers bind the pass pipeline; terrain items switch to its tessellated twin and back.
-			const VkPipeline passPipeline = shadowPass ? shadowPipeline.pipeline : scenePass == RecordedPass::gbuffer ? gbufferPipeline.pipeline : graphicsPipeline.pipeline;
+			const VkPipeline passPipeline = shadowPass ? shadowPipeline.pipeline : scenePass == RecordedPass::gbuffer ? gbufferPipeline.pipeline : scenePass == RecordedPass::probe_capture ? probePipeline.pipeline : graphicsPipeline.pipeline;
 			const VkPipeline terrainPassPipeline = shadowPass ? terrainShadowPipeline.pipeline
-				: scenePass == RecordedPass::gbuffer ? terrainGbufferPipeline.pipeline : terrainPipeline.pipeline;
+				: scenePass == RecordedPass::gbuffer ? terrainGbufferPipeline.pipeline : scenePass == RecordedPass::probe_capture ? probeTerrainPipeline.pipeline : terrainPipeline.pipeline;
 			bool terrainBound{};
 			// Bound mesh state survives dynamic-rendering boundaries and pipeline changes.
 			for (const auto &item : items) {
 				const bool opaque = !item.sky && !item.transparent;
-				if (!shadowPass && ((scenePass == RecordedPass::gbuffer && !opaque) || (scenePass == RecordedPass::forward_transparency && opaque))) { continue; }
+				if (opaqueOnly && !opaque) { continue; }
+				// Probe faces keep the shared sky draw after opaque geometry; only forward-only surfaces are excluded.
+				if (!shadowPass && ((scenePass == RecordedPass::gbuffer && !opaque) || (scenePass == RecordedPass::probe_capture && item.transparent) ||
+					(scenePass == RecordedPass::forward_transparency && opaque))) { continue; }
 				if ((shadowPass && !item.castsShadow) || !intersectsFrustum(item.worldBounds, planes)) { continue; }
 				if (item.terrain && terrainPassPipeline == VK_NULL_HANDLE) {
 					if (!terrainWarned_) {
@@ -384,6 +465,11 @@ namespace vve::simple {
 				}
 				if (!shadowPass && item.transparent && !blending) {
 					vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, transparentPipeline.pipeline);
+					if (backend_ == RendererBackend::hybrid_gi) {
+						// Only shared probe coefficients are sampled here; transparency never samples opaque AO or depth descriptors.
+						const std::array sets{target.descriptorSets.descriptorSets[frameIndex], target.deferredSet};
+						vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deferredPipelineLayout.pipelineLayout, 0, 2, sets.data(), 0, nullptr);
+					}
 					++lastFrameDrawStats_.pipelineBinds;
 					blending = true;
 				}
@@ -409,24 +495,27 @@ namespace vve::simple {
 		// Only shadow-casting layers are cleared and drawn; inactive layers retain their shader-read layout.
 		const VkClearValue shadowClear{.depthStencil = {.depth = 1.0F, .stencil = 0U}};
 		bool shadowPipelineBound{}; // Bind state belongs to this command buffer, independently of frame diagnostics.
-		const auto recordShadowLayer = [&](const ShadowMap &map, std::uint32_t layer, std::uint32_t matrixIndex, RecordedPass pass, std::string_view label) {
+		const auto recordShadowLayer = [&](const ShadowMap &map, std::uint32_t layer, std::uint32_t matrixIndex, RecordedPass pass, std::string_view label,
+			VkDescriptorSet captureSet = VK_NULL_HANDLE, bool initialized = true, bool draw = true) -> VkResult {
 			debugLabels.begin(commandBuffer, label, DebugLabelKind::shadow);
 			// One shadow pipeline/set and viewport serve every light type and layer.
-			if (!shadowPipelineBound) {
+			if (!shadowPipelineBound || pass == RecordedPass::probe_shadow) {
 				vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, shadowPipeline.pipeline);
 				++lastFrameDrawStats_.pipelineBinds;
-				const VkViewport viewport{.width = static_cast<float>(ShadowMap::resolution), .height = static_cast<float>(ShadowMap::resolution), .minDepth = 0.0F, .maxDepth = 1.0F};
-				const VkRect2D scissor{.extent = {ShadowMap::resolution, ShadowMap::resolution}};
+				const VkViewport viewport{.width = static_cast<float>(map.extent.width), .height = static_cast<float>(map.extent.height), .minDepth = 0.0F, .maxDepth = 1.0F};
+				const VkRect2D scissor{.extent = map.extent};
 				vkCmdSetViewport(commandBuffer, 0U, 1U, &viewport);
 				vkCmdSetScissor(commandBuffer, 0U, 1U, &scissor);
-				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &target.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
+				const auto set = captureSet != VK_NULL_HANDLE ? captureSet : target.descriptorSets.descriptorSets[frameIndex];
+				vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &set, 0U, nullptr);
 				shadowPipelineBound = true;
 			}
 			const VkImageSubresourceRange range{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .baseArrayLayer = layer, .layerCount = 1U};
 			const VkImageMemoryBarrier beginBarrier{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask = initialized ? VK_ACCESS_SHADER_READ_BIT : 0U,
 				.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
-				.oldLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+				.oldLayout = initialized ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED,
 				.newLayout = VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL,
 				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
@@ -446,7 +535,7 @@ namespace vve::simple {
 			};
 			const VkRenderingInfo renderingInfo{
 				.sType = VK_STRUCTURE_TYPE_RENDERING_INFO,
-				.renderArea = {.offset = {0, 0}, .extent = {.width = ShadowMap::resolution, .height = ShadowMap::resolution}},
+				.renderArea = {.offset = {0, 0}, .extent = map.extent},
 				.layerCount = 1U,
 				.colorAttachmentCount = 0U,
 				.pDepthAttachment = &depthAttachment,
@@ -454,7 +543,24 @@ namespace vve::simple {
 			vkCmdBeginRendering(commandBuffer, &renderingInfo);
 			++lastShadowLayerPassCount_;
 			recordedPassOrder.push_back(pass);
-			drawUploadedObjects(matrixIndex, true, frameUniforms_.shadowViewProjs[matrixIndex]);
+			if (draw) drawUploadedObjects(matrixIndex, true, pass == RecordedPass::probe_shadow ? target.probeShadowMatrix : frameUniforms_.shadowViewProjs[matrixIndex]);
+			if (draw && nativeDraw_) {
+				NativeDrawContext context{.pass = NativeDrawPass::shadow,.width = map.extent.width,.height = map.extent.height};
+				context.probeShadow = pass == RecordedPass::probe_shadow;
+				if (context.probeShadow) {
+					context.view = target.probeShadowView; context.projection = target.probeShadowProjection;
+					context.lightType = 3; context.lightIndex = static_cast<std::uint32_t>(target.probeSun);
+				} else {
+					context.lightType = pass == RecordedPass::directional_shadow ? 3U : pass == RecordedPass::point_shadow ? 2U : 1U;
+					const auto meta = std::ranges::find_if(shadowLightMeta,[&](const auto &m) { return m.light_type == context.lightType && m.first_layer == layer; });
+					if (meta != shadowLightMeta.end()) { context.view = meta->view; context.projection = meta->projection; context.lightIndex = meta->light_index; }
+					context.cascadeIndex = context.lightType == 3 ? layer % kNumShadowCascades : 0U;
+					context.faceIndex = context.lightType == 2 ? layer % pointShadowFaceCount : 0U;
+				}
+				const auto r = recordNative(target,commandBuffer,context);
+				boundMesh = nullptr; shadowPipelineBound = false; // External binding state cannot be reused by the next layer.
+				if (r != VK_SUCCESS) { vkCmdEndRendering(commandBuffer); return r; }
+			}
 			vkCmdEndRendering(commandBuffer);
 			const VkImageMemoryBarrier readBarrier{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -470,9 +576,10 @@ namespace vve::simple {
 			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
 										0U, 0U, nullptr, 0U, nullptr, 1U, &readBarrier);
 			debugLabels.end(commandBuffer);
+			return VK_SUCCESS;
 		};
 		const auto recordShadowMap = [&](const ShadowMap &map, std::uint32_t activeLights, std::uint32_t layersPerLight,
-			std::size_t matrixBase, RecordedPass pass, std::span<const Vec4> directions = {}) {
+			std::size_t matrixBase, RecordedPass pass, std::span<const Vec4> directions = {}) -> VkResult {
 			// Ambient-only lights retain a packed lighting slot but have no shadow passes.
 			for (std::uint32_t light{}; light < activeLights; ++light) {
 				if (!directions.empty() && directions[light].w != zero()) { continue; }
@@ -484,15 +591,38 @@ namespace vve::simple {
 							: pass == RecordedPass::point_shadow ? std::format("Shadow: point light {} face {}", light, std::array{"+X", "-X", "+Y", "-Y", "+Z", "-Z"}[face % 6U])
 							: std::format("Shadow: spot light {}", light);
 					}
-					recordShadowLayer(map, layer, static_cast<std::uint32_t>(matrixBase + layer), pass, label);
+					if (const auto r = recordShadowLayer(map, layer, static_cast<std::uint32_t>(matrixBase + layer), pass, label); r != VK_SUCCESS) { return r; }
 				}
 			}
+			return VK_SUCCESS;
 		};
 		debugLabels.begin(commandBuffer, "Shadow maps", DebugLabelKind::shadow);
-		recordShadowMap(dirShadowArray, frameUniforms_.activeDirectionalLightCount, kNumShadowCascades, kShadowMatrixDirBase, RecordedPass::directional_shadow, frameUniforms_.directionalLightDirections);
-		recordShadowMap(spotShadowArray, frameUniforms_.activeSpotLightCount, 1U, kShadowMatrixSpotBase, RecordedPass::spot_shadow, frameUniforms_.spotLightDirections);
-		recordShadowMap(pointShadowArray, frameUniforms_.activePointLightCount, pointShadowFaceCount, kShadowMatrixPointBase, RecordedPass::point_shadow);
+		if (const auto r = recordShadowMap(dirShadowArray, frameUniforms_.activeDirectionalLightCount, kNumShadowCascades, kShadowMatrixDirBase, RecordedPass::directional_shadow, frameUniforms_.directionalLightDirections); r != VK_SUCCESS) { return r; }
+		if (const auto r = recordShadowMap(spotShadowArray, frameUniforms_.activeSpotLightCount, 1U, kShadowMatrixSpotBase, RecordedPass::spot_shadow, frameUniforms_.spotLightDirections); r != VK_SUCCESS) { return r; }
+		if (const auto r = recordShadowMap(pointShadowArray, frameUniforms_.activePointLightCount, pointShadowFaceCount, kShadowMatrixPointBase, RecordedPass::point_shadow); r != VK_SUCCESS) { return r; }
 		debugLabels.end(commandBuffer);
+
+		if (backend_ == RendererBackend::hybrid_gi) {
+			// The same caster list, masked material shader and pipelines are culled against the probe sun bounds.
+			const auto &capture = target.probes.updated ? target.probes : target.coarseProbes;
+			const bool drawSun = capture.updated && target.probeSun >= 0;
+			if (target.probeShadowDirty && (drawSun || !target.probeShadowInitialized)) {
+				const auto set = drawSun ? capture.sets.descriptorSets[frameIndex * IrradianceProbes::views] : VK_NULL_HANDLE;
+				if (const auto r = recordShadowLayer(target.probeShadow, 0, target.probeSun >= 0 ? kShadowMatrixDirBase + target.probeSun * kNumShadowCascades : 0,
+					RecordedPass::probe_shadow, "Shadow: probe volume sun", set, target.probeShadowInitialized, drawSun); r != VK_SUCCESS) { return r; }
+				target.probeShadowInitialized = true;
+				if (drawSun) { target.probeShadowGeneration = probeShadowGeneration_; ++target.probeShadowRenders; }
+				if (drawSun || target.probeSun < 0) { target.probeShadowDirty = false; }
+			}
+			recordedPassOrder.push_back(RecordedPass::probe_capture);
+			const auto r = recordProbes(target, commandBuffer, [&](const NativeDrawContext &context) {
+				drawUploadedObjects(0, false, multiply(context.projection,context.view), RecordedPass::probe_capture);
+				const auto recorded = recordNative(target,commandBuffer,context);
+				if (nativeDraw_) { boundMesh = nullptr; }
+				return recorded;
+			});
+			if (r != VK_SUCCESS) { return r; }
+		}
 
 		const VkImageSubresourceRange colorRange{.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole swapchain image.
 		const VkImageSubresourceRange depthRange{.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT, .levelCount = 1U, .layerCount = 1U}; // Whole depth image.
@@ -518,7 +648,7 @@ namespace vve::simple {
 			multisampled ? 2U : 1U, colourBeginBarriers.data());
 
 		// The depth image is shared by both frames in flight: wait for the previous frame's depth writes.
-		const bool deferred = backend_ == RendererBackend::deferred;
+		const bool deferred = usesDeferred();
 		const VkImageMemoryBarrier depthBeginBarriers{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
 			.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT | (deferred ? VK_ACCESS_SHADER_READ_BIT : 0U),
@@ -597,8 +727,11 @@ namespace vve::simple {
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, gbufferPipeline.pipeline);
 			++lastFrameDrawStats_.pipelineBinds;
 			drawUploadedObjects(0U, false, viewProjection, RecordedPass::gbuffer);
+			if (const auto r = recordNative(target,commandBuffer,mainContext); r != VK_SUCCESS) { vkCmdEndRendering(commandBuffer); return r; }
+			if (nativeDraw_) { boundMesh = nullptr; }
 			vkCmdEndRendering(commandBuffer);
 			debugLabels.end(commandBuffer);
+			if (nativeDraw_) { vkCmdSetViewport(commandBuffer,0,1,&viewport); vkCmdSetScissor(commandBuffer,0,1,&scissor); }
 
 			// Publish every stored sample and its corresponding depth before the fullscreen shader reads them.
 			std::array<VkImageMemoryBarrier, 4U> reads{};
@@ -614,6 +747,7 @@ namespace vve::simple {
 			}
 			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 				VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0U, 0U, nullptr, 0U, nullptr, 4U, reads.data());
+			if (backend_ == RendererBackend::hybrid_gi) { recordAo(target, commandBuffer); }
 			auto litColour = colorAttachment;
 			litColour.resolveMode = VK_RESOLVE_MODE_NONE;
 			litColour.resolveImageView = VK_NULL_HANDLE;
@@ -623,13 +757,16 @@ namespace vve::simple {
 			lighting.pDepthAttachment = nullptr;
 			recordedPassOrder.push_back(RecordedPass::deferred_lighting);
 			debugLabels.begin(commandBuffer, "Deferred lighting", DebugLabelKind::lighting);
+			writeGpuTimestamp(target, commandBuffer, 10);
 			vkCmdBeginRendering(commandBuffer, &lighting);
-			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, lightingPipeline.pipeline);
+			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS,
+				backend_ == RendererBackend::hybrid_gi && giSettings.ao_enabled ? aoLightingPipeline.pipeline : lightingPipeline.pipeline);
 			++lastFrameDrawStats_.pipelineBinds;
 			const std::array sets{target.descriptorSets.descriptorSets[frameIndex], target.deferredSet};
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, deferredPipelineLayout.pipelineLayout, 0U, 2U, sets.data(), 0U, nullptr);
 			vkCmdDraw(commandBuffer, 3U, 1U, 0U, 0U);
 			vkCmdEndRendering(commandBuffer);
+			writeGpuTimestamp(target, commandBuffer, 11);
 			debugLabels.end(commandBuffer);
 
 			// Restore opaque depth for the sky and transparency; retain individual HDR samples until their final resolve.
@@ -661,6 +798,8 @@ namespace vve::simple {
 			++lastFrameDrawStats_.pipelineBinds;
 			vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.pipelineLayout, 0U, 1U, &target.descriptorSets.descriptorSets[frameIndex], 0U, nullptr);
 			drawUploadedObjects(0U, false, viewProjection, RecordedPass::forward_transparency);
+			auto transparentContext = mainContext; transparentContext.pass = NativeDrawPass::forward_transparent;
+			if (const auto r = recordNative(target,commandBuffer,transparentContext); r != VK_SUCCESS) { vkCmdEndRendering(commandBuffer); return r; }
 			vkCmdEndRendering(commandBuffer);
 			debugLabels.end(commandBuffer);
 		} else {
@@ -669,7 +808,18 @@ namespace vve::simple {
 			vkCmdBeginRendering(commandBuffer, &renderingInfo);
 			vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.pipeline);
 			++lastFrameDrawStats_.pipelineBinds;
-			drawUploadedObjects(0U, false, viewProjection);
+			drawUploadedObjects(0U, false, viewProjection, RecordedPass::forward_color, bool(nativeDraw_));
+			if (nativeDraw_) {
+				if (const auto r = recordNative(target,commandBuffer,mainContext); r != VK_SUCCESS) { vkCmdEndRendering(commandBuffer); return r; }
+				// Restore the state needed by engine sky/transparency after the external solid draw.
+				boundMesh = nullptr;
+				vkCmdSetViewport(commandBuffer,0,1,&viewport); vkCmdSetScissor(commandBuffer,0,1,&scissor);
+				vkCmdBindPipeline(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,graphicsPipeline.pipeline);
+				vkCmdBindDescriptorSets(commandBuffer,VK_PIPELINE_BIND_POINT_GRAPHICS,pipelineLayout.pipelineLayout,0,1,&target.descriptorSets.descriptorSets[frameIndex],0,nullptr);
+				drawUploadedObjects(0,false,viewProjection,RecordedPass::forward_transparency);
+				auto transparentContext = mainContext; transparentContext.pass = NativeDrawPass::forward_transparent;
+				if (const auto r = recordNative(target,commandBuffer,transparentContext); r != VK_SUCCESS) { vkCmdEndRendering(commandBuffer); return r; }
+			}
 			vkCmdEndRendering(commandBuffer);
 			debugLabels.end(commandBuffer);
 		}
@@ -774,6 +924,7 @@ namespace vve::simple {
 		vkCmdPipelineBarrier(commandBuffer, drawGui ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT,
 									VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &presentBarrier);
 		if constexpr (VulkanDebugLabels::compiled) { debugLabels.end(commandBuffer); } // Frame
+		writeGpuTimestamp(target, commandBuffer, 13);
 		result = vkEndCommandBuffer(commandBuffer);
 		if (result != VK_SUCCESS) { return result; }
 

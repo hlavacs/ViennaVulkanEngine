@@ -5,10 +5,14 @@ module;
 #endif
 #include <vulkan/vulkan_core.h>
 #include <VVPPL.h>
+#include "../shaders/simple_shared.h"
 // Build-generated uint32_t arrays are defined only in this translation unit.
 #include "simple_forward_vert_spv.h"
 #include "simple_forward_frag_spv.h"
 #include "simple_forward_shadow_vert_spv.h"
+#include "simple_forward_gi_frag_spv.h"
+#include "simple_shadow_gi_vert_spv.h"
+#include "simple_shadow_gi_frag_spv.h"
 #include "simple_terrain_vert_spv.h"
 #include "simple_terrain_hull_spv.h"
 #include "simple_terrain_domain_spv.h"
@@ -47,6 +51,14 @@ namespace vve::simple {
 		postProcess.reset();
 		deferredPool.cleanup();
 		deferredSet = VK_NULL_HANDLE;
+		probes.cleanup();
+		coarseProbes.cleanup(); probeShadow.cleanup();
+		probeShadowInitialized = probeShadowDirty = false;
+		probeShadowGeneration = probeShadowRenders = probeShadowBytes = 0;
+		for (auto &image : aoImages) { image.cleanup(); }
+		gpuQueries.reset(); gpuMs.fill(std::nullopt); timingSerial = 0; aoGpuMs.reset();
+		for (auto &written : timingWritten) written.reset();
+		aoGpuBytes = 0; aoInitialized = aoEnabled = false;
 		for (auto &image : gbufferImages) { image.cleanup(); }
 		descriptorSets.cleanup();
 		descriptorPool.cleanup();
@@ -147,8 +159,8 @@ namespace vve::simple {
 				return VK_ERROR_FEATURE_NOT_PRESENT;
 			}
 		}
-		if (backend_ == RendererBackend::deferred) {
-			const auto supported = deferredSupport(physicalDevice.physicalDevice, sampleCount());
+		if (usesDeferred()) {
+			const auto supported = deferredSupport(physicalDevice.physicalDevice, sampleCount(), backend_ == RendererBackend::hybrid_gi);
 			if (supported != VK_SUCCESS) {
 				std::cerr << "[vve::simple] deferred unavailable: sampled G-buffer/depth or sample shading unsupported; VkResult=" << supported << '\n';
 				cleanup();
@@ -156,7 +168,8 @@ namespace vve::simple {
 			}
 		}
 		const auto availableCapacity = materialTextureCapacity(deviceProperties.limits);
-		const auto capacity = backend_ == RendererBackend::deferred ? (availableCapacity > 4U ? availableCapacity - 4U : 0U) : availableCapacity;
+		const auto reserved = backend_ == RendererBackend::hybrid_gi ? 11U : usesDeferred() ? 4U : 0U;
+		const auto capacity = availableCapacity > reserved ? availableCapacity - reserved : 0U;
 		if (capacity == 0U) {
 			std::cerr << "[vve::simple] renderer init failed: device descriptor limits leave no material texture slot.\n";
 			cleanup();
@@ -281,7 +294,7 @@ namespace vve::simple {
 	/// @brief Allocates matched forward attachments; the resolved HDR image remains usable by every post effect.
 	VkResult ForwardRenderer::createTargetAttachments(WindowTarget &target) {
 		auto result = target.depthImage.create(allocator, device.device, target.swapchain.extent, depthFormat,
-			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | (backend_ == RendererBackend::deferred ? VK_IMAGE_USAGE_SAMPLED_BIT : 0U), VK_IMAGE_ASPECT_DEPTH_BIT, 1U, false, false, 1U, sampleCount());
+			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | (usesDeferred() ? VK_IMAGE_USAGE_SAMPLED_BIT : 0U), VK_IMAGE_ASPECT_DEPTH_BIT, 1U, false, false, 1U, sampleCount());
 		if (result != VK_SUCCESS) { return result; }
 		result = target.hdrImage.create(allocator, device.device, target.swapchain.extent, hdrFormat,
 			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
@@ -291,7 +304,7 @@ namespace vve::simple {
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT, 1U, false, false, 1U, sampleCount());
 			if (result != VK_SUCCESS) { return result; }
 		}
-		if (backend_ == RendererBackend::deferred) {
+		if (usesDeferred()) {
 			// Keep every surface sample separate until lighting and transparent composition are complete.
 			for (auto i : std::views::iota(0U, 3U)) {
 				result = target.gbufferImages[i].create(allocator, device.device, target.swapchain.extent, gbufferFormats[i],
@@ -359,9 +372,12 @@ namespace vve::simple {
 
 	/// @brief Creates the shared forward/shadow pipelines with a matching specialized material descriptor array.
 	VkResult ForwardRenderer::createScenePipelines(std::uint32_t textureCount) {
+		for (auto &pipeline : aoPipelines) { pipeline.cleanup(); }
+		aoLightingPipeline.cleanup();
 		terrainGbufferPipeline.cleanup();
 		terrainShadowPipeline.cleanup();
 		terrainPipeline.cleanup();
+		probePipeline.cleanup(); probeTerrainPipeline.cleanup(); probeIntegrationPipeline.cleanup();
 		gbufferPipeline.cleanup();
 		lightingPipeline.cleanup();
 		deferredPipelineLayout.cleanup();
@@ -380,11 +396,21 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return result; }
 		++forwardPipelineCreateCount_;
 		// The blended variant is part of the same forward setup and is not counted separately.
-		result = transparentPipeline.create(device.device, pipelineLayout.pipelineLayout, vertShaderModule.shaderModule, "vertexMain",
+		const bool gi = backend_ == RendererBackend::hybrid_gi;
+		// GI transparency needs set 1; create its pipeline after the shared deferred layout below.
+		result = gi ? VK_SUCCESS : transparentPipeline.create(device.device, pipelineLayout.pipelineLayout, vertShaderModule.shaderModule, "vertexMain",
 			fragShaderModule.shaderModule, vertexInput, hdrFormat, depthFormat, textureCount, true, sampleCount());
 		if (result != VK_SUCCESS) { return result; }
-		result = shadowPipeline.create(device.device, pipelineLayout.pipelineLayout, shadowShaderModule.shaderModule, "shadowVertexMain",
-			VK_NULL_HANDLE, vertexInput, VK_FORMAT_UNDEFINED, depthFormat);
+		if (gi) {
+			result = giShadowVertex.create(device.device, simple_shadow_gi_vert_spv);
+			if (result != VK_SUCCESS) { return result; }
+			result = giShadowFragment.create(device.device, simple_shadow_gi_frag_spv);
+			if (result != VK_SUCCESS) { return result; }
+		}
+		result = shadowPipeline.create(device.device, pipelineLayout.pipelineLayout,
+			gi ? giShadowVertex.shaderModule : shadowShaderModule.shaderModule, gi ? "shadowMaterialVertexMain" : "shadowVertexMain",
+			gi ? giShadowFragment.shaderModule : VK_NULL_HANDLE, vertexInput, VK_FORMAT_UNDEFINED, depthFormat, gi ? textureCount : 0U,
+			false, VK_SAMPLE_COUNT_1_BIT, {}, gi ? "shadowFragmentMain" : "fragmentMain");
 		if (result == VK_SUCCESS && device.tessellationShader) {
 			// Terrain reuses the forward fragment stage; the domain stage supplies the same interpolants as vertexMain.
 			result = terrainPipeline.create(device.device, pipelineLayout.pipelineLayout, terrainVertexShader.shaderModule, "terrainVertexMain",
@@ -396,7 +422,14 @@ namespace vve::simple {
 					terrainHullShader.shaderModule, terrainShadowDomainShader.shaderModule, "terrainShadowDomainMain");
 			}
 		}
-		if (result == VK_SUCCESS && backend_ == RendererBackend::deferred) { result = createDeferredPipelines(textureCount); }
+		if (result == VK_SUCCESS && usesDeferred()) { result = createDeferredPipelines(textureCount); }
+		if (result == VK_SUCCESS && gi) {
+			result = giTransparentShader.create(device.device, simple_forward_gi_frag_spv);
+			if (result != VK_SUCCESS) { return result; }
+			result = transparentPipeline.create(device.device, deferredPipelineLayout.pipelineLayout, vertShaderModule.shaderModule, "vertexMain",
+				giTransparentShader.shaderModule, vertexInput, hdrFormat, depthFormat, textureCount, true, sampleCount(), {}, "fragmentMain", false, false,
+				VK_NULL_HANDLE, VK_NULL_HANDLE, "terrainDomainMain", true);
+		}
 		if (result == VK_SUCCESS) { namePipelines(); }
 		return result;
 	}
@@ -450,7 +483,7 @@ namespace vve::simple {
 		// The initial target has no uniform buffers yet; already-rendering windows adopt the grown range together.
 		for (auto &target : targets) {
 			if (target.uniformBuffers.buffers.empty()) { continue; }
-			if (backend_ == RendererBackend::deferred) {
+			if (usesDeferred()) {
 				result = createDeferredDescriptors(target);
 				if (result != VK_SUCCESS) { return result; }
 			}
@@ -598,7 +631,8 @@ namespace vve::simple {
 					.emissiveTexture = textureIndex(material.emissive_texture_index),
 					.ambientOcclusionTexture = textureIndex(material.ambient_occlusion_texture_index),
 					.roughnessFactor = material.roughness,
-					.metalnessFactor = material.metalness});
+					.metalnessFactor = material.metalness, .alphaCutoff = material.alpha_cutoff,
+					.sidedness = material.double_sided ? (*material.double_sided ? VVE_MATERIAL_DOUBLE_SIDED : VVE_MATERIAL_SINGLE_SIDED) : VVE_MATERIAL_LEGACY_SIDED});
 			}
 		}
 
@@ -793,6 +827,7 @@ namespace vve::simple {
 		*/
 	void ForwardRenderer::cleanup() {
 		(void)waitDeviceIdle();
+		nativeDraw_ = {}; // Release application GPU owners before the idle device is destroyed.
 		frameError_.reset();
 		// Release every target before the device-wide resources its descriptors and commands reference.
 		for (auto &target : targets) { target.cleanup(); }
@@ -839,10 +874,15 @@ namespace vve::simple {
 		terrainOffsets_.clear();
 		terrainIds_.clear();
 		terrainWarned_ = false;
+		probePipeline.cleanup(); probeTerrainPipeline.cleanup(); probeIntegrationPipeline.cleanup();
 		gbufferPipeline.cleanup();
 		lightingPipeline.cleanup();
 		deferredPipelineLayout.cleanup();
 		deferredLayout.reset();
+		probeFragment.cleanup(); probeIntegration.cleanup();
+		for (auto &pipeline : aoPipelines) { pipeline.cleanup(); }
+		for (auto &shader : aoShaders) { shader.cleanup(); }
+		aoLightingPipeline.cleanup(); aoLightingShader.cleanup();
 		gbufferShader.cleanup();
 		lightingShader.cleanup();
 		lightingVertexShader.cleanup();
@@ -850,6 +890,7 @@ namespace vve::simple {
 		transparentPipeline.cleanup();
 		shadowPipeline.cleanup();
 		shadowShaderModule.cleanup();
+		giShadowVertex.cleanup(); giShadowFragment.cleanup(); giTransparentShader.cleanup();
 		fragShaderModule.cleanup();
 		vertShaderModule.cleanup();
 		pipelineLayout.cleanup();
@@ -857,6 +898,7 @@ namespace vve::simple {
 		pointShadowArray.cleanup();
 		spotShadowArray.cleanup();
 		dirShadowArray.cleanup();
+		if (allocator.allocator != VK_NULL_HANDLE) cleanupLiveAllocations = gpuAllocationCount(); // Observe leaks before destroying the allocator.
 		allocator.cleanup();
 		device.cleanup();
 		instance.cleanup();
@@ -895,6 +937,10 @@ namespace vve::simple {
 		// Release views before their images, but keep the old swapchain for the presentation handoff.
 		target.deferredPool.cleanup();
 		target.deferredSet = VK_NULL_HANDLE;
+		for (auto &image : target.aoImages) { image.cleanup(); }
+		target.aoGpuBytes = 0; target.aoInitialized = target.aoEnabled = false;
+		target.gpuQueries.reset(); target.gpuMs.fill(std::nullopt); target.timingSerial = 0; target.aoGpuMs.reset();
+		for (auto &written : target.timingWritten) written.reset();
 		for (auto &image : target.gbufferImages) { image.cleanup(); }
 		target.depthImage.cleanup();
 		target.msaaImage.cleanup();

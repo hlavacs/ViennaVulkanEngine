@@ -101,6 +101,8 @@ export namespace vve::simple {
 		VulkanDescriptorPool() = default;
 		VulkanDescriptorPool(const VulkanDescriptorPool &) = delete;
 		VulkanDescriptorPool &operator=(const VulkanDescriptorPool &) = delete;
+		VulkanDescriptorPool(VulkanDescriptorPool &&) noexcept = default; ///< Transfers the pool owner for fence retirement.
+		VulkanDescriptorPool &operator=(VulkanDescriptorPool &&) noexcept = default;
 
 		/**
 			* @brief Creates a descriptor pool for per-frame uniform-buffer, shadow-map, and object-texture descriptor sets.
@@ -150,6 +152,8 @@ export namespace vve::simple {
 		VulkanDescriptorSets() = default;
 		VulkanDescriptorSets(const VulkanDescriptorSets &) = delete;
 		VulkanDescriptorSets &operator=(const VulkanDescriptorSets &) = delete;
+		VulkanDescriptorSets(VulkanDescriptorSets &&) noexcept = default; ///< Transfers borrowed sets with their owning pool.
+		VulkanDescriptorSets &operator=(VulkanDescriptorSets &&) noexcept = default;
 
 		/**
 			* @brief Allocates one descriptor set per frame from a borrowed pool and layout.
@@ -441,17 +445,19 @@ export namespace vve::simple {
 		std::uint32_t activePointLightCount{};                                          ///< Packed point-light count.
 		Vec4 fogColorDensity{};                                                         ///< Linear haze RGB and extinction per world unit.
 		Vec4 fogHeightTime{};                                                           ///< Base height, density height falloff, animation seconds, unused.
-		Mat4 inverseViewProjection{};                                                   ///< World reconstruction from Vulkan NDC depth 0..1.
-		Vec4 viewport{};                                                               ///< Drawable width/height, remaining components reserved.
+		Mat4 inverseViewProjection{};                                                   ///< Main depth reconstruction; direct-only probe captures reuse it for their sun projection.
+		Vec4 viewport{};                                                               ///< Width/height; hybrid main W=cascade count, capture Z=packed sun index+1.
 		Vec4 environmentLighting{-1, 1, 0, 0};                                          ///< Panorama texture slot (-1 absent), strength, GGX enabled, unused.
 		Vec4 skySun{};                                                                  ///< Direction towards the sun and its irradiance; w = 0 disables the physical sky.
 		Vec4 skyParams{0, 0, -1, 0};                                                    ///< Aerosol amount, sun disk radius in radians, sun's directional light index, unused.
 		Vec4 cloudLayer{};                                                              ///< Cloud base, thickness, coverage, extinction per metre at full density.
 		Vec4 cloudWind{};                                                               ///< Wind offset of the cloud pattern along x and z, unused, unused.
+		Vec4 probeOrigin{}; ///< Snapped probe-grid origin XYZ, cell spacing in W.
+		Vec4 probeControl{}; ///< GI enabled, indirect strength, diagnostic visibility, contact AO.
 	};
 	/// Matrices are 64 bytes and vectors 16 bytes in the shader; a double Scalar (VVE_MATH_USE_DOUBLE) would break the std140 mirror.
 	static_assert(sizeof(FrameUniforms) == (3U + kShadowMatrixCount) * 64U +
-		(1U + 2U * kMaxShadowedPointLights + 4U * kMaxShadowedSpotLights + 3U * kMaxDirectionalLights + 9U) * 16U);
+		(1U + 2U * kMaxShadowedPointLights + 4U * kMaxShadowedSpotLights + 3U * kMaxDirectionalLights + 11U) * 16U);
 
 	/// @brief One mapped FrameUniforms buffer per frame in flight.
 	struct VulkanUniformBuffers {

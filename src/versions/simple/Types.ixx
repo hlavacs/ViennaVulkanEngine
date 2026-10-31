@@ -70,6 +70,8 @@ export namespace vve::simple {
 		std::optional<LinearColor> emissive{};	///< Emissive color factor.
 		std::optional<Scalar> opacity{};		///< Base-colour alpha or OBJ dissolve.
 		std::optional<AlphaMode> alpha_mode{};	///< glTF alpha mode.
+		std::optional<Scalar> alpha_cutoff{};	///< glTF mask cutoff; absent uses the shared default.
+		bool double_sided{};	///< Imported two-sided foliage; hybrid material passes light either face.
 	};
 
 	using math::add;

@@ -47,8 +47,11 @@ export namespace vve::simple {
 		std::uint32_t ambientOcclusionTexture{kNoTexture}; ///< Ambient-occlusion texture-table index (red channel).
 		Scalar roughnessFactor{static_cast<Scalar>(0.5)}; ///< Roughness factor; a roughness texture multiplies it.
 		Scalar metalnessFactor{zero()};                   ///< Metalness factor; a metalness texture multiplies it.
+		Scalar alphaCutoff{VVE_ALPHA_CUTOFF}; ///< Imported hybrid alpha threshold.
+		std::uint32_t sidedness{VVE_MATERIAL_LEGACY_SIDED}; ///< Explicit import policy or the original engine-authored policy.
+		Vec2 padding{}; ///< Explicit sixteen-byte material stride alignment.
 	};
-	static_assert(sizeof(GpuMaterial) == 64U); ///< Keeps the C++ and Slang storage-buffer strides identical.
+	static_assert(sizeof(GpuMaterial) == 80U); ///< Keeps the C++ and Slang storage-buffer strides identical.
 
 	/// @brief Plain per-object push-constant data matching the Slang ObjectPushConstants block layout.
 	struct ObjectPushConstants {
@@ -67,7 +70,7 @@ export namespace vve::simple {
 		inline constexpr std::uint32_t sky{2U};    ///< Skybox drawn around the camera at the far plane.
 		inline constexpr std::uint32_t sprite{4U}; ///< Quad turned towards the camera.
 		inline constexpr std::uint32_t water{8U}; ///< Analytic world-space waves and water normals.
-		inline constexpr std::uint32_t terrain{16U}; ///< Tessellated height grid; waves carries its height-buffer offset, size and spacing.
+		inline constexpr std::uint32_t terrain{VVE_OBJECT_TERRAIN_FLAG}; ///< Tessellated height grid; waves carries its height-buffer offset, size and spacing.
 	} // namespace objectFlag
 
 	/// @brief Shader stages that read ObjectPushConstants; every vkCmdPushConstants call must name exactly these.
@@ -279,9 +282,9 @@ export namespace vve::simple {
 		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::Device, VkDevice> &owningDevice, VkPipelineLayout pipelineLayout, VkShaderModule vertexModule, const char *vertexEntry,
 											VkShaderModule fragmentModule, const VulkanVertexInputDescription &vertexInput, VkFormat colorAttachmentFormat, VkFormat depthAttachmentFormat, std::uint32_t textureCapacity = 0U, bool blended = false, VkSampleCountFlagBits samples = VK_SAMPLE_COUNT_1_BIT,
 			std::span<const VkFormat> colorFormats = {}, const char *fragmentEntry = "fragmentMain", bool fullscreen = false, bool sampleShading = false,
-			VkShaderModule tessControlModule = VK_NULL_HANDLE, VkShaderModule tessEvalModule = VK_NULL_HANDLE, const char *tessEvalEntry = "terrainDomainMain") {
+			VkShaderModule tessControlModule = VK_NULL_HANDLE, VkShaderModule tessEvalModule = VK_NULL_HANDLE, const char *tessEvalEntry = "terrainDomainMain", bool twoSided = false) {
 			cleanup();
-			const bool depthOnly{fragmentModule == VK_NULL_HANDLE};
+			const bool depthOnly{colorAttachmentFormat == VK_FORMAT_UNDEFINED}; // Masked shadows have a fragment stage but no colour.
 			const bool tessellated{tessControlModule != VK_NULL_HANDLE};
 			if (owningDevice == VK_NULL_HANDLE || pipelineLayout == VK_NULL_HANDLE || vertexModule == VK_NULL_HANDLE || depthAttachmentFormat == VK_FORMAT_UNDEFINED ||
 				 (!depthOnly && (colorAttachmentFormat == VK_FORMAT_UNDEFINED || textureCapacity == 0U)) || tessellated != (tessEvalModule != VK_NULL_HANDLE)) {
@@ -299,7 +302,7 @@ export namespace vve::simple {
 				shaderStages[stageCount++] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, .module = tessControlModule, .pName = "terrainHullMain"};
 				shaderStages[stageCount++] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, .module = tessEvalModule, .pName = tessEvalEntry};
 			}
-			if (!depthOnly) {
+			if (fragmentModule != VK_NULL_HANDLE) {
 				shaderStages[stageCount++] = {.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = VK_SHADER_STAGE_FRAGMENT_BIT, .module = fragmentModule, .pName = fragmentEntry, .pSpecializationInfo = &specialization};
 			}
 			const VkVertexInputBindingDescription &binding = vertexInput.binding;
@@ -326,7 +329,7 @@ export namespace vve::simple {
 			const VkPipelineRasterizationStateCreateInfo rasterizer{
 				.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
 				.polygonMode = VK_POLYGON_MODE_FILL,
-				.cullMode = static_cast<VkCullModeFlags>(depthOnly || fullscreen || tessellated ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT),	///< Shadow pass renders all faces because orthoVulkan Y-flip inverts winding; terrain assumes no tessellator winding.
+				.cullMode = static_cast<VkCullModeFlags>(depthOnly || fullscreen || tessellated || twoSided ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT),	///< Capture preserves both sides of foliage; existing scene pipelines keep their culling policy.
 				.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
 				.depthBiasEnable = depthOnly ? VK_TRUE : VK_FALSE,
 				.depthBiasConstantFactor = 1.25F,		///< Constant raster bias suppresses shadow depth quantization acne.

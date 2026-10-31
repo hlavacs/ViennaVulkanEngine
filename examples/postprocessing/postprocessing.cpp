@@ -242,7 +242,7 @@ int main(int argc, char **argv) {
 
 		ImGui::Text("Frame: %d", frame);
 		ImGui::Text("Render FPS: %.1f", renderFps);
-		ImGui::Text("Renderer: %s", render.rendererBackend() == vve::RendererBackend::deferred ? "deferred" : "forward");
+		ImGui::Text("Renderer: %s", vve::example::rendererNames[std::to_underlying(render.rendererBackend())].data());
 		ImGui::Text("Camera: %.2f, %.2f, %.2f", cameraController.eye.value.x, cameraController.eye.value.y,
 						cameraController.eye.value.z);
 

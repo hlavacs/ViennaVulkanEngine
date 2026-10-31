@@ -24,7 +24,7 @@ void usage() {
 		"  --start-island 0..255 --destination 0..255 --deliveries N\n"
 		"  --camera chase|cockpit|showcase|airport --weather clear|hazy|overcast|fog\n"
 		"  --output image.png --verify flight.csv\n"
-		"  --renderer forward|deferred (default forward)\n"
+		"  --renderer forward|deferred|hybrid-gi (default forward; GI not yet active)\n"
 		"  --asset-dir DIRECTORY (otherwise configure-time downloads beside the executable)");
 }
 

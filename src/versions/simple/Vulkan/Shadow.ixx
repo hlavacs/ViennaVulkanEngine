@@ -36,9 +36,9 @@ export namespace vve::simple {
 		}
 
 		/// @brief Creates the depth array, its views, and the comparison sampler.
-		[[nodiscard]] VkResult create(VmaAllocator allocator, VkDevice owningDevice, std::uint32_t layers) {
+		[[nodiscard]] VkResult create(VmaAllocator allocator, VkDevice owningDevice, std::uint32_t layers, std::uint32_t side = resolution) {
 			cleanup();
-			VkResult result = VulkanImage::create(allocator, owningDevice, VkExtent2D{.width = resolution, .height = resolution}, VK_FORMAT_D32_SFLOAT,
+			VkResult result = VulkanImage::create(allocator, owningDevice, VkExtent2D{.width = side, .height = side}, VK_FORMAT_D32_SFLOAT,
 																VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
 																VK_IMAGE_ASPECT_DEPTH_BIT, layers, true, true); // The shader always samples a 2D array, including the one-layer fallback.
 			if (result != VK_SUCCESS) { return result; }

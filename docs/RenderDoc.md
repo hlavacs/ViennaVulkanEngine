@@ -1,7 +1,8 @@
 # Inspecting frames with RenderDoc
 
-Updated 29 October 2026 for V3 `24760ae1` (25 October). Screenshots/capture results described here
-retain their original provenance; this update does not create a new capture.
+Pass guide updated 31 October 2026 for the implemented hybrid GI path. Earlier
+RenderDoc screenshots retain their original provenance; GI-09 validates PNG/HDR
+captures and does not claim a new RenderDoc frame capture.
 
 [RenderDoc](https://renderdoc.org) captures one frame of a running program and
 shows every pass, draw call and image of it. In a **Debug** build the simple
@@ -20,8 +21,8 @@ Release builds do none of this and pay nothing for it.
    of a bounded run such as `--frames 300`.
 4. Open the capture in RenderDoc's capture list.
 
-Every example accepts `--renderer forward` or `--renderer deferred`; only the
-deferred renderer has a G-buffer.
+Every example accepts `--renderer forward`, `--renderer deferred` or `--renderer hybrid-gi`.
+Deferred and hybrid GI share the G-buffer; hybrid adds raster-probe approximate diffuse GI and optional spatial contact AO. See [the implemented pass sequence](deferred-renderer.md#passes-and-shared-state).
 
 ## What the capture shows
 

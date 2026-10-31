@@ -515,6 +515,10 @@ namespace vve::simple {
 					if (float roughness{}; source->Get(AI_MATKEY_ROUGHNESS_FACTOR, roughness) == AI_SUCCESS) {
 						item.factors.roughness = static_cast<Scalar>(roughness);
 					}
+					if (float cutoff{}; source->Get(AI_MATKEY_GLTF_ALPHACUTOFF, cutoff) == AI_SUCCESS) {
+						item.factors.alpha_cutoff = static_cast<Scalar>(cutoff);
+					}
+					if (int sided{}; source->Get(AI_MATKEY_TWOSIDED, sided) == AI_SUCCESS) { item.factors.double_sided = sided != 0; }
 					if (float metalness{}; source->Get(AI_MATKEY_METALLIC_FACTOR, metalness) == AI_SUCCESS) {
 						item.factors.metalness = static_cast<Scalar>(metalness);
 					}

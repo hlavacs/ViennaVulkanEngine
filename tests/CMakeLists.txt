@@ -156,6 +156,128 @@ target_compile_definitions(DeferredRendererTests PRIVATE
 add_test(NAME DeferredRendererMsaaTests COMMAND DeferredRendererTests --msaa4)
 set_tests_properties(RendererBackendTests DeferredRendererTests DeferredRendererMsaaTests PROPERTIES
    LABELS "gpu;deferred" TIMEOUT 180 RUN_SERIAL TRUE)
+# GI selection, disabled equivalence and real raster-probe transport share the normal native graphics workflow.
+vve_add_engine_test(HybridGiBackendTests GPU vve_test_support)
+vve_add_engine_test(HybridGiEquivalenceTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(HybridGiBounceTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(HybridGiSettingsTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(HybridGiPerfTests GPU Vulkan::Vulkan vve_test_support)
+set_tests_properties(HybridGiPerfTests PROPERTIES LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE
+   FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+vve_add_engine_test(HybridGiSkyTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(HybridGiLeakTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(HybridGiDynamicsTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(HybridGiAoTests GPU Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator vve_test_support)
+vve_add_engine_test(HybridGiMaterialTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(HybridGiTransparencyTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(HybridGiCascadeTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(HybridGiProceduralTests GPU Vulkan::Vulkan vve_test_support)
+vve_add_engine_test(HybridGiLifecycleTests GPU Vulkan::Vulkan vve_test_support)
+set(VVE_GI_LIFECYCLE_REPORT_DIR "${CMAKE_CURRENT_BINARY_DIR}/tmp/HybridGiLifecycleTests" CACHE PATH "GI lifecycle diagnostic captures")
+target_compile_definitions(HybridGiLifecycleTests PRIVATE VVE_GI_LIFECYCLE_REPORT_DIR="${VVE_GI_LIFECYCLE_REPORT_DIR}")
+set_tests_properties(HybridGiLifecycleTests PROPERTIES LABELS "gpu;gi" TIMEOUT 180 RUN_SERIAL TRUE
+   FAIL_REGULAR_EXPRESSION "Validation Error;VUID-;SYNC-HAZARD")
+foreach(lifecycle_case IN ITEMS msaa4 quality budget cycles failure scene-native)
+   add_test(NAME HybridGiLifecycle-${lifecycle_case} COMMAND HybridGiLifecycleTests ${lifecycle_case})
+   set_tests_properties(HybridGiLifecycle-${lifecycle_case} PROPERTIES LABELS "gpu;gi" TIMEOUT 180 RUN_SERIAL TRUE
+      FAIL_REGULAR_EXPRESSION "Validation Error;VUID-;SYNC-HAZARD")
+   list(APPEND gi_lifecycle_cases HybridGiLifecycle-${lifecycle_case})
+endforeach()
+if(CMAKE_BUILD_TYPE STREQUAL "Debug" AND EXISTS "${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d")
+   set_tests_properties(HybridGiLifecycleTests ${gi_lifecycle_cases} PROPERTIES ENVIRONMENT_MODIFICATION
+      "VK_ADD_LAYER_PATH=path_list_prepend:${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d;VK_LAYER_VALIDATE_SYNC=set:1")
+endif()
+# Compile application-owned stages with the same Slang embedding path as the renderer, including only public sampling code.
+set(native_shader_dir "${CMAKE_CURRENT_BINARY_DIR}/native-shaders")
+get_target_property(native_slangc ViennaVulkanEngine VVE_SLANGC)
+set(VVE_NATIVE_TEST_REPORT_DIR "${CMAKE_CURRENT_BINARY_DIR}/tmp/HybridGiProceduralTests" CACHE PATH "Native-draw captures and optional pre-change PNG references")
+target_compile_definitions(HybridGiProceduralTests PRIVATE "VVE_NATIVE_TEST_REPORT_DIR=\"${VVE_NATIVE_TEST_REPORT_DIR}\"")
+foreach(native_entry IN ITEMS vertexMain gbufferMain captureMain plainMain forwardMain)
+   set(native_stage fragment)
+   if(native_entry STREQUAL vertexMain)
+      set(native_stage vertex)
+   endif()
+   set(native_header "${native_shader_dir}/${native_entry}.h")
+   add_custom_command(OUTPUT "${native_header}"
+      COMMAND "${CMAKE_COMMAND}" -E make_directory "${native_shader_dir}"
+      COMMAND "${native_slangc}" "${CMAKE_CURRENT_SOURCE_DIR}/assets/native_procedural.slang"
+         -I "${PROJECT_SOURCE_DIR}/src/shaders" -target spirv -profile spirv_1_4 -stage ${native_stage}
+         -entry ${native_entry} -fvk-use-entrypoint-name -source-embed-style u32 -source-embed-name native_${native_entry} -o "${native_header}"
+      DEPENDS assets/native_procedural.slang "${PROJECT_SOURCE_DIR}/src/shaders/vve_irradiance.slang" "${PROJECT_SOURCE_DIR}/src/shaders/vve_irradiance.h"
+      VERBATIM)
+   list(APPEND native_headers "${native_header}")
+endforeach()
+add_custom_target(vve_native_test_shaders DEPENDS ${native_headers})
+add_dependencies(HybridGiProceduralTests vve_native_test_shaders)
+target_include_directories(HybridGiProceduralTests PRIVATE "${native_shader_dir}")
+set_tests_properties(HybridGiProceduralTests PROPERTIES
+   LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+foreach(native_case IN ITEMS procedural-bounce procedural-blocker procedural-shadow receive forward-sample none-registered)
+   add_test(NAME HybridGiProcedural-${native_case} COMMAND HybridGiProceduralTests ${native_case})
+   set_tests_properties(HybridGiProcedural-${native_case} PROPERTIES
+      LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+   list(APPEND gi_native_cases HybridGiProcedural-${native_case})
+endforeach()
+# Release has no engine debug messenger: require the real external layer instead of accepting an unvalidated pass.
+set_tests_properties(HybridGiProceduralTests ${gi_native_cases} PROPERTIES
+   FAIL_REGULAR_EXPRESSION "Validation Error;VUID-;SYNC-HAZARD"
+   ENVIRONMENT_MODIFICATION "VK_INSTANCE_LAYERS=set:VK_LAYER_KHRONOS_validation;VK_LAYER_VALIDATE_SYNC=set:1")
+if(EXISTS "${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d")
+   set_property(TEST HybridGiProceduralTests ${gi_native_cases} APPEND PROPERTY ENVIRONMENT_MODIFICATION
+      "VK_ADD_LAYER_PATH=path_list_prepend:${VVE_VULKAN_SDK_ROOT}/share/vulkan/explicit_layer.d")
+endif()
+set_tests_properties(HybridGiCascadeTests PROPERTIES
+   LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+foreach(cascade_case IN ITEMS coarse-bounce continuity coarse-scroll teleport memory memory-low)
+   add_test(NAME HybridGiCascade-${cascade_case} COMMAND HybridGiCascadeTests ${cascade_case})
+   set_tests_properties(HybridGiCascade-${cascade_case} PROPERTIES
+      LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+endforeach()
+set_tests_properties(HybridGiMaterialTests HybridGiTransparencyTests PROPERTIES
+   LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+foreach(material_case IN ITEMS cutout-msaa4 double-sided metal strength srgb)
+   add_test(NAME HybridGiMaterial-${material_case} COMMAND HybridGiMaterialTests ${material_case})
+   set_tests_properties(HybridGiMaterial-${material_case} PROPERTIES
+      LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+endforeach()
+foreach(transparent_case IN ITEMS color-msaa4 blocking ordering tonemap)
+   add_test(NAME HybridGiTransparency-${transparent_case} COMMAND HybridGiTransparencyTests ${transparent_case})
+   set_tests_properties(HybridGiTransparency-${transparent_case} PROPERTIES
+      LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+endforeach()
+set_tests_properties(HybridGiAoTests PROPERTIES
+   LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+foreach(ao_case IN ITEMS msaa4 halo halo-msaa4 material resize toggle probes)
+   add_test(NAME HybridGiAo-${ao_case} COMMAND HybridGiAoTests ${ao_case})
+   set_tests_properties(HybridGiAo-${ao_case} PROPERTIES
+      LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+endforeach()
+set_tests_properties(HybridGiDynamicsTests PROPERTIES
+   LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+foreach(gi_event IN ITEMS sun-low scroll scroll-low sky move teleport replacement)
+   add_test(NAME HybridGiDynamics-${gi_event} COMMAND HybridGiDynamicsTests ${gi_event})
+   set_tests_properties(HybridGiDynamics-${gi_event} PROPERTIES
+      LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+endforeach()
+add_test(NAME HybridGiInsideGeometryTests COMMAND HybridGiLeakTests --inside)
+add_test(NAME HybridGiEmissiveTests COMMAND HybridGiSkyTests --emissive)
+add_test(NAME HybridGiOffCameraTests COMMAND HybridGiBounceTests --off-camera)
+add_test(NAME HybridGiBounceMsaaTests COMMAND HybridGiBounceTests --msaa4)
+set_tests_properties(HybridGiBounceTests HybridGiBounceMsaaTests HybridGiOffCameraTests HybridGiSettingsTests HybridGiSkyTests HybridGiEmissiveTests PROPERTIES
+   LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+set_tests_properties(HybridGiLeakTests HybridGiInsideGeometryTests PROPERTIES
+   LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+add_test(NAME HybridGiEquivalenceMsaaTests COMMAND HybridGiEquivalenceTests --msaa4)
+set_tests_properties(HybridGiBackendTests HybridGiEquivalenceTests HybridGiEquivalenceMsaaTests PROPERTIES
+   LABELS "gpu;gi" TIMEOUT 180 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+if(TARGET simple_forward_demo)
+   add_test(NAME HybridGiExampleTests COMMAND simple_forward_demo --renderer hybrid-gi --frames 3
+      --output "${CMAKE_CURRENT_BINARY_DIR}/tmp/HybridGiExampleTests/capture.png")
+   set_tests_properties(HybridGiExampleTests PROPERTIES
+      WORKING_DIRECTORY "${PROJECT_SOURCE_DIR}" LABELS "gpu;gi;example" TIMEOUT 60 RUN_SERIAL TRUE
+      PASS_REGULAR_EXPRESSION "renderer=hybrid-gi gbuffer=1 deferred_lighting=1"
+      FAIL_REGULAR_EXPRESSION "Validation Error;VUID-;simple_forward_demo failed")
+endif()
 # Debug builds name G-buffer images, shadow maps and attachments and label every pass for RenderDoc; Release must not.
 vve_add_engine_test(RenderDebugLabelsTests GPU Vulkan::Vulkan vve_test_support)
 set_tests_properties(RenderDebugLabelsTests PROPERTIES LABELS "gpu;deferred" TIMEOUT 120)
@@ -173,6 +295,14 @@ if(VVE_TEST_PROFILES_LAYER_DIR)
       ENVIRONMENT_MODIFICATION "VK_ADD_LAYER_PATH=path_list_prepend:${VVE_TEST_PROFILES_LAYER_DIR}"
       LABELS "gpu;deferred;capabilities" RUN_SERIAL TRUE TIMEOUT 60
       FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+   add_test(NAME HybridGiBackendUnsupportedTests COMMAND HybridGiBackendTests --expect-unsupported)
+   # Share the exact real-layer capability restriction used by the unchanged deferred test.
+   foreach(profile_property IN ITEMS ENVIRONMENT ENVIRONMENT_MODIFICATION)
+      get_test_property(RendererBackendUnsupportedTests ${profile_property} profile_value)
+      set_tests_properties(HybridGiBackendUnsupportedTests PROPERTIES ${profile_property} "${profile_value}")
+   endforeach()
+   set_tests_properties(HybridGiBackendUnsupportedTests PROPERTIES
+      LABELS "gpu;gi;capabilities" RUN_SERIAL TRUE TIMEOUT 60 FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
 endif()
 
 # Reuse the existing assertions and assets against deferred rendering, with serialized fixture ownership.

@@ -114,6 +114,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error>;
 		[[nodiscard]] auto setRendererBackend(RendererBackend backend) -> std::expected<void, Error>;
 		[[nodiscard]] auto rendererBackend() const -> RendererBackend;
+		[[nodiscard]] auto setGiSettings(GiSettings settings) -> std::expected<void, Error>;
+		[[nodiscard]] auto giSettings() const -> GiSettings;
 		[[nodiscard]] auto antialiasing() const -> Antialiasing;
 		[[nodiscard]] auto setCamera(WindowHandle window, Camera camera) -> std::expected<void, Error>;
 		[[nodiscard]] auto clearCamera(WindowHandle window) -> std::expected<void, Error>;
@@ -184,6 +186,13 @@ export namespace vve::simple {
 		[[nodiscard]] auto gpuMeshUploadCount() const -> std::size_t;
 		[[nodiscard]] auto gpuMaterialUploadCount() const -> std::size_t;
 		[[nodiscard]] auto renderMaterials() const -> const Vector<RenderMaterial> &;
+		[[nodiscard]] auto setNativeDraw(NativeDrawCallback callback) -> std::expected<void,Error>;
+		auto notifyNativeDrawChanged() -> void;
+		[[nodiscard]] auto captureFrameLinear(WindowHandle window) -> std::expected<Vector<Vec4>,Error>;
+		[[nodiscard]] auto validationErrorCount() const -> std::uint64_t;
+		void setGpuTimingReadback(bool enabled);
+		[[nodiscard]] auto renderDiagnostics(WindowHandle window) const -> std::expected<Vector<std::pair<std::string,std::string>>,Error>;
+		[[nodiscard]] auto validationActive() const -> bool;
 
 		auto waitIdle() -> void;
 		auto setGuiPrepareSink(std::function<bool()> sink)														-> void;
@@ -331,10 +340,11 @@ namespace vve::simple {
 	/// @brief Selects shared scene passes before GPU startup; no process-wide state is used.
 	inline auto RenderSystem::setRendererBackend(RendererBackend backend) -> std::expected<void, Error> {
 		// After Engine::init the selected surface is available, so report hardware rejection at the API boundary.
-		if (backend == RendererBackend::deferred && backend != renderer_.rendererBackend() && !renderer_.initialized() && window_system_ != nullptr) {
+		if ((backend == RendererBackend::deferred || backend == RendererBackend::hybrid_gi) &&
+			backend != renderer_.rendererBackend() && !renderer_.initialized() && window_system_ != nullptr) {
 			for (const auto &entry : window_system_->windows()) {
 				if (entry.get().rendererId().value == "none") { continue; }
-				if (const auto result = renderer_.probeDeferred(entry.get().native()); result != VK_SUCCESS) {
+				if (const auto result = renderer_.probeDeferred(entry.get().native(), backend == RendererBackend::hybrid_gi); result != VK_SUCCESS) {
 					std::cerr << "[vve::simple] deferred selection unsupported: VkResult=" << result << '\n';
 					return std::unexpected(Error::platform_error);
 				}
@@ -345,6 +355,14 @@ namespace vve::simple {
 	}
 	/// @brief Returns this render system's retained selection.
 	inline auto RenderSystem::rendererBackend() const -> RendererBackend { return renderer_.rendererBackend(); }
+	/// @brief Rejects malformed controls before changing any retained state or GPU data.
+	inline auto RenderSystem::setGiSettings(GiSettings settings) -> std::expected<void, Error> {
+		if (!std::isfinite(settings.indirect_strength) || settings.indirect_strength < zero() ||
+			(settings.quality != GiQuality::low && settings.quality != GiQuality::medium)) { return std::unexpected(Error::invalid_argument); }
+		return renderer_.setGiSettings(settings);
+	}
+	/// @brief Returns controls without accessing the device.
+	inline auto RenderSystem::giSettings() const -> GiSettings { return renderer_.giSettings; }
 	/// @brief Returns the retained antialiasing setting.
 	inline auto RenderSystem::antialiasing() const -> Antialiasing { return renderer_.antialiasing(); }
 
@@ -504,6 +522,23 @@ namespace vve::simple {
 	inline auto RenderSystem::shadowDepthSamples() const -> std::span<const RenderShadowDepthSample> { return renderer_.shadowDepthSamples; }
 	/// @brief Enables the per-frame GPU shadow-depth readback for verification runs.
 	inline auto RenderSystem::setGpuDebugReadback(bool enabled) -> void { renderer_.setGpuDebugReadback(enabled); }
+	/// @brief Explicit diagnostic readback of one rendered window; ordinary frames perform no CPU pixel copies.
+	inline auto RenderSystem::captureFrameLinear(WindowHandle window) -> std::expected<Vector<Vec4>,Error> {
+		if (!initialized_) { return std::unexpected(Error::not_initialized); }
+		const auto target = std::ranges::find(renderer_.targets, window, &WindowTarget::handle);
+		if (target == renderer_.targets.end()) { return std::unexpected(Error::invalid_handle); }
+		return renderer_.captureFrameLinear(*target);
+	}
+	/// @brief Actual validation callbacks, including errors after opt-in readback.
+	inline auto RenderSystem::validationErrorCount() const -> std::uint64_t { return renderer_.validationErrorCount(); }
+	/// @brief Enables bounded timestamp collection through the renderer's existing frame-slot fences.
+	inline void RenderSystem::setGpuTimingReadback(bool enabled) { renderer_.setGpuTimingReadback(enabled); }
+	/// @brief Returns opt-in measurements without waiting for an in-flight frame.
+	inline auto RenderSystem::renderDiagnostics(WindowHandle window) const -> std::expected<Vector<std::pair<std::string,std::string>>,Error> {
+		return renderer_.renderDiagnostics(window);
+	}
+	/// @brief Active Debug messenger, allowing integration tests to require validation explicitly.
+	inline auto RenderSystem::validationActive() const -> bool { return renderer_.validationActive(); }
 	/// @brief Copies the last rendered swapchain image and writes it as a PNG.
 	inline auto RenderSystem::captureFrameToPng(const std::filesystem::path &output_path) -> std::expected<void, Error> {
 		if (!initialized_) { return std::unexpected(Error::not_initialized); }

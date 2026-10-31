@@ -80,10 +80,15 @@ export namespace vve {
 			return impl_.setObjectSurface(handle, surface);
 		}
 		/// @brief Selects all windows' passes before rendering starts; a different backend after startup returns already_initialized.
+		/// hybrid_gi adds visibility-aware approximate diffuse probe GI and optional spatial contact AO on indirect diffuse light.
 		[[nodiscard]] inline auto setRendererBackend(RendererBackend backend) -> std::expected<void, Error> { return impl_.setRendererBackend(backend); } /**< Invalid values return invalid_argument;
 			unsupported devices return platform_error. Before window initialization, capabilities are checked at the first frame. Failed calls preserve the selection. */
 		/// @brief Returns this engine's selected backend; forward is the default.
 		[[nodiscard]] inline auto rendererBackend() const -> RendererBackend { return impl_.rendererBackend(); }
+		/// @brief Stores runtime GI controls transactionally; invalid strength or quality returns invalid_argument.
+		[[nodiscard]] inline auto setGiSettings(GiSettings settings) -> std::expected<void, Error> { return impl_.setGiSettings(settings); }
+		/// @brief Returns retained GI controls, independent of the selected backend.
+		[[nodiscard]] inline auto giSettings() const -> GiSettings { return impl_.giSettings(); }
 		/// @brief Selects geometry antialiasing before the first rendered frame; later changes return already_initialized.
 		[[nodiscard]] inline auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error> { return impl_.setAntialiasing(mode); }
 		/// @brief Returns the configured mode, retained across renderer shutdown; GUI and shadow maps remain single-sample.
@@ -209,6 +214,22 @@ export namespace vve {
 		[[nodiscard]] auto addWater(MeshDescriptor surface, OceanDescriptor waves = {}) -> std::expected<RenderObjectHandle, Error> {
 			return impl_.addWater(std::move(surface), waves);
 		}
+		/// @brief Registers native procedural geometry for all renderer passes; empty clears it with fence-based resource retirement.
+		[[nodiscard]] auto setNativeDraw(NativeDrawCallback callback) -> std::expected<void,Error> { return impl_.setNativeDraw(std::move(callback)); }
+		/// @brief Marks procedural geometry/material/transform edits stale for bounded probe refresh and cached sun-depth invalidation.
+		auto notifyNativeDrawChanged() -> void { impl_.notifyNativeDrawChanged(); }
+		/// @brief Opt-in diagnostic copy of the last linear HDR frame, row-major RGBA, before exposure/post-processing; no new frame is drawn.
+		[[nodiscard]] auto captureFrameLinear(WindowHandle window) -> std::expected<Vector<Vec4>,Error> { return impl_.captureFrameLinear(window); }
+		/// @brief Actual Vulkan validation error callbacks since the current renderer instance was created.
+		[[nodiscard]] auto validationErrorCount() const -> std::uint64_t { return impl_.validationErrorCount(); }
+		/// @brief Opts into per-window GPU timestamps; reads only retired frame slots, without additional waits.
+		void setGpuTimingReadback(bool enabled) { impl_.setGpuTimingReadback(enabled); }
+		/// @brief Copies timing/memory receipts; *_ms is unavailable before completion or without device timestamp support.
+		[[nodiscard]] auto renderDiagnostics(WindowHandle window) const -> std::expected<Vector<std::pair<std::string,std::string>>,Error> {
+			return impl_.renderDiagnostics(window);
+		}
+		/// @brief Whether the Debug renderer has an active Vulkan validation messenger.
+		[[nodiscard]] auto validationActive() const -> bool { return impl_.validationActive(); }
 		/// @brief Adds a height-grid terrain drawn with distance-based GPU tessellation; a malformed grid returns invalid_argument.
 		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addTerrain(TerrainDescriptor terrain) {
 			return impl_.addTerrain(std::move(terrain));

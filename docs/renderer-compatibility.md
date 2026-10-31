@@ -1,16 +1,59 @@
 # Renderer application compatibility
 
-Revision scope: V3 `24760ae1`, updated 29 October 2026. The pass/capture matrix below records earlier
-verification; it is not a claim of a fresh all-platform test run. Terrain now adds a 25th paired
-renderer regression, but its GPU checks skip without `tessellationShader`. macOS engine support
-does not imply that optional terrain tessellation is supported by the selected Vulkan implementation.
-See [the current guides](vvengine_beginner_quickstart.pdf) for startup selection and capability limits.
+Updated 31 October 2026 for the implemented **approximate diffuse GI** renderer.
+The GI-09 evidence in the renderer guide records the current Linux runs; the
+older application matrix below retains its original forward/deferred provenance.
+Windows/macOS and physical-GPU execution remain unverified.
 
-Every current graphical VVE example and game accepts `--renderer forward|deferred`.
-Omitting this option preserves forward rendering. Selection uses
-`RenderSystem::setRendererBackend()` after initialization and before the first
-rendered frame. An invalid argument or a failed public selection returns a
-nonzero exit status; the application does not substitute another backend.
+Every graphical VVE example accepts `--renderer forward|deferred|hybrid-gi`.
+The facade selection is `RendererBackend::hybrid_gi`; forward remains the default.
+Selection is per engine, shared by its windows, and fixed at GPU startup.
+Runtime `GiSettings` supplies independent GI/AO switches, indirect strength and
+low/medium capture budgets. Disabled/zero-strength GI with AO off matches deferred.
+
+The renderer guide is the single detailed contract for:
+
+- [Selection, capability failure and transactional errors](deferred-renderer.md#runtime-renderer-selection), with [required formats and coverage](deferred-renderer.md#antialiasing-and-capabilities).
+- [GiSettings, probe representation, initialization, scrolling and invalidation](deferred-renderer.md#approximate-diffuse-gi-gi-02).
+- [Quality presets and measured costs](deferred-renderer.md#performance--presets-gi-08), including why low/medium allocate identical bytes.
+- [Per-window ownership, lifetime and aggregate budgets](deferred-renderer.md#lifecycle-ownership-and-memory-limits-gi-07).
+- [Native procedural passes, encoding, borrowed resources and retirement](deferred-renderer.md#native-procedural-geometry-gi-06a), including [VTL adoption](deferred-renderer.md#countryside-native-adoption-gi-06b).
+- [Spatial contact AO](deferred-renderer.md#spatial-contact-ao-gi-04) and [approximation limits](deferred-renderer.md#approximation-limits).
+
+| Backend | Native opaque | Native shadows / radiance | Forward-only surfaces |
+| --- | --- | --- | --- |
+| forward (default) | `forward_opaque` | Light `shadow` views | `forward_transparent` |
+| deferred | Three-target `gbuffer` | Light `shadow` views | `forward_transparent` |
+| hybrid_gi | Same `gbuffer`, shared GI/AO | Light/cached probe-sun `shadow`, per-face `probe_capture` | `forward_transparent`, shared irradiance sampling |
+
+VTL links the selected VVE source/prebuilt tree directly. Its native API check
+reports **patch NOT applied (no staging)**. Terrain, vegetation and stones
+participate in G-buffer/shadow/probe views; water blends over opaque depth and
+never becomes a probe blocker. No private renderer import or second GI implementation
+is used. The existing scene and plant-generation contracts are preserved.
+
+GI-08 measured software Vulkan only: at 720p/no-AA, low/medium with AO cost
+45.447/46.182 ms median versus 6.785 ms deferred, with identical 5,373,440-byte
+VMA deltas. The provisional physical-GPU +4 ms at 1080p target remains unverified.
+See the guide for per-pass measurements, the 1 km countryside benchmark and
+its device/access limitations.
+
+Current regression counts, five-view/four-state countryside measurements and
+artifact paths are consolidated in [GI-09 Linux acceptance](deferred-renderer.md#gi-09-linux-acceptance-31-october-2026).
+
+GI-09's 31 October Linux run passed **62/62 Debug GI**, **31/31 deferred** and
+**225/225 complete Release** VVE tests. Both VTL quick variants passed
+**107/107**, including all eight GI cases; the required Release subset passed
+**7/7**. Disabled/zero-strength differences remain exactly zero at 1x/MSAA4.
+The actual countryside executable supplied **20 inspected PNG/HDR pairs** and
+**19 passing region gates**: the detail stone gained **.0040437 linear luminance**,
+while open ground retained zero GI error and a **.0002176 mean RGB AO change**.
+Water remained transparent and outside opaque/shadow/probe scopes. Debug and
+checked external Release synchronization validation reported zero errors.
+These are llvmpipe correctness results; physical-GPU/Windows/macOS execution and
+the 25 excluded slow VTL tests are not claimed.
+
+## Earlier application verification
 
 On Linux, build with `./build_linux.sh release`. Executables are in
 `bin/release/exe`. For example:
@@ -23,7 +66,7 @@ ctest --test-dir build/release-linux -L example --output-on-failure
 
 Use the existing `build_macos.sh` or `build_windows.cmd` workflow on those
 platforms and the same executable arguments. No renderer build option exists.
-The executable named `simple_forward_demo` also selects either backend; its
+The executable named `simple_forward_demo` also selects any of the three backends; its
 historic name remains unchanged. `WindowSetup::renderer(RendererId)` remains a
 window renderer identifier and does not select the rendering algorithm.
 
