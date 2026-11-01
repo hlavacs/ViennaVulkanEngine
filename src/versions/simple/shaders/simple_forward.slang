@@ -717,13 +717,16 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags
 #endif
 #ifndef VVE_PROBE_CAPTURE
     if (physicallyBased) {
-        const float3 fresnel = fresnelSchlick(saturate(dot(normal, viewDir)), lerp(float3((flags & kWaterFlag) != 0 ? 0.02 : 0.04), baseColor, metalness));
+        // A single microfacet's Fresnel tends to one at grazing even on rough bark/soil.
+        // Integrate the reflection lobe before weighting sky light, otherwise it creates white rims and ground sheen.
+        const float3 reflection = environmentReflectance(dot(normal, viewDir), roughness,
+            lerp(float3((flags & kWaterFlag) != 0 ? 0.02 : 0.04), baseColor, metalness));
 #ifdef VVE_CONTACT_AO
-        litColor += ambientOcclusion * (1.0 - fresnel) * diffuseColor * sampleEnvironment(normal, 1.0) * ambientScale +
-            materialOcclusion * fresnel * sampleEnvironment(reflect(-viewDir, normal), roughness);
+        litColor += ambientOcclusion * (1.0 - reflection) * diffuseColor * sampleEnvironment(normal, 1.0) * ambientScale +
+            materialOcclusion * reflection * sampleEnvironment(reflect(-viewDir, normal), roughness);
 #else
-        litColor += ambientOcclusion * ((1.0 - fresnel) * diffuseColor * sampleEnvironment(normal, 1.0) * ambientScale +
-            fresnel * sampleEnvironment(reflect(-viewDir, normal), roughness)); ///< Specular environment response keeps material AO only.
+        litColor += ambientOcclusion * ((1.0 - reflection) * diffuseColor * sampleEnvironment(normal, 1.0) * ambientScale +
+            reflection * sampleEnvironment(reflect(-viewDir, normal), roughness)); ///< Specular environment response keeps material AO only.
 #endif
     }
 #endif

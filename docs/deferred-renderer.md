@@ -868,6 +868,12 @@ Probe diffuse multiplies linear base color and `(1-metalness)` once. Classic
 authored ambient predates the metal rule: its existing metallic share is retained,
 so replacing diffuse cannot remove a metal's old constant contribution. The
 environment specular term, direct-light BRDF and emission are independent of GI.
+Sky reflections use the roughness-dependent analytic split-sum environment BRDF
+from [Karis (2014)](https://www.unrealengine.com/en-US/blog/physically-based-shading-on-mobile).
+Applying bare `Fresnel(NdotV)` to a filtered sky made rough bark and terrain reflect
+nearly white at grazing angles even with GI disabled. The integrated response now
+weights specular sky light and its complementary diffuse term in every PBR backend;
+direct-light Fresnel, probe transport, AO, fog and classic lighting are unchanged.
 All material views use the same texture table: base/emission textures decode
 sRGB in hardware; factors and normal/roughness/metalness/AO maps remain linear.
 
