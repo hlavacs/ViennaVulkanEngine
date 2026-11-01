@@ -142,6 +142,15 @@ Single-sided backs provide zero radiance but still signed visibility; two-sided
 materials flip shading normals as needed. Forward HDR applies the application's
 usual scene atmosphere before the engine's post-processing.
 
+`AtmosphereSettings::distance_mist_start` and `distance_mist_end` optionally add a
+smooth distance fade to `AtmosphereSettings::color`, independently of ordinary
+height fog. Both zero disable it; otherwise `0 <= start < end` is required. Surfaces
+inside `start` are unchanged, and surfaces at or beyond `end` are fully concealed.
+The physical sky's low horizon approaches the same colour. Forward, deferred and
+hybrid GI resolve share this effect; probe captures exclude it so camera mist never
+becomes bounced illumination. Native forward draws must apply the same smoothstep
+using the public atmosphere settings; native G-buffer draws receive it during resolve.
+
 Hybrid preparation (binding only) and forward draw calls expose two borrowed RGBA32F `probeIrradianceViews` in
 SHADER_READ_ONLY_OPTIMAL. Bind them as two SAMPLED_IMAGE descriptors, no sampler.
 `probeOrigin` is near origin xyz / spacing w; `probeEye` is the main eye used

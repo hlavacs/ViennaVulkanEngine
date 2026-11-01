@@ -12,12 +12,16 @@ namespace vve::simple {
 	/// @brief Invalidates procedural radiance and cached caster depth without uploading engine resources.
 	auto RenderSystem::notifyNativeDrawChanged() -> void { renderer_.notifyNativeDrawChanged(); }
 
-	/// @brief Validates haze before committing it; zero density disables the effect without rebuilding resources.
+	/// @brief Validates haze and optional distance mist before committing; no resources are rebuilt.
 	auto RenderSystem::setAtmosphere(AtmosphereSettings settings) -> std::expected<void, Error> {
 		const auto c = settings.color.value;
 		if (!std::isfinite(c.x) || !std::isfinite(c.y) || !std::isfinite(c.z) || c.x < 0 || c.y < 0 || c.z < 0 ||
 			!std::isfinite(settings.density) || settings.density < 0 || !std::isfinite(settings.height_falloff) ||
-			settings.height_falloff < 0 || !std::isfinite(settings.base_height)) { return std::unexpected(Error::invalid_argument); }
+			settings.height_falloff < 0 || !std::isfinite(settings.base_height) ||
+			!std::isfinite(settings.distance_mist_start) || !std::isfinite(settings.distance_mist_end) ||
+			settings.distance_mist_start < 0 || settings.distance_mist_end < 0 ||
+			((settings.distance_mist_start != 0 || settings.distance_mist_end != 0) &&
+			 settings.distance_mist_end <= settings.distance_mist_start)) { return std::unexpected(Error::invalid_argument); }
 		renderer_.setAtmosphere(settings);
 		return {};
 	}

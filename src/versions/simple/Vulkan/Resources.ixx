@@ -454,10 +454,11 @@ export namespace vve::simple {
 		Vec4 cloudWind{};                                                               ///< Wind offset of the cloud pattern along x and z, unused, unused.
 		Vec4 probeOrigin{}; ///< Snapped probe-grid origin XYZ, cell spacing in W.
 		Vec4 probeControl{}; ///< GI enabled, indirect strength, diagnostic visibility, contact AO.
+		Vec4 distanceMist{}; ///< Additional mist start/end distances; both zero disable it.
 	};
 	/// Matrices are 64 bytes and vectors 16 bytes in the shader; a double Scalar (VVE_MATH_USE_DOUBLE) would break the std140 mirror.
 	static_assert(sizeof(FrameUniforms) == (3U + kShadowMatrixCount) * 64U +
-		(1U + 2U * kMaxShadowedPointLights + 4U * kMaxShadowedSpotLights + 3U * kMaxDirectionalLights + 11U) * 16U);
+		(1U + 2U * kMaxShadowedPointLights + 4U * kMaxShadowedSpotLights + 3U * kMaxDirectionalLights + 12U) * 16U);
 
 	/// @brief One mapped FrameUniforms buffer per frame in flight.
 	struct VulkanUniformBuffers {

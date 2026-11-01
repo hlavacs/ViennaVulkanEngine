@@ -230,7 +230,7 @@ VkResult ForwardRenderer::prepareProbes(WindowTarget &target, std::uint32_t fram
                 uniform.projection = perspectiveVulkan(static_cast<Scalar>(std::numbers::pi/2),one(),p.scale*IrradianceProbes::captureNear,p.scale*IrradianceProbes::captureFar);
                 uniform.viewport = {IrradianceProbes::faceSize,IrradianceProbes::faceSize,Scalar(target.probeSun+1),0};
                 uniform.probeOrigin.w = p.scale * IrradianceProbes::spacing;
-                uniform.probeControl = {}; uniform.fogColorDensity.w = 0;
+                uniform.probeControl = {}; uniform.fogColorDensity.w = 0; uniform.distanceMist = {};
                 // Capture does not reconstruct depth; reuse that matrix slot and one sun matrix without growing FrameUniforms.
                 uniform.inverseViewProjection = target.probeShadowMatrix;
                 if (target.probeSun >= 0) uniform.shadowViewProjs[kShadowMatrixDirBase + target.probeSun*kNumShadowCascades] = target.probeShadowMatrix;

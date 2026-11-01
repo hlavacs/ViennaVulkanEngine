@@ -14,6 +14,50 @@ namespace {
 	auto &render = world.get<RenderSystem>();
 	const Scalar nan = std::numeric_limits<Scalar>::quiet_NaN(), inf = std::numeric_limits<Scalar>::infinity();
 	const auto haze = AtmosphereSettings{.color = LinearColor{.value = Vec3{0, 0, 1}}, .density = 0.12F, .height_falloff = 0.2F};
+	if (render.atmosphere().distance_mist_start != zero() || render.atmosphere().distance_mist_end != zero()) { return false; }
+	// Distance mist is independent of weather extinction: it may start at the camera or after a clear foreground.
+	std::size_t mist_rejected{};
+	for (const auto range : std::array<std::pair<Scalar, Scalar>, 3>{{{0, 1}, {256, 716.8F}, {0, 0}}}) {
+		auto mist = haze;
+		mist.distance_mist_start = range.first;
+		mist.distance_mist_end = range.second;
+		if (!render.setAtmosphere(mist) || render.atmosphere().distance_mist_start != range.first ||
+			render.atmosphere().distance_mist_end != range.second || render.atmosphere().density != haze.density ||
+			render.atmosphere().height_falloff != haze.height_falloff) { return false; }
+	}
+	auto mist = haze;
+	mist.distance_mist_start = 256;
+	mist.distance_mist_end = 716.8F;
+	if (!render.setAtmosphere(mist)) { return false; }
+	// A rejected range must leave every atmosphere field and the empty scene unchanged, not just the offending field.
+	const auto reject_mist = [&](AtmosphereSettings bad) {
+		const auto result = render.setAtmosphere(bad);
+		const auto retained = render.atmosphere();
+		++mist_rejected;
+		return !result && result.error() == Error::invalid_argument && retained.distance_mist_start == mist.distance_mist_start &&
+			retained.distance_mist_end == mist.distance_mist_end && retained.density == mist.density &&
+			retained.height_falloff == mist.height_falloff && retained.base_height == mist.base_height &&
+			retained.color.value.x == mist.color.value.x && retained.color.value.y == mist.color.value.y &&
+			retained.color.value.z == mist.color.value.z && render.sceneMeshCount() == 0U && render.sceneInstanceCount() == 0U;
+	};
+	for (const auto member : {&AtmosphereSettings::distance_mist_start, &AtmosphereSettings::distance_mist_end}) {
+		for (const auto value : std::array<Scalar, 4>{-one(), nan, inf, -inf}) {
+			auto bad = mist;
+			bad.*member = value;
+			if (!reject_mist(bad)) { return false; }
+		}
+	}
+	for (const auto range : std::array<std::pair<Scalar, Scalar>, 3>{{{256, 0}, {256, 255}, {256, 256}}}) {
+		auto bad = mist;
+		bad.distance_mist_start = range.first;
+		bad.distance_mist_end = range.second;
+		if (!reject_mist(bad)) { return false; }
+	}
+	// A zero-density atmosphere still accepts independent distance mist; resetting restores the legacy disabled default.
+	if (!render.setAtmosphere(AtmosphereSettings{.distance_mist_start = 256, .distance_mist_end = 716.8F}) ||
+		render.atmosphere().density != zero() || !render.setAtmosphere(AtmosphereSettings{})) { return false; }
+	std::println("[RenderEnvironmentTests] distance_mist_rejected={} foreground_clear_to={} horizon_complete_at={}",
+		mist_rejected, mist.distance_mist_start, mist.distance_mist_end);
 	if (render.atmosphere().density != zero() || !render.setAtmosphere(haze) || !render.setAnimationTime(AnimationTime{})) { return false; }
 	std::size_t rejected{};
 	// Extinction, falloff and colour require finite nonnegative values; base height permits negative values.

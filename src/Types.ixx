@@ -415,12 +415,15 @@ export namespace vve {
 		Transform transform{};													///< Local or world-space placement.
 	};
 
-	/// @brief Height-dependent haze; zero density disables it. Distances use world units, colours are linear.
+	/// @brief Height-dependent haze and optional distant mist. Distances use world units, colours are linear.
 	struct AtmosphereSettings {
 		LinearColor color{.value = Vec3{0.65F, 0.75F, 0.85F}}; ///< Colour approached by distant surfaces; the enabled SkySettings light the haze instead.
 		Scalar density{}; ///< Extinction per world unit; nonnegative.
 		Scalar height_falloff{}; ///< Density decreases exponentially with height; zero gives uniform haze.
 		Scalar base_height{}; ///< Height at which density is specified.
+		Scalar distance_mist_start{}; ///< Additional distance mist starts here, leaving nearer surfaces unchanged.
+		Scalar distance_mist_end{}; ///< Fully opaque at this distance; both distances zero disable it, otherwise 0 <= start < end.
+		// Distance mist approaches color even with a physical sky, whose low horizon uses the same colour.
 	};
 
 	/// @brief Physically based sky with volumetric clouds; the first directional light is its sun.

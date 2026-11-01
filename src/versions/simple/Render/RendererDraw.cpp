@@ -226,6 +226,7 @@ namespace vve::simple {
 		const auto haze = atmosphere_.color.value;
 		frameUniforms_.fogColorDensity = {haze.x, haze.y, haze.z, atmosphere_.density};
 		frameUniforms_.fogHeightTime = {atmosphere_.base_height, atmosphere_.height_falloff, static_cast<float>(animation_time_.seconds), 0};
+		frameUniforms_.distanceMist = {atmosphere_.distance_mist_start, atmosphere_.distance_mist_end, 0, 0};
 		if (sky_.enabled) {
 			// The first lit directional light is the sun; without one the sky is lit from straight above and shows no disk.
 			const auto lights = std::span{frameUniforms_.directionalLightDirections}.first(frameUniforms_.activeDirectionalLightCount);

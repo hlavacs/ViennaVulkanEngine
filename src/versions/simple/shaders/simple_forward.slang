@@ -57,6 +57,7 @@ struct FrameUniforms
     float4 cloudWind;                 ///< Wind offset of the cloud pattern along x and z, unused, unused.
     float4 probeOrigin;               ///< Snapped grid origin and spacing.
     float4 probeControl;              ///< Enabled, strength, debug probe visibility and contact AO; other backends ignore these.
+    float4 distanceMist;              ///< Additional distance mist start/end; disabled when both zero.
 };
 
 struct ObjectPushConstants
@@ -254,11 +255,14 @@ float3 applyAtmosphere(float3 color, float3 worldPos)
 #ifdef VVE_PROBE_CAPTURE
     return color; // Linear captures exclude camera fog, exposure and post-processing.
 #endif
-    if (physicalSky()) return applySkyAtmosphere(color, worldPos);
-    if (frame.fogColorDensity.w == 0.0) return color;
     const float3 eye = worldEye();
     const float d = length(worldPos - eye);
-    return d > 0.0 ? lerp(frame.fogColorDensity.rgb, color, exp(-hazeDepth(eye, (worldPos - eye) / d, d))) : color;
+    if (frame.distanceMist.y > frame.distanceMist.x && d >= frame.distanceMist.y)
+        return frame.fogColorDensity.rgb;
+    if (physicalSky()) color = applySkyAtmosphere(color, worldPos);
+    else if (frame.fogColorDensity.w > 0.0 && d > 0.0)
+        color = lerp(frame.fogColorDensity.rgb, color, exp(-hazeDepth(eye, (worldPos - eye) / d, d)));
+    return lerp(color, frame.fogColorDensity.rgb, distanceMistAmount(d));
 }
 
 [shader("vertex")]
