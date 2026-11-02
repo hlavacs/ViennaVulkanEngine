@@ -253,6 +253,12 @@ internal setup/HDR readback/cache hooks provide numerical diagnostics.
 `HybridGiProceduralTests save-baseline` **before** renderer edits for pre-change
 PNGs. A fresh checkout without saved references compares clean control with
 explicit clear, and reports that provenance, not historical equivalence.
+The paused 128x128 no-recorder fixture compares decoded RGBA pixels: at most
+eight changed RGB pixels, each channel differing by at most 1/255, with exact
+alpha and dimensions. Missing or invalid images fail; saved references remain
+intact. Receipts retain byte identity and report pixel differences and limits.
+The CPU-only `image-comparison` subcommand tests these bounds and rejects stronger
+color errors, wider drift, alpha changes, invalid buffers and failed image decodes.
 
 GI-06a's pre-hook 1x/4x forward/deferred/hybrid PNG comparisons were byte-identical.
 Current procedural transport, validation and disabled-equivalence results are

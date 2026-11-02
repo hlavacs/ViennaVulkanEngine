@@ -1,5 +1,7 @@
 /** @file @brief Native procedural pass contracts and deterministic linear-HDR transport receipts. */
 #include <vulkan/vulkan.h>
+#include <stb_image.h>
+#include <stb_image_write.h>
 #include "vertexMain.h"
 #include "gbufferMain.h"
 #include "captureMain.h"
@@ -336,7 +338,64 @@ bool shadow(simple::Engine &engine) {
     std::println("native.notification.idle_waits={} native.notification.mesh_uploads={} native.notification.material_uploads={}",idleDelta,meshDelta,materialDelta);
     return unroofed->x-unroofed->y>.005F && reference<.5F && fraction<limit && limit<.65F && stable==0 && notified==1 && total==1 && idleDelta==0 && meshDelta==0 && materialDelta==0 && g->valid;
 }
-/// @brief Preserve the exact pre-hook output for all backends and coverage counts; compare whole PNG bytes later.
+constexpr unsigned captureSide=128, rgbDeltaLimit=1, changedPixelLimit=8; ///< This fixture permits rounding in at most 0.049% of its pixels.
+/// @brief Decode only the expected fixture extent; equal byte counts cannot conceal a different image shape.
+std::vector<unsigned char> fixturePixels(const std::filesystem::path &path) {
+    int width{},height{},channels{};
+    if (!stbi_info(path.string().c_str(),&width,&height,&channels) || width!=captureSide || height!=captureSide) return {};
+    return test::imagePixels(path).value_or(std::vector<unsigned char>{});
+}
+/// @brief Bound both the magnitude and area of RGB rounding while requiring byte-exact alpha and complete buffers.
+bool matchingPixels(std::span<const unsigned char> baseline,std::span<const unsigned char> current,std::string_view name) {
+    constexpr std::size_t byteCount=captureSide*captureSide*4;
+    if (baseline.size()!=byteCount || current.size()!=byteCount) {
+        std::println("pixels={} valid=false baseline.bytes={} current.bytes={} expected.bytes={}",name,baseline.size(),current.size(),byteCount);
+        return false;
+    }
+    unsigned changed{},maximum{}; bool alphaExact=true;
+    // Count each affected RGB pixel once, even when several channels change.
+    for (auto pixel:std::views::iota(0U,captureSide*captureSide)) {
+        unsigned delta{};
+        for (auto channel:std::views::iota(0U,3U)) delta=std::max(delta,unsigned(std::abs(int(baseline[pixel*4+channel])-int(current[pixel*4+channel]))));
+        changed+=delta!=0; maximum=std::max(maximum,delta);
+        alphaExact &= baseline[pixel*4+3]==current[pixel*4+3];
+    }
+    const bool pass=changed<=changedPixelLimit && maximum<=rgbDeltaLimit && alphaExact;
+    std::println("pixels={} valid=true changed={} changed.limit={} rgb.max_delta={} rgb.limit={} alpha.exact={} pass={}",name,changed,changedPixelLimit,maximum,rgbDeltaLimit,alphaExact,pass);
+    return pass;
+}
+/// @brief CPU-only boundary and negative controls prevent rounding tolerance from hiding image regressions or decode failures.
+bool imageComparisonControls() {
+    std::vector<unsigned char> baseline(captureSide*captureSide*4,128),current=baseline;
+    bool pass=true;
+    const auto check=[&](std::string_view name,bool expected) {
+        const bool result=matchingPixels(baseline,current,name);
+        std::println("control={} accepted={} expected={}",name,result,expected); pass &= result==expected;
+    };
+    check("exact",true);
+    // Exercise the full allowance with both signs and all RGB channels, then cross its area boundary.
+    for (auto pixel:std::views::iota(0U,changedPixelLimit)) for (auto channel:std::views::iota(0U,3U)) current[pixel*4+channel]+=channel==1 ? -1 : 1;
+    check("rounding-at-limit",true);
+    current[changedPixelLimit*4]+=1; check("rounding-too-wide",false);
+    current=baseline; current[0]+=2; check("color-too-strong",false);
+    current=baseline; current[3]-=1; check("alpha-changed",false);
+    current.clear(); check("missing-current-buffer",false);
+    current=baseline; current.pop_back(); check("truncated-current-buffer",false);
+    pass &= !matchingPixels({},baseline,"missing-baseline-buffer") && !matchingPixels({}, {},"both-buffers-missing");
+    pass &= !matchingPixels(std::span{baseline}.first(baseline.size()-1),baseline,"truncated-baseline-buffer");
+    const auto directory=reports/"image-comparison-controls";
+    std::filesystem::create_directories(directory);
+    const auto exact=directory/"exact.png",wrongSize=directory/"wrong-size.png",invalid=directory/"invalid.png",missing=directory/"missing.png";
+    // Same pixel count, different dimensions: byte-count validation alone would incorrectly accept this image.
+    if (!stbi_write_png(exact.string().c_str(),captureSide,captureSide,4,baseline.data(),captureSide*4) ||
+        !stbi_write_png(wrongSize.string().c_str(),captureSide*2,captureSide/2,4,baseline.data(),captureSide*8)) return false;
+    (void)test::writeFixture(directory,"invalid.png","not an image"); std::filesystem::remove(missing);
+    pass &= matchingPixels(baseline,fixturePixels(exact),"decoded-exact");
+    for (const auto &path:{wrongSize,invalid,missing}) pass &= !matchingPixels(baseline,fixturePixels(path),path.filename().string());
+    std::println("image-comparison.controls.pass={}",pass);
+    return pass;
+}
+/// @brief Compare retained pre-hook captures for all backends and coverage counts with a tightly bounded RGB rounding allowance.
 bool noneRegistered(bool save) {
     std::filesystem::create_directories(reports/"gi06a-baseline");
     // Fresh checkouts have no driver-specific historical PNGs: first render a clean control, then compare an explicit clear.
@@ -349,7 +408,7 @@ bool noneRegistered(bool save) {
         for (const auto aa : {Antialiasing::none,Antialiasing::msaa4}) {
             auto engine=test::hiddenEngine("native-baseline",PixelExtent{128,128}); auto &r=engine.renderSystem();
             if (!save && !r.setNativeDraw({})) return false;
-            if (!engine.init() || !r.setRendererBackend(backend) || !r.setAntialiasing(aa)) return false;
+            if (!engine.init() || !r.setRendererBackend(backend) || !r.setAntialiasing(aa) || !r.setAnimationTime(AnimationTime{})) return false;
             r.setCamera(Camera::lookAt(Position{Vec3{0,1.5F,3}},Position{}, {},FovY{1.1F}));
             r.setBackgroundColor(LinearColor{Vec3{.02F,.04F,.07F}});
             r.setDirectionalLight(Direction{Vec3{-1,-.5F,0}},LinearColor{},LightIntensity{4},LinearColor{Vec3{0}});
@@ -361,12 +420,13 @@ bool noneRegistered(bool save) {
             std::filesystem::create_directories(current.parent_path());
             if (!r.captureFrameToPng(save ? baseline : current)) return false;
             const auto bytes=[](const auto &path) { std::ifstream file{path,std::ios::binary}; return std::string{std::istreambuf_iterator<char>{file},{}}; };
-            const bool same=save || (!bytes(baseline).empty() && bytes(baseline)==bytes(current));
+            const bool byteIdentical=!save && !bytes(baseline).empty() && bytes(baseline)==bytes(current);
+            const bool same=save || matchingPixels(fixturePixels(baseline),fixturePixels(current),name);
             VkPhysicalDeviceProperties device{}; vkGetPhysicalDeviceProperties(r.forward().physicalDevice.physicalDevice,&device);
             pass &= same && requiredValidation(r.forward());
             r.waitIdle(); engine.gui().shutdownVulkan(); r.shutdown();
             pass &= r.forward().validationErrorCount()==0;
-            std::println("baseline={} saved={} byte_identical={} device={} validation.errors={}",name,save,same,std::string_view{device.deviceName},r.forward().validationErrorCount());
+            std::println("baseline={} saved={} byte_identical={} pixels.accepted={} device={} validation.errors={}",name,save,byteIdentical,same,std::string_view{device.deviceName},r.forward().validationErrorCount());
         }
     }
     return pass;
@@ -375,8 +435,9 @@ bool noneRegistered(bool save) {
 /// @brief Registered native Vulkan subcommands; existing simple setup/readback hooks provide only diagnostics.
 int main(int argc,char **argv) {
     const std::string_view mode=argc==1 ? "passes" : argv[1];
-    const std::array modes{"passes","procedural-bounce","procedural-blocker","procedural-shadow","receive","forward-sample","none-registered","save-baseline"};
+    const std::array modes{"passes","procedural-bounce","procedural-blocker","procedural-shadow","receive","forward-sample","none-registered","save-baseline","image-comparison"};
     if (argc>2 || std::ranges::find(modes,mode)==modes.end()) return 3;
+    if (mode=="image-comparison") return imageComparisonControls() ? 0 : 2;
     std::filesystem::create_directories(reports/"gi06a-captures");
     if (mode=="save-baseline" || mode=="none-registered") return noneRegistered(mode=="save-baseline") ? 0 : 2;
     if (mode=="passes" && !passes()) return 2;

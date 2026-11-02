@@ -212,6 +212,9 @@ add_dependencies(HybridGiProceduralTests vve_native_test_shaders)
 target_include_directories(HybridGiProceduralTests PRIVATE "${native_shader_dir}")
 set_tests_properties(HybridGiProceduralTests PROPERTIES
    LABELS "gpu;gi" TIMEOUT 240 RUN_SERIAL TRUE FAIL_REGULAR_EXPRESSION "Validation Error;VUID-")
+# Pixel comparison boundary/negative controls run without initializing a window or Vulkan device.
+add_test(NAME HybridGiProcedural-image-comparison COMMAND HybridGiProceduralTests image-comparison)
+set_tests_properties(HybridGiProcedural-image-comparison PROPERTIES LABELS "gi;cpu" TIMEOUT 15)
 foreach(native_case IN ITEMS procedural-bounce procedural-blocker procedural-shadow receive forward-sample none-registered)
    add_test(NAME HybridGiProcedural-${native_case} COMMAND HybridGiProceduralTests ${native_case})
    set_tests_properties(HybridGiProcedural-${native_case} PROPERTIES
