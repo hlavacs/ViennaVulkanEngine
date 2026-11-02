@@ -1,13 +1,23 @@
 /** @file simple_material.slang
  * @brief GGX/Smith/Schlick direct lighting and deterministic, approximate panorama illumination.
  * Panorama filtering uses eight lobe samples plus ordinary mipmaps, avoiding new GPU resources.
- * It approximates a prefiltered environment and omits the split-sum BRDF integration and local reflections.
+ * A fitted split-sum BRDF accounts for roughness and masking; local reflections remain unsupported.
  */
 
 /// @brief Schlick reflectance approaches unity at grazing angles.
 float3 fresnelSchlick(float cosine, float3 f0)
 {
     return f0 + (1.0 - f0) * pow(1.0 - cosine, 5.0);
+}
+
+/// @brief Integrated GGX sky response, fitted by Karis (2014), based on Lazarov's split-sum approximation.
+/// https://www.unrealengine.com/blog/physically-based-shading-on-mobile
+float3 environmentReflectance(float cosine, float roughness, float3 f0)
+{
+    const float4 fit = roughness * float4(-1.0, -0.0275, -0.572, 0.022) + float4(1.0, 0.0425, 1.04, -0.04);
+    const float grazing = min(fit.x * fit.x, exp2(-9.28 * cosine)) * fit.x + fit.y;
+    const float2 integrated = float2(-1.04, 1.04) * grazing + fit.zw;
+    return saturate(f0 * integrated.x + integrated.y); // Keep approximate endpoint weights nonnegative and energy bounded.
 }
 
 /// @brief GGX distribution with separable Smith visibility; explicit material flags also serve reconstructed deferred samples.

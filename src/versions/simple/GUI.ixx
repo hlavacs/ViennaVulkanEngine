@@ -29,7 +29,7 @@ export namespace vve::simple {
 	public:
 		auto draw(std::function<void()> frame)											-> void;
 		[[nodiscard]] auto configureFonts(std::function<void()> setup) -> std::expected<void, Error>;
-		auto initContext(VkFormat colorFormat = VK_FORMAT_UNDEFINED)					-> void;
+		auto initContext(VkFormat colorFormat = VK_FORMAT_UNDEFINED, VkFormat sceneFormat = VK_FORMAT_UNDEFINED) -> void;
 		auto initSDL(SDL_Window *window)													-> std::expected<void, Error>;
 		auto processEvent(const SDL_Event &event)								-> bool;
 		auto shutdownSDL()																		-> void;
@@ -78,12 +78,14 @@ export namespace vve::simple {
 		return {};
 	}
 
-	/// @brief Creates the context once; an sRGB GUI target needs linear theme colours when mutable views are unavailable.
-	inline auto GuiSystem::initContext(VkFormat colorFormat) -> void {
+	/// @brief Creates the context once; hardware or PNG sRGB encoding needs linear theme colours without a separate GUI view.
+	inline auto GuiSystem::initContext(VkFormat colorFormat, VkFormat sceneFormat) -> void {
 		if (!context_) {
 			context_ = ImGui::CreateContext();
 			ImGui::GetIO().IniFilename = nullptr; // Keep GUI layouts out of the working directory.
-			if (colorFormat == VK_FORMAT_B8G8R8A8_SRGB || colorFormat == VK_FORMAT_R8G8B8A8_SRGB) {
+			const bool linearCapture = colorFormat == sceneFormat &&
+				(colorFormat == VK_FORMAT_B8G8R8A8_UNORM || colorFormat == VK_FORMAT_R8G8B8A8_UNORM);
+			if (colorFormat == VK_FORMAT_B8G8R8A8_SRGB || colorFormat == VK_FORMAT_R8G8B8A8_SRGB || linearCapture) {
 				// Only the theme can be corrected here; user draw colours remain authored sRGB values.
 				const auto linear = [](float value) {
 					return value <= 0.04045F ? value / 12.92F : std::pow((value + 0.055F) / 1.055F, 2.4F);

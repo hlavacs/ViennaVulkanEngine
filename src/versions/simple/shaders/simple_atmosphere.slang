@@ -226,10 +226,14 @@ float3 skyColour(float3 dir, float dither)
     const float3 sky = skyRadiance(eye.y, dir, 16);
     float4 clouds = float4(0.0, 0.0, 0.0, 1.0);
     if (cloudsEnabled()) clouds = marchClouds(eye, dir, 1.0e9, skyLight(eye, dir), dither); // Air in front of the clouds lies under them.
-    const float3 colour = (sky + sunDisk(dir)) * clouds.a + clouds.rgb;
-    if (frame.fogColorDensity.w == 0.0) return colour;
-    const float haze = exp(-hazeDepth(eye, dir, 1.0e5));
-    return colour * haze + hazeLight(eye, dir) * (1.0 - haze);
+    float3 colour = (sky + sunDisk(dir)) * clouds.a + clouds.rgb;
+    if (frame.fogColorDensity.w > 0.0) {
+        const float haze = exp(-hazeDepth(eye, dir, 1.0e5));
+        colour = colour * haze + hazeLight(eye, dir) * (1.0 - haze);
+    }
+    // Fully concealed distant terrain must meet the same low sky, without a visible window silhouette.
+    const float mist = frame.distanceMist.y > frame.distanceMist.x ? 1.0 - smoothstep(0.0, 0.2, dir.y) : 0.0;
+    return lerp(colour, frame.fogColorDensity.rgb, mist);
 }
 
 /// @brief Air, clouds and haze between the eye and a surface; distant surfaces fade into the horizon sky.

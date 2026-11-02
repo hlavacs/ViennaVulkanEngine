@@ -1,11 +1,12 @@
-/** @file @brief CPU regression checks for example asset lookup with partially staged asset directories. */
+/** @file @brief CPU regression checks for example asset lookup and public renderer command-line selection. */
 import std;
+import VVEngine;
 import VVE.ExampleSupport;
 
 namespace {
 
 int checks{};   ///< Number of named assertions emitted for automated review.
-int failures{}; ///< Number of failed asset-discovery contracts.
+int failures{}; ///< Number of failed example-support contracts.
 
 /** @brief Reports each candidate-selection outcome and preserves all failed assertions. */
 void check(bool passed, std::string_view name) {
@@ -84,6 +85,32 @@ void discovery(const std::filesystem::path &temporary) {
    std::cout << "configured_asset_root=" << configured.generic_string() << '\n';
 }
 
+/** @brief Checks all public renderer names and malformed options without creating a window or Vulkan device. */
+void rendererSelection() {
+   vve::Engine<> engine;
+   auto world = engine.world();
+   auto &render = world.get<vve::RenderSystem>();
+   const auto select = [&](std::vector<std::string> arguments) {
+      std::vector<char *> argv;
+      // Supply mutable argv storage just as an application's main function receives it.
+      for (auto &argument : arguments) { argv.push_back(argument.data()); }
+      return vve::example::selectRenderer(render, static_cast<int>(argv.size()), argv.data());
+   };
+   check(select({"example"}) && render.rendererBackend() == vve::RendererBackend::forward, "renderer_default_is_forward");
+   // Each accepted spelling must select its distinct backend through the facade.
+   for (const auto &[name, backend] : std::array{
+           std::pair{"forward", vve::RendererBackend::forward}, std::pair{"deferred", vve::RendererBackend::deferred},
+           std::pair{"hybrid-gi", vve::RendererBackend::hybrid_gi}}) {
+      check(select({"example", "--renderer", name}) && render.rendererBackend() == backend, name);
+   }
+   check(!select({"example", "--renderer", "hybrid_gi"}) && render.rendererBackend() == vve::RendererBackend::hybrid_gi,
+         "unknown_renderer_preserves_selection");
+   check(!select({"example", "--renderer"}) && render.rendererBackend() == vve::RendererBackend::hybrid_gi,
+         "missing_renderer_value_preserves_selection");
+   check(select({"example", "--renderer", "deferred", "--renderer", "hybrid-gi"}) &&
+         render.rendererBackend() == vve::RendererBackend::hybrid_gi, "last_renderer_option_wins");
+}
+
 } // namespace
 
 /** @brief Runs isolated filesystem fixtures, removes them and reports compact deterministic assertion totals. */
@@ -94,6 +121,7 @@ int main() {
       std::filesystem::remove_all(temporary);
       std::filesystem::create_directories(temporary);
       discovery(temporary);
+      rendererSelection();
       check(std::filesystem::current_path() == previous, "lookup_scope_restores_working_directory");
       std::filesystem::remove_all(temporary);
    } catch (const std::exception &error) {

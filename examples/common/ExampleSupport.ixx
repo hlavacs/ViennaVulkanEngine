@@ -39,23 +39,26 @@ export namespace vve::example {
 
 /// @brief Selects a public renderer before the first frame; invalid names and unsupported devices fail the launch.
 [[nodiscard]] bool selectRenderer(RenderSystem &render, int argc, char **argv) {
-	auto backend = RendererBackend::forward; // Ordinary launches preserve the engine's default renderer.
+	constexpr std::array backends{std::pair{std::string_view{"forward"}, RendererBackend::forward},
+		std::pair{std::string_view{"deferred"}, RendererBackend::deferred},
+		std::pair{std::string_view{"hybrid-gi"}, RendererBackend::hybrid_gi}}; // Public command-line names.
+	auto selected = backends.begin(); // Ordinary launches preserve the engine's default renderer.
 	// Parse the same option in every application, including those with independent game-specific options.
 	for (int index = 1; index < argc; ++index) {
 		if (argv[index] == nullptr || std::string_view{argv[index]} != "--renderer") { continue; }
 		if (++index >= argc || argv[index] == nullptr) {
-			std::cerr << "--renderer requires forward or deferred\n"; return false;
+			std::cerr << "--renderer requires forward, deferred or hybrid-gi\n"; return false;
 		}
 		const std::string_view name{argv[index]};
-		if (name != "forward" && name != "deferred") {
-			std::cerr << "Unknown renderer: " << name << "; expected forward or deferred\n"; return false;
+		selected = std::ranges::find_if(backends, [name](const auto &entry) { return entry.first == name; });
+		if (selected == backends.end()) {
+			std::cerr << "Unknown renderer: " << name << "; expected forward, deferred or hybrid-gi\n"; return false;
 		}
-		backend = name == "deferred" ? RendererBackend::deferred : RendererBackend::forward;
 	}
-	if (const auto result = render.setRendererBackend(backend); !result) {
+	if (const auto result = render.setRendererBackend(selected->second); !result) {
 		std::cerr << "Renderer selection failed: " << errorName(result.error()) << '\n'; return false;
 	}
-	std::cout << "[renderer] backend=" << (render.rendererBackend() == RendererBackend::deferred ? "deferred" : "forward") << '\n';
+	std::cout << "[renderer] backend=" << selected->first << '\n';
 	return true;
 }
 

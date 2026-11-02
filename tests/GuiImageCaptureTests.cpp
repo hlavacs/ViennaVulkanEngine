@@ -44,7 +44,7 @@ int main() {
 	if (!pixels || pixels->size() != extent * extent * 4U) { return 5; }
 	const auto *pixel = test::pixelAt(pixels->data(), extent, extent / 2, extent / 2);
 	auto &renderer = engine.renderSystem().forward();
-	const bool mutable_format = renderer.device.swapchainMutableFormat;
+	const bool mutable_format = renderer.targets.front().swapchain.imageFormat != renderer.targets.front().swapchain.guiFormat;
 	// The sRGB fallback encodes the raw bytes once more.
 	const auto encode = [](int value) {
 		const double linear = value / 255.0;

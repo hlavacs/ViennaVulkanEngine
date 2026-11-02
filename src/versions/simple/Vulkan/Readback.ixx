@@ -97,6 +97,10 @@ export namespace vve::simple {
 		/// @brief Bytes per pixel of the formats the readback supports.
 		[[nodiscard]] static std::optional<VkDeviceSize> formatByteSize(VkFormat imageFormat) {
 			switch (imageFormat) {
+			case VK_FORMAT_R32G32B32A32_SFLOAT:
+				return 16U; // Opt-in probe SH/visibility/validity diagnostics; never a steady-state readback.
+			case VK_FORMAT_R16G16B16A16_SFLOAT:
+				return 8U; // Opt-in bounded linear HDR measurements; PNG encoding remains RGBA8-only.
 			case VK_FORMAT_R8G8B8A8_UNORM:
 			case VK_FORMAT_R8G8B8A8_SRGB:
 			case VK_FORMAT_B8G8R8A8_UNORM:

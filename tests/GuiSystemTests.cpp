@@ -109,11 +109,22 @@ int main() {
    if (std::abs(fallback_color.x - expected) > 1e-6F || repeated_color.x != fallback_color.x ||
        fallback_color.w != authored_color.w) { return 11; }
 
+   // A UNORM-only surface stores linear scene bytes; PNG capture encodes those bytes after GUI composition.
+   gui_system.initContext(VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_UNORM);
+   const auto offscreen_color = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
+   gui_system.initContext(VK_FORMAT_B8G8R8A8_UNORM, VK_FORMAT_B8G8R8A8_UNORM);
+   const auto repeated_offscreen_color = ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
+   gui_system.shutdownContext();
+   if (font_setup_calls != 4 || std::abs(offscreen_color.x - expected) > 1e-6F ||
+       repeated_offscreen_color.x != offscreen_color.x || offscreen_color.w != authored_color.w) { return 21; }
+   std::println("[GuiSystemTests] unorm_scene_theme={} repeated={} alpha={}",
+                offscreen_color.x, repeated_offscreen_color.x, offscreen_color.w);
+
    // An empty setup clears the retained hook before a new context is created and keeps initialization optional.
    const auto empty_setup = gui_system.configureFonts({});
    if (!empty_setup) { return 19; }
    gui_system.initContext();
-   const bool empty_setup_valid = ImGui::GetCurrentContext() != nullptr && font_setup_calls == 3;
+   const bool empty_setup_valid = ImGui::GetCurrentContext() != nullptr && font_setup_calls == 4;
    gui_system.shutdownContext();
    std::println("[GuiSystemTests] recreated_setups={} rejected_calls={} empty_setup_valid={}",
                 font_setup_calls, late_setup_calls, empty_setup_valid);

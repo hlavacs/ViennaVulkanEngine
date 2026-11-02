@@ -15,11 +15,18 @@ int main() {
 	auto engine = vve::test::hiddenEngine("gui-color-capture-tests", vve::PixelExtent{.width = 64, .height = 64});
 	vve::test::configureRenderer(engine.renderSystem());
 	if (!engine.init()) { return 1; }
+	const ImGuiStyle authored_style{};
+	const auto theme = authored_style.Colors[ImGuiCol_WindowBg];
+	const std::array expected_theme{theme.x * 255.0F, theme.y * 255.0F, theme.z * 255.0F};
 	engine.gui().draw([] {
 		const auto *viewport = ImGui::GetMainViewport();
 		ImGui::GetBackgroundDrawList()->AddRectFilled(viewport->Pos,
-			ImVec2{viewport->Pos.x + viewport->Size.x, viewport->Pos.y + viewport->Size.y},
+			ImVec2{viewport->Pos.x + viewport->Size.x * .5F, viewport->Pos.y + viewport->Size.y},
 			IM_COL32(128, 128, 128, 255));
+		// Use the real initialized theme, with opaque alpha to isolate colour conversion from blending.
+		auto theme = ImGui::GetStyle().Colors[ImGuiCol_WindowBg]; theme.w = 1.0F;
+		ImGui::GetBackgroundDrawList()->AddRectFilled(ImVec2{viewport->Pos.x + viewport->Size.x * .5F, viewport->Pos.y},
+			ImVec2{viewport->Pos.x + viewport->Size.x, viewport->Pos.y + viewport->Size.y}, ImGui::ColorConvertFloat4ToU32(theme));
 	});
 	if (!engine.renderFrame() || !engine.gui().ready()) { return 2; }
 
@@ -34,8 +41,10 @@ int main() {
 	});
 	if (renderer.device.swapchainMutableFormat != mutable_format) { return 8; }
 	const auto scene_format = renderer.targets.front().swapchain.imageFormat;
-	if (scene_format != VK_FORMAT_B8G8R8A8_SRGB && scene_format != VK_FORMAT_R8G8B8A8_SRGB) { return 9; }
-	const auto gui_format = mutable_format
+	const bool srgb_scene = scene_format == VK_FORMAT_B8G8R8A8_SRGB || scene_format == VK_FORMAT_R8G8B8A8_SRGB;
+	if (!srgb_scene && scene_format != VK_FORMAT_B8G8R8A8_UNORM && scene_format != VK_FORMAT_R8G8B8A8_UNORM) { return 9; }
+	const bool mutable_views = mutable_format && srgb_scene;
+	const auto gui_format = mutable_views
 		? (scene_format == VK_FORMAT_B8G8R8A8_SRGB ? VK_FORMAT_B8G8R8A8_UNORM : VK_FORMAT_R8G8B8A8_UNORM) : scene_format;
 
 	// Exercise view replacement even on drivers that ignore resizing hidden windows.
@@ -45,7 +54,7 @@ int main() {
 		if (!info || *info->PipelineRenderingCreateInfo.pColorAttachmentFormats != gui_format ||
 			renderer.targets.front().swapchain.imageFormat != scene_format || renderer.targets.front().swapchain.guiFormat != gui_format ||
 			renderer.targets.front().imageViews.ownedViews.size() != renderer.targets.front().swapchain.images.size() ||
-			renderer.targets.front().imageViews.ownedGuiViews.size() != (mutable_format ? renderer.targets.front().swapchain.images.size() : 0U)) { return 11; }
+			renderer.targets.front().imageViews.ownedGuiViews.size() != (mutable_views ? renderer.targets.front().swapchain.images.size() : 0U)) { return 11; }
 		if (!engine.renderFrame()) { return 2; }
 
 		// The existing PNG path renders and copies the final GUI-composited swapchain image.
@@ -56,17 +65,21 @@ int main() {
 		auto pixels = std::unique_ptr<stbi_uc, decltype(&stbi_image_free)>{
 			stbi_load(path.string().c_str(), &width, &height, &channels, STBI_rgb_alpha), stbi_image_free};
 		if (!pixels || width != 64 || height != 64) { return 4; }
-		const auto *pixel = vve::test::pixelAt(pixels.get(), width, width / 2, height / 2);
+		const auto *pixel = vve::test::pixelAt(pixels.get(), width, width / 4, height / 2);
+		const auto *theme_pixel = vve::test::pixelAt(pixels.get(), width, 3 * width / 4, height / 2);
 		engine.renderSystem().waitIdle();
 		std::println("[GuiColorCaptureTests] path={} recreated={} rgb={},{},{} validationActive={} validationErrorCount={}",
-			mutable_format ? "mutable-format" : "theme-only-fallback", recreated,
+			mutable_views ? "mutable-format" : "theme-only-fallback", recreated,
 			pixel[0], pixel[1], pixel[2], renderer.validationActive(), renderer.validationErrorCount());
 		if (renderer.validationErrorCount() != 0U) { return 5; }
-		// The fallback cannot correct custom draw colours; its theme correction has CPU coverage.
+		// Both fallback formats correct the theme; custom draw colours retain the existing fallback limitation.
 		for (const auto channel : std::views::iota(0U, 3U)) {
-			if (mutable_format && std::abs(static_cast<int>(pixel[channel]) - 128) > 2) { return 6; }
-			if (!mutable_format && std::abs(static_cast<int>(pixel[channel]) - 188) > 2) { return 6; }
+			if (mutable_views && std::abs(static_cast<int>(pixel[channel]) - 128) > 2) { return 6; }
+			if (!mutable_views && std::abs(static_cast<int>(pixel[channel]) - 188) > 2) { return 6; }
+			if (std::abs(float(theme_pixel[channel]) - expected_theme[channel]) > 3.0F) { return 13; }
 		}
+		std::println("[GuiColorCaptureTests] srgb_scene={} mutable_views={} theme_rgb={},{},{}",
+			srgb_scene, mutable_views, theme_pixel[0], theme_pixel[1], theme_pixel[2]);
 		if (pixel[3] != 255) { return 7; }
 	}
 

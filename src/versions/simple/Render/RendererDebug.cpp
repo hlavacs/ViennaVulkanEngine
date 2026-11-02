@@ -14,6 +14,26 @@ import VVEngine.Simple.Vulkan;
 /// names of G-buffer images, shadow maps, attachments and pipelines that RenderDoc shows.
 
 namespace vve::simple {
+	/// @brief Copies resolved FP16 HDR at an explicit diagnostic checkpoint; queue-ordered transfer waits only for its own submission.
+	auto ForwardRenderer::captureFrameLinear(WindowTarget &target) -> std::expected<Vector<Vec4>,Error> {
+		if (!target.lastRenderedImageIndex || target.hdrImage.image == VK_NULL_HANDLE) { return std::unexpected(Error::missing_object); }
+		auto readback = VulkanReadback{};
+		if (readback.create(allocator,device.device,device.graphicsQueue,commandPool.commandPool,target.hdrImage.extent,VK_FORMAT_R16G16B16A16_SFLOAT) != VK_SUCCESS ||
+			readback.capture(target.hdrImage.image,0,VK_IMAGE_LAYOUT_GENERAL) != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+		const auto half = [](std::uint16_t bits) {
+			const auto exponent = (bits >> 10) & 31U, mantissa = bits & 1023U;
+			const float value = exponent == 0 ? std::ldexp(float(mantissa),-24) : exponent == 31 ? std::numeric_limits<float>::infinity()
+				: std::ldexp(1.F + float(mantissa)/1024.F,int(exponent)-15);
+			return bits & 32768U ? -value : value;
+		};
+		Vector<Vec4> pixels(std::size_t(target.hdrImage.extent.width)*target.hdrImage.extent.height);
+		// Decode only this requested completed frame; the returned values own their storage independently of Vulkan.
+		for (auto i : std::views::iota(std::size_t{},pixels.size())) {
+			std::array<std::uint16_t,4> texel{}; std::memcpy(texel.data(),readback.pixelBytes().data()+i*8,8);
+			pixels[i] = Vec4{half(texel[0]),half(texel[1]),half(texel[2]),half(texel[3])};
+		}
+		return pixels;
+	}
 
 	namespace {
 		/// @brief Mirrors the shader's world-space receiver offset at a perspective light's axial depth.

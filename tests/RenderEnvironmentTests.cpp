@@ -13,12 +13,15 @@ namespace {
 	auto world = engine.world();
 	auto &render = world.get<RenderSystem>();
 	const Scalar nan = std::numeric_limits<Scalar>::quiet_NaN(), inf = std::numeric_limits<Scalar>::infinity();
-	const auto haze = AtmosphereSettings{.color = LinearColor{.value = Vec3{0, 0, 1}}, .density = 0.12F, .height_falloff = 0.2F};
-	if (render.atmosphere().density != zero() || !render.setAtmosphere(haze) || !render.setAnimationTime(AnimationTime{})) { return false; }
+	const auto haze = AtmosphereSettings{.color = LinearColor{.value = Vec3{0, 0, 1}}, .density = 0.12F, .height_falloff = 0.2F,
+		.distance_mist_start = 384, .distance_mist_end = 870.4F};
+	if (render.atmosphere().density != zero() || render.atmosphere().distance_mist_start != zero() ||
+		render.atmosphere().distance_mist_end != zero() || !render.setAtmosphere(haze) || !render.setAnimationTime(AnimationTime{})) { return false; }
 	std::size_t rejected{};
 	// Extinction, falloff and colour require finite nonnegative values; base height permits negative values.
 	for (const auto value : std::array<Scalar, 3>{-one(), nan, inf}) {
-		for (const auto member : {&AtmosphereSettings::density, &AtmosphereSettings::height_falloff}) {
+		for (const auto member : {&AtmosphereSettings::density, &AtmosphereSettings::height_falloff,
+			&AtmosphereSettings::distance_mist_start, &AtmosphereSettings::distance_mist_end}) {
 			auto bad = haze;
 			bad.*member = value;
 			const auto result = render.setAtmosphere(bad);
@@ -34,12 +37,31 @@ namespace {
 		bad.base_height = value;
 		if (render.setAtmosphere(bad)) { return false; }
 	}
+	// Enabled distance mist requires a positive interval; rejected ranges retain both endpoints.
+	for (const auto end : {haze.distance_mist_start, haze.distance_mist_start / 2}) {
+		auto bad = haze;
+		bad.distance_mist_end = end;
+		const auto result = render.setAtmosphere(bad);
+		if (result || result.error() != Error::invalid_argument) { return false; }
+		++rejected;
+	}
 	for (const double value : {-1.0, std::numeric_limits<double>::quiet_NaN(), std::numeric_limits<double>::infinity(), std::numeric_limits<double>::max()}) {
 		const auto result = render.setAnimationTime(AnimationTime{value});
 		if (result || result.error() != Error::invalid_argument) { return false; }
 	}
 	if (render.atmosphere().density != haze.density || render.atmosphere().height_falloff != haze.height_falloff ||
-		render.atmosphere().color.value.y != zero() || render.atmosphere().base_height != zero()) { return false; }
+		render.atmosphere().color.value.y != zero() || render.atmosphere().base_height != zero() ||
+		render.atmosphere().distance_mist_start != haze.distance_mist_start || render.atmosphere().distance_mist_end != haze.distance_mist_end) { return false; }
+	// Distance mist works with zero height-fog density, starts at zero, and disables by setting only its end to zero.
+	auto mist = haze;
+	mist.density = zero();
+	mist.distance_mist_start = zero();
+	if (!render.setAtmosphere(mist) || render.atmosphere().density != zero() ||
+		render.atmosphere().distance_mist_start != zero() || render.atmosphere().distance_mist_end != haze.distance_mist_end) { return false; }
+	mist.distance_mist_start = haze.distance_mist_start;
+	mist.distance_mist_end = zero();
+	if (!render.setAtmosphere(mist) || render.atmosphere().distance_mist_start != haze.distance_mist_start ||
+		render.atmosphere().distance_mist_end != zero() || !render.setAtmosphere(haze)) { return false; }
 	for (const auto value : std::array<Scalar, 3>{zero(), -one(), nan}) {
 		auto bad = OceanDescriptor{};
 		bad.wavelength = value;

@@ -194,7 +194,7 @@ export namespace vve::simple {
 			if (!gui_initialization_attempted_ && !render_system_.forward().targets.empty()) {
 				const auto &target = render_system_.forward().targets.front();
 				gui_initialization_attempted_ = true;
-				gui_.initContext(target.swapchain.guiFormat);
+				gui_.initContext(target.swapchain.guiFormat, target.swapchain.imageFormat);
 				// Stop at the first failed stage so no uninitialized backend is driven.
 				const auto failed_stage = [&]() -> std::string_view {
 					if (!gui_.initSDL(target.window)) { return "SDL"; }
