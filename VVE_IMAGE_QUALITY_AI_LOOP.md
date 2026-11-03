@@ -5,15 +5,15 @@
 Make the VTL countryside example look closer to EZ-Tree's scenes (github.com/dgreenheck/ez-tree, checked out next to VTL as `ez-tree`). A comparison on 2 November 2026 found five gaps. This task closes three of them, as requested by the maintainer:
 
 1. **Anti-aliasing.** EZ-Tree uses 4x MSAA plus SMAA 1x. VTL renders without anti-aliasing.
-2. **Tone mapping.** EZ-Tree uses three.js `NeutralToneMapping` (Khronos PBR Neutral) at exposure 2. VTL uses vvppl's ACES at exposure 0.85, so its image is darker and greyer.
-3. **Photographs.** EZ-Tree's leaves, bark and ground are photographs. VTL's are procedural.
+2. **Tone mapping.** EZ-Tree uses three.js `NeutralToneMapping` (Khronos PBR Neutral) at exposure 2. VTL uses vvppl's ACES at exposure 0.85. The observed brightness and colour difference also depends on lighting and materials; isolate these factors before assigning a cause.
+3. **Photographs.** EZ-Tree uses photographic leaves, bark and ground. VTL's leaves and bark are procedural; its ground pipeline already includes a tinted Poly Haven grass scan.
 
 The maintainer decided the following on 2 November 2026:
 
 - **DEC-IQ-1:** MSAA and SMAA are options in VVE's simple renderer, and both are off by default. SMAA is implemented inside VVE, independent of vvppl. vvppl stays pinned and unchanged; VVE DEC-8 still holds.
-- **DEC-IQ-2:** Khronos PBR Neutral tone mapping is an opt-in VVE option. With VVE's defaults, every existing image stays bit-identical.
-- **DEC-IQ-3:** the countryside example uses the photographs by default (leaves, bark and ground); `--textures procedural` restores the procedural look. This applies only to the examples. The library in `src/` keeps its procedural materials as default and fallback, so VTL DEC-15 still holds for the library.
-- **DEC-IQ-4:** the countryside example's default view uses the new Neutral tone mapping, calibrated to the brightness and saturation of EZ-Tree's reference image (see IQ-09). Anti-aliasing stays off by default; `--antialiasing` turns it on.
+- **DEC-IQ-2:** Khronos PBR Neutral tone mapping is an opt-in VVE option. VVE's default render path and appearance remain unchanged, verified against pre-task captures using the comparison policy below. Do not promise identical GPU pixels across runs, drivers or platforms.
+- **DEC-IQ-3:** the countryside example uses the photographs by default (leaves, bark and ground); `--textures procedural` selects the historical texture set, including the existing tinted grass scan where image support is enabled. It selects materials only, not lighting or tone mapping. This applies only to the examples. The library in `src/` keeps its procedural materials as default and fallback, so VTL DEC-15 still holds for the library.
+- **DEC-IQ-4:** the countryside example's tessellated default view uses the new Neutral tone mapping, calibrated with EZ-Tree as an artistic reference (see IQ-09), not a statistical ground truth for another scene. Anti-aliasing stays off by default; `--antialiasing <mode>` selects it. A separate legacy lighting selection preserves the full pre-task appearance configuration.
 
 Record DEC-IQ-1 and DEC-IQ-2 as DEC-9 in VVE's `AI_LOOP_TASKS.md` decision table. Record DEC-IQ-3 and DEC-IQ-4 as DEC-23 and DEC-24 in VTL's `AI_LOOP_TASKS.md` decision table.
 
@@ -68,9 +68,9 @@ VTL:
 
 1. `Antialiasing{none, msaa4}` exists. msaa4 is implemented for forward, deferred (per-sample shading) and, by construction, hybrid_gi. `NativeDrawContext::samples` reports the sample count. The existing test covers forward and deferred.
 2. VVE's only tone mapper is vvppl's ACES (Narkowicz) compute effect. Without a vvppl setup, `hdrImage` is blitted unmodified to the swapchain.
-3. VTL's countryside default capture (seed 12345, clear, 12:00 UTC, 960x540) has a bottom-quarter ("ground region") mean luminance of about 0.27-0.33 and mean saturation of 0.34-0.56. This was measured on Windows captures in `build/.../verify`, using sRGB-encoded PNG values, Rec. 709 luma and HSV saturation.
-4. The EZ-Tree reference image `src/app/public/og-image.png` has a ground region with these values:
-   - mean luminance 0.471, median 0.482;
+3. VTL's countryside default capture (seed 12345, clear, 12:00 UTC, 960x540) has a bottom-quarter ("ground region") mean display luma of about 0.27-0.33 and mean saturation of 0.34-0.56. This was measured on Windows captures in `build/.../verify`, using sRGB-encoded PNG values, Rec. 709 luma coefficients and HSV saturation. These are display statistics, not linear-light luminance; the bottom quarter is not necessarily all ground.
+4. The EZ-Tree reference image `src/app/public/og-image.png` has these bottom-quarter display statistics from a different scene/view (advisory only, not pass/fail targets):
+   - mean display luma 0.471, median 0.482;
    - mean HSV saturation 0.385;
    - mean RGB 0.425, 0.499, 0.333.
 5. The imported photos are dark in linear terms: the grass photo's linear mean is 0.068, 0.075, 0.034. EZ-Tree reaches its brightness through the following:
@@ -80,7 +80,7 @@ VTL:
    - exposure is 2;
    - Neutral tone mapping.
 
-   Do not brighten or recolour the photographs to reach the target. Calibrate the lighting and exposure instead.
+   Do not brighten or recolour photographs to force another scene's statistics. Calibrate lighting and exposure on controlled fixtures and inspect the countryside. The documented summer-aspen conversion and bounded artistic leaf variation are explicit exceptions, not exposure corrections.
 6. `ash.png`, `oak.png` and `pine.png` are green. `aspen.png` is autumn yellow. The proposed per-channel recolour factor for summer foliage is (0.224, 0.686, 0.797); the README has the derivation.
 
 These are observations, not proof that the Linux checkout is identical. Search by symbols, not line numbers.
@@ -96,21 +96,28 @@ scene -> hdrImage (linear HDR; captureFrameLinear reads this, unchanged)
       -> [vvppl chain, if a setup is set; destination = postImage instead of the swapchain when a VVE pass follows]
       -> [tone-map pass, if ToneMapping.op != none]            (full-screen triangle)
       -> [SMAA 1x: edges -> blend weights -> neighbourhood blending, if smaa or msaa4_smaa]
-      -> swapchain (captureFrameToPng reads this)
+      -> swapchain
       -> GUI
+      -> capture/readback when requested, then presentation
 ```
 
-- If neither option is active, VVE creates no new image, pipeline, descriptor or pass. The command stream is exactly today's, so outputs are bit-identical.
+- A fresh renderer with neither option active creates no new image, pipeline, descriptor or pass. Disabling tone mapping returns to the existing path (unless startup SMAA remains selected); previously used resources retire after their fences. Preserve the existing default command-recording path, including its UNORM fallback. Verify pass/resource invariants and compare against pre-task captures; absence of a new pass alone does not prove image equivalence.
 - vvppl documents its destination as an image that it writes with `vkCmdBlitImage`. VVE passes a per-window `postImage` (the HDR format and extent, usage TRANSFER_DST | SAMPLED) only when a VVE pass follows. Check that vvppl accepts a non-swapchain destination. Do not modify vvppl.
-- The tone-map pass reads `postImage`, or `hdrImage` when there is no vvppl chain. It writes the swapchain's sRGB view, or the SMAA input when SMAA is on.
+- The tone-map pass reads `postImage`, or `hdrImage` when there is no vvppl chain. It writes linear colour through the swapchain's sRGB attachment view, or the SMAA input when SMAA is on. Use the explicit UNORM policy below where no sRGB swapchain format is available.
 - The SMAA input `ldrImage` is R8G8B8A8_SRGB with MUTABLE_FORMAT and a UNORM view:
   - Edge detection reads the UNORM view, because luma edges are detected on gamma-encoded values.
   - Neighbourhood blending reads the sRGB view, so blending happens in linear light.
-  - Neighbourhood blending writes the swapchain's sRGB view.
+  - Neighbourhood blending outputs linear colour through the swapchain's sRGB view, or follows the UNORM policy below. Edge/weight attachments are linear data formats, never sRGB.
   - When SMAA is on without tone mapping, an identity pass (clamp to 0..1) fills `ldrImage`.
-- UNORM swapchains must give the same PNG and screen result rule as today's blit path. Check the UNORM branch in `captureFrameToPng` and the GUI's `ownedGuiViews`.
-- Resources are per window, created on demand, rebuilt on resize, and released through the existing retirement rules. Barriers and layouts must be correct; use no new device-wide idle waits.
-- Tone mapping can change at any time and takes effect on the next frame. Anti-aliasing stays startup-only: the existing `already_initialized` contract is extended to the new values.
+- Define output encoding per recorded frame, not just by swapchain format:
+  - With both new options off, retain the legacy blit and UNORM capture conversion unchanged.
+  - With either new option active, an sRGB attachment performs the one linear-to-sRGB conversion. For R8G8B8A8_UNORM/B8G8R8A8_UNORM with SRGB_NONLINEAR colour space, encode sRGB once in the final shader. Do not require an unavailable sRGB swapchain view.
+  - PNG readback must not encode an already encoded opt-in UNORM frame again. Keep the actual frame's encoding until readback completes, including across setting changes. Preserve channel order and alpha.
+  - Compose GUI colours according to the attachment encoding without a second conversion of already encoded widget colours. Test with and without mutable swapchain views. The opt-in UNORM path may correct the existing fallback's dark screen appearance; default-path behaviour stays unchanged.
+  - Check format features, attachment usages and mutable-view compatibility for new resources. Unsupported opt-in formats/colour spaces return a documented `platform_error` before submission, rather than silently using the wrong transfer function.
+- Resources are per window, created on demand, rebuilt on resize and released by fenced retirement. Document ordering of intermediate writes across frames in flight; use per-slot resources where existing ordering is insufficient. Prepare `postImage` in GENERAL before vvppl writes it, then synchronize transfer writes to sampling. Synchronize each SMAA attachment write to its later read. Match acquire-semaphore waits to the actual first swapchain use on each path, including direct colour-attachment output. Use no new device-wide idle waits.
+- Clear SMAA edge and blend-weight attachments each frame as required by the reference, including pixels skipped by discard. Test a patterned frame followed by a flat frame to catch stale data.
+- Tone mapping setters run on the renderer calling thread between frame calls and affect the next recorded frame; no concurrent-setter/thread-safety promise is introduced. Test enable, exposure changes, disable and re-enable with submissions still in flight. Retire descriptors/resources only after their last-use fences. Anti-aliasing stays startup-only: extend the existing `already_initialized` contract to the new values.
 - VVE does not detect a vvppl tonemap effect in the chain. Document that combining both tone-maps twice.
 
 ### Public API (proposals to implement)
@@ -147,7 +154,7 @@ float g = 1.0 - 1.0 / (desaturation * (peak - newPeak) + 1.0);
 return mix(c, vec3(newPeak), g);
 ```
 
-Keep a CPU twin of the formula in the test, not in the engine.
+Keep a CPU twin in the test, not the engine. Pin the reference revision and add independently calculated fixed vectors at zero, compression boundaries and HDR values so a shared transcription error is detectable. Define and test handling of negative/non-finite scene inputs and finite-exposure overflow; retain the reference behaviour for ordinary non-negative inputs.
 
 ### SMAA 1x
 
@@ -161,7 +168,7 @@ Keep a CPU twin of the formula in the test, not in the engine.
 
 ### VTL integration (IQ-04 to IQ-09)
 
-- Only `examples/` and `cmake/` change. `src/` does not change, because VTL stays engine-neutral and the photos are an example asset.
+- VVE integration/photo assets belong in `examples/` and `cmake/`; documentation and owning tests may also change. Do not change VTL public API, procedural defaults or introduce a VVE dependency in `src/`. A narrow engine-neutral correction in `src/input/Raster_Decode.cpp` is permitted only if a failing PNG/JPEG fixture proves it necessary. Add the owning decoder regression and run image-enabled/disabled library tests. Preserve unrelated channel contracts; do not force all PNGs to RGBA.
 - `cmake/VTLVVENativeDraw.cmake` additionally requires `msaa4_smaa` in `src/Types.ixx` and `setToneMapping` in `src/RenderSystem.ixx`, with the same clear FATAL_ERROR text.
 - New countryside options, each with argument tests in `check_arguments.cmake`, an entry in the report and an entry in the read-only ImGui panel:
 
@@ -170,12 +177,16 @@ Keep a CPU twin of the formula in the test, not in the engine.
   | `--antialiasing` | `none`, `msaa`, `smaa`, `msaa+smaa` | `none` |
   | `--textures` | `photo`, `procedural` | `photo` |
   | `--tone-mapping` | `neutral`, `aces`, `none` | `neutral` on the tessellated path; the legacy mesh path keeps its current output |
+  | `--lighting` | `calibrated`, `legacy` | `calibrated` on the tessellated path; `legacy` on the legacy mesh path |
 
   - `--antialiasing` applies to both the tessellated and the legacy path and is set before the first frame.
   - `--textures photo` falls back to procedural, with the report keys `textures.mode=procedural` and `textures.fallback=no_image_support`, when VTL is built without `VTL_WITH_IMAGES`.
-  - `--tone-mapping aces` reproduces today's vvppl ACES at 0.85 exactly, for comparisons.
+  - Each option requires a value; bare flags, missing values and unknown values are argument errors.
+  - `--tone-mapping aces` selects the existing ACES operator at exposure 0.85 only. `--lighting legacy` selects the pre-task sun, ambient, sky/fog and weather-lighting parameters through shared lighting code, not a duplicate weather system or renderer.
+  - The full legacy appearance configuration is `--textures procedural --lighting legacy --tone-mapping aces --antialiasing none`, with the same path, seed, view and weather as its pre-task baseline. Neither procedural textures nor ACES alone restores all old inputs.
+  - Report requested and effective selections. Reject/report unsupported explicit choices on the legacy mesh path instead of accepting and ignoring them.
 - Photos are decoded and packed **at build time**, as `terrain_materials.cpp` already does. They become binary blobs copied next to the executable. Runtime does not decode JPEG or PNG.
-  - stb_image (in `Raster_Decode.cpp`) reads progressive JPEG and palette PNG with tRNS. Verify that `readPng8` returns four channels for the leaf PNGs, and fix it if not.
+  - Verify progressive JPEG and palette PNG with tRNS using known small fixtures and the imported leaf PNGs. Preserve leaf alpha as RGBA and existing channel semantics for other callers. Correct `Raster_Decode.cpp` only under the scoped exception above when a decoder defect is demonstrated.
   - Build-time inputs are listed as `DEPENDS`, so editing a photo rebuilds the blob.
 - Ground (IQ-06):
   - A second packed file `terrain-materials-photo.bin` with the same layout.
@@ -188,7 +199,7 @@ Keep a CPU twin of the formula in the test, not in the engine.
   - In photo mode, each species' leaf cards sample the assigned photo spray (colour and alpha), following the assignment in the photo README.
   - Variation comes from mirroring, rotation, a sub-rectangle choice and a small per-instance hue/value jitter, instead of the 128 procedural shapes.
   - Alpha drives coverage with the existing stable per-sample threshold (`treeCoverageThreshold`). Mips preserve coverage (alpha-to-coverage-preserving mip generation), so distant crowns do not thin out.
-  - Shadow, G-buffer and probe-capture passes and the impostor bake use the same mask, and so does the CPU raster in `TreeAssets.hpp`, which must match the live shader exactly as it does today.
+  - Shadow, G-buffer, probe and impostor passes use the same alpha/coverage definition. The CPU raster uses matching source data, UV transforms, filtering and thresholds. Require exact agreement on shared discrete mask samples and bounded coverage differences at raster boundaries, not bit-identical continuous CPU/GPU rasterization.
   - `aspen.png` is used for birch and baobab with the summer recolour factor.
   - Needles (spruce, pine) keep their higher mask resolution.
   - Respect the existing buffer budgets, or document an increase and the reason.
@@ -205,11 +216,11 @@ Use focused commits following the repositories' established workflow (one task p
 
 | ID | Repo | Work | Completion gate |
 | --- | --- | --- | --- |
-| IQ-00 | both | Audit the current renderer, options and asset pipeline; record DEC-9 / DEC-23 / DEC-24; record baseline captures and their ground-region statistics with the current defaults. | Baseline captures and numbers saved under `build/<dir>/verify/image-quality/baseline`; existing failures distinguished from new ones. |
+| IQ-00 | both | Audit the current renderer, options and asset pipeline; record DEC-9 / DEC-23 / DEC-24; freeze pre-task captures, full legacy inputs, comparison limits and controlled quality fixtures. | Immutable baseline manifest, repeat measurements, masks and captures saved under `build/<dir>/verify/image-quality/baseline` and archived outside disposable build outputs; existing failures distinguished from new ones. |
 | IQ-01 | VVE | Verify msaa4 with forward, deferred and hybrid_gi, each with and without a native-draw callback that builds its pipelines from `context.samples`, `colorAttachmentCount` and `colorFormats`. Fix what fails. | Acceptance test 1. README states the supported backends and the native-draw rule. |
 | IQ-02 | VVE | Output chain plus opt-in Khronos Neutral tone mapping. | Acceptance tests 2 and 3. |
 | IQ-03 | VVE | Opt-in SMAA 1x (`smaa`, `msaa4_smaa`). | Acceptance tests 4 and 5. |
-| IQ-04 | VTL | `--antialiasing`, the API check in `VTLVVENativeDraw.cmake`, the panel and the report. | Acceptance test 6. |
+| IQ-04 | VTL | AA/lighting options, retained legacy lighting inputs, API check, panel and report; photo/tone options follow their owning phases. | Acceptance test 6 for available options; complete option matrix in IQ-09 and legacy preservation in test 7. |
 | IQ-05 | VTL | Photo asset pipeline: build-time packing, copying next to the executable, `--textures`, the fallback without images, licences in the install tree. | Acceptance test 7. |
 | IQ-06 | VTL | Photo ground layers. | Acceptance test 8. |
 | IQ-07 | VTL | Photo leaf sprays for the procedural trees. | Acceptance test 9. |
@@ -219,60 +230,65 @@ Use focused commits following the repositories' established workflow (one task p
 
 Do IQ-01 to IQ-03 in VVE first and commit them. VTL's API check then requires that VVE revision. IQ-09 comes after IQ-06 to IQ-08, because the photos change the brightness. Phases may be split into smaller commits. If a requirement is already implemented, verify and reuse it. When a test fails, diagnose the image, data or validation output instead of relaxing the test.
 
+## Evidence and comparison policy
+
+- Before rendering changes, capture each preservation fixture at least three times with the same executable, GPU, driver and settings. Archive immutable PNGs/decoded hashes plus source revisions, dirty-tree patch/hash, dependencies/toolchain, device/driver, format/colour space, dimensions, camera, seed, animation/weather time, GUI visibility, warm-up and capture frame. Keep a copy outside disposable build trees. Freeze animation and, for hybrid GI, cache reset, convergence/warm-up and frame sequence. Never replace references with candidate output.
+- Compare decoded RGBA, with exact dimensions/alpha, not PNG container bytes. Record changed RGB count/fraction, maximum channel error, mean error and difference images. Freeze per-fixture limits from measured baseline variation before implementation. Use exact pixels for stable fixtures and narrowly bounded measured tolerances for unstable ones, with a deliberate defect that must fail. Do not transfer one fixture's tolerance to another, rely on a loose whole-image average or widen limits after candidate failures.
+- Cross-driver/platform images are separate evidence, not strict pixel baselines. If repeat variability prevents a useful bound, record the blocker and use independent analytic/structural checks; do not claim preservation from self-generated candidate references. Missing/unreadable references fail; they never create a replacement or count as a pass.
+- Deterministic generated asset blobs require byte equality and input/output hashes. Separate GPU preservation of defaults/full legacy appearance from intentional calibrated changes. Candidate default-vs-explicit-default comparisons are API checks, not substitutes for pre-task regression comparisons.
+- Use independent object/material masks, excluding GUI, sky, water and unrelated objects. Record mask construction, coverage and minimum sample count; freeze them before tuning. Missing/too-small regions fail the fixture or remain unsupported, never pass vacuously. Distinguish linear RGB/luminance from sRGB display luma/HSV. Use alpha-weighted colour and circular hue means, excluding hue at a documented low saturation threshold.
+- Freeze quality limits using known fixtures/independent references and negative controls (bypassed AA, blur, wrong transfer curve, missing alpha, wrong LOD). Cite existing tolerances by test/constant and numeric value; if none exists, define and justify one before changing rendering. Do not retune checks/references just to accept an implementation.
+
 ## Required acceptance tests
 
 Register native C++ tests with CTest using the existing support modules and conventions. Use the label `image_quality` in both repositories, and check that the filtered run actually contains tests. Do not introduce Python tests. Use deterministic scenes, cameras, seeds and times.
 
-1. **MSAA coverage (VVE):** the extended `RenderAntialiasingTests` prints edge-pixel counts for none and msaa4 for forward, deferred and hybrid_gi, each with and without a native tilted quad.
-   - msaa4 has more intermediate edge pixels than none in every case.
-   - Devices without 4x support take the existing `platform_error` path.
-   - There are zero validation errors.
-2. **Tone-mapping exactness (VVE):** a new `RenderToneMappingTests` clears empty scenes to linear background colours (0.02, 0.18, 1.0) and (4, 2, 0.5). It captures PNGs with op none and with khronos_neutral at exposure 1 and 2.
-   - Every pixel matches the CPU reference, sRGB-encoded, within 1/255.
-   - op none matches `RenderBackgroundColorTests`' expectation.
-   - `captureFrameLinear` returns the untouched HDR values in all cases.
-   - It works with forward, deferred and hybrid_gi, with and without a vvppl chain (with a vvppl chain, compare against vvppl-then-Neutral), with msaa4, after a resize and with two windows.
-   - `setToneMapping` rejects unknown operators and exposures of 0, negative values, NaN and infinity without changing the stored setting.
-3. **Default unchanged (VVE):** with default settings, `lastRecordedPassOrder()` contains no tone-map or SMAA pass. No `postImage` or `ldrImage` exists. A representative existing capture test (lighting or Sponza) is byte-identical between the default and an explicit `setToneMapping(ToneMapping{})` with `Antialiasing::none`.
-4. **SMAA effect (VVE):** render a high-contrast tilted edge and a one-pixel stripe pattern produced by a shader or alpha test, for none, smaa, msaa4 and msaa4_smaa.
-   - smaa has more intermediate edge pixels than none; msaa4_smaa has more than msaa4.
-   - Pixels farther than 4 px from any edge change by at most 1/255.
-   - A flat-colour frame produces an all-zero edge texture; read it back in a debug-only path.
-5. **SMAA robustness (VVE):** forward, deferred and hybrid_gi; with and without tone mapping and a vvppl chain; resize; two windows; minimise and resume; repeated init and shutdown.
-   - Zero validation errors, including synchronization validation in Debug.
-   - Late `setAntialiasing` returns `already_initialized`; unknown values return `invalid_argument`.
-6. **VTL anti-aliasing:** argument tests accept and reject the right spellings. Each mode reaches VVE (report key `render.antialiasing`). Captures of the default view in all four modes show increasing edge smoothness on tree silhouettes and the horizon: count intermediate pixels in fixed masks. Zero validation errors.
-7. **VTL photo pipeline:**
-   - The build produces `terrain-materials-photo.bin` and the tree photo blob.
-   - Editing a photo triggers a rebuild.
-   - The executable directory contains the blobs and the licence files (`LICENSE`, `TEXTURES-LICENSE.md`, `README.md`).
-   - `--textures procedural` captures are byte-identical to the current default captures (before this task) for the same seed, view, weather and tone mapping.
-   - A build without images reports the fallback instead of failing.
-8. **VTL ground:** in the ground region of the default capture at 1.8 m and 30 m camera heights:
-   - The mean hue of meadow areas lies within 15 degrees of the grass photo's mean hue. Compute both in the same colour space and document the method.
-   - The luminance standard deviation is at least that of the procedural mode.
-   - An autocorrelation or FFT check finds no periodic peak at the layer repeat, following the existing anti-repetition checks.
+1. **MSAA coverage (VVE):** extend `RenderAntialiasingTests` for forward, deferred and hybrid_gi, with/without a native tilted quad. Use known unlit geometry at several subpixel offsets and an independent analytic-coverage or at least 8x-per-axis supersampled reference, averaged in linear light at the same resolve stage before the output transform. Require reduced aggregate edge error versus none and preserved interior colour/feature coverage using frozen fixture limits. Edge-pixel counts are diagnostics only. Do not require MSAA to smooth fragment-shader stripes without sample-frequency coverage changes. Unsupported 4x devices must return the existing `platform_error`, preserve state and recover with none; this tests capability handling, not 4x quality. Zero validation errors.
+2. **Tone-mapping exactness (VVE):** `RenderToneMappingTests` uses empty linear backgrounds (0.02, 0.18, 1.0), (4, 2, 0.5), zero and independently calculated compression-boundary vectors, with op none/Neutral and exposures 1/2.
+   - Scene-only pixels match the independent CPU/fixed-vector reference within 1/255 after the documented transfer curve and format quantization; hide GUI. Model legacy UNORM linear 8-bit quantization before capture encoding. Separately check opt-in UNORM/sRGB paths, no mutable swapchain views, channel order, alpha and exactly one encoding.
+   - op none preserves the old background contract; `captureFrameLinear` returns untouched HDR within a documented HDR-format tolerance, independent of display processing.
+   - Cover all backends, msaa4, resize and two windows, with/without a known analytic vvppl colour-gain chain and a separate documented ACES-then-Neutral composition case. Never use GPU output as its own reference.
+   - Invalid operators/exposures (zero, negative, NaN, infinity) preserve stored state and output. Also test the documented negative/non-finite scene-input and overflow policy.
+3. **Default unchanged (VVE):** compare lighting/Sponza captures against immutable pre-task baselines under the comparison policy, including the legacy UNORM fallback. Separately compare default with explicit `ToneMapping{}`/`Antialiasing::none` as an API check. Verify no tone-map/SMAA recorded pass and no new post images/pipelines/descriptors in a fresh default renderer. Previously enabled renderers may retain only resources awaiting fenced retirement; do not confuse them with fresh-default allocations.
+4. **SMAA effect (VVE):** test tilted edges at several offsets, thin lines, corners, diagonals and shader/alpha-cutout detail in all four modes, with pinned supersampled references and fixed masks.
+   - Measure edge error and thin-feature coverage/contrast. Require SMAA to reduce aggregate error versus none on selected edge fixtures. Require msaa4_smaa to improve a preselected residual-aliasing fixture and avoid material aggregate regression versus msaa4 within a justified frozen limit. Do not assume monotonic improvement for every image, or recovery of missing subpixel detail by SMAA 1x.
+   - Freeze numeric error/detail limits in IQ-00 before implementation. Bypassed SMAA must fail an effect check; a blur negative control must fail detail/contrast or coverage checks even if intermediate-pixel counts improve.
+   - Outside an independently defined affected-edge mask, pixels change by at most 1/255. Derive the mask from fixture geometry and the pinned filter's support, never from candidate difference images.
+   - A patterned frame followed by a flat frame has an all-zero edge texture and no stale blend weights/output; read intermediates through an opt-in test path.
+5. **SMAA and tone-mapping lifecycle (VVE):** cover all backends, startup AA modes, vvppl present/absent, two windows, independent resize, minimise/resume and repeated init/shutdown.
+   - With frames in flight, run tone mapping none -> Neutral exposure 1 -> exposure 2 -> none -> re-enable, with/without startup SMAA. Verify the next recorded frame's colour/pass order/encoding and invalid setters between valid changes. Old-frame captures retain their recorded encoding. Queue ordinary frames across transitions before waiting for results; do not let a capture helper's implicit idle wait serialize every transition and hide lifetime/synchronization defects. Use fenced per-frame diagnostic readback where needed.
+   - Resize one window during transitions; the other remains valid. Check retirement after last-use fences and bounded resource counts after repeated toggles; introduce no device-wide idle waits.
+   - Require zero errors with synchronization validation demonstrably active in Debug, not merely a zero counter. Late AA changes return `already_initialized`; unknown values return `invalid_argument` under existing error precedence.
+   - Test sRGB/UNORM output and GUI composition. Where the surface supports both, use test-only format selection. Otherwise run an offscreen format oracle and report the unavailable real-swapchain case without claiming coverage.
+6. **VTL options and anti-aliasing:** argument tests cover spellings, missing values and unsupported/incompatible choices. Reports/panel show requested/effective AA, textures, lighting and tone mapping. Exercise tessellated and mesh paths as documented. Use controlled silhouette/terrain-edge views and the error/detail checks above; countryside intermediate-pixel counts are diagnostics, not monotonic pass criteria. Zero validation errors.
+7. **VTL photo pipeline and legacy appearance:**
+   - Generate `terrain-materials-photo.bin` and the tree photo blob with verified sizes/layouts and deterministic hashes. Editing a photo rebuilds affected outputs; unchanged inputs do not regenerate unrelated assets.
+   - Install blobs and unambiguously named licence/attribution files beside/in the documented executable assets. Verify an executable copied with these assets runs without the source/build tree.
+   - Compare `--textures procedural --lighting legacy --tone-mapping aces --antialiasing none` against pre-task captures with matching path, seed, camera, weather and frozen frame sequence. Preserve historical lighting/sky/fog values and texture-blob hashes, including the old tinted grass scan.
+   - Procedural textures alone change materials; ACES alone changes tone mapping. Neither restores all old inputs. New photo+ACES captures may differ from the old default.
+   - Image-disabled builds generate usable procedural blobs and report explicit fallback. Missing/malformed scans in image-enabled builds fail rather than silently fall back. If a decoder fix is necessary, known transparency/JPEG fixtures fail before it and pass afterward; unrelated channel contracts and image-enabled/disabled library tests stay intact.
+8. **VTL ground:** verify packed photo albedo against independently decoded/resampled source texels in linear RGB with fixed filtering/quantization limits and a controlled unlit display fixture. Verify no recipe tint/colour stamps, and test normal orientation/channel packing separately. At 1.8 m and 30 m, use projected meadow-only masks for detail/repetition. Do not require lit hue to match a photograph or variance to exceed procedural textures. Quantify autocorrelation/FFT peaks with explicit windows/scales/limits and repeated-tile/nonrepeating controls. Repeated tiles and flat/noise substitutes must fail repetition or source-fidelity checks as appropriate.
 9. **VTL leaves:**
-   - The CPU raster and a GPU capture of an isolated tree per species agree on coverage within the existing tolerance.
-   - Crown coverage of distant trees at 200 m and 600 m stays within 10 % of the near-field value. This checks the coverage-preserving mips.
-   - The leaf colour mean of each species lies within 20 degrees of hue of its assigned spray; birch and baobab use the recoloured aspen.
-   - Shadow and impostor captures keep the leaf holes.
-10. **VTL bark:** close-up captures of trunks per species show the scan's structure. The luminance standard deviation at 2 m is above the procedural bark's. Birch remains white (mean luminance above 0.6 in its trunk mask). Impostor-to-mesh hand-off shows no brightness jump above the existing tolerance.
-11. **VTL calibration:** default photo mode, tessellated, seed 12345, clear, 12:00 UTC, 960x540, default view, Neutral tone mapping. Ground region = the bottom quarter of the image, using sRGB PNG values, Rec. 709 luma and HSV saturation.
-    - Mean luminance lies in 0.44-0.50.
-    - Mean saturation lies in 0.33-0.42.
-    - Fewer than 2 % of the ground pixels are clipped white and fewer than 2 % are clipped black.
-    - Calibrate sun intensity, sky/ambient and exposure. Prefer exposure 2, as in EZ-Tree, with VTL's light intensities scaled to match, and record the chosen values and the reasons.
-    - Every weather preset at 07:00, 12:00 and 18:00 keeps its order (fog and overcast darker and flatter than clear; snow the only mostly white ground) and the clip limits.
-    - Retune only the thresholds that encode the old ACES 0.85 output. Name every changed threshold, with its old and new value, in the commit message.
-    - Keep `--tone-mapping aces` captures byte-identical to the pre-task default.
-12. **Side-by-side evidence:** a CTest under the `gallery` label writes paired captures to `build/<dir>/verify/image-quality/`, with a summary report of checksums and statistics:
-    - photo vs procedural;
-    - neutral vs aces;
-    - none vs msaa+smaa;
-    - for the default view, the G-key ground view, a forest edge and the overview.
+   - Per species, compare shared discrete CPU/GPU alpha samples exactly and orthographic raster coverage with explicit boundary tolerances, matching view/UV/filtering. Verify source albedo in an unlit fixture; test summer-aspen against its specified linear transform, not autumn hue.
+   - Coverage means occupied alpha samples divided by an independently projected fixed crown region at the same view direction. At 200 m and 600 m, compare actual LOD with forced LOD0 at the identical camera/projected footprint. Record numerator, denominator, projected area, sample count and LOD; exclude ground/shadows/GUI. Do not compare raw pixel counts between distances.
+   - Apply the 10% relative coverage-error limit only to resolved crowns (at least 32x32 projected pixels and nonzero reference coverage). For smaller footprints, report actual-distance diagnostics and separately test equivalent LOD/mip coverage with a higher-resolution or subpixel-sampled fixture. Empty/tiny masks never pass vacuously. Add an isolated mip-coverage fixture with fixed alpha thresholds/sample patterns and an independent base-level reference, separate from geometry changes.
+   - Shadow, G-buffer, probe and impostor tests retain known leaf holes. Missing-alpha/thinned-mip controls fail; record numeric tolerances before implementation.
+10. **VTL bark:** verify packed albedo, normal orientation/renormalization, roughness, physical UV repeat and mip filtering against independent source texels/numeric fixtures. At 2 m, compare retained scan structure against the filtered source under controlled illumination, not against procedural variance. Birch retains pre-task procedural albedo; do not demand brightness above 0.6 from shaded bark. Test mesh/impostor hand-off with matching camera, projected size, illumination and material masks, an explicit numeric brightness-error limit and a mismatched-bark negative control.
+11. **VTL calibration:** default photo mode, tessellated, seed 12345, clear, 12:00 UTC, 960x540, recorded camera, Neutral tone mapping and calibrated lighting.
+    - Validate neutral swatches/grey ramp under fixed known lighting for albedo, exposure, transfer curve and highlight compression before artistic tuning. Do not change geometry, albedo/hue or add noise to meet image statistics.
+    - Exposure 2 is a starting point, not a reason to transplant three.js light units. Record chosen exposure, sun, ambient/sky and weather settings/reasons. Preserve legacy lighting independently.
+    - Report linear luminance and sRGB display luma/HSV separately for independent meadow, shaded-meadow, sky and snow masks where present. The former EZ-Tree bottom-quarter target ranges (display luma 0.44-0.50, saturation 0.33-0.42) are advisory only, never CTest gates. Different scene distributions are not equivalent; do not force overexposure to match them.
+    - On sufficiently populated non-snow ground masks, require fewer than 2% of pixels with all RGB channels >=254 and fewer than 2% with all channels <=1 in encoded PNGs. Also report per-channel clipping. Define separate snow/highlight and deliberate night/shadow fixture limits before tuning; do not remove failing regions or force non-snow bounds onto white snow.
+    - For all weather presets at 07:00, 12:00 and 18:00, record solar elevation and inspect same-camera pairs. Controlled same-hour/region fog/overcast fixtures must reduce contrast versus clear; require brightness ordering only where the defined illumination supports it. Measure snow whiteness in a snow-material mask. Freeze applicable numeric limits and negative controls before calibration.
+    - Only identified old-ACES visual thresholds may change for the new calibrated profile; list old/new values and independent justification. Legacy-profile references/thresholds, validation and structural checks remain unchanged. Never update baselines/tolerances to hide unrelated regressions. Full legacy appearance still passes test 7.
+12. **Side-by-side evidence:** CTests labelled both `gallery` and `image_quality` write paired captures, manifests, input/source hashes, masks, difference images and decoded metrics to `build/<dir>/verify/image-quality/`:
+    - photo vs procedural with lighting/tone mapping fixed;
+    - neutral vs aces with materials/lighting fixed;
+    - none vs msaa+smaa with everything else fixed;
+    - pre-task baseline vs full legacy appearance, separate from new-default comparisons;
+    - default view, G-key ground view, forest edge and overview, plus a short fixed subpixel camera-motion sequence for shimmer/LOD transitions. SMAA 1x is spatial AA; report remaining temporal aliasing without promising temporal reconstruction.
 
-    If `../ez-tree/src/app/public/og-image.png` exists, the report also prints its ground-region statistics next to VTL's. The test must not fail when it is absent.
+    If `../ez-tree/src/app/public/og-image.png` exists, record its revision/hash and advisory bottom-quarter display statistics. Its absence is not a failure; missing required preservation/fixture references are failures. Each pair changes one factor and records the rest. Favourable statistics do not excuse visible blur, lost foliage or overexposure.
 
 Open and look at every capture yourself before committing, and describe what it shows in the commit message, as VTL's Phase 8 rules require.
 
@@ -299,17 +315,17 @@ ctest --test-dir build/release-linux --output-on-failure
 
 Discover the actual test registrations. `--quick` builds are fine while iterating, but do not replace the final full runs. Enable the Khronos validation layer, including synchronization validation, for Debug runs according to the repository instructions. A skipped graphics test or a missing display is not a successful validation.
 
-Record the GPU cost on a physical GPU at 1920x1080 for the default view: median and 95th-percentile frame time. Use these modes: none, msaa, smaa and msaa+smaa, with and without tone mapping. Provisional budgets are at most 0.3 ms for the tone-map pass and 1.0 ms for SMAA 1x at 1080p. Explain deviations. Do not invent results for Windows, macOS or absent hardware; the maintainer checks Windows.
+Record performance on a physical GPU at 1920x1080 with the fixed default view: separate GPU timestamps for tone mapping, all SMAA passes together and the full frame; report CPU frame time separately. Record device/driver, backend, present mode/VSync, timestamp support, warm-up and sample count (at least 100 warm-up and 300 measured steady-state frames, excluding loading/resize/readback). Compare all four AA modes with/without tone mapping under comparable scene/clock conditions. Report median and 95th percentile. The provisional 0.3 ms tone-map and 1.0 ms SMAA budgets apply to the named test GPU, not every device. Explain deviations. Missing hardware/timestamps leave that evidence pending; do not substitute CPU/software-renderer timings or claim completion. Do not invent Windows/macOS results; the maintainer checks Windows.
 
 ## Final deliverables and definition of done
 
 - VVE: msaa4 verified on all backends and native draws; opt-in SMAA 1x and Khronos PBR Neutral tone mapping with defaults unchanged; tests; third-party notice; README, AGENTS, `src/versions/simple/AGENTS.md`, `docs/notes/architecture.md` and `examples/FACADE_AUDIT.md` updated.
 - VTL:
-  - `--antialiasing`, `--textures` and `--tone-mapping`;
+  - `--antialiasing`, `--textures`, `--tone-mapping` and `--lighting`, with requested/effective selections reported;
   - photographs packed at build time and used by default for ground, leaves and bark;
-  - the procedural mode byte-identical to the old default;
-  - Neutral tone mapping calibrated to the EZ-Tree reference;
+  - full legacy appearance preserves pre-task captures within frozen per-fixture limits, with historical material blobs and lighting inputs unchanged;
+  - Neutral tone mapping/calibrated lighting validated on controlled fixtures, using EZ-Tree as an inspected artistic reference;
   - tests and gallery;
   - `AGENTS.md`, README and the photo README updated with the final species assignment and physical scales.
-- Successful Linux build and test logs, inspected captures, measured timings, and a final status summary listing changes, commands and results, artifacts and any remaining blockers.
+- Successful Linux build/test logs, immutable baseline archive/manifests, inspected captures/difference images and measured timings. Final status lists changes, commands, executed/passed/failed/skipped counts, artifacts and blockers, distinguishing actual backend/hardware/format coverage from unsupported/unexecuted cases. Pending required evidence means that part is incomplete even if available tests pass.
 - Do not push or publish unless the maintainer's workflow separately authorizes it.
