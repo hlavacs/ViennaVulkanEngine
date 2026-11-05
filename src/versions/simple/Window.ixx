@@ -414,6 +414,11 @@ export namespace vve::simple {
 			case SDL_EVENT_WINDOW_FOCUS_LOST:
 				if (auto *window = impl_->find(event.window.windowID)) { window->info().focused = false; }
 				break;
+			case SDL_EVENT_WINDOW_SHOWN: // Remapping can clear SDL's minimized flag without a separate restored event.
+				if (auto *window = impl_->find(event.window.windowID)) {
+					window->info().minimized = (SDL_GetWindowFlags(window->native()) & SDL_WINDOW_MINIMIZED) != 0;
+				}
+				break;
 			case SDL_EVENT_WINDOW_MINIMIZED:
 				if (auto *window = impl_->find(event.window.windowID)) { window->info().minimized = true; }
 				break;

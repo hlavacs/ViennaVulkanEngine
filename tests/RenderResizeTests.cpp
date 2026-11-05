@@ -32,16 +32,26 @@ int main() {
 	const auto initial_extent = renderer.currentWindowPixelExtent(renderer.targets.front());
 	if (renderer.forwardPipelineCreateCount() != 1U) { return 4; }
 
-	// SDL_SyncWindow waits for the platform's resize request before the next two frames.
+	// Poll resize acknowledgements and require two complete presentations before capturing new attachments.
 	SDL_ClearError();
 	const bool resized = SDL_SetWindowSize(renderer.targets.front().window, 96, 80);
 	const bool synced = resized && SDL_SyncWindow(renderer.targets.front().window);
 	std::println("[RenderResizeTests] resize_requested={} window_synced={} sdl_error={}", resized, synced, SDL_GetError());
 	if (!resized || !synced) { return 5; }
-	for (const auto frame : {1U, 2U}) {
-		if (!engine.renderFrame()) { return 6; }
-		std::println("[RenderResizeTests] resize_frame={} presented_windows={}", frame, render.lastRenderedWindowCount());
+	const auto first_serial = renderer.lastSubmitSerial();
+	const bool presented = vve::test::renderFrames(engine, 2, std::chrono::seconds{10}, 1);
+	{
+		VkSurfaceCapabilitiesKHR surface{};
+		const auto surface_result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(renderer.physicalDevice.physicalDevice,
+			renderer.targets.front().surface.surface, &surface);
+		std::println("[RenderResizeTests] resize_frame={} presented_windows={} requested={}x{} surface={}x{} surface_result={} skipped={}",
+			2, render.lastRenderedWindowCount(), renderer.targets.front().swapchain.requestedExtent.width,
+			renderer.targets.front().swapchain.requestedExtent.height, surface.currentExtent.width, surface.currentExtent.height,
+			static_cast<int>(surface_result), renderer.skippedFrameCount());
+		std::println("[RenderResizeTests] submission_before={} submission_after={} native_flags={}",
+			first_serial, renderer.lastSubmitSerial(), SDL_GetWindowFlags(renderer.targets.front().window));
 	}
+	if (!presented) { return 6; }
 	const auto extent = renderer.currentWindowPixelExtent(renderer.targets.front());
 	const bool ignored_resize = extent.width == initial_extent.width && extent.height == initial_extent.height;
 	std::println("[RenderResizeTests] path={} initial={}x{} requested=96x80 drawable={}x{} swapchain={}x{}",
@@ -52,7 +62,7 @@ int main() {
 		// Drivers may keep hidden surfaces at their original extent; still exercise replacement.
 		if (renderer.recreateSwapchain(renderer.targets.front(), extent) != VK_SUCCESS) { return 7; }
 		// Recreation clears the last presented image; establish a frame before requesting a capture.
-		const auto rendered = engine.renderFrame();
+		const auto rendered = vve::test::renderFrames(engine, 1, std::chrono::seconds{10}, 1);
 		std::println("[RenderResizeTests] recreated_presented={}", render.lastRenderedWindowCount());
 		if (!rendered || render.lastRenderedWindowCount() != 1U) { return 14; }
 	} else {

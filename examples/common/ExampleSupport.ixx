@@ -5,6 +5,9 @@ import VVEngine;
 
 export namespace vve::example {
 
+inline constexpr std::array rendererNames{std::string_view{"forward"}, std::string_view{"deferred"},
+	std::string_view{"hybrid-gi"}}; ///< Example CLI and diagnostic spellings in RendererBackend order.
+
 /// @brief Finds a root containing the requested file, checking cwd, executable ancestors, then the configured source root.
 [[nodiscard]] std::filesystem::path assetRoot(char *argv0, const std::filesystem::path &requiredAsset) {
 	const auto containsAsset = [&requiredAsset](const std::filesystem::path &candidate) {
@@ -44,18 +47,19 @@ export namespace vve::example {
 	for (int index = 1; index < argc; ++index) {
 		if (argv[index] == nullptr || std::string_view{argv[index]} != "--renderer") { continue; }
 		if (++index >= argc || argv[index] == nullptr) {
-			std::cerr << "--renderer requires forward or deferred\n"; return false;
+			std::cerr << "--renderer requires forward, deferred or hybrid-gi\n"; return false;
 		}
 		const std::string_view name{argv[index]};
-		if (name != "forward" && name != "deferred") {
-			std::cerr << "Unknown renderer: " << name << "; expected forward or deferred\n"; return false;
+		const auto selected = std::ranges::find(rendererNames, name);
+		if (selected == rendererNames.end()) {
+			std::cerr << "Unknown renderer: " << name << "; expected forward, deferred or hybrid-gi\n"; return false;
 		}
-		backend = name == "deferred" ? RendererBackend::deferred : RendererBackend::forward;
+		backend = static_cast<RendererBackend>(selected - rendererNames.begin());
 	}
 	if (const auto result = render.setRendererBackend(backend); !result) {
 		std::cerr << "Renderer selection failed: " << errorName(result.error()) << '\n'; return false;
 	}
-	std::cout << "[renderer] backend=" << (render.rendererBackend() == RendererBackend::deferred ? "deferred" : "forward") << '\n';
+	std::cout << "[renderer] backend=" << rendererNames[std::to_underlying(render.rendererBackend())] << '\n';
 	return true;
 }
 

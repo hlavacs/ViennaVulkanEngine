@@ -35,6 +35,13 @@ float hazeDepth(float3 eye, float3 dir, float d)
     return frame.fogColorDensity.w * exponentialDepth(frame.fogHeightTime.y, eye.y - frame.fogHeightTime.x, dir.y * d, d);
 }
 
+/// @brief Smooth finite-support background mist; no foreground extinction and no altitude-dependent holes.
+float distanceMistAmount(float distance)
+{
+    return frame.distanceMist.y > frame.distanceMist.x
+        ? smoothstep(frame.distanceMist.x, frame.distanceMist.y, distance) : 0.0;
+}
+
 /// @brief Optical depth of air and aerosols over d metres of a straight ray.
 float3 airDepth(float3 eye, float3 dir, float d)
 {
@@ -226,10 +233,15 @@ float3 skyColour(float3 dir, float dither)
     const float3 sky = skyRadiance(eye.y, dir, 16);
     float4 clouds = float4(0.0, 0.0, 0.0, 1.0);
     if (cloudsEnabled()) clouds = marchClouds(eye, dir, 1.0e9, skyLight(eye, dir), dither); // Air in front of the clouds lies under them.
-    const float3 colour = (sky + sunDisk(dir)) * clouds.a + clouds.rgb;
-    if (frame.fogColorDensity.w == 0.0) return colour;
-    const float haze = exp(-hazeDepth(eye, dir, 1.0e5));
-    return colour * haze + hazeLight(eye, dir) * (1.0 - haze);
+    float3 colour = (sky + sunDisk(dir)) * clouds.a + clouds.rgb;
+    if (frame.fogColorDensity.w > 0.0) {
+        const float haze = exp(-hazeDepth(eye, dir, 1.0e5));
+        colour = colour * haze + hazeLight(eye, dir) * (1.0 - haze);
+    }
+    // The ground beyond the streaming horizon and the low sky meet in the same mist.
+    if (frame.distanceMist.y > frame.distanceMist.x)
+        colour = lerp(colour, frame.fogColorDensity.rgb, 1.0 - smoothstep(0.05, 0.18, dir.y));
+    return colour;
 }
 
 /// @brief Air, clouds and haze between the eye and a surface; distant surfaces fade into the horizon sky.

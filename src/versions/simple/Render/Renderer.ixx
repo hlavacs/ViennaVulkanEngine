@@ -15,6 +15,7 @@ import VVEngine.Simple.Types;
 import VVEngine.Simple.RenderResources;
 import VVEngine.Simple.Scene;
 import VVEngine.Simple.Vulkan;
+import VVEngine.Simple.IrradianceProbes;
 
 /**
 	* @file
@@ -79,9 +80,54 @@ export namespace vve::simple {
 		std::array<VulkanImage, 3U> gbufferImages{}; ///< Linear base/roughness, world normal/metalness, emissive/AO/flags; never attribute-resolved.
 		VulkanDescriptorPool deferredPool{};    ///< Pool owning the immutable window-sized sampled-image descriptor set.
 		VkDescriptorSet deferredSet{};         ///< Borrowed set owned by deferredPool; replaced after an idle resize.
+		IrradianceProbes probes{};             ///< Independent bounded GI coverage and capture storage for this window.
+		IrradianceProbes coarseProbes{};       ///< Same storage and algorithms at the shared coarse distance scale.
+		ShadowMap probeShadow{};              ///< Cached bounded sun depth, independent of main-view cascades.
+		Mat4 probeShadowMatrix{};             ///< Texel-snapped union projection, supplied only to capture uniforms.
+		Mat4 probeShadowView{}, probeShadowProjection{}; ///< Actual cached sun view/projection for external casters; no extra GPU storage.
+		std::uint64_t probeShadowGeneration{}; ///< Caster revision rendered into the cached map.
+		std::uint64_t probeShadowRenders{};    ///< Actually recorded sun-map refreshes, for bounded-work diagnostics.
+		std::uint64_t probeShadowBytes{};      ///< Measured VMA allocation bytes for probeShadow.
+		std::uint64_t probeResets{};           ///< Recorded whole-volume resets, counted once for the pair, including initialization.
+		int probeSun{-1};                     ///< First packed lit directional light, or -1 without a sun.
+		bool probeShadowInitialized{};        ///< Shader-readable layout established by the first recorded clear.
+		bool probeShadowDirty{};              ///< Projection or caster revision differs from the cached image.
+		std::array<VulkanImage, 2> aoImages{};  ///< Full-resolution R16F raw/filtered contact visibility; serialized in graphics queue order.
+		std::uint64_t aoGpuBytes{};            ///< Actual VMA bytes for both images, separate from the fixed probe budget.
+		bool aoInitialized{};                 ///< Both images have established shader-readable layouts.
+		bool aoEnabled{};                     ///< AO passes actually recorded for the latest window frame.
+		static constexpr unsigned timingQueries{18}; ///< Capture/integration, AO, lighting, Neutral, SMAA and whole command buffer pairs.
+		VulkanOwnedHandle<vk::raii::QueryPool, VkQueryPool> gpuQueries{}; ///< Opt-in timestamps, with disjoint query ranges per fenced slot.
+		std::array<std::bitset<timingQueries>, framesInFlight> timingWritten{}; ///< Queries actually recorded; untouched entries are never read.
+		std::array<std::optional<double>, 7> gpuMs{}; ///< Completed capture, integration, AO, lighting, frame, Neutral and SMAA times.
+		std::uint64_t timingSerial{}; ///< Submission associated with these receipts; zero before a completed measurement.
+		std::optional<double> aoGpuMs{};       ///< Latest completed AO evaluation plus filter time; empty when unavailable.
 		VulkanImage depthImage{};              ///< Owned swapchain-sized depth attachment image and view.
 		VulkanImage hdrImage{};                ///< Owned swapchain-sized RGBA16F color target the scene is rendered into.
+		bool hdrSampled{};                    ///< Sampling usage is added only when an opt-in output frame needs it.
 		VulkanImage msaaImage{};               ///< Optional multisample forward colour, resolved into single-sample HDR.
+		VulkanImage postImage{};               ///< On-demand RGBA16F vvppl destination; shared in queue order with read-to-write barriers.
+		VulkanImage ldrImage{};                ///< Optional mutable sRGB SMAA input, written by Neutral or clamped identity.
+		VulkanOwnedHandle<vk::raii::ImageView, VkImageView> ldrUnormView{}; ///< Gamma-encoded edge-detection view.
+		std::array<VulkanImage, 2> smaaImages{}; ///< Linear-data edges (RG8) and blend weights (RGBA8).
+		VulkanOwnedHandle<vk::raii::DescriptorSetLayout, VkDescriptorSetLayout> smaaLayout{}; ///< Immutable SMAA texture/sampler bindings.
+		VulkanOwnedHandle<vk::raii::PipelineLayout, VkPipelineLayout> smaaPipelineLayout{}; ///< Extent and final encoding push constants.
+		std::array<VulkanGraphicsPipeline, 3> smaaPipelines{}; ///< Edges, weights and linear neighbourhood blending.
+		VulkanDescriptorPool smaaPool{};       ///< Owns this window's immutable SMAA descriptors.
+		VkDescriptorSet smaaSet{};            ///< Borrowed from smaaPool; retired with its images.
+		std::array<VulkanBuffer, 2> smaaReadback{}; ///< Test-only intermediate copies; host access requires completed submission fences.
+		VulkanOwnedHandle<vk::raii::DescriptorSetLayout, VkDescriptorSetLayout> toneMapLayout{}; ///< Optional sampled HDR binding.
+		VulkanOwnedHandle<vk::raii::PipelineLayout, VkPipelineLayout> toneMapPipelineLayout{}; ///< Optional exposure/encoding push constants.
+		VulkanGraphicsPipeline toneMapGuiPipeline{}; ///< Optional fallback pipeline decoding authored GUI colours before sRGB attachment encoding.
+		VulkanOwnedHandle<vk::raii::PipelineLayout, VkPipelineLayout> toneMapGuiLayout{}; ///< Compatible with ImGui texture sets and vertex constants.
+		VulkanGraphicsPipeline toneMapPipeline{}; ///< Optional fullscreen output triangle, matching the swapchain attachment format.
+		std::uint64_t toneMapGeneration{};     ///< Successful output bundle creations; survives retirement/resize even when Vulkan reuses raw handles.
+		VulkanDescriptorPool toneMapPool{};    ///< Optional pool owning the immutable HDR source set.
+		VkDescriptorSet toneMapSet{};          ///< Borrowed immutable source descriptor; retired with its pool and source image.
+		bool lastOutputEncoded{};             ///< Recorded frame has encoded RGB, including opt-in UNORM output.
+		bool readbackOutputEncoded{};         ///< Encoding captured with the readback, unaffected by subsequent setting changes.
+		bool lastOutputPreservesAlpha{};       ///< Opt-in frame keeps source alpha; legacy PNGs remain opaque.
+		bool readbackPreservesAlpha{};         ///< Alpha policy captured together with the readback's encoding.
 		VulkanCommandBuffers commandBuffers{}; ///< Owned primary command buffers, one for each frame in flight.
 		VulkanFrameSync frameSync{};           ///< Owned per-frame semaphores and fences for rendering.
 		VulkanUniformBuffers uniformBuffers{}; ///< Owned per-frame uniform buffers for camera and object data.
@@ -90,6 +136,8 @@ export namespace vve::simple {
 		std::array<std::uint64_t, framesInFlight> submitSerials{}; ///< Last graphics submission using each frame slot, zero before first use.
 		std::array<VulkanBuffer, framesInFlight> materialBuffers{}; ///< Mapped materials written only after the matching fence completes.
 		std::bitset<framesInFlight> materialsDirty{}; ///< Slots awaiting the current dense material table.
+		std::array<VulkanBuffer, framesInFlight> terrainBuffers{}; ///< Mapped terrain heights written only after the matching fence completes.
+		std::bitset<framesInFlight> terrainDirty{}; ///< Slots awaiting the current packed terrain heights.
 		std::array<std::vector<bool>, framesInFlight> texturesDirty{}; ///< Device-sized texture elements awaiting descriptor updates in each slot.
 		std::bitset<framesInFlight> shadowsDirty{}; ///< Slots awaiting replacement shadow views and samplers.
 		std::map<RenderMeshHandle, DynamicVertices> dynamicVertices{}; ///< Per-slot vertex storage allocated only for edited meshes.
@@ -99,6 +147,7 @@ export namespace vve::simple {
 		std::unique_ptr<vvppl::PostProcessing> postProcess{}; ///< Owned post-processing chain applied to the finished color image.
 		std::uint32_t currentFrame{0U}; ///< Index of the frame synchronization set used by the next draw.
 
+		~WindowTarget() { cleanup(); } ///< Partial and retired targets release owners before their shared allocator.
 		void cleanup();
 	};
 
@@ -109,13 +158,40 @@ export namespace vve::simple {
 			directional_shadow, ///< Directional cascade depth pass.
 			spot_shadow,        ///< Spotlight depth pass.
 			point_shadow,       ///< Point-light face depth pass.
+			probe_shadow,       ///< Cached sun projection enclosing both GI volumes and upstream casters.
 			forward_color,      ///< Scene colour rendered into HDR.
+			probe_capture,      ///< Bounded direct-only cubemap captures and SH integration after shadows.
 			gbuffer,            ///< Opaque material attributes and preserved geometry depth.
+			contact_ao,         ///< Deterministic sample-zero contact visibility followed by bilateral filtering.
 			deferred_lighting,  ///< Fullscreen lighting, independently per coverage sample.
 			forward_transparency, ///< Sky and back-to-front transparent composition over lit HDR.
 			post_process,       ///< Configured vvppl chain applied to HDR.
+			tone_mapping,       ///< Opt-in Neutral output; never recorded by a fresh default renderer.
+			output_identity,    ///< Clamped linear HDR into the sRGB SMAA input without tone mapping.
+			smaa_edges,         ///< Gamma-space luma edges, cleared before discard.
+			smaa_weights,       ///< Cleared HIGH spatial blend weights.
+			smaa_blend,         ///< Linear-light neighbourhood blending into presentation.
 			gui,                ///< Nonempty GUI draw data composited onto the swapchain.
 		};
+		/// @brief Opt-in immutable frame receipt and coherent pixels; read only after its submission fence completes.
+		struct OutputDiagnostic {
+			VulkanBuffer pixels{}; ///< Dedicated readback owner, retained until the diagnostic is consumed.
+			WindowHandle window{}; ///< Window recorded by this submission.
+			VkExtent2D extent{}; ///< Recorded extent, independent of later resizes.
+			VkFormat format{}; ///< Recorded channel order and transfer format.
+			ToneMapping settings{}; ///< Settings used to record this frame.
+			std::vector<RecordedPass> passes{}; ///< Actual recorded passes, never inferred from settings.
+			std::uint64_t serial{}; ///< Successful submission; zero until submitted.
+			bool encoded{}, preserveAlpha{}; ///< Recorded output policies, independent of later setters.
+		};
+		bool debugOutputReadback{}; ///< Explicit test opt-in; ordinary frames allocate and copy nothing.
+		bool debugSmaaReadback{}; ///< Test opt-in for edges/weights; read mapped bytes only after waitIdle or the last-use fence.
+		std::array<VulkanImage, 2> smaaLookup{}; ///< Area RG8 and packed search R8, uploaded once per renderer device.
+		std::array<VulkanOwnedHandle<vk::raii::Sampler, VkSampler>, 2> smaaSamplers{}; ///< Linear clamp and point clamp; no anisotropy.
+		std::deque<OutputDiagnostic> outputDiagnostics{}; ///< Caller consumes completed receipts; cleanup drains before allocator destruction.
+		[[nodiscard]] auto writeOutputDiagnostic(const OutputDiagnostic &frame, const std::filesystem::path &path) const -> std::expected<void, Error>;
+		[[nodiscard]] auto toneMapResourceCounts() const -> std::array<std::size_t, 2>;
+		[[nodiscard]] auto retiredOutputImages() const -> std::vector<std::pair<std::uint64_t, std::array<VkImage, 4>>>;
 
 		static constexpr std::array gbufferFormats{VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT, VK_FORMAT_R16G16B16A16_SFLOAT}; ///< HDR factors, signed normals, and HDR emission.
 		static constexpr std::uint32_t framesInFlight{WindowTarget::framesInFlight}; ///< Number of independent frame command buffers to allocate.
@@ -139,6 +215,9 @@ export namespace vve::simple {
 		VulkanShaderModule vertShaderModule{}; ///< Owned forward vertex shader module.
 		VulkanShaderModule fragShaderModule{}; ///< Owned forward fragment shader module.
 		VulkanShaderModule shadowShaderModule{}; ///< Owned depth-only shadow vertex shader module.
+		VulkanShaderModule giTransparentShader{}; ///< Shared probe lighting without SSAO for hybrid transparency.
+		VulkanShaderModule giShadowVertex{}; ///< Hybrid shadow UV interpolation for masked materials.
+		VulkanShaderModule giShadowFragment{}; ///< Shared material alpha test for hybrid shadows.
 		VulkanPipelineLayout deferredPipelineLayout{}; ///< Lighting layout combines shared scene data with sampled G-buffer data.
 		VulkanOwnedHandle<vk::raii::DescriptorSetLayout, VkDescriptorSetLayout> deferredLayout{}; ///< Set 1 sampled attributes and depth.
 		VulkanShaderModule gbufferShader{};     ///< Shared material evaluation for opaque geometry.
@@ -146,9 +225,42 @@ export namespace vve::simple {
 		VulkanShaderModule lightingShader{};    ///< Reconstructed-position lighting, single-sample or multisample.
 		VulkanGraphicsPipeline gbufferPipeline{}; ///< Opaque material attributes and geometry depth.
 		VulkanGraphicsPipeline lightingPipeline{}; ///< Fullscreen lighting into matching-sample HDR colour.
+		std::array<VulkanShaderModule, 2> aoShaders{}; ///< Horizon evaluation and edge-aware spatial filter stages.
+		std::array<VulkanGraphicsPipeline, 2> aoPipelines{}; ///< Single-sample fullscreen passes, independent of geometry coverage.
+		VulkanShaderModule aoLightingShader{}; ///< Opaque GI lighting with contact visibility; disabled AO keeps the original shader.
+		VulkanGraphicsPipeline aoLightingPipeline{}; ///< Matching-coverage lighting selected only when contact AO is enabled.
+		VulkanShaderModule probeFragment{}; ///< Shared direct-only capture fragment stage.
+		VulkanShaderModule probeIntegration{}; ///< Radiance-to-SH fragment stage.
+		VulkanGraphicsPipeline probePipeline{}; ///< Single-sample material capture.
+		VulkanGraphicsPipeline probeTerrainPipeline{}; ///< Single-sample tessellated terrain capture.
+		VulkanGraphicsPipeline probeIntegrationPipeline{}; ///< Cosine-convolved L1 SH integration.
+		GiSettings giSettings{}; ///< Validated runtime controls; other backends ignore these.
+		static constexpr std::uint64_t probeByteBudget{2U * 1024U * 1024U}; ///< Fixed storage limit per window, excluding screen AO.
+		static constexpr std::uint64_t giWindowByteBudget{32U * 1024U * 1024U}; ///< Probes plus screen AO per window.
+		static constexpr std::uint64_t giTotalByteBudget{64U * 1024U * 1024U}; ///< Active, pending and fence-retired GI storage per engine.
+		std::optional<unsigned> debugGiFailAfter{}; ///< Internal one-shot allocation checkpoint failure; absent in the facade.
+		std::uint64_t cleanupLiveAllocations{}; ///< Actual VMA count immediately before allocator destruction, retained for opt-in leak checks.
+		[[nodiscard]] auto setGiSettings(GiSettings settings) -> std::expected<void, Error>;
+		[[nodiscard]] std::uint64_t giGpuBytes() const;
+		[[nodiscard]] std::uint64_t gpuAllocationCount() const;
+		[[nodiscard]] static std::uint64_t giGpuBytes(const WindowTarget &target);
+		bool gpuTimingEnabled{}; ///< Explicit diagnostics opt-in; ordinary frames record/read no queries.
+		std::uint32_t gpuTimestampBits{}; ///< Graphics-queue timestamp width; zero means timing unavailable.
+		float gpuTimestampPeriod{}; ///< Nanoseconds per device timestamp tick.
+		void setGpuTimingReadback(bool enabled);
+		[[nodiscard]] auto renderDiagnostics(WindowHandle window) const -> std::expected<Vector<std::pair<std::string,std::string>>,Error>;
+		bool debugProbeVisibility{true}; ///< White-box diagnostic baseline only; no facade control, capture and inactivation stay enabled.
+		bool debugProbeCoarse{true}; ///< Internal test-only fallback reference; never a public GiSettings control.
 		VulkanGraphicsPipeline graphicsPipeline{}; ///< Owned forward graphics pipeline for swapchain rendering.
 		VulkanGraphicsPipeline transparentPipeline{}; ///< Owned blended forward pipeline without depth writes, for transparent objects.
 		VulkanGraphicsPipeline shadowPipeline{};   ///< Owned depth-only pipeline shared by every shadow layer.
+		VulkanShaderModule terrainVertexShader{};  ///< Terrain patch-corner pass-through vertex stage.
+		VulkanShaderModule terrainHullShader{};    ///< Distance-based edge tessellation levels per terrain patch.
+		VulkanShaderModule terrainDomainShader{};  ///< Samples the height grid for colour and G-buffer passes.
+		VulkanShaderModule terrainShadowDomainShader{}; ///< Samples the height grid into a shadow matrix.
+		VulkanGraphicsPipeline terrainPipeline{};       ///< Tessellated forward terrain; empty without the tessellationShader feature.
+		VulkanGraphicsPipeline terrainShadowPipeline{}; ///< Tessellated depth-only terrain for every shadow layer.
+		VulkanGraphicsPipeline terrainGbufferPipeline{}; ///< Tessellated opaque terrain attributes for the deferred backend.
 		VulkanMesh skyMesh{};                      ///< Inward cube that carries the physical sky behind all geometry.
 		VulkanCommandPool commandPool{};       ///< Owned resettable command pool for the graphics queue family.
 		std::map<RenderMeshHandle, VulkanMesh> meshes{}; ///< One owned GPU mesh per referenced RenderMesh handle.
@@ -175,6 +287,9 @@ export namespace vve::simple {
 		[[nodiscard]] VkResult recreateSwapchain(WindowTarget &target, VkExtent2D requestedExtent);	///< Rebuilds swapchain-sized resources after a resize.
 		[[nodiscard]] VkExtent2D currentWindowPixelExtent(const WindowTarget &target) const;
 		void cleanup();																	///< Releases Vulkan device resources in reverse creation order.
+		[[nodiscard]] auto setNativeDraw(NativeDrawCallback callback) -> std::expected<void,Error>;
+		void notifyNativeDrawChanged();
+		[[nodiscard]] auto captureFrameLinear(WindowTarget &target) -> std::expected<Vector<Vec4>,Error>;
 		/// @brief Waits before external GUI or window teardown through the renderer's counted idle boundary.
 		[[nodiscard]] VkResult waitIdle() { return waitDeviceIdle(); }
 		void createImguiDescriptorPool();
@@ -189,12 +304,13 @@ export namespace vve::simple {
 		[[nodiscard]] auto drawFrame(WindowTarget &target, VulkanReadback *readback = nullptr) -> std::expected<FrameOutcome, Error>;
 
 		// Diagnostics (RendererDebug.cpp).
-		[[nodiscard]] bool validationActive() const;							///< Reports whether the instance's Debug validation messenger is active.
+		[[nodiscard]] bool validationActive() const;							///< Reports whether the instance's validation messenger is active.
 		[[nodiscard]] std::uint64_t validationErrorCount() const;				///< Returns the instance's validation ERROR count since creation.
 		void setGpuDebugReadback(bool enabled) { gpuDebugReadback_ = enabled; }	///< Enables the per-frame GPU shadow-depth readback for verification runs.
 		void recordShadowDepthSamples();	///< Projects the world origin through every active shadow matrix.
 		void fillShadowDepthSamplesFromGpu();												///< Reads the rendered shadow-map texel of every recorded sample.
-		[[nodiscard]] auto captureFrameToPng(WindowTarget &target, const std::filesystem::path &output_path) -> std::expected<void, Error>;
+		[[nodiscard]] auto captureFrameToPng(WindowTarget &target, const std::filesystem::path &output_path,
+			std::chrono::milliseconds retryTimeout = std::chrono::seconds{120}) -> std::expected<void, Error>;
 
 		/// @brief Returns command-recorded pass tags from the most recent frame.
 		[[nodiscard]] std::span<const RecordedPass> lastRecordedPassOrder() const { return recordedPassOrder; }
@@ -206,7 +322,7 @@ export namespace vve::simple {
 		void setGuiPrepareSink(std::function<bool()> sink) { guiPrepare_ = std::move(sink); }
 
 		/// @brief Stores the optional GUI command recorder used inside the GUI pass.
-		void setGuiRecordSink(std::function<void(VkCommandBuffer)> sink) { guiRecord_ = std::move(sink); }
+		void setGuiRecordSink(std::function<void(VkCommandBuffer, VkPipeline)> sink) { guiRecord_ = std::move(sink); }
 
 		/// @brief Stores the post processing setup, which sets and configures effects.
 		void setPostProcessSetup(std::function<void(vvppl::PostProcessing &)> setup){ postProcessSetup_ = std::move(setup); }
@@ -247,6 +363,8 @@ export namespace vve::simple {
 		[[nodiscard]] std::size_t deviceWaitIdleCount() const { return deviceWaitIdleCount_; }
 		/// @brief Reports resources retained until their last graphics submission is known complete.
 		[[nodiscard]] std::size_t retiredResourceCount() const { return retiredResources_.size(); }
+		/// @brief Last submitted serial, including frames whose fences have not yet been observed.
+		[[nodiscard]] std::uint64_t lastSubmitSerial() const { return submitSerial_; }
 		/// @brief Reports the latest graphics submission proven complete by a fence or device-idle wait.
 		[[nodiscard]] std::uint64_t completedSubmitSerial() const { return completedSerial_; }
 
@@ -270,6 +388,7 @@ export namespace vve::simple {
 		/// @brief Replaces the renderer lights; geometry, materials, and textures come from the bound RenderScene.
 		void loadScene(Scene nextScene) {
 			scene = std::move(nextScene);
+			invalidateProbes(true);
 			shadowLightMeta.clear();									// Metadata is rebuilt during the next frame assembly.
 		}
 
@@ -283,13 +402,21 @@ export namespace vve::simple {
 		}
 
 		/// @brief Marks instance topology as changed without invalidating unrelated mesh buffers.
-		void markSceneResourcesDirty() { sceneResourcesDirty_ = true; }
+		void markSceneResourcesDirty(bool shadowCasters = true) { sceneResourcesDirty_ = true; invalidateProbes(false, shadowCasters); }
 
 		/// @brief Marks the dense material buffer for one rebuild.
-		void markMaterialsDirty() { sceneMaterialsDirty_ = true; }
+		void markMaterialsDirty() { sceneMaterialsDirty_ = true; invalidateProbes(); }
+
+		/// @brief Retains old lighting until bounded refresh, or requests GPU validity reset for scene replacement.
+		void invalidateProbes(bool reset = false, bool shadowCasters = false) {
+			++probeGeneration_;
+			if (shadowCasters || reset) { ++probeShadowGeneration_; }
+			if (reset) { for (auto &target : targets) { target.probes.reset = true; target.coarseProbes.reset = true; } }
+		}
 
 		/// @brief Marks one existing CPU mesh for a vertex-buffer refresh.
 		void markMeshDirty(RenderMeshHandle mesh) {
+			invalidateProbes(false, true);
 			sceneGeometryDirty_.insert(mesh);
 			sceneResourcesDirty_ = true;
 		}
@@ -303,43 +430,61 @@ export namespace vve::simple {
 		void setAtmosphere(AtmosphereSettings settings) { atmosphere_ = settings; }
 		/// @brief Reads the configured haze without touching Vulkan resources.
 		AtmosphereSettings atmosphere() const { return atmosphere_; }
+		/// @brief Stores the validated camera distance covered by directional shadow cascades.
+		void setDirectionalShadowDistance(Scalar distance) { directionalShadowDistance_ = distance; invalidateProbes(); }
+		/// @brief Reads the directional shadow reach; defaults to Scene's shadowDistance.
+		Scalar directionalShadowDistance() const { return directionalShadowDistance_; }
 		/// @brief Stores validated physical sky settings, shared by every window.
-		void setSky(SkySettings settings) { sky_ = settings; }
+		void setSky(SkySettings settings) { sky_ = settings; invalidateProbes(); }
 		/// @brief Returns the physical sky settings.
 		[[nodiscard]] SkySettings sky() const { return sky_; }
 		/// @brief Stores an explicit animation clock; zero pauses animated surfaces.
-		void setAnimationTime(AnimationTime time) { animation_time_ = time; }
+		void setAnimationTime(AnimationTime time) {
+			if (sky_.enabled && animation_time_.seconds != time.seconds) { invalidateProbes(); }
+			animation_time_ = time;
+		}
 
 		/// @brief Returns the default camera of windows without an explicit camera.
 		[[nodiscard]] const Camera &camera() const { return camera_; }
 
 		/// @brief Sets the colour every window clears to before drawing the scene.
-		void setBackgroundColor(LinearColor color) { backgroundColor_ = color; }
+		void setBackgroundColor(LinearColor color) { backgroundColor_ = color; invalidateProbes(); }
 		/// @brief Returns the colour every window clears to.
 		[[nodiscard]] LinearColor backgroundColor() const { return backgroundColor_; }
 		/// @brief Selects the material response without changing scene resources.
 		[[nodiscard]] auto setMaterialLighting(MaterialLighting mode) -> std::expected<void, Error> {
 			if (mode != MaterialLighting::classic && mode != MaterialLighting::physically_based) { return std::unexpected(Error::invalid_argument); }
 			materialLighting_ = mode;
+			invalidateProbes();
 			return {};
 		}
 		/// @brief Returns the retained material response.
 		[[nodiscard]] MaterialLighting materialLighting() const { return materialLighting_; }
 		/// @brief Borrows the skybox texture slot; the sky instance owns its lifetime.
-		void setEnvironmentTexture(RenderTextureIndex texture) { environmentTexture_ = texture; }
+		void setEnvironmentTexture(RenderTextureIndex texture) { environmentTexture_ = texture; invalidateProbes(); }
 		[[nodiscard]] auto setRendererBackend(RendererBackend backend) -> std::expected<void, Error>;
 		/// @brief Returns the independent startup selection; forward remains the default.
 		[[nodiscard]] RendererBackend rendererBackend() const { return backend_; }
-		[[nodiscard]] VkResult probeDeferred(SDL_Window *window) const;
-		[[nodiscard]] static VkResult deferredSupport(VkPhysicalDevice physical, VkSampleCountFlagBits samples);
+		[[nodiscard]] VkResult probeDeferred(SDL_Window *window, bool gi = false) const;
+		[[nodiscard]] static VkResult deferredSupport(VkPhysicalDevice physical, VkSampleCountFlagBits samples, bool gi = false);
 		[[nodiscard]] auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error>;
 		/// @brief Returns the retained forward antialiasing setting.
 		[[nodiscard]] Antialiasing antialiasing() const { return antialiasing_; }
+		[[nodiscard]] auto setToneMapping(ToneMapping settings) -> std::expected<void, Error>;
+		/// @brief Retained display transform; setters affect the next recorded frame on the renderer's calling thread.
+		[[nodiscard]] ToneMapping toneMapping() const { return toneMapping_; }
 		/// @brief Forward colour and depth sample count; post-processing, GUI and shadows remain single-sample.
-		[[nodiscard]] VkSampleCountFlagBits sampleCount() const { return antialiasing_ == Antialiasing::msaa4 ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT; }
+		[[nodiscard]] VkSampleCountFlagBits sampleCount() const { return antialiasing_ == Antialiasing::msaa4 || antialiasing_ == Antialiasing::msaa4_smaa ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT; }
+		/// @brief Spatial filtering is independent of the scene coverage sample count.
+		[[nodiscard]] bool smaaEnabled() const { return antialiasing_ == Antialiasing::smaa || antialiasing_ == Antialiasing::msaa4_smaa; }
 
 		/// @brief Distinguishes presentation, a temporary skip and a fatal rendering failure.
 		[[nodiscard]] auto renderFrame(WindowTarget &target, VulkanReadback *readback = nullptr) -> std::expected<FrameOutcome, Error> { return drawFrame(target, readback); }
+
+		/// @brief Reports whether addTerrain objects are drawn; they need the tessellationShader device feature.
+		[[nodiscard]] bool terrainSupported() const { return device.tessellationShader; }
+		/// @brief Packed heights of every terrain instance, in the order the shaders address them.
+		[[nodiscard]] const std::vector<float> &terrainHeights() const { return terrainHeights_; }
 
 		/// @brief Borrows CPU mesh data for diagnostics; invalidated by scene mutation or destruction.
 		[[nodiscard]] const RenderMesh *findRenderMesh(RenderMeshHandle handle) const {
@@ -348,6 +493,19 @@ export namespace vve::simple {
 			return found == renderMeshes_->end() ? nullptr : std::addressof(*found);
 		}
 	private:
+		[[nodiscard]] VkResult recordOutputDiagnostic(WindowTarget &target, VkCommandBuffer command, std::uint32_t imageIndex, bool attachment);
+		[[nodiscard]] static auto writeOutputPng(std::span<const std::byte> pixels, VkExtent2D extent, VkFormat format,
+			bool encoded, bool preserveAlpha, const std::filesystem::path &path) -> std::expected<void, Error>;
+		[[nodiscard]] VkResult toneMapSupport(const WindowTarget &target) const;
+		[[nodiscard]] VkResult prepareToneMap(WindowTarget &target);
+		[[nodiscard]] VkResult createToneMapGui(WindowTarget &target);
+		void retireToneMap(WindowTarget &target);
+		void recordToneMap(WindowTarget &target, VkCommandBuffer command, std::uint32_t imageIndex);
+		[[nodiscard]] VkResult prepareSmaa(WindowTarget &target);
+		[[nodiscard]] VkResult createSmaaLookup();
+		void retireSmaa(WindowTarget &target);
+		void recordSmaa(WindowTarget &target, VkCommandBuffer command, std::uint32_t imageIndex);
+		[[nodiscard]] bool usesDeferred() const;
 		[[nodiscard]] VkResult ensureTextureCapacity(); ///< Grows the bound texture range within the device ceiling when the scene needs more slots.
 		[[nodiscard]] VkResult createScenePipelines(std::uint32_t textureCount); ///< Creates the shared pipelines and matching device-sized descriptor layout.
 		[[nodiscard]] VkResult createSceneDescriptors(WindowTarget &target); ///< Initializes each frame's descriptors from the current texture range.
@@ -361,12 +519,25 @@ export namespace vve::simple {
 		[[nodiscard]] VkResult writeShadowDescriptors(WindowTarget &target, std::uint32_t frame);
 		[[nodiscard]] VkResult createDeferredPipelines(std::uint32_t textureCount); ///< Builds only the deferred-specific pass pipelines.
 		[[nodiscard]] VkResult createDeferredDescriptors(WindowTarget &target); ///< Binds this window's stable sampled attachments after creation/resize.
+		[[nodiscard]] VkResult createProbePipelines(std::uint32_t textureCount);
+		[[nodiscard]] VkResult createProbeResources(WindowTarget &target);
+		[[nodiscard]] bool failGiAllocation(); ///< Consumes the internal one-shot failure checkpoint without a Vulkan error call.
+		[[nodiscard]] VkResult createAoPipelines(std::uint32_t textureCount);
+		[[nodiscard]] VkResult createAoResources(WindowTarget &target);
+		void recordAo(WindowTarget &target, VkCommandBuffer command);
+		[[nodiscard]] VkResult prepareGpuTiming(WindowTarget &target);
+		void collectGpuTiming(WindowTarget &target, std::uint32_t frame);
+		void writeGpuTimestamp(WindowTarget &target, VkCommandBuffer command, unsigned query);
+		[[nodiscard]] VkResult prepareProbes(WindowTarget &target, std::uint32_t frame);
+		[[nodiscard]] VkResult recordProbes(WindowTarget &target, VkCommandBuffer command, const std::function<VkResult(const NativeDrawContext &)> &draw);
+		[[nodiscard]] VkResult recordNative(WindowTarget &target, VkCommandBuffer command, NativeDrawContext context);
 		[[nodiscard]] VkResult createTargetResources(WindowTarget &target); ///< Creates one target's attachments, frame resources and post-processing chain.
 		[[nodiscard]] VkResult createTargetAttachments(WindowTarget &target); ///< Creates matching colour/depth plus a single-sample HDR resolve target.
 		void nameTargetResources(WindowTarget &target); ///< Debug builds: names a window's G-buffer, depth, colour and swapchain images.
 		void nameShadowMap(const ShadowMap &map); ///< Debug builds: names a shadow array, its sampler and every layer by light and face.
 		void namePipelines(); ///< Debug builds: names the shader modules and pipelines of both backends.
 		[[nodiscard]] VkResult writeSceneDescriptors(WindowTarget &target, std::uint32_t frame); ///< Updates only a completed slot's materials and changed texture elements.
+		void refreshTerrainHeights(); ///< Repacks terrain heights when terrain instances were added or removed.
 		[[nodiscard]] VkResult uploadDynamicVertices(WindowTarget &target, std::uint32_t frame);
 		[[nodiscard]] auto reportFrameFailure(const char *stage, VkResult result) -> std::unexpected<Error>;
 		[[nodiscard]] VkResult recordCommandBuffer(WindowTarget &target, std::uint32_t frameIndex, std::uint32_t imageIndex, const Mat4 &viewProjection, bool drawGui);
@@ -392,9 +563,11 @@ export namespace vve::simple {
 		MaterialLighting materialLighting_{MaterialLighting::classic}; ///< Opt-in GGX leaves existing scene lighting unchanged.
 		RenderTextureIndex environmentTexture_{kNoTexture}; ///< Panorama slot owned by the sky instance, never a separate resource.
 		Antialiasing antialiasing_{Antialiasing::none}; ///< Startup selection retained across shutdown; immutable while Vulkan is initialized.
+		ToneMapping toneMapping_{}; ///< Opt-in transform retained across shutdown; no resources exist until an enabled frame.
 		VkDescriptorPool imguiDescriptorPool_{VK_NULL_HANDLE}; ///< Owned Dear ImGui descriptor pool reserved for backend texture descriptors.
+		NativeDrawCallback nativeDraw_{}; ///< Pass recorder and application GPU owners, retired through the existing submission queue.
 		std::function<bool()> guiPrepare_; ///< Optional GUI preparation before command recording, only for its owning window.
-		std::function<void(VkCommandBuffer)> guiRecord_; ///< Optional GUI recorder invoked only when preparation produced vertices.
+		std::function<void(VkCommandBuffer, VkPipeline)> guiRecord_; ///< Optional GUI recorder invoked only when preparation produced vertices.
 		std::function<void(vvppl::PostProcessing &)> postProcessSetup_; ///< Optional Post Processing setup
 		const Vector<RenderMesh> *renderMeshes_{nullptr}; ///< Borrowed unique CPU meshes owned by RenderSystem.
 		const Vector<RenderMaterial> *renderMaterials_{nullptr}; ///< Borrowed CPU materials owned by RenderSystem.
@@ -402,6 +575,7 @@ export namespace vve::simple {
 		RenderScene *renderScene_{nullptr}; ///< Borrowed owner; renderer selects texture capacity, restores pixels and updates decode bookkeeping.
 		std::optional<Error> textureUploadError_{}; ///< Decode error retained through Vulkan cleanup for the expected-returning caller.
 		AtmosphereSettings atmosphere_{}; ///< Height-dependent haze; density zero preserves existing output.
+		Scalar directionalShadowDistance_{shadowDistance}; ///< Camera distance covered by the cascades; the default preserves existing output.
 		SkySettings sky_{}; ///< Physical sky; disabled by default, which preserves existing output.
 		AnimationTime animation_time_{}; ///< Explicit animation seconds shared by all windows in a logical frame.
 		std::optional<Error> frameError_{}; ///< Fatal draw failure retained until cleanup; damaged synchronization must never become a successful skip.
@@ -420,12 +594,23 @@ export namespace vve::simple {
 		std::uint64_t submitSerial_{}; ///< Monotonic serial assigned to successful submissions on the shared graphics queue.
 		std::uint64_t completedSerial_{}; ///< Highest serial covered by a completed graphics fence or device-idle wait.
 		std::size_t deviceWaitIdleCount_{}; ///< Explicit device-wide waits since renderer construction.
-		std::deque<std::pair<std::uint64_t, std::variant<VulkanMesh, TextureImage, VulkanBuffer, ShadowMap>>> retiredResources_{}; ///< Old owners ordered by last possible submission.
+		std::deque<std::pair<std::uint64_t, std::variant<VulkanMesh, TextureImage, VulkanBuffer, ShadowMap, NativeDrawCallback, std::unique_ptr<WindowTarget>>>> retiredResources_{}; ///< Old owners ordered by last possible submission; partial targets bundle GI replacements.
 		bool sceneResourcesDirty_{true}; ///< CPU scene topology changed after the last GPU synchronization.
+		std::uint64_t probeGeneration_{1}; ///< Latest explicit scene/light/sky edit; captures from older generations remain usable but stale.
+		std::uint64_t probeShadowGeneration_{1}; ///< Only shadow-caster edits invalidate cached sun depth; sun/projection changes are compared directly.
 		bool sceneMaterialsDirty_{true}; ///< CPU material additions or removals require a dense-buffer rebuild.
 		bool gpuDebugReadback_{false}; ///< False during normal rendering to avoid per-frame GPU stalls.
 		std::set<RenderMeshHandle> sceneGeometryDirty_{}; ///< Existing GPU meshes requiring a vertex-buffer refresh.
+		std::vector<float> terrainHeights_{}; ///< Every terrain's heights back to back, uploaded per window slot when it changes.
+		std::unordered_map<std::uint64_t, std::uint32_t> terrainOffsets_{}; ///< RenderTerrain id to its first sample in terrainHeights_.
+		std::vector<std::uint64_t> terrainIds_{}; ///< Terrain ids in instance order at the last repack.
+		bool terrainWarned_{false}; ///< One warning when terrain exists but the device cannot tessellate.
 	};
+
+	/// @brief Both deferred selections share main-view attachments and composition; hybrid_gi also captures probes.
+	inline bool ForwardRenderer::usesDeferred() const {
+		return backend_ == RendererBackend::deferred || backend_ == RendererBackend::hybrid_gi;
+	}
 
 } // namespace vve::simple
 

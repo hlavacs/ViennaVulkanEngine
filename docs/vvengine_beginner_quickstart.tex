@@ -22,6 +22,8 @@ $env:VCPKG_ROOT = 'C:\tools\vcpkg'
 \end{lstlisting}
 The build script sets up the Visual Studio compiler. When using Windows CMake presets directly, use a Developer PowerShell for Visual Studio.
 
+To compile without running tests, use \api{.\build_windows.cmd debug --no-tests} (or \api{release}). This still builds test executables. For an already configured tree, \api{cmake --build build/debug-windows --parallel} builds without invoking CTest. The minimum CMake version is 3.31.8; Linux needs Clang 18.1.2 or newer with matching libc++ modules, not just any installed Clang executable.
+
 \subsection*{Linux}
 Install Ninja, matching Clang, clang-scan-deps, libc++ modules, the Vulkan SDK, and the README's vcpkg dependencies. The script selects a complete installed LLVM toolchain.
 \begin{lstlisting}[language={}]
@@ -43,7 +45,7 @@ A successful example opens a window and renders a scene. The \api{--frames 120} 
 
 Debug executables are in \path{bin/debug/exe}; release executables are in \path{bin/release/exe}. Windows adds \api{.exe}. Run from the repository root while learning, so paths such as \path{assets/...} start in the expected folder. A relative filename is relative to the process's working directory, not necessarily the executable's directory.
 
-The build scripts also run tests. Distinguish these stages:
+The normal build scripts also run the default tests, excluding the longer racer group with \api{-LE racer}. Run that group separately with \api{ctest --test-dir build/debug-windows -L racer --output-on-failure}. Distinguish these stages:
 \begin{enumerate}
 \item Configuration finds tools and libraries.
 \item Compilation checks C++ and builds targets.
@@ -69,7 +71,7 @@ Add \api{add_subdirectory(mygame)} once to \path{examples/CMakeLists.txt}, then 
 This layout inherits the repository's C++23 module setup. Do not include an \api{.ixx} file as a header or copy compiler-generated module files by hand. A separate parent CMake project requires additional \api{import std} setup before \api{project()}; use the README when you reach that stage.
 \source{src/CMakeLists.txt; examples/CMakeLists.txt; README.md}
 
-\lesson{A complete first program}
+\section{A complete first program}
 This program uses a built-in sample scene. It needs no model or texture file. Copy the whole listing into \path{main.cpp}.
 % doc-example: quickstart_scene
 \begin{lstlisting}
@@ -111,7 +113,7 @@ int main() {
 A fallible call returns \api{std::expected}: either a value or an error. \api{!result} asks whether it failed. Only use \api{*result} after checking that it succeeded. The first two \api{import} lines make standard-library and VVE declarations available.
 \source{src/Engine.ixx; src/World.ixx; src/RenderSystem.ixx}
 
-\lesson{A game system runs your update code}
+\section{A game system runs your update code}
 A \emph{frame} is one trip through the main loop. A \emph{system} is an ordinary C++ object with methods the engine recognizes. Replace \path{main.cpp} with this complete program.
 % doc-example: quickstart_system
 \begin{lstlisting}
@@ -226,6 +228,37 @@ Imported lights and cameras are not applied by default. Set your own camera and 
 These are separate operations. A sprite is a world object; a GUI image is drawn on the interface. The full guide supplies examples and explains opacity and box-based picking.
 \source{src/Assets.ixx; src/RenderSystem.ixx; examples/hierarchy_car/hierarchy_car.cpp}
 
+\lesson{Choose rendering, weather, and outdoor geometry}
+The default backend is forward. Supplied graphical examples also accept \api{--renderer deferred}. The name \api{simple_forward_demo} does not restrict that example to forward rendering. In your own application, select the backend through the facade after initialization and before the first rendered frame:
+\begin{lstlisting}
+// Excerpt inside int main(), with an initialized engine.
+auto world = engine.world();
+auto &render = world.get<vve::RenderSystem>();
+if (!render.setRendererBackend(vve::RendererBackend::deferred)) return 4;
+if (!render.setAntialiasing(vve::Antialiasing::msaa4)) return 5;
+\end{lstlisting}
+Check \api{engine.step()} or \api{engine.run()} too: unsupported GPU setup can fail at the first frame. Changing backend or antialiasing after rendering starts returns \api{already_initialized}. \api{RendererId} does not select this backend.
+
+\subsection*{Physical sky and animation}
+An enabled \api{SkySettings} replaces the panorama with a sky, sun disk and clouds. The first directional light supplies the sun. \api{setAtmosphere} controls distance/height fog. The explicit animation clock starts at zero: advance it for moving clouds and waves.
+\begin{lstlisting}
+// Excerpt inside int main(), using the render view above.
+if (!render.setSky({.enabled = true, .cloud_coverage = 0.4F})) return 6;
+if (!render.setAtmosphere({.density = 0.002F,
+                          .height_falloff = 0.01F})) return 7;
+if (!render.setAnimationTime(vve::AnimationTime{1.0})) return 8;
+\end{lstlisting}
+In a game system, supply accumulated elapsed seconds each update instead of the fixed demonstration value. A physical sky is not a substitute for placing the camera and lights correctly.
+
+\subsection*{Terrain and water}
+\api{addTerrain(TerrainDescriptor)} accepts a regular height grid: \api{columns * rows} finite heights, positive \api{cell_size}, optional texture and transform. Sample (x,z) lies at (x times cell size, height, z times cell size). GPU tessellation adapts detail with distance. Without the optional \api{tessellationShader} feature the engine warns and omits terrain; a successful handle does not prove it is visible. This matters on macOS too.
+
+\api{addOcean(OceanDescriptor)} creates finite animated water. \api{addWater(MeshDescriptor, OceanDescriptor)} uses your mesh and wave settings, ignoring the ocean descriptor's position, extent and grid. Neither is a fluid solver. \api{setShadowDistance} sets sun-shadow reach (default 60), independently of camera far clipping.
+
+\subsection*{Selecting a device}
+Suitable discrete GPUs rank first. PowerShell \api{$env:VVE_GPU = 'NVIDIA'} prefers case-sensitive name matches, with fallback. \api{Remove-Item Env:VVE_GPU} removes the preference. The engine logs the selected device; required capabilities still apply.
+\source{src/RenderSystem.ixx; src/Types.ixx; src/versions/simple/Vulkan/Device.ixx; tests/RenderTerrainTests.cpp}
+
 \lesson{Add an interface and optional sound}
 \subsection*{A GUI callback}
 Include \api{<imgui.h>} before the module imports. Register a callback once; it builds the interface each GUI frame:
@@ -285,6 +318,5 @@ Read the longer guide for a complete moving-cube project, ECS-to-render synchron
 \subsection*{Ring Racer's downloaded assets}
 The \api{racer} example uses models and sounds from Kenney's \href{https://github.com/KenneyNL/Starter-Kit-Racing}{Starter Kit Racing} and \href{https://github.com/KenneyNL/Starter-Kit-City-Builder}{Starter Kit City Builder}; these assets are CC0. With examples enabled, CMake downloads both kits into the ignored folders \path{assets/racer/kenney/racing} and \path{assets/racer/kenney/city}. The first configure needs internet; later configurations reuse cached downloads and restore missing copies. Texture paths, including \path{models/Textures/colormap.png}, stay intact. See \path{cmake/RacerAssets.cmake} for pinned versions and \path{examples/racer/README.md} for the files used.
 
-\textbf{Edition.} Checked against the local V3 checkout on 17 October 2026. See the companion guide for the detailed validation results.
-\source{README.md; src/Engine.ixx; src/Types.ixx; tests/CMakeLists.txt}
+\textbf{Edition.} Updated 29 October 2026 against V3 commit \api{24760ae1} (25 October). This refresh checks documentation against source; it does not claim fresh engine-test or cross-platform runtime results. See \path{Audio.md} for optional positional sound, \path{deferred-renderer.md} for backend details and \path{RenderDoc.md} for GPU capture instructions.
 \end{document}

@@ -7,10 +7,11 @@ TOOLCHAIN_FILE="cmake/toolchains/macos-arm64-homebrew-llvm.cmake"
 JOBS="${CMAKE_BUILD_PARALLEL_LEVEL:-$(sysctl -n hw.ncpu 2>/dev/null || printf '8')}"
 VARIANT="Release"
 CLEAN=0
+RUN_TESTS=1
 
 usage() {
-  printf 'Usage: %s [debug|release] [--clean]   (default: release)\n' "$0"
-  printf '       %s --clean [debug|release]\n' "$0"
+  printf 'Usage: %s [debug|release] [--clean] [--no-tests]   (default: release)\n' "$0"
+  printf '       %s --clean [debug|release] [--no-tests]\n' "$0"
 }
 
 for arg in "$@"; do
@@ -23,6 +24,9 @@ for arg in "$@"; do
       ;;
     --clean)
       CLEAN=1
+      ;;
+    --no-tests)
+      RUN_TESTS=0
       ;;
     -h|--help)
       usage
@@ -77,8 +81,10 @@ cmake -S . -B "$BUILD_DIR" -G Ninja \
   -DVVE_VCPKG_TRIPLET=arm64-osx
 
 cmake --build "$BUILD_DIR" --parallel "$JOBS"
-# The Ring Racer game runs carry the label racer and take minutes; run them with ctest -L racer.
-ctest --test-dir "$BUILD_DIR" --output-on-failure -LE racer
+if [ "$RUN_TESTS" -eq 1 ]; then
+  # The Ring Racer game runs carry the label racer and take minutes; run them with ctest -L racer.
+  ctest --test-dir "$BUILD_DIR" --output-on-failure -LE racer
+fi
 
 printf '\n%s build complete. Executables: bin/%s/exe\n' "$VARIANT" "$VARIANT_LOWER"
 printf 'Verification output: bin/%s/verify\n' "$VARIANT_LOWER"

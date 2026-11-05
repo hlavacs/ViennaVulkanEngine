@@ -91,7 +91,8 @@ if(MSVC)
 extern "C" int _Avx2WmemEnabled = 0;
 #endif
 ]])
-    target_sources(ViennaVulkanEngine INTERFACE "${VVE_MSVC_STD_MODULE_COMPAT_SOURCE}")
+    # Compile once in the static engine; a shared generated INTERFACE source couples consumer build dependencies.
+    target_sources(ViennaVulkanEngine PRIVATE "${VVE_MSVC_STD_MODULE_COMPAT_SOURCE}")
 endif()
 
 add_subdirectory("versions/${VVE_ENGINE_IMPLEMENTATION_NAMESPACE}")

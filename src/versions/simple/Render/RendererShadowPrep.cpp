@@ -76,7 +76,7 @@ namespace vve::simple {
 
 		const Scalar safeCameraNear{max(cameraNear, static_cast<Scalar>(0.001))}; ///< Positive near plane keeps logarithmic splits finite.
 		const Scalar safeCameraFar{max(cameraFar, safeCameraNear + static_cast<Scalar>(0.001))}; ///< Ordered far plane limits cascade coverage.
-		const Scalar cascadeShadowFar{max(safeCameraNear + static_cast<Scalar>(0.001), min(shadowDistance, safeCameraFar))}; ///< Directional shadows stop at the configured distance or camera far plane.
+		const Scalar cascadeShadowFar{max(safeCameraNear + static_cast<Scalar>(0.001), min(directionalShadowDistance_, safeCameraFar))}; ///< Directional shadows stop at the configured distance or camera far plane.
 		constexpr Scalar splitLambda{static_cast<Scalar>(0.5)}; ///< Practical splits blend uniform and logarithmic spacing evenly.
 		const Scalar splitRatio{cascadeShadowFar / safeCameraNear}; ///< Logarithmic split ratio shared by all four cascades.
 		for (std::size_t cascadeIndex{}; cascadeIndex < kNumShadowCascades; ++cascadeIndex) {

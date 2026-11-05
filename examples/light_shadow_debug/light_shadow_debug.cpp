@@ -167,7 +167,7 @@ int main(int argc, char **argv) {
 	}
 	output << "engine=" << vve::engineImplementationNamespaceName << '\n';
 	output << "frames=" << maxFrames << '\n';
-	output << "renderer=" << (renderSystem.rendererBackend() == vve::RendererBackend::deferred ? "deferred" : "forward") << '\n';
+	output << "renderer=" << vve::example::rendererNames[std::to_underlying(renderSystem.rendererBackend())] << '\n';
 	output << "scene_instances=" << renderSystem.sceneInstanceCount() << '\n';
 	output << "scene_meshes=" << renderSystem.sceneMeshCount() << '\n';
 	output << "directional_light=" << renderSystem.hasSceneDirectionalLight() << '\n';

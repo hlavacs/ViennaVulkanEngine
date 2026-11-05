@@ -83,10 +83,14 @@ export namespace vve::simple {
 		[[nodiscard]] auto instantiateScene(SceneHandle scene, SceneInstantiationOptions options = {})	-> std::expected<RenderSceneInstanceHandle, Error>;
 		[[nodiscard]] auto setAtmosphere(AtmosphereSettings settings) -> std::expected<void, Error>;
 		[[nodiscard]] auto atmosphere() const -> AtmosphereSettings;
+		[[nodiscard]] auto setShadowDistance(Scalar distance) -> std::expected<void, Error>;
+		[[nodiscard]] auto shadowDistance() const -> Scalar;
 		[[nodiscard]] auto setSky(SkySettings settings) -> std::expected<void, Error>;
 		[[nodiscard]] auto sky() const -> SkySettings;
 		[[nodiscard]] auto setAnimationTime(AnimationTime time) -> std::expected<void, Error>;
 		[[nodiscard]] auto addOcean(OceanDescriptor ocean = {}) -> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto addWater(MeshDescriptor surface, OceanDescriptor waves = {}) -> std::expected<RenderObjectHandle, Error>;
+		[[nodiscard]] auto addTerrain(TerrainDescriptor terrain) -> std::expected<RenderObjectHandle, Error>;
 
 		// Object state, cameras, and lights mirrored into the renderer CPU scene (RenderSystemScene.cpp).
 		[[nodiscard]] auto setObjectUnlit(RenderObjectHandle handle, bool unlit)										-> std::expected<void, Error>;
@@ -108,8 +112,12 @@ export namespace vve::simple {
 		[[nodiscard]] auto materialLighting() const -> MaterialLighting;
 		[[nodiscard]] auto setObjectSurface(RenderObjectHandle handle, SurfaceMaterial surface) -> std::expected<void, Error>;
 		[[nodiscard]] auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error>;
+		[[nodiscard]] auto setToneMapping(ToneMapping settings) -> std::expected<void, Error>;
+		[[nodiscard]] auto toneMapping() const -> ToneMapping;
 		[[nodiscard]] auto setRendererBackend(RendererBackend backend) -> std::expected<void, Error>;
 		[[nodiscard]] auto rendererBackend() const -> RendererBackend;
+		[[nodiscard]] auto setGiSettings(GiSettings settings) -> std::expected<void, Error>;
+		[[nodiscard]] auto giSettings() const -> GiSettings;
 		[[nodiscard]] auto antialiasing() const -> Antialiasing;
 		[[nodiscard]] auto setCamera(WindowHandle window, Camera camera) -> std::expected<void, Error>;
 		[[nodiscard]] auto clearCamera(WindowHandle window) -> std::expected<void, Error>;
@@ -180,10 +188,17 @@ export namespace vve::simple {
 		[[nodiscard]] auto gpuMeshUploadCount() const -> std::size_t;
 		[[nodiscard]] auto gpuMaterialUploadCount() const -> std::size_t;
 		[[nodiscard]] auto renderMaterials() const -> const Vector<RenderMaterial> &;
+		[[nodiscard]] auto setNativeDraw(NativeDrawCallback callback) -> std::expected<void,Error>;
+		auto notifyNativeDrawChanged() -> void;
+		[[nodiscard]] auto captureFrameLinear(WindowHandle window) -> std::expected<Vector<Vec4>,Error>;
+		[[nodiscard]] auto validationErrorCount() const -> std::uint64_t;
+		void setGpuTimingReadback(bool enabled);
+		[[nodiscard]] auto renderDiagnostics(WindowHandle window) const -> std::expected<Vector<std::pair<std::string,std::string>>,Error>;
+		[[nodiscard]] auto validationActive() const -> bool;
 
 		auto waitIdle() -> void;
 		auto setGuiPrepareSink(std::function<bool()> sink)														-> void;
-		auto setGuiRecordSink(std::function<void(VkCommandBuffer)> sink)												-> void;
+		auto setGuiRecordSink(std::function<void(VkCommandBuffer, VkPipeline)> sink)												-> void;
 		auto setPostProcessSetup(std::function<void(vvppl::PostProcessing &)> setup)											-> void;
 		[[nodiscard]] static bool supportsRenderer(const RendererId &id);
 		[[nodiscard]] auto initialize(WindowSystem &windows)												-> std::expected<void, Error>;
@@ -288,6 +303,7 @@ export namespace vve::simple {
 		double render_fps_{};															///< Last measured render-frame throughput.
 		std::size_t last_window_count_{0};											///< Number of windows presented in the last frame call.
 		bool initialized_{false};														///< True after the concrete renderer is initialized.
+		std::uint64_t terrain_ids_{0};												///< Last RenderTerrain id handed out by addTerrain.
 	};
 
 } // namespace vve::simple
@@ -323,13 +339,18 @@ namespace vve::simple {
 
 	/// @brief Selects the forward sample count before Vulkan target creation.
 	inline auto RenderSystem::setAntialiasing(Antialiasing mode) -> std::expected<void, Error> { return renderer_.setAntialiasing(mode); }
+	/// @brief Forwards runtime display settings to the renderer's transactional validation.
+	inline auto RenderSystem::setToneMapping(ToneMapping settings) -> std::expected<void, Error> { return renderer_.setToneMapping(settings); }
+	/// @brief Returns the renderer's retained display settings.
+	inline auto RenderSystem::toneMapping() const -> ToneMapping { return renderer_.toneMapping(); }
 	/// @brief Selects shared scene passes before GPU startup; no process-wide state is used.
 	inline auto RenderSystem::setRendererBackend(RendererBackend backend) -> std::expected<void, Error> {
 		// After Engine::init the selected surface is available, so report hardware rejection at the API boundary.
-		if (backend == RendererBackend::deferred && backend != renderer_.rendererBackend() && !renderer_.initialized() && window_system_ != nullptr) {
+		if ((backend == RendererBackend::deferred || backend == RendererBackend::hybrid_gi) &&
+			backend != renderer_.rendererBackend() && !renderer_.initialized() && window_system_ != nullptr) {
 			for (const auto &entry : window_system_->windows()) {
 				if (entry.get().rendererId().value == "none") { continue; }
-				if (const auto result = renderer_.probeDeferred(entry.get().native()); result != VK_SUCCESS) {
+				if (const auto result = renderer_.probeDeferred(entry.get().native(), backend == RendererBackend::hybrid_gi); result != VK_SUCCESS) {
 					std::cerr << "[vve::simple] deferred selection unsupported: VkResult=" << result << '\n';
 					return std::unexpected(Error::platform_error);
 				}
@@ -340,6 +361,14 @@ namespace vve::simple {
 	}
 	/// @brief Returns this render system's retained selection.
 	inline auto RenderSystem::rendererBackend() const -> RendererBackend { return renderer_.rendererBackend(); }
+	/// @brief Rejects malformed controls before changing any retained state or GPU data.
+	inline auto RenderSystem::setGiSettings(GiSettings settings) -> std::expected<void, Error> {
+		if (!std::isfinite(settings.indirect_strength) || settings.indirect_strength < zero() ||
+			(settings.quality != GiQuality::low && settings.quality != GiQuality::medium)) { return std::unexpected(Error::invalid_argument); }
+		return renderer_.setGiSettings(settings);
+	}
+	/// @brief Returns controls without accessing the device.
+	inline auto RenderSystem::giSettings() const -> GiSettings { return renderer_.giSettings; }
 	/// @brief Returns the retained antialiasing setting.
 	inline auto RenderSystem::antialiasing() const -> Antialiasing { return renderer_.antialiasing(); }
 
@@ -371,7 +400,7 @@ namespace vve::simple {
 	}
 
 	/// @brief Forwards the GUI recorder into the active forward renderer.
-	inline auto RenderSystem::setGuiRecordSink(std::function<void(VkCommandBuffer)> sink)			-> void{
+	inline auto RenderSystem::setGuiRecordSink(std::function<void(VkCommandBuffer, VkPipeline)> sink)			-> void{
 		renderer_.setGuiRecordSink(std::move(sink));
 	}
 
@@ -403,6 +432,7 @@ namespace vve::simple {
 			const VkResult result = renderer_.initialized()
 				? renderer_.addTarget(window.native(), window.info().handle) : renderer_.init(window.native(), window.info().handle);
 			if (result != VK_SUCCESS) {
+				std::cerr << "[vve::simple] renderer init failed: VkResult=" << static_cast<std::int32_t>(result) << '\n';
 				const auto error = renderer_.textureUploadError().value_or(Error::platform_error);
 				renderer_.shutdown();
 				return std::unexpected(error);
@@ -498,6 +528,23 @@ namespace vve::simple {
 	inline auto RenderSystem::shadowDepthSamples() const -> std::span<const RenderShadowDepthSample> { return renderer_.shadowDepthSamples; }
 	/// @brief Enables the per-frame GPU shadow-depth readback for verification runs.
 	inline auto RenderSystem::setGpuDebugReadback(bool enabled) -> void { renderer_.setGpuDebugReadback(enabled); }
+	/// @brief Explicit diagnostic readback of one rendered window; ordinary frames perform no CPU pixel copies.
+	inline auto RenderSystem::captureFrameLinear(WindowHandle window) -> std::expected<Vector<Vec4>,Error> {
+		if (!initialized_) { return std::unexpected(Error::not_initialized); }
+		const auto target = std::ranges::find(renderer_.targets, window, &WindowTarget::handle);
+		if (target == renderer_.targets.end()) { return std::unexpected(Error::invalid_handle); }
+		return renderer_.captureFrameLinear(*target);
+	}
+	/// @brief Actual validation callbacks, including errors after opt-in readback.
+	inline auto RenderSystem::validationErrorCount() const -> std::uint64_t { return renderer_.validationErrorCount(); }
+	/// @brief Enables bounded timestamp collection through the renderer's existing frame-slot fences.
+	inline void RenderSystem::setGpuTimingReadback(bool enabled) { renderer_.setGpuTimingReadback(enabled); }
+	/// @brief Returns opt-in measurements without waiting for an in-flight frame.
+	inline auto RenderSystem::renderDiagnostics(WindowHandle window) const -> std::expected<Vector<std::pair<std::string,std::string>>,Error> {
+		return renderer_.renderDiagnostics(window);
+	}
+	/// @brief Active Debug messenger, allowing integration tests to require validation explicitly.
+	inline auto RenderSystem::validationActive() const -> bool { return renderer_.validationActive(); }
 	/// @brief Copies the last rendered swapchain image and writes it as a PNG.
 	inline auto RenderSystem::captureFrameToPng(const std::filesystem::path &output_path) -> std::expected<void, Error> {
 		if (!initialized_) { return std::unexpected(Error::not_initialized); }

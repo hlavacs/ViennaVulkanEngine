@@ -266,7 +266,7 @@ int main(int argc, char **argv) {
 		ImGui::Begin("Game");
 		ImGui::Text("Frame: %d", frame);
 		ImGui::Text("Render FPS: %.1f", renderFps);
-		ImGui::Text("Renderer: %s", render.rendererBackend() == vve::RendererBackend::deferred ? "deferred" : "forward");
+		ImGui::Text("Renderer: %s", vve::example::rendererNames[std::to_underlying(render.rendererBackend())].data());
 		ImGui::Text("Directional lights: %zu", directionalLightsEnabled.size());
 		for (std::size_t index{}; index < directionalLightsEnabled.size(); ++index) {
 			const auto label = std::format("Directional {}", index + 1U);

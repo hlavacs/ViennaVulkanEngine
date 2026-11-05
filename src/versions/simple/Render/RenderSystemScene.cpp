@@ -7,19 +7,37 @@ import VVEngine.Simple.Renderer;
 /// @brief RenderSystem definitions that update object state, cameras, and renderer-owned lights.
 
 namespace vve::simple {
+	/// @brief Forwards ownership of the application pass recorder to the renderer.
+	auto RenderSystem::setNativeDraw(NativeDrawCallback callback) -> std::expected<void,Error> { return renderer_.setNativeDraw(std::move(callback)); }
+	/// @brief Invalidates procedural radiance and cached caster depth without uploading engine resources.
+	auto RenderSystem::notifyNativeDrawChanged() -> void { renderer_.notifyNativeDrawChanged(); }
 
-	/// @brief Validates haze before committing it; zero density disables the effect without rebuilding resources.
+	/// @brief Validates haze and optional distance mist before committing; no resources are rebuilt.
 	auto RenderSystem::setAtmosphere(AtmosphereSettings settings) -> std::expected<void, Error> {
 		const auto c = settings.color.value;
 		if (!std::isfinite(c.x) || !std::isfinite(c.y) || !std::isfinite(c.z) || c.x < 0 || c.y < 0 || c.z < 0 ||
 			!std::isfinite(settings.density) || settings.density < 0 || !std::isfinite(settings.height_falloff) ||
-			settings.height_falloff < 0 || !std::isfinite(settings.base_height)) { return std::unexpected(Error::invalid_argument); }
+			settings.height_falloff < 0 || !std::isfinite(settings.base_height) ||
+			!std::isfinite(settings.distance_mist_start) || !std::isfinite(settings.distance_mist_end) ||
+			settings.distance_mist_start < 0 || settings.distance_mist_end < 0 ||
+			((settings.distance_mist_start != 0 || settings.distance_mist_end != 0) &&
+			 settings.distance_mist_end <= settings.distance_mist_start)) { return std::unexpected(Error::invalid_argument); }
 		renderer_.setAtmosphere(settings);
 		return {};
 	}
 
 	/// @brief Reads the configured haze; defaults preserve the original renderer's pixels.
 	auto RenderSystem::atmosphere() const -> AtmosphereSettings { return renderer_.atmosphere(); }
+
+	/// @brief Validates the directional shadow reach before committing it; the default keeps the original 60 units.
+	auto RenderSystem::setShadowDistance(Scalar distance) -> std::expected<void, Error> {
+		if (!std::isfinite(distance) || distance <= 0) { return std::unexpected(Error::invalid_argument); }
+		renderer_.setDirectionalShadowDistance(distance);
+		return {};
+	}
+
+	/// @brief Reads the directional shadow reach.
+	auto RenderSystem::shadowDistance() const -> Scalar { return renderer_.directionalShadowDistance(); }
 
 	/// @brief Validates the physical sky before committing it; it is renderer state, so clearScene keeps it.
 	auto RenderSystem::setSky(SkySettings settings) -> std::expected<void, Error> {
@@ -49,6 +67,7 @@ namespace vve::simple {
 		auto *scene_instance = scene_.findInstance(*instance);
 		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
 		scene_instance->unlit = unlit;
+		renderer_.invalidateProbes();
 		return {};
 	}
 
@@ -59,6 +78,7 @@ namespace vve::simple {
 		auto *scene_instance = scene_.findInstance(*instance);
 		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
 		scene_instance->casts_shadow = casts_shadow;
+		renderer_.invalidateProbes(false, true);
 		return {};
 	}
 
@@ -69,6 +89,7 @@ namespace vve::simple {
 		auto *scene_instance = scene_.findInstance(*instance);
 		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
 		scene_instance->visible = visible;
+		renderer_.invalidateProbes(false, true);
 		return {};
 	}
 
@@ -88,6 +109,7 @@ namespace vve::simple {
 		auto *scene_instance = instance ? scene_.findInstance(*instance) : nullptr;
 		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
 		scene_instance->opacity = opacity;
+		renderer_.invalidateProbes(false, true);
 		return {};
 	}
 
@@ -107,6 +129,7 @@ namespace vve::simple {
 		if (scene_instance == nullptr) { return std::unexpected(Error::missing_object); }
 		scene_instance->local_transform = transform;
 		scene_instance->world_transform = detail::modelMatrix(transform);
+		renderer_.invalidateProbes(false, true);
 		return {};
 	}
 
@@ -241,6 +264,7 @@ namespace vve::simple {
 		renderer_.scene.directionalLights.clear();
 		renderer_.scene.pointLights.clear();
 		renderer_.scene.spotLights.clear();
+		renderer_.invalidateProbes();
 	}
 
 	/// @brief Replaces the active directional-light list with one renderer light.
@@ -253,6 +277,7 @@ namespace vve::simple {
 			.ambient = ambient.value.x};
 		renderer_.scene.directionalLights.clear();
 		renderer_.scene.directionalLights.push_back(light);
+		renderer_.invalidateProbes();
 	}
 
 	/// @brief Appends one directional light to the capped renderer light list.
@@ -265,6 +290,7 @@ namespace vve::simple {
 			.ambient = ambient.value.x};
 		if (renderer_.scene.directionalLights.size() < kMaxDirectionalLights) {
 			renderer_.scene.directionalLights.push_back(light);
+			renderer_.invalidateProbes();
 		}
 	}
 
@@ -284,6 +310,7 @@ namespace vve::simple {
 		renderer_.scene.pointLights.clear();
 		renderer_.scene.pointLights.push_back(light);
 		renderer_.scene.ambient = light.ambient;
+		renderer_.invalidateProbes();
 	}
 
 	/// @brief Appends one point light to the capped renderer light list using default ambient.
@@ -301,6 +328,7 @@ namespace vve::simple {
 									  .ambient = ambient.value.x};
 		if (renderer_.scene.pointLights.size() < kMaxShadowedPointLights) {
 			renderer_.scene.pointLights.push_back(light);
+			renderer_.invalidateProbes();
 			if (renderer_.scene.pointLights.size() == 1U) { renderer_.scene.ambient = light.ambient; }
 		}
 	}
@@ -324,6 +352,7 @@ namespace vve::simple {
 									 .ambient = ambient.value.x};
 		renderer_.scene.spotLights.clear();
 		renderer_.scene.spotLights.push_back(light);
+		renderer_.invalidateProbes();
 	}
 
 	/// @brief Appends one spot light to the capped renderer light list using default ambient.
@@ -345,6 +374,7 @@ namespace vve::simple {
 									 .ambient = ambient.value.x};
 		if (renderer_.scene.spotLights.size() < kMaxShadowedSpotLights) {
 			renderer_.scene.spotLights.push_back(light);
+			renderer_.invalidateProbes();
 		}
 	}
 
@@ -385,6 +415,7 @@ namespace vve::simple {
 		std::erase_if(renderer_.scene.pointLights, owned);
 		std::erase_if(renderer_.scene.spotLights, owned);
 		scene_.eraseImportedBy(owner);
+		renderer_.invalidateProbes();
 	}
 
 } // namespace vve::simple

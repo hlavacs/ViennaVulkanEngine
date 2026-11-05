@@ -36,8 +36,8 @@ export namespace vve::simple {
 		auto initVulkan(ImGui_ImplVulkan_InitInfo *info)					-> std::expected<void, Error>;
 		auto shutdownVulkan()																-> void;
 		auto buildFonts()																		-> std::expected<void, Error>;
-		[[nodiscard]] auto prepareFrame()									-> bool;
-		auto record(VkCommandBuffer cmd)										-> void;
+		[[nodiscard]] auto prepareFrame(bool encodedOutput = false) -> bool;
+		auto record(VkCommandBuffer cmd, VkPipeline pipeline = VK_NULL_HANDLE) -> void;
 		auto shutdownContext()																	-> void;
 		[[nodiscard]] auto hasFrameCallback() const									-> bool;
 		[[nodiscard]] bool ready() const;
@@ -61,6 +61,8 @@ export namespace vve::simple {
 		bool sdlBackendReady_{false};										///< SDL backend lifecycle state.
 		bool vulkanBackendReady_{false};								///< Vulkan backend lifecycle state.
 		bool fontsReady_{false};												///< Vulkan font atlas lifecycle state.
+		bool srgbTarget_{false}; ///< GUI fallback attachment encodes RGB without a mutable UNORM view.
+		bool linearTheme_{false}; ///< Theme currently carries the historical fallback's linear RGB values.
 		bool frameCallbackFailed_{false};									///< Callback error pending the next engine step.
 	};
 
@@ -84,6 +86,7 @@ export namespace vve::simple {
 			context_ = ImGui::CreateContext();
 			ImGui::GetIO().IniFilename = nullptr; // Keep GUI layouts out of the working directory.
 			if (colorFormat == VK_FORMAT_B8G8R8A8_SRGB || colorFormat == VK_FORMAT_R8G8B8A8_SRGB) {
+				srgbTarget_ = linearTheme_ = true;
 				// Only the theme can be corrected here; user draw colours remain authored sRGB values.
 				const auto linear = [](float value) {
 					return value <= 0.04045F ? value / 12.92F : std::pow((value + 0.055F) / 1.055F, 2.4F);
@@ -161,8 +164,17 @@ export namespace vve::simple {
 	}
 
 	/// @brief Builds GUI draw data, recovering callback exceptions; reports whether any vertices need recording.
-	inline auto GuiSystem::prepareFrame() -> bool {
+	inline auto GuiSystem::prepareFrame(bool encodedOutput) -> bool {
 		if (!ready()) { return false; }
+		// Opt-in fallback shaders decode authored widget/texture colours; restore the theme's authored RGB too.
+		if (srgbTarget_ && linearTheme_ == encodedOutput) {
+			const auto convert = [encodedOutput](float value) {
+				return encodedOutput ? (value <= .0031308F ? value * 12.92F : 1.055F * std::pow(value, 1.F/2.4F) - .055F)
+					: (value <= .04045F ? value / 12.92F : std::pow((value + .055F) / 1.055F, 2.4F));
+			};
+			for (auto &color : ImGui::GetStyle().Colors) { color.x = convert(color.x); color.y = convert(color.y); color.z = convert(color.z); }
+			linearTheme_ = !encodedOutput;
+		}
 		registerImages();
 		ImGui_ImplVulkan_NewFrame();
 		ImGui_ImplSDL3_NewFrame();
@@ -187,10 +199,10 @@ export namespace vve::simple {
 	}
 
 	/// @brief Records prepared draw data inside the GUI rendering pass without invoking the callback again.
-	inline auto GuiSystem::record(VkCommandBuffer cmd) -> void {
+	inline auto GuiSystem::record(VkCommandBuffer cmd, VkPipeline pipeline) -> void {
 		if (!ready()) { return; }
 		auto *data = ImGui::GetDrawData();
-		if (data && data->TotalVtxCount > 0) { ImGui_ImplVulkan_RenderDrawData(data, cmd); }
+		if (data && data->TotalVtxCount > 0) { ImGui_ImplVulkan_RenderDrawData(data, cmd, pipeline); }
 	}
 
 	/// @brief Destroys the owned Dear ImGui context when it exists.
@@ -198,6 +210,7 @@ export namespace vve::simple {
 		if (context_) {
 			ImGui::DestroyContext(context_);
 			context_ = nullptr;
+			srgbTarget_ = linearTheme_ = false;
 		}
 	}
 

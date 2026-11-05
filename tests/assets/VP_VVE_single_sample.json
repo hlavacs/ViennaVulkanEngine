@@ -1,0 +1,24 @@
+{
+    "$schema": "https://schema.khronos.org/vulkan/profiles-0.8.0-204.json#",
+    "capabilities": {
+        "single_sample_framebuffer": {
+            "properties": {
+                "VkPhysicalDeviceProperties": {
+                    "limits": {
+                        "framebufferColorSampleCounts": [ "VK_SAMPLE_COUNT_1_BIT" ],
+                        "framebufferDepthSampleCounts": [ "VK_SAMPLE_COUNT_1_BIT" ]
+                    }
+                }
+            }
+        }
+    },
+    "profiles": {
+        "VP_VVE_single_sample": {
+            "version": 1,
+            "api-version": "1.3.204",
+            "label": "VVE 4x MSAA capability rejection",
+            "description": "Restrict framebuffer colour/depth to one sample, retaining unspecified device features and format capabilities.",
+            "capabilities": [ "single_sample_framebuffer" ]
+        }
+    }
+}

@@ -1,0 +1,114 @@
+{
+    "$schema": "https://schema.khronos.org/vulkan/profiles-0.8.0-204.json#",
+    "capabilities": {
+        "srgb_without_blit_destination": {
+            "formats": {
+                "VK_FORMAT_A2B10G10R10_UNORM_PACK32": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT","VK_FORMAT_FEATURE_BLIT_SRC_BIT","VK_FORMAT_FEATURE_BLIT_DST_BIT","VK_FORMAT_FEATURE_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_DST_BIT"],
+                        "bufferFeatures": []
+                    }
+                },
+                "VK_FORMAT_B8G8R8A8_UNORM": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT","VK_FORMAT_FEATURE_BLIT_SRC_BIT","VK_FORMAT_FEATURE_BLIT_DST_BIT","VK_FORMAT_FEATURE_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_DST_BIT"],
+                        "bufferFeatures": []
+                    }
+                },
+                "VK_FORMAT_R8_UNORM": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT","VK_FORMAT_FEATURE_BLIT_SRC_BIT","VK_FORMAT_FEATURE_BLIT_DST_BIT","VK_FORMAT_FEATURE_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_DST_BIT"],
+                        "bufferFeatures": []
+                    }
+                },
+                "VK_FORMAT_R8G8_UNORM": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT","VK_FORMAT_FEATURE_BLIT_SRC_BIT","VK_FORMAT_FEATURE_BLIT_DST_BIT","VK_FORMAT_FEATURE_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_DST_BIT"],
+                        "bufferFeatures": []
+                    }
+                },
+                "VK_FORMAT_R8G8B8A8_UNORM": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT","VK_FORMAT_FEATURE_BLIT_SRC_BIT","VK_FORMAT_FEATURE_BLIT_DST_BIT","VK_FORMAT_FEATURE_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_DST_BIT"],
+                        "bufferFeatures": ["VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT"]
+                    }
+                },
+                "VK_FORMAT_R16_SFLOAT": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT","VK_FORMAT_FEATURE_BLIT_SRC_BIT","VK_FORMAT_FEATURE_BLIT_DST_BIT","VK_FORMAT_FEATURE_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_DST_BIT"],
+                        "bufferFeatures": []
+                    }
+                },
+                "VK_FORMAT_R16G16B16A16_SFLOAT": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT","VK_FORMAT_FEATURE_BLIT_SRC_BIT","VK_FORMAT_FEATURE_BLIT_DST_BIT","VK_FORMAT_FEATURE_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_DST_BIT","VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT"],
+                        "bufferFeatures": []
+                    }
+                },
+                "VK_FORMAT_B8G8R8A8_SRGB": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT","VK_FORMAT_FEATURE_BLIT_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_DST_BIT"],
+                        "bufferFeatures": []
+                    }
+                },
+                "VK_FORMAT_R8G8B8A8_SRGB": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT","VK_FORMAT_FEATURE_BLIT_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_DST_BIT"],
+                        "bufferFeatures": []
+                    }
+                },
+                "VK_FORMAT_D32_SFLOAT": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT","VK_FORMAT_FEATURE_BLIT_SRC_BIT","VK_FORMAT_FEATURE_BLIT_DST_BIT","VK_FORMAT_FEATURE_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_DST_BIT"],
+                        "bufferFeatures": []
+                    },
+                    "VkFormatProperties3": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT","VK_FORMAT_FEATURE_2_BLIT_SRC_BIT","VK_FORMAT_FEATURE_2_BLIT_DST_BIT","VK_FORMAT_FEATURE_2_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_2_TRANSFER_DST_BIT","VK_FORMAT_FEATURE_2_SAMPLED_IMAGE_DEPTH_COMPARISON_BIT"],
+                        "bufferFeatures": []
+                    }
+                },
+                "VK_FORMAT_R32G32_SFLOAT": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": [],
+                        "bufferFeatures": ["VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT"]
+                    }
+                },
+                "VK_FORMAT_R32G32B32_SFLOAT": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": [],
+                        "bufferFeatures": ["VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT"]
+                    }
+                },
+                "VK_FORMAT_R32G32B32A32_SFLOAT": {
+                    "VkFormatProperties": {
+                        "linearTilingFeatures": [],
+                        "optimalTilingFeatures": ["VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT","VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT","VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT","VK_FORMAT_FEATURE_BLIT_SRC_BIT","VK_FORMAT_FEATURE_BLIT_DST_BIT","VK_FORMAT_FEATURE_TRANSFER_SRC_BIT","VK_FORMAT_FEATURE_TRANSFER_DST_BIT"],
+                        "bufferFeatures": ["VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT"]
+                    }
+                }
+            }
+        }
+    },
+    "profiles": {
+        "VP_VVE_unorm_output": {
+            "version": 1,
+            "api-version": "1.3.204",
+            "label": "VVE UNORM swapchain output fallback",
+            "description": "Explicit renderer-required image and vertex formats with sampling, filtering, transfer and attachment support. Both BGRA and RGBA sRGB omit only blit-destination support, forcing a real UNORM swapchain without disabling sRGB texture/SMAA usage. Other device capabilities remain unchanged.",
+            "capabilities": ["srgb_without_blit_destination"]
+        }
+    }
+}

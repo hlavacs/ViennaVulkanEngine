@@ -1,5 +1,9 @@
 # Inspecting frames with RenderDoc
 
+Pass guide updated 31 October 2026 for the implemented hybrid GI path. Earlier
+RenderDoc screenshots retain their original provenance; GI-09 validates PNG/HDR
+captures and does not claim a new RenderDoc frame capture.
+
 [RenderDoc](https://renderdoc.org) captures one frame of a running program and
 shows every pass, draw call and image of it. In a **Debug** build the simple
 engine names its Vulkan objects and labels its passes through
@@ -8,7 +12,7 @@ Release builds do none of this and pay nothing for it.
 
 ## Capturing a frame
 
-1. Build Debug: `build_windows.cmd debug` (or `./build_linux.sh debug`).
+1. Build Debug: `build_windows.cmd debug --no-tests` to compile without running tests, or `./build_linux.sh debug` on Linux. In a configured tree, `cmake --build <build> --parallel` also builds without invoking CTest.
 2. In RenderDoc choose *File → Launch Application*, set the executable, for
    example `bin\debug\exe\light_shadow_debug.exe` with the arguments
    `--renderer deferred`, and press *Launch*.
@@ -17,8 +21,8 @@ Release builds do none of this and pay nothing for it.
    of a bounded run such as `--frames 300`.
 4. Open the capture in RenderDoc's capture list.
 
-Every example accepts `--renderer forward` or `--renderer deferred`; only the
-deferred renderer has a G-buffer.
+Every example accepts `--renderer forward`, `--renderer deferred` or `--renderer hybrid-gi`.
+Deferred and hybrid GI share the G-buffer; hybrid adds raster-probe approximate diffuse GI and optional spatial contact AO. See [the implemented pass sequence](deferred-renderer.md#passes-and-shared-state).
 
 ## What the capture shows
 

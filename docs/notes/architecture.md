@@ -1,25 +1,56 @@
-# Engine architecture (after the 2026-09 simplification)
+# Engine architecture (V3 snapshot 24760ae1)
 
-Line counts are rounded and refer to the current tree (simple engine about 7.6k lines; the
-simplification took it from 10 409 to 6 781 lines at commit `7cce3e7a`).
+The existing opt-in `setGpuTimingReadback` / `renderDiagnostics` facade forwards completed Neutral (`gpu.tonemap_ms`), all-three-pass SMAA (`gpu.smaa_ms`) and full-command-buffer (`gpu.frame_ms`) timestamps. Per-window pools partition queries by fenced slot; query resets occur only after the slot fence, reads check availability without WAIT, and default recording creates no queries or timestamp commands. Omitted passes report zero only after a completed frame; unsupported timestamps report unavailable. Bottom-of-pipe boundaries include stores/dependencies; SMAA identity preparation is outside the Neutral/SMAA spans. Receipts include completed/submitted serials for CPU pairing and actual device/driver, timestamp width/period, surface format/present mode, SDL video driver and validation state. No Vulkan type or implementation logic enters the facade.
+
+Startup `Antialiasing{none, msaa4, smaa, msaa4_smaa}` supports forward, deferred and hybrid_gi; none is the default. Valid calls after GPU startup, including the active mode, return `already_initialized`; unknown values return `invalid_argument` first. Implementation `sampleCount()` returns 4 for msaa4/msaa4_smaa and 1 otherwise. Native pipelines must use each pass's `context.samples`, `colorAttachmentCount`, `colorFormats` and `depthFormat`; shadows/probes stay 1x. SMAA 1x HIGH uses the pinned [SMAA reference](../../third_party/SMAA/README.md) (MIT, Jimenez et al. 2012, commit `71c806a8`) through Slang. The optional chain is `hdrImage (resolved linear HDR) -> [vvppl into postImage] -> [Neutral] -> [SMAA] -> swapchain -> GUI`; With SMAA selected, Neutral or clamped identity fills sRGB `ldrImage`, followed by edges, weights and linear neighbourhood blending. `RendererSmaa.cpp` uploads AreaTex/SearchTex once per device, creates window-local immutable descriptors/pipelines on demand and clears both linear-data attachments every frame. Edge detection samples the mutable input's UNORM view; neighbourhood blending samples its sRGB view. Final sRGB attachments or the SRGB_NONLINEAR UNORM final shader encode once; frame/readback receipts prevent double PNG encoding after setting changes. The legacy UNORM blit/CPU PNG conversion remains unchanged. Shared intermediate read/write barriers order frames on the graphics queue; resize rebuilds window-sized resources and retires complete owners through existing serial/fence machinery. There are no additional device-idle waits. Fresh defaults allocate no optional images/pipelines/descriptors/passes. Disabling Neutral with startup SMAA retains clamped identity. IQ-03b's `RenderPostOutputLifecycleTests` / `RenderPostOutputWindowsTests` cover in-flight changes, two windows, resize, minimize/resume, GUI and shutdown across sRGB/UNORM with and without mutable views. Frozen IQ-03a quality acceptance remains blocked separately.
+
+`ToneMappingOperator{none, khronos_neutral}` and `ToneMapping{op = none, exposure = 1}` are facade vocabulary; `setToneMapping` / `toneMapping()` forward to the implementation. Setters run between frame calls on the renderer's calling thread and affect the next recorded frame, with no concurrent-setter contract. Unknown operators or nonpositive/nonfinite exposures, even for none, return `invalid_argument` without changing state. Unsupported output capabilities return `platform_error` before submission. Neutral maps negative/NaN RGB to zero, caps positive inputs/infinity at 65504 and exposed channels at 1e6 against overflow; ordinary inputs retain [Khronos PBR_Neutral](../../third_party/KhronosToneMapping/README.md) (Apache-2.0) behaviour.
+
+The optional Neutral display chain is `scene -> resolved linear HDR -> [vvppl -> postImage] -> Neutral -> swapchain -> GUI`. `RendererToneMap.cpp` creates per-window output objects only for enabled frames; the default blit path and its allocation flags remain unchanged. Runtime HDR replacement and optional descriptor/pipeline/image owners retire through the existing submission fences. Intermediate transfer writes publish to fragment sampling in graphics-queue order. Resize retains the existing synchronization policy; tone-map toggles add no device-wide waits. sRGB attachments perform output encoding; SRGB_NONLINEAR UNORM encodes once in the final shader. Readback carries the recorded encoding and preserves opt-in alpha. Mutable GUI views retain authored colours; the opt-in sRGB fallback decodes GUI RGB before attachment encoding. `captureFrameLinear` still reads the untouched resolved HDR. No vvppl effect detection is performed: two configured tone mappers compose twice. See README and the pinned Khronos notice for the input/capability policies; `RenderToneMappingMatrixTests` verifies composition with independent CPU gain and ACES references and queues ordinary frames through runtime changes on none/msaa4 and all backends. Opt-in output diagnostics copy inside those submissions, retain each frame's extent/pass/settings/encoding, and expose pixels only after a slot fence has completed. Diagnostic buffers die before the allocator. Live/pending optional-owner counts check retirement and bounded toggles; ordinary frames with diagnostics disabled allocate no readback storage.
+
+Updated 29 October 2026 against commit `24760ae1` (25 October). Physical source counts include
+comments, blank lines, headers and shaders: facade 2,575 lines, binding 26, simple implementation
+11,963 (core 2,585, Render 5,380, Vulkan 2,932, shaders/shared header 1,066).
+The historical simplification reduced simple from 10,409 to 6,781 lines at `7cce3e7a`.
+
+## Current rendering extensions
+
+Forward is the default; `setRendererBackend(RendererBackend::deferred)` chooses the shared engine's
+alternative opaque path before GPU startup. It does not replace the implementation selected by CMake.
+Deferred writes three G-buffer images plus depth, then fullscreen HDR lighting; sky, transparency
+and water use forward shaders. See [backend details](../deferred-renderer.md).
+
+`setSky` enables the physical sky/cloud path; `setAtmosphere` controls height fog.
+Games advance `setAnimationTime(AnimationTime{seconds})`; zero is the initial paused clock.
+`addTerrain` stores a regular height grid and uses distance-based tessellation. Its height storage
+buffer is binding 6 of the shared descriptor layout, visible to tessellation evaluation. Without
+`tessellationShader`, terrain is omitted with one warning; the corresponding GPU test can skip.
+`addWater` takes arbitrary mesh geometry and ocean wave/colour settings, ignoring the ocean grid,
+position and extent. `setShadowDistance` sets directional cascade reach (default 60 world units).
+
+Suitable discrete GPUs rank before integrated, virtual and CPU devices. Case-sensitive
+`VVE_GPU=<name part>` moves matching devices first, without bypassing suitability or prohibiting
+fallback. Debug RenderDoc labels and captures are documented in [RenderDoc.md](../RenderDoc.md).
+The forward-path walkthrough below describes the default path; use the backend guide for deferred
+attachments, barriers and MSAA rather than assuming the same scene-colour recording sequence.
 
 ## 1. Three layers, one direction
 
 ```
-application (examples/*, tests/*)            uses only vve::*
+application (examples and public-API tests) uses vve::*; white-box tests also import implementation modules
    |  import VVEngine;
    v
-VVEngine  (src/, namespace vve, ~3.1k lines)                        facade / public contract
+VVEngine  (src/, namespace vve, ~2.6k lines)                        facade / public contract
    Engine<TSystems...>, World<...>, wrappers AssetSystem . RenderSystem . WindowSystem . GuiSystem (each `Impl &impl_`)
    vocabulary: VVEngine.Types . Math . Error . Handle . Vector . ECSContainer
    |  import VVEngine.Simple;   (only in src/implementations/simple.ixx, the :Implementation partition)
    v
-VVEngine.Simple  (src/versions/simple, namespace vve::simple, 7.6k lines)   implementation
+VVEngine.Simple  (src/versions/simple, namespace vve::simple, ~12.0k lines) implementation
    Engine -> ECS . WindowSystem(SDL3) . AssetSystem(assimp) . RenderSystem . GuiSystem(ImGui)
-   partitions :Graph :Window :Assets :Gui :RenderSystem + 3 .cpp implementation units
+   module interfaces plus .cpp implementation units for assets, audio and rendering
    |
    v
-VVEngine.Simple.Renderer  (ForwardRenderer, 1.5k)  ->  VVEngine.Simple.Vulkan  (RAII wrappers + VMA, 2.2k)
+VVEngine.Simple.Renderer (shared forward/deferred host) -> VVEngine.Simple.Vulkan (RAII wrappers + VMA, ~2.9k)
    |                                                      :OwnedHandle :Memory :Device :Commands :Presentation
    |                                                      :Pipeline :Shadow :Readback :Resources
    v
@@ -65,8 +96,8 @@ may declare any of three `update` shapes, or none) -> `simple::Engine::renderFra
 create the shared Vulkan device on the first rendered window, add targets in window order and attempt ImGui initialization there) -> `RenderSystem::renderFrame`
 -> `ForwardRenderer::drawFrame` for each target, which is one linear sequence:
 
-1. A pixel-size change rebuilds the swapchain using `oldSwapchain`, releasing the old handle
-   only after successful replacement. Dynamic viewport and scissor keep the graphics pipelines alive across resizes.
+1. A pixel-size change releases the old swapchain after the existing device-idle boundary and creates its replacement.
+   This avoids stale hidden-window geometry during NVIDIA/X11 handoff. Dynamic viewport and scissor keep the graphics pipelines alive across resizes.
 2. The in-flight fence wait is bounded to 1 s; a timeout increments `skippedFrameCount()` and returns
    before changing the frame slot's data or synchronization state. A successful wait advances the
    completed submission serial and reclaims retired owners covered by that fence. `syncSceneResources`
@@ -155,8 +186,9 @@ On the first rendered window, `VK_KHR_swapchain_mutable_format` swapchain creati
 UNORM format in `VkImageFormatListCreateInfo`. `VulkanImageViews` owns both view sets and releases
 them before swapchain destruction or recreation. Only the GUI attachment and ImGui pipeline use
 UNORM, preserving authored GUI bytes while scene and post-processing blits retain sRGB encoding.
-Without the extension, `GuiSystem::initContext` linearizes the initial theme RGB once; custom draw
-colours and later theme changes are not corrected. `GuiColorCaptureTests` captures grey 128±2
+On the legacy path without the extension, `GuiSystem::initContext` linearizes the initial theme RGB once; custom draw
+colours and later theme changes are not corrected. Opt-in sRGB output decodes authored GUI RGB before attachment encoding.
+`GuiColorCaptureTests` captures grey 128±2
 on the mutable-format path before and after swapchain recreation; `GuiSystemTests` checks the fallback.
 
 `GuiSystem::prepareFrame()` runs NewFrame, saves ImGui's recovery state and invokes the user callback. A
@@ -376,6 +408,9 @@ empty; `"none"` opts out. Other ids make `Engine::init()` return `Error::invalid
   `shaderSampledImageArrayDynamicIndexing` and graphics/compute/presentation queues. Device selection
   evaluates the API version and feature contract through the pure `evaluateDeviceRequirements` helper;
   Vulkan 1.2 plus `VK_KHR_dynamic_rendering` is insufficient for its core rendering commands.
+  Candidates are tried discrete GPU first, then integrated, virtual and CPU devices (enumeration order
+  breaks ties); `VVE_GPU=<name part>` moves devices whose name contains it to the front. The selected
+  device and its largest device-local heap are logged once.
   If no device qualifies, one diagnostic names the rejected devices and versions. ImGui uses API
   version 1.3; the instance continues to request 1.4. The CPU-only `VulkanDeviceRequirementsTests`
   checks synthetic capabilities without creating Vulkan objects.

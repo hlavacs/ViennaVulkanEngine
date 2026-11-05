@@ -1,6 +1,7 @@
 module;
 
 #include <stb_image.h>
+#include "../shaders/simple_shared.h"
 
 export module VVEngine.Simple.RenderResources;
 import std;
@@ -35,6 +36,15 @@ export namespace vve::simple {
 		Vector<std::uint32_t> indices{};												///< Triangle indices.
 	};
 
+	/// @brief Immutable height grid of one tessellated terrain instance (RenderSystem::addTerrain).
+	struct RenderTerrain {
+		std::uint64_t id{};						///< Unique per addTerrain call; the renderer repacks heights when the set of ids changes.
+		std::vector<float> heights{};				///< Row-major samples: row z, column x.
+		std::uint32_t columns{};					///< Samples along +X.
+		std::uint32_t rows{};						///< Samples along +Z.
+		Scalar cell_size{};						///< Sample spacing in object units.
+	};
+
 	/// @brief CPU-side material resource.
 	struct RenderMaterial {
 		RenderMaterialHandle handle{};												///< Stable render material handle.
@@ -50,6 +60,8 @@ export namespace vve::simple {
 		RenderTextureIndex ambient_occlusion_texture_index{kNoTexture}; ///< Ambient-occlusion texture-table index.
 		Scalar opacity{one()};														///< Material alpha; the base-colour texture alpha multiplies it.
 		AlphaMode alpha_mode{AlphaMode::opaque};								///< How the material alpha is used.
+		Scalar alpha_cutoff{VVE_ALPHA_CUTOFF}; ///< Hybrid main, shadow and capture use the same imported threshold.
+		std::optional<bool> double_sided{}; ///< Imported sidedness; absent preserves engine-authored capture policy.
 	};
 
 	/// @brief Scene draw item connecting mesh, material, and transforms.
@@ -66,6 +78,7 @@ export namespace vve::simple {
 		bool sprite{false};														///< True for a camera-facing blended quad.
 		Vec4 waves{}; ///< Water height, wavelength, angular speed and enabled flag.
 		Scalar opacity{one()};													///< Object alpha multiplied with the material alpha.
+		std::shared_ptr<const RenderTerrain> terrain{};					///< Height grid drawn by the tessellation pipelines; empty for ordinary meshes.
 	};
 
 	/// @brief Minimal CPU scene that stores render resources but does not draw them.

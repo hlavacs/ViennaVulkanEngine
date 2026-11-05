@@ -212,12 +212,78 @@ export namespace vve {
 	/// @brief Scene rendering passes selected independently for each engine, shared by its windows.
 	enum class RendererBackend {
 		forward, ///< Opaque and transparent objects use forward lighting (default).
-		deferred ///< Opaque G-buffer and deferred lighting, followed by forward transparency.
+		deferred, ///< Opaque G-buffer and deferred lighting, followed by forward transparency.
+		hybrid_gi ///< Deferred opaque lighting with bounded raster-probe approximate diffuse GI.
+	};
+	/// @brief Dynamic-rendering scope supplied to application-owned Vulkan geometry.
+	enum class NativeDrawPass {
+		forward_opaque, ///< Forward backend solids, before sky and transparency.
+		gbuffer, ///< Deferred/hybrid opaque and cutout material attributes.
+		shadow, ///< Depth-only light view, including the cached probe-sun map.
+		probe_capture, ///< Direct + emission + sky radiance and signed radial metres, without GI feedback.
+		forward_transparent ///< Forward-only composition over opaque depth, before post-processing and GUI.
+	};
+	/// @brief Borrowed native Vulkan handle bits and per-pass data; never owners. See docs/deferred-renderer.md.
+	/// prepare runs once outside rendering after this window/slot fence; draw calls run after engine geometry.
+	/// Bind your own pipeline/descriptors/vertices. Do not submit, end rendering, mutate VVE or retain this context.
+	struct NativeDrawContext {
+		NativeDrawPass pass{NativeDrawPass::forward_opaque}; ///< Scope; prepare identifies the upcoming main geometry pass.
+		std::uintptr_t device{}, physicalDevice{}, commandBuffer{}; ///< Dispatchable Vulkan handle bits, as in the former native hook.
+		WindowHandle window{}; ///< Independent per-window resource identity.
+		std::uint32_t frameIndex{}, width{}, height{}; ///< Fence-completed slot and this view's pixel extent.
+		std::uint32_t viewportX{}, viewportY{}; ///< Atlas viewport/scissor origin; zero outside probe capture.
+		std::array<std::uint32_t,3> colorFormats{}; ///< VkFormat values: G-buffer targets are RGBA16F, capture/forward HDR RGBA16F.
+		std::uint32_t colorAttachmentCount{}, depthFormat{}, samples{}; ///< Pipeline rendering formats and VkSampleCountFlagBits; shadow/capture are 1x.
+		Mat4 view{identityMat4()}, projection{identityMat4()}, viewProjection{identityMat4()}; ///< Actual pass matrices; Vulkan Y flip and depth [0,1], clear 1, LESS.
+		std::array<Vec4,6> frustum{}; ///< Inward unnormalized world planes (left,right,bottom,top,near,far); dot(plane,world)>=0 is inside.
+		Position eye{}; ///< This pass's eye, including a probe or light eye; never substituted with the main camera.
+		std::uint32_t faceIndex{}, cascadeIndex{}, lightIndex{}, lightType{}; ///< Cube face +X,-X,+Y,-Y,+Z,-Z; volume/cascade; packed light; type 1 spot/2 point/3 sun.
+		bool probeShadow{}; ///< Shadow scope is the cached local-volume sun map, rather than a main light layer.
+		Scalar captureFar{}; ///< Capture alpha: min(radial metres,captureFar), negative on backfaces; sky uses positive captureFar.
+		std::array<std::uint64_t,2> probeIrradianceViews{}; ///< Borrowed RGBA32F VkImageView bits; sampled-image descriptors, SHADER_READ_ONLY_OPTIMAL, forward draws only.
+		Vec4 probeOrigin{}, probeControl{}; ///< Near origin/spacing; enabled/strength/visibility/AO. Use shaders/vve_irradiance.slang, E/pi times diffuse albedo once.
+		Position probeEye{}; ///< Main window eye used for coarse origin and visibility bias, independent of this pass's eye.
+		std::uint32_t probeCascades{}; ///< Zero without usable shared probes; otherwise near/coarse count for the public sampler.
+		std::uint64_t sunShadowView{}, captureSunShadowView{}; ///< Borrowed sampled D32 array views, shader-read layout after shadows; never sample during prepare/shadow.
+		std::array<Mat4,4> sunShadowMatrices{}; ///< First direct sun's world-to-shadow cascade transforms; zero sunShadowCount disables sampling.
+		Mat4 captureSunShadowMatrix{identityMat4()}; ///< Cached world-to-shadow transform for direct-only probe radiance.
+		Vec4 sunShadowSplits{}; ///< Positive main-view depth boundaries in metres; last cascade fades beyond its far plane.
+		Vec4 sunShadowTexels{}; ///< Reciprocal main-shadow width/height in xy and capture-shadow width/height in zw; zero when absent.
+		Mat4 mainView{identityMat4()}; ///< Main camera view for native cascade selection, independent of capture/light views.
+		std::uint32_t sunShadowCount{}, sunShadowFirstLayer{}; ///< Available cascades (0 or 4) and first array layer for the selected sun.
+		bool captureSunShadowEnabled{}; ///< Cached sun depth is usable by probe captures after its write/read dependency.
+		bool samplerAnisotropy{}, tessellationShader{}; ///< Enabled optional device features for application pipelines.
+		bool prepare{}; ///< Outside-rendering upload phase; do not sample engine attachments or draw to them here.
+	};
+	using NativeDrawCallback = std::function<std::expected<void,Error>(const NativeDrawContext &)>; ///< Owned recorder; replacement retires its captures by submission fences.
+
+	/// @brief Bounded probe refresh cost; both presets use the same coverage and storage.
+	enum class GiQuality { low, ///< One 16-square cubemap per window frame.
+		medium ///< Two 16-square cubemaps per window frame.
+	};
+	/// @brief Runtime independent probe-light and spatial contact-AO controls for hybrid_gi.
+	struct GiSettings {
+		bool enabled{true}; ///< Probe lighting is used only by hybrid_gi.
+		bool ao_enabled{false}; ///< Depth/normal-aware 0.5 m contact AO on indirect diffuse only; min with material AO, no history.
+		Scalar indirect_strength{1}; ///< Finite nonnegative probe multiplier; zero with AO off restores deferred lighting exactly.
+		GiQuality quality{GiQuality::medium}; ///< Maximum probe captures per window frame.
+	};
+	/// @brief Optional display transform, applied after any explicitly configured vvppl chain.
+	enum class ToneMappingOperator {
+		none, ///< Retains the legacy output path, with no additional GPU resources or passes.
+		khronos_neutral ///< Khronos PBR Neutral, with exposure applied before compression.
+	};
+	/// @brief Runtime display settings; positive finite exposure is required even when the operator is none.
+	struct ToneMapping {
+		ToneMappingOperator op{ToneMappingOperator::none}; ///< Display operator; none preserves existing rendering.
+		Scalar exposure{1}; ///< Linear exposure multiplier, independent of scene lighting and HDR capture.
 	};
 	/// @brief Geometry edge smoothing; selected before the renderer's first frame.
 	enum class Antialiasing {
 		none, ///< One sample per pixel; preserves the default rendering path.
-		msaa4 ///< Four coverage samples; initialization returns platform_error if unsupported.
+		msaa4, ///< Four coverage samples; initialization returns platform_error if unsupported.
+		smaa, ///< One coverage sample followed by spatial SMAA 1x (HIGH).
+		msaa4_smaa ///< Four coverage samples followed by SMAA 1x; requires 4x support.
 	};
 	/// @brief Material response; classic preserves existing scenes, physically_based uses GGX and the sky panorama.
 	enum class MaterialLighting {
@@ -361,12 +427,15 @@ export namespace vve {
 		Transform transform{};													///< Local or world-space placement.
 	};
 
-	/// @brief Height-dependent haze; zero density disables it. Distances use world units, colours are linear.
+	/// @brief Height-dependent haze and optional distant mist. Distances use world units, colours are linear.
 	struct AtmosphereSettings {
 		LinearColor color{.value = Vec3{0.65F, 0.75F, 0.85F}}; ///< Colour approached by distant surfaces; the enabled SkySettings light the haze instead.
 		Scalar density{}; ///< Extinction per world unit; nonnegative.
 		Scalar height_falloff{}; ///< Density decreases exponentially with height; zero gives uniform haze.
 		Scalar base_height{}; ///< Height at which density is specified.
+		Scalar distance_mist_start{}; ///< Additional distance mist starts here, leaving nearer surfaces unchanged.
+		Scalar distance_mist_end{}; ///< Fully opaque at this distance; both distances zero disable it, otherwise 0 <= start < end.
+		// Distance mist approaches color even with a physical sky, whose low horizon uses the same colour.
 	};
 
 	/// @brief Physically based sky with volumetric clouds; the first directional light is its sun.
@@ -391,6 +460,21 @@ export namespace vve {
 		double seconds{}; ///< Nonnegative elapsed seconds; defaults to a paused scene.
 	};
 
+	/// @brief A regular height grid drawn with GPU tessellation; detail follows the distance to the camera.
+	///
+	/// Only the heights and a coarse patch grid are stored on the GPU (about 4 bytes per sample instead of a full
+	/// triangle mesh), so square-kilometre terrains fit easily. Sample (x, z) lies at (x * cell_size, height, z * cell_size)
+	/// in object space; the texture is stretched over the whole grid with u along +X and v along +Z.
+	struct TerrainDescriptor {
+		std::uint32_t columns{};											///< Samples along +X, 2 to 65535.
+		std::uint32_t rows{};												///< Samples along +Z, 2 to 65535.
+		Scalar cell_size{1.0F};											///< Positive distance between neighbouring samples.
+		Vector<float> heights{};											///< columns * rows finite heights, row by row (row z, column x).
+		LinearColor color{.value = oneVec3()};						///< Linear base colour; multiplies the texture.
+		std::filesystem::path base_color_texture{};				///< Optional texture covering the whole grid.
+		Transform transform{};												///< Places sample (0, 0) at the local origin.
+	};
+
 	/// @brief A horizontal water patch with two analytic waves; its handle supports ordinary object operations.
 	struct OceanDescriptor {
 		Vec2 half_extent{100.0F, 100.0F}; ///< Half-size of the finite patch along X and Z.
@@ -399,6 +483,8 @@ export namespace vve {
 		Scalar wavelength{12.0F}; ///< Positive reference wavelength in world units.
 		Scalar speed{1.5F}; ///< Angular wave speed in radians per second.
 		Position position{}; ///< Centre of the undisturbed surface.
+		std::uint32_t columns{64}; ///< Grid cells along X, in [1, 1024]; a few per wavelength suffice for the vertex waves.
+		std::uint32_t rows{64}; ///< Grid cells along Z, in [1, 1024]; a thin strip needs only one.
 	};
 
 	/// @brief Nearest render object found by RenderSystem::raycast.

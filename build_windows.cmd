@@ -32,23 +32,16 @@ if not defined VULKAN_SDK if defined VK_SDK_PATH set "VULKAN_SDK=%VK_SDK_PATH%"
 if not defined VULKAN_SDK (echo VULKAN_SDK is not set. Install the Vulkan SDK first. & goto fail)
 if not exist "%VULKAN_SDK%\Include\vulkan\vulkan.h" (echo Vulkan headers not found under "%VULKAN_SDK%". Check VULKAN_SDK. & goto fail)
 
-rem --- Discover the complete toolchain even from an ordinary PowerShell window ---
-set "NEED_VS=0"
-for %%T in (cl.exe cmake.exe ctest.exe ninja.exe) do (
-    where %%T >nul 2>nul
-    if errorlevel 1 set "NEED_VS=1"
-)
-if "%NEED_VS%"=="1" (
-    set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
-    if not exist "!VSWHERE!" (echo vswhere.exe not found; run this from a "x64 Native Tools Command Prompt for VS". & goto fail)
-    set "VSINSTALL="
-    for /f "usebackq tokens=*" %%i in (`"!VSWHERE!" -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
-    if not defined VSINSTALL (echo No Visual Studio with the C++ toolchain was found. & goto fail)
-    echo Initializing MSVC environment from "!VSINSTALL!" ...
-    call "!VSINSTALL!\VC\Auxiliary\Build\vcvars64.bat" >nul
-    if errorlevel 1 goto fail
-    set "PATH=!VSINSTALL!\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin;!VSINSTALL!\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;!PATH!"
-)
+rem --- Always refresh MSVC and prefer Visual Studio CMake over other PATH entries ---
+set "VSWHERE=%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe"
+if not exist "%VSWHERE%" (echo vswhere.exe not found. Install Visual Studio with the C++ workload. & goto fail)
+set "VSINSTALL="
+for /f "usebackq tokens=*" %%i in (`"%VSWHERE%" -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath`) do set "VSINSTALL=%%i"
+if not defined VSINSTALL (echo No Visual Studio with the C++ toolchain was found. & goto fail)
+echo Initializing MSVC environment from "%VSINSTALL%" ...
+call "%VSINSTALL%\VC\Auxiliary\Build\vcvars64.bat" >nul
+if errorlevel 1 goto fail
+set "PATH=%VSINSTALL%\Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin;%VSINSTALL%\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja;%PATH%"
 
 for %%T in (cl.exe cmake.exe ctest.exe ninja.exe) do (
     where %%T >nul 2>nul

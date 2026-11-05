@@ -22,7 +22,7 @@ You should know what a variable, function, \api{if} statement, loop, and simple 
 \subsection*{Code labels and scope}
 Listings called \emph{complete programs} include their imports and \api{main}. Listings called \emph{excerpts} belong inside the named function or assume the stated variables. File paths in excerpts must name files on your machine. The small built-in-scene and moving-cube programs require no external artwork.
 
-This V3 edition describes the public \api{VVEngine} module and the \api{simple} implementation in the local checkout on 17 October 2026, including the rendering-error, scene-cleanup, builder, and asset-unloading changes. V3 is the repository branch; \api{simple} is the selected implementation. The local source remains the final authority when you change checkout.
+This edition was updated on 29 October 2026 against V3 commit \api{24760ae1} (25 October). It covers the public \api{VVEngine} module and \api{simple} implementation, including deferred rendering, physical sky, terrain, mesh-based water, device selection and spatial audio. V3 is the branch; simple is the implementation. The source remains authoritative when changing checkout. Forward-path implementation chapters explain the default path; the later backend chapter explains its shared and deferred stages.
 \clearpage
 \tableofcontents
 
@@ -1289,7 +1289,7 @@ Step & What is acquired or created \\
 \end{longtable}
 }
 
-The selected GPU must support the code's requirements, including Vulkan 1.3 device features, swapchain presentation, dynamic rendering and dynamic texture-array indexing. The instance currently requests Vulkan 1.4. Optional anisotropic filtering is enabled when supported.
+The selected GPU must support Vulkan 1.3 device features, swapchain presentation, dynamic rendering and dynamic texture-array indexing. The instance requests Vulkan 1.4. Optional anisotropic filtering and tessellation are enabled when supported. Suitable discrete GPUs are preferred over integrated, virtual and CPU devices; case-sensitive \api{VVE_GPU=<name part>} moves matches first without preventing fallback. The selected device and largest device-local heap are logged. Terrain is omitted with a warning if tessellation is unavailable.
 
 ForwardRenderer owns the shared device, allocator, pipelines, textures, mesh buffers and shadow maps. Additional windows receive their own WindowTarget resources while sharing these device-wide objects.
 
@@ -1457,7 +1457,7 @@ From the lights & Into HDR image   To swapchain image        Finish the picture 
 \subsection*{What the passes record}
 Shadows: the shadow pipeline renders depth from each contributing light's views into layers of depth-image arrays. These layers later tell the lighting shader where surfaces are hidden from the light.
 
-Scene color: the forward pipeline draws into the window's HDR image and depth attachment. For each object it binds the mesh when needed, writes push constants and records vkCmdDrawIndexed().
+Scene color: in the default forward path, the pipeline draws into the window's HDR image and depth attachment. For each object it binds the mesh when needed, writes push constants and records vkCmdDrawIndexed(). The deferred path instead records opaque geometry into G-buffer attachments and lights it in a fullscreen pass; sky, transparency and water still use forward shaders. The later backend chapter explains this path.
 
 Effects or copy: the HDR result is passed through the configured vvppl effect chain. Without a chain, a blit copies/converts it to the acquired swapchain image. The code does not automatically add a tone-mapping effect.
 
@@ -1859,7 +1859,7 @@ cmake --build build/debug-windows --target game
 ctest --test-dir build/debug-windows --output-on-failure
 \end{lstlisting}
 
-The first command also runs the repository tests. The alternative commands separate configuration, building and testing. The expected example executable is bin/debug/exe/game.exe; build files are in build/debug-windows. Release changes the variant directories and removes much of the convenient stepping behavior.
+The first command runs the default tests, excluding the longer racer group. Use \api{.\build_windows.cmd debug --no-tests} to compile everything without running tests; test executables still compile. The alternative commands separate configuration, building and testing. Unfiltered CTest includes the longer racer runs; use \api{-LE racer} for the default suite or \api{-L racer} for that group alone. Executables are in bin/debug/exe; build files are in build/debug-windows. Release changes the variant directories and stepping behavior.
 
 Add an application target inside this configured project
 
@@ -2914,7 +2914,7 @@ With a skybox enabled, the panorama fills directions behind scene geometry. Rota
 
 The simple implementation creates an internal inward-facing cube and samples the panorama by view direction. It draws the sky after solid objects and before transparent ones. The sky does not cast shadows and is not an ordinary public render object for picking. Clearing the sky allows the configured background colour to show again.
 
-This background is visual scenery. In the current renderer it does not automatically become an environment-lighting or reflection source. Add lights when lit mesh surfaces need illumination. An attractive panorama around a dark model does not prove the model's material or camera is broken.
+Classic lighting remains the default. Selecting \api{MaterialLighting::physically_based} enables GGX direct lighting and approximate skybox illumination/reflections. This is an inexpensive approximation using fixed samples and ordinary mipmaps, not local reflections or precomputed irradiance maps. Add appropriate lights and test material factors; an attractive panorama around a dark model does not establish that its camera is broken.
 
 The texture uses the existing texture table and lifetime mechanisms. Replacing the skybox releases resources that have no remaining use. \api{clearScene()} also removes the sky. Check a new panorama's file and aspect ratio, then look straight up and down as well as forward to catch orientation or pole artifacts.
 
@@ -3359,6 +3359,73 @@ Paths are relative to the repository root. These files define what a game can ca
 Only the binding module names the concrete implementation from the facade. Game programs should not use that as an invitation to call \api{vve::detail} or \api{vve::simple}. The public wrappers express the supported contract and allow a later implementation to serve the same game source.
 \source{src/CMakeLists.txt; src/implementations/simple.ixx}
 
+\lesson{Forward and deferred rendering}
+Both backends live in one simple implementation. Forward shades geometry directly into HDR colour. Deferred first stores opaque surface attributes in three G-buffer images and depth, then shades a fullscreen pass into RGBA16F HDR colour. Sky, sorted transparency and water follow through forward shaders; post-processing and ImGui complete the image. Shared shadows, materials, uploads and the Slang \api{shadeSurface} function reduce duplication. G-buffer encoding, reconstruction, precision and MSAA still require their own tests.
+
+\begin{lstlisting}
+// Excerpt inside int main(), after engine.init() and before rendering.
+auto world = engine.world();
+auto &render = world.get<vve::RenderSystem>();
+if (!render.setRendererBackend(vve::RendererBackend::deferred)) return 1;
+if (!render.setAntialiasing(vve::Antialiasing::msaa4)) return 2;
+if (!render.setMaterialLighting(vve::MaterialLighting::physically_based)) return 3;
+\end{lstlisting}
+Forward is the default. Changing a backend or antialiasing after GPU rendering starts returns \api{already_initialized}. A pending choice made before window initialization is checked at GPU startup; later \api{step()} can therefore fail. Unsupported deferred capabilities return \api{platform_error}, with no automatic forward fallback. Selection applies to all windows of one RenderSystem, independently of other Engine instances. \api{WindowSetup::renderer} controls whether a window renders, not the shading algorithm.
+
+Set appearance colour or texture before \api{setObjectSurface}; those look setters reset other material properties. Surface roughness and metalness belong to one object's material factors; imported maps still apply.
+
+\source{src/RenderSystem.ixx; Render/RendererDeferred.cpp under src/versions/simple; docs/deferred-renderer.md; tests/DeferredRendererTests.cpp}
+
+\lesson{Physical sky, haze and an explicit clock}
+\api{SkySettings} describes a physically based sky with Rayleigh/Mie single scattering, a sun disk and volumetric noise clouds. When enabled, it takes precedence over a panorama. The first directional light supplies the sun; heights use metres above y=0. \api{AtmosphereSettings} adds exponential height fog; when the sky is enabled the haze uses sky/sun lighting rather than only its fixed colour.
+\begin{lstlisting}
+// Excerpt inside int main(), using a RenderSystem view named render.
+if (!render.setSky({.enabled = true, .haze = 4.0F,
+                    .cloud_coverage = 0.4F})) return 1;
+if (!render.setAtmosphere({.density = 0.002F,
+                          .height_falloff = 0.01F})) return 2;
+if (!render.setAnimationTime(vve::AnimationTime{2.0})) return 3;
+\end{lstlisting}
+The clock defaults to zero. A user system should accumulate elapsed seconds and call \api{setAnimationTime} every update for moving clouds and water. Velocity fields do not automatically advance game positions. Negative or nonfinite settings are rejected according to the API contracts; check each result. \api{setSky({.enabled = false})} restores the panorama/background path; removing a panorama alone does not disable the physical sky.
+
+\source{src/Types.ixx; src/RenderSystem.ixx; src/versions/simple/shaders/simple_atmosphere.slang; tests/RenderSkyTests.cpp}
+
+\lesson{Height-grid terrain and mesh-based water}
+A terrain stores a row-major height grid instead of a full dense triangle mesh. GPU tessellation increases detail near the camera. Each height sample consumes four bytes, with a coarse patch mesh and other resources in addition. Texture u follows +X and v follows +Z across the whole grid. Bounds include the height range, and terrain casts and receives shadows.
+\begin{lstlisting}
+// Excerpt inside int main(), using render after engine initialization.
+vve::TerrainDescriptor terrain{
+    .columns = 3, .rows = 3, .cell_size = 10.0F,
+    .heights = {0, 0, 0, 0, 4, 0, 0, 0, 0}};
+auto ground = render.addTerrain(std::move(terrain));
+if (!ground) return 1;
+if (!render.setShadowDistance(300.0F)) return 2;
+auto water = render.addOcean(vve::OceanDescriptor{
+    .half_extent = vve::Vec2{20, 20},
+    .wave_height = 0.2F, .columns = 32, .rows = 32});
+if (!water) return 3;
+\end{lstlisting}
+Columns and rows must each be 2..65535, heights must number exactly columns times rows and be finite, and cell size must be positive and finite. Terrain requires optional \api{tessellationShader}; without it the engine warns and omits terrain, and RenderTerrainTests skips its GPU assertions. Successful object creation or a passing skip is not proof of terrain rendering on that device. In particular, do not assume that a Vulkan-on-Metal implementation supports tessellation because other scenes render successfully.
+
+\api{addOcean} creates a finite patch with two analytic waves, not an infinite ocean or fluid simulation. Its grid dimensions are cells in [1,1024]. Drive waves with the explicit animation clock. \api{addWater(surface, waves)} uses game-authored MeshDescriptor geometry for rivers or lakes, retaining the mesh transform and using colour/wave settings from OceanDescriptor. That overload ignores the ocean descriptor's position, extent and grid. Invalid geometry/waves return \api{invalid_argument}. Neither path provides refraction, foam or shoreline simulation.
+
+Sun shadows default to a 60-world-unit range. \api{setShadowDistance} accepts a positive finite distance and changes the four directional cascades' coverage. A wider range trades spatial resolution for reach; camera far clipping remains a separate setting.
+\source{src/Types.ixx; src/RenderSystem.ixx; src/versions/simple/Render/RenderSystemObjects.cpp; tests/RenderTerrainTests.cpp}
+
+\lesson{Optional positional audio}
+AudioSystem supports listener/source transforms in addition to ordinary playback. Render cameras do not automatically move the audio listener. Use \api{setListener(AudioListener)} for the listener and \api{setSource(voice, AudioSource)} for a playing voice. Positions and distances are metres; velocities are metres per second. Update moving sources yourself. Invalid directions, nonfinite values and invalid distance ranges return \api{invalid_argument}.
+
+Spatial playback uses SDL3\_mixer speaker panning and inverse-distance attenuation, downmixing sources to mono. It is not headphone HRTF processing. Maximum distance clamps attenuation rather than cutting sound off. Doppler multiplies configured pitch; it does not integrate motion. \api{clearSource} restores ordinary 2D mixing and configured pitch without restarting the voice. Cabin filtering, occlusion, reverberation and sound propagation are not implemented. \path{Audio.md} documents the full contract and examples.
+\source{src/AudioSystem.ixx; docs/Audio.md; tests/SpatialAudioTests.cpp}
+
+\lesson{Inspect a frame and interpret a test result}
+Debug builds name Vulkan resources and label rendering passes for RenderDoc. Release omits these labels. In deferred captures, inspect base colour/roughness, world normal/metalness, emission/AO/flags and depth before fullscreen lighting. Names and attachment meanings are listed in \path{RenderDoc.md}. Captures complement tests; a capture alone does not assert correctness.
+
+Hidden-window GPU tests read actual pixels. The swapchain uses \api{VK_FALSE} for clipped so hidden surface content remains defined for readback. Debug builds count validation errors and request synchronization validation. Twenty-nine test programs contain validation-counter checks; this is not a universal CTest output filter and capability-dependent early exits can skip those paths. On Linux, lavapipe can run rendering without hardware only when suitable presentation support, including \api{VK_EXT_headless_surface} for SDL offscreen, is available.
+
+The inspected Windows Debug tree registers 163 runs including the optional Profiles check: overlapping labels gpu 105, example 48, deferred 31, audio 11, racer 8. Without Profiles the registrations are 162/104/30 for total/gpu/deferred. There are 25 paired renderer regressions plus dedicated backend checks. These are registrations, not fresh passing results. Use \api{ctest --test-dir <build> -N} to inspect your configuration without executing tests.
+\source{tests/CMakeLists.txt; tests/RenderTerrainTests.cpp; docs/RenderDoc.md; docs/renderer-compatibility.md}
+
 \lesson{Source map: follow an object into the renderer}
 Begin with \api{Engine::step}, then follow one public creation or update request through these files. The larger implementation functions live in \api{.cpp} module implementation units; the corresponding \api{.ixx} files declare their classes and contracts.
 
@@ -3378,8 +3445,12 @@ Begin with \api{Engine::step}, then follow one public creation or update request
 \path{Render/RendererShadowPrep.cpp} & Light packing and shadow matrices \\
 \path{Render/RendererDraw.cpp} & Fence/acquire handling, draw lists, passes, submission and presentation \\
 \path{Render/RendererDebug.cpp} & Readback, shadow samples, PNG capture \\
+\path{Render/RendererDeferred.cpp} & G-buffer, deferred geometry and lighting passes \\
 \path{Vulkan/} & Vulkan resource owners, device checks, allocation, commands, presentation, pipelines \\
-\path{shaders/simple_forward.slang} & Forward vertex/fragment and shadow vertex shader entry points \\
+\path{shaders/simple_forward.slang} & Forward, shadow and terrain tessellation shader entry points \\
+\path{shaders/simple_deferred.slang} & Deferred geometry and fullscreen lighting \\
+\path{shaders/simple_material.slang} & Shared surface shading \\
+\path{shaders/simple_atmosphere.slang} & Physical sky, clouds and haze \\
 \path{GUI.ixx} & ImGui context/backends, callbacks, image registration \\
 \path{Audio.cpp} & SDL3\_mixer device, sounds, voices and error details \\
 \bottomrule
@@ -3388,11 +3459,11 @@ Begin with \api{Engine::step}, then follow one public creation or update request
 Use \path{tests/CMakeLists.txt} to locate the registered executable nearest the behavior you are studying. Engine tests may inspect implementation details, while examples demonstrate facade-only application code. This distinction explains why imports in tests can differ from imports in your game.
 
 \lesson{Verification, limits, and rebuilding these guides}
-This edition was checked against the local V3 source on 17 October 2026. The preceding Windows Release validation compiled and linked the complete engine, examples and tests after the MSVC constructor fix. CTest passed 85 of 88 tests, including the new constructor/unload regression. RenderTextureDedupTests stopped at filesystem path resolution denied by the execution sandbox; GameExample and PostProcessingSmokeTests terminated with fast-fail errors that were not diagnosed. This records a machine-specific result, not an all-tests-passing or cross-platform claim.
+This edition was checked against V3 source 24760ae1 on 29 October 2026. The refresh compares API contracts and examples with source, lists current test registrations and rebuilds the PDFs. It does not claim fresh engine test passes, execution of every listing or new Windows/Linux/macOS runtime coverage. Historical validation on 17 October reported 85 of 88 Windows Release tests passing, with sandbox path-resolution and undiagnosed fast-fail failures; that older result is not the status of the present revision.
 
 The existing complete teaching programs retain their imports and main functions. New builder and unload listings are labelled excerpts, and their behavior is covered by EngineBuilderTests and AssetSceneUnloadTests. SceneTreeTests covers cleanup after reparenting; the rendering result path is implemented in RendererDraw.cpp and propagated through RenderSystem. Focused excerpts require their stated surrounding variables and files. This documentation update does not claim a fresh run of every interactive listing.
 
-The simple engine is intentionally modest. Its ECS uses map-backed storage and copying access. Picking uses bounding boxes. Transparent draws use object-origin sorting. Audio has ordinary playback and gain controls rather than positional spatial audio. A successful step may skip presentation for a recoverable condition, while fatal rendering failures propagate as errors. Learning these concrete limits helps you use the existing API accurately.
+The simple engine is intentionally modest. Its ECS uses map-backed storage and copying access. Picking uses bounding boxes. Transparent draws use object-origin sorting. Spatial audio supplies panning, attenuation and Doppler but not HRTF or acoustic propagation. A successful step can skip presentation for a recoverable condition, while fatal rendering failures propagate as errors. Optional terrain rendering can be omitted on unsupported devices. Learning these limits helps you use the API accurately.
 
 \subsection*{Editable sources}
 \path{simple_engine_explained.tex} and \path{vvengine_beginner_quickstart.tex} are the editable guide sources. \path{guide_style.tex} supplies their shared typography and diagrams. Rebuild from the repository root with:

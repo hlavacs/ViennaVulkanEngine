@@ -205,6 +205,8 @@ namespace vve::simple {
 		// Files without an alpha mode (OBJ) blend only when they are see-through.
 		material.opacity = std::clamp(factors.opacity.value_or(one()), zero(), one());
 		material.alpha_mode = factors.alpha_mode.value_or(material.opacity < one() ? AlphaMode::blend : AlphaMode::opaque);
+		material.alpha_cutoff = factors.alpha_cutoff.value_or(material.alpha_cutoff);
+		material.double_sided = factors.double_sided;
 
 		const auto render_material = scene_.addMaterial(std::move(material));
 		renderer_.markMaterialsDirty();
@@ -285,6 +287,7 @@ namespace vve::simple {
 				scene_.addImportedCamera(instance.value);
 			}
 		}
+		renderer_.invalidateProbes(true); // A successfully loaded scene must never sample the previous scene's radiance.
 		return instance;
 	}
 
@@ -441,6 +444,7 @@ namespace vve::simple {
 		if (auto *render_instance = handle ? scene_.findInstance(*handle) : nullptr) {
 			render_instance->world_transform = world;									// Exact, also under non-uniformly scaled parents.
 			render_instance->local_transform = detail::decomposeTransform(world);	// What objectTransform reports.
+			renderer_.invalidateProbes(false, true);
 		}
 	}
 

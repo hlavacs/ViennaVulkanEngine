@@ -19,7 +19,7 @@ import Racer.Sound;
  * track, N night, P photo mode (hold the right mouse button to orbit, click a car), F11 fullscreen, Esc pause.
  * Options: --frames N (bounded run, fixed 60 Hz frames, capture and verify at the end), --autopilot (the computer
  * drives the player car), --night, --menu (stay in the main menu), --time-trial, --camera chase|hood|top, --output <png>,
- * --verify <txt>, --renderer forward|deferred, --width N, --height N (default 1280x720).
+ * --verify <txt>, --renderer forward|deferred|hybrid-gi (GI not yet active), --width N, --height N (default 1280x720).
  */
 namespace {
 

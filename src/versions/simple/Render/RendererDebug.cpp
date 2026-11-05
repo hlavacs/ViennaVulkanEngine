@@ -14,6 +14,26 @@ import VVEngine.Simple.Vulkan;
 /// names of G-buffer images, shadow maps, attachments and pipelines that RenderDoc shows.
 
 namespace vve::simple {
+	/// @brief Copies resolved FP16 HDR at an explicit diagnostic checkpoint; queue-ordered transfer waits only for its own submission.
+	auto ForwardRenderer::captureFrameLinear(WindowTarget &target) -> std::expected<Vector<Vec4>,Error> {
+		if (!target.lastRenderedImageIndex || target.hdrImage.image == VK_NULL_HANDLE) { return std::unexpected(Error::missing_object); }
+		auto readback = VulkanReadback{};
+		if (readback.create(allocator,device.device,device.graphicsQueue,commandPool.commandPool,target.hdrImage.extent,VK_FORMAT_R16G16B16A16_SFLOAT) != VK_SUCCESS ||
+			readback.capture(target.hdrImage.image,0,VK_IMAGE_LAYOUT_GENERAL) != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
+		const auto half = [](std::uint16_t bits) {
+			const auto exponent = (bits >> 10) & 31U, mantissa = bits & 1023U;
+			const float value = exponent == 0 ? std::ldexp(float(mantissa),-24) : exponent == 31 ? std::numeric_limits<float>::infinity()
+				: std::ldexp(1.F + float(mantissa)/1024.F,int(exponent)-15);
+			return bits & 32768U ? -value : value;
+		};
+		Vector<Vec4> pixels(std::size_t(target.hdrImage.extent.width)*target.hdrImage.extent.height);
+		// Decode only this requested completed frame; the returned values own their storage independently of Vulkan.
+		for (auto i : std::views::iota(std::size_t{},pixels.size())) {
+			std::array<std::uint16_t,4> texel{}; std::memcpy(texel.data(),readback.pixelBytes().data()+i*8,8);
+			pixels[i] = Vec4{half(texel[0]),half(texel[1]),half(texel[2]),half(texel[3])};
+		}
+		return pixels;
+	}
 
 	namespace {
 		/// @brief Mirrors the shader's world-space receiver offset at a perspective light's axial depth.
@@ -26,7 +46,7 @@ namespace vve::simple {
 		}
 	} // namespace
 
-	/// @brief Reports whether this renderer has a live Debug validation messenger.
+	/// @brief Reports whether this renderer has a live validation messenger.
 	bool ForwardRenderer::validationActive() const { return instance.validationActive(); }
 
 	/// @brief Returns Vulkan validation ERROR callbacks since instance creation, including synchronization hazards.
@@ -89,8 +109,9 @@ namespace vve::simple {
 		}
 	}
 
-	/// @brief Copies the last presented swapchain image and writes it as a deterministic PNG.
-	auto ForwardRenderer::captureFrameToPng(WindowTarget &target, const std::filesystem::path &output_path) -> std::expected<void, Error> {
+	/// @brief Writes a deterministic PNG, retrying temporary skips for the supplied diagnostic duration; fatal errors return immediately.
+	auto ForwardRenderer::captureFrameToPng(WindowTarget &target, const std::filesystem::path &output_path,
+		std::chrono::milliseconds retryTimeout) -> std::expected<void, Error> {
 		if (!target.lastRenderedImageIndex) { return std::unexpected(Error::missing_object); }
 		if (*target.lastRenderedImageIndex >= target.swapchain.images.size()) {
 			return std::unexpected(Error::internal_error);
@@ -107,19 +128,38 @@ namespace vve::simple {
 													 target.swapchain.extent, target.swapchain.imageFormat);
 		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
 
-		// Capture a newly acquired frame before presentation releases the swapchain image.
-		result = waitDeviceIdle();
-		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
-		const auto outcome = drawFrame(target, &readback);
-		if (!outcome) { return std::unexpected(outcome.error()); }
-		if (*outcome != FrameOutcome::presented) { return std::unexpected(Error::platform_error); }
+		// Slot fences protect drawing resources; the queued readback waits for its own copy before presentation releases the image.
+		const auto deadline = std::chrono::steady_clock::now() + retryTimeout;
+		// Presentation readiness and swapchain recovery may skip a draw; synchronous capture retries these bounded waits.
+		for (;;) {
+			const auto outcome = drawFrame(target, &readback);
+			if (!outcome) { return std::unexpected(outcome.error()); }
+			if (*outcome == FrameOutcome::presented) { break; }
+			const auto extent = currentWindowPixelExtent(target);
+			if (extent.width == 0U || extent.height == 0U || std::chrono::steady_clock::now() >= deadline) {
+				return std::unexpected(Error::platform_error);
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds{1}); // Avoid spinning when an out-of-date surface returns immediately.
+		}
 		if (!target.lastReadbackCaptureResult || *target.lastReadbackCaptureResult != VK_SUCCESS) {
 			return std::unexpected(Error::platform_error);
 		}
 
+		return writeOutputPng(readback.pixelBytes(), target.swapchain.extent, target.swapchain.imageFormat,
+			target.readbackOutputEncoded, target.readbackPreservesAlpha, output_path);
+	}
+
+	/// @brief Persist a fenced receipt with its recorded encoding, never the renderer's current settings.
+	auto ForwardRenderer::writeOutputDiagnostic(const OutputDiagnostic &frame, const std::filesystem::path &path) const -> std::expected<void, Error> {
+		if (!frame.serial || frame.serial > completedSerial_) { return std::unexpected(Error::missing_object); }
+		return writeOutputPng(frame.pixels.bytes(), frame.extent, frame.format, frame.encoded, frame.preserveAlpha, path);
+	}
+
+	/// @brief Shared PNG conversion preserves legacy quantization and applies the recorded transfer exactly once.
+	auto ForwardRenderer::writeOutputPng(std::span<const std::byte> pixels, VkExtent2D extent, VkFormat format,
+		bool encoded, bool preserveAlpha, const std::filesystem::path &path) -> std::expected<void, Error> {
 		auto png_pixels = std::vector<std::byte>{};
-		auto pixels = readback.pixelBytes();
-		if (target.swapchain.imageFormat == VK_FORMAT_R8G8B8A8_UNORM || target.swapchain.imageFormat == VK_FORMAT_B8G8R8A8_UNORM) {
+		if (!encoded && (format == VK_FORMAT_R8G8B8A8_UNORM || format == VK_FORMAT_B8G8R8A8_UNORM)) {
 			// Encode linear UNORM swapchain bytes with the transfer curve expected by PNG viewers.
 			png_pixels.assign(pixels.begin(), pixels.end());
 			for (std::size_t offset{}; offset < png_pixels.size(); offset += 4U) {
@@ -132,8 +172,8 @@ namespace vve::simple {
 			pixels = std::span<const std::byte>{png_pixels};
 		}
 
-		const auto output = output_path.string();
-		if (!writeReadbackPng(pixels, target.swapchain.extent, target.swapchain.imageFormat, output)) {
+		const auto output = path.string();
+		if (!writeReadbackPng(pixels, extent, format, output, preserveAlpha)) {
 			return std::unexpected(Error::io_error);
 		}
 		return {};

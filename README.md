@@ -1,10 +1,56 @@
 # Vienna Vulkan Engine
 
+[![Build](https://github.com/hlavacs/ViennaVulkanEngine/actions/workflows/build.yml/badge.svg?branch=V3)](https://github.com/hlavacs/ViennaVulkanEngine/actions/workflows/build.yml)
+
+## Automated compilation checks
+
+The [Build workflow](.github/workflows/build.yml) compiles and links the engine, examples,
+games and test executables on every push and pull request. It runs six jobs:
+
+| Platform | Runner | Compiler | Configurations |
+| --- | --- | --- | --- |
+| Windows x64 | windows-2025-vs2026 | Visual Studio MSVC | Debug, Release |
+| Linux x64 | ubuntu-24.04 | Clang 18 with matching libc++ modules | Debug, Release |
+| macOS ARM64 | macos-15 | Homebrew LLVM with libc++ modules | Debug, Release |
+
+Each job installs Vulkan SDK 1.4.350.0, including Slang, and bootstraps a pinned vcpkg
+revision. The project manifests and overlays select the dependency versions. Linux and
+macOS use CMake 4.3.1 and Ninja 1.13.2; Windows uses the tools bundled with Visual Studio.
+Homebrew's current LLVM formula supplies the macOS compiler. The YAML pins the actions
+and vcpkg revision to commit IDs. Runner images and operating-system packages can still
+change, so the job output records the tool versions.
+
+CI calls the normal build scripts with `--no-tests`. This compiles the test executables
+but does not run CTest or require a working GPU. A green build establishes compilation
+and linking for the selected toolchains, not correct rendering or passing runtime tests.
+To compile locally without running CTest:
+
+~~~text
+build_windows.cmd debug --no-tests
+bash build_linux.sh debug --no-tests
+bash build_macos.sh debug --no-tests
+~~~
+
+Omitting `--no-tests` preserves the usual build followed by CTest.
+
+The workflow caches the Vulkan SDK download and vcpkg binary packages. Package cache keys
+include the runner, architecture, manifests, overlays, toolchains and workflow; vcpkg also
+checks package ABI hashes. Failed jobs upload build and dependency logs for 14 days.
+Independent jobs keep running if one platform fails, and a new push cancels the previous
+run for the same branch or pull request.
+
+After pushing the workflow, open the repository's Actions tab to inspect all six jobs.
+Manual runs are available through Run workflow once this file is on the default branch.
+No repository secrets are needed for these public dependency downloads. GPU runtime
+checks can be added separately with a suitable driver and presentation setup.
+
 ## Setup
 
 This project uses `vcpkg` manifest dependencies for third-party libraries: Assimp, GLM, ImGui, SDL3, SDL3_mixer, stb, and Vulkan Memory Allocator are declared in [vcpkg.json](vcpkg.json) and installed into the repo-local `vcpkg_installed` directory. SDL3 is built with its Vulkan feature enabled so the examples can create Vulkan-capable windows. The post-processing library vvppl ([ViennaVulkanPostProcessingLibrary](https://github.com/orcunilker/ViennaVulkanPostProcessingLibrary), commit `e69f3e56beca935ceb257cce6005f6e39847bcb4`) is not a vcpkg package: CMake downloads it with `FetchContent` as a pinned, SHA256 hash-verified archive during the first configure.
 
 For offline builds, extract that archive beforehand and configure with `-DFETCHCONTENT_SOURCE_DIR_VIENNAVULKANPOSTPROCESSINGLIBRARY=<dir>`, where `<dir>` contains its top-level `CMakeLists.txt`. This uses the local source directory without downloading vvppl; the Vulkan SDK and vcpkg dependencies must also be installed beforehand.
+
+Third-party notice: the vendored [SMAA reference sources and lookup tables](third_party/SMAA/README.md), by Jimenez, Echevarria, Sousa and Gutierrez (*SMAA: Enhanced Subpixel Morphological Antialiasing*, Eurographics 2012), are MIT-licensed; see [the upstream licence](third_party/SMAA/LICENSE). Revision `71c806a8` (full commit and file SHA-256 receipts alongside the sources) is pinned. Builds compile the local reference through Slang and never download SMAA. The adapted [Khronos PBR_Neutral](third_party/KhronosToneMapping/README.md) reference is Apache-2.0-licensed.
 
 The project expects Vulkan, Slang (`slangc` compiles and embeds the simple engine's shaders in the engine binary during the build; no runtime shader files are needed), and optional macOS Vulkan ICDs such as KosmicKrisp to come from the Vulkan SDK. CMake takes the SDK root from `VVE_VULKAN_SDK_ROOT` or `$ENV{VULKAN_SDK}`. If neither is set, it auto-detects SDK installs below `$HOME/VulkanSDK/*/macOS` on macOS and `$HOME/vulkansdk/*/x86_64` on Linux.
 
@@ -211,6 +257,14 @@ The launch entries run these task labels internally: `Build Mac debug`, `Build M
 
 ## Unit Tests
 
+For an unpacked Vulkan SDK outside the loader's default search directories, set `VK_ADD_LAYER_PATH` to its `share/vulkan/explicit_layer.d`, `VK_INSTANCE_LAYERS=VK_LAYER_KHRONOS_validation` and `VK_LAYER_VALIDATE_SYNC=1` before full Debug CTest runs. The image-quality registrations configure these individually; the other GPU tests also need the layer to be discoverable.
+
+Debug enables the available validation layer and messenger by default. Release enables the same synchronization checks, messenger and error counter only when explicitly requested with `VK_LAYER_VALIDATE_SYNC=1`; ordinary Release startup keeps validation disabled. This lets the unchanged lifecycle assertions verify active validation in both configurations.
+
+`RenderToneMappingMatrixTests` (label `image_quality`) checks none/msaa4 on all three backends, real two-window resize and fenced in-flight tone-map changes. Its analytic vvppl fixture uses colour-grade gain `(2, 0.5, 0.25)` with identity lift/gamma/contrast/saturation. A separate ACES exposure 0.85 followed by Neutral deliberately maps twice; both cases use independent CPU references within one encoded byte. Profiles-layer variants exercise actual UNORM presentation and sRGB without mutable views. IQ-00 preservation still uses immutable references and frozen limits, with separate default-versus-explicit-default checks.
+
+Linux Debug restores the sealed IQ-00 references from `tests/assets/image-quality-reference.tar.gz`. Its two exact-pixel preservation tests use the archived llvmpipe/Mesa 25.2.8 environment (`VVE_IQ_BASELINE_ICD` selects the ICD); the other renderer tests use the normal device selection. CTest also makes the configured Vulkan SDK's validation layers discoverable.
+
 Shared test helpers use `import VVE.TestSupport` and the `vve_test_support` library, defined in `tests/CMakeLists.txt` from `tests/support/TestSupport.ixx`. The `vve::test` helpers configure hidden engines, write text fixtures in each test's build directory, and measure RGBA captures. Scene data, masks, tolerances and assertions remain in the tests. Sponza captures use `VVE_TEST_SPONZA_SCENE`, the configured source path, without runtime asset discovery.
 
 The build scripts run all tests after a successful build (`build_windows.cmd` skips them with `--no-tests`). To build and run all unit tests from the project root:
@@ -236,6 +290,8 @@ Tests that need a window or Vulkan device carry the `gpu` label. Use `ctest --te
 
 The simple renderer bounds its in-flight fence wait to 1 second and image acquisition to 100 ms. Fence timeouts and unavailable swapchain images skip the frame silently and increment the implementation diagnostic `ForwardRenderer::skippedFrameCount()`; they do not count as presented frames. Presented frames, temporary skips and fatal failures have distinct internal results. Recoverable swapchain changes remain nonfatal; fatal Vulkan failures reach the public `Engine::step()` and `run()` results with stage and `VkResult` diagnostics retained in the log. A fatal renderer failure stays failed until renderer cleanup. `RenderAcquireActionTests` checks the acquire-result policy without a window or device. Presentation (`vkQueuePresentKHR`) can still block; these limits apply only to the fence and acquire waits.
 
+Opt-in `setGpuTimingReadback(true)` diagnostics report fence-completed `gpu.tonemap_ms`, `gpu.smaa_ms`, `gpu.frame_ms` and actual device/presentation metadata; default frames allocate no queries.
+
 With `BUILD_TESTING` and the simple engine, `vve_add_example_test(<target>)` in `examples/CMakeLists.txt` registers `game`, `testscene`, `sponza` and `simple_forward_demo` with `--frames 3` (`game` uses 180 frames and verifies crate collection) and a 60-second forward timeout. Each has a deferred counterpart using the same executable and public runtime API. These tests run from the repository root. Run all example tests with `ctest --test-dir build/debug-linux -L example --output-on-failure`. The `simple_forward_demo` test passes `--output <build>/examples/simple_forward_demo/verify/simple_forward_demo_capture.png`; without `--output`, the example keeps its executable-relative capture path.
 
 Every test is a C++ executable built from one file in `tests/` and registered in [tests/CMakeLists.txt](tests/CMakeLists.txt) with `vve_add_engine_test`. CTest additionally runs `LightShadowDebugExample` (the `light_shadow_debug` example, which writes `bin/<variant>/verify/light_shadow_debug.txt` and `.png`) and `PostProcessingSmokeTests` (`postprocessing --frames 3 --all-effects`, which compiles and runs all 15 effects and fails on a non-zero exit code). Without `--all-effects`, `postprocessing` keeps its default chromatic, vignette, tonemap, greyscale and film grain chain. The rendering tests `SimpleForwardRendererTests`, `RenderTextureDedupTests`, `RenderMaterialImportTests`, `RenderLightingCaptureTests`, `RenderSponzaCaptureTests`, and `RenderMeshDedupTests` open hidden SDL windows (64 to 256 pixels) and need a Vulkan device that can present to them. Tests that pass `visible(false)` window setups also open hidden windows. They use the platform video driver; on a Linux machine without a display (`DISPLAY` and `WAYLAND_DISPLAY` unset), `build_linux.sh` switches to SDL's offscreen driver, which needs a Vulkan driver with `VK_EXT_headless_surface`.
@@ -259,12 +315,21 @@ The `vve::RenderSystem` facade offers a few features a simple game needs:
 
 - Transparency: `setObjectOpacity(object, opacity)` (0 to 1, read back with `objectOpacity`) blends an object over what lies behind it. Imported glTF materials keep their alpha mode: `OPAQUE` ignores alpha, `MASK` cuts holes where the base-colour alpha is below 0.5, and `BLEND` is see-through; OBJ materials with a dissolve below 1 are blended. Transparent objects are drawn after solid ones, far to near, and cast no shadows; cut-out objects cast solid shadows.
 - Background: `setBackgroundColor(color)` sets the colour every window clears to (default light blue); `backgroundColor()` reads it.
+- Tone mapping: `setToneMapping(ToneMapping{ToneMappingOperator::khronos_neutral, 2})` opts into Khronos PBR Neutral after any configured vvppl chain, on all three backends. `toneMapping()` reads the setting; `setToneMapping({})` restores the legacy output path unless startup SMAA remains selected. `ToneMapping{}` defaults to operator `none` and exposure 1. Setters run between frame calls on the renderer's calling thread and affect the next recorded frame; concurrent setters are not supported. Unknown operators and nonpositive/nonfinite exposures (even with `none`) return `invalid_argument` without changing state. Only RGBA8/BGRA8 sRGB or UNORM with SRGB_NONLINEAR presentation and the required attachment/sample features are supported; unsupported outputs return `platform_error` before frame submission (at the first frame for pre-initialization selections). HDR readback stays linear and untouched. Neutral maps negative RGB (including negative infinity) and NaN to zero, caps positive inputs/infinity at 65504, then saturates exposed channels at 1e6 to prevent overflow; ordinary inputs use the reference curve. Combining vvppl ACES and Neutral tone-maps twice. The adapted [Khronos reference](third_party/KhronosToneMapping/README.md) is pinned and licensed under Apache-2.0.
 - Skybox: `setSkybox(panorama)` surrounds every camera with a 2:1 equirectangular image (top row straight up); `clearSkybox()` and `clearScene()` remove it. A missing image returns `Error::io_error`.
 - Material lighting: `setMaterialLighting(MaterialLighting::physically_based)` enables GGX direct lighting and approximate illumination/reflections from the skybox. Classic lighting remains the default. `setObjectSurface(object, SurfaceMaterial{.roughness = 0.3F, .metalness = 0.0F})` changes one object's factors without changing shared materials; imported maps still apply. Set colour/texture before surface factors, since those look setters reset the other material properties. Panorama filtering uses eight fixed samples and ordinary mipmaps; it is an inexpensive approximation without local reflections or precomputed irradiance maps.
 - Haze: `setAtmosphere(AtmosphereSettings{.density = 0.002F, .height_falloff = 0.01F})` blends surfaces towards the chosen haze colour with distance and decreasing density above `base_height`. Zero density (the default) disables it. This is analytic height fog, with no volumetric clouds or light scattering; the skybox remains unchanged.
 - Sky and weather: `setSky(SkySettings{.enabled = true, .cloud_coverage = 0.4F})` replaces the skybox with a physically based sky lit by the first directional light (with a visible sun), and volumetric clouds between `cloud_base` and `cloud_base + cloud_thickness` that drift with the animation time and shade the sun. Distant surfaces fade into the sky, physically based materials reflect it, and `setAtmosphere` then adds weather haze or fog lit by sun and sky instead of its fixed colour. `haze` adds aerosols; coverage 1 gives an overcast sky. World units are read as metres above sea level (y = 0). It is per-pixel ray marching without reflections of the clouds themselves.
+- Terrain: `addTerrain(TerrainDescriptor{.columns = 1025, .rows = 1025, .cell_size = 1, .heights = ...})` draws a regular height grid with GPU tessellation: detail follows the camera distance, and only the heights (4 bytes per sample) plus a coarse patch grid live on the GPU, so square-kilometre terrains need a few megabytes instead of hundreds. An optional `base_color_texture` covers the whole grid (u along +X, v along +Z). It returns an ordinary object handle and casts and receives shadows. It needs the `tessellationShader` device feature; without it the terrain is skipped with one warning.
 - Water: `addOcean(OceanDescriptor{})` creates a finite 64×64-cell horizontal patch with two analytic waves and reflective lighting. It returns an ordinary object handle, so normal transform, visibility, opacity and removal calls apply; bounds conservatively include wave height. Drive it with `setAnimationTime(AnimationTime{elapsed_seconds})`; the default clock is paused at zero. The patch has no refraction, foam or shoreline simulation.
-- Antialiasing: call `setAntialiasing(Antialiasing::msaa4)` before the first rendered frame for four-sample geometry coverage. The default is `none`; changing the mode after renderer initialization returns `Error::already_initialized`. Unsupported devices report `Error::platform_error` when rendering initializes. Post-processing, frame capture and GUI consume the resolved single-sample image; shadow maps remain single-sample.
+- Antialiasing: call `setAntialiasing` before the first rendered frame. Modes on **forward, deferred and hybrid_gi** are `none` (default), `msaa4` (four-sample geometry coverage), `smaa` (one sample plus SMAA 1x HIGH), and `msaa4_smaa` (four samples plus SMAA). Implementation `sampleCount()` returns 4 for both four-sample modes and 1 otherwise. Valid late selections, including the active mode, return `Error::already_initialized`; unknown values return `invalid_argument` first, preserving state. Unsupported 4x devices report `Error::platform_error` during initialization, retain the requested mode and allow a retry with `none`. Native-draw pipelines must use `NativeDrawContext::samples`, `colorAttachmentCount`, `colorFormats` and `depthFormat` for each pass. Shadow maps and probe captures remain single-sample. `RenderAntialiasingQualityTests` checks resolved linear HDR against analytic coverage; the Profiles-layer unsupported test covers both four-sample selections and recovery.
+
+The output chain is `hdrImage (linear HDR) -> [vvppl -> postImage] -> [Neutral] -> [SMAA] -> swapchain -> GUI`. `postImage` is used only when a VVE output pass follows vvppl; otherwise the legacy chain writes the swapchain directly. With SMAA selected, Neutral or clamped identity fills `ldrImage`, followed by edges, weights and neighbourhood blending. HIGH retains the reference threshold 0.1, 16 orthogonal / 8 diagonal search steps and corner rounding 25; no temporal reconstruction is provided. AreaTex (160x560 RG8) and SearchTex (64x16 R8) upload once per device with linear clamp sampling; luma samples use point clamp. The mutable RGBA8 sRGB input has a UNORM view for gamma-space edge detection and an sRGB view for linear-light neighbourhood blending. Edge RG8 and weight RGBA8 attachments are linear data, cleared each frame. sRGB presentation encodes once in the attachment; SRGB_NONLINEAR UNORM encodes once in the final shader. PNG readback retains each recorded frame's encoding, channel order and opt-in alpha, so later setting changes cannot cause a second encode. The legacy UNORM path still quantizes linear bytes before CPU PNG encoding. GUI uses authored colours through a UNORM view, or decodes them before opt-in sRGB attachment encoding when mutable swapchain views are unavailable. Unsupported formats, usages, filtering or mutable-view capabilities return `platform_error` before submission. `captureFrameLinear` remains unchanged.
+
+Tone-map and SMAA resources are per window, allocated on demand, rebuilt on resize and retired through submission fences; SMAA lookup tables/samplers are shared per device. Queue barriers order intermediate reads before next-frame overwrites, including frames in flight; no new device-wide waits are added. Disabling Neutral while startup SMAA is selected retains the identity/filter chain. A fresh `none` renderer with no tone mapping allocates no optional output images, pipelines, descriptors or passes and keeps the legacy blit/UNORM capture path. VVE does not detect vvppl tone mappers: combining one with Neutral applies both. `RenderSmaaQualityTests` uses the frozen IQ-03a edge/detail/coverage/outside-mask limits, shared bypass/blur/damage evaluators, engine/native fixtures and opt-in intermediate readback for patterned-then-flat frames. `RenderPostOutputLifecycleTests` covers all AA modes and backends with ordinary in-flight submissions; `RenderPostOutputWindowsTests` adds independent two-window resize, minimize/resume, GUI and shutdown cycles across real sRGB/UNORM presentation with and without mutable views (IQ-03b).
+
+IQ-03a quality acceptance remains incomplete on llvmpipe: the active test detects 4.7158% thin-line coverage error against the frozen 2.5% bound, a SMAA thin-line edge-error ratio of 1.05376 against 1.0, and combined-mode regressions above 0.00390625 versus MSAA. The cutout residual improves, stale-data checks pass, and defaults retain their immutable references. Limits and reference images have not been changed; see the IQ-03a-impl loop-log entry and build-tree evidence for measured results.
+
 - Sprites: `addSprite(size, texture, color, transform)` adds an unlit textured quad that always faces each window's camera; its texture alpha makes it see-through. Only translation and x/y scale apply, and sprites cast no shadows. Particles are many sprites moved by game code.
 - Changing looks: `setObjectColor(object, color)` keeps the object's texture and `setObjectTexture(object, path)` keeps its colour. An imported object becomes a plain coloured object; its other PBR values are not kept.
 - Shapes and meshes: `addSphere(radius, color, transform)` adds a sphere (equal radii share one mesh). `addMesh(MeshDescriptor)` adds geometry built by game code: positions and triangle indices, optional normals (empty gives flat face normals), UVs (empty gives zero), colour, base-colour texture and transform; mismatched sizes return `Error::invalid_argument`.

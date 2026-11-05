@@ -48,13 +48,16 @@ struct FrameUniforms
     uint activePointLightCount;       ///< Packed point-light count.
     float4 fogColorDensity;           ///< Linear haze RGB and extinction per world unit.
     float4 fogHeightTime;             ///< Base height, density height falloff, animation seconds, unused.
-    float4x4 inverseViewProjection; ///< Inverse projection-view for depth reconstruction.
-    float4 viewport; ///< Drawable dimensions.
+    float4x4 inverseViewProjection; ///< Main depth reconstruction; direct-only captures reuse this for the probe sun projection.
+    float4 viewport; ///< Width/height; hybrid main W=cascade count, capture Z=packed sun index+1.
     float4 environmentLighting;       ///< Panorama texture slot (-1 absent), strength, GGX enabled, unused.
     float4 skySun;                    ///< Unit direction towards the sun and its irradiance; w = 0 keeps the panorama and classic haze.
     float4 skyParams;                 ///< Aerosol amount, sun disk radius in radians, index of the sun's directional light (-1 none), unused.
     float4 cloudLayer;                ///< Cloud base height, thickness, coverage (0 none), extinction per metre at full density.
     float4 cloudWind;                 ///< Wind offset of the cloud pattern along x and z, unused, unused.
+    float4 probeOrigin;               ///< Snapped grid origin and spacing.
+    float4 probeControl;              ///< Enabled, strength, debug probe visibility and contact AO; other backends ignore these.
+    float4 distanceMist;              ///< Additional distance mist start/end; disabled when both zero.
 };
 
 struct ObjectPushConstants
@@ -62,7 +65,7 @@ struct ObjectPushConstants
     float4x4 model;         ///< Object-local model matrix selected before each draw call.
     uint materialIndex;    ///< Dense slot in the material storage buffer.
     uint shadowMatrixIndex; ///< Index into frame.shadowViewProjs used by the shadow vertex stage.
-    uint flags;             ///< Bit 0 unlit, bit 1 sky, bit 2 sprite, bit 3 water (mirrors objectFlag in Vulkan/Pipeline.ixx).
+    uint flags;             ///< Bit 0 unlit, bit 1 sky, bit 2 sprite, bit 3 water, bit 4 terrain (mirrors objectFlag in Vulkan/Pipeline.ixx).
     float opacity;          ///< Object alpha multiplied with the material alpha.
     float4 waves;           ///< Water height, wavelength, angular speed and enabled flag.
 };
@@ -79,6 +82,9 @@ struct GpuMaterial
     uint ambientOcclusionTexture;   ///< Ambient-occlusion texture-table index, sampled from red.
     float roughnessFactor;          ///< Roughness factor; a roughness texture multiplies it.
     float metalnessFactor;          ///< Metalness factor; a metalness texture multiplies it.
+    float alphaCutoff;              ///< Hybrid mask threshold imported from the material.
+    uint sidedness;                ///< Imported single/double-sided policy, or unchanged engine-authored capture policy.
+    float2 padding;                 ///< Matches the C++ material stride.
 };
 
 struct VertexInput
@@ -122,6 +128,7 @@ static const uint kUnlitFlag = 1;  ///< ObjectPushConstants::flags bit for flat,
 static const uint kSkyFlag = 2;    ///< ObjectPushConstants::flags bit for the skybox.
 static const uint kSpriteFlag = 4; ///< ObjectPushConstants::flags bit for camera-facing quads.
 static const uint kWaterFlag = 8; ///< Analytic waves with world-space height and normal derivatives.
+static const uint kTerrainFlag = VVE_OBJECT_TERRAIN_FLAG; ///< Tessellated grids retain their existing two-sided policy.
 static const float kPi = 3.14159265358979; ///< Converts sky angles to panorama coordinates.
 static const float kAlphaMask = 1.0;  ///< Cut-out alpha mode stored in emissiveFactor.w.
 static const float kAlphaBlend = 2.0; ///< Blended alpha mode stored in emissiveFactor.w.
@@ -137,9 +144,15 @@ Sampler2DArrayShadow dirShadowArray; ///< Directional light comparison-depth arr
 
 [[vk::binding(4, 0)]]
 Sampler2DArrayShadow pointShadowArray; ///< Point light comparison-depth array, six face layers per packed point light.
+#ifdef VVE_PROBE_CAPTURE
+[[vk::binding(10, 1)]] Sampler2DArrayShadow probeSunShadow; ///< Cached sun coverage for both world-space probe volumes.
+#endif
 
 [[vk::binding(VVE_MATERIAL_BINDING, 0)]]
 StructuredBuffer<GpuMaterial> materials; ///< Dense materials selected by each object's material index.
+
+[[vk::binding(VVE_TERRAIN_HEIGHT_BINDING, 0)]]
+StructuredBuffer<float> terrainHeights; ///< Heights of every addTerrain grid back to back; read by the terrain domain stages.
 
 [[vk::push_constant]]
 ObjectPushConstants object; ///< Per-object transform constants.
@@ -159,9 +172,9 @@ float perspectiveShadowBias(float farPlane, float axialDepth)
 /**
  * @brief Averages a 3x3 grid of hardware-filtered depth comparisons.
  */
-float pcfShadow(Sampler2DArrayShadow shadowArray, float2 uv, int layer, float referenceDepth)
+float pcfShadow(Sampler2DArrayShadow shadowArray, float2 uv, int layer, float referenceDepth, float resolution = float(kShadowMapResolution))
 {
-    const float texelSize = 1.0 / float(kShadowMapResolution); ///< One shadow texel in normalized coordinates.
+    const float texelSize = 1.0 / resolution; ///< One shadow texel in normalized coordinates.
     float visibility = 0.0; ///< Accumulated lit fraction from nine comparison taps.
     for (int y = -1; y <= 1; ++y) {
         for (int x = -1; x <= 1; ++x) {
@@ -239,15 +252,21 @@ float3 oceanWave(float2 p)
 /// @brief Fades a surface by the physical sky, or by exponential height haze; zero density leaves old scenes unchanged.
 float3 applyAtmosphere(float3 color, float3 worldPos)
 {
-    if (physicalSky()) return applySkyAtmosphere(color, worldPos);
-    if (frame.fogColorDensity.w == 0.0) return color;
+#ifdef VVE_PROBE_CAPTURE
+    return color; // Linear captures exclude camera fog, exposure and post-processing.
+#endif
     const float3 eye = worldEye();
     const float d = length(worldPos - eye);
-    return d > 0.0 ? lerp(frame.fogColorDensity.rgb, color, exp(-hazeDepth(eye, (worldPos - eye) / d, d))) : color;
+    if (frame.distanceMist.y > frame.distanceMist.x && d >= frame.distanceMist.y)
+        return frame.fogColorDensity.rgb;
+    if (physicalSky()) color = applySkyAtmosphere(color, worldPos);
+    else if (frame.fogColorDensity.w > 0.0 && d > 0.0)
+        color = lerp(frame.fogColorDensity.rgb, color, exp(-hazeDepth(eye, (worldPos - eye) / d, d)));
+    return lerp(color, frame.fogColorDensity.rgb, distanceMistAmount(d));
 }
 
-[shader("vertex")]
-VertexOutput vertexMain(VertexInput input)
+/// @brief Ordinary helper shared by vertex entry points; avoids Slang entry-point calls in generated SPIR-V.
+VertexOutput transformVertex(VertexInput input)
 {
     VertexOutput output;
     // The sky follows the camera's rotation only and lies just inside the far plane; the fragment stage gets its direction.
@@ -284,11 +303,162 @@ VertexOutput vertexMain(VertexInput input)
 }
 
 [shader("vertex")]
-float4 shadowVertexMain(VertexInput input) : SV_Position
+VertexOutput vertexMain(VertexInput input)
+{
+    return transformVertex(input);
+}
+
+/// @brief Shared animated shadow position, callable without entry-point interface lowering.
+float4 shadowPosition(VertexInput input)
 {
     float4 worldPosition = mul(object.model, float4(input.position, 1.0));
     if ((object.flags & kWaterFlag) != 0) worldPosition.y += oceanWave(worldPosition.xz).x;
     return mul(frame.shadowViewProjs[object.shadowMatrixIndex], worldPosition); ///< Shadows follow the same animated surface.
+}
+
+[shader("vertex")]
+float4 shadowVertexMain(VertexInput input) : SV_Position
+{
+    return shadowPosition(input);
+}
+
+/// @brief Hybrid shadow views preserve material UVs for the shared mask test.
+[shader("vertex")]
+VertexOutput shadowMaterialVertexMain(VertexInput input)
+{
+    VertexOutput output = transformVertex(input);
+    output.position = shadowPosition(input);
+    return output;
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Terrain (RenderSystem::addTerrain): 4-corner patches, tessellated by camera distance, displaced from a height grid.
+// object.waves holds the grid: first sample in terrainHeights, columns, rows (exact float integers) and cell size.
+// ---------------------------------------------------------------------------------------------------------------
+
+static const float kTerrainEdgePixels = 6.0; ///< Target projected length of one tessellated terrain edge.
+
+/// @brief Patch corner in object space, passed unchanged to the hull stage.
+struct TerrainControlPoint
+{
+    [[vk::location(0)]] float3 position : POSITION;  ///< Object-space corner; y is the corner height.
+    [[vk::location(1)]] float2 texCoord : TEXCOORD0; ///< Grid texture coordinate of the corner.
+};
+
+/// @brief Edge and inside tessellation levels of one quad patch.
+struct TerrainPatch
+{
+    float edges[4] : SV_TessFactor;       ///< Edges u = 0, v = 0, u = 1, v = 1.
+    float inside[2] : SV_InsideTessFactor; ///< Along u and along v.
+};
+
+/// @brief World-space camera position from the view matrix: eye = -R^T t.
+float3 cameraPosition()
+{
+    const float3 t = float3(frame.view[0].w, frame.view[1].w, frame.view[2].w);
+    return -(frame.view[0].xyz * t.x + frame.view[1].xyz * t.y + frame.view[2].xyz * t.z);
+}
+
+/// @brief Tessellation level of one patch edge from its projected length; neighbours compute the same value.
+///
+/// The midpoint and length are rounded to centimetres, so a shared edge of two tiles whose model matrices differ by a
+/// rounding error still gets the identical level and the surfaces meet without cracks.
+float terrainEdgeLevel(float3 a, float3 b)
+{
+    const float3 worldA = mul(object.model, float4(a, 1.0)).xyz;
+    const float3 worldB = mul(object.model, float4(b, 1.0)).xyz;
+    const float3 middle = round((worldA + worldB) * 50.0) / 100.0;
+    const float edgeLength = round(distance(worldA, worldB) * 100.0) / 100.0;
+    const float cameraDistance = max(distance(middle, cameraPosition()), 0.01);
+    const float pixelsPerUnit = frame.viewport.y * 0.5 * abs(frame.projection[1][1]) / cameraDistance;
+    // More levels than samples along the edge add no detail; 64 is the guaranteed hardware limit.
+    const float samples = max(round(distance(a.xz, b.xz) / object.waves.w), 1.0);
+    return clamp(edgeLength * pixelsPerUnit / kTerrainEdgePixels, 1.0, min(min(samples, float(VVE_TERRAIN_PATCH_CELLS)), 64.0));
+}
+
+/// @brief Bilinear height at an object-space XZ position, clamped to the grid.
+float terrainHeight(float2 position)
+{
+    const uint offset = uint(object.waves.x + 0.5);
+    const uint columns = uint(object.waves.y + 0.5);
+    const uint rows = uint(object.waves.z + 0.5);
+    const float2 grid = clamp(position / object.waves.w, float2(0.0), float2(float(columns - 1), float(rows - 1)));
+    const uint2 base = min(uint2(grid), uint2(columns - 2, rows - 2));
+    const float2 f = grid - float2(base);
+    const uint index = offset + base.y * columns + base.x;
+    const float bottom = lerp(terrainHeights[index], terrainHeights[index + 1], f.x);
+    const float top = lerp(terrainHeights[index + columns], terrainHeights[index + columns + 1], f.x);
+    return lerp(bottom, top, f.y);
+}
+
+/// @brief Object-space surface point of the domain location (u along corners 0-1, v along corners 0-3).
+float3 terrainPoint(float2 uv, OutputPatch<TerrainControlPoint, 4> patch)
+{
+    const float3 flat = lerp(lerp(patch[0].position, patch[1].position, uv.x), lerp(patch[3].position, patch[2].position, uv.x), uv.y);
+    return float3(flat.x, terrainHeight(flat.xz), flat.z);
+}
+
+[shader("vertex")]
+TerrainControlPoint terrainVertexMain(VertexInput input)
+{
+    TerrainControlPoint output;
+    output.position = input.position;
+    output.texCoord = input.texCoord;
+    return output;
+}
+
+/// @brief Per-patch levels; inside levels follow the larger of the two opposite edges.
+TerrainPatch terrainPatchLevels(InputPatch<TerrainControlPoint, 4> patch)
+{
+    TerrainPatch output;
+    output.edges[0] = terrainEdgeLevel(patch[0].position, patch[3].position);
+    output.edges[1] = terrainEdgeLevel(patch[0].position, patch[1].position);
+    output.edges[2] = terrainEdgeLevel(patch[1].position, patch[2].position);
+    output.edges[3] = terrainEdgeLevel(patch[3].position, patch[2].position);
+    output.inside[0] = max(output.edges[1], output.edges[3]);
+    output.inside[1] = max(output.edges[0], output.edges[2]);
+    return output;
+}
+
+[shader("hull")]
+[domain("quad")]
+[partitioning("fractional_odd")]
+[outputtopology("triangle_ccw")]
+[outputcontrolpoints(4)]
+[patchconstantfunc("terrainPatchLevels")]
+TerrainControlPoint terrainHullMain(InputPatch<TerrainControlPoint, 4> patch, uint id : SV_OutputControlPointID)
+{
+    return patch[id];
+}
+
+[shader("domain")]
+[domain("quad")]
+[partitioning("fractional_odd")] // must match terrainHullMain: Slang otherwise emits SpacingEqual here
+VertexOutput terrainDomainMain(TerrainPatch levels, float2 uv : SV_DomainLocation, OutputPatch<TerrainControlPoint, 4> patch)
+{
+    const float cell = object.waves.w;
+    const float3 local = terrainPoint(uv, patch);
+    // Central differences of the height grid give the normal, independent of the tessellation level.
+    const float dx = terrainHeight(local.xz + float2(cell, 0.0)) - terrainHeight(local.xz - float2(cell, 0.0));
+    const float dz = terrainHeight(local.xz + float2(0.0, cell)) - terrainHeight(local.xz - float2(0.0, cell));
+    const float3 localNormal = normalize(float3(-dx, 2.0 * cell, -dz));
+    const float4 worldPosition = mul(object.model, float4(local, 1.0));
+    VertexOutput output;
+    output.position = mul(frame.projection, mul(frame.view, worldPosition));
+    output.worldPos = worldPosition.xyz;
+    output.texCoord = lerp(lerp(patch[0].texCoord, patch[1].texCoord, uv.x), lerp(patch[3].texCoord, patch[2].texCoord, uv.x), uv.y);
+    output.normal = normalizeTransformed(localNormal, mul(normalMatrix(object.model), localNormal));
+    output.tangent = float4(0.0);
+    return output;
+}
+
+[shader("domain")]
+[domain("quad")]
+[partitioning("fractional_odd")] // must match terrainHullMain: Slang otherwise emits SpacingEqual here
+float4 terrainShadowDomainMain(TerrainPatch levels, float2 uv : SV_DomainLocation, OutputPatch<TerrainControlPoint, 4> patch) : SV_Position
+{
+    const float4 worldPosition = mul(object.model, float4(terrainPoint(uv, patch), 1.0));
+    return mul(frame.shadowViewProjs[object.shadowMatrixIndex], worldPosition);
 }
 
 /// @brief Three material attachments, evaluated once by either geometry path in linear colour space.
@@ -298,14 +468,14 @@ struct GBufferOutput {
     [[vk::location(2)]] float4 emissiveFlags : SV_Target2; ///< HDR emission; AO + twice the unlit/water flags.
 };
 
-/// @brief Samples material maps and applies cut-out alpha, normal transforms and animated water for both backends.
-GBufferOutput evaluateSurface(FragmentInput input, out float alpha)
+/// @brief Samples linear base colour and alpha once for main, capture and masked-shadow views.
+float4 materialBaseColor(float2 uv)
 {
     const GpuMaterial material = materials[object.materialIndex];
     float3 baseColor = material.baseColorFactor.rgb;                      ///< Material factor remains the default base color.
     float coverage = material.baseColorFactor.a;                         ///< Material alpha; the texture alpha multiplies it.
     if (material.baseColorTexture != kNoTexture && material.baseColorTexture < kMaxSceneTextures) {
-        float2 texCoord = input.texCoord;
+        float2 texCoord = uv;
         if ((object.flags & kSpriteFlag) != 0) {                          ///< A sprite edge must not blend with the opposite edge.
             const float2 edge = halfTexel(material.baseColorTexture);
             texCoord = clamp(texCoord, edge, 1.0 - edge);
@@ -314,7 +484,33 @@ GBufferOutput evaluateSurface(FragmentInput input, out float alpha)
         baseColor *= texel.rgb;                                          ///< The material texture modulates its factor before lighting.
         coverage *= texel.a;
     }
-    if (material.emissiveFactor.w == kAlphaMask && coverage < 0.5) { discard; } ///< Cut-out leaves holes, the rest is opaque.
+    return float4(baseColor, coverage);
+}
+/// @brief Equality survives the mask; the old backends keep their existing default cutoff.
+void materialAlphaMask(float coverage)
+{
+    const GpuMaterial material = materials[object.materialIndex];
+#if defined(VVE_GI) || defined(VVE_GI_MATERIAL) || defined(VVE_PROBE_CAPTURE)
+    const float cutoff = material.alphaCutoff;
+#else
+    const float cutoff = VVE_ALPHA_CUTOFF;
+#endif
+    if (material.emissiveFactor.w == kAlphaMask && coverage < cutoff) discard;
+}
+/// @brief Shadows discard exactly the same masked texels as the hybrid material and capture passes.
+[shader("fragment")]
+void shadowFragmentMain(FragmentInput input)
+{
+    materialAlphaMask(materialBaseColor(input.texCoord).a);
+}
+/// @brief Samples material maps and applies cut-out alpha, normal transforms and animated water for both backends.
+GBufferOutput evaluateSurface(FragmentInput input, out float alpha)
+{
+    const GpuMaterial material = materials[object.materialIndex];
+    const float4 base = materialBaseColor(input.texCoord);
+    const float3 baseColor = base.rgb;
+    const float coverage = base.a;
+    materialAlphaMask(coverage);
     const bool blended = material.emissiveFactor.w == kAlphaBlend || (object.flags & kSpriteFlag) != 0; ///< Sprites always use their texture alpha.
     alpha = (blended ? coverage : 1.0) * object.opacity;    ///< Opaque modes ignore material alpha.
     float roughness = material.roughnessFactor;                          ///< Factors apply alone or scale their texture, as in glTF.
@@ -359,8 +555,15 @@ GBufferOutput evaluateSurface(FragmentInput input, out float alpha)
     result.emissiveFlags = float4(emissive, ambientOcclusion + 2.0 * float(object.flags & (kUnlitFlag | kWaterFlag)));
     return result;
 }
+#ifdef VVE_GI
+#include "simple_irradiance.slang"
+#endif
 /// @brief One lighting implementation shared by forward fragments and reconstructed deferred samples.
-float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags)
+float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags
+#ifdef VVE_CONTACT_AO
+    , float screenAo = 1.0
+#endif
+)
 {
     const float3 baseColor = surface.baseRoughness.rgb;
     if ((flags & kUnlitFlag) != 0) return applyAtmosphere(baseColor, worldPos);
@@ -368,9 +571,31 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags)
     const float metalness = surface.normalMetalness.a;
     const float3 normal = normalize(surface.normalMetalness.xyz);
     const float3 emissive = surface.emissiveFlags.rgb;
+#ifdef VVE_CONTACT_AO
+    // Material and contact AO overlap: min avoids double darkening; specular keeps the original material value.
+    const float materialOcclusion = surface.emissiveFlags.a - 2.0 * float(flags);
+    const float ambientOcclusion = min(materialOcclusion, screenAo);
+#else
     const float ambientOcclusion = surface.emissiveFlags.a - 2.0 * float(flags);
+#endif
     const float3 viewDir = normalize(worldEye() - worldPos);
-    const float ambient = frame.ambient * ambientOcclusion;              ///< Ambient occlusion attenuates indirect scene light.
+    float ambientScale = 1.0;
+#ifdef VVE_PROBE_CAPTURE
+    ambientScale = 0.0; // One bounce: direct lighting and emission only, without ambient or probe feedback.
+#endif
+#ifdef VVE_GI
+    float coverage = 0;
+    float3 irradiance = float3(0);
+    if (frame.probeControl.x != 0 && frame.probeControl.y > 0) {
+        irradiance = sampleProbeIrradiance(worldPos, normal, coverage);
+        ambientScale = 1.0 - coverage * frame.probeControl.y;
+    }
+    // Authored classic ambient predates metals. Preserve its metallic share while replacing only diffuse.
+    const float constantAmbientScale = 1.0 - (1.0 - ambientScale) * (1.0 - metalness);
+#else
+    const float constantAmbientScale = ambientScale;
+#endif
+    const float ambient = frame.ambient * ambientOcclusion * constantAmbientScale; ///< Contact AO attenuates only indirect diffuse light.
     const float shininess = lerp(4.0, 128.0, (1.0 - roughness) * (1.0 - roughness)); ///< Rough surfaces broaden Blinn-Phong highlights.
     const float specularStrength = lerp(0.3, 1.0, metalness);            ///< Metals strengthen their tinted reflection.
     const float3 diffuseColor = baseColor * (1.0 - metalness);           ///< Metals have no diffuse response.
@@ -415,7 +640,7 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags)
         if (i < activeDirectionalLightCount) {                     ///< Ignore unused directional-light slots.
             // This per-light uniform branch preserves ambient without evaluating shadow matrices or PCF.
             if (frame.directionalLightDirections[i].w != 0.0) {
-                directionalContribution += baseColor * frame.directionalLightAmbients[i].w * ambientOcclusion;
+                directionalContribution += baseColor * frame.directionalLightAmbients[i].w * ambientOcclusion * constantAmbientScale;
                 continue;
             }
             const float3 dirSurfaceLightDir = -frame.directionalLightDirections[i].xyz; ///< CPU-normalized directional surface-to-light vector.
@@ -423,12 +648,28 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags)
             const float3 dirHalfVector = normalize(dirSurfaceLightDir + viewDir); ///< Directional Blinn-Phong halfway direction.
             const float dirSpecular = pow(max(dot(normal, dirHalfVector), 0.0), shininess); ///< Directional highlight response.
             const float3 dirLight = frame.directionalLightColorIntensities[i].rgb * frame.directionalLightColorIntensities[i].w; ///< Directional light color scaled by intensity.
-            const float dirAmbient = frame.directionalLightAmbients[i].w * ambientOcclusion; ///< Directional ambient contribution without shadowing.
+            const float dirAmbient = frame.directionalLightAmbients[i].w * ambientOcclusion * constantAmbientScale; ///< Directional ambient contribution without shadowing.
+            float dirShadowPcf = 1.0; ///< Outside bounded shadow coverage remains fully lit.
+#ifdef VVE_PROBE_CAPTURE
+            if (i + 1 == int(frame.viewport.z)) {
+                // Capture has no depth reconstruction: that matrix slot carries the cached, view-independent sun transform.
+                const float4 clip = mul(frame.inverseViewProjection, float4(worldPos, 1));
+                const float3 ndc = clip.xyz / clip.w;
+                if (all(abs(ndc.xy) <= 1) && ndc.z >= 0 && ndc.z <= 1)
+                    dirShadowPcf = pcfShadow(probeSunShadow, ndc.xy * .5 + .5, 0, ndc.z - kDirectionalCompareBias, VVE_PROBE_SHADOW_RESOLUTION);
+            } else {
+#endif
             int dirCascade = -1;                                  ///< Negative means the fragment is beyond directional shadow coverage.
             for (int cascade = 0; cascade < kNumShadowCascades; ++cascade) {
+#ifdef VVE_PROBE_CAPTURE
+                // Cascades were fitted to the main view, so select by world coverage, not the cubemap face's view depth.
+                const float4 clip = mul(frame.shadowViewProjs[kDirShadowBase + i * kNumShadowCascades + cascade], float4(worldPos, 1));
+                const float3 ndc = clip.xyz / clip.w;
+                if (all(abs(ndc.xy) < .99) && ndc.z >= 0 && ndc.z <= 1) { dirCascade = cascade; break; }
+#else
                 if (viewDepth <= frame.cascadeSplits[cascade]) { dirCascade = cascade; break; } ///< Select the nearest cascade whose far split contains the fragment.
+#endif
             }
-            float dirShadowPcf = 1.0;                              ///< Fragments beyond the last split remain fully lit.
             if (dirCascade >= 0) {
                 const int dirShadowLayer = i * kNumShadowCascades + dirCascade; ///< Flattened light-cascade matrix and image layer.
                 const float4 dirLightClip = mul(frame.shadowViewProjs[kDirShadowBase + dirShadowLayer], float4(worldPos, 1.0)); ///< Fragment position in the selected cascade.
@@ -439,6 +680,9 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags)
                 dirShadowPcf = insideDirShadowMap ? pcfShadow(dirShadowArray, dirShadowUv, dirShadowLayer, dirLightNdc.z - dirShadowBias) : 1.0; ///< Filter the selected flattened cascade layer.
                 debugCascadeIndex = dirCascade;
             }
+#ifdef VVE_PROBE_CAPTURE
+            }
+#endif
             const float dirShadowFactor = lerp(VVE_SHADOW_OCCLUDED_FACTOR, 1.0, dirShadowPcf) *
                 (float(i) == frame.skyParams.z ? cloudShadow(worldPos) : 1.0); ///< Shadow floor and smooth edge; clouds shade the sun.
             const float3 dirResponse = physicallyBased ? microfacetLight(baseColor, metalness, roughness, normal, viewDir, dirSurfaceLightDir, flags) : diffuseColor * dirDiffuse + specularColor * dirSpecular;
@@ -451,7 +695,7 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags)
         if (i < activeSpotLightCount) {                               ///< Ignore unused shadow-array layers.
             // Ambient-only slots have no shadow image contents to sample.
             if (frame.spotLightDirections[i].w != 0.0) {
-                spotContribution += baseColor * frame.spotLightConeAmbients[i].w * ambientOcclusion;
+                spotContribution += baseColor * frame.spotLightConeAmbients[i].w * ambientOcclusion * constantAmbientScale;
                 continue;
             }
             const float3 spotToLight = frame.spotLightPositionRanges[i].xyz - worldPos; ///< Vector from fragment to the spot light.
@@ -467,7 +711,7 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags)
             const float spotCos = dot(-spotLightDir, frame.spotLightDirections[i].xyz); ///< Cone cosine using the CPU-normalized spot axis.
             const float spotConeFalloff = smoothstep(frame.spotLightConeAmbients[i].y, frame.spotLightConeAmbients[i].x, spotCos); ///< Spot cone angular falloff.
             const float3 spotLight = frame.spotLightColorIntensities[i].rgb * frame.spotLightColorIntensities[i].w; ///< Spot light color scaled by intensity.
-            const float spotAmbient = frame.spotLightConeAmbients[i].w * ambientOcclusion; ///< Spot ambient contribution without shadowing.
+            const float spotAmbient = frame.spotLightConeAmbients[i].w * ambientOcclusion * constantAmbientScale; ///< Spot ambient contribution without shadowing.
             const float4 spotLightClip = mul(frame.shadowViewProjs[kSpotShadowBase + i], float4(worldPos, 1.0)); ///< Fragment position in spot light clip space.
             const float3 spotLightNdc = spotLightClip.xyz / spotLightClip.w; ///< Spot light depth remains in 0..1 after divide.
             const float2 spotShadowUv = (spotLightNdc.xy * 0.5) + 0.5; ///< Convert spot light NDC XY to shadow texture UVs.
@@ -480,11 +724,24 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags)
         }
     }
     float3 litColor = baseColor * ambient + pointContribution + directionalContribution + spotContribution + emissive; ///< Emissive remains visible independently of shadows.
+#ifdef VVE_GI
+    litColor += diffuseColor * irradiance * frame.probeControl.y * ambientOcclusion; // E/pi includes the cosine convolution.
+#endif
+#ifndef VVE_PROBE_CAPTURE
     if (physicallyBased) {
-        const float3 fresnel = fresnelSchlick(saturate(dot(normal, viewDir)), lerp(float3((flags & kWaterFlag) != 0 ? 0.02 : 0.04), baseColor, metalness));
-        litColor += ambientOcclusion * ((1.0 - fresnel) * diffuseColor * sampleEnvironment(normal, 1.0) +
-            fresnel * sampleEnvironment(reflect(-viewDir, normal), roughness)); ///< Sky illumination is independent of authored ambient lights.
+        // A single microfacet's Fresnel tends to one at grazing even on rough bark/soil.
+        // Integrate the reflection lobe before weighting sky light, otherwise it creates white rims and ground sheen.
+        const float3 reflection = environmentReflectance(dot(normal, viewDir), roughness,
+            lerp(float3((flags & kWaterFlag) != 0 ? 0.02 : 0.04), baseColor, metalness));
+#ifdef VVE_CONTACT_AO
+        litColor += ambientOcclusion * (1.0 - reflection) * diffuseColor * sampleEnvironment(normal, 1.0) * ambientScale +
+            materialOcclusion * reflection * sampleEnvironment(reflect(-viewDir, normal), roughness);
+#else
+        litColor += ambientOcclusion * ((1.0 - reflection) * diffuseColor * sampleEnvironment(normal, 1.0) * ambientScale +
+            reflection * sampleEnvironment(reflect(-viewDir, normal), roughness)); ///< Specular environment response keeps material AO only.
+#endif
     }
+#endif
     if (kDebugCascadeTint && debugCascadeIndex >= 0) {
         const float3 cascadeTint = debugCascadeIndex == 0 ? float3(1.0, 0.25, 0.25) :
             (debugCascadeIndex == 1 ? float3(0.25, 1.0, 0.25) :
@@ -495,15 +752,32 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags)
 }
 
 [shader("fragment")]
-FragmentOutput fragmentMain(FragmentInput input)
+FragmentOutput fragmentMain(FragmentInput input
+#if defined(VVE_PROBE_CAPTURE) || defined(VVE_GI)
+    , bool frontFace : SV_IsFrontFace
+#endif
+)
 {
     FragmentOutput output;
     const GpuMaterial material = materials[object.materialIndex];
+#ifdef VVE_GI
+    if (!frontFace && material.sidedness != VVE_MATERIAL_DOUBLE_SIDED && (object.flags & kSkyFlag) == 0) discard;
+#endif
+    // Main view and probe capture share skyColour and panorama sampling. Capture uniforms disable camera haze;
+    // sky radiance stays linear HDR, independently of the surface path's ambient/feedback suppression.
     // Equirectangular lookup; textures are stored bottom-up, so v = 1 is the image's top row (straight up).
     if ((object.flags & kSkyFlag) != 0) {
         const float3 d = normalize(input.worldPos);
         if (physicalSky()) {
-            output.color = float4(skyColour(d, frac(52.9829189 * frac(dot(input.position.xy, float2(0.06711056, 0.00583715))))), 1.0);
+            float2 pixel = input.position.xy;
+#ifdef VVE_PROBE_CAPTURE
+            // A probe can move between capture-atlas slots. Its cloud samples must stay unchanged.
+            pixel -= floor(pixel / VVE_PROBE_FACE_SIZE) * VVE_PROBE_FACE_SIZE;
+#endif
+            output.color = float4(skyColour(d, frac(52.9829189 * frac(dot(pixel, float2(0.06711056, 0.00583715))))), 1.0);
+#ifdef VVE_PROBE_CAPTURE
+            output.color.a = VVE_PROBE_CAPTURE_FAR * frame.probeOrigin.w / VVE_PROBE_SPACING; // Capture spacing scales radial metres, including sky.
+#endif
             return output;
         }
         float2 uv = float2(atan2(d.x, -d.z) / (2.0 * kPi) + 0.5, 1.0 - acos(clamp(d.y, -1.0, 1.0)) / kPi);
@@ -514,26 +788,49 @@ FragmentOutput fragmentMain(FragmentInput input)
             sky = baseColorTextures[material.baseColorTexture].SampleLevel(uv, 0.0).rgb; ///< Level 0 avoids a seam where u wraps.
         }
         output.color = float4(sky * material.baseColorFactor.rgb, 1.0);
+#ifdef VVE_PROBE_CAPTURE
+        output.color.a = VVE_PROBE_CAPTURE_FAR * frame.probeOrigin.w / VVE_PROBE_SPACING;
+#endif
         return output;
     }
     float alpha;
     const GBufferOutput surface = evaluateSurface(input, alpha);
     output.color = float4(shadeSurface(input.worldPos, surface, object.flags & (kUnlitFlag | kWaterFlag)), alpha);
+#ifdef VVE_PROBE_CAPTURE
+    // Solid back faces retain distance for inside-probe detection; only two-sided materials emit back radiance.
+    if (!frontFace && material.sidedness == VVE_MATERIAL_SINGLE_SIDED) output.color.rgb = float3(0);
+    // The stored colour alpha survives D32 discard; material cutouts already discarded their fragments above.
+    output.color.a = min(length(input.worldPos - worldEye()), VVE_PROBE_CAPTURE_FAR * frame.probeOrigin.w / VVE_PROBE_SPACING) * (frontFace ? 1.0 : -1.0);
+#endif
     return output;
 }
 
 /// @brief Opaque geometry writes attributes without evaluating any lights; cut-out still uses the shared material function.
 [shader("fragment")]
-GBufferOutput gbufferMain(FragmentInput input)
+GBufferOutput gbufferMain(FragmentInput input
+#ifdef VVE_GI_MATERIAL
+    , bool frontFace : SV_IsFrontFace
+#endif
+)
 {
+#ifdef VVE_GI_MATERIAL
+    if (!frontFace && materials[object.materialIndex].sidedness != VVE_MATERIAL_DOUBLE_SIDED && (object.flags & kTerrainFlag) == 0) discard;
+#endif
     float alpha;
     return evaluateSurface(input, alpha);
 }
 
 /// @brief Interpolates every material input at the same coverage sample whose depth will reconstruct its position.
 [shader("fragment")]
-GBufferOutput gbufferMsaaMain(FragmentInput input, uint sampleIndex : SV_SampleIndex)
+GBufferOutput gbufferMsaaMain(FragmentInput input, uint sampleIndex : SV_SampleIndex
+#ifdef VVE_GI_MATERIAL
+    , bool frontFace : SV_IsFrontFace
+#endif
+)
 {
+#ifdef VVE_GI_MATERIAL
+    if (!frontFace && materials[object.materialIndex].sidedness != VVE_MATERIAL_DOUBLE_SIDED && (object.flags & kTerrainFlag) == 0) discard;
+#endif
     input.worldPos = EvaluateAttributeAtSample(input.worldPos, sampleIndex);
     input.texCoord = EvaluateAttributeAtSample(input.texCoord, sampleIndex);
     input.normal = EvaluateAttributeAtSample(input.normal, sampleIndex);
