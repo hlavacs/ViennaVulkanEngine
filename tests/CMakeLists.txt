@@ -2,7 +2,8 @@
 add_library(vve_test_support STATIC)
 target_compile_features(vve_test_support PUBLIC cxx_std_23)
 target_sources(vve_test_support PUBLIC FILE_SET CXX_MODULES FILES support/TestSupport.ixx)
-target_link_libraries(vve_test_support PUBLIC ViennaVulkanEngine::ViennaVulkanEngine Vulkan::Vulkan)
+target_link_libraries(vve_test_support PUBLIC
+   ViennaVulkanEngine::ViennaVulkanEngine Vulkan::Vulkan GPUOpen::VulkanMemoryAllocator)
 
 # SDL/ImGui headers come from the engine; linking their static archives here duplicates runtime state.
 # Buffer policy and placement tests inspect VMA allocation flags directly.

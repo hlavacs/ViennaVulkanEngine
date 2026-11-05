@@ -118,7 +118,7 @@ auto measure(std::string_view name, vve::Antialiasing aa, vve::PixelExtent exten
 /// @brief CTest runs compact fixtures; --measure DIR [--ao-off] measures eight 1080p cases after 128 warm-up frames, with 300 samples.
 int main(int argc, char **argv) {
     using namespace vve;
-    std::setvbuf(stdout,nullptr,_IOLBF,0); // Keep receipts intact when driver diagnostics share a redirected log.
+    std::setvbuf(stdout,nullptr,_IONBF,0); // Keep receipts intact when driver diagnostics share a redirected log.
     const bool measuring = (argc == 3 || argc == 4) && std::string_view{argv[1]} == "--measure";
     if ((argc != 1 && !measuring) || (argc == 4 && std::string_view{argv[3]} != "--ao-off")) return 1;
     const std::filesystem::path output = measuring ? argv[2] : "";

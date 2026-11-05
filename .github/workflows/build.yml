@@ -1,0 +1,220 @@
+name: Build
+
+# Compile main and V3 pushes and pull requests. GPU runtime tests stay separate.
+on:
+  push:
+    branches: [main, V3]
+  pull_request:
+    branches: [main, V3]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VULKAN_SDK_VERSION: '1.4.350.0'
+  VCPKG_ROOT: ${{ github.workspace }}/.ci/vcpkg
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.ci/vcpkg-binaries
+  VCPKG_BINARY_SOURCES: clear;files,${{ github.workspace }}/.ci/vcpkg-binaries,readwrite
+  CMAKE_BUILD_PARALLEL_LEVEL: '2'
+  VCPKG_MAX_CONCURRENCY: '2'
+
+jobs:
+  build:
+    name: ${{ matrix.platform }} / ${{ matrix.configuration }}
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [Windows, Linux, macOS]
+        configuration: [debug, release]
+        include:
+          - platform: Windows
+            runner: windows-2025-vs2026
+          - platform: Linux
+            runner: ubuntu-24.04
+          - platform: macOS
+            runner: macos-15
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Check out engine
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+
+      # Pin vcpkg itself as well as the port versions in vcpkg.json.
+      - name: Check out vcpkg
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          repository: microsoft/vcpkg
+          ref: d186940b2f0c4e8e5b4ff804af57d2a26fbfa091
+          path: .ci/vcpkg
+          # Port baselines and historical port trees need more than the tip commit.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify vcpkg baselines
+        run: |
+          for baseline in $(jq -r '."builtin-baseline"' vcpkg.json) $(jq -r '.registries[]? | select(.kind == "builtin") | .baseline' vcpkg-configuration.json); do
+            echo "Checking vcpkg baseline $baseline"
+            git -C "$VCPKG_ROOT" cat-file -e "$baseline:versions/baseline.json"
+          done
+
+      - name: Install Linux compiler and development libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            clang-18 clang-tools-18 libc++-18-dev libc++abi-18-dev libunwind-18-dev \
+            build-essential pkg-config autoconf autoconf-archive automake libtool libltdl-dev nasm \
+            libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxfixes-dev \
+            libxrender-dev libxtst-dev \
+            libwayland-dev wayland-protocols libxkbcommon-dev \
+            libegl1-mesa-dev libgl1-mesa-dev libasound2-dev libpulse-dev \
+            libudev-dev libdbus-1-dev libibus-1.0-dev
+          # Check the enabled SDL backends before spending time building dependencies.
+          pkg-config --print-errors --exists \
+            x11 xext xcursor xi xfixes xrandr xrender xtst \
+            wayland-client wayland-egl wayland-cursor egl xkbcommon ibus-1.0
+          wayland-scanner --version
+          echo 'VVE_LLVM_VERSION=18' >> "$GITHUB_ENV"
+
+      - name: Install macOS compiler and build tools
+        if: runner.os == 'macOS'
+        run: |
+          test "$(uname -m)" = arm64
+          brew install llvm pkgconf autoconf autoconf-archive automake libtool
+          /opt/homebrew/opt/llvm/bin/clang++ --version
+          test -f /opt/homebrew/opt/llvm/lib/c++/libc++.modules.json
+
+      # The Windows script selects Visual Studio's bundled CMake and Ninja.
+      - name: Install CMake and Ninja on Linux and macOS
+        if: runner.os != 'Windows'
+        run: |
+          python3 -m venv "$RUNNER_TEMP/cmake-tools"
+          "$RUNNER_TEMP/cmake-tools/bin/python" -m pip install --only-binary=:all: \
+            cmake==4.3.1 ninja==1.13.2
+          echo "$RUNNER_TEMP/cmake-tools/bin" >> "$GITHUB_PATH"
+
+      # This revision supports the current macOS SDK installer layout.
+      - name: Install Vulkan SDK including Slang
+        if: runner.os != 'Windows'
+        uses: humbletim/install-vulkan-sdk@e7d6e7b937bde4503c7ba5c9584c9dc68f44c4b8
+        with:
+          version: '1.4.350.0'
+          cache: true
+
+      - name: Cache Windows Vulkan SDK installer
+        if: runner.os == 'Windows'
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ runner.temp }}/vulkan-sdk-installer.exe
+          key: vulkan-installer-Windows-${{ env.VULKAN_SDK_VERSION }}
+
+      # Use LunarG's installer: archive extraction can leave out SDK headers/libraries.
+      - name: Install Windows Vulkan SDK including Slang
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $installer = Join-Path $env:RUNNER_TEMP 'vulkan-sdk-installer.exe'
+          $sdkRoot = Join-Path $env:GITHUB_WORKSPACE 'VULKAN_SDK'
+          if (!(Test-Path -LiteralPath $installer)) {
+            $url = "https://sdk.lunarg.com/sdk/download/$env:VULKAN_SDK_VERSION/windows/vulkan_sdk.exe?Human=true"
+            Invoke-WebRequest -Uri $url -OutFile $installer
+          }
+          $arguments = @('--root', ('"{0}"' -f $sdkRoot), '--accept-licenses',
+            '--default-answer', '--confirm-command', 'install', 'copy_only=1')
+          $options = @{
+            FilePath = $installer
+            ArgumentList = $arguments
+            Wait = $true
+            PassThru = $true
+            WindowStyle = 'Hidden'
+            RedirectStandardOutput = 'sdk-install.log'
+            RedirectStandardError = 'sdk-install-errors.log'
+          }
+          $install = Start-Process @options
+          Get-Content sdk-install.log
+          Get-Content sdk-install-errors.log
+          if ($install.ExitCode -ne 0) { throw "Vulkan SDK installation failed: $($install.ExitCode)" }
+          "VULKAN_SDK=$($sdkRoot.Replace('\', '/'))" >> $env:GITHUB_ENV
+          "$sdkRoot/Bin" >> $env:GITHUB_PATH
+
+      - name: Verify SDK tools
+        run: |
+          cmake --version
+          echo "Checking Vulkan SDK at $VULKAN_SDK"
+          if [ "$RUNNER_OS" = Windows ]; then
+            required_files=(Include/vulkan/vulkan.hpp Include/slang/slang.h Lib/vulkan-1.lib Lib/slang.lib Bin/slangc.exe)
+            slangc="$VULKAN_SDK/Bin/slangc.exe"
+          else
+            required_files=(include/vulkan/vulkan.hpp include/slang/slang.h bin/slangc)
+            slangc="$VULKAN_SDK/bin/slangc"
+          fi
+          for file in "${required_files[@]}"; do
+            if [ ! -f "$VULKAN_SDK/$file" ]; then
+              echo "::error::Missing Vulkan SDK file: $VULKAN_SDK/$file"
+              exit 1
+            fi
+          done
+          "$slangc" -version
+
+      - name: Restore vcpkg binary packages
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
+        with:
+          path: ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+          key: vcpkg-${{ matrix.runner }}-${{ runner.arch }}-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json', 'ports/**', 'triplets/**', 'cmake/toolchains/**', '.github/workflows/build.yml') }}
+
+      - name: Bootstrap vcpkg on Windows
+        if: runner.os == 'Windows'
+        shell: cmd
+        run: |
+          if not exist "%VCPKG_DEFAULT_BINARY_CACHE%" mkdir "%VCPKG_DEFAULT_BINARY_CACHE%"
+          call "%VCPKG_ROOT%\bootstrap-vcpkg.bat" -disableMetrics
+
+      - name: Bootstrap vcpkg on Linux and macOS
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE"
+          bash "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
+          echo "$VCPKG_ROOT" >> "$GITHUB_PATH"
+
+      - name: Compile Windows engine, examples and tests
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          & .\build_windows.cmd '${{ matrix.configuration }}' --no-tests 2>&1 |
+            Tee-Object -FilePath build.log
+          exit $LASTEXITCODE
+
+      - name: Compile Linux engine, examples and tests
+        if: runner.os == 'Linux'
+        run: bash build_linux.sh '${{ matrix.configuration }}' --no-tests 2>&1 | tee build.log
+
+      - name: Compile macOS engine, examples and tests
+        if: runner.os == 'macOS'
+        run: bash build_macos.sh '${{ matrix.configuration }}' --no-tests 2>&1 | tee build.log
+
+      - name: Upload failure logs
+        if: failure()
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: build-logs-${{ matrix.platform }}-${{ matrix.configuration }}
+          retention-days: 14
+          include-hidden-files: true
+          if-no-files-found: ignore
+          path: |
+            build.log
+            sdk-install*.log
+            build/**/CMakeCache.txt
+            build/**/CMakeConfigureLog.yaml
+            build/**/*.log
+            .ci/vcpkg/buildtrees/**/*.log
+            .ci/vcpkg/buildtrees/**/CMakeCache.txt

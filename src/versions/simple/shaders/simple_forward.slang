@@ -265,8 +265,8 @@ float3 applyAtmosphere(float3 color, float3 worldPos)
     return lerp(color, frame.fogColorDensity.rgb, mist);
 }
 
-[shader("vertex")]
-VertexOutput vertexMain(VertexInput input)
+/// @brief Ordinary helper shared by vertex entry points; avoids Slang entry-point calls in generated SPIR-V.
+VertexOutput transformVertex(VertexInput input)
 {
     VertexOutput output;
     // The sky follows the camera's rotation only and lies just inside the far plane; the fragment stage gets its direction.
@@ -303,19 +303,31 @@ VertexOutput vertexMain(VertexInput input)
 }
 
 [shader("vertex")]
-float4 shadowVertexMain(VertexInput input) : SV_Position
+VertexOutput vertexMain(VertexInput input)
+{
+    return transformVertex(input);
+}
+
+/// @brief Shared animated shadow position, callable without entry-point interface lowering.
+float4 shadowPosition(VertexInput input)
 {
     float4 worldPosition = mul(object.model, float4(input.position, 1.0));
     if ((object.flags & kWaterFlag) != 0) worldPosition.y += oceanWave(worldPosition.xz).x;
     return mul(frame.shadowViewProjs[object.shadowMatrixIndex], worldPosition); ///< Shadows follow the same animated surface.
 }
 
+[shader("vertex")]
+float4 shadowVertexMain(VertexInput input) : SV_Position
+{
+    return shadowPosition(input);
+}
+
 /// @brief Hybrid shadow views preserve material UVs for the shared mask test.
 [shader("vertex")]
 VertexOutput shadowMaterialVertexMain(VertexInput input)
 {
-    VertexOutput output = vertexMain(input);
-    output.position = shadowVertexMain(input);
+    VertexOutput output = transformVertex(input);
+    output.position = shadowPosition(input);
     return output;
 }
 

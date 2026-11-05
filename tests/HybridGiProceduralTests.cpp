@@ -337,16 +337,17 @@ bool shadow(simple::Engine &engine) {
     return unroofed->x-unroofed->y>.005F && reference<.5F && fraction<limit && limit<.65F && stable==0 && notified==1 && total==1 && idleDelta==0 && meshDelta==0 && materialDelta==0 && g->valid;
 }
 /// @brief Preserve the exact pre-hook output for all backends and coverage counts; compare whole PNG bytes later.
-bool noneRegistered(bool save) {
+bool noneRegistered(bool save, bool missingOnly = false) {
     std::filesystem::create_directories(reports/"gi06a-baseline");
-    // Fresh checkouts have no driver-specific historical PNGs: first render a clean control, then compare an explicit clear.
-    if (!save && !std::filesystem::exists(reports/"gi06a-baseline"/"forward-1.png")) {
-        std::println("baseline.provenance=current-control (use save-baseline before editing for pre-change evidence)");
-        if (!noneRegistered(true)) return false;
-    }
+    // A failed first run can leave partial controls. Fill only missing images; never replace historical references here.
+    if (!save && !noneRegistered(true, true)) return false;
     bool pass=true;
     for (const auto backend : {RendererBackend::forward,RendererBackend::deferred,RendererBackend::hybrid_gi}) {
         for (const auto aa : {Antialiasing::none,Antialiasing::msaa4}) {
+            const auto name=std::format("{}-{}.png",std::array{"forward","deferred","hybrid-gi"}[std::to_underlying(backend)],aa==Antialiasing::none ? 1 : 4);
+            const auto baseline=reports/"gi06a-baseline"/name, current=reports/"gi06a-captures"/name;
+            if (missingOnly && std::filesystem::exists(baseline)) continue;
+            if (missingOnly) std::println("baseline.provenance=current-control missing={} (not pre-change evidence)",name);
             auto engine=test::hiddenEngine("native-baseline",PixelExtent{128,128}); auto &r=engine.renderSystem();
             if (!save && !r.setNativeDraw({})) return false;
             if (!engine.init() || !r.setRendererBackend(backend) || !r.setAntialiasing(aa)) return false;
@@ -356,8 +357,6 @@ bool noneRegistered(bool save) {
             if (!r.addPlane(Vec2{2,2},LinearColor{Vec3{.5F}}) || !r.addCuboid(Vec3{-2.2F,0,-2},Vec3{-2,3,2},LinearColor{Vec3{1,.01F,.01F}})) return false;
             const auto glass=r.addCuboid(Vec3{-.4F,0,-.3F},Vec3{.3F,.8F,.3F},LinearColor{Vec3{.05F,.2F,.7F}});
             if (!glass || !r.setObjectOpacity(*glass,.4F) || !test::renderFrames(engine)) return false;
-            const auto name=std::format("{}-{}.png",std::array{"forward","deferred","hybrid-gi"}[std::to_underlying(backend)],aa==Antialiasing::none ? 1 : 4);
-            const auto baseline=reports/"gi06a-baseline"/name, current=reports/"gi06a-captures"/name;
             std::filesystem::create_directories(current.parent_path());
             if (!r.captureFrameToPng(save ? baseline : current)) return false;
             const auto bytes=[](const auto &path) { std::ifstream file{path,std::ios::binary}; return std::string{std::istreambuf_iterator<char>{file},{}}; };
