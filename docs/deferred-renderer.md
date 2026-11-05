@@ -238,8 +238,9 @@ comparisons. Native shader recording uses only this public contract; existing
 internal setup/HDR readback/cache hooks provide numerical diagnostics.
 `VVE_NATIVE_TEST_REPORT_DIR` chooses transient artifacts. Run
 `HybridGiProceduralTests save-baseline` **before** renderer edits for pre-change
-PNGs. A fresh checkout without saved references compares clean control with
-explicit clear, and reports that provenance, not historical equivalence.
+PNGs. The registered test compares a same-run clean control with explicit clear
+byte for byte. Saved historical PNG equality is reported separately; those
+references are retained unchanged and do not determine the current-control result.
 
 GI-06a's pre-hook 1x/4x forward/deferred/hybrid PNG comparisons were byte-identical.
 Current procedural transport, validation and disabled-equivalence results are

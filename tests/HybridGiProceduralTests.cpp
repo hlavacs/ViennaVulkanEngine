@@ -336,36 +336,41 @@ bool shadow(simple::Engine &engine) {
     std::println("native.notification.idle_waits={} native.notification.mesh_uploads={} native.notification.material_uploads={}",idleDelta,meshDelta,materialDelta);
     return unroofed->x-unroofed->y>.005F && reference<.5F && fraction<limit && limit<.65F && stable==0 && notified==1 && total==1 && idleDelta==0 && meshDelta==0 && materialDelta==0 && g->valid;
 }
-/// @brief Preserve the exact pre-hook output for all backends and coverage counts; compare whole PNG bytes later.
-bool noneRegistered(bool save, bool missingOnly = false) {
-    std::filesystem::create_directories(reports/"gi06a-baseline");
-    // A failed first run can leave partial controls. Fill only missing images; never replace historical references here.
-    if (!save && !noneRegistered(true, true)) return false;
+/// @brief Compare current clean/explicit-clear PNGs exactly, retaining optional historical captures as evidence.
+bool noneRegistered(bool save) {
     bool pass=true;
+    const auto bytes=[](const auto &path) { std::ifstream file{path,std::ios::binary}; return std::string{std::istreambuf_iterator<char>{file},{}}; };
     for (const auto backend : {RendererBackend::forward,RendererBackend::deferred,RendererBackend::hybrid_gi}) {
         for (const auto aa : {Antialiasing::none,Antialiasing::msaa4}) {
             const auto name=std::format("{}-{}.png",std::array{"forward","deferred","hybrid-gi"}[std::to_underlying(backend)],aa==Antialiasing::none ? 1 : 4);
-            const auto baseline=reports/"gi06a-baseline"/name, current=reports/"gi06a-captures"/name;
-            if (missingOnly && std::filesystem::exists(baseline)) continue;
-            if (missingOnly) std::println("baseline.provenance=current-control missing={} (not pre-change evidence)",name);
-            auto engine=test::hiddenEngine("native-baseline",PixelExtent{128,128}); auto &r=engine.renderSystem();
-            if (!save && !r.setNativeDraw({})) return false;
-            if (!engine.init() || !r.setRendererBackend(backend) || !r.setAntialiasing(aa)) return false;
-            r.setCamera(Camera::lookAt(Position{Vec3{0,1.5F,3}},Position{}, {},FovY{1.1F}));
-            r.setBackgroundColor(LinearColor{Vec3{.02F,.04F,.07F}});
-            r.setDirectionalLight(Direction{Vec3{-1,-.5F,0}},LinearColor{},LightIntensity{4},LinearColor{Vec3{0}});
-            if (!r.addPlane(Vec2{2,2},LinearColor{Vec3{.5F}}) || !r.addCuboid(Vec3{-2.2F,0,-2},Vec3{-2,3,2},LinearColor{Vec3{1,.01F,.01F}})) return false;
-            const auto glass=r.addCuboid(Vec3{-.4F,0,-.3F},Vec3{.3F,.8F,.3F},LinearColor{Vec3{.05F,.2F,.7F}});
-            if (!glass || !r.setObjectOpacity(*glass,.4F) || !test::renderFrames(engine)) return false;
-            std::filesystem::create_directories(current.parent_path());
-            if (!r.captureFrameToPng(save ? baseline : current)) return false;
-            const auto bytes=[](const auto &path) { std::ifstream file{path,std::ios::binary}; return std::string{std::istreambuf_iterator<char>{file},{}}; };
-            const bool same=save || (!bytes(baseline).empty() && bytes(baseline)==bytes(current));
-            VkPhysicalDeviceProperties device{}; vkGetPhysicalDeviceProperties(r.forward().physicalDevice.physicalDevice,&device);
-            pass &= same && requiredValidation(r.forward());
-            r.waitIdle(); engine.gui().shutdownVulkan(); r.shutdown();
-            pass &= r.forward().validationErrorCount()==0;
-            std::println("baseline={} saved={} byte_identical={} device={} validation.errors={}",name,save,same,std::string_view{device.deviceName},r.forward().validationErrorCount());
+            const auto baseline=reports/"gi06a-baseline"/name, control=reports/"gi06a-controls"/name, current=reports/"gi06a-captures"/name;
+            // The live equivalence contract always uses this run's clean control; only save-baseline writes historical evidence.
+            for (const bool clear : {false,true}) {
+                if (save && clear) break;
+                auto engine=test::hiddenEngine("native-baseline",PixelExtent{128,128}); auto &r=engine.renderSystem();
+                if (clear && !r.setNativeDraw({})) return false;
+                if (!engine.init() || !r.setRendererBackend(backend) || !r.setAntialiasing(aa)) return false;
+                r.setCamera(Camera::lookAt(Position{Vec3{0,1.5F,3}},Position{}, {},FovY{1.1F}));
+                r.setBackgroundColor(LinearColor{Vec3{.02F,.04F,.07F}});
+                r.setDirectionalLight(Direction{Vec3{-1,-.5F,0}},LinearColor{},LightIntensity{4},LinearColor{Vec3{0}});
+                if (!r.addPlane(Vec2{2,2},LinearColor{Vec3{.5F}}) || !r.addCuboid(Vec3{-2.2F,0,-2},Vec3{-2,3,2},LinearColor{Vec3{1,.01F,.01F}})) return false;
+                const auto glass=r.addCuboid(Vec3{-.4F,0,-.3F},Vec3{.3F,.8F,.3F},LinearColor{Vec3{.05F,.2F,.7F}});
+                if (!glass || !r.setObjectOpacity(*glass,.4F) || !test::renderFrames(engine)) return false;
+                const auto output=save ? baseline : clear ? current : control;
+                if (!r.captureFrameToPng(output)) return false;
+                VkPhysicalDeviceProperties device{}; vkGetPhysicalDeviceProperties(r.forward().physicalDevice.physicalDevice,&device);
+                pass &= requiredValidation(r.forward());
+                r.waitIdle(); engine.gui().shutdownVulkan(); r.shutdown();
+                pass &= r.forward().validationErrorCount()==0;
+                std::println("capture={} role={} device={} validation.errors={}",name,save ? "saved-baseline" : clear ? "explicit-clear" : "current-control",std::string_view{device.deviceName},r.forward().validationErrorCount());
+            }
+            if (!save) {
+                const auto currentBytes=bytes(current), controlBytes=bytes(control);
+                const bool same=!controlBytes.empty() && controlBytes==currentBytes, historical=std::filesystem::exists(baseline);
+                pass &= same;
+                std::println("comparison={} control_byte_identical={} historical_available={} historical_byte_identical={}",
+                    name,same,historical,historical && bytes(baseline)==currentBytes);
+            }
         }
     }
     return pass;

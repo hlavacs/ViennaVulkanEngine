@@ -934,7 +934,8 @@ namespace vve::simple {
 			return failed;
 		};
 
-		// Release views before their images, but keep the old swapchain for the presentation handoff.
+		// Device idle permits full replacement; handing off the old swapchain can keep resized NVIDIA/X11 windows out of date.
+		// Release views before their images, then detach the old swapchain from the native window.
 		target.deferredPool.cleanup();
 		target.deferredSet = VK_NULL_HANDLE;
 		for (auto &image : target.aoImages) { image.cleanup(); }
@@ -947,10 +948,11 @@ namespace vve::simple {
 		target.hdrImage.cleanup();
 		target.imageViews.cleanup();
 		target.frameSync.cleanup();
+		target.swapchain.cleanup();
 
 		result = target.swapchain.create(physicalDevice.physicalDevice, device.device, target.surface.surface,
 										  *physicalDevice.graphicsQueueFamily, target.presentQueueFamily,
-										  requestedExtent.width, requestedExtent.height, defaultPresentMode(), target.guiWindow && device.swapchainMutableFormat, target.swapchain.swapchain);
+										  requestedExtent.width, requestedExtent.height, defaultPresentMode(), target.guiWindow && device.swapchainMutableFormat);
 		if (result != VK_SUCCESS) { return retryNextFrame(result); }
 
 		result = target.imageViews.create(device.device, target.swapchain.images, target.swapchain.imageFormat, target.swapchain.guiFormat);

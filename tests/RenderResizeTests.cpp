@@ -40,7 +40,10 @@ int main() {
 	if (!resized || !synced) { return 5; }
 	for (const auto frame : {1U, 2U}) {
 		if (!engine.renderFrame()) { return 6; }
-		std::println("[RenderResizeTests] resize_frame={} presented_windows={}", frame, render.lastRenderedWindowCount());
+		const auto &target = renderer.targets.front();
+		std::println("[RenderResizeTests] resize_frame={} presented_windows={} requested={}x{} captured_image={} idle_waits={}",
+			frame, render.lastRenderedWindowCount(), target.swapchain.requestedExtent.width, target.swapchain.requestedExtent.height,
+			target.lastRenderedImageIndex.has_value(), renderer.deviceWaitIdleCount());
 	}
 	const auto extent = renderer.currentWindowPixelExtent(renderer.targets.front());
 	const bool ignored_resize = extent.width == initial_extent.width && extent.height == initial_extent.height;
@@ -57,13 +60,17 @@ int main() {
 		if (!rendered || render.lastRenderedWindowCount() != 1U) { return 14; }
 	} else {
 		if (renderer.targets.front().swapchain.extent.width != extent.width || renderer.targets.front().swapchain.extent.height != extent.height) { return 8; }
+		// A matching extent alone is insufficient: recovery must also produce a presented image.
+		if (render.lastRenderedWindowCount() != 1U || !renderer.targets.front().lastRenderedImageIndex) { return 14; }
 	}
 	// Both paths must retain the effect and capture the current drawable size.
 	{
 		const auto path = std::filesystem::path{VVE_TEST_TMP_DIR} / "resized.png";
 		std::filesystem::create_directories(path.parent_path());
 		std::filesystem::remove(path);
-		if (!render.captureFrameToPng(path)) { return 9; }
+		const auto captured = render.captureFrameToPng(path);
+		std::println("[RenderResizeTests] capture_saved={} error={}", static_cast<bool>(captured), captured ? "none" : vve::errorName(captured.error()));
+		if (!captured) { return 9; }
 		int width{}, height{}, channels{};
 		auto pixels = std::unique_ptr<stbi_uc, decltype(&stbi_image_free)>{
 			stbi_load(path.string().c_str(), &width, &height, &channels, STBI_rgb_alpha), stbi_image_free};
