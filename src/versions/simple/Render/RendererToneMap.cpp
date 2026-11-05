@@ -204,6 +204,7 @@ namespace vve::simple {
 		vkUpdateDescriptorSets(device.device, 1, &write, 0, nullptr);
 		result = createToneMapGui(target);
 		if (result != VK_SUCCESS) { retireToneMap(target); }
+		else { ++target.toneMapGeneration; }
 		return result;
 	}
 

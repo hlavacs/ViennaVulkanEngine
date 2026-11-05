@@ -291,7 +291,8 @@ namespace vve::simple {
 		result = vkResetFences(device.device, 1U, &inFlightFence);
 		if (result != VK_SUCCESS) { return abandonAcquiredImage("fence reset", result); }
 
-		const VkPipelineStageFlags waitStage{toneMapping_.op == ToneMappingOperator::none && !smaaEnabled() ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}; ///< Wait at the actual first swapchain use: legacy transfer or opt-in attachment output.
+		const VkPipelineStageFlags waitStage{static_cast<VkPipelineStageFlags>(
+			toneMapping_.op == ToneMappingOperator::none && !smaaEnabled() ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT)}; ///< Wait at the actual first swapchain use: legacy transfer or opt-in attachment output.
 		const VkCommandBuffer commandBuffer{target.commandBuffers.ownedCommandBuffers[target.currentFrame]}; // Borrow from the frame slot owner for submission.
 		const VkSubmitInfo submitInfo{
 			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,

@@ -121,6 +121,7 @@ export namespace vve::simple {
 		VulkanGraphicsPipeline toneMapGuiPipeline{}; ///< Optional fallback pipeline decoding authored GUI colours before sRGB attachment encoding.
 		VulkanOwnedHandle<vk::raii::PipelineLayout, VkPipelineLayout> toneMapGuiLayout{}; ///< Compatible with ImGui texture sets and vertex constants.
 		VulkanGraphicsPipeline toneMapPipeline{}; ///< Optional fullscreen output triangle, matching the swapchain attachment format.
+		std::uint64_t toneMapGeneration{};     ///< Successful output bundle creations; survives retirement/resize even when Vulkan reuses raw handles.
 		VulkanDescriptorPool toneMapPool{};    ///< Optional pool owning the immutable HDR source set.
 		VkDescriptorSet toneMapSet{};          ///< Borrowed immutable source descriptor; retired with its pool and source image.
 		bool lastOutputEncoded{};             ///< Recorded frame has encoded RGB, including opt-in UNORM output.

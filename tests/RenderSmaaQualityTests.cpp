@@ -125,7 +125,7 @@ void metricChecks() {
 /// @brief Load complete RGBA display data; missing files never become replacement references.
 auto pixels(const std::filesystem::path &path, unsigned width = side, unsigned height = side) {
 	int w = 0, h = 0, channels = 0;
-	auto *data = stbi_load(path.c_str(), &w, &h, &channels, 4);
+	auto *data = stbi_load(path.string().c_str(), &w, &h, &channels, 4);
 	require(data != nullptr, std::format("missing capture: {}", path.string()));
 	std::vector<unsigned char> result(data, data + w * h * 4);
 	stbi_image_free(data);
@@ -134,7 +134,7 @@ auto pixels(const std::filesystem::path &path, unsigned width = side, unsigned h
 }
 /// @brief Persist CPU masks/references or compare their decoded contents with the sealed freeze.
 void verifyImage(const std::filesystem::path &path, const std::vector<unsigned char> &rgb, bool freeze) {
-	if (freeze) { require(stbi_write_png(path.c_str(), side, side, 3, rgb.data(), side * 3), "reference/mask write"); }
+	if (freeze) { require(stbi_write_png(path.string().c_str(), side, side, 3, rgb.data(), side * 3), "reference/mask write"); }
 	const auto saved = pixels(path);
 	for (auto i : std::views::iota(0U, side * side)) {
 		for (auto c : std::views::iota(0U, 3U)) { require(saved[i * 4 + c] == rgb[i * 3 + c], "CPU reference/mask changed"); }
@@ -202,7 +202,7 @@ void inspectionSheet(const Images &images, const References &references, const s
 			std::copy_n(rgb.begin() + y * side * 12, side * 12, contact.begin() + destination);
 		}
 	}
-	require(stbi_write_png(path.c_str(), width, height, 3, contact.data(), width * 3), "inspection sheet write");
+	require(stbi_write_png(path.string().c_str(), width, height, 3, contact.data(), width * 3), "inspection sheet write");
 }
 /// @brief Exact clearing contract used by real readbacks and stale-data controls.
 bool stageCleared(std::span<const std::byte> bytes) {
@@ -227,7 +227,7 @@ void intermediateSheet(simple::WindowTarget &target, const std::filesystem::path
 			}
 		}
 	}
-	require(stbi_write_png(path.c_str(), side * 2, side, 3, rgb.data(), side * 6), "intermediate sheet write");
+	require(stbi_write_png(path.string().c_str(), side * 2, side, 3, rgb.data(), side * 6), "intermediate sheet write");
 }
 #include "support/SmaaStageOracle.hpp"
 /// @brief Evaluate conformance separately from intrinsic HIGH-filter limitations, using CPU-only inputs/tables.
@@ -474,7 +474,7 @@ int run(bool freeze) {
 					std::println("fixture={} edge.mae={} coverage.error={} contrast={}", stem, metrics[0], metrics[1], metrics[2]);
 					if (mode < 2 && !evaluateThinFeature(metrics, f)) {
 						const auto rgb = sheet(rgba, references[i]);
-						require(stbi_write_png((directory / (stem + "-failure.png")).c_str(), side * 4, side, 3, rgb.data(), side * 12), "failure sheet");
+						require(stbi_write_png((directory / (stem + "-failure.png")).string().c_str(), side * 4, side, 3, rgb.data(), side * 12), "failure sheet");
 						if (mode >= 2 && repeat == 0) { intermediateSheet(gpu.targets.front(), directory / (stem + "-intermediates.png"), false); }
 						accepted = false; // Collect every fixture for diagnosis, then fail the executable below.
 					}

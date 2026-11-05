@@ -26,16 +26,17 @@ Vertex vertexMain(uint vertex : SV_VulkanVertexID) {
 }
 /// @brief The three public material attachments: linear albedo/roughness, signed world normal/metalness, emission/AO+2*flags.
 struct GBuffer { float4 base : SV_Target0; float4 normal : SV_Target1; float4 emission : SV_Target2; };
-[shader("fragment")]
-GBuffer gbufferMain(Vertex input) {
+GBuffer materialGbuffer(Vertex input) {
     GBuffer result;
     result.base=float4(object.color.rgb,.5); result.normal=float4(input.normal,0); result.emission=float4(0,0,0,1);
     return result;
 }
+[shader("fragment")]
+GBuffer gbufferMain(Vertex input) { return materialGbuffer(input); }
 /// @brief IQ-01 coverage fixture: public unlit flag keeps resolved base RGB independent of lighting and GI.
 [shader("fragment")]
 GBuffer unlitMain(Vertex input) {
-    GBuffer result=gbufferMain(input);
+    GBuffer result=materialGbuffer(input);
     result.emission.a=3; // AO 1 + twice the public unlit flag 1.
     return result;
 }

@@ -55,7 +55,7 @@ void freshDefault(const Renderer &renderer) {
 	for (const auto &t : renderer.targets) {
 		require(t.postImage.image == VK_NULL_HANDLE && !t.toneMapLayout.valid() && !t.toneMapPipelineLayout.valid() &&
 			!t.toneMapPipeline.pipeline.valid() && !t.toneMapPool.descriptorPool.valid() && t.toneMapSet == VK_NULL_HANDLE &&
-			!t.toneMapGuiLayout.valid() && !t.toneMapGuiPipeline.pipeline.valid() && !t.hdrSampled,"fresh default object absence");
+			!t.toneMapGuiLayout.valid() && !t.toneMapGuiPipeline.pipeline.valid() && t.toneMapGeneration==0 && !t.hdrSampled,"fresh default object absence");
 	}
 	require(std::ranges::count(renderer.lastRecordedPassOrder(),Renderer::RecordedPass::tone_mapping)==0,"fresh default pass absence");
 }
@@ -171,11 +171,12 @@ void matrix(RendererBackend backend, unsigned chain, Antialiasing aa, bool unorm
 	const ToneMapping one{ToneMappingOperator::khronos_neutral,1}, two{one.op,2};
 	for (const auto settings : {one,two,ToneMapping{},one}) queue(engine,settings);
 
-	// Resize while Neutral is enabled; postImage and the optional pipelines must be rebuilt at the new extent.
+	// Successful creation generations prove a rebuild even when the driver reuses destroyed Vulkan handle values.
 	auto &a=renderer.targets.front(); auto &b=renderer.targets.back();
-	const auto oldPost=static_cast<VkImage>(a.postImage.image), otherHdr=static_cast<VkImage>(b.hdrImage.image);
+	const auto otherHdr=static_cast<VkImage>(b.hdrImage.image);
 	const auto otherSwap=static_cast<VkSwapchainKHR>(b.swapchain.swapchain);
 	const auto pipeline=static_cast<VkPipeline>(a.toneMapPipeline.pipeline);
+	const auto outputGeneration=a.toneMapGeneration;
 	SDL_ClearError();
 	const bool resizeRequested=SDL_SetWindowSize(a.window,80,56);
 	const std::string resizeError{SDL_GetError()};
@@ -197,10 +198,12 @@ void matrix(RendererBackend backend, unsigned chain, Antialiasing aa, bool unorm
 	require(drawable.width==80 && drawable.height==56,"native drawable confirms requested resize");
 	// A surface can temporarily reject acquisition after its native resize acknowledgement.
 	require(test::renderFrames(engine,1,std::chrono::seconds{10},2),"ordinary resize frame presents both windows");
+	std::println("matrix.resize.swapchain={}x{} pipeline.live={} pipeline.reused={} generation.before={} generation.after={}",a.swapchain.extent.width,a.swapchain.extent.height,
+		a.toneMapPipeline.pipeline!=VK_NULL_HANDLE,static_cast<VkPipeline>(a.toneMapPipeline.pipeline)==pipeline,outputGeneration,a.toneMapGeneration);
 	require(a.swapchain.extent.width==80 && a.swapchain.extent.height==56 &&
-		a.toneMapPipeline.pipeline!=VK_NULL_HANDLE && static_cast<VkPipeline>(a.toneMapPipeline.pipeline)!=pipeline,"resized output pipeline rebuilt");
+		a.toneMapPipeline.pipeline!=VK_NULL_HANDLE && a.toneMapGeneration>outputGeneration,"resized output pipeline rebuilt");
 	if (chain) require(a.postImage.extent.width==80 && a.postImage.extent.height==56 &&
-		static_cast<VkImage>(a.postImage.image)!=oldPost,"resized HDR postImage rebuilt");
+		a.postImage.image!=VK_NULL_HANDLE,"resized HDR postImage rebuilt");
 	require(static_cast<VkImage>(b.hdrImage.image)==otherHdr && static_cast<VkSwapchainKHR>(b.swapchain.swapchain)==otherSwap &&
 		b.swapchain.extent.width==64 && b.swapchain.extent.height==48,"other window survives resize");
 	// The API is renderer-wide, between frame calls. Record different selections for the two windows without adding a per-window API.
