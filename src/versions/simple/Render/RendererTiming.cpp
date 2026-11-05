@@ -76,6 +76,9 @@ auto ForwardRenderer::renderDiagnostics(WindowHandle window) const -> std::expec
         receipt.emplace_back(names[i], target->gpuMs[i] ? std::format("{:.6f}", *target->gpuMs[i]) : "unavailable");
     receipt.emplace_back("gpu.timing_serial", std::to_string(target->timingSerial));
     receipt.emplace_back("gpu.submitted_serial", std::to_string(std::ranges::max(target->submitSerials)));
+    receipt.emplace_back("gpu.next_frame_slot", std::to_string(target->currentFrame));
+    receipt.emplace_back("gpu.presented_image_index", target->lastRenderedImageIndex
+        ? std::to_string(*target->lastRenderedImageIndex) : "unavailable");
     receipt.emplace_back("gpu.timestamp_valid_bits", std::to_string(gpuTimestampBits));
     receipt.emplace_back("gpu.timestamp_period_ns", std::to_string(gpuTimestampPeriod));
     // Explicit diagnostics expose the actual device/surface contract without implementation types in the facade.
