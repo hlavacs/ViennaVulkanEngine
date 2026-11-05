@@ -364,6 +364,8 @@ bool matchingPixels(std::span<const unsigned char> baseline,std::span<const unsi
     std::println("pixels={} valid=true changed={} changed.limit={} rgb.max_delta={} rgb.limit={} alpha.exact={} pass={}",name,changed,changedPixelLimit,maximum,rgbDeltaLimit,alphaExact,pass);
     return pass;
 }
+/// @brief Historical pixels apply only to identical, explicitly recorded rendering provenance.
+bool matchingProvenance(std::string_view baseline,std::string_view current) { return !baseline.empty() && baseline==current; }
 /// @brief CPU-only boundary and negative controls prevent rounding tolerance from hiding image regressions or decode failures.
 bool imageComparisonControls() {
     std::vector<unsigned char> baseline(captureSide*captureSide*4,128),current=baseline;
@@ -392,22 +394,29 @@ bool imageComparisonControls() {
     (void)test::writeFixture(directory,"invalid.png","not an image"); std::filesystem::remove(missing);
     pass &= matchingPixels(baseline,fixturePixels(exact),"decoded-exact");
     for (const auto &path:{wrongSize,invalid,missing}) pass &= !matchingPixels(baseline,fixturePixels(path),path.filename().string());
+    // Missing metadata and any changed device/driver/format/sample field cannot authorize a historical comparison.
+    const std::string provenance="vendor=1 device=2 driver=3 api=4 format=5 color_space=6 mutable=1 samples=4 backend=2";
+    pass &= matchingProvenance(provenance,provenance) && !matchingProvenance({},provenance) && !matchingProvenance({},{});
+    for (const auto field:{"vendor=1","device=2","driver=3","api=4","format=5","color_space=6","mutable=1","samples=4","backend=2"}) {
+        auto changed=provenance; changed[changed.find(field)+std::string_view{field}.size()-1]='9';
+        pass &= !matchingProvenance(provenance,changed);
+    }
     std::println("image-comparison.controls.pass={}",pass);
     return pass;
 }
-/// @brief Compare retained pre-hook captures for all backends and coverage counts with a tightly bounded RGB rounding allowance.
+/// @brief Compare empty callbacks with same-device controls, adding historical checks only for matching capture provenance.
 bool noneRegistered(bool save) {
     std::filesystem::create_directories(reports/"gi06a-baseline");
-    // Fresh checkouts have no driver-specific historical PNGs: first render a clean control, then compare an explicit clear.
-    if (!save && !std::filesystem::exists(reports/"gi06a-baseline"/"forward-1.png")) {
-        std::println("baseline.provenance=current-control (use save-baseline before editing for pre-change evidence)");
-        if (!noneRegistered(true)) return false;
-    }
+    const auto bytes=[](const auto &path) { std::ifstream file{path,std::ios::binary}; return std::string{std::istreambuf_iterator<char>{file},{}}; };
     bool pass=true;
     for (const auto backend : {RendererBackend::forward,RendererBackend::deferred,RendererBackend::hybrid_gi}) {
         for (const auto aa : {Antialiasing::none,Antialiasing::msaa4}) {
+          std::vector<unsigned char> control; std::string controlProvenance;
+          // Ordinary checks never regenerate history: an independent clean engine supplies the current-device control.
+          for (const bool explicitClear : {false,true}) {
+            if (save && explicitClear) break;
             auto engine=test::hiddenEngine("native-baseline",PixelExtent{128,128}); auto &r=engine.renderSystem();
-            if (!save && !r.setNativeDraw({})) return false;
+            if (explicitClear && !r.setNativeDraw({})) return false;
             if (!engine.init() || !r.setRendererBackend(backend) || !r.setAntialiasing(aa) || !r.setAnimationTime(AnimationTime{})) return false;
             r.setCamera(Camera::lookAt(Position{Vec3{0,1.5F,3}},Position{}, {},FovY{1.1F}));
             r.setBackgroundColor(LinearColor{Vec3{.02F,.04F,.07F}});
@@ -417,16 +426,33 @@ bool noneRegistered(bool save) {
             if (!glass || !r.setObjectOpacity(*glass,.4F) || !test::renderFrames(engine)) return false;
             const auto name=std::format("{}-{}.png",std::array{"forward","deferred","hybrid-gi"}[std::to_underlying(backend)],aa==Antialiasing::none ? 1 : 4);
             const auto baseline=reports/"gi06a-baseline"/name, current=reports/"gi06a-captures"/name;
-            std::filesystem::create_directories(current.parent_path());
-            if (!r.captureFrameToPng(save ? baseline : current)) return false;
-            const auto bytes=[](const auto &path) { std::ifstream file{path,std::ios::binary}; return std::string{std::istreambuf_iterator<char>{file},{}}; };
-            const bool byteIdentical=!save && !bytes(baseline).empty() && bytes(baseline)==bytes(current);
-            const bool same=save || matchingPixels(fixturePixels(baseline),fixturePixels(current),name);
-            VkPhysicalDeviceProperties device{}; vkGetPhysicalDeviceProperties(r.forward().physicalDevice.physicalDevice,&device);
+            const auto path=save ? baseline : explicitClear ? current : reports/"gi06a-controls"/name;
+            std::filesystem::create_directories(path.parent_path());
+            if (!r.captureFrameToPng(path)) return false;
+            VkPhysicalDeviceDriverProperties driver{.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES};
+            VkPhysicalDeviceProperties2 properties{.sType=VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2,.pNext=&driver};
+            vkGetPhysicalDeviceProperties2(r.forward().physicalDevice.physicalDevice,&properties);
+            const auto &device=properties.properties; const auto &target=r.forward().targets.front();
+            const auto provenance=std::format("fixture=gi06a-v1 device={} vendor={} id={} driver={} driver_name={} driver_info={} api={} format={} color_space={} gui_format={} mutable={} samples={} backend={}\n",
+                device.deviceName,device.vendorID,device.deviceID,device.driverVersion,driver.driverName,driver.driverInfo,device.apiVersion,
+                int(target.swapchain.imageFormat),int(target.swapchain.colorSpace),int(target.swapchain.guiFormat),r.forward().device.swapchainMutableFormat,
+                int(r.forward().sampleCount()),int(backend));
+            const auto metadata=std::filesystem::path{baseline.string()+".provenance"};
+            bool same=true; const bool historical=matchingProvenance(bytes(metadata),provenance);
+            if (save) {
+                (void)test::writeFixture(metadata.parent_path(),metadata.filename(),provenance);
+                same=bytes(metadata)==provenance;
+            } else if (!explicitClear) { control=fixturePixels(path); controlProvenance=provenance; }
+            else {
+                same=matchingProvenance(controlProvenance,provenance) && matchingPixels(control,fixturePixels(current),name);
+                if (historical) same &= matchingPixels(fixturePixels(baseline),fixturePixels(current),name+"-historical");
+            }
             pass &= same && requiredValidation(r.forward());
             r.waitIdle(); engine.gui().shutdownVulkan(); r.shutdown();
             pass &= r.forward().validationErrorCount()==0;
-            std::println("baseline={} saved={} byte_identical={} pixels.accepted={} device={} validation.errors={}",name,save,byteIdentical,same,std::string_view{device.deviceName},r.forward().validationErrorCount());
+            std::println("baseline={} saved={} explicit_clear={} historical.provenance={} pixels.accepted={} device={} validation.errors={}",
+                name,save,explicitClear,historical ? "matching" : "missing-or-different;current-control-required",same,std::string_view{device.deviceName},r.forward().validationErrorCount());
+          }
         }
     }
     return pass;

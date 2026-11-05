@@ -181,13 +181,14 @@ export namespace vve::simple {
 			*/
 		[[nodiscard]] VkResult create(VmaAllocator owningAllocator, VkDevice owningDevice, VkExtent2D imageExtent, VkFormat imageFormat, VkImageUsageFlags usage,
 											VkImageAspectFlags imageAspect, std::uint32_t layers = 1U, bool perLayerViews = false, bool forceArrayView = false,
-											std::uint32_t imageMipLevels = 1U, VkSampleCountFlagBits imageSamples = VK_SAMPLE_COUNT_1_BIT) {
+											std::uint32_t imageMipLevels = 1U, VkSampleCountFlagBits imageSamples = VK_SAMPLE_COUNT_1_BIT, VkImageCreateFlags flags = 0U) {
 			cleanup();
 			if (owningAllocator == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || imageExtent.width == 0U || imageExtent.height == 0U || layers == 0U || imageMipLevels == 0U) {
 				return VK_ERROR_INITIALIZATION_FAILED;
 			}
 			const VkImageCreateInfo imageInfo{
 				.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+				.flags = flags, // Mutable images may additionally expose a compatible linear-data view.
 				.imageType = VK_IMAGE_TYPE_2D,
 				.format = imageFormat,
 				.extent = {.width = imageExtent.width, .height = imageExtent.height, .depth = 1U},

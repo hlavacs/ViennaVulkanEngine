@@ -89,10 +89,18 @@ export namespace vve {
 		[[nodiscard]] inline auto setGiSettings(GiSettings settings) -> std::expected<void, Error> { return impl_.setGiSettings(settings); }
 		/// @brief Returns retained GI controls, independent of the selected backend.
 		[[nodiscard]] inline auto giSettings() const -> GiSettings { return impl_.giSettings(); }
-		/// @brief Selects geometry antialiasing before the first rendered frame; later changes return already_initialized.
+		/// @brief Selects none, msaa4, smaa or msaa4_smaa before the first rendered frame; valid late changes return already_initialized.
+		/// Unknown values return invalid_argument first; unsupported opt-in formats/coverage return platform_error before submission.
 		[[nodiscard]] inline auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error> { return impl_.setAntialiasing(mode); }
 		/// @brief Returns the configured mode, retained across renderer shutdown; GUI and shadow maps remain single-sample.
 		[[nodiscard]] inline auto antialiasing() const -> Antialiasing { return impl_.antialiasing(); }
+		/// @brief Sets the next frame's display transform on the calling thread between frames; HDR capture is unchanged.
+		/// Unknown operators or nonpositive/nonfinite exposures return invalid_argument without changing state.
+		/// Unsupported output formats/colour spaces return platform_error (at first frame if not initialized).
+		/// A vvppl tone mapper followed by Neutral tone-maps twice; effects are never detected or removed.
+		[[nodiscard]] inline auto setToneMapping(ToneMapping settings) -> std::expected<void, Error> { return impl_.setToneMapping(settings); }
+		/// @brief Returns retained display settings; none and exposure one are the defaults.
+		[[nodiscard]] inline auto toneMapping() const -> ToneMapping { return impl_.toneMapping(); }
 		/// @brief Shows a 2:1 equirectangular panorama image around every window's camera, replacing an earlier skybox.
 		[[nodiscard]] inline auto setSkybox(const std::filesystem::path &panorama) -> std::expected<void, Error> {
 			return impl_.setSkybox(panorama);
@@ -224,11 +232,12 @@ export namespace vve {
 		[[nodiscard]] auto validationErrorCount() const -> std::uint64_t { return impl_.validationErrorCount(); }
 		/// @brief Opts into per-window GPU timestamps; reads only retired frame slots, without additional waits.
 		void setGpuTimingReadback(bool enabled) { impl_.setGpuTimingReadback(enabled); }
-		/// @brief Copies timing/memory receipts; *_ms is unavailable before completion or without device timestamp support.
+		/// @brief Copies timing/device/surface receipts; gpu.tonemap_ms, gpu.smaa_ms and gpu.frame_ms use completed submissions.
+		/// Missing timestamp support/completion yields unavailable; omitted passes yield zero. No waits or pixel reads occur here.
 		[[nodiscard]] auto renderDiagnostics(WindowHandle window) const -> std::expected<Vector<std::pair<std::string,std::string>>,Error> {
 			return impl_.renderDiagnostics(window);
 		}
-		/// @brief Whether the Debug renderer has an active Vulkan validation messenger.
+		/// @brief Whether Vulkan validation has an active messenger (Debug or explicitly requested Release).
 		[[nodiscard]] auto validationActive() const -> bool { return impl_.validationActive(); }
 		/// @brief Adds a height-grid terrain drawn with distance-based GPU tessellation; a malformed grid returns invalid_argument.
 		[[nodiscard]] inline std::expected<RenderObjectHandle, Error> addTerrain(TerrainDescriptor terrain) {

@@ -17,8 +17,7 @@ auto directory = std::filesystem::path{VVE_TEST_TMP_DIR}; ///< Retained native f
 
 /// @brief Keeps probes paused for AO isolation unless the active-probe subcommand explicitly warms them.
 bool frames(simple::Engine &engine, unsigned count = 4) {
-    for ([[maybe_unused]] auto i : std::views::iota(0U,count)) if (!engine.renderFrame()) return false;
-    return true;
+    return test::renderFrames(engine,count);
 }
 /// @brief Switches the existing public setting; exercising both fenced slots makes timestamps observable too.
 bool ao(simple::Engine &engine, bool enabled) {

@@ -229,10 +229,19 @@ int main() {
 	// Only b changes size; a retains its attachments and the renderer retains its shared pipeline.
 	const VkSwapchainKHR a_swapchain = target_a.swapchain.swapchain;
 	if (!SDL_SetWindowSize(b->native(), 112, 80) || !SDL_SyncWindow(b->native())) { return 13; }
-	for (const auto frame : {1U, 2U}) {
-		if (!engine.renderFrame() || render.lastRenderedWindowCount() != 2U) { return 14; }
-		std::println("[MultiWindowRenderTests] resize_frame={} presented=2", frame);
+	// A native resize can skip acquisition while events arrive; both windows must present in both frame slots.
+	const bool presented = vve::test::renderFrames(engine, 2, std::chrono::seconds{10}, 2);
+	{
+		const auto drawable = renderer.currentWindowPixelExtent(target_b);
+		VkSurfaceCapabilitiesKHR surface{};
+		const auto surface_result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(renderer.physicalDevice.physicalDevice, target_b.surface.surface, &surface);
+		std::println("[MultiWindowRenderTests] resize_frame={} presented={} drawable={}x{} requested={}x{} surface={}x{} surface_result={} skipped={}",
+			2, render.lastRenderedWindowCount(), drawable.width, drawable.height, target_b.swapchain.requestedExtent.width,
+			target_b.swapchain.requestedExtent.height, surface.currentExtent.width, surface.currentExtent.height,
+			static_cast<int>(surface_result), renderer.skippedFrameCount());
+		if (render.lastRenderedWindowCount() != 2U) { return 14; }
 	}
+	if (!presented) { return 14; }
 	const auto extent = renderer.currentWindowPixelExtent(target_b);
 	const bool ignored = extent.width == 96U && extent.height == 64U;
 	if (ignored && renderer.recreateSwapchain(target_b, extent) != VK_SUCCESS) { return 15; }

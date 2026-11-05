@@ -197,6 +197,10 @@ namespace vve::simple {
 		if (result != VK_SUCCESS) { return reportFrameFailure("fence wait", result); }
 		collectRetiredResources(target.submitSerials[frameIndex]);
 		collectGpuTiming(target, frameIndex);
+		result = prepareSmaa(target);
+		if (result != VK_SUCCESS) { return reportFrameFailure("SMAA resources", result); }
+		result = prepareToneMap(target);
+		if (result != VK_SUCCESS) { return reportFrameFailure("tone mapping resources", result); }
 		result = prepareGpuTiming(target);
 		if (result != VK_SUCCESS) { return reportFrameFailure("GPU timing queries", result); }
 		if (const VkResult sync = syncSceneResources(); sync != VK_SUCCESS) { return reportFrameFailure("scene sync", sync); }
@@ -287,7 +291,7 @@ namespace vve::simple {
 		result = vkResetFences(device.device, 1U, &inFlightFence);
 		if (result != VK_SUCCESS) { return abandonAcquiredImage("fence reset", result); }
 
-		const VkPipelineStageFlags waitStage{VK_PIPELINE_STAGE_TRANSFER_BIT}; ///< Only the swapchain transition and blit wait for acquire; shadow and HDR work can proceed.
+		const VkPipelineStageFlags waitStage{toneMapping_.op == ToneMappingOperator::none && !smaaEnabled() ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}; ///< Wait at the actual first swapchain use: legacy transfer or opt-in attachment output.
 		const VkCommandBuffer commandBuffer{target.commandBuffers.ownedCommandBuffers[target.currentFrame]}; // Borrow from the frame slot owner for submission.
 		const VkSubmitInfo submitInfo{
 			.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -302,6 +306,7 @@ namespace vve::simple {
 		result = vkQueueSubmit(device.graphicsQueue, 1U, &submitInfo, inFlightFence);
 		if (result != VK_SUCCESS) { return abandonAcquiredImage("queue submit", result, inFlightFence); }
 		target.submitSerials[frameIndex] = ++submitSerial_;
+		if (debugOutputReadback) { outputDiagnostics.back().serial = submitSerial_; }
 		if (gpuTimingEnabled && target.gpuQueries) target.timingWritten[frameIndex].set(WindowTarget::timingQueries - 1);
 		if (submitSerial_ == 1U) {
 			std::clog << "[vve::simple] renderer=" << std::array{"forward", "deferred", "hybrid-gi"}[std::to_underlying(backend_)]
@@ -311,6 +316,8 @@ namespace vve::simple {
 		}
 		fillShadowDepthSamplesFromGpu();
 		if (readback != nullptr && imageIndex < target.swapchain.images.size()) {
+			target.readbackOutputEncoded = target.lastOutputEncoded;
+			target.readbackPreservesAlpha = target.lastOutputPreservesAlpha;
 			target.lastReadbackCaptureResult = readback->capture(target.swapchain.images[imageIndex], 0U, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR);
 		}
 
@@ -372,7 +379,7 @@ namespace vve::simple {
 		if (gpuTimingEnabled && target.gpuQueries) {
 			target.timingWritten[frameIndex].reset();
 			vkCmdResetQueryPool(commandBuffer, target.gpuQueries, frameIndex * WindowTarget::timingQueries, WindowTarget::timingQueries);
-			writeGpuTimestamp(target, commandBuffer, 12);
+			writeGpuTimestamp(target, commandBuffer, 16);
 		}
 		const NativeDrawContext mainContext{.pass = usesDeferred() ? NativeDrawPass::gbuffer : NativeDrawPass::forward_opaque,
 			.view = frameUniforms_.view,.projection = frameUniforms_.projection};
@@ -632,7 +639,7 @@ namespace vve::simple {
 		// HDR was read by the previous blit; multisample colour was written by the previous forward pass.
 		const VkImageMemoryBarrier hdrBeginBarrier{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT,
+			.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT | (target.hdrSampled ? VK_ACCESS_SHADER_READ_BIT : 0U),
 			.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
 			.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED,
 			.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -644,7 +651,7 @@ namespace vve::simple {
 		auto colourBeginBarriers = std::array{hdrBeginBarrier, hdrBeginBarrier};
 		colourBeginBarriers[1].image = target.msaaImage.image;
 		colourBeginBarriers[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+		vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT | (target.hdrSampled ? VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT : 0U) | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 			VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0U, 0U, nullptr, 0U, nullptr,
 			multisampled ? 2U : 1U, colourBeginBarriers.data());
 
@@ -825,6 +832,11 @@ namespace vve::simple {
 			debugLabels.end(commandBuffer);
 		}
 
+		const bool toneMapped = toneMapping_.op != ToneMappingOperator::none || smaaEnabled(); // Both optional paths finish with an encoded attachment output.
+		target.lastOutputEncoded = toneMapped || target.swapchain.imageFormat == VK_FORMAT_B8G8R8A8_SRGB || target.swapchain.imageFormat == VK_FORMAT_R8G8B8A8_SRGB;
+		target.lastOutputPreservesAlpha = toneMapped; // Retain both recorded policies through readback.
+		if (toneMapped) { recordToneMap(target, commandBuffer, imageIndex); }
+		else {
 		// Both images need Layout GENERAL because HDR image gets read and Swapchain image gets written
 		const std::array<VkImageMemoryBarrier, 2U> postBarriers{{
 			{
@@ -874,20 +886,22 @@ namespace vve::simple {
 		}
 		debugLabels.end(commandBuffer);
 
+		}
+
 		// ImGui stays on its owning window and loads the attachment only when vertices need drawing.
 		if (drawGui) {
 			const VkImageMemoryBarrier guiBarrier {
 				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-				.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT,
+				.srcAccessMask = static_cast<VkAccessFlags>(toneMapped ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_TRANSFER_WRITE_BIT),
 				.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-				.oldLayout = VK_IMAGE_LAYOUT_GENERAL,
+				.oldLayout = toneMapped ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
 				.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
 				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 				.image = target.swapchain.images[imageIndex],
 				.subresourceRange = colorRange,
 			};
-			vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+			vkCmdPipelineBarrier(commandBuffer, toneMapped ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 								0U, 0U, nullptr, 0U, nullptr, 1U, &guiBarrier);
 
 			const VkRenderingAttachmentInfo guiAttachment{
@@ -907,25 +921,29 @@ namespace vve::simple {
 			recordedPassOrder.push_back(RecordedPass::gui);
 			debugLabels.begin(commandBuffer, "GUI", DebugLabelKind::gui);
 			vkCmdBeginRendering(commandBuffer, &guiRenderingInfo);
-			guiRecord_(commandBuffer);
+			guiRecord_(commandBuffer, toneMapped ? static_cast<VkPipeline>(target.toneMapGuiPipeline.pipeline) : VK_NULL_HANDLE);
 			vkCmdEndRendering(commandBuffer);
 			debugLabels.end(commandBuffer);
 		}
 
+		if (debugOutputReadback) {
+			const auto diagnostic = recordOutputDiagnostic(target, commandBuffer, imageIndex, drawGui || toneMapped);
+			if (diagnostic != VK_SUCCESS) { return diagnostic; }
+		}
 		const VkImageMemoryBarrier presentBarrier{
 			.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-			.srcAccessMask = static_cast<VkAccessFlags>(drawGui ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_TRANSFER_WRITE_BIT),
-			.oldLayout = drawGui ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
+			.srcAccessMask = static_cast<VkAccessFlags>((drawGui || toneMapped) ? VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT : VK_ACCESS_TRANSFER_WRITE_BIT),
+			.oldLayout = (drawGui || toneMapped) ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
 			.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
 			.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 			.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
 			.image = target.swapchain.images[imageIndex],
 			.subresourceRange = colorRange,
 		};
-		vkCmdPipelineBarrier(commandBuffer, drawGui ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT,
+		vkCmdPipelineBarrier(commandBuffer, (drawGui || toneMapped) ? VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT : VK_PIPELINE_STAGE_TRANSFER_BIT,
 									VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0U, 0U, nullptr, 0U, nullptr, 1U, &presentBarrier);
 		if constexpr (VulkanDebugLabels::compiled) { debugLabels.end(commandBuffer); } // Frame
-		writeGpuTimestamp(target, commandBuffer, 13);
+		writeGpuTimestamp(target, commandBuffer, 17);
 		result = vkEndCommandBuffer(commandBuffer);
 		if (result != VK_SUCCESS) { return result; }
 

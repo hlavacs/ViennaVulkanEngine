@@ -46,7 +46,7 @@ namespace vve::simple {
 		}
 	} // namespace
 
-	/// @brief Reports whether this renderer has a live Debug validation messenger.
+	/// @brief Reports whether this renderer has a live validation messenger.
 	bool ForwardRenderer::validationActive() const { return instance.validationActive(); }
 
 	/// @brief Returns Vulkan validation ERROR callbacks since instance creation, including synchronization hazards.
@@ -109,8 +109,9 @@ namespace vve::simple {
 		}
 	}
 
-	/// @brief Copies the last presented swapchain image and writes it as a deterministic PNG.
-	auto ForwardRenderer::captureFrameToPng(WindowTarget &target, const std::filesystem::path &output_path) -> std::expected<void, Error> {
+	/// @brief Writes a deterministic PNG, retrying temporary skips for the supplied diagnostic duration; fatal errors return immediately.
+	auto ForwardRenderer::captureFrameToPng(WindowTarget &target, const std::filesystem::path &output_path,
+		std::chrono::milliseconds retryTimeout) -> std::expected<void, Error> {
 		if (!target.lastRenderedImageIndex) { return std::unexpected(Error::missing_object); }
 		if (*target.lastRenderedImageIndex >= target.swapchain.images.size()) {
 			return std::unexpected(Error::internal_error);
@@ -127,19 +128,38 @@ namespace vve::simple {
 													 target.swapchain.extent, target.swapchain.imageFormat);
 		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
 
-		// Capture a newly acquired frame before presentation releases the swapchain image.
-		result = waitDeviceIdle();
-		if (result != VK_SUCCESS) { return std::unexpected(Error::platform_error); }
-		const auto outcome = drawFrame(target, &readback);
-		if (!outcome) { return std::unexpected(outcome.error()); }
-		if (*outcome != FrameOutcome::presented) { return std::unexpected(Error::platform_error); }
+		// Slot fences protect drawing resources; the queued readback waits for its own copy before presentation releases the image.
+		const auto deadline = std::chrono::steady_clock::now() + retryTimeout;
+		// Presentation readiness and swapchain recovery may skip a draw; synchronous capture retries these bounded waits.
+		for (;;) {
+			const auto outcome = drawFrame(target, &readback);
+			if (!outcome) { return std::unexpected(outcome.error()); }
+			if (*outcome == FrameOutcome::presented) { break; }
+			const auto extent = currentWindowPixelExtent(target);
+			if (extent.width == 0U || extent.height == 0U || std::chrono::steady_clock::now() >= deadline) {
+				return std::unexpected(Error::platform_error);
+			}
+			std::this_thread::sleep_for(std::chrono::milliseconds{1}); // Avoid spinning when an out-of-date surface returns immediately.
+		}
 		if (!target.lastReadbackCaptureResult || *target.lastReadbackCaptureResult != VK_SUCCESS) {
 			return std::unexpected(Error::platform_error);
 		}
 
+		return writeOutputPng(readback.pixelBytes(), target.swapchain.extent, target.swapchain.imageFormat,
+			target.readbackOutputEncoded, target.readbackPreservesAlpha, output_path);
+	}
+
+	/// @brief Persist a fenced receipt with its recorded encoding, never the renderer's current settings.
+	auto ForwardRenderer::writeOutputDiagnostic(const OutputDiagnostic &frame, const std::filesystem::path &path) const -> std::expected<void, Error> {
+		if (!frame.serial || frame.serial > completedSerial_) { return std::unexpected(Error::missing_object); }
+		return writeOutputPng(frame.pixels.bytes(), frame.extent, frame.format, frame.encoded, frame.preserveAlpha, path);
+	}
+
+	/// @brief Shared PNG conversion preserves legacy quantization and applies the recorded transfer exactly once.
+	auto ForwardRenderer::writeOutputPng(std::span<const std::byte> pixels, VkExtent2D extent, VkFormat format,
+		bool encoded, bool preserveAlpha, const std::filesystem::path &path) -> std::expected<void, Error> {
 		auto png_pixels = std::vector<std::byte>{};
-		auto pixels = readback.pixelBytes();
-		if (target.swapchain.imageFormat == VK_FORMAT_R8G8B8A8_UNORM || target.swapchain.imageFormat == VK_FORMAT_B8G8R8A8_UNORM) {
+		if (!encoded && (format == VK_FORMAT_R8G8B8A8_UNORM || format == VK_FORMAT_B8G8R8A8_UNORM)) {
 			// Encode linear UNORM swapchain bytes with the transfer curve expected by PNG viewers.
 			png_pixels.assign(pixels.begin(), pixels.end());
 			for (std::size_t offset{}; offset < png_pixels.size(); offset += 4U) {
@@ -152,8 +172,8 @@ namespace vve::simple {
 			pixels = std::span<const std::byte>{png_pixels};
 		}
 
-		const auto output = output_path.string();
-		if (!writeReadbackPng(pixels, target.swapchain.extent, target.swapchain.imageFormat, output)) {
+		const auto output = path.string();
+		if (!writeReadbackPng(pixels, extent, format, output, preserveAlpha)) {
 			return std::unexpected(Error::io_error);
 		}
 		return {};

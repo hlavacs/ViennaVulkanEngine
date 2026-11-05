@@ -14,8 +14,7 @@ constexpr unsigned count = VVE_PROBE_COUNT; ///< Fixed volume capacity, shared w
 constexpr Vec3 point{0,0,.5F}; ///< Shared fully covered boundary of both volumes' interiors after a one-cell shift.
 /// @brief Renders an exact window-frame budget, without changing time or scene data.
 bool warm(simple::Engine &engine, unsigned frames) {
-    for (auto frame : std::views::iota(0U,frames)) if (!engine.renderFrame()) return false;
-    return true;
+    return test::renderFrames(engine,frames);
 }
 /// @brief Maximum HDR channel error prevents color transport from hiding in a whole-frame average.
 float difference(Vec3 a, Vec3 b) { return std::max({std::abs(a.x-b.x),std::abs(a.y-b.y),std::abs(a.z-b.z)}); }
@@ -43,7 +42,7 @@ std::optional<Vec3> refresh(simple::Engine &engine, Camera camera, unsigned budg
     float minimum = std::numeric_limits<float>::max();
     std::optional<Vec3> value;
     for (auto frame : std::views::iota(1U,bound + 1)) {
-        if (!engine.renderFrame() || p.updated != budget || p.valid != count || p.stale != count - frame * budget) return {};
+        if (!warm(engine,1) || p.updated != budget || p.valid != count || p.stale != count - frame * budget) return {};
         value = measure(engine,camera,frame == 1 || frame == bound ? event : std::string_view{});
         if (!value || value->x < .001F) return {}; // The dim neutral sky keeps physically unlit receivers above black.
         minimum = std::min(minimum,value->x);
@@ -55,7 +54,7 @@ std::optional<Vec3> refresh(simple::Engine &engine, Camera camera, unsigned budg
 std::optional<Vec3> reference(simple::Engine &engine, Camera camera, unsigned frames) {
     auto &renderer = engine.renderSystem().forward();
     renderer.invalidateProbes(true);
-    if (!engine.renderFrame() || renderer.targets.front().probes.valid != 0 || !warm(engine,frames)) return {};
+    if (!warm(engine,1) || renderer.targets.front().probes.valid != 0 || !warm(engine,frames)) return {};
     return measure(engine,camera,"fresh-reference");
 }
 }
@@ -96,7 +95,7 @@ int main(int argc, char **argv) {
         camera.position.value.x += low ? -VVE_PROBE_SPACING : VVE_PROBE_SPACING;
         camera = Camera::lookAt(camera.position,Position{.value = point}, {}, camera.fov_y);
         render.setCamera(camera);
-        if (!engine.renderFrame()) return 1;
+        if (!warm(engine,1)) return 1;
         const auto shifted = measure(engine,camera,"scroll-first");
         const auto first = test::probeValidity(renderer);
         constexpr unsigned slab = VVE_PROBE_SIDE * VVE_PROBE_SIDE;
@@ -106,7 +105,7 @@ int main(int argc, char **argv) {
         const auto slabBound = (slab + budget - 1) / budget;
         // Missing rows must win over every old capture: all 16 exposed cells are captured within the slab budget.
         for (auto frame : std::views::iota(1U,slabBound)) {
-            if (!engine.renderFrame() || p.valid != count - slab + (frame + 1) * budget) return 2;
+            if (!warm(engine,1) || p.valid != count - slab + (frame + 1) * budget) return 2;
         }
         const auto complete = test::probeValidity(renderer);
         std::println("scroll.overlap.valid={} scroll.first.valid={} scroll.receiver.delta={} scroll.convergence.frames={} scroll.convergence.bound={}",
@@ -153,12 +152,12 @@ int main(int argc, char **argv) {
             wall = render.addCuboid(Vec3{-2.2F,0,-2},Vec3{-2,3,2},LinearColor{.value = Vec3{.01F,1,.01F}});
             if (!floor || !wall) return 1;
         }
-        if (!engine.renderFrame()) return 1;
+        if (!warm(engine,1)) return 1;
         const auto reset = test::probeValidity(renderer);
         const auto resetValue = measure(engine,camera,"reset",offset);
         pass &= reset && reset->first == 0 && reset->second == 0 && p.valid == 0 && p.updated == 0 && p.stale == 0;
         auto settings = render.giSettings(); settings.enabled = false;
-        if (!render.setGiSettings(settings) || !engine.renderFrame()) return 1;
+        if (!render.setGiSettings(settings) || !warm(engine,1)) return 1;
         const auto fallback = measure(engine,camera,"reset-gi-off",offset);
         if (!resetValue || !fallback) return 1;
         const auto delta = difference(*resetValue,*fallback);

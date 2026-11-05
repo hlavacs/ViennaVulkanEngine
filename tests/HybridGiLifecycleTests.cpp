@@ -78,7 +78,8 @@ void windows(Antialiasing aa) {
     require(bool(render.setGiSettings(settings)), "pause.captures");
     const auto ages = a.probes.captured;
     require(SDL_SetWindowSize(a.window,112,88) && SDL_SyncWindow(a.window), "resize.sdl");
-    require(test::renderFrames(engine,2), "resize.frames");
+    // Require the resized target as well as its unaffected neighbour before testing retained owners.
+    require(test::renderFrames(engine,2,std::chrono::seconds{10},2), "resize.frames");
     if (a.hdrImage.extent.width == 64) require(renderer.recreateSwapchain(a,renderer.currentWindowPixelExtent(a)) == VK_SUCCESS, "resize.hidden.recreate");
     require(a.probes.coefficients.image == probe && VkDescriptorPool{a.probes.pool.descriptorPool} == pool &&
         a.probes.captured == ages && a.probeResets == aReset && b.probeResets == bReset &&
@@ -102,7 +103,7 @@ void windows(Antialiasing aa) {
     require(test::renderFrames(engine,3) && render.lastRenderedWindowCount() == 1, "minimize.one");
     minimize(wb,true);
     const auto count = renderer.gpuAllocationCount();
-    require(test::renderFrames(engine,1) && render.lastRenderedWindowCount() == 0 && renderer.gpuAllocationCount() == count, "minimize.both");
+    require(engine.renderFrame().has_value() && render.lastRenderedWindowCount() == 0 && renderer.gpuAllocationCount() == count, "minimize.both");
     minimize(wa,false); minimize(wb,false);
     require(test::renderFrames(engine,2) && render.lastRenderedWindowCount() == 2 && a.probes.captured == ages &&
         a.probes.coefficients.image == probe && a.probeResets == aReset, "resume.preserved");

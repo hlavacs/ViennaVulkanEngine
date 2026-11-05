@@ -38,7 +38,7 @@ namespace {
 	const auto *centre = vve::test::pixelAt(pixels->data(), width, width / 2U, height / 2U);
 	if (std::abs(static_cast<int>(centre[0]) - 137) > 3 || centre[1] < 250 || centre[2] < 250) { return {}; }
 	const auto *corner = vve::test::pixelAt(pixels->data(), width, 4, 4);
-	const int grey = render.forward().device.swapchainMutableFormat ? 128 : 188;
+	const int grey = render.forward().device.swapchainMutableFormat || render.forward().smaaEnabled() ? 128 : 188;
 	if (target.guiWindow ? std::abs(static_cast<int>(corner[1]) - grey) > 3 : corner[1] > 3) { return {}; }
 	std::size_t edges{};
 	// Exclude the GUI marker; intermediate green can only come from triangle edge coverage.
@@ -69,7 +69,8 @@ namespace {
 	render.setPostProcessSetup([](vvppl::PostProcessing &chain) { chain.addColorGrade().gain[0] = 0.25F; });
 	engine.gui().draw([] { ImGui::GetBackgroundDrawList()->AddRectFilled({0, 0}, {12, 12}, IM_COL32(128, 128, 128, 255)); });
 	const auto first = engine.renderFrame();
-	if (mode == Antialiasing::msaa4 && !supports_msaa) {
+	const bool four = mode == Antialiasing::msaa4 || mode == Antialiasing::msaa4_smaa;
+	if (four && !supports_msaa) {
 		std::println("[RenderAntialiasingTests] unsupported_msaa_error={}", first ? "none" : errorName(first.error()));
 		if (first || first.error() != Error::platform_error || render.antialiasing() != mode) { return {}; }
 		const auto backend = render.rendererBackend();
@@ -84,8 +85,12 @@ namespace {
 	if (mode == Antialiasing::none) {
 		supports_msaa = supportsFourSamples(renderer.physicalDevice.physicalDevice, render.rendererBackend() == RendererBackend::deferred);
 	}
-	const auto locked = render.setAntialiasing(Antialiasing::none);
-	if (locked || locked.error() != Error::already_initialized) { return {}; }
+	for (auto selection : {Antialiasing::none, Antialiasing::msaa4, Antialiasing::smaa, Antialiasing::msaa4_smaa}) {
+		const auto locked = render.setAntialiasing(selection);
+		if (locked || locked.error() != Error::already_initialized || render.antialiasing() != mode) { return {}; }
+	}
+	const auto invalid = render.setAntialiasing(static_cast<Antialiasing>(99));
+	if (invalid || invalid.error() != Error::invalid_argument || render.antialiasing() != mode) { return {}; }
 	const auto directory = std::filesystem::path{VVE_TEST_TMP_DIR};
 	std::filesystem::create_directories(directory);
 	std::size_t edges{};
@@ -94,12 +99,24 @@ namespace {
 		auto &target = renderer.targets.front();
 		if (stage == 1 && renderer.recreateSwapchain(target, target.swapchain.extent) != VK_SUCCESS) { return {}; }
 		if (stage == 2 && (!SDL_SetWindowSize(target.window, 160, 96) || !SDL_SyncWindow(target.window))) { return {}; }
-		if (!engine.renderFrame() || !engine.renderFrame()) { return {}; }
+		// Native resize acknowledgements may temporarily skip acquisition; require both targets in both slots.
+		const bool presented = stage == 0 ? (engine.renderFrame() && engine.renderFrame()) :
+			test::renderFrames(engine, 2, std::chrono::seconds{10}, 2);
+		const auto drawable = renderer.currentWindowPixelExtent(target);
+		VkSurfaceCapabilitiesKHR surface{};
+		const auto surface_result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(renderer.physicalDevice.physicalDevice, target.surface.surface, &surface);
+		std::println("[RenderAntialiasingTests] mode={} stage={} presented={} drawable={}x{} requested={}x{} surface={}x{} surface_result={} skipped={}",
+			static_cast<int>(mode), stage, render.lastRenderedWindowCount(), drawable.width, drawable.height,
+			target.swapchain.requestedExtent.width, target.swapchain.requestedExtent.height, surface.currentExtent.width,
+			surface.currentExtent.height, static_cast<int>(surface_result), renderer.skippedFrameCount());
+		if (!presented) { return {}; }
 		for (auto &window : renderer.targets) {
-			const auto sample = mode == Antialiasing::msaa4 ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
+			const auto sample = four ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
 			if (window.depthImage.samples != sample || window.hdrImage.samples != VK_SAMPLE_COUNT_1_BIT ||
-				(window.msaaImage.image != VK_NULL_HANDLE) != (mode == Antialiasing::msaa4) ||
-				(mode == Antialiasing::msaa4 && window.msaaImage.samples != sample)) { return {}; }
+				(window.msaaImage.image != VK_NULL_HANDLE) != four ||
+				(four && window.msaaImage.samples != sample)) { return {}; }
+			if (renderer.smaaEnabled() && (window.ldrImage.extent.width != window.swapchain.extent.width ||
+				window.ldrImage.extent.height != window.swapchain.extent.height || window.smaaSet == VK_NULL_HANDLE)) { return {}; }
 			// Deferred surface data stays multisampled; only the final lit HDR colour is resolved.
 			if (render.rendererBackend() == RendererBackend::deferred) {
 				for (const auto &image : window.gbufferImages) {
@@ -136,5 +153,7 @@ int main() {
 	bool supported{};
 	const auto single = checkMode(Antialiasing::none, supported);
 	const auto multi = checkMode(Antialiasing::msaa4, supported);
-	return single && multi && (!supported || *multi > *single) ? 0 : 2;
+	const auto spatial = checkMode(Antialiasing::smaa, supported);
+	const auto combined = checkMode(Antialiasing::msaa4_smaa, supported);
+	return single && multi && spatial && combined && (!supported || *multi > *single) ? 0 : 2;
 }

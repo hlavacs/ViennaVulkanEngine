@@ -2,6 +2,7 @@
 module;
 #include <vulkan/vulkan_core.h>
 #include <vk_mem_alloc.h>
+#include <SDL3/SDL_video.h>
 module VVEngine.Simple.Renderer;
 import std;
 
@@ -46,9 +47,9 @@ void ForwardRenderer::collectGpuTiming(WindowTarget &target, std::uint32_t frame
     target.gpuMs.fill(std::nullopt); target.timingSerial = target.submitSerials[frame];
     const auto mask = std::numeric_limits<std::uint64_t>::max() >> (64 - gpuTimestampBits);
     // Two cascade pairs accumulate into one capture/integration measurement; absent passes have measured zero work.
-    constexpr std::array first{0U, 4U, 8U, 10U, 12U}, pairs{2U, 2U, 1U, 1U, 1U};
+    constexpr std::array first{0U, 4U, 8U, 10U, 16U, 12U, 14U}, pairs{2U, 2U, 1U, 1U, 1U, 1U, 1U};
     // Establish frame availability first, so omitted passes never masquerade as ready before any frame result exists.
-    for (auto metric : std::array{4U, 0U, 1U, 2U, 3U}) {
+    for (auto metric : std::array{4U, 0U, 1U, 2U, 3U, 5U, 6U}) {
         double elapsed{}; bool ready = true;
         for (auto pair : std::views::iota(0U, pairs[metric])) {
             const auto query = first[metric] + pair * 2;
@@ -70,12 +71,28 @@ auto ForwardRenderer::renderDiagnostics(WindowHandle window) const -> std::expec
     const auto target = std::ranges::find(targets, window, &WindowTarget::handle);
     if (target == targets.end()) return std::unexpected(Error::invalid_handle);
     Vector<std::pair<std::string,std::string>> receipt;
-    constexpr std::array names{"gi.capture_ms", "gi.integrate_ms", "ao.gpu_ms", "gi.lighting_ms", "gpu.frame_ms"};
+    constexpr std::array names{"gi.capture_ms", "gi.integrate_ms", "ao.gpu_ms", "gi.lighting_ms", "gpu.frame_ms", "gpu.tonemap_ms", "gpu.smaa_ms"};
     for (auto i : std::views::iota(0U, unsigned(names.size())))
         receipt.emplace_back(names[i], target->gpuMs[i] ? std::format("{:.6f}", *target->gpuMs[i]) : "unavailable");
     receipt.emplace_back("gpu.timing_serial", std::to_string(target->timingSerial));
+    receipt.emplace_back("gpu.submitted_serial", std::to_string(std::ranges::max(target->submitSerials)));
     receipt.emplace_back("gpu.timestamp_valid_bits", std::to_string(gpuTimestampBits));
     receipt.emplace_back("gpu.timestamp_period_ns", std::to_string(gpuTimestampPeriod));
+    // Explicit diagnostics expose the actual device/surface contract without implementation types in the facade.
+    VkPhysicalDeviceDriverProperties driver{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DRIVER_PROPERTIES};
+    VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, .pNext = &driver};
+    vkGetPhysicalDeviceProperties2(physicalDevice.physicalDevice, &properties);
+    receipt.emplace_back("gpu.device", properties.properties.deviceName);
+    receipt.emplace_back("gpu.device_type", std::to_string(properties.properties.deviceType));
+    receipt.emplace_back("gpu.driver", driver.driverName);
+    receipt.emplace_back("gpu.driver_info", driver.driverInfo);
+    receipt.emplace_back("gpu.query_pool_count", target->gpuQueries ? "1" : "0");
+    receipt.emplace_back("gpu.present_mode", std::to_string(target->swapchain.actualPresentMode));
+    receipt.emplace_back("gpu.output_format", std::to_string(target->swapchain.imageFormat));
+    receipt.emplace_back("gpu.output_color_space", std::to_string(target->swapchain.colorSpace));
+    receipt.emplace_back("gpu.validation_active", validationActive() ? "true" : "false");
+    const auto video = SDL_GetCurrentVideoDriver();
+    receipt.emplace_back("gpu.sdl_video_driver", video ? video : "unavailable");
     VmaTotalStatistics statistics{};
     if (allocator.allocator != VK_NULL_HANDLE) vmaCalculateStatistics(allocator, &statistics);
     receipt.emplace_back("gpu.allocated_bytes", std::to_string(statistics.total.statistics.allocationBytes));

@@ -39,7 +39,7 @@ namespace vve::simple {
 
 	/// @brief Changes startup antialiasing without replacing resources referenced by submitted work.
 	auto ForwardRenderer::setAntialiasing(Antialiasing mode) -> std::expected<void, Error> {
-		if (mode != Antialiasing::none && mode != Antialiasing::msaa4) { return std::unexpected(Error::invalid_argument); }
+		if (mode != Antialiasing::none && mode != Antialiasing::msaa4 && mode != Antialiasing::smaa && mode != Antialiasing::msaa4_smaa) { return std::unexpected(Error::invalid_argument); }
 		if (initialized()) { return std::unexpected(Error::already_initialized); }
 		antialiasing_ = mode;
 		return {};
@@ -49,6 +49,15 @@ namespace vve::simple {
 	void WindowTarget::cleanup() {
 		// The renderer waits for outstanding work before releasing any target resources.
 		postProcess.reset();
+		for (auto &pipeline : smaaPipelines) { pipeline.cleanup(); }
+		smaaPool.cleanup(); smaaSet = VK_NULL_HANDLE;
+		smaaPipelineLayout.reset(); smaaLayout.reset(); ldrUnormView.reset();
+		for (auto &image : smaaImages) { image.cleanup(); }
+		for (auto &buffer : smaaReadback) { buffer.cleanup(); }
+		ldrImage.cleanup();
+		toneMapPipeline.cleanup(); toneMapPool.cleanup(); toneMapSet = VK_NULL_HANDLE;
+		toneMapGuiPipeline.cleanup(); toneMapGuiLayout.reset();
+		toneMapPipelineLayout.reset(); toneMapLayout.reset(); postImage.cleanup();
 		deferredPool.cleanup();
 		deferredSet = VK_NULL_HANDLE;
 		probes.cleanup();
@@ -72,6 +81,7 @@ namespace vve::simple {
 		depthImage.cleanup();
 		msaaImage.cleanup();
 		hdrImage.cleanup();
+		hdrSampled = false;
 		imageViews.cleanup();
 		swapchain.cleanup();
 		surface.cleanup();
@@ -297,8 +307,10 @@ namespace vve::simple {
 			VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | (usesDeferred() ? VK_IMAGE_USAGE_SAMPLED_BIT : 0U), VK_IMAGE_ASPECT_DEPTH_BIT, 1U, false, false, 1U, sampleCount());
 		if (result != VK_SUCCESS) { return result; }
 		result = target.hdrImage.create(allocator, device.device, target.swapchain.extent, hdrFormat,
-			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
+			VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+				(toneMapping_.op != ToneMappingOperator::none || smaaEnabled() ? VK_IMAGE_USAGE_SAMPLED_BIT : 0U), VK_IMAGE_ASPECT_COLOR_BIT);
 		if (result != VK_SUCCESS) { return result; }
+		target.hdrSampled = toneMapping_.op != ToneMappingOperator::none || smaaEnabled();
 		if (sampleCount() != VK_SAMPLE_COUNT_1_BIT) {
 			result = target.msaaImage.create(allocator, device.device, target.swapchain.extent, hdrFormat,
 				VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, VK_IMAGE_ASPECT_COLOR_BIT, 1U, false, false, 1U, sampleCount());
@@ -827,6 +839,7 @@ namespace vve::simple {
 		*/
 	void ForwardRenderer::cleanup() {
 		(void)waitDeviceIdle();
+		outputDiagnostics.clear(); // Fenced diagnostic buffers must die before their allocator.
 		nativeDraw_ = {}; // Release application GPU owners before the idle device is destroyed.
 		frameError_.reset();
 		// Release every target before the device-wide resources its descriptors and commands reference.
@@ -898,6 +911,8 @@ namespace vve::simple {
 		pointShadowArray.cleanup();
 		spotShadowArray.cleanup();
 		dirShadowArray.cleanup();
+		for (auto &image : smaaLookup) { image.cleanup(); }
+		for (auto &sampler : smaaSamplers) { sampler.reset(); }
 		if (allocator.allocator != VK_NULL_HANDLE) cleanupLiveAllocations = gpuAllocationCount(); // Observe leaks before destroying the allocator.
 		allocator.cleanup();
 		device.cleanup();
@@ -934,7 +949,9 @@ namespace vve::simple {
 			return failed;
 		};
 
-		// Release views before their images, but keep the old swapchain for the presentation handoff.
+		// Release views before their images after the existing resize idle boundary.
+		retireToneMap(target); // Existing resize wait already completed all uses; normal toggles only use submission fences.
+		retireSmaa(target);
 		target.deferredPool.cleanup();
 		target.deferredSet = VK_NULL_HANDLE;
 		for (auto &image : target.aoImages) { image.cleanup(); }
@@ -947,10 +964,12 @@ namespace vve::simple {
 		target.hdrImage.cleanup();
 		target.imageViews.cleanup();
 		target.frameSync.cleanup();
+		// Retire the old presentation chain first: handing it over can preserve stale hidden-window geometry on X11.
+		target.swapchain.cleanup();
 
 		result = target.swapchain.create(physicalDevice.physicalDevice, device.device, target.surface.surface,
 										  *physicalDevice.graphicsQueueFamily, target.presentQueueFamily,
-										  requestedExtent.width, requestedExtent.height, defaultPresentMode(), target.guiWindow && device.swapchainMutableFormat, target.swapchain.swapchain);
+										  requestedExtent.width, requestedExtent.height, defaultPresentMode(), target.guiWindow && device.swapchainMutableFormat);
 		if (result != VK_SUCCESS) { return retryNextFrame(result); }
 
 		result = target.imageViews.create(device.device, target.swapchain.images, target.swapchain.imageFormat, target.swapchain.guiFormat);

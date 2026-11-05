@@ -112,6 +112,8 @@ export namespace vve::simple {
 		[[nodiscard]] auto materialLighting() const -> MaterialLighting;
 		[[nodiscard]] auto setObjectSurface(RenderObjectHandle handle, SurfaceMaterial surface) -> std::expected<void, Error>;
 		[[nodiscard]] auto setAntialiasing(Antialiasing mode) -> std::expected<void, Error>;
+		[[nodiscard]] auto setToneMapping(ToneMapping settings) -> std::expected<void, Error>;
+		[[nodiscard]] auto toneMapping() const -> ToneMapping;
 		[[nodiscard]] auto setRendererBackend(RendererBackend backend) -> std::expected<void, Error>;
 		[[nodiscard]] auto rendererBackend() const -> RendererBackend;
 		[[nodiscard]] auto setGiSettings(GiSettings settings) -> std::expected<void, Error>;
@@ -196,7 +198,7 @@ export namespace vve::simple {
 
 		auto waitIdle() -> void;
 		auto setGuiPrepareSink(std::function<bool()> sink)														-> void;
-		auto setGuiRecordSink(std::function<void(VkCommandBuffer)> sink)												-> void;
+		auto setGuiRecordSink(std::function<void(VkCommandBuffer, VkPipeline)> sink)												-> void;
 		auto setPostProcessSetup(std::function<void(vvppl::PostProcessing &)> setup)											-> void;
 		[[nodiscard]] static bool supportsRenderer(const RendererId &id);
 		[[nodiscard]] auto initialize(WindowSystem &windows)												-> std::expected<void, Error>;
@@ -337,6 +339,10 @@ namespace vve::simple {
 
 	/// @brief Selects the forward sample count before Vulkan target creation.
 	inline auto RenderSystem::setAntialiasing(Antialiasing mode) -> std::expected<void, Error> { return renderer_.setAntialiasing(mode); }
+	/// @brief Forwards runtime display settings to the renderer's transactional validation.
+	inline auto RenderSystem::setToneMapping(ToneMapping settings) -> std::expected<void, Error> { return renderer_.setToneMapping(settings); }
+	/// @brief Returns the renderer's retained display settings.
+	inline auto RenderSystem::toneMapping() const -> ToneMapping { return renderer_.toneMapping(); }
 	/// @brief Selects shared scene passes before GPU startup; no process-wide state is used.
 	inline auto RenderSystem::setRendererBackend(RendererBackend backend) -> std::expected<void, Error> {
 		// After Engine::init the selected surface is available, so report hardware rejection at the API boundary.
@@ -394,7 +400,7 @@ namespace vve::simple {
 	}
 
 	/// @brief Forwards the GUI recorder into the active forward renderer.
-	inline auto RenderSystem::setGuiRecordSink(std::function<void(VkCommandBuffer)> sink)			-> void{
+	inline auto RenderSystem::setGuiRecordSink(std::function<void(VkCommandBuffer, VkPipeline)> sink)			-> void{
 		renderer_.setGuiRecordSink(std::move(sink));
 	}
 

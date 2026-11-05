@@ -37,6 +37,8 @@ export namespace vve::simple {
 
 		VulkanOwnedHandle<vk::raii::SwapchainKHR, VkSwapchainKHR> swapchain{}; ///< Owned Vulkan swapchain handle.
 		VkFormat imageFormat{VK_FORMAT_UNDEFINED};    ///< Chosen swapchain image format.
+		VkColorSpaceKHR colorSpace{VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}; ///< Actual presentation transfer contract, checked by opt-in output passes.
+		VkPresentModeKHR actualPresentMode{VK_PRESENT_MODE_FIFO_KHR}; ///< Actual mode selected for diagnostic receipts.
 		VkFormat guiFormat{VK_FORMAT_UNDEFINED};      ///< GUI-only UNORM view format, or the original format without mutable views.
 		VkExtent2D extent{};                          ///< Chosen swapchain image extent.
 		VkExtent2D requestedExtent{};                 ///< Window pixel extent the swapchain was created for; may differ from the surface-chosen extent.
@@ -58,7 +60,6 @@ export namespace vve::simple {
 			* @param width Requested fallback width when the surface extent is not fixed.
 			* @param height Requested fallback height when the surface extent is not fixed.
 			* @param mutableFormat Whether VK_KHR_swapchain_mutable_format was enabled on the logical device.
-			* @param oldSwapchain Previous owned swapchain, with its image views already released; null on first creation.
 			* @return VK_SUCCESS when the swapchain and image list are available, otherwise a Vulkan error code.
 			*/
 		[[nodiscard]] VkResult create(
@@ -70,8 +71,7 @@ export namespace vve::simple {
 			std::uint32_t width,
 			std::uint32_t height,
 			PresentModePreference presentModePreference = PresentModePreference::mailbox,
-			bool mutableFormat = false,
-			VkSwapchainKHR oldSwapchain = VK_NULL_HANDLE
+			bool mutableFormat = false
 		) {
 			if (physicalDevice == VK_NULL_HANDLE || owningDevice == VK_NULL_HANDLE || surface == VK_NULL_HANDLE) {
 				return VK_ERROR_INITIALIZATION_FAILED;
@@ -147,17 +147,19 @@ export namespace vve::simple {
 				.compositeAlpha = chooseCompositeAlpha(capabilities),
 				.presentMode = presentMode,
 				.clipped = VK_FALSE,	///< Keep hidden/obscured pixels defined for captureFrameToPng (Render/RendererDebug.cpp) and in-frame readback (Render/RendererDraw.cpp).
-				.oldSwapchain = oldSwapchain,
+				.oldSwapchain = VK_NULL_HANDLE,
 			};
 
 			VkSwapchainKHR rawSwapchain{VK_NULL_HANDLE};
 			result = vkCreateSwapchainKHR(owningDevice, &createInfo, nullptr, &rawSwapchain);
 			if (result != VK_SUCCESS) { cleanup(); return result; }
-			// RAII assignment destroys the old swapchain only after its replacement exists.
+			// Resize releases the previous chain before creating its replacement.
 			swapchain.handle = vk::raii::SwapchainKHR{owningDevice.handle, rawSwapchain};
 
 			device = owningDevice;
 			imageFormat = chosenFormat.format;
+			colorSpace = chosenFormat.colorSpace;
+			actualPresentMode = presentMode;
 			guiFormat = chosenGuiFormat;
 			extent = chosenExtent;
 			requestedExtent = VkExtent2D{.width = width, .height = height};

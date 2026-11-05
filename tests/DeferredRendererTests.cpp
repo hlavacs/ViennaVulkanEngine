@@ -46,8 +46,13 @@ using Captures = std::map<std::string, std::vector<unsigned char>>; ///< RGBA ca
 	std::string name, Captures &captures, vve::RendererBackend backend) {
 	auto &render = engine.renderSystem();
 	const auto path = directory / (name + ".png");
-	if (!engine.renderFrame() || !render.captureFrameToPng(path) || !checkPasses(render.forward(), backend)) {
-		std::println("[DeferredRendererTests] capture_failed={} renderer={}", name, static_cast<int>(backend));
+	const auto frame = engine.renderFrame();
+	const auto image = frame ? render.captureFrameToPng(path) : frame;
+	const bool validPasses = image && checkPasses(render.forward(), backend);
+	if (!validPasses) {
+		std::println("[DeferredRendererTests] capture_failed={} renderer={} frame={} image={} passes={} skipped={}", name,
+			static_cast<int>(backend), frame ? "ok" : errorName(frame.error()), image ? "ok" : errorName(image.error()),
+			validPasses, render.forward().skippedFrameCount());
 		return false;
 	}
 	auto pixels = vve::test::imagePixels(path);
@@ -59,6 +64,42 @@ using Captures = std::map<std::string, std::vector<unsigned char>>; ///< RGBA ca
 		static_cast<int>(backend), std::ranges::count(passes, Pass::gbuffer), std::ranges::count(passes, Pass::deferred_lighting),
 		render.forward().validationErrorCount(), path.string());
 	return render.forward().validationErrorCount() == 0U;
+}
+
+/// @brief Forces genuine frame-fence timeouts, then restores readiness and verifies that synchronous PNG capture recovers.
+[[nodiscard]] bool checkCaptureRetry(vve::simple::Engine &engine, const std::filesystem::path &directory) {
+	auto &render = engine.renderSystem();
+	auto &renderer = render.forward();
+	auto &target = renderer.targets.front();
+	if (renderer.waitIdle() != VK_SUCCESS) { return false; }
+	// Missing history and a non-drawable target must still reject capture before attempting recovery.
+	const auto imageIndex = std::exchange(target.lastRenderedImageIndex, std::nullopt);
+	const auto missing = render.captureFrameToPng(directory / "missing-frame.png");
+	target.lastRenderedImageIndex = imageIndex;
+	auto *window = std::exchange(target.window, nullptr);
+	const auto started = std::chrono::steady_clock::now();
+	const auto hidden = render.captureFrameToPng(directory / "no-drawable.png");
+	target.window = window;
+	if (missing || missing.error() != vve::Error::missing_object || hidden || hidden.error() != vve::Error::platform_error ||
+		std::chrono::steady_clock::now() - started >= std::chrono::seconds{1}) { return false; }
+	const VkDevice device = renderer.device.device;
+	const auto frame = target.currentFrame;
+	const auto serials = target.submitSerials;
+	const auto skipped = renderer.skippedFrameCount();
+	const VkFence fence = target.frameSync.inFlightFences[frame];
+	if (vkResetFences(device, 1, &fence) != VK_SUCCESS) { return false; }
+	// No submission can signal this idle fence until capture exhausts its short diagnostic retry budget.
+	const auto timed = renderer.captureFrameToPng(target, directory / "timed-out.png", std::chrono::milliseconds{2100});
+	const auto retries = renderer.skippedFrameCount() - skipped;
+	const bool unchanged = target.currentFrame == frame && target.submitSerials == serials;
+	const VkSubmitInfo submit{.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO};
+	if (vkQueueSubmit(renderer.device.graphicsQueue, 1, &submit, fence) != VK_SUCCESS) { return false; }
+	const auto image = render.captureFrameToPng(directory / "capture-retry.png");
+	const auto pixels = vve::test::imagePixels(directory / "capture-retry.png");
+	std::println("[DeferredRendererTests] capture_timeout={} retries={} unchanged={} recovered={} pixels={}",
+		timed ? "none" : errorName(timed.error()), retries, unchanged, image ? "ok" : errorName(image.error()), pixels ? pixels->size() : 0);
+	return !timed && timed.error() == vve::Error::platform_error && retries >= 2 && unchanged && image && pixels &&
+		pixels->size() == 128U * 128U * 4U && renderer.validationErrorCount() == 0;
 }
 
 /// @brief Builds identical scenes for either backend and retains captures of each material and scene transition.
@@ -137,6 +178,7 @@ using Captures = std::map<std::string, std::vector<unsigned char>>; ///< RGBA ca
 	if (!triangle || !render.setObjectUnlit(*triangle, true) || !save("dynamic-before") ||
 		!render.setObjectMeshPositions(*triangle, {{-1, -1, 0}, {1, -1, 0}, {0.7F, 1, 0}}) || !save("dynamic-after") ||
 		!render.removeObject(*triangle) || !save("removed")) { return {}; }
+	if (backend == RendererBackend::forward && !checkCaptureRetry(engine, directory)) { return {}; }
 	render.waitIdle();
 	engine.gui().shutdownVulkan();
 	render.shutdown();

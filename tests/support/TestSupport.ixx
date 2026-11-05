@@ -139,9 +139,32 @@ template <typename TRender> void configureRenderer(TRender &render) {
 	return path;
 }
 
-/// @brief Advances a fixed capture budget with paused animation; no CPU readback enters ordinary rendering.
-template <typename TEngine> bool renderFrames(TEngine &engine, unsigned count = 64) {
-	for ([[maybe_unused]] auto frame : std::views::iota(0U, count)) if (!engine.renderFrame()) return false;
+/// @brief Advances a presented-frame budget; an optional window count polls events and requires every requested target to present.
+template <typename TEngine> bool renderFrames(TEngine &engine, unsigned count = 64,
+	std::chrono::steady_clock::duration timeout = std::chrono::seconds{120}, std::size_t expectedWindows = 0) {
+	const auto first = engine.renderSystem().renderedFrameCount();
+	const auto deadline = std::chrono::steady_clock::now() + timeout;
+	unsigned attempts{}, presented{};
+	// A successful render call can skip its window; only a presented frame consumes the requested capture budget.
+	while (presented < count) {
+		if (std::chrono::steady_clock::now() >= deadline) {
+			std::println("frames.requested={} frames.presented={} frames.attempts={} frames.windows={} frames.expected_windows={} frames.timeout=true",
+				count, presented, attempts, engine.renderSystem().lastRenderedWindowCount(), expectedWindows);
+			return false;
+		}
+		// Resize/restore acknowledgements can arrive after SDL_SyncWindow; drive the same event poll as the normal frame loop.
+		if (expectedWindows != 0 && !engine.windowSystem().poll()) { return false; }
+		++attempts;
+		if (const auto result = engine.renderFrame(); !result) {
+			std::println("frames.requested={} frames.presented={} frames.attempts={} frames.error={}", count,
+				engine.renderSystem().renderedFrameCount() - first, attempts, errorName(result.error()));
+			return false;
+		}
+		if (expectedWindows != 0 ? engine.renderSystem().lastRenderedWindowCount() == expectedWindows :
+			engine.renderSystem().renderedFrameCount() - first > presented) { ++presented; }
+	}
+	if (attempts != count) std::println("frames.requested={} frames.presented={} frames.attempts={} frames.skipped={}",
+		count, engine.renderSystem().renderedFrameCount() - first, attempts, attempts - count);
 	return true;
 }
 /// @brief Projects a known surface point into a two-square-pixel linear HDR region and prints its exact rectangle.

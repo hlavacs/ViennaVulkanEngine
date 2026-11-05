@@ -88,6 +88,33 @@ one, the original draw path is retained.
 | `probe_capture` | Hybrid updated probe faces, after engine opaque/sky | Linear radiance/distance RGBA16F + D32, 1x |
 | `forward_transparent` | Every backend, after engine sky/transparency, before post-processing/GUI | Linear HDR RGBA16F + preserved opaque D32, window 1x/4x |
 
+MSAA4 is supported by forward, deferred and hybrid_gi, subject to the device's
+HDR/depth capabilities (and sampled G-buffer/sample-rate shading for deferred
+paths). Every native pipeline must use `context.samples`, `colorAttachmentCount`
+and `colorFormats` for its handled pass, together with `depthFormat`. Hardcoding
+single-sample rasterization or one colour attachment is incompatible with a
+4x main pass or the three-attachment G-buffer. Shadows and probe captures stay 1x.
+
+IQ-01's `RenderAntialiasingQualityTests` checks engine meshes and native tilted
+quads on all three backends, none/4x at four fixed subpixel offsets. It reads
+resolved linear FP16 HDR through `captureFrameLinear`, before output transforms,
+and compares with exact CPU polygon/pixel intersection areas. Independent
+triangle-area vectors and the 4441-pixel determinant check the oracle. Masks
+come from geometry: fractional coverage for edges, signed distance >1.5 pixels
+for interiors. Frozen limits are edge MAE <=0.14 and <=0.65 of none, interior
+RGB error <=0.001 and relative integrated coverage error <=0.005; at least 150
+edge and 2000 interior samples are required. The ratio demands 35% improvement;
+the other limits account for four-sample quadrature and FP16 storage. A bypassed
+AA control must fail the improvement gate. Counts alone are not quality gates.
+Contact sheets under `build/<preset>/verify/image-quality/msaa/` contain actual,
+analytic, 8x coverage differences and geometry masks; top four rows are none,
+bottom four are 4x. The separate Profiles-layer single-sample test requires
+platform_error, unchanged startup selection/backend and successful retry with
+none on every backend (its bottom rows show the recovered none frames).
+Both tests are labelled gpu/image_quality and require Khronos synchronization
+validation. Linux XRDP verification uses llvmpipe, so it supplies software-renderer
+evidence; physical-GPU verification remains separate.
+
 Native transparent draws follow engine transparency; the caller sorts its own
 surfaces. Sorting individual transparent objects across owners is not provided.
 Transparent surfaces should depth-test, blend without depth writes and omit
@@ -188,10 +215,11 @@ uniform layouts or introducing a library-specific renderer dependency.
 the last resolved RGBA16F HDR frame, converted to owning row-major `Vector<Vec4>`
 before post-processing/exposure. It draws no extra frame and uses the existing
 queue-ordered transfer/readback helper, without a device-wide idle wait.
-`validationActive()` and `validationErrorCount()` expose the Debug renderer
-messenger/callback count for facade-only integration tests. Release has no engine
-messenger (`validationActive()==false`); its native GI CTests explicitly require
-the external Khronos synchronization layer and reject its error diagnostics.
+`validationActive()` and `validationErrorCount()` expose the renderer's actual
+messenger/callback count for facade-only integration tests. Debug enables available
+validation by default; Release creates the same messenger and synchronization checks
+when explicitly requested with `VK_LAYER_VALIDATE_SYNC=1`. Ordinary Release startup
+keeps validation disabled; native GI CTests also reject external layer error diagnostics.
 Ordinary frames do
 not invoke these readbacks. Invalid/unrendered windows retain explicit errors.
 
@@ -1347,14 +1375,20 @@ factors without narrowing them to UNORM. Background samples carry no material.
 
 # Antialiasing and capabilities
 
-Both existing modes (`Antialiasing::none`, `Antialiasing::msaa4`) are preserved.
-With MSAA4, the three G-buffer images, depth and intermediate HDR colour all have
+`Antialiasing{none, msaa4, smaa, msaa4_smaa}` supports forward, deferred and hybrid_gi;
+none remains the default. Call `setAntialiasing` before GPU startup on the first
+drawable frame. Valid late calls, including the active mode, return
+`already_initialized`; unknown values return `invalid_argument` first and preserve
+state. Implementation `sampleCount()` returns 4 for msaa4/msaa4_smaa and 1 otherwise;
+native pipelines use each pass's `context.samples`, `colorAttachmentCount`,
+`colorFormats` and `depthFormat`, as described above.
+With either four-sample mode, the three G-buffer images, depth and intermediate HDR colour all have
 four samples. Geometry evaluates material attributes at sample rate. The
 lighting shader uses `Texture2DMS.Load(pixel, SV_SampleIndex)` and sample-rate
 shading; it reconstructs and lights each surface independently. Sky and
 transparent objects then compose into the same multisampled HDR target with
 per-sample depth tests. Only the final lit/composited colour is averaged into
-the single-sample HDR image consumed by VVPPL. Surface normals, material flags
+the single-sample `hdrImage` consumed by display processing. Surface normals, material flags
 and depths are never averaged together. GUI and shadow maps remain single-sample.
 Vulkan's sample-shading coordinate rule is documented in
 [FragCoord](https://docs.vulkan.org/refpages/latest/refpages/source/FragCoord.html).
@@ -1383,6 +1417,55 @@ queue. Resizing waits through the existing idle boundary, releases descriptors
 before views/images and rebuilds all window-sized attachments. Minimized windows
 retain their resources and resume through the existing swapchain recovery path.
 Scene replacement uses the ownership and retirement contract above.
+
+# Optional display processing
+
+`ToneMappingOperator{none, khronos_neutral}` and `ToneMapping{op = none, exposure = 1}`
+are facade vocabulary. `RenderSystem::setToneMapping(ToneMapping)` selects the
+next recorded frame's transform; `toneMapping()` returns the retained settings.
+Call setters between frame calls on the renderer's calling thread; there is no
+concurrent-setter contract. Unknown operators and nonpositive/nonfinite exposures,
+even with none, return `invalid_argument` without changing state. Neutral maps
+negative/NaN RGB to zero, caps positive inputs/infinity at 65504, then exposed
+channels at 1e6 to avoid overflow. Ordinary inputs retain the pinned
+[Khronos PBR_Neutral](../third_party/KhronosToneMapping/README.md) (Apache-2.0) curve.
+VVE does not detect vvppl tone mappers; a vvppl tone mapper plus Neutral maps twice.
+
+The chain is `hdrImage -> [vvppl into postImage] -> [Neutral] -> [SMAA] -> swapchain -> GUI`.
+`captureFrameLinear` still reads untouched resolved linear HDR. vvppl writes an
+RGBA16F TRANSFER_DST|SAMPLED `postImage` in GENERAL only when a VVE pass follows;
+transfer writes are published to fragment sampling. Otherwise it retains its
+direct swapchain destination. SMAA without Neutral uses clamped identity to fill
+the mutable RGBA8 sRGB `ldrImage`. Edge detection reads its UNORM view in gamma
+space; neighbourhood blending reads the sRGB view in linear light. Linear RG8
+edges and RGBA8 weights clear every frame before their dependent reads.
+
+SMAA HIGH uses threshold 0.1, 16 orthogonal / 8 diagonal search steps and corner
+rounding 25. The [MIT reference](../third_party/SMAA/README.md), Jimenez et al.,
+*SMAA: Enhanced Subpixel Morphological Antialiasing*, Eurographics 2012, is pinned
+at `71c806a8`, compiled locally through Slang and never downloaded by the build.
+AreaTex/SearchTex and samplers are shared per device; output images, immutable
+descriptors and pipelines are per window, allocated on demand, rebuilt on resize
+and retired through submission fences. Queue barriers order intermediate reads
+before later-frame overwrites across slots. Toggles add no device/queue-idle waits.
+A fresh default creates no optional output images, pipelines, descriptors or passes.
+Disabling Neutral restores legacy output unless startup SMAA retains its identity/filter chain.
+
+Only RGBA8/BGRA8 sRGB or UNORM with SRGB_NONLINEAR presentation and required
+format/usage/view features support opt-in processing; unsupported selections fail
+with `platform_error` before submission (at the first frame for pending settings).
+sRGB attachments encode linear RGB once; opt-in UNORM encodes once in the final
+shader. Legacy UNORM keeps its linear blit/8-bit quantization and CPU PNG encoding.
+Readback keeps each recorded frame's encoding, channel order and opt-in alpha, so
+later setting changes cannot cause a second PNG encode. GUI uses UNORM views for
+authored widget/HUD bytes, or decodes RGB before opt-in sRGB attachment encoding
+when mutable swapchain views are unavailable; legacy GUI behaviour is unchanged.
+
+IQ-03b's `RenderPostOutputLifecycleTests` and `RenderPostOutputWindowsTests` cover
+ordinary in-flight transitions, vvppl, all backends, two windows, independent resize,
+minimize/resume, GUI and repeated shutdown across sRGB/UNORM with and without mutable
+views. This lifecycle evidence is separate from the frozen IQ-03a quality blocker
+in `RenderSmaaQualityTests`; physical-GPU verification and timings remain pending.
 
 # Verification
 
@@ -1422,8 +1505,8 @@ export LD_LIBRARY_PATH="$VULKAN_SDK/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
 ./build_linux.sh debug
 ```
 
-Debug instances enable synchronization validation when the installed layer
-supports its settings extension. Tests report validation errors, pass execution,
+Debug and explicitly opted-in Release instances enable synchronization validation
+when the installed layer supports its settings extension. Tests report validation errors, pass execution,
 sample counts and capture paths. Physical-GPU and cross-platform verification
 status must be read from the matrix; a software-Vulkan pass does not establish
 Windows/macOS or physical-GPU coverage.

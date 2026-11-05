@@ -120,9 +120,10 @@ export namespace vve::simple {
 		* @param extent Width and height of the readback image in pixels.
 		* @param sourceFormat Vulkan source format; only 8-bit RGBA and BGRA UNORM/SRGB are supported.
 		* @param outputPath Filesystem path passed to stb_image_write.
+		* @param preserveAlpha Retain source alpha for encoded opt-in output; false keeps historical opaque captures.
 		* @return True when validation, conversion, and stbi_write_png succeeded.
 		*/
-	[[nodiscard]] inline bool writeReadbackPng(std::span<const std::byte> pixels, VkExtent2D extent, VkFormat sourceFormat, std::string_view outputPath) {
+	[[nodiscard]] inline bool writeReadbackPng(std::span<const std::byte> pixels, VkExtent2D extent, VkFormat sourceFormat, std::string_view outputPath, bool preserveAlpha = false) {
 		const bool rgbaFormat = sourceFormat == VK_FORMAT_R8G8B8A8_UNORM || sourceFormat == VK_FORMAT_R8G8B8A8_SRGB;
 		const bool bgraFormat = sourceFormat == VK_FORMAT_B8G8R8A8_UNORM || sourceFormat == VK_FORMAT_B8G8R8A8_SRGB;
 		if ((!rgbaFormat && !bgraFormat) || extent.width == 0U || extent.height == 0U || outputPath.empty()) { return false; }
@@ -142,7 +143,7 @@ export namespace vve::simple {
 			rgbaPixels[offset + 0U] = bgraFormat ? third : first; // Convert B to R only for BGRA sources.
 			rgbaPixels[offset + 1U] = second;
 			rgbaPixels[offset + 2U] = bgraFormat ? first : third; // Convert R to B only for BGRA sources.
-			rgbaPixels[offset + 3U] = 255U;                      // Analysis PNGs ignore source alpha.
+			rgbaPixels[offset + 3U] = preserveAlpha ? std::to_integer<unsigned char>(pixels[offset + 3U]) : 255U; // Legacy captures stay opaque.
 		}
 
 		const auto path = std::string{outputPath}; // stb requires a null-terminated path.

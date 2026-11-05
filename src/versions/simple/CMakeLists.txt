@@ -5,6 +5,8 @@ target_sources(ViennaVulkanEngine
       "${CMAKE_CURRENT_LIST_DIR}/vma_impl.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererResources.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererDeferred.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/Render/RendererToneMap.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/Render/RendererSmaa.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererGi.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererGiLifecycle.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererTiming.cpp"
@@ -89,11 +91,31 @@ set(VVE_SIMPLE_SHADER_STAGES vertex fragment vertex fragment fragment vertex fra
 list(APPEND VVE_SIMPLE_SHADER_NAMES simple_forward_gi_frag simple_gbuffer_gi_frag simple_gbuffer_gi_msaa_frag simple_shadow_gi_vert simple_shadow_gi_frag)
 list(APPEND VVE_SIMPLE_SHADER_ENTRIES fragmentMain gbufferMain gbufferMsaaMain shadowMaterialVertexMain shadowFragmentMain)
 list(APPEND VVE_SIMPLE_SHADER_STAGES fragment fragment fragment vertex fragment)
+list(APPEND VVE_SIMPLE_SHADER_NAMES simple_tonemap_vert simple_tonemap_frag)
+list(APPEND VVE_SIMPLE_SHADER_ENTRIES toneMapVertex toneMapFragment)
+list(APPEND VVE_SIMPLE_SHADER_STAGES vertex fragment)
+list(APPEND VVE_SIMPLE_SHADER_NAMES simple_smaa_edges simple_smaa_weights simple_smaa_blend)
+list(APPEND VVE_SIMPLE_SHADER_ENTRIES smaaEdges smaaWeights smaaBlend)
+list(APPEND VVE_SIMPLE_SHADER_STAGES fragment fragment fragment)
+list(APPEND VVE_SIMPLE_SHADER_NAMES simple_gui_output_vert simple_gui_output_frag)
+list(APPEND VVE_SIMPLE_SHADER_ENTRIES guiOutputVertex guiOutputFragment)
+list(APPEND VVE_SIMPLE_SHADER_STAGES vertex fragment)
 set(VVE_SIMPLE_SHADER_HEADERS "")
 foreach(NAME ENTRY STAGE IN ZIP_LISTS VVE_SIMPLE_SHADER_NAMES VVE_SIMPLE_SHADER_ENTRIES VVE_SIMPLE_SHADER_STAGES)
    set(HEADER "${VVE_SIMPLE_SHADER_OUTPUT_DIR}/${NAME}_spv.h")
    set(SHADER "${VVE_SIMPLE_FORWARD_SHADER}")
    set(SHADER_DEFINES "")
+   set(SHADER_DEPENDENCIES "")
+   if(NAME MATCHES "simple_smaa")
+      set(SHADER "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_smaa.slang")
+      set(SHADER_DEPENDENCIES "${PROJECT_SOURCE_DIR}/third_party/SMAA/SMAA.hlsl")
+   endif()
+   if(NAME MATCHES "simple_tonemap")
+      set(SHADER "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_tonemap.slang")
+   endif()
+   if(NAME MATCHES "simple_gui_output")
+      set(SHADER "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_gui_output.slang")
+   endif()
    if(NAME MATCHES "simple_lighting")
       set(SHADER "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_deferred.slang")
    endif()
@@ -127,6 +149,7 @@ foreach(NAME ENTRY STAGE IN ZIP_LISTS VVE_SIMPLE_SHADER_NAMES VVE_SIMPLE_SHADER_
       # Slang preserves unchanged outputs; still rebuild the embedding unit after a source touch.
       COMMAND "${CMAKE_COMMAND}" -E touch "${HEADER}"
       DEPENDS "${SHADER}" "${VVE_SIMPLE_FORWARD_SHADER}" "${VVE_SIMPLE_SHARED_SHADER_HEADER}" "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_material.slang"
+         ${SHADER_DEPENDENCIES}
          "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_atmosphere.slang"
          "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_irradiance.slang"
          "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_deferred.slang"

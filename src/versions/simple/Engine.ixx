@@ -210,8 +210,8 @@ export namespace vve::simple {
 					gui_.shutdownSDL();
 					gui_.shutdownContext();
 				} else {
-					render_system_.setGuiPrepareSink([this]{ return gui_.prepareFrame(); });
-					render_system_.setGuiRecordSink([this](VkCommandBuffer cmd){ gui_.record(cmd); });
+					render_system_.setGuiPrepareSink([this]{ return gui_.prepareFrame(render_system_.toneMapping().op != ToneMappingOperator::none || render_system_.forward().smaaEnabled()); });
+					render_system_.setGuiRecordSink([this](VkCommandBuffer cmd, VkPipeline pipeline){ gui_.record(cmd, pipeline); });
 				}
 			}
 		}

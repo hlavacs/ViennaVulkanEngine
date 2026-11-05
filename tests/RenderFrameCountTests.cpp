@@ -125,9 +125,10 @@ bool checkFatalFramePropagation() {
 	// Restoring resources cannot turn a fatal error into a successful skip; run must return it too.
 	const auto repeated = engine.renderFrame();
 	const auto run = engine.run();
+	const bool warmed = vve::test::renderFrames(engine, 1);
 	std::println("fatal repeated={} run={} frames={} windows={}", repeated ? "none" : vve::errorName(repeated.error()),
 		run ? "none" : vve::errorName(run.error()), render.renderedFrameCount(), render.lastRenderedWindowCount());
-	if (repeated || repeated.error() != vve::Error::platform_error || run || run.error() != vve::Error::platform_error ||
+	if (repeated || repeated.error() != vve::Error::platform_error || run || run.error() != vve::Error::platform_error || warmed ||
 		render.renderedFrameCount() != 2U || render.lastRenderedWindowCount() != 0U) { return false; }
 	// Cleanup is the explicit recovery boundary; no acquired image or unsignaled fence was left by the injected failure.
 	render.waitIdle();
@@ -240,6 +241,7 @@ int main() {
 	// Engine::renderFrame initializes the renderer lazily on the hidden SDL window.
 	auto engine = vve::test::hiddenEngine("render-frame-count-tests", vve::PixelExtent{.width = 64, .height = 64});
 	vve::test::configureRenderer(engine.renderSystem());
+	if (!vve::test::renderFrames(engine, 0)) { return 14; } // A zero-frame budget needs no engine initialization.
 	if (!engine.init()) { return 2; }
 	auto &active_render = engine.renderSystem();
 	// Every successful presentation contributes exactly one frame and one rendered window.
@@ -255,12 +257,16 @@ int main() {
 	const auto fps = active_render.renderingFramesPerSecond();
 	auto *native = std::exchange(renderer.targets.front().window, nullptr);
 	const auto skipped = engine.renderFrame();
+	// The real skipped-frame path must exhaust its short deadline instead of satisfying a warmup budget.
+	const auto started = std::chrono::steady_clock::now();
+	const bool warmed = vve::test::renderFrames(engine, 1, std::chrono::milliseconds{1});
+	const auto elapsed = std::chrono::steady_clock::now() - started;
 	renderer.targets.front().window = native;
 	std::cout << "skipped success=" << skipped.has_value() << " frames=" << active_render.renderedFrameCount()
 		<< " windows=" << active_render.lastRenderedWindowCount() << '\n';
-	if (!skipped || active_render.renderedFrameCount() != 3U || active_render.lastRenderedWindowCount() != 0U ||
+	if (!skipped || warmed || elapsed > std::chrono::seconds{1} || active_render.renderedFrameCount() != 3U || active_render.lastRenderedWindowCount() != 0U ||
 		active_render.renderingFramesPerSecond() != fps) { return 5; }
-	if (!engine.renderFrame() || active_render.renderedFrameCount() != 4U ||
+	if (!vve::test::renderFrames(engine, 2) || active_render.renderedFrameCount() != 5U ||
 		active_render.lastRenderedWindowCount() != 1U) { return 6; }
 
 	// Include the skipped frame and resumed presentation in the validation check.

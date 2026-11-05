@@ -268,10 +268,22 @@ export namespace vve {
 		Scalar indirect_strength{1}; ///< Finite nonnegative probe multiplier; zero with AO off restores deferred lighting exactly.
 		GiQuality quality{GiQuality::medium}; ///< Maximum probe captures per window frame.
 	};
+	/// @brief Optional display transform, applied after any explicitly configured vvppl chain.
+	enum class ToneMappingOperator {
+		none, ///< Retains the legacy output path, with no additional GPU resources or passes.
+		khronos_neutral ///< Khronos PBR Neutral, with exposure applied before compression.
+	};
+	/// @brief Runtime display settings; positive finite exposure is required even when the operator is none.
+	struct ToneMapping {
+		ToneMappingOperator op{ToneMappingOperator::none}; ///< Display operator; none preserves existing rendering.
+		Scalar exposure{1}; ///< Linear exposure multiplier, independent of scene lighting and HDR capture.
+	};
 	/// @brief Geometry edge smoothing; selected before the renderer's first frame.
 	enum class Antialiasing {
 		none, ///< One sample per pixel; preserves the default rendering path.
-		msaa4 ///< Four coverage samples; initialization returns platform_error if unsupported.
+		msaa4, ///< Four coverage samples; initialization returns platform_error if unsupported.
+		smaa, ///< One coverage sample followed by spatial SMAA 1x (HIGH).
+		msaa4_smaa ///< Four coverage samples followed by SMAA 1x; requires 4x support.
 	};
 	/// @brief Material response; classic preserves existing scenes, physically_based uses GGX and the sky panorama.
 	enum class MaterialLighting {

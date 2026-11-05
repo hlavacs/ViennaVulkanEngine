@@ -1,6 +1,6 @@
 /**
  * @file
- * @brief SDL event-queue tests for key taps, GUI input exclusivity and held-key release.
+ * @brief SDL event-queue tests for input exclusivity, held-key release and shown-window state recovery.
  * A hidden WindowSystem and the ImGui SDL backend exercise input without initializing a renderer.
  */
 #include <SDL3/SDL.h>
@@ -102,5 +102,21 @@ int main() {
    std::println("[WindowEventTests] gui_capture down={} up={} gui_no_capture down={} up={}",
                 captured_down, captured_up, uncaptured_down, uncaptured_up);
    if (!captured_down || captured_up || uncaptured_down || uncaptured_up) { return 20; }
+
+   // A remapped SDL window can become shown without a separate restored event; refresh the engine snapshot from native flags.
+   SDL_Event state{};
+   state.window.windowID = down.key.windowID;
+   const bool initially_minimized = (SDL_GetWindowFlags(window->native()) & SDL_WINDOW_MINIMIZED) != 0;
+   if (initially_minimized) { return 21; }
+   state.type = SDL_EVENT_WINDOW_MINIMIZED;
+   if (!SDL_PushEvent(&state) || !windows.poll()) { return 22; }
+   std::println("[WindowEventTests] state=minimized requested=true native={} snapshot={}", initially_minimized, window->info().minimized);
+   if (!window->info().minimized) { return 23; }
+   state.type = SDL_EVENT_WINDOW_SHOWN;
+   if (!SDL_PushEvent(&state) || !windows.poll()) { return 24; }
+   const bool native_minimized = (SDL_GetWindowFlags(window->native()) & SDL_WINDOW_MINIMIZED) != 0;
+   std::println("[WindowEventTests] state=shown requested={} native={} snapshot={} restored_event=false",
+                native_minimized, native_minimized, window->info().minimized);
+   if (window->info().minimized != native_minimized) { return 25; }
    return 0;
 }

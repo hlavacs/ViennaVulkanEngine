@@ -32,6 +32,13 @@ GBuffer gbufferMain(Vertex input) {
     result.base=float4(object.color.rgb,.5); result.normal=float4(input.normal,0); result.emission=float4(0,0,0,1);
     return result;
 }
+/// @brief IQ-01 coverage fixture: public unlit flag keeps resolved base RGB independent of lighting and GI.
+[shader("fragment")]
+GBuffer unlitMain(Vertex input) {
+    GBuffer result=gbufferMain(input);
+    result.emission.a=3; // AO 1 + twice the public unlit flag 1.
+    return result;
+}
 /// @brief Direct-only diffuse radiance; the neutral floor has exactly zero cosine to this horizontal sun.
 [shader("fragment")]
 float4 captureMain(Vertex input,bool front : SV_IsFrontFace) : SV_Target0 {
