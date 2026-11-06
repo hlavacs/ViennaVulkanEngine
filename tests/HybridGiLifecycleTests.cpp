@@ -119,7 +119,8 @@ void windows(Antialiasing aa) {
 void quality(bool exhaustBudget) {
     auto engine = twoWindows(); start(engine);
     auto &render = engine.renderSystem(); auto &renderer = render.forward();
-    const auto allocations = renderer.gpuAllocationCount(), idle = renderer.deviceWaitIdleCount();
+    const auto allocations = renderer.gpuAllocationCount();
+    const auto idle = renderer.deviceWaitIdleCount();
     const auto meshes = renderer.gpuMeshUploadCount(), textures = renderer.textureUploadSubmitCount();
     const auto image = renderer.targets.front().aoImages[0].image;
     auto settings = render.giSettings();
