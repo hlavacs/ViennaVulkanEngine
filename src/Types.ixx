@@ -267,6 +267,7 @@ export namespace vve {
 		bool ao_enabled{false}; ///< Depth/normal-aware 0.5 m contact AO on indirect diffuse only; min with material AO, no history.
 		Scalar indirect_strength{1}; ///< Finite nonnegative probe multiplier; zero with AO off restores deferred lighting exactly.
 		GiQuality quality{GiQuality::medium}; ///< Maximum probe captures per window frame.
+        bool match_environment{false}; ///< Cache physical-sky diffuse SH once per frame so probe and fallback sky use the same quadrature.
 	};
 	/// @brief Optional display transform, applied after any explicitly configured vvppl chain.
 	enum class ToneMappingOperator {

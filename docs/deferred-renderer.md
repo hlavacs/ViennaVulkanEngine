@@ -154,8 +154,12 @@ contents, even in a fence-completed slot.
 
 G-buffer encoding: target 0 = linear base RGB / perceptual roughness A; target
 1 = signed unit world normal RGB / metalness A; target 2 = linear HDR emission
-RGB / `(materialAO + 2*flags)` A. AO is [0,1], flags 0 for ordinary lit surfaces,
-1 for unlit. VVE's deferred GI and contact AO then shade native surfaces. Do not
+RGB / `(materialAO + 2*flags)` A. AO is [0,1], flags0 for ordinary lit surfaces,
+1 for unlit,2 for diffuse-only native surfaces. Public constants are in
+`src/shaders/vve_surface_flags.slang`. These are shading flags, independent of
+implementation geometry/object flags. Diffuse-only keeps Lambert direct light,
+diffuse sky/probe irradiance, shadows and AO; it disables GGX/classic specular and
+reflected environment light. Ordinary materials retain their existing response. VVE's deferred GI and contact AO then shade native surfaces. Do not
 prelight these attributes. Preserve alpha-mask discards and material sidedness
 in geometry, shadow and capture shaders.
 
@@ -196,6 +200,11 @@ returns coverage-premultiplied **E/pi**, including visibility, validity and
 near/coarse fading. Replace diffuse fallback by
 `fallback*(1-coverage*strength) + sampled*strength`; multiply diffuse albedo,
 `(1-metalness)` and material AO once. Add direct, emission and specular separately.
+Native surfaces that author ambient as a separate fill light set `VVE_SURFACE_ADDITIVE_AMBIENT`
+from `vve_surface_flags.slang` in their G-buffer flags. For these surfaces, keep authored ambient
+outside the replacement: `authoredAmbient + environmentFallback*(1-coverage*strength) + sampled*strength`.
+Captures exclude that fill, so fading it out would create a dark camera-following probe footprint.
+Ordinary materials retain their existing classic ambient-as-fallback contract.
 Do not multiply by pi/exposure/albedo twice, or apply opaque contact AO to
 transparency. At zero cascade count do not bind/sample absent images. Refresh
 application descriptors after their slot fence if views change; current probe
@@ -956,8 +965,9 @@ VTL participation, Windows or macOS result is claimed by this verification.
 
 With `GiSettings::ao_enabled=true`, two fullscreen passes run **after G-buffer
 publication and before deferred lighting**, only in `hybrid_gi`. Evaluation
-reconstructs view-space positions in metres from D32 and rotates G-buffer world
-normals into view space. Eight azimuths, each with four radial taps, search a
+reconstructs view-space positions in metres from D32 and derives a geometric
+normal from the shorter neighbouring depth edge on each axis. Normal-mapped
+G-buffer normals still guide filtering and sample reuse. Eight azimuths, each with four radial taps, search a
 **0.5 m world-space radius**. Each azimuth retains the largest positive normal
 elevation above a **0.02 m tangent-plane bias**, weighted by
 `1-distance²/radius²`; visibility is one minus their mean. Distant layers and
@@ -985,7 +995,9 @@ AO attenuates **only diffuse indirect light**: probe irradiance and the uncovere
 `(1-coverage)` authored ambient / environment diffuse fallback. It is independent
 of probe enablement and strength. The effective diffuse visibility is
 `min(material_ao, ssao)`, rather than their product, because both approximate
-overlapping occluders and multiplication double-darkens contacts. Diffuse probe
+overlapping occluders and multiplication double-darkens contacts. Native surfaces
+with `VVE_SURFACE_MULTIPLY_CONTACT_AO` explicitly describe independent material/macro
+visibility; those use the product instead. Diffuse probe
 and environment terms retain their `(1-metalness)` factor. Direct lights,
 emission/unlit output, sky, fog, transparent objects/water, post-processing, GUI
 and environment specular response retain their existing shading. With AO off
@@ -1534,3 +1546,40 @@ Retained verification artifacts:
 Windows, macOS/KosmicKrisp and physical GPUs remain unverified. The accessible
 AMD device node denied access in this session, so physical-GPU verification is
 outstanding; every accessible application was exercised using software Vulkan.
+
+### Matched physical-sky fallback and native contact visibility (2026-11-06)
+
+`GiSettings::match_environment` is opt-in (default false). For physical skies it
+makes uncovered diffuse environment lighting use the same six 16x16 cubemap
+quadrature and Lambert-convolved L1 SH basis as probe capture. This avoids a
+camera-following brightness footprint where the probe volume blends with the
+old zenith approximation. A four-pixel integration draw refreshes the reference
+on every frame, including GI-off comparisons; panorama and sky-off fall back to
+the existing environment path. Clouds use the probe capture phase, and the
+reference excludes local fog and the lower hemisphere. Scene geometry and real
+one-bounce colour transport remain in the ordinary probes.
+
+The shared coefficient atlases retain their original 68 columns and gain one
+row (65 total). Only the coarse atlas reference row is read by the public
+`sampleProbeEnvironment(normal)` helper. There are no additional images,
+descriptors, pipelines or captured probe faces. The two-row logical increase is
+2176 bytes; actual VMA allocation is device/alignment-dependent (139264 additional
+bytes on the tested RTX 4090). Existing grid spacing, probe count and update
+budgets are unchanged. Legacy settings keep the original diffuse fallback.
+
+Native surfaces may set `VVE_SURFACE_MULTIPLY_CONTACT_AO=16` when their material AO
+represents macro visibility independently of local screen-space contacts. Their
+diffuse indirect visibility is then material AO times contact AO. Without that
+flag the existing minimum rule remains unchanged. Direct illumination,
+emission and specular retain their original treatment. VTL opts in so dense
+forest sky attenuation does not hide AO at trunk and rock contacts. Countryside
+now requests AO by default, keeps it through adaptive detail changes, and still
+honours explicit `--ao off`. AO is supported by the hybrid-GI backend.
+Contact horizons use a depth-derived geometric tangent plane, choosing the shorter
+neighbour edge on each screen axis to avoid borrowing the far surface at a depth
+break. Normal maps still affect lighting and the bilateral reuse checks, but no
+longer turn a planar forest floor into its own geometric blocker. This adds four
+bounded neighbouring depth/position samples; the existing 8x4 horizon taps,
+0.5 m support and two spatial passes are unchanged. Native contact regressions
+compare actual trunks/producer rocks against asset-absent and AO-off controls,
+including strongly normal-mapped bare forest ground and exact toggle restoration.

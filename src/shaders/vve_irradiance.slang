@@ -113,3 +113,14 @@ float3 sampleProbeIrradiance(float3 worldPos, float3 normal, out float coverage)
     }
     return irradiance;
 }
+
+/// @brief Optional physical-sky diffuse reference, using the same L1/cubemap quadrature as captures.
+/// Alpha zero retains the caller's ordinary environment model; no probe validity or camera-volume fade enters it.
+float4 sampleProbeEnvironment(float3 normal) {
+    float4 first=coarseProbeSH.Load(int3(0,VVE_PROBE_ENVIRONMENT_ROW,0));
+    if(first.w<.5) return float4(0);
+    float3 value=first.rgb*.2820947918;
+    for(uint c=1;c<VVE_PROBE_SH_COEFFICIENTS;++c)
+        value+=coarseProbeSH.Load(int3(c,VVE_PROBE_ENVIRONMENT_ROW,0)).rgb*(.4886025119*normal[c-1]);
+    return float4(max(value,float3(0)),1);
+}

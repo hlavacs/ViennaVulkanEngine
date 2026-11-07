@@ -3,6 +3,28 @@
 /** @file @brief Full-resolution deterministic horizon contact AO and a depth/normal bilateral filter. No history. */
 [[vk::binding(7, 1)]] Texture2D<float> rawAo;
 
+/// @brief Depth-derived tangent plane excludes normal-map relief from geometric horizon occlusion.
+/// Choose the shorter neighbouring edge per axis, avoiding the far depth layer at silhouettes.
+float3 contactGeometricNormal(int2 pixel, float3 p, float3 fallback) {
+    float3 edges[2];
+    for (uint axis=0; axis<2; ++axis) {
+        float3 nearest=float3(0); float shortest=1e30;
+        for (int side=-1; side<=1; side+=2) {
+            int2 q=pixel+(axis==0 ? int2(side,0) : int2(0,side));
+            if (any(q<0) || any(q>=int2(frame.viewport.xy)) || aoSourceDepth(q)>=1) continue;
+            float3 edge=(aoSourcePosition(q)-p)*float(side);
+            float squared=dot(edge,edge);
+            if (squared<shortest) { shortest=squared; nearest=edge; }
+        }
+        edges[axis]=nearest;
+    }
+    float3 geometric=cross(edges[0],edges[1]);
+    float squared=dot(geometric,geometric);
+    if (squared<1e-16) return fallback;
+    geometric*=rsqrt(squared);
+    return dot(geometric,fallback)<0 ? -geometric : geometric;
+}
+
 /// @brief Eight azimuths with four radial taps estimate local hemisphere visibility inside a 0.5 m sphere.
 [shader("fragment")]
 float aoMain(float4 position : SV_Position) : SV_Target0
@@ -10,7 +32,8 @@ float aoMain(float4 position : SV_Position) : SV_Target0
     const int2 pixel = int2(position.xy);
     if (aoSourceDepth(pixel) >= 1) return 1;
     const float3 p = aoSourcePosition(pixel);
-    const float3 n = normalize(mul((float3x3)frame.view, aoSourceNormal(pixel)));
+    const float3 shadingNormal = normalize(mul((float3x3)frame.view, aoSourceNormal(pixel)));
+    const float3 n = contactGeometricNormal(pixel,p,shadingNormal);
     // A repeating 4x4 interleaved rotation is fixed in space and never depends on time or a random seed.
     const float angle = 6.28318530718 * frac(float((pixel.x & 3) + 4 * (pixel.y & 3)) * 0.61803398875);
     const float2 radiusPixels = VVE_AO_RADIUS * abs(float2(frame.projection[0][0], frame.projection[1][1])) * frame.viewport.xy / (2 * max(-p.z, 0.001));

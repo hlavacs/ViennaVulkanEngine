@@ -227,13 +227,18 @@ float3 hazeLight(float3 eye, float3 dir)
 }
 
 /// @brief Sky, sun, clouds and haze seen in one direction from the camera.
-float3 skyColour(float3 dir, float dither)
+float3 skyColourUnfogged(float3 dir, float dither)
 {
     const float3 eye = worldEye();
     const float3 sky = skyRadiance(eye.y, dir, 16);
     float4 clouds = float4(0.0, 0.0, 0.0, 1.0);
     if (cloudsEnabled()) clouds = marchClouds(eye, dir, 1.0e9, skyLight(eye, dir), dither); // Air in front of the clouds lies under them.
-    float3 colour = (sky + sunDisk(dir)) * clouds.a + clouds.rgb;
+    return (sky + sunDisk(dir)) * clouds.a + clouds.rgb;
+}
+/// @brief Presentation sky adds camera haze to the shared untonemapped environment radiance.
+float3 skyColour(float3 dir,float dither) {
+    const float3 eye=worldEye();
+    float3 colour=skyColourUnfogged(dir,dither);
     if (frame.fogColorDensity.w > 0.0) {
         const float haze = exp(-hazeDepth(eye, dir, 1.0e5));
         colour = colour * haze + hazeLight(eye, dir) * (1.0 - haze);

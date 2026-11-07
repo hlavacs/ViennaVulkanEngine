@@ -26,6 +26,7 @@ float3 environmentReflectance(float cosine, float roughness, float3 f0)
 /// @brief GGX distribution with separable Smith visibility; explicit material flags also serve reconstructed deferred samples.
 float3 microfacetLight(float3 color, float metalness, float roughness, float3 n, float3 v, float3 l, uint flags)
 {
+    if ((flags & VVE_SURFACE_DIFFUSE_ONLY)!=0) return color*(1.0-metalness)*(saturate(dot(n,l))/kPi);
     const float nv = max(dot(n, v), 0.0001), nl = saturate(dot(n, l));
     const float3 h = normalizeOrZero(v + l); // Opposite directions have no specular response.
     const float nh = saturate(dot(n, h)), vh = saturate(dot(v, h));

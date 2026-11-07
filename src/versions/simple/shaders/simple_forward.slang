@@ -1,3 +1,4 @@
+#include "../../../shaders/vve_surface_flags.slang"
 #include "simple_shared.h"
 
 /**
@@ -50,7 +51,7 @@ struct FrameUniforms
     float4 fogHeightTime;             ///< Base height, density height falloff, animation seconds, unused.
     float4x4 inverseViewProjection; ///< Main depth reconstruction; direct-only captures reuse this for the probe sun projection.
     float4 viewport; ///< Width/height; hybrid main W=cascade count, capture Z=packed sun index+1.
-    float4 environmentLighting;       ///< Panorama texture slot (-1 absent), strength, GGX enabled, unused.
+    float4 environmentLighting;       ///< Panorama texture slot (-1 absent), strength, GGX enabled, matched physical-sky diffuse.
     float4 skySun;                    ///< Unit direction towards the sun and its irradiance; w = 0 keeps the panorama and classic haze.
     float4 skyParams;                 ///< Aerosol amount, sun disk radius in radians, index of the sun's directional light (-1 none), unused.
     float4 cloudLayer;                ///< Cloud base height, thickness, coverage (0 none), extinction per metre at full density.
@@ -567,14 +568,16 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags
 {
     const float3 baseColor = surface.baseRoughness.rgb;
     if ((flags & kUnlitFlag) != 0) return applyAtmosphere(baseColor, worldPos);
+    const bool diffuseOnly=(flags & VVE_SURFACE_DIFFUSE_ONLY)!=0;
     const float roughness = surface.baseRoughness.a;
     const float metalness = surface.normalMetalness.a;
     const float3 normal = normalize(surface.normalMetalness.xyz);
     const float3 emissive = surface.emissiveFlags.rgb;
 #ifdef VVE_CONTACT_AO
-    // Material and contact AO overlap: min avoids double darkening; specular keeps the original material value.
+    // Separate macro visibility from local contact only when the native material requests it; legacy AO keeps min.
     const float materialOcclusion = surface.emissiveFlags.a - 2.0 * float(flags);
-    const float ambientOcclusion = min(materialOcclusion, screenAo);
+    const float ambientOcclusion = (flags & VVE_SURFACE_MULTIPLY_CONTACT_AO)!=0
+        ? materialOcclusion * screenAo : min(materialOcclusion, screenAo);
 #else
     const float ambientOcclusion = surface.emissiveFlags.a - 2.0 * float(flags);
 #endif
@@ -590,14 +593,15 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags
         irradiance = sampleProbeIrradiance(worldPos, normal, coverage);
         ambientScale = 1.0 - coverage * frame.probeControl.y;
     }
-    // Authored classic ambient predates metals. Preserve its metallic share while replacing only diffuse.
-    const float constantAmbientScale = 1.0 - (1.0 - ambientScale) * (1.0 - metalness);
+    // Native surfaces can define ambient as an additive fill. Ordinary materials retain classic GI fallback semantics.
+    const float constantAmbientScale = (flags & VVE_SURFACE_ADDITIVE_AMBIENT)!=0 ? 1.0
+        : 1.0 - (1.0 - ambientScale) * (1.0 - metalness);
 #else
     const float constantAmbientScale = ambientScale;
 #endif
     const float ambient = frame.ambient * ambientOcclusion * constantAmbientScale; ///< Contact AO attenuates only indirect diffuse light.
     const float shininess = lerp(4.0, 128.0, (1.0 - roughness) * (1.0 - roughness)); ///< Rough surfaces broaden Blinn-Phong highlights.
-    const float specularStrength = lerp(0.3, 1.0, metalness);            ///< Metals strengthen their tinted reflection.
+    const float specularStrength = diffuseOnly ? 0.0 : lerp(0.3, 1.0, metalness);            ///< Metals strengthen their tinted reflection.
     const float3 diffuseColor = baseColor * (1.0 - metalness);           ///< Metals have no diffuse response.
     const float3 specularColor = lerp(float3(specularStrength), baseColor * specularStrength, metalness); ///< Metallic highlights use base color.
     const bool physicallyBased = frame.environmentLighting.z != 0.0 || (flags & kWaterFlag) != 0;
@@ -731,13 +735,18 @@ float3 shadeSurface(float3 worldPos, GBufferOutput surface, uint flags
     if (physicallyBased) {
         // A single microfacet's Fresnel tends to one at grazing even on rough bark/soil.
         // Integrate the reflection lobe before weighting sky light, otherwise it creates white rims and ground sheen.
-        const float3 reflection = environmentReflectance(dot(normal, viewDir), roughness,
+        float4 matchedSky=float4(0);
+#ifdef VVE_GI
+        if(frame.environmentLighting.w!=0 && physicalSky()) matchedSky=sampleProbeEnvironment(normal);
+#endif
+        float3 diffuseEnvironment=matchedSky.w>.5 ? matchedSky.rgb*frame.environmentLighting.y : sampleEnvironment(normal,1.0);
+        const float3 reflection = diffuseOnly ? float3(0.0) : environmentReflectance(dot(normal, viewDir), roughness,
             lerp(float3((flags & kWaterFlag) != 0 ? 0.02 : 0.04), baseColor, metalness));
 #ifdef VVE_CONTACT_AO
-        litColor += ambientOcclusion * (1.0 - reflection) * diffuseColor * sampleEnvironment(normal, 1.0) * ambientScale +
+        litColor += ambientOcclusion * (1.0 - reflection) * diffuseColor * diffuseEnvironment * ambientScale +
             materialOcclusion * reflection * sampleEnvironment(reflect(-viewDir, normal), roughness);
 #else
-        litColor += ambientOcclusion * ((1.0 - reflection) * diffuseColor * sampleEnvironment(normal, 1.0) * ambientScale +
+        litColor += ambientOcclusion * ((1.0 - reflection) * diffuseColor * diffuseEnvironment * ambientScale +
             reflection * sampleEnvironment(reflect(-viewDir, normal), roughness)); ///< Specular environment response keeps material AO only.
 #endif
     }

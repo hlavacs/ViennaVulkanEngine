@@ -80,7 +80,7 @@ VkResult ForwardRenderer::createProbeResources(WindowTarget &target) {
             if (r != VK_SUCCESS) return r;
             if (failGiAllocation()) return VK_ERROR_OUT_OF_DEVICE_MEMORY;
             // Coefficient alpha is explicit validity; reset commands clear every untouched texel.
-            r = p.coefficients.create(allocator, device.device, {IrradianceProbes::atlasColumns, IrradianceProbes::count}, VK_FORMAT_R32G32B32A32_SFLOAT,
+            r = p.coefficients.create(allocator, device.device, {IrradianceProbes::atlasColumns, VVE_PROBE_ATLAS_ROWS}, VK_FORMAT_R32G32B32A32_SFLOAT,
                 VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, VK_IMAGE_ASPECT_COLOR_BIT);
             if (r != VK_SUCCESS) return r;
             if (failGiAllocation()) return VK_ERROR_OUT_OF_DEVICE_MEMORY;
@@ -215,6 +215,7 @@ VkResult ForwardRenderer::prepareProbes(WindowTarget &target, std::uint32_t fram
         auto &p = *volumes[cascade];
         p.selected[p.updated++] = candidate % IrradianceProbes::count; ++selected;
     }
+    frameUniforms_.environmentLighting.w=giSettings.match_environment ? 1.f : 0.f;
     frameUniforms_.probeOrigin = {near.origin.x,near.origin.y,near.origin.z,IrradianceProbes::spacing};
     frameUniforms_.probeControl = {giSettings.enabled ? 1.0F : 0.0F,giSettings.indirect_strength,debugProbeVisibility ? 1.0F : 0.0F,giSettings.ao_enabled ? 1.0F : 0.0F};
     frameUniforms_.viewport.w = debugProbeCoarse ? VVE_PROBE_CASCADES : 1;
@@ -356,6 +357,26 @@ VkResult ForwardRenderer::recordProbes(WindowTarget &target, VkCommandBuffer cmd
         // Replacement, rather than accumulation, guarantees one-bounce steady radiance cannot grow with frame count.
         p.initialized = true; p.reset = false;
     }
+    // The extra coarse-atlas row is a global sky reference, not a local probe. Four
+    // fragments per frame replace repeated per-pixel sky integration without another image/set/pipeline.
+    auto& sky=target.coarseProbes.coefficients;
+    barrier(cmd,sky,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const VkRenderingAttachmentInfo attachment{.sType=VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+        .imageView=sky.imageView,.imageLayout=VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .loadOp=VK_ATTACHMENT_LOAD_OP_LOAD,.storeOp=VK_ATTACHMENT_STORE_OP_STORE};
+    const VkRenderingInfo scope{.sType=VK_STRUCTURE_TYPE_RENDERING_INFO,.renderArea={.extent=sky.extent},
+        .layerCount=1,.colorAttachmentCount=1,.pColorAttachments=&attachment};
+    vkCmdBeginRendering(cmd,&scope);
+    const VkViewport viewport{.y=float(VVE_PROBE_ENVIRONMENT_ROW),.width=float(VVE_PROBE_SH_COEFFICIENTS),.height=1,.minDepth=0,.maxDepth=1};
+    const VkRect2D scissor{.offset={0,VVE_PROBE_ENVIRONMENT_ROW},.extent={VVE_PROBE_SH_COEFFICIENTS,1}};
+    vkCmdSetViewport(cmd,0,1,&viewport); vkCmdSetScissor(cmd,0,1,&scissor);
+    vkCmdBindPipeline(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,probeIntegrationPipeline.pipeline);
+    const std::array sets{target.descriptorSets.descriptorSets[target.currentFrame],target.deferredSet};
+    vkCmdBindDescriptorSets(cmd,VK_PIPELINE_BIND_POINT_GRAPHICS,deferredPipelineLayout.pipelineLayout,0,2,sets.data(),0,nullptr);
+    const ObjectPushConstants push{.flags=2};
+    vkCmdPushConstants(cmd,deferredPipelineLayout.pipelineLayout,objectPushConstantStages,0,sizeof(push),&push);
+    vkCmdDraw(cmd,3,1,0,0); vkCmdEndRendering(cmd);
+    barrier(cmd,sky,VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     return VK_SUCCESS;
 }
 }

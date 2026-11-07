@@ -154,6 +154,7 @@ foreach(NAME ENTRY STAGE IN ZIP_LISTS VVE_SIMPLE_SHADER_NAMES VVE_SIMPLE_SHADER_
          "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_irradiance.slang"
          "${CMAKE_CURRENT_LIST_DIR}/shaders/simple_deferred.slang"
          "${PROJECT_SOURCE_DIR}/src/shaders/vve_irradiance.slang" "${PROJECT_SOURCE_DIR}/src/shaders/vve_irradiance.h"
+         "${PROJECT_SOURCE_DIR}/src/shaders/vve_surface_flags.slang"
       COMMENT "Embedding simple forward ${ENTRY} shader"
       VERBATIM
    )

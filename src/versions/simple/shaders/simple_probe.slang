@@ -21,6 +21,28 @@ float3 probeDirection(uint face, float2 p)
 [shader("fragment")]
 float4 integrateMain(float4 position : SV_Position) : SV_Target0
 {
+    // Flag 2 reuses this four-pixel integration triangle for the camera-independent sky fallback.
+    if(object.flags==2) {
+        if(frame.environmentLighting.w==0 || !physicalSky()) return float4(0);
+        const uint coefficient=uint(position.x);
+        float3 sum=float3(0); float total=0;
+        for(uint face=0;face<VVE_POINT_SHADOW_FACES;++face)
+            for(uint y=0;y<VVE_PROBE_FACE_SIZE;++y) for(uint x=0;x<VVE_PROBE_FACE_SIZE;++x) {
+                float2 pixel=float2(x,y)+.5;
+                float2 p=pixel/float(VVE_PROBE_FACE_SIZE)*2-1;
+                float3 d=probeDirection(face,p);
+                float weight=pow(1+dot(p,p),-1.5);
+                float basis=coefficient==0 ? .2820947918 : .4886025119*d[coefficient-1];
+                // A receiver's supporting ground hides the lower hemisphere. Use the same
+                // capture sample phase and atmospheric/cloud model, with no local geometry or haze.
+                if(d.y>0) {
+                    float phase=frac(52.9829189*frac(dot(pixel,float2(.06711056,.00583715))));
+                    sum+=skyColourUnfogged(d,phase)*basis*weight;
+                }
+                total+=weight;
+            }
+        return float4(sum*(4*kPi/total)*(coefficient==0 ? 1 : 2.0/3.0),1);
+    }
     const uint coefficient = uint(position.x);
     const uint row = object.shadowMatrixIndex; // Capture-atlas slot is independent of the toroidal destination row.
     const float scale = VVE_PROBE_SCALE(object.flags); // Integration receives the same cascade as capture clipping.

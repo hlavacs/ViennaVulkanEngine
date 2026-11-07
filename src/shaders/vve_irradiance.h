@@ -6,6 +6,8 @@
 #define VVE_PROBE_WRAP(cell) ((((cell) % VVE_PROBE_SIDE) + VVE_PROBE_SIDE) % VVE_PROBE_SIDE) ///< Positive modulo, including negative world cells.
 #define VVE_PROBE_ROW(x,y,z) (VVE_PROBE_WRAP(x) + VVE_PROBE_SIDE * (VVE_PROBE_WRAP(y) + VVE_PROBE_SIDE * VVE_PROBE_WRAP(z))) ///< Toroidal world-cell storage, identical in C++ and Slang.
 #define VVE_PROBE_SH_COEFFICIENTS 4 ///< L1 RGB SH: constant and three first-order directional coefficients.
+#define VVE_PROBE_ENVIRONMENT_ROW VVE_PROBE_COUNT ///< One extra row holds the matched unoccluded physical-sky SH reference.
+#define VVE_PROBE_ATLAS_ROWS (VVE_PROBE_COUNT + 1)
 #define VVE_PROBE_FACE_SIZE 16 ///< Texels per cubemap face in the bounded radiance atlas.
 #define VVE_PROBE_MAX_BUDGET 2 ///< Complete cubemaps captured per window frame at medium quality.
 #define VVE_PROBE_SPACING 2.0f ///< Metres between adjacent probe centres.
