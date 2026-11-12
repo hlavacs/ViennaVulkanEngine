@@ -230,10 +230,14 @@ float3 hazeLight(float3 eye, float3 dir)
 float3 skyColourUnfogged(float3 dir, float dither)
 {
     const float3 eye = worldEye();
-    const float3 sky = skyRadiance(eye.y, dir, 16);
+    // Full cloud coverage scatters the background sky even where marching noise is thin.
+    const float deck = cloudsEnabled() ? smoothstep(0.98,1.0,frame.cloudLayer.z) : 0.0;
+    const float3 sky = lerp(skyRadiance(eye.y, dir, 16),skyLight(eye,dir),deck);
     float4 clouds = float4(0.0, 0.0, 0.0, 1.0);
     if (cloudsEnabled()) clouds = marchClouds(eye, dir, 1.0e9, skyLight(eye, dir), dither); // Air in front of the clouds lies under them.
-    return (sky + sunDisk(dir)) * clouds.a + clouds.rgb;
+    const float3 colour = (sky + sunDisk(dir)*(1.0-deck)) * clouds.a + clouds.rgb;
+    const float luminance = dot(colour,float3(0.2126,0.7152,0.0722));
+    return lerp(colour,float3(luminance),deck);
 }
 /// @brief Presentation sky adds camera haze to the shared untonemapped environment radiance.
 float3 skyColour(float3 dir,float dither) {
