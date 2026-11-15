@@ -237,9 +237,11 @@ export namespace vve::simple {
 			*
 			* @param instance Vulkan instance that owns the physical-device list.
 			* @param surface Vulkan surface used to test presentation support.
+			* @param requiredExtensions Further device extensions a candidate must advertise, e.g. for ray tracing.
 			* @return VK_SUCCESS when a device was selected, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult select(const VulkanOwnedHandle<vk::raii::Instance, VkInstance> &instance, VkSurfaceKHR surface) {
+		[[nodiscard]] VkResult select(const VulkanOwnedHandle<vk::raii::Instance, VkInstance> &instance, VkSurfaceKHR surface,
+			std::span<const char *const> requiredExtensions = {}) {
 			reset();
 			if (instance == VK_NULL_HANDLE || surface == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
@@ -273,7 +275,7 @@ export namespace vve::simple {
 			std::ranges::stable_sort(ordered, {}, rank);
 			// Keep the first suitable device in that order and report rejected devices only when none qualifies.
 			for (const VkPhysicalDevice candidate : ordered) {
-				result = selectIfSuitable(instance, candidate, surface);
+				result = selectIfSuitable(instance, candidate, surface, requiredExtensions);
 				if (result == VK_SUCCESS && selected()) {
 					VkPhysicalDeviceProperties properties{};
 					vkGetPhysicalDeviceProperties(candidate, &properties);
@@ -301,6 +303,7 @@ export namespace vve::simple {
 			}
 			std::fprintf(stderr, "[vve::simple] No suitable device: %s; requires Vulkan 1.3, VK_KHR_swapchain, "
 				"dynamicRendering, shaderSampledImageArrayDynamicIndexing and graphics/compute/present queues\n", rejectedDevices.c_str());
+			for (const char *const extension : requiredExtensions) { std::fprintf(stderr, "[vve::simple] also required: %s\n", extension); }
 			reset();
 			return VK_ERROR_FEATURE_NOT_PRESENT;
 		}
@@ -333,7 +336,8 @@ export namespace vve::simple {
 			* @param surface Surface used for presentation support checks.
 			* @return VK_SUCCESS for selected devices, VK_ERROR_FEATURE_NOT_PRESENT for unsuitable devices, or a query error.
 			*/
-		[[nodiscard]] VkResult selectIfSuitable(const VulkanOwnedHandle<vk::raii::Instance, VkInstance> &instance, VkPhysicalDevice candidate, VkSurfaceKHR surface) {
+		[[nodiscard]] VkResult selectIfSuitable(const VulkanOwnedHandle<vk::raii::Instance, VkInstance> &instance, VkPhysicalDevice candidate, VkSurfaceKHR surface,
+			std::span<const char *const> requiredExtensions) {
 			std::optional<std::uint32_t> graphicsFamily{};
 			std::optional<std::uint32_t> presentationFamily{};
 
@@ -362,10 +366,13 @@ export namespace vve::simple {
 				if (presentSupported == VK_TRUE && !presentationFamily.has_value()) { presentationFamily = index; }
 			}
 
-			const VkResult swapchainResult = supportsSwapchain(candidate);
+			const VkResult swapchainResult = supportsExtension(candidate, swapchainExtensionName);
 			if (swapchainResult != VK_SUCCESS && swapchainResult != VK_ERROR_FEATURE_NOT_PRESENT) { return swapchainResult; }
 			const VkResult result = supportsRequiredFeatures(candidate, swapchainResult == VK_SUCCESS);
 			if (result != VK_SUCCESS) { return result; }
+			for (const char *const extension : requiredExtensions) {
+				if (const VkResult extra = supportsExtension(candidate, extension); extra != VK_SUCCESS) { return extra; }
+			}
 			if (!graphicsFamily.has_value() || !presentationFamily.has_value()) { return VK_ERROR_FEATURE_NOT_PRESENT; }
 
 			physicalDevice.handle = vk::raii::PhysicalDevice{instance.handle, candidate};
@@ -375,12 +382,13 @@ export namespace vve::simple {
 		}
 
 		/**
-			* @brief Verifies that the physical device exposes the required swapchain extension.
+			* @brief Verifies that the physical device exposes one device extension.
 			*
 			* @param candidate Physical device whose device extensions are queried.
-			* @return VK_SUCCESS when VK_KHR_swapchain is present, otherwise a Vulkan error code.
+			* @param name Extension name, e.g. VK_KHR_swapchain.
+			* @return VK_SUCCESS when the extension is present, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] static VkResult supportsSwapchain(VkPhysicalDevice candidate) {
+		[[nodiscard]] static VkResult supportsExtension(VkPhysicalDevice candidate, std::string_view name) {
 			std::uint32_t extensionCount{};
 			VkResult result = vkEnumerateDeviceExtensionProperties(candidate, nullptr, &extensionCount, nullptr);
 			if (result != VK_SUCCESS) { return result; }
@@ -391,8 +399,8 @@ export namespace vve::simple {
 				if (result != VK_SUCCESS) { return result; }
 			}
 
-			const bool found = std::ranges::any_of(extensions, [](const VkExtensionProperties &extension) {
-				return std::string_view{extension.extensionName} == swapchainExtensionName;
+			const bool found = std::ranges::any_of(extensions, [name](const VkExtensionProperties &extension) {
+				return std::string_view{extension.extensionName} == name;
 			});
 			return found ? VK_SUCCESS : VK_ERROR_FEATURE_NOT_PRESENT;
 		}
@@ -444,14 +452,18 @@ export namespace vve::simple {
 			* @brief Creates a logical device for the selected physical device and retrieves its queues.
 			*
 			* @param selectedDevice Physical-device selection containing both required queue family indices.
+			* @param extraExtensions Further device extensions to enable; the caller checked them during selection.
+			* @param extraFeatures Feature structure chain for those extensions, or null.
 			* @return Vulkan result from validation or vkCreateDevice.
 			*/
-		[[nodiscard]] VkResult create(const VulkanPhysicalDevice &selectedDevice) {
+		[[nodiscard]] VkResult create(const VulkanPhysicalDevice &selectedDevice, std::span<const char *const> extraExtensions = {},
+			const void *extraFeatures = nullptr) {
 			cleanup();
 			if (!selectedDevice.graphicsQueueFamily.has_value() || !selectedDevice.presentQueueFamily.has_value()) {
 				return VK_ERROR_INITIALIZATION_FAILED;
 			}
-			return create(selectedDevice.physicalDevice, *selectedDevice.graphicsQueueFamily, *selectedDevice.presentQueueFamily);
+			return create(selectedDevice.physicalDevice, *selectedDevice.graphicsQueueFamily, *selectedDevice.presentQueueFamily,
+				extraExtensions, extraFeatures);
 		}
 
 		/**
@@ -460,9 +472,12 @@ export namespace vve::simple {
 			* @param physicalDevice Vulkan physical device used to create the logical device.
 			* @param graphicsQueueFamily Queue family index for graphics commands.
 			* @param presentQueueFamily Queue family index for surface presentation.
+			* @param extraExtensions Further device extensions to enable.
+			* @param extraFeatures Feature structure chain for those extensions, or null.
 			* @return VK_SUCCESS when the logical device and queues are available, otherwise a Vulkan error code.
 			*/
-		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::PhysicalDevice, VkPhysicalDevice> &physicalDevice, std::uint32_t graphicsQueueFamily, std::uint32_t presentQueueFamily) {
+		[[nodiscard]] VkResult create(const VulkanOwnedHandle<vk::raii::PhysicalDevice, VkPhysicalDevice> &physicalDevice, std::uint32_t graphicsQueueFamily, std::uint32_t presentQueueFamily,
+			std::span<const char *const> extraExtensions = {}, const void *extraFeatures = nullptr) {
 			cleanup();
 			if (physicalDevice == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 
@@ -486,6 +501,7 @@ export namespace vve::simple {
 
 			const VkPhysicalDeviceDynamicRenderingFeatures dynamicRenderingFeatures{
 				.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES,
+				.pNext = const_cast<void *>(extraFeatures),
 				.dynamicRendering = VK_TRUE,
 			};
 			VkPhysicalDeviceFeatures supportedFeatures{};
@@ -508,6 +524,7 @@ export namespace vve::simple {
 			});
 			auto extensions = std::vector<char const *>{VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 			if (mutableFormat) { extensions.push_back(VK_KHR_SWAPCHAIN_MUTABLE_FORMAT_EXTENSION_NAME); }
+			extensions.append_range(extraExtensions);
 			const VkDeviceCreateInfo createInfo{
 				.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
 				.pNext = &dynamicRenderingFeatures,

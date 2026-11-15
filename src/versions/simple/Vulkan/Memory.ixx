@@ -53,10 +53,12 @@ export namespace vve::simple {
 		[[nodiscard]] operator VmaAllocator() const { return allocator; }
 
 		/// @brief Creates the allocator; apiVersion must not exceed what instance and device support.
-		[[nodiscard]] VkResult create(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, std::uint32_t apiVersion) {
+		[[nodiscard]] VkResult create(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, std::uint32_t apiVersion,
+			VmaAllocatorCreateFlags flags = 0U) {
 			cleanup();
 			if (instance == VK_NULL_HANDLE || physicalDevice == VK_NULL_HANDLE || device == VK_NULL_HANDLE) { return VK_ERROR_INITIALIZATION_FAILED; }
 			const VmaAllocatorCreateInfo createInfo{
+				.flags = flags,
 				.physicalDevice = physicalDevice,
 				.device = device,
 				.instance = instance,

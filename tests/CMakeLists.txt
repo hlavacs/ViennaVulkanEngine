@@ -24,6 +24,7 @@ function(vve_add_engine_test name)
 endfunction()
 
 vve_add_engine_test(HandleTests)
+vve_add_engine_test(RadianceCascadeRendererTests GPU Vulkan::Vulkan vve_test_support)
 vve_add_engine_test(AudioSystemTests)
 vve_add_engine_test(SpatialAudioTests)
 set_tests_properties(SpatialAudioTests PROPERTIES LABELS audio TIMEOUT 15)

@@ -456,6 +456,7 @@ namespace vve::simple {
 	}
 
 	inline auto RenderSystem::shutdown()																				-> void{
+		radiance_cascades_.shutdown(); // Its surface must go before the window system destroys the window.
 		if (initialized_) {
 			waitIdle();
 			renderer_.shutdown();

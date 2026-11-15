@@ -12,6 +12,7 @@ target_sources(ViennaVulkanEngine
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererShadowPrep.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererDraw.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RendererDebug.cpp"
+      "${CMAKE_CURRENT_LIST_DIR}/Render/RadianceCascadesRenderer.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RenderSceneImport.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RenderSystemScene.cpp"
       "${CMAKE_CURRENT_LIST_DIR}/Render/RenderSystemObjects.cpp"
