@@ -20,8 +20,9 @@ import VVEngine.Simple.RenderResources;
 /// Functional objects:
 /// - init / cleanup: own Vulkan instance, ray tracing device, allocator, swapchain and frame synchronization.
 /// - createPipeline: descriptor set, ray tracing pipeline and shader binding table of the primary rays.
-/// - rebuildScene / buildScene / buildStructure: geometry upload, one bottom-level structure per mesh, one top-level
-///   structure over the instances, and the material buffer.
+/// - voxelize / triangleTouchesBox: CPU voxelization of the traced instances.
+/// - rebuildScene / buildScene / buildStructure / uploadVoxels: voxel volumes, geometry upload, one bottom-level
+///   structure per mesh, one top-level structure over the instances, and the material buffer.
 /// - renderFrame / drawFrame / recordFrame / recordResolve: acquire, record, submit and present one frame.
 /// - captureFrameToPng: renders one more frame and copies its swapchain image into a PNG.
 ///
@@ -42,7 +43,27 @@ namespace vve::simple {
 			Vec4 up{};         ///< Camera up, scaled by tan(fov / 2).
 			Vec4 forward{};    ///< Normalized view direction.
 			Vec4 background{}; ///< Linear colour of rays that hit nothing.
+			Vec4 volume{};     ///< Voxel volume origin (xyz) and voxel size (w).
+			Vec4 grid{};       ///< Voxels per axis (xyz) and the RadianceCascadesView (w).
 		};
+		constexpr VkShaderStageFlags constantStages{VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR | VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR};
+
+		/// @brief Conservative triangle-box overlap by the separating axis test (Akenine-Moeller); touching counts as overlap.
+		[[nodiscard]] bool triangleTouchesBox(std::array<Vec3, 3> triangle, Vec3 centre, Vec3 half) {
+			for (auto &corner : triangle) { corner = subtract(corner, centre); }
+			const auto separated = [&](Vec3 axis) {
+				const Scalar p0{dot(axis, triangle[0])}, p1{dot(axis, triangle[1])}, p2{dot(axis, triangle[2])};
+				const Scalar radius{half.x * std::abs(axis.x) + half.y * std::abs(axis.y) + half.z * std::abs(axis.z)};
+				return std::min({p0, p1, p2}) > radius || std::max({p0, p1, p2}) < -radius;
+			};
+			const std::array edges{subtract(triangle[1], triangle[0]), subtract(triangle[2], triangle[1]), subtract(triangle[0], triangle[2])};
+			// Box face normals, the nine edge cross products, then the triangle plane.
+			for (const Vec3 axis : {Vec3{one(), zero(), zero()}, Vec3{zero(), one(), zero()}, Vec3{zero(), zero(), one()}}) {
+				if (separated(axis)) { return false; }
+				for (const Vec3 &edge : edges) { if (separated(cross(axis, edge))) { return false; } }
+			}
+			return !separated(cross(edges[0], edges[1]));
+		}
 
 		/// @brief Rounds a size or address up to a multiple of the alignment.
 		[[nodiscard]] constexpr VkDeviceSize alignUp(VkDeviceSize value, VkDeviceSize alignment) {
@@ -114,12 +135,15 @@ namespace vve::simple {
 		if (result == VK_SUCCESS) { stage = "command buffers"; result = command_buffers_.create(device_.device, command_pool_.commandPool, framesInFlight); }
 		if (result == VK_SUCCESS) { stage = "swapchain"; result = createSwapchainResources(windowPixelExtent()); }
 		if (result == VK_SUCCESS) { stage = "ray tracing pipeline"; result = createPipeline(); }
-		if (result == VK_SUCCESS) { stage = "scene"; result = buildScene(); }
 		if (result != VK_SUCCESS) {
 			cleanup();
 			return fail(stage, result);
 		}
 		initialized_ = true;
+		if (const auto scene = rebuildScene(); !scene) {
+			cleanup();
+			return std::unexpected(scene.error());
+		}
 		return {};
 	}
 
@@ -206,6 +230,12 @@ namespace vve::simple {
 				.descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR},
 			VkDescriptorSetLayoutBinding{.binding = VVE_RC_MATERIAL_BINDING, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
 				.descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+			VkDescriptorSetLayoutBinding{.binding = VVE_RC_VOXEL_ALBEDO_BINDING, .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+				.descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+			VkDescriptorSetLayoutBinding{.binding = VVE_RC_VOXEL_EMISSIVE_BINDING, .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+				.descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+			VkDescriptorSetLayoutBinding{.binding = VVE_RC_VOXEL_NORMAL_BINDING, .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+				.descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
 		};
 		const VkDescriptorSetLayoutCreateInfo layoutInfo{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
 			.bindingCount = static_cast<std::uint32_t>(bindings.size()), .pBindings = bindings.data()};
@@ -218,7 +248,7 @@ namespace vve::simple {
 		result = vkAllocateDescriptorSets(device_.device, &setInfo, &descriptor_set_);
 		if (result != VK_SUCCESS) { return result; }
 
-		const VkPushConstantRange constants{.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR, .size = sizeof(FrameConstants)};
+		const VkPushConstantRange constants{.stageFlags = constantStages, .size = sizeof(FrameConstants)};
 		const VkPipelineLayoutCreateInfo pipelineLayoutInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, .setLayoutCount = 1U,
 			.pSetLayouts = &set_layout_, .pushConstantRangeCount = 1U, .pPushConstantRanges = &constants};
 		result = vkCreatePipelineLayout(device_.device, &pipelineLayoutInfo, nullptr, &pipeline_layout_);
@@ -278,12 +308,151 @@ namespace vve::simple {
 		return VK_SUCCESS;
 	}
 
-	/// @brief Rebuilds the acceleration structures and the material buffer from the bound scene.
-	/// @return Error::not_initialized before init, Error::platform_error when Vulkan fails.
+	/// @brief Voxelizes the bound scene, then rebuilds the voxel volumes, acceleration structures and material buffer.
+	/// @return Error::not_initialized before init, the voxelize errors (the previous scene stays), or
+	/// Error::platform_error when Vulkan fails (the renderer then has no scene).
 	auto RadianceCascadesRenderer::rebuildScene() -> std::expected<void, Error> {
 		if (!initialized_) { return std::unexpected(Error::not_initialized); }
-		if (const VkResult result = buildScene(); result != VK_SUCCESS) { return fail("scene", result); }
+		auto voxels = scene_ != nullptr ? voxelize(*scene_, settings_.voxel_size) : RadianceCascadesVoxels{};
+		if (!voxels) { return std::unexpected(voxels.error()); }
+		if (const VkResult result = buildScene(*voxels); result != VK_SUCCESS) {
+			waitIdle();
+			destroyScene(); // Never leave a structure without its voxel volumes.
+			return fail("scene", result);
+		}
 		return {};
+	}
+
+	/// @brief Voxelizes the traced instances into a grid snapped to multiples of voxelSize, with one empty voxel of
+	/// padding on every side. A triangle marks every voxel it touches, faces included, so a surface lying on a voxel
+	/// boundary marks both neighbours and every hit point lies in a marked voxel.
+	/// @return Error::invalid_argument for a voxel size that is not finite and positive, Error::capacity_exceeded when the
+	/// grid needs more than maxVoxelsPerAxis along an axis or more than maxVoxels in total.
+	auto RadianceCascadesRenderer::voxelize(const RenderScene &scene, Scalar voxelSize) -> std::expected<RadianceCascadesVoxels, Error> {
+		if (!std::isfinite(voxelSize) || voxelSize <= zero()) { return std::unexpected(Error::invalid_argument); }
+		auto voxels = RadianceCascadesVoxels{.voxel_size = voxelSize};
+
+		// World-space triangles of every traced instance, with their material (null selects white).
+		auto triangles = std::vector<std::pair<std::array<Vec3, 3>, const RenderMaterial *>>{};
+		Vec3 lower{std::numeric_limits<Scalar>::max()};
+		Vec3 upper{std::numeric_limits<Scalar>::lowest()};
+		for (const auto &instance : scene.instances()) {
+			const RenderMesh *const mesh = scene.findMesh(instance.mesh);
+			if (!traced(instance) || mesh == nullptr || !mesh->vertices) { continue; }
+			const auto &vertices = *mesh->vertices;
+			const RenderMaterial *const material = scene.findMaterial(instance.material);
+			for (std::size_t first{}; first + 2U < mesh->indices.size(); first += 3U) {
+				std::array<Vec3, 3> triangle{};
+				bool valid{true};
+				for (std::size_t corner{}; corner < 3U; ++corner) {
+					const std::uint32_t index{mesh->indices[first + corner]};
+					if (index >= vertices.size()) { valid = false; break; }
+					triangle[corner] = Vec3{multiply(instance.world_transform, Vec4{vertices[index].position, one()})};
+					for (int axis{}; axis < 3; ++axis) {
+						lower[axis] = std::min(lower[axis], triangle[corner][axis]);
+						upper[axis] = std::max(upper[axis], triangle[corner][axis]);
+					}
+				}
+				if (valid) { triangles.emplace_back(triangle, material); }
+			}
+		}
+		if (triangles.empty()) { return voxels; }
+
+		std::uint64_t total{1U};
+		for (int axis{}; axis < 3; ++axis) {
+			const auto firstVoxel = static_cast<std::int64_t>(std::floor(lower[axis] / voxelSize)) - 1;
+			const auto lastVoxel = static_cast<std::int64_t>(std::floor(upper[axis] / voxelSize)) + 1;
+			const auto count = lastVoxel - firstVoxel + 1;
+			if (count > std::int64_t{maxVoxelsPerAxis}) { return std::unexpected(Error::capacity_exceeded); }
+			voxels.size[axis] = static_cast<std::uint32_t>(count);
+			voxels.origin[axis] = static_cast<Scalar>(firstVoxel) * voxelSize;
+			total *= voxels.size[axis];
+		}
+		if (total > maxVoxels) { return std::unexpected(Error::capacity_exceeded); }
+		voxels.albedo.assign(total, Vec4{});
+		voxels.emissive.assign(total, Vec4{});
+		voxels.normal.assign(total, Vec4{});
+		auto hits = std::vector<std::uint32_t>(total);
+
+		// The box test is grown by a thousandth of a voxel, so float error at shared faces never drops a voxel.
+		constexpr Scalar slack{static_cast<Scalar>(1e-3)};
+		const Vec3 half{voxelSize * (static_cast<Scalar>(0.5) + slack)};
+		for (const auto &[triangle, material] : triangles) {
+			const Vec3 faceNormal{cross(subtract(triangle[1], triangle[0]), subtract(triangle[2], triangle[0]))};
+			const Scalar area{length(faceNormal)};
+			const Vec3 unitNormal{area > zero() ? scale(faceNormal, one() / area) : zeroVec3()};
+			const Vec3 base{material != nullptr ? material->base_color.value : oneVec3()};
+			const Vec3 emitted{material != nullptr ? material->emissive.value : zeroVec3()};
+			std::array<std::uint32_t, 3> from{}, to{};
+			for (int axis{}; axis < 3; ++axis) {
+				const Scalar low{std::min({triangle[0][axis], triangle[1][axis], triangle[2][axis]})};
+				const Scalar high{std::max({triangle[0][axis], triangle[1][axis], triangle[2][axis]})};
+				const auto cell = [&](Scalar value) {
+					const auto index = static_cast<std::int64_t>(std::floor((value - voxels.origin[axis]) / voxelSize));
+					return static_cast<std::uint32_t>(std::clamp<std::int64_t>(index, 0, std::int64_t{voxels.size[axis]} - 1));
+				};
+				from[axis] = cell(low - voxelSize * slack);
+				to[axis] = cell(high + voxelSize * slack);
+			}
+			for (std::uint32_t z{from[2]}; z <= to[2]; ++z) {
+				for (std::uint32_t y{from[1]}; y <= to[1]; ++y) {
+					for (std::uint32_t x{from[0]}; x <= to[0]; ++x) {
+						const Vec3 cellIndex{static_cast<Scalar>(x), static_cast<Scalar>(y), static_cast<Scalar>(z)};
+						const Vec3 centre{add(voxels.origin, scale(add(cellIndex, Vec3{static_cast<Scalar>(0.5)}), voxelSize))};
+						if (!triangleTouchesBox(triangle, centre, half)) { continue; }
+						const std::size_t index{x + std::size_t{voxels.size[0]} * (y + std::size_t{voxels.size[1]} * z)};
+						voxels.albedo[index] = add(voxels.albedo[index], Vec4{base, zero()});
+						voxels.emissive[index] = add(voxels.emissive[index], Vec4{emitted, zero()});
+						voxels.normal[index] = add(voxels.normal[index], Vec4{unitNormal, zero()});
+						++hits[index];
+					}
+				}
+			}
+		}
+		for (std::size_t index{}; index < total; ++index) {
+			if (hits[index] == 0U) { continue; }
+			const Scalar weight{one() / static_cast<Scalar>(hits[index])};
+			voxels.albedo[index] = Vec4{scale(Vec3{voxels.albedo[index]}, weight), one()};
+			voxels.emissive[index] = Vec4{scale(Vec3{voxels.emissive[index]}, weight), zero()};
+			const Vec3 sum{voxels.normal[index]};
+			const Scalar sumLength{length(sum)};
+			voxels.normal[index] = sumLength > static_cast<Scalar>(1e-4) ? Vec4{scale(sum, one() / sumLength), zero()} : Vec4{};
+		}
+		return voxels;
+	}
+
+	/// @brief Uploads the three voxel volumes as RGBA32F 2D array images with one layer per z slice.
+	VkResult RadianceCascadesRenderer::uploadVoxels(const RadianceCascadesVoxels &voxels) {
+		static_assert(sizeof(Vec4) == 4U * sizeof(float)); // RGBA32F texels; the simple engine requires float math.
+		if (voxels.size[0] == 0U) { return VK_SUCCESS; }
+		const VkExtent2D extent{.width = voxels.size[0], .height = voxels.size[1]};
+		const std::uint32_t layers{voxels.size[2]};
+		VulkanUploadBatch batch{};
+		VkResult result = batch.begin(device_.device, device_.graphicsQueue, command_pool_.commandPool);
+		const std::array sources{&voxels.albedo, &voxels.emissive, &voxels.normal};
+		for (std::size_t image{}; image < voxels_.size() && result == VK_SUCCESS; ++image) {
+			// A grid one voxel deep still needs an array view for the Texture2DArray bindings.
+			result = voxels_[image].create(allocator_, device_.device, extent, VK_FORMAT_R32G32B32A32_SFLOAT,
+				VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, VK_IMAGE_ASPECT_COLOR_BIT, layers, false, true);
+			if (result != VK_SUCCESS) { break; }
+			const auto staging = batch.stage(allocator_, std::as_bytes(std::span{*sources[image]}));
+			if (!staging) { result = staging.error(); break; }
+			transitionImage(batch.commandBuffer, voxels_[image].image, VK_IMAGE_ASPECT_COLOR_BIT, 0U, layers,
+				VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			const VkBufferImageCopy region{
+				.imageSubresource = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .layerCount = layers},
+				.imageExtent = {.width = extent.width, .height = extent.height, .depth = 1U},
+			};
+			vkCmdCopyBufferToImage(batch.commandBuffer, *staging, voxels_[image].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1U, &region);
+			transitionImage(batch.commandBuffer, voxels_[image].image, VK_IMAGE_ASPECT_COLOR_BIT, 0U, layers,
+				VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		}
+		if (result == VK_SUCCESS) { result = batch.submit(); }
+		if (result != VK_SUCCESS) { return result; }
+		voxel_origin_ = voxels.origin;
+		voxel_size_ = voxels.voxel_size;
+		voxel_grid_ = voxels.size;
+		return VK_SUCCESS;
 	}
 
 	/// @brief Releases the acceleration structures and every scene buffer; the device must be idle.
@@ -297,6 +466,10 @@ namespace vve::simple {
 		bottom_levels_.clear();
 		scene_buffers_.clear();
 		materials_.cleanup();
+		for (auto &volume : voxels_) { volume.cleanup(); }
+		voxel_origin_ = zeroVec3();
+		voxel_size_ = zero();
+		voxel_grid_ = {};
 		traced_instances_ = 0U;
 	}
 
@@ -351,12 +524,13 @@ namespace vve::simple {
 		return structure;
 	}
 
-	/// @brief Uploads the bound scene: material rows, mesh geometry, one bottom-level structure per mesh and the
-	/// top-level structure over visible mesh instances. An empty scene leaves top_level_ null.
-	VkResult RadianceCascadesRenderer::buildScene() {
+	/// @brief Uploads the bound scene: voxel volumes, material rows, mesh geometry, one bottom-level structure per mesh
+	/// and the top-level structure over the traced instances. An empty scene leaves top_level_ null.
+	VkResult RadianceCascadesRenderer::buildScene(const RadianceCascadesVoxels &voxels) {
 		waitIdle();
 		destroyScene();
 		if (scene_ == nullptr) { return VK_SUCCESS; }
+		if (const VkResult uploaded = uploadVoxels(voxels); uploaded != VK_SUCCESS) { return uploaded; }
 		const auto &dispatch = *device_.device.handle.getDispatcher();
 		const auto &meshes = scene_->meshes();
 		const auto &materials = scene_->materials();
@@ -427,10 +601,10 @@ namespace vve::simple {
 			bottom_levels_[index] = *structure;
 		}
 
-		// Instances: visible ordinary meshes only; sky, sprites and terrain have no meaning for the rays.
+		// Instances: the same ones the voxelizer sees.
 		auto entries = std::vector<VkAccelerationStructureInstanceKHR>{};
 		for (const auto &instance : scene_->instances()) {
-			if (!instance.visible || instance.sky || instance.sprite || instance.terrain) { continue; }
+			if (!traced(instance)) { continue; }
 			const auto mesh = std::ranges::find(meshes, instance.mesh, &RenderMesh::handle);
 			if (mesh == meshes.end() || bottom_levels_[static_cast<std::size_t>(mesh - meshes.begin())] == VK_NULL_HANDLE) { continue; }
 			const auto material = std::ranges::find(materials, instance.material, &RenderMaterial::handle);
@@ -480,6 +654,14 @@ namespace vve::simple {
 		const VkWriteDescriptorSetAccelerationStructureKHR structureInfo{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
 			.accelerationStructureCount = 1U, .pAccelerationStructures = &top_level_};
 		const VkDescriptorBufferInfo materialInfo{.buffer = materials_.buffer, .range = VK_WHOLE_SIZE};
+		const auto volumeInfo = [this](std::size_t image) {
+			return VkDescriptorImageInfo{.imageView = voxels_[image].imageView, .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+		};
+		const std::array volumeInfos{volumeInfo(0U), volumeInfo(1U), volumeInfo(2U)};
+		const auto volumeWrite = [this, &volumeInfos](std::uint32_t binding, std::size_t image) {
+			return VkWriteDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, .dstSet = descriptor_set_, .dstBinding = binding,
+				.descriptorCount = 1U, .descriptorType = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, .pImageInfo = &volumeInfos[image]};
+		};
 		const std::array writes{
 			VkWriteDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, .dstSet = descriptor_set_, .dstBinding = VVE_RC_OUTPUT_BINDING,
 				.descriptorCount = 1U, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .pImageInfo = &outputInfo},
@@ -487,8 +669,11 @@ namespace vve::simple {
 				.dstBinding = VVE_RC_SCENE_BINDING, .descriptorCount = 1U, .descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR},
 			VkWriteDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, .dstSet = descriptor_set_, .dstBinding = VVE_RC_MATERIAL_BINDING,
 				.descriptorCount = 1U, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .pBufferInfo = &materialInfo},
+			volumeWrite(VVE_RC_VOXEL_ALBEDO_BINDING, 0U),
+			volumeWrite(VVE_RC_VOXEL_EMISSIVE_BINDING, 1U),
+			volumeWrite(VVE_RC_VOXEL_NORMAL_BINDING, 2U),
 		};
-		// Without a top-level structure only the output image is written.
+		// Without a top-level structure only the output image is written; with one, the voxel volumes exist too.
 		vkUpdateDescriptorSets(device_.device, top_level_ == VK_NULL_HANDLE ? 1U : static_cast<std::uint32_t>(writes.size()), writes.data(), 0U, nullptr);
 	}
 
@@ -587,13 +772,16 @@ namespace vve::simple {
 			.up = Vec4{scale(up, halfHeight), zero()},
 			.forward = Vec4{forward, zero()},
 			.background = Vec4{background_color_.value, one()},
+			.volume = Vec4{voxel_origin_, voxel_size_},
+			.grid = Vec4{static_cast<Scalar>(voxel_grid_[0]), static_cast<Scalar>(voxel_grid_[1]), static_cast<Scalar>(voxel_grid_[2]),
+				static_cast<Scalar>(std::to_underlying(view_))},
 		};
 		// Every pixel is written, so the previous contents are not needed.
 		imageBarrier(command, output_.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0U,
 			VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT);
 		vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_);
 		vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_layout_, 0U, 1U, &descriptor_set_, 0U, nullptr);
-		vkCmdPushConstants(command, pipeline_layout_, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR, 0U, sizeof(constants), &constants);
+		vkCmdPushConstants(command, pipeline_layout_, constantStages, 0U, sizeof(constants), &constants);
 		const VkStridedDeviceAddressRegionKHR callable{};
 		dispatch.vkCmdTraceRaysKHR(command, &shader_regions_[0], &shader_regions_[1], &shader_regions_[2], &callable,
 			swapchain_.extent.width, swapchain_.extent.height, 1U);

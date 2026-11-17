@@ -36,3 +36,6 @@
 #define VVE_RC_SCENE_BINDING 0 ///< Radiance cascades renderer: top-level acceleration structure.
 #define VVE_RC_OUTPUT_BINDING 1 ///< Radiance cascades renderer: linear HDR output storage image.
 #define VVE_RC_MATERIAL_BINDING 2 ///< Radiance cascades renderer: material rows selected by the instance custom index.
+#define VVE_RC_VOXEL_ALBEDO_BINDING 3 ///< Radiance cascades renderer: voxel albedo volume, alpha = occupancy.
+#define VVE_RC_VOXEL_EMISSIVE_BINDING 4 ///< Radiance cascades renderer: voxel emitted radiance volume.
+#define VVE_RC_VOXEL_NORMAL_BINDING 5 ///< Radiance cascades renderer: voxel average face normal volume.

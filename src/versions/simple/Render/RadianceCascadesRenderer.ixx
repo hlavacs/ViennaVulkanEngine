@@ -12,6 +12,8 @@ import VVEngine.Simple.RenderResources;
 ///
 /// Functional objects:
 /// - RadianceCascadesSettings: every size and count that research runs tune.
+/// - RadianceCascadesView: what the primary rays show; everything except shaded is a debug view.
+/// - RadianceCascadesVoxels: CPU voxelization of the traced scene (average albedo, emission and face normal per voxel).
 /// - RadianceCascadesRenderer: independent of the forward and deferred renderers. It owns its Vulkan device with the
 ///   ray tracing extensions, one window's swapchain, the cascade atlases, and records the frame stages. The cascade
 ///   layout functions are pure and need no GPU. Larger member functions live in RadianceCascadesRenderer.cpp.
@@ -22,9 +24,10 @@ import VVEngine.Simple.RenderResources;
 /// 3D law, where every cascade needs half the memory of the one before. The scene is voxelized on the CPU into a
 /// radiance volume; rays are traced with the Vulkan ray tracing pipeline against the scene triangles.
 ///
-/// Implemented so far: settings, layout, device bring-up, acceleration structures over the bound RenderScene, and a
-/// frame that traces one camera ray per pixel (material colour, no lighting) into the HDR output image and blits it
-/// to the swapchain. Without traceable geometry the frame is the background colour. The cascade stages are empty.
+/// Implemented so far: settings, layout, device bring-up, CPU voxelization uploaded as RGBA32F 2D array images
+/// (layer = z), acceleration structures over the bound RenderScene, and a frame that traces one camera ray per pixel
+/// (material colour or a voxel debug view, no lighting) into the HDR output image and blits it to the swapchain.
+/// Without traceable geometry the frame is the background colour. The cascade stages are empty.
 
 export namespace vve::simple {
 
@@ -38,6 +41,24 @@ export namespace vve::simple {
 		std::uint32_t angular_scale{2U};										///< Direction map side multiplier per cascade (2 means 4x the directions).
 		Scalar interval_scale{static_cast<Scalar>(2)};						///< Interval length multiplier per cascade.
 		Scalar voxel_size{static_cast<Scalar>(0.25)};						///< Edge length of one voxel of the radiance volume.
+	};
+
+	/// @brief What the primary rays show.
+	enum class RadianceCascadesView {
+		shaded,       ///< The rendered image (currently the material base colour).
+		voxel_albedo, ///< Albedo of the voxel at each hit point; magenta marks a hit in an empty voxel.
+	};
+
+	/// @brief Voxelized scene: a regular grid whose voxel (0, 0, 0) has its minimum corner at origin.
+	/// Voxel (x, y, z) is element x + size[0] * (y + size[1] * z) of every array. A voxel is occupied when a traced
+	/// triangle touches it, including along its faces; occupied voxels store averages over those triangles.
+	struct RadianceCascadesVoxels {
+		Vec3 origin{zeroVec3()};										///< World position of the minimum corner of voxel (0, 0, 0).
+		Scalar voxel_size{};											///< Edge length of one voxel.
+		std::array<std::uint32_t, 3> size{};							///< Voxels per axis; all zero for a scene without traced triangles.
+		std::vector<Vec4> albedo{};										///< Average base colour; alpha is 1 for occupied voxels, else 0.
+		std::vector<Vec4> emissive{};									///< Average emitted radiance factor; alpha unused.
+		std::vector<Vec4> normal{};										///< Normalized average face normal; zero when empty or when normals cancel.
 	};
 
 	/// @brief Standalone radiance cascades renderer for one window; not for production use.
@@ -64,6 +85,12 @@ export namespace vve::simple {
 		[[nodiscard]] Scalar intervalStart(std::uint32_t cascade) const;
 		[[nodiscard]] Scalar intervalEnd(std::uint32_t cascade) const;
 
+		// Voxelization (RadianceCascadesRenderer.cpp); pure CPU, so tests need no GPU.
+		static constexpr std::uint32_t maxVoxelsPerAxis{2048U};		///< Guaranteed minimum of maxImageArrayLayers; also below maxImageDimension2D.
+		static constexpr std::uint64_t maxVoxels{1ULL << 22U};		///< 4 Mi voxels, 64 MiB per RGBA32F volume image.
+		[[nodiscard]] static auto voxelize(const RenderScene &scene, Scalar voxelSize) -> std::expected<RadianceCascadesVoxels, Error>;
+		[[nodiscard]] static bool traced(const RenderInstance &instance) noexcept;
+
 		// Lifecycle (RadianceCascadesRenderer.cpp). The window must stay alive until shutdown.
 		[[nodiscard]] auto init(SDL_Window *window) -> std::expected<void, Error>;
 		auto cleanup() -> void;
@@ -76,6 +103,9 @@ export namespace vve::simple {
 		[[nodiscard]] std::size_t tracedInstanceCount() const noexcept;
 		auto setCamera(Camera camera) -> void;
 		[[nodiscard]] const Camera &camera() const noexcept;
+		auto setView(RadianceCascadesView view) -> void;
+		[[nodiscard]] RadianceCascadesView view() const noexcept;
+		[[nodiscard]] std::array<std::uint32_t, 3> voxelGrid() const noexcept;
 
 		// Per-frame work (RadianceCascadesRenderer.cpp).
 		[[nodiscard]] auto renderFrame() -> std::expected<void, Error>;
@@ -98,7 +128,8 @@ export namespace vve::simple {
 		[[nodiscard]] VkResult createSwapchainResources(VkExtent2D extent);
 		[[nodiscard]] VkResult syncSwapchain(VkExtent2D extent);
 		[[nodiscard]] VkResult createPipeline();
-		[[nodiscard]] VkResult buildScene();
+		[[nodiscard]] VkResult buildScene(const RadianceCascadesVoxels &voxels);
+		[[nodiscard]] VkResult uploadVoxels(const RadianceCascadesVoxels &voxels);
 		[[nodiscard]] auto buildStructure(VkAccelerationStructureTypeKHR type, const VkAccelerationStructureGeometryKHR &geometry,
 			std::uint32_t primitives) -> std::expected<VkAccelerationStructureKHR, VkResult>;
 		void destroyScene();
@@ -137,6 +168,11 @@ export namespace vve::simple {
 		std::vector<VkAccelerationStructureKHR> bottom_levels_{};	///< One structure per RenderScene mesh; null for meshes without triangles.
 		VkAccelerationStructureKHR top_level_{VK_NULL_HANDLE};	///< Structure over the traced instances; null when there are none.
 		VulkanBuffer materials_{};										///< Material rows in RenderScene order, plus a white fallback.
+		std::array<VulkanImage, 3> voxels_{};							///< Albedo, emissive and normal volumes as RGBA32F 2D arrays, layer = z.
+		Vec3 voxel_origin_{zeroVec3()};									///< RadianceCascadesVoxels::origin of the uploaded volume.
+		Scalar voxel_size_{};											///< RadianceCascadesVoxels::voxel_size of the uploaded volume.
+		std::array<std::uint32_t, 3> voxel_grid_{};						///< RadianceCascadesVoxels::size of the uploaded volume.
+		RadianceCascadesView view_{RadianceCascadesView::shaded};		///< What the primary rays show.
 		std::size_t traced_instances_{};								///< Instances inside top_level_.
 		Camera camera_{.position = {Vec3{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}},
 			.forward = {Vec3{zero(), static_cast<Scalar>(-5.0), static_cast<Scalar>(-9.0)}}}; ///< View of the primary rays; the default matches the forward renderer.
@@ -277,6 +313,20 @@ export namespace vve::simple {
 
 	/// @brief Returns the view of the primary rays.
 	inline const Camera &RadianceCascadesRenderer::camera() const noexcept { return camera_; }
+
+	/// @brief Selects what the primary rays show; takes effect with the next frame.
+	inline auto RadianceCascadesRenderer::setView(RadianceCascadesView view) -> void { view_ = view; }
+
+	/// @brief Returns what the primary rays show.
+	inline RadianceCascadesView RadianceCascadesRenderer::view() const noexcept { return view_; }
+
+	/// @brief Voxels per axis of the uploaded volume; zero without a scene or before init.
+	inline std::array<std::uint32_t, 3> RadianceCascadesRenderer::voxelGrid() const noexcept { return voxel_grid_; }
+
+	/// @brief Instances the rays and the voxelizer see: visible ordinary meshes, not the sky, sprites or terrain.
+	inline bool RadianceCascadesRenderer::traced(const RenderInstance &instance) noexcept {
+		return instance.visible && !instance.sky && !instance.sprite && !instance.terrain;
+	}
 
 	/// @brief Size of the swapchain images in pixels; zero before init.
 	inline VkExtent2D RadianceCascadesRenderer::extent() const noexcept { return swapchain_.extent; }
