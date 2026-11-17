@@ -33,3 +33,6 @@
 #define VVE_AO_NORMAL_COS 0.9f ///< Minimum normal similarity for spatial filtering and coverage-sample reuse.
 #define VVE_AO_DEPTH_RELATIVE 0.01f ///< Maximum relative linear view-depth difference when reusing sample-zero AO.
 #define VVE_AO_FILTER_DEPTH 0.05f ///< Bilateral linear-depth scale in metres; gaps above this are rejected.
+#define VVE_RC_SCENE_BINDING 0 ///< Radiance cascades renderer: top-level acceleration structure.
+#define VVE_RC_OUTPUT_BINDING 1 ///< Radiance cascades renderer: linear HDR output storage image.
+#define VVE_RC_MATERIAL_BINDING 2 ///< Radiance cascades renderer: material rows selected by the instance custom index.

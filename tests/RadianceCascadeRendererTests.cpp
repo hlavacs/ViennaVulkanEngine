@@ -90,18 +90,41 @@ int main() {
 	if (!resized_pixels || resized_pixels->size() != std::size_t{extent.width} * extent.height * 4U) { return 16; }
 	const auto resized_wrong = wrongPixels(*resized_pixels, {124, 188, 255, 255});
 
-	// 7. Shutdown, then a second init on the same window
+	// 7. Primary rays: a red cube on a green ground; the camera looks at the cube's centre from above the ground
+	auto &render = engine.renderSystem();
+	if (renderer.tracedInstanceCount() != 0U) { return 31; }
+	if (!render.addPlane(Vec2{5.0F, 5.0F}, LinearColor{.value = {0.0F, 1.0F, 0.0F}}) ||
+		!render.addCuboid(Vec3{-1.0F, 0.0F, -1.0F}, Vec3{1.0F, 2.0F, 1.0F}, LinearColor{.value = {1.0F, 0.0F, 0.0F}})) { return 32; }
+	renderer.setCamera(Camera::lookAt(Position{{0.0F, 3.0F, 8.0F}}, Position{{0.0F, 1.0F, 0.0F}}));
+	if (!renderer.rebuildScene() || renderer.tracedInstanceCount() != 2U) { return 33; }
+	const auto scene_capture = directory / "scene.png";
+	if (!renderer.renderFrame() || !renderer.captureFrameToPng(scene_capture)) { return 34; }
+	const auto scene_pixels = test::imagePixels(scene_capture);
+	if (!scene_pixels || scene_pixels->size() != std::size_t{extent.width} * extent.height * 4U) { return 35; }
+	const auto pixel = [&](unsigned x, unsigned y) {
+		const auto offset = (std::size_t{y} * extent.width + x) * 4U;
+		return std::array<int, 3>{(*scene_pixels)[offset], (*scene_pixels)[offset + 1U], (*scene_pixels)[offset + 2U]};
+	};
+	const auto centre = pixel(extent.width / 2U, extent.height / 2U);   // Cube.
+	const auto bottom = pixel(extent.width / 2U, extent.height - 2U);   // Ground in front of the cube.
+	const auto corner = pixel(1U, 1U);                                  // Above the horizon.
+	const bool scene_ok = centre == std::array{255, 0, 0} && bottom == std::array{0, 255, 0} &&
+		std::abs(corner[0] - 124) <= 3 && std::abs(corner[1] - 188) <= 3 && corner[2] == 255;
+
+	// 8. Shutdown, then a second init on the same window, which uploads the bound scene again
 	const bool validation = renderer.validationActive();
 	renderer.shutdown();
-	if (renderer.initialized()) { return 17; }
+	if (renderer.initialized() || renderer.tracedInstanceCount() != 0U) { return 17; }
 	const auto after = renderer.renderFrame();
 	if (after || after.error() != Error::not_initialized) { return 18; }
 	std::uint64_t errors = renderer.validationErrorCount();
-	if (!renderer.init(window) || !renderer.renderFrame()) { return 19; }
+	if (!renderer.init(window) || renderer.tracedInstanceCount() != 2U || !renderer.renderFrame()) { return 19; }
 	renderer.shutdown();
 	errors += renderer.validationErrorCount();
 
 	std::println("[RadianceCascadeRendererTests] wrong_pixels={} resize_requested={} extent={}x{} resized_wrong_pixels={} validation_active={} validation_errors={}",
 		wrong, resized, extent.width, extent.height, resized_wrong, validation, errors);
-	return wrong == 0U && resized_wrong == 0U && errors == 0U ? 0 : 30;
+	std::println("[RadianceCascadeRendererTests] scene centre={},{},{} bottom={},{},{} corner={},{},{} scene_ok={}",
+		centre[0], centre[1], centre[2], bottom[0], bottom[1], bottom[2], corner[0], corner[1], corner[2], scene_ok);
+	return wrong == 0U && resized_wrong == 0U && scene_ok && errors == 0U ? 0 : 30;
 }

@@ -1,20 +1,32 @@
 module;
 #include <SDL3/SDL_video.h>
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan_raii.hpp>
 #include <vk_mem_alloc.h>
+#include "../shaders/simple_shared.h"
+// Build-generated uint32_t arrays are defined only in this translation unit.
+#include "simple_rc_primary_raygen_spv.h"
+#include "simple_rc_primary_miss_spv.h"
+#include "simple_rc_primary_closest_hit_spv.h"
 
 module VVEngine.Simple.RadianceCascadesRenderer;
 import std;
 import VVEngine.Simple.Types;
 import VVEngine.Simple.Vulkan;
+import VVEngine.Simple.RenderResources;
 
 /// @file
-/// @brief RadianceCascadesRenderer lifecycle, frame loop and PNG capture.
+/// @brief RadianceCascadesRenderer lifecycle, scene upload, frame loop and PNG capture.
 ///
 /// Functional objects:
 /// - init / cleanup: own Vulkan instance, ray tracing device, allocator, swapchain and frame synchronization.
-/// - renderFrame / drawFrame / recordFrame: acquire, record, submit and present one frame.
+/// - createPipeline: descriptor set, ray tracing pipeline and shader binding table of the primary rays.
+/// - rebuildScene / buildScene / buildStructure: geometry upload, one bottom-level structure per mesh, one top-level
+///   structure over the instances, and the material buffer.
+/// - renderFrame / drawFrame / recordFrame / recordResolve: acquire, record, submit and present one frame.
 /// - captureFrameToPng: renders one more frame and copies its swapchain image into a PNG.
+///
+/// The ray tracing commands are extension functions the Vulkan loader does not export; they are called through the
+/// dispatch table of the device's vk::raii owner.
 
 namespace vve::simple {
 
@@ -22,6 +34,43 @@ namespace vve::simple {
 		constexpr std::uint64_t frameFenceTimeoutNs{1'000'000'000ULL}; ///< A frame slot busy for longer skips the frame.
 		constexpr std::uint64_t acquireTimeoutNs{100'000'000ULL};      ///< No swapchain image within this time skips the frame.
 		constexpr VkFormat outputFormat{VK_FORMAT_R16G16B16A16_SFLOAT}; ///< Linear HDR; the blit to an sRGB swapchain encodes it.
+
+		/// @brief Push constants of every stage; the layout matches RcFrame in simple_radiance_cascades.slang.
+		struct FrameConstants {
+			Vec4 origin{};     ///< Camera position.
+			Vec4 right{};      ///< Camera right, scaled by tan(fov / 2) * aspect.
+			Vec4 up{};         ///< Camera up, scaled by tan(fov / 2).
+			Vec4 forward{};    ///< Normalized view direction.
+			Vec4 background{}; ///< Linear colour of rays that hit nothing.
+		};
+
+		/// @brief Rounds a size or address up to a multiple of the alignment.
+		[[nodiscard]] constexpr VkDeviceSize alignUp(VkDeviceSize value, VkDeviceSize alignment) {
+			return (value + alignment - 1U) / alignment * alignment;
+		}
+
+		/// @brief Address shaders and acceleration structure builds use to reach a buffer.
+		[[nodiscard]] VkDeviceAddress bufferAddress(VkDevice device, VkBuffer buffer) {
+			const VkBufferDeviceAddressInfo info{.sType = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, .buffer = buffer};
+			return vkGetBufferDeviceAddress(device, &info);
+		}
+
+		/// @brief Layout transition with explicit stages and access, for images the ray tracing stage writes.
+		void imageBarrier(VkCommandBuffer command, VkImage image, VkImageLayout oldLayout, VkImageLayout newLayout,
+			VkPipelineStageFlags sourceStage, VkAccessFlags sourceAccess, VkPipelineStageFlags targetStage, VkAccessFlags targetAccess) {
+			const VkImageMemoryBarrier barrier{
+				.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+				.srcAccessMask = sourceAccess,
+				.dstAccessMask = targetAccess,
+				.oldLayout = oldLayout,
+				.newLayout = newLayout,
+				.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED,
+				.image = image,
+				.subresourceRange = {.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .levelCount = 1U, .layerCount = 1U},
+			};
+			vkCmdPipelineBarrier(command, sourceStage, targetStage, 0U, 0U, nullptr, 0U, nullptr, 1U, &barrier);
+		}
 
 		/// @brief Logs the failed stage with its Vulkan result and maps it to the engine error.
 		[[nodiscard]] auto fail(const char *stage, VkResult result) -> std::unexpected<Error> {
@@ -64,6 +113,8 @@ namespace vve::simple {
 		if (result == VK_SUCCESS) { stage = "command pool"; result = command_pool_.create(device_.device, *physical_device_.graphicsQueueFamily); }
 		if (result == VK_SUCCESS) { stage = "command buffers"; result = command_buffers_.create(device_.device, command_pool_.commandPool, framesInFlight); }
 		if (result == VK_SUCCESS) { stage = "swapchain"; result = createSwapchainResources(windowPixelExtent()); }
+		if (result == VK_SUCCESS) { stage = "ray tracing pipeline"; result = createPipeline(); }
+		if (result == VK_SUCCESS) { stage = "scene"; result = buildScene(); }
 		if (result != VK_SUCCESS) {
 			cleanup();
 			return fail(stage, result);
@@ -76,6 +127,18 @@ namespace vve::simple {
 	auto RadianceCascadesRenderer::cleanup() -> void {
 		waitIdle();
 		cascades_.clear();
+		destroyScene();
+		shader_table_.cleanup();
+		if (device_.device != VK_NULL_HANDLE) {
+			vkDestroyPipeline(device_.device, pipeline_, nullptr);
+			vkDestroyPipelineLayout(device_.device, pipeline_layout_, nullptr);
+			descriptor_pool_.cleanup(); // Frees descriptor_set_.
+			vkDestroyDescriptorSetLayout(device_.device, set_layout_, nullptr);
+		}
+		pipeline_ = VK_NULL_HANDLE;
+		pipeline_layout_ = VK_NULL_HANDLE;
+		descriptor_set_ = VK_NULL_HANDLE;
+		set_layout_ = VK_NULL_HANDLE;
 		frame_sync_.cleanup();
 		output_.cleanup();
 		swapchain_.cleanup();
@@ -129,7 +192,304 @@ namespace vve::simple {
 		swapchain_.cleanup();
 		const VkResult result = createSwapchainResources(extent);
 		if (result != VK_SUCCESS) { swapchain_.requestedExtent = {}; }
+		else { writeDescriptors(); } // The output image is a new object.
 		return result;
+	}
+
+	/// @brief Creates the descriptor set, the ray tracing pipeline of the primary rays and its shader binding table.
+	VkResult RadianceCascadesRenderer::createPipeline() {
+		const auto &dispatch = *device_.device.handle.getDispatcher();
+		const std::array bindings{
+			VkDescriptorSetLayoutBinding{.binding = VVE_RC_SCENE_BINDING, .descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR,
+				.descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR},
+			VkDescriptorSetLayoutBinding{.binding = VVE_RC_OUTPUT_BINDING, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+				.descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR},
+			VkDescriptorSetLayoutBinding{.binding = VVE_RC_MATERIAL_BINDING, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+				.descriptorCount = 1U, .stageFlags = VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR},
+		};
+		const VkDescriptorSetLayoutCreateInfo layoutInfo{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+			.bindingCount = static_cast<std::uint32_t>(bindings.size()), .pBindings = bindings.data()};
+		VkResult result = vkCreateDescriptorSetLayout(device_.device, &layoutInfo, nullptr, &set_layout_);
+		if (result == VK_SUCCESS) { result = descriptor_pool_.create(device_.device, 1U, bindings); }
+		if (result != VK_SUCCESS) { return result; }
+		const VkDescriptorPool pool{descriptor_pool_.descriptorPool};
+		const VkDescriptorSetAllocateInfo setInfo{.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, .descriptorPool = pool,
+			.descriptorSetCount = 1U, .pSetLayouts = &set_layout_};
+		result = vkAllocateDescriptorSets(device_.device, &setInfo, &descriptor_set_);
+		if (result != VK_SUCCESS) { return result; }
+
+		const VkPushConstantRange constants{.stageFlags = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR, .size = sizeof(FrameConstants)};
+		const VkPipelineLayoutCreateInfo pipelineLayoutInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, .setLayoutCount = 1U,
+			.pSetLayouts = &set_layout_, .pushConstantRangeCount = 1U, .pPushConstantRanges = &constants};
+		result = vkCreatePipelineLayout(device_.device, &pipelineLayoutInfo, nullptr, &pipeline_layout_);
+		if (result != VK_SUCCESS) { return result; }
+
+		// Stage order is also the shader group order: ray generation, miss, closest hit.
+		std::array<VulkanShaderModule, 3> modules{};
+		result = modules[0].create(device_.device, simple_rc_primary_raygen_spv);
+		if (result == VK_SUCCESS) { result = modules[1].create(device_.device, simple_rc_primary_miss_spv); }
+		if (result == VK_SUCCESS) { result = modules[2].create(device_.device, simple_rc_primary_closest_hit_spv); }
+		if (result != VK_SUCCESS) { return result; }
+		const auto stage = [&modules](std::size_t index, VkShaderStageFlagBits bit, const char *entry) {
+			return VkPipelineShaderStageCreateInfo{.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, .stage = bit,
+				.module = modules[index].shaderModule, .pName = entry};
+		};
+		const std::array stages{stage(0U, VK_SHADER_STAGE_RAYGEN_BIT_KHR, "primaryRaygen"), stage(1U, VK_SHADER_STAGE_MISS_BIT_KHR, "primaryMiss"),
+			stage(2U, VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, "primaryClosestHit")};
+		const auto group = [](VkRayTracingShaderGroupTypeKHR type, std::uint32_t general, std::uint32_t closestHit) {
+			return VkRayTracingShaderGroupCreateInfoKHR{.sType = VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR, .type = type,
+				.generalShader = general, .closestHitShader = closestHit, .anyHitShader = VK_SHADER_UNUSED_KHR, .intersectionShader = VK_SHADER_UNUSED_KHR};
+		};
+		const std::array groups{group(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR, 0U, VK_SHADER_UNUSED_KHR),
+			group(VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR, 1U, VK_SHADER_UNUSED_KHR),
+			group(VK_RAY_TRACING_SHADER_GROUP_TYPE_TRIANGLES_HIT_GROUP_KHR, VK_SHADER_UNUSED_KHR, 2U)};
+		const VkRayTracingPipelineCreateInfoKHR pipelineInfo{
+			.sType = VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
+			.stageCount = static_cast<std::uint32_t>(stages.size()),
+			.pStages = stages.data(),
+			.groupCount = static_cast<std::uint32_t>(groups.size()),
+			.pGroups = groups.data(),
+			.maxPipelineRayRecursionDepth = 1U, // Only the ray generation stage traces.
+			.layout = pipeline_layout_,
+		};
+		result = dispatch.vkCreateRayTracingPipelinesKHR(device_.device, VK_NULL_HANDLE, VK_NULL_HANDLE, 1U, &pipelineInfo, nullptr, &pipeline_);
+		if (result != VK_SUCCESS) { return result; }
+
+		// Shader binding table: one aligned region with one handle per group.
+		VkPhysicalDeviceRayTracingPipelinePropertiesKHR limits{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_PROPERTIES_KHR};
+		VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, .pNext = &limits};
+		vkGetPhysicalDeviceProperties2(physical_device_.physicalDevice, &properties);
+		const VkDeviceSize handleSize{limits.shaderGroupHandleSize};
+		const VkDeviceSize stride{alignUp(handleSize, limits.shaderGroupHandleAlignment)};
+		const VkDeviceSize regionSize{alignUp(stride, limits.shaderGroupBaseAlignment)};
+		auto handles = std::vector<std::byte>(groups.size() * handleSize);
+		result = dispatch.vkGetRayTracingShaderGroupHandlesKHR(device_.device, pipeline_, 0U, static_cast<std::uint32_t>(groups.size()), handles.size(), handles.data());
+		if (result != VK_SUCCESS) { return result; }
+		// The buffer's own address has no guaranteed alignment, so reserve one alignment of slack and start at the next boundary.
+		result = shader_table_.create(allocator_, groups.size() * regionSize + limits.shaderGroupBaseAlignment,
+			VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, BufferMemory::upload);
+		if (result != VK_SUCCESS) { return result; }
+		const VkDeviceAddress address{bufferAddress(device_.device, shader_table_.buffer)};
+		const VkDeviceAddress first{alignUp(address, limits.shaderGroupBaseAlignment)};
+		for (std::size_t index{}; index < groups.size(); ++index) {
+			std::memcpy(static_cast<std::byte *>(shader_table_.mapped) + (first - address) + index * regionSize, handles.data() + index * handleSize, handleSize);
+			shader_regions_[index] = {.deviceAddress = first + index * regionSize, .stride = stride, .size = stride};
+		}
+		return VK_SUCCESS;
+	}
+
+	/// @brief Rebuilds the acceleration structures and the material buffer from the bound scene.
+	/// @return Error::not_initialized before init, Error::platform_error when Vulkan fails.
+	auto RadianceCascadesRenderer::rebuildScene() -> std::expected<void, Error> {
+		if (!initialized_) { return std::unexpected(Error::not_initialized); }
+		if (const VkResult result = buildScene(); result != VK_SUCCESS) { return fail("scene", result); }
+		return {};
+	}
+
+	/// @brief Releases the acceleration structures and every scene buffer; the device must be idle.
+	void RadianceCascadesRenderer::destroyScene() {
+		if (device_.device != VK_NULL_HANDLE) {
+			const auto &dispatch = *device_.device.handle.getDispatcher();
+			dispatch.vkDestroyAccelerationStructureKHR(device_.device, top_level_, nullptr);
+			for (const auto structure : bottom_levels_) { dispatch.vkDestroyAccelerationStructureKHR(device_.device, structure, nullptr); }
+		}
+		top_level_ = VK_NULL_HANDLE;
+		bottom_levels_.clear();
+		scene_buffers_.clear();
+		materials_.cleanup();
+		traced_instances_ = 0U;
+	}
+
+	/// @brief Creates one acceleration structure, builds it and waits for the build.
+	/// Its storage buffer joins scene_buffers_; the scratch buffer lives only for the build.
+	auto RadianceCascadesRenderer::buildStructure(VkAccelerationStructureTypeKHR type, const VkAccelerationStructureGeometryKHR &geometry,
+		std::uint32_t primitives) -> std::expected<VkAccelerationStructureKHR, VkResult> {
+		const auto &dispatch = *device_.device.handle.getDispatcher();
+		VkAccelerationStructureBuildGeometryInfoKHR build{
+			.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+			.type = type,
+			.flags = VK_BUILD_ACCELERATION_STRUCTURE_PREFER_FAST_TRACE_BIT_KHR,
+			.mode = VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+			.geometryCount = 1U,
+			.pGeometries = &geometry,
+		};
+		VkAccelerationStructureBuildSizesInfoKHR sizes{.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_SIZES_INFO_KHR};
+		dispatch.vkGetAccelerationStructureBuildSizesKHR(device_.device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR, &build, &primitives, &sizes);
+
+		VulkanBuffer storage{};
+		VkResult result = storage.create(allocator_, sizes.accelerationStructureSize,
+			VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, BufferMemory::device_local);
+		if (result != VK_SUCCESS) { return std::unexpected(result); }
+		const VkAccelerationStructureCreateInfoKHR createInfo{.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
+			.buffer = storage.buffer, .size = sizes.accelerationStructureSize, .type = type};
+		VkAccelerationStructureKHR structure{VK_NULL_HANDLE};
+		result = dispatch.vkCreateAccelerationStructureKHR(device_.device, &createInfo, nullptr, &structure);
+		if (result != VK_SUCCESS) { return std::unexpected(result); }
+
+		// The scratch address must be aligned; reserve one alignment of slack and start at the next boundary.
+		VkPhysicalDeviceAccelerationStructurePropertiesKHR limits{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_PROPERTIES_KHR};
+		VkPhysicalDeviceProperties2 properties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2, .pNext = &limits};
+		vkGetPhysicalDeviceProperties2(physical_device_.physicalDevice, &properties);
+		const VkDeviceSize alignment{std::max<VkDeviceSize>(limits.minAccelerationStructureScratchOffsetAlignment, 1U)};
+		VulkanBuffer scratch{};
+		result = scratch.create(allocator_, sizes.buildScratchSize + alignment,
+			VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, BufferMemory::device_local);
+		if (result == VK_SUCCESS) {
+			build.dstAccelerationStructure = structure;
+			build.scratchData.deviceAddress = alignUp(bufferAddress(device_.device, scratch.buffer), alignment);
+			const VkAccelerationStructureBuildRangeInfoKHR range{.primitiveCount = primitives};
+			const VkAccelerationStructureBuildRangeInfoKHR *const ranges{&range};
+			result = submitOnce(device_.device, device_.graphicsQueue, command_pool_.commandPool, [&](VkCommandBuffer command) {
+				dispatch.vkCmdBuildAccelerationStructuresKHR(command, 1U, &build, &ranges);
+			});
+		}
+		if (result != VK_SUCCESS) {
+			dispatch.vkDestroyAccelerationStructureKHR(device_.device, structure, nullptr);
+			return std::unexpected(result);
+		}
+		scene_buffers_.push_back(std::move(storage));
+		return structure;
+	}
+
+	/// @brief Uploads the bound scene: material rows, mesh geometry, one bottom-level structure per mesh and the
+	/// top-level structure over visible mesh instances. An empty scene leaves top_level_ null.
+	VkResult RadianceCascadesRenderer::buildScene() {
+		waitIdle();
+		destroyScene();
+		if (scene_ == nullptr) { return VK_SUCCESS; }
+		const auto &dispatch = *device_.device.handle.getDispatcher();
+		const auto &meshes = scene_->meshes();
+		const auto &materials = scene_->materials();
+
+		// Material rows keep RenderScene order, so an instance's row is its material's position; the last row is white.
+		auto rows = std::vector<std::array<Vec4, 2>>{};
+		rows.reserve(materials.size() + 1U);
+		for (const auto &material : materials) {
+			rows.push_back({Vec4{material.base_color.value, one()}, Vec4{material.emissive.value, zero()}});
+		}
+		rows.push_back({Vec4{one(), one(), one(), one()}, Vec4{}});
+		VkResult result = materials_.create(allocator_, rows.size() * sizeof(rows.front()), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, BufferMemory::upload);
+		if (result == VK_SUCCESS) { result = materials_.upload(rows.data(), rows.size() * sizeof(rows.front())); }
+		if (result != VK_SUCCESS) { return result; }
+
+		// Geometry: device-local vertex and index buffers, filled through one upload batch.
+		constexpr VkBufferUsageFlags geometryUsage{VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT |
+			VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT};
+		auto geometry = std::vector<std::array<VkBuffer, 2>>(meshes.size()); // Vertex and index buffer per mesh; null without triangles.
+		{
+			VulkanUploadBatch batch{};
+			result = batch.begin(device_.device, device_.graphicsQueue, command_pool_.commandPool);
+			if (result != VK_SUCCESS) { return result; }
+			const auto upload = [&](std::span<const std::byte> bytes) -> std::expected<VkBuffer, VkResult> {
+				VulkanBuffer buffer{};
+				if (const VkResult created = buffer.create(allocator_, bytes.size(), geometryUsage, BufferMemory::device_local); created != VK_SUCCESS) {
+					return std::unexpected(created);
+				}
+				const auto staging = batch.stage(allocator_, bytes);
+				if (!staging) { return std::unexpected(staging.error()); }
+				const VkBufferCopy region{.size = bytes.size()};
+				vkCmdCopyBuffer(batch.commandBuffer, *staging, buffer.buffer, 1U, &region);
+				return scene_buffers_.emplace_back(std::move(buffer)).buffer;
+			};
+			for (std::size_t index{}; index < meshes.size(); ++index) {
+				const auto &mesh = meshes[index];
+				if (!mesh.vertices || mesh.vertices->empty() || mesh.indices.size() < 3U) { continue; }
+				const auto vertices = upload(std::as_bytes(std::span{*mesh.vertices}));
+				if (!vertices) { return vertices.error(); }
+				const auto indices = upload(std::as_bytes(std::span{mesh.indices}));
+				if (!indices) { return indices.error(); }
+				geometry[index] = {*vertices, *indices};
+			}
+			result = batch.submit();
+			if (result != VK_SUCCESS) { return result; }
+		}
+
+		bottom_levels_.assign(meshes.size(), VK_NULL_HANDLE);
+		for (std::size_t index{}; index < meshes.size(); ++index) {
+			if (geometry[index][0] == VK_NULL_HANDLE) { continue; }
+			const auto &mesh = meshes[index];
+			const VkAccelerationStructureGeometryKHR triangles{
+				.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
+				.geometryType = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
+				.geometry = {.triangles = {
+					.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR,
+					.vertexFormat = VK_FORMAT_R32G32B32_SFLOAT, // RenderVertex starts with its position.
+					.vertexData = {.deviceAddress = bufferAddress(device_.device, geometry[index][0])},
+					.vertexStride = sizeof(RenderVertex),
+					.maxVertex = static_cast<std::uint32_t>(mesh.vertices->size() - 1U),
+					.indexType = VK_INDEX_TYPE_UINT32,
+					.indexData = {.deviceAddress = bufferAddress(device_.device, geometry[index][1])},
+				}},
+				.flags = VK_GEOMETRY_OPAQUE_BIT_KHR,
+			};
+			const auto structure = buildStructure(VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR, triangles, static_cast<std::uint32_t>(mesh.indices.size() / 3U));
+			if (!structure) { return structure.error(); }
+			bottom_levels_[index] = *structure;
+		}
+
+		// Instances: visible ordinary meshes only; sky, sprites and terrain have no meaning for the rays.
+		auto entries = std::vector<VkAccelerationStructureInstanceKHR>{};
+		for (const auto &instance : scene_->instances()) {
+			if (!instance.visible || instance.sky || instance.sprite || instance.terrain) { continue; }
+			const auto mesh = std::ranges::find(meshes, instance.mesh, &RenderMesh::handle);
+			if (mesh == meshes.end() || bottom_levels_[static_cast<std::size_t>(mesh - meshes.begin())] == VK_NULL_HANDLE) { continue; }
+			const auto material = std::ranges::find(materials, instance.material, &RenderMaterial::handle);
+			const VkAccelerationStructureDeviceAddressInfoKHR addressInfo{.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
+				.accelerationStructure = bottom_levels_[static_cast<std::size_t>(mesh - meshes.begin())]};
+			auto &entry = entries.emplace_back();
+			// Vulkan wants the upper three rows; Mat4 is indexed by column first.
+			for (std::size_t row{}; row < 3U; ++row) {
+				for (std::size_t column{}; column < 4U; ++column) {
+					entry.transform.matrix[row][column] = instance.world_transform[static_cast<int>(column)][static_cast<int>(row)];
+				}
+			}
+			entry.instanceCustomIndex = static_cast<std::uint32_t>(material - materials.begin()); // A missing material selects the white row.
+			entry.mask = 0xFFU;
+			entry.flags = VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR;
+			entry.accelerationStructureReference = dispatch.vkGetAccelerationStructureDeviceAddressKHR(device_.device, &addressInfo);
+		}
+		if (!entries.empty()) {
+			VulkanBuffer instances{};
+			result = instances.create(allocator_, entries.size() * sizeof(entries.front()),
+				VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR, BufferMemory::upload);
+			if (result == VK_SUCCESS) { result = instances.upload(entries.data(), entries.size() * sizeof(entries.front())); }
+			if (result != VK_SUCCESS) { return result; }
+			const VkAccelerationStructureGeometryKHR instanceGeometry{
+				.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
+				.geometryType = VK_GEOMETRY_TYPE_INSTANCES_KHR,
+				.geometry = {.instances = {
+					.sType = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_INSTANCES_DATA_KHR,
+					.data = {.deviceAddress = bufferAddress(device_.device, instances.buffer)},
+				}},
+				.flags = VK_GEOMETRY_OPAQUE_BIT_KHR,
+			};
+			const auto structure = buildStructure(VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR, instanceGeometry, static_cast<std::uint32_t>(entries.size()));
+			if (!structure) { return structure.error(); }
+			top_level_ = *structure;
+			traced_instances_ = entries.size();
+		}
+		writeDescriptors();
+		return VK_SUCCESS;
+	}
+
+	/// @brief Points the descriptor set at the current output image and, when a scene exists, its structure and materials.
+	/// The device must be idle; frames without a scene never use the set.
+	void RadianceCascadesRenderer::writeDescriptors() {
+		if (descriptor_set_ == VK_NULL_HANDLE) { return; }
+		const VkDescriptorImageInfo outputInfo{.imageView = output_.imageView, .imageLayout = VK_IMAGE_LAYOUT_GENERAL};
+		const VkWriteDescriptorSetAccelerationStructureKHR structureInfo{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+			.accelerationStructureCount = 1U, .pAccelerationStructures = &top_level_};
+		const VkDescriptorBufferInfo materialInfo{.buffer = materials_.buffer, .range = VK_WHOLE_SIZE};
+		const std::array writes{
+			VkWriteDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, .dstSet = descriptor_set_, .dstBinding = VVE_RC_OUTPUT_BINDING,
+				.descriptorCount = 1U, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, .pImageInfo = &outputInfo},
+			VkWriteDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, .pNext = &structureInfo, .dstSet = descriptor_set_,
+				.dstBinding = VVE_RC_SCENE_BINDING, .descriptorCount = 1U, .descriptorType = VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR},
+			VkWriteDescriptorSet{.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, .dstSet = descriptor_set_, .dstBinding = VVE_RC_MATERIAL_BINDING,
+				.descriptorCount = 1U, .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, .pBufferInfo = &materialInfo},
+		};
+		// Without a top-level structure only the output image is written.
+		vkUpdateDescriptorSets(device_.device, top_level_ == VK_NULL_HANDLE ? 1U : static_cast<std::uint32_t>(writes.size()), writes.data(), 0U, nullptr);
 	}
 
 	/// @brief Renders and presents one frame; a temporarily unavailable window or image is a successful skip.
@@ -210,20 +570,53 @@ namespace vve::simple {
 		return true;
 	}
 
-	/// @brief Records one frame: clear the output image, run the lighting stages, blit the result to the swapchain image.
+	/// @brief Traces one camera ray per pixel into the output image, which it leaves in the general layout.
+	/// The hit currently returns the material colour; the irradiance of the merged cascade 0 is added in a later step.
+	void RadianceCascadesRenderer::recordResolve(VkCommandBuffer command) {
+		const auto &dispatch = *device_.device.handle.getDispatcher();
+		// Camera basis: the image plane sits one unit in front of the camera.
+		const Vec3 forward{normalize(camera_.forward.value)};
+		const bool vertical{std::abs(forward.y) > static_cast<Scalar>(0.999)};
+		const Vec3 right{normalize(cross(forward, vertical ? Vec3{zero(), zero(), one()} : Vec3{zero(), one(), zero()}))};
+		const Vec3 up{cross(right, forward)};
+		const Scalar halfHeight{std::tan(camera_.fov_y.radians * static_cast<Scalar>(0.5))};
+		const Scalar aspect{static_cast<Scalar>(swapchain_.extent.width) / static_cast<Scalar>(swapchain_.extent.height)};
+		const FrameConstants constants{
+			.origin = Vec4{camera_.position.value, one()},
+			.right = Vec4{scale(right, halfHeight * aspect), zero()},
+			.up = Vec4{scale(up, halfHeight), zero()},
+			.forward = Vec4{forward, zero()},
+			.background = Vec4{background_color_.value, one()},
+		};
+		// Every pixel is written, so the previous contents are not needed.
+		imageBarrier(command, output_.image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, 0U,
+			VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT);
+		vkCmdBindPipeline(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_);
+		vkCmdBindDescriptorSets(command, VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR, pipeline_layout_, 0U, 1U, &descriptor_set_, 0U, nullptr);
+		vkCmdPushConstants(command, pipeline_layout_, VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_MISS_BIT_KHR, 0U, sizeof(constants), &constants);
+		const VkStridedDeviceAddressRegionKHR callable{};
+		dispatch.vkCmdTraceRaysKHR(command, &shader_regions_[0], &shader_regions_[1], &shader_regions_[2], &callable,
+			swapchain_.extent.width, swapchain_.extent.height, 1U);
+	}
+
+	/// @brief Records one frame: fill the output image (ray traced scene, or the background colour without one), then
+	/// blit it to the swapchain image.
 	void RadianceCascadesRenderer::recordFrame(VkCommandBuffer command, std::uint32_t imageIndex) {
 		constexpr VkImageAspectFlags colour{VK_IMAGE_ASPECT_COLOR_BIT};
 		const VkImage target{swapchain_.images[imageIndex]};
-		const auto background = background_color_.value;
-		const VkClearColorValue clear{.float32 = {background.x, background.y, background.z, 1.0F}};
-		const VkImageSubresourceRange range{.aspectMask = colour, .levelCount = 1U, .layerCount = 1U};
-		// The previous contents of both images are not needed.
-		transitionImage(command, output_.image, colour, 0U, 1U, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		vkCmdClearColorImage(command, output_.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear, 1U, &range);
-
-		record(command);
-
-		transitionImage(command, output_.image, colour, 0U, 1U, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		if (top_level_ != VK_NULL_HANDLE) {
+			record(command);
+			imageBarrier(command, output_.image, VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+				VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR, VK_ACCESS_SHADER_WRITE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+		} else {
+			const auto background = background_color_.value;
+			const VkClearColorValue clear{.float32 = {background.x, background.y, background.z, 1.0F}};
+			const VkImageSubresourceRange range{.aspectMask = colour, .levelCount = 1U, .layerCount = 1U};
+			transitionImage(command, output_.image, colour, 0U, 1U, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+			vkCmdClearColorImage(command, output_.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clear, 1U, &range);
+			transitionImage(command, output_.image, colour, 0U, 1U, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+		}
+		// The previous contents of the swapchain image are not needed.
 		transitionImage(command, target, colour, 0U, 1U, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 		const VkOffset3D corner{.x = static_cast<std::int32_t>(swapchain_.extent.width), .y = static_cast<std::int32_t>(swapchain_.extent.height), .z = 1};
 		const VkImageBlit blit{

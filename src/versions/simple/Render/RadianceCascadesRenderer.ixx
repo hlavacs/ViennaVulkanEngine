@@ -5,6 +5,7 @@ export module VVEngine.Simple.RadianceCascadesRenderer;
 import std;
 import VVEngine.Simple.Types;
 import VVEngine.Simple.Vulkan;
+import VVEngine.Simple.RenderResources;
 
 /// @file
 /// @brief Standalone world-space radiance cascades renderer (Sannikov, "Radiance Cascades").
@@ -21,8 +22,9 @@ import VVEngine.Simple.Vulkan;
 /// 3D law, where every cascade needs half the memory of the one before. The scene is voxelized on the CPU into a
 /// radiance volume; rays are traced with the Vulkan ray tracing pipeline against the scene triangles.
 ///
-/// Implemented so far: settings, layout, device bring-up, and a frame that clears the HDR output image and blits it
-/// to the swapchain. The cascade stages are declared and empty.
+/// Implemented so far: settings, layout, device bring-up, acceleration structures over the bound RenderScene, and a
+/// frame that traces one camera ray per pixel (material colour, no lighting) into the HDR output image and blits it
+/// to the swapchain. Without traceable geometry the frame is the background colour. The cascade stages are empty.
 
 export namespace vve::simple {
 
@@ -68,6 +70,13 @@ export namespace vve::simple {
 		auto shutdown() -> void;
 		[[nodiscard]] bool initialized() const noexcept;
 
+		// Scene (RadianceCascadesRenderer.cpp). The scene is treated as static: call rebuildScene after changing it.
+		auto bindRenderScene(const RenderScene &scene) -> void;
+		[[nodiscard]] auto rebuildScene() -> std::expected<void, Error>;
+		[[nodiscard]] std::size_t tracedInstanceCount() const noexcept;
+		auto setCamera(Camera camera) -> void;
+		[[nodiscard]] const Camera &camera() const noexcept;
+
 		// Per-frame work (RadianceCascadesRenderer.cpp).
 		[[nodiscard]] auto renderFrame() -> std::expected<void, Error>;
 		[[nodiscard]] auto execute() -> std::expected<void, Error>;
@@ -88,6 +97,12 @@ export namespace vve::simple {
 		[[nodiscard]] VkExtent2D windowPixelExtent() const;
 		[[nodiscard]] VkResult createSwapchainResources(VkExtent2D extent);
 		[[nodiscard]] VkResult syncSwapchain(VkExtent2D extent);
+		[[nodiscard]] VkResult createPipeline();
+		[[nodiscard]] VkResult buildScene();
+		[[nodiscard]] auto buildStructure(VkAccelerationStructureTypeKHR type, const VkAccelerationStructureGeometryKHR &geometry,
+			std::uint32_t primitives) -> std::expected<VkAccelerationStructureKHR, VkResult>;
+		void destroyScene();
+		void writeDescriptors();
 		[[nodiscard]] auto drawFrame(VulkanReadback *readback) -> std::expected<bool, Error>;
 		void recordFrame(VkCommandBuffer command, std::uint32_t imageIndex);
 		void record(VkCommandBuffer command);
@@ -110,6 +125,21 @@ export namespace vve::simple {
 		VulkanSwapchain swapchain_{};									///< Presentation images of window_.
 		VulkanImage output_{};											///< Linear HDR image every stage renders into; blitted to the swapchain.
 		VulkanFrameSync frame_sync_{};									///< Fences and semaphores of the frame slots.
+		VkDescriptorSetLayout set_layout_{VK_NULL_HANDLE};			///< Scene structure, output image and materials.
+		VulkanDescriptorPool descriptor_pool_{};						///< Owns descriptor_set_.
+		VkDescriptorSet descriptor_set_{VK_NULL_HANDLE};			///< The one set every stage binds.
+		VkPipelineLayout pipeline_layout_{VK_NULL_HANDLE};			///< set_layout_ plus the frame push constants.
+		VkPipeline pipeline_{VK_NULL_HANDLE};							///< Ray tracing pipeline of the primary rays.
+		VulkanBuffer shader_table_{};									///< Shader binding table: ray generation, miss and hit group handles.
+		std::array<VkStridedDeviceAddressRegionKHR, 3> shader_regions_{}; ///< Ray generation, miss and hit regions inside shader_table_.
+		const RenderScene *scene_{nullptr};							///< Borrowed CPU scene; read only by rebuildScene and init.
+		std::vector<VulkanBuffer> scene_buffers_{};					///< Vertex, index, structure storage and instance buffers of the scene.
+		std::vector<VkAccelerationStructureKHR> bottom_levels_{};	///< One structure per RenderScene mesh; null for meshes without triangles.
+		VkAccelerationStructureKHR top_level_{VK_NULL_HANDLE};	///< Structure over the traced instances; null when there are none.
+		VulkanBuffer materials_{};										///< Material rows in RenderScene order, plus a white fallback.
+		std::size_t traced_instances_{};								///< Instances inside top_level_.
+		Camera camera_{.position = {Vec3{zero(), static_cast<Scalar>(6.0), static_cast<Scalar>(9.0)}},
+			.forward = {Vec3{zero(), static_cast<Scalar>(-5.0), static_cast<Scalar>(-9.0)}}}; ///< View of the primary rays; the default matches the forward renderer.
 		std::vector<VulkanImage> cascades_{};							///< One 2D array atlas per cascade: a layer per probe z slice.
 		std::uint32_t current_frame_{0U};								///< Frame slot used by the next frame.
 		bool initialized_{false};										///< Tracks whether the renderer has been initialized.
@@ -218,11 +248,6 @@ export namespace vve::simple {
 		// TODO: compute shader; trilinear probe interpolation, average of the child directions.
 	}
 
-	/// @brief Traces one primary ray per pixel and shades the hit with the irradiance of the merged cascade 0.
-	inline void RadianceCascadesRenderer::recordResolve(VkCommandBuffer) {
-		// TODO: ray generation shader; cosine-weighted sum of cascade 0 directions, times albedo, plus emissive and direct light.
-	}
-
 	/// @brief Convenience execution alias for renderFrame.
 	/// @return Result of renderFrame().
 	inline auto RadianceCascadesRenderer::execute() -> std::expected<void, Error> {
@@ -240,6 +265,18 @@ export namespace vve::simple {
 
 	/// @brief Returns the colour of pixels that no geometry covers; the default is the forward renderer's light blue.
 	inline LinearColor RadianceCascadesRenderer::backgroundColor() const noexcept { return background_color_; }
+
+	/// @brief Borrows the CPU scene; it must outlive the renderer or be replaced before the next rebuildScene or init.
+	inline auto RadianceCascadesRenderer::bindRenderScene(const RenderScene &scene) -> void { scene_ = std::addressof(scene); }
+
+	/// @brief Number of scene instances the rays can hit; sky, sprites, terrain and hidden instances are left out.
+	inline std::size_t RadianceCascadesRenderer::tracedInstanceCount() const noexcept { return traced_instances_; }
+
+	/// @brief Sets the view of the primary rays.
+	inline auto RadianceCascadesRenderer::setCamera(Camera camera) -> void { camera_ = std::move(camera); }
+
+	/// @brief Returns the view of the primary rays.
+	inline const Camera &RadianceCascadesRenderer::camera() const noexcept { return camera_; }
 
 	/// @brief Size of the swapchain images in pixels; zero before init.
 	inline VkExtent2D RadianceCascadesRenderer::extent() const noexcept { return swapchain_.extent; }

@@ -311,12 +311,14 @@ namespace vve::simple {
 	/// @brief Stores read access to imported asset-scene descriptors owned by the engine.
 	inline RenderSystem::RenderSystem() {
 		renderer_.bindRenderScene(scene_);
+		radiance_cascades_.bindRenderScene(scene_);
 	}
 
 	/// @brief Stores read access to imported asset-scene descriptors owned by the engine.
 	inline RenderSystem::RenderSystem(ImportedAssetReadAccess imported_assets, const WindowSystem *windows)
 		: imported_assets_{std::move(imported_assets)}, window_system_{windows} {
 		renderer_.bindRenderScene(scene_);
+		radiance_cascades_.bindRenderScene(scene_);
 	}
 
 	/// @brief Returns the forward renderer backend.
